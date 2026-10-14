@@ -713,26 +713,35 @@ describe('WorkspaceAuthGate', () => {
       {
         name: 'a revoked session',
         error: new SessionRevokedError('signed out'),
-        level: 'warning'
+        report: {
+          level: 'warning',
+          tags: { failure_code: 'SESSION_REVOKED', outcome: 'gave_up' }
+        }
+      },
+      {
+        name: 'a revoked sign-in',
+        error: new SessionRevokedError('sign-in revoked', 'TOKEN_REVOKED'),
+        report: {
+          level: 'warning',
+          tags: { failure_code: 'TOKEN_REVOKED', outcome: 'gave_up' }
+        }
       },
       {
         name: 'any other failure',
         error: new Error('Workspace init failed'),
-        level: 'error'
+        report: { level: 'error' }
       }
-    ])('reports $name at $level level', async ({ error, level }) => {
+    ])('reports $name with $report', async ({ error, report }) => {
       vi.mocked(useTeamWorkspaceStore().initialize).mockRejectedValue(error)
 
       mountComponent()
       await flushPromises()
 
-      expect(mockReportError).toHaveBeenCalledWith(
-        error,
-        expect.objectContaining({
-          errorType: 'workspace_auth_gate_initialization_failure',
-          level
-        })
-      )
+      expect(mockReportError).toHaveBeenCalledWith(error, {
+        surface: 'auth',
+        errorType: 'workspace_auth_gate_initialization_failure',
+        ...report
+      })
     })
 
     it('signs out from the no-workspace screen', async () => {

@@ -205,6 +205,11 @@ const MAX_OWNED_WORKSPACES = 10
 const MAX_INIT_RETRIES = 3
 const BASE_RETRY_DELAY_MS = 1000
 
+function initRetryLimit(error: unknown): number {
+  if (!(error instanceof SessionRevokedError)) return MAX_INIT_RETRIES
+  return error.code === 'TOKEN_REVOKED' ? 0 : 1
+}
+
 export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   const { flags } = useFeatureFlags()
   const initState = ref<InitState>('uninitialized')
@@ -381,12 +386,6 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
 
     for (let attempt = 0; attempt <= MAX_INIT_RETRIES; attempt++) {
       try {
-        // An API-key credential is bound to exactly one workspace on the
-        // server. There is no discovery, switching, or token exchange for it:
-        // the server echoes the binding back and the key itself authenticates
-        // workspace-scoped calls.
-        // Desktop owns a host session's workspace: list what the account can
-        // reach and follow the workspace Desktop's session is scoped to.
         if (isDesktopHostSignedIn()) {
           const response = await workspaceApi.list()
           if (isStaleIdentity(generation)) return
@@ -416,11 +415,9 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
         await useSessionCookie().ensureSessionCookie()
         if (isStaleIdentity(generation)) return
 
-        // 1. Try to restore workspace context from session (page refresh case)
         const hasValidSession = workspaceAuthStore.initializeFromSession()
 
         if (hasValidSession && workspaceAuthStore.currentWorkspace) {
-          // Valid session exists - fetch workspace list and verify access
           const response = await workspaceApi.list()
           if (isStaleIdentity(generation)) return
           applyWorkspaceList(response)
@@ -429,7 +426,6 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
             throw new NoWorkspaceAccessError('No workspaces available')
           }
 
-          // Verify session workspace exists in fetched list
           const sessionWorkspaceId = workspaceAuthStore.currentWorkspace.id
           const sessionWorkspaceExists = workspaces.value.some(
             (w) => w.id === sessionWorkspaceId
@@ -443,7 +439,6 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
             return
           }
 
-          // Session workspace not found (deleted/access revoked) - fallback to default
           if (isCloud) clearWorkflowRestoreState()
           workspaceAuthStore.clearWorkspaceContext()
 
@@ -462,7 +457,6 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
           return
         }
 
-        // 2. No valid session - fetch workspaces and pick default
         const response: ListedWorkspaces = await workspaceApi.list()
         if (isStaleIdentity(generation)) return
         applyWorkspaceList(response)
@@ -471,8 +465,6 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
           throw new NoWorkspaceAccessError('No workspaces available')
         }
 
-        // 3. Determine target workspace (priority: a switch's target >
-        // the server's default > localStorage > personal)
         const listed = (id: string | null | undefined): id is string =>
           !!id && workspaces.value.some((w) => w.id === id)
         let targetWorkspaceId: string | null =
@@ -487,12 +479,10 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
           targetWorkspaceId = personal?.id ?? workspaces.value[0].id
         }
 
-        // 4. Exchange Firebase token for workspace token
         await workspaceAuthStore.switchWorkspace(targetWorkspaceId)
 
         if (isStaleIdentity(generation)) return
 
-        // 5. Set active workspace
         mutableActiveWorkspaceId.value = targetWorkspaceId
         setLastWorkspaceId(targetWorkspaceId)
         reportSsoLanding(response, targetWorkspaceId)
@@ -502,13 +492,9 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
         return
       } catch (e) {
         if (isStaleIdentity(generation)) return
-        // With SSO off, ingest's 403 keeps today's retries.
         const isNoWorkspacesError =
           e instanceof NoWorkspaceAccessError &&
           (e.status === undefined || flags.ssoEnabled)
-        // A definitive 4xx on the credential lookup cannot be repaired by
-        // resending the same key; retries stay reserved for transient
-        // failures (network, 408/429, 5xx).
         const isPermanentCredentialError =
           isApiKeySession &&
           e instanceof WorkspaceApiError &&
@@ -521,8 +507,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
         if (
           isNoWorkspacesError ||
           isPermanentCredentialError ||
-          e instanceof SessionRevokedError ||
-          attempt >= MAX_INIT_RETRIES
+          attempt >= initRetryLimit(e)
         ) {
           error.value = e instanceof Error ? e : new Error('Unknown error')
           initState.value = 'error'
@@ -530,7 +515,6 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
           throw e
         }
 
-        // Retry with exponential backoff for transient errors
         const delay = BASE_RETRY_DELAY_MS * Math.pow(2, attempt)
         const errorMessage = e instanceof Error ? e.message : String(e)
         console.warn(

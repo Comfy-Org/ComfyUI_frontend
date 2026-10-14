@@ -463,19 +463,24 @@ describe('useTeamWorkspaceStore', () => {
       expect(mockWorkspaceApi.list).toHaveBeenCalledTimes(4)
     })
 
-    it('does not retry a revoked session', async () => {
-      mockEnsureSessionCookie.mockRejectedValue(
-        new SessionRevokedError('This session was signed out; sign in again')
-      )
+    it.for([
+      { code: 'SESSION_REVOKED' as const, attempts: 2 },
+      { code: 'TOKEN_REVOKED' as const, attempts: 1 }
+    ])(
+      'tries a $code refusal $attempts time(s) before giving up',
+      async ({ code, attempts }) => {
+        const refusal = new SessionRevokedError('revoked', code)
+        mockEnsureSessionCookie.mockRejectedValue(refusal)
 
-      const store = useTeamWorkspaceStore()
+        const store = useTeamWorkspaceStore()
+        const initialization = store.initialize().catch((e: unknown) => e)
+        await vi.advanceTimersByTimeAsync(7000)
 
-      await expect(store.initialize()).rejects.toBeInstanceOf(
-        SessionRevokedError
-      )
-      expect(mockEnsureSessionCookie).toHaveBeenCalledOnce()
-      expect(store.initState).toBe('error')
-    })
+        expect(await initialization).toBe(refusal)
+        expect(mockEnsureSessionCookie).toHaveBeenCalledTimes(attempts)
+        expect(store.initState).toBe('error')
+      }
+    )
 
     it('does not reinitialize if already initialized', async () => {
       const store = useTeamWorkspaceStore()
