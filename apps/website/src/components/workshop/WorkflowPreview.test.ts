@@ -52,17 +52,28 @@ describe('WorkflowPreview', () => {
             locale: 'en',
             faqs: [],
             models: [
-              { uid: 'catalog-model', name: 'Flux Pro', href: '/hub/models/flux-pro/' },
+              {
+                uid: 'catalog-model',
+                name: 'Flux Pro',
+                href: '/hub/models/flux-pro/'
+              },
               { uid: 'unresolved-model', name: 'Model unavailable' }
             ]
           }
         }
       }
     })
-    expect(screen.getByRole('link', { name: 'Flux Pro' })).toHaveAttribute('href', '/hub/models/flux-pro/')
-    expect(screen.getByRole('link', { name: 'Flux Pro' })).toHaveClass('underline')
+    expect(screen.getByRole('link', { name: 'Flux Pro' })).toHaveAttribute(
+      'href',
+      '/hub/models/flux-pro/'
+    )
+    expect(screen.getByRole('link', { name: 'Flux Pro' })).toHaveClass(
+      'underline'
+    )
     expect(screen.getByText('Model unavailable')).toBeVisible()
-    expect(screen.queryByRole('link', { name: 'Model unavailable' })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('link', { name: 'Model unavailable' })
+    ).not.toBeInTheDocument()
   })
   it('shows a readable author and decorative avatar, not an account identifier', () => {
     render(WorkflowPreview, {
