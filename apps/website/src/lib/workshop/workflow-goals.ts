@@ -2,7 +2,6 @@ import { AudioLines, Box, Image, LayoutGrid, Video } from '@lucide/vue'
 import type { Component } from 'vue'
 
 import type { WorkflowWorkshopModel } from '@/config/models-catalogue'
-import sections from '@/content/workshop-workflow-sections.json'
 import type { TranslationKey } from '@/i18n/translations'
 import type { SidebarChoice } from './sidebar-tab-classes'
 import type { WorkflowSection } from './workflow-sections'
@@ -97,13 +96,10 @@ export function matchesSectionName(
   query: string
 ): boolean {
   const needle = query.trim().toLowerCase()
-  if (!needle) return false
-  const listed = sectionsOf(model)
-  return sections
-    .filter((section) => listed.includes(section.id))
-    .some((section) =>
-      Object.values(section.label).some((name) =>
-        name.toLowerCase().includes(needle)
-      )
+  return (
+    needle !== '' &&
+    (model.sectionNames ?? []).some((name) =>
+      name.toLowerCase().includes(needle)
     )
+  )
 }

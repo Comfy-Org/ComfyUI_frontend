@@ -35,6 +35,9 @@ function categoryFor(page: WorkshopDisplayEntry) {
 function sectionFor(page: WorkshopDisplayEntry) {
   const primary = page.section ?? page.sections?.[0]
   const order = sections.findIndex((section) => section.id === primary)
+  const named = sections.filter(
+    (section) => section.id === primary || page.sections?.includes(section.id)
+  )
   const listed = sections
     .map((section) => section.id)
     .filter((id) => page.sections?.includes(id))
@@ -44,7 +47,10 @@ function sectionFor(page: WorkshopDisplayEntry) {
       sectionLabel: sections[order].label,
       sectionOrder: order
     }),
-    ...(listed.length > 0 && { sections: listed })
+    ...(listed.length > 0 && { sections: listed }),
+    ...(named.length > 0 && {
+      sectionNames: named.flatMap((section) => Object.values(section.label))
+    })
   }
 }
 

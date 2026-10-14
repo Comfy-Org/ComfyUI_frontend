@@ -26,6 +26,7 @@ function workflow(
     section: sections[0],
     sectionLabel: { en: `${sections[0]} section`, 'zh-CN': sections[0] },
     ...(sections.length > 1 && { sections }),
+    sectionNames: sections.map((id) => `${id} full name`),
     models: ['Wan 2.2']
   }
 }
@@ -123,7 +124,7 @@ describe('Workflows by modality', () => {
       const field = screen.getByRole('searchbox')
       await waitFor(() => expect(field).toBeEnabled())
 
-      await userEvent.type(field, 'clean up')
+      await userEvent.type(field, 'cleanup full')
 
       expect(
         screen

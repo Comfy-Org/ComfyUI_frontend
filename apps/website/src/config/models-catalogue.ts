@@ -173,6 +173,8 @@ export type WorkflowWorkshopModel = WorkshopPresentation & {
   readonly sectionOrder?: number
   /** Every use-case section it is listed under, when it has more than `section`. */
   readonly sections?: readonly string[]
+  /** The full names of every section it is listed under, in each language. */
+  readonly sectionNames?: readonly string[]
   /** The media a visitor brings: an upload's kind, or text for a prompt alone. */
   readonly inputKinds?: readonly Modality[]
   readonly models?: readonly string[]
