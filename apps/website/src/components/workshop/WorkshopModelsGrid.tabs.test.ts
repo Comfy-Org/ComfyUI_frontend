@@ -77,11 +77,9 @@ describe('WorkshopModelsGrid category tabs', () => {
       'true'
     )
     expect(wholeCatalogue()).toHaveTextContent(`${models.length}`)
-    expect(hostedNames().toSorted()).toEqual([
-      'Kling AI',
-      'Sharp Upscaler',
-      'Speech'
-    ])
+    const allHosted = ['Kling AI', 'Sharp Upscaler', 'Speech']
+    expect(hostedNames()).toEqual(expect.arrayContaining(allHosted))
+    expect(hostedNames()).toHaveLength(allHosted.length)
     expect(screen.getByRole('tabpanel')).toHaveAccessibleName('All')
   })
 
@@ -98,7 +96,8 @@ describe('WorkshopModelsGrid category tabs', () => {
       await chooseTab(tab)
       await showEveryPage()
 
-      expect(hostedNames().toSorted()).toEqual(hosted)
+      expect(hostedNames()).toEqual(expect.arrayContaining(hosted))
+      expect(hostedNames()).toHaveLength(hosted.length)
       expect(screen.queryByTestId('open-weight-model-card')).toBeNull()
     }
   )
