@@ -10,6 +10,7 @@ import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import {
+  SHARED_PERSONAL_TEAM_WORKSPACE,
   WEB_SESSION,
   WEB_SESSION_COOKIE,
   WEB_SESSION_ANONYMOUS_FEATURES,
@@ -26,6 +27,11 @@ import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { mockWorkspaceList } from '@e2e/fixtures/utils/workspaceMocks'
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
+
+const WEB_SESSION_WORKSPACES = [
+  ...WORKSPACE_SWITCHER_WORKSPACES,
+  SHARED_PERSONAL_TEAM_WORKSPACE
+]
 
 interface TokenMint {
   body: ExchangeTokenRequest
@@ -145,7 +151,7 @@ export const webSessionTest = comfyPageFixture.extend<WebSessionFixtures>({
 
     await mockBilling(page, { workspaceId: TEAM_WORKSPACE.id })
 
-    await mockWorkspaceList(page, WORKSPACE_SWITCHER_WORKSPACES)
+    await mockWorkspaceList(page, WEB_SESSION_WORKSPACES)
 
     await page.route('**/api/workspace/members**', (route) =>
       route.fulfill({
@@ -160,7 +166,7 @@ export const webSessionTest = comfyPageFixture.extend<WebSessionFixtures>({
       const workspaceId = await route
         .request()
         .headerValue('x-comfy-workspace-id')
-      const workspace = WORKSPACE_SWITCHER_WORKSPACES.find(
+      const workspace = WEB_SESSION_WORKSPACES.find(
         ({ id }) => id === workspaceId
       )
       if (!workspace) {

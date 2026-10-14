@@ -6,6 +6,7 @@ import { CLOUD_SELF_EMAIL } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import {
   PROMPT_ACCEPTED,
   SESSION_REVOKED,
+  SHARED_PERSONAL_TEAM_WORKSPACE,
   WEB_SESSION_COOKIE,
   WEB_SESSION_CSRF_TOKEN,
   WEB_SESSION_MINT,
@@ -170,6 +171,30 @@ test.describe('Unified web session', { tag: '@cloud' }, () => {
         page.getByTestId('workspace-switcher-trigger')
       ).toContainText(PERSONAL_WORKSPACE_NAME)
       expect(promptWorkspaces).toEqual([TEAM_WORKSPACE_ID])
+    })
+  })
+
+  test.describe("booted as a member of another user's personal-type Team workspace", () => {
+    test.use({
+      initialLocalStorage: {
+        'Comfy.Workspace.LastWorkspaceId': SHARED_PERSONAL_TEAM_WORKSPACE.id
+      }
+    })
+
+    test('a prompt request names that workspace instead of falling back to Personal', async ({
+      comfyPage
+    }) => {
+      const page = comfyPage.page
+      await mockPromptAccepted(page)
+
+      const promptRequest = page.waitForRequest(isPromptPost)
+      await comfyPage.workflow.loadWorkflow('default')
+      await comfyPage.toast.closeToasts()
+      await comfyPage.runButton.click()
+      const headers = await (await promptRequest).allHeaders()
+
+      expect(headers[WORKSPACE_HEADER]).toBe(SHARED_PERSONAL_TEAM_WORKSPACE.id)
+      expect(headers['authorization']).toBeUndefined()
     })
   })
 
