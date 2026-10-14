@@ -105,7 +105,7 @@ jobs:
           fi
 
           if ! git diff --quiet FETCH_HEAD -- "$workflow"; then
-            echo "::warning::This PR modifies ${workflow}, but /update-playwright runs the ${DEFAULT_BRANCH} copy of it. Only the container image is taken from the PR; other changes to this workflow are NOT in effect for this run. Use the 'New Browser Test Expectations' label instead to run the PR's own copy."
+            echo "::warning::This PR modifies ${workflow}, but /update-playwright runs the ${DEFAULT_BRANCH} copy of it. Only the container image is taken from the PR; other changes to this workflow are NOT in effect for this run."
           fi
 
       - name: Setup frontend
