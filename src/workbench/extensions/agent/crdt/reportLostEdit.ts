@@ -10,6 +10,7 @@ type LostEditKind =
   | 'unconfirmed'
   | 'unacknowledged'
   | 'mint_divergence'
+  | 'host_rejected'
 
 export function reportLostEdit(
   kind: LostEditKind,
@@ -31,8 +32,8 @@ export function reportLostEdit(
     tags: { tab: api.clientId, outcome: kind },
     context
   })
-  if (kind === 'mint_divergence') {
-    recordDevEvent('mint_divergence', context, { level: 'warn' })
+  if (kind === 'mint_divergence' || kind === 'host_rejected') {
+    recordDevEvent(kind, context, { level: 'warn' })
   } else {
     recordDevEvent('human_ops_settled', { state: kind, ops })
   }

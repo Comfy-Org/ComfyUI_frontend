@@ -199,6 +199,13 @@ describe('a human edit the doc host rejects', () => {
       expect(toastDescriptions()).toEqual([
         expect.stringContaining(WIDGET_REJECTION_TEXT)
       ])
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'error_applying_agent_widget_edit',
+          tags: expect.objectContaining({ outcome: 'host_rejected' })
+        })
+      )
     }
   )
 
@@ -374,10 +381,6 @@ describe('a human edit the doc host rejects', () => {
     expect(useToast().toasts).toEqual([])
   })
 
-  // The host refuses a whole batch with a top-level `code` and no `failed`
-  // entry. Read only from `failed`, every one of these collapses to
-  // 'unspecified' — and because the telemetry dedupe keys on that, the first
-  // would suppress the report for every later kind.
   it('classifies a batch-level refusal that carries no failed entry', async () => {
     const { submit } = mountFollower()
     await submit(WIDGET_EDIT)
@@ -388,24 +391,32 @@ describe('a human edit the doc host rejects', () => {
       expect.stringContaining(GENERIC_REJECTION_TEXT)
     ])
     expect(reportedCodes()).toEqual(['catalog_mismatch'])
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'error_applying_agent_graph_edit',
+        tags: expect.objectContaining({ outcome: 'host_rejected' })
+      })
+    )
   })
 
-  // Asserted on telemetry rather than toasts: every generic notice renders the
-  // same string, so they share one throttle key and the second is swallowed on
-  // screen even though it is a different failure.
-  it('reports each distinct batch-level code once', async () => {
+  it('reports each rejected batch once even when rejection codes repeat', async () => {
     const { submit } = mountFollower()
 
-    // One pending batch per answer: the notifier runs when a batch SETTLES, so
-    // a result with nothing outstanding settles nothing and reports nothing.
     await submit(WIDGET_EDIT)
     answerWithOpsResult(batchRefusal('overloaded'))
+    answerWithOpsResult(batchRefusal('overloaded'))
     await submit(WIDGET_EDIT)
+    answerWithOpsResult(batchRefusal('overloaded'))
     answerWithOpsResult(batchRefusal('overloaded'))
     await submit(WIDGET_EDIT)
     answerWithOpsResult(batchRefusal('catalog_mismatch'))
 
-    expect(reportedCodes()).toEqual(['overloaded', 'catalog_mismatch'])
+    expect(reportedCodes()).toEqual([
+      'overloaded',
+      'overloaded',
+      'catalog_mismatch'
+    ])
   })
 
   // Schema §4 aborts the remainder of a batch, so the prefix is still applied.

@@ -56,8 +56,6 @@ function noticeKey(widgetWrite: boolean, partial: boolean): string {
 }
 
 export function createRejectedOpNotifier() {
-  const reportedCodes = new Set<string>()
-
   function showToast(key: string): void {
     useToast().error(i18n.global.t('g.error'), {
       id: NOTICE_ID,
@@ -72,22 +70,19 @@ export function createRejectedOpNotifier() {
       const { failed } = result
       const widgetWrite = isRejectedWidgetWrite(ops, failed)
       const code = failed?.code ?? result.code ?? 'unspecified'
-      if (!reportedCodes.has(code)) {
-        reportedCodes.add(code)
-        reportLostEdit(
-          'mint_divergence',
-          failed
-            ? [rejectedOp(ops, failed)].filter((op) => op !== undefined)
-            : ops,
-          {
-            code,
-            workflowId: result.workflowId,
-            errorType: widgetWrite
-              ? 'error_applying_agent_widget_edit'
-              : 'error_applying_agent_graph_edit'
-          }
-        )
-      }
+      reportLostEdit(
+        'host_rejected',
+        failed
+          ? [rejectedOp(ops, failed)].filter((op) => op !== undefined)
+          : ops,
+        {
+          code,
+          workflowId: result.workflowId,
+          errorType: widgetWrite
+            ? 'error_applying_agent_widget_edit'
+            : 'error_applying_agent_graph_edit'
+        }
+      )
       const partial = result.applied.length > 0 && failed !== undefined
       showToast(noticeKey(widgetWrite, partial))
     },
