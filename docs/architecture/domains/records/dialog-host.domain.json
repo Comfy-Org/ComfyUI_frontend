@@ -114,7 +114,7 @@
   ],
   "publicEntryPoints": [],
   "allowedDependencies": [],
-  "allowedConsumers": [],
+  "allowedConsumers": ["settings"],
   "characterizationScenarios": [
     {
       "name": "Global dialog renders stacked dialogs and restores body pointer events on close",
