@@ -384,6 +384,33 @@ describe('WorkflowCatalogue filters', () => {
     }
   )
 
+  it.for([
+    {
+      address: '/hub/workflows/?model=SeedVR2',
+      shows: ['connect', 'restore'],
+      sections: ['videos section', 'upscale section']
+    },
+    {
+      address: '/hub/workflows/?input=audio',
+      shows: ['talk'],
+      sections: ['characters section']
+    },
+    {
+      address: '/hub/workflows/?output=image',
+      shows: ['restore', 'inpaint'],
+      sections: ['upscale section', 'cleanup section']
+    }
+  ])(
+    'narrows the sections from $address and hides those left empty',
+    async ({ address, shows, sections }) => {
+      history.replaceState(null, '', address)
+      render(WorkflowCatalogue, { props: { models } })
+
+      await waitFor(() => expect(listed()).toEqual(shows))
+      expect(sectionHeadings()).toEqual(sections)
+    }
+  )
+
   it('offers no media choice that every workflow in the category shares', async () => {
     const user = userEvent.setup()
     render(WorkflowCatalogue, { props: { models } })
