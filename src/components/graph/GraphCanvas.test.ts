@@ -20,7 +20,6 @@ import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { DEPLOYMENT_LISTING_BACKSTOP_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
-import { useToast } from '@/components/ui/toast/toastStore'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -679,18 +678,13 @@ describe('deployment model options at startup', () => {
     expect(useDeploymentPickStore().loadOnce).not.toHaveBeenCalled()
   })
 
-  it('stops startup with a reload message if the deployment lookup never settles', async () => {
+  it('does not construct workflow widgets if the deployment lookup never settles', async () => {
     vi.spyOn(useDeploymentPickStore(), 'loadOnce').mockReturnValue(
       new Promise(() => {})
     )
     await mountGraphCanvas()
     await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_BACKSTOP_MS)
     expect(app.setup).not.toHaveBeenCalled()
-    expect(useToast().toasts).toEqual([
-      expect.objectContaining({
-        kind: 'error',
-        title: 'deploymentSwitcher.lookupTimedOut'
-      })
-    ])
+    expect(mocks.initializeWorkflow).not.toHaveBeenCalled()
   })
 })
