@@ -11,7 +11,7 @@ import {
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-import { afterAll, describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 
 const ROOT = join(import.meta.dirname, '../../..')
 const REPORTER = join(import.meta.dirname, 'snapshotUpdatesReporter.ts')
@@ -61,15 +61,13 @@ const SNAPSHOTS: Record<string, string | Buffer> = {
   'fresh.txt': 'same'
 }
 
-const projects: string[] = []
-
 function readManifest(file: string): unknown {
   return existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : undefined
 }
 
 function runSuite(spec: string, extraConfig = '') {
   const project = mkdtempSync(join(tmpdir(), 'snapshot-updates-'))
-  projects.push(project)
+  onTestFinished(() => rmSync(project, { recursive: true, force: true }))
   symlinkSync(join(ROOT, 'node_modules'), join(project, 'node_modules'))
   writeFileSync(
     join(project, 'playwright.config.ts'),
@@ -93,20 +91,9 @@ function runSuite(spec: string, extraConfig = '') {
   }
 }
 
-describe('SnapshotUpdatesReporter', () => {
-  const mixed = runSuite(MIXED_SPEC)
-  const clean = runSuite(CLEAN_SPEC)
-  const timedOut = runSuite(SLOW_SPEC, ', globalTimeout: 1_000')
-  const failedBeforeTests = runSuite(
-    CLEAN_SPEC,
-    ", webServer: { command: 'exit 1', port: 9 }"
-  )
-  afterAll(() => {
-    for (const project of projects)
-      rmSync(project, { recursive: true, force: true })
-  })
-
+describe('SnapshotUpdatesReporter', { timeout: 30_000 }, () => {
   it('copies the actual image of every snapshot that failed the final attempt onto its golden path', () => {
+    const mixed = runSuite(MIXED_SPEC)
     expect(mixed.manifest).toEqual([
       'tests/a.spec.ts-snapshots/stale.png',
       'tests/a.spec.ts-snapshots/missing.txt',
@@ -124,13 +111,17 @@ describe('SnapshotUpdatesReporter', () => {
   })
 
   it('writes an empty manifest for a run without snapshot failures', () => {
-    expect(clean.manifest).toEqual([])
+    expect(runSuite(CLEAN_SPEC).manifest).toEqual([])
   })
 
   it.for([
-    { name: 'timed out', run: timedOut },
-    { name: 'failed before any test ran', run: failedBeforeTests }
-  ])('writes no manifest for a run that $name', ({ run }) => {
-    expect(run.manifest).toBeUndefined()
+    { name: 'timed out', spec: SLOW_SPEC, config: ', globalTimeout: 1_000' },
+    {
+      name: 'failed before any test ran',
+      spec: CLEAN_SPEC,
+      config: ", webServer: { command: 'exit 1', port: 9 }"
+    }
+  ])('writes no manifest for a run that $name', ({ spec, config }) => {
+    expect(runSuite(spec, config).manifest).toBeUndefined()
   })
 })
