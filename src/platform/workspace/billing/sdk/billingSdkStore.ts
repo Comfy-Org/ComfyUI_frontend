@@ -11,6 +11,8 @@ import type {
   BillingEventsReadOptions,
   BillingOperationTelemetryEvent,
   BillingResult,
+  BillingScopeSource,
+  BillingSession,
   CapabilitiesReadOptions,
   EmbeddedChallengePort,
   PendingBillingOperation,
@@ -32,6 +34,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
+import { readAccessTokenIdentity } from '@/platform/auth/localWeb/accessTokenIdentity'
 import { webSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
@@ -120,6 +123,23 @@ async function loadChallengePort(): Promise<EmbeddedChallengePort | undefined> {
   }
 }
 
+function tokenSessionScopeSource(session: BillingSession): BillingScopeSource {
+  return {
+    getScope: () => {
+      const credential = session.getSnapshot().session
+      const identity = credential && readAccessTokenIdentity(credential.token)
+      return (
+        identity && {
+          userId: identity.userId,
+          workspaceId: credential.workspace.id,
+          role: credential.role
+        }
+      )
+    },
+    subscribe: (listener) => session.subscribe(listener)
+  }
+}
+
 export const useBillingSdkStore = defineStore('billingSdk', () => {
   const workspaceAuthStore = useWorkspaceAuthStore()
   const workspaceStore = useTeamWorkspaceStore()
@@ -148,8 +168,10 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
         workspaceId: requests.workspaceId
       }
     }
+    const session = workspaceAuthStore.getUnifiedSessionClient()
     return {
-      session: workspaceAuthStore.getUnifiedSessionClient(),
+      session,
+      scopeSource: tokenSessionScopeSource(session),
       workspaceId: () => workspaceAuthStore.getUnifiedMintWorkspaceId()
     }
   }

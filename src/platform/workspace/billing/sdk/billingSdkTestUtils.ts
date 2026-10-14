@@ -14,6 +14,13 @@ import { vi } from 'vitest'
 
 import type { BillingSdk } from './createBillingSdk'
 
+/** An unsigned token shaped like a Cloud JWT issued for `subject`. */
+export function cloudJwtFor(subject: string): string {
+  const encode = (value: object) =>
+    btoa(JSON.stringify(value)).replace(/=+$/, '')
+  return `${encode({ alg: 'RS256' })}.${encode({ sub: subject })}.signature`
+}
+
 /** A server code minted the one sanctioned way, so a test cannot invent one. */
 export function serverCode(code: string): BillingServerCode | undefined {
   return readBillingErrorCode({ code, message: 'server text' })

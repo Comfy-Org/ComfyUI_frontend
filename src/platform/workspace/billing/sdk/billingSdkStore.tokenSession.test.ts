@@ -11,6 +11,7 @@ import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuth
 import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 
 import { useBillingSdkStore } from './billingSdkStore'
+import { cloudJwtFor } from './billingSdkTestUtils'
 
 vi.mock(import('@/composables/billing/useBillingContext'))
 
@@ -28,12 +29,6 @@ vi.mock(import('firebase/auth'))
 
 const FIREBASE_UID = 'firebase-uid'
 const COMFY_USER_ID = 'comfy-user-id'
-
-function cloudJwtFor(subject: string): string {
-  const encode = (value: object) =>
-    btoa(JSON.stringify(value)).replace(/=+$/, '')
-  return `${encode({ alg: 'RS256' })}.${encode({ sub: subject })}.signature`
-}
 
 const CREDENTIAL: AccountCredential = {
   token: cloudJwtFor(COMFY_USER_ID),

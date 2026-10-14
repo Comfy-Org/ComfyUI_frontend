@@ -44,6 +44,8 @@ import {
   stubFirebaseAuthHarness
 } from '@/utils/__tests__/stubAccountIdentityPort'
 
+import { cloudJwtFor } from './billingSdkTestUtils'
+
 vi.mock(import('@/platform/telemetry'))
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/composables/billing/useBillingContext'))
@@ -63,7 +65,7 @@ vi.mock<unknown>(
   })
 )
 const CREDENTIAL: AccountCredential = {
-  token: 'workspace-jwt',
+  token: cloudJwtFor('uid-1'),
   expiresAt: Date.now() + 60 * 60 * 1000,
   uid: 'uid-1',
   workspace: { id: 'ws-1', name: 'Personal', type: 'personal' },
