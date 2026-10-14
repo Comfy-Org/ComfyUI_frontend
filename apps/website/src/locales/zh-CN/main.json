@@ -2012,6 +2012,10 @@
       "heading": "同一引擎，多种运行方式",
       "subtitle": "今天就在 Comfy Cloud 中运行 Drama 3，通过 API 批量生成场景，或在你自己机器上的 ComfyUI 中运行。"
     },
+    "samples": {
+      "cta": "立即试用",
+      "heading": "Comfy 上的 Drama 3"
+    },
     "steps": {
       "heading": "执导你的第一个场景",
       "secondaryCta": "查看文档",
@@ -2726,7 +2730,8 @@
     },
     "copyPrompt": "复制提示词",
     "tagFree": "免费",
-    "tagPremium": "高级"
+    "tagPremium": "高级",
+    "voices": "声音"
   },
   "modelRelease": {
     "eyebrow": "新模型发布",

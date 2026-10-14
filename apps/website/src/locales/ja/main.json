@@ -2006,6 +2006,10 @@
       "heading": "1つのエンジンを、あらゆる方法で実行",
       "subtitle": "今すぐComfy CloudでDrama 3を実行することも、APIでシーンをバッチ処理することも、ご自身のマシン上のComfyUIから実行することもできます。"
     },
+    "samples": {
+      "cta": "今すぐ試す",
+      "heading": "Comfy上のDrama 3"
+    },
     "steps": {
       "heading": "最初のシーンを演出する",
       "secondaryCta": "ドキュメントを見る",
@@ -2666,7 +2670,8 @@
   "modelLaunch": {
     "copyPrompt": "プロンプトをコピー",
     "tagFree": "無料",
-    "tagPremium": "プレミアム"
+    "tagPremium": "プレミアム",
+    "voices": "ボイス"
   },
   "modelRelease": {
     "eyebrow": "新モデルリリース",
