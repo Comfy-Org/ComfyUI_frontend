@@ -1,15 +1,15 @@
 {
   "schemaVersion": 2,
-  "componentCount": 521,
-  "documentedComponentCount": 69,
-  "missingStoryCount": 452,
+  "componentCount": 528,
+  "documentedComponentCount": 71,
+  "missingStoryCount": 457,
   "dispositionCounts": {
     "compound-part": 28,
     "icon": 5,
     "integration": 3,
     "page-local": 272,
     "reusable-candidate": 24,
-    "template-local": 120
+    "template-local": 125
   },
   "classifications": [
     {
@@ -239,6 +239,11 @@
     },
     {
       "source": "src/components/common/SurfaceToggle.vue",
+      "disposition": "reusable-candidate",
+      "reason": "Shared location indicates reuse potential; requires an explicit contract before promotion."
+    },
+    {
+      "source": "src/components/common/VideoCompareSlider.vue",
       "disposition": "reusable-candidate",
       "reason": "Shared location indicates reuse potential; requires an explicit contract before promotion."
     },
@@ -618,6 +623,11 @@
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
     {
+      "source": "src/components/pricing/ComfyAgentPricingSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
       "source": "src/components/pricing/ComfyApiPlanLimitsSection.vue",
       "disposition": "page-local",
       "reason": "Feature or page-specific section; not an independent design-system primitive."
@@ -629,6 +639,11 @@
     },
     {
       "source": "src/components/pricing/MinimaxLicensePricingSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/pricing/PlanLimitsTable.vue",
       "disposition": "page-local",
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
@@ -781,11 +796,6 @@
       "source": "src/components/ui/accordion/AccordionTrigger.vue",
       "disposition": "compound-part",
       "reason": "Compound component part documented through its cataloged root composition."
-    },
-    {
-      "source": "src/components/ui/button/Button.vue",
-      "disposition": "reusable-candidate",
-      "reason": "Shared location indicates reuse potential; requires an explicit contract before promotion."
     },
     {
       "source": "src/components/ui/card/CardContent.vue",
@@ -1174,16 +1184,6 @@
     },
     {
       "source": "src/components/workshop/WorkflowCreditsGuard.vue",
-      "disposition": "page-local",
-      "reason": "Feature or page-specific section; not an independent design-system primitive."
-    },
-    {
-      "source": "src/components/workshop/WorkflowExampleCard.vue",
-      "disposition": "page-local",
-      "reason": "Feature or page-specific section; not an independent design-system primitive."
-    },
-    {
-      "source": "src/components/workshop/WorkflowExamplePreview.vue",
       "disposition": "page-local",
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
@@ -1973,6 +1973,11 @@
       "reason": "Template-specific section; compose from cataloged blocks before promoting."
     },
     {
+      "source": "src/templates/model-launch/ModelLaunchBeforeAfterSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
       "source": "src/templates/model-launch/ModelLaunchComparisonSection.vue",
       "disposition": "template-local",
       "reason": "Template-specific section; compose from cataloged blocks before promoting."
@@ -1984,6 +1989,16 @@
     },
     {
       "source": "src/templates/model-launch/ModelLaunchFaqSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/model-launch/ModelLaunchGalleryCard.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/model-launch/ModelLaunchGalleryCardMedia.vue",
       "disposition": "template-local",
       "reason": "Template-specific section; compose from cataloged blocks before promoting."
     },
@@ -2014,6 +2029,16 @@
     },
     {
       "source": "src/templates/model-launch/ModelLaunchHighlightSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/model-launch/ModelLaunchListRow.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/model-launch/ModelLaunchListSection.vue",
       "disposition": "template-local",
       "reason": "Template-specific section; compose from cataloged blocks before promoting."
     },
@@ -2320,6 +2345,7 @@
     "src/components/common/MinimaxLicenseHeroSection.vue",
     "src/components/common/ProductCardsSection.vue",
     "src/components/common/SurfaceToggle.vue",
+    "src/components/common/VideoCompareSlider.vue",
     "src/components/common/WireNodeLayout.vue",
     "src/components/contact/FormSection.vue",
     "src/components/customers/ArticleNav.vue",
@@ -2395,9 +2421,11 @@
     "src/components/models/ModelsHeroSection.vue",
     "src/components/payment/PaymentStatusSection.vue",
     "src/components/pricing/CloudPricingSection.vue",
+    "src/components/pricing/ComfyAgentPricingSection.vue",
     "src/components/pricing/ComfyApiPlanLimitsSection.vue",
     "src/components/pricing/ComfyApiPricingSection.vue",
     "src/components/pricing/MinimaxLicensePricingSection.vue",
+    "src/components/pricing/PlanLimitsTable.vue",
     "src/components/pricing/PricingCard.vue",
     "src/components/pricing/PricingContactBand.vue",
     "src/components/pricing/PricingCredits.vue",
@@ -2428,7 +2456,6 @@
     "src/components/ui/accordion/AccordionContent.vue",
     "src/components/ui/accordion/AccordionItem.vue",
     "src/components/ui/accordion/AccordionTrigger.vue",
-    "src/components/ui/button/Button.vue",
     "src/components/ui/card/CardContent.vue",
     "src/components/ui/card/CardDescription.vue",
     "src/components/ui/card/CardFooter.vue",
@@ -2507,8 +2534,6 @@
     "src/components/workshop/WorkflowApi.vue",
     "src/components/workshop/WorkflowCatalogue.vue",
     "src/components/workshop/WorkflowCreditsGuard.vue",
-    "src/components/workshop/WorkflowExampleCard.vue",
-    "src/components/workshop/WorkflowExamplePreview.vue",
     "src/components/workshop/WorkflowGraph.vue",
     "src/components/workshop/WorkflowGraphControls.vue",
     "src/components/workshop/WorkflowGraphNode.vue",
@@ -2666,15 +2691,20 @@
     "src/templates/mcp/WhySection.vue",
     "src/templates/model-launch/ModelLaunchAudioGallerySection.vue",
     "src/templates/model-launch/ModelLaunchAudioSampleCard.vue",
+    "src/templates/model-launch/ModelLaunchBeforeAfterSection.vue",
     "src/templates/model-launch/ModelLaunchComparisonSection.vue",
     "src/templates/model-launch/ModelLaunchCtaSection.vue",
     "src/templates/model-launch/ModelLaunchFaqSection.vue",
+    "src/templates/model-launch/ModelLaunchGalleryCard.vue",
+    "src/templates/model-launch/ModelLaunchGalleryCardMedia.vue",
     "src/templates/model-launch/ModelLaunchGallerySection.vue",
     "src/templates/model-launch/ModelLaunchHeroCtaButtons.vue",
     "src/templates/model-launch/ModelLaunchHeroLogoMask.vue",
     "src/templates/model-launch/ModelLaunchHeroSection.vue",
     "src/templates/model-launch/ModelLaunchHighlightCard.vue",
     "src/templates/model-launch/ModelLaunchHighlightSection.vue",
+    "src/templates/model-launch/ModelLaunchListRow.vue",
+    "src/templates/model-launch/ModelLaunchListSection.vue",
     "src/templates/model-launch/ModelLaunchPricingSection.vue",
     "src/templates/model-launch/ModelLaunchReviewsSection.vue",
     "src/templates/model-launch/ModelLaunchRunOptionsSection.vue",

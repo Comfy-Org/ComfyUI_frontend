@@ -61,7 +61,7 @@ export const CtaButtons: Story = {
         <BrandButton href="#" variant="solid">GET AN API KEY</BrandButton>
         <BrandButton href="#" variant="outline">TRY IN COMFY CLOUD</BrandButton>
         <Button>RUN</Button>
-        <Button href="#" variant="outline">BROWSE ALL MODELS</Button>
+        <Button href="#" variant="secondaryOutline">BROWSE ALL MODELS</Button>
       </div>
     `
   })

@@ -11,8 +11,8 @@
     ],
     "unknownPattern": "Treat as a gap; do not invent a local substitute."
   },
-  "componentCount": 70,
-  "storyCount": 245,
+  "componentCount": 72,
+  "storyCount": 248,
   "components": [
     {
       "component": "AddToCalendarButton",
@@ -1999,6 +1999,37 @@
       ]
     },
     {
+      "component": "FooterSocialLinks",
+      "source": "src/components/common/FooterSocialLinks.vue",
+      "storyFile": "src/components/common/FooterSocialLinks.stories.ts",
+      "title": "Website/Common/FooterSocialLinks",
+      "status": "documented",
+      "category": "common",
+      "capabilities": [],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/common/FooterSocialLinks.vue"
+      },
+      "agent": {
+        "importPath": "@/components/common/FooterSocialLinks",
+        "storybookPath": "/?path=/story/website-common-footersociallinks--default",
+        "docsPath": "/?path=/docs/website-common-footersociallinks--docs",
+        "states": ["Default"],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": false,
+        "compositionSafe": false
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-common-footersociallinks--default"
+        }
+      ]
+    },
+    {
       "component": "HeaderMain",
       "source": "src/components/common/HeaderMain/HeaderMain.vue",
       "storyFile": "src/components/common/HeaderMain/HeaderMain.stories.ts",
@@ -2725,6 +2756,41 @@
         {
           "exportName": "AllVariants",
           "storyId": "website-ui-buttonpill--all-variants"
+        }
+      ]
+    },
+    {
+      "component": "Button",
+      "source": "src/components/ui/button/Button.vue",
+      "storyFile": "src/components/ui/button/Button.stories.ts",
+      "title": "Website/UI/Button",
+      "status": "stable",
+      "category": "ui",
+      "capabilities": ["activation", "keyboard-focus"],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/ui/button/Button.vue"
+      },
+      "agent": {
+        "importPath": "@/components/ui/button/Button",
+        "storybookPath": "/?path=/story/website-ui-button--playground",
+        "docsPath": "/?path=/docs/website-ui-button--docs",
+        "states": ["Playground", "ActionVariants"],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": false,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Playground",
+          "storyId": "website-ui-button--playground"
+        },
+        {
+          "exportName": "ActionVariants",
+          "storyId": "website-ui-button--action-variants"
         }
       ]
     },
