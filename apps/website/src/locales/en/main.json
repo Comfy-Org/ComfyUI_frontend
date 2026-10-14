@@ -13,6 +13,22 @@
     }
   },
   "workshop": {
+    "nodeGraph": {
+      "badge": "Node graph",
+      "runTitle": "Run it in ComfyUI",
+      "runBody": "This workflow uses nodes and models that can't run on this page. Open it in Comfy Cloud with nothing to install, or download it and run it in ComfyUI on your machine.",
+      "models": "Models",
+      "tryCloud": "Try on Comfy Cloud",
+      "download": "Download workflow",
+      "downloadHint": "A JSON file. Drag it onto the ComfyUI canvas to open it.",
+      "about": "About this workflow",
+      "graphHint": "A read-only preview of the node graph. Open it in Comfy Cloud or download it to edit the nodes.",
+      "previewNotice": "Design preview with sample data. This page is not on the Hub.",
+      "tabs": {
+        "overview": "Overview",
+        "workflow": "Workflow"
+      }
+    },
     "meta": {
       "title": "Browse Models - Comfy",
       "description": "Browse and run the latest AI image, video and audio models on Comfy."

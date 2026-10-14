@@ -3,6 +3,7 @@ import { join, relative, sep } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 
 import { websiteRoot } from '@website/paths'
+import { DESIGN_PREVIEW_ROUTES } from '@/integrations/design-previews'
 import { modelsBuildRoutes } from '@/integrations/workshop-release-gate'
 import { routeOf } from '@/utils/hreflangRoutes'
 import {
@@ -330,7 +331,8 @@ describe('NOINDEX_ROUTES', () => {
 
   const builtRoutes = [
     ...astroFiles(pagesDir).map(pageRoute),
-    ...modelsBuildRoutes(true).map(({ pattern }) => pattern)
+    ...modelsBuildRoutes(true).map(({ pattern }) => pattern),
+    ...DESIGN_PREVIEW_ROUTES.map(({ pattern }) => pattern)
   ].map(toMatcher)
 
   it.for(NOINDEX_ROUTES)('%s is a route this site builds', (route) => {

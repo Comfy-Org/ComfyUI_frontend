@@ -54,7 +54,11 @@ const config: KnipConfig = {
     },
     'apps/website': {
       // Models pages are registered by the release-gate integration.
-      entry: ['src/scripts/**/*.ts', 'src/routes/models/*.{astro,ts}'],
+      entry: [
+        'src/scripts/**/*.ts',
+        'src/routes/models/*.{astro,ts}',
+        'src/routes/design-previews/*.astro'
+      ],
       // Executed by models-snippets.test.ts inside the generated Node examples.
       ignoreDependencies: ['mime-types']
     },
