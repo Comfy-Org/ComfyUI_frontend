@@ -5,7 +5,7 @@
     class="relative flex size-full flex-col overflow-hidden"
     @contextmenu.prevent
     @dragstart="handleDragStart"
-    @keydown.stop
+    @keydown.escape.stop
   >
     <div
       id="maskEditorCanvasContainer"

@@ -8,6 +8,7 @@ import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 import { useCanvasTransform } from '@/composables/maskeditor/useCanvasTransform'
 import { markCoreMediaMenuCallback } from '@/utils/coreMediaMenuActionUtils'
 import { isImageNode } from '@/utils/litegraphUtil'
+import { MASK_EDITOR_DIALOG_KEY } from '@/composables/maskeditor/maskEditorDialogKey'
 
 function openMaskEditor(node: LGraphNode): void {
   if (!node.imgs?.length && node.previewMediaType !== 'image') {
@@ -32,7 +33,7 @@ function openMaskEditorFromClipspace(): void {
 
 // Check if the dialog is already opened
 function isOpened(): boolean {
-  return useDialogStore().isDialogOpen('global-mask-editor')
+  return useDialogStore().isDialogOpen(MASK_EDITOR_DIALOG_KEY)
 }
 
 const changeBrushSize = async (sizeChanger: (oldSize: number) => number) => {
@@ -72,7 +73,42 @@ app.registerExtension({
       defaultValue: true
     }
   ],
+  keybindings: [
+    {
+      combo: { key: 'z', ctrl: true },
+      commandId: 'Comfy.MaskEditor.Undo',
+      dialogKey: MASK_EDITOR_DIALOG_KEY
+    },
+    {
+      combo: { key: 'y', ctrl: true },
+      commandId: 'Comfy.MaskEditor.Redo',
+      dialogKey: MASK_EDITOR_DIALOG_KEY
+    },
+    {
+      combo: { key: 'z', ctrl: true, shift: true },
+      commandId: 'Comfy.MaskEditor.Redo',
+      dialogKey: MASK_EDITOR_DIALOG_KEY
+    }
+  ],
   commands: [
+    {
+      id: 'Comfy.MaskEditor.Undo',
+      icon: 'pi pi-undo',
+      label: 'Undo in MaskEditor',
+      function: () => {
+        if (!isOpened()) return
+        useMaskEditorStore().canvasHistory.undo()
+      }
+    },
+    {
+      id: 'Comfy.MaskEditor.Redo',
+      icon: 'pi pi-refresh',
+      label: 'Redo in MaskEditor',
+      function: () => {
+        if (!isOpened()) return
+        useMaskEditorStore().canvasHistory.redo()
+      }
+    },
     {
       id: 'Comfy.MaskEditor.OpenMaskEditor',
       icon: 'pi pi-pencil',

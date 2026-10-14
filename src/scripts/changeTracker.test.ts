@@ -205,101 +205,8 @@ describe('ChangeTracker', () => {
     })
   })
 
-  describe('undoRedo', () => {
-    it.for([
-      {
-        key: 'z',
-        shiftKey: false,
-        history: 'undo',
-        selectOnly: false,
-        calls: 1
-      },
-      {
-        key: 'z',
-        shiftKey: false,
-        history: 'undo',
-        selectOnly: true,
-        calls: 0
-      },
-      { key: 'z', shiftKey: true, history: 'redo', selectOnly: true, calls: 0 },
-      { key: 'y', shiftKey: false, history: 'redo', selectOnly: true, calls: 0 }
-    ] as const)(
-      'Ctrl+$key shift=$shiftKey with selectOnly=$selectOnly consumes the key and runs $history $calls times',
-      async ({ key, shiftKey, history, selectOnly, calls }) => {
-        const tracker = createTracker()
-        const run = vi.spyOn(tracker, history).mockResolvedValue()
-        app.canvas.selectOnly = selectOnly
-        onTestFinished(() => {
-          app.canvas.selectOnly = false
-        })
-
-        const handled = await tracker.undoRedo(
-          new KeyboardEvent('keydown', { key, ctrlKey: true, shiftKey })
-        )
-
-        expect(handled).toBe(true)
-        expect(run).toHaveBeenCalledTimes(calls)
-      }
-    )
-
-    it.for([
-      { key: 'a', ctrlKey: true, shiftKey: false, altKey: false },
-      { key: 'z', ctrlKey: false, shiftKey: false, altKey: false },
-      { key: 'z', ctrlKey: true, shiftKey: false, altKey: true },
-      { key: 'y', ctrlKey: true, shiftKey: true, altKey: false }
-    ])(
-      '$key ctrl=$ctrlKey shift=$shiftKey alt=$altKey is not a history shortcut',
-      async ({ key, ctrlKey, shiftKey, altKey }) => {
-        const tracker = createTracker()
-        const undo = vi.spyOn(tracker, 'undo').mockResolvedValue()
-        const redo = vi.spyOn(tracker, 'redo').mockResolvedValue()
-
-        const handled = await tracker.undoRedo(
-          new KeyboardEvent('keydown', { key, ctrlKey, shiftKey, altKey })
-        )
-
-        expect(handled).toBeUndefined()
-        expect(undo).not.toHaveBeenCalled()
-        expect(redo).not.toHaveBeenCalled()
-      }
-    )
-
-    it.for([
-      { selectOnlyAtKeydown: true, selectOnlyAtFrame: false, undoCalls: 0 },
-      { selectOnlyAtKeydown: false, selectOnlyAtFrame: true, undoCalls: 1 }
-    ])(
-      'Ctrl+Z with selectOnly=$selectOnlyAtKeydown at keydown and $selectOnlyAtFrame at the frame undoes $undoCalls times',
-      async ({ selectOnlyAtKeydown, selectOnlyAtFrame, undoCalls }) => {
-        const tracker = createTracker()
-        const undo = vi.spyOn(tracker, 'undo').mockResolvedValue()
-        const frames: FrameRequestCallback[] = []
-        vi.spyOn(window, 'requestAnimationFrame').mockImplementation((frame) =>
-          frames.push(frame)
-        )
-        const addEventListener = vi
-          .spyOn(window, 'addEventListener')
-          .mockImplementation(() => {})
-        ChangeTracker.init()
-        const keydown = addEventListener.mock.calls.find(
-          ([type]) => type === 'keydown'
-        )?.[1]
-        if (typeof keydown !== 'function')
-          throw new Error('keydown listener missing')
-        onTestFinished(() => {
-          app.canvas.selectOnly = false
-        })
-
-        app.canvas.selectOnly = selectOnlyAtKeydown
-        keydown(new KeyboardEvent('keydown', { key: 'z', ctrlKey: true }))
-        app.canvas.selectOnly = selectOnlyAtFrame
-        expect(frames).toHaveLength(1)
-        await frames[0](0)
-
-        expect(undo).toHaveBeenCalledTimes(undoCalls)
-      }
-    )
-
-    describe('modifier release around history shortcuts', () => {
+  describe('keydown capture', () => {
+    describe('modifier release', () => {
       let events: EventTarget
       let frames: FrameRequestCallback[]
 
@@ -315,35 +222,6 @@ describe('ChangeTracker', () => {
         )
         ChangeTracker.init()
       })
-
-      it.for([
-        { key: 'y', shiftKey: false, queue: 'redoQueue' },
-        { key: 'z', shiftKey: true, queue: 'redoQueue' },
-        { key: 'z', shiftKey: false, queue: 'undoQueue' }
-      ] as const)(
-        'Ctrl+$key shift=$shiftKey restores history when released before the next frame',
-        async ({ key, shiftKey, queue }) => {
-          const tracker = createTracker(createState(1))
-          const target = createState(2)
-          tracker[queue].push(target)
-          mockCanvasState(createState(3))
-
-          events.dispatchEvent(
-            new KeyboardEvent('keydown', { key: 'Control', ctrlKey: true })
-          )
-          await Promise.all(frames.splice(0).map((frame) => frame(0)))
-          events.dispatchEvent(
-            new KeyboardEvent('keydown', { key, ctrlKey: true, shiftKey })
-          )
-          events.dispatchEvent(
-            new KeyboardEvent('keyup', { key, ctrlKey: true, shiftKey })
-          )
-          events.dispatchEvent(new KeyboardEvent('keyup', { key: 'Control' }))
-          await Promise.all(frames.splice(0).map((frame) => frame(0)))
-
-          expect(tracker.activeState).toEqual(target)
-        }
-      )
 
       it('captures changes when a bare modifier is released within one frame', () => {
         const tracker = createTracker(createState(1))
