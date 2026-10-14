@@ -1,8 +1,32 @@
 <template>
-  <div class="flex shrink-0 flex-col items-end gap-1">
+  <div class="contents">
     <Button
+      v-if="converted.length"
       variant="secondary"
       size="sm"
+      class="shrink-0"
+      @click="community.show('packs')"
+    >
+      {{ t('magicPatch.openRegistry') }}
+    </Button>
+    <span
+      v-if="converted.length"
+      role="status"
+      class="order-last basis-full text-xs text-muted-foreground"
+    >
+      {{
+        t(
+          converted.some((revision) => revision.prepared)
+            ? 'magicPatch.convertedPackAvailable'
+            : 'magicPatch.convertedPackNeedsRuntime'
+        )
+      }}
+    </span>
+    <Button
+      v-else
+      variant="secondary"
+      size="sm"
+      class="shrink-0"
       :aria-label="t('magicPatch.convertNamedPack', { pack: packName })"
       :loading="checking"
       :disabled="store.visible || store.resolvingPack || group.isResolving"
@@ -13,7 +37,7 @@
     <span
       v-if="reason"
       role="alert"
-      class="max-w-56 text-xs text-muted-foreground"
+      class="order-last basis-full text-xs text-muted-foreground"
     >
       {{ t(`magicPatch.reasons.${reason}`) }}
     </span>
@@ -25,11 +49,14 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { MissingPackGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
 import Button from '@/components/ui/button/Button.vue'
+import { useCommunityDialog } from '@/platform/community/composables/useCommunityDialog'
 import { useMagicPatchBatchStore } from '../stores/magicPatchBatchStore'
 
 const { group } = defineProps<{ group: MissingPackGroup }>()
 const { t } = useI18n()
 const store = useMagicPatchBatchStore()
+const community = useCommunityDialog()
+const converted = computed(() => store.convertedMissingPack(group))
 const checking = ref(false)
 const reason = ref<string>()
 const packName = computed(

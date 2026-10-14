@@ -6,14 +6,19 @@ import {
   collectAllNodes,
   getNodeByExecutionId
 } from '@/utils/graphTraversalUtil'
-import { workflowPackCandidates } from './workflowPackCandidates'
+import {
+  convertedWorkflowPackCandidates,
+  workflowPackCandidates
+} from './workflowPackCandidates'
 
 export function missingPackCandidates(
   rootGraph: LGraph,
   groups: MissingPackGroup[],
-  revisions: readonly CloudNodeRegistryRevision[]
+  revisions: readonly CloudNodeRegistryRevision[],
+  apiVersion: 1 | 2 = 1
 ): CloudNodeRegistryRevision[] {
   const allNodes = collectAllNodes(rootGraph)
+  let complete = true
   const matches = groups.flatMap((group) =>
     group.nodeTypes.flatMap((missing) => {
       const expectedType = typeof missing === 'string' ? missing : missing.type
@@ -26,16 +31,23 @@ export function missingPackCandidates(
           : null
         return node ? [node] : []
       })()
-      return nodes.flatMap((node) => {
+      const matchingNodes = nodes.filter((node) => {
         const type = node.last_serialization?.type ?? node.type
-        if (!type || type !== expectedType) return []
-        return workflowPackCandidates(
-          { type, properties: node.properties },
-          revisions
-        )
+        return type === expectedType
+      })
+      if (!matchingNodes.length) complete = false
+      return matchingNodes.flatMap((node) => {
+        const candidates = (
+          apiVersion === 2
+            ? convertedWorkflowPackCandidates
+            : workflowPackCandidates
+        )({ type: expectedType, properties: node.properties }, revisions)
+        if (!candidates.length) complete = false
+        return candidates
       })
     })
   )
+  if (apiVersion === 2 && !complete) return []
   return [
     ...new Map(
       matches.map((revision) => [revision.revision_id, revision])

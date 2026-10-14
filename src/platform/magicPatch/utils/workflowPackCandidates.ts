@@ -16,15 +16,35 @@ export function workflowPackCandidates(
   node: NodeIdentity,
   revisions: readonly CloudNodeRegistryRevision[]
 ): CloudNodeRegistryRevision[] {
+  if (convertedWorkflowPackCandidates(node, revisions).length) return []
+  const matches = matchingWorkflowPackRevisions(node, revisions, 1)
+  return matches.length === 1 ? matches : []
+}
+
+export function convertedWorkflowPackCandidates(
+  node: NodeIdentity,
+  revisions: readonly CloudNodeRegistryRevision[]
+): CloudNodeRegistryRevision[] {
+  return matchingWorkflowPackRevisions(node, revisions, 2)
+}
+
+function matchingWorkflowPackRevisions(
+  node: NodeIdentity,
+  revisions: readonly CloudNodeRegistryRevision[],
+  apiVersion: 1 | 2
+): CloudNodeRegistryRevision[] {
   const pack =
     typeof node.properties?.cnr_id === 'string'
       ? node.properties.cnr_id
-      : undefined
+      : typeof node.properties?.aux_id === 'string'
+        ? node.properties.aux_id.split('/').at(-1)
+        : undefined
   const version =
     typeof node.properties?.ver === 'string' ? node.properties.ver : undefined
-  const matches = revisions.filter((revision) => {
+  const normalize = (value: string) => value.toLowerCase().replaceAll('_', '-')
+  return revisions.filter((revision) => {
     if (
-      revision.node_api_version !== 1 ||
+      revision.node_api_version !== apiVersion ||
       !revision.upstream_commit ||
       !revision.nodes.includes(node.type)
     )
@@ -32,8 +52,7 @@ export function workflowPackCandidates(
     if (
       pack &&
       pack !== revision.pack_id &&
-      pack.replaceAll('_', '-') !==
-        revision.pack_id.split('/')[0]?.replaceAll('_', '-')
+      normalize(pack) !== normalize(revision.pack_id.split('/')[0] ?? '')
     )
       return false
     if (version && /^[a-f0-9]{64}$/u.test(version))
@@ -42,7 +61,6 @@ export function workflowPackCandidates(
       return version === revision.upstream_commit
     return true
   })
-  return matches.length === 1 ? matches : []
 }
 
 export function workflowPackBindings(

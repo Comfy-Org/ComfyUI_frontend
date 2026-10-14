@@ -186,6 +186,30 @@ afterEach(() => {
 })
 
 describe('globally mounted workflow pack consent', () => {
+  it('waits for the registry and does not offer missing V2 nodes for conversion', async () => {
+    const node = {
+      ...sourceNode,
+      properties: { cnr_id: original.pack_id, ver: original.upstream_commit }
+    }
+    mocks.serialize.mockReturnValue({ nodes: [node] })
+    missingNodes.value = [{ type: node.type, nodeId: node.id }]
+    const store = mountGlobalCoordinator()
+    importCompletedWorkflow()
+    await nextTick()
+    expect(store.consentOpen).toBe(false)
+
+    catalog.value = registry([
+      { ...original, node_api_version: 2 },
+      { ...original, revision_id: 'e'.repeat(64), node_api_version: 2 }
+    ])
+    await nextTick()
+    expect(store.consentOpen).toBe(false)
+    expect(store.pendingSourcePacks).toEqual([])
+    expect(store.jobs).toEqual([])
+    expect(missingNodes.value).toHaveLength(1)
+    expect(mocks.fetch).not.toHaveBeenCalled()
+  })
+
   it('automatically offers the missing Z-Image pack from the screenshot workflow before source acquisition', async () => {
     catalog.value = registry([])
     const type = 'SaveImage //ZImagePowerNodes'

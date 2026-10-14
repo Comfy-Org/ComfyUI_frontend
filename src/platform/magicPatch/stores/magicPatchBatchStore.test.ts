@@ -7,12 +7,13 @@ import { createHash, webcrypto } from 'node:crypto'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
-import { LGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
 import { api } from '@/scripts/api'
 import { useMagicPatchBatchStore } from './magicPatchBatchStore'
 import type { PackConversion } from './magicPatchBatchStore'
 import type { MissingNodeType } from '@/types/comfy'
+import { toNodeId } from '@/types/nodeId'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 const mocks = vi.hoisted(() => ({
@@ -21,6 +22,7 @@ const mocks = vi.hoisted(() => ({
   pin: vi.fn(),
   document: {} as object | null,
   documentId: 'document-a' as string | undefined,
+  graph: null as LGraph | null,
   missing: [] as MissingNodeType[],
   definitions: {} as Record<
     string,
@@ -52,9 +54,12 @@ vi.mock('@/scripts/app', () => ({
       return graphReady.value
     },
     reloadNodeDefs: vi.fn(),
-    rootGraph: { serialize: vi.fn(() => ({ nodes: [] })) }
+    get rootGraph() {
+      return mocks.graph ?? emptyGraph
+    }
   }
 }))
+const emptyGraph = { serialize: vi.fn(() => ({ nodes: [] })) }
 vi.mock('@/platform/telemetry/reportError', () => ({ reportError: vi.fn() }))
 vi.mock('@/platform/customNodes/composables/useNodeAccountScope', () => ({
   useNodeAccountScope: () => ({
@@ -140,6 +145,7 @@ beforeEach(() => {
   scope.value = 'owner'
   mocks.document = {}
   mocks.documentId = 'document-a'
+  mocks.graph = null
   mocks.missing = []
   vi.mocked(app.rootGraph.serialize).mockReturnValue(new LGraph().serialize())
   graphReady.value = true
@@ -234,6 +240,48 @@ async function submit(packs = [first], acknowledge = true) {
 }
 
 describe('authenticated publication completion and user reload', () => {
+  it('does not start another conversion for existing V2 candidates and keeps partial groups convertible', async () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('RandomNumber')
+    node.type = 'RandomNumber'
+    node.id = toNodeId(7)
+    node.properties = { cnr_id: first.pack_id, ver: first.upstream_commit }
+    graph.add(node)
+    mocks.graph = graph
+    const converted: CloudNodeRegistryRevision = {
+      ...first,
+      node_api_version: 2
+    }
+    catalog.value = { corpus_commit: 'test', pins: [], revisions: [converted] }
+    const group = {
+      packId: first.pack_id,
+      nodeTypes: [{ type: node.type, nodeId: '7' }],
+      isResolving: false
+    }
+    const store = useMagicPatchBatchStore()
+    expect(store.convertedMissingPack(group)).toEqual([converted])
+    expect(await store.offerMissingPack(group)).toBe('already_converted')
+    expect(store.consentOpen).toBe(false)
+    expect(api.fetchApi).not.toHaveBeenCalled()
+
+    const differentVersion = new LGraphNode('RandomNumber')
+    differentVersion.type = node.type
+    differentVersion.id = toNodeId(8)
+    differentVersion.properties = { cnr_id: first.pack_id, ver: 'f'.repeat(40) }
+    graph.add(differentVersion)
+    const mixed = {
+      ...group,
+      nodeTypes: [...group.nodeTypes, { type: node.type, nodeId: '8' }]
+    }
+    expect(store.convertedMissingPack(mixed)).toEqual([])
+    await store.offerMissingPack(mixed)
+    expect(store.consentOpen).toBe(true)
+    expect(store.pendingSourcePacks).toEqual([
+      expect.objectContaining({ version: differentVersion.properties.ver })
+    ])
+    expect(api.fetchApi).not.toHaveBeenCalled()
+  })
+
   it('does not revive an old workflow source after account change and a new confirmation', async () => {
     let finishOldLoad: ((value: boolean) => void) | undefined
     const oldLoad = new Promise<boolean>((resolve) => {

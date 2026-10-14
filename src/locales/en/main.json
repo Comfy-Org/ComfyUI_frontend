@@ -5556,7 +5556,9 @@
       "registry_release_not_active": "This Registry release is not active. No conversion was submitted.",
       "registry_release_identity_required": "This workflow needs its registered pack name to find the exact release.",
       "registry_source_inactive": "This pack or its publisher is not active in the Node Registry.",
-      "invalid_source_archive": "The original pack archive could not be read safely. No conversion was submitted."
+      "invalid_source_archive": "The original pack archive could not be read safely. No conversion was submitted.",
+      "already_converted": "A V2 conversion already exists. Open Node Registry to review its revisions and runtime availability.",
+      "registry_unavailable": "The Node Registry could not be loaded. Try again when it is available. No conversion has started."
     },
     "preparation": {
       "queued": "Waiting to prepare original pack source",
@@ -5591,7 +5593,7 @@
     "convertAll": "Convert these packs",
     "reviewPacks": "Review incompatible packs",
     "openRegistry": "Open Node Registry",
-    "registryGuidance": "Choose Convert next to a missing pack to review Magic Patch. Conversion starts only after you confirm.",
+    "registryGuidance": "Use Node Registry for existing V2 packs, or Convert to review Magic Patch for packs that still need conversion.",
     "progressTitle": "Pack conversions",
     "packProgress": "Conversion progress for {pack}",
     "stageProgress": "{completed} of {total} conversion stages complete",
@@ -5602,6 +5604,8 @@
     "completedDescription": "The packs listed below are converted and installed. Acknowledge to reload the current workflow with these packs and your latest edits. Other unresolved packs will remain in Problems.",
     "acknowledgeReload": "Acknowledge and reload workflow",
     "reviewCompletion": "Review completed conversions",
-    "later": "Later"
+    "later": "Later",
+    "convertedPackAvailable": "A V2 conversion is available. Select its revision in Node Registry, then reload this workflow.",
+    "convertedPackNeedsRuntime": "Already converted to V2. The cloud runtime still needs preparation; pinning alone does not enable rendering."
   }
 }

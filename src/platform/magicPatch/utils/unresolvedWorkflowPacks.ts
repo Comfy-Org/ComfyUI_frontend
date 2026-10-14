@@ -3,7 +3,10 @@ import type { MissingNodeType } from '@/types/comfy'
 import { tryNormalizeNodeExecutionId } from '@/types/nodeIdentification'
 import { flattenWorkflowNodes } from '@/platform/workflow/core/utils/workflowFlattening'
 import type { FlattenableWorkflowGraph } from '@/platform/workflow/core/utils/workflowFlattening'
-import { workflowPackCandidates } from './workflowPackCandidates'
+import {
+  convertedWorkflowPackCandidates,
+  workflowPackCandidates
+} from './workflowPackCandidates'
 
 export type UnresolvedWorkflowPack = {
   key: string
@@ -30,7 +33,12 @@ export function unresolvedWorkflowPacks(
             tryNormalizeNodeExecutionId(node.id))
       )
     })
-    if (!issue || workflowPackCandidates(node, revisions).length) continue
+    if (
+      !issue ||
+      workflowPackCandidates(node, revisions).length ||
+      convertedWorkflowPackCandidates(node, revisions).length
+    )
+      continue
     const cnrId =
       typeof node.properties?.cnr_id === 'string'
         ? node.properties.cnr_id

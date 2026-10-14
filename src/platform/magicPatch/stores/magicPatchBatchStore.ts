@@ -307,6 +307,7 @@ export const useMagicPatchBatchStore = defineStore('magicPatchBatch', () => {
   function discoverWorkflowPacks() {
     if (
       !discovery ||
+      !registry.catalog.value ||
       !identity.current(discovery.owner) ||
       discovery.workflow !== toRaw(workflow.activeWorkflow) ||
       discovery.documentId !== currentCompletedWorkflowDocumentId() ||
@@ -367,6 +368,14 @@ export const useMagicPatchBatchStore = defineStore('magicPatchBatch', () => {
     pendingSourcePacks.value = unresolved
     consentOpen.value = true
   }
+  function convertedMissingPack(group: MissingPackGroup) {
+    return missingPackCandidates(
+      app.rootGraph,
+      [group],
+      registry.catalog.value?.revisions ?? [],
+      2
+    )
+  }
   async function offerMissingPack(group: MissingPackGroup) {
     if (resolvingPack.value || visible.value || !app.isGraphReady) return
     const capturedOwner = identity.capture()
@@ -380,12 +389,15 @@ export const useMagicPatchBatchStore = defineStore('magicPatchBatch', () => {
       return
     resolvingPack.value = true
     try {
+      if (!registry.catalog.value && !(await registry.load()))
+        return 'registry_unavailable'
       if (
         !identity.current(capturedOwner) ||
         capturedDocument !== currentCompletedWorkflowDocumentId() ||
         capturedWorkflow !== toRaw(workflow.activeWorkflow)
       )
         return
+      if (convertedMissingPack(group).length) return 'already_converted'
       const revisions = missingPackCandidates(
         app.rootGraph,
         [group],
@@ -827,6 +839,7 @@ export const useMagicPatchBatchStore = defineStore('magicPatchBatch', () => {
     settled,
     dismissFinished,
     offer,
+    convertedMissingPack,
     offerMissingPack,
     dismissConsent,
     confirm,

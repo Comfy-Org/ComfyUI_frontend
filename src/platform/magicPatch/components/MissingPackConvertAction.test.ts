@@ -1,3 +1,4 @@
+import type { CloudNodeRegistryRevision } from '@comfyorg/ingest-types'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -10,11 +11,17 @@ import MissingPackConvertAction from './MissingPackConvertAction.vue'
 const store = reactive({
   visible: false,
   resolvingPack: false,
+  convertedMissingPack:
+    vi.fn<(group: MissingPackGroup) => CloudNodeRegistryRevision[]>(),
   offerMissingPack:
     vi.fn<(group: MissingPackGroup) => Promise<string | undefined>>()
 })
 vi.mock('../stores/magicPatchBatchStore', () => ({
   useMagicPatchBatchStore: () => store
+}))
+const community = vi.hoisted(() => ({ show: vi.fn() }))
+vi.mock('@/platform/community/composables/useCommunityDialog', () => ({
+  useCommunityDialog: () => community
 }))
 
 const group: MissingPackGroup = {
@@ -35,10 +42,46 @@ function mount() {
 beforeEach(() => {
   store.visible = false
   store.resolvingPack = false
+  store.convertedMissingPack.mockReturnValue([])
   store.offerMissingPack.mockResolvedValue(undefined)
 })
 
 describe('missing pack conversion action', () => {
+  it.for([true, false])(
+    'opens the registry for an existing conversion and explains runtime readiness (%s)',
+    async (prepared) => {
+      store.convertedMissingPack.mockReturnValue([
+        {
+          pack_id: 'comfyui-kjnodes/x1234567',
+          revision_id: 'a'.repeat(64),
+          name: 'comfyui-kjnodes',
+          upstream_commit: 'b'.repeat(40),
+          source_sha256: 'c'.repeat(64),
+          manifest_sha256: 'd'.repeat(64),
+          dependency_profile_sha256: 'e'.repeat(64),
+          node_api_version: 2,
+          nodes: ['PowerNode'],
+          pinned: false,
+          prepared
+        }
+      ])
+      mount()
+      expect(
+        screen.queryByRole('button', { name: /Convert/ })
+      ).not.toBeInTheDocument()
+      expect(screen.getByRole('status')).toHaveTextContent(
+        prepared
+          ? en.magicPatch.convertedPackAvailable
+          : en.magicPatch.convertedPackNeedsRuntime
+      )
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Open Node Registry' })
+      )
+      expect(community.show).toHaveBeenCalledExactlyOnceWith('packs')
+      expect(store.offerMissingPack).not.toHaveBeenCalled()
+    }
+  )
+
   it('offers the selected pack only after clicking Convert, even when it is not in the local catalog', async () => {
     mount()
     const button = screen.getByRole('button', {

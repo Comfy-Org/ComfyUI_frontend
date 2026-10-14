@@ -4,7 +4,7 @@
       :aria-current="highlighted ? 'true' : undefined"
       :class="
         cn(
-          'flex min-h-8 items-center gap-1',
+          'flex min-h-8 flex-wrap items-center gap-1',
           selectionEmphasisClass(highlighted)
         )
       "
