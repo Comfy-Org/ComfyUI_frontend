@@ -28,6 +28,7 @@ import HubEyebrow from './HubEyebrow.vue'
 import WorkshopGate from './WorkshopGate.vue'
 import WorkshopLoading from './WorkshopLoading.vue'
 import { workshopHeadingClass } from './workshopHeadingClasses'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = translationsFor('en')
 const {
@@ -239,7 +240,12 @@ const Content = shallowRef(createContent())
     >
       <div
         data-testid="workshop-heading"
-        class="animate-soft-in pb-4 sm:short:pb-3"
+        :class="
+          cn(
+            'animate-soft-in pb-4 sm:short:pb-3',
+            section === 'explore' && 'text-center'
+          )
+        "
       >
         <HubEyebrow :section />
         <h1 :class="workshopHeadingClass">{{ heading }}</h1>

@@ -156,6 +156,32 @@ describe('ModelsCatalogue', () => {
     }
   )
 
+  it.for([
+    { section: 'explore', centered: true },
+    { section: 'workflows', centered: false },
+    { section: 'apps', centered: false }
+  ] as const)(
+    'centres the subtitle only on the Hub home ($section)',
+    async ({ section, centered }) => {
+      render(ModelsCatalogue, { props: { models: launchModels, section } })
+
+      const hero = await screen.findByTestId('workshop-hero')
+      expect(hero.classList.contains('text-center')).toBe(centered)
+      expect(hero.classList.contains('justify-center')).toBe(centered)
+    }
+  )
+
+  it('centres the Hub home search box at its own width', async () => {
+    render(ModelsCatalogue, {
+      props: { models: launchModels, section: 'explore' }
+    })
+
+    expect(await screen.findByTestId('explore-finder')).toHaveClass(
+      'mx-auto',
+      'max-w-3xl'
+    )
+  })
+
   it('keeps workflow outcomes out of the models section', () => {
     render(ModelsCatalogue, { props: { models: launchModels } })
     expect(screen.getByText('Image model')).toBeVisible()

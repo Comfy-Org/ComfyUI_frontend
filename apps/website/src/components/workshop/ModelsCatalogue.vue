@@ -132,7 +132,12 @@ whenever(
 <template>
   <div
     v-if="!heroShown"
-    class="relative isolate -mx-6 mb-6 flex flex-wrap items-center justify-between gap-x-6 gap-y-4 overflow-hidden px-6 pb-2 max-sm:mb-4 max-sm:pb-0 lg:-mx-8 lg:px-8 sm:short:pb-0"
+    :class="
+      cn(
+        'relative isolate -mx-6 mb-6 flex flex-wrap items-center justify-between gap-x-6 gap-y-4 overflow-hidden px-6 pb-2 max-sm:mb-4 max-sm:pb-0 lg:-mx-8 lg:px-8 sm:short:pb-0',
+        section === 'explore' && 'justify-center text-center'
+      )
+    "
     data-testid="workshop-hero"
   >
     <div class="grid text-lg text-primary-comfy-canvas/70">

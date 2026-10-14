@@ -484,6 +484,25 @@ describe('Models page entry', () => {
     expect(screen.queryByTestId('section-back')).toBeNull()
   })
 
+  it.for([
+    { section: 'explore', centered: true },
+    { section: 'workflows', centered: false }
+  ] as const)(
+    'centres the page heading only on the Hub home ($section)',
+    async ({ section, centered }) => {
+      respondToFetch(CATALOGUE_URL, () => Response.json(workshopPages))
+      enabled.value = true
+      workflowsEnabled.value = true
+      render(ModelsPage, {
+        props: { section, heading: 'Section heading' },
+        slots: { fallback: '<h1>Public</h1>' }
+      })
+
+      const heading = await screen.findByTestId('workshop-heading')
+      expect(heading.classList.contains('text-center')).toBe(centered)
+    }
+  )
+
   it('switches the loaded catalogue and heading without fetching its data again', async () => {
     respondToFetch(CATALOGUE_URL, () => Response.json(workshopPages))
     enabled.value = true
