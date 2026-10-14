@@ -7,11 +7,15 @@ import type {
 import { describe, expect, expectTypeOf, it } from 'vitest'
 import type { z } from 'zod'
 
+import type { CapabilityDenialReason } from '../capabilityDenials.js'
+
 type CapabilitiesResponseBody = z.input<typeof zBillingCapabilitiesResponse>
 type CapabilitiesResponse = z.infer<typeof zBillingCapabilitiesResponse>
 type Capabilities = z.infer<typeof zBillingCapabilities>
 type CapabilityScope = z.infer<typeof zBillingCapabilityScope>
 type RolloutDefaults = z.infer<typeof zBillingCapabilityRolloutDefaults>
+type DeniedReasons = NonNullable<CapabilitiesResponse['denied_reasons']>
+type ServerDenialReason = NonNullable<DeniedReasons[keyof DeniedReasons]>
 
 function capabilities(): Capabilities {
   return {
@@ -78,6 +82,9 @@ expectTypeOf<Capabilities>().toEqualTypeOf<{
   can_view_pending_invites: boolean
   can_view_team_usage: boolean
 }>()
+expectTypeOf<ServerDenialReason>().toEqualTypeOf<
+  Exclude<CapabilityDenialReason, 'unspecified'>
+>()
 expectTypeOf<CapabilityScope>().toEqualTypeOf<{
   user_id: string
   workspace_id: string

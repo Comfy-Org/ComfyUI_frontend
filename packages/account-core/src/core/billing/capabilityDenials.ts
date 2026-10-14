@@ -51,31 +51,33 @@ export type CapabilityDenialReason =
    */
   | 'unspecified'
 
-const KNOWN_REASONS: ReadonlySet<string> = new Set<CapabilityDenialReason>([
-  'not_a_member',
-  'not_workspace_owner',
-  'tier_not_self_serve',
-  'subscription_not_started',
-  'subscription_change_in_progress',
-  'subscription_status_unrecognized',
-  'not_original_owner',
-  'creator_only_provisioning',
-  'payment_past_due',
-  'free_plan',
-  'no_subscription',
-  'subscription_ended',
-  'billing_operation_in_progress',
-  'billing_operation_parked',
-  'cancellation_scheduled',
-  'cancellation_not_scheduled',
-  'workspace_sso_attached',
-  'personal_workspace',
-  'plan_not_ended',
-  'membership_managed_by_directory',
-  'personal_workspace_creator',
-  'workspace_creator',
-  'only_owner'
-])
+const KNOWN_REASONS: Readonly<
+  Record<Exclude<CapabilityDenialReason, 'unspecified'>, true>
+> = {
+  not_a_member: true,
+  not_workspace_owner: true,
+  tier_not_self_serve: true,
+  subscription_not_started: true,
+  subscription_change_in_progress: true,
+  subscription_status_unrecognized: true,
+  not_original_owner: true,
+  creator_only_provisioning: true,
+  payment_past_due: true,
+  free_plan: true,
+  no_subscription: true,
+  subscription_ended: true,
+  billing_operation_in_progress: true,
+  billing_operation_parked: true,
+  cancellation_scheduled: true,
+  cancellation_not_scheduled: true,
+  workspace_sso_attached: true,
+  personal_workspace: true,
+  plan_not_ended: true,
+  membership_managed_by_directory: true,
+  personal_workspace_creator: true,
+  workspace_creator: true,
+  only_owner: true
+}
 
 /**
  * The record is open because the server adds keys as policy grows, and a
@@ -104,7 +106,7 @@ export function decodeCapabilityDenials(raw: unknown): CapabilityDenials {
 
   const denials: Record<string, CapabilityDenialReason> = {}
   for (const [capability, reason] of Object.entries(parsed.data)) {
-    denials[capability] = KNOWN_REASONS.has(reason)
+    denials[capability] = Object.hasOwn(KNOWN_REASONS, reason)
       ? (reason as CapabilityDenialReason)
       : 'unspecified'
   }

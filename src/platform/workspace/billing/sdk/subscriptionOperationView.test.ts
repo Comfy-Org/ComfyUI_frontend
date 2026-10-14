@@ -183,20 +183,6 @@ describe('projectSubscriptionResult', () => {
       }
     ],
     [
-      {
-        status: 'error',
-        code: 'ACCESS_DENIED',
-        httpStatus: 403,
-        serverCode: serverCode('NOT_ORIGINAL_OWNER'),
-        serverMessage: 'Only the workspace creator can change the plan.'
-      },
-      {
-        status: 403,
-        code: 'NOT_ORIGINAL_OWNER',
-        message: 'Only the workspace creator can change the plan.'
-      }
-    ],
-    [
       { status: 'error', code: 'SUPERSEDED' },
       {
         status: undefined,

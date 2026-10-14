@@ -401,31 +401,6 @@ describe('createCapabilitiesReader', () => {
       )
     })
 
-    it.for([
-      ['can_subscribe_self_serve', 'not_original_owner'],
-      ['can_subscribe_self_serve', 'creator_only_provisioning'],
-      ['can_top_up', 'payment_past_due'],
-      ['can_cancel', 'billing_operation_parked'],
-      ['can_reactivate', 'cancellation_not_scheduled'],
-      ['can_delete_workspace', 'plan_not_ended'],
-      ['can_leave_workspace', 'workspace_creator'],
-      ['can_leave_workspace', 'only_owner']
-    ])('decodes %s denied for %s', async ([capability, reason]) => {
-      const { scopeSource } = fakeSession()
-      const { transport } = fakeTransport([
-        httpOk(capabilitiesBody({ denied_reasons: { [capability]: reason } }))
-      ])
-
-      const result = await createCapabilitiesReader({
-        transport,
-        scopeSource
-      }).read()
-
-      expect(result.status).toBe('ok')
-      if (result.status !== 'ok') return
-      expect(result.value.denials[capability]).toBe(reason)
-    })
-
     it('falls back to the generic reason for a value it does not recognize', async () => {
       const { scopeSource } = fakeSession()
       const { transport } = fakeTransport([
