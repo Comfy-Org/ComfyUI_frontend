@@ -126,7 +126,7 @@ export interface ModelLaunchAudioGallery {
   cards: readonly ModelLaunchAudioCard[]
 }
 
-export interface ModelLaunchListVoice {
+interface ModelLaunchListVoice {
   name: string
   alias?: string
 }
