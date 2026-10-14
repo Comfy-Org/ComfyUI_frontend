@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { X } from '@lucide/vue'
+import { computed } from 'vue'
 import {
   TagsInputInput,
   TagsInputItem,
@@ -11,15 +12,21 @@ import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 
 const {
+  modelValue,
   label,
   disabled = false,
   locale = 'en'
 } = defineProps<{
+  modelValue: string[]
   label: string
   disabled?: boolean
   locale?: Locale
 }>()
-const tags = defineModel<string[]>({ required: true })
+const emit = defineEmits<{ 'update:modelValue': [value: string[]] }>()
+const tags = computed({
+  get: () => modelValue,
+  set: (value: string[]) => emit('update:modelValue', value)
+})
 const { t } = translationsFor(locale)
 function update(value: (string | number)[]) {
   if (!disabled && value.every((tag): tag is string => typeof tag === 'string'))

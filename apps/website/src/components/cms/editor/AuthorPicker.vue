@@ -1,16 +1,25 @@
 <script setup lang="ts">
-import { ref, useId, watch } from 'vue'
+import { computed, ref, useId, watch } from 'vue'
 import { UserRound } from '@lucide/vue'
 import type { ProfileChoice } from '@/lib/cms/profile-client'
 import { searchProfiles, validProfileQuery } from '@/lib/cms/profile-client'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 
-const { disabled = false, locale = 'en' } = defineProps<{
+const {
+  modelValue,
+  disabled = false,
+  locale = 'en'
+} = defineProps<{
+  modelValue: string
   disabled?: boolean
   locale?: Locale
 }>()
-const value = defineModel<string>({ required: true })
+const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
+const value = computed({
+  get: () => modelValue,
+  set: (value: string) => emit('update:modelValue', value)
+})
 const { t } = translationsFor(locale)
 const id = useId()
 const query = ref('')
