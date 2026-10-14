@@ -1,16 +1,16 @@
 <script setup lang="ts">
+import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { AgentAnswerRequest } from '../../../schemas/agentApiSchema'
 import type {
   ActivityPart,
   AssistantMessage,
   TextPart
 } from '../../../services/agent/agentMessageParts'
 import {
-  isAskPart,
-  isPendingAskPart
+  askIdOf,
+  isOpenAskPart
 } from '../../../services/agent/agentMessageParts'
 import { htmlReplyAssets } from '../../../utils/replyAssets'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -57,9 +57,8 @@ const activityParts = computed<readonly ActivityPart[]>(() =>
 const groups = computed<Group[]>(() => groupMessageParts(message.parts))
 
 function groupKey(group: Group, index: number): string {
-  return 'part' in group && isAskPart(group.part)
-    ? `ask:${group.part.askId}`
-    : `group:${index}`
+  const askId = 'part' in group ? askIdOf(group.part) : undefined
+  return askId === undefined ? `group:${index}` : `ask:${askId}`
 }
 
 const markdown = computed(() =>
@@ -83,7 +82,7 @@ const composing = computed(
     message.parts.length > 0 &&
     message.parts.every(
       (part) =>
-        !isPendingAskPart(part) && (!('state' in part) || part.state === 'done')
+        !isOpenAskPart(part) && (!('state' in part) || part.state === 'done')
     )
 )
 

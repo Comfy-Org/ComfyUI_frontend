@@ -1,7 +1,6 @@
 <script setup lang="ts">
+import type { AgentAskOption } from '@comfyorg/ingest-types'
 import { cn } from '@comfyorg/tailwind-utils'
-
-import type { AgentAskOption } from '../../../schemas/agentApiSchema'
 
 const {
   optionId,

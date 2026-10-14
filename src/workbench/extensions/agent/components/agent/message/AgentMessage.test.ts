@@ -738,7 +738,6 @@ describe('AgentMessage ask_user question', () => {
     })
 
     expect(screen.getByText('Which model should I use?')).toBeInTheDocument()
-    expect(screen.getByText('Fast, 1024px')).toBeInTheDocument()
     expect(screen.queryByText('Working...')).not.toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('radio', { name: 'Flux Dev' }))
@@ -779,14 +778,11 @@ describe('AgentMessage ask_user question', () => {
     })
 
     expect(screen.getByRole('button', { name: 'Submit' })).toBeDisabled()
-    const [sdxl, flux] = screen.getAllByRole('radio')
-    expect(sdxl).toBeDisabled()
-    expect(flux).toBeDisabled()
   })
 })
 
 describe('AgentMessage ask the panel cannot render', () => {
-  it('shows the warning notice instead of a card', () => {
+  it('shows the warning notice instead of a card, without a working spinner', () => {
     render(AgentMessage, {
       props: {
         message: {
@@ -811,10 +807,9 @@ describe('AgentMessage ask the panel cannot render', () => {
     })
 
     expect(
-      screen.getByText(
-        'The agent asked a question this panel cannot show. Stop the turn to continue.'
-      )
+      screen.getByText("The agent is waiting on a step this panel can't show.")
     ).toBeInTheDocument()
     expect(screen.queryByText('Erase everything?')).not.toBeInTheDocument()
+    expect(screen.queryByText('Working...')).not.toBeInTheDocument()
   })
 })

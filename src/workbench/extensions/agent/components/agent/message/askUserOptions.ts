@@ -1,4 +1,4 @@
-import type { AgentAskOption } from '../../../schemas/agentApiSchema'
+import type { AgentAskOption } from '@comfyorg/ingest-types'
 
 export const askUserOptionRowClass =
   'flex items-start gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-secondary-background-hover'

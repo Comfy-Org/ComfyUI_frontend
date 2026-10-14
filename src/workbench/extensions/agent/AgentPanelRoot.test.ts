@@ -5207,8 +5207,6 @@ describe('AgentPanelRoot ask_user answer telemetry', () => {
         return json(200, {})
       }
     )
-    telemetry.trackAgentRunApprovalShown.mockClear()
-    telemetry.trackAgentRunApprovalResolved.mockClear()
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     const store = useAgentConversationStore()

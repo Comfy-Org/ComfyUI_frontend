@@ -15,9 +15,7 @@ import {
 } from '@comfyorg/ingest-types/zod'
 import type {
   AgentAnswerAccepted,
-  AgentAnswerRequest,
   AgentAskKind,
-  AgentAskOption,
   AgentCancelAccepted,
   AgentRunMode as AgentRunModePreference,
   AgentThreadSummary,
@@ -30,8 +28,6 @@ import { isNodeLocatorId } from '@/types/nodeIdentification'
 export { zAgentAdmissionError, zAgentCancelAccepted }
 export type {
   AgentAnswerAccepted,
-  AgentAnswerRequest,
-  AgentAskOption,
   AgentCancelAccepted,
   AgentRunModePreference,
   AgentThreadSummary
@@ -59,14 +55,13 @@ export type AgentTurnAccepted = GeneratedAgentTurnAccepted & {
   workflow_id?: string
 }
 
-/** The ask kinds this panel can render, sent as `ask_kinds` on each turn. */
 export const RENDERED_ASK_KINDS = [
   'run_approval',
   'ask_user'
 ] as const satisfies readonly AgentAskKind[]
 export type RenderedAskKind = (typeof RENDERED_ASK_KINDS)[number]
 
-const zAgentPendingAsk = zAgentPendingAskBase.extend({
+const zTolerantPendingAsk = zAgentPendingAskBase.extend({
   kind: zAgentAskKind.or(z.literal('unknown')).catch('unknown'),
   context: z.unknown().optional()
 })
@@ -176,7 +171,7 @@ const zAgentMessageContent = z
 export const zAgentMessage = zGeneratedAgentMessage
   .extend({
     content: zAgentMessageContent.optional(),
-    pending_ask: zAgentPendingAsk.optional()
+    pending_ask: zTolerantPendingAsk.optional()
   })
   .passthrough()
 
@@ -332,7 +327,7 @@ const zAgentActiveTabEvent = z.object({
 
 const zAgentAskEvent = z.object({
   type: z.literal('agent_ask'),
-  data: zAgentPendingAsk.extend({ thread_id: z.string() })
+  data: zTolerantPendingAsk.extend({ thread_id: z.string() })
 })
 
 const zAgentAskResolvedEvent = z.object({
