@@ -61,7 +61,7 @@ const discoveryWorkflows = await resolveDiscoveryWorkflows(isWorkshopInBuild())
   <SocialProofBarSection />
   <DeveloperPlatformSection client:visible />
   <ComfyAgentSection locale="en" />
-  <MinimaxLicenseHeroSection client:visible />
+  <MinimaxLicenseHeroSection fitCtas client:visible />
   {isWorkshopInBuild() && (
     <ModelDiscoverySection
       providers={discoveryProviders}
