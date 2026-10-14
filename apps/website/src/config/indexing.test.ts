@@ -68,6 +68,8 @@ describe('indexing policy', () => {
   })
 
   it.for([
+    '/flux-3-image/',
+    '/zh-CN/flux-3-image/',
     '/privacy-policy',
     '/privacy-policy/',
     '/zh-CN/privacy-policy',

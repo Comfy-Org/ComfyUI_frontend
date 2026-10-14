@@ -18,7 +18,7 @@ export type LocalizedText = { en: string; 'zh-CN': string } & Partial<
   Record<Locale, string>
 >
 
-if (import.meta.env.DEV) {
+if (import.meta.env.DEV || import.meta.env.PUBLIC_LAUNCH_DRAFTS) {
   Object.assign(en, draftEn)
   Object.assign(zhCN, draftZhCN)
 }

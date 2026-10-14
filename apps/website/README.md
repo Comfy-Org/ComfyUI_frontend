@@ -663,8 +663,9 @@ the hosted script once, and renders the documented embed container.
 ### Flux 3 Image launch draft
 
 Run the website dev server and open `/flux-3-image/` or
-`/zh-CN/flux-3-image/` to edit the launch draft. These routes generate no
-production pages, and draft translation catalogs are included only in development.
+`/zh-CN/flux-3-image/` to edit the launch draft. The routes are available locally and in Vercel PR previews; production builds
+exclude both the pages and draft translation catalogs. Preview pages stay noindex
+and out of sitemap and generated Markdown/LLM catalogs.
 The page reuses the Qwen image launch layout with a video hero placeholder and
 clearly labeled reference samples. Replace the hero footage, sample outputs,
 workflow/docs destinations, pricing, and FAQ placeholders before launch. The intended launch URL is `https://comfy.org/flux-3-image/`. No production

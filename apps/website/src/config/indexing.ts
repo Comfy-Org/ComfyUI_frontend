@@ -29,6 +29,7 @@ export const NOINDEX_ROUTES = [
   '/terms-of-service',
   '/platform/serverless-animation',
   '/nano-banana',
+  '/flux-3-image',
   '/fish-audio',
   ...PLACEHOLDER_PATHNAMES
 ] as const

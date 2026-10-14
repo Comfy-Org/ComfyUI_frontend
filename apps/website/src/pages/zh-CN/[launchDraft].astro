@@ -2,7 +2,7 @@
 import Flux3ImageDraftPage from '@/templates/model-launch/Flux3ImageDraftPage.astro'
 
 export function getStaticPaths() {
-  return import.meta.env.DEV
+  return import.meta.env.DEV || import.meta.env.PUBLIC_LAUNCH_DRAFTS
     ? [{ params: { launchDraft: 'flux-3-image' } }]
     : []
 }
