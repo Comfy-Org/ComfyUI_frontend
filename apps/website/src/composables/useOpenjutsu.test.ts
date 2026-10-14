@@ -49,10 +49,12 @@ const facts = (duration: number): VideoFacts => ({
 
 let scenario: Scenario
 let transport: ReshootTransport
+/** Takes the last page started down, as leaving it would. */
+let leavePage = () => {}
 
 function start() {
   let swap: ReturnType<typeof useOpenjutsu> | undefined
-  render(
+  const page = render(
     defineComponent({
       setup() {
         swap = useOpenjutsu()
@@ -61,6 +63,7 @@ function start() {
     })
   )
   if (!swap) throw new Error('not mounted')
+  leavePage = page.unmount
   return swap
 }
 
@@ -249,6 +252,84 @@ describe('useOpenjutsu', () => {
       captureWorkshopEvent,
       'no account, nothing reported'
     ).not.toHaveBeenCalled()
+  })
+
+  it('keeps each take on the clip it was made from', async () => {
+    const swap = await ready()
+    void swap.generate()
+    await vi.advanceTimersByTimeAsync(10_000)
+    const first = swap.current.value
+
+    swap.takeVideo(new File(['other'], 'other.mp4', { type: 'video/mp4' }))
+    swap.confirmTrim({ ...trimmed, width: 1080, height: 1920 })
+    swap.selected.value = first?.id ?? ''
+
+    expect(swap.current.value?.sourceUrl).toMatch(/^blob:/)
+    expect(swap.current.value?.sourceUrl).not.toBe(swap.videoUrl.value)
+    expect(swap.current.value?.frame).toEqual({ width: 1344, height: 756 })
+  })
+
+  it('asks for no price again once the page has gone', async () => {
+    const swap = await ready()
+    const quote = vi
+      .spyOn(transport, 'quote')
+      .mockRejectedValue(new Error('network down'))
+
+    void swap.generate()
+    leavePage()
+    await vi.advanceTimersByTimeAsync(5 * 60_000)
+
+    expect(quote).not.toHaveBeenCalled()
+  })
+
+  it('shows the rate per second until a part is chosen, then the price of the part', async () => {
+    vi.spyOn(transport, 'quote').mockResolvedValue({
+      free_runs_remaining: 0,
+      price_credits: 0,
+      price_per_second: { tier_input: 'seed', credits: { '0': 1.0416666666 } },
+      next_run: 'paid'
+    })
+    const swap = start()
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(swap.priceNote.value).toBe('25 credits per second')
+
+    swap.takeVideo(clip)
+    swap.confirmTrim(trimmed)
+    expect(swap.priceNote.value).toBe('150 credits')
+  })
+
+  it('keeps the page as it was when an example cannot be fetched', async () => {
+    vi.mocked(fetch).mockResolvedValue(new Response('missing', { status: 404 }))
+    const swap = start()
+
+    await swap.takeExample(SWAP_EXAMPLES[0])
+
+    expect(swap.exampleFailed.value).toBe(true)
+    expect(swap.character.value).toBeUndefined()
+    expect(swap.target.value).toBe('')
+    expect(swap.loadingExample.value).toBeUndefined()
+  })
+
+  it('lets a video picked while an example loads win over the example', async () => {
+    const pending: (() => void)[] = []
+    vi.mocked(fetch).mockImplementation(
+      () =>
+        new Promise((resolve) =>
+          pending.push(() => resolve(new Response(new Blob(['x']))))
+        )
+    )
+    const swap = start()
+
+    const loading = swap.takeExample(SWAP_EXAMPLES[0])
+    swap.takeVideo(clip)
+    pending.forEach((release) => release())
+    await loading
+
+    expect(swap.trimming.value).toBe(clip)
+    expect(swap.character.value).toBeUndefined()
+    expect(swap.target.value).toBe('')
+    expect(swap.exampleFailed.value).toBe(false)
   })
 
   it('uploads a file once across takes', async () => {

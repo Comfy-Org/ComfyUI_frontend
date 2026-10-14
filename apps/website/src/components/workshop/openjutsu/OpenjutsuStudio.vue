@@ -46,6 +46,7 @@ const {
   priceNote,
   session,
   loadingExample,
+  exampleFailed,
   trimming,
   trimOpen,
   trimInitial
@@ -107,6 +108,7 @@ onBeforeUnmount(() =>
       :view
       :locale
       :loading-example="loadingExample"
+      :example-failed="exampleFailed"
       @select="selected = $event"
       @example="swap.takeExample"
       @cancel="swap.cancel"

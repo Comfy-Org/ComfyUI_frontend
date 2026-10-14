@@ -61,7 +61,9 @@ export function swapWorkflow(request: SwapRequest): Graph {
   // the result is cut back to the part, so it lines up with the source sound.
   graph.trim.inputs.duration = request.seconds
   graph.sample.inputs.num_frames = sourceFrames(request.seconds)
-  graph.frames.inputs.value = gridFrames(request.seconds)
+  // A literal on the node that sets the output's length, so the app proxy
+  // can bill the number that is actually generated.
+  graph['136'].inputs.length = gridFrames(request.seconds)
   graph.cut.inputs.duration = request.seconds
   // With nothing spare the cut would ask for more than was generated, and fail.
   if (spareSeconds(request.seconds) === 0) {

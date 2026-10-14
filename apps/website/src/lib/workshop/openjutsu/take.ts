@@ -1,10 +1,14 @@
-import type { SwapSize, SwapWindow } from './clip'
+import type { SwapCanvas, SwapSize, SwapWindow } from './clip'
 import type { SwapPhase } from './run-swap'
 
 /** One run and what came of it. */
 export interface SwapTake {
   readonly id: string
   readonly n: number
+  /** The clip the take was made from, kept so a later clip cannot stand in. */
+  readonly sourceUrl?: string
+  /** The frame the take was saved at, for the stage's shape. */
+  readonly frame?: SwapCanvas
   /** Who was replaced, as typed. */
   readonly target: string
   readonly window: SwapWindow
@@ -37,7 +41,9 @@ const showsResult = (view: StageView) =>
 
 /** The video the player plays: a take's result, or the clip it came from. */
 export const stageSource = (view: StageView) =>
-  showsResult(view) ? view.current?.url : view.videoUrl
+  showsResult(view)
+    ? view.current?.url
+    : (view.current?.sourceUrl ?? view.videoUrl)
 
 function editingWindow(view: StageView): SwapWindow | undefined {
   return view.range && view.partSeconds !== undefined

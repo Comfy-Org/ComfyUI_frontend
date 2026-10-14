@@ -34,6 +34,7 @@ const {
   sample,
   view,
   loadingExample,
+  exampleFailed = false,
   locale = 'en'
 } = defineProps<{
   videoUrl?: string
@@ -51,6 +52,8 @@ const {
   view: EditorView
   /** The example being fetched, while there is no video yet. */
   loadingExample?: SwapExample['id']
+  /** The last example could not be fetched. */
+  exampleFailed?: boolean
   locale?: Locale
 }>()
 const { t } = translationsFor(locale)
@@ -72,11 +75,13 @@ const stageView = computed(() => ({
   range,
   partSeconds
 }))
-const done = computed(() =>
-  current?.status === 'done' && current.url && videoUrl
-    ? { result: current.url, source: videoUrl, take: current }
+const done = computed(() => {
+  const source = current?.sourceUrl ?? videoUrl
+  return current?.status === 'done' && current.url && source
+    ? { result: current.url, source, take: current }
     : undefined
-)
+})
+const shape = computed(() => current?.frame ?? frame)
 const source = computed(() => stageSource(stageView.value))
 const part = computed(() => loopWindow(stageView.value))
 const playerLabel = computed(() =>
@@ -107,23 +112,24 @@ const elapsedSeconds = computed(() => {
     class="flex size-full max-w-5xl min-w-0 flex-col gap-3"
     data-testid="openjutsu-stage"
   >
+    <OpenjutsuTakes
+      v-if="takes.length"
+      :takes
+      :selected
+      :rendering
+      :locale
+      @select="emit('select', $event)"
+    />
     <OpenjutsuEmptyStage
-      v-if="!videoUrl"
+      v-if="!videoUrl && !current"
       :loading="loadingExample"
+      :failed="exampleFailed"
       :locale
       @example="emit('example', $event)"
     />
     <template v-else>
-      <OpenjutsuTakes
-        v-if="takes.length"
-        :takes
-        :selected
-        :rendering
-        :locale
-        @select="emit('select', $event)"
-      />
       <div class="min-h-0 flex-1">
-        <EditorFrame :width="frame?.width ?? 16" :height="frame?.height ?? 9">
+        <EditorFrame :width="shape?.width ?? 16" :height="shape?.height ?? 9">
           <OpenjutsuCompare
             v-if="done && view === 'compare'"
             :result="done.result"

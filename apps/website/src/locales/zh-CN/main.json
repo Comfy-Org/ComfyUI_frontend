@@ -719,7 +719,8 @@
       "unsupported": "{model} 无法使用参考图。请移除参考图或选择其他模型。"
     },
     "repo": {
-      "view": "在 GitHub 上查看"
+      "view": "在 GitHub 上查看",
+      "org": "Comfy 的 GitHub"
     },
     "scene": {
       "enhance": "AI 提示词",
@@ -4289,16 +4290,11 @@
   },
   "openjutsu": {
     "title": "Openjutsu",
-    "lead": "用一张图片替换视频中的角色。场景、镜头和声音保持不变。",
-    "credit": "基于 MiniMax H3 与 Akatz Labs 的 Character Swap LoRA 构建",
     "panel": "替换设置",
     "closed": "Openjutsu 尚未开放",
     "unavailable": "Openjutsu 暂时不可用，请稍后再试。",
     "signIn": "登录后即可开始替换。",
     "video": {
-      "heading": "视频",
-      "hint": "长度不限。从中选取 5–15 秒；单个连续镜头效果最好。",
-      "detail": "{seconds} 秒 · 替换其中 {used} 秒",
       "add": "上传视频",
       "limits": "MP4 或 MOV · 最多使用 15 秒",
       "remove": "移除视频",
@@ -4306,8 +4302,7 @@
     },
     "target": {
       "heading": "替换谁",
-      "placeholder": "要替换谁？描述一个人，确保画面中没有其他人符合，例如：穿紫色衬衫的男人。",
-      "help": "替换依据这段描述，而不是在画面上点选。请说明此人的特征：衣着、位置、发型。"
+      "placeholder": "要替换谁？描述一个人，确保画面中没有其他人符合，例如：穿紫色衬衫的男人。"
     },
     "seed": {
       "shuffle": "随机选取种子",
@@ -4334,7 +4329,6 @@
       "queued": "正在等待服务器",
       "running": "正在替换角色",
       "fetching": "正在获取结果",
-      "note": "可能需要几分钟。闲置一段时间后的首次运行还需要加载模型。",
       "elapsed": "已用时 {time}"
     },
     "take": {
@@ -4342,8 +4336,7 @@
       "source": "源视频",
       "reuse": "使用这些设置",
       "retry": "返回设置",
-      "detail": "已替换{target}",
-      "audio": "原始声音"
+      "detail": "已替换{target}"
     },
     "examples": {
       "title": "从示例开始",
@@ -4362,7 +4355,8 @@
       "kitchen": {
         "place": "厨房",
         "character": "海盗厨师"
-      }
+      },
+      "failed": "无法加载该示例。请重试，或添加你自己的视频。"
     },
     "error": {
       "swap": "替换未完成。请重试，或换一个更短的片段。"
@@ -4387,7 +4381,8 @@
     },
     "peek": {
       "seconds": "{seconds} 秒"
-    }
+    },
+    "noscript": "Openjutsu 需要启用 JavaScript 才能运行。"
   },
   "seedance": {
     "breadcrumb": {

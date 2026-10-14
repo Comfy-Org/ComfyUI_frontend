@@ -18,7 +18,7 @@ import {
   swapSeconds
 } from '@/lib/workshop/openjutsu/clip'
 import type { SwapExample } from '@/lib/workshop/openjutsu/examples'
-import { runQuote } from '@/lib/workshop/openjutsu/price'
+import { perSecondNote, runQuote } from '@/lib/workshop/openjutsu/price'
 import type { SwapOutcome } from '@/lib/workshop/openjutsu/run-report'
 import { swapRunReport } from '@/lib/workshop/openjutsu/run-report'
 import type { SwapJob } from '@/lib/workshop/openjutsu/run-swap'
@@ -178,28 +178,44 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
 
   /** The example being fetched, so its card can show it is on its way. */
   const loadingExample = ref<SwapExample['id']>()
+  /** The last example could not be fetched. */
+  const exampleFailed = ref(false)
+  let exampleRequest = 0
   async function fileFrom(url: string) {
     const response = await fetch(url)
+    if (!response.ok) throw new Error(`${url} answered ${response.status}`)
     const blob = await response.blob()
     return new File([blob], url.split('/').at(-1) ?? 'example', {
       type: blob.type
     })
   }
-  /** Loads an example's clip, character and words, on the default settings. */
+  /**
+   * Loads an example's clip, character and words, on the default settings.
+   * Nothing changes until both files have arrived, and a later example or a
+   * video picked meanwhile wins.
+   */
   async function takeExample(example: SwapExample) {
+    const request = ++exampleRequest
+    const videoAt = ++videoRequest
     loadingExample.value = example.id
+    exampleFailed.value = false
+    const stale = () =>
+      request !== exampleRequest || videoAt !== videoRequest || disposed
     try {
       const [clip, image] = await Promise.all([
         fileFrom(example.video),
         fileFrom(example.character)
       ])
+      if (stale()) return
       character.value = image
       target.value = example.target
       size.value = SWAP_SIZES[0]
       seed.value = undefined
       await useWholeClip(clip)
+    } catch {
+      if (!stale()) exampleFailed.value = true
     } finally {
-      loadingExample.value = undefined
+      if (request === exampleRequest) loadingExample.value = undefined
     }
   }
 
@@ -227,6 +243,8 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
   let quoteRequest = 0
   let quoteRetry: ReturnType<typeof setTimeout> | undefined
   let quoteFailures = 0
+  /** The page has gone: nothing may ask for a price or refresh credits again. */
+  let disposed = false
 
   const signedIn = () => OPENJUTSU_NO_ACCOUNT || !!session.value
   /** The backend to ask for a price, when there is one and someone to ask as. */
@@ -241,6 +259,7 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
   }
   /** A failed quote: the price is unknown, so ask again unless waiting cannot help. */
   function quoteFailedWith(error: unknown) {
+    if (disposed) return
     const failure = quoteFailure(error, quoteFailures)
     quote.value = undefined
     quoteSettled.value = false
@@ -251,6 +270,7 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
     quoteRetry = setTimeout(() => void refreshQuote(), failure.retryInMs)
   }
   async function refreshQuote() {
+    if (disposed) return
     const request = ++quoteRequest
     clearTimeout(quoteRetry)
     const source = quoteSource()
@@ -308,12 +328,18 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
     })
   )
   const priceNote = computed(() => {
-    if (quote.value)
-      return quoteNote(runQuote(quote.value, partSeconds.value), locale, {
-        size: size.value,
-        seconds: partSeconds.value
-      })
-    return quoteFailed.value ? t('reshoot.quote.failed') : undefined
+    const answer = quote.value
+    if (!answer)
+      return quoteFailed.value ? t('reshoot.quote.failed') : undefined
+    if (answer.price_per_second && partSeconds.value === undefined)
+      return perSecondNote(answer, locale)
+    const priced = runQuote(answer, partSeconds.value)
+    return priced
+      ? quoteNote(priced, locale, {
+          size: size.value,
+          seconds: partSeconds.value
+        })
+      : undefined
   })
 
   const noteFor = (error: unknown) =>
@@ -355,9 +381,13 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
 
   /** Adds the take a job will fill, shows it, and hands back how to stop it. */
   function openTake(job: SwapJob, chosenSeconds: number) {
+    const sourceUrl = URL.createObjectURL(job.video)
+    objectUrls.push(sourceUrl)
     const take: SwapTake = {
       id: crypto.randomUUID(),
       n: takes.value.length + 1,
+      sourceUrl,
+      frame: job.request.result,
       target: job.request.target,
       window: { start: job.request.start, seconds: chosenSeconds },
       seconds: job.request.seconds,
@@ -391,6 +421,7 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
 
   function afterRun(id: string, hadAccount: boolean) {
     runs.delete(id)
+    if (disposed) return
     void refreshQuote()
     if (hadAccount) void refreshWorkshopCredits({ force: true })
   }
@@ -447,6 +478,7 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
   }
 
   onScopeDispose(() => {
+    disposed = true
     clearTimeout(quoteRetry)
     quoteRequest += 1
     runs.forEach((controller) => controller.abort())
@@ -488,6 +520,7 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
     restoreVideo,
     takeCharacter,
     loadingExample,
+    exampleFailed,
     takeExample,
     generate,
     cancel,

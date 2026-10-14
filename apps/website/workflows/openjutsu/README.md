@@ -65,15 +65,15 @@ which is what the Openjutsu build installs. Comfy Cloud's shared model list does
 
 ## App inputs to graph inputs
 
-| App input                                     | Graph input                                                                                                           |
-| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| Video                                         | `video.file`                                                                                                          |
-| Character image                               | `character.image`                                                                                                     |
-| Who to replace                                | `136.prompt`, through `swapPrompt`                                                                                    |
-| Start of the part (trim dialog)               | `trim.start_time` (seconds)                                                                                           |
-| Length of the part (trim dialog)              | `trim.duration` and `cut.duration` (seconds), `sample.num_frames` (the part at 24 fps), `frames.value` (`gridFrames`) |
-| Quality (768p or 480p) and the source's shape | `136.width`, `136.height` (canvas); `fit.width`, `fit.height` (saved frame)                                           |
-| Seed (blank draws one)                        | `129.noise_seed`                                                                                                      |
+| App input                                     | Graph input                                                                                                         |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Video                                         | `video.file`                                                                                                        |
+| Character image                               | `character.image`                                                                                                   |
+| Who to replace                                | `136.prompt`, through `swapPrompt`                                                                                  |
+| Start of the part (trim dialog)               | `trim.start_time` (seconds)                                                                                         |
+| Length of the part (trim dialog)              | `trim.duration` and `cut.duration` (seconds), `sample.num_frames` (the part at 24 fps), `136.length` (`gridFrames`) |
+| Quality (768p or 480p) and the source's shape | `136.width`, `136.height` (canvas); `fit.width`, `fit.height` (saved frame)                                         |
+| Seed (blank draws one)                        | `129.noise_seed`                                                                                                    |
 
 Output: node `out` saves `openjutsu/result_*.mp4` (H.264). `LoadVideo` also
 emits a preview of the input under node `video`; the app takes the file whose

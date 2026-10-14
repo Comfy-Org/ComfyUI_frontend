@@ -1,7 +1,14 @@
 <script setup lang="ts">
 import { useObjectUrl, useRafFn } from '@vueuse/core'
 import { LoaderCircle, Pause, Play } from '@lucide/vue'
-import { computed, ref, shallowRef, useTemplateRef, watch } from 'vue'
+import {
+  computed,
+  onScopeDispose,
+  ref,
+  shallowRef,
+  useTemplateRef,
+  watch
+} from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import Dialog from '@/components/ui/dialog/Dialog.vue'
@@ -133,13 +140,19 @@ async function toggle() {
 }
 
 // While it plays, the part that is kept loops, so its join can be judged.
-useRafFn(() => {
-  const video = player.value
-  if (!video || !playing.value) return
-  const loop = loopedTime(video.currentTime, video.ended, range.value)
-  if (loop.seekTo !== undefined) video.currentTime = loop.seekTo
-  playhead.value = loop.playhead
-})
+// The loop only runs while playing; the dialog stays mounted all page long.
+const loop = useRafFn(
+  () => {
+    const video = player.value
+    if (!video) return
+    const next = loopedTime(video.currentTime, video.ended, range.value)
+    if (next.seekTo !== undefined) video.currentTime = next.seekTo
+    playhead.value = next.playhead
+  },
+  { immediate: false }
+)
+watch(playing, (on) => (on ? loop.resume() : loop.pause()))
+onScopeDispose(() => job?.abort())
 
 const labels = computed(() => ({
   start: t('workshop.videoTrim.start'),

@@ -38,6 +38,7 @@ test('keeps Openjutsu closed while its flag is off', async ({
 }) => {
   await mockFlags(context, false)
   await page.goto('/hub/apps/openjutsu/')
+  await expect(page.getByText('Openjutsu is not open yet')).toBeVisible()
   await expect(page.getByTestId('openjutsu')).toHaveCount(0)
 })
 

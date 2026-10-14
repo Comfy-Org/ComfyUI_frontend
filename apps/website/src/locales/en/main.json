@@ -5380,7 +5380,8 @@
     "title": "Cinematic Studio",
     "beta": "Beta",
     "repo": {
-      "view": "View on GitHub"
+      "view": "View on GitHub",
+      "org": "Comfy on GitHub"
     },
     "meta": {
       "description": "Direct cinematic stills: pick the camera, shot, light, film and grade, then run any image model through the Comfy Router."
@@ -5771,16 +5772,11 @@
   },
   "openjutsu": {
     "title": "Openjutsu",
-    "lead": "Swap a character in your video for one from a single image. The scene, the camera and the sound stay as they were.",
-    "credit": "Built on MiniMax H3 and the Akatz Labs Character Swap LoRA",
     "panel": "Swap settings",
     "closed": "Openjutsu is not open yet",
     "unavailable": "Openjutsu is not available right now. Try again later.",
     "signIn": "Sign in to run a swap.",
     "video": {
-      "heading": "Video",
-      "hint": "Any length. You pick 5–15 seconds of it; one continuous shot works best.",
-      "detail": "{seconds} s · swapping {used} s",
       "add": "Upload video",
       "limits": "MP4 or MOV · up to 15 s is used",
       "remove": "Remove video",
@@ -5788,8 +5784,7 @@
     },
     "target": {
       "heading": "Who to replace",
-      "placeholder": "Who to replace? Describe one person so no one else in the shot matches, e.g. the man in the purple shirt.",
-      "help": "The swap follows this description, not a click on the picture. Say what sets the person apart: clothing, position, hair."
+      "placeholder": "Who to replace? Describe one person so no one else in the shot matches, e.g. the man in the purple shirt."
     },
     "seed": {
       "shuffle": "Pick a random seed",
@@ -5816,7 +5811,6 @@
       "queued": "Waiting for a server",
       "running": "Swapping the character",
       "fetching": "Fetching the result",
-      "note": "This can take several minutes. The first run after a quiet spell also loads the model.",
       "elapsed": "{time} elapsed"
     },
     "take": {
@@ -5824,8 +5818,7 @@
       "source": "Source video",
       "reuse": "Use these settings",
       "retry": "Back to settings",
-      "detail": "Replaced {target}",
-      "audio": "original sound"
+      "detail": "Replaced {target}"
     },
     "examples": {
       "title": "Start with an example",
@@ -5844,7 +5837,8 @@
       "kitchen": {
         "place": "Kitchen",
         "character": "Pirate chef"
-      }
+      },
+      "failed": "That example could not be loaded. Try again, or add your own video."
     },
     "error": {
       "swap": "The swap did not finish. Try again, or try a shorter part."
@@ -5869,7 +5863,8 @@
     },
     "peek": {
       "seconds": "{seconds} s"
-    }
+    },
+    "noscript": "Openjutsu needs JavaScript to run."
   },
   "changelog": {
     "meta": {

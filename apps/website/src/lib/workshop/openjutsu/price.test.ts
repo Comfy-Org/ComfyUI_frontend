@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { ReshootQuote } from '@/lib/workshop/cinematic-studio/reshoot-engine/transport'
-import { runQuote } from './price'
+import { perSecondNote, runQuote } from './price'
 
 const perFrame: ReshootQuote = {
   free_runs_remaining: 0,
@@ -32,11 +32,36 @@ describe('runQuote', () => {
     }
   )
 
-  it('leaves the quote alone until a part is chosen', () => {
-    expect(runQuote(perFrame, undefined)).toBe(perFrame)
+  it('prices nothing until a part is chosen', () => {
+    expect(runQuote(perFrame, undefined)).toBeUndefined()
+  })
+
+  it('prices nothing it cannot read the way the proxy charges', () => {
+    const tiered: ReshootQuote = {
+      ...perFrame,
+      price_per_second: {
+        tier_input: 'megapixels',
+        credits: { '0.4': 18, '1': 45 }
+      }
+    }
+
+    expect(runQuote(tiered, 5)).toBeUndefined()
+    expect(perSecondNote(tiered, 'en')).toBeUndefined()
   })
 
   it('leaves a flat price as it came', () => {
     expect(runQuote(flat, 5)).toBe(flat)
+  })
+})
+
+describe('perSecondNote', () => {
+  it('gives the rate per second of result before a part is chosen', () => {
+    expect(perSecondNote(perFrame, 'en')).toBe('25 credits per second')
+  })
+
+  it('says nothing when the next run is free', () => {
+    expect(
+      perSecondNote({ ...perFrame, next_run: 'free' }, 'en')
+    ).toBeUndefined()
   })
 })

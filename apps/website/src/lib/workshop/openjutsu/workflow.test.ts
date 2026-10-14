@@ -29,8 +29,11 @@ describe('swapWorkflow', () => {
   it('shows H3 the chosen part and generates the next grid length up', () => {
     expect(graph.trim.inputs).toMatchObject({ start_time: 2.5, duration: 5 })
     expect(graph.sample.inputs.num_frames).toBe(120)
-    expect(graph.frames.inputs.value).toBe(124)
-    expect(graph['136'].inputs.length).toEqual(['frames', 0])
+    expect(graph['136'].inputs.length).toBe(124)
+    expect(
+      graph.frames,
+      'the length sits on the model node itself'
+    ).toBeUndefined()
   })
 
   it('cuts the result back to the chosen length before saving', () => {

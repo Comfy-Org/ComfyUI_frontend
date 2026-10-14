@@ -21,11 +21,11 @@ describe('AppRepoLink', () => {
     expect(link).toHaveAttribute('rel', 'noopener noreferrer')
   })
 
-  it("opens Comfy's GitHub until the app has its own repository", () => {
+  it("opens Comfy's GitHub, named as such, until the app has its own repository", () => {
     render(AppRepoLink)
 
     expect(
-      screen.getByRole('link', { name: 'View on GitHub' })
+      screen.getByRole('link', { name: 'Comfy on GitHub' })
     ).toHaveAttribute('href', 'https://github.com/Comfy-Org')
     expect(screen.queryByText(/coming soon/i)).toBeNull()
   })

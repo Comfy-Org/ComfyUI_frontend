@@ -84,7 +84,7 @@
       "prompt": "Swap the person in <Video 1> with the character in <Picture 1>.",
       "width": 1344,
       "height": 768,
-      "length": ["frames", 0],
+      "length": 124,
       "ref_image_size": "match",
       "ref_images.ref_image_0": ["character", 0],
       "ref_videos.ref_video_0": ["reference-components", 0]
@@ -102,12 +102,6 @@
     "class_type": "LoadImage",
     "inputs": {
       "image": "character.png"
-    }
-  },
-  "frames": {
-    "class_type": "PrimitiveInt",
-    "inputs": {
-      "value": 124
     }
   },
   "video": {

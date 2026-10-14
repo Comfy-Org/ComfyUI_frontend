@@ -51,6 +51,35 @@ describe('OpenjutsuStage', () => {
     expect(emitted('example')).toEqual([[SWAP_EXAMPLES[1]]])
   })
 
+  it('says when an example could not be fetched', () => {
+    render(OpenjutsuStage, {
+      props: { ...editing, videoUrl: undefined, exampleFailed: true }
+    })
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'That example could not be loaded.'
+    )
+  })
+
+  it('keeps a take reachable, on its own clip, after the video is taken out', () => {
+    const own = take({
+      status: 'rendering',
+      url: undefined,
+      sourceUrl: 'blob:take-source',
+      frame: { width: 756, height: 1344 }
+    })
+    render(OpenjutsuStage, {
+      props: { ...showing(own), videoUrl: undefined }
+    })
+
+    expect(screen.queryByText('Start with an example')).toBeNull()
+    expect(screen.getByRole('button', { name: /Take 1/ })).toBeVisible()
+    expect(screen.getByLabelText('Your clip')).toHaveAttribute(
+      'src',
+      'blob:take-source'
+    )
+  })
+
   it('holds the examples while one is loading', () => {
     render(OpenjutsuStage, {
       props: { ...editing, videoUrl: undefined, loadingExample: 'office' }

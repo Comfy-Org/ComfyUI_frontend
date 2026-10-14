@@ -7,7 +7,7 @@ import type { Locale } from '@/i18n/translations'
 import { captureWorkshopEvent } from '@/scripts/posthog'
 
 const {
-  repo = externalLinks.githubOrg,
+  repo,
   locale = 'en',
   appSlug
 } = defineProps<{
@@ -30,7 +30,7 @@ function captureClick() {
 
 <template>
   <a
-    :href="repo"
+    :href="repo ?? externalLinks.githubOrg"
     target="_blank"
     rel="noopener noreferrer"
     class="inline-flex h-9 shrink-0 items-center gap-2 rounded-xl border border-transparency-white-t20 bg-transparency-white-t4 px-3.5 text-sm font-medium text-primary-warm-white transition hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
@@ -40,7 +40,7 @@ function captureClick() {
       class="size-4 icon-mask mask-[url('/icons/social/github.svg')]"
       aria-hidden="true"
     />
-    {{ t('cinematic.repo.view') }}
+    {{ repo ? t('cinematic.repo.view') : t('cinematic.repo.org') }}
     <ArrowUpRight class="size-3.5" aria-hidden="true" />
   </a>
 </template>

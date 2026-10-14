@@ -7,8 +7,14 @@ import type { SwapExample } from '@/lib/workshop/openjutsu/examples'
 import { SWAP_EXAMPLES } from '@/lib/workshop/openjutsu/examples'
 
 /** The stage before a video: a card of examples to start from. */
-const { loading, locale = 'en' } = defineProps<{
+const {
+  loading,
+  failed = false,
+  locale = 'en'
+} = defineProps<{
   loading?: SwapExample['id']
+  /** The last example could not be fetched. */
+  failed?: boolean
   locale?: Locale
 }>()
 const { t } = translationsFor(locale)
@@ -27,6 +33,14 @@ const exampleName = (example: SwapExample) =>
     <h2 class="text-lg font-medium text-primary-warm-white sm:text-xl">
       {{ t('openjutsu.examples.title') }}
     </h2>
+    <p
+      v-if="failed"
+      role="alert"
+      class="text-sm text-destructive-light"
+      data-testid="openjutsu-example-failed"
+    >
+      {{ t('openjutsu.examples.failed') }}
+    </p>
     <ul class="grid grid-cols-2 gap-2 sm:gap-3">
       <li v-for="example in SWAP_EXAMPLES" :key="example.id">
         <button
