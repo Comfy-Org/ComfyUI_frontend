@@ -1,5 +1,6 @@
 import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
 
+import { themeSchema } from '@/schemas/colorPaletteSchema'
 import type { ComfyApp } from '@/scripts/app'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
@@ -33,15 +34,8 @@ function readRootProperty(property: string) {
 
 function clearRootThemeAfterTest() {
   onTestFinished(() => {
-    for (const property of [
-      '--background',
-      '--node',
-      '--node-header',
-      '--secondary',
-      '--border',
-      '--muted'
-    ]) {
-      document.documentElement.style.removeProperty(property)
+    for (const key of themeSchema.keyof().options) {
+      document.documentElement.style.removeProperty(`--${key}`)
     }
   })
 }

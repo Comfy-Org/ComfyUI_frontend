@@ -54,6 +54,7 @@ export default defineConfig({
       : ['**/_recording-session.spec.ts'])
   ],
   fullyParallel: true,
+  expect: { toHaveScreenshot: { threshold: 0.01 } },
   forbidOnly: !!process.env.CI,
   reporter: process.env.PLAYWRIGHT_BLOB_OUTPUT_DIR ? 'blob' : 'html',
   ...maybeLocalOptions,
