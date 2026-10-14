@@ -4,7 +4,7 @@
       <h2 class="mb-3 text-xl text-text-primary">
         {{ $t('cloudOnboarding.authTimeout.title') }}
       </h2>
-      <p class="mb-5 text-muted">
+      <p class="mb-5 text-muted-foreground">
         {{ $t('cloudOnboarding.authTimeout.message') }}
       </p>
 
@@ -13,7 +13,7 @@
         <h3 class="mb-2 text-sm font-semibold text-text-primary">
           {{ $t('cloudOnboarding.authTimeout.troubleshooting') }}
         </h3>
-        <ul class="space-y-1.5 text-sm text-muted">
+        <ul class="space-y-1.5 text-sm text-muted-foreground">
           <li
             v-for="(cause, index) in $tm('cloudOnboarding.authTimeout.causes')"
             :key="index"

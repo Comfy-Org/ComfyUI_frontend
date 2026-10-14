@@ -8,18 +8,26 @@
           <i class="pi pi-bookmark-fill mr-1 text-sm" />
         </span>
         <span>
-          <HighlightedText :text="nodeDef.display_name" :query="currentQuery" />
+          <HighlightedText
+            :text="nodeDef.display_name"
+            :query="currentQuery"
+            highlight-class="-my-0.5 mx-0.5 rounded-sm bg-primary-background px-0.5 font-bold text-base-foreground"
+          />
         </span>
         <span>&nbsp;</span>
         <Badge v-if="showIdName" severity="secondary">
           <span>
-            <HighlightedText :text="nodeDef.name" :query="currentQuery" />
+            <HighlightedText
+              :text="nodeDef.name"
+              :query="currentQuery"
+              highlight-class="-my-0.5 mx-0.5 rounded-sm bg-primary-background px-0.5 font-bold text-base-foreground"
+            />
           </span>
         </Badge>
       </div>
       <div
         v-if="showCategory"
-        class="option-category truncate text-sm font-light text-muted"
+        class="option-category truncate text-sm font-light text-muted-foreground"
       >
         {{ nodeDef.category.replaceAll('/', ' > ') }}
       </div>
@@ -85,14 +93,3 @@ const props = defineProps<{
   currentQuery: string
 }>()
 </script>
-
-<style scoped>
-:deep(.highlight) {
-  background-color: var(--p-primary-color);
-  color: var(--p-primary-contrast-color);
-  font-weight: 700;
-  border-radius: 0.25rem;
-  padding: 0 0.125rem;
-  margin: -0.125rem 0.125rem;
-}
-</style>
