@@ -12,7 +12,6 @@ import {
   layoutHiddenLinkBadges,
   queryLinkBadgeAtPoint
 } from '@/lib/litegraph/src/canvas/linkBadges'
-import { isLinkRevealed } from '@/lib/litegraph/src/canvas/linkRevealState'
 import { LLink } from '@/lib/litegraph/src/LLink'
 import { LinkMarkerShape } from '@/lib/litegraph/src/types/globalEnums'
 import { toLinkId } from '@/types/linkId'
@@ -525,20 +524,6 @@ describe('LGraphCanvas link visibility interactions', () => {
         new PointerEvent('pointerup', { ...init, button: 0, buttons: 0 })
       )
     }
-
-    it('reveals every stacked link while the stack is hovered', () => {
-      const { graph, canvas, links } = createStackFixture()
-
-      canvas.processMouseMove(
-        new PointerEvent('pointermove', { clientX: 420, clientY: 300 })
-      )
-
-      const { rootGraphId } = graphScopeOf(graph)
-      expect(links.map(({ id }) => isLinkRevealed(rootGraphId, id))).toEqual([
-        true,
-        true
-      ])
-    })
 
     it('expands on click and collapses on Escape', () => {
       const { canvas, links, relayout } = createStackFixture()

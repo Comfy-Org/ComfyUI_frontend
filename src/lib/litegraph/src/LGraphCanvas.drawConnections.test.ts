@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   LGraph,
@@ -719,6 +719,30 @@ describe('drawConnections hidden links', () => {
     canvas.processMouseOut(new PointerEvent('pointerout'))
 
     expect(isLinkRevealed(graphScopeOf(graph).rootGraphId, link.id)).toBe(false)
+  })
+
+  it('reveals every stacked link while the stack is hovered', () => {
+    const link = createHiddenLink()
+    const source = graph.getNodeById(link.origin_id)
+    assert.exists(source)
+    const secondTarget = new LGraphNode('Second target')
+    secondTarget.pos = [300, 300]
+    secondTarget.addInput('in', 'STRING')
+    graph.add(secondTarget)
+    const stackedLink = createTestLink(graph, source, 0, secondTarget, 0)
+    useLinkPresentationStore().patch(graphScopeOf(graph), stackedLink.id, {
+      hidden: true
+    })
+    canvas.drawConnections(createMockCtx())
+    const [badgeX, badgeY] = outputBadgePoint(link)
+
+    canvas.processMouseMove(
+      new PointerEvent('pointermove', { clientX: badgeX, clientY: badgeY })
+    )
+
+    const { rootGraphId } = graphScopeOf(graph)
+    expect(isLinkRevealed(rootGraphId, link.id)).toBe(true)
+    expect(isLinkRevealed(rootGraphId, stackedLink.id)).toBe(true)
   })
 
   it('clears a badge-hover reveal and invalidates the background on pointer cancel', () => {
