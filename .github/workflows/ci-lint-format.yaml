@@ -144,11 +144,6 @@ jobs:
           title: Architecture
           icon: '🏛️'
           status: ${{ steps.architecture-verdict.outputs.status }}
-          headline: >-
-            Checks that domain records, the suppression ledger and
-            `boundaries.json` agree. Unclaimed `src` files and record paths
-            that match no files are warnings to categorize and never fail the
-            check; only errors do.
           details-file: ${{ runner.temp }}/architecture-findings.md
           reproduce: pnpm architecture:check
           docs: '[Frontend domain catalog](docs/architecture/domains/README.md)'
