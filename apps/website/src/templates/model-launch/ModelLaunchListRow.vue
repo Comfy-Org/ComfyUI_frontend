@@ -127,7 +127,7 @@ const metaLabel = computed(() => {
         <button
           v-if="expanded || promptOverflows"
           type="button"
-          class="mt-2 cursor-pointer text-sm font-semibold text-primary-comfy-canvas underline underline-offset-4 transition-colors hover:text-primary-comfy-yellow"
+          class="mt-2 cursor-pointer text-sm/relaxed font-light text-primary-comfy-canvas underline underline-offset-4 transition-colors hover:text-primary-comfy-yellow"
           @click="expanded = !expanded"
         >
           {{ expanded ? t('ui.readLess') : t('ui.readMore') }}
