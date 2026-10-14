@@ -1,0 +1,50 @@
+{
+  "id": "note-nodes",
+  "capability": "Note nodes",
+  "description": "Plain-text and Markdown workflow annotations, their node registration, editable Markdown widget, and LiteGraph widget adapters. Shared Markdown rendering and sanitization remain outside this capability.",
+  "modules": [
+    { "path": "src/extensions/core/noteNode.ts", "role": "integration" },
+    {
+      "path": "src/lib/litegraph/src/widgets/MarkdownWidget.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useMarkdownWidget.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useMarkdownWidget.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetMarkdown.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetMarkdown.test.ts",
+      "role": "presentation"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Markdown widgets render, edit, and synchronize annotation values",
+      "checks": [
+        "src/renderer/extensions/vueNodes/widgets/components/WidgetMarkdown.test.ts",
+        "src/renderer/extensions/vueNodes/widgets/composables/useMarkdownWidget.test.ts"
+      ]
+    },
+    {
+      "name": "Note nodes remain available on the workflow canvas",
+      "checks": ["browser_tests/tests/noteNode.spec.ts"]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Note and MarkdownNote node types and serialized annotation values remain unchanged.",
+    "Other Markdown widget consumers remain supported at runtime; inventory grants no new cross-domain permissions."
+  ],
+  "deepImports": "inventory"
+}

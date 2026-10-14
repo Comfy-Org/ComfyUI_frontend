@@ -1,3 +1,4 @@
+import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { nextTick } from 'vue'
@@ -5,6 +6,62 @@ import { nextTick } from 'vue'
 import VideoPlayer from './VideoPlayer.vue'
 
 describe('VideoPlayer', () => {
+  it.for([false, true])(
+    'restarts a silent preview with sound and controls on activation (autoplay: %s)',
+    async (autoplay) => {
+      vi.spyOn(HTMLMediaElement.prototype, 'play').mockImplementation(
+        function (this: HTMLMediaElement) {
+          this.dispatchEvent(new Event('play'))
+          return Promise.resolve()
+        }
+      )
+      render(VideoPlayer, {
+        props: {
+          src: 'https://example.com/clip.mp4',
+          ariaLabel: 'Preview clip',
+          preview: true,
+          autoplay,
+          lazyAutoplay: true
+        }
+      })
+      await nextTick()
+      const video = screen.getByLabelText('Preview clip')
+      if (!(video instanceof HTMLVideoElement))
+        throw new Error('Expected the labelled video element')
+      expect(video.muted).toBe(true)
+      video.currentTime = 17
+
+      expect(screen.queryByTestId('player-control-bar')).toBeNull()
+      expect(screen.queryByRole('slider')).toBeNull()
+      await userEvent.click(screen.getByRole('button', { name: 'Play' }))
+
+      expect(video.currentTime).toBe(0)
+      expect(video.muted).toBe(false)
+      expect(video.loop).toBe(false)
+      expect(screen.getByRole('button', { name: 'Pause' })).toBeTruthy()
+      expect(screen.getByRole('button', { name: 'Mute' })).toBeTruthy()
+      expect(screen.getByRole('slider', { name: 'Seek' })).toBeTruthy()
+      await vi.advanceTimersByTimeAsync(1000)
+      expect(screen.getByTestId('player-control-bar').className).not.toContain(
+        'opacity-0'
+      )
+    }
+  )
+
+  it('returns to the preview when a different clip replaces an activated video', async () => {
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined)
+    const { rerender } = render(VideoPlayer, {
+      props: { src: 'https://example.com/first.mp4', preview: true }
+    })
+    await userEvent.click(screen.getByRole('button', { name: 'Play' }))
+    expect(screen.getByRole('slider', { name: 'Seek' })).toBeTruthy()
+
+    await rerender({ src: 'https://example.com/second.mp4' })
+
+    expect(screen.queryByRole('slider')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Play' })).toBeTruthy()
+  })
+
   it.for([true, false])(
     'keeps the playback controls visible only when requested (persistentControls: %s)',
     async (persistentControls) => {

@@ -1,0 +1,101 @@
+{
+  "id": "node-definition",
+  "capability": "Node definition contracts (shared technical module)",
+  "description": "Shared technical module, not a business domain. The node definition contract read from /object_info: the V1 schema re-export from @comfyorg/object-info-parser, the V2 schema and V1-to-V2 migration, input spec tree diagnostics and flattening, searchable slot type collection, node source classification, upload input augmentation, input ordering for widget values, node help base URLs, and the essentials node list. The node definition store, node library and search UI, and widget constructors that consume these contracts belong to their own records.",
+  "modules": [
+    {
+      "path": "src/constants/essentialsNodes.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/schemas/nodeDef/inputSpecTree.cap.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/schemas/nodeDef/inputSpecTree.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/schemas/nodeDef/inputSpecTree.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/schemas/nodeDef/inputSpecUtil.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/schemas/nodeDef/inputSpecUtil.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/schemas/nodeDef/migration.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/schemas/nodeDef/migration.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/schemas/nodeDef/nodeDefSchemaV2.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/schemas/nodeDef/searchableSlotTypes.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/schemas/nodeDef/searchableSlotTypes.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/schemas/nodeDefSchema.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/nodeDefAugmentation.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/nodeSource.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/workbench/utils/nodeDefOrderingUtil.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/workbench/utils/nodeDefOrderingUtil.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/workbench/utils/nodeHelpUtil.ts",
+      "role": "domain"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "V1 node definitions migrate to V2 and input spec trees report diagnostics within bounds",
+      "checks": [
+        "src/schemas/nodeDef/migration.test.ts",
+        "src/schemas/nodeDef/inputSpecTree.test.ts",
+        "src/schemas/nodeDef/inputSpecTree.cap.test.ts"
+      ]
+    },
+    {
+      "name": "Input specs flatten, searchable slot types are collected, and widget values follow input order",
+      "checks": [
+        "src/schemas/nodeDef/inputSpecUtil.test.ts",
+        "src/schemas/nodeDef/searchableSlotTypes.test.ts",
+        "src/workbench/utils/nodeDefOrderingUtil.test.ts"
+      ]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
+  ],
+  "deepImports": "inventory"
+}

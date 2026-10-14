@@ -13,7 +13,7 @@
         :key="filterKey(filter)"
         :value="filterKey(filter)"
         data-testid="filter-chip"
-        class="-my-1 inline-flex items-center gap-1 rounded-lg bg-base-background px-2 py-1 data-[state=active]:ring-2 data-[state=active]:ring-primary"
+        class="-my-1 inline-flex items-center gap-1 rounded-lg bg-base-background px-2 py-1 data-[state=active]:ring-2 data-[state=active]:ring-primary-background"
       >
         <span class="text-sm opacity-80">
           {{ t(`g.${filter.filterDef.id}`) }}:
@@ -62,7 +62,7 @@ import {
   TagsInputRoot
 } from 'reka-ui'
 
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import type { FuseFilterWithValue } from '@/utils/fuseUtil'
 import { getLinkTypeColor } from '@/utils/litegraphUtil'
 

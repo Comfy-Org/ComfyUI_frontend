@@ -17,7 +17,7 @@
       <h3 class="my-0 mb-1 truncate text-base font-bold text-base-foreground">
         {{ userDisplayName || $t('g.user') }}
       </h3>
-      <p v-if="userEmail" class="my-0 truncate text-sm text-muted">
+      <p v-if="userEmail" class="my-0 truncate text-sm text-muted-foreground">
         {{ userEmail }}
       </p>
       <span
@@ -98,6 +98,7 @@
         size="sm"
         class="text-base-foreground"
         data-testid="add-credits-button"
+        :data-dd-action-name="BILLING_ACTION_NAME.addCreditsPopover"
         @click="handleTopUp"
       >
         {{ $t('subscription.addCredits') }}
@@ -157,6 +158,7 @@
 </template>
 
 <script setup lang="ts">
+import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
 import { onClickOutside } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref, useTemplateRef } from 'vue'
