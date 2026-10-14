@@ -56,7 +56,7 @@ function toggle(id: string): void {
         :disabled="optionDisabled(option.id)"
         :aria-labelledby="`${askUserOptionId(idPrefix, index)}-label`"
         :aria-describedby="askUserOptionDescribedBy(idPrefix, option, index)"
-        class="mt-0.5"
+        class="mt-0.5 p-0"
         @update:model-value="toggle(option.id)"
       />
       <AskUserOptionLabel
