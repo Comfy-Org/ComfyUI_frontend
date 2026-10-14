@@ -207,8 +207,8 @@ function expectGalleryCardsLocalized(cards: ModelLaunchGallery['cards']) {
 function expectListItemsComplete(items: readonly ModelLaunchListItem[]) {
   for (const item of items) {
     expectLocalized(item.title, item.id, 'title')
-    expectLocalized(item.description, item.id, 'description')
     expect(item.prompt, `${item.id} prompt`).not.toBe('')
+    expect(item.durationSeconds, `${item.id} length`).toBeGreaterThan(0)
     expect(item.voices, `${item.id} voices`).not.toHaveLength(0)
   }
 }

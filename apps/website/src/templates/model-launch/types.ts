@@ -134,8 +134,8 @@ export interface ModelLaunchListVoice {
 export interface ModelLaunchListItem {
   id: string
   title: LocalizedText
-  description: LocalizedText
   prompt: string
+  durationSeconds: number
   voices: readonly ModelLaunchListVoice[]
   href: string
   audioSources: readonly { src: string; type: string }[]

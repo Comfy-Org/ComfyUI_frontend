@@ -3966,7 +3966,8 @@
     "tagFree": "Free",
     "tagPremium": "Premium",
     "copyPrompt": "Copy prompt",
-    "voices": "Voice | Voices",
+    "voices": "voice: | voices:",
+    "clipSeconds": "({seconds}s)",
     "beforeAfter": {
       "tabsLabel": "Comparison",
       "sliderLabel": "Comparison slider",

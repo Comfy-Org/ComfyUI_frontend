@@ -15,8 +15,8 @@ function item(
   return {
     id,
     title: { en: `${id} title`, 'zh-CN': `${id} 标题` },
-    description: { en: `${id} description`, 'zh-CN': `${id} 描述` },
     prompt: `[whisper] ${id} prompt`,
+    durationSeconds: 8,
     voices: [{ name: `${id} voice` }],
     href: `https://cloud.comfy.org/?template=${id}`,
     audioSources: [clip],
@@ -31,10 +31,7 @@ function list(
   return { headingKey: 'fishAudio.samples.heading', ctaKey, items }
 }
 
-function mockMedia(duration: number) {
-  vi.spyOn(HTMLMediaElement.prototype, 'duration', 'get').mockReturnValue(
-    duration
-  )
+function mockMedia() {
   vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined)
   return vi
     .spyOn(HTMLMediaElement.prototype, 'pause')
@@ -43,7 +40,7 @@ function mockMedia(duration: number) {
 
 describe('ModelLaunchListSection', () => {
   it('links each row title and CTA to the item href', () => {
-    mockMedia(0)
+    mockMedia()
     render(ModelLaunchListSection, {
       props: { list: list([item('a'), item('b')], 'fishAudio.samples.cta') }
     })
@@ -62,55 +59,31 @@ describe('ModelLaunchListSection', () => {
   it.for([
     {
       voices: [{ name: 'Narrator (en)' }],
-      label: 'Voice',
-      names: 'Narrator (en)'
+      meta: '(44s) · voice: Narrator (en)'
     },
     {
       voices: [
         { name: 'Sarah (en)', alias: '@Voice1' },
         { name: 'Adrian (en)', alias: '@Voice2' }
       ],
-      label: 'Voices',
-      names: '@Voice1 Sarah (en) · @Voice2 Adrian (en)'
+      meta: '(44s) · voices: @Voice1 Sarah (en), @Voice2 Adrian (en)'
     }
-  ])('shows the prompt with its $label $names', ({ voices, label, names }) => {
-    mockMedia(0)
+  ])('shows the clip length and voices as "$meta"', ({ voices, meta }) => {
+    mockMedia()
     render(ModelLaunchListSection, {
-      props: { list: list([item('scene', { voices })]) }
+      props: { list: list([item('scene', { voices, durationSeconds: 44 })]) }
     })
 
     const row = screen.getByRole('listitem')
+    expect(within(row).getByText(meta)).toBeTruthy()
     expect(within(row).getByText('[whisper] scene prompt')).toBeTruthy()
-    expect(within(row).getByText(label)).toBeTruthy()
-    expect(within(row).getByText(names)).toBeTruthy()
     expect(
       within(row).getByRole('button', { name: 'Copy prompt' })
     ).toBeTruthy()
   })
 
-  it.for([
-    { duration: 65, label: '01:05' },
-    { duration: Number.POSITIVE_INFINITY, label: null }
-  ])(
-    'shows the clip length $label for a reported duration of $duration',
-    async ({ duration, label }) => {
-      mockMedia(duration)
-      render(ModelLaunchListSection, {
-        props: { list: list([item('audio')]) }
-      })
-      await nextTick()
-
-      const row = screen.getByRole('listitem')
-      if (label === null) {
-        expect(within(row).queryByText(/\d\d:\d\d/)).toBeNull()
-      } else {
-        expect(within(row).getAllByText(label)).not.toHaveLength(0)
-      }
-    }
-  )
-
   it('pauses every other row when one starts playing', async () => {
-    const pause = mockMedia(9)
+    const pause = mockMedia()
     render(ModelLaunchListSection, {
       props: { list: list([item('first'), item('second')]) }
     })

@@ -2671,7 +2671,8 @@
     "copyPrompt": "プロンプトをコピー",
     "tagFree": "無料",
     "tagPremium": "プレミアム",
-    "voices": "ボイス"
+    "clipSeconds": "({seconds}秒)",
+    "voices": "ボイス："
   },
   "modelRelease": {
     "eyebrow": "新モデルリリース",

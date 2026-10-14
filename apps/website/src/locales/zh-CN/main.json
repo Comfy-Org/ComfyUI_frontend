@@ -2731,7 +2731,8 @@
     "copyPrompt": "复制提示词",
     "tagFree": "免费",
     "tagPremium": "高级",
-    "voices": "声音"
+    "clipSeconds": "({seconds} 秒)",
+    "voices": "声音："
   },
   "modelRelease": {
     "eyebrow": "新模型发布",
