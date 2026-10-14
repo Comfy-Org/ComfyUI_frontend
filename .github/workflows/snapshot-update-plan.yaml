@@ -28,8 +28,6 @@ on:
         type: string
         required: true
     outputs:
-      pr-number:
-        value: ${{ jobs.setup.outputs.pr-number }}
       branch:
         value: ${{ jobs.setup.outputs.branch }}
       head-sha:
@@ -51,7 +49,6 @@ jobs:
       contents: read
       pull-requests: write
     outputs:
-      pr-number: ${{ steps.pr-info.outputs.pr-number }}
       branch: ${{ steps.pr-info.outputs.branch }}
       head-sha: ${{ steps.pr-info.outputs.head-sha }}
       full: ${{ github.event_name == 'issue_comment' && startsWith(github.event.comment.body, format('{0} full', inputs.command)) }}
