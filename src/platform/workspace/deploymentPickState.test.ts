@@ -134,6 +134,35 @@ describe('reduceDeploymentPick', () => {
     })
   })
 
+  it('keeps a switch in flight, hidden, when a refresh is refused, until it ends or a listing lands', () => {
+    const refused = reduceDeploymentPick(
+      { ...switching, target: 'dep-1' },
+      { type: 'loadRefused' }
+    )
+    expect(refused).toEqual({ phase: 'hiddenSwitching', target: 'dep-1' })
+    expect(reduceDeploymentPick(refused, { type: 'loadFailed' })).toBe(refused)
+    expect(
+      reduceDeploymentPick(refused, { type: 'switchStarted', target: null })
+    ).toBe(refused)
+    expect(reduceDeploymentPick(refused, loaded)).toEqual({
+      ...ready,
+      phase: 'switching',
+      target: 'dep-1'
+    })
+    expect(reduceDeploymentPick(refused, { type: 'switchFailed' })).toEqual({
+      phase: 'hidden'
+    })
+    expect(
+      reduceDeploymentPick(refused, {
+        type: 'defaultChanged',
+        defaultDeploymentId: 'dep-1'
+      })
+    ).toEqual({ phase: 'hidden' })
+    expect(reduceDeploymentPick(refused, { type: 'workspaceChanged' })).toEqual(
+      { phase: 'idle' }
+    )
+  })
+
   it('a new default the server took ends the switch and shows at once', () => {
     expect(
       reduceDeploymentPick(switching, {

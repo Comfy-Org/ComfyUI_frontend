@@ -573,6 +573,61 @@ describe('useDeploymentPickStore', () => {
       expect(reload).toHaveBeenCalledOnce()
     })
 
+    it.for([
+      { then: 'a listing answers', outcome: 'loaded' },
+      { then: 'nothing more answers', outcome: 'refused' }
+    ])(
+      'keeps the switcher locked when a refresh is refused while a pick is in flight and $then',
+      async ({ outcome }) => {
+        mockWorkspaceApi.listDeployments.mockResolvedValueOnce(listing)
+        const store = useDeploymentPickStore()
+        await store.load()
+        const put = deferred<void>()
+        mockWorkspaceApi.pickDeployment.mockReturnValueOnce(put.promise)
+        const picking = store.pick('dep-1')
+
+        mockWorkspaceApi.listDeployments.mockRejectedValueOnce(
+          new WorkspaceApiError('not enabled for this account yet', 403)
+        )
+        await store.load()
+        expect(store.isVisible).toBe(false)
+        expect(store.isSwitching).toBe(true)
+        if (outcome === 'loaded') {
+          mockWorkspaceApi.listDeployments.mockResolvedValueOnce(listing)
+          await store.load()
+          expect(store.isVisible).toBe(true)
+        }
+
+        await expect(store.pick(null)).resolves.toBeNull()
+        await expect(store.setDefault('dep-1')).resolves.toBeNull()
+        expect(mockWorkspaceApi.clearDeployment).not.toHaveBeenCalled()
+        expect(mockWorkspaceApi.setDefaultDeployment).not.toHaveBeenCalled()
+
+        put.resolve()
+        await picking
+        expect(mockWorkspaceApi.pickDeployment).toHaveBeenCalledOnce()
+        expect(reload).toHaveBeenCalledOnce()
+      }
+    )
+
+    it('hides itself when a pick refused after a refresh said the account left the rollout', async () => {
+      mockWorkspaceApi.listDeployments.mockResolvedValueOnce(listing)
+      const store = useDeploymentPickStore()
+      await store.load()
+      const put = deferred<void>()
+      mockWorkspaceApi.pickDeployment.mockReturnValueOnce(put.promise)
+      const picking = store.pick('dep-1')
+      mockWorkspaceApi.listDeployments.mockRejectedValueOnce(
+        new WorkspaceApiError('not enabled for this account yet', 403)
+      )
+      await store.load()
+
+      put.reject(new WorkspaceApiError('not enabled for this account yet', 403))
+      await expect(picking).resolves.toBe('not enabled for this account yet')
+      expect(store.state.phase).toBe('hidden')
+      expect(reload).not.toHaveBeenCalled()
+    })
+
     it('returns to the newer listing when a pick that a listing overtook is refused', async () => {
       mockWorkspaceApi.listDeployments.mockResolvedValueOnce(listing)
       const store = useDeploymentPickStore()

@@ -13,6 +13,7 @@ import type {
 } from '@/platform/workspace/deploymentPickState'
 import {
   changeBetween,
+  isSwitchInFlight,
   loadedEvent,
   reduceDeploymentPick
 } from '@/platform/workspace/deploymentPickState'
@@ -116,7 +117,7 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
    * even when a newer load fails or never answers.
    */
   const isVisible = computed(() => 'deployments' in state.value)
-  const isSwitching = computed(() => state.value.phase === 'switching')
+  const isSwitching = computed(() => isSwitchInFlight(state.value))
   /**
    * The deployment this page booted on, from the first listing that
    * answered: null for Comfy Cloud (a gone pick included), undefined before

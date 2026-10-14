@@ -62,6 +62,11 @@ export type DeploymentPickState =
    * runs on.
    */
   | ({ phase: 'switching'; target: string | null } & DeploymentListing)
+  /**
+   * A switch is in flight and a refresh said the account left the rollout:
+   * the switcher is hidden, and stays locked until the switch ends.
+   */
+  | { phase: 'hiddenSwitching'; target: string | null }
 
 export type DeploymentPickEvent =
   | ({ type: 'loaded' } & DeploymentListing)
@@ -116,36 +121,56 @@ export function reduceDeploymentPick(
 ): DeploymentPickState {
   switch (event.type) {
     case 'loaded':
-      // A switch in flight stays in flight; it shows the newer listing.
-      if (state.phase === 'switching') {
-        return {
-          phase: 'switching',
-          target: state.target,
-          ...listingOf(event)
-        }
-      }
-      return { phase: 'ready', ...listingOf(event) }
+      return withListing(state, listingOf(event))
     case 'loadRefused':
-      return { phase: 'hidden' }
+      return isSwitchInFlight(state)
+        ? { phase: 'hiddenSwitching', target: state.target }
+        : { phase: 'hidden' }
     case 'loadFailed':
-      return 'deployments' in state ? state : { phase: 'hidden' }
+      return 'deployments' in state || state.phase === 'hiddenSwitching'
+        ? state
+        : { phase: 'hidden' }
     case 'switchStarted':
       if (state.phase !== 'ready') return state
       return { phase: 'switching', target: event.target, ...listingOf(state) }
     case 'switchFailed':
-      if (state.phase !== 'switching') return state
-      return { phase: 'ready', ...listingOf(state) }
+      return endSwitch(state, (listing) => listing)
     case 'defaultChanged':
-      if (state.phase !== 'switching') return state
-      return {
-        phase: 'ready',
-        ...listingOf(state),
+      return endSwitch(state, (listing) => ({
+        ...listing,
         defaultDeploymentId: event.defaultDeploymentId,
         goneDefaultDeploymentId: null
-      }
+      }))
     case 'workspaceChanged':
       return { phase: 'idle' }
   }
+}
+
+function withListing(
+  state: DeploymentPickState,
+  listing: DeploymentListing
+): DeploymentPickState {
+  if (!isSwitchInFlight(state)) return { phase: 'ready', ...listing }
+  return { phase: 'switching', target: state.target, ...listing }
+}
+
+function endSwitch(
+  state: DeploymentPickState,
+  shown: (listing: DeploymentListing) => DeploymentListing
+): DeploymentPickState {
+  if (state.phase === 'hiddenSwitching') return { phase: 'hidden' }
+  if (state.phase !== 'switching') return state
+  return { phase: 'ready', ...shown(listingOf(state)) }
+}
+
+/** A pick, a clear or a new default is in flight, shown or hidden. */
+export function isSwitchInFlight(
+  state: DeploymentPickState
+): state is Extract<
+  DeploymentPickState,
+  { phase: 'switching' | 'hiddenSwitching' }
+> {
+  return state.phase === 'switching' || state.phase === 'hiddenSwitching'
 }
 
 /**
