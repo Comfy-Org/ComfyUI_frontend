@@ -132,9 +132,6 @@ function renderTab({ realTemplate = false } = {}) {
   return render(AssetsSidebarTab, {
     global: {
       plugins: [i18n],
-      directives: {
-        tooltip: {}
-      },
       stubs: {
         ...(realTemplate ? {} : { SidebarTabTemplate: sidebarTabTemplateStub }),
         AssetsSidebarGridView: assetsGridStub,

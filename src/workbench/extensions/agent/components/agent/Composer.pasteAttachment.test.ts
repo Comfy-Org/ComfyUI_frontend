@@ -17,7 +17,7 @@ function clipboardOf(...files: File[]): DataTransfer {
 function mount() {
   return render(Composer, {
     props: { hasWorkflowTarget: true },
-    global: { plugins: [i18n], directives: { tooltip: () => {} } }
+    global: { plugins: [i18n] }
   })
 }
 

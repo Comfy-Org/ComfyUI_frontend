@@ -1,0 +1,122 @@
+{
+  "id": "first-run-tour",
+  "capability": "First-run canvas tour",
+  "description": "The first-run getting-started screen with template and tutorial cards, the tour nudge, and the canvas tour that resolves graph node roles from heuristics and pinned roles, sequences tour steps, frames the camera, and projects node layout positions as coachmark targets. Consumes the onboarding-tours engine (tour store, coachmark registry, coachmark layout) without owning it.",
+  "modules": [
+    {
+      "path": "src/renderer/extensions/firstRunTour/gettingStarted/tutorialCards.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/firstRunTour/roles/**",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/firstRunTour/tour/cameraFraming.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/firstRunTour/tour/cameraFraming.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/firstRunTour/tour/firstRunTourDefinition.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/firstRunTour/tour/firstRunTourDefinition.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/firstRunTour/tour/useFirstRunTourController.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/firstRunTour/tour/useFirstRunTourController.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/firstRunTour/FirstRunTour.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/firstRunTour/gettingStarted/GettingStartedCard.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/firstRunTour/gettingStarted/GettingStartedScreen.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/firstRunTour/gettingStarted/GettingStartedScreen.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/firstRunTour/gettingStarted/GettingStartedTemplateCard.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/firstRunTour/nudge/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/firstRunTour/tour/canvasCoachTarget.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/firstRunTour/tour/canvasCoachTarget.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/services/useNewUserService.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/services/useNewUserService.test.ts",
+      "role": "application"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Getting-started entry and nudge open the first-run experience",
+      "checks": [
+        "src/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry.test.ts",
+        "src/renderer/extensions/firstRunTour/gettingStarted/GettingStartedScreen.test.ts",
+        "src/renderer/extensions/firstRunTour/nudge/FirstRunTourNudge.test.ts",
+        "browser_tests/tests/gettingStartedTour.spec.ts"
+      ]
+    },
+    {
+      "name": "Tour roles, sequence, and camera framing target the right graph nodes",
+      "checks": [
+        "src/renderer/extensions/firstRunTour/roles/resolveTourRoles.test.ts",
+        "src/renderer/extensions/firstRunTour/roles/heuristicRoles.test.ts",
+        "src/renderer/extensions/firstRunTour/roles/tourSequence.test.ts",
+        "src/renderer/extensions/firstRunTour/tour/firstRunTourDefinition.test.ts",
+        "src/renderer/extensions/firstRunTour/tour/useFirstRunTourController.test.ts",
+        "browser_tests/tests/firstRunTourRolePins.spec.ts"
+      ]
+    },
+    {
+      "name": "New-user detection reads install settings and draft history and runs deferred first-run callbacks once",
+      "checks": ["src/services/useNewUserService.test.ts"]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Existing onboarding, workspace, and settings callers may continue importing first-run tour internals during inventory; this record grants no new cross-domain permissions.",
+    "Tour completion and dismissal state stored through the onboarding-tours engine and settings remains unchanged."
+  ],
+  "deepImports": "inventory"
+}
