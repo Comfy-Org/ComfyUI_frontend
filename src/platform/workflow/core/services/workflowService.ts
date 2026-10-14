@@ -365,7 +365,7 @@ export const useWorkflowService = () => {
 
   /**
    * Reload the current workflow
-   * This is used to refresh the node definitions update, e.g. when the locale changes.
+   * Waits for queued loads; skipped when a later open replaces the workflow.
    */
   const reloadCurrentWorkflow = async () => {
     await workflowLoadTail
@@ -467,8 +467,7 @@ export const useWorkflowService = () => {
           return false
         }
 
-        if (workflowStore.isActive(workflow))
-          workflow.changeTracker?.captureCanvasState()
+        workflow.changeTracker?.prepareForSave()
         const loaded = await useApp().loadGraphData(
           toRaw(workflow.activeState) as ComfyWorkflowJSON,
           /* clean=*/ true,

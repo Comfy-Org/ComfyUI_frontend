@@ -1593,10 +1593,10 @@ describe('AgentPanel extension flag gate', () => {
   })
 
   it.for([
-    { distribution: 'localhost', forcedOn: true },
-    { distribution: 'cloud', forcedOn: false }
+    { distribution: 'localhost', forcedOn: true, outcome: 'enables' },
+    { distribution: 'cloud', forcedOn: false, outcome: 'does not enable' }
   ])(
-    'enables the panel for the standalone harness with the flag off in a $distribution build: $forcedOn',
+    'the standalone harness with the flag off $outcome the panel in a $distribution build',
     async ({ distribution, forcedOn }) => {
       vi.stubEnv('VITE_AGENT_STANDALONE', 'true')
       vi.stubGlobal('__DISTRIBUTION__', distribution)
