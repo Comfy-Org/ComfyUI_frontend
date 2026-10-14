@@ -5,8 +5,8 @@ import { categoryTiles } from './explore-category-tiles'
 
 function workflow(
   slug: string,
-  category: string,
-  categoryOrder: number,
+  section: string,
+  sectionOrder: number,
   fields: Partial<WorkflowWorkshopModel> = {}
 ): WorkflowWorkshopModel {
   return {
@@ -17,9 +17,12 @@ function workflow(
     href: `/hub/workflows/${slug}/`,
     workflowCount: 0,
     capabilities: [],
-    category,
-    categoryOrder,
-    categoryLabel: { en: `${category} label`, 'zh-CN': `${category} 标签` },
+    category: `${slug}-type`,
+    categoryOrder: 0,
+    categoryLabel: { en: `${slug} type`, 'zh-CN': `${slug} 类型` },
+    section,
+    sectionOrder,
+    sectionLabel: { en: `${section} label`, 'zh-CN': `${section} 标签` },
     ...fields
   }
 }
@@ -27,7 +30,7 @@ function workflow(
 const still = (url: string) => ({ url, kind: 'image' as const })
 
 const upscaling = [5, 4, 3, 2, 1].map((rank) =>
-  workflow(`upscale-${rank}`, 'upscale', 4, {
+  workflow(`upscale-${rank}`, 'upscale', 3, {
     recommendedRank: rank,
     thumbnail: still(`/upscale-${rank}.webp`)
   })
@@ -35,23 +38,24 @@ const upscaling = [5, 4, 3, 2, 1].map((rank) =>
 
 const workflows = [
   ...upscaling,
-  workflow('inpaint', 'image-to-image', 0, {
+  workflow('inpaint', 'cleanup', 4, {
     recommendedRank: 1,
     thumbnail: { url: '/inpaint.mp4', kind: 'video', poster: '/inpaint.jpg' }
   }),
-  workflow('outpaint', 'image-to-image', 0, {
+  workflow('outpaint', 'cleanup', 4, {
     recommendedRank: 2,
     thumbnail: { url: '/outpaint.mp4', kind: 'video' }
   }),
-  workflow('relight', 'image-to-image', 0, {
+  workflow('relight', 'cleanup', 4, {
     recommendedRank: 3,
     thumbnail: still('/inpaint.jpg')
   }),
-  workflow('turnaround', 'characters', 6)
+  workflow('turnaround', 'characters', 1),
+  workflow('unsectioned', '', 0, { section: undefined })
 ]
 
 describe('categoryTiles', () => {
-  it('lists each category with a workflow, in sidebar order, linking to it', () => {
+  it('lists each use-case section with a workflow, in its order, linking to its anchor on Workflows', () => {
     expect(
       categoryTiles(workflows).map(({ id, label, count, href }) => ({
         id,
@@ -61,29 +65,29 @@ describe('categoryTiles', () => {
       }))
     ).toEqual([
       {
-        id: 'image-to-image',
-        label: 'image-to-image label',
-        count: 3,
-        href: '/hub/workflows/?category=image-to-image'
+        id: 'characters',
+        label: 'characters label',
+        count: 1,
+        href: '/hub/workflows/#section-characters'
       },
       {
         id: 'upscale',
         label: 'upscale label',
         count: 5,
-        href: '/hub/workflows/?category=upscale'
+        href: '/hub/workflows/#section-upscale'
       },
       {
-        id: 'characters',
-        label: 'characters label',
-        count: 1,
-        href: '/hub/workflows/?category=characters'
+        id: 'cleanup',
+        label: 'cleanup label',
+        count: 3,
+        href: '/hub/workflows/#section-cleanup'
       }
     ])
   })
 
   it.for([
     {
-      category: 'upscale',
+      section: 'upscale',
       stills: [
         '/upscale-1.webp',
         '/upscale-2.webp',
@@ -91,20 +95,20 @@ describe('categoryTiles', () => {
         '/upscale-4.webp'
       ]
     },
-    { category: 'image-to-image', stills: ['/inpaint.jpg'] },
-    { category: 'characters', stills: [] }
+    { section: 'cleanup', stills: ['/inpaint.jpg'] },
+    { section: 'characters', stills: [] }
   ])(
-    'shows up to four stills of $category, most recommended first, never repeated or invented',
-    ({ category, stills }) => {
+    'shows up to four stills of $section, most recommended first, never repeated or invented',
+    ({ section, stills }) => {
       expect(
-        categoryTiles(workflows).find((tile) => tile.id === category)?.stills
+        categoryTiles(workflows).find((tile) => tile.id === section)?.stills
       ).toEqual(stills)
     }
   )
 
-  it('names the categories in Chinese on the Chinese page', () => {
+  it('names the sections in Chinese on the Chinese page', () => {
     expect(categoryTiles(workflows, 'zh-CN').map((tile) => tile.label)).toEqual(
-      ['image-to-image 标签', 'upscale 标签', 'characters 标签']
+      ['characters 标签', 'upscale 标签', 'cleanup 标签']
     )
   })
 

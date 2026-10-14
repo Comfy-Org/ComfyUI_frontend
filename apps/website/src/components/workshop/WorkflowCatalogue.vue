@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, useTemplateRef, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
 import type { ComponentExposed } from 'vue-component-type-helpers'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -28,6 +28,13 @@ import {
   categoryFromAddress,
   workflowCategories
 } from '@/lib/workshop/workflow-categories'
+import {
+  allSectioned,
+  sectionAnchor,
+  sectionFromAddress,
+  sectionFromHash,
+  workflowSections
+} from '@/lib/workshop/workflow-sections'
 import CatalogueShowMore from './CatalogueShowMore.vue'
 import WorkflowCategoryTabs from './WorkflowCategoryTabs.vue'
 import type { FilterChip } from './WorkshopFilterChips.vue'
@@ -59,9 +66,8 @@ const sort = ref<SortOrder>('popular')
 const filterMenu =
   useTemplateRef<ComponentExposed<typeof WorkshopFilterMenu>>('filterMenu')
 
-const categories = computed(() =>
-  workflowCategories(models, locale === 'zh-CN' ? locale : 'en')
-)
+const language = locale === 'zh-CN' ? locale : 'en'
+const categories = computed(() => workflowCategories(models, language))
 
 function knownMedia(values: readonly string[]): Modality[] {
   return MODALITIES.filter((media) => values.includes(media))
@@ -76,6 +82,13 @@ const { submitSearch, quietly } = useHubCatalogueTracking('workflows', {
     ['sort', () => sort.value]
   ]
 })
+function scrollToSection(id: string | undefined) {
+  if (!id) return
+  void nextTick(() =>
+    document.getElementById(sectionAnchor(id))?.scrollIntoView()
+  )
+}
+
 onMounted(() =>
   quietly(() => {
     const search = initialSearch ?? location.search
@@ -87,15 +100,20 @@ onMounted(() =>
     runsOn.value = params
       .getAll('model')
       .filter((name) => models.some((model) => model.models?.includes(name)))
+    scrollToSection(
+      sectionFromHash(location.hash, models) ??
+        sectionFromAddress(search, models)
+    )
   })
 )
 
-function openWorkflow(model: WorkshopModel, position: number) {
+function openWorkflow(model: WorkshopModel, position: number, row?: string) {
   submitSearch()
   captureHubItemClick(hubItemOf(model), {
     surface: 'workflows',
     source: 'results_grid',
     position,
+    ...(row && { row }),
     ...hubActiveQuery(query.value)
   })
 }
@@ -105,8 +123,6 @@ watch(category, (value) => {
   if (next !== location.href) history.replaceState(history.state, '', next)
 })
 
-// Categories lead in their editorial order and each keeps its own
-// recommended order, so All reads as the categories one after another.
 const ordered = computed(() =>
   [...models].sort(
     (a, b) =>
@@ -201,6 +217,11 @@ const visible = computed(() => {
     : sortWorkshopModels(found, sort.value)
 })
 const { shown, total, hasMore, showMore } = usePagedList(visible)
+
+const sectioned = computed(
+  () => !query.value.trim() && allSectioned(models) && visible.value.length > 0
+)
+const sections = computed(() => workflowSections(visible.value, language))
 
 // What narrowed the list stays legible next to it, so a reader can take one
 // choice off without reopening the menu that made it.
@@ -317,7 +338,37 @@ function clear() {
           @emptied="filterMenu?.focus()"
         />
 
-        <template v-if="visible.length">
+        <div v-if="sectioned" class="flex flex-col gap-12">
+          <section
+            v-for="section in sections"
+            :id="sectionAnchor(section.id)"
+            :key="section.id"
+            :aria-labelledby="`${sectionAnchor(section.id)}-heading`"
+            class="scroll-mt-44 lg:scroll-mt-52"
+            :data-testid="`workflow-section-${section.id}`"
+          >
+            <h2
+              :id="`${sectionAnchor(section.id)}-heading`"
+              class="mb-5 text-xl font-medium text-primary-warm-white"
+            >
+              {{ section.label }}
+            </h2>
+            <ul
+              :class="CARD_GRID_BESIDE_NAV"
+              :aria-label="section.label"
+              data-testid="workflow-grid"
+            >
+              <li v-for="(model, index) in section.models" :key="model.slug">
+                <WorkshopModelCard
+                  :model
+                  :locale
+                  @click="openWorkflow(model, index, section.id)"
+                />
+              </li>
+            </ul>
+          </section>
+        </div>
+        <template v-else-if="visible.length">
           <ul
             :class="CARD_GRID_BESIDE_NAV"
             :aria-label="t('workshop.hub.workflows')"

@@ -259,6 +259,32 @@ test('cold workflow filters focus their controls and respect dismissal while loa
   await expect(trigger).toBeFocused()
 })
 
+test('a Hub use-case tile opens its titled section on Workflows', async ({
+  page,
+  context
+}) => {
+  await mockWorkflowVisibility(context, true)
+  await page.goto('/hub/')
+  const tiles = page.getByTestId('explore-category')
+  await expect(tiles).toHaveCount(5)
+  await tiles.filter({ hasText: 'Animate characters' }).click()
+  await expect(page).toHaveURL('/hub/workflows/#section-characters')
+  const section = page.getByTestId('workflow-section-characters')
+  await expect(
+    section.getByRole('heading', { level: 2, name: 'Animate characters' })
+  ).toBeInViewport()
+  await expect(section.getByTestId('workshop-model-card')).toHaveCount(6)
+  await expect(
+    page.getByTestId(/^workflow-section-/).getByRole('heading', { level: 2 })
+  ).toHaveText([
+    'Create & edit videos',
+    'Animate characters',
+    'Create product photos & ads',
+    'Upscale & restore',
+    'Edit & clean up photos'
+  ])
+})
+
 test('workflow search and categories share the mobile controls @mobile', async ({
   page,
   context

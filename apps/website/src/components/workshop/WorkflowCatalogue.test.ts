@@ -1,6 +1,6 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor, within } from '@testing-library/vue'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { WorkflowWorkshopModel } from '@/config/models-catalogue'
 import WorkflowCatalogue from './WorkflowCatalogue.vue'
@@ -21,12 +21,20 @@ function workflow(
       en: `${fields.category} label`,
       'zh-CN': `${fields.category} 标签`
     },
+    ...(fields.section && {
+      sectionLabel: {
+        en: `${fields.section} section`,
+        'zh-CN': `${fields.section} 板块`
+      }
+    }),
     ...fields
   }
 }
 
 const models: WorkflowWorkshopModel[] = [
   workflow('restore', {
+    section: 'upscale',
+    sectionOrder: 3,
     name: 'Restore a portrait',
     category: 'upscale',
     categoryOrder: 4,
@@ -36,6 +44,8 @@ const models: WorkflowWorkshopModel[] = [
     models: ['SeedVR2']
   }),
   workflow('connect', {
+    section: 'videos',
+    sectionOrder: 0,
     name: 'Connect two images',
     category: 'image-to-video',
     categoryOrder: 1,
@@ -46,6 +56,8 @@ const models: WorkflowWorkshopModel[] = [
     models: ['Wan 2.2', 'SeedVR2']
   }),
   workflow('animate', {
+    section: 'videos',
+    sectionOrder: 0,
     name: 'Turn an image into a video',
     category: 'image-to-video',
     categoryOrder: 1,
@@ -56,6 +68,8 @@ const models: WorkflowWorkshopModel[] = [
     models: ['Wan 2.2']
   }),
   workflow('talk', {
+    section: 'characters',
+    sectionOrder: 1,
     name: 'Make your character talk',
     category: 'audio',
     categoryOrder: 5,
@@ -65,6 +79,8 @@ const models: WorkflowWorkshopModel[] = [
     models: ['LTX-2.3']
   }),
   workflow('inpaint', {
+    section: 'cleanup',
+    sectionOrder: 4,
     name: 'Edit a selected region',
     category: 'image-to-image',
     categoryOrder: 0,
@@ -76,7 +92,13 @@ const models: WorkflowWorkshopModel[] = [
   })
 ]
 
-const ALL = ['inpaint', 'animate', 'connect', 'restore', 'talk']
+const ALL = ['animate', 'connect', 'talk', 'restore', 'inpaint']
+
+function sectionHeadings() {
+  return screen
+    .queryAllByRole('heading', { level: 2 })
+    .map((heading) => heading.textContent.trim())
+}
 
 function listed() {
   return screen
@@ -86,6 +108,12 @@ function listed() {
 
 function sidebar(name = 'Workflow categories') {
   return screen.getByRole('tablist', { name })
+}
+
+async function searchbox() {
+  const field = screen.getByRole('searchbox')
+  await waitFor(() => expect(field).toBeEnabled())
+  return field
 }
 
 async function openFilters(user: ReturnType<typeof userEvent.setup>) {
@@ -144,20 +172,82 @@ describe('WorkflowCatalogue categories', () => {
     ).toBeTruthy()
   })
 
-  it('opens on every workflow, category by category in recommended order, then by name', async () => {
+  it('opens on every workflow under its use-case section, in recommended order, then by name', async () => {
     const user = userEvent.setup()
     render(WorkflowCatalogue, { props: { models } })
-    expect(screen.queryByRole('heading', { level: 2 })).toBeNull()
+    expect(sectionHeadings()).toEqual([
+      'videos section',
+      'characters section',
+      'upscale section',
+      'cleanup section'
+    ])
     expect(listed()).toEqual(ALL)
 
     await user.click(screen.getByTestId('workshop-sort'))
     await user.click(screen.getByTestId('sort-name'))
     expect(listed()).toEqual([
       'connect',
-      'inpaint',
+      'animate',
       'talk',
       'restore',
-      'animate'
+      'inpaint'
+    ])
+  })
+
+  it('anchors each section so it can be linked to, listing its own workflows', () => {
+    render(WorkflowCatalogue, { props: { models } })
+
+    for (const { id, shows } of [
+      { id: 'videos', shows: ['animate', 'connect'] },
+      { id: 'characters', shows: ['talk'] },
+      { id: 'upscale', shows: ['restore'] },
+      { id: 'cleanup', shows: ['inpaint'] }
+    ]) {
+      const section = screen.getByTestId(`workflow-section-${id}`)
+      expect(section).toHaveAttribute('id', `section-${id}`)
+      expect(
+        within(section)
+          .getAllByTestId('workshop-model-card')
+          .map((card) => card.getAttribute('href')?.split('/').at(-2))
+      ).toEqual(shows)
+    }
+  })
+
+  it('names the sections in Chinese on the Chinese page', () => {
+    render(WorkflowCatalogue, { props: { models, locale: 'zh-CN' } })
+
+    expect(sectionHeadings()).toEqual([
+      'videos 板块',
+      'characters 板块',
+      'upscale 板块',
+      'cleanup 板块'
+    ])
+  })
+
+  it('lists search results flat, without sections', async () => {
+    const user = userEvent.setup()
+    render(WorkflowCatalogue, { props: { models } })
+
+    await user.type(await searchbox(), 'image')
+
+    expect(sectionHeadings()).toEqual([])
+    expect(listed()).toEqual(['inpaint', 'animate', 'connect', 'restore'])
+  })
+
+  it('lists workflows flat when they name no section', () => {
+    render(WorkflowCatalogue, {
+      props: {
+        models: models.map(({ section: _section, ...model }) => model)
+      }
+    })
+
+    expect(sectionHeadings()).toEqual([])
+    expect(listed()).toEqual([
+      'inpaint',
+      'animate',
+      'connect',
+      'restore',
+      'talk'
     ])
   })
 
@@ -169,6 +259,7 @@ describe('WorkflowCatalogue categories', () => {
       within(sidebar()).getByRole('tab', { name: /^image-to-video/ })
     )
     expect(listed()).toEqual(['animate', 'connect'])
+    expect(sectionHeadings()).toEqual(['videos section'])
     expect(location.search).toBe('?category=image-to-video')
     expect(screen.queryByTestId('workshop-filter-chips')).toBeNull()
 
@@ -194,7 +285,8 @@ describe('WorkflowCatalogue categories', () => {
       opens: 'audio',
       shows: ['talk']
     },
-    { search: '?category=unknown', opens: 'all', shows: ALL }
+    { search: '?category=unknown', opens: 'all', shows: ALL },
+    { search: '?category=characters', opens: 'all', shows: ALL }
   ])('opens $search on $opens', async ({ search, opens, shows }) => {
     history.replaceState(null, '', `/hub/workflows/${search}`)
     render(WorkflowCatalogue, { props: { models } })
@@ -208,12 +300,34 @@ describe('WorkflowCatalogue categories', () => {
     expect(listed()).toEqual(shows)
   })
 
-  it('shows twelve workflows at a time and starts again when a search narrows them', async () => {
+  it.for([
+    { address: '/hub/workflows/#section-characters', section: 'characters' },
+    { address: '/hub/workflows/?category=characters', section: 'characters' }
+  ])(
+    'brings the $section section into view from $address',
+    async ({ address, section }) => {
+      const scrolledTo: string[] = []
+      const scrolled = vi
+        .spyOn(Element.prototype, 'scrollIntoView')
+        .mockImplementation(function (this: Element) {
+          scrolledTo.push(this.id)
+        })
+      history.replaceState(null, '', address)
+      render(WorkflowCatalogue, { props: { models } })
+
+      await waitFor(() => expect(scrolledTo).toEqual([`section-${section}`]))
+      scrolled.mockRestore()
+    }
+  )
+
+  it('lists every workflow of a section at once and pages a search twelve at a time', async () => {
     const many = Array.from({ length: 20 }, (_, index) =>
       workflow(`restore-${index}`, {
         name: `Restore portrait ${index}`,
         category: 'upscale',
         categoryOrder: 4,
+        section: 'upscale',
+        sectionOrder: 3,
         recommendedRank: index,
         modality: 'image',
         inputKinds: ['image']
@@ -221,6 +335,10 @@ describe('WorkflowCatalogue categories', () => {
     )
     const user = userEvent.setup()
     render(WorkflowCatalogue, { props: { models: many } })
+    expect(listed()).toHaveLength(20)
+    expect(screen.queryByTestId('catalogue-show-more-count')).toBeNull()
+
+    await user.type(await searchbox(), 'portrait')
     expect(listed()).toHaveLength(12)
     expect(screen.getByTestId('catalogue-show-more-count')).toHaveTextContent(
       'Showing 12 of 20'
@@ -228,9 +346,6 @@ describe('WorkflowCatalogue categories', () => {
 
     await user.click(screen.getByRole('button', { name: 'Show more' }))
     expect(listed()).toHaveLength(20)
-
-    await user.type(screen.getByRole('searchbox'), 'portrait')
-    expect(listed()).toHaveLength(12)
   })
 })
 
@@ -253,7 +368,7 @@ describe('WorkflowCatalogue filters', () => {
 
   it.for([
     { facet: 'Output', option: 'Video', shows: ['animate', 'connect', 'talk'] },
-    { facet: 'Output', option: 'Image', shows: ['inpaint', 'restore'] },
+    { facet: 'Output', option: 'Image', shows: ['restore', 'inpaint'] },
     { facet: 'Input', option: 'Audio', shows: ['talk'] },
     { facet: 'Model', option: 'SeedVR2', shows: ['connect', 'restore'] }
   ])(

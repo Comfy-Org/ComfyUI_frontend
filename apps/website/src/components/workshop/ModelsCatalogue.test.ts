@@ -228,14 +228,18 @@ describe('ModelsCatalogue', () => {
       model: WorkshopModel,
       category: string,
       categoryOrder: number,
-      en: string
+      en: string,
+      section: { id: string; order: number; en: string }
     ): WorkshopModel =>
       model.type === 'CLOUD'
         ? {
             ...model,
             category,
             categoryOrder,
-            categoryLabel: { en, 'zh-CN': en }
+            categoryLabel: { en, 'zh-CN': en },
+            section: section.id,
+            sectionOrder: section.order,
+            sectionLabel: { en: section.en, 'zh-CN': section.en }
           }
         : model
     const catalogue = [
@@ -243,7 +247,8 @@ describe('ModelsCatalogue', () => {
         entry('relight', 'workflow', ['edit-images']),
         'image-to-image',
         0,
-        'Image to image'
+        'Image to image',
+        { id: 'cleanup', order: 4, en: 'Edit & clean up photos' }
       ),
       entry('painter', 'model', ['generate-images']),
       entry('animator', 'model', ['animate-images']),
@@ -251,7 +256,8 @@ describe('ModelsCatalogue', () => {
         entry('animate-still', 'workflow', ['animate-images']),
         'image-to-video',
         1,
-        'Image to video'
+        'Image to video',
+        { id: 'videos', order: 0, en: 'Create & edit videos' }
       )
     ]
     const renderExplore = (models = catalogue) =>
@@ -471,7 +477,7 @@ describe('ModelsCatalogue', () => {
       }
     )
 
-    it('closes on a tile per Workflows category, each leading to that category', async () => {
+    it('closes on a tile per Workflows use-case section, each leading to that section', async () => {
       renderExplore()
 
       const section = within(await screen.findByTestId('explore-categories'))
@@ -485,20 +491,20 @@ describe('ModelsCatalogue', () => {
         section
           .getAllByTestId('explore-category')
           .map((tile) => [
-            tile.dataset.category,
+            tile.dataset.section,
             tile.getAttribute('href'),
             tile.textContent.replace(/\s+/g, ' ').trim()
           ])
       ).toEqual([
         [
-          'image-to-image',
-          '/hub/workflows/?category=image-to-image',
-          'Image to image1 workflow'
+          'videos',
+          '/hub/workflows/#section-videos',
+          'Create & edit videos1 workflow'
         ],
         [
-          'image-to-video',
-          '/hub/workflows/?category=image-to-video',
-          'Image to video1 workflow'
+          'cleanup',
+          '/hub/workflows/#section-cleanup',
+          'Edit & clean up photos1 workflow'
         ]
       ])
     })
