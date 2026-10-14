@@ -4843,6 +4843,16 @@
       "permanent": true
     },
     {
+      "source": "/models/apps/paparazzi-me",
+      "destination": "/hub/apps/paparazzi-me/",
+      "permanent": true
+    },
+    {
+      "source": "/models/apps/paparazzi-me/",
+      "destination": "/hub/apps/paparazzi-me/",
+      "permanent": true
+    },
+    {
       "source": "/models/apps/reshoot",
       "destination": "/hub/apps/reshoot/",
       "permanent": true

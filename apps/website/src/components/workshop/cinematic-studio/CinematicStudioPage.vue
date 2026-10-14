@@ -31,6 +31,8 @@ import CinematicScenarioMenu from './CinematicScenarioMenu.vue'
 import CinematicStudio from './CinematicStudio.vue'
 import CinematicStudioPanel from './CinematicStudioPanel.vue'
 import ReshootStudio from './reshoot/ReshootStudio.vue'
+import PaparazziStudio from '@/components/workshop/paparazzi-me/PaparazziStudio.vue'
+import { pc } from '@/lib/workshop/paparazzi-me/copy'
 import { isWorkshopModelShown } from '@/scripts/workshop-model-flags'
 
 const {
@@ -61,7 +63,13 @@ interface EditorApp {
   readonly label: (locale: Locale) => string
 }
 
-const EDITOR_APPS: readonly EditorApp[] = []
+const EDITOR_APPS: readonly EditorApp[] = [
+  {
+    id: 'paparazzi-me',
+    studio: PaparazziStudio,
+    label: (locale) => pc('paparazzi.title', locale)
+  }
+]
 const APPS: readonly WorkshopAppId[] = [
   'studio',
   'reshoot',
