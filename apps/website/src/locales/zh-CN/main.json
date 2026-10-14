@@ -105,27 +105,11 @@
       "noImage": "此投稿未附带图片",
       "newTitle": "这会在网站上添加的内容",
       "pick": "加入发布",
-      "picked": "已加入发布"
+      "picked": "已加入发布",
+      "seeLive": "查看线上页面"
     },
     "publish": {
       "cancel": "取消"
-    },
-    "reject": {
-      "title": "拒绝“{title}”？",
-      "titleMany": "拒绝 {count} 个工作流？",
-      "body": "它会离开草稿，创作者可以修改后重新提交。",
-      "reason": "原因",
-      "reasons": {
-        "broken": "无法运行",
-        "description": "描述缺失或不清楚",
-        "outputs": "示例输出质量较低",
-        "duplicate": "与现有页面重复",
-        "other": "其他"
-      },
-      "note": "给创作者的备注",
-      "notePlaceholder": "重新提交前需要修改什么？",
-      "noteApi": "向创作者发送原因和备注的功能尚未接入。",
-      "confirm": "拒绝"
     },
     "history": {
       "title": "发布历史",
@@ -363,16 +347,16 @@
     },
     "undo": {
       "undo": {
-        "action": "撤销更改",
-        "title": "撤销对 {title} 的更改？",
+        "action": "放弃更改",
+        "title": "放弃对 {title} 的更改？",
         "body": "它会恢复为线上网站当前显示的内容。草稿中为它保存的内容将丢失。",
-        "confirm": "撤销更改"
+        "confirm": "放弃更改"
       },
       "remove": {
-        "action": "从草稿中移除",
-        "title": "从草稿中移除 {title}？",
-        "body": "它从未发布过，因此会离开草稿，不会上线。",
-        "confirm": "移除"
+        "action": "删除",
+        "title": "删除 {title}？",
+        "body": "它尚未上线 Hub，删除后会离开草稿，不会上线。",
+        "confirm": "删除"
       },
       "failed": "操作未成功。请刷新页面后重试。",
       "sectionTitle": "未发布的更改",

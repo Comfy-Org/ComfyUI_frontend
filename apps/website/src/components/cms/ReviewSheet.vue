@@ -5,6 +5,7 @@ import { computed } from 'vue'
 
 import CatalogReview from '@/components/cms/CatalogReview.vue'
 import ChangeTag from '@/components/cms/ChangeTag.vue'
+import DeleteSubmissionButton from '@/components/cms/DeleteSubmissionButton.vue'
 import SubmissionReview from '@/components/cms/SubmissionReview.vue'
 import UndoChangeButton from '@/components/cms/UndoChangeButton.vue'
 import AdminButton from '@/components/cms/ui/AdminButton.vue'
@@ -116,6 +117,13 @@ const subtitle = computed(() =>
           :title="item.title"
           :published="item.change !== 'new'"
           destination="/admin/"
+          :locale
+        />
+        <DeleteSubmissionButton
+          v-else-if="item.source === 'submission' && canApply"
+          :key="item.id"
+          :item
+          :csrf
           :locale
         />
         <span class="ml-auto flex flex-wrap items-center gap-1">

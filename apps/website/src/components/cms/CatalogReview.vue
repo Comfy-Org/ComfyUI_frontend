@@ -7,6 +7,7 @@ import QueueThumb from '@/components/cms/QueueThumb.vue'
 import AdminButton from '@/components/cms/ui/AdminButton.vue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
+import { isFuture } from '@/lib/cms/format'
 import type { CatalogQueueItem } from '@/lib/cms/queue'
 
 const { item, locale = 'en' } = defineProps<{
@@ -14,7 +15,13 @@ const { item, locale = 'en' } = defineProps<{
   locale?: Locale
 }>()
 const { t } = translationsFor(locale)
-const pagePreview = `${item.slug.replace(/\/?$/, '/')}?preview=DRAFT`
+// A page the draft turns off only exists live, and a scheduled one only from its date.
+const page = item.slug.replace(/\/?$/, '/')
+const pagePreview = item.hidden
+  ? `${page}?preview=LIVE`
+  : isFuture(item.visibleFrom)
+    ? `${page}?preview=DRAFT&now=${encodeURIComponent(item.visibleFrom ?? '')}`
+    : `${page}?preview=DRAFT`
 </script>
 
 <template>
@@ -26,7 +33,11 @@ const pagePreview = `${item.slug.replace(/\/?$/, '/')}?preview=DRAFT`
       rel="noopener"
       :icon="Eye"
     >
-      {{ t('cmsAdmin.review.seeOnPage') }}
+      {{
+        item.hidden
+          ? t('cmsAdmin.review.seeLive')
+          : t('cmsAdmin.review.seeOnPage')
+      }}
     </AdminButton>
     <AdminButton :href="`/admin/edit/${item.id}`" :icon="Pencil">
       {{ t('cmsAdmin.content.edit') }}

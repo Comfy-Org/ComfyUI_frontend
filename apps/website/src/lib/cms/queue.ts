@@ -34,6 +34,8 @@ export interface CatalogQueueItem extends QueueBase {
   slug: string
   provider?: string
   visibleFrom?: string
+  /** Turned off in the draft, so the page only exists on the live site. */
+  hidden: boolean
   fields: FieldGroup[]
   /** What the item still lacks; empty when removed or ready. */
   gaps: ReadinessGap[]
@@ -127,6 +129,7 @@ function catalogItem(
     provider: text(record.data.provider),
     thumbnail: text(record.data.thumbnailUrl),
     visibleFrom: shown?.visible_from,
+    hidden: shown ? !shown.enabled : false,
     fields,
     gaps: shown ? readinessGaps(shown) : []
   }

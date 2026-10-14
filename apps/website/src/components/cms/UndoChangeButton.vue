@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Undo2 } from '@lucide/vue'
+import { Trash2, Undo2 } from '@lucide/vue'
 import { DialogDescription, DialogTitle } from 'reka-ui'
 import { ref } from 'vue'
 
@@ -59,7 +59,11 @@ async function confirm() {
 </script>
 
 <template>
-  <AdminButton variant="dangerGhost" :icon="Undo2" @click="open = true">
+  <AdminButton
+    variant="dangerGhost"
+    :icon="published ? Undo2 : Trash2"
+    @click="open = true"
+  >
     {{ t(`cmsAdmin.undo.${mode}.action`) }}
   </AdminButton>
   <Dialog v-model:open="open">

@@ -105,27 +105,11 @@
       "noImage": "No image sent with this submission",
       "newTitle": "What this adds to the site",
       "pick": "Add to publish",
-      "picked": "Added to publish"
+      "picked": "Added to publish",
+      "seeLive": "See the live page"
     },
     "publish": {
       "cancel": "Cancel"
-    },
-    "reject": {
-      "title": "Reject “{title}”?",
-      "titleMany": "Reject {count} workflows?",
-      "body": "It leaves the draft and the creator can fix it and submit again.",
-      "reason": "Reason",
-      "reasons": {
-        "broken": "Doesn't run",
-        "description": "Description is missing or unclear",
-        "outputs": "Example outputs are low quality",
-        "duplicate": "Duplicates an existing page",
-        "other": "Other"
-      },
-      "note": "Note to the creator",
-      "notePlaceholder": "What should they change before submitting again?",
-      "noteApi": "Sending the reason and note to the creator isn't connected yet.",
-      "confirm": "Reject"
     },
     "history": {
       "title": "Publish history",
@@ -363,16 +347,16 @@
     },
     "undo": {
       "undo": {
-        "action": "Undo changes",
-        "title": "Undo the changes to {title}?",
+        "action": "Discard changes",
+        "title": "Discard the changes to {title}?",
         "body": "It goes back to what the live site shows now. What was saved to the draft for it is lost.",
-        "confirm": "Undo changes"
+        "confirm": "Discard changes"
       },
       "remove": {
-        "action": "Remove from draft",
-        "title": "Remove {title} from the draft?",
-        "body": "It was never published, so it leaves the draft and won't go live.",
-        "confirm": "Remove"
+        "action": "Delete",
+        "title": "Delete {title}?",
+        "body": "It isn't on the Hub yet, so it leaves the draft and won't go live.",
+        "confirm": "Delete"
       },
       "failed": "That didn't work. Reload the page and try again.",
       "sectionTitle": "Unpublished changes",
