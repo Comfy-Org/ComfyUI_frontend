@@ -125,7 +125,7 @@ test.describe(
       // Arbitrary value
       const dragTarget = {
         x: start.x + 180,
-        y: start.y - 40
+        y: start.y + 140
       }
 
       await comfyMouse.move(start)

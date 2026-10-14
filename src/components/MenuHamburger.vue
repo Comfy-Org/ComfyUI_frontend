@@ -12,7 +12,7 @@
       @click="exitFocusMode"
       @contextmenu="showNativeSystemMenu"
     >
-      <i class="pi pi-bars" />
+      <i class="pi pi-bars text-base" />
     </Button>
     <div class="window-actions-spacer" />
   </div>

@@ -115,11 +115,11 @@
 
     <div class="flex gap-3">
       <Button variant="primary" :disabled="!saveEnabled" @click="handleSave">
-        <i class="pi pi-check" />
+        <i class="pi pi-check text-base" />
         {{ saveButtonText }}
       </Button>
       <Button variant="secondary" @click="handleCancel">
-        <i class="pi pi-times" />
+        <i class="pi pi-times text-base" />
         {{ t('g.cancel') }}
       </Button>
     </div>

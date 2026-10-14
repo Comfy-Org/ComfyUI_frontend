@@ -9,7 +9,7 @@
     >
       <div class="flex items-center gap-1 px-0">
         <i
-          class="pi pi-circle-fill"
+          class="pi pi-circle-fill text-base"
           data-testid="color-picker-current-color"
           :style="{ color: currentColor ?? '' }"
         />
@@ -36,7 +36,7 @@
             class="px-1 py-2 aria-pressed:bg-secondary-background aria-pressed:text-base-foreground"
           >
             <i
-              class="pi pi-circle-fill"
+              class="pi pi-circle-fill text-base"
               :style="{
                 color: isLightTheme ? option.value.light : option.value.dark
               }"

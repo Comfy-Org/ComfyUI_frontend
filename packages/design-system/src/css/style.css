@@ -1430,11 +1430,11 @@ audio.comfy-audio.empty-audio-widget {
   border: 1px solid var(--border-color);
 }
 .maskEditor_sidePanelBrushRange::-webkit-slider-runnable-track {
-  background: var(--border-default);
+  background: light-dark(var(--color-slate-700), var(--color-zinc-700));
   height: 3px;
 }
 .maskEditor_sidePanelBrushRange::-moz-range-track {
-  background: var(--border-default);
+  background: light-dark(var(--color-slate-700), var(--color-zinc-700));
   height: 3px;
 }
 
