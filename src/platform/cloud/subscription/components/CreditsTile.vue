@@ -2,7 +2,7 @@
   <div
     :class="
       cn(
-        '@container relative flex flex-col gap-6 rounded-2xl border border-interface-stroke bg-modal-panel-background px-6 py-5',
+        '@container relative flex flex-col gap-6 rounded-2xl border border-border bg-card px-6 py-5',
         inactivePlan && 'text-muted-foreground'
       )
     "
@@ -112,7 +112,7 @@
         </div>
       </div>
 
-      <div class="h-px w-full bg-interface-stroke" />
+      <div class="h-px w-full bg-border" />
 
       <div class="flex flex-col gap-2">
         <div
@@ -155,7 +155,7 @@
     </template>
 
     <template v-else-if="showsInactivePlanState">
-      <div class="h-px w-full bg-interface-stroke" />
+      <div class="h-px w-full bg-border" />
       <div class="flex flex-col gap-2">
         <div class="flex items-center justify-between gap-2 text-sm">
           <span class="flex items-center gap-1">
@@ -189,8 +189,7 @@
         :class="
           cn(
             'w-full font-normal',
-            !isOutOfCredits &&
-              'bg-interface-menu-component-surface-selected text-text-primary'
+            !isOutOfCredits && 'bg-muted text-text-primary'
           )
         "
         @click="handleAddCredits"

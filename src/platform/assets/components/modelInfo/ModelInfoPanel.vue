@@ -205,7 +205,7 @@
           rows="3"
           :class="
             cn(
-              'w-full resize-y scrollbar-gutter-stable rounded-lg border border-transparent bg-transparent px-3 py-2 text-sm text-component-node-foreground transition-colors outline-none focus:bg-component-node-widget-background',
+              'w-full resize-y scrollbar-gutter-stable rounded-lg border border-transparent bg-transparent px-3 py-2 text-sm text-card-foreground transition-colors outline-none focus:bg-input',
               isImmutable && 'cursor-not-allowed'
             )
           "
@@ -265,9 +265,7 @@ const descriptionTextarea = useTemplateRef<HTMLTextAreaElement>(
   'descriptionTextarea'
 )
 
-const accordionClass = cn(
-  'border-t border-border-default bg-modal-panel-background'
-)
+const accordionClass = cn('border-t border-border-default bg-card')
 
 const { asset, cacheKey } = defineProps<{
   asset: AssetDisplayItem

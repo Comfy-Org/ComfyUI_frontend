@@ -24,14 +24,14 @@
           :button-styles="stringifiedMinimapStyles.buttonStyles"
         />
 
-        <div class="h-[27px] w-px self-center bg-node-divider" />
+        <div class="h-[27px] w-px self-center bg-border" />
 
         <Button
           :tooltip="fitViewLabel"
           variant="secondary"
           :aria-label="fitViewLabel"
           :style="stringifiedMinimapStyles.buttonStyles"
-          class="size-8 bg-transparent p-0 hover:bg-interface-button-hover-surface"
+          class="size-8 bg-transparent p-0 hover:bg-accent"
           @click="() => commandStore.execute('Comfy.Canvas.FitView')"
         >
           <i class="icon-[lucide--focus] size-4" aria-hidden="true" />
@@ -42,8 +42,8 @@
           variant="secondary"
           :class="
             cn(
-              'h-8 w-15 bg-transparent p-0 hover:bg-interface-button-hover-surface',
-              isModalVisible && 'not-active:bg-interface-panel-selected-surface'
+              'h-8 w-15 bg-transparent p-0 hover:bg-accent',
+              isModalVisible && 'not-active:bg-muted'
             )
           "
           :aria-label="t('zoomControls.label')"
@@ -57,7 +57,7 @@
           </span>
         </Button>
 
-        <div class="h-[27px] w-px self-center bg-node-divider" />
+        <div class="h-[27px] w-px self-center bg-border" />
 
         <Button
           :tooltip="minimapLabel"
@@ -67,9 +67,8 @@
           :style="stringifiedMinimapStyles.buttonStyles"
           :class="
             cn(
-              'size-8 bg-transparent p-0 hover:bg-interface-button-hover-surface',
-              settingStore.get('Comfy.Minimap.Visible') &&
-                'not-active:bg-interface-panel-selected-surface'
+              'size-8 bg-transparent p-0 hover:bg-accent',
+              settingStore.get('Comfy.Minimap.Visible') && 'not-active:bg-muted'
             )
           "
           @click="onMinimapToggleClick"
@@ -82,8 +81,8 @@
           variant="secondary"
           :class="
             cn(
-              'size-8 bg-transparent p-0 hover:bg-interface-button-hover-surface',
-              linkHidden && 'not-active:bg-interface-panel-selected-surface'
+              'size-8 bg-transparent p-0 hover:bg-accent',
+              linkHidden && 'not-active:bg-muted'
             )
           "
           :aria-label="linkVisibilityLabel"

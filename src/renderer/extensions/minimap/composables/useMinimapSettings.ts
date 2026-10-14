@@ -36,14 +36,14 @@ export function useMinimapSettings() {
   const containerStyles = computed(() => ({
     width: `${width}px`,
     height: `${height}px`,
-    border: '1px solid var(--interface-stroke)',
+    border: '1px solid var(--border)',
     borderRadius: '8px'
   }))
 
   const panelStyles = computed(() => ({
     width: `210px`,
     height: `${height}px`,
-    border: '1px solid var(--interface-stroke)',
+    border: '1px solid var(--border)',
     borderRadius: '8px'
   }))
 

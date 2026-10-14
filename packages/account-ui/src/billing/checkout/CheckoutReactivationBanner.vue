@@ -28,7 +28,7 @@
         <input
           v-model="confirmed"
           type="checkbox"
-          class="size-4 rounded-sm border-interface-stroke"
+          class="size-4 rounded-sm border-border"
         />
         {{ checkboxLabel }}
       </label>

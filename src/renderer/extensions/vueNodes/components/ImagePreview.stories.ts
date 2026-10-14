@@ -24,8 +24,7 @@ const meta: Meta<typeof ImagePreview> = {
   decorators: [
     (story) => ({
       components: { story },
-      template:
-        '<div class="h-80 w-96 rounded-lg bg-component-node-background"><story /></div>'
+      template: '<div class="h-80 w-96 rounded-lg bg-card"><story /></div>'
     })
   ]
 }

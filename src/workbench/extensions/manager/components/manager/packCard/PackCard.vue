@@ -2,10 +2,8 @@
   <div
     :class="
       cn(
-        'flex size-full cursor-pointer flex-col overflow-hidden rounded-lg bg-modal-card-background transition-colors duration-200 select-none',
-        isSelected
-          ? 'ring-3 ring-modal-card-border-highlighted'
-          : 'hover:bg-modal-card-background-hovered',
+        'flex size-full cursor-pointer flex-col overflow-hidden rounded-lg bg-secondary transition-colors duration-200 select-none',
+        isSelected ? 'ring-3 ring-ring' : 'hover:bg-accent',
         isDisabled && 'opacity-60'
       )
     "

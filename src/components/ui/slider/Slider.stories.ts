@@ -49,9 +49,9 @@ export const Default: Story = {
       return { value, display, min, max, step, disabled }
     },
     template: `
-      <div class="flex items-center gap-4 rounded-lg bg-component-node-widget-background px-3 py-2">
+      <div class="flex items-center gap-4 rounded-lg bg-input px-3 py-2">
         <Slider v-model="value" :min :max :step :disabled class="flex-1" />
-        <span class="w-14 shrink-0 text-right text-xs text-component-node-foreground">{{ display }}</span>
+        <span class="w-14 shrink-0 text-right text-xs text-card-foreground">{{ display }}</span>
       </div>
     `
   })
@@ -68,9 +68,9 @@ export const Disabled: Story = {
       return { value, display, min, max, step, disabled }
     },
     template: `
-      <div class="flex items-center gap-4 rounded-lg bg-component-node-widget-background px-3 py-2">
+      <div class="flex items-center gap-4 rounded-lg bg-input px-3 py-2">
         <Slider v-model="value" :min :max :step :disabled class="flex-1" />
-        <span class="w-14 shrink-0 text-right text-xs text-component-node-foreground">{{ display }}</span>
+        <span class="w-14 shrink-0 text-right text-xs text-card-foreground">{{ display }}</span>
       </div>
     `
   })

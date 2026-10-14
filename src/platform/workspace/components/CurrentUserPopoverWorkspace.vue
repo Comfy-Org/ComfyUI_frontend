@@ -151,10 +151,7 @@
       </Button>
     </div>
 
-    <div
-      v-if="!accountActionsOnly"
-      class="mx-0 my-2 border-t border-interface-stroke"
-    />
+    <div v-if="!accountActionsOnly" class="mx-0 my-2 border-t border-border" />
 
     <div
       v-if="!accountActionsOnly && isCloud && showPlansAndPricing"
@@ -207,10 +204,7 @@
       }}</span>
     </div>
 
-    <div
-      v-if="!accountActionsOnly"
-      class="mx-0 my-2 border-t border-interface-stroke"
-    />
+    <div v-if="!accountActionsOnly" class="mx-0 my-2 border-t border-border" />
 
     <!-- Workspace Settings (always shown) -->
     <div
@@ -237,7 +231,7 @@
       }}</span>
     </div>
 
-    <div class="mx-0 my-2 border-t border-interface-stroke" />
+    <div class="mx-0 my-2 border-t border-border" />
 
     <!-- Logout (always shown) -->
     <div

@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex h-10 shrink-0 items-center gap-1 bg-interface-menu-surface px-2"
+    class="flex h-10 shrink-0 items-center gap-1 bg-popover px-2"
     data-testid="load3d-animation-strip"
     @wheel.stop
   >

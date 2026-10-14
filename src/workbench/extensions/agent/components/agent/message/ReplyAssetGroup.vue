@@ -273,7 +273,7 @@ function stopPreview(event: Event): void {
       type="button"
       variant="outline"
       size="sm"
-      class="self-center rounded-full border-component-node-border"
+      class="self-center rounded-full border-border"
       @click="expanded = !expanded"
     >
       {{ expanded ? t('agent.showLess') : t('agent.showMore') }}
@@ -296,7 +296,7 @@ function stopPreview(event: Event): void {
         type="button"
         variant="outline"
         size="sm"
-        class="self-center rounded-full border-component-node-border"
+        class="self-center rounded-full border-border"
         @click="audioExpanded = !audioExpanded"
       >
         {{ audioExpanded ? t('agent.showLess') : t('agent.showMore') }}

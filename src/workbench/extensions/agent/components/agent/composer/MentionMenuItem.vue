@@ -114,7 +114,7 @@ const nodeId = computed(() =>
         }}</span>
         <span
           v-if="nodeId !== undefined"
-          class="ml-auto shrink-0 rounded-full bg-interface-menu-keybind-surface-default px-1 py-0.5 font-mono text-xs/4 text-base-foreground"
+          class="ml-auto shrink-0 rounded-full bg-muted px-1 py-0.5 font-mono text-xs/4 text-base-foreground"
         >
           {{ ' #' + nodeId }}</span
         >

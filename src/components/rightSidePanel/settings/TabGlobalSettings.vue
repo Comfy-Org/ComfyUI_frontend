@@ -91,9 +91,9 @@ function openFullSettings() {
 </script>
 
 <template>
-  <div class="flex flex-col border-t border-interface-stroke">
+  <div class="flex flex-col border-t border-border">
     <!-- NODES Section -->
-    <PropertiesAccordionItem class="border-b border-interface-stroke">
+    <PropertiesAccordionItem class="border-b border-border">
       <template #label>
         {{ t('rightSidePanel.globalSettings.nodes') }}
       </template>
@@ -117,7 +117,7 @@ function openFullSettings() {
     </PropertiesAccordionItem>
 
     <!-- CANVAS Section -->
-    <PropertiesAccordionItem class="border-b border-interface-stroke">
+    <PropertiesAccordionItem class="border-b border-border">
       <template #label>
         {{ t('rightSidePanel.globalSettings.canvas') }}
       </template>
@@ -160,7 +160,7 @@ function openFullSettings() {
     </PropertiesAccordionItem>
 
     <!-- CONNECTION LINKS Section -->
-    <PropertiesAccordionItem class="border-b border-interface-stroke">
+    <PropertiesAccordionItem class="border-b border-border">
       <template #label>
         {{ t('rightSidePanel.globalSettings.connectionLinks') }}
       </template>
@@ -184,9 +184,7 @@ function openFullSettings() {
     </PropertiesAccordionItem>
 
     <!-- View all settings button -->
-    <div
-      class="flex items-center justify-center border-b border-interface-stroke p-4"
-    >
+    <div class="flex items-center justify-center border-b border-border p-4">
       <Button
         variant="muted-textonly"
         size="sm"

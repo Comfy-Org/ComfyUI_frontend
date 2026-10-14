@@ -4,7 +4,7 @@
       label
     }}</span>
     <select
-      class="absolute right-0 h-6 rounded-md border border-border-default bg-secondary-background px-1.5 transition-colors duration-100 focus:outline focus:outline-node-component-border"
+      class="absolute right-0 h-6 rounded-md border border-border-default bg-secondary-background px-1.5 transition-colors duration-100 focus:outline focus:outline-border"
       :value="modelValue"
       @change="onChange"
     >

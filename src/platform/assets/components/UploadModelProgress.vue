@@ -16,9 +16,7 @@
         {{ $t('assetBrowser.processingModelDescription') }}
       </p>
 
-      <div
-        class="flex flex-row items-center gap-3 rounded-lg bg-modal-card-background p-4"
-      >
+      <div class="flex flex-row items-center gap-3 rounded-lg bg-secondary p-4">
         <img
           v-if="previewImage"
           :src="previewImage"
@@ -47,9 +45,7 @@
         {{ $t('assetBrowser.findInLibrary', { type: modelType }) }}
       </p>
 
-      <div
-        class="flex flex-row items-center gap-3 rounded-lg bg-modal-card-background p-4"
-      >
+      <div class="flex flex-row items-center gap-3 rounded-lg bg-secondary p-4">
         <img
           v-if="previewImage"
           :src="previewImage"

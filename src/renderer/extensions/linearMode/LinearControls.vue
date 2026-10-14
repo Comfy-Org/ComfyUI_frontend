@@ -170,14 +170,14 @@ function replayAppModeTour() {
         variant="textonly"
         size="icon"
         :aria-label="t('onboardingCoachmarks.appMode.replay')"
-        class="rounded-lg border border-solid border-border-default text-muted-foreground hover:border-interface-stroke hover:text-base-foreground"
+        class="rounded-lg border border-solid border-border-default text-muted-foreground hover:border-border hover:text-base-foreground"
         @click="replayAppModeTour"
       >
         <i class="icon-[lucide--circle-question-mark] size-4" />
       </Button>
     </section>
     <div
-      class="flex h-full flex-col gap-2 border-x border-interface-stroke bg-comfy-menu-bg px-2 md:border-y"
+      class="flex h-full flex-col gap-2 border-x border-border bg-comfy-menu-bg px-2 md:border-y"
     >
       <section
         v-coachmark="COACH_IDS.inputsList"
@@ -257,7 +257,7 @@ function replayAppModeTour() {
       <section
         v-if="mobile"
         :data-testid="linearRunButtonTestId"
-        class="border-t border-node-component-border p-4 pb-6"
+        class="border-t border-border p-4 pb-6"
       >
         <LinearRunErrorWarning v-if="showRunErrorWarning" />
         <div v-coachmark="COACH_IDS.appRunButton">
@@ -278,7 +278,7 @@ function replayAppModeTour() {
                 </Button>
               </template>
               <div
-                class="m-1 mb-2 text-node-component-slot-text"
+                class="m-1 mb-2 text-muted-foreground"
                 v-text="t('linearMode.runCount')"
               />
               <ScrubableNumberInput
@@ -316,12 +316,12 @@ function replayAppModeTour() {
       <section
         v-else
         :data-testid="linearRunButtonTestId"
-        class="border-t border-node-component-border p-4 pb-6"
+        class="border-t border-border p-4 pb-6"
       >
         <LinearRunErrorWarning v-if="showRunErrorWarning" />
         <div v-coachmark="COACH_IDS.appRunButton">
           <div
-            class="m-1 mb-2 text-node-component-slot-text"
+            class="m-1 mb-2 text-muted-foreground"
             v-text="t('linearMode.runCount')"
           />
           <ScrubableNumberInput

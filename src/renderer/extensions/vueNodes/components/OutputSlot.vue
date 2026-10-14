@@ -11,7 +11,7 @@
           <!-- Slot Name -->
           <span
             v-if="!props.dotOnly && !hasNoLabel"
-            class="truncate text-node-component-slot-text"
+            class="truncate text-muted-foreground"
           >
             {{
               slotData.label ||

@@ -100,11 +100,11 @@ const computedTooltip = computed(() => {
 }
 
 .side-bar-button-selected {
-  background-color: var(--interface-panel-selected-surface);
+  background-color: var(--muted);
   color: var(--content-hover-fg);
 }
 .side-bar-button:hover {
-  background-color: var(--interface-panel-hover-surface);
+  background-color: var(--accent);
   color: var(--content-hover-fg);
 }
 </style>

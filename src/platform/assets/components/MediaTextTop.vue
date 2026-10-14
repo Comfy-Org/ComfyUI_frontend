@@ -1,7 +1,7 @@
 <template>
   <div class="relative size-full overflow-hidden rounded-sm">
     <div
-      class="size-full bg-modal-card-placeholder-background transition-transform duration-300 group-hover:scale-105 group-data-[selected=true]:scale-105"
+      class="size-full bg-muted transition-transform duration-300 group-hover:scale-105 group-data-[selected=true]:scale-105"
     >
       <p
         v-if="snippet"

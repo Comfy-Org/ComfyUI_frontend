@@ -271,7 +271,7 @@ defineExpose({ handleDragDrop })
           :class="
             cn(
               'gap-y-3 rounded-lg py-1 [&_textarea]:resize-y **:[.col-span-2]:grid-cols-1',
-              nodeData.hasErrors && 'ring-2 ring-node-stroke-error ring-inset'
+              nodeData.hasErrors && 'ring-2 ring-error ring-inset'
             )
           "
         />

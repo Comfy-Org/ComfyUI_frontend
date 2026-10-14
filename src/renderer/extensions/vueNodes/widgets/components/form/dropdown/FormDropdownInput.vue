@@ -34,10 +34,8 @@ const selectedItems = computed(() => {
 
 const theButtonStyle = computed(() =>
   cn(
-    'border-0 bg-component-node-widget-background text-text-secondary outline-none',
-    disabled
-      ? 'cursor-not-allowed'
-      : 'cursor-pointer hover:bg-component-node-widget-background-hovered',
+    'border-0 bg-input text-text-secondary outline-none',
+    disabled ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-muted',
     selectedItems.value.length > 0 && 'text-text-primary'
   )
 )
@@ -72,7 +70,7 @@ defineExpose({ focus, showPicker })
   <div
     :class="
       cn(WidgetInputBaseClass, 'flex text-base leading-none', {
-        'cursor-not-allowed opacity-50 outline-node-component-border': disabled
+        'cursor-not-allowed opacity-50 outline-border': disabled
       })
     "
   >
@@ -102,7 +100,7 @@ defineExpose({ focus, showPicker })
         class="icon-[lucide--chevron-down]"
         :class="
           cn(
-            'mr-2 size-4 shrink-0 text-component-node-foreground-secondary transition-transform duration-200',
+            'mr-2 size-4 shrink-0 text-muted-foreground transition-transform duration-200',
             isOpen && 'rotate-180'
           )
         "
@@ -114,7 +112,7 @@ defineExpose({ focus, showPicker })
         cn(
           theButtonStyle,
           'relative',
-          'flex size-8 items-center justify-center rounded-r-lg border-l border-node-component-border'
+          'flex size-8 items-center justify-center rounded-r-lg border-l border-border'
         )
       "
     >

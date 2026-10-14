@@ -4,7 +4,7 @@
       v-if="isPositioned && ringStyle"
       aria-hidden="true"
       data-testid="first-run-nudge-ring"
-      class="pointer-events-none fixed z-1000 rounded-lg outline-2 -outline-offset-2 outline-coach-ring"
+      class="pointer-events-none fixed z-1000 rounded-lg outline-2 -outline-offset-2 outline-white"
       :style="ringStyle"
     />
     <div

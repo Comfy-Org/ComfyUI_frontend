@@ -15,7 +15,7 @@
       @load="handleImageLoad"
       @error="handleImageError"
     />
-    <div class="mt-1 text-center text-xs text-node-component-header">
+    <div class="mt-1 text-center text-xs text-card-foreground">
       {{
         imageError
           ? $t('g.errorLoadingImage')

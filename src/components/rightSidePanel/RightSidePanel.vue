@@ -229,7 +229,7 @@ const tabs = computed<RightSidePanelTabList>(() => {
             className: cn(
               'ml-1',
               hasBlockingError.value
-                ? 'icon-[lucide--octagon-alert] bg-node-stroke-error'
+                ? 'icon-[lucide--octagon-alert] bg-error'
                 : 'icon-[lucide--triangle-alert] bg-warning-foreground'
             ),
             label: () =>

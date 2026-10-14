@@ -4,7 +4,7 @@
       <Table class="min-h-0 flex-1 px-4">
         <TableHeader class="sticky top-0 z-10 bg-base-background">
           <TableRow
-            class="hover:bg-transparent [&>th]:h-14 [&>th]:border-b [&>th]:border-interface-stroke/60"
+            class="hover:bg-transparent [&>th]:h-14 [&>th]:border-b [&>th]:border-border/60"
           >
             <TableHead class="w-40" :aria-sort="ariaSort('date')">
               <button :class="sortHeaderClass" @click="toggleSort('date')">
@@ -46,7 +46,7 @@
           <TableRow
             v-for="event in pagedItems"
             :key="event.id"
-            class="hover:bg-transparent [&:last-child>td]:border-b-0 [&>td]:border-b [&>td]:border-interface-stroke/20"
+            class="hover:bg-transparent [&:last-child>td]:border-b-0 [&>td]:border-b [&>td]:border-border/20"
           >
             <TableCell class="text-sm text-muted-foreground tabular-nums">
               {{ formatDate(event.date) }}

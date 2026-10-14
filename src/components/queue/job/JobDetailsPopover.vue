@@ -1,8 +1,8 @@
 <template>
   <div
-    class="w-[300px] min-w-[260px] rounded-lg border border-interface-stroke bg-interface-panel-surface shadow-md"
+    class="w-[300px] min-w-[260px] rounded-lg border border-border bg-background shadow-md"
   >
-    <div class="flex items-center border-b border-interface-stroke p-4">
+    <div class="flex items-center border-b border-border p-4">
       <span class="text-sm/normal font-normal text-text-primary">{{
         t('queue.jobDetails.header')
       }}</span>
@@ -78,7 +78,7 @@
           </Button>
         </div>
         <div
-          class="col-span-2 mt-2 max-h-96 overflow-y-auto rounded-sm bg-interface-panel-hover-surface px-4 py-2 text-xs/normal wrap-break-word whitespace-pre-wrap text-text-secondary"
+          class="col-span-2 mt-2 max-h-96 overflow-y-auto rounded-sm bg-accent px-4 py-2 text-xs/normal wrap-break-word whitespace-pre-wrap text-text-secondary"
         >
           {{ errorMessageValue }}
         </div>

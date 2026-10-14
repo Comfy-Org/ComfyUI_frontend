@@ -54,7 +54,7 @@ function onDismiss(): void {
     :data-placement="placement"
     :class="
       cn(
-        'flex items-start gap-3 bg-blue-selection text-base-foreground',
+        'flex items-start gap-3 bg-primary/30 text-base-foreground',
         PLACEMENT_CLASSES[placement]
       )
     "

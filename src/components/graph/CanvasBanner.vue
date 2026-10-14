@@ -11,7 +11,7 @@ const { accent } = defineProps<{
   <div
     :class="
       cn(
-        'pointer-events-auto relative flex items-center gap-12 rounded-lg border border-l-4 border-interface-stroke bg-interface-panel-surface p-4 shadow-interface',
+        'pointer-events-auto relative flex items-center gap-12 rounded-lg border border-l-4 border-border bg-background p-4 shadow-interface',
         accent
       )
     "

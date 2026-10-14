@@ -2,7 +2,7 @@
   <div class="flex min-w-0 flex-col">
     <!-- Search bar + collapse toggle -->
     <div
-      class="flex min-w-0 shrink-0 items-center border-b border-interface-stroke px-4 pt-1 pb-4"
+      class="flex min-w-0 shrink-0 items-center border-b border-border px-4 pt-1 pb-4"
     >
       <AsyncSearchInput v-model="searchQuery" class="flex-1" />
       <CollapseToggleButton
@@ -11,7 +11,7 @@
       />
     </div>
 
-    <div class="min-w-0 flex-1 overflow-y-auto bg-interface-panel-surface p-3">
+    <div class="min-w-0 flex-1 overflow-y-auto bg-background p-3">
       <div
         v-if="filteredGroups.length === 0"
         role="status"
@@ -49,10 +49,7 @@
             >
               {{ hero.count }}
             </span>
-            <span
-              aria-hidden="true"
-              class="h-9 w-px shrink-0 bg-interface-stroke"
-            />
+            <span aria-hidden="true" class="h-9 w-px shrink-0 bg-border" />
             <div class="flex min-w-0 flex-1 flex-col gap-1 px-2">
               <span class="text-xs/tight font-semibold text-base-foreground">
                 {{ hero.title }}
@@ -457,12 +454,12 @@ const HIDDEN_BY_FILTER = { error: 'missing', missing: 'error' } as const
 
 const SEVERITY_CHIP_CLASS = {
   error: {
-    idle: 'border-interface-stroke text-destructive-background-hover',
+    idle: 'border-border text-destructive-background-hover',
     active:
       'border-destructive-background-hover/50 text-destructive-background-hover'
   },
   missing: {
-    idle: 'border-interface-stroke text-warning-foreground',
+    idle: 'border-border text-warning-foreground',
     active: 'border-warning-background/50 text-warning-foreground'
   }
 } as const

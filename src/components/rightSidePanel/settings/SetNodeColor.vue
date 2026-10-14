@@ -120,9 +120,7 @@ const nodeColor = computed<NodeColorOption['name'] | null>({
             :class="
               cn(
                 'flex size-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-transparent text-left ring-0 outline-0',
-                option.name === nodeColor
-                  ? 'bg-interface-menu-component-surface-selected'
-                  : 'hover:bg-interface-menu-component-surface-selected'
+                option.name === nodeColor ? 'bg-muted' : 'hover:bg-muted'
               )
             "
             @click="nodeColor = option.name"

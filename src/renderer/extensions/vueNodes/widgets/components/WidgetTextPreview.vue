@@ -12,7 +12,7 @@
         @click="handleCopy"
         @pointerdown.capture.stop
       >
-        <i class="icon-[lucide--copy] size-4 text-component-node-foreground" />
+        <i class="icon-[lucide--copy] size-4 text-card-foreground" />
       </Button>
       <Button
         v-if="downloadUrl"
@@ -24,9 +24,7 @@
         @click="handleDownload"
         @pointerdown.capture.stop
       >
-        <i
-          class="icon-[lucide--download] size-4 text-component-node-foreground"
-        />
+        <i class="icon-[lucide--download] size-4 text-card-foreground" />
       </Button>
     </div>
 

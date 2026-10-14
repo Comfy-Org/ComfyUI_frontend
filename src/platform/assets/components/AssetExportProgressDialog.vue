@@ -90,7 +90,7 @@ function closeDialog() {
             :key="job.taskId"
             :class="
               cn(
-                'flex items-center justify-between rounded-lg bg-modal-card-background px-4 py-3',
+                'flex items-center justify-between rounded-lg bg-secondary px-4 py-3',
                 job.status === 'completed' && 'opacity-50'
               )
             "

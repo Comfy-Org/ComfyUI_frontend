@@ -28,7 +28,7 @@ const isCancelled = computed(() => isDownloadCancelled(job.status))
 
 <template>
   <div
-    class="flex items-center justify-between rounded-lg bg-modal-card-background px-4 py-3"
+    class="flex items-center justify-between rounded-lg bg-secondary px-4 py-3"
   >
     <div :class="cn('min-w-0 flex-1', isCompleted && 'opacity-50')">
       <span class="block truncate text-sm text-base-foreground">{{

@@ -44,24 +44,26 @@
   --color-bypass: #6a246a;
   --color-error: #962a2a;
 
-  --color-interface-panel-job-progress-primary: var(--color-azure-300);
-  --color-interface-panel-job-progress-secondary: var(
-    --color-alpha-azure-600-30
-  );
-  --color-interface-panel-job-progress-border: var(--base-foreground);
-
-  --color-blue-selection: rgb(from var(--color-azure-600) r g b / 0.3);
-
-  /* Onboarding coachmark overlay (always renders over a dark scrim) */
-  --color-coach-scrim: rgb(0 0 0 / 0.6);
-  --color-coach-ring: #fff;
-
   --color-link: var(--color-blue-400);
-  --color-node-accent: var(--color-blue-500);
 }
 
 :root {
   color-scheme: light;
+
+  --background: var(--color-white);
+  --foreground: var(--color-charcoal-800);
+  --card: var(--color-white);
+  --card-foreground: var(--color-charcoal-800);
+  --popover: var(--color-white);
+  --primary: var(--color-azure-400);
+  --secondary: var(--color-smoke-200);
+  --muted: var(--color-smoke-400);
+  --muted-foreground: var(--color-charcoal-200);
+  --accent: var(--color-smoke-200);
+  --destructive: var(--color-coral-500);
+  --border: var(--color-smoke-600);
+  --input: var(--color-smoke-200);
+  --ring: var(--color-smoke-800);
 
   --fg-color: #000;
   --bg-color: #fff;
@@ -88,87 +90,23 @@
   --content-hover-bg: #adadad;
   --content-hover-fg: #000;
 
-  --button-surface: var(--color-white);
-  --button-surface-contrast: var(--color-black);
-
   /* Code styling colors for help menu*/
   --code-text-color: rgb(0 122 255 / 1);
   --code-bg-color: rgb(96 165 250 / 0.2);
   --code-block-bg-color: rgb(60 60 60 / 0.12);
-
-  /* --- */
-
-  --accent-primary: var(--color-charcoal-700);
-  --backdrop: var(--color-white);
-
-  --button-hover-surface: var(--color-smoke-200);
-  --button-active-surface: var(--color-smoke-400);
-  --button-icon: var(--color-smoke-600);
-
-  --dialog-surface: var(--color-neutral-200);
-
-  --interface-menu-component-surface-hovered: var(--color-smoke-200);
-  --interface-menu-component-surface-selected: var(--color-smoke-400);
-  --interface-menu-keybind-surface-default: var(--color-smoke-500);
-  --interface-menu-surface: var(--color-white);
-  --interface-menu-stroke: var(--color-smoke-600);
-  --interface-panel-surface: var(--color-white);
-  --interface-stroke: var(--color-smoke-300);
-
-  --interface-builder-mode-background: var(--color-ocean-300);
-  --interface-builder-mode-button-background: var(--color-ocean-600);
-  --interface-builder-mode-button-foreground: var(--color-white);
-  --interface-builder-mode-footer-background: var(--color-ocean-900);
-
-  --nav-background: var(--color-white);
-
-  --node-border: var(--color-smoke-300);
-  --node-component-border: var(--color-smoke-400);
-  --node-component-disabled: var(--color-alpha-ash-500-20);
-  --node-component-executing: var(--color-blue-500);
-  --node-component-header: var(--fg-color);
-  --node-component-header-icon: var(--color-ash-800);
-  --node-component-header-surface: var(--color-smoke-200);
-  --node-component-outline: var(--color-black);
-  --node-component-ring: rgb(from var(--color-smoke-500) r g b / 50%);
-  --node-component-slot-dot-outline-opacity-mult: 1;
-  --node-component-slot-dot-outline-opacity: 5%;
-  --node-component-slot-dot-outline: var(--color-black);
-  --node-component-slot-text: var(--color-ash-800);
-  --node-component-surface-highlight: var(--color-smoke-800);
-  --node-component-surface-hovered: var(--color-smoke-200);
-  --node-component-surface-selected: var(--color-charcoal-200);
-  --node-component-surface: var(--color-white);
-  --node-component-widget-input: var(--fg-color);
-  --node-component-widget-input-surface: rgb(
-    from var(--color-zinc-500) r g b / 10%
-  );
-  --node-component-widget-skeleton-surface: var(--color-zinc-300);
-  --node-divider: var(--color-sand-100);
-  --node-icon-disabled: var(--color-alpha-smoke-500-50);
-  --node-stroke: var(--color-smoke-400);
-  --node-stroke-selected: var(--color-accent-primary);
-  --node-stroke-error: var(--color-error);
-  --node-stroke-executing: var(--color-azure-600);
 
   --text-secondary: var(--color-smoke-800);
   --text-primary: var(--color-charcoal-700);
   --input-surface: rgb(0 0 0 / 0.15);
 
   /* Semantic tokens - light mode */
-  --muted-foreground: var(--color-charcoal-200);
-  --base-foreground: var(--color-charcoal-800);
   --brand-yellow: var(--color-electric-400);
   --brand-blue: var(--color-sapphire-700);
-  --secondary-background: var(--color-smoke-200);
   --secondary-background-hover: var(--color-smoke-400);
   --secondary-background-selected: var(--color-smoke-600);
   --tertiary-background: var(--color-smoke-400);
   --tertiary-background-hover: var(--color-smoke-500);
-  --base-background: var(--color-white);
-  --primary-background: var(--color-azure-400);
   --primary-background-hover: var(--color-cobalt-800);
-  --destructive-background: var(--color-coral-500);
   --destructive-background-hover: var(--color-coral-600);
   --inverted-background-hover: var(--color-charcoal-600);
   --warning-background: var(--color-gold-400);
@@ -176,69 +114,32 @@
   --warning-foreground: var(--color-gold-800);
   --warning-on-background: var(--color-charcoal-800);
   --success-background: var(--color-jade-600);
-  --border-default: var(--color-smoke-600);
   --border-subtle: var(--color-smoke-400);
   --muted-background: var(--color-smoke-700);
   --accent-background: var(--color-smoke-800);
 
-  /* Component/Node tokens from design system light */
-  --component-node-background: var(--color-white);
-  --component-node-border: var(--color-border-default);
-  --component-node-foreground: var(--base-foreground);
-  --component-node-foreground-secondary: var(--color-muted-foreground);
-  --component-node-widget-background: var(--secondary-background);
-  --component-node-widget-background-hovered: var(--secondary-background-hover);
-  --component-node-widget-background-selected: var(
-    --secondary-background-selected
-  );
-  --component-node-widget-background-disabled: var(--color-alpha-ash-500-20);
-  --component-node-widget-background-highlighted: var(--color-smoke-800);
-  --component-node-widget-promoted: var(--color-purple-700);
-  --component-node-widget-advanced: var(--color-azure-400);
-
-  --video-trim-selection-background: var(--color-datatype-CLIP, #ffd500);
-  --video-trim-playhead-background: #f0513b;
-
-  /* Default UI element color palette variables */
-  --palette-contrast-mix-color: #fff;
-  --palette-interface-panel-surface: var(--comfy-menu-bg);
-  --palette-interface-stroke: color-mix(
-    in srgb,
-    var(--interface-panel-surface) 75.5%,
-    var(--contrast-mix-color)
-  );
-
   --palette-interface-panel-box-shadow: 1px 1px 8px 0 rgb(0 0 0 / 0.4);
   --palette-interface-panel-drop-shadow: 1px 1px 4px rgb(0 0 0 / 0.4);
   --palette-interface-floating-panel-shadow: 0 2px 16px 0 rgb(0 0 0 / 0.5);
-  --palette-interface-panel-hover-surface: color-mix(
-    in srgb,
-    var(--interface-panel-surface) 92.5%,
-    var(--contrast-mix-color)
-  );
-  --palette-interface-panel-selected-surface: color-mix(
-    in srgb,
-    var(--interface-panel-surface) 87.5%,
-    var(--contrast-mix-color)
-  );
-  --palette-interface-button-hover-surface: color-mix(
-    in srgb,
-    var(--interface-panel-surface) 82%,
-    var(--contrast-mix-color)
-  );
-
-  --modal-card-background: var(--secondary-background);
-  --modal-card-background-hovered: var(--secondary-background-hover);
-  --modal-card-border-highlighted: var(--secondary-background-selected);
-  --modal-card-button-surface: var(--color-smoke-300);
-  --modal-card-placeholder-background: var(--color-smoke-600);
-  --modal-card-tag-background: var(--color-smoke-200);
-  --modal-card-tag-foreground: var(--base-foreground);
-  --modal-panel-background: var(--color-white);
 }
 
 .dark-theme {
   color-scheme: dark;
+
+  --background: var(--color-charcoal-800);
+  --foreground: var(--color-white);
+  --card: var(--color-charcoal-600);
+  --card-foreground: var(--color-white);
+  --popover: var(--color-charcoal-800);
+  --primary: var(--color-azure-600);
+  --secondary: var(--color-charcoal-600);
+  --muted: var(--color-charcoal-300);
+  --muted-foreground: var(--color-smoke-800);
+  --accent: var(--color-charcoal-400);
+  --destructive: var(--color-coral-700);
+  --border: var(--color-charcoal-200);
+  --input: var(--color-charcoal-400);
+  --ring: var(--color-smoke-800);
 
   --fg-color: #fff;
   --bg-color: #202020;
@@ -247,83 +148,19 @@
   --content-hover-bg: #222;
   --content-hover-fg: #fff;
 
-  --accent-primary: var(--color-white);
-  --backdrop: var(--color-neutral-900);
-
-  --button-surface: var(--color-charcoal-600);
-  --button-surface-contrast: var(--color-white);
-  --button-hover-surface: var(--color-charcoal-600);
-  --button-active-surface: var(--color-charcoal-600);
-  --button-icon: var(--color-smoke-800);
-
-  --dialog-surface: var(--color-neutral-700);
-
-  --interface-menu-component-surface-hovered: var(--color-charcoal-400);
-  --interface-menu-component-surface-selected: var(--color-charcoal-300);
-  --interface-menu-keybind-surface-default: var(--color-charcoal-200);
-  --interface-menu-surface: var(--color-charcoal-800);
-  --interface-menu-stroke: var(--color-ash-800);
-  --interface-panel-surface: var(--color-charcoal-800);
-  --interface-stroke: var(--color-charcoal-400);
-
-  --interface-builder-mode-background: var(--color-ocean-900);
-  --interface-builder-mode-button-background: var(--color-ocean-600);
-  --interface-builder-mode-button-foreground: var(--color-white);
-  --interface-builder-mode-footer-background: var(--color-ocean-900);
-
-  --nav-background: var(--color-charcoal-800);
-
-  --node-border: var(--color-charcoal-500);
-  --node-component-border: var(--color-ash-800);
-  --node-component-border-error: var(--color-danger-100);
-  --node-component-border-executing: var(--color-blue-500);
-  --node-component-border-selected: var(--color-charcoal-200);
-  --node-component-header-icon: var(--color-smoke-800);
-  --node-component-header-surface: var(--color-charcoal-700);
-  --node-component-outline: var(--color-white);
-  --node-component-ring: rgb(var(--color-smoke-500) / 20%);
-  --node-component-slot-dot-outline-opacity: 10%;
-  --node-component-slot-dot-outline: var(--color-white);
-  --node-component-slot-text: var(--color-smoke-700);
-  --node-component-surface-highlight: var(--color-smoke-800);
-  --node-component-surface-hovered: var(--color-charcoal-600);
-  --node-component-surface-selected: var(--color-charcoal-200);
-  --node-component-surface: var(--color-charcoal-600);
-  --node-component-widget-skeleton-surface: var(--color-zinc-800);
-  --node-component-disabled: var(--color-alpha-charcoal-600-30);
-  --node-divider: var(--color-charcoal-500);
-  --node-icon-disabled: var(--color-alpha-ash-500-20);
-  --node-stroke: var(--color-ash-800);
-  --node-stroke-selected: var(--color-white);
-  --node-stroke-error: var(--color-error);
-  --node-stroke-executing: var(--color-azure-600);
-
-  /* Queue progress (dark theme) */
-  --color-interface-panel-job-progress-primary: var(--color-cobalt-800);
-  --color-interface-panel-job-progress-secondary: var(
-    --color-alpha-azure-600-30
-  );
-  --color-interface-panel-job-progress-border: var(--base-foreground);
-
   --text-secondary: var(--color-smoke-700);
   --text-primary: var(--color-white);
 
   --input-surface: rgb(130 130 130 / 0.1);
 
   /* Semantic tokens - dark mode */
-  --muted-foreground: var(--color-smoke-800);
-  --base-foreground: var(--color-white);
   --brand-yellow: var(--color-electric-400);
   --brand-blue: var(--color-sapphire-700);
-  --secondary-background: var(--color-charcoal-600);
   --secondary-background-hover: var(--color-charcoal-400);
   --secondary-background-selected: var(--color-charcoal-200);
   --tertiary-background: var(--color-charcoal-400);
   --tertiary-background-hover: var(--color-charcoal-300);
-  --base-background: var(--color-charcoal-800);
-  --primary-background: var(--color-azure-600);
   --primary-background-hover: var(--color-azure-400);
-  --destructive-background: var(--color-coral-700);
   --destructive-background-hover: var(--color-coral-600);
   --inverted-background-hover: var(--color-smoke-200);
   --warning-background: var(--color-gold-600);
@@ -331,157 +168,47 @@
   --warning-foreground: var(--color-gold-600);
   --warning-on-background: var(--color-charcoal-800);
   --success-background: var(--color-jade-600);
-  --border-default: var(--color-charcoal-200);
   --border-subtle: var(--color-charcoal-300);
   --muted-background: var(--color-charcoal-100);
   --accent-background: var(--color-charcoal-100);
-
-  /* Component/Node tokens from design dark system */
-  --component-node-background: var(--color-charcoal-600);
-  --component-node-border: var(--color-charcoal-100);
-  --component-node-foreground: var(--base-foreground);
-  --component-node-foreground-secondary: var(--color-muted-foreground);
-  --component-node-widget-background: var(--secondary-background-hover);
-  --component-node-widget-background-hovered: var(
-    --secondary-background-selected
-  );
-  --component-node-widget-background-selected: var(--color-charcoal-100);
-  --component-node-widget-background-disabled: var(--color-charcoal-800);
-  --component-node-widget-background-highlighted: var(--color-smoke-800);
-  --component-node-widget-promoted: var(--color-purple-700);
-  --component-node-widget-advanced: var(--color-azure-600);
-
-  --modal-card-background: var(--secondary-background);
-  --modal-card-background-hovered: var(--secondary-background-hover);
-  --modal-card-border-highlighted: var(--color-ash-400);
-  --modal-card-button-surface: var(--color-charcoal-300);
-  --modal-card-placeholder-background: var(--secondary-background);
-  --modal-card-tag-background: var(--color-ash-800);
-  --modal-card-tag-foreground: var(--base-foreground);
-  --modal-panel-background: var(--color-charcoal-600);
 }
 
 @theme inline {
-  --color-backdrop: var(--backdrop);
-  --color-button-active-surface: var(--button-active-surface);
-  --color-button-hover-surface: var(--button-hover-surface);
-  --color-button-icon: var(--button-icon);
-  --color-button-surface: var(--button-surface);
-  --color-button-surface-contrast: var(--button-surface-contrast);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-primary: var(--primary);
+  --color-secondary: var(--secondary);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-base-background: var(--background);
+  --color-base-foreground: var(--foreground);
+  --color-secondary-background: var(--secondary);
+  --color-primary-background: var(--primary);
+  --color-destructive-background: var(--destructive);
+  --color-border-default: var(--border);
 
-  --color-modal-card-background: var(--modal-card-background);
-  --color-modal-card-background-hovered: var(--modal-card-background-hovered);
-  --color-modal-card-border-highlighted: var(--modal-card-border-highlighted);
-  --color-modal-card-placeholder-background: var(
-    --modal-card-placeholder-background
-  );
-  --color-modal-card-tag-background: var(--modal-card-tag-background);
-  --color-modal-card-tag-foreground: var(--modal-card-tag-foreground);
-  --color-modal-panel-background: var(--modal-panel-background);
-
-  --color-dialog-surface: var(--dialog-surface);
-  --color-interface-menu-component-surface-hovered: var(
-    --interface-menu-component-surface-hovered
-  );
-  --color-interface-menu-component-surface-selected: var(
-    --interface-menu-component-surface-selected
-  );
-  --color-interface-menu-keybind-surface-default: var(
-    --interface-menu-keybind-surface-default
-  );
-  --color-interface-menu-surface: var(--interface-menu-surface);
-  --color-interface-menu-stroke: var(--interface-menu-stroke);
-  --color-interface-panel-surface: var(--interface-panel-surface);
-  --color-interface-panel-hover-surface: var(--interface-panel-hover-surface);
-  --color-interface-panel-selected-surface: var(
-    --interface-panel-selected-surface
-  );
-  --color-interface-button-hover-surface: var(--interface-button-hover-surface);
   --color-comfy-input-foreground: var(--input-text);
   --color-comfy-menu-bg: var(--comfy-menu-bg);
   --color-comfy-menu-secondary: var(--comfy-menu-secondary-bg);
 
-  --color-interface-builder-mode-background: var(
-    --interface-builder-mode-background
-  );
-  --color-interface-builder-mode-button-background: var(
-    --interface-builder-mode-button-background
-  );
-  --color-interface-builder-mode-button-foreground: var(
-    --interface-builder-mode-button-foreground
-  );
-  --color-interface-builder-mode-footer-background: var(
-    --interface-builder-mode-footer-background
-  );
-  --color-interface-stroke: var(--interface-stroke);
-  --color-node-component-border: var(--node-component-border);
-  --color-node-component-executing: var(--node-component-executing);
-  --color-node-component-header: var(--node-component-header);
-  --color-node-component-header-icon: var(--node-component-header-icon);
-  --color-node-component-header-surface: var(--node-component-header-surface);
-  --color-node-component-outline: var(--node-component-outline);
-  --color-node-component-slot-dot-outline: rgb(
-    from var(--node-component-slot-dot-outline) r g b /
-      calc(
-        var(--node-component-slot-dot-outline-opacity) *
-          var(--node-component-slot-dot-outline-opacity-mult)
-      )
-  );
-  --color-node-component-slot-text: var(--node-component-slot-text);
-  --color-node-component-surface-highlight: var(
-    --node-component-surface-highlight
-  );
-  --color-node-component-surface-hovered: var(--node-component-surface-hovered);
-  --color-node-component-surface: var(--node-component-surface);
-  --color-node-component-disabled: var(--node-component-disabled);
-  --color-node-divider: var(--node-divider);
-  --color-node-stroke: var(--node-stroke);
-  --color-node-stroke-error: var(--node-stroke-error);
-  --color-node-stroke-executing: var(--node-stroke-executing);
   --color-text-secondary: var(--text-secondary);
   --color-text-primary: var(--text-primary);
   --color-input-surface: var(--input-surface);
 
-  /* Component/Node design tokens */
-  --color-component-node-background: var(--component-node-background);
-  --color-component-node-border: var(--component-node-border);
-  --color-component-node-foreground: var(--component-node-foreground);
-  --color-component-node-foreground-secondary: var(
-    --component-node-foreground-secondary
-  );
-  --color-component-node-widget-background: var(
-    --component-node-widget-background
-  );
-  --color-component-node-widget-background-hovered: var(
-    --component-node-widget-background-hovered
-  );
-  --color-component-node-widget-background-selected: var(
-    --component-node-widget-background-selected
-  );
-  --color-component-node-widget-background-disabled: var(
-    --component-node-widget-background-disabled
-  );
-  --color-component-node-widget-background-highlighted: var(
-    --component-node-widget-background-highlighted
-  );
-  --color-component-node-widget-advanced: var(--component-node-widget-advanced);
-  --color-video-trim-selection-background: var(
-    --video-trim-selection-background
-  );
-  --color-video-trim-playhead-background: var(--video-trim-playhead-background);
-
   /* Semantic tokens */
-  --color-base-foreground: var(--base-foreground);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-base-background: var(--base-background);
-  --color-secondary-background: var(--secondary-background);
   --color-secondary-background-hover: var(--secondary-background-hover);
   --color-secondary-background-selected: var(--secondary-background-selected);
   --color-tertiary-background: var(--tertiary-background);
   --color-tertiary-background-hover: var(--tertiary-background-hover);
-  --color-primary-background: var(--primary-background);
   --color-primary-background-hover: var(--primary-background-hover);
-  --color-destructive-background: var(--destructive-background);
   --color-destructive-background-hover: var(--destructive-background-hover);
   --color-inverted-background-hover: var(--inverted-background-hover);
   --color-warning-background: var(--warning-background);
@@ -489,7 +216,6 @@
   --color-warning-foreground: var(--warning-foreground);
   --color-warning-on-background: var(--warning-on-background);
   --color-success-background: var(--success-background);
-  --color-border-default: var(--border-default);
   --color-border-subtle: var(--border-subtle);
   --color-muted-background: var(--muted-background);
   --color-accent-background: var(--accent-background);
@@ -500,7 +226,7 @@
 @utility floating-panel {
   border-radius: var(--radius-xl);
   padding: --spacing(1);
-  background-color: var(--color-interface-panel-surface);
+  background-color: var(--color-background);
   box-shadow:
     var(--shadow-inset-highlight), var(--interface-floating-panel-shadow);
 }
@@ -530,7 +256,7 @@
   overflow-y: auto;
   /* Firefox */
   scrollbar-width: thin;
-  scrollbar-color: var(--dialog-surface) transparent;
+  scrollbar-color: var(--muted) transparent;
 
   /* WebKit */
   &::-webkit-scrollbar {
@@ -542,12 +268,12 @@
     background: transparent;
   }
   &::-webkit-scrollbar-thumb {
-    background: var(--dialog-surface);
+    background: var(--muted);
     border-radius: 9999px;
     border: 2px solid transparent;
   }
   &::-webkit-scrollbar-thumb:hover {
-    background: var(--dialog-surface);
+    background: var(--muted);
   }
   &::-webkit-scrollbar-corner {
     background: transparent;
@@ -752,7 +478,7 @@ body {
 .comfy-markdown-content pre code {
   background-color: transparent; /* bg-transparent */
   padding: 0; /* p-0 */
-  color: var(--base-foreground);
+  color: var(--foreground);
 }
 
 /* Tables */
@@ -783,7 +509,7 @@ body {
 }
 
 .comfy-markdown-content thead {
-  border-bottom: 1px solid var(--base-foreground);
+  border-bottom: 1px solid var(--foreground);
 }
 
 /* Links */
@@ -803,7 +529,7 @@ body {
 
 /* Blockquotes */
 .comfy-markdown-content blockquote {
-  border-left: 3px solid var(--primary-background);
+  border-left: 3px solid var(--primary);
   padding-left: 0.75em;
   margin: 0.5em 0;
   opacity: 0.8;
@@ -1447,7 +1173,7 @@ audio.comfy-audio.empty-audio-widget {
 }
 .maskEditor_sidePanelToggleCheckbox:checked
   + .maskEditor_sidePanelToggleSwitch {
-  background: var(--primary-background);
+  background: var(--primary);
 }
 .maskEditor_sidePanelToggleCheckbox:checked
   + .maskEditor_sidePanelToggleSwitch::before {
@@ -1460,7 +1186,7 @@ audio.comfy-audio.empty-audio-widget {
 }
 
 .maskEditor_sidePanelDropdown {
-  border: 1px solid var(--border-default);
+  border: 1px solid var(--border);
   background: var(--comfy-menu-bg);
   height: 24px;
   padding-left: 5px;
@@ -1474,7 +1200,7 @@ audio.comfy-audio.empty-audio-widget {
 }
 
 .maskEditor_sidePanelDropdown:focus {
-  outline: 1px solid var(--primary-background);
+  outline: 1px solid var(--primary);
 }
 
 .maskEditor_sidePanelDropdown option:hover {
@@ -1493,7 +1219,7 @@ audio.comfy-audio.empty-audio-widget {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  fill: var(--base-foreground);
+  fill: var(--foreground);
 }
 
 .maskEditor_sidePanelImageLayerImage {

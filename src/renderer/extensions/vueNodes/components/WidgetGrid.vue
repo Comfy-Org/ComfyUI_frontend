@@ -67,8 +67,7 @@
                     :class="
                       cn(
                         'col-span-2',
-                        row.widget.hasError &&
-                          'font-bold text-node-stroke-error'
+                        row.widget.hasError && 'font-bold text-error'
                       )
                     "
                     @update:model-value="row.widget.updateHandler"

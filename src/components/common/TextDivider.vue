@@ -5,7 +5,7 @@
       role="separator"
       :class="
         cn(
-          'grow border-0 border-t border-interface-stroke',
+          'grow border-0 border-t border-border',
           type === 'dashed' && 'border-dashed',
           type === 'dotted' && 'border-dotted'
         )

@@ -45,7 +45,7 @@
       <div
         class="flex h-4 flex-col items-center justify-between self-stretch p-2"
       >
-        <div class="w-full border-b border-interface-menu-stroke" />
+        <div class="w-full border-b border-border" />
       </div>
     </div>
 
@@ -103,7 +103,7 @@
         <article
           v-for="release in releaseStore.recentReleases"
           :key="release.id || release.version"
-          class="release-menu-item flex h-12 min-h-6 cursor-pointer items-center gap-2 self-stretch rounded-sm p-2 transition-colors hover:bg-interface-menu-component-surface-hovered"
+          class="release-menu-item flex h-12 min-h-6 cursor-pointer items-center gap-2 self-stretch rounded-sm p-2 transition-colors hover:bg-accent"
           :data-testid="`help-release-item-${release.version}`"
           role="button"
           tabindex="0"
@@ -665,10 +665,10 @@ onBeforeUnmount(() => {
   width: 256px;
   max-height: 500px;
   overflow-y: auto;
-  background: var(--interface-menu-surface);
+  background: var(--popover);
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgb(0 0 0 / 0.1);
-  border: 1px solid var(--interface-menu-stroke);
+  border: 1px solid var(--border);
   padding: 12px 8px;
   position: relative;
 }
@@ -692,7 +692,7 @@ onBeforeUnmount(() => {
 }
 
 .help-menu-item:hover {
-  background-color: var(--interface-menu-component-surface-hovered);
+  background-color: var(--accent);
 }
 
 .help-menu-item:focus,
@@ -733,7 +733,7 @@ onBeforeUnmount(() => {
   height: 8px;
   background: #ff3b30;
   border-radius: 50%;
-  border: 1.5px solid var(--base-background);
+  border: 1.5px solid var(--background);
   z-index: 1;
 }
 
@@ -809,9 +809,9 @@ onBeforeUnmount(() => {
 .more-submenu {
   width: 210px;
   padding: 12px 8px;
-  background: var(--interface-menu-surface);
+  background: var(--popover);
   border-radius: 8px;
-  border: 1px solid var(--interface-menu-stroke);
+  border: 1px solid var(--border);
   box-shadow: 0 2px 12px 0 rgb(0 0 0 / 0.1);
   overflow: hidden;
   transition: opacity 0.15s ease-out;
@@ -829,7 +829,7 @@ onBeforeUnmount(() => {
 }
 
 .submenu-item:hover {
-  background-color: var(--interface-menu-component-surface-hovered);
+  background-color: var(--accent);
 }
 
 .submenu-item:focus,
@@ -840,7 +840,7 @@ onBeforeUnmount(() => {
 
 .submenu-divider {
   height: 1px;
-  background: var(--interface-menu-stroke);
+  background: var(--border);
   margin: 4px 0;
 }
 
@@ -854,7 +854,7 @@ onBeforeUnmount(() => {
 }
 
 .help-center-menu::-webkit-scrollbar-thumb {
-  background: var(--interface-menu-stroke);
+  background: var(--border);
   border-radius: 3px;
 }
 

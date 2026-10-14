@@ -23,7 +23,7 @@
         <i :class="cn('size-4', option.icon)" />
         <span v-if="!compact">{{ option.label }}</span>
       </Button>
-      <div class="mx-1 h-5 w-px shrink-0 bg-interface-menu-stroke" />
+      <div class="mx-1 h-5 w-px shrink-0 bg-border" />
       <Button
         variant="textonly"
         size="unset"

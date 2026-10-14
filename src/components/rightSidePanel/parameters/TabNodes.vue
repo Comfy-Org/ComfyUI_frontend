@@ -89,7 +89,7 @@ async function searcher(query: string) {
           : $t('rightSidePanel.inputsNoneTooltip')
       "
       show-locate-button
-      class="border-b border-interface-stroke"
+      class="border-b border-border"
       @update:collapse="setSectionCollapsed(node.id, $event)"
     />
   </TransitionGroup>

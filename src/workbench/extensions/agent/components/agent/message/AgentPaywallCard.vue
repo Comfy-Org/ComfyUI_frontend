@@ -41,7 +41,7 @@ const showAddCredits = computed(
 <template>
   <div
     role="alert"
-    class="flex w-full flex-col justify-center gap-2 overflow-hidden rounded-lg border border-component-node-border bg-modal-card-background p-4 shadow-sm"
+    class="flex w-full flex-col justify-center gap-2 overflow-hidden rounded-lg border border-border bg-secondary p-4 shadow-sm"
   >
     <div class="flex w-full items-start gap-2">
       <span

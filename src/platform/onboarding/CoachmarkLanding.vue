@@ -4,7 +4,7 @@
       <DialogOverlay
         v-reka-z-index
         data-testid="coach-landing-overlay"
-        class="bg-coach-scrim"
+        class="bg-black/60"
       />
       <DialogContent
         v-reka-z-index

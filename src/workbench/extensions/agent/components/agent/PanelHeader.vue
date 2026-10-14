@@ -29,7 +29,7 @@ const sizeToggleLabel = computed(() =>
 
 <template>
   <header
-    class="flex h-12 shrink-0 items-center gap-2 border-b border-component-node-border px-4"
+    class="flex h-12 shrink-0 items-center gap-2 border-b border-border px-4"
   >
     <div class="flex items-center gap-1">
       <h1

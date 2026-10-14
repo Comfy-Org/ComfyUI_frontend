@@ -6,18 +6,13 @@
   >
     <div class="flex flex-col">
       <div
-        class="flex h-9 items-center gap-1 rounded-t-sm border border-b-0 border-component-node-border bg-component-node-widget-background px-2"
+        class="flex h-9 items-center gap-1 rounded-t-sm border border-b-0 border-border bg-input px-2"
       >
         <Button
           variant="textonly"
           size="unset"
           :aria-pressed="grid"
-          :class="
-            cn(
-              actionBtnClass,
-              grid && 'bg-component-node-widget-background-selected'
-            )
-          "
+          :class="cn(actionBtnClass, grid && 'bg-muted')"
           @click="grid = !grid"
         >
           <i class="icon-[lucide--grid-3x3] size-4" />
@@ -35,13 +30,13 @@
       </div>
       <div
         ref="canvasContainer"
-        class="relative w-full shrink-0 overflow-hidden rounded-b-sm border border-t-0 border-component-node-border bg-base-background"
+        class="relative w-full shrink-0 overflow-hidden rounded-b-sm border border-t-0 border-border bg-base-background"
         :style="canvasStyle"
       >
         <canvas
           ref="canvasEl"
           tabindex="0"
-          class="absolute inset-0 size-full rounded-sm text-node-component-slot-text outline-none"
+          class="absolute inset-0 size-full rounded-sm text-muted-foreground outline-none"
           :style="{ cursor: canvasCursor }"
           @pointerdown="onPointerDown"
           @pointermove="onCanvasPointerMove"
@@ -69,11 +64,9 @@
 
     <div
       v-if="activeRegion"
-      class="flex flex-col gap-2 rounded-sm bg-node-component-surface p-2 text-xs"
+      class="flex flex-col gap-2 rounded-sm bg-card p-2 text-xs"
     >
-      <div
-        class="flex h-8 items-center gap-1 rounded-sm bg-component-node-widget-background p-1"
-      >
+      <div class="flex h-8 items-center gap-1 rounded-sm bg-input p-1">
         <Button
           variant="textonly"
           size="unset"
@@ -81,7 +74,7 @@
             cn(
               'flex-1 self-stretch px-2 text-xs transition-colors',
               activeRegion.type === 'obj'
-                ? 'rounded-sm bg-component-node-widget-background-selected text-base-foreground'
+                ? 'rounded-sm bg-muted text-base-foreground'
                 : 'text-muted-foreground hover:text-base-foreground'
             )
           "
@@ -96,7 +89,7 @@
             cn(
               'flex-1 self-stretch px-2 text-xs transition-colors',
               activeRegion.type === 'text'
-                ? 'rounded-sm bg-component-node-widget-background-selected text-base-foreground'
+                ? 'rounded-sm bg-muted text-base-foreground'
                 : 'text-muted-foreground hover:text-base-foreground'
             )
           "
@@ -107,7 +100,7 @@
       </div>
       <div
         v-if="activeRegion.type === 'text'"
-        class="group relative rounded-lg transition-all focus-within:ring focus-within:ring-component-node-widget-background-highlighted hover:bg-component-node-widget-background-hovered"
+        class="group relative rounded-lg transition-all focus-within:ring focus-within:ring-ring hover:bg-muted"
       >
         <span
           class="pointer-events-none absolute top-1.5 left-3 z-10 text-2xs text-muted-foreground"
@@ -117,13 +110,13 @@
         <Textarea
           v-model="activeRegion.text"
           :placeholder="$t('boundingBoxes.textPlaceholder')"
-          class="min-h-14 resize-none overflow-hidden pt-5 text-(length:--comfy-textarea-font-size) leading-normal not-disabled:bg-component-node-widget-background not-disabled:text-component-node-foreground hover:overflow-auto focus:overflow-auto"
+          class="min-h-14 resize-none overflow-hidden pt-5 text-(length:--comfy-textarea-font-size) leading-normal not-disabled:bg-input not-disabled:text-card-foreground hover:overflow-auto focus:overflow-auto"
           data-capture-wheel="true"
           @update:model-value="syncState"
         />
       </div>
       <div
-        class="group relative rounded-lg transition-all focus-within:ring focus-within:ring-component-node-widget-background-highlighted hover:bg-component-node-widget-background-hovered"
+        class="group relative rounded-lg transition-all focus-within:ring focus-within:ring-ring hover:bg-muted"
       >
         <span
           class="pointer-events-none absolute top-1.5 left-3 z-10 text-2xs text-muted-foreground"
@@ -133,7 +126,7 @@
         <Textarea
           v-model="activeRegion.desc"
           :placeholder="$t('boundingBoxes.descPlaceholder')"
-          class="min-h-20 resize-none overflow-hidden pt-5 text-(length:--comfy-textarea-font-size) leading-normal not-disabled:bg-component-node-widget-background not-disabled:text-component-node-foreground hover:overflow-auto focus:overflow-auto"
+          class="min-h-20 resize-none overflow-hidden pt-5 text-(length:--comfy-textarea-font-size) leading-normal not-disabled:bg-input not-disabled:text-card-foreground hover:overflow-auto focus:overflow-auto"
           data-capture-wheel="true"
           @update:model-value="syncState"
         />
@@ -168,7 +161,7 @@ import type { BoundingBox } from '@/types/boundingBoxes'
 import type { NodeId } from '@/types/nodeId'
 
 const actionBtnClass =
-  'flex shrink-0 items-center gap-1.5 rounded-md border-0 bg-transparent px-2 py-1 text-sm text-base-foreground outline-none transition-colors hover:bg-component-node-widget-background-hovered'
+  'flex shrink-0 items-center gap-1.5 rounded-md border-0 bg-transparent px-2 py-1 text-sm text-base-foreground outline-none transition-colors hover:bg-muted'
 
 const { nodeId } = defineProps<{ nodeId: NodeId }>()
 const modelValue = defineModel<BoundingBox[]>({ default: () => [] })

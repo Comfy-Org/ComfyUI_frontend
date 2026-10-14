@@ -54,7 +54,7 @@ const litegraphBaseSchema = z.object({
   BADGE_BG_COLOR: z.string()
 })
 
-export const comfyBaseSchema = z.object({
+const comfyBaseSchema = z.object({
   ['fg-color']: z.string(),
   ['bg-color']: z.string(),
   ['bg-img']: z.string().optional(),
@@ -84,16 +84,38 @@ export const comfyBaseSchema = z.object({
   ['interface-button-hover-surface']: z.string().optional()
 })
 
+/** Design-system theme variables a palette may override, named after the shadcn/tweakcn theme contract. */
+export const themeSchema = z
+  .object({
+    background: z.string(),
+    foreground: z.string(),
+    card: z.string(),
+    ['card-foreground']: z.string(),
+    popover: z.string(),
+    primary: z.string(),
+    secondary: z.string(),
+    muted: z.string(),
+    ['muted-foreground']: z.string(),
+    accent: z.string(),
+    destructive: z.string(),
+    border: z.string(),
+    input: z.string(),
+    ring: z.string()
+  })
+  .partial()
+
 const colorsSchema = z.object({
   node_slot: nodeSlotSchema,
   litegraph_base: litegraphBaseSchema,
-  comfy_base: comfyBaseSchema
+  comfy_base: comfyBaseSchema,
+  theme: themeSchema.optional()
 })
 
 const partialColorsSchema = z.object({
   node_slot: nodeSlotSchema.partial(),
   litegraph_base: litegraphBaseSchema.partial(),
-  comfy_base: comfyBaseSchema.partial()
+  comfy_base: comfyBaseSchema.partial(),
+  theme: themeSchema.optional()
 })
 
 // Palette in the wild can have custom metadata fields such as 'version'.
@@ -115,6 +137,7 @@ const completedPaletteSchema = z
   .passthrough()
 
 export type Colors = z.infer<typeof colorsSchema>
+export type Theme = z.infer<typeof themeSchema>
 export type Palette = z.infer<typeof paletteSchema>
 export type CompletedPalette = z.infer<typeof completedPaletteSchema>
 export type ColorPalettes = Record<string, Palette>

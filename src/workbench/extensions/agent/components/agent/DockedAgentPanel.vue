@@ -28,14 +28,11 @@
         :class="
           cn(
             'size-full p-2',
-            hasOpaqueNeighbor &&
-              'border-l border-interface-stroke bg-base-background'
+            hasOpaqueNeighbor && 'border-l border-border bg-base-background'
           )
         "
       >
-        <div
-          class="size-full overflow-hidden rounded-lg border border-interface-stroke"
-        >
+        <div class="size-full overflow-hidden rounded-lg border border-border">
           <AgentPanelRoot />
         </div>
       </div>

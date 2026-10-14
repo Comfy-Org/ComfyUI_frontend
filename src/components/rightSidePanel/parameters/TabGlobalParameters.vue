@@ -64,7 +64,7 @@ function handleReorder({
     hidden-favorite-indicator
     show-node-name
     enable-empty-state
-    class="border-b border-interface-stroke"
+    class="border-b border-border"
     @reorder="handleReorder"
   >
     <template #empty>

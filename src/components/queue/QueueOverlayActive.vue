@@ -2,7 +2,7 @@
   <div class="flex flex-col gap-3 p-2">
     <div class="flex flex-col gap-1">
       <div
-        class="relative h-2 w-full overflow-hidden rounded-full border border-interface-stroke bg-interface-panel-surface"
+        class="relative h-2 w-full overflow-hidden rounded-full border border-border bg-background"
       >
         <div
           class="absolute inset-0 h-full origin-left rounded-full will-change-transform motion-safe:transition-transform"

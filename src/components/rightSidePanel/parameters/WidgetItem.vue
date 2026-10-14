@@ -229,7 +229,7 @@ const displayLabel = customRef((track, trigger) => {
       :class="
         cn(
           'pointer-events-none mx-auto mt-1.5 h-1 w-1/2 max-w-40 rounded-lg bg-transparent transition-colors duration-150',
-          'group-hover:bg-interface-stroke group-[.is-draggable]:bg-component-node-widget-background-highlighted',
+          'group-hover:bg-border group-[.is-draggable]:bg-ring',
           !isDraggable && 'opacity-0'
         )
       "

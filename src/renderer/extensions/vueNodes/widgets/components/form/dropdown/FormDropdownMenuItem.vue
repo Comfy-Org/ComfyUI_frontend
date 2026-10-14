@@ -94,22 +94,18 @@ function handleVideoLoad(event: Event) {
   <div
     :class="
       cn(
-        'group/item flex cursor-pointer gap-1 bg-component-node-widget-background select-none',
+        'group/item flex cursor-pointer gap-1 bg-input select-none',
         'transition-[transform,box-shadow,background-color] duration-150',
         {
           'flex-col text-center': layout === 'grid',
           'max-h-16 flex-row rounded-lg text-left hover:scale-102 active:scale-98':
             layout === 'list',
-          'flex-row rounded-lg text-left hover:bg-component-node-widget-background-hovered':
+          'flex-row rounded-lg text-left hover:bg-muted':
             layout === 'list-small',
           // selection
-          'ring-2 ring-component-node-widget-background-highlighted':
-            layout === 'list' && selected
+          'ring-2 ring-ring': layout === 'list' && selected
         },
-        candidate &&
-          !selected &&
-          layout !== 'grid' &&
-          'bg-component-node-widget-background-hovered'
+        candidate && !selected && layout !== 'grid' && 'bg-muted'
       )
     "
     @click="handleClick"
@@ -121,15 +117,14 @@ function handleVideoLoad(event: Event) {
       :class="
         cn(
           'relative',
-          'aspect-square w-full overflow-hidden outline-1 -outline-offset-1 outline-interface-stroke',
+          'aspect-square w-full overflow-hidden outline-1 -outline-offset-1 outline-border',
           'transition-[transform,box-shadow] duration-150',
           {
             'max-w-16 min-w-16 rounded-l-lg': layout === 'list',
             'rounded-sm group-hover/item:scale-108 group-active/item:scale-95':
               layout === 'grid',
             // selection
-            'ring-2 ring-component-node-widget-background-highlighted':
-              layout === 'grid' && (selected || candidate)
+            'ring-2 ring-ring': layout === 'grid' && (selected || candidate)
           }
         )
       "
@@ -166,7 +161,7 @@ function handleVideoLoad(event: Event) {
       <div
         v-else-if="isMesh"
         data-testid="dropdown-item-mesh-placeholder"
-        class="flex size-full items-center justify-center bg-modal-card-placeholder-background"
+        class="flex size-full items-center justify-center bg-muted"
       >
         <i class="icon-[lucide--box] text-3xl text-muted-foreground" />
       </div>

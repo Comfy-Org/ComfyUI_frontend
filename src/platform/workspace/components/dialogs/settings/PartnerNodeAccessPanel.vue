@@ -9,7 +9,7 @@
     </h2>
 
     <div
-      class="flex items-start gap-4 rounded-2xl border border-interface-stroke p-4 font-inter"
+      class="flex items-start gap-4 rounded-2xl border border-border p-4 font-inter"
     >
       <span class="shrink-0" @click.prevent="requestAccessModeToggle">
         <Switch
@@ -86,7 +86,7 @@
     <div
       v-else-if="status === 'error'"
       role="alert"
-      class="flex min-h-48 flex-col items-center justify-center gap-3 rounded-2xl border border-interface-stroke p-6 text-center"
+      class="flex min-h-48 flex-col items-center justify-center gap-3 rounded-2xl border border-border p-6 text-center"
     >
       <p class="text-sm text-muted-foreground">
         {{ $t('workspacePanel.partnerNodes.loadError') }}
@@ -99,7 +99,7 @@
     <div
       v-else-if="(status === 'ineligible' && !isGated) || status === 'inactive'"
       role="status"
-      class="flex min-h-48 items-center justify-center rounded-2xl border border-interface-stroke p-6 text-center"
+      class="flex min-h-48 items-center justify-center rounded-2xl border border-border p-6 text-center"
     >
       <p class="text-sm text-muted-foreground">
         {{ $t('workspacePanel.partnerNodes.unavailable') }}
@@ -147,7 +147,7 @@
       <div
         role="table"
         :aria-label="$t('workspacePanel.partnerNodes.tableLabel')"
-        class="flex min-h-0 grow flex-col rounded-2xl border border-interface-stroke px-4 py-3"
+        class="flex min-h-0 grow flex-col rounded-2xl border border-border px-4 py-3"
       >
         <div class="min-h-0 grow scrollbar-gutter-stable overflow-y-auto">
           <div
@@ -246,7 +246,7 @@
                     aria-hidden="true"
                   />
                   <span
-                    class="flex size-5 shrink-0 items-center justify-center rounded-full bg-interface-panel-hover-surface"
+                    class="flex size-5 shrink-0 items-center justify-center rounded-full bg-accent"
                     aria-hidden="true"
                   >
                     <i

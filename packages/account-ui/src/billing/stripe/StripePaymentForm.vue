@@ -391,37 +391,37 @@ function resolveAppearance(themeRoot: HTMLElement): Appearance {
     variables: {
       // Selection (radio, selected label, accordion highlight) uses the
       // theme-aware foreground rather than brand blue.
-      colorPrimary: resolveThemeColor('--base-foreground'),
-      colorBackground: resolveThemeColor('--base-background'),
-      colorText: resolveThemeColor('--base-foreground'),
+      colorPrimary: resolveThemeColor('--foreground'),
+      colorBackground: resolveThemeColor('--background'),
+      colorText: resolveThemeColor('--foreground'),
       colorTextSecondary: resolveThemeColor('--muted-foreground'),
-      colorDanger: resolveThemeColor('--destructive-background'),
+      colorDanger: resolveThemeColor('--destructive'),
       // Same token as the pricing table's "Save 20%" pill, so all
       // deal/discount badges share one accent.
-      colorSuccess: resolveThemeColor('--primary-background'),
+      colorSuccess: resolveThemeColor('--primary'),
       fontFamily: getComputedStyle(themeRoot).fontFamily,
       borderRadius: '10px',
       spacingUnit: '5px'
     },
     rules: {
       '.AccordionItem': {
-        backgroundColor: resolveThemeColor('--base-background'),
+        backgroundColor: resolveThemeColor('--background'),
         // Transparent (not none) so rows keep their size when the
         // selected item paints its outline.
         border: '1px solid transparent',
         boxShadow: 'none'
       },
       '.AccordionItem--selected': {
-        borderColor: resolveThemeColor('--base-foreground')
+        borderColor: resolveThemeColor('--foreground')
       },
       '.Input': {
         backgroundColor: resolveThemeColor('--input-surface'),
-        borderColor: resolveThemeColor('--border-default'),
+        borderColor: resolveThemeColor('--border'),
         boxShadow: 'none'
       },
       '.Input:focus': {
-        borderColor: resolveThemeColor('--primary-background'),
-        boxShadow: `0 0 0 1px ${resolveThemeColor('--primary-background')}`
+        borderColor: resolveThemeColor('--primary'),
+        boxShadow: `0 0 0 1px ${resolveThemeColor('--primary')}`
       },
       '.Label': {
         fontWeight: '500'

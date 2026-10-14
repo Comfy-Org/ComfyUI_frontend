@@ -15,7 +15,7 @@
 
   <div
     v-else-if="hasRecording"
-    class="flex shrink-0 items-center gap-0.5 rounded-lg bg-button-active-surface py-0.5 pr-0.5 pl-1 text-sm text-base-foreground"
+    class="flex shrink-0 items-center gap-0.5 rounded-lg bg-muted py-0.5 pr-0.5 pl-1 text-sm text-base-foreground"
   >
     <Popover v-model:open="menuOpen">
       <PopoverTrigger as-child>

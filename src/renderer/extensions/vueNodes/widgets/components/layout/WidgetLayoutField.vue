@@ -16,10 +16,7 @@ const { widget, rootClass } = defineProps<{
 
 const hideLayoutField = useHideLayoutField()
 const borderStyle = computed(() =>
-  cn(
-    'focus-within:ring focus-within:ring-component-node-widget-background-highlighted',
-    widget.borderStyle
-  )
+  cn('focus-within:ring focus-within:ring-ring', widget.borderStyle)
 )
 </script>
 
@@ -27,7 +24,7 @@ const borderStyle = computed(() =>
   <div
     :class="
       cn(
-        'grid min-w-0 grid-cols-subgrid justify-between gap-2 text-node-component-slot-text',
+        'grid min-w-0 grid-cols-subgrid justify-between gap-2 text-muted-foreground',
         rootClass
       )
     "

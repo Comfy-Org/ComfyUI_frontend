@@ -21,7 +21,7 @@
       <!-- Placeholder for queued/failed states or running without preview -->
       <div
         v-else
-        class="absolute inset-0 flex items-center justify-center bg-modal-card-placeholder-background"
+        class="absolute inset-0 flex items-center justify-center bg-muted"
       >
         <!-- Spinner for queued/initialization states -->
         <Loader v-if="isQueued" size="md" class="text-muted-foreground" />

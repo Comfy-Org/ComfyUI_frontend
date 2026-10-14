@@ -40,7 +40,7 @@ const baseModelSelected = defineModel<Set<string>>('baseModelSelected', {
 })
 
 const actionButtonStyle = cn(
-  'h-8 rounded-lg bg-zinc-500/20 outline-1 -outline-offset-1 outline-node-component-border transition-all duration-150'
+  'h-8 rounded-lg bg-zinc-500/20 outline-1 -outline-offset-1 outline-border transition-all duration-150'
 )
 
 const layoutSwitchItemStyle =
@@ -115,8 +115,8 @@ function handleSearchEnter(event: KeyboardEvent) {
       :class="
         cn(
           actionButtonStyle,
-          'hover:outline-component-node-widget-background-highlighted/80',
-          'focus-within:ring-0 focus-within:outline-component-node-widget-background-highlighted/80'
+          'hover:outline-ring/80',
+          'focus-within:ring-0 focus-within:outline-ring/80'
         )
       "
       @enter="handleSearchEnter"
@@ -138,16 +138,13 @@ function handleSearchEnter(event: KeyboardEvent) {
       variant="textonly"
       size="icon"
       :class="
-        cn(
-          actionButtonStyle,
-          'relative w-8 hover:outline-component-node-widget-background-highlighted active:scale-95'
-        )
+        cn(actionButtonStyle, 'relative w-8 hover:outline-ring active:scale-95')
       "
       @click="toggleSortPopover"
     >
       <div
         v-if="sortSelected !== 'default'"
-        class="absolute top-[-2px] left-[-2px] size-2 rounded-full bg-component-node-widget-background-highlighted"
+        class="absolute top-[-2px] left-[-2px] size-2 rounded-full bg-ring"
       />
       <i class="icon-[lucide--arrow-up-down] size-4" />
     </Button>
@@ -164,8 +161,8 @@ function handleSearchEnter(event: KeyboardEvent) {
         :class="
           cn(
             'flex min-w-32 flex-col gap-2 p-2',
-            'bg-component-node-background',
-            'rounded-lg outline -outline-offset-1 outline-component-node-border'
+            'bg-card',
+            'rounded-lg outline -outline-offset-1 outline-border'
           )
         "
       >
@@ -194,16 +191,13 @@ function handleSearchEnter(event: KeyboardEvent) {
       variant="textonly"
       size="icon"
       :class="
-        cn(
-          actionButtonStyle,
-          'relative w-8 hover:outline-component-node-widget-background-highlighted active:scale-95'
-        )
+        cn(actionButtonStyle, 'relative w-8 hover:outline-ring active:scale-95')
       "
       @click="toggleOwnershipPopover"
     >
       <div
         v-if="ownershipSelected !== 'all'"
-        class="absolute top-[-2px] left-[-2px] size-2 rounded-full bg-component-node-widget-background-highlighted"
+        class="absolute top-[-2px] left-[-2px] size-2 rounded-full bg-ring"
       />
       <i class="icon-[lucide--user] size-4" />
     </Button>
@@ -220,8 +214,8 @@ function handleSearchEnter(event: KeyboardEvent) {
         :class="
           cn(
             'flex min-w-32 flex-col gap-2 p-2',
-            'bg-component-node-background',
-            'rounded-lg outline -outline-offset-1 outline-component-node-border'
+            'bg-card',
+            'rounded-lg outline -outline-offset-1 outline-border'
           )
         "
       >
@@ -250,16 +244,13 @@ function handleSearchEnter(event: KeyboardEvent) {
       variant="textonly"
       size="icon"
       :class="
-        cn(
-          actionButtonStyle,
-          'relative w-8 hover:outline-component-node-widget-background-highlighted active:scale-95'
-        )
+        cn(actionButtonStyle, 'relative w-8 hover:outline-ring active:scale-95')
       "
       @click="toggleBaseModelPopover"
     >
       <div
         v-if="baseModelSelected.size > 0"
-        class="absolute top-[-2px] left-[-2px] size-2 rounded-full bg-component-node-widget-background-highlighted"
+        class="absolute top-[-2px] left-[-2px] size-2 rounded-full bg-ring"
       />
       <i class="icon-[comfy--ai-model] size-4" />
     </Button>
@@ -276,8 +267,8 @@ function handleSearchEnter(event: KeyboardEvent) {
         :class="
           cn(
             'flex min-w-32 flex-col gap-2 p-2',
-            'bg-component-node-background',
-            'rounded-lg outline -outline-offset-1 outline-component-node-border'
+            'bg-card',
+            'rounded-lg outline -outline-offset-1 outline-border'
           )
         "
       >
@@ -311,7 +302,7 @@ function handleSearchEnter(event: KeyboardEvent) {
       :class="
         cn(
           actionButtonStyle,
-          'flex items-center justify-center gap-1 p-1 hover:outline-component-node-widget-background-highlighted'
+          'flex items-center justify-center gap-1 p-1 hover:outline-ring'
         )
       "
     >

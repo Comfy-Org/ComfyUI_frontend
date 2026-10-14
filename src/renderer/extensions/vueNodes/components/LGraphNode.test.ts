@@ -427,10 +427,10 @@ describe('LGraphNode', () => {
     const { container } = renderLGraphNode({ nodeData: mockNodeData })
     const root = getNodeRoot(container)
 
-    expect(root).toHaveClass('outline-node-component-outline')
+    expect(root).toHaveClass('outline-foreground')
 
     const overlay = screen.getByTestId('node-state-outline-overlay')
-    expect(overlay).toHaveClass('border-node-component-outline')
+    expect(overlay).toHaveClass('border-foreground')
   })
 
   it('should render progress indicator when executing prop is true', () => {
@@ -439,10 +439,10 @@ describe('LGraphNode', () => {
     const { container } = renderLGraphNode({ nodeData: mockNodeData })
     const root = getNodeRoot(container)
 
-    expect(root).toHaveClass('outline-node-stroke-executing')
+    expect(root).toHaveClass('outline-primary')
 
     const overlay = screen.getByTestId('node-state-outline-overlay')
-    expect(overlay).toHaveClass('border-node-stroke-executing')
+    expect(overlay).toHaveClass('border-primary')
   })
 
   it('hides a linked core LoadImage input preview', () => {

@@ -83,7 +83,7 @@
             )
           }}
           <span
-            class="inline-flex rounded-sm bg-modal-card-tag-background px-1.5 py-0.5 text-xs/none font-medium text-modal-card-tag-foreground"
+            class="inline-flex rounded-sm bg-muted px-1.5 py-0.5 text-xs/none font-medium text-foreground"
           >
             {{ replacementLabel }}
           </span>

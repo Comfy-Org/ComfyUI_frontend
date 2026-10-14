@@ -38,7 +38,7 @@ function edit(event: Event) {
         :disabled="locked"
         autocomplete="off"
         spellcheck="false"
-        class="h-8 min-w-0 flex-1 rounded-lg border border-interface-stroke bg-input-surface px-3 text-sm text-base-foreground focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:outline-none disabled:opacity-40 max-lg:h-10"
+        class="h-8 min-w-0 flex-1 rounded-lg border border-border bg-input-surface px-3 text-sm text-base-foreground focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:outline-none disabled:opacity-40 max-lg:h-10"
         @input="edit"
       />
       <button

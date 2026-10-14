@@ -3,7 +3,7 @@
     :data-testid="`member-row-${member.id}`"
     :class="
       cn(
-        'grid w-full items-center border-b border-interface-stroke/30 p-2 last:border-0',
+        'grid w-full items-center border-b border-border/30 p-2 last:border-0',
         isSingleSeatPlan ? 'grid-cols-1' : gridCols
       )
     "

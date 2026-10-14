@@ -6,7 +6,7 @@
     @pointerup.stop
   >
     <div
-      class="flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-lg bg-node-component-surface"
+      class="flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-lg bg-card"
     >
       <div
         class="relative max-h-full w-full"
@@ -63,9 +63,7 @@
       >
         {{ $t('painter.tool') }}
       </div>
-      <div
-        class="flex h-8 items-center gap-1 rounded-sm bg-component-node-widget-background p-1"
-      >
+      <div class="flex h-8 items-center gap-1 rounded-sm bg-input p-1">
         <Button
           variant="textonly"
           size="unset"
@@ -73,7 +71,7 @@
             cn(
               'flex-1 self-stretch px-2 text-xs transition-colors',
               tool === PAINTER_TOOLS.BRUSH
-                ? 'rounded-sm bg-component-node-widget-background-selected text-base-foreground'
+                ? 'rounded-sm bg-muted text-base-foreground'
                 : 'text-muted-foreground hover:text-base-foreground'
             )
           "
@@ -88,7 +86,7 @@
             cn(
               'flex-1 self-stretch px-2 text-xs transition-colors',
               tool === PAINTER_TOOLS.ERASER
-                ? 'rounded-sm bg-component-node-widget-background-selected text-base-foreground'
+                ? 'rounded-sm bg-muted text-base-foreground'
                 : 'text-muted-foreground hover:text-base-foreground'
             )
           "
@@ -104,7 +102,7 @@
         {{ $t('painter.size') }}
       </div>
       <div
-        class="flex h-8 items-center gap-2 rounded-lg bg-component-node-widget-background pr-2 pl-3"
+        class="flex h-8 items-center gap-2 rounded-lg bg-input pr-2 pl-3"
         data-testid="painter-size-row"
       >
         <Slider
@@ -130,7 +128,7 @@
           {{ $t('painter.color') }}
         </div>
         <div
-          class="flex h-8 w-full items-center gap-2 rounded-lg bg-component-node-widget-background px-4"
+          class="flex h-8 w-full items-center gap-2 rounded-lg bg-input px-4"
           data-testid="painter-color-row"
         >
           <input
@@ -173,7 +171,7 @@
           {{ $t('painter.hardness') }}
         </div>
         <div
-          class="flex h-8 items-center gap-2 rounded-lg bg-component-node-widget-background pr-2 pl-3"
+          class="flex h-8 items-center gap-2 rounded-lg bg-input pr-2 pl-3"
           data-testid="painter-hardness-row"
         >
           <Slider
@@ -201,7 +199,7 @@
           {{ $t('painter.width') }}
         </div>
         <div
-          class="flex h-8 items-center gap-2 rounded-lg bg-component-node-widget-background pr-2 pl-3"
+          class="flex h-8 items-center gap-2 rounded-lg bg-input pr-2 pl-3"
           data-testid="painter-width-row"
         >
           <Slider
@@ -223,7 +221,7 @@
           {{ $t('painter.height') }}
         </div>
         <div
-          class="flex h-8 items-center gap-2 rounded-lg bg-component-node-widget-background pr-2 pl-3"
+          class="flex h-8 items-center gap-2 rounded-lg bg-input pr-2 pl-3"
           data-testid="painter-height-row"
         >
           <Slider
@@ -245,7 +243,7 @@
           {{ $t('painter.background') }}
         </div>
         <div
-          class="flex h-8 w-full items-center gap-2 rounded-lg bg-component-node-widget-background px-4"
+          class="flex h-8 w-full items-center gap-2 rounded-lg bg-input px-4"
           data-testid="painter-bg-color-row"
         >
           <input
@@ -269,7 +267,7 @@
         data-testid="painter-clear-button"
         :class="
           cn(
-            'gap-2 rounded-lg border border-component-node-border bg-component-node-background text-xs text-muted-foreground hover:text-base-foreground',
+            'gap-2 rounded-lg border border-border bg-card text-xs text-muted-foreground hover:text-base-foreground',
             !compact && 'col-span-2'
           )
         "

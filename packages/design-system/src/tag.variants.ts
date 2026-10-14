@@ -5,21 +5,21 @@ export const tagVariants = cva({
   base: 'inline-flex h-6 max-w-full shrink-0 items-center justify-center gap-1 text-xs ring-offset-base-background backdrop-blur-sm data-[selected=true]:ring-2 data-[selected=true]:ring-base-foreground data-[selected=true]:ring-offset-1 data-[state=active]:ring-2 data-[state=active]:ring-base-foreground data-[state=active]:ring-offset-1 [&.ProseMirror-selectednode]:ring-2 [&.ProseMirror-selectednode]:ring-base-foreground [&.ProseMirror-selectednode]:ring-offset-1',
   variants: {
     shape: {
-      square: 'rounded-sm bg-modal-card-tag-background',
+      square: 'rounded-sm bg-muted',
       rounded: 'rounded-full bg-secondary-background',
       overlay: 'rounded-sm bg-zinc-500/40 text-white/90'
     },
     state: {
-      default: 'text-modal-card-tag-foreground',
+      default: 'text-foreground',
       unselected: 'text-muted-foreground opacity-70',
-      selected: 'text-modal-card-tag-foreground'
+      selected: 'text-foreground'
     },
     removable: {
       true: 'py-1 pr-1 pl-2',
       false: 'px-2 py-1'
     },
     interactive: {
-      true: 'cursor-pointer transition-colors focus-within:ring-2 focus-within:ring-base-foreground focus-within:ring-offset-1 hover:bg-modal-card-background-hovered focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:ring-offset-1 focus-visible:outline-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50',
+      true: 'cursor-pointer transition-colors focus-within:ring-2 focus-within:ring-base-foreground focus-within:ring-offset-1 hover:bg-accent focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:ring-offset-1 focus-visible:outline-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50',
       false: ''
     }
   },

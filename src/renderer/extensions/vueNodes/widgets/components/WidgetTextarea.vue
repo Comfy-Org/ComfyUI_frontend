@@ -2,8 +2,8 @@
   <div
     :class="
       cn(
-        'group relative rounded-lg transition-all focus-within:ring focus-within:ring-component-node-widget-background-highlighted',
-        !isReadOnly && 'hover:bg-component-node-widget-background-hovered',
+        'group relative rounded-lg transition-all focus-within:ring focus-within:ring-ring',
+        !isReadOnly && 'hover:bg-muted',
         widget.borderStyle
       )
     "
@@ -47,7 +47,7 @@
       @click="handleCopy"
       @pointerdown.capture.stop
     >
-      <i class="icon-[lucide--copy] size-4 text-component-node-foreground" />
+      <i class="icon-[lucide--copy] size-4 text-card-foreground" />
     </Button>
   </div>
 </template>

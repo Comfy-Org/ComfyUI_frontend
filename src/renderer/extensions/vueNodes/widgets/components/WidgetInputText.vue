@@ -4,7 +4,7 @@
       <Loader
         v-if="loading"
         size="sm"
-        class="absolute top-1/2 left-3 z-10 -translate-y-1/2 text-component-node-foreground"
+        class="absolute top-1/2 left-3 z-10 -translate-y-1/2 text-card-foreground"
       />
       <Input
         v-model="modelValue"
@@ -13,7 +13,7 @@
           cn(
             WidgetInputBaseClass,
             'h-auto min-w-[4ch] truncate',
-            !isReadOnly && 'hover:bg-component-node-widget-background-hovered',
+            !isReadOnly && 'hover:bg-muted',
             size === 'large' ? 'py-3 text-sm' : 'py-2 text-xs',
             loading && 'pl-9'
           )

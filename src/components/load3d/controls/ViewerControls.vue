@@ -1,5 +1,5 @@
 <template>
-  <div class="relative rounded-lg bg-backdrop/30">
+  <div class="relative rounded-lg bg-background/30">
     <div class="flex flex-col gap-2">
       <Button
         :tooltip="t('load3d.openIn3DViewer')"

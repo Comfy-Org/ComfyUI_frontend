@@ -12,7 +12,7 @@
     </div>
     <div
       v-if="isRecording || isPlaying || recordedURL"
-      class="flex h-14 w-full min-w-0 items-center gap-2 rounded-lg bg-node-component-surface px-3 text-text-secondary"
+      class="flex h-14 w-full min-w-0 items-center gap-2 rounded-lg bg-card px-3 text-text-secondary"
     >
       <!-- Recording Status -->
       <div class="flex shrink-0 items-center gap-1">

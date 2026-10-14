@@ -155,8 +155,7 @@ const isSaved = computed(
   () => workflowStore.activeWorkflow?.isTemporary === false
 )
 
-const activeSaveClasses =
-  'bg-interface-builder-mode-button-background text-interface-builder-mode-button-foreground hover:bg-interface-builder-mode-button-background/80'
+const activeSaveClasses = 'bg-ocean-600 text-white hover:bg-ocean-600/80'
 const disabledSaveClasses =
   'bg-secondary-background text-muted-foreground/50 disabled:opacity-100'
 

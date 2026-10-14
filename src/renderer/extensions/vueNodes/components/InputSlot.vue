@@ -43,7 +43,7 @@
             class="min-w-0"
             :label-class="
               cn(
-                'block truncate text-node-component-slot-text',
+                'block truncate text-muted-foreground',
                 hasError && 'font-medium text-error'
               )
             "

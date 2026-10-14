@@ -29,7 +29,7 @@
       :class="
         cn(
           tabStyles,
-          '-ml-5 box-border w-[calc(50%+20px)] rounded-none bg-node-component-header-surface pt-9 pb-3 pl-5 text-node-component-slot-text',
+          '-ml-5 box-border w-[calc(50%+20px)] rounded-none bg-secondary pt-9 pb-3 pl-5 text-muted-foreground',
           enterRadiusClass
         )
       "
@@ -79,7 +79,7 @@
       :class="
         cn(
           tabStyles,
-          '-ml-5 box-border w-[calc(50%+20px)] rounded-none bg-node-component-header-surface pt-9 pb-3 pl-5 text-node-component-slot-text',
+          '-ml-5 box-border w-[calc(50%+20px)] rounded-none bg-secondary pt-9 pb-3 pl-5 text-muted-foreground',
           enterRadiusClass
         )
       "
@@ -145,7 +145,7 @@
       :class="
         cn(
           tabStyles,
-          'box-border w-full rounded-none bg-node-component-header-surface text-node-component-slot-text',
+          'box-border w-full rounded-none bg-secondary text-muted-foreground',
           hasAnyError ? 'pt-9 pb-3' : 'pt-8 pb-3',
           footerRadiusClass
         )
@@ -177,7 +177,7 @@
       :class="
         cn(
           tabStyles,
-          'box-border w-full rounded-none bg-node-component-header-surface text-node-component-slot-text',
+          'box-border w-full rounded-none bg-secondary text-muted-foreground',
           hasAnyError ? 'pt-9 pb-3' : 'pt-8 pb-3',
           footerRadiusClass
         )

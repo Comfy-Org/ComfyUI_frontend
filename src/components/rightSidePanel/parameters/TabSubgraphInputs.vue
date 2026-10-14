@@ -149,7 +149,7 @@ const label = computed(() => {
         ? ''
         : t('rightSidePanel.inputsNoneTooltip')
     "
-    class="border-b border-interface-stroke"
+    class="border-b border-border"
     @update:collapse="(v) => (firstSectionCollapsed = v)"
     @reorder="handleReorder"
   >
@@ -167,6 +167,6 @@ const label = computed(() => {
     :host="node"
     :widgets="advancedInputsWidgets"
     show-node-name
-    class="border-b border-interface-stroke"
+    class="border-b border-border"
   />
 </template>

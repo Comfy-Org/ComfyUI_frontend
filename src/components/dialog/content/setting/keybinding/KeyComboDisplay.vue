@@ -2,7 +2,7 @@
   <span class="flex flex-row gap-0.5">
     <template v-for="(sequence, index) in keySequences" :key="index">
       <Badge
-        class="min-w-6 justify-center gap-1 bg-interface-menu-keybind-surface-default text-center font-normal text-base-foreground capitalize"
+        class="min-w-6 justify-center gap-1 bg-muted text-center font-normal text-base-foreground capitalize"
         :severity="isModified ? 'info' : 'secondary'"
       >
         {{ sequence }}

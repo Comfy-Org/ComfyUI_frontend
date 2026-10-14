@@ -104,7 +104,7 @@
       </Button>
     </div>
 
-    <div class="mx-0 my-2 border-t border-interface-stroke" />
+    <div class="mx-0 my-2 border-t border-border" />
 
     <div
       v-if="canAccessSubscriptionFeatures"
@@ -141,7 +141,7 @@
       }}</span>
     </div>
 
-    <div class="mx-0 my-2 border-t border-interface-stroke" />
+    <div class="mx-0 my-2 border-t border-border" />
 
     <div
       class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"

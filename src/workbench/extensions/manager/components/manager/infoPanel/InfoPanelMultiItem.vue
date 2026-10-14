@@ -96,9 +96,7 @@ const { nodePacks } = defineProps<{
 
 const { t } = useI18n()
 
-const accordionClass = cn(
-  'border-t border-border-default bg-modal-panel-background'
-)
+const accordionClass = cn('border-t border-border-default bg-card')
 
 const managerStore = useComfyManagerStore()
 const nodePacksRef = toRef(() => nodePacks)

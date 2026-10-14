@@ -5,7 +5,7 @@
       data-testid="trim-track"
       :class="
         cn(
-          'relative min-w-0 flex-1 rounded-lg bg-component-node-widget-background',
+          'relative min-w-0 flex-1 rounded-lg bg-input',
           disabled || totalFrames <= 1
             ? 'cursor-default'
             : isScrubDragging
@@ -33,12 +33,12 @@
         :style="playheadStyle"
       >
         <span
-          class="rounded-lg bg-interface-menu-surface px-2.5 py-1 text-sm font-semibold text-base-foreground tabular-nums"
+          class="rounded-lg bg-popover px-2.5 py-1 text-sm font-semibold text-base-foreground tabular-nums"
         >
           {{ playheadFrame }}
         </span>
         <span
-          class="size-0 border-x-[5px] border-t-[5px] border-x-transparent border-t-interface-menu-surface"
+          class="size-0 border-x-[5px] border-t-[5px] border-x-transparent border-t-popover"
         />
       </div>
 
@@ -49,12 +49,12 @@
         :style="activeHandleTooltipStyle"
       >
         <span
-          class="rounded-lg bg-interface-menu-surface px-2.5 py-1 text-sm font-semibold text-base-foreground tabular-nums"
+          class="rounded-lg bg-popover px-2.5 py-1 text-sm font-semibold text-base-foreground tabular-nums"
         >
           {{ activeHandleFrame }}
         </span>
         <span
-          class="size-0 border-x-[5px] border-t-[5px] border-x-transparent border-t-interface-menu-surface"
+          class="size-0 border-x-[5px] border-t-[5px] border-x-transparent border-t-popover"
         />
       </div>
 
@@ -107,7 +107,7 @@
           :class="
             cn(
               'pointer-events-auto flex shrink-0 cursor-ew-resize',
-              'items-center justify-center bg-video-trim-selection-background',
+              'items-center justify-center bg-(--color-datatype-CLIP)',
               'rounded-l-lg border-none p-0'
             )
           "
@@ -131,7 +131,7 @@
           :class="
             cn(
               'pointer-events-auto flex shrink-0 cursor-ew-resize',
-              'items-center justify-center bg-video-trim-selection-background',
+              'items-center justify-center bg-(--color-datatype-CLIP)',
               'rounded-r-lg border-none p-0'
             )
           "
@@ -154,9 +154,7 @@
         :style="playheadStyle"
         @pointerdown.stop="startScrubDrag"
       >
-        <div
-          class="pointer-events-none w-0.5 rounded-full bg-video-trim-playhead-background"
-        />
+        <div class="pointer-events-none w-0.5 rounded-full bg-destructive" />
       </div>
     </div>
   </div>
@@ -276,9 +274,7 @@ const tileWidthPx = computed(() => {
 })
 
 const trimSelectionBarClass = computed(() =>
-  isFilmstripLoading.value
-    ? 'bg-component-node-widget-background'
-    : 'bg-video-trim-selection-background'
+  isFilmstripLoading.value ? 'bg-input' : 'bg-(--color-datatype-CLIP)'
 )
 
 const startNorm = computed(() =>

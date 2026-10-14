@@ -72,7 +72,7 @@
                 cn(
                   'pointer-events-auto',
                   !firstPanelRendered && 'hidden',
-                  sidebarLocation === 'left' && 'bg-interface-stroke/50'
+                  sidebarLocation === 'left' && 'bg-border/50'
                 )
               "
               @dragging="onResizeDragging($event, 'first-side-panel')"
@@ -127,7 +127,7 @@
                   id="bottom-panel"
                   :order="2"
                   :default-size="bottomPanelDefaultSizes[1]"
-                  class="bottom-panel pointer-events-auto max-w-full overflow-x-auto rounded-lg border border-interface-stroke bg-comfy-menu-bg focus-visible:outline-hidden"
+                  class="bottom-panel pointer-events-auto max-w-full overflow-x-auto rounded-lg border border-border bg-comfy-menu-bg focus-visible:outline-hidden"
                 >
                   <slot name="bottom-panel" />
                 </SplitterPanel>
@@ -142,7 +142,7 @@
                 cn(
                   'pointer-events-auto',
                   !lastPanelRendered && 'hidden',
-                  sidebarLocation === 'right' && 'bg-interface-stroke/50'
+                  sidebarLocation === 'right' && 'bg-border/50'
                 )
               "
               @dragging="onResizeDragging($event, 'last-side-panel')"

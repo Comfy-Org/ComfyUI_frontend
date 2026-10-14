@@ -12,7 +12,7 @@
       <div
         :class="
           cn(
-            'flex items-center justify-center gap-1 rounded-full hover:bg-interface-button-hover-surface',
+            'flex items-center justify-center gap-1 rounded-full hover:bg-accent',
             compact && 'size-full'
           )
         "

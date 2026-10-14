@@ -1,27 +1,60 @@
 import { toRaw } from 'vue'
-import { z } from 'zod'
 import { fromZodError } from 'zod-validation-error'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { paletteSchema, comfyBaseSchema } from '@/schemas/colorPaletteSchema'
-import type { Colors, Palette } from '@/schemas/colorPaletteSchema'
+import { paletteSchema, themeSchema } from '@/schemas/colorPaletteSchema'
+import type { Colors, Palette, Theme } from '@/schemas/colorPaletteSchema'
 import { useApp } from '@/scripts/appInstance'
 import { uploadFile } from '@/scripts/utils'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
-const THEME_PROPERTY_MAP = {
-  NODE_BOX_OUTLINE_COLOR: 'component-node-border',
-  NODE_DEFAULT_BGCOLOR: 'component-node-background',
-  NODE_DEFAULT_BOXCOLOR: 'node-component-header-icon',
-  NODE_DEFAULT_COLOR: 'node-component-header-surface',
-  NODE_TITLE_COLOR: 'node-component-header',
-  WIDGET_BGCOLOR: 'component-node-widget-background',
-  WIDGET_TEXT_COLOR: 'component-node-foreground'
-} as const satisfies Partial<Record<keyof Colors['litegraph_base'], string>>
+const PALETTE_FALLBACK_KEYS = [
+  'interface-panel-box-shadow',
+  'interface-panel-drop-shadow',
+  'interface-floating-panel-shadow'
+] as const
+
+const THEME_KEYS = themeSchema.keyof().options
+
+function isCorePaletteId(colorPaletteId: string) {
+  return colorPaletteId === 'dark' || colorPaletteId === 'light'
+}
+
+function deriveLegacyTheme({ comfy_base, litegraph_base }: Colors): Theme {
+  const surface =
+    comfy_base['interface-panel-surface'] ?? comfy_base['comfy-menu-bg']
+  const contrast = comfy_base['contrast-mix-color'] ?? '#fff'
+  const mixWithContrast = (surfacePercent: number) =>
+    `color-mix(in srgb, ${surface} ${surfacePercent}%, ${contrast})`
+  return {
+    background: surface,
+    popover: surface,
+    foreground: comfy_base['fg-color'],
+    'muted-foreground': comfy_base['descrip-text'],
+    border: comfy_base['interface-stroke'] ?? mixWithContrast(75.5),
+    accent:
+      comfy_base['interface-panel-hover-surface'] ??
+      comfy_base['interface-button-hover-surface'] ??
+      mixWithContrast(92.5),
+    muted:
+      comfy_base['interface-panel-selected-surface'] ?? mixWithContrast(87.5),
+    card: litegraph_base.NODE_DEFAULT_BGCOLOR,
+    'card-foreground': litegraph_base.WIDGET_TEXT_COLOR,
+    secondary: litegraph_base.NODE_DEFAULT_COLOR,
+    input: litegraph_base.WIDGET_BGCOLOR
+  }
+}
+
+function resolvePaletteTheme(colorPaletteId: string, colors: Colors): Theme {
+  const legacy = isCorePaletteId(colorPaletteId)
+    ? {}
+    : deriveLegacyTheme(colors)
+  return { ...legacy, ...colors.theme }
+}
 
 export const useColorPaletteService = () => {
   const colorPaletteStore = useColorPaletteStore()
@@ -91,14 +124,6 @@ export const useColorPaletteService = () => {
     Object.assign(LGraphCanvas.link_type_colors, types, linkColorPalette)
   }
 
-  function validThemeProp(
-    propertyMaybe: unknown
-  ): propertyMaybe is keyof typeof THEME_PROPERTY_MAP {
-    return (
-      (propertyMaybe as keyof typeof THEME_PROPERTY_MAP) in THEME_PROPERTY_MAP
-    )
-  }
-
   function loadLinkColorPaletteForVueNodes(
     linkColorPalette: Colors['node_slot']
   ) {
@@ -116,26 +141,14 @@ export const useColorPaletteService = () => {
     }
   }
 
-  function loadLitegraphForVueNodes(
-    palette: Colors['litegraph_base'],
-    colorPaletteId: string
-  ) {
+  function loadThemeColors(theme: Theme) {
     const rootStyle = document.documentElement.style
-
-    for (const themeVar of Object.keys(THEME_PROPERTY_MAP)) {
-      if (!validThemeProp(themeVar)) {
-        continue
-      }
-      const cssVar = THEME_PROPERTY_MAP[themeVar]
-      if (colorPaletteId === 'dark' || colorPaletteId === 'light') {
-        rootStyle.removeProperty(`--${cssVar}`)
-        continue
-      }
-      const valueMaybe = palette[themeVar]
-      if (valueMaybe) {
-        rootStyle.setProperty(`--${cssVar}`, valueMaybe)
+    for (const key of THEME_KEYS) {
+      const value = theme[key]
+      if (value) {
+        rootStyle.setProperty(`--${key}`, value)
       } else {
-        rootStyle.removeProperty(`--${cssVar}`)
+        rootStyle.removeProperty(`--${key}`)
       }
     }
   }
@@ -180,26 +193,6 @@ export const useColorPaletteService = () => {
   }
 
   /**
-   * Gets optional keys from a Zod schema object.
-   *
-   * @param schema - The Zod schema object to analyze.
-   * @returns Array of optional key names.
-   */
-  const getOptionalKeys = (schema: z.ZodObject<z.ZodRawShape>) => {
-    const optionalKeys: string[] = []
-    const shape = schema.shape
-
-    for (const [key, value] of Object.entries(shape)) {
-      if (value instanceof z.ZodOptional || value instanceof z.ZodDefault) {
-        optionalKeys.push(key)
-      }
-    }
-
-    return optionalKeys
-  }
-  const optionalComfyBaseKeys = getOptionalKeys(comfyBaseSchema)
-
-  /**
    * Loads the Comfy color palette.
    *
    * @param comfyColorPalette - The palette to set.
@@ -213,7 +206,7 @@ export const useColorPaletteService = () => {
       rootStyle.setProperty('--' + key, value)
     }
 
-    for (const optionalKey of optionalComfyBaseKeys) {
+    for (const optionalKey of PALETTE_FALLBACK_KEYS) {
       if (!(optionalKey in comfyColorPalette)) {
         rootStyle.setProperty(
           '--' + optionalKey,
@@ -253,9 +246,8 @@ export const useColorPaletteService = () => {
     const completedPalette = colorPaletteStore.completePalette(colorPalette)
     loadLinkColorPalette(completedPalette.colors.node_slot)
     loadLiteGraphColorPalette(completedPalette.colors.litegraph_base)
-    loadLitegraphForVueNodes(
-      completedPalette.colors.litegraph_base,
-      colorPaletteId
+    loadThemeColors(
+      resolvePaletteTheme(colorPaletteId, completedPalette.colors)
     )
     loadLinkColorPaletteForVueNodes(completedPalette.colors.node_slot)
     loadComfyColorPalette(

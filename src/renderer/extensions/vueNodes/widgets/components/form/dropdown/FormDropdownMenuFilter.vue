@@ -38,9 +38,9 @@ const uploadButtonStyle = cn(
         cn(
           'inline-flex appearance-none items-center justify-center rounded-md border-0 px-4 py-2 text-base-foreground select-none',
           !singleFilterOption &&
-            'cursor-pointer transition-all duration-150 hover:bg-interface-menu-component-surface-hovered hover:text-base-foreground active:scale-95',
+            'cursor-pointer transition-all duration-150 hover:bg-accent hover:text-base-foreground active:scale-95',
           !singleFilterOption && filterSelected === option.value
-            ? 'bg-interface-menu-component-surface-selected! text-base-foreground'
+            ? 'bg-muted! text-base-foreground'
             : 'bg-transparent'
         )
       "

@@ -19,7 +19,7 @@
               WidgetInputBaseClass,
               'flex w-full min-w-0 items-center overflow-hidden',
               useWidgetHeight(),
-              !disabled && 'hover:bg-component-node-widget-background-hovered',
+              !disabled && 'hover:bg-muted',
               disabled && 'opacity-50',
               isInvalid && 'ring-1 ring-destructive-background'
             )
@@ -58,9 +58,7 @@
               :class="
                 cn(
                   'icon-[lucide--chevron-down] size-4',
-                  disabled
-                    ? 'bg-component-node-foreground-secondary'
-                    : 'bg-muted-foreground'
+                  disabled ? 'bg-muted-foreground' : 'bg-muted-foreground'
                 )
               "
               aria-hidden="true"

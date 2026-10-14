@@ -23,7 +23,7 @@
               isCurrentStep(step.name) &&
                 !(isProfileCreationFlow && step.name === 'finish')
                 ? 'bg-secondary-background-selected'
-                : 'hover:bg-interface-menu-component-surface-hovered'
+                : 'hover:bg-accent'
             )
           "
           @click="$emit('stepClick', step.name)"

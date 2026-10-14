@@ -3,7 +3,7 @@
     <!-- Billing data still loading: avoid rendering a false $0 charge -->
     <div
       v-if="isLoading && !subscription"
-      class="rounded-2xl border border-interface-stroke p-6"
+      class="rounded-2xl border border-border p-6"
     >
       <div class="flex items-center gap-2 py-4 text-muted-foreground">
         <i class="pi pi-spin pi-spinner" />
@@ -14,7 +14,7 @@
     <!-- Billing fetch failed: offer retry rather than a misleading amount -->
     <div
       v-else-if="error && !subscription"
-      class="flex flex-col items-start gap-3 rounded-2xl border border-interface-stroke p-6"
+      class="flex flex-col items-start gap-3 rounded-2xl border border-border p-6"
     >
       <div class="flex items-center gap-2 text-text-secondary">
         <i class="pi pi-exclamation-circle text-destructive-background" />
@@ -38,7 +38,7 @@
          the history link stays reachable in every state. -->
     <div
       v-else
-      class="flex flex-col gap-4 rounded-2xl border border-interface-stroke/60 p-4 @2xl:flex-row @2xl:items-center @2xl:justify-between"
+      class="flex flex-col gap-4 rounded-2xl border border-border/60 p-4 @2xl:flex-row @2xl:items-center @2xl:justify-between"
     >
       <div v-if="upcomingAmount" class="flex flex-col gap-2">
         <span class="text-sm text-muted-foreground">

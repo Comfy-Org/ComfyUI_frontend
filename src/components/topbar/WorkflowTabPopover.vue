@@ -7,7 +7,7 @@
     @mouseleave="hidePopover"
   >
     <div
-      class="flex max-w-62.5 flex-col overflow-hidden rounded-xl bg-interface-menu-surface text-text-primary"
+      class="flex max-w-62.5 flex-col overflow-hidden rounded-xl bg-popover text-text-primary"
     >
       <div
         v-if="thumbnailUrl && !isActiveTab"

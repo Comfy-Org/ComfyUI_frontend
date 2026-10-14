@@ -63,7 +63,7 @@ export const FailedJob: Story = {
   args: {
     iconName: iconForJobState('failed'),
     iconClass: 'text-destructive-background',
-    iconWrapperClass: 'bg-modal-card-placeholder-background',
+    iconWrapperClass: 'bg-muted',
     primaryText: 'Failed',
     secondaryText: '8:59:30pm'
   }

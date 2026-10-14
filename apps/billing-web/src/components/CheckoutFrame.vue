@@ -9,7 +9,7 @@
           'relative flex h-full flex-col gap-4 overflow-y-auto p-4 pt-6',
           // The app's dark palette (src/assets/palettes/dark.json) replaces
           // the design-system stroke at runtime.
-          '[--interface-stroke:color-mix(in_srgb,#171718_75.5%,#fff)]',
+          '[--border:color-mix(in_srgb,#171718_75.5%,#fff)]',
           step === 'payment' &&
             'xl:h-[min(740px,90vh)] xl:min-h-[min(740px,90vh)] xl:w-[min(1280px,95vw)] xl:gap-0 xl:overflow-hidden xl:rounded-2xl xl:p-0',
           (step === 'confirm' || step === 'success') &&

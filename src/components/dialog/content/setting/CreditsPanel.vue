@@ -11,10 +11,10 @@
       <h2 class="mb-2 text-2xl font-bold">
         {{ $t('credits.credits') }}
       </h2>
-      <div class="my-4 border-t border-interface-stroke" />
+      <div class="my-4 border-t border-border" />
     </div>
 
-    <div v-if="embedded" class="rounded-2xl border border-interface-stroke p-6">
+    <div v-if="embedded" class="rounded-2xl border border-border p-6">
       <div class="mb-4 flex items-center justify-between">
         <h3 class="m-0 text-base font-semibold">
           {{ $t('credits.workspaceCredits') }}

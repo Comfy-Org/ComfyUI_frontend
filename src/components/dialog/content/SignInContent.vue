@@ -54,11 +54,11 @@
       </template>
 
       <div class="my-8 flex items-center gap-3">
-        <div class="grow border-t border-interface-stroke" />
+        <div class="grow border-t border-border" />
         <span class="shrink-0 text-muted-foreground">{{
           t('auth.login.orContinueWith')
         }}</span>
-        <div class="grow border-t border-interface-stroke" />
+        <div class="grow border-t border-border" />
       </div>
 
       <!-- Social Login Buttons (hidden if host not whitelisted) -->

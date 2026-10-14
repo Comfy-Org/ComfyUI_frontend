@@ -27,6 +27,87 @@ function restoreRootShadowAfterTest() {
   })
 }
 
+function readRootProperty(property: string) {
+  return document.documentElement.style.getPropertyValue(property)
+}
+
+function clearRootThemeAfterTest() {
+  onTestFinished(() => {
+    for (const property of ['--background', '--card', '--border', '--muted']) {
+      document.documentElement.style.removeProperty(property)
+    }
+  })
+}
+
+describe('useColorPaletteService theme variables', () => {
+  it.for([
+    {
+      paletteId: 'dark',
+      expected: { '--background': '', '--card': '', '--border': '' }
+    },
+    {
+      paletteId: 'light',
+      expected: { '--background': '', '--card': '', '--border': '' }
+    },
+    {
+      paletteId: 'nord',
+      expected: {
+        '--background': '#161b22',
+        '--card': '#161b22',
+        '--border': 'color-mix(in srgb, #161b22 75.5%, #fff)'
+      }
+    },
+    {
+      paletteId: 'solarized',
+      expected: {
+        '--background': '#073642',
+        '--card': '#073642',
+        '--border': 'color-mix(in srgb, #073642 75.5%, #fff)'
+      }
+    }
+  ])(
+    'applies the $paletteId palette to the theme variables',
+    async ({ paletteId, expected }) => {
+      clearRootThemeAfterTest()
+
+      await useColorPaletteService().loadColorPalette(paletteId)
+
+      expect({
+        '--background': readRootProperty('--background'),
+        '--card': readRootProperty('--card'),
+        '--border': readRootProperty('--border')
+      }).toEqual(expected)
+    }
+  )
+
+  it('lets a palette theme override derived values and clears them when a core palette loads', async () => {
+    clearRootThemeAfterTest()
+    const store = useColorPaletteStore()
+    const nord = store.palettesLookup.nord
+    assert.exists(nord)
+    store.addCustomPalette({
+      ...nord,
+      id: 'custom-theme',
+      colors: { ...nord.colors, theme: { card: '#123456', muted: '#654321' } }
+    })
+    const service = useColorPaletteService()
+
+    await service.loadColorPalette('custom-theme')
+    expect([
+      readRootProperty('--card'),
+      readRootProperty('--muted'),
+      readRootProperty('--background')
+    ]).toEqual(['#123456', '#654321', '#161b22'])
+
+    await service.loadColorPalette('dark')
+    expect([
+      readRootProperty('--card'),
+      readRootProperty('--muted'),
+      readRootProperty('--background')
+    ]).toEqual(['', '', ''])
+  })
+})
+
 describe('useColorPaletteService', () => {
   it.for([
     { paletteId: 'dark', expected: SHADOW_FALLBACK },

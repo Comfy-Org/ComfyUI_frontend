@@ -14,7 +14,7 @@
       </Button>
       <div
         v-show="showUpDirection"
-        class="absolute top-0 left-12 rounded-lg bg-interface-menu-surface shadow-lg"
+        class="absolute top-0 left-12 rounded-lg bg-popover shadow-lg"
       >
         <div class="flex flex-col">
           <Button
@@ -49,7 +49,7 @@
       </Button>
       <div
         v-show="showMaterialMode"
-        class="absolute top-0 left-12 rounded-lg bg-interface-menu-surface shadow-lg"
+        class="absolute top-0 left-12 rounded-lg bg-popover shadow-lg"
       >
         <div class="flex flex-col">
           <Button

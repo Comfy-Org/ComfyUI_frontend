@@ -31,13 +31,13 @@ const executionStore = useExecutionStore()
   >
     <div
       data-testid="linear-progress-overall"
-      class="absolute inset-0 h-full bg-interface-panel-job-progress-primary transition-[width]"
+      class="absolute inset-0 h-full bg-primary transition-[width]"
       :class="cn(rounded && 'rounded-sm')"
       :style="{ width: `${totalPercent}%`, opacity: overallOpacity }"
     />
     <div
       data-testid="linear-progress-node"
-      class="absolute inset-0 h-full bg-interface-panel-job-progress-secondary transition-[width]"
+      class="absolute inset-0 h-full bg-primary/30 transition-[width]"
       :class="cn(rounded && 'rounded-sm')"
       :style="{ width: `${currentNodePercent}%`, opacity: activeOpacity }"
     />

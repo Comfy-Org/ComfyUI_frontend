@@ -4,10 +4,7 @@
     data-testid="colors"
     @pointerdown.stop
   >
-    <span
-      v-if="widget?.name"
-      class="shrink-0 truncate text-node-component-slot-text"
-    >
+    <span v-if="widget?.name" class="shrink-0 truncate text-muted-foreground">
       {{ widget.label || widget.name }}
     </span>
     <PaletteSwatchRow v-model="modelValue" :max="MAX_COLORS" />

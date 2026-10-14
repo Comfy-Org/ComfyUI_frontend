@@ -98,7 +98,7 @@
                 id="hdr-dither"
                 v-model="viewer.dither.value"
                 type="checkbox"
-                class="size-4 cursor-pointer accent-node-component-surface-highlight"
+                class="size-4 cursor-pointer accent-muted-foreground"
               />
               <label for="hdr-dither" class="cursor-pointer">
                 {{ $t('hdrViewer.dither') }}
@@ -109,7 +109,7 @@
                 id="hdr-clip"
                 v-model="viewer.clipWarnings.value"
                 type="checkbox"
-                class="size-4 cursor-pointer accent-node-component-surface-highlight"
+                class="size-4 cursor-pointer accent-muted-foreground"
               />
               <label for="hdr-clip" class="cursor-pointer">
                 {{ $t('hdrViewer.clipWarnings') }}
@@ -120,7 +120,7 @@
                 id="hdr-checkerboard"
                 v-model="viewer.checkerboard.value"
                 type="checkbox"
-                class="size-4 cursor-pointer accent-node-component-surface-highlight"
+                class="size-4 cursor-pointer accent-muted-foreground"
               />
               <label for="hdr-checkerboard" class="cursor-pointer">
                 {{ $t('hdrViewer.checkerboard') }}

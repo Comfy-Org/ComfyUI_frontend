@@ -315,11 +315,7 @@ watch(activeCategoryKey, (newKey, oldKey) => {
     background-color: transparent;
   }
   30% {
-    background-color: color-mix(
-      in srgb,
-      var(--primary-background) 15%,
-      transparent
-    );
+    background-color: color-mix(in srgb, var(--primary) 15%, transparent);
   }
 }
 </style>

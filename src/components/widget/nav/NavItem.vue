@@ -6,9 +6,7 @@
         :class="
           cn(
             'flex cursor-pointer items-center-safe gap-2 rounded-md px-4 py-3 text-sm text-base-foreground transition-colors select-none',
-            active
-              ? 'bg-interface-menu-component-surface-selected'
-              : 'hover:bg-interface-menu-component-surface-hovered'
+            active ? 'bg-muted' : 'hover:bg-accent'
           )
         "
         role="button"

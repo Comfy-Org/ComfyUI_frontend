@@ -620,7 +620,7 @@ describe('CreditsTile', () => {
     )
     expect(screen.getByText('In use')).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Add credits' })).toHaveClass(
-      'bg-interface-menu-component-surface-selected',
+      'bg-muted',
       'hover:bg-secondary-background-hover'
     )
   })

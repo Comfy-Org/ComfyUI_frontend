@@ -10,7 +10,7 @@
       </p>
     </div>
 
-    <div class="my-4 border-t border-interface-stroke" />
+    <div class="my-4 border-t border-border" />
 
     <div class="my-4 flex items-center justify-between">
       <h3 class="my-0 text-lg font-semibold">

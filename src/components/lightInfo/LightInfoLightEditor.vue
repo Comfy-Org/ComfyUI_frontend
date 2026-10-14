@@ -1,11 +1,9 @@
 <template>
-  <div
-    class="flex flex-col gap-2 rounded-sm bg-node-component-surface p-2 text-xs"
-  >
+  <div class="flex flex-col gap-2 rounded-sm bg-card p-2 text-xs">
     <ToggleGroup
       type="single"
       :model-value="light.type"
-      class="w-full min-w-0 rounded-md bg-component-node-widget-background p-1"
+      class="w-full min-w-0 rounded-md bg-input p-1"
       @update:model-value="onTypeChange"
     >
       <ToggleGroupItem
@@ -93,8 +91,7 @@ interface NumberFieldSpec {
   step: number
 }
 
-const FIELD_LABEL_CLASS =
-  'content-center truncate text-node-component-slot-text'
+const FIELD_LABEL_CLASS = 'content-center truncate text-muted-foreground'
 
 const { light, compact } = defineProps<{
   light: LightInfoEntry

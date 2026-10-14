@@ -2,7 +2,7 @@
   <Transition name="fade">
     <div
       v-if="loading"
-      class="absolute inset-0 z-50 flex items-center justify-center bg-backdrop/50"
+      class="absolute inset-0 z-50 flex items-center justify-center bg-background/50"
       data-testid="loading-overlay"
     >
       <div class="flex flex-col items-center">

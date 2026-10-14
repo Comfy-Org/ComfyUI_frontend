@@ -12,7 +12,7 @@
           type="button"
           :data-index="i"
           :data-hex="hex"
-          class="relative size-5 cursor-pointer rounded-sm border border-component-node-border p-0"
+          class="relative size-5 cursor-pointer rounded-sm border border-border p-0"
           :style="{ background: hex }"
           :title="t('palette.swatchTitle')"
           @contextmenu.prevent.stop="remove(i)"
@@ -23,7 +23,7 @@
     <button
       v-if="modelValue.length < max"
       type="button"
-      class="h-5 rounded-sm border border-component-node-border bg-component-node-widget-background px-2 text-xs leading-none"
+      class="h-5 rounded-sm border border-border bg-input px-2 text-xs leading-none"
       :title="t('palette.addColor')"
       @click="addColor"
     >

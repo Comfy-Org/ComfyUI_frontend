@@ -41,7 +41,7 @@
     </div>
 
     <div
-      class="flex min-h-0 flex-1 flex-col space-y-2 divide-y divide-interface-stroke/20"
+      class="flex min-h-0 flex-1 flex-col space-y-2 divide-y divide-border/20"
     >
       <div
         v-for="(error, idx) in card.errors"
@@ -130,7 +130,7 @@
                 </div>
               </div>
 
-              <div aria-hidden="true" class="h-px w-full bg-interface-stroke" />
+              <div aria-hidden="true" class="h-px w-full bg-border" />
 
               <div class="flex items-center justify-between gap-2">
                 <Button

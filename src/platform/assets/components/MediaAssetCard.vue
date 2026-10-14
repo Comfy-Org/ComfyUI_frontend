@@ -8,9 +8,7 @@
       cn(
         'flex cursor-pointer flex-col overflow-hidden rounded-lg p-2 transition-colors duration-200',
         'group gap-2 select-none',
-        selected
-          ? 'ring-3 ring-modal-card-border-highlighted ring-inset'
-          : 'hover:bg-modal-card-background-hovered/20'
+        selected ? 'ring-3 ring-ring ring-inset' : 'hover:bg-accent/20'
       )
     "
     :data-selected="selected"
@@ -27,10 +25,7 @@
       @dblclick.stop="(fileKind === 'image' || isHdr) && handleZoomClick()"
     >
       <!-- Loading State -->
-      <div
-        v-if="loading"
-        class="size-full animate-pulse rounded-lg bg-modal-card-placeholder-background"
-      />
+      <div v-if="loading" class="size-full animate-pulse rounded-lg bg-muted" />
 
       <!-- Content based on asset type -->
       <component
@@ -119,16 +114,10 @@
       <!-- Loading State -->
       <div v-if="loading" class="flex items-start justify-between">
         <div class="flex flex-col gap-1">
-          <div
-            class="h-4 w-24 animate-pulse rounded-sm bg-modal-card-background"
-          />
-          <div
-            class="h-3 w-20 animate-pulse rounded-sm bg-modal-card-background"
-          />
+          <div class="h-4 w-24 animate-pulse rounded-sm bg-secondary" />
+          <div class="h-3 w-20 animate-pulse rounded-sm bg-secondary" />
         </div>
-        <div
-          class="h-6 w-12 animate-pulse rounded-sm bg-modal-card-background"
-        />
+        <div class="h-6 w-12 animate-pulse rounded-sm bg-secondary" />
       </div>
 
       <!-- Content -->

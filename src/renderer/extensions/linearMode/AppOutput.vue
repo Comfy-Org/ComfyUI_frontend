@@ -47,7 +47,7 @@ function togglePromotion() {
       </div>
       <div
         v-else
-        class="absolute -top-1/2 -right-1/2 size-full rounded-lg bg-component-node-background ring-4 ring-warning-background/50 ring-inset"
+        class="absolute -top-1/2 -right-1/2 size-full rounded-lg bg-card ring-4 ring-warning-background/50 ring-inset"
       />
     </div>
   </div>

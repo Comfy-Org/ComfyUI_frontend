@@ -23,7 +23,7 @@
 
     <div
       ref="containerRef"
-      class="litegraph-minimap relative border border-interface-stroke bg-comfy-menu-bg shadow-interface"
+      class="litegraph-minimap relative border border-border bg-comfy-menu-bg shadow-interface"
       data-testid="minimap-container"
       :aria-label="`${$t('minimap.label')}. ${$t('minimap.highlightedNodes', { count: decorationCount })}`"
       :style="containerStyles"
@@ -49,7 +49,7 @@
       </Button>
 
       <hr
-        class="absolute top-6 h-px border-0 bg-node-component-border"
+        class="absolute top-6 h-px border-0 bg-border"
         :style="{
           width: containerStyles.width
         }"

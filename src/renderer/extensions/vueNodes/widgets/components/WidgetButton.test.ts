@@ -131,10 +131,7 @@ describe('WidgetButton Interactions', () => {
     ] as const)('handles button variant: %s', ([variant, hoverClass]) => {
       const widget = createButtonWidget({ options: { variant } })
       mountComponent(widget)
-      expect(screen.getByRole('button')).toHaveClass(
-        'bg-component-node-widget-background',
-        hoverClass
-      )
+      expect(screen.getByRole('button')).toHaveClass('bg-input', hoverClass)
     })
   })
 

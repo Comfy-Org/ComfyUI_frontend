@@ -47,7 +47,7 @@ const containerClasses = computed(() => {
   // Variant styles
   const variantClasses = {
     default: cn(
-      hasBackground && 'bg-modal-card-background',
+      hasBackground && 'bg-secondary',
       hasBorder && 'border border-border-default',
       hasShadow && 'shadow-sm',
       hasCursor && 'cursor-pointer'

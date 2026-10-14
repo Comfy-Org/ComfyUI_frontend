@@ -12,7 +12,7 @@
             cn(
               stepClasses,
               activeStep === step.id
-                ? 'bg-interface-builder-mode-background'
+                ? 'bg-ocean-600/40'
                 : 'bg-transparent hover:bg-secondary-background'
             )
           "

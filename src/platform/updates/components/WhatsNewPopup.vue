@@ -179,11 +179,11 @@ defineExpose({
 }
 
 .whats-new-popup {
-  background: var(--interface-menu-surface);
+  background: var(--popover);
   border-radius: 8px;
   max-width: 400px;
   width: 400px;
-  border: 1px solid var(--interface-menu-stroke);
+  border: 1px solid var(--border);
   box-shadow: 1px 1px 8px 0 rgb(0 0 0 / 0.2);
   position: relative;
   display: flex;
@@ -311,7 +311,7 @@ defineExpose({
 /* Code styling */
 .content-text :deep(code) {
   background-color: var(--input-surface);
-  border: 1px solid var(--interface-menu-stroke);
+  border: 1px solid var(--border);
   border-radius: 4px;
   padding: 2px 6px;
   color: var(--text-primary);
@@ -338,9 +338,9 @@ defineExpose({
 
 /* Add border to content when image is present */
 .content-text:has(img:first-child) {
-  border-left: 1px solid var(--interface-menu-stroke);
-  border-right: 1px solid var(--interface-menu-stroke);
-  border-top: 1px solid var(--interface-menu-stroke);
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  border-top: 1px solid var(--border);
   border-bottom-left-radius: 8px;
   border-bottom-right-radius: 8px;
   margin: -1px;
@@ -418,7 +418,7 @@ defineExpose({
 .action-primary {
   height: 40px;
   padding: 8px 16px;
-  background: var(--interface-menu-component-surface-hovered);
+  background: var(--accent);
   border-radius: 8px;
   border: none;
   color: var(--text-primary);
@@ -429,6 +429,6 @@ defineExpose({
 }
 
 .action-primary:hover {
-  background: var(--button-hover-surface);
+  background: var(--accent);
 }
 </style>

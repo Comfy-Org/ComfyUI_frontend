@@ -149,7 +149,7 @@ async function cancelDownload(taskId: TaskId) {
             content-class="border-none bg-transparent p-0 pt-2"
           >
             <div
-              class="flex min-w-30 flex-col items-stretch rounded-lg border border-interface-stroke bg-interface-panel-surface px-2 py-3"
+              class="flex min-w-30 flex-col items-stretch rounded-lg border border-border bg-background px-2 py-3"
             >
               <Button
                 v-for="option in filterOptions"

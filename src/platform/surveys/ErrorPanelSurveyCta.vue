@@ -2,7 +2,7 @@
   <div
     v-if="shouldRenderCta"
     data-testid="error-panel-survey-cta"
-    class="flex min-w-0 shrink-0 items-center justify-between gap-2 border-t border-interface-stroke px-4 py-3"
+    class="flex min-w-0 shrink-0 items-center justify-between gap-2 border-t border-border px-4 py-3"
   >
     <span class="min-w-0 flex-1 text-sm/tight text-muted-foreground">
       {{ t('errorPanelSurvey.ctaText') }}

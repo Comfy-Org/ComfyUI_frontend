@@ -2,9 +2,9 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 export const WidgetInputBaseClass = cn([
   // Background
-  'not-disabled:bg-component-node-widget-background',
-  'not-disabled:text-component-node-foreground',
-  '[[readonly]]:bg-component-node-widget-background-disabled',
+  'not-disabled:bg-input',
+  'not-disabled:text-card-foreground',
+  '[[readonly]]:bg-input/50',
   // Outline
   'border-none',
   // Rounded

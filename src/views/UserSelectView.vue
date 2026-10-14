@@ -15,7 +15,7 @@
             @keyup.enter="login"
           />
         </div>
-        <div class="my-4 w-full border-t border-interface-stroke" />
+        <div class="my-4 w-full border-t border-border" />
         <div class="flex w-full flex-col gap-2">
           <label id="existing-user-label" for="existing-user-select"
             >{{ $t('userSelect.existingUser') }}:</label

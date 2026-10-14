@@ -13,7 +13,7 @@
       :style="gridStyle"
     >
       <nav
-        class="flex h-full flex-col overflow-hidden bg-modal-panel-background"
+        class="flex h-full flex-col overflow-hidden bg-card"
         :inert="!showLeftPanel"
         :aria-hidden="!showLeftPanel"
       >
@@ -96,9 +96,7 @@
         :inert="!isRightPanelOpen"
         :aria-hidden="!isRightPanelOpen"
       >
-        <div
-          class="flex h-full w-72 min-w-72 flex-col bg-modal-panel-background"
-        >
+        <div class="flex h-full w-72 min-w-72 flex-col bg-card">
           <header
             data-component-id="RightPanelHeader"
             class="flex h-18 shrink-0 items-center gap-2 px-6"

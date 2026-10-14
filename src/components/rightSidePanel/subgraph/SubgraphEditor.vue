@@ -336,7 +336,7 @@ onMounted(() => {
 
 <template>
   <div v-if="activeNode" class="subgraph-edit-section flex h-full flex-col">
-    <div class="flex gap-2 border-b border-interface-stroke px-4 pt-1 pb-4">
+    <div class="flex gap-2 border-b border-border px-4 pt-1 pb-4">
       <AsyncSearchInput v-model="searchQuery" />
     </div>
 
@@ -355,7 +355,7 @@ onMounted(() => {
       <div
         v-if="filteredActive.length"
         data-testid="subgraph-editor-shown-section"
-        class="flex flex-col border-b border-interface-stroke"
+        class="flex flex-col border-b border-border"
       >
         <div
           class="sticky top-0 z-10 flex min-h-12 items-center justify-between px-4 backdrop-blur-xl"
@@ -403,7 +403,7 @@ onMounted(() => {
       <div
         v-if="filteredCandidates.length"
         data-testid="subgraph-editor-hidden-section"
-        class="flex flex-col border-b border-interface-stroke"
+        class="flex flex-col border-b border-border"
       >
         <div
           class="sticky top-0 z-10 flex min-h-12 items-center justify-between px-4 backdrop-blur-xl"
@@ -433,7 +433,7 @@ onMounted(() => {
 
       <div
         v-if="recommendedWidgets.length"
-        class="flex justify-center border-b border-interface-stroke py-4"
+        class="flex justify-center border-b border-border py-4"
       >
         <Button
           size="sm"

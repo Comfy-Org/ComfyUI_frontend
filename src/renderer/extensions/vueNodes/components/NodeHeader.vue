@@ -7,7 +7,7 @@
     :class="
       cn(
         'lg-node-header w-full min-w-0 p-1 text-xs',
-        'text-node-component-slot-text',
+        'text-muted-foreground',
         headerShapeClass
       )
     "
@@ -33,7 +33,7 @@
                   collapsed && '-rotate-90'
                 )
               "
-              class="text-node-component-header-icon"
+              class="text-muted-foreground"
             />
           </Button>
         </div>

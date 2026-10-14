@@ -2,17 +2,17 @@
   <div v-if="isOnlyHasNodes" class="p-4">
     <NodeSettings :nodes="theNodes" />
   </div>
-  <div v-else class="border-t border-interface-stroke">
+  <div v-else class="border-t border-border">
     <PropertiesAccordionItem
       v-if="hasNodes"
-      class="border-b border-interface-stroke"
+      class="border-b border-border"
       :label="$t('rightSidePanel.nodes')"
     >
       <NodeSettings :nodes="theNodes" class="p-4" />
     </PropertiesAccordionItem>
     <PropertiesAccordionItem
       v-if="hasGroups"
-      class="border-b border-interface-stroke"
+      class="border-b border-border"
       :label="$t('rightSidePanel.groups')"
     >
       <NodeSettings :nodes="theGroups" class="p-4" />

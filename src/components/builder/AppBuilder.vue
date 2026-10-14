@@ -357,7 +357,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
               </div>
               <div
                 v-else
-                class="pointer-events-auto absolute -top-1/2 -right-1/2 size-full cursor-pointer rounded-lg bg-component-node-background ring-4 ring-warning-background/50 ring-inset"
+                class="pointer-events-auto absolute -top-1/2 -right-1/2 size-full cursor-pointer rounded-lg bg-card ring-4 ring-warning-background/50 ring-inset"
                 @click.stop="appModeStore.selectedOutputs.push(key)"
                 @pointerdown.stop
               />
