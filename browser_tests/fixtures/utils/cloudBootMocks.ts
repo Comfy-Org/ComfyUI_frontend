@@ -33,7 +33,6 @@ export async function mockCloudBootRoutes(
 ) {
   await mockDeploymentRolloutRefusal(page)
   await page.route('**/api/features', (r) => r.fulfill(jsonRoute(features)))
-  // Cloud publishes the `agent` server feature to users its agent gate admits.
   if (features['agent-in-app-experience'] === true)
     await new FeatureFlagHelper(page).seedServerFlags({
       agent: { state: 'ready', url: '/api/agent' }

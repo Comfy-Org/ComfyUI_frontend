@@ -5662,6 +5662,7 @@
     "entryStarting": "Agent starting…",
     "entryFailed": "Agent unavailable",
     "entryFailedReason": "ComfyUI could not start the agent: {reason}",
+    "entryStartingReason": "ComfyUI is starting the agent: {reason}",
     "feedbackCaption": "Share feedback",
     "freeUseNoticeLabel": "Free use notice",
     "freeUseNotice": "Try your first chat for free!",
