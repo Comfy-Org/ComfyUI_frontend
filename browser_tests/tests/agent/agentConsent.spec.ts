@@ -6,6 +6,7 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import frMessages from '@/locales/fr/main.json' with { type: 'json' }
 
 import { agentConsentTest as test } from '@e2e/fixtures/agentConsentFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 
 async function requestConsentFromOpenPanel(page: Page): Promise<void> {
   const openButton = page.getByRole('button', {
@@ -16,8 +17,7 @@ async function requestConsentFromOpenPanel(page: Page): Promise<void> {
 
   await expect(panel).toBeVisible()
   await expect(openButton).toHaveAttribute('aria-pressed', 'true')
-  await openButton.click()
-  await expect(panel).toHaveCount(0)
+  await new AgentPanel(page).close()
   await openButton.click()
 }
 
@@ -494,6 +494,43 @@ test.describe('Automatic agent consent', { tag: ['@cloud', '@ui'] }, () => {
     })
   })
 })
+
+test.describe(
+  'Agent consent on the authenticated web session',
+  { tag: ['@cloud', '@ui'] },
+  () => {
+    test.use({
+      agentConsentAccepted: false,
+      agentConsentWebSession: true,
+      initialLocalStorage: {
+        'Comfy.AgentConsent.AutoShown.test-user-e2e.ws-personal': 'true'
+      }
+    })
+
+    // Source: https://github.com/Comfy-Org/ComfyUI_frontend/pull/19390
+    test('persists acceptance without a workspace bearer token', async ({
+      comfyPage
+    }) => {
+      const page = comfyPage.page
+      const dialog = page.getByRole('dialog', {
+        name: enMessages.agent.consent.title
+      })
+      const panel = page.locator('#agent-panel-root')
+
+      await requestConsentFromOpenPanel(page)
+      await expect(dialog).toBeVisible()
+      await dialog
+        .getByRole('button', { name: enMessages.agent.consent.accept })
+        .click()
+      await expect(dialog).toHaveCount(0)
+      await expect(panel).toBeVisible()
+
+      await comfyPage.workflow.reloadAndWaitForApp()
+      await expect(dialog).toHaveCount(0)
+      await expect(panel).toBeVisible()
+    })
+  }
+)
 
 test.describe(
   'Automatic agent consent in the first session',

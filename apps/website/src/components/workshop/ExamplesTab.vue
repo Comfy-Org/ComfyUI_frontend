@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import { Check, Music2 } from '@lucide/vue'
 import { useElementVisibility, useMounted, whenever } from '@vueuse/core'
-import { computed, ref, useTemplateRef } from 'vue'
+import { computed, ref, useId, useTemplateRef } from 'vue'
 
-import type { PlaygroundExample } from '../../config/workshop-playground'
+import type { PlaygroundExample } from '@/config/workshop-playground'
 import {
   exampleAlt,
   isVideoUrl,
   videoPosterUrl
-} from '../../config/workshop-playground'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+} from '@/config/workshop-playground'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -18,13 +18,17 @@ const {
   examples,
   galleryLabel,
   activeId,
-  locale = 'en'
+  locale = 'en',
+  disabled = false
 } = defineProps<{
   examples: readonly PlaygroundExample[]
   galleryLabel: string
   activeId?: string
   locale?: Locale
+  disabled?: boolean
 }>()
+const { t } = translationsFor(locale)
+const headingId = useId()
 
 const emit = defineEmits<{ open: [example: PlaygroundExample] }>()
 
@@ -48,9 +52,9 @@ const samplesOnly = computed(
   () => examples.length > 0 && examples.every((example) => example.sampleOnly)
 )
 // A sample exists to be judged, and on a phone it was 144px wide: an 81px
-// preview of a generated image decides nothing. A lone sample takes the row,
-// and several take four fifths of it, so the next one peeks in at every width
-// the phone layout covers, up to the 18rem past which a card gains nothing.
+// preview of a generated image decides nothing. Several take four fifths of
+// the row so the next one peeks in, held to the 18rem past which a card gains
+// nothing; a lone one takes the whole row.
 const phoneWidth = computed(() =>
   examples.length === 1 ? 'w-full' : 'w-4/5 max-sm:max-w-72'
 )
@@ -68,27 +72,30 @@ function actionFor(example: PlaygroundExample, active = false) {
     : active
       ? 'workshop.examples.using'
       : 'workshop.examples.use'
-  return t(key, locale)
+  return t(key)
 }
 </script>
 
 <template>
-  <section class="flex flex-col gap-4" data-testid="examples-tab">
+  <section
+    :aria-labelledby="headingId"
+    class="flex flex-col gap-4"
+    data-testid="examples-tab"
+  >
     <div class="flex flex-col gap-1">
-      <h2 class="text-sm font-bold text-primary-warm-white">
+      <h2 :id="headingId" class="text-sm font-bold text-primary-warm-white">
         {{
           t(
             samplesOnly
               ? 'workshop.examples.samples'
-              : 'workshop.examples.start',
-            locale
+              : 'workshop.examples.start'
           )
         }}
       </h2>
     </div>
 
     <p v-if="!examples.length" class="text-sm text-primary-warm-gray">
-      {{ t('workshop.examples.empty', locale) }}
+      {{ t('workshop.examples.empty') }}
     </p>
 
     <!-- A phone scrolls the examples sideways, edge to edge; from a tablet up
@@ -115,10 +122,11 @@ function actionFor(example: PlaygroundExample, active = false) {
             :aria-label="`${example.title}: ${
               example.sampleOnly
                 ? actionFor(example)
-                : t('workshop.examples.open', locale)
+                : t('workshop.examples.open')
             }`"
             :aria-current="example.id === activeId ? 'true' : undefined"
-            class="group flex w-full cursor-pointer flex-col gap-2 text-left outline-none"
+            :disabled
+            class="group flex w-full cursor-pointer flex-col gap-2 text-left outline-none disabled:cursor-not-allowed disabled:opacity-50"
             data-testid="example-card"
             :title="`${example.title} · ${actionFor(
               example,
@@ -131,10 +139,11 @@ function actionFor(example: PlaygroundExample, active = false) {
                 cn(
                   'relative block aspect-video overflow-hidden rounded-lg bg-primary-comfy-ink-light ring-1 transition-all',
                   example.id === activeId
-                    ? 'ring-2 ring-primary-comfy-yellow'
+                    ? 'ring-2 ring-primary-comfy-yellow group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-primary-warm-white'
                     : 'ring-transparency-white-t8 group-hover:-translate-y-0.5 group-hover:ring-transparency-white-t20 group-hover:brightness-110 group-focus-visible:ring-primary-comfy-yellow'
                 )
               "
+              data-testid="example-thumbnail"
             >
               <video
                 v-if="
@@ -201,13 +210,6 @@ function actionFor(example: PlaygroundExample, active = false) {
             preload="metadata"
             class="w-full"
           />
-          <figcaption
-            v-if="example.prompt"
-            class="line-clamp-3 text-xs/relaxed text-primary-warm-gray"
-            data-testid="example-prompt"
-          >
-            {{ example.prompt }}
-          </figcaption>
         </figure>
       </li>
     </ul>

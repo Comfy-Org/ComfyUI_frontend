@@ -2,7 +2,7 @@ import { assert, expect, it, onTestFinished, vi } from 'vitest'
 
 import { createAgentRestClient } from '../../services/agent/agentRestClient'
 import { useAttachment } from './useAttachment'
-import type { ComposerAttachment } from './useComposer'
+import type { ComposerAttachment } from '../../types/composerAttachment'
 
 it('keeps a 4 MiB upload alive past 60 seconds and aborts it at 94 seconds', async () => {
   vi.useFakeTimers()
@@ -10,17 +10,14 @@ it('keeps a 4 MiB upload alive past 60 seconds and aborts it at 94 seconds', asy
     vi.useRealTimers()
   })
   let signal: AbortSignal | null | undefined
-  vi.stubGlobal(
-    'fetch',
-    vi.fn<typeof fetch>((_input, init) => {
-      signal = init?.signal
-      return new Promise<Response>((_resolve, reject) => {
-        signal?.addEventListener('abort', () => reject(signal?.reason), {
-          once: true
-        })
+  vi.mocked(fetch).mockImplementation((_input, init) => {
+    signal = init?.signal
+    return new Promise<Response>((_resolve, reject) => {
+      signal?.addEventListener('abort', () => reject(signal?.reason), {
+        once: true
       })
     })
-  )
+  })
   const client = createAgentRestClient()
   const chips = new Map<string, ComposerAttachment>()
   const onError = vi.fn()
@@ -30,7 +27,10 @@ it('keeps a 4 MiB upload alive past 60 seconds and aborts it at 94 seconds', asy
       return { ref: result.name ?? file.name }
     },
     stagedCount: () => chips.size,
-    stage: (chip) => chips.set(chip.id, chip),
+    stage: (chip) => {
+      chips.set(chip.id, chip)
+      return true
+    },
     update: (id, patch) => {
       const chip = chips.get(id)
       assert.exists(chip)

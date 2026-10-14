@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import { t } from '../../i18n/translations'
+import { t } from '@/i18n/translations'
 import ServerlessHero from './ServerlessHero.vue'
 
 describe('ServerlessHero', () => {
@@ -10,27 +10,33 @@ describe('ServerlessHero', () => {
 
     expect(
       screen.getByRole('heading', {
-        name: t('platform.serverlessHero.heading', 'en')
+        name: t('platform.serverlessHero.heading', {}, { locale: 'en' })
       })
     ).toBeTruthy()
     expect(screen.getByText(/into an autoscaling endpoint/)).toBeTruthy()
     expect(
-      screen.getByRole('link', { name: t('platform.hero.getStarted', 'en') })
+      screen.getByRole('link', {
+        name: t('platform.hero.getStarted', {}, { locale: 'en' })
+      })
     ).toHaveAttribute('href', 'https://platform.comfy.org/?onboarding=comfyapi')
     expect(
-      screen.getByRole('link', { name: t('platform.hero.readDocs', 'en') })
+      screen.getByRole('link', {
+        name: t('platform.hero.readDocs', {}, { locale: 'en' })
+      })
     ).toHaveAttribute(
       'href',
       'https://docs.comfy.org/development/serverless/quickstart'
     )
-    expect(screen.queryByText(t('nav.badgeBeta', 'en'))).toBeNull()
+    expect(
+      screen.queryByText(t('nav.badgeBeta', {}, { locale: 'en' }))
+    ).toBeNull()
   })
 
   it('loads the JSON API GPU animation after mounting', async () => {
     render(ServerlessHero, { props: { locale: 'en' } })
 
     const animation = await screen.findByTitle(
-      t('platform.serverlessHero.animationTitle', 'en')
+      t('platform.serverlessHero.animationTitle', {}, { locale: 'en' })
     )
     expect(animation).toHaveAttribute(
       'src',

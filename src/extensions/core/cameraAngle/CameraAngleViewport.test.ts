@@ -60,10 +60,12 @@ function makeViewportStub() {
     cameraManager: { activeCamera },
     controlsManager: { controls },
     viewHelperManager: { visibleViewHelper: vi.fn() },
-    renderer: {
+    rendererView: {
       setViewport: vi.fn(),
       setScissor: vi.fn(),
-      setScissorTest: vi.fn(),
+      setScissorTest: vi.fn()
+    },
+    renderer: {
       setClearColor: vi.fn(),
       clear: vi.fn(),
       render: vi.fn()
@@ -258,12 +260,8 @@ describe('CameraAngleViewport', () => {
     expect(viewport.isPreviewVisible()).toBe(true)
     stub.runPostRender()
     expect(stub.renderer.render).toHaveBeenCalledOnce()
-    const [, y, width, height] = stub.renderer.setViewport.mock.lastCall as [
-      number,
-      number,
-      number,
-      number
-    ]
+    const [, y, width, height] = stub.rendererView.setViewport.mock
+      .lastCall as [number, number, number, number]
     expect(width).toBe(height)
     expect(y).toBeGreaterThanOrEqual(48)
     expect(stub.renderer.setClearColor).toHaveBeenLastCalledWith('#123456')

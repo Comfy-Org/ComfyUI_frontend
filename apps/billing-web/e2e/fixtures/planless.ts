@@ -1,18 +1,16 @@
 import type { Page } from '@playwright/test'
 
+import { CLOUD_ORIGIN } from './env'
 import { entryPath, expect } from './test'
 
-const planlessCheckout = (workspace: string) =>
-  entryPath('checkout', { workspace })
-
 /**
- * Opens a checkout link that names no plan and expects what the embedded
- * checkout always did with it: straight back to the host, the link's
- * workspace echoed, with no sign-in page shown and no session minted.
+ * Opens a checkout link that names no plan and expects it to leave for
+ * `destination` at once, with no sign-in page shown and no session minted.
  */
-export async function expectStraightToHost(
+export async function expectPlanlessLinkToLeaveFor(
   tab: Page,
-  workspace: string
+  link: Record<string, string>,
+  destination: string
 ): Promise<void> {
   const shown: string[] = []
   const mints: string[] = []
@@ -24,12 +22,22 @@ export async function expectStraightToHost(
       mints.push(request.url())
   })
 
-  await tab.goto(planlessCheckout(workspace))
+  await tab.goto(entryPath('checkout', link))
 
-  await expect(tab).toHaveURL(
-    `https://testcloud.comfy.org/?workspace=${workspace}`
-  )
+  await expect(tab).toHaveURL(destination)
   await expect(tab.getByRole('heading', { name: 'Host app' })).toBeVisible()
   expect(shown).not.toContain('/sign-in')
   expect(mints, 'a link that goes back mints no session').toEqual([])
+}
+
+/** The host's pricing table, in the link's workspace: where a plan is picked. */
+export async function expectStraightToPricingTable(
+  tab: Page,
+  workspace: string
+): Promise<void> {
+  await expectPlanlessLinkToLeaveFor(
+    tab,
+    { workspace },
+    `${CLOUD_ORIGIN}/?pricing=1&workspace=${workspace}`
+  )
 }

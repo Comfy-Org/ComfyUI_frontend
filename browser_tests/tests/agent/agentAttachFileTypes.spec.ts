@@ -17,24 +17,17 @@ import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
  * Every format in the agreed list (PM-1855), driven through the real picker.
  *
  * Synthetic buffers rather than fixture files, deliberately: the gate under test
- * judges the EXTENSION and never opens the bytes, so a file named `mesh.fbx`
- * exercises it exactly as a real mesh would. That is what makes covering all 52
- * formats possible — `browser_tests/assets` holds a real asset for only four of
- * them. Content-parsing behaviour is not tested here because the composer does
- * none; the backend does, and its tests own it.
+ * judges the EXTENSION, so a file named `mesh.fbx` exercises it exactly as a
+ * real mesh would. That is what makes covering every format possible —
+ * `browser_tests/assets` holds a real asset for only four of them. Video
+ * containers get a minimal valid header because the composer checks their
+ * signature before uploading.
  *
  * Grouped by tier rather than one test per format: a per-format test would mean
- * 52 browser sessions for a check that shares all of its setup. Each format is
- * still named in an assertion message, so a failure says which one broke.
+ * a browser session per format for a check that shares all of its setup. Each
+ * format is still named in an assertion message, so a failure says which one
+ * broke.
  */
-const CAPABILITY_COPY: Record<AgentAttachCapability, string> = {
-  view: enMessages.agent.attachmentCapabilityView,
-  probe: enMessages.agent.attachmentCapabilityProbe,
-  read: enMessages.agent.attachmentCapabilityRead,
-  reference: enMessages.agent.attachmentCapabilityReference,
-  retain: enMessages.agent.attachmentCapabilityRetain
-}
-
 const ACCEPTED: ReadonlyArray<{
   tier: AgentAttachCapability
   files: readonly string[]
@@ -49,7 +42,9 @@ const ACCEPTED: ReadonlyArray<{
       'photo.webp',
       'photo.bmp',
       'photo.tif',
-      'photo.tiff'
+      'photo.tiff',
+      'photo.heic',
+      'photo.heif'
     ]
   },
   {
@@ -117,12 +112,29 @@ const REJECTED = [
   'plate.exr'
 ] as const
 
+const ISO_BASE_MEDIA_HEADER = Buffer.from('\0\0\0\x18ftypisom', 'latin1')
+const EBML_HEADER = Buffer.from([0x1a, 0x45, 0xdf, 0xa3])
+const VIDEO_HEADERS: Partial<Record<string, Buffer>> = {
+  mp4: ISO_BASE_MEDIA_HEADER,
+  m4v: ISO_BASE_MEDIA_HEADER,
+  mov: ISO_BASE_MEDIA_HEADER,
+  webm: EBML_HEADER,
+  mkv: EBML_HEADER,
+  avi: Buffer.from('RIFF\0\0\0\0AVI ', 'latin1')
+}
+
 function syntheticFile(name: string) {
+  const extension = name.slice(name.lastIndexOf('.') + 1)
   return {
     name,
     mimeType: 'application/octet-stream',
-    buffer: Buffer.from(name)
+    buffer: VIDEO_HEADERS[extension] ?? Buffer.from(name)
   }
+}
+
+function refusalMessage(name: string): string {
+  const [singular] = enMessages.agent.attachmentTypeNotAccepted.split(' | ')
+  return singular.replace('{name}', name)
 }
 
 test.describe(
@@ -163,11 +175,8 @@ test.describe(
     })
 
     for (const { tier, files } of ACCEPTED) {
-      test(`attaches every ${tier}-tier format and labels it as ${tier}`, async ({
-        agentPanel
-      }) => {
+      test(`attaches every ${tier}-tier format`, async ({ agentPanel }) => {
         await agentPanel.open()
-        const { fileInput, composerAssetSection: assetSection } = agentPanel
 
         for (const file of files) {
           expect(
@@ -175,22 +184,28 @@ test.describe(
             `${file} must sit on the ${tier} tier`
           ).toBe(tier)
 
-          await fileInput.setInputFiles(syntheticFile(file))
-          await expect(assetSection, `${file} must attach`).toContainText(file)
-
-          const chip = assetSection
-            .getByTestId('agent-attachment-chip')
-            .filter({ hasText: file })
+          await agentPanel.fileInput.setInputFiles(syntheticFile(file))
+          const chip = agentPanel.attachmentChip(file)
+          await expect(chip, `${file} must attach`).toBeVisible()
           await expect(
-            chip,
-            `${file} must state its capability`
-          ).toHaveAttribute('title', CAPABILITY_COPY[tier])
+            chip.getByRole('status', { name: enMessages.agent.uploading })
+          ).toHaveCount(0)
           await expect(
-            assetSection.locator(`[aria-label="${enMessages.agent.uploading}"]`)
+            chip.getByRole('status', {
+              name: enMessages.agent.attachmentInvalidVideo.replace(
+                '{name}',
+                file
+              )
+            }),
+            `${file} must pass the content check`
           ).toHaveCount(0)
 
+          await chip.hover()
           await chip
-            .getByRole('button', { name: enMessages.agent.remove, exact: true })
+            .getByRole('button', {
+              name: enMessages.agent.removeAsset.replace('{name}', file),
+              exact: true
+            })
             .click()
           await expect(chip).toHaveCount(0)
         }
@@ -213,13 +228,14 @@ test.describe(
 
         // PM-1856: the refusal names the file rather than failing silently.
         await expect(
-          comfyPage.page.getByText(file, { exact: false }),
+          comfyPage.toast.withText(refusalMessage(file)),
           `${file} must be reported as refused`
         ).toBeVisible()
         await expect(
           agentPanel.composerAssetSection,
           `${file} must not stage a chip`
         ).toHaveCount(0)
+        await comfyPage.toast.closeToasts()
       }
     })
 
@@ -228,21 +244,12 @@ test.describe(
       comfyPage
     }) => {
       await agentPanel.open()
-      const { root: panel, composerAssetSection: assetSection } = agentPanel
-      await expect(assetSection).toHaveCount(0)
+      await expect(agentPanel.composerAssetSection).toHaveCount(0)
 
-      const panelBox = await panel.boundingBox()
-      if (!panelBox) throw new Error('Agent panel is not visible')
-      await comfyPage.dragDrop.dragAndDropFile('default.json', {
-        preserveNativePropagation: true,
-        dropPosition: {
-          x: panelBox.x + panelBox.width / 2,
-          y: panelBox.y + panelBox.height / 2
-        }
-      })
+      await agentPanel.dropFile(comfyPage.dragDrop, 'default.json')
 
       // Dropping onto the composer means "attach this to the chat" (PM-1855).
-      await expect(assetSection).toContainText('default.json')
+      await expect(agentPanel.attachmentChip('default.json')).toBeVisible()
       // Polled, not read once: the loader runs off a document listener, so a
       // bare read can pass merely by getting there first.
       await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
@@ -278,20 +285,26 @@ test.describe(
       // The synthetic-buffer cases above prove the gate; these prove the picker
       // path works against genuine bytes for the formats that have an asset.
       await agentPanel.open()
-      const { fileInput, composerAssetSection: assetSection } = agentPanel
 
       for (const file of [
         'default.json',
         'animated_triangle.glb',
         'cube.obj'
       ]) {
-        await fileInput.setInputFiles(assetPath(file))
-        await expect(assetSection, `${file} must attach`).toContainText(file)
-        await assetSection
-          .getByTestId('agent-attachment-chip')
-          .filter({ hasText: file })
-          .getByRole('button', { name: enMessages.agent.remove, exact: true })
+        await agentPanel.fileInput.setInputFiles(assetPath(file))
+        const chip = agentPanel.attachmentChip(file)
+        await expect(chip, `${file} must attach`).toBeVisible()
+        await expect(
+          chip.getByRole('status', { name: enMessages.agent.uploading })
+        ).toHaveCount(0)
+        await chip.hover()
+        await chip
+          .getByRole('button', {
+            name: enMessages.agent.removeAsset.replace('{name}', file),
+            exact: true
+          })
           .click()
+        await expect(chip).toHaveCount(0)
       }
     })
   }

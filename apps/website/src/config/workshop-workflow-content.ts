@@ -1,5 +1,5 @@
-import displayJson from '../content/workshop-display.json'
-import { workshopDisplayEntriesSchema } from '../content/workshop-display.schema'
+import displayJson from '@/content/workshop-display.json'
+import { workshopDisplayEntriesSchema } from '@/content/workshop-display.schema'
 import { workflowCatalog } from './workshop-workflow-catalog'
 import { workflowPagesFor } from './workshop-workflow-pages'
 

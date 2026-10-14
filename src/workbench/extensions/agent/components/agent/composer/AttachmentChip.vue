@@ -1,107 +1,119 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
-import Tag from '@/components/chip/Tag.vue'
-import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
+
+import TagRemoveButton from '@/components/chip/TagRemoveButton.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
-import { agentAttachCapability } from '../../../utils/attachableFiles'
-import type { AgentAttachCapability } from '../../../utils/attachableFiles'
+import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
+
+import type { ComposerAttachment } from '../../../types/composerAttachment'
+import type { AssetPreviewMode } from '../../../types/assetPreview'
+import AssetHoverPreview from './AssetHoverPreview.vue'
+import AssetThumbnail from './AssetThumbnail.vue'
 
 const {
   name,
-  refName,
   previewUrl,
+  mediaUrl,
+  mediaKind,
   uploading = false,
-  capability
+  validationError,
+  highlighted = false
 } = defineProps<{
   name: string
-  refName?: string
   previewUrl?: string
+  mediaUrl?: string
+  mediaKind?: MediaKind
   uploading?: boolean
-  capability?: AgentAttachCapability | 'unknown'
+  validationError?: ComposerAttachment['validationError']
+  highlighted?: boolean
 }>()
 const emit = defineEmits<{ remove: [] }>()
+const previewMode = defineModel<AssetPreviewMode>('previewMode', {
+  default: 'closed'
+})
 
-const { t } = useI18n()
-
-const kind = computed(() => getMediaTypeFromFilename(name))
-
-/* The shared map's 'other' glyph is a checkmark, which reads as a status
-   rather than a file on this surface. */
-const kindIconClass = computed(() =>
-  kind.value === 'other' ? 'icon-[lucide--file]' : iconForMediaType(kind.value)
-)
-
-/* What the agent can do with this file differs sharply by type and is otherwise
-   invisible: it reads an image's pixels, a clip's duration only, and nothing at
-   all inside a mesh or a text file. Without this the chip looks identical either
-   way and the user assumes it was read. */
-/* Keyed by a Record rather than a switch so adding a tier to the server contract
-   fails TYPECHECK here until its copy exists, instead of falling through to the
-   unknown string and quietly under-describing the file. */
-const CAPABILITY_MESSAGE: Record<AgentAttachCapability | 'unknown', string> = {
-  view: 'agent.attachmentCapabilityView',
-  probe: 'agent.attachmentCapabilityProbe',
-  read: 'agent.attachmentCapabilityRead',
-  reference: 'agent.attachmentCapabilityReference',
-  retain: 'agent.attachmentCapabilityRetain',
-  unknown: 'agent.attachmentCapabilityUnknown'
-}
-
-const capabilityLabel = computed(() =>
-  // Admission's recorded capability first: it judged the real local filename.
-  // The stored ref beats the display label after that, since a card's label
-  // need not carry a judgeable extension at all.
-  t(
-    CAPABILITY_MESSAGE[
-      // `'unknown'` has to fall THROUGH, not short-circuit. It is a real
-      // string, so `??` accepts it — and every production caller passes
-      // exactly that, because admission coerces an unjudgeable ref with
-      // `agentAttachCapability(ref) ?? 'unknown'`. The two fallback legs were
-      // therefore unreachable outside tests, and a hash-backed card always
-      // read "will verify when sent" even when its name said otherwise.
-      (capability === 'unknown' ? undefined : capability) ??
-        agentAttachCapability(refName ?? '') ??
-        agentAttachCapability(name) ??
-        'unknown'
-    ]
-  )
-)
+const kind = computed(() => mediaKind ?? getMediaTypeFromFilename(name))
 </script>
 
 <template>
-  <!-- `data-attachment-name` anchors black-box coverage of what a drop actually
-       attached: the visible label truncates, so asserting on rendered text alone
-       cannot tell one long filename from another. -->
-  <Tag
+  <span
     data-testid="agent-attachment-chip"
     :data-attachment-name="name"
-    :label="name"
-    :title="capabilityLabel"
-    :aria-description="capabilityLabel"
-    removable
-    :remove-label="$t('agent.remove')"
-    class="max-w-48"
-    @remove="emit('remove')"
+    :data-highlighted="highlighted || undefined"
+    role="group"
+    :aria-label="name"
+    :class="
+      cn(
+        'group/attachment relative flex size-20 shrink-0 items-center justify-center rounded-lg p-1 data-highlighted:ring-2 data-highlighted:ring-base-foreground data-highlighted:ring-inset',
+        validationError && 'ring-1 ring-border-default ring-inset'
+      )
+    "
   >
-    <template #icon>
+    <Tooltip v-if="validationError">
+      <TooltipTrigger as-child>
+        <span
+          role="status"
+          tabindex="0"
+          :aria-label="$t('agent.attachmentInvalidVideo', { name })"
+          class="flex size-full items-center justify-center rounded-sm"
+        >
+          <AssetThumbnail :name :media-kind variant="tray" class="size-full" />
+          <span
+            aria-hidden="true"
+            class="pointer-events-none absolute right-1 bottom-1 flex size-5 items-center justify-center rounded-full bg-base-background/80"
+          >
+            <span
+              class="icon-[lucide--triangle-alert] size-3 text-destructive-background"
+            />
+          </span>
+        </span>
+      </TooltipTrigger>
+      <TooltipContent side="top" class="max-w-56">
+        {{ $t('agent.attachmentInvalidVideo', { name }) }}
+      </TooltipContent>
+    </Tooltip>
+    <AssetHoverPreview
+      v-else
+      v-model:mode="previewMode"
+      :name
+      :preview-url
+      :media-url
+      :media-kind
+    >
+      <AssetThumbnail
+        :name
+        :preview-url
+        :media-kind
+        variant="tray"
+        class="size-full"
+      />
+      <span
+        v-if="kind === 'video' && previewUrl"
+        aria-hidden="true"
+        class="pointer-events-none absolute right-1 bottom-1 flex size-5 items-center justify-center rounded-full bg-base-background/80 text-base-foreground"
+      >
+        <span class="icon-[lucide--play] size-3" />
+      </span>
       <span
         v-if="uploading"
         role="status"
         :aria-label="$t('agent.uploading')"
-        class="icon-[lucide--loader-circle] size-3.5 animate-spin text-muted-foreground"
-      />
-      <!-- Only an image kind renders its preview: a server thumbnail for an
-           audio or 3D asset would repaint the broken-image chip this fixed. -->
-      <img
-        v-else-if="previewUrl && kind === 'image'"
-        :src="previewUrl"
-        :alt="name"
-        class="size-3.5 shrink-0 rounded-sm object-cover"
-      />
-      <span v-else :class="cn(kindIconClass, 'size-3.5 shrink-0')" />
-    </template>
-  </Tag>
+        class="absolute inset-0 flex items-center justify-center bg-base-background/60"
+      >
+        <span
+          class="icon-[lucide--loader-circle] size-5 animate-spin text-muted-foreground"
+        />
+      </span>
+    </AssetHoverPreview>
+    <TagRemoveButton
+      :label="$t('agent.removeAsset', { name })"
+      class="pointer-events-none absolute top-1 right-1 size-5 shrink-0 rounded-full bg-base-background text-base-foreground opacity-0 ring-1 ring-border-subtle group-focus-within/attachment:pointer-events-auto group-focus-within/attachment:opacity-100 group-hover/attachment:pointer-events-auto group-hover/attachment:opacity-100 hover:bg-secondary-background-hover touch:pointer-events-auto touch:size-7 touch:opacity-100"
+      @click="emit('remove')"
+    />
+  </span>
 </template>

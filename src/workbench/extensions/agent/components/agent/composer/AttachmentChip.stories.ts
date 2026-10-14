@@ -44,17 +44,9 @@ export const Uploading: Story = {
   }
 }
 
-/**
- * One chip per capability tier. Hovering each shows what the agent can actually
- * do with it: read the image, measure the clip, load the mesh into a graph node,
- * or — for text — neither. The same text is exposed as aria-description.
- */
-export const CapabilityTiers: Story = {
-  render: () => ({
-    components: { AttachmentChip },
-    setup: () => ({
-      names: ['photo.png', 'clip.mp4', 'mesh.glb', 'notes.md']
-    }),
-    template: `<AttachmentChip v-for="name in names" :key="name" :name="name" />`
-  })
+export const InvalidVideo: Story = {
+  args: {
+    name: 'broken.mov',
+    validationError: 'invalid-video'
+  }
 }

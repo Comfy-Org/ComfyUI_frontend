@@ -72,7 +72,7 @@ watch(
       <span
         :class="
           cn(
-            'mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-sm border border-border-default text-transparent transition-colors',
+            'mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-sm border border-muted-foreground text-transparent transition-colors',
             'peer-focus-visible:ring-2 peer-focus-visible:ring-base-foreground peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-tertiary-background',
             'peer-checked:border-base-foreground peer-checked:bg-base-foreground peer-checked:text-base-background',
             'peer-aria-invalid:border-coral-500 peer-aria-invalid:ring-3 peer-aria-invalid:ring-coral-500/40'

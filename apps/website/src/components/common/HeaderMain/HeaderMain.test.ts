@@ -1,22 +1,37 @@
 import { render, screen, waitFor, within } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, readonly, ref } from 'vue'
 
-import { requestWorkshopBuyCredits } from '../../../config/workshop-buy-credits'
+import { requestWorkshopBuyCredits } from '@/config/workshop-buy-credits'
+import type { HubApp } from '@/data/mainNavigation'
 import {
+  useWorkshopAppsEnabled,
   useWorkshopAuthFlag,
-  useWorkshopEnabled
-} from '../../../scripts/posthog'
+  useWorkshopEnabled,
+  useWorkshopFlag,
+  useWorkshopWorkflowsEnabled
+} from '@/scripts/posthog'
 import HeaderMain from './HeaderMain.vue'
 
-vi.mock(import('../../../scripts/posthog'))
+vi.mock(import('@/scripts/posthog'))
+vi.mock(import('@/config/workshop-account-source'), () => ({
+  resolveWorkshopAccountSource: () => Promise.resolve('firebase'),
+  peekWorkshopAccountSource: () => 'firebase'
+}))
 
 let flag = ref(false)
 let visibility = ref(false)
 
-function renderHeader(workshopInBuild = false) {
+const RESHOOT_FLAG = 'workshop-reshoot-app-enabled'
+const HUB_APPS: HubApp[] = [
+  { appId: 'studio' },
+  { appId: 'reshoot', flag: RESHOOT_FLAG }
+]
+
+function renderHeader(workshopInBuild = false, hubApps: HubApp[] = []) {
   return render(HeaderMain, {
-    props: { workshopInBuild },
+    props: { workshopInBuild, hubApps },
     global: {
       stubs: {
         HeaderAccount: defineComponent({
@@ -43,19 +58,93 @@ beforeEach(() => {
 
 describe('HeaderMain workshop gating', () => {
   it.for([
-    { workshopInBuild: false, enabled: true, modelsAvailable: false },
-    { workshopInBuild: true, enabled: false, modelsAvailable: false },
-    { workshopInBuild: true, enabled: true, modelsAvailable: true }
+    { workshopInBuild: false, enabled: true },
+    { workshopInBuild: true, enabled: false },
+    { workshopInBuild: true, enabled: true }
   ])(
-    'renders Hub availability as $modelsAvailable when workshopInBuild is $workshopInBuild',
-    async ({ workshopInBuild, enabled, modelsAvailable }) => {
+    'keeps Hub in the top navigation when workshopInBuild is $workshopInBuild',
+    async ({ workshopInBuild, enabled }) => {
       visibility.value = enabled
       renderHeader(workshopInBuild)
       await nextTick()
 
-      expect(screen.queryByRole('link', { name: /^Hub\b/i }) !== null).toBe(
-        modelsAvailable
+      expect(
+        within(screen.getByTestId('desktop-nav-links')).getByRole('button', {
+          name: /^Hub\b/i
+        })
+      ).toBeTruthy()
+      expect(screen.queryByRole('button', { name: /^Models\b/i })).toBeNull()
+    }
+  )
+
+  async function openHubMenu() {
+    await userEvent.click(
+      within(screen.getByTestId('desktop-nav-links')).getByRole('button', {
+        name: /^Hub\b/i
+      })
+    )
+    return screen.findByTestId('nav-dropdown')
+  }
+
+  function setHubFlags(workflows: boolean, apps: boolean) {
+    vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(
+      readonly(ref(workflows))
+    )
+    vi.mocked(useWorkshopAppsEnabled).mockReturnValue(readonly(ref(apps)))
+  }
+
+  it.for([
+    { enabled: true, workflows: false, apps: false, headers: ['Models'] },
+    {
+      enabled: true,
+      workflows: true,
+      apps: false,
+      headers: ['Models', 'Workflows']
+    },
+    {
+      enabled: true,
+      workflows: true,
+      apps: true,
+      headers: ['Models', 'Workflows', 'Apps']
+    },
+    { enabled: false, workflows: true, apps: true, headers: ['Models'] }
+  ])(
+    'shows the Hub columns whose flags are on (workshop $enabled): $headers',
+    async ({ enabled, workflows, apps, headers }) => {
+      visibility.value = enabled
+      setHubFlags(workflows, apps)
+      renderHeader(true)
+      const menu = within(await openHubMenu())
+
+      expect(
+        ['Models', 'Workflows', 'Apps'].filter((header) =>
+          menu.queryByText(header, { exact: true })
+        )
+      ).toEqual(headers)
+    }
+  )
+
+  it.for([
+    { reshootFlag: true, apps: ['Cinematic Studio', 'Re-shoot'] },
+    { reshootFlag: false, apps: ['Cinematic Studio'] }
+  ])(
+    'lists Re-shoot under Apps only when its own flag is on: $reshootFlag',
+    async ({ reshootFlag, apps }) => {
+      visibility.value = true
+      setHubFlags(false, true)
+      vi.mocked(useWorkshopFlag).mockImplementation((name) =>
+        readonly(ref(name === RESHOOT_FLAG && reshootFlag))
       )
+      renderHeader(true, HUB_APPS)
+      const menu = within(await openHubMenu())
+
+      const appLinks = within(menu.getByRole('list', { name: 'Apps' }))
+
+      expect(
+        ['Cinematic Studio', 'Re-shoot'].filter((app) =>
+          appLinks.queryByRole('link', { name: new RegExp(`^${app}`) })
+        )
+      ).toEqual(apps)
     }
   )
 
@@ -158,7 +247,7 @@ describe('HeaderMain workshop gating', () => {
     expect(screen.getByTestId('buy-credits-dialog')).toBeTruthy()
   })
 
-  it('ignores credits requests while Models is hidden', async () => {
+  it('ignores credits requests while workshop access is hidden', async () => {
     flag.value = true
     renderHeader(true)
     await nextTick()
@@ -177,17 +266,15 @@ describe('HeaderMain workshop gating', () => {
     expect(await screen.findByTestId('buy-credits-dialog')).toBeTruthy()
   })
 
-  it('updates navigation and removes the account controls when access is revoked', async () => {
+  it('removes the account controls when access is revoked', async () => {
     flag.value = true
     renderHeader(true)
-    expect(screen.queryByRole('link', { name: /^Hub\b/i })).toBeNull()
     expect(screen.queryByTestId('header-account')).toBeNull()
 
     visibility.value = true
-    await screen.findByRole('link', { name: /^Hub\b/i })
+    expect(await screen.findAllByTestId('header-account')).not.toHaveLength(0)
     visibility.value = false
     await nextTick()
-    expect(screen.queryByRole('link', { name: /^Hub\b/i })).toBeNull()
     expect(screen.queryByTestId('header-account')).toBeNull()
   })
 })

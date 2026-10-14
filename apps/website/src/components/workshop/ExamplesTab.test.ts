@@ -3,11 +3,11 @@ import userEvent from '@testing-library/user-event'
 import { expect, it } from 'vitest'
 import { nextTick } from 'vue'
 
-import type { PlaygroundExample } from '../../config/workshop-playground'
+import type { PlaygroundExample } from '@/config/workshop-playground'
 import {
   setAllIntersecting,
   stubIntersectionObserver
-} from '../../test/fakeIntersectionObserver'
+} from '@/test/fakeIntersectionObserver'
 import ExamplesTab from './ExamplesTab.vue'
 
 const example = (overrides: Partial<PlaygroundExample>): PlaygroundExample => ({
@@ -39,7 +39,7 @@ it('keeps the audio transport separate from the preset action', async () => {
   expect(emitted().open).toEqual([[speech]])
 })
 
-it('captions each output with the prompt that produced it, and only those', () => {
+it('shows the picture and its name, and never the prompt behind it', () => {
   render(ExamplesTab, {
     props: {
       galleryLabel: 'FLUX 2 Max',
@@ -50,13 +50,11 @@ it('captions each output with the prompt that produced it, and only those', () =
     }
   })
   const [prompted, bare] = screen.getAllByRole('figure')
-  expect(within(prompted).getByText('a red fox, dusk').tagName).toBe(
-    'FIGCAPTION'
-  )
+  expect(within(prompted).queryByText('a red fox, dusk')).toBeNull()
+  expect(within(prompted).getByText('Object Swap')).toBeTruthy()
   expect(within(prompted).getByRole('img').getAttribute('alt')).toBe(
     'FLUX 2 Max: Object Swap'
   )
-  expect(within(bare).queryByTestId('example-prompt')).toBeNull()
   expect(within(bare).getByRole('img').getAttribute('alt')).toBe(
     'FLUX 2 Max example output 2'
   )
@@ -124,4 +122,32 @@ it('asks a video example for a frame it can paint before playback', () => {
     'src',
     'https://media.example/clip.mp4#t=0.1'
   )
+})
+
+it('refuses a pick while the form it would fill is busy', async () => {
+  const user = userEvent.setup()
+  const preset = example({ id: 'busy', title: 'Busy' })
+  const { emitted } = render(ExamplesTab, {
+    props: { examples: [preset], galleryLabel: 'Gallery', disabled: true }
+  })
+  await user.click(screen.getByTestId('example-card'))
+  expect(emitted().open).toBeUndefined()
+})
+
+it('marks only the example the page is showing', () => {
+  render(ExamplesTab, {
+    props: {
+      galleryLabel: 'Gallery',
+      activeId: 'second',
+      examples: [
+        example({ id: 'first', title: 'First' }),
+        example({ id: 'second', title: 'Second' })
+      ]
+    }
+  })
+  const [first, second] = screen.getAllByTestId('example-card')
+  expect(first.getAttribute('aria-current')).toBeNull()
+  expect(second.getAttribute('aria-current')).toBe('true')
+  expect(screen.getAllByTestId('example-chosen')).toHaveLength(1)
+  expect(within(second).getByTestId('example-chosen')).toBeTruthy()
 })

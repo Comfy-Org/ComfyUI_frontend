@@ -5,50 +5,48 @@ import { computed, ref } from 'vue'
 
 import type { AccountCredential } from '@comfyorg/account-core/session'
 
-import {
-  resolveModelRouterRender,
-  router_render
-} from '../../../config/router-render'
+import { resolveModelRouterRender, router_render } from '@/config/router-render'
 import type {
   PreparedRouterRender,
   RouterRenderResult
-} from '../../../config/router-render'
+} from '@/config/router-render'
 import {
   refreshWorkshopCredits,
   useTopUpWatch,
   useWorkshopCredits
-} from '../../../config/workshop-credits'
-import { getRouterWorkshopModelDetail } from '../../../config/workshop-router-content'
-import { WorkshopRouterError } from '../../../config/workshop-router-errors'
-import { useWorkshopSession } from '../../../config/workshop-session-state'
-import { appModels } from '../../../config/workshop-app-content'
-import { prepareModelPage } from '../../../routes/models/model-page'
+} from '@/config/workshop-credits'
+import { getRouterWorkshopModelDetail } from '@/config/workshop-router-content'
+import { WorkshopRouterError } from '@/config/workshop-router-errors'
+import { useWorkshopSession } from '@/config/workshop-session-state'
+import { appModels } from '@/config/workshop-app-content'
+import { prepareModelPage } from '@/routes/models/model-page'
 import {
   captureWorkshopEvent,
   useWorkshopEnabled,
   useWorkshopEnabledSettled,
   useWorkshopAppsEnabled,
   useWorkshopFlag
-} from '../../../scripts/posthog'
-import { CINEMATIC_STUDIO_APP_SLUG } from '../../../lib/workshop/cinematic-studio/analytics'
-import { sampleImageColors } from '../../../lib/workshop/cinematic-studio/colors'
-import { t } from '../../../i18n/translations'
-import { MAX_TAKES } from '../../../lib/workshop/cinematic-studio/catalog'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
-import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
+} from '@/scripts/posthog'
+import { CINEMATIC_STUDIO_APP_SLUG } from '@/lib/workshop/cinematic-studio/analytics'
+import { sampleImageColors } from '@/lib/workshop/cinematic-studio/colors'
+import { t, translationsFor } from '@/i18n/translations'
+import { MAX_TAKES } from '@/lib/workshop/cinematic-studio/catalog'
+import type { CinematicModel } from '@/lib/workshop/cinematic-studio/models'
 import {
   runnableCinematicModels,
   runnableCinematicVideoModels
-} from '../../../lib/workshop/cinematic-studio/models'
+} from '@/lib/workshop/cinematic-studio/models'
 import CinematicStudio from './CinematicStudio.vue'
 import CinematicStudioPage from './CinematicStudioPage.vue'
 import CinematicStudioPanel from './CinematicStudioPanel.vue'
 
-vi.mock(import('../../../config/workshop-session-state'))
-vi.mock(import('../../../config/workshop-credits'))
-vi.mock(import('../../../scripts/posthog'))
-vi.mock(import('../../../config/router-render'), { spy: true })
-vi.mock(import('../../../lib/workshop/cinematic-studio/colors'), { spy: true })
+const { t: tc } = translationsFor('en')
+
+vi.mock(import('@/config/workshop-session-state'))
+vi.mock(import('@/config/workshop-credits'))
+vi.mock(import('@/scripts/posthog'))
+vi.mock(import('@/config/router-render'), { spy: true })
+vi.mock(import('@/lib/workshop/cinematic-studio/colors'), { spy: true })
 
 const deploy = vi.hoisted(() => ({ env: '' }))
 vi.mock(import('astro:env/client'), () => ({
@@ -76,8 +74,6 @@ function sent(call: Parameters<typeof router_render>) {
   collect(values)
   return { values, prompt: String(values.prompt ?? ''), references }
 }
-
-const { fetchData } = vi.hoisted(() => ({ fetchData: vi.fn<typeof fetch>() }))
 
 /** A still left on the provider's storage, which sends no CORS header. */
 const PROVIDER_LINK =
@@ -169,8 +165,7 @@ describe('CinematicStudio', () => {
     vi.mocked(router_render)
       .mockReset()
       .mockRejectedValue(new WorkshopRouterError('client'))
-    vi.stubGlobal('fetch', fetchData)
-    fetchData.mockImplementation(servePageData)
+    vi.mocked(fetch).mockImplementation(servePageData)
     window.history.replaceState(null, '', '/hub/apps/cinematic-studio/')
   })
 
@@ -251,7 +246,7 @@ describe('CinematicStudio', () => {
 
     await screen.findByAltText(/A diner at dawn/)
     expect(vi.mocked(router_render).mock.calls[0][0]).toBe(second.slug)
-    expect(fetchData).toHaveBeenCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       `/models/${encodeURIComponent(second.slug)}/page.json`
     )
   })
@@ -285,7 +280,11 @@ describe('CinematicStudio', () => {
     expect(notice).toHaveTextContent('request-9')
     await user.click(
       within(notice).getByRole('button', {
-        name: tc('cinematic.state.tryOn', 'en', { model: second.name })
+        name: tc(
+          'cinematic.state.tryOn',
+          { model: second.name },
+          { locale: 'en' }
+        )
       })
     )
 
@@ -312,7 +311,11 @@ describe('CinematicStudio', () => {
     const notice = await screen.findByRole('status')
     await user.click(
       within(notice).getByRole('button', {
-        name: tc('cinematic.state.tryOn', 'en', { model: narrow.name })
+        name: tc(
+          'cinematic.state.tryOn',
+          { model: narrow.name },
+          { locale: 'en' }
+        )
       })
     )
 
@@ -444,11 +447,13 @@ describe('CinematicStudio', () => {
     {
       name: 'a take whose model cannot load',
       prepare: () =>
-        fetchData.mockImplementation(async (input) =>
-          String(input).startsWith('blob:')
-            ? servePageData(input)
-            : new Response('unavailable', { status: 500 })
-        ),
+        vi
+          .mocked(fetch)
+          .mockImplementation(async (input) =>
+            String(input).startsWith('blob:')
+              ? servePageData(input)
+              : new Response('unavailable', { status: 500 })
+          ),
       act: async () => {},
       outcome: {
         status: 'failed',
@@ -493,7 +498,7 @@ describe('CinematicStudio', () => {
     async ({ page }) => {
       const requested = Promise.withResolvers<void>()
       const cancelled = Promise.withResolvers<void>()
-      fetchData.mockImplementation(async (input) => {
+      vi.mocked(fetch).mockImplementation(async (input) => {
         if (String(input).startsWith('blob:')) return servePageData(input)
         requested.resolve()
         await cancelled.promise
@@ -822,9 +827,13 @@ describe('CinematicStudio', () => {
     expect(generateButton()).toBeDisabled()
     expect(
       screen.getByText(
-        tc('cinematic.references.unsupported', 'en', {
-          model: dropsReferences.name
-        })
+        tc(
+          'cinematic.references.unsupported',
+          {
+            model: dropsReferences.name
+          },
+          { locale: 'en' }
+        )
       )
     ).toBeInTheDocument()
     expect(router_render).not.toHaveBeenCalled()
@@ -891,9 +900,7 @@ describe('CinematicStudio', () => {
         })
       )
 
-      await vi.waitFor(() =>
-        expect(vi.mocked(router_render)).toHaveBeenCalledTimes(3)
-      )
+      await vi.waitFor(() => expect(router_render).toHaveBeenCalledTimes(3))
       const [, , retry] = vi.mocked(router_render).mock.calls[2]
       if (settlement === 'pending') {
         expect(retry.idempotencyKey).toBe(first[1].key)
@@ -1044,7 +1051,7 @@ describe('CinematicStudio', () => {
   })
 
   it('keeps the scene unreferenced when a take can no longer be read', async () => {
-    fetchData.mockImplementation(async (input) =>
+    vi.mocked(fetch).mockImplementation(async (input) =>
       String(input).startsWith('blob:')
         ? Promise.reject(new TypeError('Revoked'))
         : servePageData(input)
@@ -1125,6 +1132,37 @@ describe('CinematicStudio', () => {
       })
     }
   )
+
+  it('reports switching to Video as a tab_switched event', async () => {
+    const user = renderStudio([...models, ...videoModels])
+
+    await user.click(screen.getByRole('button', { name: 'Video' }))
+
+    expect(captureWorkshopEvent).toHaveBeenCalledWith({
+      name: 'tab_switched',
+      properties: {
+        model_slug: CINEMATIC_STUDIO_APP_SLUG,
+        page_type: 'app',
+        app_slug: CINEMATIC_STUDIO_APP_SLUG,
+        tab: 'video'
+      }
+    })
+  })
+
+  it('does not report a tab switch when the URL alone sets the mode', () => {
+    window.history.replaceState(
+      null,
+      '',
+      `/cinematic-studio?model=${videoModels[0].slug}`
+    )
+    renderStudio([...models, ...videoModels])
+
+    expect(
+      vi
+        .mocked(captureWorkshopEvent)
+        .mock.calls.some(([event]) => event.name === 'tab_switched')
+    ).toBe(false)
+  })
 
   it('shoots a clip on the first video model in video mode', async () => {
     vi.mocked(router_render).mockImplementation(async (slug) => rendered(slug))
@@ -1249,7 +1287,7 @@ describe('CinematicStudio', () => {
     )
     const estimate = () => screen.findByTestId('cinematic-estimate')
     const credits = (amount: number) =>
-      tc('cinematic.credits.estimate', 'en', { credits: amount })
+      tc('cinematic.credits.estimate', { credits: amount }, { locale: 'en' })
 
     async function shootTakes(
       user: ReturnType<typeof userEvent.setup>,
@@ -1421,9 +1459,13 @@ describe('CinematicStudio', () => {
       },
       {
         role: 'member' as const,
-        body: t('workshop.error.memberNoCredits', 'en', {
-          workspace: 'Studio Team'
-        }),
+        body: t(
+          'workshop.error.memberNoCredits',
+          {
+            workspace: 'Studio Team'
+          },
+          { locale: 'en' }
+        ),
         action: t('workshop.run.switchPersonal'),
         other: t('workshop.run.buyCredits')
       }
@@ -1463,7 +1505,11 @@ describe('CinematicStudio', () => {
 
       const summary = await screen.findByTestId('cinematic-credit-summary')
       expect(summary).toHaveTextContent(
-        tc('cinematic.credits.skipped', 'en', { failed: 1, total: 4 })
+        tc(
+          'cinematic.credits.skipped',
+          { failed: 1, total: 4 },
+          { locale: 'en' }
+        )
       )
       expect(
         within(summary).getByRole('button', {
@@ -1558,7 +1604,7 @@ describe('CinematicStudio', () => {
     ).toHaveAttribute('href', '/hub/apps/')
   })
 
-  it('shows every setting in the side panel, with Format last before the run button', async () => {
+  it('heads the side panel as a new shot, with Shot then Format and no field labels', async () => {
     render(CinematicStudioPage, { props: { apps: appModels, models } })
 
     const panel = await screen.findByRole('complementary', {
@@ -1567,9 +1613,14 @@ describe('CinematicStudio', () => {
     expect(within(panel).queryByTestId('cinematic-advanced')).toBeNull()
     expect(
       within(panel)
-        .getAllByRole('heading', { level: 2 })
+        .getAllByRole('heading')
         .map((heading) => heading.textContent.trim())
-    ).toEqual(['Model', 'Shot', 'Format'])
+    ).toEqual(['New shot'])
+    expect(
+      within(panel)
+        .getAllByRole('region')
+        .map((region) => region.getAttribute('aria-label'))
+    ).toEqual(['Shot', 'Format'])
   })
 
   it('opens a direction part from its row in the side panel shot list', async () => {
@@ -1900,12 +1951,34 @@ describe('CinematicStudio', () => {
       ).toBeInTheDocument()
 
       await user.click(
-        screen.getByRole('button', { name: tc('cinematic.reference.remove') })
+        screen.getByRole('button', {
+          name: `${tc('cinematic.reference.remove')}: ${tc('cinematic.reference.cast')}`
+        })
       )
       expect(screen.getByRole('button', { name: action })).toBeInTheDocument()
       expect(
         screen.queryByRole('button', {
           name: tc('cinematic.composer.references')
+        })
+      ).toBeNull()
+    })
+
+    it('offers the starting frame beside the scene in video mode', async () => {
+      render(CinematicStudioPanel, {
+        props: { models: [...models, ...videoModels] }
+      })
+      const user = userEvent.setup()
+
+      await user.click(screen.getByRole('button', { name: 'Video' }))
+
+      expect(
+        screen.getByRole('button', {
+          name: tc('cinematic.video.addFirstFrame')
+        })
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByRole('heading', {
+          name: tc('cinematic.section.references')
         })
       ).toBeNull()
     })

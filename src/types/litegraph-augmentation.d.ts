@@ -102,6 +102,7 @@ declare module '@/lib/litegraph/src/litegraph' {
 
   interface LGraphNode {
     constructor: LGraphNodeConstructor
+    canvasHeight?: number
 
     /**
      * Callback fired on each node after the graph is configured
@@ -152,6 +153,7 @@ declare module '@/lib/litegraph/src/litegraph' {
     runningInternalNodeId?: SerializedNodeId
 
     comfyClass?: string
+    convertWidgetToInput?(): boolean
 
     /**
      * If the node is a frontend only node and should not be serialized into the prompt.

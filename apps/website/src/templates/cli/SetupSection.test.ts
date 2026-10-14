@@ -6,10 +6,10 @@ import { nextTick } from 'vue'
 import {
   captureCliConnectionTabClick,
   captureCliClientTabClick
-} from '../../scripts/posthog'
+} from '@/scripts/posthog'
 import SetupSection from './SetupSection.vue'
 
-vi.mock(import('../../scripts/posthog'))
+vi.mock(import('@/scripts/posthog'))
 
 // reka-ui tab triggers activate on the pointer sequence, not a bare synthetic
 // click, so drive them through userEvent.

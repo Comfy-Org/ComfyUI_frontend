@@ -33,7 +33,7 @@ async function navigateAndSettle(page: Page, url: string) {
   await expect(
     page
       .getByTestId('desktop-nav-links')
-      .getByRole('link', { name: 'Hub', includeHidden: true })
+      .getByRole('button', { name: 'Products', includeHidden: true })
   ).toBeAttached()
   await waitForPpFormulaLight(page)
 }
@@ -125,6 +125,15 @@ for (const { name, url, island, trigger, opened } of FAQ_PAGES) {
         await triggers.nth(0).click()
         await triggers.nth(1).click()
         await expect(faq.locator(opened)).toHaveCount(2)
+        // The sticky header overlays this capture, so pin the scroll offset.
+        await expect
+          .poll(() =>
+            faq.evaluate((el) => el.getAnimations({ subtree: true }).length)
+          )
+          .toBe(0)
+        await faq.evaluate((el) =>
+          el.scrollIntoView({ block: 'start', behavior: 'instant' })
+        )
 
         await expect(faq).toHaveScreenshot(`${name}-faq-${vp.name}.png`)
       })
@@ -148,20 +157,6 @@ test.describe('Contact', { tag: '@visual' }, () => {
   }
 })
 
-test.describe('Gallery', { tag: '@visual' }, () => {
-  for (const vp of SMALL_VIEWPORTS) {
-    test(`gallery-grid-${vp.name}`, async ({ page }) => {
-      await page.setViewportSize({ width: vp.width, height: vp.height })
-      await navigateAndSettle(page, '/gallery')
-
-      const section = page.getByTestId('gallery-grid')
-      await expect(section).toBeVisible()
-      await section.scrollIntoViewIfNeeded()
-      await expect(page).toHaveScreenshot(`gallery-grid-${vp.name}.png`)
-    })
-  }
-})
-
 test.describe('About', { tag: '@visual' }, () => {
   for (const vp of SMALL_VIEWPORTS) {
     test(`hero-${vp.name}`, async ({ page }) => {
@@ -178,6 +173,22 @@ test.describe('About', { tag: '@visual' }, () => {
   }
 })
 
+test.describe('Customers', { tag: '@visual' }, () => {
+  for (const vp of VIEWPORTS.filter(
+    (v) => v.name === '1-sm' || v.name === '3-lg'
+  )) {
+    test(`hero-${vp.name}`, async ({ page }) => {
+      await page.setViewportSize({ width: vp.width, height: vp.height })
+      await navigateAndSettle(page, '/customers')
+
+      await expect(
+        page.getByRole('heading', { level: 1, name: /creative companies/i })
+      ).toBeVisible()
+      await expect(page).toHaveScreenshot(`customers-hero-${vp.name}.png`)
+    })
+  }
+})
+
 test.describe('Overflow guards', { tag: '@visual' }, () => {
   test.describe.configure({ mode: 'parallel' })
 
@@ -189,7 +200,6 @@ test.describe('Overflow guards', { tag: '@visual' }, () => {
     '/pricing',
     '/contact',
     '/download',
-    '/gallery',
     '/about',
     '/careers'
   ]

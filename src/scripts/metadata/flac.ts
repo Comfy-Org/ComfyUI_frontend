@@ -55,7 +55,7 @@ function parseVorbisComment(dataView: DataView): Record<string, string> {
 
   const userCommentListLength = dataView.getUint32(offset, true)
   offset += 4
-  const comments = {}
+  const comments: Record<string, string> = {}
   for (let i = 0; i < userCommentListLength; i++) {
     const commentLength = dataView.getUint32(offset, true)
     offset += 4
@@ -65,7 +65,6 @@ function parseVorbisComment(dataView: DataView): Record<string, string> {
     const ind = comment.indexOf('=')
     const key = comment.substring(0, ind)
 
-    // @ts-expect-error fixme ts strict error
     comments[key] = comment.substring(ind + 1)
   }
 

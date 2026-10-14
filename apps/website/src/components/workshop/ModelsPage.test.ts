@@ -1,14 +1,16 @@
+import { respondToFetch } from '@comfyorg/test-utils/fetch'
+import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { readonly, ref, createSSRApp, h, nextTick } from 'vue'
 import type { Ref } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 
-import { workshopModels } from '../../config/workshop-browse-content'
-import { workshopPages } from '../../config/workshop-page-content'
+import { workshopModels } from '@/config/workshop-browse-content'
+import { workshopPages } from '@/config/workshop-page-content'
 import './ModelPage.vue'
 import './ModelsCatalogue.vue'
-import { prepareModelPage } from '../../routes/models/model-page'
+import { prepareModelPage } from '@/routes/models/model-page'
 import {
   useWorkshopAppsEnabled,
   captureWorkshopEvent,
@@ -16,10 +18,11 @@ import {
   useWorkshopEnabledSettled,
   useWorkshopWorkflowsEnabled,
   useWorkshopAuthFlag
-} from '../../scripts/posthog'
+} from '@/scripts/posthog'
+import { FORWARD_GRACE_MS, forwardLegacySection } from './forwardLegacySection'
 import ModelsPage from './ModelsPage.vue'
 
-vi.mock(import('../../scripts/posthog'))
+vi.mock(import('@/scripts/posthog'))
 
 let enabled: Ref<boolean>
 let settled: Ref<boolean>
@@ -40,16 +43,17 @@ beforeEach(() => {
   vi.mocked(useWorkshopAppsEnabled).mockReturnValue(readonly(appsEnabled))
 })
 
+const CATALOGUE_URL = '/models/catalogue.json'
 const modelSlug = 'bfl--flux-2-max--generate-images'
 const modelPage = await prepareModelPage(modelSlug)
 
 describe('Models page entry', () => {
   it('gates workflow data and mounts the shared controls when enabled', async () => {
     const slug = 'workflows/change-material'
-    const fetchData = vi
-      .fn<typeof fetch>()
-      .mockResolvedValue(Response.json(await prepareModelPage(slug)))
-    vi.stubGlobal('fetch', fetchData)
+    const page = await prepareModelPage(slug)
+    respondToFetch('/models/workflows/change-material/page.json', () =>
+      Response.json(page)
+    )
     enabled.value = true
     render(ModelsPage, {
       props: { slug },
@@ -58,12 +62,12 @@ describe('Models page entry', () => {
     expect(
       await screen.findByRole('heading', { name: 'Public Models' })
     ).toBeVisible()
-    expect(fetchData).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
     workflowsEnabled.value = true
     expect(
       await screen.findByRole('heading', { name: 'Change a material' })
     ).toBeVisible()
-    expect(fetchData).toHaveBeenCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       '/models/workflows/change-material/page.json'
     )
     expect(
@@ -126,10 +130,7 @@ describe('Models page entry', () => {
   ] as const)(
     'keeps the $section section and its heading behind its flag',
     async ({ section, catalogue, turnOn }) => {
-      vi.stubGlobal(
-        'fetch',
-        vi.fn<typeof fetch>().mockResolvedValue(Response.json(workshopPages))
-      )
+      respondToFetch(CATALOGUE_URL, () => Response.json(workshopPages))
       enabled.value = true
       render(ModelsPage, {
         props: { section, heading: 'Section heading' },
@@ -155,11 +156,246 @@ describe('Models page entry', () => {
     }
   )
 
+  describe('an old ?type= catalogue link', () => {
+    let replace: ReturnType<typeof vi.fn<(url: string | URL) => void>>
+
+    // ModelsPage reads the settled flag once during setup, synchronously inside
+    // render(). The forward reads it again only after its chunk loads, right
+    // before it starts watching the flags, so a read past the setup count means
+    // the forward is pending on the flags.
+    function renderUntilForwardPending() {
+      const settledReads = vi.mocked(useWorkshopEnabledSettled).mock.calls
+      const view = render(ModelsPage)
+      const setupReads = settledReads.length
+      return vi
+        .waitFor(() => expect(settledReads.length).toBeGreaterThan(setupReads))
+        .then(() => view)
+    }
+
+    beforeEach(() => {
+      replace = vi.fn()
+      vi.spyOn(window.location, 'replace').mockImplementation(replace)
+      respondToFetch(CATALOGUE_URL, () => Response.json(workshopModels))
+      enabled.value = true
+    })
+
+    afterEach(() => {
+      window.history.replaceState({}, '', '/')
+    })
+
+    it.for([
+      {
+        link: '/hub/models/?type=workflows&q=kling#top',
+        turnOn: () => {
+          workflowsEnabled.value = true
+        },
+        target: '/hub/workflows/?q=kling#top'
+      },
+      {
+        link: '/hub/models/?type=workflow',
+        turnOn: () => {
+          workflowsEnabled.value = true
+        },
+        target: '/hub/workflows/'
+      },
+      {
+        link: '/hub/models/?model=LTX-2.3&type=apps',
+        turnOn: () => {
+          appsEnabled.value = true
+        },
+        target: '/hub/apps/?model=LTX-2.3'
+      }
+    ])(
+      'forwards $link to its section once the flags answer with it on',
+      async ({ link, turnOn, target }) => {
+        window.history.replaceState({}, '', link)
+        settled.value = false
+        await renderUntilForwardPending()
+        expect(screen.getByTestId('models-loading')).toBeTruthy()
+        expect(replace).not.toHaveBeenCalled()
+
+        turnOn()
+        settled.value = true
+        await vi.waitFor(() =>
+          expect(replace).toHaveBeenCalledExactlyOnceWith(
+            new URL(target, location.origin).href
+          )
+        )
+        expect(screen.getByTestId('models-loading')).toBeTruthy()
+      }
+    )
+
+    it('waits for settled flags before forwarding when both flags are enabled', async () => {
+      window.history.replaceState({}, '', '/hub/models/?type=workflows')
+      settled.value = false
+      workflowsEnabled.value = true
+      const controller = new AbortController()
+      const forwarding = forwardLegacySection(location.href, controller.signal)
+
+      try {
+        await nextTick()
+        expect(replace).not.toHaveBeenCalled()
+
+        settled.value = true
+        await nextTick()
+        expect(replace).toHaveBeenCalledExactlyOnceWith(
+          new URL('/hub/workflows/', location.origin).href
+        )
+        await vi.advanceTimersByTimeAsync(FORWARD_GRACE_MS)
+        await forwarding
+      } finally {
+        controller.abort()
+      }
+    })
+
+    it('loads the models catalogue while it waits for the flags', async () => {
+      window.history.replaceState({}, '', '/hub/models/?type=workflows')
+      settled.value = false
+      render(ModelsPage)
+      await vi.waitFor(() =>
+        expect(fetch).toHaveBeenCalledExactlyOnceWith(CATALOGUE_URL)
+      )
+      expect(screen.getByTestId('models-loading')).toBeTruthy()
+
+      settled.value = true
+      expect(await screen.findByTestId('workshop-search')).toBeTruthy()
+      expect(replace).not.toHaveBeenCalled()
+    })
+
+    it('waits for the page to finish parsing before trusting the flags', async () => {
+      window.history.replaceState({}, '', '/hub/models/?type=workflows')
+      const readyState = vi
+        .spyOn(document, 'readyState', 'get')
+        .mockReturnValue('loading')
+      render(ModelsPage)
+      await expect(
+        screen.findByTestId('workshop-search', undefined, { timeout: 200 })
+      ).rejects.toThrow()
+      expect(replace).not.toHaveBeenCalled()
+
+      workflowsEnabled.value = true
+      readyState.mockReturnValue('interactive')
+      document.dispatchEvent(new Event('DOMContentLoaded'))
+      await vi.waitFor(() =>
+        expect(replace).toHaveBeenCalledExactlyOnceWith(
+          new URL('/hub/workflows/', location.origin).href
+        )
+      )
+    })
+
+    it('forwards once the section turns on after the catalogue loaded, and only once', async () => {
+      window.history.replaceState({}, '', '/hub/models/?type=workflows')
+      render(ModelsPage)
+      expect(await screen.findByTestId('workshop-search')).toBeTruthy()
+
+      workflowsEnabled.value = true
+      await vi.waitFor(() => expect(replace).toHaveBeenCalledOnce())
+      workflowsEnabled.value = false
+      await nextTick()
+      workflowsEnabled.value = true
+      await nextTick()
+      expect(replace).toHaveBeenCalledOnce()
+    })
+
+    it('shows the models catalogue when the browser stays put after a forward', async () => {
+      window.history.replaceState({}, '', '/hub/models/?type=workflows')
+      workflowsEnabled.value = true
+      render(ModelsPage)
+      await vi.waitFor(() => expect(replace).toHaveBeenCalledOnce())
+      expect(screen.getByTestId('models-loading')).toBeTruthy()
+
+      await vi.advanceTimersByTimeAsync(FORWARD_GRACE_MS)
+      expect(await screen.findByTestId('workshop-search')).toBeTruthy()
+    })
+
+    it('does not forward a visitor who moved on before the flags answered', async () => {
+      window.history.replaceState({}, '', '/hub/models/?type=workflows')
+      settled.value = false
+      await renderUntilForwardPending()
+
+      window.history.replaceState({}, '', '/hub/models/?q=kling')
+      workflowsEnabled.value = true
+      settled.value = true
+      expect(await screen.findByTestId('workshop-search')).toBeTruthy()
+      expect(replace).not.toHaveBeenCalled()
+    })
+
+    it('acts on the link the page opened with, not one that replaced it while loading', async () => {
+      window.history.replaceState({}, '', '/hub/models/?type=workflows')
+      respondToFetch(CATALOGUE_URL, () => {
+        window.history.replaceState({}, '', '/hub/models/?type=apps')
+        return Response.json(workshopModels)
+      })
+      workflowsEnabled.value = true
+      appsEnabled.value = true
+      render(ModelsPage)
+      expect(await screen.findByTestId('workshop-search')).toBeTruthy()
+      expect(replace).not.toHaveBeenCalled()
+    })
+
+    it('stops forwarding once the page unmounts', async () => {
+      window.history.replaceState({}, '', '/hub/models/?type=workflows')
+      settled.value = false
+      const { unmount } = await renderUntilForwardPending()
+
+      unmount()
+      workflowsEnabled.value = true
+      settled.value = true
+      await vi.advanceTimersByTimeAsync(FORWARD_GRACE_MS)
+      expect(replace).not.toHaveBeenCalled()
+    })
+
+    it.for([
+      { link: '/hub/models/?type=workflows', workshop: true },
+      { link: '/hub/models/?type=apps', workshop: true },
+      { link: '/hub/models/?type=workflows', workshop: false }
+    ])(
+      'keeps the models catalogue for $link while its section is off (workshop $workshop)',
+      async ({ link, workshop }) => {
+        window.history.replaceState({}, '', link)
+        enabled.value = workshop
+        workflowsEnabled.value = !workshop
+        appsEnabled.value = !workshop
+        render(ModelsPage)
+        expect(await screen.findByTestId('workshop-search')).toBeTruthy()
+        expect(replace).not.toHaveBeenCalled()
+      }
+    )
+  })
+
+  it('gives the hub heading and the tabs to a category, and takes them back', async () => {
+    const user = userEvent.setup()
+    respondToFetch(CATALOGUE_URL, () => Response.json(workshopPages))
+    enabled.value = true
+    workflowsEnabled.value = true
+    render(ModelsPage, {
+      props: { section: 'models', heading: 'Models heading' },
+      slots: { fallback: '<h1>Public Models</h1>' }
+    })
+    expect(await screen.findByTestId('workshop-search')).toBeVisible()
+    const headingWrapper = () => screen.getByTestId('workshop-heading')
+
+    expect(headingWrapper()).not.toHaveClass('sr-only')
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Models heading' })
+    ).toBeVisible()
+    expect(screen.getByTestId('catalogue-tabs')).toBeVisible()
+
+    await user.click(screen.getByTestId('browse-all-end'))
+    expect(headingWrapper()).toHaveClass('sr-only')
+    // Hidden, not removed: the page still owns the only h1.
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Models heading' })
+    ).toBeInTheDocument()
+    expect(screen.queryByTestId('catalogue-tabs')).toBeNull()
+
+    await user.click(screen.getByTestId('section-back'))
+    expect(headingWrapper()).not.toHaveClass('sr-only')
+    expect(screen.getByTestId('catalogue-tabs')).toBeVisible()
+  })
+
   it('switches the loaded catalogue and heading without fetching its data again', async () => {
-    const fetchData = vi
-      .fn<typeof fetch>()
-      .mockImplementation(async () => Response.json(workshopPages))
-    vi.stubGlobal('fetch', fetchData)
+    respondToFetch(CATALOGUE_URL, () => Response.json(workshopPages))
     enabled.value = true
     workflowsEnabled.value = true
     appsEnabled.value = true
@@ -184,7 +420,7 @@ describe('Models page entry', () => {
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
       'Models heading'
     )
-    expect(fetchData).toHaveBeenCalledExactlyOnceWith('/models/catalogue.json')
+    expect(fetch).toHaveBeenCalledExactlyOnceWith(CATALOGUE_URL)
     expect(
       vi
         .mocked(captureWorkshopEvent)
@@ -201,12 +437,10 @@ describe('Models page entry', () => {
     expect(screen.queryByTestId('apps-catalogue')).toBeNull()
     await view.rerender({ section: 'models', heading: 'Models heading' })
     expect(await screen.findByTestId('workshop-search')).toBeVisible()
-    expect(fetchData).toHaveBeenCalledOnce()
+    expect(fetch).toHaveBeenCalledOnce()
   })
 
   it('keeps a workflow page behind its gate while the workshop flag is off', async () => {
-    const fetchData = vi.fn<typeof fetch>()
-    vi.stubGlobal('fetch', fetchData)
     workflowsEnabled.value = true
     render(ModelsPage, {
       props: { slug: 'workflows/change-material' },
@@ -215,14 +449,11 @@ describe('Models page entry', () => {
     expect(
       await screen.findByRole('heading', { name: 'Public Models' })
     ).toBeVisible()
-    expect(fetchData).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
   })
 
   it('adds workflows to a loaded catalogue when their flag answers late', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn<typeof fetch>().mockResolvedValue(Response.json(workshopPages))
-    )
+    respondToFetch(CATALOGUE_URL, () => Response.json(workshopPages))
     render(ModelsPage)
     expect(await screen.findByTestId('workshop-search')).toBeTruthy()
     expect(screen.queryByTestId('catalogue-tabs')).toBeNull()
@@ -240,10 +471,9 @@ describe('Models page entry', () => {
   ] as const)(
     'shows $visible when the flag is $flag',
     async ({ slug, visible, flag }) => {
-      const fetchData = vi
-        .fn<typeof fetch>()
-        .mockResolvedValue(Response.json(slug ? modelPage : workshopModels))
-      vi.stubGlobal('fetch', fetchData)
+      respondToFetch(slug ? `/models/${slug}/page.json` : CATALOGUE_URL, () =>
+        Response.json(slug ? modelPage : workshopModels)
+      )
       enabled.value = flag === 'on'
       settled.value = flag !== 'unanswered'
       render(ModelsPage, { props: { slug } })

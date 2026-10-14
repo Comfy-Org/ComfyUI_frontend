@@ -3,6 +3,7 @@ import { createMemoryHistory } from 'vue-router'
 import type { Router } from 'vue-router'
 
 import { BILLING_CLIENT_KEY } from '@comfyorg/account-ui/billing'
+import type { BillingSource } from '@comfyorg/billing-contract'
 
 import App from '@/App.vue'
 import { safeReturnTo } from '@/auth/returnTo'
@@ -93,19 +94,26 @@ describe('plan selection, which the host app owns', () => {
   }
 
   it.for([
-    `/v1/pricing?${ENTRY_QUERY}&workspace=ws-team`,
-    `/v1/checkout?${ENTRY_QUERY}&workspace=ws-team`
-  ])('sends %s back to the host without rebinding the tab', async (path) => {
-    const { router, onEntryWorkspace, leave } = hostBoundRouter()
-
-    await router.push(path)
-
-    expect(leave).toHaveBeenCalledExactlyOnceWith(
+    [
+      `/v1/pricing?${ENTRY_QUERY}&workspace=ws-team`,
       'https://testcloud.comfy.org/?workspace=ws-team'
-    )
-    expect(onEntryWorkspace).not.toHaveBeenCalled()
-    expect(router.currentRoute.value.path).not.toBe('/sign-in')
-  })
+    ],
+    [
+      `/v1/checkout?${ENTRY_QUERY}&workspace=ws-team`,
+      'https://testcloud.comfy.org/?pricing=1&workspace=ws-team'
+    ]
+  ])(
+    'sends %s to %s without rebinding the tab',
+    async ([path, destination]) => {
+      const { router, onEntryWorkspace, leave } = hostBoundRouter()
+
+      await router.push(path)
+
+      expect(leave).toHaveBeenCalledExactlyOnceWith(destination)
+      expect(onEntryWorkspace).not.toHaveBeenCalled()
+      expect(router.currentRoute.value.path).not.toBe('/sign-in')
+    }
+  )
 
   it('keeps a checkout that names a plan', async () => {
     const { router, leave } = hostBoundRouter('authenticated')
@@ -274,6 +282,39 @@ describe('hosted billing entry routing', () => {
       product: 'comfyui',
       returnTo: 'comfyui_workspace',
       plan: 'creator_monthly'
+    })
+  })
+
+  it('publishes the source and journey the product handed over', async () => {
+    await arriveAt(
+      `/v1/subscription?${ENTRY_QUERY}&source=agent_paywall&correlation_id=journey-1`
+    )
+
+    const { entry } = useBillingEntry()
+    expect(entry.value).toEqual({
+      version: 'v1',
+      intent: 'subscription',
+      product: 'comfyui',
+      returnTo: 'comfyui_workspace',
+      source: 'agent_paywall',
+      correlationId: 'journey-1'
+    })
+    expectTypeOf(entry.value?.source).toEqualTypeOf<BillingSource | undefined>()
+    expectTypeOf(entry.value?.correlationId).toEqualTypeOf<string | undefined>()
+  })
+
+  it('publishes a link whose source is outside the shared list without one', async () => {
+    await arriveAt(
+      `/v1/subscription?${ENTRY_QUERY}&source=https%3A%2F%2Fevil.test&correlation_id=journey-1`
+    )
+
+    expect(useBillingEntry().error.value).toBeUndefined()
+    expect(useBillingEntry().entry.value).toEqual({
+      version: 'v1',
+      intent: 'subscription',
+      product: 'comfyui',
+      returnTo: 'comfyui_workspace',
+      correlationId: 'journey-1'
     })
   })
 

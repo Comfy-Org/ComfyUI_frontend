@@ -74,9 +74,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => {
   }
 })
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 vi.mock(import('@/services/litegraphService'))
 
@@ -238,7 +236,6 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
 
   it('recovers canvas to root even if router.replace rejects', async () => {
     routerMocks.replace.mockRejectedValueOnce(new Error('navigation aborted'))
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     app.canvas.graph = makeSubgraph(ids.deletedSubgraph)
     useSubgraphNavigationStore()
 
@@ -246,7 +243,6 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     await vi.waitFor(() =>
       expect(app.canvas.setGraph).toHaveBeenCalledWith(app.rootGraph)
     )
-    warnSpy.mockRestore()
   })
 
   it('publishes a newer workflow hash after an older redirect settles', async () => {
@@ -279,7 +275,6 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
   })
 
   it('redirects when a workflow load resolves but the subgraph is still missing', async () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     Object.assign(useWorkflowStore(), {
       openWorkflows: [
         fromPartial<ComfyWorkflow>({
@@ -299,15 +294,13 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
       expect(routerMocks.replace).toHaveBeenCalledWith(
         expect.objectContaining({ hash: `#${app.rootGraph.id}` })
       )
-      expect(warnSpy).toHaveBeenCalledWith(
+      expect(console.warn).toHaveBeenCalledWith(
         expect.stringContaining('subgraph not found after workflow load')
       )
     })
-    warnSpy.mockRestore()
   })
 
   it('redirects when openWorkflow rejects during recovery', async () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     workflowServiceMocks.openWorkflow.mockRejectedValueOnce(
       new Error('load failed')
     )
@@ -329,7 +322,7 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
       expect(routerMocks.replace).toHaveBeenCalledWith(
         expect.objectContaining({ hash: `#${app.rootGraph.id}` })
       )
-      expect(warnSpy).toHaveBeenCalledWith(
+      expect(console.warn).toHaveBeenCalledWith(
         expect.stringContaining('workflow load failed')
       )
       expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
@@ -339,7 +332,6 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
         context: { stage: 'recovery' }
       })
     })
-    warnSpy.mockRestore()
   })
 
   it('replays the latest route after a workflow-backed route load', async () => {
@@ -936,7 +928,6 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
   })
 
   it('routeHash watcher does not re-enter navigateToHash during recovery redirect', async () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     // Simulate the real router replace: trigger the routeHash watcher
     // exactly the way vue-router does when the URL is replaced.
     routerMocks.replace.mockImplementation((target) => {
@@ -959,6 +950,5 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     await flushHashWatcher()
     expect(routerMocks.replace).toHaveBeenCalledTimes(1)
     expect(app.canvas.setGraph).toHaveBeenCalledWith(app.rootGraph)
-    warnSpy.mockRestore()
   })
 })

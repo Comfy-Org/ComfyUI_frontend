@@ -19,7 +19,6 @@ const challenge = (
 function renderPayAction(
   props: {
     phase?: SubmitPhase
-    canCancel?: boolean
     loading?: boolean
     disabled?: boolean
     onCancel?: () => void
@@ -40,82 +39,130 @@ describe('CheckoutPayAction', () => {
   it.for<{
     name: string
     phase: SubmitPhase
-    canCancel: boolean
     line: string
     buttons: string[]
   }>([
     {
       name: 'Pay at rest',
       phase: { kind: 'capture' },
-      canCancel: true,
       line: '',
       buttons: ['Pay and subscribe']
     },
     {
       name: 'a Pay the bank has not answered yet',
       phase: { kind: 'unknown' },
-      canCancel: true,
       line: '',
       buttons: ['Pay and subscribe']
     },
     {
       name: 'a charge processing',
       phase: { kind: 'processing' },
-      canCancel: true,
       line: "This payment is already processing and can't be canceled.",
       buttons: ['Pay and subscribe']
     },
     {
-      name: 'a challenge the customer can reopen',
+      name: 'a challenge the server never cancels',
       phase: { kind: 'challenge', operation: challenge('required') },
-      canCancel: false,
       line: 'Nothing has been charged yet.',
       buttons: ['Complete verification']
     },
     {
-      name: 'a challenge this tab is showing',
+      name: 'a challenge this tab is showing, with no cancel to offer',
       phase: { kind: 'challenge', operation: challenge('in_progress') },
-      canCancel: false,
       line: 'Nothing has been charged yet.',
       buttons: ['Pay and subscribe']
     },
     {
-      name: 'a reopenable challenge once the server can cancel it',
-      phase: { kind: 'challenge', operation: challenge('required') },
-      canCancel: true,
+      name: 'a reopenable challenge the server can cancel',
+      phase: {
+        kind: 'challenge',
+        operation: challenge('required'),
+        cancel: 'offered'
+      },
       line: 'Nothing has been charged yet.',
       buttons: ['Complete verification', 'Cancel payment']
     },
     {
-      name: 'a challenge on screen once the server can cancel it',
-      phase: { kind: 'challenge', operation: challenge('in_progress') },
-      canCancel: true,
+      name: 'a challenge on screen the server can cancel',
+      phase: {
+        kind: 'challenge',
+        operation: challenge('in_progress'),
+        cancel: 'offered'
+      },
       line: 'Nothing has been charged yet.',
       buttons: ['Pay and subscribe', 'Cancel payment']
     },
     {
+      name: 'a challenge whose cancel the server is settling',
+      phase: {
+        kind: 'challenge',
+        operation: challenge('required'),
+        cancel: 'canceling'
+      },
+      line: 'Nothing has been charged yet.',
+      buttons: ['Complete verification', 'Canceling…']
+    },
+    {
+      name: 'a challenge the server would not cancel',
+      phase: {
+        kind: 'challenge',
+        operation: challenge('required'),
+        cancel: 'not_cancelable'
+      },
+      line: 'Nothing has been charged yet.',
+      buttons: ['Complete verification']
+    },
+    {
       name: 'an Alipay redirect',
       phase: { kind: 'redirecting', method: 'alipay' },
-      canCancel: true,
       line: 'Taking you to Alipay to finish paying. Nothing has been charged yet.',
       buttons: ['Pay and subscribe']
     },
     {
       name: 'a redirect to a method with no name',
       phase: { kind: 'redirecting', method: 'klarna' },
-      canCancel: true,
       line: 'Taking you to your payment provider to finish paying. Nothing has been charged yet.',
       buttons: ['Pay and subscribe']
     }
-  ])(
-    'shows $name with its line and buttons',
-    ({ phase, canCancel, line, buttons }) => {
-      renderPayAction({ phase, canCancel })
+  ])('shows $name with its line and buttons', ({ phase, line, buttons }) => {
+    renderPayAction({ phase })
 
-      expect(footnote().textContent.trim()).toBe(line)
-      expect(buttonNames()).toEqual(buttons)
-    }
-  )
+    expect(footnote().textContent.trim()).toBe(line)
+    expect(buttonNames()).toEqual(buttons)
+  })
+
+  it('holds both buttons while the server settles a cancel', () => {
+    renderPayAction({
+      phase: {
+        kind: 'challenge',
+        operation: challenge('required'),
+        cancel: 'canceling'
+      }
+    })
+
+    expect(
+      screen.getByRole('button', { name: 'Complete verification' })
+    ).toBeDisabled()
+    const canceling = screen.getByRole('button', { name: 'Canceling…' })
+    expect(canceling).toBeDisabled()
+    expect(canceling).toHaveAttribute('aria-busy', 'true')
+  })
+
+  it('says why a payment the server would not cancel has no Cancel payment', () => {
+    renderPayAction({
+      phase: {
+        kind: 'challenge',
+        operation: challenge('required'),
+        cancel: 'not_cancelable'
+      }
+    })
+
+    expect(
+      screen.getByText(
+        "This payment can't be canceled right now. Finish verifying, or contact support if it doesn't go through."
+      )
+    ).toBeVisible()
+  })
 
   it('keeps Complete verification live while the page is locked', async () => {
     const onContinueVerification = vi.fn()
@@ -153,8 +200,11 @@ describe('CheckoutPayAction', () => {
   it('emits cancel from Cancel payment', async () => {
     const onCancel = vi.fn()
     renderPayAction({
-      phase: { kind: 'challenge', operation: challenge('in_progress') },
-      canCancel: true,
+      phase: {
+        kind: 'challenge',
+        operation: challenge('in_progress'),
+        cancel: 'offered'
+      },
       onCancel
     })
 
@@ -178,4 +228,28 @@ describe('CheckoutPayAction', () => {
       expect(pay).toHaveProperty('disabled', disabled)
     }
   )
+
+  it('180-6679: buys credits with a bare Pay, authorizing one charge and linking the terms', () => {
+    render(CheckoutPayAction, {
+      props: { disabled: false, purchase: 'credits' },
+      global: { plugins: [createBillingI18n()] }
+    })
+
+    expect(screen.getByRole('button', { name: 'Pay' })).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        (_, element) =>
+          element?.tagName === 'P' &&
+          element.textContent.trim() ===
+            "By continuing, you agree to Comfy Org's Terms and Privacy Policy, and authorize Comfy Org to charge your payment method once for this purchase."
+      )
+    ).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Terms' })).toHaveAttribute(
+      'href',
+      'https://comfy.org/terms-of-service/'
+    )
+    expect(
+      screen.getByRole('link', { name: 'Privacy Policy' })
+    ).toHaveAttribute('href', 'https://comfy.org/privacy-policy/')
+  })
 })

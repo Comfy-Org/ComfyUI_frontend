@@ -116,7 +116,7 @@ function dispatchDragStart(
     metaKey: { value: init.metaKey ?? false, configurable: true }
   })
   const cardSelector = `[data-asset-id="${init.assetId ?? 'a'}"]`
-  // eslint-disable-next-line testing-library/no-node-access -- the draggable card intentionally has no interactive role
+  // oxlint-disable-next-line testing-library/no-node-access -- the draggable card intentionally has no interactive role
   container.querySelector(cardSelector)!.dispatchEvent(event)
   return { event, add }
 }
@@ -235,7 +235,7 @@ describe('MediaAssetCard', () => {
     })
     const preview = await screen.findByRole('img', { name: 'a.png' })
     const outsideClick = vi.fn()
-    // eslint-disable-next-line testing-library/no-container -- verifies the card's event boundary against its rendered parent
+    // oxlint-disable-next-line testing-library/no-container -- verifies the card's event boundary against its rendered parent
     container.addEventListener('click', outsideClick)
 
     await user.click(preview)
@@ -248,13 +248,40 @@ describe('MediaAssetCard', () => {
     expect(emitted().zoom).toEqual([[asset]])
   })
 
+  it('previews an exr asset from its preview_url', async () => {
+    const previewUrl = '/api/assets/exr-preview/content'
+    renderCard({
+      loading: false,
+      asset: { ...asset, name: 'render.exr', preview_url: previewUrl }
+    })
+
+    expect(
+      await screen.findByRole('img', { name: 'render.exr' })
+    ).toHaveAttribute('src', previewUrl)
+  })
+
+  it('inspects an HDR asset on double click', async () => {
+    const user = userEvent.setup()
+    const hdrAsset = {
+      ...asset,
+      name: 'sky.exr',
+      preview_url: '/api/assets/sky-preview/content'
+    }
+    const { emitted } = renderCard({ loading: false, asset: hdrAsset })
+    const preview = await screen.findByRole('img', { name: 'sky.exr' })
+
+    await user.dblClick(preview)
+
+    expect(emitted().zoom).toEqual([[hdrAsset]])
+  })
+
   it('selects non-video assets from the preview', async () => {
     const user = userEvent.setup()
     const { container, emitted } = renderCard({
       loading: false,
       asset: { ...asset, name: 'model.glb' }
     })
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- verifies the preview event boundary independently of its async media component
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- verifies the preview event boundary independently of its async media component
     const preview = container.querySelector('.aspect-square')!
 
     await user.click(preview)
@@ -276,7 +303,7 @@ describe('MediaAssetCard', () => {
         asset: { ...asset, name: 'clip.mp4' }
       })
       const video = await vi.waitFor(() => {
-        // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
+        // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
         const element = container.querySelector('video')
         expect(element).toBeInTheDocument()
         return element!
@@ -307,7 +334,7 @@ describe('MediaAssetCard', () => {
       showNativeVideoControls: false
     })
     const video = await vi.waitFor(() => {
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
       const element = container.querySelector('video')
       expect(element).toBeInTheDocument()
       return element!
@@ -320,7 +347,7 @@ describe('MediaAssetCard', () => {
     })
 
     await fireEvent.play(video)
-    // eslint-disable-next-line testing-library/no-node-access -- the video hover target has no role
+    // oxlint-disable-next-line testing-library/no-node-access -- the video hover target has no role
     const hoverTarget = video.parentElement!
     await user.hover(hoverTarget)
 
@@ -342,13 +369,13 @@ describe('MediaAssetCard', () => {
       showNativeVideoControls: false
     })
     const video = await vi.waitFor(() => {
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
       const element = container.querySelector('video')
       expect(element).toBeInTheDocument()
       return element!
     })
 
-    // eslint-disable-next-line testing-library/no-node-access -- the video hover target has no role
+    // oxlint-disable-next-line testing-library/no-node-access -- the video hover target has no role
     const hoverTarget = video.parentElement!
     const selectionControl = screen.getByRole('button', {
       name: 'assetBrowser.ariaLabel.assetCard'

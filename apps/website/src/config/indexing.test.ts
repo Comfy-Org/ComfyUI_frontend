@@ -1,10 +1,10 @@
 import { readFileSync, readdirSync } from 'node:fs'
-import { dirname, join, relative, sep } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { join, relative, sep } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 
-import { modelsBuildRoutes } from '../integrations/workshop-release-gate'
-import { routeOf } from '../utils/hreflangRoutes'
+import { websiteRoot } from '@website/paths'
+import { modelsBuildRoutes } from '@/integrations/workshop-release-gate'
+import { routeOf } from '@/utils/hreflangRoutes'
 import {
   NOINDEX_ROUTES,
   headIndexing,
@@ -104,22 +104,12 @@ describe('indexing policy', () => {
     '/agent/',
     '/zh-CN/agent',
     '/zh-CN/agent/',
-    '/p/supported-models/grok-imagine',
+    '/hub/models/local/',
+    '/hub/models/local/4x-ultrasharp/',
     '/demos/image-to-video'
   ])('keeps %s indexable', (pathname) => {
     expect(isNoindexPathname(pathname)).toBe(false)
     expect(isExcludedFromSitemap(`https://comfy.org${pathname}`)).toBe(false)
-  })
-
-  it('derives model redirect exclusions from canonical model metadata', () => {
-    expect(
-      isExcludedFromSitemap('https://comfy.org/p/supported-models/qwen-3-8b/')
-    ).toBe(true)
-    expect(
-      isExcludedFromSitemap(
-        'https://comfy.org/zh-CN/p/supported-models/grok-image/'
-      )
-    ).toBe(true)
   })
 
   it.for([
@@ -256,22 +246,21 @@ describe('model page launch', () => {
   })
 
   it.for([
-    { path: '/hub/workflows/', workflowsLaunched: false, indexable: false },
-    { path: '/hub/workflows/', workflowsLaunched: true, indexable: true },
-    { path: '/hub/apps/', workflowsLaunched: true, indexable: false }
+    { path: '/hub/workflows/', workflowsLaunched: false },
+    { path: '/hub/workflows/', workflowsLaunched: true },
+    { path: '/hub/apps/', workflowsLaunched: false },
+    { path: '/hub/apps/', workflowsLaunched: true }
   ])(
-    'indexes $path with workflows launched $workflowsLaunched: $indexable',
-    ({ path, workflowsLaunched, indexable }) => {
-      expect(isIndexableModelPage(path, 'all', workflowsLaunched)).toBe(
-        indexable
-      )
+    'keeps $path out of the index with workflows launched $workflowsLaunched',
+    ({ path, workflowsLaunched }) => {
+      expect(isIndexableModelPage(path, 'all', workflowsLaunched)).toBe(false)
       expect(
-        !isExcludedFromSitemap(
+        isExcludedFromSitemap(
           `https://comfy.org${path}`,
           'all',
           workflowsLaunched
         )
-      ).toBe(indexable)
+      ).toBe(true)
     }
   )
 
@@ -286,7 +275,7 @@ describe('model page launch', () => {
   })
 })
 
-const pagesDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'pages')
+const pagesDir = join(websiteRoot, 'src/pages')
 
 const astroFiles = (dir: string): string[] =>
   readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {

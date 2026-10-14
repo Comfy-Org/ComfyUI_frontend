@@ -23,6 +23,6 @@ it('renders every video card on the server, loading nothing yet', async () => {
         })
     })
   )
-  expect(html.match(/<figcaption/g)).toHaveLength(2)
+  expect(html.match(/data-testid="example-card"/g)).toHaveLength(2)
   expect(html.match(/preload="none"/g)).toHaveLength(2)
 })

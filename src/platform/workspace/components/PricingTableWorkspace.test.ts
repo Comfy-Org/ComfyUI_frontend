@@ -107,25 +107,11 @@ const i18n = createI18n({
   messages: { en: enMessages }
 })
 
-const cycleToggleStub = {
-  props: ['options'],
-  emits: ['update:modelValue'],
-  template: `<div><button
-      v-for="option in options"
-      :key="option.value"
-      :data-testid="'cycle-' + option.value"
-      @click="$emit('update:modelValue', option.value)"
-    >{{ option.label }}</button></div>`
-}
-
 function renderComponent() {
   return render(PricingTableWorkspace, {
     global: {
       plugins: [i18n],
-      components: { Button },
-      stubs: {
-        SelectButton: cycleToggleStub
-      }
+      components: { Button }
     }
   })
 }
@@ -151,7 +137,7 @@ describe('PricingTableWorkspace credit allotment copy', () => {
       renderComponent()
 
       if (cycle === 'monthly') {
-        await user.click(screen.getByTestId('cycle-monthly'))
+        await user.click(screen.getByRole('button', { name: 'Monthly' }))
         await nextTick()
       }
 
@@ -178,13 +164,16 @@ describe('PricingTableWorkspace credit allotment copy', () => {
     expect(screen.getByText('~4,560')).toBeTruthy()
   })
 
-  it('states the monthly per-member allotment on the monthly cycle', async () => {
+  it('keeps the monthly per-member allotment when Monthly is selected again', async () => {
     const user = userEvent.setup()
     renderComponent()
 
-    await user.click(screen.getByTestId('cycle-monthly'))
+    const monthly = screen.getByRole('button', { name: 'Monthly' })
+    await user.click(monthly)
+    await user.click(monthly)
     await nextTick()
 
+    expect(monthly).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getAllByText('Monthly credits / member')).toHaveLength(3)
     expect(screen.queryAllByText('Yearly credits / member')).toHaveLength(0)
     expect(screen.getByText('4,200')).toBeTruthy()

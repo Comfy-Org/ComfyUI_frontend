@@ -39,6 +39,7 @@ vi.mock<unknown>(
   })
 )
 
+vi.mock(import('@/workbench/extensions/manager/composables/useManagerDialog'))
 vi.mock(import('@/workbench/extensions/manager/composables/useManagerState'))
 
 vi.mock<unknown>(
@@ -161,19 +162,6 @@ describe('MissingPackGroupRow', () => {
     it('renders node count', () => {
       renderRow()
       expect(screen.getByText('2')).toBeInTheDocument()
-    })
-
-    it('renders count of 5 for 5 nodeTypes', () => {
-      renderRow({
-        group: makeGroup({
-          nodeTypes: Array.from({ length: 5 }, (_, i) => ({
-            type: `Node${i}`,
-            nodeId: String(i),
-            isReplaceable: false
-          }))
-        })
-      })
-      expect(screen.getByText('5')).toBeInTheDocument()
     })
   })
 

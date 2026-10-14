@@ -24,7 +24,7 @@ const UPGRADE: SummaryLedger = {
       sublines: ['Unused time from Creator plan']
     }
   ],
-  adjustments: [],
+  discounts: [],
   chips: [],
   acceptsPromo: true,
   total: '$32.50',
@@ -35,7 +35,6 @@ const LANDMARKS = [
   'Pro Plan - Prorated',
   '$50.00',
   'Unused time from Creator plan',
-  'Subtotal',
   'Total due today',
   'Renews at $100.00 on July 28, 2026'
 ]
@@ -93,22 +92,6 @@ describe('CheckoutSummaryColumn', () => {
     ])
   })
 
-  it('divides above a Subtotal when the ledger has one', () => {
-    renderColumn({ ...UPGRADE, subtotal: '$32.50' })
-
-    expect(ledgerOutline()).toEqual([
-      '---',
-      'Pro Plan - Prorated',
-      '$50.00',
-      'Unused time from Creator plan',
-      '---',
-      'Subtotal',
-      '---',
-      'Total due today',
-      'Renews at $100.00 on July 28, 2026'
-    ])
-  })
-
   it('renders a $0 due quote as the headline and the total, with no row between', () => {
     renderColumn({
       family: 'charge_now',
@@ -116,7 +99,7 @@ describe('CheckoutSummaryColumn', () => {
       headline: { amount: '$0', currency: 'USD' },
       credits: { count: '1,772,400', qualifier: 'credits per year' },
       items: [],
-      adjustments: [],
+      discounts: [],
       chips: [],
       acceptsPromo: true,
       total: '$0.00',
@@ -131,15 +114,16 @@ describe('CheckoutSummaryColumn', () => {
     expect(screen.getByText('$0.00')).toBeInTheDocument()
   })
 
-  it('prices a held discount, then the Subtotal an entered code applied to', () => {
+  it('lists every discount row in the ledger order, above the chips', () => {
     render(CheckoutSummaryColumn, {
       props: {
         ledger: {
           ...UPGRADE,
           items: [UPGRADE.items[0]],
-          adjustments: [{ label: 'Education discount', amount: '−$10.00' }],
-          subtotal: '$40.00',
-          promo: { label: 'Promo code', amount: '−$7.50' }
+          discounts: [
+            { label: 'Promo code', amount: '−$7.50' },
+            { label: 'Education discount', amount: '−$10.00' }
+          ]
         }
       },
       slots: { default: '<p>chips and entry</p>' },
@@ -148,12 +132,10 @@ describe('CheckoutSummaryColumn', () => {
 
     const expected = [
       'Pro Plan - Prorated',
-      'Education discount',
-      '−$10.00',
-      'Subtotal',
-      '$40.00',
       'Promo code',
       '−$7.50',
+      'Education discount',
+      '−$10.00',
       'chips and entry',
       'Total due today'
     ]
@@ -178,37 +160,148 @@ describe('CheckoutSummaryColumn', () => {
   })
 })
 
-describe('CheckoutSummaryColumn held discounts', () => {
-  const held = (...rows: [string, string][]): SummaryLedger => ({
+describe('CheckoutSummaryColumn discount rows', () => {
+  const discounted = (...rows: [string, string][]): SummaryLedger => ({
     ...UPGRADE,
     items: [UPGRADE.items[0]],
-    adjustments: rows.map(([label, amount]) => ({ label, amount }))
+    discounts: rows.map(([label, amount]) => ({ label, amount }))
   })
-  const heldRows = () =>
+  const discountRows = () =>
     screen
       .getAllByRole('listitem')
       .map((row) => row.textContent.trim())
       .filter((text) => /discount|Promo code/.test(text))
 
-  it('re-prices two unnamed held discounts as rows of their own', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+  it('re-prices two unnamed discounts as rows of their own', async () => {
     const { rerender } = renderColumn(
-      held(['Promo code', '−$10.00'], ['Education discount', '−$4.00'])
+      discounted(['Promo code', '−$10.00'], ['Education discount', '−$4.00'])
     )
 
     await rerender({
-      ledger: held(
+      ledger: discounted(
         ['Education discount', '−$4.00'],
         ['Promo code', '−$10.00'],
         ['Promo code', '−$5.00']
       )
     })
 
-    expect(heldRows()).toEqual([
+    expect(discountRows()).toEqual([
       'Education discount−$4.00',
       'Promo code−$10.00',
       'Promo code−$5.00'
     ])
-    expect(warn).not.toHaveBeenCalled()
+    expect(console.warn).not.toHaveBeenCalled()
+  })
+})
+
+describe('CheckoutSummaryColumn server-reported rows', () => {
+  function inPageOrder(nodes: Element[]): string[] {
+    return nodes
+      .sort((a, b) =>
+        a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1
+      )
+      .map((node) => (node.tagName === 'HR' ? '---' : node.textContent.trim()))
+  }
+
+  it('strikes through only the list price of a discounted rate', () => {
+    renderColumn({
+      ...UPGRADE,
+      items: [
+        {
+          label: 'Team Plan',
+          amount: '$7,560.00',
+          comparedRate: {
+            keypath: 'checkout.fullPage.summary.item.comparedYearly',
+            amount: '$7,560',
+            listAmount: '$8,400'
+          },
+          sublines: []
+        }
+      ]
+    })
+
+    expect(screen.getByText('$8,400').tagName).toBe('S')
+    expect(
+      screen.getByText(
+        (_, element) =>
+          element?.tagName === 'SPAN' &&
+          element.textContent.trim() === '$7,560 $8,400 /yr, billed yearly'
+      )
+    ).toBeInTheDocument()
+    expect(screen.getByText('$7,560.00').tagName).not.toBe('S')
+  })
+
+  it('bounds a discount by its term under its label', () => {
+    renderColumn({
+      ...UPGRADE,
+      items: [UPGRADE.items[0]],
+      discounts: [
+        { label: 'Promo code', amount: '−$1,512.00', subline: 'First year' }
+      ]
+    })
+
+    expect(
+      inPageOrder([
+        screen.getByText('First year'),
+        screen.getByText('Promo code'),
+        screen.getByText('Total due today')
+      ])
+    ).toEqual(['Promo code', 'First year', 'Total due today'])
+  })
+
+  it('divides a Subtotal off the money rows, then lists the discount and last the account balance', () => {
+    renderColumn({
+      ...UPGRADE,
+      subtotal: '$32.50',
+      discounts: [{ label: 'Promo code', amount: '−$10.00' }],
+      balance: {
+        label: 'Account balance',
+        amount: '−$5.00',
+        subline: 'Credit already on your account'
+      },
+      total: '$17.50'
+    })
+
+    const labels = [
+      'Unused time from Creator plan',
+      'Subtotal',
+      'Promo code',
+      '−$10.00',
+      'Account balance',
+      '−$5.00',
+      'Credit already on your account',
+      'Total due today'
+    ]
+    const outline = inPageOrder([
+      ...screen.getAllByRole('separator'),
+      ...labels.map((text) => screen.getByText(text))
+    ])
+    expect(outline).toEqual([
+      '---',
+      'Unused time from Creator plan',
+      '---',
+      'Subtotal',
+      'Promo code',
+      '−$10.00',
+      'Account balance',
+      '−$5.00',
+      'Credit already on your account',
+      '---',
+      'Total due today'
+    ])
+    expect(
+      screen.getByText(
+        (_, element) =>
+          element?.tagName === 'DIV' &&
+          element.textContent.replace(/\s/g, '') === 'Subtotal$32.50'
+      )
+    ).toBeInTheDocument()
+  })
+
+  it('lists no Subtotal and no balance row when the ledger has neither', () => {
+    renderColumn(UPGRADE)
+
+    expect(screen.queryByText('Subtotal')).not.toBeInTheDocument()
+    expect(screen.queryByText('Account balance')).not.toBeInTheDocument()
   })
 })

@@ -118,9 +118,9 @@ function visitOnWindows(
 
 const DownloadLink = defineComponent({
   setup() {
-    const { downloadUrl, platform } = useDownloadUrl()
+    const { installer } = useDownloadUrl()
     return () =>
-      platform.value ? h('a', { href: downloadUrl.value }, 'Download') : null
+      installer.value ? h('a', { href: installer.value.url }, 'Download') : null
   }
 })
 

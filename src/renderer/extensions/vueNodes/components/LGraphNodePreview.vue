@@ -15,7 +15,7 @@
     </div>
     <div
       class="pointer-events-none flex flex-1 flex-col gap-1 pb-2"
-      :data-testid="`node-body-${nodeData.id}`"
+      data-testid="node-preview-body"
     >
       <NodeSlots :node-data="nodeData" :sync-layout="false" />
 
@@ -37,7 +37,7 @@ import { computed } from 'vue'
 import type {
   INodeInputSlot,
   INodeOutputSlot
-} from '@/lib/litegraph/src/interfaces'
+} from '@/lib/litegraph/src/types/slots'
 import { LGraphEventMode, RenderShape } from '@/lib/litegraph/src/litegraph'
 import NodeHeader from '@/renderer/extensions/vueNodes/components/NodeHeader.vue'
 import NodeSlots from '@/renderer/extensions/vueNodes/components/NodeSlots.vue'
@@ -52,6 +52,8 @@ import { toNodeId } from '@/types/nodeId'
 import type { NodeState } from '@/types/nodeState'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import { zeroUuid } from '@/utils/uuid'
+import { matchesWidgetName } from '@/utils/widgetBinding'
+import type { WidgetValueBinding } from '@/utils/widgetBinding'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const {
@@ -61,7 +63,7 @@ const {
 } = defineProps<{
   nodeDef: ComfyNodeDefV2
   position?: 'absolute' | 'relative'
-  widgetValues?: Record<string, string>
+  widgetValues?: readonly WidgetValueBinding[]
 }>()
 
 const widgetStore = useWidgetStore()
@@ -110,12 +112,26 @@ const nodeData = computed<NodeState>(() => ({
   properties: {}
 }))
 
+const widgetInputs = computed(() =>
+  Object.entries(nodeDef.inputs || {}).filter(([, input]) =>
+    widgetStore.inputIsWidget(input)
+  )
+)
+
+const resolvedWidgetValues = computed(() =>
+  Object.fromEntries(
+    (widgetValues ?? []).flatMap(({ selector, value }) => {
+      const input = widgetInputs.value.find(([name]) =>
+        matchesWidgetName(name, selector)
+      )
+      return input ? [[input[0], value]] : []
+    })
+  )
+)
+
 const previewWidgets = computed<WidgetGridItem[]>(() =>
-  Object.entries(nodeDef.inputs || {})
-    .filter(
-      ([, input]) =>
-        widgetStore.inputIsWidget(input) && !input.hidden && !input.advanced
-    )
+  widgetInputs.value
+    .filter(([, input]) => !input.hidden && !input.advanced)
     .map(([name, input]) => {
       const isDynamicCombo = input.type === 'COMFY_DYNAMICCOMBO_V3'
       const comboValues = isDynamicCombo
@@ -123,7 +139,7 @@ const previewWidgets = computed<WidgetGridItem[]>(() =>
         : input.type === 'COMBO' && Array.isArray(input.options)
           ? input.options
           : undefined
-      const leadValue = widgetValues?.[name]
+      const leadValue = resolvedWidgetValues.value[name]
       const value = (leadValue ??
         input.default ??
         comboValues?.[0] ??
