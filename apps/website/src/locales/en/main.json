@@ -884,7 +884,8 @@
       "homePickRemixRun": "Home: Pick · Remix · Run banner",
       "taskSidebar": "Hub: task sidebar",
       "workflowsByModality": "Hub: workflows by modality",
-      "workflowsFlat": "Hub: workflows like Models"
+      "workflowsFlat": "Hub: workflows like Models",
+      "workflowsModalityTask": "Hub: workflows by modality › task"
     },
     "taskSidebar": {
       "label": "Browse by task",
@@ -895,6 +896,9 @@
       "imageToVideo": "Image to video",
       "editVideos": "Edit videos",
       "seeAll": "See all ({n})"
+    },
+    "workflowCollections": {
+      "label": "Collections"
     },
     "workflowGoals": {
       "characters": "Characters",
