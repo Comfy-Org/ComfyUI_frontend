@@ -8,7 +8,6 @@ import type { WorkflowWorkshopModel } from '@/config/models-catalogue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import { categoryTiles } from '@/lib/workshop/explore-category-tiles'
-import { workflowSectionIcon } from '@/lib/workshop/workflow-category-icons'
 
 const { workflows, locale = 'en' } = defineProps<{
   workflows: readonly WorkflowWorkshopModel[]
@@ -66,12 +65,7 @@ const MOSAIC_LAYOUT: Readonly<Record<number, string>> = {
               draggable="false"
             />
           </span>
-          <span class="flex min-w-0 items-start gap-2 px-3">
-            <component
-              :is="workflowSectionIcon(tile.id)"
-              class="mt-0.5 size-4 shrink-0 text-primary-warm-gray"
-              aria-hidden="true"
-            />
+          <span class="flex min-w-0 px-3">
             <span class="flex min-w-0 flex-col gap-1">
               <span class="truncate text-sm font-medium text-content-bright">
                 {{ tile.label }}
