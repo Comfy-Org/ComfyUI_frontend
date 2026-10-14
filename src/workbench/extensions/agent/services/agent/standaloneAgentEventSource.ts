@@ -1,3 +1,5 @@
+import { useTimeoutFn } from '@vueuse/core'
+
 import type { AgentEventSource } from '../../composables/agent/useAgentSession'
 
 interface StandaloneAgentEventSourceOptions {
@@ -14,7 +16,9 @@ export function createStandaloneAgentEventSource({
   const listeners = new Set<(raw: unknown) => void>()
   const statusListeners = new Set<(live: boolean) => void>()
   let socket: WebSocket | null = null
-  let reconnectTimer: number | null = null
+  const reconnect = useTimeoutFn(connect, reconnectDelayMs, {
+    immediate: false
+  })
 
   function eventUrl(): string {
     const url = new URL(endpoint, window.location.href)
@@ -27,11 +31,8 @@ export function createStandaloneAgentEventSource({
   }
 
   function scheduleReconnect(): void {
-    if (listeners.size === 0 || reconnectTimer !== null) return
-    reconnectTimer = window.setTimeout(() => {
-      reconnectTimer = null
-      connect()
-    }, reconnectDelayMs)
+    if (listeners.size === 0 || reconnect.isPending.value) return
+    reconnect.start()
   }
 
   function connect(): void {
@@ -65,10 +66,7 @@ export function createStandaloneAgentEventSource({
   }
 
   function disconnect(): void {
-    if (reconnectTimer !== null) {
-      window.clearTimeout(reconnectTimer)
-      reconnectTimer = null
-    }
+    reconnect.stop()
     const current = socket
     socket = null
     if (current === null) return

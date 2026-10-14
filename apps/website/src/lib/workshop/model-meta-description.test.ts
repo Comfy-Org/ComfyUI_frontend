@@ -120,14 +120,14 @@ describe('modelMetaDescription', () => {
       expected: 'Recraft V4: Draws. Run it in your browser or call it via API.'
     },
     {
-      name: 'writes the Chinese price without English words',
+      name: 'writes the pricing unit in Chinese',
       locale: 'zh-CN' as const,
       page: {
         model: { name: 'Recraft V4', provider: 'Recraft', summary: '绘图。' },
         priceEstimate: '~9.5 credits/Image'
       },
       expected:
-        'Recraft V4：绘图。在浏览器中运行，或通过 API 调用。默认设置下约 ~9.5 积分。'
+        'Recraft V4：绘图。在浏览器中运行，或通过 API 调用。默认设置下每张图像约 ~9.5 积分。'
     },
     {
       name: 'offers only the API when the model does not run here',
@@ -153,6 +153,16 @@ describe('modelMetaDescription', () => {
         paths: { run: false, api: false }
       },
       expected: 'Kling Omni.'
+    },
+    {
+      name: 'keeps a unit the catalog does not name',
+      locale: 'zh-CN' as const,
+      page: {
+        model: { name: 'Recraft V4', provider: 'Recraft', summary: '绘图。' },
+        priceEstimate: '~9.5 credits/Second'
+      },
+      expected:
+        'Recraft V4：绘图。在浏览器中运行，或通过 API 调用。默认设置下每second约 ~9.5 积分。'
     }
   ])('$name', ({ page, expected, locale }) => {
     expect(modelMetaDescription({ paths: RUNS_HERE, ...page }, locale)).toBe(

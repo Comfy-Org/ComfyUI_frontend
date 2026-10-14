@@ -1,6 +1,9 @@
-import { matchesModulePath } from './records'
+import {
+  isClaimedBy,
+  listUnclassifiedFiles,
+  matchesModulePath
+} from './records'
 import type { ArchitectureConfiguration } from './records'
-import type { DomainRecord } from './schema'
 
 interface CodeownersRule {
   pattern: string
@@ -32,11 +35,7 @@ export function buildCatalog(
   { exceptions, records, sourceFiles }: ArchitectureConfiguration,
   codeowners: CodeownersRule[]
 ) {
-  const isClaimedBy = (file: string, record: DomainRecord) =>
-    record.modules.some(({ path }) => matchesModulePath(file, path))
-  const unclassifiedFiles = sourceFiles
-    .filter((file) => !records.some((record) => isClaimedBy(file, record)))
-    .sort()
+  const unclassifiedFiles = listUnclassifiedFiles(records, sourceFiles)
   return {
     domains: records.map((record) => ({
       ...record,

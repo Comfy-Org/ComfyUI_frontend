@@ -291,6 +291,7 @@
                   size="lg"
                   variant="secondary"
                   class="rounded-lg bg-interface-menu-component-surface-selected px-4 text-sm font-normal text-text-primary"
+                  :data-dd-action-name="BILLING_ACTION_NAME.upgradePlanPanel"
                   @click="handleUpgrade"
                 >
                   {{
@@ -402,6 +403,7 @@
 </template>
 
 <script setup lang="ts">
+import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
 import { useSettingsHeaderCollapse } from '@/platform/settings/composables/useSettingsHeaderCollapse'
 import { cn } from '@comfyorg/tailwind-utils'
 import { useTimestamp } from '@vueuse/core'
@@ -415,6 +417,7 @@ import Menu from '@/components/ui/menu/Menu.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useSubscriptionPaywall } from '@/composables/billing/useSubscriptionPaywall'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
 import {
@@ -471,12 +474,12 @@ const {
   subscriptionStatus,
   isLoading,
   error,
-  showSubscriptionDialog,
   manageSubscription,
   initialize
 } = useBillingContext()
 
 const { showPricingTable } = useSubscriptionDialog()
+const { showSubscriptionDialog } = useSubscriptionPaywall()
 
 const { isResubscribing, handleResubscribe } = useResubscribe()
 const { displayPrice, priceUnitLabel, isPriceCycleUnknown } =

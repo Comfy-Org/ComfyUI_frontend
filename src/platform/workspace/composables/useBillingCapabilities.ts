@@ -18,6 +18,7 @@ import {
 import { readOnRail } from '@/platform/workspace/composables/readOnRail'
 import { useBillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { reportWorkspaceScopeMismatch } from '@/platform/workspace/telemetry/workspaceTelemetryContext'
 import { useAuthStore } from '@/stores/authStore'
 
 type CapabilityReadState =
@@ -369,6 +370,10 @@ function useBillingCapabilitiesInternal() {
         } else {
           readFailures++
           readState.value = unavailableState(userId, workspaceId)
+          reportWorkspaceScopeMismatch(
+            workspaceId,
+            response.resolved_for.workspace_id
+          )
         }
         scheduleRefresh()
         refetchAfterSettle =
