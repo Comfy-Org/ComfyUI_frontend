@@ -27,6 +27,34 @@ export interface ExtensionLoadFailure {
   error: unknown
 }
 
+function safeToError(value: unknown): Error {
+  try {
+    return toError(value)
+  } catch {
+    return new Error('Unknown extension load failure')
+  }
+}
+
+function readErrorDetail(
+  value: unknown,
+  key: 'message' | 'stack'
+): string | undefined {
+  try {
+    const detail = value instanceof Error ? value[key] : undefined
+    return typeof detail === 'string'
+      ? detail.slice(0, MAX_EXTENSION_DIAGNOSTIC_LENGTH)
+      : undefined
+  } catch {
+    return undefined
+  }
+}
+
+function truncateExtensionPath(ext: string): string {
+  if (ext.length <= MAX_EXTENSION_PATH_LENGTH) return ext
+  const limit = ext.lastIndexOf('/', MAX_EXTENSION_PATH_LENGTH)
+  return ext.slice(0, Math.max(limit, MAX_EXTENSION_PATH_LENGTH))
+}
+
 /**
  * Import one backend-provided extension, returning the failure rather than
  * throwing, so one broken pack cannot abort the rest of the parallel load.
@@ -60,7 +88,7 @@ export function reportExtensionLoadFailures(
   if (failures.length === 0) return
 
   const noun = failures.length === 1 ? 'extension' : 'extensions'
-  const errors = failures.map(({ error }) => toError(error))
+  const errors = failures.map(({ error }) => safeToError(error))
   const reportedFailures = failures.slice(0, MAX_NAMED_FAILED_EXTENSIONS)
 
   reportError(
@@ -72,12 +100,14 @@ export function reportExtensionLoadFailures(
       tags: { failed_extension_count: failures.length },
       context: {
         failures: reportedFailures.map(({ ext }, index) => ({
-          ext: ext.slice(0, MAX_EXTENSION_PATH_LENGTH),
-          message: errors[index].message.slice(
-            0,
-            MAX_EXTENSION_DIAGNOSTIC_LENGTH
-          ),
-          stack: errors[index].stack?.slice(0, MAX_EXTENSION_DIAGNOSTIC_LENGTH)
+          ext: truncateExtensionPath(ext),
+          message:
+            readErrorDetail(failures[index].error, 'message') ??
+            readErrorDetail(errors[index], 'message') ??
+            'Unknown extension load failure',
+          stack:
+            readErrorDetail(failures[index].error, 'stack') ??
+            readErrorDetail(errors[index], 'stack')
         }))
       }
     }

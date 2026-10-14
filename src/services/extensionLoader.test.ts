@@ -104,6 +104,33 @@ describe('extension loading', () => {
       expect(options.context?.failures).toHaveLength(10)
     })
 
+    it('keeps hostile error details from aborting telemetry', () => {
+      const error = new Error('unused')
+      Object.defineProperty(error, 'message', {
+        get() {
+          throw new Error('message getter failed')
+        }
+      })
+      Object.defineProperty(error, 'stack', {
+        get() {
+          throw new Error('stack getter failed')
+        }
+      })
+
+      expect(() =>
+        reportExtensionLoadFailures([{ ext: BROKEN, error }])
+      ).not.toThrow()
+
+      const [, options] = vi.mocked(reportError).mock.calls[0]
+      expect(options.context?.failures).toEqual([
+        {
+          ext: BROKEN,
+          message: 'Unknown extension load failure',
+          stack: undefined
+        }
+      ])
+    })
+
     it('does not pair its own console line with the report', () => {
       reportExtensionLoadFailures([failureFor(BROKEN)])
 
