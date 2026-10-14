@@ -35,13 +35,6 @@ vi.mock(import('@/platform/telemetry/reportError'))
 
 const WORKFLOW_ID = 'wf-1'
 
-/**
- * Transport double that models the real socket lifecycle rather than an
- * always-ready pipe: it starts CLOSED (the state `apiTransport` is in while
- * `ComfyApi.createSocket` awaits its auth token) and THROWS on a send while
- * closed — byte-for-byte the behaviour the shipped `apiTransport` had. It also
- * counts live listener registrations so a leak is observable.
- */
 class SocketTransport extends EventTarget implements DocFrameTransport {
   open = false
   readonly sent: string[] = []
@@ -50,7 +43,7 @@ class SocketTransport extends EventTarget implements DocFrameTransport {
   sendDocFrame(
     frame: Parameters<DocFrameTransport['sendDocFrame']>[0]
   ): boolean {
-    if (!this.open) throw new Error('The ComfyUI WebSocket is not connected')
+    if (!this.open) return false
     this.sent.push(JSON.stringify(frame))
     return true
   }
@@ -310,13 +303,15 @@ describe('human op gating around subscription acknowledgement', () => {
 })
 
 describe('FE-TEARDOWN-1 — teardown completes with a dead socket', () => {
-  it('releases every transport listener and the doc when unsubscribe cannot send', () => {
+  it('releases every transport listener and the doc when unsubscribe throws', () => {
     const { transport, client, bridge, projected } = wire()
     transport.open = true
     bridge.subscribe(WORKFLOW_ID)
 
-    // Backend restarts, then the user closes the agent panel.
     transport.open = false
+    vi.spyOn(transport, 'sendDocFrame').mockImplementationOnce(() => {
+      throw new Error('Unexpected transport failure')
+    })
     expect(() => {
       bridge.destroy()
       client.destroy()
@@ -337,9 +332,6 @@ describe('FE-TEARDOWN-1 — teardown completes with a dead socket', () => {
       level: 'error'
     })
 
-    // The torn-down bridge is inert: a frame arriving after the socket recovers
-    // must not reach it. A bridge that survived here would double-apply every
-    // update against the projector still wired to the live canvas.
     transport.open = true
     transport.deliver('doc_update', docUpdateFrame(hostDocUpdate()))
     expect(projected).toHaveLength(0)

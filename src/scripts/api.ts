@@ -805,7 +805,17 @@ export class ComfyApi extends EventTarget {
 
   sendDocFrame(frame: PendingIngestClientDocFrame): boolean {
     if (this.socket?.readyState !== WebSocket.OPEN) return false
-    this.socket.send(JSON.stringify(frame))
+    let serialized: string
+    try {
+      serialized = JSON.stringify(frame)
+    } catch {
+      reportError(new Error('Failed to serialize agent document frame'), {
+        surface: 'agent',
+        errorType: 'failure_sending_agent_doc_frame'
+      })
+      return false
+    }
+    this.socket.send(serialized)
     return true
   }
 

@@ -2,10 +2,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import { ComfyApi } from '@/scripts/api'
+import { reportError } from '@/platform/telemetry/reportError'
 
 import { DocFrameClient } from './docFrameClient'
 import { setCrdtDebugEnabled, setCrdtLogLevel } from './crdtDebugGate'
 import { clearDevEvents, devEvents } from './devPanelLog'
+
+vi.mock(import('@/platform/telemetry/reportError'))
 
 describe('document frames through api', () => {
   afterEach(() => {
@@ -32,6 +35,24 @@ describe('document frames through api', () => {
       })
     ).toBe(false)
     expect(send).not.toHaveBeenCalled()
+  })
+
+  it('refuses unserializable workflows without sending a frame', () => {
+    const api = new ComfyApi()
+    const send = vi.fn()
+    api.socket = fromPartial<WebSocket>({ readyState: WebSocket.OPEN, send })
+
+    expect(
+      api.sendDocFrame({
+        type: 'doc_reseed',
+        data: { v: 1, workflow_id: 'wf', expected_seq: 7, workflow: { id: 1n } }
+      })
+    ).toBe(false)
+    expect(send).not.toHaveBeenCalled()
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({ errorType: 'failure_sending_agent_doc_frame' })
+    )
   })
 
   it('serializes typed frames and redacts the outbound diagnostic', () => {
