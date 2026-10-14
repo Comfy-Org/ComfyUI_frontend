@@ -92,17 +92,6 @@ const metaLabel = computed(() => {
           {{ metaLabel }}
         </p>
       </div>
-      <p class="mt-3 text-sm md:hidden">
-        <a
-          v-if="ctaLabel"
-          :href="item.href"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="font-bold tracking-wider text-primary-comfy-yellow underline underline-offset-4 transition-opacity hover:opacity-80"
-        >
-          {{ ctaLabel }}
-        </a>
-      </p>
       <div class="mt-4 rounded-2xl bg-transparency-white-t8 py-4 pl-5">
         <div class="flex items-end gap-2">
           <p
@@ -132,6 +121,17 @@ const metaLabel = computed(() => {
           {{ expanded ? t('ui.readLess') : t('ui.readMore') }}
         </button>
       </div>
+      <p class="mt-4 text-sm md:hidden">
+        <a
+          v-if="ctaLabel"
+          :href="item.href"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="font-bold tracking-wider text-primary-comfy-yellow underline underline-offset-4 transition-opacity hover:opacity-80"
+        >
+          {{ ctaLabel }}
+        </a>
+      </p>
     </div>
 
     <a
