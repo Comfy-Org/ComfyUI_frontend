@@ -659,3 +659,9 @@ the hosted script once, and renders the documented embed container.
 - `pnpm test:e2e` — Playwright E2E tests (requires `pnpm build:e2e` first)
 - `pnpm ashby:refresh-snapshot` — refresh the committed careers snapshot
 - `pnpm cloud-nodes:refresh-snapshot` — refresh the committed cloud nodes snapshot
+
+### Comfy VFX campaign
+
+`/solutions/vfx/` and `/zh-CN/solutions/vfx/` render the latest V2 design. This change publishes no agency-led or other vertical campaign routes. V1 remains saved on `codex/vfx-landing`.
+
+Contact links preserve incoming UTMs and record `website:vfx_link_clicked`. Link-click tracking does not establish form-submission tracking.

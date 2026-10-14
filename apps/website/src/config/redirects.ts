@@ -143,6 +143,8 @@ const hubModelRedirects: readonly SiteRedirect[] = [
  * two drift, so edit this list and never `vercel.json` by hand.
  */
 export const siteRedirects: readonly SiteRedirect[] = [
+  { source: '/vfx', destination: '/solutions/vfx/' },
+  { source: '/zh-CN/vfx', destination: '/zh-CN/solutions/vfx/' },
   { source: '/career', destination: '/careers/' },
   { source: '/privacy', destination: '/privacy-policy/' },
   { source: '/press', destination: '/about/' },
