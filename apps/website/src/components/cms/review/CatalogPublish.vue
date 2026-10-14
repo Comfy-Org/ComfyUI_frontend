@@ -9,8 +9,14 @@ import AdminButton from '@/components/cms/ui/AdminButton.vue'
 const {
   review,
   csrf,
+  selectedUids,
   locale = 'en'
-} = defineProps<{ review: FinalReview; csrf: string; locale?: Locale }>()
+} = defineProps<{
+  review: FinalReview
+  csrf: string
+  selectedUids?: string[]
+  locale?: Locale
+}>()
 const t = computed(() => translationsFor(locale).t)
 const emit = defineEmits<{ busy: [value: boolean] }>()
 const busy = ref(false)
@@ -25,7 +31,7 @@ async function publish() {
   const response = await reviewRequest('publish', {
     csrf,
     key,
-    body: JSON.stringify(publicationPayload(review))
+    body: JSON.stringify(publicationPayload(review, selectedUids))
   })
   const state = response.ok ? publicationState(response.data) : undefined
   if (
@@ -65,7 +71,7 @@ async function publish() {
     </p>
     <a
       v-if="failure"
-      href="/admin/catalog/final-review"
+      :href="selectedUids ? '/admin/catalog' : '/admin/catalog/final-review'"
       class="mt-2 inline-block text-sm underline"
       >{{ t('cccStaging.reloadFinal') }}</a
     >

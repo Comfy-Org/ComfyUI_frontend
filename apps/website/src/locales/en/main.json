@@ -1,4 +1,12 @@
 {
+  "cccChecked": {
+    "instructions": "Check the changes you want to publish. Unchecked changes stay in Draft; approval fields are not used.",
+    "remaining": "Staying in Draft",
+    "reviewSelected": "Review selected ({count})",
+    "selectShown": "Select all shown changes",
+    "tabsLabel": "Draft views",
+    "tabs": { "ALL": "All changes", "NEW": "New content", "UPDATES": "Updates" }
+  },
   "cccWorkflowVersions": {
     "heading": "Primary workflow file pair",
     "help": "The website uses the first named pair only. Other stored versions are preserved for a future selector. Save new content before uploading files. An API file is separate from the downloadable graph.",

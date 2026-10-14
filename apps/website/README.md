@@ -60,16 +60,19 @@ treated as approval evidence. The private video proxy accepts a browser's
 initial `Range: bytes=0-` request only after staff verification, does not forward
 it, and returns a freshly authorized complete 200 response. Other ranges,
 HEAD, raw-origin redirects and public video requests remain denied.
-The local CCC review console has two phases: decide every pending change
-(including previously deferred work), then inspect the complete Final review.
-`Review and publish` stays disabled while the authoritative, unfiltered unresolved
-count is nonzero. Opening the popup fetches the full server-validated candidate
-without a list filter and rejects a changed LIVE/Draft/generation. Publish binds
-that exact candidate digest, uses the existing CSRF/idempotency transport, and
-prevents dismissal while a request is unsettled. Cancel writes nothing. Unlike
-the design sandbox, opening or publishing never implicitly defers NEW items.
-The separate Final-review URL remains available for existing links. The rest of
-Mar's table, editor and filtering redesign is not yet integrated.
+The local CCC review console publishes the checked changes only; the stored
+approval field is unused. Unchecked work stays in Draft, even when it previously
+had an approval. There is no Defer control or all-NEW-items-resolved prerequisite.
+All/New content/Updates tabs and the sticky selection bar follow Mar's newer
+layout. Selection itself makes no request or editorial save.
+Opening Final review posts expected LIVE/Draft/generation and explicit checked
+UIDs. It verifies that the returned candidate contains exactly those immutable
+saves, not additional hidden/filtered items. Publish binds the same UID set and
+candidate digest, uses existing CSRF/idempotency transport, and prevents dismissal
+while a request is unsettled. Cancel does not mutate the catalog. The legacy
+decision component remains only for compatibility; the new console does not use
+it. The rest of Mar's editor, list/history and site-wide redesign is still being
+integrated, with real upload/auth/Preview transport retained instead of mocks.
 Row trash and `Delete Changes` discard Draft edits only, with an exact
 scope confirmation; they do not delete LIVE content or immutable history.
 `Add Content` is beside the selection actions. A temporary local Publish control

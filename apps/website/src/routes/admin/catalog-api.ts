@@ -11,6 +11,8 @@ import {
   stageBody,
   discardBody,
   publishBody,
+  checkedReviewBody,
+  checkedPublishBody,
   publicationState
 } from '@/lib/cms/staging-review'
 import { z } from 'astro/zod'
@@ -45,11 +47,14 @@ export const POST: APIRoute = async (context) => {
     operation !== 'staging' &&
     operation !== 'exit' &&
     operation !== 'discard-changes' &&
-    operation !== 'publish'
+    operation !== 'publish' &&
+    operation !== 'final-review'
   )
     return editorFailure(404)
   if (operation === 'staging' && !session.can_apply) return editorFailure(404)
   if (operation === 'publish' && !session.can_apply) return editorFailure(404)
+  if (operation === 'final-review' && !session.can_apply)
+    return editorFailure(404)
   if (operation === 'discard-changes' && !session.can_edit)
     return editorFailure(404)
   if (context.url.search) return editorFailure(400)
@@ -59,7 +64,11 @@ export const POST: APIRoute = async (context) => {
     return new Response(null, { status: 204, headers: editorHeaders })
   }
   const key = context.request.headers.get('Idempotency-Key')
-  if (!key || key.length > 200 || /[\r\n]/.test(key)) return editorFailure(400)
+  if (
+    operation !== 'final-review' &&
+    (!key || key.length > 200 || /[\r\n]/.test(key))
+  )
+    return editorFailure(400)
   if (
     !context.request.headers.get('Content-Type')?.startsWith('application/json')
   )
@@ -73,11 +82,13 @@ export const POST: APIRoute = async (context) => {
     return editorFailure(400)
   }
   const parsed = (
-    operation === 'publish'
-      ? publishBody
-      : operation === 'discard-changes'
-        ? discardBody
-        : stageBody
+    operation === 'final-review'
+      ? checkedReviewBody
+      : operation === 'publish'
+        ? z.union([checkedPublishBody, publishBody])
+        : operation === 'discard-changes'
+          ? discardBody
+          : stageBody
   ).safeParse(raw)
   if (!parsed.success) return editorFailure(400)
   const upstream = await catalogReview(
@@ -86,10 +97,19 @@ export const POST: APIRoute = async (context) => {
     {},
     {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Idempotency-Key': key },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(key ? { 'Idempotency-Key': key } : {})
+      },
       body: JSON.stringify(parsed.data)
     }
   )
+  if (operation === 'final-review') {
+    const result = await readReviewResponse(upstream, true)
+    return result.ok
+      ? Response.json(result.snapshot, { headers: editorHeaders })
+      : editorFailure(result.status)
+  }
   if (operation === 'publish') {
     if (!upstream.ok) return editorFailure(upstream.status)
     const bytes = await boundedBody(upstream, 64 << 10)

@@ -13,12 +13,14 @@ const {
   review,
   csrf,
   returnFocus,
+  selectedUids,
   locale = 'en'
 } = defineProps<{
   review: FinalReview
   csrf: string
   locale?: Locale
   returnFocus?: HTMLElement
+  selectedUids?: string[]
 }>()
 const emit = defineEmits<{ close: [] }>()
 const { t } = translationsFor(locale)
@@ -62,14 +64,19 @@ async function restoreFocus(event: Event) {
           v-for="item in review.changes"
           :key="item.content.uid"
           :item="item"
+          :checkbox-only="Boolean(selectedUids)"
           :draft-rev="review.state.draft_rev"
           :locale
         />
       </ul>
       <template v-if="review.deferred.length">
-        <h2 class="text-sm font-medium">{{ t('cccStaging.deferred') }}</h2>
+        <h2 class="text-sm font-medium">
+          {{ t(selectedUids ? 'cccChecked.remaining' : 'cccStaging.deferred') }}
+        </h2>
         <ul
-          :aria-label="t('cccStaging.deferred')"
+          :aria-label="
+            t(selectedUids ? 'cccChecked.remaining' : 'cccStaging.deferred')
+          "
           class="rounded-xl border border-admin-line bg-admin-chrome"
         >
           <CatalogChangeRow
@@ -78,6 +85,7 @@ async function restoreFocus(event: Event) {
             :item="item"
             :draft-rev="review.state.draft_rev"
             :locale
+            :checkbox-only="Boolean(selectedUids)"
           />
         </ul>
       </template>
@@ -85,6 +93,7 @@ async function restoreFocus(event: Event) {
         :key="review.selection_digest"
         :review
         :csrf
+        :selected-uids="selectedUids"
         :locale
         @busy="publishing = $event"
       />

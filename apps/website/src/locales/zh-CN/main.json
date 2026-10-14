@@ -1,4 +1,12 @@
 {
+  "cccChecked": {
+    "instructions": "勾选要发布的更改。未勾选的更改保留在草稿中；暂不使用审批字段。",
+    "remaining": "保留在草稿中",
+    "reviewSelected": "审核所选项（{count}）",
+    "selectShown": "选择所有当前显示的更改",
+    "tabsLabel": "草稿视图",
+    "tabs": { "ALL": "所有更改", "NEW": "新内容", "UPDATES": "更新" }
+  },
   "cccWorkflowVersions": {
     "heading": "工作流文件 — 列表第 0 项",
     "help": "网站仅使用第一组具名文件。其他已保存版本将保留，以便未来提供选择器。新内容请先保存，再上传文件。API 文件与可下载的图工作流不同。",

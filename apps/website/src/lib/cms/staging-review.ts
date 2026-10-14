@@ -112,14 +112,40 @@ export const publishBody = z
     expected_selection_digest: digest
   })
   .strict()
-export function publicationPayload(snapshot: FinalReview) {
+const checkedUIDs = z
+  .array(z.uuid())
+  .min(1)
+  .max(5000)
+  .refine((values) => new Set(values).size === values.length)
+export const checkedReviewBody = publishBody
+  .omit({ expected_selection_digest: true })
+  .extend({ selected_uids: checkedUIDs })
+  .strict()
+export const checkedPublishBody = publishBody
+  .extend({ selected_uids: checkedUIDs })
+  .strict()
+export function checkedReviewPayload(snapshot: StagingReview, uids: string[]) {
   return {
     review: {
       expected_live_rev: snapshot.state.live_rev,
       expected_draft_rev: snapshot.state.draft_rev,
       expected_draft_generation: snapshot.state.draft_generation
     },
-    expected_selection_digest: snapshot.selection_digest
+    selected_uids: uids
+  }
+}
+export function publicationPayload(
+  snapshot: FinalReview,
+  selectedUIDs?: string[]
+) {
+  return {
+    review: {
+      expected_live_rev: snapshot.state.live_rev,
+      expected_draft_rev: snapshot.state.draft_rev,
+      expected_draft_generation: snapshot.state.draft_generation
+    },
+    expected_selection_digest: snapshot.selection_digest,
+    ...(selectedUIDs ? { selected_uids: selectedUIDs } : {})
   }
 }
 export function publicationState(raw: unknown) {

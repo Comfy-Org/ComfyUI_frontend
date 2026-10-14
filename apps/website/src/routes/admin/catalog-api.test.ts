@@ -60,6 +60,104 @@ function backend(status = 200, body: unknown = fixtureReview()) {
   return fetcher
 }
 describe('catalog staging same-origin facade', () => {
+  it('forwards read-only checked review with CSRF but no mutation retry key', async () => {
+    const r = fixtureReview()
+    const final = {
+      state: r.state,
+      changes: r.items,
+      deferred: [],
+      selection_digest: 'b'.repeat(64),
+      publish_enabled: true
+    }
+    const fetcher = backend(200, final)
+    const body = {
+      review: {
+        expected_live_rev: 1,
+        expected_draft_rev: 7,
+        expected_draft_generation: 5
+      },
+      selected_uids: [r.items[0]!.content.uid]
+    }
+    const ctx = context('final-review', { body })
+    ctx.request.headers.delete('Idempotency-Key')
+    const response = await POST(ctx)
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual(final)
+    expect(String(fetcher.mock.calls[0]?.[0])).toBe(
+      'http://catalog.example/api/v1/catalog/draft/final-review'
+    )
+    expect(fetcher.mock.calls[0]?.[1]?.method).toBe('POST')
+    expect(JSON.parse(String(fetcher.mock.calls[0]?.[1]?.body))).toEqual(body)
+    expect(response.headers.get('Cache-Control')).toBe('private, no-store')
+  })
+  it('does not forward checked review from an unauthorized account or cross-origin request', async () => {
+    const fetcher = backend()
+    const body = {
+      review: {
+        expected_live_rev: 1,
+        expected_draft_rev: 7,
+        expected_draft_generation: 5
+      },
+      selected_uids: [fixtureReview().items[0]!.content.uid]
+    }
+    expect(
+      (await POST(context('final-review', { body, apply: false }))).status
+    ).toBe(404)
+    expect(
+      (
+        await POST(
+          context('final-review', { body, origin: 'https://evil.example' })
+        )
+      ).status
+    ).toBe(403)
+    expect(fetcher).not.toHaveBeenCalled()
+  })
+  it.each([
+    [],
+    null,
+    ['bad'],
+    [
+      '00000000-0000-4000-8000-000000000010',
+      '00000000-0000-4000-8000-000000000010'
+    ]
+  ])(
+    'refuses invalid checked review selection %j before forwarding',
+    async (selected_uids) => {
+      const fetcher = backend()
+      const body = {
+        review: {
+          expected_live_rev: 1,
+          expected_draft_rev: 7,
+          expected_draft_generation: 5
+        },
+        selected_uids
+      }
+      expect((await POST(context('final-review', { body }))).status).toBe(400)
+      expect(fetcher).not.toHaveBeenCalled()
+    }
+  )
+  it('preserves the checked IDs in publication instead of stripping them to the legacy body', async () => {
+    const state = {
+      ...fixtureReview().state,
+      live_rev: 7,
+      draft_rev: 8,
+      next_rev: 9,
+      previous_live_rev: 1,
+      draft_generation: 0
+    }
+    const fetcher = backend(200, state)
+    const body = {
+      review: {
+        expected_live_rev: 1,
+        expected_draft_rev: 7,
+        expected_draft_generation: 5
+      },
+      expected_selection_digest: 'b'.repeat(64),
+      selected_uids: [fixtureReview().items[0]!.content.uid]
+    }
+    expect((await POST(context('publish', { body }))).status).toBe(200)
+    expect(JSON.parse(String(fetcher.mock.calls[0]?.[1]?.body))).toEqual(body)
+  })
   it('requires publisher authority and CSRF for temporary publication', async () => {
     const r = fixtureReview()
     const payload = {

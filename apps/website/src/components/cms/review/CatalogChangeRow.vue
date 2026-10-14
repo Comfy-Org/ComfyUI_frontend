@@ -28,6 +28,7 @@ const {
   canApply = false,
   canEdit = false,
   selected = false,
+  checkboxOnly = false,
   disabled = false,
   locale = 'en',
   draftRev
@@ -36,6 +37,7 @@ const {
   canApply?: boolean
   canEdit?: boolean
   selected?: boolean
+  checkboxOnly?: boolean
   disabled?: boolean
   locale?: Locale
   draftRev?: number
@@ -46,6 +48,9 @@ const emit = defineEmits<{
   discard: [uid: string]
 }>()
 const t = computed(() => translationsFor(locale).t)
+const rowDecision = computed(() =>
+  checkboxOnly ? (selected ? 'APPROVED' : 'NEW') : item.decision
+)
 const differences = computed(() => fieldDifferences(item))
 const parentNames = computed(() =>
   item.presentation?.uses
@@ -83,12 +88,15 @@ function changeSelection(event: Event) {
 </script>
 <template>
   <li
-    :data-review-state="item.decision"
+    :data-review-state="rowDecision"
     :class="
       cn(
-        'grid grid-cols-[1rem_2.5rem_minmax(0,1fr)_6rem_1.5rem_1.5rem] items-center gap-2 border-b border-admin-line px-3 py-3 last:border-b-0 sm:grid-cols-[1.25rem_3rem_minmax(0,1fr)_8rem_1.5rem_1.5rem] sm:gap-3 sm:px-4',
-        item.decision === 'APPROVED' && 'bg-admin-success/5',
-        item.decision === 'DEFERRED' && 'bg-admin-page text-admin-muted'
+        'grid items-center gap-2 border-b border-admin-line px-3 py-3 last:border-b-0 sm:gap-3 sm:px-4',
+        checkboxOnly
+          ? 'grid-cols-[1rem_2.5rem_minmax(0,1fr)_1.5rem_1.5rem] sm:grid-cols-[1.25rem_3rem_minmax(0,1fr)_1.5rem_1.5rem]'
+          : 'grid-cols-[1rem_2.5rem_minmax(0,1fr)_6rem_1.5rem_1.5rem] sm:grid-cols-[1.25rem_3rem_minmax(0,1fr)_8rem_1.5rem_1.5rem]',
+        rowDecision === 'APPROVED' && 'bg-admin-success/5',
+        rowDecision === 'DEFERRED' && 'bg-admin-page text-admin-muted'
       )
     "
   >
@@ -98,14 +106,20 @@ function changeSelection(event: Event) {
       :aria-label="t('cccStaging.selectItem', { title: itemTitle(item) })"
       :checked="selected"
       :disabled="disabled"
-      :title="item.decision === 'NEW' ? t('cccStaging.newWarning') : undefined"
+      :title="
+        !checkboxOnly && rowDecision === 'NEW'
+          ? t('cccStaging.newWarning')
+          : undefined
+      "
       :aria-description="
-        item.decision === 'NEW' ? t('cccStaging.newWarning') : undefined
+        !checkboxOnly && rowDecision === 'NEW'
+          ? t('cccStaging.newWarning')
+          : undefined
       "
       :class="
         cn(
           'size-4 accent-admin-success',
-          item.decision === 'DEFERRED' && 'accent-admin-muted opacity-50'
+          rowDecision === 'DEFERRED' && 'accent-admin-muted opacity-50'
         )
       "
       @change="changeSelection"
@@ -116,14 +130,14 @@ function changeSelection(event: Event) {
       :preview="item.presentation?.preview"
       :label="t('cccChangeDetails.previewFor', { title: itemTitle(item) })"
       :unavailable="t('cccChangeDetails.unavailable')"
-      :class="item.decision === 'DEFERRED' ? 'opacity-40 grayscale' : undefined"
+      :class="rowDecision === 'DEFERRED' ? 'opacity-40 grayscale' : undefined"
     />
     <DialogRoot>
       <DialogTrigger
         :class="
           cn(
             'min-w-0 text-left focus-visible:outline-2 focus-visible:outline-admin-fg',
-            item.decision === 'DEFERRED' && 'text-admin-muted opacity-60'
+            rowDecision === 'DEFERRED' && 'text-admin-muted opacity-60'
           )
         "
       >
@@ -134,7 +148,7 @@ function changeSelection(event: Event) {
           ><span
             v-if="item.status === 'DELETED'"
             :class="
-              item.decision === 'DEFERRED'
+              rowDecision === 'DEFERRED'
                 ? 'text-admin-muted'
                 : 'text-admin-danger-text'
             "
@@ -248,7 +262,7 @@ function changeSelection(event: Event) {
         </DialogContent>
       </DialogPortal>
     </DialogRoot>
-    <DropdownMenuRoot v-if="canApply">
+    <DropdownMenuRoot v-if="canApply && !checkboxOnly">
       <DropdownMenuTrigger as-child>
         <button
           type="button"
@@ -299,7 +313,7 @@ function changeSelection(event: Event) {
       </DropdownMenuPortal>
     </DropdownMenuRoot>
     <span
-      v-else
+      v-else-if="!checkboxOnly"
       :class="badgeClass"
       :title="item.decision === 'NEW' ? t('cccStaging.newWarning') : undefined"
       ><CircleAlert

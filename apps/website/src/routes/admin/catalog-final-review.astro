@@ -1,36 +1,6 @@
 ---
-import BaseLayout from '@/layouts/BaseLayout.astro'
-import CatalogChangeRow from '@/components/cms/review/CatalogChangeRow.vue'
-import CatalogPublish from '@/components/cms/review/CatalogPublish.vue'
-import { resolveLocale } from '@/config/locales'
 import { editorFailure } from '@/lib/cms/editor-server'
-import { catalogReview, readReviewResponse } from '@/lib/cms/staging-server'
 const session = Astro.locals.catalogAuthoring
 if (!session?.can_apply) return editorFailure(404)
-const invalidQuery = Astro.url.search ? editorFailure(400) : undefined
-if (invalidQuery) return invalidQuery
-const result = await readReviewResponse(await catalogReview(session, 'final-review'), true)
-if (!result.ok && result.status !== 422) return editorFailure(result.status)
-const final = result.ok && 'changes' in result.snapshot ? result.snapshot : undefined
-const staging = !final && !result.ok && result.status === 422
-  ? await readReviewResponse(await catalogReview(session, 'staging'))
-  : undefined
-const unresolvedCount = staging?.ok && 'items' in staging.snapshot
-  ? staging.snapshot.unresolved_count
-  : undefined
-const t = Astro.locals.t
-const locale = resolveLocale(Astro.currentLocale)
+return Astro.redirect('/admin/catalog', 303)
 ---
-<BaseLayout title={t('cccStaging.finalReview')} minimal noindex>
-  <section class="mx-auto max-w-5xl px-5 pb-12 font-admin text-admin-fg">
-    <a href="/admin/catalog" class="text-sm underline">{t('cccStaging.back')}</a>
-    <h1 class="mt-5 text-2xl font-medium">{t('cccStaging.finalReview')}</h1>
-    {!final ? <p role="alert" class="mt-4 text-sm text-admin-danger-text">{unresolvedCount !== undefined && unresolvedCount > 0 ? t('cccStaging.unresolved', { count: unresolvedCount }) : t('cccStaging.finalBlocked')}</p> : <>
-      <p class="mt-4 text-sm text-admin-muted">{t('cccStaging.matches', { count: final.changes.length })}</p>
-      <ul class="mt-4 rounded-xl border border-admin-line bg-admin-chrome">{final.changes.map((item) => <CatalogChangeRow item={item} locale={locale} draftRev={final.state.draft_rev} client:load />)}</ul>
-      <h2 class="mt-6 text-lg">{t('cccStaging.deferred')}</h2>
-      <ul class="mt-4 rounded-xl border border-admin-line bg-admin-chrome">{final.deferred.map((item) => <CatalogChangeRow item={item} locale={locale} draftRev={final.state.draft_rev} client:load />)}</ul>
-    </>}
-    {final ? <CatalogPublish review={final} csrf={session.csrf} locale={locale} client:load /> : <button type="button" disabled class="mt-6 rounded-lg bg-admin-fg px-4 py-2 text-sm text-admin-card opacity-40">{t('cccStaging.publish')}</button>}
-  </section>
-</BaseLayout>

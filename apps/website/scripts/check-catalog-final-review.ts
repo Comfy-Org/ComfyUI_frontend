@@ -22,14 +22,12 @@ server.middlewares.use(path, async (_request, response) => {
     <html lang="en"><head><meta name="viewport" content="width=device-width, initial-scale=1"></head>
     <body><main id="review"></main><script type="module">
       import { createApp } from 'vue'
-      import CatalogStaging from '/src/components/cms/review/CatalogStaging.vue'
+      import CatalogCheckedReview from '/src/components/cms/review/CatalogCheckedReview.vue'
       import { fixtureReview } from '/src/lib/cms/staging-fixture.ts'
       import '/src/styles/global.css'
       const initial = fixtureReview()
-      initial.unresolved_count = 0
-      initial.items[0].decision = 'APPROVED'
       initial.items[0].content.document.title = 'Local review layout fixture'
-      createApp(CatalogStaging, { initial, csrf: 'layout-fixture-only', canApply: true, canEdit: true }).mount('#review')
+      createApp(CatalogCheckedReview, { initial, csrf: 'layout-fixture-only', canApply: true, canEdit: true }).mount('#review')
     </script></body></html>`
   )
   response.setHeader('Content-Type', 'text/html')
@@ -58,7 +56,21 @@ try {
   await context.route('**/*', async (route) => {
     const request = route.request()
     const url = new URL(request.url())
-    if (request.method() !== 'GET') {
+    if (
+      url.origin === origin &&
+      url.pathname === '/admin/catalog-api/final-review' &&
+      request.method() === 'POST'
+    ) {
+      expect(request.postDataJSON()).toEqual({
+        review: {
+          expected_live_rev: 1,
+          expected_draft_rev: 7,
+          expected_draft_generation: 5
+        },
+        selected_uids: [fixture.items[0]!.content.uid]
+      })
+      await route.fulfill({ json: final })
+    } else if (request.method() !== 'GET') {
       mutations.push(url.pathname)
       await route.abort()
     } else if (
@@ -79,7 +91,16 @@ try {
   page.on('pageerror', (error) => errors.push(error.message))
   await page.goto(`${origin}${path}`)
   await expect(page.locator('#review')).not.toBeEmpty()
-  const reviewButton = page.getByRole('button', { name: 'Review and publish' })
+  await expect(
+    page.getByRole('button', { name: 'Review selected (0)' })
+  ).toBeDisabled()
+  await expect(
+    page.getByRole('button', { name: 'Defer Selected' })
+  ).toHaveCount(0)
+  await page
+    .getByRole('checkbox', { name: 'Select Local review layout fixture' })
+    .check()
+  const reviewButton = page.getByRole('button', { name: 'Review selected (1)' })
   await reviewButton.click()
   const dialog = page.getByRole('dialog', { name: 'Final review' })
   await expect(dialog).toBeVisible()
@@ -111,6 +132,16 @@ try {
   await page.screenshot({ path: '/tmp/ccc-bruce-mar-final-review-mobile.png' })
   await dialog.getByRole('button', { name: 'Back to staging' }).click()
   await expect(dialog).toHaveCount(0)
+  await page
+    .getByRole('button', {
+      name: 'Delete change for Local review layout fixture'
+    })
+    .click()
+  await expect(
+    page.getByRole('dialog', { name: 'Delete 1 changes?' })
+  ).toBeVisible()
+  await page.getByRole('button', { name: 'Cancel', exact: true }).click()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
   expect(mutations).toEqual([])
   expect(errors).toEqual([])
   console.log(
