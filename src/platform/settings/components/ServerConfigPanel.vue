@@ -46,7 +46,7 @@
           v-model:form-value="item.value"
           :item="translateItem(item)"
           :label-class="{
-            'text-highlight': item.initialValue !== item.value
+            'text-primary-background': item.initialValue !== item.value
           }"
         />
       </div>

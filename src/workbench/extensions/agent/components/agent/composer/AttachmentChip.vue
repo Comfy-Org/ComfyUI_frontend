@@ -1,10 +1,16 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 import TagRemoveButton from '@/components/chip/TagRemoveButton.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 
+import type { ComposerAttachment } from '../../../types/composerAttachment'
 import type { AssetPreviewMode } from '../../../types/assetPreview'
 import AssetHoverPreview from './AssetHoverPreview.vue'
 import AssetThumbnail from './AssetThumbnail.vue'
@@ -15,6 +21,7 @@ const {
   mediaUrl,
   mediaKind,
   uploading = false,
+  validationError,
   highlighted = false
 } = defineProps<{
   name: string
@@ -22,6 +29,7 @@ const {
   mediaUrl?: string
   mediaKind?: MediaKind
   uploading?: boolean
+  validationError?: ComposerAttachment['validationError']
   highlighted?: boolean
 }>()
 const emit = defineEmits<{ remove: [] }>()
@@ -39,9 +47,38 @@ const kind = computed(() => mediaKind ?? getMediaTypeFromFilename(name))
     :data-highlighted="highlighted || undefined"
     role="group"
     :aria-label="name"
-    class="group/attachment relative flex size-20 shrink-0 items-center justify-center rounded-lg p-1 data-highlighted:ring-2 data-highlighted:ring-base-foreground data-highlighted:ring-inset"
+    :class="
+      cn(
+        'group/attachment relative flex size-20 shrink-0 items-center justify-center rounded-lg p-1 data-highlighted:ring-2 data-highlighted:ring-base-foreground data-highlighted:ring-inset',
+        validationError && 'ring-1 ring-border-default ring-inset'
+      )
+    "
   >
+    <Tooltip v-if="validationError">
+      <TooltipTrigger as-child>
+        <span
+          role="status"
+          tabindex="0"
+          :aria-label="$t('agent.attachmentInvalidVideo', { name })"
+          class="flex size-full items-center justify-center rounded-sm"
+        >
+          <AssetThumbnail :name :media-kind variant="tray" class="size-full" />
+          <span
+            aria-hidden="true"
+            class="pointer-events-none absolute right-1 bottom-1 flex size-5 items-center justify-center rounded-full bg-base-background/80"
+          >
+            <span
+              class="icon-[lucide--triangle-alert] size-3 text-destructive-background"
+            />
+          </span>
+        </span>
+      </TooltipTrigger>
+      <TooltipContent side="top" class="max-w-56">
+        {{ $t('agent.attachmentInvalidVideo', { name }) }}
+      </TooltipContent>
+    </Tooltip>
     <AssetHoverPreview
+      v-else
       v-model:mode="previewMode"
       :name
       :preview-url

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { chatgptImage25Page } from '@/data/chatgptImage25'
+import { fishAudioPage } from '@/data/fishAudio'
 import { flux3Page } from '@/data/flux3'
 import { geminiOmniPage } from '@/data/geminiOmni'
 import { ltxPage } from '@/data/ltx'
@@ -12,6 +13,7 @@ import {
 } from '@/data/qwenImage21'
 import { minimaxMusic3Page } from '@/data/minimaxMusic3'
 import { nanoBananaPage } from '@/data/nanoBanana'
+import { nvidiaRtxPage } from '@/data/nvidiaRtx'
 import { seedancePage } from '@/data/seedance'
 import { wanAnimate2Page } from '@/data/wanAnimate2'
 import { wan3Page } from '@/data/wan3'
@@ -20,12 +22,14 @@ import { t } from '@/i18n/translations'
 import { DEFAULT_SECTION_ORDER } from './types'
 import type {
   ModelLaunchAudioCard,
+  ModelLaunchBeforeAfter,
   ModelLaunchClosingCta,
   ModelLaunchComparison,
   ModelLaunchFaqSection,
   ModelLaunchGallery,
   ModelLaunchHero,
   ModelLaunchHighlight,
+  ModelLaunchListItem,
   ModelLaunchPage,
   ModelLaunchPricing,
   ModelLaunchShowcase,
@@ -36,9 +40,11 @@ import type {
 const pages: { name: string; page: ModelLaunchPage }[] = [
   { name: 'minimax', page: minimaxPage },
   { name: 'minimaxMusic3', page: minimaxMusic3Page },
+  { name: 'fishAudio', page: fishAudioPage },
   { name: 'minimaxLicense', page: minimaxLicensePage },
   { name: 'flux3', page: flux3Page },
   { name: 'chatgptImage25', page: chatgptImage25Page },
+  { name: 'nvidiaRtx', page: nvidiaRtxPage },
   { name: 'qwenImage21', page: qwenImage21Page },
   { name: 'qwenImage21Announcement', page: qwenImage21AnnouncementPage },
   { name: 'nanoBanana', page: nanoBananaPage },
@@ -122,7 +128,11 @@ function pageKeys(page: ModelLaunchPage): TranslationKey[] {
     page.breadcrumbUpdatedKey,
     ...heroKeys(page.hero),
     ...showcaseKeys(page.showcases ?? []),
+    page.beforeAfter?.headingKey,
+    page.beforeAfter?.bodyKey,
     page.gallery?.headingKey,
+    page.list?.headingKey,
+    page.list?.ctaKey,
     ...pricingKeys(page.pricing),
     page.faq?.headingKey,
     page.comparison?.headingKey,
@@ -141,6 +151,25 @@ function expectTranslated(key: TranslationKey) {
   for (const locale of LOCALES) {
     expect(t(key, {}, { locale }), `${key} (${locale})`).not.toBe('')
   }
+}
+
+function expectBeforeAfterTabs(
+  beforeAfter: ModelLaunchBeforeAfter | undefined
+) {
+  const tabs = beforeAfter?.tabs ?? []
+  expect(beforeAfter === undefined || tabs.length > 0).toBe(true)
+  expect(new Set(tabs.map((tab) => tab.id)).size).toBe(tabs.length)
+  for (const tab of tabs) {
+    expectLocalized(tab.label, tab.id, 'label')
+    expectLocalized(tab.caption, tab.id, 'caption')
+  }
+  expect(
+    tabs
+      .filter(
+        (tab) => !VIDEO_URL.test(tab.beforeSrc) || !VIDEO_URL.test(tab.afterSrc)
+      )
+      .map((tab) => tab.id)
+  ).toEqual([])
 }
 
 function expectLocalized(text: LocalizedText, id: string, field: string) {
@@ -172,6 +201,15 @@ function expectGalleryCardsLocalized(cards: ModelLaunchGallery['cards']) {
     expectLocalized(card.name, card.id, 'name')
     expectLocalized(card.note, card.id, 'note')
     expectLocalized(card.description, card.id, 'description')
+  }
+}
+
+function expectListItemsComplete(items: readonly ModelLaunchListItem[]) {
+  for (const item of items) {
+    expectLocalized(item.title, item.id, 'title')
+    expect(item.prompt, `${item.id} prompt`).not.toBe('')
+    expect(item.durationSeconds, `${item.id} length`).toBeGreaterThan(0)
+    expect(item.voices, `${item.id} voices`).not.toHaveLength(0)
   }
 }
 
@@ -235,6 +273,7 @@ function outboundHrefs(page: ModelLaunchPage): string[] {
     ...heroHrefs(page.hero),
     ...sectionCtaHrefs(page),
     ...(page.gallery?.cards.map((card) => card.href) ?? []),
+    ...(page.list?.items.map((item) => item.href) ?? []),
     ...(page.showcases ?? []).map((showcase) => showcase.cta?.href)
   ].filter((href): href is string => href !== undefined)
 }
@@ -268,7 +307,8 @@ describe.for(pages)('$name launch page config', ({ page }) => {
     const ids = [
       ...(page.showcases ?? []).flatMap((s) => s.cards.map((card) => card.id)),
       ...(page.gallery?.cards.map((card) => card.id) ?? []),
-      ...(page.audioGallery?.cards.map((card) => card.id) ?? [])
+      ...(page.audioGallery?.cards.map((card) => card.id) ?? []),
+      ...(page.list?.items.map((item) => item.id) ?? [])
     ]
     expect(new Set(ids).size).toBe(ids.length)
   })
@@ -283,6 +323,7 @@ describe.for(pages)('$name launch page config', ({ page }) => {
     expectShowcaseCardsLocalized(page.showcases ?? [])
     expectGalleryCardsLocalized(page.gallery?.cards ?? [])
     expectAudioCardsLocalized(page.audioGallery?.cards ?? [])
+    expectListItemsComplete(page.list?.items ?? [])
     expectComparisonLocalized(page.comparison)
     expectFaqLocalized(page.faq?.items ?? [])
     expectStepsLocalized(page.steps?.items ?? [])
@@ -322,6 +363,18 @@ describe.for(pages)('$name launch page config', ({ page }) => {
     )
 
     expect(audioOffenders.map((card) => card.id)).toEqual([])
+
+    const listAudioOffenders = (page.list?.items ?? []).filter(
+      (item) =>
+        item.audioSources.length === 0 ||
+        item.audioSources.some((source) => !AUDIO_URL.test(source.src))
+    )
+
+    expect(listAudioOffenders.map((item) => item.id)).toEqual([])
+  })
+
+  it('gives every before/after tab a unique id, localized copy, and a clip pair', () => {
+    expectBeforeAfterTabs(page.beforeAfter)
   })
 
   it('orders every optional section it defines', () => {
@@ -335,9 +388,10 @@ describe.for(pages)('$name launch page config', ({ page }) => {
   })
 
   it('lists a playable MP3 first in every audio source list', () => {
-    const offenders = (page.audioGallery?.cards ?? []).filter(
-      (card) => card.audioSources[0]?.type !== 'audio/mpeg'
-    )
+    const offenders = [
+      ...(page.audioGallery?.cards ?? []),
+      ...(page.list?.items ?? [])
+    ].filter((track) => track.audioSources[0]?.type !== 'audio/mpeg')
 
     expect(offenders.map((card) => card.id)).toEqual([])
   })

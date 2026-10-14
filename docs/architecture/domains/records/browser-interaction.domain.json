@@ -1,0 +1,68 @@
+{
+  "id": "browser-interaction",
+  "capability": "Browser input gesture primitives (shared technical module)",
+  "description": "Shared technical module, not a business domain. Classifies raw browser input for editing surfaces: middle-button pointer detection, wheel gestures whose browser default (page zoom, history swipe) must be suppressed, the click-versus-drag threshold guard, outside-pointer and Escape dismissal for overlays, and the Pragmatic drag-and-drop draggable/droppable adapter. Canvas pointer routing (canvas-renderer), LiteGraph gesture handling (graph-canvas), and feature drop handlers stay with their owners.",
+  "modules": [
+    {
+      "path": "src/base/pointerUtils.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/base/pointerUtils.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/base/wheelGestures.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/composables/useClickDragGuard.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useClickDragGuard.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useDismissableOverlay.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useDismissableOverlay.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/usePragmaticDragAndDrop.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/composables/usePragmaticDragAndDrop.test.ts",
+      "role": "infrastructure"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Pointer and click-drag classification distinguish middle-button pans and drags from clicks",
+      "checks": [
+        "src/base/pointerUtils.test.ts",
+        "src/composables/useClickDragGuard.test.ts"
+      ]
+    },
+    {
+      "name": "Overlays dismiss on outside pointer and Escape while ignoring their own trigger",
+      "checks": ["src/composables/useDismissableOverlay.test.ts"]
+    },
+    {
+      "name": "Pragmatic drag-and-drop adapters register droppables for canvas drops",
+      "checks": ["src/composables/useCanvasDrop.test.ts"]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
+  ],
+  "deepImports": "inventory"
+}

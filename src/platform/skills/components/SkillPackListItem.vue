@@ -12,15 +12,18 @@
       <span class="w-full truncate font-medium text-base-foreground">
         {{ pack.name }}
       </span>
-      <span :id="descriptionId" class="line-clamp-2 text-sm text-muted">
+      <span
+        :id="descriptionId"
+        class="line-clamp-2 text-sm text-muted-foreground"
+      >
         {{ pack.description }}
       </span>
-      <span class="text-xs text-muted">{{ sizeLabel }}</span>
+      <span class="text-xs text-muted-foreground">{{ sizeLabel }}</span>
     </Button>
     <div class="absolute top-4 right-4">
       <i
         v-if="loading"
-        class="icon-[lucide--loader-circle] size-4 animate-spin text-muted"
+        class="icon-[lucide--loader-circle] size-4 animate-spin text-muted-foreground"
       />
       <div
         v-else

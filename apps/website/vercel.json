@@ -93,6 +93,26 @@
       "permanent": true
     },
     {
+      "source": "/nvidia-rtx",
+      "destination": "/nvidia-vfx/",
+      "permanent": true
+    },
+    {
+      "source": "/nvidia-rtx/",
+      "destination": "/nvidia-vfx/",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/nvidia-rtx",
+      "destination": "/zh-CN/nvidia-vfx/",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/nvidia-rtx/",
+      "destination": "/zh-CN/nvidia-vfx/",
+      "permanent": true
+    },
+    {
       "source": "/blog",
       "destination": "https://blog.comfy.org/",
       "permanent": true

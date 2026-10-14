@@ -1,9 +1,12 @@
 {
   "id": "minimap",
   "capability": "Minimap",
-  "description": "Graph overview rendering, viewport navigation, settings, and redraw scheduling. Canvas stores and the shared decoration registry remain external host dependencies.",
+  "description": "Graph overview rendering, viewport navigation, settings, redraw scheduling, and the shared minimap decoration registry. Canvas stores remain external.",
   "modules": [
-    { "path": "src/renderer/extensions/minimap/types.ts", "role": "domain" },
+    {
+      "path": "src/renderer/extensions/minimap/types.ts",
+      "role": "domain"
+    },
     {
       "path": "src/renderer/extensions/minimap/data/**",
       "role": "infrastructure"
@@ -31,6 +34,10 @@
     {
       "path": "src/renderer/extensions/minimap/MiniMapPanel.vue",
       "role": "presentation"
+    },
+    {
+      "path": "src/platform/canvas/minimapDecorationRegistry.ts",
+      "role": "infrastructure"
     }
   ],
   "publicEntryPoints": [],
@@ -51,6 +58,12 @@
         "src/renderer/extensions/minimap/minimapCanvasRenderer.test.ts",
         "src/renderer/extensions/minimap/data/MinimapDataSource.test.ts",
         "src/renderer/extensions/minimap/composables/useMinimap.progressBaseline.test.ts"
+      ]
+    },
+    {
+      "name": "Decoration layers register, resolve per graph scope, and report failing layers without breaking the minimap",
+      "checks": [
+        "src/renderer/extensions/minimap/minimapDecorationRegistry.test.ts"
       ]
     }
   ],

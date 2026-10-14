@@ -157,6 +157,8 @@ describe('generated Vercel rules', () => {
       destination: '/hub/models/local/t5xxl-fp16/'
     },
     { source: '/p/supported-models', destination: '/hub/models/local/' },
+    { source: '/nvidia-rtx', destination: '/nvidia-vfx/' },
+    { source: '/zh-CN/nvidia-rtx', destination: '/zh-CN/nvidia-vfx/' },
     { source: '/models', destination: '/hub/models/' },
     {
       source: '/models/workflows/change-material',
@@ -184,6 +186,13 @@ describe('generated Vercel rules', () => {
           permanent: true
         })
       }
+    }
+  )
+
+  it.for(['/nvidia-vfx/', '/zh-CN/nvidia-vfx/'])(
+    'sends the old NVIDIA address to %s, a built page',
+    (destination) => {
+      expect(pageExistsAt(destination)).toBe(true)
     }
   )
 

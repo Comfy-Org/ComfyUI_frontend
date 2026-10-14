@@ -4,6 +4,12 @@
   --comfy-canvas-gutter: calc(var(--spacing) * 2);
 }
 
+@layer base {
+  .pi {
+    font-size: 1rem;
+  }
+}
+
 /* The agent entry button sits in the topbar, outside the agent panel, so its
    effect cannot live in agentPanel.css, which only AgentPanelRoot imports. */
 /* Sweeps out, snaps back faster, then rests off-screen before going again. */

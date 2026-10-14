@@ -1,0 +1,474 @@
+{
+  "id": "node-widgets",
+  "capability": "Node widgets",
+  "description": "The legacy LiteGraph widget layer for generic widget kinds, the widget type contracts, the node.widgets compatibility view over the widget value store, value-control and dynamic input widgets, and named-value diffing. Feature-specific Vue-only widget stubs belong to their feature domains; Vue widget components belong to the renderer.",
+  "modules": [
+    {
+      "path": "src/core/graph/widgets/comboWidgetInventory.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/core/graph/widgets/controlWidgetMarker.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/core/graph/widgets/dynamicInputSpec.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/core/graph/widgets/dynamicInputSpec.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/core/graph/widgets/revealDynamicInputSlot.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/core/graph/widgets/revealDynamicInputSlot.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/core/graph/widgets/valueControl.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/core/graph/widgets/valueControl.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/types/widgets.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/utils/mathParser.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/utils/mathParser.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/utils/namedValuesShadowDiff.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/utils/namedValuesShadowDiff.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgetConnectionSuppression.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgetValueNullContract.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/core/graph/widgets/dynamicGroupWidget.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/core/graph/widgets/dynamicGroupWidget.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/core/graph/widgets/dynamicWidgets.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/core/graph/widgets/dynamicWidgets.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/core/graph/widgets/matchTypeConfiguring.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/core/graph/widgets/matchTypeFallback.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/core/graph/widgets/nodeWidgetValues.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/core/graph/widgets/nodeWidgetValues.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/core/graph/widgets/valueControlWidgets.controlAfterGenerateName.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/core/graph/widgets/valueControlWidgets.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/lib/litegraph/src/utils/widget.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/lib/litegraph/src/utils/widget.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/lib/litegraph/src/node/widgetsView.emptyWidgetName.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/lib/litegraph/src/node/widgetsView.refusalCriterion.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/lib/litegraph/src/node/widgetsView.refusalValueRestore.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/lib/litegraph/src/node/widgetsView.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/lib/litegraph/src/node/widgetsView.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/lib/litegraph/src/node/widgetsView.uniqueWidgetName.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/lib/litegraph/src/utils/namedValuesShadowDiffTelemetry.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/lib/litegraph/src/utils/namedValuesShadowDiffTelemetry.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/lib/litegraph/src/CurveEditor.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgets/BaseSteppedWidget.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgets/BaseWidget.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgets/BaseWidget.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgets/BooleanWidget.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgets/ButtonWidget.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgets/ChartWidget.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgets/ColorWidget.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgets/ColorWidget.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgets/ColorsWidget.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgets/ColorsWidget.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgets/ComboWidget.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgets/ComboWidget.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgets/FileUploadWidget.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgets/GalleriaWidget.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgets/GradientSliderWidget.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgets/KnobWidget.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgets/LegacyWidget.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgets/MultiSelectWidget.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgets/NumberWidget.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgets/NumberWidget.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgets/NumericWidgetRendering.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgets/RangeWidget.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgets/SelectButtonWidget.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgets/SliderWidget.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgets/TextWidget.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgets/TextareaWidget.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgets/TreeSelectWidget.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgets/VueOnlyWidget.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/core/graph/widgets/__fixtures__/dynamicInputHelpers.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgets/widgetMap.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgets/widgetMap.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/stores/widgetValueStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/widgetValueStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/widgetValueStore.graphReactivity.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/utils/widgetUtil.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/utils/widgetUtil.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/types/widgetId.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/widgetId.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/widgetState.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/widgetVisibility.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/widgetVisibility.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/extensions/core/widgetValuePropagation.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/extensions/core/widgetValuePropagation.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/extensions/core/widgetInputs.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/widgetInputs.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/widgetInputs.refreshCombo.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/customWidgets.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/customWidgets.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/customWidgets.clone.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/customWidgets.numericOptions.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/customWidgets.subgraphPromotion.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/saveImageExtraOutput.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/saveImageExtraOutput.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/node/useWatchWidget.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/node/useWatchWidget.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/utils/nodeDefUtil.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/nodeDefUtil.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/widgetBinding.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/searchAndReplace.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/searchAndReplace.test.ts",
+      "role": "domain"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Legacy canvas widgets render and respond to input for each generic kind",
+      "checks": [
+        "src/lib/litegraph/src/widgets/BaseWidget.test.ts",
+        "src/lib/litegraph/src/widgets/ComboWidget.test.ts",
+        "src/lib/litegraph/src/widgets/NumberWidget.test.ts",
+        "src/lib/litegraph/src/widgets/NumericWidgetRendering.test.ts",
+        "src/lib/litegraph/src/widgets/widgetMap.test.ts"
+      ]
+    },
+    {
+      "name": "node.widgets stays a consistent view over stored widget values",
+      "checks": [
+        "src/lib/litegraph/src/node/widgetsView.test.ts",
+        "src/lib/litegraph/src/node/widgetsView.uniqueWidgetName.test.ts",
+        "src/lib/litegraph/src/widgetValueNullContract.test.ts",
+        "src/core/graph/widgets/nodeWidgetValues.test.ts"
+      ]
+    },
+    {
+      "name": "Dynamic inputs and value controls create and update widgets",
+      "checks": [
+        "src/core/graph/widgets/dynamicWidgets.test.ts",
+        "src/core/graph/widgets/dynamicGroupWidget.test.ts",
+        "src/core/graph/widgets/valueControl.test.ts",
+        "src/core/graph/widgets/valueControlWidgets.controlAfterGenerateName.test.ts"
+      ]
+    },
+    {
+      "name": "Widget value store keeps scoped widget state reactive across graph edits and announces value intents",
+      "checks": [
+        "src/stores/widgetValueStore.test.ts",
+        "src/stores/widgetValueStore.graphReactivity.test.ts"
+      ]
+    },
+    {
+      "name": "Widget default values and renames stay consistent",
+      "checks": ["src/utils/widgetUtil.test.ts"]
+    },
+    {
+      "name": "Widget ids stay unique per node and widget visibility derives canvas, Vue node, and panel surfaces",
+      "checks": [
+        "src/types/widgetId.test.ts",
+        "src/types/widgetVisibility.test.ts"
+      ]
+    },
+    {
+      "name": "PrimitiveNode and widget-to-input conversion keep widget config, combo refresh, and propagated values",
+      "checks": [
+        "src/extensions/core/widgetInputs.test.ts",
+        "src/extensions/core/widgetInputs.refreshCombo.test.ts",
+        "src/extensions/core/widgetValuePropagation.test.ts"
+      ]
+    },
+    {
+      "name": "CustomCombo and primitive numeric nodes keep options across copy, paste, and subgraph promotion",
+      "checks": [
+        "src/extensions/core/customWidgets.test.ts",
+        "src/extensions/core/customWidgets.clone.test.ts",
+        "src/extensions/core/customWidgets.numericOptions.test.ts",
+        "src/extensions/core/customWidgets.subgraphPromotion.test.ts"
+      ]
+    },
+    {
+      "name": "Save node filename prefixes apply text replacements at serialization",
+      "checks": ["src/extensions/core/saveImageExtraOutput.test.ts"]
+    }
+  ],
+  "adrs": [
+    "docs/adr/ECS-WIDGETS-0023-widget-entities-with-a-legacy-layer.md",
+    "docs/adr/WIDGET-SERIALIZATION-0006-preserve-primitive-widget-values-across-copy-and-paste.md",
+    "docs/adr/WIDGET-GROUP-0031-dynamic-group-widget-lifecycle.md"
+  ],
+  "compatibilityPromises": [
+    "widget.value, widget.callback, node.widgets array access, and widgets_values serialisation keep their extension-facing behaviour.",
+    "LegacyWidget keeps supporting extension-drawn custom widgets.",
+    "Inventory grants no new cross-domain permissions; widgetMap importing feature-owned widget stubs remains inherited debt."
+  ],
+  "deepImports": "inventory"
+}

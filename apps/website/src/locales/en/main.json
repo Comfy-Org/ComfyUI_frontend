@@ -78,7 +78,6 @@
       "select": "Select an option",
       "maxFiles": "Select no more than {count} files.",
       "invalidJson": "This JSON does not match what the model expects.",
-      "runNext": "Run model — sign-in coming next",
       "codeLanguage": "Code language",
       "copy": "Copy code",
       "copied": "Copied",
@@ -631,6 +630,7 @@
       "connectionLost": "The run could not be checked. Reconnect to recover its current status.",
       "lostContact": "This page lost contact with the run. It may still be running on Cloud and using credits. Reconnect to see its current status.",
       "browserUnavailable": "Running workflows from this page is not available yet.",
+      "tryCloud": "Try in Cloud",
       "explore": "Explore the possibilities"
     },
     "catalogue": {
@@ -2558,6 +2558,8 @@
     "chatgptImage25": "ChatGPT Images 2.5",
     "qwenImage21": "Qwen-Image 2.1",
     "nanoBanana": "Nano Banana 2.1",
+    "fishAudio": "Fish Audio",
+    "nvidiaVfx": "Nvidia VFX",
     "cloudNodes": "Comfy Cloud Nodes",
     "modelCatalogue": "ComfyUI Models",
     "changelog": "Changelog"
@@ -3963,7 +3965,15 @@
   "modelLaunch": {
     "tagFree": "Free",
     "tagPremium": "Premium",
-    "copyPrompt": "Copy prompt"
+    "copyPrompt": "Copy prompt",
+    "voices": "voice: | voices:",
+    "clipSeconds": "({seconds}s)",
+    "beforeAfter": {
+      "tabsLabel": "Comparison",
+      "sliderLabel": "Comparison slider",
+      "before": "Before",
+      "after": "After"
+    }
   },
   "flux3": {
     "meta": {
@@ -4244,6 +4254,51 @@
       }
     }
   },
+  "nvidiaRtx": {
+    "meta": {
+      "title": "Nvidia VFX Nodes for ComfyUI",
+      "description": "Three ComfyUI nodes powered by Nvidia's RTX technology for ultra fast video super resolution, frame generation and SDR-to-HDR conversion."
+    },
+    "breadcrumb": {
+      "model": "NVIDIA VFX",
+      "updated": "Updated October 2026"
+    },
+    "hero": {
+      "title": "Nvidia VFX Nodes",
+      "description": "Three custom nodes powered by Nvidia's RTX technology for ultra fast video super resolution, frame generation and SDR-to-HDR conversion. Built for VFX artists and professional video creators.",
+      "tagUpscale": "Super Resolution up to 4×",
+      "tagFrameRate": "Frame Rate up to 16×",
+      "tagSdrToHdr": "SDR-to-HDR",
+      "primaryCta": "TRY ON COMFY CLOUD",
+      "secondaryCta": "VIEW DOCS"
+    },
+    "beforeAfter": {
+      "heading": "One clip, two states.",
+      "body": "Source on one side, output on the other. Drag the line to compare them frame by frame."
+    },
+    "gallery": {
+      "heading": "Made on NVIDIA RTX"
+    },
+    "steps": {
+      "heading": "Prefer running locally?",
+      "step": "Step",
+      "primaryCta": "DOWNLOAD DESKTOP"
+    },
+    "faq": {
+      "heading": "Q&A"
+    },
+    "runOptions": {
+      "heading": "One engine, every way to run it",
+      "subtitle": "Run on your RTX PC today. Move the same workflow to Comfy Cloud or the API when a job outgrows your desk.",
+      "cta": "LEARN MORE"
+    },
+    "reviews": {
+      "heading": "4+ million Comfy creators say",
+      "highlightTitle": "COMFY AGENT",
+      "highlightDescription": "Now live in Comfy Desktop. Describe what you want, and it plans, builds, and runs the workflow side by side with you. Every step stays on the canvas for you to adjust.",
+      "highlightCta": "TRY IN COMFY DESKTOP"
+    }
+  },
   "minimax": {
     "meta": {
       "title": "MiniMax H3 on Comfy: Open-Weight Video Model",
@@ -4390,6 +4445,57 @@
       },
       "intro": "Tell us about your team and we'll get your license set up. Professional is a fixed-price monthly license covering up to 10 users —",
       "introCta": "see what it includes"
+    }
+  },
+  "fishAudio": {
+    "meta": {
+      "title": "Fish Audio Drama 3 on Comfy: Multi-Character Scenes",
+      "description": "Fish Audio's Drama 3, its most emotive and controllable model yet, generates multi-character scenes as one conversation. Try it in Comfy Cloud from day one."
+    },
+    "breadcrumb": {
+      "model": "Fish Audio Drama 3",
+      "updated": "Updated October 2026"
+    },
+    "hero": {
+      "titleModel": "Fish Audio Drama 3",
+      "titleRest": " is now on Comfy",
+      "description": "Get 50% off for your first 30 days. Drama 3 is Fish Audio's most emotive, controllable model yet. Write a multi-character scene as one conversation, then build it with audio in a single workflow.",
+      "badge1": "Partner node",
+      "badge2": "Multi-character scenes",
+      "badge3": "50% off at launch",
+      "primaryCta": "RUN DRAMA 3",
+      "secondaryCta": "VIEW DOCS"
+    },
+    "faq": {
+      "heading": "Q&A"
+    },
+    "pricing": {
+      "banner": {
+        "title": "Launch offer: 50% off Fish Audio Drama 3 for your first 30 days",
+        "subtitle": "5 free runs on real GPUs — no credit card required.",
+        "cta": "TRY FREE"
+      }
+    },
+    "samples": {
+      "heading": "Made with Drama 3",
+      "cta": "TRY NOW"
+    },
+    "steps": {
+      "heading": "Direct your first scene",
+      "step": "Step",
+      "primaryCta": "RUN DRAMA 3",
+      "secondaryCta": "VIEW DOCS"
+    },
+    "runOptions": {
+      "heading": "One engine, every way to run it",
+      "subtitle": "Run Drama 3 in Comfy Cloud today, batch scenes through the API, or run it from ComfyUI on your own machine.",
+      "cta": "LEARN MORE"
+    },
+    "reviews": {
+      "heading": "4+ million Comfy creators say",
+      "highlightTitle": "Comfy MCP: now turn your agent into a creative technologist.",
+      "highlightDescription": "Your AI assistant can access the ecosystem, build workflows, and generate images, video, audio, or 3D.",
+      "highlightCta": "GET STARTED"
     }
   },
   "fdct": {
