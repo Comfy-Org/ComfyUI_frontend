@@ -5149,6 +5149,29 @@
       "zoomIn": "放大",
       "zoomOut": "缩小",
       "zoomReset": "重置"
+    },
+    "explore": {
+      "subtitle": "挑一个应用，改编一个工作流，或调用一个模型。",
+      "doors": "按类型浏览",
+      "modelsIntent": "运行或调用任意模型",
+      "modelsTitle": "模型",
+      "modelsHint": "在代码中调用最新模型，也可以先在这里试用。",
+      "workflowsIntent": "下载并二次创作",
+      "workflowsHint": "打开节点图，修改任意步骤。",
+      "appsIntent": "一键生成",
+      "appsHint": "上传，点击，完成。无需节点，无需配置。",
+      "doorModelRun": "运行",
+      "doorModelPromptLake": "蓝调时刻的高山湖泊",
+      "doorModelPromptRowboat": "热带泻湖上的小划艇",
+      "doorWorkflows": "工作流",
+      "doorWorkflowStep": "重新打光",
+      "doorWorkflowLight": "光线",
+      "doorWorkflowStrength": "强度",
+      "doorWorkflowSave": "Save Image",
+      "doorApps": "应用",
+      "doorAppGenerate": "生成",
+      "doorAppControlFocal": "焦距",
+      "doorAppControlRotation": "旋转"
     }
   }
 }

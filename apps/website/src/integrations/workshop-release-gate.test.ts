@@ -130,6 +130,7 @@ describe('Workshop release output', () => {
   it('builds every Models page either way and adds checkout only with Workshop', () => {
     const disabled = modelsBuildRoutes(false)
     expect(disabled.map((route) => route.pattern)).toEqual([
+      '/hub',
       '/hub/models',
       '/hub/models/[slug]',
       '/hub/workflows',
@@ -151,7 +152,9 @@ describe('Workshop release output', () => {
       '/zh-CN/checkout-return'
     ])
     for (const routes of [disabled, enabled]) {
-      expect(routes[0].entrypoint).toContain('/routes/models/index.astro')
+      expect(
+        routes.find(({ pattern }) => pattern === '/hub/models')?.entrypoint
+      ).toContain('/routes/models/index.astro')
       for (const route of routes)
         expect(existsSync(route.entrypoint)).toBe(true)
     }

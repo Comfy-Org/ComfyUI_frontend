@@ -663,7 +663,30 @@
       "notSaved": "This generation could not be saved to your assets. The result is still on the page until it expires.",
       "cancelError": "Could not request cancellation. Your generation may still be running."
     },
-    "cinematic": {}
+    "cinematic": {},
+    "explore": {
+      "subtitle": "Pick an app, remix a workflow or call a model.",
+      "doors": "Browse by format",
+      "modelsIntent": "Run or call any model",
+      "modelsTitle": "Models",
+      "modelsHint": "Call the latest models from your code. Try them here first.",
+      "workflowsIntent": "Download and remix",
+      "workflowsHint": "Open the graph and change any step.",
+      "appsIntent": "Make it in one click",
+      "appsHint": "Upload, click, done. No nodes, no setup.",
+      "doorModelRun": "Run",
+      "doorModelPromptLake": "Alpine lake at blue hour",
+      "doorModelPromptRowboat": "Rowboat on a tropical lagoon",
+      "doorWorkflows": "Workflows",
+      "doorWorkflowStep": "Relight",
+      "doorWorkflowLight": "light",
+      "doorWorkflowStrength": "strength",
+      "doorWorkflowSave": "Save Image",
+      "doorApps": "Apps",
+      "doorAppGenerate": "Generate",
+      "doorAppControlFocal": "Focal length",
+      "doorAppControlRotation": "Rotation"
+    }
   },
   "auth": {
     "signIn": {
