@@ -1122,6 +1122,7 @@ export class ComfyApi extends EventTarget {
                 ...this.serverFeatureFlags.value,
                 agent: msg.data
               }
+              this.dispatchCustomEvent('agent_status', msg.data)
               break
             default:
               if (this._registered.has(msg.type)) {
@@ -1161,6 +1162,8 @@ export class ComfyApi extends EventTarget {
     this.clientId = undefined
     window.name = ''
     sessionStorage.removeItem('clientId')
+    const { agent: _previousAgent, ...features } = this.serverFeatureFlags.value
+    this.serverFeatureFlags.value = features
     await this.replaceSocket()
   }
 

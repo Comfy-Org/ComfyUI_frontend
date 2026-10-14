@@ -134,7 +134,7 @@ vi.mock(
   })
 )
 
-const READY_AGENT = { state: 'ready', url: '/api/agent', reason: null } as const
+const READY_AGENT = { state: 'ready', reason: null } as const
 
 function setAgentReady(ready: boolean): void {
   Object.assign(agentStore, {
@@ -1575,28 +1575,30 @@ describe('AgentPanel extension flag gate', () => {
   it("leaves a development build off cloud to ComfyUI's agent", async () => {
     vi.stubEnv('MODE', 'development')
     vi.stubEnv('VITE_AGENT_STANDALONE', '')
+    Object.assign(agentStore, { flagsSettled: false })
 
     await loadEntryAndSetup()
 
     expect(agentStore.enabled).toBe(false)
+    expect(agentStore.gateSettled).toBe(false)
   })
 
   it('enables the panel once ComfyUI reports its agent ready', async () => {
     Object.assign(agentStore, {
-      comfyAgent: { state: 'starting', url: null, reason: null }
+      comfyAgent: { state: 'starting', reason: null }
     })
 
     await loadEntryAndSetup()
     expect(agentStore.enabled).toBe(false)
 
     Object.assign(agentStore, {
-      comfyAgent: { state: 'ready', url: '/api/agent', reason: null }
+      comfyAgent: { state: 'ready', reason: null }
     })
     await nextTick()
     expect(agentStore.enabled).toBe(true)
 
     Object.assign(agentStore, {
-      comfyAgent: { state: 'failed', url: null, reason: 'unknown' }
+      comfyAgent: { state: 'failed', reason: 'unknown' }
     })
     await nextTick()
     expect(agentStore.enabled).toBe(false)
