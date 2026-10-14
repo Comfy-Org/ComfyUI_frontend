@@ -103,6 +103,7 @@
           </span>
         </span>
       </span>
+      <slot name="conversion" />
       <div v-if="showInstallAction" class="ml-auto shrink-0">
         <Button
           variant="secondary"

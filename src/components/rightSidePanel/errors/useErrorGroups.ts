@@ -7,6 +7,7 @@ import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { useMagicPatchBatchStore } from '@/platform/magicPatch/stores/magicPatchBatchStore'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
@@ -241,6 +242,13 @@ function searchErrorGroups(groups: ErrorGroup[], query: string) {
 export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
   const executionErrorStore = useExecutionErrorStore()
   const missingNodesStore = useMissingNodesErrorStore()
+  const conversions = isCloud ? useMagicPatchBatchStore() : undefined
+  const missingNodeTypes = computed(
+    () =>
+      conversions?.pendingNodeErrors ??
+      missingNodesStore.missingNodesError?.nodeTypes ??
+      []
+  )
   const missingModelStore = useMissingModelStore()
   const missingMediaStore = useMissingMediaStore()
   const canvasStore = useCanvasStore()
@@ -296,7 +304,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
 
   const missingNodeCache = computed(() => {
     const map = new Map<string, LGraphNode>()
-    const nodeTypes = missingNodesStore.missingNodesError?.nodeTypes ?? []
+    const nodeTypes = missingNodeTypes.value
     for (const nodeType of nodeTypes) {
       if (typeof nodeType === 'string') continue
       if (nodeType.nodeId == null) continue
@@ -455,7 +463,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
   const asyncResolvedIds = ref<Map<string, string | null>>(new Map())
 
   const pendingTypes = computed(() =>
-    (missingNodesStore.missingNodesError?.nodeTypes ?? []).filter(
+    missingNodeTypes.value.filter(
       (n): n is Exclude<MissingNodeType, string> =>
         typeof n !== 'string' && !n.cnrId
     )
@@ -520,7 +528,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
   )
 
   const missingPackGroups = computed<MissingPackGroup[]>(() => {
-    const nodeTypes = missingNodesStore.missingNodesError?.nodeTypes ?? []
+    const nodeTypes = missingNodeTypes.value
     const map = new Map<
       string | null,
       { nodeTypes: MissingNodeType[]; isResolving: boolean }
@@ -582,7 +590,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
   })
 
   const swapNodeGroups = computed<SwapNodeGroup[]>(() => {
-    const nodeTypes = missingNodesStore.missingNodesError?.nodeTypes ?? []
+    const nodeTypes = missingNodeTypes.value
     const map = new Map<string, SwapNodeGroup>()
 
     for (const nodeType of nodeTypes) {
@@ -632,7 +640,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
         priority: 0,
         ...resolveMissingErrorMessage({
           kind: 'swap_nodes',
-          nodeTypes: error.nodeTypes,
+          nodeTypes: missingNodeTypes.value,
           count: swapCount,
           isCloud
         })
@@ -648,7 +656,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
         priority: 1,
         ...resolveMissingErrorMessage({
           kind: 'missing_node',
-          nodeTypes: error.nodeTypes,
+          nodeTypes: missingNodeTypes.value,
           count: packCount,
           isCloud
         })
@@ -855,9 +863,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
       ...(missingModelStore.missingModelCandidates ?? []),
       ...(missingMediaStore.missingMediaCandidates ?? [])
     ].map((candidate) => candidate.nodeId)
-    const missingNodeTypeIds = (
-      missingNodesStore.missingNodesError?.nodeTypes ?? []
-    ).map((nodeType) =>
+    const missingNodeTypeIds = missingNodeTypes.value.map((nodeType) =>
       typeof nodeType === 'string' ? undefined : nodeType.nodeId
     )
     return [...candidateIds, ...missingNodeTypeIds]

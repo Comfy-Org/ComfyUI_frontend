@@ -6,6 +6,7 @@ import type { RequestStatus } from '@comfyorg/magic-patch-types'
 import { collectSubgraphDefinitions } from '@/platform/workflow/core/utils/workflowFlattening'
 import type { FlattenableWorkflowNode } from '@/platform/workflow/core/utils/workflowFlattening'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { WorkflowPackBinding } from './workflowPackCandidates'
 
 type SourceNodeStamp = {
   type: string
@@ -206,7 +207,8 @@ export function selectedPublisherRevision(
 export function applyPublicationNodeTypes(
   graph: ComfyWorkflowJSON,
   publications: readonly InstalledPublication[],
-  original?: ComfyWorkflowJSON
+  original?: ComfyWorkflowJSON,
+  bindings: readonly WorkflowPackBinding[] = []
 ): ComfyWorkflowJSON {
   if (!original) return graph
   const originalNodes = new Map<string, FlattenableWorkflowNode>()
@@ -234,8 +236,18 @@ export function applyPublicationNodeTypes(
         return publication.sourceNodeStamps.some(
           (stamp) =>
             stamp.type === node.type &&
-            stamp.cnrId === node.properties?.cnr_id &&
-            stamp.version === node.properties?.ver
+            ((stamp.cnrId === node.properties?.cnr_id &&
+              stamp.version === node.properties?.ver) ||
+              (stamp.cnrId === publication.sourcePackId &&
+                stamp.version === publication.sourceRevisionId &&
+                bindings.some(
+                  (binding) =>
+                    binding.scope === scope &&
+                    binding.id === node.id &&
+                    binding.type === node.type &&
+                    binding.sourcePackId === publication.sourcePackId &&
+                    binding.sourceRevisionId === publication.sourceRevisionId
+                )))
         )
       }
       // v1 has no stamp proof; only the original exact source pack ID qualifies.

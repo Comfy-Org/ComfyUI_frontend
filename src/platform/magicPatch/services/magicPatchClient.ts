@@ -1,16 +1,22 @@
 import type {
   CreateRequest,
   PackSourceRequest,
-  RequestStatus
+  RequestStatus,
+  WorkflowSourceRequest
 } from '@comfyorg/magic-patch-types'
 import {
   zCancellationStatus,
+  zAPIError,
   zCreateRequest,
   zDigest,
   zPackSourceRequest,
   zPackSourceResponse,
   zRequestPage,
-  zRequestStatus
+  zRequestStatus,
+  zSourceAcquisition,
+  zSourceEligibility,
+  zWorkflowSourceDiscovery,
+  zWorkflowSourceRequest
 } from '@comfyorg/magic-patch-types/zod'
 import type { ZodType } from 'zod'
 import { ZodError } from 'zod'
@@ -31,7 +37,10 @@ type FailureCode =
   | 'response_timeout'
 type MagicPatchResult<T> =
   | { ok: true; value: T }
-  | { ok: false; error: { code: FailureCode; status?: number } }
+  | {
+      ok: false
+      error: { code: FailureCode; status?: number; reason?: string }
+    }
 
 class MagicPatchProtocolError extends Error {
   constructor(readonly code: FailureCode) {
@@ -40,7 +49,10 @@ class MagicPatchProtocolError extends Error {
   }
 }
 class MagicPatchRequestError extends Error {
-  constructor(readonly status: number) {
+  constructor(
+    readonly status: number,
+    readonly reason?: string
+  ) {
     super(`Magic Patch request failed (${status})`)
     this.name = 'MagicPatchRequestError'
   }
@@ -58,7 +70,8 @@ export function createMagicPatchClient<Scope>(
   async function request(
     route: string,
     options: RequestInit,
-    beforeDispatch?: () => void
+    beforeDispatch?: () => void,
+    acceptedStatus: number[] = []
   ) {
     if (!available()) throw new MagicPatchRequestError(503)
     const captured = scopeGuard.capture()
@@ -73,7 +86,8 @@ export function createMagicPatchClient<Scope>(
     const response = await fetchApi(`/magic-patch${route}`, options, check)
     try {
       check()
-      if (!response.ok) throw new MagicPatchRequestError(response.status)
+      if (!response.ok && !acceptedStatus.includes(response.status))
+        throw new MagicPatchRequestError(response.status)
     } catch (cause) {
       void response.body?.cancel().catch(() => {})
       throw cause
@@ -227,16 +241,155 @@ export function createMagicPatchClient<Scope>(
 
   async function source(input: PackSourceRequest, signal?: AbortSignal) {
     const body = validateInput(zPackSourceRequest, input)
-    const response = await request('/sources/pack', {
+    const response = await request(
+      '/sources/pack',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        signal
+      },
+      undefined,
+      [422]
+    )
+    if (!response.response.ok) {
+      const failure = zAPIError.parse(await readJSON(response))
+      if (!/^[a-z_]{1,80}$/u.test(failure.code))
+        throw new MagicPatchProtocolError('invalid_response')
+      throw new MagicPatchRequestError(response.response.status, failure.code)
+    }
+    const value = zPackSourceResponse.parse(await readJSON(response))
+    if (
+      value.pack_id !== body.pack_id ||
+      value.revision_id !== body.revision_id
+    )
+      throw new MagicPatchProtocolError('invalid_response')
+    return finish(response, value)
+  }
+
+  async function prepareSource(input: PackSourceRequest, signal?: AbortSignal) {
+    const body = validateInput(zPackSourceRequest, input)
+    const response = await request('/sources/registry', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
       signal
     })
-    const value = zPackSourceResponse.parse(await readJSON(response))
+    const value = zSourceAcquisition.parse(await readJSON(response))
     if (
-      value.pack_id !== body.pack_id ||
-      value.revision_id !== body.revision_id
+      value.source &&
+      (value.source.pack_id !== body.pack_id ||
+        ![value.source.revision_id, value.source.registry_revision_id].includes(
+          body.revision_id
+        ))
+    )
+      throw new MagicPatchProtocolError('invalid_response')
+    return finish(response, value)
+  }
+
+  async function sourceStatus(id: string, signal?: AbortSignal) {
+    if (!/^[a-f0-9]{32}$/u.test(id))
+      throw new MagicPatchProtocolError('invalid_request')
+    const response = await request(`/source-acquisitions/${id}`, {
+      method: 'GET',
+      signal
+    })
+    const value = zSourceAcquisition.parse(await readJSON(response))
+    if (value.acquisition_id !== id)
+      throw new MagicPatchProtocolError('invalid_response')
+    return finish(response, value)
+  }
+
+  async function prepareWorkflowSource(
+    input: WorkflowSourceRequest,
+    signal?: AbortSignal
+  ) {
+    const body = validateInput(zWorkflowSourceRequest, input)
+    const response = await request(
+      '/sources/workflow',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        signal
+      },
+      undefined,
+      [422]
+    )
+    if (!response.response.ok) {
+      const failure = zAPIError.parse(await readJSON(response))
+      if (!/^[a-z_]{1,80}$/u.test(failure.code))
+        throw new MagicPatchProtocolError('invalid_response')
+      throw new MagicPatchRequestError(response.response.status, failure.code)
+    }
+    const accepted = finish(
+      response,
+      zSourceAcquisition.parse(await readJSON(response))
+    )
+    const lookup = await request(
+      `/workflow-source-discoveries/${accepted.acquisition_id}`,
+      { method: 'GET', signal }
+    )
+    const discovery = zWorkflowSourceDiscovery.parse(await readJSON(lookup))
+    const expected = {
+      ...body,
+      ...(body.aux_id
+        ? {
+            aux_id: (body.aux_id.startsWith('https://')
+              ? body.aux_id
+              : `https://github.com/${body.aux_id}`
+            )
+              .replace(/\/$/u, '')
+              .replace(/\.git$/u, '')
+          }
+        : {})
+    }
+    const selected = discovery.workflow_selector
+    if (
+      discovery.acquisition.acquisition_id !== accepted.acquisition_id ||
+      discovery.acquisition.status_version < accepted.status_version ||
+      selected.cnr_id !== expected.cnr_id ||
+      selected.aux_id !== expected.aux_id ||
+      selected.ver !== expected.ver ||
+      JSON.stringify(selected.node_types) !==
+        JSON.stringify(expected.node_types)
+    )
+      throw new MagicPatchProtocolError('invalid_response')
+    return finish(lookup, discovery.acquisition)
+  }
+
+  async function eligibility(
+    input: PackSourceRequest,
+    workflowVersion: string,
+    nodeType: string,
+    signal?: AbortSignal
+  ) {
+    const selector = validateInput(zPackSourceRequest, input)
+    if (
+      !workflowVersion ||
+      workflowVersion.length > 128 ||
+      !nodeType ||
+      nodeType.length > 256
+    )
+      throw new MagicPatchProtocolError('invalid_request')
+    const query = new URLSearchParams({
+      ...selector,
+      workflow_version: workflowVersion,
+      node_type: nodeType
+    })
+    const response = await request(`/eligible-packs?${query}`, {
+      method: 'GET',
+      signal
+    })
+    const value = zSourceEligibility.parse(await readJSON(response))
+    if (
+      value.candidates.some(
+        (candidate) =>
+          candidate.pack_id !== selector.pack_id ||
+          ![candidate.revision_id, candidate.registry_revision_id].includes(
+            selector.revision_id
+          )
+      )
     )
       throw new MagicPatchProtocolError('invalid_response')
     return finish(response, value)
@@ -337,7 +490,10 @@ export function createMagicPatchClient<Scope>(
         error: {
           code,
           ...(cause instanceof MagicPatchRequestError
-            ? { status: cause.status }
+            ? {
+                status: cause.status,
+                ...(cause.reason ? { reason: cause.reason } : {})
+              }
             : {})
         }
       }
@@ -347,6 +503,15 @@ export function createMagicPatchClient<Scope>(
   return {
     source: (...args: Parameters<typeof source>) =>
       recover(() => source(...args)),
+    prepareSource: (...args: Parameters<typeof prepareSource>) =>
+      recover(() => prepareSource(...args)),
+    prepareWorkflowSource: (
+      ...args: Parameters<typeof prepareWorkflowSource>
+    ) => recover(() => prepareWorkflowSource(...args)),
+    sourceStatus: (...args: Parameters<typeof sourceStatus>) =>
+      recover(() => sourceStatus(...args)),
+    eligibility: (...args: Parameters<typeof eligibility>) =>
+      recover(() => eligibility(...args)),
     submit: (...args: Parameters<typeof submit>) =>
       recover(() => submit(...args)),
     list: (...args: Parameters<typeof list>) => recover(() => list(...args)),

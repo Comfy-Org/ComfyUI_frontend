@@ -25,6 +25,159 @@ beforeEach(() => {
 })
 
 describe('Magic Patch client', () => {
+  const acquisition = {
+    acquisition_id: 'a'.repeat(32),
+    state: 'queued',
+    status_version: 1,
+    source_ref: null,
+    reason: null,
+    conversion_supported: false,
+    message: 'Queued',
+    progress: {
+      stage: 'source_preparation',
+      state: 'queued',
+      message: 'Queued'
+    }
+  }
+
+  it('binds a workflow discovery to every confirmed source selector field', async () => {
+    const input = {
+      cnr_id: 'example',
+      aux_id: 'owner/repo.git/',
+      ver: '2.0.0',
+      node_types: ['ExampleNode']
+    }
+    const transport = vi.fn<Parameters<typeof createMagicPatchClient>[0]>(
+      async () => Response.json(acquisition)
+    )
+    transport
+      .mockResolvedValueOnce(Response.json(acquisition))
+      .mockResolvedValueOnce(
+        Response.json({
+          workflow_selector: {
+            ...input,
+            aux_id: 'https://github.com/owner/repo'
+          },
+          acquisition,
+          resolved: null
+        })
+      )
+    const client = createMagicPatchClient(transport, () => true, scopeGuard)
+    await expect(client.prepareWorkflowSource(input)).resolves.toEqual({
+      ok: true,
+      value: acquisition
+    })
+    expect(transport.mock.calls.map(([route]) => route)).toEqual([
+      '/magic-patch/sources/workflow',
+      `/magic-patch/workflow-source-discoveries/${acquisition.acquisition_id}`
+    ])
+  })
+
+  it.for([
+    { cnr_id: 'other' },
+    { ver: '2.1.2' },
+    { node_types: ['OtherNode'] }
+  ])('refuses mismatched workflow source evidence %j', async (mismatch) => {
+    const input = {
+      cnr_id: 'example',
+      ver: '2.0.0',
+      node_types: ['ExampleNode']
+    }
+    const transport = vi.fn<Parameters<typeof createMagicPatchClient>[0]>(
+      async () => Response.json(acquisition)
+    )
+    transport
+      .mockResolvedValueOnce(Response.json(acquisition))
+      .mockResolvedValueOnce(
+        Response.json({
+          workflow_selector: { ...input, ...mismatch },
+          acquisition,
+          resolved: null
+        })
+      )
+    const client = createMagicPatchClient(transport, () => true, scopeGuard)
+    await expect(client.prepareWorkflowSource(input)).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'invalid_response' }
+    })
+  })
+
+  it.for([
+    { ver: '2.0.0' },
+    { cnr_id: 'example', ver: 'latest' },
+    { cnr_id: 'example', ver: '2.0.0', node_types: ['Node', 'Node'] }
+  ])(
+    'rejects incomplete or ambiguous workflow source inputs %j',
+    async (input) => {
+      const transport = vi.fn<Parameters<typeof createMagicPatchClient>[0]>(
+        async () => Response.json(acquisition)
+      )
+      const client = createMagicPatchClient(transport, () => true, scopeGuard)
+      await expect(client.prepareWorkflowSource(input)).resolves.toMatchObject({
+        ok: false,
+        error: { code: 'invalid_request' }
+      })
+      expect(transport).not.toHaveBeenCalled()
+    }
+  )
+
+  it('retains the source-preparation requirement without exposing the rejected response body to telemetry', async () => {
+    const client = createMagicPatchClient(
+      async () =>
+        Response.json(
+          { code: 'source_preparation_required', message: 'private-marker' },
+          { status: 422 }
+        ),
+      () => true,
+      scopeGuard
+    )
+    expect(
+      await client.source({ pack_id: 'example', revision_id: 'c'.repeat(64) })
+    ).toMatchObject({
+      ok: false,
+      error: { status: 422, reason: 'source_preparation_required' }
+    })
+    expect(JSON.stringify(vi.mocked(reportError).mock.calls)).not.toContain(
+      'private-marker'
+    )
+  })
+  it('rejects source status from another acquisition and cancels preparation after a scope change', async () => {
+    let generation = 1
+    const guard = {
+      capture: () => generation,
+      current: (captured: number) => captured === generation
+    }
+    const value = {
+      acquisition_id: 'a'.repeat(32),
+      state: 'queued',
+      status_version: 1,
+      source_ref: null,
+      reason: null,
+      conversion_supported: false,
+      message: 'Queued',
+      progress: {
+        stage: 'source_preparation',
+        state: 'queued',
+        message: 'Queued'
+      }
+    }
+    const transport = vi.fn(async () => Response.json(value))
+    const client = createMagicPatchClient(transport, () => true, guard)
+    expect(await client.sourceStatus('b'.repeat(32))).toMatchObject({
+      ok: false,
+      error: { code: 'invalid_response' }
+    })
+    transport.mockImplementationOnce(async () => {
+      generation++
+      return Response.json(value)
+    })
+    expect(
+      await client.prepareSource({
+        pack_id: 'example',
+        revision_id: 'c'.repeat(64)
+      })
+    ).toMatchObject({ ok: false, error: { code: 'scope_changed' } })
+  })
   it('accepts only a minted source bound to the selected pack and revision', async () => {
     const selector = { pack_id: 'example', revision_id: 'c'.repeat(64) }
     const transport = vi.fn(async () =>

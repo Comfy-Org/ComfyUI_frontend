@@ -11,6 +11,7 @@ import {
   publicationFromVerifiedReport,
   selectedPublisherRevision
 } from './selectedPublisherRevision'
+import { workflowPackBindings } from './workflowPackCandidates'
 
 const source: CloudNodeRegistryRevision = {
   revision_id: 'a'.repeat(64),
@@ -454,6 +455,51 @@ function stampedPublication(override: Record<string, unknown> = {}) {
   )
 }
 describe('authoritative workflow stamp association', () => {
+  it('reloads a shorter community ID only with its captured unambiguous Registry binding and a canonical source stamp', () => {
+    const canonicalSource = { ...source, pack_id: 'randomnumbers/x1234567' }
+    const graph = stampedGraph(canonicalSource.upstream_commit)
+    graph.nodes[0]!.type = 'RandomNumber'
+    graph.nodes[0]!.properties = {
+      cnr_id: 'randomnumbers',
+      ver: canonicalSource.upstream_commit
+    }
+    const bindings = workflowPackBindings(graph, [canonicalSource])
+    const publication: NonNullable<
+      ReturnType<typeof publicationFromVerifiedReport>
+    > = {
+      sourcePackId: canonicalSource.pack_id,
+      sourceRevisionId: canonicalSource.revision_id,
+      installedPackId: native.pack_id,
+      installedRevisionId: native.revision_id,
+      nodeTypes: { RandomNumber: 'User_owner_RandomNumber' },
+      sourceNodeStamps: [
+        {
+          type: 'RandomNumber',
+          cnrId: canonicalSource.pack_id,
+          version: canonicalSource.revision_id
+        }
+      ]
+    }
+    const latest = structuredClone(graph)
+    latest.nodes[0]!.widgets_values = [456]
+    applyPublicationNodeTypes(latest, [publication], graph, bindings)
+    expect(latest.nodes[0]).toMatchObject({
+      type: 'User_owner_RandomNumber',
+      widgets_values: [456]
+    })
+    const edited = structuredClone(graph)
+    edited.nodes[0]!.properties!.ver = 'another-version'
+    applyPublicationNodeTypes(edited, [publication], graph, bindings)
+    expect(edited.nodes[0]!.type).toBe('RandomNumber')
+    const wrong = structuredClone(graph)
+    applyPublicationNodeTypes(
+      wrong,
+      [{ ...publication, sourceRevisionId: 'e'.repeat(64) }],
+      graph,
+      bindings
+    )
+    expect(wrong.nodes[0]!.type).toBe('RandomNumber')
+  })
   it('remaps a bare cnr_id only through the explicit verified Registry source association', () => {
     const publication = stampedPublication()
     if (!publication) throw new Error('fixture v2 association is invalid')

@@ -6,8 +6,16 @@
     "description": "Proposed standalone gateway contract. Not served by the current health-only binary. Endpoint V3 and extension V2 are independent of this contract version."
   },
   "x-implementation-status": "draft-unwired",
-  "servers": [{ "url": "/api/magic-patch" }],
-  "security": [{ "existingSession": [] }],
+  "servers": [
+    {
+      "url": "/api/magic-patch"
+    }
+  ],
+  "security": [
+    {
+      "existingSession": []
+    }
+  ],
   "paths": {
     "/sources/pack": {
       "post": {
@@ -49,14 +57,20 @@
             "name": "Idempotency-Key",
             "in": "header",
             "required": true,
-            "schema": { "type": "string", "minLength": 1, "maxLength": 200 }
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
           }
         ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/CreateRequest" }
+              "schema": {
+                "$ref": "#/components/schemas/CreateRequest"
+              }
             }
           }
         },
@@ -65,11 +79,15 @@
             "description": "Request durably accepted; no execution or release-readiness claim",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/RequestStatus" }
+                "schema": {
+                  "$ref": "#/components/schemas/RequestStatus"
+                }
               }
             }
           },
-          "default": { "$ref": "#/components/responses/Error" }
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
         }
       },
       "get": {
@@ -89,7 +107,10 @@
           {
             "name": "after",
             "in": "query",
-            "schema": { "type": "string", "maxLength": 1024 }
+            "schema": {
+              "type": "string",
+              "maxLength": 1024
+            }
           }
         ],
         "responses": {
@@ -97,16 +118,24 @@
             "description": "Scoped page",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/RequestPage" }
+                "schema": {
+                  "$ref": "#/components/schemas/RequestPage"
+                }
               }
             }
           },
-          "default": { "$ref": "#/components/responses/Error" }
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
         }
       }
     },
     "/requests/{request_id}": {
-      "parameters": [{ "$ref": "#/components/parameters/RequestID" }],
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/RequestID"
+        }
+      ],
       "get": {
         "operationId": "getPatchRequest",
         "description": "Own account/workspace intent only. Unknown or inaccessible IDs return 404 without exposing other subscribers.",
@@ -115,16 +144,24 @@
             "description": "Current requester and operation state",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/RequestStatus" }
+                "schema": {
+                  "$ref": "#/components/schemas/RequestStatus"
+                }
               }
             }
           },
-          "default": { "$ref": "#/components/responses/Error" }
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
         }
       }
     },
     "/requests/{request_id}/cancel": {
-      "parameters": [{ "$ref": "#/components/parameters/RequestID" }],
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/RequestID"
+        }
+      ],
       "post": {
         "operationId": "cancelPatchRequest",
         "description": "Idempotently withdraw this requester intent and prevent its delayed auto-pin/refresh. Does not cancel other subscribers. Worker cancellation may be requested only when no active subscribers remain and policy allows. Acknowledgement never proves stopped execution; no blind replacement workflow. A completed operation/release remains immutable.",
@@ -133,16 +170,24 @@
             "description": "Requester withdrawal/cancellation observation",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/CancellationStatus" }
+                "schema": {
+                  "$ref": "#/components/schemas/CancellationStatus"
+                }
               }
             }
           },
-          "default": { "$ref": "#/components/responses/Error" }
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
         }
       }
     },
     "/requests/{request_id}/report": {
-      "parameters": [{ "$ref": "#/components/parameters/RequestID" }],
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/RequestID"
+        }
+      ],
       "get": {
         "operationId": "getPatchRequestReport",
         "description": "Authorized detached conversion report or explicitly incomplete service diagnostic; returns 409 while no report exists. Includes failed/rejected requests. Redact credentials/private logs; no arbitrary download URLs. Report byte identity is exact SHA256 of returned JSON bytes via X-Content-SHA256; clients verify before treating this as evidence. Report content schema remains REPORT_CONTRACT.md and requires a separate generated report model.",
@@ -152,14 +197,132 @@
             "headers": {
               "X-Content-SHA256": {
                 "required": true,
-                "schema": { "$ref": "#/components/schemas/Digest" }
+                "schema": {
+                  "$ref": "#/components/schemas/Digest"
+                }
               }
             },
             "content": {
-              "application/json": { "schema": { "type": "object" } }
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
             }
           },
-          "default": { "$ref": "#/components/responses/Error" }
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/sources/registry": {
+      "post": {
+        "responses": {
+          "202": {
+            "description": "Actual private r13 Registry source preparation response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceAcquisition"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/source-acquisitions/{acquisition_id}": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Actual private r13 Registry source preparation response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceAcquisition"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/eligible-packs": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Actual private r13 Registry source preparation response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceEligibility"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sources/workflow": {
+      "post": {
+        "operationId": "prepareWorkflowSource",
+        "description": "Discover the exact original source selected by a saved workflow after user confirmation.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkflowSourceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Scoped source preparation status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceAcquisition"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/workflow-source-discoveries/{id}": {
+      "get": {
+        "operationId": "getWorkflowSourceDiscovery",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{32}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Confirmed workflow selector and scoped preparation status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkflowSourceDiscovery"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
         }
       }
     }
@@ -178,7 +341,10 @@
         "name": "request_id",
         "in": "path",
         "required": true,
-        "schema": { "type": "string", "pattern": "^[0-9a-f]{32}$" }
+        "schema": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{32}$"
+        }
       }
     },
     "responses": {
@@ -186,13 +352,18 @@
         "description": "400 malformed; 401 unauthenticated; 403 unauthorized source/actor; 404 inaccessible request; 409 identity conflict/report unavailable; 429 quota; 503 unwired/indeterminate dependency; other 5xx possible. Reconcile exact idempotency key/request after a lost response before a new submission.",
         "content": {
           "application/json": {
-            "schema": { "$ref": "#/components/schemas/APIError" }
+            "schema": {
+              "$ref": "#/components/schemas/APIError"
+            }
           }
         }
       }
     },
     "schemas": {
-      "Digest": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+      "Digest": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{64}$"
+      },
       "CreateRequest": {
         "type": "object",
         "additionalProperties": false,
@@ -206,7 +377,9 @@
             "type": "string",
             "enum": ["workflow_load", "pack_pin", "private_upload"]
           },
-          "pin_on_ready": { "type": "boolean" }
+          "pin_on_ready": {
+            "type": "boolean"
+          }
         }
       },
       "RequestStatus": {
@@ -220,8 +393,14 @@
           "status_version"
         ],
         "properties": {
-          "id": { "type": "string", "pattern": "^[0-9a-f]{32}$" },
-          "operation_id": { "type": "string", "pattern": "^[0-9a-f]{32}$" },
+          "id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{32}$"
+          },
+          "operation_id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{32}$"
+          },
           "state": {
             "type": "string",
             "enum": [
@@ -268,8 +447,13 @@
             "$ref": "#/components/schemas/Digest",
             "description": "Present only after authoritative admission/publication acknowledgement."
           },
-          "report_sha256": { "$ref": "#/components/schemas/Digest" },
-          "reason": { "type": "string", "maxLength": 2000 }
+          "report_sha256": {
+            "$ref": "#/components/schemas/Digest"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 2000
+          }
         }
       },
       "RequestPage": {
@@ -280,9 +464,14 @@
           "requests": {
             "type": "array",
             "maxItems": 100,
-            "items": { "$ref": "#/components/schemas/RequestStatus" }
+            "items": {
+              "$ref": "#/components/schemas/RequestStatus"
+            }
           },
-          "next_cursor": { "type": "string", "maxLength": 1024 }
+          "next_cursor": {
+            "type": "string",
+            "maxLength": 1024
+          }
         }
       },
       "CancellationStatus": {
@@ -290,7 +479,9 @@
         "additionalProperties": false,
         "required": ["request", "worker_cancellation"],
         "properties": {
-          "request": { "$ref": "#/components/schemas/RequestStatus" },
+          "request": {
+            "$ref": "#/components/schemas/RequestStatus"
+          },
           "worker_cancellation": {
             "type": "string",
             "enum": [
@@ -309,8 +500,13 @@
         "additionalProperties": false,
         "required": ["code", "message"],
         "properties": {
-          "code": { "type": "string" },
-          "message": { "type": "string", "maxLength": 2000 }
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 2000
+          }
         }
       },
       "PackSourceRequest": {
@@ -347,6 +543,396 @@
           },
           "revision_id": {
             "$ref": "#/components/schemas/Digest"
+          }
+        }
+      },
+      "OriginalSource": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "pack_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "revision_id": {
+            "$ref": "#/components/schemas/Digest"
+          },
+          "registry_revision_id": {
+            "$ref": "#/components/schemas/Digest"
+          },
+          "upstream_commit": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{40}$"
+          },
+          "node_api_version": {
+            "type": "integer",
+            "enum": [1]
+          },
+          "nodes": {
+            "type": "array",
+            "maxItems": 10000,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          "admission": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "validation_prerequisites": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "required": [
+          "pack_id",
+          "revision_id",
+          "registry_revision_id",
+          "upstream_commit",
+          "node_api_version",
+          "nodes",
+          "admission",
+          "validation_prerequisites"
+        ]
+      },
+      "SourceProgress": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "stage": {
+            "type": "string",
+            "enum": ["source_preparation"]
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "acquiring",
+              "ready",
+              "source_ready",
+              "unsupported",
+              "failed"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024
+          }
+        },
+        "required": ["stage", "state", "message"]
+      },
+      "SourceAcquisition": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "acquisition_id": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{32}$"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "acquiring",
+              "ready",
+              "source_ready",
+              "unsupported",
+              "failed"
+            ]
+          },
+          "status_version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "source_ref": {
+            "$ref": "#/components/schemas/Digest",
+            "nullable": true
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 256,
+            "nullable": true
+          },
+          "conversion_supported": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024
+          },
+          "progress": {
+            "$ref": "#/components/schemas/SourceProgress"
+          },
+          "source": {
+            "$ref": "#/components/schemas/OriginalSource"
+          }
+        },
+        "required": [
+          "acquisition_id",
+          "state",
+          "status_version",
+          "source_ref",
+          "reason",
+          "conversion_supported",
+          "message",
+          "progress"
+        ]
+      },
+      "EligibleSource": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "pack_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "revision_id": {
+            "$ref": "#/components/schemas/Digest"
+          },
+          "upstream_git_sha": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{40}$"
+          },
+          "source_sha256": {
+            "$ref": "#/components/schemas/Digest"
+          },
+          "original_tree_sha256": {
+            "$ref": "#/components/schemas/Digest"
+          },
+          "source_kind": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "nodes": {
+            "type": "array",
+            "maxItems": 10000,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          "source_ref": {
+            "$ref": "#/components/schemas/Digest"
+          },
+          "source_version": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "registry_revision_id": {
+            "$ref": "#/components/schemas/Digest"
+          }
+        },
+        "required": [
+          "pack_id",
+          "revision_id",
+          "upstream_git_sha",
+          "source_sha256",
+          "original_tree_sha256",
+          "source_kind",
+          "nodes"
+        ]
+      },
+      "SourcePreparationOption": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "pack_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "revision_id": {
+            "$ref": "#/components/schemas/Digest"
+          },
+          "state": {
+            "type": "string",
+            "enum": ["not_prepared", "queued", "acquiring"]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024
+          },
+          "original_v1_verified": {
+            "type": "boolean"
+          },
+          "conversion_supported": {
+            "type": "boolean"
+          },
+          "acquisition_id": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{32}$"
+          },
+          "status_version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "workflow_version": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "workflow_node_type": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          }
+        },
+        "required": [
+          "pack_id",
+          "revision_id",
+          "state",
+          "reason",
+          "message",
+          "original_v1_verified",
+          "conversion_supported"
+        ]
+      },
+      "UnsupportedSource": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "pack_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "revision_id": {
+            "$ref": "#/components/schemas/Digest"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024
+          }
+        },
+        "required": ["pack_id", "reason", "message"]
+      },
+      "SourceEligibility": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "candidates": {
+            "type": "array",
+            "maxItems": 64,
+            "items": {
+              "$ref": "#/components/schemas/EligibleSource"
+            }
+          },
+          "preparations": {
+            "type": "array",
+            "maxItems": 64,
+            "items": {
+              "$ref": "#/components/schemas/SourcePreparationOption"
+            }
+          },
+          "unsupported": {
+            "type": "array",
+            "maxItems": 64,
+            "items": {
+              "$ref": "#/components/schemas/UnsupportedSource"
+            }
+          },
+          "preparation_required": {
+            "type": "boolean"
+          },
+          "selection_required": {
+            "type": "boolean"
+          },
+          "scope": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "matched": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "candidates",
+          "preparations",
+          "unsupported",
+          "preparation_required",
+          "selection_required",
+          "scope",
+          "matched"
+        ]
+      },
+      "WorkflowSourceRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["ver"],
+        "anyOf": [
+          {
+            "required": ["cnr_id"]
+          },
+          {
+            "required": ["aux_id"]
+          }
+        ],
+        "properties": {
+          "cnr_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$"
+          },
+          "aux_id": {
+            "type": "string",
+            "maxLength": 256,
+            "pattern": "^(?:https://github\\.com/)?[A-Za-z0-9][A-Za-z0-9_.-]{0,127}/[A-Za-z0-9][A-Za-z0-9_.-]{0,127}/?$"
+          },
+          "ver": {
+            "type": "string",
+            "pattern": "^(?:[a-f0-9]{40}|(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*))$",
+            "maxLength": 256
+          },
+          "node_types": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 32,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "pattern": "^[\\u0020-\\uFFFF]+$"
+            }
+          }
+        }
+      },
+      "WorkflowSourceDiscovery": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["workflow_selector", "acquisition", "resolved"],
+        "properties": {
+          "workflow_selector": {
+            "$ref": "#/components/schemas/WorkflowSourceRequest"
+          },
+          "acquisition": {
+            "$ref": "#/components/schemas/SourceAcquisition"
+          },
+          "resolved": {
+            "type": "object",
+            "additionalProperties": true,
+            "nullable": true
           }
         }
       }

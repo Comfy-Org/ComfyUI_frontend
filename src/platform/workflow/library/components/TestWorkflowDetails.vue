@@ -54,11 +54,8 @@ const cloudAdaptation = computed(() =>
     <p class="m-0 text-xs text-muted-foreground">
       {{ t('testWorkflowLibrary.noAutomaticActions') }}
     </p>
-    <Button disabled variant="secondary">{{
-      t('testWorkflowLibrary.magicPatch')
-    }}</Button>
     <p class="m-0 text-xs text-muted-foreground">
-      {{ t('testWorkflowLibrary.converterUnavailable') }}
+      {{ t('testWorkflowLibrary.repairAfterOpen') }}
     </p>
     <template v-if="metadata">
       <section>

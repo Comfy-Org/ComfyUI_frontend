@@ -45,6 +45,8 @@ export class ComfyNodeDefImpl
   readonly python_module: string
   readonly comfy_cloud_palette_visible?: boolean
   readonly comfy_cloud_revision_id?: string
+  readonly comfy_cloud_pack_id?: string
+  readonly comfy_cloud_prepared?: boolean
   readonly help: string
   readonly deprecated: boolean
   readonly experimental: boolean
@@ -163,6 +165,8 @@ export class ComfyNodeDefImpl
     this.python_module = obj.python_module
     this.comfy_cloud_palette_visible = obj.comfy_cloud_palette_visible
     this.comfy_cloud_revision_id = obj.comfy_cloud_revision_id
+    this.comfy_cloud_pack_id = obj.comfy_cloud_pack_id
+    this.comfy_cloud_prepared = obj.comfy_cloud_prepared
     this.help = obj.help ?? ''
     this.deprecated = obj.deprecated ?? obj.category === ''
     this.experimental =

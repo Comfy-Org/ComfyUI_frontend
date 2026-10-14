@@ -79,7 +79,9 @@ describe('useNodeDefStore', () => {
       const revision = 'a'.repeat(64)
       const definition = validateComfyNodeDef({
         ...createMockNodeDef(),
-        comfy_cloud_revision_id: revision
+        comfy_cloud_revision_id: revision,
+        comfy_cloud_pack_id: 'user-owner/converted',
+        comfy_cloud_prepared: true
       })
       expect(definition).not.toBeNull()
       if (!definition) return
@@ -87,6 +89,10 @@ describe('useNodeDefStore', () => {
       expect(store.nodeDefsByName.TestNode.comfy_cloud_revision_id).toBe(
         revision
       )
+      expect(store.nodeDefsByName.TestNode.comfy_cloud_pack_id).toBe(
+        'user-owner/converted'
+      )
+      expect(store.nodeDefsByName.TestNode.comfy_cloud_prepared).toBe(true)
     })
 
     it('keeps unpinned Cloud graph definitions while hiding only the palette', () => {

@@ -90,3 +90,149 @@ export const zPackSourceResponse = z
     revision_id: zDigest
   })
   .strict()
+
+export const zOriginalSource = z
+  .object({
+    pack_id: z.string().min(1).max(256),
+    revision_id: zDigest,
+    registry_revision_id: zDigest,
+    upstream_commit: z.string().regex(new RegExp('^[a-f0-9]{40}$')),
+    node_api_version: z.literal(1),
+    nodes: z.array(z.string().min(1).max(256)).max(10000),
+    admission: z.record(z.string(), z.unknown()),
+    validation_prerequisites: z.record(z.string(), z.unknown())
+  })
+  .strict()
+
+export const zSourceProgress = z
+  .object({
+    stage: z.enum(['source_preparation']),
+    state: z.enum([
+      'queued',
+      'acquiring',
+      'ready',
+      'source_ready',
+      'unsupported',
+      'failed'
+    ]),
+    message: z.string().min(1).max(1024)
+  })
+  .strict()
+
+export const zSourceAcquisition = z
+  .object({
+    acquisition_id: z.string().regex(new RegExp('^[a-f0-9]{32}$')),
+    state: z.enum([
+      'queued',
+      'acquiring',
+      'ready',
+      'source_ready',
+      'unsupported',
+      'failed'
+    ]),
+    status_version: z.number().int().safe().min(1),
+    source_ref: zDigest.nullable(),
+    reason: z.string().max(256).nullable(),
+    conversion_supported: z.boolean(),
+    message: z.string().min(1).max(1024),
+    progress: zSourceProgress,
+    source: zOriginalSource.optional()
+  })
+  .strict()
+
+export const zEligibleSource = z
+  .object({
+    pack_id: z.string().min(1).max(256),
+    revision_id: zDigest,
+    upstream_git_sha: z.string().regex(new RegExp('^[a-f0-9]{40}$')),
+    source_sha256: zDigest,
+    original_tree_sha256: zDigest,
+    source_kind: z.string().min(1).max(256),
+    nodes: z.array(z.string().min(1).max(256)).max(10000),
+    source_ref: zDigest.optional(),
+    source_version: z.string().min(1).max(128).optional(),
+    registry_revision_id: zDigest.optional()
+  })
+  .strict()
+
+export const zSourcePreparationOption = z
+  .object({
+    pack_id: z.string().min(1).max(256),
+    revision_id: zDigest,
+    state: z.enum(['not_prepared', 'queued', 'acquiring']),
+    reason: z.string().min(1).max(256),
+    message: z.string().min(1).max(1024),
+    original_v1_verified: z.boolean(),
+    conversion_supported: z.boolean(),
+    acquisition_id: z.string().regex(new RegExp('^[a-f0-9]{32}$')).optional(),
+    status_version: z.number().int().safe().min(1).optional(),
+    workflow_version: z.string().min(1).max(256).optional(),
+    workflow_node_type: z.string().min(1).max(256).optional()
+  })
+  .strict()
+
+export const zUnsupportedSource = z
+  .object({
+    pack_id: z.string().min(1).max(256),
+    revision_id: zDigest.optional(),
+    reason: z.string().min(1).max(256),
+    message: z.string().min(1).max(1024)
+  })
+  .strict()
+
+export const zSourceEligibility = z
+  .object({
+    candidates: z.array(zEligibleSource).max(64),
+    preparations: z.array(zSourcePreparationOption).max(64),
+    unsupported: z.array(zUnsupportedSource).max(64),
+    preparation_required: z.boolean(),
+    selection_required: z.boolean(),
+    scope: z.string().min(1).max(256),
+    matched: z.boolean()
+  })
+  .strict()
+
+export const zWorkflowSourceRequest = z
+  .object({
+    cnr_id: z
+      .string()
+      .regex(new RegExp('^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$'))
+      .optional(),
+    aux_id: z
+      .string()
+      .regex(
+        new RegExp(
+          '^(?:https://github\\.com/)?[A-Za-z0-9][A-Za-z0-9_.-]{0,127}/[A-Za-z0-9][A-Za-z0-9_.-]{0,127}/?$'
+        )
+      )
+      .max(256)
+      .optional(),
+    ver: z
+      .string()
+      .regex(
+        new RegExp(
+          '^(?:[a-f0-9]{40}|(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*))$'
+        )
+      )
+      .max(256),
+    node_types: z
+      .array(
+        z.string().regex(new RegExp('^[\\u0020-\\uFFFF]+$')).min(1).max(256)
+      )
+      .min(1)
+      .max(32)
+      .refine((value) => new Set(value).size === value.length)
+      .optional()
+  })
+  .strict()
+  .refine(
+    (value) => value['cnr_id'] !== undefined || value['aux_id'] !== undefined
+  )
+
+export const zWorkflowSourceDiscovery = z
+  .object({
+    workflow_selector: zWorkflowSourceRequest,
+    acquisition: zSourceAcquisition,
+    resolved: z.record(z.string(), z.unknown()).nullable()
+  })
+  .strict()

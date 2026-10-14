@@ -23,13 +23,14 @@
         >{{ t('magicPatch.reviewCompletion') }}</Button
       >
       <Button
-        v-else-if="store.settled"
+        v-else-if="store.settled && !store.installedRevisionIds.length"
         variant="textonly"
         size="sm"
         @click="store.dismissFinished"
         >{{ t('g.close') }}</Button
       >
     </div>
+    <WorkflowSourceProgress :jobs="store.sourceJobs" />
     <div
       v-for="job in store.jobs"
       :key="job.revision.revision_id"
@@ -74,6 +75,14 @@
           >{{ t('magicPatch.report') }}</Button
         >
       </template>
+      <template v-else-if="job.state.phase === 'preparing'">
+        <span>{{
+          t(`magicPatch.preparation.${job.state.acquisition.state}`)
+        }}</span>
+        <span v-if="job.state.disconnected" role="alert">{{
+          t('magicPatch.disconnected')
+        }}</span>
+      </template>
       <template v-else-if="job.state.phase === 'retry'">
         <span role="alert">{{ t('magicPatch.uncertain') }}</span>
         <Button
@@ -84,7 +93,11 @@
         >
       </template>
       <span v-else-if="job.state.phase === 'error'" role="alert">{{
-        t('magicPatch.unavailable')
+        t(
+          job.state.reason && te(`magicPatch.reasons.${job.state.reason}`)
+            ? `magicPatch.reasons.${job.state.reason}`
+            : 'magicPatch.unavailable'
+        )
       }}</span>
       <span v-else>{{ t('magicPatch.submitting') }}</span>
       <pre
@@ -104,8 +117,9 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { useDialogStore } from '@/stores/dialogStore'
 import MagicPatchBatchDialog from './MagicPatchBatchDialog.vue'
+import WorkflowSourceProgress from './WorkflowSourceProgress.vue'
 import { useMagicPatchBatchStore } from '../stores/magicPatchBatchStore'
-const { t } = useI18n()
+const { t, te } = useI18n()
 const store = useMagicPatchBatchStore()
 const dialogs = useDialogStore()
 const online = useOnline()

@@ -70,3 +70,101 @@ export type PackSourceResponse = {
   pack_id: string
   revision_id: Digest
 }
+
+export type OriginalSource = {
+  pack_id: string
+  revision_id: Digest
+  registry_revision_id: Digest
+  upstream_commit: string
+  node_api_version: 1
+  nodes: Array<string>
+  admission: Record<string, unknown>
+  validation_prerequisites: Record<string, unknown>
+}
+
+export type SourceProgress = {
+  stage: 'source_preparation'
+  state:
+    | 'queued'
+    | 'acquiring'
+    | 'ready'
+    | 'source_ready'
+    | 'unsupported'
+    | 'failed'
+  message: string
+}
+
+export type SourceAcquisition = {
+  acquisition_id: string
+  state:
+    | 'queued'
+    | 'acquiring'
+    | 'ready'
+    | 'source_ready'
+    | 'unsupported'
+    | 'failed'
+  status_version: number
+  source_ref: Digest | null
+  reason: string | null
+  conversion_supported: boolean
+  message: string
+  progress: SourceProgress
+  source?: OriginalSource
+}
+
+export type EligibleSource = {
+  pack_id: string
+  revision_id: Digest
+  upstream_git_sha: string
+  source_sha256: Digest
+  original_tree_sha256: Digest
+  source_kind: string
+  nodes: Array<string>
+  source_ref?: Digest
+  source_version?: string
+  registry_revision_id?: Digest
+}
+
+export type SourcePreparationOption = {
+  pack_id: string
+  revision_id: Digest
+  state: 'not_prepared' | 'queued' | 'acquiring'
+  reason: string
+  message: string
+  original_v1_verified: boolean
+  conversion_supported: boolean
+  acquisition_id?: string
+  status_version?: number
+  workflow_version?: string
+  workflow_node_type?: string
+}
+
+export type UnsupportedSource = {
+  pack_id: string
+  revision_id?: Digest
+  reason: string
+  message: string
+}
+
+export type SourceEligibility = {
+  candidates: Array<EligibleSource>
+  preparations: Array<SourcePreparationOption>
+  unsupported: Array<UnsupportedSource>
+  preparation_required: boolean
+  selection_required: boolean
+  scope: string
+  matched: boolean
+}
+
+export type WorkflowSourceRequest = {
+  cnr_id?: string
+  aux_id?: string
+  ver: string
+  node_types?: Array<string>
+}
+
+export type WorkflowSourceDiscovery = {
+  workflow_selector: WorkflowSourceRequest
+  acquisition: SourceAcquisition
+  resolved: Record<string, unknown> | null
+}

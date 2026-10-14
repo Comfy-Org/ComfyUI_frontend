@@ -10,6 +10,7 @@ import { computed, nextTick, reactive, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import en from '@/locales/en/main.json'
+import type { MissingNodeType } from '@/types/comfy'
 import {
   notifyWorkflowLoaded,
   resetAppReadyForTest
@@ -28,13 +29,20 @@ const mocks = vi.hoisted(() => ({
 }))
 const scope = ref<string | null>('owner')
 const catalog = ref<CloudNodeRegistry | null>(null)
+const missingNodes = ref<MissingNodeType[]>([])
 const workflow = reactive<{ activeWorkflow: { pendingWarnings: null } | null }>(
   {
     activeWorkflow: { pendingWarnings: null }
   }
 )
 
-vi.mock('@/scripts/api', () => ({ api: { fetchApi: mocks.fetch } }))
+vi.mock('@/scripts/api', () => ({
+  api: {
+    fetchApi: mocks.fetch,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn()
+  }
+}))
 vi.mock('@/scripts/app', () => ({
   app: {
     rootGraph: { serialize: mocks.serialize },
@@ -63,7 +71,11 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
 }))
 vi.mock('@/platform/nodeReplacement/missingNodesErrorStore', () => ({
   useMissingNodesErrorStore: () => ({
-    missingNodesError: null,
+    get missingNodesError() {
+      return missingNodes.value.length
+        ? { nodeTypes: missingNodes.value }
+        : null
+    },
     surfaceMissingNodes: mocks.surfaceMissingNodes
   })
 }))
@@ -162,6 +174,7 @@ beforeEach(() => {
   setActivePinia(createPinia())
   scope.value = 'owner'
   catalog.value = null
+  missingNodes.value = []
   workflow.activeWorkflow = { pendingWarnings: null }
   mocks.load.mockResolvedValue(true)
   mocks.serialize.mockReturnValue({ nodes: [sourceNode] })
@@ -173,6 +186,55 @@ afterEach(() => {
 })
 
 describe('globally mounted workflow pack consent', () => {
+  it('automatically offers the missing Z-Image pack from the screenshot workflow before source acquisition', async () => {
+    catalog.value = registry([])
+    const type = 'SaveImage //ZImagePowerNodes'
+    mocks.serialize.mockReturnValue({
+      nodes: [
+        {
+          id: 65,
+          type,
+          properties: { cnr_id: 'z-image-power-nodes', ver: '2.0.0' }
+        }
+      ]
+    })
+    missingNodes.value = [{ type, nodeId: 65, cnrId: 'z-image-power-nodes' }]
+    const store = mountGlobalCoordinator()
+    importCompletedWorkflow()
+    await waitFor(() => expect(store.consentOpen).toBe(true))
+    expect(store.candidates).toEqual([])
+    expect(store.pendingSourcePacks).toEqual([
+      expect.objectContaining({
+        cnrId: 'z-image-power-nodes',
+        version: '2.0.0',
+        nodeTypes: [type]
+      })
+    ])
+    expect(mocks.fetch).not.toHaveBeenCalled()
+    store.dismissConsent()
+    useWorkflowService().showPendingWarnings()
+    await nextTick()
+    expect(store.consentOpen).toBe(false)
+  })
+
+  it.for([
+    { cnr_id: 'comfyui_randomnumbers', ver: original.upstream_commit },
+    {},
+    { cnr_id: 'comfyui_randomnumbers', ver: '1.0.0' }
+  ])(
+    'offers conversion for ordinary workflow metadata without acquiring or submitting before consent: %j',
+    async (properties) => {
+      catalog.value = registry([original])
+      mocks.serialize.mockReturnValue({
+        nodes: [{ ...sourceNode, properties }]
+      })
+      const store = mountGlobalCoordinator()
+      importCompletedWorkflow()
+      await waitFor(() => expect(store.consentOpen).toBe(true))
+      expect(store.candidates).toEqual([original])
+      expect(mocks.fetch).not.toHaveBeenCalled()
+    }
+  )
   it('offers a known V1 pack after a clean import without a missing-node card', async () => {
     catalog.value = registry([original])
     const store = mountGlobalCoordinator()

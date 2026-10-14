@@ -17,10 +17,12 @@ const visibility = ref('visible')
 const store = reactive({
   visible: true,
   ready: false,
+  installedRevisionIds: [] as string[],
   settled: false,
   consentOpen: false,
   completionAnnounced: false,
   actionFailed: false,
+  sourceJobs: [],
   jobs: [
     {
       revision: { revision_id: 'a', name: 'RandomNumbers' },

@@ -5,20 +5,19 @@
         t(
           completed
             ? 'magicPatch.completedDescription'
-            : 'magicPatch.batchConsent'
+            : packs.length === 1
+              ? 'magicPatch.singleConsent'
+              : 'magicPatch.batchConsent',
+          { name: packs[0]?.name }
         )
       }}
     </p>
     <ul class="m-0 flex max-h-64 list-none flex-col gap-2 overflow-auto p-0">
-      <li
-        v-for="revision in revisions"
-        :key="revision.revision_id"
-        class="flex flex-col gap-1"
-      >
-        <span class="text-sm font-medium">{{ revision.name }}</span>
-        <span class="text-xs text-muted-foreground">{{
+      <li v-for="pack in packs" :key="pack.key" class="flex flex-col gap-1">
+        <span class="text-sm font-medium">{{ pack.name }}</span>
+        <span v-if="pack.version" class="text-xs text-muted-foreground">{{
           t('magicPatch.revision', {
-            revision: revision.upstream_commit.slice(0, 12)
+            revision: pack.version
           })
         }}</span>
       </li>
@@ -41,7 +40,11 @@
       >
         {{
           t(
-            completed ? 'magicPatch.acknowledgeReload' : 'magicPatch.convertAll'
+            completed
+              ? 'magicPatch.acknowledgeReload'
+              : packs.length === 1
+                ? 'magicPatch.convert'
+                : 'magicPatch.convertAll'
           )
         }}
       </Button>
@@ -59,8 +62,26 @@ const { t } = useI18n()
 const store = useMagicPatchBatchStore()
 const dialogs = useDialogStore()
 const revisions = computed(() =>
-  completed ? store.jobs.map((job) => job.revision) : store.candidates
+  completed
+    ? store.jobs
+        .filter((job) =>
+          store.installedRevisionIds.includes(job.revision.revision_id)
+        )
+        .map((job) => job.revision)
+    : store.candidates
 )
+const packs = computed(() => [
+  ...revisions.value.map((revision) => ({
+    key: revision.revision_id,
+    name: revision.name,
+    version: revision.upstream_commit.slice(0, 12)
+  })),
+  ...(completed ? [] : store.pendingSourcePacks).map((pack) => ({
+    key: pack.key,
+    name: pack.name,
+    version: pack.version
+  }))
+])
 function close() {
   if (!completed) store.dismissConsent()
   dialogs.closeDialog({

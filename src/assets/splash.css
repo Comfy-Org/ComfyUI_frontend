@@ -10,26 +10,44 @@
   contain: strict;
 }
 #splash-loader svg {
-  width: min(200px, 50vw);
+  width: min(246px, 61vw);
   height: auto;
   transform: translateZ(0);
 }
+/* Comfy 2 loop (6s): the wave fills "Comfy", the "2" boops in (already
+   full) with a springy overshoot, then everything drains together and the
+   empty "2" outline fades out so the next boop is fresh. All 6s animations
+   share one clock (6s = 5 wave cycles). */
 #splash-loader .wave-group {
-  animation: splash-rise 4s ease-in-out infinite alternate;
+  animation: splash-rise 6s linear infinite;
   will-change: transform;
-  transform: translateZ(0);
 }
 #splash-loader .wave-path {
   animation: splash-wave 1.2s linear infinite;
   will-change: transform;
-  transform: translateZ(0);
+}
+#splash-loader .two {
+  transform-origin: 942px 142px;
+  animation: splash-two-boop 6s linear infinite;
+  will-change: transform;
+}
+#splash-loader .two-outline {
+  animation: splash-two-outline 6s linear infinite;
 }
 @keyframes splash-rise {
-  from {
-    transform: translateY(280px);
+  0%,
+  1.5% {
+    transform: translateY(232px);
+    animation-timing-function: cubic-bezier(0.45, 0.05, 0.45, 1);
   }
-  to {
-    transform: translateY(-80px);
+  32%,
+  66% {
+    transform: translateY(-44px);
+    animation-timing-function: cubic-bezier(0.5, 0, 0.6, 1);
+  }
+  84%,
+  100% {
+    transform: translateY(232px);
   }
 }
 @keyframes splash-wave {
@@ -40,15 +58,54 @@
     transform: translateX(-880px);
   }
 }
-/* Reduced motion: skip the rise/wave animation but still render the final,
-   fully-filled logo frame (the end state of splash-rise). */
+@keyframes splash-two-boop {
+  0%,
+  32.5% {
+    transform: scale(0.001);
+    animation-timing-function: cubic-bezier(0.15, 0.6, 0.35, 1);
+  }
+  35.5% {
+    transform: scale(1.22);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
+  }
+  37.5% {
+    transform: scale(0.92);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
+  }
+  39.2% {
+    transform: scale(1.04);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
+  }
+  40.8% {
+    transform: scale(0.99);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
+  }
+  42%,
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes splash-two-outline {
+  0%,
+  85% {
+    opacity: 0.4;
+  }
+  92%,
+  100% {
+    opacity: 0;
+  }
+}
+/* Reduced motion: skip the animation but still render the final,
+   fully-filled "Comfy 2" frame. */
 @media (prefers-reduced-motion: reduce) {
   #splash-loader .wave-group,
-  #splash-loader .wave-path {
+  #splash-loader .wave-path,
+  #splash-loader .two,
+  #splash-loader .two-outline {
     animation: none;
     will-change: auto;
   }
   #splash-loader .wave-group {
-    transform: translateY(-80px);
+    transform: translateY(-44px);
   }
 }

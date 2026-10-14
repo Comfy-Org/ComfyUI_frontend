@@ -7,10 +7,13 @@ import { createHash, webcrypto } from 'node:crypto'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
+import { LGraph } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
 import { api } from '@/scripts/api'
 import { useMagicPatchBatchStore } from './magicPatchBatchStore'
 import type { PackConversion } from './magicPatchBatchStore'
+import type { MissingNodeType } from '@/types/comfy'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 const mocks = vi.hoisted(() => ({
   reload: vi.fn(),
@@ -18,21 +21,36 @@ const mocks = vi.hoisted(() => ({
   pin: vi.fn(),
   document: {} as object | null,
   documentId: 'document-a' as string | undefined,
-  missing: [] as string[],
+  missing: [] as MissingNodeType[],
   definitions: {} as Record<
     string,
-    { python_module: string; comfy_cloud_revision_id: string }
+    {
+      python_module: string
+      comfy_cloud_revision_id: string
+      comfy_cloud_pack_id: string
+      comfy_cloud_prepared: boolean
+    }
   >
 }))
 const scope = ref<string | null>('owner')
+const graphReady = ref(true)
 const catalog = ref<CloudNodeRegistry>({
   corpus_commit: 'test',
   pins: [],
   revisions: []
 })
-vi.mock('@/scripts/api', () => ({ api: { fetchApi: vi.fn() } }))
+vi.mock('@/scripts/api', () => ({
+  api: {
+    fetchApi: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn()
+  }
+}))
 vi.mock('@/scripts/app', () => ({
   app: {
+    get isGraphReady() {
+      return graphReady.value
+    },
     reloadNodeDefs: vi.fn(),
     rootGraph: { serialize: vi.fn(() => ({ nodes: [] })) }
   }
@@ -123,6 +141,8 @@ beforeEach(() => {
   mocks.document = {}
   mocks.documentId = 'document-a'
   mocks.missing = []
+  vi.mocked(app.rootGraph.serialize).mockReturnValue(new LGraph().serialize())
+  graphReady.value = true
   states = ['ready', 'ready']
   submitted = 0
   statusVersion = 2
@@ -162,7 +182,9 @@ beforeEach(() => {
       name,
       {
         python_module: 'custom_nodes.cloud_registry.actual_module',
-        comfy_cloud_revision_id: releases[index]!
+        comfy_cloud_revision_id: releases[index]!,
+        comfy_cloud_pack_id: `user-owner/pack-${index}`,
+        comfy_cloud_prepared: true
       }
     ])
   )
@@ -212,6 +234,275 @@ async function submit(packs = [first], acknowledge = true) {
 }
 
 describe('authenticated publication completion and user reload', () => {
+  it('does not revive an old workflow source after account change and a new confirmation', async () => {
+    let finishOldLoad: ((value: boolean) => void) | undefined
+    const oldLoad = new Promise<boolean>((resolve) => {
+      finishOldLoad = resolve
+    })
+    mocks.load.mockReturnValueOnce(oldLoad)
+    const normalFetch = vi.mocked(api.fetchApi).getMockImplementation()!
+    const acquisition = {
+      acquisition_id: 'a'.repeat(32),
+      state: 'ready',
+      status_version: 2,
+      source_ref: '7'.repeat(64),
+      reason: null,
+      conversion_supported: true,
+      message: 'Ready',
+      progress: {
+        stage: 'source_preparation',
+        state: 'ready',
+        message: 'Ready'
+      },
+      source: {
+        pack_id: first.pack_id,
+        revision_id: first.revision_id,
+        registry_revision_id: first.revision_id,
+        upstream_commit: first.upstream_commit,
+        node_api_version: 1,
+        nodes: first.nodes,
+        admission: {},
+        validation_prerequisites: {}
+      }
+    }
+    vi.mocked(api.fetchApi).mockImplementation(
+      async (route, options, beforeDispatch) => {
+        if (route === '/magic-patch/sources/workflow')
+          return Response.json(acquisition)
+        if (route.startsWith('/magic-patch/workflow-source-discoveries/'))
+          return Response.json({
+            acquisition,
+            workflow_selector: {
+              cnr_id: first.pack_id,
+              ver: first.upstream_commit,
+              node_types: first.nodes
+            },
+            resolved: null
+          })
+        return normalFetch(route, options, beforeDispatch)
+      }
+    )
+    const store = useMagicPatchBatchStore()
+    store.offer(
+      [],
+      [
+        {
+          key: 'old',
+          name: first.name,
+          cnrId: first.pack_id,
+          version: first.upstream_commit,
+          nodeTypes: first.nodes
+        }
+      ]
+    )
+    const oldConfirm = store.confirm()
+    await vi.waitFor(() => expect(mocks.load).toHaveBeenCalledOnce())
+    scope.value = 'new-owner'
+    store.offer([second])
+    const newConfirm = store.confirm()
+    catalog.value.revisions.push(first)
+    finishOldLoad!(true)
+    await Promise.all([oldConfirm, newConfirm])
+    expect(store.jobs.map((job) => job.revision.revision_id)).toEqual([
+      second.revision_id
+    ])
+    const sourcesSent = vi
+      .mocked(api.fetchApi)
+      .mock.calls.filter(([route]) => route === '/magic-patch/sources/pack')
+      .map(([, options]) => JSON.parse(options!.body as string))
+    expect(sourcesSent).toEqual([
+      { pack_id: second.pack_id, revision_id: second.revision_id }
+    ])
+  })
+
+  function affectedGraph() {
+    const empty = new LGraph().serialize()
+    const graph = {
+      id: empty.id,
+      revision: empty.revision,
+      last_node_id: 8,
+      last_link_id: 0,
+      version: empty.version,
+      links: [],
+      groups: [],
+      nodes: sources.map((source, index) => ({
+        id: index + 7,
+        type: source.nodes[0]!,
+        pos: [0, 0] as [number, number],
+        size: [235, 160] as [number, number],
+        flags: {},
+        order: index,
+        mode: 0,
+        properties: { cnr_id: source.pack_id, ver: source.upstream_commit }
+      }))
+    } satisfies ComfyWorkflowJSON & ReturnType<typeof app.rootGraph.serialize>
+    vi.mocked(app.rootGraph.serialize).mockReturnValue(graph)
+    mocks.missing = [
+      { type: 'RandomNumber', nodeId: 7, cnrId: first.pack_id },
+      { type: 'SecondNode', nodeId: 8, cnrId: second.pack_id },
+      { type: 'UnresolvedNode', nodeId: 9, cnrId: 'unknown' }
+    ]
+    return graph
+  }
+
+  it('clears only the installed pack error while another pack is still converting', async () => {
+    const graph = affectedGraph()
+    const before = structuredClone(graph)
+    states[1] = 'waiting_install'
+    const store = await submit([first, second], false)
+    expect(store.installedRevisionIds).toEqual([first.revision_id])
+    expect(
+      store.pendingNodeErrors.map((error) =>
+        typeof error === 'string' ? error : error.type
+      )
+    ).toEqual(['SecondNode', 'UnresolvedNode'])
+    expect(mocks.missing).toHaveLength(3)
+    expect(store.ready).toBe(false)
+    expect(mocks.reload).not.toHaveBeenCalled()
+    expect(graph).toEqual(before)
+    states[1] = 'ready'
+    await store.refresh()
+    await settleCompletion(store)
+    expect(store.pendingNodeErrors).toEqual([
+      { type: 'UnresolvedNode', nodeId: 9, cnrId: 'unknown' }
+    ])
+    expect(store.ready).toBe(true)
+    expect(mocks.reload).not.toHaveBeenCalled()
+  })
+
+  it('clears a verified pack independently of a failed pack', async () => {
+    affectedGraph()
+    states[1] = 'failed'
+    const store = await submit([first, second], false)
+    expect(store.installedRevisionIds).toEqual([first.revision_id])
+    expect(store.pendingNodeErrors).toHaveLength(2)
+    expect(store.ready).toBe(true)
+    store.dismissFinished()
+    expect(store.pendingNodeErrors).toHaveLength(2)
+  })
+  it('reloads verified successes in a failed batch and keeps unrelated Problems entries', async () => {
+    const graph = affectedGraph()
+    states[1] = 'failed'
+    const store = await submit([first, second], false)
+    mocks.reload.mockImplementation(
+      async (
+        current: () => boolean,
+        remap: (graph: ComfyWorkflowJSON) => ComfyWorkflowJSON
+      ) => {
+        const mapped = remap(structuredClone(graph))
+        expect(mapped.nodes[0]!.type).toBe(nativeNames[0])
+        expect(mapped.nodes[1]!.type).toBe('SecondNode')
+        mocks.missing = mocks.missing.filter(
+          (error) => typeof error === 'string' || error.nodeId !== 7
+        )
+        return current()
+      }
+    )
+    expect(await store.acknowledge()).toBe(true)
+    expect(mocks.missing).toHaveLength(2)
+    expect(store.acknowledged).toBe(true)
+  })
+  it('rejects reload when one of the remapped target nodes is still missing', async () => {
+    const graph = affectedGraph()
+    const store = await submit([first], false)
+    mocks.reload.mockImplementation(
+      async (
+        current: () => boolean,
+        remap: (graph: ComfyWorkflowJSON) => ComfyWorkflowJSON
+      ) => {
+        remap(structuredClone(graph))
+        mocks.missing = [{ type: nativeNames[0]!, nodeId: 7 }]
+        return current()
+      }
+    )
+    expect(await store.acknowledge()).toBe(false)
+    expect(store.completionReason).toBe('reload_failed')
+  })
+  it.for(['pack', 'prepared'] as const)(
+    'keeps errors when the native definition has invalid %s metadata',
+    async (invalid) => {
+      affectedGraph()
+      const definition = mocks.definitions[nativeNames[0]!]!
+      if (invalid === 'pack') definition.comfy_cloud_pack_id = 'wrong-pack'
+      else definition.comfy_cloud_prepared = false
+      const store = await submit([first], false)
+      expect(store.pendingNodeErrors).toHaveLength(3)
+      expect(store.installedRevisionIds).toEqual([])
+      expect(store.completionReason).toBe('definitions_unavailable')
+    }
+  )
+  it('retries installation verification with the same ready proof without submitting another request', async () => {
+    affectedGraph()
+    mocks.load.mockResolvedValue(false)
+    const store = await submit([first], false)
+    expect(store.pendingNodeErrors).toHaveLength(3)
+    mocks.load.mockResolvedValue(true)
+    await store.refresh()
+    await settleCompletion(store)
+    expect(store.installedRevisionIds).toEqual([first.revision_id])
+    expect(store.pendingNodeErrors).toHaveLength(2)
+    expect(submitted).toBe(1)
+  })
+  it('restores a Problems entry if its verified native revision is unpinned', async () => {
+    affectedGraph()
+    const store = await submit([first], false)
+    expect(store.pendingNodeErrors).toHaveLength(2)
+    catalog.value.pins = []
+    catalog.value.revisions[0]!.pinned = false
+    expect(store.pendingNodeErrors).toHaveLength(3)
+    expect(store.ready).toBe(false)
+  })
+  it('preserves raw errors without reading the graph while graph loading is incomplete', async () => {
+    affectedGraph()
+    const store = await submit([first], false)
+    graphReady.value = false
+    vi.mocked(app.rootGraph.serialize).mockClear()
+    expect(store.pendingNodeErrors).toHaveLength(3)
+    expect(app.rootGraph.serialize).not.toHaveBeenCalled()
+  })
+
+  it.for(['report', 'definitions'] as const)(
+    'keeps the pack error after a ready status with invalid %s',
+    async (invalid) => {
+      affectedGraph()
+      if (invalid === 'report') reports[0] = '{}'
+      else
+        mocks.definitions[nativeNames[0]!]!.comfy_cloud_revision_id =
+          '8'.repeat(64)
+      const store = await submit([first], false)
+      expect(store.installedRevisionIds).toEqual([])
+      expect(mocks.missing).toHaveLength(3)
+      expect(store.pendingNodeErrors).toHaveLength(3)
+    }
+  )
+
+  it('does not clear errors for another workflow when conversion finishes in the background', async () => {
+    affectedGraph()
+    states[0] = 'waiting_install'
+    const store = await submit([first], false)
+    mocks.documentId = 'document-b'
+    states[0] = 'ready'
+    await store.refresh()
+    await settleCompletion(store)
+    expect(store.installedRevisionIds).toEqual([first.revision_id])
+    expect(mocks.missing).toHaveLength(3)
+    expect(store.pendingNodeErrors).toHaveLength(3)
+  })
+
+  it('preserves an error when the affected node was edited to another revision during conversion', async () => {
+    const graph = affectedGraph()
+    states[0] = 'waiting_install'
+    const store = await submit([first], false)
+    graph.nodes[0]!.properties!.ver = '9'.repeat(40)
+    states[0] = 'ready'
+    await store.refresh()
+    await settleCompletion(store)
+    expect(store.installedRevisionIds).toEqual([first.revision_id])
+    expect(mocks.missing).toHaveLength(3)
+    expect(store.pendingNodeErrors).toHaveLength(3)
+    expect(graph.nodes[0]!.properties!.ver).toBe('9'.repeat(40))
+  })
+
   it('verifies installation and waits for acknowledgement before reloading', async () => {
     const store = await submit([first], false)
     expect(store.ready).toBe(true)
@@ -456,14 +747,15 @@ describe('authenticated publication completion and user reload', () => {
     expect(mocks.reload).not.toHaveBeenCalled()
   })
 
-  it('keeps completion pending when graph load fails or missing nodes remain', async () => {
+  it('keeps completion pending when graph load fails but preserves unrelated missing errors after a successful reload', async () => {
     mocks.reload.mockResolvedValue(false)
     const store = await submit()
     expect(store.acknowledged).toBe(false)
     expect(store.completionReason).toBe('reload_failed')
     mocks.reload.mockResolvedValue(true)
     mocks.missing = ['UnresolvedNode']
-    expect(await store.acknowledge()).toBe(false)
-    expect(store.acknowledged).toBe(false)
+    expect(await store.acknowledge()).toBe(true)
+    expect(store.acknowledged).toBe(true)
+    expect(mocks.missing).toEqual(['UnresolvedNode'])
   })
 })

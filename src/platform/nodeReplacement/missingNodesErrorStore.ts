@@ -36,8 +36,8 @@ export const useMissingNodesErrorStore = defineStore(
       missingNodesError.value = {
         message: isCloud
           ? st(
-              'rightSidePanel.missingNodePacks.unsupportedTitle',
-              'Unsupported Node Packs'
+              'rightSidePanel.missingNodePacks.cloudSetupTitle',
+              'Nodes need setup'
             )
           : st('rightSidePanel.missingNodePacks.title', 'Missing Node Packs'),
         nodeTypes: uniqueTypes

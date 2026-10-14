@@ -25,6 +25,14 @@ vi.mock('@/utils/graphTraversalUtil', () => ({
 }))
 
 const mockIsCloud = vi.hoisted(() => ({ value: false }))
+const progressErrors = ref<MissingNodeType[] | undefined>()
+vi.mock('@/platform/magicPatch/stores/magicPatchBatchStore', () => ({
+  useMagicPatchBatchStore: () => ({
+    get pendingNodeErrors() {
+      return progressErrors.value
+    }
+  })
+}))
 const unknownValidationMessage = vi.hoisted(
   () => 'A node returned a validation error ComfyUI does not recognize.'
 )
@@ -216,10 +224,37 @@ function createErrorGroups() {
 describe('useErrorGroups', () => {
   beforeEach(() => {
     mockIsCloud.value = false
+    progressErrors.value = undefined
     vi.mocked(isLGraphNode).mockReturnValue(false)
   })
 
   describe('missingPackGroups', () => {
+    it('removes only verified conversion errors from Cloud Problems and keeps unresolved packs', async () => {
+      mockIsCloud.value = true
+      const { groups } = createErrorGroups()
+      const missing = useMissingNodesErrorStore()
+      const first = makeMissingNodeType('ConvertedNode', {
+        nodeId: '7',
+        cnrId: 'converted-pack'
+      })
+      const second = makeMissingNodeType('StillConverting', {
+        nodeId: '8',
+        cnrId: 'pending-pack'
+      })
+      missing.setMissingNodeTypes([first, second])
+      await nextTick()
+      expect(groups.missingPackGroups.value).toHaveLength(2)
+      progressErrors.value = [second]
+      await nextTick()
+      expect(
+        groups.missingPackGroups.value.map((group) => group.packId)
+      ).toEqual(['pending-pack'])
+      expect(missing.missingNodeCount).toBe(2)
+      progressErrors.value = []
+      await nextTick()
+      expect(groups.allErrorGroups.value).toEqual([])
+    })
+
     it('returns empty array when no missing nodes', () => {
       const { groups } = createErrorGroups()
       expect(groups.missingPackGroups.value).toEqual([])
@@ -361,7 +396,7 @@ describe('useErrorGroups', () => {
         (g) => g.type === 'missing_node'
       )
       expect(missingGroup?.displayMessage).toBe(
-        "Required custom nodes aren't supported on Cloud. Replace them with supported nodes."
+        'Some nodes are not available in this workspace. Open Problems to review Magic Patch and Node Archive options.'
       )
     })
 

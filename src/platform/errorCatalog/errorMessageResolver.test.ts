@@ -1497,11 +1497,11 @@ describe('errorMessageResolver', () => {
       })
     ).toEqual({
       catalogId: 'missing_node',
-      displayTitle: 'Unsupported Node Packs',
+      displayTitle: 'Nodes need setup',
       displayMessage:
-        "Required custom nodes aren't supported on Cloud. Replace them with supported nodes.",
-      toastTitle: "FooNode isn't available on Cloud",
-      toastMessage: "This node isn't supported on Cloud."
+        'Some nodes are not available in this workspace. Open Problems to review Magic Patch and Node Archive options.',
+      toastTitle: 'FooNode needs setup',
+      toastMessage: 'Open Problems to review repair options for this node.'
     })
 
     const multipleMissingNodeTypes = [
@@ -1528,8 +1528,8 @@ describe('errorMessageResolver', () => {
         isCloud: true
       })
     ).toMatchObject({
-      toastTitle: "Nodes aren't available on Cloud",
-      toastMessage: "This workflow uses nodes that aren't supported on Cloud."
+      toastTitle: 'Nodes need setup',
+      toastMessage: 'Open Problems to review repair options for these nodes.'
     })
 
     expect(

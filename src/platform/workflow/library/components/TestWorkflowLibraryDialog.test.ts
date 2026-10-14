@@ -289,10 +289,10 @@ describe('Test workflow library UI', () => {
     expect(screen.getByText('/nodes/0')).toBeVisible()
     expect(screen.getByText('test-only')).toBeVisible()
     expect(
-      screen.getByRole('button', { name: 'MagicPatch conversion' })
-    ).toBeDisabled()
+      screen.queryByRole('button', { name: 'MagicPatch conversion' })
+    ).not.toBeInTheDocument()
     expect(
-      screen.getByText(messages.testWorkflowLibrary.converterUnavailable)
+      screen.getByText(messages.testWorkflowLibrary.repairAfterOpen)
     ).toBeVisible()
     expect(mocks.handleFile).not.toHaveBeenCalled()
     expect(

@@ -49,7 +49,7 @@ function resolveMissingNodeDisplayMessage(source: MissingNodeSource): string {
     ? 'errorCatalog.missingErrors.missing_node.displayMessageCloud'
     : 'errorCatalog.missingErrors.missing_node.displayMessageOss'
   const fallback = source.isCloud
-    ? "Required custom nodes aren't supported on Cloud. Replace them with supported nodes."
+    ? 'Some nodes are not available in this workspace. Open Problems to review Magic Patch and Node Archive options.'
     : 'Install missing packs to use this workflow.'
   return translateCatalogMessage(key, fallback)
 }
@@ -64,7 +64,7 @@ function resolveMissingNodeToastTitle(source: MissingNodeSource): string {
       ? 'errorCatalog.missingErrors.missing_node.toastTitleOneCloud'
       : 'errorCatalog.missingErrors.missing_node.toastTitleOneOss'
     const fallback = source.isCloud
-      ? "{nodeType} isn't available on Cloud"
+      ? '{nodeType} needs setup'
       : 'Missing node: {nodeType}'
     return translateCatalogMessage(key, fallback, { nodeType: firstLabel })
   }
@@ -72,9 +72,7 @@ function resolveMissingNodeToastTitle(source: MissingNodeSource): string {
   const key = source.isCloud
     ? 'errorCatalog.missingErrors.missing_node.toastTitleManyCloud'
     : 'errorCatalog.missingErrors.missing_node.toastTitleManyOss'
-  const fallback = source.isCloud
-    ? "Nodes aren't available on Cloud"
-    : 'Missing nodes'
+  const fallback = source.isCloud ? 'Nodes need setup' : 'Missing nodes'
   return translateCatalogMessage(key, fallback)
 }
 
@@ -89,7 +87,7 @@ function resolveMissingNodeToastMessage(source: MissingNodeSource): string {
       ? 'errorCatalog.missingErrors.missing_node.toastMessageOneCloud'
       : 'errorCatalog.missingErrors.missing_node.toastMessageOneOss'
     const fallback = source.isCloud
-      ? "This node isn't supported on Cloud."
+      ? 'Open Problems to review repair options for this node.'
       : "This workflow uses a custom node that isn't installed. Install it from the registry or replace the node."
     return translateCatalogMessage(key, fallback)
   }
@@ -98,7 +96,7 @@ function resolveMissingNodeToastMessage(source: MissingNodeSource): string {
     ? 'errorCatalog.missingErrors.missing_node.toastMessageManyCloud'
     : 'errorCatalog.missingErrors.missing_node.toastMessageManyOss'
   const fallback = source.isCloud
-    ? "This workflow uses nodes that aren't supported on Cloud."
+    ? 'Open Problems to review repair options for these nodes.'
     : '{count} nodes require missing node packs.'
   return translateCatalogMessage(key, fallback, { count })
 }
@@ -339,8 +337,8 @@ export function resolveMissingErrorMessage(
         catalogId: 'missing_node',
         displayTitle: source.isCloud
           ? st(
-              'rightSidePanel.missingNodePacks.unsupportedTitle',
-              'Unsupported Node Packs'
+              'rightSidePanel.missingNodePacks.cloudSetupTitle',
+              'Nodes need setup'
             )
           : st('rightSidePanel.missingNodePacks.title', 'Missing Node Packs'),
         displayMessage: resolveMissingNodeDisplayMessage(source),

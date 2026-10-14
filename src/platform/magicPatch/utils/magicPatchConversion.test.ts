@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { RequestStatus } from '@comfyorg/magic-patch-types'
+import type {
+  RequestStatus,
+  SourceAcquisition
+} from '@comfyorg/magic-patch-types'
 import type { createMagicPatchClient } from '../services/magicPatchClient'
 import { createMagicPatchConversion } from './magicPatchConversion'
 import type { ConversionState } from './magicPatchConversion'
@@ -16,6 +19,9 @@ function setup() {
   let current = true
   type Client = ReturnType<typeof createMagicPatchClient>
   const client = {
+    prepareSource: vi.fn<Client['prepareSource']>(),
+    sourceStatus: vi.fn<Client['sourceStatus']>(),
+    eligibility: vi.fn<Client['eligibility']>(),
     source: vi.fn<Client['source']>(async () => ({
       ok: true as const,
       value: {
@@ -57,7 +63,222 @@ function setup() {
   }
 }
 const selector = { pack_id: 'pack', revision_id: 'b'.repeat(64) }
+const preparation = (
+  state: SourceAcquisition['state'] = 'queued',
+  statusVersion = 1
+): SourceAcquisition => ({
+  acquisition_id: 'c'.repeat(32),
+  state,
+  status_version: statusVersion,
+  source_ref: state === 'ready' ? 'a'.repeat(64) : null,
+  reason: null,
+  conversion_supported: state === 'ready',
+  message: 'Preparing original source',
+  progress: {
+    stage: 'source_preparation',
+    state,
+    message: 'Preparing original source'
+  },
+  ...(state === 'ready'
+    ? {
+        source: {
+          ...selector,
+          registry_revision_id: selector.revision_id,
+          upstream_commit: 'd'.repeat(40),
+          node_api_version: 1,
+          nodes: ['TestNode'],
+          admission: {},
+          validation_prerequisites: {}
+        }
+      }
+    : {})
+})
 describe('pack conversion journey', () => {
+  it('refuses a minted source that differs from the confirmed workflow preparation', async () => {
+    const test = setup()
+    await test.flow.start(selector, [], 'f'.repeat(64))
+    expect(test.state()).toEqual({
+      phase: 'error',
+      reason: 'source_binding_invalid'
+    })
+    expect(test.client.submit).not.toHaveBeenCalled()
+  })
+  it('ends a stalled source preparation without submitting a conversion', async () => {
+    const test = setup()
+    test.client.source.mockResolvedValueOnce({
+      ok: false,
+      error: { code: 'request_failed', reason: 'source_preparation_required' }
+    })
+    test.client.prepareSource.mockResolvedValue({
+      ok: true,
+      value: preparation()
+    })
+    await test.flow.start(selector)
+    const previous = test.state()
+    if (previous.phase !== 'preparing')
+      throw new Error('Source preparation fixture not started')
+    vi.spyOn(performance, 'now').mockReturnValue(previous.deadline + 1)
+    await test.flow.refresh()
+    expect(test.state()).toEqual({
+      phase: 'error',
+      reason: 'source_preparation_timeout'
+    })
+    expect(test.client.submit).not.toHaveBeenCalled()
+    expect(test.client.sourceStatus).not.toHaveBeenCalled()
+  })
+  it('does not mint or submit a prepared source after its workspace changes', async () => {
+    const test = setup()
+    test.client.source.mockResolvedValueOnce({
+      ok: false,
+      error: { code: 'request_failed', reason: 'source_preparation_required' }
+    })
+    test.client.prepareSource.mockResolvedValue({
+      ok: true,
+      value: preparation()
+    })
+    await test.flow.start(selector)
+    test.client.sourceStatus.mockImplementationOnce(async () => {
+      test.changeScope()
+      return { ok: true, value: preparation('ready', 3) }
+    })
+    await test.flow.refresh()
+    expect(test.client.source).toHaveBeenCalledOnce()
+    expect(test.client.submit).not.toHaveBeenCalled()
+  })
+  it('prepares the original only after consent, displays its actual progress, then submits once when ready', async () => {
+    const test = setup()
+    test.client.source.mockResolvedValueOnce({
+      ok: false,
+      error: {
+        code: 'request_failed',
+        status: 422,
+        reason: 'source_preparation_required'
+      }
+    })
+    test.client.prepareSource.mockResolvedValue({
+      ok: true,
+      value: preparation()
+    })
+    test.client.sourceStatus.mockResolvedValueOnce({
+      ok: true,
+      value: preparation('acquiring', 2)
+    })
+    expect(test.client.prepareSource).not.toHaveBeenCalled()
+    await test.flow.start(selector)
+    expect(test.state()).toMatchObject({
+      phase: 'preparing',
+      acquisition: { state: 'queued' }
+    })
+    expect(test.client.submit).not.toHaveBeenCalled()
+    await test.flow.refresh()
+    expect(test.state()).toMatchObject({
+      phase: 'preparing',
+      acquisition: { state: 'acquiring' }
+    })
+    test.client.sourceStatus.mockResolvedValueOnce({
+      ok: true,
+      value: preparation('ready', 3)
+    })
+    await test.flow.refresh()
+    expect(test.state()).toMatchObject({ phase: 'active', request })
+    expect(test.client.submit).toHaveBeenCalledOnce()
+    expect(test.client.prepareSource).toHaveBeenCalledOnce()
+  })
+  it('never submits an unsupported original and preserves the service reason', async () => {
+    const test = setup()
+    test.client.source.mockResolvedValueOnce({
+      ok: false,
+      error: { code: 'request_failed', reason: 'source_preparation_required' }
+    })
+    test.client.prepareSource.mockResolvedValue({
+      ok: true,
+      value: {
+        ...preparation('source_ready'),
+        reason: 'unsupported_validation_prerequisites'
+      }
+    })
+    await test.flow.start(selector)
+    expect(test.state()).toEqual({
+      phase: 'error',
+      reason: 'unsupported_validation_prerequisites'
+    })
+    expect(test.client.submit).not.toHaveBeenCalled()
+  })
+  it('retains preparation progress on disconnection, rejects stale polls and a ready source from another revision', async () => {
+    const test = setup()
+    test.client.source.mockResolvedValueOnce({
+      ok: false,
+      error: { code: 'request_failed', reason: 'source_preparation_required' }
+    })
+    test.client.prepareSource.mockResolvedValue({
+      ok: true,
+      value: preparation('acquiring', 2)
+    })
+    await test.flow.start(selector)
+    test.client.sourceStatus.mockResolvedValueOnce({
+      ok: false,
+      error: { code: 'transport_indeterminate' }
+    })
+    await test.flow.refresh()
+    expect(test.state()).toMatchObject({
+      phase: 'preparing',
+      disconnected: true
+    })
+    test.client.sourceStatus.mockResolvedValueOnce({
+      ok: true,
+      value: preparation('queued', 1)
+    })
+    await test.flow.refresh()
+    expect(test.state()).toMatchObject({
+      acquisition: { state: 'acquiring', status_version: 2 }
+    })
+    const ready = preparation('ready', 3)
+    if (!ready.source) throw new Error('Fixture source missing')
+    test.client.sourceStatus.mockResolvedValueOnce({
+      ok: true,
+      value: {
+        ...ready,
+        source: {
+          ...ready.source,
+          registry_revision_id: 'e'.repeat(64),
+          revision_id: 'e'.repeat(64)
+        }
+      }
+    })
+    await test.flow.refresh()
+    expect(test.state()).toMatchObject({
+      phase: 'error',
+      reason: 'source_binding_invalid'
+    })
+    expect(test.client.submit).not.toHaveBeenCalled()
+  })
+  it('does not convert a workflow version that the verified original does not support', async () => {
+    const test = setup()
+    test.client.eligibility.mockResolvedValue({
+      ok: true,
+      value: {
+        candidates: [],
+        preparations: [],
+        unsupported: [
+          {
+            pack_id: selector.pack_id,
+            reason: 'workflow_version_mismatch',
+            message: 'Version mismatch'
+          }
+        ],
+        scope: 'scoped_registry_originals',
+        matched: false,
+        selection_required: false,
+        preparation_required: false
+      }
+    })
+    await test.flow.start(selector, [{ type: 'TestNode', version: '0.9.0' }])
+    expect(test.state()).toMatchObject({
+      phase: 'error',
+      reason: 'workflow_version_mismatch'
+    })
+    expect(test.client.submit).not.toHaveBeenCalled()
+  })
   it('does not submit until consent, then uses the producer reference unchanged', async () => {
     const test = setup()
     expect(test.client.submit).not.toHaveBeenCalled()

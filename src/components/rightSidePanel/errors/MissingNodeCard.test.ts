@@ -72,6 +72,16 @@ vi.mock('@/platform/magicPatch/components/MissingPackConversions.vue', () => ({
     template: '<section data-testid="pack-conversions" />'
   }
 }))
+vi.mock(
+  '@/platform/magicPatch/components/MissingPackConvertAction.vue',
+  () => ({
+    default: {
+      props: ['group'],
+      template:
+        '<button data-testid="pack-convert">Convert {{ group.packId }}</button>'
+    }
+  })
+)
 
 vi.mock('./MissingPackGroupRow.vue', () => ({
   default: {
@@ -81,6 +91,7 @@ vi.mock('./MissingPackGroupRow.vue', () => ({
     >
       <button data-testid="locate-node" @click="$emit('locate-node', group.nodeTypes[0]?.nodeId)" />
       <button data-testid="open-manager-info" @click="$emit('open-manager-info', group.packId)" />
+      <slot name="conversion" />
     </div>`,
     props: ['group', 'showInfoButton'],
     emits: ['locate-node', 'open-manager-info']
@@ -159,6 +170,21 @@ describe('MissingNodeCard', () => {
   })
 
   describe('Rendering & Props', () => {
+    it('places a conversion action in each Cloud missing-pack row', () => {
+      mockIsCloud.value = true
+      renderCard()
+      expect(
+        screen
+          .getAllByTestId('pack-convert')
+          .map((button) => button.textContent)
+      ).toEqual(['Convert pack-0', 'Convert pack-1'])
+    })
+
+    it('keeps Cloud conversion actions out of local Manager rows', () => {
+      renderCard()
+      expect(screen.queryByTestId('pack-convert')).not.toBeInTheDocument()
+    })
+
     it('renders correct number of MissingPackGroupRow components', () => {
       renderCard({ missingPackGroups: makePackGroups(3) })
       expect(screen.getAllByTestId('pack-row')).toHaveLength(3)
