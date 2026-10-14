@@ -248,12 +248,12 @@ jobs:
 
   commit:
     needs: [plan, update-snapshots-sharded]
-    if: ${{ !cancelled() && needs.plan.result == 'success' }}
+    if: ${{ !cancelled() && needs.plan.result != 'skipped' }}
     uses: ./.github/workflows/snapshot-update-commit.yaml
     with:
       ready: ${{ needs.plan.outputs.run-id != '' || needs.update-snapshots-sharded.result == 'success' }}
       unavailable: ${{ needs.plan.outputs.unavailable }}
-      pr-number: ${{ needs.plan.outputs.pr-number }}
+      pr-number: ${{ github.event.issue.number || github.event.number }}
       branch: ${{ needs.plan.outputs.branch }}
       head-sha: ${{ needs.plan.outputs.head-sha }}
       run-id: ${{ needs.plan.outputs.run-id }}
