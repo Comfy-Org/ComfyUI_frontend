@@ -774,11 +774,18 @@ export default defineConfig({
               test: /[\\/]node_modules[\\/](marked|dompurify)[\\/]/,
               priority: 12
             },
+            {
+              name: 'vendor-shiki',
+              test: /[\\/]node_modules[\\/](shiki|@shikijs[\\/](?!langs|themes))/,
+              priority: 12
+            },
 
             // Catch-all for remaining node_modules
             {
               name: 'vendor-other',
-              test: /[\\/]node_modules[\\/]/,
+              test: (id) =>
+                /[\\/]node_modules[\\/]/.test(id) &&
+                !/[\\/]@shikijs[\\/](langs|themes)[\\/]/.test(id),
               priority: 0,
               minSize: 10000
             }
