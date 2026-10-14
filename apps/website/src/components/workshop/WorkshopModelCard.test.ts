@@ -163,16 +163,20 @@ describe('WorkshopModelCard', () => {
       logo: 'url(/icons/ai-models/gemini.svg)'
     }
   ] as const)(
-    'writes $kind under the name, never over the artwork',
+    'marks $kind over the artwork, top right',
     ({ model, underHeading, maker, logo }) => {
       render(WorkshopModelCard, { props: { model, underHeading } })
 
       const artwork = within(screen.getByTestId('model-card-artwork'))
-      const meta = within(screen.getByTestId('model-card-meta'))
-      expect(artwork.queryByTestId('model-card-provider')).toBeNull()
-      expect(meta.getByTestId('model-card-provider')).toHaveTextContent(maker)
-      expect(meta.getByTestId('model-card-provider')).toBeVisible()
-      expect(meta.getByTestId('model-card-provider-logo')).toHaveStyle({
+      expect(artwork.getByTestId('model-card-provider')).toHaveTextContent(
+        maker
+      )
+      expect(artwork.getByTestId('model-card-provider')).toBeVisible()
+      expect(artwork.getByTestId('model-card-provider')).toHaveClass(
+        'top-4',
+        'right-4'
+      )
+      expect(artwork.getByTestId('model-card-provider-logo')).toHaveStyle({
         maskImage: logo
       })
     }

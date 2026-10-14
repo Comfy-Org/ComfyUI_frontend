@@ -42,16 +42,18 @@ const KINDS = {
   <Badge
     :class="
       cn(
-        'pointer-events-none absolute top-4 left-4 z-10 h-7 rounded-lg px-2.5 font-semibold tracking-wider text-primary-warm-white uppercase backdrop-blur-md',
+        'pointer-events-none absolute top-4 left-4 z-10 size-7 justify-center rounded-lg p-0 text-primary-warm-white backdrop-blur-md',
         KINDS[kind].surface
       )
     "
     data-testid="explore-kind"
     :data-kind="kind"
   >
-    <template #prepend>
-      <component :is="KINDS[kind].icon" class="size-3 shrink-0" />
-    </template>
-    {{ t(KINDS[kind].label) }}
+    <component
+      :is="KINDS[kind].icon"
+      class="size-3.5 shrink-0"
+      aria-hidden="true"
+    />
+    <span class="sr-only">{{ t(KINDS[kind].label) }}</span>
   </Badge>
 </template>

@@ -34,7 +34,7 @@ describe('ExploreResultCard', () => {
     }
   )
 
-  it('says what kind it is over the artwork and who makes it under the name', () => {
+  it('marks its kind top left and its maker top right over the artwork', () => {
     render(ExploreResultCard, {
       props: {
         href: '/hub/models/beeble/',
@@ -50,12 +50,13 @@ describe('ExploreResultCard', () => {
     const artwork = within(screen.getByTestId('explore-artwork'))
     const meta = within(screen.getByTestId('explore-meta'))
     expect(artwork.getByTestId('explore-kind')).toHaveTextContent('Model')
-    expect(
-      artwork.queryByTestId('explore-source'),
-      'A maker over the artwork collides with the kind chip'
-    ).toBeNull()
-    expect(meta.getByTestId('explore-source')).toHaveTextContent('Beeble')
-    expect(meta.getByTestId('model-card-provider-logo')).toHaveStyle({
+    expect(artwork.getByTestId('explore-kind')).toHaveClass('top-4', 'left-4')
+    expect(artwork.getByTestId('explore-source')).toHaveTextContent('Beeble')
+    expect(artwork.getByTestId('explore-source')).toHaveClass(
+      'top-4',
+      'right-4'
+    )
+    expect(artwork.getByTestId('model-card-provider-logo')).toHaveStyle({
       maskImage: 'url(/logos/beeble.svg)'
     })
     expect(
@@ -64,7 +65,7 @@ describe('ExploreResultCard', () => {
         .map((pill) => pill.textContent.trim())
     ).toEqual(['Edit images'])
     expect(screen.getByRole('link')).toHaveTextContent(
-      /^\s*Model\s*Beeble SwitchX\s*Beeble\s*Edit images\s*$/
+      /^\s*Model\s*Beeble\s*Beeble SwitchX\s*Edit images\s*$/
     )
   })
 
@@ -77,18 +78,12 @@ describe('ExploreResultCard', () => {
     expect(screen.queryByTestId('model-card-provider-logo')).toBeNull()
   })
 
-  it('keeps the kind chip in the top-left corner of the artwork', () => {
+  it('shows the kind as an icon and keeps its name for screen readers', () => {
     render(ExploreResultCard, {
       props: { kind: 'model', name: 'Beeble SwitchX', model: still, pills: [] }
     })
 
-    expect(screen.getByTestId('explore-kind')).toHaveClass(
-      'top-4',
-      'left-4',
-      'h-7',
-      'rounded-lg',
-      'px-2.5'
-    )
+    expect(screen.getByText('Model')).toHaveClass('sr-only')
   })
 
   it.for([

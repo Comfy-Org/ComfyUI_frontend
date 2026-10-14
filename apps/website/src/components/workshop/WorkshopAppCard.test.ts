@@ -61,7 +61,7 @@ describe('WorkshopAppCard', () => {
   })
 
   it.for(['Seedance Studio', 'Re-shoot a video'])(
-    'marks %s with the Comfy logo under its name',
+    'marks %s with the Comfy logo over its artwork',
     (name) => {
       render(WorkshopAppCard, { props: { app: { ...app, name } } })
       const mark = screen.getByTestId('model-card-provider')
@@ -73,11 +73,10 @@ describe('WorkshopAppCard', () => {
       expect(within(mark).queryByText('C', { exact: true })).toBeNull()
       expect(mark).toBeVisible()
       expect(
-        within(screen.getByTestId('app-card-artwork')).queryByTestId(
+        within(screen.getByTestId('app-card-artwork')).getByTestId(
           'model-card-provider'
-        ),
-        'A mark over the artwork covers the picture'
-      ).toBeNull()
+        )
+      ).toHaveClass('top-4', 'right-4')
       expect(
         within(screen.getByTestId('app-card-meta')).getByTestId(
           'app-card-status'

@@ -12,7 +12,7 @@ import { COMFY_LOGO_PATH, getLogoPath } from '@/lib/hub/model-logos'
 import { nameWithoutTask, taskLabelFor } from '@/lib/workshop/task-label'
 import TagRow from '@/components/hub/TagRow.vue'
 import ModelSupport from './ModelSupport.vue'
-import WorkshopCardMaker from './WorkshopCardMaker.vue'
+import WorkshopCardMark from './WorkshopCardMark.vue'
 import WorkshopCardMedia from './WorkshopCardMedia.vue'
 
 const {
@@ -91,6 +91,7 @@ const labelledBy = computed(() =>
       class="relative aspect-4/3 overflow-hidden rounded-2xl bg-hub-surface"
       data-testid="model-card-artwork"
     >
+      <WorkshopCardMark :id="`${id}-provider`" :label="providerName" :logo />
       <HubTypeBadge
         v-if="providerBadge"
         :id="`${id}-kind`"
@@ -135,7 +136,6 @@ const labelledBy = computed(() =>
         class="flex h-6 min-w-0 items-center gap-2.5 overflow-hidden"
         data-testid="model-card-meta"
       >
-        <WorkshopCardMaker :id="`${id}-provider`" :label="providerName" :logo />
         <template v-if="showsTask">
           <Badge
             :id="`${id}-task`"

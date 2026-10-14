@@ -7,7 +7,7 @@ import { translationsFor } from '@/i18n/translations'
 import { COMFY_LOGO_PATH } from '@/lib/hub/model-logos'
 import type { CatalogueApp } from '@/lib/workshop/catalogue-apps'
 
-import WorkshopCardMaker from './WorkshopCardMaker.vue'
+import WorkshopCardMark from './WorkshopCardMark.vue'
 import WorkshopCardMedia from './WorkshopCardMedia.vue'
 
 const {
@@ -44,6 +44,10 @@ const { t } = translationsFor(locale)
       class="relative aspect-4/3 overflow-hidden rounded-3xl bg-hub-surface"
       data-testid="app-card-artwork"
     >
+      <WorkshopCardMark
+        :label="t('workshop.card.comfyApp')"
+        :logo="COMFY_LOGO_PATH"
+      />
       <WorkshopCardMedia :model="app" />
     </div>
 
@@ -58,10 +62,6 @@ const { t } = translationsFor(locale)
         class="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1.5"
         data-testid="app-card-meta"
       >
-        <WorkshopCardMaker
-          :label="t('workshop.card.comfyApp')"
-          :logo="COMFY_LOGO_PATH"
-        />
         <Badge variant="subtle" data-testid="app-card-status">
           {{ t(app.href ? 'hubPages.apps.open' : 'hubPages.apps.soon') }}
         </Badge>

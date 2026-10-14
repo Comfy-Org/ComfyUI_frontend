@@ -7,7 +7,7 @@ import type { WorkshopModel } from '@/config/models-catalogue'
 import type { Locale } from '@/i18n/translations'
 import type { ExploreKind } from '@/lib/workshop/explore-search'
 import ExploreKindTag from './ExploreKindTag.vue'
-import WorkshopCardMaker from './WorkshopCardMaker.vue'
+import WorkshopCardMark from './WorkshopCardMark.vue'
 import WorkshopCardMedia from './WorkshopCardMedia.vue'
 
 const {
@@ -28,7 +28,7 @@ const {
   kind?: ExploreKind
   name: string
   model?: Pick<WorkshopModel, 'name' | 'thumbnail'>
-  /** Who makes it or what it runs on, written under the name. */
+  /** Who makes it or what it runs on, marked over the artwork. */
   source?: string
   logo?: string | null
   pills?: readonly string[]
@@ -40,7 +40,7 @@ const linkAttrs = computed(() => {
   return newTab ? { href, target: '_blank', rel: 'noopener' } : { href }
 })
 
-const hasMeta = computed(() => Boolean(source) || pills.length > 0)
+const hasMeta = computed(() => pills.length > 0)
 </script>
 
 <template>
@@ -64,6 +64,12 @@ const hasMeta = computed(() => Boolean(source) || pills.length > 0)
       <WorkshopCardMedia v-if="model" :model />
       <span v-else class="block size-full bg-hub-surface-hover" />
       <ExploreKindTag v-if="kind" :kind :locale />
+      <WorkshopCardMark
+        v-if="source"
+        :label="source"
+        :logo
+        data-testid="explore-source"
+      />
     </span>
     <span class="flex min-w-0 flex-col gap-2.5 px-3">
       <span class="truncate text-sm font-medium text-content-bright">
@@ -74,12 +80,6 @@ const hasMeta = computed(() => Boolean(source) || pills.length > 0)
         class="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1.5"
         data-testid="explore-meta"
       >
-        <WorkshopCardMaker
-          v-if="source"
-          :label="source"
-          :logo
-          data-testid="explore-source"
-        />
         <span
           v-if="pills.length"
           class="flex flex-wrap items-center gap-1.5"
