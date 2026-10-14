@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import ContentEditor from './ContentEditor.vue'
 import { editorRequest } from '@/lib/cms/editor-client'
@@ -78,7 +79,7 @@ function setup() {
   })
 }
 async function saveBody() {
-  await fireEvent.click(
+  await userEvent.click(
     screen.getAllByRole('button', { name: 'Save changes' })[0]
   )
   await waitFor(() => expect(editorRequest).toHaveBeenCalledOnce())
@@ -88,8 +89,8 @@ describe('complete authored document preservation', () => {
   it('saves chip tags without changing nested content or exact media pins', async () => {
     setup()
     const input = screen.getByRole('textbox', { name: 'Tags' })
-    await fireEvent.update(input, 'product-video')
-    await fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' })
+    await userEvent.type(input, 'product-video{Enter}')
+    expect(editorRequest).not.toHaveBeenCalled()
     const payload = await saveBody()
     expect(payload).toMatchObject({
       ...authored,
@@ -128,7 +129,7 @@ describe('complete authored document preservation', () => {
   })
   it('preserves literal keys from advanced JSON through a later structured edit and save', async () => {
     setup()
-    await fireEvent.click(screen.getByText('Advanced: complete authored JSON'))
+    await userEvent.click(screen.getByText('Advanced: complete authored JSON'))
     const literal = JSON.parse(
       '{"__proto__":{"literal":true},"nested":{"__proto__":"Keep label","constructor":"Keep too"}}'
     )
@@ -161,14 +162,12 @@ describe('complete authored document preservation', () => {
           finish = resolve
         })
     )
-    await fireEvent.click(screen.getByText('Advanced: complete authored JSON'))
-    await fireEvent.change(
+    await userEvent.click(screen.getByText('Advanced: complete authored JSON'))
+    await userEvent.upload(
       screen.getAllByLabelText('Choose image, video or workflow JSON')[0],
-      {
-        target: { files: [new File(['png'], 'new.png', { type: 'image/png' })] }
-      }
+      new File(['png'], 'new.png', { type: 'image/png' })
     )
-    await fireEvent.click(
+    await userEvent.click(
       screen.getAllByRole('button', { name: 'Upload as new media' })[0]
     )
     expect(
@@ -212,7 +211,7 @@ describe('complete authored document preservation', () => {
   })
   it('removes one example without modifying the surviving example or its references', async () => {
     setup()
-    await fireEvent.click(
+    await userEvent.click(
       screen.getAllByRole('button', { name: 'Remove example' })[0]
     )
     expect(await saveBody()).toMatchObject({
@@ -226,7 +225,7 @@ describe('complete authored document preservation', () => {
       screen.getAllByRole('textbox', { name: /Input values \(JSON\)/ })[0],
       '{invalid-a'
     )
-    await fireEvent.click(screen.getByText('Advanced: complete authored JSON'))
+    await userEvent.click(screen.getByText('Advanced: complete authored JSON'))
     const complete = screen.getByRole('textbox', {
       name: 'Complete content document'
     })
@@ -263,7 +262,7 @@ describe('complete authored document preservation', () => {
   })
   it('freezes all structured mutations while complete JSON is invalid and keeps repair enabled', async () => {
     setup()
-    await fireEvent.click(screen.getByText('Advanced: complete authored JSON'))
+    await userEvent.click(screen.getByText('Advanced: complete authored JSON'))
     await fireEvent.update(
       screen.getByRole('textbox', { name: 'Complete content document' }),
       '{invalid'

@@ -25,6 +25,11 @@ it('adds chips with Enter and comma while retaining existing literal tags', asyn
   expect(screen.getByLabelText('Saved tags')).toHaveTextContent(
     '["original, tag","portrait"]'
   )
+  screen.getByRole('button', { name: 'Remove tag portrait' }).focus()
+  await user.keyboard('{Enter}')
+  expect(screen.getByLabelText('Saved tags')).toHaveTextContent(
+    '["original, tag"]'
+  )
 })
 
 it('does not edit tags while the form is blocked and localizes removal', async () => {
