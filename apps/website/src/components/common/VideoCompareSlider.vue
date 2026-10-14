@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener, useMounted } from '@vueuse/core'
-import { computed, ref, useTemplateRef } from 'vue'
+import { computed, ref, useTemplateRef, watch } from 'vue'
 import type { HTMLAttributes } from 'vue'
 
 import { prefersReducedMotion } from '@/composables/useReducedMotion'
@@ -45,6 +45,35 @@ const isMounted = useMounted()
 const shouldAutoplay = computed(
   () => isMounted.value && !prefersReducedMotion()
 )
+
+// WCAG 2.2.2 (Pause, Stop, Hide): the clips loop indefinitely, so EVERY
+// visitor needs a mechanism to pause them - not only those whose OS asks for
+// reduced motion (#20968). The toggle is also the reduced-motion cohort's
+// only way to opt in to playing the comparison at all.
+const isPlaying = ref(false)
+
+// Track the autoplay intent so the toggle's pressed state matches what the
+// clips are actually doing for visitors who never touched it.
+watch(
+  shouldAutoplay,
+  (autoplay) => {
+    isPlaying.value = autoplay
+  },
+  { immediate: true }
+)
+
+function togglePlayback() {
+  const before = beforeVideo.value
+  const after = afterVideo.value
+  isPlaying.value = !isPlaying.value
+  if (isPlaying.value) {
+    void before?.play().catch(() => undefined)
+    void after?.play().catch(() => undefined)
+  } else {
+    before?.pause()
+    after?.pause()
+  }
+}
 
 function moveTo(clientX: number) {
   const bounds = container.value?.getBoundingClientRect()
@@ -107,7 +136,7 @@ function syncAfterToBefore() {
       :src="isMounted ? beforeSrc : undefined"
       :poster="beforePosterSrc"
       preload="none"
-      :autoplay="shouldAutoplay"
+      :autoplay="shouldAutoplay || isPlaying"
       loop
       muted
       playsinline
@@ -122,7 +151,7 @@ function syncAfterToBefore() {
       :src="isMounted ? afterSrc : undefined"
       :poster="afterPosterSrc"
       preload="none"
-      :autoplay="shouldAutoplay"
+      :autoplay="shouldAutoplay || isPlaying"
       loop
       muted
       playsinline
@@ -141,6 +170,40 @@ function syncAfterToBefore() {
     >
       {{ afterLabel }}
     </span>
+
+    <button
+      type="button"
+      data-testid="video-compare-toggle"
+      :aria-pressed="String(!isPlaying)"
+      :aria-label="
+        isPlaying
+          ? `Pause ${beforeLabel} and ${afterLabel} comparison`
+          : `Play ${beforeLabel} and ${afterLabel} comparison`
+      "
+      class="absolute right-4 bottom-4 flex size-9 cursor-pointer items-center justify-center rounded-full bg-transparency-ink-t80 text-primary-warm-white shadow-lg outline-none focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow"
+      @pointerdown.stop
+      @click.stop="togglePlayback"
+    >
+      <svg
+        v-if="isPlaying"
+        viewBox="0 0 24 24"
+        fill="currentColor"
+        aria-hidden="true"
+        class="size-4"
+      >
+        <rect x="6" y="5" width="4" height="14" rx="1" />
+        <rect x="14" y="5" width="4" height="14" rx="1" />
+      </svg>
+      <svg
+        v-else
+        viewBox="0 0 24 24"
+        fill="currentColor"
+        aria-hidden="true"
+        class="size-4"
+      >
+        <path d="M8 5.14v13.72a1 1 0 0 0 1.5.86l11-6.86a1 1 0 0 0 0-1.72l-11-6.86a1 1 0 0 0-1.5.86Z" />
+      </svg>
+    </button>
 
     <div
       role="slider"

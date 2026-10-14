@@ -171,4 +171,39 @@ describe('VideoCompareSlider', () => {
 
     expect(play).toHaveBeenCalledOnce()
   })
+
+  it('exposes a play/pause toggle that controls both clips (WCAG 2.2.2)', async () => {
+    // Regression test for #20968: the criterion needs a pause mechanism for
+    // EVERY visitor, not only those whose OS asks for reduced motion - and
+    // the reduced-motion cohort needs a way to opt in to playing at all.
+    const user = userEvent.setup()
+    const { beforeVideo, afterVideo } = await renderSlider()
+
+    // Autoplaying for non-reduced visitors: pressed=false (not paused).
+    const toggle = screen.getByTestId('video-compare-toggle')
+    expect(toggle).toHaveAttribute('aria-pressed', 'false')
+
+    const pauseBefore = vi.spyOn(beforeVideo, 'pause').mockImplementation(() => undefined)
+    const pauseAfter = vi.spyOn(afterVideo, 'pause').mockImplementation(() => undefined)
+    await user.click(toggle)
+    expect(toggle).toHaveAttribute('aria-pressed', 'true')
+    expect(pauseBefore).toHaveBeenCalledOnce()
+    expect(pauseAfter).toHaveBeenCalledOnce()
+
+    const playBefore = vi.spyOn(beforeVideo, 'play').mockResolvedValue()
+    const playAfter = vi.spyOn(afterVideo, 'play').mockResolvedValue()
+    await user.click(toggle)
+    expect(toggle).toHaveAttribute('aria-pressed', 'false')
+    expect(playBefore).toHaveBeenCalledOnce()
+    expect(playAfter).toHaveBeenCalledOnce()
+  })
+
+  it('does not drag the slider when the toggle is clicked', async () => {
+    const user = userEvent.setup()
+    const { slider } = await renderSlider()
+
+    await user.click(screen.getByTestId('video-compare-toggle'))
+
+    expect(slider).toHaveAttribute('aria-valuenow', '50')
+  })
 })
