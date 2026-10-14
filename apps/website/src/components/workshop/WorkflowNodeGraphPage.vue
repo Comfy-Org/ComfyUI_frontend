@@ -1,17 +1,8 @@
 <script setup lang="ts">
-import {
-  ArrowUpRight,
-  Box,
-  ChevronLeft,
-  Download,
-  Puzzle,
-  Workflow
-} from '@lucide/vue'
+import { ChevronLeft, Workflow } from '@lucide/vue'
 import { computed, ref } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
 import { getRoutes } from '@/config/routes'
-import { WORKSHOP_CLOUD_BASE_URL } from '@/config/workshop-env'
 import type { PlaygroundExample } from '@/config/workshop-playground'
 import type { RunState } from '@/config/workshop-run'
 import { useTablist } from '@/composables/useTablist'
@@ -23,6 +14,7 @@ import ExamplesTab from './ExamplesTab.vue'
 import PlaygroundOutput from './PlaygroundOutput.vue'
 import SectionHeading from './SectionHeading.vue'
 import WorkflowGraph from './WorkflowGraph.vue'
+import WorkflowNodeGraphRunPanel from './WorkflowNodeGraphRunPanel.vue'
 
 const { workflow, locale = 'en' } = defineProps<{
   workflow: NodeGraphWorkflow
@@ -40,11 +32,6 @@ const sectionLabels = {
   overview: 'workshop.nodeGraph.tabs.overview',
   workflow: 'workshop.nodeGraph.tabs.workflow'
 } as const
-
-const cloudHref = computed(
-  () =>
-    `${WORKSHOP_CLOUD_BASE_URL}/?template=${encodeURIComponent(workflow.templateId)}`
-)
 
 const selected = ref(0)
 const activeExample = computed(() => workflow.examples[selected.value])
@@ -74,12 +61,6 @@ function openExample(example: PlaygroundExample) {
 
 const pillClass =
   'inline-flex h-7 items-center rounded-full border border-transparency-white-t20 px-3 text-xs leading-none text-primary-comfy-canvas transition-colors hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow'
-const panelClass =
-  'overflow-hidden rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4'
-const panelHeadingClass =
-  'border-b border-transparency-white-t8 px-5 py-3 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase'
-const factHeadingClass =
-  'text-2xs font-bold tracking-wider text-primary-warm-gray uppercase'
 </script>
 
 <template>
@@ -153,112 +134,11 @@ const factHeadingClass =
       aria-labelledby="node-graph-tab-overview"
     >
       <div class="grid gap-8 lg:grid-cols-12">
-        <!-- Where a runnable workflow keeps its inputs and Run, this one says
-          what running it takes and offers the two ways to do it. -->
-        <section
-          :class="[panelClass, 'flex min-w-0 flex-col lg:col-span-5']"
-          aria-labelledby="node-graph-run-heading"
-          data-testid="node-graph-run-panel"
-        >
-          <h2 id="node-graph-run-heading" :class="panelHeadingClass">
-            {{ t('workshop.nodeGraph.runTitle') }}
-          </h2>
-          <div class="flex flex-col gap-6 p-5">
-            <p class="text-sm/relaxed text-primary-warm-gray">
-              {{ t('workshop.nodeGraph.runBody') }}
-            </p>
-            <section v-if="workflow.inputs.length">
-              <h3 :class="factHeadingClass">
-                {{ t('workshop.workflow.inputs') }}
-              </h3>
-              <ul class="mt-2 flex flex-wrap gap-2">
-                <li
-                  v-for="name in workflow.inputs"
-                  :key="name"
-                  class="inline-flex h-7 items-center rounded-full border border-transparency-white-t20 px-3 text-xs leading-none text-primary-comfy-canvas"
-                >
-                  {{ name }}
-                </li>
-              </ul>
-            </section>
-            <section v-if="workflow.models.length">
-              <h3 :class="factHeadingClass">
-                {{ t('workshop.nodeGraph.models') }}
-              </h3>
-              <ul class="mt-2 flex flex-col gap-1">
-                <li
-                  v-for="name in workflow.models"
-                  :key="name"
-                  class="flex items-center gap-2.5 py-1"
-                >
-                  <Box
-                    class="size-4 shrink-0 text-primary-warm-gray"
-                    aria-hidden="true"
-                  />
-                  <span class="min-w-0 truncate text-primary-comfy-canvas">
-                    {{ name }}
-                  </span>
-                </li>
-              </ul>
-            </section>
-            <section v-if="workflow.customNodes.length">
-              <h3 :class="factHeadingClass">
-                {{ t('workshop.workflow.customNodes') }}
-              </h3>
-              <ul class="mt-2 flex flex-col gap-1">
-                <li
-                  v-for="name in workflow.customNodes"
-                  :key="name"
-                  class="flex items-center gap-2.5 py-1"
-                >
-                  <Puzzle
-                    class="size-4 shrink-0 text-primary-warm-gray"
-                    aria-hidden="true"
-                  />
-                  <span class="min-w-0 truncate text-primary-comfy-canvas">
-                    {{ name }}
-                  </span>
-                </li>
-              </ul>
-            </section>
-          </div>
-          <div
-            class="mt-auto space-y-2 border-t border-transparency-white-t8 p-3"
-            data-testid="workflow-actions"
-          >
-            <Button
-              as="a"
-              size="lg"
-              class="w-full"
-              :href="cloudHref"
-              target="_blank"
-              rel="noopener"
-              data-testid="node-graph-try-cloud"
-              >{{ t('workshop.nodeGraph.tryCloud') }}
-              <template #append>
-                <ArrowUpRight aria-hidden="true" />
-              </template>
-            </Button>
-            <Button
-              as="a"
-              size="lg"
-              variant="outline"
-              class="w-full"
-              :href="workflow.downloadUrl"
-              download
-              :aria-label="t('workshop.workflow.download')"
-              data-testid="node-graph-download"
-            >
-              <template #prepend>
-                <Download aria-hidden="true" />
-              </template>
-              {{ t('workshop.nodeGraph.download') }}
-            </Button>
-            <p class="px-1 text-xs/relaxed text-primary-warm-gray">
-              {{ t('workshop.nodeGraph.downloadHint') }}
-            </p>
-          </div>
-        </section>
+        <WorkflowNodeGraphRunPanel
+          :workflow="workflow"
+          :locale="locale"
+          class="lg:col-span-5"
+        />
         <div class="min-w-0 lg:sticky lg:top-24 lg:col-span-7 lg:self-start">
           <PlaygroundOutput :state="outputState" :now="0" :locale="locale" />
         </div>
