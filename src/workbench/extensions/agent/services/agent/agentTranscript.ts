@@ -426,6 +426,25 @@ function recordAssistantRow(
   return rowPending
 }
 
+function keepAuthoritativeApproval(
+  message: AssistantMessage,
+  row: AgentMessages[number],
+  isAskUnavailable: (askId: string) => boolean
+): void {
+  const rowAsk =
+    row.status === 'streaming' ? pendingRunApproval(row) : undefined
+  const availableAskId =
+    rowAsk !== undefined && !isAskUnavailable(rowAsk.askId)
+      ? rowAsk.askId
+      : undefined
+  message.parts = message.parts.filter(
+    (part) =>
+      part.type !== 'runApproval' ||
+      (!isAskUnavailable(part.askId) &&
+        (availableAskId === undefined || part.askId === availableAskId))
+  )
+}
+
 /**
  * Strips the liveness a row's `streaming` status granted a message that turns
  * out not to be getting a transport. The parts matter as much as the flag,
@@ -494,14 +513,9 @@ export function normalizeAgentTranscript(
     }
     if (row.role === 'assistant') {
       const pending = recordAssistantRow(row, turnId, text, assistants)
-      const priorApproval = pendingByTurn
-        .get(turnId)
-        ?.message.parts.some(
-          (part) => part.type === 'runApproval' && !isAskUnavailable(part.askId)
-        )
-      if (row.status === 'streaming' && pending === undefined && priorApproval)
-        continue
-      else pendingByTurn.set(turnId, pending)
+      const message = assistants.get(turnId)
+      if (message) keepAuthoritativeApproval(message, row, isAskUnavailable)
+      pendingByTurn.set(turnId, pending)
     }
   }
 

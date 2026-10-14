@@ -2037,12 +2037,13 @@ describe('useAgentSession (v1 composition root)', () => {
     const answerAsk = vi
       .fn<AgentRestClient['answerAsk']>()
       .mockRejectedValue(new AgentApiError('already answered', 409, undefined))
-    const { source, emit } = fakeEvents()
+    const { source, emit, status } = fakeEvents()
     const session = useAgentSession({
       rest: fakeRest({ answerAsk }),
       events: source
     })
     session.start()
+    status(true)
     await session.sendMessage('build it')
     emit(runApproval('msg-1'))
 
@@ -2341,6 +2342,34 @@ describe('useAgentSession (v1 composition root)', () => {
       })
       expect(session.notices.value).toHaveLength(1)
       expect(cardOnScreen()).toBe(false)
+    })
+
+    it('warns from the canonical answer receipt when another selection won', async () => {
+      const answerAsk = vi
+        .fn<AgentRestClient['answerAsk']>()
+        .mockResolvedValue({ status: 'answered', selected: ['run'] })
+      const events = fakeEvents()
+      const session = useAgentSession({
+        rest: fakeRest({ answerAsk }),
+        events: events.source
+      })
+      session.start()
+      events.status(true)
+      await session.sendMessage('build it and run it')
+      events.emit(runApproval('msg-1'))
+
+      const answered = await session.answerAsk('turn-1:call-1', 'cancel')
+
+      expect(answered).toBe(false)
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        surface: 'agent',
+        errorType: 'agent_ask_answer_superseded'
+      })
+      expect(reportError).not.toHaveBeenCalledWith(expect.any(Error), {
+        surface: 'agent',
+        errorType: 'agent_ask_answer_unconfirmed'
+      })
+      expect(session.notices.value).toHaveLength(1)
     })
 
     // The resolution frame retires the card on its way through, so by the time
@@ -4158,7 +4187,7 @@ describe('useAgentSession (v1 composition root)', () => {
     )
   })
 
-  it('(g18) a history fetch that never answers is abandoned at the recovery deadline', async () => {
+  it('(g18) a history fetch that never answers gets one deadline follow-up', async () => {
     const getMessages = vi.fn(hangingGetMessages)
     const rest = fakeRest({ getMessages })
     const { source, emit, status } = fakeEvents()
@@ -4181,11 +4210,7 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(signal.aborted).toBe(true)
     expect(session.isStreaming.value).toBe(true)
     expect(reportError).not.toHaveBeenCalled()
-
-    status(false)
-    status(true)
-    await vi.advanceTimersByTimeAsync(0)
-    expect(getMessages).toHaveBeenCalledTimes(2)
+    await vi.waitFor(() => expect(getMessages).toHaveBeenCalledTimes(2))
   })
 
   it('(g19) stopping the session cancels its in-flight history fetch', async () => {

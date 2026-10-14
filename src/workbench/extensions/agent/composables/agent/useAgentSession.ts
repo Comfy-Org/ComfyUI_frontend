@@ -21,6 +21,7 @@ import {
 } from '@/platform/workflow/persistence/base/storageKeys'
 import { createUuidv4 } from '@/utils/uuid'
 import type {
+  AgentAnswerReceipt,
   AgentActiveTabData,
   AgentMessages,
   AgentTurnAccepted,
@@ -177,6 +178,7 @@ const MAX_HYDRATION_MAILBOXES = 32
 const TURN_RECOVERY_DELAYS_MS = [0, 1000, 2000, 4000, 8000, 16000]
 /** Upper bound on one recovery job, including any history fetch still in flight. */
 const TURN_RECOVERY_DEADLINE_MS = 60_000
+const THREAD_MISSING_CONFIRMATION_INTERVAL_MS = 1000
 /** How long a restored ask waits for its own broadcast before it counts as lost. */
 const LATE_ASK_FRAME_GRACE_MS = 2000
 
@@ -528,6 +530,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     rerunCause: RecoveryCause
     automaticRerun: boolean
   }
+  interface MissingThreadObservation {
+    count: number
+    observedAt: number
+  }
   const recoveringTurns = new Map<string, RunningRecovery>()
   interface PendingAskObservation {
     pendingAskId: string | undefined
@@ -537,7 +543,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     string,
     PendingAskObservation
   >()
-  const recoveryThreadMissingCounts = new Map<string, number>()
+  const recoveryThreadMissingCounts = new Map<
+    string,
+    MissingThreadObservation
+  >()
   /**
    * Asks recovery must not re-deliver: one it already restored, one a frame
    * has delivered, and any the user has answered or the server has resolved.
@@ -547,6 +556,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
    * an `ask_id` carries its `message_id`, so it is never reused.
    */
   const deliveredAsks = new Set<string>()
+  const supersededAnswerReports = new Set<string>()
   const lateAskReports = new Map<
     string,
     {
@@ -562,6 +572,16 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (deliveredAsks.size <= MAX_DELIVERED_ASKS) return
     const oldest = deliveredAsks.values().next().value
     if (oldest !== undefined) deliveredAsks.delete(oldest)
+  }
+
+  function recordSupersededAnswerReport(askId: string): boolean {
+    if (supersededAnswerReports.has(askId)) return false
+    supersededAnswerReports.add(askId)
+    if (supersededAnswerReports.size > MAX_DELIVERED_ASKS) {
+      const oldest = supersededAnswerReports.values().next().value
+      if (oldest !== undefined) supersededAnswerReports.delete(oldest)
+    }
+    return true
   }
 
   function recordPendingAskObservation(
@@ -583,15 +603,23 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   function recordThreadAvailability(key: string, outcome: TurnOutcome): number {
-    const previous = recoveryThreadMissingCounts.get(key) ?? 0
+    const previous = recoveryThreadMissingCounts.get(key)
     if (outcome.kind === 'thread-missing') {
-      const consecutive = previous + 1
+      const observedAt = Date.now()
+      const consecutive =
+        previous === undefined ||
+        observedAt - previous.observedAt > TURN_RECOVERY_DEADLINE_MS
+          ? 1
+          : observedAt - previous.observedAt >=
+              THREAD_MISSING_CONFIRMATION_INTERVAL_MS
+            ? previous.count + 1
+            : previous.count
       recoveryThreadMissingCounts.delete(key)
-      recoveryThreadMissingCounts.set(key, consecutive)
+      recoveryThreadMissingCounts.set(key, { count: consecutive, observedAt })
       return consecutive
     }
     recoveryThreadMissingCounts.delete(key)
-    return previous
+    return previous?.count ?? 0
   }
 
   function pruneRecoveryLedgers(): void {
@@ -1551,16 +1579,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   ): Promise<boolean> {
     const currentThreadId = conversationStore.threadId
     if (currentThreadId === null) {
-      // PM-1658: the card is on screen, so a click on it is never a no-op.
-      reportError(
-        new Error('run approval answered with no thread to send on'),
-        { surface: 'agent', errorType: 'agent_ask_answer_unroutable' }
-      )
-      pushError(i18n.global.t('agent.runApproval.answerFailed'))
-      // Nothing can ever answer this card, so retire it rather than let every
-      // further click raise another toast and another telemetry event.
-      recordDeliveredAsk(askId)
-      conversationStore.retireAsk(askId)
+      failUnroutableAsk(askId)
       return false
     }
     // PM-1658: deliberately NOT gated on an active turn. The endpoint is keyed
@@ -1571,75 +1590,102 @@ export function useAgentSession(deps: AgentSessionDeps) {
     conversationStore.recordAskSelection(askId, selection)
     conversationStore.setAskAnswering(askId, true)
     const answerChannelEpoch = resolutionChannelEpoch
-    const answerStartedWithoutResolutionChannel = connection === 'dropped'
+    const answerStartedWithoutResolutionChannel = connection !== 'live'
     const resolutionChannelWasLost = () =>
       answerStartedWithoutResolutionChannel ||
       resolutionChannelEpoch !== answerChannelEpoch
     try {
-      await sendAnswer(currentThreadId, askId, selection)
-      if (answeringAskIds.value.has(askId))
-        reportAcceptedRecoveredAnswer(resolutionChannelWasLost())
-      recordDeliveredAsk(askId)
-      conversationStore.commitAsk(askId, currentThreadId)
-      return true
+      const receipt = await sendAnswer(currentThreadId, askId, selection)
+      return finishAcceptedAskAnswer(
+        askId,
+        currentThreadId,
+        selection,
+        receipt,
+        resolutionChannelWasLost()
+      )
     } catch (error) {
-      // A resolution frame can land while this request is still out, and it
-      // retires the card on the way through. The ask is settled and gone, so
-      // whatever this rejection says about delivery is no longer news the user
-      // can act on — any mismatch worth telling them about has already been
-      // raised by reportSupersededAnswer.
-      if (!answeringAskIds.value.has(askId)) return false
-      if (
-        error instanceof AgentApiError &&
-        TERMINAL_ANSWER_STATUSES.has(error.status)
-      ) {
-        // A 409 is a quiet double-click unless this client restored the ask
-        // after losing its resolution channel. The rest mean this client
-        // could never have answered, which the user has to be told.
-        if (error.status !== 409) {
-          reportError(error, {
-            surface: 'agent',
-            errorType: 'agent_ask_answer_refused'
-          })
-          trackAgentError(
-            'ask_answer_failed',
-            'post_acceptance',
-            'error_overlay',
-            { retryable: isRetryableRequestFailure(error, false) }
-          )
-          pushError(i18n.global.t('agent.runApproval.answerFailed'))
-        } else
-          reportRejectedRecoveredAnswerIfPending(
-            askId,
-            resolutionChannelWasLost()
-          )
-        // The card is retired for good here, by resolution (409) or because
-        // this client could never answer it. Either way a later recovery poll
-        // must not draw it again.
-        recordDeliveredAsk(askId)
-        conversationStore.retireAsk(askId, currentThreadId)
-        return false
-      }
-      reportError(error, {
-        surface: 'agent',
-        errorType: 'agent_ask_answer_failed'
-      })
-      trackAgentError('ask_answer_failed', 'post_acceptance', 'error_overlay', {
-        retryable: isRetryableRequestFailure(error, false)
-      })
-      // Every re-drive above has been spent. The card cannot simply go back
-      // into service: the server CASes an answer onto the row BEFORE it wakes
-      // the turn and reports 500 for the wake alone, so this may already have
-      // authorized the run, and it answers any later click by replaying THIS
-      // selection while the card disappears as though the new one had taken
-      // effect. On a spend authorization that is the wrong way to be wrong, so
-      // retire the card and say the outcome is unknown rather than show a raw
-      // transport string next to a card that is about to vanish.
+      return handleAnswerFailure(
+        error,
+        askId,
+        currentThreadId,
+        resolutionChannelWasLost()
+      )
+    }
+  }
+
+  function finishAcceptedAskAnswer(
+    askId: string,
+    threadId: string,
+    selection: 'run' | 'cancel',
+    receipt: AgentAnswerReceipt,
+    resolutionChannelWasLost: boolean
+  ): boolean {
+    const committedSelection = receipt.selected ?? null
+    reportSupersededAnswer(askId, committedSelection)
+    if (
+      (committedSelection === null || committedSelection.length === 0) &&
+      answeringAskIds.value.has(askId)
+    )
+      reportAcceptedRecoveredAnswer(resolutionChannelWasLost)
+    recordDeliveredAsk(askId)
+    conversationStore.commitAsk(askId, threadId)
+    return (
+      committedSelection === null ||
+      committedSelection.length === 0 ||
+      committedSelection.includes(selection)
+    )
+  }
+
+  function failUnroutableAsk(askId: string): void {
+    reportError(new Error('run approval answered with no thread to send on'), {
+      surface: 'agent',
+      errorType: 'agent_ask_answer_unroutable'
+    })
+    pushError(i18n.global.t('agent.runApproval.answerFailed'))
+    recordDeliveredAsk(askId)
+    conversationStore.retireAsk(askId)
+  }
+
+  function handleAnswerFailure(
+    error: unknown,
+    askId: string,
+    threadId: string,
+    resolutionChannelWasLost: boolean
+  ): false {
+    if (!answeringAskIds.value.has(askId)) return false
+    if (
+      error instanceof AgentApiError &&
+      TERMINAL_ANSWER_STATUSES.has(error.status)
+    ) {
+      if (error.status !== 409) {
+        reportError(error, {
+          surface: 'agent',
+          errorType: 'agent_ask_answer_refused'
+        })
+        trackAgentError(
+          'ask_answer_failed',
+          'post_acceptance',
+          'error_overlay',
+          { retryable: isRetryableRequestFailure(error, false) }
+        )
+        pushError(i18n.global.t('agent.runApproval.answerFailed'))
+      } else
+        reportRejectedRecoveredAnswerIfPending(askId, resolutionChannelWasLost)
       recordDeliveredAsk(askId)
-      conversationStore.retireAsk(askId, currentThreadId)
-      pushError(i18n.global.t('agent.runApproval.answerUncertain'))
+      conversationStore.retireAsk(askId, threadId)
       return false
     }
+    reportError(error, {
+      surface: 'agent',
+      errorType: 'agent_ask_answer_failed'
+    })
+    trackAgentError('ask_answer_failed', 'post_acceptance', 'error_overlay', {
+      retryable: isRetryableRequestFailure(error, false)
+    })
+    recordDeliveredAsk(askId)
+    conversationStore.retireAsk(askId, threadId)
+    pushError(i18n.global.t('agent.runApproval.answerUncertain'))
+    return false
   }
 
   function reportAcceptedRecoveredAnswer(
@@ -1690,7 +1736,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
       submitted === undefined ||
       settled === null ||
       settled.length === 0 ||
-      settled.includes(submitted)
+      settled.includes(submitted) ||
+      !recordSupersededAnswerReport(askId)
     )
       return
     reportError(
@@ -1706,11 +1753,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     threadId: string,
     askId: string,
     selection: 'run' | 'cancel'
-  ): Promise<void> {
+  ): Promise<AgentAnswerReceipt> {
     for (let attempt = 0; ; attempt++) {
       try {
-        await rest.answerAsk(threadId, askId, [selection])
-        return
+        return await rest.answerAsk(threadId, askId, [selection])
       } catch (error) {
         if (
           attempt >= ANSWER_RETRY_BACKOFF_MS.length ||
@@ -1990,10 +2036,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
       automaticRerun: false
     }
     recoveringTurns.set(key, state)
-    const deadline = setTimeout(
-      () => recovery.abort(),
-      TURN_RECOVERY_DEADLINE_MS
-    )
+    const deadline = setTimeout(() => {
+      if (recoveringTurns.get(key)?.controller !== recovery) return
+      recoveringTurns.delete(key)
+      recovery.abort()
+      if (!isTurnLive(turn, ownedGeneration)) return
+      if (state.rerun)
+        void reconcileTurn(turn, state.rerunCause, state.automaticRerun)
+      else if (!isAutomaticRerun) void reconcileTurn(turn, cause, true)
+    }, TURN_RECOVERY_DEADLINE_MS)
     try {
       const needsRerun = await recoverTurn(
         turn,
@@ -2001,7 +2052,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         ownedGeneration,
         recovery.signal
       )
-      if (needsRerun && !isAutomaticRerun) {
+      if (needsRerun && !isAutomaticRerun && !state.rerun) {
         state.rerun = true
         state.automaticRerun = true
       }
@@ -2159,6 +2210,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
   ): void {
     if (pendingAsk?.kind !== 'run_approval') return
     if (deliveredAsks.has(pendingAsk.ask_id)) return
+    if (
+      conversationStore.submittedAskSelection(pendingAsk.ask_id) !==
+        undefined ||
+      answeringAskIds.value.has(pendingAsk.ask_id)
+    )
+      return
     if (conversationStore.isAskRetired(pendingAsk.ask_id, turn.threadId)) return
     if (conversationStore.isApprovalShown(turn, pendingAsk.ask_id)) return
     conversationStore.ingest({
@@ -2372,7 +2429,16 @@ export function useAgentSession(deps: AgentSessionDeps) {
           kind: 'streaming',
           pendingAsk: rows.findLast(
             (row) =>
-              !isTerminalTurnStatus(row.status) && row.pending_ask !== undefined
+              !isTerminalTurnStatus(row.status) &&
+              row.pending_ask !== undefined &&
+              !conversationStore.isAskRetired(
+                row.pending_ask.ask_id,
+                turn.threadId
+              ) &&
+              conversationStore.submittedAskSelection(
+                row.pending_ask.ask_id
+              ) === undefined &&
+              !answeringAskIds.value.has(row.pending_ask.ask_id)
           )?.pending_ask
         }
       return {
