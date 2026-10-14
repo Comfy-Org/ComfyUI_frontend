@@ -108,6 +108,7 @@ export interface AgentSessionDeps {
   rest: AgentRestClient
   events: AgentEventSource
   onThreadStarted?: (source: AgentSessionThreadStartSource) => void
+  onAgentEvent?: (event: AgentWsEvent) => void
   onThreadActivated?: (threadId: string | null) => void
   onAskResolved?: (askId: string) => void
   workflow?: {
@@ -380,6 +381,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     rest,
     events,
     onThreadStarted,
+    onAgentEvent,
     onThreadActivated,
     onAskResolved,
     workflow
@@ -1789,6 +1791,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       handleMalformedEvent(type, raw, parsed.error)
       return
     }
+    onAgentEvent?.(parsed.data)
     handleAgentEvent(parsed.data)
   }
 

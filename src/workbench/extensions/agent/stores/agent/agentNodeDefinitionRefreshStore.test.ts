@@ -1,16 +1,20 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { reportError } from '@/platform/telemetry/reportError'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { api } from '@/scripts/api'
 import { useCommandStore } from '@/stores/commandStore'
 
+import type { AgentWsEvent } from '../../schemas/agentApiSchema'
 import { useAgentNodeDefinitionRefreshStore } from './agentNodeDefinitionRefreshStore'
 
 vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
-function toolCall(toolName: string, status: 'running' | 'success' | 'error') {
+function toolCall(
+  toolName: string,
+  status: 'running' | 'success' | 'error'
+): AgentWsEvent {
   return {
     type: 'agent_tool_call',
     data: {
@@ -36,14 +40,11 @@ function registerRefreshCommand(
 }
 
 describe('agentNodeDefinitionRefreshStore', () => {
-  beforeEach(() => {
-    vi.useFakeTimers({ shouldAdvanceTime: false })
-  })
-
   it('refreshes node definitions before reloading the open workflow after a restart succeeds', async () => {
     const order: string[] = []
     registerRefreshCommand(
       vi.fn(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 100))
         order.push('refresh')
       })
     )
@@ -54,29 +55,32 @@ describe('agentNodeDefinitionRefreshStore', () => {
     )
 
     useAgentNodeDefinitionRefreshStore().observeAgentEvent(restartSucceeded)
-    await vi.advanceTimersByTimeAsync(0)
+    await vi.advanceTimersByTimeAsync(100)
 
     expect(order).toEqual(['refresh', 'reload'])
   })
 
-  it.for([
+  it.for<{ name: string; event: AgentWsEvent }>([
     {
       name: 'a restart still running',
-      raw: toolCall('restart_comfyui', 'running')
+      event: toolCall('restart_comfyui', 'running')
     },
     {
       name: 'a restart that failed',
-      raw: toolCall('restart_comfyui', 'error')
+      event: toolCall('restart_comfyui', 'error')
     },
-    { name: 'another tool succeeding', raw: toolCall('write', 'success') },
+    { name: 'another tool succeeding', event: toolCall('write', 'success') },
     {
       name: 'a frame that is not a tool call',
-      raw: { type: 'agent_message_delta', data: {} }
+      event: {
+        type: 'agent_message_delta',
+        data: { delta: 'Restarted', message_id: 'm', thread_id: 't' }
+      }
     }
-  ])('ignores $name', async ({ raw }) => {
+  ])('ignores $name', async ({ event }) => {
     const refresh = registerRefreshCommand()
 
-    useAgentNodeDefinitionRefreshStore().observeAgentEvent(raw)
+    useAgentNodeDefinitionRefreshStore().observeAgentEvent(event)
     await vi.advanceTimersByTimeAsync(0)
 
     expect(refresh).not.toHaveBeenCalled()
