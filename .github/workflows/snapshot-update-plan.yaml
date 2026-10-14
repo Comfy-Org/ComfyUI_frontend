@@ -119,6 +119,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           E2E_WORKFLOW: ${{ inputs.e2e-workflow }}
           HEAD_SHA: ${{ needs.setup.outputs.head-sha }}
+          BRANCH: ${{ needs.setup.outputs.branch }}
           ARTIFACT_PREFIX: ${{ inputs.artifact-prefix }}
           JOB_PREFIX: ${{ inputs.job-prefix }}
         run: |
@@ -130,10 +131,11 @@ jobs:
             exit 0
           }
 
-          run_id=$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/${E2E_WORKFLOW}/runs?head_sha=${HEAD_SHA}&event=pull_request&per_page=20" \
+          run_id=$(gh api -X GET "repos/${GITHUB_REPOSITORY}/actions/workflows/${E2E_WORKFLOW}/runs" \
+            -f head_sha="$HEAD_SHA" -f branch="$BRANCH" -f event=pull_request -F per_page=20 \
             --jq '[.workflow_runs[] | select(.conclusion != "cancelled" and .conclusion != "skipped")][0].id // empty')
           if [ -z "$run_id" ]; then
-            unavailable "No E2E run exists for ${HEAD_SHA}."
+            unavailable "No E2E run exists for ${HEAD_SHA} on ${BRANCH}."
           fi
           run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${run_id}"
 
