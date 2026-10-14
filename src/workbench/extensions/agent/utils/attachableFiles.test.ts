@@ -6,8 +6,7 @@ import {
   agentAttachRefVerdict,
   agentAttachVerdict,
   isAgentAttachable,
-  isValidAgentAttachment,
-  partitionAttachableFiles
+  isValidAgentAttachment
 } from './attachableFiles'
 
 /* Dragged files often carry no MIME (glb, md) or a generic one, so the
@@ -29,8 +28,6 @@ describe('isAgentAttachable', () => {
     expect(isAgentAttachable(fileNamed(name))).toBe(true)
   })
 
-  /* The formats PM-1855 adds. Text and 3D were the families that could not be
-     attached at all, which is the gap the agreed list closes. */
   it.for([
     'notes.md',
     'readme.markdown',
@@ -54,9 +51,6 @@ describe('isAgentAttachable', () => {
     expect(isAgentAttachable(fileNamed(name))).toBe(true)
   })
 
-  /* The formats PM-1855 rejects. Several of these used to slip through the
-     paperclip because the accept attribute carried image/*, video/* and
-     audio/* wildcards while the picker path ran no check of its own. */
   it.for([
     'page.html',
     'bundle.js',
@@ -85,9 +79,6 @@ describe('isAgentAttachable', () => {
 })
 
 describe('agentAttachCapability', () => {
-  /* The tier decides what the composer may promise the user: only `view` means
-     the model reads the content. A file the agent can merely name must never be
-     presented the same way. */
   it.for([
     ['photo.png', 'view'],
     ['photo.jpeg', 'view'],
@@ -108,10 +99,6 @@ describe('agentAttachCapability', () => {
 })
 
 describe('agentAttachVerdict', () => {
-  /* A caller weighing several strings of unequal authority needs "refused" and
-     "nothing to judge" kept apart: collapsing them is what made the asset-card
-     gate both too strict (a renamed but valid file refused) and too loose (a
-     rejected type admitted because the other operand said nothing). */
   it.for([
     ['photo.png', 'accepted'],
     ['notes.md', 'accepted'],
@@ -140,8 +127,6 @@ describe('agentAttachRefVerdict', () => {
 })
 
 describe('AGENT_ATTACH_ACCEPT', () => {
-  /* The wildcards are what let the OS picker offer .hdr, .exr, .wmv and .wma in
-     the first place (PM-1854); the accept list must name extensions only. */
   it('carries no MIME wildcard', () => {
     expect(AGENT_ATTACH_ACCEPT).not.toContain('/*')
   })
@@ -160,31 +145,7 @@ describe('AGENT_ATTACH_ACCEPT', () => {
   })
 })
 
-describe('partitionAttachableFiles', () => {
-  it('splits a mixed batch, preserving order within each side', () => {
-    const png = fileNamed('a.png')
-    const pdf = fileNamed('b.pdf')
-    const md = fileNamed('c.md')
-    const zip = fileNamed('d.zip')
-
-    expect(partitionAttachableFiles([png, pdf, md, zip])).toEqual({
-      attachable: [png, md],
-      rejected: [pdf, zip]
-    })
-  })
-
-  it('is empty on both sides for an empty batch', () => {
-    expect(partitionAttachableFiles([])).toEqual({
-      attachable: [],
-      rejected: []
-    })
-  })
-})
-
 describe('agentAttachRefVerdict', () => {
-  /* The server judges the final path segment (filepath.Ext over path.Base), so
-     the client must too — a dotted SUBFOLDER is not an extension. This was the
-     one ref shape the two allowlists disagreed about. */
   it.for([
     ['stored_photo.png', 'accepted'],
     ['a1b2c3.md', 'accepted'],

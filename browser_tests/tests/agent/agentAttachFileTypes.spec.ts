@@ -13,21 +13,6 @@ import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
-/**
- * Every format in the agreed list (PM-1855), driven through the real picker.
- *
- * Synthetic buffers rather than fixture files, deliberately: the gate under test
- * judges the EXTENSION, so a file named `mesh.fbx` exercises it exactly as a
- * real mesh would. That is what makes covering every format possible —
- * `browser_tests/assets` holds a real asset for only four of them. Video
- * containers get a minimal valid header because the composer checks their
- * signature before uploading.
- *
- * Grouped by tier rather than one test per format: a per-format test would mean
- * a browser session per format for a check that shares all of its setup. Each
- * format is still named in an assertion message, so a failure says which one
- * broke.
- */
 const ACCEPTED: ReadonlyArray<{
   tier: AgentAttachCapability
   files: readonly string[]
@@ -96,7 +81,6 @@ const ACCEPTED: ReadonlyArray<{
   { tier: 'retain', files: ['photo.avif'] }
 ]
 
-/** Every type PM-1855 requires be refused. */
 const REJECTED = [
   'page.html',
   'bundle.js',
@@ -132,9 +116,8 @@ function syntheticFile(name: string) {
   }
 }
 
-function refusalMessage(name: string): string {
-  const [singular] = enMessages.agent.attachmentTypeNotAccepted.split(' | ')
-  return singular.replace('{name}', name)
+function unsupportedTypeMessage(name: string): string {
+  return enMessages.agent.attachmentUnsupportedType.replace('{name}', name)
 }
 
 test.describe(
@@ -163,8 +146,6 @@ test.describe(
         'accept',
         AGENT_ATTACH_ACCEPT
       )
-      // The wildcards this replaced are what let .hdr, .exr, .wmv and .wma
-      // reach a paperclip that did no checking of its own (PM-1854).
       expect(AGENT_ATTACH_ACCEPT).not.toContain('/*')
       for (const rejected of REJECTED) {
         expect(
@@ -212,10 +193,15 @@ test.describe(
       })
     }
 
-    test('refuses every rejected format and says which file it refused', async ({
+    test('stages every rejected format as an invalid chip that is never uploaded', async ({
       agentPanel,
       comfyPage
     }) => {
+      const uploads: string[] = []
+      comfyPage.page.on('request', (request) => {
+        if (request.url().includes('/api/upload/image'))
+          uploads.push(request.url())
+      })
       await agentPanel.open()
 
       for (const file of REJECTED) {
@@ -226,17 +212,93 @@ test.describe(
 
         await agentPanel.fileInput.setInputFiles(syntheticFile(file))
 
-        // PM-1856: the refusal names the file rather than failing silently.
+        const chip = agentPanel.attachmentChip(file)
         await expect(
-          comfyPage.toast.withText(refusalMessage(file)),
-          `${file} must be reported as refused`
+          chip.getByRole('status', { name: unsupportedTypeMessage(file) }),
+          `${file} must be staged as an invalid chip`
         ).toBeVisible()
-        await expect(
-          agentPanel.composerAssetSection,
-          `${file} must not stage a chip`
-        ).toHaveCount(0)
-        await comfyPage.toast.closeToasts()
+        await expect(comfyPage.toast.withText(file)).toHaveCount(0)
+        await chip.hover()
+        await chip
+          .getByRole('button', {
+            name: enMessages.agent.removeAsset.replace('{name}', file),
+            exact: true
+          })
+          .click()
+        await expect(chip).toHaveCount(0)
       }
+      expect(uploads).toEqual([])
+    })
+
+    test('blocks Send for refused files from any path until they are removed', async ({
+      agentPanel,
+      comfyPage
+    }) => {
+      const page = comfyPage.page
+      await agentPanel.open()
+      await agentPanel.selectWorkflow()
+      await agentPanel.composer.fill('Describe these files')
+      await expect(agentPanel.sendButton).toBeEnabled()
+
+      const dataTransfer = await page.evaluateHandle(() => {
+        const transfer = new DataTransfer()
+        transfer.items.add(
+          new File(['%PDF'], 'doc.pdf', { type: 'application/pdf' })
+        )
+        return transfer
+      })
+      try {
+        await agentPanel.root.dispatchEvent('drop', { dataTransfer })
+      } finally {
+        await dataTransfer.dispose()
+      }
+      await expect(
+        agentPanel
+          .attachmentChip('doc.pdf')
+          .getByRole('status', { name: unsupportedTypeMessage('doc.pdf') })
+      ).toBeVisible()
+      await agentPanel.sendButton.hover()
+      await expect(
+        page.getByRole('tooltip', {
+          name: enMessages.agent.sendBlockedByUnsupportedType.replace(
+            '{name}',
+            'doc.pdf'
+          ),
+          exact: true
+        })
+      ).toBeVisible()
+
+      await agentPanel.fileInput.setInputFiles({
+        name: 'renamed.mp4',
+        mimeType: 'video/mp4',
+        buffer: Buffer.from('plain text')
+      })
+      await expect(
+        agentPanel.attachmentChip('renamed.mp4').getByRole('status')
+      ).toBeVisible()
+      await page.mouse.move(0, 0)
+      await agentPanel.sendButton.hover()
+      await expect(
+        page.getByRole('tooltip', {
+          name: enMessages.agent.sendBlockedByInvalidAttachments.replace(
+            '{count}',
+            '2'
+          ),
+          exact: true
+        })
+      ).toBeVisible()
+      await agentPanel.composer.press('Enter')
+      await expect(agentPanel.composer).toHaveText('Describe these files')
+
+      await agentPanel.close()
+      await agentPanel.open()
+      await expect(agentPanel.attachmentChip('doc.pdf')).toBeVisible()
+      await expect(agentPanel.composer).toHaveText('Describe these files')
+      await expect(agentPanel.sendButton).toBeDisabled()
+      await expect(comfyPage.toast.withText('doc.pdf')).toHaveCount(0)
+
+      await agentPanel.removeAllAttachments()
+      await expect(agentPanel.sendButton).toBeEnabled()
     })
 
     test('attaches a .json dropped on the panel instead of opening it as a workflow', async ({
@@ -248,10 +310,7 @@ test.describe(
 
       await agentPanel.dropFile(comfyPage.dragDrop, 'default.json')
 
-      // Dropping onto the composer means "attach this to the chat" (PM-1855).
       await expect(agentPanel.attachmentChip('default.json')).toBeVisible()
-      // Polled, not read once: the loader runs off a document listener, so a
-      // bare read can pass merely by getting there first.
       await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
     })
 
@@ -259,9 +318,6 @@ test.describe(
       agentPanel,
       comfyPage
     }) => {
-      // The other half of PM-1855's json rule, and the half the panel change
-      // could silently break: the composer claims a drop on itself, and the
-      // graph loader only runs while a drop is unclaimed.
       await agentPanel.open()
       await expect(agentPanel.composerAssetSection).toHaveCount(0)
 
@@ -282,8 +338,6 @@ test.describe(
     test('attaches the real fixtures that exist on disk through the picker', async ({
       agentPanel
     }) => {
-      // The synthetic-buffer cases above prove the gate; these prove the picker
-      // path works against genuine bytes for the formats that have an asset.
       await agentPanel.open()
 
       for (const file of [

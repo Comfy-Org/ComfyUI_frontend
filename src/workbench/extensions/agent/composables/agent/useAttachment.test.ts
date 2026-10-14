@@ -33,7 +33,7 @@ function chipRegistry() {
   const chips: ComposerAttachment[] = []
   return {
     chips,
-    stagedCount: () => chips.length,
+    staged: () => chips,
     stage: (attachment: ComposerAttachment) => {
       chips.push(attachment)
       return true
@@ -57,7 +57,7 @@ describe('useAttachment', () => {
     const { addFiles } = useAttachment({
       upload,
       onDuplicate,
-      stagedCount: () => store.attachments.length,
+      staged: () => store.attachments,
       stage: store.addAttachment,
       update: store.updateAttachment,
       remove: store.removeAttachment
@@ -83,7 +83,7 @@ describe('useAttachment', () => {
     const { addFiles } = useAttachment({
       upload,
       onDuplicate,
-      stagedCount: () => store.attachments.length,
+      staged: () => store.attachments,
       stage: store.addAttachment,
       update: store.updateAttachment,
       remove: store.removeAttachment
@@ -116,7 +116,7 @@ describe('useAttachment', () => {
       const upload = vi.fn(async (file: File) => ({ ref: file.name }))
       const { addFiles } = useAttachment({
         upload,
-        stagedCount: () => store.attachments.length,
+        staged: () => store.attachments,
         stage: store.addAttachment,
         update: store.updateAttachment,
         remove: store.removeAttachment
@@ -143,7 +143,7 @@ describe('useAttachment', () => {
     const { addFiles } = useAttachment({
       upload,
       onDuplicate,
-      stagedCount: () => store.attachments.length,
+      staged: () => store.attachments,
       stage: store.addAttachment,
       update: store.updateAttachment,
       remove: store.removeAttachment
@@ -166,7 +166,7 @@ describe('useAttachment', () => {
     upload.mockReturnValueOnce(oldUpload)
     const { addFiles, cancelUpload } = useAttachment({
       upload,
-      stagedCount: () => store.attachments.length,
+      staged: () => store.attachments,
       stage: store.addAttachment,
       update: store.updateAttachment,
       remove: store.removeAttachment
@@ -190,7 +190,7 @@ describe('useAttachment', () => {
     const resolve = async () => new File(['image'], 'cat.png')
     const { addDeferredFile } = useAttachment({
       upload,
-      stagedCount: () => store.attachments.length,
+      staged: () => store.attachments,
       stage: store.addAttachment,
       update: store.updateAttachment,
       remove: store.removeAttachment
@@ -209,7 +209,7 @@ describe('useAttachment', () => {
     const resolve = vi.fn(async () => new File(['image'], 'cat.png'))
     const { addDeferredFile } = useAttachment({
       upload,
-      stagedCount: () => store.attachments.length,
+      staged: () => store.attachments,
       stage: store.addAttachment,
       update: store.updateAttachment,
       remove: store.removeAttachment
@@ -243,10 +243,7 @@ describe('useAttachment', () => {
     expect(upload).toHaveBeenCalledTimes(2)
   })
 
-  it('refuses an unaccepted file type before staging or uploading, and says so', async () => {
-    // The paperclip reaches this with whatever the OS picker handed back, which
-    // is anything at all under "All Files" — the accept attribute is a hint the
-    // picker can be told to ignore (PM-1854). Silence here was PM-1856.
+  it('stages an unaccepted file type as an invalid chip without uploading or warning', async () => {
     const upload = vi.fn()
     const onError = vi.fn()
     const registry = chipRegistry()
@@ -259,13 +256,23 @@ describe('useAttachment', () => {
 
     expect(attached).toBe(false)
     expect(upload).not.toHaveBeenCalled()
-    expect(registry.chips).toEqual([])
-    expect(onError).toHaveBeenCalledTimes(1)
-    expect(onError.mock.calls.flat().join(' ')).toContain('doc.pdf')
-    expect(onError.mock.calls.flat().join(' ')).toContain('clip.wmv')
+    expect(onError).not.toHaveBeenCalled()
+    expect(registry.chips).toEqual([
+      expect.objectContaining({
+        name: 'doc.pdf',
+        ref: '',
+        validationError: 'unsupported-type'
+      }),
+      expect.objectContaining({
+        name: 'clip.wmv',
+        ref: '',
+        validationError: 'unsupported-type'
+      })
+    ])
+    expect(registry.chips.some((chip) => chip.uploading)).toBe(false)
   })
 
-  it('uploads the accepted files out of a mixed batch and reports only the rest', async () => {
+  it('uploads the accepted files out of a mixed batch and keeps the rest as invalid chips', async () => {
     const upload = vi.fn(async (file: File) => ({ ref: file.name }))
     const onError = vi.fn()
     const registry = chipRegistry()
@@ -278,11 +285,33 @@ describe('useAttachment', () => {
     ])
 
     expect(attached).toBe(true)
-    expect(registry.chips.map(({ name }) => name)).toEqual([
+    expect(
+      registry.chips.map(({ name, validationError }) => [name, validationError])
+    ).toEqual([
+      ['notes.md', undefined],
+      ['doc.pdf', 'unsupported-type'],
+      ['mesh.glb', undefined]
+    ])
+    expect(upload.mock.calls.map(([file]) => file.name)).toEqual([
       'notes.md',
       'mesh.glb'
     ])
-    expect(onError).toHaveBeenCalledTimes(1)
+    expect(onError).not.toHaveBeenCalled()
+  })
+
+  it('stages an oversized unaccepted file as an invalid chip rather than a size warning', async () => {
+    const upload = vi.fn()
+    const onError = vi.fn()
+    const registry = chipRegistry()
+    const { addFiles } = useAttachment({ upload, onError, ...registry })
+
+    await addFiles([fileOfSize('huge.pdf', MAX_ATTACHMENT_BYTES + 1)])
+
+    expect(registry.chips).toMatchObject([
+      { name: 'huge.pdf', validationError: 'unsupported-type' }
+    ])
+    expect(onError).not.toHaveBeenCalled()
+    expect(upload).not.toHaveBeenCalled()
   })
 
   it('stages no more than the contract allows and says so', async () => {
@@ -331,7 +360,7 @@ describe('useAttachment', () => {
       upload,
       onError,
       onDuplicate,
-      stagedCount: () => store.attachments.length,
+      staged: () => store.attachments,
       stage: store.addAttachment,
       update: store.updateAttachment,
       remove: store.removeAttachment
@@ -352,6 +381,148 @@ describe('useAttachment', () => {
     expect(store.attachments.at(-1)?.name).toBe('last.png')
     expect(onDuplicate).toHaveBeenCalledExactlyOnceWith(['0.png'])
     expect(onError).not.toHaveBeenCalled()
+  })
+
+  it('counts invalid chips toward the cap and stages nothing past it', async () => {
+    const upload = vi.fn(async (file: File) => ({ ref: file.name }))
+    const onError = vi.fn()
+    const registry = chipRegistry()
+    const { addFiles } = useAttachment({ upload, onError, ...registry })
+
+    await addFiles(
+      Array.from({ length: MAX_TURN_ATTACHMENTS - 1 }, (_unused, index) =>
+        fileOfSize(`${index}.pdf`, 1)
+      )
+    )
+    await addFiles([fileOfSize('last.png', 1), fileOfSize('over.pdf', 1)])
+
+    expect(registry.chips).toHaveLength(MAX_TURN_ATTACHMENTS)
+    expect(registry.chips.at(-1)?.name).toBe('last.png')
+    expect(registry.chips.some(({ name }) => name === 'over.pdf')).toBe(false)
+    expect(upload).toHaveBeenCalledOnce()
+    expect(onError).toHaveBeenCalledExactlyOnceWith(
+      `Only ${MAX_TURN_ATTACHMENTS} files can be attached to one message`
+    )
+  })
+
+  it.for([
+    { label: 'an accepted file', name: 'cap-01.png' },
+    { label: 'an unaccepted file', name: 'cap-01.pdf' }
+  ])(
+    'reports $label already in a full tray as a duplicate, not as over the cap',
+    async ({ name }) => {
+      const store = useAgentComposerStore()
+      const upload = vi.fn(async (file: File) => ({ ref: file.name }))
+      const onError = vi.fn()
+      const onDuplicate = vi.fn()
+      const { addFiles } = useAttachment({
+        upload,
+        onError,
+        onDuplicate,
+        staged: () => store.attachments,
+        stage: store.addAttachment,
+        update: store.updateAttachment,
+        remove: store.removeAttachment
+      })
+      const repeated = () => new File(['x'], name, { lastModified: 1 })
+      await addFiles([
+        repeated(),
+        ...Array.from(
+          { length: MAX_TURN_ATTACHMENTS - 1 },
+          (_unused, index) =>
+            new File(['x'], `filler-${index}.png`, { lastModified: 1 })
+        )
+      ])
+      expect(store.attachments).toHaveLength(MAX_TURN_ATTACHMENTS)
+
+      await addFiles([repeated()])
+
+      expect(onDuplicate).toHaveBeenCalledExactlyOnceWith([name])
+      expect(onError).not.toHaveBeenCalled()
+      expect(store.attachments).toHaveLength(MAX_TURN_ATTACHMENTS)
+    }
+  )
+
+  it('reports a deferred source already in a full tray as a duplicate', async () => {
+    const store = useAgentComposerStore()
+    const upload = vi.fn(async (file: File) => ({ ref: file.name }))
+    const onError = vi.fn()
+    const onDuplicate = vi.fn()
+    const { addFiles, addDeferredFile } = useAttachment({
+      upload,
+      onError,
+      onDuplicate,
+      staged: () => store.attachments,
+      stage: store.addAttachment,
+      update: store.updateAttachment,
+      remove: store.removeAttachment
+    })
+    await addDeferredFile(
+      'card.png',
+      async () => fileOfSize('card.png', 1),
+      'asset:card.png'
+    )
+    await addFiles(
+      Array.from(
+        { length: MAX_TURN_ATTACHMENTS - 1 },
+        (_unused, index) =>
+          new File(['x'], `filler-${index}.png`, { lastModified: 1 })
+      )
+    )
+    const resolve = vi.fn(async () => fileOfSize('card.png', 1))
+
+    await expect(
+      addDeferredFile('card.png', resolve, 'asset:card.png')
+    ).resolves.toBe('duplicate')
+    expect(resolve).not.toHaveBeenCalled()
+    expect(onDuplicate).toHaveBeenCalledExactlyOnceWith(['card.png'])
+    expect(onError).not.toHaveBeenCalled()
+  })
+
+  it('stages a rejected asset as an invalid chip without fetching it, within the cap', async () => {
+    const store = useAgentComposerStore()
+    const upload = vi.fn(async (file: File) => ({ ref: file.name }))
+    const onError = vi.fn()
+    const onDuplicate = vi.fn()
+    const { addFiles, addUnsupportedAsset } = useAttachment({
+      upload,
+      onError,
+      onDuplicate,
+      staged: () => store.attachments,
+      stage: store.addAttachment,
+      update: store.updateAttachment,
+      remove: store.removeAttachment
+    })
+
+    expect(addUnsupportedAsset('scene.usdz', 'asset:scene.usdz')).toBe(
+      'unsupported'
+    )
+    expect(store.attachments).toEqual([
+      expect.objectContaining({
+        name: 'scene.usdz',
+        ref: '',
+        sourceKey: 'asset:scene.usdz',
+        validationError: 'unsupported-type'
+      })
+    ])
+    expect(addUnsupportedAsset('scene.usdz', 'asset:scene.usdz')).toBe(
+      'duplicate'
+    )
+    expect(onDuplicate).toHaveBeenCalledExactlyOnceWith(['scene.usdz'])
+
+    await addFiles(
+      Array.from(
+        { length: MAX_TURN_ATTACHMENTS - 1 },
+        (_unused, index) =>
+          new File(['x'], `filler-${index}.png`, { lastModified: 1 })
+      )
+    )
+    expect(addUnsupportedAsset('doc.pdf', 'asset:doc.pdf')).toBe('too_many')
+    expect(store.attachments).toHaveLength(MAX_TURN_ATTACHMENTS)
+    expect(onError).toHaveBeenCalledExactlyOnceWith(
+      `Only ${MAX_TURN_ATTACHMENTS} files can be attached to one message`
+    )
+    expect(upload).toHaveBeenCalledTimes(MAX_TURN_ATTACHMENTS - 1)
   })
 
   it('refuses a deferred asset once the turn is full', async () => {
@@ -376,9 +547,6 @@ describe('useAttachment', () => {
     expect(registry.chips).toHaveLength(MAX_TURN_ATTACHMENTS)
   })
 
-  /* The number is restated in source because Zod exposes maxItems only through
-     internals. This pins it against the generated contract itself, so a change
-     to the spec's maxItems fails here rather than drifting unnoticed. */
   it('matches the maxItems the generated contract declares', () => {
     const attachments = (count: number) =>
       zAgentPostMessageRequest.safeParse({
@@ -880,10 +1048,31 @@ describe('useAttachment', () => {
 
     await expect(
       addDeferredFile('missing.mp4', async () => undefined)
-    ).resolves.toBe('unsupported')
+    ).resolves.toBe('fetch_failed')
 
     expect(registry.chips).toEqual([])
     expect(upload).not.toHaveBeenCalled()
+  })
+
+  it('keeps a deferred file of an unaccepted type as an invalid chip under its resolved name', async () => {
+    const upload = vi.fn()
+    const onError = vi.fn()
+    const registry = chipRegistry()
+    const { addDeferredFile } = useAttachment({ upload, onError, ...registry })
+
+    await expect(
+      addDeferredFile('My scan', async () => fileOfSize('scan.pdf', 1024))
+    ).resolves.toBe('unsupported')
+
+    expect(registry.chips).toMatchObject([
+      {
+        name: 'scan.pdf',
+        uploading: false,
+        validationError: 'unsupported-type'
+      }
+    ])
+    expect(upload).not.toHaveBeenCalled()
+    expect(onError).not.toHaveBeenCalled()
   })
 
   it('retains a deferred file that fails validation without a duplicate warning', async () => {
@@ -1369,7 +1558,7 @@ describe('useAttachment', () => {
     }
   })
 
-  it.for(['rejected', 'oversized', 'unsupported'] as const)(
+  it.for(['rejected', 'oversized', 'missing', 'unsupported'] as const)(
     'ignores a %s deferred source after cancellation',
     async (outcome) => {
       let resolveSource: (file: File | undefined) => void = () => {}
@@ -1392,7 +1581,8 @@ describe('useAttachment', () => {
         rejected: () => rejectSource(new Error('source failed')),
         oversized: () =>
           resolveSource(fileOfSize('cancelled.png', MAX_ATTACHMENT_BYTES + 1)),
-        unsupported: () => resolveSource(undefined)
+        missing: () => resolveSource(undefined),
+        unsupported: () => resolveSource(fileOfSize('cancelled.pdf', 1))
       }
       finish[outcome]()
 

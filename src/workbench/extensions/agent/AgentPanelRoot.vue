@@ -41,7 +41,6 @@ import {
   AGENT_ATTACH_ACCEPT,
   agentAttachRefVerdict,
   agentAttachVerdict,
-  isAgentAttachable,
   isValidAgentAttachment
 } from './utils/attachableFiles'
 import type { AgentAttachVerdict } from './utils/attachableFiles'
@@ -1729,7 +1728,7 @@ const attachment = useAttachment({
   // must not raise the server-error overlay.
   onError: warnAttachment,
   onDuplicate: notifyDuplicateAttachments,
-  stagedCount: () => composerStore.attachments.length,
+  staged: () => composerStore.attachments,
   stage: composerStore.addAttachment,
   update: composerStore.updateAttachment,
   remove: composerStore.removeAttachment
@@ -1844,52 +1843,11 @@ function warnAttachment(message: string): void {
   toast.warning(message, { duration: 5000 })
 }
 
-/**
- * An asset card is the fourth way a file reaches the composer and the only one
- * that can skip the upload, so it has to consult the same policy the other
- * three do. `asset.kind !== 'other'` is NOT that check — it reads the shared
- * media taxonomy, which files .usdz as 3D while the accepted list rejects it.
- *
- * Two strings of unequal authority, so the AUTHORITATIVE one is asked first:
- * `ref` is the stored filename the server resolves and re-checks, while `name`
- * is the card's display label, which need not carry a judgeable extension at
- * all. `unknown` from both leaves the decision to the deferred fetch, which
- * sees the real File.
- */
 function droppedAssetVerdict(asset: DroppedAsset): AgentAttachVerdict {
-  // Falls THROUGH on `unknown` rather than stopping there. A library asset's
-  // ref is its stored hash, which carries no extension, so returning that
-  // verdict meant the name was never consulted for any cloud asset — and the
-  // only thing left before staging was `asset.kind !== 'other'`, which reads
-  // the media taxonomy rather than the accept list. .usdz is non-'other' and
-  // NOT accepted, so it took a chip, the server refused it, and the turn
-  // still answered 200 with nothing said.
   const fromRef = asset.ref ? agentAttachRefVerdict(asset.ref) : 'unknown'
   return fromRef === 'unknown' ? agentAttachVerdict(asset.name) : fromRef
 }
 
-function warnDroppedAssetResult(
-  result: Awaited<ReturnType<typeof attachment.addDeferredFile>>,
-  fetched: File | undefined,
-  refused: string,
-  name: string
-): void {
-  if (result === 'fetch_failed') {
-    warnAttachment(t('agent.assetFetchFailed', { name }))
-    return
-  }
-  if (result !== 'unsupported') return
-  warnAttachment(fetched ? refused : t('agent.assetFetchFailed', { name }))
-}
-
-/**
- * Stages a card whose stored ref the policy already accepted, without an upload.
- *
- * The only path that stages outside useAttachment, so it is the only one that
- * has to apply the turn cap itself. Skipping it let a 26th card take a chip
- * while resolveAttachmentAssets dropped the reference — attached-looking and
- * absent from the turn, the PM-1856 failure the cap exists to prevent.
- */
 function stageAcceptedAssetCard(
   asset: DroppedAsset,
   ref: string,
@@ -1925,39 +1883,22 @@ async function attachDroppedAsset(event: DragEvent): Promise<boolean> {
     return false
   }
 
-  const refused = t('agent.attachmentTypeNotAccepted', { name: asset.name }, 1)
+  const sourceKey = asset.ref ? `asset:${asset.ref}` : `uri:${asset.uri}`
   if (droppedAssetVerdict(asset) === 'rejected') {
-    warnAttachment(refused)
+    attachment.addUnsupportedAsset(asset.name, sourceKey)
     return false
   }
-
-  const sourceKey = asset.ref ? `asset:${asset.ref}` : `uri:${asset.uri}`
-  // A ref with a judgeable extension reached this point only if the policy
-  // accepted it. An opaque ref (a bare digest or blake3: value) must also stay
-  // intact: the cloud contract deliberately admits it and rechecks the stored
-  // filename after resolution. Asset-card payloads do not necessarily carry a
-  // fetch URI, so routing an opaque ref through the deferred fetch would drop a
-  // valid attachment before the server can adjudicate it.
   if (asset.ref && asset.kind !== 'other') {
     return stageAcceptedAssetCard(asset, asset.ref, sourceKey)
   }
 
-  // fetchDroppedAsset answers undefined for a missing URI, a non-ok response
-  // and a thrown fetch alike, so the outcomes are told apart here instead.
-  // Reporting a 404 as a refused file type is specific and false.
-  let fetched: File | undefined
   const result = await attachment.addDeferredFile(
     asset.name,
-    async (signal) => {
-      fetched = await fetchDroppedAsset(asset, {
-        signal,
-        nameFromSource: true
-      })
-      return fetched && isAgentAttachable(fetched) ? fetched : undefined
-    },
+    (signal) => fetchDroppedAsset(asset, { signal, nameFromSource: true }),
     sourceKey
   )
-  warnDroppedAssetResult(result, fetched, refused, asset.name)
+  if (result === 'fetch_failed')
+    warnAttachment(t('agent.assetFetchFailed', { name: asset.name }))
   return result === 'uploaded'
 }
 
@@ -1977,12 +1918,6 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
     })
     return
   }
-  // A drop ON THE PANEL is claimed whole, including a .json the graph loader
-  // would otherwise open as a workflow: dropping onto the composer says "attach
-  // this to the chat", and the canvas keeps the workflow behaviour because it
-  // has its own handler (useCanvasDrop) this never reaches (PM-1855). Claiming
-  // everything is also what lets an unsupported file be REPORTED instead of
-  // silently falling through to a loader that ignores it (PM-1856).
   const files = Array.from(event.dataTransfer?.files ?? [])
   if (files.length === 0) return
   event.preventDefault()

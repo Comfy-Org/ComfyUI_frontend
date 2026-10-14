@@ -35,9 +35,6 @@ describe('pasting files into the composer', () => {
   })
 
   it('forwards every pasted file, leaving the accept decision to the composer', async () => {
-    // The editor deliberately does not filter: the composer's addFiles is the
-    // single gate, and it is what reports a type it will not take. Filtering
-    // here made a rejected paste look like pasting nothing (PM-1856).
     const user = userEvent.setup()
     const view = mount()
 
@@ -102,8 +99,6 @@ describe('pasting files into the composer', () => {
       clipboardOf(new File(['x'], 'archive.zip', { type: 'application/zip' }))
     )
 
-    // Forwarded so the composer can refuse it out loud; the draft the paste
-    // would have replaced is still untouched.
     expect(view.emitted().attachFiles).toHaveLength(1)
     expect(editor).toHaveTextContent('keep me')
   })

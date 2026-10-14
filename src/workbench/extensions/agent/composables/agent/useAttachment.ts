@@ -8,23 +8,11 @@ import {
   AgentResponseUnreadableError
 } from '../../services/agent/agentRestClient'
 import type { ComposerAttachment } from '../../types/composerAttachment'
-import { partitionAttachableFiles } from '../../utils/attachableFiles'
-import { refusedAttachmentsMessage } from '../../utils/attachmentMessages'
+import { isAgentAttachable } from '../../utils/attachableFiles'
 
 export const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024
 
-/**
- * The contract's `maxItems` on AgentPostMessageRequest.attachments.
- *
- * Capped here rather than left to the server because the server does not refuse
- * the overflow — resolveAttachmentAssets drops every reference past this many
- * with a warn log, so the file would appear attached and then silently not
- * exist for the turn. That is the failure PM-1856 is about.
- *
- * Restated as a number because Zod exposes `maxItems` only through internals;
- * useAttachment.test.ts pins it against zAgentPostMessageRequest itself, so a
- * change to the spec fails there rather than drifting unnoticed.
- */
+/** The contract's `maxItems` on AgentPostMessageRequest.attachments. */
 export const MAX_TURN_ATTACHMENTS = 25
 const UPLOAD_HANDSHAKE_TIMEOUT_MS = 30 * 1000
 const UPLOAD_FLOOR_BYTES_PER_SECOND = 64 * 1024
@@ -48,12 +36,20 @@ interface UploadResult {
 
 type UploadFileResult = 'uploaded' | 'cancelled' | 'failed'
 
+type Admission = 'admitted' | 'duplicate' | 'too_many'
+
+type FileStaging =
+  | { file: File; outcome: 'upload'; id: string }
+  | {
+      file: File
+      outcome: 'staged' | 'skipped' | Exclude<Admission, 'admitted'>
+    }
+
 type DeferredFileResult =
   | UploadFileResult
+  | Exclude<Admission, 'admitted'>
   | 'unsupported'
-  | 'duplicate'
   | 'fetch_failed'
-  | 'too_many'
 
 export interface UseAttachmentOptions {
   upload: (file: File, signal: AbortSignal) => Promise<UploadResult>
@@ -63,12 +59,7 @@ export interface UseAttachmentOptions {
   onError?: (message: string) => void
   onUploaded?: () => void
   onDuplicate?: (names: string[]) => void
-  /**
-   * How many attachments are already staged on the turn. Required rather than
-   * optional: defaulting it to 0 would disable the count cap silently, and the
-   * composer — not this composable — owns the staged list.
-   */
-  stagedCount: () => number
+  staged: () => readonly ComposerAttachment[]
   stage: (attachment: ComposerAttachment) => boolean
   update: (id: string, patch: Partial<ComposerAttachment>) => void
   remove: (id: string) => void
@@ -111,6 +102,10 @@ let stagedCount = 0
 
 function fileUploadKey(file: File): string {
   return `${file.name}:${file.size}:${file.lastModified}`
+}
+
+function fileSourceKey(file: File): string {
+  return `file:${JSON.stringify([file.name, file.size, file.lastModified, file.type])}`
 }
 
 async function fileContentHash(file: File): Promise<string> {
@@ -174,6 +169,34 @@ export function useAttachment(options: UseAttachmentOptions) {
       return undefined
     pending.add(id)
     return id
+  }
+
+  function stageUnsupported(
+    name: string,
+    sourceKey: string
+  ): string | undefined {
+    const id = `upload-${++stagedCount}:${name}`
+    const staged = options.stage({
+      id,
+      name,
+      ref: '',
+      sourceKey,
+      validationError: 'unsupported-type'
+    })
+    return staged ? id : undefined
+  }
+
+  function admit(sourceKey: string | undefined): Admission {
+    const staged = options.staged()
+    if (staged.length < MAX_TURN_ATTACHMENTS) return 'admitted'
+    return sourceKey && staged.some((item) => item.sourceKey === sourceKey)
+      ? 'duplicate'
+      : 'too_many'
+  }
+
+  function reportAdmission(name: string, admission: Admission): void {
+    if (admission === 'duplicate') options.onDuplicate?.([name])
+    if (admission === 'too_many') reportTurnLimit()
   }
 
   function settle(id: string): void {
@@ -358,6 +381,14 @@ export function useAttachment(options: UseAttachmentOptions) {
       if (cancelled.has(id)) return 'cancelled'
       if (!file) {
         options.remove(id)
+        return 'fetch_failed'
+      }
+      if (!isAgentAttachable(file)) {
+        options.update(id, {
+          name: file.name,
+          uploading: false,
+          validationError: 'unsupported-type'
+        })
         return 'unsupported'
       }
       if (isTooLarge(file)) {
@@ -387,9 +418,10 @@ export function useAttachment(options: UseAttachmentOptions) {
     resolve: (signal: AbortSignal) => Promise<File | undefined>,
     sourceKey?: string
   ): Promise<DeferredFileResult> {
-    if (options.stagedCount() >= MAX_TURN_ATTACHMENTS) {
-      reportTurnLimit()
-      return 'too_many'
+    const admission = admit(sourceKey)
+    if (admission !== 'admitted') {
+      reportAdmission(name, admission)
+      return admission
     }
     const id = stage(name, sourceKey)
     if (!id) {
@@ -399,35 +431,48 @@ export function useAttachment(options: UseAttachmentOptions) {
     return uploadDeferredFile(id, name, resolve)
   }
 
-  // The one gate every upload path passes through. The paperclip, a panel drop
-  // and a paste all land here, so putting the type check anywhere else is what
-  // let them disagree in the first place (PM-1854): `accept` on the file input
-  // is only a picker hint, and "All Files" defeats it.
-  async function addFiles(files: Iterable<File>): Promise<boolean> {
-    const { attachable, rejected } = partitionAttachableFiles(files)
-    // One message for the whole batch: dropping a folder of unsupported files
-    // would otherwise stack that many simultaneous 5-second toasts.
-    if (rejected.length > 0) {
-      options.onError?.(
-        refusedAttachmentsMessage(rejected.map(({ name }) => name))
-      )
+  function addUnsupportedAsset(
+    name: string,
+    sourceKey: string
+  ): Exclude<DeferredFileResult, UploadFileResult | 'fetch_failed'> {
+    const admission = admit(sourceKey)
+    if (admission !== 'admitted') {
+      reportAdmission(name, admission)
+      return admission
     }
+    if (stageUnsupported(name, sourceKey)) return 'unsupported'
+    options.onDuplicate?.([name])
+    return 'duplicate'
+  }
 
-    const sized = attachable.filter((file) => !isTooLarge(file))
-    const duplicates: string[] = []
-    const staged = sized.flatMap((file) => {
-      if (options.stagedCount() >= MAX_TURN_ATTACHMENTS) return []
-      const sourceKey = `file:${JSON.stringify([file.name, file.size, file.lastModified, file.type])}`
-      const id = stage(file.name, sourceKey)
-      if (!id) duplicates.push(file.name)
-      return id ? [{ file, id }] : []
-    })
+  function stageFile(file: File): FileStaging {
+    const supported = isAgentAttachable(file)
+    if (supported && isTooLarge(file)) return { file, outcome: 'skipped' }
+    const sourceKey = fileSourceKey(file)
+    const admission = admit(sourceKey)
+    if (admission !== 'admitted') return { file, outcome: admission }
+    if (!supported)
+      return {
+        file,
+        outcome: stageUnsupported(file.name, sourceKey) ? 'staged' : 'duplicate'
+      }
+    const id = stage(file.name, sourceKey)
+    return id ? { file, outcome: 'upload', id } : { file, outcome: 'duplicate' }
+  }
+
+  async function addFiles(files: Iterable<File>): Promise<boolean> {
+    const staged = Array.from(files, stageFile)
+    const duplicates = staged.flatMap(({ file, outcome }) =>
+      outcome === 'duplicate' ? [file.name] : []
+    )
     if (duplicates.length) options.onDuplicate?.(duplicates)
-    if (staged.length + duplicates.length < sized.length) reportTurnLimit()
+    if (staged.some(({ outcome }) => outcome === 'too_many')) reportTurnLimit()
     let uploaded = 0
     await Promise.all(
-      staged.map(async ({ id, file }) => {
-        if ((await uploadStagedFile(id, file)) === 'uploaded') uploaded += 1
+      staged.map(async (item) => {
+        if (item.outcome !== 'upload') return
+        if ((await uploadStagedFile(item.id, item.file)) === 'uploaded')
+          uploaded += 1
       })
     )
     if (uploaded > 0) options.onUploaded?.()
@@ -437,6 +482,7 @@ export function useAttachment(options: UseAttachmentOptions) {
   return {
     addDeferredFile,
     addFiles,
+    addUnsupportedAsset,
     cancelUpload,
     cancelAllUploads,
     forgetUploads

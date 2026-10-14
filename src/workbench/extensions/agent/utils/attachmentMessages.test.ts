@@ -23,9 +23,6 @@ describe('refusedAttachmentsMessage', () => {
     )
   })
 
-  /* The server caps AgentAttachmentRejected.rejected and reports the real
-     figure in rejected_count, so counting the array understates the refusal —
-     the user would be told 3 files were rejected when 40 were. */
   it('reports the server total rather than the length of the capped list', () => {
     const message = refusedAttachmentsMessage(['a.pdf', 'b.pdf', 'c.pdf'], 40)
     expect(message).toContain('and 37 more')

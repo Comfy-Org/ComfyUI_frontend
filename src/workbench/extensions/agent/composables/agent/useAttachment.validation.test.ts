@@ -16,7 +16,7 @@ describe('attachment validation staging', () => {
     const attachment = useAttachment({
       validate: (file) => (file.name.endsWith('.mp4') ? validation : true),
       upload: async (file) => ({ ref: file.name }),
-      stagedCount: () => store.attachments.length,
+      staged: () => store.attachments,
       stage: store.addAttachment,
       update: store.updateAttachment,
       remove: store.removeAttachment
@@ -47,7 +47,7 @@ describe('attachment validation staging', () => {
     const attachment = useAttachment({
       validate: () => validation,
       upload: async (file) => ({ ref: file.name }),
-      stagedCount: () => store.attachments.length,
+      staged: () => store.attachments,
       stage: store.addAttachment,
       update: store.updateAttachment,
       remove: store.removeAttachment
@@ -88,7 +88,7 @@ describe('attachment validation staging', () => {
       validate: (file) => file.name === 'notes.txt',
       upload,
       onError,
-      stagedCount: () => store.attachments.length,
+      staged: () => store.attachments,
       stage: store.addAttachment,
       update: store.updateAttachment,
       remove: store.removeAttachment

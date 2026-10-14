@@ -12,6 +12,7 @@ import { nextTick } from 'vue'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import { i18n } from '@/i18n'
 
+import type { AttachmentValidationError } from '../../../types/composerAttachment'
 import AttachmentChip from './AttachmentChip.vue'
 
 function renderChip(props: {
@@ -20,7 +21,7 @@ function renderChip(props: {
   mediaUrl?: string
   mediaKind?: MediaKind
   uploading?: boolean
-  validationError?: 'invalid-video'
+  validationError?: AttachmentValidationError
 }) {
   const rendered = render(AttachmentChip, {
     props,
@@ -443,4 +444,40 @@ describe('AttachmentChip', () => {
     await user.keyboard('{Enter}')
     expect(emitted('remove')).toHaveLength(1)
   })
+
+  it.for([
+    { name: 'doc.pdf', mediaKind: undefined },
+    { name: 'plate.exr', mediaKind: 'image' as const }
+  ])(
+    'shows $name of an unaccepted type as a generic file with the type explanation',
+    async ({ name, mediaKind }) => {
+      const user = userEvent.setup()
+      const { container, emitted } = renderChip({
+        name,
+        mediaKind,
+        previewUrl: 'blob:preview',
+        validationError: 'unsupported-type'
+      })
+      const message = `${name} isn’t a file type the agent accepts. Remove it and try another file.`
+      const status = screen.getByRole('status')
+
+      expect(status).toHaveAccessibleName(message)
+      expect(screen.queryByRole('img')).not.toBeInTheDocument()
+      expect(iconMarker(container)).toContain('icon-[lucide--file]')
+      expect(
+        screen.queryByRole('button', { name: `Preview ${name}` })
+      ).not.toBeInTheDocument()
+      await user.hover(status)
+      expect(await screen.findByRole('tooltip')).toHaveTextContent(message)
+      await user.unhover(status)
+      await user.tab()
+      expect(status).toHaveFocus()
+      await user.tab()
+      expect(
+        screen.getByRole('button', { name: `Remove ${name}` })
+      ).toHaveFocus()
+      await user.keyboard('{Enter}')
+      expect(emitted('remove')).toHaveLength(1)
+    }
+  )
 })

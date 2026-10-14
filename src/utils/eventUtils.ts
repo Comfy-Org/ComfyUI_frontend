@@ -35,15 +35,6 @@ export function getDroppedAsset(
     : undefined
 }
 
-/**
- * Last path segment, percent-decoded when it can be.
- *
- * `decodeURIComponent` throws on a malformed escape like `%E0%A4%A`, and this
- * runs inside the fetch's try block — so one bad byte in a URL discarded a
- * blob that had already downloaded fine and reported it to the user as a
- * failed retrieval. The raw segment is a worse name, not a reason to drop the
- * file.
- */
 function decodedBasename(pathname: string): string {
   const segment = pathname.split('/').pop() || ''
   try {
@@ -58,13 +49,6 @@ function sourceFileName(
   uri: string,
   responseUrl: string
 ): string {
-  // Each candidate is taken only if it carries an extension. `ref` outranks
-  // the storage basename because /api/assets/<id>/content 302s to a signed
-  // URL keyed by hash: that basename is either extensionless (yielding a File
-  // the accept list then refuses) or a dotted digest like `<hex>.png`, which
-  // passes the extension test and relabels the chip — and, since this File's
-  // name is what uploadImage posts, becomes the uploaded ref and the name the
-  // seed shows the model.
   const resolvedUrl = new URL(responseUrl || uri, 'http://localhost')
   const named = [
     resolvedUrl.searchParams.get('filename'),

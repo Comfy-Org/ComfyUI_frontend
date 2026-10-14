@@ -2384,6 +2384,10 @@ function dispatchDrag(
 
 const mp4Header = '\0\0\0\x18ftyp'
 
+function unsupportedTypeMessage(name: string): string {
+  return i18n.global.t('agent.attachmentUnsupportedType', { name })
+}
+
 function fileOfSize(name: string, size: number, type: string): File {
   const file = new File([mp4Header], name, { type })
   Object.defineProperty(file, 'size', { value: size })
@@ -3292,6 +3296,52 @@ describe('AgentPanelRoot attach flow', () => {
     expect(telemetry.trackAgentAttachButtonClicked).not.toHaveBeenCalled()
   })
 
+  it.for(['picker', 'drop', 'paste'] as const)(
+    'stages a refused type from the %s as an invalid chip and blocks Send',
+    async (path) => {
+      const uploaded = stubUploadFetch()
+      renderWithSelectedTarget()
+      await nextTick()
+      const user = userEvent.setup({ applyAccept: false })
+      const doc = new File(['x'], 'doc.pdf', { type: 'application/pdf' })
+      const store = useAgentComposerStore()
+      store.setText('Keep this draft')
+      const target = screen.getByRole('textbox')
+
+      if (path === 'picker') {
+        await openAddMenu()
+        await user.click(
+          await screen.findByRole('menuitem', {
+            name: i18n.global.t('agent.attachFiles')
+          })
+        )
+        await user.upload(
+          screen.getByTestId<HTMLInputElement>('agent-file-input'),
+          doc
+        )
+      }
+      if (path === 'drop') dispatchDrag(target, 'drop', { files: [doc] })
+      if (path === 'paste') {
+        const clipboard = new DataTransfer()
+        clipboard.items.add(doc)
+        await user.click(target)
+        await user.paste(clipboard)
+      }
+
+      expect(
+        await screen.findByRole('status', {
+          name: unsupportedTypeMessage('doc.pdf')
+        })
+      ).toBeVisible()
+      expect(
+        screen.getByRole('button', { name: i18n.global.t('agent.send') })
+      ).toHaveAttribute('aria-disabled', 'true')
+      expect(store.draft).toBe('Keep this draft')
+      expect(uploaded).toEqual([])
+      expect(useToast().toasts).toEqual([])
+    }
+  )
+
   it('refuses a text file renamed to mp4 from the picker', async () => {
     const uploaded = stubUploadFetch()
     renderWithSelectedTarget()
@@ -4046,44 +4096,47 @@ describe('AgentPanelRoot attach flow', () => {
     }
   })
 
-  it('refuses an asset card whose type is outside the accepted list', async () => {
-    // The asset-card path can stage without uploading, so it used to skip the
-    // policy entirely: it gated on the shared media taxonomy, which files
-    // .usdz as 3D while the accepted list rejects it. The card staged silently
-    // and the turn then failed at submit.
-    stubUploadFetch()
+  it('stages a rejected asset card as an invalid chip without fetching or uploading it', async () => {
+    const uploaded = stubUploadFetch()
     renderWithSelectedTarget()
     await nextTick()
+    const store = useAgentComposerStore()
 
-    const dragData = {
-      types: ['application/x-comfy-asset-info'],
-      getData: () =>
-        JSON.stringify({
-          filename: 'scene.usdz',
-          type: 'input',
-          attachment_ref: 'stored_scene.usdz',
-          media_kind: '3D'
-        })
-    }
-    dispatchDrag(screen.getByRole('textbox'), 'drop', dragData)
+    dispatchDrag(screen.getByRole('textbox'), 'drop', {
+      types: ['application/x-comfy-asset-info', 'text/uri-list'],
+      getData: (type: string) =>
+        type === 'application/x-comfy-asset-info'
+          ? JSON.stringify({
+              filename: 'scene.usdz',
+              type: 'input',
+              attachment_ref: 'stored_scene.usdz',
+              media_kind: '3D'
+            })
+          : 'http://localhost/api/view?filename=stored_scene.usdz'
+    })
 
-    await vi.waitFor(() =>
-      expect(
-        useToast().toasts.some(({ title }) => title.includes('scene.usdz'))
-      ).toBe(true)
-    )
     expect(
-      screen.queryByTestId('composer-asset-section')
-    ).not.toBeInTheDocument()
+      await screen.findByRole('status', {
+        name: unsupportedTypeMessage('scene.usdz')
+      })
+    ).toBeVisible()
+    expect(store.attachments).toEqual([
+      expect.objectContaining({
+        name: 'scene.usdz',
+        ref: '',
+        validationError: 'unsupported-type'
+      })
+    ])
+    expect(
+      vi
+        .mocked(fetch)
+        .mock.calls.some(([input]) => String(input).includes('/api/view'))
+    ).toBe(false)
+    expect(uploaded).toEqual([])
+    expect(useToast().toasts).toEqual([])
   })
 
   it('preserves an opaque asset ref instead of uploading it', async () => {
-    // An opaque ref (a bare digest or blake3: value) cannot be judged on the
-    // client, and that is not a reason to drop it: the cloud contract
-    // deliberately admits an extensionless reference and rechecks the stored
-    // filename after resolution. An asset card need not carry a fetch URI at
-    // all, so routing it through the deferred fetch would lose a valid
-    // attachment before the server ever saw it. It must stage as-is, unuploaded.
     const uploads: File[] = []
     vi.mocked(fetch).mockImplementation(
       async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -4120,18 +4173,10 @@ describe('AgentPanelRoot attach flow', () => {
       expect(screen.getByTestId('agent-attachment-chip')).toBeInTheDocument()
     )
     expect(uploads).toHaveLength(0)
-    expect(
-      useToast().toasts.some(({ title }) => title.includes('not a file type'))
-    ).toBe(false)
+    expect(useToast().toasts).toEqual([])
   })
 
-  it('refuses an asset card whose stored name is an unaccepted type', async () => {
-    // .usdz is the one extension the shared media taxonomy calls non-'other'
-    // while the accept list rejects it, so it is the only card that can reach
-    // the fast path and still be refused by the server. The ref is the stored
-    // hash and carries no extension, so judging the ref alone returned
-    // 'unknown' and the NAME was never consulted — the card took a chip, the
-    // server dropped the reference, and the turn answered 200 saying nothing.
+  it('stages an opaque asset card with a rejected label as an invalid chip', async () => {
     stubUploadFetch()
     renderWithSelectedTarget()
     await nextTick()
@@ -4147,20 +4192,55 @@ describe('AgentPanelRoot attach flow', () => {
         })
     })
 
-    await vi.waitFor(() =>
-      expect(
-        useToast().toasts.some(({ title }) => title.includes('scene.usdz'))
-      ).toBe(true)
-    )
     expect(
-      screen.queryByTestId('agent-attachment-chip')
-    ).not.toBeInTheDocument()
+      await screen.findByRole('status', {
+        name: unsupportedTypeMessage('scene.usdz')
+      })
+    ).toBeVisible()
+    expect(useToast().toasts).toEqual([])
+  })
+
+  it('keeps a fetched asset of an unaccepted type as an invalid chip under its stored name', async () => {
+    const uploads: File[] = []
+    vi.mocked(fetch).mockImplementation(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input)
+        if (url.includes('/api/view'))
+          return new Response(new Blob(['%PDF'], { type: 'application/pdf' }))
+        if (url.endsWith('/api/upload/image')) {
+          if (init?.body instanceof FormData) {
+            const image = init.body.get('image')
+            if (image instanceof File) uploads.push(image)
+          }
+          return json(200, { name: 'uploaded.pdf' })
+        }
+        return json(200, agentThreadList())
+      }
+    )
+    renderWithSelectedTarget()
+    await nextTick()
+
+    dispatchDrag(screen.getByRole('textbox'), 'drop', {
+      types: ['application/x-comfy-asset-info', 'text/uri-list'],
+      getData: (type: string) =>
+        type === 'application/x-comfy-asset-info'
+          ? JSON.stringify({
+              filename: 'My scan',
+              type: 'input'
+            })
+          : 'http://localhost/api/view?filename=scan.pdf'
+    })
+
+    expect(
+      await screen.findByRole('status', {
+        name: unsupportedTypeMessage('scan.pdf')
+      })
+    ).toBeVisible()
+    expect(uploads).toEqual([])
+    expect(useToast().toasts).toEqual([])
   })
 
   it('refuses an asset card once the turn is already full', async () => {
-    // The asset-card fast path stages without going through useAttachment, so
-    // it is the one route that has to apply the cap itself. Without this a 26th
-    // card got a chip while the server dropped the reference.
     stubUploadFetch()
     renderWithSelectedTarget()
     await nextTick()
@@ -4229,10 +4309,6 @@ describe('AgentPanelRoot attach flow', () => {
   })
 
   it('attaches a dropped workflow json to the chat instead of the graph loader', async () => {
-    // Dropping ONTO THE COMPOSER means "attach this", so the panel claims a
-    // .json rather than leaving it for the loader (PM-1855). The canvas keeps
-    // the open-as-workflow behaviour through its own handler, which a drop on
-    // this target never reaches.
     stubUploadFetch()
     renderWithSelectedTarget()
     await nextTick()
@@ -4301,14 +4377,11 @@ describe('AgentPanelRoot attach flow', () => {
     expect(store.prompt).toEqual({ text: 'Keep this draft', references: [] })
   })
 
-  it('attaches the accepted files out of a mixed drop and reports the rest', async () => {
+  it('attaches the accepted files out of a mixed drop and keeps the rest as invalid chips', async () => {
     const uploaded = stubUploadFetch()
     renderWithSelectedTarget()
     await nextTick()
 
-    // The rejected file comes first so a regression that forwards the whole
-    // drop would upload doc.pdf before cat.png, rather than the assertion
-    // latching a lucky intermediate state.
     const files = [
       new File(['x'], 'doc.pdf', { type: 'application/pdf' }),
       new File(['x'], 'cat.png', { type: 'image/png' })
@@ -4322,16 +4395,12 @@ describe('AgentPanelRoot attach flow', () => {
       )
     ).toBeInTheDocument()
     await vi.waitFor(() => expect(uploaded).toEqual(['cat.png']))
-    expect(screen.queryByText('doc.pdf')).not.toBeInTheDocument()
-    // PM-1856: the refusal is surfaced, not swallowed.
     expect(
-      useToast().toasts.some(({ title }) => title.includes('doc.pdf'))
-    ).toBe(true)
+      screen.getByRole('status', { name: unsupportedTypeMessage('doc.pdf') })
+    ).toBeVisible()
+    expect(useToast().toasts).toEqual([])
   })
 
-  // Falsifiers for the committed-drop gates: an implementation that emits
-  // before the deferred fetch or upload settles, or ignores their results,
-  // fails these.
   it.for(['failed', 'cancelled'] as const)(
     'emits no drop telemetry for a %s deferred asset',
     async (outcome) => {

@@ -98,8 +98,6 @@ describe('fetchDroppedAsset', () => {
     vi.mocked(fetch).mockResolvedValue(response)
   }
 
-  /* The File's name is what uploadImage posts, so it becomes the uploaded ref
-     and the name the seed shows the model — not just the chip's label. */
   it.for([
     [
       'a dotted content hash must not outrank the ref',
@@ -137,9 +135,6 @@ describe('fetchDroppedAsset', () => {
     expect(file?.name).toBe('real name.png')
   })
 
-  /* decodeURIComponent throws on a malformed escape, and it runs inside the
-     fetch's try block — so one bad byte in a storage URL used to discard a blob
-     that had already downloaded fine and report it as a failed retrieval. */
   it('keeps the file when the storage path has a malformed escape', async () => {
     stubFetch('https://storage/bucket/%E0%A4%A')
     const file = await fetchDroppedAsset(

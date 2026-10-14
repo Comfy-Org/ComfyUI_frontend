@@ -8,19 +8,7 @@ import {
 
 import type { VideoExtension } from '@/utils/formatUtil'
 
-/**
- * What the agent can do with an attachment, straight off the server contract.
- *
- * The tiers are not interchangeable and the composer must not present them as
- * one list: `view` means the model sees the content, `read` means it reads the
- * contents verbatim, `probe` means it reads metadata and never the content,
- * `reference` means it knows the file exists as a mesh, and `retain` means it
- * knows the file exists and nothing more.
- *
- * `read` describes CONTENT ACCESS only. Whether a format can also be wired into
- * a graph is a separate axis, so text gaining a node input later does not move
- * it out of this tier.
- */
+/** What the agent can do with an attachment, per the server's extension tiers. */
 export type AgentAttachCapability =
   | 'view'
   | 'probe'
@@ -28,12 +16,6 @@ export type AgentAttachCapability =
   | 'reference'
   | 'retain'
 
-/**
- * Derived from the generated enums rather than hand-listed here, so the accept
- * list cannot drift from what the server enforces (it answers 422 for anything
- * outside them). `.options` is what makes this possible: a bare TypeScript
- * union has no runtime form to build an accept string or a lookup from.
- */
 const CAPABILITY_BY_EXTENSION = new Map<string, AgentAttachCapability>([
   ...zAgentViewableAttachmentExtension.options.map(
     (extension) => [extension, 'view'] as const
@@ -52,44 +34,18 @@ const CAPABILITY_BY_EXTENSION = new Map<string, AgentAttachCapability>([
   )
 ])
 
-/**
- * Extensions only, deliberately. The old value carried `image/*`, `video/*` and
- * `audio/*` wildcards, and the OS picker honours those literally — which is how
- * .hdr, .exr, .wmv, .flv, .aac and .wma reached a paperclip that then did no
- * checking of its own (PM-1854).
- */
+/** The file input's `accept` value: every accepted extension, no wildcards. */
 export const AGENT_ATTACH_ACCEPT = [...CAPABILITY_BY_EXTENSION.keys()].join(',')
 
 const EXTENSION_PATTERN = /\.[a-z0-9]{1,8}$/i
-// `[^./\\]` rather than `[^.]`: the server judges the final PATH SEGMENT
-// (filepath.Ext over path.Base), so a ref like `my.folder/image` has no
-// extension there. Matching `.folder/image` here made it the one ref the two
-// allowlists judged differently — rejected on the client, accepted on the
-// server.
 const AUTHORITATIVE_EXTENSION_PATTERN = /\.[^./\\]+$/
 
-/**
- * A bare `lastIndexOf('.')` reads `.2` out of a label like "render v1.2" and
- * `.0` out of "Empty Ace Step 1.0". The verdict below would then call those
- * REJECTED types rather than unknown ones, and a gate that refuses on a
- * rejected verdict would veto a perfectly valid file over its version number.
- * Every extension on the accept list contains a letter; a digits-only suffix
- * is a version marker.
- */
 function extensionOf(filename: string): string {
   const match = EXTENSION_PATTERN.exec(filename)?.[0].toLowerCase()
   return match && /[a-z]/.test(match) ? match : ''
 }
 
-/**
- * Judged by file NAME, not MIME type: dragged 3D and text files carry an empty
- * or generic MIME, and the server keys its own allowlist off the extension for
- * the same reason — the upload route stores no content type for what it takes.
- *
- * Takes a name rather than a File so a staged attachment, which is only ever a
- * name by the time it reaches the chip, can be labelled with the same answer
- * the gate gave it.
- */
+/** The tier for a file name, or undefined when the agent does not accept it. */
 export function agentAttachCapability(
   filename: string
 ): AgentAttachCapability | undefined {
@@ -100,46 +56,19 @@ export function isAgentAttachable(file: File): boolean {
   return agentAttachCapability(file.name) !== undefined
 }
 
-/**
- * Three-valued because `undefined` from agentAttachCapability conflates two
- * different answers: "this type is refused" and "there is no extension to
- * judge". Callers must choose the authoritative identity before applying this
- * verdict; a mutable display label must not override a stored filename or
- * opaque server reference.
- */
+/** `unknown` means the name has no extension to judge. */
 export type AgentAttachVerdict = 'accepted' | 'rejected' | 'unknown'
 
+/** Judges a display label; digit-only suffixes such as `v1.2` are not extensions. */
 export function agentAttachVerdict(filename: string): AgentAttachVerdict {
   if (agentAttachCapability(filename)) return 'accepted'
   return extensionOf(filename) === '' ? 'unknown' : 'rejected'
 }
 
-/**
- * Stored filenames and URLs are authoritative file identities, so any final
- * dotted token is an extension to judge. Display labels use the narrower
- * heuristic above because names such as "render.v2" are not file identities.
- */
+/** Judges a stored filename or URL, where any final dotted token is an extension. */
 export function agentAttachRefVerdict(ref: string): AgentAttachVerdict {
   if (agentAttachCapability(ref)) return 'accepted'
   return AUTHORITATIVE_EXTENSION_PATTERN.test(ref) ? 'rejected' : 'unknown'
-}
-
-/**
- * Splits a batch into what can be attached and what cannot, so a caller can
- * attach the one and report the other in a single pass. Every upload path funnels
- * through this, which is what keeps the paperclip, a drop and a paste agreeing.
- */
-export function partitionAttachableFiles(files: Iterable<File>): {
-  attachable: File[]
-  rejected: File[]
-} {
-  const attachable: File[] = []
-  const rejected: File[] = []
-  for (const file of files) {
-    if (isAgentAttachable(file)) attachable.push(file)
-    else rejected.push(file)
-  }
-  return { attachable, rejected }
 }
 
 function bytesMatch(bytes: Uint8Array, offset: number, expected: string) {

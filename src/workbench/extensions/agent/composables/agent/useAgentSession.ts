@@ -1118,9 +1118,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
         : `${i18n.global.t('agent.sendFailed')}: ${message}`
     )
     const turnAccepted = accepted || isUnreadableAckFailure(error)
-    // The refusal message deliberately names the user's files so the inline
-    // notice is actionable. It is an expected, user-fixable response, though,
-    // and reporting the AgentApiError would copy those names into telemetry.
     reportSendFailure(error)
     trackAgentError(
       'request_failed',
