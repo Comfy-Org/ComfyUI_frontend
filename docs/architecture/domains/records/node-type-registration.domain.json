@@ -1,0 +1,45 @@
+{
+  "id": "node-type-registration",
+  "capability": "Node type registration",
+  "description": "Turning node definitions into LiteGraph node types: litegraphService registers node and subgraph definitions with inputs, outputs, widgets, size, context menu, key and background handlers, and image previews, adds nodes to the graph, and offers canvas centering and node focus; subgraphService loads and registers subgraph definitions from workflows. LiteGraph itself, the node definition catalog, and widget constructors remain external.",
+  "modules": [
+    {
+      "path": "src/services/litegraphService.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/services/litegraphService.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/services/litegraphService.lateRegistration.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/services/__mocks__/litegraphService.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/services/subgraphService.ts",
+      "role": "integration"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Registering node definitions creates LiteGraph node types with inputs, outputs, widgets, and previews",
+      "checks": ["src/services/litegraphService.test.ts"]
+    },
+    {
+      "name": "Late registration while a graph is loaded leaves loaded nodes, layout, and widget entities untouched",
+      "checks": ["src/services/litegraphService.lateRegistration.test.ts"]
+    }
+  ],
+  "adrs": ["docs/adr/ECS-0008-entity-component-system.md"],
+  "compatibilityPromises": [
+    "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
+  ],
+  "deepImports": "inventory"
+}

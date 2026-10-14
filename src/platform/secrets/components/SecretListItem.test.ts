@@ -59,10 +59,7 @@ function renderComponent(props: {
   return render(SecretListItem, {
     props,
     global: {
-      plugins: [i18n],
-      directives: {
-        tooltip: () => {}
-      }
+      plugins: [i18n]
     }
   })
 }

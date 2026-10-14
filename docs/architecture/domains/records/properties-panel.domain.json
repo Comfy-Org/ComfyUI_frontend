@@ -1,0 +1,202 @@
+{
+  "id": "properties-panel",
+  "capability": "Properties panel",
+  "description": "Right-side properties panel state and presentation: selected-node targeting, favorited widgets, parameters, node settings, hierarchy, and node information. Workflow errors and subgraph promotion remain separate.",
+  "modules": [
+    {
+      "path": "src/components/rightSidePanel/info/TabInfo.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/rightSidePanel/layout/CollapseToggleButton.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/rightSidePanel/parameters/PanelSearchHeader.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/rightSidePanel/parameters/PanelSearchHeader.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/rightSidePanel/parameters/SectionWidgets.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/rightSidePanel/parameters/SectionWidgets.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/rightSidePanel/parameters/TabGlobalParameters.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/rightSidePanel/parameters/TabGlobalParameters.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/rightSidePanel/parameters/TabNodes.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/rightSidePanel/parameters/TabNodes.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/rightSidePanel/parameters/TabNormalInputs.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/rightSidePanel/parameters/TabNormalInputs.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/rightSidePanel/parameters/TabSubgraphInputs.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/rightSidePanel/parameters/TabSubgraphInputs.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/rightSidePanel/parameters/WidgetActions.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/rightSidePanel/parameters/WidgetActions.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/rightSidePanel/parameters/WidgetItem.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/rightSidePanel/parameters/WidgetItem.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/rightSidePanel/RightSidePanel.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/rightSidePanel/RightSidePanel.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/rightSidePanel/rightSidePanelTabTelemetry.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/components/rightSidePanel/rightSidePanelTabTelemetry.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/components/rightSidePanel/settings/FieldSwitch.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/rightSidePanel/settings/FieldSwitch.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/rightSidePanel/settings/LayoutField.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/rightSidePanel/settings/NodeSettings.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/rightSidePanel/settings/SetNodeColor.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/rightSidePanel/settings/SetNodeColor.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/rightSidePanel/settings/SetNodeState.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/rightSidePanel/settings/SetPinned.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/rightSidePanel/settings/TabGlobalSettings.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/rightSidePanel/settings/TabSettings.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/rightSidePanel/shared.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/components/rightSidePanel/shared.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/workspace/rightSidePanelStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/workspace/favoritedWidgetsStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/graph/useGraphHierarchy.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/graph/useGraphHierarchy.test.ts",
+      "role": "application"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Panel routes between tabs for the current selection and reports tab telemetry",
+      "checks": [
+        "src/components/rightSidePanel/RightSidePanel.test.ts",
+        "src/components/rightSidePanel/rightSidePanelTabTelemetry.test.ts"
+      ]
+    },
+    {
+      "name": "Parameter tabs search, group, and edit widgets for nodes and subgraph inputs",
+      "checks": [
+        "src/components/rightSidePanel/parameters/TabNodes.test.ts",
+        "src/components/rightSidePanel/parameters/TabNormalInputs.test.ts",
+        "src/components/rightSidePanel/parameters/TabSubgraphInputs.test.ts",
+        "src/components/rightSidePanel/parameters/SectionWidgets.test.ts",
+        "src/components/rightSidePanel/parameters/WidgetItem.test.ts",
+        "src/components/rightSidePanel/shared.test.ts"
+      ]
+    },
+    {
+      "name": "Settings tab changes node color and toggles node and canvas settings",
+      "checks": [
+        "src/components/rightSidePanel/settings/SetNodeColor.test.ts",
+        "src/components/rightSidePanel/settings/FieldSwitch.test.ts"
+      ]
+    },
+    {
+      "name": "Properties panel opens, switches tabs, and keeps favorited widget actions",
+      "checks": [
+        "browser_tests/tests/rightSidePanelTabs.spec.ts",
+        "browser_tests/tests/propertiesPanel/openClose.spec.ts",
+        "browser_tests/tests/propertiesPanel/widgetActionsMenu.spec.ts"
+      ]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
+  ],
+  "deepImports": "inventory"
+}

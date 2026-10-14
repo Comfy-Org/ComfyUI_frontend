@@ -198,7 +198,7 @@ CI runs everything.
 1. Leverage VueUse functions for performance-enhancing styles
 2. Use es-toolkit for utility functions
 3. Use vue-i18n in composition API for any string literals. Place new translation entries in src/locales/en/main.json. Use the plurals system in i18n instead of hardcoding pluralization in templates.
-4. Avoid new usage of PrimeVue components
+4. PrimeVue has been removed. Its imports are permanently banned; use components from `src/components/ui`.
 5. Write tests for all changes, especially bug fixes to catch future regressions
 6. Do not write code comments. Make the code say it with names, extracted functions, types, and tests. The only permitted comment is curt JSDoc on an exported API (see Common Pitfalls)
 7. Whenever a new piece of code is written, the author should ask themselves 'is there a simpler way to introduce the same functionality?'. If the answer is yes, the simpler course should be chosen
@@ -224,7 +224,9 @@ See `docs/guidance/design-standards.md` for Figma file keys, section node IDs, a
 
 All architectural decisions are documented in `docs/adr/`. Code changes must be consistent with accepted ADRs. Proposed ADRs indicate design direction and should be treated as guidance. See `.agents/checks/adr-compliance.md` for automated validation rules.
 
-When working from a TDD or design doc, record its tradeoffs, alternatives considered, and rejected options as a new ADR, keeping only the context a future maintainer cannot read off the code, and follow the ADR structure and update the index per `docs/adr/README.md`.
+When working from a TDD or design doc, record its tradeoffs, alternatives considered, and rejected options as a new ADR, keeping only the context a future maintainer cannot read off the code, and model its structure on an existing ADR in `docs/adr/`.
+
+ADR files are named `<DOMAIN>[-<SUBDOMAIN>]-<NNNN>-descriptive-title.md`: at most two tags ordered broad-to-narrow, the first naming the subsystem that owns the invariant, then the next unused four-digit sequence number. Each ADR opens with `# ADR-<IDENTIFIER>: Title`, a `Date: YYYY-MM-DD` line, and a `## Status` section (`Proposed`, `Accepted`, `Rejected`, `Deprecated`, or `Superseded`). `pnpm adr:check` enforces the filename, heading, date, status, and identifier uniqueness. There is no index file; list the directory to find ADRs.
 
 ### Entity Architecture Constraints (ADR-CRDT-LAYOUT-0003 + ADR-ECS-0008)
 

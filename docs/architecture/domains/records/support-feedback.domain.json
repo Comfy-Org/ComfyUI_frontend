@@ -1,0 +1,42 @@
+{
+  "id": "support-feedback",
+  "capability": "Support and feedback",
+  "description": "Support URL and feedback Typeform configuration per distribution, and the feedback dialog opened from help menus, topbar, and agent surfaces. It reuses the surveys Typeform dialog.",
+  "modules": [
+    {
+      "path": "src/platform/support/config.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/support/config.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/support/feedbackDialog.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/support/feedbackDialog.test.ts",
+      "role": "application"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Feedback and support links carry the source and distribution and open the feedback dialog",
+      "checks": [
+        "src/platform/support/config.test.ts",
+        "src/platform/support/feedbackDialog.test.ts"
+      ]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Unclassified callers may import these internals during inventory; imports from classified domains remain subject to cross-domain rules.",
+    "openFeedbackDialog remains callable from help center, topbar, cloud feedback button, and agent feedback callers.",
+    "feedbackDialog reusing openTypeformDialog from surveys and reading the current user remains visible as cross-domain coupling; classification does not grant dependency exceptions."
+  ],
+  "deepImports": "inventory"
+}

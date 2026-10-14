@@ -6,7 +6,7 @@ import NodeSearchListItem from '@/components/searchbox/v2/NodeSearchListItem.vue
 import { createMockNodeDef } from '@/components/searchbox/v2/__test__/testUtils'
 import { testI18n } from '@/utils/__tests__/testI18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useNodeFrequencyStore } from '@/stores/nodeDefStore'
+import { useNodeFrequencyStore } from '@/stores/nodeFrequencyStore'
 
 function renderItem(
   props: Partial<ComponentProps<typeof NodeSearchListItem>> = {}

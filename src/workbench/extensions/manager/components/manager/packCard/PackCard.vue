@@ -26,7 +26,7 @@
           </span>
           <p
             v-if="nodePack.description"
-            class="my-0 mb-1 line-clamp-3 min-h-12 flex-1 overflow-hidden text-xs/4 font-medium wrap-break-word text-muted"
+            class="my-0 mb-1 line-clamp-3 min-h-12 flex-1 overflow-hidden text-xs/4 font-medium wrap-break-word text-muted-foreground"
           >
             {{ nodePack.description }}
           </p>
@@ -43,7 +43,7 @@
               />
               <div
                 v-if="formattedLatestVersionDate"
-                class="flex items-center justify-center gap-1 px-2 py-1 text-xs font-medium text-muted"
+                class="flex items-center justify-center gap-1 px-2 py-1 text-xs font-medium text-muted-foreground"
               >
                 {{ formattedLatestVersionDate }}
               </div>
@@ -51,7 +51,7 @@
             <div class="flex">
               <span
                 v-if="publisherName"
-                class="max-w-40 truncate text-xs/3 font-medium text-muted"
+                class="max-w-40 truncate text-xs/3 font-medium text-muted-foreground"
               >
                 {{ publisherName }}
               </span>
