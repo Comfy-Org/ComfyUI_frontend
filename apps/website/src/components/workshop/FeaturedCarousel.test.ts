@@ -73,7 +73,7 @@ describe('FeaturedCarousel', () => {
     stubIntersectionObserver()
   })
 
-  it('names itself a carousel of labelled slides with a thumbnail button per item', () => {
+  it('names itself a carousel of labelled slides with a progress button per item', () => {
     renderCarousel()
 
     const carousel = screen.getByRole('region', { name: 'Featured models' })
@@ -104,7 +104,7 @@ describe('FeaturedCarousel', () => {
     expect(screen.getByText('ByteDance')).toBeTruthy()
   })
 
-  it('switches to the item a thumbnail names', async () => {
+  it('switches to the item a progress bar names', async () => {
     const user = userEvent.setup()
     renderCarousel()
 
@@ -182,11 +182,10 @@ describe('FeaturedCarousel', () => {
     expect(shownTitle()).toBe('Seedream 5.0 Pro')
   })
 
-  it('shows a single item without thumbnails or progress bars', () => {
+  it('shows a single item without progress bars', () => {
     renderCarousel([seedream])
 
     expect(shownTitle()).toBe('Seedream 5.0 Pro')
-    expect(screen.queryByTestId('featured-thumbs')).toBeNull()
     expect(screen.queryByTestId('featured-progress')).toBeNull()
   })
 

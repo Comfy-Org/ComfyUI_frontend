@@ -104,17 +104,19 @@ test.describe('Models catalog', () => {
     await expect(page).toHaveURL(new URL(href, page.url()).href)
   })
 
-  test('switches the featured model from its thumbnails', async ({ page }) => {
+  test('switches the featured model from its progress bars', async ({
+    page
+  }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await page.goto('/hub/models/')
     const card = page
       .getByTestId('models-hub-hero')
       .getByRole('region', { name: 'Featured models' })
-    const thumbnails = card.getByTestId('featured-thumbs').getByRole('button')
-    await expect(thumbnails.first()).toHaveAttribute('aria-pressed', 'true')
-    const second = thumbnails.nth(1)
+    const bars = card.getByTestId('featured-progress').getByRole('button')
+    await expect(bars.first()).toHaveAttribute('aria-pressed', 'true')
+    const second = bars.nth(1)
     const name = await second.getAttribute('aria-label')
-    if (!name) throw new Error('The second thumbnail has no name')
+    if (!name) throw new Error('The second progress bar has no name')
 
     await second.click()
 

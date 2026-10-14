@@ -8,7 +8,6 @@ import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import type { CatalogueFeature } from '@/lib/workshop/catalogue-features'
 import FeaturedCarouselProgress from './FeaturedCarouselProgress.vue'
-import FeaturedCarouselThumbs from './FeaturedCarouselThumbs.vue'
 import WorkshopCardMaker from './WorkshopCardMaker.vue'
 import WorkshopCardMedia from './WorkshopCardMedia.vue'
 
@@ -42,7 +41,7 @@ const active = computed<CatalogueFeature | undefined>(
     ref="root"
     :aria-label="label"
     :aria-roledescription="t('auth.hero.carouselRoleDescription')"
-    class="group relative isolate flex min-h-100 flex-col overflow-hidden rounded-3xl bg-hub-surface xl:h-110"
+    class="group relative isolate flex min-h-100 flex-col overflow-hidden rounded-3xl bg-hub-surface lg:h-110"
     data-testid="featured-carousel"
   >
     <Transition
@@ -68,13 +67,6 @@ const active = computed<CatalogueFeature | undefined>(
       aria-hidden="true"
     />
 
-    <FeaturedCarouselThumbs
-      v-if="features.length > 1"
-      :features
-      :active-index="shownIndex"
-      @go="goTo"
-    />
-
     <div
       :key="active.key"
       role="group"
@@ -87,7 +79,7 @@ const active = computed<CatalogueFeature | undefined>(
         })
       "
       :aria-live="rotating ? 'off' : 'polite'"
-      class="relative flex flex-1 flex-col justify-end gap-3 px-5 pt-20 pb-12 sm:px-8 sm:pb-16 xl:justify-center xl:pt-16"
+      class="relative flex max-w-3xl flex-1 flex-col justify-end gap-3 px-5 pt-20 pb-14 sm:px-10 sm:pb-16 lg:justify-center lg:pt-10"
       data-testid="featured-slide"
     >
       <div class="flex min-w-0 items-center gap-3">
@@ -142,9 +134,10 @@ const active = computed<CatalogueFeature | undefined>(
 
     <FeaturedCarouselProgress
       v-if="features.length > 1"
-      :count="features.length"
+      :features
       :active-index="shownIndex"
       :fill
+      @go="goTo"
     />
   </section>
 </template>

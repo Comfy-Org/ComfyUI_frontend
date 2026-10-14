@@ -27,9 +27,9 @@ const routes = getRoutes(locale)
 
 <template>
   <section
-    class="mb-12 grid items-center gap-10 pt-8 max-sm:mb-8 max-sm:pt-5 lg:pt-12 xl:grid-cols-[minmax(0,1.025fr)_minmax(0,1fr)] xl:gap-16"
+    class="mb-12 flex flex-col gap-8 pt-8 max-sm:mb-8 max-sm:pt-5 lg:gap-10 lg:pt-12"
   >
-    <div class="flex min-w-0 flex-col items-start gap-6">
+    <div class="flex min-w-0 flex-col items-start gap-4">
       <HubBreadcrumb
         :crumbs="[
           {
@@ -45,7 +45,7 @@ const routes = getRoutes(locale)
         {{ title }}
       </SectionHeader>
       <p
-        class="max-w-xl text-base/relaxed font-light text-primary-comfy-canvas lg:text-lg"
+        class="max-w-3xl text-base/relaxed font-light text-primary-comfy-canvas lg:text-lg"
       >
         {{ subtitle }}
       </p>
