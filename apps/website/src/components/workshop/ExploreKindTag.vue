@@ -42,7 +42,7 @@ const KINDS = {
   <Badge
     :class="
       cn(
-        'pointer-events-none absolute top-4 left-4 z-10 h-7 px-2.5 font-semibold tracking-wider text-primary-warm-white uppercase backdrop-blur-md',
+        'pointer-events-none absolute top-4 left-4 z-10 h-7 rounded-lg px-2.5 font-semibold tracking-wider text-primary-warm-white uppercase backdrop-blur-md',
         KINDS[kind].surface
       )
     "
