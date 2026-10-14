@@ -13,7 +13,6 @@ import type { WorkspaceDeploymentList } from '@/platform/workspace/api/workspace
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 const distribution = vi.hoisted(() => ({ isCloud: false }))
@@ -44,8 +43,9 @@ const bootListing: WorkspaceDeploymentList = {
 }
 
 function loadCatalog() {
-  useNodeDefStore().nodeDefsByName = {
-    LoraLoader: fromPartial<ComfyNodeDefImpl>({
+  const nodeDefStore = useNodeDefStore()
+  nodeDefStore.nodeDefsByName = {
+    LoraLoader: fromPartial<(typeof nodeDefStore.nodeDefsByName)[string]>({
       inputs: {
         lora_name: {
           type: 'COMBO',
