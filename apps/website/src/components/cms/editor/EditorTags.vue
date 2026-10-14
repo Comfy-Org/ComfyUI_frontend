@@ -4,7 +4,6 @@ import { cn } from '@comfyorg/tailwind-utils'
 import {
   TagsInputInput,
   TagsInputItem,
-  TagsInputItemDelete,
   TagsInputItemText,
   TagsInputRoot
 } from 'reka-ui'
@@ -53,12 +52,15 @@ const list = computed({
       class="inline-flex h-6 items-center gap-1 rounded-md bg-admin-line pr-1 pl-2 text-xs text-admin-fg data-[state=active]:outline-1 data-[state=active]:outline-admin-control"
     >
       <TagsInputItemText />
-      <TagsInputItemDelete
+      <!-- Reka's delete button takes the tag's name; this one says what it does. -->
+      <button
+        type="button"
         :aria-label="t('cmsAdmin.editor.removeTag', { tag })"
         class="flex cursor-pointer rounded-sm text-admin-muted hover:text-admin-fg"
+        @click="list = list.filter((other) => other !== tag)"
       >
         <X class="size-3" />
-      </TagsInputItemDelete>
+      </button>
     </TagsInputItem>
     <TagsInputInput
       :aria-label="label"
