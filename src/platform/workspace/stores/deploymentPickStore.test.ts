@@ -105,10 +105,11 @@ describe('useDeploymentPickStore', () => {
     expect(store.bootDeployment?.deployment_id).toBe('dep-2')
   })
 
-  it('boots on Comfy Cloud when the pick is no longer listed', async () => {
+  it('boots on Comfy Cloud when ingest reports the pick gone', async () => {
     mockWorkspaceApi.listDeployments.mockResolvedValue({
       ...listing,
-      picked_deployment_id: 'dep-gone'
+      picked_deployment_id: undefined,
+      gone_picked_deployment_id: 'dep-gone'
     })
     const store = useDeploymentPickStore()
     await store.loadOnce()
@@ -116,6 +117,22 @@ describe('useDeploymentPickStore', () => {
     expect(store.goneDeployment).toBe('pick')
     expect(store.bootDeployment).toBeNull()
   })
+
+  it.for(['browser', 'workspace_default'] as const)(
+    'does not invent a gone %s deployment from an inconsistent listing',
+    async (pickSource) => {
+      mockWorkspaceApi.listDeployments.mockResolvedValue({
+        ...listing,
+        picked_deployment_id: 'dep-unlisted',
+        pick_source: pickSource
+      } satisfies WorkspaceDeploymentList)
+      const store = useDeploymentPickStore()
+
+      await store.loadOnce()
+
+      expect(store.goneDeployment).toBeNull()
+    }
+  )
 
   it('keeps saying the pick is gone after the one listing that reported it', async () => {
     const onCloud = {

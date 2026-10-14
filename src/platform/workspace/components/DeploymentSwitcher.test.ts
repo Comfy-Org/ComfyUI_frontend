@@ -190,20 +190,6 @@ describe('DeploymentSwitcher', () => {
 
   it.for([
     {
-      gone: 'its own pick, unlisted by an older ingest',
-      reply: { picked_deployment_id: GONE, pick_source: 'browser' },
-      line: pickGone
-    },
-    {
-      gone: 'the default it follows, unlisted by an older ingest',
-      reply: {
-        picked_deployment_id: GONE,
-        pick_source: 'workspace_default',
-        default_deployment_id: GONE
-      },
-      line: defaultGone
-    },
-    {
       gone: 'its own pick, with no default',
       reply: { gone_picked_deployment_id: GONE },
       line: pickGone

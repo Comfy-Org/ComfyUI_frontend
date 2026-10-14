@@ -80,21 +80,12 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
    * later listing shows a deployment picked again.
    */
   const sawPickGone = shallowRef(false)
-  /**
-   * Which deployment this browser would run on is gone (deleted, or no
-   * longer the workspace's), so ingest serves it Comfy Cloud: `pick` for its
-   * own pick, `default` for the workspace default it follows. Ingest names
-   * a gone pick or default in the listing; an older ingest instead names a
-   * picked deployment the listing does not have.
-   */
   const goneDeployment = computed<'pick' | 'default' | null>(() => {
-    const unlisted =
-      pickedDeploymentId.value !== null && pickedDeployment.value === null
-    if (sawPickGone.value || (unlisted && pickSource.value === 'browser')) {
-      return 'pick'
-    }
-    const defaultGone = goneDefaultDeploymentId.value !== null
-    if (unlisted || (defaultGone && pickSource.value !== 'browser')) {
+    if (sawPickGone.value) return 'pick'
+    if (
+      goneDefaultDeploymentId.value !== null &&
+      pickSource.value !== 'browser'
+    ) {
       return 'default'
     }
     return null
