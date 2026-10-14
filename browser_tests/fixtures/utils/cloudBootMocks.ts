@@ -26,6 +26,12 @@ export async function mockCloudBootRoutes(
   page: Page,
   { features, settings = {}, objectInfo }: CloudBootOptions
 ) {
+  await page.route('**/api/workspaces/*/deployments', (route) =>
+    route.fulfill({
+      ...jsonRoute({ error: 'Deployment selection is outside the rollout' }),
+      status: 403
+    })
+  )
   await page.route('**/api/features', (r) => r.fulfill(jsonRoute(features)))
   await page.route('**/api/system_stats', (r) =>
     r.fulfill(jsonRoute(mockSystemStats))
