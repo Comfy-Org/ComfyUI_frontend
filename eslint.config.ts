@@ -586,16 +586,17 @@ export default defineConfig([
         'error',
         {
           selector:
-            "MemberExpression[object.name='navigator'][property.name='clipboard']",
+            "MemberExpression:matches([object.name='navigator'], [object.object.name='window'][object.property.name='navigator']):matches([computed=false][property.name='clipboard'], [computed=true][property.value='clipboard'])",
           message: 'Use the shared clipboard composables.'
         },
         {
-          selector: "CallExpression[callee.property.name='getServerFeature']",
+          selector:
+            "CallExpression:matches([callee.name='getServerFeature'], [callee.property.name='getServerFeature'])",
           message: 'Read server flags through useFeatureFlags.'
         },
         {
           selector:
-            "AssignmentExpression > MemberExpression.left[object.property.name='ds'], AssignmentExpression > MemberExpression.left[object.object.property.name='ds']",
+            ":matches(AssignmentExpression > MemberExpression.left, UpdateExpression > MemberExpression.argument):matches([object.property.name='ds'], [object.object.property.name='ds'])",
           message: 'Use the canvas viewport methods.'
         },
         {
