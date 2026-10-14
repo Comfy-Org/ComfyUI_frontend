@@ -1,6 +1,6 @@
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { markRaw } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { registerCoreKeybindingCommands } from '@/platform/keybindings/__fixtures__/registerCoreKeybindingCommands'
 import { KeybindingImpl } from '@/platform/keybindings/keybinding'
@@ -40,6 +40,7 @@ describe('keybindingService - dialog gate', () => {
 
   beforeEach(() => {
     vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
+    vi.spyOn(useCommandStore(), 'isRegistered').mockReturnValue(true)
 
     const dialogStore = useDialogStore()
     dialogStore.dialogStack.length = 0
@@ -83,7 +84,7 @@ describe('keybindingService - dialog gate', () => {
     expect(useCommandStore().execute).not.toHaveBeenCalled()
   })
 
-  it('does not execute a canvas keybinding while a dialog is open', () => {
+  it('does not execute a canvas keybinding while a dialog is open', async () => {
     useCommandStore().registerCommand({
       id: 'Test.CanvasCommand',
       function: () => {}
@@ -98,10 +99,14 @@ describe('keybindingService - dialog gate', () => {
     useDialogStore().dialogStack.push(
       createTestDialogInstance('templates-dialog')
     )
+    const canvasContainer = document.createElement('div')
+    canvasContainer.id = 'graph-canvas-container'
+    document.body.appendChild(canvasContainer)
+    onTestFinished(() => canvasContainer.remove())
 
-    const event = createKeyboardEvent('F9')
+    const event = createKeyboardEvent('F9', canvasContainer)
+    await keybindingService.keybindHandler(event)
 
-    expect(keybindingService.executeCanvasKeybinding(event)).toBe(false)
     expect(useCommandStore().execute).not.toHaveBeenCalled()
     expect(event.defaultPrevented).toBe(false)
   })

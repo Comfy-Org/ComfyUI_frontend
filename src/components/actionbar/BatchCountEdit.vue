@@ -15,7 +15,7 @@
             @focus="onInputFocus"
             @input="onInput"
             @blur="onInputBlur"
-            @keydown.enter.prevent="onInputEnter"
+            @keydown.enter="onInputEnter"
           />
           <div class="flex h-full w-6 flex-col">
             <Button
@@ -125,7 +125,8 @@ const onInputBlur = () => {
   setBatchCount(Number.isNaN(parsedInput) ? minQueueCount : parsedInput)
 }
 
-const onInputEnter = () => {
+const onInputEnter = (event: KeyboardEvent) => {
+  if (!event.ctrlKey && !event.metaKey) event.preventDefault()
   batchCountInputRef.value?.blur()
 }
 </script>

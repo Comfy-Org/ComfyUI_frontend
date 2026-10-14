@@ -84,8 +84,20 @@ function notifyRemoved(dialog: DialogInstance | undefined) {
 export const useDialogStore = defineStore('dialog', () => {
   const dialogStack: Ref<DialogInstance[]> = ref([])
 
-  /** The key `closeDialog()` closes when called without one. */
   const activeKey = ref<string | null>(null)
+  let activationOrder: string[] = []
+
+  function activate(key: string) {
+    activationOrder = [...activationOrder.filter((k) => k !== key), key]
+    activeKey.value = key
+  }
+
+  function deactivate(key: string) {
+    activationOrder = activationOrder.filter(
+      (k) => k !== key && dialogStack.value.some((d) => d.key === k)
+    )
+    activeKey.value = activationOrder.at(-1) ?? null
+  }
 
   const genDialogKey = () => `dialog-${Math.random().toString(36).slice(2, 9)}`
 
@@ -111,7 +123,7 @@ export const useDialogStore = defineStore('dialog', () => {
     if (index !== -1) {
       const [dialog] = dialogStack.value.splice(index, 1)
       insertDialogByPriority(dialog)
-      activeKey.value = dialogKey
+      activate(dialogKey)
     }
   }
 
@@ -122,21 +134,12 @@ export const useDialogStore = defineStore('dialog', () => {
     if (!targetDialog) return
 
     targetDialog.dialogComponentProps.onClose?.()
-    // Identity, not key: a reentrant onClose can evict targetDialog and open a
-    // replacement under the same key. Whoever actually removes the dialog from
-    // the stack fires onRemoved, so it fires exactly once.
     const index = dialogStack.value.findIndex((d) => d === targetDialog)
     const removed = index !== -1
     if (removed) dialogStack.value.splice(index, 1)
 
-    // A reentrant callback may have already activated a dialog of its own;
-    // only fall back to the stack tail when the active key named a dialog that
-    // is now gone.
     if (!dialogStack.value.some((d) => d.key === activeKey.value)) {
-      activeKey.value =
-        dialogStack.value.length > 0
-          ? dialogStack.value[dialogStack.value.length - 1].key
-          : null
+      deactivate(targetDialog.key)
     }
 
     if (removed) notifyRemoved(targetDialog)
@@ -175,7 +178,7 @@ export const useDialogStore = defineStore('dialog', () => {
     }
 
     insertDialogByPriority(dialog)
-    activeKey.value = options.key
+    activate(options.key)
     notifyRemoved(evicted)
 
     return dialog
