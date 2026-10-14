@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 
 import EditorField from '@/components/cms/editor/EditorField.vue'
+import EditorUseCases from '@/components/cms/editor/EditorUseCases.vue'
 import EditorSection from '@/components/cms/editor/EditorSection.vue'
 import AdminSegmented from '@/components/cms/ui/AdminSegmented.vue'
 import { fieldClass } from '@/components/cms/ui/field'
@@ -41,6 +42,16 @@ watch(
 )
 const problem = (field: string) =>
   problems.includes(field) ? t(`cmsAdmin.editor.problem.${field}`) : undefined
+const runModes = [
+  { value: 'run' as const, label: t('cmsAdmin.editor.runsOnHub.yes') },
+  { value: 'graph' as const, label: t('cmsAdmin.editor.runsOnHub.no') }
+]
+const runMode = computed({
+  get: () => (state.value.runsOnHub ? 'run' : 'graph'),
+  set: (mode: 'run' | 'graph') => {
+    state.value.runsOnHub = mode === 'run'
+  }
+})
 const creditLabel =
   state.value.kind === 'MODEL'
     ? t('cmsAdmin.editor.provider')
@@ -82,6 +93,23 @@ const creditLabel =
           />
         </EditorField>
       </div>
+      <EditorUseCases
+        v-if="state.kind !== 'APP'"
+        v-model="state.useCases"
+        :locale
+      />
+      <EditorField
+        v-if="state.kind === 'WORKFLOW'"
+        :label="t('cmsAdmin.editor.runsOnHub.label')"
+        :hint="t('cmsAdmin.editor.runsOnHub.help')"
+      >
+        <AdminSegmented
+          v-model="runMode"
+          :options="runModes"
+          :label="t('cmsAdmin.editor.runsOnHub.label')"
+          class="justify-self-start"
+        />
+      </EditorField>
       <EditorField
         :label="t('cmsAdmin.editor.address')"
         :error="problem('slug')"

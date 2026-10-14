@@ -24,6 +24,24 @@ export interface EditorParameter {
   placement: Placement
 }
 
+/** The Hub's use-case filters, in the order the catalogue shows them. */
+export const EDITOR_USE_CASES = [
+  'generate-images',
+  'edit-images',
+  'generate-videos',
+  'animate-images',
+  'edit-videos',
+  'text',
+  '3d',
+  'audio'
+] as const
+export type EditorUseCase = (typeof EDITOR_USE_CASES)[number]
+
+export interface EditorFaq {
+  question: string
+  answer: string
+}
+
 export interface EditorState {
   uid: string
   kind: Kind
@@ -41,6 +59,10 @@ export interface EditorState {
   deleted: boolean
   examples: EditorExample[]
   parameters: EditorParameter[]
+  useCases: EditorUseCase[]
+  faq: EditorFaq[]
+  /** Workflows only: whether it runs on the Hub or only downloads as a node graph. */
+  runsOnHub: boolean
 }
 
 const object = (value: unknown): Data =>
@@ -162,7 +184,16 @@ export function editorState(
     examples: (Array.isArray(data.examples) ? data.examples : []).map(
       editorExample
     ),
-    parameters: editorParameters(data)
+    parameters: editorParameters(data),
+    useCases: (Array.isArray(data.useCases) ? data.useCases : []).filter(
+      (useCase): useCase is EditorUseCase =>
+        (EDITOR_USE_CASES as readonly unknown[]).includes(useCase)
+    ),
+    faq: (Array.isArray(data.faq) ? data.faq : []).map((entry) => ({
+      question: text(object(entry).question),
+      answer: text(object(entry).answer)
+    })),
+    runsOnHub: data.runsOnHub !== false
   }
 }
 
@@ -178,6 +209,7 @@ export function newFromTemplate(
     summary: '',
     slug: '',
     translation: { name: '', summary: '' },
+    faq: [],
     enabled: true,
     visibility: 'PUBLIC',
     visibleFrom: '',
@@ -225,6 +257,16 @@ function sectionSlug(state: EditorState, base: Data) {
   return state.kind === 'MODEL' ? last : `${HUB_SECTION[state.kind]}/${last}`
 }
 
+function savedFaq(faq: EditorFaq[]) {
+  const entries = faq
+    .map((entry) => ({
+      question: entry.question.trim(),
+      answer: entry.answer.trim()
+    }))
+    .filter((entry) => entry.question && entry.answer)
+  return entries.length ? entries : undefined
+}
+
 function savedData(state: EditorState, base: Data): Data {
   const credit = creditKey(state.kind)
   const translation =
@@ -254,6 +296,9 @@ function savedData(state: EditorState, base: Data): Data {
     },
     thumbnailUrl: state.cover.url.trim(),
     examples: state.examples.map(savedExample),
+    useCases: state.useCases.length ? state.useCases : undefined,
+    faq: savedFaq(state.faq),
+    runsOnHub: state.kind === 'WORKFLOW' ? state.runsOnHub : undefined,
     ...(parameters.length
       ? {
           defaults: { ...object(base.defaults), ...defaults },

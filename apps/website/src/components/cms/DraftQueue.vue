@@ -102,10 +102,9 @@ const sheetOpen = computed({
   }
 })
 const approved = computed(() => inStatus('APPROVED'))
-// Like the catalog API, the final review waits until nothing is left to review.
-const canFinish = computed(
-  () => canApply && counts.value.NEW === 0 && approved.value.length > 0
-)
+// Whatever isn't approved stays in the draft, so the final review opens as soon as anything is.
+const canFinish = computed(() => canApply && approved.value.length > 0)
+const notReviewed = computed(() => inStatus('NEW'))
 const guidance = computed(() => {
   if (counts.value.NEW > 0) return t('cmsAdmin.stage.guide.review')
   if (approved.value.length > 0)
@@ -253,7 +252,9 @@ function rejectOpen() {
     <FinalReviewDialog
       v-model:open="reviewing"
       :items="approved"
-      :later-count="counts.DEFERRED"
+      :later-count="counts.DEFERRED + counts.NEW"
+      :not-reviewed="notReviewed.map((item) => item.id)"
+      :staging-saved="stagingSaved"
       :csrf
       :draft-id="draftId"
       :generation

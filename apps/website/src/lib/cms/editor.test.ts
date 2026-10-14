@@ -9,6 +9,12 @@ import {
   savedRecord
 } from './editor'
 
+const savedRecordAsCatalog = (state: ReturnType<typeof editorState>) => ({
+  ...model,
+  kind: state.kind,
+  data: savedRecord(state, model.data).data
+})
+
 const model: ContentCatalogRecord = {
   uid: '00000000-0000-4000-8000-000000000001',
   revision: 1,
@@ -121,6 +127,25 @@ describe('content editor', () => {
       'new-uid'
     )
     expect(state).toMatchObject({ enabled: true, visibility: 'PUBLIC' })
+  })
+
+  it('keeps use cases, FAQ and the run mode, dropping unfinished answers', () => {
+    const state = editorState({ ...model, kind: 'WORKFLOW' })
+    state.useCases = ['edit-images']
+    state.faq = [
+      { question: ' What does it do? ', answer: 'Edits images.' },
+      { question: 'Half written', answer: '' }
+    ]
+    state.runsOnHub = false
+    expect(savedRecord(state, model.data).data).toMatchObject({
+      useCases: ['edit-images'],
+      faq: [{ question: 'What does it do?', answer: 'Edits images.' }],
+      runsOnHub: false
+    })
+    expect(editorState(savedRecordAsCatalog(state))).toMatchObject({
+      useCases: ['edit-images'],
+      runsOnHub: false
+    })
   })
 
   it('names what still needs filling in', () => {

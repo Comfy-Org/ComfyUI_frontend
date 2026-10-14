@@ -5,6 +5,7 @@ import { computed, ref, watch } from 'vue'
 import EditorCover from '@/components/cms/editor/EditorCover.vue'
 import EditorDetails from '@/components/cms/editor/EditorDetails.vue'
 import EditorExamples from '@/components/cms/editor/EditorExamples.vue'
+import EditorFaq from '@/components/cms/editor/EditorFaq.vue'
 import EditorCardDialog from '@/components/cms/editor/EditorCardDialog.vue'
 import EditorHeader from '@/components/cms/editor/EditorHeader.vue'
 import EditorNotices from '@/components/cms/editor/EditorNotices.vue'
@@ -167,6 +168,7 @@ function discard() {
           v-model="state.parameters"
           :locale
         />
+        <EditorFaq v-if="state.kind !== 'APP'" v-model="state.faq" :locale />
       </div>
       <div class="grid content-start gap-5">
         <EditorPublishing

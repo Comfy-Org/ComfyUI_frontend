@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { DialogDescription, DialogTitle } from 'reka-ui'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 import ChangeTag from '@/components/cms/ChangeTag.vue'
 import ReadinessFlag from '@/components/cms/ReadinessFlag.vue'
@@ -11,10 +11,13 @@ import Dialog from '@/components/ui/dialog/Dialog.vue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import type { QueueItem } from '@/lib/cms/queue'
+import { postDecision } from '@/lib/cms/stage-client'
 
 const {
   items,
   laterCount,
+  notReviewed = [],
+  stagingSaved = false,
   csrf,
   draftId,
   generation,
@@ -22,8 +25,11 @@ const {
 } = defineProps<{
   /** The approved changes, all of which go live together. */
   items: QueueItem[]
-  /** Changes left for later, which stay in the draft. */
+  /** Changes not approved, which stay in the draft. */
   laterCount: number
+  /** Changes nobody decided on yet; publishing leaves them for later. */
+  notReviewed?: string[]
+  stagingSaved?: boolean
   csrf: string
   draftId: number
   generation: number
@@ -31,6 +37,20 @@ const {
 }>()
 const open = defineModel<boolean>('open', { required: true })
 const { t } = translationsFor(locale)
+const form = ref<HTMLFormElement>()
+const publishing = ref(false)
+// The catalog API publishes once nothing is left to review, so undecided changes move to Later first.
+async function publish() {
+  publishing.value = true
+  if (stagingSaved && notReviewed.length) {
+    const saved = await postDecision(csrf, notReviewed, 'DEFERRED')
+    if (!saved) {
+      publishing.value = false
+      return
+    }
+  }
+  form.value?.submit()
+}
 const flagged = computed(
   () =>
     items.filter((item) => item.source === 'catalog' && item.gaps.length).length
@@ -77,10 +97,12 @@ const flagged = computed(
         </span>
       </DialogDescription>
       <form
+        ref="form"
         data-astro-reload
         method="post"
         action="/admin/actions"
         class="flex flex-wrap justify-end gap-2 pt-1"
+        @submit.prevent="publish"
       >
         <input type="hidden" name="csrf" :value="csrf" />
         <input type="hidden" name="action" value="publish" />
@@ -99,7 +121,7 @@ const flagged = computed(
         <AdminButton @click="open = false">
           {{ t('cmsAdmin.publish.cancel') }}
         </AdminButton>
-        <AdminButton type="submit" variant="primary">{{
+        <AdminButton type="submit" variant="primary" :disabled="publishing">{{
           t(
             'cmsAdmin.finalReview.confirm',
             { count: items.length },

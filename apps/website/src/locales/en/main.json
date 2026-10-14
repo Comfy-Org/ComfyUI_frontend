@@ -316,7 +316,26 @@
         "open": "View card"
       },
       "newReview": "New pages go to the Draft for staff review. They appear on the Hub once approved and published.",
-      "previewSaved": "Preview page"
+      "previewSaved": "Preview page",
+      "useCases": {
+        "label": "Use cases",
+        "help": "The Hub filters this page appears under."
+      },
+      "runsOnHub": {
+        "label": "On the Hub",
+        "yes": "Runs on the page",
+        "no": "Node graph only",
+        "help": "Workflows with branches, switches or custom nodes can't run on the page. They show the node graph, outputs and a download instead."
+      },
+      "faq": {
+        "title": "FAQ",
+        "help": "Questions and answers shown at the bottom of the page. Questions without an answer aren't saved.",
+        "add": "Add question",
+        "empty": "No questions yet.",
+        "question": "Question",
+        "answer": "Answer",
+        "remove": "Remove question"
+      }
     },
     "readiness": {
       "title": "Before publishing",
@@ -382,7 +401,7 @@
       "reapprovalHelp": "Edited after it was approved, so it needs another look",
       "failed": "That decision wasn't saved. Reload the page and try again.",
       "guide": {
-        "review": "Approve each change or leave it for later. The final review opens when nothing is left to review.",
+        "review": "Approve what should go live. Anything you don't approve stays in the draft for later.",
         "ready": "Everything is decided. {count} approved change is ready for the final review. | Everything is decided. {count} approved changes are ready for the final review."
       },
       "empty": {
@@ -395,7 +414,7 @@
       "open": "Final review ({count})",
       "title": "Final review",
       "body": "This approved change goes live when you publish. | These {count} approved changes go live together when you publish.",
-      "later": "{count} change left for later stays in the draft. | {count} changes left for later stay in the draft.",
+      "later": "{count} change you didn't approve stays in the draft. | {count} changes you didn't approve stay in the draft.",
       "confirm": "Publish {count} change | Publish {count} changes"
     },
     "versions": {
