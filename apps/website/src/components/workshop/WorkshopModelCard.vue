@@ -12,7 +12,7 @@ import { COMFY_LOGO_PATH, getLogoPath } from '@/lib/hub/model-logos'
 import { nameWithoutTask, taskLabelFor } from '@/lib/workshop/task-label'
 import TagRow from '@/components/hub/TagRow.vue'
 import ModelSupport from './ModelSupport.vue'
-import WorkshopCardMark from './WorkshopCardMark.vue'
+import WorkshopCardMaker from './WorkshopCardMaker.vue'
 import WorkshopCardMedia from './WorkshopCardMedia.vue'
 
 const {
@@ -87,13 +87,10 @@ const labelledBy = computed(() =>
     data-testid="workshop-model-card"
     :data-kind="model.type === 'APP' ? 'app' : workflow ? 'workflow' : 'model'"
   >
-    <div class="relative aspect-4/3 overflow-hidden rounded-2xl bg-hub-surface">
-      <!-- First in the link, so the reader hears who answers for the card
-        before its name rather than after everything else on it. -->
-      <WorkshopCardMark :id="`${id}-provider`" :label="providerName" :logo />
-
-      <!-- Only the hub mixes graphs, apps and models in one grid, so only
-        there does a card have to say which it is. -->
+    <div
+      class="relative aspect-4/3 overflow-hidden rounded-2xl bg-hub-surface"
+      data-testid="model-card-artwork"
+    >
       <HubTypeBadge
         v-if="providerBadge"
         :id="`${id}-kind`"
@@ -121,8 +118,6 @@ const labelledBy = computed(() =>
     </div>
 
     <div class="flex flex-col gap-3 px-3">
-      <!-- The mark over the artwork already says who answers for this, so the
-          line under it is the card's own name and nothing else. -->
       <h3
         :id="`${id}-name`"
         :class="
@@ -136,26 +131,25 @@ const labelledBy = computed(() =>
       >
         {{ cardName }}
       </h3>
-      <!-- Under a heading that names its kind, a workflow's artwork says the
-          rest, so the line a tag would take goes to the name instead. Listed
-          on its own — searched, filtered, or beside models — it keeps the tag,
-          which is then the only place the kind is written. -->
       <div
-        v-if="showsTask"
-        class="flex h-6 min-w-0 items-center gap-1.5 overflow-hidden"
+        class="flex min-h-6 min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1.5"
+        data-testid="model-card-meta"
       >
-        <Badge
-          :id="`${id}-task`"
-          variant="subtle"
-          data-testid="model-card-task"
-        >
-          {{ taskLabel }}
-        </Badge>
-        <TagRow
-          :tags="model.capabilities"
-          :link-tags="false"
-          class="min-w-0 flex-1"
-        />
+        <WorkshopCardMaker :id="`${id}-provider`" :label="providerName" :logo />
+        <template v-if="showsTask">
+          <Badge
+            :id="`${id}-task`"
+            variant="subtle"
+            data-testid="model-card-task"
+          >
+            {{ taskLabel }}
+          </Badge>
+          <TagRow
+            :tags="model.capabilities"
+            :link-tags="false"
+            class="min-w-0 flex-1"
+          />
+        </template>
       </div>
     </div>
   </a>

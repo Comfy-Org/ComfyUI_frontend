@@ -7,7 +7,7 @@ import type { WorkshopModel } from '@/config/models-catalogue'
 import type { Locale } from '@/i18n/translations'
 import type { ExploreKind } from '@/lib/workshop/explore-search'
 import ExploreKindTag from './ExploreKindTag.vue'
-import WorkshopCardMark from './WorkshopCardMark.vue'
+import WorkshopCardMaker from './WorkshopCardMaker.vue'
 import WorkshopCardMedia from './WorkshopCardMedia.vue'
 
 const {
@@ -28,7 +28,7 @@ const {
   kind?: ExploreKind
   name: string
   model?: Pick<WorkshopModel, 'name' | 'thumbnail'>
-  /** Who makes it or what it runs on, chipped over the artwork. */
+  /** Who makes it or what it runs on, written under the name. */
   source?: string
   logo?: string | null
   pills?: readonly string[]
@@ -40,7 +40,7 @@ const linkAttrs = computed(() => {
   return newTab ? { href, target: '_blank', rel: 'noopener' } : { href }
 })
 
-const hasTags = computed(() => pills.length > 0)
+const hasMeta = computed(() => Boolean(source) || pills.length > 0)
 </script>
 
 <template>
@@ -57,29 +57,38 @@ const hasTags = computed(() => pills.length > 0)
     "
     data-testid="explore-result"
   >
-    <span class="relative block aspect-4/3 overflow-hidden rounded-2xl">
+    <span
+      class="relative block aspect-4/3 overflow-hidden rounded-2xl"
+      data-testid="explore-artwork"
+    >
       <WorkshopCardMedia v-if="model" :model />
       <span v-else class="block size-full bg-hub-surface-hover" />
       <ExploreKindTag v-if="kind" :kind :locale />
-      <WorkshopCardMark
-        v-if="source"
-        :label="source"
-        :logo
-        data-testid="explore-source"
-      />
     </span>
     <span class="flex min-w-0 flex-col gap-2.5 px-3">
       <span class="truncate text-sm font-medium text-content-bright">
         {{ name }}
       </span>
       <span
-        v-if="hasTags"
-        class="flex min-w-0 flex-wrap items-center gap-1.5"
-        data-testid="explore-pills"
+        v-if="hasMeta"
+        class="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1.5"
+        data-testid="explore-meta"
       >
-        <Badge v-for="pill in pills" :key="pill" variant="subtle">
-          {{ pill }}
-        </Badge>
+        <WorkshopCardMaker
+          v-if="source"
+          :label="source"
+          :logo
+          data-testid="explore-source"
+        />
+        <span
+          v-if="pills.length"
+          class="flex flex-wrap items-center gap-1.5"
+          data-testid="explore-pills"
+        >
+          <Badge v-for="pill in pills" :key="pill" variant="subtle">
+            {{ pill }}
+          </Badge>
+        </span>
       </span>
     </span>
   </component>

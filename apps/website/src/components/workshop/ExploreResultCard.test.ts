@@ -34,7 +34,7 @@ describe('ExploreResultCard', () => {
     }
   )
 
-  it('says what kind it is, who makes it, and what it does', () => {
+  it('says what kind it is over the artwork and who makes it under the name', () => {
     render(ExploreResultCard, {
       props: {
         href: '/hub/models/beeble/',
@@ -42,39 +42,53 @@ describe('ExploreResultCard', () => {
         name: 'Beeble SwitchX',
         model: still,
         source: 'Beeble',
+        logo: '/logos/beeble.svg',
         pills: ['Edit images']
       }
     })
 
-    const pills = within(screen.getByTestId('explore-pills'))
-    expect(pills.queryByTestId('explore-kind')).toBeNull()
-    expect(screen.getByTestId('explore-kind')).toHaveTextContent('Model')
-    expect(screen.getByTestId('explore-source')).toHaveTextContent('Beeble')
+    const artwork = within(screen.getByTestId('explore-artwork'))
+    const meta = within(screen.getByTestId('explore-meta'))
+    expect(artwork.getByTestId('explore-kind')).toHaveTextContent('Model')
     expect(
-      pills.getAllByText(/./).map((pill) => pill.textContent.trim())
+      artwork.queryByTestId('explore-source'),
+      'A maker over the artwork collides with the kind chip'
+    ).toBeNull()
+    expect(meta.getByTestId('explore-source')).toHaveTextContent('Beeble')
+    expect(meta.getByTestId('model-card-provider-logo')).toHaveStyle({
+      maskImage: 'url(/logos/beeble.svg)'
+    })
+    expect(
+      within(meta.getByTestId('explore-pills'))
+        .getAllByText(/./)
+        .map((pill) => pill.textContent.trim())
     ).toEqual(['Edit images'])
+    expect(screen.getByRole('link')).toHaveTextContent(
+      /^\s*Model\s*Beeble SwitchX\s*Beeble\s*Edit images\s*$/
+    )
   })
 
-  it('sets the kind chip on the same top edge and height as the maker mark', () => {
+  it('writes the maker without a stand-in mark when it has no logo', () => {
     render(ExploreResultCard, {
-      props: {
-        href: '/hub/models/beeble/',
-        kind: 'model',
-        name: 'Beeble SwitchX',
-        model: still,
-        source: 'Beeble',
-        pills: []
-      }
+      props: { kind: 'workflow', name: 'Relight', source: 'Nobody', pills: [] }
     })
 
-    const kind = screen.getByTestId('explore-kind')
-    const mark = screen.getByTestId('explore-source')
-    for (const shared of ['top-4', 'h-7']) {
-      expect(kind).toHaveClass(shared)
-      expect(mark).toHaveClass(shared)
-    }
-    expect(kind).toHaveClass('left-4', 'px-2.5')
-    expect(kind).not.toHaveClass('px-4')
+    expect(screen.getByTestId('explore-source')).toHaveTextContent(/^Nobody$/)
+    expect(screen.queryByTestId('model-card-provider-logo')).toBeNull()
+  })
+
+  it('keeps the kind chip in the top-left corner of the artwork', () => {
+    render(ExploreResultCard, {
+      props: { kind: 'model', name: 'Beeble SwitchX', model: still, pills: [] }
+    })
+
+    expect(screen.getByTestId('explore-kind')).toHaveClass(
+      'top-4',
+      'left-4',
+      'h-7',
+      'rounded-lg',
+      'px-2.5'
+    )
   })
 
   it.for([

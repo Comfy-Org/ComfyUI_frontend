@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import { afterEach, describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -123,15 +123,60 @@ describe('WorkshopModelCard', () => {
     }
   )
 
-  it('falls back to the provider initial and the modality when nothing matches', () => {
+  it('writes the provider alone and the modality when nothing matches', () => {
     render(WorkshopModelCard, {
       props: {
         model: { ...base, name: 'Mystery', provider: 'Nobody', task: undefined }
       }
     })
-    expect(screen.getByText('N')).toBeTruthy()
+    expect(screen.getByTestId('model-card-provider')).toHaveTextContent(
+      /^Nobody$/
+    )
+    expect(screen.queryByTestId('model-card-provider-logo')).toBeNull()
+    expect(screen.queryByText('N')).toBeNull()
     expect(screen.getByTestId('model-card-task').textContent).toBe('Image')
   })
+
+  it.for([
+    {
+      kind: 'a model, by its maker',
+      model: base,
+      underHeading: false,
+      maker: 'Black Forest Labs',
+      logo: 'url(/icons/ai-models/bfl.svg)'
+    },
+    {
+      kind: 'a workflow under its heading, by the model it runs on',
+      model: {
+        type: 'CLOUD',
+        workflowId: 'workflows/turnaround',
+        slug: 'workflows/turnaround',
+        name: 'Create a character turnaround',
+        href: '/hub/workflows/turnaround/',
+        workflowCount: 1,
+        capabilities: [],
+        models: ['Nano Banana Pro'],
+        modality: 'image'
+      },
+      underHeading: true,
+      maker: 'Nano Banana Pro',
+      logo: 'url(/icons/ai-models/gemini.svg)'
+    }
+  ] as const)(
+    'writes $kind under the name, never over the artwork',
+    ({ model, underHeading, maker, logo }) => {
+      render(WorkshopModelCard, { props: { model, underHeading } })
+
+      const artwork = within(screen.getByTestId('model-card-artwork'))
+      const meta = within(screen.getByTestId('model-card-meta'))
+      expect(artwork.queryByTestId('model-card-provider')).toBeNull()
+      expect(meta.getByTestId('model-card-provider')).toHaveTextContent(maker)
+      expect(meta.getByTestId('model-card-provider')).toBeVisible()
+      expect(meta.getByTestId('model-card-provider-logo')).toHaveStyle({
+        maskImage: logo
+      })
+    }
+  )
 
   it('keeps an offscreen video unloaded while retaining the accessible model link', async () => {
     render(WorkshopModelCard, {
