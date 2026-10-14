@@ -27,15 +27,36 @@ const PARTNER_RELEASES: readonly PartnerRelease[] = [
   }
 ]
 
-export function latestLaunch(
+/** Launches with a page, newest first. */
+export function latestLaunches(
   models: readonly WorkshopModel[],
   releases: readonly PartnerRelease[] = PARTNER_RELEASES
-): WorkshopModel | undefined {
+): WorkshopModel[] {
   const bySlug = new Map(models.map((model) => [model.slug, model]))
   return releases
     .toSorted((a, b) => b.releasedAt.localeCompare(a.releasedAt))
     .map((release) => bySlug.get(release.slug))
-    .find((model) => model?.href !== undefined)
+    .filter((model): model is WorkshopModel => model?.href !== undefined)
+}
+
+/** The newest launches, then the most popular models with a page, up to `count`. */
+export function featuredModels(
+  models: readonly WorkshopModel[],
+  count: number,
+  releases: readonly PartnerRelease[] = PARTNER_RELEASES
+): { readonly model: WorkshopModel; readonly launch: boolean }[] {
+  const launches = latestLaunches(models, releases)
+  const popular = sortWorkshopModels(
+    models.filter(
+      (model) =>
+        model.href !== undefined && hasStill(model) && !launches.includes(model)
+    ),
+    'popular'
+  )
+  return [
+    ...launches.map((model) => ({ model, launch: true })),
+    ...popular.map((model) => ({ model, launch: false }))
+  ].slice(0, count)
 }
 
 interface FamilyRelease {

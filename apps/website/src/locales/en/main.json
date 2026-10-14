@@ -823,6 +823,14 @@
         }
       }
     },
+    "featured": {
+      "new": "New",
+      "tryModel": "Try model",
+      "openWorkflow": "Open workflow",
+      "openWorkflowNamed": "Open workflow {name}",
+      "comfyWorkflow": "Comfy workflow",
+      "workflowsLabel": "Featured workflows"
+    },
     "modelsHub": {
       "subtitle": "For developers: call the latest models through one API, try them here first or download open weights for ComfyUI.",
       "getApiKey": "Get an API key",

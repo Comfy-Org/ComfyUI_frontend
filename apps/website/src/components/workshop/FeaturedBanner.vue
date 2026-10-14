@@ -1,14 +1,7 @@
 <script setup lang="ts">
-import {
-  useDocumentVisibility,
-  useElementHover,
-  useElementVisibility,
-  useEventListener,
-  useRafFn
-} from '@vueuse/core'
-import { computed, ref, useTemplateRef, watch } from 'vue'
+import { computed, useTemplateRef } from 'vue'
 
-import { prefersReducedMotion } from '@/composables/useReducedMotion'
+import { useSlideRotation } from '@/composables/useSlideRotation'
 import { usePreviewVideo } from '@/composables/usePreviewVideo'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
@@ -50,72 +43,21 @@ const {
 const { t } = translationsFor(locale)
 const emit = defineEmits<{ open: [slide: FeaturedSlide, position: number] }>()
 
-const activeIndex = ref(0)
-const shownIndex = computed(() =>
-  Math.min(activeIndex.value, slides.length - 1)
-)
+const banner = useTemplateRef<HTMLElement>('banner')
+const { activeIndex, shownIndex, goTo, fill, onScreen } = useSlideRotation({
+  root: banner,
+  count: () => slides.length,
+  intervalMs: AUTOPLAY_MS,
+  autoplay: () => autoplay
+})
 const active = computed<FeaturedSlide | undefined>(
   () => slides[shownIndex.value]
 )
 
-function goTo(index: number) {
-  activeIndex.value = (index + slides.length) % slides.length
-}
-
-const banner = useTemplateRef<HTMLElement>('banner')
-const hovered = useElementHover(banner)
-// Starts true so the server-rendered first slide carries its video source and
-// the browser requests the frame during parse; the observer corrects it once
-// hydrated. Rotation does not care: it runs on requestAnimationFrame, which
-// only exists in the browser.
-const onScreen = useElementVisibility(banner, { initialValue: true })
-const visibility = useDocumentVisibility()
 const video = useTemplateRef<HTMLVideoElement>('video')
-// The video fills the banner, so the banner's observer is its observer.
 const previewSrc = usePreviewVideo(video, () => active.value?.media?.url, {
   visible: () => onScreen.value
 })
-
-// Clicking a bar leaves it focused, so pausing on any focus would stop the
-// rotation for good. Only a keyboard visitor, who needs the time, stops it.
-const readingByKeyboard = ref(false)
-const trackKeyboardFocus = () => {
-  readingByKeyboard.value =
-    banner.value?.querySelector(':focus-visible') != null
-}
-useEventListener(banner, 'focusin', trackKeyboardFocus)
-useEventListener(banner, 'focusout', () => (readingByKeyboard.value = false))
-
-const rotating = computed(
-  () =>
-    autoplay &&
-    slides.length > 1 &&
-    onScreen.value &&
-    visibility.value === 'visible' &&
-    !hovered.value &&
-    !readingByKeyboard.value &&
-    !prefersReducedMotion()
-)
-
-// The bar is the timer: it fills over the slide's turn and freezes where it
-// stands while the visitor reads, rather than animating on its own clock.
-const elapsed = ref(0)
-const { pause, resume } = useRafFn(
-  ({ delta }) => {
-    elapsed.value += delta
-    if (elapsed.value >= AUTOPLAY_MS) goTo(activeIndex.value + 1)
-  },
-  { immediate: false }
-)
-
-watch(rotating, (on) => (on ? resume() : pause()), { immediate: true })
-watch(activeIndex, () => (elapsed.value = 0))
-
-const fill = computed(() =>
-  !autoplay || prefersReducedMotion()
-    ? 1
-    : Math.min(elapsed.value / AUTOPLAY_MS, 1)
-)
 </script>
 
 <template>

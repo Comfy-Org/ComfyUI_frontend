@@ -51,6 +51,8 @@ import {
   workflowTypeChoices
 } from '@/lib/workshop/workflow-goals'
 import { usePreviewSwitch } from '@/lib/workshop/preview-switches'
+import { workflowFeatures } from '@/lib/workshop/catalogue-features'
+import CatalogueHero from './CatalogueHero.vue'
 import CatalogueShowMore from './CatalogueShowMore.vue'
 import HubChoiceSidebar from './HubChoiceSidebar.vue'
 import WorkflowCategoryTabs from './WorkflowCategoryTabs.vue'
@@ -85,6 +87,7 @@ const filterMenu =
 
 const language = locale === 'zh-CN' ? locale : 'en'
 const categories = computed(() => workflowCategories(models, language))
+const features = computed(() => workflowFeatures(models, locale))
 const modalitySidebar = usePreviewSwitch('hub-facet-sidebar')
 const taskSwitch = usePreviewSwitch('hub-task-sidebar')
 const taskSidebar = computed(() => taskSwitch.value && !modalitySidebar.value)
@@ -341,6 +344,14 @@ function clear() {
 </script>
 
 <template>
+  <CatalogueHero
+    :title="t('workshop.hub.workflows')"
+    :subtitle="t('workshop.catalogue.workflowsSubtitle')"
+    :features
+    :features-label="t('workshop.featured.workflowsLabel')"
+    :locale
+    data-testid="workflows-hub-hero"
+  />
   <section
     class="flex flex-col lg:flex-row lg:items-start lg:gap-10"
     data-testid="workflow-catalogue"

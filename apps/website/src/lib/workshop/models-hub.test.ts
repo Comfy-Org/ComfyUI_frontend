@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { RouterWorkshopModel } from '@/config/models-catalogue'
 import type { OpenWeightModel } from './explorer/open-weight-models'
-import { familyShowcase, latestLaunch } from './models-hub'
+import { familyShowcase, featuredModels, latestLaunches } from './models-hub'
 
 function hosted(
   slug: string,
@@ -37,17 +37,17 @@ const releases = [
   { slug: 'middle', releasedAt: '2026-07-08' }
 ]
 
-describe('latestLaunch', () => {
+describe('latestLaunches', () => {
   it.for([
     {
       kind: 'every release is listed',
       models: [hosted('older'), hosted('middle'), hosted('newest')],
-      latest: 'newest'
+      launches: ['newest', 'middle', 'older']
     },
     {
       kind: 'the newest release is not in the catalogue',
       models: [hosted('older'), hosted('middle')],
-      latest: 'middle'
+      launches: ['middle', 'older']
     },
     {
       kind: 'the newest release has no page',
@@ -55,15 +55,50 @@ describe('latestLaunch', () => {
         hosted('older'),
         hosted('newest', 'newest', { href: undefined })
       ],
-      latest: 'older'
+      launches: ['older']
     },
     {
       kind: 'no release is listed',
       models: [hosted('other')],
-      latest: undefined
+      launches: []
     }
-  ])('features $latest when $kind', ({ models, latest }) => {
-    expect(latestLaunch(models, releases)?.slug).toBe(latest)
+  ])('lists $launches when $kind', ({ models, launches }) => {
+    expect(latestLaunches(models, releases).map(({ slug }) => slug)).toEqual(
+      launches
+    )
+  })
+})
+
+describe('featuredModels', () => {
+  const still = {
+    url: 'https://example.com/still.webp',
+    kind: 'image'
+  } as const
+
+  it('leads with the launches, then the most popular models that have a page and a still', () => {
+    const models = [
+      hosted('middle'),
+      hosted('newest'),
+      hosted('second', 'second', { recommendedRank: 2, thumbnail: still }),
+      hosted('first', 'first', { recommendedRank: 1, thumbnail: still }),
+      hosted('stillless', 'stillless', { recommendedRank: 0 }),
+      hosted('pageless', 'pageless', {
+        recommendedRank: 0,
+        href: undefined,
+        thumbnail: still
+      })
+    ]
+
+    expect(
+      featuredModels(models, 3, releases).map(({ model, launch }) => [
+        model.slug,
+        launch
+      ])
+    ).toEqual([
+      ['newest', true],
+      ['middle', true],
+      ['first', false]
+    ])
   })
 })
 

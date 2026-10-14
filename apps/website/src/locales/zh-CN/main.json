@@ -4818,6 +4818,14 @@
         }
       }
     },
+    "featured": {
+      "new": "新发布",
+      "tryModel": "试用模型",
+      "openWorkflow": "打开工作流",
+      "openWorkflowNamed": "打开工作流 {name}",
+      "comfyWorkflow": "Comfy 工作流",
+      "workflowsLabel": "精选工作流"
+    },
     "modelsHub": {
       "subtitle": "面向开发者：通过一个 API 调用最新模型，先在这里试用，或下载开放权重在 ComfyUI 中使用。",
       "getApiKey": "获取 API 密钥",

@@ -493,7 +493,7 @@ describe('WorkshopModelsGrid', () => {
       ).toBeNull()
       expect(catalogueHeading()).toHaveAttribute('id', 'models-catalogue')
       expect(screen.queryByTestId('models-hub-counts')).toBeNull()
-      expect(screen.getByTestId('models-hub-latest')).toHaveTextContent(
+      expect(within(hero).getByTestId('featured-title')).toHaveTextContent(
         'Seedance 2.5 Text-to-Video'
       )
       expect(

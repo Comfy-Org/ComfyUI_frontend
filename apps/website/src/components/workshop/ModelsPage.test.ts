@@ -213,6 +213,7 @@ describe('Models page entry', () => {
     {
       section: 'workflows',
       catalogue: 'workflow-catalogue',
+      shownHeading: 'Workflows',
       turnOn: () => {
         workflowsEnabled.value = true
       }
@@ -220,13 +221,14 @@ describe('Models page entry', () => {
     {
       section: 'apps',
       catalogue: 'apps-catalogue',
+      shownHeading: 'Section heading',
       turnOn: () => {
         appsEnabled.value = true
       }
     }
   ] as const)(
     'keeps the $section section and its heading behind its flag',
-    async ({ section, catalogue, turnOn }) => {
+    async ({ section, catalogue, shownHeading, turnOn }) => {
       respondToFetch(CATALOGUE_URL, () => Response.json(workshopPages))
       enabled.value = true
       render(ModelsPage, {
@@ -245,7 +247,7 @@ describe('Models page entry', () => {
       turnOn()
       expect(await screen.findByTestId(catalogue)).toBeVisible()
       expect(
-        screen.getByRole('heading', { level: 1, name: 'Section heading' })
+        screen.getByRole('heading', { level: 1, name: shownHeading })
       ).toBeVisible()
       expect(
         screen.queryByRole('heading', { name: 'Public Models' })
@@ -486,13 +488,13 @@ describe('Models page entry', () => {
 
   it.for([
     { section: 'explore', centered: true },
-    { section: 'workflows', centered: false }
+    { section: 'apps', centered: false }
   ] as const)(
     'centres the page heading only on the Hub home ($section)',
     async ({ section, centered }) => {
       respondToFetch(CATALOGUE_URL, () => Response.json(workshopPages))
       enabled.value = true
-      workflowsEnabled.value = true
+      appsEnabled.value = true
       render(ModelsPage, {
         props: { section, heading: 'Section heading' },
         slots: { fallback: '<h1>Public</h1>' }
@@ -517,7 +519,7 @@ describe('Models page entry', () => {
     await view.rerender({ section: 'workflows', heading: 'Workflows heading' })
     expect(await screen.findByTestId('workflow-catalogue')).toBeVisible()
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
-      'Workflows heading'
+      /^Workflows$/
     )
     await view.rerender({ section: 'apps', heading: 'Apps heading' })
     expect(await screen.findByTestId('apps-catalogue')).toBeVisible()

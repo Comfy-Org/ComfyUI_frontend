@@ -1,13 +1,25 @@
 <script setup lang="ts">
-const { label, logo } = defineProps<{
+import { cn } from '@comfyorg/tailwind-utils'
+
+const {
+  label,
+  logo,
+  class: className
+} = defineProps<{
   label: string
   logo: string | null
+  class?: string
 }>()
 </script>
 
 <template>
   <span
-    class="flex max-w-full min-w-0 items-center gap-1.5 text-xs text-content-muted"
+    :class="
+      cn(
+        'flex max-w-full min-w-0 items-center gap-1.5 text-xs text-content-muted',
+        className
+      )
+    "
     data-testid="model-card-provider"
   >
     <span

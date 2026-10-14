@@ -24,6 +24,13 @@ const SECTIONS = {
 
 type HubSection = keyof typeof SECTIONS
 
+const HERO_TEST_ID = {
+  explore: 'workshop-hero',
+  apps: 'workshop-hero',
+  workflows: 'workflows-hub-hero',
+  models: 'models-hub-hero'
+} as const satisfies Record<HubSection, string>
+
 // The Hub is a landing that sends to each section, and each section leads
 // back to it: there are no tabs joining the sections to each other.
 function wayTo(page: Page, from: HubSection, to: HubSection) {
@@ -92,6 +99,23 @@ async function navigateObservingCrossfade(
   }
 }
 
+test('leads the Workflows page with a featured workflow to open', async ({
+  page
+}) => {
+  await page.goto('/hub/workflows/')
+  const hero = page.getByTestId('workflows-hub-hero')
+  await expect(
+    hero.getByRole('heading', { level: 1, name: 'Workflows', exact: true })
+  ).toBeVisible()
+  const card = hero.getByRole('region', { name: 'Featured workflows' })
+  await expect(card.getByTestId('featured-badge')).toHaveText('Featured')
+  await expect(card).toContainText('Comfy workflow')
+  const href = await card.getByTestId('featured-title').getAttribute('href')
+  if (!href) throw new Error('The featured workflow has no page')
+  await expect(card.getByTestId('featured-cta')).toHaveAttribute('href', href)
+  await expect(card.getByTestId('featured-cta')).toHaveText(/Open workflow/i)
+})
+
 for (const reducedMotion of ['no-preference', 'reduce'] as const) {
   for (const { from, to, copy } of [
     {
@@ -114,7 +138,7 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
 
       const observed = await navigateObservingCrossfade(page, from, to)
 
-      await expect(page.getByTestId('workshop-hero')).toContainText(copy)
+      await expect(page.getByTestId(HERO_TEST_ID[to])).toContainText(copy)
       expect(observed).toEqual({
         crossfade: reducedMotion === 'no-preference'
       })
@@ -143,11 +167,7 @@ for (const width of [1440, 390]) {
         await expect(
           page.getByText('Comfy Agent can now build workflows inside ComfyUI.')
         ).toBeHidden()
-        await expect(
-          page.getByTestId(
-            from === 'models' ? 'models-hub-hero' : 'workshop-hero'
-          )
-        ).toBeVisible()
+        await expect(page.getByTestId(HERO_TEST_ID[from])).toBeVisible()
         const way = wayTo(page, from, to)
         await way.scrollIntoViewIfNeeded()
         const observation = await observeHubNavigation(page)

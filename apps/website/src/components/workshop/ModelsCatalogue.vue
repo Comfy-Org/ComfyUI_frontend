@@ -47,10 +47,10 @@ const {
 }>()
 const { t } = translationsFor(locale)
 
-// The Models hero carries its own title and subtitle, so the page's plain
-// heading steps aside for it.
 const emit = defineEmits<{ hero: [boolean] }>()
-const heroShown = computed(() => section === 'models')
+const heroShown = computed(
+  () => section === 'models' || section === 'workflows'
+)
 watch(heroShown, (value) => emit('hero', value), { immediate: true })
 const mounted = useMounted()
 const enabled = useWorkshopEnabled()

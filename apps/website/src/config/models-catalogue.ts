@@ -133,6 +133,8 @@ interface WorkshopPresentation {
   readonly resolutions?: readonly Resolution[]
   readonly creditsPerRun?: number
   readonly priceUsdFrom?: number
+  /** The estimate its model page shows, as the catalogue serves it. */
+  readonly priceEstimate?: string
   readonly thumbnailUrl?: string
   readonly thumbnailLabel?: string
   readonly thumbnail?: {

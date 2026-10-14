@@ -97,6 +97,13 @@ const launchModels: WorkshopModel[] = [
   }
 ]
 
+const HERO_TEST_ID = {
+  explore: 'workshop-hero',
+  models: 'models-hub-hero',
+  workflows: 'workflows-hub-hero',
+  apps: 'workshop-hero'
+} as const
+
 describe('ModelsCatalogue', () => {
   it.for([
     {
@@ -148,16 +155,13 @@ describe('ModelsCatalogue', () => {
         props: { models: launchModels, locale, section: tab }
       })
 
-      const hero = await screen.findByTestId(
-        tab === 'models' ? 'models-hub-hero' : 'workshop-hero'
-      )
+      const hero = await screen.findByTestId(HERO_TEST_ID[tab])
       expect(within(hero).getByText(subtitle, { exact: false })).toBeVisible()
     }
   )
 
   it.for([
     { section: 'explore', centered: true },
-    { section: 'workflows', centered: false },
     { section: 'apps', centered: false }
   ] as const)(
     'centres the subtitle only on the Hub home ($section)',
@@ -631,9 +635,13 @@ describe('ModelsCatalogue', () => {
       props: { models: launchModels, section: 'workflows' }
     })
     await screen.findByTestId('workflow-grid')
-    expect(screen.queryByRole('heading', { level: 2 })).toBeNull()
+    expect(
+      within(screen.getByTestId('workflow-catalogue')).queryByRole('heading', {
+        level: 2
+      })
+    ).toBeNull()
     expect(screen.queryByTestId('browse-all-end')).toBeNull()
-    expect(screen.getByTestId('workshop-hero')).toBeVisible()
+    expect(screen.getByTestId('workflows-hub-hero')).toBeVisible()
   })
 
   it('keeps all models limited to models when workflows are available', () => {
@@ -715,13 +723,16 @@ describe('ModelsCatalogue', () => {
     expect(emitted().hero).toEqual([[true]])
   })
 
-  it.for(['workflows', 'apps'] as const)(
-    'leaves the plain heading to the %s page',
-    (section) => {
+  it.for([
+    { section: 'workflows', hero: true },
+    { section: 'apps', hero: false }
+  ] as const)(
+    'replaces the plain heading with its own header on $section: $hero',
+    ({ section, hero }) => {
       const { emitted } = render(ModelsCatalogue, {
         props: { models: launchModels, section }
       })
-      expect(emitted().hero).toEqual([[false]])
+      expect(emitted().hero).toEqual([[hero]])
     }
   )
 })

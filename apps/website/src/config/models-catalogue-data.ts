@@ -25,6 +25,7 @@ const presentationSchema = z.object({
   resolutions: z.array(z.enum(RESOLUTIONS)).optional(),
   creditsPerRun: z.number().optional(),
   priceUsdFrom: z.number().optional(),
+  priceEstimate: z.string().optional(),
   thumbnailUrl: z.string().optional(),
   thumbnailLabel: z.string().optional(),
   thumbnail: z

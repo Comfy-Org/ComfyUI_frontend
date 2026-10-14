@@ -92,19 +92,34 @@ test.describe('Models catalog', () => {
       hero.getByRole('heading', { level: 1, name: 'Models', exact: true })
     ).toBeVisible()
     await expect(page.getByTestId('workshop-heading')).toHaveCount(0)
-    const card = hero.getByTestId('models-hub-latest')
-    await expect(card).toContainText('Latest launch')
-    const latest = card.getByTestId('models-hub-latest-title')
+    const card = hero.getByRole('region', { name: 'Featured models' })
+    await expect(card.getByTestId('featured-badge')).toHaveText('New')
+    const latest = card.getByTestId('featured-title')
     const href = await latest.getAttribute('href')
     if (!href) throw new Error('The latest launch has no page')
-    await expect(card.getByTestId('models-hub-latest-try')).toHaveAttribute(
-      'href',
-      href
-    )
+    await expect(card.getByTestId('featured-cta')).toHaveAttribute('href', href)
 
     await latest.click()
 
     await expect(page).toHaveURL(new URL(href, page.url()).href)
+  })
+
+  test('switches the featured model from its thumbnails', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await page.goto('/hub/models/')
+    const card = page
+      .getByTestId('models-hub-hero')
+      .getByRole('region', { name: 'Featured models' })
+    const thumbnails = card.getByTestId('featured-thumbs').getByRole('button')
+    await expect(thumbnails.first()).toHaveAttribute('aria-pressed', 'true')
+    const second = thumbnails.nth(1)
+    const name = await second.getAttribute('aria-label')
+    if (!name) throw new Error('The second thumbnail has no name')
+
+    await second.click()
+
+    await expect(second).toHaveAttribute('aria-pressed', 'true')
+    await expect(card.getByTestId('featured-title')).toHaveText(name)
   })
 
   test('sends Browse open weights to the local models page', async ({
