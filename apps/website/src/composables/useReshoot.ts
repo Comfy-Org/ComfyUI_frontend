@@ -489,6 +489,11 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
     else upload.value = file
   }
 
+  function unpick() {
+    picked.value = false
+    upload.value = undefined
+  }
+
   function updateTake(id: string, patch: Partial<ReshootTake>) {
     takes.value = takes.value.map((take) =>
       take.id === id ? { ...take, ...patch } : take
@@ -680,6 +685,7 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
     clipName,
     isExample,
     picked,
+    unpick,
     aspect,
     size,
     depth,

@@ -240,6 +240,16 @@ describe('useReshoot', () => {
     expect(fetch).toHaveBeenCalledTimes(2)
   })
 
+  it('goes back to the start, with no clip of its own, when the clip is removed', () => {
+    const reshoot = start()
+    reshoot.pick(new File(['clip'], 'pier.mp4', { type: 'video/mp4' }))
+
+    reshoot.unpick()
+
+    expect(reshoot.picked.value).toBe(false)
+    expect(reshoot.isExample.value).toBe(true)
+  })
+
   it('downloads outputs only once their job has succeeded', async () => {
     const reshoot = start()
     await readScene(reshoot)

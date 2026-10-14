@@ -5467,6 +5467,7 @@
       "seconds": "{seconds} s",
       "length": "This clip is {seconds} s long. Use one between 5 and 15 seconds.",
       "change": "Change",
+      "remove": "Remove clip",
       "ready": "Scene read",
       "yours": "Your clip",
       "example": "Example",

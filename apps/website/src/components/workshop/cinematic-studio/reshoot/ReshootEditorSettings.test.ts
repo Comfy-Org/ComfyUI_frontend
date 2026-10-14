@@ -35,14 +35,16 @@ const props = {
 const clipFile = new File(['clip'], 'pier.mp4', { type: 'video/mp4' })
 
 describe('ReshootEditorSettings', () => {
-  it('shows the clip on top with its length and no way to empty it', () => {
-    render(ReshootEditorSettings, { props })
+  it('shows the clip on top with its length and an X that takes it out', async () => {
+    const { emitted } = render(ReshootEditorSettings, { props })
 
-    expect(
-      screen.getByRole('button', { name: 'Change: street.mp4' })
-    ).toBeVisible()
+    expect(screen.getByText('street.mp4')).toBeVisible()
     expect(screen.getByTestId('reshoot-clip-length')).toHaveTextContent('5.0 s')
-    expect(screen.queryByRole('button', { name: /^Remove/ })).toBeNull()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: t('reshoot.clip.remove') })
+    )
+    expect(emitted('removeClip')).toHaveLength(1)
   })
 
   it.for([

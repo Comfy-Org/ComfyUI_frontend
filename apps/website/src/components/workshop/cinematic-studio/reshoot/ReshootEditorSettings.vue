@@ -47,6 +47,7 @@ const { t } = translationsFor(locale)
 const emit = defineEmits<{
   aim: [patch: Partial<ReshootCamera>]
   removeKey: [frame: number]
+  removeClip: []
 }>()
 
 const upload = defineModel<File | undefined>('upload')
@@ -95,11 +96,13 @@ async function choose(file: File) {
       <EditorSourceTile
         kind="video"
         :src="clip"
-        :name="isExample ? t('reshoot.pick.exampleTitle') : clipName"
+        :caption="isExample ? t('reshoot.pick.exampleTitle') : clipName"
         :add-label="t('reshoot.pick.upload')"
-        :change-label="t('reshoot.clip.change')"
+        :hint="t('reshoot.clip.help')"
+        :remove-label="t('reshoot.clip.remove')"
         input-test-id="reshoot-clip-file"
         @file="choose"
+        @remove="emit('removeClip')"
       >
         <span
           v-if="seconds"

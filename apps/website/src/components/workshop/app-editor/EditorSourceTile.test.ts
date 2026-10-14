@@ -4,7 +4,10 @@ import { describe, expect, it } from 'vitest'
 
 import EditorSourceTile from './EditorSourceTile.vue'
 
-const labels = { addLabel: 'Add the video to edit', changeLabel: 'Change' }
+const labels = {
+  addLabel: 'Add the video to edit',
+  removeLabel: 'Remove video'
+}
 
 describe('EditorSourceTile', () => {
   it('asks for the source while empty and hands back a picked file', async () => {
@@ -21,19 +24,25 @@ describe('EditorSourceTile', () => {
     expect(emitted('file')).toEqual([[clip]])
   })
 
-  it('shows the chosen source and offers to change it, with its overlay', () => {
-    render(EditorSourceTile, {
-      props: { kind: 'image', src: 'blob:photo', name: 'photo.jpg', ...labels },
-      slots: { default: '<span>0.0–8.0 s</span>' }
+  it('names the chosen source over its cover and takes it out with the X', async () => {
+    const { emitted } = render(EditorSourceTile, {
+      props: {
+        kind: 'image',
+        src: 'blob:photo',
+        caption: 'photo.jpg',
+        ...labels
+      },
+      slots: { default: '<span>Using 0.0–8.0 s</span>' }
     })
 
-    expect(
-      screen.getByRole('button', { name: 'Change: photo.jpg' })
-    ).toBeVisible()
-    expect(screen.getByText('0.0–8.0 s')).toBeVisible()
+    expect(screen.getByText('photo.jpg')).toBeVisible()
+    expect(screen.getByText('Using 0.0–8.0 s')).toBeVisible()
+    await userEvent.click(screen.getByRole('button', { name: 'Remove video' }))
+
+    expect(emitted('remove')).toHaveLength(1)
   })
 
-  it('ignores a dropped file of the other kind', async () => {
+  it('ignores a picked file of the other kind', async () => {
     const { emitted } = render(EditorSourceTile, {
       props: { kind: 'image', inputTestId: 'source', ...labels }
     })

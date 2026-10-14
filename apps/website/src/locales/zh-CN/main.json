@@ -4860,6 +4860,7 @@
       "seconds": "{seconds} 秒",
       "length": "该片段长 {seconds} 秒，请使用 5 到 15 秒的片段。",
       "change": "更换",
+      "remove": "移除视频",
       "ready": "场景已读取",
       "yours": "你的片段",
       "example": "示例",

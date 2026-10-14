@@ -177,6 +177,7 @@ onBeforeUnmount(() =>
           :locale
           @aim="reshoot.aim"
           @remove-key="reshoot.removeKey"
+          @remove-clip="reshoot.unpick"
         />
         <ReshootExamples
           :active-id="isExample ? 'crossview-example' : undefined"
