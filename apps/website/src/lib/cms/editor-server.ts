@@ -75,7 +75,10 @@ export async function loadEditorData(
   return {
     ok: true as const,
     snapshot,
-    initial: snapshot?.document ?? blankDocument(),
+    initial: snapshot?.document ?? {
+      ...blankDocument(),
+      author_uid: session.actor_uid
+    },
     type:
       snapshot?.type ??
       contentTypes.find((kind) => kind === requestedType) ??

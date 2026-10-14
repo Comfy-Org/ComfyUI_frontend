@@ -72,6 +72,43 @@ describe('fresh CCC authorization', () => {
     expect(result.context.state.draft_rev).toBe(7)
     expect(result.context.state.live_rev).toBe(1)
   })
+  it('defaults new content to the verified author without creating a record', async () => {
+    const fetcher = backend()
+    const result = await loadAuthoringSession(context())
+    if (!result.ok) throw new Error('Valid identity rejected')
+    const editor = await loadEditorData(result.session, undefined, 'workflow')
+    if (!editor.ok) throw new Error('Editor unavailable')
+    expect(editor.initial.author_uid).toBe(uid)
+    expect(editor.initial).not.toHaveProperty('owner_uid')
+    expect(fetcher).toHaveBeenCalledOnce()
+  })
+  it('preserves another credited author when the current editor opens content', async () => {
+    const fetcher = backend()
+    const result = await loadAuthoringSession(context())
+    if (!result.ok) throw new Error('Valid identity rejected')
+    const credited = '00000000-0000-4000-8000-000000000003'
+    fetcher.mockResolvedValueOnce(
+      Response.json({
+        uid,
+        type: 'workflow',
+        schema_version: 2,
+        revision_uid: '00000000-0000-4000-8000-000000000002',
+        expected_revision_uid: '00000000-0000-4000-8000-000000000002',
+        expected_draft_rev: 7,
+        is_deleted: false,
+        title: 'Existing workflow',
+        slug: 'existing-workflow',
+        author_uid: credited,
+        owner_uid: uid
+      })
+    )
+    const editor = await loadEditorData(result.session, uid, null)
+    if (!editor.ok) throw new Error('Editor unavailable')
+    expect(editor.initial.author_uid).toBe(credited)
+    expect(editor.initial).not.toHaveProperty('owner_uid')
+    expect(fetcher).toHaveBeenCalledTimes(2)
+    expect(fetcher.mock.calls[1][1]).not.toHaveProperty('method')
+  })
   it.each(['NaN', '9223372036854775807'])(
     'fails closed for nonrepresentable state: %s',
     async (draft) => {

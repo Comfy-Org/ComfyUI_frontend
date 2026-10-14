@@ -8,6 +8,9 @@ typed output bindings and question/answer rows. New records use schema v2;
 opening an existing v1 record keeps its version and prose limits without
 truncation. Owner/editor bookkeeping remains server-protected. Temporary invalid
 counts or incomplete FAQ/output rows block saves until repaired or removed.
+New content defaults its editable credited author to the freshly verified actor;
+opening an existing record preserves its author rather than reassigning it to
+the editor. The server still fixes Owner and records the actual saving actor.
 The plain Apps/Workflows link-list fallback is now noscript-only; the hydrated
 catalog does not paint a second unstyled list. The collapsed Models directory
 is retained.
