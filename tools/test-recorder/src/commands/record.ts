@@ -198,7 +198,7 @@ function checkoutRevision(projectRoot: string): {
       stdio: 'pipe'
     }),
     'git branch --show-current',
-    true
+    false
   )
   const head = commandOutput(
     runCommand('git', ['rev-parse', 'HEAD'], {

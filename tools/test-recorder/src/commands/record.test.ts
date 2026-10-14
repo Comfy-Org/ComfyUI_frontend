@@ -166,6 +166,29 @@ describe('runRecord', () => {
     })
   })
 
+  it('returns the detached revision when an interactive fallback is explicit', async () => {
+    runCommand.mockReset()
+    runCommand
+      .mockReturnValueOnce(
+        commandResult({ error: new Error('gh is unavailable'), status: 1 })
+      )
+      .mockReturnValueOnce(commandResult())
+      .mockReturnValueOnce(
+        commandResult({ stdout: Buffer.from('detached123\n') })
+      )
+    confirm.mockResolvedValueOnce(true)
+
+    await expect(
+      preparePrCheckout('123', '/project', { allowExplicitFallback: true })
+    ).resolves.toEqual({
+      requestedBranch: '',
+      requestedHead: '',
+      effectiveBranch: '',
+      effectiveHead: 'detached123',
+      mode: 'explicit-fallback'
+    })
+  })
+
   it('records the requested and effective revision when a PR checkout matches', async () => {
     runCommand.mockReset()
     runCommand
@@ -184,6 +207,36 @@ describe('runRecord', () => {
       effectiveBranch: 'feature',
       effectiveHead: 'abc123',
       mode: 'verified'
+    })
+  })
+
+  it('switches to a confirmed PR checkout from a detached HEAD', async () => {
+    runCommand.mockReset()
+    runCommand
+      .mockReturnValueOnce(
+        commandResult({
+          stdout: Buffer.from('feature\tabc123\tFeature\tOPEN\n')
+        })
+      )
+      .mockReturnValueOnce(commandResult())
+      .mockReturnValueOnce(
+        commandResult({ stdout: Buffer.from('detached456\n') })
+      )
+      .mockReturnValueOnce(commandResult())
+      .mockReturnValueOnce(commandResult())
+      .mockReturnValueOnce(commandResult({ stdout: Buffer.from('feature\n') }))
+      .mockReturnValueOnce(commandResult({ stdout: Buffer.from('abc123\n') }))
+    confirm.mockResolvedValueOnce(true)
+
+    await expect(preparePrCheckout('123', '/project')).resolves.toEqual({
+      requestedBranch: 'feature',
+      requestedHead: 'abc123',
+      effectiveBranch: 'feature',
+      effectiveHead: 'abc123',
+      mode: 'verified'
+    })
+    expect(confirm).toHaveBeenCalledWith({
+      message: 'Switch to the code for PR #123?'
     })
   })
 
