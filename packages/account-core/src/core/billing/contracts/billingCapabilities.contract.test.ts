@@ -17,13 +17,19 @@ function capabilities(): Capabilities {
   return {
     can_cancel: true,
     can_change_seats: true,
+    can_delete_workspace: true,
     can_downgrade_to_personal: false,
     can_invite_members: true,
+    can_leave_workspace: false,
+    can_manage_billing: true,
     can_manage_members: true,
+    can_manage_partner_node_access: true,
     can_reactivate: false,
     can_revert_scheduled_change: false,
     can_subscribe_self_serve: true,
-    can_top_up: true
+    can_top_up: true,
+    can_view_pending_invites: true,
+    can_view_team_usage: true
   }
 }
 
@@ -46,11 +52,12 @@ function capabilitiesBody(
 
 // Compile-time pins: a regen that moves these fails the package typecheck.
 
-// The five fields the reader composes its own schema from, plus two it leaves out.
 expectTypeOf<keyof CapabilitiesResponse>().toEqualTypeOf<
   | 'capabilities'
   | 'denied_reasons'
   | 'expires_at'
+  | 'plan_kind'
+  | 'recovery_route'
   | 'resolved_for'
   | 'revision'
   | 'rollout_defaults_applied'
@@ -59,13 +66,19 @@ expectTypeOf<keyof CapabilitiesResponse>().toEqualTypeOf<
 expectTypeOf<Capabilities>().toEqualTypeOf<{
   can_cancel: boolean
   can_change_seats: boolean
+  can_delete_workspace: boolean
   can_downgrade_to_personal: boolean
   can_invite_members: boolean
+  can_leave_workspace: boolean
+  can_manage_billing: boolean
   can_manage_members: boolean
+  can_manage_partner_node_access: boolean
   can_reactivate: boolean
   can_revert_scheduled_change: boolean
   can_subscribe_self_serve: boolean
   can_top_up: boolean
+  can_view_pending_invites: boolean
+  can_view_team_usage: boolean
 }>()
 expectTypeOf<CapabilityScope>().toEqualTypeOf<{
   user_id: string

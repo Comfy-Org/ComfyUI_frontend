@@ -655,6 +655,12 @@ function capabilitiesResponse({
   return {
     resolved_for: { user_id: userId, workspace_id: workspaceId },
     capabilities: {
+      can_delete_workspace: false,
+      can_leave_workspace: false,
+      can_manage_billing: false,
+      can_manage_partner_node_access: false,
+      can_view_pending_invites: false,
+      can_view_team_usage: false,
       can_subscribe_self_serve: true,
       can_top_up: true,
       can_cancel: true,

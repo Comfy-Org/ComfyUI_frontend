@@ -6,6 +6,12 @@ import { projectBillingCapabilities } from './billingCapabilitiesView'
 
 const SNAPSHOT: CapabilitiesSnapshot = {
   capabilities: {
+    can_delete_workspace: false,
+    can_leave_workspace: false,
+    can_manage_billing: false,
+    can_manage_partner_node_access: false,
+    can_view_pending_invites: false,
+    can_view_team_usage: false,
     can_cancel: true,
     can_change_seats: false,
     can_downgrade_to_personal: false,
