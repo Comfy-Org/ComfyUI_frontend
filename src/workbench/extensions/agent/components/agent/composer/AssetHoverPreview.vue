@@ -9,9 +9,9 @@ import { cn } from '@comfyorg/tailwind-utils'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import AssetMediaPreview from './AssetMediaPreview.vue'
 
+import Button from '@/components/ui/button/Button.vue'
 import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
-import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 import type { AssetPreviewMode } from '../../../types/assetPreview'
 
@@ -44,7 +44,6 @@ const contentHovered = useElementHover(content, {
   delayLeave: 150,
   triggerOnRemoval: true
 })
-const contentStyle = useModalLiftedZIndex(open)
 
 watch(
   [triggerHovered, contentHovered, triggerPointerInside],
@@ -104,18 +103,20 @@ function onInteractOutside(event: Event): void {
 <template>
   <Popover :open @update:open="onOpenChange">
     <PopoverAnchor as-child>
-      <button
-        ref="trigger"
-        type="button"
-        :aria-label="t('agent.previewAsset', { name })"
-        aria-haspopup="dialog"
-        :aria-expanded="open"
-        :aria-controls="open ? contentId : undefined"
-        class="relative flex size-full cursor-pointer items-center justify-center overflow-hidden rounded-md hover:bg-secondary-background-hover focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none"
-        @click="activate"
-      >
-        <slot />
-      </button>
+      <Button as-child variant="textonly" size="unset">
+        <button
+          ref="trigger"
+          type="button"
+          :aria-label="t('agent.previewAsset', { name })"
+          aria-haspopup="dialog"
+          :aria-expanded="open"
+          :aria-controls="open ? contentId : undefined"
+          class="size-full overflow-hidden"
+          @click="activate"
+        >
+          <slot />
+        </button>
+      </Button>
     </PopoverAnchor>
     <PopoverContent
       :id="contentId"
@@ -124,10 +125,9 @@ function onInteractOutside(event: Event): void {
       align="start"
       :side-offset="8"
       :collision-padding="16"
-      :style="contentStyle"
       :class="
         cn(
-          'z-1700 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border-border-subtle bg-secondary-background p-0',
+          'max-w-[calc(100vw-2rem)] overflow-hidden p-0',
           playableKind === 'audio' ? 'w-86' : 'w-80'
         )
       "

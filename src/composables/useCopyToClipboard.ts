@@ -28,7 +28,7 @@ async function writeToClipboard(
       await navigator.clipboard.write(clipboardItems)
       return true
     } catch {
-      // Rich clipboard failed, fall through to plain text
+      return writeToClipboard(text)
     }
   }
 
@@ -36,13 +36,11 @@ async function writeToClipboard(
     await navigator.clipboard.writeText(text)
     return true
   } catch {
-    // Modern clipboard API failed, fall through to legacy
-  }
-
-  try {
-    return legacyCopy(text)
-  } catch {
-    return false
+    try {
+      return legacyCopy(text)
+    } catch {
+      return false
+    }
   }
 }
 
