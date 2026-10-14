@@ -18,6 +18,9 @@ import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/controlWidgetMarker'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import { DEPLOYMENT_LISTING_BACKSTOP_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -29,6 +32,15 @@ import { toNodeId } from '@/types/nodeId'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 
 import GraphCanvas from './GraphCanvas.vue'
+const distribution = vi.hoisted(() => ({ isCloud: false }))
+vi.mock(import('@/platform/distribution/types'), () => ({
+  DISTRIBUTION: 'localhost' as const,
+  isDesktop: false,
+  isNightly: false,
+  get isCloud() {
+    return distribution.isCloud
+  }
+}))
 const agentDocked = { value: true }
 vi.mock<unknown>(
   import('@/workbench/extensions/agent/composables/useAgentDockMount'),
@@ -634,5 +646,51 @@ describe('GraphCanvas agent dock', () => {
     await mountGraphCanvas(dockStubs)
 
     expect(screen.queryByTestId('docked-agent-panel')).not.toBeInTheDocument()
+  })
+})
+
+describe('deployment model options at startup', () => {
+  beforeEach(() => {
+    distribution.isCloud = true
+    onTestFinished(() => {
+      distribution.isCloud = false
+    })
+  })
+
+  it('waits for the deployment before constructing workflow widgets', async () => {
+    let finishListing = () => {}
+    const listing = new Promise<void>((resolve) => {
+      finishListing = resolve
+    })
+    vi.spyOn(useDeploymentPickStore(), 'loadOnce').mockReturnValue(listing)
+    await mountGraphCanvas()
+    expect(app.setup).not.toHaveBeenCalled()
+    finishListing()
+    await vi.waitFor(() => expect(app.setup).toHaveBeenCalledOnce())
+  })
+
+  it('does not wait for a deployment lookup on a local build', async () => {
+    distribution.isCloud = false
+    vi.spyOn(useDeploymentPickStore(), 'loadOnce').mockReturnValue(
+      new Promise(() => {})
+    )
+    await mountGraphCanvas()
+    expect(app.setup).toHaveBeenCalledOnce()
+    expect(useDeploymentPickStore().loadOnce).not.toHaveBeenCalled()
+  })
+
+  it('stops startup with a reload message if the deployment lookup never settles', async () => {
+    vi.spyOn(useDeploymentPickStore(), 'loadOnce').mockReturnValue(
+      new Promise(() => {})
+    )
+    await mountGraphCanvas()
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_BACKSTOP_MS)
+    expect(app.setup).not.toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'error',
+        title: 'deploymentSwitcher.lookupTimedOut'
+      })
+    ])
   })
 })

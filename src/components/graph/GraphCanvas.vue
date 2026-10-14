@@ -176,6 +176,8 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLitegraphSettings } from '@/platform/settings/composables/useLitegraphSettings'
 import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { isCloud } from '@/platform/distribution/types'
+import { waitForDeploymentPick } from '@/platform/workspace/composables/waitForDeploymentPick'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -576,6 +578,10 @@ onMounted(async () => {
 
     const canvas = canvasRef.value
     if (!canvas) throw new TypeError('GraphCanvas mounted without a canvas')
+    if (isCloud && !(await waitForDeploymentPick())) {
+      toast.error(t('deploymentSwitcher.lookupTimedOut'))
+      return
+    }
     await comfyApp.setup(canvas)
     canvasStore.canvas = comfyApp.canvas
     canvasStore.canvas.render_canvas_border = false
