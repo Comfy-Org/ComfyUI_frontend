@@ -355,7 +355,7 @@ $test_line"
         done
     fi
     
-    screenshot_diffs=$(count_screenshot_diffs)
+    screenshot_diffs=$(count_screenshot_diffs) || screenshot_diffs=0
     if [ "${screenshot_diffs:-0}" -gt 0 ]; then
         diff_plural="s"
         [ "$screenshot_diffs" -eq 1 ] && diff_plural=""
