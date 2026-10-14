@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
+import Message from '@/components/ui/message/Message.vue'
 
 import type { ActivityPart } from '../../../services/agent/agentMessageParts'
 import type {
@@ -69,19 +69,15 @@ const emit = defineEmits<{
     :message="group.part.message"
     @paywall-action="emit('paywallAction', $event)"
   />
-  <div
+  <Message
     v-else
+    :severity="group.part.level"
     :role="group.part.level === 'error' ? 'alert' : 'status'"
-    :class="
-      cn(
-        'flex items-start gap-2 rounded-xl border px-3 py-2 text-sm',
-        group.part.level === 'error'
-          ? 'border-destructive-background/40 text-destructive-background'
-          : 'border-component-node-border text-muted-foreground'
-      )
-    "
+    :aria-live="group.part.level === 'error' ? 'assertive' : 'polite'"
   >
-    <span class="mt-0.5 icon-[lucide--triangle-alert] size-4 shrink-0" />
+    <template #icon>
+      <span class="mt-0.5 icon-[lucide--triangle-alert] block size-4" />
+    </template>
     <span class="flex flex-col gap-0.5">
       <span>{{ group.part.text }}</span>
       <span
@@ -95,5 +91,5 @@ const emit = defineEmits<{
         }}
       </span>
     </span>
-  </div>
+  </Message>
 </template>

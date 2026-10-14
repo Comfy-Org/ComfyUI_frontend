@@ -30,7 +30,9 @@ const { t } = useI18n()
         />
       </Button>
     </CollapsibleTrigger>
-    <CollapsibleContent class="agent-work-summary overflow-hidden">
+    <CollapsibleContent
+      class="overflow-hidden data-[state=closed]:motion-safe:animate-collapsible-up data-[state=open]:motion-safe:animate-collapsible-down"
+    >
       <ActivityTrace :parts />
     </CollapsibleContent>
   </CollapsibleRoot>

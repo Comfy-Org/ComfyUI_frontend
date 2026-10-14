@@ -3,6 +3,7 @@ import { computed, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import Message from '@/components/ui/message/Message.vue'
 
 const {
   title,
@@ -24,12 +25,12 @@ const errorId = useId()
     <Button
       type="button"
       variant="muted-textonly"
-      size="unset"
+      size="sm"
       :aria-busy="loading"
       :aria-label="displayTitle"
       :aria-describedby="failed ? errorId : undefined"
       :disabled="loading"
-      class="min-w-0 justify-start text-left text-xs font-normal"
+      class="min-w-0 justify-start text-left"
       @click="emit('select')"
     >
       <span
@@ -47,12 +48,13 @@ const errorId = useId()
     <span v-if="loading" role="status" class="sr-only">{{
       t('g.loading')
     }}</span>
-    <span
+    <Message
       v-if="failed"
       :id="errorId"
-      role="alert"
-      class="pl-6 text-xs whitespace-normal text-destructive-background"
-      >{{ t('agent.historyOpenFailed') }}</span
+      severity="error"
+      class="mt-1 whitespace-normal"
     >
+      {{ t('agent.historyOpenFailed') }}
+    </Message>
   </div>
 </template>

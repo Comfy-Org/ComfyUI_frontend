@@ -11,6 +11,7 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { menuContentClass } from '@/components/ui/menu/menuStyles'
 import { registerEscapeOverride } from '@/platform/keybindings/escapeOverride'
 import type { AgentStopMethod } from '@/platform/telemetry/types'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
@@ -503,13 +504,18 @@ defineExpose({
       data-testid="agent-reference-menu"
       role="menu"
       :aria-label="mentionMenuLabel"
-      class="absolute inset-x-0 bottom-full z-1100 -mb-8.75 max-h-64 overflow-y-auto rounded-lg border border-border-subtle bg-secondary-background p-1 font-inter shadow-md"
+      :class="
+        cn(
+          menuContentClass,
+          'absolute inset-x-0 bottom-full z-1100 -mb-8.75 max-h-64 font-inter'
+        )
+      "
       @mousedown.prevent
       @mouseleave="leaveDescription"
     >
       <div
         v-if="mentionMenuHeading"
-        class="flex h-6 items-center px-1.5 py-1 text-xs/4 text-muted-foreground"
+        class="px-3 py-1.5 text-xs font-semibold text-muted-foreground"
       >
         {{ mentionMenuHeading }}
       </div>

@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, useTemplateRef, watch } from 'vue'
-
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { onBeforeUnmount, ref, useTemplateRef, watch } from 'vue'
 
 const { name, mediaUrl, kind, posterUrl, active } = defineProps<{
   name: string
@@ -12,10 +10,6 @@ const { name, mediaUrl, kind, posterUrl, active } = defineProps<{
 }>()
 const player = useTemplateRef<HTMLMediaElement>('player')
 const failed = ref(false)
-const colorPaletteStore = useColorPaletteStore()
-const colorScheme = computed(() =>
-  colorPaletteStore.completedActivePalette.light_theme ? 'light' : 'dark'
-)
 onBeforeUnmount(() => player.value?.pause())
 watch(
   () => active,
@@ -37,7 +31,7 @@ defineExpose({ focus: () => player.value?.focus() })
 </script>
 
 <template>
-  <div :style="{ colorScheme }">
+  <div>
     <video
       v-if="kind === 'video'"
       ref="player"

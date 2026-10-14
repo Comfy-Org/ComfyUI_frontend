@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
+import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
 
 const { isMaximized = false } = defineProps<{
@@ -51,11 +52,7 @@ const sizeToggleLabel = computed(() =>
         <span class="icon-[lucide--info] size-4" />
       </Button>
     </div>
-    <span
-      class="shrink-0 rounded-full border border-border-default px-2 py-0.5 text-xs text-muted-foreground"
-    >
-      {{ t('agent.beta') }}
-    </span>
+    <Badge variant="compact">{{ t('agent.beta') }}</Badge>
 
     <div class="ml-auto flex items-center gap-2">
       <Button

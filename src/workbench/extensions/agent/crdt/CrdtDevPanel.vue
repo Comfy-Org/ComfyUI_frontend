@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener } from '@vueuse/core'
 import type { AcceptableValue } from 'reka-ui'
 import type { ComponentPublicInstance } from 'vue'
@@ -15,9 +14,20 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Badge from '@/components/ui/badge/Badge.vue'
+import type { BadgeVariants } from '@/components/ui/badge/badge.variants'
 import Button from '@/components/ui/button/Button.vue'
+import Field from '@/components/ui/field/Field.vue'
+import FieldDescription from '@/components/ui/field/FieldDescription.vue'
+import FieldLabel from '@/components/ui/field/FieldLabel.vue'
+import Label from '@/components/ui/label/Label.vue'
+import Message from '@/components/ui/message/Message.vue'
 import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
 import Switch from '@/components/ui/switch/Switch.vue'
+import Table from '@/components/ui/table/Table.vue'
+import TableBody from '@/components/ui/table/TableBody.vue'
+import TableCell from '@/components/ui/table/TableCell.vue'
+import TableRow from '@/components/ui/table/TableRow.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
 import ToggleGroup from '@/components/ui/toggle-group/ToggleGroup.vue'
 import ToggleGroupItem from '@/components/ui/toggle-group/ToggleGroupItem.vue'
@@ -57,7 +67,11 @@ import {
 } from './devPanelLog'
 import type { MergeScenario, MergeSimulation } from './mergeScenarios'
 import { getMergeScenarios, runScenario } from './mergeScenarios'
-import type { MergeTraceEntry, NodeLifecycleRow } from './mergeTrace'
+import type {
+  MergeTraceEntry,
+  MergeVerdict,
+  NodeLifecycleRow
+} from './mergeTrace'
 import { MERGE_VOCABULARY, groupByRegister, nodeLifecycle } from './mergeTrace'
 import { collectMediaUiDiagnostics } from './mediaUiDiagnostics'
 import type { AgentCrdtStatus } from './agentCrdtStatus'
@@ -155,12 +169,15 @@ const kindOptions = computed(() => [
   ...selectOptions(DEV_EVENT_KINDS)
 ])
 
-const VERDICT_TONE: Record<string, string> = {
-  applied: 'text-success-background border-success-background',
-  'lww-dropped': 'text-muted-foreground border-border-default',
-  'no-op': 'text-muted-foreground border-border-default',
-  rejected: 'text-destructive-background border-destructive-background',
-  'not-reached': 'text-muted-foreground border-component-node-border'
+const VERDICT_SEVERITY: Record<
+  MergeVerdict['kind'],
+  BadgeVariants['severity']
+> = {
+  applied: 'success',
+  'lww-dropped': 'secondary',
+  'no-op': 'secondary',
+  rejected: 'danger',
+  'not-reached': 'secondary'
 }
 
 // ── open/close state, persisted ───────────────────────────────────────────
@@ -714,13 +731,13 @@ function fmtTime(at: number): string {
 </script>
 
 <template>
-  <div class="relative flex max-h-1/2 min-h-0 flex-col font-mono text-xs">
+  <div class="relative flex max-h-1/2 min-h-0 flex-col text-xs">
     <Button
       v-if="dismissed"
       variant="outline"
       size="sm"
       :title="t(`${i18nKey}.restore`)"
-      class="mr-4 mb-1 self-end rounded-full"
+      class="mr-4 mb-1 self-end"
       data-testid="crdt-dev-panel-restore"
       @click="restore"
     >
@@ -734,19 +751,14 @@ function fmtTime(at: number): string {
       variant="outline"
       size="sm"
       :title="t(`${i18nKey}.open`)"
-      class="mr-4 mb-1 self-end rounded-full"
+      class="mr-4 mb-1 self-end"
       data-testid="crdt-dev-panel-chip"
       @click="setOpen(true)"
     >
-      <span
-        :class="
-          cn(
-            'size-1.5 rounded-full',
-            status.connected
-              ? 'bg-success-background'
-              : 'bg-destructive-background'
-          )
-        "
+      <Badge
+        variant="dot"
+        :severity="status.connected ? 'success' : 'danger'"
+        :class="status.connected && 'bg-success-background'"
       />
       {{ chipLabel }}
     </Button>
@@ -760,7 +772,7 @@ function fmtTime(at: number): string {
         class="flex h-10 shrink-0 items-center gap-2 border-b border-component-node-border px-2"
       >
         <span class="font-bold">{{ t(`${i18nKey}.title`) }}</span>
-        <label class="ml-auto flex items-center gap-1 text-muted-foreground">
+        <Label class="ml-auto text-muted-foreground">
           {{ t(`${i18nKey}.verbosity`) }}
           <SingleSelect
             v-model="level"
@@ -771,7 +783,7 @@ function fmtTime(at: number): string {
             data-testid="crdt-dev-panel-verbosity"
             @update:model-value="onLevelChange"
           />
-        </label>
+        </Label>
         <Button
           variant="destructive-textonly"
           size="icon-sm"
@@ -819,15 +831,15 @@ function fmtTime(at: number): string {
             <div class="mb-1 font-bold text-muted-foreground">
               {{ t(`${i18nKey}.sectionFollower`) }}
             </div>
-            <table class="w-full table-fixed">
-              <tbody>
-                <tr v-for="row in statusRows" :key="row[0]">
-                  <td
-                    class="w-1/2 pr-2 align-top wrap-break-word text-muted-foreground"
+            <Table>
+              <TableBody>
+                <TableRow v-for="row in statusRows" :key="row[0]">
+                  <TableCell
+                    class="w-1/2 align-top wrap-break-word whitespace-normal text-muted-foreground"
                   >
                     {{ row[0] }}
-                  </td>
-                  <td class="break-all">
+                  </TableCell>
+                  <TableCell class="break-all whitespace-normal">
                     {{ row[1] }}
                     <Button
                       v-if="
@@ -844,26 +856,30 @@ function fmtTime(at: number): string {
                     >
                       {{ itemCopyLabel(`doc:${status.workflowId}`) }}
                     </Button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
           </section>
 
           <section>
             <div class="mb-1 font-bold text-muted-foreground">
               {{ t(`${i18nKey}.sectionDoc`) }}
             </div>
-            <table class="w-full">
-              <tbody>
-                <tr v-for="row in docRows" :key="row[0]">
-                  <td class="pr-2 align-top text-muted-foreground">
+            <Table>
+              <TableBody>
+                <TableRow v-for="row in docRows" :key="row[0]">
+                  <TableCell
+                    class="align-top wrap-break-word whitespace-normal text-muted-foreground"
+                  >
                     {{ row[0] }}
-                  </td>
-                  <td class="break-all">{{ row[1] }}</td>
-                </tr>
-              </tbody>
-            </table>
+                  </TableCell>
+                  <TableCell class="break-all whitespace-normal">
+                    {{ row[1] }}
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
           </section>
 
           <section>
@@ -926,16 +942,14 @@ function fmtTime(at: number): string {
                   <span class="text-muted-foreground">{{
                     fmtTime(row.event.at)
                   }}</span>
-                  <span
-                    :class="
-                      cn(
-                        'rounded-sm border border-component-node-border px-1',
-                        row.event.level === 'warn' &&
-                          'border-destructive-background text-destructive-background'
-                      )
+                  <Badge
+                    variant="compact"
+                    :severity="
+                      row.event.level === 'warn' ? 'danger' : 'secondary'
                     "
-                    >{{ row.event.scope }}</span
                   >
+                    {{ row.event.scope }}
+                  </Badge>
                   <span class="font-bold">{{ row.event.kind }}</span>
                 </div>
                 <div class="break-all text-muted-foreground">
@@ -981,12 +995,9 @@ function fmtTime(at: number): string {
         </template>
 
         <template v-else>
-          <div
-            class="rounded-sm border border-component-node-border bg-secondary-background px-2 py-1 font-bold text-muted-foreground"
-            data-testid="crdt-dev-panel-simulation-label"
-          >
+          <Badge data-testid="crdt-dev-panel-simulation-label">
             {{ t(`${i18nKey}.simulated`) }}
-          </div>
+          </Badge>
 
           <SingleSelect
             v-model="scenarioId"
@@ -1026,15 +1037,13 @@ function fmtTime(at: number): string {
                   >
                   <span class="font-bold">{{ entry.kind }}</span>
                   <span class="text-muted-foreground">{{ entry.actor }}</span>
-                  <span
-                    :class="
-                      cn(
-                        'ml-auto rounded-sm border px-1',
-                        VERDICT_TONE[entry.verdict.kind]
-                      )
-                    "
-                    >{{ verdictLabel(entry) }}</span
+                  <Badge
+                    variant="compact"
+                    :severity="VERDICT_SEVERITY[entry.verdict.kind]"
+                    class="ml-auto"
                   >
+                    {{ verdictLabel(entry) }}
+                  </Badge>
                 </div>
                 <div class="text-muted-foreground">
                   {{ registerLine(entry) }}
@@ -1108,12 +1117,10 @@ function fmtTime(at: number): string {
             </dl>
           </section>
 
-          <section>
-            <label
-              for="crdt-tester-note"
-              class="mb-1 block font-bold text-muted-foreground"
-              >{{ t(`${i18nKey}.notePrompt`) }}</label
-            >
+          <Field>
+            <FieldLabel for="crdt-tester-note">
+              {{ t(`${i18nKey}.notePrompt`) }}
+            </FieldLabel>
             <Textarea
               id="crdt-tester-note"
               v-model="testerNote"
@@ -1121,21 +1128,21 @@ function fmtTime(at: number): string {
               :placeholder="t(`${i18nKey}.notePlaceholder`)"
               data-testid="crdt-dev-panel-note"
             />
-          </section>
+          </Field>
         </template>
       </div>
 
       <footer
-        class="min-h-0 overflow-y-auto border-t border-component-node-border p-2"
+        class="flex min-h-0 flex-col gap-2 overflow-y-auto border-t border-component-node-border p-2"
       >
-        <div class="mb-1 text-muted-foreground">
+        <FieldDescription class="m-0">
           {{ t('agent.diagnosticReport.includedSources') }}
-        </div>
-        <div class="mb-1 flex flex-wrap gap-2">
-          <label
+        </FieldDescription>
+        <div class="flex flex-wrap gap-2">
+          <Label
             v-for="source in reportSourceLabels"
             :key="source.key"
-            class="flex items-center gap-1 text-muted-foreground"
+            class="text-muted-foreground"
           >
             {{ source.label }}
             <Switch
@@ -1143,11 +1150,11 @@ function fmtTime(at: number): string {
               :aria-label="source.label"
               :data-testid="`crdt-dev-panel-include-${String(source.key)}`"
             />
-          </label>
+          </Label>
         </div>
-        <p class="mt-0 mb-2 text-muted-foreground">
+        <FieldDescription class="m-0">
           {{ t(`${i18nKey}.includeHint`) }}
-        </p>
+        </FieldDescription>
         <div class="flex gap-1">
           <Button variant="outline" class="flex-1" @click="copyLog">
             {{ copyLogLabel }}
@@ -1162,23 +1169,22 @@ function fmtTime(at: number): string {
             {{ copyReportLabel }}
           </Button>
         </div>
-        <div v-if="reportCopyState.status === 'failed'" class="mt-2">
-          <p role="alert" class="m-0 text-destructive-background">
+        <template v-if="reportCopyState.status === 'failed'">
+          <Message severity="error">
             {{
               reportCopyState.report === null
                 ? t('agent.diagnosticReport.collectionFailed')
                 : t('agent.diagnosticReport.clipboardFailed')
             }}
-          </p>
+          </Message>
           <Textarea
             v-if="reportCopyState.report !== null"
             :aria-label="t('agent.diagnosticReport.manualCopy')"
             :model-value="reportCopyState.report"
             readonly
             rows="3"
-            class="mt-1"
           />
-        </div>
+        </template>
       </footer>
     </section>
   </div>

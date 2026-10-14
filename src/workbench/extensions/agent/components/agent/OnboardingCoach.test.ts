@@ -79,7 +79,7 @@ beforeEach(() => {
   telemetry().trackAgentOnboardingStep.mockClear()
   vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
     function (this: HTMLElement) {
-      if (this.getAttribute('role') === 'tooltip') return tooltipRect
+      if (this.dataset.slot === 'tooltip-content') return tooltipRect
       return (
         rectangles[this.id] ??
         new DOMRect(

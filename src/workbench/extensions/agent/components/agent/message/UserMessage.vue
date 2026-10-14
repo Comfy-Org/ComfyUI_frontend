@@ -262,7 +262,6 @@ function attachmentUrl(
         variant="muted-textonly"
         size="icon-sm"
         :aria-label="t('g.edit')"
-        class="size-6 rounded-lg"
         @click="
           emit('edit', {
             text,
@@ -280,7 +279,6 @@ function attachmentUrl(
             variant="muted-textonly"
             size="icon-sm"
             :aria-label="copied ? t('agent.copied') : t('agent.copy')"
-            class="size-6 rounded-lg"
             @click="copyMessage"
           >
             <span

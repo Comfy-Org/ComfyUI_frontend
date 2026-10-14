@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import Message from '@/components/ui/message/Message.vue'
 
 import { DEFAULT_AGENT_PAYWALL_PRESENTATION } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
 import type {
@@ -39,53 +40,49 @@ const showAddCredits = computed(
 </script>
 
 <template>
-  <div
-    role="alert"
-    class="flex w-full flex-col justify-center gap-2 overflow-hidden rounded-lg border border-component-node-border bg-modal-card-background p-4 shadow-sm"
-  >
-    <div class="flex w-full items-start gap-2">
-      <span
-        aria-hidden="true"
-        class="mt-0.5 icon-[lucide--gauge] size-5 shrink-0 text-destructive-background"
-      />
-      <div class="min-w-0 flex-1 text-sm/5">
-        <p class="m-0 text-base-foreground">
+  <Message severity="error">
+    <template #icon>
+      <span class="mt-0.5 icon-[lucide--gauge] block size-4" />
+    </template>
+    <div class="flex flex-col gap-2">
+      <div>
+        <p class="m-0">
           {{ $t('agent.paywall.title') }}
         </p>
         <p class="m-0 text-muted-foreground">
           {{ message || $t(bodyKey) }}
         </p>
       </div>
-    </div>
 
-    <div
-      v-if="showAddCredits || showSubscribe || showUpgrade"
-      class="flex w-full justify-end gap-2"
-    >
-      <Button
-        v-if="showUpgrade"
-        variant="secondary"
-        size="sm"
-        @click="emit('paywallAction', 'upgrade')"
+      <div
+        v-if="showAddCredits || showSubscribe || showUpgrade"
+        class="flex justify-end gap-2"
       >
-        {{ $t('agent.paywall.upgradePlan') }}
-      </Button>
-      <Button
-        v-if="showSubscribe"
-        variant="inverted"
-        size="sm"
-        @click="emit('paywallAction', 'subscribe')"
-      >
-        {{ $t('agent.paywall.subscribe') }}
-      </Button>
-      <Button
-        v-if="showAddCredits"
-        variant="inverted"
-        size="sm"
-        @click="emit('paywallAction', 'addCredits')"
-      >
-        {{ $t('agent.paywall.addCredits') }}
-      </Button>
+        <Button
+          v-if="showUpgrade"
+          variant="secondary"
+          size="sm"
+          @click="emit('paywallAction', 'upgrade')"
+        >
+          {{ $t('agent.paywall.upgradePlan') }}
+        </Button>
+        <Button
+          v-if="showSubscribe"
+          variant="inverted"
+          size="sm"
+          @click="emit('paywallAction', 'subscribe')"
+        >
+          {{ $t('agent.paywall.subscribe') }}
+        </Button>
+        <Button
+          v-if="showAddCredits"
+          variant="inverted"
+          size="sm"
+          @click="emit('paywallAction', 'addCredits')"
+        >
+          {{ $t('agent.paywall.addCredits') }}
+        </Button>
+      </div>
     </div>
-  </div>
+  </Message>
 </template>

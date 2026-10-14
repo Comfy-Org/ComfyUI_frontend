@@ -113,7 +113,7 @@ const promptIcons = [
           type="button"
           variant="secondary"
           size="md"
-          class="w-full max-w-full min-w-0 justify-start rounded-full px-3 text-sm @min-[460px]:w-auto"
+          class="w-full max-w-full min-w-0 justify-start @min-[460px]:w-auto"
           @click="onPromptClick(prompt, index)"
         >
           <span

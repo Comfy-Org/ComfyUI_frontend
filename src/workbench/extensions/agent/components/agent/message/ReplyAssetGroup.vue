@@ -199,14 +199,16 @@ function stopPreview(event: Event): void {
 <template>
   <div data-testid="reply-asset-group" class="my-4 flex flex-col gap-2">
     <div v-if="visibleVisual.length" :class="cn('grid gap-1', gridColsClass)">
-      <button
+      <Button
         v-for="asset in visibleVisual"
         :key="asset.url"
         type="button"
+        variant="textonly"
+        size="unset"
         :aria-label="asset.label ?? asset.filename"
         :class="
           cn(
-            'relative cursor-pointer overflow-hidden rounded-lg border-none p-0',
+            'block overflow-hidden rounded-lg',
             multi && 'aspect-square bg-secondary-background-hover',
             !multi && asset.kind === '3D' && 'justify-self-end'
           )
@@ -265,7 +267,7 @@ function stopPreview(event: Event): void {
             <span class="icon-[lucide--play] size-4 fill-current" />
           </span>
         </span>
-      </button>
+      </Button>
     </div>
 
     <Button
@@ -273,7 +275,7 @@ function stopPreview(event: Event): void {
       type="button"
       variant="outline"
       size="sm"
-      class="self-center rounded-full border-component-node-border"
+      class="self-center"
       @click="expanded = !expanded"
     >
       {{ expanded ? t('agent.showLess') : t('agent.showMore') }}
@@ -296,7 +298,7 @@ function stopPreview(event: Event): void {
         type="button"
         variant="outline"
         size="sm"
-        class="self-center rounded-full border-component-node-border"
+        class="self-center"
         @click="audioExpanded = !audioExpanded"
       >
         {{ audioExpanded ? t('agent.showLess') : t('agent.showMore') }}

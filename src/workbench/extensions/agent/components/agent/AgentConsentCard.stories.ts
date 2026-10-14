@@ -21,7 +21,6 @@ const meta: Meta<typeof AgentConsentCard> = {
   title: 'Agent/ConsentCard',
   component: AgentConsentCard,
   tags: ['autodocs'],
-  // The card is designed on a dark surface; default the theme toolbar to dark.
   globals: { theme: 'dark' },
   args: {
     title: enMessages.agent.consent.title,
@@ -33,7 +32,7 @@ const meta: Meta<typeof AgentConsentCard> = {
   decorators: [
     () => ({
       template:
-        '<div class="grid place-items-center bg-base-background p-8"><story /></div>'
+        '<div class="flex justify-center bg-base-background p-8"><story /></div>'
     })
   ]
 }
@@ -66,15 +65,11 @@ export const LongCopy: Story = {
   args: { paragraphs: [...paragraphs, ...paragraphs] }
 }
 
-/**
- * The card responds to its container, not the viewport, so it stacks inside a
- * narrow agent panel even on a wide screen.
- */
 export const InNarrowPanel: Story = {
   decorators: [
     () => ({
       template:
-        '<div class="grid place-items-center bg-base-background p-8"><div class="w-[380px]"><story /></div></div>'
+        '<div class="flex justify-center bg-base-background p-8"><div class="w-95 max-w-full"><story /></div></div>'
     })
   ]
 }

@@ -88,7 +88,6 @@ async function download(): Promise<void> {
             variant="muted-textonly"
             size="icon-sm"
             :aria-label="muted ? t('g.unmute') : t('g.mute')"
-            class="size-6 rounded-lg"
             @click="toggleMute"
           >
             <span :class="cn('size-4', volumeIcon)" />
@@ -98,7 +97,6 @@ async function download(): Promise<void> {
             variant="muted-textonly"
             size="icon-sm"
             :aria-label="t('g.download')"
-            class="size-6 rounded-lg"
             @click="download"
           >
             <span class="icon-[lucide--download] size-4" />

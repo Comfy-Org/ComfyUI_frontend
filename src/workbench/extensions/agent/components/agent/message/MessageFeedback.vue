@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@/components/ui/button/Button.vue'
+import ButtonGroup from '@/components/ui/button-group/ButtonGroup.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
 import type { MenuItem } from '@/components/ui/menu/types'
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
@@ -75,7 +76,6 @@ async function downloadAssets(): Promise<void> {
       size="icon-sm"
       :aria-label="t('agent.helpful')"
       :aria-pressed="vote === 'up'"
-      class="size-6"
       @click="setVote('up')"
     >
       <span class="icon-[lucide--thumbs-up] size-3" />
@@ -87,7 +87,6 @@ async function downloadAssets(): Promise<void> {
       size="icon-sm"
       :aria-label="t('agent.notHelpful')"
       :aria-pressed="vote === 'down'"
-      class="size-6"
       @click="setVote('down')"
     >
       <span class="icon-[lucide--thumbs-down] size-3" />
@@ -100,27 +99,18 @@ async function downloadAssets(): Promise<void> {
       size="icon-sm"
       :aria-label="t('agent.downloadAssets')"
       :disabled="downloading"
-      class="size-6 rounded-lg"
       @click="downloadAssets"
     >
       <span class="icon-[lucide--download] size-3" />
     </Button>
-    <div
-      class="flex h-6 w-14 rounded-lg transition-colors hover:bg-secondary-background-hover hover:text-base-foreground has-data-[state=open]:bg-secondary-background-hover has-data-[state=open]:text-base-foreground"
-    >
+    <ButtonGroup class="overflow-visible">
       <Tooltip disable-closing-trigger>
         <TooltipTrigger as-child>
           <Button
             type="button"
-            variant="muted-textonly"
-            size="unset"
+            :variant="copied ? 'textonly' : 'muted-textonly'"
+            size="icon-sm"
             :aria-label="copied ? t('agent.copied') : t('agent.copy')"
-            :class="
-              cn(
-                'h-6 w-8 rounded-l-lg rounded-r-none focus-visible:z-10',
-                copied ? 'text-base-foreground' : 'text-inherit'
-              )
-            "
             @click="copyPlainText()"
           >
             <span
@@ -148,12 +138,11 @@ async function downloadAssets(): Promise<void> {
             variant="muted-textonly"
             size="icon-sm"
             :aria-label="t('agent.copyMarkdown')"
-            class="size-6 rounded-l-none rounded-r-lg text-inherit focus-visible:z-10"
           >
             <span class="icon-[lucide--chevron-down] size-3" />
           </Button>
         </template>
       </Menu>
-    </div>
+    </ButtonGroup>
   </div>
 </template>

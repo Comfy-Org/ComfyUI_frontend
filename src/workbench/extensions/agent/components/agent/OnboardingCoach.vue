@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import { autoUpdate, offset, shift, useFloating } from '@floating-ui/vue'
 import type { Middleware } from '@floating-ui/vue'
 import {
@@ -13,6 +12,10 @@ import { computed, nextTick, onBeforeUnmount, ref, useId, watch } from 'vue'
 
 import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
 import Button from '@/components/ui/button/Button.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+import CoachmarkCard from '@/platform/onboarding/CoachmarkCard.vue'
 import {
   SPOTLIGHT_PAD,
   clampSpotlight,
@@ -62,10 +65,12 @@ const visible = computed(() => active.value && target.value !== null)
 useOnboardingOverlayStore().registerSource(() => visible.value)
 const toolbar = ref<HTMLElement | null>(null)
 const card = ref<HTMLElement | null>(null)
-const tooltip = ref<HTMLElement | null>(null)
+const tooltipText = ref<HTMLElement | null>(null)
 const bounds = useElementBounding(target)
 const toolbarBounds = useElementBounding(toolbar)
-const tooltipBounds = useElementBounding(tooltip)
+const tooltipBounds = useElementBounding(() =>
+  tooltipText.value?.closest<HTMLElement>('[data-slot="tooltip-content"]')
+)
 const { width, height } = useWindowSize()
 let targetRetryTimer: ReturnType<typeof setTimeout> | undefined
 
@@ -152,11 +157,6 @@ watch([target, () => step.value?.tooltip], ([element, text], _, onCleanup) => {
   element.setAttribute(COACH_HOVER_ATTRIBUTE, '')
   onCleanup(() => element.removeAttribute(COACH_HOVER_ATTRIBUTE))
 })
-
-const tooltipStyle = computed(() => ({
-  left: `${bounds.right.value}px`,
-  top: `${bounds.top.value + bounds.height.value / 2}px`
-}))
 
 watch(
   [active, step],
@@ -253,23 +253,12 @@ useEventListener(
         :style="{ ...spotlightStyle }"
         class="pointer-events-none absolute rounded-lg border-2 border-base-foreground shadow-[0_0_0_9999px_var(--color-coach-scrim)]"
       />
-      <div
-        v-if="step.tooltip"
-        ref="tooltip"
-        role="tooltip"
-        :style="tooltipStyle"
-        class="pointer-events-none absolute flex max-w-50 -translate-y-1/2 items-center"
-      >
-        <span
-          aria-hidden="true"
-          class="size-0 border-y-4 border-r-4 border-y-transparent border-r-border-default"
-        />
-        <div
-          class="rounded-md border border-border-default bg-base-background px-3 py-2 text-xs/tight wrap-break-word whitespace-pre-line text-base-foreground shadow-interface"
-        >
-          {{ step.tooltip }}
-        </div>
-      </div>
+      <Tooltip v-if="step.tooltip" :open="isPositioned">
+        <TooltipTrigger as="template" :reference="target ?? undefined" />
+        <TooltipContent side="right" @placed="tooltipBounds.update()">
+          <span ref="tooltipText">{{ step.tooltip }}</span>
+        </TooltipContent>
+      </Tooltip>
       <FocusScope as-child trapped loop>
         <div
           ref="card"
@@ -282,55 +271,42 @@ useEventListener(
             ...floatingStyles,
             opacity: isPositioned ? 1 : 0
           }"
-          :class="
-            cn(
-              'fixed box-border flex max-h-[calc(100vh-16px)] w-[307px] max-w-[calc(100vw-16px)] flex-col gap-3 overflow-y-auto rounded-2xl border bg-base-background p-4 font-inter text-base-foreground shadow-lg',
-              index < 2
-                ? 'border-secondary-background'
-                : 'border-alpha-smoke-500-20'
-            )
-          "
+          class="fixed box-border max-h-[calc(100vh-16px)] w-[307px] max-w-[calc(100vw-16px)] overflow-y-auto"
         >
-          <div class="flex flex-col gap-6">
-            <div class="flex flex-col gap-2">
-              <p class="m-0 text-xs/normal opacity-50">
-                {{
-                  $t('agent.coachProgress', {
-                    current: index + 1,
-                    total: steps.length
-                  })
-                }}
-              </p>
-              <h3
-                :id="titleId"
-                class="m-0 text-base/normal font-semibold text-pretty"
-              >
-                {{ step.title }}
-              </h3>
-              <p
-                :id="bodyId"
-                class="m-0 text-sm/normal text-pretty text-muted-foreground"
-              >
-                {{ step.body }}
-              </p>
-            </div>
-            <div class="flex justify-end gap-3">
+          <CoachmarkCard
+            :subtitle="
+              $t('agent.coachProgress', {
+                current: index + 1,
+                total: steps.length
+              })
+            "
+            :title="step.title"
+            :title-id="titleId"
+            :message="step.body"
+            :message-id="bodyId"
+          >
+            <template #actions>
               <Button
                 v-if="index > 0"
                 variant="textonly"
                 size="md"
-                class="mr-auto"
                 @click="previous"
-                >{{ $t('onboardingCoachmarks.back') }}</Button
               >
-              <Button variant="secondary" size="md" @click="onSkip">{{
-                $t('agent.skip')
-              }}</Button>
-              <Button variant="inverted" size="md" @click="onNext">{{
-                $t(isLast ? 'onboardingCoachmarks.done' : 'g.next')
-              }}</Button>
-            </div>
-          </div>
+                {{ $t('onboardingCoachmarks.back') }}
+              </Button>
+              <Button
+                variant="secondary"
+                size="md"
+                class="ml-auto"
+                @click="onSkip"
+              >
+                {{ $t('agent.skip') }}
+              </Button>
+              <Button variant="inverted" size="md" @click="onNext">
+                {{ $t(isLast ? 'onboardingCoachmarks.done' : 'g.next') }}
+              </Button>
+            </template>
+          </CoachmarkCard>
         </div>
       </FocusScope>
     </div>

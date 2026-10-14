@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, useTemplateRef } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
+import Badge from '@/components/ui/badge/Badge.vue'
+import { menuItemClass } from '@/components/ui/menu/menuStyles'
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
 import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
@@ -54,8 +56,8 @@ const icon = computed(() => {
   if (match.kind === 'back') return 'icon-[lucide--chevron-left] size-4'
   if (match.kind !== 'section') return undefined
   return match.id === 'nodes'
-    ? 'icon-[comfy--node] size-3.5'
-    : 'icon-[comfy--workflow] size-3.5'
+    ? 'icon-[comfy--node] size-4'
+    : 'icon-[comfy--workflow] size-4'
 })
 const unsavedWorkflow = computed(
   () => match.kind === 'workflow' && match.workflow.id === undefined
@@ -81,7 +83,8 @@ const nodeId = computed(() =>
         :data-active="active"
         :class="
           cn(
-            'flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-xs font-normal text-base-foreground outline-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50',
+            menuItemClass,
+            'w-full cursor-pointer aria-disabled:cursor-not-allowed aria-disabled:opacity-50',
             active && 'bg-secondary-background-hover'
           )
         "
@@ -112,11 +115,11 @@ const nodeId = computed(() =>
         <span v-if="unsavedWorkflow" class="text-xs text-muted-foreground">{{
           $t('agent.unsavedWorkflow')
         }}</span>
-        <span
+        <Badge
           v-if="nodeId !== undefined"
-          class="ml-auto shrink-0 rounded-full bg-interface-menu-keybind-surface-default px-1 py-0.5 font-mono text-xs/4 text-base-foreground"
-        >
-          {{ ' #' + nodeId }}</span
+          variant="badge"
+          class="ml-auto font-mono"
+          >{{ ' #' + nodeId }}</Badge
         >
         <span
           v-if="match.kind === 'section'"

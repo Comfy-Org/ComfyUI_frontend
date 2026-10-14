@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { DropdownMenuRadioGroup, DropdownMenuRadioItem } from 'reka-ui'
+import { DropdownMenuRadioGroup } from 'reka-ui'
 import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -7,6 +7,9 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
+import MenuItemContent from '@/components/ui/menu/MenuItemContent.vue'
+import MenuRadioItem from '@/components/ui/menu/MenuRadioItem.vue'
+import { selectedMenuButtonClass } from '@/components/ui/menu/menuStyles'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useTelemetry } from '@/platform/telemetry'
@@ -99,7 +102,7 @@ const options: {
     align="end"
     :side-offset="8"
     :aria-describedby="descriptionId"
-    class="agent-scope flex w-80 flex-col gap-2.5 p-2.5"
+    class="agent-scope flex w-80 flex-col gap-1"
     @update:open="onOpenChange"
   >
     <template #trigger>
@@ -116,7 +119,7 @@ const options: {
         />
       </Button>
     </template>
-    <div class="flex flex-col gap-0.5">
+    <div class="flex flex-col gap-0.5 px-3 py-1.5">
       <div aria-hidden="true" class="text-sm/5 text-base-foreground">
         {{ t('agent.runPermissions') }}
       </div>
@@ -132,55 +135,40 @@ const options: {
     <DropdownMenuRadioGroup
       :model-value="store.mode"
       :aria-label="t('agent.runPermissions')"
-      class="flex flex-col gap-1"
+      class="flex flex-col gap-0.5"
       @update:model-value="onSelectMode"
     >
-      <DropdownMenuRadioItem
+      <MenuRadioItem
         v-for="option in options"
         :key="option.mode"
         :value="option.mode"
         :disabled="savingMode !== null"
         :aria-busy="savingMode === option.mode || undefined"
-        as-child
+        :class="
+          cn(
+            store.mode === option.mode && selectedMenuButtonClass,
+            savingMode === option.mode && 'data-disabled:opacity-100'
+          )
+        "
         @select.prevent
       >
-        <Button
-          :variant="store.mode === option.mode ? 'tertiary' : 'muted-textonly'"
-          size="unset"
-          :class="
-            cn(
-              'w-full items-start gap-3 px-2.5 py-2 text-left whitespace-normal data-disabled:pointer-events-none',
-              savingMode !== null && savingMode !== option.mode && 'opacity-50'
-            )
-          "
-        >
-          <span
-            :class="
-              cn('mt-0.5 size-4 shrink-0 text-muted-foreground', option.icon)
-            "
-          />
-          <span class="min-w-0 flex-1">
-            <span class="block text-sm/5 text-base-foreground">
-              {{ t(option.title) }}
-            </span>
-            <span class="mt-0.5 block text-xs/4 text-muted-foreground">
-              {{ t(option.description) }}
-            </span>
-          </span>
-          <span
-            aria-hidden="true"
-            :class="
-              cn(
-                'mt-0.5 size-4 shrink-0',
-                savingMode === option.mode
-                  ? 'icon-[lucide--loader-circle] text-muted-foreground motion-safe:animate-spin'
-                  : store.mode === option.mode &&
-                      'icon-[lucide--check] text-base-foreground'
-              )
-            "
-          />
-        </Button>
-      </DropdownMenuRadioItem>
+        <MenuItemContent
+          :item="{
+            label: t(option.title),
+            description: t(option.description),
+            icon: cn(option.icon, 'text-muted-foreground'),
+            trailingIcon:
+              savingMode === option.mode
+                ? 'icon-[lucide--loader-circle] text-muted-foreground motion-safe:animate-spin'
+                : undefined,
+            checked:
+              savingMode === option.mode
+                ? undefined
+                : store.mode === option.mode
+          }"
+          :has-submenu="false"
+        />
+      </MenuRadioItem>
     </DropdownMenuRadioGroup>
   </Menu>
   <span v-if="open" role="status" class="sr-only">

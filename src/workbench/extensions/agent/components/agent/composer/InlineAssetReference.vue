@@ -2,17 +2,12 @@
 import { useElementHover, useFocusWithin } from '@vueuse/core'
 import { onBeforeUnmount, useTemplateRef, watch } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import TagRemoveButton from '@/components/chip/TagRemoveButton.vue'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 
 import AssetThumbnail from './AssetThumbnail.vue'
 
-import {
-  inlineReferenceChipClass,
-  inlineReferenceRemoveAnchorClass,
-  inlineReferenceRemoveBadgeClass,
-  inlineReferenceRemoveButtonClass
-} from './inlineReferenceChipStyles'
+import { inlineReferenceChipClass } from './inlineReferenceChipStyles'
 
 const { name, previewUrl, mediaKind, removeLabel } = defineProps<{
   name: string
@@ -46,19 +41,6 @@ onBeforeUnmount(() => emit('highlight', false))
       class="size-4 shrink-0"
     />
     <span class="max-w-56 min-w-0 truncate">{{ name }}</span>
-    <span :class="inlineReferenceRemoveAnchorClass">
-      <Button
-        type="button"
-        variant="textonly"
-        size="icon-sm"
-        :aria-label="removeLabel"
-        :class="inlineReferenceRemoveButtonClass"
-        @click.stop="emit('remove')"
-      >
-        <span :class="inlineReferenceRemoveBadgeClass">
-          <span aria-hidden="true" class="icon-[lucide--x] size-2" />
-        </span>
-      </Button>
-    </span>
+    <TagRemoveButton :label="removeLabel" @click.stop="emit('remove')" />
   </span>
 </template>

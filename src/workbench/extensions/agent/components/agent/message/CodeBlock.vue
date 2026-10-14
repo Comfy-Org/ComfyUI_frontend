@@ -62,7 +62,6 @@ watchDebounced(
         type="button"
         variant="outline"
         size="sm"
-        class="gap-1 font-mono"
         @click="copyToClipboard(code)"
       >
         <span
