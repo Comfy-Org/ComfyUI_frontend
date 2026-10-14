@@ -260,7 +260,7 @@ describe('WorkflowTabs agent entry button', () => {
     const store = useAgentPanelStore()
     store.enabled = false
     api.serverFeatureFlags.value = {
-      agent: { state: 'starting', url: null, reason: null }
+      agent: { state: 'starting', reason: null }
     }
     const { user } = renderComponent()
 
@@ -273,7 +273,7 @@ describe('WorkflowTabs agent entry button', () => {
     expect(withConsent).not.toHaveBeenCalled()
 
     api.serverFeatureFlags.value = {
-      agent: { state: 'failed', url: null, reason: 'not_found' }
+      agent: { state: 'failed', reason: 'not_found' }
     }
     await nextTick()
     const failed = screen.getByRole('button', {
@@ -288,7 +288,7 @@ describe('WorkflowTabs agent entry button', () => {
     )
 
     api.serverFeatureFlags.value = {
-      agent: { state: 'starting', url: null, reason: 'crashed' }
+      agent: { state: 'starting', reason: 'crashed' }
     }
     await nextTick()
     expect(
@@ -296,7 +296,7 @@ describe('WorkflowTabs agent entry button', () => {
     ).toHaveAttribute('title', 'ComfyUI is starting the agent: crashed')
 
     api.serverFeatureFlags.value = {
-      agent: { state: 'ready', url: '/api/agent', reason: null }
+      agent: { state: 'ready', reason: null }
     }
     store.enabled = true
     await nextTick()
@@ -311,7 +311,7 @@ describe('WorkflowTabs agent entry button', () => {
   it('hides the entry button when the agent is ready but the panel extension is off', () => {
     useAgentPanelStore().enabled = false
     api.serverFeatureFlags.value = {
-      agent: { state: 'ready', url: '/api/agent', reason: null }
+      agent: { state: 'ready', reason: null }
     }
     renderComponent()
 

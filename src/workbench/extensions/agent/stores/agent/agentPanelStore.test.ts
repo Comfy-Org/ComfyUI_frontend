@@ -33,25 +33,17 @@ describe('agentPanelStore engagement telemetry', () => {
     expect(store.flagsSettled).toBe(true)
   })
 
-  it("opens the event socket at ComfyUI's agent url, under ComfyUI's base", () => {
-    onTestFinished(() => {
-      api.api_base = ''
-      api.serverFeatureFlags.value = {}
-    })
-    const store = useAgentPanelStore()
-    expect(store.agentEventsUrl).toBe(api.apiURL('/agent/events'))
+  it.for([null, false, ''])(
+    'ignores an agent feature that is not an object: %j',
+    (agent) => {
+      onTestFinished(() => {
+        api.serverFeatureFlags.value = {}
+      })
+      api.serverFeatureFlags.value = { agent }
 
-    api.api_base = '/comfy'
-    api.serverFeatureFlags.value = {
-      agent: { state: 'ready', url: '/api/agent', reason: null }
+      expect(useAgentPanelStore().comfyAgent).toBeUndefined()
     }
-    expect(store.agentEventsUrl).toBe('/comfy/api/agent/events')
-
-    api.serverFeatureFlags.value = {
-      agent: { state: 'ready', url: 'http://127.0.0.1:9000/a', reason: null }
-    }
-    expect(store.agentEventsUrl).toBe('http://127.0.0.1:9000/a/events')
-  })
+  )
 
   it("leaves the standalone harness on its own agent, not ComfyUI's", () => {
     onTestFinished(() => {
@@ -59,12 +51,11 @@ describe('agentPanelStore engagement telemetry', () => {
     })
     vi.stubEnv('VITE_AGENT_STANDALONE', 'true')
     api.serverFeatureFlags.value = {
-      agent: { state: 'ready', url: 'http://127.0.0.1:9000/a', reason: null }
+      agent: { state: 'ready' }
     }
     const store = useAgentPanelStore()
 
     expect(store.comfyAgent).toBeUndefined()
-    expect(store.agentEventsUrl).toBe(api.apiURL('/agent/events'))
   })
 
   it('emits a restored open only once the rehydrated panel actually docks', async () => {

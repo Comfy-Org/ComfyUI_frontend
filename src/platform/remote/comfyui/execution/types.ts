@@ -123,7 +123,6 @@ export type FeatureFlagsWsMessage = Record<string, unknown>
 /** ComfyUI's `agent` server feature, pushed again on every change. */
 export interface AgentStatusWsMessage {
   state: 'starting' | 'ready' | 'failed'
-  url: string | null
   reason?: string | null
 }
 export interface AssetDownloadWsMessage {

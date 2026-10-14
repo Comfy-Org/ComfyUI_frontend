@@ -77,16 +77,12 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   const view = shallowRef<AgentPanelView>({ screen: 'chat' })
   const flagsSettled = computed(() => api.serverFeatureFlagsSettled.value)
   /** The local agent ComfyUI runs with `--enable-agent`; absent otherwise. */
-  const comfyAgent = computed(() =>
-    import.meta.env.VITE_AGENT_STANDALONE === 'true'
-      ? undefined
-      : api.getServerFeature<AgentStatusWsMessage | undefined>('agent')
-  )
-  /** The agent's event socket: at the flag's url (relative to ComfyUI's base) when set. */
-  const agentEventsUrl = computed(() => {
-    const url = comfyAgent.value?.url
-    if (!url) return api.apiURL('/agent/events')
-    return `${URL.canParse(url) ? '' : api.api_base}${url}/events`
+  const comfyAgent = computed(() => {
+    if (import.meta.env.VITE_AGENT_STANDALONE === 'true') return undefined
+    const agent = api.getServerFeature<unknown>('agent')
+    return typeof agent === 'object' && agent !== null
+      ? (agent as AgentStatusWsMessage)
+      : undefined
   })
   const maximized = ref(false)
   const draggedWidth = ref(PANEL_MIN_WIDTH)
@@ -396,7 +392,6 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     interruptHistorySelection,
     flagsSettled,
     comfyAgent,
-    agentEventsUrl,
     reportedExhaustionIdentity,
     reportedFreeUseExposure,
     reportedFreeUseImpression,
