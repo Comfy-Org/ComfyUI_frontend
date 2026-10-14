@@ -2,7 +2,13 @@ import { isDeepStrictEqual, parseArgs } from 'node:util'
 
 import { BOUNDARIES_PATH, buildBoundaries } from './boundaries'
 import { buildCatalog, parseCodeowners } from './catalog'
-import { attempt, readJson, readText, writeFormatted } from './outcome'
+import {
+  attempt,
+  readJson,
+  readText,
+  writeFormatted,
+  writeText
+} from './outcome'
 import type { Outcome } from './outcome'
 import { loadArchitectureConfiguration } from './records'
 import type { ArchitectureWarning } from './records'
@@ -85,19 +91,36 @@ const bulletSection = (title: string, lines: string[]) =>
     ? `${title} (${lines.length}):\n${lines.map((line) => `- ${line}`).join('\n')}\n`
     : ''
 
-/** Renders a report as plain text, or as GitHub Actions annotations. */
-export function formatReport(
-  { errors, warnings }: ArchitectureReport,
-  githubActions: boolean
-): string {
-  if (!githubActions)
-    return (
-      bulletSection(
-        'Warnings',
-        warnings.map(({ message }) => message)
-      ) + bulletSection('Errors', errors)
-    )
-  return [
+const MARKDOWN_LIST_LIMIT = 50
+
+const markdownList = (lines: string[]) =>
+  [
+    ...lines
+      .slice(0, MARKDOWN_LIST_LIMIT)
+      .map((line) => `- ${line.replaceAll('\n', '\n  ')}`),
+    ...(lines.length > MARKDOWN_LIST_LIMIT
+      ? [`- …and ${lines.length - MARKDOWN_LIST_LIMIT} more`]
+      : [])
+  ].join('\n')
+
+function formatMarkdown({ errors, warnings }: ArchitectureReport): string {
+  const errorSection = errors.length
+    ? `### Errors (${errors.length})\n\n${markdownList(errors)}\n`
+    : ''
+  const warningSection = warnings.length
+    ? `<details>\n<summary>Warnings (${warnings.length})</summary>\n\n${markdownList(warnings.map(({ message }) => message))}\n\n</details>\n`
+    : ''
+  return [errorSection, warningSection].filter(Boolean).join('\n')
+}
+
+const formatText = ({ errors, warnings }: ArchitectureReport) =>
+  bulletSection(
+    'Warnings',
+    warnings.map(({ message }) => message)
+  ) + bulletSection('Errors', errors)
+
+const formatAnnotations = ({ errors, warnings }: ArchitectureReport) =>
+  [
     ...warnings.map(
       ({ message, file }) =>
         `::warning file=${escapeWorkflowProperty(file)},title=Architecture::${escapeWorkflowCommand(message)}\n`
@@ -106,49 +129,75 @@ export function formatReport(
       (error) => `::error title=Architecture::${escapeWorkflowCommand(error)}\n`
     )
   ].join('')
+
+/** Renders a report as plain text, GitHub Actions annotations, or a Markdown PR report section. */
+export function formatReport(
+  report: ArchitectureReport,
+  format: 'text' | 'github' | 'markdown'
+): string {
+  if (format === 'github') return formatAnnotations(report)
+  if (format === 'markdown') return formatMarkdown(report)
+  return formatText(report)
 }
 
-function parseMode(args: string[]): Outcome<Mode> {
+interface CliOptions {
+  mode: Mode
+  reportFile: string | undefined
+}
+
+function parseOptions(args: string[]): Outcome<CliOptions> {
   const parsed = attempt('parse arguments', () =>
     parseArgs({
       args,
-      options: Object.fromEntries(
-        MODES.map((mode) => [mode, { type: 'boolean' as const }])
-      )
+      options: {
+        catalog: { type: 'boolean' },
+        check: { type: 'boolean' },
+        update: { type: 'boolean' },
+        report: { type: 'string' }
+      }
     })
   )
   if (!parsed.ok) return parsed
-  const modes = MODES.filter((mode) => parsed.value.values[mode])
-  return modes.length === 1
-    ? { ok: true, value: modes[0] }
-    : {
-        ok: false,
-        errors: [`Pass exactly one of ${MODES.map((m) => `--${m}`).join(', ')}`]
-      }
+  const { values } = parsed.value
+  const modes = MODES.filter((mode) => values[mode])
+  if (modes.length !== 1)
+    return {
+      ok: false,
+      errors: [`Pass exactly one of ${MODES.map((m) => `--${m}`).join(', ')}`]
+    }
+  return { ok: true, value: { mode: modes[0], reportFile: values.report } }
 }
 
 /** Runs the CLI and returns its exit code. */
 export function main(args: string[], repositoryRoot: string): number {
-  const githubActions = process.env.GITHUB_ACTIONS === 'true'
-  const mode = parseMode(args)
-  if (!mode.ok) {
-    process.stderr.write(formatReport(failure(mode.errors), githubActions))
+  const format = process.env.GITHUB_ACTIONS === 'true' ? 'github' : 'text'
+  const options = parseOptions(args)
+  if (!options.ok) {
+    process.stderr.write(formatReport(failure(options.errors), format))
     return 1
   }
-  const run = attempt(`run architecture ${mode.value}`, () =>
-    runArchitecture(repositoryRoot, mode.value)
+  const { mode, reportFile } = options.value
+  const run = attempt(`run architecture ${mode}`, () =>
+    runArchitecture(repositoryRoot, mode)
   )
-  const report = run.ok ? run.value : failure(run.errors)
-  process.stderr.write(formatReport(report, githubActions))
+  const ran = run.ok ? run.value : failure(run.errors)
+  const written = reportFile
+    ? writeText(repositoryRoot, reportFile, formatReport(ran, 'markdown'))
+    : undefined
+  const report =
+    written && !written.ok
+      ? { ...ran, errors: [...ran.errors, ...written.errors] }
+      : ran
+  process.stderr.write(formatReport(report, format))
   if (report.errors.length) {
     process.stderr.write(
-      `Architecture ${mode.value} failed with ${report.errors.length} error(s)\n`
+      `Architecture ${mode} failed with ${report.errors.length} error(s)\n`
     )
     return 1
   }
-  if (mode.value !== 'catalog')
+  if (mode !== 'catalog')
     process.stdout.write(
-      `Architecture ${mode.value} passed with ${report.warnings.length} warning(s)\n`
+      `Architecture ${mode} passed with ${report.warnings.length} warning(s)\n`
     )
   return 0
 }

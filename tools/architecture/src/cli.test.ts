@@ -275,6 +275,19 @@ describe('main', () => {
     expect(output).toContain('Could not list docs/architecture/domains/records')
     expect(output).toContain('Could not list src')
   })
+
+  it('writes the Markdown report to an absolute --report path and still passes on warnings', () => {
+    const root = createRepository({}, { 'src/brandNew.ts': '' })
+    runArchitecture(root, 'update')
+    const reportDirectory = mkdtempSync(join(tmpdir(), 'architecture-report-'))
+    roots.push(reportDirectory)
+    const reportFile = join(reportDirectory, 'report.md')
+    const { exitCode } = runMain(['--check', '--report', reportFile], root)
+    expect(exitCode).toBe(0)
+    expect(readFileSync(reportFile, 'utf8')).toContain(
+      '- src/brandNew.ts is not claimed by any domain'
+    )
+  })
 })
 
 describe('formatReport', () => {
@@ -284,7 +297,7 @@ describe('formatReport', () => {
   }
 
   it('lists warnings and errors as plain text', () => {
-    expect(formatReport(report, false)).toBe(
+    expect(formatReport(report, 'text')).toBe(
       'Warnings (1):\n- src/new.ts is unclaimed\nErrors (1):\n- records/a.json is invalid:\n  id: 100% wrong\n'
     )
   })
@@ -296,16 +309,38 @@ describe('formatReport', () => {
           errors: [],
           warnings: [{ message: 'unclaimed', file: 'src/a,b:c%.ts' }]
         },
-        true
+        'github'
       )
     ).toBe('::warning file=src/a%2Cb%3Ac%25.ts,title=Architecture::unclaimed\n')
   })
 
   it('emits one escaped GitHub Actions annotation per finding', () => {
-    expect(formatReport(report, true)).toBe(
+    expect(formatReport(report, 'github')).toBe(
       '::warning file=src/new.ts,title=Architecture::src/new.ts is unclaimed\n' +
         '::error title=Architecture::records/a.json is invalid:%0A  id: 100%25 wrong\n'
     )
+  })
+
+  it('renders errors as a list and warnings in a collapsed block as Markdown', () => {
+    expect(formatReport(report, 'markdown')).toBe(
+      '### Errors (1)\n\n- records/a.json is invalid:\n    id: 100% wrong\n\n' +
+        '<details>\n<summary>Warnings (1)</summary>\n\n- src/new.ts is unclaimed\n\n</details>\n'
+    )
+  })
+
+  it('caps a long Markdown list and counts the rest', () => {
+    const warnings = Array.from({ length: 52 }, (_, i) => ({
+      message: `src/file${i}.ts is unclaimed`,
+      file: `src/file${i}.ts`
+    }))
+    const markdown = formatReport({ errors: [], warnings }, 'markdown')
+    expect(markdown).toContain('<summary>Warnings (52)</summary>')
+    expect(markdown).toContain('- src/file49.ts is unclaimed\n- …and 2 more')
+    expect(markdown).not.toContain('src/file50.ts')
+  })
+
+  it('renders nothing for a clean report', () => {
+    expect(formatReport({ errors: [], warnings: [] }, 'markdown')).toBe('')
   })
 })
 
