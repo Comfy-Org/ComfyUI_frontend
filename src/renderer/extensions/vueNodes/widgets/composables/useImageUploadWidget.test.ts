@@ -154,6 +154,28 @@ describe('useImageUploadWidget', () => {
     ).toBe(true)
   })
 
+  it('reserves hover for extensionless videos', () => {
+    const { node } = createUploadNode()
+    constructVideo(node)
+
+    expect(
+      mocks.capturedUploadOptions?.canHandleRejectedFile?.(
+        new File([], 'extensionless', { type: 'video/mp4' })
+      )
+    ).toBe(true)
+    expect(
+      mocks.capturedUploadOptions?.canHandleRejectedFile?.(
+        new File([], 'clip.mp4', { type: 'video/mp4' })
+      )
+    ).toBe(false)
+    expect(
+      mocks.capturedUploadOptions?.canHandleRejectedFile?.(
+        new File([], 'image.png', { type: 'image/png' })
+      )
+    ).toBe(false)
+    expect(useToast().warning).not.toHaveBeenCalled()
+  })
+
   it('claims and alerts only when a video lacks an extension', () => {
     const { node } = createUploadNode()
     constructVideo(node)
