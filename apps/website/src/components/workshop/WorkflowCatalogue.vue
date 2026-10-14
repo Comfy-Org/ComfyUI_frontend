@@ -92,6 +92,7 @@ const features = computed(() => workflowFeatures(models, locale))
 const flatGrid = usePreviewSwitch('hub-workflows-flat')
 const modalitySwitch = usePreviewSwitch('hub-facet-sidebar')
 const modalitySidebar = computed(() => modalitySwitch.value && !flatGrid.value)
+const sidebarWidth = computed(() => (flatGrid.value ? 'lg:w-58' : 'lg:w-70'))
 const taskSwitch = usePreviewSwitch('hub-task-sidebar')
 const taskSidebar = computed(
   () => taskSwitch.value && !modalitySidebar.value && !flatGrid.value
@@ -364,10 +365,7 @@ function clear() {
   >
     <div
       :class="
-        cn(
-          'max-lg:contents lg:sticky lg:top-26 lg:shrink-0',
-          flatGrid ? 'lg:w-58' : 'lg:w-70'
-        )
+        cn('max-lg:contents lg:sticky lg:top-26 lg:shrink-0', sidebarWidth)
       "
     >
       <HubChoiceSidebar
