@@ -8,6 +8,7 @@
     variant="subscribe"
     size="unset"
     data-testid="subscribe-to-run-button"
+    :data-dd-action-name="BILLING_ACTION_NAME.subscribeToRun"
     @click="handleSubscribeToRun"
   >
     <i class="pi pi-lock" />
@@ -16,6 +17,7 @@
 </template>
 
 <script setup lang="ts">
+import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
 import { registerSubscribeToRunPrompt } from '@/platform/cloud/subscription/composables/useSubscribeCtaPresence'
 import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
 import { computed } from 'vue'
