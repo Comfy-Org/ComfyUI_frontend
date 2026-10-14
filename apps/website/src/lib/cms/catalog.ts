@@ -13,7 +13,8 @@ export const cmsEnabled = () => Boolean(process.env.SITE_CATALOG_API_URL)
 
 export async function loadSiteCatalog(
   session?: SiteSession | AuthoringSession,
-  locale = 'en'
+  locale = 'en',
+  workflowSlug?: string
 ) {
   const origin = process.env.SITE_CATALOG_API_URL
   if (!origin || process.env.VERCEL_ENV === 'production')
@@ -29,6 +30,9 @@ export async function loadSiteCatalog(
       url.searchParams.set('eligible', 'true')
       if (session.preview?.now) url.searchParams.set('now', session.preview.now)
     }
+    // Only detail routes opt in. Lists/cards do not read private API files or
+    // expand their graph payloads for every workflow in the catalog.
+    if (workflowSlug) url.searchParams.set('workflow_slug', workflowSlug)
     const response = await fetch(url, {
       ...(session
         ? { headers: { Authorization: `Bearer ${session.credential}` } }

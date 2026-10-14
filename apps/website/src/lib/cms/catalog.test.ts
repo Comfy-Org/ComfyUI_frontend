@@ -31,6 +31,16 @@ describe('website CMS boundary', () => {
     expect(cmsEnabled()).toBe(false)
   })
 
+  it('expands a single workflow only for explicit detail loads', async () => {
+    vi.stubEnv('SITE_CATALOG_API_URL', 'http://localhost:8099')
+    const upstream = vi.fn<typeof fetch>().mockResolvedValue(new Response('', { status: 503 }))
+    vi.stubGlobal('fetch', upstream)
+    await loadSiteCatalog(undefined, 'en', 'workflows/one-detail')
+    expect(String(upstream.mock.calls[0][0])).toBe('http://localhost:8099/api/v1/catalog/items?workflow_slug=workflows%2Fone-detail')
+    await loadSiteCatalog()
+    expect(String(upstream.mock.calls[1][0])).toBe('http://localhost:8099/api/v1/catalog/items')
+  })
+
   it('parses every existing public card and input definition from the CMS', async () => {
     vi.stubEnv('SITE_CATALOG_API_URL', 'http://localhost:8099')
     vi.stubGlobal(

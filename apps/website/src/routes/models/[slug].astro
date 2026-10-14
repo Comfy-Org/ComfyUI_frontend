@@ -40,7 +40,7 @@ export const getStaticPaths: GetStaticPaths = ({ routePattern }) =>
       }))
 
 const catalog = cmsEnabled()
-  ? await loadSiteCatalog(Astro.locals.catalogAuthoring ?? Astro.locals.site, Astro.locals.catalogLocale)
+  ? await loadSiteCatalog(Astro.locals.catalogAuthoring ?? Astro.locals.site, Astro.locals.catalogLocale, Astro.url.pathname.replace(/^\/zh-CN/, '').replace(/\/$/, ''))
   : undefined
 const failure = catalog && !catalog.ok ? catalogUnavailable() : undefined
 if (failure) return failure
