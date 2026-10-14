@@ -1,5 +1,14 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 
+import { attachKeyboard } from '@/lib/litegraph/src/__fixtures__/canvasHarness'
 import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 
@@ -46,7 +55,9 @@ describe('LGraphCanvas link drag auto-pan', () => {
     canvas['_linkConnectorDrop']()
   }
 
-  it('resumes auto-pan after Space panning during a link drag', () => {
+  it('resumes auto-pan after Space panning during a link drag', async () => {
+    const keyboard = attachKeyboard(canvas)
+    onTestFinished(keyboard.dispose)
     canvas.processMouseDown(
       new PointerEvent('pointerdown', {
         button: 0,
@@ -66,20 +77,15 @@ describe('LGraphCanvas link drag auto-pan', () => {
         isPrimary: true
       })
     )
-    const keydown = new KeyboardEvent('keydown', { key: ' ' })
-    const keyup = new KeyboardEvent('keyup', { key: ' ' })
-    Object.defineProperty(keydown, 'target', { value: canvasElement })
-    Object.defineProperty(keyup, 'target', { value: canvasElement })
-
-    canvas.processKey(keydown)
+    keyboard.press(' ')
     const offsetWhileSpacePanning = [...canvas.ds.offset]
 
-    vi.advanceTimersByTime(16)
+    await vi.advanceTimersByTimeAsync(16)
 
     expect([...canvas.ds.offset]).toEqual(offsetWhileSpacePanning)
 
-    canvas.processKey(keyup)
-    vi.advanceTimersByTime(16)
+    keyboard.release(' ')
+    await vi.advanceTimersByTimeAsync(16)
 
     expect([...canvas.ds.offset]).not.toEqual(offsetWhileSpacePanning)
   })

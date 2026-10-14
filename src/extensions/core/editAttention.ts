@@ -1,3 +1,5 @@
+import { t } from '@/i18n'
+import { useRuntimeKeybindingStore } from '@/platform/keybindings/runtimeKeybindingStore'
 import { app } from '../../scripts/app'
 
 type Enclosure = {
@@ -74,15 +76,10 @@ app.registerExtension({
       defaultValue: 0.05
     })
 
-    function editAttention(event: KeyboardEvent) {
-      const inputField = event.composedPath()[0]
-      const delta = parseFloat(String(editAttentionDelta.value))
-
+    function editAttention(direction: number, event?: KeyboardEvent) {
+      const inputField = event?.composedPath()[0] ?? document.activeElement
       if (!(inputField instanceof HTMLTextAreaElement)) return
-      if (!(event.key === 'ArrowUp' || event.key === 'ArrowDown')) return
-      if (!event.ctrlKey && !event.metaKey) return
-
-      event.preventDefault()
+      const delta = parseFloat(String(editAttentionDelta.value))
 
       let start = inputField.selectionStart
       let end = inputField.selectionEnd
@@ -137,7 +134,7 @@ app.registerExtension({
 
       selectedText = addWeightToParentheses(selectedText)
 
-      const weightDelta = event.key === 'ArrowUp' ? delta : -delta
+      const weightDelta = direction * delta
       const updatedText = selectedText.replace(
         /\((.*):([+-]?(?:\d*\.)?\d+(?:[eE][+-]?\d+)?)\)/,
         (_, text, weight) => {
@@ -155,6 +152,32 @@ app.registerExtension({
       document.execCommand('insertText', false, updatedText)
       inputField.setSelectionRange(start, start + updatedText.length)
     }
-    window.addEventListener('keydown', editAttention)
+    const runtime = useRuntimeKeybindingStore()
+    for (const { key, id, label, direction } of [
+      {
+        key: 'ArrowUp',
+        id: 'Increase',
+        label: 'keybindings.increaseAttention',
+        direction: 1
+      },
+      {
+        key: 'ArrowDown',
+        id: 'Decrease',
+        label: 'keybindings.decreaseAttention',
+        direction: -1
+      }
+    ]) {
+      runtime.register({
+        id: `Comfy.EditAttention.${id}`,
+        label: () => t(label),
+        binding: {
+          combo: { key, ctrl: true },
+          when: 'textInputFocus',
+          allowRepeat: true
+        },
+        enabled: () => document.activeElement instanceof HTMLTextAreaElement,
+        run: (event) => editAttention(direction, event)
+      })
+    }
   }
 })

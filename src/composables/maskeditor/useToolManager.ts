@@ -228,7 +228,7 @@ export function useToolManager(
   }
 
   function isLeftButtonSpacePan(event: PointerEvent) {
-    return event.buttons === 1 && keyboard.isKeyDown(' ')
+    return event.buttons === 1 && keyboard.isPanning.value
   }
 
   function shouldStartPan(event: PointerEvent) {

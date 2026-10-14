@@ -284,6 +284,30 @@ describe('GlobalDialog', () => {
     expect(store.isDialogOpen('reka-esc-blocked')).toBe(true)
   })
 
+  it('keeps the close button working when Escape dismissal is disabled', async () => {
+    mountDialog()
+    const store = useDialogStore()
+    const user = userEvent.setup()
+
+    store.showDialog({
+      key: 'reka-esc-opt-out',
+      title: 'Explicit close',
+      component: Body,
+      dialogComponentProps: { closable: true, dismissOnEscape: false }
+    })
+
+    const dialog = await screen.findByRole('dialog', { name: 'Explicit close' })
+    await user.keyboard('{Escape}')
+
+    expect(store.isDialogOpen('reka-esc-opt-out')).toBe(true)
+
+    await user.click(within(dialog).getByRole('button', { name: 'Close' }))
+
+    await waitFor(() =>
+      expect(store.isDialogOpen('reka-esc-opt-out')).toBe(false)
+    )
+  })
+
   it('toggles maximize through the header control and tells the content', async () => {
     mountDialog()
     const store = useDialogStore()
