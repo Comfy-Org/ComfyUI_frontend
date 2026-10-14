@@ -501,7 +501,7 @@ function openResult(model: WorkshopModel, event: MouseEvent) {
               :models
               :locale
               compact
-              class="min-w-0 flex-1 sm:min-w-48"
+              class="min-w-0 flex-1 sm:min-w-120"
               @submit="submitSearch"
             />
 
