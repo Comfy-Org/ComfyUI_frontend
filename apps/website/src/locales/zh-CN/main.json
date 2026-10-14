@@ -2456,12 +2456,12 @@
       },
       "workflows": {
         "title": "工作流",
-        "line": "下载一个，或在 Comfy Cloud 中运行，然后修改任意步骤。",
+        "line": "在 Comfy Cloud 中运行，然后修改任意步骤。",
         "seeAll": "查看全部工作流"
       },
       "models": {
         "title": "模型",
-        "line": "通过一个 API 调用最新模型，先在这里试用。",
+        "line": "通过一个 API 调用最新模型。",
         "seeAll": "查看全部模型"
       }
     }

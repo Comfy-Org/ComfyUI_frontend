@@ -67,11 +67,11 @@ describe('HubBannerSection', () => {
         '/hub/apps/'
       ],
       [
-        'WorkflowsDownload one or run it in Comfy Cloud, then change any step.See all workflows',
+        'WorkflowsRun it in Comfy Cloud, then change any step.See all workflows',
         '/hub/workflows/'
       ],
       [
-        'ModelsCall the latest models through one API, try them here first.See all models',
+        'ModelsCall the latest models through one API.See all models',
         '/hub/models/'
       ]
     ])

@@ -1151,12 +1151,12 @@
       },
       "workflows": {
         "title": "Workflows",
-        "line": "Download one or run it in Comfy Cloud, then change any step.",
+        "line": "Run it in Comfy Cloud, then change any step.",
         "seeAll": "See all workflows"
       },
       "models": {
         "title": "Models",
-        "line": "Call the latest models through one API, try them here first.",
+        "line": "Call the latest models through one API.",
         "seeAll": "See all models"
       }
     }

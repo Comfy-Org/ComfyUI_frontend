@@ -51,7 +51,7 @@ const entries = computed(() =>
             {{ t('homeHub.heading') }}
           </h2>
           <p
-            class="max-w-2xl text-base/snug font-light text-primary-comfy-canvas/80 lg:text-lg/6"
+            class="text-base/snug font-light text-primary-comfy-canvas/80 lg:text-lg/6"
           >
             {{ t('homeHub.subtitle') }}
           </p>
