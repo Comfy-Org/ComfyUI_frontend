@@ -17,7 +17,7 @@
       <h3 class="my-0 mb-1 truncate text-base font-bold text-base-foreground">
         {{ userDisplayName || $t('g.user') }}
       </h3>
-      <p v-if="userEmail" class="my-0 truncate text-sm text-muted">
+      <p v-if="userEmail" class="my-0 truncate text-sm text-muted-foreground">
         {{ userEmail }}
       </p>
       <span

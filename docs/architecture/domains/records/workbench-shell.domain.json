@@ -1,0 +1,253 @@
+{
+  "id": "workbench-shell",
+  "capability": "Workbench shell layout",
+  "description": "Workbench layout, persisted panel sizing, contribution registries, command dispatch, menus, sidebar and bottom-panel tabs, action bar buttons, and extension slots. Feature content belongs to its respective modules.",
+  "modules": [
+    {
+      "path": "src/components/common/ExtensionSlot.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/LiteGraphCanvasSplitterOverlay.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/LiteGraphCanvasSplitterOverlay.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/MenuHamburger.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/sidebar/ComfyMenuButton.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/sidebar/ComfyMenuButton.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/sidebar/SidebarIcon.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/sidebar/SidebarIcon.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/sidebar/SideToolbar.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/sidebar/SideToolbar.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/sidebar/tabs/SidebarTabCloseButton.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/sidebar/tabs/SidebarTabTemplate.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/sidebar/tabs/SidebarTabTemplate.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/sidebar/tabs/SidebarTopArea.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/topbar/ActionBarButtons.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/topbar/TopbarBadge.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/topbar/TopbarBadge.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/topbar/TopbarBadges.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/TopMenuSection.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/TopMenuSection.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/stores/commandStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/commandStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/menuItemStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/menuItemStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/workspace/sidebarTabStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/workspace/sidebarTabStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/workspace/bottomPanelStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/workspace/bottomPanelStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/actionBarButtonStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/topbarBadgeStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/workspaceStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/workspaceStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/usePanelSizing.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/usePanelSizing.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useWorkspaceInset.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useWorkspaceInset.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/utils/splitterPersistence.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/utils/splitterPersistence.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/utils/splitterWidthUtil.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/splitterWidthUtil.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/composables/useCoreCommands.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/useCoreCommands.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/useCoreCommands.selectOnly.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/sidebarTabs/registerCoreSidebarTabs.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/sidebarTabs/registerCoreSidebarTabs.test.ts",
+      "role": "integration"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Splitter overlay and top menu arrange workbench regions from layout settings",
+      "checks": [
+        "src/components/LiteGraphCanvasSplitterOverlay.test.ts",
+        "src/components/TopMenuSection.test.ts"
+      ]
+    },
+    {
+      "name": "Side toolbar renders registered sidebar tabs and the tab host template",
+      "checks": [
+        "src/components/sidebar/SideToolbar.test.ts",
+        "src/components/sidebar/SidebarIcon.test.ts",
+        "src/components/sidebar/tabs/SidebarTabTemplate.test.ts",
+        "src/components/sidebar/ComfyMenuButton.test.ts"
+      ]
+    },
+    {
+      "name": "Topbar badges render extension-contributed badges",
+      "checks": ["src/components/topbar/TopbarBadge.test.ts"]
+    },
+    {
+      "name": "Commands register, execute with error handling, and expose keybinding labels",
+      "checks": [
+        "src/stores/commandStore.test.ts",
+        "browser_tests/tests/commands.spec.ts"
+      ]
+    },
+    {
+      "name": "Menu items, sidebar tabs, and bottom panel tabs register, order, and toggle",
+      "checks": [
+        "src/stores/menuItemStore.test.ts",
+        "src/stores/workspace/sidebarTabStore.test.ts",
+        "src/stores/workspace/bottomPanelStore.test.ts",
+        "browser_tests/tests/menu.spec.ts",
+        "browser_tests/tests/bottomPanel.spec.ts"
+      ]
+    },
+    {
+      "name": "The extensionManager facade keeps the legacy toast API working",
+      "checks": [
+        "src/stores/workspaceStore.test.ts",
+        "browser_tests/tests/extensionAPI.spec.ts"
+      ]
+    },
+    {
+      "name": "Side panels keep pixel sizes across resizes and restore persisted or legacy percentage state",
+      "checks": [
+        "src/composables/usePanelSizing.test.ts",
+        "src/utils/splitterPersistence.test.ts",
+        "src/utils/splitterWidthUtil.test.ts"
+      ]
+    },
+    {
+      "name": "Docked surfaces publish and release the workspace inset",
+      "checks": ["src/composables/useWorkspaceInset.test.ts"]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
+  ],
+  "deepImports": "inventory"
+}

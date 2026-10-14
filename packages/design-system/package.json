@@ -45,7 +45,6 @@
     "@iconify/tools": "catalog:",
     "@iconify/utils": "catalog:",
     "cva": "catalog:",
-    "tailwindcss-primeui": "catalog:",
     "tw-animate-css": "catalog:"
   },
   "devDependencies": {

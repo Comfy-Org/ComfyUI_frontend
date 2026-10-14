@@ -3966,6 +3966,8 @@
     "tagFree": "Free",
     "tagPremium": "Premium",
     "copyPrompt": "Copy prompt",
+    "voices": "voice: | voices:",
+    "clipSeconds": "({seconds}s)",
     "beforeAfter": {
       "tabsLabel": "Comparison",
       "sliderLabel": "Comparison slider",
@@ -4461,6 +4463,7 @@
       "badge1": "Partner node",
       "badge2": "Multi-character scenes",
       "badge3": "50% off at launch",
+      "primaryCta": "RUN DRAMA 3",
       "secondaryCta": "VIEW DOCS"
     },
     "faq": {
@@ -4473,9 +4476,14 @@
         "cta": "TRY FREE"
       }
     },
+    "samples": {
+      "heading": "Made with Drama 3",
+      "cta": "TRY NOW"
+    },
     "steps": {
       "heading": "Direct your first scene",
       "step": "Step",
+      "primaryCta": "RUN DRAMA 3",
       "secondaryCta": "VIEW DOCS"
     },
     "runOptions": {

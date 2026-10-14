@@ -129,8 +129,7 @@ describe('ModelLibrarySidebarTab', () => {
     return render(ModelLibrarySidebarTab, {
       global: {
         plugins: [i18n],
-        stubs: { teleport: true },
-        directives: { tooltip: {} }
+        stubs: { teleport: true }
       }
     })
   }
