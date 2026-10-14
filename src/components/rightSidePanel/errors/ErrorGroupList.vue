@@ -24,12 +24,9 @@
         }}
       </div>
 
-      <div
-        v-else
-        class="overflow-hidden rounded-lg border border-secondary-background"
-      >
+      <div v-else class="overflow-hidden rounded-lg border border-secondary">
         <!-- Errors summary hero -->
-        <div data-testid="errors-summary-hero" class="bg-base-foreground/5">
+        <div data-testid="errors-summary-hero" class="bg-foreground/5">
           <div role="status" class="flex items-center gap-2 p-2">
             <span v-if="hasMixedSeverityTotals" class="sr-only">
               {{
@@ -51,7 +48,7 @@
             </span>
             <span aria-hidden="true" class="h-9 w-px shrink-0 bg-border" />
             <div class="flex min-w-0 flex-1 flex-col gap-1 px-2">
-              <span class="text-xs/tight font-semibold text-base-foreground">
+              <span class="text-xs/tight font-semibold text-foreground">
                 {{ hero.title }}
               </span>
               <span class="text-xs/tight text-muted-foreground">
@@ -97,7 +94,7 @@
         <div
           data-testid="selection-context-strip"
           role="status"
-          class="flex items-center border-t border-secondary-background px-3 pt-3.5 pb-1.5"
+          class="flex items-center border-t border-secondary px-3 pt-3.5 pb-1.5"
         >
           <i18n-t
             :keypath="strip.keypath"
@@ -122,7 +119,7 @@
         <div
           v-if="visibleGroups.length === 0"
           role="status"
-          class="border-t border-secondary-background px-1 pt-5 pb-15 text-center text-sm text-muted-foreground"
+          class="border-t border-secondary px-1 pt-5 pb-15 text-center text-sm text-muted-foreground"
         >
           {{ t('rightSidePanel.noneSearchDesc') }}
         </div>
@@ -137,7 +134,7 @@
             :count="group.count"
             :severity="group.severity"
             :collapse="isSectionCollapsed(group.groupKey) && !isSearching"
-            class="border-t border-secondary-background first:border-t-0"
+            class="border-t border-secondary first:border-t-0"
             @update:collapse="setSectionCollapsed(group.groupKey, $event)"
           >
             <template #title-badge>
@@ -192,7 +189,7 @@
                 data-testid="missing-model-header-refresh"
                 variant="muted-textonly"
                 size="icon"
-                class="shrink-0 rounded-lg hover:bg-transparent hover:text-base-foreground"
+                class="shrink-0 rounded-lg hover:bg-transparent hover:text-foreground"
                 :aria-label="t('rightSidePanel.missingModels.refresh')"
                 :aria-busy="missingModelStore.isRefreshingMissingModels"
                 :aria-disabled="missingModelStore.isRefreshingMissingModels"
@@ -233,7 +230,7 @@
               class="px-3 py-1"
             >
               <p
-                class="m-0 text-xs/normal wrap-break-word whitespace-pre-wrap text-base-foreground/50"
+                class="m-0 text-xs/normal wrap-break-word whitespace-pre-wrap text-foreground/50"
               >
                 {{ group.displayMessage }}
               </p>
@@ -280,7 +277,7 @@
                         <TooltipTrigger as-child>
                           <button
                             type="button"
-                            class="m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left text-xs/relaxed font-normal wrap-break-word text-muted-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none focus-visible:ring-inset"
+                            class="m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left text-xs/relaxed font-normal wrap-break-word text-muted-foreground outline-none hover:text-foreground focus:outline-none focus-visible:ring-1 focus-visible:ring-border focus-visible:outline-none focus-visible:ring-inset"
                             @click="handleLocateNode(item.nodeId)"
                           >
                             {{ item.label }}
@@ -296,9 +293,9 @@
                         size="icon-sm"
                         :class="
                           cn(
-                            'size-6 shrink-0 text-muted-foreground hover:text-base-foreground focus-visible:ring-inset',
+                            'size-6 shrink-0 text-muted-foreground hover:text-foreground focus-visible:ring-inset',
                             isExecutionItemDetailExpanded(item.key) &&
-                              'bg-secondary-background-selected text-base-foreground hover:bg-secondary-background-selected'
+                              'bg-secondary-background-selected text-foreground hover:bg-secondary-background-selected'
                           )
                         "
                         :aria-label="
@@ -690,7 +687,7 @@ const hero = computed(() => {
     const total = errorCount.value + missingCount.value
     return {
       count: total,
-      countClass: 'text-base-foreground',
+      countClass: 'text-foreground',
       title: t('rightSidePanel.issuesDetected', total),
       description: t('rightSidePanel.resolveBeforeRun')
     }

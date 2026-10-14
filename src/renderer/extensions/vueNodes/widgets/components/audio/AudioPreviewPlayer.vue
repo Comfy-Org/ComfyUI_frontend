@@ -31,7 +31,7 @@
         </Button>
 
         <!-- Time Display -->
-        <div class="text-sm font-normal text-nowrap text-base-foreground">
+        <div class="text-sm font-normal text-nowrap text-foreground">
           {{ formatTime(currentTime) }} / {{ formatTime(duration) }}
         </div>
       </div>
@@ -107,7 +107,7 @@
           </template>
           <template #item="{ item, hasSubmenu }">
             <div v-if="item.key === 'volume'" class="w-48">
-              <label class="mb-2 block text-xs text-base-foreground">{{
+              <label class="mb-2 block text-xs text-foreground">{{
                 item.label
               }}</label>
               <Slider

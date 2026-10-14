@@ -1,7 +1,5 @@
 <template>
-  <div
-    class="flex w-full max-w-[420px] flex-col border-t border-border-default"
-  >
+  <div class="flex w-full max-w-[420px] flex-col border-t border-border">
     <div class="flex flex-col gap-4 p-4">
       <p class="m-0 text-sm text-muted-foreground">
         {{ $t('g.keybindingPresets.unsavedChangesMessage') }}
@@ -16,14 +14,14 @@
         </Button>
         <Button
           variant="secondary"
-          class="bg-secondary-background"
+          class="bg-secondary"
           @click="onResult(false)"
         >
           {{ $t('g.keybindingPresets.discardAndSwitch') }}
         </Button>
         <Button
           variant="secondary"
-          class="bg-base-foreground text-base-background"
+          class="bg-foreground text-background"
           @click="onResult(true)"
         >
           {{ $t('g.keybindingPresets.saveAndSwitch') }}

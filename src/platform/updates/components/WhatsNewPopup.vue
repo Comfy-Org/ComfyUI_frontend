@@ -206,7 +206,7 @@ defineExpose({
 }
 
 .content-text {
-  color: var(--text-primary);
+  color: var(--foreground);
   font-size: 14px;
   line-height: 1.5;
   word-wrap: break-word;
@@ -220,7 +220,7 @@ defineExpose({
 }
 
 .content-text :deep(h1) {
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
   font-family: Inter, sans-serif;
   font-size: 14px;
   font-weight: 400;
@@ -234,7 +234,7 @@ defineExpose({
 .content-text :deep(h2),
 /* stylelint-disable-next-line selector-max-type -- generated markdown offers no class hooks */
 .content-text :deep(h1 + p strong) {
-  color: var(--text-primary);
+  color: var(--foreground);
   font-family: Inter, sans-serif;
   font-size: 14px;
   font-weight: 600;
@@ -244,7 +244,7 @@ defineExpose({
 
 /* Regular paragraphs - short description */
 .content-text :deep(p) {
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
   font-family: Inter, sans-serif;
   margin: 1rem 0;
 }
@@ -271,7 +271,7 @@ defineExpose({
   margin-bottom: 6px;
   position: relative;
   padding-left: 18px;
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
   font-family: Inter, sans-serif;
   font-size: 14px;
   font-weight: 400;
@@ -289,13 +289,13 @@ defineExpose({
   top: 7px;
   width: 6px;
   height: 6px;
-  border: 2px solid var(--text-secondary);
+  border: 2px solid var(--muted-foreground);
   border-radius: 50%;
   background: transparent;
 }
 
 .content-text :deep(li strong) {
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
   font-family: Inter, sans-serif;
   font-size: 14px;
   font-weight: 400;
@@ -314,7 +314,7 @@ defineExpose({
   border: 1px solid var(--border);
   border-radius: 4px;
   padding: 2px 6px;
-  color: var(--text-primary);
+  color: var(--foreground);
   white-space: nowrap;
 }
 
@@ -353,7 +353,7 @@ defineExpose({
 
 /* Secondary headings */
 .content-text :deep(h3) {
-  color: var(--text-primary);
+  color: var(--foreground);
   font-family: Inter, sans-serif;
   font-size: 16px;
   font-weight: 600;
@@ -381,7 +381,7 @@ defineExpose({
   display: flex;
   align-items: center;
   gap: 8px;
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
   font-size: 14px;
   font-weight: 400;
   line-height: 1.2102;
@@ -390,7 +390,7 @@ defineExpose({
 }
 
 .learn-more-link:hover {
-  color: var(--text-primary);
+  color: var(--foreground);
 }
 
 .learn-more-link i {
@@ -403,7 +403,7 @@ defineExpose({
   padding: 4px 0;
   background: transparent;
   border: none;
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
   font-size: 14px;
   font-weight: 400;
   line-height: 1.2102;
@@ -412,7 +412,7 @@ defineExpose({
 }
 
 .action-secondary:hover {
-  color: var(--text-primary);
+  color: var(--foreground);
 }
 
 .action-primary {
@@ -421,7 +421,7 @@ defineExpose({
   background: var(--accent);
   border-radius: 8px;
   border: none;
-  color: var(--text-primary);
+  color: var(--foreground);
   font-size: 14px;
   font-weight: 400;
   line-height: 1.2102;

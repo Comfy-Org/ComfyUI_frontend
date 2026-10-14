@@ -35,7 +35,7 @@
           </svg>
         </button>
 
-        <div class="h-5 border-l border-border-default" />
+        <div class="h-5 border-l border-border" />
 
         <button
           :class="iconButtonClass"
@@ -101,7 +101,7 @@
           </svg>
         </button>
 
-        <div class="h-5 w-px bg-border-default" />
+        <div class="h-5 w-px bg-border" />
 
         <button :class="textButtonClass" @click="onInvert">
           {{ t('maskEditor.invert') }}
@@ -148,10 +148,10 @@ const saveButtonText = ref(t('g.save'))
 const saveEnabled = ref(true)
 
 const iconButtonClass =
-  'flex h-7.5 w-12.5 items-center justify-center rounded-[10px] border border-border-default pointer-events-auto transition-colors duration-100 bg-comfy-menu-bg hover:bg-secondary-background-hover'
+  'flex h-7.5 w-12.5 items-center justify-center rounded-[10px] border border-border pointer-events-auto transition-colors duration-100 bg-background hover:bg-secondary-background-hover'
 
 const textButtonClass =
-  'h-7.5 w-15 rounded-[10px] border border-border-default text-current font-sans pointer-events-auto transition-colors duration-100 bg-comfy-menu-bg hover:bg-secondary-background-hover'
+  'h-7.5 w-15 rounded-[10px] border border-border text-current font-sans pointer-events-auto transition-colors duration-100 bg-background hover:bg-secondary-background-hover'
 
 const onUndo = () => {
   store.canvasHistory.undo()

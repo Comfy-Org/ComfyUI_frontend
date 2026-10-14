@@ -71,8 +71,8 @@
             cn(
               'flex-1 self-stretch px-2 text-xs transition-colors',
               tool === PAINTER_TOOLS.BRUSH
-                ? 'rounded-sm bg-muted text-base-foreground'
-                : 'text-muted-foreground hover:text-base-foreground'
+                ? 'rounded-sm bg-muted text-foreground'
+                : 'text-muted-foreground hover:text-foreground'
             )
           "
           @click="tool = PAINTER_TOOLS.BRUSH"
@@ -86,8 +86,8 @@
             cn(
               'flex-1 self-stretch px-2 text-xs transition-colors',
               tool === PAINTER_TOOLS.ERASER
-                ? 'rounded-sm bg-muted text-base-foreground'
-                : 'text-muted-foreground hover:text-base-foreground'
+                ? 'rounded-sm bg-muted text-foreground'
+                : 'text-muted-foreground hover:text-foreground'
             )
           "
           @click="tool = PAINTER_TOOLS.ERASER"
@@ -267,7 +267,7 @@
         data-testid="painter-clear-button"
         :class="
           cn(
-            'gap-2 rounded-lg border border-border bg-card text-xs text-muted-foreground hover:text-base-foreground',
+            'gap-2 rounded-lg border border-border bg-card text-xs text-muted-foreground hover:text-foreground',
             !compact && 'col-span-2'
           )
         "

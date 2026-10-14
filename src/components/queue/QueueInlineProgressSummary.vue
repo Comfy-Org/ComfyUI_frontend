@@ -6,7 +6,7 @@
       aria-live="polite"
       aria-atomic="true"
     >
-      <div class="flex items-center text-base-foreground">
+      <div class="flex items-center text-foreground">
         <span class="font-normal">
           {{ t('sideToolbar.queueProgressOverlay.inlineTotalLabel') }}:
         </span>

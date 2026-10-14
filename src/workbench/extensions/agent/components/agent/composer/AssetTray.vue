@@ -70,7 +70,7 @@ function scrollPage(direction: -1 | 1): void {
       :aria-label="
         t('g.asset', { count: attachments.length }, attachments.length)
       "
-      class="flex scrollbar-custom max-w-full min-w-0 flex-nowrap gap-2 overflow-x-auto overflow-y-hidden p-3 focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none focus-visible:ring-inset"
+      class="flex scrollbar-custom max-w-full min-w-0 flex-nowrap gap-2 overflow-x-auto overflow-y-hidden p-3 focus-visible:ring-1 focus-visible:ring-border focus-visible:outline-none focus-visible:ring-inset"
     >
       <AttachmentChip
         v-for="item in attachments"
@@ -94,8 +94,7 @@ function scrollPage(direction: -1 | 1): void {
         :class="
           cn(
             'pointer-events-none absolute inset-y-0 left-0 z-10 flex w-12 items-center pl-2',
-            hasMoreLeft &&
-              'bg-linear-to-r from-secondary-background to-transparent'
+            hasMoreLeft && 'bg-linear-to-r from-secondary to-transparent'
           )
         "
       >
@@ -114,8 +113,7 @@ function scrollPage(direction: -1 | 1): void {
         :class="
           cn(
             'pointer-events-none absolute inset-y-0 right-0 z-10 flex w-12 items-center justify-end pr-2',
-            hasMoreRight &&
-              'bg-linear-to-l from-secondary-background to-transparent'
+            hasMoreRight && 'bg-linear-to-l from-secondary to-transparent'
           )
         "
       >

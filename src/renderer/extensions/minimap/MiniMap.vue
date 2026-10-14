@@ -23,7 +23,7 @@
 
     <div
       ref="containerRef"
-      class="litegraph-minimap relative border border-border bg-comfy-menu-bg shadow-interface"
+      class="litegraph-minimap relative border border-border bg-background shadow-interface"
       data-testid="minimap-container"
       :aria-label="`${$t('minimap.label')}. ${$t('minimap.highlightedNodes', { count: decorationCount })}`"
       :style="containerStyles"

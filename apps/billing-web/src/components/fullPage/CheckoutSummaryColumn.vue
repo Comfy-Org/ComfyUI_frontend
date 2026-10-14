@@ -33,7 +33,7 @@ const SKELETON_BAR =
 
 <template>
   <section
-    class="flex justify-center bg-base-background lg:w-1/2 lg:justify-end"
+    class="flex justify-center bg-background lg:w-1/2 lg:justify-end"
     :aria-label="t('checkout.fullPage.summary.label')"
     :aria-busy="
       (ledger === undefined && operationPlan === undefined) || repricing
@@ -45,7 +45,7 @@ const SKELETON_BAR =
           v-if="!locked"
           type="button"
           :aria-label="t('checkout.back')"
-          class="absolute -left-10 flex size-8 cursor-pointer items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary-background hover:text-base-foreground focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:outline-none max-lg:static max-lg:mr-2 max-lg:size-10"
+          class="absolute -left-10 flex size-8 cursor-pointer items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground focus-visible:ring-2 focus-visible:ring-foreground focus-visible:outline-none max-lg:static max-lg:mr-2 max-lg:size-10"
           @click="emit('back')"
         >
           <i class="icon-[lucide--arrow-left] size-4" aria-hidden="true" />
@@ -77,9 +77,9 @@ const SKELETON_BAR =
           <span :class="cn(SKELETON_BAR, 'h-4 w-2/3')" />
         </div>
         <div
-          class="mt-8 flex items-center justify-between gap-4 border-t border-border-default pt-6"
+          class="mt-8 flex items-center justify-between gap-4 border-t border-border pt-6"
         >
-          <span class="text-base font-semibold text-base-foreground">
+          <span class="text-base font-semibold text-foreground">
             {{ t('checkout.totalDueToday') }}
           </span>
           <span :class="cn(SKELETON_BAR, 'h-3 w-16')" />

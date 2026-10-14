@@ -3,7 +3,7 @@
     <div
       class="flex size-full items-center justify-center bg-muted transition-transform duration-300 group-hover:scale-105 group-data-[selected=true]:scale-105"
     >
-      <i class="icon-[lucide--check-check] text-3xl text-base-foreground" />
+      <i class="icon-[lucide--check-check] text-3xl text-foreground" />
     </div>
   </div>
 </template>

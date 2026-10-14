@@ -251,7 +251,7 @@ useEventListener(
         aria-hidden="true"
         data-testid="agent-coach-spotlight"
         :style="{ ...spotlightStyle }"
-        class="pointer-events-none absolute rounded-lg border-2 border-base-foreground shadow-[0_0_0_9999px_color-mix(in_srgb,var(--color-black)_60%,transparent)]"
+        class="pointer-events-none absolute rounded-lg border-2 border-foreground shadow-[0_0_0_9999px_color-mix(in_srgb,var(--color-black)_60%,transparent)]"
       />
       <div
         v-if="step.tooltip"
@@ -262,10 +262,10 @@ useEventListener(
       >
         <span
           aria-hidden="true"
-          class="size-0 border-y-4 border-r-4 border-y-transparent border-r-border-default"
+          class="size-0 border-y-4 border-r-4 border-y-transparent border-r-border"
         />
         <div
-          class="rounded-md border border-border-default bg-base-background px-3 py-2 text-xs/tight wrap-break-word whitespace-pre-line text-base-foreground shadow-interface"
+          class="rounded-md border border-border bg-background px-3 py-2 text-xs/tight wrap-break-word whitespace-pre-line text-foreground shadow-interface"
         >
           {{ step.tooltip }}
         </div>
@@ -284,8 +284,8 @@ useEventListener(
           }"
           :class="
             cn(
-              'fixed box-border flex max-h-[calc(100vh-16px)] w-[307px] max-w-[calc(100vw-16px)] flex-col gap-3 overflow-y-auto rounded-2xl border bg-base-background p-4 font-inter text-base-foreground shadow-lg',
-              index < 2 ? 'border-secondary-background' : 'border-smoke-500/20'
+              'fixed box-border flex max-h-[calc(100vh-16px)] w-[307px] max-w-[calc(100vw-16px)] flex-col gap-3 overflow-y-auto rounded-2xl border bg-background p-4 font-inter text-foreground shadow-lg',
+              index < 2 ? 'border-secondary' : 'border-smoke-500/20'
             )
           "
         >

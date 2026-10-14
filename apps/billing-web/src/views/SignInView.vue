@@ -142,8 +142,8 @@ const {
 const leavingPage = computed(() => leaving.value || leavingForSso.value)
 
 const linkButtonClass =
-  'cursor-pointer self-center border-none bg-transparent p-0 text-sm text-muted-foreground underline transition-colors hover:text-base-foreground disabled:cursor-not-allowed disabled:opacity-50'
-const alertClass = 'rounded-lg bg-base-background p-3 text-sm'
+  'cursor-pointer self-center border-none bg-transparent p-0 text-sm text-muted-foreground underline transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50'
+const alertClass = 'rounded-lg bg-background p-3 text-sm'
 </script>
 
 <template>
@@ -152,10 +152,10 @@ const alertClass = 'rounded-lg bg-base-background p-3 text-sm'
   >
     <section
       v-if="!leavingPage"
-      class="mx-auto flex w-full max-w-md flex-col rounded-2xl border border-border-subtle bg-secondary-background p-8 shadow-2xl shadow-black/35"
+      class="mx-auto flex w-full max-w-md flex-col rounded-2xl border border-border-subtle bg-secondary p-8 shadow-2xl shadow-black/35"
       :aria-busy="busy"
     >
-      <h1 class="m-0 text-2xl font-semibold text-base-foreground">
+      <h1 class="m-0 text-2xl font-semibold text-foreground">
         {{ t('auth.signIn.heading') }}
       </h1>
       <p class="mt-2 mb-0 text-sm text-muted-foreground">
@@ -185,7 +185,7 @@ const alertClass = 'rounded-lg bg-base-background p-3 text-sm'
             <SocialAuthButtons
               :google-label="t('auth.signIn.google')"
               :github-label="t('auth.signIn.github')"
-              button-class="flex h-12 w-full cursor-pointer items-center justify-center gap-3 rounded-lg border border-border-default bg-base-background font-medium text-base-foreground transition-colors hover:bg-secondary-background-hover focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+              button-class="flex h-12 w-full cursor-pointer items-center justify-center gap-3 rounded-lg border border-border bg-background font-medium text-foreground transition-colors hover:bg-secondary-background-hover focus-visible:ring-2 focus-visible:ring-foreground focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
               :disabled="blocked"
               @google="signInWith('google')"
               @github="signInWith('github')"
@@ -228,7 +228,7 @@ const alertClass = 'rounded-lg bg-base-background p-3 text-sm'
         <div
           v-if="errorMessage"
           role="alert"
-          :class="cn(alertClass, 'text-destructive-background')"
+          :class="cn(alertClass, 'text-destructive')"
         >
           {{ errorMessage }}
         </div>

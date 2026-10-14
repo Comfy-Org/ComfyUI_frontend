@@ -1,11 +1,11 @@
 <template>
   <div
-    class="relative flex h-full max-h-[90vh] w-[calc(100vw-1rem)] flex-col gap-6 overflow-y-auto rounded-2xl border border-border-default bg-secondary-background p-4 pt-8 shadow-[0_25px_80px_rgba(5,6,12,0.45)] sm:max-w-7xl md:px-16 md:py-8"
+    class="relative flex h-full max-h-[90vh] w-[calc(100vw-1rem)] flex-col gap-6 overflow-y-auto rounded-2xl border border-border bg-secondary p-4 pt-8 shadow-[0_25px_80px_rgba(5,6,12,0.45)] sm:max-w-7xl md:px-16 md:py-8"
   >
     <Button
       size="icon"
       variant="muted-textonly"
-      class="absolute top-2.5 right-2.5 shrink-0 rounded-full text-text-secondary hover:bg-white/10"
+      class="absolute top-2.5 right-2.5 shrink-0 rounded-full text-muted-foreground hover:bg-white/10"
       :aria-label="$t('g.close')"
       @click="onClose"
     >
@@ -18,7 +18,7 @@
         :class="
           cn(
             'flex size-10 items-center justify-center rounded-xl text-lg font-semibold text-white',
-            isPersonal ? 'bg-muted-foreground/30' : 'bg-primary-background'
+            isPersonal ? 'bg-muted-foreground/30' : 'bg-primary'
           )
         "
         aria-hidden="true"
@@ -28,7 +28,7 @@
       <i18n-t
         keypath="subscription.plansForWorkspace"
         tag="h2"
-        class="m-0 font-inter text-2xl font-semibold text-base-foreground"
+        class="m-0 font-inter text-2xl font-semibold text-foreground"
       >
         <template #workspace>
           <span
@@ -48,7 +48,7 @@
       <h2 class="m-0 text-xl text-muted-foreground lg:text-2xl">
         {{ $t('credits.topUp.insufficientTitle') }}
       </h2>
-      <p class="m-0 mt-2 text-sm text-text-secondary">
+      <p class="m-0 mt-2 text-sm text-muted-foreground">
         {{ $t('credits.topUp.insufficientMessage') }}
       </p>
     </div>

@@ -59,7 +59,7 @@ defineExpose({
     data-testid="template-workflow-detail"
     :aria-label="title"
     tabindex="-1"
-    class="@container/template-detail flex size-full min-h-0 flex-1 flex-col overflow-hidden bg-base-background text-base-foreground"
+    class="@container/template-detail flex size-full min-h-0 flex-1 flex-col overflow-hidden bg-background text-foreground"
   >
     <div
       class="grid min-h-0 flex-1 grid-cols-1 overflow-hidden border-t border-border-subtle @[48rem]/template-detail:grid-cols-[minmax(20rem,5fr)_minmax(0,6fr)] @[48rem]/template-detail:grid-rows-[auto_minmax(0,1fr)]"
@@ -74,7 +74,7 @@ defineExpose({
         <section
           v-if="cloudUrl"
           :aria-labelledby="cloudTitleId"
-          class="flex shrink-0 flex-col gap-4 rounded-lg bg-secondary-background/50 p-4"
+          class="flex shrink-0 flex-col gap-4 rounded-lg bg-secondary/50 p-4"
         >
           <div class="flex min-w-0 flex-col gap-2">
             <h3 :id="cloudTitleId" class="m-0 text-sm font-medium">
@@ -103,7 +103,7 @@ defineExpose({
             rel="noopener noreferrer"
             variant="secondary"
             size="md"
-            class="w-full text-base-foreground no-underline"
+            class="w-full text-foreground no-underline"
           >
             {{ t('templateWorkflows.detail.openInCloud') }}
           </Button>

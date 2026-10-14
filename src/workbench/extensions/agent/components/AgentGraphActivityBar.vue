@@ -37,7 +37,7 @@ const presentation = computed(() => ({
     : 'agent-graph-activity-bar',
   accent: isComplete.value
     ? 'border-l-success-background'
-    : 'border-l-base-foreground',
+    : 'border-l-foreground',
   iconClass: isComplete.value
     ? 'icon-[lucide--check] text-success-background'
     : 'icon-[lucide--loader-circle] text-muted-foreground motion-safe:animate-spin',

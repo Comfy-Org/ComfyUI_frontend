@@ -67,7 +67,7 @@ onClickOutside(rootEl, () => {
     v-bind="forwarded"
     :class="
       cn(
-        'group relative flex flex-wrap items-center gap-2 rounded-lg bg-transparent p-2 text-xs text-base-foreground',
+        'group relative flex flex-wrap items-center gap-2 rounded-lg bg-transparent p-2 text-xs text-foreground',
         !internalDisabled &&
           'focus-within:bg-tertiary-background hover:bg-tertiary-background',
         !disabled && !isEditingEnabled && 'cursor-pointer',

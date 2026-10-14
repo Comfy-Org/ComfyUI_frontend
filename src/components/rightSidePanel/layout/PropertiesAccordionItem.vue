@@ -30,7 +30,7 @@ const isExpanded = computed(() => !isCollapse.value && !disabled)
 </script>
 
 <template>
-  <div :class="cn('flex flex-col bg-comfy-menu-bg', className)">
+  <div :class="cn('flex flex-col bg-background', className)">
     <div
       class="sticky top-0 z-10 flex items-center justify-between bg-inherit backdrop-blur-xl"
     >
@@ -58,7 +58,7 @@ const isExpanded = computed(() => !isCollapse.value && !disabled)
               <i
                 :class="
                   cn(
-                    'icon-[lucide--chevron-up] size-4 text-muted-foreground transition-all group-hover:text-base-foreground group-focus:text-base-foreground group-has-[.subbutton:hover]:text-muted-foreground',
+                    'icon-[lucide--chevron-up] size-4 text-muted-foreground transition-all group-hover:text-foreground group-focus:text-foreground group-has-[.subbutton:hover]:text-muted-foreground',
                     isCollapse && '-rotate-180',
                     disabled && 'opacity-0'
                   )

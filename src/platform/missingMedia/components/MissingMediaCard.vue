@@ -28,7 +28,7 @@
           <span class="flex min-w-0 flex-1">
             <button
               type="button"
-              class="m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left text-xs/relaxed font-normal wrap-break-word text-muted-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none focus-visible:ring-inset"
+              class="m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left text-xs/relaxed font-normal wrap-break-word text-muted-foreground outline-none hover:text-foreground focus:outline-none focus-visible:ring-1 focus-visible:ring-border focus-visible:outline-none focus-visible:ring-inset"
               @click="emit('locateNode', item.nodeId)"
             >
               {{ item.displayItemLabel }}
@@ -38,7 +38,7 @@
             data-testid="missing-media-locate-button"
             variant="textonly"
             size="icon-sm"
-            class="size-8 shrink-0 text-muted-foreground hover:text-base-foreground focus-visible:ring-inset"
+            class="size-8 shrink-0 text-muted-foreground hover:text-foreground focus-visible:ring-inset"
             :aria-label="
               t(
                 'rightSidePanel.locateNodeFor',

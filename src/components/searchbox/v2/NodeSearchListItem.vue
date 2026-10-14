@@ -4,7 +4,7 @@
   >
     <div class="flex min-w-0 flex-1 flex-col gap-1 overflow-hidden">
       <!-- Row 1: Name (left) + badges (right) -->
-      <div class="flex items-center gap-2 text-sm text-base-foreground">
+      <div class="flex items-center gap-2 text-sm text-foreground">
         <span
           v-if="isBookmarked && !hideBookmarkIcon"
           role="img"
@@ -18,7 +18,7 @@
         <span
           v-if="showIdName"
           data-testid="node-id-badge"
-          class="shrink-0 rounded-sm bg-secondary-background px-1.5 py-0.5 text-xs text-muted-foreground"
+          class="shrink-0 rounded-sm bg-secondary px-1.5 py-0.5 text-xs text-muted-foreground"
         >
           <HighlightedText :text="nodeDef.name" :query="currentQuery" />
         </span>
@@ -75,7 +75,7 @@
         </span>
         <span
           v-if="nodeDef.description && showCategory"
-          class="h-3 w-px shrink-0 bg-border-default"
+          class="h-3 w-px shrink-0 bg-border"
         />
         <TextTicker v-if="nodeDef.description" class="min-w-0 flex-1">
           {{ nodeDef.description }}
@@ -104,13 +104,13 @@
       <span
         v-if="showNodeFrequency && nodeFrequency > 0"
         data-testid="frequency-badge"
-        class="rounded-sm bg-secondary-background px-1.5 py-0.5 text-xs text-muted-foreground"
+        class="rounded-sm bg-secondary px-1.5 py-0.5 text-xs text-muted-foreground"
       >
         {{ formatNumberWithSuffix(nodeFrequency, { roundToInt: true }) }}
       </span>
       <span
         v-if="nodeDef.nodeSource.type !== NodeSourceType.Unknown"
-        class="rounded-sm bg-secondary-background px-2 py-0.5 text-sm text-muted-foreground"
+        class="rounded-sm bg-secondary px-2 py-0.5 text-sm text-muted-foreground"
       >
         {{ nodeDef.nodeSource.displayText }}
       </span>

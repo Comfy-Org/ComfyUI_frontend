@@ -10,7 +10,7 @@
         :aria-label="t('load3d.openIn3DViewer')"
         @click="openIn3DViewer"
       >
-        <i class="pi pi-expand text-lg text-base-foreground" />
+        <i class="pi pi-expand text-lg text-foreground" />
       </Button>
     </div>
   </div>

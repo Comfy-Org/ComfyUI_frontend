@@ -5,12 +5,12 @@
     >
       <p
         v-if="snippet"
-        class="m-0 size-full overflow-hidden p-2 text-left text-xs/4 wrap-break-word whitespace-pre-wrap text-base-foreground"
+        class="m-0 size-full overflow-hidden p-2 text-left text-xs/4 wrap-break-word whitespace-pre-wrap text-foreground"
       >
         {{ snippet }}
       </p>
       <div v-else class="flex size-full items-center justify-center">
-        <i class="icon-[lucide--text] text-3xl text-base-foreground" />
+        <i class="icon-[lucide--text] text-3xl text-foreground" />
       </div>
     </div>
   </div>

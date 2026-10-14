@@ -49,8 +49,8 @@ const kind = computed(() => mediaKind ?? getMediaTypeFromFilename(name))
     :aria-label="name"
     :class="
       cn(
-        'group/attachment relative flex size-20 shrink-0 items-center justify-center rounded-lg p-1 data-highlighted:ring-2 data-highlighted:ring-base-foreground data-highlighted:ring-inset',
-        validationError && 'ring-1 ring-border-default ring-inset'
+        'group/attachment relative flex size-20 shrink-0 items-center justify-center rounded-lg p-1 data-highlighted:ring-2 data-highlighted:ring-foreground data-highlighted:ring-inset',
+        validationError && 'ring-1 ring-border ring-inset'
       )
     "
   >
@@ -65,10 +65,10 @@ const kind = computed(() => mediaKind ?? getMediaTypeFromFilename(name))
           <AssetThumbnail :name :media-kind variant="tray" class="size-full" />
           <span
             aria-hidden="true"
-            class="pointer-events-none absolute right-1 bottom-1 flex size-5 items-center justify-center rounded-full bg-base-background/80"
+            class="pointer-events-none absolute right-1 bottom-1 flex size-5 items-center justify-center rounded-full bg-background/80"
           >
             <span
-              class="icon-[lucide--triangle-alert] size-3 text-destructive-background"
+              class="icon-[lucide--triangle-alert] size-3 text-destructive"
             />
           </span>
         </span>
@@ -95,7 +95,7 @@ const kind = computed(() => mediaKind ?? getMediaTypeFromFilename(name))
       <span
         v-if="kind === 'video' && previewUrl"
         aria-hidden="true"
-        class="pointer-events-none absolute right-1 bottom-1 flex size-5 items-center justify-center rounded-full bg-base-background/80 text-base-foreground"
+        class="pointer-events-none absolute right-1 bottom-1 flex size-5 items-center justify-center rounded-full bg-background/80 text-foreground"
       >
         <span class="icon-[lucide--play] size-3" />
       </span>
@@ -103,7 +103,7 @@ const kind = computed(() => mediaKind ?? getMediaTypeFromFilename(name))
         v-if="uploading"
         role="status"
         :aria-label="$t('agent.uploading')"
-        class="absolute inset-0 flex items-center justify-center bg-base-background/60"
+        class="absolute inset-0 flex items-center justify-center bg-background/60"
       >
         <span
           class="icon-[lucide--loader-circle] size-5 animate-spin text-muted-foreground"
@@ -112,7 +112,7 @@ const kind = computed(() => mediaKind ?? getMediaTypeFromFilename(name))
     </AssetHoverPreview>
     <TagRemoveButton
       :label="$t('agent.removeAsset', { name })"
-      class="pointer-events-none absolute top-1 right-1 size-5 shrink-0 rounded-full bg-base-background text-base-foreground opacity-0 ring-1 ring-border-subtle group-focus-within/attachment:pointer-events-auto group-focus-within/attachment:opacity-100 group-hover/attachment:pointer-events-auto group-hover/attachment:opacity-100 hover:bg-secondary-background-hover touch:pointer-events-auto touch:size-7 touch:opacity-100"
+      class="pointer-events-none absolute top-1 right-1 size-5 shrink-0 rounded-full bg-background text-foreground opacity-0 ring-1 ring-border-subtle group-focus-within/attachment:pointer-events-auto group-focus-within/attachment:opacity-100 group-hover/attachment:pointer-events-auto group-hover/attachment:opacity-100 hover:bg-secondary-background-hover touch:pointer-events-auto touch:size-7 touch:opacity-100"
       @click="emit('remove')"
     />
   </span>

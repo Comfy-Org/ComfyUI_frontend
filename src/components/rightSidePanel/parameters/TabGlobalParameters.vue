@@ -85,7 +85,7 @@ function handleReorder({
           <template #moreIcon>
             <span
               aria-hidden="true"
-              class="inline-flex size-5 items-center justify-center rounded-md bg-secondary-background-hover align-middle text-base-foreground"
+              class="inline-flex size-5 items-center justify-center rounded-md bg-secondary-background-hover align-middle text-foreground"
             >
               <i class="icon-[lucide--more-vertical] text-sm" />
             </span>

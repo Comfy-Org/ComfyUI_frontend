@@ -134,10 +134,10 @@ function handleVideoLoad(event: Event) {
         v-if="selected"
         :aria-label="t('g.selected')"
         role="img"
-        class="absolute top-1 left-1 size-4 rounded-full border border-base-foreground bg-primary-background"
+        class="absolute top-1 left-1 size-4 rounded-full border border-foreground bg-primary"
       >
         <i
-          class="bold icon-[lucide--check] size-3 translate-y-[-0.5px] text-base-foreground"
+          class="bold icon-[lucide--check] size-3 translate-y-[-0.5px] text-foreground"
           aria-hidden="true"
         />
       </div>
@@ -190,7 +190,7 @@ function handleVideoLoad(event: Event) {
                 'line-clamp-2 block overflow-hidden text-xs wrap-break-word',
                 'transition-colors duration-150',
                 // selection
-                !!selected && 'text-base-foreground'
+                !!selected && 'text-foreground'
               )
             "
           >

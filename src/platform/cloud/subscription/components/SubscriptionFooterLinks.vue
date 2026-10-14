@@ -4,36 +4,36 @@
       <Button
         v-if="showUsageActivity"
         variant="muted-textonly"
-        class="text-xs text-text-secondary"
+        class="text-xs text-muted-foreground"
         @click="handleFullUsageActivity"
       >
-        <i class="pi pi-external-link text-xs text-text-secondary" />
+        <i class="pi pi-external-link text-xs text-muted-foreground" />
         {{ $t('subscription.fullUsageActivity') }}
       </Button>
       <Button
         v-if="showPlansLink"
         variant="muted-textonly"
-        class="text-xs text-text-secondary"
+        class="text-xs text-muted-foreground"
         @click="$emit('viewPlans')"
       >
-        <i class="pi pi-external-link text-xs text-text-secondary" />
+        <i class="pi pi-external-link text-xs text-muted-foreground" />
         {{ $t('subscription.plansAndPricing') }}
       </Button>
       <Button
         variant="muted-textonly"
-        class="text-xs text-text-secondary"
+        class="text-xs text-muted-foreground"
         @click="handleOpenPartnerNodesInfo"
       >
-        <i class="pi pi-question-circle text-xs text-text-secondary" />
+        <i class="pi pi-question-circle text-xs text-muted-foreground" />
         {{ $t('subscription.partnerNodesPricingTable') }}
       </Button>
       <Button
         variant="muted-textonly"
-        class="text-xs text-text-secondary"
+        class="text-xs text-muted-foreground"
         :loading="isLoadingSupport"
         @click="handleMessageSupport"
       >
-        <i class="pi pi-comment text-xs text-text-secondary" />
+        <i class="pi pi-comment text-xs text-muted-foreground" />
         {{ $t('subscription.messageSupport') }}
       </Button>
     </div>
@@ -41,11 +41,11 @@
     <Button
       v-if="!isCloud && showInvoiceHistory"
       variant="muted-textonly"
-      class="text-xs text-text-secondary"
+      class="text-xs text-muted-foreground"
       @click="handleInvoiceHistory"
     >
       {{ $t('subscription.invoiceHistory') }}
-      <i class="pi pi-external-link text-xs text-text-secondary" />
+      <i class="pi pi-external-link text-xs text-muted-foreground" />
     </Button>
   </div>
 </template>

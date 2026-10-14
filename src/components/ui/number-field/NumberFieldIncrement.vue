@@ -18,7 +18,7 @@ const forwarded = useForwardProps(restProps)
     :aria-label="$t('g.increment')"
     :class="
       cn(
-        'flex h-full w-6 shrink-0 cursor-pointer items-center justify-center rounded-r-lg border-none bg-transparent text-muted-foreground hover:bg-secondary-background-hover focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none focus-visible:ring-inset disabled:pointer-events-none disabled:opacity-30',
+        'flex h-full w-6 shrink-0 cursor-pointer items-center justify-center rounded-r-lg border-none bg-transparent text-muted-foreground hover:bg-secondary-background-hover focus-visible:ring-1 focus-visible:ring-border focus-visible:outline-none focus-visible:ring-inset disabled:pointer-events-none disabled:opacity-30',
         className
       )
     "

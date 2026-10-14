@@ -62,7 +62,7 @@ function leaveForHost(href: string) {
     <div class="mx-auto flex max-w-3xl flex-col gap-6">
       <header class="flex flex-wrap items-center justify-between gap-3">
         <div class="flex flex-col gap-1">
-          <h1 class="m-0 text-xl font-semibold text-base-foreground">
+          <h1 class="m-0 text-xl font-semibold text-foreground">
             {{ title }}
           </h1>
           <p v-if="workspaceLabel" class="m-0 text-xs text-muted-foreground">
@@ -72,7 +72,7 @@ function leaveForHost(href: string) {
         <a
           v-if="returnLink"
           :href="returnLink.href"
-          class="text-sm text-muted-foreground underline underline-offset-4 hover:text-base-foreground"
+          class="text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
           @click.prevent="leaveForHost(returnLink.href)"
         >
           {{ returnLink.label }}
@@ -81,9 +81,9 @@ function leaveForHost(href: string) {
 
       <section
         v-if="error"
-        class="rounded-xl border border-border-subtle bg-secondary-background p-6"
+        class="rounded-xl border border-border-subtle bg-secondary p-6"
       >
-        <h2 class="m-0 text-base font-semibold text-base-foreground">
+        <h2 class="m-0 text-base font-semibold text-foreground">
           {{ t('hosted.entryError.title') }}
         </h2>
         <p class="mt-2 mb-0 text-sm text-muted-foreground">

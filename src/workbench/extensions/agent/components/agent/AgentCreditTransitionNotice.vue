@@ -12,12 +12,12 @@ onMounted(() => emit('shown'))
   <div
     role="status"
     aria-live="polite"
-    class="relative flex items-start gap-2 overflow-hidden rounded-lg bg-base-background p-4 ring-1 ring-border-subtle before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-warning-background"
+    class="relative flex items-start gap-2 overflow-hidden rounded-lg bg-background p-4 ring-1 ring-border-subtle before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-warning-background"
   >
     <span
       class="icon-[heroicons--information-circle-20-solid] size-5 shrink-0 text-warning-foreground"
     />
-    <p class="my-0 min-w-0 flex-1 text-sm text-base-foreground">
+    <p class="my-0 min-w-0 flex-1 text-sm text-foreground">
       {{ $t('agent.creditTransitionNotice') }}
     </p>
     <Button

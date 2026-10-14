@@ -20,7 +20,7 @@ const forwarded = useForwardPropsEmits(reactiveOmit(props, 'class'), emits)
     data-slot="checkbox"
     :class="
       cn(
-        'inline-flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-sm border border-border-default bg-transparent text-base-background transition-colors outline-none focus-visible:ring-1 focus-visible:ring-border-default disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:border-primary-background data-[state=checked]:bg-primary-background data-[state=indeterminate]:border-primary-background data-[state=indeterminate]:bg-primary-background',
+        'inline-flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-sm border border-border bg-transparent text-background transition-colors outline-none focus-visible:ring-1 focus-visible:ring-border disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=indeterminate]:border-primary data-[state=indeterminate]:bg-primary',
         props.class
       )
     "

@@ -57,7 +57,7 @@ function failureLabel(): string {
       :aria-describedby="state.reason === 'error' ? hintId : undefined"
       variant="outline"
       size="unset"
-      class="h-6 rounded-md bg-secondary-background px-2 text-xs"
+      class="h-6 rounded-md bg-secondary px-2 text-xs"
       @click="emit('retry')"
     >
       {{ t('templateWorkflows.detail.retryDownload') }}

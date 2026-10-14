@@ -28,7 +28,7 @@ function toggle() {
       data-testid="toast-panel"
       :class="
         cn(
-          'w-full max-w-3xl overflow-hidden rounded-lg border border-border-default bg-base-background shadow-lg transition-all duration-300',
+          'w-full max-w-3xl overflow-hidden rounded-lg border border-border bg-background shadow-lg transition-all duration-300',
           isExpanded ? 'sm:w-[max(400px,40vw)]' : 'sm:w-fit'
         )
       "

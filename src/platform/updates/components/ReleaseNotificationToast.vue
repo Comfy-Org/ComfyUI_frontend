@@ -13,7 +13,7 @@
 
       <template #footer-start>
         <a
-          class="flex items-center gap-2 py-1 text-sm font-normal text-muted-foreground hover:text-base-foreground"
+          class="flex items-center gap-2 py-1 text-sm font-normal text-muted-foreground hover:text-foreground"
           :href="changelogUrl"
           target="_blank"
           rel="noopener noreferrer"

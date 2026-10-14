@@ -2,7 +2,7 @@
   <div class="flex flex-col gap-3 rounded-lg">
     <CollapsibleRoot
       v-model:open="isWarningExpanded"
-      class="overflow-hidden rounded-lg bg-secondary-background"
+      class="overflow-hidden rounded-lg bg-secondary"
     >
       <CollapsibleTrigger as-child>
         <Button
@@ -39,7 +39,7 @@
       <input
         v-model="acknowledged"
         type="checkbox"
-        class="size-3.5 shrink-0 cursor-pointer accent-primary-background"
+        class="size-3.5 shrink-0 cursor-pointer accent-primary"
       />
       <span class="text-sm text-muted-foreground">
         {{ $t('shareWorkflow.acknowledgeCheckbox') }}

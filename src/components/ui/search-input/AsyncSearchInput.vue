@@ -89,10 +89,10 @@ function handleKeydownEnter(event: KeyboardEvent) {
     :class="
       cn(
         'group',
-        'rounded-lg bg-secondary-background transition-all duration-150',
+        'rounded-lg bg-secondary transition-all duration-150',
         'flex flex-1 items-center',
-        'border-0 text-base-foreground',
-        'focus-within:ring focus-within:ring-border-default/80',
+        'border-0 text-foreground',
+        'focus-within:ring focus-within:ring-border/80',
         customClass
       )
     "
@@ -105,8 +105,8 @@ function handleKeydownEnter(event: KeyboardEvent) {
             ? 'icon-[lucide--loader-circle] animate-spin'
             : 'icon-[lucide--search]',
           searchQuery?.trim() !== ''
-            ? 'text-base-foreground'
-            : 'text-muted-foreground group-focus-within:text-base-foreground group-hover:text-base-foreground'
+            ? 'text-foreground'
+            : 'text-muted-foreground group-focus-within:text-foreground group-hover:text-foreground'
         )
       "
     />
@@ -122,7 +122,7 @@ function handleKeydownEnter(event: KeyboardEvent) {
     />
     <button
       v-if="searchQuery.trim().length > 0"
-      class="m-0 flex shrink-0 items-center justify-center border-0 bg-transparent p-0 pr-3 pl-1 text-muted-foreground ring-0 outline-0 transition-all duration-150 hover:scale-108 hover:text-base-foreground"
+      class="m-0 flex shrink-0 items-center justify-center border-0 bg-transparent p-0 pr-3 pl-1 text-muted-foreground ring-0 outline-0 transition-all duration-150 hover:scale-108 hover:text-foreground"
       :aria-label="$t('g.clear')"
       @click="searchQuery = ''"
     >

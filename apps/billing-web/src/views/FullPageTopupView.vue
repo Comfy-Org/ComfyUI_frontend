@@ -72,7 +72,7 @@ function openBillingSettings() {
   />
   <main
     v-else
-    class="dark-theme fixed inset-0 overflow-auto bg-secondary-background font-inter"
+    class="dark-theme fixed inset-0 overflow-auto bg-secondary font-inter"
   >
     <h1 class="sr-only">{{ t('hosted.title.checkout') }}</h1>
     <div class="flex min-h-full flex-col lg:flex-row">

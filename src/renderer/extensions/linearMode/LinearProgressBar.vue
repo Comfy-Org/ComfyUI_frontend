@@ -22,7 +22,7 @@ const executionStore = useExecutionStore()
   <div
     :class="
       cn(
-        'relative h-2 bg-secondary-background transition-opacity',
+        'relative h-2 bg-secondary transition-opacity',
         !executionStore.isActiveWorkflowRunning && 'opacity-0',
         rounded && 'rounded-sm',
         className

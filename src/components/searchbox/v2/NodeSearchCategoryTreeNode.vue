@@ -5,7 +5,7 @@
         selectedCategory === node.key &&
           isExpanded &&
           node.children?.length &&
-          'rounded-lg bg-secondary-background'
+          'rounded-lg bg-secondary'
       )
     "
   >
@@ -71,9 +71,9 @@ export interface CategoryNode {
 }
 
 export const CATEGORY_SELECTED_CLASS =
-  'bg-secondary-background-hover text-base-foreground'
+  'bg-secondary-background-hover text-foreground'
 export const CATEGORY_UNSELECTED_CLASS =
-  'text-muted-foreground hover:bg-secondary-background-hover hover:text-base-foreground'
+  'text-muted-foreground hover:bg-secondary-background-hover hover:text-foreground'
 </script>
 
 <script setup lang="ts">

@@ -350,7 +350,7 @@ function handleTitleCancel() {
 <template>
   <div
     data-testid="properties-panel"
-    class="flex size-full flex-col bg-comfy-menu-bg"
+    class="flex size-full flex-col bg-background"
   >
     <!-- Panel Header -->
     <section class="pt-1">

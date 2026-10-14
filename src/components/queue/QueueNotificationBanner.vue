@@ -1,5 +1,5 @@
 <template>
-  <div class="inline-flex overflow-hidden rounded-lg bg-secondary-background">
+  <div class="inline-flex overflow-hidden rounded-lg bg-secondary">
     <div class="flex items-center gap-2 p-1 pr-3">
       <div
         :class="
@@ -21,7 +21,7 @@
               :class="
                 cn(
                   'relative size-8 shrink-0 overflow-hidden rounded-[4px]',
-                  index > 0 && '-ml-3 ring-2 ring-secondary-background'
+                  index > 0 && '-ml-3 ring-2 ring-secondary'
                 )
               "
             >
@@ -46,7 +46,7 @@
       </div>
       <div class="flex h-full items-center">
         <span
-          class="overflow-hidden text-center font-inter text-[12px] leading-normal font-normal text-ellipsis text-base-foreground"
+          class="overflow-hidden text-center font-inter text-[12px] leading-normal font-normal text-ellipsis text-foreground"
         >
           {{ bannerText }}
         </span>
@@ -140,11 +140,11 @@ const iconClass = computed(() => {
 
 const iconColorClass = computed(() => {
   if (notification.type === 'queuedPending') {
-    return 'animate-spin text-text-secondary'
+    return 'animate-spin text-muted-foreground'
   }
   if (notification.type === 'failed') {
     return 'text-danger-200'
   }
-  return 'text-text-secondary'
+  return 'text-muted-foreground'
 })
 </script>

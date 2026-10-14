@@ -3,12 +3,12 @@
     class="flex cursor-pointer items-center justify-between rounded-lg p-2 transition-all duration-200"
     :class="[
       selected
-        ? 'border-2 border-border-default bg-secondary-background'
-        : 'border-2 border-transparent bg-muted/30 hover:bg-secondary-background'
+        ? 'border-2 border-border bg-secondary'
+        : 'border-2 border-transparent bg-muted/30 hover:bg-secondary'
     ]"
     @click="$emit('select')"
   >
-    <span class="text-base font-bold text-base-foreground">
+    <span class="text-base font-bold text-foreground">
       {{ formattedCredits }}
     </span>
     <span class="text-sm font-normal text-muted-foreground">

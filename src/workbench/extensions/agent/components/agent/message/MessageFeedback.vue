@@ -103,7 +103,7 @@ async function downloadAssets(): Promise<void> {
       <span class="icon-[lucide--download] size-3" />
     </Button>
     <div
-      class="flex h-6 w-14 rounded-lg transition-colors hover:bg-secondary-background-hover hover:text-base-foreground has-data-[state=open]:bg-secondary-background-hover has-data-[state=open]:text-base-foreground"
+      class="flex h-6 w-14 rounded-lg transition-colors hover:bg-secondary-background-hover hover:text-foreground has-data-[state=open]:bg-secondary-background-hover has-data-[state=open]:text-foreground"
     >
       <Tooltip disable-closing-trigger>
         <TooltipTrigger as-child>
@@ -115,7 +115,7 @@ async function downloadAssets(): Promise<void> {
             :class="
               cn(
                 'h-6 w-8 rounded-l-lg rounded-r-none focus-visible:z-10',
-                copied ? 'text-base-foreground' : 'text-inherit'
+                copied ? 'text-foreground' : 'text-inherit'
               )
             "
             @click="copyPlainText()"

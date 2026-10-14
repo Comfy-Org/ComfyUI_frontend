@@ -2,7 +2,7 @@
 <template>
   <div
     data-testid="current-user-popover"
-    class="current-user-popover -m-3 w-80 rounded-lg border border-border-default bg-base-background p-2 shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
+    class="current-user-popover -m-3 w-80 rounded-lg border border-border bg-background p-2 shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
   >
     <!-- User Info Section -->
     <div class="mb-4 flex flex-col items-center px-0 py-3">
@@ -14,7 +14,7 @@
       />
 
       <!-- User Details -->
-      <h3 class="my-0 mb-1 truncate text-base font-bold text-base-foreground">
+      <h3 class="my-0 mb-1 truncate text-base font-bold text-foreground">
         {{ userDisplayName || $t('g.user') }}
       </h3>
       <p v-if="userEmail" class="my-0 truncate text-sm text-muted-foreground">
@@ -22,7 +22,7 @@
       </p>
       <span
         v-if="subscriptionTierName"
-        class="my-0 mt-2 rounded-full bg-secondary-background-hover px-2 py-0.5 text-xs font-bold text-base-foreground uppercase"
+        class="my-0 mt-2 rounded-full bg-secondary-background-hover px-2 py-0.5 text-xs font-bold text-foreground uppercase"
       >
         {{ subscriptionTierName }}
       </span>
@@ -48,7 +48,7 @@
                 :workspace-name
                 :subscription-tier="tier"
               />
-              <span class="truncate text-sm text-base-foreground">
+              <span class="truncate text-sm text-foreground">
                 {{ workspaceName }}
               </span>
             </div>
@@ -65,7 +65,7 @@
         id="workspace-switcher-panel"
         ref="workspaceSwitcherPanel"
         role="menu"
-        class="absolute top-0 right-full z-10 mr-4 rounded-lg border border-border-default bg-base-background shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
+        class="absolute top-0 right-full z-10 mr-4 rounded-lg border border-border bg-background shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
         data-testid="workspace-switcher-panel"
       >
         <WorkspaceSwitcherPopover @select="isWorkspaceSwitcherOpen = false" />
@@ -79,7 +79,7 @@
     >
       <i class="icon-[lucide--coins] text-sm text-credit" />
       <Skeleton v-if="isLoading" class="h-5 w-16" />
-      <span v-else class="text-base font-semibold text-base-foreground">{{
+      <span v-else class="text-base font-semibold text-foreground">{{
         formattedBalance
       }}</span>
       <Button
@@ -96,7 +96,7 @@
         v-if="showAddCredits"
         variant="secondary"
         size="sm"
-        class="text-base-foreground"
+        class="text-foreground"
         data-testid="add-credits-button"
         @click="handleTopUp"
       >
@@ -113,7 +113,7 @@
       @click="handleOpenPartnerNodesInfo"
     >
       <i class="icon-[lucide--tag] text-sm text-muted-foreground" />
-      <span class="flex-1 text-sm text-base-foreground">{{
+      <span class="flex-1 text-sm text-foreground">{{
         $t('subscription.partnerNodesCredits')
       }}</span>
     </div>
@@ -125,7 +125,7 @@
       @click="handleOpenPlanAndCreditsSettings"
     >
       <i class="icon-[lucide--coins] size-4 text-muted-foreground" />
-      <span class="flex-1 text-sm text-base-foreground">{{
+      <span class="flex-1 text-sm text-foreground">{{
         $t('credits.credits')
       }}</span>
     </div>
@@ -136,7 +136,7 @@
       @click="handleOpenUserSettings"
     >
       <i class="icon-[lucide--settings-2] text-sm text-muted-foreground" />
-      <span class="flex-1 text-sm text-base-foreground">{{
+      <span class="flex-1 text-sm text-foreground">{{
         $t('userSettings.accountSettings')
       }}</span>
     </div>
@@ -149,7 +149,7 @@
       @click="handleLogout"
     >
       <i class="icon-[lucide--log-out] text-sm text-muted-foreground" />
-      <span class="flex-1 text-sm text-base-foreground">{{
+      <span class="flex-1 text-sm text-foreground">{{
         $t('auth.signOut.signOut')
       }}</span>
     </div>

@@ -53,7 +53,7 @@
         <span class="shrink-0 text-sm text-muted-foreground">
           {{ Math.round(progressPercent ?? 0) }}%
         </span>
-        <div class="relative h-1 flex-1 rounded-sm bg-secondary-background">
+        <div class="relative h-1 flex-1 rounded-sm bg-secondary">
           <div
             :class="progressBarPrimaryClass"
             :style="progressPercentStyle(progressPercent)"

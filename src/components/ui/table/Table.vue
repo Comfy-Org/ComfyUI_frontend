@@ -2,7 +2,7 @@
   <div
     :class="
       cn(
-        'relative w-full overflow-auto rounded-lg border border-border-default',
+        'relative w-full overflow-auto rounded-lg border border-border',
         className
       )
     "

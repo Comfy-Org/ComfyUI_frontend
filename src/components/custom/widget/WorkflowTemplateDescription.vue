@@ -51,7 +51,7 @@ watch(
   <button
     v-if="descriptionOverflows || showFullDescription"
     type="button"
-    class="m-0 flex w-fit cursor-pointer items-center gap-1 border-0 bg-transparent p-0 text-sm text-base-foreground hover:underline"
+    class="m-0 flex w-fit cursor-pointer items-center gap-1 border-0 bg-transparent p-0 text-sm text-foreground hover:underline"
     :aria-expanded="showFullDescription"
     @click="showFullDescription = !showFullDescription"
   >

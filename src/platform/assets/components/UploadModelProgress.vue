@@ -26,7 +26,7 @@
         <div
           class="flex min-w-0 flex-1 flex-col items-start justify-center gap-1"
         >
-          <p class="m-0 w-full truncate text-base-foreground">
+          <p class="m-0 w-full truncate text-foreground">
             {{ metadata?.filename || metadata?.name }}
           </p>
           <p class="m-0 text-sm text-muted-foreground">
@@ -55,7 +55,7 @@
         <div
           class="flex min-w-0 flex-1 flex-col items-start justify-center gap-1"
         >
-          <p class="m-0 w-full truncate text-base-foreground">
+          <p class="m-0 w-full truncate text-foreground">
             {{ metadata?.filename || metadata?.name }}
           </p>
           <p class="m-0 text-sm text-muted-foreground">
@@ -107,7 +107,7 @@
         <i18n-t
           keypath="assetBrowser.missingModelImportTypeMismatchNextAction"
           tag="p"
-          class="m-0 text-sm text-base-foreground"
+          class="m-0 text-sm text-foreground"
         >
           <template #required>
             <span>{{ typeMismatch.requiredModelTypeLabel }}</span>

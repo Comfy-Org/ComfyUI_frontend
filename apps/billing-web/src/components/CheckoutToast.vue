@@ -21,7 +21,7 @@
           :class="
             severity === 'warn'
               ? 'pi pi-exclamation-circle text-warning-background'
-              : 'pi pi-spin pi-spinner text-link'
+              : 'pi pi-spin pi-spinner text-primary'
           "
           aria-hidden="true"
         />
@@ -43,7 +43,7 @@
           </p>
           <p
             data-toast-detail
-            class="m-0 text-sm/5 font-medium text-base-foreground"
+            class="m-0 text-sm/5 font-medium text-foreground"
           >
             {{ detail }}
           </p>

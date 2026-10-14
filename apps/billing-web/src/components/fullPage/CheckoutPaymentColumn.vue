@@ -67,7 +67,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-const SECTION_LABEL = 'm-0 text-base font-normal text-base-foreground'
+const SECTION_LABEL = 'm-0 text-base font-normal text-foreground'
 
 const phase = computed(() => submitPhaseOf(page))
 const locked = computed(() => isLocked(page))

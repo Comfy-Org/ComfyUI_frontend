@@ -34,7 +34,7 @@
           <span class="menu-label">{{ menuItem.label }}</span>
           <i
             v-if="menuItem.showExternalIcon"
-            class="ml-auto icon-[lucide--external-link] size-4 text-primary-background"
+            class="ml-auto icon-[lucide--external-link] size-4 text-primary"
           />
           <i
             v-if="menuItem.key === 'more'"
@@ -687,7 +687,7 @@ onBeforeUnmount(() => {
   cursor: pointer;
   transition: background-color 0.2s;
   font-size: 0.9rem;
-  color: var(--text-primary);
+  color: var(--foreground);
   text-align: left;
 }
 
@@ -712,7 +712,7 @@ onBeforeUnmount(() => {
   width: 16px;
   height: 16px;
   font-size: 16px;
-  color: var(--text-primary);
+  color: var(--foreground);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -722,7 +722,7 @@ onBeforeUnmount(() => {
 .help-menu-icon svg {
   width: 16px;
   height: 16px;
-  color: var(--text-primary);
+  color: var(--foreground);
 }
 
 .menu-red-dot {
@@ -746,7 +746,7 @@ onBeforeUnmount(() => {
 }
 
 .section-description {
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
   font-family: var(--font-inter);
   font-size: 12px;
   font-style: normal;
@@ -773,12 +773,12 @@ onBeforeUnmount(() => {
   font-size: 0.9rem;
   line-height: 1.2;
   font-weight: 500;
-  color: var(--text-primary);
+  color: var(--foreground);
 }
 
 .release-date {
   height: 16px;
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
   font-family: var(--font-inter);
   font-size: 12px;
   font-style: normal;
@@ -822,7 +822,7 @@ onBeforeUnmount(() => {
   height: 32px;
   min-height: 24px;
   border-radius: 4px;
-  color: var(--text-primary);
+  color: var(--foreground);
   font-size: 0.9rem;
   font-weight: inherit;
   line-height: inherit;
@@ -859,7 +859,7 @@ onBeforeUnmount(() => {
 }
 
 .help-center-menu::-webkit-scrollbar-thumb:hover {
-  background: var(--text-secondary);
+  background: var(--muted-foreground);
 }
 
 /* Reduced Motion */

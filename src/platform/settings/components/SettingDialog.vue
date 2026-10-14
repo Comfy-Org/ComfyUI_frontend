@@ -8,7 +8,7 @@
   >
     <template #leftPanelHeaderTitle>
       <i class="icon-[lucide--settings]" />
-      <h2 class="text-base text-base-foreground">{{ $t('g.settings') }}</h2>
+      <h2 class="text-base text-foreground">{{ $t('g.settings') }}</h2>
     </template>
 
     <template #leftPanel>

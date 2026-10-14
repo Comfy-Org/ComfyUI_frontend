@@ -2,7 +2,7 @@
   <div v-if="banner" class="@container">
     <div
       role="status"
-      class="flex flex-col gap-3 rounded-2xl border border-border/60 bg-base-background p-4 @2xl:flex-row @2xl:items-center @2xl:gap-2"
+      class="flex flex-col gap-3 rounded-2xl border border-border/60 bg-background p-4 @2xl:flex-row @2xl:items-center @2xl:gap-2"
     >
       <div class="flex min-w-0 flex-1 flex-col gap-1">
         <div class="flex items-center gap-2">
@@ -16,7 +16,7 @@
               )
             "
           />
-          <span class="text-sm text-base-foreground">{{ banner.title }}</span>
+          <span class="text-sm text-foreground">{{ banner.title }}</span>
         </div>
         <p class="m-0 pl-6 text-sm text-muted-foreground">{{ banner.body }}</p>
       </div>

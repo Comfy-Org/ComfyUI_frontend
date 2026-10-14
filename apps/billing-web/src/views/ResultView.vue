@@ -91,10 +91,7 @@ const returnResult = computed(() => ({
     >
       {{ t('hosted.result.recovering') }}
     </p>
-    <p
-      v-else-if="recoveryFailure"
-      class="m-0 text-sm text-destructive-background"
-    >
+    <p v-else-if="recoveryFailure" class="m-0 text-sm text-destructive">
       {{ coded('failure', recoveryFailure) }}
     </p>
     <p
@@ -106,13 +103,13 @@ const returnResult = computed(() => ({
     <CheckoutSteps
       v-else
       :projection="checkout.projection.value"
-      root-class="flex flex-col gap-3 rounded-xl border border-border-subtle bg-secondary-background p-6"
-      header-class="m-0 text-base font-semibold text-base-foreground"
+      root-class="flex flex-col gap-3 rounded-xl border border-border-subtle bg-secondary p-6"
+      header-class="m-0 text-base font-semibold text-foreground"
       body-class="m-0 text-sm text-muted-foreground"
-      reason-class="m-0 text-sm text-destructive-background"
+      reason-class="m-0 text-sm text-destructive"
       safety-class="m-0 text-sm text-muted-foreground"
       actions-class="mt-2 flex gap-2"
-      action-class="inline-flex h-11 cursor-pointer items-center justify-center rounded-lg bg-base-foreground px-5 font-semibold text-base-background"
+      action-class="inline-flex h-11 cursor-pointer items-center justify-center rounded-lg bg-foreground px-5 font-semibold text-background"
       @retry="retryPayment"
       @cancel="checkout.cancel()"
       @continue-verification="checkout.continueVerification()"

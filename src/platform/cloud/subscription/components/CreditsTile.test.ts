@@ -641,7 +641,7 @@ describe('CreditsTile', () => {
     )
     expect(screen.queryByText('In use')).toBeNull()
     expect(screen.getByRole('button', { name: 'Add credits' })).toHaveClass(
-      'bg-base-foreground'
+      'bg-foreground'
     )
   })
 

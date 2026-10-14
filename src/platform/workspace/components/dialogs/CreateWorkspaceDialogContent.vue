@@ -1,16 +1,16 @@
 <template>
   <div
-    class="flex w-full max-w-lg flex-col rounded-2xl border border-border-default bg-base-background"
+    class="flex w-full max-w-lg flex-col rounded-2xl border border-border bg-background"
   >
     <!-- Header -->
     <div
-      class="flex h-12 items-center justify-between border-b border-border-default px-4"
+      class="flex h-12 items-center justify-between border-b border-border px-4"
     >
-      <h2 class="m-0 text-sm font-normal text-base-foreground">
+      <h2 class="m-0 text-sm font-normal text-foreground">
         {{ $t('workspacePanel.createWorkspaceDialog.title') }}
       </h2>
       <button
-        class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none"
+        class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-1 focus-visible:ring-border focus-visible:outline-none"
         :aria-label="$t('g.close')"
         @click="onCancel"
       >
@@ -30,7 +30,7 @@
         <input
           v-model="workspaceName"
           type="text"
-          class="h-10 w-full rounded-lg border-none bg-secondary-background px-4 text-sm text-base-foreground placeholder:text-muted-foreground focus:ring-1 focus:ring-border-default focus:outline-none"
+          class="h-10 w-full rounded-lg border-none bg-secondary px-4 text-sm text-foreground placeholder:text-muted-foreground focus:ring-1 focus:ring-border focus:outline-none"
           :placeholder="
             $t('workspacePanel.createWorkspaceDialog.namePlaceholder')
           "

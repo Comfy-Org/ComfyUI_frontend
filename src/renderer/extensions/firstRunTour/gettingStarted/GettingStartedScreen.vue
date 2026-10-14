@@ -3,7 +3,7 @@
     <FocusScope as-child :trapped="!dialogOpen" loop>
       <div
         ref="screenRef"
-        class="fixed inset-0 z-1600 flex overflow-y-auto bg-base-background focus:outline-none"
+        class="fixed inset-0 z-1600 flex overflow-y-auto bg-background focus:outline-none"
         role="dialog"
         :aria-modal="!dialogOpen"
         :aria-label="t('gettingStarted.title')"
@@ -12,9 +12,7 @@
       >
         <div class="m-auto flex w-full flex-col items-center gap-8 px-8 py-16">
           <div class="flex flex-col items-center gap-3">
-            <h1
-              class="m-0 text-center text-4xl/11 font-medium text-base-foreground"
-            >
+            <h1 class="m-0 text-center text-4xl/11 font-medium text-foreground">
               {{ t('gettingStarted.title') }}
             </h1>
             <p class="m-0 text-center text-base/5 text-muted-foreground">
@@ -31,7 +29,7 @@
               v-for="tab in tabs"
               :key="tab.value"
               :value="tab.value"
-              class="gap-2.5 rounded-full px-3 text-xs font-medium text-base-foreground hover:opacity-100 data-[state=active]:bg-tertiary-background data-[state=inactive]:opacity-70"
+              class="gap-2.5 rounded-full px-3 text-xs font-medium text-foreground hover:opacity-100 data-[state=active]:bg-tertiary-background data-[state=inactive]:opacity-70"
             >
               <i :class="cn(tab.icon, 'size-3.5')" aria-hidden="true" />
               {{ t(tab.labelKey) }}

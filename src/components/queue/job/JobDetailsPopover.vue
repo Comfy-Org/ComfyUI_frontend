@@ -3,7 +3,7 @@
     class="w-[300px] min-w-[260px] rounded-lg border border-border bg-background shadow-md"
   >
     <div class="flex items-center border-b border-border p-4">
-      <span class="text-sm/normal font-normal text-text-primary">{{
+      <span class="text-sm/normal font-normal text-foreground">{{
         t('queue.jobDetails.header')
       }}</span>
     </div>
@@ -11,12 +11,12 @@
       <div class="grid grid-cols-2 items-center gap-2">
         <template v-for="row in baseRows" :key="row.label">
           <div
-            class="flex items-center text-xs/normal font-normal text-text-primary"
+            class="flex items-center text-xs/normal font-normal text-foreground"
           >
             {{ row.label }}
           </div>
           <div
-            class="flex min-w-0 items-center text-xs/normal font-normal text-text-secondary"
+            class="flex min-w-0 items-center text-xs/normal font-normal text-muted-foreground"
           >
             <span class="block min-w-0 truncate">{{ row.value }}</span>
             <Button
@@ -35,12 +35,12 @@
       <div v-if="extraRows.length" class="grid grid-cols-2 items-center gap-2">
         <template v-for="row in extraRows" :key="row.label">
           <div
-            class="flex items-center text-xs/normal font-normal text-text-primary"
+            class="flex items-center text-xs/normal font-normal text-foreground"
           >
             {{ row.label }}
           </div>
           <div
-            class="flex min-w-0 items-center text-xs/normal font-normal text-text-secondary"
+            class="flex min-w-0 items-center text-xs/normal font-normal text-muted-foreground"
           >
             <span class="block min-w-0 truncate">{{ row.value }}</span>
           </div>
@@ -49,7 +49,7 @@
 
       <div v-if="jobState === 'failed'" class="grid grid-cols-2 gap-x-2">
         <div
-          class="flex items-center text-xs/normal font-normal text-text-primary"
+          class="flex items-center text-xs/normal font-normal text-foreground"
         >
           {{ t('queue.jobDetails.errorMessage') }}
         </div>
@@ -78,7 +78,7 @@
           </Button>
         </div>
         <div
-          class="col-span-2 mt-2 max-h-96 overflow-y-auto rounded-sm bg-accent px-4 py-2 text-xs/normal wrap-break-word whitespace-pre-wrap text-text-secondary"
+          class="col-span-2 mt-2 max-h-96 overflow-y-auto rounded-sm bg-accent px-4 py-2 text-xs/normal wrap-break-word whitespace-pre-wrap text-muted-foreground"
         >
           {{ errorMessageValue }}
         </div>

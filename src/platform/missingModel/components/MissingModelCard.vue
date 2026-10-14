@@ -42,7 +42,7 @@
     <div
       v-if="unsupportedModelRows.length > 0"
       data-testid="missing-model-import-not-supported-section"
-      class="flex flex-col gap-1 border-t border-secondary-background pt-3"
+      class="flex flex-col gap-1 border-t border-secondary pt-3"
     >
       <div class="mb-1">
         <p class="m-0 text-sm font-semibold text-warning-background">

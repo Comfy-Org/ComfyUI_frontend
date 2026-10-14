@@ -18,7 +18,7 @@
         class="flex h-[50px] w-full flex-row items-center gap-2.5 rounded-[10px] bg-secondary-background-hover"
       >
         <div
-          class="maskEditor_sidePanelBrushShapeCircle hover:bg-comfy-menu-bg"
+          class="maskEditor_sidePanelBrushShapeCircle hover:bg-background"
           :class="
             cn(
               store.brushSettings.type === BrushShape.Arc
@@ -30,7 +30,7 @@
         ></div>
 
         <div
-          class="maskEditor_sidePanelBrushShapeSquare hover:bg-comfy-menu-bg"
+          class="maskEditor_sidePanelBrushShapeSquare hover:bg-background"
           :class="
             cn(
               store.brushSettings.type === BrushShape.Rect
@@ -66,7 +66,7 @@
           v-model.number="brushSize"
           data-testid="brush-thickness-input"
           type="number"
-          class="w-16 rounded-md border border-border-default bg-comfy-menu-bg px-2 py-1 text-center text-sm text-base-foreground"
+          class="w-16 rounded-md border border-border bg-background px-2 py-1 text-center text-sm text-foreground"
           :min="1"
           :max="250"
           :step="1"
@@ -91,7 +91,7 @@
         <input
           v-model.number="brushOpacity"
           type="number"
-          class="w-16 rounded-md border border-border-default bg-comfy-menu-bg px-2 py-1 text-center text-sm text-base-foreground"
+          class="w-16 rounded-md border border-border bg-background px-2 py-1 text-center text-sm text-foreground"
           :min="0"
           :max="1"
           :step="0.01"
@@ -116,7 +116,7 @@
         <input
           v-model.number="brushHardness"
           type="number"
-          class="w-16 rounded-md border border-border-default bg-comfy-menu-bg px-2 py-1 text-center text-sm text-base-foreground"
+          class="w-16 rounded-md border border-border bg-background px-2 py-1 text-center text-sm text-foreground"
           :min="0"
           :max="1"
           :step="0.01"
@@ -141,7 +141,7 @@
         <input
           v-model.number="brushStepSize"
           type="number"
-          class="w-16 rounded-md border border-border-default bg-comfy-menu-bg px-2 py-1 text-center text-sm text-base-foreground"
+          class="w-16 rounded-md border border-border bg-background px-2 py-1 text-center text-sm text-foreground"
           :min="1"
           :max="100"
           :step="1"
@@ -175,7 +175,7 @@ const store = useMaskEditorStore()
 const colorInputRef = ref<HTMLInputElement>()
 
 const textButtonClass =
-  'h-7.5 w-32 rounded-[10px] border border-border-default text-base-foreground font-sans transition-colors duration-100 bg-comfy-menu-bg hover:bg-secondary-background-hover'
+  'h-7.5 w-32 rounded-[10px] border border-border text-foreground font-sans transition-colors duration-100 bg-background hover:bg-secondary-background-hover'
 
 /* Computed properties that use store setters for validation */
 const brushSize = computed({

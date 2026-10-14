@@ -31,16 +31,14 @@ const isCancelled = computed(() => isDownloadCancelled(job.status))
     class="flex items-center justify-between rounded-lg bg-secondary px-4 py-3"
   >
     <div :class="cn('min-w-0 flex-1', isCompleted && 'opacity-50')">
-      <span class="block truncate text-sm text-base-foreground">{{
+      <span class="block truncate text-sm text-foreground">{{
         job.assetName
       }}</span>
     </div>
 
     <div class="flex shrink-0 items-center gap-2">
       <template v-if="isFailed">
-        <i
-          class="icon-[lucide--circle-alert] size-4 text-destructive-background"
-        />
+        <i class="icon-[lucide--circle-alert] size-4 text-destructive" />
         <StatusBadge :label="t('progressToast.failed')" severity="danger" />
       </template>
 
@@ -56,10 +54,8 @@ const isCancelled = computed(() => isDownloadCancelled(job.status))
       </template>
 
       <template v-else-if="isRunning">
-        <Loader size="sm" class="text-base-foreground" />
-        <span class="text-xs text-base-foreground">
-          {{ progressPercent }}%
-        </span>
+        <Loader size="sm" class="text-foreground" />
+        <span class="text-xs text-foreground"> {{ progressPercent }}% </span>
       </template>
 
       <template v-else-if="isPending">

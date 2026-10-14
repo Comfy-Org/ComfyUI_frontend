@@ -1,6 +1,6 @@
 <template>
   <div class="setting-group">
-    <div v-if="divider" class="my-8 border-t border-border-default" />
+    <div v-if="divider" class="my-8 border-t border-border" />
     <h3 class="text-base">
       <span v-if="group.category" class="text-muted-foreground">
         {{

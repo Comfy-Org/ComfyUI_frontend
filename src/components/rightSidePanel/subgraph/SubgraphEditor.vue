@@ -364,7 +364,7 @@ onMounted(() => {
             {{ $t('subgraphStore.shown') }}
           </div>
           <a
-            class="cursor-pointer text-right text-xs font-normal whitespace-nowrap text-text-secondary hover:text-azure-600"
+            class="cursor-pointer text-right text-xs font-normal whitespace-nowrap text-muted-foreground hover:text-azure-600"
             @click.stop="hideAll"
           >
             {{ $t('subgraphStore.hideAll') }}</a
@@ -375,7 +375,7 @@ onMounted(() => {
             v-for="row in filteredActivePromoted"
             :key="rowKey(row)"
             :data-nodeid="row.node.id"
-            :class="cn(!searchQuery && dragClass, 'bg-comfy-menu-bg')"
+            :class="cn(!searchQuery && dragClass, 'bg-background')"
             :node-title="row.node.title"
             :widget-name="rowDisplayName(row)"
             :is-physical="isRowLinked(row)"
@@ -389,7 +389,7 @@ onMounted(() => {
             v-for="row in filteredActivePreviews"
             :key="rowKey(row)"
             :data-nodeid="row.node.id"
-            class="bg-comfy-menu-bg"
+            class="bg-background"
             :node-title="row.node.title"
             :widget-name="rowDisplayName(row)"
             :is-physical="isRowLinked(row)"
@@ -412,7 +412,7 @@ onMounted(() => {
             {{ $t('subgraphStore.hidden') }}
           </div>
           <a
-            class="cursor-pointer text-right text-xs font-normal whitespace-nowrap text-text-secondary hover:text-azure-600"
+            class="cursor-pointer text-right text-xs font-normal whitespace-nowrap text-muted-foreground hover:text-azure-600"
             @click.stop="showAll"
           >
             {{ $t('subgraphStore.showAll') }}</a
@@ -423,7 +423,7 @@ onMounted(() => {
             v-for="[node, widget] in filteredCandidates"
             :key="`${node.id}:${widget.name}`"
             :data-nodeid="node.id"
-            class="bg-comfy-menu-bg"
+            class="bg-background"
             :node-title="node.title"
             :widget-name="widget.name"
             @toggle-visibility="promoteCandidate([node, widget])"

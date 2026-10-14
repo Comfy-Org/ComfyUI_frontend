@@ -1,9 +1,9 @@
 <template>
   <div
-    class="flex w-xl max-w-full flex-col overflow-hidden rounded-2xl border border-border-default bg-base-background shadow-lg"
+    class="flex w-xl max-w-full flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-lg"
   >
     <header
-      class="flex h-12 items-center justify-between gap-2 border-b border-border-default px-4"
+      class="flex h-12 items-center justify-between gap-2 border-b border-border px-4"
     >
       <div
         v-if="showPublishToHubTab"
@@ -294,7 +294,7 @@ function tabButtonClass(mode: DialogMode) {
   return cn(
     'cursor-pointer border-none transition-colors',
     dialogMode.value === mode
-      ? 'bg-secondary-background text-base-foreground'
+      ? 'bg-secondary text-foreground'
       : 'bg-transparent text-muted-foreground hover:bg-secondary-background-hover'
   )
 }

@@ -12,7 +12,7 @@
   >
     <template #details>
       <div v-if="showInviteBlock" class="mt-4 flex w-full flex-col gap-2">
-        <h3 class="m-0 text-base font-normal text-base-foreground">
+        <h3 class="m-0 text-base font-normal text-foreground">
           {{ $t('subscription.success.inviteTitle') }}
         </h3>
         <p class="m-0 text-sm text-muted-foreground">
@@ -39,7 +39,7 @@
             :show-submit="false"
             :tags-input-class="
               darkSurface
-                ? 'min-h-10 w-full bg-secondary-background px-3 focus-within:bg-secondary-background hover:bg-secondary-background-hover'
+                ? 'min-h-10 w-full bg-secondary px-3 focus-within:bg-secondary hover:bg-secondary-background-hover'
                 : undefined
             "
             source="post_upgrade_success"

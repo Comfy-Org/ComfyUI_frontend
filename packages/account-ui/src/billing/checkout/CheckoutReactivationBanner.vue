@@ -8,7 +8,7 @@
       <i class="pi pi-info-circle" />
     </div>
     <div class="flex flex-col gap-2">
-      <p class="m-0 text-sm font-bold text-base-foreground">
+      <p class="m-0 text-sm font-bold text-foreground">
         {{ title }}
       </p>
       <p class="m-0 text-sm text-muted-foreground">
@@ -57,7 +57,7 @@ const confirmed = defineModel<boolean>('confirmed', { required: true })
 
 const amountClass = computed(() =>
   cn(
-    'font-bold text-base-foreground',
+    'font-bold text-foreground',
     checkboxLabel !== null && 'text-base font-extrabold'
   )
 )

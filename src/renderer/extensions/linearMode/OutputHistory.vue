@@ -346,7 +346,7 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
 
       <div
         v-if="hasActiveContent && visibleHistory.length > 0"
-        class="mx-4 h-12 shrink-0 border-l border-border-default"
+        class="mx-4 h-12 shrink-0 border-l border-border"
       />
     </div>
 
@@ -359,7 +359,7 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
         <template v-for="(asset, aIdx) in visibleHistory" :key="asset.id">
           <div
             v-if="aIdx > 0"
-            class="mx-4 h-12 shrink-0 border-l border-border-default"
+            class="mx-4 h-12 shrink-0 border-l border-border"
           />
           <div
             v-for="(output, key) in toValue(allOutputs(asset))"

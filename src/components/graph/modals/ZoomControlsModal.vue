@@ -5,7 +5,7 @@
     class="absolute right-0 bottom-[62px] z-1300 flex w-[250px] justify-center border-0! bg-inherit!"
   >
     <div
-      class="w-4/5 rounded-lg border border-border bg-background p-2 text-text-primary shadow-lg select-none"
+      class="w-4/5 rounded-lg border border-border bg-background p-2 text-foreground shadow-lg select-none"
       :style="filteredMinimapStyles"
       @click.stop
     >
@@ -18,7 +18,7 @@
           @mouseleave="stopRepeat"
         >
           <span class="font-medium">{{ $t('graphCanvasMenu.zoomIn') }}</span>
-          <span class="text-[9px] text-text-primary">{{
+          <span class="text-[9px] text-foreground">{{
             zoomInCommandText
           }}</span>
         </div>
@@ -31,7 +31,7 @@
           @mouseleave="stopRepeat"
         >
           <span class="font-medium">{{ $t('graphCanvasMenu.zoomOut') }}</span>
-          <span class="text-[9px] text-text-primary">{{
+          <span class="text-[9px] text-foreground">{{
             zoomOutCommandText
           }}</span>
         </div>
@@ -42,7 +42,7 @@
           @click="executeCommand('Comfy.Canvas.FitView')"
         >
           <span class="font-medium">{{ $t('zoomControls.zoomToFit') }}</span>
-          <span class="text-[9px] text-text-primary">{{
+          <span class="text-[9px] text-foreground">{{
             zoomToFitCommandText
           }}</span>
         </div>
@@ -57,7 +57,7 @@
         >
           <NumberFieldDecrement />
           <NumberFieldInput :aria-label="$t('zoomControls.zoomPercentage')" />
-          <span class="shrink-0 text-sm text-text-primary">%</span>
+          <span class="shrink-0 text-sm text-foreground">%</span>
           <NumberFieldIncrement />
         </NumberField>
       </div>

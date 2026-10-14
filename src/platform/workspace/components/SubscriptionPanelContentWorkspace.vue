@@ -36,8 +36,8 @@
       v-else-if="error && !subscription"
       class="flex flex-col items-start gap-3 rounded-2xl border border-border p-6"
     >
-      <div class="flex items-center gap-2 text-text-secondary">
-        <i class="pi pi-exclamation-circle text-destructive-background" />
+      <div class="flex items-center gap-2 text-muted-foreground">
+        <i class="pi pi-exclamation-circle text-destructive" />
         <span class="text-sm">{{ $t('subscription.planLoadError') }}</span>
       </div>
       <Button
@@ -64,10 +64,10 @@
           <i class="pi pi-info-circle" />
         </div>
         <div class="flex flex-col gap-2">
-          <h2 class="m-0 pt-1.5 text-sm font-bold text-text-primary">
+          <h2 class="m-0 pt-1.5 text-sm font-bold text-foreground">
             {{ subscriptionStateCardTitle }}
           </h2>
-          <p class="m-0 text-sm text-text-secondary">
+          <p class="m-0 text-sm text-muted-foreground">
             {{ subscriptionStateCardDescription }}
           </p>
         </div>
@@ -84,7 +84,7 @@
                 <h3
                   :class="
                     cn(
-                      'm-0 font-bold text-text-primary',
+                      'm-0 font-bold text-foreground',
                       showInactiveTeamSubscription ? 'text-base' : 'text-sm'
                     )
                   "
@@ -97,7 +97,7 @@
                     )
                   }}
                 </h3>
-                <div class="text-sm text-text-secondary">
+                <div class="text-sm text-muted-foreground">
                   {{
                     $t(
                       showInactiveTeamSubscription
@@ -115,7 +115,7 @@
                   "
                   size="lg"
                   variant="secondary"
-                  class="rounded-lg bg-muted px-4 text-sm font-normal text-text-primary"
+                  class="rounded-lg bg-muted px-4 text-sm font-normal text-foreground"
                   @click="manageSubscription"
                 >
                   {{ $t('subscription.billingAndInvoices') }}
@@ -154,10 +154,10 @@
             <!-- MEMBER View - read-only, workspace not subscribed -->
             <template v-else-if="isMemberView">
               <div class="flex flex-col gap-2">
-                <h3 class="m-0 text-sm font-bold text-text-primary">
+                <h3 class="m-0 text-sm font-bold text-foreground">
                   {{ $t('subscription.workspaceNotSubscribed') }}
                 </h3>
-                <div class="text-sm text-text-secondary">
+                <div class="text-sm text-muted-foreground">
                   {{ $t('subscription.contactOwnerToSubscribe') }}
                 </div>
               </div>
@@ -166,7 +166,7 @@
             <!-- OWNER personal workspace without subscription (Free plan) -->
             <template v-else-if="isPersonalFree">
               <div class="flex flex-col gap-2">
-                <h3 class="m-0 text-base font-bold text-text-primary">
+                <h3 class="m-0 text-base font-bold text-foreground">
                   {{ $t('subscription.tiers.free.name') }}
                 </h3>
                 <div
@@ -182,7 +182,7 @@
                   v-if="isCloud && permissions.canManageSubscription"
                   size="lg"
                   variant="secondary"
-                  class="rounded-lg bg-muted px-4 text-sm font-normal text-text-primary"
+                  class="rounded-lg bg-muted px-4 text-sm font-normal text-foreground"
                   @click="manageSubscription"
                 >
                   {{ $t('subscription.billingAndInvoices') }}
@@ -213,7 +213,7 @@
             <template v-else>
               <div class="flex flex-col gap-2">
                 <div class="flex items-center gap-2">
-                  <h3 class="m-0 text-base font-bold text-text-primary">
+                  <h3 class="m-0 text-base font-bold text-foreground">
                     {{ planDisplayName }}
                   </h3>
                   <StatusBadge
@@ -230,12 +230,15 @@
                   <span class="text-2xl font-semibold">{{ displayPrice }}</span>
                   <span class="text-base">{{ priceUnitLabel }}</span>
                 </div>
-                <div v-if="planDateDisplay" class="text-sm text-text-secondary">
+                <div
+                  v-if="planDateDisplay"
+                  class="text-sm text-muted-foreground"
+                >
                   {{ planDateDisplay }}
                 </div>
                 <p
                   v-if="isEndedEnterprise"
-                  class="m-0 text-sm text-text-secondary"
+                  class="m-0 text-sm text-muted-foreground"
                 >
                   {{ $t('subscription.inactiveEnterpriseDescription') }}
                 </p>
@@ -255,7 +258,7 @@
                   "
                   size="lg"
                   variant="secondary"
-                  class="rounded-lg bg-muted px-4 text-sm font-normal text-text-primary"
+                  class="rounded-lg bg-muted px-4 text-sm font-normal text-foreground"
                   @click="manageSubscription"
                 >
                   {{
@@ -287,7 +290,7 @@
                   "
                   size="lg"
                   variant="secondary"
-                  class="rounded-lg bg-muted px-4 text-sm font-normal text-text-primary"
+                  class="rounded-lg bg-muted px-4 text-sm font-normal text-foreground"
                   @click="handleUpgrade"
                 >
                   {{
@@ -340,7 +343,7 @@
               class="text-sm text-muted-foreground"
             >
               <template #plan>
-                <span class="text-text-primary">
+                <span class="text-foreground">
                   {{ $t('subscription.tiers.pro.name') }}
                 </span>
               </template>
@@ -351,7 +354,7 @@
             >
               {{ $t('subscription.whatsIncluded') }}
             </div>
-            <div v-else class="text-sm text-text-primary">
+            <div v-else class="text-sm text-foreground">
               {{ $t('subscription.yourPlanIncludes') }}
             </div>
 
@@ -368,13 +371,13 @@
                       'pi pi-check text-xs',
                       showInactiveTeamSubscription
                         ? 'text-muted-foreground'
-                        : 'text-text-primary'
+                        : 'text-foreground'
                     )
                   "
                 />
                 <span
                   v-else-if="benefit.type === 'metric' && benefit.value"
-                  class="text-sm font-normal whitespace-nowrap text-text-primary"
+                  class="text-sm font-normal whitespace-nowrap text-foreground"
                 >
                   {{ benefit.value }}
                 </span>

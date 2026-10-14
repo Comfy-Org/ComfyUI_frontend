@@ -42,7 +42,7 @@ watch(
     data-testid="keep-subscription-notice"
   >
     <p
-      class="m-0 flex items-center gap-2 text-sm/5 font-medium text-base-foreground"
+      class="m-0 flex items-center gap-2 text-sm/5 font-medium text-foreground"
     >
       <i
         class="icon-[lucide--circle-alert] size-4 shrink-0 text-warning-background"
@@ -73,8 +73,8 @@ watch(
         :class="
           cn(
             'mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-sm border border-muted-foreground text-transparent transition-colors',
-            'peer-focus-visible:ring-2 peer-focus-visible:ring-base-foreground peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-tertiary-background',
-            'peer-checked:border-base-foreground peer-checked:bg-base-foreground peer-checked:text-base-background',
+            'peer-focus-visible:ring-2 peer-focus-visible:ring-foreground peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-tertiary-background',
+            'peer-checked:border-foreground peer-checked:bg-foreground peer-checked:text-background',
             'peer-aria-invalid:border-coral-500 peer-aria-invalid:ring-3 peer-aria-invalid:ring-coral-500/40'
           )
         "
@@ -83,9 +83,7 @@ watch(
       >
         <i class="icon-[lucide--check] size-3.5" />
       </span>
-      <span
-        class="text-sm/5 text-base-foreground peer-aria-invalid:text-coral-500"
-      >
+      <span class="text-sm/5 text-foreground peer-aria-invalid:text-coral-500">
         {{ t('checkout.fullPage.keepSubscription.checkbox') }}
       </span>
     </label>

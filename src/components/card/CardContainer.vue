@@ -48,7 +48,7 @@ const containerClasses = computed(() => {
   const variantClasses = {
     default: cn(
       hasBackground && 'bg-secondary',
-      hasBorder && 'border border-border-default',
+      hasBorder && 'border border-border',
       hasShadow && 'shadow-sm',
       hasCursor && 'cursor-pointer'
     ),

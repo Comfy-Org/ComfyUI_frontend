@@ -76,7 +76,7 @@ const emit = defineEmits<{
       cn(
         'flex items-start gap-2 rounded-xl border px-3 py-2 text-sm',
         group.part.level === 'error'
-          ? 'border-destructive-background/40 text-destructive-background'
+          ? 'border-destructive/40 text-destructive'
           : 'border-border text-muted-foreground'
       )
     "

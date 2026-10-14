@@ -10,7 +10,7 @@
         :aria-label="$t('load3d.exportModel')"
         @click="toggleExportFormats"
       >
-        <i class="pi pi-download text-lg text-base-foreground" />
+        <i class="pi pi-download text-lg text-foreground" />
       </Button>
       <div
         v-show="showExportFormats"
@@ -21,7 +21,7 @@
             v-for="format in exportFormats"
             :key="format.value"
             variant="textonly"
-            class="text-base-foreground"
+            class="text-foreground"
             @click="exportModel(format.value)"
           >
             {{ format.label }}

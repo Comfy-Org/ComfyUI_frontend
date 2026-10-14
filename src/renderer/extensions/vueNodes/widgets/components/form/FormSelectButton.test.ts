@@ -131,7 +131,7 @@ describe('FormSelectButton Core Component', () => {
 
       const buttons = screen.getAllByRole('button')
       expect(buttons[1]).toHaveClass('bg-muted')
-      expect(buttons[1]).toHaveClass('text-text-primary')
+      expect(buttons[1]).toHaveClass('text-foreground')
       expect(buttons[0]).not.toHaveClass('bg-muted')
       expect(buttons[2]).not.toHaveClass('bg-muted')
     })
@@ -175,7 +175,7 @@ describe('FormSelectButton Core Component', () => {
 
       const buttons = screen.getAllByRole('button')
       expect(buttons[1]).toHaveClass('bg-muted')
-      expect(buttons[1]).toHaveClass('text-text-primary')
+      expect(buttons[1]).toHaveClass('text-foreground')
     })
   })
 
@@ -358,7 +358,7 @@ describe('FormSelectButton Core Component', () => {
       const buttons = screen.getAllByRole('button')
       expect(buttons[0]).not.toHaveClass('bg-muted') // Selected styling disabled
       expect(buttons[0]).toHaveClass('opacity-50')
-      expect(buttons[0]).toHaveClass('text-text-secondary')
+      expect(buttons[0]).toHaveClass('text-muted-foreground')
     })
   })
 
@@ -408,7 +408,7 @@ describe('FormSelectButton Core Component', () => {
 
       const selectedButton = screen.getAllByRole('button')[0]
       expect(selectedButton).toHaveClass('bg-muted')
-      expect(selectedButton).toHaveClass('text-text-primary')
+      expect(selectedButton).toHaveClass('text-foreground')
     })
 
     it('applies unselected styling to inactive options', () => {
@@ -417,7 +417,7 @@ describe('FormSelectButton Core Component', () => {
 
       const unselectedButton = screen.getAllByRole('button')[1]
       expect(unselectedButton).toHaveClass('bg-transparent')
-      expect(unselectedButton).toHaveClass('text-text-secondary')
+      expect(unselectedButton).toHaveClass('text-muted-foreground')
     })
 
     it('applies hover effects to enabled unselected buttons', () => {

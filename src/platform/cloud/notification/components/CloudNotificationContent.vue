@@ -1,7 +1,7 @@
 <template>
   <div
     data-testid="cloud-notification-dialog"
-    class="relative grid h-full w-170 max-w-full grid-cols-5 overflow-hidden rounded-2xl border border-border-default bg-base-background shadow-lg"
+    class="relative grid h-full w-170 max-w-full grid-cols-5 overflow-hidden rounded-2xl border border-border bg-background shadow-lg"
   >
     <Button
       size="unset"
@@ -33,10 +33,10 @@
     <div class="col-span-3 flex flex-col justify-between p-8">
       <div>
         <div class="flex flex-col gap-4">
-          <div class="text-sm font-semibold text-text-primary">
+          <div class="text-sm font-semibold text-foreground">
             {{ t('cloudNotification.title') }}
           </div>
-          <p class="m-0 text-sm text-text-secondary">
+          <p class="m-0 text-sm text-muted-foreground">
             {{ t('cloudNotification.message') }}
           </p>
         </div>
@@ -47,8 +47,8 @@
             :key="n"
             class="flex items-center gap-2 py-2"
           >
-            <i class="pi pi-check text-xs text-text-primary" />
-            <span class="text-sm text-text-primary">
+            <i class="pi pi-check text-xs text-foreground" />
+            <span class="text-sm text-foreground">
               {{ t(`cloudNotification.feature${n}Title`) }}
             </span>
           </div>
@@ -67,7 +67,7 @@
         <Button variant="textonly" size="sm" class="w-full" @click="onDismiss">
           {{ t('cloudNotification.continueLocally') }}
         </Button>
-        <p class="m-0 text-center text-xs text-text-secondary">
+        <p class="m-0 text-center text-xs text-muted-foreground">
           {{ t('cloudNotification.footer') }}
         </p>
       </div>

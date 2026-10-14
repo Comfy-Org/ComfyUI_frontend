@@ -577,7 +577,7 @@ describe('LGraphNode', () => {
     await nextTick()
 
     expect(screen.getByTestId('node-inner-wrapper')).toHaveClass(
-      'ring-destructive-background'
+      'ring-destructive'
     )
     expect(screen.getByRole('button', { name: 'Error' })).toBeInTheDocument()
 

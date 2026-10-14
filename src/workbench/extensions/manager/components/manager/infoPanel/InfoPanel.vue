@@ -161,7 +161,7 @@ const { nodePack } = defineProps<{
 
 const scrollContainer = ref<HTMLElement | null>(null)
 
-const accordionClass = cn('border-t border-border-default bg-card')
+const accordionClass = cn('border-t border-border bg-card')
 
 const managerStore = useComfyManagerStore()
 const { isPackInstalled } = managerStore

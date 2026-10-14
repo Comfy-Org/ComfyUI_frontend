@@ -1,6 +1,6 @@
 <template>
   <section
-    class="relative flex min-h-0 w-[min(32rem,calc(100vw-2rem))] flex-col gap-6 overflow-y-auto rounded-2xl border border-border-default bg-base-background p-8"
+    class="relative flex min-h-0 w-[min(32rem,calc(100vw-2rem))] flex-col gap-6 overflow-y-auto rounded-2xl border border-border bg-background p-8"
     :aria-labelledby="titleId"
   >
     <Button
@@ -18,7 +18,7 @@
       <header class="flex flex-col gap-2 pr-8">
         <h2
           :id="titleId"
-          class="m-0 flex items-center gap-2 text-2xl font-semibold text-base-foreground"
+          class="m-0 flex items-center gap-2 text-2xl font-semibold text-foreground"
         >
           {{ title }}
           <slot name="title-icon" />

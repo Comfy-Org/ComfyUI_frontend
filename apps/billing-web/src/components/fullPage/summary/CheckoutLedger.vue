@@ -13,7 +13,7 @@ const { t } = useI18n()
   <div class="mt-16 flex flex-col gap-2">
     <p class="m-0 text-sm text-muted-foreground">{{ ledger.eyebrow }}</p>
     <p
-      class="m-0 flex items-baseline gap-1.5 text-2xl font-semibold text-base-foreground tabular-nums"
+      class="m-0 flex items-baseline gap-1.5 text-2xl font-semibold text-foreground tabular-nums"
     >
       <i
         v-if="ledger.headline.icon"
@@ -46,12 +46,12 @@ const { t } = useI18n()
     <slot />
   </div>
 
-  <hr class="mt-6 mb-0 border-border-default" />
+  <hr class="mt-6 mb-0 border-border" />
   <div class="flex items-center justify-between gap-4 pt-6">
-    <span class="text-base font-semibold text-base-foreground">
+    <span class="text-base font-semibold text-foreground">
       {{ t('checkout.totalDueToday') }}
     </span>
-    <span class="text-base font-semibold text-base-foreground tabular-nums">
+    <span class="text-base font-semibold text-foreground tabular-nums">
       {{ ledger.total }}
     </span>
   </div>

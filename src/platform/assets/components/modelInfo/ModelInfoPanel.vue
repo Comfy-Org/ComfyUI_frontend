@@ -44,7 +44,7 @@
           :href="sourceUrl"
           target="_blank"
           rel="noopener noreferrer"
-          class="inline-flex items-center gap-1.5 text-muted-foreground no-underline transition-colors hover:text-base-foreground"
+          class="inline-flex items-center gap-1.5 text-muted-foreground no-underline transition-colors hover:text-foreground"
         >
           <img
             v-if="sourceName === 'Civitai'"
@@ -265,7 +265,7 @@ const descriptionTextarea = useTemplateRef<HTMLTextAreaElement>(
   'descriptionTextarea'
 )
 
-const accordionClass = cn('border-t border-border-default bg-card')
+const accordionClass = cn('border-t border-border bg-card')
 
 const { asset, cacheKey } = defineProps<{
   asset: AssetDisplayItem

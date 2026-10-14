@@ -6,7 +6,7 @@
       <Button
         variant="textonly"
         size="icon"
-        class="hover:bg-base-foreground/10"
+        class="hover:bg-foreground/10"
         :title="$t('g.copyToClipboard')"
         :aria-label="$t('g.copyToClipboard')"
         @click="handleCopy"
@@ -18,7 +18,7 @@
         v-if="downloadUrl"
         variant="textonly"
         size="icon"
-        class="hover:bg-base-foreground/10"
+        class="hover:bg-foreground/10"
         :title="$t('g.download')"
         :aria-label="$t('g.download')"
         @click="handleDownload"

@@ -18,13 +18,11 @@ const segments = computed(() => code.split(/(?<=[_-])/))
 </script>
 
 <template>
-  <div
-    class="flex w-full flex-col gap-2 rounded-lg bg-secondary-background p-6 text-left"
-  >
+  <div class="flex w-full flex-col gap-2 rounded-lg bg-secondary p-6 text-left">
     <p class="m-0 text-sm/5 text-muted-foreground">{{ label }}</p>
     <div class="flex items-center justify-between gap-4">
       <code
-        class="min-w-0 font-mono text-base font-normal wrap-anywhere text-base-foreground"
+        class="min-w-0 font-mono text-base font-normal wrap-anywhere text-foreground"
         data-testid="checkout-ending-code"
       >
         <template v-for="(segment, index) in segments" :key="index">
@@ -38,7 +36,7 @@ const segments = computed(() => code.split(/(?<=[_-])/))
             ? t('checkout.fullPage.ending.copied')
             : t('checkout.fullPage.ending.copy')
         "
-        class="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm text-muted-foreground hover:text-base-foreground focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:outline-none max-lg:size-10"
+        class="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-foreground focus-visible:outline-none max-lg:size-10"
         @click="copy(code)"
       >
         <i

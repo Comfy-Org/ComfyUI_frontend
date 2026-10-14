@@ -1,5 +1,5 @@
 <template>
-  <div class="z-8888 flex h-full flex-col justify-between bg-comfy-menu-bg">
+  <div class="z-8888 flex h-full flex-col justify-between bg-background">
     <div class="flex flex-col">
       <div
         v-for="tool in allTools"
@@ -8,7 +8,7 @@
         :data-tool="tool"
         :class="
           cn(
-            'maskEditor_toolPanelContainer text-base-foreground hover:bg-secondary-background-hover',
+            'maskEditor_toolPanelContainer text-foreground hover:bg-secondary-background-hover',
             currentTool === tool && 'maskEditor_toolPanelContainerSelected'
           )
         "
@@ -26,12 +26,16 @@
       :title="t('maskEditor.clickToResetZoom')"
       @click="onResetZoom"
     >
-      <span data-testid="zoom-percentage" class="text-sm text-text-secondary">{{
-        zoomText
-      }}</span>
-      <span data-testid="zoom-dimensions" class="text-xs text-text-secondary">{{
-        dimensionsText
-      }}</span>
+      <span
+        data-testid="zoom-percentage"
+        class="text-sm text-muted-foreground"
+        >{{ zoomText }}</span
+      >
+      <span
+        data-testid="zoom-dimensions"
+        class="text-xs text-muted-foreground"
+        >{{ dimensionsText }}</span
+      >
     </div>
   </div>
 </template>

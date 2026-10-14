@@ -43,7 +43,7 @@ function togglePromotion() {
         v-if="isPromoted"
         class="absolute -top-1/2 -right-1/2 size-full rounded-lg bg-warning-background p-2"
       >
-        <i class="icon-[lucide--check] size-full bg-base-foreground" />
+        <i class="icon-[lucide--check] size-full bg-foreground" />
       </div>
       <div
         v-else

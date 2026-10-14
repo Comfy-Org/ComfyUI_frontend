@@ -45,9 +45,7 @@
             :class="
               cn(
                 packTextButtonClass,
-                isUnknownPack
-                  ? 'text-warning-background'
-                  : 'text-base-foreground'
+                isUnknownPack ? 'text-warning-background' : 'text-foreground'
               )
             "
             :aria-expanded="expanded"
@@ -61,9 +59,7 @@
             :class="
               cn(
                 packTextButtonClass,
-                isUnknownPack
-                  ? 'text-warning-background'
-                  : 'text-base-foreground'
+                isUnknownPack ? 'text-warning-background' : 'text-foreground'
               )
             "
             @click="handleLocateNode(primaryLocatableNodeType)"
@@ -74,7 +70,7 @@
             v-else
             class="min-w-0 truncate text-xs/relaxed font-normal"
             :class="
-              isUnknownPack ? 'text-warning-background' : 'text-base-foreground'
+              isUnknownPack ? 'text-warning-background' : 'text-foreground'
             "
           >
             <span v-if="group.isResolving" class="text-muted-foreground italic">
@@ -88,7 +84,7 @@
             v-if="showInfoButton && group.packId !== null"
             variant="textonly"
             size="icon-sm"
-            class="size-6 shrink-0 text-muted-foreground hover:bg-transparent hover:text-base-foreground focus-visible:ring-inset"
+            class="size-6 shrink-0 text-muted-foreground hover:bg-transparent hover:text-foreground focus-visible:ring-inset"
             :aria-label="t('rightSidePanel.missingNodePacks.viewInManager')"
             @click="emit('openManagerInfo', group.packId ?? '')"
           >
@@ -97,7 +93,7 @@
           <span
             v-if="showNodeCount"
             data-testid="missing-node-pack-count"
-            class="flex h-4 min-w-4 shrink-0 items-center justify-center rounded-sm bg-secondary-background-hover px-1 text-2xs font-semibold text-base-foreground"
+            class="flex h-4 min-w-4 shrink-0 items-center justify-center rounded-sm bg-secondary-background-hover px-1 text-2xs font-semibold text-foreground"
           >
             {{ group.nodeTypes.length }}
           </span>
@@ -117,7 +113,7 @@
             :size="12"
             class="mr-1.5 shrink-0"
           />
-          <span class="min-w-0 truncate text-base-foreground">
+          <span class="min-w-0 truncate text-foreground">
             {{
               isInstalling
                 ? t('rightSidePanel.missingNodePacks.installing')
@@ -130,10 +126,10 @@
       </div>
       <div
         v-else-if="showLoadingAction"
-        class="ml-auto flex h-6 shrink-0 cursor-not-allowed items-center justify-center overflow-hidden rounded-sm bg-secondary-background px-2 py-1 text-xs opacity-60 select-none"
+        class="ml-auto flex h-6 shrink-0 cursor-not-allowed items-center justify-center overflow-hidden rounded-sm bg-secondary px-2 py-1 text-xs opacity-60 select-none"
       >
         <DotSpinner duration="1s" :size="12" class="mr-1.5 shrink-0" />
-        <span class="min-w-0 truncate text-xs text-base-foreground">
+        <span class="min-w-0 truncate text-xs text-foreground">
           {{ t('g.loading') }}
         </span>
       </div>
@@ -149,7 +145,7 @@
             })
           "
         >
-          <span class="min-w-0 truncate text-base-foreground">
+          <span class="min-w-0 truncate text-foreground">
             {{ t('g.search') }}
           </span>
         </Button>
@@ -192,7 +188,7 @@
                 :class="
                   cn(
                     packTextButtonClass,
-                    'text-muted-foreground hover:text-base-foreground'
+                    'text-muted-foreground hover:text-foreground'
                   )
                 "
                 @click="handleLocateNode(nodeType)"
@@ -259,7 +255,7 @@ const { t } = useI18n()
 const expandedOverride = ref<boolean | null>(null)
 
 const packTextButtonClass =
-  'm-0 inline max-w-full cursor-pointer appearance-none border-0 bg-transparent p-0 text-left text-xs/relaxed font-normal wrap-break-word outline-none focus:outline-none rounded-sm focus-visible:ring-1 focus-visible:ring-border-default focus-visible:ring-inset focus-visible:outline-none'
+  'm-0 inline max-w-full cursor-pointer appearance-none border-0 bg-transparent p-0 text-left text-xs/relaxed font-normal wrap-break-word outline-none focus:outline-none rounded-sm focus-visible:ring-1 focus-visible:ring-border focus-visible:ring-inset focus-visible:outline-none'
 
 const { missingNodePacks, isLoading } = useMissingNodes()
 const comfyManagerStore = useComfyManagerStore()

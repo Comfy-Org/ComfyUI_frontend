@@ -15,7 +15,7 @@
         class="rounded-full"
         @click="toggleMenu"
       >
-        <i class="icon-[lucide--menu] text-lg text-base-foreground" />
+        <i class="icon-[lucide--menu] text-lg text-foreground" />
       </Button>
 
       <div
@@ -37,7 +37,7 @@
             @click="selectCategory(category)"
           >
             <i :class="getCategoryIcon(category)" />
-            <span class="whitespace-nowrap text-base-foreground">{{
+            <span class="whitespace-nowrap text-foreground">{{
               $t(categoryLabels[category])
             }}</span>
           </Button>
@@ -252,7 +252,7 @@ const getCategoryIcon = (category: string) => {
     category in categoryIcons
       ? categoryIcons[category as keyof typeof categoryIcons]
       : 'icon-[lucide--circle]'
-  return cn(icon, 'text-lg text-base-foreground')
+  return cn(icon, 'text-lg text-foreground')
 }
 
 const emit = defineEmits<{

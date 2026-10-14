@@ -1,6 +1,6 @@
 <template>
   <label
-    class="flex min-w-0 flex-1 items-center gap-1 rounded-md border border-border-default bg-secondary-background px-1.5 py-1"
+    class="flex min-w-0 flex-1 items-center gap-1 rounded-md border border-border bg-secondary px-1.5 py-1"
   >
     <span class="shrink-0 text-xs text-muted-foreground">{{ label }}</span>
     <Input

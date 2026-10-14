@@ -86,7 +86,7 @@ const { openCompositorEditor } = useCompositorEditor()
 const { exporting, downloadPsd } = useCompositorPsdDownload()
 
 const actionButtonClass =
-  'flex h-8 min-h-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-base-foreground p-2 text-base-background shadow-interface transition-colors duration-200 hover:bg-base-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:ring-offset-2 disabled:cursor-default disabled:opacity-50'
+  'flex h-8 min-h-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-foreground p-2 text-background shadow-interface transition-colors duration-200 hover:bg-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2 disabled:cursor-default disabled:opacity-50'
 
 const naturalSize = ref<{ w: number; h: number } | null>(null)
 const outputUrl = ref<string | null>(null)

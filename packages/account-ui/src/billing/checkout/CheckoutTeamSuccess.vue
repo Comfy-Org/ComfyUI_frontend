@@ -15,7 +15,7 @@
     </template>
     <template #details>
       <div v-if="showInviteBlock" class="mt-4 flex w-full flex-col gap-2">
-        <h3 class="m-0 text-base font-normal text-base-foreground">
+        <h3 class="m-0 text-base font-normal text-foreground">
           {{ inviteCopy.title }}
         </h3>
         <p class="m-0 text-sm text-muted-foreground">
@@ -156,7 +156,7 @@ const inviting = computed(
 )
 const inputClass = computed(() =>
   darkSurface
-    ? 'min-h-10 w-full bg-secondary-background px-3 focus-within:bg-secondary-background hover:bg-secondary-background-hover'
+    ? 'min-h-10 w-full bg-secondary px-3 focus-within:bg-secondary hover:bg-secondary-background-hover'
     : 'min-h-10 w-full bg-tertiary-background px-3 focus-within:bg-tertiary-background hover:bg-tertiary-background-hover'
 )
 

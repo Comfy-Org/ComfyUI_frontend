@@ -4,13 +4,11 @@
     class="flex min-h-0 flex-1 flex-col gap-8 px-6 py-4"
   >
     <section class="flex flex-col gap-4">
-      <span class="text-sm text-base-foreground">
+      <span class="text-sm text-foreground">
         {{ $t('comfyHubPublish.shareAs') }}
       </span>
 
-      <div
-        class="flex items-center gap-4 rounded-2xl bg-secondary-background px-6 py-4"
-      >
+      <div class="flex items-center gap-4 rounded-2xl bg-secondary px-6 py-4">
         <div
           class="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-linear-to-b from-green-600/50 to-green-900"
         >
@@ -25,7 +23,7 @@
           </span>
         </div>
         <div class="flex flex-1 flex-col gap-2">
-          <span class="text-sm text-base-foreground">
+          <span class="text-sm text-foreground">
             {{ profile.name ?? profile.username }}
           </span>
           <span class="text-sm text-muted-foreground">
@@ -39,7 +37,7 @@
       v-if="isLoadingAssets || hasPrivateAssets"
       class="flex flex-col gap-4"
     >
-      <span class="text-sm text-base-foreground">
+      <span class="text-sm text-foreground">
         {{ $t('comfyHubPublish.additionalInfo') }}
       </span>
 

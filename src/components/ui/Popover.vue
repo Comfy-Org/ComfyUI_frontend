@@ -39,7 +39,7 @@ const contentStyle = useModalLiftedZIndex(open)
         :style="contentStyle"
         :class="
           cn(
-            'z-1700 rounded-lg border border-border-subtle bg-base-background p-2 shadow-sm',
+            'z-1700 rounded-lg border border-border-subtle bg-background p-2 shadow-sm',
             $attrs.class,
             'will-change-[transform,opacity] data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95'
           )
@@ -48,7 +48,7 @@ const contentStyle = useModalLiftedZIndex(open)
         <slot :close />
         <PopoverArrow
           v-if="showArrow"
-          class="fill-base-background stroke-border-subtle"
+          class="fill-background stroke-border-subtle"
         />
       </PopoverContent>
     </PopoverPortal>

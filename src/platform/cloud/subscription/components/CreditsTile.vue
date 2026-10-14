@@ -15,7 +15,7 @@
       :aria-label="$t('subscription.refreshCredits')"
       @click="handleRefresh"
     >
-      <i class="icon-[lucide--refresh-cw] size-4 text-text-secondary" />
+      <i class="icon-[lucide--refresh-cw] size-4 text-muted-foreground" />
     </Button>
 
     <div class="flex flex-col gap-1">
@@ -42,13 +42,11 @@
     <template v-if="showBreakdown">
       <div
         v-if="emptyStateNotice"
-        class="flex items-start gap-2 rounded-lg bg-base-background p-3 text-sm"
+        class="flex items-start gap-2 rounded-lg bg-background p-3 text-sm"
       >
-        <i
-          class="mt-0.5 icon-[lucide--info] size-4 shrink-0 text-base-foreground"
-        />
+        <i class="mt-0.5 icon-[lucide--info] size-4 shrink-0 text-foreground" />
         <div class="flex flex-col gap-1">
-          <span class="text-base-foreground">{{ emptyStateNotice.title }}</span>
+          <span class="text-foreground">{{ emptyStateNotice.title }}</span>
           <span class="text-muted-foreground">{{
             emptyStateNotice.description
           }}</span>
@@ -60,7 +58,7 @@
         :class="cn('flex flex-col gap-2', isMonthlyDepleted && 'opacity-30')"
       >
         <div class="flex items-center justify-between text-sm">
-          <span class="text-text-primary">{{ allowanceLabel }}</span>
+          <span class="text-foreground">{{ allowanceLabel }}</span>
           <span class="text-muted-foreground">
             {{ refillsLabel }}
           </span>
@@ -89,7 +87,7 @@
           <Skeleton v-if="isLoadingBalance" class="h-4 w-36" />
           <span
             v-else
-            class="flex items-center gap-1 font-bold text-text-primary"
+            class="flex items-center gap-1 font-bold text-foreground"
           >
             <i class="icon-[lucide--coins] size-4 text-credit" />
             <span class="@max-[180px]:hidden">
@@ -118,7 +116,7 @@
         <div
           class="flex items-center justify-between gap-2 text-sm @max-[300px]:flex-col @max-[300px]:items-start"
         >
-          <span class="flex items-center gap-1 text-text-primary">
+          <span class="flex items-center gap-1 text-foreground">
             {{ $t('subscription.additionalCredits') }}
             <Button
               :tooltip="$t('subscription.additionalCreditsTooltip')"
@@ -131,7 +129,7 @@
             </Button>
             <span
               v-if="isSpendingAdditional"
-              class="flex h-3.5 items-center rounded-full bg-base-foreground px-1 text-2xs/none font-semibold text-base-background uppercase"
+              class="flex h-3.5 items-center rounded-full bg-foreground px-1 text-2xs/none font-semibold text-background uppercase"
             >
               {{ $t('subscription.additionalCreditsInUse') }}
             </span>
@@ -139,7 +137,7 @@
           <Skeleton v-if="isLoadingBalance" class="h-4 w-12" />
           <span
             v-else
-            class="flex items-center gap-1 font-bold text-text-primary"
+            class="flex items-center gap-1 font-bold text-foreground"
           >
             <i class="icon-[lucide--coins] size-4 text-credit" />
             {{ displayPrepaid }}
@@ -189,7 +187,7 @@
         :class="
           cn(
             'w-full font-normal',
-            !isOutOfCredits && 'bg-muted text-text-primary'
+            !isOutOfCredits && 'bg-muted text-foreground'
           )
         "
         @click="handleAddCredits"

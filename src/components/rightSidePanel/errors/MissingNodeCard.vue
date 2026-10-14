@@ -45,13 +45,13 @@
     >
       <template #pipCmd>
         <code
-          class="rounded-sm bg-comfy-menu-bg px-1 py-0.5 font-mono text-xs text-comfy-input-foreground"
+          class="rounded-sm bg-background px-1 py-0.5 font-mono text-xs text-foreground"
           >pip install -U --pre comfyui-manager</code
         >
       </template>
       <template #flag>
         <code
-          class="rounded-sm bg-comfy-menu-bg px-1 py-0.5 font-mono text-xs text-comfy-input-foreground"
+          class="rounded-sm bg-background px-1 py-0.5 font-mono text-xs text-foreground"
           >--enable-manager</code
         >
       </template>

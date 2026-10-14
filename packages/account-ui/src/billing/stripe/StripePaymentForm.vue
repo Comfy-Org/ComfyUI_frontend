@@ -2,10 +2,7 @@
   <form class="flex min-h-0 flex-col gap-6 xl:flex-1" @submit.prevent="submit">
     <div v-if="!pageLayout" class="flex items-start justify-between gap-4">
       <div>
-        <h3
-          :id="headingId"
-          class="m-0 text-base font-semibold text-base-foreground"
-        >
+        <h3 :id="headingId" class="m-0 text-base font-semibold text-foreground">
           {{ copy.paymentMethod }}
         </h3>
         <p class="m-0 mt-1 max-w-md text-sm text-muted-foreground">
@@ -15,7 +12,7 @@
     </div>
     <div
       v-if="configurationError"
-      class="rounded-lg border border-destructive-background bg-destructive-background/10 px-3 py-2 text-sm text-destructive-background"
+      class="rounded-lg border border-destructive bg-destructive/10 px-3 py-2 text-sm text-destructive"
     >
       {{ configurationError }}
     </div>
@@ -33,7 +30,7 @@
         <h4
           :class="
             cn(
-              'm-0 text-base-foreground',
+              'm-0 text-foreground',
               pageLayout ? 'text-base font-normal' : 'text-sm font-medium'
             )
           "
@@ -44,7 +41,7 @@
       </div>
       <div
         v-if="selectedMethodType === 'alipay'"
-        class="flex items-start gap-3 rounded-xl bg-base-background/60 px-4 py-3 text-xs text-muted-foreground"
+        class="flex items-start gap-3 rounded-xl bg-background/60 px-4 py-3 text-xs text-muted-foreground"
       >
         <i
           class="mt-0.5 icon-[lucide--shield-check] size-4 shrink-0 text-(--success-foreground)"

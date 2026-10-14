@@ -17,7 +17,7 @@
           aria-modal="false"
           :aria-labelledby="pitchId"
           data-testid="partner-nodes-education-card"
-          class="pointer-events-auto flex w-100 flex-col gap-2 overflow-hidden rounded-2xl border border-white/5 bg-base-background"
+          class="pointer-events-auto flex w-100 flex-col gap-2 overflow-hidden rounded-2xl border border-white/5 bg-background"
         >
           <div class="isolate flex h-60 flex-col">
             <VideoCompareSlider
@@ -88,7 +88,7 @@
 
             <div class="z-1 flex h-14 items-start">
               <div
-                class="flex h-14 flex-1 items-center justify-center gap-1.5 bg-secondary-background px-3 pt-7 pb-1.5 opacity-60 backdrop-blur-md"
+                class="flex h-14 flex-1 items-center justify-center gap-1.5 bg-secondary px-3 pt-7 pb-1.5 opacity-60 backdrop-blur-md"
               >
                 <i class="icon-[lucide--boxes] size-4 text-white" />
                 <span class="text-xs font-semibold text-white">
@@ -127,7 +127,7 @@
               <span :id="pitchId" class="font-semibold text-white">
                 {{ t('partnerNodesEducation.pitch') }}
               </span>
-              <span class="text-text-secondary">
+              <span class="text-muted-foreground">
                 {{ t('partnerNodesEducation.reassurance') }}
               </span>
             </div>
@@ -148,7 +148,7 @@
                 :key="row.key"
                 class="flex items-center pr-4.5"
               >
-                <span class="flex-1 text-sm/snug text-text-secondary">
+                <span class="flex-1 text-sm/snug text-muted-foreground">
                   {{ t(`partnerNodesEducation.benefits.${row.key}`) }}
                 </span>
                 <span

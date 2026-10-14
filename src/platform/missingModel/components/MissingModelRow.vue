@@ -40,7 +40,7 @@
             v-if="hasModelLabelControl"
             ref="modelLabelControl"
             type="button"
-            class="m-0 min-w-0 cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left font-normal wrap-break-word text-base-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none focus-visible:ring-inset"
+            class="m-0 min-w-0 cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left font-normal wrap-break-word text-foreground outline-none hover:text-foreground focus:outline-none focus-visible:ring-1 focus-visible:ring-border focus-visible:outline-none focus-visible:ring-inset"
             :title="displayModelName"
             @click="handleModelLabelClick"
           >
@@ -48,7 +48,7 @@
           </button>
           <span
             v-else
-            class="min-w-0 font-normal wrap-break-word text-base-foreground"
+            class="min-w-0 font-normal wrap-break-word text-foreground"
             :title="displayModelName"
           >
             {{ displayModelName }}
@@ -56,14 +56,14 @@
           <span
             v-if="hasMultipleReferences"
             data-testid="missing-model-reference-count"
-            class="inline-flex h-4 min-w-4 shrink-0 items-center justify-center rounded-sm bg-secondary-background-hover px-1 text-2xs font-semibold text-base-foreground"
+            class="inline-flex h-4 min-w-4 shrink-0 items-center justify-center rounded-sm bg-secondary-background-hover px-1 text-2xs font-semibold text-foreground"
           >
             {{ model.referencingNodes.length }}
           </span>
           <Button
             variant="textonly"
             size="icon-sm"
-            class="size-6 shrink-0 text-muted-foreground hover:bg-transparent hover:text-base-foreground focus-visible:ring-inset"
+            class="size-6 shrink-0 text-muted-foreground hover:bg-transparent hover:text-foreground focus-visible:ring-inset"
             :aria-label="linkLabel"
             :title="linkLabel"
             @click="copyModelLink"
@@ -110,7 +110,7 @@
             class="block h-1.5 w-full overflow-hidden rounded-full bg-secondary-background-selected"
           >
             <span
-              class="block h-full rounded-full bg-primary-background transition-all duration-200 ease-linear"
+              class="block h-full rounded-full bg-primary transition-all duration-200 ease-linear"
               :style="{ width: `${cloudImportProgressPercent}%` }"
             />
           </span>
@@ -186,7 +186,7 @@
         variant="textonly"
         size="icon-sm"
         :aria-label="t('rightSidePanel.missingModels.locateNode')"
-        class="size-8 shrink-0 text-muted-foreground hover:text-base-foreground focus-visible:ring-inset"
+        class="size-8 shrink-0 text-muted-foreground hover:text-foreground focus-visible:ring-inset"
         @click="handleLocatePrimary"
       >
         <i aria-hidden="true" class="icon-[lucide--locate] size-4" />
@@ -211,7 +211,7 @@
           <div class="flex min-h-8 min-w-0 items-center gap-2">
             <button
               type="button"
-              class="m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left text-xs/tight font-normal wrap-break-word text-muted-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none focus-visible:ring-inset"
+              class="m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left text-xs/tight font-normal wrap-break-word text-muted-foreground outline-none hover:text-foreground focus:outline-none focus-visible:ring-1 focus-visible:ring-border focus-visible:outline-none focus-visible:ring-inset"
               @click="emit('locateModel', String(ref.nodeId))"
             >
               {{
@@ -223,7 +223,7 @@
               variant="textonly"
               size="icon-sm"
               :aria-label="t('rightSidePanel.missingModels.locateNode')"
-              class="ml-auto size-8 shrink-0 text-muted-foreground hover:text-base-foreground focus-visible:ring-inset"
+              class="ml-auto size-8 shrink-0 text-muted-foreground hover:text-foreground focus-visible:ring-inset"
               @click="emit('locateModel', String(ref.nodeId))"
             >
               <i aria-hidden="true" class="icon-[lucide--locate] size-4" />

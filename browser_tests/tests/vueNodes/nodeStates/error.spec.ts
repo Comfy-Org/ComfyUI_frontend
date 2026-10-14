@@ -21,7 +21,7 @@ import { webSocketFixture } from '@e2e/fixtures/ws'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 
-const ERROR_CLASS = /ring-destructive-background/
+const ERROR_CLASS = /ring-destructive/
 const WARNING_CLASS = /ring-warning-background/
 const SLOT_ERROR_CLASS = /before:ring-error/
 const UNKNOWN_NODE_ID = '1'

@@ -1,12 +1,12 @@
 <template>
   <div
-    class="flex w-full max-w-lg flex-col rounded-2xl border border-border-default bg-base-background"
+    class="flex w-full max-w-lg flex-col rounded-2xl border border-border bg-background"
   >
     <div
-      class="flex h-12 items-center justify-between border-b border-border-default px-4"
+      class="flex h-12 items-center justify-between border-b border-border px-4"
     >
       <h2
-        class="m-0 flex items-center gap-2 text-sm font-normal text-base-foreground"
+        class="m-0 flex items-center gap-2 text-sm font-normal text-foreground"
       >
         <template v-if="step === 'invited'">
           <i class="pi pi-check-circle size-4 text-success-background" />
@@ -23,7 +23,7 @@
         </template>
       </h2>
       <button
-        class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none"
+        class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-1 focus-visible:ring-border focus-visible:outline-none"
         :aria-label="$t('g.close')"
         @click="onClose"
       >
@@ -42,7 +42,7 @@
           :placeholder="$t('workspacePanel.inviteMemberDialog.placeholder')"
           :max-seats="inviteFormMaxSeats"
           :occupied-seats="inviteFormOccupiedSeats"
-          tags-input-class="min-h-10 w-full bg-secondary-background"
+          tags-input-class="min-h-10 w-full bg-secondary"
           @submitted="onInvited"
         />
       </div>

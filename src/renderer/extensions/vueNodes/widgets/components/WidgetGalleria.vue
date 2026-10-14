@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col gap-1">
     <div
-      class="max-w-full overflow-hidden rounded-lg border border-border-default"
+      class="max-w-full overflow-hidden rounded-lg border border-border"
       role="region"
       :aria-label="t('g.imageGallery')"
     >
@@ -104,7 +104,7 @@ const activeIndex = ref(0)
 const { t } = useI18n()
 
 const navButtonClass =
-  'absolute top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-full border-0 bg-secondary-background/80 text-base-foreground transition-colors hover:bg-secondary-background disabled:pointer-events-none disabled:opacity-40'
+  'absolute top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-full border-0 bg-secondary/80 text-foreground transition-colors hover:bg-secondary disabled:pointer-events-none disabled:opacity-40'
 
 watch(
   () => images.value.length,

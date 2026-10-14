@@ -43,8 +43,6 @@
 
   --color-bypass: #6a246a;
   --color-error: #962a2a;
-
-  --color-link: var(--color-blue-400);
 }
 
 :root {
@@ -89,9 +87,6 @@
   --content-fg: #000;
   --content-hover-bg: #adadad;
   --content-hover-fg: #000;
-
-  --text-secondary: var(--color-smoke-800);
-  --text-primary: var(--color-charcoal-700);
 
   /* Semantic tokens - light mode */
   --brand-yellow: var(--color-electric-400);
@@ -142,9 +137,6 @@
   --content-hover-bg: #222;
   --content-hover-fg: #fff;
 
-  --text-secondary: var(--color-smoke-700);
-  --text-primary: var(--color-white);
-
   /* Semantic tokens - dark mode */
   --brand-yellow: var(--color-electric-400);
   --brand-blue: var(--color-sapphire-700);
@@ -180,19 +172,6 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --color-base-background: var(--background);
-  --color-base-foreground: var(--foreground);
-  --color-secondary-background: var(--secondary);
-  --color-primary-background: var(--primary);
-  --color-destructive-background: var(--destructive);
-  --color-border-default: var(--border);
-
-  --color-comfy-input-foreground: var(--input-text);
-  --color-comfy-menu-bg: var(--comfy-menu-bg);
-  --color-comfy-menu-secondary: var(--comfy-menu-secondary-bg);
-
-  --color-text-secondary: var(--text-secondary);
-  --color-text-primary: var(--text-primary);
 
   /* Semantic tokens */
   --color-secondary-background-hover: var(--secondary-background-hover);

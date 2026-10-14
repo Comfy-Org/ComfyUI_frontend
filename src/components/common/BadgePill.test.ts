@@ -82,16 +82,14 @@ describe('BadgePill', () => {
     render(BadgePill, {
       props: { text: 'Not Filled', borderStyle: '#f59e0b' }
     })
-    expect(screen.getByTestId('badge-pill')).toHaveClass('text-base-foreground')
+    expect(screen.getByTestId('badge-pill')).toHaveClass('text-foreground')
   })
 
   it('does not have foreground text class when filled', () => {
     render(BadgePill, {
       props: { text: 'Filled', borderStyle: '#f59e0b', filled: true }
     })
-    expect(screen.getByTestId('badge-pill')).not.toHaveClass(
-      'text-base-foreground'
-    )
+    expect(screen.getByTestId('badge-pill')).not.toHaveClass('text-foreground')
   })
 
   it('renders slot content', () => {

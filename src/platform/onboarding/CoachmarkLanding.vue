@@ -9,7 +9,7 @@
       <DialogContent
         v-reka-z-index
         data-testid="coach-landing"
-        class="w-[800px] max-w-[calc(100vw-2.5rem)] overflow-hidden rounded-2xl border-border-default bg-secondary-background p-0 shadow-[0_24px_80px_rgba(0,0,0,0.85)] md:h-fit md:min-h-100 md:max-w-[800px] md:flex-row"
+        class="w-[800px] max-w-[calc(100vw-2.5rem)] overflow-hidden rounded-2xl border-border bg-secondary p-0 shadow-[0_24px_80px_rgba(0,0,0,0.85)] md:h-fit md:min-h-100 md:max-w-[800px] md:flex-row"
         @pointer-down-outside.prevent
         @open-auto-focus="onOpenAutoFocus"
       >
@@ -24,7 +24,7 @@
           </Button>
         </DialogClose>
         <div
-          class="flex aspect-video items-center justify-center bg-base-background md:aspect-auto md:w-1/2"
+          class="flex aspect-video items-center justify-center bg-background md:aspect-auto md:w-1/2"
         >
           <img
             v-if="image"
@@ -38,7 +38,7 @@
         >
           <div class="flex flex-col gap-2.5">
             <DialogTitle
-              class="m-0 text-[28px] leading-normal font-medium text-base-foreground"
+              class="m-0 text-[28px] leading-normal font-medium text-foreground"
             >
               {{ title }}
             </DialogTitle>

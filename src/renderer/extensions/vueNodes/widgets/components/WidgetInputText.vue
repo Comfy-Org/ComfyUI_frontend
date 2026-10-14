@@ -66,9 +66,6 @@ const isReadOnly = computed(() =>
 const layoutWidget = computed(() => ({
   name: widget.name,
   label: widget.label,
-  borderStyle: cn(
-    widget.borderStyle,
-    invalid && 'border border-destructive-background'
-  )
+  borderStyle: cn(widget.borderStyle, invalid && 'border border-destructive')
 }))
 </script>

@@ -82,7 +82,7 @@
         :class="
           cn(
             'z-3000 max-h-60 w-(--reka-combobox-trigger-width) overflow-y-auto',
-            'rounded-lg border border-border-default bg-base-background p-1 shadow-lg'
+            'rounded-lg border border-border bg-background p-1 shadow-lg'
           )
         "
       >

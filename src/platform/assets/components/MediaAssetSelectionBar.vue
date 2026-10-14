@@ -2,7 +2,7 @@
   <div class="relative mx-2">
     <div
       data-testid="assets-selection-bar"
-      class="absolute bottom-6 left-1/2 z-40 flex w-full max-w-78 -translate-x-1/2 items-center gap-2 rounded-lg bg-base-foreground p-2 text-base-background shadow-interface"
+      class="absolute bottom-6 left-1/2 z-40 flex w-full max-w-78 -translate-x-1/2 items-center gap-2 rounded-lg bg-foreground p-2 text-background shadow-interface"
     >
       <Button
         :tooltip="$t('mediaAsset.selection.deselectAll')"
@@ -11,7 +11,7 @@
         type="button"
         data-testid="assets-deselect-selected"
         :aria-label="$t('mediaAsset.selection.deselectAll')"
-        class="rounded-lg hover:bg-base-background/10"
+        class="rounded-lg hover:bg-background/10"
         @click="emit('deselect')"
       >
         <i class="icon-[lucide--x] size-4" />
@@ -27,13 +27,13 @@
           type="button"
           data-testid="assets-download-selected"
           :aria-label="$t('mediaAsset.selection.downloadSelected')"
-          class="rounded-lg hover:bg-base-background/10"
+          class="rounded-lg hover:bg-background/10"
           @click="emit('download')"
         >
           <i class="icon-[lucide--download] size-4" />
         </Button>
         <template v-if="showDelete">
-          <span class="h-6 w-px bg-base-background/20" aria-hidden="true" />
+          <span class="h-6 w-px bg-background/20" aria-hidden="true" />
           <Button
             :tooltip="$t('mediaAsset.selection.deleteSelected')"
             variant="inverted"
@@ -41,7 +41,7 @@
             type="button"
             data-testid="assets-delete-selected"
             :aria-label="$t('mediaAsset.selection.deleteSelected')"
-            class="rounded-lg hover:bg-base-background/10"
+            class="rounded-lg hover:bg-background/10"
             @click="emit('delete')"
           >
             <i class="icon-[lucide--trash-2] size-4" />

@@ -1,17 +1,17 @@
 <template>
   <section
-    class="flex w-full max-w-[480px] flex-col rounded-2xl border border-border-default bg-base-background"
+    class="flex w-full max-w-[480px] flex-col rounded-2xl border border-border bg-background"
   >
     <!-- Header -->
     <header class="flex items-start gap-3 p-5 pb-0">
       <div
-        class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary-background text-white"
+        class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-white"
         aria-hidden="true"
       >
         <i class="icon-[lucide--users] text-lg" />
       </div>
       <div class="flex min-w-0 flex-1 flex-col">
-        <h2 class="m-0 text-lg font-semibold text-base-foreground">
+        <h2 class="m-0 text-lg font-semibold text-foreground">
           {{ $t('teamWorkspacesDialog.title') }}
         </h2>
         <p class="m-0 text-sm text-muted-foreground">
@@ -23,7 +23,7 @@
         </p>
       </div>
       <button
-        class="-mt-1 cursor-pointer rounded-sm border-none bg-transparent p-2 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none"
+        class="-mt-1 cursor-pointer rounded-sm border-none bg-transparent p-2 text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-1 focus-visible:ring-border focus-visible:outline-none"
         :aria-label="$t('g.close')"
         @click="onCancel"
       >
@@ -46,7 +46,7 @@
       >
         <li v-for="workspace in ownedTeamWorkspaces" :key="workspace.id">
           <button
-            class="flex w-full cursor-pointer items-center gap-3 rounded-lg border border-border-default bg-transparent px-4 py-3 transition-colors hover:bg-secondary-background-hover focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none"
+            class="flex w-full cursor-pointer items-center gap-3 rounded-lg border border-border bg-transparent px-4 py-3 transition-colors hover:bg-secondary-background-hover focus-visible:ring-1 focus-visible:ring-border focus-visible:outline-none"
             @click="handleSwitch(workspace.id)"
           >
             <WorkspaceProfilePic
@@ -57,19 +57,19 @@
             <div class="flex min-w-0 flex-1 flex-col items-start gap-1">
               <div class="flex items-center gap-1.5">
                 <span
-                  class="truncate text-left text-sm font-medium text-base-foreground"
+                  class="truncate text-left text-sm font-medium text-foreground"
                 >
                   {{ workspace.name }}
                 </span>
                 <span
                   v-if="tierLabels.get(workspace.id)"
-                  class="shrink-0 rounded-full bg-base-foreground px-1 py-0.5 text-2xs font-bold text-base-background uppercase"
+                  class="shrink-0 rounded-full bg-foreground px-1 py-0.5 text-2xs font-bold text-background uppercase"
                 >
                   {{ tierLabels.get(workspace.id) }}
                 </span>
               </div>
             </div>
-            <span class="shrink-0 text-sm font-medium text-base-foreground">
+            <span class="shrink-0 text-sm font-medium text-foreground">
               {{ $t('teamWorkspacesDialog.switch') }}
               <i class="pi pi-arrow-right text-xs" aria-hidden="true" />
             </span>
@@ -79,10 +79,7 @@
     </section>
 
     <!-- Divider -->
-    <hr
-      v-if="ownedTeamWorkspaces.length > 0"
-      class="mx-5 my-4 border-border-default"
-    />
+    <hr v-if="ownedTeamWorkspaces.length > 0" class="mx-5 my-4 border-border" />
 
     <!-- New workspace section -->
     <section
@@ -95,14 +92,14 @@
         {{ $t('teamWorkspacesDialog.newWorkspace') }}
       </h3>
       <div class="flex flex-col gap-2">
-        <label for="workspace-name-input" class="text-sm text-base-foreground">
+        <label for="workspace-name-input" class="text-sm text-foreground">
           {{ $t('workspacePanel.createWorkspaceDialog.nameLabel') }}
         </label>
         <input
           id="workspace-name-input"
           v-model="workspaceName"
           type="text"
-          class="w-full rounded-lg border border-border-default bg-transparent px-3 py-2 text-sm text-base-foreground placeholder:text-muted-foreground focus:ring-1 focus:ring-border-default focus:outline-none"
+          class="w-full rounded-lg border border-border bg-transparent px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:ring-1 focus:ring-border focus:outline-none"
           :placeholder="$t('teamWorkspacesDialog.namePlaceholder')"
           :aria-invalid="workspaceName.length > 0 && !isValidName"
           :aria-describedby="
@@ -115,7 +112,7 @@
         <p
           v-if="workspaceName.length > 0 && !isValidName"
           id="workspace-name-error"
-          class="m-0 text-xs text-destructive-background"
+          class="m-0 text-xs text-destructive"
         >
           {{ $t('teamWorkspacesDialog.nameValidationError') }}
         </p>

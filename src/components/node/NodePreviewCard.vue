@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex flex-col overflow-hidden rounded-lg border border-border-default bg-base-background"
+    class="flex flex-col overflow-hidden rounded-lg border border-border bg-background"
     :style="{ width: `${BASE_WIDTH_PX * (scaleFactor / BASE_SCALE)}px` }"
     data-testid="node-preview-card"
   >
@@ -17,7 +17,7 @@
     <!-- Content Section -->
     <div class="flex flex-col gap-2 p-3 pt-1">
       <!-- Title -->
-      <h3 class="m-0 text-xs font-semibold text-base-foreground">
+      <h3 class="m-0 text-xs font-semibold text-foreground">
         {{ nodeDef.display_name }}
       </h3>
 
@@ -46,7 +46,7 @@
       <!-- Divider -->
       <div
         v-if="(inputs.length > 0 || outputs.length > 0) && showInputsAndOutputs"
-        class="border-t border-border-default"
+        class="border-t border-border"
       />
 
       <!-- Inputs Section -->
@@ -65,7 +65,7 @@
           :key="input.name"
           class="flex items-center justify-between gap-2 text-2xs"
         >
-          <span class="shrink-0 text-base-foreground">{{ input.name }}</span>
+          <span class="shrink-0 text-foreground">{{ input.name }}</span>
           <span class="min-w-0 truncate text-muted-foreground">{{
             input.type
           }}</span>
@@ -87,7 +87,7 @@
           :key="output.name"
           class="flex items-center justify-between gap-2 text-2xs"
         >
-          <span class="shrink-0 text-base-foreground">{{ output.name }}</span>
+          <span class="shrink-0 text-foreground">{{ output.name }}</span>
           <span class="min-w-0 truncate text-muted-foreground">{{
             output.type
           }}</span>

@@ -3,9 +3,9 @@
     ref="tileRef"
     :class="
       cn(
-        'group relative aspect-square overflow-hidden rounded-sm outline-offset-2 focus-visible:outline-2 focus-visible:outline-border-default',
+        'group relative aspect-square overflow-hidden rounded-sm outline-offset-2 focus-visible:outline-2 focus-visible:outline-border',
         state === 'dragging' && 'opacity-40',
-        state === 'over' && 'ring-2 ring-primary-background'
+        state === 'over' && 'ring-2 ring-primary'
       )
     "
     tabindex="0"

@@ -1,12 +1,12 @@
 <template>
   <div
     v-if="showCustomPricingTable"
-    class="relative flex h-full max-h-[90vh] w-[calc(100vw-1rem)] flex-col gap-6 overflow-y-auto rounded-2xl border border-border-default bg-secondary-background p-4 pt-8 shadow-[0_25px_80px_rgba(5,6,12,0.45)] sm:max-w-7xl md:px-16 md:py-8"
+    class="relative flex h-full max-h-[90vh] w-[calc(100vw-1rem)] flex-col gap-6 overflow-y-auto rounded-2xl border border-border bg-secondary p-4 pt-8 shadow-[0_25px_80px_rgba(5,6,12,0.45)] sm:max-w-7xl md:px-16 md:py-8"
   >
     <Button
       size="icon"
       variant="muted-textonly"
-      class="absolute top-2.5 right-2.5 shrink-0 rounded-full text-text-secondary hover:bg-white/10"
+      class="absolute top-2.5 right-2.5 shrink-0 rounded-full text-muted-foreground hover:bg-white/10"
       :aria-label="$t('g.close')"
       @click="handleClose"
     >
@@ -23,7 +23,7 @@
       <i18n-t
         keypath="subscription.plansForWorkspace"
         tag="h2"
-        class="m-0 font-inter text-2xl font-semibold text-base-foreground"
+        class="m-0 font-inter text-2xl font-semibold text-foreground"
       >
         <template #workspace>
           <span class="text-muted-foreground">
@@ -41,22 +41,22 @@
 
     <!-- Contact and Enterprise Links -->
     <div class="flex flex-col items-center gap-2">
-      <p class="m-0 text-sm text-text-secondary">
+      <p class="m-0 text-sm text-muted-foreground">
         {{ $t('subscription.haveQuestions') }}
       </p>
       <div class="flex items-center gap-1.5">
         <Button
           variant="muted-textonly"
-          class="h-6 p-1 text-sm text-text-secondary hover:text-base-foreground"
+          class="h-6 p-1 text-sm text-muted-foreground hover:text-foreground"
           @click="handleContactUs"
         >
           {{ $t('subscription.contactUs') }}
           <i class="pi pi-comments" />
         </Button>
-        <span class="text-sm text-text-secondary">{{ $t('g.or') }}</span>
+        <span class="text-sm text-muted-foreground">{{ $t('g.or') }}</span>
         <Button
           variant="muted-textonly"
-          class="h-6 p-1 text-sm text-text-secondary hover:text-base-foreground"
+          class="h-6 p-1 text-sm text-muted-foreground hover:text-foreground"
           @click="handleViewEnterprise"
         >
           {{ $t('subscription.viewEnterprise') }}
@@ -67,7 +67,7 @@
   </div>
   <div
     v-else
-    class="relative grid h-full max-h-[90vh] w-[calc(100vw-1rem)] grid-cols-5 rounded-2xl border border-border-default bg-secondary-background shadow-[0_25px_80px_rgba(5,6,12,0.45)] sm:max-w-7xl"
+    class="relative grid h-full max-h-[90vh] w-[calc(100vw-1rem)] grid-cols-5 rounded-2xl border border-border bg-secondary shadow-[0_25px_80px_rgba(5,6,12,0.45)] sm:max-w-7xl"
   >
     <!-- Custom close button -->
     <Button
@@ -102,7 +102,7 @@
       <div>
         <div class="flex flex-col gap-6">
           <div class="inline-flex items-center gap-2">
-            <div class="text-sm text-text-primary">
+            <div class="text-sm text-foreground">
               {{
                 reason === 'out_of_credits'
                   ? $t('credits.topUp.insufficientTitle')
@@ -112,14 +112,14 @@
             <CloudBadge
               reverse-order
               no-padding
-              background-color="var(--color-secondary-background)"
+              background-color="var(--color-secondary)"
               use-subscription
             />
           </div>
 
           <p
             v-if="reason === 'out_of_credits'"
-            class="m-0 text-sm text-text-secondary"
+            class="m-0 text-sm text-muted-foreground"
           >
             {{ $t('credits.topUp.insufficientMessage') }}
           </p>

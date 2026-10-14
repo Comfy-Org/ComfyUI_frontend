@@ -1,10 +1,10 @@
 <template>
   <div
-    class="flex items-center justify-between rounded-lg border border-border-default bg-secondary-background p-4"
+    class="flex items-center justify-between rounded-lg border border-border bg-secondary p-4"
   >
     <div class="flex flex-col gap-1">
       <div class="flex items-center gap-2">
-        <span class="font-medium text-base-foreground">{{ secret.name }}</span>
+        <span class="font-medium text-foreground">{{ secret.name }}</span>
         <img
           v-if="providerLogo"
           :src="providerLogo"

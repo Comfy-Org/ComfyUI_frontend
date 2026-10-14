@@ -10,14 +10,14 @@
       <div class="flex w-full items-center gap-2">
         <span
           v-if="getItemColor(item)"
-          class="size-5 rounded-full border border-border-default"
+          class="size-5 rounded-full border border-border"
           :style="{ backgroundColor: getItemColor(item) }"
         />
         <i v-else-if="item.icon" :class="cn(item.icon, 'size-4')" />
         <span class="flex-1">{{ item.label }}</span>
         <span
           v-if="item.shortcut"
-          class="ml-auto rounded-sm border border-border-default bg-secondary-background p-1 text-xs text-nowrap text-muted-foreground"
+          class="ml-auto rounded-sm border border-border bg-secondary p-1 text-xs text-nowrap text-muted-foreground"
         >
           {{ item.shortcut }}
         </span>

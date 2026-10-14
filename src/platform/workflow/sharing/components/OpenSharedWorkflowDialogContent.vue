@@ -1,15 +1,15 @@
 <template>
   <div
     data-testid="open-shared-workflow-dialog"
-    class="flex w-176 max-w-full flex-col overflow-hidden rounded-2xl border border-border-default bg-base-background shadow-lg"
+    class="flex w-176 max-w-full flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-lg"
     :aria-busy="isOpening"
   >
     <header
-      class="flex h-12 items-center justify-between gap-2 border-b border-border-default px-4"
+      class="flex h-12 items-center justify-between gap-2 border-b border-border px-4"
     >
       <h2
         data-testid="open-shared-workflow-title"
-        class="text-sm text-base-foreground"
+        class="text-sm text-foreground"
       >
         {{ $t('openSharedWorkflow.dialogTitle') }}
       </h2>
@@ -35,7 +35,7 @@
         </div>
       </main>
       <footer
-        class="flex items-center justify-end gap-2.5 border-t border-border-default px-8 py-4"
+        class="flex items-center justify-end gap-2.5 border-t border-border px-8 py-4"
       >
         <Skeleton class="h-10 w-24 rounded-md" />
         <Skeleton class="h-10 w-40 rounded-md" />
@@ -53,7 +53,7 @@
         </p>
       </main>
       <footer
-        class="flex items-center justify-end gap-2.5 border-t border-border-default px-8 py-4"
+        class="flex items-center justify-end gap-2.5 border-t border-border px-8 py-4"
       >
         <Button
           data-testid="open-shared-workflow-error-close"
@@ -69,9 +69,7 @@
     <template v-else-if="sharedWorkflow">
       <main :class="cn('flex gap-8 px-8 pt-4 pb-6', !hasAssets && 'flex-col')">
         <div class="flex min-w-0 flex-1 flex-col gap-12 py-4">
-          <h2
-            class="m-0 text-2xl font-semibold wrap-anywhere text-base-foreground"
-          >
+          <h2 class="m-0 text-2xl font-semibold wrap-anywhere text-foreground">
             {{ workflowName }}
           </h2>
           <p
@@ -97,7 +95,7 @@
         <div v-if="hasAssets" class="flex w-96 shrink-0 flex-col gap-2 py-4">
           <CollapsibleRoot
             v-model:open="isWarningExpanded"
-            class="overflow-hidden rounded-lg bg-secondary-background"
+            class="overflow-hidden rounded-lg bg-secondary"
           >
             <CollapsibleTrigger as-child>
               <Button
@@ -134,7 +132,7 @@
       </main>
 
       <footer
-        class="flex items-center justify-end gap-2.5 border-t border-border-default px-8 py-4"
+        class="flex items-center justify-end gap-2.5 border-t border-border px-8 py-4"
       >
         <Button
           data-testid="open-shared-workflow-cancel"

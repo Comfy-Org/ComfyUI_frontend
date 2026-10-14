@@ -12,7 +12,7 @@
       <div
         v-show="openModel"
         data-testid="nightly-survey-popover"
-        class="fixed right-4 bottom-4 z-10000 w-80 rounded-lg border border-border-subtle bg-base-background p-4 shadow-lg"
+        class="fixed right-4 bottom-4 z-10000 w-80 rounded-lg border border-border-subtle bg-background p-4 shadow-lg"
       >
         <div class="mb-2 flex items-center justify-end">
           <Button

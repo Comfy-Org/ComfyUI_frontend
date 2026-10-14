@@ -4,16 +4,14 @@
       <p class="m-0">
         {{ $t('assetBrowser.modelAssociatedWithLink') }}
       </p>
-      <div
-        class="flex items-center gap-3 rounded-lg bg-secondary-background px-4 py-2"
-      >
+      <div class="flex items-center gap-3 rounded-lg bg-secondary px-4 py-2">
         <img
           v-if="previewImage"
           :src="previewImage"
           :alt="metadata?.filename || metadata?.name || 'Model preview'"
           class="size-14 shrink-0 rounded-sm object-cover"
         />
-        <p class="m-0 min-w-0 flex-1 truncate text-base-foreground">
+        <p class="m-0 min-w-0 flex-1 truncate text-foreground">
           {{ metadata?.filename || metadata?.name }}
         </p>
       </div>
@@ -21,12 +19,12 @@
 
     <div
       v-if="isMissingModelResolution"
-      class="flex flex-col gap-2 rounded-lg bg-secondary-background px-4 py-3"
+      class="flex flex-col gap-2 rounded-lg bg-secondary px-4 py-3"
     >
       <i18n-t
         keypath="assetBrowser.missingModelImportWillReplace"
         tag="p"
-        class="m-0 text-base-foreground"
+        class="m-0 text-foreground"
       >
         <template #model>
           <span>{{ missingModelName }}</span>

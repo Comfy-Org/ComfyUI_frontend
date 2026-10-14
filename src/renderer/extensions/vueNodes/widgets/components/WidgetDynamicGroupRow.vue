@@ -1,6 +1,6 @@
 <template>
   <div class="flex items-center gap-2">
-    <span class="h-px flex-1 bg-border-default" />
+    <span class="h-px flex-1 bg-border" />
     <span class="text-xs text-muted-foreground">{{ widget.label }}</span>
     <Button
       variant="textonly"

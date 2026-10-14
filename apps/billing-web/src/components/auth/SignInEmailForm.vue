@@ -51,7 +51,7 @@ const passwordError = computed(() =>
 )
 
 const fieldClass =
-  'h-11 w-full rounded-lg border border-border bg-input px-3 text-base-foreground placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:outline-none aria-invalid:border-destructive-background'
+  'h-11 w-full rounded-lg border border-border bg-input px-3 text-foreground placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-foreground focus-visible:outline-none aria-invalid:border-destructive'
 
 defineExpose({ focus: () => emailField.value?.focus() })
 
@@ -81,7 +81,7 @@ function submit(): void {
         :aria-invalid="Boolean(emailError)"
         @input="emailTouched = true"
       />
-      <small v-if="emailError" role="alert" class="text-destructive-background">
+      <small v-if="emailError" role="alert" class="text-destructive">
         {{ emailError }}
       </small>
     </div>
@@ -107,7 +107,7 @@ function submit(): void {
           :aria-label="
             revealed ? t('auth.password.hide') : t('auth.password.show')
           "
-          class="absolute right-2 flex size-8 cursor-pointer items-center justify-center rounded-md text-muted-foreground hover:text-base-foreground focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:outline-none"
+          class="absolute right-2 flex size-8 cursor-pointer items-center justify-center rounded-md text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-foreground focus-visible:outline-none"
           @click="revealed = !revealed"
         >
           <i
@@ -121,11 +121,7 @@ function submit(): void {
           />
         </button>
       </div>
-      <small
-        v-if="passwordError"
-        role="alert"
-        class="text-destructive-background"
-      >
+      <small v-if="passwordError" role="alert" class="text-destructive">
         {{ passwordError }}
       </small>
       <a
@@ -140,7 +136,7 @@ function submit(): void {
       type="submit"
       :disabled="loading"
       :aria-busy="loading || undefined"
-      class="mt-1 h-12 w-full cursor-pointer rounded-lg bg-base-foreground px-5 font-semibold text-base-background transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
+      class="mt-1 h-12 w-full cursor-pointer rounded-lg bg-foreground px-5 font-semibold text-background transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-foreground focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
     >
       {{ t('auth.signIn.submit') }}
     </button>

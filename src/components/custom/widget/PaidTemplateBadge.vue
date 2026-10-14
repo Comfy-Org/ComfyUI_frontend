@@ -28,7 +28,7 @@ const tooltipCopy = computed(() => {
         type="button"
         :aria-label="tooltipCopy.label"
         data-testid="paid-template-badge"
-        class="cursor-pointer rounded-lg border-none bg-transparent p-0 focus-visible:ring-1 focus-visible:ring-base-foreground focus-visible:outline-none"
+        class="cursor-pointer rounded-lg border-none bg-transparent p-0 focus-visible:ring-1 focus-visible:ring-foreground focus-visible:outline-none"
         @click.stop
       >
         <Tag

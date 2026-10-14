@@ -4,7 +4,7 @@
     class="flex min-h-0 flex-1 flex-col gap-6 px-6 py-4"
   >
     <label class="flex flex-col gap-2">
-      <span class="text-sm text-base-foreground">
+      <span class="text-sm text-foreground">
         {{ $t('comfyHubPublish.workflowName') }}
       </span>
       <Input
@@ -16,7 +16,7 @@
     </label>
 
     <label class="flex flex-col gap-2">
-      <span class="text-sm text-base-foreground">
+      <span class="text-sm text-foreground">
         {{ $t('comfyHubPublish.workflowDescription') }}
       </span>
       <Textarea
@@ -28,14 +28,14 @@
     </label>
 
     <label class="flex flex-col gap-2">
-      <span class="text-sm text-base-foreground">
+      <span class="text-sm text-foreground">
         {{ $t('comfyHubPublish.tagsDescription') }}
       </span>
       <TagsInput
         v-slot="{ isEmpty }"
         data-testid="publish-tags-input"
         always-editing
-        class="bg-secondary-background select-none"
+        class="bg-secondary select-none"
         :model-value="tags"
         @update:model-value="$emit('update:tags', $event as string[])"
       >
@@ -56,7 +56,7 @@
           :key="tag"
           v-auto-animate
           :value="tag"
-          class="cursor-pointer bg-secondary-background px-2 text-muted-foreground transition-colors select-none hover:bg-secondary-background-selected"
+          class="cursor-pointer bg-secondary px-2 text-muted-foreground transition-colors select-none hover:bg-secondary-background-selected"
           @click="addTag(tag)"
         >
           <TagsInputItemText />

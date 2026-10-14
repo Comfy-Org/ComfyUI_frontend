@@ -1,11 +1,11 @@
 <template>
   <div
-    class="flex w-full max-w-lg flex-col rounded-2xl border border-border-default bg-base-background"
+    class="flex w-full max-w-lg flex-col rounded-2xl border border-border bg-background"
   >
     <div
-      class="flex h-12 items-center justify-between border-b border-border-default px-4"
+      class="flex h-12 items-center justify-between border-b border-border px-4"
     >
-      <h2 class="m-0 text-sm font-normal text-base-foreground">
+      <h2 class="m-0 text-sm font-normal text-foreground">
         {{ t('auth.sso.outsideOrganization.title') }}
       </h2>
       <Button

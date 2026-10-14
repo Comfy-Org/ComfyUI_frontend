@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col gap-0.5 text-left">
-    <span class="text-sm font-medium text-base-foreground">
+    <span class="text-sm font-medium text-foreground">
       {{ step.title }}
     </span>
     <span

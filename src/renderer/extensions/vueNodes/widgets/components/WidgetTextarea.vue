@@ -41,7 +41,7 @@
       v-if="isReadOnly"
       variant="textonly"
       size="icon"
-      class="invisible absolute top-1.5 right-1.5 z-10 group-focus-within:visible group-hover:visible hover:bg-base-foreground/10"
+      class="invisible absolute top-1.5 right-1.5 z-10 group-focus-within:visible group-hover:visible hover:bg-foreground/10"
       :title="$t('g.copyToClipboard')"
       :aria-label="$t('g.copyToClipboard')"
       @click="handleCopy"

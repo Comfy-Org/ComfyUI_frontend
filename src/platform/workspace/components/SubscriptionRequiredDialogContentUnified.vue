@@ -3,7 +3,7 @@
     ref="contentRoot"
     :class="
       cn(
-        'relative flex h-full max-h-[90vh] max-w-[min(1280px,95vw)] flex-col gap-4 overflow-y-auto rounded-2xl border border-border-default bg-secondary-background p-4 pt-6 shadow-[0_25px_80px_rgba(5,6,12,0.45)]',
+        'relative flex h-full max-h-[90vh] max-w-[min(1280px,95vw)] flex-col gap-4 overflow-y-auto rounded-2xl border border-border bg-secondary p-4 pt-6 shadow-[0_25px_80px_rgba(5,6,12,0.45)]',
         (checkoutStep === 'pricing' || isEmbeddedPaymentStep) &&
           'xl:min-h-[min(740px,90vh)] xl:w-[min(1280px,95vw)]',
         // Pin the embedded step to the pricing table's exact height (min-h
@@ -13,7 +13,7 @@
         isEmbeddedPaymentStep &&
           'xl:h-[min(740px,90vh)] xl:gap-0 xl:overflow-hidden xl:rounded-2xl xl:p-0',
         (isEmbeddedSuccessStep || isEmbeddedConfirmStep) &&
-          'h-[min(740px,85vh)] overflow-hidden rounded-2xl bg-base-background xl:h-[min(740px,90vh)] xl:w-[512px]',
+          'h-[min(740px,85vh)] overflow-hidden rounded-2xl bg-background xl:h-[min(740px,90vh)] xl:w-[512px]',
         (isEmbeddedPaymentStep ||
           isEmbeddedSuccessStep ||
           isEmbeddedConfirmStep) &&
@@ -31,7 +31,7 @@
     <Button
       size="icon"
       variant="muted-textonly"
-      class="absolute top-6 right-4 shrink-0 rounded-full text-text-secondary hover:bg-white/10"
+      class="absolute top-6 right-4 shrink-0 rounded-full text-muted-foreground hover:bg-white/10"
       :aria-label="$t('g.close')"
       @click="onClose"
     >
@@ -43,7 +43,7 @@
       v-if="checkoutStep === 'pricing'"
       class="flex flex-col items-center gap-3"
     >
-      <h2 class="m-0 font-inter text-2xl font-semibold text-base-foreground">
+      <h2 class="m-0 font-inter text-2xl font-semibold text-foreground">
         {{ $t('subscription.descriptionWorkspace') }}
       </h2>
     </div>
@@ -52,7 +52,7 @@
       <h2 class="m-0 text-xl text-muted-foreground lg:text-2xl">
         {{ $t('credits.topUp.insufficientTitle') }}
       </h2>
-      <p class="m-0 mt-2 text-sm text-text-secondary">
+      <p class="m-0 mt-2 text-sm text-muted-foreground">
         {{ $t('credits.topUp.insufficientMessage') }}
       </p>
     </div>

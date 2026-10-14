@@ -17,7 +17,7 @@
         v-for="(url, index) in gridImageUrls"
         :key="index"
         size="unset"
-        class="overflow-hidden rounded-none p-0 ring-border-default hover:ring-1 focus-visible:ring-2"
+        class="overflow-hidden rounded-none p-0 ring-border hover:ring-1 focus-visible:ring-2"
         :aria-label="
           $t('g.viewImageOfTotal', {
             index: index + 1,
@@ -41,7 +41,7 @@
         </div>
         <div
           v-else
-          class="flex size-full flex-col items-center justify-center gap-1 text-base-foreground"
+          class="flex size-full flex-col items-center justify-center gap-1 text-foreground"
         >
           <i class="icon-[lucide--sun] size-6" />
           <span class="text-xs">{{ $t('hdrViewer.hdrImage') }}</span>
@@ -77,13 +77,13 @@
       <div
         v-if="imageError"
         role="alert"
-        class="flex size-full flex-1 flex-col items-center justify-around self-center py-8 text-center text-base-foreground"
+        class="flex size-full flex-1 flex-col items-center justify-around self-center py-8 text-center text-foreground"
       >
-        <i class="mb-2 icon-[lucide--image-off] size-12 text-base-foreground" />
-        <p class="text-sm text-base-foreground">
+        <i class="mb-2 icon-[lucide--image-off] size-12 text-foreground" />
+        <p class="text-sm text-foreground">
           {{ $t('g.imageFailedToLoad') }}
         </p>
-        <p class="mt-1 text-xs text-base-foreground">
+        <p class="mt-1 text-xs text-foreground">
           {{ getImageFilename(currentImageUrl) }}
         </p>
       </div>
@@ -98,13 +98,13 @@
         v-if="!imageError && isHdrPlaceholder(currentIndex)"
         type="button"
         data-testid="hdr-open-button"
-        class="absolute inset-0 flex cursor-pointer flex-col items-center justify-center gap-3 border-0 bg-transparent text-base-foreground"
+        class="absolute inset-0 flex cursor-pointer flex-col items-center justify-center gap-3 border-0 bg-transparent text-foreground"
         @click="openHdrViewer(currentImageUrl)"
       >
         <i class="icon-[lucide--sun] size-12" />
         <span class="text-sm">{{ $t('hdrViewer.hdrImage') }}</span>
         <span
-          class="rounded-md bg-base-foreground px-3 py-1.5 text-sm text-base-background"
+          class="rounded-md bg-foreground px-3 py-1.5 text-sm text-background"
         >
           {{ $t('hdrViewer.openInHdrViewer') }}
         </span>
@@ -186,7 +186,7 @@
     <!-- Image Dimensions (gallery mode only) -->
     <div
       v-if="viewMode === 'gallery' && !isHdrPlaceholder(currentIndex)"
-      class="pt-2 text-center text-xs text-base-foreground"
+      class="pt-2 text-center text-xs text-foreground"
     >
       <span
         v-if="imageError"
@@ -195,7 +195,7 @@
       >
         {{ $t('g.errorLoadingImage') }}
       </span>
-      <span v-else-if="showLoader" class="text-base-foreground">
+      <span v-else-if="showLoader" class="text-foreground">
         {{ $t('g.loading') }}...
       </span>
       <span v-else>
@@ -210,7 +210,7 @@
     >
       <!-- Back to Grid button -->
       <button
-        class="mr-1 flex cursor-pointer items-center justify-center rounded-sm border-0 bg-transparent p-0.5 text-base-foreground/50 transition-colors hover:text-base-foreground"
+        class="mr-1 flex cursor-pointer items-center justify-center rounded-sm border-0 bg-transparent p-0.5 text-foreground/50 transition-colors hover:text-foreground"
         :title="$t('g.viewGrid')"
         :aria-label="$t('g.viewGrid')"
         @click="viewMode = 'grid'"
@@ -275,7 +275,7 @@ const { hasMultipleOutputs, showOutputsExportDialog } = useNodeOutputsExport()
 const toast = useToast()
 
 const actionButtonClass =
-  'flex h-8 min-h-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-base-foreground p-2 text-base-background shadow-interface transition-colors duration-200 hover:bg-base-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:ring-offset-2'
+  'flex h-8 min-h-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-foreground p-2 text-background shadow-interface transition-colors duration-200 hover:bg-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2'
 
 type ViewMode = 'gallery' | 'grid'
 
@@ -463,8 +463,8 @@ function getNavigationDotClass(index: number) {
   return cn(
     'size-2 cursor-pointer rounded-full border-0 p-0 transition-all duration-200',
     index === currentIndex.value
-      ? 'bg-base-foreground'
-      : 'bg-base-foreground/50 hover:bg-base-foreground/80'
+      ? 'bg-foreground'
+      : 'bg-foreground/50 hover:bg-foreground/80'
   )
 }
 

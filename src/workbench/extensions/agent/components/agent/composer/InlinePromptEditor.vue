@@ -289,7 +289,7 @@ function assetReferenceView(
   if (reference?.kind !== 'asset') return { dom }
   dom.contentEditable = 'false'
   dom.className =
-    'inline-flex rounded-sm align-middle ring-offset-base-background [&.ProseMirror-selectednode]:ring-2 [&.ProseMirror-selectednode]:ring-base-foreground [&.ProseMirror-selectednode]:ring-offset-1'
+    'inline-flex rounded-sm align-middle ring-offset-background [&.ProseMirror-selectednode]:ring-2 [&.ProseMirror-selectednode]:ring-foreground [&.ProseMirror-selectednode]:ring-offset-1'
   const vnode = h(InlineAssetReference, {
     name: reference.attachment.name,
     previewUrl: reference.attachment.previewUrl,
@@ -382,7 +382,7 @@ onMounted(() => {
         ? { 'aria-activedescendant': activeDescendant }
         : {}),
       class:
-        'text-base-foreground w-full flex-1 cursor-text p-3 font-inter text-[14px]/5 font-normal wrap-anywhere whitespace-pre-wrap outline-none'
+        'text-foreground w-full flex-1 cursor-text p-3 font-inter text-[14px]/5 font-normal wrap-anywhere whitespace-pre-wrap outline-none'
     }),
     decorations(state) {
       if (state.selection.empty) {
@@ -521,7 +521,7 @@ onMounted(() => {
         if (reference?.kind !== 'skill') return { dom }
         dom.contentEditable = 'false'
         dom.className =
-          'rounded-sm [&.ProseMirror-selectednode]:ring-2 [&.ProseMirror-selectednode]:ring-base-foreground'
+          'rounded-sm [&.ProseMirror-selectednode]:ring-2 [&.ProseMirror-selectednode]:ring-foreground'
         const vnode = h(ComposerSkillReference, { skill: reference })
         vnode.appContext = appContext ?? null
         render(vnode, dom)

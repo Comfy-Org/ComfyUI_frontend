@@ -15,7 +15,7 @@
           <i class="pi pi-arrow-left text-base" />
         </CheckoutButton>
         <h2
-          class="m-0 flex-1 text-center text-xl font-semibold text-base-foreground lg:text-2xl"
+          class="m-0 flex-1 text-center text-xl font-semibold text-foreground lg:text-2xl"
         >
           {{ confirmTitle }}
         </h2>
@@ -93,7 +93,7 @@
         <p
           v-if="cancelPaymentError"
           role="alert"
-          class="m-0 text-sm text-destructive-background"
+          class="m-0 text-sm text-destructive"
         >
           {{ cancelPaymentError }}
         </p>

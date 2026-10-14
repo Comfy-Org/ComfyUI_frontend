@@ -2,7 +2,7 @@
   <Button
     variant="textonly"
     size="icon-sm"
-    class="size-8 shrink-0 text-muted-foreground hover:text-base-foreground focus-visible:ring-inset"
+    class="size-8 shrink-0 text-muted-foreground hover:text-foreground focus-visible:ring-inset"
     :aria-label="label"
     @click.stop="emit('locate')"
   >

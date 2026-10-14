@@ -51,7 +51,7 @@ if (returningFromPortal) void resumeFromPortal()
     <p v-if="loading" class="m-0 text-sm text-muted-foreground">
       {{ t('hosted.loading') }}
     </p>
-    <p v-if="failure" class="m-0 text-sm text-destructive-background">
+    <p v-if="failure" class="m-0 text-sm text-destructive">
       {{ refusal(failure) }}
     </p>
     <p
@@ -65,22 +65,22 @@ if (returningFromPortal) void resumeFromPortal()
       <li
         v-for="row in rows"
         :key="row.id"
-        class="flex items-center justify-between gap-4 rounded-xl border border-border-subtle bg-secondary-background px-4 py-3"
+        class="flex items-center justify-between gap-4 rounded-xl border border-border-subtle bg-secondary px-4 py-3"
       >
-        <span class="text-sm text-base-foreground">{{ row.label }}</span>
+        <span class="text-sm text-foreground">{{ row.label }}</span>
         <span v-if="row.isDefault" class="text-xs text-muted-foreground">
           {{ t('hosted.paymentMethods.default') }}
         </span>
       </li>
     </ul>
 
-    <p v-if="portalRefusal" class="m-0 text-sm text-destructive-background">
+    <p v-if="portalRefusal" class="m-0 text-sm text-destructive">
       {{ refusal(portalRefusal) }}
     </p>
     <button
       type="button"
       :disabled="openingPortal"
-      class="h-11 cursor-pointer self-start rounded-lg bg-base-foreground px-5 font-semibold text-base-background disabled:cursor-not-allowed disabled:opacity-40"
+      class="h-11 cursor-pointer self-start rounded-lg bg-foreground px-5 font-semibold text-background disabled:cursor-not-allowed disabled:opacity-40"
       @click="openPortal"
     >
       {{ t('hosted.paymentMethods.manage') }}

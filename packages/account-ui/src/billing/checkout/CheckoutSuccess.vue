@@ -5,7 +5,7 @@
     <div class="flex flex-col items-center gap-4 pt-8">
       <i class="pi pi-check-circle text-5xl text-success-background" />
       <h2
-        class="m-0 text-center text-xl font-semibold text-base-foreground lg:text-2xl"
+        class="m-0 text-center text-xl font-semibold text-foreground lg:text-2xl"
       >
         {{ copy.allSet }}
       </h2>
@@ -19,19 +19,17 @@
         <div
           :class="
             cn(
-              'mt-4 flex w-full flex-col gap-1 rounded-xl border border-border-default bg-base-background p-4',
-              darkSurface && 'border-none bg-secondary-background'
+              'mt-4 flex w-full flex-col gap-1 rounded-xl border border-border bg-background p-4',
+              darkSurface && 'border-none bg-secondary'
             )
           "
         >
-          <span class="text-sm text-base-foreground">{{ plan.name }}</span>
+          <span class="text-sm text-foreground">{{ plan.name }}</span>
           <div class="flex items-baseline gap-1">
-            <span
-              class="text-2xl font-semibold text-base-foreground tabular-nums"
-            >
+            <span class="text-2xl font-semibold text-foreground tabular-nums">
               ${{ displayPrice }}
             </span>
-            <span class="text-sm text-base-foreground">
+            <span class="text-sm text-foreground">
               {{ isYearly ? copy.usdPerYear : copy.usdPerMonth }}
             </span>
           </div>
@@ -47,7 +45,7 @@
           v-if="promoApplied"
           class="m-0 text-center text-sm text-muted-foreground tabular-nums"
         >
-          <span class="font-medium text-base-foreground">
+          <span class="font-medium text-foreground">
             {{ copy.promoApplied(promoApplied.code) }}
           </span>
           {{

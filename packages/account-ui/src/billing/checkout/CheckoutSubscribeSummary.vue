@@ -1,13 +1,13 @@
 <template>
   <div class="flex flex-col gap-2">
-    <span class="text-sm text-base-foreground">
+    <span class="text-sm text-foreground">
       {{ plan.name }}
     </span>
     <div class="flex items-baseline gap-2">
-      <span class="text-2xl font-semibold text-base-foreground tabular-nums">
+      <span class="text-2xl font-semibold text-foreground tabular-nums">
         ${{ displayPrice }}
       </span>
-      <span class="text-base text-base-foreground">
+      <span class="text-base text-foreground">
         {{ copy.usdPerMonth }}
       </span>
     </div>
@@ -23,12 +23,12 @@
     :class="cn('flex flex-col gap-3 pt-16 pb-8', compact && 'xl:pt-6 xl:pb-4')"
   >
     <div class="flex items-center justify-between">
-      <span class="text-base-foreground">
+      <span class="text-foreground">
         {{ refillLabel }}
       </span>
       <div class="flex items-center gap-1">
         <i class="icon-[lucide--coins] size-4 shrink-0 bg-credit" />
-        <span class="font-bold text-base-foreground tabular-nums">
+        <span class="font-bold text-foreground tabular-nums">
           {{ refillCredits }}
         </span>
       </div>
@@ -45,10 +45,10 @@
     "
   >
     <div class="flex items-center justify-between text-base">
-      <span class="text-base-foreground">
+      <span class="text-foreground">
         {{ copy.totalDueToday }}
       </span>
-      <span class="font-bold text-base-foreground tabular-nums">
+      <span class="font-bold text-foreground tabular-nums">
         {{ totalDueToday }}
       </span>
     </div>
@@ -63,7 +63,7 @@
       class="flex items-center justify-between text-muted-foreground"
     >
       <span>{{ discount.label }}</span>
-      <span class="text-base-foreground">
+      <span class="text-foreground">
         {{ discount.name
         }}<template v-if="discount.amount"> · −{{ discount.amount }}</template>
       </span>

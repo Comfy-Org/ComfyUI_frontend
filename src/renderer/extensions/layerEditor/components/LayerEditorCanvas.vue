@@ -3,7 +3,7 @@
     ref="viewportRef"
     tabindex="0"
     data-testid="layer-editor-viewport"
-    class="relative min-h-0 min-w-0 flex-1 touch-none overflow-hidden bg-base-background outline-none focus-visible:ring-1 focus-visible:ring-border-default"
+    class="relative min-h-0 min-w-0 flex-1 touch-none overflow-hidden bg-background outline-none focus-visible:ring-1 focus-visible:ring-border"
     :style="{ cursor: viewportCursor }"
     @pointerdown="session.onPointerDown"
     @pointermove="session.onPointerMove"
@@ -34,9 +34,7 @@
       class="absolute inset-0 flex items-center justify-center"
       data-testid="layer-editor-gl-unavailable"
     >
-      <span
-        class="rounded-md bg-base-background px-4 py-2 text-sm text-destructive-background"
-      >
+      <span class="rounded-md bg-background px-4 py-2 text-sm text-destructive">
         {{ t('layerEditor.webglUnavailable') }}
       </span>
     </div>

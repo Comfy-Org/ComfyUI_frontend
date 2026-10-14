@@ -3,12 +3,10 @@
     <template #leftPanel>
       <LeftSidePanel v-model="selectedNavItem" :nav-items="tempNavigation">
         <template #header-icon>
-          <i class="icon-[lucide--puzzle] text-base-foreground" />
+          <i class="icon-[lucide--puzzle] text-foreground" />
         </template>
         <template #header-title>
-          <span class="text-base text-base-foreground">{{
-            $t('g.title')
-          }}</span>
+          <span class="text-base text-foreground">{{ $t('g.title') }}</span>
         </template>
       </LeftSidePanel>
     </template>

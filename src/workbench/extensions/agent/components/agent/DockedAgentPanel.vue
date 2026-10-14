@@ -9,7 +9,7 @@
         cn(
           'docked-agent-panel pointer-events-auto shrink-0 overflow-hidden [anchor-name:--docked-agent-panel]',
           isOverlay
-            ? 'fixed inset-y-0 right-0 z-1100 max-w-full bg-base-background shadow-lg'
+            ? 'fixed inset-y-0 right-0 z-1100 max-w-full bg-background shadow-lg'
             : 'relative h-full'
         )
       "
@@ -18,7 +18,7 @@
       <div
         v-if="!isOverlay"
         data-testid="agent-panel-resize-handle"
-        class="absolute top-0 left-0 z-10 h-full w-[5px] cursor-col-resize transition-colors delay-300 duration-200 hover:bg-primary-background data-[resizing=true]:bg-primary-background"
+        class="absolute top-0 left-0 z-10 h-full w-[5px] cursor-col-resize transition-colors delay-300 duration-200 hover:bg-primary data-[resizing=true]:bg-primary"
         :data-resizing="isResizing"
         @pointerdown="onResizeStart"
         @lostpointercapture="isResizing = false"
@@ -28,7 +28,7 @@
         :class="
           cn(
             'size-full p-2',
-            hasOpaqueNeighbor && 'border-l border-border bg-base-background'
+            hasOpaqueNeighbor && 'border-l border-border bg-background'
           )
         "
       >
@@ -64,13 +64,13 @@ const AgentPanelLoadError = defineComponent({
   setup() {
     const { t } = useI18n()
     return () =>
-      h('div', { class: 'size-full bg-base-background p-3' }, [
+      h('div', { class: 'size-full bg-background p-3' }, [
         h(
           'h2',
           { id: 'agent-panel-title', class: 'sr-only' },
           t('agent.title')
         ),
-        h('p', { class: 'text-sm text-base-foreground' }, t('agent.loadFailed'))
+        h('p', { class: 'text-sm text-foreground' }, t('agent.loadFailed'))
       ])
   }
 })

@@ -21,7 +21,7 @@
               useWidgetHeight(),
               !disabled && 'hover:bg-muted',
               disabled && 'opacity-50',
-              isInvalid && 'ring-1 ring-destructive-background'
+              isInvalid && 'ring-1 ring-destructive'
             )
           "
         >
@@ -76,7 +76,7 @@
           align="start"
           :class="
             cn(
-              'z-3000 overflow-hidden rounded-lg border border-solid border-border-default bg-base-background p-0 text-base-foreground shadow-md',
+              'z-3000 overflow-hidden rounded-lg border border-solid border-border bg-background p-0 text-foreground shadow-md',
               'max-w-(--reka-combobox-content-available-width) min-w-[min(var(--reka-combobox-trigger-width),var(--reka-combobox-content-available-width))]'
             )
           "
@@ -86,7 +86,7 @@
           <div
             v-if="isFilterable"
             ref="searchInputContainerRef"
-            class="m-1 flex items-center gap-2 rounded-md border border-solid border-border-default px-2 py-1.5 transition-colors focus-within:border-primary-background"
+            class="m-1 flex items-center gap-2 rounded-md border border-solid border-border px-2 py-1.5 transition-colors focus-within:border-primary"
           >
             <i
               class="icon-[lucide--search] shrink-0 text-sm text-muted-foreground"
@@ -128,8 +128,8 @@
                 :class="
                   cn(
                     'flex h-8 w-full cursor-pointer items-center justify-between gap-3 rounded-sm p-2 outline-none select-none',
-                    'hover:bg-secondary-background data-highlighted:bg-secondary-background',
-                    'data-[state=checked]:bg-primary-background/20 data-[state=checked]:hover:bg-primary-background/20 data-[state=checked]:data-highlighted:bg-primary-background/30'
+                    'hover:bg-secondary data-highlighted:bg-secondary',
+                    'data-[state=checked]:bg-primary/20 data-[state=checked]:hover:bg-primary/20 data-[state=checked]:data-highlighted:bg-primary/30'
                   )
                 "
               >
@@ -140,7 +140,7 @@
                   class="flex shrink-0 items-center justify-center"
                 >
                   <i
-                    class="icon-[lucide--check] size-3.5 text-base-foreground"
+                    class="icon-[lucide--check] size-3.5 text-foreground"
                     aria-hidden="true"
                   />
                 </ComboboxItemIndicator>

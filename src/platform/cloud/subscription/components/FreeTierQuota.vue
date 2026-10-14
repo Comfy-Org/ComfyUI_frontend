@@ -7,7 +7,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
 
 const DOT_COLORS = [
-  'bg-destructive-background',
+  'bg-destructive',
   'bg-warning-background',
   'bg-success-background'
 ]
@@ -33,7 +33,7 @@ const label = computed(() =>
 <template>
   <div
     v-if="quotaEnabled && isFreeTier"
-    class="mt-2 w-full cursor-pointer border-t border-border-subtle bg-comfy-menu-bg px-4 pt-2 select-none"
+    class="mt-2 w-full cursor-pointer border-t border-border-subtle bg-background px-4 pt-2 select-none"
     data-testid="free-tier-quota"
     @click="showSubscriptionDialog({ reason: 'free_tier_quota' })"
   >

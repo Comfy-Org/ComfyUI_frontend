@@ -1,7 +1,7 @@
 <template>
   <div
     ref="dialogRef"
-    class="flex h-[min(80vh,750px)] w-full flex-col overflow-hidden rounded-lg border border-border bg-base-background"
+    class="flex h-[min(80vh,750px)] w-full flex-col overflow-hidden rounded-lg border border-border bg-background"
   >
     <!-- Search input row -->
     <NodeSearchInput
@@ -41,7 +41,7 @@
         id="node-search-category-sidebar"
         v-model:selected-category="sidebarCategory"
         :aria-label="isMobile ? t('g.categories') : undefined"
-        class="w-52 shrink-0 max-md:absolute max-md:inset-y-0 max-md:left-0 max-md:z-20 max-md:bg-base-background max-md:shadow-interface"
+        class="w-52 shrink-0 max-md:absolute max-md:inset-y-0 max-md:left-0 max-md:z-20 max-md:bg-background max-md:shadow-interface"
         :hide-chevrons="!anyTreeCategoryHasChildren"
         :hide-presets="rootFilter !== null"
         :node-defs="rootFilteredNodeDefs"
@@ -76,8 +76,8 @@
           :aria-selected="index === selectedIndex"
           :class="
             cn(
-              'flex h-14 cursor-pointer items-center rounded-lg px-4 outline-none focus-visible:ring-2 focus-visible:ring-primary-background',
-              index === selectedIndex && 'bg-secondary-background'
+              'flex h-14 cursor-pointer items-center rounded-lg px-4 outline-none focus-visible:ring-2 focus-visible:ring-primary',
+              index === selectedIndex && 'bg-secondary'
             )
           "
           @click="emit('addNode', node, $event)"

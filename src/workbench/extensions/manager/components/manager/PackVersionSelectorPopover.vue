@@ -59,7 +59,7 @@
             />
           </div>
           <ListboxItemIndicator as-child>
-            <i class="icon-[lucide--check] text-primary-background" />
+            <i class="icon-[lucide--check] text-primary" />
           </ListboxItemIndicator>
         </ListboxItem>
       </ListboxContent>
@@ -79,7 +79,7 @@
       </Button>
       <Button
         variant="secondary"
-        class="rounded-lg bg-secondary-background px-4 py-2.5 text-sm text-base-foreground"
+        class="rounded-lg bg-secondary px-4 py-2.5 text-sm text-foreground"
         :disabled="isInstallDisabled"
         @click="handleSubmit"
       >

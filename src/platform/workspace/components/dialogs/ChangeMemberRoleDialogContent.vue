@@ -1,12 +1,12 @@
 <template>
   <div
-    class="flex w-full max-w-90 flex-col rounded-2xl border border-border-default bg-base-background"
+    class="flex w-full max-w-90 flex-col rounded-2xl border border-border bg-background"
   >
     <!-- Header -->
     <div
-      class="flex h-12 items-center justify-between border-b border-border-default px-4"
+      class="flex h-12 items-center justify-between border-b border-border px-4"
     >
-      <h2 class="m-0 text-sm font-normal text-base-foreground">
+      <h2 class="m-0 text-sm font-normal text-foreground">
         {{
           isPromotion
             ? $t('workspacePanel.changeRoleDialog.promoteTitle', {
@@ -18,7 +18,7 @@
         }}
       </h2>
       <button
-        class="-m-1 cursor-pointer rounded-sm border-none bg-transparent p-1 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none"
+        class="-m-1 cursor-pointer rounded-sm border-none bg-transparent p-1 text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-1 focus-visible:ring-border focus-visible:outline-none"
         :aria-label="$t('g.close')"
         @click="onCancel"
       >

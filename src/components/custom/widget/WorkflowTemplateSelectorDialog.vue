@@ -8,7 +8,7 @@
   >
     <template #leftPanelHeaderTitle>
       <i class="icon-[comfy--template]" />
-      <h2 class="text-base font-semibold text-base-foreground">
+      <h2 class="text-base font-semibold text-foreground">
         {{ $t('sideToolbar.templates', 'Templates') }}
       </h2>
     </template>
@@ -43,7 +43,7 @@
         class="flex min-w-0 flex-1 items-center gap-2"
       >
         <h2
-          class="m-0 hidden shrink-0 truncate text-base font-medium text-base-foreground min-[880px]:block"
+          class="m-0 hidden shrink-0 truncate text-base font-medium text-foreground min-[880px]:block"
         >
           {{ pageTitle }}
         </h2>
@@ -141,7 +141,7 @@
           <Button
             variant="link"
             size="unset"
-            class="ml-auto text-xs font-normal text-base-foreground underline opacity-70 hover:opacity-100"
+            class="ml-auto text-xs font-normal text-foreground underline opacity-70 hover:opacity-100"
             @click="resetFilters"
           >
             {{ $t('templateWorkflows.clearAllFilters') }}
@@ -189,7 +189,7 @@
             size="compact"
             variant="ghost"
             rounded="lg"
-            class="hover:bg-base-background"
+            class="hover:bg-background"
           >
             <template #top>
               <CardTop ratio="landscape">
@@ -217,7 +217,7 @@
             variant="ghost"
             rounded="lg"
             :data-testid="`template-workflow-${template.name}`"
-            class="group/card h-full transition-colors hover:bg-secondary-background/50"
+            class="group/card h-full transition-colors hover:bg-secondary/50"
             @mouseenter="hoveredTemplate = template.name"
             @mouseleave="hoveredTemplate = null"
             @click="onLoadWorkflow(template, $event)"
@@ -326,7 +326,7 @@
                         <button
                           type="button"
                           :aria-label="tags.hidden.join(', ')"
-                          class="cursor-pointer rounded-sm border-none bg-transparent p-0 focus-visible:ring-1 focus-visible:ring-base-foreground focus-visible:outline-none"
+                          class="cursor-pointer rounded-sm border-none bg-transparent p-0 focus-visible:ring-1 focus-visible:ring-foreground focus-visible:outline-none"
                           @click.stop
                         >
                           <Tag
@@ -353,7 +353,7 @@
             size="compact"
             variant="ghost"
             rounded="lg"
-            class="hover:bg-base-background"
+            class="hover:bg-background"
           >
             <template #top>
               <CardTop ratio="square">

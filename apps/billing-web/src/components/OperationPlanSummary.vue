@@ -16,12 +16,12 @@ const { recovered } = defineProps<{
     class="flex flex-col gap-2"
     data-testid="checkout-operation-plan"
   >
-    <span v-if="recovered.label?.name" class="text-sm text-base-foreground">
+    <span v-if="recovered.label?.name" class="text-sm text-foreground">
       {{ recovered.label.name }}
     </span>
     <p
       v-if="recovered.label?.price"
-      class="m-0 flex items-baseline gap-2 text-base-foreground tabular-nums"
+      class="m-0 flex items-baseline gap-2 text-foreground tabular-nums"
     >
       <span class="text-2xl font-semibold">{{ recovered.label.price }}</span>
       <span class="text-base">{{ recovered.label.period }}</span>

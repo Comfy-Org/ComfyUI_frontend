@@ -1,20 +1,20 @@
 <template>
   <form
-    class="flex min-h-0 flex-1 flex-col overflow-hidden bg-base-background"
+    class="flex min-h-0 flex-1 flex-col overflow-hidden bg-background"
     @submit.prevent
   >
     <header
       v-if="showCloseButton"
       class="flex h-16 items-center justify-between px-6"
     >
-      <h2 class="text-base font-normal text-base-foreground">
+      <h2 class="text-base font-normal text-foreground">
         {{ $t('comfyHubProfile.createProfileTitle') }}
       </h2>
       <Button size="icon" :aria-label="$t('g.close')" @click="onClose">
         <i class="icon-[lucide--x] size-4" />
       </Button>
     </header>
-    <h2 v-else class="px-6 pt-6 text-base font-normal text-base-foreground">
+    <h2 v-else class="px-6 pt-6 text-base font-normal text-foreground">
       {{ $t('comfyHubProfile.createProfileTitle') }}
     </h2>
 
@@ -69,7 +69,7 @@
               :class="
                 cn(
                   'pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-sm',
-                  username ? 'text-base-foreground' : 'text-muted-foreground'
+                  username ? 'text-foreground' : 'text-muted-foreground'
                 )
               "
             >
@@ -88,7 +88,7 @@
           <p
             v-if="showUsernameError"
             id="profile-username-error"
-            class="text-xs text-destructive-background"
+            class="text-xs text-destructive"
           >
             {{ $t('comfyHubProfile.usernameError') }}
           </p>
@@ -105,14 +105,14 @@
             id="profile-description"
             v-model="description"
             :placeholder="$t('comfyHubProfile.descriptionPlaceholder')"
-            class="h-24 resize-none rounded-lg border-none bg-secondary-background p-4 text-sm shadow-none"
+            class="h-24 resize-none rounded-lg border-none bg-secondary p-4 text-sm shadow-none"
           />
         </div>
       </div>
     </div>
 
     <footer
-      class="flex items-center justify-end gap-4 border-t border-border-default px-6 py-4"
+      class="flex items-center justify-end gap-4 border-t border-border px-6 py-4"
     >
       <Button size="lg" @click="onClose">
         {{ $t('g.cancel') }}

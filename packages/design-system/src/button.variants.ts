@@ -2,30 +2,28 @@ import type { VariantProps } from 'cva'
 import { cva } from 'cva'
 
 export const buttonVariants = cva({
-  base: 'relative inline-flex cursor-pointer touch-manipulation appearance-none items-center justify-center gap-2 rounded-md border-none font-inter text-sm font-medium whitespace-nowrap transition-colors focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([width]):not([height])]:size-4',
+  base: 'relative inline-flex cursor-pointer touch-manipulation appearance-none items-center justify-center gap-2 rounded-md border-none font-inter text-sm font-medium whitespace-nowrap transition-colors focus-visible:ring-1 focus-visible:ring-border focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([width]):not([height])]:size-4',
   variants: {
     variant: {
       secondary:
-        'bg-secondary-background text-base-foreground hover:bg-secondary-background-hover',
-      primary:
-        'bg-primary-background text-base-foreground hover:bg-primary-background-hover',
-      inverted:
-        'bg-base-foreground text-base-background hover:bg-base-foreground/80',
+        'bg-secondary text-foreground hover:bg-secondary-background-hover',
+      primary: 'bg-primary text-foreground hover:bg-primary-background-hover',
+      inverted: 'bg-foreground text-background hover:bg-foreground/80',
       destructive:
-        'bg-destructive-background text-base-foreground hover:bg-destructive-background-hover',
+        'bg-destructive text-foreground hover:bg-destructive-background-hover',
       textonly:
-        'bg-transparent text-base-foreground hover:bg-secondary-background-hover',
+        'bg-transparent text-foreground hover:bg-secondary-background-hover',
       'muted-textonly':
         'bg-transparent text-muted-foreground hover:bg-secondary-background-hover',
       'destructive-textonly':
-        'bg-transparent text-destructive-background hover:bg-destructive-background/10',
+        'bg-transparent text-destructive hover:bg-destructive/10',
       outline:
-        'border border-solid border-border-default bg-transparent text-base-foreground hover:bg-secondary-background-hover',
-      link: 'bg-transparent text-muted-foreground hover:text-base-foreground',
+        'border border-solid border-border bg-transparent text-foreground hover:bg-secondary-background-hover',
+      link: 'bg-transparent text-muted-foreground hover:text-foreground',
       'overlay-white': 'bg-white text-gray-600 hover:bg-white/90',
-      base: 'bg-base-background text-base-foreground hover:bg-secondary-background-hover',
+      base: 'bg-background text-foreground hover:bg-secondary-background-hover',
       tertiary:
-        'bg-tertiary-background text-base-foreground hover:bg-tertiary-background-hover',
+        'bg-tertiary-background text-foreground hover:bg-tertiary-background-hover',
       subscribe:
         'border-transparent bg-credit text-charcoal-800 hover:opacity-80',
       'brand-ghost':

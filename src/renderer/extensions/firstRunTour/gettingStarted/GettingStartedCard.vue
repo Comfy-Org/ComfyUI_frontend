@@ -16,7 +16,7 @@
     :data-testid="testid"
     :aria-label="failed ? t('gettingStarted.retryTemplate', { title }) : title"
     :aria-busy="loading"
-    class="group/card relative cursor-pointer overflow-hidden rounded-2xl focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none"
+    class="group/card relative cursor-pointer overflow-hidden rounded-2xl focus-visible:ring-1 focus-visible:ring-border focus-visible:outline-none"
     @click="onSelect"
     @keydown.enter.prevent="onSelect"
     @keydown.space.prevent="onSelect"
@@ -35,30 +35,30 @@
     <div
       v-if="badgeIcon"
       aria-hidden="true"
-      class="pointer-events-none absolute top-3 right-3 flex size-7 items-center justify-center rounded-full bg-black/50 text-base-foreground backdrop-blur-sm"
+      class="pointer-events-none absolute top-3 right-3 flex size-7 items-center justify-center rounded-full bg-black/50 text-foreground backdrop-blur-sm"
     >
       <i :class="cn(badgeIcon, 'size-4')" />
     </div>
     <h3
-      class="absolute inset-x-0 bottom-0 m-0 truncate p-4 text-sm font-semibold text-base-foreground drop-shadow-md"
+      class="absolute inset-x-0 bottom-0 m-0 truncate p-4 text-sm font-semibold text-foreground drop-shadow-md"
       :title
     >
       {{ title }}
     </h3>
     <div
       v-if="loading"
-      class="absolute inset-0 flex items-center justify-center bg-base-background/70 backdrop-blur-md"
+      class="absolute inset-0 flex items-center justify-center bg-background/70 backdrop-blur-md"
     >
       <Loader size="md" />
     </div>
     <div
       v-else-if="failed"
-      class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-1 bg-base-background/80 p-4 backdrop-blur-md"
+      class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-1 bg-background/80 p-4 backdrop-blur-md"
     >
-      <span class="text-center text-xs font-medium text-base-foreground">
+      <span class="text-center text-xs font-medium text-foreground">
         {{ t('gettingStarted.templateFailed') }}
       </span>
-      <span class="text-xs font-semibold text-primary-background">
+      <span class="text-xs font-semibold text-primary">
         {{ t('gettingStarted.retry') }}
       </span>
     </div>

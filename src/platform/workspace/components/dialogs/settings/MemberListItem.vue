@@ -17,14 +17,14 @@
       />
       <div
         v-else
-        class="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary-background"
+        class="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary"
       >
         <span class="text-sm text-muted-foreground">
           {{ memberInitial }}
         </span>
       </div>
       <div class="flex min-w-0 flex-1 flex-col gap-1">
-        <span class="text-sm text-base-foreground">
+        <span class="text-sm text-foreground">
           {{ member.name }}
           <span v-if="isCurrentUser" class="text-muted-foreground">
             ({{ $t('g.you') }})
@@ -49,7 +49,7 @@
     </span>
     <div v-if="showCreditsColumn" class="text-sm tabular-nums">
       <div v-if="hasCreditLimit" class="flex flex-col gap-1">
-        <span class="text-base-foreground">{{ creditsLabel }}</span>
+        <span class="text-foreground">{{ creditsLabel }}</span>
         <div
           v-if="hasCreditUsage"
           class="h-1 overflow-hidden rounded-full bg-secondary-background-hover"

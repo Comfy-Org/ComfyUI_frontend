@@ -46,7 +46,7 @@
       <span
         v-for="chip in filterChips"
         :key="chip.key"
-        class="inline-flex items-center gap-1 rounded-md bg-secondary-background py-1 pr-1 pl-2 text-xs whitespace-nowrap"
+        class="inline-flex items-center gap-1 rounded-md bg-secondary py-1 pr-1 pl-2 text-xs whitespace-nowrap"
       >
         <span>{{ chip.label }}</span>
         <Button

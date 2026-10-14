@@ -22,7 +22,7 @@ const { t } = useI18n()
       class="flex flex-col gap-2 rounded-lg bg-tertiary-background p-4"
     >
       <p
-        class="m-0 flex items-center gap-2 text-sm/5 font-medium text-base-foreground"
+        class="m-0 flex items-center gap-2 text-sm/5 font-medium text-foreground"
       >
         <i
           class="icon-[lucide--circle-alert] size-4 shrink-0 text-warning-background"
@@ -36,7 +36,7 @@ const { t } = useI18n()
     </div>
     <button
       type="button"
-      class="h-10 w-full cursor-pointer rounded-lg bg-base-foreground px-4 text-sm font-semibold text-base-background transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-secondary-background focus-visible:outline-none"
+      class="h-10 w-full cursor-pointer rounded-lg bg-foreground px-4 text-sm font-semibold text-background transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-secondary focus-visible:outline-none"
       @click="emit('retry')"
     >
       {{ t('checkout.fullPage.railFailed.retry') }}

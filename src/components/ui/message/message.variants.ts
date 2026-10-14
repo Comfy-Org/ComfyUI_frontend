@@ -5,15 +5,13 @@ export const messageVariants = cva({
   base: 'flex w-full items-start gap-2 rounded-lg border px-3 py-2.75 text-sm',
   variants: {
     severity: {
-      error:
-        'border-destructive-background/40 bg-destructive-background/10 text-base-foreground',
+      error: 'border-destructive/40 bg-destructive/10 text-foreground',
       warning:
-        'border-warning-background/50 bg-warning-background/15 text-base-foreground',
-      info: 'border-primary-background/40 bg-primary-background/10 text-base-foreground',
+        'border-warning-background/50 bg-warning-background/15 text-foreground',
+      info: 'border-primary/40 bg-primary/10 text-foreground',
       success:
-        'border-success-background/50 bg-success-background/15 text-base-foreground',
-      secondary:
-        'border-border-subtle bg-secondary-background text-base-foreground'
+        'border-success-background/50 bg-success-background/15 text-foreground',
+      secondary: 'border-border-subtle bg-secondary text-foreground'
     }
   },
   defaultVariants: { severity: 'info' }

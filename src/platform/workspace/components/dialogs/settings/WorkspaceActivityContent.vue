@@ -2,7 +2,7 @@
   <div class="flex min-h-0 flex-1 flex-col gap-4">
     <div ref="tableContainer" class="flex min-h-0 flex-1 flex-col">
       <Table class="min-h-0 flex-1 px-4">
-        <TableHeader class="sticky top-0 z-10 bg-base-background">
+        <TableHeader class="sticky top-0 z-10 bg-background">
           <TableRow
             class="hover:bg-transparent [&>th]:h-14 [&>th]:border-b [&>th]:border-border/60"
           >
@@ -65,11 +65,11 @@
                     class="flex size-5 shrink-0 items-center justify-center rounded-full"
                     :style="{ backgroundColor: userBadgeColor(event.userName) }"
                   >
-                    <span class="text-2xs font-bold text-base-foreground">
+                    <span class="text-2xs font-bold text-foreground">
                       {{ event.userName.charAt(0).toUpperCase() }}
                     </span>
                   </span>
-                  <span class="truncate text-sm text-base-foreground">
+                  <span class="truncate text-sm text-foreground">
                     {{ event.userName }}
                   </span>
                 </HoverCardTrigger>
@@ -87,7 +87,7 @@
                         <i
                           class="icon-[lucide--coins] size-4 text-muted-foreground"
                         />
-                        <span class="text-sm text-base-foreground tabular-nums">
+                        <span class="text-sm text-foreground tabular-nums">
                           {{
                             summaryFor(
                               event.userId
@@ -102,7 +102,7 @@
                           $t('workspacePanel.activity.hoverCard.lastActivity')
                         }}
                       </span>
-                      <span class="text-sm text-base-foreground">
+                      <span class="text-sm text-foreground">
                         {{ lastActivityLabel(event.userId) }}
                       </span>
                     </div>
@@ -129,7 +129,7 @@
                         $t('workspacePanel.activity.hoverCard.partnerNodeUsed')
                       }}
                     </span>
-                    <span class="truncate text-sm text-base-foreground">
+                    <span class="truncate text-sm text-foreground">
                       {{ event.partnerNode }}
                     </span>
                   </div>
@@ -170,7 +170,7 @@
           :href="fullActivityUrl"
           target="_blank"
           rel="noopener noreferrer"
-          class="flex cursor-pointer items-center gap-1 text-sm text-muted-foreground no-underline transition-colors hover:text-base-foreground"
+          class="flex cursor-pointer items-center gap-1 text-sm text-muted-foreground no-underline transition-colors hover:text-foreground"
         >
           <i class="icon-[lucide--external-link] size-4" />
           {{ $t('workspacePanel.activity.fullActivity') }}

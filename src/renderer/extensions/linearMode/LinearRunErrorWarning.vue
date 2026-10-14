@@ -18,10 +18,8 @@ const { hasError, overlayMessage, overlayTitle } = useErrorOverlayState()
     data-testid="linear-validation-warning"
     :class="
       cn(
-        'mb-3 flex w-full flex-col gap-2 overflow-hidden rounded-lg border border-l-4 border-border-default bg-base-background p-3 shadow-interface transition-colors duration-200 ease-in-out',
-        hasError
-          ? 'border-l-destructive-background'
-          : 'border-l-warning-foreground'
+        'mb-3 flex w-full flex-col gap-2 overflow-hidden rounded-lg border border-l-4 border-border bg-background p-3 shadow-interface transition-colors duration-200 ease-in-out',
+        hasError ? 'border-l-destructive' : 'border-l-warning-foreground'
       )
     "
   >
@@ -37,14 +35,14 @@ const { hasError, overlayMessage, overlayTitle } = useErrorOverlayState()
             cn(
               'mt-0.5 size-4 shrink-0',
               hasError
-                ? 'icon-[lucide--circle-x] text-destructive-background'
+                ? 'icon-[lucide--circle-x] text-destructive'
                 : 'icon-[lucide--triangle-alert] text-warning-foreground'
             )
           "
         />
         <span class="sr-only">{{ t(hasError ? 'g.error' : 'g.warning') }}</span>
         <span
-          class="min-w-0 flex-1 truncate text-sm text-base-foreground"
+          class="min-w-0 flex-1 truncate text-sm text-foreground"
           :title="overlayTitle"
         >
           {{ overlayTitle }}

@@ -15,14 +15,14 @@
         />
       </div>
       <div class="flex items-start justify-end gap-4 text-[12px] leading-none">
-        <div class="flex items-center gap-1 text-text-primary opacity-90">
+        <div class="flex items-center gap-1 text-foreground opacity-90">
           <i18n-t keypath="sideToolbar.queueProgressOverlay.total">
             <template #percent>
               <span class="font-bold">{{ totalPercentFormatted }}</span>
             </template>
           </i18n-t>
         </div>
-        <div class="flex items-center gap-1 text-text-secondary">
+        <div class="flex items-center gap-1 text-muted-foreground">
           <span>{{ t('sideToolbar.queueProgressOverlay.currentNode') }}</span>
           <span class="inline-block max-w-40 truncate">{{
             currentNodeName
@@ -35,7 +35,7 @@
     </div>
 
     <div :class="bottomRowClass">
-      <div class="flex items-center gap-4 text-[12px] text-text-primary">
+      <div class="flex items-center gap-4 text-[12px] text-foreground">
         <div class="flex items-center gap-2">
           <span class="opacity-90">
             <span class="font-bold">{{ runningCount }}</span>
@@ -52,7 +52,7 @@
             @click="$emit('interruptAll')"
           >
             <i
-              class="icon-[lucide--x] block size-4 leading-none text-text-primary"
+              class="icon-[lucide--x] block size-4 leading-none text-foreground"
             />
           </Button>
         </div>
@@ -73,7 +73,7 @@
             @click="$emit('clearQueued')"
           >
             <i
-              class="icon-[lucide--list-x] block size-4 leading-none text-text-primary"
+              class="icon-[lucide--list-x] block size-4 leading-none text-foreground"
             />
           </Button>
         </div>

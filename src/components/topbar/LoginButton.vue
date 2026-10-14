@@ -4,14 +4,14 @@
     data-testid="login-button"
     variant="textonly"
     size="icon"
-    :class="cn('group rounded-full p-0 text-base-foreground', className)"
+    :class="cn('group rounded-full p-0 text-foreground', className)"
     :aria-label="t('g.login')"
     @click="handleSignIn()"
     @mouseenter="showPopover"
     @mouseleave="hidePopover"
   >
     <span
-      class="flex size-full items-center justify-center rounded-full bg-secondary-background transition-colors group-hover:bg-transparent"
+      class="flex size-full items-center justify-center rounded-full bg-secondary transition-colors group-hover:bg-transparent"
     >
       <i class="icon-[lucide--user] size-4" />
     </span>
@@ -28,7 +28,7 @@
         data-testid="login-button-popover-learn-more"
         :href="apiNodesOverviewUrl"
         target="_blank"
-        class="text-neutral-500 hover:text-primary-background"
+        class="text-neutral-500 hover:text-primary"
         >{{ t('auth.loginButton.tooltipLearnMore') }}</a
       >
     </div>

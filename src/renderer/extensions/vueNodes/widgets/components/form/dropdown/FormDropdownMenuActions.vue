@@ -44,7 +44,7 @@ const actionButtonStyle = cn(
 )
 
 const layoutSwitchItemStyle =
-  'size-6 flex justify-center items-center rounded-sm cursor-pointer transition-all duration-150 hover:scale-108 hover:text-base-foreground active:scale-95'
+  'size-6 flex justify-center items-center rounded-sm cursor-pointer transition-all duration-150 hover:scale-108 hover:text-foreground active:scale-95'
 
 const sortPopoverRef = useTemplateRef('sortPopoverRef')
 const sortTriggerRef = useTemplateRef('sortTriggerRef')
@@ -286,7 +286,7 @@ function handleSearchEnter(event: KeyboardEvent) {
             class="icon-[lucide--check] size-4"
           />
         </Button>
-        <span class="h-0 w-full border-b border-border-default" />
+        <span class="h-0 w-full border-b border-border" />
         <Button
           variant="textonly"
           size="unset"
@@ -314,7 +314,7 @@ function handleSearchEnter(event: KeyboardEvent) {
         :class="
           cn(
             layoutSwitchItemStyle,
-            layoutMode === 'list' && 'bg-neutral-500/50 text-base-foreground'
+            layoutMode === 'list' && 'bg-neutral-500/50 text-foreground'
           )
         "
         @click="layoutMode = 'list'"
@@ -329,7 +329,7 @@ function handleSearchEnter(event: KeyboardEvent) {
         :class="
           cn(
             layoutSwitchItemStyle,
-            layoutMode === 'grid' && 'bg-neutral-500/50 text-base-foreground'
+            layoutMode === 'grid' && 'bg-neutral-500/50 text-foreground'
           )
         "
         @click="layoutMode = 'grid'"

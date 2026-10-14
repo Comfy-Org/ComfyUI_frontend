@@ -36,14 +36,14 @@
               cn(
                 'size-5 shrink-0 border bg-transparent font-inter text-xs font-bold',
                 isCurrentStep(step.name)
-                  ? 'border-base-foreground bg-base-foreground text-base-background'
+                  ? 'border-foreground bg-foreground text-background'
                   : isCompletedStep(step.name)
-                    ? 'border-base-foreground text-base-foreground'
+                    ? 'border-foreground text-foreground'
                     : 'border-muted-foreground text-muted-foreground'
               )
             "
           />
-          <span class="truncate text-sm text-base-foreground">
+          <span class="truncate text-sm text-foreground">
             {{ step.label }}
           </span>
         </Button>
@@ -53,7 +53,7 @@
           v-auto-animate
           class="flex h-10 w-full items-center rounded-lg bg-secondary-background-selected pl-11 select-none"
         >
-          <span class="truncate text-sm text-base-foreground">
+          <span class="truncate text-sm text-foreground">
             {{ $t('comfyHubProfile.profileCreationNav') }}
           </span>
         </div>

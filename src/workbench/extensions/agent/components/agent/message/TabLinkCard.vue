@@ -93,7 +93,7 @@ async function open(): Promise<void> {
     <span
       aria-hidden="true"
       data-testid="workflow-link-media"
-      class="flex size-8 shrink-0 items-center justify-center rounded-md border border-border bg-secondary-background text-muted-foreground"
+      class="flex size-8 shrink-0 items-center justify-center rounded-md border border-border bg-secondary text-muted-foreground"
     >
       <span class="icon-[comfy--workflow] size-4" />
     </span>
@@ -101,7 +101,7 @@ async function open(): Promise<void> {
       data-testid="workflow-link-content"
       class="flex min-w-0 flex-1 flex-col gap-0.5"
     >
-      <span class="truncate text-sm/4 text-base-foreground">{{ label }}</span>
+      <span class="truncate text-sm/4 text-foreground">{{ label }}</span>
       <span
         v-if="nodeCount !== undefined"
         :id="nodeCountId"

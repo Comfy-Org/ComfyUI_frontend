@@ -74,7 +74,7 @@
           shapeClass,
           hasAnyError && 'ring-4',
           errorSeverity === 'missing' && 'ring-warning-background',
-          errorSeverity === 'error' && 'ring-destructive-background',
+          errorSeverity === 'error' && 'ring-destructive',
           bypassed && bypassOverlayClass,
           muted && mutedOverlayClass,
           isDraggingOver && 'bg-primary/10 ring-4 ring-primary'

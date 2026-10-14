@@ -138,7 +138,7 @@ function copy(obj: unknown) {
                 <div
                   v-for="error in allErrors"
                   :key="error"
-                  class="w-full rounded-lg bg-secondary-background p-2 text-muted-foreground"
+                  class="w-full rounded-lg bg-secondary p-2 text-muted-foreground"
                   v-text="error"
                 />
               </section>
@@ -158,7 +158,7 @@ function copy(obj: unknown) {
     </div>
     <div
       v-if="accessibleErrors.length"
-      class="my-8 w-full rounded-lg bg-secondary-background text-muted-foreground"
+      class="my-8 w-full rounded-lg bg-secondary text-muted-foreground"
     >
       <ul>
         <li

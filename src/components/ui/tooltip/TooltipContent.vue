@@ -64,7 +64,7 @@ const forwarded = useForwardPropsEmits(
         :style="contentStyle"
         :class="
           cn(
-            'z-1700 max-w-96 rounded-md border border-border-default bg-base-background px-3 py-2 text-xs/tight whitespace-pre-line text-base-foreground shadow-interface',
+            'z-1700 max-w-96 rounded-md border border-border bg-background px-3 py-2 text-xs/tight whitespace-pre-line text-foreground shadow-interface',
             className
           )
         "
@@ -74,7 +74,7 @@ const forwarded = useForwardPropsEmits(
         <TooltipArrow
           :width="10"
           :height="5"
-          class="-mt-px fill-base-background stroke-border-default"
+          class="-mt-px fill-background stroke-border"
         />
       </TooltipContent>
     </div>

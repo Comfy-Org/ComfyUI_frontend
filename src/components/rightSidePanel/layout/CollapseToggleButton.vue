@@ -14,7 +14,7 @@
         :aria-label="isAllCollapsed ? t('g.expandAll') : t('g.collapseAll')"
         variant="textonly"
         size="icon-sm"
-        class="size-8 shrink-0 text-muted-foreground hover:text-base-foreground"
+        class="size-8 shrink-0 text-muted-foreground hover:text-foreground"
         @click="toggle"
       >
         <i

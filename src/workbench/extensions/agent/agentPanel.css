@@ -46,7 +46,7 @@
   background: linear-gradient(
     90deg,
     var(--color-muted-foreground) 35%,
-    var(--color-base-foreground) 50%,
+    var(--color-foreground) 50%,
     var(--color-muted-foreground) 65%
   );
   background-size: 200% auto;
@@ -96,7 +96,7 @@
   :where(#agent-panel-root, .agent-scope),
   :where(#agent-panel-root, .agent-scope) :where(*) {
     scrollbar-width: thin;
-    scrollbar-color: var(--color-border-default) transparent;
+    scrollbar-color: var(--color-border) transparent;
   }
 
   :where(#agent-panel-root, .agent-scope)

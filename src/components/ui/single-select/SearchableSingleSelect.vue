@@ -61,7 +61,7 @@
         >
           <div class="px-2 pt-2">
             <div
-              class="flex items-center gap-2 rounded-lg border border-solid border-border-default px-3 py-1.5"
+              class="flex items-center gap-2 rounded-lg border border-solid border-border px-3 py-1.5"
             >
               <i class="icon-[lucide--search] text-muted-foreground" />
               <ComboboxInput
@@ -87,7 +87,7 @@
                 class="flex shrink-0 items-center justify-center"
               >
                 <i
-                  class="icon-[lucide--check] text-base-foreground"
+                  class="icon-[lucide--check] text-foreground"
                   aria-hidden="true"
                 />
               </ComboboxItemIndicator>

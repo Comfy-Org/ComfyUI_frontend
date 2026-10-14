@@ -17,8 +17,8 @@
           :value="option"
           :class="
             cn(
-              'flex w-full cursor-pointer items-center gap-2 rounded-[10px] border border-border-subtle bg-transparent p-2.5 text-left text-sm text-base-foreground transition-colors hover:bg-secondary-background-hover focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none',
-              reason === option && 'border-transparent bg-secondary-background'
+              'flex w-full cursor-pointer items-center gap-2 rounded-[10px] border border-border-subtle bg-transparent p-2.5 text-left text-sm text-foreground transition-colors hover:bg-secondary-background-hover focus-visible:ring-1 focus-visible:ring-border focus-visible:outline-none',
+              reason === option && 'border-transparent bg-secondary'
             )
           "
         >
@@ -26,14 +26,14 @@
             :class="
               cn(
                 'flex size-4 shrink-0 items-center justify-center rounded-full border border-border-subtle',
-                reason === option && 'border-base-foreground bg-base-foreground'
+                reason === option && 'border-foreground bg-foreground'
               )
             "
             aria-hidden="true"
           >
             <span
               v-if="reason === option"
-              class="size-2 rounded-full bg-base-background"
+              class="size-2 rounded-full bg-background"
             />
           </span>
           {{ $t(`subscription.cancelFlow.survey.reasons.${option}`) }}
@@ -41,7 +41,7 @@
       </RadioGroupRoot>
 
       <div class="flex flex-col gap-3">
-        <label :for="commentId" class="text-sm text-base-foreground">
+        <label :for="commentId" class="text-sm text-foreground">
           {{ $t('subscription.cancelFlow.survey.commentLabel') }}
         </label>
         <Textarea

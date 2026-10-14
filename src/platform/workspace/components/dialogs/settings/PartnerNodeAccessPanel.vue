@@ -24,14 +24,12 @@
       </span>
       <div class="min-w-0 flex-1">
         <div class="flex h-6 items-center gap-2">
-          <p
-            class="m-0 text-sm leading-[normal] font-normal text-base-foreground"
-          >
+          <p class="m-0 text-sm leading-[normal] font-normal text-foreground">
             {{ $t('workspacePanel.partnerNodes.allowAll') }}
           </p>
           <span
             v-if="isGated"
-            class="rounded-full bg-secondary-background px-2 py-0.5 text-xs text-base-foreground"
+            class="rounded-full bg-secondary px-2 py-0.5 text-xs text-foreground"
           >
             {{ $t('workspacePanel.partnerNodes.enterpriseBadge') }}
           </span>
@@ -139,7 +137,7 @@
       <p
         v-if="saveError"
         role="alert"
-        class="rounded-lg bg-destructive-background/10 px-4 py-3 text-sm text-destructive-background"
+        class="rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive"
       >
         {{ $t('workspacePanel.partnerNodes.saveError') }}
       </p>
@@ -154,7 +152,7 @@
             role="row"
             :class="
               cn(
-                'sticky -top-px z-10 grid h-10 items-center gap-2 border-b border-border-default bg-base-background px-2 text-sm text-muted-foreground',
+                'sticky -top-px z-10 grid h-10 items-center gap-2 border-b border-border bg-background px-2 text-sm text-muted-foreground',
                 rowGridClass
               )
             "
@@ -222,7 +220,7 @@
               role="row"
               :class="
                 cn(
-                  'grid h-10 items-center gap-2 border-b border-secondary-background px-2 last:border-b-0 hover:bg-secondary-background/40',
+                  'grid h-10 items-center gap-2 border-b border-secondary px-2 last:border-b-0 hover:bg-secondary/40',
                   rowGridClass
                 )
               "
@@ -309,7 +307,7 @@
               role="row"
               :class="
                 cn(
-                  'grid h-10 items-center gap-2 border-b border-secondary-background px-2 text-sm last:border-b-0',
+                  'grid h-10 items-center gap-2 border-b border-secondary px-2 text-sm last:border-b-0',
                   rowGridClass
                 )
               "
@@ -332,7 +330,7 @@
 
         <div
           v-if="sortedProviders.length > 0"
-          class="mt-2 flex shrink-0 justify-end border-t border-border-default px-2 pt-3 text-sm text-base-foreground"
+          class="mt-2 flex shrink-0 justify-end border-t border-border px-2 pt-3 text-sm text-foreground"
         >
           <i18n-t
             keypath="workspacePanel.partnerNodes.allowedSummary"

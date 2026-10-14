@@ -38,7 +38,7 @@ const emit = defineEmits<{ 'download-model': [rowId: string] }>()
         "
       >
         <span
-          class="col-start-1 row-start-1 flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-secondary-background text-muted-foreground"
+          class="col-start-1 row-start-1 flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-secondary text-muted-foreground"
         >
           <img
             v-if="row.kind === 'input' && row.preview?.mediaType === 'image'"

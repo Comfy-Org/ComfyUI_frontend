@@ -194,8 +194,8 @@ onMounted(async () => {
                 cn(
                   'relative flex h-8 items-center gap-0 rounded-lg font-normal transition-[background-color,color,transform] duration-200',
                   seg.displayActive
-                    ? 'bg-secondary-background pr-2 pl-2.5 text-base-foreground group-data-[state=open]:bg-secondary-background-hover group-data-[state=open]:shadow-interface hover:bg-secondary-background'
-                    : 'w-8 justify-center bg-transparent text-muted-foreground hover:bg-secondary-background hover:text-base-foreground'
+                    ? 'bg-secondary pr-2 pl-2.5 text-foreground group-data-[state=open]:bg-secondary-background-hover group-data-[state=open]:shadow-interface hover:bg-secondary'
+                    : 'w-8 justify-center bg-transparent text-muted-foreground hover:bg-secondary hover:text-foreground'
                 )
               "
               @click="onSegmentClick(seg, $event)"
@@ -225,7 +225,7 @@ onMounted(async () => {
               <span
                 v-if="seg.active && hasUnseenItems"
                 aria-hidden="true"
-                class="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-primary-background"
+                class="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-primary"
               />
             </Button>
           </div>

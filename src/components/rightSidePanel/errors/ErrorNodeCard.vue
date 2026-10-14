@@ -5,14 +5,14 @@
         <button
           v-if="hasRuntimeError && (card.nodeTitle || card.title)"
           type="button"
-          class="m-0 max-w-full min-w-0 cursor-pointer appearance-none truncate rounded-sm border-0 bg-transparent p-0 text-left text-xs font-normal text-base-foreground outline-none focus:outline-none focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none focus-visible:ring-inset"
+          class="m-0 max-w-full min-w-0 cursor-pointer appearance-none truncate rounded-sm border-0 bg-transparent p-0 text-left text-xs font-normal text-foreground outline-none focus:outline-none focus-visible:ring-1 focus-visible:ring-border focus-visible:outline-none focus-visible:ring-inset"
           @click="handleLocateNode"
         >
           {{ card.nodeTitle || card.title }}
         </button>
         <span
           v-else-if="card.nodeTitle || card.title"
-          class="max-w-full min-w-0 truncate text-xs font-normal text-base-foreground"
+          class="max-w-full min-w-0 truncate text-xs font-normal text-foreground"
         >
           {{ card.nodeTitle || card.title }}
         </span>
@@ -24,9 +24,9 @@
           size="icon-sm"
           :class="
             cn(
-              'size-8 shrink-0 text-muted-foreground hover:text-base-foreground focus-visible:ring-inset',
+              'size-8 shrink-0 text-muted-foreground hover:text-foreground focus-visible:ring-inset',
               runtimeDetailsExpanded &&
-                'bg-secondary-background-selected text-base-foreground hover:bg-secondary-background-selected'
+                'bg-secondary-background-selected text-foreground hover:bg-secondary-background-selected'
             )
           "
           :aria-label="t('g.details')"
@@ -63,7 +63,7 @@
             <button
               v-if="card.nodeId"
               type="button"
-              class="m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left text-sm/relaxed font-normal wrap-break-word text-muted-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none focus-visible:ring-inset"
+              class="m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left text-sm/relaxed font-normal wrap-break-word text-muted-foreground outline-none hover:text-foreground focus:outline-none focus-visible:ring-1 focus-visible:ring-border focus-visible:outline-none focus-visible:ring-inset"
               @click="handleLocateNode"
             >
               {{ getInlineItemLabel(error) }}
@@ -77,14 +77,11 @@
         <div
           v-if="!error.isRuntimeError && getInlineDetails(error, idx)"
           :class="
-            cn(
-              'overflow-y-auto rounded-lg bg-base-foreground/5 p-3',
-              'max-h-[6lh]'
-            )
+            cn('overflow-y-auto rounded-lg bg-foreground/5 p-3', 'max-h-[6lh]')
           "
         >
           <p
-            class="m-0 text-xs/normal wrap-break-word whitespace-pre-wrap text-base-foreground/50"
+            class="m-0 text-xs/normal wrap-break-word whitespace-pre-wrap text-foreground/50"
           >
             {{ getInlineDetails(error, idx) }}
           </p>
@@ -101,19 +98,17 @@
           >
             <div
               v-if="getInlineDetails(error, idx)"
-              class="flex flex-col gap-3 rounded-lg bg-base-foreground/5 p-3"
+              class="flex flex-col gap-3 rounded-lg bg-foreground/5 p-3"
             >
               <div class="flex flex-col gap-2">
                 <div class="flex items-center justify-between gap-1 py-1">
-                  <span
-                    class="text-xs font-semibold text-base-foreground uppercase"
-                  >
+                  <span class="text-xs font-semibold text-foreground uppercase">
                     {{ t('rightSidePanel.errorLog') }}
                   </span>
                   <Button
                     variant="textonly"
                     size="icon-sm"
-                    class="size-7 shrink-0 text-muted-foreground hover:text-base-foreground focus-visible:ring-inset"
+                    class="size-7 shrink-0 text-muted-foreground hover:text-foreground focus-visible:ring-inset"
                     :aria-label="t('g.copy')"
                     data-testid="error-card-copy"
                     @click="handleCopyError(idx)"
@@ -123,7 +118,7 @@
                 </div>
                 <div class="max-h-[15lh] overflow-y-auto">
                   <p
-                    class="m-0 text-xs/normal wrap-break-word whitespace-pre-wrap text-base-foreground/50"
+                    class="m-0 text-xs/normal wrap-break-word whitespace-pre-wrap text-foreground/50"
                   >
                     {{ getInlineDetails(error, idx) }}
                   </p>
@@ -137,7 +132,7 @@
                   :tooltip="t('rightSidePanel.getHelpTooltip')"
                   variant="textonly"
                   size="sm"
-                  class="justify-start gap-1 px-0 text-xs hover:bg-transparent hover:text-base-foreground focus-visible:ring-inset"
+                  class="justify-start gap-1 px-0 text-xs hover:bg-transparent hover:text-foreground focus-visible:ring-inset"
                   @click="handleGetHelp"
                 >
                   <i class="icon-[lucide--external-link] size-4" />
@@ -147,7 +142,7 @@
                   :tooltip="t('rightSidePanel.findOnGithubTooltip')"
                   variant="textonly"
                   size="sm"
-                  class="justify-end gap-1 px-0 text-xs hover:bg-transparent hover:text-base-foreground focus-visible:ring-inset"
+                  class="justify-end gap-1 px-0 text-xs hover:bg-transparent hover:text-foreground focus-visible:ring-inset"
                   data-testid="error-card-find-on-github"
                   @click="handleCheckGithub(error)"
                 >

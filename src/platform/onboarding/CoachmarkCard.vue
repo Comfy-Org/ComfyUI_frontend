@@ -1,10 +1,10 @@
 <template>
   <div
-    class="flex w-full flex-col items-start justify-center gap-3 rounded-2xl bg-secondary-background p-4 drop-shadow-[1px_1px_8px_rgba(0,0,0,0.4)]"
+    class="flex w-full flex-col items-start justify-center gap-3 rounded-2xl bg-secondary p-4 drop-shadow-[1px_1px_8px_rgba(0,0,0,0.4)]"
   >
     <div
       v-if="image || $slots.image"
-      class="flex h-[146px] flex-col items-start justify-center gap-4 self-stretch overflow-hidden rounded-xl bg-base-background"
+      class="flex h-[146px] flex-col items-start justify-center gap-4 self-stretch overflow-hidden rounded-xl bg-background"
     >
       <slot name="image">
         <img v-if="image" :src="image" alt="" class="size-full object-cover" />
@@ -15,13 +15,13 @@
         <p
           v-if="subtitle"
           :id="subtitleId"
-          class="m-0 text-xs/normal text-base-foreground"
+          class="m-0 text-xs/normal text-foreground"
         >
           {{ subtitle }}
         </p>
         <h3
           :id="titleId"
-          class="m-0 text-base/normal font-semibold text-base-foreground"
+          class="m-0 text-base/normal font-semibold text-foreground"
         >
           {{ title }}
         </h3>

@@ -14,7 +14,7 @@ export const inlineReferenceRemoveAnchorClass =
 export const inlineReferenceRemoveButtonClass = cn(
   buttonVariants({ variant: 'textonly', size: 'icon-sm' }),
   tagRemoveButtonVariants(),
-  'pointer-events-none absolute -top-2 -right-2 z-10 flex size-5 cursor-pointer items-center justify-center rounded-full p-0 text-base-foreground opacity-0 transition-opacity group-focus-within/inline-reference:pointer-events-auto group-focus-within/inline-reference:opacity-100 group-hover/inline-reference:pointer-events-auto group-hover/inline-reference:opacity-100 touch:pointer-events-auto touch:opacity-100'
+  'pointer-events-none absolute -top-2 -right-2 z-10 flex size-5 cursor-pointer items-center justify-center rounded-full p-0 text-foreground opacity-0 transition-opacity group-focus-within/inline-reference:pointer-events-auto group-focus-within/inline-reference:opacity-100 group-hover/inline-reference:pointer-events-auto group-hover/inline-reference:opacity-100 touch:pointer-events-auto touch:opacity-100'
 )
 export const inlineReferenceRemoveBadgeClass =
-  'flex size-3 items-center justify-center rounded-full bg-base-background ring-1 ring-border-default hover:bg-secondary-background-hover'
+  'flex size-3 items-center justify-center rounded-full bg-background ring-1 ring-border hover:bg-secondary-background-hover'

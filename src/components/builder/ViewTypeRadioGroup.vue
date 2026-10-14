@@ -7,9 +7,9 @@
       :aria-checked="modelValue === option.value"
       :class="
         cn(
-          'flex cursor-pointer items-center gap-2 self-stretch rounded-lg border-none bg-transparent py-2 pr-4 pl-2 text-base-foreground transition-colors hover:bg-secondary-background',
+          'flex cursor-pointer items-center gap-2 self-stretch rounded-lg border-none bg-transparent py-2 pr-4 pl-2 text-foreground transition-colors hover:bg-secondary',
           heightClass,
-          modelValue === option.value && 'bg-secondary-background'
+          modelValue === option.value && 'bg-secondary'
         )
       "
       variant="textonly"
@@ -23,7 +23,7 @@
         <i :class="cn(option.icon, 'size-4')" aria-hidden="true" />
       </div>
       <div class="mx-2 flex flex-1 flex-col items-start">
-        <span class="text-sm font-medium text-base-foreground">
+        <span class="text-sm font-medium text-foreground">
           {{ option.title }}
         </span>
         <span class="text-xs text-muted-foreground">
@@ -32,7 +32,7 @@
       </div>
       <i
         v-if="modelValue === option.value"
-        class="icon-[lucide--check] size-4 text-base-foreground"
+        class="icon-[lucide--check] size-4 text-foreground"
         aria-hidden="true"
       />
     </Button>

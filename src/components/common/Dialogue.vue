@@ -27,7 +27,7 @@ const { t } = useI18n()
       />
       <DialogContent
         v-bind="$attrs"
-        class="fixed top-[50%] left-[50%] z-1700 max-h-[85vh] w-[90vw] max-w-[450px] -translate-1/2 rounded-2xl border border-border-subtle bg-base-background p-2 shadow-sm data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
+        class="fixed top-[50%] left-[50%] z-1700 max-h-[85vh] w-[90vw] max-w-[450px] -translate-1/2 rounded-2xl border border-border-subtle bg-background p-2 shadow-sm data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
       >
         <div
           v-if="title"

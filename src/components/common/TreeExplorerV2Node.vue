@@ -35,7 +35,7 @@
           :aria-label="$t('g.delete')"
           @click.stop="deleteBlueprint"
         >
-          <i class="icon-[lucide--trash-2] bg-destructive-background" />
+          <i class="icon-[lucide--trash-2] bg-destructive" />
         </Button>
         <Button
           v-if="isUserBlueprint"

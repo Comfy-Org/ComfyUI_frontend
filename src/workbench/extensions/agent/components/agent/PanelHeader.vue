@@ -35,7 +35,7 @@ const sizeToggleLabel = computed(() =>
       <h1
         id="agent-panel-title"
         data-testid="agent-panel-title"
-        class="my-0 text-sm font-normal whitespace-nowrap text-base-foreground"
+        class="my-0 text-sm font-normal whitespace-nowrap text-foreground"
       >
         {{ t('agent.title') }}
       </h1>
@@ -52,7 +52,7 @@ const sizeToggleLabel = computed(() =>
       </Button>
     </div>
     <span
-      class="shrink-0 rounded-full border border-border-default px-2 py-0.5 text-xs text-muted-foreground"
+      class="shrink-0 rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground"
     >
       {{ t('agent.beta') }}
     </span>

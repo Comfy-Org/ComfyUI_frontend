@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex w-[211px] flex-col gap-2 rounded-lg border border-border-subtle bg-base-background p-2 shadow-md"
+    class="flex w-[211px] flex-col gap-2 rounded-lg border border-border-subtle bg-background p-2 shadow-md"
   >
     <ColorPickerSaturationValue
       v-model:saturation="hsva.s"
@@ -33,7 +33,7 @@
         </SelectContent>
       </Select>
       <div
-        class="flex h-6 min-w-0 flex-1 items-center gap-1 rounded-sm bg-secondary-background px-1 text-xs text-muted-foreground"
+        class="flex h-6 min-w-0 flex-1 items-center gap-1 rounded-sm bg-secondary px-1 text-xs text-muted-foreground"
       >
         <template v-if="displayMode === 'hex'">
           <input

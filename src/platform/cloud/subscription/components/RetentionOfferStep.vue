@@ -17,24 +17,21 @@
       class="flex flex-col gap-3"
     >
       <div
-        class="flex flex-col gap-3 rounded-[14px] border border-border-subtle bg-secondary-background/50 px-4 py-5 shadow-xs"
+        class="flex flex-col gap-3 rounded-[14px] border border-border-subtle bg-secondary/50 px-4 py-5 shadow-xs"
       >
         <div class="flex items-center justify-between gap-2">
-          <p class="m-0 text-sm font-medium text-base-foreground">
+          <p class="m-0 text-sm font-medium text-foreground">
             {{
               $t('subscription.retentionOffer.stayOnPlan', { plan: planName })
             }}
           </p>
-          <Badge
-            variant="compact"
-            class="bg-base-foreground text-base-background"
-          >
+          <Badge variant="compact" class="bg-foreground text-background">
             {{ $t('subscription.retentionOffer.percentOff', { percent }) }}
           </Badge>
         </div>
         <p class="m-0 flex flex-wrap items-baseline gap-1.5">
           <span
-            class="text-[32px] leading-[1.15] font-semibold text-base-foreground"
+            class="text-[32px] leading-[1.15] font-semibold text-foreground"
           >
             {{ discountedPrice }}
           </span>
@@ -70,17 +67,14 @@
 
     <div v-else-if="phase === 'applied'" class="flex flex-col gap-5">
       <div
-        class="flex flex-col gap-3 rounded-[14px] border border-border-subtle bg-secondary-background/50 p-4 shadow-xs"
+        class="flex flex-col gap-3 rounded-[14px] border border-border-subtle bg-secondary/50 p-4 shadow-xs"
       >
         <div class="flex flex-wrap items-center justify-between gap-2 text-sm">
-          <span class="flex items-center gap-2 text-base-foreground">
+          <span class="flex items-center gap-2 text-foreground">
             {{
               $t('subscription.retentionOffer.nextPayments', { months }, months)
             }}
-            <Badge
-              variant="compact"
-              class="bg-base-foreground text-base-background"
-            >
+            <Badge variant="compact" class="bg-foreground text-background">
               {{ $t('subscription.retentionOffer.appliedBadge') }}
             </Badge>
           </span>
@@ -88,7 +82,7 @@
             <span class="text-muted-foreground line-through">
               {{ regularAmount }}
             </span>
-            <span class="text-base-foreground">
+            <span class="text-foreground">
               {{
                 $t('subscription.retentionOffer.pricePerMonth', {
                   price: discountedMonthlyAmount

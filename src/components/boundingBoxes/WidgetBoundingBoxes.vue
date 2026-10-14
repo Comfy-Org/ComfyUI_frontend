@@ -30,7 +30,7 @@
       </div>
       <div
         ref="canvasContainer"
-        class="relative w-full shrink-0 overflow-hidden rounded-b-sm border border-t-0 border-border bg-base-background"
+        class="relative w-full shrink-0 overflow-hidden rounded-b-sm border border-t-0 border-border bg-background"
         :style="canvasStyle"
       >
         <canvas
@@ -74,8 +74,8 @@
             cn(
               'flex-1 self-stretch px-2 text-xs transition-colors',
               activeRegion.type === 'obj'
-                ? 'rounded-sm bg-muted text-base-foreground'
-                : 'text-muted-foreground hover:text-base-foreground'
+                ? 'rounded-sm bg-muted text-foreground'
+                : 'text-muted-foreground hover:text-foreground'
             )
           "
           @click="setActiveType('obj')"
@@ -89,8 +89,8 @@
             cn(
               'flex-1 self-stretch px-2 text-xs transition-colors',
               activeRegion.type === 'text'
-                ? 'rounded-sm bg-muted text-base-foreground'
-                : 'text-muted-foreground hover:text-base-foreground'
+                ? 'rounded-sm bg-muted text-foreground'
+                : 'text-muted-foreground hover:text-foreground'
             )
           "
           @click="setActiveType('text')"
@@ -161,7 +161,7 @@ import type { BoundingBox } from '@/types/boundingBoxes'
 import type { NodeId } from '@/types/nodeId'
 
 const actionBtnClass =
-  'flex shrink-0 items-center gap-1.5 rounded-md border-0 bg-transparent px-2 py-1 text-sm text-base-foreground outline-none transition-colors hover:bg-muted'
+  'flex shrink-0 items-center gap-1.5 rounded-md border-0 bg-transparent px-2 py-1 text-sm text-foreground outline-none transition-colors hover:bg-muted'
 
 const { nodeId } = defineProps<{ nodeId: NodeId }>()
 const modelValue = defineModel<BoundingBox[]>({ default: () => [] })

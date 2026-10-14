@@ -67,7 +67,7 @@
           <button
             type="button"
             data-testid="video-preview-retry"
-            class="mt-1 cursor-pointer rounded-md border-none bg-input px-3 py-1 text-sm text-base-foreground hover:bg-muted"
+            class="mt-1 cursor-pointer rounded-md border-none bg-input px-3 py-1 text-sm text-foreground hover:bg-muted"
             @click="emit('retry')"
           >
             {{ t('videoEdit.retry') }}

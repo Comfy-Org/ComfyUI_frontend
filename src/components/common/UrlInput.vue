@@ -61,7 +61,7 @@ const validationIcon = computed(() => {
     case ValidationState.VALID:
       return 'icon-[lucide--check] text-success-background'
     case ValidationState.INVALID:
-      return 'icon-[lucide--x] text-destructive-background'
+      return 'icon-[lucide--x] text-destructive'
     default:
       return undefined
   }

@@ -10,7 +10,7 @@
           <div
             :class="
               cn(
-                'col-start-1 row-start-1 animate-spin rounded-full border-muted-foreground border-t-base-foreground',
+                'col-start-1 row-start-1 animate-spin rounded-full border-muted-foreground border-t-foreground',
                 spinnerSizeClass
               )
             "
@@ -19,7 +19,7 @@
             <slot />
           </div>
         </div>
-        <div v-if="loadingMessage" class="mt-4 text-lg text-base-foreground">
+        <div v-if="loadingMessage" class="mt-4 text-lg text-foreground">
           {{ loadingMessage }}
         </div>
       </div>

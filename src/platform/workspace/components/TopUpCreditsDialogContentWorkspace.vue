@@ -1,13 +1,13 @@
 <template>
   <div
-    class="flex min-h-[500px] w-[min(512px,95vw)] flex-col rounded-2xl border border-border-default bg-base-background shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
+    class="flex min-h-[500px] w-[min(512px,95vw)] flex-col rounded-2xl border border-border bg-background shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
   >
     <!-- Header -->
     <div class="flex items-center justify-between p-8">
       <div class="flex items-center gap-2">
         <button
           v-if="step === 'confirm'"
-          class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground disabled:pointer-events-none disabled:opacity-40"
+          class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
           :disabled="paymentLocked"
           :aria-label="$t('g.back')"
           @click="step = 'amount'"
@@ -16,7 +16,7 @@
         </button>
         <h2
           v-if="step !== 'verifying'"
-          class="m-0 text-base font-bold text-base-foreground"
+          class="m-0 text-base font-bold text-foreground"
         >
           {{
             step === 'confirm'
@@ -28,7 +28,7 @@
         </h2>
       </div>
       <button
-        class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none"
+        class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-1 focus-visible:ring-border focus-visible:outline-none"
         :aria-label="$t('g.close')"
         @click="() => handleClose(!topupIsParkedWithoutLink)"
       >
@@ -48,20 +48,18 @@
       </p>
       <div class="flex flex-col gap-3 px-8 pt-6">
         <span
-          class="flex items-center gap-2 py-2 text-2xl font-semibold text-base-foreground tabular-nums"
+          class="flex items-center gap-2 py-2 text-2xl font-semibold text-foreground tabular-nums"
         >
           <i class="icon-[lucide--coins] size-5 text-gold-500" />
           {{ formatNumber(creditsModel) }}
         </span>
         <div
-          class="flex items-center justify-between border-t border-border-default pt-4"
+          class="flex items-center justify-between border-t border-border pt-4"
         >
-          <span class="text-base font-semibold text-base-foreground">
+          <span class="text-base font-semibold text-foreground">
             {{ $t('subscription.preview.totalDueToday') }}
           </span>
-          <span
-            class="text-base font-semibold text-base-foreground tabular-nums"
-          >
+          <span class="text-base font-semibold text-foreground tabular-nums">
             {{ displayTotal }}
           </span>
         </div>
@@ -74,7 +72,7 @@
           class="icon-[lucide--shield-alert] size-10 text-warning-background"
         />
         <h2
-          class="m-0 text-center text-xl font-semibold text-base-foreground lg:text-2xl"
+          class="m-0 text-center text-xl font-semibold text-foreground lg:text-2xl"
         >
           {{ $t('credits.topUp.verifyTitle') }}
         </h2>
@@ -83,7 +81,7 @@
         </p>
         <span
           v-if="topupReconciliationOperationId"
-          class="font-mono text-sm text-base-foreground"
+          class="font-mono text-sm text-foreground"
         >
           {{ topupReconciliationOperationId }}
         </span>
@@ -104,7 +102,7 @@
           size="lg"
           :class="
             cn(
-              'h-10 w-full text-base font-medium focus-visible:ring-border-default',
+              'h-10 w-full text-base font-medium focus-visible:ring-border',
               selectedPreset === amount && 'bg-secondary-background-selected'
             )
           "
@@ -133,7 +131,7 @@
           @update:model-value="handlePayAmountChange"
         >
           <NumberFieldDecrement />
-          <span class="shrink-0 text-base font-semibold text-base-foreground"
+          <span class="shrink-0 text-base font-semibold text-foreground"
             >$</span
           >
           <NumberFieldInput
@@ -277,7 +275,7 @@
         <a
           :href="pricingUrl"
           target="_blank"
-          class="flex items-center gap-1 text-sm text-muted-foreground no-underline transition-colors hover:text-base-foreground"
+          class="flex items-center gap-1 text-sm text-muted-foreground no-underline transition-colors hover:text-foreground"
         >
           {{ $t('credits.topUp.viewPricing') }}
           <i class="icon-[lucide--external-link] size-4" />

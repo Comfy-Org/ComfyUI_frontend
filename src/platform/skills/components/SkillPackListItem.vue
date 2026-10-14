@@ -1,5 +1,5 @@
 <template>
-  <div class="group relative rounded-lg border border-border-default">
+  <div class="group relative rounded-lg border border-border">
     <Button
       variant="textonly"
       size="unset"
@@ -9,7 +9,7 @@
       :disabled="disabled || loading"
       @click="emit('edit')"
     >
-      <span class="w-full truncate font-medium text-base-foreground">
+      <span class="w-full truncate font-medium text-foreground">
         {{ pack.name }}
       </span>
       <span

@@ -50,11 +50,9 @@
           <i class="icon-[lucide--mouse-pointer-2] size-4" aria-hidden="true" />
           <span>{{ $t('graphCanvasMenu.select') }}</span>
         </div>
-        <span
-          class="text-[9px] text-text-primary"
-          data-testid="shortcut-hint"
-          >{{ unlockCommandText }}</span
-        >
+        <span class="text-[9px] text-foreground" data-testid="shortcut-hint">{{
+          unlockCommandText
+        }}</span>
       </button>
 
       <button
@@ -73,11 +71,9 @@
           <i class="icon-[lucide--hand] size-4" aria-hidden="true" />
           <span>{{ $t('graphCanvasMenu.hand') }}</span>
         </div>
-        <span
-          class="text-[9px] text-text-primary"
-          data-testid="shortcut-hint"
-          >{{ lockCommandText }}</span
-        >
+        <span class="text-[9px] text-foreground" data-testid="shortcut-hint">{{
+          lockCommandText
+        }}</span>
       </button>
     </div>
   </Popover>

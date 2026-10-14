@@ -1,11 +1,9 @@
 <template>
   <div
-    class="flex w-56 min-w-56 flex-col overflow-y-auto border-l border-border-default bg-base-background"
+    class="flex w-56 min-w-56 flex-col overflow-y-auto border-l border-border bg-background"
     data-testid="layer-properties-panel"
   >
-    <div
-      class="flex items-center gap-2 border-b border-border-default px-3 py-2"
-    >
+    <div class="flex items-center gap-2 border-b border-border px-3 py-2">
       <i
         :class="
           cn(
@@ -14,7 +12,7 @@
           )
         "
       />
-      <span class="truncate text-xs font-semibold text-base-foreground">
+      <span class="truncate text-xs font-semibold text-foreground">
         {{ isLayerContext ? activeNode?.name : t('layerEditor.background') }}
       </span>
     </div>
@@ -226,10 +224,10 @@ const isLayerContext = computed(
   () => selectedContext.value === 'layer' && activeNode.value !== null
 )
 
-const sectionClass = 'flex flex-col gap-2 border-b border-border-default p-3'
+const sectionClass = 'flex flex-col gap-2 border-b border-border p-3'
 const sectionLabelClass = 'text-xs text-muted-foreground'
 const iconButtonClass =
-  'flex size-7 cursor-pointer items-center justify-center rounded-md border-0 bg-transparent text-base-foreground transition-colors hover:bg-secondary-background-hover'
+  'flex size-7 cursor-pointer items-center justify-center rounded-md border-0 bg-transparent text-foreground transition-colors hover:bg-secondary-background-hover'
 
 const BLEND_KEYS: Record<BlendFn, string> = {
   normal: 'normal',

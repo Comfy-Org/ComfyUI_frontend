@@ -225,9 +225,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
           <template v-for="entry in resolvedInputs" :key="entry.widgetId">
             <IoItem
               v-if="entry.status === 'resolved'"
-              :class="
-                cn(dragClass, 'my-2 rounded-lg bg-primary-background/30 p-2')
-              "
+              :class="cn(dragClass, 'my-2 rounded-lg bg-primary/30 p-2')"
               :title="entry.widget.label ?? entry.displayName"
               :sub-title="entry.node.title"
               can-rename
@@ -236,9 +234,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
             />
             <IoItem
               v-else
-              :class="
-                cn(dragClass, 'my-2 rounded-lg bg-primary-background/30 p-2')
-              "
+              :class="cn(dragClass, 'my-2 rounded-lg bg-primary/30 p-2')"
               :title="entry.displayName"
               :sub-title="t('linearMode.builder.unknownWidget')"
               :remove="() => removeSelectedWidgetId(entry.widgetId)"
@@ -248,7 +244,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
       </PropertiesAccordionItem>
       <div
         v-if="isSelectInputsMode && !appModeStore.selectedInputs.length"
-        class="m-4 flex flex-1 items-center justify-center rounded-lg border-2 border-dashed border-primary-background bg-primary-background/20 text-center text-sm text-primary-background"
+        class="m-4 flex flex-1 items-center justify-center rounded-lg border-2 border-dashed border-primary bg-primary/20 text-center text-sm text-primary"
       >
         {{ t('linearMode.builder.inputPlaceholder') }}
       </div>
@@ -329,7 +325,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
             v-for="[key, style] in renderedInputs"
             :key
             :style="toValue(style)"
-            class="fixed rounded-lg bg-primary-background/30"
+            class="fixed rounded-lg bg-primary/30"
           />
         </template>
         <template v-else>
@@ -353,7 +349,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
                 "
                 @pointerdown.stop
               >
-                <i class="icon-[lucide--check] size-full bg-base-foreground" />
+                <i class="icon-[lucide--check] size-full bg-foreground" />
               </div>
               <div
                 v-else

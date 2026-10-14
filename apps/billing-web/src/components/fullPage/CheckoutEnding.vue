@@ -203,7 +203,7 @@ function act() {
 
 <template>
   <main
-    class="dark-theme fixed inset-0 flex items-center justify-center overflow-auto bg-base-background p-6 font-inter"
+    class="dark-theme fixed inset-0 flex items-center justify-center overflow-auto bg-background p-6 font-inter"
   >
     <section
       class="flex w-full max-w-96 flex-col items-center gap-8 text-center"
@@ -212,7 +212,7 @@ function act() {
       <div class="flex flex-col items-center gap-3">
         <i :class="cn(ICON[ending.tone], 'size-10')" aria-hidden="true" />
         <h1
-          class="m-0 text-2xl font-semibold text-balance text-base-foreground sm:whitespace-nowrap"
+          class="m-0 text-2xl font-semibold text-balance text-foreground sm:whitespace-nowrap"
         >
           {{ title }}
         </h1>
@@ -242,7 +242,7 @@ function act() {
 
       <dl
         v-if="receiptRows.length > 0"
-        class="m-0 flex w-full flex-col gap-2 rounded-lg bg-secondary-background p-4 text-left text-sm"
+        class="m-0 flex w-full flex-col gap-2 rounded-lg bg-secondary p-4 text-left text-sm"
         data-testid="checkout-ending-receipt"
       >
         <div
@@ -252,7 +252,7 @@ function act() {
         >
           <dt class="text-muted-foreground">{{ row.label }}</dt>
           <dd
-            class="m-0 flex items-center gap-1.5 text-base-foreground tabular-nums"
+            class="m-0 flex items-center gap-1.5 text-foreground tabular-nums"
           >
             <i
               v-if="row.kind === 'added'"
@@ -283,10 +283,10 @@ function act() {
           type="button"
           :class="
             cn(
-              'h-10 w-full cursor-pointer rounded-lg px-4 text-sm font-semibold focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-base-background focus-visible:outline-none',
+              'h-10 w-full cursor-pointer rounded-lg px-4 text-sm font-semibold focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none',
               primary === 'close'
-                ? 'bg-secondary-background text-base-foreground hover:bg-secondary-background-hover'
-                : 'bg-base-foreground text-base-background hover:opacity-90'
+                ? 'bg-secondary text-foreground hover:bg-secondary-background-hover'
+                : 'bg-foreground text-background hover:opacity-90'
             )
           "
           @click="act"

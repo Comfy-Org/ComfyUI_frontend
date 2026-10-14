@@ -61,8 +61,8 @@ const mergedStyle = computed<StyleValue>(() => [
         cn(
           'relative z-3000 max-h-96 min-w-32 overflow-hidden',
           'mt-2 rounded-lg p-2',
-          'bg-base-background text-base-foreground',
-          'border border-solid border-border-default',
+          'bg-background text-foreground',
+          'border border-solid border-border',
           'shadow-md',
           'data-[state=closed]:animate-out data-[state=open]:animate-in',
           'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',

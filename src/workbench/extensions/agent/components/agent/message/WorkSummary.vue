@@ -18,7 +18,7 @@ const { t } = useI18n()
 <template>
   <CollapsibleRoot>
     <CollapsibleTrigger
-      class="group flex h-8 w-full cursor-pointer items-center gap-2 rounded-lg px-2 text-sm leading-none font-normal text-muted-foreground transition-colors hover:bg-secondary-background-hover hover:text-base-foreground"
+      class="group flex h-8 w-full cursor-pointer items-center gap-2 rounded-lg px-2 text-sm leading-none font-normal text-muted-foreground transition-colors hover:bg-secondary-background-hover hover:text-foreground"
     >
       <span class="text-left">{{ t('agent.worked') }}</span>
       <span

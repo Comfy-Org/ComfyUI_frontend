@@ -13,7 +13,7 @@
       <template v-for="{ row, virtualItem } in virtualRows" :key="row.key">
         <div
           v-if="row.type === 'header'"
-          class="box-border px-3 pb-2 text-xs leading-none text-text-secondary"
+          class="box-border px-3 pb-2 text-xs leading-none text-muted-foreground"
           :style="getVirtualRowStyle(virtualItem)"
         >
           {{ row.label }}
@@ -32,8 +32,8 @@
             <AssetsListItem
               :class="
                 cn(
-                  'size-full shrink-0 cursor-default text-text-primary transition-colors hover:bg-secondary-background-hover',
-                  row.job.state === 'running' && 'bg-secondary-background'
+                  'size-full shrink-0 cursor-default text-foreground transition-colors hover:bg-secondary-background-hover',
+                  row.job.state === 'running' && 'bg-secondary'
                 )
               "
               :preview-url="getJobPreviewUrl(row.job)"

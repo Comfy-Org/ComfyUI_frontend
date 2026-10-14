@@ -35,7 +35,7 @@
     </PopoverTrigger>
     <PopoverContent
       align="start"
-      class="w-auto max-w-xs min-w-40 border-border-default bg-base-background p-3"
+      class="w-auto max-w-xs min-w-40 border-border bg-background p-3"
       @open-auto-focus.prevent="badgeContent?.focus()"
     >
       <div
@@ -138,7 +138,7 @@ const triggerShowsLabel = computed(() =>
 )
 
 const labelClasses =
-  'shrink-0 rounded-full border border-border-default px-2 py-0.5 text-xs text-muted-foreground'
+  'shrink-0 rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground'
 
 const textClasses = computed(() => {
   switch (variant.value) {
@@ -148,7 +148,7 @@ const textClasses = computed(() => {
       return 'text-warning-background'
     case 'info':
     default:
-      return 'text-text-primary'
+      return 'text-foreground'
   }
 })
 
@@ -179,7 +179,7 @@ const dotClasses = computed(() => {
       return 'bg-gold-600'
     case 'info':
     default:
-      return 'bg-text-secondary'
+      return 'bg-muted-foreground'
   }
 })
 </script>

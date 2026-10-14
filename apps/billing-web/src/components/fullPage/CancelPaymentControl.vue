@@ -22,7 +22,7 @@ const { t } = useI18n()
     type="button"
     :disabled="offer === 'canceling'"
     :aria-busy="offer === 'canceling'"
-    class="flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-tertiary-background px-4 text-sm font-semibold text-base-foreground hover:bg-tertiary-background-hover focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
+    class="flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-tertiary-background px-4 text-sm font-semibold text-foreground hover:bg-tertiary-background-hover focus-visible:ring-2 focus-visible:ring-foreground focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
     @click="emit('cancel')"
   >
     <template v-if="offer === 'canceling'">

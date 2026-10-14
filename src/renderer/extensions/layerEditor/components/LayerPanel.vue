@@ -1,9 +1,7 @@
 <template>
-  <div
-    class="flex w-52 min-w-52 flex-col border-r border-border-default bg-base-background"
-  >
+  <div class="flex w-52 min-w-52 flex-col border-r border-border bg-background">
     <div class="flex items-center px-3 py-2">
-      <span class="text-xs font-semibold text-base-foreground">
+      <span class="text-xs font-semibold text-foreground">
         {{ t('layerEditor.layers') }}
       </span>
     </div>
@@ -33,13 +31,13 @@
           :ref="(el) => registerThumb(node.id, el)"
           width="32"
           height="32"
-          class="size-8 shrink-0 rounded-sm border border-border-default bg-base-background"
+          class="size-8 shrink-0 rounded-sm border border-border bg-background"
         />
         <div class="flex min-w-0 flex-1 flex-col">
           <input
             v-if="renamingId === node.id"
             :ref="focusInput"
-            class="min-w-0 rounded-sm border border-border-default bg-base-background px-1 text-xs text-base-foreground select-text"
+            class="min-w-0 rounded-sm border border-border bg-background px-1 text-xs text-foreground select-text"
             :value="node.name"
             @blur="commitRename(node.id, $event)"
             @keydown.enter="commitRename(node.id, $event)"
@@ -48,7 +46,7 @@
           />
           <span
             v-else
-            class="truncate text-xs text-base-foreground"
+            class="truncate text-xs text-foreground"
             :title="node.name"
             @dblclick="renamingId = node.id"
           >
@@ -76,12 +74,12 @@
         <i :class="eyeIconClass(backgroundLayer.visible)" />
       </button>
       <div
-        class="size-8 shrink-0 rounded-sm border border-border-default"
+        class="size-8 shrink-0 rounded-sm border border-border"
         :style="{ backgroundColor: backgroundColor }"
         data-testid="layer-panel-background-swatch"
       />
       <div class="flex min-w-0 flex-1 flex-col">
-        <span class="truncate text-xs text-base-foreground">
+        <span class="truncate text-xs text-foreground">
           {{ t('layerEditor.background') }}
         </span>
         <span class="truncate text-xs text-muted-foreground">
@@ -90,9 +88,7 @@
       </div>
     </div>
 
-    <div
-      class="flex items-center justify-end gap-1 border-t border-border-default p-1"
-    >
+    <div class="flex items-center justify-end gap-1 border-t border-border p-1">
       <button
         :class="footerButtonClass"
         :disabled="!canMoveActive"
@@ -164,7 +160,7 @@ const canMoveActive = computed(
 )
 
 const footerButtonClass =
-  'flex size-7 cursor-pointer items-center justify-center rounded-md border-0 bg-transparent text-base-foreground transition-colors hover:bg-secondary-background-hover disabled:cursor-default disabled:opacity-40'
+  'flex size-7 cursor-pointer items-center justify-center rounded-md border-0 bg-transparent text-foreground transition-colors hover:bg-secondary-background-hover disabled:cursor-default disabled:opacity-40'
 
 function layerSubtitle(node: SceneNode): string {
   const blendInitial = node.mode.blend.charAt(0).toUpperCase()
@@ -177,7 +173,7 @@ function isRowSelected(id: string): boolean {
 
 function rowClass(selected: boolean, extra?: string): string {
   return cn(
-    'group relative flex cursor-pointer items-center gap-2 border-border-default px-2 py-1.5 select-none',
+    'group relative flex cursor-pointer items-center gap-2 border-border px-2 py-1.5 select-none',
     'hover:bg-secondary-background-hover',
     selected && 'bg-secondary-background-selected',
     extra
@@ -186,7 +182,7 @@ function rowClass(selected: boolean, extra?: string): string {
 
 function eyeButtonClass(visible: boolean): string {
   return cn(
-    'flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm border-0 bg-transparent text-base-foreground hover:bg-secondary-background-hover',
+    'flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm border-0 bg-transparent text-foreground hover:bg-secondary-background-hover',
     visible && 'opacity-0 group-hover:opacity-100'
   )
 }
@@ -210,8 +206,8 @@ function dropHintClass(id: string): string {
   const hint = dropHint.value
   if (hint?.id !== id) return ''
   return hint.pos === 'above'
-    ? "before:absolute before:inset-x-0 before:top-0 before:h-0.5 before:bg-base-foreground before:content-['']"
-    : "after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-base-foreground after:content-['']"
+    ? "before:absolute before:inset-x-0 before:top-0 before:h-0.5 before:bg-foreground before:content-['']"
+    : "after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-foreground after:content-['']"
 }
 
 function onRowDragStart(id: string, e: DragEvent): void {

@@ -162,11 +162,11 @@ const menuEntries = computed<MenuItem[]>(() => [
 </script>
 <template>
   <section
-    class="absolute flex size-full flex-col bg-secondary-background"
+    class="absolute flex size-full flex-col bg-secondary"
     data-testid="linear-mobile"
   >
     <header
-      class="flex h-16 w-full items-center gap-3 border-b border-border-subtle bg-base-background px-4 py-3"
+      class="flex h-16 w-full items-center gap-3 border-b border-border-subtle bg-background px-4 py-3"
     >
       <Menu :items="menuEntries" :label="$t('linearMode.appModeToolbar.apps')">
         <template #trigger>
@@ -221,7 +221,7 @@ const menuEntries = computed<MenuItem[]>(() => [
         </div>
         <div
           id="mobile-app-preview-panel"
-          class="absolute top-0 left-[100vw] flex h-full w-screen flex-col bg-base-background"
+          class="absolute top-0 left-[100vw] flex h-full w-screen flex-col bg-background"
           role="tabpanel"
           :aria-hidden="activeIndex !== 1"
           aria-labelledby="mobile-app-preview-tab"
@@ -235,7 +235,7 @@ const menuEntries = computed<MenuItem[]>(() => [
         </div>
         <AssetsSidebarTab
           id="mobile-app-output-panel"
-          class="absolute top-0 left-[200vw] h-full w-screen bg-base-background"
+          class="absolute top-0 left-[200vw] h-full w-screen bg-background"
           role="tabpanel"
           :aria-hidden="activeIndex !== 2"
           aria-labelledby="mobile-app-output-tab"
@@ -246,7 +246,7 @@ const menuEntries = computed<MenuItem[]>(() => [
     </div>
     <div
       ref="sliderPaneRef"
-      class="flex h-22 w-full items-center justify-around gap-4 bg-secondary-background p-4"
+      class="flex h-22 w-full items-center justify-around gap-4 bg-secondary p-4"
       role="tablist"
     >
       <Button
@@ -272,7 +272,7 @@ const menuEntries = computed<MenuItem[]>(() => [
               (queueStore.runningTasks.length > 0 ||
                 queueStore.pendingTasks.length > 0)
             "
-            class="absolute -top-1 -right-1 size-2 animate-pulse rounded-full bg-primary-background"
+            class="absolute -top-1 -right-1 size-2 animate-pulse rounded-full bg-primary"
           />
         </div>
         {{ t(label) }}

@@ -16,8 +16,8 @@
       v-else-if="error && !subscription"
       class="flex flex-col items-start gap-3 rounded-2xl border border-border p-6"
     >
-      <div class="flex items-center gap-2 text-text-secondary">
-        <i class="pi pi-exclamation-circle text-destructive-background" />
+      <div class="flex items-center gap-2 text-muted-foreground">
+        <i class="pi pi-exclamation-circle text-destructive" />
         <span class="text-sm">{{ $t('subscription.planLoadError') }}</span>
       </div>
       <Button
@@ -44,9 +44,9 @@
         <span class="text-sm text-muted-foreground">
           {{ $t('workspacePanel.invoices.nextInvoice') }}
         </span>
-        <p class="m-0 text-2xl font-semibold text-base-foreground">
+        <p class="m-0 text-2xl font-semibold text-foreground">
           {{ upcomingAmount }}
-          <span class="text-base font-normal text-base-foreground">
+          <span class="text-base font-normal text-foreground">
             {{ $t('workspacePanel.invoices.usd') }}
           </span>
         </p>

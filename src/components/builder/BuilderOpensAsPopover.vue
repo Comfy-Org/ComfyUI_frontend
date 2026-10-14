@@ -37,7 +37,7 @@
             side="top"
             :side-offset="5"
             :collision-padding="10"
-            class="z-1700 rounded-lg border border-border-subtle bg-base-background p-2 shadow-sm will-change-[transform,opacity]"
+            class="z-1700 rounded-lg border border-border-subtle bg-background p-2 shadow-sm will-change-[transform,opacity]"
           >
             <ViewTypeRadioGroup
               :model-value="isAppMode"

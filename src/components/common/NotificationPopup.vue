@@ -4,7 +4,7 @@
     :data-position="position"
     :class="
       cn(
-        'pointer-events-auto absolute z-1000 flex max-h-96 w-96 flex-col rounded-lg border border-border-default bg-base-background shadow-interface',
+        'pointer-events-auto absolute z-1000 flex max-h-96 w-96 flex-col rounded-lg border border-border bg-background shadow-interface',
         position === 'bottom-left' && 'bottom-4 left-4',
         position === 'bottom-right' && 'right-4 bottom-4'
       )
@@ -19,7 +19,7 @@
           <i :class="cn('size-4 text-white', icon)" />
         </div>
         <div class="flex flex-1 flex-col gap-1">
-          <div class="text-sm leading-[1.429] font-normal text-base-foreground">
+          <div class="text-sm leading-[1.429] font-normal text-foreground">
             {{ title }}
           </div>
           <div

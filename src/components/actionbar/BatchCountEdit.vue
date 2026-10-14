@@ -2,9 +2,7 @@
   <Tooltip>
     <TooltipTrigger as-child>
       <div class="batch-count h-full" :aria-label="t('menu.batchCount')">
-        <div
-          class="flex h-full w-14 overflow-hidden rounded-l-lg bg-secondary-background"
-        >
+        <div class="flex h-full w-14 overflow-hidden rounded-l-lg bg-secondary">
           <input
             ref="batchCountInputRef"
             v-model="batchCountInput"
@@ -82,7 +80,7 @@ const isIncrementDisabled = computed(
 )
 const isDecrementDisabled = computed(() => batchCount.value <= minQueueCount)
 const inputClass =
-  'h-full min-w-0 flex-1 border-none bg-secondary-background pl-1 pr-0 text-center text-sm font-normal tabular-nums text-base-foreground outline-none'
+  'h-full min-w-0 flex-1 border-none bg-secondary pl-1 pr-0 text-center text-sm font-normal tabular-nums text-foreground outline-none'
 const stepButtonClass =
   'h-1/2 w-full rounded-none border-none p-0 text-muted-foreground hover:bg-secondary-background-hover disabled:cursor-not-allowed disabled:opacity-50'
 const incrementButtonClass = 'rounded-tr-none border-b border-border-subtle'

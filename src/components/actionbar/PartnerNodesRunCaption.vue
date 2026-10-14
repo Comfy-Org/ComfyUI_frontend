@@ -3,7 +3,7 @@
     <div
       v-if="gate !== 'none'"
       id="partner-run-gate-caption"
-      class="mt-2 w-full border-t border-border-subtle bg-comfy-menu-bg px-4 pt-2 select-none"
+      class="mt-2 w-full border-t border-border-subtle bg-background px-4 pt-2 select-none"
       data-testid="partner-run-gate-caption"
     >
       <div class="flex w-full items-center justify-center gap-2">

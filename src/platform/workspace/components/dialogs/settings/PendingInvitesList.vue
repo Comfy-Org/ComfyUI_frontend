@@ -16,14 +16,14 @@
         "
       >
         <div
-          class="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary-background"
+          class="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary"
         >
           <span class="text-sm text-muted-foreground">
             {{ getInviteInitial(invite.email) }}
           </span>
         </div>
         <div class="flex min-w-0 flex-1 flex-col gap-1">
-          <span class="text-sm text-base-foreground">
+          <span class="text-sm text-foreground">
             {{ getInviteDisplayName(invite.email) }}
           </span>
           <span class="text-sm text-muted-foreground">

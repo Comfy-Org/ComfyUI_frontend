@@ -103,7 +103,7 @@
             "
             :class="
               cn(
-                'sticky -top-px z-10 grid w-full items-center bg-base-background px-2 pt-[calc(--spacing(2)+1px)] pb-2',
+                'sticky -top-px z-10 grid w-full items-center bg-background px-2 pt-[calc(--spacing(2)+1px)] pb-2',
                 activeView === 'pending'
                   ? uiConfig.pendingGridCols
                   : uiConfig.headerGridCols
@@ -229,7 +229,7 @@
         v-if="permissions.canManageSubscription"
         variant="muted-textonly"
         size="sm"
-        class="text-sm text-base-foreground"
+        class="text-sm text-foreground"
         @click="isSalesManagedPlan ? handleContactSales() : showTeamPlans()"
       >
         {{
@@ -262,7 +262,7 @@
       <Button
         variant="muted-textonly"
         size="sm"
-        class="text-sm text-base-foreground"
+        class="text-sm text-foreground"
         @click="handleContactUs"
       >
         {{ $t('workspacePanel.members.contactUs') }}

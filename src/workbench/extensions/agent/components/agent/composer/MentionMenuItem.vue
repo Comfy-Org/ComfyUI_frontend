@@ -81,7 +81,7 @@ const nodeId = computed(() =>
         :data-active="active"
         :class="
           cn(
-            'flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-xs font-normal text-base-foreground outline-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50',
+            'flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-xs font-normal text-foreground outline-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50',
             active && 'bg-secondary-background-hover'
           )
         "
@@ -114,7 +114,7 @@ const nodeId = computed(() =>
         }}</span>
         <span
           v-if="nodeId !== undefined"
-          class="ml-auto shrink-0 rounded-full bg-muted px-1 py-0.5 font-mono text-xs/4 text-base-foreground"
+          class="ml-auto shrink-0 rounded-full bg-muted px-1 py-0.5 font-mono text-xs/4 text-foreground"
         >
           {{ ' #' + nodeId }}</span
         >

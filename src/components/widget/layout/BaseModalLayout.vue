@@ -2,7 +2,7 @@
   <div
     :class="
       cn(
-        'relative overflow-hidden rounded-2xl border border-border-default bg-base-background shadow-lg',
+        'relative overflow-hidden rounded-2xl border border-border bg-background shadow-lg',
         sizeClasses
       )
     "
@@ -35,7 +35,7 @@
         <slot name="leftPanel" />
       </nav>
 
-      <div class="flex flex-col overflow-hidden bg-base-background">
+      <div class="flex flex-col overflow-hidden bg-background">
         <header v-if="$slots.header" :class="headerClass">
           <div :class="headerContentClass">
             <Button

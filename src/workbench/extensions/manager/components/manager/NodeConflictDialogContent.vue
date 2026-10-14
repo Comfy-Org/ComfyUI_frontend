@@ -4,7 +4,7 @@
     <div class="flex size-full flex-col gap-2 px-4 py-6">
       <!-- Description -->
       <div v-if="showAfterWhatsNew">
-        <p class="m-0 mb-4 text-sm/4 text-base-foreground">
+        <p class="m-0 mb-4 text-sm/4 text-foreground">
           {{ $t('manager.conflicts.description') }}
           <br /><br />
           {{ $t('manager.conflicts.info') }}
@@ -14,7 +14,7 @@
       <!-- Import Failed List Wrapper -->
       <div
         v-if="importFailedConflicts.length > 0"
-        class="flex min-h-8 w-full flex-col rounded-lg bg-base-background"
+        class="flex min-h-8 w-full flex-col rounded-lg bg-background"
       >
         <div
           data-testid="conflict-dialog-panel-toggle"
@@ -25,7 +25,7 @@
             <span class="mr-2 text-xs font-bold text-warning-background">{{
               importFailedConflicts.length
             }}</span>
-            <span class="text-xs font-bold text-base-foreground">{{
+            <span class="text-xs font-bold text-foreground">{{
               $t('manager.conflicts.importFailedExtensions')
             }}</span>
           </div>
@@ -66,7 +66,7 @@
       <!-- Conflict List Wrapper -->
       <div
         v-if="allConflictDetails.length > 0"
-        class="flex min-h-8 w-full flex-col rounded-lg bg-base-background"
+        class="flex min-h-8 w-full flex-col rounded-lg bg-background"
       >
         <div
           data-testid="conflict-dialog-panel-toggle"
@@ -77,7 +77,7 @@
             <span class="mr-2 text-xs font-bold text-warning-background">{{
               allConflictDetails.length
             }}</span>
-            <span class="text-xs font-bold text-base-foreground">{{
+            <span class="text-xs font-bold text-foreground">{{
               $t('manager.conflicts.conflicts')
             }}</span>
           </div>
@@ -118,7 +118,7 @@
       <!-- Extension List Wrapper -->
       <div
         v-if="conflictData.length > 0"
-        class="flex min-h-8 w-full flex-col rounded-lg bg-base-background"
+        class="flex min-h-8 w-full flex-col rounded-lg bg-background"
       >
         <div
           data-testid="conflict-dialog-panel-toggle"
@@ -129,7 +129,7 @@
             <span class="mr-2 text-xs font-bold text-warning-background">{{
               conflictData.length
             }}</span>
-            <span class="text-xs font-bold text-base-foreground">{{
+            <span class="text-xs font-bold text-foreground">{{
               $t('manager.conflicts.extensionAtRisk')
             }}</span>
           </div>

@@ -11,10 +11,10 @@
           :key="i"
           class="flex h-[54px] animate-pulse items-center gap-2 rounded-sm px-2 py-4"
         >
-          <div class="size-8 rounded-full bg-secondary-background" />
+          <div class="size-8 rounded-full bg-secondary" />
           <div class="flex flex-1 flex-col gap-1">
-            <div class="h-4 w-24 rounded-sm bg-secondary-background" />
-            <div class="h-3 w-16 rounded-sm bg-secondary-background" />
+            <div class="h-4 w-24 rounded-sm bg-secondary" />
+            <div class="h-3 w-16 rounded-sm bg-secondary" />
           </div>
         </div>
       </div>
@@ -22,13 +22,13 @@
       <!-- Workspace list -->
       <template v-else>
         <template v-for="workspace in availableWorkspaces" :key="workspace.id">
-          <div class="border-b border-border-default p-2">
+          <div class="border-b border-border p-2">
             <div
               :class="
                 cn(
                   'group flex h-[54px] w-full items-center gap-2 rounded-sm px-2 py-4',
                   'hover:bg-secondary-background-hover',
-                  isCurrentWorkspace(workspace) && 'bg-secondary-background'
+                  isCurrentWorkspace(workspace) && 'bg-secondary'
                 )
               "
             >
@@ -46,13 +46,13 @@
                   <div class="flex max-w-full min-w-0 items-center gap-1.5">
                     <span
                       :title="workspace.name"
-                      class="min-w-0 truncate text-sm text-base-foreground"
+                      class="min-w-0 truncate text-sm text-foreground"
                     >
                       {{ workspace.name }}
                     </span>
                     <span
                       v-if="resolveTierLabel(workspace)"
-                      class="shrink-0 rounded-full bg-base-foreground px-1 py-0.5 text-2xs font-bold text-base-background uppercase"
+                      class="shrink-0 rounded-full bg-foreground px-1 py-0.5 text-2xs font-bold text-background uppercase"
                     >
                       {{ resolveTierLabel(workspace) }}
                     </span>
@@ -63,7 +63,7 @@
                 </div>
                 <i
                   v-if="isCurrentWorkspace(workspace)"
-                  class="pi pi-check shrink-0 text-sm text-base-foreground"
+                  class="pi pi-check shrink-0 text-sm text-foreground"
                 />
               </button>
             </div>
@@ -88,7 +88,7 @@
     </div>
 
     <!-- Create workspace button -->
-    <div v-if="isCloud" class="shrink-0 border-t border-border-default p-2">
+    <div v-if="isCloud" class="shrink-0 border-t border-border p-2">
       <div
         :class="
           cn(
@@ -103,7 +103,7 @@
         <div
           :class="
             cn(
-              'flex size-8 items-center justify-center rounded-full bg-secondary-background',
+              'flex size-8 items-center justify-center rounded-full bg-secondary',
               !canCreateWorkspace && 'opacity-50'
             )
           "

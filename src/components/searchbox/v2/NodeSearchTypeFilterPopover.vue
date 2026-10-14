@@ -7,7 +7,7 @@
       side="bottom"
       :side-offset="4"
       :collision-padding="10"
-      class="z-1001 w-64 rounded-lg border border-border-default bg-base-background px-4 py-1 shadow-interface will-change-[transform,opacity] data-[side=bottom]:slide-in-from-top-2 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
+      class="z-1001 w-64 rounded-lg border border-border bg-background px-4 py-1 shadow-interface will-change-[transform,opacity] data-[side=bottom]:slide-in-from-top-2 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
       @open-auto-focus="onOpenAutoFocus"
       @close-auto-focus="onCloseAutoFocus"
       @escape-key-down.prevent
@@ -20,7 +20,7 @@
         @update:model-value="onSelectionChange"
       >
         <div
-          class="mt-2 flex h-8 items-center gap-2 rounded-sm border border-border-default px-2"
+          class="mt-2 flex h-8 items-center gap-2 rounded-sm border border-border px-2"
         >
           <i
             class="icon-[lucide--search] size-4 shrink-0 text-muted-foreground"
@@ -29,7 +29,7 @@
             ref="searchFilterRef"
             v-model="searchQuery"
             :placeholder="t('g.search')"
-            class="size-full border-none bg-transparent font-inter text-sm text-base-foreground outline-none placeholder:text-muted-foreground"
+            class="size-full border-none bg-transparent font-inter text-sm text-foreground outline-none placeholder:text-muted-foreground"
           />
         </div>
 
@@ -46,14 +46,14 @@
           <button
             v-if="selectedValues.length > 0"
             type="button"
-            class="cursor-pointer border-none bg-transparent font-inter text-sm text-base-foreground"
+            class="cursor-pointer border-none bg-transparent font-inter text-sm text-foreground"
             @click="emit('clear')"
           >
             {{ t('g.clearAll') }}
           </button>
         </div>
 
-        <div class="h-px bg-border-default" />
+        <div class="h-px bg-border" />
 
         <ListboxContent class="max-h-64 overflow-y-auto py-3">
           <ListboxItem
@@ -61,14 +61,14 @@
             :key="option"
             :value="option"
             data-testid="filter-option"
-            class="flex cursor-pointer items-center gap-2 rounded-sm px-1 py-2 text-sm text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
+            class="flex cursor-pointer items-center gap-2 rounded-sm px-1 py-2 text-sm text-foreground outline-none data-highlighted:bg-secondary-background-hover"
           >
             <span
               :class="
                 cn(
-                  'flex size-4 shrink-0 items-center justify-center rounded-sm border border-border-default',
+                  'flex size-4 shrink-0 items-center justify-center rounded-sm border border-border',
                   selectedSet.has(option) &&
-                    'border-primary-background bg-primary-background text-base-foreground'
+                    'border-primary bg-primary text-foreground'
                 )
               "
             >

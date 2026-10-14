@@ -3,7 +3,7 @@
     <TagsInputRoot
       :model-value="tagValues"
       delimiter=""
-      class="flex cursor-text flex-wrap items-center gap-2 rounded-lg bg-secondary-background px-4 py-3"
+      class="flex cursor-text flex-wrap items-center gap-2 rounded-lg bg-secondary px-4 py-3"
       @remove-tag="onRemoveTag"
       @click="inputRef?.focus()"
     >
@@ -13,7 +13,7 @@
         :key="filterKey(filter)"
         :value="filterKey(filter)"
         data-testid="filter-chip"
-        class="-my-1 inline-flex items-center gap-1 rounded-lg bg-base-background px-2 py-1 data-[state=active]:ring-2 data-[state=active]:ring-primary-background"
+        class="-my-1 inline-flex items-center gap-1 rounded-lg bg-background px-2 py-1 data-[state=active]:ring-2 data-[state=active]:ring-primary"
       >
         <span class="text-sm opacity-80">
           {{ t(`g.${filter.filterDef.id}`) }}:
@@ -25,7 +25,7 @@
           type="button"
           data-testid="chip-delete"
           :aria-label="$t('g.remove')"
-          class="ml-1 flex aspect-square cursor-pointer items-center justify-center rounded-full border-none bg-transparent text-muted-foreground hover:text-base-foreground"
+          class="ml-1 flex aspect-square cursor-pointer items-center justify-center rounded-full border-none bg-transparent text-muted-foreground hover:text-foreground"
         >
           <i class="icon-[lucide--x] size-3" />
         </TagsInputItemDelete>
@@ -42,7 +42,7 @@
           aria-controls="results-list"
           :aria-label="t('g.addNode')"
           :placeholder="t('g.addNode')"
-          class="h-6 min-w-[min(300px,80vw)] flex-1 border-none bg-transparent font-inter text-sm text-base-foreground outline-none placeholder:text-muted-foreground"
+          class="h-6 min-w-[min(300px,80vw)] flex-1 border-none bg-transparent font-inter text-sm text-foreground outline-none placeholder:text-muted-foreground"
           @keydown.enter.prevent="emit('selectCurrent')"
           @keydown.down.prevent="emit('navigateDown')"
           @keydown.up.prevent="emit('navigateUp')"

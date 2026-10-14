@@ -34,9 +34,9 @@ const selectedItems = computed(() => {
 
 const theButtonStyle = computed(() =>
   cn(
-    'border-0 bg-input text-text-secondary outline-none',
+    'border-0 bg-input text-muted-foreground outline-none',
     disabled ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-muted',
-    selectedItems.value.length > 0 && 'text-text-primary'
+    selectedItems.value.length > 0 && 'text-foreground'
   )
 )
 

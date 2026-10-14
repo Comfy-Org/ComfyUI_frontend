@@ -1,17 +1,14 @@
 <template>
   <div
-    class="flex w-xl max-w-full min-w-116 flex-col rounded-2xl border border-border-default bg-base-background shadow-lg"
+    class="flex w-xl max-w-full min-w-116 flex-col rounded-2xl border border-border bg-background shadow-lg"
   >
     <!-- Header -->
     <div
-      class="flex h-12 items-center justify-between border-b border-border-default px-4"
+      class="flex h-12 items-center justify-between border-b border-border px-4"
     >
       <div class="flex items-center gap-2">
         <slot name="header-icon" />
-        <DialogTitle
-          as="h2"
-          class="m-0 text-sm font-normal text-base-foreground"
-        >
+        <DialogTitle as="h2" class="m-0 text-sm font-normal text-foreground">
           <slot name="title" />
         </DialogTitle>
       </div>

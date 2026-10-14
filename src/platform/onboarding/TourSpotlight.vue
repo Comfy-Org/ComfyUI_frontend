@@ -89,7 +89,7 @@
           data-testid="coach-cursor"
           :class="
             cn(
-              'absolute icon-[lucide--mouse-pointer-2] size-4 text-base-foreground drop-shadow-md',
+              'absolute icon-[lucide--mouse-pointer-2] size-4 text-foreground drop-shadow-md',
               cursorClass
             )
           "
@@ -124,7 +124,7 @@
                 v-if="canGoBack"
                 variant="secondary"
                 size="md"
-                class="border border-solid border-border-default"
+                class="border border-solid border-border"
                 @click="emit('back')"
               >
                 <i class="icon-[lucide--arrow-left]" />

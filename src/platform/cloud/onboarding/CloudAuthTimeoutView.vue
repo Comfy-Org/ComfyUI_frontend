@@ -1,7 +1,7 @@
 <template>
   <div class="flex h-full items-center justify-center p-6">
     <div class="max-w-[100vw] text-center lg:w-[500px]">
-      <h2 class="mb-3 text-xl text-text-primary">
+      <h2 class="mb-3 text-xl text-foreground">
         {{ $t('cloudOnboarding.authTimeout.title') }}
       </h2>
       <p class="mb-5 text-muted-foreground">
@@ -9,8 +9,8 @@
       </p>
 
       <!-- Troubleshooting Section -->
-      <div class="mb-4 rounded-sm bg-secondary-background px-3 py-2 text-left">
-        <h3 class="mb-2 text-sm font-semibold text-text-primary">
+      <div class="mb-4 rounded-sm bg-secondary px-3 py-2 text-left">
+        <h3 class="mb-2 text-sm font-semibold text-foreground">
           {{ $t('cloudOnboarding.authTimeout.troubleshooting') }}
         </h3>
         <ul class="space-y-1.5 text-sm text-muted-foreground">
@@ -28,7 +28,7 @@
       <!-- Technical Details (Collapsible) -->
       <div v-if="errorMessage" class="mb-4 text-left">
         <button
-          class="flex w-full items-center justify-between rounded-sm border-0 bg-secondary-background px-4 py-2 text-sm text-text-secondary transition-colors hover:bg-secondary-background-hover"
+          class="flex w-full items-center justify-between rounded-sm border-0 bg-secondary px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-secondary-background-hover"
           @click="showTechnicalDetails = !showTechnicalDetails"
         >
           <span>{{ $t('cloudOnboarding.authTimeout.technicalDetails') }}</span>

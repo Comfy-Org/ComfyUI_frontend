@@ -94,7 +94,7 @@ const promptIcons = [
   <div class="flex h-full flex-col overflow-x-hidden overflow-y-auto px-4 py-8">
     <div class="my-auto flex shrink-0 flex-col items-center gap-8 text-center">
       <div
-        class="flex max-w-sm flex-col items-center pt-12 text-base/snug font-semibold tracking-tight text-base-foreground @min-[570px]:text-2xl/snug"
+        class="flex max-w-sm flex-col items-center pt-12 text-base/snug font-semibold tracking-tight text-foreground @min-[570px]:text-2xl/snug"
       >
         <p class="my-0">
           {{ t('agent.greeting', { name: userName ?? t('agent.friend') }) }}

@@ -19,7 +19,7 @@
         class="flex items-center justify-between text-muted-foreground"
       >
         <span>{{ discount.label }}</span>
-        <span class="text-base-foreground">
+        <span class="text-foreground">
           {{ discount.name
           }}<template v-if="discount.amount">
             · −{{ discount.amount }}</template
@@ -28,10 +28,10 @@
       </div>
     </template>
     <div class="flex items-center justify-between text-base">
-      <span class="text-base-foreground">
+      <span class="text-foreground">
         {{ totalDueToday }}
       </span>
-      <span class="font-bold text-base-foreground tabular-nums">
+      <span class="font-bold text-foreground tabular-nums">
         {{ amountDueToday }}
       </span>
     </div>

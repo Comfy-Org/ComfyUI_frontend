@@ -313,7 +313,7 @@ onBeforeUnmount(() => {
             <Button
               v-if="!isInProgress && !isRestartCompleted && hasSuccessfulTasks"
               variant="secondary"
-              class="mr-4 rounded-full border-2 border-base-foreground px-3 text-base-foreground hover:bg-secondary-background-hover"
+              class="mr-4 rounded-full border-2 border-foreground px-3 text-foreground hover:bg-secondary-background-hover"
               @click="handleRestart"
             >
               {{ t('manager.applyChanges') }}

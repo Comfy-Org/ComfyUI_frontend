@@ -111,7 +111,7 @@ const nodeColor = computed<NodeColorOption['name'] | null>({
 <template>
   <LayoutField :label="t('rightSidePanel.color')">
     <div
-      class="grid grid-cols-5 justify-items-center gap-1 rounded-lg border-none bg-secondary-background p-1"
+      class="grid grid-cols-5 justify-items-center gap-1 rounded-lg border-none bg-secondary p-1"
     >
       <Tooltip v-for="option of colorOptions" :key="option.name">
         <TooltipTrigger as-child>

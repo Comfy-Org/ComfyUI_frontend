@@ -21,13 +21,13 @@
       <div
         v-if="videoError"
         role="alert"
-        class="flex flex-auto flex-col items-center justify-center bg-muted-background py-8 text-center text-base-foreground"
+        class="flex flex-auto flex-col items-center justify-center bg-muted-background py-8 text-center text-foreground"
       >
-        <i class="mb-2 icon-[lucide--video-off] size-12 text-base-foreground" />
-        <p class="text-sm text-base-foreground">
+        <i class="mb-2 icon-[lucide--video-off] size-12 text-foreground" />
+        <p class="text-sm text-foreground">
           {{ $t('g.videoFailedToLoad') }}
         </p>
-        <p class="mt-1 text-xs text-base-foreground">
+        <p class="mt-1 text-xs text-foreground">
           {{ getVideoFilename(currentVideoUrl) }}
         </p>
       </div>
@@ -254,8 +254,8 @@ const getNavigationDotClass = (index: number) =>
   cn(
     'size-2 cursor-pointer rounded-full border-0 transition-all duration-200',
     index === currentIndex.value
-      ? 'bg-base-foreground'
-      : 'bg-base-foreground/50 hover:bg-base-foreground/80'
+      ? 'bg-foreground'
+      : 'bg-foreground/50 hover:bg-foreground/80'
   )
 
 const handleKeyDown = (event: KeyboardEvent) => {

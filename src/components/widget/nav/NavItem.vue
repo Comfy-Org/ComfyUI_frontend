@@ -5,7 +5,7 @@
         v-bind="$attrs"
         :class="
           cn(
-            'flex cursor-pointer items-center-safe gap-2 rounded-md px-4 py-3 text-sm text-base-foreground transition-colors select-none',
+            'flex cursor-pointer items-center-safe gap-2 rounded-md px-4 py-3 text-sm text-foreground transition-colors select-none',
             active ? 'bg-muted' : 'hover:bg-accent'
           )
         "
@@ -16,7 +16,7 @@
         <NavIcon v-if="icon" :icon="icon" />
         <i
           v-else
-          class="icon-[lucide--folder] size-3.5 shrink-0 text-base-foreground"
+          class="icon-[lucide--folder] size-3.5 shrink-0 text-foreground"
         />
         <span ref="textRef" class="min-w-0 truncate">
           <slot />
@@ -26,7 +26,7 @@
           :label="String(badge)"
           severity="contrast"
           variant="circle"
-          class="ml-auto min-h-5 min-w-5 px-1 text-base-background"
+          class="ml-auto min-h-5 min-w-5 px-1 text-background"
         />
         <i
           v-else-if="suffixIcon"

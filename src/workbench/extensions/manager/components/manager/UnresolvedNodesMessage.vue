@@ -7,7 +7,7 @@
     <p class="text-center text-sm text-muted-foreground">
       {{ $t('manager.unresolvedNodes.message') }}
     </p>
-    <ul class="mt-2 flex flex-col gap-1 rounded-lg bg-secondary-background p-2">
+    <ul class="mt-2 flex flex-col gap-1 rounded-lg bg-secondary p-2">
       <li
         v-for="name in nodeNames"
         :key="name"

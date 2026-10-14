@@ -54,7 +54,7 @@ const emit = defineEmits<{
 }>()
 
 const ids = { invalid: useId(), pending: useId(), seats: useId() }
-const ERROR = 'm-0 text-xs text-destructive-background'
+const ERROR = 'm-0 text-xs text-destructive'
 
 const hints = computed(() => [
   ...(invalidCount > 0

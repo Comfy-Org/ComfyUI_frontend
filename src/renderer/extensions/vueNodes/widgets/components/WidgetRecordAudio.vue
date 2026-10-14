@@ -2,7 +2,7 @@
   <div class="relative" @pointerdown.stop>
     <div class="mb-4">
       <Button
-        class="w-full border-0 bg-secondary-background text-base-foreground hover:bg-secondary-background-hover"
+        class="w-full border-0 bg-secondary text-foreground hover:bg-secondary-background-hover"
         :disabled="isRecording || readonly"
         @click="handleStartRecording"
       >
@@ -12,7 +12,7 @@
     </div>
     <div
       v-if="isRecording || isPlaying || recordedURL"
-      class="flex h-14 w-full min-w-0 items-center gap-2 rounded-lg bg-card px-3 text-text-secondary"
+      class="flex h-14 w-full min-w-0 items-center gap-2 rounded-lg bg-card px-3 text-muted-foreground"
     >
       <!-- Recording Status -->
       <div class="flex shrink-0 items-center gap-1">
@@ -35,7 +35,7 @@
         <div
           v-for="(bar, index) in waveformBars"
           :key="index"
-          class="max-h-8 min-h-1 w-0.75 rounded-[1.5px] bg-text-secondary transition-all duration-100"
+          class="max-h-8 min-h-1 w-0.75 rounded-[1.5px] bg-muted-foreground transition-all duration-100"
           :style="{ height: bar.height + 'px' }"
           :title="`Bar ${index + 1}: ${bar.height}px`"
         />
@@ -57,7 +57,7 @@
         class="flex size-8 shrink-0 items-center justify-center rounded-full border-0 bg-smoke-500/33 transition-colors"
         @click="handlePlayRecording"
       >
-        <i class="icon-[lucide--play] size-4 text-text-secondary" />
+        <i class="icon-[lucide--play] size-4 text-muted-foreground" />
       </button>
 
       <button
@@ -66,7 +66,7 @@
         class="flex size-8 shrink-0 items-center justify-center rounded-full border-0 bg-smoke-500/33 transition-colors"
         @click="handleStopPlayback"
       >
-        <i class="icon-[lucide--square] size-4 text-text-secondary" />
+        <i class="icon-[lucide--square] size-4 text-muted-foreground" />
       </button>
     </div>
     <audio

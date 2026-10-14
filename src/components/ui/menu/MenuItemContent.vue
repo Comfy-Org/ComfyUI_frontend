@@ -30,7 +30,7 @@ const { hasSubmenu, item } = defineProps<{
   />
   <span
     v-if="item.badge"
-    class="ml-3 flex items-center gap-1 rounded-full bg-(--primary) px-1.5 py-0.5 text-2xs text-base-foreground uppercase"
+    class="ml-3 flex items-center gap-1 rounded-full bg-(--primary) px-1.5 py-0.5 text-2xs text-foreground uppercase"
   >
     {{ item.badge }}
   </span>
@@ -59,13 +59,13 @@ const { hasSubmenu, item } = defineProps<{
   />
   <span
     v-if="item.new && !toValue(item.checked) && !hasSubmenu"
-    class="shrink-0 rounded-full bg-primary-background px-1 text-2xs leading-none font-bold"
+    class="shrink-0 rounded-full bg-primary px-1 text-2xs leading-none font-bold"
   >
     {{ $t('contextMenu.new') }}
   </span>
   <span
     v-if="!hasSubmenu && toValue(item.shortcut)"
-    class="ml-auto rounded-sm border border-border-default bg-secondary-background p-1 text-xs text-nowrap text-muted-foreground"
+    class="ml-auto rounded-sm border border-border bg-secondary p-1 text-xs text-nowrap text-muted-foreground"
   >
     {{ toValue(item.shortcut) }}
   </span>

@@ -28,9 +28,9 @@
         aria-valuemax="100"
         class="flex-1"
       >
-        <div class="h-5 overflow-hidden rounded-full bg-secondary-background">
+        <div class="h-5 overflow-hidden rounded-full bg-secondary">
           <div
-            class="h-full bg-primary-background transition-[width]"
+            class="h-full bg-primary transition-[width]"
             :style="{ width: `${downloadProgressPercent}%` }"
           />
         </div>

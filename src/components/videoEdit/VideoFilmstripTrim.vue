@@ -33,7 +33,7 @@
         :style="playheadStyle"
       >
         <span
-          class="rounded-lg bg-popover px-2.5 py-1 text-sm font-semibold text-base-foreground tabular-nums"
+          class="rounded-lg bg-popover px-2.5 py-1 text-sm font-semibold text-foreground tabular-nums"
         >
           {{ playheadFrame }}
         </span>
@@ -49,7 +49,7 @@
         :style="activeHandleTooltipStyle"
       >
         <span
-          class="rounded-lg bg-popover px-2.5 py-1 text-sm font-semibold text-base-foreground tabular-nums"
+          class="rounded-lg bg-popover px-2.5 py-1 text-sm font-semibold text-foreground tabular-nums"
         >
           {{ activeHandleFrame }}
         </span>
@@ -115,7 +115,7 @@
           :aria-label="t('videoEdit.adjustStartFrame')"
           @pointerdown.stop="startDrag('min', $event)"
         >
-          <span class="h-4 w-px rounded-full bg-secondary-background" />
+          <span class="h-4 w-px rounded-full bg-secondary" />
         </button>
 
         <div class="flex min-w-0 flex-1 flex-col">
@@ -139,7 +139,7 @@
           :aria-label="t('videoEdit.adjustEndFrame')"
           @pointerdown.stop="startDrag('max', $event)"
         >
-          <span class="h-4 w-px rounded-full bg-secondary-background" />
+          <span class="h-4 w-px rounded-full bg-secondary" />
         </button>
       </div>
 

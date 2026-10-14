@@ -8,7 +8,7 @@
   >
     <template #alt-title>
       <span
-        class="ml-2 flex items-center rounded-full bg-primary-background px-1.5 py-0.5 text-2xs text-base-foreground uppercase"
+        class="ml-2 flex items-center rounded-full bg-primary px-1.5 py-0.5 text-2xs text-foreground uppercase"
       >
         {{ $t('g.beta') }}
       </span>

@@ -30,7 +30,7 @@
 
     <span
       v-if="!compact"
-      class="shrink-0 text-xs text-base-foreground tabular-nums"
+      class="shrink-0 text-xs text-foreground tabular-nums"
       data-testid="load3d-animation-time"
     >
       {{ formatAnimationTime(currentTime) }} /

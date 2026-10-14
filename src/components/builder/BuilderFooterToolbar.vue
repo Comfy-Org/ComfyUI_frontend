@@ -12,7 +12,7 @@
     <!-- Main toolbar -->
     <nav
       data-testid="builder-footer-nav"
-      class="flex items-center gap-2 rounded-2xl border border-border-default bg-base-background p-2 shadow-interface"
+      class="flex items-center gap-2 rounded-2xl border border-border bg-background p-2 shadow-interface"
     >
       <Button variant="textonly" size="lg" @click="onExitBuilder">
         {{ t('builderMenu.exitAppBuilder') }}
@@ -61,7 +61,7 @@
         <ButtonGroup
           v-else-if="isSaved"
           data-testid="builder-save-group"
-          class="w-full rounded-lg bg-secondary-background has-[[data-save-chevron]:hover]:bg-secondary-background-hover"
+          class="w-full rounded-lg bg-secondary has-[[data-save-chevron]:hover]:bg-secondary-background-hover"
         >
           <Button
             size="lg"
@@ -85,7 +85,7 @@
                 :aria-label="t('builderToolbar.saveAs')"
                 data-save-chevron
                 data-testid="builder-save-as-chevron"
-                class="w-6 rounded-l-none border-l border-border-default px-0"
+                class="w-6 rounded-l-none border-l border-border px-0"
               >
                 <i
                   class="icon-[lucide--chevron-down] size-4"
@@ -157,7 +157,7 @@ const isSaved = computed(
 
 const activeSaveClasses = 'bg-ocean-600 text-white hover:bg-ocean-600/80'
 const disabledSaveClasses =
-  'bg-secondary-background text-muted-foreground/50 disabled:opacity-100'
+  'bg-secondary text-muted-foreground/50 disabled:opacity-100'
 
 const isModified = computed(
   () => workflowStore.activeWorkflow?.isModified === true

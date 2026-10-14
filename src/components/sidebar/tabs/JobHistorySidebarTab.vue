@@ -28,11 +28,11 @@
         :search-placeholder="t('g.searchPlaceholder', { subject: t('g.jobs') })"
       />
       <div
-        class="flex items-center justify-between px-4 pb-2 text-xs leading-none text-text-primary"
+        class="flex items-center justify-between px-4 pb-2 text-xs leading-none text-foreground"
       >
-        <span class="text-text-secondary">{{ activeQueueSummary }}</span>
+        <span class="text-muted-foreground">{{ activeQueueSummary }}</span>
         <div class="flex items-center gap-2">
-          <span class="text-xs text-base-foreground">
+          <span class="text-xs text-foreground">
             {{ t('sideToolbar.queueProgressOverlay.clearQueueTooltip') }}
           </span>
           <Button

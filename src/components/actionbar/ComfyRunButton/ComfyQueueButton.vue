@@ -1,7 +1,5 @@
 <template>
-  <ButtonGroup
-    class="queue-button-group h-8 rounded-lg bg-secondary-background"
-  >
+  <ButtonGroup class="queue-button-group h-8 rounded-lg bg-secondary">
     <BatchCountEdit />
     <Button
       :tooltip="queueButtonTooltip"
@@ -192,7 +190,7 @@ const queueMenuTriggerVariant = computed(() =>
 const queueMenuTriggerVariantClass = {
   destructive:
     'border-black/20 data-[state=open]:bg-destructive-background-hover',
-  inverted: 'data-[state=open]:bg-base-foreground/80',
+  inverted: 'data-[state=open]:bg-foreground/80',
   secondary: 'text-muted-foreground'
 } satisfies Record<typeof queueMenuTriggerVariant.value, string>
 const queueMenuTriggerClass =

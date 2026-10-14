@@ -33,7 +33,7 @@
           <ToggleGroupItem
             :value="option.name"
             :aria-label="option.localizedName"
-            class="px-1 py-2 aria-pressed:bg-secondary-background aria-pressed:text-base-foreground"
+            class="px-1 py-2 aria-pressed:bg-secondary aria-pressed:text-foreground"
           >
             <i
               class="pi pi-circle-fill"

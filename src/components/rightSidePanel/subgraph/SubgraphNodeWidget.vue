@@ -45,7 +45,7 @@ const icon = computed(() =>
   >
     <div class="pointer-events-none flex-1">
       <div
-        class="line-clamp-1 text-xs text-text-secondary"
+        class="line-clamp-1 text-xs text-muted-foreground"
         data-testid="subgraph-widget-node-name"
       >
         {{ nodeTitle }}

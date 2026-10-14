@@ -18,7 +18,7 @@
     </p>
     <template v-else-if="!didCancelSucceed">
       <p class="m-0 text-sm/5 text-muted-foreground">{{ description }}</p>
-      <p class="m-0 text-sm/5 text-base-foreground">
+      <p class="m-0 text-sm/5 text-foreground">
         {{
           $t('subscription.cancelFlow.confirm.loseAccess', {
             date: formattedEndDate
@@ -29,13 +29,13 @@
         <li
           v-for="feature in lostFeatures"
           :key="feature.key"
-          class="flex flex-col gap-1.5 rounded-[10px] border border-border-subtle bg-secondary-background/50 p-3"
+          class="flex flex-col gap-1.5 rounded-[10px] border border-border-subtle bg-secondary/50 p-3"
         >
           <i
-            :class="cn(feature.icon, 'size-4 text-base-foreground')"
+            :class="cn(feature.icon, 'size-4 text-foreground')"
             aria-hidden="true"
           />
-          <span class="text-sm text-base-foreground">{{ feature.title }}</span>
+          <span class="text-sm text-foreground">{{ feature.title }}</span>
           <span class="text-xs text-muted-foreground">
             {{ feature.description }}
           </span>

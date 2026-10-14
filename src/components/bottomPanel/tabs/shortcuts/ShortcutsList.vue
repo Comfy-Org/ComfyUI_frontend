@@ -10,7 +10,7 @@
         class="flex flex-col"
       >
         <h3
-          class="subcategory-title mb-4 text-xs font-bold tracking-wide text-text-secondary uppercase"
+          class="subcategory-title mb-4 text-xs font-bold tracking-wide text-muted-foreground uppercase"
         >
           {{ getSubcategoryTitle(subcategory) }}
         </h3>

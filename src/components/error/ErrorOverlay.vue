@@ -10,10 +10,8 @@
         data-testid="error-overlay"
         :class="
           cn(
-            'pointer-events-auto relative flex w-fit max-w-120 min-w-80 flex-col gap-2 overflow-hidden rounded-lg border border-l-4 border-border-default bg-base-background p-3 shadow-interface transition-colors duration-200 ease-in-out',
-            hasError
-              ? 'border-l-destructive-background'
-              : 'border-l-warning-foreground'
+            'pointer-events-auto relative flex w-fit max-w-120 min-w-80 flex-col gap-2 overflow-hidden rounded-lg border border-l-4 border-border bg-background p-3 shadow-interface transition-colors duration-200 ease-in-out',
+            hasError ? 'border-l-destructive' : 'border-l-warning-foreground'
           )
         "
       >
@@ -24,7 +22,7 @@
               cn(
                 'mt-0.5 size-4 shrink-0',
                 hasError
-                  ? 'icon-[lucide--circle-x] text-destructive-background'
+                  ? 'icon-[lucide--circle-x] text-destructive'
                   : 'icon-[lucide--triangle-alert] text-warning-foreground'
               )
             "
@@ -32,7 +30,7 @@
           <span class="sr-only">{{
             t(hasError ? 'g.error' : 'g.warning')
           }}</span>
-          <span class="min-w-0 flex-1 truncate text-sm text-base-foreground">
+          <span class="min-w-0 flex-1 truncate text-sm text-foreground">
             {{ overlayTitle }}
           </span>
         </div>

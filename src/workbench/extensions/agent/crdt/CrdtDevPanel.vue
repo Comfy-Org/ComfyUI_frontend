@@ -173,9 +173,9 @@ const SCOPES: readonly CrdtLogScope[] = ['wire', 'doc']
 
 const VERDICT_TONE: Record<string, string> = {
   applied: 'text-success-background border-success-background',
-  'lww-dropped': 'text-muted-foreground border-border-default',
-  'no-op': 'text-muted-foreground border-border-default',
-  rejected: 'text-destructive-background border-destructive-background',
+  'lww-dropped': 'text-muted-foreground border-border',
+  'no-op': 'text-muted-foreground border-border',
+  rejected: 'text-destructive border-destructive',
   'not-reached': 'text-muted-foreground border-border'
 }
 
@@ -693,7 +693,7 @@ function fmtTime(at: number): string {
       v-if="dismissed"
       type="button"
       :title="S.restore"
-      class="mr-4 mb-1 flex h-6 cursor-pointer items-center gap-1 self-end rounded-full border border-border bg-secondary-background px-2 text-muted-foreground transition-colors hover:bg-secondary-background-hover hover:text-base-foreground"
+      class="mr-4 mb-1 flex h-6 cursor-pointer items-center gap-1 self-end rounded-full border border-border bg-secondary px-2 text-muted-foreground transition-colors hover:bg-secondary-background-hover hover:text-foreground"
       data-testid="crdt-dev-panel-restore"
       @click="restore"
     >
@@ -706,7 +706,7 @@ function fmtTime(at: number): string {
       ref="chipButton"
       type="button"
       :title="S.open"
-      class="mr-4 mb-1 flex h-6 cursor-pointer items-center gap-1 self-end rounded-full border border-border bg-secondary-background px-2 text-muted-foreground transition-colors hover:bg-secondary-background-hover hover:text-base-foreground"
+      class="mr-4 mb-1 flex h-6 cursor-pointer items-center gap-1 self-end rounded-full border border-border bg-secondary px-2 text-muted-foreground transition-colors hover:bg-secondary-background-hover hover:text-foreground"
       data-testid="crdt-dev-panel-chip"
       @click="setOpen(true)"
     >
@@ -714,9 +714,7 @@ function fmtTime(at: number): string {
         :class="
           cn(
             'size-1.5 rounded-full',
-            status.connected
-              ? 'bg-success-background'
-              : 'bg-destructive-background'
+            status.connected ? 'bg-success-background' : 'bg-destructive'
           )
         "
       />
@@ -725,7 +723,7 @@ function fmtTime(at: number): string {
 
     <section
       v-else
-      class="flex min-h-0 grow flex-col overflow-hidden border-y border-border bg-base-background text-base-foreground"
+      class="flex min-h-0 grow flex-col overflow-hidden border-y border-border bg-background text-foreground"
       data-testid="crdt-dev-panel"
     >
       <header
@@ -736,7 +734,7 @@ function fmtTime(at: number): string {
           {{ S.verbosity }}
           <select
             v-model="level"
-            class="rounded-sm border border-border bg-secondary-background px-1 py-0.5"
+            class="rounded-sm border border-border bg-secondary px-1 py-0.5"
             data-testid="crdt-dev-panel-verbosity"
             @change="onLevelChange(level)"
           >
@@ -752,7 +750,7 @@ function fmtTime(at: number): string {
         <button
           type="button"
           :title="S.hide"
-          class="cursor-pointer text-muted-foreground hover:text-destructive-background"
+          class="cursor-pointer text-muted-foreground hover:text-destructive"
           data-testid="crdt-dev-panel-dismiss"
           @click="dismiss"
         >
@@ -762,7 +760,7 @@ function fmtTime(at: number): string {
           ref="closeButton"
           type="button"
           :title="S.close"
-          class="cursor-pointer text-muted-foreground hover:text-base-foreground"
+          class="cursor-pointer text-muted-foreground hover:text-foreground"
           data-testid="crdt-dev-panel-close"
           @click="setOpen(false)"
         >
@@ -783,8 +781,8 @@ function fmtTime(at: number): string {
             cn(
               'flex-1 cursor-pointer px-2 py-1 transition-colors',
               tab === entry[0]
-                ? 'border-b-2 border-primary-background text-base-foreground'
-                : 'text-muted-foreground hover:text-base-foreground'
+                ? 'border-b-2 border-primary text-foreground'
+                : 'text-muted-foreground hover:text-foreground'
             )
           "
           :data-testid="`crdt-dev-panel-tab-${entry[0]}`"
@@ -853,7 +851,7 @@ function fmtTime(at: number): string {
           <div class="flex flex-wrap items-center gap-1">
             <select
               v-model="scopeFilter"
-              class="rounded-sm border border-border bg-secondary-background px-1 py-0.5"
+              class="rounded-sm border border-border bg-secondary px-1 py-0.5"
               data-testid="crdt-dev-panel-scope-filter"
             >
               <option value="">{{ S.allScopes }}</option>
@@ -863,7 +861,7 @@ function fmtTime(at: number): string {
             </select>
             <select
               v-model="levelFilter"
-              class="rounded-sm border border-border bg-secondary-background px-1 py-0.5"
+              class="rounded-sm border border-border bg-secondary px-1 py-0.5"
             >
               <option value="">{{ S.allLevels }}</option>
               <option
@@ -876,7 +874,7 @@ function fmtTime(at: number): string {
             </select>
             <select
               v-model="kindFilter"
-              class="rounded-sm border border-border bg-secondary-background px-1 py-0.5"
+              class="rounded-sm border border-border bg-secondary px-1 py-0.5"
               data-testid="crdt-dev-panel-filter"
             >
               <option value="">{{ S.allKinds }}</option>
@@ -918,7 +916,7 @@ function fmtTime(at: number): string {
                       cn(
                         'rounded-sm border border-border px-1',
                         row.event.level === 'warn' &&
-                          'border-destructive-background text-destructive-background'
+                          'border-destructive text-destructive'
                       )
                     "
                     >{{ row.event.scope }}</span
@@ -965,14 +963,14 @@ function fmtTime(at: number): string {
 
         <template v-else>
           <div
-            class="rounded-sm border border-border bg-secondary-background px-2 py-1 font-bold text-muted-foreground"
+            class="rounded-sm border border-border bg-secondary px-2 py-1 font-bold text-muted-foreground"
             data-testid="crdt-dev-panel-simulation-label"
           >
             {{ S.simulated }}
           </div>
 
           <select
-            class="w-full rounded-sm border border-border bg-secondary-background p-1"
+            class="w-full rounded-sm border border-border bg-secondary p-1"
             data-testid="crdt-dev-panel-scenario"
             @change="selectScenario(($event.target as HTMLSelectElement).value)"
           >
@@ -992,7 +990,7 @@ function fmtTime(at: number): string {
 
           <button
             type="button"
-            class="w-full cursor-pointer rounded-sm border border-primary-background px-2 py-1 text-base-foreground hover:bg-secondary-background-hover"
+            class="w-full cursor-pointer rounded-sm border border-primary px-2 py-1 text-foreground hover:bg-secondary-background-hover"
             data-testid="crdt-dev-panel-run"
             @click="run"
           >
@@ -1102,7 +1100,7 @@ function fmtTime(at: number): string {
               v-model="testerNote"
               rows="3"
               :placeholder="S.notePlaceholder"
-              class="w-full rounded-sm border border-border bg-secondary-background p-1 text-base-foreground"
+              class="w-full rounded-sm border border-border bg-secondary p-1 text-foreground"
               data-testid="crdt-dev-panel-note"
             />
           </section>
@@ -1124,7 +1122,7 @@ function fmtTime(at: number): string {
               cn(
                 'flex cursor-pointer items-center gap-1 rounded-full border px-2 py-0.5 transition-colors',
                 reportSources[source.key]
-                  ? 'border-primary-background text-base-foreground'
+                  ? 'border-primary text-foreground'
                   : 'border-border text-muted-foreground'
               )
             "
@@ -1156,7 +1154,7 @@ function fmtTime(at: number): string {
           <button
             type="button"
             :disabled="reportCopyState.status === 'busy'"
-            class="flex-2 cursor-pointer rounded-sm border border-primary-background px-2 py-1 hover:bg-secondary-background-hover disabled:cursor-default"
+            class="flex-2 cursor-pointer rounded-sm border border-primary px-2 py-1 hover:bg-secondary-background-hover disabled:cursor-default"
             data-testid="crdt-dev-panel-copy-report"
             @click="copyReport"
           >
@@ -1164,7 +1162,7 @@ function fmtTime(at: number): string {
           </button>
         </div>
         <div v-if="reportCopyState.status === 'failed'" class="mt-2">
-          <p role="alert" class="m-0 text-destructive-background">
+          <p role="alert" class="m-0 text-destructive">
             {{
               reportCopyState.report === null
                 ? t('agent.diagnosticReport.collectionFailed')
@@ -1177,7 +1175,7 @@ function fmtTime(at: number): string {
             :value="reportCopyState.report"
             readonly
             rows="3"
-            class="mt-1 w-full rounded-sm border border-border bg-secondary-background p-1 text-base-foreground"
+            class="mt-1 w-full rounded-sm border border-border bg-secondary p-1 text-foreground"
           />
         </div>
       </footer>

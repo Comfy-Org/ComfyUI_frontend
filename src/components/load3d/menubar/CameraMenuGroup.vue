@@ -57,7 +57,7 @@
       :class="cn(formPanelClass, 'w-56')"
     >
       <div class="flex flex-col gap-2 p-1">
-        <span class="text-sm text-base-foreground">{{ t('load3d.fov') }}</span>
+        <span class="text-sm text-foreground">{{ t('load3d.fov') }}</span>
         <Slider
           :model-value="[fov]"
           :min="10"

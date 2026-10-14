@@ -145,7 +145,7 @@ const { t } = useI18n()
       <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
         <span class="flex shrink-0 items-baseline gap-1.5 whitespace-nowrap">
           <span
-            class="text-[2rem]/none font-semibold text-base-foreground tabular-nums"
+            class="text-[2rem]/none font-semibold text-foreground tabular-nums"
             data-testid="credit-slider-price"
           >
             {{ formatUsd(displayMonthly) }}
@@ -167,7 +167,7 @@ const { t } = useI18n()
         <span
           v-if="hasDiscount"
           data-testid="credit-slider-save"
-          class="shrink-0 rounded-full border-2 border-primary-background px-2 py-1 text-sm font-bold whitespace-nowrap text-primary-background xl:ms-auto"
+          class="shrink-0 rounded-full border-2 border-primary px-2 py-1 text-sm font-bold whitespace-nowrap text-primary xl:ms-auto"
         >
           {{
             t('subscription.creditSliderSave', {
@@ -198,8 +198,8 @@ const { t } = useI18n()
       :max="lastIndex"
       :step="1"
       :disabled="disabled"
-      range-class="bg-base-foreground"
-      thumb-class="bg-base-foreground"
+      range-class="bg-foreground"
+      thumb-class="bg-foreground"
     />
 
     <!-- Credit stop labels; the selected stop is emphasized -->
@@ -215,7 +215,7 @@ const { t } = useI18n()
           cn(
             'flex items-center gap-1 text-xs tabular-nums',
             i === selectedIndex
-              ? 'font-semibold text-base-foreground'
+              ? 'font-semibold text-foreground'
               : 'text-muted-foreground'
           )
         "

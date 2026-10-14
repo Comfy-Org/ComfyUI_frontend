@@ -13,7 +13,7 @@ const emit = defineEmits<{ download: [] }>()
     :href="row.status.href"
     target="_blank"
     rel="noopener noreferrer"
-    class="col-start-3 row-start-1 shrink-0 text-xs text-base-foreground no-underline hover:underline focus-visible:rounded-sm focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none"
+    class="col-start-3 row-start-1 shrink-0 text-xs text-foreground no-underline hover:underline focus-visible:rounded-sm focus-visible:ring-1 focus-visible:ring-border focus-visible:outline-none"
   >
     {{ row.status.label }}
     <span aria-hidden="true">↗</span>

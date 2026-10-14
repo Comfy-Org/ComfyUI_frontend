@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex w-full items-center justify-between gap-2 border-b border-border-default p-2"
+    class="flex w-full items-center justify-between gap-2 border-b border-border p-2"
   >
     <div class="flex items-center gap-2">
       <i class="icon-[lucide--layers-2] size-4" />

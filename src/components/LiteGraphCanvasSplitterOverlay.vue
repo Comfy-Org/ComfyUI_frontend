@@ -37,8 +37,8 @@
               :order="1"
               :class="
                 sidebarLocation === 'left'
-                  ? 'side-bar-panel pointer-events-auto bg-comfy-menu-bg focus-visible:outline-hidden'
-                  : 'pointer-events-auto bg-comfy-menu-bg focus-visible:outline-hidden'
+                  ? 'side-bar-panel pointer-events-auto bg-background focus-visible:outline-hidden'
+                  : 'pointer-events-auto bg-background focus-visible:outline-hidden'
               "
               :min-size="
                 sidebarLocation === 'left'
@@ -127,7 +127,7 @@
                   id="bottom-panel"
                   :order="2"
                   :default-size="bottomPanelDefaultSizes[1]"
-                  class="bottom-panel pointer-events-auto max-w-full overflow-x-auto rounded-lg border border-border bg-comfy-menu-bg focus-visible:outline-hidden"
+                  class="bottom-panel pointer-events-auto max-w-full overflow-x-auto rounded-lg border border-border bg-background focus-visible:outline-hidden"
                 >
                   <slot name="bottom-panel" />
                 </SplitterPanel>
@@ -156,8 +156,8 @@
               :order="3"
               :class="
                 sidebarLocation === 'right'
-                  ? 'side-bar-panel pointer-events-auto bg-comfy-menu-bg focus-visible:outline-hidden'
-                  : 'pointer-events-auto bg-comfy-menu-bg focus-visible:outline-hidden'
+                  ? 'side-bar-panel pointer-events-auto bg-background focus-visible:outline-hidden'
+                  : 'pointer-events-auto bg-background focus-visible:outline-hidden'
               "
               :min-size="
                 sidebarLocation === 'right'

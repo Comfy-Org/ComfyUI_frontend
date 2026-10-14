@@ -19,7 +19,7 @@ const { accent } = defineProps<{
     <div class="flex min-w-0 items-center gap-2">
       <slot name="icon" />
       <div class="flex min-w-0 flex-col">
-        <span class="text-sm font-medium wrap-break-word text-base-foreground">
+        <span class="text-sm font-medium wrap-break-word text-foreground">
           <slot name="title" />
         </span>
         <span

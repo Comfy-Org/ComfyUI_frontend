@@ -28,7 +28,7 @@
             <i
               v-else-if="workflowOption.workflow.initialMode === 'app'"
               data-testid="workflow-mode-icon"
-              class="icon-[lucide--panels-top-left] bg-primary-background"
+              class="icon-[lucide--panels-top-left] bg-primary"
             />
           </template>
           <WorkflowAgentTargetIndicator
@@ -58,7 +58,7 @@
               role="img"
               :aria-label="t('g.agentModified')"
               data-testid="agent-modified-indicator"
-              class="absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full bg-primary-background"
+              class="absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full bg-primary"
             />
             <i
               v-else-if="workflowStatus"
@@ -77,7 +77,7 @@
               :class="
                 cn(
                   'absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full',
-                  isActiveTab ? 'bg-base-foreground' : 'bg-smoke-800'
+                  isActiveTab ? 'bg-foreground' : 'bg-smoke-800'
                 )
               "
             />
@@ -238,9 +238,9 @@ const showModeIcon = computed(() => !compact || isActiveTab.value)
 
 const workflowStatusIconClasses: Record<WorkflowExecutionStatus, string> = {
   running:
-    'text-base-foreground icon-[lucide--loader-circle] motion-safe:animate-spin',
+    'text-foreground icon-[lucide--loader-circle] motion-safe:animate-spin',
   completed: 'icon-[lucide--circle-check] text-success-background',
-  failed: 'icon-[lucide--octagon-alert] text-destructive-background'
+  failed: 'icon-[lucide--octagon-alert] text-destructive'
 }
 
 const tabActivity = useWorkflowTabActivityStore()

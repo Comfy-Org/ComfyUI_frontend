@@ -1,10 +1,10 @@
 <template>
   <div
-    class="flex min-w-[460px] flex-col rounded-2xl border border-border-default bg-base-background shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
+    class="flex min-w-[460px] flex-col rounded-2xl border border-border bg-background shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
   >
     <!-- Header -->
     <div class="flex items-center justify-between p-8">
-      <h2 class="m-0 text-lg font-bold text-base-foreground">
+      <h2 class="m-0 text-lg font-bold text-foreground">
         {{
           isInsufficientCredits
             ? $t('credits.topUp.addMoreCreditsToRun')
@@ -12,7 +12,7 @@
         }}
       </h2>
       <button
-        class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none"
+        class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-1 focus-visible:ring-border focus-visible:outline-none"
         :aria-label="$t('g.close')"
         @click="() => handleClose()"
       >
@@ -41,7 +41,7 @@
           :aria-pressed="selectedPreset === amount"
           :class="
             cn(
-              'h-10 w-full text-base font-medium focus-visible:ring-border-default',
+              'h-10 w-full text-base font-medium focus-visible:ring-border',
               selectedPreset === amount && 'bg-secondary-background-selected'
             )
           "
@@ -70,7 +70,7 @@
           @update:model-value="handlePayAmountChange"
         >
           <NumberFieldDecrement />
-          <span class="shrink-0 text-base font-semibold text-base-foreground"
+          <span class="shrink-0 text-base font-semibold text-foreground"
             >$</span
           >
           <NumberFieldInput
@@ -151,7 +151,7 @@
         <a
           :href="pricingUrl"
           target="_blank"
-          class="flex items-center gap-1 text-sm text-muted-foreground no-underline transition-colors hover:text-base-foreground"
+          class="flex items-center gap-1 text-sm text-muted-foreground no-underline transition-colors hover:text-foreground"
         >
           {{ $t('credits.topUp.viewPricing') }}
           <i class="icon-[lucide--external-link] size-4" />

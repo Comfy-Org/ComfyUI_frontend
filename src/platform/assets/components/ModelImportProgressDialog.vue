@@ -127,9 +127,9 @@ async function cancelDownload(taskId: TaskId) {
   <ToastPanel v-model:expanded="isExpanded" :visible :announcement>
     <template #default>
       <div
-        class="flex h-12 items-center justify-between border-b border-border-default px-4"
+        class="flex h-12 items-center justify-between border-b border-border px-4"
       >
-        <h3 class="text-sm font-bold text-base-foreground">
+        <h3 class="text-sm font-bold text-foreground">
           {{ t('progressToast.importingModels') }}
         </h3>
         <div class="flex items-center gap-2">
@@ -207,22 +207,20 @@ async function cancelDownload(taskId: TaskId) {
 
     <template #footer="{ toggle }">
       <div
-        class="flex h-12 items-center justify-between gap-2 border-t border-border-default px-4"
+        class="flex h-12 items-center justify-between gap-2 border-t border-border px-4"
       >
         <div class="flex min-w-0 flex-1 items-center gap-2 text-sm">
           <template v-if="isInProgress">
             <Loader size="sm" class="shrink-0 text-muted-foreground" />
-            <span
-              class="min-w-0 flex-1 truncate font-bold text-base-foreground"
-            >
+            <span class="min-w-0 flex-1 truncate font-bold text-foreground">
               {{ currentJobName }}
             </span>
           </template>
           <template v-else-if="failedJobs.length > 0">
             <i
-              class="icon-[lucide--circle-alert] size-4 shrink-0 text-destructive-background"
+              class="icon-[lucide--circle-alert] size-4 shrink-0 text-destructive"
             />
-            <span class="min-w-0 truncate font-bold text-base-foreground">
+            <span class="min-w-0 truncate font-bold text-foreground">
               {{ outcomeLabel }}
             </span>
           </template>
@@ -230,7 +228,7 @@ async function cancelDownload(taskId: TaskId) {
             <i
               class="icon-[lucide--circle-x] size-4 shrink-0 text-muted-foreground"
             />
-            <span class="min-w-0 truncate font-bold text-base-foreground">
+            <span class="min-w-0 truncate font-bold text-foreground">
               {{ outcomeLabel }}
             </span>
           </template>
@@ -238,7 +236,7 @@ async function cancelDownload(taskId: TaskId) {
             <i
               class="icon-[lucide--check-circle] size-4 shrink-0 text-jade-600"
             />
-            <span class="min-w-0 truncate font-bold text-base-foreground">
+            <span class="min-w-0 truncate font-bold text-foreground">
               {{ outcomeLabel }}
             </span>
           </template>

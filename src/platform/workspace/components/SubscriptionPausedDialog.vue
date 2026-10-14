@@ -1,17 +1,15 @@
 <template>
   <div
-    class="flex w-90 max-w-full flex-col overflow-hidden rounded-2xl border border-border-default bg-base-background"
+    class="flex w-90 max-w-full flex-col overflow-hidden rounded-2xl border border-border bg-background"
   >
-    <div
-      class="flex h-12 items-center gap-2 border-b border-border-default p-4"
-    >
-      <p class="m-0 min-w-0 flex-1 font-inter text-sm text-base-foreground">
+    <div class="flex h-12 items-center gap-2 border-b border-border p-4">
+      <p class="m-0 min-w-0 flex-1 font-inter text-sm text-foreground">
         {{ $t(titleKey) }}
       </p>
       <button
         type="button"
         :aria-label="$t('g.close')"
-        class="flex size-4 shrink-0 cursor-pointer items-center justify-center border-none bg-transparent text-base-foreground hover:text-muted-foreground"
+        class="flex size-4 shrink-0 cursor-pointer items-center justify-center border-none bg-transparent text-foreground hover:text-muted-foreground"
         @click="onClose"
       >
         <i class="pi pi-times text-xs" />

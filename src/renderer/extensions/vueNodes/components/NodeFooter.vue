@@ -247,7 +247,7 @@ const errorLabel = computed(() =>
 const errorColorClass = computed(() =>
   errorSeverity === 'missing'
     ? 'bg-warning-background text-warning-on-background hover:bg-warning-background-hover'
-    : 'bg-destructive-background text-white hover:bg-destructive-background-hover'
+    : 'bg-destructive text-white hover:bg-destructive-background-hover'
 )
 
 let suppressNextClick = false

@@ -8,7 +8,7 @@
           v-for="option in planScopeOptions"
           :key="option.value"
           :value="option.value"
-          class="h-8 rounded-b-none bg-base-background px-4 text-base-foreground opacity-50 hover:bg-base-background hover:opacity-100 data-[state=on]:bg-base-background data-[state=on]:opacity-100"
+          class="h-8 rounded-b-none bg-background px-4 text-foreground opacity-50 hover:bg-background hover:opacity-100 data-[state=on]:bg-background data-[state=on]:opacity-100"
         >
           {{ option.label }}
         </ToggleGroupItem>
@@ -22,7 +22,7 @@
          Grows to fill the dialog so its height stays constant across the
          personal/team toggle. -->
     <div
-      class="flex min-h-0 flex-col gap-6 rounded-2xl bg-base-background p-8 xl:flex-1"
+      class="flex min-h-0 flex-col gap-6 rounded-2xl bg-background p-8 xl:flex-1"
     >
       <!-- Plan-scope description, above the billing toggle (DES-197). -->
       <I18nT
@@ -34,7 +34,7 @@
         <template #action>
           <button
             type="button"
-            class="cursor-pointer border-none bg-transparent p-0 text-sm text-base-foreground hover:text-muted-foreground"
+            class="cursor-pointer border-none bg-transparent p-0 text-sm text-foreground hover:text-muted-foreground"
             @click="planMode = 'team'"
           >
             {{ t('subscription.personalHeaderAction') }}
@@ -50,7 +50,7 @@
         <template #learnMore>
           <button
             type="button"
-            class="cursor-pointer border-none bg-transparent p-0 text-sm text-base-foreground hover:text-muted-foreground"
+            class="cursor-pointer border-none bg-transparent p-0 text-sm text-foreground hover:text-muted-foreground"
             @click="handleViewEnterprise"
           >
             {{ t('subscription.teamHeaderLearnMore') }}
@@ -65,19 +65,19 @@
           v-model="currentBillingCycle"
           type="single"
           :allow-empty="false"
-          class="rounded-lg bg-secondary-background p-1.5"
+          class="rounded-lg bg-secondary p-1.5"
         >
           <ToggleGroupItem
             v-for="option in billingCycleOptions"
             :key="option.value"
             :value="option.value"
-            class="h-8 min-w-44 px-5 data-[state=on]:bg-base-foreground data-[state=on]:text-base-background"
+            class="h-8 min-w-44 px-5 data-[state=on]:bg-foreground data-[state=on]:text-background"
           >
             <div class="flex items-center gap-2">
               <span>{{ option.label }}</span>
               <div
                 v-if="option.value === 'yearly'"
-                class="flex items-center rounded-full bg-primary-background px-2 py-0.5 text-2xs font-bold whitespace-nowrap text-white"
+                class="flex items-center rounded-full bg-primary px-2 py-0.5 text-2xs font-bold whitespace-nowrap text-white"
               >
                 {{
                   planMode === 'team'
@@ -99,18 +99,18 @@
         <div
           v-for="tier in tiers"
           :key="tier.id"
-          class="flex flex-col rounded-2xl border border-border-default bg-base-background shadow-[0_0_12px_rgba(0,0,0,0.1)] xl:w-80"
+          class="flex flex-col rounded-2xl border border-border bg-background shadow-[0_0_12px_rgba(0,0,0,0.1)] xl:w-80"
         >
           <div class="flex flex-1 flex-col gap-4 p-6 pb-0">
             <div class="flex flex-row items-center justify-between gap-2">
               <span
-                class="font-inter text-base/normal font-bold text-base-foreground"
+                class="font-inter text-base/normal font-bold text-foreground"
               >
                 {{ tier.name }}
               </span>
               <div
                 v-if="tier.isPopular"
-                class="flex h-5 items-center rounded-full bg-base-foreground px-1.5 text-2xs font-bold tracking-tight text-base-background uppercase"
+                class="flex h-5 items-center rounded-full bg-foreground px-1.5 text-2xs font-bold tracking-tight text-background uppercase"
               >
                 {{ t('subscription.mostPopular') }}
               </div>
@@ -118,7 +118,7 @@
             <div class="flex flex-col gap-2">
               <div class="flex flex-row items-baseline gap-2">
                 <span
-                  class="font-inter text-[28px] leading-normal font-semibold text-base-foreground tabular-nums"
+                  class="font-inter text-[28px] leading-normal font-semibold text-foreground tabular-nums"
                 >
                   ${{ getPrice(tier) }}
                   <span
@@ -128,7 +128,7 @@
                     ${{ getMonthlyPrice(tier) }}
                   </span>
                 </span>
-                <span class="font-inter text-sm/normal text-base-foreground">
+                <span class="font-inter text-sm/normal text-foreground">
                   {{ t('subscription.usdPerMonth') }}
                 </span>
               </div>
@@ -143,7 +143,7 @@
               </span>
             </div>
 
-            <div class="h-px w-full bg-border-default" />
+            <div class="h-px w-full bg-border" />
 
             <!-- Progressive feature list: "What's included" then
                  "Everything in {prev tier}, plus:" (DES-197). -->
@@ -156,7 +156,7 @@
                 :key="feature"
                 class="flex flex-row items-start gap-2"
               >
-                <i class="pi pi-check mt-0.5 text-xs text-base-foreground" />
+                <i class="pi pi-check mt-0.5 text-xs text-foreground" />
                 <span class="text-sm font-normal text-muted-foreground">
                   {{ feature }}
                 </span>
@@ -172,7 +172,7 @@
                   aria-hidden="true"
                 />
                 <span
-                  class="font-inter text-sm/normal font-bold text-base-foreground tabular-nums"
+                  class="font-inter text-sm/normal font-bold text-foreground tabular-nums"
                 >
                   {{ n(creditsForTier(tier)) }}
                 </span>
@@ -199,8 +199,8 @@
                   'h-10 w-full',
                   getButtonTextClass(tier),
                   tier.key === 'creator'
-                    ? 'border-transparent bg-base-foreground hover:bg-inverted-background-hover'
-                    : 'border-transparent bg-secondary-background hover:bg-secondary-background-hover focus:bg-secondary-background-selected'
+                    ? 'border-transparent bg-foreground hover:bg-inverted-background-hover'
+                    : 'border-transparent bg-secondary hover:bg-secondary-background-hover focus:bg-secondary-background-selected'
                 )
               "
               @click="() => handleSubscribe(tier.key)"
@@ -218,13 +218,13 @@
         >
           <!-- Team Plan + Details share one card, split by a divider. -->
           <div
-            class="flex flex-[2.6] flex-col rounded-2xl border border-border-default bg-base-background shadow-[0_0_12px_rgba(0,0,0,0.1)] xl:flex-row xl:overflow-hidden"
+            class="flex flex-[2.6] flex-col rounded-2xl border border-border bg-background shadow-[0_0_12px_rgba(0,0,0,0.1)] xl:flex-row xl:overflow-hidden"
           >
             <!-- Team Plan column -->
             <div class="flex flex-[1.6] flex-col gap-6 p-6">
               <div class="flex flex-col gap-1">
                 <span
-                  class="font-inter text-base/normal font-bold text-base-foreground"
+                  class="font-inter text-base/normal font-bold text-foreground"
                 >
                   {{ t('subscription.teamPlan.name') }}
                 </span>
@@ -250,7 +250,7 @@
                     aria-hidden="true"
                   />
                   <span
-                    class="font-inter text-sm/normal font-bold text-base-foreground tabular-nums"
+                    class="font-inter text-sm/normal font-bold text-foreground tabular-nums"
                   >
                     {{ n(teamCreditsForCurrentCycle) }}
                   </span>
@@ -280,13 +280,13 @@
 
             <!-- Divider: horizontal when stacked, vertical at xl -->
             <div
-              class="h-px w-full shrink-0 self-stretch bg-border-default xl:h-auto xl:w-px"
+              class="h-px w-full shrink-0 self-stretch bg-border xl:h-auto xl:w-px"
             />
 
             <!-- Details column -->
             <div class="flex flex-1 flex-col gap-4 p-6">
               <span
-                class="font-inter text-base/normal font-bold text-base-foreground"
+                class="font-inter text-base/normal font-bold text-foreground"
               >
                 {{ t('subscription.teamPlan.detailsTitle') }}
               </span>
@@ -304,7 +304,7 @@
                   :key="perk"
                   class="flex flex-row items-start gap-2"
                 >
-                  <i class="pi pi-check mt-0.5 text-xs text-base-foreground" />
+                  <i class="pi pi-check mt-0.5 text-xs text-foreground" />
                   <span class="text-sm font-normal text-muted-foreground">
                     {{ perk }}
                   </span>
@@ -327,11 +327,9 @@
 
           <!-- Enterprise card -->
           <div
-            class="flex flex-1 flex-col gap-4 rounded-2xl border border-border-default bg-base-background p-6 shadow-[0_0_12px_rgba(0,0,0,0.1)]"
+            class="flex flex-1 flex-col gap-4 rounded-2xl border border-border bg-background p-6 shadow-[0_0_12px_rgba(0,0,0,0.1)]"
           >
-            <span
-              class="font-inter text-base/normal font-bold text-base-foreground"
-            >
+            <span class="font-inter text-base/normal font-bold text-foreground">
               {{ t('subscription.enterprise.name') }}
             </span>
             <div class="flex flex-col gap-3">
@@ -342,13 +340,13 @@
                 {{ t('subscription.enterprise.flexibility') }}
               </span>
             </div>
-            <div class="h-px w-full bg-border-default" />
+            <div class="h-px w-full bg-border" />
             <span class="text-sm/relaxed font-normal text-muted-foreground">
               {{ t('subscription.enterprise.reachOut') }}
             </span>
             <Button
               variant="secondary"
-              class="mt-auto h-10 w-full border-transparent bg-secondary-background font-bold hover:bg-secondary-background-hover"
+              class="mt-auto h-10 w-full border-transparent bg-secondary font-bold hover:bg-secondary-background-hover"
               @click="handleViewEnterprise"
             >
               {{ t('subscription.enterprise.cta') }}
@@ -362,10 +360,10 @@
       <div
         v-if="showScheduledPlanChange"
         role="status"
-        class="flex items-center gap-2 rounded-full bg-base-foreground px-3 py-1.5 text-sm text-base-background"
+        class="flex items-center gap-2 rounded-full bg-foreground px-3 py-1.5 text-sm text-background"
       >
         <i
-          class="icon-[lucide--info] size-4 shrink-0 bg-base-background"
+          class="icon-[lucide--info] size-4 shrink-0 bg-background"
           aria-hidden="true"
         />
         <span>
@@ -381,14 +379,14 @@
         v-else
         keypath="subscription.pricingBlurb"
         tag="p"
-        class="m-0 text-center text-sm text-text-secondary"
+        class="m-0 text-center text-sm text-muted-foreground"
       >
         <template #seeDetails>
           <a
             :href="VIDEO_TEMPLATE_URL"
             target="_blank"
             rel="noopener noreferrer"
-            class="cursor-pointer text-sm text-base-foreground no-underline hover:text-muted-foreground"
+            class="cursor-pointer text-sm text-foreground no-underline hover:text-muted-foreground"
           >
             {{ t('subscription.pricingBlurbSeeDetails') }}
           </a>
@@ -398,7 +396,7 @@
             :href="QUESTIONS_URL"
             target="_blank"
             rel="noopener noreferrer"
-            class="cursor-pointer text-sm text-base-foreground no-underline hover:text-muted-foreground"
+            class="cursor-pointer text-sm text-foreground no-underline hover:text-muted-foreground"
           >
             {{ t('subscription.pricingBlurbQuestions') }}
           </a>
@@ -408,7 +406,7 @@
             :href="ENTERPRISE_URL"
             target="_blank"
             rel="noopener noreferrer"
-            class="cursor-pointer text-sm text-base-foreground no-underline hover:text-muted-foreground"
+            class="cursor-pointer text-sm text-foreground no-underline hover:text-muted-foreground"
           >
             {{ t('subscription.pricingBlurbEnterprise') }}
           </a>
@@ -418,7 +416,7 @@
             :href="PRICING_URL"
             target="_blank"
             rel="noopener noreferrer"
-            class="cursor-pointer text-sm text-base-foreground no-underline hover:text-muted-foreground"
+            class="cursor-pointer text-sm text-foreground no-underline hover:text-muted-foreground"
           >
             {{ t('subscription.pricingBlurbClickHere') }}
           </a>
@@ -905,8 +903,8 @@ const isButtonDisabled = (tier: PricingTierConfig): boolean =>
 
 const getButtonTextClass = (tier: PricingTierConfig): string =>
   tier.key === 'creator'
-    ? 'font-inter text-sm font-bold leading-normal text-base-background'
-    : 'font-inter text-sm font-bold leading-normal text-base-foreground'
+    ? 'font-inter text-sm font-bold leading-normal text-background'
+    : 'font-inter text-sm font-bold leading-normal text-foreground'
 
 const getPrice = (tier: PricingTierConfig): number =>
   getPriceFromApi(tier) ?? tier.pricing[currentBillingCycle.value]

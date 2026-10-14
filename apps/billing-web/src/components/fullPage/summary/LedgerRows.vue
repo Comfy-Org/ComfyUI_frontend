@@ -27,7 +27,7 @@ const continuesItems = computed(
 
 <template>
   <template v-if="ledger.items.length + deductions.length > 0">
-    <hr class="mt-8 mb-0 border-border-default" />
+    <hr class="mt-8 mb-0 border-border" />
     <ul
       v-if="ledger.items.length > 0"
       class="m-0 flex list-none flex-col gap-4 p-0 pt-6"
@@ -39,7 +39,7 @@ const continuesItems = computed(
       />
     </ul>
     <template v-if="ledger.subtotal">
-      <hr class="mt-6 mb-0 border-border-default" />
+      <hr class="mt-6 mb-0 border-border" />
       <div
         class="flex items-baseline justify-between gap-4 pt-4 text-sm text-muted-foreground"
       >

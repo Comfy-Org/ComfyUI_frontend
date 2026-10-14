@@ -19,8 +19,8 @@
             'cursor-pointer': !disabled
           },
           isSelected(index) && !disabled
-            ? 'text-text-primary'
-            : 'text-text-secondary'
+            ? 'text-foreground'
+            : 'text-muted-foreground'
         )
       "
       :disabled="disabled"

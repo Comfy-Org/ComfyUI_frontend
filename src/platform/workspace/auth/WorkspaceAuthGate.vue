@@ -3,7 +3,7 @@
   <div
     v-else-if="initializationState === 'no_workspace'"
     ref="errorPanel"
-    class="flex size-full items-center justify-center bg-base-background p-8"
+    class="flex size-full items-center justify-center bg-background p-8"
     role="alert"
     tabindex="-1"
   >
@@ -13,7 +13,7 @@
         class="icon-[lucide--users] size-8 text-muted-foreground"
       />
       <div>
-        <h1 class="m-0 text-lg font-semibold text-base-foreground">
+        <h1 class="m-0 text-lg font-semibold text-foreground">
           {{ $t('workspaceAuth.noWorkspaceAccess.title') }}
         </h1>
         <p class="mt-2 mb-0 text-muted-foreground">
@@ -28,7 +28,7 @@
   <div
     v-else-if="initializationState !== 'initializing'"
     ref="errorPanel"
-    class="flex size-full items-center justify-center bg-base-background p-8"
+    class="flex size-full items-center justify-center bg-background p-8"
     role="alert"
     tabindex="-1"
   >
@@ -38,7 +38,7 @@
         class="icon-[lucide--triangle-alert] size-8 text-error"
       />
       <div>
-        <h1 class="m-0 text-lg font-semibold text-base-foreground">
+        <h1 class="m-0 text-lg font-semibold text-foreground">
           {{ $t('workspaceAuth.initializationFailed') }}
         </h1>
         <p class="mt-2 mb-0 text-muted-foreground">

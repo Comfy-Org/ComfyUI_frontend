@@ -144,7 +144,7 @@ function dragDrop(e: DragEvent) {
     >
       <WorkflowTabs />
     </div>
-    <div class="flex min-h-0 flex-1 flex-row bg-secondary-background">
+    <div class="flex min-h-0 flex-1 flex-row bg-secondary">
       <div
         ref="workspace"
         data-testid="linear-workspace-column"
@@ -162,7 +162,7 @@ function dragDrop(e: DragEvent) {
           hide-workspace-toggles
         />
         <SplitterGroup
-          class="h-full flex-1 border-none bg-secondary-background"
+          class="h-full flex-1 border-none bg-secondary"
           @keydown.capture="onResizeStart"
           @keyup="onResizeEnd"
           @focusout="onResizeEnd"
@@ -175,7 +175,7 @@ function dragDrop(e: DragEvent) {
             :order="1"
             :default-size="panelPercentages[0]"
             :min-size="sidePanelMinSize(showLeftBuilder)"
-            class="arrange-panel min-w-78 overflow-hidden bg-comfy-menu-bg outline-none"
+            class="arrange-panel min-w-78 overflow-hidden bg-background outline-none"
           >
             <AppBuilder v-if="showLeftBuilder" />
             <div
@@ -234,7 +234,7 @@ function dragDrop(e: DragEvent) {
             :order="3"
             :default-size="panelPercentages[2]"
             :min-size="sidePanelMinSize(showRightBuilder)"
-            class="arrange-panel min-w-78 overflow-hidden bg-comfy-menu-bg outline-none"
+            class="arrange-panel min-w-78 overflow-hidden bg-background outline-none"
           >
             <AppBuilder v-if="showRightBuilder" />
             <LinearControls

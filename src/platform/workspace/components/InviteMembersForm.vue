@@ -17,8 +17,7 @@
         :class="
           cn(
             'rounded-full',
-            !isValidEmail(email) &&
-              'bg-destructive-background/20 text-destructive-background'
+            !isValidEmail(email) && 'bg-destructive/20 text-destructive'
           )
         "
       >
@@ -38,7 +37,7 @@
       v-if="invalidEmails.length > 0"
       :id="invalidEmailsHintId"
       role="alert"
-      class="m-0 text-xs text-destructive-background"
+      class="m-0 text-xs text-destructive"
     >
       {{
         $t(
@@ -68,7 +67,7 @@
       v-if="seatOverage > 0"
       :id="seatLimitHintId"
       role="alert"
-      class="m-0 text-xs text-destructive-background"
+      class="m-0 text-xs text-destructive"
     >
       {{
         $t('workspacePanel.inviteMemberDialog.seatLimitExceeded', {

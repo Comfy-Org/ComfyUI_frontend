@@ -10,7 +10,7 @@
         :aria-label="t('load3d.upDirection')"
         @click="toggleUpDirection"
       >
-        <i class="pi pi-arrow-up text-lg text-base-foreground" />
+        <i class="pi pi-arrow-up text-lg text-foreground" />
       </Button>
       <div
         v-show="showUpDirection"
@@ -22,10 +22,7 @@
             :key="direction"
             variant="textonly"
             :class="
-              cn(
-                'text-base-foreground',
-                upDirection === direction && 'bg-blue-500'
-              )
+              cn('text-foreground', upDirection === direction && 'bg-blue-500')
             "
             @click="selectUpDirection(direction)"
           >
@@ -45,7 +42,7 @@
         :aria-label="t('load3d.materialMode')"
         @click="toggleMaterialMode"
       >
-        <i class="pi pi-box text-lg text-base-foreground" />
+        <i class="pi pi-box text-lg text-foreground" />
       </Button>
       <div
         v-show="showMaterialMode"
@@ -58,7 +55,7 @@
             variant="textonly"
             :class="
               cn(
-                'whitespace-nowrap text-base-foreground',
+                'whitespace-nowrap text-foreground',
                 materialMode === mode && 'bg-blue-500'
               )
             "
@@ -80,7 +77,7 @@
         :aria-label="t('load3d.showSkeleton')"
         @click="showSkeleton = !showSkeleton"
       >
-        <i class="pi pi-sitemap text-lg text-base-foreground" />
+        <i class="pi pi-sitemap text-lg text-foreground" />
       </Button>
     </div>
   </div>

@@ -74,7 +74,7 @@ function choose(action: 'accept' | 'reject'): void {
   >
     <div
       data-testid="agent-consent-card"
-      class="max-h-[85dvh] overflow-y-auto rounded-2xl border border-border bg-base-background shadow-[0_20px_24px_-4px_rgba(10,13,18,0.4),0_8px_8px_-4px_rgba(10,13,18,0.25),0_3px_3px_-1.5px_rgba(10,13,18,0.2)]"
+      class="max-h-[85dvh] overflow-y-auto rounded-2xl border border-border bg-background shadow-[0_20px_24px_-4px_rgba(10,13,18,0.4),0_8px_8px_-4px_rgba(10,13,18,0.25),0_3px_3px_-1.5px_rgba(10,13,18,0.2)]"
     >
       <div class="p-2">
         <Video
@@ -89,7 +89,7 @@ function choose(action: 'accept' | 'reject'): void {
         >
           <template #fallback>
             <div
-              class="grid aspect-video w-full place-items-center rounded-lg bg-secondary-background text-xs text-muted-foreground"
+              class="grid aspect-video w-full place-items-center rounded-lg bg-secondary text-xs text-muted-foreground"
             >
               {{ $t('agent.consent.videoPlaceholder') }}
             </div>
@@ -101,7 +101,7 @@ function choose(action: 'accept' | 'reject'): void {
         <div class="flex flex-col gap-4">
           <h2
             :id="titleId"
-            class="my-0 text-xl font-semibold text-base-foreground @xl:text-2xl"
+            class="my-0 text-xl font-semibold text-foreground @xl:text-2xl"
           >
             {{ title }}
           </h2>
@@ -115,11 +115,7 @@ function choose(action: 'accept' | 'reject'): void {
 
           <ReuseDocsLink v-if="docsUrl && !isWide" />
 
-          <p
-            v-if="error"
-            role="alert"
-            class="my-0 text-sm/5 text-destructive-background"
-          >
+          <p v-if="error" role="alert" class="my-0 text-sm/5 text-destructive">
             {{ error }}
           </p>
         </div>

@@ -37,7 +37,7 @@ onMounted(() => {
     class="flex flex-col gap-2 rounded-lg bg-tertiary-background p-4 focus-visible:outline-none"
   >
     <p
-      class="m-0 flex items-center gap-2 text-sm/5 font-medium text-base-foreground"
+      class="m-0 flex items-center gap-2 text-sm/5 font-medium text-foreground"
     >
       <i
         class="icon-[lucide--circle-alert] size-4 shrink-0 text-warning-background"
@@ -50,7 +50,7 @@ onMounted(() => {
     </p>
     <p
       v-if="outcome.kind === 'declined' && outcome.reason"
-      class="m-0 text-sm/5 text-base-foreground"
+      class="m-0 text-sm/5 text-foreground"
     >
       {{
         t('checkout.fullPage.outcome.reportedIssue', {

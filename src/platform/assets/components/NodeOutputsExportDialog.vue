@@ -1,5 +1,5 @@
 <template>
-  <div class="flex w-105 max-w-full flex-col border-t border-border-default">
+  <div class="flex w-105 max-w-full flex-col border-t border-border">
     <label
       class="flex cursor-pointer items-center justify-between gap-4 px-4 py-3 text-sm"
     >
@@ -20,17 +20,17 @@
             data-testid="output-thumbnail"
             :src="item.thumbnailUrl"
             alt=""
-            class="size-10 shrink-0 rounded-sm bg-secondary-background object-cover"
+            class="size-10 shrink-0 rounded-sm bg-secondary object-cover"
             @error="failedThumbnails.add(index)"
           />
           <div
             v-else
             data-testid="output-thumbnail-placeholder"
-            class="flex size-10 shrink-0 items-center justify-center rounded-sm bg-secondary-background"
+            class="flex size-10 shrink-0 items-center justify-center rounded-sm bg-secondary"
           >
             <i
               aria-hidden="true"
-              class="icon-[lucide--image] size-4 text-text-secondary"
+              class="icon-[lucide--image] size-4 text-muted-foreground"
             />
           </div>
           <span class="min-w-0 flex-1 truncate text-sm">{{ item.name }}</span>

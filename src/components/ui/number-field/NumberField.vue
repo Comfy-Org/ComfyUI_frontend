@@ -33,7 +33,7 @@ function updateModelValue(value: number | undefined) {
     :disable-wheel-change="disableWheelChange"
     :class="
       cn(
-        'flex h-10 w-full items-center rounded-lg bg-secondary-background text-base-foreground focus-within:ring-1 focus-within:ring-border-default hover:bg-secondary-background-hover data-disabled:pointer-events-none data-disabled:opacity-50',
+        'flex h-10 w-full items-center rounded-lg bg-secondary text-foreground focus-within:ring-1 focus-within:ring-border hover:bg-secondary-background-hover data-disabled:pointer-events-none data-disabled:opacity-50',
         className
       )
     "

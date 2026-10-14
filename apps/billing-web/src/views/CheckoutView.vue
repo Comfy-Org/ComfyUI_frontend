@@ -681,15 +681,15 @@ useEventListener(window, 'pagehide', () => {
       </p>
       <section
         v-else-if="failure && !preview"
-        class="rounded-xl border border-border-subtle bg-secondary-background p-6"
+        class="rounded-xl border border-border-subtle bg-secondary p-6"
       >
-        <p class="m-0 text-sm text-destructive-background">
+        <p class="m-0 text-sm text-destructive">
           {{ refusal(failure) }}
         </p>
         <button
           v-if="returnLink"
           type="button"
-          class="mt-4 cursor-pointer text-sm text-base-foreground underline underline-offset-4"
+          class="mt-4 cursor-pointer text-sm text-foreground underline underline-offset-4"
           @click="leaveForHost('back')"
         >
           {{ t('checkout.back') }}
@@ -720,7 +720,7 @@ useEventListener(window, 'pagehide', () => {
           >
             <template #plan>
               <OperationPlanSummary
-                class="mt-4 w-full rounded-xl bg-secondary-background p-4"
+                class="mt-4 w-full rounded-xl bg-secondary p-4"
                 :recovered="recoveredPlan"
               />
             </template>
