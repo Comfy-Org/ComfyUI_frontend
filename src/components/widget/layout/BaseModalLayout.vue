@@ -67,7 +67,7 @@
               :aria-label="t('g.closeDialog')"
               @click="closeDialog"
             >
-              <i class="pi pi-times text-base" />
+              <i class="pi pi-times" />
             </Button>
           </template>
         </header>
@@ -128,7 +128,7 @@
               :aria-label="t('g.closeDialog')"
               @click="closeDialog"
             >
-              <i class="pi pi-times text-base" />
+              <i class="pi pi-times" />
             </Button>
           </header>
           <div class="min-h-0 flex-1 overflow-y-auto">
