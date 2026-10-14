@@ -2447,7 +2447,24 @@
     "pickRemixRunSubtitle": "挑选应用、改编工作流或调用模型。尽在 Hub，直接在浏览器中完成。",
     "showcase": "Hub 中的工作流和模型",
     "workflowBy": "工作流 · {maker}",
-    "modelBy": "模型 · {maker}"
+    "modelBy": "模型 · {maker}",
+    "entries": {
+      "apps": {
+        "title": "应用",
+        "line": "上传，点击，完成。无需节点，无需配置。",
+        "seeAll": "查看全部应用"
+      },
+      "workflows": {
+        "title": "工作流",
+        "line": "下载一个，或在 Comfy Cloud 中运行，然后修改任意步骤。",
+        "seeAll": "查看全部工作流"
+      },
+      "models": {
+        "title": "模型",
+        "line": "通过一个 API 调用最新模型，先在这里试用。",
+        "seeAll": "查看全部模型"
+      }
+    }
   },
   "modelLaunch": {
     "copyPrompt": "复制提示词",

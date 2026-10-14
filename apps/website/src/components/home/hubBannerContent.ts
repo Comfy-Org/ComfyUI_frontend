@@ -5,7 +5,7 @@ type LoadHubBannerContent = () => Promise<HubBannerContent>
 const loadCatalogueContent: LoadHubBannerContent = async () =>
   (await import('@/data/hubBanner')).hubBannerContent
 
-const EMPTY: HubBannerContent = { workflows: [], models: [] }
+const EMPTY: HubBannerContent = { apps: [], workflows: [], models: [] }
 
 /** The homepage Hub banner's tiles, read from the catalogue only when the Hub is in this build. */
 export async function resolveHubBannerContent(

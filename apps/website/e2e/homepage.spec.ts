@@ -56,9 +56,10 @@ test.describe('Homepage @smoke', () => {
     await expect(
       banner.getByRole('link', { name: 'Explore the Hub' })
     ).toHaveAttribute('href', '/hub/')
-    await expect(
-      banner.getByRole('link', { name: 'Partner models' })
-    ).toHaveAttribute('href', '/hub/models/')
+    await expect(banner.getByRole('link', { name: /^Models/ })).toHaveAttribute(
+      'href',
+      '/hub/models/'
+    )
   })
 
   test('FeaturedWorkflowsSection carousel is visible', async ({ page }) => {
@@ -305,14 +306,14 @@ test.describe('Home Hub banner @interaction', () => {
     )
   })
 
-  test('the preview switch trades the mosaic for Pick · Remix · Run', async ({
+  test('the preview switch trades the entries for Pick · Remix · Run', async ({
     page
   }) => {
     await page.goto('/')
     const banner = page.getByTestId('home-hub-banner')
-    await expect(banner).toHaveAttribute('data-design', 'mosaic')
+    await expect(banner).toHaveAttribute('data-design', 'entries')
     await expect(
-      banner.getByRole('link', { name: 'Workflows' })
+      banner.getByRole('link', { name: /^Workflows/ })
     ).toHaveAttribute('href', '/hub/workflows/')
 
     const previewControls = page.getByRole('button', {

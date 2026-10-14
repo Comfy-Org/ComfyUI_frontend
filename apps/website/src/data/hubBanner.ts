@@ -1,11 +1,12 @@
 import { uniqBy } from 'es-toolkit'
 
 import type { WorkshopModel } from '@/config/models-catalogue'
+import { appModels } from '@/config/workshop-app-content'
 import { workshopModels } from '@/config/workshop-browse-content'
 import { workflowModels } from '@/config/workshop-workflow-content'
 
 export interface HubBannerTile {
-  readonly kind: 'workflow' | 'model'
+  readonly kind: 'app' | 'workflow' | 'model'
   readonly name: string
   readonly maker: string
   readonly href: string
@@ -13,6 +14,7 @@ export interface HubBannerTile {
 }
 
 export interface HubBannerContent {
+  readonly apps: readonly HubBannerTile[]
   readonly workflows: readonly HubBannerTile[]
   readonly models: readonly HubBannerTile[]
 }
@@ -66,5 +68,20 @@ const models: readonly HubBannerTile[] = uniqBy(
   (tile) => tile.maker
 ).slice(0, ROW_LENGTH)
 
-/** Ranked catalogue workflows and one model per partner, each with a still image. */
-export const hubBannerContent: HubBannerContent = { workflows, models }
+const apps: readonly HubBannerTile[] = appModels.flatMap((app) => {
+  const imageUrl = stillImage(app)
+  return imageUrl && !app.flag
+    ? [
+        {
+          kind: 'app' as const,
+          name: app.name,
+          maker: 'Comfy',
+          href: app.href,
+          imageUrl
+        }
+      ]
+    : []
+})
+
+/** Ranked catalogue apps, workflows and one model per partner, each with a still image. */
+export const hubBannerContent: HubBannerContent = { apps, workflows, models }

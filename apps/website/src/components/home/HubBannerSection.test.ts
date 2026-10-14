@@ -46,7 +46,7 @@ const sectionLinks = () =>
     .map((link) => [link.textContent.trim(), link.getAttribute('href')])
 
 describe('HubBannerSection', () => {
-  it('shows the mosaic banner by default', async () => {
+  it('leads with three entries into the open Hub sections by default', async () => {
     renderBanner()
 
     expect(
@@ -54,29 +54,51 @@ describe('HubBannerSection', () => {
         name: 'Everything you need to make it'
       })
     ).toBeVisible()
+    expect(screen.getByTestId('home-hub-banner')).toHaveAttribute(
+      'data-design',
+      'entries'
+    )
     expect(
       screen.getByRole('link', { name: 'Explore the Hub' })
     ).toHaveAttribute('href', '/hub/')
     expect(sectionLinks()).toEqual([
-      ['Apps', '/hub/apps/'],
-      ['Workflows', '/hub/workflows/'],
-      ['Partner models', '/hub/models/']
+      [
+        'AppsUpload, click, done. No nodes, no setup.See all apps',
+        '/hub/apps/'
+      ],
+      [
+        'WorkflowsDownload one or run it in Comfy Cloud, then change any step.See all workflows',
+        '/hub/workflows/'
+      ],
+      [
+        'ModelsCall the latest models through one API, try them here first.See all models',
+        '/hub/models/'
+      ]
     ])
   })
 
-  it('fills the mosaic with catalogue images only', async () => {
+  it('shows each entry with an image from its own catalogue', async () => {
     renderBanner()
 
-    const sources = (await screen.findAllByTestId('home-hub-mosaic-image')).map(
-      (image) => image.getAttribute('src')
-    )
-    const catalogueImages = new Set(
-      [...hubBannerContent.models, ...hubBannerContent.workflows].map(
-        (tile) => tile.imageUrl
-      )
-    )
-    expect(sources.length).toBeGreaterThan(3)
-    expect(sources.every((src) => catalogueImages.has(src ?? ''))).toBe(true)
+    await screen.findByTestId('home-hub-banner')
+    for (const [id, tiles] of [
+      ['apps', hubBannerContent.apps],
+      ['workflows', hubBannerContent.workflows],
+      ['models', hubBannerContent.models]
+    ] as const)
+      expect(
+        within(screen.getByTestId(`home-hub-entry-${id}`)).getByTestId(
+          'home-hub-entry-image'
+        )
+      ).toHaveAttribute('src', tiles[0]?.imageUrl)
+  })
+
+  it('leaves out the entries whose sections are closed', async () => {
+    flags({ apps: false, workflows: false })
+    renderBanner()
+
+    await screen.findByTestId('home-hub-banner')
+    expect(sectionLinks().map(([, href]) => href)).toEqual(['/hub/models/'])
   })
 
   it('switches to Pick · Remix · Run when the preview switch is on', async () => {

@@ -5,6 +5,7 @@ import { hubBannerContent } from '@/data/hubBanner'
 import { resolveHubBannerContent } from './hubBannerContent'
 
 const content: HubBannerContent = {
+  apps: [],
   workflows: [
     {
       kind: 'workflow',
@@ -22,6 +23,7 @@ describe('resolveHubBannerContent', () => {
     const load = vi.fn<() => Promise<HubBannerContent>>()
 
     await expect(resolveHubBannerContent(false, load)).resolves.toEqual({
+      apps: [],
       workflows: [],
       models: []
     })
