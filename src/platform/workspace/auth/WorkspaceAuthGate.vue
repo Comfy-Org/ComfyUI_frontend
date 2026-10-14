@@ -225,7 +225,7 @@ async function initialize(): Promise<void> {
     reportError(error, {
       surface: 'auth',
       errorType: 'workspace_auth_gate_initialization_failure',
-      level: error instanceof SessionRevokedError ? 'warning' : 'error'
+      level: initializationFailureLevel(error)
     })
     initializationRetryable.value = isRetryableInitializationError(error)
     initializationState.value =
@@ -238,6 +238,10 @@ async function initialize(): Promise<void> {
     if (generation !== initializationGeneration) return
     errorPanel.value?.focus()
   }
+}
+
+function initializationFailureLevel(error: unknown): 'warning' | 'error' {
+  return error instanceof SessionRevokedError ? 'warning' : 'error'
 }
 
 function isRetryableInitializationError(error: unknown): boolean {
