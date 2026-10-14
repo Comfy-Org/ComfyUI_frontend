@@ -35,7 +35,15 @@ import {
   sectionFromHash,
   workflowSections
 } from '@/lib/workshop/workflow-sections'
+import { useHubTaskSelection } from '@/lib/workshop/hub-task-address'
+import {
+  hubTaskEntries,
+  hubTaskShown,
+  inHubTask
+} from '@/lib/workshop/hub-tasks'
+import { usePreviewSwitch } from '@/lib/workshop/preview-switches'
 import CatalogueShowMore from './CatalogueShowMore.vue'
+import HubTaskSidebar from './HubTaskSidebar.vue'
 import WorkflowCategoryTabs from './WorkflowCategoryTabs.vue'
 import type { FilterChip } from './WorkshopFilterChips.vue'
 import WorkshopFilterChips from './WorkshopFilterChips.vue'
@@ -68,6 +76,14 @@ const filterMenu =
 
 const language = locale === 'zh-CN' ? locale : 'en'
 const categories = computed(() => workflowCategories(models, language))
+const taskSidebar = usePreviewSwitch('hub-task-sidebar')
+const taskEntries = computed(() =>
+  hubTaskEntries(models, (listed) => listed.length)
+)
+const { taskKey, readAddress: readTask } = useHubTaskSelection(
+  taskSidebar,
+  (key) => hubTaskShown(taskEntries.value, key)
+)
 
 function knownMedia(values: readonly string[]): Modality[] {
   return MODALITIES.filter((media) => values.includes(media))
@@ -78,9 +94,13 @@ const { submitSearch, quietly } = useHubCatalogueTracking('workflows', {
   resultsCount: () => visible.value.length,
   filters: [
     ['category', () => category.value],
+    ['task', () => taskKey.value],
     ['model', () => runsOn.value],
     ['sort', () => sort.value]
   ]
+})
+watch(taskSidebar, (on) => {
+  if (on) quietly(() => (category.value = ALL_WORKFLOWS))
 })
 function scrollToSection(id: string | undefined) {
   if (!id) return
@@ -94,7 +114,10 @@ onMounted(() =>
     const search = initialSearch ?? location.search
     const params = new URLSearchParams(search)
     query.value = params.get('q') ?? ''
-    category.value = categoryFromAddress(search, models)
+    category.value = taskSidebar.value
+      ? ALL_WORKFLOWS
+      : categoryFromAddress(search, models)
+    readTask(search)
     inputs.value = knownMedia(params.getAll('input'))
     outputs.value = knownMedia(params.getAll('output'))
     runsOn.value = params
@@ -131,9 +154,11 @@ const ordered = computed(() =>
   )
 )
 const inCategory = computed(() =>
-  category.value === ALL_WORKFLOWS
-    ? ordered.value
-    : ordered.value.filter((model) => model.category === category.value)
+  taskSidebar.value
+    ? ordered.value.filter((model) => inHubTask(model, taskKey.value))
+    : category.value === ALL_WORKFLOWS
+      ? ordered.value
+      : ordered.value.filter((model) => model.category === category.value)
 )
 
 function startsFrom(model: WorkflowWorkshopModel, chosen: Modality[]) {
@@ -219,7 +244,11 @@ const visible = computed(() => {
 const { shown, total, hasMore, showMore } = usePagedList(visible)
 
 const sectioned = computed(
-  () => !query.value.trim() && allSectioned(models) && visible.value.length > 0
+  () =>
+    !query.value.trim() &&
+    (!taskSidebar.value || taskKey.value === 'all') &&
+    allSectioned(models) &&
+    visible.value.length > 0
 )
 const sections = computed(() => workflowSections(visible.value, language))
 
@@ -263,6 +292,7 @@ function clearFilters() {
 function clear() {
   query.value = ''
   category.value = ALL_WORKFLOWS
+  taskKey.value = 'all'
   clearFilters()
 }
 </script>
@@ -273,7 +303,18 @@ function clear() {
     data-testid="workflow-catalogue"
   >
     <div class="max-lg:contents lg:sticky lg:top-26 lg:w-70 lg:shrink-0">
+      <HubTaskSidebar
+        v-if="taskSidebar"
+        v-model="taskKey"
+        :entries="taskEntries"
+        :total="models.length"
+        :panel-id="TAB_PANEL_ID"
+        :locale
+        class="max-lg:order-1"
+        data-design-decision="workflows-sidebar"
+      />
       <WorkflowCategoryTabs
+        v-else
         v-model="category"
         :categories
         :total="models.length"
@@ -327,7 +368,7 @@ function clear() {
       <div
         :id="TAB_PANEL_ID"
         role="tabpanel"
-        :aria-labelledby="`${TAB_PANEL_ID}-${category}`"
+        :aria-labelledby="`${TAB_PANEL_ID}-${taskSidebar ? taskKey : category}`"
         class="max-lg:order-2"
       >
         <WorkshopFilterChips

@@ -872,7 +872,17 @@
     "preview": {
       "label": "Preview controls",
       "community": "From the community",
-      "homePickRemixRun": "Home: Pick · Remix · Run banner"
+      "homePickRemixRun": "Home: Pick · Remix · Run banner",
+      "taskSidebar": "Hub: task sidebar"
+    },
+    "taskSidebar": {
+      "label": "Browse by task",
+      "generateImages": "Generate images",
+      "editImages": "Edit images",
+      "generateVideos": "Generate videos",
+      "imageToVideo": "Image to video",
+      "editVideos": "Edit videos",
+      "seeAll": "See all ({n})"
     }
   },
   "auth": {

@@ -10,7 +10,8 @@ export const PREVIEW_SWITCHES = [
   {
     id: 'home-hub-pick-remix-run',
     labelKey: 'workshop.preview.homePickRemixRun'
-  }
+  },
+  { id: 'hub-task-sidebar', labelKey: 'workshop.preview.taskSidebar' }
 ] as const satisfies readonly { id: string; labelKey: TranslationKey }[]
 
 export type PreviewSwitchId = (typeof PREVIEW_SWITCHES)[number]['id']

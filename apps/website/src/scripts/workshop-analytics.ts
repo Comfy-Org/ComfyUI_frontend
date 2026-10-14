@@ -54,7 +54,13 @@ export type HubItemSource =
   | 'app_row'
   | 'results_grid'
 
-export type HubFilter = 'catalogue' | 'use_case' | 'category' | 'model' | 'sort'
+export type HubFilter =
+  | 'catalogue'
+  | 'use_case'
+  | 'category'
+  | 'model'
+  | 'sort'
+  | 'task'
 
 export type WorkshopCheckoutFailureStage = 'balance' | 'credential' | 'checkout'
 

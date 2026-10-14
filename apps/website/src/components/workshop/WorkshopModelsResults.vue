@@ -7,14 +7,20 @@ import { CARD_GRID_BESIDE_NAV } from '@/lib/workshop/card-layout'
 import { canCompare, MAX_COMPARED } from '@/lib/workshop/explorer/compare'
 import CompareToggle from '@/components/workshop/explorer/compare/CompareToggle.vue'
 import WorkshopModelCard from '@/components/workshop/WorkshopModelCard.vue'
+import CatalogueShowMore from './CatalogueShowMore.vue'
 
 const {
   families,
   compared = [],
+  limit,
+  total,
   locale = 'en'
 } = defineProps<{
   families: readonly ModelFamily[]
   compared?: readonly string[]
+  /** How many cards are shown out of `total`; Show more appears below the rest. */
+  limit: number
+  total: number
   locale?: Locale
 }>()
 const { t } = translationsFor(locale)
@@ -22,6 +28,7 @@ const { t } = translationsFor(locale)
 defineEmits<{
   open: [model: WorkshopModel, event: MouseEvent]
   compare: [slug: string]
+  more: []
 }>()
 </script>
 
@@ -55,5 +62,12 @@ defineEmits<{
         />
       </li>
     </ul>
+    <CatalogueShowMore
+      v-if="limit < total"
+      :shown="limit"
+      :total
+      :locale
+      @more="$emit('more')"
+    />
   </div>
 </template>

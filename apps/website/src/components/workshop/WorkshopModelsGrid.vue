@@ -53,6 +53,15 @@ import { useModelTab } from '@/lib/workshop/explorer/model-tab-address'
 import { rememberListOnClick } from '@/lib/workshop/shelf-memory'
 import { modelsListReturn } from '@/lib/workshop/models-list-return'
 import { MODELS_CATALOGUE_ID } from '@/lib/workshop/models-hub'
+import {
+  hubTaskAddress,
+  hubTaskEntries,
+  hubTaskLabelKey,
+  hubTaskShown,
+  inHubTask
+} from '@/lib/workshop/hub-tasks'
+import { useHubTaskSelection } from '@/lib/workshop/hub-task-address'
+import { usePreviewSwitch } from '@/lib/workshop/preview-switches'
 import { shelfOf } from '@/lib/workshop/shelf-use-cases'
 import { useHubCatalogueTracking } from '@/composables/useHubCatalogueTracking'
 import {
@@ -74,8 +83,9 @@ import WorkshopModelsEmpty from '@/components/workshop/WorkshopModelsEmpty.vue'
 import WorkshopModelsResults from '@/components/workshop/WorkshopModelsResults.vue'
 import CompareTray from '@/components/workshop/explorer/compare/CompareTray.vue'
 import ModelTabs from '@/components/workshop/explorer/ModelTabs.vue'
+import HubTaskRows from '@/components/workshop/HubTaskRows.vue'
+import HubTaskSidebar from '@/components/workshop/HubTaskSidebar.vue'
 import ModelsExploreHero from '@/components/workshop/models-hub/ModelsExploreHero.vue'
-import CatalogueShowMore from './CatalogueShowMore.vue'
 import WorkshopSearchField from './WorkshopSearchField.vue'
 
 const CompareView = defineAsyncComponent(
@@ -106,6 +116,14 @@ const { tab, readAddress: readTab } = useModelTab(
   (named) => (tabCounts.value.get(named) ?? 0) > 0
 )
 const TAB_PANEL_ID = 'workshop-model-tab-panel'
+const taskSidebar = usePreviewSwitch('hub-task-sidebar')
+const taskEntries = computed(() =>
+  hubTaskEntries(models, (listed) => groupModels(listed).length)
+)
+const { taskKey, readAddress: readTask } = useHubTaskSelection(
+  taskSidebar,
+  (key) => hubTaskShown(taskEntries.value, key)
+)
 const MODELS_PAGE_SIZE = 48
 const openedShelf = computed(() => shelfOf(selectedUseCases.value))
 let scrollReady = false
@@ -115,6 +133,7 @@ const { submitSearch, quietly } = useHubCatalogueTracking('models', {
   resultsCount: () => visible.value.length,
   filters: [
     ['use_case', () => selectedUseCases.value],
+    ['task', () => taskKey.value],
     ['sort', () => sort.value]
   ]
 })
@@ -134,8 +153,19 @@ function readAddress(search: string) {
     legacyCapabilities.value = [...initial.capabilities]
     selectedAccess.value = parseAccess(search)
     selectedResolution.value = parseResolution(search)
+    readTask(search)
+    if (taskSidebar.value) leaveTabs()
   })
 }
+
+function leaveTabs() {
+  tab.value = 'all'
+  selectedUseCases.value = []
+}
+
+watch(taskSidebar, (on) => {
+  if (on) quietly(leaveTabs)
+})
 
 function selectTab(next: ModelTab) {
   tab.value = next
@@ -184,6 +214,7 @@ const toolbar = useTemplateRef<HTMLElement>('toolbar')
 const heading = useTemplateRef<HTMLElement>('heading')
 
 const useCaseOptions = computed<FacetMenuOption[]>(() => {
+  if (taskSidebar.value) return []
   const counts = countByUseCase(
     models.filter(
       (model) =>
@@ -230,7 +261,11 @@ const inTab = computed(() =>
     modalities: legacyModalities.value,
     providers: legacyProviders.value,
     capabilities: legacyCapabilities.value
-  }).filter((model) => hostedInTab(model, tab.value))
+  }).filter(
+    (model) =>
+      hostedInTab(model, tab.value) &&
+      (!taskSidebar.value || inHubTask(model, taskKey.value))
+  )
 )
 
 // A way of using a model that every listed model offers narrows nothing, so
@@ -284,13 +319,17 @@ const isFiltered = computed(
     selectedAccess.value.length > 0 ||
     selectedResolution.value !== undefined ||
     tab.value !== 'all' ||
+    (taskSidebar.value && taskKey.value !== 'all') ||
     legacyFiltered.value
+)
+const taskRowsShown = computed(() => taskSidebar.value && !isFiltered.value)
+const rowModels = computed(() =>
+  sortWorkshopModels(withAccess.value, sort.value)
 )
 
 const {
   limit: cardLimit,
   total: cardTotal,
-  hasMore,
   showMore,
   shown: shownFamilies
 } = usePagedList(() => visible.value, MODELS_PAGE_SIZE)
@@ -303,8 +342,18 @@ watch([openedShelf, () => query.value.trim() !== ''], () => {
 })
 
 const sectionTitleKey = computed<TranslationKey>(() =>
-  sectionTitleKeyFor(selectedUseCases.value, tab.value)
+  taskSidebar.value && taskKey.value !== 'all'
+    ? hubTaskLabelKey[taskKey.value]
+    : sectionTitleKeyFor(selectedUseCases.value, tab.value)
 )
+
+watch(taskKey, () => {
+  if (!scrollReady || !taskSidebar.value) return
+  void nextTick(() => {
+    if ((heading.value?.getBoundingClientRect().top ?? 0) < 0)
+      heading.value?.scrollIntoView({ block: 'start' })
+  })
+})
 
 function clearFilters() {
   query.value = ''
@@ -312,6 +361,7 @@ function clearFilters() {
   selectedAccess.value = []
   selectedResolution.value = undefined
   tab.value = 'all'
+  taskKey.value = 'all'
   legacyModalities.value = []
   legacyProviders.value = []
   legacyCapabilities.value = []
@@ -328,7 +378,34 @@ function rememberModel(model: WorkshopModel, event: MouseEvent) {
     },
     locale
   )
-  rememberListOnClick(list, model.href, event)
+  rememberListOnClick(
+    taskSidebar.value ? { ...list, href: withTask(list.href) } : list,
+    model.href,
+    event
+  )
+}
+
+function withTask(href: string): string {
+  const url = new URL(
+    hubTaskAddress(new URL(href, location.origin).href, taskKey.value)
+  )
+  return url.pathname + url.search
+}
+
+function openRowModel(
+  model: WorkshopModel,
+  event: MouseEvent,
+  row: string,
+  position: number
+) {
+  if (model.href)
+    captureHubItemClick(hubItemOf(model), {
+      surface: 'models',
+      source: 'use_case_row',
+      row,
+      position
+    })
+  rememberModel(model, event)
 }
 
 function openResult(model: WorkshopModel, event: MouseEvent) {
@@ -376,7 +453,18 @@ function openResult(model: WorkshopModel, event: MouseEvent) {
 
       <div class="flex flex-col lg:flex-row lg:items-start lg:gap-10">
         <div class="max-lg:contents lg:sticky lg:top-26 lg:w-58 lg:shrink-0">
+          <HubTaskSidebar
+            v-if="taskSidebar"
+            v-model="taskKey"
+            :entries="taskEntries"
+            :total="tabCounts.get('all') ?? 0"
+            :panel-id="TAB_PANEL_ID"
+            :locale
+            class="max-lg:order-1"
+            data-design-decision="models-sidebar"
+          />
           <ModelTabs
+            v-else
             :model-value="tab"
             :panel-id="TAB_PANEL_ID"
             :counts="tabCounts"
@@ -427,25 +515,28 @@ function openResult(model: WorkshopModel, event: MouseEvent) {
           <div
             :id="TAB_PANEL_ID"
             role="tabpanel"
-            :aria-labelledby="`${TAB_PANEL_ID}-${tab}`"
+            :aria-labelledby="`${TAB_PANEL_ID}-${taskSidebar ? taskKey : tab}`"
             class="max-lg:order-2"
           >
-            <template v-if="resultCount">
-              <WorkshopModelsResults
-                :families="shownFamilies"
-                :compared="comparedSlugs"
-                :locale
-                @open="openResult"
-                @compare="toggleCompare"
-              />
-              <CatalogueShowMore
-                v-if="hasMore"
-                :shown="cardLimit"
-                :total="cardTotal"
-                :locale
-                @more="showMore"
-              />
-            </template>
+            <HubTaskRows
+              v-if="taskRowsShown"
+              :models="rowModels"
+              :entries="taskEntries"
+              :locale
+              @select="taskKey = $event"
+              @pick="openRowModel"
+            />
+            <WorkshopModelsResults
+              v-else-if="resultCount"
+              :families="shownFamilies"
+              :compared="comparedSlugs"
+              :limit="cardLimit"
+              :total="cardTotal"
+              :locale
+              @open="openResult"
+              @compare="toggleCompare"
+              @more="showMore"
+            />
             <WorkshopModelsEmpty
               v-else
               :filtered="isFiltered"
