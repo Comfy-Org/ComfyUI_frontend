@@ -37,7 +37,7 @@
         <Button
           v-for="(light, index) in lights"
           :key="index"
-          v-tooltip.top="tip($t(LIGHT_TYPE_LABEL_KEYS[light.type]))"
+          :tooltip="$t(LIGHT_TYPE_LABEL_KEYS[light.type])"
           variant="textonly"
           size="unset"
           :aria-pressed="index === selectedIndex"
@@ -57,10 +57,9 @@
           {{ chipNumber(index) }}
         </Button>
         <Button
-          v-tooltip.top="tip($t('lightInfo.addLight'))"
+          :tooltip="$t('lightInfo.addLight')"
           variant="textonly"
-          size="unset"
-          :class="iconBtnClass"
+          size="icon"
           :aria-label="$t('lightInfo.addLight')"
           @click="addLight('directional')"
         >
@@ -68,10 +67,9 @@
         </Button>
         <Button
           v-if="selectedLight"
-          v-tooltip.top="tip($t('lightInfo.removeLight'))"
+          :tooltip="$t('lightInfo.removeLight')"
           variant="textonly"
-          size="unset"
-          :class="iconBtnClass"
+          size="icon"
           :aria-label="$t('lightInfo.removeLight')"
           @click="removeSelectedLight"
         >
@@ -97,18 +95,15 @@
 import { useElementSize } from '@vueuse/core'
 import { computed, onMounted, onUnmounted, ref, shallowRef, watch } from 'vue'
 
-import {
-  chipClass,
-  iconBtnClass,
-  tip
-} from '@/components/load3d/menubar/menuBarStyles'
+import { cn } from '@comfyorg/tailwind-utils'
+
+import { chipClass } from '@/components/load3d/menubar/menuBarStyles'
 import Button from '@/components/ui/button/Button.vue'
 import type { LightTransformGizmoMode } from '@/extensions/core/lightInfo/LightInfoViewport'
 import { LIGHT_TYPE_LABEL_KEYS } from '@/extensions/core/lightInfo/types'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { NodeId } from '@/types/nodeId'
 import { resolveNode } from '@/utils/litegraphUtil'
-import { cn } from '@comfyorg/tailwind-utils'
 
 import LightInfoLightEditor from './LightInfoLightEditor.vue'
 import LightInfoViewportToolbar from './LightInfoViewportToolbar.vue'

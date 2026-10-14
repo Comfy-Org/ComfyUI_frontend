@@ -5,15 +5,13 @@ import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useToast } from '@/components/ui/toast/toastStore'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 
 import ModelImportProgressDialog from './ModelImportProgressDialog.vue'
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 const i18n = createI18n({
   legacy: false,
@@ -52,8 +50,6 @@ describe('ModelImportProgressDialog cancellation', () => {
   it('reports cancellation failures and shows the error toast', async () => {
     const user = userEvent.setup()
     const store = renderDialog()
-    const toastStore = useToastStore()
-    const addToast = vi.spyOn(toastStore, 'add')
     const error = new Error('Cancellation unavailable')
     vi.spyOn(store, 'cancelDownload').mockResolvedValue({ ok: false, error })
 
@@ -66,10 +62,8 @@ describe('ModelImportProgressDialog cancellation', () => {
         errorType: 'asset_download_cancellation_failure',
         logToConsole: false
       })
-      expect(addToast).toHaveBeenCalledWith({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Cancellation unavailable'
+      expect(useToast().error).toHaveBeenCalledWith('Error', {
+        description: 'Cancellation unavailable'
       })
     })
   })
@@ -84,7 +78,6 @@ describe('ModelImportProgressDialog cancellation', () => {
     await user.click(screen.getByRole('button', { name: 'Close' }))
 
     await waitFor(() => expect(store.hasDownloads).toBe(false))
-    expect(screen.queryByRole('status')).toBeNull()
   })
 
   it('restores the close control once a cancellation settles', async () => {
@@ -111,7 +104,7 @@ describe('ModelImportProgressDialog cancellation', () => {
 
     await user.click(screen.getByRole('button', { name: 'Close' }))
 
-    expect(screen.queryByRole('status')).toBeNull()
+    expect(store.hasDownloads).toBe(false)
   })
 
   it('dismisses a failed download while reconciliation continues', async () => {
@@ -123,6 +116,41 @@ describe('ModelImportProgressDialog cancellation', () => {
 
     await user.click(screen.getByRole('button', { name: 'Close' }))
 
-    expect(screen.queryByRole('status')).toBeNull()
+    expect(store.hasDownloads).toBe(false)
   })
+})
+
+it('renders only while a download is tracked', async () => {
+  render(ModelImportProgressDialog, { global: { plugins: [i18n] } })
+  expect(screen.queryByRole('button', { name: 'Expand' })).toBeNull()
+
+  useAssetDownloadStore().trackDownload(
+    'task-123',
+    'checkpoints',
+    'model.safetensors'
+  )
+  await nextTick()
+
+  expect(screen.getByRole('button', { name: 'Expand' })).toBeVisible()
+})
+
+describe('ModelImportProgressDialog announcements', () => {
+  it.for([
+    { status: 'running', announcement: 'Importing Models' },
+    { status: 'failed', announcement: '1 download failed' },
+    { status: 'completed', announcement: 'All downloads completed' },
+    { status: 'cancelled', announcement: 'Cancelled' }
+  ] as const)(
+    'announces "$announcement" when the import is $status',
+    async ({ status, announcement }) => {
+      const store = renderDialog()
+
+      store.downloadList[0].status = status
+      await nextTick()
+
+      expect(
+        screen.getByText(announcement, { selector: '[role="status"]' })
+      ).toBeInTheDocument()
+    }
+  )
 })

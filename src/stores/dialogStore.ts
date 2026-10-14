@@ -1,34 +1,20 @@
-// We should consider moving to https://primevue.org/dynamicdialog/ once everything is in Vue.
-// Currently we need to bridge between legacy app code and Vue app with a Pinia store.
-import { merge } from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
-import type { DialogPassThroughOptions } from 'primevue/dialog'
 import { markRaw, ref } from 'vue'
-import type { Component, HTMLAttributes, Ref } from 'vue'
+import type { Component, Ref } from 'vue'
 
 import type { DialogContentSize } from '@/components/ui/dialog/dialog.variants'
 import type { ComponentAttrs } from 'vue-component-type-helpers'
 
-type DialogPosition =
-  | 'center'
-  | 'top'
-  | 'bottom'
-  | 'left'
-  | 'right'
-  | 'topleft'
-  | 'topright'
-  | 'bottomleft'
-  | 'bottomright'
-
-/**
- * Selects the dialog renderer used by `GlobalDialog`. `'reka'` (the default)
- * renders the Reka-UI primitive set under `src/components/ui/dialog/`.
- * `'primevue'` is the legacy PrimeVue `Dialog` escape hatch, kept only until
- * the branch is deleted in the Phase 6 cleanup (FE-578).
- */
-type DialogRenderer = 'primevue' | 'reka'
-
-interface CustomDialogComponentProps {
+export interface DialogComponentProps {
+  closable?: boolean
+  dismissOnPointerDownOutside?: boolean
+  /**
+   * The header, body and footer components lay out and pad their own
+   * sections, so the dialog frame adds no padding around them.
+   */
+  flush?: boolean
+  /** The component renders the whole panel: its surface, size and close button. */
+  headless?: boolean
   maximizable?: boolean
   maximized?: boolean
   onClose?: () => void
@@ -40,60 +26,14 @@ interface CustomDialogComponentProps {
    * `onClose`, which never fires on eviction.
    */
   onRemoved?: () => void
-  closable?: boolean
   /**
    * Hides the header close button while keeping `closable` dismissal paths
    * (Escape, programmatic close) available. Defaults to shown.
    */
   showCloseButton?: boolean
-  modal?: boolean
-  position?: DialogPosition
-  pt?: DialogPassThroughOptions
-  closeOnEscape?: boolean
-  dismissableMask?: boolean
-  /**
-   * When `false`, the Reka dialog does not dismiss when focus leaves its
-   * content. Set on container dialogs (e.g. Settings) that host nested dialogs,
-   * where a nested dialog closing can move focus onto an ordinary app element
-   * — a programmatic shift that must not be read as a dismiss. Escape and
-   * outside-pointer dismissal are unaffected. Defaults to `true`.
-   */
-  dismissOnFocusOutside?: boolean
-  unstyled?: boolean
-  headless?: boolean
-  renderer?: DialogRenderer
-  useAutomaticLabeling?: boolean
   size?: DialogContentSize
-  /**
-   * Class applied to the Reka-UI `DialogContent` element. Ignored on the
-   * PrimeVue path — use `pt` for that renderer.
-   */
-  contentClass?: HTMLAttributes['class']
-  /**
-   * Class applied to the Reka-UI `DialogOverlay` element. Ignored on the
-   * PrimeVue path — use `pt.mask` for that renderer.
-   */
-  overlayClass?: HTMLAttributes['class']
-  /**
-   * Class applied to the Reka-UI `DialogHeader` element on the non-headless
-   * path. Ignored on the PrimeVue path — use `pt.header` for that renderer.
-   */
-  headerClass?: HTMLAttributes['class']
-  /**
-   * Class applied to the wrapper around the content component on the Reka-UI
-   * non-headless path. Ignored on the PrimeVue path — use `pt.content` for
-   * that renderer.
-   */
-  bodyClass?: HTMLAttributes['class']
-  /**
-   * Class applied to the Reka-UI `DialogFooter` element on the non-headless
-   * path. Ignored on the PrimeVue path — use `pt.footer` for that renderer.
-   */
-  footerClass?: HTMLAttributes['class']
+  useAutomaticLabeling?: boolean
 }
-
-export type DialogComponentProps = Record<string, unknown> &
-  CustomDialogComponentProps
 
 export interface DialogInstance {
   key: string
@@ -144,10 +84,7 @@ function notifyRemoved(dialog: DialogInstance | undefined) {
 export const useDialogStore = defineStore('dialog', () => {
   const dialogStack: Ref<DialogInstance[]> = ref([])
 
-  /**
-   * The key of the currently active (top-most) dialog.
-   * Only the active dialog can be closed with the ESC key.
-   */
+  /** The key `closeDialog()` closes when called without one. */
   const activeKey = ref<string | null>(null)
 
   const genDialogKey = () => `dialog-${Math.random().toString(36).slice(2, 9)}`
@@ -175,7 +112,6 @@ export const useDialogStore = defineStore('dialog', () => {
       const [dialog] = dialogStack.value.splice(index, 1)
       insertDialogByPriority(dialog)
       activeKey.value = dialogKey
-      updateCloseOnEscapeStates()
     }
   }
 
@@ -203,7 +139,6 @@ export const useDialogStore = defineStore('dialog', () => {
           : null
     }
 
-    updateCloseOnEscapeStates()
     if (removed) notifyRemoved(targetDialog)
   }
 
@@ -232,55 +167,18 @@ export const useDialogStore = defineStore('dialog', () => {
       priority: options.priority ?? 1,
       dialogComponentProps: {
         maximizable: false,
-        modal: true,
         closable: true,
-        closeOnEscape: true,
-        dismissableMask: true,
-        renderer: 'reka' as DialogRenderer,
+        dismissOnPointerDownOutside: true,
         ...options.dialogComponentProps,
-        maximized: options.dialogComponentProps?.maximized ?? false,
-        onMaximize: () => {
-          dialog.dialogComponentProps.maximized = true
-        },
-        onUnmaximize: () => {
-          dialog.dialogComponentProps.maximized = false
-        },
-        onAfterHide: () => {
-          closeDialog(dialog)
-        },
-        pt: merge(options.dialogComponentProps?.pt || {}, {
-          root: {
-            onMousedown: () => {
-              riseDialog(dialog)
-            }
-          }
-        })
+        maximized: options.dialogComponentProps?.maximized ?? false
       }
     }
 
     insertDialogByPriority(dialog)
     activeKey.value = options.key
-    updateCloseOnEscapeStates()
     notifyRemoved(evicted)
 
     return dialog
-  }
-
-  /**
-   * Ensures only the top-most dialog in the stack can be closed with the Escape key.
-   * This is necessary because PrimeVue Dialogs do not handle `closeOnEscape` prop
-   * correctly when multiple dialogs are open.
-   */
-  function updateCloseOnEscapeStates() {
-    const topDialog = dialogStack.value.find((d) => d.key === activeKey.value)
-    const topClosable = topDialog?.dialogComponentProps.closable
-
-    dialogStack.value.forEach((dialog) => {
-      dialog.dialogComponentProps = {
-        ...dialog.dialogComponentProps,
-        closeOnEscape: dialog === topDialog && !!topClosable
-      }
-    })
   }
 
   function showDialog<
@@ -343,7 +241,6 @@ export const useDialogStore = defineStore('dialog', () => {
         ...dialog.dialogComponentProps,
         ...options.dialogComponentProps
       }
-      updateCloseOnEscapeStates()
     }
 
     return true

@@ -53,7 +53,7 @@ import { app } from '@/scripts/app'
 import NodeSelectionModeBanner from '@/components/graph/NodeSelectionModeBanner.vue'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useAssetsStore } from '@/stores/assetsStore'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { startAssetDrag } from '@/platform/assets/utils/assetDragUtil'
@@ -244,10 +244,12 @@ const paywallBilling = vi.hoisted(() => ({
   tier: 'STANDARD' as SubscriptionTier | null,
   type: 'workspace' as 'workspace' | 'legacy',
   status: 'paid' as BillingStatus | null,
+  isActive: true,
   fetchStatus: vi.fn<() => Promise<void>>()
 }))
 const paywallHasFunds = ref<boolean | null>(false)
 const paywallAgentHasFunds = ref<boolean | undefined>()
+const paywallAgentScopedHasFunds = ref<boolean | undefined>()
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'), {
   spy: true
@@ -260,6 +262,7 @@ vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'), {
 import type { AgentMessages, TurnId } from './schemas/agentApiSchema'
 import { toTurnId, zAgentWsEvent } from './schemas/agentApiSchema'
 import { MAX_ATTACHMENT_BYTES } from './composables/agent/useAttachment'
+import { useBillingIdentity } from './composables/useBillingIdentity'
 import type { AgentChatEvent } from './services/agent/agentEventTransport'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentConversationStore } from './stores/agent/agentConversationStore'
@@ -333,12 +336,15 @@ beforeEach(() => {
           ? null
           : fromPartial({
               hasFunds: paywallHasFunds.value,
-              agentHasFunds: paywallAgentHasFunds.value ?? paywallHasFunds.value
+              agentHasFunds:
+                paywallAgentHasFunds.value ?? paywallHasFunds.value,
+              agentScopedHasFunds: paywallAgentScopedHasFunds.value
             })
       ),
       tier: computed(() => paywallBilling.tier),
       type: computed(() => paywallBilling.type),
       billingStatus: computed(() => paywallBilling.status),
+      canAccessSubscriptionFeatures: computed(() => paywallBilling.isActive),
       fetchStatus: paywallBilling.fetchStatus
     })
   )
@@ -451,9 +457,11 @@ beforeEach(() => {
   paywallBilling.tier = 'STANDARD'
   paywallBilling.type = 'workspace'
   paywallBilling.status = 'paid'
+  paywallBilling.isActive = true
   paywallBilling.fetchStatus.mockReset().mockResolvedValue(undefined)
   paywallHasFunds.value = false
   paywallAgentHasFunds.value = undefined
+  paywallAgentScopedHasFunds.value = undefined
 })
 
 const zAgentWsEventForTest = (raw: unknown): AgentChatEvent =>
@@ -616,23 +624,74 @@ describe('AgentPanelRoot first-use experience', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
-  it('forwards free-use notice telemetry with its rendered placement', async () => {
+  const reportFreeUseNotice = vi.fn()
+
+  function placeFundedFreeUseNotice() {
+    paywallHasFunds.value = true
+    paywallAgentScopedHasFunds.value = true
     vi.mocked(useFreeUsePlacement).mockReturnValueOnce(
-      fromPartial({ variant: ref('top-banner') })
+      fromPartial({
+        variant: ref('top-banner'),
+        reportNotice: reportFreeUseNotice
+      })
     )
+  }
+
+  function freeUseNotice() {
+    return screen.findByRole('note', { name: 'Free use notice' })
+  }
+
+  it('forwards free-use notice interactions to the experiment', async () => {
+    placeFundedFreeUseNotice()
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
-    const notice = await screen.findByRole('note', {
-      name: 'Free use notice'
-    })
     await userEvent.click(
-      within(notice).getByRole('button', { name: 'Dismiss' })
+      within(await freeUseNotice()).getByRole('button', { name: 'Dismiss' })
     )
 
-    expect(useTelemetry()!.trackAgentFreeUseNotice).toHaveBeenCalledWith({
-      action: 'dismissed',
-      placement: 'top-banner'
-    })
+    expect(reportFreeUseNotice.mock.calls).toEqual([
+      [{ action: 'shown', placement: 'top-banner' }],
+      [{ action: 'dismissed', placement: 'top-banner' }]
+    ])
+  })
+
+  it.for([
+    { label: 'the grant is spent but paid credits remain', scoped: false },
+    { label: 'no scoped balance is reported at all', scoped: undefined }
+  ])('says nothing about free turns when $label', async ({ scoped }) => {
+    placeFundedFreeUseNotice()
+    paywallAgentScopedHasFunds.value = scoped
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    expect(screen.queryByRole('note', { name: 'Free use notice' })).toBeNull()
+    expect(reportFreeUseNotice).not.toHaveBeenCalled()
+  })
+
+  it('hides the notice while any inline paywall remains unresolved', async () => {
+    placeFundedFreeUseNotice()
+    const conversation = useAgentConversationStore()
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await freeUseNotice()
+
+    conversation.recordPaywall(toTurnId('msg-paywall'), 'continue')
+    expect(await findInlinePaywallButton('Add credits')).toBeInTheDocument()
+    conversation.recordFailedSend(
+      toTurnId('msg-failed'),
+      'try again',
+      'Send failed'
+    )
+    await screen.findByText('Send failed')
+
+    await vi.waitFor(() =>
+      expect(screen.queryByRole('note', { name: 'Free use notice' })).toBeNull()
+    )
+
+    conversation.resolvePaywalls()
+
+    expect(await freeUseNotice()).toBeInTheDocument()
   })
 })
 
@@ -1572,6 +1631,207 @@ describe('AgentPanelRoot paywall telemetry', () => {
   })
 })
 
+describe('AgentPanelRoot Agent credit transition notice', () => {
+  const NOTICE = 'agent-credit-transition-notice'
+
+  function observeAgentScopedFunds(scopedHasFunds: boolean | undefined): void {
+    paywallAgentScopedHasFunds.value = scopedHasFunds
+    if (scopedHasFunds === undefined) return
+    useAgentPanelStore().observeAgentScopedFunds(
+      useBillingIdentity().value,
+      scopedHasFunds
+    )
+  }
+
+  beforeEach(() => {
+    paywallHasFunds.value = true
+    paywallAgentHasFunds.value = true
+  })
+
+  it('shows only after the Agent-scoped balance changes from available to exhausted', async () => {
+    observeAgentScopedFunds(true)
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    observeAgentScopedFunds(false)
+
+    expect(await screen.findByTestId(NOTICE)).toHaveTextContent(
+      i18n.global.t('agent.creditTransitionNotice')
+    )
+    expect(
+      telemetry.trackAgentCreditTransitionNotice
+    ).toHaveBeenCalledExactlyOnceWith({ action: 'shown' })
+  })
+
+  it('reports one impression however often the panel remounts', async () => {
+    observeAgentScopedFunds(true)
+    const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+    observeAgentScopedFunds(false)
+    await screen.findByTestId(NOTICE)
+
+    panel.unmount()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByTestId(NOTICE)
+
+    expect(
+      telemetry.trackAgentCreditTransitionNotice
+    ).toHaveBeenCalledExactlyOnceWith({ action: 'shown' })
+  })
+
+  it('reports an impression first shown without telemetry once telemetry is available', async () => {
+    observeAgentScopedFunds(true)
+    const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+    vi.mocked(useTelemetry).mockReturnValue(null)
+    observeAgentScopedFunds(false)
+    await screen.findByTestId(NOTICE)
+    vi.mocked(useTelemetry).mockReturnValue(telemetry)
+
+    panel.unmount()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByTestId(NOTICE)
+
+    expect(
+      telemetry.trackAgentCreditTransitionNotice
+    ).toHaveBeenCalledExactlyOnceWith({ action: 'shown' })
+  })
+
+  it('does not infer a transition when the first scoped-balance read is false', async () => {
+    observeAgentScopedFunds(false)
+    const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+    observeAgentScopedFunds(undefined)
+    await nextTick()
+    observeAgentScopedFunds(false)
+    await nextTick()
+    panel.unmount()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    expect(screen.queryByTestId(NOTICE)).not.toBeInTheDocument()
+  })
+
+  it('preserves the last defined scoped balance across an omitted read and panel remount', async () => {
+    observeAgentScopedFunds(true)
+    const firstPanel = render(AgentPanelRoot, {
+      global: { plugins: [i18n] }
+    })
+    await screen.findByRole('textbox')
+    firstPanel.unmount()
+
+    observeAgentScopedFunds(undefined)
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+    observeAgentScopedFunds(false)
+
+    expect(await screen.findByTestId(NOTICE)).toBeInTheDocument()
+  })
+
+  it('defers an observed transition until Agent consent is ready', async () => {
+    Object.assign(useAgentConsentStore(), { accepted: false })
+    observeAgentScopedFunds(true)
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    observeAgentScopedFunds(false)
+    await nextTick()
+    expect(screen.queryByTestId(NOTICE)).not.toBeInTheDocument()
+
+    Object.assign(useAgentConsentStore(), { accepted: true })
+    expect(await screen.findByTestId(NOTICE)).toBeInTheDocument()
+  })
+
+  it('withholds the notice while the workspace has no active subscription', async () => {
+    paywallBilling.isActive = false
+    observeAgentScopedFunds(true)
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    observeAgentScopedFunds(false)
+    await nextTick()
+
+    expect(screen.queryByTestId(NOTICE)).not.toBeInTheDocument()
+  })
+
+  it('defers the notice until the billing capability read settles', async () => {
+    paywallCapabilities.isReady = false
+    observeAgentScopedFunds(true)
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    observeAgentScopedFunds(false)
+    await nextTick()
+    expect(screen.queryByTestId(NOTICE)).not.toBeInTheDocument()
+
+    paywallCapabilities.isReady = true
+    expect(await screen.findByTestId(NOTICE)).toBeInTheDocument()
+  })
+
+  it('yields to the exhaustion paywall when no funding remains, then shows the notice once workspace funding returns', async () => {
+    observeAgentScopedFunds(true)
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    observeAgentScopedFunds(false)
+    paywallAgentHasFunds.value = false
+    paywallHasFunds.value = false
+
+    expect(
+      await screen.findByTestId('agent-credits-exhausted-paywall')
+    ).toBeInTheDocument()
+    expect(screen.queryByTestId(NOTICE)).not.toBeInTheDocument()
+
+    paywallAgentHasFunds.value = true
+    paywallHasFunds.value = true
+
+    expect(await screen.findByTestId(NOTICE)).toBeInTheDocument()
+  })
+
+  it('reports a new impression when the scoped balance refills and runs out again', async () => {
+    observeAgentScopedFunds(true)
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+    observeAgentScopedFunds(false)
+    await screen.findByTestId(NOTICE)
+    observeAgentScopedFunds(true)
+    await nextTick()
+    observeAgentScopedFunds(false)
+    await screen.findByTestId(NOTICE)
+
+    expect(telemetry.trackAgentCreditTransitionNotice.mock.calls).toEqual([
+      [{ action: 'shown' }],
+      [{ action: 'shown' }]
+    ])
+  })
+
+  it('shows again for a dismissed notice once the scoped balance refills and runs out again', async () => {
+    observeAgentScopedFunds(true)
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+    observeAgentScopedFunds(false)
+    const notice = await screen.findByTestId(NOTICE)
+
+    await userEvent.click(
+      within(notice).getByRole('button', {
+        name: i18n.global.t('agent.dismiss')
+      })
+    )
+    expect(screen.queryByTestId(NOTICE)).not.toBeInTheDocument()
+
+    observeAgentScopedFunds(true)
+    await nextTick()
+    observeAgentScopedFunds(false)
+
+    expect(await screen.findByTestId(NOTICE)).toBeInTheDocument()
+    expect(telemetry.trackAgentCreditTransitionNotice.mock.calls).toEqual([
+      [{ action: 'shown' }],
+      [{ action: 'dismissed' }],
+      [{ action: 'shown' }]
+    ])
+  })
+})
+
 /**
  * The standing credits-exhausted surface.
  *
@@ -1617,16 +1877,19 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
   it.for([
     {
       subscription: null,
+      isActive: false,
       effectiveFunds: false
     },
     {
       subscription: 'STANDARD' as const,
+      isActive: true,
       effectiveFunds: false
     }
   ])(
     'shows for subscription=$subscription without effective funds',
-    async ({ subscription, effectiveFunds }) => {
+    async ({ subscription, isActive, effectiveFunds }) => {
       paywallBilling.tier = subscription
+      paywallBilling.isActive = isActive
       paywallHasFunds.value = effectiveFunds
       render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
@@ -2070,12 +2333,12 @@ describe('AgentPanelRoot session notices', () => {
         })
     )
     renderWithSelectedTarget()
-    const toast = useToastStore()
+    const toast = useToast()
 
     ws.emit('agent_message_done', {})
     await nextTick()
 
-    expect(toast.messagesToAdd).toHaveLength(0)
+    expect(toast.toasts).toHaveLength(0)
     expect(executionErrors.showErrorOverlay).toHaveBeenCalledTimes(1)
     expect(executionErrors.lastPromptError).toMatchObject({
       type: 'agent_api_failed',
@@ -2522,10 +2785,10 @@ describe('AgentPanelRoot attach flow', () => {
     await nextTick()
     expect(store.attachments).toHaveLength(1)
     expect(fetchRequests(source)).toHaveLength(1)
-    expect(useToastStore().messagesToAdd).toEqual([
+    expect(useToast().toasts).toEqual([
       expect.objectContaining({
-        severity: 'info',
-        detail: 'Recording.mp3 is already in the asset tray'
+        kind: 'info',
+        title: 'Recording.mp3 is already in the asset tray'
       })
     ])
   })
@@ -2561,13 +2824,13 @@ describe('AgentPanelRoot attach flow', () => {
     expect(store.attachments).toEqual([newAttachment])
     expect(newAttachment.ref).toBe('stored-library.png')
     expect(store.prompt.references).toEqual([])
-    expect(useToastStore().messagesToAdd).toEqual([])
+    expect(useToast().toasts).toEqual([])
     expect(dispatchDrag(target, 'drop', data)).toBe(true)
     expect(store.attachments).toHaveLength(1)
-    expect(useToastStore().messagesToAdd).toEqual([
+    expect(useToast().toasts).toEqual([
       expect.objectContaining({
-        severity: 'info',
-        detail: 'library.png is already in the asset tray'
+        kind: 'info',
+        title: 'library.png is already in the asset tray'
       })
     ])
   })
@@ -2835,10 +3098,10 @@ describe('AgentPanelRoot attach flow', () => {
     await nextTick()
 
     expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
-    expect(useToastStore().messagesToAdd).toContainEqual(
+    expect(useToast().toasts).toContainEqual(
       expect.objectContaining({
-        severity: 'warn',
-        detail: 'movie.mp4 is larger than 24 MB'
+        kind: 'warning',
+        title: 'movie.mp4 is larger than 24 MB'
       })
     )
     expect(
@@ -3012,10 +3275,10 @@ describe('AgentPanelRoot attach flow', () => {
     await renderAndPasteScreenshot()
 
     await vi.waitFor(() =>
-      expect(useToastStore().messagesToAdd).toContainEqual(
+      expect(useToast().toasts).toContainEqual(
         expect.objectContaining({
-          severity: 'warn',
-          detail: 'image.png could not be uploaded'
+          kind: 'warning',
+          title: 'image.png could not be uploaded'
         })
       )
     )
@@ -3263,10 +3526,10 @@ describe('AgentPanelRoot attach flow', () => {
     await nextTick()
 
     expect(uploaded).toEqual([])
-    expect(useToastStore().messagesToAdd).toContainEqual(
+    expect(useToast().toasts).toContainEqual(
       expect.objectContaining({
-        severity: 'warn',
-        detail: 'big.mp3 is larger than 24 MB'
+        kind: 'warning',
+        title: 'big.mp3 is larger than 24 MB'
       })
     )
   })
@@ -3573,7 +3836,7 @@ describe('AgentPanelRoot attach flow', () => {
     })
     const { unmount } = renderWithSelectedTarget()
     await nextTick()
-    const toast = useToastStore()
+    const toast = useToast()
     vi.useFakeTimers()
     try {
       dispatchDrag(screen.getByRole('textbox'), 'drop', {
@@ -3591,7 +3854,7 @@ describe('AgentPanelRoot attach flow', () => {
       unmount()
       await vi.advanceTimersByTimeAsync(60_000)
 
-      expect(toast.messagesToAdd).toEqual([])
+      expect(toast.toasts).toEqual([])
     } finally {
       vi.useRealTimers()
     }
@@ -3642,7 +3905,7 @@ describe('AgentPanelRoot attach flow', () => {
       ]
     })
     await vi.waitFor(() => expect(store.attachments[0]?.uploading).toBe(false))
-    expect(useToastStore().messagesToAdd).toEqual([])
+    expect(useToast().toasts).toEqual([])
     dispatchDrag(target, 'drop', {
       files: [
         ...Array.from(
@@ -3666,8 +3929,8 @@ describe('AgentPanelRoot attach flow', () => {
       )
     ).toHaveLength(1)
     await vi.waitFor(() => expect(uploaded).toEqual(['cat.png', 'dog.png']))
-    expect(useToastStore().messagesToAdd).toEqual([
-      expect.objectContaining({ severity: 'info', detail: notice })
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({ kind: 'info', title: notice })
     ])
     expect(screen.getByRole('group', { name: 'dog.png' })).toBeInTheDocument()
     expect(target).toHaveFocus()
@@ -4000,10 +4263,10 @@ describe('AgentPanelRoot attach flow', () => {
     // A rejected file is the user's to fix; raising the server-error overlay
     // told them the agent had broken instead.
     expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
-    expect(useToastStore().messagesToAdd).toContainEqual(
+    expect(useToast().toasts).toContainEqual(
       expect.objectContaining({
-        severity: 'warn',
-        detail: 'cat.png could not be uploaded'
+        kind: 'warning',
+        title: 'cat.png could not be uploaded'
       })
     )
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
@@ -4656,9 +4919,9 @@ describe('AgentPanelRoot transcript copy', () => {
         )
       } else {
         expect(clipboard.copy).not.toHaveBeenCalled()
-        expect(useToastStore().messagesToAdd).toContainEqual(
+        expect(useToast().toasts).toContainEqual(
           expect.objectContaining({
-            summary: i18n.global.t('agent.copyUnavailable')
+            title: i18n.global.t('agent.copyUnavailable')
           })
         )
       }
@@ -5092,7 +5355,7 @@ describe('AgentPanelRoot lifecycle', () => {
   })
 
   it('does not claim the minimap graph-activity layer when setup throws', () => {
-    vi.mocked(useFreeUsePlacement).mockImplementationOnce(() => {
+    vi.mocked(useBillingContext).mockImplementationOnce(() => {
       throw new Error('setup failed')
     })
     // Mounted without Testing Library, whose error handler lets a failed
@@ -5893,7 +6156,7 @@ describe('AgentPanelRoot workflow binding', () => {
           name: outcome === 'failed open' ? 'other' : 'scratch'
         })
       )
-      await waitFor(() => expect(useToastStore().messagesToAdd).toHaveLength(1))
+      await waitFor(() => expect(useToast().toasts).toHaveLength(1))
       expect(useAgentPanelStore().selectedWorkflow?.path).toBe(target.path)
       workflowStore.activeWorkflow = other
       await nextTick()
@@ -5929,9 +6192,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await userEvent.click(
       await screen.findByRole('menuitemradio', { name: 'scratch' })
     )
-    await vi.waitFor(() =>
-      expect(useToastStore().messagesToAdd).toHaveLength(1)
-    )
+    await vi.waitFor(() => expect(useToast().toasts).toHaveLength(1))
     expect(
       screen.getByRole('menuitemradio', { name: 'scratch' })
     ).not.toHaveAttribute('aria-disabled', 'true')
@@ -5958,9 +6219,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await userEvent.click(
       await screen.findByRole('menuitemradio', { name: 'scratch' })
     )
-    await vi.waitFor(() =>
-      expect(useToastStore().messagesToAdd).toHaveLength(1)
-    )
+    await vi.waitFor(() => expect(useToast().toasts).toHaveLength(1))
     expect(scratch.isTemporary).toBe(false)
     expect(workflowStore.activeWorkflow?.path).toBe(current.path)
     expect(screen.getByRole('menuitemradio', { name: 'current' })).toBeChecked()
@@ -6145,7 +6404,7 @@ describe('AgentPanelRoot workflow binding', () => {
       expect(workflowStore.activeWorkflow?.path).toBe(target.path)
       expect(useAgentPanelStore().selectedWorkflow?.path).toBe(target.path)
       expect(useAgentChatHistoryStore().activeId).toBe('th-1')
-      expect(useToastStore().messagesToAdd).toHaveLength(0)
+      expect(useToast().toasts).toHaveLength(0)
       expect(fetchRequests(blockedRoute)).toHaveLength(requestsBeforeSwitch)
     }
   )
@@ -6212,15 +6471,15 @@ describe('AgentPanelRoot workflow binding', () => {
         expect(
           screen.queryByText(i18n.global.t('agent.historyOpenFailed'))
         ).toBeNull()
-        expect(useToastStore().messagesToAdd).toHaveLength(0)
+        expect(useToast().toasts).toHaveLength(0)
         expect(useAgentChatHistoryStore().activeId).toBeNull()
         expect(workflowStore.activeWorkflow.path).toBe(other.path)
       } else {
         expect(await screen.findByRole('alert')).toHaveTextContent(
           i18n.global.t('agent.historyOpenFailed')
         )
-        expect(useToastStore().messagesToAdd).not.toContainEqual(
-          expect.objectContaining({ severity: 'warn' })
+        expect(useToast().toasts).not.toContainEqual(
+          expect.objectContaining({ kind: 'warning' })
         )
         expect(useAgentChatHistoryStore().activeId).toBe('th-1')
         expect(useAgentPanelStore().selectedWorkflow?.path).toBe(target.path)
@@ -6403,7 +6662,7 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(workflowStore.activeWorkflow?.path).toBe(other.path)
     expect(useAgentPanelStore().selectedWorkflow?.path).toBe(other.path)
     expect(fetchRequests(/\/workflows/).length).toBeLessThanOrEqual(1)
-    expect(useToastStore().messagesToAdd).toHaveLength(0)
+    expect(useToast().toasts).toHaveLength(0)
   })
 
   it.for([null, 'th-current'])(
@@ -6524,7 +6783,7 @@ describe('AgentPanelRoot workflow binding', () => {
         'workflows/current.json',
         'workflows/portrait.json'
       ])
-      expect(useToastStore().messagesToAdd).toHaveLength(0)
+      expect(useToast().toasts).toHaveLength(0)
       await sendFromComposer('Continue the portrait')
       expect(bodies[0]).toMatchObject({ workflow_id: 'wf-portrait' })
       expect(useWorkflowService().saveWorkflowAs).not.toHaveBeenCalled()
@@ -6796,7 +7055,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await vi.waitFor(() =>
       expect(useAgentPanelStore().selectedWorkflow).toEqual(restored)
     )
-    expect(useToastStore().messagesToAdd).toHaveLength(0)
+    expect(useToast().toasts).toHaveLength(0)
     await sendFromComposer('continue editing')
 
     expect(bodies[0]).toMatchObject({
@@ -6842,7 +7101,7 @@ describe('AgentPanelRoot workflow binding', () => {
       expect(useAgentPanelStore().selectedWorkflow).toEqual(current)
       expect(workflowStore.activeWorkflow).toEqual(current)
       expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
-      expect(useToastStore().messagesToAdd).toHaveLength(0)
+      expect(useToast().toasts).toHaveLength(0)
     }
   )
 
@@ -6958,8 +7217,8 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBe(
       'th-history'
     )
-    expect(useToastStore().messagesToAdd).not.toContainEqual(
-      expect.objectContaining({ severity: 'warn' })
+    expect(useToast().toasts).not.toContainEqual(
+      expect.objectContaining({ kind: 'warning' })
     )
 
     await userEvent.click(screen.getByRole('button', { name: 'New chat' }))
@@ -7014,9 +7273,9 @@ describe('AgentPanelRoot workflow binding', () => {
       await screen.findAllByText('Historical prompt')
       await vi.waitFor(() => {
         expect(
-          useToastStore()
-            .messagesToAdd.filter(({ severity }) => severity === 'warn')
-            .map(({ detail }) => detail)
+          useToast().toasts.flatMap((toast) =>
+            toast.kind === 'warning' ? [toast.title] : []
+          )
         ).toEqual(toasts)
         expect(
           screen
@@ -7081,10 +7340,10 @@ describe('AgentPanelRoot workflow binding', () => {
     failListing()
 
     await vi.waitFor(() =>
-      expect(useToastStore().messagesToAdd).toContainEqual(
+      expect(useToast().toasts).toContainEqual(
         expect.objectContaining({
-          severity: 'warn',
-          detail: i18n.global.t('agent.targetWorkflowOpenFailed')
+          kind: 'warning',
+          title: i18n.global.t('agent.targetWorkflowOpenFailed')
         })
       )
     )
@@ -7156,8 +7415,8 @@ describe('AgentPanelRoot workflow binding', () => {
           screen.getByRole('heading', { name: 'Chat history' })
         ).toBeVisible()
         expect(screen.queryByText('Historical prompt')).not.toBeInTheDocument()
-        expect(useToastStore().messagesToAdd).not.toContainEqual(
-          expect.objectContaining({ severity: 'warn' })
+        expect(useToast().toasts).not.toContainEqual(
+          expect.objectContaining({ kind: 'warning' })
         )
         expect(useAgentPanelStore().selectedWorkflow).toBeNull()
         expect(useAgentChatHistoryStore().activeId).toBeNull()
@@ -7293,9 +7552,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await userEvent.click(
       await screen.findByRole('menuitemradio', { name: 'other' })
     )
-    await vi.waitFor(() =>
-      expect(useToastStore().messagesToAdd).toHaveLength(1)
-    )
+    await vi.waitFor(() => expect(useToast().toasts).toHaveLength(1))
     expect(screen.getByRole('menuitemradio', { name: 'current' })).toBeChecked()
   })
 
@@ -7874,12 +8131,12 @@ describe('AgentPanelRoot workflow binding', () => {
       message: 'Expected schema 2, found 1'
     })
 
-    expect(useToastStore().messagesToAdd).toContainEqual(
+    expect(useToast().toasts).toContainEqual(
       expect.objectContaining({
-        severity: 'error',
-        summary: i18n.global.t('agent.workflowSyncFailedTitle'),
-        detail: `${i18n.global.t('agent.workflowSyncFailedDetail')} (Expected schema 2, found 1)`,
-        life: 0
+        kind: 'error',
+        title: i18n.global.t('agent.workflowSyncFailedTitle'),
+        description: `${i18n.global.t('agent.workflowSyncFailedDetail')} (Expected schema 2, found 1)`,
+        duration: Number.POSITIVE_INFINITY
       })
     )
   })
@@ -8413,10 +8670,10 @@ describe('AgentPanelRoot workflow binding', () => {
       await vi.advanceTimersByTimeAsync(500)
 
       await vi.waitFor(() =>
-        expect(useToastStore().messagesToAdd).toContainEqual(
+        expect(useToast().toasts).toContainEqual(
           expect.objectContaining({
-            severity: 'warn',
-            detail: i18n.global.t('agent.targetNavigationUnavailable')
+            kind: 'warning',
+            title: i18n.global.t('agent.targetNavigationUnavailable')
           })
         )
       )
@@ -9401,9 +9658,9 @@ describe('AgentPanelRoot workflow binding', () => {
         await screen.findByRole('menuitem', { name: /scratch\s*Unsaved/ })
       )
       await vi.waitFor(() =>
-        expect(useToastStore().messagesToAdd).toEqual(
+        expect(useToast().toasts).toEqual(
           expect.arrayContaining([
-            expect.objectContaining({ detail: 'Save unavailable' })
+            expect.objectContaining({ description: 'Save unavailable' })
           ])
         )
       )
@@ -9702,10 +9959,10 @@ describe('AgentPanelRoot workflow binding', () => {
         screen.getByRole('button', { name: 'Open reference' })
       )
       await vi.waitFor(() =>
-        expect(useToastStore().messagesToAdd).toEqual(
+        expect(useToast().toasts).toEqual(
           expect.arrayContaining([
             expect.objectContaining({
-              detail: i18n.global.t('agent.targetNavigationUnavailable')
+              title: i18n.global.t('agent.targetNavigationUnavailable')
             })
           ])
         )
@@ -10974,11 +11231,11 @@ describe('AgentPanelRoot workflow binding', () => {
     setupNodeSelectionCanvas()
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentPanelStore().isOpen = true
-    const action = screen.getByRole('button', {
-      name: 'mention nodes'
-    })
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('@')
+    const action = screen.getByRole('menuitem', { name: 'Nodes' })
     expect(action).not.toHaveAttribute('aria-disabled', 'true')
-    await openMentionPicker()
+    await userEvent.click(action)
     await userEvent.click(await screen.findByText('KSampler'))
 
     workflowStore.activeWorkflow = addTab('workflows/other.json')

@@ -13,6 +13,7 @@ import {
   bootCloudIdentity,
   cloudSignIn
 } from '@/platform/auth/session/cloudIdentityBoot'
+import { installCloudApiAuth } from '@/platform/auth/cloudApiAuthProvider'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
@@ -443,6 +444,7 @@ describe('cloud auth requests with unified_web_session off', () => {
 
   beforeEach(() => {
     identity.reset()
+    installCloudApiAuth()
   })
 
   afterEach(() => {

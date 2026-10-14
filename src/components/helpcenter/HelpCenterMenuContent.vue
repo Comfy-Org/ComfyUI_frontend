@@ -154,7 +154,7 @@
 </template>
 
 <script setup lang="ts">
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import type { CSSProperties, Component } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -168,9 +168,11 @@ import { useTelemetry } from '@/platform/telemetry'
 import type { ReleaseNote } from '@/platform/updates/common/releaseService'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useCommandStore } from '@/stores/commandStore'
+import { getErrorMessage } from '@/utils/errorUtil'
 import { electronAPI } from '@/utils/envUtil'
 import { formatVersionAnchor } from '@/utils/formatUtil'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
+import { useManagerDialog } from '@/workbench/extensions/manager/composables/useManagerDialog'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { useComfyManagerService } from '@/workbench/extensions/manager/services/comfyManagerService'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
@@ -404,7 +406,7 @@ const menuItems = computed<MenuItem[]>(() => {
       showRedDot: shouldShowManagerRedDot.value,
       action: async () => {
         trackResourceClick('manager', false)
-        await useManagerState().openManager({
+        await useManagerDialog().openManager({
           initialTab: ManagerTab.All,
           showToastOnLegacyError: false
         })
@@ -606,11 +608,9 @@ const onUpdateComfyUI = async (): Promise<void> => {
   const { updateComfyUI, startQueue, rebootComfyUI, error } =
     useComfyManagerService()
 
-  toast.add({
-    severity: 'info',
-    summary: t('helpCenter.updateComfyUIStarted'),
-    detail: t('helpCenter.updateComfyUIStartedDetail'),
-    life: 3000
+  toast.info(t('helpCenter.updateComfyUIStarted'), {
+    description: t('helpCenter.updateComfyUIStartedDetail'),
+    duration: 3000
   })
 
   try {
@@ -618,27 +618,21 @@ const onUpdateComfyUI = async (): Promise<void> => {
     if (result !== null) await startQueue()
 
     if (result === null || error.value) {
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: error.value || t('helpCenter.updateComfyUIFailed')
+      toast.error(t('g.error'), {
+        description: error.value || t('helpCenter.updateComfyUIFailed')
       })
       return
     }
 
-    toast.add({
-      severity: 'success',
-      summary: t('helpCenter.updateComfyUISuccess'),
-      detail: t('helpCenter.updateComfyUISuccessDetail'),
-      life: 3000
+    toast.success(t('helpCenter.updateComfyUISuccess'), {
+      description: t('helpCenter.updateComfyUISuccessDetail'),
+      duration: 3000
     })
 
     await rebootComfyUI()
   } catch (err) {
-    toast.add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: err instanceof Error ? err.message : t('g.unknownError')
+    toast.error(t('g.error'), {
+      description: getErrorMessage(err) ?? t('g.unknownError')
     })
   }
 }
