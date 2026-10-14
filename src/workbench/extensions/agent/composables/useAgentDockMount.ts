@@ -8,24 +8,15 @@ import { useBillingIdentity } from './useBillingIdentity'
 
 interface AgentDockMount {
   docked: ComputedRef<boolean>
-  DockedAgentPanel: Component | null
+  DockedAgentPanel: Component
 }
 
 /**
- * The one distribution seam for the dock mounts. The literal comparison is
- * what dead-code-eliminates the store and both panel component chunks from
- * OSS builds; on cloud the async component is only requested once the gate
- * enables and opens the panel, so a flag-off session fetches no agent chunk.
+ * The dock mounts for the graph and linear hosts. The async component is only
+ * requested once the gate enables and opens the panel, so a flag-off session
+ * (on cloud, or a ComfyUI without its agent) fetches no agent chunk.
  */
 export function useAgentDockMount(): AgentDockMount {
-  // The local agent harness (VITE_AGENT_STANDALONE) mounts the panel in any
-  // distribution; production keeps it cloud-only.
-  if (
-    __DISTRIBUTION__ !== 'cloud' &&
-    import.meta.env.VITE_AGENT_STANDALONE !== 'true'
-  ) {
-    return { docked: computed(() => false), DockedAgentPanel: null }
-  }
   const agentPanelStore = useAgentPanelStore()
   const { subscription } = useBillingContext()
 

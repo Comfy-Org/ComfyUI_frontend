@@ -10,6 +10,12 @@
       )
     "
     :aria-pressed="active"
+    :disabled="comfyAgent !== undefined"
+    :title="
+      comfyAgent?.state === 'failed'
+        ? $t('agent.entryFailedReason', { reason: comfyAgent.reason })
+        : undefined
+    "
   >
     <i
       :class="
@@ -19,7 +25,13 @@
         )
       "
     />
-    <span>{{ $t('agent.entryButton') }}</span>
+    <span>{{
+      comfyAgent?.state === 'starting'
+        ? $t('agent.entryStarting')
+        : comfyAgent?.state === 'failed'
+          ? $t('agent.entryFailed')
+          : $t('agent.entryButton')
+    }}</span>
   </Button>
 </template>
 
@@ -27,10 +39,17 @@
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
+import type { AgentStatusWsMessage } from '@/platform/remote/comfyui/execution/types'
 
-const { active = false, inviting = false } = defineProps<{
+const {
+  active = false,
+  inviting = false,
+  comfyAgent
+} = defineProps<{
   active?: boolean
   /** Draw attention to the button for a user who has never opened the panel. */
   inviting?: boolean
+  /** ComfyUI's agent while it is not ready: shown, but not clickable. */
+  comfyAgent?: AgentStatusWsMessage
 }>()
 </script>

@@ -124,6 +124,25 @@ describe('API Feature Flags', () => {
       expect(api.serverFeatureFlagsSettled.value).toBe(true)
     })
 
+    it("folds ComfyUI's agent_status pushes into the agent feature", () => {
+      void api.init()
+      const send = (type: string, data: unknown) =>
+        wsEventHandlers['message']({ data: JSON.stringify({ type, data }) })
+
+      send('feature_flags', {
+        api_version: '1.0.0',
+        agent: { state: 'starting', url: null, reason: null }
+      })
+      send('agent_status', { state: 'ready', url: '/api/agent', reason: null })
+
+      expect(api.getServerFeature('agent')).toEqual({
+        state: 'ready',
+        url: '/api/agent',
+        reason: null
+      })
+      expect(api.getServerFeature('api_version')).toBe('1.0.0')
+    })
+
     it('settles feature flags immediately when the server delivers an empty map', () => {
       void api.init()
 
