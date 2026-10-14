@@ -240,10 +240,10 @@ describe('GraphCanvas canvas parent', () => {
     await mountGraphCanvas({
       TitleEditor: { template: '<input aria-label="Node title" />' }
     })
-    // oxlint-disable-next-line testing-library/no-node-access -- Extensions use this canvas ID.
+    // eslint-disable-next-line testing-library/no-node-access -- Extensions use this canvas ID.
     const canvas = document.getElementById('graph-canvas')
     assert.exists(canvas)
-    // oxlint-disable-next-line testing-library/no-node-access -- Canvas-parent listeners are the compatibility contract under test.
+    // eslint-disable-next-line testing-library/no-node-access -- Canvas-parent listeners are the compatibility contract under test.
     const parent = canvas.parentElement
     assert.exists(parent)
     const receivedTouch = vi.fn()
