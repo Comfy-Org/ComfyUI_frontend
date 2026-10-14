@@ -61,7 +61,7 @@ for (const { path, heading, contact, cta, cleanplate, upscale } of [
   },
 
   {
-    path: '/zh-CN/solutions/solutions/vfx/',
+    path: '/zh-CN/solutions/vfx/',
     heading: '为制作流程而构建的 视觉特效工作流。',
     contact: '/zh-CN/contact/',
     cta: '联系 COMFY',

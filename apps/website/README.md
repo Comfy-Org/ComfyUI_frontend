@@ -662,6 +662,6 @@ the hosted script once, and renders the documented embed container.
 
 ### Comfy VFX campaign
 
-`/solutions/vfx/` and `/zh-CN/solutions/solutions/vfx/` render the latest V2 design. This change publishes no agency-led or other vertical campaign routes. V1 remains saved on `codex/vfx-landing`.
+`/solutions/vfx/` and `/zh-CN/solutions/vfx/` render the latest V2 design. This change publishes no agency-led or other vertical campaign routes. V1 remains saved on `codex/vfx-landing`.
 
 Contact links preserve incoming UTMs and record `website:vfx_link_clicked`. Link-click tracking does not establish form-submission tracking.
