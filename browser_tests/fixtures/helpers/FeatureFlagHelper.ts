@@ -114,15 +114,18 @@ export class FeatureFlagHelper {
    * later `feature_flags` handshake, as `setServerFlagsPersistent()` does.
    *
    * Must be called before `page.goto()`; init scripts persist for the page
-   * lifetime and cannot be removed.
+   * lifetime and cannot be removed. Repeated calls compose: each seed chains to
+   * the accessor an earlier one installed.
    */
   async seedServerFlags(flags: Record<string, unknown>): Promise<void> {
     await this.page.addInitScript((flagMap: Record<string, unknown>) => {
+      const earlier = Object.getOwnPropertyDescriptor(window, 'app')
       let comfyApp: Window['app']
       Object.defineProperty(window, 'app', {
         configurable: true,
         get: () => comfyApp,
         set: (value: Window['app']) => {
+          earlier?.set?.(value)
           comfyApp = value
           const api = value?.api
           if (!api) return

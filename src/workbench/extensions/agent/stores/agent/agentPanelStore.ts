@@ -8,7 +8,6 @@ import {
   SIDE_TOOLBAR_WIDTH
 } from '@/constants/splitterConstants'
 import type { AgentStatusWsMessage } from '@/platform/remote/comfyui/execution/types'
-import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type {
   AgentPanelCloseSource,
@@ -79,7 +78,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   const flagsSettled = computed(() => api.serverFeatureFlagsSettled.value)
   /** The local agent ComfyUI runs with `--enable-agent`; absent otherwise. */
   const comfyAgent = computed(() =>
-    isCloud || import.meta.env.VITE_AGENT_STANDALONE === 'true'
+    import.meta.env.VITE_AGENT_STANDALONE === 'true'
       ? undefined
       : api.getServerFeature<AgentStatusWsMessage | undefined>('agent')
   )

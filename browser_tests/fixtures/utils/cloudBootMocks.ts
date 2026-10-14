@@ -5,6 +5,7 @@ import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
+import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
@@ -27,6 +28,11 @@ export async function mockCloudBootRoutes(
   { features, settings = {}, objectInfo }: CloudBootOptions
 ) {
   await page.route('**/api/features', (r) => r.fulfill(jsonRoute(features)))
+  // Cloud publishes the `agent` server feature to users its agent gate admits.
+  if (features['agent-in-app-experience'] === true)
+    await new FeatureFlagHelper(page).seedServerFlags({
+      agent: { state: 'ready', url: '/api/agent' }
+    })
   await page.route('**/api/system_stats', (r) =>
     r.fulfill(jsonRoute(mockSystemStats))
   )

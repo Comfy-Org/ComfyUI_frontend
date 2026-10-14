@@ -11,11 +11,6 @@ interface AgentDockMount {
   DockedAgentPanel: Component
 }
 
-/**
- * The dock mounts for the graph and linear hosts. The async component is only
- * requested once the gate enables and opens the panel, so a flag-off session
- * (on cloud, or a ComfyUI without its agent) fetches no agent chunk.
- */
 export function useAgentDockMount(): AgentDockMount {
   const agentPanelStore = useAgentPanelStore()
   const { subscription } = useBillingContext()
