@@ -368,6 +368,7 @@ export const useWorkflowService = () => {
    * This is used to refresh the node definitions update, e.g. when the locale changes.
    */
   const reloadCurrentWorkflow = async () => {
+    await workflowLoadTail
     const workflow = workflowStore.activeWorkflow
     if (workflow) {
       await openWorkflow(workflow, {
@@ -466,6 +467,8 @@ export const useWorkflowService = () => {
           return false
         }
 
+        if (workflowStore.isActive(workflow))
+          workflow.changeTracker?.captureCanvasState()
         const loaded = await useApp().loadGraphData(
           toRaw(workflow.activeState) as ComfyWorkflowJSON,
           /* clean=*/ true,
@@ -479,8 +482,6 @@ export const useWorkflowService = () => {
           }
         )
         if (loaded === false) {
-          // Same invariant as the catch: a failed load's intent must not
-          // stay newest (guarded no-op when the publish already superseded).
           useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
           await restoreRetainedWorkflow(workflow)
           return false
@@ -490,7 +491,6 @@ export const useWorkflowService = () => {
         })
         return true
       } catch (error) {
-        // A failed load's intent must not stay newest (suppresses the survivor's hash).
         useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
         throw error
       }

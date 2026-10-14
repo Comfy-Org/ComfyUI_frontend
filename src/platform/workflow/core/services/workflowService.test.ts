@@ -31,6 +31,7 @@ import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { useAppMode } from '@/composables/useAppMode'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 import type { AppMode } from '@/utils/appMode'
@@ -122,7 +123,11 @@ function createWorkflow(
       path: options.path ?? 'workflows/test.json',
       isLoaded: true,
       activeState: { nodes: [], links: [] },
-      changeTracker: { reset: vi.fn(), restore: vi.fn() }
+      changeTracker: {
+        reset: vi.fn(),
+        restore: vi.fn(),
+        captureCanvasState: vi.fn()
+      }
     })
   } as Partial<ComfyWorkflow>
   return wf as ComfyWorkflow
@@ -492,44 +497,65 @@ describe('useWorkflowService', () => {
   })
 
   describe('openWorkflow ordering', () => {
-    it('does not reopen the previous workflow when a tab switch was queued before the reload', async () => {
-      const workflows = useWorkflowStore()
-      const previous = createModeTestWorkflow({
-        path: 'workflows/previous.json'
-      })
-      const next = createModeTestWorkflow({
-        path: 'workflows/next.json',
-        loaded: false
-      })
-      workflows.activeWorkflow = previous
-      let finishLoad = () => {}
-      const loaded = new Promise<void>((resolve) => {
-        finishLoad = resolve
-      })
-      const load = vi.spyOn(next, 'load').mockImplementation(async () => {
-        await loaded
-        next.originalContent = '{}'
-        next.content = '{}'
-        next.changeTracker = createMockChangeTracker()
-        return next
-      })
-      vi.mocked(app.loadGraphData)
-        .mockImplementationOnce(async () => {
-          workflows.activeWorkflow = next
-          return true
-        })
-        .mockImplementationOnce(async () => {
-          workflows.activeWorkflow = previous
-          return true
-        })
-      const switching = useWorkflowService().openWorkflow(next)
-      await vi.waitFor(() => expect(load).toHaveBeenCalled())
+    it('reloads canvas edits that were not yet captured into the workflow state', async () => {
+      const workflow = createModeTestWorkflow()
+      workflow.changeTracker = new ChangeTracker(workflow, makeWorkflowData())
+      useWorkflowStore().activeWorkflow = workflow
+      app.rootGraph.add(new LGraphNode('Agent edit'))
 
-      const reloading = useWorkflowService().reloadCurrentWorkflow()
-      finishLoad()
-      await Promise.all([switching, reloading])
+      await useWorkflowService().reloadCurrentWorkflow()
 
-      expect(workflows.activeWorkflow.path).toBe(next.path)
+      expect(app.loadGraphData).toHaveBeenCalledWith(
+        expect.objectContaining({
+          nodes: [expect.objectContaining({ title: 'Agent edit' })]
+        }),
+        true,
+        true,
+        workflow,
+        expect.anything()
+      )
+    })
+
+    describe('reloadCurrentWorkflow during a tab switch', () => {
+      let previous: LoadedComfyWorkflow
+      let next: LoadedComfyWorkflow
+
+      beforeEach(() => {
+        const workflows = useWorkflowStore()
+        previous = createModeTestWorkflow({ path: 'workflows/previous.json' })
+        next = createModeTestWorkflow({ path: 'workflows/next.json' })
+        workflows.activeWorkflow = previous
+        vi.mocked(app.loadGraphData).mockImplementation(
+          async (_data, _clean, _restoreView, workflow) => {
+            workflows.activeWorkflow = workflow === next ? next : previous
+            return true
+          }
+        )
+      })
+
+      it('reloads the workflow the queued switch opens', async () => {
+        await Promise.all([
+          useWorkflowService().openWorkflow(next),
+          useWorkflowService().reloadCurrentWorkflow()
+        ])
+
+        expect(app.loadGraphData).toHaveBeenLastCalledWith(
+          expect.anything(),
+          true,
+          true,
+          next,
+          expect.objectContaining({ skipAssetScans: false })
+        )
+      })
+
+      it('does not reopen the previous workflow when the switch is queued after the reload', async () => {
+        await Promise.all([
+          useWorkflowService().reloadCurrentWorkflow(),
+          useWorkflowService().openWorkflow(next)
+        ])
+
+        expect(useWorkflowStore().activeWorkflow?.path).toBe(next.path)
+      })
     })
 
     it('keeps the current workflow when a remote load is superseded', async () => {
