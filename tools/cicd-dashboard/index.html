@@ -96,7 +96,7 @@
       <h1>ComfyUI_frontend CI Dashboard</h1>
       <p class="lede">
         Persistent links to CI-generated reports and tools for the
-        <code>main</code> branch, rebuilt on every push.
+        <code>main</code> branch, updated when both reports are available.
       </p>
 
       <ul class="reports">
@@ -114,11 +114,18 @@
             <code>ci-tests-e2e.yaml</code>.
           </div>
         </li>
+        <li>
+          <a href="./coverage/">E2E coverage</a>
+          <div class="description">
+            Chromium E2E coverage from the same <code>main</code> run as the
+            Playwright report.
+          </div>
+        </li>
       </ul>
 
       <footer>
-        More report types (coverage, bundle size, lint, etc.) will be added here
-        in follow-up PRs as they get a persistent, hosted home. This page is
+        More report types (bundle size, lint, etc.) will be added here in
+        follow-up PRs as they get a persistent, hosted home. This page is
         intentionally minimal for now.
       </footer>
     </main>

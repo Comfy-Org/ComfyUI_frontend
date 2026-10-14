@@ -1,7 +1,3 @@
-# Triggered by workflow_run (not push) so this only runs after 'CI: Tests E2E' has
-# finished merging its sharded blob reports into an HTML report on main — the
-# 'playwright-report-chromium' artifact this job downloads doesn't exist until that
-# merge-reports job completes.
 name: 'CI: Dashboard Deploy'
 
 on:
@@ -27,6 +23,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
+      actions: read
+      contents: read
       pages: write
       id-token: write
     environment:
@@ -35,6 +33,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Download merged Playwright report
         uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
@@ -44,14 +44,22 @@ jobs:
           path: dashboard-site/playwright-report
           if_no_artifact_found: warn
 
-      - name: Check Playwright report was found
+      - name: Download packaged coverage report
+        uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392
+        with:
+          run_id: ${{ github.event.workflow_run.id }}
+          name: e2e-coverage-html
+          path: dashboard-site/coverage
+          if_no_artifact_found: warn
+
+      - name: Check both reports were found
         id: report
         run: |
-          if [ -f dashboard-site/playwright-report/index.html ]; then
+          if [ -f dashboard-site/playwright-report/index.html ] && [ -f dashboard-site/coverage/index.html ]; then
             echo "found=true" >> "$GITHUB_OUTPUT"
           else
             echo "found=false" >> "$GITHUB_OUTPUT"
-            echo "No merged Playwright report artifact found for this run; skipping the dashboard deploy so the existing Pages deployment isn't wiped out." >> "$GITHUB_STEP_SUMMARY"
+            echo "Playwright or coverage report missing; keeping the existing Pages deployment." >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - name: Assemble dashboard index
