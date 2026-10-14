@@ -5128,7 +5128,15 @@
     "rules": [
       {
         "from": "agent/domain",
-        "allow": ["agent/domain", "authentication/domain", "unclassified"]
+        "allow": [
+          "agent/domain",
+          "authentication/domain",
+          "error-reporting/domain",
+          "extension-runtime/domain",
+          "workbench-shell/domain",
+          "workflow-management/domain",
+          "unclassified"
+        ]
       },
       {
         "from": "agent/application",
@@ -5139,6 +5147,18 @@
           "authentication/domain",
           "authentication/application",
           "authentication/infrastructure",
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/infrastructure",
+          "extension-runtime/domain",
+          "extension-runtime/application",
+          "extension-runtime/infrastructure",
+          "workbench-shell/domain",
+          "workbench-shell/application",
+          "workbench-shell/infrastructure",
+          "workflow-management/domain",
+          "workflow-management/application",
+          "workflow-management/infrastructure",
           "unclassified"
         ]
       },
@@ -5151,6 +5171,18 @@
           "authentication/domain",
           "authentication/application",
           "authentication/infrastructure",
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/infrastructure",
+          "extension-runtime/domain",
+          "extension-runtime/application",
+          "extension-runtime/infrastructure",
+          "workbench-shell/domain",
+          "workbench-shell/application",
+          "workbench-shell/infrastructure",
+          "workflow-management/domain",
+          "workflow-management/application",
+          "workflow-management/infrastructure",
           "unclassified"
         ]
       },
@@ -5163,6 +5195,17 @@
           "authentication/domain",
           "authentication/application",
           "authentication/presentation",
+          "error-reporting/domain",
+          "error-reporting/application",
+          "extension-runtime/domain",
+          "extension-runtime/application",
+          "extension-runtime/presentation",
+          "workbench-shell/domain",
+          "workbench-shell/application",
+          "workbench-shell/presentation",
+          "workflow-management/domain",
+          "workflow-management/application",
+          "workflow-management/presentation",
           "unclassified"
         ]
       },
@@ -5179,6 +5222,24 @@
           "authentication/infrastructure",
           "authentication/presentation",
           "authentication/integration",
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/infrastructure",
+          "extension-runtime/domain",
+          "extension-runtime/application",
+          "extension-runtime/infrastructure",
+          "extension-runtime/presentation",
+          "extension-runtime/integration",
+          "workbench-shell/domain",
+          "workbench-shell/application",
+          "workbench-shell/infrastructure",
+          "workbench-shell/presentation",
+          "workbench-shell/integration",
+          "workflow-management/domain",
+          "workflow-management/application",
+          "workflow-management/infrastructure",
+          "workflow-management/presentation",
+          "workflow-management/integration",
           "unclassified"
         ]
       },
