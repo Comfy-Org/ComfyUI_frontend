@@ -1,7 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import type { ComfyApp } from '@/scripts/app'
-import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'

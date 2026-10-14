@@ -7,7 +7,6 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import {
-  afterEach,
   assert,
   beforeEach,
   describe,
@@ -259,6 +258,19 @@ function createWorkflowGraphData(): ComfyWorkflowJSON {
     extra: {},
     version: 0.4
   }
+}
+
+function onceForExtensionEvent(event: string, result: () => unknown) {
+  const mock = mockExtensionService.invokeExtensionsAsync
+  const previous = mock.getMockImplementation()
+  let used = false
+  mock.mockImplementation((name: string, ...args: unknown[]) => {
+    if (!used && name === event) {
+      used = true
+      return result()
+    }
+    return previous?.(name, ...args)
+  })
 }
 
 describe('ComfyApp', () => {
@@ -527,16 +539,8 @@ describe('ComfyApp', () => {
       const errorHandling = new Promise<void>((resolve) => {
         releaseErrorHandling = resolve
       })
-      vi.when(mockExtensionService.invokeExtensionsAsync)
-        .calledWith(
-          'beforeConfigureGraph',
-          expect.anything(),
-          expect.anything()
-        )
-        .thenRejectOnce(error)
-      vi.when(mockExtensionService.invokeExtensionsAsync)
-        .calledWith('onGraphLoadError', error)
-        .thenReturnOnce(errorHandling)
+      onceForExtensionEvent('beforeConfigureGraph', () => Promise.reject(error))
+      onceForExtensionEvent('onGraphLoadError', () => errorHandling)
       const load = app.loadGraphData(
         createWorkflowGraphData(),
         false,
@@ -716,9 +720,7 @@ describe('ComfyApp', () => {
       const pending = new Promise<void>((resolve) => {
         releasePending = resolve
       })
-      vi.when(mockExtensionService.invokeExtensionsAsync)
-        .calledWith('afterConfigureGraph', expect.anything())
-        .thenReturnOnce(pending)
+      onceForExtensionEvent('afterConfigureGraph', () => pending)
 
       const undoLoad = app.loadGraphData(saved, false, false, firstWorkflow, {
         skipAssetScans: true
@@ -902,9 +904,7 @@ describe('ComfyApp', () => {
       const afterConfigure = new Promise<void>((resolve) => {
         releaseAfterConfigure = resolve
       })
-      vi.when(mockExtensionService.invokeExtensionsAsync)
-        .calledWith('afterConfigureGraph', expect.anything())
-        .thenReturnOnce(afterConfigure)
+      onceForExtensionEvent('afterConfigureGraph', () => afterConfigure)
 
       const undoLoad = app.loadGraphData(saved, false, false, firstWorkflow, {
         skipAssetScans: true
@@ -919,13 +919,7 @@ describe('ComfyApp', () => {
       const beforeConfigure = new Promise<void>((resolve) => {
         releaseBeforeConfigure = resolve
       })
-      vi.when(mockExtensionService.invokeExtensionsAsync)
-        .calledWith(
-          'beforeConfigureGraph',
-          expect.anything(),
-          expect.anything()
-        )
-        .thenReturnOnce(beforeConfigure)
+      onceForExtensionEvent('beforeConfigureGraph', () => beforeConfigure)
       const newerLoad = app.loadGraphData(other, true, false, secondWorkflow, {
         skipAssetScans: true
       })
@@ -991,9 +985,7 @@ describe('ComfyApp', () => {
       const firstPending = new Promise<void>((resolve) => {
         releaseFirst = resolve
       })
-      vi.when(mockExtensionService.invokeExtensionsAsync)
-        .calledWith('afterConfigureGraph', expect.anything())
-        .thenReturnOnce(firstPending)
+      onceForExtensionEvent('afterConfigureGraph', () => firstPending)
       const firstLoad = app.loadGraphData(graph, false, false, null, {
         skipAssetScans: true
       })
