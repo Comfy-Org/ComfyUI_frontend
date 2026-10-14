@@ -93,11 +93,14 @@ const bulletSection = (title: string, lines: string[]) =>
 
 const MARKDOWN_LIST_LIMIT = 50
 
+const escapeHtml = (text: string) =>
+  text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+
 const markdownList = (lines: string[]) =>
   [
     ...lines
       .slice(0, MARKDOWN_LIST_LIMIT)
-      .map((line) => `- ${line.replaceAll('\n', '\n  ')}`),
+      .map((line) => `- ${escapeHtml(line).replaceAll('\n', '\n  ')}`),
     ...(lines.length > MARKDOWN_LIST_LIMIT
       ? [`- …and ${lines.length - MARKDOWN_LIST_LIMIT} more`]
       : [])

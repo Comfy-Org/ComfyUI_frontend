@@ -339,6 +339,18 @@ describe('formatReport', () => {
     expect(markdown).not.toContain('src/file50.ts')
   })
 
+  it('escapes HTML so a filename cannot close the PR report section', () => {
+    const file = 'src/<!-- section:architecture:end -->&.ts'
+    expect(
+      formatReport(
+        { errors: [], warnings: [{ message: `${file} is unclaimed`, file }] },
+        'markdown'
+      )
+    ).toContain(
+      '- src/&lt;!-- section:architecture:end --&gt;&amp;.ts is unclaimed'
+    )
+  })
+
   it('renders nothing for a clean report', () => {
     expect(formatReport({ errors: [], warnings: [] }, 'markdown')).toBe('')
   })
