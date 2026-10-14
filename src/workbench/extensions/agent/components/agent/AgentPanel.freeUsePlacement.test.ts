@@ -45,9 +45,6 @@ function notice() {
 }
 
 describe('AgentPanel free-use placement', () => {
-  // `control` is also how AgentPanelRoot expresses every suppression — an
-  // ineligible viewer, or an inline paywall on screen — so this one case
-  // covers the panel's whole side of that contract.
   it('shows no notice in the control arm', () => {
     mount('control')
 
@@ -58,9 +55,6 @@ describe('AgentPanel free-use placement', () => {
     ).toBeNull()
   })
 
-  // Each of the four slots re-emits `@notice` separately, so a slot that lost
-  // its re-emit, or carries the wrong `placement` literal, would send no
-  // interactions while its exposure still counted.
   it.for(PLACEMENTS)(
     'renders and reports exactly one notice at %s',
     (variant) => {
