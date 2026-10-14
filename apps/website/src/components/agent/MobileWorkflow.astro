@@ -84,13 +84,16 @@ const badgeClass =
           src={`${imageRoot}/motion-reference.mp4`}
           poster={`${imageRoot}/motion-reference-poster.webp`}
           aria-label={tAgent('agentPage.workflow.mobile.motionAlt', locale)}
-          autoplay
-          lazy-autoplay
           loop
           hide-controls
           class="rounded-none border-0"
           style="aspect-ratio: 4 / 3"
         />
+        <span
+          class="mobile-workflow-video-cue"
+          style="animation-delay: 0.96s"
+          aria-hidden="true"
+        ></span>
       </div>
       <div
         class="mobile-workflow-cursor mobile-workflow-user"
@@ -157,12 +160,15 @@ const badgeClass =
           src={`${imageRoot}/result-purple.mp4`}
           poster={`${imageRoot}/keyframe-purple.webp`}
           aria-label={tAgent('agentPage.workflow.mobile.outputAlt', locale)}
-          autoplay
-          lazy-autoplay
           loop
           hide-controls
           class="rounded-none border-0"
         />
+        <span
+          class="mobile-workflow-video-cue"
+          style="animation-delay: 3.12s"
+          aria-hidden="true"
+        ></span>
       </div>
       <div
         class="mobile-workflow-cursor mobile-workflow-agent-cursor"
@@ -409,12 +415,29 @@ const badgeClass =
       opacity: 1;
     }
   }
+  .mobile-workflow-video-cue {
+    position: absolute;
+    visibility: hidden;
+    animation: workflow-mobile-video-cue 12s linear infinite;
+  }
+  @keyframes workflow-mobile-video-cue {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  mobile-workflow-connections[data-paused] * {
+    animation-play-state: paused;
+  }
   @media (prefers-reduced-motion: reduce) {
     .mobile-workflow-cursor,
     .mobile-workflow-input,
     .mobile-workflow-reference,
     .mobile-workflow-process,
-    .mobile-workflow-output {
+    .mobile-workflow-output,
+    .mobile-workflow-video-cue {
       animation: none;
     }
   }
@@ -423,6 +446,7 @@ const badgeClass =
 <script>
   class MobileWorkflowConnections extends HTMLElement {
     private observer?: ResizeObserver
+    private stopMotion?: () => void
 
     connectedCallback() {
       const draw = () => {
@@ -469,10 +493,47 @@ const badgeClass =
         this.observer?.observe(node)
       )
       draw()
+
+      const controller = new AbortController()
+      const startedVideos = new WeakSet<HTMLVideoElement>()
+      const play = (video: HTMLVideoElement) => {
+        video.muted = true
+        void video.play().catch(() => {})
+      }
+      const revealVideo = (event: AnimationEvent) => {
+        const cue = event.target
+        if (!(cue instanceof HTMLElement)) return
+        if (!cue.classList.contains('mobile-workflow-video-cue')) return
+        const video = cue.parentElement?.querySelector('video')
+        if (!video) return
+        video.currentTime = 0
+        startedVideos.add(video)
+        play(video)
+      }
+      this.addEventListener('animationstart', revealVideo, {
+        signal: controller.signal
+      })
+      this.addEventListener('animationiteration', revealVideo, {
+        signal: controller.signal
+      })
+      this.toggleAttribute('data-paused', true)
+      const viewObserver = new IntersectionObserver(([entry]) => {
+        this.toggleAttribute('data-paused', !entry.isIntersecting)
+        for (const video of this.querySelectorAll('video')) {
+          if (!entry.isIntersecting) video.pause()
+          else if (startedVideos.has(video)) play(video)
+        }
+      })
+      viewObserver.observe(this)
+      this.stopMotion = () => {
+        controller.abort()
+        viewObserver.disconnect()
+      }
     }
 
     disconnectedCallback() {
       this.observer?.disconnect()
+      this.stopMotion?.()
     }
   }
 
