@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { UseCase, WorkshopModel } from '@/config/models-catalogue'
-import { hubTaskAddress, hubTaskOf, parseHubTaskKey } from './hub-tasks'
+import { hubTaskOf } from './hub-tasks'
 
 function hosted(useCase: UseCase, capabilities: string[] = []): WorkshopModel {
   return {
@@ -70,32 +70,5 @@ describe('hubTaskOf', () => {
     { item: '3D model', model: hosted('3d'), leaf: undefined }
   ])('places an $item under $leaf', ({ model, leaf }) => {
     expect(hubTaskOf(model)).toBe(leaf)
-  })
-})
-
-describe('the task address', () => {
-  it.for([
-    { search: '?task=edit-images', key: 'edit-images' },
-    { search: '?task=upscale&q=a', key: 'upscale' },
-    { search: '?task=nonsense', key: 'all' },
-    { search: '', key: 'all' }
-  ] as const)('reads "$search" as $key', ({ search, key }) => {
-    expect(parseHubTaskKey(search)).toBe(key)
-  })
-
-  it.for([
-    {
-      from: 'https://x/hub/?task=upscale&q=a',
-      key: 'audio',
-      to: 'https://x/hub/?task=audio&q=a'
-    },
-    {
-      from: 'https://x/hub/?type=workflows',
-      key: 'upscale',
-      to: 'https://x/hub/?type=workflows&task=upscale'
-    },
-    { from: 'https://x/hub/?task=audio', key: 'all', to: 'https://x/hub/' }
-  ] as const)('writes $key over $from', ({ from, key, to }) => {
-    expect(hubTaskAddress(from, key)).toBe(to)
   })
 })

@@ -54,13 +54,14 @@ import { rememberListOnClick } from '@/lib/workshop/shelf-memory'
 import { modelsListReturn } from '@/lib/workshop/models-list-return'
 import { MODELS_CATALOGUE_ID } from '@/lib/workshop/models-hub'
 import {
-  hubTaskAddress,
+  HUB_TASKS,
+  hubTaskChoices,
   hubTaskEntries,
   hubTaskLabelKey,
   hubTaskShown,
   inHubTask
 } from '@/lib/workshop/hub-tasks'
-import { useHubTaskSelection } from '@/lib/workshop/hub-task-address'
+import { useAddressedChoice, withChoice } from '@/lib/workshop/addressed-choice'
 import { usePreviewSwitch } from '@/lib/workshop/preview-switches'
 import { shelfOf } from '@/lib/workshop/shelf-use-cases'
 import { useHubCatalogueTracking } from '@/composables/useHubCatalogueTracking'
@@ -84,7 +85,7 @@ import WorkshopModelsResults from '@/components/workshop/WorkshopModelsResults.v
 import CompareTray from '@/components/workshop/explorer/compare/CompareTray.vue'
 import ModelTabs from '@/components/workshop/explorer/ModelTabs.vue'
 import HubTaskRows from '@/components/workshop/HubTaskRows.vue'
-import HubTaskSidebar from '@/components/workshop/HubTaskSidebar.vue'
+import HubChoiceSidebar from '@/components/workshop/HubChoiceSidebar.vue'
 import ModelsExploreHero from '@/components/workshop/models-hub/ModelsExploreHero.vue'
 import WorkshopSearchField from './WorkshopSearchField.vue'
 
@@ -116,13 +117,19 @@ const { tab, readAddress: readTab } = useModelTab(
   (named) => (tabCounts.value.get(named) ?? 0) > 0
 )
 const TAB_PANEL_ID = 'workshop-model-tab-panel'
+const TASK_PARAM = 'task'
 const taskSidebar = usePreviewSwitch('hub-task-sidebar')
 const taskEntries = computed(() =>
   hubTaskEntries(models, (listed) => groupModels(listed).length)
 )
-const { taskKey, readAddress: readTask } = useHubTaskSelection(
+const { choice: taskKey, readAddress: readTask } = useAddressedChoice(
+  TASK_PARAM,
+  HUB_TASKS,
   taskSidebar,
   (key) => hubTaskShown(taskEntries.value, key)
+)
+const taskChoices = computed(() =>
+  hubTaskChoices(taskEntries.value, tabCounts.value.get('all') ?? 0, t)
 )
 const MODELS_PAGE_SIZE = 48
 const openedShelf = computed(() => shelfOf(selectedUseCases.value))
@@ -387,7 +394,7 @@ function rememberModel(model: WorkshopModel, event: MouseEvent) {
 
 function withTask(href: string): string {
   const url = new URL(
-    hubTaskAddress(new URL(href, location.origin).href, taskKey.value)
+    withChoice(new URL(href, location.origin).href, TASK_PARAM, taskKey.value)
   )
   return url.pathname + url.search
 }
@@ -453,13 +460,12 @@ function openResult(model: WorkshopModel, event: MouseEvent) {
 
       <div class="flex flex-col lg:flex-row lg:items-start lg:gap-10">
         <div class="max-lg:contents lg:sticky lg:top-26 lg:w-58 lg:shrink-0">
-          <HubTaskSidebar
+          <HubChoiceSidebar
             v-if="taskSidebar"
             v-model="taskKey"
-            :entries="taskEntries"
-            :total="tabCounts.get('all') ?? 0"
+            :entries="taskChoices"
+            :label="t('workshop.taskSidebar.label')"
             :panel-id="TAB_PANEL_ID"
-            :locale
             class="max-lg:order-1"
             data-design-decision="models-sidebar"
           />

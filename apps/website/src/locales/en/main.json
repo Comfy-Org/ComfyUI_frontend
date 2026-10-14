@@ -873,16 +873,25 @@
       "label": "Preview controls",
       "community": "From the community",
       "homePickRemixRun": "Home: Pick · Remix · Run banner",
-      "taskSidebar": "Hub: task sidebar"
+      "taskSidebar": "Hub: task sidebar",
+      "workflowsByModality": "Hub: workflows by modality"
     },
     "taskSidebar": {
       "label": "Browse by task",
+      "typeLabel": "Browse by type",
       "generateImages": "Generate images",
       "editImages": "Edit images",
       "generateVideos": "Generate videos",
       "imageToVideo": "Image to video",
       "editVideos": "Edit videos",
       "seeAll": "See all ({n})"
+    },
+    "workflowGoals": {
+      "characters": "Characters",
+      "product": "Product & ads",
+      "upscale": "Upscale & restore",
+      "cleanup": "Photo edits",
+      "more": "More workflows"
     }
   },
   "auth": {

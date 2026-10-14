@@ -171,6 +171,8 @@ export type WorkflowWorkshopModel = WorkshopPresentation & {
   readonly section?: string
   readonly sectionLabel?: { readonly en: string; readonly 'zh-CN': string }
   readonly sectionOrder?: number
+  /** Every use-case section it is listed under, when it has more than `section`. */
+  readonly sections?: readonly string[]
   /** The media a visitor brings: an upload's kind, or text for a prompt alone. */
   readonly inputKinds?: readonly Modality[]
   readonly models?: readonly string[]

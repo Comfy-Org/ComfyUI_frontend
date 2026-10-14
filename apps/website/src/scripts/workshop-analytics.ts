@@ -61,6 +61,7 @@ export type HubFilter =
   | 'model'
   | 'sort'
   | 'task'
+  | 'type'
 
 export type WorkshopCheckoutFailureStage = 'balance' | 'credential' | 'checkout'
 

@@ -33,12 +33,18 @@ function categoryFor(page: WorkshopDisplayEntry) {
 }
 
 function sectionFor(page: WorkshopDisplayEntry) {
-  const order = sections.findIndex((section) => section.id === page.section)
-  if (order < 0) return undefined
+  const primary = page.section ?? page.sections?.[0]
+  const order = sections.findIndex((section) => section.id === primary)
+  const listed = sections
+    .map((section) => section.id)
+    .filter((id) => page.sections?.includes(id))
   return {
-    section: sections[order].id,
-    sectionLabel: sections[order].label,
-    sectionOrder: order
+    ...(order >= 0 && {
+      section: sections[order].id,
+      sectionLabel: sections[order].label,
+      sectionOrder: order
+    }),
+    ...(listed.length > 0 && { sections: listed })
   }
 }
 

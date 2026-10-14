@@ -1,3 +1,5 @@
+import type { Component } from 'vue'
+
 /**
  * The Hub catalogues' category sidebar: a row of pills on a narrow screen and
  * a column of entries with counts beside the grid from `lg` up. Models and
@@ -41,4 +43,12 @@ export function sidebarTargetIndex(
     default:
       return undefined
   }
+}
+
+/** One row of a Hub catalogue sidebar. */
+export interface SidebarChoice<Key extends string> {
+  readonly key: Key
+  readonly label: string
+  readonly count: number
+  readonly icon: Component
 }

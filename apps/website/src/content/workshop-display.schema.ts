@@ -124,6 +124,7 @@ export const workshopDisplaySchema = workshopDisplaySourceSchema
     template: workshopTemplateSchema.optional(),
     category: z.string().min(1).optional(),
     section: z.string().min(1).optional(),
+    sections: z.array(z.string().min(1)).min(1).optional(),
     recommendedRank: z.number().int().nonnegative().optional(),
     useCase: workshopUseCaseSchema,
     withheldContent: z

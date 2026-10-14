@@ -1,9 +1,22 @@
 import type { WorkshopModel } from '@/config/models-catalogue'
 import { useCaseFor } from '@/config/models-catalogue'
+import {
+  AudioLines,
+  Columns2,
+  Film,
+  Image,
+  LayoutGrid,
+  Pencil,
+  Scissors,
+  Video
+} from '@lucide/vue'
+import type { Component } from 'vue'
+
 import type { TranslationKey } from '@/i18n/translations'
 import { hostedInTab } from './explorer/model-tabs'
+import type { SidebarChoice } from './sidebar-tab-classes'
 
-const HUB_TASKS = [
+export const HUB_TASKS = [
   'generate-images',
   'edit-images',
   'generate-videos',
@@ -74,17 +87,26 @@ export function hubTaskShown(
   return key === 'all' || entries.some((entry) => entry.key === key)
 }
 
-const HUB_TASK_PARAM = 'task'
-
-/** The task an address names, as `?task=edit-images`. */
-export function parseHubTaskKey(search: string): HubTaskKey {
-  const named = new URLSearchParams(search).get(HUB_TASK_PARAM)
-  return HUB_TASKS.find((task) => task === named) ?? 'all'
+const hubTaskIcon: Record<HubTaskKey, Component> = {
+  all: LayoutGrid,
+  'generate-images': Image,
+  'edit-images': Pencil,
+  'generate-videos': Video,
+  'animate-images': Film,
+  'edit-videos': Scissors,
+  upscale: Columns2,
+  audio: AudioLines
 }
 
-export function hubTaskAddress(href: string, key: HubTaskKey): string {
-  const url = new URL(href)
-  if (key === 'all') url.searchParams.delete(HUB_TASK_PARAM)
-  else url.searchParams.set(HUB_TASK_PARAM, key)
-  return url.href
+/** The task sidebar's rows: All, then each task that lists something. */
+export function hubTaskChoices(
+  entries: readonly HubTaskEntry[],
+  total: number,
+  t: (key: TranslationKey) => string
+): SidebarChoice<HubTaskKey>[] {
+  return [{ key: 'all' as const, count: total }, ...entries].map((entry) => ({
+    ...entry,
+    label: t(hubTaskLabelKey[entry.key]),
+    icon: hubTaskIcon[entry.key]
+  }))
 }
