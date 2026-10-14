@@ -47,7 +47,7 @@ function choose(value: unknown): void {
         :value="option.id"
         :aria-labelledby="`${askUserOptionId(idPrefix, index)}-label`"
         :aria-describedby="askUserOptionDescribedBy(idPrefix, option, index)"
-        class="mt-0.5"
+        class="mt-0.5 p-0"
       />
       <AskUserOptionLabel
         :option-id="askUserOptionId(idPrefix, index)"
