@@ -7,12 +7,7 @@ import type { WorkflowReference } from '../../types/workflowReference'
 import type { SkillReference } from '../../types/skillReference'
 import { parseSkillReferenceText } from '../../utils/skillReferenceText'
 import { parseWorkflowReferences } from '../../utils/workflowReferenceText'
-import type {
-  AskPart,
-  AssistantMessage,
-  AskUnavailablePart,
-  ToolPart
-} from './agentMessageParts'
+import type { AssistantMessage, ToolPart } from './agentMessageParts'
 import {
   createAssistantMessage,
   isOpenAskPart,
@@ -431,12 +426,6 @@ function appendAssistantContent(
     message.parts = [...message.parts, { type: 'text', text, state: 'done' }]
 }
 
-function pendingAskPart(
-  row: AgentMessages[number]
-): AskPart | AskUnavailablePart | undefined {
-  return row.pending_ask ? toAskOrNoticePart(row.pending_ask) : undefined
-}
-
 function applyAssistantRow(
   row: AgentMessages[number],
   message: AssistantMessage,
@@ -448,8 +437,7 @@ function applyAssistantRow(
 
   if (!isLive) return undefined
 
-  const ask = pendingAskPart(row)
-  if (ask) message.parts.push(ask)
+  if (row.pending_ask) message.parts.push(toAskOrNoticePart(row.pending_ask))
   return { messageId: toTurnId(row.id), message }
 }
 
@@ -532,7 +520,6 @@ function recordAssistantRow(
   return rowPending
 }
 
-/** Settles a live message that will not get a transport. */
 export function settleLiveMessage(message: AssistantMessage): void {
   message.streaming = false
   message.parts = message.parts.filter((part) => !isOpenAskPart(part))

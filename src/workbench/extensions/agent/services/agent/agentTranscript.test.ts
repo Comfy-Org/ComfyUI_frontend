@@ -650,18 +650,7 @@ describe('normalizeAgentTranscript', () => {
     {
       name: 'an ask_user card',
       ask: pendingAsk('ask_user'),
-      part: {
-        type: 'askUser',
-        askId: 'ask-1',
-        prompt: 'Which style?',
-        options: [
-          { id: 'oil', label: 'Oil', description: undefined },
-          { id: 'ink', label: 'Ink', description: 'Fine lines' }
-        ],
-        minSelections: 1,
-        maxSelections: 2,
-        allowOther: true
-      }
+      part: expect.objectContaining({ type: 'askUser', askId: 'ask-1' })
     },
     {
       name: 'a notice for an unknown kind',

@@ -13,7 +13,6 @@ import {
   retireAskParts,
   snapshotMessage,
   toAskOrNoticePart,
-  toAskPart,
   toAskResolution
 } from './agentMessageParts'
 import type {
@@ -91,7 +90,7 @@ export interface AgentEventTransport {
   notifyCanvasCaughtUp: () => void
   /** Whether any tool-call part is currently held pending canvas catch-up. */
   hasPendingCanvasSync: () => boolean
-  dropAskPart: (askId: string, resolution?: AskUserResolution) => void
+  retireAskPart: (askId: string, resolution: AskUserResolution) => void
   /**
    * Tears the transport down for a reason other than natural completion
    * (abort, drop, reset, hydrate). Flushes any tool-call parts held pending
@@ -326,20 +325,27 @@ export function createAgentEventTransport(
     return true
   }
 
+  function reportUnrenderedAsk(data: AgentAskEvent['data']): void {
+    reportUndeliverableAsk(
+      data,
+      data.kind === 'unknown' ? 'unknown-kind' : 'unrendered-kind'
+    )
+  }
+
   function handleAskEvent(data: AgentAskEvent['data']): boolean {
-    const shown = message.parts.some((part) => askIdOf(part) === data.ask_id)
-    if (shown) return false
-    if (!toAskPart(data))
-      reportUndeliverableAsk(
-        data,
-        data.kind === 'unknown' ? 'unknown-kind' : 'unrendered-kind'
-      )
+    const shown = message.parts.find((part) => askIdOf(part) === data.ask_id)
+    if (shown) {
+      if (shown.type === 'askUnavailable') reportUnrenderedAsk(data)
+      return false
+    }
+    const part = toAskOrNoticePart(data)
+    if (part.type === 'askUnavailable') reportUnrenderedAsk(data)
     dropDraft()
     closeOpenText()
     closeOpenThinking()
     message.thinking = false
     message.thinkingText = undefined
-    message.parts.push(toAskOrNoticePart(data))
+    message.parts.push(part)
     return true
   }
 
@@ -488,7 +494,7 @@ export function createAgentEventTransport(
     emit(snapshotMessage(message))
   }
 
-  function dropAskPart(askId: string, resolution?: AskUserResolution): void {
+  function retireAskPart(askId: string, resolution: AskUserResolution): void {
     const parts = retireAskParts(message.parts, askId, resolution)
     if (parts === message.parts) return
     message.parts = parts
@@ -501,6 +507,6 @@ export function createAgentEventTransport(
     notifyCanvasCaughtUp,
     hasPendingCanvasSync,
     dispose,
-    dropAskPart
+    retireAskPart
   }
 }

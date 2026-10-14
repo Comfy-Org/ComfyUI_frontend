@@ -1,4 +1,6 @@
-import { delay } from 'es-toolkit'
+import { zAgentAskConflict } from '@comfyorg/ingest-types/zod'
+import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
+import { delay, xor } from 'es-toolkit'
 import { computed, ref, watch } from 'vue'
 import { ZodError } from 'zod'
 
@@ -22,7 +24,7 @@ import {
 import { createUuidv4 } from '@/utils/uuid'
 import type {
   AgentActiveTabData,
-  AgentAnswerRequest,
+  AgentAnswerReceipt,
   AgentMessages,
   AgentTurnAccepted,
   AgentWsEvent,
@@ -46,7 +48,10 @@ import type {
   OpenTabsSnapshot,
   PostMessageInput
 } from '../../services/agent/agentRestClient'
-import type { AssistantMessage } from '../../services/agent/agentMessageParts'
+import type {
+  AskUserResolution,
+  AssistantMessage
+} from '../../services/agent/agentMessageParts'
 import { toAskResolution } from '../../services/agent/agentMessageParts'
 import { normalizeAgentTranscript } from '../../services/agent/agentTranscript'
 import type { LiveTurn } from '../../stores/agent/agentConversationStore'
@@ -291,14 +296,21 @@ export function trackAgentError(
   })
 }
 
-/**
- * Statuses the answer endpoint uses to say this ask will never be answerable
- * by this client: 409 once it is resolved, 403 for a thread/workspace or
- * ownership mismatch, 404 once the ask or its thread is gone. Retrying any of
- * them just reproduces it, so the card is dropped rather than re-offered. 5xx
- * is deliberately absent — the server documents it as retryable.
- */
-const TERMINAL_ANSWER_STATUSES = new Set([403, 404, 409])
+const REFUSED_ANSWER_STATUSES = new Set([400, 403, 404, 501])
+
+type AnswerFailure = 'rejected' | 'refused' | 'unconfirmed'
+
+const ANSWER_FAILURE_ERROR_TYPES: Record<AnswerFailure, string> = {
+  rejected: 'agent_ask_answer_rejected',
+  refused: 'agent_ask_answer_refused',
+  unconfirmed: 'agent_ask_answer_failed'
+}
+
+function classifyAnswerFailure(error: unknown): AnswerFailure {
+  if (!(error instanceof AgentApiError)) return 'unconfirmed'
+  if (error.status === 422) return 'rejected'
+  return REFUSED_ANSWER_STATUSES.has(error.status) ? 'refused' : 'unconfirmed'
+}
 
 /**
  * PM-1658: backoff before re-driving a consent answer. The server documents
@@ -325,11 +337,12 @@ function isRetryableAnswerFailure(error: unknown): boolean {
 
 function isSupersededAnswer(
   submitted: AgentAnswerRequest,
-  settled: readonly string[]
+  committed: Extract<AskUserResolution, { status: 'answered' }>
 ): boolean {
-  if (settled.length === 0) return false
-  if (submitted.selected.length !== settled.length) return true
-  return submitted.selected.some((id) => !settled.includes(id))
+  return (
+    xor(submitted.selected, committed.selected).length > 0 ||
+    (submitted.other_text || undefined) !== committed.otherText
+  )
 }
 
 let sessionGeneration = 0
@@ -1445,106 +1458,81 @@ export function useAgentSession(deps: AgentSessionDeps) {
   ): Promise<boolean> {
     const currentThreadId = conversationStore.threadId
     if (currentThreadId === null) {
-      // PM-1658: the card is on screen, so a click on it is never a no-op.
-      reportError(
-        new Error('run approval answered with no thread to send on'),
-        { surface: 'agent', errorType: 'agent_ask_answer_unroutable' }
-      )
+      reportError(new Error('agent ask answered with no thread to send on'), {
+        surface: 'agent',
+        errorType: 'agent_ask_answer_unroutable'
+      })
       pushError(i18n.global.t('agent.runApproval.answerFailed'))
-      // Nothing can ever answer this card, so retire it rather than let every
-      // further click raise another toast and another telemetry event.
-      conversationStore.retireAsk(askId)
+      conversationStore.retireAsk(askId, undefined, { status: 'retired' })
       return false
     }
-    // PM-1658: deliberately NOT gated on an active turn. The endpoint is keyed
-    // by thread and ask alone — it never looks a turn up — and the server
-    // parks a run approval for days, so a card can still be answered long
-    // after the turn that raised it stopped streaming to this client.
     if (answeringAskIds.value.has(askId)) return false
-    conversationStore.recordAskSelection(askId, answer)
+    conversationStore.recordAskAnswer(askId, answer)
     conversationStore.setAskAnswering(askId, true)
     try {
-      await sendAnswer(currentThreadId, askId, answer)
-      conversationStore.commitAsk(askId, currentThreadId)
+      const committed = toAskResolution(
+        await sendAnswer(currentThreadId, askId, answer)
+      )
+      reportSupersededAnswer(askId, committed)
+      conversationStore.commitAsk(askId, currentThreadId, committed)
       return true
     } catch (error) {
-      // A resolution frame can land while this request is still out, and it
-      // retires the card on the way through. The ask is settled and gone, so
-      // whatever this rejection says about delivery is no longer news the user
-      // can act on — any mismatch worth telling them about has already been
-      // raised by reportSupersededAnswer.
-      if (!answeringAskIds.value.has(askId)) return false
-      if (
-        error instanceof AgentApiError &&
-        TERMINAL_ANSWER_STATUSES.has(error.status)
-      ) {
-        // A 409 is the ordinary double-click, and the ask really is resolved,
-        // so it needs neither telemetry nor a notice. The rest mean this
-        // client could never have answered, which the user has to be told
-        // about or the card simply vanishes as though it had worked.
-        if (error.status !== 409) {
-          reportError(error, {
-            surface: 'agent',
-            errorType: 'agent_ask_answer_refused'
-          })
-          trackAgentError(
-            'ask_answer_failed',
-            'post_acceptance',
-            'error_overlay',
-            { retryable: isRetryableRequestFailure(error, false) }
-          )
-          pushError(i18n.global.t('agent.runApproval.answerFailed'))
-        }
-        conversationStore.retireAsk(askId, currentThreadId)
-        return false
-      }
-      reportError(error, {
-        surface: 'agent',
-        errorType: 'agent_ask_answer_failed'
-      })
-      trackAgentError('ask_answer_failed', 'post_acceptance', 'error_overlay', {
-        retryable: isRetryableRequestFailure(error, false)
-      })
-      // Every re-drive above has been spent. The card cannot simply go back
-      // into service: the server CASes an answer onto the row BEFORE it wakes
-      // the turn and reports 500 for the wake alone, so this may already have
-      // authorized the run, and it answers any later click by replaying THIS
-      // selection while the card disappears as though the new one had taken
-      // effect. On a spend authorization that is the wrong way to be wrong, so
-      // retire the card and say the outcome is unknown rather than show a raw
-      // transport string next to a card that is about to vanish.
-      conversationStore.retireAsk(askId, currentThreadId, {
-        status: 'unknown',
-        selected: []
-      })
-      pushError(i18n.global.t('agent.runApproval.answerUncertain'))
+      if (answeringAskIds.value.has(askId))
+        handleAnswerFailure(error, askId, currentThreadId)
       return false
     }
   }
 
-  /**
-   * PM-1658: the server commits the FIRST answer an ask receives and takes
-   * every later one with 202 while replaying the stored selection, so another
-   * tab — or this one before a reload — can decide a card this client also
-   * answered. The resolution frame names the selection that actually won, so
-   * when it disagrees with ours, the card is about to disappear on someone
-   * else's choice and the user has to be told rather than left reading the
-   * dismissal as their own.
-   */
+  function handleAnswerFailure(
+    error: unknown,
+    askId: string,
+    threadId: string
+  ): void {
+    if (error instanceof AgentApiError && error.status === 409) {
+      const committed = toAskResolution(
+        zAgentAskConflict.safeParse(error.body).data ?? {}
+      )
+      reportSupersededAnswer(askId, committed)
+      conversationStore.retireAsk(askId, threadId, committed)
+      return
+    }
+    const failure = classifyAnswerFailure(error)
+    reportError(error, {
+      surface: 'agent',
+      errorType: ANSWER_FAILURE_ERROR_TYPES[failure]
+    })
+    trackAgentError('ask_answer_failed', 'post_acceptance', 'error_overlay', {
+      retryable: isRetryableRequestFailure(error, false)
+    })
+    if (failure === 'rejected') {
+      conversationStore.setAskAnswering(askId, false)
+      pushError(i18n.global.t('agent.askUser.answerRejected'))
+      return
+    }
+    if (failure === 'refused') {
+      pushError(i18n.global.t('agent.runApproval.answerFailed'))
+      conversationStore.retireAsk(askId, threadId, { status: 'retired' })
+      return
+    }
+    conversationStore.retireAsk(askId, threadId, { status: 'unknown' })
+    pushError(i18n.global.t('agent.runApproval.answerUncertain'))
+  }
+
   function reportSupersededAnswer(
     askId: string,
-    settled: string[] | null
+    committed: AskUserResolution
   ): void {
-    const submitted = conversationStore.submittedAskSelection(askId)
     if (
-      submitted === undefined ||
-      settled === null ||
-      !isSupersededAnswer(submitted, settled)
+      committed.status !== 'answered' ||
+      (committed.selected.length === 0 && committed.otherText === undefined)
     )
+      return
+    const submitted = conversationStore.takeSubmittedAskAnswer(askId)
+    if (submitted === undefined || !isSupersededAnswer(submitted, committed))
       return
     reportError(
       new Error(
-        `agent ask resolved as ${settled.join(',')}, not ${submitted.selected.join(',')}`
+        `agent ask resolved as ${committed.selected.join(',')}, not ${submitted.selected.join(',')}`
       ),
       { surface: 'agent', errorType: 'agent_ask_answer_superseded' }
     )
@@ -1555,11 +1543,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     threadId: string,
     askId: string,
     answer: AgentAnswerRequest
-  ): Promise<void> {
+  ): Promise<AgentAnswerReceipt> {
     for (let attempt = 0; ; attempt++) {
       try {
-        await rest.answerAsk(threadId, askId, answer)
-        return
+        return await rest.answerAsk(threadId, askId, answer)
       } catch (error) {
         if (
           attempt >= ANSWER_RETRY_BACKOFF_MS.length ||
@@ -1758,14 +1745,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (heldForHydration(event)) return
     observeLiveDelivery(event)
     if (event.type === 'agent_ask_resolved') {
-      reportSupersededAnswer(event.data.ask_id, event.data.selected)
-      // Not just un-busying it: `ingest` below routes this frame through the
-      // owning turn's transport, and the turn is gone in exactly the case that
-      // matters, so on its own it would re-enable a card it cannot remove.
+      const resolution = toAskResolution(event.data)
+      reportSupersededAnswer(event.data.ask_id, resolution)
       conversationStore.retireAsk(
         event.data.ask_id,
         event.data.thread_id,
-        toAskResolution(event.data)
+        resolution
       )
       onAskResolved?.(event.data.ask_id)
     }
