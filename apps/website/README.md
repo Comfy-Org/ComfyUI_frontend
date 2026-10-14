@@ -97,6 +97,11 @@ has a localized remove action. Enter adds the chip without submitting the form.
 Tags stay an array throughout editing and saving;
 existing tag text is not split merely by opening the form. Upload/save and
 invalid complete-JSON states block the chip controls with the rest of the form.
+Mar's sticky unsaved-changes bar is also adapted from PR #20640 (83744da).
+It uses the existing real Save/CAS flow; Discard unsaved edits restores the last
+confirmed form snapshot and resets invalid local buffers, without discarding
+server-side Draft records or uploaded Media. Save/upload in progress disables
+that reset. Conflicts retain local edits, and leaving a dirty form warns first.
 Row trash and `Delete Changes` discard Draft edits only, with an exact
 scope confirmation; they do not delete LIVE content or immutable history.
 `Add Content` is beside the selection actions. A temporary local Publish control

@@ -1,4 +1,8 @@
 {
+  "cccEditorActions": {
+    "unsaved": "Unsaved changes",
+    "discard": "Discard unsaved edits"
+  },
   "cccReferences": {
     "authorSearch": "Author",
     "searchPlaceholder": "Search name, username or account ID",

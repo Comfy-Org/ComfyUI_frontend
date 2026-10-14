@@ -1,4 +1,8 @@
 {
+  "cccEditorActions": {
+    "unsaved": "有未保存的更改",
+    "discard": "放弃未保存的编辑"
+  },
   "cccReferences": {
     "authorSearch": "作者",
     "searchPlaceholder": "搜索姓名、用户名或账户 ID",

@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, toRaw } from 'vue'
+import { useEventListener } from '@vueuse/core'
 import { ArrowLeft, Save } from '@lucide/vue'
 import { z } from 'astro/zod'
 import { zCreateCccItemResponse } from '@comfyorg/ingest-types/zod'
 import AdminButton from '@/components/cms/ui/AdminButton.vue'
 import EditorTags from './EditorTags.vue'
+import EditorSaveBar from './EditorSaveBar.vue'
 import AuthorPicker from './AuthorPicker.vue'
 import InputsEditor from './InputsEditor.vue'
 import ExamplesEditor from './ExamplesEditor.vue'
@@ -75,6 +77,7 @@ const invalidFields = ref(new Set<string>())
 const uploads = ref(0)
 const attempt = ref<{ payload: string; key: string }>()
 const ready = ref(false)
+const editorEpoch = ref(0)
 onMounted(() => {
   ready.value = true
 })
@@ -106,6 +109,25 @@ const dirty = computed(
     JSON.stringify(document.value) !==
     JSON.stringify(snapshot.value?.document ?? initial)
 )
+const unsaved = computed(
+  () =>
+    dirty.value ||
+    invalidFields.value.size > 0 ||
+    kind.value !== (snapshot.value?.type ?? initialType)
+)
+useEventListener('beforeunload', (event: BeforeUnloadEvent) => {
+  if (unsaved.value && state.value !== 'saving') event.preventDefault()
+})
+function discardUnsaved() {
+  if (state.value === 'saving' || uploads.value > 0) return
+  document.value = structuredClone(toRaw(snapshot.value?.document ?? initial))
+  kind.value = snapshot.value?.type ?? initialType
+  invalidFields.value = new Set()
+  errors.value = []
+  state.value = 'idle'
+  attempt.value = undefined
+  editorEpoch.value++
+}
 const fields = ['title', 'slug', 'description', 'long_description'] as const
 function value(name: string) {
   const raw = document.value[name]
@@ -403,7 +425,7 @@ async function save() {
 <template>
   <form
     :data-editor-ready="ready"
-    class="grid gap-5 font-admin text-admin-fg"
+    class="grid gap-5 pb-24 font-admin text-admin-fg"
     @submit.prevent="save"
   >
     <header class="flex flex-wrap items-center justify-between gap-4">
@@ -455,6 +477,7 @@ async function save() {
       </p>
     </div>
     <fieldset
+      :key="editorEpoch"
       :disabled="
         state === 'saving' || uploads > 0 || invalidFields.has('document')
       "
@@ -935,6 +958,7 @@ async function save() {
       </summary>
       <div class="mt-4">
         <JsonField
+          :key="editorEpoch"
           :label="t('cmsEditor.completeDocument')"
           :value="document"
           :disabled="completeDocumentBlocked"
@@ -944,7 +968,14 @@ async function save() {
         />
       </div>
     </details>
-    <footer class="flex flex-wrap justify-end gap-2">
+    <EditorSaveBar
+      v-if="unsaved"
+      :blocked
+      :busy="state === 'saving' || uploads > 0"
+      :locale
+      @discard="discardUnsaved"
+    />
+    <footer v-else class="flex flex-wrap justify-end gap-2">
       <AdminButton href="/hub/models/" size="lg" class="w-40">{{
         t('cmsEditor.cancel')
       }}</AdminButton
