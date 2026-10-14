@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+
 import type { ModelFamily } from '@/config/model-family'
 import type { WorkshopModel } from '@/config/models-catalogue'
 import type { Locale } from '@/i18n/translations'
@@ -42,7 +44,11 @@ defineEmits<{
       aria-labelledby="workshop-models-heading"
       data-testid="workshop-models-grid"
     >
-      <li v-for="family in families" :key="family.key" class="relative">
+      <li
+        v-for="family in families"
+        :key="family.key"
+        class="group/compare relative"
+      >
         <WorkshopModelCard
           :model="family.latest"
           :locale
@@ -57,7 +63,13 @@ defineEmits<{
             !compared.includes(family.latest.slug)
           "
           :locale
-          class="absolute top-4 right-4 z-20"
+          :class="
+            cn(
+              'absolute top-4 left-4 z-20 transition-opacity',
+              !compared.length &&
+                'opacity-0 group-focus-within/compare:opacity-100 group-hover/compare:opacity-100 pointer-coarse:opacity-100'
+            )
+          "
           @update:model-value="$emit('compare', family.latest.slug)"
         />
       </li>

@@ -602,7 +602,7 @@ test.describe('Models catalog', () => {
     await view.getByTestId('compare-add').click()
     await expect(view).toHaveCount(0)
     await expect(page).not.toHaveURL(/compare=/)
-    await expect(page.getByTestId('compare-open')).toHaveText(
+    await expect(page.getByTestId('compare-open')).toHaveAccessibleName(
       'Compare 2 models'
     )
   })

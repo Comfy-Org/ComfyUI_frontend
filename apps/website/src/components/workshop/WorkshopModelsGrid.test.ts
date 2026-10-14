@@ -820,20 +820,28 @@ describe('WorkshopModelsGrid', () => {
       const user = renderCatalogue()
       await user.click(toggle('Kling AI'))
       expect(compareButton()).toBeDisabled()
-      expect(compareButton()).toHaveTextContent('Compare 1 model')
-      expect(screen.getByTestId('compare-hint')).toHaveTextContent(
-        'Pick 1 more to compare'
-      )
+      expect(compareButton()).toHaveAccessibleName('Compare 1 model')
+      expect(compareButton()).toHaveTextContent('Compare 1')
+      expect(screen.getByTestId('compare-count')).toHaveTextContent('1 of 4')
+      expect(screen.getAllByTestId('compare-slot')).toHaveLength(3)
 
       await user.click(toggle('Flux'))
       expect(compareButton()).toBeEnabled()
-      expect(screen.getByTestId('compare-hint')).toHaveTextContent(
-        'You can add 2 more'
-      )
+      expect(screen.getByTestId('compare-count')).toHaveTextContent('2 of 4')
+      expect(screen.getAllByTestId('compare-slot')).toHaveLength(2)
 
       await user.click(toggle('Mystery'))
       await user.click(toggle('Seedream'))
-      expect(screen.queryByTestId('compare-hint')).toBeNull()
+      expect(screen.getByTestId('compare-count')).toHaveTextContent('4 of 4')
+      expect(screen.queryByTestId('compare-slot')).toBeNull()
+      expect(
+        screen.getAllByTestId('compare-pick').map((pick) => pick.textContent)
+      ).toEqual([
+        'KKling AIKling',
+        'FFluxBlack Forest Labs',
+        'MMystery',
+        'SSeedreamByteDance'
+      ])
       expect(toggle('Veo')).toBeDisabled()
 
       await user.click(
@@ -887,7 +895,7 @@ describe('WorkshopModelsGrid', () => {
       await user.click(screen.getByTestId('compare-add'))
       expect(screen.queryByTestId('compare-view')).toBeNull()
       expect(location.search).toBe('')
-      expect(compareButton()).toHaveTextContent('Compare 3 models')
+      expect(compareButton()).toHaveAccessibleName('Compare 3 models')
 
       await user.click(compareButton())
       await user.click(
@@ -900,7 +908,7 @@ describe('WorkshopModelsGrid', () => {
         screen.getByRole('button', { name: 'Remove Seedream from compare' })
       )
       expect(screen.queryByTestId('compare-view')).toBeNull()
-      expect(compareButton()).toHaveTextContent('Compare 1 model')
+      expect(compareButton()).toHaveAccessibleName('Compare 1 model')
     })
 
     it('opens a shared comparison on its models', async () => {
@@ -915,7 +923,7 @@ describe('WorkshopModelsGrid', () => {
       renderCatalogue()
       await nextTick()
       expect(screen.queryByTestId('compare-view')).toBeNull()
-      expect(compareButton()).toHaveTextContent('Compare 1 model')
+      expect(compareButton()).toHaveAccessibleName('Compare 1 model')
     })
   })
 })
