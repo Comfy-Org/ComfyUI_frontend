@@ -1,18 +1,19 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-import type { GalleryItem } from '../../data/gallery'
-import type { Locale } from '../../i18n/translations'
+import type { GalleryItem } from '@/data/gallery'
+import type { Locale } from '@/i18n/translations'
 
-import { t } from '../../i18n/translations'
-import BrandButton from '../common/BrandButton.vue'
-import GalleryCard from '../gallery/GalleryCard.vue'
-import GalleryDetailModal from '../gallery/GalleryDetailModal.vue'
+import { translationsFor } from '@/i18n/translations'
+import BrandButton from '@/components/common/BrandButton.vue'
+import GalleryCard from '@/components/gallery/GalleryCard.vue'
+import GalleryDetailModal from '@/components/gallery/GalleryDetailModal.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
 const modelName = 'Grok'
-const ctaHref = 'https://comfy.org/workflows/model/grok'
+const ctaHref = 'https://comfy.org/workflows/model/grok/'
 
 const items: GalleryItem[] = [
   {
@@ -75,8 +76,8 @@ function openDetail(index: number) {
   modalOpen.value = true
 }
 
-const title = t('models.list.creations.title', locale, { name: modelName })
-const ctaLabel = t('models.list.creations.cta', locale)
+const title = t('models.list.creations.title', { name: modelName })
+const ctaLabel = t('models.list.creations.cta')
 </script>
 
 <template>

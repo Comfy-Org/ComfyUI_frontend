@@ -4,19 +4,19 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { readonly, ref, nextTick } from 'vue'
 import type { Ref } from 'vue'
 
-import { discoveryProviders } from '../../data/modelDiscovery'
+import { discoveryProviders } from '@/data/modelDiscovery'
 import type {
   DiscoveryProvider,
   DiscoveryWorkflow
-} from '../../data/modelDiscovery'
+} from '@/data/modelDiscovery'
 import {
   useWorkshopEnabled,
   useWorkshopEnabledSettled,
   useWorkshopWorkflowsEnabled
-} from '../../scripts/posthog'
+} from '@/scripts/posthog'
 import ModelDiscoverySection from './ModelDiscoverySection.vue'
 
-vi.mock(import('../../scripts/posthog'))
+vi.mock(import('@/scripts/posthog'))
 
 let enabled: Ref<boolean>
 let settled: Ref<boolean>
@@ -91,12 +91,12 @@ describe('ModelDiscoverySection', async () => {
 
     const provider = screen.getByRole('link', { name: /Fixture Studio & Co/ })
     expect(provider.getAttribute('href')).toBe(
-      '/models?q=Fixture+Studio+%26+Co'
+      '/hub/models/?q=Fixture+Studio+%26+Co'
     )
     expect(screen.queryByRole('link', { name: /ByteDance/ })).toBeNull()
 
     const browse = screen.getByRole('link', { name: 'Browse all models' })
-    expect(browse.getAttribute('href')).toBe('/models')
+    expect(browse.getAttribute('href')).toBe('/hub/models/')
   })
 
   it('hides the looping copy of the row from assistive tech', async () => {
@@ -158,7 +158,7 @@ describe('ModelDiscoverySection', async () => {
     ).toHaveAttribute('href', '/models/workflows/sketch/')
     expect(
       screen.getByRole('link', { name: 'Browse all workflows' })
-    ).toHaveAttribute('href', '/models?type=workflows')
+    ).toHaveAttribute('href', '/hub/workflows/')
   })
 
   // Both rows cross the screen at one pace, so switching tabs does not speed
@@ -213,6 +213,6 @@ describe('ModelDiscoverySection', async () => {
     await nextTick()
 
     const browse = screen.getByRole('link', { name: '浏览全部模型' })
-    expect(browse.getAttribute('href')).toBe('/models')
+    expect(browse.getAttribute('href')).toBe('/hub/models/')
   })
 })

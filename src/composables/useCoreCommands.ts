@@ -31,7 +31,7 @@ import { buildSupportUrl } from '@/platform/support/config'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { ExecutionTriggerSource } from '@/platform/telemetry/types'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
@@ -42,6 +42,7 @@ import {
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useAssetsStore } from '@/stores/assetsStore'
@@ -68,6 +69,7 @@ import {
   ManagerUIState,
   useManagerState
 } from '@/workbench/extensions/manager/composables/useManagerState'
+import { useManagerDialog } from '@/workbench/extensions/manager/composables/useManagerDialog'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
 import { useWorkflowTemplateSelectorDialog } from './useWorkflowTemplateSelectorDialog'
@@ -88,11 +90,9 @@ export function useCoreCommands(): ComfyCommand[] {
   function blockRunWithoutSubscription(): boolean {
     if (!isCloud || canAccessSubscriptionFeatures.value) return false
     if (isSalesManagedTier(subscription.value?.tier)) {
-      toastStore.add({
-        severity: 'warn',
-        summary: t('subscription.salesManagedRunBlockedTitle'),
-        detail: t('subscription.salesManagedRunBlockedDetail'),
-        life: 5000
+      toast.warning(t('subscription.salesManagedRunBlockedTitle'), {
+        description: t('subscription.salesManagedRunBlockedDetail'),
+        duration: 5000
       })
     } else {
       showSubscriptionDialog({ reason: 'subscribe_to_run' })
@@ -103,9 +103,10 @@ export function useCoreCommands(): ComfyCommand[] {
   const workflowStore = useWorkflowStore()
   const settingsDialog = useSettingsDialog()
   const dialogService = useDialogService()
+  const { showSignInDialog } = useAuthDialogs()
   const colorPaletteStore = useColorPaletteStore()
   const authActions = useAuthActions()
-  const toastStore = useToastStore()
+  const toast = useToast()
   const canvasStore = useCanvasStore()
   const executionStore = useExecutionStore()
   const modelStore = useModelStore()
@@ -348,11 +349,9 @@ export function useCoreCommands(): ComfyCommand[] {
       category: 'essentials' as const,
       function: async () => {
         await api.interrupt(executionStore.activeJobId)
-        toastStore.add({
-          severity: 'info',
-          summary: t('g.interrupted'),
-          detail: t('toastMessages.interrupted'),
-          life: 1000
+        toast.info(t('g.interrupted'), {
+          description: t('toastMessages.interrupted'),
+          duration: 1000
         })
       }
     },
@@ -363,11 +362,9 @@ export function useCoreCommands(): ComfyCommand[] {
       category: 'essentials' as const,
       function: async () => {
         await useQueueStore().clear(['queue'])
-        toastStore.add({
-          severity: 'info',
-          summary: t('g.confirmed'),
-          detail: t('toastMessages.pendingTasksDeleted'),
-          life: 3000
+        toast.info(t('g.confirmed'), {
+          description: t('toastMessages.pendingTasksDeleted'),
+          duration: 3000
         })
       }
     },
@@ -427,10 +424,7 @@ export function useCoreCommands(): ComfyCommand[] {
       category: 'view-controls' as const,
       function: () => {
         if (app.canvas.empty) {
-          toastStore.add({
-            severity: 'error',
-            summary: t('toastMessages.emptyCanvas')
-          })
+          toast.error(t('toastMessages.emptyCanvas'))
           return
         }
         app.canvas.fitViewToSelectionAnimated({
@@ -578,10 +572,8 @@ export function useCoreCommands(): ComfyCommand[] {
         const selectedOutputNodes = filterOutputNodes(selectedNodes)
 
         if (selectedOutputNodes.length === 0) {
-          toastStore.add({
-            severity: 'error',
-            summary: t('toastMessages.nothingToQueue'),
-            detail: t('toastMessages.pleaseSelectOutputNodes')
+          toast.error(t('toastMessages.nothingToQueue'), {
+            description: t('toastMessages.pleaseSelectOutputNodes')
           })
           return
         }
@@ -591,10 +583,8 @@ export function useCoreCommands(): ComfyCommand[] {
           getExecutionIdsForSelectedNodes(selectedOutputNodes)
 
         if (executionIds.length === 0) {
-          toastStore.add({
-            severity: 'error',
-            summary: t('toastMessages.failedToQueue'),
-            detail: t('toastMessages.failedExecutionPathResolution')
+          toast.error(t('toastMessages.failedToQueue'), {
+            description: t('toastMessages.failedExecutionPathResolution')
           })
           return
         }
@@ -625,10 +615,8 @@ export function useCoreCommands(): ComfyCommand[] {
       function: () => {
         const { canvas } = app
         if (!canvas.selectedItems.size) {
-          toastStore.add({
-            severity: 'error',
-            summary: t('toastMessages.nothingToGroup'),
-            detail: t('toastMessages.pleaseSelectNodesToGroup')
+          toast.error(t('toastMessages.nothingToGroup'), {
+            description: t('toastMessages.pleaseSelectNodesToGroup')
           })
           return
         }
@@ -921,13 +909,12 @@ export function useCoreCommands(): ComfyCommand[] {
 
           const result = await resetOnboardingState()
           if (result.status === 'failed') {
-            toastStore.add({
-              severity: 'error',
-              summary: t('onboardingReplay.failedSummary'),
-              detail: t('onboardingReplay.failedDetail'),
-              life: 5000
+            toast.error(t('onboardingReplay.failedSummary'), {
+              description: t('onboardingReplay.failedDetail'),
+              duration: 5000
             })
             reportError(result.cause, {
+              surface: 'platform',
               errorType: 'error_resetting_onboarding_state'
             })
             return
@@ -985,7 +972,7 @@ export function useCoreCommands(): ComfyCommand[] {
     {
       id: 'Comfy.Canvas.PasteFromClipboardWithConnect',
       icon: 'icon-[lucide--clipboard-paste]',
-      label: () => t('Paste with Connect'),
+      label: () => t('menuLabels.Paste with Connect'),
       mutatesGraph: true,
       function: () => {
         app.canvas.pasteFromClipboard({ connectInputs: true })
@@ -1022,7 +1009,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Custom Nodes Manager',
       versionAdded: '1.12.10',
       function: async () => {
-        await useManagerState().openManager({
+        await useManagerDialog().openManager({
           showToastOnLegacyError: true
         })
       }
@@ -1033,20 +1020,17 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Check for Custom Node Updates',
       versionAdded: '1.17.0',
       function: async () => {
-        const managerState = useManagerState()
-        const state = managerState.managerUIState.value
+        const state = useManagerState().managerUIState.value
 
         // For DISABLED state, show error toast instead of opening settings
         if (state === ManagerUIState.DISABLED) {
-          toastStore.add({
-            severity: 'error',
-            summary: t('g.error'),
-            detail: t('manager.notAvailable')
+          toast.error(t('g.error'), {
+            description: t('manager.notAvailable')
           })
           return
         }
 
-        await managerState.openManager({
+        await useManagerDialog().openManager({
           initialTab: ManagerTab.UpdateAvailable,
           showToastOnLegacyError: false
         })
@@ -1058,7 +1042,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Install Missing Custom Nodes',
       versionAdded: '1.17.0',
       function: async () => {
-        await useManagerState().openManager({
+        await useManagerDialog().openManager({
           initialTab: ManagerTab.Missing,
           showToastOnLegacyError: false
         })
@@ -1070,7 +1054,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Open Sign In Dialog',
       versionAdded: '1.17.6',
       function: async () => {
-        await dialogService.showSignInDialog()
+        await showSignInDialog()
       }
     },
     {
@@ -1166,7 +1150,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'mdi mdi-puzzle-outline',
       label: 'Manager',
       function: async () => {
-        await useManagerState().openManager({
+        await useManagerDialog().openManager({
           initialTab: ManagerTab.All,
           showToastOnLegacyError: false
         })
@@ -1305,7 +1289,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Custom Nodes (Legacy)',
       versionAdded: '1.16.4',
       function: async () => {
-        await useManagerState().openManager({
+        await useManagerDialog().openManager({
           legacyCommand: 'Comfy.Manager.CustomNodesManager.ToggleVisibility',
           showToastOnLegacyError: true,
           isLegacyOnly: true
@@ -1318,7 +1302,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Manager Menu (Legacy)',
       versionAdded: '1.16.4',
       function: async () => {
-        await useManagerState().openManager({
+        await useManagerDialog().openManager({
           showToastOnLegacyError: true,
           isLegacyOnly: true
         })
@@ -1331,10 +1315,8 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '1.16.4',
       function: async () => {
         if (!useSettingStore().get('Comfy.Memory.AllowManualUnload')) {
-          useToastStore().add({
-            severity: 'error',
-            summary: t('g.error'),
-            detail: t('g.commandProhibited', {
+          toast.error(t('g.error'), {
+            description: t('g.commandProhibited', {
               command: 'Comfy.Memory.UnloadModels'
             })
           })
@@ -1350,10 +1332,8 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '1.16.4',
       function: async () => {
         if (!useSettingStore().get('Comfy.Memory.AllowManualUnload')) {
-          useToastStore().add({
-            severity: 'error',
-            summary: t('g.error'),
-            detail: t('g.commandProhibited', {
+          toast.error(t('g.error'), {
+            description: t('g.commandProhibited', {
               command: 'Comfy.Memory.UnloadModelsAndExecutionCache'
             })
           })

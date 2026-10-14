@@ -1,17 +1,22 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useTelemetry } from '@/platform/telemetry'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
+import {
+  bindOperationToCheckoutJourney,
+  clearCheckoutJourney,
+  resolveCheckoutJourney
+} from '@/platform/workspace/utils/checkoutJourney'
 import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -25,7 +30,12 @@ import {
   settledOperation,
   settledTopup
 } from './billingSdkTestUtils'
-import type { HostedBillingDestination } from '@comfyorg/account-core/billing'
+import type {
+  BillingOperationKind,
+  BillingOperationTelemetryEvent,
+  HostedBillingDestination
+} from '@comfyorg/account-core/billing'
+import { BILLING_OPERATION_TELEMETRY_EVENT } from '@comfyorg/account-core/billing'
 import type { BillingSdk, BillingSdkOptions } from './createBillingSdk'
 
 const mockCreateBillingSdk = vi.hoisted(() =>
@@ -69,6 +79,12 @@ beforeEach(() => {
     return harness.sdk
   })
   vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
+  vi.spyOn(window, 'open').mockReturnValue(window)
+})
+
+afterEach(() => {
+  clearCheckoutJourney()
+  sessionStorage.clear()
 })
 
 function startedEvent(resumed: boolean) {
@@ -171,59 +187,87 @@ describe('useBillingSdkStore', () => {
 
   it('keeps the progress toast in step with the verification the server asks for', () => {
     useBillingSdkStore()
-    const toasts = useToastStore()
+    const toast = useToast()
 
     harness.publish(pendingTopup())
-    expect(toasts.messagesToAdd).toEqual([
+    expect(toast.toasts).toEqual([
       expect.objectContaining({
-        severity: 'info',
-        summary: 'Processing payment — adding credits...'
+        duration: Number.POSITIVE_INFINITY,
+        kind: 'loading',
+        title: 'Processing payment — adding credits...'
       })
     ])
 
     harness.publish(pendingTopup({ actionUrl: 'https://verify.example/op-1' }))
-    expect(toasts.messagesToRemove).toEqual([
-      expect.objectContaining({ severity: 'info' })
+    expect(toast.toasts).toEqual([
+      expect.objectContaining({
+        duration: Number.POSITIVE_INFINITY,
+        kind: 'warning',
+        title: 'Verify your payment to add your credits'
+      })
     ])
-    expect(toasts.messagesToAdd.at(-1)).toMatchObject({
-      severity: 'warn',
-      summary: 'Verify your payment to add your credits'
-    })
 
     harness.publish(settledTopup('succeeded'))
-    expect(toasts.messagesToRemove.at(-1)).toMatchObject({ severity: 'warn' })
+    expect(toast.toasts).toEqual([])
   })
 
   it('keeps a subscribe in step with its progress toast, as the poller did', () => {
     useBillingSdkStore()
-    const toasts = useToastStore()
+    const toast = useToast()
 
     harness.publish(pendingSubscription())
-    expect(toasts.messagesToAdd).toEqual([
+    expect(toast.toasts).toEqual([
       expect.objectContaining({
-        severity: 'info',
-        summary: 'Processing payment — setting up your workspace...'
+        kind: 'loading',
+        title: 'Processing payment — setting up your workspace...'
       })
     ])
 
     harness.publish(
       pendingSubscription({ actionUrl: 'https://verify.example/op-1' })
     )
-    expect(toasts.messagesToAdd.at(-1)).toMatchObject({
-      severity: 'warn',
-      summary: 'Verify your payment to finish setting up your workspace'
-    })
+    expect(toast.toasts).toEqual([
+      expect.objectContaining({
+        kind: 'warning',
+        title: 'Verify your payment to finish setting up your workspace'
+      })
+    ])
 
     harness.publish(settledOperation('succeeded', 'subscription'))
-    expect(toasts.messagesToRemove.at(-1)).toMatchObject({ severity: 'warn' })
+    expect(toast.toasts).toEqual([])
   })
+
+  it.for([
+    {
+      kind: 'subscription',
+      actionRequired: 'Verify your payment to finish setting up your workspace'
+    },
+    { kind: 'topup', actionRequired: 'Verify your payment to add your credits' }
+  ] as const)(
+    'raises no progress toast for a $kind parked on a payment method until the server serves a link',
+    ({ kind, actionRequired }) => {
+      useBillingSdkStore()
+      const toast = useToast()
+      const parked = { kind, serverPhase: 'awaiting_payment_method' } as const
+
+      harness.publish(pendingTopup(parked))
+      expect(toast.toasts).toEqual([])
+
+      harness.publish(
+        pendingTopup({ ...parked, actionUrl: 'https://verify.example/op-1' })
+      )
+      expect(toast.toasts).toEqual([
+        expect.objectContaining({ kind: 'warning', title: actionRequired })
+      ])
+    }
+  )
 
   it('shows no progress toast for a cancel', () => {
     useBillingSdkStore()
 
     harness.publish(pendingTopup({ kind: 'cancel' }))
 
-    expect(useToastStore().messagesToAdd).toEqual([])
+    expect(useToast().toasts).toEqual([])
   })
 
   it('drives a required in-page challenge once per operation', () => {
@@ -264,6 +308,34 @@ describe('useBillingSdkStore', () => {
     expect(harness.sdk.driveChallenge).toHaveBeenCalledTimes(2)
   })
 
+  it('reports the source of the journey a reattached operation is bound to', () => {
+    resolveCheckoutJourney({
+      actorUid: 'user-1',
+      workspaceId: 'ws-1',
+      entryFlow: 'topup',
+      entrySource: 'settings_billing',
+      paymentIntentSource: 'avatar_menu_plans',
+      assignment: { status: 'unavailable' }
+    })
+    bindOperationToCheckoutJourney('op-1')
+    useBillingSdkStore()
+
+    options.onTelemetry({
+      ...startedEvent(true),
+      name: 'billing.operation.succeeded',
+      duration_ms: 1200
+    })
+
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        operation: 'operation',
+        stage: 'succeeded',
+        billing_op_id: 'op-1',
+        payment_intent_source: 'avatar_menu_plans'
+      })
+    )
+  })
+
   it('finishes a reattached top-up the way the poller did', async () => {
     useBillingSdkStore()
 
@@ -284,22 +356,30 @@ describe('useBillingSdkStore', () => {
     expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
       key: 'top-up-credits'
     })
-    expect(useToastStore().messagesToAdd).toContainEqual(
+    expect(useToast().toasts).toContainEqual(
       expect.objectContaining({
-        severity: 'success',
-        summary: 'Credits added successfully'
+        kind: 'success',
+        title: 'Credits added successfully',
+        duration: 5000
       })
     )
     expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'operation',
+      billing_client: 'sdk',
       operation_type: 'topup',
+      billing_op_id: 'op-1',
+      presentation: 'hosted',
+      resumed: true,
       stage: 'started',
       outcome: 'pending'
     })
     expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'operation',
+      billing_client: 'sdk',
       operation_type: 'topup',
       billing_op_id: 'op-1',
+      presentation: 'hosted',
+      resumed: true,
       duration_ms: 1200,
       stage: 'succeeded',
       outcome: 'success'
@@ -321,7 +401,7 @@ describe('useBillingSdkStore', () => {
     expect(useTelemetry()?.trackBillingEvent).not.toHaveBeenCalled()
     expect(useSettingsDialog().show).not.toHaveBeenCalled()
     expect(useBillingContext().fetchStatus).not.toHaveBeenCalled()
-    expect(useToastStore().messagesToAdd).toEqual([])
+    expect(useToast().toasts).toEqual([])
   })
 
   it('reports the decline of a reattached top-up with its coded reason', () => {
@@ -330,11 +410,12 @@ describe('useBillingSdkStore', () => {
     options.onTelemetry(startedEvent(true))
     harness.publish(failedTopup('expired_card'))
 
-    expect(useToastStore().messagesToAdd).toContainEqual(
+    expect(useToast().toasts).toContainEqual(
       expect.objectContaining({
-        severity: 'error',
-        summary: 'Top-up failed',
-        detail: 'This card has expired. Use a different payment method.'
+        kind: 'error',
+        title: 'Top-up failed',
+        description: 'This card has expired. Use a different payment method.',
+        duration: 7000
       })
     )
   })
@@ -344,10 +425,11 @@ describe('useBillingSdkStore', () => {
 
     harness.publish(settledTopup('timed_out'))
 
-    expect(useToastStore().messagesToAdd).toContainEqual(
+    expect(useToast().toasts).toContainEqual(
       expect.objectContaining({
-        severity: 'error',
-        summary: 'Top-up verification timed out'
+        kind: 'error',
+        title: 'Top-up verification timed out',
+        duration: Number.POSITIVE_INFINITY
       })
     )
   })
@@ -445,8 +527,11 @@ describe('useBillingSdkStore', () => {
 
     expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'operation',
+      billing_client: 'sdk',
       operation_type: 'cancel',
       billing_op_id: 'op-cancel',
+      presentation: 'hosted',
+      resumed: false,
       duration_ms: 900,
       stage: 'succeeded',
       outcome: 'success'
@@ -508,7 +593,7 @@ describe('useBillingSdkStore subscription commands', () => {
 
     await expect(useBillingSdkStore().cancelSubscription()).resolves.toEqual({
       status: 'ok',
-      value: undefined
+      value: { operationObserved: true }
     })
     expect(useBillingContext().fetchStatus).toHaveBeenCalledOnce()
     expect(useBillingContext().fetchBalance).toHaveBeenCalledOnce()
@@ -520,7 +605,7 @@ describe('useBillingSdkStore subscription commands', () => {
 
     await expect(useBillingSdkStore().resubscribe()).resolves.toEqual({
       status: 'ok',
-      value: undefined
+      value: { operationObserved: true }
     })
     expect(
       useBillingContext().reconcileSubscriptionSuccess
@@ -569,7 +654,8 @@ describe('useBillingSdkStore subscription commands', () => {
       value: {
         billing_op_id: 'op-1',
         status: 'subscribed',
-        requiredPayment: false
+        requiredPayment: false,
+        operationObserved: true
       }
     })
     expect(harness.sdk.commands.subscribe).toHaveBeenCalledWith({
@@ -601,12 +687,32 @@ describe('useBillingSdkStore subscription commands', () => {
     )
 
     expect(openPage).not.toHaveBeenCalled()
-    expect(
-      useToastStore().messagesToAdd.filter(
-        (message) => message.group !== 'billing-operation'
-      )
-    ).toEqual([])
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'warning',
+        title: 'Verify your payment to finish setting up your workspace'
+      })
+    ])
     expect(store.subscriptionActionUrl).toBe('https://pay.example/op-1')
+  })
+
+  it('drives no in-page challenge for a subscribe it reattached to', async () => {
+    const openPage = vi.spyOn(window, 'open').mockReturnValue(null)
+    const store = useBillingSdkStore()
+
+    reattachedSubscribe()
+    harness.publish(
+      pendingSubscription({
+        presentation: 'embedded',
+        actionUrl: 'https://pay.example/invoice',
+        challenge: { clientSecret: 'pi_secret', status: 'required' }
+      })
+    )
+    await nextTick()
+
+    expect(harness.sdk.driveChallenge).not.toHaveBeenCalled()
+    expect(openPage).not.toHaveBeenCalled()
+    expect(store.subscriptionActionUrl).toBe('https://pay.example/invoice')
   })
 
   it('finishes a reattached subscribe the way the poller did', async () => {
@@ -616,11 +722,9 @@ describe('useBillingSdkStore subscription commands', () => {
     harness.publish(settledOperation('succeeded', 'subscription'))
 
     await vi.waitFor(() =>
-      expect(useToastStore().messagesToAdd).toContainEqual(
-        expect.objectContaining({
-          severity: 'success',
-          summary: 'Subscription updated successfully'
-        })
+      expect(useToast().success).toHaveBeenCalledWith(
+        'Subscription updated successfully',
+        { duration: 5000 }
       )
     )
     expect(
@@ -635,11 +739,9 @@ describe('useBillingSdkStore subscription commands', () => {
     reattachedSubscribe()
     harness.publish(failedOperation('subscription'))
 
-    expect(useToastStore().messagesToAdd).toContainEqual(
-      expect.objectContaining({
-        severity: 'error',
-        summary: 'Subscription update failed'
-      })
+    expect(useToast().error).toHaveBeenCalledWith(
+      'Subscription update failed',
+      expect.objectContaining({ duration: 7000 })
     )
   })
 
@@ -649,11 +751,8 @@ describe('useBillingSdkStore subscription commands', () => {
     reattachedSubscribe()
     harness.publish(settledOperation('timed_out', 'subscription'))
 
-    expect(useToastStore().messagesToAdd).toContainEqual(
-      expect.objectContaining({
-        severity: 'error',
-        summary: 'Subscription verification timed out'
-      })
+    expect(useToast().error).toHaveBeenCalledWith(
+      'Subscription verification timed out'
     )
     expect(
       useBillingContext().reconcileSubscriptionSuccess
@@ -669,7 +768,7 @@ describe('useBillingSdkStore subscription commands', () => {
     expect(
       useBillingContext().reconcileSubscriptionSuccess
     ).not.toHaveBeenCalled()
-    expect(useToastStore().messagesToAdd).toEqual([])
+    expect(useToast().toasts).toEqual([])
   })
 
   it('hands back the quote without refreshing anything', async () => {
@@ -690,7 +789,6 @@ describe('useBillingSdkStore subscription commands', () => {
   it('warns once and keeps a blocked payment page reachable however long it polls', () => {
     const openPage = vi.spyOn(window, 'open').mockReturnValue(null)
     const store = useBillingSdkStore()
-    const toasts = useToastStore()
 
     harness.publish(
       pendingSubscription({ actionUrl: 'https://pay.example/op-1' })
@@ -713,11 +811,18 @@ describe('useBillingSdkStore subscription commands', () => {
       'https://pay.example/op-1',
       '_blank'
     )
-    expect(
-      toasts.messagesToAdd.filter(
-        (message) => message.group !== 'billing-operation'
-      )
-    ).toEqual([expect.objectContaining({ severity: 'warn' })])
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'warning',
+        title: 'Verify your payment to finish setting up your workspace'
+      }),
+      expect.objectContaining({
+        description:
+          "Couldn't open the payment page — please allow popups and try again.",
+        kind: 'warning',
+        title: 'Warning'
+      })
+    ])
     expect(store.subscriptionActionUrl).toBe('https://pay.example/op-1')
   })
 
@@ -735,11 +840,12 @@ describe('useBillingSdkStore subscription commands', () => {
 
     expect(harness.sdk.driveChallenge).toHaveBeenCalledExactlyOnceWith('op-1')
     expect(openPage).not.toHaveBeenCalled()
-    expect(
-      useToastStore().messagesToAdd.filter(
-        (message) => message.group !== 'billing-operation'
-      )
-    ).toEqual([])
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'warning',
+        title: 'Verify your payment to finish setting up your workspace'
+      })
+    ])
   })
 
   it('opens the hosted page for an embedded operation that carries no in-page challenge', () => {
@@ -758,6 +864,25 @@ describe('useBillingSdkStore subscription commands', () => {
       '_blank'
     )
   })
+
+  it.for([
+    { page: 'opened', opened: window, reported: [['op-1', 'new_tab']] },
+    { page: 'had blocked', opened: null, reported: [] }
+  ])(
+    'reports to the lifecycle a hosted page it $page in a new tab',
+    ({ opened, reported }) => {
+      vi.spyOn(window, 'open').mockReturnValue(opened)
+      useBillingSdkStore()
+
+      harness.publish(
+        pendingSubscription({ actionUrl: 'https://pay.example/first' })
+      )
+
+      expect(
+        vi.mocked(harness.sdk.lifecycle.reportHostedStepOpened).mock.calls
+      ).toEqual(reported)
+    }
+  )
 
   it('offers the next hosted page the same subscribe moves to', () => {
     const openPage = vi.spyOn(window, 'open').mockReturnValue(null)
@@ -869,6 +994,188 @@ describe('useBillingSdkStore subscription commands', () => {
   })
 })
 
+describe('useBillingSdkStore telemetry ownership', () => {
+  type Store = ReturnType<typeof useBillingSdkStore>
+
+  const SETTLED = {
+    status: 'ok',
+    value: {
+      phase: 'succeeded',
+      operation: settledOperation('succeeded', 'subscription')
+    }
+  } as const
+
+  const EVENTS = {
+    started: { name: 'started', resumed: false },
+    'resumed started': { name: 'started', resumed: true },
+    terminal: { name: 'succeeded', resumed: false },
+    'resumed terminal': { name: 'succeeded', resumed: true }
+  } as const
+
+  function lifecycleEvent(
+    kind: BillingOperationKind,
+    { name, resumed }: (typeof EVENTS)[keyof typeof EVENTS]
+  ): BillingOperationTelemetryEvent {
+    return {
+      name: BILLING_OPERATION_TELEMETRY_EVENT[name],
+      billing_op_id: 'op-1',
+      operation_type: kind,
+      presentation: 'hosted',
+      resumed
+    }
+  }
+
+  const COMMANDS = {
+    'a cancel': {
+      kind: 'cancel',
+      stub: (fire: () => void) =>
+        vi
+          .mocked(harness.sdk.commands.cancelSubscription)
+          .mockImplementation(async () => {
+            fire()
+            return SETTLED
+          }),
+      run: (store: Store) => store.cancelSubscription()
+    },
+    'a subscribe the caller announced': {
+      kind: 'subscription',
+      stub: (fire: () => void) =>
+        vi
+          .mocked(harness.sdk.commands.subscribe)
+          .mockImplementation(async () => {
+            fire()
+            return SETTLED
+          }),
+      run: (store: Store) =>
+        store.subscribe({ plan_slug: 'pro-yearly' }, { callerStarted: true })
+    },
+    'a subscribe no caller announced': {
+      kind: 'subscription',
+      stub: (fire: () => void) =>
+        vi
+          .mocked(harness.sdk.commands.subscribe)
+          .mockImplementation(async () => {
+            fire()
+            return SETTLED
+          }),
+      run: (store: Store) => store.subscribe({ plan_slug: 'pro-yearly' })
+    },
+    'a resubscribe': {
+      kind: 'subscription',
+      stub: (fire: () => void) =>
+        vi
+          .mocked(harness.sdk.commands.resubscribe)
+          .mockImplementation(async () => {
+            fire()
+            return SETTLED
+          }),
+      run: (store: Store) => store.resubscribe()
+    }
+  } as const
+
+  it.for([
+    { command: 'a cancel', event: 'started', reports: 0 },
+    { command: 'a cancel', event: 'resumed started', reports: 1 },
+    { command: 'a cancel', event: 'terminal', reports: 1 },
+    { command: 'a cancel', event: 'resumed terminal', reports: 1 },
+    {
+      command: 'a subscribe the caller announced',
+      event: 'started',
+      reports: 0
+    },
+    {
+      command: 'a subscribe the caller announced',
+      event: 'resumed started',
+      reports: 1
+    },
+    {
+      command: 'a subscribe the caller announced',
+      event: 'terminal',
+      reports: 1
+    },
+    {
+      command: 'a subscribe the caller announced',
+      event: 'resumed terminal',
+      reports: 1
+    },
+    {
+      command: 'a subscribe no caller announced',
+      event: 'started',
+      reports: 1
+    },
+    {
+      command: 'a subscribe no caller announced',
+      event: 'resumed started',
+      reports: 1
+    },
+    {
+      command: 'a subscribe no caller announced',
+      event: 'terminal',
+      reports: 1
+    },
+    {
+      command: 'a subscribe no caller announced',
+      event: 'resumed terminal',
+      reports: 1
+    },
+    { command: 'a resubscribe', event: 'started', reports: 1 },
+    { command: 'a resubscribe', event: 'resumed started', reports: 1 },
+    { command: 'a resubscribe', event: 'terminal', reports: 1 },
+    { command: 'a resubscribe', event: 'resumed terminal', reports: 1 }
+  ] as const)(
+    'reports $reports event(s) for a lifecycle $event inside $command',
+    async ({ command, event, reports }) => {
+      const { kind, stub, run } = COMMANDS[command]
+      const store = useBillingSdkStore()
+      stub(() => options.onTelemetry(lifecycleEvent(kind, EVENTS[event])))
+
+      await run(store)
+
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledTimes(reports)
+    }
+  )
+
+  it.for(['topup', 'subscription'] as const)(
+    'reports the payment friction of a %s this tab issued, which no dialog reports',
+    (kind) => {
+      useBillingSdkStore()
+
+      options.onTelemetry({
+        name: 'billing.checkout.challenge_failed',
+        billing_op_id: 'op-1',
+        operation_type: kind,
+        presentation: 'embedded',
+        resumed: false,
+        decline_reason: 'authentication_failed'
+      })
+
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
+        operation: 'checkout',
+        billing_client: 'sdk',
+        stage: 'challenge_failed',
+        outcome: 'pending',
+        operation_type: kind,
+        billing_op_id: 'op-1',
+        presentation: 'embedded',
+        resumed: false,
+        decline_reason: 'authentication_failed'
+      })
+    }
+  )
+
+  it('reports a started that arrives once the announced command has settled', async () => {
+    const store = useBillingSdkStore()
+    vi.mocked(harness.sdk.commands.cancelSubscription).mockResolvedValue(
+      SETTLED
+    )
+    await store.cancelSubscription()
+
+    options.onTelemetry(lifecycleEvent('cancel', EVENTS.started))
+
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledOnce()
+  })
+})
+
 describe('useBillingSdkStore operation projections', () => {
   const otherWorkspace = {
     userId: 'uid-1',
@@ -879,6 +1186,31 @@ describe('useBillingSdkStore operation projections', () => {
   beforeEach(() => {
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-1' })
   })
+
+  it.for([
+    {
+      name: 'an adopted operation',
+      result: { status: 'ok', value: pendingSubscription() },
+      adopted: true
+    },
+    {
+      name: 'nothing pending',
+      result: { status: 'ok', value: undefined },
+      adopted: false
+    },
+    {
+      name: 'a failed recovery read',
+      result: { status: 'error', code: 'REQUEST_FAILED' },
+      adopted: false
+    }
+  ] as const)(
+    'recover reports $name as adopted: $adopted',
+    async ({ result, adopted }) => {
+      vi.mocked(harness.sdk.lifecycle.recover).mockResolvedValue(result)
+
+      await expect(useBillingSdkStore().recover()).resolves.toBe(adopted)
+    }
+  )
 
   describe('recoverPendingOperation', () => {
     it('resolves with the operation once the lifecycle settles it', async () => {
@@ -940,6 +1272,19 @@ describe('useBillingSdkStore operation projections', () => {
       'one the customer must retry is not setting up either',
       pendingSubscription({ authenticationState: 'failed_retryable' }),
       false
+    ],
+    [
+      'a checkout parked on a payment method is not setting up',
+      pendingSubscription({ serverPhase: 'awaiting_payment_method' }),
+      false
+    ],
+    [
+      'a parked checkout the server serves a link for is setting up again',
+      pendingSubscription({
+        serverPhase: 'awaiting_payment_method',
+        actionUrl: 'https://pay.example/op-1'
+      }),
+      true
     ],
     ['a top-up is not a subscription setup', pendingTopup(), false],
     [

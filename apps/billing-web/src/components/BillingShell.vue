@@ -15,10 +15,12 @@ import {
 } from '@comfyorg/account-ui/billing'
 
 import { createModeBillingClient } from '@/session/billingWebAuth'
+import { provideWorkspaceInvites } from '@/session/workspaceInvites'
 
 const client = createModeBillingClient()
 
 provideBillingClient(client)
+provideWorkspaceInvites(client.invites)
 onUnmounted(() => disposeBillingClient(client))
 </script>
 

@@ -23,22 +23,33 @@ test.describe('Vue Nodes Image Preview', { tag: '@vue-nodes' }, () => {
     const { x, y } = await loadImageNode.getPosition()
 
     await comfyPage.dragDrop.dragAndDropFile('image64x64.webp', {
-      dropPosition: { x, y }
+      dropPosition: { x, y },
+      waitForUpload: true
     })
 
-    const nodeId = String(loadImageNode.id)
-    const { imagePreview } =
-      await comfyPage.vueNodes.getFixtureByTitle('Load Image')
+    const node = await comfyPage.vueNodes.getFixtureByTitle('Load Image')
+    await node.waitForImageLoaded('image64x64.webp')
+    await expect(node.imagePreview).toContainText('64 x 64')
 
-    await expect(imagePreview).toBeVisible()
-    await expect(imagePreview.locator('img')).toBeVisible({ timeout: 30_000 })
-    await expect(imagePreview).toContainText('x')
-
-    return {
-      imagePreview,
-      nodeId
-    }
+    return node
   }
+
+  test('restores an image preview with Undo and removes it again with Redo', async ({
+    comfyPage
+  }) => {
+    const node = await loadImageOnNode(comfyPage)
+    await node.title.click()
+    await comfyPage.keyboard.delete()
+    await expect(comfyPage.vueNodes.nodes).toHaveCount(0)
+
+    await comfyPage.keyboard.undo()
+    await node.waitForImageLoaded('image64x64.webp')
+    await expect(node.imagePreview).toContainText('64 x 64')
+    await node.title.click()
+
+    await comfyPage.keyboard.redo()
+    await expect(comfyPage.vueNodes.nodes).toHaveCount(0)
+  })
 
   test('opens mask editor from image preview button', async ({ comfyPage }) => {
     const { imagePreview } = await loadImageOnNode(comfyPage)
@@ -46,7 +57,9 @@ test.describe('Vue Nodes Image Preview', { tag: '@vue-nodes' }, () => {
     await imagePreview.getByRole('region').hover()
     await comfyPage.page.getByLabel('Edit or mask image').click()
 
-    await expect(comfyPage.page.locator('.mask-editor-dialog')).toBeVisible()
+    await expect(
+      comfyPage.page.getByRole('heading', { name: 'Mask Editor' })
+    ).toBeVisible()
   })
 
   test('hides mask and download buttons when image is missing', async ({
@@ -69,20 +82,15 @@ test.describe('Vue Nodes Image Preview', { tag: '@vue-nodes' }, () => {
   })
 
   test('shows image context menu options', async ({ comfyPage }) => {
-    const { nodeId } = await loadImageOnNode(comfyPage)
+    const node = await loadImageOnNode(comfyPage)
 
-    await comfyPage.vueNodes.selectNode(nodeId)
-    const nodeHeader = comfyPage.vueNodes
-      .getNodeLocator(nodeId)
-      .locator('.lg-node-header')
-    await nodeHeader.click({ button: 'right' })
-
-    const contextMenu = comfyPage.page.locator('.p-contextmenu')
-    await expect(contextMenu).toBeVisible()
-    await expect(contextMenu.getByText('Open Image')).toBeVisible()
-    await expect(contextMenu.getByText('Copy Image')).toBeVisible()
-    await expect(contextMenu.getByText('Save Image')).toBeVisible()
-    await expect(contextMenu.getByText('Open in Mask Editor')).toBeVisible()
+    const contextMenu = await comfyPage.contextMenu.openForVueNode(node.header)
+    await contextMenu.assertHasItems([
+      'Open Image',
+      'Copy Image',
+      'Save Image',
+      'Open in Mask Editor'
+    ])
   })
 
   test(

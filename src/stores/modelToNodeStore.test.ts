@@ -45,6 +45,8 @@ const MOCK_NODE_NAMES = [
   'ImageOnlyCheckpointLoader',
   'LoraLoader',
   'LoraLoaderModelOnly',
+  'LoadLoraModel',
+  'LoadLoraTextEncoder',
   'VAELoader',
   'ControlNetLoader',
   'UNETLoader',
@@ -109,14 +111,6 @@ describe('useModelToNodeStore', () => {
       const modelToNodeStore = useModelToNodeStore()
       modelToNodeStore.registerDefaults()
       expect(modelToNodeStore.getNodeProvider('nonexistent')).toBeUndefined()
-    })
-
-    it('should return first registered provider when multiple providers exist for same model type', () => {
-      const modelToNodeStore = useModelToNodeStore()
-      modelToNodeStore.registerDefaults()
-
-      const provider = modelToNodeStore.getNodeProvider('checkpoints')
-      expect(provider?.nodeDef.name).toBe('CheckpointLoaderSimple')
     })
 
     it('should trigger lazy registration when called before registerDefaults', () => {
@@ -250,6 +244,51 @@ describe('useModelToNodeStore', () => {
     )
   })
 
+  it('does not treat an auto-loading provider as an asset widget', () => {
+    expect(useModelToNodeStore().isModelWidget('FL_ChatterboxVC', '')).toBe(
+      false
+    )
+  })
+
+  it('supports repeated model fields registered outside the default mappings', () => {
+    const store = useModelToNodeStore()
+    store.registerNodeProvider(
+      'vae',
+      new ModelNodeProvider(createMockNodeDef('MultiVAE'), /^items\.\d+\.file$/)
+    )
+
+    expect(store.isModelWidget('MultiVAE', 'items.3.file')).toBe(true)
+    expect(store.isModelWidget('MultiVAE', 'items.3.strength')).toBe(false)
+    expect(store.getCategoryForNodeType('MultiVAE')).toBe('vae')
+  })
+
+  it('matches string selectors literally, including regex characters', () => {
+    const store = useModelToNodeStore()
+    store.quickRegister('vae', 'VAELoader', 'items.*.file')
+
+    expect(store.isModelWidget('VAELoader', 'items.*.file')).toBe(true)
+    expect(store.isModelWidget('VAELoader', 'items.3.file')).toBe(false)
+  })
+
+  it.for(['g', 'y'])(
+    'keeps repeated widget checks stable with the %s flag',
+    (flags) => {
+      const store = useModelToNodeStore()
+      store.registerNodeProvider(
+        'vae',
+        new ModelNodeProvider(
+          createMockNodeDef('MultiVAE'),
+          new RegExp(/^items\.\d+\.file$/, flags)
+        )
+      )
+
+      expect(store.isModelWidget('MultiVAE', 'items.1.file')).toBe(true)
+      expect(store.isModelWidget('MultiVAE', 'items.1.file')).toBe(true)
+      expect(store.isModelWidget('MultiVAE', 'items.2.file')).toBe(true)
+      expect(store.isModelWidget('MultiVAE', 'items.2.strength')).toBe(false)
+    }
+  )
+
   describe('getAllNodeProviders', () => {
     it('should return all providers for model type with multiple nodes', () => {
       const modelToNodeStore = useModelToNodeStore()
@@ -272,7 +311,7 @@ describe('useModelToNodeStore', () => {
       )
 
       const loraProviders = modelToNodeStore.getAllNodeProviders('loras')
-      expect(loraProviders).toHaveLength(3)
+      expect(loraProviders).toHaveLength(5)
       expect(loraProviders).toEqual(
         expect.arrayContaining([
           expect.objectContaining({

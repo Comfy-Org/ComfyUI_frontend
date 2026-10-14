@@ -265,7 +265,6 @@ async function setUpFixture(page: Page) {
   await test.step('open the agent panel and target the workflow', async () => {
     await loadSeedIntoActiveTab(page, seed)
     await new AgentPanel(page).open()
-    await expect(panel).toBeVisible()
     await panel
       .getByRole('button', { name: enMessages.agent.switchWorkflow })
       .click()

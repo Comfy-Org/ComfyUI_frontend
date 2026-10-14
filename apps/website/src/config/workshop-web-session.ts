@@ -27,3 +27,7 @@ export function readUnifiedWebSessionEnabled(): Promise<boolean> {
   }
   return resolution
 }
+
+export function resetUnifiedWebSessionEnabled() {
+  resolution = undefined
+}

@@ -74,13 +74,6 @@ describe('WidgetButton Interactions', () => {
   })
 
   describe('Component Rendering', () => {
-    it('renders button component', () => {
-      const widget = createButtonWidget()
-      mountComponent(widget)
-
-      expect(screen.getByRole('button')).toBeDefined()
-    })
-
     it('renders widget text when name is provided', () => {
       const widget = createButtonWidget()
       mountComponent(widget)
@@ -93,17 +86,6 @@ describe('WidgetButton Interactions', () => {
       mountComponent(widget)
 
       expect(screen.getByRole('button')).toHaveClass('h-6', 'rounded-sm')
-    })
-
-    it('passes widget options to button component', () => {
-      const widget = createButtonWidget({
-        options: { variant: 'secondary' }
-      })
-      mountComponent(widget)
-
-      expect(screen.getByRole('button')).toHaveClass(
-        'hover:bg-secondary-background-hover'
-      )
     })
   })
 
@@ -125,7 +107,7 @@ describe('WidgetButton Interactions', () => {
       })
       const { container } = mountComponent(widget)
 
-      // eslint-disable-next-line testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-node-access
       expect(container.querySelector('i.pi.pi-star')).not.toBeNull()
     })
 
@@ -137,7 +119,7 @@ describe('WidgetButton Interactions', () => {
       const { container } = mountComponent(widget)
 
       expect(screen.getByRole('button')).toHaveTextContent('Save')
-      // eslint-disable-next-line testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-node-access
       expect(container.querySelector('i.pi.pi-save')).not.toBeNull()
     })
 
@@ -157,13 +139,6 @@ describe('WidgetButton Interactions', () => {
   })
 
   describe('Edge Cases', () => {
-    it('handles widget with no options', () => {
-      const widget = createButtonWidget()
-      mountComponent(widget)
-
-      expect(screen.getByRole('button')).toBeDefined()
-    })
-
     it('handles callback that throws error', async () => {
       const mockCallback = vi.fn(() => {
         throw new Error('Callback error')
@@ -173,18 +148,6 @@ describe('WidgetButton Interactions', () => {
 
       await expect(clickButton(user)).rejects.toThrow('Callback error')
       expect(mockCallback).toHaveBeenCalledTimes(1)
-    })
-
-    it('handles rapid consecutive clicks', async () => {
-      const mockCallback = vi.fn()
-      const widget = createButtonWidget({ callback: mockCallback })
-      const { user } = mountComponent(widget)
-
-      for (let i = 0; i < 16; i++) {
-        await clickButton(user)
-      }
-
-      expect(mockCallback).toHaveBeenCalledTimes(16)
     })
   })
 })

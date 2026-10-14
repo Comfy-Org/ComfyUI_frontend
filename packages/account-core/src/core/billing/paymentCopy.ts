@@ -55,6 +55,7 @@ export const DEFAULT_PAYMENT_COPY: Readonly<Record<PaymentCopyKey, string>> = {
     'Your bank requires authentication.',
   'billing.reason.authentication_failed':
     'Authentication with your bank did not complete.',
+  'billing.reason.payment_not_completed': 'The payment was not completed.',
   'billing.reason.processing_error':
     'The payment could not be processed right now.',
   'billing.recovery.retry': 'Please try again.',
@@ -92,6 +93,7 @@ export function declineDetailKey(
       return 'incorrectCvcDetail'
     case 'authentication_required':
     case 'authentication_failed':
+    case 'payment_not_completed':
       return 'authenticationFailedDetail'
     case 'processing_error':
       return 'processingErrorDetail'

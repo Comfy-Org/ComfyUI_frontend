@@ -8,27 +8,49 @@ import type {
 } from '@comfyorg/ingest-types'
 import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
 
-import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type {
+  AgentWsEvent,
+  PersistedToolCallSummary
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { agentTest } from '@e2e/fixtures/agentPanelFixture'
 import { workflowSelectionTest } from '@e2e/fixtures/agentWorkflowSelectionFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 const base = mergeTests(agentTest, workflowSelectionTest, webSocketFixture)
 
+// A mocked history row models what the server actually persists, which is
+// the relaxed `PersistedToolCallSummary` shape (see agentApiSchema.ts), not
+// the stricter wire `ToolCallSummary` generated type.
+type MockAgentMessageContent = Omit<
+  NonNullable<AgentMessage['content']>,
+  'tool_calls'
+> & {
+  tool_calls?: PersistedToolCallSummary[]
+}
+type MockAgentMessage = Omit<AgentMessage, 'content'> & {
+  content?: MockAgentMessageContent
+}
+
 export const promptHistoryTest = base.extend<{
+  agentPanel: AgentPanel
   promptHistory: {
     requests: AgentPostMessageRequest[]
     historyReads: () => number
     historyRequestThreadIds: string[]
+    completeLatestTurn: (content: MockAgentMessageContent) => void
   }
 }>({
+  agentPanel: async ({ page }, use) => {
+    await use(new AgentPanel(page))
+  },
   promptHistory: async ({ page, workflowSelection, getWebSocket }, use) => {
     // Workflow selection boots the app before these agent-specific routes.
     void workflowSelection
     const requests: AgentPostMessageRequest[] = []
-    const messages: AgentMessage[] = []
+    const messages: MockAgentMessage[] = []
     const historyRequestThreadIds: string[] = []
     let threadId = ''
     let historyReads = 0
@@ -108,7 +130,7 @@ export const promptHistoryTest = base.extend<{
           .split('/')
           .at(-2)!
         const message = messages.find(({ id }) => id === messageId)
-        if (message) message.status = 'interrupted'
+        if (message?.status === 'streaming') message.status = 'interrupted'
         const accepted: AgentCancelAccepted = { status: 'cancelling' }
         await route.fulfill(jsonRoute(accepted))
         const done: AgentWsEvent = {
@@ -122,7 +144,13 @@ export const promptHistoryTest = base.extend<{
     await use({
       requests,
       historyReads: () => historyReads,
-      historyRequestThreadIds
+      historyRequestThreadIds,
+      completeLatestTurn: (content) => {
+        const turn = messages.findLast(({ role }) => role === 'assistant')
+        if (!turn) throw new Error('No turn has been sent yet')
+        turn.status = 'complete'
+        turn.content = content
+      }
     })
   }
 })

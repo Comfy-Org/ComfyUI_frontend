@@ -39,7 +39,10 @@ export function useSocialSignIn(options: {
       popup: {
         onResumed: (credential) => {
           signInWith(provider, credential).catch((error: unknown) =>
-            reportError(error, { errorType: 'auth_late_sign_in_failed' })
+            reportError(error, {
+              surface: 'auth',
+              errorType: 'auth_late_sign_in_failed'
+            })
           )
         },
         keepLateResult: wanted
