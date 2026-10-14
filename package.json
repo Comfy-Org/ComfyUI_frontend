@@ -45,7 +45,6 @@
     "lint:fix": "pnpm oxlint --fix && eslint --cache --concurrency auto --fix",
     "lint:server-facts": "tsx scripts/server-fact-gate.ts",
     "lint:unstaged:fix": "tsx scripts/lint-unstaged.ts --fix",
-    "lint:ci": "pnpm lint --cache-strategy content",
     "lint": "pnpm stylelint && pnpm oxlint && pnpm architecture:check && eslint --cache --concurrency auto",
     "locale": "tsx scripts/i18n/update-locales.ts",
     "locale:check": "tsx scripts/i18n/update-locales.ts --check",
