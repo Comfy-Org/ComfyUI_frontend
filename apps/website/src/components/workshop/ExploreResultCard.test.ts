@@ -55,6 +55,28 @@ describe('ExploreResultCard', () => {
     ).toEqual(['Edit images'])
   })
 
+  it('sets the kind chip on the same top edge and height as the maker mark', () => {
+    render(ExploreResultCard, {
+      props: {
+        href: '/hub/models/beeble/',
+        kind: 'model',
+        name: 'Beeble SwitchX',
+        model: still,
+        source: 'Beeble',
+        pills: []
+      }
+    })
+
+    const kind = screen.getByTestId('explore-kind')
+    const mark = screen.getByTestId('explore-source')
+    for (const shared of ['top-4', 'h-7']) {
+      expect(kind).toHaveClass(shared)
+      expect(mark).toHaveClass(shared)
+    }
+    expect(kind).toHaveClass('left-4', 'px-2.5')
+    expect(kind).not.toHaveClass('px-4')
+  })
+
   it.for([
     {
       href: '/hub/apps/cinematic-studio/',
