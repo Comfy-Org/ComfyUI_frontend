@@ -492,6 +492,46 @@ describe('useWorkflowService', () => {
   })
 
   describe('openWorkflow ordering', () => {
+    it('does not reopen the previous workflow when a tab switch was queued before the reload', async () => {
+      const workflows = useWorkflowStore()
+      const previous = createModeTestWorkflow({
+        path: 'workflows/previous.json'
+      })
+      const next = createModeTestWorkflow({
+        path: 'workflows/next.json',
+        loaded: false
+      })
+      workflows.activeWorkflow = previous
+      let finishLoad = () => {}
+      const loaded = new Promise<void>((resolve) => {
+        finishLoad = resolve
+      })
+      const load = vi.spyOn(next, 'load').mockImplementation(async () => {
+        await loaded
+        next.originalContent = '{}'
+        next.content = '{}'
+        next.changeTracker = createMockChangeTracker()
+        return next
+      })
+      vi.mocked(app.loadGraphData)
+        .mockImplementationOnce(async () => {
+          workflows.activeWorkflow = next
+          return true
+        })
+        .mockImplementationOnce(async () => {
+          workflows.activeWorkflow = previous
+          return true
+        })
+      const switching = useWorkflowService().openWorkflow(next)
+      await vi.waitFor(() => expect(load).toHaveBeenCalled())
+
+      const reloading = useWorkflowService().reloadCurrentWorkflow()
+      finishLoad()
+      await Promise.all([switching, reloading])
+
+      expect(workflows.activeWorkflow.path).toBe(next.path)
+    })
+
     it('keeps the current workflow when a remote load is superseded', async () => {
       const workflows = useWorkflowStore()
       const current = createModeTestWorkflow({ path: 'workflows/current.json' })
