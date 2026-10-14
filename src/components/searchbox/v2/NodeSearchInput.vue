@@ -13,7 +13,7 @@
         :key="filterKey(filter)"
         :value="filterKey(filter)"
         data-testid="filter-chip"
-        class="-my-1 inline-flex items-center gap-1 rounded-lg bg-base-background px-2 py-1 data-[state=active]:ring-2 data-[state=active]:ring-primary"
+        class="-my-1 inline-flex items-center gap-1 rounded-lg bg-base-background px-2 py-1 data-[state=active]:ring-2 data-[state=active]:ring-primary-background"
       >
         <span class="text-sm opacity-80">
           {{ t(`g.${filter.filterDef.id}`) }}:
@@ -35,6 +35,7 @@
           ref="inputRef"
           v-model="searchQuery"
           type="text"
+          autofocus
           role="combobox"
           aria-autocomplete="list"
           :aria-expanded="true"
@@ -52,7 +53,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   TagsInputInput,
@@ -95,10 +96,6 @@ function onRemoveTag(tagValue: string) {
 function focus() {
   inputRef.value?.focus()
 }
-
-onMounted(() => {
-  focus()
-})
 
 defineExpose({ focus })
 </script>

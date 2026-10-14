@@ -1,5 +1,20 @@
 import type { LGraphNode } from '../LGraphNode'
-import type { Direction, IBoundaryNodes, NewNodePosition } from '../interfaces'
+import type { Direction } from '../interfaces'
+
+export interface NewNodePosition {
+  node: LGraphNode
+  newPos: {
+    x: number
+    y: number
+  }
+}
+
+export interface IBoundaryNodes {
+  top: LGraphNode
+  right: LGraphNode
+  bottom: LGraphNode
+  left: LGraphNode
+}
 
 /**
  * Finds the nodes that are farthest in all four directions, representing the boundary of the nodes.

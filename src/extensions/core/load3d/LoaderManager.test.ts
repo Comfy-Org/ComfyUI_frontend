@@ -1,8 +1,8 @@
+import { useToast } from '@/components/ui/toast/toastStore'
 import * as THREE from 'three'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { isGaussianSplatPLY } from '@/scripts/metadata/ply'
 
 import type {
@@ -56,11 +56,14 @@ function makeModelManagerStub(): ModelManagerStub {
   }
 }
 
-const { meshLoad, splatLoad, pointCloudLoad } = vi.hoisted(() => ({
-  meshLoad: vi.fn(),
-  splatLoad: vi.fn(),
-  pointCloudLoad: vi.fn()
-}))
+const { meshLoad, meshDisposeModel, splatLoad, pointCloudLoad } = vi.hoisted(
+  () => ({
+    meshLoad: vi.fn(),
+    meshDisposeModel: vi.fn(),
+    splatLoad: vi.fn(),
+    pointCloudLoad: vi.fn()
+  })
+)
 
 vi.mock(import('./MeshModelAdapter'), () => ({
   MeshModelAdapter: fromAny(
@@ -69,6 +72,7 @@ vi.mock(import('./MeshModelAdapter'), () => ({
       readonly extensions = ['stl', 'fbx', 'obj', 'gltf', 'glb'] as const
       readonly capabilities = {}
       load = meshLoad
+      disposeModel = meshDisposeModel
     }
   )
 }))
@@ -133,6 +137,7 @@ function makeLoaderManager() {
 describe('LoaderManager', () => {
   beforeEach(() => {
     meshLoad.mockResolvedValue(null)
+    meshDisposeModel.mockReset()
     splatLoad.mockResolvedValue(null)
     pointCloudLoad.mockResolvedValue(null)
     vi.mocked(fetchModelData).mockResolvedValue(new ArrayBuffer(0))
@@ -349,7 +354,7 @@ describe('LoaderManager', () => {
 
       await lm.loadModel('api/view?other=1')
 
-      expect(useToastStore().addAlert).toHaveBeenCalledWith(
+      expect(useToast().warning).toHaveBeenCalledWith(
         'toastMessages.couldNotDetermineFileType'
       )
       expect(modelManager.setupModel).not.toHaveBeenCalled()
@@ -464,6 +469,75 @@ describe('LoaderManager', () => {
       expect(fetchModelData).toHaveBeenCalledTimes(1)
     })
 
+    it('forwards the caller signal to model data fetches', async () => {
+      const controller = new AbortController()
+      const { lm } = makeLoaderManager()
+
+      await lm.loadModel('api/view?filename=scan.ply', undefined, {
+        signal: controller.signal
+      })
+
+      expect(fetchModelData).toHaveBeenCalledWith(
+        'api/view?type=input&subfolder=&filename=',
+        'scan.ply',
+        controller.signal
+      )
+    })
+
+    it('classifies an aborted current request as cancelled without reporting it', async () => {
+      const controller = new AbortController()
+      const { lm, eventManager } = makeLoaderManager()
+      meshLoad.mockImplementationOnce(async () => {
+        controller.abort()
+        throw new DOMException('The operation was aborted', 'AbortError')
+      })
+
+      await expect(
+        lm.loadModel('api/view?filename=cube.glb', undefined, {
+          signal: controller.signal
+        })
+      ).resolves.toBe('cancelled')
+
+      expect(eventManager.emitEvent).toHaveBeenCalledWith(
+        'modelLoadingEnd',
+        null
+      )
+      expect(useToast().warning).not.toHaveBeenCalled()
+      expect(console.error).not.toHaveBeenCalled()
+    })
+
+    it('cancels and disposes a load whose parse resolves after the caller aborted', async () => {
+      const controller = new AbortController()
+      const { lm, modelManager, eventManager } = makeLoaderManager()
+      const geometry = new THREE.BufferGeometry()
+      const material = new THREE.MeshBasicMaterial()
+      const model = new THREE.Mesh(geometry, material)
+      const disposeGeometry = vi.spyOn(geometry, 'dispose')
+      const disposeMaterial = vi.spyOn(material, 'dispose')
+      meshLoad.mockImplementationOnce(async (ctx: ModelLoadContext) => {
+        controller.abort()
+        ctx.setOriginalModel(model)
+        return loadResult(model)
+      })
+
+      await expect(
+        lm.loadModel('api/view?filename=cube.glb', undefined, {
+          signal: controller.signal
+        })
+      ).resolves.toBe('cancelled')
+
+      expect(modelManager.setupModel).not.toHaveBeenCalled()
+      expect(modelManager.setOriginalModel).not.toHaveBeenCalled()
+      expect(meshDisposeModel).toHaveBeenCalledWith(model)
+      expect(disposeGeometry).toHaveBeenCalledOnce()
+      expect(disposeMaterial).toHaveBeenCalledOnce()
+      expect(eventManager.emitEvent).toHaveBeenCalledWith(
+        'modelLoadingEnd',
+        null
+      )
+      expect(useToast().warning).not.toHaveBeenCalled()
+    })
+
     it('dispatches .ply via the adapter matches() tiebreaker, not extension order — a splat adapter whose matches() returns false yields to point-cloud', async () => {
       const modelManager =
         makeModelManagerStub() as unknown as ConstructorParameters<
@@ -513,7 +587,7 @@ describe('LoaderManager', () => {
         'modelLoadingEnd',
         null
       )
-      expect(useToastStore().addAlert).toHaveBeenCalledWith(
+      expect(useToast().warning).toHaveBeenCalledWith(
         'toastMessages.errorLoadingModel'
       )
       expect(console.error).toHaveBeenCalled()
@@ -531,7 +605,7 @@ describe('LoaderManager', () => {
       })
 
       expect(console.error).toHaveBeenCalled()
-      expect(useToastStore().addAlert).not.toHaveBeenCalledWith(
+      expect(useToast().warning).not.toHaveBeenCalledWith(
         'toastMessages.errorLoadingModel'
       )
     })
@@ -547,7 +621,7 @@ describe('LoaderManager', () => {
         silentOnNotFound: true
       })
 
-      expect(useToastStore().addAlert).not.toHaveBeenCalledWith(
+      expect(useToast().warning).not.toHaveBeenCalledWith(
         'toastMessages.errorLoadingModel'
       )
     })
@@ -560,9 +634,178 @@ describe('LoaderManager', () => {
         silentOnNotFound: true
       })
 
-      expect(useToastStore().addAlert).toHaveBeenCalledWith(
+      expect(useToast().warning).toHaveBeenCalledWith(
         'toastMessages.errorLoadingModel'
       )
+    })
+
+    it('rejects with the load failure instead of alerting when silent is set', async () => {
+      const { lm } = makeLoaderManager()
+      meshLoad.mockRejectedValueOnce(new Error('parse failure: bad header'))
+
+      await expect(
+        lm.loadModel('api/view?filename=cube.glb', undefined, { silent: true })
+      ).rejects.toThrow('parse failure: bad header')
+      expect(useToast().warning).not.toHaveBeenCalled()
+    })
+
+    it('rejects on an undeterminable file type instead of alerting when silent is set', async () => {
+      const { lm } = makeLoaderManager()
+
+      await expect(
+        lm.loadModel('api/view?type=output', undefined, { silent: true })
+      ).rejects.toThrow(/Unknown model file type/)
+      expect(useToast().warning).not.toHaveBeenCalled()
+    })
+
+    it('ends loading when a visible load has no file type', async () => {
+      const { lm, eventManager } = makeLoaderManager()
+
+      await expect(lm.loadModel('api/view?type=output')).resolves.toBe('empty')
+
+      expect(eventManager.emitEvent).toHaveBeenCalledWith(
+        'modelLoadingEnd',
+        null
+      )
+    })
+
+    it('rejects when no adapter claims the extension and silent is set', async () => {
+      const { lm, modelManager } = makeLoaderManager()
+
+      await expect(
+        lm.loadModel('api/view?filename=scene.usdz', undefined, {
+          silent: true
+        })
+      ).rejects.toThrow(/No model was produced/)
+      expect(modelManager.setupModel).not.toHaveBeenCalled()
+      expect(useToast().warning).not.toHaveBeenCalled()
+    })
+
+    it('rejects when the URL carries no filename and silent is set', async () => {
+      const { lm } = makeLoaderManager()
+
+      await expect(
+        lm.loadModel('api/view?type=output', 'scene.glb', { silent: true })
+      ).rejects.toThrow(/No model was produced/)
+      expect(useToast().warning).not.toHaveBeenCalled()
+      expect(console.error).not.toHaveBeenCalled()
+    })
+
+    it('never embeds the requested URL in a silent load error, only the file type', async () => {
+      const { lm } = makeLoaderManager()
+
+      await expect(
+        lm.loadModel(
+          'api/view?filename=secret.usdz&token=abc123&subfolder=priv',
+          undefined,
+          { silent: true }
+        )
+      ).rejects.toSatisfy((error: Error) => {
+        expect(error.message).not.toMatch(/token=abc123|secret|priv/)
+        return true
+      })
+    })
+
+    it('disposes a stale result on a live (non-disposed) manager and never publishes its setOriginalModel write', async () => {
+      const { lm, modelManager } = makeLoaderManager()
+
+      let resolveFirst!: (value: THREE.Object3D) => void
+      const firstLoad = new Promise<THREE.Object3D>((r) => {
+        resolveFirst = r
+      })
+      const geometry = new THREE.BufferGeometry()
+      const material = new THREE.MeshBasicMaterial()
+      const firstModel = new THREE.Mesh(geometry, material)
+      const disposeGeometry = vi.spyOn(geometry, 'dispose')
+      const disposeMaterial = vi.spyOn(material, 'dispose')
+      const secondModel = new THREE.Object3D()
+
+      meshLoad.mockImplementationOnce((ctx) =>
+        firstLoad.then((object) => {
+          // Adapters call setOriginalModel synchronously during load(),
+          // before loadModel can know this result will be superseded.
+          ctx.setOriginalModel(object)
+          return loadResult(object)
+        })
+      )
+      meshLoad.mockResolvedValueOnce(loadResult(secondModel))
+
+      const firstPromise = lm.loadModel('api/view?filename=first.glb')
+      const secondPromise = lm.loadModel('api/view?filename=second.glb')
+
+      resolveFirst(firstModel)
+      await Promise.all([firstPromise, secondPromise])
+
+      expect(disposeGeometry).toHaveBeenCalledOnce()
+      expect(disposeMaterial).toHaveBeenCalledOnce()
+      expect(meshDisposeModel).toHaveBeenCalledWith(firstModel)
+      expect(modelManager.setOriginalModel).not.toHaveBeenCalledWith(firstModel)
+    })
+
+    it('disposes textures held by a stale result material, not just the material itself', async () => {
+      const { lm, modelManager } = makeLoaderManager()
+
+      let resolveFirst!: (value: THREE.Object3D) => void
+      const firstLoad = new Promise<THREE.Object3D>((r) => {
+        resolveFirst = r
+      })
+      const geometry = new THREE.BufferGeometry()
+      const map = new THREE.Texture()
+      const normalMap = new THREE.Texture()
+      const material = new THREE.MeshStandardMaterial({ map, normalMap })
+      const firstModel = new THREE.Mesh(geometry, material)
+      const disposeMap = vi.spyOn(map, 'dispose')
+      const disposeNormalMap = vi.spyOn(normalMap, 'dispose')
+      const secondModel = new THREE.Object3D()
+
+      meshLoad.mockImplementationOnce((ctx) =>
+        firstLoad.then((object) => {
+          ctx.setOriginalModel(object)
+          return loadResult(object)
+        })
+      )
+      meshLoad.mockResolvedValueOnce(loadResult(secondModel))
+
+      const firstPromise = lm.loadModel('api/view?filename=first.glb')
+      const secondPromise = lm.loadModel('api/view?filename=second.glb')
+
+      resolveFirst(firstModel)
+      await Promise.all([firstPromise, secondPromise])
+
+      expect(disposeMap).toHaveBeenCalledOnce()
+      expect(disposeNormalMap).toHaveBeenCalledOnce()
+      expect(modelManager.setOriginalModel).not.toHaveBeenCalledWith(firstModel)
+    })
+
+    it('does not dispose textures on the shared standardMaterial', async () => {
+      const { lm, modelManager } = makeLoaderManager()
+
+      let resolveFirst!: (value: THREE.Object3D) => void
+      const firstLoad = new Promise<THREE.Object3D>((r) => {
+        resolveFirst = r
+      })
+      const geometry = new THREE.BufferGeometry()
+      const sharedMap = new THREE.Texture()
+      modelManager.standardMaterial.map = sharedMap
+      const firstModel = new THREE.Mesh(geometry, modelManager.standardMaterial)
+      const disposeSharedMap = vi.spyOn(sharedMap, 'dispose')
+      const secondModel = new THREE.Object3D()
+
+      meshLoad.mockImplementationOnce((ctx) =>
+        firstLoad.then((object) => {
+          ctx.setOriginalModel(object)
+          return loadResult(object)
+        })
+      )
+      meshLoad.mockResolvedValueOnce(loadResult(secondModel))
+
+      const firstPromise = lm.loadModel('api/view?filename=first.glb')
+      const secondPromise = lm.loadModel('api/view?filename=second.glb')
+
+      resolveFirst(firstModel)
+      await Promise.all([firstPromise, secondPromise])
+
+      expect(disposeSharedMap).not.toHaveBeenCalled()
     })
 
     it('discards the result of a stale load when a newer one has started', async () => {
@@ -595,6 +838,107 @@ describe('LoaderManager', () => {
         (call: unknown[]) => call[0] === 'modelLoadingEnd'
       )
       expect(endEmits).toHaveLength(1)
+    })
+
+    it('drops and disposes an in-flight load when disposed', async () => {
+      const { lm, modelManager } = makeLoaderManager()
+      let resolveLoad!: (value: ReturnType<typeof loadResult>) => void
+      const pendingLoad = new Promise<ReturnType<typeof loadResult>>(
+        (resolve) => {
+          resolveLoad = resolve
+        }
+      )
+      const geometry = new THREE.BufferGeometry()
+      const material = new THREE.MeshBasicMaterial()
+      const model = new THREE.Mesh(geometry, material)
+      const disposeGeometry = vi.spyOn(geometry, 'dispose')
+      const disposeMaterial = vi.spyOn(material, 'dispose')
+      meshLoad.mockReturnValueOnce(pendingLoad)
+
+      const load = lm.loadModel('api/view?filename=cube.glb')
+      await vi.waitFor(() => expect(meshLoad).toHaveBeenCalledOnce())
+      lm.dispose()
+      resolveLoad(loadResult(model))
+
+      await expect(load).resolves.toBe('cancelled')
+      expect(modelManager.setupModel).not.toHaveBeenCalled()
+      expect(disposeGeometry).toHaveBeenCalledOnce()
+      expect(disposeMaterial).toHaveBeenCalledOnce()
+      expect(useToast().warning).not.toHaveBeenCalled()
+    })
+
+    it('does not start an adapter load after disposal during adapter selection', async () => {
+      const { lm } = makeLoaderManager()
+      let resolveFetch!: (value: ArrayBuffer) => void
+      vi.mocked(fetchModelData).mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveFetch = resolve
+        })
+      )
+
+      const load = lm.loadModel('api/view?filename=scan.ply')
+      await vi.waitFor(() => expect(fetchModelData).toHaveBeenCalledOnce())
+      lm.dispose()
+      resolveFetch(new ArrayBuffer(0))
+
+      await expect(load).resolves.toBe('cancelled')
+      expect(splatLoad).not.toHaveBeenCalled()
+      expect(pointCloudLoad).not.toHaveBeenCalled()
+    })
+
+    it('cancels a load disposed while model setup is settling', async () => {
+      const { lm, modelManager, eventManager } = makeLoaderManager()
+      let resolveSetup!: () => void
+      modelManager.setupModel.mockReturnValueOnce(
+        new Promise<void>((resolve) => {
+          resolveSetup = resolve
+        })
+      )
+      meshLoad.mockResolvedValueOnce(loadResult(new THREE.Object3D()))
+
+      const load = lm.loadModel('api/view?filename=cube.glb')
+      await vi.waitFor(() =>
+        expect(modelManager.setupModel).toHaveBeenCalledOnce()
+      )
+      lm.dispose()
+      resolveSetup()
+
+      await expect(load).resolves.toBe('cancelled')
+      expect(eventManager.emitEvent).not.toHaveBeenCalledWith(
+        'modelLoadingEnd',
+        null
+      )
+    })
+
+    it('drops a load that fails after disposal without alerting', async () => {
+      const { lm, modelManager } = makeLoaderManager()
+      let rejectLoad!: (reason: Error) => void
+      meshLoad.mockReturnValueOnce(
+        new Promise((_, reject) => {
+          rejectLoad = reject
+        })
+      )
+
+      const load = lm.loadModel('api/view?filename=cube.glb')
+      await vi.waitFor(() => expect(meshLoad).toHaveBeenCalledOnce())
+      lm.dispose()
+      rejectLoad(new Error('connection reset'))
+
+      await expect(load).resolves.toBe('cancelled')
+      expect(modelManager.setupModel).not.toHaveBeenCalled()
+      expect(useToast().warning).not.toHaveBeenCalled()
+    })
+
+    it('drops a load started after disposal without alerting', async () => {
+      const { lm, modelManager } = makeLoaderManager()
+      lm.dispose()
+
+      await expect(lm.loadModel('api/view?filename=cube.glb')).resolves.toBe(
+        'cancelled'
+      )
+      expect(modelManager.setupModel).not.toHaveBeenCalled()
+      expect(meshLoad).not.toHaveBeenCalled()
+      expect(useToast().warning).not.toHaveBeenCalled()
     })
 
     it('logs and drops the load when the URL is missing a filename param', async () => {
@@ -665,7 +1009,7 @@ describe('LoaderManager', () => {
 
       await Promise.all([firstPromise, secondPromise])
 
-      expect(useToastStore().addAlert).not.toHaveBeenCalled()
+      expect(useToast().warning).not.toHaveBeenCalled()
       const endEmits = eventManager.emitEvent.mock.calls.filter(
         (call: unknown[]) => call[0] === 'modelLoadingEnd'
       )

@@ -143,7 +143,7 @@
                 >
                   <template #trigger>
                     <Button
-                      v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
+                      :tooltip="$t('g.moreOptions')"
                       variant="secondary"
                       size="icon-lg"
                       icon="icon-[lucide--ellipsis]"
@@ -201,7 +201,7 @@
                 <Menu v-if="menuEntries.length > 0" :items="menuEntries">
                   <template #trigger>
                     <Button
-                      v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
+                      :tooltip="$t('g.moreOptions')"
                       variant="secondary"
                       size="icon-lg"
                       icon="icon-[lucide--ellipsis]"
@@ -302,7 +302,7 @@
                 <Menu v-if="menuEntries.length > 0" :items="menuEntries">
                   <template #trigger>
                     <Button
-                      v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
+                      :tooltip="$t('g.moreOptions')"
                       variant="secondary"
                       size="icon-lg"
                       icon="icon-[lucide--ellipsis]"
@@ -340,7 +340,7 @@
                   : 'subscription.teamPlanIncludes'
               "
               tag="div"
-              class="text-sm text-muted"
+              class="text-sm text-muted-foreground"
             >
               <template #plan>
                 <span class="text-text-primary">
@@ -348,7 +348,10 @@
                 </span>
               </template>
             </i18n-t>
-            <div v-else-if="isPersonalFree" class="text-sm text-muted">
+            <div
+              v-else-if="isPersonalFree"
+              class="text-sm text-muted-foreground"
+            >
               {{ $t('subscription.whatsIncluded') }}
             </div>
             <div v-else class="text-sm text-text-primary">
@@ -367,7 +370,7 @@
                     cn(
                       'pi pi-check text-xs',
                       showInactiveTeamSubscription
-                        ? 'text-muted'
+                        ? 'text-muted-foreground'
                         : 'text-text-primary'
                     )
                   "
@@ -378,7 +381,7 @@
                 >
                   {{ benefit.value }}
                 </span>
-                <span class="text-sm text-muted">
+                <span class="text-sm text-muted-foreground">
                   {{ benefit.label }}
                 </span>
               </div>
@@ -747,9 +750,3 @@ const tierBenefits = computed((): TierBenefit[] => {
   return getCommonTierBenefits(tierKey.value, t, n)
 })
 </script>
-
-<style scoped>
-:deep(.bg-comfy-menu-secondary) {
-  background-color: transparent;
-}
-</style>

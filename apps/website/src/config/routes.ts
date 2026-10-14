@@ -15,8 +15,6 @@ const baseRoutes = {
   pricing: '/pricing/',
   enterprise: '/enterprise/',
   managedBuilds: '/enterprise/managed-builds/',
-  gallery: '/gallery/',
-  launches: '/launches/',
   events: '/events/',
   about: '/about/',
   careers: '/careers/',
@@ -43,6 +41,8 @@ const baseRoutes = {
   minimaxMusic3: '/minimax-music-3/',
   minimaxLicense: '/minimax/license/',
   minimaxLicenseProfessionalRequest: '/minimax/license/professional-request/',
+  fishAudio: '/fish-audio/',
+  nvidiaVfx: '/nvidia-vfx/',
   flux3: '/flux-3/',
   seedance: '/seedance-2.5/',
   fdct: '/forward-deployed-creatives/',
@@ -128,6 +128,7 @@ const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
 // workshop: the catalog is English-only. It is also build-gated until launch,
 // but enabled previews must not advertise a localized page that does not exist.
 const LOCALE_INVARIANT_EXTRA_PATHS = [
+  '/comfy-agent',
   // Auth surfaces render one page for every locale (copy localizes in the
   // island); a /zh-CN twin does not exist and must not be advertised.
   '/forgot-password',

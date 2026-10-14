@@ -37,11 +37,12 @@ function renderComposer() {
     }
   })
   const view = render(Host, {
-    global: { plugins: [i18n], directives: { tooltip: () => {} } }
+    global: { plugins: [i18n] }
   })
   return { ...view, store, selected, send, editor: screen.getByRole('textbox') }
 }
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
 describe('inline node and asset references', () => {
   beforeEach(() => vi.useRealTimers())
 

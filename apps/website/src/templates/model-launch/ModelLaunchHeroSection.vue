@@ -49,6 +49,8 @@ const isOverlay = hero.layout === 'overlay'
 const isLogoMask = isOverlay && !hero.videoSrc && Boolean(hero.logoMaskImageSrc)
 const OVERLAY_CELL = 'col-start-1 row-start-1'
 const isContentFirst = hero.layout === 'content-first'
+const mediaOutlineClass =
+  hero.mediaOutline === 'gray' ? 'border-primary-warm-gray' : undefined
 </script>
 
 <template>
@@ -71,7 +73,14 @@ const isContentFirst = hero.layout === 'content-first'
 
     <component
       :is="headingTag"
-      class="max-w-3xl text-4xl font-light tracking-tight whitespace-pre-line text-primary-comfy-canvas lg:text-6xl/tight"
+      :class="
+        cn(
+          'max-w-3xl text-4xl font-light tracking-tight whitespace-pre-line text-primary-comfy-canvas',
+          hero.titleSize === 'compact'
+            ? 'lg:text-5xl/tight'
+            : 'lg:text-6xl/tight'
+        )
+      "
     >
       {{ t(hero.titleKey)
       }}<span v-if="hero.titleRestKey" class="text-primary-comfy-canvas/80">{{
@@ -224,18 +233,33 @@ const isContentFirst = hero.layout === 'content-first'
     class="mx-auto flex max-w-9xl flex-col px-6 py-12 lg:px-20 lg:py-16"
   >
     <div
-      v-if="hero.videoSrc"
+      v-if="hero.videoSrc || hero.placeholderImageSrc"
       data-testid="model-launch-hero-block"
       :class="cn('relative', isContentFirst ? 'order-3' : 'order-1')"
     >
+      <img
+        v-if="!hero.videoSrc && hero.placeholderImageSrc"
+        :src="hero.placeholderImageSrc"
+        alt=""
+        aria-hidden="true"
+        width="1280"
+        height="720"
+        :class="
+          cn(
+            'aspect-video w-full rounded-4xl border border-white/10 object-cover',
+            mediaOutlineClass
+          )
+        "
+      />
       <VideoPlayer
-        v-if="showVideo"
+        v-else-if="showVideo"
         :locale
         :aria-label="t(hero.titleKey)"
         :src="hero.videoSrc"
         :poster="hero.posterSrc"
         autoplay
         loop
+        :class="mediaOutlineClass"
       />
       <VideoPlayer
         v-else-if="showMobileVideo"
@@ -245,6 +269,7 @@ const isContentFirst = hero.layout === 'content-first'
         :poster="hero.posterSrc"
         autoplay
         loop
+        :class="mediaOutlineClass"
       />
       <img
         v-else-if="hero.mobileFallbackImageSrc"
@@ -253,7 +278,12 @@ const isContentFirst = hero.layout === 'content-first'
         aria-hidden="true"
         width="1280"
         height="720"
-        class="aspect-video w-full rounded-4xl border border-white/10 object-cover"
+        :class="
+          cn(
+            'aspect-video w-full rounded-4xl border border-white/10 object-cover',
+            mediaOutlineClass
+          )
+        "
       />
       <div
         v-if="hero.logoSrc"
@@ -261,7 +291,14 @@ const isContentFirst = hero.layout === 'content-first'
         class="pointer-events-none absolute top-6 right-6 flex size-12 items-center justify-center rounded-2xl bg-transparency-white-t4 backdrop-blur-sm lg:top-10 lg:right-10 lg:size-17.5 lg:rounded-3xl"
       >
         <span
-          class="inline-block size-6 bg-current text-primary-warm-white lg:size-8.75"
+          :class="
+            cn(
+              'inline-block bg-current text-primary-warm-white',
+              hero.logoSize === 'large'
+                ? 'size-9 lg:size-13'
+                : 'size-6 lg:size-8.75'
+            )
+          "
           :style="{
             maskImage: `url(${hero.logoSrc})`,
             maskSize: 'contain',
@@ -283,7 +320,14 @@ const isContentFirst = hero.layout === 'content-first'
     >
       <component
         :is="headingTag"
-        class="text-4xl font-light tracking-tight whitespace-pre-line text-primary-comfy-canvas lg:text-6xl/tight"
+        :class="
+          cn(
+            'text-4xl font-light tracking-tight whitespace-pre-line text-primary-comfy-canvas',
+            hero.titleSize === 'compact'
+              ? 'lg:text-5xl/tight'
+              : 'lg:text-6xl/tight'
+          )
+        "
       >
         {{ t(hero.titleKey)
         }}<span v-if="hero.titleRestKey" class="text-primary-comfy-canvas/80">{{

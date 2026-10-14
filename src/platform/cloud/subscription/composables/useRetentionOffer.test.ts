@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApiError'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
@@ -89,8 +89,8 @@ describe('useRetentionOffer', () => {
       surface: 'billing',
       errorType: 'error_refreshing_billing_after_retention_discount'
     })
-    expect(useToastStore().add).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'warn' })
+    expect(useToast().toasts).toContainEqual(
+      expect.objectContaining({ kind: 'warning' })
     )
   })
 
