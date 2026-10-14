@@ -7,8 +7,6 @@ on:
   issue_comment:
     types: [created, edited]
 
-# GitHub keeps one pending run per concurrency group, so the PR's group must
-# admit exactly what plan's `if` accepts; other events would displace a request.
 concurrency:
   group: >-
     ${{ github.workflow }}-${{ (
@@ -88,7 +86,6 @@ jobs:
           echo "Regenerating snapshots with ${images[0]} (resolved from the PR branch)"
           echo "image=${images[0]}" >> "$GITHUB_OUTPUT"
 
-      # Other workflow changes still come from the default branch on this path.
       - name: Warn when the update workflows differ from the default branch
         shell: bash
         env:

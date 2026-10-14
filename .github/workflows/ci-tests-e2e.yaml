@@ -199,7 +199,6 @@ jobs:
         with:
           node_cache: 'false'
 
-      # Run sharded tests (browsers pre-installed in container)
       - name: Run Playwright tests (Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
         id: playwright
         run: pnpm exec playwright test --project=chromium --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} --add-reporter=./tools/snapshot-updates/src/snapshotUpdatesReporter.ts
@@ -345,7 +344,6 @@ jobs:
         with:
           node_cache: 'false'
 
-      # Run tests (browsers pre-installed in container)
       - name: Run Playwright tests (${{ matrix.browser }})
         id: playwright
         run: pnpm exec playwright test --project=${{ matrix.browser }} --add-reporter=./tools/snapshot-updates/src/snapshotUpdatesReporter.ts
