@@ -51,7 +51,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useMenuItemStore } from '@/stores/menuItemStore'
-import type { AppMenuItem, CommandMenuItem } from '@/stores/menuItemStore'
+import type { AppMenuItem } from '@/stores/menuItemStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { useManagerDialog } from '@/workbench/extensions/manager/composables/useManagerDialog'
@@ -74,6 +74,13 @@ function onLogoMenuClick() {
   telemetry?.trackUiButtonClicked({
     button_id: 'sidebar_comfy_menu_opened',
     element_group: 'sidebar'
+  })
+}
+
+function trackMenuItemClick(buttonId: string) {
+  telemetry?.trackUiButtonClicked({
+    button_id: `comfy_menu_${buttonId}_clicked`,
+    element_group: 'comfy_menu'
   })
 }
 
@@ -104,12 +111,12 @@ const showManageExtensions = async () => {
 }
 
 const themeMenuItems = computed(() => {
-  return colorPaletteStore.palettes.map<CommandMenuItem>((palette) => ({
+  return colorPaletteStore.palettes.map<MenuItem>((palette) => ({
     key: `theme-${palette.id}`,
     label: palette.name,
-    commandId: `theme-${palette.id}`,
     checked: () => colorPaletteStore.activePaletteId === palette.id,
     command: async () => {
+      trackMenuItemClick('theme')
       await colorPaletteService.loadColorPalette(palette.id)
     }
   }))
@@ -135,36 +142,51 @@ const extraMenuItems = computed<MenuItem[]>(() => [
     key: 'browse-templates',
     label: t('menuLabels.Browse Templates'),
     icon: 'icon-[comfy--template]',
-    command: () => useWorkflowTemplateSelectorDialog().show('menu')
+    command: () => {
+      trackMenuItemClick('browse_templates')
+      useWorkflowTemplateSelectorDialog().show('menu')
+    }
   },
   {
     key: 'settings',
     label: t('g.settings'),
     icon: 'icon-[lucide--settings]',
-    command: () => showSettings()
+    command: () => {
+      telemetry?.trackUiButtonClicked({
+        button_id: 'sidebar_settings_menu_opened',
+        element_group: 'sidebar'
+      })
+      showSettings()
+    }
   },
   {
     key: 'manage-extensions',
     label: t('menu.manageExtensions'),
     icon: 'icon-[comfy--extensions-blocks]',
-    command: showManageExtensions
+    command: async () => {
+      trackMenuItemClick('manage_extensions')
+      await showManageExtensions()
+    }
   }
 ])
 
 const menuSeparator: MenuItem = { separator: true }
 
+function commandButtonId(commandId: string) {
+  return menuItemStore.isCoreMenuCommand(commandId)
+    ? snakeCase(commandId)
+    : 'extension_command'
+}
+
 function withClickTelemetry(item: AppMenuItem): AppMenuItem {
   if (item.items) return { ...item, items: item.items.map(withClickTelemetry) }
-  if (!item.command) return item
-  const id = 'commandId' in item ? item.commandId : item.key
-  if (!id) return item
+  if (!('commandId' in item) || item.pressAndHoldInterval !== undefined)
+    return item
+  const buttonId = commandButtonId(item.commandId)
   return {
     ...item,
     command: (event) => {
-      telemetry?.trackUiButtonClicked({
-        button_id: `comfy_menu_${snakeCase(id)}_clicked`,
-        element_group: 'comfy_menu'
-      })
+      trackMenuItemClick(buttonId)
       return item.command?.(event)
     }
   }
