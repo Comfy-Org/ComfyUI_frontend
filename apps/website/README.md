@@ -87,6 +87,12 @@ links; the editor API separately rechecks authorization on every operation.
 
 ## CCC review discovery
 
+Workflow info cards use backend-resolved Comfy account display names and public
+profile avatars, bound to the credited author UID. Unknown/synthetic demo authors
+show an unavailable label and standard avatar icon; no guessed name/photo/email.
+Runs-on relationships keep their canonical UIDs internally while showing eligible
+localized model titles, with a localized unavailable label for unresolved models.
+
 Workflow editors expose element 0 of `workflow_versions`: named `download` graph
 JSON and `api` execution JSON, separately uploaded and exactly pinned in Media.
 The initial name is V1; later stored pairs are preserved but ignored by the site.

@@ -23,6 +23,8 @@
     "longDescription": "Long description", "author": "Credited author account UID", "documentation": "Documentation URL", "ownerFixed": "The owner is fixed by the server; credited author is editable.", "runs": "Runs", "downloads": "Downloads", "cloud": "Works on Comfy Cloud", "unspecified": "Not specified", "outputType": "Output type", "models": "Model UIDs (comma-separated)", "cloudShare": "Comfy Cloud share URL", "faq": "Questions & answers", "addQuestion": "Add question", "removeQuestion": "Remove question", "question": "Question {count}", "answer": "Answer {count}"
   },
   "cccWorkflow": {
+    "authorUnavailable": "Author unavailable",
+    "modelUnavailable": "Model unavailable",
     "codeHeading": "Use this workflow from code",
     "codeHint": "Generated from the workflow graph and inputs when possible; stored examples are shown otherwise. Review credentials and endpoints before running code, which may incur charges.",
     "codeUnavailable": "Script examples are not available for this workflow yet. Download the workflow or open its documentation.",

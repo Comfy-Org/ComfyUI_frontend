@@ -1,10 +1,12 @@
 import type { ContentCatalogRecord } from '@comfyorg/ingest-types'
 import { jsonObject } from './editor-document'
+import { translationsFor } from '@/i18n/translations'
 import {
   workflowCatalogDetailsSchema,
   validCloudShareURL,
   validDocumentationURL,
-  validWorkflowDownloadURL
+  validWorkflowDownloadURL,
+  validAuthorAvatarURL
 } from '@/config/workflow-catalog-details'
 
 export function catalogLanguageFallback(
@@ -50,6 +52,18 @@ export function catalogPresentation(
   const doc = jsonObject.safeParse(record.data)
   if (!doc.success) return undefined
   const d = doc.data
+  const t = translationsFor(locale === 'zh-CN' ? 'zh-CN' : 'en').t
+  const resolvedAuthor = objectPresentation(d.website_author)
+  const authorMatches =
+    typeof d.author_uid === 'string' && resolvedAuthor.uid === d.author_uid
+  const authorName =
+    authorMatches &&
+    typeof resolvedAuthor.name === 'string' &&
+    resolvedAuthor.name.trim()
+      ? resolvedAuthor.name.trim()
+      : typeof d.author_uid === 'string' && d.author_uid.trim()
+        ? t('cccWorkflow.authorUnavailable')
+        : undefined
   const compatibility = jsonObject.safeParse(d.compatibility)
   const migrated = jsonObject.safeParse(
     compatibility.success ? compatibility.data.website : undefined
@@ -195,7 +209,7 @@ export function catalogPresentation(
           if (typeof uid !== 'string' || !uid.trim()) return []
           const resource = resources.find(
             (candidate) =>
-              candidate.uid === uid &&
+              candidate.uid.toLowerCase() === uid.toLowerCase() &&
               candidate.data.type === 'model' &&
               !candidate.deleted
           )
@@ -211,7 +225,10 @@ export function catalogPresentation(
           return [
             {
               uid,
-              name: typeof name === 'string' && name.trim() ? name.trim() : uid,
+              name:
+                typeof name === 'string' && name.trim()
+                  ? name.trim()
+                  : t('cccWorkflow.modelUnavailable'),
               ...(href && /^\/hub\/models\/[a-z0-9._-]+\/?$/.test(href)
                 ? {
                     href: `${locale === 'en' ? '' : `/${locale}`}${href.replace(/\/$/, '')}/`
@@ -221,10 +238,12 @@ export function catalogPresentation(
           ]
         })
       : [],
-    author:
-      typeof d.author_uid === 'string' && d.author_uid.trim()
-        ? d.author_uid.trim()
-        : undefined,
+    author: authorName,
+    ...(authorMatches &&
+    typeof resolvedAuthor.avatar_url === 'string' &&
+    validAuthorAvatarURL(resolvedAuthor.avatar_url)
+      ? { authorAvatarURL: resolvedAuthor.avatar_url }
+      : {}),
     runs:
       typeof d.runs === 'number' && Number.isSafeInteger(d.runs) && d.runs >= 0
         ? d.runs

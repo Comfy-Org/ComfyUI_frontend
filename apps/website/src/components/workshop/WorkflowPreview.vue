@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Box } from '@lucide/vue'
+import { Box, UserRound } from '@lucide/vue'
 import { computed, ref, watch } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -322,7 +322,25 @@ const facts = computed(() => {
                   <dd
                     class="min-w-0 truncate text-primary-comfy-canvas tabular-nums"
                   >
-                    {{ fact.value }}
+                    <span
+                      v-if="fact.label === 'workshop.workflow.factAuthor'"
+                      class="flex items-center gap-2"
+                    >
+                      <img
+                        v-if="model.catalogDetails?.authorAvatarURL"
+                        :src="model.catalogDetails.authorAvatarURL"
+                        alt=""
+                        class="size-6 shrink-0 rounded-full object-cover"
+                        referrerpolicy="no-referrer"
+                      />
+                      <UserRound
+                        v-else
+                        class="size-6 shrink-0 text-primary-warm-gray"
+                        aria-hidden="true"
+                      />
+                      <span class="truncate">{{ fact.value }}</span>
+                    </span>
+                    <template v-else>{{ fact.value }}</template>
                   </dd>
                 </div>
               </dl>

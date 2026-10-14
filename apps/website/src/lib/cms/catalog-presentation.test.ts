@@ -44,6 +44,45 @@ const record: ContentCatalogRecord = {
   }
 }
 describe('native CONTENT presentation', () => {
+  it('does not echo account IDs or accept mismatched profile/avatar metadata', () => {
+    const uid = '00000000-0000-4000-8000-000000000096'
+    const view = detailSchema.parse(
+      catalogPresentation({
+        ...record,
+        data: {
+          ...record.data,
+          author_uid: uid,
+          website_author: {
+            uid: 'other-account',
+            name: 'Wrong person',
+            avatar_url: 'https://media.comfy.org/other.png'
+          }
+        }
+      })
+    )
+    expect(view).toMatchObject({
+      catalogDetails: { author: 'Author unavailable' }
+    })
+    expect(view).not.toHaveProperty('catalogDetails.authorAvatarURL')
+    const invalidAvatar = detailSchema.parse(
+      catalogPresentation({
+        ...record,
+        data: {
+          ...record.data,
+          author_uid: uid,
+          website_author: {
+            uid,
+            name: 'Actual author',
+            avatar_url: 'javascript:alert(1)'
+          }
+        }
+      })
+    )
+    expect(invalidAvatar).toMatchObject({
+      catalogDetails: { author: 'Actual author' }
+    })
+    expect(invalidAvatar).not.toHaveProperty('catalogDetails.authorAvatarURL')
+  })
   it('uses only named pair zero: download graph and independent API prompt for Run', () => {
     const download = '00000000-0000-4000-8000-000000000080'
     const api = '00000000-0000-4000-8000-000000000081'
@@ -263,6 +302,12 @@ describe('native CONTENT presentation', () => {
         runs: 0,
         downloads: 12,
         author_uid: modelUID,
+        website_author: {
+          uid: modelUID,
+          name: 'Comfy creator',
+          username: 'comfy-creator',
+          avatar_url: 'https://media.comfy.org/creator.png'
+        },
         model_uids: [modelUID]
       }
     }
@@ -291,7 +336,8 @@ describe('native CONTENT presentation', () => {
         outputType: 'video',
         runs: 0,
         downloads: 12,
-        author: modelUID,
+        author: 'Comfy creator',
+        authorAvatarURL: 'https://media.comfy.org/creator.png',
         models: [
           {
             uid: modelUID,
@@ -363,7 +409,7 @@ describe('native CONTENT presentation', () => {
       catalogDetails: {
         longDescription: 'Source body',
         faqs: [{ question: 'Source question' }],
-        models: [{ name: '00000000-0000-4000-8000-000000000098' }]
+        models: [{ name: '模型信息暂不可用' }]
       }
     })
     expect(catalogPresentation(authored, 'zh-CN', true)).toMatchObject({

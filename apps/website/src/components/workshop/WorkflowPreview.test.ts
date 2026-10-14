@@ -43,6 +43,32 @@ beforeEach(() => {
 })
 
 describe('WorkflowPreview', () => {
+  it('shows a readable author and decorative avatar, not an account identifier', () => {
+    render(WorkflowPreview, {
+      props: {
+        model: {
+          ...model,
+          catalogDetails: {
+            locale: 'en',
+            faqs: [],
+            models: [{ uid: 'opaque-model-id', name: 'Flux Pro' }],
+            author: 'Ben Cooley',
+            authorAvatarURL: 'https://media.comfy.org/ben-avatar.png'
+          }
+        }
+      }
+    })
+    expect(screen.getByText('Ben Cooley')).toBeVisible()
+    expect(screen.getByText('Flux Pro')).toBeVisible()
+    expect(screen.queryByText('opaque-model-id')).not.toBeInTheDocument()
+    const avatar = screen.getByTestId('workflow-facts').querySelector('img')
+    expect(avatar).toHaveAttribute(
+      'src',
+      'https://media.comfy.org/ben-avatar.png'
+    )
+    expect(avatar).toHaveAttribute('referrerpolicy', 'no-referrer')
+    expect(avatar).toHaveAttribute('alt', '')
+  })
   it('downloads the latest authorized exact file and permits choosing another declared file', async () => {
     const uid = '00000000-0000-4000-8000-000000000080'
     const first = `/preview-media/7/${uid}/00000000-0000-4000-8000-000000000081`

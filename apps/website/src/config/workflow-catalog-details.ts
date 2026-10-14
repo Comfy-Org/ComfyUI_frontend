@@ -55,6 +55,17 @@ export function validWorkflowDownloadURL(value: string) {
   )
 }
 
+export function validAuthorAvatarURL(raw: string) {
+  try {
+    const url = new URL(raw)
+    return (
+      url.protocol === 'https:' && !url.username && !url.password && !url.hash
+    )
+  } catch {
+    return false
+  }
+}
+
 export const workflowCatalogDetailsSchema = z.object({
   locale: z.enum(['en', 'zh-CN', 'ja']),
   cloudShareURL: z.string().refine(validCloudShareURL).optional(),
@@ -93,6 +104,7 @@ export const workflowCatalogDetailsSchema = z.object({
     z.object({ uid: z.string(), name: z.string(), href: z.string().optional() })
   ),
   author: z.string().optional(),
+  authorAvatarURL: z.string().refine(validAuthorAvatarURL).optional(),
   runs: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).optional(),
   downloads: z
     .number()
