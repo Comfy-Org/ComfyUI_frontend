@@ -245,7 +245,7 @@ jobs:
             if (UNAVAILABLE) {
               lines.push(
                 '> [!CAUTION]',
-                `> ${UNAVAILABLE} Re-run the E2E workflow and trigger the update again, or add \`full\` after the update command to rerun Playwright. [View workflow run](${runUrl})`
+                `> ${UNAVAILABLE} Push to the branch for a new E2E run and trigger the update again, or add \`full\` after the update command to rerun Playwright. [View workflow run](${runUrl})`
               )
             } else if (COMMIT_RESULT !== 'success') {
               lines.push('> [!CAUTION]', `> Screenshot update failed. [View workflow run](${runUrl})`)
