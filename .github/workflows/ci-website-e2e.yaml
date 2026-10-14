@@ -105,7 +105,8 @@ jobs:
 
       - name: Upload snapshot updates
         uses: actions/upload-artifact@v6
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        continue-on-error: true
         with:
           name: website-snapshot-updates-${{ matrix.shardIndex }}
           path: apps/website/snapshot-updates/
