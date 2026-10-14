@@ -20,8 +20,9 @@ describe('routerCodeTabs', () => {
 
   it.for([
     { tab: 'curl', index: 1, expected: '?model_provider=fal"' },
-    { tab: 'python', index: 2, expected: 'model_provider="runware",' },
-    { tab: 'typescript', index: 3, expected: "{ modelProvider: 'wavespeed' }" }
+    { tab: 'python', index: 2, expected: 'model_provider="pika",' },
+    { tab: 'python', index: 3, expected: 'model_provider="runware",' },
+    { tab: 'typescript', index: 4, expected: "{ modelProvider: 'wavespeed' }" }
   ])('selects $expected in the $tab sample', ({ tab, index, expected }) => {
     expect(resolve(routerCodeTabs[tab].segments, index)).toContain(expected)
   })

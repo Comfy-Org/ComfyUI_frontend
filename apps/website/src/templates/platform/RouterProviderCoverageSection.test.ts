@@ -46,7 +46,7 @@ describe('RouterProviderCoverageSection', () => {
       headers
         .slice(1)
         .map((header) => within(header).getByRole('img').getAttribute('alt'))
-    ).toEqual(['Comfy', 'fal', 'Higgsfield', 'Runware', 'WaveSpeed'])
+    ).toEqual(['Comfy', 'fal', 'Higgsfield', 'Pika', 'Runware', 'WaveSpeed'])
   })
 
   it('lists each routable model, then previews the Comfy-only catalog', () => {
@@ -72,10 +72,46 @@ describe('RouterProviderCoverageSection', () => {
   it('marks Comfy on every row and each other provider where it serves', () => {
     render(RouterProviderCoverageSection, { props: { locale: 'en' } })
 
-    expect(servedBy('Nano Banana Pro')).toEqual([true, true, false, true, true])
-    expect(servedBy('Kling V3')).toEqual([true, false, true, false, false])
-    expect(servedBy('Seedance 2.0')).toEqual([true, true, true, true, true])
-    expect(servedBy('MiniMax H3')).toEqual([true, false, false, false, false])
+    expect(servedBy('Nano Banana Pro')).toEqual([
+      true,
+      true,
+      false,
+      true,
+      true,
+      true
+    ])
+    expect(servedBy('GPT Image 2.5 Flare')).toEqual([
+      true,
+      true,
+      false,
+      false,
+      true,
+      true
+    ])
+    expect(servedBy('Kling V3')).toEqual([
+      true,
+      false,
+      true,
+      false,
+      false,
+      false
+    ])
+    expect(servedBy('Seedance 2.0')).toEqual([
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ])
+    expect(servedBy('MiniMax H3')).toEqual([
+      true,
+      false,
+      false,
+      false,
+      false,
+      false
+    ])
   })
 
   it('sends the rest of the catalog to the models page', () => {

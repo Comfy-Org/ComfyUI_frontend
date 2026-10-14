@@ -28,6 +28,7 @@ const logos: Record<Column, { src: string; class: string }> = {
   Comfy: { src: '/icons/router-providers/comfy.svg', class: 'h-5' },
   fal: { src: '/icons/router-providers/fal.svg', class: 'h-4.5' },
   Higgsfield: { src: '/icons/router-providers/higgsfield.svg', class: 'h-5' },
+  Pika: { src: '/icons/router-providers/pika-wordmark.svg', class: 'h-4' },
   Runware: { src: '/icons/router-providers/runware.svg', class: 'h-4' },
   WaveSpeed: { src: '/icons/router-providers/wavespeed.svg', class: 'h-3.5' }
 }
