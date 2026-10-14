@@ -81,8 +81,7 @@ const localizedText = (key: string): LocalizedText => ({
 const buildNightRegistration = 'https://luma.com/5mydmvu6'
 const meetups = [
   { id: 'Sf', startDateTime: '2026-10-28T18:00:00-07:00' },
-  { id: 'La', startDateTime: '2026-10-29T18:00:00-07:00' },
-  { id: 'Nyc', startDateTime: '2026-11-03T18:00:00-05:00' }
+  { id: 'La', startDateTime: '2026-10-29T18:00:00-07:00' }
 ] as const
 const meetupEvents: ComfyEvent[] = meetups.map(({ id, startDateTime }) => ({
   id: `challenge-meetup-${id.toLowerCase()}`,
