@@ -37,7 +37,7 @@ test('inserts the Paparazzi me example into a picked scene from the panel', asyn
   await page.goto('/hub/apps/paparazzi-me/')
   const app = page.getByTestId('paparazzi-me')
   const panel = app.getByRole('complementary', { name: 'Paparazzi settings' })
-  expect(await panel.boundingBox()).toMatchObject({ width: 280 })
+  expect(await panel.boundingBox()).toMatchObject({ width: 372 })
   await app.getByRole('button', { name: 'Red hair' }).click()
   await expect(
     app.getByRole('img', {
@@ -57,7 +57,7 @@ test('inserts the Paparazzi me example into a picked scene from the panel', asyn
   await expect(picker.getByRole('radio')).toHaveCount(9)
   const pickerBox = await picker.boundingBox()
   const panelBox = await panel.boundingBox()
-  expect(pickerBox?.x).toBeGreaterThan((panelBox?.x ?? 0) + 280)
+  expect(pickerBox?.x).toBeGreaterThan((panelBox?.x ?? 0) + 372)
   await picker.getByRole('radio', { name: 'Hotel exit' }).click()
   await expect(picker).toBeHidden()
   await expect(row).toContainText('Hotel exit')
