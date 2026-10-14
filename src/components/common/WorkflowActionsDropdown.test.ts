@@ -191,6 +191,10 @@ describe('WorkflowActionsDropdown', () => {
     await user.click(screen.getByRole('menuitem', { name: 'Test action' }))
 
     expect(spies.action).toHaveBeenCalledOnce()
+    expect(useTelemetry()?.trackUiButtonClicked).toHaveBeenCalledWith({
+      button_id: 'workflow_actions_test_action_clicked',
+      element_group: 'workflow_actions'
+    })
   })
 
   it('closes the menu when the open trigger is clicked again', async () => {

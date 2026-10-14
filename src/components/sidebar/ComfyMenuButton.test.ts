@@ -5,10 +5,16 @@ import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
+import type { CommandMenuItem } from '@/stores/menuItemStore'
+import { useMenuItemStore } from '@/stores/menuItemStore'
 
 import ComfyMenuButton from './ComfyMenuButton.vue'
 
-vi.mock(import('@/platform/telemetry'))
+const mocks = vi.hoisted(() => ({ trackUiButtonClicked: vi.fn() }))
+
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
+  useTelemetry: () => mocks
+}))
 
 const NODES_2_LABEL = 'Nodes 2.0'
 
@@ -77,6 +83,61 @@ describe('ComfyMenuButton', () => {
       expect(
         screen.getByRole('menuitemcheckbox', { name: NODES_2_LABEL })
       ).toHaveAttribute('aria-checked', String(written))
+    })
+  })
+
+  it.for([
+    {
+      role: 'menuitem',
+      name: 'New',
+      button_id: 'comfy_menu_comfy_new_blank_workflow_clicked'
+    },
+    {
+      role: 'menuitem',
+      name: 'g.settings',
+      button_id: 'comfy_menu_settings_clicked'
+    },
+    {
+      role: 'menuitemcheckbox',
+      name: NODES_2_LABEL,
+      button_id: 'comfy_menu_nodes_2_0_toggle_clicked'
+    }
+  ] as const)(
+    'reports $button_id when $name is clicked',
+    async ({ role, name, button_id }) => {
+      useMenuItemStore().menuItems = [
+        { label: 'New', commandId: 'Comfy.NewBlankWorkflow', command: vi.fn() }
+      ]
+      const menu = await openMenu()
+
+      await menu.user.click(screen.getByRole(role, { name }))
+
+      expect(mocks.trackUiButtonClicked).toHaveBeenCalledWith({
+        button_id,
+        element_group: 'comfy_menu'
+      })
+    }
+  )
+
+  it('reports clicks on commands nested in a submenu', async () => {
+    const save: CommandMenuItem = {
+      label: 'Save',
+      commandId: 'Comfy.SaveWorkflow',
+      command: vi.fn()
+    }
+    useMenuItemStore().menuItems = [
+      { key: 'File', label: 'File', items: [save] }
+    ]
+    const menu = await openMenu()
+
+    await menu.user.hover(screen.getByRole('menuitem', { name: 'File' }))
+    await screen.findByRole('menuitem', { name: 'Save' })
+    await menu.user.keyboard('{ArrowRight}{Enter}')
+
+    expect(save.command).toHaveBeenCalledOnce()
+    expect(mocks.trackUiButtonClicked).toHaveBeenCalledWith({
+      button_id: 'comfy_menu_comfy_save_workflow_clicked',
+      element_group: 'comfy_menu'
     })
   })
 

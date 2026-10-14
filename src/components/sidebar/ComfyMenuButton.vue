@@ -38,6 +38,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
+import { snakeCase } from 'es-toolkit'
 
 import ComfyLogo from '@/components/icons/ComfyLogo.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -140,13 +141,7 @@ const extraMenuItems = computed<MenuItem[]>(() => [
     key: 'settings',
     label: t('g.settings'),
     icon: 'icon-[lucide--settings]',
-    command: () => {
-      telemetry?.trackUiButtonClicked({
-        button_id: 'sidebar_settings_menu_opened',
-        element_group: 'sidebar'
-      })
-      showSettings()
-    }
+    command: () => showSettings()
   },
   {
     key: 'manage-extensions',
@@ -157,6 +152,23 @@ const extraMenuItems = computed<MenuItem[]>(() => [
 ])
 
 const menuSeparator: MenuItem = { separator: true }
+
+function withClickTelemetry(item: AppMenuItem): AppMenuItem {
+  if (item.items) return { ...item, items: item.items.map(withClickTelemetry) }
+  if (!item.command) return item
+  const id = 'commandId' in item ? item.commandId : item.key
+  if (!id) return item
+  return {
+    ...item,
+    command: (event) => {
+      telemetry?.trackUiButtonClicked({
+        button_id: `comfy_menu_${snakeCase(id)}_clicked`,
+        element_group: 'comfy_menu'
+      })
+      return item.command?.(event)
+    }
+  }
+}
 
 const translatedItems = computed<AppMenuItem[]>(() => {
   const items = menuItemStore.menuItems.map(translateMenuItem)
@@ -182,7 +194,7 @@ const translatedItems = computed<AppMenuItem[]>(() => {
     ...(helpItem ? [menuSeparator, helpItem] : [])
   )
 
-  return items
+  return items.map(withClickTelemetry)
 })
 
 const onNodes2ToggleChange = async (value: boolean) => {

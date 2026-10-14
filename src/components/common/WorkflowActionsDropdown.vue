@@ -7,6 +7,7 @@ let restoreFocusOnMount = false
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import { snakeCase } from 'es-toolkit'
 import { computed, nextTick, onMounted, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -18,6 +19,7 @@ import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useCommandStore } from '@/stores/commandStore'
+import type { WorkflowMenuItem } from '@/types/workflowMenuItem'
 import type { ViewMode } from '@/utils/appMode'
 
 interface ViewModeSegment {
@@ -49,6 +51,23 @@ const { menuItems } = useWorkflowActionsMenu(
 const { hasUnseenItems, markAsSeen } = useNewMenuItemIndicator(
   () => menuItems.value
 )
+
+function withClickTelemetry(item: WorkflowMenuItem): WorkflowMenuItem {
+  if (item.separator || !item.command) return item
+  const command = item.command
+  return {
+    ...item,
+    command: () => {
+      useTelemetry()?.trackUiButtonClicked({
+        button_id: `workflow_actions_${snakeCase(item.id)}_clicked`,
+        element_group: 'workflow_actions'
+      })
+      return command()
+    }
+  }
+}
+
+const trackedMenuItems = computed(() => menuItems.value.map(withClickTelemetry))
 
 const toggleShortcut = computed(() => {
   const shortcut = keybindingStore
@@ -157,7 +176,7 @@ onMounted(async () => {
 <template>
   <Menu
     v-model:open="dropdownOpen"
-    :items="menuItems"
+    :items="trackedMenuItems"
     :modal="false"
     :align
     :side-offset="8"
