@@ -31,6 +31,11 @@ export const fishAudioPage: ModelLaunchPage = {
     titleKey: 'fishAudio.hero.titleModel',
     titleRestKey: 'fishAudio.hero.titleRest',
     descriptionKey: 'fishAudio.hero.description',
+    primaryCta: {
+      labelKey: 'fishAudio.hero.primaryCta',
+      href: DIRECTED_TEMPLATE_HREF,
+      target: '_blank'
+    },
     secondaryCta: {
       labelKey: 'fishAudio.hero.secondaryCta',
       href: DOCS_HREF,

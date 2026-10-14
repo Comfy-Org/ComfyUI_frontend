@@ -1,6 +1,11 @@
 <script setup lang="ts">
-import { useEventListener, useMediaControls } from '@vueuse/core'
-import { computed, useTemplateRef } from 'vue'
+import { cn } from '@comfyorg/tailwind-utils'
+import {
+  useEventListener,
+  useMediaControls,
+  useResizeObserver
+} from '@vueuse/core'
+import { computed, onMounted, shallowRef, useTemplateRef } from 'vue'
 
 import type { Locale } from '@/i18n/translations'
 import type { ModelLaunchListItem } from './types'
@@ -28,6 +33,16 @@ useEventListener(audioEl, 'play', () => {
     if (el !== audioEl.value) el.pause()
   }
 })
+
+const promptEl = useTemplateRef<HTMLParagraphElement>('promptEl')
+const expanded = shallowRef(false)
+const promptOverflows = shallowRef(false)
+function measurePromptOverflow() {
+  const el = promptEl.value
+  promptOverflows.value = el !== null && el.scrollHeight > el.clientHeight
+}
+onMounted(measurePromptOverflow)
+useResizeObserver(promptEl, measurePromptOverflow)
 
 const title = computed(() => item.title[locale] || item.title.en)
 
@@ -90,19 +105,35 @@ const metaLabel = computed(() => {
         </a>
       </p>
       <div
-        class="mt-4 flex max-w-3xl items-end gap-2 rounded-2xl bg-transparency-white-t8 py-4 pl-5"
+        class="mt-4 max-w-3xl rounded-2xl bg-transparency-white-t8 py-4 pl-5"
       >
-        <p
-          class="flex-1 text-sm/relaxed font-light whitespace-pre-line text-primary-warm-gray"
+        <div class="flex items-end gap-2">
+          <p
+            ref="promptEl"
+            :class="
+              cn(
+                'flex-1 text-sm/relaxed font-light whitespace-pre-line text-primary-warm-gray',
+                !expanded && 'line-clamp-3'
+              )
+            "
+          >
+            {{ item.prompt }}
+          </p>
+          <CopyTextButton
+            class="-mb-2"
+            :value="item.prompt"
+            :label="t('modelLaunch.copyPrompt')"
+            :copied-label="t('ui.copied')"
+          />
+        </div>
+        <button
+          v-if="expanded || promptOverflows"
+          type="button"
+          class="mt-2 cursor-pointer text-sm font-semibold text-primary-warm-white underline underline-offset-4 transition-colors hover:text-primary-comfy-yellow"
+          @click="expanded = !expanded"
         >
-          {{ item.prompt }}
-        </p>
-        <CopyTextButton
-          class="-mb-2"
-          :value="item.prompt"
-          :label="t('modelLaunch.copyPrompt')"
-          :copied-label="t('ui.copied')"
-        />
+          {{ expanded ? t('ui.readLess') : t('ui.readMore') }}
+        </button>
       </div>
     </div>
 

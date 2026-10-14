@@ -1,3 +1,4 @@
+import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen, within } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
@@ -29,6 +30,15 @@ function list(
   ctaKey?: ModelLaunchList['ctaKey']
 ): ModelLaunchList {
   return { headingKey: 'fishAudio.samples.heading', ctaKey, items }
+}
+
+function mockPromptHeight(scrollHeight: number, clientHeight: number) {
+  vi.spyOn(Element.prototype, 'scrollHeight', 'get').mockReturnValue(
+    scrollHeight
+  )
+  vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(
+    clientHeight
+  )
 }
 
 function mockMedia() {
@@ -80,6 +90,40 @@ describe('ModelLaunchListSection', () => {
     expect(
       within(row).getByRole('button', { name: 'Copy prompt' })
     ).toBeTruthy()
+  })
+
+  it.for([
+    { scrollHeight: 120, clientHeight: 60, toggle: 'Read more' },
+    { scrollHeight: 60, clientHeight: 60, toggle: null }
+  ])(
+    'offers "$toggle" when the prompt is $scrollHeight tall in a $clientHeight clamp',
+    async ({ scrollHeight, clientHeight, toggle }) => {
+      mockMedia()
+      mockPromptHeight(scrollHeight, clientHeight)
+      render(ModelLaunchListSection, { props: { list: list([item('long')]) } })
+      await nextTick()
+
+      const row = screen.getByRole('listitem')
+      const button = within(row).queryByRole('button', { name: /^Read/ })
+      expect(button?.textContent.trim() ?? null).toBe(toggle)
+    }
+  )
+
+  it('expands the prompt on read more and folds it on read less', async () => {
+    mockMedia()
+    mockPromptHeight(120, 60)
+    render(ModelLaunchListSection, { props: { list: list([item('long')]) } })
+    await nextTick()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Read more' }))
+    expect(screen.getByText('[whisper] long prompt').className).not.toContain(
+      'line-clamp-3'
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: 'Read less' }))
+    expect(screen.getByText('[whisper] long prompt').className).toContain(
+      'line-clamp-3'
+    )
   })
 
   it('pauses every other row when one starts playing', async () => {
