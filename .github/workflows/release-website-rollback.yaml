@@ -69,11 +69,16 @@ jobs:
 
       - name: Require a production deployment of the website project
         run: |
-          deployment=$(curl --fail --silent --show-error \
+          deployment=$(curl --fail --silent --show-error --max-time 30 --retry 2 \
             --header "Authorization: Bearer $VERCEL_TOKEN" \
-            "https://api.vercel.com/v13/deployments/${TARGET_DEPLOYMENT#https://}?teamId=$VERCEL_ORG_ID")
-          if [[ "$(jq -r .projectId <<<"$deployment")" != "$VERCEL_PROJECT_ID" || "$(jq -r .target <<<"$deployment")" != production ]]; then
-            echo '::error title=Ineligible deployment::The target must be a production deployment of the website project.'
+            "https://api.vercel.com/v13/deployments/${TARGET_DEPLOYMENT#https://}?teamId=$VERCEL_ORG_ID") || {
+            echo "::error title=Deployment lookup failed::Could not look up $TARGET_DEPLOYMENT in Vercel; see the curl error above. Production was not changed."
+            exit 1
+          }
+          project=$(jq -r .projectId <<<"$deployment")
+          target=$(jq -r '.target // "preview"' <<<"$deployment")
+          if [[ "$project" != "$VERCEL_PROJECT_ID" || "$target" != production ]]; then
+            echo "::error title=Ineligible deployment::$TARGET_DEPLOYMENT is a $target deployment of project $project. Use a production deployment of the website project."
             exit 1
           fi
 
