@@ -85,9 +85,10 @@ FE-3349 (TDD "Server-fact guardrails"):
   A gate slot typed as a fact rejects `||`, `&&`, `!` and ternaries that mix
   in other state at compile time. It is adopted surface by surface,
   starting with the members panel (FE-3361); the lint gate holds the line on
-  surfaces not yet migrated. Only the module that decodes the API response
-  may import its constructor, `receiveServerFact`
-  (`comfy/no-stray-server-fact-constructor`).
+  surfaces not yet migrated. Only a fact provider may call its constructor,
+  `receiveServerFact`: the module that decodes the API response, or an
+  off-Cloud local provider that answers the same fact (rule 2). Each provider
+  is listed in the rule (`comfy/no-stray-server-fact-constructor`).
 
 Until those land, this ADR and the `AGENTS.md` line are the only guidance.
 

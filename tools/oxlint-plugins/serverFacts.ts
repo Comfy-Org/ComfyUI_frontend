@@ -849,11 +849,11 @@ export const noStrayServerFactConstructor: Rule = {
     type: 'problem',
     docs: {
       description:
-        'Restrict receiveServerFact to the modules that decode an API response'
+        'Restrict receiveServerFact to the modules that decode an API response or answer a fact locally'
     },
     schema: [],
     messages: {
-      stray: `\`${FACT_CONSTRUCTOR}\` is imported outside a fact provider. Only the module that decodes the API response may mint a ServerFact; a gate receives it from there. ${GUIDANCE}`
+      stray: `\`${FACT_CONSTRUCTOR}\` is used outside a fact provider. Only the module that decodes the API response, or a local provider listed in FACT_PROVIDERS, may mint a ServerFact; a gate receives it from there. ${GUIDANCE}`
     }
   },
   create(context) {
@@ -864,6 +864,17 @@ export const noStrayServerFactConstructor: Rule = {
         const imported = node.imported
         const name =
           imported.type === 'Identifier' ? imported.name : imported.value
+        if (name !== FACT_CONSTRUCTOR) return
+        context.report({ node, messageId: 'stray' })
+      },
+      MemberExpression(node) {
+        const property = node.property
+        const name =
+          property.type === 'Identifier' && !node.computed
+            ? property.name
+            : property.type === 'Literal'
+              ? property.value
+              : undefined
         if (name !== FACT_CONSTRUCTOR) return
         context.report({ node, messageId: 'stray' })
       }

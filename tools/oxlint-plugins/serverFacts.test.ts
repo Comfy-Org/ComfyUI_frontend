@@ -707,6 +707,16 @@ ruleTester.run(
         errors: [{ messageId: 'stray' }]
       },
       {
+        name: 'a namespace import whose member mints a fact',
+        filename: 'src/platform/workspace/composables/useMembersPanel.ts',
+        code: `
+import * as facts from '@/platform/serverFacts/serverFact'
+const canInvite = facts.receiveServerFact('can_invite_members', true)
+const canManage = facts['receiveServerFact']('can_manage_members', true)
+`,
+        errors: [{ messageId: 'stray' }, { messageId: 'stray' }]
+      },
+      {
         name: 'an aliased import in a component',
         filename: 'src/platform/workspace/components/UnifiedPricingTable.vue',
         code: `import { receiveServerFact as fact } from '@/platform/serverFacts/serverFact'`,
