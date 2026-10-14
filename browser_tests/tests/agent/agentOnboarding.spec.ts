@@ -7,6 +7,7 @@ import {
   agentTest as test,
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 
 test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
   test('returns to the previous card without completing the tour', async ({
@@ -16,9 +17,7 @@ test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
     await bootAgentApp(page, agentFlagEnabled, {
       onboardingCompleted: false
     })
-    await page
-      .getByRole('button', { name: enMessages.agent.entryButton, exact: true })
-      .click()
+    await new AgentPanel(page).open()
 
     const firstCard = page.getByRole('dialog', {
       name: enMessages.agent.coachTitle
@@ -62,9 +61,7 @@ test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
     await bootAgentApp(page, agentFlagEnabled, {
       onboardingCompleted: true
     })
-    await page
-      .getByRole('button', { name: enMessages.agent.entryButton, exact: true })
-      .click()
+    await new AgentPanel(page).open()
 
     const firstCard = page.getByRole('dialog', {
       name: enMessages.agent.coachTitle
@@ -103,9 +100,7 @@ test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
     await bootAgentApp(page, agentFlagEnabled, {
       onboardingCompleted: false
     })
-    await page
-      .getByRole('button', { name: enMessages.agent.entryButton, exact: true })
-      .click()
+    await new AgentPanel(page).open()
     const steps = [
       [enMessages.agent.coachTitle, enMessages.agent.coachBody],
       [enMessages.agent.coachWorkflowTitle, enMessages.agent.coachWorkflowBody],

@@ -35,6 +35,7 @@ describe('LGraph serialize when the node data store has already diverged', () =>
     expect(mockReportError).toHaveBeenCalledWith(
       expect.any(Error),
       expect.objectContaining({
+        surface: 'graph',
         errorType: 'graph_serialization_state_mismatch'
       })
     )

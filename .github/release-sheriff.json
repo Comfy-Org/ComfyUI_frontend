@@ -1,0 +1,21 @@
+{
+  "_comment": [
+    "Who the release sheriff is, and who reviews what the sheriff writes.",
+    "Read by scripts/release-sheriff/release-sheriff.ts; details in docs/release-process.md.",
+    "",
+    "The sheriff is a FIXED role, declared here. It used to be derived from the",
+    "Datadog layer 'Release Sheriff' on the frontend on-call schedule, which is a",
+    "different job: on-call pages for incidents and hands over weekly, the sheriff",
+    "shepherds releases through QA. One rotation cannot be both, and reading the",
+    "release owner off the paging rota is what coupled them.",
+    "",
+    "backupReviewer MUST be someone other than the sheriff. GitHub rejects a",
+    "self-review request, so backport PRs the sheriff authors would be assigned to",
+    "their own author with nobody asked to review — and backport-auto-merge.yaml",
+    "only merges on an approval, so they would wait on a review that was never",
+    "requested. parseSheriffConfig rejects the two being equal rather than letting",
+    "that fail silently at 3am."
+  ],
+  "sheriff": "thedatalife",
+  "backupReviewer": "christian-byrne"
+}

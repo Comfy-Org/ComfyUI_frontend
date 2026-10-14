@@ -1,30 +1,35 @@
 <script setup lang="ts">
-import { ChevronRight, Video } from '@lucide/vue'
+import { translationsFor } from '@/i18n/translations'
+import { ChevronRight } from '@lucide/vue'
 import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { Direction } from '../../../lib/workshop/cinematic-studio/catalog'
+import type { Direction } from '@/lib/workshop/cinematic-studio/catalog'
 import {
   cameraGroups,
   directionOption,
   gradeGroup,
   lookGroups
-} from '../../../lib/workshop/cinematic-studio/catalog'
-import type { Locale } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
-import CinematicDirectionIcon from './CinematicDirectionIcon.vue'
+} from '@/lib/workshop/cinematic-studio/catalog'
+import type { Locale } from '@/i18n/translations'
+import { shownOption } from '@/lib/workshop/cinematic-studio/grade-image'
+import CinematicDirectionThumb from './CinematicDirectionThumb.vue'
+import CinematicOptionIcon from './CinematicOptionIcon.vue'
 import type { PickerKey } from './picker-key'
 
 const {
   direction,
   openPicker,
+  colors,
   locale = 'en'
 } = defineProps<{
   direction: Direction
+  colors?: readonly string[]
   openPicker?: PickerKey
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const emit = defineEmits<{ open: [key: PickerKey] }>()
 
@@ -33,23 +38,21 @@ const camera = computed(() => {
     directionOption(group.part, direction)
   )
   return {
-    value: tc(body.label, locale),
-    detail: specs
+    value: t(body.label),
+    specs: specs
       .filter((option) => option.id !== 'auto')
-      .map((option) => tc(option.label, locale))
-      .join(' · ')
+      .map((option) => t(option.label))
   }
 })
 
 const rows = computed(() =>
   [...lookGroups, gradeGroup].map((group) => {
-    const option = directionOption(group.part, direction)
+    const { label, option } = shownOption(group.part, direction, colors)
     return {
       key: group.part,
-      title: tc(group.title, locale),
-      value: tc(option.label, locale),
-      option: option.id,
-      palette: option.palette
+      title: t(group.title),
+      value: t(label),
+      option
     }
   })
 )
@@ -69,24 +72,52 @@ const rowClass = (key: PickerKey) =>
       type="button"
       aria-haspopup="dialog"
       :aria-expanded="openPicker === 'camera'"
-      :class="rowClass('camera')"
+      :class="
+        cn(rowClass('camera'), 'max-sm:h-auto max-sm:min-h-12 max-sm:py-2')
+      "
       @click="emit('open', 'camera')"
     >
-      <span
-        class="grid h-7 w-10 shrink-0 place-items-center"
+      <CinematicOptionIcon
+        part="body"
+        :option="direction.body"
+        class="h-7 w-10 shrink-0"
         aria-hidden="true"
-      >
-        <Video class="size-5 text-primary-warm-white" />
-      </span>
+      />
       <span class="w-14 shrink-0 text-xs text-primary-warm-gray">
-        {{ tc('cinematic.section.camera', locale) }}
+        {{ t('cinematic.section.camera') }}
       </span>
-      <span class="min-w-0 flex-1 truncate text-sm">
-        <span class="font-semibold text-primary-warm-white">
+      <span
+        class="flex min-w-0 flex-1 items-center gap-2 max-sm:flex-col max-sm:items-start max-sm:gap-1"
+      >
+        <span
+          class="max-w-full min-w-0 truncate text-sm font-semibold text-primary-warm-white sm:flex-1"
+        >
           {{ camera.value }}
         </span>
-        <span v-if="camera.detail" class="text-primary-warm-gray">
-          · {{ camera.detail }}
+        <span
+          v-if="camera.specs.length"
+          class="flex max-w-full items-center gap-1 sm:shrink-0"
+          data-testid="camera-specs"
+        >
+          <span
+            v-for="(spec, index) in camera.specs"
+            :key="spec"
+            :class="
+              cn(
+                'truncate rounded-md bg-transparency-white-t8 px-1.5 py-0.5 text-xs text-primary-comfy-canvas tabular-nums',
+                index > 0 && 'max-sm:hidden'
+              )
+            "
+          >
+            {{ spec }}
+          </span>
+          <span
+            v-if="camera.specs.length > 1"
+            class="shrink-0 rounded-md bg-transparency-white-t8 px-1.5 py-0.5 text-xs text-primary-comfy-canvas tabular-nums sm:hidden"
+            aria-hidden="true"
+          >
+            +{{ camera.specs.length - 1 }}
+          </span>
         </span>
       </span>
       <ChevronRight
@@ -103,29 +134,7 @@ const rowClass = (key: PickerKey) =>
       :class="rowClass(row.key)"
       @click="emit('open', row.key)"
     >
-      <span
-        v-if="row.palette"
-        class="flex h-7 w-10 shrink-0 overflow-hidden rounded-md"
-        aria-hidden="true"
-      >
-        <span
-          v-for="(color, stripe) in row.palette"
-          :key="stripe"
-          class="h-full flex-1"
-          :style="{ backgroundColor: color }"
-        />
-      </span>
-      <span
-        v-else
-        class="grid h-7 w-10 shrink-0 place-items-center"
-        aria-hidden="true"
-      >
-        <CinematicDirectionIcon
-          :part="row.key"
-          :option="row.option"
-          class="size-7 text-primary-warm-white"
-        />
-      </span>
+      <CinematicDirectionThumb :option="row.option" class="h-7 w-10" />
       <span class="w-14 shrink-0 text-xs text-primary-warm-gray">
         {{ row.title }}
       </span>

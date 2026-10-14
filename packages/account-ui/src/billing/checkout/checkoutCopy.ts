@@ -65,6 +65,7 @@ export interface CheckoutCopy {
   readonly authenticationFailedDetail: string
   readonly pendingVerificationDetail: string
   readonly completeVerification: string
+  readonly cancelPaymentAndRetry: string
   readonly confirmPayment: string
   readonly startingToday: string
   readonly parkedCheckoutDetail: string
@@ -101,6 +102,20 @@ export interface CheckoutSuccessCopy {
   readonly promoApplied: (code: string) => string
   readonly promoRenews: (amount: string, date: string) => string
   readonly close: string
+}
+
+export interface CheckoutInviteCopy {
+  readonly title: string
+  readonly subtext: string
+  readonly placeholder: string
+  readonly sendInvites: string
+  readonly removeTag: string
+  readonly invalidEmailCount: (count: number) => string
+  readonly pendingInviteSingle: string
+  readonly pendingInviteCount: (count: number) => string
+  readonly seatLimitExceeded: (max: number, overage: number) => string
+  readonly invitedMessage: (emails: string, count: number) => string
+  readonly failedCount: (count: number) => string
 }
 
 export type CopySegment<Key extends string> =

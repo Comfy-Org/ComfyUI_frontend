@@ -5,8 +5,10 @@ import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
 import subgraphAsset from '@e2e/assets/subgraphs/agent-subgraph-with-two-promoted-widgets.json' with { type: 'json' }
 import {
+  BLANK_WORKFLOW,
   agentTest,
   bootAgentApp,
+  loadIntoBootWorkflow,
   mockAgentTurnApi,
   mockWorkflowPersistence
 } from '@e2e/fixtures/agentPanelFixture'
@@ -190,9 +192,6 @@ test.describe(
     }, testInfo) => {
       test.setTimeout(60_000)
       await page.setViewportSize({ width: 1920, height: 1280 })
-      await page.addInitScript(() => {
-        localStorage.setItem('Comfy.Agent.CrdtFollower', 'true')
-      })
       await bootAgentApp(page, true, {
         settings: { 'Comfy.VueNodes.Enabled': true },
         objectInfo: nodeDefs,
@@ -205,6 +204,7 @@ test.describe(
           await mockWorkflowPersistence(page, WORKFLOW_ID)
         }
       })
+      await loadIntoBootWorkflow(page, BLANK_WORKFLOW)
       const socket = await getWebSocket()
       const outboundFrames: string[] = []
       socket.onMessage((message) => outboundFrames.push(String(message)))

@@ -3,9 +3,9 @@ import { describe, expect, it } from 'vitest'
 import type {
   RouterWorkshopModel,
   WorkshopModel
-} from '../../config/models-catalogue'
-import { workshopModels } from '../../config/workshop-browse-content'
-import hubTemplates from '../../data/hubTemplates.json'
+} from '@/config/models-catalogue'
+import { workshopModels } from '@/config/workshop-browse-content'
+import hubTemplates from '@/data/hubTemplates.json'
 import { partnerModelFor, useCaseForTemplate } from './template-use-case'
 import type { HubTemplate } from './types'
 

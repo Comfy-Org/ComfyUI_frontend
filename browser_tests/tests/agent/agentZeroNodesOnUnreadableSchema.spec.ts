@@ -1,8 +1,6 @@
 import type { WebSocketRoute } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import { createI18n } from 'vue-i18n'
-
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import type { WorkflowListResponse } from '@comfyorg/ingest-types'
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
@@ -17,8 +15,10 @@ import {
 } from '@e2e/fixtures/agentPanelFixture'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
 /**
  * Regression test for PM-1343: the in-app agent used to report a turn as
@@ -71,14 +71,8 @@ const CATALOG: WidgetCatalog = {
 }
 const SEED: WorkflowJSON = { nodes: [], links: [] }
 
-const OPEN_AGENT_LABEL = enMessages.agent.entryButton
 const SEND_LABEL = enMessages.agent.send
 const STOP_LABEL = enMessages.agent.stop
-const COMPOSER_LABEL = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: { en: enMessages }
-}).global.t('agent.placeholder')
 
 test.describe(
   'Agent canvas recovers after an unreadable doc schema is repaired',
@@ -179,9 +173,7 @@ test.describe(
         'true',
         { timeout: 8_000 }
       )
-      await topbarActions
-        .getByRole('button', { name: OPEN_AGENT_LABEL, exact: true })
-        .click()
+      await new AgentPanel(page).open()
       await expect(panel).toBeVisible({ timeout: 30_000 })
 
       let savedName: string | undefined
@@ -238,7 +230,9 @@ test.describe(
       // trip (with its corrupted catch-up) actually completed.
       await expect.poll(() => socket !== null).toBe(true)
 
-      const composer = panel.getByRole('textbox', { name: COMPOSER_LABEL })
+      const composer = panel.getByRole('textbox', {
+        name: AGENT_COMPOSER_LABEL
+      })
       await composer.fill('Add a note to the canvas.')
       await panel.getByRole('button', { name: SEND_LABEL }).click()
       await expect(

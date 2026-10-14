@@ -3,15 +3,13 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { i18n } from '@/i18n'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
 
 import type { ReplyAsset } from '../../../utils/replyAssets'
 import ReplyAudioCard from './ReplyAudioCard.vue'
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 vi.mock(import('@/scripts/api'))
 
@@ -50,9 +48,7 @@ describe('ReplyAudioCard', () => {
 
   beforeEach(() => {
     vi.mocked(api.apiURL).mockImplementation((route) => `http://x/api${route}`)
-    vi.mocked(api.fetchApi)
-      .mockReset()
-      .mockResolvedValue(new Response(new Blob(['x'])))
+    vi.mocked(api.fetchApi).mockResolvedValue(new Response(new Blob(['x'])))
     vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:mock')
     vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
     anchorClick = vi
@@ -149,12 +145,9 @@ describe('ReplyAudioCard', () => {
     await userEvent.click(download)
 
     await waitFor(() =>
-      expect(useToastStore().add).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          detail: '1 download failed'
-        })
-      )
+      expect(useToast().error).toHaveBeenCalledWith('Error', {
+        description: '1 download failed'
+      })
     )
 
     await userEvent.click(download)

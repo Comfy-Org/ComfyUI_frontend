@@ -9,7 +9,9 @@ import { useBilledWorkspace } from '@/composables/useBilledWorkspace'
 import { useHostedCopy } from '@/composables/useHostedCopy'
 import { BILLING_WEB_ENV } from '@/config/env'
 import { useBillingEntry } from '@/entry/billingEntry'
+import { returnToHost } from '@/entry/returnToHost'
 import { useBilledScope } from '@/session/billingWebAuth'
+import { reportReturnClicked } from '@/telemetry/webReturnTelemetry'
 
 /** What the trip back should say, when the surface has a result to report. */
 const { returnResult } = defineProps<{ returnResult?: BillingReturn }>()
@@ -46,6 +48,11 @@ const returnLink = computed(() => {
     })
   }
 })
+
+function leaveForHost(href: string) {
+  reportReturnClicked('host_link')
+  returnToHost(href)
+}
 </script>
 
 <template>
@@ -66,6 +73,7 @@ const returnLink = computed(() => {
           v-if="returnLink"
           :href="returnLink.href"
           class="text-sm text-muted-foreground underline underline-offset-4 hover:text-base-foreground"
+          @click.prevent="leaveForHost(returnLink.href)"
         >
           {{ returnLink.label }}
         </a>

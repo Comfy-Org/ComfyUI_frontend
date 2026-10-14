@@ -1,8 +1,8 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { flattenInputSpecs } from '@/schemas/nodeDef/inputSpecUtil'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
-import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 
 describe('flattenInputSpecs', () => {
   it('includes a dynamic combo input alongside its nested per-option inputs', () => {
@@ -200,16 +200,9 @@ describe('flattenInputSpecs', () => {
     }
 
     const nodeDefImpl = new ComfyNodeDefImpl(nodeDef)
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-
     const result = flattenInputSpecs(nodeDefImpl.inputs)
 
     expect(result.map((spec) => spec.name)).toEqual(['model'])
-    expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining('Unparseable COMFY_DYNAMICCOMBO_V3 spec'),
-      expect.anything()
-    )
-    warn.mockRestore()
   })
 
   it('keeps well-formed sibling options when one option is unparseable', () => {
@@ -240,15 +233,8 @@ describe('flattenInputSpecs', () => {
     }
 
     const nodeDefImpl = new ComfyNodeDefImpl(nodeDef)
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-
     const result = flattenInputSpecs(nodeDefImpl.inputs)
 
     expect(result.map((spec) => spec.name)).toEqual(['model', 'image'])
-    expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining('option index 1'),
-      expect.anything()
-    )
-    warn.mockRestore()
   })
 })

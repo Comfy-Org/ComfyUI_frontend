@@ -1,14 +1,14 @@
 import { assert, describe, expect, it } from 'vitest'
 import { z } from 'astro/zod'
 
-import { workshopContractSchema } from '../src/config/workshop-contract'
-import { validateWorkshopInput } from '../src/config/workshop-json-schema'
+import { workshopContractSchema } from '@/config/workshop-contract'
+import { validateWorkshopInput } from '@/config/workshop-json-schema'
 import {
   parseRouterResponse,
   releaseRouterOutputs
-} from '../src/config/workshop-response'
+} from '@/config/workshop-response'
 import { adaptRouterModel } from './router-model-adapters'
-import contracts from '../src/content/workshop-router-contracts.json'
+import contracts from '@/content/workshop-router-contracts.json'
 
 const source = workshopContractSchema.parse({
   id: 'bria/image-edit-gen-fill',

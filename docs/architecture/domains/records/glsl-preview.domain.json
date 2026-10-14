@@ -1,0 +1,70 @@
+{
+  "id": "glsl-preview",
+  "capability": "GLSL preview",
+  "description": "Shader preview scheduling, uniform extraction, multipass rendering, and shared WebGL resource management. Graph and widget stores remain external host dependencies.",
+  "modules": [
+    { "path": "src/renderer/glsl/glslUtils.ts", "role": "domain" },
+    { "path": "src/renderer/glsl/glslUtils.test.ts", "role": "domain" },
+    { "path": "src/renderer/glsl/glslPreviewUtils.ts", "role": "application" },
+    { "path": "src/renderer/glsl/useGLSLPreview.ts", "role": "application" },
+    {
+      "path": "src/renderer/glsl/useGLSLPreview.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/glsl/glslPreviewStoreContract.test.ts",
+      "role": "application"
+    },
+    { "path": "src/renderer/glsl/useGLSLUniforms.ts", "role": "application" },
+    {
+      "path": "src/renderer/glsl/useGLSLUniforms.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/glsl/useGLSLUniforms.promotedRead.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/glsl/useGLSLRenderer.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/renderer/glsl/useGLSLRenderer.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/renderer/glsl/sharedGLContext.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/renderer/glsl/sharedGLContext.test.ts",
+      "role": "infrastructure"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Preview scheduling and uniform reads follow workflow outputs and promoted widgets",
+      "checks": [
+        "src/renderer/glsl/useGLSLPreview.test.ts",
+        "src/renderer/glsl/glslPreviewStoreContract.test.ts",
+        "src/renderer/glsl/useGLSLUniforms.promotedRead.test.ts"
+      ]
+    },
+    {
+      "name": "Shader rendering and shared context disposal preserve resource lifetimes",
+      "checks": [
+        "src/renderer/glsl/useGLSLRenderer.test.ts",
+        "src/renderer/glsl/sharedGLContext.test.ts"
+      ]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Existing Vue-node callers may continue importing preview internals during inventory.",
+    "Classification does not move graph, widget, output, or curve state into the preview capability."
+  ],
+  "deepImports": "inventory"
+}

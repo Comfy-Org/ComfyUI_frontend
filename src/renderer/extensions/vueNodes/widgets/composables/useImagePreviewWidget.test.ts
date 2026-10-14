@@ -133,11 +133,6 @@ describe('useImagePreviewWidget', () => {
   })
 
   describe('widget construction', () => {
-    it('returns a widget constructor function', () => {
-      const constructor = useImagePreviewWidget()
-      expect(typeof constructor).toBe('function')
-    })
-
     it('creates a widget with correct name and type', () => {
       const constructor = useImagePreviewWidget()
       const node = createMockNode()

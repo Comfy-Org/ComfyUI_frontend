@@ -3,7 +3,7 @@
     :class="
       cn(
         '@container relative flex flex-col gap-6 rounded-2xl border border-interface-stroke bg-modal-panel-background px-6 py-5',
-        inactivePlan && 'text-muted'
+        inactivePlan && 'text-muted-foreground'
       )
     "
   >
@@ -19,10 +19,10 @@
     </Button>
 
     <div class="flex flex-col gap-1">
-      <div class="text-sm text-muted">
+      <div class="text-sm text-muted-foreground">
         {{ $t('subscription.totalCredits') }}
       </div>
-      <Skeleton v-if="isLoadingBalance" width="8rem" height="2rem" />
+      <Skeleton v-if="isLoadingBalance" class="h-8 w-32" />
       <div v-else class="flex items-baseline gap-2">
         <i
           :class="
@@ -33,7 +33,7 @@
           "
         />
         <span class="text-2xl leading-none font-bold">{{ displayTotal }}</span>
-        <span class="text-sm text-muted @max-[300px]:hidden">{{
+        <span class="text-sm text-muted-foreground @max-[300px]:hidden">{{
           $t('subscription.remaining')
         }}</span>
       </div>
@@ -49,7 +49,9 @@
         />
         <div class="flex flex-col gap-1">
           <span class="text-base-foreground">{{ emptyStateNotice.title }}</span>
-          <span class="text-muted">{{ emptyStateNotice.description }}</span>
+          <span class="text-muted-foreground">{{
+            emptyStateNotice.description
+          }}</span>
         </div>
       </div>
 
@@ -59,7 +61,7 @@
       >
         <div class="flex items-center justify-between text-sm">
           <span class="text-text-primary">{{ allowanceLabel }}</span>
-          <span class="text-muted">
+          <span class="text-muted-foreground">
             {{ refillsLabel }}
           </span>
         </div>
@@ -79,14 +81,12 @@
         <div class="flex items-center justify-between gap-2 text-sm">
           <Skeleton
             v-if="isLoadingBalance"
-            class="@max-[300px]:hidden"
-            width="5rem"
-            height="1rem"
+            class="h-4 w-20 @max-[300px]:hidden"
           />
-          <span v-else class="text-muted @max-[300px]:hidden">
+          <span v-else class="text-muted-foreground @max-[300px]:hidden">
             {{ $t('subscription.creditsUsed', { used: usedDisplay }) }}
           </span>
-          <Skeleton v-if="isLoadingBalance" width="9rem" height="1rem" />
+          <Skeleton v-if="isLoadingBalance" class="h-4 w-36" />
           <span
             v-else
             class="flex items-center gap-1 font-bold text-text-primary"
@@ -121,14 +121,11 @@
           <span class="flex items-center gap-1 text-text-primary">
             {{ $t('subscription.additionalCredits') }}
             <Button
-              v-tooltip="{
-                value: $t('subscription.additionalCreditsTooltip'),
-                showDelay: 300
-              }"
+              :tooltip="$t('subscription.additionalCreditsTooltip')"
               variant="muted-textonly"
               size="icon-sm"
               :aria-label="$t('subscription.additionalCreditsInfo')"
-              class="text-muted"
+              class="text-muted-foreground"
             >
               <i class="icon-[lucide--info] size-4" />
             </Button>
@@ -139,7 +136,7 @@
               {{ $t('subscription.additionalCreditsInUse') }}
             </span>
           </span>
-          <Skeleton v-if="isLoadingBalance" width="3rem" height="1rem" />
+          <Skeleton v-if="isLoadingBalance" class="h-4 w-12" />
           <span
             v-else
             class="flex items-center gap-1 font-bold text-text-primary"
@@ -148,7 +145,10 @@
             {{ displayPrepaid }}
           </span>
         </div>
-        <span class="text-sm text-muted @max-[300px]:hidden">
+        <span
+          v-if="!isDurationUnknown"
+          class="text-sm text-muted-foreground @max-[300px]:hidden"
+        >
           {{ usedAfterAllowanceLabel }}
         </span>
       </div>
@@ -161,14 +161,11 @@
           <span class="flex items-center gap-1">
             {{ $t('subscription.additionalCredits') }}
             <Button
-              v-tooltip="{
-                value: $t('subscription.additionalCreditsTooltip'),
-                showDelay: 300
-              }"
+              :tooltip="$t('subscription.additionalCreditsTooltip')"
               variant="muted-textonly"
               size="icon-sm"
               :aria-label="$t('subscription.additionalCreditsInfo')"
-              class="text-muted"
+              class="text-muted-foreground"
             >
               <i class="icon-[lucide--info] size-4" />
             </Button>
@@ -196,6 +193,7 @@
               'bg-interface-menu-component-surface-selected text-text-primary'
           )
         "
+        :data-dd-action-name="BILLING_ACTION_NAME.addCreditsTile"
         @click="handleAddCredits"
       >
         {{ $t('subscription.addCredits') }}
@@ -214,11 +212,13 @@
 </template>
 
 <script setup lang="ts">
+import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
 import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener } from '@vueuse/core'
-import Skeleton from 'primevue/skeleton'
 import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 
 import { formatCredits } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
@@ -235,10 +235,11 @@ import {
 import { computeMonthlyUsage } from '@/platform/cloud/subscription/utils/creditsProgress'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
 import { usePendingTopup } from '@/composables/billing/usePendingTopup'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useCustomerEventsService } from '@/services/customerEventsService'
-import { useDialogService } from '@/services/dialogService'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 
 const { zeroState = false, inactivePlan } = defineProps<{
   /** Forces the zero-credit display (e.g. unsubscribed / member view). */
@@ -267,9 +268,9 @@ const {
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 const { showPricingTable } = useSubscriptionDialog()
 const customerEventsService = useCustomerEventsService()
-const dialogService = useDialogService()
+const { showTopUpCreditsDialog } = useBillingDialogs()
 const telemetry = useTelemetry()
-const { pendingTopupNeedsRefresh, isPendingTopupCompleted } = usePendingTopup()
+const { pendingTopupNeedsRefresh, consumeCompletedTopup } = usePendingTopup()
 
 const tierKey = computed(() => {
   const tier = subscription.value?.tier
@@ -281,7 +282,19 @@ const isAnnualBilling = computed(
   () => subscription.value?.duration === 'ANNUAL'
 )
 
+// Paid plan with no reported duration: the allowance cycle is unknown, so no
+// total is shown rather than guessing monthly. Free has no duration by design,
+// and Founders Edition is a fixed monthly grant.
+const isDurationUnknown = computed(
+  () =>
+    !!subscription.value?.tier &&
+    !subscription.value.duration &&
+    tierKey.value !== 'free' &&
+    tierKey.value !== 'founder'
+)
+
 const creditPoolTotalCredits = computed<number | null>(() => {
+  if (isDurationUnknown.value) return null
   const monthlyCredits =
     currentTeamCreditStop.value?.credits_monthly ??
     (isSalesManagedTier(subscription.value?.tier)
@@ -433,11 +446,23 @@ const isMonthlyDepleted = computed(
     balance.value != null &&
     monthlyBonusCreditsValue.value <= 0
 )
+// Depletion needs only the remaining allowance, not its cycle, so the
+// cycle-neutral signals still work when the duration is unknown.
+const isAllowanceDepleted = computed(
+  () =>
+    isMonthlyDepleted.value ||
+    (isDurationUnknown.value &&
+      isCloud &&
+      showBreakdown.value &&
+      !isLoadingBalance.value &&
+      balance.value != null &&
+      monthlyBonusCreditsValue.value <= 0)
+)
 const isOutOfCredits = computed(
-  () => isMonthlyDepleted.value && prepaidCreditsValue.value <= 0
+  () => isAllowanceDepleted.value && prepaidCreditsValue.value <= 0
 )
 const isSpendingAdditional = computed(
-  () => isMonthlyDepleted.value && prepaidCreditsValue.value > 0
+  () => isAllowanceDepleted.value && prepaidCreditsValue.value > 0
 )
 
 const emptyStateNotice = computed(() => {
@@ -488,8 +513,15 @@ async function refreshCredits() {
       customerEventsService.error.value ?? 'Fetching customer events failed'
     )
   }
-  if (isPendingTopupCompleted(response.events)) {
+  const completedTopup = consumeCompletedTopup(response.events)
+  if (completedTopup) {
     telemetry?.trackApiCreditTopupSucceeded()
+    telemetry?.trackBillingEvent({
+      operation: 'topup',
+      stage: 'succeeded',
+      outcome: 'success',
+      duration_ms: Date.now() - completedTopup.startedAtMs
+    })
   }
 }
 
@@ -525,7 +557,9 @@ const handleRefresh = wrapWithErrorHandlingAsync(refreshLatestCredits)
 
 function handleAddCredits() {
   telemetry?.trackAddApiCreditButtonClicked({ source: 'credits_panel' })
-  void dialogService.showTopUpCreditsDialog()
+  void showTopUpCreditsDialog({
+    source: paymentIntentSourceForAddCreditsClick('credits_panel')
+  })
 }
 
 function handleUpgradeToAddCredits() {

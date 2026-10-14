@@ -24,13 +24,22 @@ describe('useLitegraphService().getCanvasCenter', () => {
     expect(center).toEqual([0, 0])
   })
 
-  it('returns the visible-area centre once the canvas is ready', () => {
-    app.canvas.ds.visible_area.set([10, 20, 200, 100])
+  it.for<{
+    dpr: number
+    visibleArea: [number, number, number, number]
+    center: [number, number]
+  }>([
+    { dpr: 1, visibleArea: [10, 20, 200, 100], center: [110, 70] },
+    { dpr: 2, visibleArea: [0, 0, 800, 600], center: [400, 300] }
+  ])(
+    'returns the CSS-pixel visible-area centre at DPR $dpr',
+    ({ dpr, visibleArea, center }) => {
+      app.canvas.dpr = dpr
+      app.canvas.ds.visible_area.set(visibleArea)
 
-    const center = useLitegraphService().getCanvasCenter()
-
-    expect(center).toEqual([110, 70])
-  })
+      expect(useLitegraphService().getCanvasCenter()).toEqual(center)
+    }
+  )
 })
 
 describe('useLitegraphService().registerNodeDef slot text', () => {

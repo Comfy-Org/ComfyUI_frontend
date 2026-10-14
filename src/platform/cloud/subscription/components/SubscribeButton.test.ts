@@ -1,6 +1,6 @@
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { getActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -14,6 +14,7 @@ import SubscribeButton from './SubscribeButton.vue'
 
 vi.mock(import('@/platform/telemetry'))
 vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/composables/billing/useSubscriptionPaywall'))
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
 function renderComponent() {
@@ -37,10 +38,6 @@ function renderComponent() {
 }
 
 describe('SubscribeButton', () => {
-  beforeEach(() => {
-    vi.mocked(useTelemetry())!.trackSubscription.mockClear()
-  })
-
   it('names its own surface on the subscribe event', async () => {
     renderComponent()
 

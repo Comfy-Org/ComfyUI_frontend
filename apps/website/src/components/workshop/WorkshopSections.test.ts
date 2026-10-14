@@ -2,10 +2,10 @@ import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen, within } from '@testing-library/vue'
 import { afterEach, describe, expect, it } from 'vitest'
 
-import type { UseCase, WorkshopModel } from '../../config/models-catalogue'
-import type { TranslationKey } from '../../i18n/translations'
+import type { UseCase, WorkshopModel } from '@/config/models-catalogue'
+import type { TranslationKey } from '@/i18n/translations'
 import WorkshopSections from './WorkshopSections.vue'
-import { lastShelf } from '../../lib/workshop/shelf-memory'
+import { lastShelf } from '@/lib/workshop/shelf-memory'
 
 afterEach(() => {
   sessionStorage.clear()
@@ -85,7 +85,7 @@ describe('WorkshopSections', () => {
       const row = within(screen.getByTestId('section-generate-videos'))
 
       // userEvent.click cannot express a non-primary button or click modifier.
-      // eslint-disable-next-line testing-library/prefer-user-event
+      // oxlint-disable-next-line testing-library/prefer-user-event
       await fireEvent.click(row.getByRole('link', { name: /\ba\b/i }), event)
 
       expect(lastShelf('/models/a/')).toBeUndefined()

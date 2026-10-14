@@ -2,7 +2,7 @@ import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { ref } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useNodePreviewAndDrag } from './useNodePreviewAndDrag'
 import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 

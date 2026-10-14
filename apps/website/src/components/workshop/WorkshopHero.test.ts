@@ -30,6 +30,24 @@ describe('WorkshopHero', () => {
     expect(screen.queryByText('Browse')).toBeNull()
   })
 
+  it('reserves room for every subtitle it may switch to, hidden from readers', () => {
+    render(WorkshopHero, {
+      props: {
+        heading: 'What will you make next?',
+        subtitle: 'Short',
+        subtitleSpace: ['Short', 'A much longer subtitle for another tab']
+      }
+    })
+
+    const space = screen.getAllByTestId('hero-subtitle-space')
+    expect(space.map((line) => line.textContent)).toEqual([
+      'Short',
+      'A much longer subtitle for another tab'
+    ])
+    for (const line of space)
+      expect(line).toHaveAttribute('aria-hidden', 'true')
+  })
+
   // The live catalogue puts its tabs where the eyebrow goes, so a section that
   // fills the slot replaces the line rather than sitting under it.
   it('gives the eyebrow line up to whatever fills its slot', () => {
