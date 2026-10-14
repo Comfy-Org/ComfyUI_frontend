@@ -70,6 +70,18 @@ describe('useDeploymentPickStore', () => {
     })
   })
 
+  it('keeps Cloud as the boot source when an excluded account later gets a listing', async () => {
+    mockWorkspaceApi.listDeployments
+      .mockRejectedValueOnce(new WorkspaceApiError('Outside rollout', 403))
+      .mockResolvedValueOnce(listing)
+    const store = useDeploymentPickStore()
+    await store.loadOnce()
+    expect(store.bootDeployment).toBeNull()
+    await store.load()
+    expect(store.bootDeployment).toBeNull()
+    expect(store.changeSinceBoot).toBe('deployment')
+  })
+
   it('loads the listing and knows which deployment is picked', async () => {
     mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
     const store = useDeploymentPickStore()

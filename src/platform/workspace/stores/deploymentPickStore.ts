@@ -125,8 +125,8 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
   const isSwitching = computed(() => state.value.phase === 'switching')
   /**
    * The deployment this page booted on, from the first listing that
-   * answered: null for Comfy Cloud (a gone pick included), undefined before
-   * any listing answered. The editor's node catalog is that deployment's
+   * answered: null for Comfy Cloud (a gone pick or rollout refusal included),
+   * undefined before the model source is known. The editor's node catalog is that deployment's
    * Release as it was at boot, since a pick or a workspace switch reloads
    * the page.
    */
@@ -183,6 +183,9 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     lastApplied = request
     dispatch(event)
     if (event.type === 'loaded') noteListing(event.gonePickedDeploymentId)
+    if (event.type === 'loadRefused' && bootDeployment.value === undefined) {
+      bootDeployment.value = null
+    }
   }
 
   function keepPickGone(gonePickedDeploymentId: string | null) {

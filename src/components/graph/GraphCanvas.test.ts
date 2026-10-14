@@ -664,8 +664,35 @@ describe('deployment model options at startup', () => {
     vi.spyOn(useDeploymentPickStore(), 'loadOnce').mockReturnValue(listing)
     await mountGraphCanvas()
     expect(app.setup).not.toHaveBeenCalled()
+    useDeploymentPickStore().bootDeployment = null
     finishListing()
     await vi.waitFor(() => expect(app.setup).toHaveBeenCalledOnce())
+  })
+
+  it('stops startup after a failed lookup even if the menu retries successfully', async () => {
+    const store = useDeploymentPickStore()
+    vi.spyOn(store, 'loadOnce').mockResolvedValue()
+    await mountGraphCanvas()
+    expect(app.setup).not.toHaveBeenCalled()
+    expect(getActivePinia()?.state.value.toast?.toasts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'error',
+          title: 'deploymentSwitcher.lookupTimedOut'
+        })
+      ])
+    )
+    store.bootDeployment = {
+      deployment_id: 'dep-1',
+      release_id: 'r-1',
+      build_id: 'b-1',
+      build_name: 'Build',
+      release_version: 1,
+      status: 'ready',
+      created_at: ''
+    }
+    await nextTick()
+    expect(app.setup).not.toHaveBeenCalled()
   })
 
   it('does not wait for a deployment lookup on a local build', async () => {
@@ -684,6 +711,14 @@ describe('deployment model options at startup', () => {
     )
     await mountGraphCanvas()
     await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_BACKSTOP_MS)
+    expect(getActivePinia()?.state.value.toast?.toasts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'error',
+          title: 'deploymentSwitcher.lookupTimedOut'
+        })
+      ])
+    )
     expect(app.setup).not.toHaveBeenCalled()
     expect(mocks.initializeWorkflow).not.toHaveBeenCalled()
   })
