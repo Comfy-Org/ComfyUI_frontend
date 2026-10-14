@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { effectScope, nextTick } from 'vue';
-import type { EffectScope } from 'vue';
+import { effectScope, nextTick } from 'vue'
+import type { EffectScope } from 'vue'
 
 import {
   authenticatedRemoteConfigState,
