@@ -4,14 +4,19 @@ import { ac } from './catalogue-apps'
 
 describe('app catalogue copy', () => {
   it.for([
-    { locale: 'en', names: ['Cinematic Studio', 'Re-shoot a video'] },
-    { locale: 'zh-CN', names: ['电影工作室', '重拍视频'] }
-  ] as const)(
-    'lists the two apps that open today in $locale',
-    ({ locale, names }) => {
-      expect([ac('studioName', locale), ac('reshootName', locale)]).toEqual(
-        names
-      )
+    {
+      locale: 'en',
+      names: ['Cinematic Studio', 'Re-shoot a video', 'Relight']
+    },
+    {
+      locale: 'zh-CN',
+      names: ['电影工作室', '重拍视频', '重新布光']
     }
-  )
+  ] as const)('names every app in $locale', ({ locale, names }) => {
+    expect([
+      ac('studioName', locale),
+      ac('reshootName', locale),
+      ac('relightName', locale)
+    ]).toEqual(names)
+  })
 })

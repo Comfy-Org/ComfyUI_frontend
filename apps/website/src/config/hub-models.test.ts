@@ -19,7 +19,7 @@ describe('hub model addresses', () => {
       `${HUB_WORKFLOWS_PATH}/`,
       `${HUB_APPS_PATH}/`
     ])
-    expect([routes.cinematicStudio, routes.reshoot]).toEqual(
+    expect([routes.cinematicStudio, routes.relight, routes.reshoot]).toEqual(
       hubAppSlugs.map(hubAppHref)
     )
   })
