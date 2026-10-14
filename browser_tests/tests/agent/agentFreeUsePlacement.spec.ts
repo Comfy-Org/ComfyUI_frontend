@@ -5,10 +5,7 @@ import type { BillingStatusResponse } from '@comfyorg/ingest-types'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import { DEFAULT_BILLING_STATUS } from '@e2e/fixtures/utils/cloudBillingMocks'
-import {
-  drainHostTelemetry,
-  hostTelemetryFixture
-} from '@e2e/fixtures/hostTelemetryFixture'
+import { hostTelemetryFixture } from '@e2e/fixtures/hostTelemetryFixture'
 
 const FLAG = 'agent-free-use-message-placement'
 const PLACEMENT = 'near-composer'
@@ -114,8 +111,6 @@ test.describe(
             ).length
         )
         .toBe(1)
-      await drainHostTelemetry(page, hostTelemetry)
-
       await expect(
         agentPanel.root.getByRole('note', { name: 'Free use notice' })
       ).toBeHidden()

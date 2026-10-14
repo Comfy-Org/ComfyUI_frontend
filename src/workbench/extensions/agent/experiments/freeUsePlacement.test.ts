@@ -196,9 +196,9 @@ describe('useFreeUsePlacement', () => {
     const telemetry = useTelemetry()!
     vi.mocked(telemetry.trackAgentFreeUseExposure).mockClear()
 
-    panelStore.isOpen = false
+    panelStore.close('close_button')
     await nextTick()
-    panelStore.isOpen = true
+    panelStore.open()
     await nextTick()
 
     expect(telemetry.trackAgentFreeUseExposure).toHaveBeenCalledTimes(1)

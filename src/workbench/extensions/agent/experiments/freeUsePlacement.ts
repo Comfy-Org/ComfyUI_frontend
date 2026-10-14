@@ -46,6 +46,7 @@ export function useFreeUsePlacement() {
     if (panelStore.reportedFreeUseExposure) return
     const telemetry = useTelemetry()
     if (!telemetry) return
+    panelStore.reportedFreeUseExposure = true
     telemetry.trackAgentFreeUseExposure({
       placement: served,
       [`$feature/${FREE_USE_PLACEMENT_FLAG}`]: served
