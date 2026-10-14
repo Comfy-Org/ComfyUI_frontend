@@ -9,6 +9,7 @@ import ModelLaunchFaqSection from './ModelLaunchFaqSection.vue'
 import ModelLaunchGallerySection from './ModelLaunchGallerySection.vue'
 import ModelLaunchHeroSection from './ModelLaunchHeroSection.vue'
 import ModelLaunchHighlightSection from './ModelLaunchHighlightSection.vue'
+import ModelLaunchListSection from './ModelLaunchListSection.vue'
 import ModelLaunchPricingSection from './ModelLaunchPricingSection.vue'
 import ModelLaunchReviewsSection from './ModelLaunchReviewsSection.vue'
 import ModelLaunchShowcaseSection from './ModelLaunchShowcaseSection.vue'
@@ -111,6 +112,16 @@ const sectionOrder = page.sectionOrder ?? DEFAULT_SECTION_ORDER
             <ModelLaunchAudioGallerySection
               client:visible
               audioGallery={page.audioGallery}
+              locale={locale}
+            />
+          )
+        )
+      case 'list':
+        return (
+          page.list && (
+            <ModelLaunchListSection
+              client:visible
+              list={page.list}
               locale={locale}
             />
           )

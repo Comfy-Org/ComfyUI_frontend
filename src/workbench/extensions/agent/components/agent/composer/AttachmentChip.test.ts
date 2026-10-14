@@ -20,6 +20,7 @@ function renderChip(props: {
   mediaUrl?: string
   mediaKind?: MediaKind
   uploading?: boolean
+  validationError?: 'invalid-video'
 }) {
   const rendered = render(AttachmentChip, {
     props,
@@ -411,5 +412,35 @@ describe('AttachmentChip', () => {
       screen.getByRole('status', { name: 'Uploading' })
     ).toBeInTheDocument()
     expect(screen.queryByRole('img')).not.toBeInTheDocument()
+  })
+
+  it('explains an invalid video on hover and keyboard focus and remains removable', async () => {
+    const user = userEvent.setup()
+    const { emitted } = renderChip({
+      name: 'bad.mov',
+      validationError: 'invalid-video'
+    })
+    const status = screen.getByRole('status')
+    const errorMessage =
+      'bad.mov isn’t a valid video file. Remove it and try another file.'
+    expect(screen.queryByText('bad.mov')).not.toBeInTheDocument()
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+    expect(status).toHaveAccessibleName(errorMessage)
+    expect(
+      screen.queryByRole('button', { name: 'Preview bad.mov' })
+    ).not.toBeInTheDocument()
+    await user.hover(status)
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(errorMessage)
+    await user.unhover(status)
+    await waitFor(() =>
+      expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+    )
+    await user.tab()
+    expect(status).toHaveFocus()
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(errorMessage)
+    await user.tab()
+    expect(screen.getByRole('button', { name: 'Remove bad.mov' })).toHaveFocus()
+    await user.keyboard('{Enter}')
+    expect(emitted('remove')).toHaveLength(1)
   })
 })

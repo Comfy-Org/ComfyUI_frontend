@@ -1,4 +1,4 @@
-import type { MediaType } from '@/utils/formatUtil'
+import type { MediaType, VideoExtension } from '@/utils/formatUtil'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
 const AGENT_ATTACH_MEDIA_KINDS = [
@@ -53,4 +53,54 @@ export function isAgentAttachable(file: File): boolean {
 
 export function attachableClipboardFiles(clipboard: DataTransfer): File[] {
   return Array.from(clipboard.files).filter(isAgentAttachable)
+}
+
+function bytesMatch(bytes: Uint8Array, offset: number, expected: string) {
+  return expected
+    .split('')
+    .every((char, index) => bytes[offset + index] === char.charCodeAt(0))
+}
+
+type VideoContainerCheck = (bytes: Uint8Array) => boolean
+
+const ISO_BASE_MEDIA_BOXES = [
+  'ftyp',
+  'moov',
+  'mdat',
+  'wide',
+  'free',
+  'skip',
+  'pnot'
+] as const
+const EBML_MAGIC = '\x1a\x45\xdf\xa3'
+
+function isIsoBaseMedia(bytes: Uint8Array) {
+  return ISO_BASE_MEDIA_BOXES.some((box) => bytesMatch(bytes, 4, box))
+}
+
+function isEbml(bytes: Uint8Array) {
+  return bytesMatch(bytes, 0, EBML_MAGIC)
+}
+
+const VIDEO_CONTAINER_CHECKS: Partial<Record<string, VideoContainerCheck>> = {
+  mp4: isIsoBaseMedia,
+  m4v: isIsoBaseMedia,
+  mov: isIsoBaseMedia,
+  webm: isEbml,
+  mkv: isEbml,
+  avi: (bytes) => bytesMatch(bytes, 0, 'RIFF') && bytesMatch(bytes, 8, 'AVI ')
+} satisfies Record<VideoExtension, VideoContainerCheck>
+
+export function isValidAgentAttachment(file: File): boolean | Promise<boolean> {
+  const extension = file.name.split('.').pop()?.toLowerCase() ?? ''
+  const check = Object.hasOwn(VIDEO_CONTAINER_CHECKS, extension)
+    ? VIDEO_CONTAINER_CHECKS[extension]
+    : undefined
+  if (!check) return true
+
+  return file
+    .slice(0, 12)
+    .arrayBuffer()
+    .then((buffer) => check(new Uint8Array(buffer)))
+    .catch(() => false)
 }
