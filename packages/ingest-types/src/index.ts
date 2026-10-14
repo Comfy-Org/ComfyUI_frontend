@@ -874,6 +874,7 @@ export type {
   InterruptJobResponses,
   JobAssetsResponse,
   JobCancelResponse,
+  JobDeployment,
   JobDetailResponse,
   JobEntry,
   JobOutputAsset,
