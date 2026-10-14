@@ -3,6 +3,9 @@ import { expect } from '@playwright/test'
 import { test } from './fixtures/blockExternalMedia'
 import { waitForIsland } from './fixtures/islands'
 
+const shareImage =
+  'https://media.comfy.org/website/open-source-higgsfield/og-open-source-higgsfield.png'
+
 const locales = [
   {
     prefix: '',
@@ -14,7 +17,8 @@ const locales = [
     submit: 'Submit your entry',
     register: 'Register',
     question: 'Do I have to attend a Build Night?',
-    answer: 'The online competition and the Build Nights are separate.'
+    answer: 'The online competition and the Build Nights are separate.',
+    shareAlt: 'Open Source Higgsfield: $25,000 in prizes'
   },
   {
     prefix: '/zh-CN',
@@ -26,7 +30,8 @@ const locales = [
     submit: '提交作品',
     register: '报名',
     question: '必须参加构建之夜线下活动吗？',
-    answer: '线上比赛与构建之夜各自独立。'
+    answer: '线上比赛与构建之夜各自独立。',
+    shareAlt: 'Open Source Higgsfield：25,000 美元奖品'
   }
 ] as const
 
@@ -36,6 +41,15 @@ for (const locale of locales) {
   }) => {
     const base = `${locale.prefix}/open-source-higgsfield/`
     await page.goto(base)
+    await expect(page.locator('meta[property="og:image"]')).toHaveAttribute(
+      'content',
+      shareImage
+    )
+    for (const key of ['og:image:alt', 'twitter:image:alt']) {
+      await expect(
+        page.locator(`meta[property="${key}"], meta[name="${key}"]`)
+      ).toHaveAttribute('content', locale.shareAlt)
+    }
     await expect(
       page.getByRole('link', { name: locale.submit }).first()
     ).toHaveAttribute('href', 'https://form.typeform.com/to/V1dSQrkS')

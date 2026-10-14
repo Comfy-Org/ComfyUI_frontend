@@ -5810,6 +5810,7 @@
     "prizeFluxBody": "FLUX3 must be the core video model in the workflow to qualify.",
     "totalPrize": "$25,000",
     "totalPrizeCaption": "total worth in prizes",
+    "shareImageAlt": "Open Source Higgsfield: $25,000 in prizes",
     "gpu": "GeForce RTX 5090",
     "details": "The details",
     "timeline": "Timeline",
