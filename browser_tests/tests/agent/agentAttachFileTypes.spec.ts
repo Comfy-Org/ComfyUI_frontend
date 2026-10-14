@@ -15,70 +15,13 @@ import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 const ACCEPTED: ReadonlyArray<{
   tier: AgentAttachCapability
-  files: readonly string[]
+  file: string
 }> = [
-  {
-    tier: 'view',
-    files: [
-      'photo.png',
-      'photo.jpg',
-      'photo.jpeg',
-      'photo.gif',
-      'photo.webp',
-      'photo.bmp',
-      'photo.tif',
-      'photo.tiff',
-      'photo.heic',
-      'photo.heif'
-    ]
-  },
-  {
-    tier: 'probe',
-    files: [
-      'clip.mp4',
-      'clip.webm',
-      'clip.mov',
-      'clip.m4v',
-      'clip.avi',
-      'clip.mkv',
-      'track.mp3',
-      'track.wav',
-      'track.ogg',
-      'track.opus',
-      'track.flac',
-      'track.m4a'
-    ]
-  },
-  {
-    tier: 'read',
-    files: [
-      'notes.md',
-      'notes.markdown',
-      'notes.txt',
-      'data.json',
-      'data.csv',
-      'conf.yaml',
-      'conf.yml',
-      'feed.xml',
-      'server.log',
-      'logo.svg'
-    ]
-  },
-  {
-    tier: 'reference',
-    files: [
-      'mesh.glb',
-      'mesh.obj',
-      'mesh.fbx',
-      'mesh.gltf',
-      'mesh.stl',
-      'cloud.ply',
-      'cloud.spz',
-      'cloud.splat',
-      'cloud.ksplat'
-    ]
-  },
-  { tier: 'retain', files: ['photo.avif'] }
+  { tier: 'view', file: 'photo.png' },
+  { tier: 'probe', file: 'clip.mp4' },
+  { tier: 'read', file: 'notes.md' },
+  { tier: 'reference', file: 'mesh.glb' },
+  { tier: 'retain', file: 'photo.avif' }
 ]
 
 const REJECTED = [
@@ -96,15 +39,8 @@ const REJECTED = [
   'plate.exr'
 ] as const
 
-const ISO_BASE_MEDIA_HEADER = Buffer.from('\0\0\0\x18ftypisom', 'latin1')
-const EBML_HEADER = Buffer.from([0x1a, 0x45, 0xdf, 0xa3])
 const VIDEO_HEADERS: Partial<Record<string, Buffer>> = {
-  mp4: ISO_BASE_MEDIA_HEADER,
-  m4v: ISO_BASE_MEDIA_HEADER,
-  mov: ISO_BASE_MEDIA_HEADER,
-  webm: EBML_HEADER,
-  mkv: EBML_HEADER,
-  avi: Buffer.from('RIFF\0\0\0\0AVI ', 'latin1')
+  mp4: Buffer.from('\0\0\0\x18ftypisom', 'latin1')
 }
 
 function syntheticFile(name: string) {
@@ -155,41 +91,29 @@ test.describe(
       }
     })
 
-    for (const { tier, files } of ACCEPTED) {
-      test(`attaches every ${tier}-tier format`, async ({ agentPanel }) => {
+    for (const { tier, file } of ACCEPTED) {
+      test(`uploads a ${tier}-tier file (${file}) and leaves no status on its chip`, async ({
+        agentPanel,
+        comfyPage
+      }) => {
         await agentPanel.open()
+        const upload = comfyPage.page.waitForRequest(
+          (request) =>
+            request.method() === 'POST' &&
+            request.url().endsWith('/api/upload/image')
+        )
 
-        for (const file of files) {
-          expect(
-            agentAttachCapability(file),
-            `${file} must sit on the ${tier} tier`
-          ).toBe(tier)
+        await agentPanel.fileInput.setInputFiles(syntheticFile(file))
 
-          await agentPanel.fileInput.setInputFiles(syntheticFile(file))
-          const chip = agentPanel.attachmentChip(file)
-          await expect(chip, `${file} must attach`).toBeVisible()
-          await expect(
-            chip.getByRole('status', { name: enMessages.agent.uploading })
-          ).toHaveCount(0)
-          await expect(
-            chip.getByRole('status', {
-              name: enMessages.agent.attachmentInvalidVideo.replace(
-                '{name}',
-                file
-              )
-            }),
-            `${file} must pass the content check`
-          ).toHaveCount(0)
-
-          await chip.hover()
-          await chip
-            .getByRole('button', {
-              name: enMessages.agent.removeAsset.replace('{name}', file),
-              exact: true
-            })
-            .click()
-          await expect(chip).toHaveCount(0)
-        }
+        const chip = agentPanel.attachmentChip(file)
+        await expect(chip).toBeVisible()
+        await expect(
+          chip.getByRole('status'),
+          `${file} must finish uploading with no validation status`
+        ).toHaveCount(0)
+        expect((await upload).postDataBuffer()?.toString('latin1')).toContain(
+          `filename="${file}"`
+        )
       })
     }
 

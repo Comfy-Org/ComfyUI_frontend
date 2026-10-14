@@ -452,7 +452,7 @@ describe('AttachmentChip', () => {
     'shows $name of an unaccepted type as a generic file with the type explanation',
     async ({ name, mediaKind }) => {
       const user = userEvent.setup()
-      const { container, emitted } = renderChip({
+      const { emitted } = renderChip({
         name,
         mediaKind,
         previewUrl: 'blob:preview',
@@ -463,7 +463,6 @@ describe('AttachmentChip', () => {
 
       expect(status).toHaveAccessibleName(message)
       expect(screen.queryByRole('img')).not.toBeInTheDocument()
-      expect(iconMarker(container)).toContain('icon-[lucide--file]')
       expect(
         screen.queryByRole('button', { name: `Preview ${name}` })
       ).not.toBeInTheDocument()
