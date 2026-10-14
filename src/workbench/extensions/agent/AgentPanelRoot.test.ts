@@ -1,5 +1,6 @@
 import { fetchRequests, respondToFetch } from '@comfyorg/test-utils/fetch'
 import { fromPartial } from '@total-typescript/shoehorn'
+import { setImmediate } from 'node:timers/promises'
 
 import type {
   AgentThreadListResponse,
@@ -2378,8 +2379,10 @@ function dispatchDrag(
   return event.defaultPrevented
 }
 
+const mp4Header = '\0\0\0\x18ftyp'
+
 function fileOfSize(name: string, size: number, type: string): File {
-  const file = new File(['x'], name, { type })
+  const file = new File([mp4Header], name, { type })
   Object.defineProperty(file, 'size', { value: size })
   return file
 }
@@ -3168,7 +3171,7 @@ describe('AgentPanelRoot attach flow', () => {
 
     expect(
       dispatchDrag(screen.getByRole('textbox'), 'drop', {
-        files: [new File(['x'], name, { type })]
+        files: [new File([mp4Header], name, { type })]
       })
     ).toBe(true)
 
@@ -3284,6 +3287,56 @@ describe('AgentPanelRoot attach flow', () => {
     )
     await nextTick()
     expect(telemetry.trackAgentAttachButtonClicked).not.toHaveBeenCalled()
+  })
+
+  it('refuses a text file renamed to mp4 from the picker', async () => {
+    const uploaded = stubUploadFetch()
+    renderWithSelectedTarget()
+
+    await openAddMenu()
+    await userEvent.click(
+      await screen.findByRole('menuitem', {
+        name: i18n.global.t('agent.attachFiles')
+      })
+    )
+    await userEvent.upload(
+      screen.getByTestId<HTMLInputElement>('agent-file-input'),
+      new File(['plain text'], 'renamed.mp4', { type: 'video/mp4' })
+    )
+
+    expect(
+      await screen.findByRole('status', {
+        name: i18n.global.t('agent.attachmentInvalidVideo', {
+          name: 'renamed.mp4'
+        })
+      })
+    ).toBeVisible()
+    expect(uploaded).toEqual([])
+    expect(screen.getByRole('group', { name: 'renamed.mp4' })).toBeVisible()
+    expect(useToast().toasts).toEqual([])
+  })
+
+  it('refuses a text file renamed to mp4 from drag and drop', async () => {
+    const uploaded = stubUploadFetch()
+    renderWithSelectedTarget()
+    const renamed = new File(['plain text'], 'renamed.mp4', {
+      type: 'video/mp4'
+    })
+
+    expect(
+      dispatchDrag(screen.getByRole('textbox'), 'drop', { files: [renamed] })
+    ).toBe(true)
+
+    expect(
+      await screen.findByRole('status', {
+        name: i18n.global.t('agent.attachmentInvalidVideo', {
+          name: 'renamed.mp4'
+        })
+      })
+    ).toBeVisible()
+    expect(uploaded).toEqual([])
+    expect(screen.getByRole('group', { name: 'renamed.mp4' })).toBeVisible()
+    expect(useToast().toasts).toEqual([])
   })
 
   it('names every approved format in the picker accept list', async () => {
@@ -3472,7 +3525,7 @@ describe('AgentPanelRoot attach flow', () => {
     }
   )
 
-  it('keeps a removed tray upload retired after completion and stale editor history', async () => {
+  it('cancels a removed tray upload and keeps it retired after stale editor history', async () => {
     const signals: AbortSignal[] = []
     let finishUpload: (response: Response) => void = () => {}
     const upload = new Promise<Response>((resolve) => {
@@ -3505,11 +3558,12 @@ describe('AgentPanelRoot attach flow', () => {
       })
     )
 
-    expect(signals[0].aborted).toBe(false)
+    expect(signals[0].aborted).toBe(true)
     finishUpload(
       json(200, { name: 'uploaded-cat.png', subfolder: '', type: 'input' })
     )
-    await vi.waitFor(() => expect(refresh).toHaveBeenCalledOnce())
+    await setImmediate()
+    expect(refresh).not.toHaveBeenCalled()
     expect(composer.attachments).toEqual([])
     composer.applyEditorPrompt(prompt)
     expect(composer.attachments).toEqual([])
@@ -3632,7 +3686,7 @@ describe('AgentPanelRoot attach flow', () => {
         async (input: RequestInfo | URL, init?: RequestInit) => {
           const url = String(input)
           if (url.includes('/api/view'))
-            return new Response(new Blob(['asset']), {
+            return new Response(new Blob([mp4Header]), {
               headers: { 'Content-Type': mime }
             })
           if (url.endsWith('/api/upload/image'))
@@ -3695,6 +3749,54 @@ describe('AgentPanelRoot attach flow', () => {
       })
     }
   )
+
+  it('keeps an invalid URI-only asset visible and blocks Send until removal', async () => {
+    respondToFetch({}, () => json(200, agentThreadList()))
+    respondToFetch(
+      /\/api\/view/,
+      () =>
+        new Response(new Blob(['plain text']), {
+          headers: { 'Content-Type': 'video/mp4' }
+        })
+    )
+    renderWithSelectedTarget()
+    await nextTick()
+
+    expect(
+      dispatchDrag(screen.getByRole('textbox'), 'drop', {
+        types: ['application/x-comfy-asset-info', 'text/uri-list'],
+        getData: (type: string) =>
+          type === 'application/x-comfy-asset-info'
+            ? JSON.stringify({ filename: 'renamed.mp4', type: 'input' })
+            : 'http://localhost/api/view?filename=renamed.mp4'
+      })
+    ).toBe(true)
+
+    expect(
+      await screen.findByRole('status', {
+        name: 'renamed.mp4 isn’t a valid video file. Remove it and try another file.'
+      })
+    ).toBeVisible()
+    expect(screen.getByRole('group', { name: 'renamed.mp4' })).toBeVisible()
+    await userEvent.type(screen.getByRole('textbox'), 'Describe these files')
+    expect(screen.getByRole('button', { name: 'Send' })).toHaveAttribute(
+      'aria-disabled',
+      'true'
+    )
+    await userEvent.keyboard('{Enter}')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    expect(fetchRequests(/\/messages$/)).toEqual([])
+    expect(useToast().toasts).toEqual([])
+    await userEvent.hover(screen.getByRole('group', { name: 'renamed.mp4' }))
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Remove renamed.mp4' })
+    )
+    expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Send' })).not.toHaveAttribute(
+      'aria-disabled'
+    )
+    expect(fetchRequests(/\/api\/upload\/image$/)).toEqual([])
+  })
 
   it.for([
     { mime: 'image/png', filename: 'gen.png' },
@@ -4082,6 +4184,56 @@ describe('AgentPanelRoot attach flow', () => {
           ).toHaveBeenCalledExactlyOnceWith({ method: 'drag_drop' })
         )
       }
+    }
+  )
+
+  it.for(['valid', 'invalid'] as const)(
+    'removing a video during %s validation cancels it and allows a fresh retry',
+    async (outcome) => {
+      const uploaded = stubUploadFetch()
+      renderWithSelectedTarget()
+      const file = new File(
+        [outcome === 'valid' ? mp4Header : 'plain text'],
+        'clip.mp4',
+        { type: 'video/mp4' }
+      )
+      const header = file.slice(0, 12)
+      const bytes = await header.arrayBuffer()
+      let finishValidation: (bytes: ArrayBuffer) => void = () => {}
+      const validation = new Promise<ArrayBuffer>((resolve) => {
+        finishValidation = resolve
+      })
+      vi.spyOn(file, 'slice').mockReturnValue(header)
+      vi.spyOn(header, 'arrayBuffer').mockReturnValue(validation)
+      const input = screen.getByTestId<HTMLInputElement>('agent-file-input')
+      await userEvent.upload(input, file)
+      await userEvent.click(screen.getByRole('textbox'))
+      await userEvent.paste('Describe the clip')
+      expect(
+        screen.getByRole('group', { name: 'clip.mp4' })
+      ).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled()
+      await userEvent.keyboard('{Enter}')
+      expect(fetchRequests(/\/messages$/)).toHaveLength(0)
+
+      await clearTrayAsset('clip.mp4')
+      expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled()
+      await userEvent.upload(
+        input,
+        new File([mp4Header], 'clip.mp4', { type: 'video/mp4' })
+      )
+      await vi.waitFor(() => expect(uploaded).toEqual(['clip.mp4']))
+      finishValidation(bytes)
+      await setImmediate()
+
+      expect(uploaded).toEqual(['clip.mp4'])
+      expect(
+        useToast().toasts.filter(({ kind }) => kind === 'warning')
+      ).toEqual([])
+      expect(
+        screen.getByRole('group', { name: 'clip.mp4' })
+      ).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled()
     }
   )
 
