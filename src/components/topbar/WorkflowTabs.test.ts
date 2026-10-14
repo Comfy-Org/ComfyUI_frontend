@@ -271,6 +271,7 @@ describe('WorkflowTabs agent entry button', () => {
       name: enMessages.agent.entryStarting
     })
     expect(starting).toHaveAttribute('aria-disabled', 'true')
+    expect(starting).not.toHaveAttribute('title')
     await user.click(starting)
     expect(withConsent).not.toHaveBeenCalled()
 
@@ -286,6 +287,14 @@ describe('WorkflowTabs agent entry button', () => {
       'title',
       'ComfyUI could not start the agent: not_found'
     )
+
+    api.serverFeatureFlags.value = {
+      agent: { state: 'starting', url: null, reason: 'crashed' }
+    }
+    await nextTick()
+    expect(
+      screen.getByRole('button', { name: enMessages.agent.entryStarting })
+    ).toHaveAttribute('title', 'ComfyUI is starting the agent: crashed')
 
     api.serverFeatureFlags.value = {
       agent: { state: 'ready', url: '/api/agent', reason: null }

@@ -17,7 +17,9 @@
         ? $t('agent.entryFailedReason', {
             reason: comfyAgent.reason ?? 'unknown'
           })
-        : undefined
+        : comfyAgent?.reason
+          ? $t('agent.entryStartingReason', { reason: comfyAgent.reason })
+          : undefined
     "
   >
     <i
