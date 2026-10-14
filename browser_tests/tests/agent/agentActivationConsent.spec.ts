@@ -92,7 +92,7 @@ test.describe(
   'Fresh signed-in Agent consent and tour sequencing',
   { tag: ['@cloud', '@ui'] },
   () => {
-    test.use({ agentConsentAccepted: false })
+    test.use({ agentConsentAccepted: false, agentOnboardingCompleted: false })
 
     for (const tourAction of ['finish', 'skip'] as const) {
       test(`resumes one held send after the user ${tourAction === 'finish' ? 'finishes' : 'skips'} the tour`, async ({
