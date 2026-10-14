@@ -213,7 +213,7 @@ const userName = computed(
 const rest = createAgentRestClient()
 
 const events = createAgentEventSource({
-  endpoint: api.apiURL('/agent/events'),
+  endpoint: api.agentURL('/agent/events'),
   getAuthParams: agentSocketAuthParams
 })
 

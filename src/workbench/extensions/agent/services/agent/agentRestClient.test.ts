@@ -110,6 +110,18 @@ describe('agentRestClient route + method', () => {
     expect(init.method).toBe('POST')
   })
 
+  it("sends agent routes to the agent feature's base", async () => {
+    vi.mocked(api.agentRoute).mockImplementation(
+      (route) => `http://127.0.0.1:9000/a${route.slice('/agent'.length)}`
+    )
+    respond(jsonResponse(202, turnAccepted))
+    await makeClient().postMessage('new', { content: 'hi' })
+
+    expect(lastCall().route).toBe(
+      'http://127.0.0.1:9000/a/threads/new/messages'
+    )
+  })
+
   it('percent-encodes a hostile thread id instead of retargeting the path', async () => {
     respond(jsonResponse(202, turnAccepted))
     await makeClient().postMessage('t1/x', { content: 'hi' })

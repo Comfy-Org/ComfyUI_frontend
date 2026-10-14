@@ -84,6 +84,16 @@ describe('api.fetchApi', () => {
       )
     })
 
+    it('fetches an absolute route as given', async () => {
+      vi.mocked(global.fetch).mockResolvedValue(new Response())
+
+      await api.fetchApi('http://127.0.0.1:9000/a/threads')
+
+      expect(vi.mocked(global.fetch).mock.calls[0][0]).toBe(
+        'http://127.0.0.1:9000/a/threads'
+      )
+    })
+
     it('reports when a cloud auth header was attached', async () => {
       mockDistribution.isCloud = true
       vi.spyOn(firebaseIdentity, 'onUserChanged').mockReturnValue(() => {})

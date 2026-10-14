@@ -535,7 +535,7 @@ export function createAgentRestClient() {
     let authScheme: ReportedAuthScheme = 'unreported'
     let credential: ReportedAuthCredential = 'unreported'
     const response = await api.fetchApi(
-      route,
+      api.agentRoute(route),
       await withAgentAuth({
         ...init,
         onAuthScheme: (scheme) => {

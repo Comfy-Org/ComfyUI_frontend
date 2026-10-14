@@ -137,6 +137,10 @@ const ws = vi.hoisted(() => {
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
+    agentRoute: (route: string) => route,
+    agentURL(route: string) {
+      return this.apiURL(route)
+    },
     apiURL: vi.fn((route: string) => `/api${route}`),
     fetchApi: (route: string, options?: RequestInit) =>
       fetch(route.startsWith('/api') ? route : `/api${route}`, options),

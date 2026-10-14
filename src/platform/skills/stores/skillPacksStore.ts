@@ -40,7 +40,7 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
   function currentScope(): string {
     return JSON.stringify([
       location.origin,
-      api.apiURL('/agent/skills'),
+      api.agentURL('/agent/skills'),
       resolvedUserInfo.value?.id ?? null,
       workspace.workspaceId ?? null
     ])

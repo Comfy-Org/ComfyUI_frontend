@@ -124,6 +124,8 @@ export type FeatureFlagsWsMessage = Record<string, unknown>
 export interface AgentStatusWsMessage {
   state: 'starting' | 'ready' | 'failed'
   reason?: string | null
+  /** Where the agent is served; ComfyUI's own `/api/agent` when absent. */
+  url?: string | null
 }
 export interface AssetDownloadWsMessage {
   task_id: string

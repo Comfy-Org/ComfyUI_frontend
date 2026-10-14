@@ -525,6 +525,28 @@ export class ComfyApi extends EventTarget {
     )
   }
 
+  /**
+   * An agent route (`/agent/...`) for `fetchApi`: unchanged while the agent is
+   * ComfyUI's own `/api/agent`, else absolute at the `agent` feature's url.
+   */
+  agentRoute(route: string): string {
+    const url =
+      import.meta.env.VITE_AGENT_STANDALONE === 'true'
+        ? undefined
+        : this.getServerFeature<AgentStatusWsMessage | undefined>('agent')?.url
+    if (!url || url === '/api/agent' || !/^\/agent(\/|\?|$)/.test(route))
+      return route
+    const path = route.slice('/agent'.length)
+    if (URL.canParse(url)) return url + path
+    return new URL(this.api_base + url + path, window.location.origin).href
+  }
+
+  /** The full URL of an agent route, for sockets and cache keys. */
+  agentURL(route: string): string {
+    const resolved = this.agentRoute(route)
+    return URL.canParse(resolved) ? resolved : this.apiURL(resolved)
+  }
+
   /** For requests whose headers already name the workspace. */
   private unscopedApiURL(route: string): string {
     if (route.startsWith('/api')) return this.api_base + route
@@ -702,10 +724,11 @@ export class ComfyApi extends EventTarget {
       headers,
       signal
     }
+    const absolute = URL.canParse(route) ? route : undefined
     const response = sendOnWebSession
-      ? sendOnWebSession(this.unscopedApiURL(route), init)
+      ? sendOnWebSession(absolute ?? this.unscopedApiURL(route), init)
       : this.authProvider.fetch(
-          this.apiURL(route),
+          absolute ?? this.apiURL(route),
           init,
           unifiedRetryOn401,
           retrySignalLifecycle
