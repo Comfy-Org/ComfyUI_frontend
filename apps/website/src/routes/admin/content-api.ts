@@ -56,7 +56,7 @@ export const POST: APIRoute = async (context) => {
   if (!key || key.length > 200 || /[\r\n]/.test(key)) return editorFailure(400)
   const bytes = await boundedBody(
     context.request,
-    operation === 'upload' ? 9 << 20 : 1 << 20
+    operation === 'upload' ? 65 << 20 : 1 << 20
   )
   if (!bytes) return editorFailure(413)
   if (operation === 'save') {
@@ -124,7 +124,7 @@ export const POST: APIRoute = async (context) => {
   )
     return editorFailure(400)
   const file = form.get('file')
-  if (!(file instanceof Blob) || file.size > 8 << 20) return editorFailure(413)
+  if (!(file instanceof Blob) || file.size > 64 << 20) return editorFailure(413)
   const mediaUID = form.get('media_uid')
   if (mediaUID !== null && !uid.safeParse(mediaUID).success)
     return editorFailure(400)

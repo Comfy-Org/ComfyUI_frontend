@@ -9,7 +9,7 @@ const revision = '00000000-0000-4000-8000-000000000002'
 const later = '00000000-0000-4000-8000-000000000003'
 async function choose() {
   await fireEvent.change(
-    screen.getByLabelText('Choose image or workflow JSON'),
+    screen.getByLabelText('Choose image, video or workflow JSON'),
     {
       target: {
         files: [new File(['png'], 'a file.png', { type: 'image/png' })]
@@ -86,13 +86,46 @@ describe('media editing', () => {
     expect(body.get('expected_revision_uid')).toBe(later)
     expect(body.get('media_uid')).toBe(uid)
   })
-  it('rejects unsupported media locally without pretending the backend supports video', async () => {
+  it.each(['mp4', 'webm'])(
+    'allows %s videos through to authoritative byte verification',
+    async (extension) => {
+      const result = setup()
+      vi.mocked(editorRequest).mockResolvedValue({
+        ok: true,
+        status: 201,
+        data: { uid: later, revision_uid: revision }
+      })
+      await fireEvent.change(
+        screen.getByLabelText('Choose image, video or workflow JSON'),
+        {
+          target: {
+            files: [
+              new File(['video'], `sample.${extension}`, {
+                type: `video/${extension}`
+              })
+            ]
+          }
+        }
+      )
+      await fireEvent.click(
+        screen.getByRole('button', { name: 'Upload as new media' })
+      )
+      await waitFor(() => expect(result.emitted().update).toHaveLength(1))
+      const body = vi.mocked(editorRequest).mock.calls[0][1]?.body
+      if (!(body instanceof FormData)) throw new Error('Missing video envelope')
+      expect(body.get('file')).toBeInstanceOf(File)
+      expect(body.get('name')).toBe(`sample.${extension}`)
+    }
+  )
+  it('rejects unsupported media locally without promising arbitrary codecs', async () => {
     setup()
     await fireEvent.change(
-      screen.getByLabelText('Choose image or workflow JSON'),
+      screen.getByLabelText('Choose image, video or workflow JSON'),
       {
         target: {
-          files: [new File(['video'], 'sample.mp4', { type: 'video/mp4' })]
+          files: [
+            new File(['video'], 'sample.avi', { type: 'video/x-msvideo' })
+          ]
         }
       }
     )

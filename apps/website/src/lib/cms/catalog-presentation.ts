@@ -83,6 +83,7 @@ export function catalogPresentation(
   }
   const title = text('title', record.uid)
   const urls = jsonObject.safeParse(d.website_media)
+  const mediaTypes = jsonObject.safeParse(d.website_media_types)
   const faq = Array.isArray(local.faq) ? local.faq : d.faq
   const catalogDetails = workflowCatalogDetailsSchema.safeParse({
     locale: ['en', 'zh-CN', 'ja'].includes(locale) ? locale : 'en',
@@ -221,6 +222,12 @@ export function catalogPresentation(
                 : '',
             tags: Array.isArray(example.tags) ? example.tags : [],
             values: example.values ?? {},
+            ...(mediaTypes.success &&
+            ['video/mp4', 'video/webm'].includes(
+              String(mediaTypes.data[`$.examples[${index}].media`])
+            )
+              ? { mediaKind: 'video' }
+              : {}),
             thumbnailUrl: typeof url === 'string' ? url : ''
           }
         })
@@ -230,7 +237,19 @@ export function catalogPresentation(
           thumbnailUrl: hero,
           thumbnail: {
             url: hero,
-            kind: preserved.thumbnailKind ?? 'image',
+            kind:
+              mediaTypes.success &&
+              ['video/mp4', 'video/webm'].includes(
+                String(
+                  mediaTypes.data[
+                    urls.success && typeof urls.data['$.hero'] === 'string'
+                      ? '$.hero'
+                      : '$.thumbnail'
+                  ]
+                )
+              )
+                ? 'video'
+                : (preserved.thumbnailKind ?? 'image'),
             ...(urls.success && typeof urls.data['$.hero_poster'] === 'string'
               ? { poster: urls.data['$.hero_poster'] }
               : {})

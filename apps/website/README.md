@@ -87,6 +87,14 @@ links; the editor API separately rechecks authorization on every operation.
 
 ## CCC review discovery
 
+CCC editor uploads accept PNG/JPEG/WebP, MP4/WebM and workflow JSON, up to 64 MiB
+per file (the proxy allows 65 MiB for multipart overhead). Video bytes are verified
+by the backend's ffprobe runtime; the browser never supplies trusted hashes/MIME.
+Upload/replace remain authenticated, exact-pin, private Draft operations. The
+server-resolved website media MIME selects video hero/thumbnail rendering.
+Unsupported codecs, unavailable verifier and configured lower limits still fail
+closed; this local demo change does not activate any production media service.
+
 With `SITE_CATALOG_API_URL` configured in a non-production review environment,
 `/api/v1/catalog/agents`, `/api/v1/catalog/openapi.json` and
 `/api/v1/catalog/docs` proxy the deployed catalog's editing instructions,

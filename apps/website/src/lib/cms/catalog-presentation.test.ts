@@ -43,6 +43,46 @@ const record: ContentCatalogRecord = {
   }
 }
 describe('native CONTENT presentation', () => {
+  it.each(['video/mp4', 'video/webm'])(
+    'uses exact verified %s metadata for native hero playback',
+    (mime) => {
+      const view = catalogPresentation({
+        ...record,
+        data: {
+          ...record.data,
+          website_media_types: { '$.hero': mime },
+          presentation: { thumbnailKind: 'image' }
+        }
+      })
+      expect(view).toMatchObject({
+        thumbnail: {
+          kind: 'video',
+          url: '/preview-media/2/logical-use/exact-bytes'
+        }
+      })
+    }
+  )
+  it('renders verified example videos without changing execution values', () => {
+    const view = catalogPresentation({
+      ...record,
+      data: {
+        ...record.data,
+        website_media: {
+          '$.examples[0].media': '/preview-media/2/example/file'
+        },
+        website_media_types: { '$.examples[0].media': 'video/webm' }
+      }
+    })
+    expect(view).toMatchObject({
+      examples: [
+        {
+          mediaKind: 'video',
+          thumbnailUrl: '/preview-media/2/example/file',
+          values: { quality: 2 }
+        }
+      ]
+    })
+  })
   it('preserves explicit download-only and stored script facts only in detail data', () => {
     const view = catalogPresentation({
       ...record,

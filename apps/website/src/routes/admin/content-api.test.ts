@@ -217,6 +217,23 @@ describe('staff content proxy', () => {
     expect((await POST(context('upload', { body: form }))).status).toBe(400)
     expect(fetcher).not.toHaveBeenCalled()
   })
+  it('forwards videos larger than the previous 8 MiB cap, retaining private authorization', async () => {
+    const fetcher = upstream()
+    const form = new FormData()
+    form.set(
+      'file',
+      new Blob([new Uint8Array(9 << 20)], { type: 'video/mp4' }),
+      'clip.mp4'
+    )
+    form.set('name', 'clip.mp4')
+    form.set('expected_draft_rev', '7')
+    form.set('originating_entity_uid', uid)
+    form.set('role', 'hero')
+    expect((await POST(context('upload', { body: form }))).status).toBe(200)
+    const forwarded = fetcher.mock.calls[0][1].body.get('file')
+    expect(forwarded.size).toBe(9 << 20)
+    expect(forwarded.type).toBe('video/mp4')
+  })
   it('fails closed when upstream returns an unexpected document', async () => {
     const fetcher = upstream()
     fetcher.mockResolvedValue(

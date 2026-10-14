@@ -48,10 +48,16 @@ async function upload(replace: boolean) {
   if (!entityUID || !file.value || state.value === 'uploading') return
   const mime = file.value.type
   if (
-    file.value.size > 8 << 20 ||
-    !['image/png', 'image/jpeg', 'image/webp', 'application/json', ''].includes(
-      mime
-    )
+    file.value.size > 64 << 20 ||
+    ![
+      'image/png',
+      'image/jpeg',
+      'image/webp',
+      'video/mp4',
+      'video/webm',
+      'application/json',
+      ''
+    ].includes(mime)
   ) {
     error.value = t('cmsEditor.unsupportedMedia')
     return
@@ -128,7 +134,7 @@ async function upload(replace: boolean) {
 </script>
 <template>
   <div class="grid gap-3 rounded-lg border border-admin-line bg-admin-page p-4">
-    <code v-if="reference?.id" class="break-all text-xs text-admin-muted"
+    <code v-if="reference?.id" class="text-xs break-all text-admin-muted"
       >{{ reference.name }} · {{ reference.id }}</code
     >
     <p v-if="!entityUID" class="text-sm text-admin-muted">
@@ -138,7 +144,7 @@ async function upload(replace: boolean) {
       >{{ t('cmsEditor.chooseFile')
       }}<input
         type="file"
-        accept="image/png,image/jpeg,image/webp,application/json,.json"
+        accept="image/png,image/jpeg,image/webp,video/mp4,video/webm,application/json,.json,.mp4,.webm"
         :disabled="!entityUID || state === 'uploading'"
         class="w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-admin-raised file:px-3 file:py-2 file:text-admin-fg"
         @change="choose"

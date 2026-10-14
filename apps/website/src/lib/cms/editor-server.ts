@@ -37,7 +37,7 @@ export async function catalogAuthoring(
       headers,
       cache: 'no-store',
       redirect: 'error',
-      signal: AbortSignal.timeout(15000)
+      signal: AbortSignal.timeout(init.body instanceof FormData ? 45000 : 15000)
     })
     return response
   } catch {
