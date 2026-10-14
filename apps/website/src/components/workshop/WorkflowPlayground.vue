@@ -396,7 +396,11 @@ function start() {
         :key="example.name"
         :example
         :chosen="selectedExample === index"
-        :poster="model.thumbnailUrl"
+        :poster="
+          model.thumbnail?.kind === 'image'
+            ? model.thumbnail.url
+            : model.thumbnail?.poster
+        "
         :disabled="formDisabled"
         @open="selectExample(index)"
       />

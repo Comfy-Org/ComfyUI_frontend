@@ -333,6 +333,66 @@ describe('WorkflowPlayground primary action', () => {
 })
 
 describe('WorkflowPlayground examples', () => {
+  it.each([
+    {
+      name: 'image hero',
+      thumbnail: {
+        kind: 'image' as const,
+        url: '/preview-media/6/image/exact'
+      },
+      poster: '/preview-media/6/image/exact',
+      preload: 'none',
+      src: '/preview-media/6/video/exact'
+    },
+    {
+      name: 'video hero with a still poster',
+      thumbnail: {
+        kind: 'video' as const,
+        url: '/preview-media/6/hero-video/exact',
+        poster: '/preview-media/6/still/exact'
+      },
+      poster: '/preview-media/6/still/exact',
+      preload: 'none',
+      src: '/preview-media/6/video/exact'
+    },
+    {
+      name: 'video hero without a still poster',
+      thumbnail: {
+        kind: 'video' as const,
+        url: '/preview-media/6/hero-video/exact'
+      },
+      poster: null,
+      preload: 'metadata',
+      src: '/preview-media/6/video/exact#t=0.1'
+    }
+  ])(
+    'shows a video example with $name without using video bytes as a poster',
+    ({ thumbnail, poster, preload, src }) => {
+      const original = workflowDetailsBySlug.get('workflows/remove-background')
+      assert(original)
+      const model = {
+        ...original,
+        thumbnail,
+        thumbnailUrl: thumbnail.url,
+        examples: [
+          {
+            ...original.examples[0],
+            name: 'product-video',
+            title: 'Product video example',
+            thumbnailUrl: '/preview-media/6/video/exact',
+            mediaKind: 'video' as const
+          }
+        ]
+      }
+      render(WorkflowPlayground, { props: { model, scope: 'anonymous' } })
+      const card = screen.getByRole('button', { name: 'Product video example' })
+      const video = within(card).getByTestId('workflow-example-video')
+      expect(video.getAttribute('poster')).toBe(poster)
+      expect(video.getAttribute('preload')).toBe(preload)
+      expect(video.getAttribute('src')).toBe(src)
+    }
+  )
+
   it.for([{ tab: 'Details' }, { tab: 'API' }])(
     'keeps the examples to the Playground tab, not $tab',
     async ({ tab }) => {

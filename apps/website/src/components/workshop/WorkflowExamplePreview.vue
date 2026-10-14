@@ -2,6 +2,7 @@
 import { Music2 } from '@lucide/vue'
 
 import type { GeneratedExample } from '@/config/models-catalogue'
+import { videoPosterUrl } from '@/config/workshop-playground'
 
 const { example, poster } = defineProps<{
   example: GeneratedExample
@@ -12,12 +13,13 @@ const { example, poster } = defineProps<{
 <template>
   <video
     v-if="example.mediaKind === 'video'"
-    :src="example.thumbnailUrl"
+    :src="poster ? example.thumbnailUrl : videoPosterUrl(example.thumbnailUrl)"
     :poster
     muted
     playsinline
-    preload="none"
+    :preload="poster ? 'none' : 'metadata'"
     aria-hidden="true"
+    data-testid="workflow-example-video"
     class="aspect-4/3 w-full object-cover"
   />
   <span

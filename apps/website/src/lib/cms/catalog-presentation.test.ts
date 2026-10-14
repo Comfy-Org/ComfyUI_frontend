@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { detailSchema } from '@/config/models-page-data'
 import { modelSchema } from '@/config/models-catalogue-data'
 import { workflowCloudRequest } from '@/config/workshop-workflow-api'
+import { examplesForModel } from '@/config/workshop-playground'
 import {
   catalogLanguageFallback,
   catalogPresentation
@@ -178,27 +179,38 @@ describe('native CONTENT presentation', () => {
       })
     }
   )
-  it('renders verified example videos without changing execution values', () => {
-    const view = catalogPresentation({
-      ...record,
-      data: {
-        ...record.data,
-        website_media: {
-          '$.examples[0].media': '/preview-media/2/example/file'
-        },
-        website_media_types: { '$.examples[0].media': 'video/webm' }
-      }
-    })
-    expect(view).toMatchObject({
-      examples: [
+  it.each(['video/mp4', 'video/webm'])(
+    'preserves verified %s on extensionless examples through the actual page schemas',
+    (mime) => {
+      const view = catalogPresentation({
+        ...record,
+        data: {
+          ...record.data,
+          website_media: {
+            '$.examples[0].media': '/preview-media/2/example/file'
+          },
+          website_media_types: { '$.examples[0].media': mime }
+        }
+      })
+      expect(view).toMatchObject({
+        examples: [
+          {
+            mediaKind: 'video',
+            thumbnailUrl: '/preview-media/2/example/file',
+            values: { quality: 2 }
+          }
+        ]
+      })
+      const detail = detailSchema.parse(view)
+      expect(examplesForModel(detail)).toMatchObject([
         {
           mediaKind: 'video',
-          thumbnailUrl: '/preview-media/2/example/file',
+          outputUrl: '/preview-media/2/example/file',
           values: { quality: 2 }
         }
-      ]
-    })
-  })
+      ])
+    }
+  )
   it('does not reuse old video presentation when the selected file becomes an image', () => {
     const view = catalogPresentation({
       ...record,

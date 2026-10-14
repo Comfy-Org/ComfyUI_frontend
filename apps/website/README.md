@@ -119,7 +119,10 @@ CCC editor uploads accept PNG/JPEG/WebP, MP4/WebM and workflow JSON, up to 64 Mi
 per file (the proxy allows 65 MiB for multipart overhead). Video bytes are verified
 by the backend's ffprobe runtime; the browser never supplies trusted hashes/MIME.
 Upload/replace remain authenticated, exact-pin, private Draft operations. The
-server-resolved website media MIME selects video hero/thumbnail rendering.
+server-resolved website media MIME selects video hero/thumbnail and example
+rendering, including extensionless private URLs. Workflow example cards use only
+an image hero or the hero's still poster as their poster, never the hero video
+itself. Without a still, the example loads its own first frame.
 Unsupported codecs, unavailable verifier and configured lower limits still fail
 closed; this local demo change does not activate any production media service.
 
