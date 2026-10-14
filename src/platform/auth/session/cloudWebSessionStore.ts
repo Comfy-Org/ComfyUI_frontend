@@ -150,9 +150,6 @@ function resetForAccountChange(change: WebSessionAccountChange): void {
   })
 }
 
-// Every selection is named: a Team plan can live on a personal-type
-// workspace, and a request without the header is served as the caller's own
-// Personal.
 function selectedWorkspaceId(): string | undefined {
   const { currentWorkspace, deniedWorkspaceId } = useWorkspaceAuthStore()
   return currentWorkspace?.id ?? deniedWorkspaceId ?? undefined
