@@ -67,7 +67,7 @@ export function createDevAgentConfig(env: NodeJS.ProcessEnv) {
 
   if (env.VITE_AGENT_STANDALONE === 'true' && env.DISTRIBUTION === 'cloud') {
     throw new Error(
-      'VITE_AGENT_STANDALONE cannot be combined with DISTRIBUTION=cloud: the standalone agent harness is never a cloud distribution.'
+      'VITE_AGENT_STANDALONE cannot be combined with DISTRIBUTION=cloud (set directly or derived from a *.comfy.org DEV_SERVER_COMFYUI_URL); point DEV_SERVER_COMFYUI_URL at a local ComfyUI.'
     )
   }
 
