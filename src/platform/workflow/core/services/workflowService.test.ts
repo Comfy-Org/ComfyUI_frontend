@@ -123,11 +123,7 @@ function createWorkflow(
       path: options.path ?? 'workflows/test.json',
       isLoaded: true,
       activeState: { nodes: [], links: [] },
-      changeTracker: {
-        reset: vi.fn(),
-        restore: vi.fn(),
-        captureCanvasState: vi.fn()
-      }
+      changeTracker: createMockChangeTracker()
     })
   } as Partial<ComfyWorkflow>
   return wf as ComfyWorkflow
@@ -497,13 +493,14 @@ describe('useWorkflowService', () => {
   })
 
   describe('openWorkflow ordering', () => {
-    it('reloads canvas edits that were not yet captured into the workflow state', async () => {
+    it('reloads canvas edits made after the reload was requested', async () => {
       const workflow = createModeTestWorkflow()
       workflow.changeTracker = new ChangeTracker(workflow, makeWorkflowData())
       useWorkflowStore().activeWorkflow = workflow
+      const reloading = useWorkflowService().reloadCurrentWorkflow()
       app.rootGraph.add(new LGraphNode('Agent edit'))
 
-      await useWorkflowService().reloadCurrentWorkflow()
+      await reloading
 
       expect(app.loadGraphData).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -524,6 +521,7 @@ describe('useWorkflowService', () => {
         const workflows = useWorkflowStore()
         previous = createModeTestWorkflow({ path: 'workflows/previous.json' })
         next = createModeTestWorkflow({ path: 'workflows/next.json' })
+        next.changeTracker = new ChangeTracker(next, makeWorkflowData())
         workflows.activeWorkflow = previous
         vi.mocked(app.loadGraphData).mockImplementation(
           async (_data, _clean, _restoreView, workflow) => {
@@ -539,16 +537,12 @@ describe('useWorkflowService', () => {
           useWorkflowService().reloadCurrentWorkflow()
         ])
 
-        expect(app.loadGraphData).toHaveBeenLastCalledWith(
-          expect.anything(),
-          true,
-          true,
-          next,
-          expect.objectContaining({ skipAssetScans: false })
-        )
+        expect(
+          vi.mocked(app.loadGraphData).mock.calls.map((call) => call[3])
+        ).toEqual([next, next])
       })
 
-      it('does not reopen the previous workflow when the switch is queued after the reload', async () => {
+      it('does not reopen the previous workflow when a switch lands after the reload read it', async () => {
         await Promise.all([
           useWorkflowService().reloadCurrentWorkflow(),
           useWorkflowService().openWorkflow(next)
