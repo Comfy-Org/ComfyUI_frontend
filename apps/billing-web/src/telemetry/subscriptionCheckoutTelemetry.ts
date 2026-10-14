@@ -5,19 +5,28 @@ import type {
   SubscriptionCheckoutTier,
   SubscriptionCheckoutType,
   SubscriptionCheckoutUi,
-  SubscriptionPreview
+  SubscriptionPreview,
+  TerminalBillingOperation
 } from '@comfyorg/account-core/billing'
 import { isAnnualDuration } from '@comfyorg/account-ui/billing/checkout'
 
+import { operationPlanOf } from '@/checkout/operationPlan'
 import type { AttemptEvents } from '@/telemetry/attemptTelemetry'
-import { createAttemptTelemetry } from '@/telemetry/attemptTelemetry'
+import {
+  createAttemptTelemetry,
+  outcomeOfOperation
+} from '@/telemetry/attemptTelemetry'
 import { billingWebTelemetry } from '@/telemetry/billingWebTelemetry'
+import { trackOncePerTab } from '@/telemetry/trackOncePerTab'
 
-/** What a pay press chooses: the plan the quote prices and where the customer came from. */
+/**
+ * What a pay press chooses: the plan the quote prices and where the customer
+ * came from. An attempt read back from its operation knows only the plan.
+ */
 export interface CheckoutAttempt {
   readonly tier?: SubscriptionCheckoutTier
-  readonly cycle: BillingCycle
-  readonly checkoutType: SubscriptionCheckoutType
+  readonly cycle?: BillingCycle
+  readonly checkoutType?: SubscriptionCheckoutType
   readonly source?: PaymentIntentSource
 }
 
@@ -110,4 +119,40 @@ export function createSubscriptionCheckoutTelemetry({
     track,
     now
   })
+}
+
+/** The attempt as the operation's own plan describes it; the quote and the entry stayed on the page that issued it. */
+function attemptOfOperation(
+  operation: TerminalBillingOperation
+): CheckoutAttempt {
+  const plan = operationPlanOf(operation)
+  if (plan === undefined) return {}
+  return {
+    tier: plan.tier === undefined ? undefined : checkoutTierOf(plan.tier),
+    cycle: isAnnualDuration(plan.duration) ? 'yearly' : 'monthly'
+  }
+}
+
+/**
+ * A subscribe this tab paid for on a provider page settles on the page the
+ * provider sends it back to, where the attempt that began it no longer runs.
+ * That page reports the terminal once per operation, so a reload does not
+ * count it again.
+ */
+export function reportReturnedSubscriptionCheckout(
+  operation: TerminalBillingOperation,
+  {
+    ui,
+    now = Date.now
+  }: { readonly ui: SubscriptionCheckoutUi; readonly now?: () => number }
+): void {
+  if (operation.kind !== 'subscription' || !operation.awaitedHere) return
+  trackOncePerTab(
+    subscriptionCheckoutEvents(ui).end(
+      attemptOfOperation(operation),
+      outcomeOfOperation(operation),
+      now() - operation.attemptStartedAt
+    ),
+    operation.id
+  )
 }
