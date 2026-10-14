@@ -1029,8 +1029,8 @@ commits nothing. The workflow fails and says why when there is no run for
 the head commit, the run takes over 45 minutes, a Playwright job did not
 finish, no Playwright job ran, or a Playwright job left no
 `snapshot-updates-*` artifact (for example after a crash or once the
-artifacts expire after 7 days). Re-run the E2E workflow and trigger the
-update again, or comment `/update-playwright full` to rerun the
+artifacts expire after 7 days). Push to the branch for a new E2E run and
+trigger the update again, or comment `/update-playwright full` to rerun the
 `@screenshot` suite with `--update-snapshots`.
 
 A failed screenshot assertion ends its test, so only the first stale
