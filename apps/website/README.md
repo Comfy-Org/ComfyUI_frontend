@@ -132,7 +132,9 @@ Upload/replace remain authenticated, exact-pin, private Draft operations. The
 server-resolved website media MIME selects video hero/thumbnail and example
 rendering, including extensionless private URLs. Workflow example cards use only
 an image hero or the hero's still poster as their poster, never the hero video
-itself. Without a still, the example loads its own first frame.
+itself. Without a still, the example loads its own first frame. Workflow video
+examples use the shared play/pause player; the separate title action selects
+the example inputs. Watching the clip does not change inputs or run a workflow.
 Unsupported codecs, unavailable verifier and configured lower limits still fail
 closed; this local demo change does not activate any production media service.
 

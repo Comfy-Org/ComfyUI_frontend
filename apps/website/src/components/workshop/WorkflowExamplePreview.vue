@@ -3,24 +3,29 @@ import { Music2 } from '@lucide/vue'
 
 import type { GeneratedExample } from '@/config/models-catalogue'
 import { videoPosterUrl } from '@/config/workshop-playground'
+import VideoPlayer from '@/components/common/VideoPlayer.vue'
+import type { Locale } from '@/i18n/translations'
 
-const { example, poster } = defineProps<{
+const {
+  example,
+  poster,
+  locale = 'en'
+} = defineProps<{
   example: GeneratedExample
   poster?: string
+  locale?: Locale
 }>()
 </script>
 
 <template>
-  <video
+  <VideoPlayer
     v-if="example.mediaKind === 'video'"
     :src="poster ? example.thumbnailUrl : videoPosterUrl(example.thumbnailUrl)"
     :poster
-    muted
-    playsinline
-    :preload="poster ? 'none' : 'metadata'"
-    aria-hidden="true"
-    data-testid="workflow-example-video"
-    class="aspect-4/3 w-full object-cover"
+    :locale
+    :aria-label="example.title"
+    no-cors
+    class="aspect-4/3 w-full rounded-none border-0"
   />
   <span
     v-else-if="example.mediaKind === 'audio'"

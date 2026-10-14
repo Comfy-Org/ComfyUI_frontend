@@ -333,7 +333,7 @@ describe('WorkflowPlayground primary action', () => {
 })
 
 describe('WorkflowPlayground examples', () => {
-  it.each([
+  it.for([
     {
       name: 'image hero',
       thumbnail: {
@@ -341,7 +341,7 @@ describe('WorkflowPlayground examples', () => {
         url: '/preview-media/6/image/exact'
       },
       poster: '/preview-media/6/image/exact',
-      preload: 'none',
+      preload: 'metadata',
       src: '/preview-media/6/video/exact'
     },
     {
@@ -352,7 +352,7 @@ describe('WorkflowPlayground examples', () => {
         poster: '/preview-media/6/still/exact'
       },
       poster: '/preview-media/6/still/exact',
-      preload: 'none',
+      preload: 'metadata',
       src: '/preview-media/6/video/exact'
     },
     {
@@ -385,8 +385,7 @@ describe('WorkflowPlayground examples', () => {
         ]
       }
       render(WorkflowPlayground, { props: { model, scope: 'anonymous' } })
-      const card = screen.getByRole('button', { name: 'Product video example' })
-      const video = within(card).getByTestId('workflow-example-video')
+      const video = screen.getByLabelText('Product video example')
       expect(video.getAttribute('poster')).toBe(poster)
       expect(video.getAttribute('preload')).toBe(preload)
       expect(video.getAttribute('src')).toBe(src)

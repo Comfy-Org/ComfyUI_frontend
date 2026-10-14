@@ -396,6 +396,7 @@ function start() {
         :key="example.name"
         :example
         :chosen="selectedExample === index"
+        :locale="model.catalogDetails?.locale"
         :poster="
           model.thumbnail?.kind === 'image'
             ? model.thumbnail.url
