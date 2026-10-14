@@ -1,3 +1,6 @@
+import { TimeoutError } from 'es-toolkit/error'
+import { withTimeout } from 'es-toolkit/promise'
+
 import { i18n } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
 import { hasAudioType, hasImageType, hasVideoType } from '@/utils/eventUtils'
@@ -17,13 +20,6 @@ const MAX_CONCURRENT_UPLOADS = 3
 const MAX_TELEMETRY_FILE_TYPE_LENGTH = 128
 const MIME_TYPE_PATTERN =
   /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+\/[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/
-
-class DeadlineExceededError extends Error {
-  constructor(timeoutMs: number) {
-    super(`Timed out after ${timeoutMs}ms`)
-    this.name = 'DeadlineExceededError'
-  }
-}
 
 interface UploadResult {
   ref: string
@@ -59,25 +55,6 @@ function uploadDeadlineMs(file: File): number {
 function telemetryFileType(type: string | undefined): string {
   if (!type || type.length > MAX_TELEMETRY_FILE_TYPE_LENGTH) return 'unknown'
   return MIME_TYPE_PATTERN.test(type) ? type : 'unknown'
-}
-
-async function withDeadline<T>(
-  work: Promise<T>,
-  timeoutMs: number,
-  onExpire?: () => void
-): Promise<T> {
-  let timer: ReturnType<typeof setTimeout> | undefined
-  const expiry = new Promise<never>((_resolve, reject) => {
-    timer = setTimeout(() => {
-      onExpire?.()
-      reject(new DeadlineExceededError(timeoutMs))
-    }, timeoutMs)
-  })
-  try {
-    return await Promise.race([work, expiry])
-  } finally {
-    clearTimeout(timer)
-  }
 }
 
 let stagedCount = 0
@@ -168,16 +145,11 @@ export function useAttachment(options: UseAttachmentOptions) {
     return true
   }
 
-  // The file's declared size/type and the failure's shape (status code,
-  // timeout, abort) are safe, bounded context. The caught error's own
-  // message/stack are not reported: they can carry a local file path (e.g. a
-  // dropped file's full source path), which is why this always reports a
-  // fresh synthetic Error rather than the original cause.
   function uploadFailureCause(cause: unknown): string {
     if (cause instanceof AgentApiError) return `http_${cause.status}`
     if (cause instanceof AgentResponseUnreadableError)
       return 'unreadable_response'
-    if (cause instanceof DeadlineExceededError) return 'timeout'
+    if (cause instanceof TimeoutError) return 'timeout'
     if (cause instanceof DOMException && cause.name === 'AbortError')
       return 'aborted'
     return 'unknown'
@@ -227,12 +199,18 @@ export function useAttachment(options: UseAttachmentOptions) {
 
     const generation = uploadGeneration
     const controller = new AbortController()
+    const deadline = new AbortController()
     inFlight.set(id, controller)
-    const result = await withDeadline(
-      options.upload(file, controller.signal),
+    const result = await withTimeout(
+      () => options.upload(file, controller.signal),
       options.uploadTimeoutMs ?? uploadDeadlineMs(file),
-      () => controller.abort()
+      { signal: deadline.signal }
     )
+      .catch((error: unknown) => {
+        if (error instanceof TimeoutError) controller.abort()
+        throw error
+      })
+      .finally(() => deadline.abort())
     const hash = await contentHash
     if (cancelled.has(id)) throw new DOMException('Aborted', 'AbortError')
     if (generation === uploadGeneration) {
@@ -310,8 +288,11 @@ export function useAttachment(options: UseAttachmentOptions) {
     name: string,
     resolve: () => Promise<File | undefined>
   ): Promise<DeferredFileResult> {
+    const deadline = new AbortController()
     try {
-      const file = await withDeadline(resolve(), DEFERRED_FETCH_TIMEOUT_MS)
+      const file = await withTimeout(resolve, DEFERRED_FETCH_TIMEOUT_MS, {
+        signal: deadline.signal
+      }).finally(() => deadline.abort())
       if (cancelled.has(id)) return 'cancelled'
       if (!file) {
         options.remove(id)

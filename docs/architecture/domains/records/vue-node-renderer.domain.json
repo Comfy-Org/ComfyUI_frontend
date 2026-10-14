@@ -1,0 +1,401 @@
+{
+  "id": "vue-node-renderer",
+  "capability": "Vue node renderer (shared technical module)",
+  "description": "Shared technical module, not a business domain. The Node 2.0 DOM renderer that draws each LiteGraph node as a Vue component: node shell, header, badges, footer, slots, widget grid host, node image, video, and live previews, execution and error state, pointer, drag, snap, resize, z-index, tooltip, and slot link interactions, and DOM measurement fed into the layout store. Composables that read or drive LiteGraph nodes, canvas pointers, link connectors, and the widget render model are integration. Widget components and constructors belong to vue-node-widgets; capability previews already recorded elsewhere (audio, GLSL, and others) stay with their records.",
+  "modules": [
+    {
+      "path": "src/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/types/**",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/utils/linkedCoreMediaUtils.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/utils/linkedCoreMediaUtils.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/composables/slotLinkDragContext.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/composables/useNodeEventHandlers.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/composables/useNodeEventHandlers.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/composables/useNodeSnap.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/composables/useNodeTooltips.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/composables/useNodeTooltips.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/composables/useNodeZIndex.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/composables/useNodeZIndex.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/composables/usePartitionedBadges.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/composables/usePartitionedBadges.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/composables/useShiftKeySync.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/execution/**",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/interactions/resize/useNodeResize.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/interactions/resize/useNodeResize.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/layout/nodeSizeReflow.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/layout/useNodeDrag.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/layout/useNodeDrag.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/layout/useNodeLayout.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/layout/useNodeLayout.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/preview/**",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/utils/__tests__/nodeDataUtils.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/utils/nodeDataUtils.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/utils/nodeErrorState.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/utils/nodeErrorState.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/utils/nodeStyleUtils.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/utils/nodeStyleUtils.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/components/ImagePreview.stories.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/components/ImagePreview.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/components/ImagePreview.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/components/imagePreviewLayout.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/components/InputSlot.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/components/InputSlot.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/components/LGraphNode.subgraph.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/components/LGraphNode.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/components/LGraphNode.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/components/LGraphNodePreview.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/components/LGraphNodePreview.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/components/LivePreview.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/components/LivePreview.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/components/NodeBadge.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/components/NodeBadges.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/components/NodeBadges.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/components/NodeContent.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/components/NodeFooter.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/components/NodeFooter.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/components/NodeHeader.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/components/NodeHeader.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/components/NodeSlots.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/components/NodeSlots.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/components/NodeWidgets.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/components/NodeWidgets.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/components/OutputSlot.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/components/OutputSlot.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/components/SlotConnectionDot.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/components/SlotConnectionDot.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/components/SlotLinkReveal.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/components/WidgetGrid.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/components/WidgetGrid.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/VideoPreview.agentReset.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/VideoPreview.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/VideoPreview.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/composables/insertWorkflowSubgraphInteriorWidgets.regression.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/composables/processedWidgetRenderModel.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/composables/useNodePointerInteractions.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/composables/useNodePointerInteractions.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/composables/useProcessedWidgets.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/composables/useProcessedWidgets.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/composables/useProcessedWidgets.widgetRename.regression.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/composables/useSlotLinkInteraction.autoPan.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/composables/useSlotLinkInteraction.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/composables/useSlotLinkInteraction.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/composables/useSlotLinkReveal.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/composables/useSlotLinkReveal.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/layout/ensureCorrectLayoutScale.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/layout/ensureCorrectLayoutScale.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/utils/eventUtils.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/useVueFeatureFlags.ts",
+      "role": "application"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Node components render header, slots, badges, widgets, and state",
+      "checks": [
+        "src/renderer/extensions/vueNodes/components/LGraphNode.test.ts",
+        "src/renderer/extensions/vueNodes/components/LGraphNode.subgraph.test.ts",
+        "src/renderer/extensions/vueNodes/components/NodeHeader.test.ts",
+        "src/renderer/extensions/vueNodes/components/NodeSlots.test.ts",
+        "src/renderer/extensions/vueNodes/components/NodeWidgets.test.ts",
+        "browser_tests/tests/vueNodes/nodeStates/error.spec.ts",
+        "browser_tests/tests/vueNodes/slots.spec.ts"
+      ]
+    },
+    {
+      "name": "Widget render model follows LiteGraph widgets, promotion, and renames",
+      "checks": [
+        "src/renderer/extensions/vueNodes/composables/useProcessedWidgets.test.ts",
+        "src/renderer/extensions/vueNodes/composables/useProcessedWidgets.widgetRename.regression.test.ts",
+        "src/renderer/extensions/vueNodes/composables/insertWorkflowSubgraphInteriorWidgets.regression.test.ts"
+      ]
+    },
+    {
+      "name": "Pointer, drag, resize, and slot link interactions write through the layout store",
+      "checks": [
+        "src/renderer/extensions/vueNodes/composables/useNodePointerInteractions.test.ts",
+        "src/renderer/extensions/vueNodes/layout/useNodeDrag.test.ts",
+        "src/renderer/extensions/vueNodes/interactions/resize/useNodeResize.test.ts",
+        "src/renderer/extensions/vueNodes/composables/useSlotLinkInteraction.test.ts",
+        "src/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking.test.ts",
+        "browser_tests/tests/vueNodes/interactions/node/move.spec.ts",
+        "browser_tests/tests/vueNodes/interactions/node/resize.spec.ts"
+      ]
+    },
+    {
+      "name": "Node media previews show outputs and recover from failures",
+      "checks": [
+        "src/renderer/extensions/vueNodes/components/ImagePreview.test.ts",
+        "src/renderer/extensions/vueNodes/VideoPreview.test.ts",
+        "src/renderer/extensions/vueNodes/components/LivePreview.test.ts"
+      ]
+    }
+  ],
+  "adrs": [
+    "docs/adr/CRDT-LAYOUT-0003-crdt-layout-intent-and-local-measurement.md",
+    "docs/adr/ECS-0008-entity-component-system.md",
+    "docs/adr/ECS-LINK-PRESENTATION-0028-link-presentation-store-ownership.md",
+    "docs/adr/CANVAS-GESTURE-0029-pointer-gesture-state-machine.md",
+    "docs/adr/CANVAS-INTERACTION-0035-agent-node-picking-policy.md",
+    "docs/adr/RENDERING-ATOMICITY-0020-frame-atomic-rendering.md"
+  ],
+  "compatibilityPromises": [
+    "Existing graph canvas, linear mode, properties panel, node library preview, agent, and capability callers may continue importing Vue node renderer internals during inventory; this record grants no new cross-domain permissions.",
+    "Switching between the classic canvas and Vue node renderer preserves node geometry, widget values, and serialized workflows."
+  ],
+  "deepImports": "inventory"
+}

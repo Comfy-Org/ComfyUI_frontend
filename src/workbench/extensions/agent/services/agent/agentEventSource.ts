@@ -1,3 +1,5 @@
+import { useTimeoutFn } from '@vueuse/core'
+
 import type { AgentEventSource } from '../../composables/agent/useAgentSession'
 
 export interface AgentEventSocket extends AgentEventSource {
@@ -26,7 +28,14 @@ export function createAgentEventSource({
   const listeners = new Set<(raw: unknown) => void>()
   const statusListeners = new Set<(live: boolean) => void>()
   let socket: WebSocket | null = null
-  let reconnectTimer: number | null = null
+  let nextReconnectDelayMs = reconnectDelayMs
+  const reconnectTimer = useTimeoutFn(
+    () => void connect(),
+    () => nextReconnectDelayMs,
+    {
+      immediate: false
+    }
+  )
   let connectGeneration = 0
   let connecting = false
   let failedConnects = 0
@@ -43,19 +52,14 @@ export function createAgentEventSource({
   }
 
   function scheduleReconnect(): void {
-    if (listeners.size === 0 || reconnectTimer !== null) return
+    if (listeners.size === 0 || reconnectTimer.isPending.value) return
     const ceiling = Math.min(
       maxReconnectDelayMs,
       reconnectDelayMs * 2 ** failedConnects
     )
     failedConnects += 1
-    reconnectTimer = window.setTimeout(
-      () => {
-        reconnectTimer = null
-        void connect()
-      },
-      ceiling * (0.5 + 0.5 * random())
-    )
+    nextReconnectDelayMs = ceiling * (0.5 + 0.5 * random())
+    reconnectTimer.start()
   }
 
   async function connect(): Promise<void> {
@@ -121,10 +125,7 @@ export function createAgentEventSource({
 
   function disconnect(): void {
     connectGeneration++
-    if (reconnectTimer !== null) {
-      window.clearTimeout(reconnectTimer)
-      reconnectTimer = null
-    }
+    reconnectTimer.stop()
     const current = socket
     socket = null
     if (current === null) return

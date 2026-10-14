@@ -1,0 +1,63 @@
+{
+  "id": "litegraph-api",
+  "capability": "LiteGraph public API",
+  "description": "The LiteGraph barrel and global singleton that custom nodes and extensions consume: node type registration and creation, global configuration, late-bound instance access, deprecation feedback, and canvas polyfills.",
+  "modules": [
+    {
+      "path": "src/lib/litegraph/src/litegraphInstance.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/lib/litegraph/src/polyfills.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/lib/litegraph/src/utils/feedback.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/lib/litegraph/src/LiteGraphGlobal.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/lib/litegraph/src/litegraph.publicApi.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/lib/litegraph/src/litegraph.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/lib/litegraph/src/litegraph.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/useGlobalLitegraph.ts",
+      "role": "integration"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "The LiteGraph barrel exposes the supported extension API",
+      "checks": [
+        "src/lib/litegraph/src/litegraph.publicApi.test.ts",
+        "src/lib/litegraph/src/litegraph.test.ts"
+      ]
+    },
+    {
+      "name": "Extensions register node types and receive litegraph events",
+      "checks": ["browser_tests/tests/litegraphEvent.spec.ts"]
+    }
+  ],
+  "adrs": [
+    "docs/adr/DEPS-LITEGRAPH-0001-integrate-litegraph-into-the-frontend.md"
+  ],
+  "compatibilityPromises": [
+    "Names exported from src/lib/litegraph/src/litegraph.ts and the LiteGraph global stay available to extensions; removals need deprecation warnings.",
+    "Model, canvas, and widget modules may keep importing the barrel during inventory to avoid the LGraph and Subgraph initialisation cycle."
+  ],
+  "deepImports": "inventory"
+}
