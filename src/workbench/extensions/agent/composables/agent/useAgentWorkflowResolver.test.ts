@@ -13,6 +13,7 @@ import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflo
 
 import { useAgentWorkflowResolver } from './useAgentWorkflowResolver'
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/platform/telemetry/reportError'))
 
 function workflow(

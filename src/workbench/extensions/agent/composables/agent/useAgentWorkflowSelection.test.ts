@@ -16,6 +16,7 @@ import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflo
 import { useAgentWorkflowResolver } from './useAgentWorkflowResolver'
 import { useAgentWorkflowSelection } from './useAgentWorkflowSelection'
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
 function setup() {

@@ -8,6 +8,8 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
+
 it('gates real document transport and removes reconnect listeners on revocation', async () => {
   const previousSocket = api.socket
   const send = vi.fn<(frame: string) => void>()

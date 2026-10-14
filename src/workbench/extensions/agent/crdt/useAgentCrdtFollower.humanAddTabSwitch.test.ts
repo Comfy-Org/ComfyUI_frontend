@@ -23,6 +23,8 @@ import { attachDocOpMinter } from './docOpMinter'
 import { mintWireOps } from './opEnvelope'
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
+
 const WORKFLOW_ID = 'wf-human-add'
 const CATALOG: WidgetCatalog = {
   types: { TestSource: { widget_order: ['steps'] } }

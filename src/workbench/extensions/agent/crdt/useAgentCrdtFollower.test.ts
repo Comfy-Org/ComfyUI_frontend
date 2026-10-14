@@ -27,6 +27,8 @@ import type { DocFrameTransport } from './docFrameClient'
 import type { GraphOperation } from './graphOperations'
 import type { BatchOutcome, OpSenderDeps } from './opSender'
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
+
 const bridgeState = vi.hoisted(() => {
   class FakeBridge extends EventTarget {
     subscribe = vi.fn()

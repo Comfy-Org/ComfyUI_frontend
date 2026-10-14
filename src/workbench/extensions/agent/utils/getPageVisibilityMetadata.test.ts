@@ -1,7 +1,9 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { useAgentPanelStore } from '../stores/agent/agentPanelStore'
 import { getPageVisibilityMetadata } from './getPageVisibilityMetadata'
+
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 describe('getPageVisibilityMetadata', () => {
   it('reports the panel as closed when it is not visible', () => {

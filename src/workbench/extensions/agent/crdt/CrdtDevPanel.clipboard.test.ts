@@ -6,6 +6,8 @@ import { useClipboard } from '@vueuse/core'
 
 import { i18n } from '@/i18n'
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
+
 const { writeText } = vi.hoisted(() => ({
   writeText: vi.fn<ReturnType<typeof useClipboard>['copy']>(() =>
     Promise.resolve()

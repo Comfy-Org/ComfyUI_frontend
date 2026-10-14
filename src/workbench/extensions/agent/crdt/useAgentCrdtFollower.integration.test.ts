@@ -20,6 +20,8 @@ import {
 import { encodeBase64 } from './docFrameClient'
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
+
 const sent: string[] = []
 
 const WORKFLOW_ID = 'wf-late-graph'

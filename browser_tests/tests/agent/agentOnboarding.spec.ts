@@ -1,6 +1,8 @@
 import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { accountScope } from '@/platform/workflow/persistence/base/accountScope'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import { waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
 
 import {
@@ -8,6 +10,10 @@ import {
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+
+const ONBOARDING_KEY = StorageKeys.agentOnboarded(
+  accountScope('test-user-e2e', 'ws-personal')!
+)
 
 test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
   test('returns to the previous card without completing the tour', async ({
@@ -43,11 +49,7 @@ test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
     await expect(firstCard).toBeVisible()
     await expect
       .poll(() =>
-        page.evaluate(() =>
-          localStorage.getItem(
-            'Comfy.AgentPanel.onboarded.test-user-e2e.ws-personal'
-          )
-        )
+        page.evaluate((key) => localStorage.getItem(key), ONBOARDING_KEY)
       )
       .toBe('false')
   })
@@ -72,7 +74,6 @@ test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
       .getByRole('button', { name: enMessages.agent.takeTour, exact: true })
       .click()
 
-    // Replay starts at card one, not wherever the finished tour left off.
     await expect(firstCard).toBeVisible()
     await expect(
       firstCard.getByRole('button', {
@@ -80,15 +81,9 @@ test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
       })
     ).toHaveCount(0)
 
-    // The persisted flag has to clear too, or a reload re-hides a tour the
-    // user just asked to see.
     await expect
       .poll(() =>
-        page.evaluate(() =>
-          localStorage.getItem(
-            'Comfy.AgentPanel.onboarded.test-user-e2e.ws-personal'
-          )
-        )
+        page.evaluate((key) => localStorage.getItem(key), ONBOARDING_KEY)
       )
       .not.toBe('true')
   })
@@ -128,11 +123,7 @@ test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
     await expect(page.getByRole('dialog')).toHaveCount(0)
     await expect
       .poll(() =>
-        page.evaluate(() =>
-          localStorage.getItem(
-            'Comfy.AgentPanel.onboarded.test-user-e2e.ws-personal'
-          )
-        )
+        page.evaluate((key) => localStorage.getItem(key), ONBOARDING_KEY)
       )
       .toBe('true')
 

@@ -14,6 +14,8 @@ import { DEPLOY_ACTION_SEEN_SETTINGS } from '@e2e/fixtures/constants/workflowAct
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
+import { accountScope } from '@/platform/workflow/persistence/base/accountScope'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import type {
   AgentCancelAccepted,
   AgentTurnAccepted,
@@ -324,6 +326,7 @@ async function mockAgentBoot(
     ({
       initiallyOpen,
       onboardingCompleted,
+      onboardingKey,
       debugEnabled,
       autoShownReadProbe
     }) => {
@@ -341,11 +344,8 @@ async function mockAgentBoot(
       if (localStorage.getItem('Comfy.AgentPanel.open') === null) {
         localStorage.setItem('Comfy.AgentPanel.open', String(initiallyOpen))
       }
-      if (localStorage.getItem('Comfy.AgentPanel.onboarded') === null) {
-        localStorage.setItem(
-          'Comfy.AgentPanel.onboarded',
-          String(onboardingCompleted)
-        )
+      if (localStorage.getItem(onboardingKey) === null) {
+        localStorage.setItem(onboardingKey, String(onboardingCompleted))
       }
       if (debugEnabled) {
         localStorage.setItem('Comfy.Agent.CrdtDebug.enabled', 'true')
@@ -355,6 +355,9 @@ async function mockAgentBoot(
     {
       initiallyOpen: agentPanelInitiallyOpen,
       onboardingCompleted: agentOnboardingCompleted,
+      onboardingKey: StorageKeys.agentOnboarded(
+        accountScope('test-user-e2e', 'ws-personal')!
+      ),
       debugEnabled: crdtDebugEnabled,
       autoShownReadProbe: agentAutoShownReadProbe
     }
