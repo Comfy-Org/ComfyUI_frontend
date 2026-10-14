@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import './agentPanel.css'
 
-import type { GetFeaturesResponse } from '@comfyorg/ingest-types'
 import { useClipboard } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import {
@@ -1690,10 +1689,7 @@ function onSelectNodes(): void {
 
 const assetsStore = useAssetsStore()
 let inputAssetRefresh: Promise<unknown> = Promise.resolve()
-const maxUploadSize =
-  useFeatureFlags().featureFlag<GetFeaturesResponse['max_upload_size']>(
-    'max_upload_size'
-  )
+const { flags } = useFeatureFlags()
 
 const attachment = useAttachment({
   upload: async (file, signal) => {
@@ -1716,7 +1712,7 @@ const attachment = useAttachment({
       .then(() => assetsStore.inputAssets.loadNew())
       .catch(() => undefined)
   },
-  maxBytes: () => maxUploadSize.value ?? MAX_ATTACHMENT_BYTES,
+  maxBytes: () => flags.maxUploadSize ?? MAX_ATTACHMENT_BYTES,
   // A rejected file is the user's problem to fix, not an agent failure, so it
   // must not raise the server-error overlay.
   onError: (message) => toast.warning(message, { duration: 5000 }),
