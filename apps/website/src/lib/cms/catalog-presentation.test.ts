@@ -83,6 +83,17 @@ describe('native CONTENT presentation', () => {
       ]
     })
   })
+  it('does not reuse old video presentation when the selected file becomes an image', () => {
+    const view = catalogPresentation({
+      ...record,
+      data: {
+        ...record.data,
+        website_media_types: { '$.hero': 'image/png' },
+        presentation: { thumbnailKind: 'video' }
+      }
+    })
+    expect(view).toMatchObject({ thumbnail: { kind: 'image' } })
+  })
   it('preserves explicit download-only and stored script facts only in detail data', () => {
     const view = catalogPresentation({
       ...record,

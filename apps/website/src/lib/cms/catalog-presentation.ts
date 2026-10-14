@@ -84,6 +84,13 @@ export function catalogPresentation(
   const title = text('title', record.uid)
   const urls = jsonObject.safeParse(d.website_media)
   const mediaTypes = jsonObject.safeParse(d.website_media_types)
+  const mediaKind = (field: string) => {
+    const mime = mediaTypes.success ? mediaTypes.data[field] : undefined
+    if (mime === 'video/mp4' || mime === 'video/webm') return 'video'
+    if (mime === 'image/png' || mime === 'image/jpeg' || mime === 'image/webp')
+      return 'image'
+    return undefined
+  }
   const faq = Array.isArray(local.faq) ? local.faq : d.faq
   const catalogDetails = workflowCatalogDetailsSchema.safeParse({
     locale: ['en', 'zh-CN', 'ja'].includes(locale) ? locale : 'en',
@@ -222,11 +229,8 @@ export function catalogPresentation(
                 : '',
             tags: Array.isArray(example.tags) ? example.tags : [],
             values: example.values ?? {},
-            ...(mediaTypes.success &&
-            ['video/mp4', 'video/webm'].includes(
-              String(mediaTypes.data[`$.examples[${index}].media`])
-            )
-              ? { mediaKind: 'video' }
+            ...(mediaKind(`$.examples[${index}].media`)
+              ? { mediaKind: mediaKind(`$.examples[${index}].media`) }
               : {}),
             thumbnailUrl: typeof url === 'string' ? url : ''
           }
@@ -238,18 +242,13 @@ export function catalogPresentation(
           thumbnail: {
             url: hero,
             kind:
-              mediaTypes.success &&
-              ['video/mp4', 'video/webm'].includes(
-                String(
-                  mediaTypes.data[
-                    urls.success && typeof urls.data['$.hero'] === 'string'
-                      ? '$.hero'
-                      : '$.thumbnail'
-                  ]
-                )
-              )
-                ? 'video'
-                : (preserved.thumbnailKind ?? 'image'),
+              mediaKind(
+                urls.success && typeof urls.data['$.hero'] === 'string'
+                  ? '$.hero'
+                  : '$.thumbnail'
+              ) ??
+              preserved.thumbnailKind ??
+              'image',
             ...(urls.success && typeof urls.data['$.hero_poster'] === 'string'
               ? { poster: urls.data['$.hero_poster'] }
               : {})
