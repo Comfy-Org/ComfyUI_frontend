@@ -58,6 +58,9 @@ jobs:
           - name: Verify oxlint
             run: pnpm oxlint
 
+          - name: Verify architecture
+            run: pnpm architecture:check
+
           - name: Verify ESLint
             run: pnpm exec eslint --cache --concurrency auto --cache-strategy content
 
