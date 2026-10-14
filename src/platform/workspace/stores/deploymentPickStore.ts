@@ -146,7 +146,8 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
    * Orders the answers. Each `load()` takes the next number (`latestRequest`);
    * `lastApplied` is the number of the newest answer put on screen. A listing
    * or a 403 applies when it is newer than that, so a listing that answered
-   * stays shown when a newer load fails or never answers. A plain failure
+   * stays shown when a newer load fails or never answers; an older listing
+   * still passes on a gone pick it reports. A plain failure
    * applies only when it is the latest load asked for and nothing newer has
    * applied, so it never replaces a listing that may still arrive. A default
    * the server took moves `lastApplied` up to `latestRequest`, which drops
@@ -166,7 +167,10 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
   }
 
   function applyAnswer(request: number, event: DeploymentPickEvent) {
-    if (request <= lastApplied) return
+    if (request <= lastApplied) {
+      if (event.type === 'loaded') keepPickGone(event.gonePickedDeploymentId)
+      return
+    }
     if (event.type === 'loadFailed') {
       if (request === latestRequest) dispatch(event)
       return
@@ -174,6 +178,12 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     lastApplied = request
     dispatch(event)
     if (event.type === 'loaded') noteListing(event.gonePickedDeploymentId)
+  }
+
+  function keepPickGone(gonePickedDeploymentId: string | null) {
+    if (gonePickedDeploymentId !== null && pickedDeployment.value === null) {
+      sawPickGone.value = true
+    }
   }
 
   function noteListing(gonePickedDeploymentId: string | null) {

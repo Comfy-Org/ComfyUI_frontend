@@ -47,6 +47,31 @@ describe('useDeploymentPickAtBoot', () => {
     ])
   })
 
+  it('tells the person their pick is gone when a newer listing answers before the boot listing that said so', async () => {
+    Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-1' })
+    let answerBoot: (reply: WorkspaceDeploymentList) => void = () => {}
+    vi.mocked(workspaceApi.listDeployments)
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          answerBoot = resolve
+        })
+      )
+      .mockResolvedValue(listing)
+
+    const booting = useDeploymentPickAtBoot()
+    await useDeploymentPickStore().load()
+    answerBoot({ ...listing, gone_picked_deployment_id: 'dep-gone' })
+    await booting
+
+    expect(useDeploymentPickStore().goneDeployment).toBe('pick')
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'warning',
+        title: 'The deployment you picked no longer exists.'
+      })
+    ])
+  })
+
   it.for([
     {
       when: 'its pick is listed',

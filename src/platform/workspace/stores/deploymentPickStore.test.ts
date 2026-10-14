@@ -829,6 +829,45 @@ describe('useDeploymentPickStore', () => {
       expect(store.pickedDeploymentId).toBe('dep-1')
     })
 
+    it.for([
+      { newer: 'shows no pick', reply: {}, gone: 'pick' },
+      {
+        newer: 'shows a deployment picked',
+        reply: { picked_deployment_id: 'dep-1', pick_source: 'browser' },
+        gone: null
+      }
+    ] satisfies {
+      newer: string
+      reply: Partial<WorkspaceDeploymentList>
+      gone: 'pick' | null
+    }[])(
+      'says the pick is gone: $gone, when an older listing reports it gone after a newer one that $newer answered',
+      async ({ reply, gone }) => {
+        const older = deferred<WorkspaceDeploymentList>()
+        mockWorkspaceApi.listDeployments
+          .mockReturnValueOnce(older.promise)
+          .mockResolvedValueOnce({
+            ...listing,
+            picked_deployment_id: undefined,
+            pick_source: undefined,
+            ...reply
+          })
+        const store = useDeploymentPickStore()
+        const first = store.load()
+        await store.load()
+
+        older.resolve({
+          ...listing,
+          picked_deployment_id: undefined,
+          pick_source: undefined,
+          gone_picked_deployment_id: 'dep-gone'
+        })
+        await first
+
+        expect(store.goneDeployment).toBe(gone)
+      }
+    )
+
     it('stays visible when an older listing fails after a newer one answered', async () => {
       const older = deferred<WorkspaceDeploymentList>()
       mockWorkspaceApi.listDeployments
