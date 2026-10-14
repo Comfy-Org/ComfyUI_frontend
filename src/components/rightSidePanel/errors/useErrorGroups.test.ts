@@ -7,6 +7,7 @@ import { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import { createBoundaryLinkedSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { useComfyRegistryService } from '@/services/comfyRegistryService'
 import type { MissingNodeType } from '@/types/comfy'
@@ -57,6 +58,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 
 vi.mock<unknown>(import('@/i18n'), () => {
   const messages: Record<string, string> = {
+    'deploymentSwitcher.deployment': '{build} v{version}',
     'errorCatalog.validationErrors.required_input_missing.title':
       'Missing connection',
     'errorCatalog.validationErrors.required_input_missing.message':
@@ -373,6 +375,33 @@ describe('useErrorGroups', () => {
       )
       expect(missingGroup?.displayMessage).toBe(
         "Required custom nodes aren't supported on Cloud. Replace them with supported nodes."
+      )
+    })
+
+    it('names the deployment this page booted on in the missing_node copy', async () => {
+      mockIsCloud.value = true
+      useDeploymentPickStore().$patch({
+        bootDeployment: {
+          deployment_id: 'dep-2',
+          release_id: 'r-2',
+          build_name: 'Studio Build',
+          release_version: 2,
+          status: 'ready',
+          created_at: '2026-10-01T00:00:00Z'
+        }
+      })
+      const { groups } = createErrorGroups()
+      const missingNodesStore = useMissingNodesErrorStore()
+      missingNodesStore.setMissingNodeTypes([
+        makeMissingNodeType('NodeA', { cnrId: 'pack-1' })
+      ])
+      await nextTick()
+
+      const missingGroup = groups.allErrorGroups.value.find(
+        (g) => g.type === 'missing_node'
+      )
+      expect(missingGroup?.displayMessage).toBe(
+        "These nodes aren't on Studio Build v2. Replace them, or pick a deployment that has them."
       )
     })
 

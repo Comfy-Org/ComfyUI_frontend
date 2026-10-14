@@ -5,7 +5,10 @@ import { createI18n } from 'vue-i18n'
 import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh'
 import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
 import type * as DistributionTypes from '@/platform/distribution/types'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
+import { mockDeploymentListing } from '@/platform/workspace/__fixtures__/deploymentListing'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
@@ -222,5 +225,42 @@ describe('GraphView - partner nodes education card', () => {
     render(GraphView, { global: { plugins: [i18n] } })
 
     expect(screen.queryByTestId('education-card-stub')).not.toBeInTheDocument()
+  })
+})
+
+describe('GraphView - deployment pick at startup', () => {
+  const pickGone = 'The deployment you picked no longer exists.'
+
+  beforeEach(() => {
+    mockDeploymentListing({
+      items: [],
+      builds_visible: true,
+      gone_picked_deployment_id: 'dep-gone'
+    })
+    vi.spyOn(useDeploymentPickStore(), 'loadOnce')
+  })
+
+  afterEach(() => {
+    distribution.isCloud = false
+  })
+
+  it("warns on Cloud that this browser's picked deployment is gone, without opening the account menu", async () => {
+    distribution.isCloud = true
+
+    const add = vi.spyOn(useToastStore(), 'add')
+    render(GraphView, { global: { plugins: [i18n] } })
+
+    await waitFor(() =>
+      expect(add).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'warn', summary: pickGone })
+      )
+    )
+  })
+
+  it('does not look up the deployment on a local build', () => {
+    render(GraphView, { global: { plugins: [i18n] } })
+
+    expect(useDeploymentPickStore().loadOnce).not.toHaveBeenCalled()
+    expect(useToastStore().messagesToAdd).toEqual([])
   })
 })
