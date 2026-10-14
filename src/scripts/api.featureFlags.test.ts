@@ -1,5 +1,13 @@
 import type { Mock } from 'vitest'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { computed, nextTick } from 'vue'
 
 import { api, ComfyApi } from '@/scripts/api'
@@ -160,6 +168,42 @@ describe('API Feature Flags', () => {
         reason: null
       })
       expect(api.getServerFeature('api_version')).toBe('1.0.0')
+    })
+
+    it("routes agent calls to ComfyUI's /api/agent unless the agent feature names another url", () => {
+      onTestFinished(() => {
+        api.api_base = ''
+      })
+      expect(api.agentRoute('/agent/threads')).toBe('/agent/threads')
+
+      api.serverFeatureFlags.value = { agent: { state: 'ready' } }
+      expect(api.agentRoute('/agent/threads')).toBe('/agent/threads')
+      expect(api.agentURL('/agent/events')).toBe(api.apiURL('/agent/events'))
+
+      api.serverFeatureFlags.value = {
+        agent: { state: 'ready', url: 'http://127.0.0.1:9000/a' }
+      }
+      expect(api.agentRoute('/agent/threads')).toBe(
+        'http://127.0.0.1:9000/a/threads'
+      )
+      expect(api.agentURL('/agent/events')).toBe(
+        'http://127.0.0.1:9000/a/events'
+      )
+      expect(api.agentRoute('/workflows?limit=100')).toBe(
+        '/workflows?limit=100'
+      )
+
+      vi.stubEnv('VITE_AGENT_STANDALONE', 'true')
+      expect(api.agentRoute('/agent/threads')).toBe('/agent/threads')
+      vi.unstubAllEnvs()
+
+      api.api_base = '/comfy'
+      api.serverFeatureFlags.value = {
+        agent: { state: 'ready', url: '/agent-host' }
+      }
+      expect(api.agentRoute('/agent/threads')).toBe(
+        `${window.location.origin}/comfy/agent-host/threads`
+      )
     })
 
     it('settles feature flags immediately when the server delivers an empty map', () => {
