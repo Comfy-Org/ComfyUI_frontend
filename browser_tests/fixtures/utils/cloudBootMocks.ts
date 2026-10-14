@@ -30,7 +30,7 @@ export async function mockCloudBootRoutes(
   await page.route('**/api/features', (r) => r.fulfill(jsonRoute(features)))
   if (features['agent-in-app-experience'] === true)
     await new FeatureFlagHelper(page).seedServerFlags({
-      agent: { state: 'ready', url: '/api/agent' }
+      agent: { state: 'ready' }
     })
   await page.route('**/api/system_stats', (r) =>
     r.fulfill(jsonRoute(mockSystemStats))

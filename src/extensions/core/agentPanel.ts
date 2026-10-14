@@ -559,8 +559,7 @@ function setupFlagGate(
     { immediate: true }
   )
   watch(
-    () =>
-      import.meta.env.MODE === 'development' || agentPanelStore.flagsSettled,
+    () => devForcedOn || agentPanelStore.flagsSettled,
     (settled) => {
       agentPanelStore.gateSettled = settled
     },
