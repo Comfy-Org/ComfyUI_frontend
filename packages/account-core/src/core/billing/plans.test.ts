@@ -91,11 +91,11 @@ describe('createPlansReader', () => {
 
     const result = await createPlansReader({ transport, scopeSource }).read()
 
-    expect(result.status).toBe('ok')
-    if (result.status !== 'ok') return
-    expect(result.value.data.plans[0].availability).toEqual({
-      available: false,
-      reason
+    expect(result).toMatchObject({
+      status: 'ok',
+      value: {
+        data: { plans: [{ availability: { available: false, reason } }] }
+      }
     })
   })
 })
