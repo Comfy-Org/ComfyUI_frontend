@@ -6,7 +6,7 @@ import { waitForIsland } from './fixtures/islands'
 test('customer-story preview opens playback with sound and pauses when another video starts', async ({
   page
 }) => {
-  await page.goto('/vfx/')
+  await page.goto('/solutions/vfx/')
   const story = page.locator('section').filter({
     has: page.getByRole('heading', {
       name: 'Inside Black Math’s creative systems',
@@ -52,7 +52,7 @@ test('customer-story preview opens playback with sound and pauses when another v
 
 for (const { path, heading, contact, cta, cleanplate, upscale } of [
   {
-    path: '/vfx/',
+    path: '/solutions/vfx/',
     heading: 'VFX workflows. Built for your pipeline.',
     contact: '/contact/',
     cta: 'TALK TO COMFY',
@@ -61,7 +61,7 @@ for (const { path, heading, contact, cta, cleanplate, upscale } of [
   },
 
   {
-    path: '/zh-CN/vfx/',
+    path: '/zh-CN/solutions/solutions/vfx/',
     heading: '为制作流程而构建的 视觉特效工作流。',
     contact: '/zh-CN/contact/',
     cta: '联系 COMFY',
@@ -74,6 +74,10 @@ for (const { path, heading, contact, cta, cleanplate, upscale } of [
   }) => {
     await page.goto(`${path}?utm_source=linkedin&utm_campaign=vfx-review`)
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(heading)
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+      'href',
+      `https://comfy.org${path}`
+    )
     await expect(
       page.getByRole('navigation', { name: 'Main navigation' })
     ).toBeVisible()

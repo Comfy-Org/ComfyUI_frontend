@@ -15,7 +15,7 @@ afterEach(() => {
 })
 
 function mount(markup: string) {
-  window.history.replaceState(null, '', '/vfx/?utm_source=linkedin')
+  window.history.replaceState(null, '', '/solutions/vfx/?utm_source=linkedin')
   const root = document.createElement('div')
   root.innerHTML = markup
   document.body.append(root)

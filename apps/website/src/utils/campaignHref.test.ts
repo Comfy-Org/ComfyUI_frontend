@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { campaignHref } from './campaignHref'
 
 const PAGE_URL =
-  'https://comfy.org/vfx/?utm_source=linkedin&utm_campaign=vfx&email=private&interest=other'
+  'https://comfy.org/solutions/vfx/?utm_source=linkedin&utm_campaign=vfx&email=private&interest=other'
 
 describe('campaign destinations', () => {
   it.for([

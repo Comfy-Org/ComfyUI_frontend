@@ -23,7 +23,7 @@ const baseRoutes = {
   customerVideoSilversideAi: '/customers/videos/silverside-ai/',
   demos: '/demos/',
   learning: '/learning/',
-  vfx: '/vfx/',
+  vfx: '/solutions/vfx/',
   termsOfService: '/terms-of-service/',
   enterpriseMsa: '/enterprise-msa/',
   privacyPolicy: '/privacy-policy/',
