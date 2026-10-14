@@ -35,5 +35,5 @@ const hero = {
 </script>
 
 <template>
-  <ModelLaunchHeroSection :hero :locale heading-tag="h2" />
+  <ModelLaunchHeroSection :hero :locale heading-tag="h2" fit-ctas />
 </template>
