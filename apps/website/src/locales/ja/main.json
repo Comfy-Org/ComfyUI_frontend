@@ -2009,10 +2009,11 @@
     },
     "samples": {
       "cta": "今すぐ試す",
-      "heading": "Comfy上のDrama 3"
+      "heading": "Drama 3で制作"
     },
     "steps": {
       "heading": "最初のシーンを演出する",
+      "primaryCta": "DRAMA 3を実行",
       "secondaryCta": "ドキュメントを見る",
       "step": "ステップ"
     }

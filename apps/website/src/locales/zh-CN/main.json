@@ -2015,10 +2015,11 @@
     },
     "samples": {
       "cta": "立即试用",
-      "heading": "Comfy 上的 Drama 3"
+      "heading": "用 Drama 3 制作"
     },
     "steps": {
       "heading": "执导你的第一个场景",
+      "primaryCta": "运行 Drama 3",
       "secondaryCta": "查看文档",
       "step": "步骤"
     }

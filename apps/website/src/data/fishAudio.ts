@@ -105,6 +105,11 @@ export const fishAudioPage: ModelLaunchPage = {
   steps: {
     headingKey: 'fishAudio.steps.heading',
     stepLabelKey: 'fishAudio.steps.step',
+    primaryCta: {
+      labelKey: 'fishAudio.steps.primaryCta',
+      href: DIRECTED_TEMPLATE_HREF,
+      target: '_blank'
+    },
     secondaryCta: {
       labelKey: 'fishAudio.steps.secondaryCta',
       href: DOCS_HREF,

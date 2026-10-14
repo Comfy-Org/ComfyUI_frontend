@@ -72,7 +72,6 @@ const metaLabel = computed(() => {
 
     <PlayPauseButton
       :playing
-      variant="muted"
       :aria-label="playing ? t('player.pause') : t('player.play')"
       @click="playing = !playing"
     />

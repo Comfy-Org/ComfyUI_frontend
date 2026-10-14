@@ -4477,12 +4477,13 @@
       }
     },
     "samples": {
-      "heading": "Drama 3 on Comfy",
+      "heading": "Made with Drama 3",
       "cta": "TRY NOW"
     },
     "steps": {
       "heading": "Direct your first scene",
       "step": "Step",
+      "primaryCta": "RUN DRAMA 3",
       "secondaryCta": "VIEW DOCS"
     },
     "runOptions": {
