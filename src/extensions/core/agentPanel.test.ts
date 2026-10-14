@@ -233,7 +233,7 @@ describe('AgentPanel extension flag gate', () => {
     workflowStore = useWorkflowStore()
     agentStore.close.mockClear()
     agentStore.enabled = false
-    agentStore.comfyAgent = undefined
+    Object.assign(agentStore, { comfyAgent: undefined })
     agentStore.isOpen = true
     agentFlagEnabled.value = false
     releaseFirstRunScreen()
@@ -1596,6 +1596,7 @@ describe('AgentPanel extension flag gate', () => {
 
   it("leaves a development build off cloud to ComfyUI's agent", async () => {
     vi.stubEnv('MODE', 'development')
+    vi.stubEnv('VITE_AGENT_STANDALONE', '')
 
     await loadEntryAndSetup()
 
@@ -1603,16 +1604,22 @@ describe('AgentPanel extension flag gate', () => {
   })
 
   it('enables the panel once ComfyUI reports its agent ready', async () => {
-    agentStore.comfyAgent = { state: 'starting', url: null, reason: null }
+    Object.assign(agentStore, {
+      comfyAgent: { state: 'starting', url: null, reason: null }
+    })
 
     await loadEntryAndSetup()
     expect(agentStore.enabled).toBe(false)
 
-    agentStore.comfyAgent = { state: 'ready', url: '/api/agent', reason: null }
+    Object.assign(agentStore, {
+      comfyAgent: { state: 'ready', url: '/api/agent', reason: null }
+    })
     await nextTick()
     expect(agentStore.enabled).toBe(true)
 
-    agentStore.comfyAgent = { state: 'failed', url: null, reason: 'unknown' }
+    Object.assign(agentStore, {
+      comfyAgent: { state: 'failed', url: null, reason: 'unknown' }
+    })
     await nextTick()
     expect(agentStore.enabled).toBe(false)
   })
