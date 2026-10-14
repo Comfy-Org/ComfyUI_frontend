@@ -13,8 +13,8 @@ import type {
   AgentStarterPromptAssignment,
   AgentStopMethod
 } from '@/platform/telemetry/types'
-import type { FreeUseVariant } from '../../experiments/freeUsePlacement'
 
+import type { FreeUseVariant } from '../../experiments/freeUsePlacement'
 import type { ActiveTab } from '../../types/activeTab'
 import type {
   WorkflowReference,
@@ -133,6 +133,7 @@ const emit = defineEmits<{
   stop: [method: AgentStopMethod]
   attach: []
   attachFiles: [files: File[]]
+  removeAttachment: [id: string]
   openAssets: []
   selectNodes: []
   removeTag: [id: string]
@@ -495,8 +496,12 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
 
     <template v-if="!showHistory">
       <slot name="instrument" />
-      <footer class="shrink-0 py-3">
-        <div class="mx-auto flex w-full max-w-[640px] flex-col gap-4 px-4">
+      <footer data-testid="agent-panel-footer" class="shrink-0 py-3">
+        <div
+          data-testid="agent-composer-stack"
+          class="mx-auto flex w-full max-w-[640px] flex-col gap-4 px-4"
+        >
+          <slot name="composerNotice" />
           <AgentPaywallCard
             v-if="creditsExhausted"
             data-testid="agent-credits-exhausted-paywall"
@@ -532,6 +537,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             @stop="emit('stop', $event)"
             @attach="emit('attach')"
             @attach-files="emit('attachFiles', $event)"
+            @remove-attachment="emit('removeAttachment', $event)"
             @open-assets="emit('openAssets')"
             @select-nodes="emit('selectNodes')"
             @remove-tag="emit('removeTag', $event)"

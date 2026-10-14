@@ -139,9 +139,13 @@ describe('getMainNavigation', () => {
           {
             label: 'Cinematic Studio',
             href: '/hub/apps/cinematic-studio/',
-            newTab: true
+            newTab: undefined
           },
-          { label: 'Re-shoot', href: '/hub/apps/reshoot/', newTab: true }
+          {
+            label: 'Re-shoot',
+            href: '/hub/apps/reshoot/',
+            newTab: undefined
+          }
         ],
         allLink: { label: 'All apps', href: '/hub/apps/' }
       }
@@ -229,15 +233,8 @@ describe('getMainNavigation', () => {
       'Developer Platform',
       'Comfy API',
       'Comfy Router',
-      'Builds',
-      'Managed Builds'
+      'Builds'
     ])
-    expect(productsItem?.columns?.[2].items).toContainEqual(
-      expect.objectContaining({
-        label: 'Managed Builds',
-        href: '/enterprise/managed-builds/'
-      })
-    )
     expect(productsItem?.columns?.[3].placement).toBe('footer')
     expect(productsItem?.columns?.[3].items.map((item) => item.label)).toEqual([
       'Docs',
@@ -261,7 +258,6 @@ describe('getMainNavigation', () => {
       expect(badgeOf(routes.platform)).toBe('new')
       expect(badgeOf(routes.platformComfyApi)).toBeUndefined()
       expect(badgeOf(routes.platformRouter)).toBe('new')
-      expect(badgeOf(routes.managedBuilds)).toBeUndefined()
     }
   )
 
@@ -280,11 +276,18 @@ describe('getMainNavigation', () => {
     expect(enterprise.columns?.[0].header).toBeUndefined()
     expect(enterprise.columns?.[0].items.map((item) => item.label)).toEqual([
       'Comfy Enterprise',
+      'Managed Builds',
       'Forward Deployed Creatives',
       'Team Billing',
       'Commercial Licensing',
       'Contact Sales'
     ])
+    expect(enterprise.columns?.[0].items).toContainEqual(
+      expect.objectContaining({
+        label: 'Managed Builds',
+        href: '/enterprise/managed-builds/'
+      })
+    )
     expect(enterprise.featured).toEqual(
       expect.objectContaining({
         videoSrc: 'https://media.comfy.org/website/minimax-license/hero.mp4',

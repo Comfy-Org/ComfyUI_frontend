@@ -3178,6 +3178,17 @@
         "count": 4
       }
     },
+    "src/scripts/clipspace.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
     "src/scripts/domWidget.ts": {
       "crap_high": {
         "count": 1
@@ -3531,10 +3542,12 @@
         "count": 1
       }
     },
-    "src/workbench/extensions/manager/composables/useManagerState.ts": {
+    "src/workbench/extensions/manager/composables/useManagerDialog.ts": {
       "crap_high": {
         "count": 1
-      },
+      }
+    },
+    "src/workbench/extensions/manager/composables/useManagerState.ts": {
       "crap_moderate": {
         "count": 1
       }

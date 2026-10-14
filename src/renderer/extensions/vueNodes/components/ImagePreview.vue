@@ -26,14 +26,19 @@
         "
         @click="handleGridClick(index)"
       >
-        <img
-          v-if="!isHdrImageUrl(imageUrls[index])"
-          :src="url"
-          :alt="`${$t('g.galleryThumbnail')} ${index + 1}`"
-          draggable="false"
-          class="pointer-events-none size-full object-contain"
-          @load="updateAspectRatio($event, index)"
-        />
+        <div
+          v-if="!isHdrPlaceholder(index)"
+          class="pointer-events-none relative size-full"
+        >
+          <img
+            :src="url"
+            :alt="`${$t('g.galleryThumbnail')} ${index + 1}`"
+            draggable="false"
+            class="size-full object-contain"
+            @load="updateAspectRatio($event, index)"
+            @error="failedHdrPreviews[index] = true"
+          />
+        </div>
         <div
           v-else
           class="flex size-full flex-col items-center justify-center gap-1 text-base-foreground"
@@ -84,13 +89,13 @@
       </div>
       <!-- Loading State -->
       <div
-        v-if="showLoader && !imageError && !currentImageIsHdr"
+        v-if="showLoader && !imageError && !isHdrPlaceholder(currentIndex)"
         class="size-full"
       >
         <Skeleton class="size-full rounded-sm" />
       </div>
       <button
-        v-if="!imageError && currentImageIsHdr"
+        v-if="!imageError && isHdrPlaceholder(currentIndex)"
         type="button"
         data-testid="hdr-open-button"
         class="absolute inset-0 flex cursor-pointer flex-col items-center justify-center gap-3 border-0 bg-transparent text-base-foreground"
@@ -106,9 +111,11 @@
       </button>
       <!-- Main Image -->
       <img
-        v-if="!imageError && !currentImageIsHdr"
+        v-if="!imageError && !isHdrPlaceholder(currentIndex)"
+        :key="currentImageUrl"
         data-testid="main-image"
-        :src="currentImageUrl"
+        :src="currentHdrPreviewUrl ?? currentImageUrl"
+        :data-file-url="currentHdrPreviewUrl ? currentImageUrl : undefined"
         :alt="imageAltText"
         draggable="false"
         class="pointer-events-none absolute inset-0 block size-full object-contain"
@@ -129,6 +136,16 @@
           @click="handleEditMask"
         >
           <i-comfy:mask class="size-4" />
+        </button>
+
+        <button
+          v-if="!imageError && currentHdrPreviewUrl"
+          :class="actionButtonClass"
+          :title="$t('hdrViewer.openInHdrViewer')"
+          :aria-label="$t('hdrViewer.openInHdrViewer')"
+          @click="openHdrViewer(currentImageUrl)"
+        >
+          <i class="icon-[lucide--sun] size-4" />
         </button>
 
         <!-- Layer Editor Button -->
@@ -168,7 +185,7 @@
 
     <!-- Image Dimensions (gallery mode only) -->
     <div
-      v-if="viewMode === 'gallery' && !currentImageIsHdr"
+      v-if="viewMode === 'gallery' && !isHdrPlaceholder(currentIndex)"
       class="pt-2 text-center text-xs text-base-foreground"
     >
       <span
@@ -235,7 +252,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { openHdrViewer } from '@/services/hdrViewerService'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { NodeId } from '@/types/nodeId'
-import { isHdrImageUrl } from '@/utils/hdrFormatUtil'
+import { getHdrPreviewUrl, isHdrImageUrl } from '@/utils/hdrFormatUtil'
 import { getGridThumbnailUrl } from '@/utils/imageUtil'
 import { resolveNode } from '@/utils/litegraphUtil'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -277,6 +294,7 @@ const actualDimensions = ref<string | null>(null)
 const imageError = ref(false)
 const showLoader = ref(false)
 const imageAspectRatio = ref(1)
+const failedHdrPreviews = ref<boolean[]>([])
 
 const { start: startDelayedLoader, stop: stopDelayedLoader } = useTimeoutFn(
   () => {
@@ -288,8 +306,17 @@ const { start: startDelayedLoader, stop: stopDelayedLoader } = useTimeoutFn(
 )
 
 const currentImageUrl = computed(() => imageUrls[currentIndex.value] ?? '')
+const isHdrPlaceholder = (index: number) =>
+  isHdrImageUrl(imageUrls[index]) &&
+  (!getHdrPreviewUrl(imageUrls[index]) || !!failedHdrPreviews.value[index])
+
 const currentImageIsHdr = computed(() => isHdrImageUrl(currentImageUrl.value))
-const gridImageUrls = computed(() => imageUrls.map(getGridThumbnailUrl))
+const currentHdrPreviewUrl = computed(() =>
+  getHdrPreviewUrl(currentImageUrl.value)
+)
+const gridImageUrls = computed(() =>
+  imageUrls.map((url) => getHdrPreviewUrl(url) ?? getGridThumbnailUrl(url))
+)
 const hasMultipleImages = computed(() => imageUrls.length > 1)
 const canExportOutputs = computed(() => {
   const node = nodeId ? resolveNode(nodeId) : undefined
@@ -309,24 +336,24 @@ const gridCols = computed(() => {
 watch(
   () => imageUrls,
   (newUrls, oldUrls) => {
-    // Only reset state if URLs actually changed (not just array reference)
+    const key = (url: string) =>
+      imageError.value ? url : (getHdrPreviewUrl(url) ?? url)
     const urlsChanged =
       !oldUrls ||
       newUrls.length !== oldUrls.length ||
-      newUrls.some((url, i) => url !== oldUrls[i])
+      newUrls.some((url, i) => key(url) !== key(oldUrls[i]))
 
     if (!urlsChanged) return
 
-    // Reset current index if it's out of bounds
     if (currentIndex.value >= newUrls.length) {
       currentIndex.value = 0
     }
 
-    // Reset loading and error states when URLs change
     actualDimensions.value = null
 
     viewMode.value = defaultViewMode(newUrls)
     imageError.value = false
+    failedHdrPreviews.value = []
     if (newUrls.length > 0) startDelayedLoader()
   },
   { immediate: true }
@@ -358,6 +385,10 @@ function updateAspectRatio(event: Event, index: number) {
 function handleImageError() {
   stopDelayedLoader()
   showLoader.value = false
+  if (currentHdrPreviewUrl.value) {
+    failedHdrPreviews.value[currentIndex.value] = true
+    return
+  }
   imageError.value = true
   actualDimensions.value = null
 
@@ -421,7 +452,7 @@ async function openImageInGallery(index: number) {
 
 function handleGridClick(index: number) {
   const url = imageUrls[index]
-  if (isHdrImageUrl(url)) {
+  if (isHdrPlaceholder(index)) {
     openHdrViewer(url)
     return
   }

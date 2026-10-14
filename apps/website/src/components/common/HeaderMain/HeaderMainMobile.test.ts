@@ -56,9 +56,8 @@ describe('HeaderMainMobile', () => {
       '/hub/apps/reshoot/',
       '/hub/apps/'
     ])
-    expect(screen.getByRole('link', { name: 'Re-shoot' })).toHaveAttribute(
-      'target',
-      '_blank'
+    expect(screen.getByRole('link', { name: 'Re-shoot' })).not.toHaveAttribute(
+      'target'
     )
     expect(screen.getByRole('link', { name: 'All apps' })).not.toHaveAttribute(
       'target'

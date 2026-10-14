@@ -63,7 +63,7 @@ describe('loadArchitectureConfiguration', () => {
     {
       name: 'an unknown record field',
       overrides: { owners: ['@images-team'] },
-      error: "Unrecognized key(s) in object: 'owners'"
+      error: 'Unrecognized key: "owners"'
     },
     {
       name: 'a glob other than a trailing /**',
@@ -157,5 +157,26 @@ describe('buildCatalog', () => {
       { path: 'src/images/**', role: 'domain', owners: ['@images-team'] },
       { path: 'src/imageView.vue', role: 'presentation', owners: ['@fallback'] }
     ])
+  })
+
+  it('reports source coverage from directory and exact module paths', () => {
+    const root = createRepository(
+      {},
+      {
+        'src/zeta.tsx': '',
+        'src/imageView.test.ts': '',
+        'src/images/nested/deep.vue': '<template />',
+        'src/README.md': '',
+        'apps/desktop/main.ts': ''
+      }
+    )
+    const catalog = buildCatalog(loadArchitectureConfiguration(root), [])
+    expect(catalog.domains[0].sourceFileCount).toBe(4)
+    expect(catalog.coverage).toEqual({
+      total: 6,
+      classified: 4,
+      unclassified: 2,
+      unclassifiedFiles: ['src/imageView.test.ts', 'src/zeta.tsx']
+    })
   })
 })
