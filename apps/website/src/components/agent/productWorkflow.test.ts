@@ -357,8 +357,7 @@ describe('conditioner workflow', () => {
     }
   })
 
-  it('connects right-side outputs to left-side inputs across the workflow', () => {
-    // Dots may sit slightly inside or outside the card edge, never mid-card.
+  it('connects right-side outputs to left-side inputs, keeping ports near the card edge', () => {
     const edgeTolerance = 27
     const nearEdge = (x: number, edge: number) =>
       Math.abs(x - edge) <= edgeTolerance

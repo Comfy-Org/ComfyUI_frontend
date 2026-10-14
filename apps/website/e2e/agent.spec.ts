@@ -257,3 +257,23 @@ test.describe('Agent workflow — mobile @mobile', () => {
     })
   }
 })
+
+test.describe('Agent workflow — mobile motion @mobile', () => {
+  test('runs the sequence only while it is in view', async ({ page }) => {
+    await page.goto(PATH_EN)
+    const connections = page.locator('mobile-workflow-connections')
+    const output = connections.locator('.mobile-workflow-input')
+
+    await connections.scrollIntoViewIfNeeded()
+    await expect(connections).not.toHaveAttribute('data-paused')
+    await expect(output).toHaveCSS('animation-play-state', 'running')
+
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+    await expect(connections).toHaveAttribute('data-paused', '')
+    await expect(output).toHaveCSS('animation-play-state', 'paused')
+
+    await connections.scrollIntoViewIfNeeded()
+    await expect(connections).not.toHaveAttribute('data-paused')
+    await expect(output).toHaveCSS('animation-play-state', 'running')
+  })
+})

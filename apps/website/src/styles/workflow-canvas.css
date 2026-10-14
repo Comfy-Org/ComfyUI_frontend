@@ -130,7 +130,7 @@ video.wf-node-image {
   inset: 0 0.75cqw auto;
   height: 2cqw;
   color: var(--color-primary-warm-white);
-  font-size: 0.75cqw;
+  font-size: max(8px, 0.75cqw);
   font-weight: 400;
   line-height: 1;
   letter-spacing: 0;
@@ -299,7 +299,7 @@ video.wf-node-image {
 }
 .agent-workflow .wf-kind-processor .wf-prompt-well {
   background: var(--color-secondary-cool-gray);
-  font-size: 0.6875cqw;
+  font-size: max(7px, 0.6875cqw);
   line-height: 1.3;
 }
 .agent-workflow .wf-product-references {
@@ -313,7 +313,7 @@ video.wf-node-image {
 .agent-workflow .wf-example[data-example='conditioner'] .wf-node-heading {
   inset-inline: 1.4cqw;
   color: var(--color-primary-warm-white);
-  font-size: 0.75cqw;
+  font-size: max(8px, 0.75cqw);
   font-weight: 700;
 }
 .agent-workflow
@@ -337,7 +337,7 @@ video.wf-node-image {
   border-radius: 0.3cqw;
   background: var(--color-secondary-deep-plum);
   color: var(--color-primary-comfy-yellow);
-  font-size: 0.75cqw;
+  font-size: max(8px, 0.75cqw);
 }
 .agent-workflow
   :is(.wf-kind-landscape, .wf-kind-featured)

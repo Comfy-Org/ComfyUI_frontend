@@ -105,6 +105,7 @@
     "src/composables/billing/useBillingContext.ts->src/platform/workspace/billing/sdk/billingSdkStore.ts->src/platform/workspace/composables/useBillingReadRail.ts->src/platform/workspace/composables/useWorkspaceBilling.ts",
     "src/composables/billing/useBillingContext.ts->src/platform/workspace/billing/sdk/billingSdkStore.ts->src/platform/workspace/composables/useSubscriptionRail.ts->src/platform/workspace/composables/useWorkspaceBilling.ts",
     "src/composables/billing/useBillingContext.ts->src/platform/workspace/composables/useSubscriptionRail.ts->src/platform/workspace/composables/useWorkspaceBilling.ts->src/platform/workspace/stores/billingOperationStore.ts",
+    "src/composables/billing/useBillingContext.ts->src/composables/billing/useBillingDialogs.ts->src/composables/billing/useLegacyBilling.ts->src/platform/cloud/subscription/components/CancellationFlowDialogContent.vue->src/platform/cloud/subscription/composables/useSubscription.ts",
     "src/composables/useAppMode.ts->src/platform/workflow/management/stores/workflowStore.ts->src/stores/executionStore.ts",
     "src/composables/useFeatureFlags.ts->src/platform/auth/unified/remintRetry.ts->src/scripts/api.ts",
     "src/composables/useFeatureFlags.ts->src/scripts/api.ts->src/stores/authStore.ts",
@@ -145,7 +146,10 @@
     "src/composables/canvas/useSelectedLiteGraphItems.ts->src/core/graph/subgraph/promotionUtils.ts->src/renderer/core/canvas/canvasStore.ts->src/services/litegraphService.ts",
     "src/platform/workspace/billing/sdk/billingSdkStore.ts->src/platform/workspace/composables/useBillingCapabilities.ts->src/platform/workspace/composables/useBillingReadRail.ts",
     "src/renderer/core/canvas/canvasStore.ts->src/renderer/extensions/vueNodes/composables/useNodeZIndex.ts->src/utils/litegraphUtil.ts",
-    "src/scripts/changeTracker.ts->src/stores/executionErrorStore.ts->src/stores/executionStore.ts"
+    "src/scripts/changeTracker.ts->src/stores/executionErrorStore.ts->src/stores/executionStore.ts",
+    "src/components/dialog/content/subscription/CancelSubscriptionDialogContent.vue->src/composables/billing/useBillingContext.ts->src/composables/billing/useBillingDialogs.ts->src/composables/billing/useLegacyBilling.ts->src/platform/cloud/subscription/composables/useSubscription.ts",
+    "src/composables/billing/useBillingDialogs.ts->src/platform/cloud/subscription/composables/useSubscriptionDialog.ts->src/platform/workspace/components/SubscriptionRequiredDialogContentUnified.vue->src/platform/workspace/composables/useSubscriptionCheckout.ts",
+    "src/composables/billing/useBillingDialogs.ts->src/platform/cloud/subscription/composables/useSubscriptionDialog.ts->src/platform/workspace/components/SubscriptionRequiredDialogContentWorkspace.vue->src/platform/workspace/composables/useSubscriptionCheckout.ts"
   ],
   "re_export_cycles": [],
   "unused_optional_dependencies": [],
