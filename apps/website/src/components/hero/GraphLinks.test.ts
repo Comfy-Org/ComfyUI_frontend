@@ -6,7 +6,7 @@ import {
   setAllIntersecting,
   stubIntersectionObserver
 } from '@/test/fakeIntersectionObserver'
-import { ELEMENT_KEYS, FLOW } from './graphLayout'
+import { PORTS, defaultPositions, portEdge, portPoint } from './graphLayout'
 import GraphLinks from './GraphLinks.vue'
 
 const motion = vi.hoisted(() => ({ reduced: false }))
@@ -17,15 +17,6 @@ vi.mock(import('@/composables/useReducedMotion'), () => ({
 
 const BANDS = 32
 
-function defaultPositions() {
-  return Object.fromEntries(
-    ELEMENT_KEYS.map((key) => [
-      key,
-      { x: FLOW.elements[key].left, y: FLOW.elements[key].top }
-    ])
-  ) as Record<(typeof ELEMENT_KEYS)[number], { x: number; y: number }>
-}
-
 function renderLinks() {
   return render(GraphLinks, { props: { positions: defaultPositions() } })
 }
@@ -34,6 +25,20 @@ describe('GraphLinks', () => {
   beforeEach(() => {
     motion.reduced = false
     stubIntersectionObserver()
+  })
+
+  it('runs each wire from its dot out through the element edge and in through the next edge to its dot', () => {
+    const positions = defaultPositions()
+    const { container } = renderLinks()
+    const d = (
+      container.querySelector('defs path') as SVGPathElement
+    ).getAttribute('d') as string
+    const svg = ({ x, y }: { x: number; y: number }) => `${x * 10} ${y * 10}`
+    const start = `M ${svg(portPoint(PORTS.inputOut, positions))} L ${svg(portEdge(PORTS.inputOut, positions))} C `
+    const end = `, ${svg(portEdge(PORTS.angleIn, positions))} L ${svg(portPoint(PORTS.angleIn, positions))}`
+
+    expect(d.slice(0, start.length)).toBe(start)
+    expect(d.slice(-end.length)).toBe(end)
   })
 
   it('draws one wire per node pair with a full band stack each', () => {

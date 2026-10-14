@@ -13,7 +13,14 @@ import GraphLinks from './GraphLinks.vue'
 import HeroHeadline from './HeroHeadline.vue'
 import HeroImageCard from './HeroImageCard.vue'
 import type { ElementKey } from './graphLayout'
-import { DRAG_MARGIN, ELEMENT_KEYS, FLOW } from './graphLayout'
+import {
+  COLUMN_CENTER,
+  CTA,
+  DRAG_MARGIN,
+  ELEMENT_KEYS,
+  FLOW,
+  defaultPositions
+} from './graphLayout'
 import { useHeroPipeline } from './useHeroPipeline'
 import { useIdleAutoplay } from './useIdleAutoplay'
 
@@ -26,14 +33,7 @@ const { pose, hue, saturation, output, outputFilter } = useHeroPipeline()
 
 useIdleAutoplay({ pose, hue, saturation }, canvasEl)
 
-const positions = reactive(
-  Object.fromEntries(
-    ELEMENT_KEYS.map((key) => [
-      key,
-      { x: FLOW.elements[key].left, y: FLOW.elements[key].top }
-    ])
-  ) as Record<ElementKey, { x: number; y: number }>
-)
+const positions = reactive(defaultPositions())
 
 const zOrder = ref<ElementKey[]>([...ELEMENT_KEYS])
 
@@ -121,20 +121,26 @@ function wrapperStyle(key: ElementKey) {
       <GraphLinks :positions />
 
       <div
-        class="pointer-events-none absolute top-[1.5em] left-1/2 z-20 flex -translate-x-1/2 flex-col items-center"
+        class="pointer-events-none absolute top-[0.5em] z-20 flex -translate-x-1/2 flex-col items-center"
+        :style="{ left: `${COLUMN_CENTER}em` }"
       >
-        <div class="text-[3em]">
+        <div class="text-[2em]">
           <HeroHeadline :locale />
         </div>
       </div>
 
       <div
-        class="pointer-events-none absolute bottom-[2em] left-1/2 z-20 flex -translate-x-1/2"
+        class="pointer-events-none absolute z-20 flex -translate-x-1/2"
+        :style="{
+          left: `${COLUMN_CENTER}em`,
+          top: `${CTA.top}em`,
+          height: `${CTA.height}em`
+        }"
       >
         <BrandButton
           :href="externalLinks.cloudCta('hero_get_started_free')"
           variant="outline"
-          class="pointer-events-auto font-bold uppercase"
+          class="pointer-events-auto h-full rounded-[1.1em] px-[1.1em] py-0 text-[0.93em] font-bold uppercase"
         >
           {{ t('hero.getStartedFree') }}
         </BrandButton>
