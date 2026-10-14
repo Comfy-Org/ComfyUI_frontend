@@ -221,7 +221,7 @@ async function expectDownloadBesideGitHub(app: Locator) {
 }
 
 async function expectPanelWidth(panel: Locator) {
-  expect((await panel.boundingBox())?.width).toBe(280)
+  expect((await panel.boundingBox())?.width).toBe(372)
 }
 
 test('hides the site header in the editor apps only', async ({
@@ -312,10 +312,10 @@ async function relightFromPanel(page: Page) {
 }
 
 for (const { width, panel } of [
-  { width: 768, panel: 280 },
-  { width: 1280, panel: 280 },
-  { width: 1920, panel: 307.2 },
-  { width: 2400, panel: 340 }
+  { width: 768, panel: 372 },
+  { width: 1280, panel: 372 },
+  { width: 1920, panel: 403.2 },
+  { width: 2400, panel: 452 }
 ])
   test(`sizes the Relight panel to ${panel}px on a ${width}px screen`, async ({
     page,
