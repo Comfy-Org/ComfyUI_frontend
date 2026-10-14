@@ -36,8 +36,16 @@ function workflow(
 }
 
 const workflows = [
-  workflow('mockup', 'image', 'edit-images', 'product'),
-  workflow('remove-object', 'image', 'edit-images', 'cleanup'),
+  {
+    ...workflow('mockup', 'image', 'edit-images', 'product'),
+    inputKinds: ['image' as const],
+    models: ['FLUX.1 Fill']
+  },
+  {
+    ...workflow('remove-object', 'image', 'edit-images', 'cleanup'),
+    inputKinds: ['text' as const],
+    models: ['BRIA']
+  },
   workflow('sharpen', 'image', 'edit-images', 'upscale', 'upscale'),
   workflow('talking', 'video', 'animate-images', 'characters'),
   workflow('product-video', 'video', 'animate-images', 'product'),
@@ -120,5 +128,19 @@ describe('Workflows by modality › task', () => {
     expect(
       within(collections).queryByRole('button', { name: /Characters/ })
     ).toBeNull()
+  })
+
+  it('leaves Output out of Filters, since the sidebar already says what comes out', async () => {
+    history.replaceState(null, '', '/hub/workflows/?output=video')
+    render(WorkflowCatalogue, { props: { models: workflows } })
+
+    expect(cardNames()).toHaveLength(workflows.length)
+    await userEvent.click(screen.getByRole('button', { name: 'Filters' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Filters' })
+    expect(
+      within(dialog)
+        .getAllByRole('tab')
+        .map((tab) => tab.textContent.replace(/\d+/g, '').trim())
+    ).toEqual(['Input', 'Models'])
   })
 })

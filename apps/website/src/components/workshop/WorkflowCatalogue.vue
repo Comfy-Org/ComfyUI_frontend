@@ -216,7 +216,9 @@ onMounted(() =>
     readModalityTask(search)
     readCollection(search)
     inputs.value = knownMedia(params.getAll('input'))
-    outputs.value = knownMedia(params.getAll('output'))
+    outputs.value = modalityTaskOn.value
+      ? []
+      : knownMedia(params.getAll('output'))
     runsOn.value = params
       .getAll('model')
       .filter((name) => models.some((model) => model.models?.includes(name)))
@@ -319,14 +321,16 @@ const inputOptions = computed(() =>
   )
 )
 const outputOptions = computed(() =>
-  mediaOptions(
-    inCategory.value.filter(
-      (model) =>
-        startsFrom(model, inputs.value) && runsOnChosen(model, runsOn.value)
-    ),
-    (model) => (model.modality ? [model.modality] : []),
-    outputs.value
-  )
+  modalityTaskOn.value
+    ? []
+    : mediaOptions(
+        inCategory.value.filter(
+          (model) =>
+            startsFrom(model, inputs.value) && runsOnChosen(model, runsOn.value)
+        ),
+        (model) => (model.modality ? [model.modality] : []),
+        outputs.value
+      )
 )
 // An outcome is reached through the model it runs on as often as through the
 // task it performs, and one workflow can stand on several.
