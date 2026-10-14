@@ -65,6 +65,13 @@ export function useEditKeybindingDialog() {
       return keybindingStore.findConflictingKeybinding(candidate) ?? null
     })
 
+    const existingKeybindingSource = computed(() => {
+      const existing = existingKeybindingOnCombo.value
+      if (!existing) return null
+      const source = keybindingStore.sourceOf(existing)
+      return source.tier === 'extension' ? source.name : null
+    })
+
     function onUpdateCombo(combo: KeyComboImpl) {
       dialogState.newCombo = combo
     }
@@ -78,7 +85,8 @@ export function useEditKeybindingDialog() {
         dialogState,
         onUpdateCombo,
         commandLabel: options.commandLabel,
-        existingKeybindingOnCombo
+        existingKeybindingOnCombo,
+        existingKeybindingSource
       },
       headerProps: {},
       footerProps: { dialogState, newKeybinding, existingKeybindingOnCombo }

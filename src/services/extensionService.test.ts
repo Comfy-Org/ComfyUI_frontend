@@ -4,6 +4,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
 import { useContextKeyStore } from '@/platform/keybindings/contextKeyStore'
 import { KeyComboImpl } from '@/platform/keybindings/keyCombo'
+import { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useExtensionStore } from '@/stores/extensionStore'
 import type { ComfyExtension } from '@/types/comfy'
@@ -396,6 +397,28 @@ describe('registerExtension keybindings', () => {
         new KeyComboImpl({ key: 'k', ctrl: true })
       )
     ).toEqual([])
+  })
+
+  it('registers keybindings in the extension tier alongside core ones', () => {
+    const store = useKeybindingStore()
+    const combo = { key: 'z', ctrl: true }
+    store.addDefaultKeybinding(
+      new KeybindingImpl({ commandId: 'Comfy.Undo', combo })
+    )
+    const toast = vi.spyOn(useToast(), 'error')
+
+    useExtensionService().registerExtension({
+      name: 'Test.Tier',
+      keybindings: [{ combo, commandId: 'Test.Undo' }]
+    })
+
+    const winner = store.getKeybindings(new KeyComboImpl(combo))[0]
+    expect(winner.commandId).toBe('Test.Undo')
+    expect(store.sourceOf(winner)).toEqual({
+      tier: 'extension',
+      name: 'Test.Tier'
+    })
+    expect(toast).not.toHaveBeenCalled()
   })
 
   it('registers context keys under the extension name', () => {

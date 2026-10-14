@@ -18,16 +18,23 @@ function shownDialog() {
   assert.exists(call)
   const props: Record<string, unknown> = call[0].props ?? {}
   const footerProps: Record<string, unknown> = call[0].footerProps ?? {}
-  const { dialogState, onUpdateCombo, existingKeybindingOnCombo } = props
+  const {
+    dialogState,
+    onUpdateCombo,
+    existingKeybindingOnCombo,
+    existingKeybindingSource
+  } = props
   const { newKeybinding } = footerProps
   assert(isPlainObject(dialogState))
   assert(typeof onUpdateCombo === 'function')
   assert(isRef<KeybindingImpl | null>(existingKeybindingOnCombo))
   assert(isRef<KeybindingImpl | null>(newKeybinding))
+  assert(isRef<string | null>(existingKeybindingSource))
   return {
     dialogState,
     onUpdateCombo,
     existingKeybindingOnCombo,
+    existingKeybindingSource,
     newKeybinding
   }
 }
@@ -107,5 +114,24 @@ describe('useEditKeybindingDialog', () => {
     dialog.onUpdateCombo(ctrlZ)
 
     expect(dialog.existingKeybindingOnCombo.value).toEqual(maskEditorUndo)
+    expect(dialog.existingKeybindingSource.value).toBeNull()
+  })
+
+  it('names the extension that owns the conflicting binding', () => {
+    useKeybindingStore().addExtensionKeybinding(
+      new KeybindingImpl({ commandId: 'ext.undo', combo: ctrlZ }),
+      'ext'
+    )
+
+    useEditKeybindingDialog().show({
+      commandId: 'test.save',
+      commandLabel: 'Save',
+      currentCombo: null
+    })
+    const dialog = shownDialog()
+    dialog.onUpdateCombo(ctrlZ)
+
+    expect(dialog.existingKeybindingOnCombo.value?.commandId).toBe('ext.undo')
+    expect(dialog.existingKeybindingSource.value).toBe('ext')
   })
 })
