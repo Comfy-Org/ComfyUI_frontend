@@ -391,3 +391,57 @@ describe('WorkflowPlayground primary action', () => {
     expect(purchase).not.toHaveBeenCalled()
   })
 })
+
+describe('WorkflowPlayground examples', () => {
+  it.for([{ section: 'workflow-inside' }, { section: 'workflow-api' }])(
+    'keeps the examples to the Try it section, not $section',
+    ({ section }) => {
+      const model = workflowDetailsBySlug.get('workflows/remove-background')
+      assert(model)
+      expect(model.examples.length).toBeGreaterThan(0)
+      vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(ref(true)))
+      vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(
+        readonly(ref(true))
+      )
+      render(WorkflowPlayground, { props: { model, scope: 'anonymous' } })
+
+      const examples = screen.getByRole('heading', { name: 'Try an example' })
+      expect(examples).toBeVisible()
+      expect(screen.getByTestId(section)).not.toContainElement(examples)
+    }
+  )
+
+  it('moves the chosen mark to the example the gallery opened', async () => {
+    const model = workflowDetailsBySlug.get('workflows/change-material')
+    assert(model)
+    expect(model.examples.length).toBeGreaterThan(1)
+    vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(ref(true)))
+    vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(readonly(ref(true)))
+    render(WorkflowPlayground, { props: { model, scope: 'anonymous' } })
+
+    const [first, second] = screen.getAllByTestId('example-card')
+    expect(first).toHaveAttribute('aria-current', 'true')
+
+    await userEvent.setup().click(second)
+
+    await waitFor(() => expect(second).toHaveAttribute('aria-current', 'true'))
+    expect(first).not.toHaveAttribute('aria-current')
+    expect(screen.getAllByTestId('example-chosen')).toHaveLength(1)
+    expect(within(second).getByTestId('example-chosen')).toBeTruthy()
+  })
+
+  it('keeps the chosen example where it is while a run holds the form', async () => {
+    const model = workflowDetailsBySlug.get('workflows/change-material')
+    assert(model)
+    vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(ref(true)))
+    vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(readonly(ref(true)))
+    mockWorkflowRun(shallowRef<WorkflowState>({ phase: 'preparing' }))
+    render(WorkflowPlayground, { props: { model, scope: 'anonymous' } })
+
+    const [first, second] = screen.getAllByTestId('example-card')
+    await userEvent.setup().click(second)
+
+    expect(first).toHaveAttribute('aria-current', 'true')
+    expect(second).not.toHaveAttribute('aria-current')
+  })
+})

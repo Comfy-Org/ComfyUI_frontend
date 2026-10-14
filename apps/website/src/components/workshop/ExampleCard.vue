@@ -9,12 +9,17 @@ import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import ExampleMedia from './ExampleMedia.vue'
 
-const { example, locale = 'en' } = defineProps<{
+const {
+  example,
+  locale = 'en',
+  disabled = false
+} = defineProps<{
   example: PlaygroundExample
   active: boolean
   alt: string
   videoPreload: 'metadata' | 'none'
   locale?: Locale
+  disabled?: boolean
 }>()
 const { t } = translationsFor(locale)
 
@@ -39,7 +44,8 @@ const openLabel = computed(() =>
       type="button"
       :aria-label="`${example.title}: ${openLabel}`"
       :aria-current="active ? 'true' : undefined"
-      class="group flex w-full cursor-pointer flex-col gap-2 text-left outline-none"
+      :disabled
+      class="group flex w-full cursor-pointer flex-col gap-2 text-left outline-none disabled:cursor-not-allowed disabled:opacity-50"
       data-testid="example-card"
       :title="`${example.title} · ${actionFor(active)}`"
       @click="emit('open')"
@@ -49,10 +55,11 @@ const openLabel = computed(() =>
           cn(
             'relative block aspect-video overflow-hidden rounded-lg bg-primary-comfy-ink-light ring-1 transition-all',
             active
-              ? 'ring-2 ring-primary-comfy-yellow'
+              ? 'ring-2 ring-primary-comfy-yellow group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-primary-warm-white'
               : 'ring-transparency-white-t8 group-hover:-translate-y-0.5 group-hover:ring-transparency-white-t20 group-hover:brightness-110 group-focus-visible:ring-primary-comfy-yellow'
           )
         "
+        data-testid="example-thumbnail"
       >
         <ExampleMedia :example :alt :video-preload />
 

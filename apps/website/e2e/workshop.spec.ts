@@ -1120,6 +1120,20 @@ test.describe('Model playground', () => {
       .toBe(true)
   })
 
+  test('tells a keyboard apart from the pick it lands on', async ({ page }) => {
+    await page.goto('/hub/models/krea-2-medium-turbo-text-to-image/')
+    const chosen = page.getByTestId('example-card').first()
+    await expect(chosen).toHaveAttribute('aria-current', 'true')
+    const thumbnail = chosen.getByTestId('example-thumbnail')
+    await expect(thumbnail).toHaveCSS('outline-style', 'none')
+
+    await page.keyboard.press('Tab')
+    await chosen.focus()
+
+    await expect(thumbnail).toHaveCSS('outline-style', 'solid')
+    await expect(thumbnail).toHaveCSS('outline-color', 'rgb(240, 239, 237)')
+  })
+
   for (const tag of ['', ' @mobile'])
     test(`a lone sample keeps the size of a gallery card${tag}`, async ({
       page

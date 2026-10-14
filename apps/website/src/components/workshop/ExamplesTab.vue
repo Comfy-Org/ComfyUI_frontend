@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useElementVisibility, useMounted, whenever } from '@vueuse/core'
-import { computed, ref, useTemplateRef } from 'vue'
+import { computed, ref, useId, useTemplateRef } from 'vue'
 
 import type { PlaygroundExample } from '@/config/workshop-playground'
 import { exampleAlt } from '@/config/workshop-playground'
@@ -14,20 +14,24 @@ const {
   examples,
   galleryLabel,
   activeId,
-  locale = 'en'
+  locale = 'en',
+  disabled = false,
+  headingTag = 'h2'
 } = defineProps<{
   examples: readonly PlaygroundExample[]
   galleryLabel: string
   activeId?: string
   locale?: Locale
+  disabled?: boolean
+  headingTag?: 'h2' | 'h3'
 }>()
 const { t } = translationsFor(locale)
+const headingId = useId()
 
 const emit = defineEmits<{ open: [example: PlaygroundExample] }>()
 
 const altOf = (example: PlaygroundExample) =>
   exampleAlt(galleryLabel, example.title, locale)
-// No posters yet: first frames load near the screen, not ahead of the LCP.
 const gallery = useTemplateRef<HTMLUListElement>('gallery')
 const galleryNear = useElementVisibility(gallery, {
   rootMargin: '20% 0px'
@@ -51,9 +55,17 @@ const desktopGridColumns = computed(() =>
 </script>
 
 <template>
-  <section class="flex flex-col gap-4" data-testid="examples-tab">
+  <section
+    :aria-labelledby="headingId"
+    class="flex flex-col gap-4"
+    data-testid="examples-tab"
+  >
     <div class="flex flex-col gap-1">
-      <h2 class="text-sm font-bold text-primary-warm-white">
+      <component
+        :is="headingTag"
+        :id="headingId"
+        class="text-sm font-bold text-primary-warm-white"
+      >
         {{
           t(
             samplesOnly
@@ -61,16 +73,13 @@ const desktopGridColumns = computed(() =>
               : 'workshop.examples.start'
           )
         }}
-      </h2>
+      </component>
     </div>
 
     <p v-if="!examples.length" class="text-sm text-primary-warm-gray">
       {{ t('workshop.examples.empty') }}
     </p>
 
-    <!-- A phone scrolls the examples sideways, edge to edge, each four fifths
-      of the row up to 18rem so the next one peeks in; from a tablet up they
-      fit in a row of their own. A lone example keeps the same size. -->
     <ul
       v-else
       ref="gallery"
@@ -93,6 +102,7 @@ const desktopGridColumns = computed(() =>
           :alt="altOf(example)"
           :video-preload
           :locale
+          :disabled
           @open="emit('open', example)"
         />
       </li>

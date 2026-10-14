@@ -25,9 +25,9 @@ export class AgentPanel {
   public readonly attachmentChips: Locator
   public readonly closeButton: Locator
   public readonly composer: Locator
-  public readonly composerStack: Locator
   public readonly composerAssetSection: Locator
   public readonly composerPromptArea: Locator
+  public readonly composerStack: Locator
   public readonly copiedButton: Locator
   public readonly copyReportButton: Locator
   public readonly creditsExhaustedPaywall: Locator
@@ -44,10 +44,10 @@ export class AgentPanel {
   public readonly serverLogsSwitch: Locator
   public readonly settingsSwitch: Locator
   public readonly stopButton: Locator
+  private readonly toasts: ToastHelper
   public readonly workflowPicker: Locator
   public readonly workflowSwitch: Locator
   public readonly workSummary: Locator
-  private readonly toasts: ToastHelper
 
   constructor(private readonly page: Page) {
     this.root = page.locator('#agent-panel-root')
@@ -322,9 +322,7 @@ export class AgentPanel {
     await this.page.mouse.move(0, 0)
     await this.workflowPicker.blur()
     await expect(
-      this.page
-        .locator('.p-tooltip, [role="tooltip"]')
-        .filter({ visible: true })
+      this.page.getByRole('tooltip').filter({ visible: true })
     ).toHaveCount(0)
   }
 

@@ -39,7 +39,7 @@ describe('FilterDropdown', () => {
           setup: () => ({ filters }),
           template: '<FilterDropdown v-model="filters" />'
         }),
-        { global: { plugins: [i18n], directives: { tooltip: {} } } }
+        { global: { plugins: [i18n] } }
       )
       const user = userEvent.setup()
       await user.click(screen.getByRole('button', { name: 'Filter' }))
