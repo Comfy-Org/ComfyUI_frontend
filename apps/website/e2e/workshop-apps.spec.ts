@@ -236,7 +236,7 @@ async function expectDownloadBesideGitHub(app: Locator) {
 }
 
 async function expectPanelWidth(panel: Locator) {
-  expect((await panel.boundingBox())?.width).toBe(280)
+  expect((await panel.boundingBox())?.width).toBe(372)
 }
 
 test('hides the site header in the editor apps only', async ({
