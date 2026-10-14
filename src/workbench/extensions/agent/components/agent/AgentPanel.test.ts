@@ -283,7 +283,6 @@ describe('AgentPanel', () => {
       },
       global: {
         plugins: [i18n],
-        directives: { tooltip: {} },
         stubs: { WorkflowSelectorChip: true }
       }
     })
@@ -525,7 +524,6 @@ describe('AgentPanel', () => {
       props: { entries: [], historyGroups: createHistoryGroups() },
       global: {
         plugins: [pinia, i18n],
-        directives: { tooltip: {} },
         stubs: {
           WorkflowSelectorChip: true
         }
@@ -578,7 +576,6 @@ describe('AgentPanel', () => {
         },
         global: {
           plugins: [pinia, i18n],
-          directives: { tooltip: {} },
           stubs: { WorkflowSelectorChip: true }
         }
       })

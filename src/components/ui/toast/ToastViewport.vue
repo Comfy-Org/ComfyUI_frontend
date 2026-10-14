@@ -5,7 +5,7 @@ import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { TOAST_Z_INDEX } from '@/components/dialog/vRekaZIndex'
+import { TOAST_Z_INDEX } from '@/utils/modalLayerStack'
 
 const { class: className, ...restProps } = defineProps<
   ToastViewportProps & { class?: HTMLAttributes['class'] }
