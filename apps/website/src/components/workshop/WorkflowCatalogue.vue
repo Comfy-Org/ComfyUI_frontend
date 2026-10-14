@@ -51,12 +51,23 @@ import {
   workflowGoalRows,
   workflowTypeChoices
 } from '@/lib/workshop/workflow-goals'
+import type { ModalityTaskKey } from '@/lib/workshop/workflow-modality-tasks'
+import {
+  MODALITY_TASK_KEYS,
+  WORKFLOW_COLLECTIONS,
+  collectionChips,
+  inCollection,
+  inModalityTask,
+  modalityTaskChoices,
+  modalityTaskShown
+} from '@/lib/workshop/workflow-modality-tasks'
 import { usePreviewSwitch } from '@/lib/workshop/preview-switches'
 import { workflowFeatures } from '@/lib/workshop/catalogue-features'
 import CatalogueHero from './CatalogueHero.vue'
 import CatalogueShowMore from './CatalogueShowMore.vue'
 import HubChoiceSidebar from './HubChoiceSidebar.vue'
 import WorkflowCategoryTabs from './WorkflowCategoryTabs.vue'
+import WorkflowCollectionChips from './WorkflowCollectionChips.vue'
 import type { FilterChip } from './WorkshopFilterChips.vue'
 import WorkshopFilterChips from './WorkshopFilterChips.vue'
 import type { FacetMenuOption } from './WorkshopFilterMenu.vue'
@@ -90,14 +101,39 @@ const language = locale === 'zh-CN' ? locale : 'en'
 const categories = computed(() => workflowCategories(models, language))
 const features = computed(() => workflowFeatures(models, locale))
 const flatGrid = usePreviewSwitch('hub-workflows-flat')
+// Modality › task with one grid wins over the other Workflows layouts.
+const modalityTaskOn = usePreviewSwitch('hub-workflows-modality-task')
 const modalitySwitch = usePreviewSwitch('hub-facet-sidebar')
-const modalitySidebar = computed(() => modalitySwitch.value && !flatGrid.value)
-const sidebarWidth = computed(() => (flatGrid.value ? 'lg:w-58' : 'lg:w-70'))
+const modalitySidebar = computed(
+  () => modalitySwitch.value && !flatGrid.value && !modalityTaskOn.value
+)
+const sidebarWidth = computed(() =>
+  flatGrid.value || modalityTaskOn.value ? 'lg:w-58' : 'lg:w-70'
+)
 const taskSwitch = usePreviewSwitch('hub-task-sidebar')
 const taskSidebar = computed(
-  () => taskSwitch.value && !modalitySidebar.value && !flatGrid.value
+  () =>
+    taskSwitch.value &&
+    !modalitySidebar.value &&
+    !flatGrid.value &&
+    !modalityTaskOn.value
 )
-const altSidebar = computed(() => taskSidebar.value || modalitySidebar.value)
+const altSidebar = computed(
+  () => taskSidebar.value || modalitySidebar.value || modalityTaskOn.value
+)
+const { choice: modalityTask, readAddress: readModalityTask } =
+  useAddressedChoice('browse', MODALITY_TASK_KEYS, modalityTaskOn, (key) =>
+    modalityTaskShown(models, key)
+  )
+const modalityTaskEntries = computed(() =>
+  modalityTaskChoices(models, modalityTask.value, t)
+)
+const { choice: collection, readAddress: readCollection } = useAddressedChoice(
+  'collection',
+  WORKFLOW_COLLECTIONS,
+  modalityTaskOn,
+  (key) => models.some((model) => inCollection(model, key))
+)
 const taskEntries = computed(() =>
   hubTaskEntries(models, (listed) => listed.length)
 )
@@ -117,7 +153,23 @@ const { choice: workflowType, readAddress: readType } = useAddressedChoice(
   modalitySidebar,
   (key) => typeChoices.value.some((choice) => choice.key === key)
 )
+// The type sidebar shows modality › task when that preview is on, else types alone.
+const typeSidebar = computed(
+  () => modalityTaskOn.value || modalitySidebar.value
+)
+const typeEntries = computed(() =>
+  modalityTaskOn.value ? modalityTaskEntries.value : typeChoices.value
+)
+const typeChoice = computed<ModalityTaskKey>({
+  get: () => (modalityTaskOn.value ? modalityTask.value : workflowType.value),
+  set: (key) => {
+    if (modalityTaskOn.value) modalityTask.value = key
+    else
+      workflowType.value = WORKFLOW_TYPES.find((type) => type === key) ?? 'all'
+  }
+})
 const panelTab = computed(() => {
+  if (modalityTaskOn.value) return modalityTask.value
   if (modalitySidebar.value) return workflowType.value
   return taskSidebar.value ? taskKey.value : category.value
 })
@@ -132,7 +184,11 @@ const { submitSearch, quietly } = useHubCatalogueTracking('workflows', {
   filters: [
     ['category', () => category.value],
     ['task', () => taskKey.value],
-    ['type', () => workflowType.value],
+    [
+      'type',
+      () => (modalityTaskOn.value ? modalityTask.value : workflowType.value)
+    ],
+    ['collection', () => collection.value],
     ['model', () => runsOn.value],
     ['sort', () => sort.value]
   ]
@@ -157,6 +213,8 @@ onMounted(() =>
       : categoryFromAddress(search, models)
     readTask(search)
     readType(search)
+    readModalityTask(search)
+    readCollection(search)
     inputs.value = knownMedia(params.getAll('input'))
     outputs.value = knownMedia(params.getAll('output'))
     runsOn.value = params
@@ -192,14 +250,31 @@ const ordered = computed(() =>
       (a.recommendedRank ?? Infinity) - (b.recommendedRank ?? Infinity)
   )
 )
+const byModalityTask = computed(() =>
+  ordered.value.filter((model) => inModalityTask(model, modalityTask.value))
+)
+const collectionEntries = computed(() =>
+  modalityTaskOn.value ? collectionChips(byModalityTask.value, t) : []
+)
+// A collection the chosen type holds nothing of would empty the grid.
+watch(collectionEntries, (entries) => {
+  if (!entries.some((entry) => entry.key === collection.value))
+    collection.value = 'all'
+})
 const inCategory = computed(() =>
-  modalitySidebar.value
-    ? ordered.value.filter((model) => inWorkflowType(model, workflowType.value))
-    : taskSidebar.value
-      ? ordered.value.filter((model) => inHubTask(model, taskKey.value))
-      : category.value === ALL_WORKFLOWS
-        ? ordered.value
-        : ordered.value.filter((model) => model.category === category.value)
+  modalityTaskOn.value
+    ? byModalityTask.value.filter((model) =>
+        inCollection(model, collection.value)
+      )
+    : modalitySidebar.value
+      ? ordered.value.filter((model) =>
+          inWorkflowType(model, workflowType.value)
+        )
+      : taskSidebar.value
+        ? ordered.value.filter((model) => inHubTask(model, taskKey.value))
+        : category.value === ALL_WORKFLOWS
+          ? ordered.value
+          : ordered.value.filter((model) => model.category === category.value)
 )
 
 function startsFrom(model: WorkflowWorkshopModel, chosen: Modality[]) {
@@ -293,6 +368,7 @@ const { shown, total, hasMore, showMore } = usePagedList(visible)
 const sectioned = computed(
   () =>
     !flatGrid.value &&
+    !modalityTaskOn.value &&
     !query.value.trim() &&
     (!taskSidebar.value || taskKey.value === 'all') &&
     allSectioned(models) &&
@@ -346,6 +422,8 @@ function clear() {
   category.value = ALL_WORKFLOWS
   taskKey.value = 'all'
   workflowType.value = 'all'
+  modalityTask.value = 'all'
+  collection.value = 'all'
   clearFilters()
 }
 </script>
@@ -369,9 +447,9 @@ function clear() {
       "
     >
       <HubChoiceSidebar
-        v-if="modalitySidebar"
-        v-model="workflowType"
-        :entries="typeChoices"
+        v-if="typeSidebar"
+        v-model="typeChoice"
+        :entries="typeEntries"
         :label="t('workshop.taskSidebar.typeLabel')"
         :panel-id="TAB_PANEL_ID"
         class="max-lg:order-1"
@@ -444,6 +522,11 @@ function clear() {
         :aria-labelledby="`${TAB_PANEL_ID}-${panelTab}`"
         class="max-lg:order-2"
       >
+        <WorkflowCollectionChips
+          v-model="collection"
+          :chips="collectionEntries"
+          :label="t('workshop.workflowCollections.label')"
+        />
         <WorkshopFilterChips
           :chips
           :locale

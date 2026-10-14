@@ -71,6 +71,7 @@ function onKeydown(event: KeyboardEvent) {
         >
           <component
             :is="entry.icon"
+            v-if="entry.icon"
             :class="SIDEBAR_ICON"
             aria-hidden="true"
           />

@@ -50,5 +50,8 @@ export interface SidebarChoice<Key extends string> {
   readonly key: Key
   readonly label: string
   readonly count: number
-  readonly icon: Component
+  /** Left out on a row nested under the one before it. */
+  readonly icon?: Component
+  /** A row listed under the one before it, such as a task under its type. */
+  readonly nested?: boolean
 }
