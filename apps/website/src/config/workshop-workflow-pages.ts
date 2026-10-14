@@ -2,6 +2,7 @@ import { z } from 'astro/zod'
 
 import type { WorkshopDisplayEntry } from '@/content/workshop-display.schema'
 import categories from '@/content/workshop-workflow-categories.json'
+import sections from '@/content/workshop-workflow-sections.json'
 import type {
   Modality,
   WorkflowWorkshopModel,
@@ -28,6 +29,16 @@ function categoryFor(page: WorkshopDisplayEntry) {
     categoryOrder: order,
     categoryHighlight: category.highlight === page.modelId,
     ...('aliases' in category && { categoryAliases: category.aliases })
+  }
+}
+
+function sectionFor(page: WorkshopDisplayEntry) {
+  const order = sections.findIndex((section) => section.id === page.section)
+  if (order < 0) return undefined
+  return {
+    section: sections[order].id,
+    sectionLabel: sections[order].label,
+    sectionOrder: order
   }
 }
 
@@ -93,6 +104,7 @@ function workflowPageFor(
     summary: page.description,
     category: page.category,
     ...categoryFor(page),
+    ...sectionFor(page),
     recommendedRank: page.recommendedRank,
     models: page.template?.models,
     author: page.template?.author,

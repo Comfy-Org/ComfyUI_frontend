@@ -167,6 +167,10 @@ export type WorkflowWorkshopModel = WorkshopPresentation & {
   readonly workflowId: string
   readonly routerId?: never
   readonly category?: string
+  /** The use-case section the Workflows page lists it under. */
+  readonly section?: string
+  readonly sectionLabel?: { readonly en: string; readonly 'zh-CN': string }
+  readonly sectionOrder?: number
   /** The media a visitor brings: an upload's kind, or text for a prompt alone. */
   readonly inputKinds?: readonly Modality[]
   readonly models?: readonly string[]

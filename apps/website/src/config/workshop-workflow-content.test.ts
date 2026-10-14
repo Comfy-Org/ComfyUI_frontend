@@ -6,6 +6,7 @@ import { assert, describe, expect, it } from 'vitest'
 import { websiteRoot } from '@website/paths'
 import displayJson from '@/content/workshop-display.json'
 import categories from '@/content/workshop-workflow-categories.json'
+import sections from '@/content/workshop-workflow-sections.json'
 import { workshopDisplayEntriesSchema } from '@/content/workshop-display.schema'
 import { modelTitle } from '@/lib/workshop/model-title'
 import { workshopExecutionId } from './models-catalogue'
@@ -139,6 +140,79 @@ describe('curated workflow pages', () => {
     ])
     expect(workflows).toHaveLength(30)
   })
+
+  it('files every published workflow under one use-case section, labelled in both languages', () => {
+    expect(
+      Object.fromEntries(
+        Object.entries(
+          Object.groupBy(workflows, (workflow) => workflow.section ?? '')
+        ).map(([section, listed]) => [section, listed?.length])
+      )
+    ).toEqual({ videos: 6, characters: 6, product: 6, upscale: 6, cleanup: 6 })
+    expect(
+      sections.map(({ id, label }, order) => ({ id, label, order }))
+    ).toEqual([
+      {
+        id: 'videos',
+        label: { en: 'Create & edit videos', 'zh-CN': '创作与编辑视频' },
+        order: 0
+      },
+      {
+        id: 'characters',
+        label: { en: 'Animate characters', 'zh-CN': '让角色动起来' },
+        order: 1
+      },
+      {
+        id: 'product',
+        label: {
+          en: 'Create product photos & ads',
+          'zh-CN': '制作产品照片与广告'
+        },
+        order: 2
+      },
+      {
+        id: 'upscale',
+        label: { en: 'Upscale & restore', 'zh-CN': '放大与修复' },
+        order: 3
+      },
+      {
+        id: 'cleanup',
+        label: { en: 'Edit & clean up photos', 'zh-CN': '编辑与修整照片' },
+        order: 4
+      }
+    ])
+    for (const workflow of workflows) {
+      const order = sections.findIndex(({ id }) => id === workflow.section)
+      expect(workflow).toMatchObject({
+        sectionOrder: order,
+        sectionLabel: sections[order]?.label
+      })
+    }
+  })
+
+  it.for([
+    { slug: 'workflows/image-to-video', section: 'videos' },
+    { slug: 'workflows/motion-transfer', section: 'characters' },
+    { slug: 'workflows/change-material', section: 'product' },
+    { slug: 'workflows/upscale-and-restore', section: 'upscale' },
+    { slug: 'workflows/edit-selected-region', section: 'cleanup' }
+  ])('lists $slug under the $section section', ({ slug, section }) => {
+    expect(workflows.find((workflow) => workflow.slug === slug)).toMatchObject({
+      section
+    })
+  })
+
+  it.for([undefined, 'unknown-section'])(
+    'leaves unknown section %s off the Workflows sections',
+    (section) => {
+      const [projected] = workflowPagesFor(
+        [{ ...page, section }],
+        workflowCatalog
+      )
+      expect(projected.model).not.toHaveProperty('section')
+      expect(projected.model).not.toHaveProperty('sectionOrder')
+    }
+  )
 
   it.for([
     {
