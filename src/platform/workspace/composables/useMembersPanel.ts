@@ -8,8 +8,8 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
-import { isCloud } from '@/platform/distribution/types'
 import type { ServerFact } from '@/platform/serverFacts/serverFact'
+import { narrowServerFact } from '@/platform/serverFacts/serverFact'
 import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { usePlanEnded } from '@/platform/workspace/composables/usePlanEnded'
@@ -106,8 +106,7 @@ export function useMembersPanel() {
     showRevokeInviteDialog,
     showChangeMemberRoleDialog,
     showSetMemberCreditLimitDialog,
-    showInviteMemberDialog,
-    showInviteMemberUpsellDialog
+    showInviteMemberDialog
   } = useWorkspaceDialogs()
   const workspaceStore = useTeamWorkspaceStore()
   const {
@@ -123,15 +122,12 @@ export function useMembersPanel() {
     () => activeWorkspace.value?.totalMembers ?? members.value.length
   )
   const { resendInvite } = workspaceStore
-  const {
-    permissions: workspacePermissions,
-    uiConfig: workspaceUiConfig,
-    workspaceRole
-  } = useWorkspaceUI()
+  const { permissions: workspacePermissions, uiConfig: workspaceUiConfig } =
+    useWorkspaceUI()
   const { hasTeamPlan, isOnTeamPlan, hasMemberSeats, isPlanLoading } =
     useTeamPlan()
   const subscriptionDialog = useSubscriptionDialog()
-  const { maxSeats, occupiedSeats } = useBillingContext()
+  const { maxSeats } = useBillingContext()
   const { canManageMembers, canInviteMembers } = useBillingCapabilities()
 
   const { isPlanEnded, isSalesManagedPlan, isEnterprisePlan } = usePlanEnded()
@@ -141,9 +137,7 @@ export function useMembersPanel() {
 
     return {
       ...workspacePermissions.value,
-      canViewOtherMembers: isCloud
-        ? membersLoaded.value
-        : hasMemberSeats.value || canManage,
+      canViewOtherMembers: membersLoaded.value,
       canViewPendingInvites: canManage,
       canInviteMembers: canInviteMembers.value,
       canManageInvites: canManage,
@@ -153,13 +147,10 @@ export function useMembersPanel() {
 
   const hasMultipleMembers = computed(() => members.value.length > 1)
 
-  const showMinimalMemberLayout = computed(() =>
-    isCloud
-      ? !membersLoaded.value ||
-        (isInPersonalWorkspace.value && members.value.length === 1)
-      : !hasMemberSeats.value &&
-        !isPlanEnded.value &&
-        !permissions.value.canManageMembers
+  const showMinimalMemberLayout = computed(
+    () =>
+      !membersLoaded.value ||
+      (isInPersonalWorkspace.value && members.value.length === 1)
   )
 
   const uiConfig = computed(() => {
@@ -167,7 +158,7 @@ export function useMembersPanel() {
       return {
         ...workspaceUiConfig.value,
         showMembersList: false,
-        showPendingTab: isCloud && permissions.value.canViewPendingInvites,
+        showPendingTab: permissions.value.canViewPendingInvites,
         showSearch: false,
         showRoleColumn: false,
         showCreditsColumn: false,
@@ -177,7 +168,7 @@ export function useMembersPanel() {
       }
     }
 
-    if (isCloud ? canManageMembers.value : workspaceRole.value === 'owner') {
+    if (canManageMembers.value) {
       return {
         ...workspaceUiConfig.value,
         showMembersList: true,
@@ -210,68 +201,21 @@ export function useMembersPanel() {
     () => uiConfig.value.showSearch && hasMultipleMembers.value
   )
 
-  const showViewTabs = computed(
-    () =>
-      (isCloud
-        ? permissions.value.canViewPendingInvites
-        : hasMemberSeats.value || permissions.value.canManageMembers) &&
-      (hasMultipleMembers.value || pendingInvites.value.length > 0)
+  const hasTabContent = computed(
+    () => hasMultipleMembers.value || pendingInvites.value.length > 0
   )
 
-  const showInviteButton = computed(() =>
-    isCloud ? canInviteMembers.value : workspaceRole.value === 'owner'
+  const showViewTabs = computed(() =>
+    narrowServerFact(
+      permissions.value.canViewPendingInvites,
+      hasTabContent.value
+    )
   )
 
-  const isMemberLimitReached = computed(
-    () =>
-      maxSeats.value !== null &&
-      occupiedSeats.value !== null &&
-      maxSeats.value > 0 &&
-      occupiedSeats.value >= maxSeats.value
-  )
-
-  const isInviteDisabled = computed(() =>
-    isCloud
-      ? !canInviteMembers.value
-      : isPlanLoading.value ||
-        !permissions.value.canInviteMembers ||
-        isPlanEnded.value ||
-        maxSeats.value === null ||
-        occupiedSeats.value === null ||
-        !hasMemberSeats.value ||
-        isMemberLimitReached.value
-  )
-
-  const inviteTooltip = computed(() => {
-    if (isCloud) return null
-    if (!hasMemberSeats.value) return null
-    if (maxSeats.value === null || occupiedSeats.value === null) return null
-    if (!isMemberLimitReached.value) return null
-    return t('workspacePanel.inviteLimitReached', { count: maxSeats.value })
-  })
+  const showInviteButton = computed(() => canInviteMembers.value)
 
   function handleInviteMember() {
-    if (isCloud) {
-      if (canInviteMembers.value) void showInviteMemberDialog()
-      return
-    }
-    handleDesktopInviteMember()
-  }
-
-  function handleDesktopInviteMember() {
-    if (workspaceRole.value !== 'owner') return
-    if (
-      isPlanLoading.value ||
-      maxSeats.value === null ||
-      occupiedSeats.value === null
-    )
-      return
-    if (!hasMemberSeats.value) {
-      void showInviteMemberUpsellDialog()
-      return
-    }
-    if (isPlanEnded.value || isMemberLimitReached.value) return
-    void showInviteMemberDialog()
+    if (canInviteMembers.value) void showInviteMemberDialog()
   }
 
   const personalWorkspaceMember = computed<WorkspaceMember>(() => ({
@@ -427,8 +371,6 @@ export function useMembersPanel() {
     showSearch,
     showViewTabs,
     showInviteButton,
-    isInviteDisabled,
-    inviteTooltip,
     handleInviteMember,
     personalWorkspaceMember,
     filteredMembers,

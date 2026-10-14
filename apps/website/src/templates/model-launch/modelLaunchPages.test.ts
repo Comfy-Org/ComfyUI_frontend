@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { chatgptImage25Page } from '@/data/chatgptImage25'
+import { fishAudioPage } from '@/data/fishAudio'
 import { flux3Page } from '@/data/flux3'
 import { geminiOmniPage } from '@/data/geminiOmni'
 import { ltxPage } from '@/data/ltx'
@@ -12,6 +13,7 @@ import {
 } from '@/data/qwenImage21'
 import { minimaxMusic3Page } from '@/data/minimaxMusic3'
 import { nanoBananaPage } from '@/data/nanoBanana'
+import { nvidiaRtxPage } from '@/data/nvidiaRtx'
 import { seedancePage } from '@/data/seedance'
 import { wanAnimate2Page } from '@/data/wanAnimate2'
 import { wan3Page } from '@/data/wan3'
@@ -20,6 +22,7 @@ import { t } from '@/i18n/translations'
 import { DEFAULT_SECTION_ORDER } from './types'
 import type {
   ModelLaunchAudioCard,
+  ModelLaunchBeforeAfter,
   ModelLaunchClosingCta,
   ModelLaunchComparison,
   ModelLaunchFaqSection,
@@ -36,9 +39,11 @@ import type {
 const pages: { name: string; page: ModelLaunchPage }[] = [
   { name: 'minimax', page: minimaxPage },
   { name: 'minimaxMusic3', page: minimaxMusic3Page },
+  { name: 'fishAudio', page: fishAudioPage },
   { name: 'minimaxLicense', page: minimaxLicensePage },
   { name: 'flux3', page: flux3Page },
   { name: 'chatgptImage25', page: chatgptImage25Page },
+  { name: 'nvidiaRtx', page: nvidiaRtxPage },
   { name: 'qwenImage21', page: qwenImage21Page },
   { name: 'qwenImage21Announcement', page: qwenImage21AnnouncementPage },
   { name: 'nanoBanana', page: nanoBananaPage },
@@ -122,6 +127,8 @@ function pageKeys(page: ModelLaunchPage): TranslationKey[] {
     page.breadcrumbUpdatedKey,
     ...heroKeys(page.hero),
     ...showcaseKeys(page.showcases ?? []),
+    page.beforeAfter?.headingKey,
+    page.beforeAfter?.bodyKey,
     page.gallery?.headingKey,
     ...pricingKeys(page.pricing),
     page.faq?.headingKey,
@@ -141,6 +148,25 @@ function expectTranslated(key: TranslationKey) {
   for (const locale of LOCALES) {
     expect(t(key, {}, { locale }), `${key} (${locale})`).not.toBe('')
   }
+}
+
+function expectBeforeAfterTabs(
+  beforeAfter: ModelLaunchBeforeAfter | undefined
+) {
+  const tabs = beforeAfter?.tabs ?? []
+  expect(beforeAfter === undefined || tabs.length > 0).toBe(true)
+  expect(new Set(tabs.map((tab) => tab.id)).size).toBe(tabs.length)
+  for (const tab of tabs) {
+    expectLocalized(tab.label, tab.id, 'label')
+    expectLocalized(tab.caption, tab.id, 'caption')
+  }
+  expect(
+    tabs
+      .filter(
+        (tab) => !VIDEO_URL.test(tab.beforeSrc) || !VIDEO_URL.test(tab.afterSrc)
+      )
+      .map((tab) => tab.id)
+  ).toEqual([])
 }
 
 function expectLocalized(text: LocalizedText, id: string, field: string) {
@@ -322,6 +348,10 @@ describe.for(pages)('$name launch page config', ({ page }) => {
     )
 
     expect(audioOffenders.map((card) => card.id)).toEqual([])
+  })
+
+  it('gives every before/after tab a unique id, localized copy, and a clip pair', () => {
+    expectBeforeAfterTabs(page.beforeAfter)
   })
 
   it('orders every optional section it defines', () => {

@@ -152,10 +152,8 @@ import {
   SUBSCRIBE_CATCHUP_GRACE_MS,
   useAgentCrdtFollower
 } from './useAgentCrdtFollower'
-import type {
-  AgentCrdtFollowerOptions,
-  AgentCrdtStatus
-} from './useAgentCrdtFollower'
+import type { AgentCrdtFollowerOptions } from './useAgentCrdtFollower'
+import type { AgentCrdtStatus } from './agentCrdtStatus'
 
 const DOC_ID_KEY = 'Comfy.Agent.CrdtDocId'
 const TEARDOWN_ERROR_TYPE = 'failure_tearing_down_agent_crdt_follower'
