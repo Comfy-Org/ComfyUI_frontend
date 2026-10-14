@@ -832,7 +832,7 @@
       "workflowsLabel": "Featured workflows"
     },
     "modelsHub": {
-      "subtitle": "For developers: call the latest models through one API, try them here first or download open weights for ComfyUI.",
+      "subtitle": "Call the latest models through one API, try them here first or download open weights for ComfyUI.",
       "getApiKey": "Get an API key",
       "latestLaunch": "Latest launch",
       "access": {

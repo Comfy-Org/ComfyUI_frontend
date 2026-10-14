@@ -120,7 +120,7 @@ describe('ModelsCatalogue', () => {
       locale: 'en',
       tab: 'models',
       subtitle:
-        'For developers: call the latest models through one API, try them here first or download open weights for ComfyUI.'
+        'Call the latest models through one API, try them here first or download open weights for ComfyUI.'
     },
     {
       locale: 'en',
@@ -136,7 +136,7 @@ describe('ModelsCatalogue', () => {
       locale: 'zh-CN',
       tab: 'models',
       subtitle:
-        '面向开发者：通过一个 API 调用最新模型，先在这里试用，或下载开放权重在 ComfyUI 中使用。'
+        '通过一个 API 调用最新模型，先在这里试用，或下载开放权重在 ComfyUI 中使用。'
     },
     {
       locale: 'zh-CN',
