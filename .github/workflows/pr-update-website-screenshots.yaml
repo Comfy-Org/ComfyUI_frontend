@@ -6,8 +6,8 @@ on:
   issue_comment:
     types: [created, edited]
 
-# GitHub keeps one pending run per concurrency group, so only update requests
-# share the PR's group; other comment events would displace a queued request.
+# GitHub keeps one pending run per concurrency group, so the PR's group must
+# admit exactly what plan's `if` accepts; other events would displace a request.
 concurrency:
   group: >-
     ${{ github.workflow }}-${{ (
