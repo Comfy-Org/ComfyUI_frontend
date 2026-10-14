@@ -84,6 +84,7 @@
       <DeploymentSwitcherOwnerFooter
         v-if="canSetDefault"
         :default-label="hasDefault ? defaultLabel : null"
+        :default-gone="goneDefaultDeploymentId !== null"
         :can-set-picked="canSetPicked"
         :disabled="isSwitching"
         @set-default="changeDefault(pickedDeploymentId)"
@@ -118,6 +119,7 @@ const {
   pickedDeployment,
   goneDeployment,
   defaultDeploymentId,
+  goneDefaultDeploymentId,
   followsWorkspace,
   canSetDefault,
   isVisible,

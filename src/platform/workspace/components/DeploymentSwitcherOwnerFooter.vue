@@ -19,7 +19,7 @@
         {{ $t('deploymentSwitcher.setAsDefault') }}
       </button>
       <button
-        v-if="defaultLabel !== null"
+        v-if="defaultLabel !== null || defaultGone"
         type="button"
         :class="linkClass"
         :disabled="disabled"
@@ -36,9 +36,11 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-const { defaultLabel, canSetPicked, disabled } = defineProps<{
+const { defaultLabel, defaultGone, canSetPicked, disabled } = defineProps<{
   /** The default deployment's label, or null when the workspace has none. */
   defaultLabel: string | null
+  /** The workspace's default deployment is gone but still recorded. */
+  defaultGone: boolean
   /** This browser picked a deployment that is not already the default. */
   canSetPicked: boolean
   disabled: boolean
@@ -54,13 +56,13 @@ const { t } = useI18n()
 const linkClass =
   'cursor-pointer appearance-none border-0 bg-transparent p-0 text-xs text-base-foreground underline disabled:cursor-wait'
 
-const summary = computed(() =>
-  defaultLabel === null
-    ? t('deploymentSwitcher.noWorkspaceDefault')
-    : t(
-        'deploymentSwitcher.workspaceDefaultIs',
-        { deployment: defaultLabel },
-        { escapeParameter: false }
-      )
-)
+const summary = computed(() => {
+  if (defaultGone) return t('deploymentSwitcher.defaultGone')
+  if (defaultLabel === null) return t('deploymentSwitcher.noWorkspaceDefault')
+  return t(
+    'deploymentSwitcher.workspaceDefaultIs',
+    { deployment: defaultLabel },
+    { escapeParameter: false }
+  )
+})
 </script>

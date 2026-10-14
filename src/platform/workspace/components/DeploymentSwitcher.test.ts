@@ -478,6 +478,39 @@ describe('DeploymentSwitcher', () => {
     expect(mockWorkspaceApi.clearDefaultDeployment).toHaveBeenCalledWith('ws-1')
   })
 
+  it('lets an owner clear a workspace default that no longer exists', async () => {
+    Object.assign(useTeamWorkspaceStore(), {
+      workspaceId: 'ws-1',
+      activeWorkspace: { id: 'ws-1', role: 'owner' }
+    })
+    const ownPick = {
+      ...listing,
+      picked_deployment_id: D2,
+      pick_source: 'browser' as const
+    }
+    mockWorkspaceApi.listDeployments
+      .mockResolvedValueOnce({ ...ownPick, gone_default_deployment_id: GONE })
+      .mockResolvedValue(ownPick)
+    mockWorkspaceApi.clearDefaultDeployment.mockResolvedValue(undefined)
+    renderSwitcher()
+    await userEvent.click(
+      await screen.findByTestId('deployment-switcher-trigger')
+    )
+
+    const owner = screen.getByTestId('deployment-switcher-owner')
+    expect(owner).toHaveTextContent(
+      "The workspace's default deployment no longer exists."
+    )
+    await userEvent.click(
+      screen.getByTestId('deployment-switcher-clear-default')
+    )
+
+    expect(mockWorkspaceApi.clearDefaultDeployment).toHaveBeenCalledWith('ws-1')
+    await waitFor(() => expect(owner).toHaveTextContent('No workspace default'))
+    expect(screen.queryByTestId('deployment-switcher-clear-default')).toBeNull()
+    expect(reload).not.toHaveBeenCalled()
+  })
+
   it("disables the trigger and the owner's buttons while a default is being set", async () => {
     Object.assign(useTeamWorkspaceStore(), {
       workspaceId: 'ws-1',

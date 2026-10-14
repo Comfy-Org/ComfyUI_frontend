@@ -147,6 +147,12 @@ describe('reduceDeploymentPick', () => {
         { type: 'defaultChanged', defaultDeploymentId: null }
       )
     ).toEqual(ready)
+    expect(
+      reduceDeploymentPick(
+        { ...switching, goneDefaultDeploymentId: 'dep-gone' },
+        { type: 'defaultChanged', defaultDeploymentId: null }
+      )
+    ).toEqual(ready)
     // A refusal that landed meanwhile still hides it.
     const hidden: DeploymentPickState = { phase: 'hidden' }
     expect(

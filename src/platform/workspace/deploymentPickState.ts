@@ -140,7 +140,8 @@ export function reduceDeploymentPick(
       return {
         phase: 'ready',
         ...listingOf(state),
-        defaultDeploymentId: event.defaultDeploymentId
+        defaultDeploymentId: event.defaultDeploymentId,
+        goneDefaultDeploymentId: null
       }
     case 'workspaceChanged':
       return { phase: 'idle' }

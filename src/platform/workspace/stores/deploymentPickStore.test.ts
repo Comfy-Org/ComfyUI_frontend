@@ -301,6 +301,29 @@ describe('useDeploymentPickStore', () => {
     expect(reload).toHaveBeenCalledOnce()
   })
 
+  it('an owner clears a workspace default that no longer exists, and a browser that follows it reloads', async () => {
+    Object.assign(useTeamWorkspaceStore(), {
+      workspaceId: 'ws-1',
+      activeWorkspace: { id: 'ws-1', role: 'owner' }
+    })
+    mockWorkspaceApi.listDeployments.mockResolvedValue({
+      ...listing,
+      picked_deployment_id: undefined,
+      pick_source: undefined,
+      gone_default_deployment_id: 'dep-gone'
+    })
+    mockWorkspaceApi.clearDefaultDeployment.mockResolvedValue(undefined)
+    const store = useDeploymentPickStore()
+    await store.load()
+    expect(store.defaultDeploymentId).toBeNull()
+    expect(store.goneDeployment).toBe('default')
+
+    await expect(store.setDefault(null)).resolves.toBeNull()
+
+    expect(mockWorkspaceApi.clearDefaultDeployment).toHaveBeenCalledWith('ws-1')
+    expect(reload).toHaveBeenCalledOnce()
+  })
+
   it("hands back the server's refusal of a default and stays ready", async () => {
     mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
     mockWorkspaceApi.setDefaultDeployment.mockRejectedValue(

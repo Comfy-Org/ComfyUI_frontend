@@ -53,6 +53,15 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     'pickSource' in state.value ? state.value.pickSource : null
   )
   /**
+   * The workspace's default deployment when it is gone: still recorded, so
+   * an owner can clear it, but members on it run on Comfy Cloud.
+   */
+  const goneDefaultDeploymentId = computed(() =>
+    'goneDefaultDeploymentId' in state.value
+      ? state.value.goneDefaultDeploymentId
+      : null
+  )
+  /**
    * Set once a listing says ingest found this browser's own pick gone and
    * cleared it. Only that one listing says so, so the page keeps it until a
    * later listing shows a deployment picked again.
@@ -71,9 +80,7 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     if (sawPickGone.value || (unlisted && pickSource.value === 'browser')) {
       return 'pick'
     }
-    const defaultGone =
-      'goneDefaultDeploymentId' in state.value &&
-      state.value.goneDefaultDeploymentId !== null
+    const defaultGone = goneDefaultDeploymentId.value !== null
     if (unlisted || (defaultGone && pickSource.value !== 'browser')) {
       return 'default'
     }
@@ -267,7 +274,9 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
   ): Promise<string | null> {
     const id = workspaceStore.workspaceId
     if (!id || state.value.phase !== 'ready') return null
-    if (deploymentId === defaultDeploymentId.value) return null
+    const recordedDefault =
+      defaultDeploymentId.value ?? goneDefaultDeploymentId.value
+    if (deploymentId === recordedDefault) return null
     dispatch({ type: 'switchStarted', target: pickedDeploymentId.value })
     try {
       if (deploymentId === null) {
@@ -299,6 +308,7 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     goneDeployment,
     pickSource,
     defaultDeploymentId,
+    goneDefaultDeploymentId,
     defaultDeployment,
     followsWorkspace,
     canSetDefault,
