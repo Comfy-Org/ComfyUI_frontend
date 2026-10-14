@@ -233,12 +233,24 @@ const mediaOutlineClass =
     class="mx-auto flex max-w-9xl flex-col px-6 py-12 lg:px-20 lg:py-16"
   >
     <div
-      v-if="hero.videoSrc || hero.placeholderImageSrc"
+      v-if="
+        hero.videoSrc || hero.placeholderImageSrc || hero.placeholderLabelKey
+      "
       data-testid="model-launch-hero-block"
       :class="cn('relative', isContentFirst ? 'order-3' : 'order-1')"
     >
+      <div
+        v-if="!hero.videoSrc && hero.placeholderLabelKey"
+        role="img"
+        :aria-label="t(hero.placeholderLabelKey)"
+        class="grid aspect-video w-full place-items-center rounded-4xl border border-white/10 bg-primary-comfy-ink"
+      >
+        <span class="text-xs tracking-widest text-primary-warm-gray uppercase">
+          {{ t(hero.placeholderLabelKey) }}
+        </span>
+      </div>
       <img
-        v-if="!hero.videoSrc && hero.placeholderImageSrc"
+        v-else-if="!hero.videoSrc && hero.placeholderImageSrc"
         :src="hero.placeholderImageSrc"
         alt=""
         aria-hidden="true"

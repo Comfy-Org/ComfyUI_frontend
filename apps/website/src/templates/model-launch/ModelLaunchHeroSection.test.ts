@@ -93,6 +93,38 @@ describe('ModelLaunchHeroSection', () => {
     expect(within(blocks[1]).getByRole('heading', { level: 1 })).toBeTruthy()
   })
 
+  it.for([390, 1440])(
+    'shows a labelled video placeholder without loading media at %s pixels',
+    async (width) => {
+      stubViewport(width)
+      render(ModelLaunchHeroSection, {
+        props: {
+          hero: {
+            layout: 'media-first',
+            placeholderLabelKey: 'flux3Image.hero.placeholder',
+            titleKey: 'flux3Image.hero.title'
+          }
+        }
+      })
+
+      await nextTick()
+
+      const placeholder = screen.getByRole('img', {
+        name: 'Video hero · FPO'
+      })
+      expect(placeholder).toBeVisible()
+      expect(placeholder).toHaveTextContent('Video hero · FPO')
+      expect(
+        screen.getByRole('heading', { level: 1, name: 'Flux 3 Image' })
+      ).toBeVisible()
+      expect(screen.getAllByRole('img', { hidden: true })).toEqual([
+        placeholder
+      ])
+      expect(screen.queryByLabelText('Flux 3 Image')).toBeNull()
+      expect(fetch).not.toHaveBeenCalled()
+    }
+  )
+
   it('spins the logo mask over the placeholder for overlay heroes that opt in', () => {
     render(ModelLaunchHeroSection, {
       props: {

@@ -36,6 +36,48 @@ describe('ModelLaunchGallerySection', () => {
     stubIntersectionObserver()
   })
 
+  it('keeps the cards and their links when the gallery heading is omitted', () => {
+    render(ModelLaunchGallerySection, {
+      props: { gallery: { cards: gallery.cards } }
+    })
+
+    expect(screen.queryByRole('heading', { level: 2 })).toBeNull()
+    expect(screen.getByRole('img', { name: 'First render' })).toBeVisible()
+    expect(screen.getByRole('img', { name: 'Second render' })).toBeVisible()
+    expect(screen.getByRole('link', { name: 'First render' })).toHaveAttribute(
+      'href',
+      'https://comfy.org/download/'
+    )
+    expect(screen.getByRole('link', { name: 'Second render' })).toHaveAttribute(
+      'href',
+      'https://comfy.org/download/'
+    )
+  })
+
+  it.for([
+    { locale: 'en' as const, label: 'Sample', defaultLabel: 'Free' },
+    { locale: 'zh-CN' as const, label: '示例', defaultLabel: '免费' }
+  ])(
+    'uses a localized sample label instead of the tier label in $locale',
+    ({ locale, label, defaultLabel }) => {
+      render(ModelLaunchGallerySection, {
+        props: {
+          locale,
+          gallery: {
+            ...gallery,
+            cards: gallery.cards.map((card) => ({
+              ...card,
+              tierLabel: { en: 'Sample', 'zh-CN': '示例' }
+            }))
+          }
+        }
+      })
+
+      expect(screen.getAllByText(label)).toHaveLength(2)
+      expect(screen.queryByText(defaultLabel)).toBeNull()
+    }
+  )
+
   it.for([
     { ctaVariant: undefined, cardMeta: undefined, links: 2, notes: 2 },
     { ctaVariant: 'accent' as const, cardMeta: undefined, links: 2, notes: 2 },

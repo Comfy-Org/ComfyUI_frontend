@@ -181,6 +181,10 @@ const websiteI18nSettings = {
       {
         pattern: './apps/website/src/locales/en/main.json',
         localeKey: 'path'
+      },
+      {
+        pattern: './apps/website/src/locales/drafts/en.json',
+        localeKey: 'path'
       }
     ],
     cwd: import.meta.dirname,

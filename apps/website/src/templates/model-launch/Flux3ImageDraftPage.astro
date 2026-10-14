@@ -1,0 +1,18 @@
+---
+import ModelLaunchPage from './ModelLaunchPage.astro'
+import { flux3ImagePage } from '@/data/flux3Image'
+
+const { t } = Astro.locals
+---
+
+<ModelLaunchPage page={flux3ImagePage}>
+  <aside
+    id="launch-links"
+    class="mx-auto my-12 max-w-5xl scroll-mt-28 rounded-3xl border border-dashed border-primary-comfy-yellow p-7 text-sm/relaxed text-primary-comfy-canvas"
+  >
+    <strong class="text-primary-comfy-yellow"
+      >{t('flux3Image.draft.title')}</strong
+    >
+    <p class="mt-2">{t('flux3Image.draft.description')}</p>
+  </aside>
+</ModelLaunchPage>

@@ -34,6 +34,7 @@ export interface ModelLaunchHero {
   // Still stand-in for the hero frame, for pages announcing a model whose
   // launch footage does not exist yet. Ignored once videoSrc is set.
   placeholderImageSrc?: string
+  placeholderLabelKey?: TranslationKey
   // Overlay pages without videoSrc only: spins the extruded Comfy C above the
   // copy and shows this image through its body. A flat C stands in until
   // WebGL is ready and for reduced-motion visitors.
@@ -87,6 +88,7 @@ export interface ModelLaunchGalleryCard {
   id: string
   name: LocalizedText
   tier: ModelLaunchTier
+  tierLabel?: LocalizedText
   note: LocalizedText
   description: LocalizedText
   // The prompt that produced the clip. Cards that have one also offer a copy
@@ -101,7 +103,7 @@ export interface ModelLaunchGalleryCard {
 }
 
 export interface ModelLaunchGallery {
-  headingKey: TranslationKey
+  headingKey?: TranslationKey
   // 'accent' paints the per-card link solid yellow. Defaults to the muted
   // treatment /minimax ships, so opting in cannot restyle a live page.
   ctaVariant?: 'muted' | 'accent' | 'none'

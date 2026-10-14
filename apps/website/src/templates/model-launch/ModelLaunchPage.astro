@@ -178,6 +178,7 @@ const sectionOrder = page.sectionOrder ?? DEFAULT_SECTION_ORDER
         )
     }
   })}
+  <slot />
   <ModelLaunchRunOptionsSection runOptions={page.runOptions} locale={locale} />
   <ModelLaunchReviewsSection
     client:visible

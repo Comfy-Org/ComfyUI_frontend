@@ -1,0 +1,9 @@
+---
+import Flux3ImageDraftPage from '@/templates/model-launch/Flux3ImageDraftPage.astro'
+
+export function getStaticPaths() {
+  return import.meta.env.DEV ? [{ params: { model: 'flux-3-image' } }] : []
+}
+---
+
+<Flux3ImageDraftPage />

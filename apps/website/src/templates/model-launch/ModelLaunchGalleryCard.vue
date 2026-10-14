@@ -34,9 +34,11 @@ const showLink = ctaVariant !== 'none'
 const overlayCaption = captionPlacement === 'overlay'
 const isFree = card.tier === 'free'
 const tierVariant = isFree ? 'accent' : 'callout'
-const tierLabel = isFree
-  ? t('modelLaunch.tagFree')
-  : t('modelLaunch.tagPremium')
+const tierLabel = card.tierLabel
+  ? card.tierLabel[locale] || card.tierLabel.en
+  : isFree
+    ? t('modelLaunch.tagFree')
+    : t('modelLaunch.tagPremium')
 const name = card.name[locale] || card.name.en
 const note = card.note[locale] || card.note.en
 const description = card.description[locale] || card.description.en
@@ -73,7 +75,7 @@ const linkClass = cn(
         v-if="showLink"
         as="a"
         :href="card.href"
-        target="_blank"
+        :target="card.href.startsWith('#') ? undefined : '_blank'"
         rel="noopener"
         :aria-label="name"
         size="sm"
