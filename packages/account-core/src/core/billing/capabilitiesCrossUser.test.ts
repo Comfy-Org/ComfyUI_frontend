@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { assert, describe, expect, it } from 'vitest'
 
 import type { SessionSnapshot } from '../session.js'
 import type { AccountCredential } from '../sessionContracts.js'
@@ -36,6 +36,18 @@ const MEMBER_SESSION = authenticated(
     role: 'member'
   })
 )
+const SECOND_OWNER_SESSION = authenticated(
+  credential({
+    uid: 'firebase-second-owner',
+    workspace: TEAM_WORKSPACE,
+    role: 'owner'
+  })
+)
+
+const TAKEOVERS = [
+  { takeover: 'a member', next: MEMBER_SESSION },
+  { takeover: 'another owner with the same role', next: SECOND_OWNER_SESSION }
+]
 
 const NO_RIGHTS = {
   can_cancel: false,
@@ -127,28 +139,9 @@ describe('capabilities read across an account switch in one workspace', () => {
     expect(reader.getSnapshot()?.scope.userId).toBe('firebase-owner')
   })
 
-  it('refuses the owner answer that lands after a member took over', async () => {
-    const session = switchableSession(OWNER_SESSION)
-    const network = heldTransport()
-    const reader = createCapabilitiesReader({
-      transport: network.transport,
-      scopeSource: session.scopeSource
-    })
-
-    const ownerRead = reader.read()
-    session.switchTo(MEMBER_SESSION)
-    network.answer(0, OWNER_ANSWER)
-
-    expect(await ownerRead).toEqual({ status: 'error', code: 'SUPERSEDED' })
-    expect(reader.getSnapshot()).toBeUndefined()
-  })
-
-  it.for([
-    { order: 'member answer first', ownerAnswersFirst: false },
-    { order: 'owner answer first', ownerAnswersFirst: true }
-  ])(
-    'serves the member only their own rights ($order)',
-    async ({ ownerAnswersFirst }) => {
+  it.for(TAKEOVERS)(
+    'refuses the owner answer that lands after $takeover took over',
+    async ({ next }) => {
       const session = switchableSession(OWNER_SESSION)
       const network = heldTransport()
       const reader = createCapabilitiesReader({
@@ -157,18 +150,58 @@ describe('capabilities read across an account switch in one workspace', () => {
       })
 
       const ownerRead = reader.read()
+      session.switchTo(next)
+      network.answer(0, OWNER_ANSWER)
+
+      expect(await ownerRead).toEqual({ status: 'error', code: 'SUPERSEDED' })
+      expect(reader.getSnapshot()).toBeUndefined()
+    }
+  )
+
+  it('refuses the owner answer when the owner signs back in before it lands', async () => {
+    const session = switchableSession(OWNER_SESSION)
+    const network = heldTransport()
+    const reader = createCapabilitiesReader({
+      transport: network.transport,
+      scopeSource: session.scopeSource
+    })
+
+    const firstOwnerRead = reader.read()
+    session.switchTo(MEMBER_SESSION)
+    session.switchTo(OWNER_SESSION)
+    network.answer(0, OWNER_ANSWER)
+
+    expect(await firstOwnerRead).toEqual({
+      status: 'error',
+      code: 'SUPERSEDED'
+    })
+    expect(reader.getSnapshot()).toBeUndefined()
+  })
+
+  it.for([
+    { order: 'member answer first', answerOrder: [1, 0] },
+    { order: 'owner answer first', answerOrder: [0, 1] }
+  ])(
+    'serves the member only their own rights ($order)',
+    async ({ answerOrder }) => {
+      const session = switchableSession(OWNER_SESSION)
+      const network = heldTransport()
+      const reader = createCapabilitiesReader({
+        transport: network.transport,
+        scopeSource: session.scopeSource
+      })
+      const answers = [OWNER_ANSWER, MEMBER_ANSWER]
+
+      const ownerRead = reader.read()
       session.switchTo(MEMBER_SESSION)
       const memberRead = reader.read()
       expect(network.requestCount()).toBe(2)
 
-      if (ownerAnswersFirst) network.answer(0, OWNER_ANSWER)
-      network.answer(1, MEMBER_ANSWER)
-      if (!ownerAnswersFirst) network.answer(0, OWNER_ANSWER)
+      for (const index of answerOrder) network.answer(index, answers[index])
 
       const memberResult = await memberRead
       expect(await ownerRead).toEqual({ status: 'error', code: 'SUPERSEDED' })
-      expect(memberResult.status).toBe('ok')
-      if (memberResult.status !== 'ok') return
+      assert(memberResult.status === 'ok', 'member read resolves')
       expect(memberResult.value.capabilities.can_manage_members).toBe(false)
       expect(memberResult.value.capabilities.can_cancel).toBe(false)
       expect(reader.getSnapshot()?.scope).toEqual({
@@ -181,27 +214,29 @@ describe('capabilities read across an account switch in one workspace', () => {
     }
   )
 
-  it('never serves the owner cached snapshot to the member who takes over', async () => {
-    const session = switchableSession(OWNER_SESSION)
-    const network = heldTransport()
-    const reader = createCapabilitiesReader({
-      transport: network.transport,
-      scopeSource: session.scopeSource
-    })
+  it.for(TAKEOVERS)(
+    'never serves the owner cached snapshot to $takeover',
+    async ({ next }) => {
+      const session = switchableSession(OWNER_SESSION)
+      const network = heldTransport()
+      const reader = createCapabilitiesReader({
+        transport: network.transport,
+        scopeSource: session.scopeSource
+      })
 
-    const ownerRead = reader.read()
-    network.answer(0, OWNER_ANSWER)
-    await ownerRead
-    session.switchTo(MEMBER_SESSION)
+      const ownerRead = reader.read()
+      network.answer(0, OWNER_ANSWER)
+      await ownerRead
+      session.switchTo(next)
 
-    expect(reader.getSnapshot()).toBeUndefined()
-    const memberRead = reader.read()
-    expect(network.requestCount()).toBe(2)
-    network.answer(1, MEMBER_ANSWER)
-    const memberResult = await memberRead
+      expect(reader.getSnapshot()).toBeUndefined()
+      const nextRead = reader.read()
+      expect(network.requestCount()).toBe(2)
+      network.answer(1, MEMBER_ANSWER)
+      const nextResult = await nextRead
 
-    expect(memberResult.status).toBe('ok')
-    if (memberResult.status !== 'ok') return
-    expect(memberResult.value.capabilities.can_manage_members).toBe(false)
-  })
+      assert(nextResult.status === 'ok', 'next account read resolves')
+      expect(nextResult.value.capabilities.can_manage_members).toBe(false)
+    }
+  )
 })

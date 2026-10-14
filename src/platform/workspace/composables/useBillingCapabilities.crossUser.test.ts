@@ -8,6 +8,7 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import { useAuthStore } from '@/stores/authStore'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
+import type { BillingReadRail } from './useBillingReadRail'
 import { useBillingCapabilities } from './useBillingCapabilities'
 
 vi.mock(import('firebase/auth'), { spy: true })
@@ -17,13 +18,12 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
 }))
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
-const railState = vi.hoisted(() => ({
-  rail: null as { readCapabilities: ReturnType<typeof vi.fn> } | null
+const railState = vi.hoisted((): { rail: BillingReadRail | null } => ({
+  rail: null
 }))
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingReadRail'),
-  () => ({ useBillingReadRail: () => railState.rail })
-)
+vi.mock(import('@/platform/workspace/composables/useBillingReadRail'), () => ({
+  useBillingReadRail: () => railState.rail
+}))
 
 const TEAM_WORKSPACE_ID = 'workspace-team'
 const OWNER = { firebaseUid: 'firebase-owner', canonicalId: 'comfy-owner' }
@@ -59,29 +59,66 @@ function capabilitiesFor(
   }
 }
 
+type ReadOutcome = 'outage' | 'superseded'
+
+function notReadHere(): Promise<never> {
+  return Promise.reject(new Error('not read by useBillingCapabilities'))
+}
+
+function capabilityOnlyRail(
+  readCapabilities: BillingReadRail['readCapabilities']
+): BillingReadRail {
+  return {
+    readStatus: vi.fn(notReadHere),
+    readBalance: vi.fn(notReadHere),
+    readPlans: vi.fn(notReadHere),
+    readCapabilities: vi.fn(readCapabilities),
+    readPaymentMethods: vi.fn(notReadHere),
+    readEvents: vi.fn(notReadHere)
+  }
+}
+
 function heldCapabilityReads(rail: 'legacy' | 'sdk') {
-  const held: Array<(response: BillingCapabilitiesResponse) => void> = []
+  const held: Array<{
+    resolve: (response: BillingCapabilitiesResponse) => void
+    reject: (outcome: ReadOutcome) => void
+  }> = []
   const nextRead = () =>
-    new Promise<BillingCapabilitiesResponse>((resolve) => {
-      held.push(resolve)
+    new Promise<BillingCapabilitiesResponse>((resolve, reject) => {
+      held.push({ resolve, reject })
     })
 
   if (rail === 'legacy') {
-    vi.mocked(workspaceApi.getBillingCapabilities).mockImplementation(nextRead)
+    vi.mocked(workspaceApi.getBillingCapabilities).mockImplementation(() =>
+      nextRead().catch(() => {
+        throw new Error('capabilities outage')
+      })
+    )
   } else {
-    railState.rail = {
-      readCapabilities: vi.fn(async () => ({
-        status: 'ok',
-        value: await nextRead()
-      }))
-    }
+    railState.rail = capabilityOnlyRail(() =>
+      nextRead().then(
+        (value) => ({ status: 'ok', value }),
+        (outcome: ReadOutcome) =>
+          outcome === 'superseded'
+            ? { status: 'error', code: 'SUPERSEDED' }
+            : { status: 'error', code: 'REQUEST_FAILED', httpStatus: 503 }
+      )
+    )
+  }
+
+  async function settle() {
+    await vi.advanceTimersByTimeAsync(0)
   }
 
   return {
     requestCount: () => held.length,
     async answer(index: number, response: BillingCapabilitiesResponse) {
-      held[index](response)
-      await vi.advanceTimersByTimeAsync(0)
+      held[index].resolve(response)
+      await settle()
+    },
+    async fail(index: number, outcome: ReadOutcome) {
+      held[index].reject(outcome)
+      await settle()
     }
   }
 }
@@ -134,30 +171,28 @@ describe('useBillingCapabilities across an account switch in one workspace', () 
   )
 
   it.for([
-    { rail: 'legacy', switchedRole: 'member' },
-    { rail: 'sdk', switchedRole: 'member' },
-    { rail: 'legacy', switchedRole: 'owner' },
-    { rail: 'sdk', switchedRole: 'owner' }
+    { rail: 'legacy', switchedRole: 'member', answerOrder: [0, 1] },
+    { rail: 'sdk', switchedRole: 'member', answerOrder: [0, 1] },
+    { rail: 'legacy', switchedRole: 'owner', answerOrder: [0, 1] },
+    { rail: 'sdk', switchedRole: 'owner', answerOrder: [0, 1] },
+    { rail: 'legacy', switchedRole: 'member', answerOrder: [1, 0] },
+    { rail: 'sdk', switchedRole: 'member', answerOrder: [1, 0] }
   ] as const)(
-    'drops the owner answer that lands after another account took over ($rail rail, next account is $switchedRole)',
-    async ({ rail, switchedRole }) => {
+    'keeps the next account on its own answer when the owner answer lands late ($rail rail, next account is $switchedRole, answers $answerOrder)',
+    async ({ rail, switchedRole, answerOrder }) => {
       const reads = heldCapabilityReads(rail)
       const billing = mountCapabilities()
+      const answers = [
+        capabilitiesFor(OWNER.canonicalId, true),
+        capabilitiesFor(MEMBER.canonicalId, false)
+      ]
 
       const initialized = billing.initialize()
       signIn(MEMBER.firebaseUid, switchedRole)
       await nextTick()
       expect(reads.requestCount()).toBe(2)
 
-      await reads.answer(0, capabilitiesFor(OWNER.canonicalId, true))
-
-      expect(billing.hasResolvedCapabilities.value).toBe(false)
-      expect(billing.isReady.value).toBe(false)
-      expect(billing.canManageMembers.value).toBe(false)
-      expect(billing.canCancel.value).toBe(false)
-      expect(billing.canInviteMembers.value).toBe(false)
-
-      await reads.answer(1, capabilitiesFor(MEMBER.canonicalId, false))
+      for (const index of answerOrder) await reads.answer(index, answers[index])
       await initialized
 
       expect(billing.isReady.value).toBe(true)
@@ -169,7 +204,28 @@ describe('useBillingCapabilities across an account switch in one workspace', () 
   )
 
   it.for(['legacy', 'sdk'] as const)(
-    'clears the owner snapshot the moment another account signs in (%s rail)',
+    'hides the owner answer while the next account is still waiting on its own (%s rail)',
+    async (rail) => {
+      const reads = heldCapabilityReads(rail)
+      const billing = mountCapabilities()
+
+      void billing.initialize()
+      signIn(MEMBER.firebaseUid, 'member')
+      await nextTick()
+      await reads.answer(0, capabilitiesFor(OWNER.canonicalId, true))
+
+      expect(billing.hasResolvedCapabilities.value).toBe(false)
+      expect(billing.isReady.value).toBe(false)
+      expect(billing.canManageMembers.value).toBe(false)
+      expect(billing.canCancel.value).toBe(false)
+      expect(billing.canInviteMembers.value).toBe(false)
+
+      await reads.answer(1, capabilitiesFor(MEMBER.canonicalId, false))
+    }
+  )
+
+  it.for(['legacy', 'sdk'] as const)(
+    'hides the owner snapshot before the switch is even observed (%s rail)',
     async (rail) => {
       const reads = heldCapabilityReads(rail)
       const billing = mountCapabilities()
@@ -180,12 +236,62 @@ describe('useBillingCapabilities across an account switch in one workspace', () 
       expect(billing.canManageMembers.value).toBe(true)
 
       signIn(MEMBER.firebaseUid, 'member')
-      await nextTick()
 
+      expect(billing.hasResolvedCapabilities.value).toBe(false)
+      expect(billing.isReady.value).toBe(false)
       expect(billing.canManageMembers.value).toBe(false)
       expect(billing.canCancel.value).toBe(false)
-      expect(billing.isReady.value).toBe(false)
+    }
+  )
+
+  it.for(['legacy', 'sdk'] as const)(
+    'refetches for the next account once the switch is observed (%s rail)',
+    async (rail) => {
+      const reads = heldCapabilityReads(rail)
+      const billing = mountCapabilities()
+
+      const initialized = billing.initialize()
+      await reads.answer(0, capabilitiesFor(OWNER.canonicalId, true))
+      await initialized
+
+      signIn(MEMBER.firebaseUid, 'member')
+      await nextTick()
       expect(reads.requestCount()).toBe(2)
+      await reads.answer(1, capabilitiesFor(MEMBER.canonicalId, false))
+
+      expect(billing.isReady.value).toBe(true)
+      expect(billing.canManageMembers.value).toBe(false)
+    }
+  )
+
+  it.for([
+    { rail: 'legacy', outcome: 'outage' },
+    { rail: 'sdk', outcome: 'outage' },
+    { rail: 'sdk', outcome: 'superseded' }
+  ] as const)(
+    'keeps the next account on its own answer when the owner refresh fails after the switch ($rail rail, $outcome)',
+    async ({ rail, outcome }) => {
+      const reads = heldCapabilityReads(rail)
+      const billing = mountCapabilities()
+
+      const initialized = billing.initialize()
+      await reads.answer(0, capabilitiesFor(OWNER.canonicalId, true))
+      await initialized
+
+      void billing.refresh()
+      await nextTick()
+      expect(reads.requestCount()).toBe(2)
+
+      signIn(MEMBER.firebaseUid, 'member')
+      await nextTick()
+      expect(reads.requestCount()).toBe(3)
+      await reads.answer(2, capabilitiesFor(MEMBER.canonicalId, false))
+      await reads.fail(1, outcome)
+
+      expect(billing.isReady.value).toBe(true)
+      expect(billing.hasResolvedCapabilities.value).toBe(true)
+      expect(billing.canManageMembers.value).toBe(false)
+      expect(billing.canCancel.value).toBe(false)
     }
   )
 })
