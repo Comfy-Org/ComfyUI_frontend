@@ -39,7 +39,11 @@ import { fetchDroppedAsset, getDroppedAsset } from '@/utils/eventUtils'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
-import { AGENT_ATTACH_ACCEPT, isAgentAttachable } from './utils/attachableFiles'
+import {
+  AGENT_ATTACH_ACCEPT,
+  isAgentAttachable,
+  isValidAgentAttachment
+} from './utils/attachableFiles'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -1759,6 +1763,7 @@ const assetsStore = useAssetsStore()
 let inputAssetRefresh: Promise<unknown> = Promise.resolve()
 
 const attachment = useAttachment({
+  validate: isValidAgentAttachment,
   upload: async (file, signal) => {
     const uploaded = await rest.uploadImage(file, file.name, signal)
     const filename = uploaded.name ?? file.name
@@ -2024,6 +2029,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       @stop="onStop"
       @attach="onAttach"
       @attach-files="onAttachFiles"
+      @remove-attachment="attachment.cancelUpload"
       @open-assets="onOpenAssets"
       @select-nodes="onSelectNodes"
       @remove-tag="onRemoveSelectionTag"
