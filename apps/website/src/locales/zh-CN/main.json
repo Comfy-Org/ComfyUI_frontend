@@ -169,11 +169,10 @@
       "attentionHelp": "Hub 上缺少内容的页面。选择一个缺漏，即可批量处理同类问题。",
       "gapLabel": "按缺少的内容筛选",
       "allGood": "没有需要处理的内容。每个页面都具备 Hub 所需的内容。",
-      "sort": {
-        "label": "排序方式",
-        "popular": "最受欢迎",
-        "default": "目录顺序"
-      }
+      "columns": {
+        "name": "名称"
+      },
+      "viewTitle": "在网站上查看 {title}"
     },
     "preview": {
       "card": {
@@ -447,6 +446,13 @@
       "downloads": "下载次数",
       "runsCount": "{count} 次运行",
       "downloadsCount": "{count} 次下载"
+    },
+    "pagination": {
+      "label": "分页",
+      "range": "第 {from}–{to} 项，共 {total} 项",
+      "page": "第 {page} / {pages} 页",
+      "previous": "上一页",
+      "next": "下一页"
     }
   },
   "about": {

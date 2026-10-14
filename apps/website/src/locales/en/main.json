@@ -169,11 +169,10 @@
       "attentionHelp": "Pages on the Hub that are missing something. Pick a gap to fix the same thing across pages.",
       "gapLabel": "Filter by what's missing",
       "allGood": "Nothing needs attention. Every page has what the Hub needs.",
-      "sort": {
-        "label": "Sort by",
-        "popular": "Most popular",
-        "default": "Catalog order"
-      }
+      "columns": {
+        "name": "Name"
+      },
+      "viewTitle": "View {title} on the site"
     },
     "preview": {
       "card": {
@@ -447,6 +446,13 @@
       "downloads": "Downloads",
       "runsCount": "{count} runs",
       "downloadsCount": "{count} downloads"
+    },
+    "pagination": {
+      "label": "Pages",
+      "range": "{from}–{to} of {total}",
+      "page": "Page {page} of {pages}",
+      "previous": "Previous page",
+      "next": "Next page"
     }
   },
   "home": {

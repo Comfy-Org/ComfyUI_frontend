@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { byPopularity, compactCount, itemStats } from './stats'
+import { compactCount, itemStats, sortRows } from './stats'
 
 describe('itemStats', () => {
   it('reads the numbers and ignores anything else', () => {
@@ -10,15 +10,34 @@ describe('itemStats', () => {
   })
 })
 
-describe('byPopularity', () => {
-  it('puts the most popular first and keeps the rest in order', () => {
-    const rows = [
-      { id: 'a', stats: {} },
-      { id: 'b', stats: { popularity: 5 } },
-      { id: 'c', stats: {} },
-      { id: 'd', stats: { popularity: 9 } }
-    ]
-    expect(byPopularity(rows).map(({ id }) => id)).toEqual(['d', 'b', 'a', 'c'])
+describe('sortRows', () => {
+  const rows = [
+    { title: 'Beta', stats: {} },
+    { title: 'alpha', stats: { popularity: 5 } },
+    { title: 'Gamma', stats: {} },
+    { title: 'Delta', stats: { popularity: 9 } }
+  ]
+  const titles = (sorted: typeof rows) => sorted.map(({ title }) => title)
+
+  it('puts the most popular first and rows without a score last, in order', () => {
+    expect(
+      titles(sortRows(rows, { key: 'popularity', descending: true }))
+    ).toEqual(['Delta', 'alpha', 'Beta', 'Gamma'])
+  })
+
+  it('keeps rows without a score last when sorting up', () => {
+    expect(
+      titles(sortRows(rows, { key: 'popularity', descending: false }))
+    ).toEqual(['alpha', 'Delta', 'Beta', 'Gamma'])
+  })
+
+  it('sorts names alphabetically, ignoring case', () => {
+    expect(titles(sortRows(rows, { key: 'name', descending: false }))).toEqual([
+      'alpha',
+      'Beta',
+      'Delta',
+      'Gamma'
+    ])
   })
 })
 

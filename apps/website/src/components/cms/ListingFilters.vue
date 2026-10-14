@@ -29,43 +29,46 @@ const label = (option: ListingFilter) =>
 <template>
   <div class="flex flex-wrap items-center gap-2">
     <slot />
-    <div
-      role="group"
-      :aria-label="t('cmsAdmin.draft.filterLabel')"
-      class="inline-flex max-w-full gap-1 overflow-x-auto rounded-lg border border-admin-field p-0.5"
-    >
-      <button
-        v-for="option in options"
-        :key="option"
-        type="button"
-        :aria-pressed="filter === option"
-        :class="
-          cn(
-            'inline-flex h-6.5 shrink-0 cursor-pointer items-center gap-1.5 rounded-md px-2.5 text-xs font-medium whitespace-nowrap transition-colors outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-admin-fg',
-            filter === option
-              ? 'bg-admin-selected text-admin-fg'
-              : 'text-admin-muted hover:text-admin-fg'
-          )
-        "
-        @click="filter = option"
+    <div class="flex w-full flex-wrap items-center gap-2 sm:ml-auto sm:w-auto">
+      <div
+        role="group"
+        :aria-label="t('cmsAdmin.draft.filterLabel')"
+        class="inline-flex max-w-full gap-1 overflow-x-auto rounded-lg border border-admin-field p-0.5"
       >
-        {{ label(option) }}
-        <span class="text-admin-subtle tabular-nums">{{ counts[option] }}</span>
-      </button>
+        <button
+          v-for="option in options"
+          :key="option"
+          type="button"
+          :aria-pressed="filter === option"
+          :class="
+            cn(
+              'inline-flex h-6.5 shrink-0 cursor-pointer items-center gap-1.5 rounded-md px-2.5 text-xs font-medium whitespace-nowrap transition-colors outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-admin-fg',
+              filter === option
+                ? 'bg-admin-selected text-admin-fg'
+                : 'text-admin-muted hover:text-admin-fg'
+            )
+          "
+          @click="filter = option"
+        >
+          {{ label(option) }}
+          <span class="text-admin-subtle tabular-nums">{{
+            counts[option]
+          }}</span>
+        </button>
+      </div>
+      <label class="relative w-full sm:w-64">
+        <span class="sr-only">{{ searchLabel }}</span>
+        <Search
+          class="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-admin-muted"
+          aria-hidden="true"
+        />
+        <input
+          v-model="query"
+          type="search"
+          :placeholder="searchLabel"
+          class="h-8 w-full rounded-lg border border-admin-field bg-transparent pr-3 pl-8 text-xs text-admin-fg outline-none placeholder:text-admin-subtle hover:border-ash-800 focus-visible:border-admin-control"
+        />
+      </label>
     </div>
-    <label class="relative ml-auto w-full sm:w-64">
-      <span class="sr-only">{{ searchLabel }}</span>
-      <Search
-        class="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-admin-muted"
-        aria-hidden="true"
-      />
-      <input
-        v-model="query"
-        type="search"
-        :placeholder="searchLabel"
-        class="h-8 w-full rounded-lg border border-admin-field bg-transparent pr-3 pl-8 text-xs text-admin-fg outline-none placeholder:text-admin-subtle hover:border-ash-800 focus-visible:border-admin-control"
-      />
-    </label>
-    <slot name="end" />
   </div>
 </template>

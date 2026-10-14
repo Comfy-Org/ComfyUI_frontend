@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { Plus } from '@lucide/vue'
 import { cn } from '@comfyorg/tailwind-utils'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
-import ContentListRow from '@/components/cms/ContentListRow.vue'
+import ContentTable from '@/components/cms/ContentTable.vue'
 import ListingFilters from '@/components/cms/ListingFilters.vue'
 import AdminButton from '@/components/cms/ui/AdminButton.vue'
 import AdminSegmented from '@/components/cms/ui/AdminSegmented.vue'
-import AdminSelect from '@/components/cms/ui/AdminSelect.vue'
+import AdminPagination from '@/components/cms/ui/AdminPagination.vue'
 import PageHeader from '@/components/cms/ui/PageHeader.vue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
@@ -15,7 +15,8 @@ import type { ListingFilter } from '@/lib/cms/format'
 import { kindCounts, matchesListing } from '@/lib/cms/format'
 import type { ContentRow } from '@/lib/cms/queue'
 import type { ReadinessGap } from '@/lib/cms/readiness'
-import { byPopularity } from '@/lib/cms/stats'
+import type { SortOrder } from '@/lib/cms/stats'
+import { sortRows } from '@/lib/cms/stats'
 
 const {
   rows,
@@ -63,12 +64,9 @@ const inStatus = computed(() => {
   )
 })
 const counts = computed(() => kindCounts(inStatus.value.map((row) => row.kind)))
-type Order = 'popular' | 'default'
-const order = ref<Order>('popular')
-const orders = [
-  { value: 'popular' as const, label: t('cmsAdmin.content.sort.popular') },
-  { value: 'default' as const, label: t('cmsAdmin.content.sort.default') }
-]
+const PAGE_SIZE = 25
+const order = ref<SortOrder>({ key: 'popularity', descending: true })
+const page = ref(1)
 const filtered = computed(() =>
   inStatus.value.filter((row) =>
     matchesListing(filter.value, query.value, row.kind, [
@@ -78,9 +76,12 @@ const filtered = computed(() =>
     ])
   )
 )
-const visible = computed(() =>
-  order.value === 'popular' ? byPopularity(filtered.value) : filtered.value
+const sorted = computed(() => sortRows(filtered.value, order.value))
+const shown = computed(() =>
+  sorted.value.slice((page.value - 1) * PAGE_SIZE, page.value * PAGE_SIZE)
 )
+// Any change to what's listed starts again from the first page.
+watch([status, gapFilter, filter, query, order], () => (page.value = 1))
 const emptyText = computed(() => {
   if (status.value === 'archived') return t('cmsAdmin.content.noArchived')
   if (status.value === 'attention') return t('cmsAdmin.content.allGood')
@@ -95,11 +96,6 @@ const emptyText = computed(() => {
       :description="t('cmsAdmin.content.help')"
     >
       <template #actions>
-        <AdminSegmented
-          v-model="status"
-          :options="statuses"
-          :label="t('cmsAdmin.content.statusLabel')"
-        />
         <AdminButton
           v-if="canEdit"
           href="/admin/new"
@@ -110,6 +106,19 @@ const emptyText = computed(() => {
         </AdminButton>
       </template>
     </PageHeader>
+    <ListingFilters
+      v-model:filter="filter"
+      v-model:query="query"
+      :counts
+      :search-label="t('cmsAdmin.content.search')"
+      :locale
+    >
+      <AdminSegmented
+        v-model="status"
+        :options="statuses"
+        :label="t('cmsAdmin.content.statusLabel')"
+      />
+    </ListingFilters>
     <div
       v-if="status === 'attention' && gapCounts.length"
       class="grid gap-2 rounded-lg border border-admin-warning/25 bg-admin-warning/6 p-3"
@@ -142,31 +151,17 @@ const emptyText = computed(() => {
         </button>
       </div>
     </div>
-    <ListingFilters
-      v-model:filter="filter"
-      v-model:query="query"
-      :counts
-      :search-label="t('cmsAdmin.content.search')"
+    <ContentTable
+      v-model:order="order"
+      :rows="shown"
+      :empty-text="emptyText"
       :locale
-    >
-      <template #end>
-        <div class="w-40">
-          <AdminSelect
-            v-model="order"
-            :options="orders"
-            :label="t('cmsAdmin.content.sort.label')"
-          />
-        </div>
-      </template>
-    </ListingFilters>
-    <ul class="overflow-hidden rounded-lg border border-admin-line">
-      <li
-        v-if="visible.length === 0"
-        class="px-6 py-10 text-center text-xs text-admin-muted"
-      >
-        {{ emptyText }}
-      </li>
-      <ContentListRow v-for="row in visible" :key="row.uid" :row :locale />
-    </ul>
+    />
+    <AdminPagination
+      v-model="page"
+      :total="sorted.length"
+      :page-size="PAGE_SIZE"
+      :locale
+    />
   </div>
 </template>
