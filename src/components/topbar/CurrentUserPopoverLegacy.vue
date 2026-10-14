@@ -1,9 +1,6 @@
 <!-- A popover that shows current user information and actions -->
 <template>
-  <div
-    data-testid="current-user-popover"
-    class="current-user-popover w-80 rounded-lg border border-border-default bg-base-background p-2 shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
-  >
+  <div data-testid="current-user-popover" class="current-user-popover p-2">
     <!-- User Info Section -->
     <div class="mb-4 flex flex-col items-center px-0 py-3">
       <UserAvatar

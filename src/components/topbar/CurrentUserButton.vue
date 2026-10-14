@@ -37,7 +37,12 @@
     <Popover
       ref="popover"
       align="end"
-      content-class="w-auto overflow-visible border-0 bg-transparent p-0 shadow-none"
+      :content-class="
+        cn(
+          'overflow-visible border-border-default shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]',
+          showWorkspacePopover ? 'w-fit max-w-96 min-w-80' : 'w-80'
+        )
+      "
       @show="onPopoverShow"
     >
       <CurrentUserPopoverWorkspace

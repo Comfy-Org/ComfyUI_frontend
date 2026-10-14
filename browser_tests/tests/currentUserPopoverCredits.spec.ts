@@ -183,7 +183,7 @@ test.describe('Current user popover credits row', { tag: '@cloud' }, () => {
     expect(resubscribeRight).toBeLessThanOrEqual(popoverRight)
   })
 
-  test('draws a single card frame with no offset shell behind it', async ({
+  test('keeps the user card inside the single popover frame', async ({
     page
   }) => {
     test.setTimeout(60_000)
@@ -204,10 +204,23 @@ test.describe('Current user popover credits row', { tag: '@cloud' }, () => {
     await expect(popover).toBeVisible()
     const shell = page.getByRole('dialog').filter({ has: popover })
 
-    const popoverBox = await popover.boundingBox()
-    const shellBox = await shell.boundingBox()
-    expect(popoverBox).not.toBeNull()
-    expect(shellBox).toEqual(popoverBox)
+    await expect(popover).toHaveCSS('border-top-width', '0px')
+    await expect(popover).toHaveCSS('box-shadow', 'none')
+    await expect
+      .poll(async () => {
+        const [card, frame] = await Promise.all([
+          popover.boundingBox(),
+          shell.boundingBox()
+        ])
+        if (!card || !frame) return false
+        return (
+          card.x >= frame.x &&
+          card.y >= frame.y &&
+          card.x + card.width <= frame.x + frame.width &&
+          card.y + card.height <= frame.y + frame.height
+        )
+      })
+      .toBe(true)
   })
 
   test(
