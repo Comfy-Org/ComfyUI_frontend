@@ -887,6 +887,7 @@ const {
     useTelemetry()?.trackAgentThreadStarted({ source }),
   onThreadActivated: (id) => history.setActive(id),
   onAskResolved: forgetApproval,
+  refreshCredentialDuringTurns: !isCloud,
   workflow: {
     initialize: agentPanelStore.initializeTargetTracking,
     current: targetWorkflowTurnContext,

@@ -4,7 +4,6 @@ import { computed, ref, watch } from 'vue'
 import { ZodError } from 'zod'
 
 import { i18n } from '@/i18n'
-import { isCloud } from '@/platform/distribution/types'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -110,6 +109,12 @@ export interface AgentSessionDeps {
   onThreadStarted?: (source: AgentSessionThreadStartSource) => void
   onThreadActivated?: (threadId: string | null) => void
   onAskResolved?: (askId: string) => void
+  /**
+   * Re-send the credential on an interval while a turn runs. Local servers
+   * need it to keep their session cookie alive; in the cloud fetchApi
+   * authenticates every request.
+   */
+  refreshCredentialDuringTurns?: boolean
   workflow?: {
     /** Resolve fresh versus restored startup before asynchronous hydration. */
     initialize?(hasThread: boolean): void
@@ -382,6 +387,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     onThreadStarted,
     onThreadActivated,
     onAskResolved,
+    refreshCredentialDuringTurns = false,
     workflow
   } = deps
   const threadStorageKey = StorageKeys.agentThread(getWorkspaceId())
@@ -494,7 +500,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
   )
 
   useIntervalFn(() => {
-    if (isCloud || conversationStore.liveTurns().length === 0) return
+    if (!refreshCredentialDuringTurns) return
+    if (conversationStore.liveTurns().length === 0) return
     rest.refreshCredential().catch((error: unknown) =>
       reportError(error, {
         surface: 'agent',
