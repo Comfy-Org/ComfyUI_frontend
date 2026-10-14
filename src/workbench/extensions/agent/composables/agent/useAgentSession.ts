@@ -1,3 +1,4 @@
+import { until } from '@vueuse/core'
 import { delay } from 'es-toolkit'
 import { computed, ref, watch } from 'vue'
 import { ZodError } from 'zod'
@@ -555,28 +556,29 @@ export function useAgentSession(deps: AgentSessionDeps) {
     readyThreadId.value = null
     ownedGeneration = ++sessionGeneration
     connection = 'initial'
+    unsubscribe = events.subscribe(onRaw)
+    if (events.onStatus) unsubscribeStatus = events.onStatus(onStatus)
+    void initializeThread(restore)
+  }
+
+  async function initializeThread(restore: boolean): Promise<void> {
+    const generation = ++loadGeneration
+    const isCurrent = () =>
+      !stopped &&
+      generation === loadGeneration &&
+      ownedGeneration === sessionGeneration
+    if (owner.value === null) await until(owner).not.toBeNull()
+    if (!isCurrent()) return
     const surviving = conversationStore.threadId
     const stored =
       conversationStore.messages.length === 0 ? storedThread.value : null
     const initialThreadId = surviving ?? stored
     initializeWorkflowContext(initialThreadId !== null)
-    unsubscribe = events.subscribe(onRaw)
-    if (events.onStatus) unsubscribeStatus = events.onStatus(onStatus)
     if (!restore) return
     if (initialThreadId === null) {
       onThreadActivated?.(null)
       return
     }
-    void restoreInitialThread(initialThreadId, surviving)
-  }
-
-  async function restoreInitialThread(
-    initialThreadId: string,
-    surviving: string | null
-  ): Promise<void> {
-    const generation = ++loadGeneration
-    const isCurrent = () =>
-      generation === loadGeneration && ownedGeneration === sessionGeneration
     const stashedTurn = beginInitialThread(initialThreadId, surviving)
     const ready = await hydrateFromServer(
       initialThreadId,

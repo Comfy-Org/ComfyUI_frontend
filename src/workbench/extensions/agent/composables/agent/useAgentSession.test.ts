@@ -6044,22 +6044,46 @@ describe('thread resume (B17)', () => {
     localStorage.clear()
   })
 
-  it('restores the persisted thread and hydrates its transcript on start', async () => {
+  it.for([{ initialIdentity: null }, { initialIdentity: { id: 'user-1' } }])(
+    'restores the persisted thread with initial identity $initialIdentity',
+    async ({ initialIdentity }) => {
+      const identity = ref(initialIdentity)
+      useCurrentUser().resolvedUserInfo = computed(() => identity.value)
+      localStorage.setItem(StorageKeys.agentThread(PERSONAL_SCOPE), 'th-9')
+      const session = useAgentSession({
+        rest: fakeRest({ getMessages: async () => HISTORY }),
+        events: fakeEvents().source
+      })
+      session.start()
+      identity.value = { id: 'user-1' }
+      await vi.waitFor(() => expect(session.entries.value).toHaveLength(2))
+
+      const [user, assistant] = session.entries.value
+      expect(user).toMatchObject({ role: 'user', text: 'build a duck' })
+      expect(assistant).toMatchObject({ role: 'assistant', streaming: false })
+      expect(session.threadId.value).toBe('th-9')
+      expect(session.isStreaming.value).toBe(false)
+      session.stop()
+    }
+  )
+
+  it('keeps a new chat empty when identity resolves after startup', async () => {
+    vi.useFakeTimers()
+    const identity = ref<{ id: string } | null>(null)
+    useCurrentUser().resolvedUserInfo = computed(() => identity.value)
     localStorage.setItem(StorageKeys.agentThread(PERSONAL_SCOPE), 'th-9')
-    const getMessages = vi.fn(async (): Promise<AgentMessages> => HISTORY)
     const session = useAgentSession({
-      rest: fakeRest({ getMessages }),
+      rest: fakeRest({ getMessages: async () => HISTORY }),
       events: fakeEvents().source
     })
     session.start()
-    await vi.waitFor(() => expect(getMessages).toHaveBeenCalledWith('th-9'))
-    await vi.waitFor(() => expect(session.entries.value).toHaveLength(2))
+    session.newChat()
+    identity.value = { id: 'user-1' }
+    await vi.advanceTimersByTimeAsync(0)
 
-    const [user, assistant] = session.entries.value
-    expect(user).toMatchObject({ role: 'user', text: 'build a duck' })
-    expect(assistant).toMatchObject({ role: 'assistant', streaming: false })
-    expect(session.threadId.value).toBe('th-9')
-    expect(session.isStreaming.value).toBe(false)
+    expect(session.threadId.value).toBeNull()
+    expect(session.entries.value).toEqual([])
+    session.stop()
   })
 
   it('reconciles a hydrated streaming turn without waiting for a socket transition', async () => {
