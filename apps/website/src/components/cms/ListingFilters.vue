@@ -8,7 +8,7 @@ import { translationsFor } from '@/i18n/translations'
 import type { ListingFilter } from '@/lib/cms/format'
 import { LISTING_KINDS } from '@/lib/cms/format'
 
-/** A list's views on the left (slot), then its type filter and search on the right. */
+/** A list's views on the left (slot), underlined up to the type filter and search, which always sit on the right. */
 const {
   counts,
   searchLabel,
@@ -34,11 +34,14 @@ const options = computed(() =>
 </script>
 
 <template>
-  <div
-    class="flex flex-wrap items-end justify-between gap-x-4 gap-y-3 border-b border-admin-line"
-  >
-    <slot />
-    <div class="flex w-full items-center gap-2 pb-2 sm:w-auto">
+  <div class="flex flex-wrap items-end justify-end gap-x-4 gap-y-3">
+    <div
+      v-if="$slots.default"
+      class="flex min-w-0 flex-1 basis-full border-b border-admin-line sm:basis-0"
+    >
+      <slot />
+    </div>
+    <div class="flex w-full items-center gap-2 pb-1 sm:w-auto">
       <div
         class="w-40 shrink-0 [&_button]:h-8 [&_button]:py-0 [&_button]:text-xs"
       >
