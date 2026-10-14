@@ -1,16 +1,15 @@
 <script setup lang="ts">
 import type { Locale } from '@/i18n/translations'
 
-import { externalLinks } from '@/config/routes'
 import { I18nT } from 'vue-i18n'
 
+import { externalLinks } from '@/config/routes'
 import { translationsFor } from '@/i18n/translations'
 import CardArrow from '@/components/common/CardArrow.vue'
 import GlassCard from '@/components/common/GlassCard.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
-const i18n = translationsFor(locale)
-const { t } = i18n
+const { t } = translationsFor(locale)
 
 const cards = [
   {
@@ -33,7 +32,7 @@ const cards = [
     <I18nT
       keypath="cloud.audience.heading"
       tag="h2"
-      :i18n
+      :i18n="translationsFor(locale)"
       class="mx-auto max-w-3xl text-center text-3.5xl/tight font-light text-primary-comfy-canvas lg:text-5xl/tight"
     >
       <template #highlight>

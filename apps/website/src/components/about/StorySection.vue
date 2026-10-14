@@ -6,8 +6,7 @@ import { I18nT } from 'vue-i18n'
 import { translationsFor } from '@/i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
-const i18n = translationsFor(locale)
-const { t } = i18n
+const { t } = translationsFor(locale)
 
 const investors = [
   { name: 'CRAFT', icon: '/icons/investors/craft.svg' },
@@ -30,7 +29,7 @@ const investors = [
       <I18nT
         keypath="about.story.heading"
         tag="h2"
-        :i18n
+        :i18n="translationsFor(locale)"
         class="mt-6 text-3xl font-light text-primary-comfy-canvas lg:text-5xl"
       >
         <template #highlight>

@@ -1834,7 +1834,7 @@
     },
     "careers": {
       "whyLabel": "IF YOU...",
-      "whyTitle": "Why join{logo}?",
+      "whyJoinTitle": "Why join{br}{logo}?",
       "reason1": "Want to build tools that empower others to create.",
       "reason2": "Want your output to matter more than your title.",
       "reason3": "Want high agency in a flat organization.",

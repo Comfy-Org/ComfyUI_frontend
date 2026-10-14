@@ -8,8 +8,7 @@ import NodeBadge from '@/components/common/NodeBadge.vue'
 import SectionLabel from '@/components/common/SectionLabel.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
-const i18n = translationsFor(locale)
-const { t } = i18n
+const { t } = translationsFor(locale)
 
 const values: {
   segments: Array<{ text: string }>
@@ -43,7 +42,7 @@ const values: {
       <I18nT
         keypath="about.values.heading"
         tag="h2"
-        :i18n
+        :i18n="translationsFor(locale)"
         class="mt-6 text-3xl font-light text-primary-comfy-canvas lg:text-5xl"
       >
         <template #highlight>

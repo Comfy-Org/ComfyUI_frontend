@@ -9,8 +9,8 @@
       "reason2": "想要你的产出比头衔更重要。",
       "reason3": "想要在扁平组织中拥有高度自主权。",
       "reason4": "宁愿交付与学习，也不愿计划与等待。",
-      "whyLabel": "如果你...",
-      "whyTitle": "为什么加入{logo}？"
+      "whyJoinTitle": "为什么加入{br}{logo}？",
+      "whyLabel": "如果你..."
     },
     "hero": {
       "body": "Comfy 背后的团队规模虽小，但充满热情，致力于打造我们毕生的事业。",

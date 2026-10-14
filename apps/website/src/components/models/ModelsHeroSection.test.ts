@@ -24,6 +24,7 @@ describe('ModelsHeroSection', () => {
         new RegExp(`^${title}$`),
         { normalizeWhitespace: false }
       )
+      expect(screen.getByText('ComfyUI')).toBeInTheDocument()
     }
   )
 })

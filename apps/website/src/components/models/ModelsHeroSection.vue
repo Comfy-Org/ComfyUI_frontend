@@ -19,8 +19,7 @@ const {
   videoSrc: string
   videoAriaLabel?: string
 }>()
-const i18n = translationsFor(locale)
-const { t } = i18n
+const { t } = translationsFor(locale)
 </script>
 
 <template>
@@ -28,7 +27,7 @@ const { t } = i18n
     <I18nT
       keypath="models.list.heroTitle"
       tag="h1"
-      :i18n
+      :i18n="translationsFor(locale)"
       class="max-w-4xl text-4xl font-light tracking-tight text-primary-comfy-canvas lg:text-6xl"
     >
       <template #name>{{ modelName }}</template>
