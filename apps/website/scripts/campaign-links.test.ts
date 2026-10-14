@@ -52,11 +52,10 @@ describe('campaign link automation', () => {
     )
   })
 
-  it('generates links for all eight vertical pages and both VFX v2 pages', () => {
+  it('generates unique links for current Comfy and agency campaign pages', () => {
     const links = buildCampaignLinks()
     expect(links.map(({ baseUrl }) => baseUrl)).toEqual([
-      'https://comfy.org/vfx/',
-      'https://comfy.org/vfx/v2/',
+      'https://comfy.org/solutions/vfx/',
       'https://comfy.org/agency-led/vfx/',
       'https://comfy.org/agency-led/vfx/v2/',
       'https://comfy.org/advertising/',
@@ -66,7 +65,24 @@ describe('campaign link automation', () => {
       'https://comfy.org/architectural-visualization/',
       'https://comfy.org/agency-led/architectural-visualization/'
     ])
-    expect(new Set(links.map(({ id }) => id)).size).toBe(10)
+    expect(new Set(links.map(({ id }) => id)).size).toBe(9)
+  })
+
+  it('targets the current Comfy VFX page with creative and audience attribution', () => {
+    expect(
+      buildCampaignLinks({
+        vertical: 'vfx',
+        track: 'comfy-led',
+        version: 'v2',
+        creative: 'workflow_demo_02',
+        audience: 'vfx_studios'
+      }).map(({ fullUrl }) => fullUrl)
+    ).toEqual([
+      'https://comfy.org/solutions/vfx/?utm_source=linkedin&utm_medium=ads&utm_campaign=comfy_vfx&utm_content=workflow_demo_02&utm_term=vfx_studios'
+    ])
+    expect(
+      buildCampaignLinks({ vertical: 'vfx', track: 'comfy-led', version: 'v1' })
+    ).toEqual([])
   })
 
   it('keeps creative, audience, campaign type and page version distinct', () => {
@@ -102,7 +118,7 @@ describe('campaign link automation', () => {
     const links = buildCampaignLinks({
       vertical: 'vfx',
       track: 'comfy-led',
-      version: 'v1'
+      version: 'v2'
     })
     const request = vi.fn<typeof fetch>().mockResolvedValue(
       Response.json({
@@ -110,7 +126,7 @@ describe('campaign link automation', () => {
           {
             id: 'existing',
             fullUrl:
-              'https://comfy.org/vfx/?utm_content=sizzle_video_01&utm_campaign=comfy_vfx&utm_medium=ads&utm_source=linkedin'
+              'https://comfy.org/solutions/vfx/?utm_content=sizzle_video_01&utm_campaign=comfy_vfx&utm_medium=ads&utm_source=linkedin'
           }
         ]
       })
@@ -143,7 +159,14 @@ describe('campaign link automation', () => {
   })
 
   it('creates only missing drafts, verifies them and skips them on the next run', async () => {
-    const links = buildCampaignLinks({ vertical: 'vfx', track: 'comfy-led' })
+    const links = ['sizzle_video_01', 'workflow_demo_02'].flatMap((creative) =>
+      buildCampaignLinks({
+        vertical: 'vfx',
+        track: 'comfy-led',
+        version: 'v2',
+        creative
+      })
+    )
     const request = vi
       .fn<typeof fetch>()
       .mockResolvedValueOnce(linkResponse(links.slice(0, 1)))
@@ -243,7 +266,7 @@ describe('campaign link automation', () => {
       const links = buildCampaignLinks({
         vertical: 'vfx',
         track: 'comfy-led',
-        version: 'v1'
+        version: 'v2'
       })
       const request = vi
         .fn<typeof fetch>()
@@ -295,7 +318,7 @@ describe('campaign link automation', () => {
           buildCampaignLinks({
             vertical: 'vfx',
             track: 'comfy-led',
-            version: 'v1'
+            version: 'v2'
           }),
           { token: 'test', apply: true, request }
         )

@@ -1,8 +1,10 @@
 # Campaign links
 
 The **Campaign Links** GitHub Actions workflow runs in the cloud on demand.
-It covers the four Comfy-led and four agency-led landing pages, plus both VFX
-v2 pages. Existing links keep working between runs; there is no schedule.
+It covers the four Comfy-led and four agency-led landing pages, plus the agency
+VFX v2 page. Comfy VFX uses version `v2` at `/solutions/vfx/`; its retired V1
+page is excluded. The default preview contains nine links. Existing saved links
+are never changed; there is no schedule. Black Math is not included.
 
 Choose a vertical, campaign type, page version, traffic source, creative and
 optional audience. The creative becomes `utm_content`; the audience becomes

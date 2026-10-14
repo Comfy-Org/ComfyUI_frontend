@@ -50,13 +50,20 @@ export function buildCampaignLinks({
         .flatMap((type) =>
           (route === 'vfx' ? ['v1', 'v2'] : ['v1'])
             .filter(
-              (pageVersion) => version === 'all' || version === pageVersion
+              (pageVersion) =>
+                (version === 'all' || version === pageVersion) &&
+                (type !== 'comfy-led' ||
+                  route !== 'vfx' ||
+                  pageVersion === 'v2')
             )
             .map((pageVersion) => {
               const campaign = `${type === 'comfy-led' ? 'comfy' : 'agency'}_${campaignSlug}`
               const prefix = type === 'agency-led' ? 'agency-led/' : ''
               const suffix = pageVersion === 'v2' ? '/v2' : ''
-              const baseUrl = `https://comfy.org/${prefix}${route}${suffix}/`
+              const baseUrl =
+                type === 'comfy-led' && route === 'vfx'
+                  ? 'https://comfy.org/solutions/vfx/'
+                  : `https://comfy.org/${prefix}${route}${suffix}/`
               const url = new URL(baseUrl)
               url.search = new URLSearchParams({
                 utm_source: source,
@@ -281,7 +288,7 @@ async function main() {
   const links = linksFromEnvironment()
   if (!links.length)
     throw new CampaignLinkError(
-      'No pages match these filters; v2 is available for VFX only'
+      'No pages match these filters; Comfy VFX requires v2, and v2 is available for VFX only'
     )
   const report =
     values.mode === 'preview'
