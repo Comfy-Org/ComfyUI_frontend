@@ -49,7 +49,7 @@ test('removes the background of the example from the floating panel', async ({
   await panel.getByRole('button', { name: 'Format: PNG' }).click()
   await page.getByRole('menuitemradio', { name: /^WebP/ }).click()
   await expect(app.getByRole('button', { name: 'Undo' })).toBeEnabled()
-  expect(await panel.boundingBox()).toMatchObject({ width: 280 })
+  expect(await panel.boundingBox()).toMatchObject({ width: 372 })
 
   await panel.getByTestId('background-removal-run').click()
   await expect(app.getByRole('status')).toContainText('Removing the background')
