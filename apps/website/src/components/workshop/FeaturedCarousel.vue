@@ -100,7 +100,7 @@ const active = computed<CatalogueFeature | undefined>(
       >
         <a
           :href="active.href"
-          class="rounded-sm outline-none hover:underline focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
+          class="rounded-sm outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
           data-testid="featured-title"
         >
           {{ active.title }}
