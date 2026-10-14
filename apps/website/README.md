@@ -46,8 +46,9 @@ generated examples still require a real executable API graph plus input bindings
 writing prose or adding a documentation link does not manufacture that graph.
 Body/FAQ/action metadata is decoded only in the detail view, not list cards.
 The review header reuses Mar's presentational `PageHeader` from PR #20640
-(source `b6eeab96dd33b9c17c6dcf3b079af8492d5fa9b8`), with slots for the
-existing phase instructions and server-backed Next guard. Her button/sidebar
+(source `b6eeab96dd33b9c17c6dcf3b079af8492d5fa9b8`). The first integration of
+her newer one-page review layout (`83744da`) uses `AdminDialogContent` and opens
+Final review in a popup. The button/sidebar
 palette remains in use; her sandbox publication/authentication transports are
 not merged into the real catalog, nor is the required yellow Preview warning
 replaced by a graphite bar.
@@ -61,8 +62,15 @@ it, and returns a freshly authorized complete 200 response. Other ranges,
 HEAD, raw-origin redirects and public video requests remain denied.
 The local CCC review console has two phases: decide every pending change
 (including previously deferred work), then inspect the complete Final review.
-`Next` stays disabled while the authoritative, unfiltered unresolved count is
-nonzero. Row trash and `Delete Changes` discard Draft edits only, with an exact
+`Review and publish` stays disabled while the authoritative, unfiltered unresolved
+count is nonzero. Opening the popup fetches the full server-validated candidate
+without a list filter and rejects a changed LIVE/Draft/generation. Publish binds
+that exact candidate digest, uses the existing CSRF/idempotency transport, and
+prevents dismissal while a request is unsettled. Cancel writes nothing. Unlike
+the design sandbox, opening or publishing never implicitly defers NEW items.
+The separate Final-review URL remains available for existing links. The rest of
+Mar's table, editor and filtering redesign is not yet integrated.
+Row trash and `Delete Changes` discard Draft edits only, with an exact
 scope confirmation; they do not delete LIVE content or immutable history.
 `Add Content` is beside the selection actions. A temporary local Publish control
 is available only when the backend explicitly enables it in Final review. It

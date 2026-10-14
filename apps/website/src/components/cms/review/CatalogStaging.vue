@@ -14,6 +14,7 @@ import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import type {
   Decision,
+  FinalReview,
   ReviewFilter,
   StagingReview
 } from '@/lib/cms/staging-review'
@@ -22,6 +23,7 @@ import {
   reviewTypes,
   reviewFilter,
   stagingSnapshot,
+  finalSnapshot,
   stagePayload,
   discardPayload,
   itemTitle,
@@ -30,6 +32,7 @@ import {
 import { reviewRequest } from '@/lib/cms/staging-client'
 import CatalogAdminShell from '@/components/cms/layout/CatalogAdminShell.vue'
 import CatalogChangeRow from './CatalogChangeRow.vue'
+import CatalogFinalReviewDialog from './CatalogFinalReviewDialog.vue'
 import AdminButton from '@/components/cms/ui/AdminButton.vue'
 const {
   initial,
@@ -48,6 +51,7 @@ const t = computed(() => translationsFor(locale).t)
 type Flow =
   | { kind: 'ready'; review: StagingReview; message?: string }
   | { kind: 'loading' | 'saving' | 'exiting'; review: StagingReview }
+  | { kind: 'finalReview'; review: StagingReview; final: FinalReview }
   | {
       kind: 'confirmDiscard'
       review: StagingReview
@@ -63,6 +67,7 @@ type Flow =
 const flow = ref<Flow>({ kind: 'ready', review: initial })
 const selected = ref(new Set<string>())
 const acknowledgeAll = ref(false)
+let reviewTrigger: HTMLElement | undefined
 
 const form = ref({
   search: initial.filter.search ?? '',
@@ -134,7 +139,12 @@ function filterInput(): ReviewFilter | undefined {
   return parsed.success ? parsed.data : undefined
 }
 async function load() {
-  if (busy.value || flow.value.kind === 'confirmDiscard') return
+  if (
+    busy.value ||
+    flow.value.kind === 'confirmDiscard' ||
+    flow.value.kind === 'finalReview'
+  )
+    return
   const filter = filterInput()
   if (!filter) {
     flow.value = {
@@ -267,12 +277,49 @@ async function applyDecision(pending: {
   }
 }
 async function exit() {
-  if (busy.value || flow.value.kind === 'confirmDiscard') return
+  if (
+    busy.value ||
+    flow.value.kind === 'confirmDiscard' ||
+    flow.value.kind === 'finalReview'
+  )
+    return
   const previous = flow.value.review
   flow.value = { kind: 'exiting', review: previous }
   const response = await reviewRequest('exit', { csrf })
   if (response.ok) window.location.assign('/hub/models/')
   else flow.value = { kind: 'failed', review: previous, reason: 'failed' }
+}
+async function openFinalReview(event: MouseEvent) {
+  if (!canApply || blocked.value || flow.value.review.unresolved_count > 0)
+    return
+  reviewTrigger =
+    event.currentTarget instanceof HTMLElement ? event.currentTarget : undefined
+  const previous = flow.value.review
+  flow.value = { kind: 'loading', review: previous }
+  const response = await reviewRequest('final-review')
+  const final = response.ok ? finalSnapshot(response.data) : undefined
+  if (!final) {
+    flow.value = {
+      kind: 'failed',
+      review: previous,
+      reason:
+        response.status === 409 || response.status === 422 ? 'stale' : 'failed'
+    }
+    return
+  }
+  if (
+    final.state.live_rev !== previous.state.live_rev ||
+    final.state.draft_rev !== previous.state.draft_rev ||
+    final.state.draft_generation !== previous.state.draft_generation
+  ) {
+    flow.value = { kind: 'failed', review: previous, reason: 'stale' }
+    return
+  }
+  flow.value = { kind: 'finalReview', review: previous, final }
+}
+function closeFinalReview() {
+  if (flow.value.kind === 'finalReview')
+    flow.value = { kind: 'ready', review: flow.value.review }
 }
 function requestDiscard(uids: string[]) {
   if (!canEdit || blocked.value || !uids.length || uids.length > 100) return
@@ -391,9 +438,9 @@ function discardDetails(raw: unknown) {
         <div v-if="canApply" class="flex flex-col items-end gap-2">
           <AdminButton
             variant="primary"
-            href="/admin/catalog/final-review"
             :disabled="blocked || flow.review.unresolved_count > 0"
-            >{{ t('cccStaging.next') }}</AdminButton
+            @click="openFinalReview"
+            >{{ t('cccStaging.reviewAndPublish') }}</AdminButton
           >
           <span class="text-xs text-admin-muted">{{
             t('cccStaging.finalReview')
@@ -417,7 +464,9 @@ function discardDetails(raw: unknown) {
       @submit.prevent="load"
     >
       <fieldset
-        :disabled="busy || flow.kind === 'confirmDiscard'"
+        :disabled="
+          busy || flow.kind === 'confirmDiscard' || flow.kind === 'finalReview'
+        "
         class="contents"
       >
         <label class="text-xs text-admin-muted xl:col-span-2"
@@ -625,5 +674,13 @@ function discardDetails(raw: unknown) {
         </DialogContent>
       </DialogPortal>
     </DialogRoot>
+    <CatalogFinalReviewDialog
+      v-if="flow.kind === 'finalReview'"
+      :review="flow.final"
+      :return-focus="reviewTrigger"
+      :csrf
+      :locale
+      @close="closeFinalReview"
+    />
   </CatalogAdminShell>
 </template>

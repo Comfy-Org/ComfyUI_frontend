@@ -5223,6 +5223,7 @@
     "approveMatching": "批准所有匹配项",
     "deferMatching": "推迟所有匹配项",
     "finalReview": "最终审核",
+    "reviewAndPublish": "审核并发布",
     "changes": "草稿变更",
     "matches": "{count} 项匹配变更",
     "working": "处理中…",

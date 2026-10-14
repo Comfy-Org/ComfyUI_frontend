@@ -12,6 +12,7 @@ const {
   locale = 'en'
 } = defineProps<{ review: FinalReview; csrf: string; locale?: Locale }>()
 const t = computed(() => translationsFor(locale).t)
+const emit = defineEmits<{ busy: [value: boolean] }>()
 const busy = ref(false)
 const failure = ref<'stale' | 'failed' | undefined>()
 // Retain the same retry key after an uncertain response; never publish twice.
@@ -19,6 +20,7 @@ const key = crypto.randomUUID()
 async function publish() {
   if (busy.value || !review.publish_enabled) return
   busy.value = true
+  emit('busy', true)
   failure.value = undefined
   const response = await reviewRequest('publish', {
     csrf,
@@ -36,6 +38,7 @@ async function publish() {
   }
   failure.value = response.status === 409 ? 'stale' : 'failed'
   busy.value = false
+  emit('busy', false)
 }
 </script>
 <template>

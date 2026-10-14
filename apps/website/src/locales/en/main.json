@@ -5830,6 +5830,7 @@
     "approveMatching": "Approve all matching",
     "deferMatching": "Defer all matching",
     "finalReview": "Final review",
+    "reviewAndPublish": "Review and publish",
     "changes": "Draft changes",
     "matches": "{count} matching changes",
     "working": "Working…",

@@ -325,10 +325,9 @@ describe('actual catalog staging console', () => {
     expect(
       screen.getByRole('button', { name: 'Decision for Review fixture' })
     ).toHaveTextContent('APPROVED')
-    expect(screen.getByRole('link', { name: 'Next →' })).toHaveAttribute(
-      'href',
-      '/admin/catalog/final-review'
-    )
+    expect(
+      screen.getByRole('button', { name: 'Review and publish' })
+    ).toBeEnabled()
   })
   it('fails stale decisions closed and requires a reload before any next staging action', async () => {
     vi.stubGlobal(
@@ -431,7 +430,7 @@ describe('actual catalog staging console', () => {
     ).toBeDisabled()
   })
   it.each([1, 4])(
-    'blocks Next for %i undecided entries even when filters show only an approved row',
+    'blocks final review for %i undecided entries even when filters show only an approved row',
     (count) => {
       const initial = fixtureReview()
       initial.filter = { statuses: ['APPROVED'] }
@@ -445,7 +444,9 @@ describe('actual catalog staging console', () => {
           canEdit: true
         }
       })
-      expect(screen.getByRole('button', { name: 'Next →' })).toBeDisabled()
+      expect(
+        screen.getByRole('button', { name: 'Review and publish' })
+      ).toBeDisabled()
       expect(
         screen.queryByRole('link', { name: 'Next →' })
       ).not.toBeInTheDocument()
