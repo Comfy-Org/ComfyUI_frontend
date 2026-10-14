@@ -4833,11 +4833,15 @@
         "ctaShort": "可在浏览器或 API 中运行。",
         "lead": "{who}：{summary}",
         "leadNoSummary": "{who}。",
-        "price": "默认设置下约 {credits} 积分。",
+        "price": "默认设置下每{unit}约 {credits} 积分。",
         "priceNoUnit": "默认设置下约 {credits} 积分。",
         "title": "{name} API 与 Playground - Comfy",
         "titleApi": "{name} API - Comfy",
-        "titleUnbranded": "{name} API 与 Playground"
+        "titleUnbranded": "{name} API 与 Playground",
+        "units": {
+          "image": "张图像",
+          "run": "次运行"
+        }
       },
       "missingInputSchema": "Comfy Router 已列出此模型，但其输入架构尚未提供。你可以查看已有信息；添加架构后将启用运行和 API 代码示例。",
       "nodePriceDefaults": "根据公布的费率或节点默认设置估算。实际费用随设置和用量变化。",
