@@ -5803,7 +5803,7 @@
     "prizeLtxBody": "LTX must be the core video model in the workflow to qualify.",
     "prizeFlux": "Built with FLUX",
     "prizeFluxAward": "$1,000 / $500 / $250 in Flux API credits",
-    "prizeFluxBody": "FLUX3 must be the core video model in the workflow to qualify.",
+    "prizeFluxBody": "FLUX 3 must be the core model in the workflow to qualify.",
     "totalPrize": "$25,000",
     "totalPrizeCaption": "total worth in prizes",
     "shareImageAlt": "Open Source Higgsfield: $25,000 in prizes",

@@ -5196,7 +5196,7 @@
     "prizeLtxBody": "工作流须以 LTX 作为核心视频模型方可参评。",
     "prizeFlux": "使用 FLUX 构建",
     "prizeFluxAward": "1,000 / 500 / 250 美元 Flux API 额度",
-    "prizeFluxBody": "工作流须以 FLUX3 作为核心视频模型方可参评。",
+    "prizeFluxBody": "工作流须以 FLUX 3 作为核心模型方可参评。",
     "totalPrize": "25,000 美元",
     "totalPrizeCaption": "奖品总价值",
     "shareImageAlt": "Open Source Higgsfield：25,000 美元奖品",
