@@ -370,7 +370,10 @@ export const useWorkflowService = () => {
   const reloadCurrentWorkflow = async () => {
     const workflow = workflowStore.activeWorkflow
     if (workflow) {
-      await openWorkflow(workflow, { force: true })
+      await openWorkflow(workflow, {
+        force: true,
+        isCurrent: () => workflowStore.activeWorkflow === workflow
+      })
     }
   }
 
