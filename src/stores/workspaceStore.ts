@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
+import { useContextKeyStore } from '@/platform/keybindings/contextKeyStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -145,6 +146,9 @@ function workspaceStoreSetup() {
 
   const executionErrorStore = useExecutionErrorStore()
 
+  const contextKeyStore = useContextKeyStore()
+  const contextKey = { set: contextKeyStore.setFromExtension }
+
   return {
     spinner,
     shiftDown,
@@ -161,6 +165,7 @@ function workspaceStoreSetup() {
     colorPalette,
     dialog,
     bottomPanel,
+    contextKey,
     user: partialUserStore,
 
     // Execution error state (read-only, exposed for custom extensions)

@@ -93,6 +93,9 @@ export interface ExtensionManager {
     set: (id: string, value: unknown) => void
   }
   workflow: WorkflowStore
+  contextKey: {
+    set: (name: string, value: boolean) => void
+  }
 
   // Execution error state (read-only)
   lastNodeErrors: Record<string, NodeError> | null
