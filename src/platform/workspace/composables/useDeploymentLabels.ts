@@ -11,13 +11,15 @@ function shortId(deploymentId: string): string {
   return deploymentId.slice(0, 12)
 }
 
-/**
- * The message for a deployment's label: its Build name and the Release
- * version it runs now, or its short id when Build names are hidden.
- */
 function labelMessage(
   deployment: WorkspaceDeployment
 ): [key: string, values: Record<string, string | number>] {
+  if (deployment.deployment_name) {
+    return [
+      'deploymentSwitcher.namedDeployment',
+      { name: deployment.deployment_name }
+    ]
+  }
   if (
     deployment.build_name !== undefined &&
     deployment.release_version !== undefined
@@ -47,13 +49,6 @@ export function useBootDeploymentLabel() {
   })
 }
 
-/**
- * The words the deployment switcher shows (FE-2434): a deployment's label
- * (its Build name and the Release version it runs now, or its short id when
- * Build names are hidden), its caption, and the labels of this browser's pick
- * and of the workspace's default deployment. Plain text, never HTML: Vue
- * escapes them where they render, so a Build name is not escaped here.
- */
 export function useDeploymentLabels() {
   const { t } = useI18n()
   const { pickedDeployment, defaultDeploymentId, defaultDeployment } =
@@ -64,15 +59,34 @@ export function useDeploymentLabels() {
     return t(key, values, { escapeParameter: false })
   }
 
-  /** The id and status, marking the workspace's default deployment. */
   function deploymentCaption(deployment: WorkspaceDeployment): string {
     const key =
       deployment.deployment_id === defaultDeploymentId.value
         ? 'deploymentSwitcher.captionDefault'
         : 'deploymentSwitcher.caption'
-    return t(
+    const caption = t(
       key,
       { id: shortId(deployment.deployment_id), status: deployment.status },
+      { escapeParameter: false }
+    )
+    if (
+      !deployment.deployment_name ||
+      deployment.build_name === undefined ||
+      deployment.release_version === undefined
+    )
+      return caption
+
+    const release = t(
+      'deploymentSwitcher.deployment',
+      {
+        build: deployment.build_name,
+        version: deployment.release_version
+      },
+      { escapeParameter: false }
+    )
+    return t(
+      'deploymentSwitcher.namedCaption',
+      { release, caption },
       { escapeParameter: false }
     )
   }

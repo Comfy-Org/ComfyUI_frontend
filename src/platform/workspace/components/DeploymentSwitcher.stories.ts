@@ -186,3 +186,22 @@ export const BuildsHidden: Story = seeded({
   goneDefaultDeploymentId: null,
   buildsVisible: false
 })
+
+export const NamedDeployments: Story = seeded({
+  phase: 'ready',
+  deployments: [
+    { ...studioProd, deployment_name: 'Agency A production' },
+    {
+      ...studioProd,
+      deployment_id: studioStaging.deployment_id,
+      deployment_name: 'Agency A staging'
+    },
+    experiments
+  ],
+  pickedDeploymentId: studioProd.deployment_id,
+  pickSource: 'workspace_default',
+  defaultDeploymentId: studioProd.deployment_id,
+  gonePickedDeploymentId: null,
+  goneDefaultDeploymentId: null,
+  buildsVisible: true
+})
