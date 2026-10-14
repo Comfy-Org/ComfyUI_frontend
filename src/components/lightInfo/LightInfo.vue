@@ -122,7 +122,7 @@ function lightChipClass(active: boolean) {
     chipClass,
     'border border-transparent bg-transparent font-mono text-xs',
     active
-      ? 'border-border bg-muted text-foreground'
+      ? 'border-node-border bg-muted text-foreground'
       : 'text-muted-foreground hover:bg-accent hover:text-foreground'
   )
 }

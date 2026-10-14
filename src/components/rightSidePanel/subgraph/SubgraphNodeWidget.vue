@@ -36,7 +36,7 @@ const icon = computed(() =>
     :class="
       cn(
         'flex items-center gap-1 rounded-sm px-2 py-1 break-all',
-        'bg-card',
+        'bg-node',
         isDraggable && 'ring-accent-background hover:ring-1',
         className
       )

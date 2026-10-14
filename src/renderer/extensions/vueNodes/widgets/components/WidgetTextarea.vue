@@ -47,7 +47,7 @@
       @click="handleCopy"
       @pointerdown.capture.stop
     >
-      <i class="icon-[lucide--copy] size-4 text-card-foreground" />
+      <i class="icon-[lucide--copy] size-4 text-node-foreground" />
     </Button>
   </div>
 </template>

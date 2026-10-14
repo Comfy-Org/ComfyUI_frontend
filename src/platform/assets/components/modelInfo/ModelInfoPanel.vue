@@ -205,7 +205,7 @@
           rows="3"
           :class="
             cn(
-              'w-full resize-y scrollbar-gutter-stable rounded-lg border border-transparent bg-transparent px-3 py-2 text-sm text-card-foreground transition-colors outline-none focus:bg-input',
+              'w-full resize-y scrollbar-gutter-stable rounded-lg border border-transparent bg-transparent px-3 py-2 text-sm text-foreground transition-colors outline-none focus:bg-input',
               isImmutable && 'cursor-not-allowed'
             )
           "

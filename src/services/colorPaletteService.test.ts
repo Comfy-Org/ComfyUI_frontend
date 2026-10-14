@@ -33,7 +33,14 @@ function readRootProperty(property: string) {
 
 function clearRootThemeAfterTest() {
   onTestFinished(() => {
-    for (const property of ['--background', '--card', '--border', '--muted']) {
+    for (const property of [
+      '--background',
+      '--node',
+      '--node-header',
+      '--secondary',
+      '--border',
+      '--muted'
+    ]) {
       document.documentElement.style.removeProperty(property)
     }
   })
@@ -43,17 +50,31 @@ describe('useColorPaletteService theme variables', () => {
   it.for([
     {
       paletteId: 'dark',
-      expected: { '--background': '', '--card': '', '--border': '' }
+      expected: {
+        '--background': '',
+        '--node': '',
+        '--node-header': '',
+        '--secondary': '',
+        '--border': ''
+      }
     },
     {
       paletteId: 'light',
-      expected: { '--background': '', '--card': '', '--border': '' }
+      expected: {
+        '--background': '',
+        '--node': '',
+        '--node-header': '',
+        '--secondary': '',
+        '--border': ''
+      }
     },
     {
       paletteId: 'nord',
       expected: {
         '--background': '#161b22',
-        '--card': '#161b22',
+        '--node': '#161b22',
+        '--node-header': '#2e3440',
+        '--secondary': '',
         '--border': 'color-mix(in srgb, #161b22 75.5%, #fff)'
       }
     },
@@ -61,7 +82,9 @@ describe('useColorPaletteService theme variables', () => {
       paletteId: 'solarized',
       expected: {
         '--background': '#073642',
-        '--card': '#073642',
+        '--node': '#073642',
+        '--node-header': '#094656',
+        '--secondary': '',
         '--border': 'color-mix(in srgb, #073642 75.5%, #fff)'
       }
     }
@@ -74,7 +97,9 @@ describe('useColorPaletteService theme variables', () => {
 
       expect({
         '--background': readRootProperty('--background'),
-        '--card': readRootProperty('--card'),
+        '--node': readRootProperty('--node'),
+        '--node-header': readRootProperty('--node-header'),
+        '--secondary': readRootProperty('--secondary'),
         '--border': readRootProperty('--border')
       }).toEqual(expected)
     }
@@ -88,20 +113,20 @@ describe('useColorPaletteService theme variables', () => {
     store.addCustomPalette({
       ...nord,
       id: 'custom-theme',
-      colors: { ...nord.colors, theme: { card: '#123456', muted: '#654321' } }
+      colors: { ...nord.colors, theme: { node: '#123456', muted: '#654321' } }
     })
     const service = useColorPaletteService()
 
     await service.loadColorPalette('custom-theme')
     expect([
-      readRootProperty('--card'),
+      readRootProperty('--node'),
       readRootProperty('--muted'),
       readRootProperty('--background')
     ]).toEqual(['#123456', '#654321', '#161b22'])
 
     await service.loadColorPalette('dark')
     expect([
-      readRootProperty('--card'),
+      readRootProperty('--node'),
       readRootProperty('--muted'),
       readRootProperty('--background')
     ]).toEqual(['', '', ''])

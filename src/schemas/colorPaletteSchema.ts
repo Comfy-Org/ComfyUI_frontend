@@ -84,13 +84,12 @@ const comfyBaseSchema = z.object({
   ['interface-button-hover-surface']: z.string().optional()
 })
 
-/** Design-system theme variables a palette may override, named after the shadcn/tweakcn theme contract. */
+/** Design-system theme variables a palette may override: the shadcn/tweakcn contract plus the node layer. */
 export const themeSchema = z
   .object({
     background: z.string(),
     foreground: z.string(),
     card: z.string(),
-    ['card-foreground']: z.string(),
     popover: z.string(),
     primary: z.string(),
     secondary: z.string(),
@@ -100,7 +99,11 @@ export const themeSchema = z
     destructive: z.string(),
     border: z.string(),
     input: z.string(),
-    ring: z.string()
+    ring: z.string(),
+    node: z.string(),
+    ['node-foreground']: z.string(),
+    ['node-header']: z.string(),
+    ['node-border']: z.string()
   })
   .partial()
 
