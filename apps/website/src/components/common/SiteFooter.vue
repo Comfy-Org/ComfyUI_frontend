@@ -106,7 +106,9 @@ const models: FooterColumn = {
       href: routes.qwenImage21
     },
     { label: t('footer.nanoBanana'), href: routes.nanoBanana },
-    { label: t('footer.flux3'), href: routes.flux3 }
+    { label: t('footer.flux3'), href: routes.flux3 },
+    { label: t('footer.fishAudio'), href: routes.fishAudio },
+    { label: t('footer.nvidiaVfx'), href: routes.nvidiaVfx }
   ]
 }
 

@@ -1,0 +1,220 @@
+{
+  "id": "subgraph-promotion",
+  "capability": "Subgraph widget promotion",
+  "description": "Promoting inner widgets and previews onto subgraph nodes: promotion and preview-exposure property schemas, concrete widget resolution, promoted input widgets and value controls, legacy proxy-widget migration, and promotion error reconciliation. Widget values stay in the widget value store outside this domain.",
+  "modules": [
+    {
+      "path": "src/core/graph/subgraph/createPromotionErrorReconciler.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/core/graph/subgraph/hasPromotedWidgetTarget.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/core/graph/subgraph/matchPromotedInput.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/core/graph/subgraph/matchPromotedInput.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/core/graph/subgraph/preview/previewExposureChain.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/core/graph/subgraph/preview/previewExposureChain.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/core/graph/subgraph/promotedWidgetTypes.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/core/graph/subgraph/resolveConcretePromotedWidget.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/core/graph/subgraph/resolveConcretePromotedWidget.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/core/graph/subgraph/resolvePromotedWidgetSource.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/core/graph/subgraph/widgetRenderKey.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/core/graph/subgraph/widgetRenderKey.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/core/schemas/parseNodePropertyArray.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/core/schemas/previewExposureSchema.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/core/schemas/previewExposureSchema.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/core/schemas/promotionSchema.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/core/schemas/promotionSchema.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/core/schemas/proxyWidgetQuarantineSchema.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/core/schemas/proxyWidgetQuarantineSchema.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/core/graph/subgraph/adoptPromotedWidgetValue.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/core/graph/subgraph/migration/proxyWidgetMigration.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/core/graph/subgraph/migration/proxyWidgetMigration.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/core/graph/subgraph/promotedInputWidget.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/core/graph/subgraph/promotedInputWidget.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/core/graph/subgraph/promotedWidgetControl.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/core/graph/subgraph/promotedWidgetControl.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/core/graph/subgraph/promotionAfterReplacement.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/core/graph/subgraph/promotionUtils.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/core/graph/subgraph/promotionUtils.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/lib/litegraph/src/subgraph/promotedWidgetStoreProjection.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/components/rightSidePanel/subgraph/SubgraphEditor.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/rightSidePanel/subgraph/SubgraphEditor.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/rightSidePanel/subgraph/SubgraphNodeWidget.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/stores/previewExposureStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/previewExposureStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/services/subgraphPseudoWidgetCache.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/services/subgraphPseudoWidgetCache.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/node/usePromotedPreviews.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/node/usePromotedPreviews.ts",
+      "role": "application"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Promoted widgets resolve to their concrete inner widgets and keep values",
+      "checks": [
+        "src/core/graph/subgraph/resolveConcretePromotedWidget.test.ts",
+        "src/core/graph/subgraph/promotedInputWidget.test.ts",
+        "src/core/graph/subgraph/promotedWidgetControl.test.ts",
+        "src/core/graph/subgraph/promotionAfterReplacement.test.ts"
+      ]
+    },
+    {
+      "name": "Legacy proxy widgets and persisted promotion properties migrate safely",
+      "checks": [
+        "src/core/graph/subgraph/migration/proxyWidgetMigration.test.ts",
+        "src/core/schemas/promotionSchema.test.ts",
+        "src/core/schemas/proxyWidgetQuarantineSchema.test.ts",
+        "src/core/schemas/previewExposureSchema.test.ts"
+      ]
+    },
+    {
+      "name": "Promoted widgets behave on the canvas end to end",
+      "checks": [
+        "browser_tests/tests/subgraph/subgraphPromotion.spec.ts",
+        "browser_tests/tests/subgraphPromotedWidgetPanel.spec.ts"
+      ]
+    },
+    {
+      "name": "Subgraph editor lists, reorders, and toggles promoted widgets and previews",
+      "checks": [
+        "src/components/rightSidePanel/subgraph/SubgraphEditor.test.ts"
+      ]
+    },
+    {
+      "name": "Preview exposures and promoted preview pseudo-widgets resolve to their inner host nodes",
+      "checks": [
+        "src/stores/previewExposureStore.test.ts",
+        "src/services/subgraphPseudoWidgetCache.test.ts"
+      ]
+    },
+    {
+      "name": "Subgraph nodes expose promoted inner previews",
+      "checks": ["src/composables/node/usePromotedPreviews.test.ts"]
+    }
+  ],
+  "adrs": [
+    "docs/adr/SUBGRAPH-PROMOTION-0009-represent-promoted-widgets-as-linked-inputs.md",
+    "docs/adr/SUBGRAPH-PROMOTION-0027-defer-promoted-widget-registration-to-onadded.md"
+  ],
+  "compatibilityPromises": [
+    "Persisted proxyWidgets and preview-exposure node properties keep loading from existing workflows.",
+    "Promoted widget state is never registered under the unassigned node id.",
+    "Inventory grants no new cross-domain permissions; LGraph and SubgraphNode imports of promotion helpers remain inherited debt."
+  ],
+  "deepImports": "inventory"
+}
