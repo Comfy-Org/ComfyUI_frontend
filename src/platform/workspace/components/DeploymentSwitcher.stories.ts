@@ -9,8 +9,8 @@ import DeploymentSwitcher from './DeploymentSwitcher.vue'
 /**
  * The deployment switcher under the workspace selector in the user popover:
  * which developer-platform deployment this browser runs its Cloud jobs on,
- * and the list it may pick from. Each row is a deployment with the Release it
- * runs now; a pick follows the deployment when its owner updates it. Each story seeds the store's state directly; the
+ * and the list it may pick from. Each row is titled by the deployment's name,
+ * with the Build and Release it runs now in its caption; a pick follows the deployment when its owner updates it. Each story seeds the store's state directly; the
  * Storybook team-workspace stub has no active workspace, so the store never
  * calls the listing route here. Click the trigger to open the panel.
  */
@@ -33,6 +33,7 @@ type Story = StoryObj<typeof meta>
 
 const studioProd: WorkspaceDeployment = {
   deployment_id: 'dep-f24d36bb-fd1f-4cd7-bfa9-fe015b5cd33d',
+  deployment_name: 'Studio production',
   release_id: '6f1c2b0e-3c4d-4e5f-8a9b-0c1d2e3f4a5b',
   build_id: 'b-1',
   build_name: 'Studio Build',
@@ -43,6 +44,7 @@ const studioProd: WorkspaceDeployment = {
 
 const studioStaging: WorkspaceDeployment = {
   deployment_id: 'dep-0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d',
+  deployment_name: 'Studio staging',
   release_id: 'c4a8e2f0-5b6c-4d7e-8f90-1a2b3c4d5e6f',
   build_id: 'b-1',
   build_name: 'Studio Build',
@@ -90,7 +92,7 @@ export const Default: Story = seeded({
   buildsVisible: true
 })
 
-/** A deployment picked; the trigger names its Build and Release. */
+/** A deployment picked; the trigger names it. */
 export const Picked: Story = seeded({
   phase: 'ready',
   deployments: [studioProd, experiments, studioStaging],
@@ -161,13 +163,15 @@ export const Empty: Story = seeded({
 
 /**
  * comfy-builder refused the caller (its routes sit behind the Builds beta):
- * the deployments are listed by id, and the panel says why.
+ * the deployments are listed by name without their Build and Release, an
+ * unnamed one by id, and the panel says why.
  */
 export const BuildsHidden: Story = seeded({
   phase: 'ready',
   deployments: [
     {
       deployment_id: studioProd.deployment_id,
+      deployment_name: studioProd.deployment_name,
       release_id: studioProd.release_id,
       status: 'ready',
       created_at: studioProd.created_at

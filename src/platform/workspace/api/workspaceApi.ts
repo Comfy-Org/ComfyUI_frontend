@@ -21,6 +21,7 @@ import type {
   PaymentPortalRequest,
   PaymentPortalResponse,
   PendingInvite,
+  PickWorkspaceDeploymentRequest,
   Plan,
   PreviewSubscribeRequest,
   PreviewSubscribeResponse,
@@ -40,6 +41,7 @@ import type {
   TeamCreditStops,
   TeamCreditStopSummary,
   UpdateWorkspaceRequest,
+  WorkspaceDeployment,
   WorkspaceDeploymentList,
   WorkspaceWithRole
 } from '@comfyorg/ingest-types'
@@ -158,14 +160,8 @@ export type BillingRecoveryAction = NonNullable<
   BillingOpStatusResponse['recovery_action']
 >
 
-export type {
-  WorkspaceDeployment,
-  WorkspaceDeploymentList
-} from '@comfyorg/ingest-types'
-
-interface PickWorkspaceDeploymentRequest {
-  deployment_id: string
-}
+export type { WorkspaceDeployment }
+export type { WorkspaceDeploymentList }
 
 interface GetBillingEventsParams {
   page?: number
