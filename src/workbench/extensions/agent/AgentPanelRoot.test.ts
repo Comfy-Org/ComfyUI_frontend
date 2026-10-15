@@ -5717,6 +5717,30 @@ describe('AgentPanelRoot history', () => {
       )
     })
 
+    it('does not re-list chats for a saved tab that has no cloud workflow', async () => {
+      workflowStore.activeWorkflow = addTab('workflows/first.json')
+      const unlisted = addTab('workflows/fourth.json')
+      const { listCalls, loadedThreads } = stubWorkflowBoundHistory([
+        agentThread({
+          id: 'th-first',
+          title: 'First chat',
+          last_message_at: '2026-09-22T10:00:00Z',
+          workflow_id: 'wf-first'
+        })
+      ])
+      renderWithSelectedTarget()
+      await vi.waitFor(() =>
+        expect(useAgentChatHistoryStore().sessions).toHaveLength(1)
+      )
+      const listedBefore = listCalls()
+
+      await activateTabAsUser(unlisted)
+      await settleFollow()
+
+      expect(listCalls()).toBe(listedBefore)
+      expect(loadedThreads).toEqual([])
+    })
+
     it('does not follow a tab the app activates on its own, like a restored or linked workflow', async () => {
       const first = addTab('workflows/first.json')
       const second = addTab('workflows/second.json')

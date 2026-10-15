@@ -1562,6 +1562,25 @@ async function tabWorkflowId(
   return cloudIdFor(workflow)
 }
 
+async function openFollowedChat(
+  id: string,
+  workflow: ComfyWorkflow,
+  workflowId: string,
+  isCurrent: () => boolean
+): Promise<void> {
+  followedChat = { threadId: id, workflow, workflowId }
+  const opened = await loadThread(id, isCurrent, {
+    keepOpenChatUntilLoaded: true
+  })
+  if (followedChat?.threadId === id) followedChat = null
+  if (!opened) {
+    if (isCurrent()) followFailure.value = workflow
+    return
+  }
+  if (!composerStore.hasDraft) composerStore.setText('')
+  useTelemetry()?.trackAgentThreadStarted({ source: 'history_select' })
+}
+
 async function followTab(workflow: ComfyWorkflow): Promise<void> {
   const generation = ++followGeneration
   followFailure.value = null
@@ -1570,22 +1589,13 @@ async function followTab(workflow: ComfyWorkflow): Promise<void> {
     generation === followGeneration &&
     workflowStore.activeWorkflow?.path === workflow.path &&
     !userEngaged()
-  const [workflowId] = await Promise.all([
-    tabWorkflowId(workflow),
-    refreshHistory('none')
-  ])
-  if (!isCurrent() || workflowId === undefined) return
+  const workflowId = await tabWorkflowId(workflow)
+  if (workflowId === undefined || !isCurrent()) return
+  await refreshHistory('none')
+  if (!isCurrent()) return
   const latest = latestChatFor(workflowId)
-  if (latest === undefined || latest === threadId.value) return
-  followedChat = { threadId: latest, workflow, workflowId }
-  const opened = await loadThread(latest, isCurrent, {
-    keepOpenChatUntilLoaded: true
-  })
-  if (followedChat?.threadId === latest) followedChat = null
-  if (opened) {
-    composerStore.setText('')
-    useTelemetry()?.trackAgentThreadStarted({ source: 'history_select' })
-  } else if (isCurrent()) followFailure.value = workflow
+  if (latest !== undefined && latest !== threadId.value)
+    await openFollowedChat(latest, workflow, workflowId, isCurrent)
 }
 
 function restoreChatWorkflow(
