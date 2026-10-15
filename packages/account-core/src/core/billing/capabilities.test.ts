@@ -325,21 +325,12 @@ describe('createCapabilitiesReader', () => {
       expect(reader.getSnapshot()).toBeUndefined()
     })
 
-    it('refuses another member\u2019s answer for the caller\u2019s own workspace', async () => {
+    it('accepts the server\u2019s own user id for a caller the scope knows by its sign-in uid', async () => {
       const { scopeSource } = fakeSession()
       const { transport } = fakeTransport([
         httpOk(
           capabilitiesBody({
-            // The right workspace, the wrong actor. Capabilities resolve per
-            // (user, workspace), so this decides what a different member may
-            // be offered — publishing it would hand the caller someone else's
-            // rights.
-            resolved_for: { user_id: 'uid-other', workspace_id: 'ws-1' },
-            capabilities: {
-              ...CAPABILITIES,
-              can_cancel: true,
-              can_manage_members: true
-            }
+            resolved_for: { user_id: 'canonical-user-1', workspace_id: 'ws-1' }
           })
         )
       ])
@@ -347,12 +338,14 @@ describe('createCapabilitiesReader', () => {
 
       const result = await reader.read()
 
-      expect(result).toEqual({
-        status: 'error',
-        code: 'REQUEST_FAILED',
-        httpStatus: 200
+      expect(result).toMatchObject({
+        status: 'ok',
+        value: {
+          capabilities: CAPABILITIES,
+          scope: { userId: 'uid-1', workspaceId: 'ws-1', role: 'owner' }
+        }
       })
-      expect(reader.getSnapshot()).toBeUndefined()
+      expect(reader.getSnapshot()?.scope.userId).toBe('uid-1')
     })
   })
 

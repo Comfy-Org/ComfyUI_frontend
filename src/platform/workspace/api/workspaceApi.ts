@@ -21,6 +21,7 @@ import type {
   PaymentPortalRequest,
   PaymentPortalResponse,
   PendingInvite,
+  PickWorkspaceDeploymentRequest,
   Plan,
   PreviewSubscribeRequest,
   PreviewSubscribeResponse,
@@ -40,6 +41,8 @@ import type {
   TeamCreditStops,
   TeamCreditStopSummary,
   UpdateWorkspaceRequest,
+  WorkspaceDeployment,
+  WorkspaceDeploymentList,
   WorkspaceWithRole
 } from '@comfyorg/ingest-types'
 import {
@@ -59,6 +62,7 @@ import {
   errorResponseFromBody
 } from '@/platform/remote/comfyui/errors'
 import { attachCapabilityRevisionInterceptor } from '@/platform/workspace/api/capabilityRevision'
+import { DEPLOYMENT_LISTING_TIMEOUT_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
 import type {
   WorkspaceId,
   WorkspaceInviteId
@@ -155,6 +159,9 @@ export type BillingOperationPhase = NonNullable<
 export type BillingRecoveryAction = NonNullable<
   BillingOpStatusResponse['recovery_action']
 >
+
+export type { WorkspaceDeployment }
+export type { WorkspaceDeploymentList }
 
 interface GetBillingEventsParams {
   page?: number
@@ -303,6 +310,114 @@ export const workspaceApi = {
       return response.data
     } catch (err) {
       handleAxiosError(err, 'update')
+    }
+  },
+
+  /**
+   * List the developer-platform deployments this browser may pick, each
+   * with the Release it runs now, and which one it picked. 403 when the account is outside the rollout.
+   * Times out `DEPLOYMENT_LISTING_TIMEOUT_MS` after it is sent; the
+   * sign-in step before it is not covered and can hang.
+   * GET /api/workspaces/:id/deployments
+   */
+  async listDeployments(
+    workspaceId: WorkspaceId
+  ): Promise<WorkspaceDeploymentList> {
+    const auth = await requestAuth()
+    try {
+      const response = await workspaceApiClient.get<WorkspaceDeploymentList>(
+        workspaceApiUrl(`/workspaces/${workspaceId}/deployments`),
+        { ...auth, timeout: DEPLOYMENT_LISTING_TIMEOUT_MS }
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err, 'listDeployments')
+    }
+  },
+
+  /**
+   * Pick the deployment this browser runs on; it follows the deployment's
+   * updates to new Releases. The pick is a cookie on the
+   * response; nothing about the workspace changes.
+   * PUT /api/workspaces/:id/deployment
+   */
+  async pickDeployment(
+    workspaceId: WorkspaceId,
+    payload: PickWorkspaceDeploymentRequest,
+    signal?: AbortSignal
+  ): Promise<void> {
+    const auth = await requestAuth()
+    signal?.throwIfAborted()
+    try {
+      await workspaceApiClient.put(
+        workspaceApiUrl(`/workspaces/${workspaceId}/deployment`),
+        payload,
+        { ...auth, ...(signal ? { signal } : {}) }
+      )
+    } catch (err) {
+      handleAxiosError(err, 'pickDeployment')
+    }
+  },
+
+  /**
+   * Clear the pick: this browser runs on Comfy Cloud, or with
+   * `follow: 'workspace'` on whatever the workspace says (its default
+   * deployment, or Comfy Cloud when it has none).
+   * DELETE /api/workspaces/:id/deployment
+   */
+  async clearDeployment(
+    workspaceId: WorkspaceId,
+    options: { follow?: 'workspace' } = {}
+  ): Promise<void> {
+    const auth = await requestAuth()
+    try {
+      await workspaceApiClient.delete(
+        workspaceApiUrl(`/workspaces/${workspaceId}/deployment`),
+        {
+          ...auth,
+          params: options.follow ? { follow: options.follow } : undefined
+        }
+      )
+    } catch (err) {
+      handleAxiosError(err, 'clearDeployment')
+    }
+  },
+
+  /**
+   * Set the deployment members of the workspace run on when their browser has
+   * no pick of its own (BE-17480). Owner only.
+   * PUT /api/workspaces/:id/default-deployment
+   */
+  async setDefaultDeployment(
+    workspaceId: WorkspaceId,
+    payload: PickWorkspaceDeploymentRequest
+  ): Promise<void> {
+    const auth = await requestAuth()
+    try {
+      await workspaceApiClient.put(
+        workspaceApiUrl(`/workspaces/${workspaceId}/default-deployment`),
+        payload,
+        auth
+      )
+    } catch (err) {
+      handleAxiosError(err, 'setDefaultDeployment')
+    }
+  },
+
+  /**
+   * Clear the workspace's default deployment; members with no pick are back on
+   * Comfy Cloud. Owner only.
+   * DELETE /api/workspaces/:id/default-deployment
+   */
+  async clearDefaultDeployment(workspaceId: WorkspaceId): Promise<void> {
+    const auth = await requestAuth()
+    try {
+      await workspaceApiClient.delete(
+        workspaceApiUrl(`/workspaces/${workspaceId}/default-deployment`),
+        auth
+      )
+    } catch (err) {
+      handleAxiosError(err, 'clearDefaultDeployment')
     }
   },
 

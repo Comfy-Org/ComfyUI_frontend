@@ -4,6 +4,53 @@ import { describe, expect, it } from 'vitest'
 import SanitizedHtml from './SanitizedHtml.vue'
 
 describe('SanitizedHtml', () => {
+  it('preserves code token colours and font styles without executable or layout attributes', () => {
+    render(SanitizedHtml, {
+      props: {
+        profile: 'highlighted-code',
+        html: '<pre><code><span style="color:#F97583;font-style:italic;font-weight:700;position:fixed;background-image:url(https://evil.example/image)" onerror="alert(1)">const</span></code></pre>'
+      }
+    })
+
+    const token = screen.getByText('const')
+    expect(token).toHaveStyle({
+      color: '#F97583',
+      fontStyle: 'italic',
+      fontWeight: '700'
+    })
+    expect(token).not.toHaveAttribute('onerror')
+    expect(token.style.position).toBe('')
+    expect(token.style.backgroundImage).toBe('')
+  })
+
+  it.for(['pre', 'code', 'div', 'img'])(
+    'strips styles on %s in highlighted code',
+    (tag) => {
+      render(SanitizedHtml, {
+        props: {
+          profile: 'highlighted-code',
+          html: `<${tag} data-testid="styled" style="color:red">`
+        }
+      })
+
+      expect(screen.getByTestId('styled')).not.toHaveAttribute('style')
+    }
+  )
+
+  it('keeps the default profile isolated and strips styles when the profile changes', async () => {
+    const html = '<span style="color:red">token</span>'
+    const { rerender } = render(SanitizedHtml, {
+      props: { html, profile: 'highlighted-code' }
+    })
+    render(SanitizedHtml, {
+      props: { html: '<span style="color:blue">default</span>' }
+    })
+
+    expect(screen.getByText('default')).not.toHaveAttribute('style')
+    await rerender({ html, profile: 'default' })
+    expect(screen.getByText('token')).not.toHaveAttribute('style')
+  })
+
   it('preserves supported markup and removes executable content', () => {
     render(SanitizedHtml, {
       props: {
@@ -28,11 +75,6 @@ describe('SanitizedHtml', () => {
     expect(content.innerHTML).not.toContain('<script')
   })
 
-  // Each forbidden construct is rendered on its own: DOMPurify's tree walk
-  // over happy-dom (this project's test DOM) does not revisit sibling nodes
-  // after removing one forbidden element in the same pass, so combining
-  // multiple forbidden tags/attrs into a single sanitize call would hide
-  // regressions in whichever one is walked after the first.
   it('strips a form and its credential-harvesting inputs', () => {
     render(SanitizedHtml, {
       props: {

@@ -30,7 +30,10 @@
             }}</span>
           </div>
           <div>
-            <Button variant="textonly" class="bg-transparent text-muted">
+            <Button
+              variant="textonly"
+              class="bg-transparent text-muted-foreground"
+            >
               <i
                 :class="
                   importFailedExpanded
@@ -53,7 +56,7 @@
             :aria-label="`Import failed package: ${packageName}`"
             class="flex min-h-6 shrink-0 items-center justify-between px-4 py-1 hover:bg-node-component-surface-hovered"
           >
-            <span class="text-xs text-muted">
+            <span class="text-xs text-muted-foreground">
               {{ packageName }}
             </span>
             <span class="pi pi-info-circle text-sm"></span>
@@ -79,7 +82,10 @@
             }}</span>
           </div>
           <div>
-            <Button variant="textonly" class="bg-transparent text-muted">
+            <Button
+              variant="textonly"
+              class="bg-transparent text-muted-foreground"
+            >
               <i
                 :class="
                   conflictsExpanded
@@ -102,7 +108,7 @@
             :aria-label="`Conflict: ${getConflictMessage(conflict, t)}`"
             class="flex min-h-6 shrink-0 items-center justify-between px-4 py-1 hover:bg-node-component-surface-hovered"
           >
-            <span class="text-xs text-muted">{{
+            <span class="text-xs text-muted-foreground">{{
               getConflictMessage(conflict, t)
             }}</span>
             <span class="pi pi-info-circle text-sm"></span>
@@ -128,7 +134,10 @@
             }}</span>
           </div>
           <div>
-            <Button variant="textonly" class="bg-transparent text-muted">
+            <Button
+              variant="textonly"
+              class="bg-transparent text-muted-foreground"
+            >
               <i
                 :class="
                   extensionsExpanded
@@ -150,7 +159,7 @@
             :key="conflictResult.package_id"
             class="flex min-h-6 shrink-0 items-center justify-between px-4 py-1 hover:bg-node-component-surface-hovered"
           >
-            <span class="text-xs text-muted">
+            <span class="text-xs text-muted-foreground">
               {{ conflictResult.package_name }}
             </span>
             <span class="pi pi-info-circle text-sm"></span>

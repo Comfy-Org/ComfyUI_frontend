@@ -80,6 +80,7 @@ function scrollPage(direction: -1 | 1): void {
         :media-url="item.mediaUrl"
         :media-kind="item.mediaKind"
         :uploading="item.uploading"
+        :validation-error="item.validationError"
         :highlighted="highlightedIds.includes(item.id)"
         :preview-mode="
           activePreview?.id === item.id ? activePreview.mode : 'closed'
