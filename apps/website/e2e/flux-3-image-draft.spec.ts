@@ -8,7 +8,7 @@ for (const prefix of ['', '/zh-CN']) {
   test(`gates the ${prefix || 'English'} Flux image draft by deployment environment`, async ({
     page
   }) => {
-    const response = await page.goto(`${prefix}/flux-3-image/`)
+    const response = await page.goto(`${prefix}/flux-3-image-klein/`)
     const heading = page.getByRole('heading', {
       name: 'FLUX 3 Image Klein',
       exact: true
