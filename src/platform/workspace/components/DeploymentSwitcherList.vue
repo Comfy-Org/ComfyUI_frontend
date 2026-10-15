@@ -175,7 +175,7 @@ const {
   defaultName
 } = useDeploymentLabels()
 
-const createDeploymentUrl = `${getComfyPlatformBaseUrl()}/deploy`
+const createDeploymentUrl = `${getComfyPlatformBaseUrl()}/profile/deploy#builds`
 
 const pickedValue = computed(() => pickedDeploymentId.value ?? COMFY_CLOUD_ROW)
 const defaultGone = computed(() => goneDefaultDeploymentId.value !== null)

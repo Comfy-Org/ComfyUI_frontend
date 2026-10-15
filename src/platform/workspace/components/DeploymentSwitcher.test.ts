@@ -216,7 +216,10 @@ describe('DeploymentSwitcher', () => {
 
     const create = screen.getByTestId('deployment-switcher-create')
     expect(create).toHaveTextContent('Create a custom deployment')
-    expect(create).toHaveAttribute('href', expect.stringMatching(/\/deploy$/))
+    expect(create).toHaveAttribute(
+      'href',
+      expect.stringMatching(/\/profile\/deploy#builds$/)
+    )
     expect(create).toHaveAttribute('target', '_blank')
   })
 
