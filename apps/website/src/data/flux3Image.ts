@@ -1,6 +1,10 @@
 import type { ModelLaunchPage } from '@/templates/model-launch/types'
 
+import { externalLinks } from '@/config/routes'
+
 import { qwenImage21Page } from './qwenImage21'
+
+const bflLicensing = 'https://bfl.ai/licensing'
 
 const mediaBase = 'https://media.comfy.org/website/flux-3-image'
 
@@ -176,33 +180,9 @@ export const flux3ImagePage: ModelLaunchPage = {
           'zh-CN': '什么是 FLUX 3 Image Klein？'
         },
         answer: {
-          en: "FLUX 3 Image Klein is an open-weight image model from Black Forest Labs. It has 5.6B parameters, runs on a single consumer GPU, and draws on FLUX 3's shared learning across image, video, and audio. It keeps the control features of the larger FLUX 3 Image model, including bounding boxes, and handles both generation and editing.",
+          en: 'FLUX 3 Image Klein is the compact, open-weights image model in Black Forest Labs’ FLUX 3 family. It has 5.6B parameters, runs on a single consumer GPU, and handles text-to-image generation and image editing in one model. It generates natively at 4K and supports bounding box layout control and multiple reference images.',
           'zh-CN':
-            'FLUX 3 Image Klein 是 Black Forest Labs 推出的开放权重图像模型。它拥有 5.6B 参数，可在单张消费级 GPU 上运行，并受益于 FLUX 3 跨图像、视频与音频的共享学习。它保留了规模更大的 FLUX 3 Image 模型的控制功能（包括边界框），同时支持图像生成与编辑。'
-        }
-      },
-      {
-        id: 'versions',
-        question: {
-          en: 'What is the difference between standard and turbo?',
-          'zh-CN': '标准版和 turbo 版有什么区别？'
-        },
-        answer: {
-          en: 'Standard is the undistilled base checkpoint, released in full for fine-tuning, further training, and research. Turbo is the step-distilled version, built for low-latency generation and self-hosting. Both are open weights. FP8 and NVFP4 quantized versions are also available.',
-          'zh-CN':
-            '标准版是未蒸馏的基础 checkpoint，完整开放，可用于微调、继续训练与研究。turbo 版是步数蒸馏版本，面向低延迟生成与自托管部署。两者均为开放权重。另提供 FP8 与 NVFP4 量化版本。'
-        }
-      },
-      {
-        id: 'hardware',
-        question: {
-          en: 'What hardware do I need?',
-          'zh-CN': '需要什么样的硬件？'
-        },
-        answer: {
-          en: 'At 5.6B parameters, FLUX 3 Image Klein runs on a single consumer GPU. FP8 and NVFP4 quantized versions are also available.',
-          'zh-CN':
-            'FLUX 3 Image Klein 拥有 5.6B 参数，可在单张消费级 GPU 上运行。另提供 FP8 与 NVFP4 量化版本。'
+            'FLUX 3 Image Klein 是 Black Forest Labs 旗下 FLUX 3 系列中的紧凑型开放权重图像模型。它拥有 5.6B 参数，可在单张消费级 GPU 上运行，在同一个模型中同时支持文生图与图像编辑。它可原生生成 4K 图像，并支持边界框布局控制与多张参考图像。'
         }
       },
       {
@@ -212,69 +192,9 @@ export const flux3ImagePage: ModelLaunchPage = {
           'zh-CN': '如何在 ComfyUI 中使用 FLUX 3 Image Klein？'
         },
         answer: {
-          en: 'ComfyUI supports FLUX 3 Image Klein from launch day. Add the launch workflow, model download links, and setup steps here.',
+          en: 'Update ComfyUI to the latest version, download the FLUX 3 Image Klein weights from Hugging Face, and load the FLUX 3 Image Klein template. FLUX 3 Image Klein runs on ComfyUI’s standard loaders: Load Diffusion Model for the checkpoint, Load CLIP with type set to flux3 for the Qwen3-VL 4B text encoder, and Load VAE. No API key is needed.',
           'zh-CN':
-            'ComfyUI 自发布当天起即支持 FLUX 3 Image Klein。在此添加发布工作流、模型下载链接及设置步骤。'
-        }
-      },
-      {
-        id: 'editing',
-        question: {
-          en: 'Can I edit images with FLUX 3 Image Klein?',
-          'zh-CN': '可以用 FLUX 3 Image Klein 编辑图像吗？'
-        },
-        answer: {
-          en: 'Yes. Add, replace, remove, or restyle specific elements without needlessly changing the rest of the image. Use multiple reference images to keep characters and subjects recognizable across edits, apply the style of a reference while keeping your intended content and composition, and render or edit text inside the image.',
-          'zh-CN':
-            '可以。你可以对图像中的特定元素进行添加、替换、删除或风格重塑，而不会对图像其余部分做不必要的改动。使用多张参考图像，可在多次编辑中保持角色与主体的辨识度；还可以套用参考图像的风格，同时保留你想要的内容与构图，并在图像中渲染或编辑文字。'
-        }
-      },
-      {
-        id: 'layout',
-        question: {
-          en: 'Can I control the layout of an image?',
-          'zh-CN': '可以控制图像的布局吗？'
-        },
-        answer: {
-          en: 'Yes. Bounding boxes let you place elements and set the exact composition and layout of the image.',
-          'zh-CN':
-            '可以。借助边界框，你可以指定各元素的位置，精确设定图像的构图与布局。'
-        }
-      },
-      {
-        id: 'resolution',
-        question: {
-          en: 'What image sizes are supported?',
-          'zh-CN': '支持哪些图像尺寸？'
-        },
-        answer: {
-          en: 'Through the BFL API, the turbo model generates natively at up to 4K, which holds small details when you zoom in, crop, or print. Proposed pricing covers 768 × 768, 1K, 1.5K, 2K, and 4K outputs.',
-          'zh-CN':
-            '通过 BFL API，turbo 版模型可原生生成最高 4K 的图像，在放大查看、裁剪或打印时仍能保留细微细节。拟定定价涵盖 768 × 768、1K、1.5K、2K 与 4K 输出。'
-        }
-      },
-      {
-        id: 'fine-tuning',
-        question: {
-          en: 'Can I fine-tune FLUX 3 Image Klein?',
-          'zh-CN': '可以微调 FLUX 3 Image Klein 吗？'
-        },
-        answer: {
-          en: "Yes. The standard version is the full undistilled base checkpoint, released for fine-tuning and further training. Launch tooling includes Ostris's AI Toolkit, ComfyUI, Diffusers, SGLang, and vLLM, plus NVIDIA fine-tuning recipes and deployment optimizations.",
-          'zh-CN':
-            '可以。标准版是完整的未蒸馏基础 checkpoint，专为微调与继续训练而发布。发布时的工具支持包括 Ostris 的 AI Toolkit、ComfyUI、Diffusers、SGLang 和 vLLM，并提供 NVIDIA 微调方案与部署优化。'
-        }
-      },
-      {
-        id: 'cost',
-        question: {
-          en: 'How much does FLUX 3 Image Klein cost?',
-          'zh-CN': 'FLUX 3 Image Klein 的费用是多少？'
-        },
-        answer: {
-          en: 'Running the open weights locally in ComfyUI has no per-image charge; check the license terms below before commercial use. Proposed pricing is the same for text-to-image and image-to-image: $0.008 at 768 × 768, $0.009 at 1K, $0.011 at 1.5K, $0.014 at 2K, and $0.036 at 4K per image.',
-          'zh-CN':
-            '在 ComfyUI 中本地运行开放权重模型不按张收费；用于商业用途前，请查阅下方的许可条款。拟定定价对文生图与图生图相同：768 × 768 每张 $0.008，1K 每张 $0.009，1.5K 每张 $0.011，2K 每张 $0.014，4K 每张 $0.036。'
+            '将 ComfyUI 更新到最新版本，从 Hugging Face 下载 FLUX 3 Image Klein 权重，然后加载 FLUX 3 Image Klein 模板。FLUX 3 Image Klein 使用 ComfyUI 的标准加载器：用 Load Diffusion Model 加载 checkpoint，用 Load CLIP（type 设为 flux3）加载 Qwen3-VL 4B 文本编码器，再用 Load VAE 加载 VAE。无需 API 密钥。'
         }
       },
       {
@@ -284,8 +204,104 @@ export const flux3ImagePage: ModelLaunchPage = {
           'zh-CN': 'FLUX 3 Image Klein 可以用于商业用途吗？'
         },
         answer: {
-          en: 'Add the official license and commercial usage terms here.',
-          'zh-CN': '在此添加官方许可证和商业使用条款。'
+          en: `It depends on your revenue. FLUX 3 Image Klein is released under the FLUX Kommunity License, which allows free non-commercial use. If you and your affiliates have under US$5M in annual revenue, you can also use the images you generate commercially, provided you filter or review outputs and disclose AI generation where the law requires it. Any other commercial use, including commercial fine-tunes, needs a license from Black Forest Labs at [bfl.ai/licensing](${bflLicensing}).`,
+          'zh-CN': `这取决于你的收入。FLUX 3 Image Klein 依据 FLUX Kommunity License 发布，允许免费的非商业使用。如果你及你的关联方年收入低于 500 万美元，你也可以将生成的图像用于商业用途，前提是对输出进行过滤或审核，并在法律要求时披露内容由 AI 生成。其他任何商业用途（包括商业微调）都需要向 Black Forest Labs 获取许可，详见 [bfl.ai/licensing](${bflLicensing})。`
+        }
+      },
+      {
+        id: 'cost',
+        question: {
+          en: 'How much does FLUX 3 Image Klein cost in ComfyUI?',
+          'zh-CN': '在 ComfyUI 中使用 FLUX 3 Image Klein 需要多少费用？'
+        },
+        answer: {
+          en: `FLUX 3 Image Klein is open weights, so running it locally in ComfyUI costs nothing per image beyond your own hardware. On Comfy Cloud it draws on your plan’s compute; see the [ComfyUI pricing page](${externalLinks.pricing}) for current rates. Cost and licensing are separate questions: the FLUX Kommunity License governs commercial use wherever you run it.`,
+          'zh-CN': `FLUX 3 Image Klein 是开放权重模型，在 ComfyUI 中本地运行时，除自有硬件投入外，生成图像不产生任何按张计算的费用。在 Comfy Cloud 上则消耗套餐内的算力，当前费率请参阅 [ComfyUI 定价页面](${externalLinks.pricing})。费用与许可是两回事：无论在哪里运行，商业用途都受 FLUX Kommunity License 约束。`
+        }
+      },
+      {
+        id: 'vs-flux-2-klein',
+        question: {
+          en: 'How does FLUX 3 Image Klein compare to FLUX.2 [klein]?',
+          'zh-CN': 'FLUX 3 Image Klein 与 FLUX.2 [klein] 相比如何？'
+        },
+        answer: {
+          en: 'FLUX 3 Image Klein improves on FLUX.2 [klein] 9B in Black Forest Labs’ internal text-to-image evaluations while using fewer parameters, 5.6B against 9B. It also brings over control features from the larger FLUX 3 Image model, including bounding boxes, and generates natively at 4K.',
+          'zh-CN':
+            '在 Black Forest Labs 的内部文生图评测中，FLUX 3 Image Klein 表现优于 FLUX.2 [klein] 9B，参数量却更少（5.6B，后者为 9B）。它还继承了规模更大的 FLUX 3 Image 模型的控制功能（包括边界框），并可原生生成 4K 图像。'
+        }
+      },
+      {
+        id: 'partner-node',
+        question: {
+          en: 'Is FLUX 3 Image Klein the same as the Flux 3 Image Partner Node in ComfyUI?',
+          'zh-CN':
+            'FLUX 3 Image Klein 与 ComfyUI 中的 Flux 3 Image Partner Node 是同一个东西吗？'
+        },
+        answer: {
+          en: 'No. The Flux 3 Image Partner Node calls Black Forest Labs’ hosted API and runs the larger FLUX 3 Image model. FLUX 3 Image Klein is the open-weights model you download and run yourself, locally or on Comfy Cloud. Both are available in ComfyUI.',
+          'zh-CN':
+            '不是。Flux 3 Image Partner Node 调用 Black Forest Labs 托管的 API，运行的是规模更大的 FLUX 3 Image 模型。FLUX 3 Image Klein 则是开放权重模型，由你自行下载，在本地或 Comfy Cloud 上运行。两者在 ComfyUI 中均可使用。'
+        }
+      },
+      {
+        id: 'versions',
+        question: {
+          en: 'Which versions of FLUX 3 Image Klein are available?',
+          'zh-CN': 'FLUX 3 Image Klein 有哪些版本？'
+        },
+        answer: {
+          en: 'FLUX 3 Image Klein ships as an undistilled base checkpoint for fine-tuning, further training, and research, and as a distilled checkpoint for faster generation. Both come with INT8, FP8 and NVFP4 quantized builds that use less memory. All of them run on the same ComfyUI loaders.',
+          'zh-CN':
+            'FLUX 3 Image Klein 提供用于微调、继续训练与研究的未蒸馏基础 checkpoint，以及生成速度更快的蒸馏 checkpoint。两者均提供占用显存更少的 INT8、FP8 与 NVFP4 量化版本。所有版本均使用相同的 ComfyUI 加载器运行。'
+        }
+      },
+      {
+        id: 'native-4k',
+        question: {
+          en: 'Does FLUX 3 Image Klein generate at 4K?',
+          'zh-CN': 'FLUX 3 Image Klein 能生成 4K 图像吗？'
+        },
+        answer: {
+          en: 'Yes. FLUX 3 Image Klein generates natively at 4K rather than upscaling to it. Fine detail holds up when you zoom in, crop, or print.',
+          'zh-CN':
+            '能。FLUX 3 Image Klein 原生生成 4K 图像，而不是通过超分辨率放大得到 4K。无论放大查看、裁剪还是打印，细节都依然清晰。'
+        }
+      },
+      {
+        id: 'bounding-boxes',
+        question: {
+          en: 'What are bounding boxes in FLUX 3 Image Klein?',
+          'zh-CN': 'FLUX 3 Image Klein 中的边界框是什么？'
+        },
+        answer: {
+          en: 'Bounding boxes let you mark regions of the canvas and say what goes in each, so FLUX 3 Image Klein follows your layout instead of choosing its own. They are useful for compositions with several subjects, product shots, and designs with text in fixed positions.',
+          'zh-CN':
+            '边界框让你在画布上标出区域，并指定每个区域放什么内容，使 FLUX 3 Image Klein 按照你的布局生成，而不是自行安排。它适用于多主体构图、产品图，以及文字位置固定的设计。'
+        }
+      },
+      {
+        id: 'prompt-upsampler',
+        question: {
+          en: 'What does the FLUX 3 prompt upsampler do?',
+          'zh-CN': 'FLUX 3 提示词扩写器有什么作用？'
+        },
+        answer: {
+          en: 'The prompt upsampler is a separate model that expands a short prompt into a detailed one before FLUX 3 Image Klein generates. In ComfyUI it loads through Load CLIP with type set to flux3. Try the same short prompt with and without it to see the difference.',
+          'zh-CN':
+            '提示词扩写器（prompt upsampler）是一个独立模型，会在 FLUX 3 Image Klein 生成之前，将简短的提示词扩展为详细的提示词。在 ComfyUI 中，它通过 Load CLIP（type 设为 flux3）加载。用同一条简短提示词分别在启用和不启用它的情况下生成，即可看出区别。'
+        }
+      },
+      {
+        id: 'fine-tuning',
+        question: {
+          en: 'Can I fine-tune FLUX 3 Image Klein or train LoRAs on it?',
+          'zh-CN': '可以微调 FLUX 3 Image Klein 或在其上训练 LoRA 吗？'
+        },
+        answer: {
+          en: 'Yes. The undistilled base checkpoint of FLUX 3 Image Klein is built for fine-tuning and further training, and LoRAs trained on it load through ComfyUI’s standard LoRA loader. Under the FLUX Kommunity License, fine-tuning for commercial use requires a separate license from Black Forest Labs.',
+          'zh-CN':
+            '可以。FLUX 3 Image Klein 的未蒸馏基础 checkpoint 专为微调与继续训练而构建，在其上训练的 LoRA 可通过 ComfyUI 的标准 LoRA 加载器加载。根据 FLUX Kommunity License，用于商业用途的微调需要另行向 Black Forest Labs 获取许可。'
         }
       }
     ]
