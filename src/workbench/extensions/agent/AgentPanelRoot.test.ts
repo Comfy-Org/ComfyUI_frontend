@@ -5302,7 +5302,7 @@ describe('AgentPanelRoot history', () => {
     expect(useAgentChatHistoryStore().sessions).toHaveLength(0)
   })
 
-  it('keeps the loaded chat list when a refresh ends before its last page', async () => {
+  it('keeps the loaded chat list and reports a non-retryable failure when a refresh ends before its last page', async () => {
     respondToFetch({}, () => json(200, []))
     respondToFetch(/\/api\/agent\/threads\?/, () =>
       json(
