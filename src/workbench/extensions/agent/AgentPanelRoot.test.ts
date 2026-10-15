@@ -5804,6 +5804,28 @@ describe('AgentPanelRoot history', () => {
       expect(screen.queryByText(failure)).toBeNull()
     })
 
+    it("opens the active tab's chat on mount when the target is another tab", async () => {
+      const first = addTab('workflows/first.json')
+      const second = addTab('workflows/second.json')
+      workflowStore.activeWorkflow = second
+      useAgentPanelStore().setWorkflowTarget(first)
+      stubWorkflowBoundHistory([
+        agentThread({
+          id: 'th-second',
+          title: 'Second chat',
+          last_message_at: '2026-09-22T10:00:00Z',
+          workflow_id: 'wf-second'
+        })
+      ])
+
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+      await vi.waitFor(() =>
+        expect(useAgentConversationStore().threadId).toBe('th-second')
+      )
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(second.path)
+    })
+
     it('keeps a chat picked in Chat history when restoring it opens its tab', async () => {
       const first = addTab('workflows/first.json')
       const second = addTab('workflows/second.json')

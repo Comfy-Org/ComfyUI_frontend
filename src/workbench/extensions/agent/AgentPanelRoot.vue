@@ -1499,16 +1499,18 @@ const historyGroups = computed(() => {
 })
 
 /**
- * Whether the panel still owes the active tab its chat. Only an activation
- * arms it: a mount does not, because the panel is remounted every time it is
- * minimized and restored, and adopting the tab's older chat there would
- * discard the chat the user had open. A temporary tab does not arm it either
- * -- it has no cloud chat to follow, and the id it gets later comes from this
- * panel saving it, which binds the open chat rather than navigating away.
+ * Whether the panel still owes the active tab its chat. A user's tab
+ * activation arms it; a tab the panel opens itself does not. A mount arms it
+ * only when the target is another tab: the panel is remounted every time it is
+ * minimized and restored, and adopting the tab's chat there would discard an
+ * older chat of the same tab the user had open. A temporary tab does not arm
+ * it either -- it has no cloud chat to follow, and the id it gets later comes
+ * from this panel saving it, which binds the open chat rather than navigating
+ * away.
  *
  * It outlives the activation because both the summary list and the tab's cloud
  * id can resolve afterwards, and it is retired the moment the follow is
- * satisfied or the user picks a chat themselves.
+ * satisfied, held back, or the user picks a chat themselves.
  */
 const followOwed = ref(false)
 let followedChat: { threadId: string; workflowId: string } | null = null
@@ -1677,6 +1679,19 @@ watch(
 watch(workflowSelecting, (selecting) => {
   if (selecting) followOwed.value = false
 })
+
+function targetIsAnotherTab(): boolean {
+  const target = selectedTarget.value
+  const active = workflowStore.activeWorkflow
+  return (
+    target !== null &&
+    active !== null &&
+    !active.isTemporary &&
+    target.path !== active.path
+  )
+}
+
+followOwed.value = targetIsAnotherTab()
 
 function buildTranscriptMarkdown(entries: ConversationEntry[]): string {
   return entries
