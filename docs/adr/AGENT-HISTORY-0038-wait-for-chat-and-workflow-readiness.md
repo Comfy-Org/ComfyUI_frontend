@@ -119,9 +119,10 @@ workflow is no longer available.
 
 An agent tab activation applies only if, when it runs, the chat it came from is
 still the open chat. While History is open, that is the Current chat, the chat
-History was opened over, or the row still loading. An earlier chat therefore
-cannot open a tab or set the target of the chat on screen. These cancel a
-pending activation:
+History was opened over, or the row still loading. A Current chat whose own
+History row failed does not count. When the check fails, the activation is
+dropped, so an earlier chat does not set the target of the chat on screen.
+These cancel a pending activation:
 
 - a newer activation;
 - selecting a History row, unless it reuses the loaded Current chat;
