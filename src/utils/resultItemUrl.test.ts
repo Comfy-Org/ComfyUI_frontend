@@ -28,7 +28,6 @@ describe('resultItemPreviewUrl', () => {
       preview_id: 'p1',
       pathname: '/api/assets/p1/content'
     },
-    { filename: 'render.exr', preview_id: undefined, pathname: '/api/view' },
     { filename: 'render.png', preview_id: 'p1', pathname: '/api/view' }
   ])(
     'resolves $filename with preview_id $preview_id to $pathname',
@@ -40,4 +39,10 @@ describe('resultItemPreviewUrl', () => {
       expect(url.pathname).toBe(pathname)
     }
   )
+
+  it('resolves no preview for an HDR output without a stored preview', () => {
+    expect(resultItemPreviewUrl(resultItem({ filename: 'render.exr' }))).toBe(
+      ''
+    )
+  })
 })

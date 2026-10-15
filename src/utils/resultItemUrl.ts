@@ -26,8 +26,8 @@ export function resultItemPreviewUrl(
   options: { fullRes?: boolean } = {}
 ): string {
   if (item.previewUrl !== undefined) return item.previewUrl
-  if (item.preview_id && isHdrImageFilename(item.filename))
-    return assetContentUrl(item.preview_id)
+  if (isHdrImageFilename(item.filename))
+    return item.preview_id ? assetContentUrl(item.preview_id) : ''
   if (!isImageResult(item)) return resultItemUrl(item)
   const params = resultItemUrlParams(item)
   if (!options.fullRes) appendCloudResParam(params, item.filename)

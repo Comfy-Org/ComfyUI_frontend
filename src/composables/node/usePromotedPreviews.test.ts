@@ -175,9 +175,10 @@ describe(usePromotedPreviews, () => {
     seedOutputs(setup.subgraph.id, [20], 'b.png')
 
     const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
-    expect(promotedPreviews.value).toHaveLength(2)
-    expect(promotedPreviews.value[0].items).toEqual(outputItems('a.png'))
-    expect(promotedPreviews.value[1].items).toEqual(outputItems('b.png'))
+    expect(promotedPreviews.value).toEqual([
+      expect.objectContaining({ items: outputItems('a.png') }),
+      expect.objectContaining({ items: outputItems('b.png') })
+    ])
   })
 
   it('returns preview when only nodePreviewImages exist (e.g. GLSL live preview)', () => {
@@ -189,16 +190,28 @@ describe(usePromotedPreviews, () => {
     seedPreviewImages(setup.subgraph.id, [
       { nodeId: toNodeId(10), urls: [blobUrl] }
     ])
-    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([blobUrl])
 
     const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
     expect(promotedPreviews.value).toEqual([
       {
         sourceNodeId: '10',
         sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET,
-        type: 'image',
-        urls: [blobUrl]
+        type: 'preview',
+        url: blobUrl
       }
+    ])
+  })
+
+  it('prefers the live preview over saved outputs of the same node', () => {
+    const { setup } = arrangePromotedPreview({ previewMediaType: 'image' })
+    const blobUrl = 'blob:http://localhost/live'
+    seedPreviewImages(setup.subgraph.id, [
+      { nodeId: toNodeId(10), urls: ['blob:http://localhost/stale', blobUrl] }
+    ])
+
+    const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
+    expect(promotedPreviews.value).toEqual([
+      expect.objectContaining({ type: 'preview', url: blobUrl })
     ])
   })
 
@@ -214,14 +227,13 @@ describe(usePromotedPreviews, () => {
     seedPreviewImages(setup.subgraph.id, [
       { nodeId: toNodeId(10), urls: [blobUrl] }
     ])
-    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([blobUrl])
 
     expect(promotedPreviews.value).toEqual([
       {
         sourceNodeId: '10',
         sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET,
-        type: 'image',
-        urls: [blobUrl]
+        type: 'preview',
+        url: blobUrl
       }
     ])
   })
@@ -328,21 +340,14 @@ describe(usePromotedPreviews, () => {
         return undefined
       }
     )
-    vi.mocked(outputStore.getNodeImageUrlsByExecutionId).mockImplementation(
-      (executionId) => {
-        if (executionId === firstLeafExecutionId) return ['blob:first']
-        if (executionId === secondLeafExecutionId) return ['blob:second']
-        return undefined
-      }
-    )
 
     expect(usePromotedPreviews(() => firstHost).promotedPreviews.value).toEqual(
       [
         {
           sourceNodeId: '10',
           sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET,
-          type: 'image',
-          urls: ['blob:first']
+          type: 'preview',
+          url: 'blob:first'
         }
       ]
     )
@@ -352,8 +357,8 @@ describe(usePromotedPreviews, () => {
       {
         sourceNodeId: '10',
         sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET,
-        type: 'image',
-        urls: ['blob:second']
+        type: 'preview',
+        url: 'blob:second'
       }
     ])
   })

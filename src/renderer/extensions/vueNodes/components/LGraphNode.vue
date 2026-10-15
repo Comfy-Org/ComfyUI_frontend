@@ -173,12 +173,16 @@
             "
           >
             <NodeContent v-if="nodeMedia" :node-data :media="nodeMedia" />
-            <NodeContent
+            <template
               v-for="preview in promotedPreviews"
               :key="`${preview.sourceNodeId}-${preview.sourceWidgetName}`"
-              :node-data
-              :media="preview"
-            />
+            >
+              <LivePreview
+                v-if="preview.type === 'preview'"
+                :image-url="preview.url"
+              />
+              <NodeContent v-else :node-data :media="preview" />
+            </template>
           </div>
           <LivePreview
             v-if="shouldShowPreviewImg && !lgraphNode?.isSubgraphNode()"
@@ -699,7 +703,7 @@ const nodeMedia = computed(() => {
   if (node instanceof SubgraphNode) return undefined
 
   const outputs = nodeOutputs.getNodeOutputs(node)
-  if (!outputs?.length) return undefined
+  if (!outputs) return undefined
 
   if (shouldHideLinkedCoreMediaInputPreview(node, outputs)) return undefined
 
@@ -713,6 +717,8 @@ const nodeMedia = computed(() => {
   if (type === 'video' && hasVideoEditWidget.value) return undefined
 
   const items = parseNodeOutput(node.id, outputs)
+  if (!items.length) return undefined
+
   return { type, items } as const
 })
 

@@ -22,6 +22,7 @@ import {
 } from '@/lib/litegraph/src/types/globalEnums'
 import type { LGraphNode as LiteGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { NodeState } from '@/types/nodeState'
+import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
 import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import type NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
@@ -192,6 +193,15 @@ function renderLGraphNode(props: ComponentProps<typeof LGraphNode>) {
     }
   })
 }
+function seedNodeOutputs(images: ResultItem[]) {
+  const outputs = useNodeOutputStore()
+  outputs.nodeOutputs['test-node-123'] = { images }
+  vi.mocked(outputs.getNodeOutputs).mockImplementation(
+    () => outputs.nodeOutputs['test-node-123']
+  )
+  return outputs
+}
+
 const mockNodeData: NodeState = {
   id: toNodeId('test-node-123'),
   graphId: 'test-graph',
@@ -343,12 +353,7 @@ describe('LGraphNode', () => {
           suppression: { byExtension: false, byConnection: false }
         }
       )
-      useNodeOutputStore().nodeOutputs['test-node-123'] = {
-        images: [{ filename: 'output.png', type: 'output' }]
-      }
-      vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([
-        '/output.png'
-      ])
+      seedNodeOutputs([{ filename: 'output.png', type: 'output' }])
 
       const { container } = renderLGraphNode({
         nodeData: { ...mockNodeData, graphId: 'graph-test' }
@@ -373,11 +378,9 @@ describe('LGraphNode', () => {
       widgetId('graph-test', mockNodeData.id, 'prompt'),
       { name: 'prompt', type: 'customtext', value: '', options: {} }
     )
-    const outputs = useNodeOutputStore()
-    outputs.nodeOutputs['test-node-123'] = {
-      images: [{ filename: 'output.png', type: 'output' }]
-    }
-    vi.mocked(outputs.getNodeImageUrls).mockReturnValue(['/output.png'])
+    const outputs = seedNodeOutputs([
+      { filename: 'output.png', type: 'output' }
+    ])
     const { container } = renderLGraphNode({
       nodeData: { ...mockNodeData, graphId: 'graph-test' }
     })
@@ -455,11 +458,7 @@ describe('LGraphNode', () => {
       isInputConnected: vi.fn(() => true),
       isSubgraphNode: () => false
     }
-    const nodeOutputStore = useNodeOutputStore()
-    nodeOutputStore.nodeOutputs['test-node-123'] = {
-      images: [{ filename: 'input.png', type: 'input' }]
-    }
-    vi.mocked(nodeOutputStore.getNodeImageUrls).mockReturnValue(['/input.png'])
+    seedNodeOutputs([{ filename: 'input.png', type: 'input' }])
 
     renderLGraphNode({
       nodeData: {
@@ -481,11 +480,7 @@ describe('LGraphNode', () => {
       isInputConnected: vi.fn(() => true),
       isSubgraphNode: () => false
     }
-    const nodeOutputStore = useNodeOutputStore()
-    nodeOutputStore.nodeOutputs['test-node-123'] = {
-      images: [{ filename: 'output.png', type: 'output' }]
-    }
-    vi.mocked(nodeOutputStore.getNodeImageUrls).mockReturnValue(['/output.png'])
+    seedNodeOutputs([{ filename: 'output.png', type: 'output' }])
 
     renderLGraphNode({
       nodeData: {
