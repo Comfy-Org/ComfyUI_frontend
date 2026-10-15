@@ -13,6 +13,7 @@ import {
   onMounted,
   provide,
   ref,
+  shallowRef,
   watch
 } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -63,6 +64,7 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
+import Button from '@/components/ui/button/Button.vue'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type { RootGraphId } from '@/types/graphScopeId'
@@ -1510,6 +1512,11 @@ const historyGroups = computed(() => {
  */
 const followOwed = ref(false)
 let followedChat: { threadId: string; workflowId: string } | null = null
+let chatNavigation = 0
+const followFailure = shallowRef<{
+  workflowId: string
+  workflowName: string
+} | null>(null)
 
 async function selectThread(
   id: string,
@@ -1541,6 +1548,8 @@ async function onSelectHistory(
 ): Promise<boolean> {
   followOwed.value = false
   followedChat = null
+  followFailure.value = null
+  ++chatNavigation
   return selectThread(id, isCurrent)
 }
 
@@ -1576,13 +1585,17 @@ function followActiveWorkflowChat(): void {
     followOwed.value = false
     return
   }
+  const workflow = workflowStore.activeWorkflow
   const workflowId = activeWorkflowId.value
-  if (workflowId === undefined) return
+  if (workflow === null || workflowId === undefined) return
   const latest = latestChatFor(workflowId)
   if (latest === undefined) return
   followOwed.value = false
   if (latest === threadId.value) return
-  void openFollowedChat(latest, workflowId)
+  void openFollowedChat(latest, {
+    workflowId,
+    workflowName: workflow.filename
+  })
 }
 
 // The chat was opened for the tab the user is on, so that tab is its
@@ -1598,21 +1611,50 @@ function restoreChatWorkflow(
   return onWorkflowRestored(followed ?? workflowId, isCurrent)
 }
 
-async function openFollowedChat(id: string, workflowId: string): Promise<void> {
-  followedChat = { threadId: id, workflowId }
+async function openFollowedChat(
+  id: string,
+  followed: { workflowId: string; workflowName: string }
+): Promise<void> {
+  const navigation = ++chatNavigation
+  const isCurrent = () => navigation === chatNavigation
+  const kept = {
+    threadId: threadId.value,
+    targetTracking: agentPanelStore.targetTracking
+  }
+  followFailure.value = null
+  followedChat = { threadId: id, workflowId: followed.workflowId }
   if (composerStore.prompt.references.length === 0 && !composerStore.hasDraft)
     composerStore.setText('')
-  // Following the active tab carries no navigation intent to invalidate;
-  // loadThread's own generation guard already drops a superseded load.
-  await selectThread(id, () => true)
+  const opened = await selectThread(id, isCurrent)
   if (followedChat?.threadId === id) followedChat = null
+  if (opened || !isCurrent()) return
+  // The user did not ask for this chat, so a failed open goes back to the
+  // chat they had, with its target, instead of leaving a broken one open.
+  followFailure.value = followed
+  agentPanelStore.targetTracking = kept.targetTracking
+  if (kept.threadId === null) newChat()
+  else await loadThread(kept.threadId, isCurrent)
 }
+
+function onRetryFollow(): void {
+  const failed = followFailure.value
+  followFailure.value = null
+  if (failed === null) return
+  const latest = latestChatFor(failed.workflowId)
+  if (latest !== undefined && latest !== threadId.value)
+    void openFollowedChat(latest, failed)
+}
+
+onBeforeUnmount(() => {
+  ++chatNavigation
+})
 
 // Synchronous, so a tab the panel is opening itself is still recognised as
 // such when it becomes active.
 watch(
   () => workflowStore.activeWorkflow,
   (workflow) => {
+    followFailure.value = null
     followOwed.value =
       workflow !== null &&
       !workflow.isTemporary &&
@@ -1796,6 +1838,8 @@ function onNewChat(source?: 'new_chat_button' | 'history_delete'): void {
   // does: a follow still waiting on a cloud id or a summary list would land
   // the tab's older thread on top of the chat the user just opened.
   followOwed.value = false
+  followFailure.value = null
+  ++chatNavigation
   composerStore.invalidateSubmission()
   cancelWorkflowSelection()
   canvasStore.stopNodePicking()
@@ -2182,6 +2226,32 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
         <CrdtDevPanel :status="crdtStatus" :snapshot="crdtDebugSnapshot" />
       </template>
       <template #composerNotice>
+        <div
+          v-if="followFailure"
+          role="status"
+          aria-live="polite"
+          class="relative flex items-start gap-2 overflow-hidden rounded-lg bg-base-background p-4 ring-1 ring-border-subtle before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-warning-background"
+        >
+          <span
+            aria-hidden="true"
+            class="icon-[heroicons--information-circle-20-solid] size-5 shrink-0 text-warning-foreground"
+          />
+          <p class="my-0 min-w-0 flex-1 text-sm text-base-foreground">
+            {{
+              t('agent.followedChatOpenFailed', {
+                workflowName: followFailure.workflowName
+              })
+            }}
+            <Button
+              type="button"
+              variant="muted-textonly"
+              size="sm"
+              @click="onRetryFollow"
+            >
+              {{ t('g.retry') }}
+            </Button>
+          </p>
+        </div>
         <AgentCreditTransitionNotice
           v-if="showCreditTransitionNotice"
           data-testid="agent-credit-transition-notice"
