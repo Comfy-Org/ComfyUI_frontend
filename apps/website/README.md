@@ -208,11 +208,13 @@ per file (the proxy allows 65 MiB for multipart overhead). Video bytes are verif
 by the backend's ffprobe runtime; the browser never supplies trusted hashes/MIME.
 Upload/replace remain authenticated, exact-pin, private Draft operations. The
 server-resolved website media MIME selects video hero/thumbnail and example
-rendering, including extensionless private URLs. Workflow example cards use only
-an image hero or the hero's still poster as their poster, never the hero video
-itself. Without a still, the example loads its own first frame. Workflow video
-examples use the shared play/pause player; the separate title action selects
-the example inputs. Watching the clip does not change inputs or run a workflow.
+rendering, including extensionless private URLs. Workflow examples are drawn by
+the model page's gallery (`ExamplesTab`); a workflow page passes it only an image
+hero or the hero's still poster as the video examples' poster, never the hero
+video itself. Without a still, the example loads its own first frame. On a
+workflow page each video example has its own Play/Pause control beside the card
+that selects the example inputs, so watching the clip does not change inputs or
+run a workflow.
 Unsupported codecs, unavailable verifier and configured lower limits still fail
 closed; this local demo change does not activate any production media service.
 
@@ -888,6 +890,12 @@ the hosted script once, and renders the documented embed container.
 - `pnpm test:e2e` — Playwright E2E tests (requires `pnpm build:e2e` first)
 - `pnpm ashby:refresh-snapshot` — refresh the committed careers snapshot
 - `pnpm cloud-nodes:refresh-snapshot` — refresh the committed cloud nodes snapshot
+
+### Comfy VFX campaign
+
+`/solutions/vfx/` and `/zh-CN/solutions/vfx/` render the latest V2 design. This change publishes no agency-led or other vertical campaign routes. V1 remains saved on `codex/vfx-landing`.
+
+Contact links preserve incoming UTMs and record `website:vfx_link_clicked`. Link-click tracking does not establish form-submission tracking.
 
 ### CCC demo initial catalogue rendering
 

@@ -1,4 +1,3 @@
-import { useDialogService } from '@/services/dialogService'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -217,9 +216,6 @@ const statusReadPaths = [
     idleReader: () => mockGetBillingStatus
   }
 ]
-
-// Mock fetch
-global.fetch = vi.fn()
 
 beforeEach(() => {
   vi.mocked(webSessionResourceHeader).mockResolvedValue(undefined)
@@ -2549,9 +2545,6 @@ describe('useSubscription', () => {
     })
 
     it('waits on a web session until the workspace is selected', async () => {
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
       Object.assign(useAuthStore(), { sessionUser: SESSION_USER })
       mockIsLoggedIn.value = true
 
@@ -2569,7 +2562,7 @@ describe('useSubscription', () => {
       expect(mockReadStatus).toHaveBeenCalledOnce()
       expect(subscriptionStatus.value).toEqual(buildStatus())
       expect(isInitialized.value).toBe(true)
-      expect(consoleError).not.toHaveBeenCalled()
+      expect(console.error).not.toHaveBeenCalled()
     })
 
     it('recovers a pending checkout on a web session only once the workspace is selected', async () => {
@@ -2591,7 +2584,6 @@ describe('useSubscription', () => {
           resolveRead = resolve
         })
       )
-      vi.spyOn(console, 'error').mockImplementation(() => {})
       Object.assign(useAuthStore(), { sessionUser: SESSION_USER })
       mockIsLoggedIn.value = true
 
@@ -2626,40 +2618,6 @@ describe('useSubscription', () => {
       expect(mockReadStatus).toHaveBeenCalledOnce()
       expect(subscriptionStatus.value).toEqual(buildStatus())
       expect(isInitialized.value).toBe(true)
-    })
-  })
-
-  describe('requireActiveSubscription', () => {
-    it('should not show dialog when subscription is active', async () => {
-      mockGetBillingStatus.mockResolvedValue({
-        is_active: true,
-        has_funds: true,
-        renewal_date: '2025-11-16'
-      })
-
-      const { requireActiveSubscription } = useSubscriptionWithScope()
-
-      await requireActiveSubscription()
-
-      expect(
-        useDialogService().showSubscriptionRequiredDialog
-      ).not.toHaveBeenCalled()
-    })
-
-    it('should show dialog when subscription is inactive', async () => {
-      mockGetBillingStatus.mockResolvedValue({
-        is_active: false,
-        has_funds: true,
-        renewal_date: '2025-11-16'
-      })
-
-      const { requireActiveSubscription } = useSubscriptionWithScope()
-
-      await requireActiveSubscription()
-
-      expect(
-        useDialogService().showSubscriptionRequiredDialog
-      ).toHaveBeenCalled()
     })
   })
 

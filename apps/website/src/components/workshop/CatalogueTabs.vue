@@ -6,6 +6,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { getRoutes } from '@/config/routes'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
+import { captureHubFilterChange } from '@/scripts/hub-analytics'
 
 export type CatalogueTab = 'models' | 'workflows' | 'apps'
 
@@ -68,6 +69,10 @@ function navigate(event: MouseEvent, tab: CatalogueTab) {
   )
     return
   emit('navigate', tab)
+}
+function openTab(event: MouseEvent, tab: CatalogueTab) {
+  captureHubFilterChange(active.value, 'catalogue', tab, active.value)
+  navigate(event, tab)
 }
 const labels = {
   models: 'workshop.hub.kind.models',
@@ -136,7 +141,7 @@ const tabClass = (tab: CatalogueTab) =>
         :aria-current="active === tab ? 'page' : undefined"
         :data-testid="`catalogue-tab-${tab}`"
         :class="tabClass(tab)"
-        @click="navigate($event, tab)"
+        @click="openTab($event, tab)"
       >
         {{ t(labels[tab]) }}
       </a>

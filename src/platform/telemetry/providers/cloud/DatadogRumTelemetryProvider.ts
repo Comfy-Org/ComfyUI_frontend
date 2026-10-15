@@ -8,7 +8,10 @@ import type {
   BillingTelemetryEvent,
   CheckoutJourneyTelemetryEvent
 } from '@comfyorg/account-core/billing'
-import type { WebSessionTelemetryEvent } from '@comfyorg/account-core/telemetry'
+import type {
+  SsoTelemetryEvent,
+  WebSessionTelemetryEvent
+} from '@comfyorg/account-core/telemetry'
 // oxlint-disable-next-line no-restricted-imports -- the telemetry layer owns the sinks that reportError() fans out to
 import { datadogRum } from '@datadog/browser-rum'
 
@@ -21,7 +24,9 @@ import type {
   ImageLoadFailureMetadata,
   TelemetryProvider,
   UnifiedAuthRefreshMetadata,
-  UnifiedAuthRetryMetadata
+  UnifiedAuthRetryMetadata,
+  WorkspaceScopeMismatchMetadata,
+  WorkspaceTelemetryContext
 } from '../../types'
 import { TelemetryEvents } from '../../types'
 
@@ -73,6 +78,10 @@ export class DatadogRumTelemetryProvider implements TelemetryProvider {
     datadogRum.addAction(event.name, event.properties)
   }
 
+  trackSsoEvent(event: SsoTelemetryEvent): void {
+    datadogRum.addAction(event.name, event.properties)
+  }
+
   trackImageLoadFailed(metadata: ImageLoadFailureMetadata): void {
     datadogRum.addAction(TelemetryEvents.IMAGE_LOAD_FAILED, metadata)
   }
@@ -89,6 +98,27 @@ export class DatadogRumTelemetryProvider implements TelemetryProvider {
       getBillingTelemetryEventName(event),
       getCloudAppBillingTelemetryEventPayload(event)
     )
+  }
+
+  // fallow-ignore-next-line unused-class-member
+  setWorkspaceContext(context: WorkspaceTelemetryContext | undefined): void {
+    if (!context) {
+      datadogRum.removeGlobalContextProperty('workspace')
+      datadogRum.removeGlobalContextProperty('auth')
+      return
+    }
+    datadogRum.setGlobalContextProperty('workspace', {
+      id: context.workspace_id,
+      type: context.workspace_type,
+      role: context.workspace_role,
+      tier: context.workspace_tier
+    })
+    datadogRum.setGlobalContextProperty('auth', { rail: context.auth_rail })
+  }
+
+  // fallow-ignore-next-line unused-class-member
+  trackWorkspaceScopeMismatch(metadata: WorkspaceScopeMismatchMetadata): void {
+    datadogRum.addAction(TelemetryEvents.WORKSPACE_SCOPE_MISMATCH, metadata)
   }
 
   trackCheckoutJourneyEvent(event: CheckoutJourneyTelemetryEvent): void {

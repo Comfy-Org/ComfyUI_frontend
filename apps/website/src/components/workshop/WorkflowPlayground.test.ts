@@ -20,6 +20,10 @@ import type { WorkflowState } from '@/config/workshop-workflow-state'
 import { workflowDetailsBySlug } from '@/config/workshop-workflow-content'
 import { useWorkflowRun } from '@/composables/useWorkflowRun'
 import {
+  setAllIntersecting,
+  stubIntersectionObserver
+} from '@/test/fakeIntersectionObserver'
+import {
   captureWorkshopEvent,
   useWorkshopEnabled,
   useWorkshopWorkflowsEnabled
@@ -214,15 +218,15 @@ describe('WorkflowPlayground API tab analytics', () => {
 })
 
 describe('WorkflowPlayground input panel', () => {
-  // The way out of the page lives on Details beside the graph, so the panel
-  // that asks the questions carries the run control and nothing else.
-  it('heads the questions and leaves the ways out to Details', () => {
+  // The ways out of the page live in the page header, so the panel that asks
+  // the questions carries the run control and nothing else.
+  it('heads the questions and leaves the ways out to the page header', () => {
     const model = workflowDetailsBySlug.get('workflows/remove-background')
     assert(model)
     vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(ref(true)))
     vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(readonly(ref(true)))
     render(WorkflowPlayground, {
-      props: { model, scope: 'anonymous', cloudHref: 'https://cloud/?t=1' }
+      props: { model, scope: 'anonymous' }
     })
 
     const panel = screen.getByRole('tabpanel', { name: 'Playground' })
@@ -367,7 +371,8 @@ describe('WorkflowPlayground examples', () => {
     }
   ])(
     'shows a video example with $name without using video bytes as a poster',
-    ({ thumbnail, poster, preload, src }) => {
+    async ({ thumbnail, poster, preload, src }) => {
+      stubIntersectionObserver()
       const original = workflowDetailsBySlug.get('workflows/remove-background')
       assert(original)
       const model = {
@@ -385,12 +390,48 @@ describe('WorkflowPlayground examples', () => {
         ]
       }
       render(WorkflowPlayground, { props: { model, scope: 'anonymous' } })
-      const video = screen.getByLabelText('Product video example')
+      await setAllIntersecting(true)
+      const video = screen.getByTestId('example-video')
       expect(video.getAttribute('poster')).toBe(poster)
       expect(video.getAttribute('preload')).toBe(preload)
       expect(video.getAttribute('src')).toBe(src)
     }
   )
+
+  it('plays a video example without loading its inputs', async () => {
+    const play = vi
+      .spyOn(HTMLMediaElement.prototype, 'play')
+      .mockResolvedValue()
+    const original = workflowDetailsBySlug.get('workflows/remove-background')
+    assert(original)
+    const model = {
+      ...original,
+      examples: [
+        original.examples[0],
+        {
+          ...original.examples[0],
+          name: 'product-video',
+          title: 'Product video example',
+          thumbnailUrl: '/preview-media/6/video/exact',
+          mediaKind: 'video' as const
+        }
+      ]
+    }
+    render(WorkflowPlayground, { props: { model, scope: 'anonymous' } })
+    const [first, second] = screen.getAllByTestId('example-card')
+    expect(first).toHaveAttribute('aria-current', 'true')
+
+    await userEvent
+      .setup()
+      .click(
+        screen.getByRole('button', { name: 'Product video example: Play' })
+      )
+
+    expect(play).toHaveBeenCalledOnce()
+    expect(first).toHaveAttribute('aria-current', 'true')
+    expect(second).not.toHaveAttribute('aria-current')
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
 
   it.for([{ tab: 'Details' }, { tab: 'API' }])(
     'keeps the examples to the Playground tab, not $tab',
@@ -411,4 +452,38 @@ describe('WorkflowPlayground examples', () => {
       expect(examples).not.toBeVisible()
     }
   )
+
+  it('moves the chosen mark to the example the gallery opened', async () => {
+    const model = workflowDetailsBySlug.get('workflows/change-material')
+    assert(model)
+    expect(model.examples.length).toBeGreaterThan(1)
+    vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(ref(true)))
+    vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(readonly(ref(true)))
+    render(WorkflowPlayground, { props: { model, scope: 'anonymous' } })
+
+    const [first, second] = screen.getAllByTestId('example-card')
+    expect(first).toHaveAttribute('aria-current', 'true')
+
+    await userEvent.setup().click(second)
+
+    await waitFor(() => expect(second).toHaveAttribute('aria-current', 'true'))
+    expect(first).not.toHaveAttribute('aria-current')
+    expect(screen.getAllByTestId('example-chosen')).toHaveLength(1)
+    expect(within(second).getByTestId('example-chosen')).toBeTruthy()
+  })
+
+  it('keeps the chosen example where it is while a run holds the form', async () => {
+    const model = workflowDetailsBySlug.get('workflows/change-material')
+    assert(model)
+    vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(ref(true)))
+    vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(readonly(ref(true)))
+    mockWorkflowRun(shallowRef<WorkflowState>({ phase: 'preparing' }))
+    render(WorkflowPlayground, { props: { model, scope: 'anonymous' } })
+
+    const [first, second] = screen.getAllByTestId('example-card')
+    await userEvent.setup().click(second)
+
+    expect(first).toHaveAttribute('aria-current', 'true')
+    expect(second).not.toHaveAttribute('aria-current')
+  })
 })

@@ -51,6 +51,7 @@ export async function loadEditorData(
   requestedType: string | null
 ) {
   if (
+    // oxlint-disable-next-line comfy/no-capability-recombination -- SSR route authorization enforcing the server-issued catalog capabilities, not a rendered UI gate
     !session?.can_edit ||
     (id !== undefined && !z.uuid().safeParse(id).success)
   )

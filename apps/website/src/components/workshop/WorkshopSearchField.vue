@@ -7,7 +7,7 @@ import { DialogContent, DialogPortal, DialogRoot, DialogTitle } from 'reka-ui'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { WorkshopModel } from '@/config/models-catalogue'
-import { filterWorkshopModels } from '@/config/models-catalogue'
+import { searchWorkshopModels } from '@/config/models-search'
 import { useVisualViewport } from '@/composables/useVisualViewport'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
@@ -31,6 +31,11 @@ const {
 const { t } = translationsFor(locale)
 
 const query = defineModel<string>({ required: true })
+const emit = defineEmits<{ submit: [] }>()
+
+function submit(event: KeyboardEvent) {
+  if (!event.isComposing) emit('submit')
+}
 const mounted = useMounted()
 const label = computed(() =>
   t(kind === 'models' ? 'workshop.search.label' : 'workshop.hub.search')
@@ -82,7 +87,7 @@ const sheetStyle = computed(() =>
 // The sheet applies as you tap, so its button is a way out that says what is
 // waiting behind it.
 const matches = computed(
-  () => filterWorkshopModels(models, { query: query.value }).length
+  () => searchWorkshopModels(models, { query: query.value }).length
 )
 
 function clearSheet() {
@@ -138,6 +143,7 @@ const clearButtonClass =
         :aria-label="label"
         data-testid="workshop-search"
         :class="fieldClass"
+        @keydown.enter="submit"
       />
       <button
         v-if="query"
@@ -175,6 +181,7 @@ const clearButtonClass =
                 :aria-label="label"
                 data-testid="workshop-search-sheet-input"
                 :class="fieldClass"
+                @keydown.enter="submit"
               />
               <button
                 v-if="query"

@@ -62,9 +62,8 @@ describe('unit test network guard', () => {
     expect(await response.text()).toBe('delegated')
   })
 
-  it('lets a test stub its own fetch', async () => {
-    const stub = vi.fn().mockResolvedValue(new Response('ok'))
-    vi.stubGlobal('fetch', stub)
+  it('restores the guard when the automatic reset clears a configured fetch', async () => {
+    vi.mocked(fetch).mockImplementation(async () => new Response('ok'))
 
     await expect(fetch('https://example.com/thing')).resolves.toBeInstanceOf(
       Response
@@ -73,9 +72,7 @@ describe('unit test network guard', () => {
       window.fetch('https://example.com/thing')
     ).resolves.toBeInstanceOf(Response)
 
-    // A test that stubs fetch owns restoring it. Unstubbing here proves the
-    // guard is what sits underneath, rather than having been overwritten.
-    vi.unstubAllGlobals()
+    vi.mocked(fetch).mockReset()
     await expect(fetch('https://example.com/thing')).rejects.toThrow(
       /Blocked a real network request/
     )

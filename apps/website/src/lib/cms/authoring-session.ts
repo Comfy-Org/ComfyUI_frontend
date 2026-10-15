@@ -74,6 +74,7 @@ export async function verifyAuthoringCredential(credential: string) {
     )
   if (!state.success)
     return { ok: false as const, response: editorFailure(503) }
+  // oxlint-disable-next-line comfy/no-capability-recombination -- SSR route authorization enforcing the server-issued catalog capabilities, not a rendered UI gate
   if (!parsed.data.can_edit && !parsed.data.can_apply)
     return { ok: false as const, response: editorFailure(403) }
   return { ok: true as const, context: { ...parsed.data, state: state.data } }
@@ -98,6 +99,7 @@ export async function loadAuthoringSession(context: APIContext) {
     session: {
       ...verified.context,
       can_apply:
+        // oxlint-disable-next-line comfy/no-capability-recombination -- a local demo/tester role only narrows the server capability; it never grants one
         verified.context.can_apply && (!demo || demo.role === 'publish'),
       credential,
       csrf

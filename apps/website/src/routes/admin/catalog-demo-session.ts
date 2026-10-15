@@ -56,6 +56,7 @@ export const POST: APIRoute = async (context) => {
     const verified = await verifyAuthoringCredential(parent.credential)
     if (!verified.ok) return verified.response
     if (
+      // oxlint-disable-next-line comfy/no-capability-recombination -- SSR route authorization enforcing the server-issued catalog capabilities, not a rendered UI gate
       !verified.context.can_edit ||
       !verified.context.can_apply ||
       verified.context.actor_uid !== '00000000-0000-4000-8000-000000000003' ||
