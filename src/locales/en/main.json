@@ -1740,6 +1740,7 @@
     "3DViewer": "3DViewer",
     "Canvas Navigation": "Canvas Navigation",
     "PlanCredits": "Plan & Credits",
+    "Billing": "Billing",
     "Members": "Members",
     "Allowlist": "Partner Models",
     "Vue Nodes": "Nodes 2.0",
@@ -3536,6 +3537,44 @@
     "updatePassword": "Update Password"
   },
   "workspacePanel": {
+    "billingTab": {
+      "handoff": {
+        "member": {
+          "action": "View usage",
+          "label": "Usage"
+        },
+        "owner": {
+          "action": "Open billing",
+          "label": "Payment methods, invoices, and usage"
+        }
+      },
+      "loadError": "We couldn't load your plan.",
+      "plan": {
+        "actions": {
+          "choosePlan": "Choose a plan",
+          "manage": "Manage",
+          "subscribe": "Subscribe"
+        },
+        "active": {
+          "monthly": "Billed monthly. Next invoice {date}.",
+          "yearly": "Billed yearly. Next invoice {date}."
+        },
+        "ended": "Ended {date}.",
+        "ending": "Ends {date}. You won't be charged again.",
+        "managedByOwner": "Managed by the workspace owner.",
+        "noPlan": {
+          "freeRunsLeft": "You have {remaining} of {total} free runs left. Subscribe to keep running workflows after that.",
+          "freeRunsUsed": "You've used all {total} free runs. Subscribe to keep running workflows.",
+          "line": "Subscribe to run workflows on Cloud.",
+          "title": "This workspace has no active plan"
+        },
+        "scheduledChange": "Changes to {plan} on {date}.",
+        "unknown": {
+          "title": "Your plan"
+        }
+      },
+      "tryAgain": "Try again"
+    },
     "activity": {
       "columns": {
         "creditsUsed": "Credits",

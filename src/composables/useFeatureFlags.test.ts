@@ -402,6 +402,54 @@ describe('useFeatureFlags', () => {
     })
   })
 
+  describe.for([
+    { flag: 'unifiedBillingSettingsEnabled' as const },
+    { flag: 'autoTopUpEnabled' as const }
+  ])('$flag', ({ flag }) => {
+    afterEach(() => {
+      vi.mocked(distributionTypes).isCloud = false
+    })
+
+    it.for([
+      {
+        case: 'missing on cloud',
+        cloud: true,
+        value: undefined,
+        expected: false
+      },
+      { case: 'false on cloud', cloud: true, value: false, expected: false },
+      {
+        case: 'malformed on cloud',
+        cloud: true,
+        value: 'true',
+        expected: false
+      },
+      { case: 'true on cloud', cloud: true, value: true, expected: true },
+      { case: 'true off cloud', cloud: false, value: true, expected: false }
+    ])('is $expected when $case', ({ cloud, value, expected }) => {
+      vi.mocked(distributionTypes).isCloud = cloud
+      vi.mocked(api.getServerFeature).mockReturnValue(value)
+
+      expect(useFeatureFlags().flags[flag]).toBe(expected)
+    })
+
+    it('is false on cloud when feature lookup throws', () => {
+      vi.mocked(distributionTypes).isCloud = true
+      vi.mocked(api.getServerFeature).mockImplementation(() => {
+        throw new Error('feature service unavailable')
+      })
+
+      expect(useFeatureFlags().flags[flag]).toBe(false)
+    })
+
+    it('honours a session override on cloud', () => {
+      vi.mocked(distributionTypes).isCloud = true
+      vi.mocked(getSessionOverride).mockReturnValue(true)
+
+      expect(useFeatureFlags().flags[flag]).toBe(true)
+    })
+  })
+
   describe('localWebSsoEnabled', () => {
     afterEach(() => {
       vi.mocked(distributionTypes).isCloud = false
