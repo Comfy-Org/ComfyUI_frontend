@@ -1,9 +1,6 @@
 import { render, screen } from '@testing-library/vue'
-import { existsSync } from 'node:fs'
-import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
-import { websiteRoot } from '@website/paths'
 import { isExcludedFromSitemap, isNoindexPathname } from '@/config/indexing'
 import { translationsFor } from '@/i18n/translations'
 import ModelLaunchGallerySection from '@/templates/model-launch/ModelLaunchGallerySection.vue'
@@ -19,7 +16,6 @@ describe('Krea 3 launch draft', () => {
     })
     expect(screen.getAllByText(/^premium$/i)).toHaveLength(2)
     expect(screen.getAllByText('Pay-as-you-go')).toHaveLength(2)
-    // Workflow cards are plain images; sliders live in the comparison section.
     expect(screen.queryAllByRole('slider')).toHaveLength(0)
     expect(
       screen.getByRole('link', { name: 'Krea 3: Image editing' })
@@ -72,8 +68,6 @@ describe('Krea 3 launch draft', () => {
           ])
         ),
         ...krea3Page.faq.items.flatMap((item) => [
-          // The approved speed FAQ asks "How fast is Krea 3", which is a
-          // question about the supplied 8 second figure, not a comparison.
           item.question[locale].replace(APPROVED_SPEED_QUESTION, ''),
           item.answer[locale]
         ])
@@ -111,7 +105,7 @@ describe('Krea 3 launch draft', () => {
     ).toHaveLength(3)
   })
 
-  it('ships every poster and gallery asset locally for private review', () => {
+  it('serves every poster and gallery asset from the media CDN', () => {
     const sources = [
       ...krea3Page.workflowGallery.cards.flatMap((card) => [
         card.media.src,
@@ -127,8 +121,7 @@ describe('Krea 3 launch draft', () => {
       )
     ]
     for (const src of sources) {
-      expect(src).toMatch(/^\/media\/krea-3\//)
-      expect(existsSync(join(websiteRoot, 'public', src))).toBe(true)
+      expect(src).toMatch(/^https:\/\/media\.comfy\.org\/website\/krea-3\//)
     }
   })
 })

@@ -9,7 +9,7 @@ export const krea3Links = {
   imageEdit: 'https://cloud.comfy.org/?template=api_krea3_image_edit'
 } as const
 
-const mediaBase = '/media/krea-3'
+const mediaBase = 'https://media.comfy.org/website/krea-3'
 const text = (en: string, zh: string): LocalizedText => ({ en, 'zh-CN': zh })
 const card = (
   id: string,
