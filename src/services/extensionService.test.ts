@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
-import type { useApp } from '@/scripts/appRegistry'
+import { useApp } from '@/scripts/appInstance'
 import { useExtensionStore } from '@/stores/extensionStore'
 
 import { useExtensionService } from './extensionService'
@@ -148,37 +148,59 @@ describe('invokeExtensionsAsync', () => {
     expect(hook.mock.contexts[0]).toBe(useExtensionStore().extensions[0])
   })
 
-  it('rejects a graph load requested after an await in a lifecycle hook', async () => {
+  type HookApp = ReturnType<typeof useApp>
+
+  it.for([
+    {
+      entrypoint: 'loadGraphData',
+      call: (app: HookApp) => app.loadGraphData()
+    },
+    {
+      entrypoint: 'loadApiJson',
+      call: (app: HookApp) => app.loadApiJson({}, 'nested.json')
+    },
+    {
+      entrypoint: 'handleFile',
+      call: (app: HookApp) => app.handleFile(new File([], 'nested.png'))
+    }
+  ])(
+    'rejects $entrypoint started after an await in a graph-load hook',
+    async ({ call }) => {
+      let nested: Promise<unknown> | undefined
+      register({
+        name: 'nested-loader',
+        beforeLoadGraph: async (app: HookApp) => {
+          await Promise.resolve()
+          nested = call(app)
+          await nested.catch(() => {})
+        }
+      })
+
+      await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+
+      await expect(nested).rejects.toThrow(
+        'A graph-load lifecycle hook cannot start a nested graph load'
+      )
+    }
+  )
+
+  it('lets a retained hook app load once the hook dispatch has finished', async () => {
+    let retained: HookApp | undefined
     register({
-      name: 'nested-loader',
-      beforeLoadGraph: async (app: ReturnType<typeof useApp>) => {
-        await Promise.resolve()
-        await expect(app.loadGraphData()).rejects.toThrow(
-          'A graph-load lifecycle hook cannot start a nested graph load'
-        )
+      name: 'retaining-extension',
+      afterLoadGraph: (app: HookApp) => {
+        retained = app
       }
     })
+    await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
+    const handleFile = vi
+      .spyOn(useApp(), 'handleFile')
+      .mockResolvedValue(undefined)
+    const file = new File([], 'later.png')
 
-    await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
-  })
+    await retained?.handleFile(file)
 
-  it('rejects an awaited API import without blocking the next load hook', async () => {
-    const nestedImportRejected = vi.fn()
-    register({
-      name: 'nested-api-loader',
-      beforeLoadGraph: async (app: ReturnType<typeof useApp>) => {
-        await Promise.resolve()
-        await expect(app.loadApiJson({}, 'nested.json')).rejects.toThrow(
-          'A graph-load lifecycle hook cannot start a nested graph load'
-        )
-        nestedImportRejected()
-      }
-    })
-
-    await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
-    await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
-
-    expect(nestedImportRejected).toHaveBeenCalledTimes(2)
+    expect(handleFile).toHaveBeenCalledWith(file)
   })
 
   it('silently ignores a non-function property of the same name', async () => {
