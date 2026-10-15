@@ -7187,6 +7187,41 @@ describe('AgentPanelRoot workflow binding', () => {
     }
   )
 
+  it('keeps a readable unresolved chat open when its Current row is selected again', async () => {
+    makeTab('wf-42')
+    stubUnresolvedTargetChat()
+    renderWithSelectedTarget()
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Unresolved target chat' })
+    )
+    await waitFor(() =>
+      expect(useAgentChatHistoryStore().activeId).toBe('th-history')
+    )
+    respondToFetch(/\/workflows/, () => json(500, { error: 'down' }))
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Unresolved target chat' })
+    )
+
+    await screen.findAllByText('Historical prompt')
+    expect(screen.queryByRole('heading', { name: 'Chat history' })).toBeNull()
+    expect(
+      screen.queryByText(i18n.global.t('agent.historyOpenFailed'))
+    ).toBeNull()
+    expect(useAgentPanelStore().selectedWorkflow).toBeNull()
+    expect(useAgentChatHistoryStore().activeId).toBe('th-history')
+  })
+
   it.for(['false', 'throw', 'missing-id'])(
     'handles a history restoration with %s without showing an unready chat',
     async (outcome) => {

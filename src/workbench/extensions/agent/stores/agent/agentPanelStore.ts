@@ -31,18 +31,28 @@ type TargetTracking =
       workflow: null
       closedPath?: never
       unavailable?: never
+      unresolved?: never
     }
   | {
       mode: 'retained'
       workflow: null
       closedPath: string
       unavailable?: never
+      unresolved?: never
     }
   | {
       mode: 'retained'
       workflow: null
       closedPath?: never
       unavailable: true
+      unresolved?: never
+    }
+  | {
+      mode: 'retained'
+      workflow: null
+      closedPath?: never
+      unavailable?: never
+      unresolved: true
     }
 
 export type AgentPanelView =
@@ -95,6 +105,12 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
       targetTracking.value.workflow === null &&
       targetTracking.value.unavailable === true
   )
+  const targetUnresolved = computed(
+    () =>
+      targetTracking.value.mode === 'retained' &&
+      targetTracking.value.workflow === null &&
+      targetTracking.value.unresolved === true
+  )
   const canRestoreWorkflow = computed(
     () => targetTracking.value.mode === 'restoring'
   )
@@ -133,6 +149,14 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
       workflow === null
         ? { mode: 'retained', workflow: null }
         : { mode: 'retained', workflow }
+  }
+
+  function retainUnresolvedTarget(): void {
+    targetTracking.value = {
+      mode: 'retained',
+      workflow: null,
+      unresolved: true
+    }
   }
 
   function markWorkflowTargetUnavailable(): void {
@@ -350,6 +374,8 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     startFollowingVisibleWorkflow,
     selectedWorkflow,
     targetUnavailable,
+    targetUnresolved,
+    retainUnresolvedTarget,
     markWorkflowTargetUnavailable,
     canRestoreWorkflow,
     beginWorkflowRestoration,

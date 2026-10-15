@@ -296,8 +296,11 @@ export function useAgentWorkflowSelection({
       const target = storedWorkflowFor(workflowId)
       if (target !== null)
         return await openRestoredWorkflow(target, workflowId, isCurrent)
+      if (lifecycle === 'live') {
+        panelStore.retainUnresolvedTarget()
+        return true
+      }
       panelStore.setWorkflowTarget(null)
-      if (lifecycle === 'live') return true
       warnRestoreFailed()
       return false
     } catch {

@@ -1386,7 +1386,7 @@ const currentChatReady = computed(
   () =>
     isTranscriptReady.value &&
     threadId.value === history.activeId &&
-    selectedTarget.value !== null
+    (selectedTarget.value !== null || agentPanelStore.targetUnresolved)
 )
 
 const historyGroups = computed(() => {
@@ -1411,7 +1411,10 @@ async function onSelectHistory(
   isCurrent: () => boolean
 ): Promise<boolean> {
   if (currentChatReady.value && id === threadId.value)
-    return onShowTarget(isCurrent, warnRestoreFailed)
+    return (
+      selectedTarget.value === null ||
+      onShowTarget(isCurrent, warnRestoreFailed)
+    )
 
   abandonPendingChatWork()
   agentPanelStore.beginWorkflowRestoration()
