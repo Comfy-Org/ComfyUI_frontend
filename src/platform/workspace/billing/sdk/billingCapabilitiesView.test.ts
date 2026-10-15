@@ -22,7 +22,10 @@ const SNAPSHOT: CapabilitiesSnapshot = {
     can_subscribe_self_serve: true,
     can_top_up: true
   },
-  denials: {},
+  denials: {
+    can_delete_workspace: 'personal_workspace',
+    can_leave_workspace: 'personal_workspace_creator'
+  },
   rolloutDefaultsApplied: {
     can_downgrade_to_personal: false,
     can_subscribe_self_serve: true,
@@ -41,6 +44,7 @@ describe('projectBillingCapabilities', () => {
   it('reads the snapshot back as the response the composable holds', () => {
     expect(projectBillingCapabilities(SNAPSHOT)).toStrictEqual({
       capabilities: SNAPSHOT.capabilities,
+      denied_reasons: SNAPSHOT.denials,
       expires_at: '2026-10-01T00:00:00.000Z',
       resolved_for: {
         user_id: 'canonical-user-1',

@@ -3732,7 +3732,11 @@
       "leaveWorkspace": "Leave Workspace",
       "deleteWorkspace": "Delete Workspace",
       "deleteWorkspaceDisabledTooltip": "Cancel your workspace's active subscription first",
-      "deleteWorkspaceAfterPlanEndsTooltip": "You can delete this workspace after your plan ends on {date}",
+      "deleteWorkspaceAfterPlanEndsTooltip": "You can delete this workspace after your plan ends on {date}.",
+      "deleteWorkspacePlanNotEndedTooltip": "You can delete this workspace after its plan ends. Cancel it from Manage plan.",
+      "deleteWorkspaceBillingParkedTooltip": "A recent payment needs a fix from our team. Contact support.",
+      "deleteWorkspaceBillingInProgressTooltip": "A billing change is in progress. Try again in a moment.",
+      "deleteWorkspaceUnavailableTooltip": "This workspace can't be deleted right now.",
       "creatorCannotLeave": "The workspace creator can't leave the workspace they created"
     },
     "editWorkspaceDialog": {
