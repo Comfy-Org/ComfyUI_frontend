@@ -3109,27 +3109,6 @@ describe('ComfyApp', () => {
       expect(mockImportA1111).toHaveBeenCalledOnce()
     })
 
-    it('rejects a nested load awaited by a lifecycle hook', async () => {
-      let beforeLoadGraphCalls = 0
-      mockExtensionService.invokeExtensionsAsync.mockImplementation(
-        async (hook) => {
-          if (hook === 'beforeLoadGraph') beforeLoadGraphCalls++
-          if (hook !== 'afterLoadGraph') return
-          await expect(
-            app.loadGraphData(createWorkflowGraphData(), true)
-          ).rejects.toThrow(
-            'A graph-load lifecycle hook cannot start a nested graph load'
-          )
-          expect(beforeLoadGraphCalls).toBe(1)
-        }
-      )
-
-      await expect(
-        app.loadGraphData(createWorkflowGraphData(), true)
-      ).resolves.toBeTruthy()
-      expect(beforeLoadGraphCalls).toBe(1)
-    })
-
     it('cleans before extensions prepare the incoming workflow', async () => {
       const clean = vi.spyOn(app, 'clean')
       let cleanCallsDuringPreparation: number | undefined

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
+import { useApp } from '@/scripts/appRegistry'
 import { useExtensionStore } from '@/stores/extensionStore'
 
 import { useExtensionService } from './extensionService'
@@ -145,6 +146,25 @@ describe('invokeExtensionsAsync', () => {
     expect(hook.mock.calls[0]).toHaveLength(2)
     expect(hook.mock.calls[0][0]).toBe(defs)
     expect(hook.mock.contexts[0]).toBe(useExtensionStore().extensions[0])
+  })
+
+  it('rejects a graph load requested after an await in a lifecycle hook', async () => {
+    let hookApp: ReturnType<typeof useApp> | undefined
+    register({
+      name: 'nested-loader',
+      beforeLoadGraph: async (app: ReturnType<typeof useApp>) => {
+        hookApp = app
+        await Promise.resolve()
+        await expect(app.loadGraphData()).rejects.toThrow(
+          'A graph-load lifecycle hook cannot start a nested graph load'
+        )
+      }
+    })
+
+    await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+
+    expect(hookApp).not.toBe(useApp())
+    expect(hookApp?.loadGraphData).not.toBe(useApp().loadGraphData)
   })
 
   it('silently ignores a non-function property of the same name', async () => {

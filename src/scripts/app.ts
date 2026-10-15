@@ -434,7 +434,6 @@ export class ComfyApp implements IComfyApp {
   private configuringGraphLevel: number = 0
   private graphLoadSequence = 0
   private graphLoadQueue: Promise<void> = Promise.resolve()
-  private invokingGraphLoadHookSynchronously = false
   private pendingCamera:
     | { id: number; workflow: string | null | ComfyWorkflow }
     | undefined
@@ -1193,25 +1192,10 @@ export class ComfyApp implements IComfyApp {
   ): ReturnType<
     ReturnType<typeof useExtensionService>['invokeExtensionsAsync']
   > {
-    this.invokingGraphLoadHookSynchronously = true
-    try {
-      return useExtensionService().invokeExtensionsAsync(...args)
-    } finally {
-      // Extension callbacks start synchronously. Rejecting a nested load in
-      // that call stack prevents a hook that awaits it from deadlocking the
-      // queue, while later user actions still queue normally.
-      this.invokingGraphLoadHookSynchronously = false
-    }
+    return useExtensionService().invokeExtensionsAsync(...args)
   }
 
   private enqueueGraphLoad<T>(operation: () => Promise<T>): Promise<T> {
-    if (this.invokingGraphLoadHookSynchronously) {
-      return Promise.reject(
-        new Error(
-          'A graph-load lifecycle hook cannot start a nested graph load'
-        )
-      )
-    }
     const result = this.graphLoadQueue.then(operation)
     this.graphLoadQueue = result.then(
       () => undefined,
