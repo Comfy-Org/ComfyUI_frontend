@@ -4,7 +4,7 @@ import recorded from '../src/services/providers/__fixtures__/algoliaNodesIndex.j
 import type {
   NodesIndexFixture,
   RecordedResponse
-} from './record-algolia-nodes-fixture'
+} from '../src/services/providers/__fixtures__/algoliaNodesIndexFixture'
 import {
   RECORDED_QUERIES,
   recordNodesIndex,

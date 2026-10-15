@@ -7,6 +7,10 @@ import { uniq, zip } from 'es-toolkit'
 
 import { DEFAULT_PAGE_SIZE } from '../src/constants/searchConstants'
 import type {
+  NodesIndexFixture,
+  RecordedResponse
+} from '../src/services/providers/__fixtures__/algoliaNodesIndexFixture'
+import type {
   AlgoliaNodePack,
   SearchAttribute
 } from '../src/types/algoliaTypes'
@@ -47,28 +51,6 @@ const RECORDED_ATTRIBUTES: SearchAttribute[] = [
 ]
 
 const PACK_SEARCHABLE_ATTRIBUTES: SearchAttribute[] = ['name', 'description']
-
-export type RecordedHit = {
-  objectID: string
-  id: string
-  name: string
-  description: string
-  total_install: number
-  publisher_id: string
-  latest_version: string
-  comfy_nodes: string[]
-}
-
-export type RecordedResponse = {
-  nbHits: number
-  hits: RecordedHit[]
-}
-
-export type NodesIndexFixture = {
-  _README: string
-  _recordedFor: string[]
-  responses: Record<string, RecordedResponse>
-}
 
 type RetrievedHit = { objectID: string } & Partial<
   Pick<
