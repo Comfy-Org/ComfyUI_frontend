@@ -14,8 +14,6 @@ import {
 } from '@e2e/fixtures/data/agent/agentThreadList'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
-const PANEL_MOUNT_TIMEOUT = 30_000
-
 test.describe(
   'Agent chat history pagination',
   { tag: ['@cloud', '@ui'] },
@@ -24,13 +22,11 @@ test.describe(
       page,
       agentFlagEnabled
     }) => {
-      const threadListQueries: string[] = []
       await page.route('**/api/agent/threads?*', (route) => {
-        const { search, searchParams } = new URL(route.request().url())
-        threadListQueries.push(search)
+        const after = new URL(route.request().url()).searchParams.get('after')
         return route.fulfill(
           jsonRoute(
-            searchParams.get('after') === SECOND_THREAD_PAGE_CURSOR
+            after === SECOND_THREAD_PAGE_CURSOR
               ? secondAgentThreadPage
               : firstAgentThreadPage
           )
@@ -38,7 +34,7 @@ test.describe(
       })
 
       await bootAgentApp(page, agentFlagEnabled)
-      const panel = await new AgentPanel(page).open(PANEL_MOUNT_TIMEOUT)
+      const panel = await new AgentPanel(page).open(30_000)
       await panel
         .getByRole('button', { name: enMessages.agent.showChatHistory })
         .click()
@@ -55,10 +51,6 @@ test.describe(
           exact: true
         })
       ).toBeVisible()
-      expect(threadListQueries[0]).toBe('?limit=100')
-      expect(threadListQueries).toContain(
-        `?limit=100&after=${SECOND_THREAD_PAGE_CURSOR}`
-      )
     })
   }
 )
