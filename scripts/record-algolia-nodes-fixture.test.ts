@@ -71,9 +71,46 @@ describe('recordNodesIndex', () => {
       ['comfyui kjnodes']
     ])
   })
+
+  it.for([
+    { returned: 1, error: 'Missing response for query "comfyui-kjnodes"' },
+    { returned: 3, error: 'Got 3 responses for 2 queries' }
+  ])(
+    'rejects an index that answers $returned of 2 queries',
+    async ({ returned, error }) => {
+      await expect(
+        recordNodesIndex(
+          async () => Array.from({ length: returned }, () => emptyResponse),
+          ['gguf', 'comfyui-kjnodes']
+        )
+      ).rejects.toThrow(error)
+    }
+  )
+
+  it('records a rewrite named like an Object.prototype key', async () => {
+    const fixture = await recordNodesIndex(
+      async (queries) => queries.map(() => emptyResponse),
+      ['-constructor']
+    )
+
+    expect(Object.keys(fixture.responses)).toEqual([
+      '-constructor',
+      'constructor'
+    ])
+  })
 })
 
 describe('toRecordedResponse', () => {
+  it('shortens descriptions by code point without splitting a surrogate pair', () => {
+    const description = `${'x'.repeat(59)}😀😀`
+
+    const [hit] = toRecordedResponse({
+      hits: [{ objectID: 'pack', description }]
+    }).hits
+
+    expect(hit.description).toBe(`${'x'.repeat(59)}😀`)
+  })
+
   it('keeps the replayed fields, shortens descriptions and drops node lists', () => {
     const response = toRecordedResponse({
       nbHits: 3,

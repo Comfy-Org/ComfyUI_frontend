@@ -1,4 +1,5 @@
 import { writeFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 
 import type { SearchResponse } from 'algoliasearch/lite'
 import { liteClient } from 'algoliasearch/lite'
@@ -12,8 +13,12 @@ import type {
 import { buildPackSearchFallbacks } from '../src/utils/searchQueryUtil'
 import { isMainModule } from './isMainModule'
 
-export const FIXTURE_PATH =
-  'src/services/providers/__fixtures__/algoliaNodesIndex.json'
+export const FIXTURE_PATH = fileURLToPath(
+  new URL(
+    '../src/services/providers/__fixtures__/algoliaNodesIndex.json',
+    import.meta.url
+  )
+)
 
 export const RECORDED_QUERIES = [
   'kijai/comfyui-kjnodes',
@@ -92,10 +97,9 @@ export function toRecordedResponse(response: {
       objectID: hit.objectID,
       id: hit.id ?? hit.objectID,
       name: hit.name ?? '',
-      description: (hit.description ?? '').slice(
-        0,
-        RECORDED_DESCRIPTION_LENGTH
-      ),
+      description: Array.from(hit.description ?? '')
+        .slice(0, RECORDED_DESCRIPTION_LENGTH)
+        .join(''),
       total_install: hit.total_install ?? 0,
       publisher_id: hit.publisher_id ?? '',
       latest_version: hit.latest_version ?? '',
@@ -104,29 +108,39 @@ export function toRecordedResponse(response: {
   }
 }
 
+async function searchAll(
+  search: SearchNodesIndex,
+  queries: string[]
+): Promise<Map<string, RecordedResponse>> {
+  if (queries.length === 0) return new Map()
+  const responses = await search(queries)
+  if (responses.length !== queries.length) {
+    const missingQuery = queries.at(responses.length)
+    throw new Error(
+      missingQuery === undefined
+        ? `Got ${responses.length} responses for ${queries.length} queries`
+        : `Missing response for query "${missingQuery}"`
+    )
+  }
+  return new Map(zip(queries, responses))
+}
+
 export async function recordNodesIndex(
   search: SearchNodesIndex,
   seedQueries: string[]
 ): Promise<NodesIndexFixture> {
-  const searchAll = async (
-    queries: string[]
-  ): Promise<Record<string, RecordedResponse>> =>
-    queries.length === 0
-      ? {}
-      : Object.fromEntries(zip(queries, await search(queries)))
-
-  const rawResponses = await searchAll(uniq(seedQueries))
+  const rawResponses = await searchAll(search, uniq(seedQueries))
   const fallbackQueries = uniq(
     seedQueries
-      .filter((query) => rawResponses[query].nbHits === 0)
+      .filter((query) => rawResponses.get(query)?.nbHits === 0)
       .flatMap(buildPackSearchFallbacks)
-  ).filter((query) => !(query in rawResponses))
-  const fallbackResponses = await searchAll(fallbackQueries)
+  ).filter((query) => !rawResponses.has(query))
+  const fallbackResponses = await searchAll(search, fallbackQueries)
 
   return {
     _README: FIXTURE_README,
     _recordedFor: seedQueries,
-    responses: { ...rawResponses, ...fallbackResponses }
+    responses: Object.fromEntries([...rawResponses, ...fallbackResponses])
   }
 }
 
