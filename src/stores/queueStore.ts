@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
-import { computed, ref, shallowRef, toRaw, toValue } from 'vue'
+import { computed, onScopeDispose, ref, shallowRef, toRaw, toValue } from 'vue'
 
+import { onAccountIdentityChange } from '@/platform/auth/accountStateReset'
 import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type {
   APITaskType,
@@ -439,6 +440,7 @@ export const useQueueStore = defineStore('queue', () => {
     historyTasks.value = []
     hasFetchedHistorySnapshot.value = false
   }
+  onScopeDispose(onAccountIdentityChange('queue', reset))
 
   return {
     runningTasks,

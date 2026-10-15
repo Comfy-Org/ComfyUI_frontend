@@ -4,6 +4,7 @@ import { defineStore } from 'pinia'
 import {
   computed,
   effectScope,
+  onScopeDispose,
   reactive,
   ref,
   shallowReactive,
@@ -28,6 +29,7 @@ import {
   invalidateAll
 } from '@/platform/assets/composables/useAssetsQuery'
 import { assetService } from '@/platform/assets/services/assetService'
+import { onAccountIdentityChange } from '@/platform/auth/accountStateReset'
 import type { AssetPaginationOptions } from '@/platform/assets/services/assetService'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { api } from '@/scripts/api'
@@ -989,6 +991,7 @@ export const useAssetsStore = defineStore('assets', () => {
     invalidateAllCategories()
     assetService.invalidateModelBuckets()
   }
+  onScopeDispose(onAccountIdentityChange('assets', reset))
 
   // Watch for completed downloads and refresh model caches
   whenever(

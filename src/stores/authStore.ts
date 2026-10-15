@@ -4,7 +4,7 @@ import { AuthErrorCodes, getAdditionalUserInfo } from 'firebase/auth'
 import type { User, UserCredential } from 'firebase/auth'
 
 import type { PopupSignInOptions } from '@comfyorg/account-core/firebase'
-import { defineStore, getActivePinia } from 'pinia'
+import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
 import { fetchWithCustomerRecovery as fetchHealingMissingCustomer } from '@comfyorg/account-core/customerRecovery'
@@ -50,8 +50,7 @@ import { useDialogService } from '@/services/dialogService'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import { useAssetsStore } from '@/stores/assetsStore'
-import { useQueueStore } from '@/stores/queueStore'
+import { resetAccountScopedState } from '@/platform/auth/accountStateReset'
 import { provideAuthStore } from '@/platform/auth/authStoreAccess'
 import type { AuthHeader } from '@/types/authTypes'
 import type { operations } from '@/types/comfyRegistryTypes'
@@ -231,9 +230,6 @@ export const useAuthStore = defineStore('auth', () => {
     return shareId ? { share_id: shareId } : {}
   }
 
-  const isStoreCreated = (id: string) =>
-    getActivePinia()?.state.value[id] !== undefined
-
   /**
    * Drops the previous account's state when the signed-in identity changes
    * or signs out, whichever source (Firebase or the Desktop host) changed it.
@@ -255,9 +251,7 @@ export const useAuthStore = defineStore('auth', () => {
       useTeamWorkspaceStore().resetForIdentityChange()
       // The previous account's jobs and outputs are still rendered until they
       // are dropped; nothing else refetches on an identity change.
-      if (isStoreCreated(useQueueStore.$id)) useQueueStore().reset()
-      if (isStoreCreated(useAssetsStore.$id))
-        useAssetsStore().reset({ signedIn: nextUserId !== null })
+      resetAccountScopedState({ signedIn: nextUserId !== null })
       invalidateRemoteConfig()
     }
 
