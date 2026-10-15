@@ -537,7 +537,7 @@ function stubHistoryWithWorkflowListing({
   listing: number | Promise<number>
   lookup: number | Promise<number>
 }): void {
-  respondToFetch({ method: 'GET', url: /\/agent\/threads/ }, () =>
+  respondToFetch({ method: 'GET', url: /\/agent\/threads(\?|$)/ }, () =>
     json(
       200,
       agentThreadList([
@@ -563,7 +563,7 @@ function stubHistoryWithWorkflowListing({
       }
     ] satisfies AgentMessages)
   )
-  respondToFetch({ method: 'GET', url: /\/workflows/ }, async () =>
+  respondToFetch({ method: 'GET', url: /\/workflows(\?|$)/ }, async () =>
     json(await listing, {
       data: [],
       pagination: { offset: 0, limit: 100, total: 0, has_more: false }
@@ -7947,7 +7947,7 @@ describe('AgentPanelRoot workflow binding', () => {
         }
       ] satisfies AgentMessages)
     )
-    respondToFetch({ method: 'GET', url: /\/workflows/ }, () =>
+    respondToFetch({ method: 'GET', url: /\/workflows(\?|$)/ }, () =>
       json(200, {
         data: [
           cloudWorkflow({ id: 'wf-unresolved', name: 'missing-saved-file' }),
@@ -9150,7 +9150,7 @@ describe('AgentPanelRoot workflow binding', () => {
       }
     ]
     const bodies: unknown[] = []
-    respondToFetch({ method: 'GET', url: /\/agent\/threads/ }, () =>
+    respondToFetch({ method: 'GET', url: /\/agent\/threads(\?|$)/ }, () =>
       json(200, agentThreadList())
     )
     respondToFetch({ method: 'GET', url: /\/messages/ }, () =>
@@ -9160,7 +9160,7 @@ describe('AgentPanelRoot workflow binding', () => {
       bodies.push(JSON.parse(String(init?.body)))
       return json(202, ack(staleWorkflowId))
     })
-    respondToFetch({ method: 'GET', url: /\/workflows/ }, () =>
+    respondToFetch({ method: 'GET', url: /\/workflows(\?|$)/ }, () =>
       json(200, {
         data: fresh.isTemporary
           ? []
