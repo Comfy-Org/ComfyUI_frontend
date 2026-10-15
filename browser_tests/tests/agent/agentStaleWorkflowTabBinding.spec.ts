@@ -142,10 +142,8 @@ test.describe(
       )
 
       await bootAgentApp(page, agentFlagEnabled, {
-        settings: {
-          'Comfy.VueNodes.Enabled': true,
-          'Comfy.Graph.CanvasInfo': false
-        },
+        settings: { 'Comfy.Graph.CanvasInfo': false },
+        vueNodes: true,
         objectInfo: 'server'
       })
 
@@ -227,18 +225,8 @@ test.describe(
       ).toBeHidden()
       if (!socket) throw new Error('the app never opened /ws')
 
-      const workflowPicker = panel.getByRole('button', {
-        name: enMessages.agent.switchWorkflow
-      })
-      await workflowPicker.click()
-      await page
-        .getByRole('menuitemradio', { name: DEFAULT_TAB_NAME, exact: true })
-        .click()
-      await expect(workflowPicker).toHaveText(DEFAULT_TAB_NAME)
-      await panel.getByRole('textbox').fill('continue here')
-      await panel
-        .getByRole('button', { name: enMessages.agent.send, exact: true })
-        .click()
+      await agentPanel.selectWorkflow(DEFAULT_TAB_NAME)
+      await agentPanel.sendMessage('continue here')
       await expect.poll(() => posted.length).toBe(1)
       expect(posted[0]).toMatchObject({
         workflow_id: 'a81718a4-02ae-41e6-ae85-000000000001'
