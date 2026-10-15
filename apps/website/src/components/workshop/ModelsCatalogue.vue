@@ -10,19 +10,21 @@ import type {
 } from '@/config/models-catalogue'
 import type { Locale, TranslationKey } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
-import WorkshopModelsGrid from './WorkshopModelsGrid.vue'
+import ModelsHalf from './ModelsHalf.vue'
 import CatalogueTabs from './CatalogueTabs.vue'
 import type { CatalogueTab } from './CatalogueTabs.vue'
 import type { WorkshopPageType } from '@/scripts/workshop-analytics'
 import {
   captureWorkshopEvent,
   useWorkshopAppsEnabled,
-  useWorkshopEnabled
+  useWorkshopEnabled,
+  useWorkshopFlag
 } from '@/scripts/posthog'
 import type { CatalogueApp } from '@/lib/workshop/catalogue-apps'
 import { ac } from '@/lib/workshop/catalogue-apps'
 import { loadAppsHalf } from '@/lib/workshop/apps-half'
 import { loadWorkflowCatalogue } from '@/lib/workshop/catalogue-components'
+import { HUB_HOME_FLAG } from '@/lib/workshop/hub-section'
 import { isWorkshopModelShown } from '@/scripts/workshop-model-flags'
 
 const WorkflowCatalogue = defineAsyncComponent(loadWorkflowCatalogue)
@@ -44,10 +46,16 @@ const { t } = translationsFor(locale)
 const inSection = ref(false)
 // A category replaces the page's own heading and the switch between
 // catalogues, so the state has to reach the page that renders them.
-const emit = defineEmits<{ section: [boolean] }>()
+const emit = defineEmits<{ section: [boolean]; hero: [boolean] }>()
 watch(inSection, (value) => emit('section', value), { immediate: true })
 const browseAll = ref(false)
 const mounted = useMounted()
+const hubOpen = useWorkshopFlag(HUB_HOME_FLAG)
+const hubModels = computed(
+  () => section === 'models' && mounted.value && hubOpen.value
+)
+watch(hubModels, (value) => emit('hero', value), { immediate: true })
+const subtitleShown = computed(() => !inSection.value && !hubModels.value)
 const enabled = useWorkshopEnabled()
 const appsEnabled = useWorkshopAppsEnabled()
 const shownModels = computed(() =>
@@ -115,7 +123,7 @@ whenever(
 
 <template>
   <div
-    v-if="!inSection"
+    v-if="subtitleShown"
     class="relative isolate -mx-6 mb-6 flex flex-wrap items-center justify-between gap-x-6 gap-y-4 overflow-hidden px-6 pb-2 max-sm:mb-4 max-sm:pb-0 lg:-mx-8 lg:px-8 sm:short:pb-0"
     data-testid="workshop-hero"
   >
@@ -135,9 +143,10 @@ whenever(
       </p>
     </div>
   </div>
-  <WorkshopModelsGrid
+  <ModelsHalf
     v-if="section === 'models'"
     v-model:browse-all="browseAll"
+    :hub="hubModels"
     :models="routerModels"
     :initial-search
     :locale
@@ -152,7 +161,7 @@ whenever(
         links
       />
     </template>
-  </WorkshopModelsGrid>
+  </ModelsHalf>
   <WorkflowCatalogue
     v-else-if="section === 'workflows'"
     v-model:browse-all="browseAll"
