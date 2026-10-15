@@ -345,14 +345,17 @@ export const workspaceApi = {
    */
   async clearDeployment(
     workspaceId: WorkspaceId,
-    options: { follow?: 'workspace' } = {}
+    options: { follow?: 'workspace' } = {},
+    signal?: AbortSignal
   ): Promise<void> {
     const auth = await requestAuth()
+    signal?.throwIfAborted()
     try {
       await workspaceApiClient.delete(
         workspaceApiUrl(`/workspaces/${workspaceId}/deployment`),
         {
           ...auth,
+          ...(signal ? { signal } : {}),
           params: options.follow ? { follow: options.follow } : undefined
         }
       )
@@ -368,14 +371,16 @@ export const workspaceApi = {
    */
   async setDefaultDeployment(
     workspaceId: WorkspaceId,
-    payload: PickWorkspaceDeploymentRequest
+    payload: PickWorkspaceDeploymentRequest,
+    signal?: AbortSignal
   ): Promise<void> {
     const auth = await requestAuth()
+    signal?.throwIfAborted()
     try {
       await workspaceApiClient.put(
         workspaceApiUrl(`/workspaces/${workspaceId}/default-deployment`),
         payload,
-        auth
+        { ...auth, ...(signal ? { signal } : {}) }
       )
     } catch (err) {
       handleAxiosError(err, 'setDefaultDeployment')
@@ -387,12 +392,16 @@ export const workspaceApi = {
    * Comfy Cloud. Owner only.
    * DELETE /api/workspaces/:id/default-deployment
    */
-  async clearDefaultDeployment(workspaceId: WorkspaceId): Promise<void> {
+  async clearDefaultDeployment(
+    workspaceId: WorkspaceId,
+    signal?: AbortSignal
+  ): Promise<void> {
     const auth = await requestAuth()
+    signal?.throwIfAborted()
     try {
       await workspaceApiClient.delete(
         workspaceApiUrl(`/workspaces/${workspaceId}/default-deployment`),
-        auth
+        { ...auth, ...(signal ? { signal } : {}) }
       )
     } catch (err) {
       handleAxiosError(err, 'clearDefaultDeployment')

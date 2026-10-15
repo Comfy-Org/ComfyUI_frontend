@@ -251,7 +251,11 @@ describe('useDeploymentPickStore', () => {
     // through the clear route and reloads.
     mockWorkspaceApi.clearDeployment.mockResolvedValue(undefined)
     await expect(store.pick(null)).resolves.toBeNull()
-    expect(mockWorkspaceApi.clearDeployment).toHaveBeenCalledWith('ws-1')
+    expect(mockWorkspaceApi.clearDeployment).toHaveBeenCalledWith(
+      'ws-1',
+      {},
+      expect.any(AbortSignal)
+    )
     expect(reload).toHaveBeenCalledOnce()
   })
 
@@ -267,9 +271,13 @@ describe('useDeploymentPickStore', () => {
 
     await expect(store.followWorkspace()).resolves.toBeNull()
 
-    expect(mockWorkspaceApi.clearDeployment).toHaveBeenCalledWith('ws-1', {
-      follow: 'workspace'
-    })
+    expect(mockWorkspaceApi.clearDeployment).toHaveBeenCalledWith(
+      'ws-1',
+      {
+        follow: 'workspace'
+      },
+      expect.any(AbortSignal)
+    )
     expect(reload).toHaveBeenCalledOnce()
   })
 
@@ -288,9 +296,13 @@ describe('useDeploymentPickStore', () => {
 
     await expect(store.setDefault('dep-2')).resolves.toBeNull()
 
-    expect(mockWorkspaceApi.setDefaultDeployment).toHaveBeenCalledWith('ws-1', {
-      deployment_id: 'dep-2'
-    })
+    expect(mockWorkspaceApi.setDefaultDeployment).toHaveBeenCalledWith(
+      'ws-1',
+      {
+        deployment_id: 'dep-2'
+      },
+      expect.any(AbortSignal)
+    )
     expect(reload).not.toHaveBeenCalled()
     expect(store.state.phase).toBe('ready')
     expect(store.defaultDeploymentId).toBe('dep-2')
@@ -301,7 +313,10 @@ describe('useDeploymentPickStore', () => {
     mockWorkspaceApi.listDeployments.mockResolvedValueOnce(listing)
     mockWorkspaceApi.clearDefaultDeployment.mockResolvedValue(undefined)
     await expect(store.setDefault(null)).resolves.toBeNull()
-    expect(mockWorkspaceApi.clearDefaultDeployment).toHaveBeenCalledWith('ws-1')
+    expect(mockWorkspaceApi.clearDefaultDeployment).toHaveBeenCalledWith(
+      'ws-1',
+      expect.any(AbortSignal)
+    )
     expect(store.defaultDeploymentId).toBeNull()
   })
 
@@ -339,7 +354,10 @@ describe('useDeploymentPickStore', () => {
 
     await expect(store.setDefault(null)).resolves.toBeNull()
 
-    expect(mockWorkspaceApi.clearDefaultDeployment).toHaveBeenCalledWith('ws-1')
+    expect(mockWorkspaceApi.clearDefaultDeployment).toHaveBeenCalledWith(
+      'ws-1',
+      expect.any(AbortSignal)
+    )
     expect(reload).toHaveBeenCalledOnce()
   })
 
@@ -384,9 +402,13 @@ describe('useDeploymentPickStore', () => {
 
     await expect(store.pick('dep-1')).resolves.toBeNull()
 
-    expect(mockWorkspaceApi.pickDeployment).toHaveBeenCalledWith('ws-1', {
-      deployment_id: 'dep-1'
-    })
+    expect(mockWorkspaceApi.pickDeployment).toHaveBeenCalledWith(
+      'ws-1',
+      {
+        deployment_id: 'dep-1'
+      },
+      expect.any(AbortSignal)
+    )
     expect(reload).toHaveBeenCalledOnce()
   })
 
@@ -398,7 +420,11 @@ describe('useDeploymentPickStore', () => {
 
     await expect(store.pick(null)).resolves.toBeNull()
 
-    expect(mockWorkspaceApi.clearDeployment).toHaveBeenCalledWith('ws-1')
+    expect(mockWorkspaceApi.clearDeployment).toHaveBeenCalledWith(
+      'ws-1',
+      {},
+      expect.any(AbortSignal)
+    )
     expect(mockWorkspaceApi.pickDeployment).not.toHaveBeenCalled()
     expect(reload).toHaveBeenCalledOnce()
   })
@@ -476,6 +502,161 @@ describe('useDeploymentPickStore', () => {
 
     expect(mockWorkspaceApi.listDeployments).toHaveBeenLastCalledWith('ws-2')
     expect(store.pickedDeploymentId).toBe('dep-2')
+  })
+
+  describe('menu mutation lifetime', () => {
+    const operations = [
+      {
+        name: 'pick',
+        method: 'pickDeployment',
+        run: (store: ReturnType<typeof useDeploymentPickStore>) =>
+          store.pick('dep-1')
+      },
+      {
+        name: 'clear',
+        method: 'clearDeployment',
+        run: (store: ReturnType<typeof useDeploymentPickStore>) =>
+          store.pick(null)
+      },
+      {
+        name: 'follow',
+        method: 'clearDeployment',
+        run: (store: ReturnType<typeof useDeploymentPickStore>) =>
+          store.followWorkspace()
+      },
+      {
+        name: 'set default',
+        method: 'setDefaultDeployment',
+        run: (store: ReturnType<typeof useDeploymentPickStore>) =>
+          store.setDefault('dep-2')
+      },
+      {
+        name: 'clear default',
+        method: 'clearDefaultDeployment',
+        run: (store: ReturnType<typeof useDeploymentPickStore>) =>
+          store.setDefault(null)
+      }
+    ] as const
+
+    it.for(operations)(
+      'ignores an old $name failure while the new workspace is switching',
+      async ({ method, run }) => {
+        const old = deferred<void>()
+        const current = deferred<void>()
+        mockWorkspaceApi.listDeployments.mockResolvedValue({
+          ...listing,
+          default_deployment_id: 'dep-1'
+        })
+        mockWorkspaceApi[method].mockReturnValueOnce(old.promise)
+        const store = useDeploymentPickStore()
+        await store.load()
+        const previous = run(store)
+        Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-2' })
+        await store.load()
+        mockWorkspaceApi.pickDeployment.mockReturnValueOnce(current.promise)
+        const selecting = store.pick('dep-1')
+
+        old.reject(new Error('old account failed'))
+        await previous
+        expect(store.isSwitching).toBe(true)
+        await store.pick(null)
+        expect(mockWorkspaceApi.clearDeployment).toHaveBeenCalledTimes(
+          method === 'clearDeployment' ? 1 : 0
+        )
+        expect(reload).not.toHaveBeenCalled()
+        current.reject(new Error('new account refused'))
+        await selecting
+      }
+    )
+
+    it.for(operations)(
+      'cancels an old $name without applying its late success',
+      async ({ method, run }) => {
+        const old = deferred<void>()
+        let signal: AbortSignal | undefined
+        mockWorkspaceApi.listDeployments.mockResolvedValue({
+          ...listing,
+          default_deployment_id: 'dep-1'
+        })
+        mockWorkspaceApi[method].mockImplementation((...args: unknown[]) => {
+          signal = args.find(
+            (arg): arg is AbortSignal => arg instanceof AbortSignal
+          )
+          return old.promise
+        })
+        const store = useDeploymentPickStore()
+        await store.load()
+        const previous = run(store)
+        Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-2' })
+        await store.load()
+        expect(signal?.aborted).toBe(true)
+        old.resolve()
+        await previous
+        expect(reload).not.toHaveBeenCalled()
+        expect(store.defaultDeploymentId).toBe('dep-1')
+        expect(store.state.phase).toBe('ready')
+      }
+    )
+
+    it.for(operations)(
+      'bounds a stalled $name, cancels it and ignores late success',
+      async ({ method, run }) => {
+        vi.useFakeTimers()
+        const pending = deferred<void>()
+        let signal: AbortSignal | undefined
+        mockWorkspaceApi.listDeployments.mockResolvedValue({
+          ...listing,
+          default_deployment_id: 'dep-1'
+        })
+        mockWorkspaceApi[method].mockImplementation((...args: unknown[]) => {
+          signal = args.find(
+            (arg): arg is AbortSignal => arg instanceof AbortSignal
+          )
+          return pending.promise
+        })
+        const store = useDeploymentPickStore()
+        await store.load()
+        const settled = vi.fn()
+        const changing = run(store).then(settled)
+        await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_BACKSTOP_MS - 1)
+        expect(store.isSwitching).toBe(true)
+        expect(settled).not.toHaveBeenCalled()
+        await vi.advanceTimersByTimeAsync(1)
+        expect(signal?.aborted).toBe(true)
+        expect(settled).toHaveBeenCalledWith(
+          'This change took too long. Reload the page before trying again.'
+        )
+        expect(store.isSwitching).toBe(false)
+        pending.resolve()
+        await changing
+        await vi.advanceTimersByTimeAsync(0)
+        expect(reload).not.toHaveBeenCalled()
+        expect(store.defaultDeploymentId).toBe('dep-1')
+        mockWorkspaceApi.pickDeployment.mockRejectedValueOnce(
+          new Error('retry refused')
+        )
+        await expect(store.pick('dep-1')).resolves.toBe('retry refused')
+      }
+    )
+  })
+
+  it('ignores a deleted-pick report from the previous workspace', async () => {
+    const old = deferred<WorkspaceDeploymentList>()
+    mockWorkspaceApi.listDeployments
+      .mockReturnValueOnce(old.promise)
+      .mockResolvedValueOnce({ ...listing, picked_deployment_id: undefined })
+    const store = useDeploymentPickStore()
+    const previous = store.load()
+    Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-2' })
+    await store.load()
+    old.resolve({
+      ...listing,
+      picked_deployment_id: undefined,
+      gone_picked_deployment_id: 'dep-gone'
+    })
+    await previous
+    expect(store.goneDeployment).toBeNull()
+    expect(store.pickedDeploymentId).toBeNull()
   })
 
   describe('a pick from a link', () => {

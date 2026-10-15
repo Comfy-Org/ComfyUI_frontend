@@ -3825,6 +3825,7 @@
     "deploymentChanged": "This browser now runs on {deployment}. Reload to get its nodes.",
     "reload": "Reload",
     "failedToSwitch": "Could not switch",
+    "switchTimedOut": "This change took too long. Reload the page before trying again.",
     "workspaceDefault": "Workspace default",
     "workspaceDefaultIs": "Workspace default: {deployment}",
     "noWorkspaceDefault": "No workspace default: members start on Comfy Cloud.",

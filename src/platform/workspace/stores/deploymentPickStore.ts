@@ -1,7 +1,8 @@
 import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
 import { defineStore } from 'pinia'
-import { computed, shallowRef, watch } from 'vue'
+import { computed, onScopeDispose, shallowRef, watch } from 'vue'
 
+import { t } from '@/i18n'
 import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import { DEPLOYMENT_LISTING_BACKSTOP_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
 import {
@@ -19,6 +20,12 @@ import {
   reduceDeploymentPick
 } from '@/platform/workspace/deploymentPickState'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+
+type MutationOutcome =
+  | { kind: 'completed' }
+  | { kind: 'unchanged' }
+  | { kind: 'timedOut' }
+  | { kind: 'refused'; message: string }
 
 /**
  * What picking a linked deployment did: `picked` (the page is reloading onto
@@ -200,6 +207,8 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
   }
 
   let firstLoad: Promise<void> | null = null
+  let activeMutation: AbortController | null = null
+  onScopeDispose(() => activeMutation?.abort())
 
   /**
    * Another workspace, or another account (signed in without a reload), has
@@ -211,6 +220,8 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
   watch(
     () => workspaceStore.workspaceId,
     () => {
+      activeMutation?.abort()
+      activeMutation = null
       dispatch({ type: 'workspaceChanged' })
       sawPickGone.value = false
       lastApplied = latestRequest
@@ -276,53 +287,90 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     workspaceId: string,
     deploymentId: string
   ): Promise<LinkPickOutcome> {
-    dispatch({ type: 'switchStarted', target: deploymentId })
+    const outcome = await mutate(
+      workspaceId,
+      deploymentId,
+      (signal) =>
+        workspaceApi.pickDeployment(
+          workspaceId,
+          { deployment_id: deploymentId },
+          signal
+        ),
+      () => window.location.reload()
+    )
+    return outcome.kind === 'completed' ? { kind: 'picked' } : outcome
+  }
+
+  async function mutate(
+    workspaceId: string,
+    target: string | null,
+    send: (signal: AbortSignal) => Promise<void>,
+    onSuccess: () => void | Promise<void>
+  ): Promise<MutationOutcome> {
     const controller = new AbortController()
-    let timeout: ReturnType<typeof setTimeout> | undefined
-    const selection = workspaceApi
-      .pickDeployment(
-        workspaceId,
-        { deployment_id: deploymentId },
-        controller.signal
-      )
-      .then<LinkPickOutcome, LinkPickOutcome>(
-        () => ({ kind: 'picked' }),
-        (error: unknown) => ({ kind: 'refused', message: errorMessage(error) })
-      )
-    const outcome = await Promise.race([
-      selection,
-      new Promise<LinkPickOutcome>((resolve) => {
-        timeout = setTimeout(() => {
-          resolve({ kind: 'timedOut' })
-          controller.abort()
-        }, DEPLOYMENT_LISTING_BACKSTOP_MS)
-      })
-    ]).finally(() => clearTimeout(timeout))
-    if (workspaceStore.workspaceId !== workspaceId) return { kind: 'unchanged' }
-    if (outcome.kind === 'picked') window.location.reload()
+    activeMutation = controller
+    dispatch({ type: 'switchStarted', target })
+    let timedOut = false
+    let cancel: () => void = () => {}
+    const canceled = new Promise<MutationOutcome>((resolve) => {
+      cancel = () => resolve({ kind: timedOut ? 'timedOut' : 'unchanged' })
+      controller.signal.addEventListener('abort', cancel, { once: true })
+    })
+    const timeout = setTimeout(() => {
+      timedOut = true
+      controller.abort()
+    }, DEPLOYMENT_LISTING_BACKSTOP_MS)
+    const request = (async (): Promise<MutationOutcome> => {
+      try {
+        await send(controller.signal)
+        return { kind: 'completed' }
+      } catch (error) {
+        return { kind: 'refused', message: errorMessage(error) }
+      }
+    })()
+    const outcome = await Promise.race([request, canceled]).finally(() => {
+      clearTimeout(timeout)
+      controller.signal.removeEventListener('abort', cancel)
+    })
+    if (
+      activeMutation !== controller ||
+      workspaceStore.workspaceId !== workspaceId
+    ) {
+      return { kind: 'unchanged' }
+    }
+    activeMutation = null
+    if (outcome.kind === 'completed' && !controller.signal.aborted)
+      await onSuccess()
     else dispatch({ type: 'switchFailed' })
     return outcome
+  }
+
+  function menuError(outcome: MutationOutcome): string | null {
+    if (outcome.kind === 'refused') return outcome.message
+    if (outcome.kind === 'timedOut')
+      return t('deploymentSwitcher.switchTimedOut')
+    return null
   }
 
   async function pickAndReload(
     workspaceId: string,
     deploymentId: string | null
   ): Promise<string | null> {
-    dispatch({ type: 'switchStarted', target: deploymentId })
-    try {
-      if (deploymentId === null) {
-        await workspaceApi.clearDeployment(workspaceId)
-      } else {
-        await workspaceApi.pickDeployment(workspaceId, {
-          deployment_id: deploymentId
-        })
-      }
-    } catch (err) {
-      dispatch({ type: 'switchFailed' })
-      return errorMessage(err)
-    }
-    window.location.reload()
-    return null
+    return menuError(
+      await mutate(
+        workspaceId,
+        deploymentId,
+        (signal) =>
+          deploymentId === null
+            ? workspaceApi.clearDeployment(workspaceId, {}, signal)
+            : workspaceApi.pickDeployment(
+                workspaceId,
+                { deployment_id: deploymentId },
+                signal
+              ),
+        () => window.location.reload()
+      )
+    )
   }
 
   /**
@@ -333,15 +381,15 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     const id = workspaceStore.workspaceId
     if (!id || state.value.phase !== 'ready') return null
     if (followsWorkspace.value) return null
-    dispatch({ type: 'switchStarted', target: defaultDeploymentId.value })
-    try {
-      await workspaceApi.clearDeployment(id, { follow: 'workspace' })
-    } catch (err) {
-      dispatch({ type: 'switchFailed' })
-      return errorMessage(err)
-    }
-    window.location.reload()
-    return null
+    return menuError(
+      await mutate(
+        id,
+        defaultDeploymentId.value,
+        (signal) =>
+          workspaceApi.clearDeployment(id, { follow: 'workspace' }, signal),
+        () => window.location.reload()
+      )
+    )
   }
 
   /**
@@ -362,27 +410,32 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     const recordedDefault =
       defaultDeploymentId.value ?? goneDefaultDeploymentId.value
     if (deploymentId === recordedDefault) return null
-    dispatch({ type: 'switchStarted', target: pickedDeploymentId.value })
-    try {
-      if (deploymentId === null) {
-        await workspaceApi.clearDefaultDeployment(id)
-      } else {
-        await workspaceApi.setDefaultDeployment(id, {
-          deployment_id: deploymentId
-        })
-      }
-    } catch (err) {
-      dispatch({ type: 'switchFailed' })
-      return errorMessage(err)
-    }
-    if (followsWorkspace.value) {
-      window.location.reload()
-      return null
-    }
-    lastApplied = latestRequest
-    dispatch({ type: 'defaultChanged', defaultDeploymentId: deploymentId })
-    await load()
-    return null
+    return menuError(
+      await mutate(
+        id,
+        pickedDeploymentId.value,
+        (signal) =>
+          deploymentId === null
+            ? workspaceApi.clearDefaultDeployment(id, signal)
+            : workspaceApi.setDefaultDeployment(
+                id,
+                { deployment_id: deploymentId },
+                signal
+              ),
+        async () => {
+          if (followsWorkspace.value) {
+            window.location.reload()
+            return
+          }
+          lastApplied = latestRequest
+          dispatch({
+            type: 'defaultChanged',
+            defaultDeploymentId: deploymentId
+          })
+          await load()
+        }
+      )
+    )
   }
 
   return {

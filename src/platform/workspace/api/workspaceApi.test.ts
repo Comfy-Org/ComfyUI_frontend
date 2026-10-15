@@ -375,40 +375,90 @@ describe('workspaceApi', () => {
       )
     })
 
-    it('does not dispatch a canceled deployment selection when authorization finishes late', async () => {
-      let finishAuth!: (headers: typeof AUTH_HEADER) => void
-      const auth = new Promise<typeof AUTH_HEADER>((resolve) => {
-        finishAuth = resolve
-      })
-      vi.mocked(useAuthStore().getWorkspaceAuthHeaderOrThrow).mockReturnValue(
-        auth
-      )
-      const controller = new AbortController()
-      const selected = workspaceApi.pickDeployment(
-        'ws-1',
-        { deployment_id: 'dep-1' },
-        controller.signal
-      )
-      controller.abort()
-      finishAuth(AUTH_HEADER)
-      await expect(selected).rejects.toMatchObject({ name: 'AbortError' })
-      expect(mockAxiosInstance.put).not.toHaveBeenCalled()
-    })
+    const cancellableMutations = [
+      {
+        name: 'pick',
+        run: (signal: AbortSignal) =>
+          workspaceApi.pickDeployment(
+            'ws-1',
+            { deployment_id: 'dep-1' },
+            signal
+          )
+      },
+      {
+        name: 'clear',
+        run: (signal: AbortSignal) =>
+          workspaceApi.clearDeployment('ws-1', {}, signal)
+      },
+      {
+        name: 'follow',
+        run: (signal: AbortSignal) =>
+          workspaceApi.clearDeployment('ws-1', { follow: 'workspace' }, signal)
+      },
+      {
+        name: 'set default',
+        run: (signal: AbortSignal) =>
+          workspaceApi.setDefaultDeployment(
+            'ws-1',
+            { deployment_id: 'dep-1' },
+            signal
+          )
+      },
+      {
+        name: 'clear default',
+        run: (signal: AbortSignal) =>
+          workspaceApi.clearDefaultDeployment('ws-1', signal)
+      }
+    ]
 
-    it('forwards deployment selection cancellation to the transport', async () => {
-      mockAxiosInstance.put.mockResolvedValue({})
-      const controller = new AbortController()
-      await workspaceApi.pickDeployment(
-        'ws-1',
-        { deployment_id: 'dep-1' },
-        controller.signal
-      )
-      expect(mockAxiosInstance.put).toHaveBeenCalledWith(
-        '/api/workspaces/ws-1/deployment',
-        { deployment_id: 'dep-1' },
-        { headers: AUTH_HEADER, signal: controller.signal }
-      )
-    })
+    it.for(cancellableMutations)(
+      'does not send $name after canceled authentication finishes late',
+      async ({ run }) => {
+        let finishAuth!: (headers: typeof AUTH_HEADER) => void
+        vi.mocked(useAuthStore().getWorkspaceAuthHeaderOrThrow).mockReturnValue(
+          new Promise((resolve) => {
+            finishAuth = resolve
+          })
+        )
+        const controller = new AbortController()
+        const changing = run(controller.signal)
+        controller.abort()
+        finishAuth(AUTH_HEADER)
+        await expect(changing).rejects.toMatchObject({ name: 'AbortError' })
+        expect(mockAxiosInstance.put).not.toHaveBeenCalled()
+        expect(mockAxiosInstance.delete).not.toHaveBeenCalled()
+      }
+    )
+
+    it.for(cancellableMutations)(
+      'cancels $name at the transport boundary',
+      async ({ run }) => {
+        let canceled = false
+        let markStarted!: () => void
+        const started = new Promise<void>((resolve) => {
+          markStarted = resolve
+        })
+        const send = (_url: string, config: { signal?: AbortSignal }) =>
+          new Promise((_, reject) => {
+            markStarted()
+            config.signal?.addEventListener('abort', () => {
+              canceled = true
+              reject(new DOMException('Aborted', 'AbortError'))
+            })
+          })
+        mockAxiosInstance.put.mockImplementation(
+          (url: string, _body: unknown, config: { signal?: AbortSignal }) =>
+            send(url, config)
+        )
+        mockAxiosInstance.delete.mockImplementation(send)
+        const controller = new AbortController()
+        const changing = run(controller.signal)
+        await started
+        controller.abort()
+        expect(canceled).toBe(true)
+        await expect(changing).rejects.toMatchObject({ name: 'AbortError' })
+      }
+    )
 
     it('clearDeployment() sends DELETE /workspaces/:id/deployment, with follow=workspace only when asked', async () => {
       mockAxiosInstance.delete.mockResolvedValue({})

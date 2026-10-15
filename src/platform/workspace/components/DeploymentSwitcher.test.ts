@@ -321,9 +321,13 @@ describe('DeploymentSwitcher', () => {
 
     await userEvent.click(screen.getByTestId(`deployment-row-${D2}`))
 
-    expect(mockWorkspaceApi.pickDeployment).toHaveBeenCalledWith('ws-1', {
-      deployment_id: D2
-    })
+    expect(mockWorkspaceApi.pickDeployment).toHaveBeenCalledWith(
+      'ws-1',
+      {
+        deployment_id: D2
+      },
+      expect.any(AbortSignal)
+    )
     await waitFor(() => expect(reload).toHaveBeenCalledOnce())
   })
 
@@ -340,7 +344,11 @@ describe('DeploymentSwitcher', () => {
 
     await userEvent.click(screen.getByTestId('deployment-row-cloud'))
 
-    expect(mockWorkspaceApi.clearDeployment).toHaveBeenCalledWith('ws-1')
+    expect(mockWorkspaceApi.clearDeployment).toHaveBeenCalledWith(
+      'ws-1',
+      {},
+      expect.any(AbortSignal)
+    )
     await waitFor(() => expect(reload).toHaveBeenCalledOnce())
   })
 
@@ -448,9 +456,13 @@ describe('DeploymentSwitcher', () => {
     expect(follow).toHaveTextContent('Studio Build v2')
     await userEvent.click(follow)
 
-    expect(mockWorkspaceApi.clearDeployment).toHaveBeenCalledWith('ws-1', {
-      follow: 'workspace'
-    })
+    expect(mockWorkspaceApi.clearDeployment).toHaveBeenCalledWith(
+      'ws-1',
+      {
+        follow: 'workspace'
+      },
+      expect.any(AbortSignal)
+    )
     await waitFor(() => expect(reload).toHaveBeenCalledOnce())
   })
 
@@ -483,9 +495,13 @@ describe('DeploymentSwitcher', () => {
     expect(screen.queryByTestId('deployment-switcher-clear-default')).toBeNull()
     await userEvent.click(screen.getByTestId('deployment-switcher-set-default'))
 
-    expect(mockWorkspaceApi.setDefaultDeployment).toHaveBeenCalledWith('ws-1', {
-      deployment_id: D2
-    })
+    expect(mockWorkspaceApi.setDefaultDeployment).toHaveBeenCalledWith(
+      'ws-1',
+      {
+        deployment_id: D2
+      },
+      expect.any(AbortSignal)
+    )
     await waitFor(() =>
       expect(owner).toHaveTextContent('Workspace default: Studio Build v2')
     )
@@ -495,7 +511,10 @@ describe('DeploymentSwitcher', () => {
     await userEvent.click(
       screen.getByTestId('deployment-switcher-clear-default')
     )
-    expect(mockWorkspaceApi.clearDefaultDeployment).toHaveBeenCalledWith('ws-1')
+    expect(mockWorkspaceApi.clearDefaultDeployment).toHaveBeenCalledWith(
+      'ws-1',
+      expect.any(AbortSignal)
+    )
   })
 
   it('lets an owner clear a workspace default that no longer exists', async () => {
@@ -525,7 +544,10 @@ describe('DeploymentSwitcher', () => {
       screen.getByTestId('deployment-switcher-clear-default')
     )
 
-    expect(mockWorkspaceApi.clearDefaultDeployment).toHaveBeenCalledWith('ws-1')
+    expect(mockWorkspaceApi.clearDefaultDeployment).toHaveBeenCalledWith(
+      'ws-1',
+      expect.any(AbortSignal)
+    )
     await waitFor(() => expect(owner).toHaveTextContent('No workspace default'))
     expect(screen.queryByTestId('deployment-switcher-clear-default')).toBeNull()
     expect(reload).not.toHaveBeenCalled()
