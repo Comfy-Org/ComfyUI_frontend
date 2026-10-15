@@ -43,11 +43,13 @@ export interface BackendHandle {
    */
   on(event: string, listener: (detail: unknown) => void): Unsubscribe
   /**
-   * Calls only an endpoint declared by this Secure Nodes pack, e.g. `presets`.
-   * Paths are relative: no leading slash, `..`, percent encoding, or schemes.
-   * The host assigns the base from pack identity and owns authentication;
-   * the pack never supplies or receives that base. Shared/core operations use
-   * named async `comfy.*` methods with host validation and capability checks.
+   * In a Secure Nodes worker, calls only this pack's declared endpoints.
+   * Use a relative path such as `presets`, with no leading slash, dot segments,
+   * percent-encoded path or scheme. The host re-encodes query values, assigns
+   * the namespace from trusted pack identity and owns authentication.
+   * Shared/core operations use named async `comfy.*` methods with validation
+   * and capability checks. The trusted in-process adapter retains API-root
+   * paths for host code; it does not provide sandbox authorization.
    */
   fetch(route: string, init?: RequestInit): Promise<Response>
 }
