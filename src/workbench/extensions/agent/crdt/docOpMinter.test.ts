@@ -1818,6 +1818,74 @@ describe('attachDocOpMinter', () => {
       ])
     })
 
+    function seedThreeRows() {
+      const seeded = seedGroup()
+      const { widget } = seeded
+      withGraphIntentSource('load', () => {
+        widget('loras').value = 3
+        widget('loras.0.seed').value = 10
+        widget('loras.1.seed').value = 11
+        widget('loras.1.seed.0').value = 'increment'
+        widget('loras.2.seed').value = 12
+        widget('loras.2.seed.0').value = 'decrement'
+      })
+      return seeded
+    }
+
+    it('mints the shifted field values after a middle row is removed', async () => {
+      const { node, widget } = seedThreeRows()
+
+      widget('loras.1').callback?.(undefined)
+      await afterFlush()
+
+      const setWidget = (name: string, value: unknown, old: unknown) => ({
+        op: 'set_widget',
+        node_id: node.id,
+        widget: name,
+        value,
+        old
+      })
+      expect(minted).toEqual([
+        setWidget('loras.1.lora_name', 'A', undefined),
+        setWidget('loras.1.seed', 12, undefined),
+        setWidget('loras.1.seed.0', 'decrement', undefined),
+        setWidget('loras', 2, 3)
+      ])
+    })
+
+    it('does not mint a shifted field whose rename was refused', async () => {
+      const { node, widget } = seedThreeRows()
+      vi.spyOn(useWidgetValueStore(), 'renameWidget').mockReturnValue(undefined)
+
+      widget('loras.1').callback?.(undefined)
+      await afterFlush()
+
+      expect(minted).toEqual([
+        {
+          op: 'set_widget',
+          node_id: node.id,
+          widget: 'loras',
+          value: 2,
+          old: 3
+        }
+      ])
+    })
+
+    it.for(['agent-remote', 'load'] as const)(
+      'mints nothing for a row removed by a %s write',
+      async (source) => {
+        const { widget } = seedThreeRows()
+
+        withGraphIntentSource(source, () => {
+          widget('loras.1').callback?.(undefined)
+        })
+        await afterFlush()
+
+        expect(widget('loras.1.seed').value).toBe(12)
+        expect(minted).toEqual([])
+      }
+    )
+
     it.for(['agent-remote', 'load'] as const)(
       'mints nothing for a row added by a %s write',
       async (source) => {
