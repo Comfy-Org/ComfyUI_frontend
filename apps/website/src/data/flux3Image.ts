@@ -23,6 +23,9 @@ export const flux3ImagePage: ModelLaunchPage = {
   breadcrumbUpdatedKey: 'flux3Image.breadcrumb.updated',
   hero: {
     layout: 'media-first',
+    videoSrc: `${mediaBase}/flux-hero-1280.mp4`,
+    posterSrc: `${mediaBase}/flux-hero-poster.jpg`,
+    mobileFallbackImageSrc: `${mediaBase}/flux-hero-poster.jpg`,
     titleKey: 'flux3Image.hero.title',
     descriptionKey: 'flux3Image.hero.description',
     badgeKeys: [

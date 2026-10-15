@@ -13,7 +13,11 @@ for (const prefix of ['', '/zh-CN']) {
       page.getByRole('heading', { name: 'FLUX 3 Image Klein', exact: true })
     ).toBeVisible()
     const hero = page.getByTestId('model-launch-hero-block')
-    await expect(hero).toHaveCount(1)
+    await expect(hero).toHaveCount(2)
+    await expect(hero.locator('video')).toHaveAttribute(
+      'src',
+      'https://media.comfy.org/website/flux-3-image/flux-hero-1280.mp4'
+    )
     await expect(
       page.getByRole('link', {
         name: prefix ? '运行 FLUX 3 IMAGE KLEIN' : 'RUN FLUX 3 IMAGE KLEIN',
