@@ -15,7 +15,6 @@ import { isAgentAttachable } from '../../utils/attachableFiles'
 
 export const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024
 
-/** The contract's `maxItems` on AgentPostMessageRequest.attachments. */
 export const MAX_TURN_ATTACHMENTS = 25
 const UPLOAD_HANDSHAKE_TIMEOUT_MS = 30 * 1000
 const UPLOAD_FLOOR_BYTES_PER_SECOND = 64 * 1024

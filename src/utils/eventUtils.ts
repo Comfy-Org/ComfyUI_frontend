@@ -61,7 +61,6 @@ function sourceFileName(
 
 interface FetchDroppedAssetOptions {
   signal?: AbortSignal
-  /** Name the File from the stored filename instead of the display label. */
   nameFromSource?: boolean
 }
 

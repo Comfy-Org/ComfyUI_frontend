@@ -8,7 +8,6 @@ import {
 
 import type { VideoExtension } from '@/utils/formatUtil'
 
-/** What the agent can do with an attachment, per the server's extension tiers. */
 export type AgentAttachCapability =
   | 'view'
   | 'probe'
@@ -34,7 +33,6 @@ const CAPABILITY_BY_EXTENSION = new Map<string, AgentAttachCapability>([
   )
 ])
 
-/** The file input's `accept` value: every accepted extension, no wildcards. */
 export const AGENT_ATTACH_ACCEPT = [...CAPABILITY_BY_EXTENSION.keys()].join(',')
 
 const EXTENSION_PATTERN = /\.[a-z0-9]{1,8}$/i
@@ -45,7 +43,6 @@ function extensionOf(filename: string): string {
   return match && /[a-z]/.test(match) ? match : ''
 }
 
-/** The tier for a file name, or undefined when the agent does not accept it. */
 export function agentAttachCapability(
   filename: string
 ): AgentAttachCapability | undefined {
@@ -56,16 +53,13 @@ export function isAgentAttachable(file: File): boolean {
   return agentAttachCapability(file.name) !== undefined
 }
 
-/** `unknown` means the name has no extension to judge. */
 export type AgentAttachVerdict = 'accepted' | 'rejected' | 'unknown'
 
-/** Judges a display label; digit-only suffixes such as `v1.2` are not extensions. */
 export function agentAttachVerdict(filename: string): AgentAttachVerdict {
   if (agentAttachCapability(filename)) return 'accepted'
   return extensionOf(filename) === '' ? 'unknown' : 'rejected'
 }
 
-/** Judges a stored filename or URL, where any final dotted token is an extension. */
 export function agentAttachRefVerdict(ref: string): AgentAttachVerdict {
   if (agentAttachCapability(ref)) return 'accepted'
   return AUTHORITATIVE_EXTENSION_PATTERN.test(ref) ? 'rejected' : 'unknown'

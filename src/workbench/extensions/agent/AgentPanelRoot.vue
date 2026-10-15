@@ -1724,8 +1724,6 @@ const attachment = useAttachment({
     api.getServerFeature<GetFeaturesResponse['max_upload_size']>(
       'max_upload_size'
     ) ?? MAX_ATTACHMENT_BYTES,
-  // A rejected file is the user's problem to fix, not an agent failure, so it
-  // must not raise the server-error overlay.
   onError: warnAttachment,
   onDuplicate: notifyDuplicateAttachments,
   staged: () => composerStore.attachments,
@@ -1908,8 +1906,6 @@ function onPanelDragOver(event: DragEvent): void {
 
 async function onPanelDrop(event: DragEvent): Promise<void> {
   clearAssetDrag()
-  // A dropped asset card carries a URI, not a File, so the claim must happen
-  // before the async fetch resolves it into one.
   if ((event.dataTransfer?.files.length ?? 0) === 0 && isAssetDrag(event)) {
     event.preventDefault()
     void attachDroppedAsset(event).then((attached) => {
