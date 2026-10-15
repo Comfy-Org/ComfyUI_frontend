@@ -148,10 +148,11 @@ describe('DynamicGroup row refusal reports', () => {
     ])
   })
 
+  const resizeRefusal = ['failure_resizing_dynamic_group_rows']
   it.for([
-    { isCloud: false, enableTelemetry: false, reported: false },
-    { isCloud: false, enableTelemetry: true, reported: true },
-    { isCloud: true, enableTelemetry: false, reported: true }
+    { isCloud: false, enableTelemetry: false, reported: [] },
+    { isCloud: false, enableTelemetry: true, reported: resizeRefusal },
+    { isCloud: true, enableTelemetry: false, reported: resizeRefusal }
   ])(
     'sends with cloud=$isCloud and host telemetry=$enableTelemetry: $reported',
     ({ isCloud, enableTelemetry, reported }) => {
@@ -162,7 +163,11 @@ describe('DynamicGroup row refusal reports', () => {
 
       widget('rows').value = 3
 
-      expect(vi.mocked(reportError).mock.calls.length > 0).toBe(reported)
+      expect(
+        vi
+          .mocked(reportError)
+          .mock.calls.map(([, options]) => options.errorType)
+      ).toEqual(reported)
     }
   )
 })
