@@ -32,7 +32,8 @@ const card = (
 export const krea3Page = {
   hero: {
     layout: 'media-first',
-    videoSrc: `${mediaBase}/hero.mp4`,
+    videoSrc:
+      'https://media.comfy.org/website/krea-3/krea3-16x9-jp-20261015-d009ff37.mp4',
     posterSrc: `${mediaBase}/hero-poster.jpg`,
     logoSrc: '/icons/ai-models/krea.svg',
     titleKey: 'krea3.hero.title',

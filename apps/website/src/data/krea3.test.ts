@@ -84,12 +84,17 @@ describe('Krea 3 launch draft', () => {
     }
   )
 
-  it('ships every hero and gallery asset locally for private review', () => {
+  it('plays the updated launch video in the hero', () => {
+    expect(krea3Page.hero.videoSrc).toBe(
+      'https://media.comfy.org/website/krea-3/krea3-16x9-jp-20261015-d009ff37.mp4'
+    )
+  })
+
+  it('ships every poster and gallery asset locally for private review', () => {
     const sources = [
       ...krea3Page.workflowGallery.cards.map((card) => card.media.src),
       krea3Page.comparison.beforeSrc,
       krea3Page.comparison.afterSrc,
-      krea3Page.hero.videoSrc,
       krea3Page.hero.posterSrc,
       ...krea3Page.galleries.flatMap((gallery) =>
         gallery.cards.map((card) => card.media.src)
