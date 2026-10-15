@@ -1,0 +1,77 @@
+---
+import BuildConfiguratorSplit01 from '@/components/blocks/BuildConfiguratorSplit01.vue'
+import FAQSplit01 from '@/components/blocks/FAQSplit01.vue'
+import type { Locale } from '@/config/locales'
+import { getRoutes } from '@/config/routes'
+
+interface Props {
+  locale: Locale
+  contactHref?: string
+}
+
+const { locale, contactHref } = Astro.props
+const { t } = Astro.locals
+const routes = getRoutes(locale)
+const faqs = (['licensing', 'capacity', 'security'] as const).map((id) => ({
+  id: `vfx-production-${id}`,
+  question: t(`vfxV2.production.details.${id}.question`),
+  answer: t(`vfxV2.production.details.${id}.answer`)
+}))
+---
+
+<BuildConfiguratorSplit01
+  eyebrow={t('vfxV2.production.eyebrow')}
+  heading={t('vfxV2.production.heading')}
+  body={t('vfxV2.production.body')}
+  features={[1, 2, 3].map((id) => t(`vfxV2.production.features.${id}`))}
+  releasesLabel={t('vfxV2.production.releasesLabel')}
+  releases={['v0.3.41', 'v0.3.40', 'v0.3.38']}
+  environmentsLabel={t('vfxV2.production.environmentsLabel')}
+  environments={[
+    { id: 'env-current', python: '3.12', torch: '2.6', cuda: '12.8' },
+    { id: 'env-previous', python: '3.12', torch: '2.5', cuda: '12.4' },
+    { id: 'env-legacy', python: '3.11', torch: '2.5', cuda: '12.4' }
+  ]}
+  nodesLabel={t('vfxV2.production.nodesLabel')}
+  nodes={[
+    { id: 'manager', label: 'ComfyUI-Manager', selected: true },
+    { id: 'ipadapter', label: 'IPAdapter Plus', selected: true },
+    { id: 'controlnet', label: 'ControlNet Aux' },
+    { id: 'videohelper', label: 'VideoHelperSuite', selected: true },
+    {
+      id: 'studio-nodes',
+      label: t('vfxV2.production.privateNodes'),
+      selected: true
+    }
+  ]}
+  modelsLabel={t('vfxV2.production.modelsLabel')}
+  models={[
+    { id: 'flux', label: 'FLUX 3', selected: true },
+    { id: 'wan', label: 'Wan 3.0' },
+    { id: 'sdxl', label: 'SDXL Base', selected: true },
+    { id: 'ltx', label: 'LTX-2.5' },
+    {
+      id: 'brand-lora',
+      label: t('vfxV2.production.privateModel'),
+      selected: true
+    }
+  ]}
+  pinnedLabel={t('vfxV2.production.pinnedLabel')}
+  moreOptionsLabel={t('vfxV2.production.moreOptionsLabel')}
+  nodesUnit={t('vfxV2.production.nodesUnit')}
+  modelsUnit={t('vfxV2.production.modelsUnit')}
+  cta={{
+    label: t('vfxV2.production.cta'),
+    href:
+      contactHref ?? `${routes.contact}?interest=vfx&placement=managed-builds`
+  }}
+  client:visible
+/>
+
+<FAQSplit01
+  id="production-details"
+  heading={t('vfxV2.production.detailsHeading')}
+  faqs={faqs}
+  compact
+  client:visible
+/>

@@ -1,0 +1,177 @@
+{
+  "id": "app-host",
+  "capability": "App composition and startup",
+  "description": "Shared technical module for app composition and startup: entrypoints, router, i18n, bootstrap state, GraphView, configuration, and desktop host wiring. Feature implementations remain in their own records.",
+  "modules": [
+    {
+      "path": "src/stores/bootstrapStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/bootstrapStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/config.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/constants/coreMenuCommands.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/constants/splitterConstants.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/constants/uvMirrors.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/locales/localeConfig.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/vite-env.d.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/__mocks__/i18n.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/i18n.catalog.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/i18n.safeTranslation.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/i18n.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/i18n.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/config/comfyApi.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/config/comfyApi.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/config/viteSeo.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/bootstrap.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/electronAdapter.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/main.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/router.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/App.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/App.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/views/GraphView.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/views/GraphView.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/views/layouts/LayoutDefault.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/views/templates/BaseViewTemplate.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/GraphCanvas.vue",
+      "role": "integration"
+    },
+    {
+      "path": "src/components/graph/GraphCanvas.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/useUrlActionLoaders.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/useUrlActionLoaders.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/platform/distribution/types.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/utils/envUtil.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/utils/electronMirrorCheck.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/composables/useExternalLink.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/composables/useExternalLink.test.ts",
+      "role": "infrastructure"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Bootstrap loads i18n, waits for cloud auth with a bounded retry, and loads settings and workflows once",
+      "checks": ["src/stores/bootstrapStore.test.ts"]
+    },
+    {
+      "name": "Root app component and graph view wire reconnect handling, output refresh, and global providers",
+      "checks": ["src/App.test.ts", "src/views/GraphView.test.ts"]
+    },
+    {
+      "name": "i18n setup merges custom node translations, resolves safe translations, and keeps source keys in the English catalog",
+      "checks": [
+        "src/i18n.test.ts",
+        "src/i18n.safeTranslation.test.ts",
+        "src/i18n.catalog.test.ts"
+      ]
+    },
+    {
+      "name": "Endpoint configuration falls back for servers without override keys and the build publishes only the cloud canonical tag",
+      "checks": ["src/config/comfyApi.test.ts", "src/config/viteSeo.test.ts"]
+    }
+  ],
+  "adrs": ["docs/adr/TELEMETRY-STARTUP-0030-production-startup-telemetry.md"],
+  "compatibilityPromises": [
+    "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
+  ],
+  "deepImports": "inventory"
+}
