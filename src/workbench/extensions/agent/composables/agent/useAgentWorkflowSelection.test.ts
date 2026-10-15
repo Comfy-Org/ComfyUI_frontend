@@ -664,7 +664,13 @@ describe('historical workflow restoration', () => {
   )
 
   it('reads a chat by its lookup when a reference request supersedes its listing', async () => {
-    const { selection, panel, listCloudWorkflows, warnRestoreFailed } = setup()
+    const {
+      selection,
+      panel,
+      listCloudWorkflows,
+      getCloudWorkflow,
+      warnRestoreFailed
+    } = setup()
     let finishListing = () => {}
     const pendingListing = new Promise<void>((resolve) => {
       finishListing = resolve
@@ -674,12 +680,15 @@ describe('historical workflow restoration', () => {
       return listing([{ id: 'wf-saved', name: 'saved' }])
     })
     const restoration = selection.restoreTarget('wf-saved', () => true)
+    listCloudWorkflows.mockReturnValueOnce(new Promise(() => {}))
 
     selection.requestReferences()
     finishListing()
 
     expect(await restoration).toBe(true)
+    expect(getCloudWorkflow.mock.calls.map(([id]) => id)).toEqual(['wf-saved'])
     expect(panel.selectedWorkflow).toBeNull()
+    expect(panel.targetUnresolved).toBe(true)
     expect(panel.targetUnavailable).toBe(false)
     expect(warnRestoreFailed).not.toHaveBeenCalled()
   })
