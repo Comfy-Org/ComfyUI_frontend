@@ -69,7 +69,10 @@ when no graph load is queued; otherwise, keep row loading until the target is
 visible. Preserve the draft and active run. The Current label alone does not
 enable this path: the session ID must still match, the session must have completed
 hydration or accepted a turn in this mounted instance, and its target must be
-retained. A partially restored selection or an interrupted return after remount
+retained, either as an open workflow or as the unresolved target described
+below; reusing an unresolved target opens no workflow. Any other empty target,
+such as one cleared by closing its tab or by a failed restoration, is restored
+again. A partially restored selection or an interrupted return after remount
 uses the normal guarded restoration path.
 
 Closing-related chat transitions are a separate change. This decision does not
@@ -81,33 +84,35 @@ The user gets one visible transition into a usable conversation, at the cost of
 waiting for workflow readiness before reading it. Back may need another fetch.
 The session's underlying data can hydrate while history remains visible; the
 panel must not use thread-ID changes alone as proof of navigation success.
-The Cloud listing can omit live, version-less drafts. An identity omitted from
-a complete listing needs a direct lifecycle lookup; only 404 establishes that it
-is gone. An incomplete, failed or superseded listing establishes neither
-presence nor absence.
+The Cloud listing can omit live, version-less drafts, and an incomplete, failed
+or superseded listing establishes neither presence nor absence. A direct
+lifecycle lookup decides when a complete listing omits the identity, or when
+such a listing cannot place it and no local target answers. Only 404
+establishes that it is gone; any other failure is inconclusive.
 
 ## Amendment (2026-10-06): Readable History with an Unresolved Target
 
 A loaded conversation remains readable when the complete Cloud listing includes
-its workflow, or a direct identity lookup confirms that an omitted workflow is
-live, but no local target resolves after saved-catalog synchronization. Local
-identity resolution stays conservative: missing files, missing names, ambiguous
-names and refused bindings do not justify choosing another canvas. The panel
-settles into its existing retained-null target state, leaves the visible graph
-unchanged and does not mark the target deleted. Sending opens the workflow picker
-and preserves the draft until the user explicitly chooses a target. Passive tab
+its workflow, or a direct identity lookup confirms that a workflow the listing
+omits or cannot place is live, but no local target resolves after saved-catalog
+synchronization. Local identity resolution stays conservative: missing files,
+missing names, ambiguous names and refused bindings do not justify choosing
+another canvas. The panel keeps a retained-null target marked unresolved, which
+Current reuses without restoring again. It leaves the visible graph unchanged
+and does not mark the target deleted. Sending opens the workflow picker and
+preserves the draft until the user explicitly chooses a target. Passive tab
 changes and panel remounts do not resume following for that conversation.
 
 This exception provides conversation access, not workflow restoration. It does
 not materialize Cloud content into a new editor tab or repair identity mapping.
 Transcript failures, failures opening a resolved workflow, and unresolved
-targets with inconclusive Cloud identity are retryable failures. A lookup that
-fails with anything other than 404 is inconclusive, like an incomplete, failed
-or superseded listing. During restoration, only a lifecycle 404 shows the
-unavailable-target notice.
+targets whose direct lookup fails with anything other than 404 are retryable
+failures. During restoration, only a lifecycle 404 shows the unavailable-target
+notice.
 
 An agent tab activation applies only if, when it runs, the chat it came from is
-still the open chat or the History row being loaded. An earlier chat therefore
+still the open chat. While History is open, that is the Current chat, the chat
+History was opened over, or the row still loading. An earlier chat therefore
 cannot open a tab or set the target of the chat on screen. These cancel a
 pending activation:
 
@@ -115,8 +120,7 @@ pending activation:
 - selecting a History row, unless it reuses the loaded Current chat;
 - New Chat, including deleting the open chat;
 - the server deleting the open chat;
-- the chat failing to restore while History is open, including after its row is
-  deleted;
+- a failed History selection, including after its row is deleted;
 - closing the panel.
 
 Cancellation does not make graph activation a rollback transaction.
