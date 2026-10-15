@@ -6,7 +6,9 @@ import type {
   AgentThreadListResponse,
   AgentThreadSummary,
   BillingStatus,
-  SubscriptionTier
+  SubscriptionTier,
+  WorkflowListResponse,
+  WorkflowResponse
 } from '@comfyorg/ingest-types'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -514,6 +516,20 @@ function agentThreadList(
   }
 }
 
+function cloudWorkflow({
+  id,
+  name
+}: Pick<WorkflowResponse, 'id' | 'name'>): WorkflowResponse {
+  return {
+    created_at: '2026-09-11T10:00:00Z',
+    created_by: 'user-1',
+    id,
+    latest_version: 1,
+    name,
+    updated_at: '2026-09-11T10:00:00Z'
+  }
+}
+
 function stubHistoryWithWorkflowListing({
   listing,
   lookup
@@ -551,7 +567,7 @@ function stubHistoryWithWorkflowListing({
     json(await listing, {
       data: [],
       pagination: { offset: 0, limit: 100, total: 0, has_more: false }
-    })
+    } satisfies WorkflowListResponse)
   )
   respondToFetch({ method: 'GET', url: /\/workflows\/wf-gone/ }, async () =>
     json(await lookup, {})
@@ -7934,11 +7950,11 @@ describe('AgentPanelRoot workflow binding', () => {
     respondToFetch({ method: 'GET', url: /\/workflows/ }, () =>
       json(200, {
         data: [
-          { id: 'wf-unresolved', name: 'missing-saved-file' },
-          { id: 'wf-42', name: 'current' }
+          cloudWorkflow({ id: 'wf-unresolved', name: 'missing-saved-file' }),
+          cloudWorkflow({ id: 'wf-42', name: 'current' })
         ],
         pagination: { offset: 0, limit: 100, total: 2, has_more: false }
-      })
+      } satisfies WorkflowListResponse)
     )
     respondToFetch({ method: 'GET', url: /\/assets/ }, () =>
       json(200, { assets: [], total: 0, has_more: false })
@@ -9148,9 +9164,9 @@ describe('AgentPanelRoot workflow binding', () => {
       json(200, {
         data: fresh.isTemporary
           ? []
-          : [{ id: 'wf-new', name: 'Unsaved Workflow' }],
+          : [cloudWorkflow({ id: 'wf-new', name: 'Unsaved Workflow' })],
         pagination: { offset: 0, limit: 100, total: 0, has_more: false }
-      })
+      } satisfies WorkflowListResponse)
     )
     respondToFetch({ method: 'GET', url: /\/workflows\/wf-abandoned$/ }, () =>
       json(200, {
@@ -9159,7 +9175,7 @@ describe('AgentPanelRoot workflow binding', () => {
         created_by: 'user-1',
         created_at: '2026-09-11T10:00:00Z',
         updated_at: '2026-09-11T10:00:00Z'
-      })
+      } satisfies WorkflowResponse)
     )
     respondToFetch({ method: 'GET', url: /\/assets/ }, () =>
       json(200, { assets: [], total: 0, has_more: false })
