@@ -53,9 +53,11 @@ test.describe(
                 entered = resolve
               })
               let holdNext = true
+              let beforeLoadGraphCalls = 0
               window.app!.registerExtension({
                 name: extensionName,
                 beforeLoadGraph: async () => {
+                  beforeLoadGraphCalls++
                   if (!holdNext) return
                   holdNext = false
                   entered()
@@ -70,11 +72,11 @@ test.describe(
                 .app!.loadGraphData(newer)
                 .then(() => order.push('newer'))
               await Promise.resolve()
-              const newerFinishedWhileOlderWasHeld = order.includes('newer')
+              const loadsStartedWhileOlderWasHeld = beforeLoadGraphCalls
               release()
               await olderLoad.then(() => order.push('older'))
               await newerLoad
-              return { order, newerFinishedWhileOlderWasHeld }
+              return { order, loadsStartedWhileOlderWasHeld }
             },
             [
               STALL_EXTENSION,
@@ -85,7 +87,7 @@ test.describe(
 
       expect(order).toEqual({
         order: ['older', 'newer'],
-        newerFinishedWhileOlderWasHeld: false
+        loadsStartedWhileOlderWasHeld: 1
       })
 
       await test.step('the canvas shows the last queued workflow', async () => {

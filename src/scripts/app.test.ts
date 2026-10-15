@@ -275,6 +275,22 @@ describe('ComfyApp', () => {
   let app: ComfyApp
   let mockCanvas: LGraphCanvas
 
+  it('applies extension paste overrides when the clipspace editor saves', () => {
+    const node = new LGraphNode('original')
+    const previousReturnNode = ComfyApp.clipspace_return_node
+    onTestFinished(() => {
+      ComfyApp.clipspace_return_node = previousReturnNode
+    })
+    ComfyApp.clipspace_return_node = node
+    vi.spyOn(ComfyApp, 'pasteFromClipspace').mockImplementation((target) => {
+      target.title = 'extension-edited'
+    })
+
+    ComfyApp.onClipspaceEditorSave()
+
+    expect(node.title).toBe('extension-edited')
+  })
+
   beforeEach(() => {
     vi.mocked(createNode).mockResolvedValue(null)
     vi.mocked(executeWidgetsCallback).mockImplementation(() => {})
