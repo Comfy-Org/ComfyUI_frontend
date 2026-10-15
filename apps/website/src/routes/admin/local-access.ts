@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import type { APIRoute, APIContext } from 'astro'
 import { z } from 'astro/zod'
+import { demoMode, newDemoCredential } from '@/lib/cms/demo'
 import { TESTER_COOKIE } from '@/lib/cms/testers'
 import { DEMO_COOKIE } from '@/lib/cms/catalog-demo'
 import {
@@ -41,10 +42,18 @@ export function isLocalAccess(
 
 export const POST: APIRoute = async (context) => {
   if (
-    !isLocalAccess(context) ||
+    !(isLocalAccess(context) || demoMode()) ||
     context.request.headers.get('origin') !== context.url.origin
   )
     return new Response('Not found', { status: 404 })
+  if (demoMode()) {
+    const credential = newDemoCredential()
+    if (!(await verifySiteSession(credential))) return editorFailure(403)
+    context.cookies.set(SESSION_COOKIE, credential, cookieOptions(context))
+    context.cookies.set(CSRF_COOKIE, newCSRF(), cookieOptions(context))
+    context.cookies.delete(TESTER_COOKIE, { path: '/' })
+    return context.redirect('/admin/', 303)
+  }
   const fixtureFile = process.env.SITE_CATALOG_LOCAL_AUTHORING_CREDENTIAL_FILE
   if (fixtureFile) {
     // Explicit loopback-only fixture bridge, never production login or tester

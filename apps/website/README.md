@@ -131,7 +131,30 @@ all-records list; `eligible=false` currently does not include disabled/future
 records. The old review/history facade is not a canonical catalog history.
 Consequently All Content/History are not wired to those incomplete sources.
 Their canonical bounded read adapters remain required; no fake history,
-unconditional rollback, or mock authorization has been imported from Mar's demo.
+unconditional rollback, or mock authorization is used by the canonical catalog.
+
+PR #20640 is merged as an actual Git parent rather than reconstructed from
+screenshots. The canonical Draft route renders Mar's `DraftQueue`,
+`ListingFilters`, `DraftTable`, `QueueRow`, `ReviewSheet` and
+`FinalReviewDialog`. A controlled adapter supplies the reviewed canonical
+records and selected UIDs; final review, publish and confirmed trash retain
+the existing state/digest/CAS/idempotency contracts. Checking/filtering never
+implicitly approves, defers or saves a record. Protected thumbnail MIME is
+carried into the table without guessing from extensionless Preview URLs.
+Author/tag/server filters remain available in a folded advanced section.
+Drawer dismissal restores keyboard focus to the row.
+
+Mar's old projection-shaped editor is retained as `LegacyContentEditor` with
+separate legacy field adapters, not substituted for the canonical authoring
+controller or its exact media pins. Her isolated sample-data sandbox remains
+behind the explicit non-production `SITE_CATALOG_DEMO` build flag; real catalog
+sessions and uploads never use it. A verified canonical session at `/admin/`
+redirects to the real Draft console. No production consumer is activated.
+
+`scripts/check-mar-admin.ts` mounts the actual merged components with labeled
+local visual fixtures. It checks desktop/mobile English and Chinese layouts,
+checkboxes, the right-hand drawer and Escape/focus restoration while refusing
+all backend mutations. This is separate from authenticated runtime evidence.
 
 Row trash and `Delete Changes` discard Draft edits only, with an exact
 scope confirmation; they do not delete LIVE content or immutable history.

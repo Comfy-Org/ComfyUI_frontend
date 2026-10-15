@@ -1,9 +1,13 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro'
 import { isLocalAccess } from './local-access'
-if (!isLocalAccess(Astro)) return new Response('Not found', { status: 404 })
+import { demoMode } from '@/lib/cms/demo'
+if (!(isLocalAccess(Astro) || demoMode()))
+  return new Response('Not found', { status: 404 })
 const t = Astro.locals.t
-const catalogDemo = Boolean(process.env.SITE_CATALOG_LOCAL_AUTHORING_CREDENTIAL_FILE)
+const catalogDemo = Boolean(
+  process.env.SITE_CATALOG_LOCAL_AUTHORING_CREDENTIAL_FILE
+)
 ---
 
 <BaseLayout title={t('cmsAdmin.title')} minimal noindex>

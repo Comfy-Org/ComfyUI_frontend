@@ -3,10 +3,8 @@ import { computed, ref } from 'vue'
 import { DialogRoot, DialogTitle, DialogDescription } from 'reka-ui'
 import CatalogAdminShell from '@/components/cms/layout/CatalogAdminShell.vue'
 import AdminButton from '@/components/cms/ui/AdminButton.vue'
-import AdminTabs from '@/components/cms/ui/AdminTabs.vue'
 import AdminDialogContent from '@/components/cms/ui/AdminDialogContent.vue'
-import PageHeader from '@/components/cms/ui/PageHeader.vue'
-import CatalogChangeRow from './CatalogChangeRow.vue'
+import DraftQueue from '@/components/cms/DraftQueue.vue'
 import CatalogFinalReviewDialog from './CatalogFinalReviewDialog.vue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
@@ -22,6 +20,7 @@ import {
 } from '@/lib/cms/staging-review'
 import { matchesCheckedReview } from '@/lib/cms/checked-review'
 import { reviewRequest } from '@/lib/cms/staging-client'
+import { canonicalQueue } from '@/lib/cms/canonical-queue'
 
 const {
   initial,
@@ -62,26 +61,10 @@ const form = ref({
   tags: initial.filter.tags?.join(', ') ?? '',
   type: initial.filter.types?.[0] ?? ''
 })
-const tab = ref<'ALL' | 'NEW' | 'UPDATES'>('ALL')
-const tabs = computed(() =>
-  (['ALL', 'NEW', 'UPDATES'] as const).map((value) => ({
-    value,
-    label: t(`cccChecked.tabs.${value}`)
-  }))
-)
-const visible = computed(() =>
-  flow.value.snapshot.items.filter(
-    (item) => tab.value === 'ALL' || (tab.value === 'NEW') === !item.before
-  )
-)
+const queue = computed(() => canonicalQueue(flow.value.snapshot.items))
 const blocked = computed(() => flow.value.kind !== 'ready')
 const busy = computed(
   () => flow.value.kind === 'loading' || flow.value.kind === 'saving'
-)
-const allSelected = computed(
-  () =>
-    visible.value.length > 0 &&
-    visible.value.every((item) => selected.value.has(item.content.uid))
 )
 const requiresAcknowledgement = computed(
   () =>
@@ -100,29 +83,17 @@ const discardBlocked = computed(
 const inputClass =
   'w-full rounded-lg border border-admin-field bg-admin-chrome px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-admin-fg'
 
-function select(uid: string, checked: boolean) {
+function selectMany(uids: string[]) {
   if (blocked.value || (!canApply && !canEdit)) return
-  if (!flow.value.snapshot.items.some((item) => item.content.uid === uid))
-    return
-  const next = new Set(selected.value)
-  if (checked) next.add(uid)
-  else next.delete(uid)
-  selected.value = next
-  acknowledgeAll.value = false
-}
-function selectShown(event: Event) {
   if (
-    blocked.value ||
-    (!canApply && !canEdit) ||
-    !(event.target instanceof HTMLInputElement)
+    new Set(uids).size !== uids.length ||
+    uids.some(
+      (uid) =>
+        !flow.value.snapshot.items.some((item) => item.content.uid === uid)
+    )
   )
     return
-  const next = new Set(selected.value)
-  for (const item of visible.value) {
-    if (event.target.checked) next.add(item.content.uid)
-    else next.delete(item.content.uid)
-  }
-  selected.value = next
+  selected.value = new Set(uids)
   acknowledgeAll.value = false
 }
 async function reload() {
@@ -259,69 +230,29 @@ async function exit() {
     :locale
     @open-live="exit"
   >
-    <PageHeader
-      :title="t('cccStaging.title')"
-      :description="t('cccChecked.instructions')"
-    >
-    </PageHeader>
-    <form
-      class="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-5"
-      @submit.prevent="reload"
-    >
-      <fieldset
-        :disabled="busy || flow.kind === 'final' || flow.kind === 'discard'"
-        class="contents"
-      >
-        <label class="text-xs text-admin-muted"
-          >{{ t('cccStaging.search')
-          }}<input v-model="form.search" maxlength="300" :class="inputClass"
-        /></label>
-        <label class="text-xs text-admin-muted"
-          >{{ t('cccStaging.originalAuthor')
-          }}<input v-model="form.author" :class="inputClass"
-        /></label>
-        <label class="text-xs text-admin-muted"
-          >{{ t('cccStaging.tags')
-          }}<input v-model="form.tags" :class="inputClass"
-        /></label>
-        <label class="text-xs text-admin-muted"
-          >{{ t('cccStaging.type')
-          }}<select v-model="form.type" :class="inputClass">
-            <option value="">{{ t('cccStaging.all') }}</option>
-            <option v-for="type in reviewTypes" :key="type" :value="type">
-              {{ t(`cccStaging.types.${type}`) }}
-            </option>
-          </select></label
-        >
-        <AdminButton type="submit">{{
-          t('cccStaging.applyFilters')
-        }}</AdminButton>
-      </fieldset>
-    </form>
     <p
       v-if="flow.kind === 'failed'"
       role="alert"
-      class="mt-4 text-sm text-admin-danger-text"
+      class="mb-5 text-sm text-admin-danger-text"
     >
       {{ t(`cccStaging.errors.${flow.reason}`) }}
     </p>
-    <div
-      class="sticky top-0 z-20 mt-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-admin-line bg-admin-chrome p-3"
+    <DraftQueue
+      :items="queue"
+      :csrf
+      :can-apply="canApply"
+      :can-edit="canEdit"
+      :draft-id="flow.snapshot.state.draft_rev"
+      :generation="flow.snapshot.state.draft_generation"
+      :selected-uids="[...selected]"
+      :busy="blocked"
+      controlled
+      :locale
+      @selection="selectMany"
+      @review="review"
+      @discard="(uid) => requestDiscard([uid])"
     >
-      <label class="flex items-center gap-2 text-xs"
-        ><input
-          type="checkbox"
-          :checked="allSelected"
-          :indeterminate="selected.size > 0 && !allSelected"
-          :disabled="blocked || !visible.length || (!canApply && !canEdit)"
-          :aria-label="t('cccChecked.selectShown')"
-          @change="selectShown"
-        />{{ t('cccStaging.all') }}</label
-      >
-      <div class="flex flex-wrap items-center gap-2">
-        <span role="status" class="text-xs text-admin-muted">{{
-          t('cccStaging.selectedCount', { count: selected.size })
-        }}</span>
+      <template #actions>
         <AdminButton
           v-if="canEdit"
           href="/admin/content/new"
@@ -335,53 +266,64 @@ async function exit() {
           @click="requestDiscard([...selected])"
           >{{ t('cccStaging.deleteChanges') }}</AdminButton
         >
-        <AdminButton
-          v-if="canApply"
-          variant="primary"
-          :disabled="blocked || !selected.size"
-          @click="review"
-          >{{
-            t('cccChecked.reviewSelected', { count: selected.size })
-          }}</AdminButton
+      </template>
+      <template #filters>
+        <details>
+          <summary class="w-fit cursor-pointer text-xs text-admin-muted">
+            {{ t('cccStaging.applyFilters') }}
+          </summary>
+          <form
+            class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-5"
+            @submit.prevent="reload"
+          >
+            <fieldset
+              :disabled="blocked && flow.kind !== 'failed'"
+              class="contents"
+            >
+              <label class="text-xs text-admin-muted"
+                >{{ t('cccStaging.search')
+                }}<input
+                  v-model="form.search"
+                  maxlength="300"
+                  :class="inputClass"
+              /></label>
+              <label class="text-xs text-admin-muted"
+                >{{ t('cccStaging.originalAuthor')
+                }}<input v-model="form.author" :class="inputClass"
+              /></label>
+              <label class="text-xs text-admin-muted"
+                >{{ t('cccStaging.tags')
+                }}<input v-model="form.tags" :class="inputClass"
+              /></label>
+              <label class="text-xs text-admin-muted"
+                >{{ t('cccStaging.type')
+                }}<select v-model="form.type" :class="inputClass">
+                  <option value="">{{ t('cccStaging.all') }}</option>
+                  <option v-for="type in reviewTypes" :key="type" :value="type">
+                    {{ t(`cccStaging.types.${type}`) }}
+                  </option>
+                </select></label
+              >
+              <AdminButton type="submit">{{
+                t('cccStaging.applyFilters')
+              }}</AdminButton>
+            </fieldset>
+          </form>
+        </details>
+      </template>
+      <template #selection>
+        <label
+          v-if="requiresAcknowledgement && canEdit"
+          class="flex items-center gap-2 text-xs text-admin-muted"
         >
-      </div>
-    </div>
-    <label
-      v-if="requiresAcknowledgement && canEdit"
-      class="mt-3 flex items-center gap-2 text-xs text-admin-muted"
-      ><input v-model="acknowledgeAll" type="checkbox" :disabled="blocked" />{{
-        t('cccStaging.confirmAll')
-      }}</label
-    >
-    <div class="mt-5 border-b border-admin-line">
-      <AdminTabs
-        v-model="tab"
-        :options="tabs"
-        :label="t('cccChecked.tabsLabel')"
-      />
-    </div>
-    <ul
-      :aria-label="t('cccStaging.changes')"
-      class="mt-3 rounded-xl border border-admin-line bg-admin-chrome"
-    >
-      <CatalogChangeRow
-        v-for="item in visible"
-        :key="item.content.uid"
-        :item
-        :can-apply="canApply"
-        :can-edit="canEdit"
-        checkbox-only
-        :selected="selected.has(item.content.uid)"
-        :disabled="blocked"
-        :locale
-        :draft-rev="flow.snapshot.state.draft_rev"
-        @selection="select"
-        @discard="(uid) => requestDiscard([uid])"
-      />
-    </ul>
-    <p v-if="!visible.length" class="mt-4 text-sm text-admin-muted">
-      {{ t('cccStaging.empty') }}
-    </p>
+          <input
+            v-model="acknowledgeAll"
+            type="checkbox"
+            :disabled="blocked"
+          />{{ t('cccStaging.confirmAll') }}
+        </label>
+      </template>
+    </DraftQueue>
     <DialogRoot
       :open="flow.kind === 'discard'"
       @update:open="

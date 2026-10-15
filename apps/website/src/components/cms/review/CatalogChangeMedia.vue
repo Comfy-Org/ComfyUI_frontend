@@ -53,6 +53,7 @@ function firstFrame(event: Event) {
       :src="loadVideo ? preview.src : undefined"
       :aria-label="label"
       preload="metadata"
+      :controls="expanded"
       muted
       playsinline
       class="size-full object-contain"

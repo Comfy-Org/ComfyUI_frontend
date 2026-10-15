@@ -4,6 +4,7 @@ import { defineMiddleware } from 'astro:middleware'
 import { resolveLocale } from './config/locales'
 import { translationsFor } from './i18n/translations'
 import { isLocalAccess } from '@/routes/admin/local-access'
+import { demoMode } from '@/lib/cms/demo'
 import { TESTER_COOKIE, localCredential, verifyTester } from '@/lib/cms/testers'
 import { DEMO_COOKIE } from '@/lib/cms/catalog-demo'
 import {
@@ -182,6 +183,9 @@ export const onRequest = defineMiddleware(async (context, next) => {
   }
   if (
     isAuthoringRoute(context.url.pathname) ||
+    (['/admin', '/admin/'].includes(context.url.pathname) &&
+      (context.cookies.has(AUTHORING_COOKIE) ||
+        context.cookies.has(DEMO_COOKIE))) ||
     context.url.pathname === '/admin/catalog-testers' ||
     context.url.pathname.startsWith('/preview-media/')
   ) {
@@ -224,7 +228,9 @@ export const onRequest = defineMiddleware(async (context, next) => {
     )
       return verified.response
   }
-  context.locals.siteLocalAccess = cms && isLocalAccess(context)
+  context.locals.siteDemo = cms && demoMode()
+  context.locals.siteLocalAccess =
+    cms && (isLocalAccess(context) || context.locals.siteDemo)
   const signIn = isSignIn(context)
   const publicDocumentation = isPublicCatalogDocumentation(context)
   // Discovery is public and does not read staff state or act on Preview controls.
@@ -233,7 +239,10 @@ export const onRequest = defineMiddleware(async (context, next) => {
     const failure = await authenticate(context)
     if (failure) return failure
   }
-  if (admin && !signIn && !context.locals.site) return denied(404)
+  if (admin && !signIn && !context.locals.site)
+    return context.locals.siteDemo
+      ? context.redirect('/admin/local-access', 303)
+      : denied(404)
   const selection = publicDocumentation ? undefined : selectPreview(context)
   if (!publicDocumentation && context.url.searchParams.has('preview_at'))
     return denied()

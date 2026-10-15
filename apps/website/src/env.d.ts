@@ -9,6 +9,7 @@ declare global {
       t: typeof t
       site?: SiteSession
       siteLocalAccess?: boolean
+      siteDemo?: boolean
       catalogAuthoring?: AuthoringSession
       catalogLocale?: 'en' | 'zh-CN'
     }

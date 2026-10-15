@@ -118,5 +118,7 @@ describe('staff site administration boundary', () => {
     expect(draftChanges(review)).toHaveLength(1)
     expect(draftChanges(review)[0].before?.data.name).toBe('Item')
     expect(draftChanges(review)[0].after?.data.name).toBe('Changed')
+    review.draft.items = [{ ...record, edit_version: 'c' }]
+    expect(draftChanges(review)).toEqual([])
   })
 })

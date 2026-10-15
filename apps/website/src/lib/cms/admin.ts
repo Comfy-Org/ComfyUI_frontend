@@ -3,6 +3,8 @@ import type { APIContext } from 'astro'
 import { zContentCatalogReview } from './review-contract'
 import type { ContentCatalogReview } from './review-contract'
 import { normalizeProjection } from './catalog-contract'
+import { catalogFetch } from './demo'
+import { contentDiff } from './diff'
 
 export interface SiteSession {
   credential: string
@@ -26,7 +28,7 @@ export async function siteAPI(
   if (!path.startsWith('/admin/api/site/'))
     throw new Error('Invalid site API path')
   try {
-    return await fetch(new URL(path, origin), {
+    return await catalogFetch(new URL(path, origin), {
       ...init,
       cache: 'no-store',
       signal: AbortSignal.timeout(5000),
@@ -154,6 +156,8 @@ export function draftChanges(review: ContentCatalogReview) {
     const before = live.get(uid)
     const after = draft.get(uid)
     if (before?.edit_version === after?.edit_version) return []
+    // A save that put the live value back leaves nothing to publish.
+    if (!contentDiff(before, after).length) return []
     return [{ uid, before, after }]
   })
 }
