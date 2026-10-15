@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef, watch } from 'vue'
 
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useCurrentUserAccess } from '@/platform/auth/currentUserAccess'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   desktopHostUser,
@@ -9,6 +9,7 @@ import {
   requestDesktopHostWorkspaceSwitch
 } from '@/platform/auth/desktopHost/desktopHostSession'
 import { trackSsoWorkspaceLanded } from '@/platform/auth/sso/ssoTelemetry'
+import { ensureSessionCookie } from '@/platform/auth/session/sessionCookieAccess'
 import { isCloud } from '@/platform/distribution/types'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
@@ -18,6 +19,7 @@ import {
   clearWorkflowRestoreState,
   prepareWorkflowWorkspaceTransition
 } from '@/platform/workflow/persistence/base/storageIO'
+import { provideTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStoreAccess'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 
 import type {
@@ -305,7 +307,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   // self-row by email (the stable current-user join key; member.id is a cloud
   // user id, not the Firebase uid) and fails closed until members load.
   const isCurrentUserOriginalOwner = computed(() => {
-    const email = useCurrentUser().userEmail.value?.toLowerCase()
+    const email = useCurrentUserAccess().userEmail.value?.toLowerCase()
     if (!email) return false
     const selfRow = members.value.find((m) => m.email.toLowerCase() === email)
     return !!selfRow && selfRow.id === originalOwnerId.value
@@ -376,7 +378,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     error.value = null
 
     const workspaceAuthStore = useWorkspaceAuthStore()
-    const isApiKeySession = useCurrentUser().isApiKeyLogin.value
+    const isApiKeySession = useCurrentUserAccess().isApiKeyLogin.value
 
     for (let attempt = 0; attempt <= MAX_INIT_RETRIES; attempt++) {
       try {
@@ -410,9 +412,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
           return
         }
 
-        const { useSessionCookie } =
-          await import('@/platform/auth/session/useSessionCookie')
-        await useSessionCookie().ensureSessionCookie()
+        await ensureSessionCookie()
         if (isStaleIdentity(generation)) return
 
         // 1. Try to restore workspace context from session (page refresh case)
@@ -1244,3 +1244,5 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     setWorkspaceBillingRail
   }
 })
+
+provideTeamWorkspaceStore(useTeamWorkspaceStore)
