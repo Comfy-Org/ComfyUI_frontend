@@ -168,12 +168,12 @@ export class AgentResponseUnreadableError extends Error {
   }
 }
 
-type PaginationStop = 'missing_cursor' | 'repeated_cursor'
+export type PaginationStopReason = 'missing_cursor' | 'repeated_cursor'
 
 export class AgentThreadListIncompleteError extends Error {
-  readonly reason: PaginationStop
+  readonly reason: PaginationStopReason
 
-  constructor(reason: PaginationStop) {
+  constructor(reason: PaginationStopReason) {
     super('Agent thread list ended before its last page')
     this.name = 'AgentThreadListIncompleteError'
     this.reason = reason
@@ -586,7 +586,7 @@ export function createAgentRestClient() {
     schema: z.ZodType<Page>,
     itemsOf: (page: Page) => Item[],
     signal?: AbortSignal
-  ): Promise<{ items: Item[]; stop?: PaginationStop }> {
+  ): Promise<{ items: Item[]; stopReason?: PaginationStopReason }> {
     const items: Item[] = []
     let cursor: string | undefined
     const seenCursors = new Set<string>()
@@ -601,8 +601,9 @@ export function createAgentRestClient() {
       items.push(...itemsOf(page))
       if (!page.pagination.has_more) return { items }
       const nextCursor = page.pagination.next_cursor
-      if (!nextCursor) return { items, stop: 'missing_cursor' }
-      if (seenCursors.has(nextCursor)) return { items, stop: 'repeated_cursor' }
+      if (!nextCursor) return { items, stopReason: 'missing_cursor' }
+      if (seenCursors.has(nextCursor))
+        return { items, stopReason: 'repeated_cursor' }
       seenCursors.add(nextCursor)
       cursor = nextCursor
     }
@@ -647,14 +648,14 @@ export function createAgentRestClient() {
   async function listThreads(
     options: { signal?: AbortSignal } = {}
   ): Promise<AgentThreadSummary[]> {
-    const { items, stop } = await listAllPages(
+    const { items, stopReason } = await listAllPages(
       'list_threads',
       '/agent/threads',
       zAgentThreads,
       (page) => page.threads,
       options.signal
     )
-    if (stop) throw new AgentThreadListIncompleteError(stop)
+    if (stopReason) throw new AgentThreadListIncompleteError(stopReason)
     return items
   }
 
@@ -679,13 +680,13 @@ export function createAgentRestClient() {
   }
 
   async function listCloudWorkflows(): Promise<CloudWorkflowListing> {
-    const { items, stop } = await listAllPages(
+    const { items, stopReason } = await listAllPages(
       'list_cloud_workflows',
       '/workflows',
       zCloudWorkflowIndex,
       (page) => page.data
     )
-    return { entries: items, complete: stop === undefined }
+    return { entries: items, complete: stopReason === undefined }
   }
 
   async function getCloudWorkflow(
