@@ -8696,7 +8696,7 @@ describe('AgentPanelRoot workflow binding', () => {
   const historyNavigation = {
     navigation: 'history',
     navigate: openOtherChat,
-    targetPath: null
+    targetPath: undefined
   }
 
   it.for([
@@ -8731,9 +8731,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
       expect(workflowStore.getWorkflowByPath('workflows/Late.json')).toBeNull()
       expect(workflowStore.activeWorkflow?.path).toBe(current.path)
-      expect(useAgentPanelStore().selectedWorkflow?.path ?? null).toBe(
-        targetPath
-      )
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(targetPath)
       expect(
         useAgentWorkflowTabBindingStore().tabPathFor('wf-late')
       ).toBeUndefined()
@@ -8786,7 +8784,7 @@ describe('AgentPanelRoot workflow binding', () => {
       navigate: openOtherChat,
       prepareTab: () => addTab('workflows/Late.json'),
       cloudRows: [{ id: 'wf-late', name: 'Late' }],
-      targetPath: null,
+      targetPath: undefined,
       workflowPaths: ['workflows/current.json', 'workflows/Late.json']
     },
     {
@@ -8855,9 +8853,7 @@ describe('AgentPanelRoot workflow binding', () => {
       expect(workflowStore.workflows.map(({ path }) => path)).toEqual(
         workflowPaths
       )
-      expect(useAgentPanelStore().selectedWorkflow?.path ?? null).toBe(
-        targetPath
-      )
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(targetPath)
       expect(
         useAgentWorkflowTabBindingStore().workflowIdFor(current.path)
       ).toBe('wf-42')
@@ -8872,23 +8868,6 @@ describe('AgentPanelRoot workflow binding', () => {
     mockMessagesEndpoint('wf-42', [{ id: 'wf-42', name: 'current' }])
     renderWithSelectedTarget()
     await sendFromComposer('work here')
-  }
-
-  function openDeletedTargetChatAtStartup(): void {
-    localStorage.setItem(StorageKeys.agentThread('personal'), 'th-history')
-    stubHistoryWithWorkflowListing({ listing: 200, lookup: 404 })
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
-  }
-
-  async function deleteFailedHistoryRow(): Promise<void> {
-    await userEvent.click(
-      screen.getByRole('button', { name: i18n.global.t('agent.chatOptions') })
-    )
-    await userEvent.click(
-      await screen.findByRole('menuitem', {
-        name: i18n.global.t('g.delete')
-      })
-    )
   }
 
   it('activates a tab for the history chat that is still loading', async () => {
@@ -8994,7 +8973,14 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(
       await screen.findByText(i18n.global.t('agent.historyOpenFailed'))
     ).toBeVisible()
-    await deleteFailedHistoryRow()
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.chatOptions') })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitem', {
+        name: i18n.global.t('g.delete')
+      })
+    )
     expect(screen.queryByRole('button', { name: 'Earlier chat' })).toBeNull()
     await vi.advanceTimersByTimeAsync(500)
 
@@ -9008,7 +8994,9 @@ describe('AgentPanelRoot workflow binding', () => {
 
   it('drops an activation from the current chat when reopening it from history fails (listing fails, no lookup, bound workflow does not open)', async () => {
     const current = makeTab('wf-42')
-    openDeletedTargetChatAtStartup()
+    localStorage.setItem(StorageKeys.agentThread('personal'), 'th-history')
+    stubHistoryWithWorkflowListing({ listing: 200, lookup: 404 })
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await waitFor(() =>
       expect(useAgentChatHistoryStore().activeId).toBe('th-history')
     )
