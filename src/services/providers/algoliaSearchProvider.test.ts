@@ -360,6 +360,33 @@ describe('useAlgoliaSearchProvider', () => {
       ])
     })
 
+    it.for([
+      { pageNumber: 0, nbPages: 3, expected: true },
+      { pageNumber: 2, nbPages: 3, expected: false },
+      { pageNumber: 0, nbPages: undefined, expected: false }
+    ])(
+      'reports hasMore $expected on page $pageNumber of $nbPages',
+      async ({ pageNumber, nbPages, expected }) => {
+        mockSearchClient.search.mockResolvedValueOnce({
+          results: [
+            {
+              hits: Array.from({ length: 10 }, (_, i) => packHit(`${i}`)),
+              nbPages
+            },
+            { hits: [] }
+          ]
+        })
+
+        const provider = useAlgoliaSearchProvider()
+        const result = await provider.searchPacks('test', {
+          pageSize: 10,
+          pageNumber
+        })
+
+        expect(result.hasMore).toBe(expected)
+      }
+    )
+
     it('sends no fallback queries when searching node names', async () => {
       mockSearchClient.search.mockResolvedValueOnce({
         results: [{ hits: [] }, { hits: [] }]

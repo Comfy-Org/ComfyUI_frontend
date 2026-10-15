@@ -39,7 +39,7 @@ export function useRegistrySearch(inputs: {
   async function doLoadMore() {
     if (!morePages.value) return
     try {
-      const { nodePacks, querySuggestions } = await searchPacks(
+      const { nodePacks, querySuggestions, hasMore } = await searchPacks(
         toValue(inputs.query),
         {
           pageSize: DEFAULT_PAGE_SIZE,
@@ -47,7 +47,7 @@ export function useRegistrySearch(inputs: {
           restrictSearchableAttributes: searchableAttributes()
         }
       )
-      morePages.value = nodePacks.length >= DEFAULT_PAGE_SIZE
+      morePages.value = hasMore ?? nodePacks.length >= DEFAULT_PAGE_SIZE
       items.value.push(...nodePacks)
       suggestions.value = querySuggestions
       pageNumber++

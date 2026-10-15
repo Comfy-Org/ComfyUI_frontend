@@ -15,6 +15,8 @@ export type QuerySuggestion = {
 export interface SearchPacksResult {
   nodePacks: RegistryNodePack[]
   querySuggestions: QuerySuggestion[]
+  /** Whether the raw query has pages past this one; omitted when unknown. */
+  hasMore?: boolean
 }
 
 export interface NodePackSearchProvider {

@@ -46,7 +46,8 @@ const replay = (request: {
   const page = request.page ?? 0
   return {
     hits: recordedHits.slice(page * hitsPerPage, (page + 1) * hitsPerPage),
-    nbHits: responses[request.query].nbHits
+    nbHits: responses[request.query].nbHits,
+    nbPages: Math.ceil(responses[request.query].nbHits / hitsPerPage)
   }
 }
 
@@ -102,6 +103,13 @@ describe('pack search against recorded live Algolia responses', () => {
       const { nodePacks } = await searchPacks('kijai/comfyui-promptrelay')
 
       expect(nodePacks).toHaveLength(0)
+    })
+
+    it('reports no further pages once fallback hits stand in for an empty raw query', async () => {
+      const { nodePacks, hasMore } = await searchPacks('kijai/comfyui-kjnodes')
+
+      expect(nodePacks.length).toBeGreaterThan(0)
+      expect(hasMore).toBe(false)
     })
 
     it('tries the owner-stripped slug before its separator-split form', async () => {
