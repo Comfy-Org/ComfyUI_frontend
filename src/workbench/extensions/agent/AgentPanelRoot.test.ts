@@ -9369,47 +9369,69 @@ describe('AgentPanelRoot workflow binding', () => {
     )
   })
 
-  it('keeps a pending activation when its chat is reselected as the Current History row', async () => {
-    makeTab('wf-42')
-    mockMessagesEndpoint(
-      'wf-42',
-      [{ id: 'wf-42', name: 'current' }],
-      [
-        agentThread({
-          id: 'th-1',
-          title: 'Current chat',
-          last_message_at: '2026-09-25T00:00:00Z'
+  it.for([
+    {
+      chat: 'a targeted chat',
+      threadId: 'th-1',
+      title: 'Current chat',
+      openChat: async () => {
+        mockMessagesEndpoint(
+          'wf-42',
+          [{ id: 'wf-42', name: 'current' }],
+          [
+            agentThread({
+              id: 'th-1',
+              title: 'Current chat',
+              last_message_at: '2026-09-25T00:00:00Z'
+            })
+          ]
+        )
+        renderWithSelectedTarget()
+        await sendFromComposer('work here')
+      }
+    },
+    {
+      chat: 'an unresolved chat retrying its workflow',
+      threadId: 'th-history',
+      title: 'Unresolved target chat',
+      openChat: async () => {
+        stubHistoryWithWorkflowListing({
+          ...unresolvedTargetChat,
+          listing: 503
         })
-      ]
-    )
-    renderWithSelectedTarget()
-    await sendFromComposer('work here')
-    vi.useFakeTimers()
-    ws.emit('agent_active_tab', {
-      workflow_id: 'wf-late',
-      name: 'Late',
-      thread_id: 'th-1'
-    })
-    await vi.advanceTimersByTimeAsync(0)
-    expect(useWorkflowTabActivityStore().creatingTab).toBe(true)
-    await userEvent.click(
-      screen.getByRole('button', {
-        name: i18n.global.t('agent.showChatHistory')
+        await openUnresolvedChatOnStartup()
+      }
+    }
+  ])(
+    'keeps a pending activation when $chat is reselected as the Current History row',
+    async ({ threadId, title, openChat }) => {
+      makeTab('wf-42')
+      await openChat()
+      vi.useFakeTimers()
+      ws.emit('agent_active_tab', {
+        workflow_id: 'wf-late',
+        name: 'Late',
+        thread_id: threadId
       })
-    )
-    await userEvent.click(
-      await screen.findByRole('button', { name: 'Current chat' })
-    )
-    expect(
-      screen.queryByRole('heading', { name: i18n.global.t('agent.history') })
-    ).toBeNull()
-    await vi.advanceTimersByTimeAsync(500)
+      await vi.advanceTimersByTimeAsync(0)
+      expect(useWorkflowTabActivityStore().creatingTab).toBe(true)
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.showChatHistory')
+        })
+      )
+      await userEvent.click(await screen.findByRole('button', { name: title }))
+      expect(
+        screen.queryByRole('heading', { name: i18n.global.t('agent.history') })
+      ).toBeNull()
+      await vi.advanceTimersByTimeAsync(500)
 
-    expect(workflowStore.activeWorkflow?.path).toBe('workflows/Late.json')
-    expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-late')).toBe(
-      'workflows/Late.json'
-    )
-  })
+      expect(workflowStore.activeWorkflow?.path).toBe('workflows/Late.json')
+      expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-late')).toBe(
+        'workflows/Late.json'
+      )
+    }
+  )
 
   it('agent_active_tab opens an unknown workflow as a blank named tab', async () => {
     makeTab('wf-42')
