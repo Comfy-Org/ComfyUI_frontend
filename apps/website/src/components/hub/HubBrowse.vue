@@ -153,15 +153,7 @@ const MODEL_SORTS: SortOption[] = [
     value: 'popular',
     label: t('workshop.sort.popular')
   },
-  { value: 'name', label: t('workshop.sort.name') },
-  {
-    value: 'priceAsc',
-    label: t('workshop.sort.priceAsc')
-  },
-  {
-    value: 'priceDesc',
-    label: t('workshop.sort.priceDesc')
-  }
+  { value: 'name', label: t('workshop.sort.name') }
 ]
 const sortOptions = computed(() =>
   store.activeTab.value === 'models' ? MODEL_SORTS : WORKFLOW_SORTS

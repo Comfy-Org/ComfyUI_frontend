@@ -2,7 +2,9 @@ import { z } from 'astro/zod'
 
 import type { WorkshopDisplayEntry } from '@/content/workshop-display.schema'
 import categories from '@/content/workshop-workflow-categories.json'
+import sections from '@/content/workshop-workflow-sections.json'
 import type {
+  Modality,
   WorkflowWorkshopModel,
   WorkflowWorkshopModelDetail
 } from './models-catalogue'
@@ -25,8 +27,49 @@ function categoryFor(page: WorkshopDisplayEntry) {
   return {
     categoryLabel: category.label,
     categoryOrder: order,
-    categoryHighlight: category.highlight === page.modelId
+    categoryHighlight: category.highlight === page.modelId,
+    ...('aliases' in category && { categoryAliases: category.aliases })
   }
+}
+
+function sectionFor(page: WorkshopDisplayEntry) {
+  const primary = page.section ?? page.sections?.[0]
+  const order = sections.findIndex((section) => section.id === primary)
+  const named = sections.filter(
+    (section) => section.id === primary || page.sections?.includes(section.id)
+  )
+  const listed = sections
+    .map((section) => section.id)
+    .filter((id) => page.sections?.includes(id))
+  return {
+    ...(order >= 0 && {
+      section: sections[order].id,
+      sectionLabel: sections[order].label,
+      sectionOrder: order
+    }),
+    ...(listed.length > 0 && { sections: listed }),
+    ...(named.length > 0 && {
+      sectionNames: named.flatMap((section) => Object.values(section.label))
+    })
+  }
+}
+
+const UPLOAD_MEDIA = {
+  image: ['image'],
+  video: ['video'],
+  audio: ['audio'],
+  'image-or-video': ['image', 'video'],
+  file: []
+} as const satisfies Record<string, readonly Modality[]>
+
+/** The media a visitor brings to a workflow; a prompt alone starts from text. */
+function inputKindsFor(page: WorkshopDisplayEntry): Modality[] {
+  const media = Object.values(page.inputs ?? {}).flatMap((input) =>
+    input.control === 'media' && !input.hidden && input.urlUpload
+      ? UPLOAD_MEDIA[input.urlUpload]
+      : []
+  )
+  return media.length ? [...new Set(media)] : ['text']
 }
 
 export function workflowPagesFor(
@@ -60,7 +103,8 @@ function workflowPageFor(
     inputs: page.inputs,
     cloud: entry.cloud,
     outputs: entry.outputs,
-    template: page.template
+    template: page.template,
+    runsOnHub: page.runsOnHub
   }
   const modality = entry.outputs[0]?.kind
   const samples = page.media.samples ?? []
@@ -73,11 +117,13 @@ function workflowPageFor(
     summary: page.description,
     category: page.category,
     ...categoryFor(page),
+    ...sectionFor(page),
     recommendedRank: page.recommendedRank,
     models: page.template?.models,
     author: page.template?.author,
     workflowCount: samples.length,
     modality,
+    inputKinds: inputKindsFor(page),
     useCases: [page.useCase],
     capabilities: [],
     thumbnail: page.media.thumbnail,

@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import { translationsFor } from '@/i18n/translations'
-import { ArrowUpRight } from '@lucide/vue'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
+import Button from '@/components/ui/button/Button.vue'
 import type { Locale } from '@/i18n/translations'
 import { captureWorkshopEvent } from '@/scripts/posthog'
 
@@ -29,26 +27,22 @@ function captureClick() {
 </script>
 
 <template>
-  <component
-    :is="repo ? 'a' : 'span'"
+  <Button
+    :as="repo ? 'a' : 'span'"
     :href="repo"
     :target="repo && '_blank'"
     :rel="repo && 'noopener noreferrer'"
-    :class="
-      cn(
-        'inline-flex h-9 shrink-0 items-center gap-2 rounded-xl border px-3.5 text-sm font-medium',
-        repo
-          ? 'border-transparency-white-t20 bg-transparency-white-t4 text-primary-warm-white transition hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none'
-          : 'border-transparency-white-t8 text-primary-warm-gray'
-      )
-    "
+    variant="outline"
+    size="sm"
+    :class="!repo && 'pointer-events-none opacity-50'"
     @click="captureClick"
   >
-    <span
-      class="size-4 icon-mask mask-[url('/icons/social/github.svg')]"
-      aria-hidden="true"
-    />
+    <template #prepend>
+      <span
+        class="size-4 icon-mask mask-[url('/icons/social/github.svg')]"
+        aria-hidden="true"
+      />
+    </template>
     {{ t(repo ? 'cinematic.repo.view' : 'cinematic.repo.soon') }}
-    <ArrowUpRight v-if="repo" class="size-3.5" aria-hidden="true" />
-  </component>
+  </Button>
 </template>

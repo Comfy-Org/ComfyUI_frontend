@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowRight } from '@lucide/vue'
+import { useMounted } from '@vueuse/core'
 import { computed } from 'vue'
 
 import { catalogSearch, useCaseFor } from '@/config/models-catalogue'
@@ -8,11 +8,18 @@ import type {
   RouterWorkshopModelDetail,
   WorkshopModel
 } from '@/config/models-catalogue'
+import type { ProviderModelRow } from '@/config/models-page-data'
 import { formForContract } from '@/config/workshop-contract'
+import { pagePaths } from '@/lib/workshop/page-paths'
 import { t } from '@/i18n/translations'
-import CatalogueBackLink from './CatalogueBackLink.vue'
+import { useWorkshopWorkflowsEnabled } from '@/scripts/posthog'
+import { SHELF_CARD } from '@/lib/workshop/card-layout'
+import CardRow from './CardRow.vue'
+import DetailTrail from './DetailTrail.vue'
 import ModelPrice from './ModelPrice.vue'
 import ModelDetail from './ModelDetail.vue'
+import ProviderModelsTable from './model-detail/ProviderModelsTable.vue'
+import ModelPaths from './model-detail/ModelPaths.vue'
 import ModelStatus from './ModelStatus.vue'
 import ModelSupport from './ModelSupport.vue'
 import TagOverflow from './TagOverflow.vue'
@@ -26,11 +33,11 @@ interface ModelTag {
 const { page } = defineProps<{
   page: {
     model: RouterWorkshopModelDetail
-    related: readonly WorkshopModel[]
-    relatedHeading: string
+    providerModels: readonly ProviderModelRow[]
     successor?: WorkshopModel
     priceEstimate?: string
     useCaseLabel?: string
+    workflows: readonly WorkshopModel[]
     shownTags: readonly ModelTag[]
     restTags: readonly ModelTag[]
     restTagCount: number
@@ -42,7 +49,13 @@ const model = computed(() =>
     ? { ...page.model, form: formForContract(page.model.execution) }
     : page.model
 )
+const paths = computed(() => pagePaths(page.model))
 const modelUseCase = computed(() => useCaseFor(page.model))
+const mounted = useMounted()
+const workflowsEnabled = useWorkshopWorkflowsEnabled()
+const showsWorkflows = computed(
+  () => mounted.value && workflowsEnabled.value && page.workflows.length > 0
+)
 const pillClass =
   'inline-flex h-7 items-center rounded-full border border-transparency-white-t20 px-3 text-xs leading-none text-primary-comfy-canvas transition-colors hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow'
 const restTags = computed(() =>
@@ -55,8 +68,8 @@ const restTags = computed(() =>
 
 <template>
   <div class="mx-auto max-w-10xl px-6 py-10 lg:px-8 lg:py-14">
-    <div class="mb-8 sm:px-8 lg:px-10">
-      <CatalogueBackLink />
+    <div class="mb-8 sm:px-8 lg:px-10" data-testid="model-trail">
+      <DetailTrail section="models" :name="page.model.name" />
     </div>
     <header class="mb-12 sm:mx-8 lg:mx-10" data-testid="model-hero">
       <div
@@ -91,6 +104,7 @@ const restTags = computed(() =>
           >
             {{ page.model.summary }}
           </p>
+          <ModelPaths :paths class="mt-1" />
         </div>
 
         <div class="flex flex-col gap-4 lg:items-end">
@@ -126,34 +140,35 @@ const restTags = computed(() =>
       <ModelDetail :model />
 
       <section
+        v-if="showsWorkflows"
+        aria-labelledby="model-workflows-heading"
         class="mt-24 border-t border-transparency-white-t8 pt-12"
-        data-testid="related-models"
+        data-testid="model-workflows"
       >
-        <div class="mb-6 flex items-baseline justify-between gap-4">
-          <h2 class="text-2xl font-bold text-primary-comfy-canvas">
-            {{ page.relatedHeading }}
-          </h2>
-          <a
-            :href="routes.workshop"
-            class="inline-flex items-center gap-2 text-sm font-bold tracking-wider text-primary-comfy-yellow uppercase hover:underline"
+        <CardRow>
+          <template #heading>
+            <h2
+              id="model-workflows-heading"
+              class="text-2xl font-bold text-primary-comfy-canvas"
+            >
+              {{ t('workshop.model.usedBy', { name: page.model.name }) }}
+            </h2>
+          </template>
+          <li
+            v-for="workflow in page.workflows"
+            :key="workflow.slug"
+            :class="SHELF_CARD"
           >
-            <span class="sm:hidden">{{
-              t('workshop.model.browseAllShort')
-            }}</span>
-            <span class="max-sm:hidden">{{
-              t('workshop.model.browseAll')
-            }}</span>
-            <ArrowRight class="size-4 shrink-0" aria-hidden="true" />
-          </a>
-        </div>
-        <ul
-          class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-        >
-          <li v-for="other in page.related" :key="other.slug">
-            <WorkshopModelCard :model="other" />
+            <WorkshopModelCard :model="workflow" />
           </li>
-        </ul>
+        </CardRow>
       </section>
+
+      <ProviderModelsTable
+        v-if="page.model.provider"
+        :provider="page.model.provider"
+        :rows="page.providerModels"
+      />
     </div>
   </div>
 </template>

@@ -34,11 +34,13 @@ const model: WorkshopModelDetail = {
     }
   ],
   defaults: {},
-  examples: []
+  examples: [],
+  execution: workshopContract('bfl/flux-2-pro')
 }
 
 describe('ModelDetail on the server', () => {
   it('arrives with its playground already rendered, since a browser global read at setup would empty the island', async () => {
+    vi.stubEnv('PUBLIC_WORKSHOP_ROUTER_RUN', '1')
     vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(ref(true)))
     expect(typeof window, 'this file must run without a window').toBe(
       'undefined'
@@ -54,14 +56,10 @@ describe('ModelDetail on the server', () => {
 
   it('renders the same run area whatever the flag says, so a cached flag cannot break hydration', async () => {
     vi.stubEnv('PUBLIC_WORKSHOP_ROUTER_RUN', '1')
-    const runnable = {
-      ...model,
-      execution: workshopContract('bfl/flux-2-pro')
-    }
     const render = async (enabled: boolean) => {
       vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(ref(enabled)))
       return renderToString(
-        createSSRApp({ render: () => h(ModelDetail, { model: runnable }) })
+        createSSRApp({ render: () => h(ModelDetail, { model }) })
       )
     }
 
@@ -72,6 +70,7 @@ describe('ModelDetail on the server', () => {
   })
 
   it('arrives with its inputs disabled, since hydration would discard anything typed first', async () => {
+    vi.stubEnv('PUBLIC_WORKSHOP_ROUTER_RUN', '1')
     vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(ref(true)))
 
     const html = await renderToString(

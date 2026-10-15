@@ -24,9 +24,25 @@ const routerDetailSchema = generatedModelSchema
     ...(model.execution ? { form: formForContract(model.execution) } : {})
   }))
 
+const workflowPartsSchema = z.object({
+  runsOn: z.array(z.object({ name: z.string(), href: z.string().optional() })),
+  files: z.array(
+    z.object({
+      name: z.string(),
+      directory: z.string().optional(),
+      folder: z.string().optional(),
+      href: z.string().optional(),
+      downloadUrl: z.string().url().optional()
+    })
+  )
+})
+
 const workflowDetailSchema = generatedModelSchema
   .extend(workflowModelSchema.shape)
-  .extend({ workflow: workshopWorkflowDefinitionSchema })
+  .extend({
+    workflow: workshopWorkflowDefinitionSchema,
+    parts: workflowPartsSchema.optional()
+  })
   .refine((model) => model.workflowId === model.workflow.id)
   .transform((model) => ({
     ...model,
@@ -37,14 +53,26 @@ const detailSchema = z.union([routerDetailSchema, workflowDetailSchema])
 
 const tagSchema = z.object({ label: z.string(), search: z.string() })
 
+const providerModelSchema = z.object({
+  slug: z.string(),
+  name: z.string(),
+  href: z.string(),
+  provider: z.string(),
+  price: z.string().optional(),
+  resolution: z.string().optional(),
+  duration: z.object({ min: z.number().optional(), max: z.number() }).optional()
+})
+
+export type ProviderModelRow = z.output<typeof providerModelSchema>
+
 const modelsPageDataSchema = z.object({
   kind: z.literal('page'),
   model: detailSchema,
-  related: z.array(modelSchema),
-  relatedHeading: z.string(),
+  providerModels: z.array(providerModelSchema),
   successor: modelSchema.optional(),
   priceEstimate: z.string().optional(),
   useCaseLabel: z.string().optional(),
+  workflows: z.array(workflowModelSchema),
   tags: z.array(tagSchema),
   shownTags: z.array(tagSchema),
   restTags: z.array(tagSchema),

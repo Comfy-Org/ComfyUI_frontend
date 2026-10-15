@@ -21,23 +21,24 @@ const clicked = (slug: string, source: string, position: number) => ({
 })
 
 describe('AppCatalogue analytics', () => {
-  it('reports which app was opened from the shelf and from Browse all', async () => {
+  it('reports which open app was opened from the grid, and nothing for one coming soon', async () => {
     const user = userEvent.setup()
-    render(AppCatalogue, { props: { apps } })
+    render(AppCatalogue, {
+      props: {
+        apps,
+        upcoming: [{ key: 'apps/later', name: 'Later app', task: 'Later' }]
+      }
+    })
+    const grid = screen.getByRole('list', { name: 'Apps' })
+    grid.addEventListener('click', (click) => click.preventDefault())
 
-    await user.click(
-      within(screen.getByTestId('app-shelf')).getAllByRole('link')[2]
-    )
-    expect(captureWorkshopEvent).toHaveBeenLastCalledWith(
-      clicked('apps/app-2', 'app_row', 2)
-    )
-
-    await user.click(screen.getByRole('button', { name: /Browse all apps/ }))
-    await user.click(
-      within(screen.getByTestId('app-search-results')).getAllByRole('link')[8]
-    )
+    await user.click(within(grid).getAllByRole('link')[8])
     expect(captureWorkshopEvent).toHaveBeenLastCalledWith(
       clicked('apps/app-8', 'results_grid', 8)
     )
+
+    vi.mocked(captureWorkshopEvent).mockClear()
+    await user.click(within(grid).getByText('Later app'))
+    expect(captureWorkshopEvent).not.toHaveBeenCalled()
   })
 })

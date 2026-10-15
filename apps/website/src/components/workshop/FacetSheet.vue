@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { Check, X } from '@lucide/vue'
+import { X } from '@lucide/vue'
 import { useMediaQuery, useWindowSize } from '@vueuse/core'
-import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
-import { computed, ref, useId, watch } from 'vue'
+import { computed, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -10,6 +9,7 @@ import type { SheetRest } from '@/composables/useBottomSheet'
 import { heightAt, restAt } from '@/composables/useBottomSheet'
 import { prefersReducedMotion } from '@/composables/useReducedMotion'
 import { useVisualViewport } from '@/composables/useVisualViewport'
+import FacetTabs from './FacetTabs.vue'
 
 interface FacetSheetOption {
   readonly value: string
@@ -50,19 +50,6 @@ const emit = defineEmits<{
   clearAll: []
   close: []
 }>()
-
-const activeKey = ref(groups[0]?.key ?? '')
-const search = ref<Record<string, string>>({})
-const loneGroupLabelId = `facet-sheet-group-${useId()}`
-
-// A facet that is no longer offered would leave the sheet on an empty tab.
-watch(
-  () => groups.map((group) => group.key).join(),
-  () => {
-    if (!groups.some((group) => group.key === activeKey.value))
-      activeKey.value = groups[0]?.key ?? ''
-  }
-)
 
 const selectedCount = computed(() =>
   groups.reduce((total, group) => total + group.selected.length, 0)
@@ -153,15 +140,6 @@ function cancelDrag(event: PointerEvent) {
   dragged.value = null
   suppressClick.value = false
 }
-
-function visibleOptions(group: FacetSheetGroup) {
-  const needle = (search.value[group.key] ?? '').trim().toLowerCase()
-  return needle
-    ? group.options.filter((option) =>
-        option.label.toLowerCase().includes(needle)
-      )
-    : group.options
-}
 </script>
 
 <template>
@@ -206,107 +184,12 @@ function visibleOptions(group: FacetSheetGroup) {
       </div>
     </div>
 
-    <TabsRoot v-model="activeKey" class="flex min-h-0 flex-col max-sm:flex-1">
-      <!-- One group has nothing to be chosen between. Its name labels the
-        region directly without exposing an inoperable tab widget. -->
-      <h3 v-if="groups.length === 1" :id="loneGroupLabelId" class="sr-only">
-        {{ groups[0]?.label }}
-      </h3>
-      <TabsList
-        v-if="groups.length > 1"
-        class="scrollbar-hide flex items-center gap-1 overflow-x-auto border-b border-white/10 p-2 max-sm:px-4 max-sm:pb-3"
-      >
-        <TabsTrigger
-          v-for="group in groups"
-          :key="group.key"
-          :value="group.key"
-          :data-testid="`workshop-facet-${group.key}`"
-          class="inline-flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold tracking-wider whitespace-nowrap text-content-secondary uppercase transition-colors outline-none hover:bg-white/5 hover:text-content focus-visible:ring-2 focus-visible:ring-brand data-[state=active]:bg-white/8 data-[state=active]:text-content"
-        >
-          {{ group.label }}
-          <span
-            v-if="group.selected.length"
-            class="inline-flex size-4 items-center justify-center rounded-full bg-brand text-2xs font-bold text-page tabular-nums"
-            :data-testid="`workshop-facet-${group.key}-count`"
-          >
-            {{ group.selected.length }}
-          </span>
-        </TabsTrigger>
-      </TabsList>
-
-      <TabsContent
-        v-for="group in groups"
-        :key="group.key"
-        :value="group.key"
-        v-bind="
-          groups.length === 1
-            ? {
-                role: 'region',
-                'aria-labelledby': loneGroupLabelId,
-                tabindex: -1
-              }
-            : {}
-        "
-        class="flex min-h-0 flex-col outline-none max-sm:flex-1"
-      >
-        <div class="border-b border-white/10 p-2 max-sm:px-4 max-sm:py-3">
-          <input
-            v-model="search[group.key]"
-            type="search"
-            :placeholder="labels.search"
-            :aria-label="labels.search"
-            :data-testid="`workshop-filter-${group.key}-search`"
-            class="w-full rounded-lg bg-white/5 px-3 py-2 text-xs text-content outline-none placeholder:text-content-muted focus-visible:ring-2 focus-visible:ring-brand max-sm:py-2.5 max-sm:text-base [&::-webkit-search-cancel-button]:hidden"
-          />
-        </div>
-
-        <!-- On a phone the list takes whatever the sheet's own height leaves,
-          so switching tab does not resize it under the thumb. On a pointer the
-          popover hugs its list instead of standing half empty. -->
-        <ul
-          class="scrollbar-thin overflow-y-auto py-1 max-sm:min-h-0 max-sm:flex-1 sm:max-h-72 sm:min-h-32"
-          :aria-label="group.label"
-        >
-          <li v-for="option in visibleOptions(group)" :key="option.value">
-            <button
-              type="button"
-              :aria-pressed="group.selected.includes(option.value)"
-              :data-testid="`filter-${group.key}-${option.value}`"
-              class="flex w-full cursor-pointer items-center gap-2.5 px-3 py-2 text-left text-xs text-content-secondary transition-colors outline-none hover:bg-white/5 hover:text-content focus-visible:bg-white/5 max-sm:py-2.5 max-sm:text-sm"
-              @click="emit('toggle', group.key, option.value)"
-            >
-              <span
-                :class="
-                  cn(
-                    'flex size-4 shrink-0 items-center justify-center rounded-sm border transition-colors',
-                    group.selected.includes(option.value)
-                      ? 'border-brand bg-brand text-page'
-                      : 'border-white/25'
-                  )
-                "
-                aria-hidden="true"
-              >
-                <Check
-                  v-if="group.selected.includes(option.value)"
-                  class="size-3"
-                  :stroke-width="3"
-                />
-              </span>
-              <span class="flex-1 truncate">{{ option.label }}</span>
-              <span class="shrink-0 text-content/30 tabular-nums">
-                {{ option.count }}
-              </span>
-            </button>
-          </li>
-          <li
-            v-if="!visibleOptions(group).length"
-            class="px-3 py-2 text-xs text-content-muted max-sm:py-10 max-sm:text-center max-sm:text-sm"
-          >
-            {{ labels.noMatches }}
-          </li>
-        </ul>
-      </TabsContent>
-    </TabsRoot>
+    <FacetTabs
+      :groups
+      :search-label="labels.search"
+      :no-matches="labels.noMatches"
+      @toggle="(key, value) => emit('toggle', key, value)"
+    />
 
     <div
       v-if="selectedCount"

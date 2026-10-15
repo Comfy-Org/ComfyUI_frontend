@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import type { NavigationMenuRootEmits, NavigationMenuRootProps } from 'reka-ui'
+import type {
+  NavigationMenuRootEmits,
+  NavigationMenuRootProps,
+  NavigationMenuViewportProps
+} from 'reka-ui'
 import { NavigationMenuRoot, useForwardPropsEmits } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 import { computed } from 'vue'
@@ -10,12 +14,15 @@ import NavigationMenuViewport from './NavigationMenuViewport.vue'
 
 const {
   viewport = true,
+  viewportAlign = 'center',
   class: className,
   ...restProps
 } = defineProps<
   NavigationMenuRootProps & {
     class?: HTMLAttributes['class']
     viewport?: boolean
+    /** Where an open panel lines up against its trigger. */
+    viewportAlign?: NavigationMenuViewportProps['align']
   }
 >()
 const emits = defineEmits<NavigationMenuRootEmits>()
@@ -40,6 +47,6 @@ const forwarded = useForwardPropsEmits(
     "
   >
     <slot v-bind="slotProps" />
-    <NavigationMenuViewport v-if="viewport" />
+    <NavigationMenuViewport v-if="viewport" :align="viewportAlign" />
   </NavigationMenuRoot>
 </template>

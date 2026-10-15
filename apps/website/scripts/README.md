@@ -10,6 +10,18 @@ scheduled Router Provider Drift workflow:
 pnpm --filter @comfyorg/website check:router-provider-drift
 ```
 
+## `generate-workflow-catalogue-mock.ts`
+
+Sorts Comfy-Org/workflow_templates `templates/index.json` into the designer's
+modality › task tree and collections, and writes
+`public/hub-mock/workflow-catalogue-mock.json` for the "Hub: full catalogue mock
+(Workflows)" preview switch. It prints the count per task and collection, and
+leaves out text-only LLM templates. From the repository root:
+
+```sh
+pnpm --filter @comfyorg/website generate:workflow-catalogue-mock /path/to/templates/index.json
+```
+
 ## `generate-workshop-display.ts`
 
 Imports the content team's `workshop-display.json`, keyed by catalogue model ID,

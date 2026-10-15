@@ -38,6 +38,7 @@ if (!models.length) throw new Error('Cinematic Studio has no runnable models')
   description={model.summary ?? Astro.locals.t('cinematic.meta.description')}
   ogImage={modelOgImage(model)}
   noindex
+  bare
 >
   <CinematicStudioPage
     apps={appModels}

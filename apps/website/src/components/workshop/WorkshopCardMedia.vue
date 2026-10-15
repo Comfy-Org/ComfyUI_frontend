@@ -14,12 +14,24 @@ const previewSrc = usePreviewVideo(video, () => model.thumbnail?.url)
 <template>
   <!-- The card names itself in its heading and marks its provider over the
     artwork, so a third reading of the name here is noise in the link. -->
+  <div
+    v-if="model.thumbnail?.kind === 'video' && !model.thumbnail.poster"
+    class="absolute inset-0 grid place-items-center bg-hub-surface-hover"
+    aria-hidden="true"
+    data-testid="model-media-placeholder"
+  >
+    <span
+      class="font-formula text-7xl font-bold text-primary-warm-white/20 select-none"
+    >
+      {{ model.name[0] }}
+    </span>
+  </div>
   <video
     v-if="model.thumbnail?.kind === 'video'"
     ref="video"
     :src="previewSrc"
     :poster="model.thumbnail.poster"
-    class="size-full object-cover transition-transform duration-300 group-hover:scale-105"
+    class="relative size-full object-cover transition-transform duration-300 group-hover:scale-105"
     aria-hidden="true"
     data-testid="model-card-media"
     muted

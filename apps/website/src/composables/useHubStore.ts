@@ -10,7 +10,7 @@ export interface FilterBadge {
 export type HubTab = 'all' | 'nodeGraphs' | 'comfyApps' | 'models'
 // Workflows carry a date and models carry a price, so the orders on offer
 // depend on what the tab is listing.
-export type HubSort = 'popular' | 'newest' | 'name' | 'priceAsc' | 'priceDesc'
+export type HubSort = 'popular' | 'newest' | 'name'
 
 // Module-level refs: every island on the page shares the same browse state.
 const filterBadges = ref<FilterBadge[]>([])

@@ -44,6 +44,9 @@ test.describe('Home', { tag: '@visual' }, () => {
       test.beforeEach(async ({ page }) => {
         await page.setViewportSize({ width: vp.width, height: vp.height })
         await navigateAndSettle(page, '/')
+        await page.addStyleTag({
+          content: '[data-testid="preview-controls"] { display: none }'
+        })
       })
 
       test('product-cards screenshot', async ({ page }) => {

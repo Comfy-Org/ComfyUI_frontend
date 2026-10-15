@@ -48,18 +48,18 @@ test.describe('Homepage @smoke', () => {
     )
   })
 
-  test('ModelDiscoverySection links providers to the Workshop', async ({
-    page
-  }) => {
-    const section = page.getByTestId('model-discovery')
+  test('Hub banner leads into the Hub', async ({ page }) => {
+    const banner = page.getByTestId('home-hub-banner')
     await expect(
-      section.getByRole('heading', { name: /ready to run/i })
+      banner.getByRole('heading', { name: 'Everything you need to make it' })
     ).toBeVisible()
-    const bytedance = section.getByRole('link', { name: /ByteDance/ }).first()
-    await expect(bytedance).toHaveAttribute('href', '/hub/models/?q=ByteDance')
     await expect(
-      section.getByRole('link', { name: 'Browse all models' })
-    ).toHaveAttribute('href', '/hub/models/')
+      banner.getByRole('link', { name: 'Explore the Hub' })
+    ).toHaveAttribute('href', '/hub/')
+    await expect(banner.getByRole('link', { name: /^Models/ })).toHaveAttribute(
+      'href',
+      '/hub/models/'
+    )
   })
 
   test('FeaturedWorkflowsSection carousel is visible', async ({ page }) => {
@@ -288,7 +288,7 @@ test.describe('Get started section links @smoke', () => {
   })
 })
 
-test.describe('Model discovery row @interaction', () => {
+test.describe('Home Hub banner @interaction', () => {
   test.beforeEach(async ({ context }) => {
     await context.route('**/t.comfy.org/**', (route) =>
       /\/(flags|decide)\//.test(route.request().url())
@@ -296,7 +296,8 @@ test.describe('Model discovery row @interaction', () => {
             json: {
               featureFlags: {
                 'workshop-enabled': true,
-                'workshop-workflows-enabled': true
+                'workshop-workflows-enabled': true,
+                'workshop-apps-enabled': true
               },
               featureFlagPayloads: {}
             }
@@ -305,65 +306,15 @@ test.describe('Model discovery row @interaction', () => {
     )
   })
 
-  test('the toggle swaps the row and leads to the page of the half it shows', async ({
-    page
-  }) => {
+  test('leads into the Hub with its three entries', async ({ page }) => {
     await page.goto('/')
-    const tabs = page.getByTestId('catalogue-tabs')
-    const browse = page.getByTestId('model-discovery').getByRole('link', {
-      name: /^Browse all/
-    })
-    await expect(browse).toHaveAttribute('href', '/hub/models/')
-
-    await tabs.getByRole('button', { name: 'Workflows' }).click()
+    const banner = page.getByTestId('home-hub-banner')
+    await expect(banner).toHaveAttribute('data-design', 'entries')
     await expect(
-      tabs.getByRole('button', { name: 'Workflows' })
-    ).toHaveAttribute('aria-pressed', 'true')
-    await expect(page.getByTestId('discovery-workflow').first()).toBeAttached()
-    await expect(browse).toHaveAttribute('href', '/hub/workflows/')
-    await browse.click()
-    await expect(page).toHaveURL('/hub/workflows/')
-  })
-
-  test('a hovered or focused workflow card gives its whole name', async ({
-    page
-  }) => {
-    await page.goto('/')
-    await page
-      .getByTestId('catalogue-tabs')
-      .getByRole('button', { name: 'Workflows' })
-      .click()
-    const cards = page.getByTestId('discovery-workflow')
-    await expect(cards.first()).toBeAttached()
-    await page.addStyleTag({
-      content:
-        '[data-testid="discovery-marquee"] { animation: none !important }'
-    })
-
-    const cut = await cards.evaluateAll((elements) =>
-      elements.findIndex((element) => {
-        const name = element.querySelector('span[title]')
-        const box = element.getBoundingClientRect()
-        return (
-          name !== null &&
-          name.scrollWidth > name.clientWidth + 1 &&
-          box.x > 0 &&
-          box.right < window.innerWidth
-        )
-      })
-    )
-    expect(cut).toBeGreaterThan(-1)
-
-    const card = cards.nth(cut)
-    const name = card.locator('span[title]')
-    const overflow = () =>
-      name.evaluate((element) => element.scrollWidth - element.clientWidth)
-    await card.hover()
-    await expect.poll(overflow).toBeLessThanOrEqual(1)
-
-    await page.mouse.move(0, 0)
-    await expect.poll(overflow).toBeGreaterThan(1)
-    await card.focus()
-    await expect.poll(overflow).toBeLessThanOrEqual(1)
+      banner.getByRole('link', { name: /^Workflows/ })
+    ).toHaveAttribute('href', '/hub/workflows/')
+    await expect(
+      banner.getByRole('link', { name: 'Explore the Hub' })
+    ).toHaveAttribute('href', '/hub/')
   })
 })

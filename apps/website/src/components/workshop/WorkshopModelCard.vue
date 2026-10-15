@@ -7,7 +7,8 @@ import type { WorkshopModel } from '@/config/models-catalogue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import HubTypeBadge from '@/components/hub/HubTypeBadge.vue'
-import { getLogoPath } from '@/lib/hub/model-logos'
+import Badge from '@/components/ui/badge/Badge.vue'
+import { COMFY_LOGO_PATH, getLogoPath } from '@/lib/hub/model-logos'
 import { nameWithoutTask, taskLabelFor } from '@/lib/workshop/task-label'
 import TagRow from '@/components/hub/TagRow.vue'
 import ModelSupport from './ModelSupport.vue'
@@ -44,10 +45,11 @@ const providerName = computed(() =>
       t('workshop.card.partnerNode'))
 )
 
-const logo = computed(
-  () =>
-    getLogoPath(workflowModels.value?.[0] ?? model.provider ?? '') ??
-    getLogoPath(model.name)
+const logo = computed(() =>
+  model.type === 'APP'
+    ? COMFY_LOGO_PATH
+    : (getLogoPath(workflowModels.value?.[0] ?? model.provider ?? '') ??
+      getLogoPath(model.name))
 )
 
 const taskLabel = computed(() => taskLabelFor(model, locale))
@@ -75,26 +77,21 @@ const labelledBy = computed(() =>
     .filter(Boolean)
     .join(' ')
 )
-
-const pillClass =
-  'inline-flex h-6 w-fit shrink-0 items-center justify-center rounded-full bg-hub-surface px-4 py-1 text-xs font-normal whitespace-nowrap text-content'
 </script>
 
 <template>
   <a
     :href="model.href"
-    class="group flex cursor-pointer flex-col gap-3 overflow-hidden rounded-3xl bg-hub-surface px-2 pt-2 pb-4 transition-colors duration-200 outline-none hover:bg-hub-surface-hover focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
+    class="group flex h-full cursor-pointer flex-col gap-3 overflow-hidden rounded-3xl bg-hub-surface px-2 pt-2 pb-4 transition-colors duration-200 outline-none hover:bg-hub-surface-hover focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
     :aria-labelledby="labelledBy"
     data-testid="workshop-model-card"
     :data-kind="model.type === 'APP' ? 'app' : workflow ? 'workflow' : 'model'"
   >
-    <div class="relative aspect-4/3 overflow-hidden rounded-2xl bg-hub-surface">
-      <!-- First in the link, so the reader hears who answers for the card
-        before its name rather than after everything else on it. -->
+    <div
+      class="relative aspect-4/3 overflow-hidden rounded-2xl bg-hub-surface"
+      data-testid="model-card-artwork"
+    >
       <WorkshopCardMark :id="`${id}-provider`" :label="providerName" :logo />
-
-      <!-- Only the hub mixes graphs, apps and models in one grid, so only
-        there does a card have to say which it is. -->
       <HubTypeBadge
         v-if="providerBadge"
         :id="`${id}-kind`"
@@ -122,8 +119,6 @@ const pillClass =
     </div>
 
     <div class="flex flex-col gap-3 px-3">
-      <!-- The mark over the artwork already says who answers for this, so the
-          line under it is the card's own name and nothing else. -->
       <h3
         :id="`${id}-name`"
         :class="
@@ -137,26 +132,25 @@ const pillClass =
       >
         {{ cardName }}
       </h3>
-      <!-- Under a heading that names its kind, a workflow's artwork says the
-          rest, so the line a tag would take goes to the name instead. Listed
-          on its own — searched, filtered, or beside models — it keeps the tag,
-          which is then the only place the kind is written. -->
       <div
-        v-if="showsTask"
-        class="flex h-6 min-w-0 items-center gap-1.5 overflow-hidden"
+        class="flex h-6 min-w-0 items-center gap-2.5 overflow-hidden"
+        data-testid="model-card-meta"
       >
-        <span
-          :id="`${id}-task`"
-          :class="pillClass"
-          data-testid="model-card-task"
-        >
-          {{ taskLabel }}
-        </span>
-        <TagRow
-          :tags="model.capabilities"
-          :link-tags="false"
-          class="min-w-0 flex-1"
-        />
+        <template v-if="showsTask">
+          <Badge
+            :id="`${id}-task`"
+            variant="subtle"
+            class="shrink-0"
+            data-testid="model-card-task"
+          >
+            {{ taskLabel }}
+          </Badge>
+          <TagRow
+            :tags="model.capabilities"
+            :link-tags="false"
+            class="min-w-0 flex-1"
+          />
+        </template>
       </div>
     </div>
   </a>

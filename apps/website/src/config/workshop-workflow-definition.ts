@@ -13,6 +13,7 @@ export const workshopTemplateSchema = z.object({
   id: z.string().regex(/^[a-zA-Z0-9._-]+$/),
   author: z.string().min(1),
   models: z.array(z.string().min(1)),
+  customNodes: z.array(z.string().min(1)).optional(),
   previewUrl: z
     .string()
     .regex(/^\/workflow-graphs\/[a-z0-9-]+\.svg$/)
@@ -37,7 +38,8 @@ export const workshopWorkflowDefinitionSchema = z.object({
   inputs: z.record(z.string(), workshopInputDefinitionSchema),
   cloud: workflowSchema.shape.cloud.optional(),
   outputs: workflowSchema.shape.outputs.optional(),
-  template: workshopTemplateSchema.optional()
+  template: workshopTemplateSchema.optional(),
+  runsOnHub: z.boolean().optional()
 })
 
 export type WorkshopWorkflowDefinition = z.infer<

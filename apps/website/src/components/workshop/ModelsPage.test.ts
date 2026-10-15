@@ -1,6 +1,6 @@
 import { respondToFetch } from '@comfyorg/test-utils/fetch'
 import userEvent from '@testing-library/user-event'
-import { render, screen, within } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { readonly, ref, createSSRApp, h, nextTick } from 'vue'
 import type { Ref } from 'vue'
@@ -10,6 +10,7 @@ import { workshopModels } from '@/config/workshop-browse-content'
 import { workshopPages } from '@/config/workshop-page-content'
 import './ModelPage.vue'
 import './ModelsCatalogue.vue'
+import { setPreviewSwitch } from '@/lib/workshop/preview-switches'
 import { prepareModelPage } from '@/routes/models/model-page'
 import {
   useWorkshopAppsEnabled,
@@ -20,6 +21,7 @@ import {
   useWorkshopAuthFlag
 } from '@/scripts/posthog'
 import { FORWARD_GRACE_MS, forwardLegacySection } from './forwardLegacySection'
+import type { HubSection } from '@/lib/workshop/hub-section'
 import ModelsPage from './ModelsPage.vue'
 
 vi.mock(import('@/scripts/posthog'))
@@ -30,6 +32,7 @@ let workflowsEnabled: Ref<boolean>
 let appsEnabled: Ref<boolean>
 
 beforeEach(() => {
+  setPreviewSwitch('hub-workflows-modality-task', false)
   enabled = ref(false)
   vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(enabled))
   settled = ref(true)
@@ -112,10 +115,107 @@ describe('Models page entry', () => {
     expect(html).toContain('workshop-loading')
   })
 
+  function renderSection(section: HubSection) {
+    respondToFetch(CATALOGUE_URL, () => Response.json(workshopPages))
+    enabled.value = true
+    render(ModelsPage, { props: { section, heading: 'Section heading' } })
+    return screen.findByRole('heading', { name: 'Section heading' })
+  }
+
+  it.for([
+    { section: 'explore', back: false },
+    { section: 'apps', back: true },
+    { section: 'workflows', back: true },
+    { section: 'models', back: true }
+  ] as const)(
+    'heads $section with the Hub, as a way back only off the landing',
+    async ({ section, back }) => {
+      appsEnabled.value = true
+      workflowsEnabled.value = true
+      await renderSection(section)
+
+      expect(
+        screen.queryByRole('navigation', { name: 'Hub spaces' })
+      ).toBeNull()
+      expect(
+        screen.queryByRole('link', { name: 'Hub' })?.getAttribute('href')
+      ).toBe(back ? '/hub/' : undefined)
+    }
+  )
+
+  it.for([
+    { section: 'apps', current: 'Apps' },
+    { section: 'workflows', current: 'Workflows' }
+  ] as const)(
+    'places $section under a Hub breadcrumb above the eyebrow',
+    async ({ section, current }) => {
+      appsEnabled.value = true
+      workflowsEnabled.value = true
+      await renderSection(section)
+
+      const trail = screen.getByRole('navigation', { name: 'Breadcrumb' })
+      expect(within(trail).getByRole('link', { name: 'Hub' })).toHaveAttribute(
+        'href',
+        '/hub/'
+      )
+      expect(within(trail).getByText(current)).toHaveAttribute(
+        'aria-current',
+        'page'
+      )
+    }
+  )
+
+  it('lays the breadcrumb in when the persisted landing swaps to workflows', async () => {
+    workflowsEnabled.value = true
+    respondToFetch(CATALOGUE_URL, () => Response.json(workshopPages))
+    enabled.value = true
+    const { rerender } = render(ModelsPage, {
+      props: { section: 'explore', heading: 'Section heading' }
+    })
+    await screen.findByRole('heading', { name: 'Section heading' })
+    expect(screen.queryByRole('navigation', { name: 'Breadcrumb' })).toBeNull()
+
+    await rerender({ section: 'workflows', heading: 'Section heading' })
+
+    expect(
+      within(screen.getByRole('navigation', { name: 'Breadcrumb' })).getByText(
+        'Workflows'
+      )
+    ).toHaveAttribute('aria-current', 'page')
+  })
+
+  it('adds the way back when the persisted landing swaps to a section', async () => {
+    respondToFetch(CATALOGUE_URL, () => Response.json(workshopPages))
+    enabled.value = true
+    const { rerender } = render(ModelsPage, {
+      props: { section: 'explore', heading: 'Section heading' }
+    })
+    await screen.findByRole('heading', { name: 'Section heading' })
+    expect(screen.queryByTestId('hub-back')).toBeNull()
+
+    await rerender({ section: 'models', heading: 'Section heading' })
+
+    expect(screen.getByTestId('hub-back')).toHaveAttribute('href', '/hub/')
+  })
+
+  it('opens the explore page to visitors without the workshop flag', async () => {
+    respondToFetch(CATALOGUE_URL, () => Response.json(workshopPages))
+    render(ModelsPage, {
+      props: { section: 'explore', heading: 'Explore heading' },
+      slots: { fallback: '<h1>Public Models</h1>' }
+    })
+
+    expect(await screen.findByTestId('explore-results')).toBeVisible()
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+      'Explore heading'
+    )
+  })
+
   it.for([
     {
       section: 'workflows',
       catalogue: 'workflow-catalogue',
+      shownHeading: 'Workflows',
       turnOn: () => {
         workflowsEnabled.value = true
       }
@@ -123,13 +223,14 @@ describe('Models page entry', () => {
     {
       section: 'apps',
       catalogue: 'apps-catalogue',
+      shownHeading: 'Section heading',
       turnOn: () => {
         appsEnabled.value = true
       }
     }
   ] as const)(
     'keeps the $section section and its heading behind its flag',
-    async ({ section, catalogue, turnOn }) => {
+    async ({ section, catalogue, shownHeading, turnOn }) => {
       respondToFetch(CATALOGUE_URL, () => Response.json(workshopPages))
       enabled.value = true
       render(ModelsPage, {
@@ -148,7 +249,7 @@ describe('Models page entry', () => {
       turnOn()
       expect(await screen.findByTestId(catalogue)).toBeVisible()
       expect(
-        screen.getByRole('heading', { level: 1, name: 'Section heading' })
+        screen.getByRole('heading', { level: 1, name: shownHeading })
       ).toBeVisible()
       expect(
         screen.queryByRole('heading', { name: 'Public Models' })
@@ -363,7 +464,7 @@ describe('Models page entry', () => {
     )
   })
 
-  it('gives the hub heading and the tabs to a category, and takes them back', async () => {
+  it('gives the page heading to the hero and leaves it there as the catalogue narrows', async () => {
     const user = userEvent.setup()
     respondToFetch(CATALOGUE_URL, () => Response.json(workshopPages))
     enabled.value = true
@@ -373,26 +474,38 @@ describe('Models page entry', () => {
       slots: { fallback: '<h1>Public Models</h1>' }
     })
     expect(await screen.findByTestId('workshop-search')).toBeVisible()
-    const headingWrapper = () => screen.getByTestId('workshop-heading')
+    const headingWrapper = () => screen.queryByTestId('workshop-heading')
 
-    expect(headingWrapper()).not.toHaveClass('sr-only')
-    expect(
-      screen.getByRole('heading', { level: 1, name: 'Models heading' })
-    ).toBeVisible()
-    expect(screen.getByTestId('catalogue-tabs')).toBeVisible()
+    expect(headingWrapper()).toBeNull()
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1)
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+      /^Models$/
+    )
 
-    await user.click(screen.getByTestId('browse-all-end'))
-    expect(headingWrapper()).toHaveClass('sr-only')
-    // Hidden, not removed: the page still owns the only h1.
-    expect(
-      screen.getByRole('heading', { level: 1, name: 'Models heading' })
-    ).toBeInTheDocument()
-    expect(screen.queryByTestId('catalogue-tabs')).toBeNull()
-
-    await user.click(screen.getByTestId('section-back'))
-    expect(headingWrapper()).not.toHaveClass('sr-only')
-    expect(screen.getByTestId('catalogue-tabs')).toBeVisible()
+    await user.type(screen.getByTestId('workshop-search'), 'image')
+    expect(headingWrapper()).toBeNull()
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1)
+    expect(screen.queryByTestId('section-back')).toBeNull()
   })
+
+  it.for([
+    { section: 'explore', centered: true },
+    { section: 'apps', centered: false }
+  ] as const)(
+    'centres the page heading only on the Hub home ($section)',
+    async ({ section, centered }) => {
+      respondToFetch(CATALOGUE_URL, () => Response.json(workshopPages))
+      enabled.value = true
+      appsEnabled.value = true
+      render(ModelsPage, {
+        props: { section, heading: 'Section heading' },
+        slots: { fallback: '<h1>Public</h1>' }
+      })
+
+      const heading = await screen.findByTestId('workshop-heading')
+      expect(heading.classList.contains('text-center')).toBe(centered)
+    }
+  )
 
   it('switches the loaded catalogue and heading without fetching its data again', async () => {
     respondToFetch(CATALOGUE_URL, () => Response.json(workshopPages))
@@ -408,7 +521,7 @@ describe('Models page entry', () => {
     await view.rerender({ section: 'workflows', heading: 'Workflows heading' })
     expect(await screen.findByTestId('workflow-catalogue')).toBeVisible()
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
-      'Workflows heading'
+      /^Workflows$/
     )
     await view.rerender({ section: 'apps', heading: 'Apps heading' })
     expect(await screen.findByTestId('apps-catalogue')).toBeVisible()
@@ -418,7 +531,7 @@ describe('Models page entry', () => {
     await view.rerender({ section: 'models', heading: 'Models heading' })
     expect(await screen.findByTestId('workshop-search')).toBeVisible()
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
-      'Models heading'
+      /^Models$/
     )
     expect(fetch).toHaveBeenCalledExactlyOnceWith(CATALOGUE_URL)
     expect(
@@ -452,14 +565,18 @@ describe('Models page entry', () => {
     expect(fetch).not.toHaveBeenCalled()
   })
 
-  it('adds workflows to a loaded catalogue when their flag answers late', async () => {
+  it('adds workflows to the landing when their flag answers late', async () => {
     respondToFetch(CATALOGUE_URL, () => Response.json(workshopPages))
-    render(ModelsPage)
-    expect(await screen.findByTestId('workshop-search')).toBeTruthy()
-    expect(screen.queryByTestId('catalogue-tabs')).toBeNull()
+    render(ModelsPage, {
+      props: { section: 'explore', heading: 'Explore heading' }
+    })
+    const kinds = () =>
+      screen.queryAllByTestId('explore-kind').map((tag) => tag.dataset.kind)
+    await screen.findByTestId('explore-results')
+    expect(kinds()).not.toContain('workflow')
 
     workflowsEnabled.value = true
-    expect(await screen.findByTestId('catalogue-tabs')).toBeTruthy()
+    await waitFor(() => expect(kinds()).toContain('workflow'))
   })
 
   it.for([
@@ -487,9 +604,13 @@ describe('Models page entry', () => {
         ).toBeTruthy()
         expect(screen.getByTestId('model-detail')).toBeTruthy()
         expect(screen.getByTestId('model-tags')).toBeTruthy()
-        expect(screen.getByTestId('related-models').textContent).toContain(
-          'Browse all'
-        )
+        expect(
+          within(screen.getByTestId('related-models')).getByRole('heading', {
+            level: 2,
+            name: 'More from Black Forest Labs'
+          })
+        ).toBeTruthy()
+        expect(screen.queryByTestId('model-compare')).toBeNull()
         expect(
           within(screen.getByTestId('model-hero')).getByRole('link', {
             name: 'Generate images'

@@ -7,7 +7,11 @@ import { computed, onMounted, ref, shallowRef, watch } from 'vue'
 import { provideStudioSwitchGuard } from '@/composables/useStudioSwitchGuard'
 import type { AppWorkshopModel } from '@/config/models-catalogue'
 import type { WorkshopAppId } from '@/lib/workshop/apps'
-import { workshopAppHref } from '@/lib/workshop/apps'
+import { workshopAppHref, workshopAppRepo } from '@/lib/workshop/apps'
+import {
+  CINEMATIC_STUDIO_APP_SLUG,
+  RESHOOT_APP_SLUG
+} from '@/lib/workshop/cinematic-studio/analytics'
 import { getRoutes } from '@/config/routes'
 import type { CinematicModel } from '@/lib/workshop/cinematic-studio/models'
 import type { Locale } from '@/i18n/translations'
@@ -18,6 +22,7 @@ import {
 } from '@/scripts/posthog'
 import RunLeaveDialog from '@/components/workshop/RunLeaveDialog.vue'
 import WorkshopGate from '@/components/workshop/WorkshopGate.vue'
+import AppShellBar from './AppShellBar.vue'
 import CinematicAppsHub from './CinematicAppsHub.vue'
 import CinematicScenarioMenu from './CinematicScenarioMenu.vue'
 import CinematicStudio from './CinematicStudio.vue'
@@ -59,6 +64,9 @@ const studioEnabled = computed(
   () =>
     appsEnabled.value &&
     shownApps.value.some((candidate) => candidate.appId === app.value)
+)
+const appName = computed(() =>
+  t(app.value === 'reshoot' ? 'reshoot.title' : 'cinematic.title')
 )
 const workshopEnabled = useWorkshopEnabled()
 const mounted = useMounted()
@@ -162,6 +170,12 @@ function pickApp(id: string) {
 </script>
 
 <template>
+  <AppShellBar
+    :name="appName"
+    :repo="studioEnabled ? workshopAppRepo(app) : undefined"
+    :app-slug="app === 'reshoot' ? RESHOOT_APP_SLUG : CINEMATIC_STUDIO_APP_SLUG"
+    :locale
+  />
   <WorkshopGate :allowed="studioEnabled">
     <CinematicAppsHub v-if="layout === 'hub'" :models="shownApps" :locale />
     <ReshootStudio v-else-if="app === 'reshoot'" :locale />

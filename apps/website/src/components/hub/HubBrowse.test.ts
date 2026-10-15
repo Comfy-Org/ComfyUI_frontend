@@ -189,8 +189,9 @@ describe('HubBrowse', () => {
 
     await user.click(screen.getByTestId('hub-tab-models'))
     await user.click(screen.getByTestId('hub-sort'))
-    expect(await screen.findByTestId('hub-sort-priceAsc')).toBeTruthy()
+    expect(await screen.findByTestId('hub-sort-name')).toBeTruthy()
     expect(screen.queryByTestId('hub-sort-newest')).toBeNull()
+    expect(screen.queryByTestId('hub-sort-priceAsc')).toBeNull()
   })
 
   it('filters from the phone panel, one facet at a time', async () => {

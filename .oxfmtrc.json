@@ -22,6 +22,7 @@
     "apps/website/MODEL_URL_MAP.md",
     "apps/website/testing/models-test-results.json",
     "apps/website/src/content/workshop-display.json",
+    "apps/website/public/hub-mock/workflow-catalogue-mock.json",
     "apps/website/src/content/workshop-models.json",
     "apps/website/src/content/workshop-router-contracts.json",
     "apps/website/src/content/workshop-router-index.json",

@@ -40,11 +40,18 @@ export type NavFeatured = {
   }
 }
 
+type NavExploreLink = {
+  label: string
+  intro: string
+  href: string
+}
+
 export type NavItem =
   | {
       label: string
       columns: NavColumn[]
       featured?: NavFeatured
+      exploreLink?: NavExploreLink
       activePathPrefix?: string
       badge?: 'new'
       href?: never
@@ -55,6 +62,7 @@ export type NavItem =
       badge?: 'new'
       columns?: never
       featured?: never
+      exploreLink?: never
       activePathPrefix?: never
     }
 
@@ -85,6 +93,11 @@ export function getMainNavigation(
     {
       label: t('nav.workshop'),
       activePathPrefix: '/hub/',
+      exploreLink: {
+        label: t('nav.hubExplore'),
+        intro: t('nav.hubExploreHint'),
+        href: routes.hubExplore
+      },
       featured: {
         imageSrc:
           'https://media.comfy.org/website/seedance-2.5/balloons-poster.webp',

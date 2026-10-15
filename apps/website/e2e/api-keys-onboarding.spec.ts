@@ -25,9 +25,9 @@ test.describe('API-keys onboarding links @smoke', () => {
     page
   }) => {
     await page.goto(MODEL_PATH)
-    const apiTab = page.getByTestId('tab-api')
-    await waitForIsland(page, apiTab)
-    await apiTab.click()
+    const apiPath = page.getByTestId('model-path-api')
+    await waitForIsland(page, apiPath)
+    await apiPath.click()
     await expect(page.getByTestId('api-get-key')).toHaveAttribute(
       'href',
       `${API_KEYS}?onboarding=models&model=${MODEL_ID}`

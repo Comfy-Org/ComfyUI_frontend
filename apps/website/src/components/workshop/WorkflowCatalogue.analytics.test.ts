@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { SEARCH_SETTLE_MS } from '@/composables/useHubCatalogueTracking'
 import type { WorkflowWorkshopModel } from '@/config/models-catalogue'
+import { setPreviewSwitch } from '@/lib/workshop/preview-switches'
 import { captureWorkshopEvent } from '@/scripts/posthog'
 import WorkflowCatalogue from './WorkflowCatalogue.vue'
 
@@ -23,6 +24,7 @@ function workflow(
     href: `/hub/workflows/${name}/`,
     category,
     categoryOrder: category === 'video' ? 0 : 1,
+    modality: category === 'video' ? 'video' : 'image',
     recommendedRank,
     workflowCount: 1,
     capabilities: [],
@@ -50,6 +52,7 @@ async function searchbox() {
 
 beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true })
+  setPreviewSwitch('hub-workflows-modality-task', false)
   history.replaceState(null, '', '/hub/workflows/')
 })
 
@@ -83,10 +86,15 @@ describe('WorkflowCatalogue analytics', () => {
     vi.advanceTimersByTime(SEARCH_SETTLE_MS)
     expect(captureWorkshopEvent).not.toHaveBeenCalled()
 
-    await user.click(screen.getByTestId('workshop-filter'))
-    await user.click(await screen.findByTestId('workshop-facet-model'))
-    await user.click(await screen.findByTestId('filter-model-SeedVR2'))
-    await user.click(screen.getByRole('button', { name: 'Remove video' }))
+    await user.click(screen.getByRole('button', { name: 'Filters' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Filters' })
+    await user.click(within(dialog).getByRole('button', { name: /^SeedVR2 / }))
+    await user.keyboard('{Escape}')
+    await user.click(
+      within(
+        screen.getByRole('tablist', { name: 'Workflow categories' })
+      ).getByRole('tab', { name: /^All/ })
+    )
 
     expect(events('hub_filter_changed')).toEqual([
       {
@@ -110,39 +118,16 @@ describe('WorkflowCatalogue analytics', () => {
     ])
   })
 
-  it('reports a workflow opened from the featured banner', async () => {
-    const user = userEvent.setup()
-    const highlighted = models.map((model) => ({
-      ...model,
-      categoryHighlight: model.workflowId === 'restore'
-    }))
-    render(WorkflowCatalogue, { props: { models: highlighted } })
-
-    await user.click(screen.getByTestId('featured-slide-link'))
-
-    expect(events('hub_item_clicked')).toEqual([
-      {
-        name: 'hub_item_clicked',
-        properties: {
-          surface: 'workflows',
-          kind: 'workflow',
-          slug: 'workflows/restore',
-          source: 'featured_banner',
-          position: 0
-        }
-      }
-    ])
-  })
-
-  it('reports a workflow opened from a category row', async () => {
+  it('reports a workflow opened from a category, by its place in the grid', async () => {
     const user = userEvent.setup()
     render(WorkflowCatalogue, { props: { models } })
-
     await user.click(
-      within(screen.getByTestId('workflow-category-video')).getAllByTestId(
-        'workshop-model-card'
-      )[1]
+      within(
+        screen.getByRole('tablist', { name: 'Workflow categories' })
+      ).getByRole('tab', { name: /^video/ })
     )
+
+    await user.click(screen.getAllByTestId('workshop-model-card')[1])
 
     expect(events('hub_item_clicked')).toEqual([
       {
@@ -151,36 +136,8 @@ describe('WorkflowCatalogue analytics', () => {
           surface: 'workflows',
           kind: 'workflow',
           slug: 'workflows/connect',
-          source: 'category_row',
-          position: 1,
-          row: 'video'
-        }
-      }
-    ])
-  })
-
-  it('keeps the category row for a workflow whose category is empty', async () => {
-    const user = userEvent.setup()
-    render(WorkflowCatalogue, {
-      props: { models: [...models, workflow('loose', '', 1, ['SeedVR2'])] }
-    })
-
-    await user.click(
-      within(screen.getByTestId('workflow-category-')).getAllByTestId(
-        'workshop-model-card'
-      )[0]
-    )
-
-    expect(events('hub_item_clicked')).toEqual([
-      {
-        name: 'hub_item_clicked',
-        properties: {
-          surface: 'workflows',
-          kind: 'workflow',
-          slug: 'workflows/loose',
-          source: 'category_row',
-          position: 0,
-          row: ''
+          source: 'results_grid',
+          position: 1
         }
       }
     ])
