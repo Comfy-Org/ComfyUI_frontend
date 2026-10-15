@@ -7,13 +7,12 @@ import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useRegistrySearchGateway } from '@/services/gateway/registrySearchGateway'
-import type { components } from '@/types/comfyRegistryTypes'
 import type { SearchPacksResult } from '@/types/searchServiceTypes'
 import { useWorkflowPacks } from '@/workbench/extensions/manager/composables/nodePack/useWorkflowPacks'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
-type NodePack = components['schemas']['Node']
+type NodePack = SearchPacksResult['nodePacks'][number]
 
 vi.mock(import('@/services/gateway/registrySearchGateway'), () => {
   const gateway = {
