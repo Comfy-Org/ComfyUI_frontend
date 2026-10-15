@@ -11,6 +11,7 @@ import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { isCloud } from '@/platform/distribution/types'
+import { useBootDeploymentLabel } from '@/platform/workspace/composables/useDeploymentLabels'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
@@ -21,7 +22,7 @@ import {
 import { createCancelToken } from '@/utils/createCancelToken'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { isLGraphNode } from '@/utils/litegraphUtil'
-import type { MissingNodeType } from '@/types/comfy'
+import type { MissingNodeType } from '@/platform/nodeReplacement/types'
 import type { ErrorCardData, ErrorGroup, ErrorItem } from './types'
 import { shouldRenderExecutionItemList } from './executionItemList'
 import { someNodeTypeInSelection } from './selectionEmphasis'
@@ -44,7 +45,7 @@ import {
   tryNormalizeNodeExecutionId
 } from '@/types/nodeIdentification'
 
-import type { MissingResourceAbsorption } from './missingResourceAbsorption'
+import type { MissingResourceAbsorption } from '@/utils/missingResourceAbsorption'
 import { useErrorClassification } from './useErrorClassification'
 
 const PROMPT_CARD_ID = '__prompt__'
@@ -207,7 +208,10 @@ function searchErrorGroups(groups: ErrorGroup[], query: string) {
         searchableNodeId: card.nodeId ?? '',
         searchableNodeTitle: card.nodeTitle ?? '',
         searchableRawMessage: card.errors.map((e) => e.message).join(' '),
-        searchableRawDetails: card.errors.map((e) => e.details).join(' '),
+        searchableRawDetails: card.errors
+          .map((e) => e.details)
+          .filter(Boolean)
+          .join(' '),
         searchableMessage: card.errors
           .map((e) =>
             [e.displayTitle, e.displayMessage, e.message]
@@ -266,6 +270,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
   const collapseState = reactive<Record<string, boolean>>({})
 
   const errorClassification = useErrorClassification()
+  const deploymentLabel = isCloud ? useBootDeploymentLabel() : undefined
 
   const selectedNodeInfo = computed(() => {
     const rootGraph = app.rootGraphOrUndefined
@@ -740,7 +745,8 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
           kind: 'missing_node',
           nodeTypes: error.nodeTypes,
           count: packCount,
-          isCloud
+          isCloud,
+          deploymentLabel: deploymentLabel?.value
         })
       })
     }
@@ -770,7 +776,8 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
           kind: 'missing_model',
           groups: missingModelGroups.value,
           count,
-          isCloud
+          isCloud,
+          deploymentLabel: deploymentLabel?.value
         })
       }
     ]
@@ -883,7 +890,8 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
           kind: 'missing_model',
           groups: missingModelGroupsForSelection.value,
           count,
-          isCloud
+          isCloud,
+          deploymentLabel: deploymentLabel?.value
         })
       }
     ]

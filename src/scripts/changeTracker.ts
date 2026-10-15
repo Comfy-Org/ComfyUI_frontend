@@ -2,12 +2,19 @@ import { useDebounceFn } from '@vueuse/core'
 import _ from 'es-toolkit/compat'
 
 import { assert } from '@/base/assert'
-import { LAYER_EDITOR_DIALOG_KEY } from '@/renderer/extensions/layerEditor/composables/layerEditorDialog'
+import { LAYER_EDITOR_DIALOG_KEY } from '@/renderer/extensions/layerEditor/layerEditorDialogKey'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import type {
+  ComfyWorkflow,
+  WorkflowChangeTracker
+} from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import {
+  collectSubgraphDefinitions,
+  parseFlattenableSubgraphDefinitions
+} from '@/platform/workflow/core/utils/workflowFlattening'
 import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -15,11 +22,12 @@ import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { serializeNodeId } from '@/types/nodeId'
+import { isSelectOnly } from '@/utils/litegraphUtil'
 import { isModalOpen } from '@/utils/modalUtil'
 
 import { api } from './api'
-import type { ComfyApp } from './app'
-import { app } from './app'
+import { useApp } from '@/scripts/appInstance'
+import { clipspace } from '@/scripts/clipspace'
 
 function clone<T>(obj: T): T {
   return JSON.parse(JSON.stringify(obj))
@@ -29,14 +37,56 @@ function withoutExecutionOrder(nodes: ComfyWorkflowJSON['nodes']) {
   return nodes.map((node) => _.omit(node, ['order']))
 }
 
+function withNormalizedNodeSizes(state: ComfyWorkflowJSON): ComfyWorkflowJSON {
+  const comparable = clone(state)
+  const subgraphs = collectSubgraphDefinitions(
+    parseFlattenableSubgraphDefinitions(comparable.definitions?.subgraphs ?? [])
+  )
+  const nodes = [
+    ...comparable.nodes,
+    ...subgraphs.flatMap((subgraph) => subgraph.nodes)
+  ]
+  for (const node of nodes) {
+    if ('size' in node) node.size = [0, 0]
+  }
+  return comparable
+}
+
+function matchesRestoredTarget(
+  actual: ComfyWorkflowJSON,
+  target: ComfyWorkflowJSON,
+  previous: ComfyWorkflowJSON
+): boolean {
+  if (ChangeTracker.graphEqual(actual, target)) return true
+  const comparableTarget = withNormalizedNodeSizes(target)
+  return (
+    ChangeTracker.graphEqual(
+      withNormalizedNodeSizes(actual),
+      comparableTarget
+    ) &&
+    !ChangeTracker.graphEqual(
+      comparableTarget,
+      withNormalizedNodeSizes(previous)
+    )
+  )
+}
+
 function isActiveTracker(tracker: ChangeTracker): boolean {
   return useWorkflowStore().activeWorkflow?.changeTracker === tracker
 }
 
+function historyShortcut(e: KeyboardEvent): 'undo' | 'redo' | undefined {
+  if (!(e.ctrlKey || e.metaKey) || e.altKey) return
+  const key = e.key.toUpperCase()
+  if (key === 'Y' && !e.shiftKey) return 'redo'
+  if (key === 'Z') return e.shiftKey ? 'redo' : 'undo'
+}
+
 function isAutoQueueOnChange(): boolean {
+  const { ui } = useApp()
   return (
     useQueueSettingsStore().mode === 'change' ||
-    (app.ui.autoQueueEnabled && app.ui.autoQueueMode === 'change')
+    (ui.autoQueueEnabled && ui.autoQueueMode === 'change')
   )
 }
 
@@ -242,7 +292,7 @@ function reportInactiveTrackerCall(method: string, workflowPath: string) {
   assert(false, `ChangeTracker.${method}() called on inactive tracker`)
 }
 
-export class ChangeTracker {
+export class ChangeTracker implements WorkflowChangeTracker {
   static MAX_HISTORY = 50
   /**
    * Guard flag to prevent captureCanvasState from running during loadGraphData.
@@ -263,9 +313,10 @@ export class ChangeTracker {
    * Whether the redo/undo restoring is in progress.
    */
   _restoringState: boolean = false
+  private restoreChain?: Promise<void>
 
   ds?: { scale: number; offset: [number, number] }
-  nodeOutputs?: Record<string, ExecutedWsMessage['output']>
+  nodeOutputs?: Partial<Record<string, ExecutedWsMessage['output']>>
 
   private subgraphState?: {
     navigation: string[]
@@ -288,18 +339,15 @@ export class ChangeTracker {
    * Save the current state as the initial state.
    */
   reset(state?: ComfyWorkflowJSON) {
-    // Do not reset the state if we are restoring.
+    if (state) this.activeState = clone(state)
     if (this._restoringState) return
 
-    if (state) this.activeState = clone(state)
     this.initialState = clone(this.activeState)
   }
 
   store() {
-    this.ds = {
-      scale: app.canvas.ds.scale,
-      offset: [app.canvas.ds.offset[0], app.canvas.ds.offset[1]]
-    }
+    const { ds } = useApp().canvas
+    this.ds = { scale: ds.scale, offset: [ds.offset[0], ds.offset[1]] }
     this.nodeOutputs = useNodeOutputStore().snapshotOutputs()
     const navigation = useSubgraphNavigationStore().exportState()
     // Always store the navigation state, even if empty (root level)
@@ -339,6 +387,7 @@ export class ChangeTracker {
   }
 
   restore() {
+    const app = useApp()
     if (this.ds) {
       app.canvas.ds.scale = this.ds.scale
       app.canvas.ds.offset = this.ds.offset
@@ -402,7 +451,7 @@ export class ChangeTracker {
     const isUndoRedoing = this._restoringState
     const isInsideChangeTransaction = this.changeCount > 0
     if (
-      !app.graph ||
+      !useApp().isGraphReady ||
       isInsideChangeTransaction ||
       isUndoRedoing ||
       ChangeTracker.isLoadingGraph
@@ -414,11 +463,9 @@ export class ChangeTracker {
       return
     }
 
-    const currentState = clone(app.rootGraph.serialize()) as ComfyWorkflowJSON
-    if (!this.activeState) {
-      this.activeState = currentState
-      return
-    }
+    const currentState = clone(
+      useApp().rootGraph.serialize()
+    ) as ComfyWorkflowJSON
     if (!ChangeTracker.graphEqual(this.activeState, currentState)) {
       const previousState = this.activeState
       this.undoQueue.push(previousState)
@@ -439,7 +486,9 @@ export class ChangeTracker {
     )
       return
 
-    const currentState = clone(app.rootGraph.serialize()) as ComfyWorkflowJSON
+    const currentState = clone(
+      useApp().rootGraph.serialize()
+    ) as ComfyWorkflowJSON
     if (ChangeTracker.graphEqual(this.activeState, currentState)) return
 
     const previousState = this.activeState
@@ -465,22 +514,49 @@ export class ChangeTracker {
   }
 
   async updateState(source: ComfyWorkflowJSON[], target: ComfyWorkflowJSON[]) {
-    const prevState = source.pop()
-    if (prevState) {
-      const previousState = this.activeState
-      target.push(previousState)
-      this._restoringState = true
-      try {
-        await app.loadGraphData(prevState, false, false, this.workflow, {
-          checkForRerouteMigration: false,
-          silentAssetErrors: true
-        })
-        this.activeState = prevState
-        this.updateModified(previousState)
-      } finally {
-        this._restoringState = false
+    const restore = async () => {
+      if (this._restoringState || source.length === 0) return
+      const prevState = source.pop()
+      if (prevState) {
+        const previousState = this.activeState
+        const restoresSavedState = ChangeTracker.graphEqual(
+          prevState,
+          this.initialState
+        )
+        let restored = false
+        this._restoringState = true
+        try {
+          const result = await useApp().loadGraphData(
+            prevState,
+            false,
+            false,
+            this.workflow,
+            {
+              checkForRerouteMigration: false,
+              silentAssetErrors: true
+            }
+          )
+          restored = result !== false && result !== undefined
+        } finally {
+          this._restoringState = false
+          restored ||=
+            !ChangeTracker.graphEqual(this.activeState, previousState) &&
+            matchesRestoredTarget(this.activeState, prevState, previousState)
+          if (restored) {
+            target.push(previousState)
+            if (restoresSavedState) this.initialState = clone(this.activeState)
+          } else {
+            source.push(prevState)
+          }
+          if (restored) this.updateModified(previousState)
+        }
       }
     }
+    this.restoreChain = (this.restoreChain ?? Promise.resolve()).then(
+      restore,
+      restore
+    )
+    return this.restoreChain
   }
 
   async undo() {
@@ -491,18 +567,13 @@ export class ChangeTracker {
     await this.updateState(this.redoQueue, this.undoQueue)
   }
 
-  async undoRedo(e: KeyboardEvent) {
-    if ((e.ctrlKey || e.metaKey) && !e.altKey) {
-      const key = e.key.toUpperCase()
-      // Redo: Ctrl + Y, or Ctrl + Shift + Z
-      if ((key === 'Y' && !e.shiftKey) || (key == 'Z' && e.shiftKey)) {
-        await this.redo()
-        return true
-      } else if (key === 'Z' && !e.shiftKey) {
-        await this.undo()
-        return true
-      }
+  async undoRedo(e: KeyboardEvent, selectOnly = isSelectOnly(useApp().canvas)) {
+    const shortcut = historyShortcut(e)
+    if (!shortcut) return
+    if (!selectOnly) {
+      await (shortcut === 'redo' ? this.redo() : this.undo())
     }
+    return true
   }
 
   beforeChange() {
@@ -530,40 +601,44 @@ export class ChangeTracker {
         if (e.repeat) return
 
         // If the mask editor is opened, we don't want to trigger on key events
-        const comfyApp = app.constructor as typeof ComfyApp
-        if (comfyApp.maskeditor_is_opended?.()) return
+        if (clipspace.maskEditorIsOpened?.()) return
+
+        const activeEl = document.activeElement
+        if (
+          !isAutoQueueOnChange() &&
+          (activeEl?.tagName === 'INPUT' ||
+            activeEl?.tagName === 'TEXTAREA' ||
+            (activeEl instanceof HTMLElement && activeEl.isContentEditable))
+        ) {
+          // Text editors own their history. Bail out before the document-wide
+          // modal probes, whose cost otherwise scales with transcript size.
+          return
+        }
         if (isModalOpen(dialogStore.dialogStack.length)) return
 
         // The layer editor has its own session-local undo history
         if (useDialogStore().isDialogOpen(LAYER_EDITOR_DIALOG_KEY)) return
 
-        const activeEl = document.activeElement
+        keyIgnored =
+          e.key === 'Control' ||
+          e.key === 'Shift' ||
+          e.key === 'Alt' ||
+          e.key === 'Meta'
+        if (keyIgnored) return
+
+        const selectOnlyAtKeydown = isSelectOnly(useApp().canvas)
         requestAnimationFrame(async () => {
           let bindInputEl: Element | null = null
           // If we are auto queue in change mode then we do want to trigger on inputs
-          if (!app.ui.autoQueueEnabled || app.ui.autoQueueMode === 'instant') {
-            if (
-              activeEl?.tagName === 'INPUT' ||
-              (activeEl && 'type' in activeEl && activeEl.type === 'textarea')
-            ) {
-              // Ignore events on inputs, they have their native history
-              return
-            }
+          if (!isAutoQueueOnChange()) {
             bindInputEl = activeEl
           }
-
-          keyIgnored =
-            e.key === 'Control' ||
-            e.key === 'Shift' ||
-            e.key === 'Alt' ||
-            e.key === 'Meta'
-          if (keyIgnored) return
 
           const changeTracker = getCurrentChangeTracker()
           if (!changeTracker) return
 
           // Check if this is a ctrl+z ctrl+y
-          if (await changeTracker.undoRedo(e)) return
+          if (await changeTracker.undoRedo(e, selectOnlyAtKeydown)) return
 
           // If our active element is some type of input then handle changes after they're done
           if (ChangeTracker.bindInput(bindInputEl)) return
@@ -646,7 +721,7 @@ export class ChangeTracker {
       const nodeOutputs = changeTracker.nodeOutputs
       const output = nodeOutputs[detail.node]
       if (detail.merge && output) {
-        for (const k in detail.output ?? {}) {
+        for (const k in detail.output) {
           const v = output[k]
           if (v instanceof Array) {
             output[k] = v.concat(detail.output[k])
@@ -673,7 +748,7 @@ export class ChangeTracker {
       const htmlElement = activeEl as HTMLElement
       if (`on${evt}` in htmlElement) {
         const listener = () => {
-          useWorkflowStore().activeWorkflow?.changeTracker?.captureCanvasState?.()
+          useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
           htmlElement.removeEventListener(evt, listener)
         }
         htmlElement.addEventListener(evt, listener)
@@ -686,45 +761,41 @@ export class ChangeTracker {
   static graphEqual(a: ComfyWorkflowJSON, b: ComfyWorkflowJSON) {
     if (a === b) return true
 
-    if (typeof a == 'object' && a && typeof b == 'object' && b) {
-      // Compare nodes ignoring array position and execution order
-      if (
-        !_.isEqualWith(
-          withoutExecutionOrder(a.nodes),
-          withoutExecutionOrder(b.nodes),
-          (arrA, arrB) => {
-            if (Array.isArray(arrA) && Array.isArray(arrB)) {
-              return _.isEqual(new Set(arrA), new Set(arrB))
-            }
+    // Compare nodes ignoring array position and execution order
+    if (
+      !_.isEqualWith(
+        withoutExecutionOrder(a.nodes),
+        withoutExecutionOrder(b.nodes),
+        (arrA, arrB) => {
+          if (Array.isArray(arrA) && Array.isArray(arrB)) {
+            return _.isEqual(new Set(arrA), new Set(arrB))
           }
-        )
-      ) {
-        return false
-      }
-
-      // Compare extra properties ignoring ds
-      if (
-        !_.isEqual(_.omit(a.extra ?? {}, ['ds']), _.omit(b.extra ?? {}, ['ds']))
-      )
-        return false
-
-      // Compare other properties normally
-      for (const key of [
-        'links',
-        'floatingLinks',
-        'reroutes',
-        'groups',
-        'definitions',
-        'subgraphs'
-      ]) {
-        if (!_.isEqual(a[key], b[key])) {
-          return false
         }
-      }
-
-      return true
+      )
+    ) {
+      return false
     }
 
-    return false
+    // Compare extra properties ignoring ds
+    if (
+      !_.isEqual(_.omit(a.extra ?? {}, ['ds']), _.omit(b.extra ?? {}, ['ds']))
+    )
+      return false
+
+    // Compare other properties normally
+    for (const key of [
+      'links',
+      'floatingLinks',
+      'reroutes',
+      'groups',
+      'definitions',
+      'subgraphs'
+    ]) {
+      if (!_.isEqual(a[key], b[key])) {
+        return false
+      }
+    }
+
+    return true
   }
 }

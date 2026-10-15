@@ -27,7 +27,7 @@ import {
   SubgraphNode,
   createUuidv4
 } from '@/lib/litegraph/src/litegraph'
-import { remapClipboardSubgraphNodeIds } from '@/lib/litegraph/src/LGraphCanvas'
+import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import type {
   ClipboardItems,
@@ -40,11 +40,9 @@ import { useRerouteStore } from '@/stores/rerouteStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toRerouteId } from '@/types/rerouteId'
-import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 
-vi.mock<unknown>(import('@/services/litegraphService'), () => ({
-  useLitegraphService: () => ({ updatePreviews: () => ({}) })
-}))
+vi.mock(import('@/services/litegraphService'))
 
 function createSerialisedNode(
   id: number,
@@ -65,140 +63,392 @@ function createSerialisedNode(
   }
 }
 
-describe('remapClipboardSubgraphNodeIds', () => {
-  it('remaps pasted subgraph interior IDs and proxyWidgets references', () => {
+describe('clipboard ID allocation', () => {
+  it('wraps at the safe-integer boundary without mutating clipboard data', () => {
+    const nodeType = 'test/clipboard-id-wrap'
+    registerClipboardNodeType(nodeType)
     const rootGraph = new LGraph()
-    const existingNode = new LGraphNode('existing')
-    existingNode.id = toNodeId(1)
-    rootGraph.add(existingNode)
-
-    const subgraphId = createUuidv4()
-    const pastedSubgraph: ExportedSubgraph = {
-      id: subgraphId,
-      version: 1,
-      revision: 0,
-      state: {
-        lastNodeId: 0,
-        lastLinkId: 0,
-        lastGroupId: 0,
-        lastRerouteId: 0
-      },
-      config: {},
-      name: 'Pasted Subgraph',
-      inputNode: {
-        id: SUBGRAPH_INPUT_ID,
-        bounding: [0, 0, 10, 10]
-      },
-      outputNode: {
-        id: SUBGRAPH_OUTPUT_ID,
-        bounding: [0, 0, 10, 10]
-      },
-      inputs: [],
-      outputs: [],
-      widgets: [],
-      nodes: [createSerialisedNode(1, 'test/node')],
+    rootGraph.state.lastNodeId = Number.MAX_SAFE_INTEGER
+    rootGraph.state.lastGroupId = Number.MAX_SAFE_INTEGER
+    rootGraph.state.lastLinkId = toLinkId(Number.MAX_SAFE_INTEGER)
+    rootGraph.state.lastRerouteId = toRerouteId(Number.MAX_SAFE_INTEGER)
+    const canvas = createCanvas(rootGraph)
+    const parsed: ClipboardItems = {
+      nodes: [
+        createSerialisedNode(7, nodeType),
+        createSerialisedNode(8, nodeType)
+      ],
+      groups: [{ id: 7, title: 'Group', bounding: [0, 0, 100, 100] }],
       links: [
         {
-          id: 1,
-          type: '*',
-          origin_id: 1,
+          id: 7,
+          origin_id: 7,
           origin_slot: 0,
-          target_id: 1,
-          target_slot: 0
+          target_id: 8,
+          target_slot: 0,
+          type: '*',
+          parentId: 7
         }
       ],
-      groups: []
+      reroutes: [{ id: 7, pos: [0, 0], linkIds: [7] }]
+    }
+    const original = structuredClone(parsed)
+
+    const result = canvas._deserializeItems(parsed, {})
+
+    expect(parsed).toEqual(original)
+    expect(result?.created).toHaveLength(4)
+    expect(rootGraph.nodes.map((node) => node.id)).toEqual([
+      toNodeId(1),
+      toNodeId(2)
+    ])
+    expect(rootGraph.groups[0].id).toBe(1)
+    expect([...rootGraph.links.keys()]).toEqual([toLinkId(1)])
+    expect([...rootGraph.reroutes.keys()]).toEqual([toRerouteId(1)])
+  })
+
+  it('emits one complete canvas change pair for public paste', () => {
+    const nodeType = 'test/clipboard-change-hooks'
+    registerClipboardNodeType(nodeType)
+    const rootGraph = new LGraph()
+    const canvas = createCanvas(rootGraph)
+    const before = vi.spyOn(canvas, 'emitBeforeChange')
+    const after = vi.spyOn(canvas, 'emitAfterChange')
+    localStorage.setItem(
+      'litegrapheditor_clipboard',
+      JSON.stringify({ nodes: [createSerialisedNode(1, nodeType)] })
+    )
+    onTestFinished(() => localStorage.removeItem('litegrapheditor_clipboard'))
+
+    canvas.pasteFromClipboard()
+
+    expect(before).toHaveBeenCalledOnce()
+    expect(after).toHaveBeenCalledOnce()
+  })
+
+  it('clones extension values that structuredClone cannot clone', () => {
+    const nodeType = 'test/clipboard-function-property'
+    registerClipboardNodeType(nodeType)
+    const rootGraph = new LGraph()
+    const canvas = createCanvas(rootGraph)
+    const extensionCallback = () => 'extension value'
+    const node = createSerialisedNode(1, nodeType)
+    node.properties = { extensionCallback }
+
+    const result = canvas._deserializeItems({ nodes: [node] }, {})
+
+    const pasted = [...(result?.nodes.values() ?? [])][0]
+    expect(pasted).toBeDefined()
+    expect(pasted.properties.extensionCallback).toBe(extensionCallback)
+    expect(node.id).toBe(1)
+  })
+
+  it('rolls back every created item when paste throws part-way through', () => {
+    const workingType = 'test/clipboard-rollback-working'
+    const throwingType = 'test/clipboard-rollback-throwing'
+    class ProtectedClipboardNode extends LGraphNode {
+      override configure(info: ISerialisedNode): void {
+        super.configure(info)
+        this.ignore_remove = true
+      }
+    }
+    class ThrowingClipboardNode extends LGraphNode {
+      override configure(info: ISerialisedNode): void {
+        super.configure(info)
+        throw new Error('configure failed')
+      }
+    }
+    LiteGraph.registerNodeType(workingType, ProtectedClipboardNode)
+    LiteGraph.registerNodeType(throwingType, ThrowingClipboardNode)
+    const rootGraph = new LGraph()
+    const canvas = createCanvas(rootGraph)
+
+    expect(() =>
+      canvas._deserializeItems(
+        {
+          groups: [{ id: 1, title: 'Group', bounding: [0, 0, 100, 100] }],
+          nodes: [
+            createSerialisedNode(1, workingType),
+            createSerialisedNode(2, throwingType)
+          ]
+        },
+        {}
+      )
+    ).toThrow('configure failed')
+    expect(rootGraph.nodes).toEqual([])
+    expect(rootGraph.groups).toEqual([])
+  })
+
+  it('rolls back a node inserted before its onAdded callback throws', () => {
+    const nodeType = 'test/clipboard-rollback-on-added'
+    let callbackRan = false
+    class ThrowingOnAddedNode extends LGraphNode {
+      override onAdded(): void {
+        callbackRan = true
+        throw new Error('onAdded failed')
+      }
+    }
+    LiteGraph.registerNodeType(nodeType, ThrowingOnAddedNode)
+    const rootGraph = new LGraph()
+    const canvas = createCanvas(rootGraph)
+
+    expect(() =>
+      canvas._deserializeItems(
+        { nodes: [createSerialisedNode(1, nodeType)] },
+        {}
+      )
+    ).toThrow('onAdded failed')
+    expect(callbackRan).toBe(true)
+    expect(rootGraph.nodes).toEqual([])
+  })
+
+  it('releases registered subgraphs after partial configuration', () => {
+    const nodeType = 'test/subgraph-partial-configuration'
+    let removalRan = false
+    class PartiallyConfiguredNode extends LGraphNode {
+      override configure(info: ISerialisedNode): void {
+        super.configure(info)
+        throw new Error('subgraph configure failed')
+      }
+
+      override onRemoved(): void {
+        removalRan = true
+      }
+    }
+    LiteGraph.registerNodeType(nodeType, PartiallyConfiguredNode)
+    const rootGraph = new LGraph()
+    const canvas = createCanvas(rootGraph)
+    const subgraph = createClipboardSubgraph(createUuidv4())
+    subgraph.nodes = [createSerialisedNode(1, nodeType)]
+
+    expect(() =>
+      canvas._deserializeItems({ subgraphs: [subgraph] }, {})
+    ).toThrow('subgraph configure failed')
+    expect(removalRan).toBe(true)
+    expect(rootGraph.subgraphs.size).toBe(0)
+  })
+
+  it('retains configuration and rollback failures', () => {
+    const nodeType = 'test/subgraph-failed-rollback'
+    const configurationError = new Error('subgraph configure failed')
+    const rollbackError = new Error('subgraph rollback failed')
+    class FailedRollbackNode extends LGraphNode {
+      override configure(info: ISerialisedNode): void {
+        super.configure(info)
+        throw configurationError
+      }
+
+      override onRemoved(): void {
+        throw rollbackError
+      }
+    }
+    LiteGraph.registerNodeType(nodeType, FailedRollbackNode)
+    const rootGraph = new LGraph()
+    const canvas = createCanvas(rootGraph)
+    const subgraph = createClipboardSubgraph(createUuidv4())
+    subgraph.nodes = [createSerialisedNode(1, nodeType)]
+
+    let thrown: unknown
+    try {
+      canvas._deserializeItems({ subgraphs: [subgraph] }, {})
+    } catch (error) {
+      thrown = error
     }
 
-    const parsed: ClipboardItems = {
-      nodes: [createSerialisedNode(99, subgraphId, [['1', 'seed']])],
-      groups: [],
-      reroutes: [],
-      links: [],
-      subgraphs: [pastedSubgraph]
+    expect(thrown).toBeInstanceOf(AggregateError)
+    if (!(thrown instanceof AggregateError)) return
+    expect(thrown.cause).toBe(configurationError)
+    expect(thrown.errors).toEqual([configurationError, rollbackError])
+    expect(rootGraph.subgraphs.size).toBe(0)
+  })
+
+  it('rolls back nodes, links, and reroutes after a late lifecycle failure', () => {
+    const nodeType = 'test/clipboard-rollback-late'
+    let topologyExisted = false
+    class ThrowingConfiguredNode extends LGraphNode {
+      override onGraphConfigured(): void {
+        topologyExisted =
+          this.graph?.links.size === 1 && this.graph.reroutes.size === 1
+        throw new Error('graph configured failed')
+      }
+
+      override onRemoved(): void {
+        throw new Error('node removal failed')
+      }
+    }
+    LiteGraph.registerNodeType(nodeType, ThrowingConfiguredNode)
+    const rootGraph = new LGraph()
+    const canvas = createCanvas(rootGraph)
+    const origin = createSerialisedNode(1, nodeType)
+    const target = createSerialisedNode(2, nodeType)
+    origin.outputs = [{ name: 'output', type: '*', links: [1] }]
+    target.inputs = [{ name: 'input', type: '*', link: 1 }]
+
+    expect(() =>
+      canvas._deserializeItems(
+        {
+          nodes: [origin, target],
+          links: [
+            {
+              id: 1,
+              origin_id: 1,
+              origin_slot: 0,
+              target_id: 2,
+              target_slot: 0,
+              type: '*',
+              parentId: 1
+            }
+          ],
+          reroutes: [{ id: 1, pos: [20, 20], linkIds: [1] }]
+        },
+        {}
+      )
+    ).toThrow('graph configured failed')
+    expect(topologyExisted).toBe(true)
+    expect(rootGraph.nodes).toEqual([])
+    expect(rootGraph.links.size).toBe(0)
+    expect(rootGraph.reroutes.size).toBe(0)
+  })
+
+  it('retains the paste failure when change finalization also fails', () => {
+    const nodeType = 'test/clipboard-operation-and-finalization-fail'
+    const operationError = new Error('node configure failed')
+    const finalizationError = new Error('after change failed')
+    class ThrowingConfigureNode extends LGraphNode {
+      override configure(): void {
+        throw operationError
+      }
+    }
+    LiteGraph.registerNodeType(nodeType, ThrowingConfigureNode)
+    const rootGraph = new LGraph()
+    rootGraph.onAfterChange = () => {
+      throw finalizationError
+    }
+    const canvas = createCanvas(rootGraph)
+
+    let thrown: unknown
+    try {
+      canvas._deserializeItems(
+        { nodes: [createSerialisedNode(1, nodeType)] },
+        {}
+      )
+    } catch (error) {
+      thrown = error
     }
 
-    remapClipboardSubgraphNodeIds(parsed, rootGraph)
+    expect(thrown).toBeInstanceOf(AggregateError)
+    if (!(thrown instanceof AggregateError)) return
+    expect(thrown.cause).toBe(operationError)
+    expect(thrown.errors).toEqual([operationError, finalizationError])
+    expect(rootGraph.nodes).toEqual([])
+  })
 
-    const remappedSubgraph = parsed.subgraphs?.[0]
-    expect(remappedSubgraph).toBeDefined()
+  it('rolls back a successful paste when change finalization fails', () => {
+    const nodeType = 'test/clipboard-finalization-fail'
+    LiteGraph.registerNodeType(nodeType, LGraphNode)
+    const rootGraph = new LGraph()
+    const finalizationError = new Error('after change failed')
+    rootGraph.onAfterChange = () => {
+      throw finalizationError
+    }
+    const canvas = createCanvas(rootGraph)
+    const changeEvents: Array<{ nodeCount: number; subType: string }> = []
+    const emitEvent = canvas.emitEvent.bind(canvas)
+    vi.spyOn(canvas, 'emitEvent').mockImplementation((detail) => {
+      changeEvents.push({
+        nodeCount: rootGraph.nodes.length,
+        subType: detail.subType
+      })
+      emitEvent(detail)
+    })
 
-    const remappedLink = remappedSubgraph?.links?.[0]
-    expect(remappedLink).toBeDefined()
-
-    const remappedInteriorId = remappedSubgraph?.nodes?.[0]?.id
-    expect(remappedInteriorId).not.toBe(1)
-    expect(remappedLink?.origin_id).toBe(remappedInteriorId)
-    expect(remappedLink?.target_id).toBe(remappedInteriorId)
-
-    const remappedNode = parsed.nodes?.[0]
-    expect(remappedNode).toBeDefined()
-    expect(remappedNode?.properties?.proxyWidgets).toStrictEqual([
-      [String(remappedInteriorId), 'seed']
+    expect(() =>
+      canvas._deserializeItems(
+        { nodes: [createSerialisedNode(1, nodeType)] },
+        {}
+      )
+    ).toThrow(finalizationError)
+    expect(rootGraph.nodes).toEqual([])
+    expect(changeEvents).toEqual([
+      { nodeCount: 0, subType: 'before-change' },
+      { nodeCount: 0, subType: 'after-change' }
     ])
   })
 
-  it('remaps pasted SubgraphNode previewExposures sourceNodeId references', () => {
+  it('retains a falsy change finalization failure after rollback', () => {
+    const nodeType = 'test/clipboard-falsy-finalization-fail'
+    LiteGraph.registerNodeType(nodeType, LGraphNode)
     const rootGraph = new LGraph()
-    const existingNode = new LGraphNode('existing')
-    existingNode.id = toNodeId(1)
-    rootGraph.add(existingNode)
+    vi.spyOn(rootGraph, 'afterChange').mockImplementationOnce(() => {
+      throw undefined
+    })
+    const canvas = createCanvas(rootGraph)
 
-    const subgraphId = createUuidv4()
-    const pastedSubgraph: ExportedSubgraph = {
-      id: subgraphId,
-      version: 1,
-      revision: 0,
-      state: {
-        lastNodeId: 0,
-        lastLinkId: 0,
-        lastGroupId: 0,
-        lastRerouteId: 0
-      },
-      config: {},
-      name: 'Pasted Subgraph',
-      inputNode: { id: SUBGRAPH_INPUT_ID, bounding: [0, 0, 10, 10] },
-      outputNode: { id: SUBGRAPH_OUTPUT_ID, bounding: [0, 0, 10, 10] },
-      inputs: [],
-      outputs: [],
-      widgets: [],
-      nodes: [createSerialisedNode(1, 'test/node')],
-      links: [],
-      groups: []
+    let completed = false
+    try {
+      canvas._deserializeItems(
+        { nodes: [createSerialisedNode(1, nodeType)] },
+        {}
+      )
+      completed = true
+    } catch (error) {
+      expect(error).toBeUndefined()
     }
 
-    const hostInfo = createSerialisedNode(99, subgraphId)
-    hostInfo.properties = {
-      previewExposures: [
-        {
-          name: '$$canvas-image-preview',
-          sourceNodeId: '1',
-          sourcePreviewName: '$$canvas-image-preview'
-        }
-      ]
-    }
+    expect(completed).toBe(false)
+    expect(rootGraph.nodes).toEqual([])
+  })
 
-    const parsed: ClipboardItems = {
-      nodes: [hostInfo],
-      groups: [],
-      reroutes: [],
-      links: [],
-      subgraphs: [pastedSubgraph]
-    }
-
-    remapClipboardSubgraphNodeIds(parsed, rootGraph)
-
-    const remappedInteriorId = parsed.subgraphs?.[0]?.nodes?.[0]?.id
-    expect(remappedInteriorId).not.toBe(1)
-    expect(parsed.nodes?.[0]?.properties?.previewExposures).toStrictEqual([
-      {
-        name: '$$canvas-image-preview',
-        sourceNodeId: String(remappedInteriorId),
-        sourcePreviewName: '$$canvas-image-preview'
+  it('retains a falsy paste operation failure after rollback', () => {
+    const nodeType = 'test/clipboard-falsy-operation-fail'
+    class ThrowingConfigureNode extends LGraphNode {
+      override configure(): void {
+        throw undefined
       }
-    ])
+    }
+    LiteGraph.registerNodeType(nodeType, ThrowingConfigureNode)
+    const rootGraph = new LGraph()
+    const canvas = createCanvas(rootGraph)
+
+    let completed = false
+    try {
+      canvas._deserializeItems(
+        { nodes: [createSerialisedNode(1, nodeType)] },
+        {}
+      )
+      completed = true
+    } catch (error) {
+      expect(error).toBeUndefined()
+    }
+
+    expect(completed).toBe(false)
+    expect(rootGraph.nodes).toEqual([])
   })
 })
+
+function createClipboardSubgraph(id: string): ExportedSubgraph {
+  return {
+    id,
+    version: 1,
+    revision: 0,
+    state: {
+      lastNodeId: 0,
+      lastLinkId: 0,
+      lastGroupId: 0,
+      lastRerouteId: 0
+    },
+    config: {},
+    name: 'Pasted Subgraph',
+    inputNode: { id: SUBGRAPH_INPUT_ID, bounding: [0, 0, 10, 10] },
+    outputNode: { id: SUBGRAPH_OUTPUT_ID, bounding: [0, 0, 10, 10] },
+    inputs: [],
+    outputs: [],
+    widgets: [],
+    nodes: [],
+    links: [],
+    groups: []
+  }
+}
 
 function createCanvas(graph: LGraph): LGraphCanvas {
   const el = document.createElement('canvas')

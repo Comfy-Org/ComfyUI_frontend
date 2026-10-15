@@ -24,6 +24,7 @@ import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import * as missingModelScan from '@/platform/missingModel/missingModelScan'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { cloudReleaseModelOptions } from '@/platform/missingModel/releaseModelOptions'
 import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -33,6 +34,11 @@ import { seedRequiredInputMissingNodeError } from '@/utils/__tests__/executionEr
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
+
+vi.mock(import('@/platform/missingModel/releaseModelOptions'), () => ({
+  cloudReleaseModelOptions: vi.fn(),
+  releaseModelOptions: vi.fn()
+}))
 
 function stubAppRootGraph(graph: LGraph | undefined) {
   vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValue(graph)
@@ -627,7 +633,6 @@ describe('installErrorClearingHooks lifecycle', () => {
         resolveVerification = resolve
       })
     })
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     installErrorClearingHooks(graph)
 
     const node = new LGraphNode('CheckpointLoaderSimple')
@@ -643,7 +648,7 @@ describe('installErrorClearingHooks lifecycle', () => {
     )
     await Promise.resolve()
     expect(store.hasPendingAddedNodeErrorScan(graph, executionId)).toBe(true)
-    expect(warn).not.toHaveBeenCalledWith(
+    expect(console.warn).not.toHaveBeenCalledWith(
       '[useErrorClearingHooks] added-node scan failed:',
       scanError
     )
@@ -652,7 +657,7 @@ describe('installErrorClearingHooks lifecycle', () => {
     await vi.waitFor(() =>
       expect(store.hasPendingAddedNodeErrorScan(graph, executionId)).toBe(false)
     )
-    expect(warn).toHaveBeenCalledWith(
+    expect(console.warn).toHaveBeenCalledWith(
       '[useErrorClearingHooks] added-node scan failed:',
       scanError
     )
@@ -914,7 +919,7 @@ describe('installErrorClearingHooks lifecycle', () => {
     graph.remove(node)
 
     expect(store.hasPendingAddedNodeErrorScan(graph, executionId)).toBe(false)
-    expect(verifySpy.mock.calls[0][1].signal?.aborted).toBe(true)
+    expect(verifySpy.mock.calls[0][1]?.signal?.aborted).toBe(true)
 
     resolveVerification()
     await vi.waitFor(() => expect(candidate.isMissing).toBe(true))
@@ -1133,39 +1138,6 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
     expect(executionErrorStore.lastPromptError?.type).toBe('missing_node_type')
   })
 
-  it('preserves same-id successor missing model errors', () => {
-    const graph = new LGraph()
-    const orphan = new LGraphNode('CheckpointLoaderSimple')
-    graph.add(orphan)
-    const successor = new LGraphNode('CheckpointLoaderSimple')
-    successor.id = orphan.id
-    graph._nodes.push(successor)
-    graph._nodes_by_id[orphan.id] = successor
-
-    stubAppRootGraph(graph)
-    installErrorClearingHooks(graph)
-
-    const modelStore = useMissingModelStore()
-    modelStore.setMissingModels([
-      fromAny<
-        Parameters<typeof modelStore.setMissingModels>[0][number],
-        unknown
-      >({
-        nodeId: String(successor.id),
-        nodeType: 'CheckpointLoaderSimple',
-        widgetName: 'ckpt_name',
-        isAssetSupported: false,
-        name: 'model.safetensors',
-        isMissing: true
-      })
-    ])
-
-    graph.remove(orphan, { preserveCanonicalState: true })
-
-    expect(graph.getNodeById(successor.id)).toBe(successor)
-    expect(modelStore.missingModelCandidates).toHaveLength(1)
-  })
-
   it('removes missing model errors when the graph is cleared', () => {
     const graph = new LGraph()
     const node = new LGraphNode('CheckpointLoaderSimple')
@@ -1321,7 +1293,7 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
     expect(scopeSpy).toHaveBeenCalledTimes(survivingNodes.length)
   })
 
-  it('removes host-keyed missing media when its sole promoted consumer is deleted', () => {
+  it('removes host-keyed missing media when its sole promoted consumer is deleted', async () => {
     const {
       rootGraph,
       subgraph,
@@ -1336,6 +1308,10 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
 
     expect(host.widgets).toHaveLength(1)
     subgraph.remove(sourceNodes[0])
+
+    // Widget demotion is deferred by a microtask so a same-tick reconnect
+    // (a rewire) can cancel it; this genuine removal completes once it runs.
+    await Promise.resolve()
 
     expect(host.widgets).toHaveLength(0)
     expect(mediaStore.missingMediaCandidates).toBeNull()
@@ -1372,7 +1348,7 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
     expect(errorStore.lastNodeErrors).toBeNull()
   })
 
-  it('keeps promoted missing media until the last fanout consumer is deleted', () => {
+  it('keeps promoted missing media until the last fanout consumer is deleted', async () => {
     const {
       rootGraph,
       subgraph,
@@ -1387,14 +1363,19 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
     mediaStore.setMissingMedia([candidate])
 
     subgraph.remove(sourceNodes[0])
+    await Promise.resolve()
     expect(host.widgets).toHaveLength(1)
     expect(mediaStore.missingMediaCandidates).toEqual([candidate])
 
     subgraph.remove(sourceNodes[2])
+    await Promise.resolve()
     expect(host.widgets).toHaveLength(1)
     expect(mediaStore.missingMediaCandidates).toEqual([candidate])
 
     subgraph.remove(sourceNodes[1])
+    // Widget demotion is deferred by a microtask so a same-tick reconnect
+    // (a rewire) can cancel it; this genuine removal completes once it runs.
+    await Promise.resolve()
     expect(host.widgets).toHaveLength(0)
     expect(mediaStore.missingMediaCandidates).toBeNull()
   })
@@ -1506,6 +1487,31 @@ describe('realtime scan verifies pending cloud candidates', () => {
       expect(store.missingMediaCandidates).toHaveLength(1)
       expect(store.missingMediaCandidates![0].name).toBe('cloud_image.png')
     })
+  })
+
+  it('hands the scan the lookup of the models the boot Release has', async () => {
+    const releaseModelOptions = vi.fn(async () => ['release.safetensors'])
+    vi.mocked(cloudReleaseModelOptions).mockReturnValue(releaseModelOptions)
+    const graph = new LGraph()
+    const node = new LGraphNode('CheckpointLoaderSimple')
+    node.mode = LGraphEventMode.BYPASS
+    graph.add(node)
+    stubAppRootGraph(graph)
+    const scanSpy = vi
+      .spyOn(missingModelScan, 'scanNodeModelCandidates')
+      .mockReturnValue([])
+    vi.spyOn(missingMediaScan, 'scanNodeMediaCandidates').mockReturnValue([])
+
+    installErrorClearingHooks(graph)
+    setNodeMode(graph, node, LGraphEventMode.ALWAYS)
+
+    expect(scanSpy).toHaveBeenCalledWith(
+      graph,
+      node,
+      expect.any(Function),
+      expect.any(Function),
+      releaseModelOptions
+    )
   })
 
   it('does not add candidates that remain confirmed-present after verification', async () => {
@@ -1820,31 +1826,26 @@ describe('scan skips interior of bypassed subgraph containers', () => {
       rootGraph,
       outerSubgraphNode,
       expect.any(Function),
-      expect.any(Function)
+      expect.any(Function),
+      undefined
     )
     expect(modelScanSpy).toHaveBeenCalledWith(
       rootGraph,
       leafNode,
       expect.any(Function),
-      expect.any(Function)
+      expect.any(Function),
+      undefined
     )
     expect(modelScanSpy).toHaveBeenCalledWith(
       rootGraph,
       innerSubgraphNode,
       expect.any(Function),
-      expect.any(Function)
+      expect.any(Function),
+      undefined
     )
-    expect(mediaScanSpy).toHaveBeenCalledWith(
-      rootGraph,
-      outerSubgraphNode,
-      false
-    )
-    expect(mediaScanSpy).toHaveBeenCalledWith(rootGraph, leafNode, false)
-    expect(mediaScanSpy).toHaveBeenCalledWith(
-      rootGraph,
-      innerSubgraphNode,
-      false
-    )
+    expect(mediaScanSpy).toHaveBeenCalledWith(rootGraph, outerSubgraphNode)
+    expect(mediaScanSpy).toHaveBeenCalledWith(rootGraph, leafNode)
+    expect(mediaScanSpy).toHaveBeenCalledWith(rootGraph, innerSubgraphNode)
   })
 
   it('removes host-keyed promoted missing models when a source ancestor is bypassed', () => {

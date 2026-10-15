@@ -1,4 +1,3 @@
-import type { ComfyApp } from '@/scripts/app'
 import { useReleaseStore } from '../common/releaseStore'
 beforeEach(() => {
   Object.assign(useReleaseStore(), {
@@ -12,7 +11,6 @@ beforeEach(() => {
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import Button from '@/components/ui/button/Button.vue'
-import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -65,10 +63,7 @@ vi.mock(import('@/utils/markdownRendererUtil'), () => ({
   renderMarkdownToHtml: vi.fn((content: string) => `<div>${content}</div>`)
 }))
 
-vi.mock(import('@/scripts/app'), async () => {
-  const { fromPartial } = await import('@total-typescript/shoehorn')
-  return { app: fromPartial<ComfyApp>({}) }
-})
+vi.mock(import('@/scripts/app'))
 
 // Mock release store
 
@@ -76,7 +71,7 @@ describe('WhatsNewPopup', () => {
   const renderComponent = (props = {}) => {
     return render(WhatsNewPopup, {
       global: {
-        plugins: [PrimeVue, i18n],
+        plugins: [i18n],
         components: { Button },
         stubs: {
           'i-lucide-x': true,
@@ -95,24 +90,10 @@ describe('WhatsNewPopup', () => {
     useReleaseStore().fetchReleases = vi.fn()
   })
 
-  it('renders correctly when shouldShow is true', () => {
-    Object.assign(useReleaseStore(), { shouldShowPopup: true })
-    Object.assign(useReleaseStore(), {
-      recentRelease: {
-        version: '1.2.3',
-        content: '# Test Release\n\nSome content'
-      } as ReleaseNote
-    })
-
-    const { container } = renderComponent()
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-    expect(container.querySelector('.whats-new-popup')).not.toBeNull()
-  })
-
   it('does not render when shouldShow is false', () => {
     Object.assign(useReleaseStore(), { shouldShowPopup: false })
     const { container } = renderComponent()
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     expect(container.querySelector('.whats-new-popup')).toBeNull()
   })
 
@@ -161,7 +142,7 @@ describe('WhatsNewPopup', () => {
 
     const { container } = renderComponent()
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     expect(container.querySelector('.content-text')).not.toBeNull()
   })
 

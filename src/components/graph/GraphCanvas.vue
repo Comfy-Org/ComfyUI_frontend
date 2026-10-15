@@ -15,11 +15,11 @@
     <template #side-toolbar>
       <SideToolbar v-if="showUI && !isBuilderMode && !linearMode" />
     </template>
-    <template v-if="showUI" #side-bar-panel>
+    <template v-if="betaMenuEnabled" #side-bar-panel>
       <div
-        :inert="agentNodeSelectionStore.isActive"
+        :inert="canvasStore.isPickingNodes"
         class="sidebar-content-container size-full overflow-x-hidden overflow-y-auto transition-opacity duration-200 ease-in-out"
-        :class="{ 'opacity-0': agentNodeSelectionStore.isActive }"
+        :class="{ 'opacity-0': canvasStore.isPickingNodes }"
       >
         <ExtensionSlot v-if="activeSidebarTab" :extension="activeSidebarTab" />
       </div>
@@ -27,10 +27,10 @@
     <template v-if="showUI && !isBuilderMode" #topmenu>
       <TopMenuSection />
     </template>
-    <template v-if="showUI" #bottom-panel>
+    <template v-if="betaMenuEnabled" #bottom-panel>
       <BottomPanel />
     </template>
-    <template v-if="showUI" #right-side-panel>
+    <template v-if="betaMenuEnabled" #right-side-panel>
       <AppBuilder v-if="isBuilderMode" />
       <NodePropertiesPanel v-else />
     </template>
@@ -50,13 +50,13 @@
         v-if="canvasMenuEnabled && !isBuilderMode"
         class="pointer-events-auto"
       />
-      <!-- No node-selection condition here on purpose: entering the mode turns
-           the minimap setting off, so this reacts the same way it does to the
-           user's own toggle - and leaves them free to switch it back on while
-           they pick. -->
       <MiniMap
         v-if="
-          comfyAppReady && minimapEnabled && betaMenuEnabled && !isBuilderMode
+          comfyAppReady &&
+          minimapEnabled &&
+          betaMenuEnabled &&
+          !isBuilderMode &&
+          !canvasStore.isPickingNodes
         "
         class="pointer-events-auto"
       />
@@ -73,7 +73,9 @@
   <!-- TransformPane for Vue node rendering -->
   <TransformPane
     v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
+    ref="transformPaneRef"
     :canvas="comfyApp.canvas"
+    :inert="canvasStore.isPickingNodes"
     @wheel.capture="canvasInteractions.forwardEventToCanvas"
     @pointerdown.capture="forwardPointerDownPanEvent"
     @pointerup.capture="forwardPointerUpPanEvent"
@@ -175,7 +177,7 @@ import { useLitegraphSettings } from '@/platform/settings/composables/useLitegra
 import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowAutoSave } from '@/platform/workflow/persistence/composables/useWorkflowAutoSave'
@@ -194,7 +196,9 @@ import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue
 import { UnauthorizedError } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
-import { IS_CONTROL_WIDGET, updateControlWidgetLabel } from '@/scripts/widgets'
+import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/controlWidgetMarker'
+import { updateControlWidgetLabel } from '@/core/graph/widgets/valueControlWidgets'
+import { loadExtensions } from '@/services/extensionLoader'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useNewUserService } from '@/services/useNewUserService'
 import {
@@ -207,7 +211,6 @@ import { useBootstrapStore } from '@/stores/bootstrapStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
@@ -223,15 +226,24 @@ const emit = defineEmits<{
   ready: []
 }>()
 const canvasRef = ref<HTMLCanvasElement | null>(null)
+const transformPaneRef =
+  useTemplateRef<InstanceType<typeof TransformPane>>('transformPaneRef')
+const vueNodeDropTarget = computed(() => {
+  const element: unknown = transformPaneRef.value?.$el
+  return element instanceof HTMLElement ? element : null
+})
 const canvasPanelBoundsRef = useTemplateRef('canvasPanelBoundsRef')
 const nodeSearchboxPopoverRef = shallowRef<InstanceType<
   typeof NodeSearchboxPopover
 > | null>(null)
 const settingStore = useSettingStore()
+// Extensions still listen for `<id>.change` events on the legacy dialog.
+settingStore.onSettingChanged(({ id, value, oldValue }) =>
+  comfyApp.ui.settings.dispatchChange(id, value, oldValue)
+)
 const nodeDefStore = useNodeDefStore()
 const workspaceStore = useWorkspaceStore()
 const { isBuilderMode } = useAppMode()
-const agentNodeSelectionStore = useAgentNodeSelectionStore()
 const canvasStore = useCanvasStore()
 const workflowStore = useWorkflowStore()
 const nodeProgressCanvasSync = createNodeProgressCanvasSync(
@@ -241,7 +253,7 @@ const { linearMode } = storeToRefs(canvasStore)
 const { docked: agentDocked, DockedAgentPanel } = useAgentDockMount()
 const executionStore = useExecutionStore()
 const executionErrorStore = useExecutionErrorStore()
-const toastStore = useToastStore()
+const toast = useToast()
 const colorPaletteStore = useColorPaletteStore()
 const colorPaletteService = useColorPaletteService()
 const canvasInteractions = useCanvasInteractions()
@@ -263,7 +275,7 @@ const tooltipEnabled = computed(() => settingStore.get('Comfy.EnableTooltips'))
 const selectionToolboxEnabled = computed(
   () =>
     settingStore.get('Comfy.Canvas.SelectionToolbox') &&
-    !agentNodeSelectionStore.isActive
+    !canvasStore.isPickingNodes
 )
 const activeSidebarTab = computed(() => {
   return workspaceStore.sidebarTab.activeSidebarTab
@@ -388,7 +400,10 @@ watch(
   () => {
     if (!canvasStore.canvas) return
 
-    forEachNode(comfyApp.rootGraph, (n) => {
+    const rootGraph = comfyApp.rootGraphOrUndefined
+    if (!rootGraph) return
+
+    forEachNode(rootGraph, (n) => {
       if (!n.widgets) return
       for (const w of n.widgets) {
         if (!w[IS_CONTROL_WIDGET]) continue
@@ -474,11 +489,7 @@ useEventListener(
   canvasRef,
   'litegraph:no-items-selected',
   () => {
-    toastStore.add({
-      severity: 'warn',
-      summary: t('toastMessages.nothingSelected'),
-      life: 2000
-    })
+    toast.warning(t('toastMessages.nothingSelected'), { duration: 2000 })
   },
   { passive: true }
 )
@@ -487,6 +498,7 @@ const comfyAppReady = ref(false)
 const workflowPersistence = useWorkflowPersistence()
 const { runUrlActionLoaders } = useUrlActionLoaders()
 useCanvasDrop(canvasRef)
+useCanvasDrop(vueNodeDropTarget)
 useLitegraphSettings()
 useNodeBadge()
 
@@ -560,8 +572,11 @@ onMounted(async () => {
       )
     }
 
-    // @ts-expect-error fixme ts strict error
-    await comfyApp.setup(canvasRef.value)
+    await bootstrapTracer.settle('bootstrap/extensions-load', loadExtensions)
+
+    const canvas = canvasRef.value
+    if (!canvas) throw new TypeError('GraphCanvas mounted without a canvas')
+    await comfyApp.setup(canvas)
     canvasStore.canvas = comfyApp.canvas
     canvasStore.canvas.render_canvas_border = false
     useSearchBoxStore().setPopoverRef(nodeSearchboxPopoverRef.value)

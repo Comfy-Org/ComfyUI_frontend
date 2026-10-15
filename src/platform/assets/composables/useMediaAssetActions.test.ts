@@ -4,23 +4,22 @@ import { useAssetExportStore } from '@/stores/assetExportStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { CreateAssetExportData } from '@comfyorg/ingest-types'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { App } from 'vue'
 import { createApp, defineComponent, h, provide, ref } from 'vue'
 
 import { i18n } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IWidget } from '@/lib/litegraph/src/types/widgets'
 import { MediaAssetKey } from '@/platform/assets/schemas/mediaAssetSchema'
 import type { AssetId, AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { AssetMeta } from '@/platform/assets/schemas/mediaAssetSchema'
 import { scanNodeMediaCandidates } from '@/platform/missingMedia/missingMediaScan'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { api } from '@/scripts/api'
+import { useLitegraphService } from '@/services/litegraphService'
 import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
 import { clearDeletedAssetWidgetValues } from '../utils/clearDeletedAssetWidgetValues'
 import { clearNodePreviewCacheForValues } from '../utils/clearNodePreviewCacheForValues'
@@ -48,17 +47,6 @@ vi.mock(import('@/platform/distribution/types'), () => ({
     return mockIsCloud.value
   }
 }))
-
-vi.mock<unknown>(
-  import('primevue/usetoast'),
-
-  () => {
-    const add = vi.fn()
-    return {
-      useToast: () => ({ add })
-    }
-  }
-)
 
 const mockShowDialog = vi.hoisted(() => vi.fn())
 
@@ -88,17 +76,13 @@ vi.mock(
 )
 
 const mockExtractWorkflowFromAsset = vi.hoisted(() => vi.fn())
+const mockExtractApiPromptFromAsset = vi.hoisted(() => vi.fn())
 vi.mock(import('@/platform/workflow/utils/workflowExtractionUtil'), () => ({
-  extractWorkflowFromAsset: mockExtractWorkflowFromAsset
+  extractWorkflowFromAsset: mockExtractWorkflowFromAsset,
+  extractApiPromptFromAsset: mockExtractApiPromptFromAsset
 }))
 
-const litegraphServiceMock = vi.hoisted(() => ({
-  addNodeOnGraph: vi.fn<(nodeDef: unknown, options?: unknown) => LGraphNode>(),
-  getCanvasCenter: vi.fn<() => [number, number]>()
-}))
-vi.mock<unknown>(import('@/services/litegraphService'), () => ({
-  useLitegraphService: () => litegraphServiceMock
-}))
+vi.mock(import('@/services/litegraphService'))
 
 vi.mock(import('@/utils/loaderNodeUtil'))
 const mockDetectNodeTypeFromFilename = vi.mocked(detectNodeTypeFromFilename)
@@ -148,6 +132,7 @@ const mockTrackExport = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     deleteItem: vi.fn(),
+    fetchApi: vi.fn(() => Promise.resolve(new Response())),
     apiURL: vi.fn((path: string) => `http://localhost:8188/api${path}`),
     internalURL: vi.fn((path: string) => `http://localhost:8188${path}`),
     addEventListener: vi.fn(),
@@ -162,6 +147,7 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
 const mockAppGraph = vi.hoisted(() => ({
   value: { nodes: [] as unknown[] }
 }))
+const mockLoadApiJson = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     nodeOutputs: {},
@@ -171,7 +157,9 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
     },
     get rootGraph() {
       return mockAppGraph.value
-    }
+    },
+    isApiJson: (data: unknown) => !!data && typeof data === 'object',
+    loadApiJson: mockLoadApiJson
   }
 }))
 
@@ -219,10 +207,19 @@ function createLoadImageNode(): LGraphNode {
   })
 }
 
-function getAddedImageWidgetValues() {
-  return litegraphServiceMock.addNodeOnGraph.mock.results.map(
-    ({ value }) =>
-      value.widgets?.find((widget: IWidget) => widget.name === 'image')?.value
+function captureAddedNodes() {
+  const addedNodes: LGraphNode[] = []
+  vi.mocked(useLitegraphService()).addNodeOnGraph.mockImplementation(() => {
+    const node = createLoadImageNode()
+    addedNodes.push(node)
+    return node
+  })
+  return addedNodes
+}
+
+function getImageWidgetValues(nodes: LGraphNode[]) {
+  return nodes.map(
+    (node) => node.widgets?.find((widget) => widget.name === 'image')?.value
   )
 }
 
@@ -320,8 +317,10 @@ describe('useMediaAssetActions', () => {
     vi.mocked(api.getServerFeature).mockImplementation(
       (_path: string, defaultValue?: unknown) => defaultValue
     )
-    litegraphServiceMock.addNodeOnGraph.mockImplementation(createLoadImageNode)
-    litegraphServiceMock.getCanvasCenter.mockReturnValue([100, 100])
+    vi.mocked(useLitegraphService()).addNodeOnGraph.mockImplementation(
+      createLoadImageNode
+    )
+    vi.mocked(useLitegraphService()).getCanvasCenter.mockReturnValue([100, 100])
     mockDetectNodeTypeFromFilename.mockReturnValue({
       nodeType: 'LoadImage',
       widgetName: 'image'
@@ -339,6 +338,7 @@ describe('useMediaAssetActions', () => {
       })
 
       it('should use asset.name as filename', async () => {
+        const addedNodes = captureAddedNodes()
         const actions = useMediaAssetActions()
 
         const asset = createMockAsset({
@@ -348,7 +348,7 @@ describe('useMediaAssetActions', () => {
 
         await actions.addWorkflow(asset)
 
-        expect(getAddedImageWidgetValues()).toEqual(['my-image.jpeg'])
+        expect(getImageWidgetValues(addedNodes)).toEqual(['my-image.jpeg'])
       })
     })
 
@@ -358,6 +358,7 @@ describe('useMediaAssetActions', () => {
       })
 
       it('should use hash as filename when available', async () => {
+        const addedNodes = captureAddedNodes()
         const actions = useMediaAssetActions()
 
         const asset = createMockAsset({
@@ -367,10 +368,11 @@ describe('useMediaAssetActions', () => {
 
         await actions.addWorkflow(asset)
 
-        expect(getAddedImageWidgetValues()).toEqual(['abc123hash.jpeg'])
+        expect(getImageWidgetValues(addedNodes)).toEqual(['abc123hash.jpeg'])
       })
 
       it('annotates a single output asset with its metadata subfolder', async () => {
+        const addedNodes = captureAddedNodes()
         mockGetAssetType.mockReturnValue('output')
         mockGetOutputAssetMetadata.mockReturnValue({
           subfolder: 'runs/2026'
@@ -383,12 +385,13 @@ describe('useMediaAssetActions', () => {
           })
         )
 
-        expect(getAddedImageWidgetValues()).toEqual([
+        expect(getImageWidgetValues(addedNodes)).toEqual([
           'runs/2026/generated.png [output]'
         ])
       })
 
       it('should fall back to asset.name when hash is not available', async () => {
+        const addedNodes = captureAddedNodes()
         const actions = useMediaAssetActions()
 
         const asset = createMockAsset({
@@ -398,11 +401,12 @@ describe('useMediaAssetActions', () => {
 
         await actions.addWorkflow(asset)
 
-        expect(getAddedImageWidgetValues()).toEqual(['fallback-name.jpeg'])
+        expect(getImageWidgetValues(addedNodes)).toEqual(['fallback-name.jpeg'])
       })
     })
 
     it('adds supported assets and reports an exact partial result', async () => {
+      const addedNodes = captureAddedNodes()
       mockDetectNodeTypeFromFilename.mockImplementation((filename: string) =>
         filename.endsWith('.txt')
           ? { nodeType: null, widgetName: null }
@@ -417,22 +421,29 @@ describe('useMediaAssetActions', () => {
 
       await actions.addMultipleToWorkflow(assets)
 
-      expect(litegraphServiceMock.addNodeOnGraph).toHaveBeenCalledTimes(2)
-      expect(getAddedImageWidgetValues()).toEqual(['first.png', 'third.png'])
+      expect(useLitegraphService().addNodeOnGraph).toHaveBeenCalledTimes(2)
+      expect(getImageWidgetValues(addedNodes)).toEqual([
+        'first.png',
+        'third.png'
+      ])
       expect(
-        litegraphServiceMock.addNodeOnGraph.mock.calls.map(
-          ([, options]) => options
-        )
+        vi
+          .mocked(useLitegraphService())
+          .addNodeOnGraph.mock.calls.map(([, options]) => options)
       ).toEqual([{ pos: [100, 100] }, { pos: [150, 150] }])
-      expect(useToast().add).toHaveBeenCalledWith({
-        severity: 'warn',
-        summary: i18n.global.t('g.warning'),
-        detail: i18n.global.t('mediaAsset.selection.partialAddNodesSuccess', {
-          succeeded: 2,
-          failed: 1
-        }),
-        life: 3000
-      })
+      expect(useToast().warning).toHaveBeenCalledWith(
+        i18n.global.t('g.warning'),
+        {
+          description: i18n.global.t(
+            'mediaAsset.selection.partialAddNodesSuccess',
+            {
+              succeeded: 2,
+              failed: 1
+            }
+          ),
+          duration: 3000
+        }
+      )
       unmount()
     })
   })
@@ -444,6 +455,7 @@ describe('useMediaAssetActions', () => {
       })
 
       it('assigns hashes with annotations derived from each asset type', async () => {
+        const addedNodes = captureAddedNodes()
         const typeByAssetId = new Map([
           ['1', 'input'],
           ['2', 'temp'],
@@ -473,7 +485,7 @@ describe('useMediaAssetActions', () => {
         ]
 
         await actions.addMultipleToWorkflow(assets)
-        const widgetValues = getAddedImageWidgetValues()
+        const widgetValues = getImageWidgetValues(addedNodes)
         unmount()
 
         expect(widgetValues).toEqual([
@@ -482,6 +494,114 @@ describe('useMediaAssetActions', () => {
           'hash3.jpeg [output]'
         ])
       })
+    })
+  })
+
+  describe('openWorkflow', () => {
+    const apiPrompt = {
+      '1': { class_type: 'KSampler', inputs: { seed: 1 } }
+    }
+
+    beforeEach(() => {
+      mockOpenWorkflowAction.mockResolvedValue({ success: true })
+      mockExtractApiPromptFromAsset.mockResolvedValue(undefined)
+    })
+
+    it('opens an embedded workflow without touching the stored API graph', async () => {
+      mockExtractWorkflowFromAsset.mockResolvedValue({
+        workflow: { version: 0.4 },
+        filename: 'open.json'
+      })
+      const actions = useMediaAssetActions()
+
+      await actions.openWorkflow(createMockAsset())
+
+      expect(mockOpenWorkflowAction).toHaveBeenCalledWith(
+        { version: 0.4 },
+        'open.json'
+      )
+      expect(mockLoadApiJson).not.toHaveBeenCalled()
+    })
+
+    it('opens the stored API graph when no workflow is embedded', async () => {
+      mockExtractWorkflowFromAsset.mockResolvedValue({
+        workflow: null,
+        filename: 'open.json'
+      })
+      mockExtractApiPromptFromAsset.mockResolvedValue(apiPrompt)
+      const actions = useMediaAssetActions()
+
+      await actions.openWorkflow(createMockAsset())
+
+      expect(mockLoadApiJson).toHaveBeenCalledWith(apiPrompt, 'open.json')
+      expect(mockOpenWorkflowAction).not.toHaveBeenCalled()
+      expect(useToast().success).toHaveBeenCalled()
+    })
+
+    it('warns when loading the stored API graph fails', async () => {
+      mockExtractWorkflowFromAsset.mockResolvedValue({
+        workflow: null,
+        filename: 'open.json'
+      })
+      mockExtractApiPromptFromAsset.mockResolvedValue(apiPrompt)
+      mockLoadApiJson.mockRejectedValueOnce(new Error('boom'))
+      const actions = useMediaAssetActions()
+
+      await actions.openWorkflow(createMockAsset())
+
+      expect(useToast().warning).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ description: 'boom' })
+      )
+    })
+
+    it('warns when fetching the stored API graph fails', async () => {
+      mockExtractWorkflowFromAsset.mockResolvedValue({
+        workflow: null,
+        filename: 'open.json'
+      })
+      mockExtractApiPromptFromAsset.mockRejectedValueOnce(
+        new Error('network down')
+      )
+      const actions = useMediaAssetActions()
+
+      await actions.openWorkflow(createMockAsset())
+
+      expect(useToast().warning).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ description: 'network down' })
+      )
+    })
+
+    it('warns when neither a workflow nor a stored API graph exists', async () => {
+      mockExtractWorkflowFromAsset.mockResolvedValue({
+        workflow: null,
+        filename: 'open.json'
+      })
+      const actions = useMediaAssetActions()
+
+      await actions.openWorkflow(createMockAsset())
+
+      expect(mockLoadApiJson).not.toHaveBeenCalled()
+      expect(useToast().warning).toHaveBeenCalled()
+    })
+  })
+
+  describe('openMultipleWorkflows', () => {
+    it('falls back to the stored API graph for assets with no workflow', async () => {
+      const apiPrompt = { '1': { class_type: 'KSampler', inputs: {} } }
+      mockOpenWorkflowAction.mockResolvedValue({ success: true })
+      mockExtractWorkflowFromAsset.mockResolvedValue({
+        workflow: null,
+        filename: 'bulk.json'
+      })
+      mockExtractApiPromptFromAsset.mockResolvedValue(apiPrompt)
+      const actions = useMediaAssetActions()
+
+      await actions.openMultipleWorkflows([createMockAsset()])
+
+      expect(mockLoadApiJson).toHaveBeenCalledWith(apiPrompt, 'bulk.json')
+      expect(useToast().success).toHaveBeenCalled()
     })
   })
 
@@ -507,7 +627,7 @@ describe('useMediaAssetActions', () => {
 
       await actions.exportWorkflow(createMockAsset())
 
-      expect(useToast().add).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
     })
 
     it('shows a success toast on successful export', async () => {
@@ -516,9 +636,7 @@ describe('useMediaAssetActions', () => {
 
       await actions.exportWorkflow(createMockAsset())
 
-      expect(useToast().add).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'success' })
-      )
+      expect(useToast().success).toHaveBeenCalled()
     })
 
     it('shows an error toast on actual failure', async () => {
@@ -527,9 +645,7 @@ describe('useMediaAssetActions', () => {
 
       await actions.exportWorkflow(createMockAsset())
 
-      expect(useToast().add).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error' })
-      )
+      expect(useToast().error).toHaveBeenCalled()
     })
 
     it('shows a warning toast when the workflow is missing', async () => {
@@ -538,9 +654,7 @@ describe('useMediaAssetActions', () => {
 
       await actions.exportWorkflow(createMockAsset())
 
-      expect(useToast().add).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'warn' })
-      )
+      expect(useToast().warning).toHaveBeenCalled()
     })
 
     it('shows no toast when every asset in a bulk export is cancelled', async () => {
@@ -552,7 +666,7 @@ describe('useMediaAssetActions', () => {
         createMockAsset({ id: 'b' })
       ])
 
-      expect(useToast().add).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
     })
 
     it('shows a success toast for the succeeded subset when some bulk exports are cancelled', async () => {
@@ -566,9 +680,7 @@ describe('useMediaAssetActions', () => {
         createMockAsset({ id: 'b' })
       ])
 
-      expect(useToast().add).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'success' })
-      )
+      expect(useToast().success).toHaveBeenCalled()
     })
 
     it('shows a partial-success warning toast when some bulk exports fail outright', async () => {
@@ -582,9 +694,7 @@ describe('useMediaAssetActions', () => {
         createMockAsset({ id: 'b' })
       ])
 
-      expect(useToast().add).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'warn' })
-      )
+      expect(useToast().warning).toHaveBeenCalled()
     })
   })
 
@@ -649,6 +759,34 @@ describe('useMediaAssetActions', () => {
       expect(mockTrackExport).not.toHaveBeenCalled()
     })
 
+    it('fetches a cloud download through the workspace-authenticated client', async () => {
+      mockIsCloud.value = true
+      mockGetOutputAssetMetadata.mockReturnValue({
+        jobId: 'job1',
+        outputCount: 1
+      })
+
+      const actions = useMediaAssetActions()
+      actions.downloadAssets([
+        createMockAsset({
+          id: 'team-owned',
+          name: 'team-owned.glb',
+          tags: ['output'],
+          user_metadata: { jobId: 'job1', outputCount: 1 }
+        })
+      ])
+
+      const contentUrl = 'http://localhost:8188/api/assets/team-owned/content'
+      expect(mockDownloadFileAsBlob).toHaveBeenCalledWith(
+        contentUrl,
+        expect.objectContaining({ fetch: expect.any(Function) })
+      )
+
+      const { fetch: authedFetch } = mockDownloadFileAsBlob.mock.calls[0][1]
+      await authedFetch(contentUrl)
+      expect(api.fetchApi).toHaveBeenCalledWith(contentUrl)
+    })
+
     it('preserves successful OSS downloads when another file fails', async () => {
       const failure = new Error('download failed')
       mockDownloadFile
@@ -665,20 +803,19 @@ describe('useMediaAssetActions', () => {
 
       expect(mockDownloadFile).toHaveBeenCalledTimes(2)
       await vi.waitFor(() => {
-        expect(useToastStore().add).toHaveBeenCalledWith(
+        expect(useToast().success).toHaveBeenCalledWith(
+          'Success',
           expect.objectContaining({
-            severity: 'success',
-            detail: 'Started downloading 1 file'
+            description: 'Started downloading 1 file'
           })
         )
-        expect(useToastStore().add).toHaveBeenCalledWith(
-          expect.objectContaining({
-            severity: 'error',
-            detail: '1 download failed'
-          })
+        expect(useToast().error).toHaveBeenCalledWith(
+          'Error',
+          expect.objectContaining({ description: '1 download failed' })
         )
       })
       expect(mockReportError).toHaveBeenCalledWith(failure, {
+        surface: 'assets',
         errorType: 'error_downloading_asset',
         context: { filename: 'a.png' }
       })
@@ -1142,6 +1279,98 @@ describe('useMediaAssetActions', () => {
     })
   })
 
+  describe('downloadAssets - local zip export', () => {
+    beforeEach(() => {
+      mockIsCloud.value = false
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (path: string, defaultValue?: unknown) =>
+          path === 'assets' ? true : defaultValue
+      )
+      mockGetAssetType.mockImplementation((asset: AssetItem) =>
+        asset.tags.includes('input') ? 'input' : 'output'
+      )
+      mockGetOutputAssetMetadata.mockImplementation(
+        (meta: Record<string, unknown> | undefined) =>
+          meta && 'jobId' in meta ? meta : null
+      )
+    })
+
+    const groupedJob = createMockAsset({
+      id: 'job1',
+      name: 'cover.png',
+      tags: ['output'],
+      user_metadata: { jobId: 'job1', outputCount: 3 }
+    })
+    const flatJobOutput = createMockAsset({
+      id: 'flat-asset',
+      name: 'flat.png',
+      tags: ['output'],
+      job_id: 'job2'
+    })
+    const jobLessOutput = createMockAsset({
+      id: 'scanned-asset',
+      name: 'scanned.png',
+      tags: ['output'],
+      job_id: null
+    })
+    const input = createMockAsset({ id: 'input-asset', tags: ['input'] })
+
+    it.for([
+      {
+        name: 'a grouped job',
+        assets: [groupedJob],
+        expected: {
+          job_ids: ['job1'],
+          naming_strategy: 'preserve',
+          include_previews: true
+        }
+      },
+      {
+        name: 'an output without job metadata, by asset id',
+        assets: [groupedJob, flatJobOutput],
+        expected: {
+          job_ids: ['job1'],
+          asset_ids: ['flat-asset'],
+          naming_strategy: 'preserve',
+          include_previews: true
+        }
+      },
+      {
+        name: 'outputs with no job, by asset id',
+        assets: [groupedJob, jobLessOutput, input],
+        expected: {
+          job_ids: ['job1'],
+          asset_ids: ['scanned-asset', 'input-asset'],
+          naming_strategy: 'preserve',
+          include_previews: true
+        }
+      }
+    ])('zips $name', async ({ assets, expected }) => {
+      const actions = useMediaAssetActions()
+      actions.downloadAssets(assets)
+
+      await vi.waitFor(() => {
+        expect(mockCreateAssetExport).toHaveBeenCalledWith(expected)
+      })
+      expect(mockTrackExport).toHaveBeenCalledWith('test-task-id')
+      expect(mockDownloadFile).not.toHaveBeenCalled()
+    })
+
+    it('downloads files one by one when the assets system is disabled', async () => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (_path: string, defaultValue?: unknown) => defaultValue
+      )
+
+      const actions = useMediaAssetActions()
+      actions.downloadAssets([jobLessOutput, input])
+
+      await vi.waitFor(() => {
+        expect(mockDownloadFile).toHaveBeenCalledTimes(2)
+      })
+      expect(mockCreateAssetExport).not.toHaveBeenCalled()
+    })
+  })
+
   describe('downloadAssets - export toast file count', () => {
     beforeEach(() => {
       mockIsCloud.value = true
@@ -1171,11 +1400,12 @@ describe('useMediaAssetActions', () => {
         expect(mockCreateAssetExport).toHaveBeenCalledTimes(1)
       })
 
-      const { add } = useToast()
+      const { info } = useToast()
       await vi.waitFor(() => {
-        expect(add).toHaveBeenCalledWith(
+        expect(info).toHaveBeenCalledWith(
+          'Preparing ZIP download...',
           expect.objectContaining({
-            detail: i18n.global.t(
+            description: i18n.global.t(
               'mediaAsset.selection.exportStarted',
               { count },
               count
@@ -1380,14 +1610,33 @@ describe('useMediaAssetActions', () => {
       expect(mockDeleteAsset.mock.invocationCallOrder[0]).toBeLessThan(
         mockSetAssetDeleting.mock.invocationCallOrder[1]
       )
-      expect(useToast().add).toHaveBeenCalledWith({
-        severity: 'success',
-        summary: i18n.global.t('mediaAsset.assetDelete.success'),
-        detail: i18n.global.t('mediaAsset.assetsDeleted', { total: 1 }, 1),
-        life: 2000
+      expect(useToast().success).toHaveBeenCalledWith('Deletion successful', {
+        description: i18n.global.t('mediaAsset.assetsDeleted', { total: 1 }, 1),
+        duration: 2000
       })
 
       unmount()
+    })
+
+    it('deletes OSS output history without calling the asset endpoint', async () => {
+      mockIsCloud.value = false
+      vi.mocked(api.getServerFeature).mockReturnValue(false)
+      mockGetAssetType.mockReturnValue('output')
+      mockGetOutputAssetMetadata.mockReturnValue({ jobId: 'job-1' })
+      vi.mocked(api.deleteItem).mockResolvedValue(undefined)
+      const actions = useMediaAssetActions()
+      const asset = createMockAsset({
+        id: 'asset-1',
+        name: 'output.png',
+        tags: ['output'],
+        user_metadata: { jobId: 'job-1' }
+      })
+
+      await expect(actions.deleteAssets(asset)).resolves.toBe(true)
+
+      expect(api.deleteItem).toHaveBeenCalledWith('history', 'job-1')
+      expect(mockDeleteAsset).not.toHaveBeenCalled()
+      expect(useToast().success).toHaveBeenCalled()
     })
   })
 
@@ -1769,11 +2018,9 @@ describe('useMediaAssetActions', () => {
       expect(mockInputAssets.items.map((item) => item.id)).toEqual([
         'asset-503'
       ])
-      expect(useToast().add).toHaveBeenCalledWith({
-        severity: 'error',
-        summary: i18n.global.t('mediaAsset.assetDelete.error'),
-        detail: i18n.global.t('mediaAsset.assetsDeleted', { total: 1 }, 0),
-        life: 5000
+      expect(useToast().error).toHaveBeenCalledWith('Items failed to delete', {
+        description: i18n.global.t('mediaAsset.assetsDeleted', { total: 1 }, 0),
+        duration: 5000
       })
       expect(mockMarkMissingMedia).not.toHaveBeenCalled()
       expect(mockClearWidgetValues).not.toHaveBeenCalled()
@@ -1782,12 +2029,17 @@ describe('useMediaAssetActions', () => {
 
       expect(mockDeleteAsset).toHaveBeenCalledTimes(2)
       expect(mockInputAssets.items).toEqual([])
-      expect(useToast().add).toHaveBeenLastCalledWith({
-        severity: 'success',
-        summary: i18n.global.t('mediaAsset.assetDelete.success'),
-        detail: i18n.global.t('mediaAsset.assetsDeleted', { total: 1 }, 1),
-        life: 2000
-      })
+      expect(useToast().success).toHaveBeenLastCalledWith(
+        'Deletion successful',
+        {
+          description: i18n.global.t(
+            'mediaAsset.assetsDeleted',
+            { total: 1 },
+            1
+          ),
+          duration: 2000
+        }
+      )
     })
 
     it('cleans up only the succeeded assets and clears every overlay when part of a batch fails', async () => {
@@ -1831,12 +2083,17 @@ describe('useMediaAssetActions', () => {
         succeededVariants
       )
       expect(mockCaptureCanvasState).toHaveBeenCalledTimes(1)
-      expect(useToast().add).toHaveBeenCalledWith({
-        severity: 'warn',
-        summary: i18n.global.t('mediaAsset.assetDelete.warn'),
-        detail: i18n.global.t('mediaAsset.assetsDeleted', { total: 3 }, 2),
-        life: 5000
-      })
+      expect(useToast().warning).toHaveBeenCalledWith(
+        'Some items failed to delete',
+        {
+          description: i18n.global.t(
+            'mediaAsset.assetsDeleted',
+            { total: 3 },
+            2
+          ),
+          duration: 5000
+        }
+      )
 
       const flagsById: Record<string, boolean[]> = {}
       for (const [id, flag] of mockSetAssetDeleting.mock.calls) {

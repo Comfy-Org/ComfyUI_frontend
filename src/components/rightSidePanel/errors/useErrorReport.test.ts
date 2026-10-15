@@ -1,5 +1,5 @@
 import { until } from '@vueuse/core'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
@@ -8,6 +8,7 @@ import { createNodeExecutionId } from '@/types/nodeIdentification'
 
 import type { ErrorCardData } from './types'
 import { useErrorReport } from './useErrorReport'
+import { app } from '@/scripts/app'
 
 async function flushPromises() {
   await new Promise((resolve) => setTimeout(resolve, 0))
@@ -30,13 +31,7 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    rootGraph: {
-      serialize: mocks.serialize
-    }
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
 vi.mock(import('@/utils/errorReportUtil'), () => ({
   generateErrorReport: mocks.generateErrorReport
@@ -67,18 +62,12 @@ function makeCard(overrides: Partial<ErrorCardData> = {}): ErrorCardData {
 }
 
 describe('useErrorReport', () => {
-  let warnSpy: ReturnType<typeof vi.spyOn>
-
   beforeEach(async () => {
+    vi.spyOn(app.rootGraph, 'serialize').mockImplementation(mocks.serialize)
     const store = useSystemStatsStore()
     await until(() => store.isInitialized).toBe(true)
     store.systemStats = null
     store.isLoading = false
-    warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-  })
-
-  afterEach(() => {
-    warnSpy.mockRestore()
   })
 
   it('returns early without enrichment when the card has no runtime errors', async () => {
@@ -199,9 +188,7 @@ describe('useErrorReport', () => {
     useErrorReport(card)
     await flushPromises()
 
-    expect(
-      vi.mocked(useSystemStatsStore().refetchSystemStats)
-    ).toHaveBeenCalledTimes(1)
+    expect(useSystemStatsStore().refetchSystemStats).toHaveBeenCalledTimes(1)
     expect(mocks.generateErrorReport).toHaveBeenCalledTimes(1)
   })
 
@@ -218,12 +205,10 @@ describe('useErrorReport', () => {
     useErrorReport(card)
     await flushPromises()
 
-    expect(
-      vi.mocked(useSystemStatsStore().refetchSystemStats)
-    ).toHaveBeenCalledTimes(1)
+    expect(useSystemStatsStore().refetchSystemStats).toHaveBeenCalledTimes(1)
     expect(mocks.getLogs).not.toHaveBeenCalled()
     expect(mocks.generateErrorReport).not.toHaveBeenCalled()
-    expect(warnSpy).toHaveBeenCalled()
+    expect(console.warn).toHaveBeenCalled()
   })
 
   it('returns early and warns when workflow serialization throws', async () => {
@@ -242,7 +227,7 @@ describe('useErrorReport', () => {
     await flushPromises()
 
     expect(mocks.generateErrorReport).not.toHaveBeenCalled()
-    expect(warnSpy).toHaveBeenCalled()
+    expect(console.warn).toHaveBeenCalled()
     expect(displayedDetailsMap.value).toEqual({ 0: 'trace' })
   })
 
@@ -264,7 +249,7 @@ describe('useErrorReport', () => {
     const { displayedDetailsMap } = useErrorReport(card)
     await flushPromises()
 
-    expect(warnSpy).toHaveBeenCalled()
+    expect(console.warn).toHaveBeenCalled()
     expect(displayedDetailsMap.value).toEqual({ 0: 'fallback' })
   })
 

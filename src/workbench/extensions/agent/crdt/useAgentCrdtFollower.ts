@@ -8,98 +8,90 @@ import {
   watch
 } from 'vue'
 import type { Ref } from 'vue'
-import * as Y from 'yjs'
 
+import { SCHEMA_VERSION } from '@comfyorg/comfy-multi-player'
+import type { Op } from '@comfyorg/comfy-multi-player'
+
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
+import type { AgentGraphProjectionStage } from '@/platform/telemetry/types'
 import { api } from '@/scripts/api'
-import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { parseNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import { createUuidv4 } from '@/utils/uuid'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
-import type { MaterializableGraph } from './agentNodeMaterializer'
+import type {
+  AgentCrdtOutcomeCounters,
+  AgentCrdtStatus
+} from './agentCrdtStatus'
 import {
   AgentCrdtDocLifecycle,
   STALE_AFTER_MS,
   SUBSCRIBE_CATCHUP_GRACE_MS
 } from './agentCrdtDocLifecycle'
 import { AgentCrdtProjection } from './agentCrdtProjection'
+import type { DocNodeDelta, FrameOutcome } from './agentCrdtProjection'
 import { apiTransport, createLoggedTransport } from './agentCrdtTransport'
 import { recordDevEvent } from './devPanelLog'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import { readCrdtSnapshot } from './crdtSnapshot'
 import { DocFrameClient } from './docFrameClient'
-import type { MutationsForTarget } from './ecsFollowerAdapter'
+import { RESEED_CONFLICT, isRetryableReseedCode } from './docFrameCodes'
 import type { GraphOperation } from './graphOperations'
 import type { ClassifiedDocUpdate } from './layoutFollowerBridge'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
+import type { LiveGraphApplierDeps } from './liveGraphApplier'
+import { readDocPromotedWidgets } from './agentSubgraphDefinitions'
+import { readDocSlotNames } from './liveGraphApplier'
 import { createOpCoalescer } from './opCoalescer'
-import type { OpsResultView } from './opSender'
 import { createOpSender } from './opSender'
+import type { BatchOutcome, OpsResultView } from './opSender'
+import { createRejectedOpNotifier } from './rejectedOpNotice'
 
 export { apiTransport, STALE_AFTER_MS, SUBSCRIBE_CATCHUP_GRACE_MS }
 
-/**
- * s5-metrics-1: per-outcome counters for every `doc_update` the composable's
- * listeners observe, replacing the single overloaded `updatesApplied`
- * observable. Each counter increments exactly once, at the boundary where
- * that outcome is decided — never inferred after the fact. `received` counts
- * only frames the bridge re-dispatched as `doc_update`, so
- * `received === applied + skipped` always holds; `errored`, `gap` and
- * `dropped` are disjoint from it because the bridge returns before
- * re-dispatching in each of those cases (schema gate, FEB-2 seq jump,
- * stale/duplicate discard). Frames the bridge drops for a workflowId other
- * than its `sentWorkflowId` emit no event and are not counted anywhere.
- * `applied` is tracked independently of `bridge.follower.updatesApplied`
- * (which counts Yjs merges, including frames this composable skips) so a
- * divergence between the two is visible instead of hidden behind one number.
- * No payload bodies or actor identifiers are recorded here — see
- * `recordDevEvent` call sites for the (dev-only) frame detail surface.
- */
-interface AgentCrdtOutcomeCounters {
-  /** Every `doc_update` event the composable's listener was invoked with. */
-  received: number
-  /** Passed this composable's own filter and the adapter had a bound session to apply it to. */
-  applied: number
-  /** Received but not applied: inactive target, workflow mismatch, or no bound adapter session. */
-  skipped: number
-  /** The merged doc failed the KA-11 read gate (`schema_error`). */
-  errored: number
-  /** A seq jump was detected upstream; the frame was withheld and a resubscribe forced (`doc_gap`). */
-  gap: number
-  /** An explicit lineage break (`doc_reset`). */
-  reset: number
-  /** A stale/duplicate frame the bridge discarded before it became a `doc_update` event (`doc_stale`). */
-  dropped: number
+interface ProjectionFrameId {
+  opIds?: readonly string[]
+  seq: number
+}
+
+const NOTHING_APPLIED: FrameOutcome = {
+  applied: false,
+  nodes: { added: [], removed: [] }
+}
+
+function isAgentFrame(actor: string | undefined): boolean {
+  return actor === undefined || actor.startsWith('agent:')
+}
+
+function reportAgentProjection(
+  frame: ProjectionFrameId,
+  stage: AgentGraphProjectionStage,
+  outcome: FrameOutcome
+): void {
+  const opIds = frame.opIds?.filter((id) => id.length > 0) ?? []
+  useTelemetry()?.trackAgentGraphProjection({
+    op_id: opIds[0] ?? null,
+    op_count: opIds.length,
+    sequence: frame.seq,
+    stage,
+    added_count: outcome.nodes.added.length,
+    removed_count: outcome.nodes.removed.length,
+    apply_failure_count: outcome.applied ? outcome.failureCount : 0
+  })
 }
 
 function liveAddedNodeIds(
   added: readonly string[],
-  graph: MaterializableGraph | null
+  graph: LGraph | null
 ): NodeId[] {
   if (!graph) return []
   return added.flatMap((id) => {
     const nodeId = parseNodeId(id)
-    return nodeId && graph._nodes_by_id[nodeId] ? [nodeId] : []
+    return nodeId && graph.getNodeById(nodeId) ? [nodeId] : []
   })
-}
-
-function updateNodeIds(update: Uint8Array): NodeId[] {
-  try {
-    return Y.decodeUpdate(update).structs.flatMap((struct) => {
-      if (!(struct instanceof Y.Item)) return []
-      if (
-        String(struct.parent) !== 'nodes' ||
-        typeof struct.parentSub !== 'string'
-      )
-        return []
-      const nodeId = parseNodeId(struct.parentSub)
-      return nodeId ? [nodeId] : []
-    })
-  } catch {
-    return []
-  }
 }
 
 function emitPendingMaterializations(
@@ -115,30 +107,60 @@ function emitPendingMaterializations(
   events.onMaterialized?.({ workflowId, actor, nodeIds })
 }
 
+interface SubscribeRefusalOutcome {
+  shouldNotify: boolean
+  message?: string
+  code?: string
+}
+
+// PM-1604 / BE-11437: a subscribe refusal carries a `code` that is either
+// retryable (the lifecycle keeps retrying on its own) or one of
+// `PERMANENT_SUBSCRIBE_REFUSAL_CODES`, which the lifecycle won't recover
+// from by itself — surface those to the person via `onSyncError`, except
+// `unsupported`, which the lifecycle already declines to notify (a
+// deployment with the doc surface off shouldn't toast every user). The
+// caller notifies only after its own held-ops cleanup, matching
+// `onDocReset`'s cleanup-before-notify order, so a throw from consumer code
+// reaching into the toast store can't strand an in-flight op batch. `code`
+// rides along so the presentation layer can pick accurate copy instead of
+// collapsing every permanent code to the same message.
+function handleSubscribeRefusal(
+  detail: { code?: unknown; message?: unknown } | null,
+  lifecycle: AgentCrdtDocLifecycle
+): SubscribeRefusalOutcome {
+  const code = typeof detail?.code === 'string' ? detail.code : undefined
+  if (!lifecycle.onSubscribeRefused(code)) return { shouldNotify: false }
+  return {
+    shouldNotify: true,
+    message: typeof detail?.message === 'string' ? detail.message : undefined,
+    code
+  }
+}
+
 function notifyAgentMaterialization(
   update: ClassifiedDocUpdate,
-  added: readonly string[],
+  nodes: DocNodeDelta,
   materialized: readonly NodeId[],
-  graph: MaterializableGraph | null,
+  graph: LGraph | null,
   pendingLiveNodeIds: Set<NodeId>,
   events: AgentCrdtFollowerEvents
 ): void {
+  for (const id of nodes.removed) {
+    const nodeId = parseNodeId(id)
+    if (nodeId) pendingLiveNodeIds.delete(nodeId)
+  }
   const isLiveAgentUpdate =
     !update.catchUp && update.actor?.startsWith('agent:') === true
   if (isLiveAgentUpdate) {
-    if (update.update instanceof Uint8Array) {
-      for (const nodeId of updateNodeIds(update.update))
-        pendingLiveNodeIds.add(nodeId)
-    }
     for (const nodeId of materialized) pendingLiveNodeIds.add(nodeId)
-    for (const id of added) {
+    for (const id of nodes.added) {
       const nodeId = parseNodeId(id)
       if (nodeId) pendingLiveNodeIds.add(nodeId)
     }
   }
   const available = new Set([
     ...materialized,
-    ...liveAddedNodeIds(added, graph)
+    ...liveAddedNodeIds(nodes.added, graph)
   ])
   emitPendingMaterializations(
     update.workflowId,
@@ -149,19 +171,21 @@ function notifyAgentMaterialization(
   )
 }
 
-export interface AgentCrdtStatus {
-  enabled: boolean
-  connected: boolean
-  workflowId: string | null
-  /**
-   * Mirror of `bridge.follower.updatesApplied` (Yjs merges, reset to 0 on
-   * `doc_reset` / `follower_replaced`). Not interchangeable with
-   * `outcomes.applied`, which is monotonic and counts only frames that passed
-   * this composable's filter. Kept for AgentPanelRoot.vue and CrdtDevPanel.vue.
-   */
-  updatesApplied: number
-  lastFrameType: string | null
-  outcomes: AgentCrdtOutcomeCounters
+function hasNodes(
+  canvas: Record<string, unknown> | null
+): canvas is Record<string, unknown> {
+  return Array.isArray(canvas?.nodes) && canvas.nodes.length > 0
+}
+
+type OpsResultDropReason = 'inactive_target' | 'workflow_mismatch'
+
+function opsResultDropReason(
+  active: boolean,
+  workflowId: unknown,
+  subscribedWorkflowId: string | null
+): OpsResultDropReason | null {
+  if (!active) return 'inactive_target'
+  return workflowId === subscribedWorkflowId ? null : 'workflow_mismatch'
 }
 
 export interface AgentCrdtFollowerEvents {
@@ -171,6 +195,20 @@ export interface AgentCrdtFollowerEvents {
     nodeIds: readonly NodeId[]
   }) => void
   onReset?: (workflowId: string) => void
+  /**
+   * PM-1604 / BE-11437: the doc-host classified a resync refusal as
+   * permanent (one of `PERMANENT_SUBSCRIBE_REFUSAL_CODES`) — the lifecycle
+   * has already stopped retrying it, so this is the one chance to tell the
+   * person their canvas is out of sync instead of leaving them to notice a
+   * channel that silently stopped updating. Not fired for `unsupported`
+   * (the doc surface is off for this deployment; every user hits it, so it
+   * latches silently) or for a refusal that repeats on reconnect for a
+   * workflow already notified. `code` is the doc-host's permanent refusal
+   * code (e.g. `schema_version_mismatch`, `catalog_mismatch`) so the
+   * presentation layer can choose accurate localized copy instead of a
+   * single message for every permanent reason.
+   */
+  onSyncError?: (message?: string, code?: string) => void
 }
 
 // Nothing is re-thrown: an error escaping onBeforeUnmount reaches Vue's
@@ -183,24 +221,56 @@ function runFollowerTeardown(cleanups: readonly (() => void)[]): void {
       cleanup()
     } catch (error) {
       reportError(error, {
+        surface: 'agent',
         errorType: 'failure_tearing_down_agent_crdt_follower'
       })
     }
   }
 }
 
+export type AgentCrdtApplierDeps = Omit<
+  LiveGraphApplierDeps,
+  'getGraph' | 'holdsLocalWrite'
+>
+
+function reportRejectedHumanOps(
+  workflowId: string | null,
+  ops: readonly Op[],
+  result: OpsResultView
+): void {
+  const settled = new Set([...result.applied, ...result.skipped])
+  const rejected = ops.filter((op) => !settled.has(op.op_id))
+  const { failed } = result
+  reportError(
+    new Error(
+      `The doc host rejected ${rejected.length} local edit(s): ${failed?.message ?? 'no diagnostics'}`
+    ),
+    {
+      surface: 'agent',
+      errorType: 'agent_crdt_human_ops_rejected',
+      context: {
+        workflowId,
+        opId: failed?.op_id ?? rejected[0]?.op_id,
+        code: failed?.code,
+        rejectedOps: rejected.map((op) => op.op)
+      }
+    }
+  )
+}
+
 export function useAgentCrdtFollower(
   workflowId: Ref<string | null>,
-  graphMutations: MutationsForTarget,
   userId: () => string | null = () => null,
   isTargetActive: Ref<boolean> = ref(true),
   /**
-   * Live graph that receives node adapters for store-only records. Reactive
-   * reads inside the getter are tracked, so a `null` → graph flip triggers a
-   * reconcile without waiting for the next remote frame.
+   * Live graph the document is applied to. Reactive reads inside the getter
+   * are tracked, so a `null` → graph flip syncs the graph from the document
+   * without waiting for the next remote frame.
    */
-  getGraph: () => MaterializableGraph | null = () => null,
-  events: AgentCrdtFollowerEvents = {}
+  getGraph: () => LGraph | null = () => null,
+  events: AgentCrdtFollowerEvents = {},
+  applierDeps: AgentCrdtApplierDeps = {},
+  canvasFor: (workflowId: string) => Record<string, unknown> | null = () => null
 ) {
   const productGate = useAgentPanelStore()
   const follower = shallowRef<ReturnType<typeof startAgentCrdtFollower>>()
@@ -213,6 +283,7 @@ export function useAgentCrdtFollower(
     outcomes: {
       received: 0,
       applied: 0,
+      appliedLive: 0,
       skipped: 0,
       errored: 0,
       gap: 0,
@@ -234,11 +305,12 @@ export function useAgentCrdtFollower(
       follower.value = scope.run(() =>
         startAgentCrdtFollower(
           workflowId,
-          graphMutations,
           userId,
           isTargetActive,
           getGraph,
-          events
+          events,
+          applierDeps,
+          canvasFor
         )
       )
     },
@@ -256,17 +328,25 @@ export function useAgentCrdtFollower(
         schemaError: null
       }),
     enqueueHumanOperations: (operations: GraphOperation[]) =>
-      follower.value?.enqueueHumanOperations(operations)
+      follower.value?.enqueueHumanOperations(operations),
+    docInputNames: (nodeId: NodeId) =>
+      follower.value?.docInputNames(nodeId) ?? null,
+    docPromotedWidgets: (nodeId: NodeId) =>
+      follower.value?.docPromotedWidgets(nodeId) ?? null,
+    mayWritePromotedHost: (nodeId: NodeId) =>
+      follower.value?.mayWritePromotedHost(nodeId) ?? false,
+    notifyWidgetWriteRefused: () => follower.value?.notifyWidgetWriteRefused()
   }
 }
 
 function startAgentCrdtFollower(
   workflowId: Ref<string | null>,
-  graphMutations: MutationsForTarget,
   userId: () => string | null,
   isTargetActive: Ref<boolean>,
-  getGraph: () => MaterializableGraph | null,
-  events: AgentCrdtFollowerEvents
+  getGraph: () => LGraph | null,
+  events: AgentCrdtFollowerEvents,
+  applierDeps: AgentCrdtApplierDeps,
+  canvasFor: (workflowId: string) => Record<string, unknown> | null
 ) {
   const connected = ref(false)
   const updatesApplied = ref(0)
@@ -275,6 +355,7 @@ function startAgentCrdtFollower(
   const outcomes = ref<AgentCrdtOutcomeCounters>({
     received: 0,
     applied: 0,
+    appliedLive: 0,
     skipped: 0,
     errored: 0,
     gap: 0,
@@ -292,25 +373,100 @@ function startAgentCrdtFollower(
     }
   )
   const tabId = createUuidv4()
+  const ownActor = (): string => `human:${userId() ?? 'anonymous'}:${tabId}`
   // Doc node ids whose human delete the host has applied but whose effect
   // frame has not yet removed them from the doc. Kept pending for the
   // reconcile so the result-to-effect window cannot resurrect them.
   const confirmedDeletes = new Set<string>()
+  const rejectedOpNotifier = createRejectedOpNotifier()
+  const sentAddsByDoc = new WeakMap<typeof bridge.follower.doc, Set<string>>()
+  const sentAddsToCurrentDoc = (): Set<string> => {
+    const doc = bridge.follower.doc
+    const sentAdds = sentAddsByDoc.get(doc) ?? new Set<string>()
+    sentAddsByDoc.set(doc, sentAdds)
+    return sentAdds
+  }
+  const projection = new AgentCrdtProjection(getGraph, applierDeps)
+  const pendingRejected = new Map<string, Op[]>()
+
+  const applyRejectedOps = (
+    workflowId: string,
+    rejected: readonly Op[],
+    seq: number = bridge.lastSequence
+  ): boolean => {
+    if (getGraph() === null) return false
+    const projectionOutcome = projection.revertRejected(workflowId, rejected)
+    if (!projectionOutcome.applied) return true
+    reportMaterialized(workflowId, projectionOutcome.createdNodeIds)
+    reportAgentProjection(
+      {
+        opIds: rejected.map((op) => op.op_id),
+        seq
+      },
+      'reverted',
+      projectionOutcome
+    )
+    return true
+  }
+
+  const drainRejectedOps = (workflowId: string): void => {
+    const rejected = pendingRejected.get(workflowId)
+    if (!rejected) return
+    if (applyRejectedOps(workflowId, rejected))
+      pendingRejected.delete(workflowId)
+  }
+
+  const trackAcknowledgedDeletes = (
+    outcome: Extract<BatchOutcome, { state: 'acknowledged' }>
+  ) => {
+    const applied = new Set(outcome.result.applied)
+    for (const op of outcome.ops) {
+      if (op.op === 'delete_node' && applied.has(op.op_id))
+        confirmedDeletes.add(String(op.node_id))
+    }
+    rejectedOpNotifier.notify(outcome.ops, outcome.result)
+  }
+
+  const revertRejectedOps = (
+    outcome: Extract<BatchOutcome, { state: 'acknowledged' }>
+  ) => {
+    const workflowId = outcome.result.workflowId ?? bridge.subscribedWorkflowId
+    if (outcome.result.failed)
+      reportRejectedHumanOps(workflowId, outcome.ops, outcome.result)
+    if (workflowId === null) return
+
+    const applied = new Set(outcome.result.applied)
+    const rejected = outcome.ops.filter((op) => !applied.has(op.op_id))
+    if (!isTargetActive.value) {
+      pendingRejected.set(workflowId, [
+        ...(pendingRejected.get(workflowId) ?? []),
+        ...rejected
+      ])
+      return
+    }
+    if (!applyRejectedOps(workflowId, rejected, outcome.result.seq))
+      pendingRejected.set(workflowId, [
+        ...(pendingRejected.get(workflowId) ?? []),
+        ...rejected
+      ])
+  }
+
+  const settleHumanOps = (outcome: BatchOutcome) => {
+    if (outcome.state === 'acknowledged') trackAcknowledgedDeletes(outcome)
+    recordDevEvent('human_ops_settled', outcome)
+    projection.settleLocalWrites(outcome.ops)
+    if (outcome.state === 'acknowledged' && !outcome.result.ok)
+      revertRejectedOps(outcome)
+  }
+
   const sender = createOpSender({
     sendOps: (target, tab, ops) => client.sendOps(target, tab, ops),
     onOpsResult(listener) {
       const handler: EventListener = (event) => {
-        if (!(event instanceof CustomEvent)) return
-        const detail = event.detail as OpsResultView & { failed?: unknown }
-        listener({
-          workflowId: detail.workflowId,
-          ok: detail.ok,
-          applied: detail.applied,
-          skipped: detail.skipped,
-          ...(detail.failed && typeof detail.failed === 'object'
-            ? { failure: detail.failed }
-            : {})
-        })
+        // `docFrameClient` already validated this into a DocOpsResult, which
+        // OpsResultView is derived from, so it travels whole.
+        if (event instanceof CustomEvent)
+          listener(event.detail as OpsResultView)
       }
       bridge.addEventListener('doc_ops_result', handler)
       return () => bridge.removeEventListener('doc_ops_result', handler)
@@ -319,58 +475,18 @@ function startAgentCrdtFollower(
     // every send and resend, so ops never reach a doc we are not subscribed to.
     workflowId: () => bridge.subscribedWorkflowId,
     tab: tabId,
-    actor: () => `human:${userId() ?? 'anonymous'}:${tabId}`,
+    actor: ownActor,
     baseVersion: () => bridge.lastSequence,
-    onBatchSettled: (outcome) => {
-      if (outcome.state === 'acknowledged') {
-        const applied = new Set(outcome.result.applied)
-        for (const op of outcome.ops) {
-          if (op.op === 'delete_node' && applied.has(op.op_id))
-            confirmedDeletes.add(String(op.node_id))
-        }
-      }
-      recordDevEvent('human_ops_settled', outcome)
-    }
+    onBatchSettled: settleHumanOps
   })
-  const pendingHumanDeletes = (workflowId: string): ReadonlySet<string> => {
-    const docNodeIds = currentDocNodeIds()
-    for (const id of confirmedDeletes) {
-      if (!docNodeIds.has(id)) confirmedDeletes.delete(id)
-    }
-    const pending = new Set(confirmedDeletes)
-    for (const batch of sender.pendingOps()) {
-      if (batch.workflowId !== workflowId) continue
-      for (const op of batch.ops) {
-        if (op.op === 'delete_node') pending.add(String(op.node_id))
-      }
-    }
-    return pending
-  }
-  const projection = new AgentCrdtProjection(
-    graphMutations,
-    getGraph,
-    () => bridge.follower.doc,
-    { pendingDeletes: pendingHumanDeletes }
-  )
   const coalescer = createOpCoalescer(sender.admit, sender.flush)
 
-  // Dev-panel tap (poc-4): track the doc's node-id set so the panel can show
-  // exactly which nodes each doc_update added/removed. Rebuilt from zero on
-  // doc_reset (remint) because the lineage broke.
-  let knownDocNodeIds: Set<string> = new Set()
   const pendingLiveNodeIds = new Set<NodeId>()
-  const currentDocNodeIds = (): Set<string> => {
-    try {
-      const doc = bridge.follower.doc as unknown as {
-        getMap: (k: string) => { toJSON: () => Record<string, unknown> }
-      }
-      return new Set(Object.keys(doc.getMap('nodes').toJSON()))
-    } catch {
-      return new Set()
-    }
-  }
-  const reconcileAndReportPending = (workflowId: string): void => {
-    const materialized = projection.reconcileLiveGraph(workflowId)
+  const pendingProjectionFrames = new Map<string, ProjectionFrameId[]>()
+  const reportMaterialized = (
+    workflowId: string,
+    materialized: readonly NodeId[]
+  ): void => {
     emitPendingMaterializations(
       workflowId,
       undefined,
@@ -379,36 +495,128 @@ function startAgentCrdtFollower(
       events
     )
   }
+  const retainPendingFrame = (update: ClassifiedDocUpdate): void => {
+    const frames = pendingProjectionFrames.get(update.workflowId)
+    const frame = { opIds: update.opIds, seq: update.seq }
+    if (frames) frames.push(frame)
+    else pendingProjectionFrames.set(update.workflowId, [frame])
+  }
+  const reportPendingFrames = (
+    workflowId: string,
+    stage: Extract<AgentGraphProjectionStage, 'applied_deferred' | 'discarded'>,
+    outcome: FrameOutcome
+  ): void => {
+    const frames = pendingProjectionFrames.get(workflowId)
+    pendingProjectionFrames.delete(workflowId)
+    for (const frame of frames ?? [])
+      reportAgentProjection(frame, stage, outcome)
+  }
+  const reportFrameProjection = (
+    update: ClassifiedDocUpdate,
+    outcome: FrameOutcome
+  ): void => {
+    const stage = outcome.applied
+      ? 'applied'
+      : getGraph() === null
+        ? 'received_no_graph'
+        : 'discarded'
+    if (isAgentFrame(update.actor)) {
+      const reported = stage === 'discarded' ? NOTHING_APPLIED : outcome
+      reportAgentProjection(update, stage, reported)
+    }
+    if (stage === 'received_no_graph') {
+      if (isAgentFrame(update.actor)) retainPendingFrame(update)
+      return
+    }
+    if (stage === 'applied')
+      reportPendingFrames(update.workflowId, 'applied_deferred', outcome)
+    else reportPendingFrames(update.workflowId, 'discarded', NOTHING_APPLIED)
+  }
+  const applyCollected = (workflowId: string): void => {
+    const outcome = projection.applyCollected(workflowId)
+    if (!outcome.applied) return
+    reportMaterialized(workflowId, outcome.createdNodeIds)
+    reportPendingFrames(workflowId, 'applied_deferred', outcome)
+  }
   const incrementOutcome = (
-    key: 'received' | 'applied' | 'skipped' | 'reset'
+    key: 'received' | 'applied' | 'appliedLive' | 'skipped' | 'reset'
   ): void => {
     outcomes.value = { ...outcomes.value, [key]: outcomes.value[key] + 1 }
   }
   const isCurrentWorkflow = (workflowId: unknown): workflowId is string =>
     isTargetActive.value && workflowId === subscribedWorkflowId.value
-  const trackNodeChanges = (): string[] => {
-    const ids = currentDocNodeIds()
-    const added = [...ids].filter((id) => !knownDocNodeIds.has(id))
-    const removed = [...knownDocNodeIds].filter((id) => !ids.has(id))
-    if (added.length > 0 || removed.length > 0)
-      recordDevEvent('doc_nodes_changed', { added, removed })
-    for (const id of removed) {
-      const nodeId = parseNodeId(id)
-      if (nodeId) pendingLiveNodeIds.delete(nodeId)
+  /**
+   * The host echoes this tab's own ops back as a `doc_update`. The graph
+   * already holds that edit (the intent was minted from it), so the frame is
+   * merged into the doc and never re-applied. Catch-up frames are exempt:
+   * they can carry this actor as the last writer while replaying state the
+   * graph has not seen.
+   */
+  const isOwnEcho = (update: ClassifiedDocUpdate): boolean =>
+    !update.catchUp && update.actor === ownActor()
+  const applyFrame = (update: ClassifiedDocUpdate): FrameOutcome => {
+    if (isOwnEcho(update) && getGraph() !== null) {
+      const nodes = projection.discardPending(update.workflowId)
+      incrementOutcome('skipped')
+      return { applied: false, nodes }
     }
-    knownDocNodeIds = ids
-    return added
+    const outcome = projection.applyFrame(update)
+    incrementOutcome(outcome.applied ? 'applied' : 'skipped')
+    if (outcome.applied && !update.catchUp) incrementOutcome('appliedLive')
+    return outcome
   }
-  const applyAndReconcile = (update: ClassifiedDocUpdate): NodeId[] => {
-    const applied = projection.applyFrame(update)
-    incrementOutcome(applied ? 'applied' : 'skipped')
-    return applied ? projection.reconcileLiveGraph(update.workflowId) : []
+
+  function tryReseed(): boolean {
+    const target = subscribedWorkflowId.value
+    if (target === null || !bridge.canReseed(target)) return false
+    const canvas = canvasFor(target)
+    if (!hasNodes(canvas) || !bridge.reseed(target, canvas)) return false
+    recordDevEvent('doc_reseed_sent', { workflowId: target })
+    lifecycle.onSubscribeSent(target)
+    return true
+  }
+  const onReseedResult: EventListener = (event) => {
+    if (!(event instanceof CustomEvent)) return
+    const detail = event.detail as {
+      workflowId?: unknown
+      ok?: unknown
+      code?: unknown
+    } | null
+    if (!isCurrentWorkflow(detail?.workflowId)) return
+    lastFrameType.value = event.type
+    recordDevEvent('doc_reseed_result', detail)
+    const code = typeof detail.code === 'string' ? detail.code : undefined
+    if (detail.ok === true || code === RESEED_CONFLICT) return
+    if (isRetryableReseedCode(code)) lifecycle.onSubscribeRefused(code)
+    else lifecycle.stopProbing()
+  }
+
+  function handleRejectedSubscription(
+    detail: {
+      workflowId?: unknown
+      ok?: unknown
+      code?: unknown
+      message?: unknown
+    } | null
+  ) {
+    const refusal = tryReseed()
+      ? { shouldNotify: false }
+      : handleSubscribeRefusal(detail, lifecycle)
+    releaseHeldOps()
+    sender.abortIfUnbound()
+    if (refusal.shouldNotify)
+      events.onSyncError?.(refusal.message, refusal.code)
   }
 
   const onSubscribed: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
     if (!isTargetActive.value) return
-    const ok = event.detail?.ok === true
+    const detail = event.detail as {
+      ok?: unknown
+      code?: unknown
+      message?: unknown
+    } | null
+    const ok = detail?.ok === true
     connected.value = ok
     lastFrameType.value = event.type
     recordDevEvent('doc_subscribed', event.detail ?? null)
@@ -416,12 +624,7 @@ function startAgentCrdtFollower(
       lifecycle.onSubscribeConfirmed()
       resumeHeldOpsIfSubscribed()
     } else {
-      lifecycle.onSubscribeRefused()
-      // FE #16637 residual: a refusal is the earliest signal the sender can
-      // get that its in-flight batch's doc is gone — don't make it wait out
-      // the 10 s result-silence window to notice on its own.
-      releaseHeldOps()
-      sender.abortIfUnbound()
+      handleRejectedSubscription(detail)
     }
   }
   const onUpdate: EventListener = (event) => {
@@ -435,24 +638,23 @@ function startAgentCrdtFollower(
     lifecycle.onDocumentUpdate()
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
-    const materialized = applyAndReconcile(update)
+    const outcome = applyFrame(update)
+    const nodes = outcome.nodes
+    const created = outcome.applied ? outcome.createdNodeIds : []
+    reportFrameProjection(update, outcome)
     recordDevEvent('doc_update', {
       workflowId: update.workflowId,
       seq: update.seq,
       actor: update.actor,
+      echo: isOwnEcho(update),
       bytes: update.update instanceof Uint8Array ? update.update.length : null
     })
-    const added = trackNodeChanges()
-    if (!update.actor?.startsWith('agent:')) {
-      const liveDocIds = currentDocNodeIds()
-      for (const nodeId of pendingLiveNodeIds) {
-        if (!liveDocIds.has(nodeId)) pendingLiveNodeIds.delete(nodeId)
-      }
-    }
+    if (nodes.added.length > 0 || nodes.removed.length > 0)
+      recordDevEvent('doc_nodes_changed', nodes)
     notifyAgentMaterialization(
       update,
-      added,
-      materialized,
+      nodes,
+      created,
       getGraph(),
       pendingLiveNodeIds,
       events
@@ -461,11 +663,19 @@ function startAgentCrdtFollower(
   const onOpsResult: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
     const detail = event.detail as { workflowId?: unknown } | null
-    if (
-      !isTargetActive.value ||
-      detail?.workflowId !== subscribedWorkflowId.value
+    const dropReason = opsResultDropReason(
+      isTargetActive.value,
+      detail?.workflowId,
+      subscribedWorkflowId.value
     )
+    if (dropReason !== null) {
+      recordDevEvent('doc_ops_result_dropped', {
+        reason: dropReason,
+        subscribedWorkflowId: subscribedWorkflowId.value,
+        frame: event.detail ?? null
+      })
       return
+    }
     lifecycle.onDocumentResult()
     lastFrameType.value = event.type
     recordDevEvent('doc_ops_result', event.detail ?? null)
@@ -473,29 +683,20 @@ function startAgentCrdtFollower(
   const onDocReset: EventListener = (event) => {
     const detail =
       event instanceof CustomEvent
-        ? (event.detail as {
-            workflowId?: string
-            actor?: string
-            seq?: number
-          })
+        ? (event.detail as { workflowId?: string })
         : undefined
     incrementOutcome('reset')
     if (!isCurrentWorkflow(detail?.workflowId)) return
-    const context: RemoteMutationContext = {
-      source: 'agent-remote',
-      actor: detail.actor ?? 'agent-reset',
-      opId: `doc-reset:${detail.seq ?? 'unknown'}`
-    }
-    projection.clearForReset(detail.workflowId, context)
+    projection.replaceOnNextFrame(detail.workflowId)
+    reportPendingFrames(detail.workflowId, 'discarded', NOTHING_APPLIED)
     sender.abortAll()
     events.onReset?.(detail.workflowId)
     connected.value = false
     updatesApplied.value = 0
     lastFrameType.value = event.type
     lifecycle.clearStaleProbe()
-    knownDocNodeIds = new Set()
+    lifecycle.resetNotifiedGiveUp()
     pendingLiveNodeIds.clear()
-    confirmedDeletes.clear()
     recordDevEvent(
       'doc_reset',
       event instanceof CustomEvent ? (event.detail ?? null) : null
@@ -516,15 +717,12 @@ function startAgentCrdtFollower(
       workflowId === subscribedWorkflowId.value
     ) {
       updatesApplied.value = 0
-      confirmedDeletes.clear()
-      projection.clearForReset(workflowId, {
-        source: 'agent-remote',
-        actor: 'agent-lineage',
-        opId: `follower-replaced:${workflowId}`
-      })
+      projection.discardPending(workflowId)
+      reportPendingFrames(workflowId, 'discarded', NOTHING_APPLIED)
       projection.bind(workflowId, bridge.follower)
     }
   }
+  const staleClientNotified = new Set<string>()
   const onSchemaError: EventListener = (event) => {
     // KA-11 fail-closed: the bridge refused to propagate an unreadable doc, so
     // nothing was projected. Surface it as its own status rather than as a
@@ -534,14 +732,30 @@ function startAgentCrdtFollower(
     lifecycle.clearStaleProbe()
     const detail =
       event instanceof CustomEvent
-        ? (event.detail as { workflowId?: string } | null)
+        ? (event.detail as { workflowId?: string; found?: unknown } | null)
         : null
-    if (detail?.workflowId !== undefined)
+    if (detail?.workflowId !== undefined) {
       projection.discardPending(detail.workflowId)
+      reportPendingFrames(detail.workflowId, 'discarded', NOTHING_APPLIED)
+    }
     outcomes.value = { ...outcomes.value, errored: outcomes.value.errored + 1 }
     recordDevEvent(
       'schema_error',
       event instanceof CustomEvent ? (event.detail ?? null) : null
+    )
+    notifyStaleClient(detail)
+  }
+  function notifyStaleClient(
+    detail: { workflowId?: string; found?: unknown } | null
+  ): void {
+    const found = newerDocSchema(detail?.found)
+    const workflowId = detail?.workflowId
+    if (found === null || workflowId === undefined) return
+    if (staleClientNotified.has(workflowId)) return
+    staleClientNotified.add(workflowId)
+    events.onSyncError?.(
+      `document schema v${found} is newer than this page reads (v${SCHEMA_VERSION})`,
+      'stale_client_schema'
     )
   }
   const onGap: EventListener = (event) => {
@@ -568,7 +782,7 @@ function startAgentCrdtFollower(
     connected.value = false
     lifecycle.onReconnected()
     recordDevEvent('reconnected', null)
-    bridge.resubscribe()
+    bridge.reconnect()
   }
   /**
    * Re-drive subscription intent whenever the socket may have become usable.
@@ -599,6 +813,7 @@ function startAgentCrdtFollower(
   bridge.addEventListener('doc_gap', onGap)
   bridge.addEventListener('doc_stale', onStale)
   bridge.addEventListener('doc_subscribe_sent', onSubscribeSent)
+  bridge.addEventListener('doc_reseed_result', onReseedResult)
   api.addEventListener('reconnected', onReconnected)
   api.addEventListener('status', onSocketActivity)
 
@@ -606,18 +821,29 @@ function startAgentCrdtFollower(
   // with the previous mount — rebind from sessionStorage) from a later null
   // (a REAL detach, e.g. new chat — drop the persisted id too).
   let initialBind = true
-  let boundWorkflowId: string | null = null
   // Readiness only. The other ordering -- graph ready first, target activated
   // second -- cannot be caught here: `getGraph` does not change when activity
   // flips, and even if this watcher also took `isTargetActive` as a source it
   // was created before the binding watcher below, so it would run first and
-  // still see `boundWorkflowId === null`. Activation is therefore reconciled at
-  // the bind site instead, once the binding actually exists.
+  // still see no subscribed workflow. Activation therefore applies what was
+  // collected at the bind site instead, once the binding actually exists.
   watch(getGraph, (graph) => {
-    if (graph && boundWorkflowId !== null && isTargetActive.value) {
-      reconcileAndReportPending(boundWorkflowId)
+    const bound = subscribedWorkflowId.value
+    if (graph && bound !== null && isTargetActive.value) {
+      applyCollected(bound)
+      drainRejectedOps(bound)
     }
   })
+  const rebindProjection = (next: string | null): void => {
+    const current = subscribedWorkflowId.value
+    if (current === next) return
+    if (current !== null) {
+      projection.unbind(current)
+      reportPendingFrames(current, 'discarded', NOTHING_APPLIED)
+    }
+    if (next !== null) projection.bind(next, bridge.follower)
+    subscribedWorkflowId.value = next
+  }
   // The bound workflow whose tab went inactive while the sender still held
   // batches for it. A tab switch pauses the subscription without rebinding
   // the session, so those batches are held rather than aborted (see
@@ -661,19 +887,20 @@ function startAgentCrdtFollower(
     sender.abortIfUnbound()
   }
 
+  // A tab switch keeps the projection bound: whatever the doc collects while
+  // the tab is away is applied on return, instead of the live graph being
+  // rebuilt from the whole doc over the human's edits.
   const deactivateTarget = (
     next: string | null,
     previousWorkflowId: string | null
   ): void => {
     if (next !== null) initialBind = false
-    if (boundWorkflowId !== null) {
-      projection.unbind(boundWorkflowId)
-      boundWorkflowId = null
-    }
-    subscribedWorkflowId.value = null
-    if (next !== null && next === previousWorkflowId)
+    if (next !== null && next === previousWorkflowId) {
       holdOpsForInactiveTab(next)
-    else retarget(null)
+      return
+    }
+    rebindProjection(null)
+    retarget(null)
   }
 
   const restorePersistedTarget = (justActivated: boolean): void => {
@@ -681,48 +908,49 @@ function startAgentCrdtFollower(
     initialBind = false
     if (persisted === null) {
       lifecycle.clearPersistedDocId()
-      if (boundWorkflowId !== null) projection.unbind(boundWorkflowId)
-      boundWorkflowId = null
-      subscribedWorkflowId.value = null
+      rebindProjection(null)
       retarget(null)
       return
     }
     recordDevEvent('rebind', { workflowId: persisted })
-    if (boundWorkflowId !== persisted) {
-      if (boundWorkflowId !== null) projection.unbind(boundWorkflowId)
-      projection.bind(persisted, bridge.follower)
-      boundWorkflowId = persisted
-    }
-    subscribedWorkflowId.value = persisted
+    rebindProjection(persisted)
     retarget(persisted)
-    if (justActivated) reconcileAndReportPending(persisted)
+    if (justActivated) applyCollected(persisted)
   }
+
+  type TargetSnapshot = [string | null | undefined, boolean | undefined]
+  const isActivationEdge = (
+    active: boolean,
+    previous: TargetSnapshot | undefined
+  ): boolean => active && previous?.[1] === false
+  const acknowledgesFollowedDoc = (
+    next: string | null,
+    active: boolean,
+    justActivated: boolean
+  ): boolean =>
+    active &&
+    !justActivated &&
+    next !== null &&
+    next === subscribedWorkflowId.value
 
   const activateTarget = (next: string, justActivated: boolean): void => {
     initialBind = false
-    if (boundWorkflowId !== next) {
-      if (boundWorkflowId !== null) projection.unbind(boundWorkflowId)
-      projection.bind(next, bridge.follower)
-      boundWorkflowId = next
-    }
-    subscribedWorkflowId.value = next
+    rebindProjection(next)
     retarget(next)
-    if (justActivated) reconcileAndReportPending(next)
+    drainRejectedOps(next)
+    if (justActivated) applyCollected(next)
   }
 
   watch(
     [workflowId, isTargetActive],
-    (
-      [next, active],
-      previous: [string | null | undefined, boolean | undefined] | undefined
-    ) => {
+    ([next, active], previous: TargetSnapshot | undefined) => {
       // Only the inactive->active edge, and never the `immediate` first run
-      // (`previous` is undefined there), so a plain mount or retarget keeps its
-      // existing "reconcile on frame or on graph readiness" behaviour.
-      const justActivated = active && previous?.[1] === false
+      // (`previous` is undefined there): a plain mount or retarget has no
+      // collected changes to apply, the graph watcher covers readiness.
+      const justActivated = isActivationEdge(active, previous)
+      if (acknowledgesFollowedDoc(next, active, justActivated)) return
       lifecycle.clearForRetarget()
       connected.value = false
-      knownDocNodeIds = new Set()
       pendingLiveNodeIds.clear()
       if (!active) {
         deactivateTarget(next, previous?.[0] ?? null)
@@ -753,9 +981,16 @@ function startAgentCrdtFollower(
       () => bridge.removeEventListener('doc_gap', onGap),
       () => bridge.removeEventListener('doc_stale', onStale),
       () => bridge.removeEventListener('doc_subscribe_sent', onSubscribeSent),
+      () => bridge.removeEventListener('doc_reseed_result', onReseedResult),
       () => sender.detach(),
+      () => rejectedOpNotifier.cancel(),
+      () => pendingRejected.clear(),
       () => coalescer.detach(),
-      () => projection.destroy(),
+      () => {
+        for (const workflowId of pendingProjectionFrames.keys())
+          reportPendingFrames(workflowId, 'discarded', NOTHING_APPLIED)
+        projection.destroy()
+      },
       () => bridge.destroy(),
       () => client.destroy()
     ])
@@ -781,7 +1016,26 @@ function startAgentCrdtFollower(
   return {
     status: readonly(status),
     debugSnapshot,
-    enqueueHumanOperations: (operations: GraphOperation[]) =>
+    enqueueHumanOperations: (operations: GraphOperation[]) => {
+      const sentAdds = sentAddsToCurrentDoc()
+      for (const operation of operations)
+        if (operation.op === 'add_node') sentAdds.add(String(operation.node_id))
+      projection.noteLocalWrites(operations)
       coalescer.enqueue(operations)
+    },
+    docInputNames: (nodeId: NodeId) =>
+      readDocSlotNames(bridge.follower.doc, String(nodeId), 'inputs'),
+    docPromotedWidgets: (nodeId: NodeId) =>
+      readDocPromotedWidgets(bridge.follower.doc, String(nodeId)),
+    mayWritePromotedHost: (nodeId: NodeId) =>
+      bridge.isSubscribeBaselineIntegrated ||
+      (sentAddsToCurrentDoc().has(String(nodeId)) &&
+        readDocPromotedWidgets(bridge.follower.doc, String(nodeId)) === null),
+    notifyWidgetWriteRefused: () =>
+      rejectedOpNotifier.notifyWidgetWriteRefused()
   }
+}
+
+function newerDocSchema(found: unknown): number | null {
+  return typeof found === 'number' && found > SCHEMA_VERSION ? found : null
 }

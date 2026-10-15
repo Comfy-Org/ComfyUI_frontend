@@ -3,12 +3,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, reactive } from 'vue'
 
 import type Load3d from '@/extensions/core/load3d/Load3d'
-import Load3DConfiguration, {
-  parseAnnotatedFilename
-} from '@/extensions/core/load3d/Load3DConfiguration'
+import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
-import type { ComfyApi } from '@/scripts/api'
-import type { ComfyApp } from '@/scripts/app'
+import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
 import type {
   CameraConfig,
   GizmoConfig,
@@ -28,20 +25,8 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { Settings } from '@/platform/settings/types'
 
-vi.mock(import('@/scripts/api'), () => ({
-  api: fromPartial<ComfyApi>({
-    apiURL: (p: string) => p,
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    dispatchCustomEvent: vi.fn(),
-    fetchApi: vi.fn(),
-    getSystemStats: vi.fn()
-  })
-}))
-
-vi.mock(import('@/scripts/app'), () => ({
-  app: fromPartial<ComfyApp>({ rootGraph: { extra: {} } })
-}))
+vi.mock(import('@/scripts/api'))
+vi.mock(import('@/scripts/app'))
 
 vi.mock(import('@/extensions/core/load3d/Load3d'), () => ({
   default: fromAny(class {})
@@ -202,7 +187,7 @@ describe('Load3DConfiguration.silentOnNotFound propagation', () => {
   let loadModelSpy: ReturnType<typeof vi.fn<Load3d['loadModel']>>
 
   function makeLoad3dMock(): Load3d {
-    loadModelSpy = vi.fn<Load3d['loadModel']>().mockResolvedValue(true)
+    loadModelSpy = vi.fn<Load3d['loadModel']>().mockResolvedValue('loaded')
     return {
       loadModel: loadModelSpy,
       clearModel: vi.fn(),
@@ -317,7 +302,7 @@ describe('Load3DConfiguration.silentOnNotFound propagation', () => {
       loadFolder: 'output'
     })
     await flush()
-    expect(vi.mocked(load3d.emitModelReady)).toHaveBeenCalledTimes(1)
+    expect(load3d.emitModelReady).toHaveBeenCalledTimes(1)
   })
 
   it('configureForSaveMesh also emits modelReady once the load resolves', async () => {
@@ -325,15 +310,15 @@ describe('Load3DConfiguration.silentOnNotFound propagation', () => {
     const config = new Load3DConfiguration(load3d)
     config.configureForSaveMesh('output', 'model.glb')
     await flush()
-    expect(vi.mocked(load3d.emitModelReady)).toHaveBeenCalledTimes(1)
+    expect(load3d.emitModelReady).toHaveBeenCalledTimes(1)
   })
 
   it('does not publish effects for a load superseded by clear', async () => {
-    let resolveLoad!: (accepted: boolean) => void
+    let resolveLoad!: (outcome: 'cancelled') => void
     const load3d = makeLoad3dMock()
     vi.mocked(load3d.loadModel).mockImplementation(
       () =>
-        new Promise<boolean>((resolve) => {
+        new Promise<'cancelled'>((resolve) => {
           resolveLoad = resolve
         })
     )
@@ -342,7 +327,7 @@ describe('Load3DConfiguration.silentOnNotFound propagation', () => {
 
     config.configure({ modelWidget, loadFolder: 'output' })
     modelWidget.value = ''
-    resolveLoad(false)
+    resolveLoad('cancelled')
     await flush()
 
     expect(load3d.setUpDirection).not.toHaveBeenCalled()
@@ -351,19 +336,19 @@ describe('Load3DConfiguration.silentOnNotFound propagation', () => {
   })
 
   it('publishes effects only for the replacement after clear', async () => {
-    let resolveFirst!: (accepted: boolean) => void
-    let resolveSecond!: (accepted: boolean) => void
+    let resolveFirst!: (outcome: 'cancelled') => void
+    let resolveSecond!: (outcome: 'loaded') => void
     const load3d = makeLoad3dMock()
     vi.mocked(load3d.loadModel)
       .mockImplementationOnce(
         () =>
-          new Promise<boolean>((resolve) => {
+          new Promise<'cancelled'>((resolve) => {
             resolveFirst = resolve
           })
       )
       .mockImplementationOnce(
         () =>
-          new Promise<boolean>((resolve) => {
+          new Promise<'loaded'>((resolve) => {
             resolveSecond = resolve
           })
       )
@@ -373,8 +358,8 @@ describe('Load3DConfiguration.silentOnNotFound propagation', () => {
     config.configure({ modelWidget, loadFolder: 'output' })
     modelWidget.value = ''
     modelWidget.value = 'b.glb'
-    resolveFirst(false)
-    resolveSecond(true)
+    resolveFirst('cancelled')
+    resolveSecond('loaded')
     await flush()
 
     expect(load3d.setUpDirection).toHaveBeenCalledTimes(1)
@@ -383,46 +368,46 @@ describe('Load3DConfiguration.silentOnNotFound propagation', () => {
   })
 })
 
-describe('parseAnnotatedFilename', () => {
+describe('parseAnnotatedPath', () => {
   it('strips a [output] suffix and switches to the output folder', () => {
-    expect(parseAnnotatedFilename('foo.glb [output]', 'input')).toEqual({
-      filename: 'foo.glb',
-      folder: 'output'
+    expect(parseAnnotatedPath('foo.glb [output]', 'input')).toEqual({
+      filepath: 'foo.glb',
+      rootFolder: 'output'
     })
   })
 
   it('strips a [input] suffix and switches to the input folder', () => {
-    expect(parseAnnotatedFilename('sub/foo.glb [input]', 'output')).toEqual({
-      filename: 'sub/foo.glb',
-      folder: 'input'
+    expect(parseAnnotatedPath('sub/foo.glb [input]', 'output')).toEqual({
+      filepath: 'sub/foo.glb',
+      rootFolder: 'input'
     })
   })
 
   it('strips a [temp] suffix and switches to the temp folder', () => {
-    expect(parseAnnotatedFilename('foo.glb [temp]', 'input')).toEqual({
-      filename: 'foo.glb',
-      folder: 'temp'
+    expect(parseAnnotatedPath('foo.glb [temp]', 'input')).toEqual({
+      filepath: 'foo.glb',
+      rootFolder: 'temp'
     })
   })
 
   it('returns the value unchanged with the fallback folder when unannotated', () => {
-    expect(parseAnnotatedFilename('foo.glb', 'input')).toEqual({
-      filename: 'foo.glb',
-      folder: 'input'
+    expect(parseAnnotatedPath('foo.glb', 'input')).toEqual({
+      filepath: 'foo.glb',
+      rootFolder: 'input'
     })
   })
 
   it('does not strip a non-folder annotation', () => {
-    expect(parseAnnotatedFilename('foo.glb [draft]', 'input')).toEqual({
-      filename: 'foo.glb [draft]',
-      folder: 'input'
+    expect(parseAnnotatedPath('foo.glb [draft]', 'input')).toEqual({
+      filepath: 'foo.glb [draft]',
+      rootFolder: 'input'
     })
   })
 
   it('only matches a trailing annotation, not one in the middle', () => {
-    expect(parseAnnotatedFilename('foo [output] bar.glb', 'input')).toEqual({
-      filename: 'foo [output] bar.glb',
-      folder: 'input'
+    expect(parseAnnotatedPath('foo [output] bar.glb', 'input')).toEqual({
+      filepath: 'foo [output] bar.glb',
+      rootFolder: 'input'
     })
   })
 })
@@ -546,7 +531,7 @@ describe('Load3DConfiguration.configure forwards persisted + settings to load3d'
 
   function makeLoad3dMock(): Load3d {
     return fromPartial<Load3d>({
-      loadModel: vi.fn<Load3d['loadModel']>().mockResolvedValue(true),
+      loadModel: vi.fn<Load3d['loadModel']>().mockResolvedValue('loaded'),
       setUpDirection: vi.fn(),
       setMaterialMode: vi.fn(),
       setTargetSize: vi.fn(),
@@ -638,7 +623,7 @@ describe('Load3DConfiguration "none" model handling', () => {
 
   function makeLoad3dMock(): Load3d {
     let cleanup: (() => void) | undefined
-    loadModelSpy = vi.fn<Load3d['loadModel']>().mockResolvedValue(true)
+    loadModelSpy = vi.fn<Load3d['loadModel']>().mockResolvedValue('loaded')
     clearModelSpy = vi.fn()
     return fromPartial<Load3d>({
       loadModel: loadModelSpy,
@@ -771,11 +756,7 @@ describe('Load3DConfiguration "none" model handling', () => {
     loadModelSpy.mockClear()
     onSceneInvalidated.mockClear()
 
-    const applied = useWidgetValueStore().setValue(widgetId, 'agent.glb', {
-      source: 'agent-remote',
-      actor: 'agent:e2e',
-      opId: 'op-1'
-    })
+    const applied = useWidgetValueStore().setValue(widgetId, 'agent.glb')
 
     expect(applied).toBe(true)
     expect(onSceneInvalidated).toHaveBeenCalledTimes(1)
@@ -810,7 +791,7 @@ describe('Load3DConfiguration "none" model handling', () => {
 describe('Load3DConfiguration.onSceneInvalidated', () => {
   function makeLoad3dMock(): Load3d {
     return {
-      loadModel: vi.fn<Load3d['loadModel']>().mockResolvedValue(true),
+      loadModel: vi.fn<Load3d['loadModel']>().mockResolvedValue('loaded'),
       clearModel: vi.fn(),
       setUpDirection: vi.fn(),
       setMaterialMode: vi.fn(),

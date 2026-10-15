@@ -1,6 +1,6 @@
 import { mint } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
-import { assert, describe, expect, it } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { createTestSubgraphData } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
@@ -81,6 +81,17 @@ function storedNode(definition: Y.Map<unknown>, id: number): Y.Map<unknown> {
   return node
 }
 
+function nestedDefinitionChain(depth: number): Record<string, unknown> {
+  let current: Record<string, unknown> = { id: `nested-${depth}` }
+  for (let index = depth - 1; index >= 0; index--) {
+    current = {
+      id: `nested-${index}`,
+      definitions: { subgraphs: [current] }
+    }
+  }
+  return current
+}
+
 describe('readSubgraphDefinitions', () => {
   it('returns nothing for a document without definitions', () => {
     expect(readSubgraphDefinitions(new Y.Doc())).toEqual([])
@@ -114,6 +125,43 @@ describe('readSubgraphDefinitions', () => {
     const [projected] = readSubgraphDefinitions(seed(definition))
 
     expect(projected).toEqual(definition)
+  })
+
+  it('does not project an excluded definition body', () => {
+    const excluded = createTestSubgraphData({ nodes: [interiorNode(1)] })
+    const included = createTestSubgraphData({ nodes: [interiorNode(2)] })
+    const doc = seed(excluded, included)
+    const body = new Y.Text('expensive body')
+    storedDefinition(doc, excluded.id).set('name', body)
+    const toJSON = vi.spyOn(body, 'toJSON')
+
+    expect(readSubgraphDefinitions(doc, new Set([excluded.id]))).toEqual([
+      included
+    ])
+    expect(toJSON).not.toHaveBeenCalled()
+  })
+
+  it('does not project an excluded nested definition body', () => {
+    const excluded = createTestSubgraphData({ nodes: [interiorNode(1)] })
+    const included = createTestSubgraphData({ nodes: [interiorNode(2)] })
+    const outer = createTestSubgraphData({
+      definitions: { subgraphs: [excluded, included] }
+    })
+    const doc = seed(outer)
+    const nestedDefinitions = storedDefinition(doc, outer.id).get('definitions')
+    assert.instanceOf(nestedDefinitions, Y.Map)
+    const nestedSubgraphs = nestedDefinitions.get('subgraphs')
+    assert.instanceOf(nestedSubgraphs, Y.Map)
+    const storedExcluded = nestedSubgraphs.get(excluded.id)
+    assert.instanceOf(storedExcluded, Y.Map)
+    const body = new Y.Text('expensive nested body')
+    storedExcluded.set('name', body)
+    const toJSON = vi.spyOn(body, 'toJSON')
+
+    expect(readSubgraphDefinitions(doc, new Set([excluded.id]))).toEqual([
+      { ...outer, definitions: { subgraphs: [included] } }
+    ])
+    expect(toJSON).not.toHaveBeenCalled()
   })
 
   it('keeps interior nodes and links in mint order, not key order', () => {
@@ -363,6 +411,45 @@ describe('readSubgraphDefinitions', () => {
     })
 
     expect(readSubgraphDefinitionIds(seed(outer))).toEqual([outer.id, inner.id])
+  })
+
+  it('normalizes shared-text definition ids like the full reader', () => {
+    const definition = createTestSubgraphData()
+    const doc = seed(definition)
+    const stored = storedDefinition(doc, definition.id)
+    const id = new Y.Text()
+    stored.set('id', id)
+    id.insert(0, definition.id)
+
+    expect(readSubgraphDefinitionIds(doc)).toEqual([definition.id])
+  })
+
+  it('ignores inherited definition ids like the full reader', () => {
+    const inheritedId = '00000000-0000-4000-8000-000000000099'
+    const definition = createTestSubgraphData()
+    const doc = seed(definition)
+    const stored = storedDefinition(doc, definition.id)
+    const inherited = Object.setPrototypeOf({}, { id: inheritedId })
+    stored.set('definitions', { subgraphs: [inherited] })
+
+    expect(readSubgraphDefinitionIds(doc)).toEqual([definition.id])
+  })
+
+  it('scans deeply nested definition ids without recursive stack growth', () => {
+    const depth = 12_000
+    const definition = createTestSubgraphData()
+    const doc = seed(definition)
+    const stored = storedDefinition(doc, definition.id)
+    stored.set('definitions', {
+      subgraphs: [nestedDefinitionChain(depth)]
+    })
+
+    const ids = readSubgraphDefinitionIds(doc)
+
+    expect(ids).toHaveLength(depth + 2)
+    expect(ids[0]).toBe(definition.id)
+    expect(ids[1]).toBe('nested-0')
+    expect(ids.at(-1)).toBe(`nested-${depth}`)
   })
 
   it('skips definition and node entries that are not records', () => {

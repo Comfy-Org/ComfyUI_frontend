@@ -1,18 +1,46 @@
 import type {
+  BillingTelemetryEvent,
+  CheckoutJourneyTelemetryEvent
+} from '@comfyorg/account-core/billing'
+import type {
+  SsoTelemetryEvent,
+  WebSessionTelemetryEvent
+} from '@comfyorg/account-core/telemetry'
+import type {
   AddCreditsClickMetadata,
+  AgentAttachButtonClickedMetadata,
+  AgentConsentNotOfferedMetadata,
+  AgentConsentOfferExitedMetadata,
+  AgentConsentResolvedMetadata,
+  AgentConsentShownMetadata,
+  AgentCreditTransitionNoticeMetadata,
+  AgentPaywallCtaMetadata,
+  AgentPaywallShownMetadata,
   AgentEntryButtonClickedMetadata,
+  AgentErrorMetadata,
+  AgentFreeUseExposureMetadata,
+  AgentFreeUseNoticeMetadata,
+  AgentGraphProjectionMetadata,
   AgentMessageSentMetadata,
   AgentMessageFeedbackMetadata,
   AgentNodeTaggedMetadata,
+  AgentOnboardingNotShownMetadata,
+  AgentOnboardingStepMetadata,
   AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,
+  AgentRunApprovalResolvedMetadata,
+  AgentRunApprovalShownMetadata,
+  AgentRunModeChangedMetadata,
+  AgentStarterPromptClickedMetadata,
+  AgentStarterPromptExposureMetadata,
+  AgentStopClickedMetadata,
+  AgentThreadStartedMetadata,
+  AgentWorkflowBoundMetadata,
   AgentWorkflowAppliedMetadata,
   AuthErrorMetadata,
   AuthMetadata,
   BeginCheckoutMetadata,
-  BillingTelemetryEvent,
   BootstrapCompleteMetadata,
-  CheckoutJourneyTelemetryEvent,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ExecutionErrorMetadata,
@@ -22,6 +50,8 @@ import type {
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
   ImageLoadFailureMetadata,
+  InAppSurveyEvent,
+  InAppSurveyStage,
   LinkDedupDropMetadata,
   NamedValuesShadowDiffMismatchMetadata,
   NamedValuesShadowDiffSummaryMetadata,
@@ -64,7 +94,9 @@ import type {
   WorkflowImportMetadata,
   WorkflowSavedMetadata,
   WorkspaceInviteFailedMetadata,
-  WorkspaceInviteMetadata
+  WorkspaceInviteMetadata,
+  WorkspaceScopeMismatchMetadata,
+  WorkspaceTelemetryContext
 } from './types'
 
 /**
@@ -110,6 +142,15 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackUnifiedAuthRefresh(metadata: UnifiedAuthRefreshMetadata): void {
     this.dispatch((provider) => provider.trackUnifiedAuthRefresh?.(metadata))
+  }
+
+  // fallow-ignore-next-line unused-class-member
+  trackWebSessionEvent(event: WebSessionTelemetryEvent): void {
+    this.dispatch((provider) => provider.trackWebSessionEvent?.(event))
+  }
+
+  trackSsoEvent(event: SsoTelemetryEvent): void {
+    this.dispatch((provider) => provider.trackSsoEvent?.(event))
   }
 
   trackImageLoadFailed(metadata: ImageLoadFailureMetadata): void {
@@ -194,8 +235,38 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackBillingEvent?.(event))
   }
 
+  // fallow-ignore-next-line unused-class-member
+  setWorkspaceContext(context: WorkspaceTelemetryContext | undefined): void {
+    this.dispatch((provider) => provider.setWorkspaceContext?.(context))
+  }
+
+  // fallow-ignore-next-line unused-class-member
+  trackWorkspaceScopeMismatch(metadata: WorkspaceScopeMismatchMetadata): void {
+    this.dispatch((provider) =>
+      provider.trackWorkspaceScopeMismatch?.(metadata)
+    )
+  }
+
   trackCheckoutJourneyEvent(event: CheckoutJourneyTelemetryEvent): void {
     this.dispatch((provider) => provider.trackCheckoutJourneyEvent?.(event))
+  }
+
+  trackAgentPaywallShown(metadata: AgentPaywallShownMetadata): void {
+    this.dispatch((provider) => provider.trackAgentPaywallShown?.(metadata))
+  }
+
+  trackAgentPaywallCtaClicked(metadata: AgentPaywallCtaMetadata): void {
+    this.dispatch((provider) =>
+      provider.trackAgentPaywallCtaClicked?.(metadata)
+    )
+  }
+
+  trackAgentCreditTransitionNotice(
+    metadata: AgentCreditTransitionNoticeMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackAgentCreditTransitionNotice?.(metadata)
+    )
   }
 
   trackRunButton(properties: RunButtonProperties): void {
@@ -207,6 +278,11 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     responses?: SurveyResponses
   ): void {
     this.dispatch((provider) => provider.trackSurvey?.(stage, responses))
+  }
+
+  // fallow-ignore-next-line unused-class-member
+  trackInAppSurvey(stage: InAppSurveyStage, event: InAppSurveyEvent): void {
+    this.dispatch((provider) => provider.trackInAppSurvey?.(stage, event))
   }
 
   trackOnboardingTour(
@@ -375,20 +451,123 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackAgentCloseButtonClicked?.())
   }
 
+  trackAgentConsentShown(metadata: AgentConsentShownMetadata): void {
+    this.dispatch((provider) => provider.trackAgentConsentShown?.(metadata))
+  }
+
+  trackAgentConsentResolved(metadata: AgentConsentResolvedMetadata): void {
+    this.dispatch((provider) => provider.trackAgentConsentResolved?.(metadata))
+  }
+
+  trackAgentOnboardingShown(): void {
+    this.dispatch((provider) => provider.trackAgentOnboardingShown?.())
+  }
+
+  trackAgentOnboardingStep(metadata: AgentOnboardingStepMetadata): void {
+    this.dispatch((provider) => provider.trackAgentOnboardingStep?.(metadata))
+  }
+
   trackAgentMessageSent(metadata: AgentMessageSentMetadata): void {
     this.dispatch((provider) => provider.trackAgentMessageSent?.(metadata))
+  }
+
+  trackAgentStarterPromptClicked(
+    metadata: AgentStarterPromptClickedMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackAgentStarterPromptClicked?.(metadata)
+    )
+  }
+
+  trackAgentStarterPromptExposure(
+    metadata: AgentStarterPromptExposureMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackAgentStarterPromptExposure?.(metadata)
+    )
+  }
+
+  trackAgentFreeUseNotice(metadata: AgentFreeUseNoticeMetadata): void {
+    this.dispatch((provider) => provider.trackAgentFreeUseNotice?.(metadata))
+  }
+
+  trackAgentFreeUseExposure(metadata: AgentFreeUseExposureMetadata): void {
+    this.dispatch((provider) => provider.trackAgentFreeUseExposure?.(metadata))
   }
 
   trackAgentNodeTagged(metadata: AgentNodeTaggedMetadata): void {
     this.dispatch((provider) => provider.trackAgentNodeTagged?.(metadata))
   }
 
-  trackAgentAttachButtonClicked(): void {
-    this.dispatch((provider) => provider.trackAgentAttachButtonClicked?.())
+  trackAgentAttachButtonClicked(
+    metadata: AgentAttachButtonClickedMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackAgentAttachButtonClicked?.(metadata)
+    )
   }
 
   trackAgentWorkflowApplied(metadata: AgentWorkflowAppliedMetadata): void {
     this.dispatch((provider) => provider.trackAgentWorkflowApplied?.(metadata))
+  }
+
+  trackAgentGraphProjection(metadata: AgentGraphProjectionMetadata): void {
+    this.dispatch((provider) => provider.trackAgentGraphProjection?.(metadata))
+  }
+
+  // fallow-ignore-next-line unused-class-member
+  trackAgentError(metadata: AgentErrorMetadata): void {
+    this.dispatch((provider) => provider.trackAgentError?.(metadata))
+  }
+
+  trackAgentStopClicked(metadata: AgentStopClickedMetadata): void {
+    this.dispatch((provider) => provider.trackAgentStopClicked?.(metadata))
+  }
+
+  trackAgentWorkflowBound(metadata: AgentWorkflowBoundMetadata): void {
+    this.dispatch((provider) => provider.trackAgentWorkflowBound?.(metadata))
+  }
+
+  trackAgentRunApprovalShown(metadata: AgentRunApprovalShownMetadata): void {
+    this.dispatch((provider) => provider.trackAgentRunApprovalShown?.(metadata))
+  }
+
+  trackAgentRunApprovalResolved(
+    metadata: AgentRunApprovalResolvedMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackAgentRunApprovalResolved?.(metadata)
+    )
+  }
+
+  trackAgentRunModeChanged(metadata: AgentRunModeChangedMetadata): void {
+    this.dispatch((provider) => provider.trackAgentRunModeChanged?.(metadata))
+  }
+
+  trackAgentThreadStarted(metadata: AgentThreadStartedMetadata): void {
+    this.dispatch((provider) => provider.trackAgentThreadStarted?.(metadata))
+  }
+
+  trackAgentConsentNotOffered(metadata: AgentConsentNotOfferedMetadata): void {
+    this.dispatch((provider) =>
+      provider.trackAgentConsentNotOffered?.(metadata)
+    )
+  }
+
+  trackAgentConsentOfferExited(
+    metadata: AgentConsentOfferExitedMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackAgentConsentOfferExited?.(metadata)
+    )
+  }
+
+  trackAgentOnboardingNotShown(
+    metadata: AgentOnboardingNotShownMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackAgentOnboardingNotShown?.(metadata)
+    )
   }
 
   trackWidgetFavoriteToggled(metadata: WidgetFavoriteToggledMetadata): void {

@@ -14,6 +14,7 @@ import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 import AgentMessageGroup from './AgentMessageGroup.vue'
 import MessageFeedback from './MessageFeedback.vue'
 import type { AgentMessageGroup as Group } from './agentMessageGroup'
+import { groupMessageParts } from './agentMessageGroup'
 import { DEFAULT_AGENT_PAYWALL_PRESENTATION } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
 import type {
   AgentPaywallAction,
@@ -34,7 +35,8 @@ const { t } = useI18n()
 const emit = defineEmits<{
   feedback: [vote: 'up' | 'down' | null]
   answerAsk: [askId: string, selection: 'run' | 'cancel']
-  openWorkflow: [workflowId: string, workflowName?: string]
+  openWorkflow: [askId: string, workflowId: string, workflowName?: string]
+  approvalShown: [askId: string, turnId: string, workflowId: string | null]
   paywallAction: [action: AgentPaywallAction]
 }>()
 
@@ -47,30 +49,7 @@ const activityParts = computed<readonly ActivityPart[]>(() =>
   )
 )
 
-const groups = computed<Group[]>(() => {
-  const out: Group[] = []
-  let tracePlaced = activityParts.value.length === 0
-  for (const part of message.parts) {
-    if (part.type === 'tool' || part.type === 'thinking') {
-      if (tracePlaced) continue
-      tracePlaced = true
-      out.push({ kind: 'trace' })
-    } else if (part.type === 'text') {
-      out.push({ kind: 'text', part })
-    } else if (part.type === 'tabLink') {
-      const prev = out.at(-1)
-      if (prev?.kind === 'tabLinks') prev.parts.push(part)
-      else out.push({ kind: 'tabLinks', parts: [part] })
-    } else if (part.type === 'runApproval') {
-      out.push({ kind: 'runApproval', part })
-    } else if (part.type === 'paywall') {
-      out.push({ kind: 'paywall', part })
-    } else {
-      out.push({ kind: 'notice', part })
-    }
-  }
-  return out
-})
+const groups = computed<Group[]>(() => groupMessageParts(message.parts))
 
 const markdown = computed(() =>
   message.parts
@@ -131,9 +110,13 @@ const status = computed(() => {
         :answering-ask-ids="answeringAskIds"
         :paywall-presentation="paywallPresentation"
         @answer="(askId, selection) => emit('answerAsk', askId, selection)"
+        @approval-shown="
+          (askId, workflowId) =>
+            emit('approvalShown', askId, message.id, workflowId)
+        "
         @open-workflow="
-          (workflowId, workflowName) =>
-            emit('openWorkflow', workflowId, workflowName)
+          (askId, workflowId, workflowName) =>
+            emit('openWorkflow', askId, workflowId, workflowName)
         "
         @paywall-action="emit('paywallAction', $event)"
       />

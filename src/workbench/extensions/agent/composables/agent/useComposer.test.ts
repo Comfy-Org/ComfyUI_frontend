@@ -1,7 +1,26 @@
-import { describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 
-import type { ComposerAttachment } from './useComposer'
+import { useTelemetry } from '@/platform/telemetry'
+
+import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
+import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
+import { starterPromptAttribution } from '../../utils/starterPrompts'
+import type { ComposerAttachment } from '../../types/composerAttachment'
 import { useComposer } from './useComposer'
+
+vi.mock(import('@/platform/telemetry'))
+const telemetryProvider = useTelemetry()
+assert.exists(telemetryProvider)
+const telemetry = vi.mocked(telemetryProvider)
+
+const CHIP: AgentStarterPromptAttribution = {
+  promptId: 'slot_2',
+  promptIndex: 1,
+  promptCount: 5,
+  promptTextHash: 'deadbeef',
+  locale: 'en',
+  assignment: 'control'
+}
 
 function setup(running = false) {
   const onSend =
@@ -28,10 +47,8 @@ describe('useComposer', () => {
 
     composer.submit()
 
-    expect(onSend).toHaveBeenCalledWith('make a cat  @[Image: cat.png]', [
-      attachment
-    ])
-    expect(composer.draft.value).toBe('  make a cat   ')
+    expect(onSend).toHaveBeenCalledWith('make a cat', [attachment])
+    expect(composer.draft.value).toBe('  make a cat  ')
     expect(composer.attachments.value).toEqual([attachment])
   })
 
@@ -88,7 +105,7 @@ describe('useComposer', () => {
     expect(composer.canSend.value).toBe(true)
     composer.submit()
 
-    expect(onSend).toHaveBeenCalledWith('@[Image: cat.png]', [
+    expect(onSend).toHaveBeenCalledWith('', [
       { id: 'a1', name: 'cat.png', ref: 'r' }
     ])
   })
@@ -116,11 +133,115 @@ describe('useComposer', () => {
 
   it('insert appends to the draft without sending', () => {
     const { composer, onSend } = setup()
-    composer.insert('first')
-    composer.insert('second')
+    composer.insert('first', CHIP)
+    composer.insert('second', CHIP)
 
     expect(composer.draft.value).toBe('first second')
     expect(onSend).not.toHaveBeenCalled()
+  })
+
+  it('attributes an inserted starter-prompt chip to the suggestion origin', () => {
+    const { composer } = setup()
+    const store = useAgentComposerStore()
+    expect(store.promptOrigin).toBe('typed')
+
+    composer.insert('Upscale this image', CHIP)
+
+    expect(store.promptOrigin).toBe('suggestion')
+  })
+
+  it('preserves an unidentified suggestion insert without reporting a click', () => {
+    const { composer } = setup()
+    const store = useAgentComposerStore()
+
+    composer.insert('Try a different workflow')
+
+    expect(composer.draft.value).toBe('Try a different workflow')
+    expect(store.promptOrigin).toBe('suggestion')
+    expect(store.starterPrompt).toBeNull()
+    expect(telemetry.trackAgentStarterPromptClicked).not.toHaveBeenCalled()
+  })
+
+  it('reports one starter prompt click per identified insert', () => {
+    const { composer } = setup()
+    const store = useAgentComposerStore()
+
+    composer.insert('List my saved workflows', { ...CHIP, locale: 'zh' })
+
+    expect(telemetry.trackAgentStarterPromptClicked).toHaveBeenCalledTimes(1)
+    expect(telemetry.trackAgentStarterPromptClicked).toHaveBeenCalledWith({
+      prompt_id: 'slot_2',
+      prompt_index: 1,
+      prompt_count: 5,
+      prompt_text_hash: 'deadbeef',
+      locale: 'zh',
+      click_id: expect.any(String),
+      draft_was_empty: true,
+      '$feature/agent-starter-prompt-set': 'control'
+    })
+    // The id on the event is the id the send will be attributed with.
+    const [[event]] = telemetry.trackAgentStarterPromptClicked.mock.calls
+    expect(store.starterPrompt).toEqual({
+      id: 'slot_2',
+      clickId: event.click_id,
+      assignment: 'control'
+    })
+  })
+
+  it('marks a second click as landing on a draft that was not empty', () => {
+    const { composer } = setup()
+
+    composer.insert('List my saved workflows', CHIP)
+    composer.insert('Explain the selected node', {
+      ...CHIP,
+      promptId: 'slot_4',
+      promptIndex: 3
+    })
+
+    const calls = telemetry.trackAgentStarterPromptClicked.mock.calls
+    expect(calls.map(([event]) => event.draft_was_empty)).toEqual([true, false])
+    expect(calls[0][0].click_id).not.toBe(calls[1][0].click_id)
+    // Appending means the last chip owns the draft, and the text is a mix.
+    expect(composer.draft.value).toBe(
+      'List my saved workflows Explain the selected node'
+    )
+  })
+
+  it('omits experiment properties when prompt attribution has no assignment', () => {
+    const { composer } = setup()
+
+    composer.insert(
+      'QA treatment',
+      starterPromptAttribution('QA treatment', 1, 5, 'en')
+    )
+
+    const [[event]] = telemetry.trackAgentStarterPromptClicked.mock.calls
+    expect(event).not.toHaveProperty('$feature/agent-starter-prompt-set')
+    expect(useAgentComposerStore().starterPrompt).not.toHaveProperty(
+      'assignment'
+    )
+  })
+
+  it('treats a whitespace-only draft as empty for clean prompt attribution', () => {
+    const { composer } = setup()
+    composer.setText('    ')
+
+    composer.insert('List my saved workflows', CHIP)
+
+    expect(telemetry.trackAgentStarterPromptClicked).toHaveBeenCalledWith(
+      expect.objectContaining({ draft_was_empty: true })
+    )
+  })
+
+  it('treats an attachment-only draft as non-empty for prompt attribution', () => {
+    const { composer } = setup()
+    composer.addAttachment({ id: 'a1', name: 'cat.png', ref: 'r' })
+
+    composer.insert('List my saved workflows', CHIP)
+
+    expect(telemetry.trackAgentStarterPromptClicked).toHaveBeenCalledWith(
+      expect.objectContaining({ draft_was_empty: false })
+    )
   })
 
   it('a recreated composer rehydrates the pending draft and attachments', () => {
@@ -129,14 +250,14 @@ describe('useComposer', () => {
     first.addAttachment({ id: 'a1', name: 'cat.png', ref: 'r' })
 
     const { composer: second, onSend } = setup()
-    expect(second.draft.value).toBe('still here ')
+    expect(second.draft.value).toBe('still here')
     expect(second.attachments.value.map((a) => a.id)).toEqual(['a1'])
 
     second.submit()
-    expect(onSend).toHaveBeenCalledWith('still here@[Image: cat.png]', [
+    expect(onSend).toHaveBeenCalledWith('still here', [
       { id: 'a1', name: 'cat.png', ref: 'r' }
     ])
-    expect(first.draft.value).toBe('still here ')
+    expect(first.draft.value).toBe('still here')
     expect(first.attachments.value.map((attachment) => attachment.id)).toEqual([
       'a1'
     ])

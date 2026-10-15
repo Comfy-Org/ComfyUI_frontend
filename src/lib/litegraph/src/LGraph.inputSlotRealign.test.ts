@@ -8,6 +8,7 @@ import {
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import {
   normalizeConfiguredTopology,
+  realignGroupWidgetChildLinks,
   realignInputLinkSlots
 } from '@/lib/litegraph/src/linkDeduplication'
 import type {
@@ -324,7 +325,6 @@ function assertLinksRealigned(graph: LGraph, targetNodeId: NodeId) {
 
 describe('normalizeConfiguredTopology', () => {
   it('keeps the competing link referenced by the target input', () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
     const data = savedWorkflow()
     const target = data.nodes?.find((node) => node.id === 2)
     if (!target?.inputs || !data.links) throw new Error('Invalid fixture')
@@ -623,12 +623,10 @@ describe('LGraph.configure realignment with an unmatched input name (#15581)', (
   })
 
   it('reports no error while realigning around an unmatched name', () => {
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
-
     const graph = new LGraph()
     graph.configure(unmatchedInputNameWorkflow('test/DroppedInputTarget'))
 
-    expect(error).not.toHaveBeenCalled()
+    expect(console.error).not.toHaveBeenCalled()
   })
 })
 
@@ -717,7 +715,6 @@ describe('realignInputLinkSlots', () => {
   })
 
   it('realigns remaining links when one move is rejected', () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     const graph = new LGraph()
     const source = new LGraphNode('Source')
     source.addOutput('out', 'number')
@@ -750,7 +747,6 @@ describe('realignInputLinkSlots', () => {
   })
 
   it('replays a successful retry after a rejected move', () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     const graph = new LGraph()
     const source = new LGraphNode('Source')
     source.addOutput('out', 'number')
@@ -782,5 +778,99 @@ describe('realignInputLinkSlots', () => {
     realignInputLinkSlots(graph, [[target.id, nodeData]])
 
     expect(movable.target_slot).toBe(4)
+  })
+})
+
+describe('realignGroupWidgetChildLinks (FE-258)', () => {
+  function groupWidgetSetup(inputNames: string[], groupWidgetName: string) {
+    const graph = new LGraph()
+    const source = new LGraphNode('Source')
+    source.addOutput('out', 'number')
+    const target = new LGraphNode('Target')
+    for (const name of inputNames) target.addInput(name, 'number')
+    target.addWidget('combo', groupWidgetName, 'scale dimensions', () => {}, {
+      values: ['scale dimensions', 'scale by multiplier']
+    })
+    graph.add(source)
+    graph.add(target)
+    return { graph, source, target }
+  }
+
+  function serializedInputs(
+    target: LGraphNode,
+    links: Record<string, number | null>
+  ) {
+    return target.inputs.map((input) => ({
+      name: input.name,
+      type: 'number',
+      link: links[input.name] ?? null
+    }))
+  }
+
+  it('moves a child link off the slot the default option laid out', () => {
+    const { graph, source, target } = groupWidgetSetup(
+      ['input', 'resize_type.width', 'resize_type', 'resize_type.multiplier'],
+      'resize_type'
+    )
+    const link = source.connect(0, target, 1)!
+
+    realignGroupWidgetChildLinks(target, {
+      id: target.id,
+      inputs: serializedInputs(target, { 'resize_type.multiplier': link.id })
+    })
+
+    expect(link.target_slot).toBe(3)
+    expect(
+      useLinkStore().getInputSlotLink(graphScopeOf(graph), target.id, 3)?.id
+    ).toBe(link.id)
+  })
+
+  it.for([
+    { label: 'a plain ordinary', ordinaryName: 'roll' },
+    { label: 'a dotted ordinary', ordinaryName: 'metadata.scale' }
+  ])(
+    'moves $label input link that holds a child destination slot',
+    ({ ordinaryName }) => {
+      const { source, target } = groupWidgetSetup(
+        [
+          'image',
+          'resize_type.width',
+          'resize_type',
+          ordinaryName,
+          'resize_type.multiplier'
+        ],
+        'resize_type'
+      )
+      const child = source.connect(0, target, 1)!
+      const ordinary = source.connect(0, target, 4)!
+
+      realignGroupWidgetChildLinks(target, {
+        id: target.id,
+        inputs: serializedInputs(target, {
+          'resize_type.multiplier': child.id,
+          [ordinaryName]: ordinary.id
+        })
+      })
+
+      expect({
+        child: child.target_slot,
+        ordinary: ordinary.target_slot
+      }).toEqual({ child: 4, ordinary: 3 })
+    }
+  )
+
+  it('leaves a node that has no group widget child input', () => {
+    const { source, target } = groupWidgetSetup(
+      ['first', 'second', 'resize_type'],
+      'resize_type'
+    )
+    const link = source.connect(0, target, 0)!
+
+    realignGroupWidgetChildLinks(target, {
+      id: target.id,
+      inputs: serializedInputs(target, { second: link.id })
+    })
+
+    expect(link.target_slot).toBe(0)
   })
 })

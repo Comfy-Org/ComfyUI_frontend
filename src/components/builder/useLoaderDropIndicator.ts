@@ -55,12 +55,15 @@ function buildMediaUrl(
   mediaType: LoaderMediaType,
   filename: string,
   subfolder: string,
-  type: string
+  type: string,
+  previewRevision?: (filename: string) => number
 ) {
   if (!filename) return undefined
 
   const params = new URLSearchParams({ filename, subfolder, type })
   appendCloudResParam(params, filename)
+  const revision = previewRevision?.(filename)
+  if (revision) params.set('template_input_revision', String(revision))
   const previewParam = mediaType === 'image' ? app.getPreviewFormatParam() : ''
   return api.apiURL(`/view?${params}${previewParam}`)
 }
@@ -78,6 +81,7 @@ export function getLoaderDropIndicator(
     label: (key: string) => string
     onMaskEdit: (node: LGraphNode) => void
     widgetValueStore: Pick<ReturnType<typeof useWidgetValueStore>, 'getWidget'>
+    previewRevision?: (filename: string) => number
   }
 ): LoaderDropIndicator | undefined {
   const config = LOADER_MEDIA_CONFIG[node.type]
@@ -91,7 +95,13 @@ export function getLoaderDropIndicator(
     ? parseImageWidgetValue(stringValue)
     : { filename: '', subfolder: '', type: 'input' }
 
-  const mediaUrl = buildMediaUrl(config.mediaType, filename, subfolder, type)
+  const mediaUrl = buildMediaUrl(
+    config.mediaType,
+    filename,
+    subfolder,
+    type,
+    options.previewRevision
+  )
 
   return {
     iconClass: iconForMediaType(config.mediaType),

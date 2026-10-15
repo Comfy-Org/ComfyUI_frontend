@@ -1,6 +1,6 @@
 <template>
   <div
-    class="relative flex h-full flex-col gap-6 overflow-y-auto p-4 pt-8 md:px-16 md:py-8"
+    class="relative flex h-full max-h-[90vh] w-[calc(100vw-1rem)] flex-col gap-6 overflow-y-auto rounded-2xl border border-border-default bg-secondary-background p-4 pt-8 shadow-[0_25px_80px_rgba(5,6,12,0.45)] sm:max-w-7xl md:px-16 md:py-8"
   >
     <Button
       size="icon"
@@ -103,6 +103,10 @@
       :reconciliation-operation-id
       :quote-is-current
       :is-applying-promotion-code
+      :payment-cancelable
+      :canceling-payment="isCancelingPayment"
+      :cancel-payment-error
+      @cancel-payment="cancelPayment"
       @confirm="handleConfirmTransition"
       @apply-promotion-code="applyPromotionCode"
       @invalidate-quote="invalidateQuote"
@@ -125,7 +129,7 @@ import { onMounted } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
-import type { SubscriptionCheckoutSelection } from '@/platform/workspace/composables/useSubscriptionCheckout'
+import type { SubscriptionCheckoutSelection } from '@/composables/billing/types'
 import { useSubscriptionCheckout } from '@/platform/workspace/composables/useSubscriptionCheckout'
 
 import PricingTableWorkspace from './PricingTableWorkspace.vue'
@@ -136,11 +140,13 @@ import SubscriptionTransitionPreviewWorkspace from './SubscriptionTransitionPrev
 const {
   onClose,
   reason,
+  paymentIntentSource,
   isPersonal = false,
   initialCheckout
 } = defineProps<{
   onClose: () => void
   reason?: PaymentIntentSource
+  paymentIntentSource: PaymentIntentSource | undefined
   isPersonal?: boolean
   initialCheckout?: SubscriptionCheckoutSelection
 }>()
@@ -167,6 +173,10 @@ const {
   reconciliationOperationId,
   parkedCheckoutRecovery,
   isPolling,
+  paymentCancelable,
+  isCancelingPayment,
+  cancelPaymentError,
+  cancelPayment,
   handleSubscribeClick,
   handleBackToPricing,
   handleAddCreditCard,
@@ -175,7 +185,7 @@ const {
   invalidateQuote,
   handleResubscribe,
   handleSuccessClose
-} = useSubscriptionCheckout(emit, reason, {
+} = useSubscriptionCheckout(emit, paymentIntentSource, {
   tierPlanType: isPersonal ? 'personal' : 'team'
 })
 
@@ -185,13 +195,3 @@ onMounted(() => {
   }
 })
 </script>
-
-<style scoped>
-.legacy-dialog :deep(.bg-comfy-menu-secondary) {
-  background-color: transparent;
-}
-
-.legacy-dialog :deep(.p-button) {
-  color: white;
-}
-</style>

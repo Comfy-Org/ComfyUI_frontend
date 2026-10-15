@@ -24,9 +24,7 @@ type DraggableListProps = ComponentProps<typeof DraggableList>
 type PromotedRow =
   DraggableListProps['modelValue'] extends Array<infer T> ? T : never
 
-vi.mock<unknown>(import('@/services/litegraphService'), () => ({
-  useLitegraphService: () => ({ updatePreviews: vi.fn() })
-}))
+vi.mock(import('@/services/litegraphService'))
 
 const i18n = createI18n({
   legacy: false,

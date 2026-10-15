@@ -1,7 +1,6 @@
 import { getActivePinia } from 'pinia'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
-import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -18,7 +17,6 @@ import ErrorNodeCard from './ErrorNodeCard.vue'
 import type { ErrorCardData } from './types'
 
 const mockGetLogs = vi.fn(() => Promise.resolve('mock server logs'))
-const mockSerialize = vi.fn(() => ({ nodes: [] }))
 const mockGenerateErrorReport = vi.fn(
   (_data?: unknown) => '# ComfyUI Error Report\n...'
 )
@@ -29,13 +27,7 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    rootGraph: {
-      serialize: () => mockSerialize()
-    }
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
 vi.mock(import('@/utils/errorReportUtil'), () => ({
   generateErrorReport: (data: unknown) => mockGenerateErrorReport(data)
@@ -110,7 +102,7 @@ describe('ErrorNodeCard.vue', () => {
     const { container } = render(ErrorNodeCard, {
       props: { card, onCopyToClipboard, onLocateNode },
       global: {
-        plugins: [PrimeVue, i18n, getActivePinia()!],
+        plugins: [i18n, getActivePinia()!],
         stubs: {
           TransitionCollapse: { template: '<div><slot /></div>' }
         }

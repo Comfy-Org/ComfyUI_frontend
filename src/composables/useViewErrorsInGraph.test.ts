@@ -5,7 +5,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 
 import { useViewErrorsInGraph } from './useViewErrorsInGraph'
@@ -20,21 +20,7 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: apiMock
 }))
 
-const appMock = vi.hoisted(() => ({
-  ui: {
-    settings: {
-      dispatchChange: vi.fn()
-    }
-  },
-  rootGraph: {
-    events: new EventTarget(),
-    nodes: []
-  }
-}))
-
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: appMock
-}))
+vi.mock(import('@/scripts/app'))
 
 function createSelectedCanvas() {
   const graph = new LGraph()

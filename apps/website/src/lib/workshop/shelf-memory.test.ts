@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { lastShelf, rememberShelf } from './shelf-memory'
+import { lastShelf, rememberShelf, rememberShelfOnClick } from './shelf-memory'
 
 afterEach(() => {
   sessionStorage.clear()
@@ -10,6 +10,38 @@ describe('shelf memory', () => {
   it('reads back the shelf the visitor was standing on', () => {
     rememberShelf('generate-videos', '/models/kling/')
     expect(lastShelf('/models/kling/')).toBe('generate-videos')
+  })
+
+  it.for([
+    { named: 'a plain click', event: {}, remembered: 'generate-videos' },
+    { named: 'a middle click', event: { button: 1 }, remembered: undefined },
+    {
+      named: 'a new-tab click',
+      event: { metaKey: true },
+      remembered: undefined
+    },
+    {
+      named: 'a control click',
+      event: { ctrlKey: true },
+      remembered: undefined
+    },
+    {
+      named: 'a new-window click',
+      event: { shiftKey: true },
+      remembered: undefined
+    },
+    {
+      named: 'a download click',
+      event: { altKey: true },
+      remembered: undefined
+    }
+  ])('follows the model on $named', ({ event, remembered }) => {
+    rememberShelfOnClick(
+      'generate-videos',
+      '/models/kling/',
+      new MouseEvent('click', event)
+    )
+    expect(lastShelf('/models/kling/')).toBe(remembered)
   })
 
   it('remembers nothing before the catalogue has been browsed', () => {

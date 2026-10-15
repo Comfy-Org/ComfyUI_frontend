@@ -12,7 +12,10 @@ import type {
   JobDetail,
   JobOutputAsset
 } from '@/platform/remote/comfyui/jobs/jobTypes'
-import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
+import {
+  extractApiPrompt,
+  extractWorkflow
+} from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { TaskOutput } from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
@@ -82,6 +85,7 @@ export async function getOutputsForTask(
     taskCache.set(requestId, loadedTask)
     return [...loadedTask.previewableOutputs]
   } catch (error) {
+    if (latestTaskRequestId !== requestId) return null
     console.warn('Failed to load full outputs, using preview:', error)
     return [...task.previewableOutputs]
   }
@@ -149,4 +153,13 @@ export async function getJobWorkflow(
 ): Promise<ComfyWorkflowJSON | undefined> {
   const detail = await getJobDetail(jobId)
   return await extractWorkflow(detail)
+}
+
+/**
+ * The API-format graph a job stores, available only for jobs that embed no
+ * editor workflow. Returned unvalidated — see `extractApiPrompt`.
+ */
+export async function getJobApiPrompt(jobId: string): Promise<unknown> {
+  const detail = await getJobDetail(jobId)
+  return extractApiPrompt(detail)
 }

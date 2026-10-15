@@ -386,11 +386,7 @@ export async function runPack(
   // dispatching=false marks an op that is a bare property or array write with
   // no call into the app: its err channel cannot fail, so the summarizer must
   // exclude it from the gated cleanliness percentage.
-  async function op(
-    name: string,
-    fn: () => unknown | Promise<unknown>,
-    dispatching = true
-  ) {
+  async function op(name: string, fn: () => unknown, dispatching = true) {
     DEPR = []
     NOTE = ''
     DISPATCHED = dispatching

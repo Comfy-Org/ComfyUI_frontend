@@ -27,7 +27,7 @@ test.describe('Feature Flags', { tag: ['@slow', '@settings'] }, () => {
           if (parsed.type === 'feature_flags') {
             window.__capturedMessages!.clientFeatureFlags = parsed
           }
-        } catch (e) {
+        } catch {
           // Not JSON, ignore
         }
         return originalSend.call(this, data)

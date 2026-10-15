@@ -3,7 +3,6 @@ import type { Pinia } from 'pinia'
 import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
 import { fromAny } from '@total-typescript/shoehorn'
-import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -18,12 +17,13 @@ import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNod
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { useComfyRegistryService } from '@/services/comfyRegistryService'
-import type { MissingNodeType } from '@/types/comfy'
+import type { MissingNodeType } from '@/platform/nodeReplacement/types'
 import { toNodeId } from '@/types/nodeId'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 
 import TabErrors from './TabErrors.vue'
+import { app } from '@/scripts/app'
 vi.mock(import('@/services/comfyRegistryService'), () => ({
   useComfyRegistryService: () =>
     fromAny<ReturnType<typeof useComfyRegistryService>, unknown>({
@@ -33,24 +33,11 @@ vi.mock(import('@/services/comfyRegistryService'), () => ({
     })
 }))
 
-const { mockFocusNode, mockRefreshMissingModels } = vi.hoisted(() => ({
-  mockFocusNode: vi.fn(),
-  mockRefreshMissingModels: vi.fn()
+const { mockFocusNode } = vi.hoisted(() => ({
+  mockFocusNode: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/scripts/app'), () => {
-  const rootGraph = {
-    serialize: vi.fn(() => ({})),
-    getNodeById: vi.fn()
-  }
-  return {
-    app: {
-      refreshMissingModels: mockRefreshMissingModels,
-      rootGraph,
-      rootGraphOrUndefined: rootGraph
-    }
-  }
-})
+vi.mock(import('@/scripts/app'))
 
 vi.mock(import('@/utils/graphTraversalUtil'), () => ({
   collectAllNodes: vi.fn(() => []),
@@ -155,7 +142,7 @@ describe('TabErrors.vue', () => {
     seed?.(pinia)
     render(TabErrors, {
       global: {
-        plugins: [PrimeVue, i18n, pinia],
+        plugins: [i18n, pinia],
         stubs: {
           AsyncSearchInput: {
             template:
@@ -174,7 +161,7 @@ describe('TabErrors.vue', () => {
     seed(pinia)
     render(RightSidePanel, {
       global: {
-        plugins: [PrimeVue, i18n, pinia],
+        plugins: [i18n, pinia],
         stubs: {
           EditableText: true,
           TabErrors: true,
@@ -495,7 +482,7 @@ describe('TabErrors.vue', () => {
 
     await user.click(screen.getByTestId('missing-model-header-refresh'))
 
-    expect(mockRefreshMissingModels).toHaveBeenCalledWith({ silent: true })
+    expect(app.refreshMissingModels).toHaveBeenCalledWith({ silent: true })
   })
 
   it('counts missing models per file when several share one directory', () => {

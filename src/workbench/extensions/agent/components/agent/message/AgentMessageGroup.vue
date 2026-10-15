@@ -24,13 +24,17 @@ const { group } = defineProps<{
 
 const emit = defineEmits<{
   answer: [askId: string, selection: 'run' | 'cancel']
-  openWorkflow: [workflowId: string, workflowName?: string]
+  openWorkflow: [askId: string, workflowId: string, workflowName?: string]
+  approvalShown: [askId: string, workflowId: string | null]
   paywallAction: [action: AgentPaywallAction]
 }>()
 </script>
 
 <template>
-  <MarkdownStream v-if="group.kind === 'text'" :text="group.part.text" />
+  <MarkdownStream
+    v-if="group.kind === 'text'"
+    :text="group.parts.map((part) => part.text).join('\n\n')"
+  />
   <template v-else-if="group.kind === 'trace'">
     <ActivityTrace v-if="streaming" :parts="activityParts" live />
     <WorkSummary v-else :parts="activityParts" />
@@ -53,9 +57,10 @@ const emit = defineEmits<{
     :part="group.part"
     :answering="answeringAskIds.has(group.part.askId)"
     @answer="(askId, selection) => emit('answer', askId, selection)"
+    @shown="(askId, workflowId) => emit('approvalShown', askId, workflowId)"
     @open-workflow="
-      (workflowId, workflowName) =>
-        emit('openWorkflow', workflowId, workflowName)
+      (askId, workflowId, workflowName) =>
+        emit('openWorkflow', askId, workflowId, workflowName)
     "
   />
   <AgentPaywallCard

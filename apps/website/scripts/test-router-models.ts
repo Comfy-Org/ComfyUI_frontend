@@ -2,17 +2,19 @@ import { createHash, randomUUID } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
 import { appendFileSync } from 'node:fs'
 import { mkdir, writeFile } from 'node:fs/promises'
-import { join, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { dirname, join, resolve } from 'node:path'
 import { parseArgs } from 'node:util'
 
-import { authoredWorkshopModels } from '../src/config/workshop-browse-content'
-import { resolveWorkshopCloudEnv } from '../src/config/workshop-cloud-env'
-import { WORKSHOP_ROUTER_BASE_URL } from '../src/config/workshop-env'
-import { releaseRouterOutputs } from '../src/config/workshop-response'
-import { WorkshopRouterError } from '../src/config/workshop-router-errors'
-import { getAuthoredRouterWorkshopModelDetail } from '../src/config/workshop-router-content'
-import type { RunOutput } from '../src/config/workshop-run'
+import { z } from 'zod'
+
+import { repoRoot, websiteRoot } from '@website/paths'
+import { authoredWorkshopModels } from '@/config/workshop-browse-content'
+import { resolveWorkshopCloudEnv } from '@/config/workshop-cloud-env'
+import { WORKSHOP_ROUTER_BASE_URL } from '@/config/workshop-env'
+import { releaseRouterOutputs } from '@/config/workshop-response'
+import { WorkshopRouterError } from '@/config/workshop-router-errors'
+import { getAuthoredRouterWorkshopModelDetail } from '@/config/workshop-router-content'
+import type { RunOutput } from '@/config/workshop-run'
 import type { MediaKind } from './router-model-artifacts'
 import { checkMediaDecoders, validateArtifact } from './router-model-artifacts'
 import { createStartGate, mapConcurrent } from './router-model-batch'
@@ -21,6 +23,7 @@ import { openRouterModelReport } from './router-model-report'
 import { routerReportUpdate } from './router-model-report-events'
 import { openRouterModelTransport } from './router-model-transport'
 import { selectRouterModels } from './router-model-selection'
+import { selectModelShard } from './router-model-shard'
 import { createRouterRenderHelpers } from './router-render'
 import { openRouterSvgRasterizer } from './router-model-svg'
 
@@ -31,6 +34,11 @@ pnpm --filter @comfyorg/website test:router-models [options]
   --execute                Make paid Router calls after preflight (default: dry)
   --slug SLUG              Test one authored page; repeat; disabled is allowed
   --modality KIND          Select image, video or audio pages
+  --exclude-modality KIND  Exclude one modality
+  --plan                   Print a free CI shard plan and exit without writing reports
+  --shard-index N          Zero-based shard index (default: 0)
+  --shard-total N          Number of shards (default: 1)
+  --max-cases N            Maximum paid cases in a shard (default: 1000)
   --concurrency N          Simultaneous cases, 1–128 (default: 16)
   --starts-per-second N    Pace new requests; fractions allowed (default: 2)
   --timeout-seconds N      Whole-case deadline (default: 2700)
@@ -100,12 +108,59 @@ function failureEvidence(error: unknown, token: string) {
   }
 }
 
+function selectSweepModels(options: {
+  slug?: string[]
+  modality?: string
+  'exclude-modality'?: string
+}) {
+  const mediaKind = z.enum(['image', 'video', 'audio']).optional()
+  const excluded = mediaKind.parse(options['exclude-modality'])
+  const selected = selectRouterModels({
+    slugs: options.slug,
+    modality: mediaKind.parse(options.modality)
+  }).filter((model) => model.modality !== excluded)
+  if (!selected.length) throw new Error('No published models selected')
+  return selected
+}
+
+function printSweepPlan(
+  selectedCount: number,
+  maxCases: number,
+  execute: boolean
+) {
+  if (execute) throw new Error('--plan cannot execute paid jobs')
+  const total = Math.ceil(selectedCount / maxCases)
+  process.stdout.write(
+    JSON.stringify({
+      total,
+      shards: Array.from({ length: total }, (_, index) => index),
+      selectedCount
+    }) + '\n'
+  )
+}
+
+function resolveReportPaths(report: string | undefined) {
+  if (!report)
+    return {
+      markdownPath: join(websiteRoot, 'MODELS_TEST_RESULTS.md'),
+      jsonPath: join(websiteRoot, 'testing/models-test-results.json')
+    }
+  if (!report.endsWith('.md')) throw new Error('--report must name a .md file')
+  const markdownPath = resolve(report)
+  return { markdownPath, jsonPath: markdownPath.replace(/\.md$/, '.json') }
+}
+
 async function main() {
   const { values } = parseArgs({
     options: {
       execute: { type: 'boolean', default: false },
       slug: { type: 'string', multiple: true },
       modality: { type: 'string' },
+      'exclude-modality': { type: 'string' },
+      plan: { type: 'boolean', default: false },
+      'shard-index': { type: 'string' },
+      'shard-total': { type: 'string' },
+      'max-cases': { type: 'string' },
       concurrency: { type: 'string' },
       'starts-per-second': { type: 'string' },
       'timeout-seconds': { type: 'string' },
@@ -121,8 +176,6 @@ async function main() {
   }
   const concurrency = positiveInteger(values.concurrency, 16)
   const startsPerSecond = positiveNumber(values['starts-per-second'], 2)
-  if (values.modality !== undefined && !isMediaKind(values.modality))
-    throw new Error('--modality must be image, video or audio')
   if (concurrency > 128) throw new Error('Concurrency cannot exceed 128')
   const timeoutMs = positiveInteger(values['timeout-seconds'], 2700) * 1000
   const maxBytes = positiveInteger(values['max-artifact-mb'], 256) * 1024 * 1024
@@ -130,35 +183,31 @@ async function main() {
   const runId = `${new Date().toISOString().replaceAll(':', '-')}-${randomUUID()}`
   const directory = values.output
     ? resolve(values.output)
-    : fileURLToPath(
-        new URL(`../../../temp/router-model-tests/${runId}/`, import.meta.url)
-      )
-  const cases = selectRouterModels({
-    slugs: values.slug,
-    modality: values.modality
-  })
-  if (values.report && !values.report.endsWith('.md'))
-    throw new Error('--report must name a .md file')
-  const markdownPath = values.report
-    ? resolve(values.report)
-    : fileURLToPath(new URL('../MODELS_TEST_RESULTS.md', import.meta.url))
-  const jsonPath = values.report
-    ? markdownPath.replace(/\.md$/, '.json')
-    : fileURLToPath(
-        new URL('../testing/models-test-results.json', import.meta.url)
-      )
+    : join(repoRoot, 'temp/router-model-tests', runId)
+  const selectedModels = selectSweepModels(values)
+  const maxCases = positiveInteger(values['max-cases'], 1000)
+  if (values.plan) {
+    printSweepPlan(selectedModels.length, maxCases, values.execute)
+    return
+  }
+  const cases = selectModelShard(
+    selectedModels,
+    Number(values['shard-index'] ?? 0),
+    positiveInteger(values['shard-total'], 1),
+    maxCases
+  )
+  const { markdownPath, jsonPath } = resolveReportPaths(values.report)
   const environment = resolveWorkshopCloudEnv(
     process.env.PUBLIC_WORKSHOP_CLOUD_ENV
   )
-  const repoDirectory = fileURLToPath(new URL('../../../', import.meta.url))
   const source = {
     revision: execFileSync('git', ['rev-parse', 'HEAD'], {
-      cwd: repoDirectory,
+      cwd: repoRoot,
       encoding: 'utf8'
     }).trim(),
     dirty: Boolean(
       execFileSync('git', ['status', '--porcelain'], {
-        cwd: repoDirectory,
+        cwd: repoRoot,
         encoding: 'utf8'
       }).trim()
     ),
@@ -166,7 +215,9 @@ async function main() {
   }
   const report = openRouterModelReport({ jsonPath, markdownPath })
   try {
-    for (const model of authoredWorkshopModels) {
+    for (const model of values['shard-total']
+      ? cases
+      : authoredWorkshopModels) {
       report.update({
         slug: model.slug,
         routerId: model.routerId,
@@ -175,7 +226,7 @@ async function main() {
         inputMode: 'page-defaults'
       })
     }
-    await mkdir(resolve(directory, '..'), { recursive: true })
+    await mkdir(dirname(directory), { recursive: true })
     await mkdir(directory, { mode: 0o700 })
     const journal = join(directory, 'events.jsonl')
     function record(event: Readonly<Record<string, unknown>>) {

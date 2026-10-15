@@ -19,15 +19,8 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-const mockShowPricingTable = vi.fn()
-
-vi.mock<unknown>(
-  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
-  () => ({
-    useSubscriptionDialog: vi.fn(() => ({
-      showPricingTable: mockShowPricingTable
-    }))
-  })
+vi.mock(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
 )
 
 vi.mock(import('@/composables/billing/useBillingContext'))
@@ -71,6 +64,15 @@ describe('TopbarSubscribeButton', () => {
     promptMounted.value = false
     await nextTick()
     expect(screen.getByTestId('topbar-subscribe-button')).toBeInTheDocument()
+  })
+
+  it('names its click for RUM independently of the button label', () => {
+    mockIsCloud.value = true
+    renderComponent()
+    expect(screen.getByRole('button')).toHaveAttribute(
+      'data-dd-action-name',
+      'billing.subscribe.topbar'
+    )
   })
 
   it('hides on non-cloud distribution', () => {

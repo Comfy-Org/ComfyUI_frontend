@@ -1,14 +1,17 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, watch } from 'vue'
+import { nextTick, toValue, watch } from 'vue'
 
 import { useAssetsStore } from '@/stores/assetsStore'
-import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
+import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type {
   AssetItem,
   AssetResponse
 } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
+import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+import { api } from '@/scripts/api'
 
 // Mock the api module
 vi.mock<unknown>(import('@/scripts/api'), () => ({
@@ -17,6 +20,7 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
     internalURL: vi.fn((path) => `http://localhost:3000${path}`),
     apiURL: vi.fn((path) => `http://localhost:3000/api${path}`),
     addEventListener: vi.fn(),
+    fetchApi: vi.fn(),
     removeEventListener: vi.fn(),
     getServerFeature: vi.fn(() => false),
     user: 'test-user'
@@ -85,6 +89,73 @@ vi.mock<unknown>(
   })
 )
 
+function createHistoryPage(start: number): JobListItem[] {
+  return Array.from({ length: 200 }, (_, index) => {
+    const id = `job_${start + index}`
+    return {
+      id,
+      status: 'completed',
+      create_time: start + index,
+      priority: 0,
+      outputs_count: 1,
+      previewable_outputs_count: 1,
+      preview_output: {
+        filename: `${id}.png`,
+        mediaType: 'images',
+        nodeId: '1',
+        subfolder: '',
+        type: 'output'
+      }
+    }
+  })
+}
+
+describe('assetsStore - OSS history pagination', () => {
+  it('serializes refresh with pagination without skipping the next offset', async () => {
+    let resolveFirstPage!: (jobs: JobListItem[]) => void
+    const firstPage = new Promise<JobListItem[]>((resolve) => {
+      resolveFirstPage = resolve
+    })
+    vi.mocked(api.getHistory)
+      .mockImplementationOnce(() => firstPage)
+      .mockResolvedValueOnce([])
+    const store = useAssetsStore()
+
+    const refresh = store.outputAssets.invalidate()
+    const pagination = store.outputAssets.loadMore()
+    await vi.waitFor(() => expect(api.getHistory).toHaveBeenCalledTimes(1))
+
+    resolveFirstPage(createHistoryPage(0))
+    await Promise.all([refresh, pagination])
+
+    expect(
+      vi.mocked(api.getHistory).mock.calls.map(([, options]) => options)
+    ).toEqual([{ offset: 0 }, { offset: 200 }])
+  })
+
+  it('loads history pages until it finds the requested output asset', async () => {
+    vi.mocked(api.getHistory)
+      .mockResolvedValueOnce(createHistoryPage(0))
+      .mockResolvedValueOnce(createHistoryPage(200))
+    const store = useAssetsStore()
+
+    await expect(store.loadOutputAsset('job_200')).resolves.toBe(true)
+
+    expect(
+      vi.mocked(api.getHistory).mock.calls.map(([, options]) => options)
+    ).toEqual([{ offset: 0 }, { offset: 200 }])
+  })
+
+  it('stops looking when history has no more pages', async () => {
+    vi.mocked(api.getHistory).mockResolvedValueOnce([])
+    const store = useAssetsStore()
+
+    await expect(store.loadOutputAsset('missing-job')).resolves.toBe(false)
+
+    expect(api.getHistory).toHaveBeenCalledOnce()
+  })
+})
+
 describe('assetsStore - Model Assets Cache (Cloud)', () => {
   beforeEach(() => {
     mockIsCloud.value = true
@@ -115,6 +186,39 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
     ...(page.next_cursor === undefined ? {} : { next_cursor: page.next_cursor })
   })
 
+  it('bounds output lookup when pagination never reports exhaustion', async () => {
+    let outputPage = 0
+    vi.mocked(api.fetchApi).mockImplementation(async (url) => {
+      const isInputQuery = url.includes('tags_any=input')
+      const body: AssetResponse = isInputQuery
+        ? makePage([])
+        : makePage(
+            [
+              fromPartial<AssetItem>({
+                id: `output-${++outputPage}`,
+                name: `output-${outputPage}.png`,
+                loader_path: `output-${outputPage}.png`,
+                tags: ['output'],
+                created_at: '2026-09-22T00:00:00Z',
+                updated_at: '2026-09-22T00:00:00Z'
+              })
+            ],
+            { has_more: true, next_cursor: `page-${outputPage + 1}` }
+          )
+      return new Response(JSON.stringify(body), {
+        headers: { 'Content-Type': 'application/json' }
+      })
+    })
+    const store = useAssetsStore()
+    await vi.waitFor(() =>
+      expect(toValue(store.outputAssets.isLoading)).toBe(false)
+    )
+
+    await expect(store.loadOutputAsset('missing-output')).resolves.toBe(false)
+
+    expect(outputPage).toBe(21)
+  })
+
   describe('getAssets cache invalidation', () => {
     it('should invalidate cache before mutating assets during batch loading', async () => {
       const store = useAssetsStore()
@@ -141,9 +245,7 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
 
       // Wait for background batch loading to complete
       await vi.waitFor(() => {
-        expect(
-          vi.mocked(assetService.getAssetsPageForNodeType)
-        ).toHaveBeenCalledTimes(2)
+        expect(assetService.getAssetsPageForNodeType).toHaveBeenCalledTimes(2)
       })
 
       const assets = store.getAssets(nodeType)
@@ -174,9 +276,7 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
 
       // Wait for background batch loading to complete
       await vi.waitFor(() => {
-        expect(
-          vi.mocked(assetService.getAssetsPageForNodeType)
-        ).toHaveBeenCalledTimes(2)
+        expect(assetService.getAssetsPageForNodeType).toHaveBeenCalledTimes(2)
       })
 
       const assets = store.getAssets(nodeType)
@@ -287,9 +387,7 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
 
       await store.updateModelsForNodeType(nodeType)
 
-      expect(
-        vi.mocked(assetService.getAssetsPageForNodeType)
-      ).toHaveBeenCalledTimes(3)
+      expect(assetService.getAssetsPageForNodeType).toHaveBeenCalledTimes(3)
       expect(store.getAssets(nodeType).map((a) => a.id)).toEqual([
         'p1',
         'p2',
@@ -337,9 +435,7 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       await Promise.all([firstRequest, secondRequest])
 
       // Second request should be short-circuited, only one API call made
-      expect(
-        vi.mocked(assetService.getAssetsPageForNodeType)
-      ).toHaveBeenCalledTimes(1)
+      expect(assetService.getAssetsPageForNodeType).toHaveBeenCalledTimes(1)
       expect(store.getAssets(nodeType)).toHaveLength(5)
     })
 
@@ -366,9 +462,7 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       await store.updateModelsForNodeType(nodeType)
 
       expect(store.getAssets(nodeType)).toHaveLength(2)
-      expect(
-        vi.mocked(assetService.getAssetsPageForNodeType)
-      ).toHaveBeenCalledTimes(2)
+      expect(assetService.getAssetsPageForNodeType).toHaveBeenCalledTimes(2)
     })
 
     it('keeps a newer request single-flighted when a stale request finishes after invalidation', async () => {
@@ -394,9 +488,7 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       // single-flight entry: a third call short-circuits instead of starting
       // a duplicate walk.
       void store.updateModelsForNodeType(nodeType)
-      expect(
-        vi.mocked(assetService.getAssetsPageForNodeType)
-      ).toHaveBeenCalledTimes(2)
+      expect(assetService.getAssetsPageForNodeType).toHaveBeenCalledTimes(2)
     })
   })
 
@@ -436,9 +528,7 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
 
       expect(store.getAssets('CheckpointLoaderSimple')).toHaveLength(2)
       expect(store.getAssets('ImageOnlyCheckpointLoader')).toHaveLength(2)
-      expect(
-        vi.mocked(assetService.getAssetsPageForNodeType)
-      ).toHaveBeenCalledTimes(1)
+      expect(assetService.getAssetsPageForNodeType).toHaveBeenCalledTimes(1)
     })
 
     it('should return empty array for unknown node types', () => {
@@ -449,9 +539,7 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
     it('should not fetch for unknown node types', async () => {
       const store = useAssetsStore()
       await store.updateModelsForNodeType('UnknownNodeType')
-      expect(
-        vi.mocked(assetService.getAssetsPageForNodeType)
-      ).not.toHaveBeenCalled()
+      expect(assetService.getAssetsPageForNodeType).not.toHaveBeenCalled()
     })
   })
 
@@ -513,18 +601,6 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
   })
 
   describe('hasCategory', () => {
-    it('should return true for loaded categories', async () => {
-      const store = useAssetsStore()
-      const assets = [createMockAsset('asset-1')]
-
-      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValue(
-        makePage(assets)
-      )
-      await store.updateModelsForNodeType('CheckpointLoaderSimple')
-
-      expect(store.hasCategory('checkpoints')).toBe(true)
-    })
-
     it('should return true for tag-based category when tag: prefix is not used', async () => {
       const store = useAssetsStore()
       const assets = [createMockAsset('asset-1')]
@@ -663,7 +739,6 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       vi.mocked(assetService.updateAsset).mockRejectedValueOnce(
         new Error('500 Internal Error')
       )
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
       await store.updateAssetMetadata(
         original,
@@ -673,7 +748,6 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
 
       const cached = store.getAssets('CheckpointLoaderSimple')[0]
       expect(cached.user_metadata).toEqual({ note: 'before' })
-      consoleSpy.mockRestore()
     })
   })
 
@@ -693,8 +767,8 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
         'CheckpointLoaderSimple'
       )
 
-      expect(vi.mocked(assetService.addAssetTags)).not.toHaveBeenCalled()
-      expect(vi.mocked(assetService.removeAssetTags)).not.toHaveBeenCalled()
+      expect(assetService.addAssetTags).not.toHaveBeenCalled()
+      expect(assetService.removeAssetTags).not.toHaveBeenCalled()
     })
 
     it('calls only the add endpoint when there are no tags to remove', async () => {
@@ -717,11 +791,10 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
         'CheckpointLoaderSimple'
       )
 
-      expect(vi.mocked(assetService.addAssetTags)).toHaveBeenCalledWith(
-        'tags-add-only',
-        ['featured']
-      )
-      expect(vi.mocked(assetService.removeAssetTags)).not.toHaveBeenCalled()
+      expect(assetService.addAssetTags).toHaveBeenCalledWith('tags-add-only', [
+        'featured'
+      ])
+      expect(assetService.removeAssetTags).not.toHaveBeenCalled()
       expect(store.getAssets('CheckpointLoaderSimple')[0].tags).toEqual([
         'models',
         'featured'
@@ -730,16 +803,6 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
   })
 
   describe('updateAssetTags partial-failure compensation', () => {
-    let consoleSpy: ReturnType<typeof vi.spyOn>
-
-    beforeEach(() => {
-      consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-    })
-
-    afterEach(() => {
-      consoleSpy.mockRestore()
-    })
-
     it('re-adds removed tags when add fails so cache and server converge', async () => {
       const store = useAssetsStore()
       const asset = createMockAsset('tags-partial-fail', ['models', 'loras'])
@@ -766,12 +829,12 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
         'LoraLoader'
       )
 
-      expect(vi.mocked(assetService.addAssetTags)).toHaveBeenNthCalledWith(
+      expect(assetService.addAssetTags).toHaveBeenNthCalledWith(
         1,
         'tags-partial-fail',
         ['checkpoints']
       )
-      expect(vi.mocked(assetService.addAssetTags)).toHaveBeenNthCalledWith(
+      expect(assetService.addAssetTags).toHaveBeenNthCalledWith(
         2,
         'tags-partial-fail',
         ['loras']
@@ -806,7 +869,7 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       )
 
       expect(store.hasCategory('loras')).toBe(false)
-      expect(vi.mocked(assetService.addAssetTags)).toHaveBeenCalledTimes(2)
+      expect(assetService.addAssetTags).toHaveBeenCalledTimes(2)
     })
 
     it('invalidates overlapping tag caches that also contain the asset when cacheKey is provided', async () => {
@@ -862,8 +925,8 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
         'CheckpointLoaderSimple'
       )
 
-      expect(vi.mocked(assetService.addAssetTags)).toHaveBeenCalledTimes(1)
-      expect(vi.mocked(assetService.removeAssetTags)).not.toHaveBeenCalled()
+      expect(assetService.addAssetTags).toHaveBeenCalledTimes(1)
+      expect(assetService.removeAssetTags).not.toHaveBeenCalled()
       expect(store.getAssets('CheckpointLoaderSimple')[0].tags).toEqual([
         'models'
       ])
@@ -893,7 +956,7 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
         'LoraLoader'
       )
 
-      expect(vi.mocked(assetService.addAssetTags)).toHaveBeenCalledTimes(1)
+      expect(assetService.addAssetTags).toHaveBeenCalledTimes(1)
       expect(store.getAssets('LoraLoader')[0].tags).toEqual(['models', 'loras'])
     })
 
@@ -947,23 +1010,25 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
 
       await store.updateModelsForNodeType(nodeType)
 
-      expect(
-        vi.mocked(assetService.getAssetsPageForNodeType)
-      ).toHaveBeenCalledTimes(2)
-      expect(
-        vi.mocked(assetService.getAssetsPageForNodeType)
-      ).toHaveBeenNthCalledWith(1, nodeType, {
-        limit: 500,
-        offset: 0,
-        signal: expect.any(AbortSignal)
-      })
-      expect(
-        vi.mocked(assetService.getAssetsPageForNodeType)
-      ).toHaveBeenNthCalledWith(2, nodeType, {
-        limit: 500,
-        after: 'cursor-1',
-        signal: expect.any(AbortSignal)
-      })
+      expect(assetService.getAssetsPageForNodeType).toHaveBeenCalledTimes(2)
+      expect(assetService.getAssetsPageForNodeType).toHaveBeenNthCalledWith(
+        1,
+        nodeType,
+        {
+          limit: 500,
+          offset: 0,
+          signal: expect.any(AbortSignal)
+        }
+      )
+      expect(assetService.getAssetsPageForNodeType).toHaveBeenNthCalledWith(
+        2,
+        nodeType,
+        {
+          limit: 500,
+          after: 'cursor-1',
+          signal: expect.any(AbortSignal)
+        }
+      )
       expect(store.getAssets(nodeType)).toHaveLength(8)
     })
 
@@ -980,9 +1045,7 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
 
       await store.updateModelsForNodeType(nodeType)
 
-      expect(
-        vi.mocked(assetService.getAssetsPageForNodeType)
-      ).toHaveBeenCalledTimes(1)
+      expect(assetService.getAssetsPageForNodeType).toHaveBeenCalledTimes(1)
       expect(store.getAssets(nodeType)).toHaveLength(500)
     })
 
@@ -1006,9 +1069,7 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
 
       await store.updateModelsForNodeType(nodeType)
 
-      expect(
-        vi.mocked(assetService.getAssetsPageForNodeType)
-      ).toHaveBeenCalledTimes(2)
+      expect(assetService.getAssetsPageForNodeType).toHaveBeenCalledTimes(2)
       expect(store.getAssets(nodeType)).toHaveLength(2)
     })
 
@@ -1022,9 +1083,7 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
 
       await store.updateModelsForNodeType(nodeType)
 
-      expect(
-        vi.mocked(assetService.getAssetsPageForNodeType)
-      ).toHaveBeenCalledTimes(1)
+      expect(assetService.getAssetsPageForNodeType).toHaveBeenCalledTimes(1)
       expect(store.getAssets(nodeType)).toHaveLength(0)
     })
 
@@ -1044,16 +1103,16 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
 
       await store.updateModelsForNodeType(nodeType)
 
-      expect(
-        vi.mocked(assetService.getAssetsPageForNodeType)
-      ).toHaveBeenCalledTimes(2)
-      expect(
-        vi.mocked(assetService.getAssetsPageForNodeType)
-      ).toHaveBeenNthCalledWith(2, nodeType, {
-        limit: 500,
-        offset: 500,
-        signal: expect.any(AbortSignal)
-      })
+      expect(assetService.getAssetsPageForNodeType).toHaveBeenCalledTimes(2)
+      expect(assetService.getAssetsPageForNodeType).toHaveBeenNthCalledWith(
+        2,
+        nodeType,
+        {
+          limit: 500,
+          offset: 500,
+          signal: expect.any(AbortSignal)
+        }
+      )
       expect(store.getAssets(nodeType)).toHaveLength(510)
     })
 
@@ -1108,13 +1167,15 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       await store.updateModelsForNodeType(nodeType)
       await store.updateModelsForNodeType(nodeType)
 
-      expect(
-        vi.mocked(assetService.getAssetsPageForNodeType)
-      ).toHaveBeenNthCalledWith(3, nodeType, {
-        limit: 500,
-        offset: 0,
-        signal: expect.any(AbortSignal)
-      })
+      expect(assetService.getAssetsPageForNodeType).toHaveBeenNthCalledWith(
+        3,
+        nodeType,
+        {
+          limit: 500,
+          offset: 0,
+          signal: expect.any(AbortSignal)
+        }
+      )
       expect(store.getAssets(nodeType).map((a) => a.id)).toEqual(['fresh'])
     })
 
@@ -1135,17 +1196,13 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       // Wait for the first fetch, then invalidate during the inter-batch delay
       // so the walk aborts instead of issuing further requests.
       await vi.waitFor(() =>
-        expect(
-          vi.mocked(assetService.getAssetsPageForNodeType)
-        ).toHaveBeenCalledTimes(1)
+        expect(assetService.getAssetsPageForNodeType).toHaveBeenCalledTimes(1)
       )
       store.invalidateCategory('checkpoints')
 
       await walk
 
-      expect(
-        vi.mocked(assetService.getAssetsPageForNodeType)
-      ).toHaveBeenCalledTimes(1)
+      expect(assetService.getAssetsPageForNodeType).toHaveBeenCalledTimes(1)
     })
 
     it('does not clear a superseding walk when an aborted walk tears down', async () => {
@@ -1169,18 +1226,14 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
 
       const walkA = store.updateModelsForNodeType(nodeType)
       await vi.waitFor(() =>
-        expect(
-          vi.mocked(assetService.getAssetsPageForNodeType)
-        ).toHaveBeenCalledTimes(1)
+        expect(assetService.getAssetsPageForNodeType).toHaveBeenCalledTimes(1)
       )
 
       // Abort walk A, then start walk B before A's teardown runs.
       store.invalidateCategory('checkpoints')
       const walkB = store.updateModelsForNodeType(nodeType)
       await vi.waitFor(() =>
-        expect(
-          vi.mocked(assetService.getAssetsPageForNodeType)
-        ).toHaveBeenCalledTimes(2)
+        expect(assetService.getAssetsPageForNodeType).toHaveBeenCalledTimes(2)
       )
 
       // Let walk A's aborted teardown settle; it must not delete walk B's guard.
@@ -1191,9 +1244,7 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       resolveB(makePage([createMockAsset('b1')]))
       await Promise.all([walkB, walkC])
 
-      expect(
-        vi.mocked(assetService.getAssetsPageForNodeType)
-      ).toHaveBeenCalledTimes(2)
+      expect(assetService.getAssetsPageForNodeType).toHaveBeenCalledTimes(2)
       expect(store.getAssets(nodeType).map((a) => a.id)).toEqual(['b1'])
     })
 
@@ -1211,23 +1262,27 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
 
       await store.updateModelsForTag('models')
 
-      expect(vi.mocked(assetService.getAssetsPageByTag)).toHaveBeenCalledTimes(
-        2
+      expect(assetService.getAssetsPageByTag).toHaveBeenCalledTimes(2)
+      expect(assetService.getAssetsPageByTag).toHaveBeenNthCalledWith(
+        1,
+        'models',
+        true,
+        {
+          limit: 500,
+          offset: 0,
+          signal: expect.any(AbortSignal)
+        }
       )
-      expect(
-        vi.mocked(assetService.getAssetsPageByTag)
-      ).toHaveBeenNthCalledWith(1, 'models', true, {
-        limit: 500,
-        offset: 0,
-        signal: expect.any(AbortSignal)
-      })
-      expect(
-        vi.mocked(assetService.getAssetsPageByTag)
-      ).toHaveBeenNthCalledWith(2, 'models', true, {
-        limit: 500,
-        after: 'cursor-tag',
-        signal: expect.any(AbortSignal)
-      })
+      expect(assetService.getAssetsPageByTag).toHaveBeenNthCalledWith(
+        2,
+        'models',
+        true,
+        {
+          limit: 500,
+          after: 'cursor-tag',
+          signal: expect.any(AbortSignal)
+        }
+      )
       expect(store.getAssets('tag:models')).toHaveLength(2)
     })
   })

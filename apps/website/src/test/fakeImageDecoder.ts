@@ -32,9 +32,9 @@ export function stubImageDecoder(): FakeImageDecoder {
     onload: (() => void) | null = null
     naturalWidth = 0
     naturalHeight = 0
-    #src = ''
+    private source = ''
     set src(value: string) {
-      this.#src = value
+      this.source = value
       const size = sizes.get(value)
       if (!size) return
       this.naturalWidth = size.width
@@ -47,7 +47,7 @@ export function stubImageDecoder(): FakeImageDecoder {
       else queueMicrotask(load)
     }
     get src(): string {
-      return this.#src
+      return this.source
     }
   }
 

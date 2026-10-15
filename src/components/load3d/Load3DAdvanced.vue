@@ -10,7 +10,7 @@
 
 <script setup lang="ts">
 import Load3D from '@/components/load3d/Load3D.vue'
-import type { ComponentWidget } from '@/scripts/domWidget'
+import type { ComponentWidget } from '@/types/domWidget'
 import type { NodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 

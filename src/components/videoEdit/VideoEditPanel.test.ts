@@ -60,17 +60,6 @@ function stub(testId: string) {
   })
 }
 
-const SliderStub = defineComponent({
-  emits: ['update:modelValue'],
-  setup(_, { emit }) {
-    return () =>
-      h('button', {
-        'data-testid': 'stub-slider-seek',
-        onClick: () => emit('update:modelValue', [90])
-      })
-  }
-})
-
 type PanelProps = ComponentProps<typeof VideoEditPanel>
 
 function renderPanel(props: Partial<PanelProps> = {}) {
@@ -91,19 +80,12 @@ function renderPanel(props: Partial<PanelProps> = {}) {
     } as PanelProps,
     global: {
       plugins: [i18n],
-      directives: { tooltip: {} },
       stubs: {
         VideoFilmstripTrim: stub('stub-filmstrip'),
         VideoCropOverlay: stub('stub-crop-overlay'),
         WidgetInputNumberInput: stub('stub-number-input'),
         WidgetBoundingBox: stub('stub-bounding-box'),
-        Loader: stub('stub-loader'),
-        Slider: SliderStub,
-        Select: stub('stub-select'),
-        SelectTrigger: stub('stub-select-trigger'),
-        SelectValue: stub('stub-select-value'),
-        SelectContent: stub('stub-select-content'),
-        SelectItem: stub('stub-select-item')
+        Loader: stub('stub-loader')
       }
     }
   })
@@ -222,10 +204,13 @@ describe('VideoEditPanel', () => {
       features: ['trim'],
       startFrame: 30,
       endFrame: 60,
+      playheadFrame: 89,
       'onUpdate:playheadFrame': (value: number) => updates.push(value)
     } as Partial<PanelProps>)
 
-    await userEvent.click(screen.getByTestId('stub-slider-seek'))
+    const slider = await screen.findByRole('slider')
+    slider.focus()
+    await userEvent.keyboard('{ArrowRight}')
 
     expect(updates).toContain(60)
     expect(updates).not.toContain(90)
@@ -235,10 +220,13 @@ describe('VideoEditPanel', () => {
     const updates: number[] = []
     renderPanel({
       features: ['crop'],
+      playheadFrame: 89,
       'onUpdate:playheadFrame': (value: number) => updates.push(value)
     } as Partial<PanelProps>)
 
-    await userEvent.click(screen.getByTestId('stub-slider-seek'))
+    const slider = await screen.findByRole('slider')
+    slider.focus()
+    await userEvent.keyboard('{ArrowRight}')
 
     expect(updates).toContain(90)
   })

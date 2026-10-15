@@ -1,11 +1,13 @@
 <template>
-  <div class="flex w-full flex-col">
+  <div
+    class="flex w-lg max-w-full flex-col overflow-hidden rounded-2xl border border-border-default bg-base-background shadow-lg"
+  >
     <header
       class="flex h-12 items-center justify-between gap-2 border-b border-border-default px-4"
     >
       <div class="flex items-center gap-2">
         <i class="icon-[comfy--extensions-blocks]" />
-        <h2 class="text-neutral m-0 text-base">
+        <h2 class="m-0 text-base text-base-foreground">
           {{ $t('manager.survey.title') }}
         </h2>
       </div>

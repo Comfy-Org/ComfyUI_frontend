@@ -1,3 +1,4 @@
+import { SCHEMA_VERSION } from '@comfyorg/comfy-multi-player'
 import { describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
@@ -12,9 +13,7 @@ import {
 import { FollowerDoc } from './followerDoc'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 class TestTransport extends EventTarget implements DocFrameTransport {
   readonly sent: string[] = []
@@ -113,7 +112,9 @@ describe('doc frame client', () => {
         data: {
           v: 1,
           workflow_id: 'wf-1',
-          state_vector_b64: encodeBase64(stateVector)
+          state_vector_b64: encodeBase64(stateVector),
+          supports_reseed: true,
+          schema_version: SCHEMA_VERSION
         }
       },
       {
@@ -202,11 +203,22 @@ describe('doc frame client', () => {
     expect(
       parseServerDocFrame({
         type: 'doc_reset',
-        data: { v: 1, workflow_id: 'wf-1', seq: 43, actor: 'agent:th-1:turn-2' }
+        data: {
+          v: 1,
+          workflow_id: 'wf-1',
+          seq: 43,
+          lineage_seq: 7,
+          actor: 'agent:th-1:turn-2'
+        }
       })
     ).toEqual({
       type: 'doc_reset',
-      data: { workflowId: 'wf-1', seq: 43, actor: 'agent:th-1:turn-2' }
+      data: {
+        workflowId: 'wf-1',
+        seq: 43,
+        lineageSeq: 7,
+        actor: 'agent:th-1:turn-2'
+      }
     })
     expect(
       parseServerDocFrame({
@@ -273,11 +285,13 @@ describe('doc frame client', () => {
     expect(listener).not.toHaveBeenCalled()
     expect(reportError).toHaveBeenCalledTimes(2)
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'agent',
       errorType: 'agent_crdt_invalid_server_frame',
       tags: { frame_type: 'doc_update' },
       level: 'warning'
     })
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'agent',
       errorType: 'agent_crdt_invalid_server_frame',
       tags: { frame_type: 'awareness' },
       level: 'warning'
@@ -303,5 +317,14 @@ describe('doc frame client', () => {
       type: 'doc_update',
       data: { workflowId: 'wf-1', seq: 0, update: new Uint8Array([1]) }
     })
+  })
+
+  it('rejects inherited object keys as frame types', () => {
+    expect(
+      parseServerDocFrame({
+        type: 'constructor',
+        data: { v: 1, workflow_id: 'wf-1' }
+      })
+    ).toBeNull()
   })
 })

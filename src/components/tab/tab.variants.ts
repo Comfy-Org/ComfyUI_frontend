@@ -1,7 +1,7 @@
 import { cva } from 'cva'
 
 export const tabStateVariants = cva({
-  base: 'cursor-pointer rounded-lg border-none text-sm transition-all duration-200 focus-visible:ring-ring/20 outline-hidden focus-visible:ring-1',
+  base: 'cursor-pointer rounded-lg border-none text-sm outline-hidden transition-all duration-200 focus-visible:ring-1 focus-visible:ring-border-default',
   variants: {
     active: {
       true: 'bg-interface-menu-component-surface-hovered text-text-primary',

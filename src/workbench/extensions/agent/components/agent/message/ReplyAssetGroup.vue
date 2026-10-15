@@ -1,7 +1,14 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, ref, watch } from 'vue'
+import {
+  computed,
+  defineAsyncComponent,
+  onBeforeUnmount,
+  ref,
+  watch
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { LOAD3D_VIEWER_DIALOG_PROPS } from '@/components/load3d/load3dViewerDialog'
 import Button from '@/components/ui/button/Button.vue'
 import {
   findOutputAsset,
@@ -65,6 +72,48 @@ const galleryIndex = ref(-1)
 
 const modelThumbnails = ref<Record<string, string>>({})
 const assetNames = ref<Record<string, string>>({})
+const thumbnailAbortController = new AbortController()
+const thumbnailRetryTimers = new Set<ReturnType<typeof setTimeout>>()
+const THUMBNAIL_RETRY_DELAY_MS = 2000
+const THUMBNAIL_MAX_ATTEMPTS = 30
+
+onBeforeUnmount(() => {
+  thumbnailAbortController.abort()
+  for (const timer of thumbnailRetryTimers) clearTimeout(timer)
+  thumbnailRetryTimers.clear()
+})
+
+async function generateOffscreenModelThumbnail(
+  url: string,
+  filename: string,
+  attempt = 1
+): Promise<void> {
+  const { generateModelThumbnail } =
+    await import('@/components/load3d/modelThumbnail')
+  const generated = await generateModelThumbnail(
+    url,
+    filename,
+    thumbnailAbortController.signal
+  )
+  if (generated.status === 'rendered') {
+    modelThumbnails.value[url] = generated.dataUrl
+    return
+  }
+  if (
+    generated.status !== 'busy' ||
+    thumbnailAbortController.signal.aborted ||
+    attempt >= THUMBNAIL_MAX_ATTEMPTS
+  ) {
+    return
+  }
+  const timer = setTimeout(() => {
+    thumbnailRetryTimers.delete(timer)
+    void generateOffscreenModelThumbnail(url, filename, attempt + 1).catch(
+      () => {}
+    )
+  }, THUMBNAIL_RETRY_DELAY_MS)
+  thumbnailRetryTimers.add(timer)
+}
 
 watch(
   () => assets.filter((asset) => asset.kind === '3D' || asset.kind === 'audio'),
@@ -79,10 +128,12 @@ watch(
               modelThumbnails.value[url] = preview
               return
             }
-            const { generateModelThumbnail } =
-              await import('@/components/load3d/modelThumbnail')
-            const generated = await generateModelThumbnail(url, filename)
-            if (generated) modelThumbnails.value[url] = generated
+            if (
+              !new URL(url, window.location.origin).searchParams.has('filename')
+            ) {
+              return
+            }
+            await generateOffscreenModelThumbnail(url, filename)
           })
           .catch(() => {})
       }
@@ -121,14 +172,11 @@ function inspect(asset: ReplyAsset): void {
   if (asset.kind === '3D') {
     useDialogStore().showDialog({
       key: 'asset-3d-viewer',
-      title: assetNames.value[asset.url] || asset.filename,
+      title: assetNames.value[asset.url] || asset.label || asset.filename,
       component: Load3dViewerContent,
       props: { modelUrl: asset.url },
       dialogComponentProps: {
-        renderer: 'reka',
-        size: 'full',
-        contentClass: 'left-1/2 w-[80vw] sm:max-w-[80vw] h-[80vh] max-h-[80vh]',
-        maximizable: true,
+        ...LOAD3D_VIEWER_DIALOG_PROPS,
         onClose: () => refreshModelThumbnail(asset)
       }
     })
@@ -149,7 +197,7 @@ function stopPreview(event: Event): void {
 </script>
 
 <template>
-  <div class="my-4 flex flex-col gap-2">
+  <div data-testid="reply-asset-group" class="my-4 flex flex-col gap-2">
     <div v-if="visibleVisual.length" :class="cn('grid gap-1', gridColsClass)">
       <button
         v-for="asset in visibleVisual"
@@ -205,6 +253,18 @@ function stopPreview(event: Event): void {
         >
           <span class="icon-[lucide--box] size-6 text-muted-foreground" />
         </span>
+        <span
+          v-if="asset.kind === 'video'"
+          data-testid="reply-video-affordance"
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 flex items-center justify-center"
+        >
+          <span
+            class="flex size-9 items-center justify-center rounded-full bg-black/60 text-white shadow-sm backdrop-blur-sm"
+          >
+            <span class="icon-[lucide--play] size-4 fill-current" />
+          </span>
+        </span>
       </button>
     </div>
 
@@ -229,7 +289,7 @@ function stopPreview(event: Event): void {
         v-for="asset in visibleAudio"
         :key="asset.url"
         :asset
-        :title="assetNames[asset.url] || asset.filename"
+        :title="assetNames[asset.url] || asset.label || asset.filename"
       />
       <Button
         v-if="audioCollapsible"
