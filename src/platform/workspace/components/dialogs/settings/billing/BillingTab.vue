@@ -26,7 +26,7 @@
       v-else
       :state="planRow"
       :action="action"
-      :role="workspaceRole"
+      :can-manage-billing="canManageBilling"
     />
 
     <section
@@ -34,7 +34,7 @@
       data-testid="billing-handoff"
     >
       <span class="text-sm wrap-break-word text-muted-foreground">
-        {{ $t(`workspacePanel.billingTab.handoff.${workspaceRole}.label`) }}
+        {{ $t(`workspacePanel.billingTab.handoff.${handoffAudience}.label`) }}
       </span>
       <Button
         as="a"
@@ -44,7 +44,7 @@
         variant="secondary"
         class="shrink-0"
       >
-        {{ $t(`workspacePanel.billingTab.handoff.${workspaceRole}.action`) }}
+        {{ $t(`workspacePanel.billingTab.handoff.${handoffAudience}.action`) }}
         <i class="icon-[lucide--external-link] size-4" aria-hidden="true" />
       </Button>
     </section>
@@ -57,7 +57,7 @@ import { computed, onMounted } from 'vue'
 import Button from '@/components/ui/button/Button.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
+import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import BillingPlanRow from '@/platform/workspace/components/dialogs/settings/billing/BillingPlanRow.vue'
 import {
   deriveBillingTabLoad,
@@ -76,7 +76,15 @@ const { state: planRow } = useBillingPlanRow()
 const HANDOFF_PATH = {
   owner: '/profile/billing',
   member: '/profile/usage'
-} as const satisfies Record<WorkspaceRole, `/${string}`>
+} as const
+
+const canManageBilling = computed(() =>
+  pendingServerFact('BE-20308', workspaceRole.value === 'owner')
+)
+
+const handoffAudience = computed(() =>
+  canManageBilling.value ? 'owner' : 'member'
+)
 
 const load = computed(() =>
   deriveBillingTabLoad({
@@ -94,7 +102,7 @@ const action = computed(() =>
 )
 
 const handoffUrl = computed(() =>
-  platformLink(HANDOFF_PATH[workspaceRole.value])
+  platformLink(HANDOFF_PATH[handoffAudience.value])
 )
 
 async function retry() {

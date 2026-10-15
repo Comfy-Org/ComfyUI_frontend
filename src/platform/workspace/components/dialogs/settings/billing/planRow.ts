@@ -1,8 +1,7 @@
 import type {
   BillingStatus,
   BillingSubscriptionStatus,
-  SubscriptionDuration,
-  WorkspaceRole
+  SubscriptionDuration
 } from '@/platform/workspace/api/workspaceApi'
 
 type BillingCadence = 'monthly' | 'yearly'
@@ -148,13 +147,4 @@ export function formatPlanDate(
     ...(cadence === 'yearly' ? { year: 'numeric' } : {}),
     timeZone: 'UTC'
   }).format(date)
-}
-
-const MANAGED_BY_OWNER: Record<WorkspaceRole, boolean> = {
-  owner: false,
-  member: true
-}
-
-export function isManagedByOwner(role: WorkspaceRole): boolean {
-  return MANAGED_BY_OWNER[role]
 }

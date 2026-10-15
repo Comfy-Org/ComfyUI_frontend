@@ -37,26 +37,22 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
-import {
-  formatPlanDate,
-  isManagedByOwner
-} from '@/platform/workspace/components/dialogs/settings/billing/planRow'
+import { formatPlanDate } from '@/platform/workspace/components/dialogs/settings/billing/planRow'
 import type {
   PlanRowAction,
   PlanRowState
 } from '@/platform/workspace/components/dialogs/settings/billing/planRow'
 import { platformLink } from '@/platform/workspace/utils/platformLink'
 
-const { state, action, role } = defineProps<{
+const { state, action, canManageBilling } = defineProps<{
   state: PlanRowState
   action: PlanRowAction | null
-  role: WorkspaceRole
+  canManageBilling: boolean
 }>()
 
 const { t, locale } = useI18n()
 
-const plansUrl = computed(() => platformLink('/profile/plans'))
+const plansUrl = computed(() => platformLink('/profile/billing/plans'))
 
 const title = computed(() => {
   if (state.kind === 'noPlan') {
@@ -87,7 +83,7 @@ function activeLine(state: Extract<PlanRowState, { kind: 'active' }>) {
 
 function noPlanLine(state: Extract<PlanRowState, { kind: 'noPlan' }>) {
   const key = 'workspacePanel.billingTab.plan.noPlan'
-  if (isManagedByOwner(role)) return ''
+  if (!canManageBilling) return ''
   if (!state.freeRuns) return t(`${key}.line`)
   const { remaining, total } = state.freeRuns
   return remaining > 0
@@ -113,10 +109,10 @@ const statusLine = computed(() => {
 })
 
 const line = computed(() =>
-  isManagedByOwner(role)
-    ? [statusLine.value, t('workspacePanel.billingTab.plan.managedByOwner')]
+  canManageBilling
+    ? statusLine.value
+    : [statusLine.value, t('workspacePanel.billingTab.plan.managedByOwner')]
         .filter(Boolean)
         .join(' ')
-    : statusLine.value
 )
 </script>

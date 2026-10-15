@@ -147,7 +147,7 @@ describe('BillingTab', () => {
     )
     expect(screen.getByRole('link', { name: 'Manage' })).toHaveAttribute(
       'href',
-      'https://platform.test/profile/plans?workspace=ws_1'
+      'https://platform.test/profile/billing/plans?workspace=ws_1'
     )
     expect(screen.getByRole('link', { name: 'Open billing' })).toHaveAttribute(
       'href',
