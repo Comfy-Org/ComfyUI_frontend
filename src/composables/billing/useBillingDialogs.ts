@@ -21,13 +21,6 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import { useDialogStore } from '@/stores/dialogStore'
 import { getErrorMessage } from '@/utils/errorUtil'
 
-function topUpFallbackReason(
-  options?: TopUpCreditsDialogOptions
-): PaymentIntentSource {
-  if (options?.isInsufficientCredits) return 'out_of_credits'
-  return options?.source ?? 'top_up_blocked'
-}
-
 export function useBillingDialogs() {
   const dialogStore = useDialogStore()
 
@@ -41,19 +34,9 @@ export function useBillingDialogs() {
         (options?.isInsufficientCredits ? 'out_of_credits' : undefined)
     })
     const { type } = useBillingContext()
-    const { canTopUp, canSubscribeSelfServe, isReady, initialize } =
-      useBillingCapabilities()
-    // A capability read still in flight has to be awaited here, or a top-up
-    // triggered during that window is silently dropped with no recovery UI.
+    const { canTopUp, isReady, initialize } = useBillingCapabilities()
     if (!isReady.value) await initialize()
     if (!isReady.value) return
-    if (!canTopUp.value && canSubscribeSelfServe.value) {
-      await showSubscriptionRequiredDialog({
-        reason: topUpFallbackReason(options),
-        paymentIntentSource: options?.source
-      })
-      return
-    }
 
     if (!canTopUp.value && type.value === 'workspace') {
       return dialogStore.showDialog({
