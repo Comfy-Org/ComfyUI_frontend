@@ -111,8 +111,8 @@ export interface AgentSessionDeps {
   onThreadActivated?: (threadId: string | null) => void
   onAskResolved?: (askId: string) => void
   /**
-   * Re-send the credential on an interval while a turn runs. Local servers
-   * need it to keep their session cookie alive; in the cloud fetchApi
+   * Re-send the user's credential on an interval while a turn runs, so a long
+   * local turn never outlives its token. Off in the cloud, where fetchApi
    * authenticates every request.
    */
   refreshCredentialDuringTurns?: boolean

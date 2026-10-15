@@ -8559,6 +8559,22 @@ describe('AgentPanelRoot workflow binding', () => {
     ).not.toBeNull()
   })
 
+  it('does not refresh the agent credential while a cloud turn runs', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    await renderAndSend('keep going')
+    vi.mocked(fetch).mockClear()
+
+    await vi.advanceTimersByTimeAsync(4 * 60 * 1000 + 1)
+
+    expect(screen.getByRole('button', { name: 'Stop' })).toBeInTheDocument()
+    const refreshes = vi
+      .mocked(fetch)
+      .mock.calls.filter(([input]) => String(input).includes('limit=1'))
+    expect(refreshes).toEqual([])
+  })
+
   it('lowers the creating flag when a newer focus event supersedes the fetch', async () => {
     const bound = makeTab('wf-42')
     let resolveLookup: ((response: Response) => void) | undefined
