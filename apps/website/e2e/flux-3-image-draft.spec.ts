@@ -10,7 +10,7 @@ for (const prefix of ['', '/zh-CN']) {
   }) => {
     const response = await page.goto(`${prefix}/flux-3-image/`)
     const heading = page.getByRole('heading', {
-      name: 'Flux 3 Image',
+      name: 'FLUX 3 Image Klein',
       exact: true
     })
 
@@ -21,14 +21,10 @@ for (const prefix of ['', '/zh-CN']) {
     }
 
     await expect(heading).toBeVisible()
-    await expect(
-      page.getByRole('img', {
-        name: prefix ? '视频主视觉 · 占位' : 'Video hero · FPO'
-      })
-    ).toBeVisible()
+    await expect(page.getByTestId('model-launch-hero-block')).toHaveCount(1)
     await expect(
       page.getByRole('link', {
-        name: prefix ? '运行 FLUX IMAGE 3' : 'RUN FLUX IMAGE 3',
+        name: prefix ? '运行 FLUX 3 IMAGE KLEIN' : 'RUN FLUX 3 IMAGE KLEIN',
         exact: true
       })
     ).toHaveAttribute('href', '#launch-links')

@@ -56,11 +56,18 @@ const { stop } = useIntersectionObserver(
 <template>
   <section
     ref="sectionRef"
-    class="mx-auto max-w-9xl px-4 py-16 lg:px-20 lg:py-24"
+    :class="
+      cn(
+        'mx-auto max-w-9xl px-4 py-16 lg:px-20 lg:py-24',
+        !gallery.headingKey && 'pt-14 lg:pt-18'
+      )
+    "
   >
-    <div class="mx-auto flex max-w-3xl flex-col items-center text-center">
+    <div
+      v-if="gallery.headingKey"
+      class="mx-auto flex max-w-3xl flex-col items-center text-center"
+    >
       <h2
-        v-if="gallery.headingKey"
         class="text-3xl font-light tracking-tight text-primary-comfy-canvas lg:text-5xl/tight"
       >
         {{ t(gallery.headingKey) }}
@@ -70,7 +77,11 @@ const { stop } = useIntersectionObserver(
     <div
       data-testid="model-launch-gallery-grid"
       :class="
-        cn('mx-auto mt-16 grid max-w-7xl grid-cols-1 md:grid-cols-2', gapClass)
+        cn(
+          'mx-auto grid max-w-7xl grid-cols-1 md:grid-cols-2',
+          gallery.headingKey && 'mt-16',
+          gapClass
+        )
       "
     >
       <ModelLaunchGalleryCard

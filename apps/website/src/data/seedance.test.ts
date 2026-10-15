@@ -27,7 +27,7 @@ function pageCopy(locale: Locale): { label: string; text: string }[] {
       },
       {
         label: `card ${card.id} note`,
-        text: card.note[locale] || card.note.en
+        text: card.note?.[locale] || card.note?.en || ''
       },
       {
         label: `card ${card.id} description`,

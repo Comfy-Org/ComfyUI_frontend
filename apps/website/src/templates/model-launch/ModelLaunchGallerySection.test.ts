@@ -55,28 +55,36 @@ describe('ModelLaunchGallerySection', () => {
   })
 
   it.for([
-    { locale: 'en' as const, label: 'Sample', defaultLabel: 'Free' },
-    { locale: 'zh-CN' as const, label: '示例', defaultLabel: '免费' }
+    { headingKey: gallery.headingKey, gapBelowHeading: true },
+    { headingKey: undefined, gapBelowHeading: false }
   ])(
-    'uses a localized sample label instead of the tier label in $locale',
-    ({ locale, label, defaultLabel }) => {
+    'spaces the grid below a heading only when headingKey=$headingKey',
+    ({ headingKey, gapBelowHeading }) => {
       render(ModelLaunchGallerySection, {
-        props: {
-          locale,
-          gallery: {
-            ...gallery,
-            cards: gallery.cards.map((card) => ({
-              ...card,
-              tierLabel: { en: 'Sample', 'zh-CN': '示例' }
-            }))
-          }
-        }
+        props: { gallery: { cards: gallery.cards, headingKey } }
       })
 
-      expect(screen.getAllByText(label)).toHaveLength(2)
-      expect(screen.queryByText(defaultLabel)).toBeNull()
+      expect(
+        screen
+          .getByTestId('model-launch-gallery-grid')
+          .classList.contains('mt-16')
+      ).toBe(gapBelowHeading)
     }
   )
+
+  it('shows the tier badge without a note for cards that omit one', () => {
+    render(ModelLaunchGallerySection, {
+      props: {
+        gallery: {
+          ...gallery,
+          cards: gallery.cards.map(({ note: _note, ...card }) => card)
+        }
+      }
+    })
+
+    expect(screen.getAllByText('Free')).toHaveLength(2)
+    expect(screen.queryByText('Runs locally')).toBeNull()
+  })
 
   it.for([
     { ctaVariant: undefined, cardMeta: undefined, links: 2, notes: 2 },

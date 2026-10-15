@@ -34,7 +34,6 @@ export interface ModelLaunchHero {
   // Still stand-in for the hero frame, for pages announcing a model whose
   // launch footage does not exist yet. Ignored once videoSrc is set.
   placeholderImageSrc?: string
-  placeholderLabelKey?: TranslationKey
   // Overlay pages without videoSrc only: spins the extruded Comfy C above the
   // copy and shows this image through its body. A flat C stands in until
   // WebGL is ready and for reduced-motion visitors.
@@ -88,8 +87,7 @@ export interface ModelLaunchGalleryCard {
   id: string
   name: LocalizedText
   tier: ModelLaunchTier
-  tierLabel?: LocalizedText
-  note: LocalizedText
+  note?: LocalizedText
   description: LocalizedText
   // The prompt that produced the clip. Cards that have one also offer a copy
   // button; cards still waiting on copy simply omit it.
