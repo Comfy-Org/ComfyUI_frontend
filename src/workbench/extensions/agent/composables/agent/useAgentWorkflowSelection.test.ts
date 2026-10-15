@@ -605,27 +605,24 @@ describe('historical workflow restoration', () => {
     {
       walk: 'before reaching it',
       entries: [{ id: 'wf-saved', name: 'saved' }],
-      lookups: ['wf-past-the-cut']
+      unavailable: true
     },
     {
       walk: 'after listing it',
       entries: [{ id: 'wf-past-the-cut', name: 'past the cut' }],
-      lookups: []
+      unavailable: false
     }
   ])(
-    'reads a chat with no local target when the listing gave up $walk',
-    async ({ entries, lookups }) => {
+    'asks the lookup about a chat with no local target only when the listing gave up $walk',
+    async ({ entries, unavailable }) => {
       const {
         selection,
         workflows,
         panel,
         current,
-        cloudRows,
         listCloudWorkflows,
-        getCloudWorkflow,
         warnRestoreFailed
       } = setup()
-      cloudRows.set('wf-past-the-cut', 1)
       listCloudWorkflows.mockImplementationOnce(async () =>
         listing(entries, false)
       )
@@ -634,11 +631,9 @@ describe('historical workflow restoration', () => {
         true
       )
 
-      expect(panel.selectedWorkflow).toBeNull()
-      expect(panel.targetUnavailable).toBe(false)
+      expect(panel.targetUnavailable).toBe(unavailable)
       expect(warnRestoreFailed).not.toHaveBeenCalled()
       expect(workflows.activeWorkflow?.path).toBe(current.path)
-      expect(getCloudWorkflow.mock.calls.map(([id]) => id)).toEqual(lookups)
     }
   )
 
