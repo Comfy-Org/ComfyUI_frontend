@@ -65,7 +65,8 @@ describe('Preview controls', () => {
 
 function adminPost(
   fields: ReadonlyArray<readonly [string, string]>,
-  canApply = true
+  canApply = true,
+  statusFor: (path: string) => number = () => 204
 ) {
   vi.stubEnv('SITE_CATALOG_API_URL', 'https://ingest.example')
   vi.stubEnv('SITE_CATALOG_WEBSITE_ORIGINS', 'https://preview.example')
@@ -93,8 +94,10 @@ function adminPost(
   }
   const upstream = vi
     .fn<typeof fetch>()
-    .mockImplementation(() =>
-      Promise.resolve(new Response(null, { status: 204 }))
+    .mockImplementation((url) =>
+      Promise.resolve(
+        new Response(null, { status: statusFor(new URL(String(url)).pathname) })
+      )
     )
   vi.stubGlobal('fetch', upstream)
   const calls = () =>
@@ -106,26 +109,20 @@ function adminPost(
 }
 
 describe('Draft publication', () => {
-  it('approves the included workflows before publishing the draft', async () => {
-    const { response, calls } = adminPost([
-      ['action', 'publish'],
-      ['confirm', 'yes'],
-      ['draft_id', '2'],
-      ['generation', '1'],
-      ['approve', 'shr_a:v3'],
-      ['approve', 'shr_b:v1'],
-      ['approve_item', '11111111-1111-4111-8111-111111111111']
-    ])
+  const publishFields = [
+    ['action', 'publish'],
+    ['confirm', 'yes'],
+    ['draft_id', '2'],
+    ['generation', '1'],
+    ['approve', 'shr_a:v3'],
+    ['approve', 'shr_b:v1'],
+    ['approve_item', '11111111-1111-4111-8111-111111111111']
+  ] as const
+
+  it('publishes the draft before approving the included workflows', async () => {
+    const { response, calls } = adminPost(publishFields)
     expect((await response).headers.get('Location')).toBe('/admin/history/')
     expect(calls()).toEqual([
-      [
-        '/admin/api/site/submissions/shr_a/review',
-        { version_id: 'v3', status: 'approved' }
-      ],
-      [
-        '/admin/api/site/submissions/shr_b/review',
-        { version_id: 'v1', status: 'approved' }
-      ],
       [
         '/admin/api/site/publish',
         {
@@ -133,8 +130,32 @@ describe('Draft publication', () => {
           generation: 1,
           approved_uids: ['11111111-1111-4111-8111-111111111111']
         }
+      ],
+      [
+        '/admin/api/site/submissions/shr_a/review',
+        { version_id: 'v3', status: 'approved' }
+      ],
+      [
+        '/admin/api/site/submissions/shr_b/review',
+        { version_id: 'v1', status: 'approved' }
       ]
     ])
+  })
+
+  it('approves no workflow when the publish is refused', async () => {
+    const { response, calls } = adminPost(publishFields, true, (path) =>
+      path === '/admin/api/site/publish' ? 409 : 204
+    )
+    expect((await response).status).toBe(409)
+    expect(calls().map(([path]) => path)).toEqual(['/admin/api/site/publish'])
+  })
+
+  it('treats a workflow that is already approved as done', async () => {
+    const { response, calls } = adminPost(publishFields, true, (path) =>
+      path.endsWith('/shr_a/review') ? 409 : 204
+    )
+    expect((await response).headers.get('Location')).toBe('/admin/history/')
+    expect(calls()).toHaveLength(3)
   })
 
   it('rejects several workflows in one action', async () => {

@@ -50,6 +50,42 @@ describe('website CMS boundary', () => {
     expect(await loadSiteCatalog()).toEqual({ ok: false, status: 503 })
   })
 
+  it('keeps the static Hub in production even when the CMS is configured', () => {
+    vi.stubEnv('SITE_CATALOG_API_URL', 'http://localhost:8099')
+    vi.stubEnv('VERCEL_ENV', 'production')
+    expect(cmsEnabled()).toBe(false)
+  })
+
+  it('drops an unreadable item and keeps the rest of the catalog', async () => {
+    vi.stubEnv('SITE_CATALOG_API_URL', 'http://localhost:8099')
+    const [broken, ...valid] = entries.filter((item) => item.kind === 'MODEL')
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>().mockResolvedValue(
+        Response.json({
+          revision_id: 1,
+          generation: 0,
+          items: [
+            { ...broken, data: { slug: broken.data.slug } },
+            ...valid
+          ].map((item) => ({
+            ...item,
+            revision: 1,
+            deleted: false,
+            edit_version: item.uid
+          }))
+        })
+      )
+    )
+    const result = await loadSiteCatalog()
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.models).toHaveLength(valid.length)
+    expect(result.models.some((model) => model.slug === broken.data.slug)).toBe(
+      false
+    )
+  })
+
   it('rejects production before making an upstream request', async () => {
     vi.stubEnv('SITE_CATALOG_API_URL', 'http://localhost:8099')
     vi.stubEnv('VERCEL_ENV', 'production')
