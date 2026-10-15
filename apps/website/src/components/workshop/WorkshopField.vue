@@ -6,15 +6,16 @@ import type {
   WorkshopField,
   WorkshopFormValue,
   WorkshopFormValues
-} from '../../config/workshop-detail'
-import { parseWorkshopJsonInput } from '../../config/workshop-json-schema'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+} from '@/config/workshop-detail'
+import { parseWorkshopJsonInput } from '@/config/workshop-json-schema'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
 const { field, locale = 'en' } = defineProps<{
   field: WorkshopField
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 const values = defineModel<WorkshopFormValues>({ required: true })
 /**
  * A validation message the visitor can actually see.
@@ -65,7 +66,7 @@ function onText(event: Event) {
     value !== '' &&
     !parseWorkshopJsonInput(value, field.jsonSchema).success
 
-  error.value = invalid ? t('workshop.model.invalidJson', locale) : ''
+  error.value = invalid ? t('workshop.model.invalidJson') : ''
   input.setCustomValidity(error.value)
   set(value)
 }
@@ -88,7 +89,7 @@ function onMedia(event: Event) {
   const input = event.target as HTMLInputElement
   const files = [...(input.files ?? [])]
   if (field.maxItems !== undefined && files.length > field.maxItems) {
-    error.value = t('workshop.model.maxFiles', locale, {
+    error.value = t('workshop.model.maxFiles', {
       count: field.maxItems
     })
     input.setCustomValidity(error.value)
@@ -170,7 +171,7 @@ const acceptByType = {
       @change="onSelect"
     >
       <option v-if="field.defaultValue === undefined" value="">
-        {{ t('workshop.model.select', locale) }}
+        {{ t('workshop.model.select') }}
       </option>
       <!--
         `selected` rather than relying on the select's `:value`. A `value`

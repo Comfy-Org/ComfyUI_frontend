@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { readBalanceCents } from '../acceptance/billing'
+import { readBalanceCents } from '@website/acceptance/billing'
 
 describe('live effective balance in cents', () => {
   it.for([

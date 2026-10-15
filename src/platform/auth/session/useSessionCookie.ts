@@ -1,3 +1,8 @@
+import { isSsoRequiredRefusal } from '@comfyorg/account-core/sso'
+import { zErrorResponse } from '@comfyorg/ingest-types/zod'
+
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import { isCloud } from '@/platform/distribution/types'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -8,6 +13,13 @@ interface InFlightCreateSession {
   ownerUid: string | null
   promise: Promise<void>
 }
+
+class SsoRequiredSessionError extends Error {
+  readonly code = 'SSO_REQUIRED'
+}
+
+/** Ingest refused the session because the sign-in predates a sign-out. */
+export class SessionRevokedError extends Error {}
 
 let inFlightCreateSession: InFlightCreateSession | null = null
 let confirmedSessionOwnerUid: string | null = null
@@ -32,10 +44,16 @@ export const useSessionCookie = () => {
     })
   }
 
-  const readSessionError = async (response: Response): Promise<string> => {
+  const readSessionError = async (response: Response): Promise<Error> => {
     const errorData: unknown = await response.json().catch(() => null)
-    const message = (errorData as { message?: unknown } | null)?.message
-    return typeof message === 'string' ? message : response.statusText
+    const refusal = zErrorResponse.partial().safeParse(errorData).data
+    const text = refusal?.message ?? response.statusText
+    if (isSsoRequiredRefusal(response.status, errorData)) {
+      return new SsoRequiredSessionError(text)
+    }
+    return response.status === 401 && refusal?.code === 'SESSION_REVOKED'
+      ? new SessionRevokedError(text)
+      : new Error(text)
   }
 
   const getSessionHeaderOrThrow = async (): Promise<Record<string, string>> => {
@@ -62,7 +80,7 @@ export const useSessionCookie = () => {
     const response = await createSessionWithHeader(authHeader)
 
     if (!response.ok) {
-      throw new Error(await readSessionError(response))
+      throw await readSessionError(response)
     }
   }
 
@@ -115,15 +133,19 @@ export const useSessionCookie = () => {
     return ownerUid
   }
 
+  const isApiKeyOnWebSession = () =>
+    useFeatureFlags().flags.unifiedWebSessionEnabled &&
+    useCurrentUser().isApiKeyLogin.value
+
   const ensureSessionCookie = async (): Promise<void> => {
-    if (!isCloud) return
+    if (!isCloud || isApiKeyOnWebSession()) return
     const webSession = useCloudWebSessionStore()
     if (webSession.start()) return webSession.whenReady()
     await establishSession(currentOwnerUidOrThrow(), false)
   }
 
   const createSession = async (): Promise<void> => {
-    if (!isCloud) return
+    if (!isCloud || isApiKeyOnWebSession()) return
     if (useCloudWebSessionStore().start()) return
     try {
       await establishSession(currentOwnerUidOrThrow(), true)
@@ -131,9 +153,25 @@ export const useSessionCookie = () => {
       // The session cookie is the only credential <img>/media loads carry, so
       // a swallowed creation failure means images break with no other signal.
       reportError(error, {
+        surface: 'auth',
         errorType: 'session_cookie_creation_failure',
         level: 'warning'
       })
+    }
+  }
+
+  /** After an interactive sign-in: whether ingest refused its session for SSO. */
+  const sessionRequiresSso = async (): Promise<boolean> => {
+    if (!isCloud || isApiKeyOnWebSession()) return false
+    const webSession = useCloudWebSessionStore()
+    if (webSession.start()) {
+      return (await webSession.whenSessionCreated()) === 'SSO_REQUIRED'
+    }
+    try {
+      await establishSession(currentOwnerUidOrThrow(), false)
+      return false
+    } catch (error) {
+      return error instanceof SsoRequiredSessionError
     }
   }
 
@@ -164,7 +202,7 @@ export const useSessionCookie = () => {
           })
 
           if (!response.ok) {
-            throw new Error(await readSessionError(response))
+            throw await readSessionError(response)
           }
           confirmedSessionOwnerUid = null
         })
@@ -179,6 +217,7 @@ export const useSessionCookie = () => {
       // other signal. The caught error carries the server's message, which can
       // name the user, so a fixed error is reported in its place.
       reportError(new Error('Session cookie deletion failed'), {
+        surface: 'auth',
         errorType: 'auth_session_cookie_delete_failed',
         tags: {
           failure_kind: 'caught_unexpected',
@@ -197,6 +236,7 @@ export const useSessionCookie = () => {
   return {
     createSession,
     createSessionOrThrow,
+    sessionRequiresSso,
     ensureSessionCookie,
     deleteSession
   }

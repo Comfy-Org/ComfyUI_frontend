@@ -54,6 +54,7 @@ export function reportMissingCoachTarget(target: string, step: number): void {
     step
   })
   reportError(new Error('Agent coach target never mounted'), {
+    surface: 'agent',
     errorType: 'failure_locating_agent_coach_target',
     level: 'warning',
     context: { target, step }

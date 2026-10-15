@@ -30,7 +30,7 @@ import CrdtDevPanel from './CrdtDevPanel.vue'
 import { setCrdtDebugEnabled } from './crdtDebugGate'
 import * as crdtDebugReport from './crdtDebugReport'
 import { clearDevEvents, recordDevEvent } from './devPanelLog'
-import type { AgentCrdtStatus } from './useAgentCrdtFollower'
+import type { AgentCrdtStatus } from './agentCrdtStatus'
 
 const STATUS: AgentCrdtStatus = {
   enabled: true,
@@ -282,6 +282,7 @@ describe('CrdtDevPanel', () => {
     await user.click(copyReportButton)
 
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'agent',
       errorType: 'crdt_dev_panel_report_copy_failed'
     })
     expect(copyReportButton).toHaveTextContent('Retry copy report')

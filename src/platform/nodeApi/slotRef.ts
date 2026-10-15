@@ -8,7 +8,7 @@
 import type {
   INodeInputSlot,
   INodeOutputSlot
-} from '@/lib/litegraph/src/interfaces'
+} from '@/lib/litegraph/src/types/slots'
 import { extensionValue } from '@/lib/litegraph/src/utils/extensionValue'
 
 import { ComfyAmbiguousSlotError } from './errors'

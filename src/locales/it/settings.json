@@ -339,10 +339,6 @@
     "name": "Mostra aggiornamenti di versione",
     "tooltip": "Mostra aggiornamenti per nuovi modelli e nuove funzionalità principali."
   },
-  "Comfy_Pointer_ClickBufferTime": {
-    "name": "Ritardo tolleranza clic puntatore",
-    "tooltip": "Dopo aver premuto un pulsante del puntatore, questo è il tempo massimo (in millisecondi) in cui il movimento del puntatore può essere ignorato.\n\nAiuta a prevenire spostamenti involontari degli oggetti se il puntatore viene mosso durante il clic.\n\nLa soglia di distanza (tolleranza clic puntatore) già distingue tra clic e trascinamento; questa soglia temporale conta solo quando il puntatore resta fermo e poi viene rilasciato. Un ritardo lungo qui obbliga ogni pressione a dover attendere prima che inizi il trascinamento, il che può risultare lento durante il click+drag di un nodo non selezionato. ~2 frame a 60fps sono sufficienti."
-  },
   "Comfy_Pointer_ClickDrift": {
     "name": "Tolleranza clic puntatore (distanza massima)",
     "tooltip": "Se il puntatore si sposta oltre questa distanza mentre si tiene premuto un pulsante, viene considerato come trascinamento (anziché clic).\n\nAiuta a prevenire spostamenti involontari degli oggetti se il puntatore viene mosso durante il clic."

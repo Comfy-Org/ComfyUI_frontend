@@ -2,7 +2,7 @@ import { useMounted, useObjectUrl } from '@vueuse/core'
 import type { MaybeRefOrGetter } from 'vue'
 import { computed, toValue } from 'vue'
 
-import type { Locale } from '../i18n/translations'
+import type { Locale } from '@/i18n/translations'
 
 /** What a preview needs to show one chosen file, whatever kind it is. */
 export interface SourcePreviewProps {

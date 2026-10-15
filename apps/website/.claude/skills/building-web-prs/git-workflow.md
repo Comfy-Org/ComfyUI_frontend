@@ -122,9 +122,10 @@ stops the next trailer.
   (`git checkout origin/main -- pnpm-lock.yaml`), run `pnpm install`, and commit
   the result. The repository also repairs lockfile conflicts on its own after
   `main` changes; pull before assuming you must fix it.
-- Conflict in `src/i18n/translations.ts`, `src/config/routes.ts`,
+- Conflict in `src/locales/<locale>/*.json`, `src/config/routes.ts`,
   `public/llms.txt`, or `SiteFooter.vue`: these are lists that every new page
-  appends to. Keep both sides' entries.
+  appends to. Merge both sides' entries at their nested paths; never write a
+  JSON key twice. Render catalogs in every locale after resolving copy changes.
 - Conflict in a file this task did not change: stop and escalate.
 
 ## Preview link is missing or stale

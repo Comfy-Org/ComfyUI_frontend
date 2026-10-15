@@ -1,11 +1,11 @@
 import { z } from 'astro/zod'
 
-import { valuesAtPointer } from '../src/config/workshop-json-pointer'
+import { valuesAtPointer } from '@/config/workshop-json-pointer'
 
 import type {
   WorkshopContract,
   WorkshopMediaBinding
-} from '../src/config/workshop-contract'
+} from '@/config/workshop-contract'
 
 const mediaBindings: Readonly<
   Partial<Record<string, readonly WorkshopMediaBinding[]>>

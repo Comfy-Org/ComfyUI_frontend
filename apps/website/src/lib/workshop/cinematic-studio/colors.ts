@@ -64,7 +64,8 @@ const SAMPLE_MAX_BYTES = 10 * 1024 * 1024
 
 /** Reads a picture's dominant colours in the browser. */
 export async function sampleImageColors(
-  file: File
+  file: File,
+  limit = MAX_COLORS
 ): Promise<readonly string[]> {
   if (!SAMPLE_TYPES.includes(file.type) || file.size > SAMPLE_MAX_BYTES)
     throw new Error('Unsupported image')
@@ -83,7 +84,8 @@ export async function sampleImageColors(
     if (!context) throw new Error('Canvas unavailable')
     context.drawImage(bitmap, 0, 0)
     const colors = dominantColors(
-      context.getImageData(0, 0, canvas.width, canvas.height).data
+      context.getImageData(0, 0, canvas.width, canvas.height).data,
+      limit
     )
     if (!colors.length) throw new Error('Empty image')
     return colors

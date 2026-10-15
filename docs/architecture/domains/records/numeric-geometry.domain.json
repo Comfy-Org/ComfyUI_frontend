@@ -1,0 +1,29 @@
+{
+  "id": "numeric-geometry",
+  "capability": "Numeric and rectangle operations",
+  "description": "Shared technical module for arithmetic normalization, wrapping, GCD and LCM, rectangle clipping, union bounds, and overlap calculations. Geometry and scalar arithmetic share one existing file; classification preserves that mixed responsibility for later review.",
+  "modules": [
+    {
+      "path": "src/utils/mathUtil.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/mathUtil.test.ts",
+      "role": "domain"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Numeric and rectangle operations preserves its existing behavior",
+      "checks": ["src/utils/mathUtil.test.ts"]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Inventory preserves existing exports and behavior without granting cross-module permissions. This record describes current responsibilities, not a proposed extraction interface."
+  ],
+  "deepImports": "inventory"
+}

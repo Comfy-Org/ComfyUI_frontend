@@ -78,12 +78,11 @@ describe('closed proxy handles', () => {
     })
 
     it('enumerates only the declared surface', () => {
-      expect(Object.keys(handle()).sort()).toEqual([
-        'id',
-        'isDeleted',
-        'title',
-        'type'
-      ])
+      const keys = Object.keys(handle())
+      expect(keys).toHaveLength(4)
+      expect(keys).toEqual(
+        expect.arrayContaining(['id', 'isDeleted', 'title', 'type'])
+      )
     })
 
     it('rejects structural tampering', () => {
@@ -333,7 +332,7 @@ describe('reading a member that does not exist', () => {
   it('reads as undefined and says so once', () => {
     // A conversion kept `node.graph.isRootGraph` long after handles stopped
     // having a `graph`, and the branch simply never ran.
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const warn = vi.mocked(console.warn)
     const handle = handleForTest()
 
     expect((handle as Record<string, unknown>)['graph']).toBeUndefined()
@@ -345,7 +344,7 @@ describe('reading a member that does not exist', () => {
 
   it('stays quiet for keys the language probes', () => {
     // Warning here would fire on `await handle`, JSON.stringify, or a spread.
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const warn = vi.mocked(console.warn)
     warn.mockClear()
     const handle = handleForTest() as Record<string, unknown>
 

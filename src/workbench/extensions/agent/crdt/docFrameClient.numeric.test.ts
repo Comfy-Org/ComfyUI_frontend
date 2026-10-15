@@ -31,7 +31,8 @@ const sequencedFrame = (
     v: 1,
     workflow_id: 'wf-1',
     seq,
-    ...(type === 'doc_subscribed' && { ok: true })
+    ...(type === 'doc_subscribed' && { ok: true }),
+    ...(type === 'doc_reset' && { lineage_seq: seq })
   }
 })
 
@@ -81,6 +82,43 @@ describe('doc frame numeric domains', () => {
       expect(
         parseServerDocFrame(sequencedFrame('doc_reset', 0))?.data
       ).toMatchObject({ seq: 0 })
+    })
+  })
+
+  describe('doc_reset lineage_seq', () => {
+    it.for([-1, 1.5, Number.POSITIVE_INFINITY, Number.NaN, '1'])(
+      'rejects an invalid value: %s',
+      (lineageSeq) => {
+        expect(
+          parseServerDocFrame({
+            type: 'doc_reset',
+            data: {
+              v: 1,
+              workflow_id: 'wf-1',
+              seq: 43,
+              lineage_seq: lineageSeq
+            }
+          })
+        ).toBeNull()
+      }
+    )
+
+    it('rejects a reset event with no lineage_seq at all, rather than falling back to seq', () => {
+      expect(
+        parseServerDocFrame({
+          type: 'doc_reset',
+          data: { v: 1, workflow_id: 'wf-1', seq: 43 }
+        })
+      ).toBeNull()
+    })
+
+    it('accepts zero, distinct from seq', () => {
+      expect(
+        parseServerDocFrame({
+          type: 'doc_reset',
+          data: { v: 1, workflow_id: 'wf-1', seq: 43, lineage_seq: 0 }
+        })?.data
+      ).toMatchObject({ seq: 43, lineageSeq: 0 })
     })
   })
 

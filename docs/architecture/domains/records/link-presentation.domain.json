@@ -1,0 +1,87 @@
+{
+  "id": "link-presentation",
+  "capability": "Link presentation",
+  "description": "Per-link hidden state and labels in the link presentation store, reveal state, badge layout and drawing, and transfer of presentation when links are replaced.",
+  "modules": [
+    {
+      "path": "src/lib/litegraph/src/canvas/linkGeometry.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/canvas/linkRevealState.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/canvas/linkRevealState.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/core/graph/transferLinkPresentation.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/lib/litegraph/src/canvas/linkVisibility.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/lib/litegraph/src/canvas/linkVisibility.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/lib/litegraph/src/canvas/linkBadgeRenderer.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/canvas/linkBadges.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/canvas/linkBadges.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/stores/linkPresentationStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/linkPresentationStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/types/linkPresentation.ts",
+      "role": "domain"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Link visibility and reveal state follow user toggles",
+      "checks": [
+        "src/lib/litegraph/src/canvas/linkVisibility.test.ts",
+        "src/lib/litegraph/src/canvas/linkRevealState.test.ts",
+        "browser_tests/tests/links/linkVisibility.spec.ts"
+      ]
+    },
+    {
+      "name": "Link badges lay out labels and transfer presentation across graph edits",
+      "checks": [
+        "src/lib/litegraph/src/canvas/linkBadges.test.ts",
+        "src/lib/litegraph/src/LGraph.linkPresentationTransfer.test.ts"
+      ]
+    },
+    {
+      "name": "Link presentation store keeps hidden and label state per root graph and refuses cross-owner writes",
+      "checks": ["src/stores/linkPresentationStore.test.ts"]
+    }
+  ],
+  "adrs": [
+    "docs/adr/ECS-LINK-PRESENTATION-0028-link-presentation-store-ownership.md"
+  ],
+  "compatibilityPromises": [
+    "Serialised link presentation stays compatible with saved workflows.",
+    "Inventory grants no new cross-domain permissions; graph-model and link-connection imports of presentation transfer remain inherited debt."
+  ],
+  "deepImports": "inventory"
+}

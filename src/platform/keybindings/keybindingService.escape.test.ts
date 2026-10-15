@@ -126,8 +126,8 @@ describe('keybindingService - Escape key handling', () => {
     expect(useCommandStore().execute).not.toHaveBeenCalled()
   })
 
-  it.for(['menu', 'menubar'])(
-    'should leave Escape events from role=%s to the menu',
+  it.for(['menu', 'menubar', 'dialog'])(
+    'should leave Escape events from role=%s to the overlay',
     async (role) => {
       const menu = document.createElement('div')
       menu.setAttribute('role', role)

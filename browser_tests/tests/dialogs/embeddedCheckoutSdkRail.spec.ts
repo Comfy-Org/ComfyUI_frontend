@@ -168,7 +168,12 @@ const FAKE_STRIPE_JS = `(() => {
       },
       async createConfirmationToken() {
         await report({ method: 'createConfirmationToken' })
-        return { confirmationToken: { id: 'ctoken_e2e' } }
+        return {
+          confirmationToken: {
+            id: 'ctoken_e2e',
+            payment_method_preview: { type: 'card' }
+          }
+        }
       },
       async handleNextAction({ clientSecret }) {
         const outcome = await report({ method: 'handleNextAction', clientSecret })
@@ -657,7 +662,8 @@ test.describe(
 
 test.describe('Embedded top-up bank step', { tag: '@cloud' }, () => {
   test('offers the in-page bank step again after a decline, and settles when it completes', async ({
-    page
+    page,
+    toast
   }) => {
     const fake = await installFakeStripe(page)
     fake.bankSteps.push('fail')
@@ -696,9 +702,7 @@ test.describe('Embedded top-up bank step', { tag: '@cloud' }, () => {
       .click()
 
     await expect(
-      page
-        .locator('.p-toast-message-success')
-        .getByText('Credits added successfully')
+      toast.toastSuccesses.filter({ hasText: 'Credits added successfully' })
     ).toBeVisible()
     expect(bankSteps(fake)).toEqual([
       { method: 'handleNextAction', clientSecret: BANK_STEP_SECRET },

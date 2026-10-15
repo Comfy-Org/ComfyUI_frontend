@@ -34,8 +34,6 @@ import type { NodeHandle } from './nodeHandle'
 import { registerQueueGuard } from './queueGuard'
 import type { Unsubscribe } from './widgetHandle'
 
-export { mayRun } from './queueGuard'
-
 /** @knipIgnoreUnusedButUsedByCustomNodes */
 export interface RunOptions {
   /**
@@ -271,7 +269,7 @@ function normalizeRejection(
             Object.freeze({
               type: error.type,
               message: error.message,
-              details: error.details,
+              details: error.details ?? '',
               ...(error.extra_info?.input_name === undefined
                 ? {}
                 : { inputName: error.extra_info.input_name })
