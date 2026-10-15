@@ -9,6 +9,7 @@ import { boundedBody, catalogAuthoring, editorFailure } from './editor-server'
 import { catalogReview, readReviewResponse } from './staging-server'
 import { reviewTypes } from './staging-review'
 import { accountID } from './account-id'
+import { hasCatalogCapability } from '@/lib/cms/catalog-capabilities'
 
 export async function loadRecordView(
   session: AuthoringSession | undefined,
@@ -16,9 +17,8 @@ export async function loadRecordView(
   query: URLSearchParams
 ) {
   if (
-    // oxlint-disable-next-line comfy/no-capability-recombination -- SSR route authorization enforcing the server-issued catalog capabilities, not a rendered UI gate
     !session ||
-    (!session.can_edit && !session.can_apply) ||
+    !hasCatalogCapability(session) ||
     !z.uuid().safeParse(rawUID).success ||
     !rawUID
   )

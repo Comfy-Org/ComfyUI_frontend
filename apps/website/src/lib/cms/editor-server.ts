@@ -50,11 +50,9 @@ export async function loadEditorData(
   id: string | undefined,
   requestedType: string | null
 ) {
-  if (
-    // oxlint-disable-next-line comfy/no-capability-recombination -- SSR route authorization enforcing the server-issued catalog capabilities, not a rendered UI gate
-    !session?.can_edit ||
-    (id !== undefined && !z.uuid().safeParse(id).success)
-  )
+  if (!session?.can_edit)
+    return { ok: false as const, response: editorFailure(404) }
+  if (id !== undefined && !z.uuid().safeParse(id).success)
     return { ok: false as const, response: editorFailure(404) }
   let snapshot
   if (id) {

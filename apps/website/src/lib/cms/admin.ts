@@ -5,6 +5,7 @@ import type { ContentCatalogReview } from './review-contract'
 import { normalizeProjection } from './catalog-contract'
 import { catalogFetch } from './demo'
 import { contentDiff } from './diff'
+import { hasCatalogCapability } from '@/lib/cms/catalog-capabilities'
 
 export interface SiteSession {
   credential: string
@@ -56,9 +57,7 @@ export async function verifySiteSession(
     return undefined
   }
   const review = zContentCatalogReview.safeParse(data)
-  // oxlint-disable-next-line comfy/no-capability-recombination -- SSR route authorization enforcing the server-issued catalog capabilities, not a rendered UI gate
-  if (!review.success || (!review.data.can_edit && !review.data.can_apply))
-    return undefined
+  if (!review.success || !hasCatalogCapability(review.data)) return undefined
   const draft = normalizeProjection(review.data.draft)
   const live = normalizeProjection(review.data.live)
   const previousLive = review.data.previous_live_id

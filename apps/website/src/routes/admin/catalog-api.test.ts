@@ -60,6 +60,24 @@ function backend(status = 200, body: unknown = fixtureReview()) {
   return fetcher
 }
 describe('catalog staging same-origin facade', () => {
+  it.for([
+    { edit: false, apply: false, staging: 404, exit: 404 },
+    { edit: true, apply: false, staging: 200, exit: 204 },
+    { edit: false, apply: true, staging: 200, exit: 204 },
+    { edit: true, apply: true, staging: 200, exit: 204 }
+  ])(
+    'opens the facade with either capability (edit=$edit apply=$apply)',
+    async ({ edit, apply, staging, exit }) => {
+      backend()
+      const read = context('staging', { method: 'GET', apply })
+      const leave = context('exit', { apply })
+      for (const ctx of [read, leave])
+        if (ctx.locals.catalogAuthoring)
+          ctx.locals.catalogAuthoring.can_edit = edit
+      expect((await GET(read)).status).toBe(staging)
+      expect((await POST(leave)).status).toBe(exit)
+    }
+  )
   it('forwards read-only checked review with CSRF but no mutation retry key', async () => {
     const r = fixtureReview()
     const final = {

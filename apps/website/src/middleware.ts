@@ -27,6 +27,7 @@ import {
   parsePreview,
   verifySiteSession
 } from './lib/cms/admin'
+import { narrowToLocalRole } from '@/lib/cms/catalog-capabilities'
 
 function isAdmin(path: string) {
   return path === '/admin' || path.startsWith('/admin/')
@@ -100,14 +101,7 @@ function capabilities(
   review: ContentCatalogReview,
   tester: Awaited<ReturnType<typeof verifyTester>>
 ) {
-  if (!tester) return review
-  return {
-    ...review,
-    // oxlint-disable-next-line comfy/no-capability-recombination -- a local demo/tester role only narrows the server capability; it never grants one
-    can_edit: review.can_edit && tester.role !== 'review',
-    // oxlint-disable-next-line comfy/no-capability-recombination -- a local demo/tester role only narrows the server capability; it never grants one
-    can_apply: review.can_apply && tester.role === 'publish'
-  }
+  return tester ? narrowToLocalRole(review, tester.role) : review
 }
 
 async function authenticate(context: APIContext) {

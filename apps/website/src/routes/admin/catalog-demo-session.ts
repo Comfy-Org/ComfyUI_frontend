@@ -55,10 +55,10 @@ export const POST: APIRoute = async (context) => {
     const parent = await demoParent()
     const verified = await verifyAuthoringCredential(parent.credential)
     if (!verified.ok) return verified.response
+    // The demo parent must hold both capabilities in its own right.
+    if (!verified.context.can_edit) return editorFailure(403)
+    if (!verified.context.can_apply) return editorFailure(403)
     if (
-      // oxlint-disable-next-line comfy/no-capability-recombination -- SSR route authorization enforcing the server-issued catalog capabilities, not a rendered UI gate
-      !verified.context.can_edit ||
-      !verified.context.can_apply ||
       verified.context.actor_uid !== '00000000-0000-4000-8000-000000000003' ||
       verified.context.owner_uid !== '00000000-0000-4000-8000-000000000001'
     )

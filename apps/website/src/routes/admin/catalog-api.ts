@@ -17,17 +17,41 @@ import {
 } from '@/lib/cms/staging-review'
 import { z } from 'astro/zod'
 import { catalogReview, readReviewResponse } from '@/lib/cms/staging-server'
+import { hasCatalogCapability } from '@/lib/cms/catalog-capabilities'
+
+type Operation =
+  | 'staging'
+  | 'exit'
+  | 'discard-changes'
+  | 'publish'
+  | 'final-review'
+
+// Each operation needs one backend capability, read as received and
+// mirroring the backend's own check on the forwarded request. `exit` only
+// clears this site's Preview cookie.
+function requiredCapability(
+  session: { can_edit: boolean; can_apply: boolean },
+  operation: Operation
+): boolean {
+  switch (operation) {
+    case 'staging':
+    case 'publish':
+    case 'final-review':
+      return session.can_apply
+    case 'discard-changes':
+      return session.can_edit
+    case 'exit':
+      return true
+  }
+}
 
 export const GET: APIRoute = async (context) => {
   const session = context.locals.catalogAuthoring
   const operation = context.params.operation
-  // oxlint-disable-next-line comfy/no-capability-recombination -- SSR route authorization enforcing the server-issued catalog capabilities, not a rendered UI gate
-  if (!session || (!session.can_edit && !session.can_apply))
-    return editorFailure(404)
+  if (!session || !hasCatalogCapability(session)) return editorFailure(404)
   if (operation !== 'staging' && operation !== 'final-review')
     return editorFailure(404)
-  // oxlint-disable-next-line comfy/no-capability-recombination -- SSR route authorization enforcing the server-issued catalog capabilities, not a rendered UI gate
-  if (operation === 'final-review' && !session.can_apply)
+  if (operation === 'final-review' && !requiredCapability(session, operation))
     return editorFailure(404)
   const filter = filterFromQuery(context.url.searchParams)
   if (!filter || (operation === 'final-review' && context.url.search))
@@ -43,9 +67,7 @@ export const GET: APIRoute = async (context) => {
 export const POST: APIRoute = async (context) => {
   const session = context.locals.catalogAuthoring
   const operation = context.params.operation
-  // oxlint-disable-next-line comfy/no-capability-recombination -- SSR route authorization enforcing the server-issued catalog capabilities, not a rendered UI gate
-  if (!session || (!session.can_edit && !session.can_apply))
-    return editorFailure(404)
+  if (!session || !hasCatalogCapability(session)) return editorFailure(404)
   if (
     operation !== 'staging' &&
     operation !== 'exit' &&
@@ -54,16 +76,7 @@ export const POST: APIRoute = async (context) => {
     operation !== 'final-review'
   )
     return editorFailure(404)
-  // oxlint-disable-next-line comfy/no-capability-recombination -- SSR route authorization enforcing the server-issued catalog capabilities, not a rendered UI gate
-  if (operation === 'staging' && !session.can_apply) return editorFailure(404)
-  // oxlint-disable-next-line comfy/no-capability-recombination -- SSR route authorization enforcing the server-issued catalog capabilities, not a rendered UI gate
-  if (operation === 'publish' && !session.can_apply) return editorFailure(404)
-  // oxlint-disable-next-line comfy/no-capability-recombination -- SSR route authorization enforcing the server-issued catalog capabilities, not a rendered UI gate
-  if (operation === 'final-review' && !session.can_apply)
-    return editorFailure(404)
-  // oxlint-disable-next-line comfy/no-capability-recombination -- SSR route authorization enforcing the server-issued catalog capabilities, not a rendered UI gate
-  if (operation === 'discard-changes' && !session.can_edit)
-    return editorFailure(404)
+  if (!requiredCapability(session, operation)) return editorFailure(404)
   if (context.url.search) return editorFailure(400)
   if (!validAuthoringMutation(context)) return editorFailure(403)
   if (operation === 'exit') {
