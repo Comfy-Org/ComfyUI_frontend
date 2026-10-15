@@ -8,7 +8,6 @@ import {
 } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import {
-  SECOND_THREAD_PAGE_CURSOR,
   firstAgentThreadPage,
   secondAgentThreadPage
 } from '@e2e/fixtures/data/agent/agentThreadList'
@@ -26,7 +25,7 @@ test.describe(
         const after = new URL(route.request().url()).searchParams.get('after')
         return route.fulfill(
           jsonRoute(
-            after === SECOND_THREAD_PAGE_CURSOR
+            after === firstAgentThreadPage.pagination.next_cursor
               ? secondAgentThreadPage
               : firstAgentThreadPage
           )

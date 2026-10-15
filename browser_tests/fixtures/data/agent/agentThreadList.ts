@@ -5,12 +5,19 @@ import type {
 
 const LISTED_AT = '2026-10-01T00:00:00Z'
 
-export const SECOND_THREAD_PAGE_CURSOR = 'thread-page-2'
-
-export function emptyAgentThreadList(): AgentThreadListResponse {
+function agentThreadPage(
+  threads: AgentThreadSummary[],
+  nextCursor?: string
+): AgentThreadListResponse {
   return {
-    threads: [],
-    pagination: { has_more: false, limit: 100, offset: 0, total: 0 }
+    threads,
+    pagination: {
+      has_more: nextCursor !== undefined,
+      ...(nextCursor !== undefined && { next_cursor: nextCursor }),
+      limit: 100,
+      offset: 0,
+      total: 0
+    }
   }
 }
 
@@ -28,20 +35,15 @@ function agentThreadSummary(id: string, title: string): AgentThreadSummary {
   }
 }
 
-export const firstAgentThreadPage: AgentThreadListResponse = {
-  threads: [agentThreadSummary('thread-first-page', 'Chat on the first page')],
-  pagination: {
-    has_more: true,
-    next_cursor: SECOND_THREAD_PAGE_CURSOR,
-    limit: 100,
-    offset: 0,
-    total: 0
-  }
+export function emptyAgentThreadList(): AgentThreadListResponse {
+  return agentThreadPage([])
 }
 
-export const secondAgentThreadPage: AgentThreadListResponse = {
-  threads: [
-    agentThreadSummary('thread-second-page', 'Chat on the second page')
-  ],
-  pagination: { has_more: false, limit: 100, offset: 0, total: 0 }
-}
+export const firstAgentThreadPage = agentThreadPage(
+  [agentThreadSummary('thread-first-page', 'Chat on the first page')],
+  'thread-page-2'
+)
+
+export const secondAgentThreadPage = agentThreadPage([
+  agentThreadSummary('thread-second-page', 'Chat on the second page')
+])
