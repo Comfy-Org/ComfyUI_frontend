@@ -19,7 +19,10 @@ import type {
   AgentTurnAccepted,
   AgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-import { zAgentAdmissionError } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import {
+  zAgentAdmissionError,
+  zAgentWsEvent
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
@@ -249,6 +252,54 @@ export const MESSAGE_DONE_EVENT: AgentWsEvent = {
       cache_creation_input_tokens: 0
     }
   }
+}
+
+export function pushTurnEvent(
+  ws: WebSocketRoute,
+  event: AgentWsEvent,
+  messageId: string
+): void {
+  pushAgentEvent(
+    ws,
+    zAgentWsEvent.parse({
+      ...event,
+      data: { ...event.data, message_id: messageId }
+    })
+  )
+}
+
+export function pushThinking(
+  ws: WebSocketRoute,
+  delta: string,
+  messageId?: string
+): void {
+  if (THINKING_EVENT.type !== 'agent_thinking')
+    throw new Error('thinking fixture has the wrong event type')
+  pushAgentEvent(ws, {
+    type: 'agent_thinking',
+    data: {
+      ...THINKING_EVENT.data,
+      delta,
+      message_id: messageId ?? THINKING_EVENT.data.message_id
+    }
+  })
+}
+
+export function pushDelta(
+  ws: WebSocketRoute,
+  delta: string,
+  messageId?: string
+): void {
+  if (MESSAGE_DELTA_EVENT.type !== 'agent_message_delta')
+    throw new Error('message delta fixture has the wrong event type')
+  pushAgentEvent(ws, {
+    type: 'agent_message_delta',
+    data: {
+      ...MESSAGE_DELTA_EVENT.data,
+      delta,
+      message_id: messageId ?? MESSAGE_DELTA_EVENT.data.message_id
+    }
+  })
 }
 
 function agentFeatures(agentFlag: boolean): RemoteConfig {

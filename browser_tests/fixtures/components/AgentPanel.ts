@@ -16,6 +16,7 @@ export class AgentPanel {
   public readonly composer: Locator
   public readonly composerAssetSection: Locator
   public readonly composerPromptArea: Locator
+  public readonly conversationScroll: Locator
   public readonly copiedButton: Locator
   public readonly copyReportButton: Locator
   public readonly creditsExhaustedPaywall: Locator
@@ -23,6 +24,7 @@ export class AgentPanel {
   public readonly dockedPanel: Locator
   public readonly dockedPanelShell: Locator
   public readonly fileInput: Locator
+  public readonly latestButton: Locator
   public readonly nodeSelectionBanner: Locator
   public readonly openButton: Locator
   public readonly root: Locator
@@ -53,6 +55,9 @@ export class AgentPanel {
     this.composer = this.root.getByRole('textbox', { name: /^Describe ideas/ })
     this.composerAssetSection = this.root.getByTestId('composer-asset-section')
     this.composerPromptArea = this.root.getByTestId('composer-inline-input')
+    this.conversationScroll = this.root.getByTestId(
+      TestIds.agent.conversationScroll
+    )
     this.copiedButton = this.root.getByRole('button', { name: 'Copied' })
     this.copyReportButton = this.root.getByRole('button', {
       name: 'Copy full report'
@@ -64,6 +69,9 @@ export class AgentPanel {
     this.dockedPanel = page.getByTestId('docked-agent-panel')
     this.dockedPanelShell = page.getByTestId('docked-agent-panel-shell')
     this.fileInput = this.root.getByTestId('agent-file-input')
+    this.latestButton = this.root.getByRole('button', {
+      name: enMessages.agent.latest
+    })
     this.nodeSelectionBanner = page.getByTestId('node-selection-mode-banner')
     this.openButton = page.getByRole('button', {
       name: enMessages.agent.entryButton,
@@ -92,6 +100,23 @@ export class AgentPanel {
     this.workSummary = this.root.getByRole('button', {
       name: new RegExp(`^${escapeRegExp(enMessages.agent.worked)}`)
     })
+  }
+
+  async waitForConversationToSettle(): Promise<void> {
+    await expect
+      .poll(() =>
+        this.conversationScroll.evaluate(
+          (element) =>
+            element
+              .getAnimations({ subtree: true })
+              .filter(
+                (animation) =>
+                  animation.playState === 'running' &&
+                  animation.effect?.getTiming().iterations !== Infinity
+              ).length
+        )
+      )
+      .toBe(0)
   }
 
   async scrollAssetsToEnd(): Promise<void> {
