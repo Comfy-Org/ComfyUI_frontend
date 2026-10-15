@@ -2218,6 +2218,41 @@
       "subheading": "汇集数百个来自各大实验室的模型，提供真实的输入参数，以及可在你自己的应用中调用的同一套 API。"
     }
   },
+  "homeHub": {
+    "eyebrow": "Comfy Hub",
+    "heading": "创作所需，\n一应俱全",
+    "subtitle": "合作伙伴模型、现成工作流和一键应用，直接在浏览器中使用。",
+    "explore": "探索 Hub",
+    "sections": "Hub 分区",
+    "apps": "应用",
+    "workflows": "工作流",
+    "models": "合作伙伴模型",
+    "pick": "挑选",
+    "remix": "改编",
+    "run": "运行",
+    "pickRemixRunHeading": "在 Comfy Hub 中挑选、改编和运行",
+    "pickRemixRunSubtitle": "挑选应用、改编工作流或调用模型。尽在 Hub，直接在浏览器中完成。",
+    "showcase": "Hub 中的工作流和模型",
+    "workflowBy": "工作流 · {maker}",
+    "modelBy": "模型 · {maker}",
+    "entries": {
+      "apps": {
+        "title": "应用",
+        "line": "上传，点击，完成。无需节点，无需配置。",
+        "seeAll": "查看全部应用"
+      },
+      "workflows": {
+        "title": "工作流",
+        "line": "在 Comfy Cloud 中运行，然后修改任意步骤。",
+        "seeAll": "查看全部工作流"
+      },
+      "models": {
+        "title": "模型",
+        "line": "通过一个 API 调用最新模型。",
+        "seeAll": "查看全部模型"
+      }
+    }
+  },
   "hubspotForm": {
     "embedLoadErrorPrefix": "表单无法加载。请发送邮件至",
     "embedLoadErrorSuffix": "我们会为您处理请求。"
@@ -4659,6 +4694,45 @@
       "view": "查看样例",
       "viewing": "正在查看样例"
     },
+    "explore": {
+      "appOpen": "打开",
+      "appSoon": "即将推出",
+      "appsHint": "上传，点击，完成。无需节点，无需配置。",
+      "appsIntent": "一键生成",
+      "clear": "清除搜索",
+      "countApps": "{count} 个应用 | {count} 个应用",
+      "countModels": "{count} 个模型 | {count} 个模型",
+      "countWorkflows": "{count} 个工作流 | {count} 个工作流",
+      "doorAppControlFocal": "焦距",
+      "doorAppControlRotation": "旋转",
+      "doorAppGenerate": "生成",
+      "doorApps": "应用",
+      "doorModelPromptLake": "蓝调时刻的高山湖泊",
+      "doorModelPromptRowboat": "热带泻湖上的小划艇",
+      "doorModelRun": "运行",
+      "doorWorkflowLight": "光线",
+      "doorWorkflowSave": "Save Image",
+      "doorWorkflowStep": "重新打光",
+      "doorWorkflowStrength": "强度",
+      "doorWorkflows": "工作流",
+      "doors": "按类型浏览",
+      "empty": "暂时没有匹配的结果。",
+      "kindApp": "应用",
+      "kindModel": "模型",
+      "kinds": "按类型查看结果",
+      "modelsHint": "在代码中调用最新模型，也可以先在这里试用。",
+      "modelsIntent": "运行或调用任意模型",
+      "modelsTitle": "模型",
+      "popularTitle": "热门",
+      "resultsFor": "“{query}”的结果",
+      "searchLabel": "搜索 Hub",
+      "searchPlaceholder": "试试“relight”、“upscale”或模型名称",
+      "subtitle": "挑一个应用，改编一个工作流，或调用一个模型。",
+      "useCasesTitle": "按你想创作的内容浏览",
+      "workflowPill": "工作流",
+      "workflowsHint": "打开节点图，修改任意步骤。",
+      "workflowsIntent": "下载并二次创作"
+    },
     "field": {
       "aspectRatio": "宽高比",
       "auto": "自动",
@@ -4896,6 +4970,16 @@
       "title": "输出",
       "truncated": "预览已缩短。请在下方下载完整响应。",
       "useInCode": "在代码中使用这些设置"
+    },
+    "preview": {
+      "label": "预览控制",
+      "community": "来自社区",
+      "homePickRemixRun": "首页：挑选 · 改编 · 运行横幅",
+      "taskSidebar": "Hub：任务侧栏",
+      "workflowsByModality": "Hub：按模态浏览工作流",
+      "workflowsFlat": "Hub：工作流与模型页同版式",
+      "workflowsModalityTask": "Hub：按模态 › 任务浏览工作流",
+      "fullCatalogueMock": "Hub：完整目录模拟（工作流）"
     },
     "proto": {
       "featured": "显示精选行",
@@ -5151,45 +5235,6 @@
       "zoomIn": "放大",
       "zoomOut": "缩小",
       "zoomReset": "重置"
-    },
-    "explore": {
-      "appOpen": "打开",
-      "appSoon": "即将推出",
-      "appsHint": "上传，点击，完成。无需节点，无需配置。",
-      "appsIntent": "一键生成",
-      "clear": "清除搜索",
-      "countApps": "{count} 个应用 | {count} 个应用",
-      "countModels": "{count} 个模型 | {count} 个模型",
-      "countWorkflows": "{count} 个工作流 | {count} 个工作流",
-      "doorAppControlFocal": "焦距",
-      "doorAppControlRotation": "旋转",
-      "doorAppGenerate": "生成",
-      "doorApps": "应用",
-      "doorModelPromptLake": "蓝调时刻的高山湖泊",
-      "doorModelPromptRowboat": "热带泻湖上的小划艇",
-      "doorModelRun": "运行",
-      "doorWorkflowLight": "光线",
-      "doorWorkflowSave": "Save Image",
-      "doorWorkflowStep": "重新打光",
-      "doorWorkflowStrength": "强度",
-      "doorWorkflows": "工作流",
-      "doors": "按类型浏览",
-      "empty": "暂时没有匹配的结果。",
-      "kindApp": "应用",
-      "kindModel": "模型",
-      "kinds": "按类型查看结果",
-      "modelsHint": "在代码中调用最新模型，也可以先在这里试用。",
-      "modelsIntent": "运行或调用任意模型",
-      "modelsTitle": "模型",
-      "popularTitle": "热门",
-      "resultsFor": "“{query}”的结果",
-      "searchLabel": "搜索 Hub",
-      "searchPlaceholder": "试试“relight”、“upscale”或模型名称",
-      "subtitle": "挑一个应用，改编一个工作流，或调用一个模型。",
-      "useCasesTitle": "按你想创作的内容浏览",
-      "workflowPill": "工作流",
-      "workflowsHint": "打开节点图，修改任意步骤。",
-      "workflowsIntent": "下载并二次创作"
     }
   }
 }
