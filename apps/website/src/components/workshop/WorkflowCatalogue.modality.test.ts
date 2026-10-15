@@ -66,6 +66,7 @@ function row(name: string) {
 beforeEach(() => {
   history.replaceState(null, '', '/hub/workflows/')
   setPreviewSwitch('hub-facet-sidebar', true)
+  setPreviewSwitch('hub-workflows-modality-task', false)
 })
 afterEach(() => {
   setPreviewSwitch('hub-facet-sidebar', false)

@@ -71,4 +71,22 @@ describe('PreviewControls', () => {
 
     expect(usePreviewSwitch('hub-home-community').value).toBe(false)
   })
+
+  it('opens Workflows by modality › task over the full catalogue until this browser turns it off', async () => {
+    vi.resetModules()
+    const posthog = await import('@/scripts/posthog')
+    vi.mocked(posthog.useWorkshopFlag).mockReturnValue(readonly(ref(false)))
+    const { usePreviewSwitch, setPreviewSwitch } =
+      await import('@/lib/workshop/preview-switches')
+
+    expect(usePreviewSwitch('hub-workflows-modality-task').value).toBe(true)
+    expect(usePreviewSwitch('hub-workflows-full-catalogue-mock').value).toBe(
+      true
+    )
+    expect(usePreviewSwitch('hub-home-community').value).toBe(false)
+
+    setPreviewSwitch('hub-workflows-modality-task', false)
+
+    expect(usePreviewSwitch('hub-workflows-modality-task').value).toBe(false)
+  })
 })

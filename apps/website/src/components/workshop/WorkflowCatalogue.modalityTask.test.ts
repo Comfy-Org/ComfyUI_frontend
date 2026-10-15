@@ -75,6 +75,7 @@ function cardNames() {
 beforeEach(() => {
   history.replaceState(null, '', '/hub/workflows/')
   setPreviewSwitch('hub-workflows-modality-task', true)
+  setPreviewSwitch('hub-workflows-full-catalogue-mock', false)
 })
 afterEach(() => {
   setPreviewSwitch('hub-workflows-modality-task', false)

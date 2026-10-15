@@ -17,7 +17,6 @@ function toggle(key: WorkflowCollection) {
 </script>
 
 <template>
-  <!-- One line that scrolls sideways, so many collections never push the grid down. -->
   <div
     v-if="chips.length"
     role="group"

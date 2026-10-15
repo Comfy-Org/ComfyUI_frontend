@@ -137,7 +137,10 @@ async function choose(
   await user.keyboard('{Escape}')
 }
 
-beforeEach(() => history.replaceState(null, '', '/hub/workflows/'))
+beforeEach(() => {
+  setPreviewSwitch('hub-workflows-modality-task', false)
+  history.replaceState(null, '', '/hub/workflows/')
+})
 
 describe('WorkflowCatalogue categories', () => {
   it('lists All and every category with a workflow, in editorial order, with counts', () => {

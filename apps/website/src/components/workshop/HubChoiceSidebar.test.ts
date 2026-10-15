@@ -143,7 +143,10 @@ async function choose(name: string) {
   await userEvent.click(within(sidebar()).getByRole('tab', { name }))
 }
 
-beforeEach(() => history.replaceState(null, '', '/hub/'))
+beforeEach(() => {
+  setPreviewSwitch('hub-workflows-modality-task', false)
+  history.replaceState(null, '', '/hub/')
+})
 afterEach(() => {
   setPreviewSwitch('hub-task-sidebar', false)
   window.localStorage.clear()

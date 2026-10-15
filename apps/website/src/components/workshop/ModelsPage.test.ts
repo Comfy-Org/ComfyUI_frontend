@@ -10,6 +10,7 @@ import { workshopModels } from '@/config/workshop-browse-content'
 import { workshopPages } from '@/config/workshop-page-content'
 import './ModelPage.vue'
 import './ModelsCatalogue.vue'
+import { setPreviewSwitch } from '@/lib/workshop/preview-switches'
 import { prepareModelPage } from '@/routes/models/model-page'
 import {
   useWorkshopAppsEnabled,
@@ -31,6 +32,7 @@ let workflowsEnabled: Ref<boolean>
 let appsEnabled: Ref<boolean>
 
 beforeEach(() => {
+  setPreviewSwitch('hub-workflows-modality-task', false)
   enabled = ref(false)
   vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(enabled))
   settled = ref(true)

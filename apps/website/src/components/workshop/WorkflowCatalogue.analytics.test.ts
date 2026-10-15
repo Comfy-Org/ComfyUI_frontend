@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { SEARCH_SETTLE_MS } from '@/composables/useHubCatalogueTracking'
 import type { WorkflowWorkshopModel } from '@/config/models-catalogue'
+import { setPreviewSwitch } from '@/lib/workshop/preview-switches'
 import { captureWorkshopEvent } from '@/scripts/posthog'
 import WorkflowCatalogue from './WorkflowCatalogue.vue'
 
@@ -51,6 +52,7 @@ async function searchbox() {
 
 beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true })
+  setPreviewSwitch('hub-workflows-modality-task', false)
   history.replaceState(null, '', '/hub/workflows/')
 })
 

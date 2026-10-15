@@ -11,6 +11,7 @@ import {
   useWorkshopFlag
 } from '@/scripts/posthog'
 import ModelsCatalogue from './ModelsCatalogue.vue'
+import { setPreviewSwitch } from '@/lib/workshop/preview-switches'
 import { lastList } from '@/lib/workshop/shelf-memory'
 import type { WorkshopModel } from '@/config/models-catalogue'
 
@@ -22,6 +23,7 @@ let appsFlag: Ref<boolean>
 let communityFlag: Ref<boolean>
 
 beforeEach(() => {
+  setPreviewSwitch('hub-workflows-modality-task', false)
   history.replaceState(null, '', '/models/')
   enabled = ref(false)
   reshootFlag = ref(true)

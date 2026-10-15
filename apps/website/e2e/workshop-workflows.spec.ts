@@ -2,6 +2,11 @@ import type { BrowserContext } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
+import { pinSectionedWorkflows } from './fixtures/previewSwitches'
+
+test.beforeEach(async ({ context }) => {
+  await pinSectionedWorkflows(context)
+})
 
 async function mockWorkflowVisibility(
   context: BrowserContext,

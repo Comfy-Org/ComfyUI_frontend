@@ -16,13 +16,19 @@ export const PREVIEW_SWITCHES = [
   { id: 'hub-workflows-flat', labelKey: 'workshop.preview.workflowsFlat' },
   {
     id: 'hub-workflows-modality-task',
-    labelKey: 'workshop.preview.workflowsModalityTask'
+    labelKey: 'workshop.preview.workflowsModalityTask',
+    defaultOn: true
   },
   {
     id: 'hub-workflows-full-catalogue-mock',
-    labelKey: 'workshop.preview.fullCatalogueMock'
+    labelKey: 'workshop.preview.fullCatalogueMock',
+    defaultOn: true
   }
-] as const satisfies readonly { id: string; labelKey: TranslationKey }[]
+] as const satisfies readonly {
+  id: string
+  labelKey: TranslationKey
+  defaultOn?: boolean
+}[]
 
 export type PreviewSwitchId = (typeof PREVIEW_SWITCHES)[number]['id']
 
@@ -51,11 +57,15 @@ function loadStored() {
   )
 }
 
-/** Whether a switched section shows: this browser's choice, else its flag. */
+const DEFAULT_ON: ReadonlySet<PreviewSwitchId> = new Set(
+  PREVIEW_SWITCHES.flatMap((entry) => ('defaultOn' in entry ? [entry.id] : []))
+)
+
+/** Whether a switched section shows: this browser's choice, else its flag or default. */
 export function usePreviewSwitch(id: PreviewSwitchId): ComputedRef<boolean> {
   loadStored()
   const flag = useWorkshopFlag(id)
-  return computed(() => stored.value[id] ?? flag.value)
+  return computed(() => stored.value[id] ?? (flag.value || DEFAULT_ON.has(id)))
 }
 
 export function setPreviewSwitch(id: PreviewSwitchId, on: boolean) {

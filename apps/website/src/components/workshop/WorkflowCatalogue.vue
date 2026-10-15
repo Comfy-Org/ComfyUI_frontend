@@ -298,6 +298,9 @@ const collectionEntries = computed(() =>
     ? collectionChips(byModalityTask.value, t, taxonomy.value)
     : []
 )
+const toolbarSpacing = computed(() =>
+  collectionEntries.value.length ? 'mb-0' : 'mb-8 max-sm:mb-4'
+)
 watch(collectionEntries, (entries) => {
   if (!entries.some((entry) => entry.key === collection.value))
     collection.value = 'all'
@@ -524,7 +527,12 @@ function clear() {
     <div class="min-w-0 max-lg:contents lg:flex-1">
       <div
         :id="HUB_TOOLBAR_ID"
-        class="sticky top-20 z-30 -mx-1 mb-8 flex flex-wrap items-center gap-3 bg-page px-1 py-4 max-sm:mb-4 max-sm:py-2 lg:top-26"
+        :class="
+          cn(
+            'sticky top-20 z-30 -mx-1 flex flex-wrap items-center gap-3 bg-page px-1 py-4 max-sm:py-2 lg:top-26',
+            toolbarSpacing
+          )
+        "
         data-testid="workshop-toolbar"
       >
         <div

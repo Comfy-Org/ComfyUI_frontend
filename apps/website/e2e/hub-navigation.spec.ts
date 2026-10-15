@@ -4,9 +4,11 @@ import { expect } from '@playwright/test'
 import { test } from './fixtures/blockExternalMedia'
 import { observeHubNavigation } from './fixtures/hubNavigation'
 import { waitForIsland } from './fixtures/islands'
+import { pinSectionedWorkflows } from './fixtures/previewSwitches'
 import { stubWorkshopFlags } from './fixtures/workshopFlags'
 
 test.beforeEach(async ({ context }) => {
+  await pinSectionedWorkflows(context)
   await stubWorkshopFlags(context, {
     'workshop-enabled': true,
     'workshop-auth': false,
