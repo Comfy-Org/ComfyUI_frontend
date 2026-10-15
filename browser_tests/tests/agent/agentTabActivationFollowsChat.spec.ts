@@ -20,8 +20,8 @@ import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 /**
  * PM-1257 / PM-1270: activating a workflow tab has to bring up that workflow's
- * chat, and a chat the user picked by hand has to survive the thread-list
- * refresh that the pick itself triggers.
+ * chat unless the composer holds a draft, and a chat the user picked by hand
+ * has to survive the thread-list refresh that the pick itself triggers.
  */
 const PORTRAIT_WORKFLOW_ID = 'f0e1d2c3-4b5a-4968-8776-5a4b3c2d1e0f'
 const LANDSCAPE_WORKFLOW_ID = 'b2c3d4e5-6f70-4812-9a3b-4c5d6e7f8a9b'
@@ -33,6 +33,7 @@ const LANDSCAPE_NAME = 'Landscape Study'
 const PORTRAIT_REQUEST = 'Tidy up the portrait study'
 const LANDSCAPE_REQUEST = 'Widen the landscape study'
 const UNBOUND_REQUEST = 'What does a KSampler do?'
+const LANDSCAPE_DRAFT = 'Now add a sunset'
 const AT = '2026-09-22T10:00:00Z'
 
 const EMPTY_WORKFLOW: ComfyWorkflowJSON = {
@@ -144,7 +145,7 @@ test.describe(
   'Agent chat follows the active workflow tab',
   { tag: ['@cloud', '@agent'] },
   () => {
-    test('brings up the tab’s chat on activation and keeps a hand-picked chat', async ({
+    test('brings up the tab’s chat on activation unless a chat is picked or drafted', async ({
       page,
       agentFlagEnabled
     }) => {
@@ -163,7 +164,7 @@ test.describe(
 
       await bootAgentApp(page, agentFlagEnabled, {
         beforeNavigate: async (page) => {
-          await page.route('**/api/agent/threads', (route) => {
+          await page.route('**/api/agent/threads?*', (route) => {
             threadListReads += 1
             return route.fulfill(jsonRoute(threads))
           })
@@ -251,6 +252,30 @@ test.describe(
         await expect(
           topbar.getWorkflowTab(PORTRAIT_NAME).and(topbar.getActiveTab())
         ).toBeVisible()
+      })
+
+      await test.step('a draft keeps the open chat when another tab is activated', async () => {
+        await openChat('Landscape chat', LANDSCAPE_REQUEST)
+        await expect(
+          topbar.getWorkflowTab(LANDSCAPE_NAME).and(topbar.getActiveTab())
+        ).toBeVisible()
+        await agentPanel.composer.fill(LANDSCAPE_DRAFT)
+
+        await topbar.getWorkflowTab(PORTRAIT_NAME).click()
+
+        await expect(
+          topbar.getWorkflowTab(PORTRAIT_NAME).and(topbar.getActiveTab())
+        ).toBeVisible()
+        await expect(panel.getByRole('note')).toContainText(
+          enMessages.agent.viewingDifferentWorkflow
+        )
+        await expect(
+          expect(transcriptBubbles).toHaveText([PORTRAIT_REQUEST], {
+            timeout: 3000
+          })
+        ).rejects.toThrow()
+        await expect(transcriptBubbles).toHaveText([LANDSCAPE_REQUEST])
+        await expect(agentPanel.composer).toHaveText(LANDSCAPE_DRAFT)
       })
     })
   }
