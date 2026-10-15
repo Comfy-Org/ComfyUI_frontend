@@ -4,10 +4,7 @@ import { expect } from '@playwright/test'
 
 import { test } from './fixtures/workshopVisibility'
 import { waitForIsland } from './fixtures/islands'
-import {
-  loadEveryFontFace,
-  waitForPpFormulaLight
-} from './fixtures/visualFonts'
+import { waitForPpFormulaLight } from './fixtures/visualFonts'
 import { VIEWPORTS } from './viewports'
 
 test.describe.configure({ timeout: 60_000 })
@@ -47,7 +44,6 @@ test.describe('Home', { tag: '@visual' }, () => {
       test.beforeEach(async ({ page }) => {
         await page.setViewportSize({ width: vp.width, height: vp.height })
         await navigateAndSettle(page, '/')
-        await loadEveryFontFace(page)
         await page.addStyleTag({
           content: '[data-testid="preview-controls"] { display: none }'
         })
