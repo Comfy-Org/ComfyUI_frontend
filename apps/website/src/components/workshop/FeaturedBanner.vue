@@ -69,7 +69,7 @@ const previewSrc = usePreviewVideo(video, () => active.value?.media?.url, {
     data-testid="section-featured"
   >
     <div
-      class="group relative flex min-h-52 sm:min-h-40"
+      class="group relative flex min-h-60 sm:min-h-48"
       data-testid="featured-slide"
     >
       <a
@@ -107,13 +107,13 @@ const previewSrc = usePreviewVideo(video, () => active.value?.media?.url, {
       />
 
       <div
-        class="pointer-events-none relative flex w-full min-w-0 items-end justify-between gap-8 px-7 pt-7 pb-17 max-sm:px-5 max-sm:pt-5 lg:px-9 lg:pt-8"
+        class="pointer-events-none relative flex w-full min-w-0 flex-col justify-end gap-5 px-7 pt-7 pb-17 max-sm:px-5 max-sm:pt-5 lg:px-9 lg:pt-8"
       >
         <div
           class="flex max-w-3xl min-w-0 flex-wrap items-center gap-x-3 gap-y-2"
         >
           <h2
-            class="line-clamp-2 text-xl font-bold text-balance text-primary-warm-white max-sm:line-clamp-3 max-sm:text-lg lg:text-2xl"
+            class="line-clamp-2 text-xl font-bold text-balance text-primary-warm-white lg:text-2xl"
           >
             {{ active.title }}
           </h2>
@@ -135,12 +135,12 @@ const previewSrc = usePreviewVideo(video, () => active.value?.media?.url, {
           </Badge>
         </div>
 
-        <div class="pointer-events-auto flex shrink-0 items-center gap-3">
+        <div class="pointer-events-auto flex w-fit items-center gap-3">
           <Button
             as="a"
             variant="secondary"
             :href="active.href"
-            class="w-fit max-sm:h-9 max-sm:px-4"
+            class="w-fit"
             @click="emit('open', active, shownIndex)"
           >
             {{ active.cta ?? t('workshop.hub.tryNow') }}
