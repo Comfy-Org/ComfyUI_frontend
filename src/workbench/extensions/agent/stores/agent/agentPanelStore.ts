@@ -154,7 +154,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     activeThreadId: string | null
   ): boolean {
     const navigation = view.value
-    if (navigation.screen !== 'history') return true
+    if (navigation.screen === 'chat') return true
     const { selection } = navigation
     if (selection.status !== 'idle' && threadId === selection.id)
       return selection.status === 'loading'
