@@ -499,7 +499,6 @@ function agentThread({
   }
 }
 
-/** The Chat history list request, which carries a page query. */
 function isThreadListUrl(url: string): boolean {
   return url.split('?')[0].endsWith('/api/agent/threads')
 }
