@@ -17,6 +17,11 @@ export const SIDEBAR_TAB =
 export const SIDEBAR_TAB_SELECTED =
   'bg-transparency-white-t8 font-semibold text-primary-warm-white hover:bg-transparency-white-t8'
 
+export const SIDEBAR_TAB_NESTED =
+  'lg:relative lg:ml-8 lg:w-auto lg:before:absolute lg:before:-inset-y-px lg:before:-left-3 lg:before:w-px lg:before:bg-transparency-white-t20'
+
+export const SIDEBAR_TAB_NESTED_SELECTED = 'lg:before:bg-primary-warm-white'
+
 export const SIDEBAR_ICON =
   'size-3.5 shrink-0 text-primary-warm-white lg:size-4'
 

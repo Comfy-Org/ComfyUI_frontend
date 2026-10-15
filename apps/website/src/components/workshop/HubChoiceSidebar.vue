@@ -11,6 +11,8 @@ import {
   SIDEBAR_LABEL,
   SIDEBAR_LIST,
   SIDEBAR_TAB,
+  SIDEBAR_TAB_NESTED,
+  SIDEBAR_TAB_NESTED_SELECTED,
   SIDEBAR_TAB_SELECTED,
   sidebarTargetIndex
 } from '@/lib/workshop/sidebar-tab-classes'
@@ -65,7 +67,14 @@ function onKeydown(event: KeyboardEvent) {
           :aria-selected="entry.key === selected"
           :tabindex="entry.key === selected ? 0 : -1"
           :class="
-            cn(SIDEBAR_TAB, entry.key === selected && SIDEBAR_TAB_SELECTED)
+            cn(
+              SIDEBAR_TAB,
+              entry.nested && SIDEBAR_TAB_NESTED,
+              entry.key === selected && SIDEBAR_TAB_SELECTED,
+              entry.nested &&
+                entry.key === selected &&
+                SIDEBAR_TAB_NESTED_SELECTED
+            )
           "
           @click="selected = entry.key"
         >
