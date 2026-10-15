@@ -24,6 +24,11 @@ import { deriveWidgetSurfaces } from '@/types/widgetVisibility'
 import { mapUniqueNodes } from '@/utils/graphTraversalUtil'
 import { isSubgraph } from '@/utils/typeGuardUtil'
 
+import {
+  markDynamicGroupController,
+  reportDynamicGroupRowRefusal
+} from './dynamicGroupDiagnostics'
+
 export function dynamicGroupWidget(
   node: LGraphNode,
   inputName: string,
@@ -46,6 +51,7 @@ export function dynamicGroupWidget(
     hidden: true,
     options: { min, max, socketless: true, serialize: false }
   })
+  markDynamicGroupController(controller)
   node.addCustomWidget(
     new DynamicGroupNoticeWidget(
       {
@@ -150,12 +156,17 @@ export function dynamicGroupWidget(
     const inputs = previous.inputs.filter(
       (input) => !input.name.startsWith(`${prefix}.`)
     )
-    const promotedSlots = previous.inputs.flatMap((input) => {
-      const link = previous.links.get(input)
-      return !inputs.includes(input) && link?.origin_id === SUBGRAPH_INPUT_ID
-        ? [link.origin_slot]
-        : []
-    })
+    const graph = node.graph
+    const promotedInputs = new Set(
+      previous.inputs.flatMap((input) => {
+        const link = previous.links.get(input)
+        return isSubgraph(graph) &&
+          !inputs.includes(input) &&
+          link?.origin_id === SUBGRAPH_INPUT_ID
+          ? [graph.inputs[link.origin_slot]]
+          : []
+      })
+    )
     const result = replaceNodeInputs(
       node,
       previous,
@@ -173,8 +184,9 @@ export function dynamicGroupWidget(
     previous.inputs.forEach((input, slot) => {
       if (!inputs.includes(input)) node.onInputRemoved?.(slot, input)
     })
-    for (const slot of promotedSlots)
-      disconnectOrphanedPromotion(node.graph, slot, hosts)
+    if (isSubgraph(graph))
+      for (const input of promotedInputs)
+        disconnectOrphanedPromotion(graph, graph.inputs.indexOf(input), hosts)
     return true
   }
 
@@ -208,16 +220,29 @@ export function dynamicGroupWidget(
     }
   }
 
+  function renameRowWidgets(oldPrefix: string, newPrefix: string) {
+    for (const widget of node.widgets ?? []) {
+      if (widget.name !== oldPrefix && !widget.name.startsWith(`${oldPrefix}.`))
+        continue
+      const name = newPrefix + widget.name.slice(oldPrefix.length)
+      widget.name = name
+      if (
+        widget.name === name &&
+        widget.serialize !== false &&
+        widget.type !== 'button' &&
+        widget.widgetId
+      )
+        store.announceValue(widget.widgetId)
+    }
+  }
+
   function renameRow(
     oldPrefix: string,
     newPrefix: string,
     hosts: PromotionHostLookup
   ) {
     const rowLabel = rows().find((row) => row.name === oldPrefix)?.label
-    for (const widget of node.widgets ?? []) {
-      if (widget.name === oldPrefix || widget.name.startsWith(`${oldPrefix}.`))
-        widget.name = newPrefix + widget.name.slice(oldPrefix.length)
-    }
+    renameRowWidgets(oldPrefix, newPrefix)
     for (const input of node.inputs) {
       if (!input.name.startsWith(`${oldPrefix}.`)) continue
       input.name = newPrefix + input.name.slice(oldPrefix.length)
@@ -249,7 +274,14 @@ export function dynamicGroupWidget(
       callback: () => {
         if (rows().length <= min) return
         changeRows(() => {
-          removeRow(Number(header.name.slice(inputName.length + 1)))
+          const requested = rows().length - 1
+          if (!removeRow(Number(header.name.slice(inputName.length + 1))))
+            reportDynamicGroupRowRefusal(
+              node,
+              'remove_row',
+              requested,
+              rows().length
+            )
           publish()
         })
       }
@@ -381,6 +413,13 @@ export function dynamicGroupWidget(
       }
       publish()
       announceAddedValues(existing)
+      if (rowCount !== count)
+        reportDynamicGroupRowRefusal(
+          node,
+          rowCount > count ? 'remove_row' : 'add_row',
+          count,
+          rowCount
+        )
     }
   })
   controller.value = initialCount
@@ -429,14 +468,32 @@ function disconnectOrphanedPromotion(
   slot: number,
   hosts: PromotionHostLookup
 ) {
-  if (!isSubgraph(graph) || graph.inputs[slot]?.linkIds.length) return
+  if (!isSubgraph(graph) || graph.inputs[slot]?.linkIds.length !== 0) return
+  const input = graph.inputs[slot]
   for (const host of hosts(graph)) {
+    removeFloatingHostLinks(host, slot)
     const link = host.graph && inputLink(host.graph, host.id, slot)
     if (!link) continue
     host.disconnectInput(slot)
     if (link.origin_id === SUBGRAPH_INPUT_ID)
       disconnectOrphanedPromotion(host.graph, link.origin_slot, hosts)
   }
+  graph.removeInput(input)
+  if (!graph.inputs.includes(input)) removeFloatingLinksFrom(graph, slot)
+}
+
+function removeFloatingLinksFrom(graph: Subgraph, slot: number) {
+  for (const link of graph.floatingLinks.values()) {
+    if (link.origin_id !== SUBGRAPH_INPUT_ID) continue
+    if (link.origin_slot === slot) graph.removeFloatingLink(link)
+    else if (link.origin_slot > slot) link.origin_slot--
+  }
+}
+
+function removeFloatingHostLinks(host: SubgraphNode, slot: number) {
+  for (const link of host.graph?.floatingLinks.values() ?? [])
+    if (link.target_id === host.id && link.target_slot === slot)
+      host.graph?.removeFloatingLink(link)
 }
 
 class DynamicGroupNoticeWidget extends VueOnlyWidget<IBaseWidget> {
