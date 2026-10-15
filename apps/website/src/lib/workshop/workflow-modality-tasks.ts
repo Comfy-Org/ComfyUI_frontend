@@ -76,6 +76,11 @@ function split(key: ModalityTaskKey): {
   return { type, task }
 }
 
+/** Whether a sidebar key names a task inside a type, not All or a type alone. */
+export function namesTask(key: ModalityTaskKey): boolean {
+  return split(key).task !== undefined
+}
+
 export function inModalityTask(
   model: WorkflowWorkshopModel,
   key: ModalityTaskKey,

@@ -69,7 +69,7 @@ const previewSrc = usePreviewVideo(video, () => active.value?.media?.url, {
     data-testid="section-featured"
   >
     <div
-      class="group relative flex min-h-72 short:min-h-60 sm:short:min-h-65"
+      class="group relative flex min-h-60 short:min-h-56"
       data-testid="featured-slide"
     >
       <a
@@ -134,16 +134,10 @@ const previewSrc = usePreviewVideo(video, () => active.value?.media?.url, {
           {{ active.title }}
         </h2>
 
-        <p
-          v-if="active.summary"
-          class="line-clamp-1 max-w-prose shrink-0 text-sm text-content-secondary"
-        >
-          {{ active.summary }}
-        </p>
-
         <div class="pointer-events-auto flex w-fit items-center gap-3">
           <Button
             as="a"
+            variant="secondary"
             :href="active.href"
             class="w-fit"
             @click="emit('open', active, shownIndex)"

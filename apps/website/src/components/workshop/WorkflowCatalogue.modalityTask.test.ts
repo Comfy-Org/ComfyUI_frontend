@@ -156,6 +156,18 @@ describe('Workflows by modality › task', () => {
     ).toBeNull()
   })
 
+  it('offers the collections on All and on a type, but not inside one of its tasks', async () => {
+    render(WorkflowCatalogue, { props: { models: workflows } })
+    await userEvent.click(within(sidebar()).getByRole('tab', { name: /Image/ }))
+    expect(
+      screen.getByRole('group', { name: 'Collections' })
+    ).toBeInTheDocument()
+
+    await userEvent.click(within(sidebar()).getByRole('tab', { name: /Edit/ }))
+
+    expect(screen.queryByRole('group', { name: 'Collections' })).toBeNull()
+  })
+
   it('leaves Output out of Filters, since the sidebar already says what comes out', async () => {
     history.replaceState(null, '', '/hub/workflows/?output=video')
     render(WorkflowCatalogue, { props: { models: workflows } })

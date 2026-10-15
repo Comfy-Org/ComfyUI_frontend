@@ -44,7 +44,8 @@ import {
   inCollection,
   inModalityTask,
   modalityTaskChoices,
-  modalityTaskShown
+  modalityTaskShown,
+  namesTask
 } from '@/lib/workshop/workflow-modality-tasks'
 import { WORKFLOW_COLLECTIONS } from '@/lib/workshop/workflow-catalogue-mock-data'
 import type { WorkflowCatalogueMock } from '@/lib/workshop/workflow-catalogue-mock'
@@ -223,7 +224,7 @@ const byModalityTask = computed(() =>
   )
 )
 const collectionEntries = computed(() =>
-  modalityTaskOn.value
+  modalityTaskOn.value && !namesTask(modalityTask.value)
     ? collectionChips(byModalityTask.value, t, taxonomy.value)
     : []
 )

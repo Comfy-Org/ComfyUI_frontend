@@ -96,7 +96,6 @@ describe('FeaturedBanner', () => {
     await user.click(screen.getByRole('button', { name: 'Kling' }))
 
     expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Kling')
-    expect(screen.getByText(kling.summary ?? '')).toBeTruthy()
     expect(screen.getByTestId('featured-slide-link').getAttribute('href')).toBe(
       '/models/kling/'
     )
@@ -272,17 +271,21 @@ describe('FeaturedBanner', () => {
     expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Kling')
   })
 
-  it('carries everything the reader came for', () => {
+  it('carries the title, the kind and one white call to action, without a subtitle', () => {
     render(FeaturedBanner, {
       props: { slides: modelSlides([base, kling], 'en') }
     })
     expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Flux')
     expect(screen.getByText('Text to image')).toBeTruthy()
     expect(
-      screen.getByText(
+      screen.queryByText(
         'Photorealistic images with professional text rendering.'
       )
-    ).toBeTruthy()
+    ).toBeNull()
+    expect(screen.getByRole('link', { name: /Try/i })).toHaveAttribute(
+      'data-variant',
+      'secondary'
+    )
     expect(screen.getByTestId('featured-slide-link').getAttribute('href')).toBe(
       '/models/flux/'
     )
