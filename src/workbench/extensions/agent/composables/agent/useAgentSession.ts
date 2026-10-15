@@ -1635,10 +1635,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
       stashedTurn: false,
       switched: false
     }
-    const isCurrent = () =>
+    const isLoadCurrent = () =>
       load.generation === loadGeneration &&
-      ownedGeneration === sessionGeneration &&
-      (load.switched || isNavigationCurrent())
+      ownedGeneration === sessionGeneration
+    const isCurrent = () => isLoadCurrent() && isNavigationCurrent()
+    const outlivedItsNavigation = () =>
+      load.switched &&
+      isLoadCurrent() &&
+      !isNavigationCurrent() &&
+      readyThreadId.value === threadId
     function openThread(): void {
       readyThreadId.value = null
       load.generation = ++loadGeneration
@@ -1660,8 +1665,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
         ? { openThread, failureNotice: 'inline_notice' }
         : { stashedTurn: load.stashedTurn }
     )
-    const opened = (hydrated || load.switched) && isCurrent()
-    if (opened) {
+    const opened = hydrated && isCurrent()
+    if (opened || outlivedItsNavigation()) {
       localStorage.setItem(threadStorageKey, threadId)
       onThreadActivated?.(threadId)
       conversationStore.resumeBackgroundTurn()

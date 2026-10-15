@@ -669,47 +669,75 @@ describe('useAgentSession (v1 composition root)', () => {
     }
   )
 
-  it.for([
-    {
-      during: 'a newer navigation',
-      restored: (supersede: () => void) => {
-        supersede()
-        return true
+  function keptOpenSession(
+    restored: (isCurrent: () => boolean) => Promise<boolean> | boolean
+  ) {
+    const onThreadActivated = vi.fn()
+    const session = useAgentSession({
+      rest: fakeRest(),
+      events: fakeEvents().source,
+      onThreadActivated,
+      workflow: {
+        current: () => undefined,
+        adopted: vi.fn(),
+        restored: (_workflowId, isCurrent) => restored(isCurrent)
       }
-    },
-    { during: 'a failed restore', restored: () => false }
+    })
+    session.start()
+    return { session, onThreadActivated }
+  }
+
+  it.for([
+    { restore: 'fails', restored: () => false },
+    {
+      restore: 'throws',
+      restored: (): boolean => {
+        throw new Error('restore failed')
+      }
+    }
   ])(
-    'finishes a kept-open switch after $during once its transcript is in',
+    'reports a kept-open switch whose workflow restore $restore as failed, without activating it',
     async ({ restored }) => {
-      let navigationCurrent = true
-      const onThreadActivated = vi.fn()
-      const session = useAgentSession({
-        rest: fakeRest(),
-        events: fakeEvents().source,
-        onThreadActivated,
-        workflow: {
-          current: () => undefined,
-          adopted: vi.fn(),
-          restored: () => restored(() => (navigationCurrent = false))
-        }
+      const { session, onThreadActivated } = keptOpenSession(restored)
+
+      const opened = await session.loadThread('th-next', () => true, {
+        keepOpenChatUntilLoaded: true
       })
-      session.start()
 
-      const opened = await session.loadThread(
-        'th-next',
-        () => navigationCurrent,
-        { keepOpenChatUntilLoaded: true }
-      )
-
-      expect(opened).toBe(true)
-      expect(session.threadId.value).toBe('th-next')
-      expect(onThreadActivated).toHaveBeenLastCalledWith('th-next')
-      expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBe(
-        'th-next'
-      )
+      expect(opened).toBe(false)
+      expect(onThreadActivated).not.toHaveBeenCalledWith('th-next')
+      expect(
+        localStorage.getItem(StorageKeys.agentThread('personal'))
+      ).toBeNull()
+      expect(session.notices.value).toEqual([])
       session.stop()
     }
   )
+
+  it('finishes, but no longer navigates for, a kept-open switch the user moved on from', async () => {
+    let navigationCurrent = true
+    let restoreWasCurrent: boolean | undefined
+    const { session, onThreadActivated } = keptOpenSession((isCurrent) => {
+      navigationCurrent = false
+      restoreWasCurrent = isCurrent()
+      return true
+    })
+
+    const opened = await session.loadThread(
+      'th-next',
+      () => navigationCurrent,
+      { keepOpenChatUntilLoaded: true }
+    )
+
+    expect(restoreWasCurrent).toBe(false)
+    expect(opened).toBe(false)
+    expect(session.threadId.value).toBe('th-next')
+    expect(onThreadActivated).toHaveBeenLastCalledWith('th-next')
+    expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBe(
+      'th-next'
+    )
+    session.stop()
+  })
 
   it('(b) a second send posts to the adopted threadId, not new', async () => {
     const postMessage = vi
