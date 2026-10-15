@@ -22,56 +22,66 @@ test.describe(
       const originalGraph = await page.evaluate(() =>
         window.app!.graph.serialize()
       )
-      await panel
-        .getByRole('button', { name: enMessages.agent.showChatHistory })
-        .click()
-      await panel
-        .getByRole('button', { name: 'Unresolved workflow chat', exact: true })
-        .click()
-      await expect(panel.getByTestId('user-message-bubble')).toHaveText([
-        'Earlier prompt'
-      ])
-      await expect(
-        panel.getByRole('heading', { name: enMessages.agent.history })
-      ).toBeHidden()
-      await expect(agentPanel.workflowPicker).toHaveText(
-        enMessages.agent.selectWorkflowForAgent
-      )
-      await expect(
-        panel.getByText(enMessages.agent.targetWorkflowUnavailable)
-      ).toBeHidden()
-      await expect(topbar.tabs).toHaveCount(1)
-      expect(await page.evaluate(() => window.app!.graph.serialize())).toEqual(
-        originalGraph
-      )
 
-      await agentPanel.sendMessage('Continue in my chosen workflow')
-      await expect(
-        page.getByPlaceholder(enMessages.agent.searchWorkflows)
-      ).toBeVisible()
-      expect(await page.evaluate(() => window.app!.graph.serialize())).toEqual(
-        originalGraph
-      )
-      await page.keyboard.press('Escape')
-      await expect(agentPanel.composer).toHaveText(
-        'Continue in my chosen workflow'
-      )
-
-      await agentPanel.selectWorkflow()
-      await agentPanel.sendButton.click()
-      await expect(panel.getByTestId('user-message-bubble')).toHaveText([
-        'Earlier prompt',
-        'Continue in my chosen workflow'
-      ])
-      expect(posted).toEqual([
-        expect.objectContaining({
-          workflow_id: chosenId,
-          draft: expect.objectContaining({
-            content: expect.objectContaining({ nodes: originalGraph.nodes })
+      await test.step('open the chat from History', async () => {
+        await panel
+          .getByRole('button', { name: enMessages.agent.showChatHistory })
+          .click()
+        await panel
+          .getByRole('button', {
+            name: 'Unresolved workflow chat',
+            exact: true
           })
-        })
-      ])
-      await expect(agentPanel.workflowPicker).toHaveText('Unsaved Workflow')
+          .click()
+        await expect(panel.getByTestId('user-message-bubble')).toHaveText([
+          'Earlier prompt'
+        ])
+        await expect(
+          panel.getByRole('heading', { name: enMessages.agent.history })
+        ).toBeHidden()
+        await expect(agentPanel.workflowPicker).toHaveText(
+          enMessages.agent.selectWorkflowForAgent
+        )
+        await expect(
+          panel.getByText(enMessages.agent.targetWorkflowUnavailable)
+        ).toBeHidden()
+        await expect(topbar.tabs).toHaveCount(1)
+        expect(
+          await page.evaluate(() => window.app!.graph.serialize())
+        ).toEqual(originalGraph)
+      })
+
+      await test.step('send waits for a workflow pick', async () => {
+        await agentPanel.sendMessage('Continue in my chosen workflow')
+        await expect(
+          page.getByPlaceholder(enMessages.agent.searchWorkflows)
+        ).toBeVisible()
+        expect(
+          await page.evaluate(() => window.app!.graph.serialize())
+        ).toEqual(originalGraph)
+        await page.keyboard.press('Escape')
+        await expect(agentPanel.composer).toHaveText(
+          'Continue in my chosen workflow'
+        )
+      })
+
+      await test.step('send to the picked workflow', async () => {
+        await agentPanel.selectWorkflow()
+        await agentPanel.sendButton.click()
+        await expect(panel.getByTestId('user-message-bubble')).toHaveText([
+          'Earlier prompt',
+          'Continue in my chosen workflow'
+        ])
+        expect(posted).toEqual([
+          expect.objectContaining({
+            workflow_id: chosenId,
+            draft: expect.objectContaining({
+              content: expect.objectContaining({ nodes: originalGraph.nodes })
+            })
+          })
+        ])
+        await expect(agentPanel.workflowPicker).toHaveText('Unsaved Workflow')
+      })
     })
   }
 )
