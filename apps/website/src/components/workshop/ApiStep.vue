@@ -32,7 +32,7 @@ const {
       {{ step }}
     </span>
     <div class="flex min-w-0 flex-col gap-1">
-      <h3 class="text-lg/tight font-medium text-primary-warm-white">
+      <h3 class="text-base/tight font-medium text-primary-warm-white">
         {{ title }}
       </h3>
       <p class="text-sm/relaxed text-primary-comfy-canvas/75">{{ body }}</p>

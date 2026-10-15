@@ -3,7 +3,6 @@ import { ArrowUpRight, KeyRound } from '@lucide/vue'
 import { computed, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import Card from '@/components/ui/card/Card.vue'
 import CopyableField from '@/components/ui/copyable-field/CopyableField.vue'
 import type { WorkflowWorkshopModelDetail } from '@/config/models-catalogue'
 import type { SnippetLanguage } from '@/config/models-snippets'
@@ -23,6 +22,7 @@ import {
 } from '@/config/workshop-workflow-snippet'
 import { t } from '@/i18n/translations'
 import ApiStep from './ApiStep.vue'
+import SectionHeading from './SectionHeading.vue'
 import WorkflowCodePanel from './WorkflowCodePanel.vue'
 
 const { model, values } = defineProps<{
@@ -64,23 +64,15 @@ const hasMedia = initialWorkshopPageState(model).schema.some((field) =>
 
 <template>
   <section aria-labelledby="workflow-api-heading">
-    <Card
-      class="gap-8 max-sm:rounded-none max-sm:bg-transparent max-sm:shadow-none sm:p-8 lg:p-10"
-    >
+    <div class="flex flex-col gap-8">
       <div
         class="flex flex-wrap items-baseline justify-between gap-x-8 gap-y-1"
       >
-        <div class="flex max-w-3xl flex-col gap-3">
-          <h2
-            id="workflow-api-heading"
-            class="text-3xl/tight font-light text-primary-warm-white lg:text-4xl/tight"
-          >
-            {{ t('workshop.workflow.apiTitle') }}
-          </h2>
-          <p class="text-base/relaxed text-primary-comfy-canvas">
-            {{ t('workshop.workflow.apiLead') }}
-          </p>
-        </div>
+        <SectionHeading
+          title-id="workflow-api-heading"
+          :title="t('workshop.workflow.apiTitle')"
+          :subtitle="t('workshop.workflow.apiLead')"
+        />
         <a
           :href="externalLinks.docsApi"
           target="_blank"
@@ -178,6 +170,6 @@ const hasMedia = initialWorkshopPageState(model).schema.some((field) =>
           </div>
         </details>
       </div>
-    </Card>
+    </div>
   </section>
 </template>

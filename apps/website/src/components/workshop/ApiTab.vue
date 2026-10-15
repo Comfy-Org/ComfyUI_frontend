@@ -2,7 +2,6 @@
 import { ArrowUpRight } from '@lucide/vue'
 import { computed, ref, watch } from 'vue'
 
-import Card from '@/components/ui/card/Card.vue'
 import { apiKeysLink, externalLinks } from '@/config/routes'
 import type { FileValue, FormValues } from '@/config/workshop-playground'
 import { schemaForModel } from '@/config/workshop-playground'
@@ -20,6 +19,7 @@ import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import ModelApiSteps from './ModelApiSteps.vue'
 import ModelSnippetPanel from './ModelSnippetPanel.vue'
+import SectionHeading from './SectionHeading.vue'
 
 const {
   contract,
@@ -188,22 +188,13 @@ const endpoint = computed(() =>
 </script>
 
 <template>
-  <Card
-    class="gap-8 max-sm:rounded-none max-sm:bg-transparent max-sm:shadow-none sm:p-8 lg:p-10"
-    data-testid="api-tab"
-  >
+  <div class="flex flex-col gap-8" data-testid="api-tab">
     <div class="flex flex-wrap items-baseline justify-between gap-x-8 gap-y-1">
-      <div class="flex max-w-3xl flex-col gap-3">
-        <h2
-          id="api-heading"
-          class="text-3xl/tight font-light text-primary-warm-white lg:text-4xl/tight"
-        >
-          {{ t('workshop.api.heading') }}
-        </h2>
-        <p class="text-base/relaxed text-primary-comfy-canvas">
-          {{ t('workshop.api.body') }}
-        </p>
-      </div>
+      <SectionHeading
+        title-id="api-heading"
+        :title="t('workshop.api.heading')"
+        :subtitle="t('workshop.api.body')"
+      />
       <a
         :href="docsHref ?? externalLinks.docsComfyRouter"
         target="_blank"
@@ -246,5 +237,5 @@ const endpoint = computed(() =>
         </p>
       </div>
     </div>
-  </Card>
+  </div>
 </template>
