@@ -558,19 +558,30 @@ describe('DynamicGroup widgets', () => {
   it('removes every promoted field of the deleted row through two boundaries', () => {
     const { node, widget, innerHost, outerHost } = setupTwiceDeepPromotion()
     widget('loras').value = 3
-    for (const name of ['loras.1.enabled', 'loras.2.strength']) {
-      expect(
-        promoteValueWidgetViaSubgraphInput(innerHost, node, widget(name)).ok
-      ).toBe(true)
-      const innerPromoted = promotedInputWidget(
-        innerHost.inputs[innerHost.inputs.length - 1]
-      )
-      assert.exists(innerPromoted)
-      expect(
-        promoteValueWidgetViaSubgraphInput(outerHost, innerHost, innerPromoted)
-          .ok
-      ).toBe(true)
-    }
+    expect(
+      promoteValueWidgetViaSubgraphInput(
+        innerHost,
+        node,
+        widget('loras.1.enabled')
+      ).ok
+    ).toBe(true)
+    const enabled = promotedInputWidget(innerHost.inputs[1])
+    assert.exists(enabled)
+    expect(
+      promoteValueWidgetViaSubgraphInput(outerHost, innerHost, enabled).ok
+    ).toBe(true)
+    expect(
+      promoteValueWidgetViaSubgraphInput(
+        innerHost,
+        node,
+        widget('loras.2.strength')
+      ).ok
+    ).toBe(true)
+    const strength = promotedInputWidget(innerHost.inputs[2])
+    assert.exists(strength)
+    expect(
+      promoteValueWidgetViaSubgraphInput(outerHost, innerHost, strength).ok
+    ).toBe(true)
 
     widget('loras.1').callback?.(undefined)
 
