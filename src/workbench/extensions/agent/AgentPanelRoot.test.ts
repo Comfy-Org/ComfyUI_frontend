@@ -5234,6 +5234,34 @@ describe('AgentPanelRoot history', () => {
     })
   })
 
+  it('lists a chat with no valid time among today’s chats', async () => {
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) =>
+      threadListRoute.test(String(input))
+        ? json(
+            200,
+            agentThreadList([
+              agentThread({
+                id: 'th-stampless',
+                title: 'Stampless chat',
+                last_message_at: '',
+                updated_at: 'unknown',
+                created_at: ''
+              })
+            ])
+          )
+        : json(200, [])
+    )
+
+    renderWithSelectedTarget()
+
+    const history = useAgentChatHistoryStore()
+    await vi.waitFor(() =>
+      expect(history.grouped.today.map(({ id }) => id)).toEqual([
+        'th-stampless'
+      ])
+    )
+  })
+
   it('switches to the chat bound to the active workflow tab', async () => {
     const first = addTab('workflows/first.json')
     const second = addTab('workflows/second.json')

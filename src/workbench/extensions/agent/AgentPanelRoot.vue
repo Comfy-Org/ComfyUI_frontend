@@ -1408,7 +1408,7 @@ function onFeedback(turnId: string, vote: 'up' | 'down' | null): void {
 }
 
 function toChatSession(thread: AgentThreadSummary): ChatSession {
-  const updatedAt = [
+  const lastActivityAt = [
     thread.last_message_at,
     thread.updated_at,
     thread.created_at
@@ -1418,7 +1418,8 @@ function toChatSession(thread: AgentThreadSummary): ChatSession {
   return {
     id: thread.id,
     title: thread.title || thread.preview || t('agent.untitledChat'),
-    updatedAt: updatedAt ?? 0,
+    updatedAt: lastActivityAt ?? Date.now(),
+    lastActivityAt,
     titleSource: thread.title ? 'server' : 'fallback',
     workflowId: thread.workflow_id || undefined
   }
@@ -1543,7 +1544,7 @@ async function onSelectHistory(
 function latestChatFor(workflowId: string): string | undefined {
   return maxBy(
     history.sessions.filter((session) => session.workflowId === workflowId),
-    ({ updatedAt }) => updatedAt
+    ({ lastActivityAt }) => lastActivityAt ?? Number.NEGATIVE_INFINITY
   )?.id
 }
 
