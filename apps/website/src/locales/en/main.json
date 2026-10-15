@@ -101,7 +101,8 @@
         "NEW": "New content {count}",
         "UPDATES": "Updates {count}"
       },
-      "tabLabel": "Show changes by kind"
+      "tabLabel": "Show changes by kind",
+      "authorLoading": "Loading author"
     },
     "exit": "EXIT",
     "now": "NOW",
@@ -6504,7 +6505,7 @@
     }
   },
   "cccStaging": {
-    "localPublish": "Temporary local test: publish the reviewed changes, rebuild LIVE, and open a new DRAFT. Deferred work is preserved. This is not production publishing.",
+    "localPublish": "Temporary local test: publish the checked changes, rebuild LIVE, and open a new DRAFT. Unchecked changes stay in the Draft. This is not production publishing.",
     "reloadFinal": "Reload Final review",
     "title": "Draft changes",
     "description": "Staging → Final review → Publish. Review exact saved content before it becomes Live.",

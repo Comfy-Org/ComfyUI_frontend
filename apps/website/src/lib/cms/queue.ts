@@ -32,6 +32,8 @@ export interface CatalogQueueItem extends QueueBase {
   canonical?: ReviewItem
   slug: string
   provider?: string
+  /** Canonical account ID of the credited author; shown as its profile. */
+  authorUID?: string
   visibleFrom?: string
   /** Turned off in the draft, so the page only exists on the live site. */
   hidden: boolean

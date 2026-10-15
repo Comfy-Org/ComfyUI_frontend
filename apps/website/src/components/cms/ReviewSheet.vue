@@ -3,6 +3,7 @@ import { Check, ChevronDown, ChevronUp, Plus, Trash2 } from '@lucide/vue'
 import { DialogDescription, DialogTitle } from 'reka-ui'
 import { computed, nextTick } from 'vue'
 
+import AuthorName from '@/components/cms/AuthorName.vue'
 import CatalogReview from '@/components/cms/CatalogReview.vue'
 import ChangeTag from '@/components/cms/ChangeTag.vue'
 import DeleteSubmissionButton from '@/components/cms/DeleteSubmissionButton.vue'
@@ -61,7 +62,12 @@ const subtitle = computed(() =>
     ? `${item.author} · ${t('cmsAdmin.review.submitted', {
         date: formatUtc(item.submittedAt, locale)
       })}`
-    : `${item.provider ?? t('cmsAdmin.draft.catalogSource')} · ${item.slug}`
+    : item.provider || !item.authorUID
+      ? `${item.provider ?? t('cmsAdmin.draft.catalogSource')} · ${item.slug}`
+      : item.slug
+)
+const author = computed(() =>
+  item.source === 'catalog' && !item.provider ? item.authorUID : undefined
 )
 </script>
 
@@ -116,8 +122,12 @@ const subtitle = computed(() =>
           <DialogTitle class="text-lg leading-snug font-medium text-balance">
             {{ item.title }}
           </DialogTitle>
-          <DialogDescription class="text-xs text-admin-muted">
-            {{ subtitle }}
+          <DialogDescription
+            class="flex flex-wrap items-center gap-x-1.5 text-xs text-admin-muted"
+          >
+            <AuthorName v-if="author" :uid="author" :locale />
+            <span v-if="author" aria-hidden="true">·</span>
+            <span>{{ subtitle }}</span>
           </DialogDescription>
         </div>
 

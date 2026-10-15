@@ -1,8 +1,20 @@
 import { render, screen, waitFor, within } from '@testing-library/vue'
-import { assert, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import userEvent from '@testing-library/user-event'
 import { fixtureReview } from '@/lib/cms/staging-fixture'
+import { resolveAuthorProfile } from '@/lib/cms/author-profiles'
 import CatalogCheckedReview from './CatalogCheckedReview.vue'
+
+// Rows credit their author through the staff profile search; these tests
+// count catalog requests, so the profile is answered here instead.
+vi.mock(import('@/lib/cms/author-profiles'))
+beforeEach(() => {
+  vi.mocked(resolveAuthorProfile).mockResolvedValue({
+    id: '00000000-0000-4000-8000-000000000004',
+    label: 'Fixture Author',
+    username: 'fixture-author'
+  })
+})
 
 function firstItem(review: ReturnType<typeof fixtureReview>) {
   const item = review.items[0]

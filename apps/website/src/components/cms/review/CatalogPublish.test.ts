@@ -28,6 +28,28 @@ function published() {
   }
 }
 describe('temporary local Publish', () => {
+  it.for([
+    {
+      locale: 'en' as const,
+      kept: 'Unchecked changes stay in the Draft.',
+      gone: /defer/i
+    },
+    {
+      locale: 'zh-CN' as const,
+      kept: '未勾选的变更保留在草稿中。',
+      gone: /推迟/
+    }
+  ])(
+    'says unchecked changes stay in the Draft, with no Defer step ($locale)',
+    ({ locale, kept, gone }) => {
+      render(CatalogPublish, {
+        props: { review: final(), csrf: 'fixture', locale }
+      })
+      const note = screen.getByText((text) => text.includes(kept))
+      expect(note).toBeVisible()
+      expect(note).not.toHaveTextContent(gone)
+    }
+  )
   it('stays disabled unless the backend explicitly enables publication', async () => {
     render(CatalogPublish, { props: { review: final(false), csrf: 'fixture' } })
     const button = screen.getByRole('button', { name: 'Publish' })

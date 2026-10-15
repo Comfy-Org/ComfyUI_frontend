@@ -3,6 +3,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { ArrowUpRight, Trash2 } from '@lucide/vue'
 import { useTemplateRef } from 'vue'
 
+import AuthorName from '@/components/cms/AuthorName.vue'
 import ChangeTag from '@/components/cms/ChangeTag.vue'
 import QueueThumb from '@/components/cms/QueueThumb.vue'
 import ReadinessFlag from '@/components/cms/ReadinessFlag.vue'
@@ -41,6 +42,10 @@ function open() {
 const { t } = translationsFor(locale)
 
 const later = isFuture(item.source === 'catalog' ? item.visibleFrom : undefined)
+// A model names its provider; otherwise the credited author's public profile
+// answers "from", never the raw account ID.
+const author =
+  item.source === 'catalog' && !item.provider ? item.authorUID : undefined
 const source =
   item.source === 'submission'
     ? item.author
@@ -111,8 +116,13 @@ const when =
         />
       </span>
     </span>
-    <span role="cell" class="hidden min-w-0 md:grid">
-      <span class="truncate">{{ source }}</span>
+    <span
+      role="cell"
+      class="hidden min-w-0 md:grid"
+      data-testid="queue-row-from"
+    >
+      <AuthorName v-if="author" :uid="author" :locale />
+      <span v-else class="truncate">{{ source }}</span>
       <span
         :class="cn('text-xs text-admin-muted', later && 'text-admin-warning')"
       >

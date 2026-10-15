@@ -25,10 +25,10 @@ export function canonicalQueue(items: ReviewItem[]): CatalogQueueItem[] {
           ? 'new'
           : 'updated',
       slug: typeof document.slug === 'string' ? document.slug : '',
-      provider:
-        typeof document.provider === 'string'
-          ? document.provider
-          : item.content.author_uid,
+      ...(typeof document.provider === 'string'
+        ? { provider: document.provider }
+        : {}),
+      authorUID: item.content.author_uid,
       thumbnail: item.presentation?.preview?.src,
       visibleFrom:
         typeof document.visible_from === 'string'

@@ -37,4 +37,18 @@ describe('canonical records in Mar’s queue', () => {
     item.content.is_deleted = true
     expect(canonicalQueue([item]).map((row) => row.change)).toEqual(['removed'])
   })
+
+  it('credits the author by canonical account ID, never as the provider name', () => {
+    const item = fixtureReview().items[0]
+    assert.exists(item)
+    const [row] = canonicalQueue([item])
+    assert.exists(row)
+    expect(row.authorUID).toBe(item.content.author_uid)
+    expect(row.provider).toBeUndefined()
+    item.content.document.provider = 'Black Forest Labs'
+    expect(canonicalQueue([item])[0]).toMatchObject({
+      provider: 'Black Forest Labs',
+      authorUID: item.content.author_uid
+    })
+  })
 })
