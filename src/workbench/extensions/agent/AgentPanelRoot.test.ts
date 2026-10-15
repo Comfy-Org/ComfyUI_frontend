@@ -7143,6 +7143,10 @@ describe('AgentPanelRoot workflow binding', () => {
       const current = makeTab('wf-42')
       stubUnresolvedTargetChat()
       const rendered = await openChat()
+      const selector = () =>
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.switchWorkflow')
+        })
       await screen.findAllByText('Historical prompt')
       expect(screen.queryByRole('heading', { name: 'Chat history' })).toBeNull()
       expect(
@@ -7151,27 +7155,30 @@ describe('AgentPanelRoot workflow binding', () => {
       await waitFor(() =>
         expect(useAgentChatHistoryStore().activeId).toBe('th-history')
       )
-      expect(useAgentPanelStore().selectedWorkflow).toBeNull()
-      expect(useAgentPanelStore().targetUnavailable).toBe(false)
+      expect(selector()).toHaveTextContent(
+        i18n.global.t('agent.selectWorkflowForAgent')
+      )
+      expect(
+        screen.queryByText(i18n.global.t('agent.targetWorkflowUnavailable'))
+      ).toBeNull()
       expect(workflowStore.activeWorkflow?.path).toBe(current.path)
       expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
-      expect(
-        screen.getByRole('button', {
-          name: i18n.global.t('agent.switchWorkflow')
-        })
-      ).toHaveTextContent(i18n.global.t('agent.selectWorkflowForAgent'))
-      useAgentComposerStore().setText('Do not edit the visible graph')
-      await nextTick()
+      await userEvent.click(screen.getByRole('textbox'))
+      await userEvent.paste('Do not edit the visible graph')
       const other = addTab('workflows/other.json', {
         activeState: fromPartial<ComfyWorkflowJSON>({ id: 'local-other' })
       })
       workflowStore.activeWorkflow = other
       await nextTick()
-      expect(useAgentPanelStore().selectedWorkflow).toBeNull()
+      expect(selector()).toHaveTextContent(
+        i18n.global.t('agent.selectWorkflowForAgent')
+      )
       rendered.unmount()
       render(AgentPanelRoot, { global: { plugins: [i18n] } })
       await screen.findAllByText('Historical prompt')
-      expect(useAgentPanelStore().selectedWorkflow).toBeNull()
+      expect(selector()).toHaveTextContent(
+        i18n.global.t('agent.selectWorkflowForAgent')
+      )
       await userEvent.click(
         screen.getByRole('button', {
           name: i18n.global.t('agent.showChatHistory')
@@ -7181,9 +7188,11 @@ describe('AgentPanelRoot workflow binding', () => {
         await screen.findByRole('button', { name: 'Unresolved target chat' })
       )
       await screen.findAllByText('Historical prompt')
-      expect(useAgentPanelStore().selectedWorkflow).toBeNull()
+      expect(selector()).toHaveTextContent(
+        i18n.global.t('agent.selectWorkflowForAgent')
+      )
       expect(workflowStore.activeWorkflow.path).toBe(other.path)
-      expect(useAgentComposerStore().draft).toBe(
+      expect(screen.getByRole('textbox')).toHaveTextContent(
         'Do not edit the visible graph'
       )
     }
