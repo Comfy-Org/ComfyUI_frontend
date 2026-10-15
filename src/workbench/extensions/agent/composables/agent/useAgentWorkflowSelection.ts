@@ -20,8 +20,10 @@ import type {
   useAgentWorkflowResolver
 } from './useAgentWorkflowResolver'
 
+type OpenLifecycle = Exclude<CloudWorkflowLifecycle, 'gone'>
+
 type RestorationOutcome =
-  | { outcome: 'open'; target: ComfyWorkflow | null; allowUnresolved?: boolean }
+  | { outcome: 'open'; target: ComfyWorkflow | null; lifecycle: OpenLifecycle }
   | { outcome: 'deleted' }
   | { outcome: 'superseded' }
 
@@ -29,14 +31,9 @@ function restorationOutcomeFor(
   lifecycle: CloudWorkflowLifecycle,
   target: ComfyWorkflow | null
 ): RestorationOutcome {
-  switch (lifecycle) {
-    case 'gone':
-      return { outcome: 'deleted' }
-    case 'live':
-      return { outcome: 'open', target, allowUnresolved: true }
-    case 'unknown':
-      return { outcome: 'open', target }
-  }
+  return lifecycle === 'gone'
+    ? { outcome: 'deleted' }
+    : { outcome: 'open', target, lifecycle }
 }
 
 interface WorkflowSelectionOptions {
@@ -76,8 +73,7 @@ export function useAgentWorkflowSelection({
     boundOrOpenWorkflowFor,
     cachedOpenWorkflowFor,
     storedWorkflowFor,
-    cloudListingContains,
-    cloudListingOmits,
+    cloudListingStatus,
     cloudWorkflowLifecycle
   } = resolver
   const editableWorkflowId = computed(() =>
@@ -234,25 +230,20 @@ export function useAgentWorkflowSelection({
     if (!workflowSelection.value) void refreshCloudWorkflowIds()
   }
 
-  /**
-   * The listing can omit version-less drafts, so a complete listing that omits
-   * the id is not conclusive: `GET /api/workflows/{id}` decides, and only its
-   * 404 means deleted. A workflow the complete listing includes, or that lookup
-   * finds live, may open without a local target.
-   */
   async function resolveRestorationTarget(
     workflowId: string,
     isCurrent: () => boolean
   ): Promise<RestorationOutcome> {
-    const listed = await refreshCloudWorkflowIds()
+    const refreshed = await refreshCloudWorkflowIds()
     if (!isCurrent()) return { outcome: 'superseded' }
     const target =
       boundOrOpenWorkflowFor(workflowId) ?? storedWorkflowFor(workflowId)
-    if (!listed || !cloudListingOmits(workflowId))
+    const listing = refreshed ? cloudListingStatus(workflowId) : 'unknown'
+    if (listing !== 'omitted')
       return {
         outcome: 'open',
         target,
-        allowUnresolved: listed && cloudListingContains(workflowId)
+        lifecycle: listing === 'listed' ? 'live' : 'unknown'
       }
     const lifecycle = await cloudWorkflowLifecycle(workflowId)
     if (!isCurrent()) return { outcome: 'superseded' }
@@ -267,8 +258,6 @@ export function useAgentWorkflowSelection({
     isSessionCurrent: () => boolean
   ): Promise<boolean> {
     if (!isSessionCurrent()) return false
-    // A target that is already decided (e.g. a remounted panel) needs no
-    // restoration, so the chat is ready as far as its workflow goes.
     if (!canRestoreWorkflow.value) return true
     const generation = ++targetSelectionGeneration
     const isCurrent = () =>
@@ -278,7 +267,7 @@ export function useAgentWorkflowSelection({
     if (workflowId === undefined) return true
     const cached = cachedOpenWorkflowFor(workflowId)
     if (cached !== null)
-      return openRestoredWorkflow(cached, workflowId, isCurrent)
+      return openRestoredWorkflow(cached, 'unknown', workflowId, isCurrent)
     const resolved = await resolveRestorationTarget(workflowId, isCurrent)
     if (resolved.outcome === 'superseded') return false
     if (resolved.outcome === 'deleted') {
@@ -287,17 +276,17 @@ export function useAgentWorkflowSelection({
     }
     return openRestoredWorkflow(
       resolved.target,
+      resolved.lifecycle,
       workflowId,
-      isCurrent,
-      resolved.allowUnresolved
+      isCurrent
     )
   }
 
   async function openRestoredWorkflow(
     target: ComfyWorkflow | null,
+    lifecycle: OpenLifecycle,
     workflowId: string,
-    isCurrent: () => boolean,
-    allowUnresolved = false
+    isCurrent: () => boolean
   ): Promise<boolean> {
     try {
       if (target === null) {
@@ -307,7 +296,7 @@ export function useAgentWorkflowSelection({
       }
       if (target === null) {
         panelStore.setWorkflowTarget(null)
-        if (allowUnresolved) return true
+        if (lifecycle === 'live') return true
         warnRestoreFailed()
         return false
       }

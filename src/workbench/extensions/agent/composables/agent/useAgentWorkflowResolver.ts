@@ -161,12 +161,11 @@ export function useAgentWorkflowResolver({
       : null
   }
 
-  function cloudListingContains(workflowId: string): boolean {
-    return listingComplete.value && listedCloudIds.value.has(workflowId)
-  }
-
-  function cloudListingOmits(workflowId: string): boolean {
-    return listingComplete.value && !listedCloudIds.value.has(workflowId)
+  function cloudListingStatus(
+    workflowId: string
+  ): 'listed' | 'omitted' | 'unknown' {
+    if (!listingComplete.value) return 'unknown'
+    return listedCloudIds.value.has(workflowId) ? 'listed' : 'omitted'
   }
 
   /**
@@ -262,8 +261,7 @@ export function useAgentWorkflowResolver({
     boundOrOpenWorkflowFor,
     cachedOpenWorkflowFor,
     storedWorkflowFor,
-    cloudListingContains,
-    cloudListingOmits,
+    cloudListingStatus,
     cloudWorkflowLifecycle,
     openWorkflowFor,
     availableWorkflowReferences,
