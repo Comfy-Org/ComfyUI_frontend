@@ -1,8 +1,8 @@
 diff --git a/dist/Listbox/ListboxVirtualizer.cjs b/dist/Listbox/ListboxVirtualizer.cjs
-index 496488e159b1c815966c8f489671a29c242a883c..0a81bb4c6158e761b4fff6f261adddba9cd2b65e 100644
+index 496488e159b1c815966c8f489671a29c242a883c..61acddded50c1e5103daa9d2f7d5a9865ebff70c 100644
 --- a/dist/Listbox/ListboxVirtualizer.cjs
 +++ b/dist/Listbox/ListboxVirtualizer.cjs
-@@ -99,6 +99,25 @@ var ListboxVirtualizer_vue_vue_type_script_setup_true_lang_default = /* @__PURE_
+@@ -99,6 +99,26 @@ var ListboxVirtualizer_vue_vue_type_script_setup_true_lang_default = /* @__PURE_
  				})
  			};
  		}));
@@ -25,10 +25,11 @@ index 496488e159b1c815966c8f489671a29c242a883c..0a81bb4c6158e761b4fff6f261adddba
 +				})
 +			};
 +		}
++		(0, vue.watch)(() => props.options, cancelPendingHighlight);
  		rootContext.virtualFocusHook.on((event) => {
  			const index = props.options.findIndex((option) => {
  				if (Array.isArray(rootContext.modelValue.value)) return require_Listbox_utils.compare(option, rootContext.modelValue.value[0], rootContext.by);
-@@ -107,12 +126,8 @@ var ListboxVirtualizer_vue_vue_type_script_setup_true_lang_default = /* @__PURE_
+@@ -107,12 +127,8 @@ var ListboxVirtualizer_vue_vue_type_script_setup_true_lang_default = /* @__PURE_
  			if (index !== -1) {
  				event?.preventDefault();
  				virtualizer.value.scrollToIndex(index, { align: "start" });
@@ -43,7 +44,7 @@ index 496488e159b1c815966c8f489671a29c242a883c..0a81bb4c6158e761b4fff6f261adddba
  				});
  			} else rootContext.highlightFirstItem();
  		});
-@@ -121,10 +136,7 @@ var ListboxVirtualizer_vue_vue_type_script_setup_true_lang_default = /* @__PURE_
+@@ -121,10 +137,7 @@ var ListboxVirtualizer_vue_vue_type_script_setup_true_lang_default = /* @__PURE_
  				return require_Listbox_utils.compare(option, value, rootContext.by);
  			});
  			virtualizer.value.scrollToIndex(index, { align: "start" });
@@ -55,7 +56,7 @@ index 496488e159b1c815966c8f489671a29c242a883c..0a81bb4c6158e761b4fff6f261adddba
  		});
  		const search = (0, __vueuse_shared.refAutoReset)("", 1e3);
  		const optionsWithMetadata = (0, vue.computed)(() => {
-@@ -174,11 +186,11 @@ var ListboxVirtualizer_vue_vue_type_script_setup_true_lang_default = /* @__PURE_
+@@ -174,11 +187,11 @@ var ListboxVirtualizer_vue_vue_type_script_setup_true_lang_default = /* @__PURE_
  				event.preventDefault();
  				const index = intent === "first" ? 0 : props.options.length - 1;
  				virtualizer.value.scrollToIndex(index);
@@ -72,7 +73,7 @@ index 496488e159b1c815966c8f489671a29c242a883c..0a81bb4c6158e761b4fff6f261adddba
  			} else if (!intent && !isMetaKey) {
  				search.value += event.key;
  				const currentIndex = Number(require_shared_getActiveElement.getActiveElement()?.getAttribute("data-index"));
-@@ -188,10 +200,7 @@ var ListboxVirtualizer_vue_vue_type_script_setup_true_lang_default = /* @__PURE_
+@@ -188,10 +201,7 @@ var ListboxVirtualizer_vue_vue_type_script_setup_true_lang_default = /* @__PURE_
  				const nextMatch = optionsWithMetadata.value.find((option) => option.textContent === next);
  				if (nextMatch) {
  					virtualizer.value.scrollToIndex(nextMatch.index, { align: "start" });
@@ -85,10 +86,19 @@ index 496488e159b1c815966c8f489671a29c242a883c..0a81bb4c6158e761b4fff6f261adddba
  			}
  		});
 diff --git a/dist/Listbox/ListboxVirtualizer.js b/dist/Listbox/ListboxVirtualizer.js
-index c47f435f18af73bd8ab8e1375b239d087ec21f62..eea4bcc67e73d64ee7c12b7883b2e76b519c3c91 100644
+index c47f435f18af73bd8ab8e1375b239d087ec21f62..5af313d23959d5db5f8dec519e2c776c2a4c0f6c 100644
 --- a/dist/Listbox/ListboxVirtualizer.js
 +++ b/dist/Listbox/ListboxVirtualizer.js
-@@ -98,6 +98,25 @@ var ListboxVirtualizer_vue_vue_type_script_setup_true_lang_default = /* @__PURE_
+@@ -5,7 +5,7 @@ import { useCollection } from "../Collection/Collection.js";
+ import { MAP_KEY_TO_FOCUS_INTENT } from "../RovingFocus/utils.js";
+ import { compare, queryCheckedElement } from "./utils.js";
+ import { injectListboxRootContext } from "./ListboxRoot.js";
+-import { Fragment, cloneVNode, computed, createBlock, createElementBlock, defineComponent, normalizeStyle, openBlock, renderList, resolveDynamicComponent, unref, useSlots } from "vue";
++import { Fragment, cloneVNode, computed, createBlock, createElementBlock, defineComponent, normalizeStyle, openBlock, renderList, resolveDynamicComponent, unref, useSlots, watch } from "vue";
+ import { useParentElement } from "@vueuse/core";
+ import { refAutoReset as refAutoReset$1 } from "@vueuse/shared";
+ import { useVirtualizer } from "@tanstack/vue-virtual";
+@@ -98,6 +98,26 @@ var ListboxVirtualizer_vue_vue_type_script_setup_true_lang_default = /* @__PURE_
  				})
  			};
  		}));
@@ -111,10 +121,11 @@ index c47f435f18af73bd8ab8e1375b239d087ec21f62..eea4bcc67e73d64ee7c12b7883b2e76b
 +				})
 +			};
 +		}
++		watch(() => props.options, cancelPendingHighlight);
  		rootContext.virtualFocusHook.on((event) => {
  			const index = props.options.findIndex((option) => {
  				if (Array.isArray(rootContext.modelValue.value)) return compare(option, rootContext.modelValue.value[0], rootContext.by);
-@@ -106,12 +125,8 @@ var ListboxVirtualizer_vue_vue_type_script_setup_true_lang_default = /* @__PURE_
+@@ -106,12 +126,8 @@ var ListboxVirtualizer_vue_vue_type_script_setup_true_lang_default = /* @__PURE_
  			if (index !== -1) {
  				event?.preventDefault();
  				virtualizer.value.scrollToIndex(index, { align: "start" });
@@ -129,7 +140,7 @@ index c47f435f18af73bd8ab8e1375b239d087ec21f62..eea4bcc67e73d64ee7c12b7883b2e76b
  				});
  			} else rootContext.highlightFirstItem();
  		});
-@@ -120,10 +135,7 @@ var ListboxVirtualizer_vue_vue_type_script_setup_true_lang_default = /* @__PURE_
+@@ -120,10 +136,7 @@ var ListboxVirtualizer_vue_vue_type_script_setup_true_lang_default = /* @__PURE_
  				return compare(option, value, rootContext.by);
  			});
  			virtualizer.value.scrollToIndex(index, { align: "start" });
@@ -141,7 +152,7 @@ index c47f435f18af73bd8ab8e1375b239d087ec21f62..eea4bcc67e73d64ee7c12b7883b2e76b
  		});
  		const search = refAutoReset$1("", 1e3);
  		const optionsWithMetadata = computed(() => {
-@@ -173,11 +185,11 @@ var ListboxVirtualizer_vue_vue_type_script_setup_true_lang_default = /* @__PURE_
+@@ -173,11 +186,11 @@ var ListboxVirtualizer_vue_vue_type_script_setup_true_lang_default = /* @__PURE_
  				event.preventDefault();
  				const index = intent === "first" ? 0 : props.options.length - 1;
  				virtualizer.value.scrollToIndex(index);
@@ -158,7 +169,7 @@ index c47f435f18af73bd8ab8e1375b239d087ec21f62..eea4bcc67e73d64ee7c12b7883b2e76b
  			} else if (!intent && !isMetaKey) {
  				search.value += event.key;
  				const currentIndex = Number(getActiveElement()?.getAttribute("data-index"));
-@@ -187,10 +199,7 @@ var ListboxVirtualizer_vue_vue_type_script_setup_true_lang_default = /* @__PURE_
+@@ -187,10 +200,7 @@ var ListboxVirtualizer_vue_vue_type_script_setup_true_lang_default = /* @__PURE_
  				const nextMatch = optionsWithMetadata.value.find((option) => option.textContent === next);
  				if (nextMatch) {
  					virtualizer.value.scrollToIndex(nextMatch.index, { align: "start" });

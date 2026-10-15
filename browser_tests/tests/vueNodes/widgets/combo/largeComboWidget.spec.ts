@@ -140,6 +140,9 @@ test.describe(
         await comfyPage.page.keyboard.press('ArrowDown')
         await comfyPage.page.keyboard.press('ArrowDown')
         await releaseFrames()
+        await expect(
+          combo.menu.getByRole('option', { name: SEARCH_HITS[2], exact: true })
+        ).toHaveAttribute('data-highlighted')
 
         await comfyPage.page.keyboard.press('Enter')
         await expect.poll(() => widget.getValue()).toBe(SEARCH_HITS[2])
@@ -157,12 +160,14 @@ test.describe(
       const releaseFrames = await holdAnimationFrames(comfyPage.page)
       await combo.open()
       await comfyPage.page.keyboard.press('ArrowDown')
+      const nextLora = LORA_NAMES[LORA_NAMES.indexOf(DEEP_LORA) + 1]
       await releaseFrames()
+      await expect(
+        combo.menu.getByRole('option', { name: nextLora, exact: true })
+      ).toHaveAttribute('data-highlighted')
 
       await comfyPage.page.keyboard.press('Enter')
-      await expect
-        .poll(() => widget.getValue())
-        .toBe(LORA_NAMES[LORA_NAMES.indexOf(DEEP_LORA) + 1])
+      await expect.poll(() => widget.getValue()).toBe(nextLora)
     })
 
     test('a very long name keeps the popup inside the viewport', async ({
