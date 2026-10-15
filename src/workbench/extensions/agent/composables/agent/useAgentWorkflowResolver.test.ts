@@ -494,7 +494,7 @@ describe('Cloud listing completeness', () => {
     expect(resolver.cloudListingStatus('cloud-b')).toBe('omitted')
   })
 
-  it('keeps the last completeness verdict when a refresh fails', async () => {
+  it('does not answer from an earlier listing when the latest refresh fails', async () => {
     const { resolver, listCloudWorkflows } = setup([])
     await resolver.refreshCloudWorkflowIds()
     expect(resolver.cloudListingStatus('cloud-a')).toBe('omitted')
@@ -502,7 +502,18 @@ describe('Cloud listing completeness', () => {
     listCloudWorkflows.mockRejectedValueOnce(new Error('offline'))
     expect(await resolver.refreshCloudWorkflowIds()).toBe(false)
 
+    expect(resolver.cloudListingStatus('cloud-a')).toBe('unknown')
+  })
+
+  it('does not answer from an earlier listing while a refresh is in flight', async () => {
+    const { resolver, listCloudWorkflows } = setup([])
+    await resolver.refreshCloudWorkflowIds()
     expect(resolver.cloudListingStatus('cloud-a')).toBe('omitted')
+
+    listCloudWorkflows.mockReturnValueOnce(new Promise(() => {}))
+    void resolver.refreshCloudWorkflowIds()
+
+    expect(resolver.cloudListingStatus('cloud-a')).toBe('unknown')
   })
 })
 

@@ -236,11 +236,11 @@ export function useAgentWorkflowSelection({
     workflowId: string,
     isCurrent: () => boolean
   ): Promise<RestorationOutcome> {
-    const refreshed = await refreshCloudWorkflowIds()
+    await refreshCloudWorkflowIds()
     if (!isCurrent()) return { outcome: 'superseded' }
     const target =
       boundOrOpenWorkflowFor(workflowId) ?? storedWorkflowFor(workflowId)
-    const listing = refreshed ? cloudListingStatus(workflowId) : 'unknown'
+    const listing = cloudListingStatus(workflowId)
     if (listing === 'listed') return restorationOutcomeFor('live', target)
     if (listing === 'unknown' && target !== null)
       return { outcome: 'open', target }

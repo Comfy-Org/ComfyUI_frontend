@@ -39,6 +39,7 @@ export function useAgentWorkflowResolver({
   const cloudIndex = ref<WorkflowReferenceMetadata[]>([])
   const listedCloudIds = ref<ReadonlySet<string>>(new Set())
   const listingComplete = ref(false)
+  const latestRefreshSucceeded = ref(false)
   let refreshGeneration = 0
   const cloudIdsByName = computed(() => {
     const counts = new Map<string, number>()
@@ -53,11 +54,13 @@ export function useAgentWorkflowResolver({
 
   async function refreshCloudWorkflowIds(): Promise<boolean> {
     const generation = ++refreshGeneration
+    latestRefreshSucceeded.value = false
     try {
       const { entries, complete } = await listCloudWorkflows()
       if (generation !== refreshGeneration) return false
       listedCloudIds.value = new Set(entries.map(({ id }) => id))
       listingComplete.value = complete
+      latestRefreshSucceeded.value = true
       cloudIndex.value = entries.flatMap(({ id, name }) =>
         name === undefined ? [] : [{ id, name }]
       )
@@ -161,10 +164,12 @@ export function useAgentWorkflowResolver({
       : null
   }
 
+  /** `unknown` unless the latest refresh succeeded with a complete listing. */
   function cloudListingStatus(
     workflowId: string
   ): 'listed' | 'omitted' | 'unknown' {
-    if (!listingComplete.value) return 'unknown'
+    if (!latestRefreshSucceeded.value || !listingComplete.value)
+      return 'unknown'
     return listedCloudIds.value.has(workflowId) ? 'listed' : 'omitted'
   }
 
