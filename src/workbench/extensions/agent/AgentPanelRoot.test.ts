@@ -5350,6 +5350,89 @@ describe('AgentPanelRoot history', () => {
     expect(history.sessions.map(({ id }) => id)).toEqual(['th-kept'])
   })
 
+  it.for([
+    {
+      outcome: 'a list',
+      staleResponse: () =>
+        json(
+          200,
+          agentThreadList([
+            agentThread({
+              id: 'th-stale',
+              title: 'Stale chat',
+              last_message_at: '2026-07-07T09:00:00Z'
+            })
+          ])
+        )
+    },
+    { outcome: 'a failure', staleResponse: () => json(500, {}) }
+  ])(
+    'ignores an older history refresh that ends with $outcome after a newer one',
+    async ({ staleResponse }) => {
+      const threadListRoute = /\/api\/agent\/threads\?/
+      let resolveStale!: (response: Response) => void
+      const staleList = new Promise<Response>((resolve) => {
+        resolveStale = resolve
+      })
+      const openHistory = async () =>
+        userEvent.click(
+          await screen.findByRole('button', {
+            name: i18n.global.t('agent.showChatHistory')
+          })
+        )
+      respondToFetch({}, () => json(200, []))
+      respondToFetch(threadListRoute, () =>
+        json(
+          200,
+          agentThreadList([
+            agentThread({
+              id: 'th-old',
+              title: 'Old chat',
+              last_message_at: '2026-07-07T08:00:00Z'
+            })
+          ])
+        )
+      )
+      renderWithSelectedTarget()
+      const history = useAgentChatHistoryStore()
+      await vi.waitFor(() =>
+        expect(history.sessions.map(({ id }) => id)).toEqual(['th-old'])
+      )
+      respondToFetch(threadListRoute, () => staleList, { times: 1 })
+      await openHistory()
+      await vi.waitFor(() =>
+        expect(fetchRequests(threadListRoute)).toHaveLength(2)
+      )
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.backToPreviousChat')
+        })
+      )
+      respondToFetch(threadListRoute, () =>
+        json(
+          200,
+          agentThreadList([
+            agentThread({
+              id: 'th-new',
+              title: 'New chat',
+              last_message_at: '2026-07-07T10:00:00Z'
+            })
+          ])
+        )
+      )
+      await openHistory()
+      await vi.waitFor(() =>
+        expect(history.sessions.map(({ id }) => id)).toEqual(['th-new'])
+      )
+
+      resolveStale(staleResponse())
+      await new Promise((resolve) => setTimeout(resolve))
+
+      expect(history.sessions.map(({ id }) => id)).toEqual(['th-new'])
+      expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
+    }
+  )
+
   it('marks the restored thread as the current session', async () => {
     vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
       const url = String(input)

@@ -1411,10 +1411,16 @@ function toChatSession(thread: AgentThreadSummary): ChatSession {
   }
 }
 
+let historyRefreshGeneration = 0
+
 async function refreshHistory(): Promise<void> {
+  const generation = ++historyRefreshGeneration
   try {
-    history.replaceAll((await listThreads()).map(toChatSession))
+    const threads = await listThreads()
+    if (generation === historyRefreshGeneration)
+      history.replaceAll(threads.map(toChatSession))
   } catch (error) {
+    if (generation !== historyRefreshGeneration) return
     reportError(error, {
       surface: 'agent',
       errorType: 'agent_thread_list_load_failed'
