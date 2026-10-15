@@ -18,7 +18,10 @@ for (const prefix of ['', '/zh-CN']) {
         name: prefix ? '运行 FLUX 3 IMAGE KLEIN' : 'RUN FLUX 3 IMAGE KLEIN',
         exact: true
       })
-    ).toBeVisible()
+    ).toHaveAttribute(
+      'href',
+      'https://cloud.comfy.org/?template=image_flux3_klein_t2i'
+    )
     await expect(
       page.getByRole('link', {
         name: prefix ? '阅读文档' : 'READ DOCS',

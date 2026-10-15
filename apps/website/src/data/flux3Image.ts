@@ -6,11 +6,13 @@ import { qwenImage21Page } from './qwenImage21'
 
 const bflLicensing = 'https://bfl.ai/licensing'
 
+const cloudTemplate = 'https://cloud.comfy.org/?template=image_flux3_klein_t2i'
+
 const mediaBase = 'https://media.comfy.org/website/flux-3-image'
 
 const sampleCard = {
   tier: 'free',
-  href: '#launch-links'
+  href: cloudTemplate
 } as const
 
 export const flux3ImagePage: ModelLaunchPage = {
@@ -30,7 +32,8 @@ export const flux3ImagePage: ModelLaunchPage = {
     ],
     primaryCta: {
       labelKey: 'flux3Image.hero.primaryCta',
-      href: '#launch-links'
+      href: cloudTemplate,
+      target: '_blank'
     },
     secondaryCta: {
       labelKey: 'flux3Image.hero.secondaryCta',
@@ -166,7 +169,8 @@ export const flux3ImagePage: ModelLaunchPage = {
       subtitleKey: 'qwenImage21.pricing.banner.subtitle',
       cta: {
         labelKey: 'qwenImage21.pricing.banner.cta',
-        href: '#launch-links'
+        href: cloudTemplate,
+        target: '_blank'
       }
     }
   },
