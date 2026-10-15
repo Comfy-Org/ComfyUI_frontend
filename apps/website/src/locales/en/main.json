@@ -16,7 +16,8 @@
     "nodeGraph": {
       "graphHint": "A read-only preview of the node graph. Open it in Comfy Cloud or download it to edit the nodes.",
       "previewNotice": "Design preview with sample data. This page is not on the Hub.",
-      "runsWhere": "Runs in ComfyUI"
+      "runsWhere": "Runs in ComfyUI",
+      "download": "Download workflow"
     },
     "meta": {
       "title": "Browse Models - Comfy",
