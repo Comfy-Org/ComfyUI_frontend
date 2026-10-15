@@ -613,8 +613,10 @@ onMounted(async () => {
     await useFirstRunEntry().handleStartupOutcome(startupOutcome)
     bootstrapOutcome = 'completed'
   } finally {
-    workspaceStore.spinner = false
-    bootstrapTracer.complete(bootstrapOutcome)
+    if (!disposed) {
+      workspaceStore.spinner = false
+      bootstrapTracer.complete(bootstrapOutcome)
+    }
   }
   const sharedStatus =
     await workflowPersistence.loadSharedWorkflowFromUrlIfPresent()

@@ -17,6 +17,8 @@ import { createI18n } from 'vue-i18n'
 import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/controlWidgetMarker'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { DEPLOYMENT_LISTING_BACKSTOP_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
@@ -692,6 +694,41 @@ describe('deployment model options at startup', () => {
       expect(getActivePinia()?.state.value.toast?.toasts ?? []).toEqual([])
     }
   )
+
+  it('lets the replacement editor finish startup after unmount during lookup', async () => {
+    const store = useDeploymentPickStore()
+    let finishListing = () => {}
+    vi.spyOn(store, 'loadOnce').mockReturnValue(
+      new Promise<void>((resolve) => {
+        finishListing = resolve
+      })
+    )
+    let finishSetup = () => {}
+    vi.mocked(app.setup).mockReturnValue(
+      new Promise<void>((resolve) => {
+        finishSetup = resolve
+      })
+    )
+    const complete = vi.spyOn(bootstrapTracer, 'complete')
+    await mountGraphCanvas()
+    cleanup()
+    await mountGraphCanvas()
+
+    store.bootDeployment = null
+    finishListing()
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(app.setup).toHaveBeenCalledOnce()
+    expect(useWorkspaceStore().spinner).toBe(true)
+    expect(complete).not.toHaveBeenCalled()
+
+    finishSetup()
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(useWorkspaceStore().spinner).toBe(false)
+    expect(complete).toHaveBeenCalledExactlyOnceWith('completed')
+    expect(mocks.initializeWorkflow).toHaveBeenCalledOnce()
+  })
 
   it('stops startup after a failed lookup even if the menu retries successfully', async () => {
     const store = useDeploymentPickStore()
