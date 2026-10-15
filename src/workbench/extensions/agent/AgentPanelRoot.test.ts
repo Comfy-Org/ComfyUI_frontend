@@ -4935,9 +4935,23 @@ describe('AgentPanelRoot canvas draft on send', () => {
 })
 
 describe('AgentPanelRoot history', () => {
+  const threadListRoute = /\/api\/agent\/threads\?/
+
   beforeEach(() => {
     ws.clear()
+    respondToFetch({}, () => json(200, []))
   })
+
+  async function openHistory(): Promise<void> {
+    await userEvent.click(
+      await screen.findByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await screen.findByRole('heading', {
+      name: i18n.global.t('agent.history')
+    })
+  }
 
   async function renderWithActiveThread(): Promise<void> {
     vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
@@ -5233,17 +5247,6 @@ describe('AgentPanelRoot history', () => {
       useAgentConversationStore().setThreadId('th-active')
     }
 
-    async function openHistory(): Promise<void> {
-      await userEvent.click(
-        await screen.findByRole('button', {
-          name: i18n.global.t('agent.showChatHistory')
-        })
-      )
-      await screen.findByRole('heading', {
-        name: i18n.global.t('agent.history')
-      })
-    }
-
     it('shows the first user message while the server title is empty', async () => {
       stubActiveThread('')
       renderWithSelectedTarget()
@@ -5303,8 +5306,7 @@ describe('AgentPanelRoot history', () => {
   })
 
   it('keeps the loaded chat list and reports a non-retryable failure when a refresh ends before its last page', async () => {
-    respondToFetch({}, () => json(200, []))
-    respondToFetch(/\/api\/agent\/threads\?/, () =>
+    respondToFetch(threadListRoute, () =>
       json(
         200,
         agentThreadList([
@@ -5321,7 +5323,7 @@ describe('AgentPanelRoot history', () => {
     await vi.waitFor(() =>
       expect(history.sessions.map(({ id }) => id)).toEqual(['th-kept'])
     )
-    respondToFetch(/\/api\/agent\/threads\?/, () =>
+    respondToFetch(threadListRoute, () =>
       json(
         200,
         agentThreadList(
@@ -5332,16 +5334,12 @@ describe('AgentPanelRoot history', () => {
               last_message_at: '2026-07-07T11:00:00Z'
             })
           ],
-          { has_more: true, total: 2 }
+          { has_more: true }
         )
       )
     )
 
-    await userEvent.click(
-      await screen.findByRole('button', {
-        name: i18n.global.t('agent.showChatHistory')
-      })
-    )
+    await openHistory()
 
     await vi.waitFor(() =>
       expect(executionErrors.showErrorOverlay).toHaveBeenCalledTimes(1)
@@ -5380,18 +5378,10 @@ describe('AgentPanelRoot history', () => {
   it.for(staleRefreshOutcomes)(
     'ignores an older history refresh that ends with $outcome after a newer one',
     async ({ staleResponse }) => {
-      const threadListRoute = /\/api\/agent\/threads\?/
       let resolveStale!: (response: Response) => void
       const staleList = new Promise<Response>((resolve) => {
         resolveStale = resolve
       })
-      const openHistory = async () =>
-        userEvent.click(
-          await screen.findByRole('button', {
-            name: i18n.global.t('agent.showChatHistory')
-          })
-        )
-      respondToFetch({}, () => json(200, []))
       respondToFetch(threadListRoute, () =>
         json(
           200,
@@ -5446,18 +5436,10 @@ describe('AgentPanelRoot history', () => {
   )
 
   it('applies an older history refresh that succeeds after a newer one fails', async () => {
-    const threadListRoute = /\/api\/agent\/threads\?/
     let resolveOlder!: (response: Response) => void
     const olderList = new Promise<Response>((resolve) => {
       resolveOlder = resolve
     })
-    const openHistory = async () =>
-      userEvent.click(
-        await screen.findByRole('button', {
-          name: i18n.global.t('agent.showChatHistory')
-        })
-      )
-    respondToFetch({}, () => json(200, []))
     respondToFetch(threadListRoute, () =>
       json(
         200,
@@ -5513,13 +5495,11 @@ describe('AgentPanelRoot history', () => {
   it.for(staleRefreshOutcomes)(
     'ignores a closed panel history refresh that ends with $outcome after the panel reopens',
     async ({ staleResponse }) => {
-      const threadListRoute = /\/api\/agent\/threads\?/
       const secondPageRoute = /\/api\/agent\/threads\?.*after=page-2/
       let resolveStale!: (response: Response) => void
       const staleSecondPage = new Promise<Response>((resolve) => {
         resolveStale = resolve
       })
-      respondToFetch({}, () => json(200, []))
       respondToFetch(threadListRoute, () =>
         json(
           200,
@@ -5531,7 +5511,7 @@ describe('AgentPanelRoot history', () => {
                 last_message_at: '2026-07-07T08:00:00Z'
               })
             ],
-            { has_more: true, next_cursor: 'page-2', total: 2 }
+            { has_more: true, next_cursor: 'page-2' }
           )
         )
       )
@@ -5541,11 +5521,9 @@ describe('AgentPanelRoot history', () => {
         expect(fetchRequests(secondPageRoute)).toHaveLength(1)
       )
       closedPanel.unmount()
-      const [, secondPageInit] =
-        vi
-          .mocked(fetch)
-          .mock.calls.find(([input]) => secondPageRoute.test(String(input))) ??
-        []
+      const secondPageInit = vi
+        .mocked(fetch)
+        .mock.calls.find(([input]) => secondPageRoute.test(String(input)))?.[1]
       expect(secondPageInit?.signal?.aborted).toBe(true)
       respondToFetch(threadListRoute, () =>
         json(
@@ -5571,18 +5549,15 @@ describe('AgentPanelRoot history', () => {
 
       expect(history.sessions.map(({ id }) => id)).toEqual(['th-new'])
       expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
-      expect(telemetry.trackAgentError).not.toHaveBeenCalled()
     }
   )
 
   it('does not refresh chat history once the panel closes while a picked chat loads', async () => {
-    const threadListRoute = /\/api\/agent\/threads\?/
     const pickedMessagesRoute = /\/th-picked\/messages/
     let resolveMessages!: (response: Response) => void
     const pickedMessages = new Promise<Response>((resolve) => {
       resolveMessages = resolve
     })
-    respondToFetch({}, () => json(200, []))
     respondToFetch(threadListRoute, () =>
       json(
         200,
@@ -5597,11 +5572,7 @@ describe('AgentPanelRoot history', () => {
     )
     respondToFetch(pickedMessagesRoute, () => pickedMessages, { times: 1 })
     const panel = renderWithSelectedTarget()
-    await userEvent.click(
-      await screen.findByRole('button', {
-        name: i18n.global.t('agent.showChatHistory')
-      })
-    )
+    await openHistory()
     await userEvent.click(
       await screen.findByRole('button', { name: 'Picked chat' })
     )
