@@ -5287,11 +5287,20 @@ describe('AgentPanelRoot history', () => {
 
   describe('following the active workflow tab', () => {
     /**
-     * Two tabs whose cloud ids are listed, and a thread list the caller
+     * Three tabs whose cloud ids are listed, and a thread list the caller
      * chooses. Records every thread whose messages were fetched so a test can
-     * assert that a chat was *not* re-loaded.
+     * assert that a chat was *not* re-loaded. A transcript can name the
+     * workflow of its user row, or be answered by the caller.
      */
-    function stubWorkflowBoundHistory(threads: AgentThreadSummary[]): {
+    function stubWorkflowBoundHistory(
+      threads: AgentThreadSummary[],
+      transcripts: Partial<
+        Record<
+          string,
+          { workflowId?: string; response?: () => Promise<Response> }
+        >
+      > = {}
+    ): {
       loadedThreads: string[]
       listCalls: () => number
     } {
@@ -5307,13 +5316,16 @@ describe('AgentPanelRoot history', () => {
           return json(200, {
             data: [
               { id: 'wf-first', name: 'first' },
-              { id: 'wf-second', name: 'second' }
+              { id: 'wf-second', name: 'second' },
+              { id: 'wf-third', name: 'third' }
             ],
-            pagination: { offset: 0, limit: 100, total: 2, has_more: false }
+            pagination: { offset: 0, limit: 100, total: 3, has_more: false }
           })
         const match = url.match(/\/api\/agent\/threads\/([^/]+)\/messages$/)
         if (match) {
           loadedThreads.push(match[1])
+          const transcript = transcripts[match[1]]
+          if (transcript?.response) return transcript.response()
           return json(200, [
             {
               id: `${match[1]}-user`,
@@ -5322,6 +5334,7 @@ describe('AgentPanelRoot history', () => {
               role: 'user',
               status: 'complete',
               turn_id: `${match[1]}-turn`,
+              workflow_id: transcript?.workflowId,
               content: { text: `Prompt in ${match[1]}` }
             }
           ] satisfies AgentMessages)
@@ -5518,6 +5531,98 @@ describe('AgentPanelRoot history', () => {
         )
       ).rejects.toThrow()
       expect(loadedThreads).toEqual([])
+    })
+
+    it('keeps a chat picked in Chat history when restoring it opens its tab', async () => {
+      const first = addTab('workflows/first.json')
+      const second = addTab('workflows/second.json')
+      workflowStore.activeWorkflow = first
+      const { loadedThreads } = stubWorkflowBoundHistory(
+        [
+          agentThread({
+            id: 'th-newest',
+            title: 'Newest chat',
+            last_message_at: '2026-09-22T10:00:00Z',
+            workflow_id: 'wf-second'
+          }),
+          agentThread({
+            id: 'th-picked',
+            title: 'Picked chat',
+            last_message_at: '2026-09-22T09:00:00Z',
+            workflow_id: 'wf-second'
+          })
+        ],
+        { 'th-picked': { workflowId: 'wf-second' } }
+      )
+
+      renderWithSelectedTarget()
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.showChatHistory')
+        })
+      )
+      await userEvent.click(await screen.findByText('Picked chat'))
+      await vi.waitFor(() =>
+        expect(workflowStore.activeWorkflow?.path).toBe(second.path)
+      )
+
+      await expect(
+        vi.waitFor(() => expect(loadedThreads).toContain('th-newest'), {
+          timeout: FOLLOW_LANDS_WITHIN_MS
+        })
+      ).rejects.toThrow()
+      expect(useAgentConversationStore().threadId).toBe('th-picked')
+      expect(loadedThreads).toEqual(['th-picked'])
+    })
+
+    it('keeps the open chat when Show target opens its tab', async () => {
+      const first = addTab('workflows/first.json')
+      const second = addTab('workflows/second.json')
+      workflowStore.activeWorkflow = first
+      const { loadedThreads } = stubWorkflowBoundHistory(
+        [
+          agentThread({
+            id: 'th-newest',
+            title: 'Newest chat',
+            last_message_at: '2026-09-22T10:00:00Z',
+            workflow_id: 'wf-first'
+          }),
+          agentThread({
+            id: 'th-open',
+            title: 'Open chat',
+            last_message_at: '2026-09-22T09:00:00Z',
+            workflow_id: 'wf-first'
+          })
+        ],
+        { 'th-open': { workflowId: 'wf-first' } }
+      )
+      renderWithSelectedTarget()
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.showChatHistory')
+        })
+      )
+      await userEvent.click(await screen.findByText('Open chat'))
+      await vi.waitFor(() =>
+        expect(userPrompts()).toEqual(['Prompt in th-open'])
+      )
+      workflowStore.activeWorkflow = second
+
+      await userEvent.click(
+        await screen.findByRole('button', {
+          name: 'Show target workflow: first'
+        })
+      )
+      await vi.waitFor(() =>
+        expect(workflowStore.activeWorkflow?.path).toBe(first.path)
+      )
+
+      await expect(
+        vi.waitFor(() => expect(loadedThreads).toContain('th-newest'), {
+          timeout: FOLLOW_LANDS_WITHIN_MS
+        })
+      ).rejects.toThrow()
+      expect(useAgentConversationStore().threadId).toBe('th-open')
     })
   })
 

@@ -1128,7 +1128,7 @@ async function onNavigateToReferenceWorkflow(
       ])
       target = storedWorkflowFor(workflowId)
     }
-    if (target === null || !(await workflowService.openWorkflow(target))) {
+    if (target === null || !(await openFromPanel(target))) {
       warnWorkflowUnavailable()
       return
     }
@@ -1136,6 +1136,21 @@ async function onNavigateToReferenceWorkflow(
   } catch {
     warnWorkflowUnavailable()
   }
+}
+
+function openFromPanel(
+  workflow: ComfyWorkflow,
+  ...options: [{ isCurrent: () => boolean }?]
+): Promise<boolean> {
+  return agentPanelStore.navigateFromPanel(workflow, () =>
+    workflowService.openWorkflow(workflow, ...options)
+  )
+}
+
+function closeFromPanel(workflow: ComfyWorkflow): Promise<boolean> {
+  return agentPanelStore.navigateFromPanel(null, () =>
+    workflowService.closeWorkflow(workflow, { warnIfUnsaved: false })
+  )
 }
 
 async function onShowTarget(
@@ -1147,7 +1162,7 @@ async function onShowTarget(
   const isCurrent = () =>
     isNavigationCurrent() && selectedTarget.value === target
   try {
-    const opened = await workflowService.openWorkflow(target, { isCurrent })
+    const opened = await openFromPanel(target, { isCurrent })
     if (!isCurrent()) return false
     if (!opened) warnOpenFailed()
     return opened
@@ -1208,7 +1223,7 @@ async function activateExistingAgentTab(
   previousWorkflowId: string | null,
   stale: () => boolean
 ): Promise<boolean> {
-  const opened = await workflowService.openWorkflow(bound)
+  const opened = await openFromPanel(bound)
   if (stale()) return false
   if (!opened) {
     warnWorkflowUnavailable()
@@ -1247,11 +1262,11 @@ async function createAndActivateAgentTab(
   try {
     opened = await workflowService.openWorkflow(tab)
   } catch (error) {
-    await workflowService.closeWorkflow(tab, { warnIfUnsaved: false })
+    await closeFromPanel(tab)
     throw error
   }
   if (stale() || !opened) {
-    await workflowService.closeWorkflow(tab, { warnIfUnsaved: false })
+    await closeFromPanel(tab)
     if (!stale()) {
       warnWorkflowUnavailable()
       trackWorkflowOpenFailure('toast')
@@ -1554,19 +1569,27 @@ function followActiveWorkflowChat(): void {
   void selectThread(matchingThread.id, () => true)
 }
 
+// Synchronous, so a tab the panel is opening itself is still recognised as
+// such when it becomes active.
 watch(
   () => workflowStore.activeWorkflow,
   (workflow) => {
-    followOwed.value = workflow !== null && !workflow.isTemporary
-    followActiveWorkflowChat()
-  }
+    followOwed.value =
+      workflow !== null &&
+      !workflow.isTemporary &&
+      !agentPanelStore.isPanelNavigation(workflow)
+  },
+  { flush: 'sync' }
 )
 
-// Late arrivals only: the active tab's cloud id and the summary list can both
-// resolve after the activation that armed the follow. A refresh with nothing
-// owed is inert, which is what stops `selectThread`'s own refresh from
-// re-asserting the tab's chat over a chat the user picked.
-watch([activeWorkflowId, threadSummaries], () => followActiveWorkflowChat())
+// The active tab's cloud id and the summary list can both resolve after the
+// activation that armed the follow. A refresh with nothing owed is inert,
+// which is what stops `selectThread`'s own refresh from re-asserting the tab's
+// chat over a chat the user picked.
+watch(
+  [() => workflowStore.activeWorkflow, activeWorkflowId, threadSummaries],
+  () => followActiveWorkflowChat()
+)
 
 // A selection started after the activation retires the follow for the same
 // reason: the user is binding the chat they are in, not asking for another.
