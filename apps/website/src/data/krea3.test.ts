@@ -43,11 +43,11 @@ describe('Krea 3 launch draft', () => {
     ])
   })
 
-  it.for(locales)('keeps the %s draft out of search indexes', (locale) => {
+  it.for(locales)('lists the %s page in search indexes', (locale) => {
     const prefix = locale === 'en' ? '' : `/${locale}`
     const path = `${prefix}/krea-3/`
-    expect(isNoindexPathname(path)).toBe(true)
-    expect(isExcludedFromSitemap(`https://comfy.org${path}`)).toBe(true)
+    expect(isNoindexPathname(path)).toBe(false)
+    expect(isExcludedFromSitemap(`https://comfy.org${path}`)).toBe(false)
   })
 
   it.for(locales)(
