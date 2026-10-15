@@ -7,6 +7,9 @@ import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApi
 import { webSocketFixture } from '@e2e/fixtures/ws'
 import {
   MESSAGE_DELTA_EVENT,
+  MESSAGE_DONE_EVENT,
+  THINKING_EVENT,
+  TOOL_CALL_EVENT,
   agentTest
 } from '@e2e/tests/agent/agentPanelMocks'
 
@@ -18,6 +21,16 @@ function pushDelta(socket: WebSocketRoute, delta: string): void {
   const event: AgentWsEvent = {
     type: 'agent_message_delta',
     data: { ...MESSAGE_DELTA_EVENT.data, delta }
+  }
+  socket.send(JSON.stringify(event))
+}
+
+function pushThinking(socket: WebSocketRoute, delta: string): void {
+  if (THINKING_EVENT.type !== 'agent_thinking')
+    throw new Error('thinking fixture has the wrong event type')
+  const event: AgentWsEvent = {
+    type: 'agent_thinking',
+    data: { ...THINKING_EVENT.data, delta }
   }
   socket.send(JSON.stringify(event))
 }
@@ -94,6 +107,80 @@ test.describe(
       await expect(
         agentPanel.root.getByRole('button', { name: enMessages.agent.latest })
       ).toBeVisible()
+    })
+
+    test('keeps a completed Worked summary in place while its trace expands and collapses', async ({
+      agentPanel,
+      getWebSocket,
+      postedMessages
+    }) => {
+      await agentPanel.open()
+      await agentPanel.selectWorkflow()
+
+      const socket = await getWebSocket()
+      await agentPanel.sendMessage('Plan this workflow')
+      await expect.poll(() => postedMessages).toHaveLength(1)
+      pushThinking(
+        socket,
+        Array.from(
+          { length: 80 },
+          (_, index) => `Step ${index + 1}: check the graph.`
+        ).join('\n\n')
+      )
+      socket.send(JSON.stringify(TOOL_CALL_EVENT))
+      pushDelta(socket, 'Done.')
+      socket.send(JSON.stringify(MESSAGE_DONE_EVENT))
+
+      const summary = agentPanel.workSummary
+      await expect(summary).toHaveAttribute('aria-expanded', 'false')
+      const scrollContainer = agentPanel.root.getByTestId(
+        'agent-conversation-scroll'
+      )
+      const latest = agentPanel.root.getByRole('button', {
+        name: enMessages.agent.latest
+      })
+      const settle = () =>
+        expect
+          .poll(() =>
+            scrollContainer.evaluate(
+              (element) =>
+                element
+                  .getAnimations({ subtree: true })
+                  .filter(
+                    (animation) =>
+                      animation.playState === 'running' &&
+                      animation.effect?.getTiming().iterations !== Infinity
+                  ).length
+            )
+          )
+          .toBe(0)
+      const summaryTop = async () => (await summary.boundingBox())?.y ?? NaN
+      await settle()
+      await expect(latest).toBeHidden()
+      const before = await summaryTop()
+
+      await summary.click()
+      await expect(
+        agentPanel.root.getByText('Step 80: check the graph.')
+      ).toBeAttached()
+      await settle()
+
+      await expect
+        .poll(() =>
+          scrollContainer.evaluate(
+            (element) => element.scrollHeight > element.clientHeight
+          )
+        )
+        .toBe(true)
+      expect(await summaryTop()).toBeCloseTo(before, 0)
+      await expect(latest).toBeVisible()
+
+      await summary.click()
+      await expect(summary).toHaveAttribute('aria-expanded', 'false')
+      await settle()
+
+      expect(await summaryTop()).toBeCloseTo(before, 0)
+      await expect(latest).toBeHidden()
     })
   }
 )
