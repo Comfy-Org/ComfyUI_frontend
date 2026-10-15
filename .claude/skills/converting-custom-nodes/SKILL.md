@@ -503,8 +503,9 @@ lives here.
 
 If a conversion is blocked and the fix is a **new API capability**, the addition
 is a design decision, not a detail. Record the tradeoff and rejected alternatives
-in an ADR following `docs/adr/README.md`, then update `docs/node-api/`. An
-addition made under conversion pressure with its rationale only in a commit
+in an ADR under `docs/adr/`, using the repository's topic/number/slug naming
+convention, then update `docs/node-api/`. An addition made under conversion
+pressure with its rationale only in a commit
 message is one nobody can argue with later.
 
 ### Adding a pattern
