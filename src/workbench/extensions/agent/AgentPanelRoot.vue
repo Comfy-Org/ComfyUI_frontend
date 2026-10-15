@@ -1051,7 +1051,10 @@ function isActiveTabNavigationCurrent(): boolean {
   const { selection } = view
   if (selection.status !== 'idle' && threadId.value === selection.id)
     return selection.status === 'loading'
-  return threadId.value === history.activeId
+  return (
+    threadId.value === history.activeId ||
+    threadId.value === view.previousThreadId
+  )
 }
 
 function enqueueActiveTab(data: AgentActiveTabData): Promise<boolean> {
