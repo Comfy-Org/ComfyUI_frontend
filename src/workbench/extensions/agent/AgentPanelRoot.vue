@@ -1406,7 +1406,7 @@ async function onSelectHistory(
 ): Promise<boolean> {
   if (currentChatReady.value && id === threadId.value)
     return (
-      selectedTarget.value === null ||
+      agentPanelStore.targetUnresolved ||
       onShowTarget(isCurrent, warnRestoreFailed)
     )
 
