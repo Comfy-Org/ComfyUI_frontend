@@ -128,7 +128,7 @@ export const krea3Page = {
   workflowGallery: {
     headingKey: 'krea3.workflows.heading',
     ctaVariant: 'accent',
-    cardMeta: 'none',
+    cardMeta: 'default',
     cards: [
       {
         ...card(

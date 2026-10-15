@@ -1,3 +1,4 @@
+import { render, screen } from '@testing-library/vue'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
@@ -5,11 +6,22 @@ import { describe, expect, it } from 'vitest'
 import { websiteRoot } from '@website/paths'
 import { isExcludedFromSitemap, isNoindexPathname } from '@/config/indexing'
 import { translationsFor } from '@/i18n/translations'
+import ModelLaunchGallerySection from '@/templates/model-launch/ModelLaunchGallerySection.vue'
 import { krea3Links, krea3Page } from './krea3'
 
 const locales = ['en', 'zh-CN'] as const
 
 describe('Krea 3 launch draft', () => {
+  it('shows the Premium badge on every linked workflow example', () => {
+    render(ModelLaunchGallerySection, {
+      props: { gallery: krea3Page.workflowGallery, locale: 'en' }
+    })
+    expect(screen.getAllByText(/^premium$/i)).toHaveLength(3)
+    expect(
+      screen.getByRole('link', { name: 'Krea 3: Image editing' })
+    ).toHaveAttribute('href', krea3Links.imageEdit)
+  })
+
   it('opens image editing from the main calls to action', () => {
     expect(krea3Page.hero.primaryCta.href).toBe(
       'https://cloud.comfy.org/?template=api_krea3_image_edit'

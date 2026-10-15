@@ -21,14 +21,10 @@ const { t } = Astro.locals
   hideAnnouncementBanner
 >
   <ModelLaunchHeroSection client:load hero={krea3Page.hero} locale={locale} />
-  <div id="edit-workflow" class="scroll-mt-24">
-    <ModelLaunchGallerySection
-      client:visible
-      gallery={krea3Page.workflowGallery}
-      locale={locale}
-    />
-  </div>
-  <section class="mx-auto max-w-7xl px-6 py-16 lg:px-20 lg:py-24">
+  <section
+    id="reference-edit"
+    class="mx-auto max-w-7xl scroll-mt-24 px-6 py-16 lg:px-20 lg:py-24"
+  >
     <h2
       class="mx-auto mb-12 max-w-3xl text-center text-3xl font-light tracking-tight text-primary-comfy-canvas lg:text-5xl/tight"
     >
@@ -60,6 +56,13 @@ const { t } = Astro.locals
       />
     </div>
   </section>
+  <div id="edit-workflow" class="scroll-mt-24">
+    <ModelLaunchGallerySection
+      client:visible
+      gallery={krea3Page.workflowGallery}
+      locale={locale}
+    />
+  </div>
   {krea3Page.galleries.map((gallery) => (
     <ModelLaunchGallerySection
       client:visible
