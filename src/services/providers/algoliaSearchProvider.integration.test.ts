@@ -29,7 +29,6 @@ vi.mock(import('algoliasearch/dist/lite/builds/browser'), () => ({
   liteClient: vi.fn()
 }))
 
-/** Replays a recorded response, paginated the way Algolia paginates. */
 const replay = (request: {
   query: string
   page?: number
@@ -68,7 +67,6 @@ beforeEach(() => {
   }))
   vi.mocked(algoliasearch, { partial: true }).mockReturnValue({ search })
 
-  // The provider's result cache is module-level, so it outlives each test.
   useAlgoliaSearchProvider().clearSearchCache()
 })
 
@@ -81,9 +79,6 @@ const searchPacks = (query: string, pageNumber = 0) =>
 
 describe('pack search against recorded live Algolia responses', () => {
   describe('pasted owner/repo slugs', () => {
-    // The three highest-volume no-result queries in Algolia analytics are all
-    // of this shape. The raw query returns nothing because `removeWordsIfNoResults`
-    // is "none", making the owner segment a required term that matches nothing.
     it.for([
       ['kijai/comfyui-kjnodes', 'ComfyUI-KJNodes'],
       ['ainvfx/comfyui-seedvr2_videoupscaler', 'ComfyUI-SeedVR2_VideoUpscaler'],
@@ -125,9 +120,6 @@ describe('pack search against recorded live Algolia responses', () => {
   })
 
   describe('queries that already work', () => {
-    // Every one of these is a top-volume query from the suggestions index.
-    // Rewriting must not fire for them: it would cost extra index lookups and
-    // could append loosely-related packs beneath the real results.
     it.for([
       'gguf',
       'seedvr2',
