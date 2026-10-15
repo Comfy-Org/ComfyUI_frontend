@@ -6,7 +6,7 @@ import {
   useModelToNodeStore
 } from '@/stores/modelToNodeStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 
 const EXPECTED_DEFAULT_TYPES = [
   'checkpoints',

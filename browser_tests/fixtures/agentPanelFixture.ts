@@ -6,6 +6,7 @@ import type {
   AgentRunMode,
   AgentThreadListResponse,
   AgentThreadSummary,
+  BillingStatusResponse,
   GlobalSetting,
   ListAssetsResponse,
   WorkflowListResponse
@@ -62,6 +63,8 @@ interface BootAgentAppOptions {
    * boot and relying on route-precedence order.
    */
   assets?: ListAssetsResponse
+  /** Replaces `mockBilling`'s default billing status. */
+  billingStatus?: BillingStatusResponse
   beforeNavigate?: (page: Page) => Promise<void>
 }
 
@@ -73,7 +76,8 @@ async function mockAgentBoot(
     features,
     vueNodes,
     objectInfo,
-    assets
+    assets,
+    billingStatus
   }: { agentFlag: boolean } & BootAgentAppOptions
 ): Promise<void> {
   await mockCloudBoot(page, {
@@ -89,7 +93,7 @@ async function mockAgentBoot(
     },
     objectInfo
   })
-  await mockBilling(page)
+  await mockBilling(page, { billingStatus })
   const storedConsent: GlobalSetting = {
     key: AGENT_CONSENT_SETTING_ID,
     value: true,

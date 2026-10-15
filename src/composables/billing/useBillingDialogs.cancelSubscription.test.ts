@@ -53,7 +53,7 @@ describe('showCancelSubscriptionFlow', () => {
     expect(cancelSubscriptionDialog()?.contentProps).toEqual(options)
     expect(cancelSubscriptionDialog()?.dialogComponentProps).toMatchObject({
       closable: false,
-      dismissableMask: false
+      dismissOnPointerDownOutside: false
     })
   })
 

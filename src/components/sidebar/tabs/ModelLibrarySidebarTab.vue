@@ -38,7 +38,7 @@
         <p
           v-if="searchResults.capped"
           role="status"
-          class="mx-2 my-1 text-xs text-muted"
+          class="mx-2 my-1 text-xs text-muted-foreground"
         >
           {{
             $t('sideToolbar.searchResultsCapped', {
@@ -333,10 +333,3 @@ watch(
   }
 )
 </script>
-
-<style scoped>
-:deep(.pi-fake-spacer) {
-  height: 1px;
-  width: 16px;
-}
-</style>

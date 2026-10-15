@@ -1,8 +1,5 @@
 <template>
-  <div
-    :ref="primeVueOverlay.overlayScopeRef"
-    class="flex flex-col gap-4 text-sm text-muted-foreground"
-  >
+  <div class="flex flex-col gap-4 text-sm text-muted-foreground">
     <div class="flex flex-col gap-2">
       <p class="m-0">
         {{ $t('assetBrowser.modelAssociatedWithLink') }}
@@ -76,7 +73,6 @@
         "
         :options="modelTypes"
         :disabled="isLoading || isMissingModelResolution"
-        :content-style="selectContentStyle"
         data-attr="upload-model-step2-type-selector"
       />
       <i18n-t
@@ -97,7 +93,6 @@
 import { computed } from 'vue'
 
 import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
-import { usePrimeVueOverlayChildStyle } from '@/composables/usePopoverSizing'
 import { useModelTypes } from '@/platform/assets/composables/useModelTypes'
 import type { UploadModelDialogContext } from '@/platform/assets/composables/useUploadModelWizard'
 import type { AssetMetadata } from '@/platform/assets/schemas/assetSchema'
@@ -111,8 +106,6 @@ const { uploadContext } = defineProps<{
 const modelValue = defineModel<string | undefined>()
 
 const { modelTypes, isLoading } = useModelTypes()
-const primeVueOverlay = usePrimeVueOverlayChildStyle()
-const selectContentStyle = primeVueOverlay.contentStyle
 
 const isMissingModelResolution = computed(
   () => uploadContext?.kind === 'missing-model-resolution'

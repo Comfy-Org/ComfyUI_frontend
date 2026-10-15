@@ -14,10 +14,10 @@
          auto margin pins the toolbar to the right instead, and the width cap keeps
          any overflow inside the canvas as a scroll. -->
     <div class="pointer-events-none absolute inset-x-0 bottom-0 z-1200 flex">
-      <ButtonGroup
+      <div
         role="toolbar"
         :aria-label="t('graphCanvasMenu.canvasToolbar')"
-        class="pointer-events-auto ml-auto max-w-full min-w-0 flex-row gap-1 overflow-x-auto floating-panel"
+        class="pointer-events-auto ml-auto flex max-w-full min-w-0 gap-1 overflow-x-auto floating-panel"
         @wheel="canvasInteractions.handleWheel"
       >
         <CanvasModeSelector
@@ -93,13 +93,12 @@
         >
           <i class="icon-[lucide--route-off] size-4" aria-hidden="true" />
         </Button>
-      </ButtonGroup>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import ButtonGroup from 'primevue/buttongroup'
 import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 

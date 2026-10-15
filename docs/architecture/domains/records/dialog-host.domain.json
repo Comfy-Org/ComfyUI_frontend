@@ -1,0 +1,155 @@
+{
+  "id": "dialog-host",
+  "capability": "Dialog host",
+  "description": "Global dialog state, stacking, focus, dismissal guards, confirmation and prompt dialogs, and extension dialog dispatch. Feature-specific dialog contents remain with their owning modules.",
+  "modules": [
+    {
+      "path": "src/services/dialogServiceTypes.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/components/dialog/bodyPointerEventsRestore.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/confirm/ConfirmBody.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/confirm/confirmDialog.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/confirm/confirmDialog.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/confirm/ConfirmFooter.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/confirm/ConfirmHeader.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/ConfirmationDialogContent.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/ConfirmationDialogContent.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/confirmationDialogTypes.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/components/dialog/content/error/FindIssueButton.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/ErrorDialogContent.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/PromptDialogContent.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/PromptDialogContent.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/GlobalDialog.menu.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/GlobalDialog.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/GlobalDialog.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/dialogDismissGuards.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/vRekaZIndex.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/stores/dialogStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/dialogStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/services/dialogService.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/services/dialogService.concurrency.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/services/dialogService.errorCatalog.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/services/dialogService.options.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/services/__mocks__/dialogService.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/services/extensionDialogService.ts",
+      "role": "integration"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Global dialog renders stacked dialogs and restores body pointer events on close",
+      "checks": [
+        "src/components/dialog/GlobalDialog.test.ts",
+        "src/components/dialog/GlobalDialog.menu.test.ts",
+        "src/components/dialog/bodyPointerEventsRestore.test.ts"
+      ]
+    },
+    {
+      "name": "Confirmation, prompt, and confirm-builder dialogs resolve user choices",
+      "checks": [
+        "src/components/dialog/confirm/confirmDialog.test.ts",
+        "src/components/dialog/content/ConfirmationDialogContent.test.ts",
+        "src/components/dialog/content/PromptDialogContent.test.ts"
+      ]
+    },
+    {
+      "name": "Dialog store stacks, focuses, and closes dialogs",
+      "checks": ["src/stores/dialogStore.test.ts"]
+    },
+    {
+      "name": "dialogService shows confirmation, prompt, and error dialogs with catalogued messages and concurrent requests",
+      "checks": [
+        "src/services/dialogService.concurrency.test.ts",
+        "src/services/dialogService.errorCatalog.test.ts",
+        "src/services/dialogService.options.test.ts",
+        "browser_tests/tests/dialogs/concurrentConfirmDialog.spec.ts",
+        "browser_tests/tests/dialogs/errorDialog.spec.ts"
+      ]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
+  ],
+  "deepImports": "inventory"
+}

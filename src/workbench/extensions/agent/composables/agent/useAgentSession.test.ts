@@ -4357,6 +4357,27 @@ describe('useAgentSession (v1 composition root)', () => {
     })
   })
 
+  it('keeps the media URL on the sent user entry', async () => {
+    const session = useAgentSession({
+      rest: fakeRest(),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    await session.sendMessage('use this', [
+      {
+        ref: 'clip.mp4',
+        name: 'clip.mp4',
+        mediaUrl: '/api/view?filename=clip.mp4&type=input'
+      }
+    ])
+
+    expect(session.entries.value[0]).toMatchObject({
+      role: 'user',
+      attachments: [{ mediaUrl: '/api/view?filename=clip.mp4&type=input' }]
+    })
+  })
+
   it('serializes stable attachment refs without unrelated fields', async () => {
     const { postedBody, send } = wireSend()
 
@@ -5180,6 +5201,65 @@ describe('useAgentSession (v1 composition root)', () => {
       ])
     }
     expect(session.isStreaming.value).toBe(false)
+    expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
+      surface: 'agent',
+      errorType: 'agent_send_message_failed'
+    })
+  })
+
+  it('keeps rejected attachment names inline without reporting them', async () => {
+    const message =
+      'private-client-name.pdf is not a file type the agent accepts'
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockRejectedValue(
+        new AgentApiError(message, 422, {
+          type: 'ATTACHMENT_TYPE_NOT_ACCEPTED',
+          rejected: ['private-client-name.pdf'],
+          rejected_count: 1
+        })
+      )
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    expect(await session.sendMessage('use this attachment')).toBe(false)
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      parts: [
+        {
+          type: 'notice',
+          level: 'error',
+          text: `Message failed to send: ${message}`
+        }
+      ]
+    })
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('still reports a 422 send failure that is not an attachment refusal', async () => {
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockRejectedValue(
+        new AgentApiError('content too long', 422, { type: 'VALIDATION_ERROR' })
+      )
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    expect(await session.sendMessage('use this attachment')).toBe(false)
+    expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
+      surface: 'agent',
+      errorType: 'agent_send_message_failed'
+    })
   })
 
   it('(l) newChat keeps the active turn running instead of cancelling it', async () => {

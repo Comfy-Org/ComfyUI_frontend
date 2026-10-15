@@ -1,5 +1,5 @@
 <template>
-  <div class="flex w-full items-center justify-between gap-3">
+  <div class="flex w-full items-center justify-between gap-3 p-2">
     <div class="flex items-center gap-3">
       <h3 class="m-0 text-lg font-semibold">{{ t('maskEditor.title') }}</h3>
 
@@ -101,7 +101,7 @@
           </svg>
         </button>
 
-        <div class="h-5 w-px bg-(--p-form-field-border-color)" />
+        <div class="h-5 w-px bg-border-default" />
 
         <button :class="textButtonClass" @click="onInvert">
           {{ t('maskEditor.invert') }}

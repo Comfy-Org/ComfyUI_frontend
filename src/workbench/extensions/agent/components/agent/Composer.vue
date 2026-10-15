@@ -21,7 +21,10 @@ import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
 import { useAgentMentionPicker } from '../../composables/agent/useAgentMentionPicker'
 import { useSkillMenuDescription } from '../../composables/agent/useSkillMenuDescription'
 import { useWorkflowReferencePicker } from '../../composables/agent/useWorkflowReferencePicker'
-import type { ComposerAttachment } from '../../types/composerAttachment'
+import type {
+  AttachmentValidationError,
+  ComposerAttachment
+} from '../../types/composerAttachment'
 import type { MentionSection } from '../../composables/agent/mentionPickerState'
 import { useComposer } from '../../composables/agent/useComposer'
 import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
@@ -78,6 +81,7 @@ const emit = defineEmits<{
   stop: [method: AgentStopMethod]
   attach: []
   attachFiles: [files: File[]]
+  removeAttachment: [id: string]
   openAssets: []
   selectNodes: []
   removeTag: [id: string]
@@ -177,7 +181,8 @@ const {
   workflows: () => eligibleWorkflows.value,
   skills: () => skills.packs,
   skillsEnabled: () => skills.enabled,
-  assets: () => composer.attachments.value,
+  assets: () =>
+    composer.attachments.value.filter((item) => !item.validationError),
   nodeReferenceDisabledReason: () => nodeReferenceDisabledReason,
   workflowSelecting: () => workflowSelecting,
   getMentionNodes: () => getMentionNodes(),
@@ -354,14 +359,41 @@ function onEnter(event: KeyboardEvent): void {
   composer.submit()
 }
 
-const primaryActionTooltip = computed(() =>
+const primaryActionLabel = computed(() =>
   running.value ? t('agent.stop') : t('agent.send')
 )
 const primaryActionVariant = computed(() =>
   running.value ? 'secondary' : 'inverted'
 )
+const SEND_BLOCKED_MESSAGES = {
+  'invalid-video': 'agent.sendBlockedByInvalidVideo',
+  'unsupported-type': 'agent.sendBlockedByUnsupportedType'
+} as const satisfies Record<AttachmentValidationError, string>
+
+const sendBlockedReason = computed(() => {
+  const invalid = composer.attachments.value.flatMap(
+    ({ name, validationError }) =>
+      validationError ? [{ name, validationError }] : []
+  )
+  if (running.value || invalid.length === 0) return undefined
+  if (invalid.length > 1)
+    return t('agent.sendBlockedByInvalidAttachments', {
+      count: invalid.length
+    })
+  const [{ name, validationError }] = invalid
+  return t(SEND_BLOCKED_MESSAGES[validationError], { name })
+})
+const primaryActionTooltip = computed(
+  () => sendBlockedReason.value ?? primaryActionLabel.value
+)
+const primaryActionAriaDisabled = computed(() =>
+  sendBlockedReason.value ? true : undefined
+)
 const primaryActionDisabled = computed(
-  () => !running.value && (workflowSelecting || !composer.canSend.value)
+  () =>
+    !running.value &&
+    !sendBlockedReason.value &&
+    (workflowSelecting || !composer.canSend.value)
 )
 const skillSearchHint = computed(() =>
   skillQueryEmpty.value ? t('agent.typeToSearch') : undefined
@@ -453,6 +485,11 @@ function replaceDraft(prompt: PromptSnapshot): void {
   editorRef.value?.focus()
 }
 
+function removeAttachment(id: string): void {
+  composer.removeAttachment(id)
+  emit('removeAttachment', id)
+}
+
 defineExpose({
   insert,
   replaceDraft,
@@ -531,7 +568,7 @@ defineExpose({
         v-if="composer.attachments.value.length"
         :attachments="composer.attachments.value"
         :highlighted-ids="highlightedAssetIds"
-        @remove="composer.removeAttachment"
+        @remove="removeAttachment"
       />
 
       <div
@@ -631,8 +668,11 @@ defineExpose({
             type="button"
             :variant="primaryActionVariant"
             size="icon"
-            :aria-label="primaryActionTooltip"
+            :aria-label="primaryActionLabel"
+            :aria-disabled="primaryActionAriaDisabled"
+            :aria-description="sendBlockedReason"
             :disabled="primaryActionDisabled"
+            class="aria-disabled:cursor-not-allowed aria-disabled:opacity-50 aria-disabled:hover:bg-base-foreground"
             @click="onPrimaryAction"
           >
             <i-lucide:square v-if="running" class="size-4" />

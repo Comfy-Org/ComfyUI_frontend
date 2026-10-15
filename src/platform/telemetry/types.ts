@@ -18,18 +18,25 @@ import {
   SSO_TELEMETRY_EVENT
 } from '@comfyorg/account-core/telemetry'
 import type {
+  BillingCycle,
   BillingTelemetryEvent,
   BillingTelemetryEventName,
   CheckoutJourneyTelemetryEvent,
   CheckoutJourneyTelemetryEventName,
   CheckoutJourneyTelemetryEventPayload,
   ResubscribeSource,
+  BillingTierKey as TierKey,
   SubscriptionCheckoutTier,
   SubscriptionCheckoutType
 } from '@comfyorg/account-core/billing'
 import { BILLING_TELEMETRY_EVENTS } from '@comfyorg/account-core/billing'
 import type { BillingSource } from '@comfyorg/billing-contract'
-import type { AgentRunMode, GetFeaturesResponses } from '@comfyorg/ingest-types'
+import type {
+  AgentRunMode,
+  GetFeaturesResponses,
+  SubscriptionTier,
+  WorkspaceWithRole
+} from '@comfyorg/ingest-types'
 import type {
   AuthErrorMetadata,
   AuthFlowAction,
@@ -39,8 +46,6 @@ import type {
 } from '@comfyorg/account-core/telemetry'
 import type { SessionRefreshOutcome } from '@comfyorg/account-core/session'
 
-import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
-import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { AppMode } from '@/utils/appMode'
 
 export type { AuthMethod }
@@ -264,10 +269,31 @@ export interface SurveyResponsesNormalized extends SurveyResponses {
   useCase_raw?: string
 }
 
+type AuthRail = 'web_session' | 'token'
+
+/**
+ * The selected workspace and the auth rail its requests ride on. The RUM
+ * global context and the Run-gate events carry it, so a blocked run or a
+ * failure can be split by the workspace it was scoped to.
+ */
+export interface WorkspaceTelemetryContext {
+  workspace_id: string
+  workspace_type: WorkspaceWithRole['type']
+  workspace_role: WorkspaceWithRole['role']
+  workspace_tier: SubscriptionTier | null
+  auth_rail: AuthRail
+}
+
+/** A billing read for the selected workspace that the server resolved for another. */
+export interface WorkspaceScopeMismatchMetadata extends WorkspaceTelemetryContext {
+  resolved_workspace_id: string
+  resolved_workspace_type: WorkspaceWithRole['type'] | 'unknown'
+}
+
 /**
  * Run button tracking properties
  */
-export interface RunButtonProperties {
+export interface RunButtonProperties extends Partial<WorkspaceTelemetryContext> {
   subscribe_to_run: boolean
   workflow_type: 'template' | 'custom'
   workflow_name: string
@@ -895,6 +921,40 @@ interface AgentStarterPromptExperimentMetadata {
    */
   '$feature/agent-starter-prompt-set': AgentStarterPromptAssignment
 }
+/**
+ * Where the free-use notice was placed, for the DES-1221 placement experiment.
+ *
+ * Deliberately the PostHog variant keys verbatim: the analysis joins this property to
+ * `$feature/agent-free-use-message-placement`, and a translation layer between
+ * the two is one more place for the arms to drift apart.
+ */
+export const AGENT_FREE_USE_PLACEMENTS = [
+  'top-banner',
+  'near-composer',
+  'above-input',
+  'inside-input'
+] as const
+export type AgentFreeUsePlacement = (typeof AGENT_FREE_USE_PLACEMENTS)[number]
+export type AgentFreeUseVariant = 'control' | AgentFreeUsePlacement
+export interface AgentFreeUseExposureMetadata extends Record<string, unknown> {
+  placement: AgentFreeUseVariant
+  '$feature/agent-free-use-message-placement': AgentFreeUseVariant
+}
+/**
+ * Interactions with the notice itself. This event adds what the existing
+ * outcome events cannot say: whether the notice was actually on screen in its
+ * assigned arm, and what the viewer did with it.
+ */
+export interface AgentFreeUseNoticeMetadata extends Record<string, unknown> {
+  action: 'shown' | 'dismissed' | 'learn_more_clicked'
+  placement: AgentFreeUsePlacement
+}
+export interface AgentCreditTransitionNoticeMetadata extends Record<
+  string,
+  unknown
+> {
+  action: 'shown' | 'dismissed'
+}
 export interface AgentStarterPromptClickedMetadata
   extends
     Record<string, unknown>,
@@ -981,6 +1041,56 @@ export interface AgentAttachButtonClickedMetadata extends Record<
 export interface AgentWorkflowAppliedMetadata extends Record<string, unknown> {
   workflow_id: string
   target: 'active_tab_switch' | 'active_tab_open'
+}
+export type AgentGraphProjectionStage =
+  | 'received_no_graph'
+  | 'applied'
+  | 'applied_deferred'
+  | 'discarded'
+  | 'reverted'
+
+/**
+ * Projection telemetry for agent and actorless frames and for reverted human
+ * batches. `op_id` is the join key; no actor, node, widget, workflow or prompt
+ * identifier is sent.
+ */
+export interface AgentGraphProjectionMetadata extends Record<string, unknown> {
+  /**
+   * First non-empty op id of the frame, or of the rejected batch on
+   * `reverted`. Not necessarily creator-owned: `reverted` carries the first
+   * rejected HUMAN op id. `null` when the frame carried no op ids.
+   */
+  op_id: string | null
+  /** How many non-empty op ids it carried; `op_id` is the first of them. */
+  op_count: number
+  sequence: number
+  /**
+   * - `received_no_graph` — delivered, nothing applied yet (no graph bound).
+   * - `applied` — this frame applied. If earlier no-graph frames were still
+   *   collected, the counts are the whole batch's, as on `applied_deferred`.
+   * - `applied_deferred` — a batch flush applied this earlier no-graph frame.
+   *   The counts are the WHOLE batch's and are repeated across its frames, so
+   *   they must not be attributed to this `op_id` alone.
+   * - `discarded` — the collected changes were thrown away without applying
+   *   (own-echo discard, `doc_reset`, `schema_error`, scope disposal, follower
+   *   replacement, rebind). All counts are zero: nothing reached the canvas, so
+   *   the size of what was dropped is deliberately not reported under a count a
+   *   dashboard would read as applied work.
+   * - `reverted` — the host rejected a human batch and the document state it
+   *   claimed was put back on the canvas. The counts are that revert's.
+   */
+  stage: AgentGraphProjectionStage
+  added_count: number
+  /**
+   * Newly reported document deletes. Excludes entries already reported on an
+   * earlier pending frame, and replace-mode `removeAbsent` removals.
+   */
+  removed_count: number
+  /**
+   * Apply steps that threw, plus reported degradations that did not throw
+   * (an unresolved link, a subgraph definition that failed to register).
+   */
+  apply_failure_count: number
 }
 export type AgentStopMethod = 'button' | 'escape'
 export interface AgentStopClickedMetadata extends Record<string, unknown> {
@@ -1166,7 +1276,7 @@ export interface CheckoutAttributionMetadata {
   wbraid?: string
 }
 
-export interface SubscriptionMetadata {
+export interface SubscriptionMetadata extends Partial<WorkspaceTelemetryContext> {
   current_tier?: string
   reason?: PaymentIntentSource
 }
@@ -1348,11 +1458,17 @@ export interface TelemetryProvider {
 
   trackBillingEvent?(event: BillingTelemetryEvent): void
 
+  setWorkspaceContext?(context: WorkspaceTelemetryContext | undefined): void
+  trackWorkspaceScopeMismatch?(metadata: WorkspaceScopeMismatchMetadata): void
+
   /** Emit a checkout-journey lifecycle event to this provider. */
   trackCheckoutJourneyEvent?(event: CheckoutJourneyTelemetryEvent): void
 
   trackAgentPaywallShown?(metadata: AgentPaywallShownMetadata): void
   trackAgentPaywallCtaClicked?(metadata: AgentPaywallCtaMetadata): void
+  trackAgentCreditTransitionNotice?(
+    metadata: AgentCreditTransitionNoticeMetadata
+  ): void
 
   // Survey flow events
   trackSurvey?(stage: 'opened' | 'submitted', responses?: SurveyResponses): void
@@ -1445,11 +1561,14 @@ export interface TelemetryProvider {
   trackAgentStarterPromptExposure?(
     metadata: AgentStarterPromptExposureMetadata
   ): void
+  trackAgentFreeUseNotice?(metadata: AgentFreeUseNoticeMetadata): void
+  trackAgentFreeUseExposure?(metadata: AgentFreeUseExposureMetadata): void
   trackAgentNodeTagged?(metadata: AgentNodeTaggedMetadata): void
   trackAgentAttachButtonClicked?(
     metadata: AgentAttachButtonClickedMetadata
   ): void
   trackAgentWorkflowApplied?(metadata: AgentWorkflowAppliedMetadata): void
+  trackAgentGraphProjection?(metadata: AgentGraphProjectionMetadata): void
   trackAgentError?(metadata: AgentErrorMetadata): void
   trackAgentStopClicked?(metadata: AgentStopClickedMetadata): void
   trackAgentWorkflowBound?(metadata: AgentWorkflowBoundMetadata): void
@@ -1629,9 +1748,13 @@ export const TelemetryEvents = {
   AGENT_MESSAGE_SENT: 'app:agent_message_sent',
   AGENT_STARTER_PROMPT_CLICKED: 'app:agent_starter_prompt_clicked',
   AGENT_STARTER_PROMPT_EXPOSURE: 'app:agent_starter_prompt_exposure',
+  AGENT_FREE_USE_NOTICE: 'app:agent_free_use_notice',
+  AGENT_FREE_USE_EXPOSURE: 'app:agent_free_use_exposure',
+  AGENT_CREDIT_TRANSITION_NOTICE: 'app:agent_credit_transition_notice',
   AGENT_NODE_TAGGED: 'app:agent_node_tagged',
   AGENT_ATTACH_BUTTON_CLICKED: 'app:agent_attach_button_clicked',
   AGENT_WORKFLOW_APPLIED: 'app:agent_workflow_applied',
+  AGENT_GRAPH_PROJECTION: 'app:agent_graph_projection',
   AGENT_ERROR: 'app:agent_error',
   AGENT_STOP_CLICKED: 'app:agent_stop_clicked',
   AGENT_WORKFLOW_BOUND: 'app:agent_workflow_bound',
@@ -1657,7 +1780,9 @@ export const TelemetryEvents = {
   PAGE_VIEW: 'app:page_view',
 
   // Network
-  FETCH_TIMEOUT: 'app:fetch_timeout'
+  FETCH_TIMEOUT: 'app:fetch_timeout',
+
+  WORKSPACE_SCOPE_MISMATCH: 'workspace_scope_mismatch'
 } as const
 
 export type TelemetryEventName =
@@ -1760,4 +1885,6 @@ export type TelemetryEventProperties =
   | CheckoutJourneyTelemetryEventPayload
   | AgentPaywallShownMetadata
   | AgentPaywallCtaMetadata
+  | AgentCreditTransitionNoticeMetadata
   | FetchTimeoutMetadata
+  | WorkspaceScopeMismatchMetadata

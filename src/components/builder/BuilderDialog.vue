@@ -1,5 +1,7 @@
 <template>
-  <div class="flex w-full min-w-116 flex-col rounded-2xl bg-base-background">
+  <div
+    class="flex w-xl max-w-full min-w-116 flex-col rounded-2xl border border-border-default bg-base-background shadow-lg"
+  >
     <!-- Header -->
     <div
       class="flex h-12 items-center justify-between border-b border-border-default px-4"
