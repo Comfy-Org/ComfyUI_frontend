@@ -48,7 +48,6 @@ import type {
   CloudWorkflowEntry
 } from '../../schemas/agentApiSchema'
 
-/** The largest page the cursor-paged list endpoints serve. */
 const LIST_PAGE_SIZE = 100
 
 /**
@@ -572,11 +571,6 @@ export function createAgentRestClient() {
     }
   }
 
-  /**
-   * Reads every page of a cursor-paged list. Stops early, with
-   * `complete: false`, when the server reports more pages but gives no new
-   * cursor.
-   */
   async function listAllPages<
     Page extends { pagination: PaginationInfo },
     Item
