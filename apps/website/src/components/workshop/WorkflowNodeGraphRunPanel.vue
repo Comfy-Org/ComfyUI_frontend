@@ -25,8 +25,6 @@ const factHeadingClass =
   'text-2xs font-bold tracking-wider text-primary-warm-gray uppercase'
 </script>
 
-<!-- Where a runnable workflow keeps its inputs and Run, this one says what
-  running it takes and offers the two ways to do it. -->
 <template>
   <section
     class="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4"

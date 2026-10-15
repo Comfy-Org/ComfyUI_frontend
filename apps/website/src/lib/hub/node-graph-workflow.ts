@@ -1,11 +1,6 @@
 import type { PlaygroundExample } from '@/config/workshop-playground'
 
-/**
- * A Hub workflow that cannot run on its own page: a node graph that needs
- * ComfyUI (custom nodes, local models). It keeps the layout of a runnable
- * workflow page, and the Run button gives way to Try on Comfy Cloud and
- * Download.
- */
+/** A Hub workflow that runs only in ComfyUI, never on its own page. */
 export interface NodeGraphWorkflow {
   readonly slug: string
   readonly name: string
@@ -26,10 +21,7 @@ export interface NodeGraphWorkflow {
 const MEDIA =
   'https://media.comfy.org/website/workshop/workflows/character-turnaround'
 
-/**
- * Sample data for the design preview. It borrows a published workflow's graph
- * and media so the page reads as real; nothing here reaches a live Hub page.
- */
+/** Sample data for the node graph design preview. */
 export const nodeGraphWorkflowSample: NodeGraphWorkflow = {
   slug: 'node-graph-preview',
   name: 'Create a character turnaround',

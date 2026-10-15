@@ -26,10 +26,7 @@ export function isDesignPreviewBuild(
   return vercelEnv !== 'production'
 }
 
-/**
- * Builds the design preview pages everywhere except production, so a preview
- * link works and comfy.org never carries a page made of sample data.
- */
+/** Injects the design preview routes in every build except production. */
 export function designPreviews(): AstroIntegration {
   return {
     name: 'design-previews',

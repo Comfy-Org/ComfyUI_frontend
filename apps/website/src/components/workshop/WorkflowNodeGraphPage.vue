@@ -23,8 +23,6 @@ const { workflow, locale = 'en' } = defineProps<{
 const { t } = translationsFor(locale)
 const routes = getRoutes()
 
-// The same two tabs a runnable workflow keeps once its Playground is gone:
-// what it makes, and the graph that makes it.
 const sections = ['overview', 'workflow'] as const
 const section = ref<(typeof sections)[number]>('overview')
 const { onKeydown } = useTablist(() => sections, section)
