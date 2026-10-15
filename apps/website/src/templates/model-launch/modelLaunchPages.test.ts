@@ -282,6 +282,9 @@ function expectHeroStills(hero: ModelLaunchHero) {
   if (hero.videoSrc !== undefined) {
     expect(hero.videoSrc).toMatch(VIDEO_URL)
   }
+  if (hero.mobileVideoSrc !== undefined) {
+    expect(hero.mobileVideoSrc).toMatch(VIDEO_URL)
+  }
   if (hero.posterSrc !== undefined) {
     expect(hero.posterSrc).toMatch(HERO_STILL_URL)
   }

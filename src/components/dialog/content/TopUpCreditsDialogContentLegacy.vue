@@ -177,6 +177,7 @@ import NumberFieldIncrement from '@/components/ui/number-field/NumberFieldIncrem
 import NumberFieldInput from '@/components/ui/number-field/NumberFieldInput.vue'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@/platform/telemetry'
 import { usePendingTopup } from '@/composables/billing/usePendingTopup'
@@ -270,7 +271,7 @@ async function handleBuy() {
   loading.value = true
   try {
     telemetry?.trackApiCreditTopupButtonPurchaseClicked(payAmount.value)
-    if (authActions.canPurchaseCredits()) {
+    if (useBillingContext().canAccessSubscriptionFeatures.value) {
       telemetry?.trackBillingEvent({
         operation: 'topup',
         stage: 'started',
@@ -279,8 +280,8 @@ async function handleBuy() {
         amount_cents: payAmount.value * 100,
         amount_preset: getTopupAmountPreset(selectedPreset.value)
       })
+      await authActions.purchaseCreditsDirect(payAmount.value)
     }
-    await authActions.purchaseCreditsDirect(payAmount.value)
 
     // Close top-up dialog (keep tracking) and open Plan & Credits to show the
     // updated balance. The destination is the V1 panel for every session: the

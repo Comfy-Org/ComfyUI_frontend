@@ -331,6 +331,25 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     return true
   }
 
+  /**
+   * Announces a newly created widget's current value as a `set_widget`
+   * intent. Registration alone announces nothing, so a widget a local edit
+   * creates (a new DynamicGroup row) would otherwise reach the document only
+   * if its value later changes.
+   */
+  function announceValue(widgetId: WidgetId): void {
+    const state = getWidget(widgetId)
+    if (!state) return
+    emitGraphIntent({
+      type: 'set_widget',
+      graphId: parseWidgetId(widgetId).graphId,
+      nodeId: state.nodeId,
+      name: state.name,
+      value: state.value ?? null,
+      previous: undefined
+    })
+  }
+
   function setLabel(widgetId: WidgetId, label: string): boolean {
     const state = getWidget(widgetId)
     if (!state) return false
@@ -546,6 +565,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     getWidgetRenderState,
     getWidgetVisibility,
     setValue,
+    announceValue,
     setLabel,
     setOptions,
     updateOptions,

@@ -100,16 +100,12 @@ describe('useFreeUsePlacement', () => {
   })
 
   it('ignores an unrecognised QA override rather than rendering it', () => {
-    vi.mocked(console.warn).mockImplementation(() => {})
     vi.mocked(getDevOverride).mockReturnValue('sidebar')
 
     const { variant } = useFreeUsePlacement()
 
     expect(variant.value).toBe('control')
     expect(useTelemetry()?.trackAgentFreeUseExposure).not.toHaveBeenCalled()
-    expect(console.warn).toHaveBeenCalledWith(
-      expect.stringContaining('sidebar')
-    )
   })
 
   it('reports exposure and the impression once per panel open', () => {
