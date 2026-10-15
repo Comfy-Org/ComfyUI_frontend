@@ -1412,6 +1412,7 @@ function toChatSession(thread: AgentThreadSummary): ChatSession {
 }
 
 let historyRefreshGeneration = 0
+let appliedHistoryRefreshGeneration = 0
 const historyRefreshAbort = new AbortController()
 
 async function refreshHistory(): Promise<void> {
@@ -1420,8 +1421,9 @@ async function refreshHistory(): Promise<void> {
   const generation = ++historyRefreshGeneration
   try {
     const threads = await listThreads({ signal })
-    if (!signal.aborted && generation === historyRefreshGeneration)
-      history.replaceAll(threads.map(toChatSession))
+    if (signal.aborted || generation < appliedHistoryRefreshGeneration) return
+    appliedHistoryRefreshGeneration = generation
+    history.replaceAll(threads.map(toChatSession))
   } catch (error) {
     if (signal.aborted || generation !== historyRefreshGeneration) return
     reportError(error, {

@@ -5441,6 +5441,71 @@ describe('AgentPanelRoot history', () => {
     }
   )
 
+  it('applies an older history refresh that succeeds after a newer one fails', async () => {
+    const threadListRoute = /\/api\/agent\/threads\?/
+    let resolveOlder!: (response: Response) => void
+    const olderList = new Promise<Response>((resolve) => {
+      resolveOlder = resolve
+    })
+    const openHistory = async () =>
+      userEvent.click(
+        await screen.findByRole('button', {
+          name: i18n.global.t('agent.showChatHistory')
+        })
+      )
+    respondToFetch({}, () => json(200, []))
+    respondToFetch(threadListRoute, () =>
+      json(
+        200,
+        agentThreadList([
+          agentThread({
+            id: 'th-old',
+            title: 'Old chat',
+            last_message_at: '2026-07-07T08:00:00Z'
+          })
+        ])
+      )
+    )
+    renderWithSelectedTarget()
+    const history = useAgentChatHistoryStore()
+    await vi.waitFor(() =>
+      expect(history.sessions.map(({ id }) => id)).toEqual(['th-old'])
+    )
+    respondToFetch(threadListRoute, () => olderList, { times: 1 })
+    await openHistory()
+    await vi.waitFor(() =>
+      expect(fetchRequests(threadListRoute)).toHaveLength(2)
+    )
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.backToPreviousChat')
+      })
+    )
+    respondToFetch(threadListRoute, () => json(500, {}))
+    await openHistory()
+    await vi.waitFor(() =>
+      expect(executionErrors.showErrorOverlay).toHaveBeenCalledTimes(1)
+    )
+
+    resolveOlder(
+      json(
+        200,
+        agentThreadList([
+          agentThread({
+            id: 'th-older-refresh',
+            title: 'Older refresh chat',
+            last_message_at: '2026-07-07T09:00:00Z'
+          })
+        ])
+      )
+    )
+
+    await vi.waitFor(() =>
+      expect(history.sessions.map(({ id }) => id)).toEqual(['th-older-refresh'])
+    )
+    expect(executionErrors.showErrorOverlay).toHaveBeenCalledTimes(1)
+  })
+
   it.for(staleRefreshOutcomes)(
     'ignores a closed panel history refresh that ends with $outcome after the panel reopens',
     async ({ staleResponse }) => {
