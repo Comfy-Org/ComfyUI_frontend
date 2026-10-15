@@ -7,7 +7,7 @@ export interface SwapExample {
   readonly target: string
 }
 
-const base = '/images/apps/openjutsu/examples'
+const base = 'https://media.comfy.org/website/workshop/openjutsu/examples'
 
 const example = (
   id: SwapExample['id'],
