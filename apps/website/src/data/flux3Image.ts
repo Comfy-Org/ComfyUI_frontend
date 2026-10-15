@@ -26,7 +26,6 @@ export const flux3ImagePage: ModelLaunchPage = {
     videoSrc: `${mediaBase}/flux-hero-1280.mp4`,
     posterSrc: `${mediaBase}/flux-hero-poster.jpg`,
     mobileFallbackImageSrc: `${mediaBase}/flux-hero-poster.jpg`,
-    // No lighter encode exists yet, so phones play the same clip.
     mobileVideoSrc: `${mediaBase}/flux-hero-1280.mp4`,
     titleKey: 'flux3Image.hero.title',
     descriptionKey: 'flux3Image.hero.description',
