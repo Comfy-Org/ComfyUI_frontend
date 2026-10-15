@@ -28,7 +28,6 @@ export const NOINDEX_ROUTES = [
   '/privacy-policy',
   '/terms-of-service',
   '/platform/serverless-animation',
-  '/open-source-higgsfield',
   '/nano-banana',
   '/fish-audio',
   ...PLACEHOLDER_PATHNAMES
