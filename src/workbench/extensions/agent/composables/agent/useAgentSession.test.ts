@@ -2095,6 +2095,43 @@ describe('useAgentSession (v1 composition root)', () => {
     ).toBe(false)
   })
 
+  it.for([
+    { returnsToOrigin: false, notices: 0 },
+    { returnsToOrigin: true, notices: 1 }
+  ])(
+    'reports a late answer failure but notifies only on its originating thread: %o',
+    async ({ returnsToOrigin, notices }) => {
+      let rejectAnswer: ((reason: unknown) => void) | undefined
+      const answerAsk = vi.fn(
+        () =>
+          new Promise<AgentAnswerAccepted>((_resolve, reject) => {
+            rejectAnswer = reject
+          })
+      )
+      const { source, emit } = fakeEvents()
+      const session = useAgentSession({
+        rest: fakeRest({ answerAsk }),
+        events: source
+      })
+      session.start()
+      await session.sendMessage('build it')
+      emit(runApproval('msg-1'))
+
+      const answered = session.answerAsk('turn-1:call-1', 'run')
+      await vi.waitFor(() => expect(answerAsk).toHaveBeenCalledOnce())
+      await session.loadThread('th-2')
+      if (returnsToOrigin) await session.loadThread('th-1')
+      rejectAnswer?.(new AgentApiError('backend blip', 400, undefined))
+
+      expect(await answered).toBe(false)
+      expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
+        surface: 'agent',
+        errorType: 'agent_ask_answer_failed'
+      })
+      expect(session.notices.value).toHaveLength(notices)
+    }
+  )
+
   // PM-1658. A live->down socket transition aborts the active turn, which
   // nulls activeTurnId and disposes the transport, while the turn's parts -- a
   // pending consent card among them -- stay on screen. Most cases below put

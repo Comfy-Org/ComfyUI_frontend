@@ -1442,6 +1442,63 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
+  function handleAnswerFailure(
+    error: unknown,
+    askId: string,
+    threadId: string,
+    notify: boolean
+  ): void {
+    // A resolution frame can land while this request is still out, and it
+    // retires the card on the way through. The ask is settled and gone, so
+    // whatever this rejection says about delivery is no longer news the user
+    // can act on — any mismatch worth telling them about has already been
+    // raised by reportSupersededAnswer.
+    if (!answeringAskIds.value.has(askId)) return
+    if (
+      error instanceof AgentApiError &&
+      TERMINAL_ANSWER_STATUSES.has(error.status)
+    ) {
+      // A 409 is the ordinary double-click, and the ask really is resolved,
+      // so it needs neither telemetry nor a notice. The rest mean this
+      // client could never have answered, which the user has to be told
+      // about or the card simply vanishes as though it had worked.
+      if (error.status !== 409) {
+        reportError(error, {
+          surface: 'agent',
+          errorType: 'agent_ask_answer_refused'
+        })
+        trackAgentError(
+          'ask_answer_failed',
+          'post_acceptance',
+          'error_overlay',
+          {
+            retryable: isRetryableRequestFailure(error, false)
+          }
+        )
+        if (notify) pushError(i18n.global.t('agent.runApproval.answerFailed'))
+      }
+      conversationStore.retireAsk(askId, threadId)
+      return
+    }
+    reportError(error, {
+      surface: 'agent',
+      errorType: 'agent_ask_answer_failed'
+    })
+    trackAgentError('ask_answer_failed', 'post_acceptance', 'error_overlay', {
+      retryable: isRetryableRequestFailure(error, false)
+    })
+    // Every re-drive above has been spent. The card cannot simply go back
+    // into service: the server CASes an answer onto the row BEFORE it wakes
+    // the turn and reports 500 for the wake alone, so this may already have
+    // authorized the run, and it answers any later click by replaying THIS
+    // selection while the card disappears as though the new one had taken
+    // effect. On a spend authorization that is the wrong way to be wrong, so
+    // retire the card and say the outcome is unknown rather than show a raw
+    // transport string next to a card that is about to vanish.
+    conversationStore.retireAsk(askId, threadId)
+    if (notify) pushError(i18n.global.t('agent.runApproval.answerUncertain'))
+  }
+
   async function answerAsk(
     askId: string,
     selection: 'run' | 'cancel'
@@ -1464,6 +1521,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
     // parks a run approval for days, so a card can still be answered long
     // after the turn that raised it stopped streaming to this client.
     if (answeringAskIds.value.has(askId)) return false
+    const answerOwnedGeneration = ownedGeneration
+    const answerSessionGeneration = sessionGeneration
+    const isAnswerOnScreen = () =>
+      answerOwnedGeneration === ownedGeneration &&
+      answerSessionGeneration === sessionGeneration &&
+      conversationStore.threadId === currentThreadId
     conversationStore.recordAskSelection(askId, selection)
     conversationStore.setAskAnswering(askId, true)
     try {
@@ -1471,53 +1534,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       conversationStore.commitAsk(askId, currentThreadId)
       return true
     } catch (error) {
-      // A resolution frame can land while this request is still out, and it
-      // retires the card on the way through. The ask is settled and gone, so
-      // whatever this rejection says about delivery is no longer news the user
-      // can act on — any mismatch worth telling them about has already been
-      // raised by reportSupersededAnswer.
-      if (!answeringAskIds.value.has(askId)) return false
-      if (
-        error instanceof AgentApiError &&
-        TERMINAL_ANSWER_STATUSES.has(error.status)
-      ) {
-        // A 409 is the ordinary double-click, and the ask really is resolved,
-        // so it needs neither telemetry nor a notice. The rest mean this
-        // client could never have answered, which the user has to be told
-        // about or the card simply vanishes as though it had worked.
-        if (error.status !== 409) {
-          reportError(error, {
-            surface: 'agent',
-            errorType: 'agent_ask_answer_refused'
-          })
-          trackAgentError(
-            'ask_answer_failed',
-            'post_acceptance',
-            'error_overlay',
-            { retryable: isRetryableRequestFailure(error, false) }
-          )
-          pushError(i18n.global.t('agent.runApproval.answerFailed'))
-        }
-        conversationStore.retireAsk(askId, currentThreadId)
-        return false
-      }
-      reportError(error, {
-        surface: 'agent',
-        errorType: 'agent_ask_answer_failed'
-      })
-      trackAgentError('ask_answer_failed', 'post_acceptance', 'error_overlay', {
-        retryable: isRetryableRequestFailure(error, false)
-      })
-      // Every re-drive above has been spent. The card cannot simply go back
-      // into service: the server CASes an answer onto the row BEFORE it wakes
-      // the turn and reports 500 for the wake alone, so this may already have
-      // authorized the run, and it answers any later click by replaying THIS
-      // selection while the card disappears as though the new one had taken
-      // effect. On a spend authorization that is the wrong way to be wrong, so
-      // retire the card and say the outcome is unknown rather than show a raw
-      // transport string next to a card that is about to vanish.
-      conversationStore.retireAsk(askId, currentThreadId)
-      pushError(i18n.global.t('agent.runApproval.answerUncertain'))
+      handleAnswerFailure(error, askId, currentThreadId, isAnswerOnScreen())
       return false
     }
   }
