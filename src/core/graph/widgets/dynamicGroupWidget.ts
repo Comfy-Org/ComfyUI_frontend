@@ -331,6 +331,18 @@ export function dynamicGroupWidget(
     }
   }
 
+  function announceAddedValues(existing: Set<IBaseWidget>) {
+    for (const widget of node.widgets ?? []) {
+      if (
+        !existing.has(widget) &&
+        widget.serialize !== false &&
+        widget.type !== 'button' &&
+        widget.widgetId
+      )
+        store.announceValue(widget.widgetId)
+    }
+  }
+
   function validateSavedRowCount(value: number, requested: number) {
     const graphId = resolveNodeRootGraphId(node)
     if (!graphId) return
@@ -363,10 +375,12 @@ export function dynamicGroupWidget(
       for (let index = rows().length - 1; index >= count; index--) {
         if (!removeRow(index, hosts)) break
       }
+      const existing = new Set(node.widgets)
       while (rows().length < count) {
         if (!addRow(rows().length, hosts)) break
       }
       publish()
+      announceAddedValues(existing)
     }
   })
   controller.value = initialCount
