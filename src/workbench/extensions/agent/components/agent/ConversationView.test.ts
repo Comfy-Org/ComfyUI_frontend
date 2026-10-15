@@ -445,6 +445,7 @@ describe('ConversationView', () => {
       scroll.scrollTop = 700
       await fireEvent.scroll(scroll)
       await toggleTrace(summary, false)
+      expect(screen.getByRole('list')).toBeInTheDocument()
       geometry.trace = 100
       scroll.scrollTop = 600
       await fireEvent.scroll(scroll)

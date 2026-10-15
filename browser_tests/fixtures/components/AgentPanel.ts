@@ -102,6 +102,10 @@ export class AgentPanel {
     })
   }
 
+  async workSummaryTop(): Promise<number> {
+    return (await this.workSummary.boundingBox())?.y ?? NaN
+  }
+
   async waitForConversationToSettle(): Promise<void> {
     await expect
       .poll(() =>

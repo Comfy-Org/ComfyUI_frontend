@@ -1,70 +1,18 @@
-import type { WebSocketRoute } from '@playwright/test'
 import { expect, mergeTests } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { AgentTurnAccepted } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
-import type { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 import {
   MESSAGE_DONE_EVENT,
   TOOL_CALL_EVENT,
   agentTest,
+  finishWorkedTurnAfterLongReply,
   pushDelta,
-  pushThinking,
-  pushTurnEvent
+  pushThinking
 } from '@e2e/tests/agent/agentPanelMocks'
 
 const test = mergeTests(agentTest, webSocketFixture)
-
-async function finishWorkedTurnAfterLongReply({
-  acceptedTurns,
-  agentPanel,
-  socket
-}: {
-  acceptedTurns: AgentTurnAccepted[]
-  agentPanel: AgentPanel
-  socket: WebSocketRoute
-}): Promise<void> {
-  const userMessages = agentPanel.root.getByTestId('user-message-bubble')
-  await agentPanel.sendMessage('Explain this workflow in detail')
-  await expect(userMessages).toHaveText(['Explain this workflow in detail'])
-  pushDelta(
-    socket,
-    Array.from(
-      { length: 40 },
-      (_, index) => `Paragraph ${index + 1}: workflow detail.\n\n`
-    ).join('')
-  )
-  socket.send(JSON.stringify(MESSAGE_DONE_EVENT))
-  await expect(
-    agentPanel.root.getByText('Paragraph 40: workflow detail.', {
-      exact: true
-    })
-  ).toBeInViewport()
-
-  await agentPanel.sendMessage('Plan this workflow')
-  await expect(userMessages).toHaveText([
-    'Explain this workflow in detail',
-    'Plan this workflow'
-  ])
-  expect(acceptedTurns).toHaveLength(2)
-  const planTurn = acceptedTurns[1].message_id
-  pushThinking(
-    socket,
-    Array.from(
-      { length: 3 },
-      (_, index) => `Step ${index + 1}: check the graph.`
-    ).join('\n\n'),
-    planTurn
-  )
-  pushTurnEvent(socket, TOOL_CALL_EVENT, planTurn)
-  pushDelta(socket, 'Done.', planTurn)
-  pushTurnEvent(socket, MESSAGE_DONE_EVENT, planTurn)
-
-  await expect(agentPanel.workSummary).toHaveAttribute('aria-expanded', 'false')
-  await agentPanel.waitForConversationToSettle()
-}
 
 test.describe(
   'Agent streaming scroll anchor',
@@ -165,10 +113,9 @@ test.describe(
 
       const summary = agentPanel.workSummary
       await expect(summary).toHaveAttribute('aria-expanded', 'false')
-      const summaryTop = async () => (await summary.boundingBox())?.y ?? NaN
       await agentPanel.waitForConversationToSettle()
       await expect(agentPanel.latestButton).toBeHidden()
-      const before = await summaryTop()
+      const before = await agentPanel.workSummaryTop()
 
       await summary.click()
       await expect(
@@ -183,14 +130,14 @@ test.describe(
           )
         )
         .toBe(true)
-      expect(await summaryTop()).toBeCloseTo(before, 0)
+      expect(await agentPanel.workSummaryTop()).toBeCloseTo(before, 0)
       await expect(agentPanel.latestButton).toBeVisible()
 
       await summary.click()
       await expect(summary).toHaveAttribute('aria-expanded', 'false')
       await agentPanel.waitForConversationToSettle()
 
-      expect(await summaryTop()).toBeCloseTo(before, 0)
+      expect(await agentPanel.workSummaryTop()).toBeCloseTo(before, 0)
       await expect(agentPanel.latestButton).toBeHidden()
     })
 
@@ -213,8 +160,7 @@ test.describe(
         agentPanel.root.getByText('Done.', { exact: true })
       ).toBeInViewport()
       await expect(agentPanel.latestButton).toBeHidden()
-      const summaryTop = async () => (await summary.boundingBox())?.y ?? NaN
-      const before = await summaryTop()
+      const before = await agentPanel.workSummaryTop()
 
       await summary.click()
       await expect(
@@ -222,7 +168,7 @@ test.describe(
       ).toBeVisible()
       await agentPanel.waitForConversationToSettle()
 
-      expect(await summaryTop()).toBeCloseTo(before, 0)
+      expect(await agentPanel.workSummaryTop()).toBeCloseTo(before, 0)
       await expect(agentPanel.latestButton).toBeVisible()
 
       await summary.click()
