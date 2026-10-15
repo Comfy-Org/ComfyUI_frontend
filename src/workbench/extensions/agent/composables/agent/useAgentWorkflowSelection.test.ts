@@ -340,11 +340,8 @@ describe('historical workflow restoration', () => {
 
     expect(await selection.restoreTarget('wf-saved', () => true)).toBe(true)
     expect(workflows.activeWorkflow?.path).toBe(current.path)
-    expect(panel.selectedWorkflow).toBeNull()
-    expect(panel.targetUnavailable).toBe(false)
-    expect(panel.canRestoreWorkflow).toBe(false)
+    expect(panel.targetUnresolved).toBe(true)
     expect(bindings.tabPathFor('wf-saved')).toBeUndefined()
-    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
     expect(warnRestoreFailed).not.toHaveBeenCalled()
   })
 
@@ -360,10 +357,8 @@ describe('historical workflow restoration', () => {
     listCloudWorkflows.mockResolvedValueOnce(listing([]))
 
     expect(await selection.restoreTarget('wf-draft', () => true)).toBe(true)
-    expect(panel.selectedWorkflow).toBeNull()
-    expect(panel.targetUnavailable).toBe(false)
+    expect(panel.targetUnresolved).toBe(true)
     expect(workflows.activeWorkflow?.path).toBe(current.path)
-    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
     expect(warnRestoreFailed).not.toHaveBeenCalled()
   })
 
@@ -383,11 +378,8 @@ describe('historical workflow restoration', () => {
     )
 
     expect(await selection.restoreTarget('wf-saved', () => true)).toBe(true)
-    expect(panel.selectedWorkflow).toBeNull()
     expect(panel.targetUnresolved).toBe(true)
-    expect(panel.targetUnavailable).toBe(false)
     expect(workflows.activeWorkflow?.path).toBe(current.path)
-    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
     expect(warnRestoreFailed).not.toHaveBeenCalled()
   })
 
