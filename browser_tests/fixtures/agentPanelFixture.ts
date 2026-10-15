@@ -1,11 +1,9 @@
 import type { Page, Route } from '@playwright/test'
 
 import type {
-  AgentMessage,
   AgentPostMessageRequest,
   AgentRunMode,
   AgentThreadListResponse,
-  AgentThreadSummary,
   BillingStatusResponse,
   GlobalSetting,
   ListAssetsResponse,
@@ -30,6 +28,7 @@ import {
   createAgentComposerConversation,
   createAgentComposerThreadList
 } from '@e2e/fixtures/data/agent/agentComposerPerformance'
+import type { AgentSavedChat } from '@e2e/fixtures/data/agent/agentSavedChat'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -125,7 +124,7 @@ async function mockAgentBoot(
 export async function mockAgentTurnApi(
   page: Page,
   turnAccepted: AgentTurnAccepted,
-  savedThread?: { thread: AgentThreadSummary; messages: AgentMessage[] }
+  savedThread?: AgentSavedChat
 ): Promise<AgentPostMessageRequest[]> {
   const summaries = savedThread ? [savedThread.thread] : []
   const threads: AgentThreadListResponse = {

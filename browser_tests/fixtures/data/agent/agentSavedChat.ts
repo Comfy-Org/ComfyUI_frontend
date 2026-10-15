@@ -2,6 +2,11 @@ import type { AgentMessage, AgentThreadSummary } from '@comfyorg/ingest-types'
 
 const SAVED_AT = '2026-10-01T12:00:00Z'
 
+export interface AgentSavedChat {
+  thread: AgentThreadSummary
+  messages: AgentMessage[]
+}
+
 export function createAgentSavedChat({
   threadId,
   workflowId,
@@ -12,7 +17,7 @@ export function createAgentSavedChat({
   workflowId: string
   title: string
   prompt: string
-}): { thread: AgentThreadSummary; messages: AgentMessage[] } {
+}): AgentSavedChat {
   return {
     thread: {
       id: threadId,
