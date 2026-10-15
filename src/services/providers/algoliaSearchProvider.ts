@@ -109,7 +109,7 @@ const toRegistryPack = memoize(
       comfy_nodes: algoliaNode.comfy_nodes
     }
   },
-  (algoliaNode: AlgoliaNodePack) => algoliaNode.id
+  (algoliaNode: AlgoliaNodePack) => algoliaNode.id ?? algoliaNode.objectID
 )
 
 export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {

@@ -528,5 +528,32 @@ describe('useAlgoliaSearchProvider', () => {
       expect(result.nodePacks[0]).toBe(result.nodePacks[1])
       expect(result.nodePacks[1]).toBe(result.nodePacks[2])
     })
+
+    it('keys conversions of hits without an id by objectID', async () => {
+      const hitWithoutId = (objectID: string) => ({
+        objectID,
+        name: objectID,
+        publisher_id: 'pub',
+        total_install: 0,
+        comfy_nodes: []
+      })
+      mockSearchClient.search.mockResolvedValue({
+        results: [
+          { hits: [hitWithoutId('no-id-a'), hitWithoutId('no-id-b')] },
+          { hits: [] }
+        ]
+      })
+
+      const provider = useAlgoliaSearchProvider()
+      const result = await provider.searchPacks('test', {
+        pageSize: 10,
+        pageNumber: 0
+      })
+
+      expect(result.nodePacks.map((pack) => pack.name)).toEqual([
+        'no-id-a',
+        'no-id-b'
+      ])
+    })
   })
 })
