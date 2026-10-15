@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
+import type { SucceededBillingOperation } from '@comfyorg/account-core/billing'
 import { BILLING_CLIENT_KEY } from '@comfyorg/account-ui/billing'
 import { parseBillingEntry } from '@comfyorg/billing-contract'
 
@@ -159,7 +160,14 @@ describe('ResultView subscription checkout telemetry', () => {
     await renderResult({
       recover: {
         status: 'ok',
-        value: { ...succeededOperation('op_returned'), ...AWAITED }
+        value: {
+          ...succeededOperation('op_returned'),
+          ...AWAITED,
+          phase: 'succeeded',
+          receipt: {
+            plan: { slug: 'pro_annual', tier: 'PRO', duration: 'ANNUAL' }
+          }
+        } satisfies SucceededBillingOperation
       }
     })
 
@@ -170,7 +178,9 @@ describe('ResultView subscription checkout telemetry', () => {
           context: expect.objectContaining({
             billing_op_id: 'op_returned',
             checkout_ui: 'embedded',
-            outcome: 'success'
+            outcome: 'success',
+            tier: 'pro',
+            cycle: 'yearly'
           })
         }
       ])

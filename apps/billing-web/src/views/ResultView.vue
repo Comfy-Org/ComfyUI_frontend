@@ -38,7 +38,6 @@ const checkout = useCheckout({
   challengePort: createDeferredStripeChallengePort(awaitBillingWebStripeKey)
 })
 
-// Only the embedded checkout sends a hosted step back here.
 watch(
   () => checkout.operation.value,
   (operation) => {

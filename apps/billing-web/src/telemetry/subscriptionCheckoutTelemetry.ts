@@ -121,7 +121,6 @@ export function createSubscriptionCheckoutTelemetry({
   })
 }
 
-/** The attempt as the operation's own plan describes it; the quote and the entry stayed on the page that issued it. */
 function attemptOfOperation(
   operation: TerminalBillingOperation
 ): CheckoutAttempt {
@@ -133,12 +132,7 @@ function attemptOfOperation(
   }
 }
 
-/**
- * A subscribe this tab paid for on a provider page settles on the page the
- * provider sends it back to, where the attempt that began it no longer runs.
- * That page reports the terminal once per operation, so a reload does not
- * count it again.
- */
+/** Reports, once per operation, the terminal of a subscribe this tab awaited and a provider page sent back. */
 export function reportReturnedSubscriptionCheckout(
   operation: TerminalBillingOperation,
   {
