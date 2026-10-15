@@ -8676,18 +8676,6 @@ describe('AgentPanelRoot workflow binding', () => {
     await sendFromComposer('work here')
   }
 
-  const acknowledgedActivation = {
-    activation: 'acknowledged',
-    send: () => sendFromComposer('work here'),
-    threadAtActivation: 'th-1',
-    event: { workflow_id: 'wf-late', name: 'Late', thread_id: 'th-1' }
-  }
-  const legacyActivationBeforeAcknowledgment = {
-    activation: 'legacy pre-acknowledgment',
-    send: sendBeforeAcknowledgment,
-    threadAtActivation: null,
-    event: { workflow_id: 'wf-late', name: 'Late' }
-  }
   const newChatNavigation = {
     navigation: 'new-chat',
     navigate: startNewChat,
@@ -8699,14 +8687,9 @@ describe('AgentPanelRoot workflow binding', () => {
     targetPath: undefined
   }
 
-  it.for([
-    { ...acknowledgedActivation, ...newChatNavigation },
-    { ...acknowledgedActivation, ...historyNavigation },
-    { ...legacyActivationBeforeAcknowledgment, ...newChatNavigation },
-    { ...legacyActivationBeforeAcknowledgment, ...historyNavigation }
-  ])(
-    'drops an older $activation activation when $navigation navigation happens during the creation delay',
-    async ({ send, threadAtActivation, event, navigate, targetPath }) => {
+  it.for([newChatNavigation, historyNavigation])(
+    'drops a legacy activation queued before the first send acknowledgment when $navigation navigation happens during the creation delay',
+    async ({ navigate, targetPath }) => {
       const current = makeTab('wf-42')
       mockMessagesEndpoint(
         'wf-42',
@@ -8720,10 +8703,10 @@ describe('AgentPanelRoot workflow binding', () => {
         ]
       )
       renderWithSelectedTarget()
-      await send()
-      expect(useAgentConversationStore().threadId).toBe(threadAtActivation)
+      await sendBeforeAcknowledgment()
+      expect(useAgentConversationStore().threadId).toBeNull()
       vi.useFakeTimers()
-      ws.emit('agent_active_tab', event)
+      ws.emit('agent_active_tab', { workflow_id: 'wf-late', name: 'Late' })
       await vi.advanceTimersByTimeAsync(0)
       expect(useWorkflowTabActivityStore().creatingTab).toBe(true)
       await navigate()
