@@ -104,7 +104,7 @@ const { heading, mainLabel, grand, categories, runnerUp, bonusLabel, bonuses } =
       >
         {{ bonusLabel }}
       </h3>
-      <ul role="list" class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+      <ul role="list" class="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
         <li
           v-for="bonus in bonuses"
           :key="bonus.id"

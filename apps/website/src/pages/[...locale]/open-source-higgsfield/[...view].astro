@@ -71,35 +71,41 @@ const examples = [
   }
 ]
 const categoryPrizes = ['Innovative', 'Viral', 'OpenWeights'] as const
-const bonusPrizes = ['Ltx', 'Flux'] as const
+const bonusPrizes = ['Ltx', 'Flux', 'Minimax'] as const
 const milestones = ['Signup', 'Window', 'Nights', 'Winner'] as const
 const tabs = ['how', 'timeline'] as const
 const localizedText = (key: string): LocalizedText => ({
   en: translationsFor('en').t(key),
   'zh-CN': translationsFor('zh-CN').t(key)
 })
-const buildNightRegistration = 'https://luma.com/5mydmvu6'
 const meetups = [
-  { id: 'Sf', startDateTime: '2026-10-28T18:00:00-07:00' },
-  { id: 'La', startDateTime: '2026-10-29T18:00:00-07:00' }
-] as const
-const meetupEvents: ComfyEvent[] = meetups.map(({ id, startDateTime }) => ({
-  id: `challenge-meetup-${id.toLowerCase()}`,
-  category: 'hackathon',
-  title: localizedText(`eventChallenge.meetup${id}Title`),
-  description: localizedText(`eventChallenge.meetup${id}Body`),
-  location: localizedText(`eventChallenge.meetup${id}Location`),
-  dateLabel: localizedText(`eventChallenge.meetup${id}Date`),
-  startDateTime,
-  link: {
-    href: {
-      en: buildNightRegistration,
-      'zh-CN': buildNightRegistration
-    },
-    newTab: true
+  {
+    id: 'Sf',
+    startDateTime: '2026-10-28T18:00:00-07:00',
+    registration: 'https://luma.com/5mydmvu6'
   },
-  ctaLabel: localizedText('eventChallenge.meetupCta')
-}))
+  {
+    id: 'La',
+    startDateTime: '2026-10-29T18:00:00-07:00',
+    registration: 'https://luma.com/73q6c0ln'
+  }
+] as const
+const meetupEvents: ComfyEvent[] = meetups.map(
+  ({ id, startDateTime, registration }) => ({
+    id: `challenge-meetup-${id.toLowerCase()}`,
+    category: 'hackathon',
+    title: localizedText(`eventChallenge.meetup${id}Title`),
+    description: localizedText(`eventChallenge.meetup${id}Body`),
+    location: localizedText(`eventChallenge.meetup${id}Location`),
+    dateLabel: localizedText(`eventChallenge.meetup${id}Date`),
+    startDateTime,
+    link: {
+      href: { en: registration, 'zh-CN': registration },
+      newTab: true
+    },
+    ctaLabel: localizedText('eventChallenge.meetupCta')
+  })
+)
 const meetupRows = directoryRows(meetupEvents, locale, eventsDerivedAt).map(
   (row) => ({ ...row, calendar: undefined })
 )
@@ -195,6 +201,11 @@ const faqs = ['Demo', 'Event', 'License', 'Bonus'] as const
           role="img"
           aria-label="Black Forest Labs"
           class="aspect-571/141 h-4 icon-mask mask-[url('/icons/partners/black-forest-labs.svg')] lg:h-6"
+        ></span>
+        <span
+          role="img"
+          aria-label="MiniMax"
+          class="aspect-1296/314 h-4 icon-mask mask-[url('/icons/partners/minimax.svg')] lg:h-6"
         ></span>
       </div>
     </section>
