@@ -82,7 +82,7 @@ const pillClass =
           class="h-auto min-h-11 max-w-full whitespace-normal"
           :aria-label="t('workshop.workflow.download')"
           data-testid="node-graph-download"
-          >{{ t('workshop.nodeGraph.download') }}</Button
+          >{{ t('workshop.workflow.downloadShort') }}</Button
         >
         <Button
           as="a"
