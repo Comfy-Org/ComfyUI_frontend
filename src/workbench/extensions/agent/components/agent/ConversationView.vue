@@ -260,7 +260,8 @@ watch(
         cn(
           'h-full overflow-y-auto',
           !atTop && 'mask-t-from-[calc(100%-2rem)]',
-          !atBottom && 'mask-b-from-[calc(100%-2rem)]'
+          !atBottom && 'mask-b-from-[calc(100%-2rem)]',
+          followIntent === 'paused' && '[overflow-anchor:none]'
         )
       "
     >
