@@ -873,7 +873,7 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '1.7.3',
       function: async () => {
         if (workflowStore.activeWorkflow)
-          await workflowService.closeWorkflow(workflowStore.activeWorkflow, {
+          await workflowService.closeWorkflows([workflowStore.activeWorkflow], {
             warnIfUnsaved: true,
             initiator: 'user'
           })

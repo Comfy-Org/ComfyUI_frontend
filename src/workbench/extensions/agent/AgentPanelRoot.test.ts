@@ -390,7 +390,7 @@ beforeEach(() => {
     }
   )
   vi.mocked(useWorkflowService()).closeWorkflow.mockImplementation(
-    async (tab, options) => {
+    async (tab) => {
       if (workflowStore.activeWorkflow?.path === tab.path) {
         const replacement = workflowStore.openWorkflows.find(
           (candidate) => candidate.path !== tab.path
@@ -398,11 +398,19 @@ beforeEach(() => {
         workflowStore.activeWorkflow = replacement
           ? await replacement.load()
           : null
-        if (replacement && options?.initiator === 'user')
-          workflowStore.reportUserActivation(replacement)
       }
       await workflowStore.closeWorkflow(tab)
       return true
+    }
+  )
+  vi.mocked(useWorkflowService()).closeWorkflows.mockImplementation(
+    async (tabs, { initiator, ...options }) => {
+      const activeBefore = workflowStore.activeWorkflow
+      for (const tab of tabs)
+        await useWorkflowService().closeWorkflow(tab, options)
+      const active = workflowStore.activeWorkflow
+      if (initiator === 'user' && active !== null && active !== activeBefore)
+        workflowStore.reportUserActivation(active)
     }
   )
   vi.mocked(useWorkflowService()).openWorkflow.mockImplementation(
@@ -5704,7 +5712,7 @@ describe('AgentPanelRoot history', () => {
         expect(useAgentChatHistoryStore().sessions).toHaveLength(1)
       )
 
-      await useWorkflowService().closeWorkflow(first, {
+      await useWorkflowService().closeWorkflows([first], {
         warnIfUnsaved: true,
         initiator: 'user'
       })

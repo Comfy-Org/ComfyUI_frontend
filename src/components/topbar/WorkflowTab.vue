@@ -299,24 +299,12 @@ const handleClick = (event: Event) => {
   popoverRef.value?.togglePopover(event)
 }
 
-const closeWorkflows = async (options: WorkflowOption[]) => {
-  for (const opt of options) {
-    if (
-      !(await useWorkflowService().closeWorkflow(opt.workflow, {
-        warnIfUnsaved: !workspaceStore.shiftDown,
-        hint: t('sideToolbar.workflowTab.dirtyCloseHint'),
-        initiator: 'user'
-      }))
-    ) {
-      // User cancelled, or the replacement load failed
-      break
-    }
-  }
-}
-
-const onCloseWorkflow = async (option: WorkflowOption) => {
-  await closeWorkflows([option])
-}
+const onCloseWorkflow = (option: WorkflowOption) =>
+  useWorkflowService().closeWorkflows([option.workflow], {
+    warnIfUnsaved: !workspaceStore.shiftDown,
+    hint: t('sideToolbar.workflowTab.dirtyCloseHint'),
+    initiator: 'user'
+  })
 
 const commandStore = useCommandStore()
 const workflow = computed(() => workflowOption.workflow)

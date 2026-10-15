@@ -120,12 +120,20 @@ vi.mock(import('./WorkflowTab.vue'), () => ({
         required: true
       }
     },
+    emits: ['closeOthers'],
     render() {
-      return h(
-        TabsTrigger,
-        { value: this.workflowOption.workflow.path },
-        () => this.workflowOption.workflow.filename
-      )
+      return [
+        h(
+          TabsTrigger,
+          { value: this.workflowOption.workflow.path },
+          () => this.workflowOption.workflow.filename
+        ),
+        h(
+          'button',
+          { type: 'button', onClick: () => this.$emit('closeOthers') },
+          `Close tabs other than ${this.workflowOption.workflow.filename}`
+        )
+      ]
     }
   })
 }))
@@ -550,6 +558,26 @@ describe('WorkflowTabs selection and overflow', () => {
         initiator: 'user'
       }
     )
+  })
+
+  it('closes the other tabs as one user action', async () => {
+    const thirdWorkflow = await useWorkflowStore()
+      .createTemporary('Third workflow.json')
+      .load()
+    useWorkflowStore().attachWorkflow(thirdWorkflow, 2)
+    const { user } = renderComponent()
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Close tabs other than Second workflow'
+      })
+    )
+
+    expect(useWorkflowService().closeWorkflows).toHaveBeenCalledExactlyOnceWith(
+      [thirdWorkflow, firstWorkflow],
+      { warnIfUnsaved: true, initiator: 'user' }
+    )
+    expect(useWorkflowService().closeWorkflow).not.toHaveBeenCalled()
   })
 
   it('keeps the real workflow selected when another workflow fails to load', async () => {

@@ -506,7 +506,7 @@ export const useWorkflowService = () => {
    */
   const closeWorkflow = async (
     workflow: ComfyWorkflow,
-    options: { warnIfUnsaved: boolean; hint?: string; initiator?: 'user' } = {
+    options: { warnIfUnsaved: boolean; hint?: string } = {
       warnIfUnsaved: true
     }
   ): Promise<boolean> => {
@@ -574,12 +574,7 @@ export const useWorkflowService = () => {
         // the close (a real configure failure resolves false - the dialog
         // path); a rejection still propagates as before.
         if (replacementWorkflow) {
-          if (
-            !(await openWorkflow(replacementWorkflow, {
-              initiator: options.initiator
-            }))
-          )
-            return false
+          if (!(await openWorkflow(replacementWorkflow))) return false
         } else {
           if ((await loadDefaultWorkflow()) === false) return false
         }
@@ -876,6 +871,22 @@ export const useWorkflowService = () => {
     canvas._deserializeItems(items, options)
   }
 
+  /** Closes `workflows` in order, stopping at the first one that stays open. */
+  const closeWorkflows = async (
+    workflows: ComfyWorkflow[],
+    {
+      initiator,
+      ...options
+    }: { warnIfUnsaved: boolean; hint?: string; initiator?: 'user' }
+  ): Promise<void> => {
+    const activeBefore = workflowStore.activeWorkflow
+    for (const workflow of workflows)
+      if (!(await closeWorkflow(workflow, options))) break
+    const active = workflowStore.activeWorkflow
+    if (initiator === 'user' && active !== null && active !== activeBefore)
+      workflowStore.reportUserActivation(active)
+  }
+
   const loadNextOpenedWorkflow = async (
     options: { initiator?: 'user' } = {}
   ) => {
@@ -969,6 +980,7 @@ export const useWorkflowService = () => {
     reloadCurrentWorkflow,
     openWorkflow,
     closeWorkflow,
+    closeWorkflows,
     renameWorkflow,
     deleteWorkflow,
     insertWorkflow,

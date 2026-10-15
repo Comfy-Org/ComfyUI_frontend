@@ -238,7 +238,7 @@ const dummyExpandedKeys = ref<Record<string, boolean>>({})
 
 const handleCloseWorkflow = async (workflow?: ComfyWorkflow) => {
   if (workflow) {
-    await workflowService.closeWorkflow(workflow, {
+    await workflowService.closeWorkflows([workflow], {
       warnIfUnsaved: !workspaceStore.shiftDown,
       initiator: 'user'
     })

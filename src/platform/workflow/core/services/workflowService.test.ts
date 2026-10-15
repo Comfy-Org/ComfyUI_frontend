@@ -1862,36 +1862,48 @@ describe('useWorkflowService', () => {
       expect(activated).not.toHaveBeenCalled()
     })
 
-    it('reports the tab a user close activates in place of the closed one', async () => {
-      const workflowStore = useWorkflowStore()
-      const closing = createWorkflow(null, {
-        loadable: true,
-        path: 'workflows/closing.json'
-      })
-      Object.defineProperty(closing, 'unload', { value: vi.fn() })
-      const replacement = createWorkflow(null, {
-        loadable: true,
-        path: 'workflows/replacement.json'
-      })
-      workflowStore.attachWorkflow(closing, 0)
-      workflowStore.attachWorkflow(replacement, 1)
-      workflowStore.activeWorkflow = closing as LoadedComfyWorkflow
-      vi.spyOn(workflowStore, 'getMostRecentWorkflow').mockReturnValue(
-        replacement
-      )
-      activateOnLoad()
-      const activated = vi.fn()
-      workflowStore.onUserActivation(activated)
+    it.for([
+      { closed: 'the active tab', closing: ['first'], left: 'second' },
+      {
+        closed: 'several tabs',
+        closing: ['first', 'second'],
+        left: 'third'
+      }
+    ])(
+      'reports once, for the tab left active, when a user closes $closed',
+      async ({ closing, left }) => {
+        const workflowStore = useWorkflowStore()
+        const tabs = ['first', 'second', 'third'].map((name, index) => {
+          const tab = createWorkflow(null, {
+            loadable: true,
+            path: `workflows/${name}.json`
+          })
+          Object.defineProperty(tab, 'unload', { value: vi.fn() })
+          workflowStore.attachWorkflow(tab, index)
+          return tab
+        })
+        const byName = (name: string) =>
+          tabs[['first', 'second', 'third'].indexOf(name)]
+        workflowStore.activeWorkflow = tabs[0] as LoadedComfyWorkflow
+        vi.spyOn(workflowStore, 'getMostRecentWorkflow').mockImplementation(
+          () =>
+            workflowStore.openWorkflows.find(
+              (tab) => !workflowStore.isActive(tab)
+            ) ?? null
+        )
+        activateOnLoad()
+        const activated = vi.fn()
+        workflowStore.onUserActivation(activated)
 
-      await expect(
-        useWorkflowService().closeWorkflow(closing, {
+        await useWorkflowService().closeWorkflows(closing.map(byName), {
           warnIfUnsaved: false,
           initiator: 'user'
         })
-      ).resolves.toBe(true)
 
-      expect(activated).toHaveBeenCalledExactlyOnceWith(replacement)
-    })
+        expect(workflowStore.activeWorkflow.path).toBe(byName(left).path)
+        expect(activated.mock.calls).toEqual([[byName(left)]])
+      }
+    )
   })
 
   describe('openWorkflow deferred warnings', () => {
