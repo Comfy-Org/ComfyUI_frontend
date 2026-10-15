@@ -78,6 +78,8 @@ describe('stripRepoOwner', () => {
       expected: 'ComfyUI-KJNodes'
     },
     { query: 'kijai/ComfyUI-KJNodes', expected: 'ComfyUI-KJNodes' },
+    { query: 'kijai/comfyui-kjnodes.git', expected: 'comfyui-kjnodes' },
+    { query: 'kijai/ComfyUI-KJNodes.GIT', expected: 'ComfyUI-KJNodes' },
     { query: 'Comfy-Org/ComfyUI-Manager', expected: 'ComfyUI-Manager' },
     { query: 'ZHO-ZHO-ZHO/ComfyUI-Gemini', expected: 'ComfyUI-Gemini' },
     {
