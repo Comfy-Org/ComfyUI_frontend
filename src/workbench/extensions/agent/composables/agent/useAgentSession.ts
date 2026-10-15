@@ -38,7 +38,8 @@ import {
 } from '../../schemas/agentApiSchema'
 import {
   AgentApiError,
-  AgentResponseUnreadableError
+  AgentResponseUnreadableError,
+  AgentThreadListIncompleteError
 } from '../../services/agent/agentRestClient'
 import type {
   AgentRestClient,
@@ -261,7 +262,8 @@ export function isRetryableRequestFailure(
   if (accepted) return false
   if (
     error instanceof ZodError ||
-    error instanceof AgentResponseUnreadableError
+    error instanceof AgentResponseUnreadableError ||
+    error instanceof AgentThreadListIncompleteError
   )
     return false
   if (error instanceof AgentApiError)

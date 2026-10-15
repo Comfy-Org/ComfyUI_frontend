@@ -5301,22 +5301,26 @@ describe('AgentPanelRoot history', () => {
   })
 
   it('keeps the loaded chat list when a refresh ends before its last page', async () => {
-    let truncated = false
-    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
-      const url = String(input)
-      if (!isThreadListUrl(url)) return json(200, [])
-      if (!truncated)
-        return json(
-          200,
-          agentThreadList([
-            agentThread({
-              id: 'th-kept',
-              title: 'Kept chat',
-              last_message_at: '2026-07-07T10:00:00Z'
-            })
-          ])
-        )
-      return json(200, {
+    respondToFetch({}, () => json(200, []))
+    respondToFetch(/\/api\/agent\/threads\?/, () =>
+      json(
+        200,
+        agentThreadList([
+          agentThread({
+            id: 'th-kept',
+            title: 'Kept chat',
+            last_message_at: '2026-07-07T10:00:00Z'
+          })
+        ])
+      )
+    )
+    renderWithSelectedTarget()
+    const history = useAgentChatHistoryStore()
+    await vi.waitFor(() =>
+      expect(history.sessions.map(({ id }) => id)).toEqual(['th-kept'])
+    )
+    respondToFetch(/\/api\/agent\/threads\?/, () =>
+      json(200, {
         ...agentThreadList([
           agentThread({
             id: 'th-partial',
@@ -5326,15 +5330,7 @@ describe('AgentPanelRoot history', () => {
         ]),
         pagination: { has_more: true, limit: 1, offset: 0, total: 2 }
       })
-    })
-    renderWithSelectedTarget()
-    const history = useAgentChatHistoryStore()
-    await vi.waitFor(() =>
-      expect(history.sessions.map(({ id }) => id)).toEqual(['th-kept'])
     )
-    executionErrors.showErrorOverlay.mockClear()
-    telemetry.trackAgentError.mockClear()
-    truncated = true
 
     await userEvent.click(
       await screen.findByRole('button', {
@@ -5346,7 +5342,10 @@ describe('AgentPanelRoot history', () => {
       expect(executionErrors.showErrorOverlay).toHaveBeenCalledTimes(1)
     )
     expect(telemetry.trackAgentError).toHaveBeenCalledWith(
-      expect.objectContaining({ error_class: 'thread_list_load_failed' })
+      expect.objectContaining({
+        error_class: 'thread_list_load_failed',
+        retryable: false
+      })
     )
     expect(history.sessions.map(({ id }) => id)).toEqual(['th-kept'])
   })

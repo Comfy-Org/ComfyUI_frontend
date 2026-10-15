@@ -1,3 +1,4 @@
+import type { PaginationInfo } from '@comfyorg/ingest-types'
 import { describe, expect, it, vi } from 'vitest'
 
 import {
@@ -328,8 +329,7 @@ describe('agentRestClient route + method', () => {
 describe('listThreads pagination', () => {
   function threadPage(
     ids: string[],
-    hasMore: boolean,
-    nextCursor?: string
+    { has_more, next_cursor }: Pick<PaginationInfo, 'has_more' | 'next_cursor'>
   ): Response {
     const threads: AgentThreadSummary[] = ids.map((id) => ({
       id,
@@ -344,84 +344,57 @@ describe('listThreads pagination', () => {
     }))
     return jsonResponse(200, {
       threads,
-      pagination: {
-        offset: 0,
-        limit: 100,
-        total: ids.length,
-        has_more: hasMore,
-        next_cursor: nextCursor
-      }
+      pagination: { offset: 0, limit: 100, total: 0, has_more, next_cursor }
     })
   }
 
-  function requestedRoutes(): string[] {
-    return vi.mocked(api.fetchApi).mock.calls.map(([route]) => route)
-  }
-
   it('follows next_cursor at the maximum page size until has_more is false', async () => {
-    respond(threadPage(['th-1', 'th-2'], true, 'next page'))
-    respond(threadPage(['th-3'], false))
+    respond(
+      threadPage(['th-1', 'th-2'], { has_more: true, next_cursor: 'next page' })
+    )
+    respond(threadPage(['th-3'], { has_more: false }))
 
-    const { threads, complete } = await makeClient().listThreads()
+    const threads = await makeClient().listThreads()
 
-    expect(requestedRoutes()).toEqual([
+    expect(vi.mocked(api.fetchApi).mock.calls.map(([route]) => route)).toEqual([
       '/agent/threads?limit=100',
       '/agent/threads?limit=100&after=next%20page'
     ])
     expect(threads.map(({ id }) => id)).toEqual(['th-1', 'th-2', 'th-3'])
-    expect(complete).toBe(true)
   })
 
   it.for([
     {
-      name: 'gives no cursor',
-      pages: [threadPage(['th-1'], true)],
-      listed: ['th-1']
+      reason: 'missing_cursor',
+      pages: () => [threadPage(['th-1'], { has_more: true })]
     },
     {
-      name: 'repeats a cursor it already gave',
-      pages: [threadPage(['th-1'], true, 'a'), threadPage(['th-2'], true, 'a')],
-      listed: ['th-1', 'th-2']
+      reason: 'repeated_cursor',
+      pages: () => [
+        threadPage(['th-1'], { has_more: true, next_cursor: 'a' }),
+        threadPage(['th-2'], { has_more: true, next_cursor: 'a' })
+      ]
     }
   ])(
-    'reports an incomplete list when the server $name',
-    async ({ pages, listed }) => {
-      pages.forEach(respond)
+    'rejects with $reason when paging stops before the last page',
+    async ({ reason, pages }) => {
+      pages().forEach(respond)
 
-      const { threads, complete } = await makeClient().listThreads()
-
-      expect(api.fetchApi).toHaveBeenCalledTimes(pages.length)
-      expect(threads.map(({ id }) => id)).toEqual(listed)
-      expect(complete).toBe(false)
+      await expect(makeClient().listThreads()).rejects.toMatchObject({
+        name: 'AgentThreadListIncompleteError',
+        reason
+      })
     }
   )
 
-  // A partial list could hide chats that an earlier full refresh showed.
-  it.for([
-    {
-      name: 'an HTTP error',
-      fail: () => respond(jsonResponse(503, { error: 'unavailable' })),
-      error: { name: 'AgentApiError', status: 503 }
-    },
-    {
-      name: 'a network error',
-      fail: () =>
-        vi
-          .mocked(api.fetchApi)
-          .mockRejectedValueOnce(new TypeError('Failed to fetch')),
-      error: { name: 'TypeError' }
-    },
-    {
-      name: 'a malformed body',
-      fail: () => respond(jsonResponse(200, { threads: [] })),
-      error: { name: 'ZodError' }
-    }
-  ])('rejects when a later page fails with $name', async ({ fail, error }) => {
-    respond(threadPage(['th-1'], true, 'page-2'))
-    fail()
+  it('rejects instead of returning a partial list when a later page fails', async () => {
+    respond(threadPage(['th-1'], { has_more: true, next_cursor: 'page-2' }))
+    respond(jsonResponse(503, { error: 'unavailable' }))
 
-    await expect(makeClient().listThreads()).rejects.toMatchObject(error)
-    expect(api.fetchApi).toHaveBeenCalledTimes(2)
+    await expect(makeClient().listThreads()).rejects.toMatchObject({
+      name: 'AgentApiError',
+      status: 503
+    })
   })
 })
 

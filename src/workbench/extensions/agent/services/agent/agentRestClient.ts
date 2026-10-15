@@ -168,15 +168,22 @@ export class AgentResponseUnreadableError extends Error {
   }
 }
 
+type PaginationStop = 'missing_cursor' | 'repeated_cursor'
+
+/** The thread list's pagination stopped before its last page. */
+export class AgentThreadListIncompleteError extends Error {
+  readonly reason: PaginationStop
+
+  constructor(reason: PaginationStop) {
+    super('Agent thread list ended before its last page')
+    this.name = 'AgentThreadListIncompleteError'
+    this.reason = reason
+  }
+}
+
 /** A workflow index and whether pagination reached its last page. */
 export interface CloudWorkflowListing {
   entries: CloudWorkflowEntry[]
-  complete: boolean
-}
-
-/** The user's threads and whether pagination reached its last page. */
-export interface AgentThreadListing {
-  threads: AgentThreadSummary[]
   complete: boolean
 }
 
@@ -579,12 +586,11 @@ export function createAgentRestClient() {
     path: string,
     schema: z.ZodType<Page>,
     itemsOf: (page: Page) => Item[]
-  ): Promise<{ items: Item[]; complete: boolean }> {
+  ): Promise<{ items: Item[]; stop?: PaginationStop }> {
     const items: Item[] = []
-    let hasMore: boolean
     let cursor: string | undefined
     const seenCursors = new Set<string>()
-    do {
+    for (;;) {
       const after = cursor ? `&after=${encodeURIComponent(cursor)}` : ''
       const page = await request(
         operation,
@@ -593,15 +599,13 @@ export function createAgentRestClient() {
         schema
       )
       items.push(...itemsOf(page))
-      hasMore = page.pagination.has_more
-      if (hasMore) {
-        const nextCursor = page.pagination.next_cursor
-        if (!nextCursor || seenCursors.has(nextCursor)) break
-        seenCursors.add(nextCursor)
-        cursor = nextCursor
-      }
-    } while (hasMore)
-    return { items, complete: !hasMore }
+      if (!page.pagination.has_more) return { items }
+      const nextCursor = page.pagination.next_cursor
+      if (!nextCursor) return { items, stop: 'missing_cursor' }
+      if (seenCursors.has(nextCursor)) return { items, stop: 'repeated_cursor' }
+      seenCursors.add(nextCursor)
+      cursor = nextCursor
+    }
   }
 
   async function postMessage(
@@ -640,14 +644,15 @@ export function createAgentRestClient() {
     )
   }
 
-  async function listThreads(): Promise<AgentThreadListing> {
-    const { items, complete } = await listAllPages(
+  async function listThreads(): Promise<AgentThreadSummary[]> {
+    const { items, stop } = await listAllPages(
       'list_threads',
       '/agent/threads',
       zAgentThreads,
       (page) => page.threads
     )
-    return { threads: items, complete }
+    if (stop) throw new AgentThreadListIncompleteError(stop)
+    return items
   }
 
   async function getRunMode(): Promise<AgentRunModePreference> {
@@ -671,13 +676,13 @@ export function createAgentRestClient() {
   }
 
   async function listCloudWorkflows(): Promise<CloudWorkflowListing> {
-    const { items, complete } = await listAllPages(
+    const { items, stop } = await listAllPages(
       'list_cloud_workflows',
       '/workflows',
       zCloudWorkflowIndex,
       (page) => page.data
     )
-    return { entries: items, complete }
+    return { entries: items, complete: stop === undefined }
   }
 
   async function getCloudWorkflow(
