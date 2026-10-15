@@ -424,6 +424,7 @@ function disconnectOrphanedPromotion(
   if (!isSubgraph(graph) || graph.inputs[slot]?.linkIds.length !== 0) return
   const input = graph.inputs[slot]
   for (const host of hosts(graph)) {
+    removeFloatingHostLinks(host, slot)
     const link = host.graph && inputLink(host.graph, host.id, slot)
     if (!link) continue
     host.disconnectInput(slot)
@@ -435,9 +436,17 @@ function disconnectOrphanedPromotion(
 }
 
 function removeFloatingLinksFrom(graph: Subgraph, slot: number) {
-  for (const link of graph.floatingLinks.values())
-    if (link.origin_id === SUBGRAPH_INPUT_ID && link.origin_slot === slot)
-      graph.removeFloatingLink(link)
+  for (const link of graph.floatingLinks.values()) {
+    if (link.origin_id !== SUBGRAPH_INPUT_ID) continue
+    if (link.origin_slot === slot) graph.removeFloatingLink(link)
+    else if (link.origin_slot > slot) link.origin_slot--
+  }
+}
+
+function removeFloatingHostLinks(host: SubgraphNode, slot: number) {
+  for (const link of host.graph?.floatingLinks.values() ?? [])
+    if (link.target_id === host.id && link.target_slot === slot)
+      host.graph?.removeFloatingLink(link)
 }
 
 class DynamicGroupNoticeWidget extends VueOnlyWidget<IBaseWidget> {

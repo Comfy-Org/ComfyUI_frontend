@@ -517,6 +517,44 @@ describe('DynamicGroup widgets', () => {
     expect(subgraph.floatingLinks.size).toBe(0)
   })
 
+  it('drops the rerouted link of a later promoted field in the same row', () => {
+    const { node, widget, innerHost } = setupTwiceDeepPromotion()
+    const subgraph = innerHost.subgraph
+    expect(
+      promoteValueWidgetViaSubgraphInput(
+        innerHost,
+        node,
+        widget('loras.1.enabled')
+      ).ok
+    ).toBe(true)
+    const linkId = node.inputs.find(
+      (input) => input.name === 'loras.1.enabled'
+    )?.link
+    const link = linkId == null ? undefined : subgraph.links.get(linkId)
+    assert.exists(link)
+    assert.exists(subgraph.createReroute([0, 0], link))
+
+    widget('loras.1').callback?.(undefined)
+
+    expect(subgraph.inputs).toEqual([])
+    expect(subgraph.floatingLinks.size).toBe(0)
+  })
+
+  it('drops a floating host link left on a removed promoted input', () => {
+    const { widget, innerHost, outerSubgraph } = setupTwiceDeepPromotion()
+    const linkId = innerHost.inputs[0].link
+    const link = linkId == null ? undefined : outerSubgraph.links.get(linkId)
+    assert.exists(link)
+    assert.exists(outerSubgraph.createReroute([0, 0], link))
+    link.disconnect(outerSubgraph, 'input')
+    expect(outerSubgraph.floatingLinks.size).toBe(1)
+
+    widget('loras.1').callback?.(undefined)
+
+    expect(innerHost.inputs).toEqual([])
+    expect(outerSubgraph.floatingLinks.size).toBe(0)
+  })
+
   it('removes every promoted field of the deleted row through two boundaries', () => {
     const { node, widget, innerHost, outerHost } = setupTwiceDeepPromotion()
     widget('loras').value = 3
