@@ -621,30 +621,46 @@ describe('historical workflow restoration', () => {
     expect(warnRestoreFailed).not.toHaveBeenCalled()
   })
 
-  it('reads a chat by its lookup when the listing gave up mid-walk', async () => {
-    const {
-      selection,
-      workflows,
-      panel,
-      current,
-      cloudRows,
-      listCloudWorkflows,
-      warnRestoreFailed
-    } = setup()
-    cloudRows.set('wf-past-the-cut', 1)
-    listCloudWorkflows.mockImplementationOnce(async () =>
-      listing([{ id: 'wf-saved', name: 'saved' }], false)
-    )
+  it.for([
+    {
+      walk: 'before reaching it',
+      entries: [{ id: 'wf-saved', name: 'saved' }],
+      lookups: ['wf-past-the-cut']
+    },
+    {
+      walk: 'after listing it',
+      entries: [{ id: 'wf-past-the-cut', name: 'past the cut' }],
+      lookups: []
+    }
+  ])(
+    'reads a chat with no local target when the listing gave up $walk',
+    async ({ entries, lookups }) => {
+      const {
+        selection,
+        workflows,
+        panel,
+        current,
+        cloudRows,
+        listCloudWorkflows,
+        getCloudWorkflow,
+        warnRestoreFailed
+      } = setup()
+      cloudRows.set('wf-past-the-cut', 1)
+      listCloudWorkflows.mockImplementationOnce(async () =>
+        listing(entries, false)
+      )
 
-    expect(await selection.restoreTarget('wf-past-the-cut', () => true)).toBe(
-      true
-    )
+      expect(await selection.restoreTarget('wf-past-the-cut', () => true)).toBe(
+        true
+      )
 
-    expect(panel.selectedWorkflow).toBeNull()
-    expect(panel.targetUnavailable).toBe(false)
-    expect(warnRestoreFailed).not.toHaveBeenCalled()
-    expect(workflows.activeWorkflow?.path).toBe(current.path)
-  })
+      expect(panel.selectedWorkflow).toBeNull()
+      expect(panel.targetUnavailable).toBe(false)
+      expect(warnRestoreFailed).not.toHaveBeenCalled()
+      expect(workflows.activeWorkflow?.path).toBe(current.path)
+      expect(getCloudWorkflow.mock.calls.map(([id]) => id)).toEqual(lookups)
+    }
+  )
 
   it('reads a chat by its lookup when a reference request supersedes its listing', async () => {
     const { selection, panel, listCloudWorkflows, warnRestoreFailed } = setup()

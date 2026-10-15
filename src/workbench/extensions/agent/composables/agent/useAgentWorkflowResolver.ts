@@ -165,8 +165,9 @@ export function useAgentWorkflowResolver({
   function cloudListingStatus(
     workflowId: string
   ): 'listed' | 'omitted' | 'unknown' {
-    if (listing.value === null || !listing.value.complete) return 'unknown'
-    return listing.value.ids.has(workflowId) ? 'listed' : 'omitted'
+    if (listing.value === null) return 'unknown'
+    if (listing.value.ids.has(workflowId)) return 'listed'
+    return listing.value.complete ? 'omitted' : 'unknown'
   }
 
   /**

@@ -465,7 +465,7 @@ describe('Cloud listing completeness', () => {
       complete: true,
       statuses: ['listed', 'omitted']
     },
-    { walk: 'gave up early', complete: false, statuses: ['unknown', 'unknown'] }
+    { walk: 'gave up early', complete: false, statuses: ['listed', 'unknown'] }
   ])('carries that the listing $walk', async ({ complete, statuses }) => {
     const { resolver, listCloudWorkflows } = setup([])
     listCloudWorkflows.mockResolvedValueOnce(
