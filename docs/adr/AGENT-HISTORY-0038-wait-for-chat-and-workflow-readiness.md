@@ -84,7 +84,8 @@ The session's underlying data can hydrate while history remains visible; the
 panel must not use thread-ID changes alone as proof of navigation success.
 The Cloud listing can omit live, version-less drafts. An identity omitted from
 a complete listing needs a direct lifecycle lookup; only 404 establishes that it
-is gone. An incomplete, failed or superseded listing does not establish absence.
+is gone. An incomplete, failed or superseded listing establishes neither
+presence nor absence.
 
 ## Amendment (2026-10-06): Readable History with an Unresolved Target
 
