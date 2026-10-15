@@ -142,7 +142,9 @@ describe('buildPackSearchFallbacks', () => {
     'kijai/c',
     '',
     '   ',
-    'gguf '
+    'gguf ',
+    'euler  discrete',
+    ' euler \t discrete '
   ])('yields nothing for %j', (query) => {
     expect(buildPackSearchFallbacks(query)).toEqual([])
   })
