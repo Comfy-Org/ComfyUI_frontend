@@ -1,5 +1,7 @@
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 
+export type AttachmentValidationError = 'invalid-video' | 'unsupported-type'
+
 export interface ComposerAttachment {
   id: string
   name: string
@@ -9,5 +11,5 @@ export interface ComposerAttachment {
   mediaUrl?: string
   mediaKind?: MediaKind
   uploading?: boolean
-  validationError?: 'invalid-video'
+  validationError?: AttachmentValidationError
 }
