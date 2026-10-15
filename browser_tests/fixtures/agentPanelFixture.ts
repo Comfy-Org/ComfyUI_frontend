@@ -1,12 +1,15 @@
 import type { Page, Route } from '@playwright/test'
 
 import type {
+  AgentMessage,
+  AgentPostMessageRequest,
   AgentRunMode,
   AgentThreadListResponse,
   GlobalSetting,
   ListAssetsResponse,
   WorkflowListResponse
 } from '@comfyorg/ingest-types'
+import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
@@ -14,7 +17,10 @@ import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import type { AgentTurnAccepted } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type {
+  AgentThreadSummary,
+  AgentTurnAccepted
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { cloudAppFixture, waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
@@ -116,11 +122,18 @@ async function mockAgentBoot(
 
 export async function mockAgentTurnApi(
   page: Page,
-  turnAccepted: AgentTurnAccepted
-): Promise<void> {
+  turnAccepted: AgentTurnAccepted,
+  savedThread?: { thread: AgentThreadSummary; messages: AgentMessage[] }
+): Promise<AgentPostMessageRequest[]> {
+  const summaries = savedThread ? [savedThread.thread] : []
   const threads: AgentThreadListResponse = {
-    threads: [],
-    pagination: { has_more: false, limit: 100, offset: 0, total: 0 }
+    threads: summaries,
+    pagination: {
+      has_more: false,
+      limit: 100,
+      offset: 0,
+      total: summaries.length
+    }
   }
   const runMode: AgentRunMode = { mode: 'ask_approval', credit_limit: null }
   await page.route('**/api/experiment/models', (route) =>
@@ -132,9 +145,16 @@ export async function mockAgentTurnApi(
   await page.route('**/api/agent/run-mode', (route) =>
     route.fulfill(jsonRoute(runMode))
   )
-  await page.route('**/api/agent/threads/*/messages', (route) =>
-    route.fulfill(jsonRoute(turnAccepted))
-  )
+  const posted: AgentPostMessageRequest[] = []
+  await page.route('**/api/agent/threads/*/messages', (route) => {
+    const request = route.request()
+    if (savedThread && request.method() === 'GET')
+      return route.fulfill(jsonRoute(savedThread.messages))
+    if (request.method() === 'POST')
+      posted.push(zAgentPostMessageRequest.parse(request.postDataJSON()))
+    return route.fulfill(jsonRoute(turnAccepted))
+  })
+  return posted
 }
 
 export async function mockWorkflowPersistence(
