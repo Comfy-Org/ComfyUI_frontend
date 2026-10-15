@@ -15,26 +15,13 @@ import type {
   WorkflowReferenceMetadata,
   WorkflowReferenceOption
 } from '../../types/workflowReference'
-import type {
-  CloudWorkflowLifecycle,
-  useAgentWorkflowResolver
-} from './useAgentWorkflowResolver'
+import type { useAgentWorkflowResolver } from './useAgentWorkflowResolver'
 
 type RestorationOutcome =
   | { outcome: 'open'; target: ComfyWorkflow }
   | { outcome: 'unresolved' }
   | { outcome: 'deleted' }
   | { outcome: 'superseded' }
-
-function restorationOutcomeFor(
-  lifecycle: CloudWorkflowLifecycle,
-  target: ComfyWorkflow | null
-): RestorationOutcome {
-  if (lifecycle === 'gone') return { outcome: 'deleted' }
-  return target === null
-    ? { outcome: 'unresolved' }
-    : { outcome: 'open', target }
-}
 
 interface WorkflowSelectionOptions {
   resolver: ReturnType<typeof useAgentWorkflowResolver>
@@ -236,21 +223,34 @@ export function useAgentWorkflowSelection({
   ): Promise<RestorationOutcome> {
     await refreshCloudWorkflowIds()
     if (!isCurrent()) return { outcome: 'superseded' }
-    const target =
+    if (needsLifecycleLookup(workflowId)) {
+      const lifecycle = await cloudWorkflowLifecycle(workflowId)
+      if (!isCurrent()) return { outcome: 'superseded' }
+      if (lifecycle === 'gone') return { outcome: 'deleted' }
+    }
+    const known =
       boundOrOpenWorkflowFor(workflowId) ?? storedWorkflowFor(workflowId)
-    const listing = cloudListingStatus(workflowId)
-    if (listing === 'listed')
-      return target === null
-        ? { outcome: 'unresolved' }
-        : { outcome: 'open', target }
-    if (listing === 'unknown' && target !== null)
-      return { outcome: 'open', target }
-    const lifecycle = await cloudWorkflowLifecycle(workflowId)
+    if (known !== null) return { outcome: 'open', target: known }
+    await workflowStore.syncWorkflows()
     if (!isCurrent()) return { outcome: 'superseded' }
-    return restorationOutcomeFor(
-      lifecycle,
-      boundOrOpenWorkflowFor(workflowId) ?? storedWorkflowFor(workflowId)
-    )
+    const synced = storedWorkflowFor(workflowId)
+    return synced === null
+      ? { outcome: 'unresolved' }
+      : { outcome: 'open', target: synced }
+  }
+
+  function needsLifecycleLookup(workflowId: string): boolean {
+    switch (cloudListingStatus(workflowId)) {
+      case 'listed':
+        return false
+      case 'omitted':
+        return true
+      case 'unknown':
+        return (
+          boundOrOpenWorkflowFor(workflowId) === null &&
+          storedWorkflowFor(workflowId) === null
+        )
+    }
   }
 
   async function onWorkflowRestored(
@@ -278,21 +278,9 @@ export function useAgentWorkflowSelection({
       case 'open':
         return openRestoredWorkflow(resolved.target, workflowId, isCurrent)
       case 'unresolved':
-        return restoreUnresolvedWorkflow(workflowId, isCurrent)
+        panelStore.retainUnresolvedTarget()
+        return true
     }
-  }
-
-  async function restoreUnresolvedWorkflow(
-    workflowId: string,
-    isCurrent: () => boolean
-  ): Promise<boolean> {
-    await workflowStore.syncWorkflows()
-    if (!isCurrent()) return false
-    const target = storedWorkflowFor(workflowId)
-    if (target !== null)
-      return openRestoredWorkflow(target, workflowId, isCurrent)
-    panelStore.retainUnresolvedTarget()
-    return true
   }
 
   async function openRestoredWorkflow(
