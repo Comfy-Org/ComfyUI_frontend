@@ -11,9 +11,7 @@ const nodeGraphWorkflow = join(
 /** Mock pages a designer shares from a pull request preview. */
 export const DESIGN_PREVIEW_ROUTES = [
   '/hub-preview/node-graph-workflow',
-  '/zh-CN/hub-preview/node-graph-workflow',
-  '/hub-preview/node-graph-workflow-api',
-  '/zh-CN/hub-preview/node-graph-workflow-api'
+  '/zh-CN/hub-preview/node-graph-workflow'
 ].map((pattern) => ({ pattern, entrypoint: nodeGraphWorkflow }))
 
 export function isDesignPreviewBuild(

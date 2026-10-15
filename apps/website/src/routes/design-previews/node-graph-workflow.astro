@@ -1,14 +1,7 @@
 ---
 import WorkflowNodeGraphPage from '@/components/workshop/WorkflowNodeGraphPage.vue'
 import BaseLayout from '@/layouts/BaseLayout.astro'
-import {
-  nodeGraphWorkflowSample,
-  nodeGraphWorkflowWithApiSample
-} from '@/lib/hub/node-graph-workflow'
-
-const workflow = Astro.url.pathname.includes('node-graph-workflow-api')
-  ? nodeGraphWorkflowWithApiSample
-  : nodeGraphWorkflowSample
+import { nodeGraphWorkflowSample as workflow } from '@/lib/hub/node-graph-workflow'
 ---
 
 <BaseLayout

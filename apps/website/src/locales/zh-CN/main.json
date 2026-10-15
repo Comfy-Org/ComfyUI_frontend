@@ -4500,18 +4500,9 @@
   },
   "workshop": {
     "nodeGraph": {
-      "badge": "节点图",
-      "runTitle": "在 ComfyUI 中运行",
-      "runBody": "此工作流使用的节点和模型无法在本页运行。你可以在 Comfy Cloud 中打开，无需安装；也可以下载后在本地的 ComfyUI 中运行。",
-      "models": "模型",
-      "tryCloud": "在 Comfy Cloud 中试用",
-      "download": "下载工作流",
-      "downloadHint": "JSON 文件。将其拖到 ComfyUI 画布上即可打开。",
-      "about": "关于此工作流",
       "graphHint": "节点图的只读预览。在 Comfy Cloud 中打开或下载后即可编辑节点。",
       "previewNotice": "使用示例数据的设计预览。此页面不在 Hub 上。",
-      "apiTitle": "通过代码使用此工作流",
-      "apiHint": "使用你的 API 密钥，将此工作流的 API 版本发送到 Comfy Cloud。"
+      "runsWhere": "在 ComfyUI 中运行"
     },
     "api": {
       "body": "使用试用区的输入调用 Comfy Router。运行前请设置 COMFY_API_KEY，并检查本地文件路径。",
