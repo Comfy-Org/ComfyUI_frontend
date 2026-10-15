@@ -500,47 +500,51 @@ function agentThreadList(
   }
 }
 
-function stubHistoryWithWorkflowListing(
-  listingStatus: number | Promise<number>
-): void {
-  vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
-    const url = String(input)
-
-    if (url.includes('/messages'))
-      return json(200, [
-        {
-          id: 'history-user',
-          thread_id: 'th-history',
-          seq: 1,
-          role: 'user',
-          status: 'complete',
-          turn_id: 'history-turn',
-          workflow_id: 'wf-gone',
-          content: { text: 'Historical prompt' }
-        }
-      ] satisfies AgentMessages)
-    if (url.includes('/agent/threads'))
-      return json(
-        200,
-        agentThreadList([
-          agentThread({
-            id: 'th-history',
-            title: 'Earlier chat',
-            last_message_at: '2026-09-01T00:00:00Z'
-          })
-        ])
-      )
-    if (url.includes('/workflows/wf-gone')) {
-      const status = await listingStatus
-      return json(status === 200 ? 404 : status, {})
-    }
-    if (url.includes('/workflows'))
-      return json(await listingStatus, {
-        data: [],
-        pagination: { offset: 0, limit: 100, total: 0, has_more: false }
-      })
-    return json(200, {})
-  })
+function stubHistoryWithWorkflowListing({
+  listing,
+  lookup
+}: {
+  listing: number | Promise<number>
+  lookup: number | Promise<number>
+}): void {
+  respondToFetch({ method: 'GET', url: /\/agent\/threads/ }, () =>
+    json(
+      200,
+      agentThreadList([
+        agentThread({
+          id: 'th-history',
+          title: 'Earlier chat',
+          last_message_at: '2026-09-01T00:00:00Z'
+        })
+      ])
+    )
+  )
+  respondToFetch({ method: 'GET', url: /\/messages/ }, () =>
+    json(200, [
+      {
+        id: 'history-user',
+        thread_id: 'th-history',
+        seq: 1,
+        role: 'user',
+        status: 'complete',
+        turn_id: 'history-turn',
+        workflow_id: 'wf-gone',
+        content: { text: 'Historical prompt' }
+      }
+    ] satisfies AgentMessages)
+  )
+  respondToFetch({ method: 'GET', url: /\/workflows/ }, async () =>
+    json(await listing, {
+      data: [],
+      pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+    })
+  )
+  respondToFetch({ method: 'GET', url: /\/workflows\/wf-gone/ }, async () =>
+    json(await lookup, {})
+  )
+  respondToFetch({ method: 'GET', url: /\/assets/ }, () =>
+    json(200, { assets: [], total: 0, has_more: false })
+  )
 }
 
 function ack(workflowId: string, messageId = 'm-1') {
@@ -6920,7 +6924,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
   it('opens a history chat whose workflow the Cloud no longer lists and marks its target unavailable', async () => {
     makeTab('wf-42')
-    stubHistoryWithWorkflowListing(200)
+    stubHistoryWithWorkflowListing({ listing: 200, lookup: 404 })
     renderWithSelectedTarget()
     await userEvent.click(
       screen.getByRole('button', {
@@ -6971,6 +6975,7 @@ describe('AgentPanelRoot workflow binding', () => {
     {
       listing: 'omits the workflow',
       listingStatus: 200,
+      lookupStatus: 404,
       notices: [i18n.global.t('agent.targetWorkflowUnavailable')],
       toasts: [],
       current: 'th-history'
@@ -6978,17 +6983,21 @@ describe('AgentPanelRoot workflow binding', () => {
     {
       listing: 'fails',
       listingStatus: 500,
+      lookupStatus: 500,
       notices: [],
       toasts: [i18n.global.t('agent.targetWorkflowOpenFailed')],
       current: null
     }
   ])(
     'restores a stored chat on startup when the workflow listing $listing',
-    async ({ listingStatus, notices, toasts, current }) => {
+    async ({ listingStatus, lookupStatus, notices, toasts, current }) => {
       makeTab('wf-42')
       useAgentConversationStore().setThreadId('th-history')
       localStorage.setItem(StorageKeys.agentThread('personal'), 'th-history')
-      stubHistoryWithWorkflowListing(listingStatus)
+      stubHistoryWithWorkflowListing({
+        listing: listingStatus,
+        lookup: lookupStatus
+      })
       render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
       await screen.findAllByText('Historical prompt')
@@ -7048,7 +7057,7 @@ describe('AgentPanelRoot workflow binding', () => {
     makeTab('wf-42')
     useAgentConversationStore().setThreadId('th-history')
     localStorage.setItem(StorageKeys.agentThread('personal'), 'th-history')
-    stubHistoryWithWorkflowListing(listing)
+    stubHistoryWithWorkflowListing({ listing, lookup: 500 })
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await screen.findAllByText('Historical prompt')
     await userEvent.click(
@@ -8837,7 +8846,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
   function openDeletedTargetChatAtStartup(): void {
     localStorage.setItem(StorageKeys.agentThread('personal'), 'th-history')
-    stubHistoryWithWorkflowListing(200)
+    stubHistoryWithWorkflowListing({ listing: 200, lookup: 404 })
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
   }
 
@@ -8855,7 +8864,8 @@ describe('AgentPanelRoot workflow binding', () => {
   it('activates a tab for the history chat that is still loading', async () => {
     makeTab('wf-42')
     await startCurrentChat()
-    stubHistoryWithWorkflowListing(new Promise<number>(() => {}))
+    const unanswered = new Promise<number>(() => {})
+    stubHistoryWithWorkflowListing({ listing: unanswered, lookup: unanswered })
     await userEvent.click(
       screen.getByRole('button', {
         name: i18n.global.t('agent.showChatHistory')
@@ -8887,7 +8897,7 @@ describe('AgentPanelRoot workflow binding', () => {
   it('activates a tab for the chat that History opened over after its startup restoration failed', async () => {
     makeTab('wf-42')
     useAgentConversationStore().setThreadId('th-history')
-    stubHistoryWithWorkflowListing(500)
+    stubHistoryWithWorkflowListing({ listing: 500, lookup: 500 })
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await screen.findAllByText('Historical prompt')
     await vi.waitFor(() =>
@@ -8927,7 +8937,7 @@ describe('AgentPanelRoot workflow binding', () => {
     const listing = new Promise<number>((resolve) => {
       finishListing = resolve
     })
-    stubHistoryWithWorkflowListing(listing)
+    stubHistoryWithWorkflowListing({ listing, lookup: 500 })
     await userEvent.click(
       screen.getByRole('button', {
         name: i18n.global.t('agent.showChatHistory')
@@ -8974,7 +8984,7 @@ describe('AgentPanelRoot workflow binding', () => {
     const listing = new Promise<number>((resolve) => {
       finishListing = resolve
     })
-    stubHistoryWithWorkflowListing(listing)
+    stubHistoryWithWorkflowListing({ listing, lookup: 500 })
     await userEvent.click(
       screen.getByRole('button', {
         name: i18n.global.t('agent.showChatHistory')
