@@ -41,8 +41,10 @@ function mouseDown(event: MouseEvent) {
   const { dispose } = whileMouseDown(
     event,
     () => {
+      const firstRepeat = !pointerRepeating
       pointerRepeating = true
       void item.command?.({ originalEvent: event, item })
+      if (firstRepeat) emit('activate', item)
     },
     item.pressAndHoldInterval
   )
@@ -59,12 +61,7 @@ function select(event: Event) {
     event.preventDefault()
     return
   }
-  if (item.checked !== undefined) {
-    event.preventDefault()
-    void item.command({ originalEvent: event, item })
-    emit('activate', item)
-    return
-  }
+  if (item.checked !== undefined) event.preventDefault()
   void item.command({ originalEvent: event, item })
   emit('activate', item)
   if (event.defaultPrevented) return

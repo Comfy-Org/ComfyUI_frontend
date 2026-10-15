@@ -83,14 +83,15 @@ function onLogoMenuClick() {
   })
 }
 
-const EXTRA_ITEM_BUTTON_IDS: Record<string, string> = {
+const EXTRA_ITEM_BUTTON_IDS: Partial<Record<string, string>> = {
   'browse-templates': 'comfy_menu_browse_templates_clicked',
   'manage-extensions': 'comfy_menu_manage_extensions_clicked'
 }
 
 function commandButtonId(commandId: string) {
-  const isCoreCommand = commandStore.getCommand(commandId)?.source === 'System'
-  return `comfy_menu_${isCoreCommand ? snakeCase(commandId) : 'extension_command'}_clicked`
+  if (commandStore.getCommand(commandId)?.source !== 'System')
+    return 'comfy_menu_extension_command_clicked'
+  return `comfy_menu_${snakeCase(commandId)}_clicked`
 }
 
 function menuItemButtonId(item: AppMenuItem) {

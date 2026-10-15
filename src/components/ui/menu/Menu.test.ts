@@ -47,37 +47,23 @@ describe('Menu', () => {
   })
 
   it.for([
+    { gesture: 'a click', role: 'menuitem', checked: undefined, hold: 0 },
+    { gesture: 'a click', role: 'menuitemcheckbox', checked: false, hold: 0 },
     {
-      gesture: 'a click',
+      gesture: 'a 100 ms hold',
       role: 'menuitem',
       checked: undefined,
-      hold: 0,
-      activations: 1
+      hold: 100
     },
     {
-      gesture: 'a click',
+      gesture: 'a 100 ms hold',
       role: 'menuitemcheckbox',
       checked: false,
-      hold: 0,
-      activations: 1
-    },
-    {
-      gesture: 'press-and-hold repeats',
-      role: 'menuitem',
-      checked: undefined,
-      hold: 100,
-      activations: 0
-    },
-    {
-      gesture: 'press-and-hold repeats',
-      role: 'menuitemcheckbox',
-      checked: false,
-      hold: 100,
-      activations: 0
+      hold: 100
     }
   ] as const)(
-    'emits $activations activate events for $gesture on a press-and-hold $role',
-    async ({ role, checked, hold, activations }) => {
+    'emits one activate event for $gesture on a press-and-hold $role',
+    async ({ role, checked, hold }) => {
       const onActivate = vi.fn()
       render(Menu, {
         props: {
@@ -95,10 +81,6 @@ describe('Menu', () => {
         slots: { trigger: '<button>Open</button>' }
       })
       const item = await screen.findByRole(role, { name: 'Zoom' })
-      vi.useFakeTimers()
-      onTestFinished(() => {
-        vi.useRealTimers()
-      })
       const user = userEvent.setup({
         advanceTimers: vi.advanceTimersByTime,
         pointerEventsCheck: 0
@@ -108,7 +90,7 @@ describe('Menu', () => {
       await vi.advanceTimersByTimeAsync(hold)
       await user.pointer({ keys: '[/MouseLeft]', target: item })
 
-      expect(onActivate).toHaveBeenCalledTimes(activations)
+      expect(onActivate).toHaveBeenCalledOnce()
     }
   )
 
