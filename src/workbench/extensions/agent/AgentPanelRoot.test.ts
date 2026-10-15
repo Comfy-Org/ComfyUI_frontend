@@ -5624,6 +5624,34 @@ describe('AgentPanelRoot history', () => {
       ).rejects.toThrow()
       expect(useAgentConversationStore().threadId).toBe('th-open')
     })
+
+    it('keeps the user on the activated tab when the followed chat last ran on another', async () => {
+      const first = addTab('workflows/first.json')
+      const second = addTab('workflows/second.json')
+      workflowStore.activeWorkflow = first
+      stubWorkflowBoundHistory(
+        [
+          agentThread({
+            id: 'th-second',
+            title: 'Second chat',
+            last_message_at: '2026-09-22T10:00:00Z',
+            workflow_id: 'wf-second'
+          })
+        ],
+        { 'th-second': { workflowId: 'wf-first' } }
+      )
+
+      renderWithSelectedTarget()
+      workflowStore.activeWorkflow = second
+      await vi.waitFor(() =>
+        expect(userPrompts()).toEqual(['Prompt in th-second'])
+      )
+      await settle()
+
+      expect(workflowStore.activeWorkflow.path).toBe(second.path)
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(second.path)
+      expect(useAgentConversationStore().threadId).toBe('th-second')
+    })
   })
 
   describe('history row title for the active chat', () => {

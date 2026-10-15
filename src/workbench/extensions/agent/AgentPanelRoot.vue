@@ -849,7 +849,7 @@ const {
     initialize: agentPanelStore.initializeTargetTracking,
     current: targetWorkflowTurnContext,
     adopted: onWorkflowAdopted,
-    restored: onWorkflowRestored,
+    restored: restoreChatWorkflow,
     prepare: async () => {
       try {
         await refreshCloudWorkflowIds()
@@ -1508,6 +1508,7 @@ const historyGroups = computed(() => {
  * satisfied or the user picks a chat themselves.
  */
 const followOwed = ref(false)
+let followedChat: { threadId: string; workflowId: string } | null = null
 
 async function selectThread(
   id: string,
@@ -1538,6 +1539,7 @@ async function onSelectHistory(
   isCurrent: () => boolean
 ): Promise<boolean> {
   followOwed.value = false
+  followedChat = null
   return selectThread(id, isCurrent)
 }
 
@@ -1564,9 +1566,28 @@ function followActiveWorkflowChat(): void {
   if (matchingThread === undefined) return
   followOwed.value = false
   if (matchingThread.id === threadId.value) return
+  void openFollowedChat(matchingThread.id, workflowId)
+}
+
+// The chat was opened for the tab the user is on, so that tab is its
+// workflow, even when its transcript last ran on another one.
+function restoreChatWorkflow(
+  workflowId: string | undefined,
+  isCurrent: () => boolean
+): Promise<boolean> {
+  const followed =
+    followedChat?.threadId === conversationStore.threadId
+      ? followedChat.workflowId
+      : undefined
+  return onWorkflowRestored(followed ?? workflowId, isCurrent)
+}
+
+async function openFollowedChat(id: string, workflowId: string): Promise<void> {
+  followedChat = { threadId: id, workflowId }
   // Following the active tab carries no navigation intent to invalidate;
   // loadThread's own generation guard already drops a superseded load.
-  void selectThread(matchingThread.id, () => true)
+  await selectThread(id, () => true)
+  if (followedChat?.threadId === id) followedChat = null
 }
 
 // Synchronous, so a tab the panel is opening itself is still recognised as
