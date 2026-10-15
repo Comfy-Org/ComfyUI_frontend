@@ -55,10 +55,11 @@ function main(args: string[], repoRoot: string) {
   const write = args.includes('--write')
   const files = readProject(repoRoot)
   const findings = findInheritedClasses(files)
-  const byFile = groupByFile(findings)
   process.stdout.write(findings.map(formatFinding).join(''))
+  const counted = write ? findings.filter((finding) => finding.edit) : findings
+  const byFile = groupByFile(counted)
   if (write) removeFindings(repoRoot, files, byFile)
-  process.stdout.write(summarize(findings, byFile.size, write))
+  process.stdout.write(summarize(counted, byFile.size, write))
 }
 
 if (import.meta.main)
