@@ -1399,6 +1399,13 @@ const historyGroups = computed(() => {
   )
 })
 
+function abandonPendingChatWork(): void {
+  ++activeTabGeneration
+  composerStore.invalidateSubmission()
+  cancelWorkflowSelection()
+  canvasStore.stopNodePicking()
+}
+
 async function onSelectHistory(
   id: string,
   isCurrent: () => boolean
@@ -1406,11 +1413,8 @@ async function onSelectHistory(
   if (currentChatReady.value && id === threadId.value)
     return onShowTarget(isCurrent, warnRestoreFailed)
 
-  ++activeTabGeneration
-  composerStore.invalidateSubmission()
-  cancelWorkflowSelection()
+  abandonPendingChatWork()
   agentPanelStore.beginWorkflowRestoration()
-  canvasStore.stopNodePicking()
   const opened = await loadThread(id, isCurrent)
   if (opened)
     useTelemetry()?.trackAgentThreadStarted({ source: 'history_select' })
@@ -1574,10 +1578,7 @@ function onDeleteHistory(id: string): void {
 }
 
 function onNewChat(source?: 'new_chat_button' | 'history_delete'): void {
-  ++activeTabGeneration
-  composerStore.invalidateSubmission()
-  cancelWorkflowSelection()
-  canvasStore.stopNodePicking()
+  abandonPendingChatWork()
   composerStore.setWorkflowReferences([])
   composerStore.resetPromptHistory()
   newChat(source)
