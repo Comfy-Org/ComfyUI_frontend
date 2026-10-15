@@ -80,6 +80,7 @@ const bottomGracePx = 16
 const followIntentTolerancePx = 1
 let pendingProgrammaticScroll: { target: number; frame: number } | undefined
 let pendingConversationId: string | undefined
+let pausedTraceId: string | undefined
 
 const top = ref<HTMLElement>()
 const atTop = ref(true)
@@ -128,14 +129,16 @@ useEventListener(scrollContainer, 'touchstart', handleUserScrollInput, {
 
 onBeforeUnmount(clearPendingProgrammaticScroll)
 
-function pauseFollowingForTrace(): void {
+function pauseFollowingForTrace(traceId: string): void {
   clearPendingProgrammaticScroll()
+  pausedTraceId = traceId
   followIntent.value = 'paused'
 }
 
-function resumeFollowingAfterTrace(): void {
+function resumeFollowingAfterTrace(traceId: string): void {
   const element = scrollContainer.value
-  if (followIntent.value !== 'paused' || !element) return
+  if (followIntent.value !== 'paused' || traceId !== pausedTraceId || !element)
+    return
   followIntent.value = measureAtBottom(element) ? 'latest' : 'reading'
 }
 
