@@ -591,6 +591,10 @@ async function activateTabAsUser(tab: ComfyWorkflow): Promise<void> {
   await useWorkflowService().openWorkflow(tab, { initiator: 'user' })
 }
 
+async function settleFollow(): Promise<void> {
+  await setImmediate()
+}
+
 function addTab(
   path: string,
   overrides: Partial<LoadedComfyWorkflow> = {}
@@ -5269,15 +5273,10 @@ describe('AgentPanelRoot history', () => {
     await vi.waitFor(() =>
       expect(useAgentChatHistoryStore().sessions).toHaveLength(2)
     )
-    // A mount is not an activation. The panel remounts on every minimize and
-    // restore, and adopting the tab's older chat there would throw away the
-    // chat the user had open.
     expect(useAgentConversationStore().threadId).toBeNull()
 
-    // Activated while the cloud ids are still in flight, so the follow has
-    // nothing to match on yet.
     await activateTabAsUser(second)
-    await nextTick()
+    await settleFollow()
     expect(useAgentConversationStore().threadId).toBeNull()
 
     resolveWorkflows()
@@ -5358,21 +5357,6 @@ describe('AgentPanelRoot history', () => {
       return { loadedThreads, listCalls: () => listCalls }
     }
 
-    async function settle(): Promise<void> {
-      for (let i = 0; i < 5; i++) await nextTick()
-    }
-
-    async function settleFollow(): Promise<void> {
-      await setImmediate()
-    }
-
-    /**
-     * How long an armed follow is given to land. Pinned by the positive
-     * control below, so the test that asserts a follow does *not* land is
-     * waiting a proven-sufficient window rather than an arbitrary one.
-     */
-    const FOLLOW_LANDS_WITHIN_MS = 1000
-
     function userPrompts(): string[] {
       return useAgentConversationStore().entries.flatMap((entry) =>
         entry.role === 'user' ? [entry.text] : []
@@ -5402,7 +5386,7 @@ describe('AgentPanelRoot history', () => {
       )
 
       await activateTabAsUser(second)
-      await settle()
+      await settleFollow()
 
       expect(useAgentConversationStore().threadId).toBe('th-first')
       expect(userPrompts()).toEqual(['Prompt in th-first'])
@@ -5444,12 +5428,10 @@ describe('AgentPanelRoot history', () => {
       await vi.waitFor(() =>
         expect(useAgentConversationStore().threadId).toBe('th-other')
       )
-      // The selection's own refreshHistory is what used to re-assert the tab's
-      // thread, so the assertion has to wait for that refresh to land.
       await vi.waitFor(() =>
         expect(listCalls()).toBeGreaterThan(callsBeforeSelect)
       )
-      await settle()
+      await settleFollow()
 
       expect(useAgentConversationStore().threadId).toBe('th-other')
       expect(loadedThreads).toEqual(['th-first', 'th-other'])
@@ -5765,11 +5747,8 @@ describe('AgentPanelRoot history', () => {
 
       await activateTabAsUser(scratch)
 
-      await expect(
-        vi.waitFor(() => expect(loadedThreads).toContain('th-second'), {
-          timeout: FOLLOW_LANDS_WITHIN_MS
-        })
-      ).rejects.toThrow()
+      await settleFollow()
+      expect(loadedThreads).not.toContain('th-second')
       expect(useAgentConversationStore().threadId).toBeNull()
     })
 
@@ -6013,11 +5992,8 @@ describe('AgentPanelRoot history', () => {
         expect(workflowStore.activeWorkflow?.path).toBe(second.path)
       )
 
-      await expect(
-        vi.waitFor(() => expect(loadedThreads).toContain('th-newest'), {
-          timeout: FOLLOW_LANDS_WITHIN_MS
-        })
-      ).rejects.toThrow()
+      await settleFollow()
+      expect(loadedThreads).not.toContain('th-newest')
       expect(useAgentConversationStore().threadId).toBe('th-picked')
       expect(loadedThreads).toEqual(['th-picked'])
     })
@@ -6064,11 +6040,8 @@ describe('AgentPanelRoot history', () => {
         expect(workflowStore.activeWorkflow?.path).toBe(first.path)
       )
 
-      await expect(
-        vi.waitFor(() => expect(loadedThreads).toContain('th-newest'), {
-          timeout: FOLLOW_LANDS_WITHIN_MS
-        })
-      ).rejects.toThrow()
+      await settleFollow()
+      expect(loadedThreads).not.toContain('th-newest')
       expect(useAgentConversationStore().threadId).toBe('th-open')
     })
 
@@ -6093,7 +6066,7 @@ describe('AgentPanelRoot history', () => {
       await vi.waitFor(() =>
         expect(userPrompts()).toEqual(['Prompt in th-second'])
       )
-      await settle()
+      await settleFollow()
 
       expect(workflowStore.activeWorkflow.path).toBe(second.path)
       expect(useAgentPanelStore().selectedWorkflow?.path).toBe(second.path)
