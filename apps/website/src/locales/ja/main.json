@@ -2077,6 +2077,7 @@
     "company": "会社情報",
     "contact": "お問い合わせ",
     "enterpriseMsa": "エンタープライズMSA",
+    "fishAudio": "Fish Audio",
     "flux3": "Flux 3",
     "geminiOmni": "Gemini Omni 1.1 Flash",
     "language": "言語",
@@ -2088,6 +2089,7 @@
     "modelCatalogue": "ComfyUIモデル",
     "models": "モデル",
     "nanoBanana": "Nano Banana 2.1",
+    "nvidiaVfx": "Nvidia VFX",
     "press": "プレス",
     "privacyPolicy": "プライバシーポリシー",
     "products": "製品",
@@ -2674,7 +2676,13 @@
     "tagFree": "無料",
     "tagPremium": "プレミアム",
     "clipSeconds": "({seconds}秒)",
-    "voices": "ボイス："
+    "voices": "ボイス：",
+    "beforeAfter": {
+      "tabsLabel": "比較",
+      "sliderLabel": "比較スライダー",
+      "before": "処理前",
+      "after": "処理後"
+    }
   },
   "modelRelease": {
     "eyebrow": "新モデルリリース",
@@ -2997,6 +3005,51 @@
     "workspacesLoading": "ワークスペースを読み込み中…",
     "x": "X",
     "youtube": "YouTube"
+  },
+  "nvidiaRtx": {
+    "meta": {
+      "title": "ComfyUI用Nvidia VFXノード",
+      "description": "Nvidia RTXテクノロジーによる3つのComfyUIノード。超高速のビデオ超解像、フレーム生成、SDRからHDRへの変換を実現します。"
+    },
+    "breadcrumb": {
+      "model": "NVIDIA VFX",
+      "updated": "2026年10月更新"
+    },
+    "hero": {
+      "title": "Nvidia VFXノード",
+      "description": "Nvidia RTXテクノロジーによる3つのカスタムノード。超高速のビデオ超解像、フレーム生成、SDRからHDRへの変換を実現します。VFXアーティストとプロの映像クリエイターのために設計されています。",
+      "tagUpscale": "最大4倍の超解像",
+      "tagFrameRate": "最大16倍のフレームレート",
+      "tagSdrToHdr": "SDRからHDRへ",
+      "primaryCta": "Comfy Cloudで試す",
+      "secondaryCta": "ドキュメントを見る"
+    },
+    "beforeAfter": {
+      "heading": "1つのクリップ、2つの状態。",
+      "body": "片側にソース、もう片側に出力を表示します。ラインをドラッグしてフレームごとに比較できます。"
+    },
+    "gallery": {
+      "heading": "NVIDIA RTXで制作"
+    },
+    "steps": {
+      "heading": "ローカルで実行したい方へ",
+      "step": "ステップ",
+      "primaryCta": "デスクトップ版をダウンロード"
+    },
+    "faq": {
+      "heading": "Q&A"
+    },
+    "runOptions": {
+      "heading": "1つのエンジン、あらゆる実行方法",
+      "subtitle": "今すぐRTX搭載PCで実行。ジョブがローカルの処理能力を超えたら、同じワークフローをComfy CloudやAPIに移行できます。",
+      "cta": "詳しくはこちら"
+    },
+    "reviews": {
+      "heading": "400万人以上のComfyクリエイターの声",
+      "highlightTitle": "COMFY AGENT",
+      "highlightDescription": "Comfy Desktopで利用可能。やりたいことを記述すると、ワークフローの計画、構築、実行を並走してサポートします。すべてのステップがキャンバスに残るため、いつでも調整できます。",
+      "highlightCta": "Comfy Desktopで試す"
+    }
   },
   "payment": {
     "failed": {
