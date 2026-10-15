@@ -234,14 +234,14 @@ export const flux3ImagePage: ModelLaunchPage = {
       {
         id: 'partner-node',
         question: {
-          en: 'Is FLUX 3 Image Klein the same as the Flux 3 Image Partner Node in ComfyUI?',
+          en: 'Is FLUX 3 Image Klein the same as the FLUX 3 Image Partner Node in ComfyUI?',
           'zh-CN':
-            'FLUX 3 Image Klein 与 ComfyUI 中的 Flux 3 Image Partner Node 是同一个东西吗？'
+            'FLUX 3 Image Klein 与 ComfyUI 中的 FLUX 3 Image Partner Node 是同一个东西吗？'
         },
         answer: {
-          en: 'No. The Flux 3 Image Partner Node calls Black Forest Labs’ hosted API and runs the larger FLUX 3 Image model. FLUX 3 Image Klein is the open-weights model you download and run yourself, locally or on Comfy Cloud. Both are available in ComfyUI.',
+          en: 'No. The FLUX 3 Image Partner Node calls Black Forest Labs’ hosted API and runs the larger FLUX 3 Image model. FLUX 3 Image Klein is the open-weights model you download and run yourself, locally or on Comfy Cloud. Both are available in ComfyUI.',
           'zh-CN':
-            '不是。Flux 3 Image Partner Node 调用 Black Forest Labs 托管的 API，运行的是规模更大的 FLUX 3 Image 模型。FLUX 3 Image Klein 则是开放权重模型，由你自行下载，在本地或 Comfy Cloud 上运行。两者在 ComfyUI 中均可使用。'
+            '不是。FLUX 3 Image Partner Node 调用 Black Forest Labs 托管的 API，运行的是规模更大的 FLUX 3 Image 模型。FLUX 3 Image Klein 则是开放权重模型，由你自行下载，在本地或 Comfy Cloud 上运行。两者在 ComfyUI 中均可使用。'
         }
       },
       {
