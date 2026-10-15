@@ -159,3 +159,12 @@ changes the boot warning described under Negative consequences. A restoration
 that cannot open its workflow now reports "Couldn’t open the target workflow."
 A workflow absent from a successful Cloud listing shows an in-chat notice
 instead of a toast.
+
+## Amendment (2026-10-15): Only a lookup 404 marks a workflow gone
+
+[AGENT-HISTORY-0038](AGENT-HISTORY-0038-wait-for-chat-and-workflow-readiness.md)
+narrows the notice in the amendment above. Only a 404 from the direct lifecycle
+lookup marks a workflow gone and shows the in-chat notice. Absence from the
+Cloud listing alone does not, because the listing can omit live, version-less
+drafts. When Cloud confirms the workflow live but no local tab resolves, as with
+a refused binding, the chat opens readable without a target.
