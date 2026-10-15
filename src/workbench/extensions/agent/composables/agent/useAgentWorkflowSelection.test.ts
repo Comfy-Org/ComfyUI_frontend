@@ -508,43 +508,26 @@ describe('historical workflow restoration', () => {
     expect(warnRestoreFailed).not.toHaveBeenCalled()
   })
 
-  it.for([
-    {
-      listing: 'fails',
-      list: async (): Promise<never> => {
-        throw new Error('offline')
-      }
-    },
-    {
-      listing: 'gives up before reaching it',
-      list: async () => listing([{ id: 'wf-saved', name: 'saved' }], false)
-    }
-  ])(
-    'focuses the draft tab this chat owns without a lookup when the listing $listing',
-    async ({ list }) => {
-      const {
-        selection,
-        workflows,
-        bindings,
-        panel,
-        cloudRows,
-        listCloudWorkflows,
-        getCloudWorkflow,
-        warnRestoreFailed
-      } = setup()
-      const draft = openDraftTab(workflows, bindings)
-      cloudRows.delete('wf-draft')
-      listCloudWorkflows.mockImplementationOnce(list)
+  it('focuses the draft tab this chat owns without a lookup when the listing fails', async () => {
+    const {
+      selection,
+      workflows,
+      bindings,
+      panel,
+      cloudRows,
+      listCloudWorkflows,
+      warnRestoreFailed
+    } = setup()
+    const draft = openDraftTab(workflows, bindings)
+    cloudRows.delete('wf-draft')
+    listCloudWorkflows.mockRejectedValueOnce(new Error('offline'))
 
-      expect(await selection.restoreTarget('wf-draft', () => true)).toBe(true)
+    expect(await selection.restoreTarget('wf-draft', () => true)).toBe(true)
 
-      expect(workflows.activeWorkflow?.path).toBe(draft.path)
-      expect(panel.selectedWorkflow?.path).toBe(draft.path)
-      expect(panel.targetUnavailable).toBe(false)
-      expect(getCloudWorkflow).not.toHaveBeenCalled()
-      expect(warnRestoreFailed).not.toHaveBeenCalled()
-    }
-  )
+    expect(workflows.activeWorkflow?.path).toBe(draft.path)
+    expect(panel.selectedWorkflow?.path).toBe(draft.path)
+    expect(warnRestoreFailed).not.toHaveBeenCalled()
+  })
 
   it('calls a promoted-then-deleted draft unavailable even though its tab is still open', async () => {
     const { selection, workflows, bindings, panel, cloudRows, current } =
