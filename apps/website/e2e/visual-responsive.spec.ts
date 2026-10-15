@@ -54,8 +54,9 @@ test.describe('Home', { tag: '@visual' }, () => {
           has: page.getByRole('heading', { name: /The AI creation/i })
         })
         await expect(section).toBeVisible()
-        await section.scrollIntoViewIfNeeded()
-        await expect(page).toHaveScreenshot(`home-product-cards-${vp.name}.png`)
+        await expect(section).toHaveScreenshot(
+          `home-product-cards-${vp.name}.png`
+        )
       })
 
       test('get-started screenshot', async ({ page }) => {
