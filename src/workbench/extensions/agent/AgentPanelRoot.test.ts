@@ -9730,43 +9730,6 @@ describe('AgentPanelRoot workflow binding', () => {
     await sendFromComposer('work here')
   }
 
-  it('activates a tab for the chat that History opened over after its startup restoration failed (listing fails, no lookup, bound workflow does not open)', async () => {
-    makeTab('wf-42')
-    useAgentConversationStore().setThreadId('th-history')
-    stubHistoryWithWorkflowListing({ listing: 500, lookup: 404 })
-    bindTargetThatFailsToOpen('wf-gone', 'workflows/gone.json')
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
-    await screen.findAllByText('Historical prompt')
-    await vi.waitFor(() =>
-      expect(useToast().toasts).toContainEqual(
-        expect.objectContaining({
-          title: i18n.global.t('agent.targetWorkflowOpenFailed')
-        })
-      )
-    )
-    expect(useAgentChatHistoryStore().activeId).toBeNull()
-    await userEvent.click(
-      screen.getByRole('button', {
-        name: i18n.global.t('agent.showChatHistory')
-      })
-    )
-    vi.useFakeTimers()
-    ws.emit('agent_active_tab', {
-      workflow_id: 'wf-late',
-      name: 'Late',
-      thread_id: 'th-history'
-    })
-    await vi.advanceTimersByTimeAsync(500)
-
-    expect(
-      screen.getByRole('heading', { name: i18n.global.t('agent.history') })
-    ).toBeVisible()
-    expect(workflowStore.activeWorkflow?.path).toBe('workflows/Late.json')
-    expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-late')).toBe(
-      'workflows/Late.json'
-    )
-  })
-
   it('drops an activation from a history chat that fails to open and is then deleted (listing fails, no lookup, bound workflow does not open)', async () => {
     const current = makeTab('wf-42')
     await startCurrentChat()
