@@ -45,83 +45,83 @@ when it runs, and which saved or queued bytes it affects.
 This index gives the usual destination. Follow the detailed recipe whenever the
 row names more than one destination or changes saved workflow topology.
 
-| Legacy surface                                     | Published destination                                                                  |
-| -------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| `app.registerExtension(...)`                       | Split registration across `comfy.defs`, `settings`, `commands`, UI, and lifecycle APIs |
-| `beforeRegisterNodeDef`                            | `comfy.defs.extend(selector, builder => ...)`                                          |
-| `nodeType.prototype.onNodeCreated`                 | `builder.onCreated()`                                                                  |
-| `nodeType.prototype.onConfigure`                   | `builder.onConfigured()`                                                               |
-| `nodeType.prototype.onExecuted`                    | `builder.onExecuted()`                                                                 |
-| `nodeType.prototype.onRemoved`                     | `builder.onRemoved()`                                                                  |
-| `nodeType.prototype.onConnectionsChange`           | `builder.onConnectionsChanged()`                                                       |
-| `nodeType.prototype.onDragOver` / `onDragDrop`     | `builder.onDragOver()` / `builder.onDrop()`                                            |
-| `nodeType.prototype.onSerialize`                   | `builder.onSerialize()` for pack-owned fields                                          |
-| `extends LGraphNode` / `registerNodeType`          | `comfy.defs.define()`                                                                  |
-| `app.graph._nodes`                                 | `comfy.graph.nodes()`                                                                  |
-| `graph.getNodeById(id)`                            | `comfy.graph.node(id)` or a scoped `graph.node(id)`                                    |
-| `graph._groups`                                    | `comfy.graph.groups()` or a scoped `graph.groups()`                                    |
-| `canvas.selected_nodes`                            | `comfy.graph.selection()`                                                              |
-| `canvas.selectNode(...)`                           | `comfy.graph.select(...)`                                                              |
-| `canvas.centerOnNode(node)`                        | `comfy.graph.centerOn(node)`                                                           |
-| `LiteGraph.createNode()` plus `graph.add()`        | `comfy.graph.add()`                                                                    |
-| `node.clone()` plus `graph.add()`                  | `comfy.graph.duplicate()`                                                              |
-| `graph.remove(node)`                               | `node.remove()` or `comfy.graph.remove()`                                              |
-| Replace or retype a live node                      | `comfy.graph.replace()`                                                                |
-| `graph.beforeChange()` / `afterChange()`           | `comfy.graph.batch()`                                                                  |
-| `graph._version++`                                 | Delete the write; published mutations update `graph.version`                           |
-| Document pointer listeners for a node gesture      | `comfy.onNodeMoved()` and, in Nodes 2.0, `comfy.onNodeDragEnd()`                       |
-| `canvas.connecting_links` / `resizing_node`        | `comfy.isInteracting()`                                                                |
-| `node.pos` / `node.size`                           | `getPosition()` / `setPosition()` and `getSize()` / `setSize()`                        |
-| `node.getBounding()`                               | `node.getBounds()`                                                                     |
-| `node.getConnectionPos()`                          | `node.getSlotPosition()`                                                               |
-| Canvas transform and `graph_mouse`                 | `node.getScreenRect()` and `comfy.graph.pointerPosition()`                             |
-| `input.link`                                       | `input.isConnected`, `input.link()`, `input.source()`, or `input.disconnect()`         |
-| `output.links`                                     | `output.links()`, `output.connectTo()`, or `output.disconnect()`                       |
-| Disconnect then reconnect to another output        | `output.moveLinksTo()`                                                                 |
-| `node.addInput()` / `addOutput()`                  | `node.inputs.add()` / `node.outputs.add()`                                             |
-| `node.removeInput()` / `removeOutput()`            | `node.inputs.remove()` / `node.outputs.remove()`                                       |
-| Direct slot name, type, label, or shape writes     | `slot.modify()`                                                                        |
-| Mutate slot arrays to reorder                      | `node.inputs.reorder()` / `node.outputs.reorder()`                                     |
-| `LiteGraph.isValidConnection()`                    | `comfy.defs.isTypeCompatible()`                                                        |
-| Read or merge a connected Primitive's config       | `input.widgetConfig()` / `input.mergeWidgetConfig()`                                   |
-| Patch `connectByType` for a link dropped on a node | `builder.onUnplacedLink()`                                                             |
-| `widget.value = value; widget.callback(value)`     | `widget.setValue(value)`                                                               |
-| Replace or chain `widget.callback`                 | `widget.on('change')` or `widget.on('activate')`                                       |
-| `widget.type = 'converted-widget'`                 | `widget.setHidden(true)`                                                               |
-| `widget.options[key] = value`                      | `widget.setOption(key, value)`                                                         |
-| `widget.disabled = value`                          | `widget.setDisabled(value)`                                                            |
-| `widget.linkedWidgets`                             | `widget.linked()` / `widget.setLinked()`                                               |
-| `widget.computeSize`                               | `widget.setHeight()` or node size constraints                                          |
-| `widgets.push()` / `removeWidget()`                | `widgets.add()` / `widgets.remove()`                                                   |
-| `widgets.splice()` / replace widget array          | `widgets.move()` / `widgets.reorder()` after classifying intent                        |
-| `node.addDOMWidget()`                              | `node.widgets.mount()`                                                                 |
-| `widget.inputEl`                                   | `textInteraction` for a host editor, or `widgets.mount()` for a pack control           |
-| `getCustomWidgets` for an input type               | `comfy.defs.defineWidgetType()`                                                        |
-| `widget.serializeValue`                            | Widget serialization flags or `beforeSerialize`                                        |
-| Name-keyed object written into `widgets_values`    | Delete the write; use named handles and migrate old data in `onConfigured()`           |
-| Custom upload UI beside an upload-declared input   | Delete it; use the host's built-in upload control                                      |
-| `node.imgs = ...` for pack drawing                 | `node.widgets.canvas()` and `CanvasHandle.redraw()`                                    |
-| Draw status text in node chrome                    | `node.addBadge()`                                                                      |
-| `onDrawForeground` / `onDrawBackground`            | Canvas widget, semantic event, mount lifecycle, or size constraint based on intent     |
-| `canvas.setDirty()` / `setDirtyCanvas()`           | Usually delete; use `CanvasHandle.redraw()` for external canvas-widget data            |
-| Read `node.imgs` / `imageIndex` from another node  | `getOutputImages()` / `getDisplayedImageIndex()`                                       |
-| `getExtraMenuOptions`                              | `builder.addMenuItem()`                                                                |
-| `new LiteGraph.ContextMenu(...)`                   | `comfy.ui.showMenu()` when the pack owns the triggering gesture                        |
-| Inject sidebar, top-bar, action-bar, or modal DOM  | `comfy.ui` contributions                                                               |
-| `app.ui.settings` / extension `settings`           | `comfy.settings`                                                                       |
-| Replace the canvas background draw hook            | Write the core `Comfy.Canvas.BackgroundImage` setting                                  |
-| Extension `commands`, keybindings, and toast       | `comfy.commands`                                                                       |
-| `api.fetchApi()` / `api.apiURL()`                  | `comfy.backend.fetch()` / `comfy.backend.url()`                                        |
-| `api.addEventListener()` for pack messages         | `comfy.backend.on()`                                                                   |
-| Global preview and executing listeners             | Definition `onPreview()` or root execution observers                                   |
-| `app.queuePrompt()`                                | `comfy.queue` plus serialization, resolution, or supply for the actual intent          |
-| Read or mutate queue setting stores                | `queue.autoQueueMode()`, `setAutoQueueMode()`, `batchCount()`, or `setBatchCount()`    |
-| `graphToPrompt` wrapper used only for a sidecar    | Pack backend route, partial queueing, and correlated execution events                  |
-| `app.loadGraphData()`                              | `comfy.workflow.open()`                                                                |
-| `app.applyTextReplacements()`                      | `comfy.workflow.applyTextReplacements()`                                               |
-| `localStorage` or direct user-data APIs            | `comfy.storage` for user-authored pack documents                                       |
-| `LGraphCanvas.node_colors[name]`                   | `comfy.defs.nodeColor(name)`                                                           |
-| Read or write pack link-type colors                | `comfy.defs.typeColor()` / `setTypeColor()`                                            |
+| Legacy surface                                     | Published destination                                                                                         |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `app.registerExtension(...)`                       | Split registration across `comfy.defs`, `settings`, `commands`, UI, and lifecycle APIs                        |
+| `beforeRegisterNodeDef`                            | `comfy.defs.extend(selector, builder => ...)`                                                                 |
+| `nodeType.prototype.onNodeCreated`                 | `builder.onCreated()`                                                                                         |
+| `nodeType.prototype.onConfigure`                   | `builder.onConfigured()`                                                                                      |
+| `nodeType.prototype.onExecuted`                    | `builder.onExecuted()`                                                                                        |
+| `nodeType.prototype.onRemoved`                     | `builder.onRemoved()`                                                                                         |
+| `nodeType.prototype.onConnectionsChange`           | `builder.onConnectionsChanged()`                                                                              |
+| `nodeType.prototype.onDragOver` / `onDragDrop`     | `builder.onDragOver()` / `builder.onDrop()`                                                                   |
+| `nodeType.prototype.onSerialize`                   | `builder.onSerialize()` for pack-owned fields                                                                 |
+| `extends LGraphNode` / `registerNodeType`          | `comfy.defs.define()`                                                                                         |
+| `app.graph._nodes`                                 | `comfy.graph.nodes()`                                                                                         |
+| `graph.getNodeById(id)`                            | `comfy.graph.node(id)` or a scoped `graph.node(id)`                                                           |
+| `graph._groups`                                    | `comfy.graph.groups()` or a scoped `graph.groups()`                                                           |
+| `canvas.selected_nodes`                            | `comfy.graph.selection()`                                                                                     |
+| `canvas.selectNode(...)`                           | `comfy.graph.select(...)`                                                                                     |
+| `canvas.centerOnNode(node)`                        | `comfy.graph.centerOn(node)`                                                                                  |
+| `LiteGraph.createNode()` plus `graph.add()`        | `comfy.graph.add()`                                                                                           |
+| `node.clone()` plus `graph.add()`                  | `comfy.graph.duplicate()`                                                                                     |
+| `graph.remove(node)`                               | `node.remove()` or `comfy.graph.remove()`                                                                     |
+| Replace or retype a live node                      | `comfy.graph.replace()`                                                                                       |
+| `graph.beforeChange()` / `afterChange()`           | `comfy.graph.batch()`                                                                                         |
+| `graph._version++`                                 | Delete the write; published mutations update `graph.version`                                                  |
+| Document pointer listeners for a node gesture      | `comfy.onNodeMoved()` and, in Nodes 2.0, `comfy.onNodeDragEnd()`                                              |
+| `canvas.connecting_links` / `resizing_node`        | `comfy.isInteracting()`                                                                                       |
+| `node.pos` / `node.size`                           | `getPosition()` / `setPosition()` and `getSize()` / `setSize()`                                               |
+| `node.getBounding()`                               | `node.getBounds()`                                                                                            |
+| `node.getConnectionPos()`                          | `node.getSlotPosition()`                                                                                      |
+| Canvas transform and `graph_mouse`                 | `node.getScreenRect()` and `comfy.graph.pointerPosition()`                                                    |
+| `input.link`                                       | `input.isConnected`, `input.link()`, `input.source()`, or `input.disconnect()`                                |
+| `output.links`                                     | `output.links()`, `output.connectTo()`, or `output.disconnect()`                                              |
+| Disconnect then reconnect to another output        | `output.moveLinksTo()`                                                                                        |
+| `node.addInput()` / `addOutput()`                  | `node.inputs.add()` / `node.outputs.add()`                                                                    |
+| `node.removeInput()` / `removeOutput()`            | `node.inputs.remove()` / `node.outputs.remove()`                                                              |
+| Direct slot name, type, label, or shape writes     | `slot.modify()`                                                                                               |
+| Mutate slot arrays to reorder                      | `node.inputs.reorder()` / `node.outputs.reorder()`                                                            |
+| `LiteGraph.isValidConnection()`                    | `comfy.defs.isTypeCompatible()`                                                                               |
+| Read or merge a connected Primitive's config       | `input.widgetConfig()` / `input.mergeWidgetConfig()`                                                          |
+| Patch `connectByType` for a link dropped on a node | `builder.onUnplacedLink()`                                                                                    |
+| `widget.value = value; widget.callback(value)`     | `widget.setValue(value)`                                                                                      |
+| Replace or chain `widget.callback`                 | `widget.on('change')` or `widget.on('activate')`                                                              |
+| `widget.type = 'converted-widget'`                 | `widget.setHidden(true)`                                                                                      |
+| `widget.options[key] = value`                      | `widget.setOption(key, value)`                                                                                |
+| `widget.disabled = value`                          | `widget.setDisabled(value)`                                                                                   |
+| `widget.linkedWidgets`                             | `widget.linked()` / `widget.setLinked()`                                                                      |
+| `widget.computeSize`                               | `widget.setHeight()` or node size constraints                                                                 |
+| `widgets.push()` / `removeWidget()`                | `widgets.add()` / `widgets.remove()`                                                                          |
+| `widgets.splice()` / replace widget array          | `widgets.move()` / `widgets.reorder()` after classifying intent                                               |
+| `node.addDOMWidget()`                              | `node.widgets.mount()`                                                                                        |
+| `widget.inputEl`                                   | `textInteraction` for a host editor, or `widgets.mount()` for a pack control                                  |
+| `getCustomWidgets` for an input type               | `comfy.defs.defineWidgetType()`                                                                               |
+| `widget.serializeValue`                            | Widget serialization flags or `beforeSerialize`                                                               |
+| Name-keyed object written into `widgets_values`    | Delete the write; use named handles and migrate old data in `onConfigured()`                                  |
+| Custom upload UI beside an upload-declared input   | Delete it; use the host's built-in upload control                                                             |
+| `node.imgs = ...` for pack drawing                 | `node.widgets.canvas()` and `CanvasHandle.redraw()`                                                           |
+| Draw status text in node chrome                    | `node.addBadge()`                                                                                             |
+| `onDrawForeground` / `onDrawBackground`            | Canvas widget, semantic event, mount lifecycle, or size constraint based on intent                            |
+| `canvas.setDirty()` / `setDirtyCanvas()`           | Usually delete; use `CanvasHandle.redraw()` for external canvas-widget data                                   |
+| Read `node.imgs` / `imageIndex` from another node  | `getOutputImages()` / `getDisplayedImageIndex()`                                                              |
+| `getExtraMenuOptions`                              | `builder.addMenuItem()`                                                                                       |
+| `new LiteGraph.ContextMenu(...)`                   | `comfy.ui.showMenu()` when the pack owns the triggering gesture                                               |
+| Inject sidebar, top-bar, action-bar, or modal DOM  | `comfy.ui` contributions                                                                                      |
+| `app.ui.settings` / extension `settings`           | `comfy.settings`                                                                                              |
+| Replace the canvas background draw hook            | Write the core `Comfy.Canvas.BackgroundImage` setting                                                         |
+| Extension `commands`, keybindings, and toast       | `comfy.commands`                                                                                              |
+| `api.fetchApi()` / `api.apiURL()`                  | `comfy.backend.fetch(relativePath)` for own declared endpoints; named `comfy.*` methods for shared operations |
+| `api.addEventListener()` for pack messages         | `comfy.backend.on()`                                                                                          |
+| Global preview and executing listeners             | Definition `onPreview()` or root execution observers                                                          |
+| `app.queuePrompt()`                                | `comfy.queue` plus serialization, resolution, or supply for the actual intent                                 |
+| Read or mutate queue setting stores                | `queue.autoQueueMode()`, `setAutoQueueMode()`, `batchCount()`, or `setBatchCount()`                           |
+| `graphToPrompt` wrapper used only for a sidecar    | Pack backend route, partial queueing, and correlated execution events                                         |
+| `app.loadGraphData()`                              | `comfy.workflow.open()`                                                                                       |
+| `app.applyTextReplacements()`                      | `comfy.workflow.applyTextReplacements()`                                                                      |
+| `localStorage` or direct user-data APIs            | `comfy.storage` for user-authored pack documents                                                              |
+| `LGraphCanvas.node_colors[name]`                   | `comfy.defs.nodeColor(name)`                                                                                  |
+| Read or write pack link-type colors                | `comfy.defs.typeColor()` / `setTypeColor()`                                                                   |
 
 ## Registration and lifecycle
 
@@ -1106,15 +1106,21 @@ limitation instead of restoring prompt mutation.
 ### How do I call my Python routes or receive custom messages?
 
 ```js
-const response = await comfy.backend.fetch('/my-pack/models')
+const response = await comfy.backend.fetch('presets')
 const stop = comfy.backend.on('my-pack-progress', (detail) => {
   updateProgress(detail)
 })
 ```
 
-Use `backend.fetch()` rather than plain `fetch(backend.url(...))` when the
-request needs host credentials. Use `new URL('./asset.css', import.meta.url)`
-for a file shipped beside the current module.
+Declare `presets` as a relative route in this pack's `secure-nodes.json`.
+`backend.fetch('presets')` and `backend.ownFetch('presets')` call only that pack's
+endpoint. Paths have no leading slash, traversal, percent-encoded path, or scheme.
+The host alone assigns the base and builds the authenticated request.
+
+Shared operations use their published named async methods. URL builders are
+not a supported pack API; do not construct `/ext/` or core URLs. See the
+[routing contract](./services.md#pack-relative-backend-requests-and-events).
+Use `new URL('./asset.css', import.meta.url)` for an admitted bundled file.
 
 ### How do I load a workflow or store pack documents?
 

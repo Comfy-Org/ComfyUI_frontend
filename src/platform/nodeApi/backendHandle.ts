@@ -18,27 +18,20 @@ import type { Unsubscribe } from './widgetHandle'
 
 export interface BackendHandle {
   /**
-   * Absolute URL for a backend route, honouring however the host is served —
-   * a base path, a different port, a proxy.
+   * @deprecated Trusted host adapter only; unavailable to Secure Nodes packs.
+   * Use `fetch()` with a pack-relative path, or a named `comfy.*` capability.
    */
   url(route: string): string
   /**
-   * Absolute URL for a file the host serves, rather than an API route.
-   *
-   * Distinct from `url()` because that one addresses the API and prepends
-   * `/api`, so a static path built through it produced `/api/extensions/…`,
-   * which 404s.
-   *
-   * This is for a path the caller already knows absolutely. It is *not* the
-   * way a pack should reach its own neighbouring files: the host serves those
-   * from `/extensions/<install-dir>/`, and that directory name is chosen when
-   * the pack is installed and can be renamed, so it is not knowable from
-   * source. `new URL('x.css', import.meta.url)` resolves against the module's
-   * real location and stays correct. One pack ships two spellings of its own
-   * directory with an `onerror` fallback between them, which is what guessing
-   * costs.
+   * @deprecated Trusted host adapter only; unavailable to Secure Nodes packs.
+   * Use module-relative URLs for bundled files and named APIs for host assets.
    */
   assetUrl(route: string): string
+  /**
+   * Calls this pack's declared endpoint using the same relative-path contract
+   * as `fetch()`. It cannot access core routes or another pack's endpoints.
+   */
+  ownFetch(route: string, init?: RequestInit): Promise<Response>
   /**
    * Identifies this frontend connection to a pack's own backend route.
    * Undefined until the backend establishes the connection; do not persist it.
@@ -50,14 +43,13 @@ export interface BackendHandle {
    */
   on(event: string, listener: (detail: unknown) => void): Unsubscribe
   /**
-   * Calls a backend route with the host's own credentials attached.
-   *
-   * `url()` only builds a string, so a pack calling `fetch()` on it sends an
-   * unauthenticated request — fine on a local install, a 401 on a hosted one.
-   * Packs ship their own Python routes and were reaching for `api.fetchApi`
-   * precisely to inherit the session; this is that, and nothing more.
-   *
-   * The route is API-relative and must start with `/`, as `url()` requires.
+   * In a Secure Nodes worker, calls only this pack's declared endpoints.
+   * Use a relative path such as `presets`, with no leading slash, dot segments,
+   * percent-encoded path or scheme. The host re-encodes query values, assigns
+   * the namespace from trusted pack identity and owns authentication.
+   * Shared/core operations use named async `comfy.*` methods with validation
+   * and capability checks. The trusted in-process adapter retains API-root
+   * paths for host code; it does not provide sandbox authorization.
    */
   fetch(route: string, init?: RequestInit): Promise<Response>
 }
@@ -80,6 +72,12 @@ export function createBackendApi(): BackendHandle {
         )
       }
       return api.fileURL(route)
+    },
+
+    ownFetch() {
+      throw new ComfyApiError(
+        'Pack-owned routes are available only inside a Secure Nodes pack sandbox.'
+      )
     },
 
     sessionId() {

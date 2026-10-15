@@ -38,7 +38,7 @@ const tierLabel = isFree
   ? t('modelLaunch.tagFree')
   : t('modelLaunch.tagPremium')
 const name = card.name[locale] || card.name.en
-const note = card.note[locale] || card.note.en
+const note = card.note && (card.note[locale] || card.note.en)
 const description = card.description[locale] || card.description.en
 const prompt = card.prompt && (card.prompt[locale] || card.prompt.en)
 const linkClass = cn(
@@ -66,14 +66,16 @@ const linkClass = cn(
     >
       <div v-if="showMeta" class="flex items-center gap-3">
         <Badge :variant="tierVariant">{{ tierLabel }}</Badge>
-        <span class="text-xs text-primary-warm-gray">{{ note }}</span>
+        <span v-if="note" class="text-xs text-primary-warm-gray">{{
+          note
+        }}</span>
       </div>
 
       <IconButton
         v-if="showLink"
         as="a"
         :href="card.href"
-        target="_blank"
+        :target="card.href.startsWith('#') ? undefined : '_blank'"
         rel="noopener"
         :aria-label="name"
         size="sm"

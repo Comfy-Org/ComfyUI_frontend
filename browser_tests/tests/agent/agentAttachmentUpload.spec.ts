@@ -94,9 +94,10 @@ test.describe('Agent attachment validation', { tag: ['@cloud', '@ui'] }, () => {
     await agentPanel.sendButton.hover()
     await expect(
       comfyPage.page.getByRole('tooltip', {
-        name: enMessages.agent.sendBlockedByInvalidVideo
-          .split(' | ')[0]
-          .replace('{name}', 'renamed.mp4'),
+        name: enMessages.agent.sendBlockedByInvalidVideo.replace(
+          '{name}',
+          'renamed.mp4'
+        ),
         exact: true
       })
     ).toBeVisible()
