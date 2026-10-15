@@ -10,15 +10,17 @@ import ModelLaunchGallerySection from '@/templates/model-launch/ModelLaunchGalle
 import { krea3Links, krea3Page } from './krea3'
 
 const locales = ['en', 'zh-CN'] as const
+const APPROVED_SPEED_QUESTION = 'How fast is Krea 3 when editing images?'
 
 describe('Krea 3 launch draft', () => {
   it('shows the Premium badge on every linked workflow example', () => {
     render(ModelLaunchGallerySection, {
       props: { gallery: krea3Page.workflowGallery, locale: 'en' }
     })
-    expect(screen.getAllByText(/^premium$/i)).toHaveLength(3)
-    expect(screen.getAllByText('Pay-as-you-go')).toHaveLength(3)
-    expect(screen.getByRole('slider')).toBeVisible()
+    expect(screen.getAllByText(/^premium$/i)).toHaveLength(2)
+    expect(screen.getAllByText('Pay-as-you-go')).toHaveLength(2)
+    // Workflow cards are plain images; sliders live in the comparison section.
+    expect(screen.queryAllByRole('slider')).toHaveLength(0)
     expect(
       screen.getByRole('link', { name: 'Krea 3: Image editing' })
     ).toHaveAttribute('href', krea3Links.imageEdit)
@@ -36,11 +38,7 @@ describe('Krea 3 launch draft', () => {
       krea3Page.workflowGallery.cards.map(({ href }) =>
         new URL(href).searchParams.get('template')
       )
-    ).toEqual([
-      'api_krea3_image_edit',
-      'api_krea3_t2i',
-      'api_krea3_image_bboxes'
-    ])
+    ).toEqual(['api_krea3_image_edit', 'api_krea3_t2i'])
   })
 
   it.for(locales)('lists the %s page in search indexes', (locale) => {
@@ -74,7 +72,9 @@ describe('Krea 3 launch draft', () => {
           ])
         ),
         ...krea3Page.faq.items.flatMap((item) => [
-          item.question[locale],
+          // The approved speed FAQ asks "How fast is Krea 3", which is a
+          // question about the supplied 8 second figure, not a comparison.
+          item.question[locale].replace(APPROVED_SPEED_QUESTION, ''),
           item.answer[locale]
         ])
       ].join(' ')
@@ -90,9 +90,35 @@ describe('Krea 3 launch draft', () => {
     )
   })
 
+  it('keeps the approved FAQ copy and bullet format', () => {
+    const { items } = krea3Page.faq
+    expect(items.map((item) => item.question.en)).toEqual([
+      'What is Krea 3, and how does it differ from traditional AI image tools?',
+      'How fast is Krea 3 when editing images?',
+      'How does regional precision and exact color matching work in Krea 3?',
+      'Can Krea 3 maintain character consistency across different scenes?',
+      'How many reference images can I combine, and what is the output resolution?',
+      'What creative industries and workflows is Krea 3 built for?'
+    ])
+    expect(items.map((item) => item.answer.en).join('\n')).not.toContain(
+      '\u2014'
+    )
+    expect(
+      items[2].answer.en.split('\n').filter((l) => l.startsWith('• '))
+    ).toHaveLength(2)
+    expect(
+      items[5].answer.en.split('\n').filter((l) => l.startsWith('• '))
+    ).toHaveLength(3)
+  })
+
   it('ships every poster and gallery asset locally for private review', () => {
     const sources = [
-      ...krea3Page.workflowGallery.cards.map((card) => card.media.src),
+      ...krea3Page.workflowGallery.cards.flatMap((card) => [
+        card.media.src,
+        ...(card.comparison
+          ? [card.comparison.beforeSrc, card.comparison.afterSrc]
+          : [])
+      ]),
       krea3Page.comparison.beforeSrc,
       krea3Page.comparison.afterSrc,
       krea3Page.hero.posterSrc,

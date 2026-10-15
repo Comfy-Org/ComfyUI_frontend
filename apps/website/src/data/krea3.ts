@@ -6,8 +6,7 @@ import type {
 
 export const krea3Links = {
   textToImage: 'https://cloud.comfy.org/?template=api_krea3_t2i',
-  imageEdit: 'https://cloud.comfy.org/?template=api_krea3_image_edit',
-  boxes: 'https://cloud.comfy.org/?template=api_krea3_image_bboxes'
+  imageEdit: 'https://cloud.comfy.org/?template=api_krea3_image_edit'
 } as const
 
 const mediaBase = '/media/krea-3'
@@ -140,10 +139,7 @@ export const krea3Page = {
             '图像编辑。加载参考图，描述需要修改的内容。'
           )
         ),
-        comparison: {
-          beforeSrc: `${mediaBase}/reference-before.jpg`,
-          afterSrc: `${mediaBase}/reference-after.jpg`
-        },
+        media: { kind: 'image', src: `${mediaBase}/image-editing.webp` },
         href: krea3Links.imageEdit
       },
       {
@@ -155,18 +151,8 @@ export const krea3Page = {
             '文生图。通过提示词设定主体、场景和视觉方向。'
           )
         ),
+        media: { kind: 'image', src: `${mediaBase}/text-to-image.jpg` },
         href: krea3Links.textToImage
-      },
-      {
-        ...card(
-          'finish-after',
-          text('Krea 3: Edit with boxes', 'Krea 3：边界框编辑'),
-          text(
-            'Edit with boxes. Open the workflow for edits guided by bounding boxes.',
-            '边界框编辑。打开通过边界框引导编辑的工作流。'
-          )
-        ),
-        href: krea3Links.boxes
       }
     ]
   },
@@ -205,32 +191,68 @@ export const krea3Page = {
     items: [
       {
         id: 'what',
-        question: text('What is Krea 3?', 'Krea 3 是什么？'),
+        question: text(
+          'What is Krea 3, and how does it differ from traditional AI image tools?',
+          'What is Krea 3, and how does it differ from traditional AI image tools?'
+        ),
         answer: text(
-          'Krea 3 is an image model from Krea built for reference-driven generation and editing. Start with visual references and describe what you want to change.',
-          'Krea 3 是 Krea 推出的图像模型，用于参考图驱动的生成与编辑。从视觉参考图出发，描述你想修改的内容。'
+          'Krea 3 is an AI image editing model engineered for targeted visual edits. Unlike standard AI generators that redraw the entire image from scratch, Krea 3 performs pixel-perfect regional editing, modifying only what you specify while keeping the rest of your original image 100% untouched.',
+          'Krea 3 is an AI image editing model engineered for targeted visual edits. Unlike standard AI generators that redraw the entire image from scratch, Krea 3 performs pixel-perfect regional editing, modifying only what you specify while keeping the rest of your original image 100% untouched.'
         )
       },
       {
-        id: 'video',
+        id: 'speed',
         question: text(
-          'Does Krea 3 generate video?',
-          'Krea 3 可以生成视频吗？'
+          'How fast is Krea 3 when editing images?',
+          'How fast is Krea 3 when editing images?'
         ),
         answer: text(
-          'Krea 3 is an image model. The hero video demonstrates image-editing workflows. You can use selected stills as inputs to a separate video workflow.',
-          'Krea 3 是图像模型。页面顶部的视频演示了图像编辑工作流。你可以将选定的静帧作为独立视频工作流的输入。'
+          'Krea 3 finishes an edit in under 8 seconds per output. This rapid speed allows creators, designers, and marketers to iterate on visual ideas and test design variations almost instantly.',
+          'Krea 3 finishes an edit in under 8 seconds per output. This rapid speed allows creators, designers, and marketers to iterate on visual ideas and test design variations almost instantly.'
+        )
+      },
+      {
+        id: 'precision',
+        question: text(
+          'How does regional precision and exact color matching work in Krea 3?',
+          'How does regional precision and exact color matching work in Krea 3?'
+        ),
+        answer: text(
+          'Krea 3 offers two key tools for fine visual control:\n• **Regional Precision:** Simply draw a box over a specific area to edit that region exclusively, achieving zero unintended pixel changes outside your selection.\n• **Hex Color Matching:** Name an exact Hex color code (e.g., #D9C3A3) in your prompt to apply precise brand or product colors directly onto apparel, furniture, or props.',
+          'Krea 3 offers two key tools for fine visual control:\n• **Regional Precision:** Simply draw a box over a specific area to edit that region exclusively, achieving zero unintended pixel changes outside your selection.\n• **Hex Color Matching:** Name an exact Hex color code (e.g., #D9C3A3) in your prompt to apply precise brand or product colors directly onto apparel, furniture, or props.'
+        )
+      },
+      {
+        id: 'consistency',
+        question: text(
+          'Can Krea 3 maintain character consistency across different scenes?',
+          'Can Krea 3 maintain character consistency across different scenes?'
+        ),
+        answer: text(
+          'Yes. Krea 3 features dedicated subject consistency capabilities. You can change a character’s outfit, setting, lighting, or camera angle while preserving their facial features and identity across a sequence of edits.',
+          'Yes. Krea 3 features dedicated subject consistency capabilities. You can change a character’s outfit, setting, lighting, or camera angle while preserving their facial features and identity across a sequence of edits.'
         )
       },
       {
         id: 'references',
         question: text(
-          'How should I use multiple references?',
-          '如何使用多张参考图？'
+          'How many reference images can I combine, and what is the output resolution?',
+          'How many reference images can I combine, and what is the output resolution?'
         ),
         answer: text(
-          'Give each reference a clear role and refer to images by input order. State which details should stay, then inspect those details in the result.',
-          '为每张参考图明确分配用途，并按输入顺序指明图像。说明要保留的细节，再检查结果中的对应细节。'
+          'Krea 3 allows you to combine up to 8 visual reference images (mixing people, products, backgrounds, and art styles) into a single cohesive output. It renders natively at crisp 2K resolution (e.g., 2736 × 1536 px).',
+          'Krea 3 allows you to combine up to 8 visual reference images (mixing people, products, backgrounds, and art styles) into a single cohesive output. It renders natively at crisp 2K resolution (e.g., 2736 × 1536 px).'
+        )
+      },
+      {
+        id: 'industries',
+        question: text(
+          'What creative industries and workflows is Krea 3 built for?',
+          'What creative industries and workflows is Krea 3 built for?'
+        ),
+        answer: text(
+          'Krea 3 comes with 251 launch presets tailored for creative professionals across multiple fields:\n• **E-Commerce & Marketing:** Swap product staging backgrounds, re-skin packaging, and update ad layouts while keeping brand typography intact.\n• **Fashion & Photography:** Relight portraits, restyle apparel, and perform virtual model staging.\n• **Architecture & Interior Design:** Transform raw sketches/blockouts into photo-realistic renders and virtual room stagings.',
+          'Krea 3 comes with 251 launch presets tailored for creative professionals across multiple fields:\n• **E-Commerce & Marketing:** Swap product staging backgrounds, re-skin packaging, and update ad layouts while keeping brand typography intact.\n• **Fashion & Photography:** Relight portraits, restyle apparel, and perform virtual model staging.\n• **Architecture & Interior Design:** Transform raw sketches/blockouts into photo-realistic renders and virtual room stagings.'
         )
       }
     ]
