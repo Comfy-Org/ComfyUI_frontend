@@ -54,12 +54,12 @@ const mockUpdateSelectedItems = vi.hoisted(() => vi.fn())
 const mockHandleFilesUpdate = vi.hoisted(() => vi.fn())
 
 const { mockItemsRef, mockSelectedSetRef } = vi.hoisted(() => {
-    // oxlint-disable-next-line typescript/no-require-imports
-    const { ref } = require('vue')
-    return {
-      mockItemsRef: ref([]) as Ref<FormDropdownItem[]>,
-      mockSelectedSetRef: ref(new Set()) as Ref<Set<string>>
-    }
+  // oxlint-disable-next-line typescript/no-require-imports
+  const { ref } = require('vue')
+  return {
+    mockItemsRef: ref([]) as Ref<FormDropdownItem[]>,
+    mockSelectedSetRef: ref(new Set()) as Ref<Set<string>>
+  }
 })
 
 vi.mock(
