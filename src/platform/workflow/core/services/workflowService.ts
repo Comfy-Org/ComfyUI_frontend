@@ -477,8 +477,6 @@ export const useWorkflowService = () => {
           }
         )
         if (loaded === false) {
-          // Same invariant as the catch: a failed load's intent must not
-          // stay newest (guarded no-op when the publish already superseded).
           useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
           await restoreRetainedWorkflow(workflow)
           return false
@@ -490,7 +488,6 @@ export const useWorkflowService = () => {
           workflowStore.reportUserActivation(workflow)
         return true
       } catch (error) {
-        // A failed load's intent must not stay newest (suppresses the survivor's hash).
         useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
         throw error
       }
