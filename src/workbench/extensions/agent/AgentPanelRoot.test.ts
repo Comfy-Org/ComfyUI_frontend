@@ -5575,6 +5575,34 @@ describe('AgentPanelRoot history', () => {
     }
   )
 
+  it('does not report the history request it aborts when the panel closes', async () => {
+    const threadListRoute = /\/api\/agent\/threads\?/
+    respondToFetch({}, () => json(200, []))
+    respondToFetch(
+      threadListRoute,
+      (_input, init) =>
+        new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () =>
+            reject(init.signal?.reason)
+          )
+        })
+    )
+    const panel = renderWithSelectedTarget()
+    await vi.waitFor(() =>
+      expect(fetchRequests(threadListRoute)).toHaveLength(1)
+    )
+
+    panel.unmount()
+    await setImmediate()
+
+    expect(reportError).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ errorType: 'agent_thread_list_load_failed' })
+    )
+    expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
+    expect(telemetry.trackAgentError).not.toHaveBeenCalled()
+  })
+
   it('does not refresh chat history once the panel closes while a picked chat loads', async () => {
     const threadListRoute = /\/api\/agent\/threads\?/
     const pickedMessagesRoute = /\/th-picked\/messages/
