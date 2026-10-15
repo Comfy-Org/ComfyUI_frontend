@@ -32,7 +32,10 @@ for (const prefix of ['', '/zh-CN']) {
         name: prefix ? '阅读文档' : 'READ DOCS',
         exact: true
       })
-    ).toHaveCount(0)
+    ).toHaveAttribute(
+      'href',
+      'https://docs.comfy.org/tutorials/flux/flux-3-klein'
+    )
   })
 }
 
