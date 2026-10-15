@@ -81,8 +81,9 @@ export class AgentPanel {
     this.creditTransitionNotice = this.root.getByTestId(
       'agent-credit-transition-notice'
     )
-    this.currentHistorySection = this.root.locator('section').filter({
-      has: page.getByText(enMessages.agent.historyCurrent, { exact: true })
+    this.currentHistorySection = this.root.getByRole('region', {
+      name: enMessages.agent.historyCurrent,
+      exact: true
     })
     this.debugHeading = this.root.getByText('CRDT debug', { exact: true })
     this.dockedPanel = page.getByTestId('docked-agent-panel')

@@ -163,7 +163,12 @@ function getSessionMenuItems(session: ChatSession): MenuItem[] {
         {{ t('agent.historyEmpty') }}
       </p>
 
-      <section v-for="[key, label, items] in sections" :key class="mb-3">
+      <section
+        v-for="[key, label, items] in sections"
+        :key
+        :aria-label="label"
+        class="mb-3"
+      >
         <p class="my-0 px-2 py-1 text-xs text-muted-foreground">
           {{ label }}
         </p>
