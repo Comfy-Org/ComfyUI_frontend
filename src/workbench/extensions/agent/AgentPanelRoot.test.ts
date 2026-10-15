@@ -5352,6 +5352,10 @@ describe('AgentPanelRoot history', () => {
         retryable: false
       })
     )
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'AgentThreadListIncompleteError' }),
+      expect.objectContaining({ tags: { reason: 'missing_cursor' } })
+    )
     expect(history.sessions.map(({ id }) => id)).toEqual(['th-kept'])
   })
 

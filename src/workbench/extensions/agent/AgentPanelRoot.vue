@@ -123,7 +123,10 @@ import {
 } from './composables/agent/useAgentSession'
 import { useAgentDraftSubmission } from './composables/agent/useAgentDraftSubmission'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
-import { createAgentRestClient } from './services/agent/agentRestClient'
+import {
+  AgentThreadListIncompleteError,
+  createAgentRestClient
+} from './services/agent/agentRestClient'
 import type { DraftSnapshot } from './services/agent/agentRestClient'
 import type { AgentPaywallAction } from './services/agent/agentPaywallPresentation'
 import {
@@ -1428,7 +1431,11 @@ async function refreshHistory(): Promise<void> {
     if (signal.aborted || generation !== historyRefreshGeneration) return
     reportError(error, {
       surface: 'agent',
-      errorType: 'agent_thread_list_load_failed'
+      errorType: 'agent_thread_list_load_failed',
+      tags:
+        error instanceof AgentThreadListIncompleteError
+          ? { reason: error.reason }
+          : undefined
     })
     surfaceAgentError(
       'agent_api_failed',
