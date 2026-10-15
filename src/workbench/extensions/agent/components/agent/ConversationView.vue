@@ -78,8 +78,6 @@ const followIntent = ref<'latest' | 'reading' | 'paused'>('latest')
 const atBottom = ref(true)
 const bottomGracePx = 16
 const followIntentTolerancePx = 1
-let measuredAtEnd = false
-let measuredScrollHeight = 0
 let pendingProgrammaticScroll: { target: number; frame: number } | undefined
 let pendingConversationId: string | undefined
 
@@ -133,17 +131,17 @@ onBeforeUnmount(clearPendingProgrammaticScroll)
 function pauseFollowingForTrace(): void {
   clearPendingProgrammaticScroll()
   followIntent.value = 'paused'
-  measuredAtEnd = false
 }
 
-function measureSettledTrace(): void {
+function resumeFollowingAfterTrace(): void {
   const element = scrollContainer.value
-  if (element) measuredAtEnd = measureAtBottom(element)
+  if (followIntent.value !== 'paused' || !element) return
+  followIntent.value = measureAtBottom(element) ? 'latest' : 'reading'
 }
 
 provide(conversationFollowKey, {
   pauseForTrace: pauseFollowingForTrace,
-  traceSettled: measureSettledTrace
+  traceSettled: resumeFollowingAfterTrace
 })
 
 function scrollToLatest(): void {
@@ -172,7 +170,7 @@ function scrollToLatest(): void {
 useEventListener(scrollContainer, 'scroll', () => {
   const element = scrollContainer.value
   if (!element) return
-  measuredAtEnd = measureAtBottom(element)
+  measureAtBottom(element)
   if (
     pendingProgrammaticScroll &&
     Math.abs(element.scrollTop - pendingProgrammaticScroll.target) <=
@@ -188,10 +186,7 @@ useEventListener(scrollContainer, 'scroll', () => {
 function followLatestAfterResize(): void {
   const element = scrollContainer.value
   if (!element || element.clientHeight === 0) return
-  const atEnd = measureAtBottom(element)
-  if (element.scrollHeight !== measuredScrollHeight)
-    measuredAtEnd = atEnd && element.scrollHeight < measuredScrollHeight
-  measuredScrollHeight = element.scrollHeight
+  measureAtBottom(element)
   if (followIntent.value === 'latest') scrollToLatest()
 }
 
@@ -247,8 +242,6 @@ watch(
 watch(
   latestContentSignal,
   async () => {
-    if (followIntent.value === 'paused' && measuredAtEnd)
-      followIntent.value = 'latest'
     if (followIntent.value !== 'latest') return
     await nextTick()
     if (followIntent.value !== 'latest') return

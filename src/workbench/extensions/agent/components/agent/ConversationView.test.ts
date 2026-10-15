@@ -296,17 +296,28 @@ describe('ConversationView', () => {
       await nextTick()
       await nextTick()
       const scroll = screen.getByTestId('agent-conversation-scroll')
-      const geometry = { height }
+      const geometry = { height, viewport: 500 }
       Object.defineProperties(scroll, {
-        scrollHeight: { get: () => geometry.height },
+        scrollHeight: {
+          get: () => Math.max(geometry.height, geometry.viewport)
+        },
         scrollTop: { value: scrollTop, writable: true },
-        clientHeight: { value: 500 }
+        clientHeight: { get: () => geometry.viewport }
       })
       const scrollTo = vi.spyOn(Element.prototype, 'scrollTo')
       dispatchResize()
       scrollTo.mockClear()
       const summary = screen.getByRole('button', { name: /^worked/i })
       return { store, scroll, geometry, scrollTo, summary }
+    }
+
+    async function toggleTrace(summary: HTMLElement, expanded: boolean) {
+      await userEvent.click(summary)
+      expect(summary).toHaveAttribute('aria-expanded', String(expanded))
+    }
+
+    async function finishOpening() {
+      await fireEvent.animationEnd(screen.getByTestId('agent-work-trace'))
     }
 
     async function startNextTurn(
@@ -318,60 +329,129 @@ describe('ConversationView', () => {
       store.ingest(delta('msg-2', 'More content'))
       await nextTick()
       await nextTick()
+      expect(screen.getByText('More content')).toBeInTheDocument()
     }
 
     it('does not scroll when a trace expands or collapses at the end', async () => {
-      const { geometry, scrollTo, summary } = await mountCompletedTurnAtEnd()
+      const { scroll, geometry, scrollTo, summary } =
+        await mountCompletedTurnAtEnd()
 
-      await userEvent.click(summary)
+      await toggleTrace(summary, true)
       geometry.height = 1_200
       dispatchResize()
-      await userEvent.click(summary)
+      await toggleTrace(summary, false)
       geometry.height = 1_000
       dispatchResize()
       await nextTick()
 
       expect(scrollTo).not.toHaveBeenCalled()
+      expect(scroll.scrollTop).toBe(500)
     })
 
-    it('follows the next turn once a toggle leaves the reader at the end', async () => {
-      const { store, geometry, scrollTo, summary } =
+    it('does not follow new content while a toggled trace is still opening', async () => {
+      const { store, scroll, scrollTo, summary } =
         await mountCompletedTurnAtEnd()
-      await userEvent.click(summary)
-      geometry.height = 1_200
-      dispatchResize()
-      await userEvent.click(summary)
-      geometry.height = 1_000
-      dispatchResize()
-
-      await startNextTurn(store)
-
-      expect(scrollTo).toHaveBeenCalledWith({ top: 500, behavior: 'instant' })
-    })
-
-    it('does not follow new content that arrives before the toggled trace is measured', async () => {
-      const { store, scrollTo, summary } = await mountCompletedTurnAtEnd()
-      await userEvent.click(summary)
+      await toggleTrace(summary, true)
 
       await startNextTurn(store)
 
       expect(scrollTo).not.toHaveBeenCalled()
+      expect(scroll.scrollTop).toBe(500)
     })
 
-    it('keeps new content below the fold after a trace expands away from the end', async () => {
-      const { store, geometry, scrollTo, summary } =
+    it('keeps new content below the fold after a trace opens away from the end', async () => {
+      const { store, scroll, geometry, scrollTo, summary } =
         await mountCompletedTurnAtEnd()
-      await userEvent.click(summary)
+      await toggleTrace(summary, true)
       geometry.height = 1_200
       dispatchResize()
+      await finishOpening()
 
       await startNextTurn(store)
       geometry.height = 1_400
       dispatchResize()
 
       expect(scrollTo).not.toHaveBeenCalled()
+      expect(scroll.scrollTop).toBe(500)
       await userEvent.click(screen.getByRole('button', { name: 'Latest' }))
       expect(scrollTo).toHaveBeenCalledWith({ top: 900, behavior: 'instant' })
+    })
+
+    it('follows the next turn once a collapse leaves the reader at the end', async () => {
+      const { store, geometry, scrollTo, summary } =
+        await mountCompletedTurnAtEnd()
+      await toggleTrace(summary, true)
+      geometry.height = 1_200
+      dispatchResize()
+      await finishOpening()
+      expect(screen.getByRole('button', { name: 'Latest' })).toBeInTheDocument()
+
+      geometry.height = 1_000
+      await toggleTrace(summary, false)
+      await startNextTurn(store)
+
+      expect(scrollTo).toHaveBeenCalledWith({ top: 500, behavior: 'instant' })
+    })
+
+    it('follows the next turn once an opened trace settles in a conversation that fits', async () => {
+      const { store, geometry, scrollTo, summary } =
+        await mountCompletedTurnAtEnd({ height: 400, scrollTop: 0 })
+      await toggleTrace(summary, true)
+      geometry.height = 480
+      dispatchResize()
+      await finishOpening()
+
+      await startNextTurn(store)
+
+      expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'instant' })
+    })
+
+    it('follows the next turn when an opened trace settles within the bottom grace', async () => {
+      const { store, geometry, scrollTo, summary } =
+        await mountCompletedTurnAtEnd()
+      await toggleTrace(summary, true)
+      geometry.height = 1_008
+      dispatchResize()
+      await finishOpening()
+
+      await startNextTurn(store)
+
+      expect(scrollTo).toHaveBeenCalledWith({ top: 508, behavior: 'instant' })
+    })
+
+    it.for([
+      { resize: 'shrinks', viewport: 300, top: 180 },
+      { resize: 'grows', viewport: 700, top: 0 }
+    ])(
+      'follows when the viewport $resize once an opened trace settles at the end',
+      async ({ viewport, top }) => {
+        const { geometry, scrollTo, summary } = await mountCompletedTurnAtEnd({
+          height: 400,
+          scrollTop: 0
+        })
+        await toggleTrace(summary, true)
+        geometry.height = 480
+        dispatchResize()
+        await finishOpening()
+
+        geometry.viewport = viewport
+        dispatchResize()
+
+        expect(scrollTo).toHaveBeenCalledWith({ top, behavior: 'instant' })
+      }
+    )
+
+    it('does not treat an animation inside the trace as the trace settling', async () => {
+      const { store, geometry, scrollTo, summary } =
+        await mountCompletedTurnAtEnd({ height: 400, scrollTop: 0 })
+      await toggleTrace(summary, true)
+      geometry.height = 480
+      dispatchResize()
+
+      await fireEvent.animationEnd(screen.getByRole('list'))
+      await startNextTurn(store)
+
+      expect(scrollTo).not.toHaveBeenCalled()
     })
 
     it.for([
@@ -386,7 +466,7 @@ describe('ConversationView', () => {
       async ({ height, scrollTop }) => {
         const { summary } = await mountCompletedTurnAtEnd({ height, scrollTop })
 
-        await userEvent.click(summary)
+        await toggleTrace(summary, true)
         dispatchResize()
         await nextTick()
 
@@ -396,52 +476,23 @@ describe('ConversationView', () => {
       }
     )
 
-    it('keeps the view in place when a trace expands a conversation that fits past the panel', async () => {
-      const { geometry, scrollTo, summary } = await mountCompletedTurnAtEnd({
-        height: 500,
-        scrollTop: 0
-      })
+    it('keeps the view in place when a trace opens a conversation that fits past the panel', async () => {
+      const { scroll, geometry, scrollTo, summary } =
+        await mountCompletedTurnAtEnd({ height: 500, scrollTop: 0 })
 
-      await userEvent.click(summary)
+      await toggleTrace(summary, true)
       dispatchResize()
       geometry.height = 800
       dispatchResize()
-      await nextTick()
+      await finishOpening()
 
       expect(scrollTo).not.toHaveBeenCalled()
+      expect(scroll.scrollTop).toBe(0)
       expect(screen.getByRole('button', { name: 'Latest' })).toBeInTheDocument()
     })
 
-    it('keeps the view in place when a trace re-opens while it is still collapsing', async () => {
-      const { scroll, geometry, scrollTo, summary } =
-        await mountCompletedTurnAtEnd()
-      await userEvent.click(summary)
-      geometry.height = 1_200
-      dispatchResize()
-      await fireEvent.wheel(scroll)
-      scroll.scrollTop = 700
-      await fireEvent.scroll(scroll)
-      await userEvent.click(summary)
-      geometry.height = 1_100
-      scroll.scrollTop = 600
-      await fireEvent.scroll(scroll)
-      dispatchResize()
-      scrollTo.mockClear()
-
-      await userEvent.click(summary)
-      geometry.height = 1_000
-      scroll.scrollTop = 500
-      await fireEvent.scroll(scroll)
-      dispatchResize()
-      geometry.height = 1_200
-      dispatchResize()
-      await nextTick()
-
-      expect(scrollTo).not.toHaveBeenCalled()
-    })
-
     it('keeps following paused when an automatic scroll lands just after the toggle', async () => {
-      const { scroll, geometry, scrollTo, summary } =
+      const { store, scroll, geometry, scrollTo, summary } =
         await mountCompletedTurnAtEnd()
       const user = userEvent.setup()
       await user.pointer({ keys: '[MouseLeft>]', target: summary })
@@ -450,38 +501,22 @@ describe('ConversationView', () => {
       expect(scrollTo).toHaveBeenCalledWith({ top: 600, behavior: 'instant' })
       scroll.scrollTop = 600
       await user.pointer({ keys: '[/MouseLeft]', target: summary })
+      expect(summary).toHaveAttribute('aria-expanded', 'true')
       await fireEvent.scroll(scroll)
       scrollTo.mockClear()
 
+      await startNextTurn(store)
       geometry.height = 1_300
       dispatchResize()
 
       expect(scrollTo).not.toHaveBeenCalled()
+      expect(scroll.scrollTop).toBe(600)
     })
 
-    it('follows the next turn after collapsing a trace clamps the reader back to the end', async () => {
-      const { store, scroll, geometry, scrollTo, summary } =
-        await mountCompletedTurnAtEnd()
-      await userEvent.click(summary)
-      geometry.height = 1_200
-      dispatchResize()
-      await fireEvent.wheel(scroll)
-      scroll.scrollTop = 650
-      await fireEvent.scroll(scroll)
-      await userEvent.click(summary)
-      geometry.height = 1_000
-      scroll.scrollTop = 500
-      await fireEvent.scroll(scroll)
-
-      await startNextTurn(store)
-
-      expect(scrollTo).toHaveBeenCalledWith({ top: 500, behavior: 'instant' })
-    })
-
-    it('keeps the view in place when new content arrives while a trace expands a conversation that fits', async () => {
+    it('keeps the view in place when new content arrives while a trace opens a conversation that fits', async () => {
       const { store, geometry, scrollTo, summary } =
         await mountCompletedTurnAtEnd({ height: 400, scrollTop: 0 })
-      await userEvent.click(summary)
+      await toggleTrace(summary, true)
       geometry.height = 480
       dispatchResize()
 
@@ -492,34 +527,9 @@ describe('ConversationView', () => {
       expect(scrollTo).not.toHaveBeenCalled()
     })
 
-    it('follows the next turn once a toggled trace settles in a conversation that fits', async () => {
-      const { store, geometry, scrollTo, summary } =
-        await mountCompletedTurnAtEnd({ height: 400, scrollTop: 0 })
-      await userEvent.click(summary)
-      geometry.height = 480
-      dispatchResize()
-      await fireEvent.animationEnd(screen.getByRole('list'))
-
-      await startNextTurn(store)
-
-      expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'instant' })
-    })
-
-    it('follows the next turn when a toggle leaves the reader within the bottom grace', async () => {
-      const { store, scroll, scrollTo, summary } =
-        await mountCompletedTurnAtEnd()
-      await userEvent.click(summary)
-      scroll.scrollTop = 492
-      await fireEvent.scroll(scroll)
-
-      await startNextTurn(store)
-
-      expect(scrollTo).toHaveBeenCalledWith({ top: 500, behavior: 'instant' })
-    })
-
     it('keeps following paused while the Worked trigger is pressed at the end', async () => {
       const { geometry, scrollTo, summary } = await mountCompletedTurnAtEnd()
-      await userEvent.click(summary)
+      await toggleTrace(summary, true)
       const user = userEvent.setup()
 
       await user.pointer({ keys: '[MouseLeft>]', target: summary })
@@ -531,7 +541,7 @@ describe('ConversationView', () => {
 
     it('clears a trace pause when the conversation is emptied', async () => {
       const { store, geometry, summary } = await mountCompletedTurnAtEnd()
-      await userEvent.click(summary)
+      await toggleTrace(summary, true)
       geometry.height = 1_200
       dispatchResize()
       await nextTick()
@@ -551,7 +561,7 @@ describe('ConversationView', () => {
       async (type) => {
         const { scroll, geometry, scrollTo, summary } =
           await mountCompletedTurnAtEnd()
-        await userEvent.click(summary)
+        await toggleTrace(summary, true)
 
         scroll.dispatchEvent(new Event(type))
         geometry.height = 1_200
@@ -564,7 +574,7 @@ describe('ConversationView', () => {
     it('keeps reading when input happens away from the end after a toggle', async () => {
       const { scroll, geometry, scrollTo, summary } =
         await mountCompletedTurnAtEnd()
-      await userEvent.click(summary)
+      await toggleTrace(summary, true)
       geometry.height = 1_200
       dispatchResize()
 
