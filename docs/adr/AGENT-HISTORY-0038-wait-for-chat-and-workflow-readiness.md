@@ -112,10 +112,10 @@ conversation.
 
 This exception provides conversation access, not workflow restoration. It does
 not materialize Cloud content into a new editor tab or repair identity mapping.
-Retryable failures remain for a transcript that fails to load, a found workflow
-that fails to open, and a saved-catalog synchronization that fails. During
-restoration, only a 404 from the direct lookup shows the notice that the
-workflow is no longer available.
+Retryable failures remain for a transcript that fails to load and for a found
+workflow that fails to open. When the saved workflow list fails to sync, the
+workflow is treated as not found locally. During restoration, only a 404 from
+the direct lookup shows the notice that the workflow is no longer available.
 
 An agent tab activation applies only if, when it runs, the chat it came from is
 still the open chat. While History is open, that is the Current chat, the chat

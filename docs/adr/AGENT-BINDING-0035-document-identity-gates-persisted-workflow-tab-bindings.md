@@ -177,4 +177,5 @@ refused binding to a workflow that is not gone no longer shows a warning at
 every boot. The next message on the thread is not posted without a workflow.
 Picking the draft still saves it as a new Cloud workflow and orphans the old
 one. "Couldn’t open the target workflow." remains for a found workflow that
-fails to open and for a saved workflow list that fails to sync.
+fails to open. When the saved workflow list fails to sync, the workflow is
+treated as not found locally.
