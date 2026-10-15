@@ -219,7 +219,9 @@ describe('WorkflowTab - agent activity indicators', () => {
 
   it('T-17 / PM-658 / FE-1289 renders the active workflow tab loading state', async () => {
     renderTab({ activeWorkflowKey: 'test-key' })
-    useWorkflowTabActivityStore().setEditing('/workflows/test.json')
+    useWorkflowTabActivityStore().setAgentTurnTabs([
+      { path: '/workflows/test.json' }
+    ])
     await nextTick()
 
     expect(
@@ -230,7 +232,7 @@ describe('WorkflowTab - agent activity indicators', () => {
   it('the agent spinner wins over the unseen-changes dot', async () => {
     renderTab()
     const activity = useWorkflowTabActivityStore()
-    activity.setEditing('/workflows/test.json')
+    activity.setAgentTurnTabs([{ path: '/workflows/test.json' }])
     activity.markModified('/workflows/test.json')
     await nextTick()
 
@@ -294,7 +296,9 @@ describe('WorkflowTab - close button', () => {
 
   it('keeps the close button hidden while an active status indicator shows', async () => {
     renderTab({ activeWorkflowKey: 'test-key' })
-    useWorkflowTabActivityStore().setEditing('/workflows/test.json')
+    useWorkflowTabActivityStore().setAgentTurnTabs([
+      { path: '/workflows/test.json' }
+    ])
     await nextTick()
 
     expect(
@@ -401,14 +405,14 @@ describe('WorkflowTab - Agent target', () => {
     panel.enabled = true
     panel.setWorkflowTarget(workflowOption.workflow)
     const activity = useWorkflowTabActivityStore()
-    activity.setEditing(workflowOption.workflow.path)
+    activity.setAgentTurnTabs([{ path: workflowOption.workflow.path }])
     await nextTick()
     expect(screen.getByRole('img', { name: targetLabel })).toBeVisible()
     expect(
       screen.getByRole('img', { name: agentAriaLabels.agentWorking })
     ).toBeVisible()
 
-    activity.setEditing(null)
+    activity.setAgentTurnTabs([])
     activity.markModified(workflowOption.workflow.path)
     await nextTick()
     expect(screen.getByRole('img', { name: targetLabel })).toBeVisible()

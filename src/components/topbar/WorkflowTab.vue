@@ -245,8 +245,8 @@ const workflowStatusIconClasses: Record<WorkflowExecutionStatus, string> = {
 
 const tabActivity = useWorkflowTabActivityStore()
 
-const isAgentEditing = computed(
-  () => tabActivity.editingTabPath === workflowOption.workflow.path
+const isAgentEditing = computed(() =>
+  tabActivity.editingPaths.has(workflowOption.workflow.path)
 )
 
 // The active tab doesn't badge its own status - the user is already looking

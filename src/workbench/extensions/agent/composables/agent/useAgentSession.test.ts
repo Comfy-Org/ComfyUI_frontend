@@ -12,10 +12,12 @@ import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/platform/skills/api/skillsApi'), { spy: true })
 import { reportError } from '@/platform/telemetry/reportError'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import { api } from '@/scripts/api'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
+import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
 import type {
   AgentAnswerAccepted,
@@ -3752,6 +3754,61 @@ describe('useAgentSession (v1 composition root)', () => {
       }
     ])
   })
+
+  it.for([
+    { statuses: ['complete'], completes: true },
+    { statuses: ['error'], completes: false },
+    { statuses: ['interrupted'], completes: false },
+    { statuses: ['interrupted', 'complete'], completes: true },
+    { statuses: ['complete', 'error'], completes: false }
+  ] as const)(
+    'reports a turn recovered with rows $statuses as completed: $completes',
+    async ({ statuses, completes }) => {
+      const rest = fakeRest({
+        getMessages: vi.fn(
+          async (): Promise<AgentMessages> => [
+            historyRow(1, 'user', 'msg-1', 'go'),
+            ...statuses.map((rowStatus, index) => ({
+              ...historyRow(
+                2 + index,
+                'assistant',
+                'msg-1',
+                'answer',
+                index === 0 ? 'msg-1' : `msg-1-${index}`
+              ),
+              status: rowStatus
+            }))
+          ]
+        )
+      })
+      useWorkflowStore().attachWorkflow(
+        createMockLoadedWorkflow({
+          path: 'workflows/a.json',
+          instanceId: 'tab-a'
+        }),
+        0
+      )
+      const conversation = useAgentConversationStore()
+      conversation.setTurnTabResolver(() => ({
+        status: 'known',
+        workflowInstanceId: 'tab-a'
+      }))
+      const completed: string[] = []
+      conversation.onTurnCompleted((path) => completed.push(path))
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+
+      await session.sendMessage('go')
+      emit(delta('msg-1', 'partial'))
+      status(false)
+      status(true)
+
+      await vi.waitFor(() => expect(session.isStreaming.value).toBe(false))
+      expect(completed).toEqual(completes ? ['workflows/a.json'] : [])
+    }
+  )
 
   it('an empty interrupted row preserves the locally streamed reply', async () => {
     const interruptedWithoutParts = {

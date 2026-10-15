@@ -5890,14 +5890,14 @@ describe('AgentPanelRoot lifecycle', () => {
 
   it('clears workflow activity when the panel unmounts', () => {
     const activity = useWorkflowTabActivityStore()
-    activity.setEditing('workflows/active.json')
+    activity.setAgentTurnTabs([{ path: 'workflows/active.json' }])
     activity.setCreating(true)
 
     const { unmount } = renderWithSelectedTarget()
 
     unmount()
 
-    expect(activity.$state.editingTabPath).toBeNull()
+    expect(activity.editingPaths.size).toBe(0)
     expect(activity.$state.creatingTab).toBe(false)
   })
 })
@@ -8450,11 +8450,11 @@ describe('AgentPanelRoot workflow binding', () => {
     await renderAndSend('add an upscaler')
 
     const activity = useWorkflowTabActivityStore()
-    expect(activity.editingTabPath).toBe('workflows/current.json')
+    expect([...activity.editingPaths]).toEqual(['workflows/current.json'])
 
     ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
     await screen.findByRole('button', { name: 'Send' })
-    expect(activity.editingTabPath).toBeNull()
+    expect(activity.editingPaths.size).toBe(0)
     expect(activity.unseenModifiedPaths.has('workflows/current.json')).toBe(
       true
     )
@@ -8468,12 +8468,12 @@ describe('AgentPanelRoot workflow binding', () => {
     await sendFromComposer('add an upscaler')
 
     const activity = useWorkflowTabActivityStore()
-    expect(activity.editingTabPath).toBe('workflows/current.json')
+    expect([...activity.editingPaths]).toEqual(['workflows/current.json'])
     activity.setCreating(true)
 
     unmount()
 
-    expect(activity.editingTabPath).toBeNull()
+    expect(activity.editingPaths.size).toBe(0)
     expect(activity.creatingTab).toBe(false)
   })
 
@@ -8576,7 +8576,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await renderAndSend('add an upscaler')
 
     const activity = useWorkflowTabActivityStore()
-    expect(activity.editingTabPath).toBe('workflows/current.json')
+    expect([...activity.editingPaths]).toEqual(['workflows/current.json'])
   })
 
   // PM-1575 regression: the canvas-sync gate was wired to
@@ -8638,7 +8638,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
     await renderAndSend('work here')
     const activity = useWorkflowTabActivityStore()
-    expect(activity.editingTabPath).toBe('workflows/current.json')
+    expect([...activity.editingPaths]).toEqual(['workflows/current.json'])
     vi.useFakeTimers()
 
     ws.emit('agent_active_tab', {
@@ -8649,7 +8649,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await vi.advanceTimersByTimeAsync(500)
 
     await vi.waitFor(() =>
-      expect(activity.editingTabPath).toBe('workflows/Video test.json')
+      expect([...activity.editingPaths]).toEqual(['workflows/Video test.json'])
     )
   })
 
@@ -8661,10 +8661,10 @@ describe('AgentPanelRoot workflow binding', () => {
     await sendFromComposer('add an upscaler')
 
     const activity = useWorkflowTabActivityStore()
-    expect(activity.editingTabPath).toBe('workflows/current.json')
+    expect([...activity.editingPaths]).toEqual(['workflows/current.json'])
 
     unmount()
-    expect(activity.editingTabPath).toBeNull()
+    expect(activity.editingPaths.size).toBe(0)
 
     const other = addTab('workflows/other.json')
     useAgentWorkflowTabBindingStore().bind('wf-other', other.path)
@@ -8679,11 +8679,11 @@ describe('AgentPanelRoot workflow binding', () => {
 
     renderWithSelectedTarget()
     await vi.waitFor(() =>
-      expect(activity.editingTabPath).toBe('workflows/current.json')
+      expect([...activity.editingPaths]).toEqual(['workflows/current.json'])
     )
 
     ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
-    await vi.waitFor(() => expect(activity.editingTabPath).toBeNull())
+    await vi.waitFor(() => expect(activity.editingPaths.size).toBe(0))
   })
 
   it("sends the active tab's saved workflow id with the turn", async () => {
@@ -8815,17 +8815,17 @@ describe('AgentPanelRoot workflow binding', () => {
 
     await sendFromComposer('attached turn')
     const activity = useWorkflowTabActivityStore()
-    expect(activity.editingTabPath).toBe('workflows/current.json')
+    expect([...activity.editingPaths]).toEqual(['workflows/current.json'])
 
     ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
-    await vi.waitFor(() => expect(activity.editingTabPath).toBeNull())
+    await vi.waitFor(() => expect(activity.editingPaths.size).toBe(0))
 
     await userEvent.click(
       screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
     )
     await sendFromComposer('detached turn')
 
-    expect(activity.editingTabPath).toBe('workflows/current.json')
+    expect([...activity.editingPaths]).toEqual(['workflows/current.json'])
   })
 
   it('agent_active_tab activates the bound tab', async () => {
@@ -9174,7 +9174,9 @@ describe('AgentPanelRoot workflow binding', () => {
         useAgentWorkflowTabBindingStore().tabPathFor('wf-other')
       ).toBeUndefined()
       expect(useTelemetry()!.trackAgentWorkflowApplied).not.toHaveBeenCalled()
-      expect(useWorkflowTabActivityStore().editingTabPath).toBe(current.path)
+      expect([...useWorkflowTabActivityStore().editingPaths]).toEqual([
+        current.path
+      ])
       expect(useWorkflowTabActivityStore().creatingTab).toBe(false)
       expect(
         Boolean(workflowStore.getWorkflowByPath('workflows/Other.json'))
@@ -9250,7 +9252,7 @@ describe('AgentPanelRoot workflow binding', () => {
         useAgentWorkflowTabBindingStore().tabPathFor('wf-late')
       ).toBeUndefined()
       expect(useTelemetry()!.trackAgentWorkflowApplied).not.toHaveBeenCalled()
-      expect(useWorkflowTabActivityStore().editingTabPath).toBeNull()
+      expect(useWorkflowTabActivityStore().editingPaths.size).toBe(0)
       if (kind === 'new') expect(workflowStore.activeWorkflow).toEqual(current)
       expect(
         Boolean(workflowStore.getWorkflowByPath('workflows/Late.json'))
@@ -9450,13 +9452,15 @@ describe('AgentPanelRoot workflow binding', () => {
 
     const activity = useWorkflowTabActivityStore()
     await vi.waitFor(() =>
-      expect(activity.editingTabPath).toBe(
+      expect([...activity.editingPaths]).toEqual([
         'workflows/Unsaved Workflow (2).json'
-      )
+      ])
     )
     ws.emit('agent_active_tab', { workflow_id: 'wf-a', thread_id: 'th-1' })
     await vi.waitFor(() =>
-      expect(activity.editingTabPath).toBe('workflows/Unsaved Workflow.json')
+      expect([...activity.editingPaths]).toEqual([
+        'workflows/Unsaved Workflow.json'
+      ])
     )
   })
 
