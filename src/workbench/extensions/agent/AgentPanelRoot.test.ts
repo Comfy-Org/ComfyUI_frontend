@@ -8237,13 +8237,10 @@ describe('AgentPanelRoot workflow binding', () => {
       )
     )
     expect(useWorkflowService().saveWorkflowAs).not.toHaveBeenCalled()
-    // The whole FE-1310 chain: wire event -> session -> store -> rendered card.
     expect(
       await screen.findByRole('button', { name: /^Open / })
     ).toBeInTheDocument()
 
-    // Content sync rides the CRDT follower; activation never reloads the
-    // canvas itself.
     expect(app.loadGraphData).not.toHaveBeenCalled()
     await vi.waitFor(() =>
       expect(useTelemetry()!.trackAgentWorkflowApplied).toHaveBeenCalledWith({
@@ -9799,8 +9796,6 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(
       workflowStore.getWorkflowByPath('workflows/duck (2).json')
     ).toBeNull()
-    // Resolving by cloud name has to leave the binding behind, or the transcript
-    // link renders nothing for the tab the user was just moved to.
     expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-cloud-duck')).toBe(
       duck.path
     )
