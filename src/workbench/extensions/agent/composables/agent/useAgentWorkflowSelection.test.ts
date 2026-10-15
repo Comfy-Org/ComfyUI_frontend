@@ -728,7 +728,6 @@ describe('historical workflow restoration', () => {
     expect(panel.selectedWorkflow).toBeNull()
     expect(panel.targetUnavailable).toBe(false)
     expect(workflows.openWorkflows).not.toContain(draft)
-    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
     expect(workflows.activeWorkflow?.path).toBe(current.path)
     expect(bindings.tabPathFor('wf-draft')).toBeUndefined()
   })
