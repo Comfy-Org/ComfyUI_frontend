@@ -52,10 +52,9 @@ const { hasUnseenItems, markAsSeen } = useNewMenuItemIndicator(
 )
 
 function onMenuItemActivate(item: object) {
-  const action = menuItems.value.find((candidate) => candidate === item)
-  if (!action || action.separator) return
+  if (!('id' in item) || typeof item.id !== 'string') return
   useTelemetry()?.trackUiButtonClicked({
-    button_id: `workflow_actions_${snakeCase(action.id)}_clicked`,
+    button_id: `workflow_actions_${snakeCase(item.id)}_clicked`,
     element_group: 'workflow_actions'
   })
 }

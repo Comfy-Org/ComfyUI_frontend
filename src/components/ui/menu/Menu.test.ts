@@ -47,23 +47,54 @@ describe('Menu', () => {
   })
 
   it.for([
-    { gesture: 'a click', hold: 0, activations: 1 },
-    { gesture: 'press-and-hold repeats', hold: 100, activations: 0 }
-  ])(
-    'emits $activations activate events for $gesture on a press-and-hold item',
-    async ({ hold, activations }) => {
+    {
+      gesture: 'a click',
+      role: 'menuitem',
+      checked: undefined,
+      hold: 0,
+      activations: 1
+    },
+    {
+      gesture: 'a click',
+      role: 'menuitemcheckbox',
+      checked: false,
+      hold: 0,
+      activations: 1
+    },
+    {
+      gesture: 'press-and-hold repeats',
+      role: 'menuitem',
+      checked: undefined,
+      hold: 100,
+      activations: 0
+    },
+    {
+      gesture: 'press-and-hold repeats',
+      role: 'menuitemcheckbox',
+      checked: false,
+      hold: 100,
+      activations: 0
+    }
+  ] as const)(
+    'emits $activations activate events for $gesture on a press-and-hold $role',
+    async ({ role, checked, hold, activations }) => {
       const onActivate = vi.fn()
       render(Menu, {
         props: {
           open: true,
           items: [
-            { label: 'Zoom', command: vi.fn(), pressAndHoldInterval: 50 }
+            {
+              label: 'Zoom',
+              command: vi.fn(),
+              pressAndHoldInterval: 50,
+              checked
+            }
           ],
           onActivate
         },
         slots: { trigger: '<button>Open</button>' }
       })
-      const item = await screen.findByRole('menuitem', { name: 'Zoom' })
+      const item = await screen.findByRole(role, { name: 'Zoom' })
       vi.useFakeTimers()
       onTestFinished(() => {
         vi.useRealTimers()

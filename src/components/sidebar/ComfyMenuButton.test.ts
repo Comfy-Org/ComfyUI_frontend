@@ -223,12 +223,10 @@ describe('ComfyMenuButton', () => {
     }
   )
 
-  const save = vi.fn()
-
   it.for([
     {
       submenu: 'File',
-      menuItems: [
+      menuItems: (save: () => void) => [
         {
           key: 'File',
           label: 'File',
@@ -246,15 +244,16 @@ describe('ComfyMenuButton', () => {
     },
     {
       submenu: 'menu.theme',
-      menuItems: [],
+      menuItems: () => [],
       expected: 'comfy_menu_theme_clicked',
       saveCalls: 0
     }
   ])(
     'reports $expected when the first $submenu submenu item is activated',
     async ({ submenu, menuItems, expected, saveCalls }) => {
+      const save = vi.fn()
       registerCommand('Comfy.SaveWorkflow', 'System')
-      useMenuItemStore().menuItems = menuItems
+      useMenuItemStore().menuItems = menuItems(save)
       const menu = await openMenu()
 
       await menu.user.hover(screen.getByRole('menuitem', { name: submenu }))

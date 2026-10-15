@@ -54,15 +54,15 @@ function select(event: Event) {
     event.preventDefault()
     return
   }
+  if (pointerRepeating) {
+    pointerRepeating = false
+    event.preventDefault()
+    return
+  }
   if (item.checked !== undefined) {
     event.preventDefault()
     void item.command({ originalEvent: event, item })
     emit('activate', item)
-    return
-  }
-  if (pointerRepeating) {
-    pointerRepeating = false
-    event.preventDefault()
     return
   }
   void item.command({ originalEvent: event, item })
