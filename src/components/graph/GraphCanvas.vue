@@ -120,6 +120,10 @@
   </template>
 </template>
 
+<script lang="ts">
+let activeStartup: symbol | undefined
+</script>
+
 <script setup lang="ts">
 import { until, useEventListener } from '@vueuse/core'
 import {
@@ -538,8 +542,17 @@ useEventListener(
 )
 
 let disposed = false
+const startupOwner = Symbol()
+
+function finishStartup(outcome: 'completed' | 'failed') {
+  if (activeStartup !== startupOwner) return
+  activeStartup = undefined
+  workspaceStore.spinner = false
+  bootstrapTracer.complete(outcome)
+}
 
 onMounted(async () => {
+  activeStartup = startupOwner
   comfyApp.vueAppReady = true
   workspaceStore.spinner = true
   let startupOutcome: StartupOutcome | undefined
@@ -614,8 +627,7 @@ onMounted(async () => {
     bootstrapOutcome = 'completed'
   } finally {
     if (!disposed) {
-      workspaceStore.spinner = false
-      bootstrapTracer.complete(bootstrapOutcome)
+      finishStartup(bootstrapOutcome)
     }
   }
   const sharedStatus =
@@ -647,6 +659,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   disposed = true
+  void nextTick(() => finishStartup('failed'))
   cleanupErrorHooks?.()
   cleanupErrorHooks = null
 })

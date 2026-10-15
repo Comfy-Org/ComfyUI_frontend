@@ -695,6 +695,36 @@ describe('deployment model options at startup', () => {
     }
   )
 
+  it.for([true, false])(
+    'clears abandoned startup when lookup eventually succeeds: %s',
+    async (succeeds) => {
+      const store = useDeploymentPickStore()
+      let finishListing = () => {}
+      vi.spyOn(store, 'loadOnce').mockReturnValue(
+        new Promise<void>((resolve) => {
+          finishListing = resolve
+        })
+      )
+      const complete = vi.spyOn(bootstrapTracer, 'complete')
+      await mountGraphCanvas()
+      expect(useWorkspaceStore().spinner).toBe(true)
+
+      cleanup()
+      await nextTick()
+
+      expect(useWorkspaceStore().spinner).toBe(false)
+      expect(complete).toHaveBeenCalledExactlyOnceWith('failed')
+
+      store.bootDeployment = succeeds ? null : undefined
+      finishListing()
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(useWorkspaceStore().spinner).toBe(false)
+      expect(complete).toHaveBeenCalledExactlyOnceWith('failed')
+      expect(app.setup).not.toHaveBeenCalled()
+    }
+  )
+
   it('lets the replacement editor finish startup after unmount during lookup', async () => {
     const store = useDeploymentPickStore()
     let finishListing = () => {}
