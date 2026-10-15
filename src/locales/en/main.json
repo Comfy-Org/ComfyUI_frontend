@@ -3023,6 +3023,7 @@
     "topupSuccess": "Credits added successfully",
     "topupFailed": "Top-up failed",
     "topupTimeout": "Top-up verification timed out",
+    "topupAlreadyPendingDetail": "A top-up you started earlier is still going through. Finish verifying it or wait for it to complete before adding more credits.",
     "paymentDeclinedDetail": "Your bank declined this payment. Try another payment method or contact your bank.",
     "insufficientFundsDetail": "This payment method has insufficient funds. Try another payment method or contact your bank.",
     "expiredCardDetail": "This card has expired. Use a different payment method.",
