@@ -1,8 +1,5 @@
 import type { MediaType } from '@/utils/formatUtil'
-import {
-  getFilenameDetails,
-  getMediaTypeFromFilename
-} from '@/utils/formatUtil'
+import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
 const AGENT_ATTACH_MEDIA_KINDS = [
   'image',
@@ -41,7 +38,7 @@ export const AGENT_ATTACH_ACCEPT = [
 export function isAgentAttachable(file: File): boolean {
   if (MEDIA_ATTACHABLE_KINDS.has(getMediaTypeFromFilename(file.name)))
     return true
-  const extension = getFilenameDetails(file.name).suffix?.toLowerCase() ?? ''
+  const extension = file.name.split('.').pop()?.toLowerCase() ?? ''
   return ATTACHABLE_EXTENSIONS.has(extension)
 }
 
