@@ -47,6 +47,8 @@ import type { SettingsHandle } from './settingsHandle'
 import type { StorageHandle } from './storageHandle'
 import { createSystemApi } from './systemHandle'
 import type { SystemHandle } from './systemHandle'
+import { createModelsApi } from './modelsHandle'
+import type { ModelsHandle } from './modelsHandle'
 import type { UiHandle } from './uiHandle'
 import type { NodeHandle } from './nodeHandle'
 import { createWorkflowApi } from './workflowHandle'
@@ -145,6 +147,7 @@ const CAPABILITIES: ReadonlyMap<string, string> = new Map([
   ['backend', '2.0'],
   ['storage', '2.0'],
   ['system.monitor', '2.0'],
+  ['models.list', '2.0'],
   ['ui.sidebarTab', '2.0'],
   ['viewport.changed', '2.0'],
   ['interaction.state', '2.0'],
@@ -237,6 +240,7 @@ export interface Comfy {
   readonly storage: StorageHandle
   /** Bounded, host-sampled hardware metrics. */
   readonly system: SystemHandle
+  readonly models: ModelsHandle
   /** The sanctioned slice of app chrome — sidebar tabs. */
   readonly ui: UiHandle
   /** Commands, their keybindings, and notifications. */
@@ -364,6 +368,7 @@ function buildMajor(
   const settings = createSettingsApi()
   const storage = createStorageApi()
   const system = createSystemApi()
+  const models = createModelsApi()
   const ui = createUiHandle()
   const commands = createCommandsApi()
   const backend = createBackendApi()
@@ -448,6 +453,7 @@ function buildMajor(
     settings,
     storage,
     system,
+    models,
     ui,
     commands,
     backend,
