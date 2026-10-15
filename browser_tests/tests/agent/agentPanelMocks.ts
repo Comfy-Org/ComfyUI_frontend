@@ -255,7 +255,7 @@ export const MESSAGE_DONE_EVENT: AgentWsEvent = {
   }
 }
 
-export function pushTurnEvent(
+function pushTurnEvent(
   ws: WebSocketRoute,
   event: AgentWsEvent,
   messageId: string
