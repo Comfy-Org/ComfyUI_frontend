@@ -5337,7 +5337,7 @@
     },
     "hero": {
       "title": "FLUX 3 Image Klein",
-      "description": "BFL 最新的开放权重模型提供两个版本：标准版和步数蒸馏 turbo 版。两者都能生成和编辑图像。使用标准版创作图像，或使用 turbo 版快速迭代。",
+      "description": "Black Forest Labs 最新的开放权重模型提供两个版本：标准版和步数蒸馏 turbo 版。两者都能生成和编辑图像。使用标准版创作图像，或使用 turbo 版快速迭代。",
       "openSource": "开源",
       "imageGeneration": "图像生成",
       "imageEdit": "图像编辑",
