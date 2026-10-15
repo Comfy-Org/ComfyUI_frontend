@@ -11,6 +11,7 @@ vi.mock(import('@/scripts/app'))
 describe('savedImageUrls', () => {
   beforeEach(() => {
     vi.mocked(api.apiURL).mockImplementation((path) => `/api${path}`)
+    vi.mocked(app.getRandParam).mockReturnValue('&rand=0.5')
   })
 
   it('builds a /view URL for every saved image, keeping subfolder and type', () => {
@@ -25,12 +26,19 @@ describe('savedImageUrls', () => {
     ])
   })
 
-  it('appends the preview format and cache-busting params', () => {
+  it('keeps the content version so a rewritten file gets a new URL', () => {
+    expect(
+      savedImageUrls([
+        { filename: 'a.png', type: 'output', version: '18dd-46' }
+      ])
+    ).toEqual(['/api/view?filename=a.png&type=output&version=18dd-46'])
+  })
+
+  it('appends the preview format param', () => {
     vi.spyOn(app, 'getPreviewFormatParam').mockReturnValue('&preview=webp')
-    vi.spyOn(app, 'getRandParam').mockReturnValue('&rand=0.5')
 
     expect(savedImageUrls([{ filename: 'a.png', type: 'temp' }])).toEqual([
-      '/api/view?filename=a.png&type=temp&preview=webp&rand=0.5'
+      '/api/view?filename=a.png&type=temp&preview=webp'
     ])
   })
 

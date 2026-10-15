@@ -145,6 +145,21 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
     expect(previewUrl.searchParams.get('type')).toBe('output')
   })
 
+  it('carries the server content version into the view URL', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 1 })
+    const executionId = createNodeExecutionId([node.id])
+    store.setNodeOutputsByExecutionId(
+      executionId,
+      createMockOutputs([{ filename: 'a.png', type: 'output', version: 'v2' }])
+    )
+
+    const [url] = store.getNodeImageUrlsByExecutionId(executionId, node) ?? []
+    expect(
+      new URL(url, window.location.origin).searchParams.get('version')
+    ).toBe('v2')
+  })
+
   it('carries preview_id on the view URL', () => {
     const store = useNodeOutputStore()
     const node = createMockNode({ id: 1 })

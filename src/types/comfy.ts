@@ -149,6 +149,7 @@ export interface ComfyApp {
   /** @deprecated Use useLitegraphService().resetView instead */
   resetView(): void
   getPreviewFormatParam(): string
+  /** @deprecated The frontend no longer cache-busts /view URLs; the server versions each output */
   getRandParam(): string
 
   setup(canvasEl: HTMLCanvasElement): Promise<void>

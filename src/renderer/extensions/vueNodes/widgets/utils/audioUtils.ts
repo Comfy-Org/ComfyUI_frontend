@@ -1,16 +1,16 @@
 import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
-import { app } from '@/scripts/app'
 
 export function getResourceURL(
   subfolder: string,
   filename: string,
-  type: ResultItemType = 'input'
+  type: ResultItemType = 'input',
+  version?: string
 ): string {
   const params = [
     'filename=' + encodeURIComponent(filename),
     'type=' + type,
     'subfolder=' + subfolder,
-    app.getRandParam().substring(1)
+    ...(version ? ['version=' + encodeURIComponent(version)] : [])
   ].join('&')
 
   return `/view?${params}`

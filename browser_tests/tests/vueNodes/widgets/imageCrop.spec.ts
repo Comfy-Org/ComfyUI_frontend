@@ -829,18 +829,32 @@ test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
         const img = node.locator('img')
         await waitForImageNaturalSize(img)
 
-        let failExamplePng = false
+        let examplePngRequests = 0
         await comfyPage.page.route('**/api/view**', async (route) => {
-          const u = route.request().url()
-          if (failExamplePng && u.includes('example.png')) {
+          if (route.request().url().includes('example.png')) {
+            examplePngRequests++
             await route.abort('failed')
             return
           }
           await route.fallback()
         })
         try {
-          failExamplePng = true
+          // /view URLs are stable now, so an already-loaded image is reused
+          // in-page; a fresh document forces the fetch the route will fail.
+          await comfyPage.workflow.reloadAndWaitForApp()
+          await expect(node.getByTestId('crop-empty-state')).toBeVisible()
+          await expect(
+            comfyPage.vueNodes
+              .getNodeLocator('1')
+              .getByTestId('error-loading-image')
+          ).toBeVisible()
+          const beforeRun = examplePngRequests
           const runDone = comfyPage.runButton.click()
+          await expect
+            .poll(() => examplePngRequests, {
+              message: 'the rerun should make the crop request the image again'
+            })
+            .toBeGreaterThan(beforeRun)
           await expect(
             node.getByTestId('crop-empty-state'),
             'failed view fetch should show empty state'
@@ -849,10 +863,17 @@ test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
             node.getByTestId('crop-overlay'),
             'crop overlay should hide when image fails'
           ).toHaveCount(0)
+          await expect(
+            node.locator('img'),
+            'a failed image should not stay mounted'
+          ).toHaveCount(0)
           await runDone
         } finally {
           await comfyPage.page.unroute('**/api/view**')
         }
+
+        await comfyPage.runButton.click()
+        await waitForImageNaturalSize(node.locator('img'), { timeout: 30_000 })
       })
 
       test('Selecting 16:9 ratio adjusts crop height proportionally', async ({

@@ -83,8 +83,8 @@ describe('loadCompositorSession', () => {
 
     expect(session.loadImages).toHaveBeenCalledWith(
       [
-        'http://host/api/view?filename=first.png&subfolder=sub&type=temp&rand=0.5',
-        'http://host/api/view?filename=&type=temp&rand=0.5'
+        'http://host/api/view?filename=first.png&subfolder=sub&type=temp',
+        'http://host/api/view?filename=&type=temp'
       ],
       ['first', 'Layer 2']
     )

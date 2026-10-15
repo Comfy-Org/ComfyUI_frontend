@@ -128,6 +128,7 @@ import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
+import { useLoadRetry } from '@/composables/media/useLoadRetry'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { NodeId } from '@/types/nodeId'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -152,8 +153,9 @@ const currentIndex = ref(0)
 const isHovered = ref(false)
 const isFocused = ref(false)
 const actualDimensions = ref<string | null>(null)
-const videoError = ref(false)
+const { failed: videoError, retryKey } = useLoadRetry(() => props.imageUrls)
 const showLoader = ref(false)
+watch(retryKey, () => (showLoader.value = true))
 
 const videoWrapperEl = ref<HTMLDivElement>()
 

@@ -31,14 +31,17 @@
     >
       <img
         v-if="afterImage"
+        :key="`after-${retryKey}`"
         :src="afterImage"
         :alt="$t('imageCompare.afterAlt')"
         draggable="false"
         class="absolute inset-0 size-full object-contain"
+        @error="onError"
       />
 
       <img
         v-if="beforeImage"
+        :key="`before-${retryKey}`"
         :src="beforeImage"
         :alt="$t('imageCompare.beforeAlt')"
         draggable="false"
@@ -48,6 +51,7 @@
             ? { clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }
             : undefined
         "
+        @error="onError"
       />
 
       <!-- Circular drag handle -->
@@ -83,6 +87,7 @@
 import { useMouseInElement } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
 
+import { useLoadRetry } from '@/composables/media/useLoadRetry'
 import { useImageCompareImages } from '@/renderer/extensions/vueNodes/widgets/composables/useImageCompareImages'
 import { app } from '@/scripts/app'
 import type { NodeId } from '@/types/nodeId'
@@ -128,6 +133,11 @@ watch(beforeImages, (images) => {
 watch(afterImages, (images) => {
   if (afterIndex.value >= images.length) afterIndex.value = 0
 })
+
+const { retryKey, onError } = useLoadRetry(() => [
+  beforeImages.value,
+  afterImages.value
+])
 
 const beforeImage = computed(() => beforeImages.value[beforeIndex.value] ?? '')
 const afterImage = computed(() => afterImages.value[afterIndex.value] ?? '')

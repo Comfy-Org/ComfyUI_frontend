@@ -350,6 +350,10 @@ describe('ComfyApp', () => {
     )
   })
 
+  it.skipIf(isCloud)('keeps the deprecated cache-buster for extensions', () => {
+    expect(app.getRandParam()).toMatch(/^&rand=0\.\d+/)
+  })
+
   it('registers the exported singleton for useApp', () => {
     expect(useApp()).toBe(singletonApp)
   })

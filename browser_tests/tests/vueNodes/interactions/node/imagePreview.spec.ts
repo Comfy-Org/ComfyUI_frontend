@@ -1,3 +1,5 @@
+import { copyFileSync, readFileSync } from 'node:fs'
+
 import { expect, mergeTests } from '@playwright/test'
 import type { Locator } from '@playwright/test'
 
@@ -8,6 +10,7 @@ import {
   getPromotedWidgetNames,
   getPromotedWidgetCountByName
 } from '@e2e/fixtures/utils/promotedWidgets'
+import { assetPath } from '@e2e/fixtures/utils/paths'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 const wstest = mergeTests(test, webSocketFixture)
@@ -79,6 +82,35 @@ test.describe('Vue Nodes Image Preview', { tag: '@vue-nodes' }, () => {
 
     await expect(imagePreview.getByLabel('Edit or mask image')).toHaveCount(0)
     await expect(imagePreview.getByLabel('Download image')).toHaveCount(0)
+  })
+
+  test('shows the image once a missing file is uploaded under its name', async ({
+    comfyPage
+  }, testInfo) => {
+    const filename = `reupload-${crypto.randomUUID()}.png`
+    const filePath = testInfo.outputPath(filename)
+    copyFileSync(assetPath('test_upload_image.png'), filePath)
+
+    const workflow = readFileSync(
+      assetPath('widgets/load_image_widget_missing_file.json'),
+      'utf8'
+    ).replace('this-image-does-not-exist-deadbeef.png', filename)
+    await comfyPage.workflow.loadGraphData(JSON.parse(workflow))
+    const loadImage = (
+      await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
+    )[0]
+    const node = await comfyPage.vueNodes.getFixtureByTitle('Load Image')
+    await expect(
+      node.imagePreview.getByTestId('error-loading-image')
+    ).toBeVisible()
+
+    const { x, y } = await loadImage.getPosition()
+    await comfyPage.dragDrop.dragAndDropFilePath(filePath, {
+      dropPosition: { x, y },
+      waitForUpload: true
+    })
+
+    await node.waitForImageLoaded(filename)
   })
 
   test('shows image context menu options', async ({ comfyPage }) => {
@@ -267,6 +299,76 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
         await expect(cell).toHaveAttribute('src', /[?&]preview=webp(%3B|;)75/)
         await expect(cell).toHaveAttribute('src', /[?&]filename=grid-\d+\.png/)
       }
+    }
+  )
+})
+
+test.describe('Vue Nodes Image Preview URLs', { tag: '@vue-nodes' }, () => {
+  wstest(
+    'shows the new image when a run rewrites the same filename',
+    async ({ comfyPage, getWebSocket }) => {
+      const execution = new ExecutionHelper(comfyPage, await getWebSocket())
+      await comfyPage.page.route('**/api/view?**', (route) =>
+        route.fulfill({
+          path: assetPath(
+            route.request().url().includes('version=v2')
+              ? 'image64x64.webp'
+              : 'test_upload_image.png'
+          )
+        })
+      )
+
+      await comfyPage.menu.topbar.newWorkflowButton.click()
+      await comfyPage.nextFrame()
+      await comfyPage.searchBoxV2.addNode('Preview Image')
+      const node = await comfyPage.vueNodes.getFixtureByTitle('Preview Image')
+      const image = node.imagePreview.getByTestId('main-image')
+      const output = (version: string) => ({
+        images: [
+          { filename: 'same.png', subfolder: '', type: 'output', version }
+        ]
+      })
+      const naturalWidth = () =>
+        image.evaluate((img: HTMLImageElement) => img.naturalWidth)
+
+      execution.executed('', '1', output('v1'))
+      await node.waitForImageLoaded('same.png')
+      const firstWidth = await naturalWidth()
+
+      execution.executed('', '1', output('v2'))
+      await expect.poll(naturalWidth).toBe(64)
+      expect(firstWidth).not.toBe(64)
+    }
+  )
+
+  wstest(
+    'shows a re-shown output at the same /view URL, without a cache-busting param',
+    async ({ comfyPage, getWebSocket }) => {
+      const execution = new ExecutionHelper(comfyPage, await getWebSocket())
+      await comfyPage.page.route('**/api/view?**', (route) =>
+        route.fulfill({ path: assetPath('test_upload_image.png') })
+      )
+
+      await comfyPage.menu.topbar.newWorkflowButton.click()
+      await comfyPage.nextFrame()
+      await comfyPage.searchBoxV2.addNode('Preview Image')
+      const node = await comfyPage.vueNodes.getFixtureByTitle('Preview Image')
+      const image = node.imagePreview.getByTestId('main-image')
+      const output = (filename: string) => ({
+        images: [{ filename, subfolder: '', type: 'output' }]
+      })
+
+      execution.executed('', '1', output('first.png'))
+      await node.waitForImageLoaded('first.png')
+      await expect(image).not.toHaveAttribute('src', /[?&]rand=/)
+      const firstSrc = await image.getAttribute('src')
+
+      execution.executed('', '1', output('second.png'))
+      await node.waitForImageLoaded('second.png')
+
+      execution.executed('', '1', output('first.png'))
+      await node.waitForImageLoaded('first.png')
+      await expect(image).toHaveAttribute('src', firstSrc!)
     }
   )
 })

@@ -14,7 +14,6 @@ import {
 import type { LayerEditorSession } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
 
 export async function loadCompositorSession(
   session: LayerEditorSession,
@@ -22,9 +21,8 @@ export async function loadCompositorSession(
   fallbackLayerName: (index: number) => string
 ): Promise<number> {
   const refs = getCompositorLayers(node) ?? []
-  const rand = app.getRandParam()
   const urls = refs.map((fileRef) =>
-    api.apiURL(`/view?${imageRefViewQuery(fileRef)}${rand}`)
+    api.apiURL(`/view?${imageRefViewQuery(fileRef)}`)
   )
   const names = refs.map(
     (fileRef, i) =>

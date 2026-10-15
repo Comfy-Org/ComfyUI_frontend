@@ -1,5 +1,5 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen, within } from '@testing-library/vue'
+import { fireEvent, render, screen, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -83,6 +83,31 @@ describe('WidgetImageCompare', () => {
       const images = screen.getAllByRole('img')
       expect(images[0]).toHaveAttribute('src', savedUrl('after.png'))
       expect(images[1]).toHaveAttribute('src', savedUrl('before.png'))
+    })
+
+    it('reloads a failed image when the node gets outputs again', async () => {
+      const { compare } = buildGraph()
+      setSavedImages(compare, ['before.png'], ['after.png'])
+      renderWidget(compare)
+      const [failed] = screen.getAllByRole('img')
+      await fireEvent.error(failed)
+
+      setSavedImages(compare, ['before.png'], ['after.png'])
+      await nextTick()
+
+      expect(screen.getAllByRole('img')[0]).not.toBe(failed)
+    })
+
+    it('keeps a loaded image when the node gets the same outputs again', async () => {
+      const { compare } = buildGraph()
+      setSavedImages(compare, ['before.png'], ['after.png'])
+      renderWidget(compare)
+      const [loaded] = screen.getAllByRole('img')
+
+      setSavedImages(compare, ['before.png'], ['after.png'])
+      await nextTick()
+
+      expect(screen.getAllByRole('img')[0]).toBe(loaded)
     })
 
     it('shows the empty state while the node is unconnected and unrun', () => {

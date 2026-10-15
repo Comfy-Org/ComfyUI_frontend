@@ -31,12 +31,13 @@
           class="pointer-events-none relative size-full"
         >
           <img
+            :key="gridRetryKey"
             :src="url"
             :alt="`${$t('g.galleryThumbnail')} ${index + 1}`"
             draggable="false"
             class="size-full object-contain"
             @load="updateAspectRatio($event, index)"
-            @error="failedHdrPreviews[index] = true"
+            @error="((failedHdrPreviews[index] = true), onGridImageError())"
           />
         </div>
         <div
@@ -245,6 +246,7 @@ import { downloadFile } from '@/base/common/downloadUtil'
 import Button from '@/components/ui/button/Button.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
+import { useLoadRetry } from '@/composables/media/useLoadRetry'
 import { useNodeOutputsExport } from '@/platform/assets/composables/useNodeOutputsExport'
 import { useTelemetry } from '@/platform/telemetry'
 import { describeImageLoadFailure } from '@/platform/telemetry/imageFailureDiagnostics'
@@ -291,7 +293,10 @@ const currentIndex = ref(0)
 const viewMode = ref<ViewMode>(defaultViewMode(imageUrls))
 const galleryPanelEl = ref<HTMLDivElement>()
 const actualDimensions = ref<string | null>(null)
-const imageError = ref(false)
+const { failed: imageError, retryKey } = useLoadRetry(() => imageUrls)
+const { retryKey: gridRetryKey, onError: onGridImageError } = useLoadRetry(
+  () => imageUrls
+)
 const showLoader = ref(false)
 const imageAspectRatio = ref(1)
 const failedHdrPreviews = ref<boolean[]>([])
@@ -304,6 +309,7 @@ const { start: startDelayedLoader, stop: stopDelayedLoader } = useTimeoutFn(
   // Make sure it doesnt run on component mount
   { immediate: false }
 )
+watch(retryKey, () => startDelayedLoader())
 
 const currentImageUrl = computed(() => imageUrls[currentIndex.value] ?? '')
 const isHdrPlaceholder = (index: number) =>
@@ -333,6 +339,7 @@ const gridCols = computed(() => {
   return Math.max(Math.round(Math.sqrt(imageUrls.length * bias)), 1)
 })
 
+let loadedImage: HTMLImageElement | undefined
 watch(
   () => imageUrls,
   (newUrls, oldUrls) => {
@@ -343,8 +350,18 @@ watch(
       newUrls.length !== oldUrls.length ||
       newUrls.some((url, i) => key(url) !== key(oldUrls[i]))
 
-    if (!urlsChanged) return
+    if (!urlsChanged) {
+      // Same URLs, so no reload: hand the node back the image it already has.
+      if (loadedImage && nodeId)
+        nodeOutputStore.syncLegacyNodeImgs(
+          nodeId,
+          loadedImage,
+          currentIndex.value
+        )
+      return
+    }
 
+    loadedImage = undefined
     if (currentIndex.value >= newUrls.length) {
       currentIndex.value = 0
     }
@@ -369,6 +386,7 @@ function handleImageLoad(event: Event) {
     actualDimensions.value = `${img.naturalWidth} x ${img.naturalHeight}`
   }
 
+  loadedImage = img
   if (nodeId) {
     nodeOutputStore.syncLegacyNodeImgs(nodeId, img, currentIndex.value)
   }
@@ -383,6 +401,7 @@ function updateAspectRatio(event: Event, index: number) {
 }
 
 function handleImageError() {
+  loadedImage = undefined
   stopDelayedLoader()
   showLoader.value = false
   if (currentHdrPreviewUrl.value) {

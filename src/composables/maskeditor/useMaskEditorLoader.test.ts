@@ -3,6 +3,7 @@ import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
@@ -163,6 +164,30 @@ describe('useMaskEditorLoader', () => {
       paintLayer: undefined,
       nodeId: toNodeId(7)
     })
+  })
+
+  it('keeps the output version when loading the node image', async () => {
+    const node = createLoadImageNode('')
+    node.images = [{ filename: 'out.png', type: 'output', version: 'v2' }]
+
+    await useMaskEditorLoader().loadFromNode(node)
+
+    expect(requestedLayerUrls('out.png')).toContainEqual(
+      expect.stringContaining('version=v2')
+    )
+  })
+
+  it('keeps the output version when loading the image from stored outputs', async () => {
+    const node = createLoadImageNode('')
+    vi.spyOn(useNodeOutputStore(), 'getNodeOutputs').mockReturnValue({
+      images: [{ filename: 'stored.png', type: 'output', version: 'v3' }]
+    })
+
+    await useMaskEditorLoader().loadFromNode(node)
+
+    expect(requestedLayerUrls('stored.png')).toContainEqual(
+      expect.stringContaining('version=v3')
+    )
   })
 
   it('still fails when the node image itself cannot be loaded', async () => {

@@ -54,6 +54,26 @@ describe('VideoPreview', () => {
     })
   }
 
+  it('retries a failed video when the same URLs arrive again', async () => {
+    const urls = ['/api/view?filename=test.mp4&type=input']
+    const { container, rerender } = renderVideoPreview({ imageUrls: urls })
+
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    const failed = container.querySelector('video')!
+    await fireEvent.error(failed)
+    await nextTick()
+    expect(screen.getByTestId('error-loading-video')).toBeInTheDocument()
+
+    await rerender({ imageUrls: [...urls] })
+    await nextTick()
+
+    expect(screen.queryByTestId('error-loading-video')).not.toBeInTheDocument()
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    expect(container.querySelector('video')).not.toBe(failed)
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    expect(container.querySelector('[aria-busy="true"]')).toBeInTheDocument()
+  })
+
   describe('batch cycling with identical URLs', () => {
     it('should not enter persistent loading state when cycling through identical videos', async () => {
       const sameUrl = '/api/view?filename=test.mp4&type=output'

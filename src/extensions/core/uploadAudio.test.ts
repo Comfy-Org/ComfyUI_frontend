@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { api } from '@/scripts/api'
+import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import { app } from '@/scripts/app'
 import type { useAudioService } from '@/services/audioService'
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -63,8 +64,9 @@ vi.mock(import('@/i18n'))
 vi.mock(
   import('@/renderer/extensions/vueNodes/widgets/utils/audioUtils'),
   () => ({
-    getResourceURL: (subfolder, filename, type = 'input') =>
-      `/view?filename=${filename}&subfolder=${subfolder}&type=${type}`,
+    getResourceURL: (subfolder, filename, type = 'input', version) =>
+      `/view?filename=${filename}&subfolder=${subfolder}&type=${type}` +
+      (version ? `&version=${version}` : ''),
     splitFilePath: (path) => ['', path]
   })
 )
@@ -289,6 +291,61 @@ describe('Comfy.AudioWidget AUDIO_UI widget', () => {
 
     expect(domWidget.serialize).toBe(false)
     expect(domWidget.options.serialize).toBe(false)
+  })
+
+  it('puts the output version in the audio URL so a rewritten file reloads', async () => {
+    const AUDIO_UI = await loadAudioUIWidget()
+    const domWidget = {
+      element: document.createElement('audio'),
+      options: {}
+    }
+    const node = fromAny<LGraphNode, unknown>({
+      addDOMWidget: vi.fn(() => domWidget),
+      constructor: { nodeData: { output_node: true } }
+    })
+    AUDIO_UI(node, 'audioUI')
+
+    node.onExecuted!({
+      audio: [
+        { filename: 'out.wav', subfolder: '', type: 'output', version: 'v2' }
+      ]
+    })
+
+    expect(api.apiURL).toHaveBeenCalledWith(
+      '/view?filename=out.wav&subfolder=&type=output&version=v2'
+    )
+  })
+
+  it('puts the output version in the audio URL when outputs are re-synced', () => {
+    const extension = registeredExtensions.find(
+      ({ name }) => name === 'Comfy.AudioWidget'
+    )
+    const audioUIWidget = {
+      name: 'audioUI',
+      element: document.createElement('audio')
+    }
+    vi.mocked(getNodeByLocatorId).mockReturnValue(
+      fromAny<LGraphNode, unknown>({ widgets: [audioUIWidget] })
+    )
+
+    extension!.onNodeOutputsUpdated!(
+      fromAny({
+        '1': {
+          audio: [
+            {
+              filename: 'out.wav',
+              subfolder: '',
+              type: 'output',
+              version: 'v3'
+            }
+          ]
+        }
+      })
+    )
+
+    expect(api.apiURL).toHaveBeenCalledWith(
+      '/view?filename=out.wav&subfolder=&type=output&version=v3'
+    )
   })
 })
 

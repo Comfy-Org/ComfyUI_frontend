@@ -608,6 +608,10 @@ export class ComfyApp implements IComfyApp {
     else return ''
   }
 
+  /**
+   * @deprecated The frontend no longer cache-busts /view URLs: the server
+   * revalidates them and versions each output. Kept for extensions.
+   */
   getRandParam() {
     if (isCloud) return ''
     return '&rand=' + Math.random()
