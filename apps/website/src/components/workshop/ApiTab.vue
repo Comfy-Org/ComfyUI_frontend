@@ -2,10 +2,7 @@
 import { ArrowUpRight } from '@lucide/vue'
 import { computed, ref, watch } from 'vue'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
 import Card from '@/components/ui/card/Card.vue'
-import CopyTextButton from '@/components/ui/copy-text-button/CopyTextButton.vue'
 import { apiKeysLink, externalLinks } from '@/config/routes'
 import type { FileValue, FormValues } from '@/config/workshop-playground'
 import { schemaForModel } from '@/config/workshop-playground'
@@ -13,22 +10,16 @@ import { formForContract } from '@/config/workshop-contract'
 import { workshopExampleFile } from '@/config/workshop-example-file'
 import { shouldRehostWorkshopUrl } from '@/config/workshop-url-input'
 import type { SnippetFile, SnippetLanguage } from '@/config/models-snippets'
-import {
-  SNIPPET_LANGUAGES,
-  buildSnippet,
-  hasOmittedCurlFiles
-} from '@/config/models-snippets'
+import { buildSnippet, hasOmittedCurlFiles } from '@/config/models-snippets'
 import type { WorkshopContract } from '@/config/workshop-contract'
 import { prepareWorkshopRouterInput } from '@/config/workshop-request'
 import { WorkshopRouterError } from '@/config/workshop-router-errors'
 import { workshopIdempotencyKey } from '@/config/workshop-snippets'
 import { workspaceLinkedHref } from '@/config/workshop-workspace-link'
 import type { Locale } from '@/i18n/translations'
-import { useTablist } from '@/composables/useTablist'
 import { translationsFor } from '@/i18n/translations'
-import type { CodeLang } from '@/lib/highlight'
-import HighlightedCode from './HighlightedCode.vue'
 import ModelApiSteps from './ModelApiSteps.vue'
+import ModelSnippetPanel from './ModelSnippetPanel.vue'
 
 const {
   contract,
@@ -57,10 +48,6 @@ const apiKeyHref = computed(() =>
 )
 
 const language = ref<SnippetLanguage>('python')
-const { onKeydown: onLanguageKeydown } = useTablist(
-  () => SNIPPET_LANGUAGES,
-  language
-)
 const request = ref<{
   body: Readonly<Record<string, unknown>>
   files: readonly SnippetFile[]
@@ -194,16 +181,6 @@ const showFileNotice = computed(() => {
     ? hasOmittedCurlFiles(body, files)
     : hasLocalFiles.value
 })
-const languageLabel: Record<SnippetLanguage, string> = {
-  python: 'Python',
-  typescript: 'TypeScript',
-  curl: 'cURL'
-}
-const highlightLanguage = {
-  python: 'python',
-  typescript: 'typescript',
-  curl: 'shell'
-} satisfies Record<SnippetLanguage, CodeLang>
 
 const endpoint = computed(() =>
   contract ? `POST /v2/models/${contract.id}` : undefined
@@ -249,76 +226,16 @@ const endpoint = computed(() =>
       />
 
       <div class="flex min-w-0 flex-col gap-4">
-        <div
+        <ModelSnippetPanel
           v-if="snippet"
-          class="overflow-hidden rounded-2xl border border-transparency-white-t20 bg-transparency-white-t4"
-        >
-          <div
-            class="flex items-center justify-between border-b border-transparency-white-t8 px-3 py-2"
-          >
-            <div
-              role="tablist"
-              :aria-label="t('workshop.api.heading')"
-              class="flex gap-1"
-              @keydown="onLanguageKeydown"
-            >
-              <button
-                v-for="option in SNIPPET_LANGUAGES"
-                :id="`snippet-tab-${option}`"
-                :key="option"
-                type="button"
-                role="tab"
-                :aria-selected="language === option"
-                aria-controls="snippet-panel"
-                :tabindex="language === option ? 0 : -1"
-                :data-testid="`snippet-${option}`"
-                :class="
-                  cn(
-                    'cursor-pointer rounded-xl px-3 py-1.5 text-xs font-bold tracking-wider uppercase transition-colors',
-                    language === option
-                      ? 'bg-primary-comfy-yellow text-primary-comfy-ink'
-                      : 'text-primary-comfy-canvas hover:bg-transparency-white-t8 hover:text-primary-warm-white'
-                  )
-                "
-                @click="language = option"
-              >
-                {{ languageLabel[option] }}
-              </button>
-            </div>
-            <CopyTextButton
-              :value="snippet"
-              :label="t('workshop.api.copy')"
-              :copied-label="t('workshop.api.copied')"
-              @click="emit('copy', language)"
-            />
-          </div>
-          <p
-            v-if="showFileNotice"
-            role="note"
-            class="px-6 pt-4 text-sm text-primary-warm-gray"
-          >
-            {{
-              t(
-                language === 'curl'
-                  ? 'workshop.api.filesOmitted'
-                  : 'workshop.api.localFiles'
-              )
-            }}
-          </p>
-          <pre
-            id="snippet-panel"
-            role="tabpanel"
-            :aria-labelledby="`snippet-tab-${language}`"
-            tabindex="0"
-            class="max-h-120 overflow-auto bg-primary-comfy-ink p-6 font-mono text-sm/relaxed text-primary-warm-white"
-            data-testid="snippet"
-          ><HighlightedCode
-              :code="snippet"
-              :language="highlightLanguage[language]"
-            /></pre>
-        </div>
+          v-model:language="language"
+          :snippet="snippet"
+          :file-notice="showFileNotice"
+          :locale="locale"
+          @copy="emit('copy', $event)"
+        />
 
-        <p v-if="!snippet" role="status" class="text-sm text-primary-warm-gray">
+        <p v-else role="status" class="text-sm text-primary-warm-gray">
           {{
             t(
               unavailable
