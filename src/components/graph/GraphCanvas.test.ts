@@ -22,6 +22,8 @@ import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
+import { resetComfyApi } from '@/platform/nodeApi/comfyApi'
+import { loadExtensions } from '@/services/extensionLoader'
 import { app } from '@/scripts/app'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -193,6 +195,13 @@ function setRootGraph(graph: LGraph | undefined) {
 }
 
 async function mountGraphCanvas(stubs: Record<string, unknown> = {}) {
+  const previousComfy = window.comfy
+  resetComfyApi()
+  onTestFinished(() => {
+    resetComfyApi()
+    if (previousComfy === undefined) delete window.comfy
+    else window.comfy = previousComfy
+  })
   // Handed to the component rather than left to the active-Pinia fallback, so
   // the readiness gates below are set on the instance startup actually reads.
   const pinia = getActivePinia()!
@@ -230,6 +239,22 @@ describe('GraphCanvas first-run tour wiring', () => {
     mocks.initializeWorkflow.mockResolvedValue('url-intent')
     mocks.loadTemplateFromUrlIfPresent.mockResolvedValue('image_to_image')
     mocks.loadSharedWorkflowFromUrlIfPresent.mockResolvedValue(undefined)
+  })
+
+  it('lets an extension subscribe to movement while its module loads', async () => {
+    const moduleLoaded = vi.fn()
+    vi.mocked(loadExtensions).mockImplementationOnce(async () => {
+      const comfy = window.comfy
+      assert.exists(comfy)
+      const stop = comfy.onNodeMoved(() => {})
+      stop()
+      moduleLoaded()
+    })
+
+    await mountGraphCanvas()
+
+    expect(moduleLoaded).toHaveBeenCalledOnce()
+    expect(loadExtensions).toHaveBeenCalledOnce()
   })
 
   it('hands the startup outcome to the first-run entry point', async () => {
