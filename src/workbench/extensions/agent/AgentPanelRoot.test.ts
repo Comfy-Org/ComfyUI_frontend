@@ -7254,8 +7254,14 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(
       screen.queryByText(i18n.global.t('agent.historyOpenFailed'))
     ).toBeNull()
-    expect(useAgentPanelStore().selectedWorkflow).toBeNull()
-    expect(useAgentChatHistoryStore().activeId).toBe('th-history')
+    expect(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.switchWorkflow')
+      })
+    ).toHaveTextContent(i18n.global.t('agent.selectWorkflowForAgent'))
+    expect(
+      screen.queryByText(i18n.global.t('agent.targetWorkflowUnavailable'))
+    ).toBeNull()
   })
 
   it.for(['false', 'throw', 'missing-id'])(
