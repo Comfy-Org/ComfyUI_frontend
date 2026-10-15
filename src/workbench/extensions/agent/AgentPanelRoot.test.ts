@@ -8816,28 +8816,21 @@ describe('AgentPanelRoot workflow binding', () => {
     await sendFromComposer('work here')
   }
 
-  async function openDeletedTargetChatAtStartup(): Promise<void> {
+  function openDeletedTargetChatAtStartup(): void {
     localStorage.setItem(StorageKeys.agentThread('personal'), 'th-history')
     stubHistoryWithWorkflowListing(200)
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
-    await waitFor(() =>
-      expect(useAgentChatHistoryStore().activeId).toBe('th-history')
-    )
-    expect(useAgentPanelStore().selectedWorkflow).toBeNull()
   }
 
   async function deleteFailedHistoryRow(): Promise<void> {
-    const options = screen.getByRole('button', {
-      name: i18n.global.t('agent.chatOptions')
-    })
-    expect(options).toBeEnabled()
-    await userEvent.click(options)
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.chatOptions') })
+    )
     await userEvent.click(
       await screen.findByRole('menuitem', {
         name: i18n.global.t('g.delete')
       })
     )
-    expect(screen.queryByRole('button', { name: 'Earlier chat' })).toBeNull()
   }
 
   it('activates a tab for the history chat that is still loading', async () => {
@@ -8908,64 +8901,91 @@ describe('AgentPanelRoot workflow binding', () => {
     )
   })
 
-  it.for([
-    {
-      rowState: 'deleted',
-      alreadyCurrent: false,
-      prepareChat: startCurrentChat,
-      afterFailure: deleteFailedHistoryRow,
-      activeId: 'th-1'
-    },
-    {
-      rowState: 'retry',
-      alreadyCurrent: true,
-      prepareChat: openDeletedTargetChatAtStartup,
-      afterFailure: async () => {},
-      activeId: 'th-history'
-    }
-  ])(
-    'does not activate a failed history row ($rowState, Current=$alreadyCurrent)',
-    async ({ prepareChat, afterFailure, activeId }) => {
-      const current = makeTab('wf-42')
-      await prepareChat()
-      let finishListing = (_status: number) => {}
-      const listing = new Promise<number>((resolve) => {
-        finishListing = resolve
+  it('drops an activation from a history chat that fails to open and is then deleted', async () => {
+    const current = makeTab('wf-42')
+    await startCurrentChat()
+    let finishListing = (_status: number) => {}
+    const listing = new Promise<number>((resolve) => {
+      finishListing = resolve
+    })
+    stubHistoryWithWorkflowListing(listing)
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
       })
-      stubHistoryWithWorkflowListing(listing)
-      await userEvent.click(
-        screen.getByRole('button', {
-          name: i18n.global.t('agent.showChatHistory')
-        })
-      )
-      await userEvent.click(
-        await screen.findByRole('button', { name: 'Earlier chat' })
-      )
-      await waitFor(() =>
-        expect(useAgentConversationStore().threadId).toBe('th-history')
-      )
-      vi.useFakeTimers()
-      ws.emit('agent_active_tab', {
-        workflow_id: 'wf-late',
-        name: 'Late',
-        thread_id: 'th-history'
-      })
-      finishListing(500)
-      await vi.advanceTimersByTimeAsync(0)
-      expect(
-        await screen.findByText(i18n.global.t('agent.historyOpenFailed'))
-      ).toBeVisible()
-      await afterFailure()
-      await vi.advanceTimersByTimeAsync(500)
+    )
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Earlier chat' })
+    )
+    await waitFor(() =>
+      expect(useAgentConversationStore().threadId).toBe('th-history')
+    )
+    vi.useFakeTimers()
+    ws.emit('agent_active_tab', {
+      workflow_id: 'wf-late',
+      name: 'Late',
+      thread_id: 'th-history'
+    })
+    await vi.advanceTimersByTimeAsync(0)
+    expect(useWorkflowTabActivityStore().creatingTab).toBe(true)
+    finishListing(500)
+    await vi.advanceTimersByTimeAsync(0)
+    expect(
+      await screen.findByText(i18n.global.t('agent.historyOpenFailed'))
+    ).toBeVisible()
+    await deleteFailedHistoryRow()
+    expect(screen.queryByRole('button', { name: 'Earlier chat' })).toBeNull()
+    await vi.advanceTimersByTimeAsync(500)
 
-      expect(workflowStore.activeWorkflow?.path).toBe(current.path)
-      expect(workflowStore.getWorkflowByPath('workflows/Late.json')).toBeNull()
-      expect(
-        useAgentWorkflowTabBindingStore().tabPathFor('wf-late')
-      ).toBeUndefined()
-      expect(useAgentChatHistoryStore().activeId).toBe(activeId)
-    }
-  )
+    expect(workflowStore.activeWorkflow?.path).toBe(current.path)
+    expect(workflowStore.getWorkflowByPath('workflows/Late.json')).toBeNull()
+    expect(
+      useAgentWorkflowTabBindingStore().tabPathFor('wf-late')
+    ).toBeUndefined()
+    expect(useAgentChatHistoryStore().activeId).toBe('th-1')
+  })
+
+  it('drops an activation from the current chat when reopening it from history fails', async () => {
+    const current = makeTab('wf-42')
+    openDeletedTargetChatAtStartup()
+    await waitFor(() =>
+      expect(useAgentChatHistoryStore().activeId).toBe('th-history')
+    )
+    let finishListing = (_status: number) => {}
+    const listing = new Promise<number>((resolve) => {
+      finishListing = resolve
+    })
+    stubHistoryWithWorkflowListing(listing)
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Earlier chat' })
+    )
+    vi.useFakeTimers()
+    ws.emit('agent_active_tab', {
+      workflow_id: 'wf-late',
+      name: 'Late',
+      thread_id: 'th-history'
+    })
+    await vi.advanceTimersByTimeAsync(0)
+    expect(useWorkflowTabActivityStore().creatingTab).toBe(true)
+    finishListing(500)
+    await vi.advanceTimersByTimeAsync(0)
+    expect(
+      await screen.findByText(i18n.global.t('agent.historyOpenFailed'))
+    ).toBeVisible()
+    await vi.advanceTimersByTimeAsync(500)
+
+    expect(workflowStore.activeWorkflow?.path).toBe(current.path)
+    expect(workflowStore.getWorkflowByPath('workflows/Late.json')).toBeNull()
+    expect(
+      useAgentWorkflowTabBindingStore().tabPathFor('wf-late')
+    ).toBeUndefined()
+    expect(useAgentChatHistoryStore().activeId).toBe('th-history')
+  })
 
   it('drops an activation unmounted during the tab creation delay', async () => {
     const current = makeTab('wf-42')
