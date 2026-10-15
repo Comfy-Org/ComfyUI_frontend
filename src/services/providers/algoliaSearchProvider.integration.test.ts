@@ -37,7 +37,7 @@ const replay = (request: {
   if (!(request.query in responses)) {
     throw new Error(
       `No recorded Algolia response for query "${request.query}". ` +
-        `Re-record the fixture if the query rewriting changed.`
+        `Re-record it with scripts/record-algolia-nodes-fixture.ts.`
     )
   }
   const recordedHits = responses[request.query].hits
