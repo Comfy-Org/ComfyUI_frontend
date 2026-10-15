@@ -5104,7 +5104,7 @@
       "deliveryFailed": "运行已完成，但部分输出未能送达。重试获取此运行的输出即可。",
       "dismissUnknown": "返回输入",
       "download": "下载工作流 JSON",
-      "downloadShort": "下载",
+      "downloadShort": "下载工作流",
       "explore": "探索更多可能",
       "factAuthor": "作者",
       "factOutput": "输出",
