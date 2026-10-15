@@ -1,15 +1,16 @@
 import { expect } from '@playwright/test'
 import type { WebSocketRoute } from '@playwright/test'
 
-import type { AgentMessage, AgentThreadSummary } from '@comfyorg/ingest-types'
+import type {
+  AgentMessage,
+  AgentThreadSummary,
+  WorkflowListResponse
+} from '@comfyorg/ingest-types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
-import type {
-  AgentTurnAccepted,
-  CloudWorkflowEntry
-} from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type { AgentTurnAccepted } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import {
   agentTest as test,
@@ -135,7 +136,7 @@ test.describe(
         thread,
         messages: history
       })
-      const cloudWorkflows: CloudWorkflowEntry[] = []
+      const cloudWorkflows: WorkflowListResponse['data'] = []
       await page.route('**/api/workflows?*', (route) =>
         route.fulfill(
           jsonRoute({
@@ -146,7 +147,7 @@ test.describe(
               offset: 0,
               total: cloudWorkflows.length
             }
-          })
+          } satisfies WorkflowListResponse)
         )
       )
       await page.route(`**/api/workflows/${staleWorkflowId}`, (route) =>
@@ -183,7 +184,11 @@ test.describe(
           return route.fulfill({ status: 404 })
         cloudWorkflows.push({
           id: 'a81718a4-02ae-41e6-ae85-000000000001',
-          name: path.slice('workflows/'.length, -'.json'.length)
+          name: path.slice('workflows/'.length, -'.json'.length),
+          created_by: 'test-user-e2e',
+          created_at: '2026-09-11T10:00:00Z',
+          updated_at: '2026-09-11T10:00:00Z',
+          latest_version: 1
         })
         const file: UserDataFullInfo = {
           path,
