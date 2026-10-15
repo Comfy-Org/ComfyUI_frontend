@@ -390,6 +390,18 @@ describe('listThreads pagination', () => {
     }
   )
 
+  it('passes the caller abort signal to every page request', async () => {
+    respond(threadPage(['th-1'], { has_more: true, next_cursor: 'page-2' }))
+    respond(threadPage(['th-2'], { has_more: false }))
+    const { signal } = new AbortController()
+
+    await makeClient().listThreads({ signal })
+
+    expect(
+      vi.mocked(api.fetchApi).mock.calls.map(([, init]) => init?.signal)
+    ).toEqual([signal, signal])
+  })
+
   it('rejects instead of returning a partial list when a later page fails', async () => {
     respond(threadPage(['th-1'], { has_more: true, next_cursor: 'page-2' }))
     respond(jsonResponse(503, { error: 'unavailable' }))

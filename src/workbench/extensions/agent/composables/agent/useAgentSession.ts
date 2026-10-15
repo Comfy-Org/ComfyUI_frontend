@@ -1597,8 +1597,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     pendingThreadSource.value = source ?? null
   }
 
-  function listThreads() {
-    return rest.listThreads()
+  function listThreads(options?: { signal?: AbortSignal }) {
+    return rest.listThreads(options)
   }
 
   async function loadThread(

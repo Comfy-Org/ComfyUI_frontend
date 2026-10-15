@@ -1412,15 +1412,18 @@ function toChatSession(thread: AgentThreadSummary): ChatSession {
 }
 
 let historyRefreshGeneration = 0
+const historyRefreshAbort = new AbortController()
 
 async function refreshHistory(): Promise<void> {
+  const { signal } = historyRefreshAbort
+  if (signal.aborted) return
   const generation = ++historyRefreshGeneration
   try {
-    const threads = await listThreads()
-    if (generation === historyRefreshGeneration)
+    const threads = await listThreads({ signal })
+    if (!signal.aborted && generation === historyRefreshGeneration)
       history.replaceAll(threads.map(toChatSession))
   } catch (error) {
-    if (generation !== historyRefreshGeneration) return
+    if (signal.aborted || generation !== historyRefreshGeneration) return
     reportError(error, {
       surface: 'agent',
       errorType: 'agent_thread_list_load_failed'
@@ -1441,8 +1444,8 @@ async function refreshHistory(): Promise<void> {
 void refreshHistory()
 onBeforeUnmount(() =>
   runPanelTeardown({
-    invalidateHistoryRefreshGeneration: () => {
-      ++historyRefreshGeneration
+    abortHistoryRefreshes: () => {
+      historyRefreshAbort.abort()
     }
   })
 )

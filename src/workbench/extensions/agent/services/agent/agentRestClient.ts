@@ -584,7 +584,8 @@ export function createAgentRestClient() {
     operation: AgentApiOperation,
     path: string,
     schema: z.ZodType<Page>,
-    itemsOf: (page: Page) => Item[]
+    itemsOf: (page: Page) => Item[],
+    signal?: AbortSignal
   ): Promise<{ items: Item[]; stop?: PaginationStop }> {
     const items: Item[] = []
     let cursor: string | undefined
@@ -594,7 +595,7 @@ export function createAgentRestClient() {
       const page = await request(
         operation,
         `${path}?limit=${LIST_PAGE_SIZE}${after}`,
-        { method: 'GET' },
+        { method: 'GET', signal },
         schema
       )
       items.push(...itemsOf(page))
@@ -643,12 +644,15 @@ export function createAgentRestClient() {
     )
   }
 
-  async function listThreads(): Promise<AgentThreadSummary[]> {
+  async function listThreads(
+    options: { signal?: AbortSignal } = {}
+  ): Promise<AgentThreadSummary[]> {
     const { items, stop } = await listAllPages(
       'list_threads',
       '/agent/threads',
       zAgentThreads,
-      (page) => page.threads
+      (page) => page.threads,
+      options.signal
     )
     if (stop) throw new AgentThreadListIncompleteError(stop)
     return items

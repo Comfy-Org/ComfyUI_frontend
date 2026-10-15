@@ -5472,6 +5472,12 @@ describe('AgentPanelRoot history', () => {
         expect(fetchRequests(secondPageRoute)).toHaveLength(1)
       )
       closedPanel.unmount()
+      const [, secondPageInit] =
+        vi
+          .mocked(fetch)
+          .mock.calls.find(([input]) => secondPageRoute.test(String(input))) ??
+        []
+      expect(secondPageInit?.signal?.aborted).toBe(true)
       respondToFetch(threadListRoute, () =>
         json(
           200,
@@ -5499,6 +5505,50 @@ describe('AgentPanelRoot history', () => {
       expect(telemetry.trackAgentError).not.toHaveBeenCalled()
     }
   )
+
+  it('does not refresh chat history once the panel closes while a picked chat loads', async () => {
+    const threadListRoute = /\/api\/agent\/threads\?/
+    const pickedMessagesRoute = /\/th-picked\/messages/
+    let resolveMessages!: (response: Response) => void
+    const pickedMessages = new Promise<Response>((resolve) => {
+      resolveMessages = resolve
+    })
+    respondToFetch({}, () => json(200, []))
+    respondToFetch(threadListRoute, () =>
+      json(
+        200,
+        agentThreadList([
+          agentThread({
+            id: 'th-picked',
+            title: 'Picked chat',
+            last_message_at: '2026-07-07T10:00:00Z'
+          })
+        ])
+      )
+    )
+    respondToFetch(pickedMessagesRoute, () => pickedMessages, { times: 1 })
+    const panel = renderWithSelectedTarget()
+    await userEvent.click(
+      await screen.findByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Picked chat' })
+    )
+    await vi.waitFor(() =>
+      expect(fetchRequests(pickedMessagesRoute)).toHaveLength(1)
+    )
+    const listRequestsBeforeClose = fetchRequests(threadListRoute).length
+    panel.unmount()
+
+    const messages = json(200, [])
+    resolveMessages(messages)
+    await vi.waitFor(() => expect(messages.bodyUsed).toBe(true))
+
+    expect(fetchRequests(threadListRoute)).toHaveLength(listRequestsBeforeClose)
+    expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
+  })
 
   it('marks the restored thread as the current session', async () => {
     vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
