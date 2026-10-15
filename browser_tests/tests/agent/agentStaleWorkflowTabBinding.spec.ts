@@ -224,7 +224,7 @@ test.describe(
         await expect(
           panel.getByText(enMessages.agent.targetWorkflowUnavailable)
         ).toBeHidden()
-        if (!socket) throw new Error('the app never opened /ws')
+        expect(socket, 'the app opened /ws').toBeDefined()
       })
 
       await test.step('choosing the fresh tab saves it as its own workflow', async () => {
