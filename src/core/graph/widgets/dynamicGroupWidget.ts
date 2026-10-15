@@ -336,6 +336,7 @@ export function dynamicGroupWidget(
       if (
         !existing.has(widget) &&
         widget.serialize !== false &&
+        widget.type !== 'button' &&
         widget.widgetId
       )
         store.announceValue(widget.widgetId)
