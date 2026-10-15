@@ -94,7 +94,6 @@ export const TestIds = {
     cloudNotification: 'cloud-notification-dialog',
     openSharedWorkflow: 'open-shared-workflow-dialog',
     openSharedWorkflowTitle: 'open-shared-workflow-title',
-    openSharedWorkflowClose: 'open-shared-workflow-close',
     openSharedWorkflowErrorClose: 'open-shared-workflow-error-close',
     openSharedWorkflowCancel: 'open-shared-workflow-cancel',
     openSharedWorkflowOpenWithoutImporting:
