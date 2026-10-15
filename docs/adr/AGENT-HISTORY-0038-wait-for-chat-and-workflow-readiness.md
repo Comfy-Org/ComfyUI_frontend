@@ -94,7 +94,7 @@ answers and the listing cannot place the workflow: the listing failed, was
 superseded, or is incomplete and omits it. Only a 404 from that lookup shows
 that the workflow is gone; any other failure is inconclusive.
 
-## Amendment (2026-10-06): Readable History with an Unresolved Target
+## Amendment (2026-10-15): Readable History with an Unresolved Target
 
 A loaded conversation remains readable when no local target resolves after
 saved-catalog synchronization, unless a direct lookup shows that the workflow is
