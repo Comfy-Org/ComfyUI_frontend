@@ -1,5 +1,5 @@
 <template>
-  <Dialog v-model:open="visible" :modal="false">
+  <Dialog v-model:open="visible">
     <DialogPortal>
       <DialogOverlay />
       <DialogContent size="md" :aria-labelledby="titleId">
@@ -18,6 +18,7 @@
               id="customization-icon"
               v-model="selectedIconValue"
               type="single"
+              :allow-empty="false"
               class="justify-start"
             >
               <ToggleGroupItem

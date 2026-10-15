@@ -1,0 +1,14 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import HeroSection from '@/components/legal/HeroSection.vue'
+import ChangelogContent from '@/components/legal/ChangelogContent.vue'
+---
+
+<BaseLayout
+  title={Astro.locals.t('changelog.meta.title')}
+  description={Astro.locals.t('changelog.meta.description')}
+  noindex
+>
+  <HeroSection title={Astro.locals.t('changelog.title')} />
+  <ChangelogContent client:load />
+</BaseLayout>

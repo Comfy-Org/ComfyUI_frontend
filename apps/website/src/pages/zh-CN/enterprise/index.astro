@@ -44,7 +44,7 @@ const faqs = [
   {
     id: 'security',
     question: 'Comfy 如何支持安全审查？',
-    answer: `提供 SSO 和 DPA。Comfy 不会使用客户数据进行训练，SOC 2 Type II 审计正在进行中。请在 [Comfy Trust Center](${externalLinks.trustCenter}) 查看当前的安全控制措施。`
+    answer: `提供 SSO 和 DPA。Comfy 不会使用客户数据进行训练，SOC 2 Type II 审计已完成。请在 [Comfy Trust Center](${externalLinks.trustCenter}) 查看当前的安全控制措施。`
   },
   {
     id: 'usage',
@@ -216,7 +216,6 @@ const faqPage = buildFaqPageNode(url, faqs)
       { id: 'brand-lora', label: 'brand-lora（私有）', selected: true }
     ]}
     cta={{ label: '申请演示', href: '/zh-CN/contact/' }}
-    moreOptionsLabel="更多选项"
     nodesUnit="个节点"
     modelsUnit="个模型"
     pinnedLabel="已固定"
@@ -255,7 +254,7 @@ const faqPage = buildFaqPageNode(url, faqs)
       {
         id: 'soc2',
         title: 'SOC 2',
-        description: 'Type II 审计正在进行中。'
+        description: 'Type II 报告可应要求提供。'
       },
       {
         id: 'sso',

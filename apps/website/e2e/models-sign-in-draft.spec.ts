@@ -48,7 +48,7 @@ for (const { entry, randomUUID, failRead } of [
       .fill('Keep the reference character, watercolor style')
     const signIn =
       entry === 'playground'
-        ? page.getByRole('link', { name: 'Sign in to run', exact: true })
+        ? page.getByRole('link', { name: 'Run', exact: true })
         : page.getByRole('link', { name: 'Sign in', exact: true })
     await signIn.click()
     await expect(page).toHaveURL(/\/login\/\?returnTo=/)
@@ -163,7 +163,7 @@ test('unavailable draft storage does not trap sign-in and reports missing files 
   const chooser = page.waitForEvent('filechooser')
   await page.getByText(/^Select or drop /).click()
   await (await chooser).setFiles('e2e/assets/placeholder-1x1.webp')
-  await page.getByRole('link', { name: 'Sign in to run', exact: true }).click()
+  await page.getByRole('link', { name: 'Run', exact: true }).click()
   await expect(page).toHaveURL(/\/login\/\?returnTo=/)
   await page.goto(path)
   await expect(

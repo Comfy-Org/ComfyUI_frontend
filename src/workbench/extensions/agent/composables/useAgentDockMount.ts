@@ -4,6 +4,8 @@ import { computed, defineAsyncComponent, watch } from 'vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
+import { useBillingIdentity } from './useBillingIdentity'
+
 interface AgentDockMount {
   docked: ComputedRef<boolean>
   DockedAgentPanel: Component | null
@@ -35,6 +37,17 @@ export function useAgentDockMount(): AgentDockMount {
     () => subscription.value?.agentHasFunds,
     (hasFunds) => {
       if (hasFunds === true) agentPanelStore.reportedExhaustionIdentity = null
+    },
+    { immediate: true }
+  )
+
+  const billingIdentity = useBillingIdentity()
+
+  watch(
+    [billingIdentity, () => subscription.value?.agentScopedHasFunds],
+    ([identity, scopedHasFunds]) => {
+      if (scopedHasFunds === undefined) return
+      agentPanelStore.observeAgentScopedFunds(identity, scopedHasFunds)
     },
     { immediate: true }
   )

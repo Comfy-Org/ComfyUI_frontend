@@ -15,7 +15,7 @@ import type {
 import { ComfyWorkflow as ComfyWorkflowClass } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { defaultGraph } from '@/scripts/defaultGraph'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import {
@@ -31,6 +31,7 @@ import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { useAppMode } from '@/composables/useAppMode'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 import type { AppMode } from '@/utils/appMode'
 import { isValidUuid } from '@/utils/formatUtil'
@@ -90,12 +91,14 @@ vi.mock(import('@/services/dialogService'))
 
 vi.mock(import('@/scripts/app'))
 
+const storeThumbnailMock = vi.hoisted(() => vi.fn())
+
 vi.mock<unknown>(
   import('@/renderer/core/thumbnail/useWorkflowThumbnail'), // oxlint-disable-line comfy/no-restricted-paths
 
   () => ({
     useWorkflowThumbnail: () => ({
-      storeThumbnail: vi.fn(),
+      storeThumbnail: storeThumbnailMock,
       getThumbnail: vi.fn()
     })
   })
@@ -300,6 +303,33 @@ describe('useWorkflowService', () => {
       ).toHaveBeenCalledWith(true)
     })
 
+    it('stores a thumbnail of the active subgraph', () => {
+      const activeWorkflow = createModeTestWorkflow()
+      const subgraph = createTestSubgraph()
+      workflowStore.activeWorkflow = activeWorkflow
+      workflowStore.activeSubgraph = subgraph
+
+      useWorkflowService().beforeLoadNewGraph()
+
+      expect(storeThumbnailMock).toHaveBeenCalledExactlyOnceWith(
+        activeWorkflow,
+        subgraph
+      )
+    })
+
+    it('stores a thumbnail of the canvas graph when no subgraph is active', () => {
+      const activeWorkflow = createModeTestWorkflow()
+      workflowStore.activeWorkflow = activeWorkflow
+      workflowStore.activeSubgraph = undefined
+
+      useWorkflowService().beforeLoadNewGraph()
+
+      expect(storeThumbnailMock).toHaveBeenCalledExactlyOnceWith(
+        activeWorkflow,
+        app.canvas.graph
+      )
+    })
+
     it('should cache missingModelCandidates and missingMediaCandidates to activeWorkflow.pendingWarnings', () => {
       const activeWorkflow = createModeTestWorkflow({
         path: 'workflows/test.json'
@@ -380,11 +410,39 @@ describe('useWorkflowService', () => {
       )
     })
 
+    it('persists the displayed state when Undo fails before graph configuration', async () => {
+      vi.spyOn(useSettingStore(), 'get').mockImplementation(
+        (key: string) => key === 'Comfy.Workflow.Persist'
+      )
+      const activeWorkflow = createModeTestWorkflow()
+      const saved = makeWorkflowData()
+      const current = makeWorkflowData({ note: 'latest edit' })
+      const tracker = new ChangeTracker(activeWorkflow, saved)
+      activeWorkflow.changeTracker = tracker
+      tracker.activeState = current
+      tracker.undoQueue.push(saved)
+      workflowStore.activeWorkflow = activeWorkflow
+      vi.mocked(app.loadGraphData).mockImplementationOnce(async () => {
+        useWorkflowService().beforeLoadNewGraph(false)
+        return false
+      })
+
+      await tracker.undo()
+
+      expect(useWorkflowDraftStoreV2().saveDraft).toHaveBeenCalledWith(
+        activeWorkflow.path,
+        JSON.stringify(current),
+        { name: activeWorkflow.key, isTemporary: activeWorkflow.isTemporary }
+      )
+      expect(activeWorkflow.activeState).toEqual(current)
+      expect(tracker.undoQueue).toEqual([saved])
+      expect(tracker.redoQueue).toEqual([])
+    })
+
     it('should show an error toast when the V2 draft store cannot save', () => {
       vi.spyOn(useSettingStore(), 'get').mockImplementation((key: string) => {
         return key === 'Comfy.Workflow.Persist'
       })
-      const addToastSpy = vi.spyOn(useToastStore(), 'add')
       vi.mocked(useWorkflowDraftStoreV2().saveDraft).mockReturnValue(false)
       const activeWorkflow = createModeTestWorkflow({
         path: 'workflows/test.json'
@@ -393,11 +451,10 @@ describe('useWorkflowService', () => {
 
       useWorkflowService().beforeLoadNewGraph()
 
-      expect(addToastSpy).toHaveBeenCalledWith(
+      expect(useToast().error).toHaveBeenCalledWith(
+        t('g.error'),
         expect.objectContaining({
-          severity: 'error',
-          summary: t('g.error'),
-          detail: t('toastMessages.failedToSaveDraft')
+          description: t('toastMessages.failedToSaveDraft')
         })
       )
     })
@@ -406,10 +463,6 @@ describe('useWorkflowService', () => {
       vi.spyOn(useSettingStore(), 'get').mockImplementation((key: string) => {
         return key === 'Comfy.Workflow.Persist'
       })
-      const addToastSpy = vi.spyOn(useToastStore(), 'add')
-      const consoleErrorSpy = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
       const error = new Error('storage unavailable')
       vi.mocked(useWorkflowDraftStoreV2().saveDraft).mockImplementation(() => {
         throw error
@@ -422,19 +475,18 @@ describe('useWorkflowService', () => {
       try {
         useWorkflowService().beforeLoadNewGraph()
 
-        expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect(console.error).toHaveBeenCalledWith(
           'Failed to persist active workflow draft',
           error
         )
-        expect(addToastSpy).toHaveBeenCalledWith(
+        expect(useToast().error).toHaveBeenCalledWith(
+          t('g.error'),
           expect.objectContaining({
-            severity: 'error',
-            summary: t('g.error'),
-            detail: t('toastMessages.failedToSaveDraft')
+            description: t('toastMessages.failedToSaveDraft')
           })
         )
       } finally {
-        consoleErrorSpy.mockRestore()
+        vi.mocked(console.error).mockRestore()
       }
     })
   })
@@ -688,9 +740,6 @@ describe('useWorkflowService', () => {
       const storeClose = vi.spyOn(workflowStore, 'closeWorkflow')
       const error = new Error('replacement load failed')
       vi.mocked(app.loadGraphData).mockRejectedValueOnce(error)
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => undefined)
 
       await expect(
         useWorkflowService().closeWorkflow(closing, { warnIfUnsaved: false })
@@ -700,7 +749,6 @@ describe('useWorkflowService', () => {
       // close must keep its draft.
       expect(storeClose).not.toHaveBeenCalled()
       expect(useWorkflowDraftStoreV2().removeDraft).not.toHaveBeenCalled()
-      consoleError.mockRestore()
     })
 
     it('keeps the tab and draft when the replacement load reports failure', async () => {
@@ -2005,49 +2053,11 @@ describe('useWorkflowService', () => {
         path: 'workflows/Unsaved Workflow.json'
       })
       Object.defineProperty(workflow, 'isTemporary', { get: () => true })
-      vi.spyOn(workflow, 'promptSave').mockResolvedValue(null)
+      vi.mocked(useDialogService().prompt).mockResolvedValue(null)
 
       const result = await useWorkflowService().saveWorkflow(workflow)
 
       expect(result).toBe(false)
-      expect(workflowStore.saveWorkflow).not.toHaveBeenCalled()
-    })
-
-    // Second-lens coverage for the crash reproduced in isolation by
-    // comfyWorkflow.test.ts (PR #18121): ComfyWorkflow.promptSave()
-    // destructures `useDialogService` straight out of a dynamic
-    // `import('@/services/dialogService')`, which throws instead of
-    // resolving when that import does not yield the expected export.
-    // useWorkflowService().saveWorkflow() is the exact function the real
-    // "Save" command (useCoreCommands.ts's Comfy.SaveWorkflow, wired to
-    // Ctrl+S and File > Save) calls for a never-saved workflow, so this
-    // proves the crash reaches all the way to the command layer uncaught
-    // -- an unhandled rejection from the Save action -- rather than being
-    // caught and turned into a graceful "save failed" outcome.
-    //
-    // This intentionally simulates the failure via a spy on
-    // `promptSave()` rather than re-stubbing `@/services/dialogService`
-    // here: dialogService is *also* imported statically by
-    // workflowService.ts itself (`useDialogService()` is called eagerly
-    // in useWorkflowService()'s own setup), so stubbing the module for
-    // this test would break useWorkflowService() construction for an
-    // unrelated reason instead of isolating this call path. See the PR
-    // description for why that also rules out forcing this exact failure
-    // from a Playwright e2e test.
-    it('propagates a promptSave() crash uncaught instead of failing the save gracefully', async () => {
-      const workflow = createModeTestWorkflow({
-        path: 'workflows/Unsaved Workflow.json'
-      })
-      Object.defineProperty(workflow, 'isTemporary', { get: () => true })
-      vi.spyOn(workflow, 'promptSave').mockRejectedValue(
-        new TypeError(
-          "Cannot destructure property 'useDialogService' of '(intermediate value)' as it is undefined."
-        )
-      )
-
-      await expect(useWorkflowService().saveWorkflow(workflow)).rejects.toThrow(
-        "Cannot destructure property 'useDialogService'"
-      )
       expect(workflowStore.saveWorkflow).not.toHaveBeenCalled()
     })
   })
@@ -2067,7 +2077,7 @@ describe('useWorkflowService', () => {
       })
       workflow.isModified = true
       Object.defineProperty(workflow, 'isTemporary', { get: () => true })
-      vi.spyOn(workflow, 'promptSave').mockResolvedValue(null)
+      vi.mocked(useDialogService().prompt).mockResolvedValue(null)
       vi.mocked(useDialogService().confirm).mockResolvedValue(true)
 
       const closed = await service.closeWorkflow(workflow)
@@ -2769,12 +2779,48 @@ describe('useWorkflowService', () => {
       const workflow = createModeTestWorkflow({
         path: 'workflows/test.json'
       })
-      vi.spyOn(workflow, 'promptSave').mockResolvedValue(null)
+      vi.mocked(useDialogService().prompt).mockResolvedValue(null)
 
       const result = await service.saveWorkflowAs(workflow)
 
       expect(result).toBe(false)
       expect(workflowStore.saveWorkflow).not.toHaveBeenCalled()
+    })
+
+    it('prompts for a name using the workflow save-name copy', async () => {
+      const workflow = createTemporaryWorkflow()
+      vi.mocked(workflowStore.getWorkflowByPath).mockReturnValue(null)
+      vi.mocked(useDialogService().prompt).mockResolvedValue('named')
+
+      const result = await service.saveWorkflowAs(workflow)
+
+      expect(result).toBe(true)
+      expect(useDialogService().prompt).toHaveBeenCalledWith({
+        title: t('workflowService.saveWorkflow'),
+        message: t('workflowService.enterFilenamePrompt'),
+        defaultValue: 'temp'
+      })
+      expect(workflowStore.renameWorkflow).toHaveBeenCalledWith(
+        workflow,
+        'workflows/named.json'
+      )
+    })
+
+    it('uses the filename chosen by an extension promptSave override', async () => {
+      const workflow = createTemporaryWorkflow()
+      Object.assign(workflow, {
+        promptSave: async () => 'extension-folder/picked'
+      })
+      vi.mocked(workflowStore.getWorkflowByPath).mockReturnValue(null)
+
+      const result = await service.saveWorkflowAs(workflow)
+
+      expect(result).toBe(true)
+      expect(workflowStore.renameWorkflow).toHaveBeenCalledWith(
+        workflow,
+        'workflows/extension-folder/picked.json'
+      )
+      expect(useDialogService().prompt).not.toHaveBeenCalled()
     })
 
     it('appends .app.json extension when initialMode is app', async () => {
@@ -3061,12 +3107,10 @@ describe('useWorkflowService', () => {
 
   describe('saveWorkflow', () => {
     let workflowStore: ReturnType<typeof useWorkflowStore>
-    let toastStore: ReturnType<typeof useToastStore>
     let service: ReturnType<typeof useWorkflowService>
 
     beforeEach(() => {
       workflowStore = useWorkflowStore()
-      toastStore = useToastStore()
       service = useWorkflowService()
       vi.spyOn(workflowStore, 'saveWorkflow').mockResolvedValue()
       vi.spyOn(workflowStore, 'renameWorkflow').mockResolvedValue()
@@ -3121,27 +3165,26 @@ describe('useWorkflowService', () => {
     })
 
     it('shows toast only when rename occurs', async () => {
-      const addSpy = vi.spyOn(toastStore, 'add')
-
       const workflow = createSaveableWorkflow('workflows/test.json')
       workflow.initialMode = 'app'
 
       await service.saveWorkflow(workflow)
 
-      expect(addSpy).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'info' })
+      expect(useToast().info).toHaveBeenCalledWith(
+        'Converted to app workflow',
+        {
+          duration: 3000
+        }
       )
     })
 
     it('does not show toast when no rename occurs', async () => {
-      const addSpy = vi.spyOn(toastStore, 'add')
-
       const workflow = createSaveableWorkflow('workflows/test.app.json')
       workflow.initialMode = 'app'
 
       await service.saveWorkflow(workflow)
 
-      expect(addSpy).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
     })
 
     it('does not rename when initialMode is not set', async () => {

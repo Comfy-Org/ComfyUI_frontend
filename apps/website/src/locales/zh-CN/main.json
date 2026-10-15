@@ -97,90 +97,8 @@
     }
   },
   "affiliate-terms": {
-    "1-program-overview": {
-      "block": {
-        "0": "The <a href=\"https://comfy.org\" class=\"text-white underline\">Comfy.org</a> Affiliate Program (\"<strong>Program</strong>\") allows approved participants (\"<strong>Affiliates</strong>\") to earn commissions by referring new paying customers to Comfy Cloud. By participating in this program, you agree to these terms."
-      },
-      "label": "PROGRAM",
-      "title": "1. Program Overview"
-    },
-    "10-governing-law": {
-      "block": {
-        "0": "These terms shall be governed by and construed in accordance with the laws of the State of Delaware, without regard to conflict of law principles. All disputes arising under this Agreement shall be resolved exclusively in the state or federal courts in the State of Delaware."
-      },
-      "label": "GOVERNING LAW",
-      "title": "10. Governing Law"
-    },
-    "11-miscellaneous": {
-      "block": {
-        "0": "<strong>(a) Entire Agreement.</strong> These terms constitutes the sole and entire agreement (including the attached schedules and exhibits) of the Parties with respect to the subject matter of these terms, and supersedes all prior and contemporaneous understandings, agreements, representations, and warranties, both written and oral, with respect to the subject matter. <strong>(b) Relationship of Parties.</strong> Each party is an independent contractor with regard to these terms. Nothing contained in These terms shall be construed as creating any agency, partnership, joint venture, or other form of joint enterprise, employment, or fiduciary relationship between the Parties. Neither party, by virtue of these terms, will have any right, power, or authority to act or create an obligation, express or implied, on behalf of the other party. <strong>(c) Assignment.</strong> Neither party shall assign any of its rights or delegate any of its obligations hereunder without the prior written consent of the other party, which consent shall not be unreasonably withheld, conditioned or delayed. <strong>(d) Severability.</strong> If any term or provision of these terms is invalid, illegal, or unenforceable in any jurisdiction, such invalidity, illegality, or unenforceability shall not affect any other term or provision of these terms or invalidate or render unenforceable such term or provision in any other jurisdiction. Upon a determination that any term or provision is invalid, illegal or unenforceable, the Parties hereto shall negotiate in good faith to modify these terms to effect the original intent of the Parties as closely as possible in order that the transactions contemplated hereby be consummated as originally contemplated to the greatest extent possible. <strong>(e) Waiver.</strong> No waiver by either party of any of the provisions hereof shall be effective unless explicitly set forth in writing and signed by the party so waiving. <strong>(f) Notice.</strong> Each party shall deliver all notices, requests, consents, claims, demands, waivers, and other communications under these terms in writing to the email utilized for the primary contact for the other party. <strong>(g) Cumulative Remedies.</strong> All rights and remedies provided in these terms are cumulative and not exclusive, and the exercise by a party of any right or remedy does not preclude the exercise of any other rights or remedies that may now or subsequently be available at Law, in equity, by statute, in any other agreement between the Parties or otherwise. <strong>(h) No Third-Party Beneficiaries.</strong> These terms benefits solely the Parties to these terms and their respective permitted successors and assigns and nothing in these terms, express or implied, confers on any other person or entity any legal or equitable right, benefit, or remedy of any nature whatsoever under or by reason of these terms."
-      },
-      "label": "MISCELLANEOUS",
-      "title": "11. Miscellaneous"
-    },
-    "2-eligible-products": {
-      "block": {
-        "0": "Commissions are earned on Comfy Cloud paid subscription plans only. The following are excluded from commission eligibility: free tier signups (unless they later convert to paid), one-time credit purchases, enterprise contracts negotiated directly with Comfy sales, and API-only usage billed outside of standard subscription plans."
-      },
-      "label": "PRODUCTS",
-      "title": "2. Eligible Products"
-    },
-    "3-commission-structure": {
-      "block": {
-        "0": "Commission rate: 30% recurring on the net subscription amount received by Comfy.org\nCommission duration: 3 months from the referred customer’s first paid subscription\nCookie/attribution window: 60 days from the referral click\nMinimum payout threshold: $100\nPayout schedule: Monthly, within the first 10 business days of each month after the receipt of applicable payment by Comfy from its referred customer\nPayout method: Via the affiliate tracking platform (Stripe Express or PayPal)\nCommission cessation: To the extent a referred customer’s subscription is canceled, in whole or in part, the affiliate shall correspondingly cease to receive commission payments, even within the 3-month commission window. Refunded or charged-back transactions are not eligible for commission, and any commission previously paid for such transactions will be deducted from future payouts (see Section 4)."
-      },
-      "label": "COMMISSION",
-      "title": "3. Commission Structure"
-    },
-    "4-attribution-rules": {
-      "block": {
-        "0": "Commissions are attributed on a last-click basis within the 60-day cookie window\nIf a referred customer cancels and re-subscribes within 60 days, the original affiliate retains attribution\nIf a referred customer upgrades their plan, commission is calculated on the upgraded amount\nIf a referred customer downgrades their plan, commission adjusts to the new plan amount\nRefunded transactions are not eligible for commission\nAny commission paid on refunded transactions will be deducted from future payouts to you"
-      },
-      "label": "ATTRIBUTION",
-      "title": "4. Attribution Rules"
-    },
-    "5-prohibited-activities": {
-      "block": {
-        "0": "Affiliates must NOT:",
-        "1": "<strong>Self-refer</strong>: Use your own affiliate link to purchase or receive discounts on your own account\n<strong>Bid on branded keywords</strong>: Run paid search campaigns (Google Ads, Bing Ads, etc.) targeting \"ComfyUI,\" \"Comfy.org,\" \"Comfy Cloud,\" or any misspellings or variations thereof\n<strong>Misrepresent</strong>: Impersonate Comfy.org, claim to be an employee, or create assets that could be confused with official Comfy.org materials\n<strong>Spam</strong>: Send unsolicited bulk emails, messages, or engage in any form of spam promotion\n<strong>Cookie stuff</strong>: Use hidden iframes, pop-unders, or any technical means to set cookies without genuine user intent\n<strong>Incentivize clicks</strong>: Offer monetary rewards, points, or other incentives solely for clicking your affiliate link (content recommendations are fine)\n<strong>Use misleading claims</strong>: Make false or exaggerated claims about Comfy.org products, pricing, or features\n<strong>Promote on prohibited content</strong>: Place affiliate links on sites containing illegal content, hate speech, or adult content\n<strong>Contrary to laws</strong>: Place affiliate links in any market that is prohibited as a region under the laws of the United States of America."
-      },
-      "label": "PROHIBITED",
-      "title": "5. Prohibited Activities"
-    },
-    "6-content-guidelines": {
-      "block": {
-        "0": "Affiliates must clearly disclose the affiliate relationship in accordance with FTC guidelines (US) and equivalent regulations in their jurisdiction\nRecommended disclosure: \"This page contains affiliate links. I may earn a commission if you sign up through my link.\"\nAffiliates may use Comfy.org logos and brand assets only as provided in the official affiliate asset kit, and may not modify them\nComfy.org retains all rights, including in any of its intellectual property apart from the limited use rights granted herein"
-      },
-      "label": "CONTENT & IP",
-      "title": "6. Content Guidelines and Intellectual Property Rights"
-    },
-    "7-termination": {
-      "block": {
-        "0": "Either party may terminate the affiliate relationship at any time with 14 days’ prior written notice\nComfy.org reserves the right to immediately terminate and withhold commissions if an affiliate violates any of the prohibited activities listed above\nUpon termination, any unpaid commissions above the minimum threshold will be paid in the next regular payout cycle\nCommissions on referred customers will cease at the time of termination, even if within the 3-month commission window"
-      },
-      "label": "TERMINATION",
-      "title": "7. Termination"
-    },
-    "8-program-modifications": {
-      "block": {
-        "0": "Comfy.org reserves the right to modify these terms, commission rates, or program structure with 30 days notice to active affiliates\nContinued participation after notice constitutes acceptance of modified terms"
-      },
-      "label": "MODIFICATIONS",
-      "title": "8. Program Modifications"
-    },
-    "9-indemnification": {
-      "block": {
-        "0": "You will indemnify Comfy.org from any third party claim arising out of your breach of these terms.\nComfy.org’s liability to any affiliate shall not (i) exceed the total commissions paid to that affiliate in the preceding 12 months, and (ii) include any indirect, consequential, punitive or any other type of special damages.\nComfy.org is not responsible for tracking failures caused by user browser settings, ad blockers, or VPNs, though we employ server-side tracking to minimize these issues"
-      },
-      "label": "LIABILITY",
-      "title": "9. Indemnification and Limitation of Liability"
-    },
-    "effective-date": "May 16, 2026",
     "page": {
-      "description": "Comfy.org Affiliate Program Terms and Conditions.",
       "effectiveDateLabel": "生效日期",
-      "heading": "Affiliate Terms",
-      "title": "Affiliate Terms - Comfy",
       "tocLabel": "本页内容"
     }
   },
@@ -348,6 +266,7 @@
       "signOut": "退出登录",
       "signUpLink": "在这里注册",
       "signingIn": "正在为你登录…",
+      "ssoRedirecting": "正在前往你所在组织的登录页面…",
       "submit": "登录",
       "useEmailInstead": "改用邮箱"
     },
@@ -381,7 +300,8 @@
       "troubleshooting": "常见原因："
     },
     "toast": {
-      "close": "关闭"
+      "close": "关闭",
+      "viewportLabel": "通知 ({hotkey})"
     },
     "turnstile": {
       "expired": "验证已过期。请重新完成验证。",
@@ -541,6 +461,19 @@
     "subheading": "来自使用 ComfyUI 构建的团队的视频和案例研究",
     "watchStory": "观看故事"
   },
+  "changelog": {
+    "introduction": "ComfyUI 的最新功能、改进和修复，来自 Comfy 文档。",
+    "loading": "正在加载最新更新日志…",
+    "meta": {
+      "description": "来自 Comfy 文档的 ComfyUI 最新功能、改进和修复。",
+      "title": "更新日志 - Comfy"
+    },
+    "retry": "重试",
+    "saved": "正在显示已保存的更新日志。无法加载最新更新。",
+    "title": "更新日志",
+    "unavailable": "无法加载更新日志。",
+    "viewDocs": "查看文档"
+  },
   "chatgptImage25": {
     "breadcrumb": {
       "model": "ChatGPT Images 2.5",
@@ -582,6 +515,276 @@
       "cta": "了解更多",
       "heading": "同一引擎，多种运行方式",
       "subtitle": "今天就在浏览器中搭建工作流。用 API 批量制作，或将图像生成接入完整创意流程。"
+    }
+  },
+  "cinematic": {
+    "aspect": {
+      "academy": "学院比例",
+      "landscapePhoto": "横向照片",
+      "portraitPhoto": "纵向照片",
+      "scope": "宽银幕",
+      "square": "方形",
+      "vertical": "竖屏",
+      "widescreen": "宽屏"
+    },
+    "backToApps": "返回应用",
+    "beta": "测试版",
+    "camera": {
+      "aperture": "光圈",
+      "body": "机身",
+      "focal": "焦距",
+      "lens": "镜头"
+    },
+    "colors": {
+      "add": "添加颜色",
+      "clear": "清除颜色",
+      "color": "颜色",
+      "hex": "十六进制颜色",
+      "hue": "色相",
+      "main": "主色",
+      "makeMain": "设为主色",
+      "remove": "移除颜色",
+      "sampleError": "无法从该图片读取颜色。",
+      "shade": "饱和度与亮度",
+      "title": "颜色"
+    },
+    "composer": {
+      "format": "画幅",
+      "label": "导演镜头",
+      "references": "添加参考图"
+    },
+    "credits": {
+      "estimate": "约 {credits} 积分",
+      "perTake": "{takes} 条 × 约 {credits} 积分",
+      "reduce": "改为 {takes} 条",
+      "reduceOne": "改为 1 条",
+      "retrySkipped": "立即运行",
+      "short": "{takes} 条需要约 {credits} 积分，你有 {balance} 积分。",
+      "shortOne": "1 条需要约 {credits} 积分，你有 {balance} 积分。",
+      "skipped": "{total} 条中有 {failed} 条因积分不足未运行",
+      "varies": "费用不定",
+      "variesHint": "该模型暂无公开价格，每一条按模型实际计费扣除积分。"
+    },
+    "firstRun": {
+      "body": "描述这一刻。选择摄影机、光线与风格。随时切换模型。",
+      "desert": "黎明时分独自穿越沙丘的骑手",
+      "portrait": "阴天码头上的老渔夫",
+      "train": "蓝调时刻的夜车车窗"
+    },
+    "grade": {
+      "done": "完成",
+      "edit": "编辑色板",
+      "fromImage": "来自图片",
+      "fromImageAction": "匹配图片的色彩",
+      "yourPalette": "你的色板"
+    },
+    "hub": {
+      "apps": "应用",
+      "appsIntro": "围绕一类工作打造的工具，为你运行模型和工作流。",
+      "beta": "测试版",
+      "elsewhere": "模型和工作流在新版 Hub 原型中。",
+      "eyebrow": "Hub",
+      "heading": "接下来你想创造什么？",
+      "models": "模型",
+      "openHub": "打开 Hub",
+      "prototype": "原型",
+      "reshoot": "重拍视频",
+      "reshootMeta": "视频 · MiniMax H3",
+      "reshootSummary": "为你的片段重新架设机位，从新的角度生成这一场景。",
+      "studioMeta": "图像 · 5 个模型",
+      "studioSummary": "用真实的摄影机、光线与调色导演一个镜头，然后在任意图像模型上运行。",
+      "subtitle": "模型、基于模型的工作流，以及为单一任务打造的应用。",
+      "tabs": "显示",
+      "workflows": "工作流"
+    },
+    "lead": "执导每一个镜头。选择摄影机、镜头、光线与调色，用任意模型生成电影级画面。",
+    "meta": {
+      "description": "导演电影感静帧：选择摄影机、景别、光线、胶片与调色，然后通过 Comfy Router 运行任意图像模型。"
+    },
+    "model": {
+      "degraded": "当前较慢",
+      "heading": "模型"
+    },
+    "option": {
+      "anamorphic": "变形宽银幕",
+      "auto": "自动",
+      "blackWhite400": "黑白 400",
+      "bleachBypass": "漂白效果",
+      "blueHour": "蓝调时刻",
+      "closeUp": "特写",
+      "daylight250": "日光 250D",
+      "desertDust": "沙漠尘土",
+      "digital": "数字电影机",
+      "digitalClean": "纯净数字",
+      "documentary": "纪录片",
+      "expired": "过期胶片",
+      "extremeCloseUp": "大特写",
+      "extremeWide": "大远景",
+      "f14": "f/1.4",
+      "f2": "f/2",
+      "f28": "f/2.8",
+      "f4": "f/4",
+      "f8": "f/8",
+      "film16": "16mm 胶片",
+      "film35": "35mm 胶片",
+      "goldenHour": "黄金时刻",
+      "handheld": "手持",
+      "kodachrome": "柯达克罗姆",
+      "largeFormat": "大画幅",
+      "lowAngle": "仰拍",
+      "lowKey": "低调光",
+      "macro": "微距",
+      "medium": "中景",
+      "mm135": "135mm",
+      "mm14": "14mm",
+      "mm24": "24mm",
+      "mm35": "35mm",
+      "mm50": "50mm",
+      "mm85": "85mm",
+      "neoNoir": "新黑色电影",
+      "neon": "霓虹",
+      "neonNight": "霓虹之夜",
+      "noir": "黑白",
+      "nordicCold": "北欧冷调",
+      "overShoulder": "过肩镜头",
+      "overcast": "阴天",
+      "periodDrama": "年代剧",
+      "practicalNight": "实景夜光",
+      "prime": "球面定焦",
+      "reversal": "反转片",
+      "roadMovie": "公路片",
+      "sciFi": "科幻",
+      "silhouette": "剪影",
+      "super35": "Super 35",
+      "tealOrange": "青橙色调",
+      "thriller": "惊悚片",
+      "tiltShift": "移轴",
+      "tungsten500": "钨丝灯 500T",
+      "vintage": "复古镜头",
+      "western": "西部片",
+      "wide": "远景"
+    },
+    "output": {
+      "aspect": "画面比例",
+      "cancel": "取消",
+      "checking": "检查中…",
+      "fewerTakes": "减少条数",
+      "generate": "生成",
+      "moreTakes": "增加条数",
+      "resolution": "分辨率",
+      "takes": "条数",
+      "unavailable": "此处暂不支持运行模型。"
+    },
+    "panel": {
+      "label": "镜头设置",
+      "newShot": "新镜头"
+    },
+    "part": {
+      "film": "胶片",
+      "grade": "调色",
+      "light": "光线",
+      "look": "风格",
+      "shot": "景别"
+    },
+    "picker": {
+      "close": "关闭"
+    },
+    "reference": {
+      "cast": "角色",
+      "castAction": "添加角色参考",
+      "optional": "可选",
+      "remove": "移除参考"
+    },
+    "references": {
+      "needsPicture": "{model} 需要图片本身，但此处无法读取该图片。请下载后通过 + 添加，或选择其他模型。",
+      "unreadable": "无法使用此图片。请下载后通过 + 添加。",
+      "unsupported": "{model} 无法使用参考图。请移除参考图或选择其他模型。"
+    },
+    "repo": {
+      "soon": "GitHub · 即将推出",
+      "view": "在 GitHub 上查看"
+    },
+    "scene": {
+      "enhance": "AI 提示词",
+      "enhanceHint": "在提示词中加入“电影静帧”描述",
+      "placeholder": "描述这一刻：谁、在哪里、发生了什么。"
+    },
+    "section": {
+      "camera": "摄影机",
+      "direction": "导演",
+      "output": "画幅",
+      "references": "参考",
+      "scene": "场景",
+      "shot": "镜头"
+    },
+    "stage": {
+      "again": "再生成一次",
+      "download": "下载",
+      "emptyBody": "写下场景，设置导演选项，然后点击生成。",
+      "emptyTitle": "你的第一个镜头会显示在这里",
+      "generatingImage": "正在生成图像",
+      "generatingVideo": "正在生成视频",
+      "label": "镜头",
+      "loadingTake": "正在加载镜头",
+      "longWait": "仍在进行。部分模型需要约一分钟。没有排队，你的任务已经开始。",
+      "rendering": "渲染中…",
+      "renderingTakeName": "正在渲染镜头 {shot}，第 {take} 条",
+      "sequence": "序列",
+      "shot": "镜头 {number}",
+      "takeName": "镜头 {shot}，第 {take} 条",
+      "takes": "条数",
+      "useAsReference": "用作参考"
+    },
+    "state": {
+      "blocked": "被模型的内容政策拦截",
+      "cancelled": "你已停止这一条",
+      "editScene": "修改场景",
+      "failed": "这一条生成失败",
+      "noCredits": "积分不足，无法生成这个镜头",
+      "tryOn": "换用 {model}"
+    },
+    "title": "电影工作室",
+    "unavailable": {
+      "link": "浏览模型",
+      "title": "电影工作室尚未开放"
+    },
+    "ux": {
+      "app": "应用",
+      "composer": "E · 底部输入栏",
+      "heading": "评审布局",
+      "hub": "Hub · 应用标签页",
+      "panel": "D · 侧边面板"
+    },
+    "video": {
+      "addFirstFrame": "添加起始帧",
+      "addLastFrame": "添加结束帧",
+      "addSourceVideo": "添加要编辑的视频",
+      "animate": "将图像转为视频",
+      "aspect": "画幅",
+      "audio": "生成音频",
+      "audioHint": "为片段添加声音。",
+      "audioOff": "关闭",
+      "audioOn": "开启",
+      "audioTag": "音频",
+      "duration": "时长",
+      "enhanceHint": "在提示词中添加电影运镜和连续动作",
+      "firstFrame": "起始帧",
+      "frameError": "无法加载起始帧。请下载图像并在视频设置中上传。",
+      "frameLoading": "正在准备起始帧…",
+      "image": "图像",
+      "lastFrame": "结束帧",
+      "mode": "创作类型",
+      "modelDecides": "此模型自行决定时长和分辨率。",
+      "needFrame": "请为此模型添加起始帧。",
+      "needSourceVideo": "请先添加要编辑的视频。",
+      "noFirstFrame": "{model} 无法从图像开始。请移除该帧或选择其他模型。",
+      "oneClip": "每次请求生成一个片段。请在场景中描述动作和镜头运动。",
+      "preview": "生成的视频",
+      "resolution": "分辨率",
+      "sourceVideo": "要编辑的视频",
+      "start": "描述运动，选择视频模型，或将你的静帧转为视频。",
+      "uploadFrame": "上传图像",
+      "video": "视频"
     }
   },
   "cli": {
@@ -817,19 +1020,19 @@
   "cloud": {
     "aiModels": {
       "card": {
+        "chatgptImages25": "ChatGPT Images 2.5",
+        "flux3": "Flux 3",
         "geminiOmniFlash": "Gemini\nOmni 1.1 Flash",
         "gptImage2": "GPT Image 2",
         "grokImagine": "Grok Video",
+        "klingAi30": "KlingAI 3.0",
         "minimaxH3": "MiniMax H3",
         "nanoBananaPro": "Nano Banana Pro",
         "qwenImageEdit": "Qwen\n图像编辑",
         "seedance20": "Seedance 2.0",
         "seedance25": "Seedance 2.5",
         "wan22TextToVideo": "Wan 2.2",
-        "wan3": "Wan 3.0",
-        "chatgptImages25": "ChatGPT Images 2.5",
-        "klingAi30": "KlingAI 3.0",
-        "flux3": "Flux 3"
+        "wan3": "Wan 3.0"
       },
       "ctaDesktop": "探索最新模型工作流",
       "ctaMobile": "探索工作流",
@@ -1122,7 +1325,7 @@
       "a1": "Comfy 是 MiniMax 商业使用许可的唯一官方经销商，涵盖 MiniMax H3 以及 MiniMax 音频与音乐模型，面向在自有硬件上本地运行模型的场景。许可分为专业版和企业版两个级别。通过此表单申请许可，或在 [MiniMax 商业许可页面](https://comfy.org/zh-CN/minimax/license/)了解更多。",
       "a2": "Comfy 专家驻场加入你的团队，在你的环境中构建生产级工作流，用你的风格训练 LoRA，并教会你的团队运行和扩展他们构建的一切。通过此表单告诉我们你在做什么，或[认识前沿驻场创意人才](https://comfy.org/zh-CN/forward-deployed-creatives/)。",
       "a3": "云端或自有环境部署，数据归属权、自带密钥支持、编排能力、来自引擎开发团队的支持，以及 MiniMax 商业许可等附加项。[了解 Comfy 企业版](https://comfy.org/zh-CN/enterprise/)，或通过此表单预约演示。",
-      "a4": "SOC 2 Type II 审计正在进行中。安全文档和实时控制状态可在我们的 [Trust Center](https://app.vanta.com/comfy.org/trust/o6nu46b16iu3e7fhc41hnz) 查看，我们的团队也可以在企业版沟通中详细说明安全要求。",
+      "a4": "SOC 2 Type II 审计已完成，Type II 报告可应要求提供。安全文档和实时控制状态可在我们的 [Trust Center](https://app.vanta.com/comfy.org/trust/o6nu46b16iu3e7fhc41hnz) 查看，我们的团队也可以在企业版沟通中详细说明安全要求。",
       "heading": "常见问题",
       "q1": "如何获取 MiniMax 商业许可？",
       "q2": "什么是前沿驻场创意人才？",
@@ -1151,6 +1354,20 @@
     "contact": {
       "heading": "有兴趣与 ComfyUI 合作案例研究？点击<a href=\"https://docs.google.com/forms/d/e/1FAIpQLSd-Keeq1VIePeanQIsdHq9eYeDE82MHJTdvwdgpxCoEzo_CUg/viewform\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"text-primary-comfy-yellow underline\">此处</a>联系我们",
       "label": "联系"
+    },
+    "directory": {
+      "empty": "没有符合筛选条件的客户故事。请尝试放宽搜索条件。",
+      "formatLabel": "形式",
+      "searchLabel": "搜索客户故事",
+      "searchPlaceholder": "按公司、标题、类别或描述搜索…",
+      "sortLabel": "客户故事排序",
+      "sortLatest": "最新",
+      "sortOldest": "最早",
+      "tab": {
+        "all": "全部",
+        "read": "阅读",
+        "watch": "观看"
+      }
     },
     "feedback": {
       "name1": "PJ Pereira",
@@ -1239,97 +1456,6 @@
       "transcript": "<ol><li><strong>打开模板浏览器</strong> — 点击 ComfyUI 侧栏中的模板图标。</li><li><strong>浏览分类</strong> — 模板按任务分类：图像生成、视频、放大等。</li><li><strong>预览模板</strong> — 将鼠标悬停在模板上查看预览。</li><li><strong>加载并自定义</strong> — 点击加载模板，然后修改参数。</li></ol>"
     }
   },
-  "desktop_privacy": {
-    "changes": {
-      "block": {
-        "0": "We will revise this Privacy Policy when our processing changes materially. The Effective date at the top of this policy reflects the date of the most recent revision."
-      },
-      "label": "CHANGES",
-      "title": "Changes"
-    },
-    "children": {
-      "block": {
-        "0": "Comfy Desktop is not intended for, and we do not knowingly collect personal data from, individuals under 13 years of age."
-      },
-      "label": "CHILDREN",
-      "title": "Children"
-    },
-    "contact": {
-      "block": {
-        "0": "For any privacy enquiry, contact <a href=\"mailto:support{'@'}comfy.org\" class=\"text-white underline\">support{'@'}comfy.org</a>."
-      },
-      "label": "CONTACT",
-      "title": "Contact"
-    },
-    "controller": {
-      "block": {
-        "0": "Comfy Organization Inc (\"Comfy Org\", \"we\", \"us\") is the data controller for personal data processed in connection with your use of Comfy Desktop. We are established in San Francisco, USA. For privacy enquiries: <a href=\"mailto:support{'@'}comfy.org\" class=\"text-white underline\">support{'@'}comfy.org</a>."
-      },
-      "label": "CONTROLLER",
-      "title": "Controller"
-    },
-    "data": {
-      "block": {
-        "0": "If you have enabled telemetry, either on the first-run consent screen or at Settings → Telemetry, we process the following categories of data:",
-        "1": "Device identifier. A pseudonymous identifier generated locally on first run. Before you sign in to Comfy Cloud it is not linked to your name, email address, or hardware. When you sign in, it is associated with your Comfy account.\nTechnical metadata. Application version, operating system, and processor architecture.\nProduct usage events. Feature interactions, navigation between views, installation and update milestones, and approximate timing.\nCustom node identifiers. Public package names of custom nodes you install through Manager (for example, \"comfyui-impact-pack\"). The local installation path is not transmitted.\nCrash and error diagnostics. Stack traces, error messages, and short stdout/stderr fragments captured at the moment of failure.",
-        "2": "Before crash or error diagnostic data is transmitted, we apply automated redaction to home-directory paths and to well-known credential patterns (Bearer tokens, OpenAI <code>sk-*</code> and Hugging Face <code>hf_*</code> keys, basic-auth URLs, and <code>KEY=</code> / <code>SECRET=</code> environment assignments).",
-        "3": "We do not process:",
-        "4": "Workflow content (the graph, the nodes you connect, their parameters)\nPrompts you write\nGenerated images, video, or audio\nModel weights, or the local filenames under which you save them\nNetwork activity outside the application",
-        "5": "Your workflow files, your models, the outputs you generate, the list of installations you create, and your local settings remain on your device. They are not transmitted to Comfy Org, and they are not accessible to us."
-      },
-      "label": "DATA WE PROCESS",
-      "title": "Personal data we process"
-    },
-    "intro": {
-      "block": {
-        "0": "Effective 3 June 2026. Applies to the Comfy Desktop application.",
-        "1": "This Privacy Policy describes the personal data we process when you use Comfy Desktop, the purposes and lawful bases for that processing, the recipients of the data, and the rights available to you. The same policy is shown in the application on first run and is available at any time from Settings → About → Privacy Policy."
-      },
-      "label": "OVERVIEW"
-    },
-    "processors": {
-      "block": {
-        "0": "We engage the following processors under Data Processing Agreements:",
-        "1": "PostHog (product usage analytics)\nDatadog (crash and error diagnostics)\nToDesktop (application distribution and software updates)\nComfy Org analytics warehouse (long-term aggregate analytics, operated by Comfy Org)"
-      },
-      "label": "RECIPIENTS",
-      "title": "Recipients"
-    },
-    "purposes": {
-      "block": {
-        "0": "We process personal data on the following lawful bases under GDPR and UK GDPR:",
-        "1": "Product usage analytics: consent under Article 6(1)(a).\nCrash and error diagnostics: consent under Article 6(1)(a).\nDelivery of software updates and integrity verification: legitimate interests under Article 6(1)(f).\nAuthentication when you sign in to Comfy Cloud: performance of a contract under Article 6(1)(b).",
-        "2": "Consent for analytics and crash diagnostics is opt-in, and you may withdraw it at any time at Settings → Telemetry. Withdrawal does not affect the lawfulness of processing carried out before withdrawal. To object to processing on the basis of legitimate interests, contact <a href=\"mailto:support{'@'}comfy.org\" class=\"text-white underline\">support{'@'}comfy.org</a>.",
-        "3": "We do not carry out automated decision-making, including profiling, that produces legal or similarly significant effects. We do not sell personal data, and we do not share personal data for cross-context behavioural advertising."
-      },
-      "label": "PURPOSES",
-      "title": "Purposes and lawful bases"
-    },
-    "retention": {
-      "block": {
-        "0": "Product usage analytics: up to 24 months from the event, then aggregated or deleted.\nCrash and error diagnostics: 15 days at full fidelity, then sampled or aggregated.\nAggregate analytics: up to 36 months in aggregated form.\nUpdate-server logs: 90 days.\nLocal device identifier: stored on your device only, and removed when you uninstall the application."
-      },
-      "label": "RETENTION",
-      "title": "Retention"
-    },
-    "rights": {
-      "block": {
-        "0": "If you are in the EU, UK, or EEA, you have the following rights under GDPR and UK GDPR: access, rectification, erasure, restriction of processing, objection, portability, and withdrawal of consent.",
-        "1": "If you are a California resident, you have rights under CCPA and CPRA: to know what we collect, to delete, to correct, and to limit use of sensitive personal information. We do not sell personal information, and we do not share it for cross-context behavioural advertising.",
-        "2": "You also have the right to lodge a complaint with your supervisory authority, such as the UK Information Commissioner's Office, your EU member-state data protection authority, or the California Privacy Protection Agency.",
-        "3": "To exercise any of these rights, contact <a href=\"mailto:support{'@'}comfy.org\" class=\"text-white underline\">support{'@'}comfy.org</a>. If you have signed in to Comfy Cloud, your account verifies your identity. If you have not signed in, please tell us your approximate install date, platform, and application version, and we will attempt to match these against our records. We aim to respond within 30 days."
-      },
-      "label": "YOUR RIGHTS",
-      "title": "Your rights"
-    },
-    "transfers": {
-      "block": {
-        "0": "Comfy Organization Inc is established in the United States. Personal data of users in the EU, UK, EEA, or other jurisdictions outside the United States may be transferred to the United States and to other locations where our processors operate. Where required, we rely on the European Commission Standard Contractual Clauses (and the UK International Data Transfer Addendum where applicable) as the transfer mechanism under Chapter V GDPR."
-      },
-      "label": "TRANSFERS",
-      "title": "International transfers"
-    }
-  },
   "download": {
     "ecosystem": {
       "description": "超过 5,000 个社区构建的扩展——共计 60,000+ 节点——接入 ComfyUI 并扩展其能力。当新的开源模型发布时，ComfyUI 会实现它，社区会立即将其定制并构建到工作流中。当研究论文发布新技术时，几天内就会出现相应扩展。",
@@ -1385,10 +1511,10 @@
       "installGithub": "从 GITHUB 安装",
       "installers": {
         "label": "全部安装包",
-        "windowsX64": "Windows x64",
-        "windowsArm64": "Windows ARM64（仅限 NVIDIA）",
+        "linuxX64": "Linux x64（AppImage）",
         "macArm64": "macOS（Apple 芯片）",
-        "linuxX64": "Linux x64（AppImage）"
+        "windowsArm64": "Windows ARM64（仅限 NVIDIA）",
+        "windowsX64": "Windows x64"
       },
       "subtitle": "完整的 ComfyUI 引擎——开源、快速、可扩展，随你运行。"
     },
@@ -1544,146 +1670,6 @@
       },
       "heading": "围绕共享用量打造的\n团队方案。",
       "subtitle": "为团队共享点数池，统一结算，并根据每个人的角色提供合适的 Comfy 使用方式。"
-    }
-  },
-  "enterprise-msa": {
-    "1-definitions": {
-      "block": {
-        "0": "<strong>“Affiliates”</strong> means any entity that directly or indirectly controls, is controlled by, or is under common control with a party, where “control” means the ownership of more than fifty percent (50%) of the voting securities or other voting interests of such entity.",
-        "1": "<strong>“Applicable Laws”</strong> means all federal and state laws, treaties, rules, regulations, regulatory and supervisory guidance, directives, policies, orders or determinations of a regulatory authority applicable to the activities and obligations contemplated under this Agreement.",
-        "2": "<strong>“Comfy API”</strong> means the application programming interface and related developer tools made available by Comfy that allows Customer to access and execute visual AI workflows programmatically as production endpoints from within Customer’s own applications or systems.",
-        "3": "<strong>“Comfy Branding”</strong> means the names, logos, and associated trademarks owned or in progress of being owned by Comfy.",
-        "4": "<strong>“Comfy Cloud”</strong> means the cloud-based hosting environment made available by Comfy that allows Customer to access and run visual AI workflows remotely through Comfy’s infrastructure, without requiring local installation or hardware.",
-        "5": "<strong>“Comfy Enterprise”</strong> means the enterprise-grade product tier made available by Comfy that provides organizations with dedicated infrastructure, enhanced security, administrative controls, and related support services for deploying and managing visual AI workflows at scale.",
-        "6": "<strong>“Comfy OSS”</strong> means the open-source software, source code, libraries, tools, and related components made available by Comfy under one or more open source licenses, including the software repositories published by Comfy at <a href=\"https://github.com/Comfy-Org\" class=\"text-white underline\">https://github.com/Comfy-Org</a>, as updated, modified, or supplemented from time to time. For the avoidance of doubt, Comfy OSS does not include any proprietary software, infrastructure, or functionality made available by Comfy under this Agreement or in connection with any commercial product or offering.",
-        "7": "<strong>“Comfy Products”</strong> means Comfy Cloud, Comfy API, Comfy Enterprise and other products, software, features, tools, and functionality made available by Comfy to Customer under this Agreement, excluding any Comfy OSS.",
-        "8": "<strong>“Customer Data”</strong> means electronic data and information submitted or generated by Customer in connection with its use of the Comfy Products, including all Inputs and Outputs.",
-        "9": "<strong>“Open Source License”</strong> means the open source license(s) under which Comfy makes Comfy OSS available, as identified in the applicable source code repository.",
-        "10": "<strong>“Operational Metadata”</strong> means usage and diagnostic information generated by the Comfy Products and collected by Comfy to support, maintain, and optimize the performance and security of the Comfy Products, including information regarding software versions, system configuration, uptime, error logs, health metrics, and feature usage. Operational Metadata does not include Customer Data or Confidential Information.",
-        "11": "<strong>“Order Form”</strong> means the online sign-up flow, order form or other ordering document entered into or otherwise agreed by Customer that references this Agreement. The initial Order Form is attached as Exhibit A.",
-        "12": "<strong>“User”</strong> means Customer’s or Customer’s Affiliates’ employees and contractors who are authorized by Customer to access and use the Comfy Products on Customer’s or Customer’s Affiliates’ behalf according to the terms of this Agreement."
-      },
-      "label": "DEFINITIONS",
-      "title": "1. Definitions"
-    },
-    "10-indemnification": {
-      "block": {
-        "0": "<strong>Indemnity by Comfy.</strong> Comfy will defend Customer against any claim, demand, suit, or proceeding (“Claim”) made or brought against Customer by a third party alleging that the Comfy Products as provided by Comfy infringes or misappropriates a U.S. patent, copyright or trade secret and will indemnify Customer for any damages finally awarded against Customer (or any settlement approved by Comfy) in connection with any such Claim; provided that (a) Customer will promptly notify Comfy of such Claim, (b) Comfy will have the sole and exclusive authority to defend and/or settle any such Claim (provided that Comfy may not settle any Claim without Customer’s prior written consent, which will not be unreasonably withheld, unless it unconditionally releases Customer of all related liability) and (c) Customer reasonably cooperates with Comfy in connection therewith. If the use of the Comfy Products by Customer has become, or in Comfy’s opinion is likely to become, the subject of any claim of infringement, Comfy may at its option and expense (i) procure for Customer the right to continue using and receiving the Comfy Products as set forth hereunder; (ii) replace or modify the Comfy Products to make it non-infringing (with comparable functionality); or (iii) if the options in clauses (i) or (ii) are not reasonably practicable, terminate the applicable Order Form and provide a pro rata refund of any prepaid subscription fees corresponding to the terminated portion of the applicable subscription term. Comfy will have no liability or obligation with respect to any Claim to the extent such Claim is caused by (A) prompts, inputs, or other instructions or materials submitted by Customer or its Users; (B) Customer’s use of any outputs, generated content, or models in a manner not authorized under this Agreement; (C) modification of any generated outputs by or on behalf of Customer; (D) Customer Data, including any third-party intellectual property, likenesses, or other proprietary material incorporated therein; or (E) Customer’s failure to obtain rights, consents, or clearances required for the submission or use of any content through the Comfy Products (clauses (A) through (E), “Excluded Claims”). This Section states Comfy’s sole and exclusive liability and obligation, and Customer’s exclusive remedy, for any claim of any nature related to infringement or misappropriation of intellectual property.",
-        "1": "<strong>Indemnification by Customer.</strong> Customer will defend Comfy against any Claim made or brought against Comfy by a third party to the extent arising out of Customer’s breach of Section 3 or the Excluded Claims, and Customer will indemnify Comfy for any damages finally awarded against Comfy (or any settlement approved by Customer) in connection with any such Claim; provided that (a) Comfy will promptly notify Customer of such Claim, (b) Customer will have the sole and exclusive authority to defend and/or settle any such Claim (provided that Customer may not settle any Claim without Comfy’s prior written consent, which will not be unreasonably withheld, unless it unconditionally releases Comfy of all liability) and (c) Comfy reasonably cooperates with Customer in connection therewith."
-      },
-      "label": "INDEMNITY",
-      "title": "10. Indemnification"
-    },
-    "11-miscellaneous": {
-      "block": {
-        "0": "<strong>Governing Law.</strong> This Agreement will be governed by the laws of the State of California, exclusive of its rules governing choice of law and conflict of laws. The parties agree to the exclusive jurisdiction and venue of the state and federal courts located in San Francisco, CA and each party irrevocably submits to such jurisdiction and venue and waives any objection based on inconvenient forum. This Agreement will not be governed by the United Nations Convention on Contracts for the International Sale of Goods.",
-        "1": "<strong>Export Compliance.</strong> Customer will comply with the export laws and regulations of the United States, the European Union and other applicable jurisdictions in using the Comfy Products.",
-        "2": "<strong>Publicity.</strong> Customer agrees that Comfy may refer to Customer’s name, logo, and trademarks in Comfy’s marketing materials and website; however, Comfy will not use Customer’s name or trademarks in any other publicity (e.g., press releases, customer references and case studies) without Customer’s prior written consent (which may be by email) not to be unreasonably withheld, conditioned, or delayed.",
-        "3": "<strong>Third-Party Infrastructure.</strong> Customer acknowledges that the Comfy Products relies on third-party infrastructure, hardware, and services, including cloud computing providers and GPU infrastructure providers (collectively, “Third-Party Infrastructure”), and that the availability, performance, and security of the Comfy Products may be affected by the operation, maintenance, or failure of such Third-Party Infrastructure. Comfy will use commercially reasonable efforts to maintain Comfy Products availability but makes no representation or warranty regarding the performance or availability of any Third-Party Infrastructure, and Comfy shall have no liability to Customer for any interruption, degradation, loss of data, or other harm arising out of or related to any failure, outage, or limitation of Third-Party Infrastructure, whether or not within Comfy’s control.",
-        "4": "<strong>Assignment; Delegation.</strong> Neither party hereto may assign or otherwise transfer this Agreement, in whole or in part, without the other party’s prior written consent, except that Comfy may assign this Agreement without consent to a successor to all or substantially all of its assets or business related to this Agreement. Any attempted assignment, delegation, or transfer by either party in violation hereof will be null and void. Subject to the foregoing, this Agreement will be binding on the parties and their successors and assigns.",
-        "5": "<strong>Amendment; Waiver.</strong> No amendment or modification to this Agreement, nor any waiver of any rights hereunder, will be effective unless assented to in writing by both parties. Any such waiver will be only to the specific provision and under the specific circumstances for which it was given and will not apply with respect to any repeated or continued violation of the same provision or any other provision. Failure or delay by either party to enforce any provision of this Agreement will not be deemed a waiver of future enforcement of that or any other provision.",
-        "6": "<strong>Relationship.</strong> Nothing contained herein will in any way constitute any association, partnership, agency, employment or joint venture between the parties hereto, or be construed to evidence the intention of the parties to establish any such relationship. Neither party will have the authority to obligate or bind the other in any manner, and nothing herein contained will give rise to, or is intended to give rise to any rights of any kind in favor of any third parties.",
-        "7": "<strong>Unenforceability.</strong> If a court of competent jurisdiction determines that any provision of this Agreement is invalid, illegal, or otherwise unenforceable, such provision will be enforced as nearly as possible in accordance with the stated intention of the parties, while the remainder of this Agreement will remain in full force and effect and bind the parties according to its terms.",
-        "8": "<strong>Notices.</strong> Any notice required or permitted to be given hereunder will be given in writing by personal delivery, certified mail, return receipt requested, or by overnight delivery. Notices to the parties must be sent to the respective address set forth in the signature blocks below, or such other address designated pursuant to this Section.",
-        "9": "<strong>Force Majeure.</strong> Neither party will be deemed in breach hereunder for any cessation, interruption or delay in the performance of its obligations due to causes beyond its reasonable control, including earthquake, flood, or other natural disaster, act of God, labor controversy, civil disturbance, terrorism, war (whether or not officially declared), cyber attacks (e.g., denial of service attacks), or the inability to obtain sufficient supplies, transportation, or other essential commodity or service required in the conduct of its business, or any change in or the adoption of any law, regulation, judgment or decree for which the party could not reasonably prepare mitigation in advance.",
-        "10": "<strong>Entire Agreement.</strong> This Agreement comprises the entire agreement between Customer and Comfy with respect to its subject matter, and supersedes all prior and contemporaneous proposals, statements, sales materials or presentations and agreements (oral and written). No oral or written information or advice given by Comfy, its agents or employees will create a warranty or in any way increase the scope of the warranties in this Agreement."
-      },
-      "label": "MISCELLANEOUS",
-      "title": "11. Miscellaneous"
-    },
-    "12-exhibit-a": {
-      "block": {
-        "0": "The initial Order Form is attached as <strong>Exhibit A</strong> to the executed copy of this Agreement. Each Order Form is subject to the terms and conditions of this Agreement, and by executing an Order Form, Customer agrees to be bound by the terms and conditions of this Agreement.",
-        "1": "This document reproduces the current template of the Enterprise Customer Agreement for reference only. The executed Agreement between Comfy and Customer, together with any signed Order Forms, governs the relationship between the parties. To request an executable copy, please contact <a href=\"mailto:sales{'@'}comfy.org\" class=\"text-white underline\">sales{'@'}comfy.org</a>."
-      },
-      "label": "EXHIBIT A",
-      "title": "Exhibit A. Order Form"
-    },
-    "2-comfy-products": {
-      "block": {
-        "0": "<strong>Right to Access and Use Comfy Products.</strong> Subject to Customer’s compliance with all of the terms and conditions of this Agreement, Comfy grants Customer and Customer’s Users a non-exclusive, non-sublicensable, non-transferable right during the term of this Agreement to access and use the Comfy Products as set forth in the applicable Order Form for Customer’s internal business purposes.",
-        "1": "<strong>Customer Data.</strong> As between Comfy and Customer, Customer retains all right, title, and interest in and to any data, images, videos, prompts, models, workflows, nodes, parameters, or other materials submitted or uploaded by Customer to the Comfy Products (“Input”), as well as any images, videos, designs, or other visual content generated through Customer’s use of the Comfy Products as a result of processing Customer’s Input (“Output”). Customer acknowledges that due to the nature of artificial intelligence, Comfy may generate the same or similar Output for other customers, and Customer shall have no right, title, or interest in or to Output generated for any other customer.",
-        "2": "<strong>No AI Training.</strong> Comfy will not use Input or Output to train generative AI or diffusion models. Comfy may, however, collect and use limited metadata derived from Customer’s use of the Comfy Products, such as prompt classifications, workflow structures, and node configurations, to improve the performance, functionality, and user experience of the Comfy Products.",
-        "3": "<strong>Comfy OSS.</strong> Customer may use Comfy OSS under the terms of the applicable Open Source License(s) governing each respective component, as identified in the corresponding source code repository, rather than under this Agreement. Nothing in this Agreement shall be construed to limit, supersede, or modify any rights or obligations arising under an applicable Open Source License. If Customer chooses to use the Comfy Products in conjunction with Comfy OSS, this Agreement applies solely to Customer’s use of the Comfy Products and not to the Comfy OSS itself.",
-        "4": "<strong>Partner Nodes.</strong> Certain features of the Comfy Products allow Customer to access third-party AI model providers (“Partner Nodes”) through Comfy. When Customer uses a Partner Node, Comfy proxies Customer’s request to the applicable third-party provider, transmitting the information necessary to fulfill Customer’s request, including prompts, images, models, and parameters. Comfy does not transmit Customer’s identity or account information to third-party providers in connection with Partner Node requests. Customer’s use of Partner Nodes is subject to the terms and policies of the applicable third-party provider, and Comfy is not responsible for the data practices of such providers. Usage of Partner Nodes is metered and billed through Comfy.",
-        "5": "<strong>Modification of Comfy Products.</strong> Comfy may, at any time and in its sole discretion, modify, update, enhance, restrict, suspend, or discontinue the Comfy Products, in whole or in part, including by changing or removing features, functionality, endpoints, specifications, documentation, access methods, usage limits, or availability. Comfy has no obligation to maintain or support any particular version of the Comfy Products or to ensure backward compatibility. Any such modifications may be made with or without notice and may result in interruptions to or degradation of the Comfy Products. Comfy shall have no liability arising out of or related to any modification, suspension, or discontinuation of the Comfy Products, and Customer acknowledges that its use of the Comfy Products is at its own risk and that it should not rely on the continued availability of any aspect of the Comfy Products.",
-        "6": "<strong>Data Retention and Deletion.</strong> Comfy retains Customer Data for as long as Customer’s account remains active or as otherwise necessary to provide the Comfy Products, comply with applicable legal obligations, resolve disputes, and enforce this Agreement. Specific retention periods for different categories of Customer Data are set forth in Comfy’s retention documentation, available at <a href=\"https://docs.comfy.org/support/data-retention\" class=\"text-white underline\">docs.comfy.org/support/data-retention</a>, as updated from time to time. Customer may request deletion of Customer’s account and associated Customer Data by contacting Comfy at <a href=\"mailto:legal{'@'}comfy.org\" class=\"text-white underline\">legal{'@'}comfy.org</a>. Upon receipt of a verified deletion request, Comfy will use commercially reasonable efforts to delete or de-identify Customer’s personal information from its primary systems within a reasonable time. Customer acknowledges that: (i) deletion may not propagate immediately to all backup systems, third-party analytics providers, or observability systems, which retain data subject to their own retention policies; (ii) certain Customer Data may be retained as required by applicable law or for legitimate business purposes such as billing records; and (iii) aggregated or de-identified data derived from Customer’s use of the Comfy Products may be retained indefinitely."
-      },
-      "label": "PRODUCTS",
-      "title": "2. Comfy Products"
-    },
-    "3-customer-responsibilities": {
-      "block": {
-        "0": "<strong>Registration.</strong> To access and use the Comfy Products, Customer may be required to register one or more accounts by providing Comfy with the information specified in the applicable registration form, including Customer’s email address. Customer shall ensure that all registration information provided to Comfy is complete and accurate, and shall promptly update such information as necessary to keep it current. Customer shall be liable for all activities conducted through its account, including any unauthorized access or use resulting from Customer’s failure to implement reasonable access controls or to limit access to its systems and devices.",
-        "1": "<strong>General Technology Restrictions.</strong> Customer agrees that it will not, directly or indirectly: (i) sublicense the Comfy Products for use by a third party; (ii) reverse engineer or attempt to extract the source code or underlying methodology from the Comfy Products or any related software, except to the extent that this restriction is expressly prohibited by Applicable Laws; (iii) use or facilitate the use of the Comfy Products for any activities that are prohibited by Applicable Laws or otherwise; (iv) bypass or circumvent measures employed to prevent or limit access to the Comfy Products; (v) use the Comfy Products to create a product or service competitive with Comfy’s products or services; (vi) create derivative works of or otherwise create, attempt to create or derive, or knowingly assist any third party to create or derive, the source code underlying the Comfy Products; or (vii) otherwise use or interact with the Comfy Products for any purpose not expressly permitted under this Agreement.",
-        "2": "<strong>Acceptable Use; Prohibited Customer Data.</strong> Customer is solely responsible for ensuring that all Input submitted to the Comfy Products complies with all Applicable Laws, and Customer agrees that it will not, and will not permit any third party to submit to Comfy or the Comfy Products or otherwise use the Comfy Products to create: (i) any data, designs, or other materials subject to U.S. export control laws and regulations; (ii) any viruses, malware, ransomware, Trojan horses, worms, spyware, or other malicious or harmful code or content that could damage, disrupt, interfere with, or compromise the Comfy Products, Comfy’s systems or infrastructure, or the data or systems of any other user or third party; (iii) any Customer Data that depicts, promotes, or facilitates illegal activity, including without limitation child sexual abuse material, non-consensual intimate imagery, or content that incites violence or hatred against any individual or group; (iv) any Customer Data that infringes or misappropriates the intellectual property rights, privacy rights, or publicity rights of any third party, including without limitation by submitting models, images, or other materials without the right to do so; (v) any content or information that is intentionally deceptive or misleading, including without limitation synthetic media designed to impersonate a real individual without their consent; or (vi) any Customer Data that could reasonably be expected to cause harm to any individual or group."
-      },
-      "label": "CUSTOMER",
-      "title": "3. Customer Responsibilities"
-    },
-    "4-payment": {
-      "block": {
-        "0": "<strong>Fees.</strong> Customer will pay Comfy the fees set forth in the applicable Order Form. Customer shall pay those amounts due and not disputed in good faith within seven (7) days of the date of receipt of the applicable invoice, unless a specific date for payment is set forth in such Order Form, in which case payment will be due on the date specified. Except as otherwise specified herein or in any applicable Order Form, (a) fees are quoted and payable in United States dollars and (b) payment obligations are non-cancelable and non-pro-ratable for partial months, and fees paid are non-refundable. Comfy reserves the right to change its fees upon each renewal term. Customer is responsible for all usage under Customer’s account, including usage by Customer’s Users and under Customer’s credentials and API keys.",
-        "1": "<strong>Prepaid Credits.</strong> Customer may prepay for usage credits (“Credits”) which may be applied toward usage of the Comfy Products at the rates set forth on Comfy’s pricing page. Except for documented billing errors or similar service issues attributed to Comfy, all purchases of Credits are final and non-refundable, and Comfy will not issue refunds or credits for any unused, partially used, or remaining Credits under any circumstances, including upon termination or expiration of Customer’s account. Comfy reserves the right to modify the pricing or Credit redemption rates applicable to future Credit purchases upon reasonable notice, but any Credits purchased prior to such modification will be honored at the rates in effect at the time of purchase.",
-        "2": "<strong>Taxes.</strong> Fees are exclusive of all taxes, duties, levies, and similar governmental assessments (including sales, use, VAT/GST, and withholding taxes), and Customer is responsible for all such amounts other than taxes based on Comfy’s net income; if withholding is required by law, Customer will gross up payments so Comfy receives the invoiced amount, unless prohibited by law.",
-        "3": "<strong>Late Payments; Suspension.</strong> Overdue undisputed amounts may accrue interest at the lesser of 1.5% per month or the maximum rate permitted by law, plus reasonable collection costs. Comfy may suspend or limit access to the Comfy Products (including throttling, disabling API keys, or downgrading to the Free Tier) for non-payment of undisputed amounts after providing commercially reasonable notice and an opportunity to cure, unless Comfy reasonably determines immediate suspension is necessary to protect the Comfy Products or comply with Applicable Laws."
-      },
-      "label": "PAYMENT",
-      "title": "4. Payment"
-    },
-    "5-term-termination": {
-      "block": {
-        "0": "<strong>Term.</strong> The term of this Agreement will commence on the Effective Date and continue until terminated as set forth below (“Term”). The initial term of each Order Form will begin on the Subscription Start Date of such Order Form and will continue for the subscription term set forth therein. Except as set forth in such Order Form, the Order Form will renew for successive renewal terms equal to the length of the Initial Subscription Term.",
-        "1": "<strong>Termination of Agreement.</strong> Each party may terminate this Agreement upon written notice to the other party if there are no Order Forms then in effect. Each party may also terminate this Agreement or the applicable Order Form upon written notice in the event (a) the other party commits any material breach of this Agreement or the applicable Order Form and fails to remedy such breach within thirty (30) days after written notice of such breach or (b) subject to applicable law, upon the other party’s liquidation, commencement of dissolution proceedings or assignment of substantially all its assets for the benefit of creditors, or if the other party becomes the subject of bankruptcy or similar proceeding that is not dismissed within sixty (60) days.",
-        "2": "<strong>Deletion of Customer Data Upon Termination.</strong> Upon expiration or termination of this Agreement, Comfy will delete Customer Data from its primary production systems within sixty (60) days. Notwithstanding the foregoing, Customer Data may persist in routine backup systems beyond such period solely to the extent necessary under Comfy’s standard backup retention schedule, provided that such data is not actively accessed or used by Comfy and remains subject to the confidentiality obligations of this Agreement.",
-        "3": "<strong>Survival.</strong> Termination or expiration will not affect any rights or obligations, including the payment of amounts due, which have accrued under this Agreement up to the date of termination or expiration. Upon termination or expiration of this Agreement, the provisions that are intended by their nature to survive termination will survive and continue in full force and effect in accordance with their terms, including confidentiality obligations, proprietary rights, indemnification, limitations of liability, and disclaimers."
-      },
-      "label": "TERM",
-      "title": "5. Term; Termination"
-    },
-    "6-confidentiality": {
-      "block": {
-        "0": "<strong>Definition of Confidential Information.</strong> “Confidential Information” means all non-public information disclosed by a party (“Disclosing Party”) to the other party (“Receiving Party”), whether oral or written, that is designated as confidential or that reasonably should be understood to be confidential given the nature of the information and circumstances of disclosure. Confidential Information of Customer includes Customer Data; Confidential Information of Comfy includes the Comfy Products; and each party’s Confidential Information includes the terms of this Agreement and any Order Forms (including pricing), as well as business, financial, marketing, technical, and product information. Confidential Information excludes information that the Receiving Party can demonstrate: (i) is or becomes publicly available without breach; (ii) was known prior to disclosure without breach; (iii) is received from a third party without breach; or (iv) was independently developed without use of or reference to the Disclosing Party’s Confidential Information.",
-        "1": "<strong>Protection of Confidential Information.</strong> The Receiving Party will: (a) protect Confidential Information using at least reasonable care; (b) use it solely to perform under this Agreement; and (c) limit access to its and its Affiliates’ employees and contractors with a need to know and confidentiality obligations at least as protective as those herein. Neither party may disclose the terms of this Agreement or any Order Form except to its Affiliates, legal counsel, or accountants, and remains responsible for their compliance. Upon written request, the Receiving Party will promptly return or destroy Confidential Information, except for information retained in routine backups or as required by law or internal retention policies.",
-        "2": "<strong>Compelled Disclosure.</strong> The Receiving Party may disclose Confidential Information if legally required, provided it gives prior notice (where permitted) and reasonable assistance, at the Disclosing Party’s expense, to seek protective treatment. Any disclosure will be limited to what is legally required, and the Receiving Party will request confidential treatment. These obligations survive while Confidential Information remains in the Receiving Party’s possession.",
-        "3": "<strong>Data Security.</strong> Comfy will implement and maintain commercially reasonable administrative, technical, and physical safeguards designed to protect Customer Data against unauthorized access, disclosure, alteration, or destruction. These measures will be no less protective than those Comfy uses to protect its own confidential information of a similar nature. In the event Comfy becomes aware of a confirmed security breach that results in unauthorized access to or disclosure of Customer Data, Comfy will notify Customer without undue delay and will provide reasonable cooperation to assist Customer in investigating and mitigating the effects of such breach. Customer acknowledges that no security measures are perfect or impenetrable, and Comfy does not guarantee that Customer Data will be free from unauthorized access or disclosure."
-      },
-      "label": "CONFIDENTIALITY",
-      "title": "6. Confidentiality"
-    },
-    "7-proprietary-rights": {
-      "block": {
-        "0": "<strong>Reservation of Rights.</strong> Comfy and its licensors retain all right, title, and interest, including all intellectual property and proprietary rights, in and to the Comfy Products, Comfy Branding, and all software, code, algorithms, protocols, interfaces, tools, documentation, data structures, and other technology underlying or embodied in, or used to provide, the Comfy Products (collectively, “Comfy Materials”). Except for the limited rights expressly granted to Customer under this Agreement, no rights or licenses are granted, whether by implication, estoppel, or otherwise. Comfy expressly reserves all rights in and to the Comfy Materials not expressly granted hereunder.",
-        "1": "<strong>Feedback.</strong> Customer may from time to time provide feedback (including suggestions, comments for enhancements, functionality or usability, etc.) (“Feedback”) to Comfy regarding Customer’s experience using, and needs and integration requirements for, the Comfy Products. Comfy shall have full discretion to determine whether or not to proceed with the development of any requested enhancements, new features or functionality, and Customer hereby grants Comfy the full, unencumbered, royalty-free right to incorporate and otherwise fully exploit Feedback in connection with Comfy’s products and services.",
-        "2": "<strong>Operational Metadata.</strong> Customer agrees that Comfy may collect and use Operational Metadata to operate, maintain, improve, and support the Comfy Products, including for diagnostics, analytics, system performance, and reporting purposes. Comfy will only disclose Operational Metadata externally if such data is (a) aggregated or anonymized with data across other customers, and (b) does not disclose the identity of Customer or any Customer Confidential Information."
-      },
-      "label": "IP",
-      "title": "7. Proprietary Rights"
-    },
-    "8-warranties-disclaimer": {
-      "block": {
-        "0": "<strong>Comfy.</strong> Comfy warrants that it will, consistent with prevailing industry standards, provide the Comfy Products in a professional and workmanlike manner and the Comfy Products will conform in all material respects with the Documentation. For material breach of the foregoing express warranty, Customer’s exclusive remedy shall be the re-performance of the deficient Comfy Products or, if Comfy cannot re-perform such deficient Comfy Products as warranted within thirty (30) days after receipt of written notice of the warranty breach, Customer shall be entitled to terminate the applicable Order Form and recover a pro-rata portion of the prepaid subscription fees corresponding to the terminated portion of the applicable subscription term.",
-        "1": "<strong>Customer.</strong> Customer represents and warrants that it owns or has obtained all necessary rights, licenses, and permissions to submit Customer Data to the Comfy Products, and that Customer Data does not include any content that Customer is legally prohibited from sharing or processing through the Comfy Products.",
-        "2": "<strong>Disclaimer.</strong> EXCEPT AS SET FORTH HEREIN, THE COMFY PRODUCTS AND OUTPUT ARE PROVIDED “AS IS” WITHOUT ANY WARRANTY OF ANY KIND. COMFY DISCLAIMS ANY AND ALL WARRANTIES, REPRESENTATIONS, AND CONDITIONS RELATING TO THE COMFY PRODUCTS (INCLUDING ANY OUTPUT), WHETHER EXPRESS, IMPLIED, INCLUDING, BUT NOT LIMITED TO, ANY REPRESENTATION, WARRANTY, OR CONDITION OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE OR NON-INFRINGEMENT. CUSTOMER AGREES AND ACKNOWLEDGES THAT CUSTOMER’S USE OF ANY OUTPUT PROVIDED BY THE COMFY PRODUCTS IS AT CUSTOMER’S OWN RISK. Customer is solely responsible for (a) verifying the Output is appropriate for Customer’s use case, and (b) any decisions, actions, or omissions taken in reliance on the OUTPUT. IN NO EVENT WILL COMFY BE LIABLE FOR ANY DAMAGES OR LOSSES ARISING FROM OR RELATED TO CUSTOMER’S USE OF OR RELIANCE ON THE OUTPUT, INCLUDING ANY DECISIONS MADE OR ACTIONS TAKEN BASED ON THE OUTPUT."
-      },
-      "label": "WARRANTIES",
-      "title": "8. Warranties; Disclaimer"
-    },
-    "9-limitation-of-liability": {
-      "block": {
-        "0": "UNDER NO LEGAL THEORY, WHETHER IN TORT, CONTRACT, OR OTHERWISE, WILL EITHER PARTY BE LIABLE TO THE OTHER UNDER THIS AGREEMENT FOR (A) ANY INDIRECT, SPECIAL, INCIDENTAL, CONSEQUENTIAL OR PUNITIVE DAMAGES OF ANY CHARACTER, INCLUDING DAMAGES FOR LOSS OF GOODWILL, LOST PROFITS, LOST SALES OR BUSINESS, WORK STOPPAGE, COMPUTER FAILURE OR MALFUNCTION, LOST CONTENT OR DATA, EVEN IF A REPRESENTATIVE OF SUCH PARTY HAS BEEN ADVISED, KNEW OR SHOULD HAVE KNOWN OF THE POSSIBILITY OF SUCH DAMAGES, OR (B) EXCLUDING CUSTOMER’S PAYMENT OBLIGATIONS, ANY AGGREGATE DAMAGES, COSTS, OR LIABILITIES IN EXCESS OF THE AMOUNTS PAID BY CUSTOMER UNDER THE APPLICABLE ORDER FORM DURING THE TWELVE (12) MONTHS PRECEDING THE CLAIM."
-      },
-      "label": "LIABILITY",
-      "title": "9. Limitation of Liability"
-    },
-    "effective-date": "May 22, 2026",
-    "page": {
-      "description": "Comfy Enterprise Customer Agreement — the master services agreement that governs Comfy Enterprise deployments of Comfy Cloud, Comfy API, and related products.",
-      "effectiveDateLabel": "Effective Date",
-      "heading": "Enterprise Customer Agreement",
-      "parties": "This Enterprise Customer Agreement (the “Agreement”) is entered into by and between Comfy Organization, Inc., a Delaware corporation (“Comfy”), and the entity identified on the applicable Order Form (“Customer”), and is effective as of the date set forth on the applicable Order Form (the “Effective Date”).",
-      "title": "Enterprise MSA - Comfy",
-      "tocLabel": "On this page"
     }
   },
   "events": {
@@ -1987,6 +1973,57 @@
     "next": "下一个精选工作流",
     "prev": "上一个精选工作流"
   },
+  "fishAudio": {
+    "breadcrumb": {
+      "model": "Fish Audio Drama 3",
+      "updated": "更新于 2026 年 10 月"
+    },
+    "faq": {
+      "heading": "问答"
+    },
+    "hero": {
+      "badge1": "合作伙伴节点",
+      "badge2": "多角色场景",
+      "badge3": "首发半价",
+      "description": "首 30 天享 5 折优惠。这是 Fish Audio 迄今最富情感、最可控的模型。把多角色场景写成一段对话，再在同一个工作流中连同音频一起构建。",
+      "primaryCta": "运行 Drama 3",
+      "secondaryCta": "查看文档",
+      "titleModel": "Fish Audio Drama 3",
+      "titleRest": " 现已登陆 Comfy"
+    },
+    "meta": {
+      "description": "Fish Audio 的 Drama 3 是其迄今最富情感、最可控的模型，能把多角色场景作为一段对话完整演绎。发布首日即可在 Comfy Cloud 中试用。",
+      "title": "Comfy 上的 Fish Audio Drama 3：多角色场景"
+    },
+    "pricing": {
+      "banner": {
+        "cta": "免费试用",
+        "subtitle": "在真实 GPU 上免费运行 5 次 — 无需信用卡。",
+        "title": "首发优惠：Fish Audio Drama 3 前 30 天半价"
+      }
+    },
+    "reviews": {
+      "heading": "400 万+ Comfy 创作者这样说",
+      "highlightCta": "开始使用",
+      "highlightDescription": "你的 AI 助手可以接入整个生态、构建工作流，并生成图像、视频、音频或 3D 内容。",
+      "highlightTitle": "Comfy MCP：让你的智能体成为创意技术专家。"
+    },
+    "runOptions": {
+      "cta": "了解更多",
+      "heading": "同一引擎，多种运行方式",
+      "subtitle": "今天就在 Comfy Cloud 中运行 Drama 3，通过 API 批量生成场景，或在你自己机器上的 ComfyUI 中运行。"
+    },
+    "samples": {
+      "cta": "立即试用",
+      "heading": "用 Drama 3 制作"
+    },
+    "steps": {
+      "heading": "执导你的第一个场景",
+      "primaryCta": "运行 Drama 3",
+      "secondaryCta": "查看文档",
+      "step": "步骤"
+    }
+  },
   "flux3": {
     "breadcrumb": {
       "model": "Flux 3",
@@ -2039,20 +2076,26 @@
     "about": "关于",
     "affiliateProgram": "Affiliate Program",
     "blog": "博客",
+    "changelog": "更新日志",
     "chatgptImage25": "ChatGPT Images 2.5",
     "cloudNodes": "Comfy Cloud 节点",
     "cloudStatus": "云端状态",
     "company": "公司",
     "contact": "联系我们",
     "enterpriseMsa": "Enterprise MSA",
+    "fishAudio": "Fish Audio",
     "flux3": "Flux 3",
     "geminiOmni": "Gemini Omni 1.1 Flash",
+    "language": "语言",
     "location": "美国旧金山",
     "ltx": "LTX 2.5",
     "minimaxH3": "MiniMax H3",
     "minimaxLicense": "MiniMax 商业许可",
     "minimaxMusic3": "MiniMax Music 3",
+    "modelCatalogue": "ComfyUI 模型",
     "models": "模型",
+    "nanoBanana": "Nano Banana 2.1",
+    "nvidiaVfx": "Nvidia VFX",
     "press": "媒体",
     "privacyPolicy": "隐私政策",
     "products": "产品",
@@ -2060,6 +2103,7 @@
     "resources": "资源",
     "sales": "销售",
     "seedance": "Seedance 2.5",
+    "social": "关注 Comfy",
     "support": "支持",
     "tagline": "视觉 AI 的开放标准",
     "termsOfService": "服务条款",
@@ -2067,8 +2111,7 @@
     "useCases": "用例",
     "wan3": "Wan 3.0",
     "wanAnimate2": "Wan Animate 2",
-    "workflows": "工作流",
-    "modelCatalogue": "ComfyUI 模型"
+    "workflows": "工作流"
   },
   "g": {
     "error": "错误",
@@ -2081,18 +2124,10 @@
       "teamUsing": "团队使用",
       "using": "使用"
     },
-    "contact": {
-      "heading": "用 ComfyUI 创作了很酷的作品？<br><a href=\"https://docs.google.com/forms/d/1B6_RPQfhTyKvqHk9OO2bUn8z1Qgh6QIZsF3GNMiCXDw/preview\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"text-primary-comfy-yellow underline\">提交</a>你的作品，展示在我们的网站和社交媒体上，让全球 ComfyUI 社区看到。",
-      "label": "联系"
-    },
     "detail": {
       "close": "关闭",
       "visitHub": "访问社区中心"
-    },
-    "heroSubtitle": "社区使用 ComfyUI 创作成果的一小部分展示。",
-    "heroTitleAfter": " 中构建、调整与创想",
-    "heroTitleBefore": "在 ",
-    "label": "画廊"
+    }
   },
   "geminiOmni": {
     "breadcrumb": {
@@ -2201,24 +2236,6 @@
     "banner": {
       "cta": "免费试用",
       "text": "Comfy Agent 现在可以在 ComfyUI 内部构建工作流。"
-    },
-    "cta": {
-      "heading": "Comfy 的全部内容，一处尽享。",
-      "primary": "打开 Comfy Cloud",
-      "secondary": "试用工作流"
-    },
-    "hero": {
-      "primary": "下载桌面版",
-      "secondary": "免费试用云端",
-      "title": "ComfyUI 全新内容",
-      "visualAlt": "Comfy"
-    },
-    "page": {
-      "description": "所有 ComfyUI 发布汇总：新模型、桌面版、云端、MCP、CLI 与核心引擎更新，以及逐一讲解的直播回放。",
-      "title": "发布：ComfyUI 的所有新内容"
-    },
-    "section": {
-      "title": "最新发布"
     }
   },
   "learning": {
@@ -2633,14 +2650,6 @@
       "description": "通过 Comfy 获取 MiniMax 商业许可。Comfy 是 MiniMax 商业使用许可的唯一官方经销商，涵盖 MiniMax H3 及音频与音乐模型。产出的完整商业权利归你，包含 LoRA 训练。",
       "title": "Comfy 上的 MiniMax 商业许可"
     },
-    "professionalRequest": {
-      "intro": "Tell us about your team and we'll get your license set up. Professional is a fixed-price monthly license covering up to 10 users —",
-      "introCta": "see what it includes",
-      "meta": {
-        "description": "Request a MiniMax Professional commercial license through Comfy, the official reseller of MiniMax commercial-use licenses. Fixed monthly price, up to 10 licensed users."
-      },
-      "title": "Request MiniMax Professional License"
-    },
     "reviews": {
       "heading": "400 万+ Comfy 创作者这样说",
       "highlightCta": "认识团队",
@@ -2707,17 +2716,25 @@
   },
   "modelDiscovery": {
     "browse": "浏览全部模型",
-    "workflowRowLabel": "工作流",
     "browseWorkflows": "浏览全部工作流",
     "heading": "最新模型，\n即刻运行",
     "label": "HUB",
     "rowLabel": "模型提供商",
-    "subtitle": "直接在浏览器中运行。无需安装，无需配置。"
+    "subtitle": "直接在浏览器中运行。无需安装，无需配置。",
+    "workflowRowLabel": "工作流"
   },
   "modelLaunch": {
+    "beforeAfter": {
+      "after": "处理后",
+      "before": "处理前",
+      "sliderLabel": "对比滑块",
+      "tabsLabel": "对比项目"
+    },
     "copyPrompt": "复制提示词",
     "tagFree": "免费",
-    "tagPremium": "高级"
+    "tagPremium": "高级",
+    "clipSeconds": "({seconds} 秒)",
+    "voices": "声音："
   },
   "modelRelease": {
     "eyebrow": "新模型发布",
@@ -2807,6 +2824,13 @@
       "tutorialCta": "查看教程",
       "workflowCount": "{count} 个工作流使用此模型"
     },
+    "hub": {
+      "meta": {
+        "description": "在 ComfyUI 中浏览 {count} 个 AI 模型，包括 {names}。在浏览器中试用任意模型，然后在你的代码中调用它。",
+        "descriptionWithoutNames": "在 ComfyUI 中浏览 {count} 个 AI 模型。在浏览器中试用任意模型，然后在你的代码中调用它。",
+        "title": "ComfyUI 模型：运行 AI 图像、视频和音频模型 - Comfy"
+      }
+    },
     "index": {
       "subtitle": "在 ComfyUI 中运行世界领先的 AI 模型",
       "title": "支持的模型"
@@ -2853,12 +2877,56 @@
     "whatIs": {
       "heading": "什么是 {name}？",
       "tutorialLink": "阅读完整教程 →"
+    }
+  },
+  "nanoBanana": {
+    "breadcrumb": {
+      "model": "Nano Banana",
+      "updated": "更新于 2026 年 10 月"
     },
-    "hub": {
-      "meta": {
-        "title": "ComfyUI 模型：运行 AI 图像、视频和音频模型 - Comfy",
-        "description": "在 ComfyUI 中浏览 {count} 个 AI 模型，包括 {names}。在浏览器中试用任意模型，然后在你的代码中调用它。",
-        "descriptionWithoutNames": "在 ComfyUI 中浏览 {count} 个 AI 模型。在浏览器中试用任意模型，然后在你的代码中调用它。"
+    "faq": {
+      "heading": "问答"
+    },
+    "hero": {
+      "description": "Google 最新的 Gemini 图像模型，现已登陆 Comfy。给它一个提示词和参考图，它就能返回最高 4K 分辨率的图像。它可以在 Nano Banana 2 适用的任何地方使用，并新增思考等级，价格更低。",
+      "primaryCta": "运行 Nano Banana 2.1",
+      "secondaryCta": "查看教程",
+      "tagImageEditing": "图像编辑",
+      "tagPartnerNode": "合作伙伴节点",
+      "tagTextToImage": "文生图",
+      "title": "Nano Banana 2.1 来了"
+    },
+    "meta": {
+      "description": "在 ComfyUI 中运行 Nano Banana。通过文字生成图像、编辑现有视觉内容，并使用参考图像在可复用工作流中引导结果。",
+      "title": "Comfy 上的 Nano Banana：生成与编辑图像"
+    },
+    "pricing": {
+      "banner": {
+        "cta": "免费试用",
+        "subtitle": "在真实 GPU 上免费运行 5 次 — 无需信用卡。",
+        "title": "免费开始使用 Comfy Cloud，准备好了再升级。"
+      }
+    },
+    "reviews": {
+      "heading": "超过 400 万 Comfy 创作者这样说"
+    },
+    "runOptions": {
+      "cta": "了解更多",
+      "heading": "同一引擎，多种运行方式",
+      "subtitle": "今天就在浏览器中搭建工作流。用 API 批量制作，或将图像生成接入完整创意流程。"
+    },
+    "showcase": {
+      "advertising": {
+        "description": "适用于任何行业的广告，细节清晰，文字可读。",
+        "heading": "从创意简报到完整广告活动。"
+      },
+      "design": {
+        "description": "以你想要的任意风格迭代设计。",
+        "heading": "一个创意，所有风格。"
+      },
+      "photography": {
+        "description": "为你脑海中的场景，呈现真实的光影与细节。",
+        "heading": "如实拍摄。"
       }
     }
   },
@@ -2874,23 +2942,34 @@
     "blogs": "博客",
     "brand": "品牌",
     "brandAssets": "品牌素材",
+    "builds": "构建",
     "buyCredits": "添加积分",
     "careers": "招聘",
+    "cinematicStudio": "电影工作室",
     "close": "关闭",
+    "colAutomate": "自动化",
+    "colBuild": "构建",
     "colConnect": "联系",
+    "colCreate": "创作",
     "colFeatures": "功能",
     "colMore": "更多",
     "colPrograms": "项目",
+    "colResources": "资源",
+    "colUpdates": "动态",
     "comfyAgent": "Comfy Agent",
+    "comfyApi": "Comfy API",
     "comfyCli": "Comfy CLI",
     "comfyCloud": "Comfy Cloud",
     "comfyEnterprise": "Comfy 企业版",
     "comfyHub": "Comfy Workflows",
     "comfyLocal": "Comfy 桌面版",
-    "comfyWorkshop": "浏览模型",
+    "comfyRouter": "Comfy Router",
+    "comfySdks": "Comfy SDKs",
+    "commercialLicensing": "商业授权",
     "community": "社区",
     "company": "公司",
     "contact": "联系我们",
+    "contactSales": "联系销售",
     "copied": "已复制",
     "copyLogoSvg": "复制 SVG 标志",
     "copyLogomarkSvg": "复制 SVG 标志符号",
@@ -2900,10 +2979,10 @@
     "ctaDesktopCore": "桌面版",
     "customerStories": "客户故事",
     "developerPlatform": "开发者平台",
-    "comfyRouter": "Comfy Router",
     "discord": "Discord",
     "docs": "文档",
     "downloadLocal": "下载桌面版",
+    "enterprise": "企业版",
     "events": "活动",
     "fdct": "前沿驻场创意人才",
     "featuredCommunityAlt": "产品摄影工作流演示图片",
@@ -2912,6 +2991,10 @@
     "featuredCompanyAlt": "Black Math 客户故事图片",
     "featuredCompanyCtaAria": "观看 Black Math 客户故事",
     "featuredCompanyTitle": "客户故事：Black Math",
+    "featuredEnterpriseAlt": "MiniMax 商业授权视频",
+    "featuredHubAlt": "Seedance 2.5 视频：动物们举着拼出 SEEDANCE 2.5 的气球穿过雨中街道",
+    "featuredHubCta": "立即试用",
+    "featuredHubCtaAria": "在 Hub 中试用 Seedance 2.5 参考生成视频",
     "featuredProductsAlt": "Gemini Omni 1.1 Flash 视频：穴居人遇见未来",
     "featuredProductsCta": "立即探索",
     "featuredProductsCtaAria": "探索 Gemini Omni 1.1 Flash 版本",
@@ -2919,6 +3002,23 @@
     "gallery": "画廊",
     "github": "GitHub",
     "home": "Comfy 首页",
+    "hubAllApps": "全部应用",
+    "hubAllModels": "全部模型",
+    "hubAllWorkflows": "全部工作流",
+    "hubApps": "应用",
+    "hubAppsDescription": "基于 Comfy 构建的完整工具",
+    "hubEditSelectedRegion": "编辑选定区域",
+    "hubGptImage2": "GPT Image 2",
+    "hubImageToVideo": "图像转视频",
+    "hubModels": "模型",
+    "hubModelsDescription": "运行最新的 AI 模型",
+    "hubMotionTransfer": "运动迁移",
+    "hubNanoBanana2": "Nano Banana 2",
+    "hubSeedance25": "Seedance 2.5",
+    "hubSeedream5Pro": "Seedream 5.0 Pro",
+    "hubVideoFromReferences": "参考生成视频",
+    "hubWorkflows": "工作流",
+    "hubWorkflowsDescription": "针对任务的现成方案",
     "instagram": "Instagram",
     "launchCloud": "免费试用云端",
     "launches": "发布",
@@ -2929,12 +3029,14 @@
     "menu": "菜单",
     "mobileMenuDescription": "网站导航和快速链接",
     "noCredits": "无积分",
+    "opensInNewTab": "在新标签页中打开",
     "planAndCredits": "套餐与积分",
     "planFree": "免费",
     "planPro": "Pro",
     "pricing": "价格",
     "products": "产品",
     "reddit": "Reddit",
+    "reshoot": "重拍",
     "resources": "资源",
     "roleMember": "成员",
     "roleOwner": "所有者",
@@ -2942,6 +3044,7 @@
     "signOut": "退出登录",
     "supportedModels": "支持的模型",
     "switchWorkspace": "切换工作区",
+    "teamBilling": "团队账单",
     "toggleMenu": "切换菜单",
     "upgrade": "升级",
     "upgradeToAddCredits": "升级以添加积分",
@@ -2953,8 +3056,52 @@
     "workspacesError": "无法加载工作区。",
     "workspacesLoading": "正在加载工作区…",
     "x": "X",
-    "youtube": "YouTube",
-    "cinematicStudio": "电影工作室"
+    "youtube": "YouTube"
+  },
+  "nvidiaRtx": {
+    "beforeAfter": {
+      "body": "一侧是原始素材，另一侧是输出结果。拖动分割线，逐帧比较两者。",
+      "heading": "一段视频，两种状态。"
+    },
+    "breadcrumb": {
+      "model": "NVIDIA VFX",
+      "updated": "更新于 2026 年 10 月"
+    },
+    "faq": {
+      "heading": "问答"
+    },
+    "gallery": {
+      "heading": "在 NVIDIA RTX 上创作"
+    },
+    "hero": {
+      "description": "三个由 Nvidia RTX 技术驱动的自定义节点，提供超快的视频超分辨率、帧生成与 SDR 转 HDR。专为 VFX 艺术家与专业视频创作者打造。",
+      "primaryCta": "在 Comfy Cloud 试用",
+      "secondaryCta": "查看文档",
+      "tagFrameRate": "最高 16 倍帧率",
+      "tagSdrToHdr": "SDR 转 HDR",
+      "tagUpscale": "最高 4 倍超分辨率",
+      "title": "Nvidia VFX 节点"
+    },
+    "meta": {
+      "description": "三个由 Nvidia RTX 技术驱动的 ComfyUI 节点，提供超快的视频超分辨率、帧生成与 SDR 转 HDR。",
+      "title": "ComfyUI 的 Nvidia VFX 节点"
+    },
+    "reviews": {
+      "heading": "超过 400 万 Comfy 创作者这样说",
+      "highlightCta": "在 Comfy Desktop 中试用",
+      "highlightDescription": "现已登陆 Comfy Desktop。描述你想要的效果，它会与你并肩规划、搭建并运行工作流。每一步都保留在画布上，随时可以调整。",
+      "highlightTitle": "COMFY AGENT"
+    },
+    "runOptions": {
+      "cta": "了解更多",
+      "heading": "同一引擎，多种运行方式",
+      "subtitle": "今天就在你的 RTX 电脑上运行。当任务超出本地算力时，将同一工作流迁移到 Comfy Cloud 或 API。"
+    },
+    "steps": {
+      "heading": "更喜欢在本地运行？",
+      "primaryCta": "下载桌面版",
+      "step": "步骤"
+    }
   },
   "payment": {
     "failed": {
@@ -3028,6 +3175,11 @@
       "4": "环境维护占用了构建工作流的时间。",
       "heading": "一次构建，在任何地方运行同一个 Comfy。"
     },
+    "challengeBanner": {
+      "cta": "阅读文章",
+      "label": "公开征集挑战赛",
+      "line": "基于平台构建，有机会赢取 1 万美元。太平洋时间 10 月 19 日上午 9 点截止。"
+    },
     "closing": {
       "heading": "在开发者平台上将规模与控制力最大化",
       "headingAfterBadge": "将你的 ComfyUI 工作流部署为生产级 API。数千个模型，尽在一个平台。",
@@ -3036,7 +3188,7 @@
     "customers": {
       "enterprise": {
         "cta": "联系销售",
-        "description": "托管构建：经批准的模型检查点、经审核的节点，以及覆盖整个集群的部署治理。SOC 2 认证进行中。",
+        "description": "托管构建：经批准的模型检查点、经审核的节点，以及覆盖整个集群的部署治理。SOC 2 Type II 审计已完成。",
         "title": "企业"
       },
       "heading": "从一块 GPU 到一整座渲染农场",
@@ -3117,7 +3269,7 @@
         "q": "生成结果会保留多久？"
       },
       "7": {
-        "a": "SOC 2 认证正在进行中。欢迎联系我们了解最新进展与安全文档。",
+        "a": "SOC 2 Type II 审计已完成，报告可应要求提供。欢迎联系我们了解安全文档。",
         "q": "平台通过 SOC 2 认证了吗？"
       },
       "8": {
@@ -3164,36 +3316,17 @@
       "chat": {
         "channel": "创意团队",
         "message": "现在做视频高清放大，最好的方式是什么？",
-        "reply": "我部署了这个工作流，试试看：",
+        "messageBgRemove": "有批量去背景的工作流吗？",
+        "messageProductShots": "批量产品图最快方法？",
         "placeholder": "发送消息给团队",
+        "reply": "我部署了这个工作流，试试看：",
+        "replyBgRemove": "有的，调用方式是：",
+        "replyProductShots": "已经上线了：",
         "replySnippet": "curl https://video-upscale-4k.run.comfy.app \\\n  -F \"video={'@'}clip.mp4\"",
         "thanks": "谢谢！",
-        "messageBgRemove": "有批量去背景的工作流吗？",
-        "replyBgRemove": "有的，调用方式是：",
         "thanksBgRemove": "太好了，谢谢！",
-        "messageProductShots": "批量产品图最快方法？",
-        "replyProductShots": "已经上线了：",
         "thanksProductShots": "太棒了，谢谢！"
       }
-    },
-    "serverlessApps": {
-      "eyebrow": "创意应用",
-      "heading": "构建应用，而不只是工作流。",
-      "body": "将 ComfyUI 工作流作为 API 部署在面向客户的产品、内部工具和自动化创意流程之后。在不暴露工作流图的情况下，构建用户所需的体验。",
-      "browseApps": "浏览应用",
-      "videoLabel": "由 Comfy API 驱动的创意应用"
-    },
-    "serverlessCaseStudy": {
-      "quote": "在 Silverside，Comfy 工作流将我们的创意专长转化为基础设施。我们构建生产流水线，再通过 Comfy API 提供服务，让客户能够大规模运行同样经过验证的工作流。这让小团队也能交付企业级创意成果。",
-      "name": "Allie Wrubel",
-      "role": "Silverside AI 技术负责人",
-      "linkLabel": "阅读 Silverside AI 客户案例"
-    },
-    "serverlessSkipSetup": {
-      "heading": "或者跳过手动设置。",
-      "subtitle": "把它粘贴到你的编码智能体里。",
-      "copyPrompt": "复制智能体提示词",
-      "copied": "已复制"
     },
     "meta": {
       "description": "部署并扩展 ComfyUI 工作流。你的工作流。所有模型。一个 API。",
@@ -3234,10 +3367,10 @@
       "idleNote": "存储持续计费；GPU 只在工作节点运行时计费。绝不为闲置算力付费。",
       "modelsNote": "Comfy Router 用量在每个模型卡片上标注单次输出价格，并从同一积分池扣费。",
       "priceColumn": "价格",
-      "storageColumn": "存储",
       "storage": {
         "title": "网络存储"
       },
+      "storageColumn": "存储",
       "storageExample": "示例：20 GB 模型 = 每月 {amount} + GPU 时间。",
       "storageNote": "模型存放在网络存储上——持久化并在部署的所有工作节点间共享。",
       "subtitle": "只为实际用量付费。",
@@ -3250,10 +3383,10 @@
         "title": "Builder"
       },
       "models": {
+        "badgeLabel": "ROUTER",
         "description": "在一个 API 中使用数千个最新模型。调用 Seedance、Minimax H3、Nano Banana 和 GPT-Image。",
         "learnMore": "了解更多",
-        "title": "Comfy Router",
-        "badgeLabel": "ROUTER"
+        "title": "Comfy Router"
       },
       "serverless": {
         "badgeLabel": "API",
@@ -3261,24 +3394,168 @@
         "title": "Comfy API"
       }
     },
+    "router": {
+      "badge": {
+        "label": "ROUTER"
+      },
+      "closing": {
+        "headingAfterBadge": "现在就开始使用 Comfy Router 构建。",
+        "subtitle": "调用前沿媒体模型，自由选择供应商，获得更好的价格与可用性，一切都在一个 API 之内。"
+      },
+      "code": {
+        "heading": "一行代码，选择供应商。",
+        "providerLabel": "供应商",
+        "supporting": "更换供应商，其余代码不变。"
+      },
+      "coverage": {
+        "body": "每个模型默认在 Comfy 上运行，你可以设置 `model_provider` 让它们在其他供应商上运行。我们从流量最高的模型开始，更多模型和供应商即将上线。",
+        "browseAll": "浏览全部 {count} 个模型",
+        "heading": "同样的模型，更多运行选择。",
+        "modelColumn": "模型",
+        "moreModels": "另有 {count} 个模型",
+        "moreModelsSuffix": "在 Comfy 上运行",
+        "notServed": "不提供服务",
+        "served": "可提供服务"
+      },
+      "cta": {
+        "browseModels": "浏览模型",
+        "getApiKey": "获取 API 密钥"
+      },
+      "faq": {
+        "1": {
+          "a": "你当然可以，很多团队也是这么做的。但当你需要不止一个供应商时，Comfy Router 就有了价值：同一个模型可在多个供应商上运行，只用一个密钥和一套任务接口，路由由你选择。每个供应商只路由到它自己，Comfy Router 让你用一套接口覆盖所有供应商。",
+          "q": "为什么不直接调用 fal、Runware 或 Wavespeed？"
+        },
+        "2": {
+          "a": "OpenRouter 以路由语言模型著称。Comfy Router 则是为生成式媒体打造的：大体积资源、模型专属的控制参数，以及可能运行数分钟的任务。",
+          "q": "Comfy Router 是“媒体版的 OpenRouter”吗？"
+        },
+        "3": {
+          "a": "目前发布阶段不会。你指定供应商，Comfy 就在那里运行，绝不会在背后替你更换。",
+          "q": "Comfy 会替我选择供应商吗？"
+        },
+        "4": {
+          "a": "请求会在你选择的供应商上失败，不会被静默替换。有序的故障转移已在路线图上：一份备用列表，仅在确认重试安全时才会启用。",
+          "q": "如果我指定的供应商不可用怎么办？"
+        },
+        "5": {
+          "a": "把任务排入队列，而不是在收到 429 后自行重试。使用 submit 发送任务并立即获得请求 ID，之后可按自己的节奏用该 ID 查询进度、获取结果。如果希望 Comfy 代为等待结果，可使用 subscribe，它会提交任务并轮询直到完成。所有受支持的模型都支持排队。\n\n<a href=\"https://docs.comfy.org/tutorials/partner-nodes/concurrency-limits\">了解更多并发限制信息。</a>",
+          "q": "当我达到并发上限时会发生什么？"
+        },
+        "6": {
+          "a": "输入在上传后保留 24 小时，输出在生成后保留 24 小时，之后即被删除。",
+          "q": "我的输入和输出会保留多久？"
+        },
+        "7": {
+          "a": "为你正在使用的模型提供更多运行方式。跨供应商调用受支持的模型，选择它们在哪里运行，并在价格、速度或可用性变化时随时切换。",
+          "q": "我已经在使用 ComfyUI 了，Comfy Router 还能带来什么？"
+        },
+        "8": {
+          "a": "目前还不能通过 Comfy Router 调用。工作流现在通过开发者平台上的 Comfy API 运行，Router 对工作流的支持已在路线图上。",
+          "q": "我也可以调用 Comfy 工作流吗？"
+        },
+        "9": {
+          "a": "在开发者平台。你的 API 密钥、运行记录、积分和付款都在那里。",
+          "q": "我的 API 密钥、用量和账单在哪里管理？"
+        },
+        "10": {
+          "a": "在企业版中，部分模型支持自带密钥（BYOK），需申请开通。\n\n<a href=\"/zh-CN/enterprise/\">联系企业销售</a>",
+          "q": "我可以使用自己的供应商密钥吗？"
+        },
+        "11": {
+          "a": "Comfy Router 使用与 Partner Nodes、Comfy Cloud 工作流运行及其他受支持模型调用相同的 Comfy 积分。每个模型的价格都列在模型目录中，运行前即可查看费用。",
+          "q": "Comfy Router 如何计费？"
+        },
+        "12": {
+          "a": "不需要。Router 使用积分运行。充值积分后即可开始调用模型。",
+          "q": "我需要订阅 Comfy 吗？"
+        },
+        "heading": "常见问题"
+      },
+      "migrate": {
+        "copied": "已复制",
+        "copyPrompt": "复制提示词",
+        "subtitle": "帮我把这个项目现有的模型集成迁移到 Comfy Router。",
+        "title": "用你的智能体迁移到 Comfy Router"
+      },
+      "proof": {
+        "caption": "300 万+ ComfyUI 用户正在使用的同一批模型，现在都在一个 API 之后。"
+      },
+      "roadmap": {
+        "1": {
+          "description": "用同一个 SDK 运行 ComfyUI 工作流，就像调用模型一样。",
+          "details": "工作流目前通过开发者平台上的 Comfy API 运行。Router 支持将把它们纳入同一个密钥、同一个任务接口和同一份积分，你在 ComfyUI 中构建的流水线只需一次请求即可接入你的应用。",
+          "title": "Comfy 工作流"
+        },
+        "2": {
+          "description": "指定策略：reliable、fast_start、fast_finish 或 lowest_cost。",
+          "details": "不再指定供应商，而是指定你想要的结果。Comfy 会选择符合策略的路由，每个任务仍会报告实际执行的供应商。有序回退也将同步推出：仅在确认可安全重试时才启用备用列表。",
+          "title": "路由策略"
+        },
+        "3": {
+          "description": "请求一次放大、抠图或动画生成，Comfy 会自动选择能完成任务的模型或工作流。",
+          "details": "描述任务而不是模型。Comfy 会匹配一个能完成该任务的模型或工作流，并在可用的供应商上运行，新模型上线时你无需改动任何代码。",
+          "title": "按使用场景路由"
+        },
+        "4": {
+          "description": "在支持的模型上使用你自己的供应商密钥，同时保留同一套 Comfy Router 集成。",
+          "details": "接入你自己的供应商凭据，通过同一套 Comfy Router API 运行支持的模型。SDK 和任务生命周期保持不变，这些调用的用量与计费仍归属于你的供应商。",
+          "title": "自带密钥（BYOK）"
+        },
+        "eyebrow": "路线图",
+        "heading": "即将登陆同一个 API。",
+        "learnMore": "了解更多",
+        "subtitle": "供应商选择是基础。以下所有能力都会加入到你今天集成的这个 API 上。"
+      },
+      "section1": {
+        "body": "每新增一个供应商，就多一套 SDK、一个密钥、一套任务生命周期和一组错误处理。通过 Comfy Router 一次性搭建好这些，之后每加一个模型只需一行代码。",
+        "heading": "集成一次，模型随时添加。"
+      },
+      "section2": {
+        "body": "同一个模型可在 fal、Runware 或 Wavespeed 上运行，当某个供应商被限流或另一个更便宜时，只需改一个参数即可切换。Comfy 绝不会替你切换路由，每个任务都会报告实际运行它的供应商。",
+        "heading": "更高可用性。更优价格。无需订阅。",
+        "providers": "fal · Runware · Wavespeed",
+        "providersLabel": "受支持的供应商"
+      },
+      "section3": {
+        "body": "让 Comfy 替你等待。使用 `submit` 立即获得请求 ID。任务会在有空闲槽位时运行，你可以用这个 ID 查询进度并获取结果。或者使用 `subscribe` 提交任务并等待其完成。",
+        "heading": "遇到并发限制？把任务排入队列。"
+      },
+      "video": {
+        "alt": "Comfy Router 介绍：一个 API，每个任务都由你选择供应商"
+      }
+    },
     "serverless": {
       "codeHeading": "调用你的端点",
       "codeSubtitle": "SDK 是首选入口，纯 HTTP 同样可用。"
     },
+    "serverlessApps": {
+      "body": "将 ComfyUI 工作流作为 API 部署在面向客户的产品、内部工具和自动化创意流程之后。在不暴露工作流图的情况下，构建用户所需的体验。",
+      "browseApps": "浏览应用",
+      "eyebrow": "创意应用",
+      "heading": "构建应用，而不只是工作流。",
+      "videoLabel": "由 Comfy API 驱动的创意应用"
+    },
+    "serverlessCaseStudy": {
+      "linkLabel": "阅读 Silverside AI 客户案例",
+      "name": "Allie Wrubel",
+      "quote": "在 Silverside，Comfy 工作流将我们的创意专长转化为基础设施。我们构建生产流水线，再通过 Comfy API 提供服务，让客户能够大规模运行同样经过验证的工作流。这让小团队也能交付企业级创意成果。",
+      "role": "Silverside AI 技术负责人"
+    },
     "serverlessDeploy": {
+      "copied": "已复制",
+      "copy": "复制提示词",
       "heading": "工作原理",
       "shipHeading": "几分钟内上线",
       "shipSubtitle": "使用我们的 CLI 和 Skills，让你的编码智能体在几分钟内完成部署。",
       "subtitle": "Builder 将你的 ComfyUI 工作流和环境打包成可复现的构建。将该构建部署到 Comfy API，并按需扩展。",
       "tabInstall": "从你的环境开始",
-      "tabWorkflow": "从你的工作流开始",
-      "copy": "复制提示词",
-      "copied": "已复制"
+      "tabWorkflow": "从你的工作流开始"
     },
     "serverlessHero": {
+      "animationTitle": "Comfy 图像管线与 GPU 编排动画",
       "heading": "几分钟内，将 ComfyUI 工作流变成生产级 API。",
-      "subtitle": "将你的所有自定义节点、LoRA、模型和 Python 依赖打包成一个自动扩缩的端点。",
-      "animationTitle": "Comfy 图像管线与 GPU 编排动画"
+      "subtitle": "将你的所有自定义节点、LoRA、模型和 Python 依赖打包成一个自动扩缩的端点。"
     },
     "serverlessScale": {
       "1": {
@@ -3296,140 +3573,15 @@
       "heading": "为团队打造",
       "subtitle": "轻松与团队共享工作流。API 会根据团队需求自动扩缩。"
     },
+    "serverlessSkipSetup": {
+      "copied": "已复制",
+      "copyPrompt": "复制智能体提示词",
+      "heading": "或者跳过手动设置。",
+      "subtitle": "把它粘贴到你的编码智能体里。"
+    },
     "serverlessVisual": {
       "ariaLabel": "动画图示：请求点亮 RTX 6000 PRO、H100 和 B200 GPU 工作节点，COMFYUI 字样在网格中滚动。",
       "worker": "工作节点"
-    },
-    "router": {
-      "badge": {
-        "label": "ROUTER"
-      },
-      "cta": {
-        "getApiKey": "获取 API 密钥",
-        "browseModels": "浏览模型"
-      },
-      "migrate": {
-        "title": "用你的智能体迁移到 Comfy Router",
-        "subtitle": "帮我把这个项目现有的模型集成迁移到 Comfy Router。",
-        "copyPrompt": "复制提示词",
-        "copied": "已复制"
-      },
-      "proof": {
-        "caption": "300 万+ ComfyUI 用户正在使用的同一批模型，现在都在一个 API 之后。"
-      },
-      "code": {
-        "heading": "一行代码，选择供应商。",
-        "supporting": "更换供应商，其余代码不变。",
-        "providerLabel": "供应商"
-      },
-      "video": {
-        "alt": "Comfy Router 介绍：一个 API，每个任务都由你选择供应商"
-      },
-      "section1": {
-        "heading": "集成一次，模型随时添加。",
-        "body": "每新增一个供应商，就多一套 SDK、一个密钥、一套任务生命周期和一组错误处理。通过 Comfy Router 一次性搭建好这些，之后每加一个模型只需一行代码。"
-      },
-      "section2": {
-        "heading": "更高可用性。更优价格。无需订阅。",
-        "body": "同一个模型可在 fal、Runware 或 Wavespeed 上运行，当某个供应商被限流或另一个更便宜时，只需改一个参数即可切换。Comfy 绝不会替你切换路由，每个任务都会报告实际运行它的供应商。",
-        "providersLabel": "受支持的供应商",
-        "providers": "fal · Runware · Wavespeed"
-      },
-      "coverage": {
-        "heading": "同样的模型，更多运行选择。",
-        "body": "每个模型默认在 Comfy 上运行，你可以设置 `model_provider` 让它们在其他供应商上运行。我们从流量最高的模型开始，更多模型和供应商即将上线。",
-        "modelColumn": "模型",
-        "moreModels": "另有 {count} 个模型",
-        "moreModelsSuffix": "在 Comfy 上运行",
-        "browseAll": "浏览全部 {count} 个模型",
-        "served": "可提供服务",
-        "notServed": "不提供服务"
-      },
-      "section3": {
-        "heading": "遇到并发限制？把任务排入队列。",
-        "body": "让 Comfy 替你等待。使用 `submit` 立即获得请求 ID。任务会在有空闲槽位时运行，你可以用这个 ID 查询进度并获取结果。或者使用 `subscribe` 提交任务并等待其完成。"
-      },
-      "roadmap": {
-        "1": {
-          "title": "Comfy 工作流",
-          "description": "用同一个 SDK 运行 ComfyUI 工作流，就像调用模型一样。",
-          "details": "工作流目前通过开发者平台上的 Comfy API 运行。Router 支持将把它们纳入同一个密钥、同一个任务接口和同一份积分，你在 ComfyUI 中构建的流水线只需一次请求即可接入你的应用。"
-        },
-        "2": {
-          "title": "路由策略",
-          "description": "指定策略：reliable、fast_start、fast_finish 或 lowest_cost。",
-          "details": "不再指定供应商，而是指定你想要的结果。Comfy 会选择符合策略的路由，每个任务仍会报告实际执行的供应商。有序回退也将同步推出：仅在确认可安全重试时才启用备用列表。"
-        },
-        "3": {
-          "title": "按使用场景路由",
-          "description": "请求一次放大、抠图或动画生成，Comfy 会自动选择能完成任务的模型或工作流。",
-          "details": "描述任务而不是模型。Comfy 会匹配一个能完成该任务的模型或工作流，并在可用的供应商上运行，新模型上线时你无需改动任何代码。"
-        },
-        "4": {
-          "title": "自带密钥（BYOK）",
-          "description": "在支持的模型上使用你自己的供应商密钥，同时保留同一套 Comfy Router 集成。",
-          "details": "接入你自己的供应商凭据，通过同一套 Comfy Router API 运行支持的模型。SDK 和任务生命周期保持不变，这些调用的用量与计费仍归属于你的供应商。"
-        },
-        "eyebrow": "路线图",
-        "heading": "即将登陆同一个 API。",
-        "subtitle": "供应商选择是基础。以下所有能力都会加入到你今天集成的这个 API 上。",
-        "learnMore": "了解更多"
-      },
-      "faq": {
-        "1": {
-          "q": "为什么不直接调用 fal、Runware 或 Wavespeed？",
-          "a": "你当然可以，很多团队也是这么做的。但当你需要不止一个供应商时，Comfy Router 就有了价值：同一个模型可在多个供应商上运行，只用一个密钥和一套任务接口，路由由你选择。每个供应商只路由到它自己，Comfy Router 让你用一套接口覆盖所有供应商。"
-        },
-        "2": {
-          "q": "Comfy Router 是“媒体版的 OpenRouter”吗？",
-          "a": "OpenRouter 以路由语言模型著称。Comfy Router 则是为生成式媒体打造的：大体积资源、模型专属的控制参数，以及可能运行数分钟的任务。"
-        },
-        "3": {
-          "q": "Comfy 会替我选择供应商吗？",
-          "a": "目前发布阶段不会。你指定供应商，Comfy 就在那里运行，绝不会在背后替你更换。"
-        },
-        "4": {
-          "q": "如果我指定的供应商不可用怎么办？",
-          "a": "请求会在你选择的供应商上失败，不会被静默替换。有序的故障转移已在路线图上：一份备用列表，仅在确认重试安全时才会启用。"
-        },
-        "5": {
-          "q": "当我达到并发上限时会发生什么？",
-          "a": "把任务排入队列，而不是在收到 429 后自行重试。使用 submit 发送任务并立即获得请求 ID，之后可按自己的节奏用该 ID 查询进度、获取结果。如果希望 Comfy 代为等待结果，可使用 subscribe，它会提交任务并轮询直到完成。所有受支持的模型都支持排队。\n\n<a href=\"https://docs.comfy.org/tutorials/partner-nodes/concurrency-limits\">了解更多并发限制信息。</a>"
-        },
-        "6": {
-          "q": "我的输入和输出会保留多久？",
-          "a": "输入在上传后保留 24 小时，输出在生成后保留 24 小时，之后即被删除。"
-        },
-        "7": {
-          "q": "我已经在使用 ComfyUI 了，Comfy Router 还能带来什么？",
-          "a": "为你正在使用的模型提供更多运行方式。跨供应商调用受支持的模型，选择它们在哪里运行，并在价格、速度或可用性变化时随时切换。"
-        },
-        "8": {
-          "q": "我也可以调用 Comfy 工作流吗？",
-          "a": "目前还不能通过 Comfy Router 调用。工作流现在通过开发者平台上的 Comfy API 运行，Router 对工作流的支持已在路线图上。"
-        },
-        "9": {
-          "q": "我的 API 密钥、用量和账单在哪里管理？",
-          "a": "在开发者平台。你的 API 密钥、运行记录、积分和付款都在那里。"
-        },
-        "10": {
-          "q": "我可以使用自己的供应商密钥吗？",
-          "a": "在企业版中，部分模型支持自带密钥（BYOK），需申请开通。\n\n<a href=\"/zh-CN/enterprise/\">联系企业销售</a>"
-        },
-        "11": {
-          "q": "Comfy Router 如何计费？",
-          "a": "Comfy Router 使用与 Partner Nodes、Comfy Cloud 工作流运行及其他受支持模型调用相同的 Comfy 积分。每个模型的价格都列在模型目录中，运行前即可查看费用。"
-        },
-        "12": {
-          "q": "我需要订阅 Comfy 吗？",
-          "a": "不需要。Router 使用积分运行。充值积分后即可开始调用模型。"
-        },
-        "heading": "常见问题"
-      },
-      "closing": {
-        "headingAfterBadge": "现在就开始使用 Comfy Router 构建。",
-        "subtitle": "调用前沿媒体模型，自由选择供应商，获得更好的价格与可用性，一切都在一个 API 之内。"
-      }
     }
   },
   "player": {
@@ -3443,16 +3595,74 @@
     "unmute": "取消静音"
   },
   "pricing": {
+    "agent": {
+      "cardFeature": {
+        "sessionsPerWorkspace": "每个工作区可同时进行 {count} 个 Agent 会话"
+      },
+      "cardTitle": "Comfy Agent",
+      "enterpriseNote": "Enterprise 方案享有更高的 Agent 限额。",
+      "heading": "Comfy Agent",
+      "learnMore": "了解更多",
+      "limit": {
+        "availability": {
+          "description": "任何 Comfy Cloud 账户都可以使用 Comfy Agent，不限定特定方案：只需有新用户免费积分或积分余额大于零即可。",
+          "title": "所有方案均可使用"
+        },
+        "credits": {
+          "description": "免费积分用完后，Comfy Agent 会消耗你的 Comfy Credits 来支付 LLM token 费用，费率与 LLM Partner Nodes 相同。在 Team 方案中，用量从共享积分池中扣除。",
+          "title": "使用 Comfy Credits 计费"
+        },
+        "model": {
+          "description": "由 Comfy 为你选择模型，暂不支持使用你自己的 LLM 密钥。",
+          "title": "模型"
+        },
+        "queue": {
+          "description": "发送消息的数量没有上限。超出方案限额时，新任务会排队等待而不会失败。积分用完后，Agent 会暂停，直到你充值。",
+          "title": "不限消息数量"
+        },
+        "runs": {
+          "description": "Agent 运行的工作流与你自己运行的计费方式完全相同，不额外收费，并遵循你所在方案的运行时长和任务限制。",
+          "title": "工作流运行"
+        }
+      },
+      "metric": {
+        "requestsPerWorkspace": "每个工作区同时处理的 Agent 请求数",
+        "tasksPerMember": "每位成员同时运行的 Agent 任务数"
+      },
+      "subtitle": "描述你想要的效果，即可构建并运行工作流。Comfy Agent 适用于所有方案，新用户还可获得免费积分进行试用。"
+    },
     "badge": {
       "popular": "最受欢迎"
     },
     "banner": {
       "cta": "免费试用",
-      "subtitle": "在真实 GPU 上免费运行 5 次 — 无需信用卡。",
+      "subtitle": "在真实 GPU 上免费运行 5 次，新用户还可获得免费的 Comfy Agent 积分",
       "title": "免费开始使用 Comfy Cloud，准备好了再升级。"
+    },
+    "comfyApi": {
+      "cardFeature": {
+        "builds": "{count} 个构建版本",
+        "concurrency": "每个部署最多 {count} 个 worker",
+        "deployments": "{count} 个部署",
+        "notIncluded": "Comfy API 访问"
+      },
+      "cardTitle": "Comfy API",
+      "enterpriseNote": "企业版的限制由合同约定。",
+      "heading": "Comfy API 定价",
+      "learnMore": "了解更多",
+      "metric": {
+        "builds": "构建版本总数上限",
+        "concurrency": "最大工作节点并发数（每个部署）",
+        "deployments": "部署总数上限"
+      },
+      "subtitle": "Comfy API 让你将工作流部署为生产级 API。GPU 时间与存储按秒计费；构建、部署与并发限制取决于你的套餐。"
     },
     "creditsLabel": "每月积分",
     "creditsLabelYearly": "年度积分",
+    "cycle": {
+      "monthly": "按月",
+      "yearly": "按年"
+    },
     "enterprise": {
       "andMore": "以及更多…",
       "cta": "联系我们",
@@ -3466,18 +3676,6 @@
     },
     "faq": {
       "heading": "常见问题"
-    },
-    "comfyApi": {
-      "heading": "Comfy API 定价",
-      "subtitle": "Comfy API 是独立于你的 Comfy Cloud 套餐之外的产品，面向以编程方式构建于 Comfy Cloud 平台之上的团队。GPU 时间与存储按秒计费；下方列出了各套餐的版本、部署与并发限制。",
-      "metricColumn": "限制项",
-      "metric": {
-        "releases": "版本总数上限",
-        "deployments": "部署总数上限",
-        "concurrency": "最大工作节点并发数（每个部署）"
-      },
-      "enterpriseNote": "企业版的限制由合同约定。",
-      "learnMore": "了解更多"
     },
     "feature": {
       "addCredits": "可随时增加积分",
@@ -3560,6 +3758,7 @@
         "eduYearlyPrice": "$26.25",
         "eduYearlyTotal": "$315",
         "estimate": "约可生成 670 个 5 秒视频*",
+        "everythingInStandardPlus": "包含标准版的全部功能，另加：",
         "label": "创作者版",
         "price": "$35",
         "yearlyCredits": "88,800",
@@ -3591,6 +3790,7 @@
         "eduYearlyPrice": "$75",
         "eduYearlyTotal": "$900",
         "estimate": "约可生成 1,915 个 5 秒视频*",
+        "everythingInCreatorPlus": "包含创作者版的全部功能，另加：",
         "label": "专业版",
         "price": "$100",
         "yearlyCredits": "253,200",
@@ -3607,6 +3807,7 @@
         "estimate": "约可生成 380 个 5 秒视频*",
         "label": "标准版",
         "price": "$20",
+        "whatsIncluded": "包含内容：",
         "yearlyCredits": "50,400",
         "yearlyEstimate": "约可生成 4,560 个 5 秒视频*",
         "yearlyPrice": "$16",
@@ -3621,6 +3822,9 @@
         "sharedWorkflowsAndAssets": "共享工作流与资产"
       }
     },
+    "planLimits": {
+      "metricColumn": "限制"
+    },
     "savePercent": "节省 {pct}%（{amount}）",
     "subtitle": "通过简单透明、按使用量计费的方式，访问云端 ComfyUI 工作流。",
     "team": {
@@ -3628,11 +3832,7 @@
       "sliderLabel": "团队每月积分承诺",
       "videosEstimate": "约可生成 {count} 个 5 秒视频*"
     },
-    "title": "价格",
-    "cycle": {
-      "monthly": "按月",
-      "yearly": "按年"
-    }
+    "title": "价格"
   },
   "privacy": {
     "australian-privacy": {
@@ -3645,9 +3845,7 @@
     "ccpa": {
       "block": {
         "0": "根据加利福尼亚消费者隐私法（CCPA）和加利福尼亚隐私保护局（CPPA）的规定，加利福尼亚州居民有权了解我们收集的个人信息、请求删除其数据以及选择退出出售其个人信息。我们不会出售个人信息。如需提出请求，请通过 <a href=\"mailto:support{'@'}comfy.org\" class=\"text-white underline\">support{'@'}comfy.org</a> 与我们联系。"
-      },
-      "label": "CCPA",
-      "title": "CCPA / CPPA"
+      }
     },
     "changes": {
       "block": {
@@ -3676,8 +3874,7 @@
     },
     "contact": {
       "block": {
-        "0": "如果您对本隐私政策或我们的数据处理方式有任何疑问或顾虑，请通过以下方式联系我们：",
-        "1": "<a href=\"mailto:support{'@'}comfy.org\" class=\"text-white underline\">support{'@'}comfy.org</a>"
+        "0": "如果您对本隐私政策或我们的数据处理方式有任何疑问或顾虑，请通过以下方式联系我们："
       },
       "label": "联系",
       "title": "联系我们"
@@ -3686,14 +3883,12 @@
       "block": {
         "0": "某些浏览器包含\"请勿追踪\"（DNT）功能，向网站发出您不希望被追踪的信号。目前尚无关于公司应如何回应 DNT 信号的统一标准。目前，我们不会回应 DNT 信号。"
       },
-      "label": "DNT",
       "title": "请勿追踪（Do Not Track）"
     },
     "gdpr": {
       "block": {
         "0": "如果您位于欧洲经济区（EEA），《通用数据保护条例》（GDPR）赋予您有关个人数据的某些权利，包括访问权、更正权、删除权、限制处理权、数据可携带权以及反对处理权。我们处理的法律依据包括同意、合同履行和合法利益。如需行使您的 GDPR 权利，请通过 <a href=\"mailto:support{'@'}comfy.org\" class=\"text-white underline\">support{'@'}comfy.org</a> 与我们联系。"
       },
-      "label": "GDPR",
       "title": "GDPR — 欧洲经济区"
     },
     "information-we-collect": {
@@ -3764,7 +3959,6 @@
       "block": {
         "0": "如果您位于英国，英国《通用数据保护条例》（UK GDPR）为您提供与欧盟 GDPR 类似的权利，包括访问、更正、删除和传输数据的权利。如需行使您在英国 GDPR 下的权利，请通过 <a href=\"mailto:support{'@'}comfy.org\" class=\"text-white underline\">support{'@'}comfy.org</a> 与我们联系。"
       },
-      "label": "UK GDPR",
       "title": "英国 GDPR"
     },
     "us-state-privacy": {
@@ -3869,6 +4063,221 @@
       "subtitle": "今天就在浏览器中搭建工作流，在自己的 GPU 上运行开源权重，或用 API 批量制作，将图像生成接入完整创意流程。"
     }
   },
+  "reshoot": {
+    "advanced": {
+      "label": "高级",
+      "value": "提示词、对白、种子"
+    },
+    "aim": {
+      "globe": "围绕片段拖动机位 · 滚动以靠近",
+      "less": "收起",
+      "more": "更多：镜头、高度、保持朝向",
+      "reading": "正在读取场景"
+    },
+    "analyzing": "正在估算深度…",
+    "aspect": {
+      "label": "画面比例",
+      "source": "与原片一致"
+    },
+    "axis": {
+      "azimuth": "水平角",
+      "distance": "距离",
+      "elevation": "俯仰角",
+      "fov": "镜头视角",
+      "height": "高度",
+      "lens": "镜头",
+      "rotation": "旋转",
+      "shift": "垂直位移",
+      "tilt": "俯仰"
+    },
+    "back": "返回片段",
+    "cancel": "取消",
+    "clip": {
+      "change": "更换",
+      "example": "示例",
+      "help": "5–15 秒，主体清晰，无黑边",
+      "length": "该片段长 {seconds} 秒，请使用 5 到 15 秒的片段。",
+      "ready": "场景已读取",
+      "rejected": "{name} 长 {seconds} 秒，当前片段保持不变。请选择 5 到 15 秒的片段。",
+      "replace": "选择其他片段",
+      "yours": "你的片段"
+    },
+    "clipLength": "此片段时长 {seconds} 秒，请使用 5 到 15 秒的片段。",
+    "collapse": "退出全屏",
+    "continue": "继续",
+    "credit": "基于 Cseti 的 CrossView-Warp LoRA 与节点",
+    "demoNote": "预览版：目前镜头播放示例结果。",
+    "distanceHelp": "距离只是近似值，角度的控制最精确。",
+    "dolly": {
+      "in": "机位靠近",
+      "out": "机位远离"
+    },
+    "download": "下载",
+    "dragHint": {
+      "label": "拖动以环绕 · 滚动以靠近",
+      "touch": "拖动以环绕"
+    },
+    "edit": "编辑",
+    "empty": {
+      "hint": "先选一段 5 到 15 秒的片段，或挑一个示例。",
+      "title": "新机位的画面将在这里播放"
+    },
+    "error": {
+      "busy": "一次只能生成一条镜头，请等待当前镜头完成。",
+      "failed": "出了点问题，请重试。",
+      "rateLimited": "尝试次数过多，请{when}再试。"
+    },
+    "expand": "全屏",
+    "failed": "出现问题",
+    "frames": "{frames} 帧，24 fps（{seconds} 秒）",
+    "generate": {
+      "label": "生成",
+      "note": "生成期间可以继续调整机位。",
+      "wait": "正在读取场景 · 约 20 到 40 秒"
+    },
+    "generating": "正在生成新视角",
+    "generatingHelp": "闲置一段时间后的首次运行还需要加载模型。",
+    "keepAim": "保持原机位的朝向",
+    "keepAimHelp": "围绕主体移动，但保持原片的朝向，与训练数据一致。",
+    "motion": {
+      "ease_in": "缓入",
+      "ease_in_out": "缓入缓出",
+      "ease_out": "缓出",
+      "linear": "线性",
+      "smooth": "平滑样条"
+    },
+    "move": {
+      "clear": "清除关键帧",
+      "frame": "帧",
+      "goTo": "跳到 {time} 处的关键帧",
+      "help": "拖动预览下方的时间轴，调整机位，按“关键帧”。两个以上的关键帧构成运镜；第一个之前和最后一个之后机位保持不动。在关键帧上调整机位会直接修改它。",
+      "key": "关键帧",
+      "keys": "{count} 个关键帧",
+      "motion": "运动曲线",
+      "noKeys": "没有关键帧：整个片段使用同一机位。设置两个关键帧即可形成运镜。",
+      "oneKey": "一个关键帧会让机位固定在此。再设置一帧即可形成运镜。",
+      "remove": "删除 {time} 处的关键帧",
+      "static": "固定机位",
+      "unkey": "删除关键帧"
+    },
+    "needsDepth": "分析深度后即可设置新机位。",
+    "noWebgl": "此预览需要 WebGL2，当前浏览器不支持。",
+    "nudge": {
+      "down": "机位降低",
+      "left": "机位向左",
+      "right": "机位向右",
+      "up": "机位升高"
+    },
+    "optional": "可选",
+    "panel": "重拍设置",
+    "pause": "暂停",
+    "period": {
+      "day": "今天",
+      "days": "每 {n} 天",
+      "hours": "每 {n} 小时",
+      "week": "本周"
+    },
+    "pick": {
+      "drop": "将视频拖到这里",
+      "exampleMeta": "无需上传即可试用",
+      "exampleTitle": "科幻飞行员",
+      "lead": "从任意角度重拍任意视频。机位随心移动，无需补拍。",
+      "upload": "上传视频"
+    },
+    "play": "播放",
+    "prompt": {
+      "dialogue": "模型也会生成新的音频：如果视频中有对白，请在这里写下台词，新生成的内容会更好地保留它们。",
+      "placeholder": "例如：她身后是一面石墙，左边有更多麦田"
+    },
+    "promptHelp": "描述原机位未拍到的区域应填充什么内容。",
+    "prototype": "原型",
+    "quote": {
+      "exhausted": "免费次数已用完，下一次{when}可用",
+      "failed": "暂时无法获取价格，正在重试…",
+      "free": "免费 · {period}剩余 {left}/{runs} 次",
+      "freeOnly": "免费",
+      "later": "稍后",
+      "paid": "{price} 积分",
+      "perSecond": "每秒 {rate} 积分",
+      "priceUnknown": "暂无价格"
+    },
+    "reuse": "再次使用此机位",
+    "sample": {
+      "diner": "餐馆对话",
+      "meta": "示例",
+      "street": "夜晚街道",
+      "train": "火车车窗"
+    },
+    "section": {
+      "camera": "新机位",
+      "format": "格式",
+      "move": "运镜",
+      "prompt": "新视角中出现的内容",
+      "video": "视频"
+    },
+    "seed": {
+      "help": "留空则每次生成使用新的种子；输入数字即可固定。",
+      "label": "种子",
+      "random": "随机"
+    },
+    "signIn": "登录后即可读取场景。",
+    "size": {
+      "480p": "0.4 MP · 864×480 · 更快",
+      "768p": "1.0 MP · 1376×768 · 更清晰，更慢",
+      "label": "输出尺寸"
+    },
+    "sound": {
+      "generated": "生成的声音",
+      "label": "声音",
+      "original": "原始音频"
+    },
+    "speed": {
+      "480p": "更快",
+      "768p": "更清晰"
+    },
+    "stage": {
+      "fetching": "正在获取结果",
+      "queued": "正在等待服务器",
+      "queuedAt": "排队中 · 第 {n} 位",
+      "starting": "正在启动服务器",
+      "uploading": "正在上传片段"
+    },
+    "stale": "画面比例或尺寸已更改，需要重新分析深度。",
+    "step": "第 {n} 步",
+    "step1": {
+      "hint": "选择片段、画面比例以及新视角要呈现的内容。深度只需分析一次，之后可自由取景。",
+      "label": "准备片段"
+    },
+    "step2": {
+      "hint": "拖动预览或使用控件，需要时添加关键帧运镜，然后生成。",
+      "label": "设置机位并生成"
+    },
+    "take": {
+      "aim": "取景",
+      "cancelled": "已取消",
+      "example": "示例结果",
+      "exampleHelp": "示例结果：该片段以 768p 从新角度重拍。设置你自己的机位试试。",
+      "failed": "此镜头生成失败",
+      "move": "第 {n} 条 · 运镜，{keys} 个关键帧",
+      "static": "第 {n} 条 · 水平 {az}° 俯仰 {el}°"
+    },
+    "takes": "镜头",
+    "title": "重拍视频",
+    "tryAgain": "重试",
+    "unavailable": "重拍功能暂不可用，请稍后再试。",
+    "view": {
+      "result": "结果",
+      "source": "原片",
+      "warp": "变形引导"
+    },
+    "views": "显示",
+    "warpNote": "真实运行时这里显示变形引导：片段被推到新机位，洋红色为需要生成的部分。",
+    "zone": {
+      "green": "在 LoRA 验证过的范围内。",
+      "red": "超出训练范围，看不到的一面将由模型想象。",
+      "yellow": "训练过，但不太稳定。"
+    }
+  },
   "seedance": {
     "breadcrumb": {
       "model": "Seedance 2.5",
@@ -3924,16 +4333,19 @@
     "badgeHow": "了解",
     "badgeWorks": "运行方式",
     "feature1": {
+      "cta": "下载 Desktop",
       "description": "在无限画布上连接节点，构建强大的 AI 管线。每个模型、参数和处理步骤都可见且可调整。",
       "title": "节点带来的可控性"
     },
     "feature2": {
-      "description": "如果您是 ComfyUI 新手，可以从 App 模式开始——这是工作流的简化视图。您随时可以切换回节点图视图以深入了解。",
-      "title": "App 模式，工作流的简化视图"
+      "cta": "探索 Comfy Agent",
+      "description": "描述你想要的效果，Comfy Agent 会为你构建并运行工作流。",
+      "title": "Comfy Agent"
     },
     "feature3": {
-      "description": "浏览和混搭数千个社区共享的工作流。从经过验证的模板开始，按需自定义。",
-      "title": "Comfy Workflows 上的社区工作流"
+      "cta": "探索 Comfy API",
+      "description": "通过一个 API，在你自己的应用中运行 Comfy 工作流和模型。",
+      "title": "Comfy API"
     },
     "subtitle1": "在画布上连接模型、处理步骤和输出，每个决策都可见，每个步骤都可检查。",
     "subtitle2": "从工作流模板开始，或从零构建。"
@@ -3981,286 +4393,6 @@
   },
   "toastMessages": {
     "unauthorizedDomain": "您的域名 {domain} 未被授权使用此服务。请联系 {email} 将您的域名添加到白名单。"
-  },
-  "tos": {
-    "comfy-products": {
-      "block": {
-        "0": {
-          "heading": "Right to Access and Use Comfy Products."
-        },
-        "1": "Subject to your compliance with all of the terms and conditions of this Agreement, Comfy grants you and your Users a non-exclusive, non-sublicensable, non-transferable right during the term of this Agreement to access and use the Comfy Products as set forth in the applicable Order Form for your internal business purposes.",
-        "2": {
-          "heading": "Customer Data."
-        },
-        "3": "As between Comfy and Customer, Customer retains all right, title, and interest in and to any data, images, videos, prompts, models, workflows, nodes, parameters, or other materials submitted or uploaded by Customer to the Comfy Products (“Input”), as well as any images, videos, designs, or other visual content generated through Customer’s use of the Comfy Products as a result of processing Customer’s Input (“Output”). Customer acknowledges that due to the nature of artificial intelligence, Comfy may generate the same or similar Output for other customers, and Customer shall have no right, title, or interest in or to Output generated for any other customer.",
-        "4": {
-          "heading": "No AI Training."
-        },
-        "5": "Comfy will not use Input or Output to train generative AI or diffusion models. Comfy may, however, collect and use limited metadata derived from Customer’s use of the Comfy Products, such as prompt classifications, workflow structures, and node configurations, to improve the performance, functionality, and user experience of the Comfy Products.",
-        "6": {
-          "heading": "Comfy OSS."
-        },
-        "7": "You may use Comfy OSS under the terms of the applicable Open Source License(s) governing each respective component, as identified in the corresponding source code repository, rather than under these Terms. Nothing in these Terms shall be construed to limit, supersede, or modify any rights or obligations arising under an applicable Open Source License. If you choose to use the Comfy Products in conjunction with Comfy OSS, these Terms apply solely to your use of the Comfy Products and not to the Comfy OSS itself.",
-        "8": {
-          "heading": "Partner Nodes."
-        },
-        "9": "Certain features of the Comfy Products allow you to access third-party AI model providers (“Partner Nodes”) through Comfy. When you use a Partner Node, Comfy proxies your request to the applicable third-party provider, transmitting the information necessary to fulfill your request, including prompts, images, models, and parameters. Comfy does not transmit your identity or account information to third-party providers in connection with Partner Node requests. Your use of Partner Nodes is subject to the terms and policies of the applicable third-party provider, and Comfy is not responsible for the data practices of such providers. Usage of Partner Nodes is metered and billed through Comfy.",
-        "10": {
-          "heading": "Modification of Comfy Products."
-        },
-        "11": "Comfy may, at any time and in its sole discretion, modify, update, enhance, restrict, suspend, or discontinue the Comfy Products, in whole or in part, including by changing or removing features, functionality, endpoints, specifications, documentation, access methods, usage limits, or availability. Comfy has no obligation to maintain or support any particular version of the Comfy Products or to ensure backward compatibility. Any such modifications may be made with or without notice and may result in interruptions to or degradation of the Comfy Products. Comfy shall have no liability arising out of or related to any modification, suspension, or discontinuation of the Comfy Products, and Customer acknowledges that its use of the Comfy Products is at its own risk and that it should not rely on the continued availability of any aspect of the Comfy Products.",
-        "12": {
-          "heading": "Data Retention and Deletion."
-        },
-        "13": "Comfy retains Customer Data for as long as your account remains active or as otherwise necessary to provide the Comfy Products, comply with applicable legal obligations, resolve disputes, and enforce this Agreement. Specific retention periods for different categories of Customer Data are set forth in Comfy’s retention documentation, available at <a href=\"https://docs.comfy.org/support/data-retention\" class=\"text-white underline\">docs.comfy.org/support/data-retention</a>, as updated from time to time. You may request deletion of your account and associated Customer Data by contacting Comfy at <a href=\"mailto:legal{'@'}comfy.org\" class=\"text-white underline\">legal{'@'}comfy.org</a>. Upon receipt of a verified deletion request, Comfy will use commercially reasonable efforts to delete or de-identify your personal information from its primary systems within a reasonable time. You acknowledge that: (i) deletion may not propagate immediately to all backup systems, third-party analytics providers, or observability systems, which retain data subject to their own retention policies; (ii) certain Customer Data may be retained as required by applicable law or for legitimate business purposes such as billing records; and (iii) aggregated or de-identified data derived from your use of the Comfy Products may be retained indefinitely."
-      },
-      "label": "COMFY PRODUCTS",
-      "title": "2. Comfy Products"
-    },
-    "confidentiality": {
-      "block": {
-        "0": {
-          "heading": "Definition of Confidential Information."
-        },
-        "1": "“Confidential Information” means all non-public information disclosed by a party (“Disclosing Party”) to the other party (“Receiving Party”), whether oral or written, that is designated as confidential or that reasonably should be understood to be confidential given the nature of the information and circumstances of disclosure. Confidential Information of Customer includes Customer Data; Confidential Information of Comfy includes the Comfy Products; and each party’s Confidential Information includes the terms of this Agreement and any Order Forms (including pricing), as well as business, financial, marketing, technical, and product information. Confidential Information excludes information that the Receiving Party can demonstrate: (i) is or becomes publicly available without breach; (ii) was known prior to disclosure without breach; (iii) is received from a third party without breach; or (iv) was independently developed without use of or reference to the Disclosing Party’s Confidential Information.",
-        "2": {
-          "heading": "Protection of Confidential Information."
-        },
-        "3": "The Receiving Party will: (a) protect Confidential Information using at least reasonable care; (b) use it solely to perform under this Agreement; and (c) limit access to its and its Affiliates’ employees and contractors with a need to know and confidentiality obligations at least as protective as those herein. Neither party may disclose the terms of this Agreement or any Order Form except to its Affiliates, legal counsel, or accountants, and remains responsible for their compliance. Upon written request, the Receiving Party will promptly return or destroy Confidential Information, except for information retained in routine backups or as required by law or internal retention policies.",
-        "4": {
-          "heading": "Compelled Disclosure."
-        },
-        "5": "The Receiving Party may disclose Confidential Information if legally required, provided it gives prior notice (where permitted) and reasonable assistance, at the Disclosing Party’s expense, to seek protective treatment. Any disclosure will be limited to what is legally required, and the Receiving Party will request confidential treatment. These obligations survive while Confidential Information remains in the Receiving Party’s possession.",
-        "6": {
-          "heading": "Data Security."
-        },
-        "7": "Comfy will implement and maintain commercially reasonable administrative, technical, and physical safeguards designed to protect Customer Data against unauthorized access, disclosure, alteration, or destruction. These measures will be no less protective than those Comfy uses to protect its own confidential information of a similar nature. In the event Comfy becomes aware of a confirmed security breach that results in unauthorized access to or disclosure of Customer Data, Comfy will notify Customer without undue delay and will provide reasonable cooperation to assist Customer in investigating and mitigating the effects of such breach. Customer acknowledges that no security measures are perfect or impenetrable, and Comfy does not guarantee that Customer Data will be free from unauthorized access or disclosure."
-      },
-      "label": "CONFIDENTIALITY",
-      "title": "6. Confidentiality"
-    },
-    "contact": {
-      "block": {
-        "0": "If you have any questions regarding this Agreement or the Comfy Products, please contact us at: <a href=\"mailto:legal{'@'}comfy.org\" class=\"text-white underline\">legal{'@'}comfy.org</a>."
-      },
-      "label": "CONTACT",
-      "title": "13. Contact Us"
-    },
-    "customer-responsibilities": {
-      "block": {
-        "0": {
-          "heading": "Registration."
-        },
-        "1": "In order to access and use the Comfy Products, you may be required to register an account by providing us with your email and other information requested in our registration form. You agree to provide us with complete and accurate registration information. You may not attempt to impersonate another person in registration. If you are registering on behalf of an organization, you warrant that you are authorized to agree to this Agreement on their behalf. You agree to be responsible for the security of your account. You accept that you are solely responsible for all activities that take place through your account, and that failure to limit access to your devices or systems may permit unauthorized use by third parties.",
-        "2": {
-          "heading": "General Technology Restrictions."
-        },
-        "3": "You agree that you will not, directly or indirectly: (i) sublicense the Comfy Products for use by a third party; (ii) reverse engineer or attempt to extract the source code or underlying methodology from the Comfy Products or any related software, except to the extent that this restriction is expressly prohibited by Applicable Laws; (iii) use or facilitate the use of the Comfy Products for any activities that are prohibited by Applicable Laws or otherwise; (iv) bypass or circumvent measures employed to prevent or limit access to the Comfy Products; (v) use the Comfy Products to create a product or service competitive with Comfy’s products or services; (vi) create derivative works of or otherwise create, attempt to create or derive, or knowingly assist any third party to create or derive, the source code underlying the Comfy Products; or (vii) otherwise use or interact with the Comfy Products for any purpose not expressly permitted under this Agreement.",
-        "4": {
-          "heading": "Acceptable Use; Prohibited Customer Data."
-        },
-        "5": "Customer is solely responsible for ensuring that all Input submitted to the Comfy Products complies with all Applicable Laws, and Customer agrees that it will not, and will not permit any third party to submit to Comfy or the Comfy Products or otherwise use the Comfy Products to create: (i) any data, designs, or other materials subject to U.S. export control laws and regulations; (ii) any viruses, malware, ransomware, Trojan horses, worms, spyware, or other malicious or harmful code or content that could damage, disrupt, interfere with, or compromise the Comfy Products, Comfy’s systems or infrastructure, or the data or systems of any other user or third party; (iii) any Customer Data that depicts, promotes, or facilitates illegal activity, including without limitation child sexual abuse material, non-consensual intimate imagery, or content that incites violence or hatred against any individual or group; (iv) any Customer Data that infringes or misappropriates the intellectual property rights, privacy rights, or publicity rights of any third party, including without limitation by submitting models, images, or other materials without the right to do so; (v) any content or information that is intentionally deceptive or misleading, including without limitation synthetic media designed to impersonate a real individual without their consent; or (vi) any Customer Data that could reasonably be expected to cause harm to any individual or group."
-      },
-      "label": "RESPONSIBILITIES",
-      "title": "3. Customer Responsibilities"
-    },
-    "definitions": {
-      "block": {
-        "0": "“Affiliates” means any entity that directly or indirectly controls, is controlled by, or is under common control with a party, where “control” means the ownership of more than fifty percent (50%) of the voting securities or other voting interests of such entity.",
-        "1": "“Applicable Laws” means all federal and state laws, treaties, rules, regulations, regulatory and supervisory guidance, directives, policies, orders or determinations of a regulatory authority applicable to the activities and obligations contemplated under this Agreement.",
-        "2": "“Comfy API” means the application programming interface and related developer tools made available by Comfy that allow you to access and execute visual AI workflows programmatically as production endpoints from within your own applications or systems.",
-        "3": "“Comfy Branding” means the names, logos, and associated trademarks owned or in progress of being owned by Comfy.",
-        "4": "“Comfy Cloud” means the cloud-based hosting environment made available by Comfy that allows you to access and run visual AI workflows remotely through Comfy’s infrastructure, without requiring local installation or hardware.",
-        "5": "“Comfy Enterprise” means the enterprise-grade product tier made available by Comfy that provides organizations with dedicated infrastructure, enhanced security, administrative controls, and related support services for deploying and managing visual AI workflows at scale.",
-        "6": "“Comfy OSS” means the open-source software, source code, libraries, tools, and related components made available by Comfy under one or more open source licenses, including the software repositories published by Comfy at <a href=\"https://github.com/Comfy-Org\" class=\"text-white underline\">https://github.com/Comfy-Org</a>, as updated, modified, or supplemented from time to time. For the avoidance of doubt, Comfy OSS does not include any proprietary software, infrastructure, or functionality made available by Comfy under these Terms of Service or in connection with any commercial product or offering.",
-        "7": "“Comfy Products” means Comfy Cloud, Comfy API, Comfy Enterprise and other products, software, features, tools, and functionality made available by Comfy to you under these Terms of Service, excluding any Comfy OSS.",
-        "8": "“Customer Data” means electronic data and information submitted or generated by Customer in connection with its use of the Comfy Products, including all Inputs and Outputs.",
-        "9": "“Open Source License” means the open source license(s) under which Comfy makes Comfy OSS available, as identified in the applicable source code repository.",
-        "10": "“Operational Metadata” means usage and diagnostic information generated by the Comfy Products and collected by Comfy to support, maintain, and optimize the performance and security of the Comfy Products, including information regarding software versions, system configuration, uptime, error logs, health metrics, and feature usage. Operational Metadata does not include Customer Data or Confidential Information.",
-        "11": "“Order Form” means the online sign-up flow, order form or other ordering document entered into or otherwise agreed by Customer that references this Agreement.",
-        "12": "“User” means Customer’s or Customer’s Affiliates’ employees and contractors who are authorized by Customer to access and use the Comfy Products on Customer’s or Customer’s Affiliates’ behalf according to the terms of this Agreement."
-      },
-      "label": "DEFINITIONS",
-      "title": "1. Definitions"
-    },
-    "disclaimer": {
-      "block": {
-        "0": "THE Comfy Products AND OUTPUT ARE PROVIDED “AS IS” WITHOUT ANY WARRANTY OF ANY KIND. Comfy DISCLAIMS ANY AND ALL WARRANTIES, REPRESENTATIONS, AND CONDITIONS RELATING TO THE Comfy Products (INCLUDING ANY OUTPUT), WHETHER EXPRESS, IMPLIED, INCLUDING, BUT NOT LIMITED TO, ANY REPRESENTATION, WARRANTY, OR CONDITION OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE OR NON-INFRINGEMENT. YOU AGREE AND ACKNOWLEDGE THAT YOUR USE OF ANY OUTPUT PROVIDED BY THE Comfy Products IS AT YOUR OWN RISK.",
-        "1": "Customer is solely responsible for (a) verifying the Output is appropriate for Customer’s use case, and (b) any decisions, actions, or omissions taken in reliance on the OUTPUT. in no event will Comfy be liable for any damages or losses arising from or related to Customer’s use of or reliance on the OUTPUT, including any decisions made or actions taken based on the OUTPUT."
-      },
-      "label": "DISCLAIMER",
-      "title": "8. Disclaimer"
-    },
-    "dispute-resolution": {
-      "block": {
-        "0": {
-          "heading": "Governing Law."
-        },
-        "1": "This Agreement and any dispute, claim, or controversy arising out of or relating to this Agreement, the Comfy Products, or the parties’ relationship (each, a “Dispute”), shall be governed by and construed in accordance with the laws of the State of California, without regard to conflict of laws principles that would result in the application of the laws of any other jurisdiction.",
-        "2": {
-          "heading": "Binding Arbitration; JAMS."
-        },
-        "3": "Except as expressly set forth in Section 11(c) (Exceptions; Injunctive Relief), any Dispute shall be finally resolved by binding arbitration administered by JAMS in accordance with the JAMS Comprehensive Arbitration Rules and Procedures (or, if applicable, the JAMS Streamlined Arbitration Rules and Procedures), as in effect at the time the arbitration is commenced. The arbitration shall be seated in San Francisco, California, and conducted in English before one (1) arbitrator. Judgment on the award rendered by the arbitrator may be entered in any court of competent jurisdiction.",
-        "4": {
-          "heading": "Exceptions; Injunctive Relief."
-        },
-        "5": "Notwithstanding anything to the contrary, either party may seek temporary, preliminary, or permanent injunctive relief (or other equitable relief) in any court of competent jurisdiction located in San Francisco, CA to prevent or enjoin actual or threatened misuse, infringement, or misappropriation of its intellectual property rights, confidential information, or proprietary rights, without the necessity of posting bond or proving actual damages to the extent permitted by Applicable Law. In addition, either party may bring an individual claim in small claims court in San Francisco, CA, if the claim qualifies.",
-        "6": {
-          "heading": "Class Action Waiver."
-        },
-        "7": "To the fullest extent permitted by Applicable Law, the parties agree that any Dispute will be brought and resolved on an individual basis only, and not as a plaintiff or class member in any purported class, collective, consolidated, coordinated, or representative action or proceeding. The arbitrator may not consolidate claims or preside over any form of representative or class proceeding.",
-        "8": {
-          "heading": "Waiver of Jury Trial."
-        },
-        "9": "To the fullest extent permitted by Applicable Law, each party hereby knowingly and irrevocably waives any right to a trial by jury in any action, proceeding, or counterclaim arising out of or relating to this Agreement or the Comfy Products.",
-        "10": {
-          "heading": "Exclusive Forum for Court Proceedings."
-        },
-        "11": "To the extent any Dispute is not subject to arbitration under this Agreement, the parties agree to the exclusive jurisdiction and venue of the state and federal courts located in San Francisco, CA and each party irrevocably submits to such jurisdiction and venue and waives any objection based on inconvenient forum.",
-        "12": {
-          "heading": "Confidentiality."
-        },
-        "13": "The arbitration, including the existence of the arbitration, all materials submitted, and all testimony and awards, shall be confidential and may not be disclosed except as necessary to conduct the arbitration, to enforce an award, or as required by Applicable Law.",
-        "14": {
-          "heading": "Time Limit."
-        },
-        "15": "To the fullest extent permitted by Applicable Law, any Dispute must be brought by you within one (1) year after the claim or cause of action first arose, or it is permanently barred."
-      },
-      "label": "DISPUTE RESOLUTION",
-      "title": "11. Governing Law and Dispute Resolution"
-    },
-    "effectiveDate": "May 13, 2026",
-    "effectiveDateLabel": "Effective Date",
-    "indemnification": {
-      "block": {
-        "0": "You agree to defend, indemnify, and hold harmless Comfy Organization, Inc. and its officers, directors, employees, contractors, and agents from and against any and all third-party claims, demands, actions, suits, or proceedings, and any resulting losses, damages, liabilities, costs, and expenses (including reasonable attorneys’ fees) to the extent resulting from your Customer Data or your breach of this Agreement. You must not settle any claim without Comfy’s prior written consent if the settlement would require Comfy to (a) admit fault, (b) pay any damages or other amounts, or (c) take or refrain from taking any action. Comfy may participate in a claim through counsel of its own choosing at its own expense, and you and Comfy will reasonably cooperate on the defense of any such claim."
-      },
-      "label": "INDEMNIFICATION",
-      "title": "10. Indemnification"
-    },
-    "intro": {
-      "block": {
-        "0": "These Comfy Terms of Service (the “Agreement”) are made available by Comfy Organization, Inc., a Delaware corporation (“Comfy”) and set forth your rights and obligations when accessing the Comfy Products (as defined below).",
-        "1": "The Agreement is entered into by and between Comfy and the entity or person accessing the Comfy Products (“Customer” or “you”). If you are accessing or using the Comfy Products on behalf of your company, you represent that you are authorized to enter into the Agreement on behalf of your company.",
-        "2": "PLEASE REVIEW THESE TERMS OF SERVICE CAREFULLY. ONCE ACCEPTED, THE TERMS AND CONDITIONS OF THE AGREEMENT WILL BECOME A BINDING LEGAL COMMITMENT BETWEEN YOU AND COMFY. IF YOU DO NOT AGREE TO BE BOUND BY THESE TERMS OF SERVICE, YOU SHOULD NOT ACCEPT THESE TERMS OF SERVICE AND MAY NOT USE THE PLATFORM."
-      },
-      "label": "INTRO"
-    },
-    "liability": {
-      "block": {
-        "0": "WHEN PERMITTED BY LAW, COMFY, AND COMFY’S SUPPLIERS AND DISTRIBUTORS, WILL NOT BE RESPONSIBLE FOR LOST PROFITS, REVENUES, OR DATA; FINANCIAL LOSSES; OR INDIRECT, SPECIAL, CONSEQUENTIAL, EXEMPLARY, OR PUNITIVE DAMAGES. TO THE EXTENT PERMITTED BY LAW, THE TOTAL LIABILITY OF Comfy, AND ITS SUPPLIERS AND DISTRIBUTORS, FOR ANY CLAIM UNDER THIS AGREEMENT, INCLUDING FOR ANY IMPLIED WARRANTIES, IS LIMITED TO THE GREATER OF (A) ONE THOUSAND DOLLARS ($1,000); AND (B) THE AMOUNTS PAID OR PAYABLE BY CUSTOMER IN THE SIX (6) MONTHS PRECEDING THE DATE OF THE CLAIM. IN ALL CASES, Comfy, AND ITS SUPPLIERS AND DISTRIBUTORS, WILL NOT BE LIABLE FOR ANY EXPENSE, LOSS, OR DAMAGE THAT IS NOT REASONABLY FORESEEABLE."
-      },
-      "label": "LIABILITY",
-      "title": "9. Limitation of Liability"
-    },
-    "miscellaneous": {
-      "block": {
-        "0": {
-          "heading": "Export Compliance."
-        },
-        "1": "You will comply with the export laws and regulations of the United States, the European Union and other applicable jurisdictions in providing and using the Comfy Products.",
-        "2": {
-          "heading": "Publicity."
-        },
-        "3": "You agree that Comfy may refer to your name, logo, and trademarks in Comfy’s marketing materials and website; however, Comfy will not use your name or trademarks in any other publicity (e.g., press releases, customer references and case studies) without your prior written consent (which may be by email) not to be unreasonably withheld, conditioned, or delayed.",
-        "4": {
-          "heading": "Third-Party Infrastructure."
-        },
-        "5": "Customer acknowledges that the Comfy Products relies on third-party infrastructure, hardware, and services, including cloud computing providers and GPU infrastructure providers (collectively, “Third-Party Infrastructure”), and that the availability, performance, and security of the Comfy Products may be affected by the operation, maintenance, or failure of such Third-Party Infrastructure. Comfy will use commercially reasonable efforts to maintain Comfy Products availability but makes no representation or warranty regarding the performance or availability of any Third-Party Infrastructure, and Comfy shall have no liability to Customer for any interruption, degradation, loss of data, or other harm arising out of or related to any failure, outage, or limitation of Third-Party Infrastructure, whether or not within Comfy’s control.",
-        "6": {
-          "heading": "Assignment; Delegation."
-        },
-        "7": "Neither party hereto may assign or otherwise transfer this Agreement, in whole or in part, without the other party’s prior written consent, except that Comfy may assign this Agreement without consent to a successor to all or substantially all of its assets or business related to this Agreement. Any attempted assignment, delegation, or transfer by either party in violation hereof will be null and void. Subject to the foregoing, this Agreement will be binding on the parties and their successors and assigns.",
-        "8": {
-          "heading": "Amendment; Waiver."
-        },
-        "9": "Comfy reserves the right in its sole discretion and at any time and for any reason to modify this Agreement. Any modifications to this Agreement shall become effective upon the date of posting. Your continued use of, or access to, the Comfy Products after an update goes into effect will constitute acceptance of the update. If you do not agree with an update, you may stop using the Comfy Products or terminate this Agreement. No waiver by either party of any breach or default hereunder shall be deemed to be a waiver of any preceding or subsequent breach or default. Any such waiver will apply only to the specific provision and under the specific circumstances for which it was given, and will not apply with respect to any repeated or continued violation of the same provision or any other provision. Failure or delay by either party to enforce any provision of this Agreement will not be deemed a waiver of future enforcement of that or any other provision.",
-        "10": {
-          "heading": "Relationship."
-        },
-        "11": "Nothing contained herein will in any way constitute any association, partnership, agency, employment or joint venture between the parties hereto, or be construed to evidence the intention of the parties to establish any such relationship. Neither party will have the authority to obligate or bind the other in any manner, and nothing herein contained will give rise to, or is intended to give rise to any rights of any kind in favor of any third parties.",
-        "12": {
-          "heading": "Unenforceability."
-        },
-        "13": "If a court of competent jurisdiction determines that any provision of this Agreement is invalid, illegal, or otherwise unenforceable, such provision will be enforced as nearly as possible in accordance with the stated intention of the parties, while the remainder of this Agreement will remain in full force and effect and bind the parties according to its terms.",
-        "14": {
-          "heading": "Notices."
-        },
-        "15": "Any notice required or permitted to be given hereunder will be given in writing by personal delivery, certified mail, return receipt requested, or by overnight delivery. Notices to you may be sent to the email address provided by you when you created your account with Comfy. Notices to Comfy must be sent to the following: 201 Spear Street, Ste 17, San Francisco, CA 94105.",
-        "16": {
-          "heading": "Entire Agreement."
-        },
-        "17": "This Agreement comprises the entire agreement between you and Comfy with respect to its subject matter, and supersedes all prior and contemporaneous proposals, statements, sales materials or presentations and agreements (oral and written). No oral or written information or advice given by Comfy, its agents or employees will create a warranty or in any way increase the scope of the warranties in this Agreement."
-      },
-      "label": "MISCELLANEOUS",
-      "title": "12. Miscellaneous"
-    },
-    "payment": {
-      "block": {
-        "0": {
-          "heading": "Plans; Fees; Free Tier."
-        },
-        "1": "Your use of the Comfy Products is subject to the plan selected via the applicable ordering page, online sign-up flow, or order form (“Plan”). Comfy may offer a free or freemium tier (“Free Tier”) and one or more paid tiers; the applicable Plan may include usage caps, feature restrictions, throttling, overage charges, or upgrade requirements, each as described in the pricing page or applicable Order Form. If a Free Tier user provides a valid payment method in connection with their account (including for identity verification, future upgrade purposes, or any other reason), such user expressly authorizes Comfy to charge that payment method for any usage that exceeds the applicable Free Tier limits, including overages resulting from intentional use, usage by authorized users or third parties under the account, or technical factors. Comfy will use reasonable efforts to notify users when they approach or exceed Free Tier limits, but such notice is not a condition of Comfy’s right to charge for overages. You are responsible for all usage under your account, including usage by your Users and under your credentials and API keys. Comfy may modify, suspend, or discontinue any Plan (including the Free Tier) consistent with this Agreement and the Order Forms.",
-        "2": {
-          "heading": "Self-Serve Credit Card Billing."
-        },
-        "3": "For self-serve Plans, Customer will provide a valid payment method (e.g., credit card) and authorizes Comfy (and its payment processor) to charge all fees and taxes when due. Unless the Order Forms state otherwise, subscription components (if any) will be billed in advance on a recurring basis and usage-based components (including any overages) will be billed in arrears for the applicable billing period (and may be charged as usage accrues). This billing authorization applies regardless of whether the Customer is on a paid Plan or a Free Tier at the time the overage is incurred. Paid self-serve Plans automatically renew for successive billing periods until cancelled through the console or as otherwise described in the Order Forms; if a charge fails, Comfy may retry the charge and Customer must promptly update its payment method. The same retry rights apply to any failed overage charges incurred by Free Tier users.",
-        "4": {
-          "heading": "Invoiced Billing."
-        },
-        "5": "If Comfy approves invoiced billing for Customer, Comfy will invoice Customer in accordance with the applicable Order Form, and Customer will pay all undisputed amounts within thirty (30) days of the invoice date. Any purchase Order Forms are for administrative convenience only and will not modify this Agreement. Customer will notify Comfy in writing of any good-faith dispute regarding an invoice within thirty (30) days of the invoice date and will timely pay all undisputed amounts while the parties work to resolve the dispute.",
-        "6": {
-          "heading": "Prepaid Credits."
-        },
-        "7": "Customer may prepay for usage credits (“Credits”) which may be applied toward usage of the Comfy Products at the rates set forth on Comfy’s pricing page. Except for documented billing errors or similar service issues attributed to Comfy, all purchases of Credits are final and non-refundable, and Comfy will not issue refunds or credits for any unused, partially used, or remaining Credits under any circumstances, including upon termination or expiration of Customer’s account. Comfy reserves the right to modify the pricing or Credit redemption rates applicable to future Credit purchases upon reasonable notice, but any Credits purchased prior to such modification will be honored at the rates in effect at the time of purchase.",
-        "8": {
-          "heading": "Taxes; Price Changes; No Refunds."
-        },
-        "9": "Fees are exclusive of all taxes, duties, levies, and similar governmental assessments (including sales, use, VAT/GST, and withholding taxes), and Customer is responsible for all such amounts other than taxes based on Comfy’s net income; if withholding is required by law, Customer will gross up payments so Comfy receives the invoiced amount, unless prohibited by law. Comfy may change fees or introduce new fees upon prior notice (including by posting to the pricing page or in-product notice), effective as of the next billing period or as otherwise stated in the notice. Except as required by law or expressly stated in the Order Forms, all fees are non-cancellable and non-refundable.",
-        "10": {
-          "heading": "Late Payments; Suspension."
-        },
-        "11": "Overdue undisputed amounts may accrue interest at the lesser of 1.5% per month or the maximum rate permitted by law, plus reasonable collection costs. Comfy may suspend or limit access to the Comfy Products (including throttling, disabling API keys, or downgrading to the Free Tier) for non-payment of undisputed amounts after providing commercially reasonable notice and an opportunity to cure, unless Comfy reasonably determines immediate suspension is necessary to protect the Comfy Products or comply with Applicable Laws."
-      },
-      "label": "PAYMENT",
-      "title": "4. Payment"
-    },
-    "proprietary-rights": {
-      "block": {
-        "0": {
-          "heading": "Reservation of Rights."
-        },
-        "1": "Comfy and its licensors retain all right, title, and interest, including all intellectual property and proprietary rights, in and to the Comfy Products, Comfy Branding, and all software, code, algorithms, protocols, interfaces, tools, documentation, data structures, and other technology underlying or embodied in, or used to provide, the Comfy Products (collectively, “Comfy Materials”). Except for the limited rights expressly granted to Customer under this Agreement, no rights or licenses are granted, whether by implication, estoppel, or otherwise. Comfy expressly reserves all rights in and to the Comfy Materials not expressly granted hereunder.",
-        "2": {
-          "heading": "Feedback."
-        },
-        "3": "You may from time to time provide feedback (including suggestions, comments for enhancements, functionality or usability, etc.) (“Feedback”) to Comfy regarding your experience using, and needs and integration requirements for, the Comfy Products. Comfy shall have full discretion to determine whether or not to proceed with the development of any requested enhancements, new features or functionality, and you hereby grant Comfy the full, unencumbered, royalty-free right to incorporate and otherwise fully exploit Feedback in connection with Comfy’s products and services.",
-        "4": {
-          "heading": "Operational Metadata."
-        },
-        "5": "Customer agrees that Comfy may collect and use Operational Metadata to operate, maintain, improve, and support the Comfy Products, including for diagnostics, analytics, system performance, and reporting purposes. Comfy will only disclose Operational Metadata externally if such data is (a) aggregated or anonymized with data across other customers, and (b) does not disclose the identity of Customer or any Customer Confidential Information."
-      },
-      "label": "PROPRIETARY RIGHTS",
-      "title": "7. Proprietary Rights"
-    },
-    "term-termination": {
-      "block": {
-        "0": {
-          "heading": "Termination of Agreement."
-        },
-        "1": "You may stop using the Comfy Products at any time with or without notice. This Agreement will remain in effect until terminated in accordance with this Section. Either party may terminate this Agreement for convenience upon written notice to the other; provided, however, that to the extent the parties have entered into one or more executed Order Forms with a stated term, such Order Form will remain in effect for its stated term unless earlier terminated in accordance with its terms or this Agreement, and termination of this Agreement will not, by itself, terminate any then-effective Order Form.",
-        "2": {
-          "heading": "Effect of Termination."
-        },
-        "3": "Upon any termination or expiration of an Order Form (or this Agreement, if no Order Form is then in effect), Customer will promptly cease all use of the Comfy Products under the terminated arrangement and, if applicable, any continued use must be pursuant to a then-effective Order Form or other written authorization from Comfy. Comfy may suspend or terminate Customer’s access to the Comfy Products, or discontinue the Comfy Products or any portion or feature thereof, at any time; provided that Comfy will not terminate an unexpired Order Form for convenience unless the applicable Order Form expressly permits it, and any suspension or termination may be implemented immediately if Comfy reasonably determines that Customer’s use poses a security risk, violates this Agreement, or materially degrades the Comfy Products. Except as expressly set forth in an Order Form, Comfy will have no liability or other obligation to Customer arising out of or relating to any termination, suspension, or discontinuance under this Section.",
-        "4": {
-          "heading": "Survival."
-        },
-        "5": "Termination or expiration will not affect any rights or obligations, including the payment of amounts due, which have accrued under this Agreement up to the date of termination or expiration. Upon termination or expiration of this Agreement, the provisions that are intended by their nature to survive termination will survive and continue in full force and effect in accordance with their terms, including confidentiality obligations, proprietary rights, indemnification, limitations of liability, and disclaimers."
-      },
-      "label": "TERM; TERMINATION",
-      "title": "5. Term; Termination"
-    }
   },
   "ui": {
     "breadcrumb": "面包屑导航",
@@ -4371,35 +4503,66 @@
       "body": "使用试用区的输入调用 Comfy Router。运行前请设置 COMFY_API_KEY，并检查本地文件路径。",
       "copied": "已复制",
       "copy": "复制代码",
+      "copyEndpoint": "复制接口地址",
       "docs": "Router 文档",
-      "needs": "你需要准备的",
-      "needsEndpoint": "接口地址",
-      "needsKey": "密钥",
-      "needsFiles": "你的文件",
-      "runsOnRouter": "Comfy Router",
-      "runsOnCloud": "Comfy Cloud",
-      "filesRead": "代码运行时从代码中的路径读取",
-      "filesUploaded": "调用前先上传，再通过链接读取",
-      "filesOmitted": "cURL 已省略上传的文件，请求可能不完整。请使用 Python 或 TypeScript 包含这些文件。",
-      "getKey": "获取 API 密钥",
       "downloadGraph": "下载 API 节点图",
+      "filesOmitted": "cURL 已省略上传的文件，请求可能不完整。请使用 Python 或 TypeScript 包含这些文件。",
+      "filesRead": "代码运行时从代码中的路径读取",
+      "filesSdk": "由代码根据链接上传",
+      "filesUploaded": "调用前先上传，再通过链接读取",
+      "getKey": "获取 API 密钥",
       "heading": "从代码中调用该模型",
       "inputInvalid": "请在试用区填写有效的模型参数以生成请求。",
       "localFiles": "代码运行时会读取文件并进行 Base64 编码。请将路径设置为您的本地文件。",
       "mappingUnavailable": "此模型的原生 Router 请求映射尚未验证。调用前请查看 Router 文档。",
-      "copyEndpoint": "复制接口地址",
+      "needs": "你需要准备的",
+      "needsEndpoint": "接口地址",
+      "needsFiles": "你的文件",
+      "needsKey": "密钥",
       "runsOn": "运行于",
-      "filesSdk": "由代码根据链接上传"
+      "runsOnCloud": "Comfy Cloud",
+      "runsOnRouter": "Comfy Router"
+    },
+    "assets": {
+      "cancelError": "无法请求取消。生成可能仍在进行。",
+      "generating": "正在生成…",
+      "go": "显示第 {n} 个素材",
+      "loadError": "无法加载你的素材。",
+      "loadingMedia": "正在加载素材…",
+      "next": "下一个素材",
+      "notSaved": "这次生成未能保存到你的素材。结果在过期前仍然留在页面上。",
+      "open": "打开已保存的素材",
+      "previous": "上一个素材",
+      "seeAll": "在云端查看全部",
+      "title": "你的素材"
     },
     "card": {
+      "comfyApp": "Comfy 应用",
       "creditsPerRun": "积分 / 次",
       "from": "起",
       "partnerNode": "合作伙伴节点",
-      "comfyApp": "Comfy 应用",
       "priceOnPage": "价格见模型页",
       "runs": "{n} 次运行",
       "tryCta": "在 Playground 试用"
     },
+    "catalogue": {
+      "allWorkflows": "全部工作流",
+      "apps": "应用",
+      "appsSubtitle": "用把多个工作流组合在一起的应用，挑战更大的想法。",
+      "backToWorkflows": "返回工作流",
+      "browseAllWorkflows": "浏览全部工作流",
+      "categories": "分类",
+      "directory": "全部模型（按提供商）",
+      "directoryCount": "{count} 个模型",
+      "eyebrow": "Hub",
+      "heading": "ComfyUI 模型",
+      "noWorkflows": "没有符合搜索和筛选条件的工作流。",
+      "searchWorkflows": "搜索工作流…",
+      "show": "浏览",
+      "showWorkflows": "显示 {n} 个工作流",
+      "workflowsSubtitle": "用由 AI 模型驱动的多步骤工作流，把你的想法变成完成的作品。"
+    },
+    "cinematic": {},
     "credits": {
       "added": "新增",
       "addedTo": "已添加到 {workspace}。你的输入保持原样。",
@@ -4434,8 +4597,8 @@
       "returnMetaDescription": "正在返回发起结账的页面。",
       "returnMetaTitle": "正在返回模型页面 - Comfy",
       "returnTitle": "正在返回模型页面",
-      "subscriptionPrompt": "想每月获得更多积分？",
       "subscriptionLink": "查看 Cloud 订阅方案",
+      "subscriptionPrompt": "想每月获得更多积分？",
       "title": "添加积分",
       "waitingBody": "你已从结账页返回。新积分到账后，此页面会自动更新。",
       "waitingPolling": "正在查询积分…",
@@ -4469,6 +4632,7 @@
       "noCreditsCloud": "{workspace} 的积分不足。",
       "noCreditsPlatform": "在 platform.comfy.org 上为 {workspace} 添加积分",
       "policy": "模型提供商因内容政策阻止了输入或生成的输出。请检查提示词和参考文件后再运行。",
+      "policyRealFaces": "Seedance 会拦截逼真的人脸，包括 AI 生成的人脸。请换一张不含人脸的图片或使用风格化角色，也可以检查一下提示词。",
       "provider": "运行失败。重试时请保持输入不变。若已扣费但未获得结果，请提供请求 ID 联系支持。",
       "rateLimit": "当前运行过多。请稍后重试。",
       "response": "Comfy 已返回响应，但无法读取结果。重试时请保持输入不变。若问题持续，请提供请求 ID 联系支持。",
@@ -4476,8 +4640,7 @@
       "timeout": "等待结果已超时。若该运行随后完成仍会扣费，请重试未更改的请求，而不要开始新的运行。",
       "unavailable": "该模型暂时不可用。",
       "upload": "文件上传失败，模型尚未运行。请重试或粘贴可访问的网址。",
-      "validation": "请检查高亮的字段。",
-      "policyRealFaces": "Seedance 会拦截逼真的人脸，包括 AI 生成的人脸。请换一张不含人脸的图片或使用风格化角色，也可以检查一下提示词。"
+      "validation": "请检查高亮的字段。"
     },
     "examples": {
       "empty": "该模型暂无示例。",
@@ -4486,13 +4649,13 @@
       "replaceConfirm": "载入示例",
       "replaceKeep": "取消",
       "replaceTitle": "要载入这个示例吗？",
+      "sampleAlt": "{name} 示例输出 {n}",
       "samples": "输出样例",
       "start": "试试一个示例",
       "use": "使用此示例",
       "using": "已填入表单",
       "view": "查看样例",
-      "viewing": "正在查看样例",
-      "sampleAlt": "{name} 示例输出 {n}"
+      "viewing": "正在查看样例"
     },
     "field": {
       "aspectRatio": "宽高比",
@@ -4518,9 +4681,8 @@
       "providerDefault": "提供方默认值",
       "remove": "移除文件",
       "removeNamedFile": "移除 {name}",
-      "replaceFile": "替换 {name}",
       "removedFile": "已移除 {name}",
-      "undoRemove": "撤销移除",
+      "replaceFile": "替换 {name}",
       "resolution": "分辨率",
       "seconds": "{value} 秒",
       "seed": "随机种子",
@@ -4530,6 +4692,7 @@
       "selectOrDropImages": "选择或拖入最多 {count} 张图片",
       "tooManyFiles": "最多选择 {count} 个文件。",
       "tooManyImages": "最多选择 {count} 张图片。",
+      "undoRemove": "撤销移除",
       "upload": "上传",
       "uploadLimit": "最大 {limit}",
       "voice": "声音"
@@ -4538,12 +4701,10 @@
       "3d": "3D",
       "all": "全部",
       "applied": "已选 {n} 项",
-      "clear": "清除",
-      "remove": "移除{filter}",
-      "runsOn": "运行于 {model}",
       "audio": "音频",
       "back": "全部筛选",
       "capabilityGroup": "功能",
+      "clear": "清除",
       "clearAll": "清除筛选",
       "filterBy": "筛选…",
       "image": "图像",
@@ -4551,7 +4712,9 @@
       "noMatches": "没有匹配项",
       "other": "其他",
       "outputGroup": "输出",
+      "remove": "移除{filter}",
       "resize": "拖动调整筛选器高度",
+      "runsOn": "运行于 {model}",
       "search": "搜索…",
       "sectionLabel": "筛选条件",
       "text": "文本",
@@ -4563,6 +4726,9 @@
       "badType": "不支持的文件类型",
       "draftRestoreFailed": "部分已保存的输入无法恢复。请检查输入并重新选择文件。",
       "fileUnreadable": "无法再读取此文件。请重新选择。",
+      "imageAspectRatioOutOfRange": "请使用宽高比在 {minimum} 到 {maximum} 之间的图片。",
+      "imageLayerDecompositionUnsupported": "此图片过于复杂，无法分离图层。请选择更简单的图片。",
+      "imageUnreadable": "无法读取图片尺寸。请选择可读取的图片或使用可访问的图片链接。",
       "incompatible": "此输入与其他设置不兼容。",
       "nativeJson": "原生 JSON",
       "outOfRange": "数值超出允许范围",
@@ -4571,13 +4737,10 @@
       "required": "此字段为必填项",
       "tooLarge": "文件超过 {limit}",
       "uploadFailed": "上传失败。请重试或粘贴可访问的网址。",
+      "videoHdrUnsupported": "不支持 HDR 视频。请将此视频转换为 SDR 后重试。",
       "videoTooLong": "请使用时长不超过 {seconds} 秒的视频。",
       "videoUnreadable": "无法读取视频详情。请选择可播放的视频或使用可访问的视频链接。",
-      "imageAspectRatioOutOfRange": "请使用宽高比在 {minimum} 到 {maximum} 之间的图片。",
-      "imageLayerDecompositionUnsupported": "此图片过于复杂，无法分离图层。请选择更简单的图片。",
-      "imageUnreadable": "无法读取图片尺寸。请选择可读取的图片或使用可访问的图片链接。",
-      "videoWidthOutOfRange": "请使用宽度在 {minimum} 到 {maximum} 像素之间的视频。",
-      "videoHdrUnsupported": "不支持 HDR 视频。请将此视频转换为 SDR 后重试。"
+      "videoWidthOutOfRange": "请使用宽度在 {minimum} 到 {maximum} 像素之间的视频。"
     },
     "hero": {
       "eyebrow": "模型",
@@ -4666,15 +4829,19 @@
       "maxFiles": "最多选择 {count} 个文件。",
       "meta": {
         "byProvider": "{name}（{provider}）",
-        "lead": "{who}：{summary}",
-        "leadNoSummary": "{who}。",
         "cta": "在浏览器中运行，或通过 API 调用。",
         "ctaShort": "可在浏览器或 API 中运行。",
-        "price": "默认设置下约 {credits} 积分。",
+        "lead": "{who}：{summary}",
+        "leadNoSummary": "{who}。",
+        "price": "默认设置下每{unit}约 {credits} 积分。",
         "priceNoUnit": "默认设置下约 {credits} 积分。",
         "title": "{name} API 与 Playground - Comfy",
+        "titleApi": "{name} API - Comfy",
         "titleUnbranded": "{name} API 与 Playground",
-        "titleApi": "{name} API - Comfy"
+        "units": {
+          "image": "张图像",
+          "run": "次运行"
+        }
       },
       "missingInputSchema": "Comfy Router 已列出此模型，但其输入架构尚未提供。你可以查看已有信息；添加架构后将启用运行和 API 代码示例。",
       "nodePriceDefaults": "根据公布的费率或节点默认设置估算。实际费用随设置和用量变化。",
@@ -4683,7 +4850,6 @@
       "priceNoteLabel": "此估算的计算方式",
       "related": "更多模型",
       "relatedProvider": "{provider} 的更多模型",
-      "runNext": "运行模型 — 登录功能即将推出",
       "select": "选择一个选项",
       "tabs": {
         "api": "API",
@@ -4723,6 +4889,7 @@
       "pause": "暂停",
       "placeholder": "你的输出会显示在这里。",
       "play": "播放",
+      "refreshLink": "刷新下载链接",
       "reveal": "点击查看",
       "runAgain": "再次运行",
       "select": "输出 {n}",
@@ -4730,8 +4897,7 @@
       "soundOn": "打开声音",
       "title": "输出",
       "truncated": "预览已缩短。请在下方下载完整响应。",
-      "useInCode": "在代码中使用这些设置",
-      "refreshLink": "刷新下载链接"
+      "useInCode": "在代码中使用这些设置"
     },
     "proto": {
       "featured": "显示精选行",
@@ -4799,24 +4965,24 @@
       "preparingSession": "正在检查登录状态…",
       "previewUnavailable": "此预览尚未连接模型运行功能",
       "requestId": "请求 ID：",
+      "resolvingAvailability": "请稍候…",
+      "rollingOut": "浏览器内运行正在逐步开放。你可以通过 API 调用此模型，或在 ComfyUI 中运行。",
+      "rollingOutApi": "查看 API",
       "run": "运行",
       "running": "生成中…",
+      "savedAssets": "打开你的素材",
+      "savedBody": "你不会在这个页面看到结果。若让它继续，它会一直消耗积分直到完成，结果会保存到你的素材中。",
+      "savedKeep": "让它继续运行",
+      "savedLeave": "离开并停止",
+      "savedStay": "留在此页面",
+      "savedTitle": "离开并停止这次生成？",
       "signIn": "登录以运行",
       "switchAnyway": "切换并取消",
       "switchBody": "切换工作区会取消生成，已消耗的积分不会退回。",
       "switchPersonal": "切换到个人工作区",
       "switchStay": "留在此工作区",
       "unavailable": "模型暂时不可用",
-      "videoHint": "视频生成最长可能需要 10 分钟，且不排队。",
-      "savedTitle": "离开并停止这次生成？",
-      "savedBody": "你不会在这个页面看到结果。若让它继续，它会一直消耗积分直到完成，结果会保存到你的素材中。",
-      "savedAssets": "打开你的素材",
-      "savedStay": "留在此页面",
-      "savedLeave": "离开并停止",
-      "savedKeep": "让它继续运行",
-      "rollingOut": "浏览器内运行正在逐步开放。你可以通过 API 调用此模型，或在 ComfyUI 中运行。",
-      "resolvingAvailability": "请稍候…",
-      "rollingOutApi": "查看 API"
+      "videoHint": "视频生成最长可能需要 10 分钟，且不排队。"
     },
     "search": {
       "clear": "清除搜索",
@@ -4886,6 +5052,14 @@
       "audio": "音频",
       "image": "图像",
       "label": "{input}转{output}",
+      "output": {
+        "3d": "3D",
+        "audio": "音频",
+        "image": "图像",
+        "other": "其他",
+        "text": "文本",
+        "video": "视频"
+      },
       "text": "文本",
       "video": "视频"
     },
@@ -4905,595 +5079,253 @@
     },
     "workflow": {
       "about": "关于",
+      "accessDenied": "此账号已无法访问该工作区。请检查所选工作区。",
+      "apiDocs": "API 文档",
+      "apiHint": "以下请求使用与体验区相同的预设图和设置。每次提交都可能开始一次付费运行；如果提交结果未知，请勿自动重试。",
+      "apiNote": "需要付费的 Cloud 方案和额度。",
+      "apiPoll": "POST /api/prompt 返回 prompt_id。使用凭证轮询 GET /api/jobs/{'{'}prompt_id{'}'}?short_link=ephemeral_tool_chain。选定输出包含临时 short_url 链接；再次读取运行即可刷新链接。",
+      "apiSteps": "完整调用步骤",
+      "apiUploadFinalize": "PUT 响应包含 name。用此名称替换下方对应的 UPLOADED_*_FILENAME。",
+      "apiUploadGrant": "使用工作区凭证向 Cloud 的 POST /api/inputs/upload-url 发送 {'{'}\"content_type\":\"image/png\"{'}'}。",
+      "apiUploadPut": "将文件原始字节 PUT 到同一 Cloud 地址返回的 upload_path。此 PUT 不要携带账号凭证。",
+      "apiUploads": "先上传媒体",
+      "browserUnavailable": "暂不支持从此页面运行工作流。",
       "by": "作者 {author}",
+      "cancelRequested": "已请求取消。请在 Cloud 中查看最终运行状态。",
+      "cancelled": "这次运行在完成前已取消。",
+      "cancelling": "正在等待取消确认…",
+      "checkCloud": "查看 Cloud",
       "cloneCta": "在本机运行",
       "comfyApp": "Comfy 应用",
+      "connectionLost": "无法查看运行状态。请重新连接以获取最新状态。",
       "customNodes": "需要自定义节点",
+      "definitionChanged": "工作流已更新。开始新运行前请重新加载页面。",
+      "delivering": "正在准备输出…",
+      "deliveryFailed": "运行已完成，但部分输出未能送达。重试获取此运行的输出即可。",
+      "dismissUnknown": "返回输入",
       "download": "下载工作流 JSON",
+      "downloadShort": "下载",
+      "explore": "探索更多可能",
+      "factAuthor": "作者",
+      "factOutput": "输出",
+      "factWhere": "运行位置",
+      "failed": "运行失败。请检查输入后重试。",
+      "fullPreview": "打开完整尺寸的工作流预览",
       "graph": "工作流",
+      "graphAlt": "此工作流的节点及其连接",
+      "graphFailed": "节点图加载失败，下载仍然可用。",
+      "graphHint": "仅供查看 · 拖动平移",
+      "graphLoading": "正在加载节点图",
       "graphNote": "此部署背后的节点图在这里为只读。可在 comfy.org 打开或下载 JSON 在 ComfyUI 中编辑。",
+      "inputSize": "单个文件不得超过 25 MiB，每次运行的输入总大小不得超过 50 MiB。",
       "inputs": "输入",
+      "inside": "查看工作流内部",
+      "interrupted": "连接中断",
       "io": "输入与输出",
+      "lostContact": "此页面与运行失去了联系。它可能仍在 Cloud 上运行并消耗积分。请重新连接以查看最新状态。",
+      "mediaUnavailable": "输入文件尚未上传完成或已不可用。请检查文件后重试。",
       "nodeGraph": "节点图",
       "openComfy": "在 comfy.org 打开",
       "outputs": "输出",
+      "paused": "新工作流运行已暂时停用。你仍可查看或取消已有运行。",
+      "perRun": "每次运行 {count} 个",
+      "preparing": "正在准备输入…",
+      "previewHint": "源模板的只读预览。在 Cloud 中打开，即可查看节点并进行修改。",
+      "queued": "排队中",
       "ratings": "评分与评论",
       "related": "相关工作流",
       "relatedAll": "浏览全部",
-      "serverless": "无服务器 API",
-      "templateBy": "模板作者：{author}",
-      "sections": "工作流栏目",
-      "graphAlt": "此工作流的节点及其连接",
-      "graphHint": "仅供查看 · 拖动平移",
-      "graphLoading": "正在加载节点图",
-      "graphFailed": "节点图加载失败，下载仍然可用。",
-      "zoomIn": "放大",
-      "zoomOut": "缩小",
-      "zoomReset": "重置",
-      "factWhere": "运行位置",
-      "factOutput": "输出",
-      "factAuthor": "作者",
-      "runsCloud": "在 Comfy Cloud 上运行",
-      "runsOwn": "在你自己的部署上运行",
-      "perRun": "每次运行 {count} 个",
-      "runsOn": "运行于",
-      "inside": "查看工作流内部",
-      "previewHint": "源模板的只读预览。在 Cloud 中打开，即可查看节点并进行修改。",
-      "fullPreview": "打开完整尺寸的工作流预览",
-      "apiHint": "以下请求使用与体验区相同的预设图和设置。每次提交都可能开始一次付费运行；如果提交结果未知，请勿自动重试。",
-      "apiNote": "需要付费的 Cloud 方案和额度。",
-      "apiDocs": "API 文档",
-      "apiSteps": "完整调用步骤",
-      "apiUploads": "先上传媒体",
-      "apiUploadGrant": "使用工作区凭证向 Cloud 的 POST /api/inputs/upload-url 发送 {'{'}\"content_type\":\"image/png\"{'}'}。",
-      "apiUploadPut": "将文件原始字节 PUT 到同一 Cloud 地址返回的 upload_path。此 PUT 不要携带账号凭证。",
-      "apiUploadFinalize": "PUT 响应包含 name。用此名称替换下方对应的 UPLOADED_*_FILENAME。",
-      "apiPoll": "POST /api/prompt 返回 prompt_id。使用凭证轮询 GET /api/jobs/{'{'}prompt_id{'}'}?short_link=ephemeral_tool_chain。选定输出包含临时 short_url 链接；再次读取运行即可刷新链接。",
-      "preparing": "正在准备输入…",
-      "submitting": "正在提交工作流",
-      "queued": "排队中",
-      "cancelled": "这次运行在完成前已取消。",
-      "cancelling": "正在等待取消确认…",
-      "delivering": "正在准备输出…",
-      "failed": "运行失败。请检查输入后重试。",
-      "interrupted": "连接中断",
       "resume": "重新连接此运行",
       "resumeHint": "Cloud 返回运行 ID 后，此标签页可在刷新后重新连接。离开页面不会取消运行。",
-      "inputSize": "单个文件不得超过 25 MiB，每次运行的输入总大小不得超过 50 MiB。",
-      "submissionUnknown": "Cloud 可能已接受运行，但响应丢失。开始新运行前请检查 Cloud 历史记录。",
-      "checkCloud": "查看 Cloud",
-      "dismissUnknown": "返回输入",
-      "cancelRequested": "已请求取消。请在 Cloud 中查看最终运行状态。",
-      "signInAgain": "请重新登录以连接此运行。",
-      "accessDenied": "此账号已无法访问该工作区。请检查所选工作区。",
-      "definitionChanged": "工作流已更新。开始新运行前请重新加载页面。",
-      "runMissing": "当前账号和工作区无法访问此运行。",
-      "paused": "新工作流运行已暂时停用。你仍可查看或取消已有运行。",
-      "mediaUnavailable": "输入文件尚未上传完成或已不可用。请检查文件后重试。",
-      "deliveryFailed": "运行已完成，但部分输出未能送达。重试获取此运行的输出即可。",
       "retryDelivery": "重试获取输出",
+      "runMissing": "当前账号和工作区无法访问此运行。",
+      "runsCloud": "在 Comfy Cloud 上运行",
+      "runsOn": "运行于",
+      "runsOwn": "在你自己的部署上运行",
+      "sections": "工作流栏目",
+      "serverless": "无服务器 API",
+      "signInAgain": "请重新登录以连接此运行。",
       "storageFailed": "浏览器无法保存运行恢复信息。请允许此网站使用存储，然后重试。",
-      "connectionLost": "无法查看运行状态。请重新连接以获取最新状态。",
-      "lostContact": "此页面与运行失去了联系。它可能仍在 Cloud 上运行并消耗积分。请重新连接以查看最新状态。",
-      "browserUnavailable": "暂不支持从此页面运行工作流。",
-      "tryCloud": "在 Cloud 中体验",
-      "explore": "探索更多可能"
-    },
-    "catalogue": {
-      "apps": "应用",
-      "eyebrow": "Hub",
-      "categories": "分类",
-      "show": "浏览",
-      "workflowsSubtitle": "用由 AI 模型驱动的多步骤工作流，把你的想法变成完成的作品。",
-      "appsSubtitle": "用把多个工作流组合在一起的应用，挑战更大的想法。",
-      "noWorkflows": "没有符合搜索和筛选条件的工作流。",
-      "backToWorkflows": "返回工作流",
-      "allWorkflows": "全部工作流",
-      "browseAllWorkflows": "浏览全部工作流",
-      "searchWorkflows": "搜索工作流…",
-      "showWorkflows": "显示 {n} 个工作流",
-      "heading": "ComfyUI 模型",
-      "directory": "全部模型（按提供商）",
-      "directoryCount": "{count} 个模型"
-    },
-    "assets": {
-      "title": "你的素材",
-      "seeAll": "在云端查看全部",
-      "open": "打开已保存的素材",
-      "generating": "正在生成…",
-      "loadingMedia": "正在加载素材…",
-      "loadError": "无法加载你的素材。",
-      "previous": "上一个素材",
-      "next": "下一个素材",
-      "go": "显示第 {n} 个素材",
-      "notSaved": "这次生成未能保存到你的素材。结果在过期前仍然留在页面上。",
-      "cancelError": "无法请求取消。生成可能仍在进行。"
-    },
-    "cinematic": {}
-  },
-  "cinematic": {
-    "ux": {
-      "hub": "Hub · 应用标签页",
-      "app": "应用",
-      "heading": "评审布局",
-      "composer": "E · 底部输入栏",
-      "panel": "D · 侧边面板"
-    },
-    "hub": {
-      "eyebrow": "Hub",
-      "heading": "接下来你想创造什么？",
-      "subtitle": "模型、基于模型的工作流，以及为单一任务打造的应用。",
-      "tabs": "显示",
-      "models": "模型",
-      "workflows": "工作流",
-      "apps": "应用",
-      "appsIntro": "围绕一类工作打造的工具，为你运行模型和工作流。",
-      "elsewhere": "模型和工作流在新版 Hub 原型中。",
-      "openHub": "打开 Hub",
-      "beta": "测试版",
-      "studioSummary": "用真实的摄影机、光线与调色导演一个镜头，然后在任意图像模型上运行。",
-      "studioMeta": "图像 · 5 个模型",
-      "prototype": "原型",
-      "reshoot": "重拍视频",
-      "reshootSummary": "为你的片段重新架设机位，从新的角度生成这一场景。",
-      "reshootMeta": "视频 · MiniMax H3"
-    },
-    "stage": {
-      "longWait": "仍在进行。部分模型需要约一分钟。没有排队，你的任务已经开始。",
-      "generatingImage": "正在生成图像",
-      "generatingVideo": "正在生成视频",
-      "loadingTake": "正在加载镜头",
-      "again": "再生成一次",
-      "useAsReference": "用作参考",
-      "emptyTitle": "你的第一个镜头会显示在这里",
-      "emptyBody": "写下场景，设置导演选项，然后点击生成。",
-      "label": "镜头",
-      "rendering": "渲染中…",
-      "shot": "镜头 {number}",
-      "takes": "条数",
-      "download": "下载",
-      "sequence": "序列",
-      "takeName": "镜头 {shot}，第 {take} 条",
-      "renderingTakeName": "正在渲染镜头 {shot}，第 {take} 条"
-    },
-    "state": {
-      "failed": "这一条生成失败",
-      "blocked": "被模型的内容政策拦截",
-      "noCredits": "积分不足，无法生成这个镜头",
-      "cancelled": "你已停止这一条",
-      "tryOn": "换用 {model}",
-      "editScene": "修改场景"
-    },
-    "credits": {
-      "estimate": "约 {credits} 积分",
-      "perTake": "{takes} 条 × 约 {credits} 积分",
-      "varies": "费用不定",
-      "variesHint": "该模型暂无公开价格，每一条按模型实际计费扣除积分。",
-      "short": "{takes} 条需要约 {credits} 积分，你有 {balance} 积分。",
-      "shortOne": "1 条需要约 {credits} 积分，你有 {balance} 积分。",
-      "reduce": "改为 {takes} 条",
-      "reduceOne": "改为 1 条",
-      "skipped": "{total} 条中有 {failed} 条因积分不足未运行",
-      "retrySkipped": "立即运行"
-    },
-    "output": {
-      "checking": "检查中…",
-      "takes": "条数",
-      "fewerTakes": "减少条数",
-      "moreTakes": "增加条数",
-      "aspect": "画面比例",
-      "resolution": "分辨率",
-      "generate": "生成",
-      "cancel": "取消",
-      "unavailable": "此处暂不支持运行模型。"
-    },
-    "model": {
-      "degraded": "当前较慢",
-      "heading": "模型"
-    },
-    "picker": {
-      "close": "关闭"
-    },
-    "backToApps": "返回应用",
-    "panel": {
-      "label": "镜头设置",
-      "newShot": "新镜头"
-    },
-    "section": {
-      "output": "画幅",
-      "shot": "镜头",
-      "direction": "导演",
-      "scene": "场景",
-      "camera": "摄影机",
-      "references": "参考"
-    },
-    "scene": {
-      "placeholder": "描述这一刻：谁、在哪里、发生了什么。",
-      "enhance": "AI 提示词",
-      "enhanceHint": "在提示词中加入“电影静帧”描述"
-    },
-    "reference": {
-      "optional": "可选",
-      "cast": "角色",
-      "castAction": "添加角色参考",
-      "remove": "移除参考"
-    },
-    "title": "电影工作室",
-    "beta": "测试版",
-    "repo": {
-      "view": "在 GitHub 上查看",
-      "soon": "GitHub · 即将推出"
-    },
-    "meta": {
-      "description": "导演电影感静帧：选择摄影机、景别、光线、胶片与调色，然后通过 Comfy Router 运行任意图像模型。"
-    },
-    "unavailable": {
-      "title": "电影工作室尚未开放",
-      "link": "浏览模型"
-    },
-    "composer": {
-      "label": "导演镜头",
-      "references": "添加参考图",
-      "format": "画幅"
-    },
-    "firstRun": {
-      "body": "描述这一刻。选择摄影机、光线与风格。随时切换模型。",
-      "desert": "黎明时分独自穿越沙丘的骑手",
-      "portrait": "阴天码头上的老渔夫",
-      "train": "蓝调时刻的夜车车窗"
-    },
-    "lead": "执导每一个镜头。选择摄影机、镜头、光线与调色，用任意模型生成电影级画面。",
-    "camera": {
-      "body": "机身",
-      "lens": "镜头",
-      "focal": "焦距",
-      "aperture": "光圈"
-    },
-    "part": {
-      "shot": "景别",
-      "light": "光线",
-      "film": "胶片",
-      "look": "风格",
-      "grade": "调色"
-    },
-    "option": {
-      "auto": "自动",
-      "digital": "数字电影机",
-      "largeFormat": "大画幅",
-      "super35": "Super 35",
-      "film35": "35mm 胶片",
-      "film16": "16mm 胶片",
-      "handheld": "手持",
-      "prime": "球面定焦",
-      "anamorphic": "变形宽银幕",
-      "vintage": "复古镜头",
-      "macro": "微距",
-      "tiltShift": "移轴",
-      "mm14": "14mm",
-      "mm24": "24mm",
-      "mm35": "35mm",
-      "mm50": "50mm",
-      "mm85": "85mm",
-      "mm135": "135mm",
-      "f14": "f/1.4",
-      "f2": "f/2",
-      "f28": "f/2.8",
-      "f4": "f/4",
-      "f8": "f/8",
-      "extremeWide": "大远景",
-      "wide": "远景",
-      "medium": "中景",
-      "closeUp": "特写",
-      "extremeCloseUp": "大特写",
-      "overShoulder": "过肩镜头",
-      "lowAngle": "仰拍",
-      "goldenHour": "黄金时刻",
-      "overcast": "阴天",
-      "blueHour": "蓝调时刻",
-      "practicalNight": "实景夜光",
-      "neon": "霓虹",
-      "lowKey": "低调光",
-      "silhouette": "剪影",
-      "digitalClean": "纯净数字",
-      "tungsten500": "钨丝灯 500T",
-      "daylight250": "日光 250D",
-      "blackWhite400": "黑白 400",
-      "reversal": "反转片",
-      "expired": "过期胶片",
-      "bleachBypass": "漂白效果",
-      "neoNoir": "新黑色电影",
-      "western": "西部片",
-      "sciFi": "科幻",
-      "periodDrama": "年代剧",
-      "thriller": "惊悚片",
-      "documentary": "纪录片",
-      "roadMovie": "公路片",
-      "tealOrange": "青橙色调",
-      "noir": "黑白",
-      "kodachrome": "柯达克罗姆",
-      "neonNight": "霓虹之夜",
-      "desertDust": "沙漠尘土",
-      "nordicCold": "北欧冷调"
-    },
-    "aspect": {
-      "scope": "宽银幕",
-      "widescreen": "宽屏",
-      "academy": "学院比例",
-      "landscapePhoto": "横向照片",
-      "portraitPhoto": "纵向照片",
-      "square": "方形",
-      "vertical": "竖屏"
-    },
-    "video": {
-      "audioOn": "开启",
-      "audioOff": "关闭",
-      "enhanceHint": "在提示词中添加电影运镜和连续动作",
-      "mode": "创作类型",
-      "image": "图像",
-      "video": "视频",
-      "animate": "将图像转为视频",
-      "preview": "生成的视频",
-      "duration": "时长",
-      "audio": "生成音频",
-      "firstFrame": "起始帧",
-      "lastFrame": "结束帧",
-      "addFirstFrame": "添加起始帧",
-      "addLastFrame": "添加结束帧",
-      "uploadFrame": "上传图像",
-      "needFrame": "请为此模型添加起始帧。",
-      "oneClip": "每次请求生成一个片段。请在场景中描述动作和镜头运动。",
-      "start": "描述运动，选择视频模型，或将你的静帧转为视频。",
-      "frameError": "无法加载起始帧。请下载图像并在视频设置中上传。",
-      "frameLoading": "正在准备起始帧…",
-      "sourceVideo": "要编辑的视频",
-      "addSourceVideo": "添加要编辑的视频",
-      "noFirstFrame": "{model} 无法从图像开始。请移除该帧或选择其他模型。",
-      "needSourceVideo": "请先添加要编辑的视频。",
-      "audioTag": "音频",
-      "resolution": "分辨率",
-      "aspect": "画幅",
-      "modelDecides": "此模型自行决定时长和分辨率。",
-      "audioHint": "为片段添加声音。"
-    },
-    "references": {
-      "needsPicture": "{model} 需要图片本身，但此处无法读取该图片。请下载后通过 + 添加，或选择其他模型。",
-      "unreadable": "无法使用此图片。请下载后通过 + 添加。",
-      "unsupported": "{model} 无法使用参考图。请移除参考图或选择其他模型。"
-    },
-    "colors": {
-      "title": "颜色",
-      "color": "颜色",
-      "add": "添加颜色",
-      "remove": "移除颜色",
-      "makeMain": "设为主色",
-      "main": "主色",
-      "sampleError": "无法从该图片读取颜色。",
-      "clear": "清除颜色",
-      "shade": "饱和度与亮度",
-      "hue": "色相",
-      "hex": "十六进制颜色"
-    },
-    "grade": {
-      "fromImage": "来自图片",
-      "fromImageAction": "匹配图片的色彩",
-      "yourPalette": "你的色板",
-      "edit": "编辑色板",
-      "done": "完成"
+      "submissionUnknown": "Cloud 可能已接受运行，但响应丢失。开始新运行前请检查 Cloud 历史记录。",
+      "submitting": "正在提交工作流",
+      "templateBy": "模板作者：{author}",
+      "tryCloud": "在 Cloud 中试用",
+      "zoomIn": "放大",
+      "zoomOut": "缩小",
+      "zoomReset": "重置"
     }
   },
-  "reshoot": {
-    "title": "重拍视频",
-    "prototype": "原型",
-    "panel": "重拍设置",
-    "section": {
-      "video": "视频",
-      "camera": "新机位",
-      "move": "运镜",
-      "prompt": "新视角中出现的内容",
-      "format": "格式"
+  "vfx": {
+    "meta": {
+      "title": "Comfy 视觉特效 | 为制作流程打造的工作流",
+      "description": "探索天空替换、净板、减龄、遮罩与帧调整等视觉特效示例和可用的 ComfyUI 工作流。"
     },
-    "step": "第 {n} 步",
-    "step1": {
-      "label": "准备片段",
-      "hint": "选择片段、画面比例以及新视角要呈现的内容。深度只需分析一次，之后可自由取景。"
+    "hero": {
+      "heading": "用 Comfy 构建\n你的视觉特效流程。",
+      "subtitle": "从净板到天空替换，将复杂的镜头制作转化为团队可以查看、调整并重复使用的工作流。",
+      "explore": "探索特效工作流",
+      "contact": "联系我们的团队",
+      "videoLabel": "Comfy 精彩展示"
     },
-    "step2": {
-      "label": "设置机位并生成",
-      "hint": "拖动预览或使用控件，需要时添加关键帧运镜，然后生成。"
+    "examples": {
+      "heading": "看看你能做什么。",
+      "eyebrow": "视觉特效实践",
+      "sky": "替换天空，保留镜头。",
+      "skyDescription": "观看 Doug Hogan 在 ComfyUI 中构建天空替换工作流，了解每一步，并将工作流应用于自己的素材。",
+      "clean": "从干净的底板开始。",
+      "cleanDescription": "探索净板工作流，了解 ComfyUI 如何用于镜头清理。在将其引入自己的制作流程前，先跟随教程学习。"
     },
-    "continue": "继续",
-    "back": "返回片段",
-    "edit": "编辑",
-    "credit": "基于 Cseti 的 CrossView-Warp LoRA 与节点",
-    "pick": {
-      "lead": "从任意角度重拍任意视频。机位随心移动，无需补拍。",
-      "drop": "将视频拖到这里",
-      "upload": "上传视频",
-      "exampleMeta": "无需上传即可试用",
-      "exampleTitle": "科幻飞行员"
+    "workflows": {
+      "heading": "热门 VFX 工作流",
+      "description": "探索 Comfy 社区热门视觉特效工作流。打开工作流，开始创作。",
+      "tag": "观看教程并打开工作流",
+      "tryNow": "立即试用",
+      "browse": "浏览全部 VFX 工作流",
+      "featured": "精选工作流",
+      "storyboard": "从故事板到 Seedance",
+      "storyboarding": "故事板"
     },
-    "aim": {
-      "globe": "围绕片段拖动机位 · 滚动以靠近",
-      "more": "更多：镜头、高度、保持朝向",
-      "less": "收起",
-      "reading": "正在读取场景"
+    "why": {
+      "heading": "你的流程。\n你的掌控。",
+      "subtitle": "围绕团队的工作方式构建。",
+      "1": {
+        "title": "查看每一步",
+        "description": "在节点式工作流中连接模型与处理步骤。了解结果的生成过程，再调整镜头所需的部分。"
+      },
+      "2": {
+        "title": "复用有效的流程",
+        "description": "保存工作流，并将其调整用于下一个镜头。为艺术家和技术指导提供可重复使用的共同起点。"
+      },
+      "3": {
+        "title": "选择运行方式",
+        "description": "在本地或 Comfy Cloud 中工作。若有工作室部署需求，请与我们的团队讨论托管构建。"
+      }
     },
-    "axis": {
-      "rotation": "旋转",
-      "tilt": "俯仰",
-      "lens": "镜头",
-      "height": "高度",
-      "azimuth": "水平角",
-      "elevation": "俯仰角",
-      "distance": "距离",
-      "fov": "镜头视角",
-      "shift": "垂直位移"
+    "proof": {
+      "heading": "看看创意团队如何使用 Comfy",
+      "title": "走进 Black Math 的创意系统",
+      "description": "Black Math 的艺术家与技术指导分享如何构建可扩展的创意系统，同时让团队掌握艺术指导。"
     },
-    "view": {
-      "result": "结果",
-      "warp": "变形引导",
-      "source": "原片"
+    "contact": {
+      "heading": "将 Comfy 引入工作室的制作流程。",
+      "button": "联系我们的团队",
+      "models": "了解企业方案"
     },
-    "views": "显示",
-    "sound": {
-      "label": "声音",
-      "generated": "生成的声音",
-      "original": "原始音频"
+    "faq": {
+      "heading": "视觉特效常见问题",
+      "1": {
+        "q": "可以将这些工作流用于自己的素材吗？",
+        "a": "可以。先观看关联教程，打开工作流，然后将示例输入替换为自己的素材。在将输出用于制作前，请检查模型与设置。"
+      },
+      "2": {
+        "q": "在哪里打开工作流？",
+        "a": "每张工作流卡片都会打开 Comfy Hub 中对应的页面，你可以在运行前查看工作流及其要求。"
+      },
+      "3": {
+        "q": "团队可以在本地运行 Comfy 吗？",
+        "a": "可以。ComfyUI 是开源的，可以在本地运行。硬件要求取决于选择的模型与工作流。也可以使用 Comfy Cloud 运行工作流。"
+      },
+      "4": {
+        "q": "如何讨论工作室部署？",
+        "a": "向我们的团队介绍你的部署要求。我们可以讨论托管构建、算力、模型商业条款和实施支持。"
+      },
+      "5": {
+        "q": "这些模型可以商用吗？",
+        "a": "Cloud 上的每个模型均已获得商业使用授权。本地模型的授权因提供商而异。Comfy 提供 MiniMax 商业授权；可与我们的团队讨论本地使用条款。"
+      }
+    }
+  },
+  "vfxV2": {
+    "comfy": {
+      "badge": "视觉特效",
+      "heroTitle": "为制作流程而构建的\n视觉特效工作流。",
+      "heroDescription": "在可查看、可扩展的工作流中移除物体、制作遮罩、重塑视频风格并提升镜头分辨率。在本地运行 ComfyUI，或接入现有制作流程。",
+      "primaryCta": "探索特效工作流",
+      "contactHeading": "将 Comfy 接入工作室制作流程。",
+      "contactButton": "联系 COMFY"
     },
-    "warpNote": "真实运行时这里显示变形引导：片段被推到新机位，洋红色为需要生成的部分。",
-    "seed": {
-      "label": "种子",
-      "random": "随机",
-      "help": "留空则每次生成使用新的种子；输入数字即可固定。"
+    "shared": {
+      "secondaryCta": "了解制作方式"
     },
-    "prompt": {
-      "dialogue": "模型也会生成新的音频：如果视频中有对白，请在这里写下台词，新生成的内容会更好地保留它们。",
-      "placeholder": "例如：她身后是一面石墙，左边有更多麦田"
+    "proof": {
+      "label": "特效工作流实例",
+      "upscale": "镜头超分辨率",
+      "upscaleDescription": "对比原始画面与提升分辨率后的结果。",
+      "cleanplate": "物体移除",
+      "cleanplateDescription": "遮罩目标物体，通过 LTX 重建背景净板。",
+      "restyling": "视频风格重塑",
+      "restylingDescription": "探索已发布的 MiniMax 视频风格重塑工作流。",
+      "compareHint": "移动分隔线，对比处理前后的效果。",
+      "demoLabel": "已发布的工作流示例"
     },
-    "clip": {
-      "length": "该片段长 {seconds} 秒，请使用 5 到 15 秒的片段。",
-      "change": "更换",
-      "ready": "场景已读取",
-      "yours": "你的片段",
-      "example": "示例",
-      "replace": "选择其他片段",
-      "help": "5–15 秒，主体清晰，无黑边",
-      "rejected": "{name} 长 {seconds} 秒，当前片段保持不变。请选择 5 到 15 秒的片段。"
+    "workflows": {
+      "heading": "下一个镜头的工作流起点。",
+      "description": "打开节点图，查看各个步骤，并根据你的素材进行调整。",
+      "featured": "精选视觉特效工作流"
     },
-    "reuse": "再次使用此机位",
-    "generate": {
-      "note": "生成期间可以继续调整机位。",
-      "wait": "正在读取场景 · 约 20 到 40 秒",
-      "label": "生成"
+    "pipeline": {
+      "heading": "融入工作室的制作方式。",
+      "1": {
+        "title": "工作站与渲染基础设施",
+        "description": "在自有硬件上运行 ComfyUI。与技术团队一起规划共享基础设施和部署方式。"
+      },
+      "2": {
+        "title": "在节点图中掌控流程",
+        "description": "查看模型、遮罩、参数和处理步骤。随着镜头需求变化，持续调整工作流。"
+      },
+      "3": {
+        "title": "API 与 SDK",
+        "description": "通过代码运行工作流节点图，并接入现有工具。Comfy SDK 可用于 Cloud 或自行托管的 ComfyUI。"
+      },
+      "4": {
+        "title": "自定义节点与 DCC 工具",
+        "description": "通过自定义节点和社区集成扩展制作流程。根据工作室的工具与要求评估每项集成。"
+      },
+      "download": "在本地运行 COMFYUI",
+      "sdk": "了解 SDK",
+      "platform": "开发者平台"
     },
-    "expand": "全屏",
-    "collapse": "退出全屏",
-    "sample": {
-      "street": "夜晚街道",
-      "diner": "餐馆对话",
-      "train": "火车车窗",
-      "meta": "示例"
+    "learning": {
+      "heading": "深入了解工作流。",
+      "description": "准备开始制作时，可跟随净板和天空替换教程逐步操作。"
     },
-    "nudge": {
-      "up": "机位升高",
-      "down": "机位降低",
-      "left": "机位向左",
-      "right": "机位向右"
-    },
-    "dolly": {
-      "in": "机位靠近",
-      "out": "机位远离"
-    },
-    "advanced": {
-      "label": "高级",
-      "value": "提示词、对白、种子"
-    },
-    "distanceHelp": "距离只是近似值，角度的控制最精确。",
-    "keepAimHelp": "围绕主体移动，但保持原片的朝向，与训练数据一致。",
-    "promptHelp": "描述原机位未拍到的区域应填充什么内容。",
-    "generatingHelp": "闲置一段时间后的首次运行还需要加载模型。",
-    "take": {
-      "exampleHelp": "示例结果：该片段以 768p 从新角度重拍。设置你自己的机位试试。",
-      "aim": "取景",
-      "example": "示例结果",
-      "static": "第 {n} 条 · 水平 {az}° 俯仰 {el}°",
-      "move": "第 {n} 条 · 运镜，{keys} 个关键帧",
-      "cancelled": "已取消",
-      "failed": "此镜头生成失败"
-    },
-    "frames": "{frames} 帧，24 fps（{seconds} 秒）",
-    "speed": {
-      "480p": "更快",
-      "768p": "更清晰"
-    },
-    "empty": {
-      "title": "新机位的画面将在这里播放",
-      "hint": "先选一段 5 到 15 秒的片段，或挑一个示例。"
-    },
-    "optional": "可选",
-    "aspect": {
-      "label": "画面比例",
-      "source": "与原片一致"
-    },
-    "size": {
-      "label": "输出尺寸",
-      "480p": "0.4 MP · 864×480 · 更快",
-      "768p": "1.0 MP · 1376×768 · 更清晰，更慢"
-    },
-    "keepAim": "保持原机位的朝向",
-    "zone": {
-      "green": "在 LoRA 验证过的范围内。",
-      "yellow": "训练过，但不太稳定。",
-      "red": "超出训练范围，看不到的一面将由模型想象。"
-    },
-    "dragHint": {
-      "label": "拖动以环绕 · 滚动以靠近",
-      "touch": "拖动以环绕"
-    },
-    "needsDepth": "分析深度后即可设置新机位。",
-    "stale": "画面比例或尺寸已更改，需要重新分析深度。",
-    "move": {
-      "static": "固定机位",
-      "keys": "{count} 个关键帧",
-      "help": "拖动预览下方的时间轴，调整机位，按“关键帧”。两个以上的关键帧构成运镜；第一个之前和最后一个之后机位保持不动。在关键帧上调整机位会直接修改它。",
-      "frame": "帧",
-      "key": "关键帧",
-      "remove": "删除 {time} 处的关键帧",
-      "clear": "清除关键帧",
-      "motion": "运动曲线",
-      "unkey": "删除关键帧",
-      "noKeys": "没有关键帧：整个片段使用同一机位。设置两个关键帧即可形成运镜。",
-      "oneKey": "一个关键帧会让机位固定在此。再设置一帧即可形成运镜。",
-      "goTo": "跳到 {time} 处的关键帧"
-    },
-    "motion": {
-      "linear": "线性",
-      "ease_in": "缓入",
-      "ease_out": "缓出",
-      "ease_in_out": "缓入缓出",
-      "smooth": "平滑样条"
-    },
-    "analyzing": "正在估算深度…",
-    "cancel": "取消",
-    "generating": "正在生成新视角",
-    "takes": "镜头",
-    "download": "下载",
-    "stage": {
-      "starting": "正在启动服务器",
-      "queued": "正在等待服务器",
-      "uploading": "正在上传片段",
-      "queuedAt": "排队中 · 第 {n} 位",
-      "fetching": "正在获取结果"
-    },
-    "signIn": "登录后即可读取场景。",
-    "unavailable": "重拍功能暂不可用，请稍后再试。",
-    "quote": {
-      "free": "免费 · {period}剩余 {left}/{runs} 次",
-      "freeOnly": "免费",
-      "paid": "{price} 积分",
-      "perSecond": "每秒 {rate} 积分",
-      "failed": "暂时无法获取价格，正在重试…",
-      "priceUnknown": "暂无价格",
-      "exhausted": "免费次数已用完，下一次{when}可用",
-      "later": "稍后"
-    },
-    "period": {
-      "day": "今天",
-      "week": "本周",
-      "days": "每 {n} 天",
-      "hours": "每 {n} 小时"
-    },
-    "error": {
-      "busy": "一次只能生成一条镜头，请等待当前镜头完成。",
-      "rateLimited": "尝试次数过多，请{when}再试。",
-      "failed": "出了点问题，请重试。"
-    },
-    "demoNote": "预览版：目前镜头播放示例结果。",
-    "clipLength": "此片段时长 {seconds} 秒，请使用 5 到 15 秒的片段。",
-    "failed": "出现问题",
-    "tryAgain": "重试",
-    "noWebgl": "此预览需要 WebGL2，当前浏览器不支持。",
-    "play": "播放",
-    "pause": "暂停"
+    "production": {
+      "eyebrow": "MANAGED BUILDS",
+      "heading": "统一的已批准环境。\n供整个团队使用。",
+      "body": "固定 ComfyUI 版本、节点、模型和依赖。无论在哪里制作，团队都能使用一致的构建环境。",
+      "features": {
+        "1": "私有节点与模型",
+        "2": "支持的服务商密钥与现有合同",
+        "3": "通过公司身份分配构建环境"
+      },
+      "releasesLabel": "COMFYUI 版本",
+      "environmentsLabel": "PYTHON · PYTORCH · CUDA",
+      "nodesLabel": "自定义节点",
+      "modelsLabel": "模型",
+      "privateNodes": "studio-nodes（私有）",
+      "privateModel": "brand-lora（私有）",
+      "pinnedLabel": "已固定",
+      "moreOptionsLabel": "更多选项",
+      "nodesUnit": "个节点",
+      "modelsUnit": "个模型",
+      "cta": "讨论 MANAGED BUILDS",
+      "detailsHeading": "需要时，再了解\n制作细节。",
+      "details": {
+        "licensing": {
+          "question": "模型许可与商业使用",
+          "answer": "查看 MiniMax 商业许可方案，并向 Comfy 咨询其他本地模型的服务商条款。模型使用权取决于具体模型和用途。"
+        },
+        "capacity": {
+          "question": "部署、容量与支持",
+          "answer": "讨论 Cloud、开发者平台或自有基础设施方案。专用容量、入驻支持、技术支持和响应承诺将在企业协议中明确。"
+        },
+        "security": {
+          "question": "身份管理与安全审查",
+          "answer": "与 Comfy 讨论公司身份、已批准构建的访问权限、私有素材和工作室安全要求。围绕部署方案确定审查范围。"
+        }
+      },
+      "enterprise": "查看企业方案详情",
+      "licensing": "MINIMAX 许可"
+    }
   }
 }

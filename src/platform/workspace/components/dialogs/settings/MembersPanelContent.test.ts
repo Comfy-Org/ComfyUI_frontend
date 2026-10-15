@@ -1,8 +1,7 @@
-import { render, screen, within } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Slots } from 'vue'
-import { computed, h, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import MembersPanelContent from './MembersPanelContent.vue'
@@ -11,6 +10,9 @@ import type {
   WorkspacePendingInvite,
   WorkspaceMember
 } from '../../../stores/teamWorkspaceStore'
+
+const mockDistribution = vi.hoisted(() => ({ isCloud: true }))
+vi.mock(import('@/platform/distribution/types'), () => mockDistribution)
 
 const mockHandleResendInvite = vi.fn()
 const mockHandleRevokeInvite = vi.fn()
@@ -29,14 +31,12 @@ const {
   mockMaxSeats,
   mockIsInPersonalWorkspace,
   mockHasTeamPlan,
-  mockHasLapsedTeamPlan,
   mockIsPlanLoading,
   mockIsOnTeamPlan,
   mockHasMultipleMembers,
   mockShowSearch,
   mockShowViewTabs,
   mockShowInviteButton,
-  mockIsInviteDisabled,
   mockActiveView,
   mockSearchQuery,
   mockMembersLoaded,
@@ -59,7 +59,6 @@ const {
     mockShowSearch: ref(true),
     mockShowViewTabs: ref(true),
     mockShowInviteButton: ref(true),
-    mockIsInviteDisabled: ref(false),
     mockIsPlanEnded: ref(false),
     mockIsSalesManagedPlan: ref(false),
     mockIsEnterprisePlanStrict: ref(false),
@@ -68,7 +67,6 @@ const {
     mockMaxSeats: ref<number | null>(20),
     mockIsInPersonalWorkspace: ref(false),
     mockHasTeamPlan: ref(true),
-    mockHasLapsedTeamPlan: ref(false),
     mockIsPlanLoading: ref(false),
     mockIsOnTeamPlan: ref(true),
     mockActiveView: ref<'active' | 'pending'>('active'),
@@ -114,16 +112,13 @@ vi.mock<unknown>(
       ),
       isPlanLoading: mockIsPlanLoading,
       isOnTeamPlan: mockIsOnTeamPlan,
-      hasLapsedTeamPlan: mockHasLapsedTeamPlan,
       hasMultipleMembers: mockHasMultipleMembers,
       showSearch: mockShowSearch,
       showViewTabs: mockShowViewTabs,
       showInviteButton: mockShowInviteButton,
-      isInviteDisabled: mockIsInviteDisabled,
       isPlanEnded: mockIsPlanEnded,
       isSalesManagedPlan: mockIsSalesManagedPlan,
       isEnterprisePlan: mockIsEnterprisePlanStrict,
-      inviteTooltip: computed(() => null),
       handleInviteMember: mockHandleInviteMember,
       personalWorkspaceMember: computed(() => ({
         id: 'self',
@@ -178,11 +173,6 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/components/button/MoreButton.vue'), () => ({
-  default: (_: unknown, { slots }: { slots: Slots }) =>
-    h('div', slots.default?.({ close: () => {} }))
-}))
-
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -215,8 +205,7 @@ function renderComponent() {
           name: 'WorkspaceMenuButton',
           template: '<button aria-label="workspace-menu-stub" />'
         }
-      },
-      directives: { tooltip: () => {} }
+      }
     }
   })
 }
@@ -259,14 +248,12 @@ describe('MembersPanelContent', () => {
     mockMaxSeats.value = 20
     mockIsInPersonalWorkspace.value = false
     mockHasTeamPlan.value = true
-    mockHasLapsedTeamPlan.value = false
     mockIsPlanLoading.value = false
     mockIsOnTeamPlan.value = true
     mockHasMultipleMembers.value = true
     mockShowSearch.value = true
     mockShowViewTabs.value = true
     mockShowInviteButton.value = true
-    mockIsInviteDisabled.value = false
     mockIsPlanEnded.value = false
     mockIsSalesManagedPlan.value = false
     mockIsEnterprisePlanStrict.value = false
@@ -307,7 +294,6 @@ describe('MembersPanelContent', () => {
       mockHasMultipleMembers.value = false
       mockShowSearch.value = false
       mockShowViewTabs.value = false
-      mockIsInviteDisabled.value = true
       mockUiConfig.value.showMembersList = false
       mockUiConfig.value.showSearch = false
       mockUiConfig.value.showPendingTab = false
@@ -334,6 +320,38 @@ describe('MembersPanelContent', () => {
       renderComponent()
       expect(screen.queryByRole('textbox')).toBeNull()
     })
+
+    it.for([
+      { name: 'active', isPlanEnded: false, isSalesManagedPlan: false },
+      {
+        name: 'ended self-serve',
+        isPlanEnded: true,
+        isSalesManagedPlan: false
+      },
+      {
+        name: 'ended sales-managed',
+        isPlanEnded: true,
+        isSalesManagedPlan: true
+      }
+    ])(
+      'pitches the Team plan whatever the plan state ($name)',
+      async ({ isPlanEnded, isSalesManagedPlan }) => {
+        mockIsPlanEnded.value = isPlanEnded
+        mockIsSalesManagedPlan.value = isSalesManagedPlan
+        renderComponent()
+
+        expect(
+          screen.getByText('workspacePanel.members.upsellBanner')
+        ).toBeTruthy()
+        expect(screen.queryByText(/workspacePanel\.members\.ended/)).toBeNull()
+        await userEvent.click(
+          screen.getByRole('button', {
+            name: /workspacePanel\.members\.upgradeToTeam/
+          })
+        )
+        expect(mockShowTeamPlans).toHaveBeenCalled()
+      }
+    )
   })
 
   describe('pending invite counts', () => {
@@ -368,6 +386,45 @@ describe('MembersPanelContent', () => {
 
       expect(screen.queryByLabelText('workspace-menu-stub')).toBeNull()
     })
+
+    it.for([
+      { maxSeats: 1, ended: false },
+      { maxSeats: 73, ended: true }
+    ])(
+      'renders the returned roster without management ($maxSeats seats, ended: $ended)',
+      ({ maxSeats, ended }) => {
+        mockMaxSeats.value = maxSeats
+        mockIsPlanEnded.value = ended
+        mockIsInPersonalWorkspace.value = true
+        mockPermissions.value.canViewOtherMembers = true
+        mockPermissions.value.canManageMembers = false
+        mockPermissions.value.canViewPendingInvites = false
+        mockShowViewTabs.value = false
+        mockUiConfig.value.showRoleColumn = true
+        mockUiConfig.value.showPendingTab = false
+        mockFilteredMembers.value = [
+          createMember({
+            id: 'self',
+            name: 'Owner User',
+            email: 'owner@example.com'
+          }),
+          createMember({ id: 'alice', name: 'Alice' }),
+          createMember({ id: 'bob', name: 'Bob' })
+        ]
+
+        renderComponent()
+
+        expect(screen.getByText('Owner User')).toBeInTheDocument()
+        expect(screen.getByText('Alice')).toBeInTheDocument()
+        expect(screen.getByText('Bob')).toBeInTheDocument()
+        expect(
+          screen.getByText('workspacePanel.members.columns.role')
+        ).toBeInTheDocument()
+        expect(
+          screen.queryByRole('button', { name: /Pending/ })
+        ).not.toBeInTheDocument()
+      }
+    )
 
     it('keeps rendering members while seat capacity is unresolved', () => {
       mockMaxSeats.value = null
@@ -456,6 +513,21 @@ describe('MembersPanelContent', () => {
   })
 
   describe('pending invites tab', () => {
+    it('hides loaded pending invites when permission is revoked', async () => {
+      mockActiveView.value = 'pending'
+      mockFilteredPendingInvites.value = [createInvite()]
+      renderComponent()
+      expect(screen.getByText('invitee@example.com')).toBeInTheDocument()
+
+      mockPermissions.value.canViewPendingInvites = false
+
+      await waitFor(() =>
+        expect(
+          screen.queryByText('invitee@example.com')
+        ).not.toBeInTheDocument()
+      )
+    })
+
     it('shows pending tab button when configured', () => {
       mockPendingInvites.value = [createInvite({ token: 'tok-1' })]
       renderComponent()
@@ -467,7 +539,10 @@ describe('MembersPanelContent', () => {
       mockFilteredPendingInvites.value = [createInvite({ id: 'inv-42' })]
       renderComponent()
       await userEvent.click(
-        screen.getByRole('button', {
+        screen.getByRole('button', { name: 'g.moreOptions' })
+      )
+      await userEvent.click(
+        screen.getByRole('menuitem', {
           name: 'workspacePanel.members.actions.cancelInvite'
         })
       )
@@ -481,7 +556,10 @@ describe('MembersPanelContent', () => {
       mockFilteredPendingInvites.value = [createInvite({ id: 'inv-42' })]
       renderComponent()
       await userEvent.click(
-        screen.getByRole('button', {
+        screen.getByRole('button', { name: 'g.moreOptions' })
+      )
+      await userEvent.click(
+        screen.getByRole('menuitem', {
           name: 'workspacePanel.members.actions.resendInvite'
         })
       )
@@ -547,7 +625,6 @@ describe('MembersPanelContent', () => {
 
     it('does not show a reactivate action for a lapsed Team plan', () => {
       mockHasTeamPlan.value = true
-      mockHasLapsedTeamPlan.value = true
       mockIsOnTeamPlan.value = false
       renderComponent()
 
@@ -559,16 +636,28 @@ describe('MembersPanelContent', () => {
     })
   })
 
-  it('renders fetched personal members while seat capacity is unresolved', () => {
-    mockIsInPersonalWorkspace.value = true
-    mockMaxSeats.value = null
-    mockFilteredMembers.value = [createMember({ name: 'Alice' })]
+  it.for([
+    { maxSeats: null, upsells: 0 },
+    { maxSeats: 1, upsells: 1 }
+  ])(
+    'renders fetched personal members with seat limit $maxSeats',
+    ({ maxSeats, upsells }) => {
+      mockIsInPersonalWorkspace.value = true
+      mockMaxSeats.value = maxSeats
+      mockFilteredMembers.value = [
+        createMember({ id: 'alice', name: 'Alice' }),
+        createMember({ id: 'bob', name: 'Bob' })
+      ]
 
-    renderComponent()
+      renderComponent()
 
-    expect(screen.getByText('Alice')).toBeTruthy()
-    expect(screen.queryByText('workspacePanel.members.upsellBanner')).toBeNull()
-  })
+      expect(screen.getByText('Alice')).toBeTruthy()
+      expect(screen.getByText('Bob')).toBeTruthy()
+      expect(
+        screen.queryAllByText('workspacePanel.members.upsellBanner')
+      ).toHaveLength(upsells)
+    }
+  )
 
   describe('ended treatment gate (DES-1200)', () => {
     it('shows the resume banner once a team plan has ended', () => {
@@ -824,6 +913,16 @@ describe('MembersPanelContent', () => {
       expect(screen.getByText('No members match "nobody"')).toBeInTheDocument()
     })
 
+    it('shows no-match copy for personal workspaces with several members and one seat', () => {
+      mockIsInPersonalWorkspace.value = true
+      mockMaxSeats.value = 1
+      mockHasMultipleMembers.value = true
+      mockMembers.value = [createMember({ id: '1' }), createMember({ id: '2' })]
+      mockSearchQuery.value = 'nobody'
+      renderComponent()
+      expect(screen.getByText('No members match "nobody"')).toBeInTheDocument()
+    })
+
     it('names the query when no invite matches the search', () => {
       mockActiveView.value = 'pending'
       mockSearchQuery.value = 'nobody'
@@ -834,6 +933,7 @@ describe('MembersPanelContent', () => {
     it('shows the personal row instead of empty copy on a single-seat plan', () => {
       mockMaxSeats.value = 1
       mockIsInPersonalWorkspace.value = true
+      mockHasMultipleMembers.value = false
       renderComponent()
       expect(screen.getByText('Owner User')).toBeInTheDocument()
       expect(screen.queryByText('No members')).not.toBeInTheDocument()
@@ -907,16 +1007,19 @@ describe('MembersPanelContent', () => {
       ).toBeNull()
     })
 
-    it('disables the invite button when gated', () => {
-      mockIsInviteDisabled.value = true
+    it('hides the Active tab when there is no Pending tab to switch to', () => {
+      mockUiConfig.value = { ...mockUiConfig.value, showPendingTab: false }
       renderComponent()
-      const button = screen.getByRole('button', {
-        name: 'workspacePanel.inviteMember'
-      })
-      expect((button as HTMLButtonElement).disabled).toBe(true)
+      expect(
+        screen.queryByText('workspacePanel.members.tabs.active')
+      ).toBeNull()
+      expect(
+        screen.getByText('workspacePanel.members.columns.role')
+      ).toBeInTheDocument()
     })
 
     it('hides the view tabs for a lone owner', () => {
+      mockHasMultipleMembers.value = false
       mockShowViewTabs.value = false
       renderComponent()
       expect(
