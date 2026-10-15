@@ -177,6 +177,12 @@ function followLatestAfterResize(): void {
 useResizeObserver(content, followLatestAfterResize)
 useResizeObserver(scrollContainer, followLatestAfterResize)
 
+const showLatest = computed(
+  () =>
+    followIntent.value === 'reading' ||
+    (followIntent.value === 'paused' && !atBottom.value)
+)
+
 const latestContentSignal = computed(() => {
   const last = entries.at(-1)
   if (!last || !('parts' in last)) return `${entries.length}`
@@ -289,9 +295,7 @@ watch(
     </div>
 
     <Button
-      v-if="
-        followIntent === 'reading' || (followIntent === 'paused' && !atBottom)
-      "
+      v-if="showLatest"
       :tooltip="t('agent.latest')"
       type="button"
       variant="secondary"
