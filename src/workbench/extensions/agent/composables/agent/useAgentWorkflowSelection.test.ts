@@ -61,7 +61,6 @@ function setup() {
     filename: 'current',
     isTemporary: false
   })
-  current.load = vi.fn(async () => current)
   workflows.attachWorkflow(current)
   workflows.openWorkflowsInBackground({ right: [current.path] })
   workflows.activeWorkflow = current
