@@ -87,6 +87,7 @@ describe('useAgentCrdtFollower over a live graph', () => {
         v: 1,
         workflow_id: WORKFLOW_ID,
         seq: 1,
+        lineage_seq: 1,
         update_b64: encodeBase64(Y.encodeStateAsUpdate(host))
       })
 
@@ -138,6 +139,7 @@ describe('useAgentCrdtFollower over a live graph', () => {
         v: 1,
         workflow_id: WORKFLOW_ID,
         seq: 1,
+        lineage_seq: 1,
         update_b64: DOC_HOST_MINTED_SINK_UPDATE_B64
       })
       await nextTick()

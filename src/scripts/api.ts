@@ -24,6 +24,7 @@ import {
 import { scopeMediaRoute } from '@/platform/auth/session/sessionMediaUrl'
 import { webSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import { FETCH_RESPONSE_HEADERS_TIMEOUT_MS } from '@/scripts/apiTimeouts'
+import type { PendingIngestClientDocFrame } from '@/scripts/apiDocFrames'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 import type {
@@ -800,6 +801,31 @@ export class ComfyApi extends EventTarget {
       this.getWrappedListener(callback as EventListener),
       options
     )
+  }
+
+  sendDocFrame(frame: PendingIngestClientDocFrame): boolean {
+    if (this.socket?.readyState !== WebSocket.OPEN) return false
+    let serialized: string
+    try {
+      serialized = JSON.stringify(frame)
+    } catch {
+      reportError(new Error('Failed to serialize agent document frame'), {
+        surface: 'agent',
+        errorType: 'failure_sending_agent_doc_frame'
+      })
+      return false
+    }
+    this.socket.send(serialized)
+    return true
+  }
+
+  registerFrameHandler(
+    type: string,
+    handler: (data: unknown) => void
+  ): () => void {
+    const listener = (event: CustomEvent<unknown>) => handler(event.detail)
+    this.addCustomEventListener(type, listener)
+    return () => this.removeCustomEventListener(type, listener)
   }
 
   addCustomEventListener(
