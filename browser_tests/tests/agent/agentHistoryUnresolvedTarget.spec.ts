@@ -14,27 +14,24 @@ test.describe(
       page,
       unresolvedHistory
     }) => {
-      const { posted, chosenId } = unresolvedHistory
+      const { posted, chosenId, chatTitle, earlierPrompt } = unresolvedHistory
       const agentPanel = new AgentPanel(page)
       const panel = await agentPanel.open()
       const topbar = new Topbar(page)
       await expect(topbar.getActiveTab()).toHaveText('Unsaved Workflow')
-      const originalGraph = await page.evaluate(() =>
-        window.app!.graph.serialize()
-      )
+      const serializeGraph = () =>
+        page.evaluate(() => window.app!.graph.serialize())
+      const originalGraph = await serializeGraph()
 
       await test.step('open the chat from History', async () => {
         await panel
           .getByRole('button', { name: enMessages.agent.showChatHistory })
           .click()
         await panel
-          .getByRole('button', {
-            name: 'Unresolved workflow chat',
-            exact: true
-          })
+          .getByRole('button', { name: chatTitle, exact: true })
           .click()
         await expect(panel.getByTestId('user-message-bubble')).toHaveText([
-          'Earlier prompt'
+          earlierPrompt
         ])
         await expect(
           panel.getByRole('heading', { name: enMessages.agent.history })
@@ -46,9 +43,7 @@ test.describe(
           panel.getByText(enMessages.agent.targetWorkflowUnavailable)
         ).toBeHidden()
         await expect(topbar.tabs).toHaveCount(1)
-        expect(
-          await page.evaluate(() => window.app!.graph.serialize())
-        ).toEqual(originalGraph)
+        expect(await serializeGraph()).toEqual(originalGraph)
       })
 
       await test.step('send waits for a workflow pick', async () => {
@@ -56,9 +51,7 @@ test.describe(
         await expect(
           page.getByPlaceholder(enMessages.agent.searchWorkflows)
         ).toBeVisible()
-        expect(
-          await page.evaluate(() => window.app!.graph.serialize())
-        ).toEqual(originalGraph)
+        expect(await serializeGraph()).toEqual(originalGraph)
         await page.keyboard.press('Escape')
         await expect(agentPanel.composer).toHaveText(
           'Continue in my chosen workflow'
@@ -69,7 +62,7 @@ test.describe(
         await agentPanel.selectWorkflow()
         await agentPanel.sendButton.click()
         await expect(panel.getByTestId('user-message-bubble')).toHaveText([
-          'Earlier prompt',
+          earlierPrompt,
           'Continue in my chosen workflow'
         ])
         expect(posted).toEqual([

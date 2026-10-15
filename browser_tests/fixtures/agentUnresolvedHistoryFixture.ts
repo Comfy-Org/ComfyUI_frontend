@@ -14,13 +14,20 @@ import {
 import { createAgentSavedChat } from '@e2e/fixtures/data/agent/agentSavedChat'
 
 export const agentUnresolvedHistoryTest = agentTest.extend<{
-  unresolvedHistory: { posted: AgentPostMessageRequest[]; chosenId: string }
+  unresolvedHistory: {
+    posted: AgentPostMessageRequest[]
+    chosenId: string
+    chatTitle: string
+    earlierPrompt: string
+  }
 }>({
   unresolvedHistory: async ({ page, agentFlagEnabled }, use) => {
     const threadId = 'e7b827c1-c5f8-4f92-9a37-5b7e41a03d18'
     const unresolvedId = 'df3a6e91-832d-44d2-a990-c8b1a7c99421'
     const chosenId = 'ba817a93-218d-4167-a13b-2aae419302e2'
     const at = '2026-10-01T12:00:00Z'
+    const chatTitle = 'Unresolved workflow chat'
+    const earlierPrompt = 'Earlier prompt'
     const accepted: AgentTurnAccepted = {
       thread_id: threadId,
       message_id: 'd079c950-fc47-44ab-93ea-8397ad8e55b5',
@@ -29,8 +36,8 @@ export const agentUnresolvedHistoryTest = agentTest.extend<{
     const savedChat = createAgentSavedChat({
       threadId,
       workflowId: unresolvedId,
-      title: 'Unresolved workflow chat',
-      prompt: 'Earlier prompt'
+      title: chatTitle,
+      prompt: earlierPrompt
     })
     const listedWorkflows: WorkflowListResponse['data'] = [
       {
@@ -48,6 +55,6 @@ export const agentUnresolvedHistoryTest = agentTest.extend<{
         mockWorkflowPersistence(page, chosenId, listedWorkflows)
     })
 
-    await use({ posted, chosenId })
+    await use({ posted, chosenId, chatTitle, earlierPrompt })
   }
 })
