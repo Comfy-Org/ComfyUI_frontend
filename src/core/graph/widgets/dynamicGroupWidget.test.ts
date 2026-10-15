@@ -464,12 +464,41 @@ describe('DynamicGroup widgets', () => {
   )
 
   it('removes a field promoted through two boundaries when its row is removed', async () => {
-    const { widget, innerHost, outerInput } = setupTwiceDeepPromotion()
+    const { widget, innerHost, outerHost, outerInput } =
+      setupTwiceDeepPromotion()
 
     widget('loras.1').callback?.(undefined)
 
-    expect(innerHost.inputs[0].link).toBeNull()
+    expect(innerHost.inputs).toEqual([])
+    expect(outerHost.inputs).toEqual([])
     await vi.waitFor(() => expect(promotedInputWidget(outerInput)).toBeNull())
+  })
+
+  it('removes the deleted row inputs from both hosts while keeping the next row', () => {
+    const { node, widget, innerHost, outerHost } = setupTwiceDeepPromotion()
+    widget('loras').value = 3
+    expect(
+      promoteValueWidgetViaSubgraphInput(
+        innerHost,
+        node,
+        widget('loras.2.strength')
+      ).ok
+    ).toBe(true)
+    const innerPromoted = promotedInputWidget(innerHost.inputs[1])
+    assert.exists(innerPromoted)
+    expect(
+      promoteValueWidgetViaSubgraphInput(outerHost, innerHost, innerPromoted).ok
+    ).toBe(true)
+
+    widget('loras.1').callback?.(undefined)
+
+    expect(innerHost.subgraph.inputs).toHaveLength(1)
+    expect(outerHost.subgraph.inputs).toHaveLength(1)
+    expect(
+      [innerHost.inputs, outerHost.inputs].map((inputs) =>
+        inputs.map((input) => promotedInputWidget(input)?.label)
+      )
+    ).toEqual([['LoRA #2 strength'], ['LoRA #2 strength']])
   })
 
   it('disconnects the deleted row at the outer host while keeping the next row connected', async () => {
@@ -509,8 +538,8 @@ describe('DynamicGroup widgets', () => {
     await vi.waitFor(() => expect(promotedInputWidget(outerInput)).toBeNull())
     expect(graph.getLink(removed.id)).toBeUndefined()
     expect(graph.getLink(otherRemoved.id)).toBeUndefined()
-    expect(outerInput.link).toBeNull()
-    expect(otherHost.inputs[0].link).toBeNull()
+    expect(outerHost.inputs).toEqual([survivingInput])
+    expect(otherHost.inputs).toHaveLength(1)
     assert.exists(survivingInput.link)
     expect(graph.getLink(survivingInput.link)).toBe(retained)
     expect(promotedInputWidget(survivingInput)?.value).toBe(0.37)
