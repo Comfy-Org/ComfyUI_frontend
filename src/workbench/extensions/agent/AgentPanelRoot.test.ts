@@ -8549,14 +8549,7 @@ describe('AgentPanelRoot workflow binding', () => {
       times: 1
     })
     renderWithSelectedTarget()
-    await userEvent.click(screen.getByRole('textbox'))
-    await userEvent.paste('work here')
-    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
-    await waitFor(() =>
-      expect(fetchRequests({ method: 'POST', url: /\/messages/ })).toHaveLength(
-        1
-      )
-    )
+    await sendFromComposer('work here')
     expect(useAgentConversationStore().threadId).toBeNull()
     vi.useFakeTimers()
     ws.emit('agent_active_tab', { workflow_id: 'wf-late', name: 'Late' })
