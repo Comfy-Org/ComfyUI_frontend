@@ -162,41 +162,43 @@ test.describe(
         objectInfo: 'server'
       })
 
-      const savedFiles: UserDataFullInfo[] = []
-      await page.route('**/api/userdata?*', (route) => {
-        const dir = new URL(route.request().url()).searchParams.get('dir')
-        if (dir !== 'workflows') return route.fallback()
-        return route.fulfill(
-          jsonRoute(
-            savedFiles.map((file) => ({
-              ...file,
-              path: file.path.slice('workflows/'.length)
-            }))
+      await test.step('override the boot userdata stub so the fresh tab saves to Cloud', async () => {
+        const savedFiles: UserDataFullInfo[] = []
+        await page.route('**/api/userdata?*', (route) => {
+          const dir = new URL(route.request().url()).searchParams.get('dir')
+          if (dir !== 'workflows') return route.fallback()
+          return route.fulfill(
+            jsonRoute(
+              savedFiles.map((file) => ({
+                ...file,
+                path: file.path.slice('workflows/'.length)
+              }))
+            )
           )
-        )
-      })
-      await page.route('**/api/userdata/*', (route) => {
-        const path = decodeURIComponent(
-          new URL(route.request().url()).pathname.split('/userdata/')[1]
-        )
-        if (!path.startsWith('workflows/')) return route.fallback()
-        if (route.request().method() !== 'POST')
-          return route.fulfill({ status: 404 })
-        cloudWorkflows.push({
-          id: 'a81718a4-02ae-41e6-ae85-000000000001',
-          name: path.slice('workflows/'.length, -'.json'.length),
-          created_by: 'test-user-e2e',
-          created_at: '2026-09-11T10:00:00Z',
-          updated_at: '2026-09-11T10:00:00Z',
-          latest_version: 1
         })
-        const file: UserDataFullInfo = {
-          path,
-          modified: Date.now(),
-          size: route.request().postDataBuffer()?.length ?? 1
-        }
-        savedFiles.push(file)
-        return route.fulfill(jsonRoute(file))
+        await page.route('**/api/userdata/*', (route) => {
+          const path = decodeURIComponent(
+            new URL(route.request().url()).pathname.split('/userdata/')[1]
+          )
+          if (!path.startsWith('workflows/')) return route.fallback()
+          if (route.request().method() !== 'POST')
+            return route.fulfill({ status: 404 })
+          cloudWorkflows.push({
+            id: 'a81718a4-02ae-41e6-ae85-000000000001',
+            name: path.slice('workflows/'.length, -'.json'.length),
+            created_by: 'test-user-e2e',
+            created_at: '2026-09-11T10:00:00Z',
+            updated_at: '2026-09-11T10:00:00Z',
+            latest_version: 1
+          })
+          const file: UserDataFullInfo = {
+            path,
+            modified: Date.now(),
+            size: route.request().postDataBuffer()?.length ?? 1
+          }
+          savedFiles.push(file)
+          return route.fulfill(jsonRoute(file))
+        })
       })
 
       const topbar = new Topbar(page)
