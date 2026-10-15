@@ -5340,9 +5340,10 @@
     "hero": {
       "title": "KREA 3",
       "description": "从你的图像出发，掌控每次编辑，保留关键细节。使用 Krea 3 构建参考图驱动的图像工作流。",
-      "cta": "查看工作流",
+      "cta": "使用 KREA 3 编辑",
       "references": "参考图驱动的编辑",
-      "image": "图像模型"
+      "image": "图像模型",
+      "workflows": "查看工作流"
     },
     "references": "你的参考图，你的创作方向。",
     "products": "同一产品，不同广告场景。",
@@ -5356,7 +5357,13 @@
     "closing": {
       "heading": "将你的下一个创意带入 COMFY",
       "description": "将参考图、编辑步骤和后续处理连接成可重复使用的工作流。",
-      "cta": "打开 COMFY CLOUD"
+      "cta": "使用 KREA 3 编辑"
+    },
+    "workflows": {
+      "label": "Krea 3 工作流",
+      "edit": "编辑图像",
+      "generate": "生成图像",
+      "boxes": "使用边界框编辑"
     }
   }
 }

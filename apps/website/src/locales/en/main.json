@@ -5947,12 +5947,13 @@
     "hero": {
       "title": "KREA 3",
       "description": "Start with your images. Direct the edit. Keep what matters. Build reference-driven image workflows with Krea 3.",
-      "cta": "SEE THE WORKFLOW",
+      "cta": "EDIT WITH KREA 3",
       "references": "REFERENCE-DRIVEN EDITING",
-      "image": "IMAGE MODEL"
+      "image": "IMAGE MODEL",
+      "workflows": "VIEW WORKFLOWS"
     },
     "references": "YOUR REFERENCES. YOUR DIRECTION.",
-    "products": "ONE PRODUCT. ANOTHER CAMPAIGN.",
+    "products": "ONE PRODUCT.\nANOTHER CAMPAIGN.",
     "interiors": "SAME SPACE. NEW POSSIBILITIES.",
     "characters": "KEEP THE CHARACTER. CHANGE THE SCENE.",
     "steps": {
@@ -5963,7 +5964,13 @@
     "closing": {
       "heading": "BRING YOUR NEXT IDEA INTO COMFY",
       "description": "Connect your references, edits, and next steps in a workflow you can return to.",
-      "cta": "OPEN COMFY CLOUD"
+      "cta": "EDIT WITH KREA 3"
+    },
+    "workflows": {
+      "label": "Krea 3 workflows",
+      "edit": "EDIT AN IMAGE",
+      "generate": "GENERATE AN IMAGE",
+      "boxes": "EDIT WITH BOXES"
     }
   }
 }

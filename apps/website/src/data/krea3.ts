@@ -1,8 +1,15 @@
 import type { LocalizedText, TranslationKey } from '@/i18n/translations'
 import type {
+  ModelLaunchCta,
   ModelLaunchGallery,
   ModelLaunchPage
 } from '@/templates/model-launch/types'
+
+export const krea3Links = {
+  textToImage: 'https://cloud.comfy.org/?template=api_krea3_t2i',
+  imageEdit: 'https://cloud.comfy.org/?template=api_krea3_image_edit',
+  boxes: 'https://cloud.comfy.org/?template=api_krea3_image_bboxes'
+} as const
 
 const mediaBase = '/media/krea-3'
 const text = (en: string, zh: string): LocalizedText => ({ en, 'zh-CN': zh })
@@ -19,7 +26,7 @@ const card = (
   tier: 'premium',
   note: text('Krea 3 demo', 'Krea 3 演示'),
   media: { kind: 'image', src: `${mediaBase}/${id}.jpg` },
-  href: '#edit-workflow',
+  href: krea3Links.imageEdit,
   expandable: true
 })
 
@@ -31,7 +38,12 @@ export const krea3Page = {
     logoSrc: '/icons/ai-models/krea.svg',
     titleKey: 'krea3.hero.title',
     descriptionKey: 'krea3.hero.description',
-    primaryCta: { labelKey: 'krea3.hero.cta', href: '#edit-workflow' },
+    primaryCta: {
+      labelKey: 'krea3.hero.cta',
+      href: krea3Links.imageEdit,
+      target: '_blank'
+    },
+    secondaryCta: { labelKey: 'krea3.hero.workflows', href: '#edit-workflow' },
     badgeKeys: ['krea3.hero.references', 'krea3.hero.image']
   },
   comparison: {
@@ -114,6 +126,23 @@ export const krea3Page = {
       ]
     }
   ],
+  workflowCtas: [
+    {
+      labelKey: 'krea3.workflows.edit',
+      href: krea3Links.imageEdit,
+      target: '_blank'
+    },
+    {
+      labelKey: 'krea3.workflows.generate',
+      href: krea3Links.textToImage,
+      target: '_blank'
+    },
+    {
+      labelKey: 'krea3.workflows.boxes',
+      href: krea3Links.boxes,
+      target: '_blank'
+    }
+  ],
   steps: {
     headingKey: 'krea3.steps.heading',
     stepLabelKey: 'krea3.steps.label',
@@ -184,7 +213,7 @@ export const krea3Page = {
     subtitleKey: 'krea3.closing.description',
     primaryCta: {
       labelKey: 'krea3.closing.cta',
-      href: 'https://cloud.comfy.org/?utm_source=comfy.org&utm_medium=referral&utm_campaign=krea-3',
+      href: krea3Links.imageEdit,
       target: '_blank'
     }
   }
@@ -197,6 +226,7 @@ export const krea3Page = {
     prompt: LocalizedText
   }
   galleries: readonly ModelLaunchGallery[]
+  workflowCtas: readonly ModelLaunchCta[]
   steps: NonNullable<ModelLaunchPage['steps']>
   faq: NonNullable<ModelLaunchPage['faq']>
   closingCta: NonNullable<ModelLaunchPage['closingCta']>

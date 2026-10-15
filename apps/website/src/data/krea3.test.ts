@@ -5,11 +5,30 @@ import { describe, expect, it } from 'vitest'
 import { websiteRoot } from '@website/paths'
 import { isExcludedFromSitemap, isNoindexPathname } from '@/config/indexing'
 import { translationsFor } from '@/i18n/translations'
-import { krea3Page } from './krea3'
+import { krea3Links, krea3Page } from './krea3'
 
 const locales = ['en', 'zh-CN'] as const
 
 describe('Krea 3 launch draft', () => {
+  it('opens image editing from the main calls to action', () => {
+    expect(krea3Page.hero.primaryCta.href).toBe(
+      'https://cloud.comfy.org/?template=api_krea3_image_edit'
+    )
+    expect(krea3Page.closingCta.primaryCta.href).toBe(krea3Links.imageEdit)
+  })
+
+  it('offers each supplied Krea workflow', () => {
+    expect(
+      krea3Page.workflowCtas.map(({ href }) =>
+        new URL(href).searchParams.get('template')
+      )
+    ).toEqual([
+      'api_krea3_image_edit',
+      'api_krea3_t2i',
+      'api_krea3_image_bboxes'
+    ])
+  })
+
   it.for(locales)('keeps the %s draft out of search indexes', (locale) => {
     const prefix = locale === 'en' ? '' : `/${locale}`
     const path = `${prefix}/krea-3/`

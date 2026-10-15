@@ -1,4 +1,5 @@
 ---
+import BrandButton from '@/components/common/BrandButton.vue'
 import VideoCompareSlider from '@/components/common/VideoCompareSlider.vue'
 import CopyTextButton from '@/components/ui/copy-text-button/CopyTextButton.vue'
 import BaseLayout from '@/layouts/BaseLayout.astro'
@@ -62,6 +63,20 @@ const { t } = Astro.locals
   ))}
   <div id="edit-workflow" class="scroll-mt-24">
     <ModelLaunchStepsSection steps={krea3Page.steps} locale={locale} />
+    <nav
+      aria-label={t('krea3.workflows.label')}
+      class="mx-auto flex max-w-7xl flex-col justify-center gap-4 px-6 pb-16 sm:flex-row sm:flex-wrap lg:px-20"
+    >
+      {krea3Page.workflowCtas.map((cta, index) => <BrandButton
+        href={cta.href}
+        target={cta.target}
+        variant={index === 0 ? 'solid' : 'outline'}
+        size="lg"
+        class="justify-center p-4 text-center"
+      >
+        {t(cta.labelKey)}
+      </BrandButton>)}
+    </nav>
   </div>
   <ModelLaunchFaqSection client:visible faq={krea3Page.faq} locale={locale} />
   <ModelLaunchCtaSection cta={krea3Page.closingCta} locale={locale} />
