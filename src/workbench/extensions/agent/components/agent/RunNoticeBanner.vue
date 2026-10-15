@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { useStorage } from '@vueuse/core'
 import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 
@@ -26,21 +25,21 @@ const contextMessages = {
 const defaultNotice = computed(() =>
   expanded ? 'agent.runNoticeExpanded' : 'agent.runNotice'
 )
-const { t } = useI18n()
+const shown = computed(() => context !== undefined || !dismissed.value)
+const liveness = computed(() => (context ? 'polite' : undefined))
 const contextAction = computed(() => {
   switch (context) {
     case 'mismatch':
       return {
-        label: t('agent.showTarget'),
-        name: t('agent.showTargetWorkflow', { workflowName }),
+        label: 'agent.showTarget',
+        name: 'agent.showTargetWorkflow',
         icon: 'icon-[lucide--arrow-up-right] size-4',
         run: () => emit('showTarget')
       }
     case 'followFailed':
       return {
-        label: t('g.retry'),
-        name: t('agent.retryFollowedChat', { workflowName }),
-        icon: '',
+        label: 'g.retry',
+        name: 'agent.retryFollowedChat',
         run: () => emit('retry')
       }
     default:
@@ -51,9 +50,9 @@ const contextAction = computed(() => {
 
 <template>
   <div
-    v-if="context || !dismissed"
+    v-if="shown"
     role="note"
-    :aria-live="context ? 'polite' : undefined"
+    :aria-live="liveness"
     class="relative flex items-start gap-2 overflow-hidden rounded-lg bg-base-background p-4 ring-1 ring-border-subtle before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-muted-background"
   >
     <span
@@ -67,11 +66,11 @@ const contextAction = computed(() => {
           type="button"
           variant="muted-textonly"
           size="sm"
-          :aria-label="contextAction.name"
+          :aria-label="$t(contextAction.name, { workflowName })"
           @click="contextAction.run"
         >
-          {{ contextAction.label }}
-          <span :class="contextAction.icon" />
+          {{ $t(contextAction.label) }}
+          <span v-if="contextAction.icon" :class="contextAction.icon" />
         </Button>
       </template>
       <i18n-t
