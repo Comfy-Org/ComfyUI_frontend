@@ -561,12 +561,14 @@ function stubHistoryWithWorkflowListing({
   )
 }
 
-function bindHistoryTargetThatFailsToOpen(): void {
-  useAgentWorkflowTabBindingStore().bind(
-    'wf-gone',
-    addTab('workflows/gone.json').path
+function bindTargetThatFailsToOpen(workflowId: string, path: string): void {
+  useAgentWorkflowTabBindingStore().bind(workflowId, addTab(path).path)
+  const openWorkflow = vi.mocked(useWorkflowService().openWorkflow)
+  const open = openWorkflow.getMockImplementation()
+  assert.exists(open)
+  openWorkflow.mockImplementation(async (tab, options) =>
+    tab.path === path ? false : open(tab, options)
   )
-  vi.mocked(useWorkflowService()).openWorkflow.mockResolvedValueOnce(false)
 }
 
 function ack(workflowId: string, messageId = 'm-1') {
@@ -7844,7 +7846,7 @@ describe('AgentPanelRoot workflow binding', () => {
     useAgentConversationStore().setThreadId('th-history')
     localStorage.setItem(StorageKeys.agentThread('personal'), 'th-history')
     stubHistoryWithWorkflowListing({ listing, lookup: 404 })
-    bindHistoryTargetThatFailsToOpen()
+    bindTargetThatFailsToOpen('wf-gone', 'workflows/gone.json')
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await screen.findAllByText('Historical prompt')
     await userEvent.click(
@@ -9754,7 +9756,7 @@ describe('AgentPanelRoot workflow binding', () => {
     makeTab('wf-42')
     useAgentConversationStore().setThreadId('th-history')
     stubHistoryWithWorkflowListing({ listing: 500, lookup: 404 })
-    bindHistoryTargetThatFailsToOpen()
+    bindTargetThatFailsToOpen('wf-gone', 'workflows/gone.json')
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await screen.findAllByText('Historical prompt')
     await vi.waitFor(() =>
@@ -9795,7 +9797,7 @@ describe('AgentPanelRoot workflow binding', () => {
       finishListing = resolve
     })
     stubHistoryWithWorkflowListing({ listing, lookup: 404 })
-    bindHistoryTargetThatFailsToOpen()
+    bindTargetThatFailsToOpen('wf-gone', 'workflows/gone.json')
     await userEvent.click(
       screen.getByRole('button', {
         name: i18n.global.t('agent.showChatHistory')
@@ -9852,7 +9854,7 @@ describe('AgentPanelRoot workflow binding', () => {
       finishListing = resolve
     })
     stubHistoryWithWorkflowListing({ listing, lookup: 404 })
-    bindHistoryTargetThatFailsToOpen()
+    bindTargetThatFailsToOpen('wf-gone', 'workflows/gone.json')
     await userEvent.click(
       screen.getByRole('button', {
         name: i18n.global.t('agent.showChatHistory')
