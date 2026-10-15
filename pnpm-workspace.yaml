@@ -208,4 +208,3 @@ minimumReleaseAgeExclude:
 
 patchedDependencies:
   '@total-typescript/shoehorn@0.1.2': patches/@total-typescript__shoehorn@0.1.2.patch
-  reka-ui@2.6.2: patches/reka-ui@2.6.2.patch
