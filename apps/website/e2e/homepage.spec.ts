@@ -306,41 +306,15 @@ test.describe('Home Hub banner @interaction', () => {
     )
   })
 
-  test('the preview switch trades the entries for Pick · Remix · Run', async ({
-    page
-  }) => {
+  test('leads into the Hub with its three entries', async ({ page }) => {
     await page.goto('/')
     const banner = page.getByTestId('home-hub-banner')
     await expect(banner).toHaveAttribute('data-design', 'entries')
     await expect(
       banner.getByRole('link', { name: /^Workflows/ })
     ).toHaveAttribute('href', '/hub/workflows/')
-
-    const previewControls = page.getByRole('button', {
-      name: 'Preview controls'
-    })
-    await expect(
-      page.locator('astro-island', { has: previewControls })
-    ).not.toHaveAttribute('ssr')
-    await previewControls.click()
-    await page
-      .getByRole('menuitemcheckbox', {
-        name: 'Home: Pick · Remix · Run banner'
-      })
-      .click()
-    await page.keyboard.press('Escape')
-
-    await expect(banner).toHaveAttribute('data-design', 'pick-remix-run')
-    await expect(banner.getByRole('link', { name: /REMIX/ })).toHaveAttribute(
-      'href',
-      '/hub/workflows/'
-    )
     await expect(
       banner.getByRole('link', { name: 'Explore the Hub' })
     ).toHaveAttribute('href', '/hub/')
-    await expect(banner.getByTestId('home-hub-tile').first()).toHaveAttribute(
-      'href',
-      /^\/hub\/workflows\/[^/]+\/$/
-    )
   })
 })

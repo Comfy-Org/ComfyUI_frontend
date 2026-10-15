@@ -8,13 +8,6 @@ import { useWorkshopFlag } from '@/scripts/posthog'
 export const PREVIEW_SWITCHES = [
   { id: 'hub-home-community', labelKey: 'workshop.preview.community' },
   {
-    id: 'home-hub-pick-remix-run',
-    labelKey: 'workshop.preview.homePickRemixRun'
-  },
-  { id: 'hub-task-sidebar', labelKey: 'workshop.preview.taskSidebar' },
-  { id: 'hub-facet-sidebar', labelKey: 'workshop.preview.workflowsByModality' },
-  { id: 'hub-workflows-flat', labelKey: 'workshop.preview.workflowsFlat' },
-  {
     id: 'hub-workflows-modality-task',
     labelKey: 'workshop.preview.workflowsModalityTask',
     defaultOn: true

@@ -36,21 +36,7 @@ import {
   workflowSections
 } from '@/lib/workshop/workflow-sections'
 import { useAddressedChoice } from '@/lib/workshop/addressed-choice'
-import {
-  HUB_TASKS,
-  hubTaskChoices,
-  hubTaskEntries,
-  hubTaskShown,
-  inHubTask
-} from '@/lib/workshop/hub-tasks'
-import {
-  WORKFLOW_TYPES,
-  inWorkflowType,
-  matchesSectionName,
-  workflowGoalRows,
-  workflowTypeChoices
-} from '@/lib/workshop/workflow-goals'
-import type { ModalityTaskKey } from '@/lib/workshop/workflow-modality-tasks'
+import { matchesSectionName } from '@/lib/workshop/workflow-goals'
 import {
   HUB_TAXONOMY,
   MODALITY_TASK_KEYS,
@@ -112,7 +98,6 @@ function openFeatured(slide: FeaturedSlide, position: number) {
     { surface: 'workflows', source: 'featured_banner', position }
   )
 }
-const flatGrid = usePreviewSwitch('hub-workflows-flat')
 const modalityTaskOn = usePreviewSwitch('hub-workflows-modality-task')
 const mockSwitch = usePreviewSwitch('hub-workflows-full-catalogue-mock')
 const mockOn = computed(() => modalityTaskOn.value && mockSwitch.value)
@@ -123,23 +108,8 @@ const catalogue = computed(() =>
 const taxonomy = computed(() =>
   mockOn.value && mock.value ? mock.value.taxonomy : HUB_TAXONOMY
 )
-const modalitySwitch = usePreviewSwitch('hub-facet-sidebar')
-const modalitySidebar = computed(
-  () => modalitySwitch.value && !flatGrid.value && !modalityTaskOn.value
-)
 const sidebarWidth = computed(() =>
-  flatGrid.value || modalityTaskOn.value ? 'lg:w-58' : 'lg:w-70'
-)
-const taskSwitch = usePreviewSwitch('hub-task-sidebar')
-const taskSidebar = computed(
-  () =>
-    taskSwitch.value &&
-    !modalitySidebar.value &&
-    !flatGrid.value &&
-    !modalityTaskOn.value
-)
-const altSidebar = computed(
-  () => taskSidebar.value || modalitySidebar.value || modalityTaskOn.value
+  modalityTaskOn.value ? 'lg:w-58' : 'lg:w-70'
 )
 const { choice: modalityTask, readAddress: readModalityTask } =
   useAddressedChoice('browse', MODALITY_TASK_KEYS, modalityTaskOn, (key) =>
@@ -155,45 +125,9 @@ const { choice: collection, readAddress: readCollection } = useAddressedChoice(
   (key) =>
     catalogue.value.some((model) => inCollection(model, key, taxonomy.value))
 )
-const taskEntries = computed(() =>
-  hubTaskEntries(models, (listed) => listed.length)
+const panelTab = computed(() =>
+  modalityTaskOn.value ? modalityTask.value : category.value
 )
-const { choice: taskKey, readAddress: readTask } = useAddressedChoice(
-  'task',
-  HUB_TASKS,
-  taskSidebar,
-  (key) => hubTaskShown(taskEntries.value, key)
-)
-const taskChoices = computed(() =>
-  hubTaskChoices(taskEntries.value, models.length, t)
-)
-const typeChoices = computed(() => workflowTypeChoices(models, t))
-const { choice: workflowType, readAddress: readType } = useAddressedChoice(
-  'type',
-  WORKFLOW_TYPES,
-  modalitySidebar,
-  (key) => typeChoices.value.some((choice) => choice.key === key)
-)
-// The type sidebar shows modality › task when that preview is on, else types alone.
-const typeSidebar = computed(
-  () => modalityTaskOn.value || modalitySidebar.value
-)
-const typeEntries = computed(() =>
-  modalityTaskOn.value ? modalityTaskEntries.value : typeChoices.value
-)
-const typeChoice = computed<ModalityTaskKey>({
-  get: () => (modalityTaskOn.value ? modalityTask.value : workflowType.value),
-  set: (key) => {
-    if (modalityTaskOn.value) modalityTask.value = key
-    else
-      workflowType.value = WORKFLOW_TYPES.find((type) => type === key) ?? 'all'
-  }
-})
-const panelTab = computed(() => {
-  if (modalityTaskOn.value) return modalityTask.value
-  if (modalitySidebar.value) return workflowType.value
-  return taskSidebar.value ? taskKey.value : category.value
-})
 
 function knownMedia(values: readonly string[]): Modality[] {
   return MODALITIES.filter((media) => values.includes(media))
@@ -204,17 +138,13 @@ const { submitSearch, quietly } = useHubCatalogueTracking('workflows', {
   resultsCount: () => visible.value.length,
   filters: [
     ['category', () => category.value],
-    ['task', () => taskKey.value],
-    [
-      'type',
-      () => (modalityTaskOn.value ? modalityTask.value : workflowType.value)
-    ],
+    ['type', () => modalityTask.value],
     ['collection', () => collection.value],
     ['model', () => runsOn.value],
     ['sort', () => sort.value]
   ]
 })
-watch(altSidebar, (on) => {
+watch(modalityTaskOn, (on) => {
   if (on) quietly(() => (category.value = ALL_WORKFLOWS))
 })
 function scrollToSection(id: string | undefined) {
@@ -229,11 +159,9 @@ onMounted(() =>
     const search = initialSearch ?? location.search
     const params = new URLSearchParams(search)
     query.value = params.get('q') ?? ''
-    category.value = altSidebar.value
+    category.value = modalityTaskOn.value
       ? ALL_WORKFLOWS
       : categoryFromAddress(search, models)
-    readTask(search)
-    readType(search)
     readModalityTask(search)
     readCollection(search)
     inputs.value = knownMedia(params.getAll('input'))
@@ -311,15 +239,9 @@ const inCategory = computed(() =>
     ? byModalityTask.value.filter((model) =>
         inCollection(model, collection.value, taxonomy.value)
       )
-    : modalitySidebar.value
-      ? ordered.value.filter((model) =>
-          inWorkflowType(model, workflowType.value)
-        )
-      : taskSidebar.value
-        ? ordered.value.filter((model) => inHubTask(model, taskKey.value))
-        : category.value === ALL_WORKFLOWS
-          ? ordered.value
-          : ordered.value.filter((model) => model.category === category.value)
+    : category.value === ALL_WORKFLOWS
+      ? ordered.value
+      : ordered.value.filter((model) => model.category === category.value)
 )
 
 function startsFrom(model: WorkflowWorkshopModel, chosen: Modality[]) {
@@ -399,7 +321,7 @@ const searched = computed(
   () =>
     new Set([
       ...searchWorkshopModels(catalogue.value, { query: query.value }),
-      ...(modalitySidebar.value
+      ...(modalityTaskOn.value
         ? models.filter((model) => matchesSectionName(model, query.value))
         : []),
       ...(mockOn.value && mock.value
@@ -419,18 +341,12 @@ const { shown, total, hasMore, showMore } = usePagedList(visible)
 
 const sectioned = computed(
   () =>
-    !flatGrid.value &&
     !modalityTaskOn.value &&
     !query.value.trim() &&
-    (!taskSidebar.value || taskKey.value === 'all') &&
     allSectioned(models) &&
     visible.value.length > 0
 )
-const sections = computed(() =>
-  modalitySidebar.value
-    ? workflowGoalRows(visible.value, t)
-    : workflowSections(visible.value, language)
-)
+const sections = computed(() => workflowSections(visible.value, language))
 
 function clearFilters() {
   inputs.value = []
@@ -441,8 +357,6 @@ function clearFilters() {
 function clear() {
   query.value = ''
   category.value = ALL_WORKFLOWS
-  taskKey.value = 'all'
-  workflowType.value = 'all'
   modalityTask.value = 'all'
   collection.value = 'all'
   clearFilters()
@@ -476,20 +390,12 @@ function clear() {
       "
     >
       <HubChoiceSidebar
-        v-if="typeSidebar"
-        v-model="typeChoice"
-        :entries="typeEntries"
+        v-if="modalityTaskOn"
+        v-model="modalityTask"
+        :entries="modalityTaskEntries"
         :label="t('workshop.taskSidebar.typeLabel')"
         :panel-id="TAB_PANEL_ID"
         class="max-lg:order-1 max-lg:mb-1 max-sm:mb-1"
-      />
-      <HubChoiceSidebar
-        v-else-if="taskSidebar"
-        v-model="taskKey"
-        :entries="taskChoices"
-        :label="t('workshop.taskSidebar.label')"
-        :panel-id="TAB_PANEL_ID"
-        class="max-lg:order-1"
       />
       <WorkflowCategoryTabs
         v-else

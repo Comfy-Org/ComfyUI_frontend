@@ -1,5 +1,5 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen, within } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import type {
@@ -97,6 +97,31 @@ describe('Workflows by modality › task', () => {
       'Video 3'
     ])
     expect(location.search).toBe('?browse=image')
+  })
+
+  it('moves between rows with the arrow keys', async () => {
+    render(WorkflowCatalogue, { props: { models: workflows } })
+    await userEvent.click(within(sidebar()).getByRole('tab', { name: /Image/ }))
+    within(sidebar()).getByRole('tab', { name: /Image/ }).focus()
+
+    await userEvent.keyboard('{ArrowDown}')
+
+    const edit = within(sidebar()).getByRole('tab', { name: /Edit/ })
+    expect(edit).toHaveFocus()
+    expect(edit).toHaveAttribute('aria-selected', 'true')
+    expect(cardNames()).toEqual(['mockup', 'remove-object'])
+  })
+
+  it('opens the type a shared address names', async () => {
+    history.replaceState(null, '', '/hub/workflows/?browse=video')
+    render(WorkflowCatalogue, { props: { models: workflows } })
+
+    await waitFor(() =>
+      expect(
+        within(sidebar()).getByRole('tab', { name: /Video/ })
+      ).toHaveAttribute('aria-selected', 'true')
+    )
+    expect(cardNames()).toEqual(['talking', 'product-video', 'cut-clip'])
   })
 
   it('lists one grid, with no row headings', async () => {

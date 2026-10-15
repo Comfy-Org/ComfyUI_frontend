@@ -873,22 +873,12 @@
     "preview": {
       "label": "Preview controls",
       "community": "From the community",
-      "homePickRemixRun": "Home: Pick · Remix · Run banner",
-      "taskSidebar": "Hub: task sidebar",
-      "workflowsByModality": "Hub: workflows by modality",
-      "workflowsFlat": "Hub: workflows like Models",
       "workflowsModalityTask": "Hub: workflows by modality › task",
       "fullCatalogueMock": "Hub: full catalogue mock (Workflows)"
     },
     "taskSidebar": {
-      "label": "Browse by task",
       "typeLabel": "Browse by type",
-      "generateImages": "Generate images",
-      "editImages": "Edit images",
-      "generateVideos": "Generate videos",
-      "imageToVideo": "Image to video",
-      "editVideos": "Edit videos",
-      "seeAll": "See all ({n})"
+      "imageToVideo": "Image to video"
     },
     "modalityTasks": {
       "control": "Control",
@@ -908,10 +898,7 @@
     },
     "workflowGoals": {
       "characters": "Characters",
-      "product": "Product & ads",
-      "upscale": "Upscale & restore",
-      "cleanup": "Photo edits",
-      "more": "More workflows"
+      "product": "Product & ads"
     }
   },
   "auth": {
@@ -1142,17 +1129,6 @@
     "subtitle": "Partner models, ready-made workflows and one-click apps. Right in your browser.",
     "explore": "Explore the Hub",
     "sections": "Hub sections",
-    "apps": "Apps",
-    "workflows": "Workflows",
-    "models": "Partner models",
-    "pick": "PICK",
-    "remix": "REMIX",
-    "run": "RUN",
-    "pickRemixRunHeading": "Pick, remix and run in the Comfy Hub",
-    "pickRemixRunSubtitle": "Pick an app, remix a workflow or call a model. All in the Hub, right in your browser.",
-    "showcase": "Workflows and models in the Hub",
-    "workflowBy": "Workflow · {maker}",
-    "modelBy": "Model · {maker}",
     "entries": {
       "apps": {
         "title": "Apps",

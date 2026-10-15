@@ -1,5 +1,5 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen, waitFor, within } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import type { Modality, WorkflowWorkshopModel } from '@/config/models-catalogue'
@@ -43,84 +43,20 @@ const workflows = [
   workflow('upvid', 'Upscale a video', 'video', ['upscale'])
 ]
 
-function sidebar() {
-  return screen.getByRole('tablist', { name: 'Browse by type' })
-}
-
-function rowHeadings() {
-  return screen
-    .getAllByRole('heading', { level: 2 })
-    .map((heading) => heading.textContent.trim())
-}
-
-function namesIn(container: HTMLElement) {
-  return within(container)
-    .queryAllByTestId('model-card-name')
-    .map((name) => name.textContent.trim())
-}
-
-function row(name: string) {
-  return screen.getByRole('region', { name })
-}
-
 beforeEach(() => {
   history.replaceState(null, '', '/hub/workflows/')
-  setPreviewSwitch('hub-facet-sidebar', true)
-  setPreviewSwitch('hub-workflows-modality-task', false)
+  setPreviewSwitch('hub-workflows-full-catalogue-mock', false)
 })
-afterEach(() => {
-  setPreviewSwitch('hub-facet-sidebar', false)
-  setPreviewSwitch('hub-task-sidebar', false)
-  window.localStorage.clear()
-})
+afterEach(() => window.localStorage.clear())
 
-describe('Workflows by modality', () => {
-  it('lists the output types that hold workflows, with counts', () => {
-    render(WorkflowCatalogue, { props: { models: workflows } })
-
-    expect(
-      within(sidebar())
-        .getAllByRole('tab')
-        .map((tab) => tab.textContent.replaceAll(/\s+/g, ''))
-    ).toEqual(['All6', 'Image3', 'Video3'])
-  })
-
-  it('shows the goal rows in order, a workflow in each row it belongs to, and the rest under More workflows', () => {
-    render(WorkflowCatalogue, { props: { models: workflows } })
-
-    expect(rowHeadings()).toEqual([
-      'Characters',
-      'Product & ads',
-      'Upscale & restore',
-      'Photo edits',
-      'More workflows'
-    ])
-    expect(namesIn(row('Characters'))).toContain('Retouch a portrait')
-    expect(namesIn(row('Photo edits'))).toEqual(['Retouch a portrait'])
-    expect(namesIn(row('More workflows'))).toEqual(['Cut a clip'])
-  })
-
-  it('narrows every row to the chosen type and drops the rows it empties', async () => {
-    render(WorkflowCatalogue, { props: { models: workflows } })
-
-    await userEvent.click(within(sidebar()).getByRole('tab', { name: 'Video' }))
-
-    expect(rowHeadings()).toEqual([
-      'Characters',
-      'Upscale & restore',
-      'More workflows'
-    ])
-    expect(namesIn(row('Characters'))).toEqual(['Make a character talk'])
-    expect(location.search).toBe('?type=video')
-  })
-
+describe('Searching Workflows by a section full name', () => {
   it.for([
-    { modality: true, found: true },
-    { modality: false, found: false }
+    { modalityTask: true, found: true },
+    { modalityTask: false, found: false }
   ])(
-    'with the switch on is $modality, finds a workflow by its section full name: $found',
-    async ({ modality, found }) => {
-      setPreviewSwitch('hub-facet-sidebar', modality)
+    'with modality › task on is $modalityTask, finds a workflow by its section full name: $found',
+    async ({ modalityTask, found }) => {
+      setPreviewSwitch('hub-workflows-modality-task', modalityTask)
       render(WorkflowCatalogue, { props: { models: workflows } })
       const field = screen.getByRole('searchbox')
       await waitFor(() => expect(field).toBeEnabled())
@@ -134,12 +70,4 @@ describe('Workflows by modality', () => {
       ).toBe(found)
     }
   )
-
-  it('wins over the task sidebar when both switches are on', () => {
-    setPreviewSwitch('hub-task-sidebar', true)
-    render(WorkflowCatalogue, { props: { models: workflows } })
-
-    expect(sidebar()).toBeVisible()
-    expect(screen.queryByRole('tablist', { name: 'Browse by task' })).toBeNull()
-  })
 })
