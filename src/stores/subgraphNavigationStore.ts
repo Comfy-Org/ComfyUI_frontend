@@ -315,22 +315,18 @@ export const useSubgraphNavigationStore = defineStore(
         }, newHash)
       }
 
-      //Search all open workflows
       for (const workflow of workflowStore.openWorkflows) {
         const { activeState } = workflow
         if (!activeState) continue
         const subgraphs = activeState.definitions?.subgraphs ?? []
         for (const graph of [activeState, ...subgraphs]) {
           if (graph.id !== locatorId) continue
-          // This will trigger a navigation, which can break forward history.
-          // After openWorkflow resolves, app.rootGraph has been swapped, so we
-          // intentionally re-read app.rootGraph below instead of using the
-          // `root` captured at function entry.
           try {
             await withNavBlocked(
               () =>
                 useWorkflowService().openWorkflow(workflow, {
-                  navigationIntentId: navigationId
+                  navigationIntentId: navigationId,
+                  initiator: 'user'
                 }),
               newHash
             )

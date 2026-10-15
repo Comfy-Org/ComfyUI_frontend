@@ -538,7 +538,7 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     })
     expect(workflowServiceMocks.openWorkflow).toHaveBeenCalledWith(
       targetWorkflow,
-      { navigationIntentId: expect.any(Number) }
+      { navigationIntentId: expect.any(Number), initiator: 'user' }
     )
   })
 
@@ -593,7 +593,7 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     expect(routeHashRef.value).toBe(`#${targetSubgraph.id}`)
     expect(workflowServiceMocks.openWorkflow).toHaveBeenCalledWith(
       originalWorkflow,
-      { navigationIntentId: expect.any(Number) }
+      { navigationIntentId: expect.any(Number), initiator: 'user' }
     )
   })
 
@@ -691,7 +691,7 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     await vi.waitFor(() =>
       expect(workflowServiceMocks.openWorkflow).toHaveBeenCalledWith(
         routeWorkflow,
-        { navigationIntentId: expect.any(Number) }
+        { navigationIntentId: expect.any(Number), initiator: 'user' }
       )
     )
     resolveFirstPush?.()
@@ -743,7 +743,7 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     await vi.waitFor(() =>
       expect(workflowServiceMocks.openWorkflow).toHaveBeenCalledWith(
         firstWorkflow,
-        { navigationIntentId: expect.any(Number) }
+        { navigationIntentId: expect.any(Number), initiator: 'user' }
       )
     )
     app.canvas.graph = secondRoot
@@ -753,7 +753,7 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     await vi.waitFor(() => {
       expect(workflowServiceMocks.openWorkflow).toHaveBeenLastCalledWith(
         secondWorkflow,
-        { navigationIntentId: expect.any(Number) }
+        { navigationIntentId: expect.any(Number), initiator: 'user' }
       )
       expect(app.canvas.graph?.id).toBe(secondId)
       expect(routeHashRef.value).toBe(`#${secondId}`)
@@ -793,7 +793,7 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     await vi.waitFor(() =>
       expect(workflowServiceMocks.openWorkflow).toHaveBeenCalledWith(
         firstWorkflow,
-        { navigationIntentId: expect.any(Number) }
+        { navigationIntentId: expect.any(Number), initiator: 'user' }
       )
     )
     routeHashRef.value = `#${secondId}`
@@ -802,7 +802,7 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     await vi.waitFor(() => {
       expect(workflowServiceMocks.openWorkflow).toHaveBeenLastCalledWith(
         secondWorkflow,
-        { navigationIntentId: expect.any(Number) }
+        { navigationIntentId: expect.any(Number), initiator: 'user' }
       )
       expect(app.canvas.graph?.id).toBe(secondId)
     })
@@ -843,7 +843,7 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     await vi.waitFor(() =>
       expect(workflowServiceMocks.openWorkflow).toHaveBeenCalledWith(
         firstWorkflow,
-        { navigationIntentId: expect.any(Number) }
+        { navigationIntentId: expect.any(Number), initiator: 'user' }
       )
     )
     routeHashRef.value = `#${secondId}`
@@ -855,7 +855,7 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     await vi.waitFor(() => {
       expect(workflowServiceMocks.openWorkflow).toHaveBeenLastCalledWith(
         secondWorkflow,
-        { navigationIntentId: expect.any(Number) }
+        { navigationIntentId: expect.any(Number), initiator: 'user' }
       )
       expect(app.canvas.graph?.id).toBe(secondId)
     })
