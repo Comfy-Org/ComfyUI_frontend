@@ -4766,6 +4766,7 @@
     "remaining": "保留在草稿中",
     "reviewSelected": "审核所选项（{count}）",
     "selectShown": "选择所有当前显示的更改",
+    "selectMatching": "选择所有 {count} 项匹配的更改",
     "tabsLabel": "草稿视图",
     "tabs": {
       "ALL": "所有更改",

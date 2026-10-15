@@ -6237,6 +6237,7 @@
     "remaining": "Staying in Draft",
     "reviewSelected": "Review selected ({count})",
     "selectShown": "Select all shown changes",
+    "selectMatching": "Select all {count} matching changes",
     "tabsLabel": "Draft views",
     "tabs": {
       "ALL": "All changes",

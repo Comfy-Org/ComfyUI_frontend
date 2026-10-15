@@ -946,3 +946,14 @@ follow native navigation so an unhydrated persisted island cannot display the ol
 section at a new URL. After hydration the normal immediate tab intent and
 persisted navigation resume. CCC mobile search, like filters, recreates its portal
 target after page body swaps.
+
+### CCC Draft table rendering bound
+
+The Draft table mounts at most 50 change rows at once. Previous/Next controls
+use normal page flow, without an inner scrolling list. Picks survive page
+navigation. The header checkbox still selects the complete matching set, not
+just the current page; when paged, its label names that scope and count.
+Review and Publish continue to bind the exact selected UIDs and frozen state.
+This bounds mounted rows and their media elements, not the upstream staging
+payload or database query cost. It does not reconcile duplicate source records,
+recover unavailable graph bytes, change Draft/LIVE, or publish any content.
