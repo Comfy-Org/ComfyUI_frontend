@@ -5600,7 +5600,6 @@ describe('AgentPanelRoot history', () => {
         i18n.global.t('agent.viewingDifferentWorkflow')
       )
 
-      // Clearing the draft later does not switch either.
       composer.setText('')
       await settle()
       expect(loadedThreads).toEqual([])

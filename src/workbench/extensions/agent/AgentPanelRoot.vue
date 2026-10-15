@@ -1577,8 +1577,7 @@ function followActiveWorkflowChat(): void {
   // Pointing the composer at a workflow binds the chat the user is in to that
   // workflow. It is not navigation to that workflow's other chats, so a cloud
   // id that first appears while the selection is running must not replace the
-  // open chat. A draft is written for the open chat, and a chat that was
-  // never sent moves its target to the visible tab instead.
+  // open chat.
   if (
     workflowSelecting.value ||
     composerStore.hasDraft ||
@@ -1600,8 +1599,6 @@ function followActiveWorkflowChat(): void {
   })
 }
 
-// The chat was opened for the tab the user is on, so that tab is its
-// workflow, even when its transcript last ran on another one.
 function restoreChatWorkflow(
   workflowId: string | undefined,
   isCurrent: () => boolean
@@ -1630,8 +1627,6 @@ async function openFollowedChat(
   const opened = await selectThread(id, isCurrent)
   if (followedChat?.threadId === id) followedChat = null
   if (opened || !isCurrent()) return
-  // The user did not ask for this chat, so a failed open goes back to the
-  // chat they had, with its target, instead of leaving a broken one open.
   followFailure.value = followed
   agentPanelStore.targetTracking = kept.targetTracking
   if (kept.threadId === null) newChat()
