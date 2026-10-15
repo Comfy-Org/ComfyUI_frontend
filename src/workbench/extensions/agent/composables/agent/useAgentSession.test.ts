@@ -669,6 +669,48 @@ describe('useAgentSession (v1 composition root)', () => {
     }
   )
 
+  it.for([
+    {
+      during: 'a newer navigation',
+      restored: (supersede: () => void) => {
+        supersede()
+        return true
+      }
+    },
+    { during: 'a failed restore', restored: () => false }
+  ])(
+    'finishes a kept-open switch after $during once its transcript is in',
+    async ({ restored }) => {
+      let navigationCurrent = true
+      const onThreadActivated = vi.fn()
+      const session = useAgentSession({
+        rest: fakeRest(),
+        events: fakeEvents().source,
+        onThreadActivated,
+        workflow: {
+          current: () => undefined,
+          adopted: vi.fn(),
+          restored: () => restored(() => (navigationCurrent = false))
+        }
+      })
+      session.start()
+
+      const opened = await session.loadThread(
+        'th-next',
+        () => navigationCurrent,
+        { keepOpenChatUntilLoaded: true }
+      )
+
+      expect(opened).toBe(true)
+      expect(session.threadId.value).toBe('th-next')
+      expect(onThreadActivated).toHaveBeenLastCalledWith('th-next')
+      expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBe(
+        'th-next'
+      )
+      session.stop()
+    }
+  )
+
   it('(b) a second send posts to the adopted threadId, not new', async () => {
     const postMessage = vi
       .fn<
