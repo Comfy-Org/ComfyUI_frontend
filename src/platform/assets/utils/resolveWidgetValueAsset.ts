@@ -22,7 +22,8 @@ export async function resolveWidgetValueAsset(
     toValue(assetsStore.outputAssets.items).find(assetMatches)
   if (storedAsset) return storedAsset
 
-  if (!useFeatureFlags().flags.assetsEnabled) return undefined
+  if (!useFeatureFlags().flags.assetsEnabled)
+    return type === 'input' ? null : undefined
 
   const query = encodeParams(
     isCloud
