@@ -7408,18 +7408,22 @@ describe('AgentPanelRoot workflow binding', () => {
   )
 
   it.for([
-    { failure: 'missing messages', status: 404, listingStatus: 200 },
-    { failure: 'message server error', status: 500, listingStatus: 200 },
-    { failure: 'failed workflow opening', status: 200, listingStatus: 500 }
+    { failure: 'missing messages', status: 404, prepareTarget: () => {} },
+    { failure: 'message server error', status: 500, prepareTarget: () => {} },
+    {
+      failure: 'failed workflow opening',
+      status: 200,
+      prepareTarget: () =>
+        bindTargetThatFailsToOpen(
+          'wf-unavailable',
+          'workflows/unavailable.json'
+        )
+    }
   ])(
     'preserves Current after deleting a chat with $failure',
-    async ({ status, listingStatus }) => {
+    async ({ status, prepareTarget }) => {
       makeTab('wf-current')
-      useAgentWorkflowTabBindingStore().bind(
-        'wf-unavailable',
-        addTab('workflows/unavailable.json').path
-      )
-      vi.mocked(useWorkflowService()).openWorkflow.mockResolvedValueOnce(false)
+      prepareTarget()
       useAgentConversationStore().setThreadId('th-current')
       localStorage.setItem(StorageKeys.agentThread('personal'), 'th-current')
       vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
@@ -7451,7 +7455,7 @@ describe('AgentPanelRoot workflow binding', () => {
             }
           ])
         if (url.includes('/workflows'))
-          return json(listingStatus, {
+          return json(200, {
             data: [],
             pagination: { offset: 0, limit: 100, total: 0, has_more: false }
           })
