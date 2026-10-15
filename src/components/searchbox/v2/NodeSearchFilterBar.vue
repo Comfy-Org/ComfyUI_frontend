@@ -65,26 +65,17 @@
   </div>
 </template>
 
-<script lang="ts">
-import type { FuseFilter } from '@/utils/fuseUtil'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-
-export interface FilterChip {
-  key: string
-  label: string
-  filter: FuseFilter<ComfyNodeDefImpl, string>
-}
-</script>
-
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import type { FilterChip } from '@/components/searchbox/v2/filterChip'
 import NodeSearchTypeFilterPopover from '@/components/searchbox/v2/NodeSearchTypeFilterPopover.vue'
 import { RootCategory } from '@/components/searchbox/v2/rootCategories'
 import type { RootCategoryId } from '@/components/searchbox/v2/rootCategories'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import type { FuseFilterWithValue } from '@/utils/fuseUtil'
+import type { FuseFilter, FuseFilterWithValue } from '@/utils/fuseUtil'
 import { getLinkTypeColor } from '@/utils/litegraphUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 

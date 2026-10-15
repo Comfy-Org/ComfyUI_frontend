@@ -107,18 +107,6 @@ function recoveredOperation(
   }
 }
 
-function expectRekaPricingDialogProps(
-  dialogComponentProps: Record<string, unknown>
-) {
-  expect(dialogComponentProps).toMatchObject({
-    renderer: 'reka',
-    size: 'full',
-    dismissableMask: false
-  })
-  expect(dialogComponentProps).not.toHaveProperty('style')
-  expect(dialogComponentProps).not.toHaveProperty('pt')
-}
-
 beforeEach(() => {
   vi.mocked(useDialogService().showLayoutDialog).mockImplementation(
     mockShowLayoutDialog
@@ -213,7 +201,7 @@ describe('useSubscriptionDialog', () => {
       expect(props).not.toHaveProperty('onChooseTeam')
     })
 
-    it('sizes the unified pricing dialog via the Reka contentClass, not the ignored PrimeVue style', () => {
+    it('keeps the unified pricing dialog open on an outside click', () => {
       useBillingRouting().type = computed(() => 'workspace')
       useBillingRouting().shouldUseWorkspaceBilling = computed(() => true)
       useBillingRouting().shouldUseUnifiedPricing = computed(() => true)
@@ -223,7 +211,7 @@ describe('useSubscriptionDialog', () => {
       showPricingTable()
 
       const { dialogComponentProps } = mockShowLayoutDialog.mock.calls[0][0]
-      expectRekaPricingDialogProps(dialogComponentProps)
+      expect(dialogComponentProps.dismissOnPointerDownOutside).toBe(false)
     })
 
     it('defaults to the personal tab in a personal workspace', () => {
@@ -361,7 +349,7 @@ describe('useSubscriptionDialog', () => {
       expect(props).toHaveProperty('onChooseTeam')
       expect(props).not.toHaveProperty('initialCheckout')
       const { dialogComponentProps } = mockShowLayoutDialog.mock.calls[0][0]
-      expectRekaPricingDialogProps(dialogComponentProps)
+      expect(dialogComponentProps.dismissOnPointerDownOutside).toBe(false)
       expect(useTelemetry()?.trackSubscription).toHaveBeenCalledWith(
         'modal_opened',
         expect.objectContaining({ reason: 'deep_link' })
@@ -415,7 +403,7 @@ describe('useSubscriptionDialog', () => {
       expect(props).not.toHaveProperty('onChooseTeam')
     })
 
-    it('sizes the legacy workspace pricing dialog via Reka contentClass', () => {
+    it('keeps the legacy workspace pricing dialog open on an outside click', () => {
       useBillingRouting().type = computed(() => 'workspace')
       useBillingRouting().shouldUseWorkspaceBilling = computed(() => true)
       useBillingRouting().shouldUseUnifiedPricing = computed(() => true)
@@ -426,10 +414,7 @@ describe('useSubscriptionDialog', () => {
       showPricingTable()
 
       const { dialogComponentProps } = mockShowLayoutDialog.mock.calls[0][0]
-      expect(dialogComponentProps).toMatchObject({
-        modal: false
-      })
-      expectRekaPricingDialogProps(dialogComponentProps)
+      expect(dialogComponentProps.dismissOnPointerDownOutside).toBe(false)
     })
 
     it('defaults an unsubscribed team workspace to the team tab', () => {
@@ -489,6 +474,32 @@ describe('useSubscriptionDialog', () => {
       expect(useTelemetry()?.trackSubscription).toHaveBeenCalledWith(
         'modal_opened',
         expect.objectContaining({ reason: 'subscribe_to_run' })
+      )
+    })
+
+    it('splits a subscribe-to-run modal_opened by the selected workspace', () => {
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspace: {
+          id: 'owner-personal-team-plan',
+          type: 'personal',
+          role: 'member',
+          subscriptionTier: 'TEAM'
+        }
+      })
+      const { showPricingTable } = useSubscriptionDialog()
+
+      showPricingTable({ reason: 'subscribe_to_run' })
+
+      expect(useTelemetry()?.trackSubscription).toHaveBeenCalledWith(
+        'modal_opened',
+        expect.objectContaining({
+          reason: 'subscribe_to_run',
+          workspace_id: 'owner-personal-team-plan',
+          workspace_type: 'personal',
+          workspace_role: 'member',
+          workspace_tier: 'TEAM',
+          auth_rail: 'token'
+        })
       )
     })
 

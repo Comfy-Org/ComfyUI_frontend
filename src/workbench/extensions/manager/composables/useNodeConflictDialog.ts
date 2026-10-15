@@ -18,11 +18,11 @@ export function useNodeConflictDialog() {
 
   function show(
     options: {
-      showAfterWhatsNew?: boolean
-      conflictedPackages?: ConflictDetectionResult[]
-      dialogComponentProps?: Omit<DialogComponentProps, 'pt'>
       buttonText?: string
+      conflictedPackages?: ConflictDetectionResult[]
+      dialogComponentProps?: DialogComponentProps
       onButtonClick?: () => void
+      showAfterWhatsNew?: boolean
     } = {}
   ) {
     const {

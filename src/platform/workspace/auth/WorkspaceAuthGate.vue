@@ -96,6 +96,7 @@ import {
 import Button from '@/components/ui/button/Button.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { SessionRevokedError } from '@/platform/auth/session/useSessionCookie'
 import { signedInOnWebSession } from '@/platform/auth/session/webSessionFetch'
 import { isCloud } from '@/platform/distribution/types'
 import {
@@ -108,6 +109,7 @@ import { NoWorkspaceAccessError } from '@/platform/workspace/api/workspaceApiErr
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { syncWorkspaceTelemetryContext } from '@/platform/workspace/telemetry/workspaceTelemetryContext'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -120,6 +122,7 @@ const initializationState = ref<
 const initializationRetryable = ref(true)
 const errorPanel = useTemplateRef<HTMLElement>('errorPanel')
 const billingCapabilities = useBillingCapabilities()
+syncWorkspaceTelemetryContext()
 let initializationGeneration = 0
 let initializationController: AbortController | null = null
 let backgroundInitialization: Promise<void> | null = null
@@ -245,6 +248,7 @@ function isRetryableInitializationError(error: unknown): boolean {
   ) {
     return false
   }
+  if (error instanceof SessionRevokedError) return false
   return !(
     error instanceof Error && error.message === 'No workspaces available'
   )

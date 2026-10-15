@@ -28,6 +28,7 @@ import {
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import { partnerNodeTokens } from '@/platform/auth/partnerNode/partnerNodeTokens'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
+import { provideEnsureSessionCookie } from '@/platform/auth/session/sessionCookieAccess'
 import type { WebSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import {
   webSessionRequests,
@@ -51,6 +52,7 @@ import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuth
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useQueueStore } from '@/stores/queueStore'
+import { provideAuthStore } from '@/platform/auth/authStoreAccess'
 import type { AuthHeader } from '@/types/authTypes'
 import type { operations } from '@/types/comfyRegistryTypes'
 import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
@@ -1190,4 +1192,11 @@ export const useAuthStore = defineStore('auth', () => {
     getWorkspaceAuthToken,
     notifyTokenRefreshed
   }
+})
+
+provideAuthStore(useAuthStore)
+provideEnsureSessionCookie(async () => {
+  const { useSessionCookie } =
+    await import('@/platform/auth/session/useSessionCookie')
+  await useSessionCookie().ensureSessionCookie()
 })

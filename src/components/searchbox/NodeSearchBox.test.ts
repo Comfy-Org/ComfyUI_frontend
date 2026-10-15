@@ -4,22 +4,33 @@ import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
 import { useTelemetry } from '@/platform/telemetry'
-import {
-  ComfyNodeDefImpl,
-  useNodeDefStore,
-  useNodeFrequencyStore
-} from '@/stores/nodeDefStore'
+import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useNodeFrequencyStore } from '@/stores/nodeFrequencyStore'
 import { FuseFilter } from '@/utils/fuseUtil'
 import NodeSearchBox from './NodeSearchBox.vue'
 
 vi.mock(import('@/platform/telemetry'))
 
+const OpenDialog = defineComponent({
+  directives: { rekaZIndex: vRekaZIndex },
+  template: '<div v-reka-z-index data-testid="open-dialog" />'
+})
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
   messages: {
-    en: { g: { searchPlaceholder: 'Search {subject}', nodes: 'nodes' } }
+    en: {
+      g: {
+        searchPlaceholder: 'Search {subject}',
+        nodes: 'nodes',
+        addNodeFilterCondition: 'Add node filter condition',
+        close: 'Close'
+      }
+    }
   }
 })
 
@@ -69,7 +80,7 @@ describe('NodeSearchBox', () => {
       output_name: [],
       output_node: false
     })
-    vi.spyOn(useNodeFrequencyStore(), 'topNodeDefs', 'get').mockReturnValue([
+    vi.spyOn(useNodeDefStore(), 'topNodeDefs', 'get').mockReturnValue([
       frequent
     ])
     const filter = new FuseFilter<ComfyNodeDefImpl>([], {
@@ -135,4 +146,46 @@ describe('NodeSearchBox', () => {
       expect(useTelemetry()?.trackNodeSearch).not.toHaveBeenCalled()
     }
   )
+
+  it('opens its filter dialog above search opened over another dialog', async () => {
+    render(OpenDialog)
+    const managerZIndex = Number(screen.getByTestId('open-dialog').style.zIndex)
+    const Harness = defineComponent({
+      components: { NodeSearchBox },
+      directives: { rekaZIndex: vRekaZIndex },
+      setup: () => ({ filterVisible: ref(false) }),
+      template: `
+        <div v-reka-z-index data-testid="search-content">
+          <NodeSearchBox v-model:filter-visible="filterVisible" :filters="[]" />
+        </div>
+      `
+    })
+    render(Harness, {
+      global: {
+        plugins: [i18n],
+        stubs: {
+          NodePreview: true,
+          NodeSearchFilter: true,
+          NodeSearchItem: true,
+          SearchAutocomplete: {
+            template: '<input />',
+            methods: { focus: vi.fn(), open: vi.fn() }
+          }
+        }
+      }
+    })
+    const searchContent = screen.getByTestId('search-content')
+
+    expect(Number(searchContent.style.zIndex)).toBeGreaterThan(managerZIndex)
+
+    const user = userEvent.setup()
+    await user.click(
+      screen.getByRole('button', { name: 'Add node filter condition' })
+    )
+    const filterContent = await screen.findByRole('dialog')
+
+    expect(Number(filterContent.style.zIndex)).toBeGreaterThan(
+      Number(searchContent.style.zIndex)
+    )
+  })
 })

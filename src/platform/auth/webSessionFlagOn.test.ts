@@ -624,11 +624,12 @@ function currentWorkspaceResponse(workspaceId: string | undefined): Response {
     return jsonResponse({ code: 'workspace_access_denied', message: 'no' }, 403)
   }
   const isTeam = workspaceId === 'ws-team'
+  const isSharedPersonal = workspaceId === 'ws-shared-personal'
   return jsonResponse({
     id: workspaceId ?? 'ws-personal',
     name: isTeam ? 'Team' : 'Personal',
     type: isTeam ? 'team' : 'personal',
-    role: 'owner',
+    role: isSharedPersonal ? 'member' : 'owner',
     auth_method: 'web_session',
     permissions: ['owner:*']
   })
@@ -926,7 +927,10 @@ describe('cloud API requests on the shared web session', () => {
       sessionRequest('GET', '/api/workspaces/current', {
         'x-comfy-workspace-id': 'ws-personal'
       }),
-      sessionRequest('GET', '/api/queue', { 'comfy-user': '' })
+      sessionRequest('GET', '/api/queue', {
+        'x-comfy-workspace-id': 'ws-personal',
+        'comfy-user': ''
+      })
     ])
     expect(workspaceAuth.currentWorkspace).toEqual({
       id: 'ws-personal',
@@ -980,6 +984,28 @@ describe('cloud API requests on the shared web session', () => {
       ).toEqual(tokens)
     }
   )
+
+  it("names a member's Team-plan workspace on requests even when its type is personal", async () => {
+    const ingest = await bootOnSession()
+    const workspaceAuth = useWorkspaceAuthStore()
+    await workspaceAuth.switchWorkspace('ws-shared-personal')
+    ingest.requests.length = 0
+
+    await postPrompt()
+
+    expect(workspaceAuth.currentWorkspace).toMatchObject({
+      id: 'ws-shared-personal',
+      type: 'personal',
+      role: 'member'
+    })
+    expect(ingest.requests).toEqual([
+      sessionRequest('POST', '/api/prompt', {
+        'x-comfy-workspace-id': 'ws-shared-personal',
+        ...PROMPT_HEADERS,
+        'x-csrf-token': 'csrf-1'
+      })
+    ])
+  })
 
   it('workspace_access_denied drops the selection, is never replayed, and never falls back to Personal while the reload is held', async () => {
     const ingest = await bootOnSession()
@@ -1097,7 +1123,10 @@ describe('workspace API and global settings on the shared web session', () => {
 
   it.for<{ workspace: string; headers: Record<string, string> }>([
     { workspace: 'ws-team', headers: { 'x-comfy-workspace-id': 'ws-team' } },
-    { workspace: 'ws-personal', headers: {} }
+    {
+      workspace: 'ws-personal',
+      headers: { 'x-comfy-workspace-id': 'ws-personal' }
+    }
   ])(
     'reads billing status in $workspace on the session cookie',
     async ({ workspace, headers }) => {
@@ -1308,7 +1337,9 @@ describe('live updates and media on the shared web session', () => {
     )
     await workspaceAuth.switchWorkspace('ws-personal')
     await vi.waitFor(() =>
-      expect(api.socket).toEqual(expect.objectContaining({ path: '/ws' }))
+      expect(api.socket).toEqual(
+        expect.objectContaining({ path: '/ws?workspace_id=ws-personal' })
+      )
     )
 
     expect(api.socket).toBe(FakeSocket.created.at(-1))
@@ -1326,9 +1357,9 @@ describe('live updates and media on the shared web session', () => {
 
   it.for([
     { workspace: 'ws-team', suffix: '&workspace_id=ws-team' },
-    { workspace: 'ws-personal', suffix: '' }
+    { workspace: 'ws-personal', suffix: '&workspace_id=ws-personal' }
   ])(
-    'media URLs name the workspace only for a team ($workspace)',
+    'media URLs name the selected workspace ($workspace)',
     async ({ workspace, suffix }) => {
       await bootOnSession()
       await useWorkspaceAuthStore().switchWorkspace(workspace)
@@ -1735,7 +1766,7 @@ describe('billing SDK rails on a tab that arrived by session', () => {
   })
 
   it.for([
-    { workspace: 'ws-personal', mintedFor: 'personal' },
+    { workspace: 'ws-personal', mintedFor: 'ws-personal' },
     { workspace: 'ws-team', mintedFor: 'ws-team' }
   ])(
     'reads billing in $workspace with a token minted from the session cookie alone',
@@ -1773,7 +1804,7 @@ describe('billing SDK rails on a tab that arrived by session', () => {
       status: 'completed'
     })
     expect(useAuthStore().currentUser).toBeNull()
-    expect(ingest.mintedFor).toEqual(['personal'])
+    expect(ingest.mintedFor).toEqual(['ws-personal'])
     expect(
       sent(ingest).filter(({ path }) => path === '/api/billing/topup')
     ).toEqual([
@@ -1823,7 +1854,7 @@ describe('billing SDK rails on a tab that arrived by session', () => {
     await useWorkspaceAuthStore().switchWorkspace('ws-team')
     await rail.readStatus()
 
-    expect(ingest.mintedFor).toEqual(['personal', 'ws-team'])
+    expect(ingest.mintedFor).toEqual(['ws-personal', 'ws-team'])
     expect(
       sent(ingest)
         .filter(({ path }) => path === '/api/billing/status')
@@ -1901,6 +1932,7 @@ describe.for([{ unified: false }, { unified: true }])(
       const authStore = useAuthStore()
       const workspaceAuth = useWorkspaceAuthStore()
 
+      await workspaceAuth.switchWorkspace('ws-personal')
       const personal = await authStore.getWorkspaceAuthToken()
       await workspaceAuth.switchWorkspace('ws-team')
       const team = await authStore.getWorkspaceAuthToken()
@@ -1912,7 +1944,7 @@ describe.for([{ unified: false }, { unified: true }])(
         'session-jwt-2',
         'session-jwt-1'
       ])
-      expect(ingest.mintedFor).toEqual(['personal', 'ws-team'])
+      expect(ingest.mintedFor).toEqual(['ws-personal', 'ws-team'])
     })
 
     it('resolves undefined for a revoked session and mints again once it recovers', async () => {

@@ -8,11 +8,13 @@ import Input from '@/components/ui/input/Input.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
 import type { MenuItem } from '@/components/ui/menu/types'
 import type {
+  AgentFreeUseNoticeMetadata,
   AgentPaywallSurface,
   AgentStarterPromptAssignment,
   AgentStopMethod
 } from '@/platform/telemetry/types'
 
+import type { FreeUseVariant } from '../../experiments/freeUsePlacement'
 import type { ActiveTab } from '../../types/activeTab'
 import type {
   WorkflowReference,
@@ -38,6 +40,7 @@ import ChatHistoryScreen from './ChatHistoryScreen.vue'
 import Composer from './Composer.vue'
 import ConversationView from './ConversationView.vue'
 import EmptyState from './EmptyState.vue'
+import FreeUseNotice from './FreeUseNotice.vue'
 import PanelHeader from './PanelHeader.vue'
 import RunNoticeBanner from './RunNoticeBanner.vue'
 import WorkflowSelectorChip from './composer/WorkflowSelectorChip.vue'
@@ -75,6 +78,7 @@ const {
   selectHistory = async () => false,
   editableTurnId = null,
   answeringAskIds = new Set<string>(),
+  freeUsePlacement = 'control',
   starterPromptAssignment = 'control',
   attributeStarterPromptExperiment = false
 } = defineProps<{
@@ -116,6 +120,7 @@ const {
   selectHistory?: (id: string, isCurrent: () => boolean) => Promise<boolean>
   editableTurnId?: TurnId | null
   answeringAskIds?: ReadonlySet<string>
+  freeUsePlacement?: FreeUseVariant
   starterPromptAssignment?: AgentStarterPromptAssignment
   attributeStarterPromptExperiment?: boolean
 }>()
@@ -128,6 +133,7 @@ const emit = defineEmits<{
   stop: [method: AgentStopMethod]
   attach: []
   attachFiles: [files: File[]]
+  removeAttachment: [id: string]
   openAssets: []
   selectNodes: []
   removeTag: [id: string]
@@ -151,6 +157,7 @@ const emit = defineEmits<{
   approvalShown: [askId: string, turnId: string, workflowId: string | null]
   openReferenceWorkflow: [workflowId: string, workflowName: string]
   showTarget: []
+  freeUseNotice: [metadata: AgentFreeUseNoticeMetadata]
   starterPromptRendered: [assignment: AgentStarterPromptAssignment]
 }>()
 
@@ -356,6 +363,12 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
       @close="onClose"
     />
 
+    <FreeUseNotice
+      v-if="!showHistory && freeUsePlacement === 'top-banner'"
+      placement="top-banner"
+      @notice="emit('freeUseNotice', $event)"
+    />
+
     <template v-if="showHistory">
       <ChatHistoryScreen
         :groups="historyGroups"
@@ -483,8 +496,12 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
 
     <template v-if="!showHistory">
       <slot name="instrument" />
-      <footer class="shrink-0 py-3">
-        <div class="mx-auto flex w-full max-w-[640px] flex-col gap-4 px-4">
+      <footer data-testid="agent-panel-footer" class="shrink-0 py-3">
+        <div
+          data-testid="agent-composer-stack"
+          class="mx-auto flex w-full max-w-[640px] flex-col gap-4 px-4"
+        >
+          <slot name="composerNotice" />
           <AgentPaywallCard
             v-if="creditsExhausted"
             data-testid="agent-credits-exhausted-paywall"
@@ -496,6 +513,11 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             :workflow-name="workflowDetached ? undefined : activeTab?.name"
             :context="targetNotice"
             @show-target="emit('showTarget')"
+          />
+          <FreeUseNotice
+            v-if="freeUsePlacement === 'near-composer'"
+            placement="near-composer"
+            @notice="emit('freeUseNotice', $event)"
           />
           <Composer
             ref="composerRef"
@@ -515,6 +537,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             @stop="emit('stop', $event)"
             @attach="emit('attach')"
             @attach-files="emit('attachFiles', $event)"
+            @remove-attachment="emit('removeAttachment', $event)"
             @open-assets="emit('openAssets')"
             @select-nodes="emit('selectNodes')"
             @remove-tag="emit('removeTag', $event)"
@@ -537,6 +560,20 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
                 :select-tab
                 :detached="workflowDetached"
                 :disabled="streaming || submitting || savingReference"
+              />
+            </template>
+            <template #aboveInput>
+              <FreeUseNotice
+                v-if="freeUsePlacement === 'above-input'"
+                placement="above-input"
+                @notice="emit('freeUseNotice', $event)"
+              />
+            </template>
+            <template #insideInput>
+              <FreeUseNotice
+                v-if="freeUsePlacement === 'inside-input'"
+                placement="inside-input"
+                @notice="emit('freeUseNotice', $event)"
               />
             </template>
           </Composer>

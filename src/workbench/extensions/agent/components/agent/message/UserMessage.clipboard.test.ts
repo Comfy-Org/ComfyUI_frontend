@@ -49,7 +49,7 @@ function renderComposer() {
   const onSend = vi.fn<NonNullable<ComponentProps<typeof Composer>['onSend']>>()
   render(Composer, {
     props: { hasWorkflowTarget: true, editableWorkflowId: 'target-A', onSend },
-    global: { plugins: [i18n], directives: { tooltip: () => {} } }
+    global: { plugins: [i18n] }
   })
   return { store, onSend, editor: screen.getByRole('textbox') }
 }
