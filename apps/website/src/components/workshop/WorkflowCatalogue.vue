@@ -417,16 +417,6 @@ const visible = computed(() => {
 })
 const { shown, total, hasMore, showMore } = usePagedList(visible)
 
-const browsing = computed(
-  () =>
-    !query.value.trim() &&
-    !inputs.value.length &&
-    !outputs.value.length &&
-    !runsOn.value.length &&
-    collection.value === 'all' &&
-    modalityTask.value === 'all'
-)
-
 const sectioned = computed(
   () =>
     !flatGrid.value &&
@@ -467,6 +457,14 @@ function clear() {
     :features-label="t('workshop.featured.workflowsLabel')"
     :locale
     data-testid="workflows-hub-hero"
+  />
+  <FeaturedBanner
+    v-if="featuredSlides.length"
+    :slides="featuredSlides"
+    :locale
+    :autoplay="false"
+    class="mb-8 short:mb-4"
+    @open="openFeatured"
   />
   <section
     class="flex flex-col lg:flex-row lg:items-start lg:gap-10"
@@ -557,14 +555,6 @@ function clear() {
           v-model="collection"
           :chips="collectionEntries"
           :label="t('workshop.workflowCollections.label')"
-        />
-        <FeaturedBanner
-          v-if="browsing && featuredSlides.length"
-          :slides="featuredSlides"
-          :locale
-          :autoplay="false"
-          class="mb-10 short:mb-6"
-          @open="openFeatured"
         />
 
         <WorkflowSectionRows

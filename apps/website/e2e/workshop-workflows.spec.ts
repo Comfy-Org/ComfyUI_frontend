@@ -69,7 +69,7 @@ test('workflow launch groups lead to the existing shared form', async ({
   await expect(catalogue.getByRole('button', { name: /See all/ })).toHaveCount(
     0
   )
-  await expect(catalogue.getByTestId('section-featured')).toBeVisible()
+  await expect(page.getByTestId('section-featured')).toBeVisible()
   await expect(page.getByTestId('browse-all-end')).toHaveCount(0)
   await expect(
     catalogue

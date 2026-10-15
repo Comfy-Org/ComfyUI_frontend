@@ -110,9 +110,7 @@ test('leads the Workflows catalogue with a featured workflow to open', async ({
       .getByTestId('workflows-hub-hero')
       .getByRole('heading', { level: 1, name: 'Workflows', exact: true })
   ).toBeVisible()
-  const banner = page
-    .getByTestId('workflow-catalogue')
-    .getByTestId('section-featured')
+  const banner = page.getByTestId('section-featured')
   const href = await banner
     .getByTestId('featured-slide-link')
     .getAttribute('href')
