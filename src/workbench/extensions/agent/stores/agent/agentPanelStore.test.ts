@@ -585,64 +585,78 @@ describe('agentPanelStore width', () => {
 })
 
 describe('agentPanelStore thread navigation', () => {
-  function historyView(
-    selection: Extract<AgentPanelView, { screen: 'history' }>['selection']
-  ): AgentPanelView {
-    return { screen: 'history', previousThreadId: 'th-open', selection }
-  }
-
   it.for([
     {
-      navigation: 'the chat screen',
+      outcome: 'keeps any chat current on the chat screen',
       view: { screen: 'chat' } satisfies AgentPanelView,
       threadId: 'th-other',
       activeThreadId: null,
       current: true
     },
     {
-      navigation: 'idle History on the Current chat',
-      view: historyView({ status: 'idle' }),
-      threadId: 'th-current',
-      activeThreadId: 'th-current',
+      outcome:
+        'keeps the active chat current on idle History opened over a new chat',
+      view: {
+        screen: 'history',
+        previousThreadId: null,
+        selection: { status: 'idle' }
+      } satisfies AgentPanelView,
+      threadId: 'th-active',
+      activeThreadId: 'th-active',
       current: true
     },
     {
-      navigation: 'idle History on the chat it opened over',
-      view: historyView({ status: 'idle' }),
+      outcome:
+        'keeps the chat idle History opened over current when no chat is active',
+      view: {
+        screen: 'history',
+        previousThreadId: 'th-open',
+        selection: { status: 'idle' }
+      } satisfies AgentPanelView,
       threadId: 'th-open',
       activeThreadId: null,
       current: true
     },
     {
-      navigation: 'idle History on another chat',
-      view: historyView({ status: 'idle' }),
+      outcome:
+        'makes a chat stale on idle History opened over another active chat',
+      view: {
+        screen: 'history',
+        previousThreadId: 'th-open',
+        selection: { status: 'idle' }
+      } satisfies AgentPanelView,
       threadId: 'th-other',
       activeThreadId: 'th-open',
       current: false
     },
     {
-      navigation: 'History loading the chat',
-      view: historyView({ status: 'loading', id: 'th-other' }),
+      outcome: 'keeps the chat History is loading current',
+      view: {
+        screen: 'history',
+        previousThreadId: 'th-open',
+        selection: { status: 'loading', id: 'th-other' }
+      } satisfies AgentPanelView,
       threadId: 'th-other',
       activeThreadId: 'th-open',
       current: true
     },
     {
-      navigation: 'History failing the Current chat',
-      view: historyView({ status: 'failed', id: 'th-current' }),
-      threadId: 'th-current',
-      activeThreadId: 'th-current',
+      outcome: 'makes the active chat stale once History fails to reopen it',
+      view: {
+        screen: 'history',
+        previousThreadId: 'th-open',
+        selection: { status: 'failed', id: 'th-open' }
+      } satisfies AgentPanelView,
+      threadId: 'th-open',
+      activeThreadId: 'th-open',
       current: false
     }
-  ])(
-    'keeps a thread current on $navigation: $current',
-    ({ view, threadId, activeThreadId, current }) => {
-      const store = useAgentPanelStore()
-      store.view = view
+  ])('$outcome', ({ view, threadId, activeThreadId, current }) => {
+    const store = useAgentPanelStore()
+    store.view = view
 
-      expect(store.isThreadNavigationCurrent(threadId, activeThreadId)).toBe(
-        current
-      )
-    }
-  )
+    expect(store.isThreadNavigationCurrent(threadId, activeThreadId)).toBe(
+      current
+    )
+  })
 })
