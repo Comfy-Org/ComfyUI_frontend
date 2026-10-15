@@ -41,6 +41,7 @@ const {
   muteOnly = false,
   hideControls = false,
   hideFullscreen = false,
+  hasAudio = true,
   controlsOnHover = false,
   persistentControls = false,
   preview = false,
@@ -69,6 +70,7 @@ const {
   muteOnly?: boolean
   hideControls?: boolean
   hideFullscreen?: boolean
+  hasAudio?: boolean
   /** Where the video is the content rather than something to operate, a
    * paused frame should not carry a bar across it: the controls wait for a
    * pointer. */
@@ -403,6 +405,7 @@ function toggleFullscreen() {
         @click="playing = !playing"
       />
       <button
+        v-if="hasAudio"
         type="button"
         class="flex size-8 items-center justify-center rounded-lg bg-primary-comfy-yellow lg:size-10"
         :aria-label="muted ? t('player.unmute') : t('player.mute')"
@@ -521,6 +524,7 @@ function toggleFullscreen() {
 
       <!-- Mute / Unmute button -->
       <button
+        v-if="hasAudio"
         type="button"
         class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary-comfy-yellow lg:size-10"
         :aria-label="muted ? t('player.unmute') : t('player.mute')"

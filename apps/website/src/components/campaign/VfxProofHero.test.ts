@@ -70,7 +70,7 @@ describe('VfxProofHero', () => {
   })
 
   it.for(['cleanplate', 'restyling'] as const)(
-    'plays the %s clip with sound and keeps the mute button honest',
+    'plays the %s clip without a sound control because it has no audio track',
     async (id) => {
       vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined)
       const user = userEvent.setup()
@@ -79,22 +79,11 @@ describe('VfxProofHero', () => {
       await user.click(
         screen.getByRole('button', { name: t(`vfxV2.proof.${id}`) })
       )
-      const video = screen.getByLabelText(t(`vfxV2.proof.${id}`))
-      if (!(video instanceof HTMLVideoElement))
-        throw new Error('Expected the labelled video element')
-      expect(video.muted).toBe(true)
-
       await user.click(screen.getByRole('button', { name: 'Play' }))
-      expect(video.muted).toBe(false)
-      expect(screen.getByRole('button', { name: 'Mute' })).toBeTruthy()
 
-      await user.click(screen.getByRole('button', { name: 'Mute' }))
-      expect(video.muted).toBe(true)
-      expect(screen.getByRole('button', { name: 'Unmute' })).toBeTruthy()
-
-      await user.click(screen.getByRole('button', { name: 'Unmute' }))
-      expect(video.muted).toBe(false)
-      expect(screen.getByRole('button', { name: 'Mute' })).toBeTruthy()
+      expect(screen.getByTestId('player-control-bar')).toBeTruthy()
+      expect(screen.queryByRole('button', { name: 'Mute' })).toBeNull()
+      expect(screen.queryByRole('button', { name: 'Unmute' })).toBeNull()
     }
   )
 })

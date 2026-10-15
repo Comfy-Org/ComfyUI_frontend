@@ -217,9 +217,6 @@ describe('VideoPlayer', () => {
     }
   )
 
-  // The toggle must flip what the element reports, not the player's own flag.
-  // Here the element becomes muted without a volumechange, so the flag still
-  // reads unmuted; flipping the flag would write muted back and leave it muted.
   it('toggles the muted state the video element reports, even when the control has not caught up', async () => {
     render(VideoPlayer, {
       props: {
@@ -242,7 +239,10 @@ describe('VideoPlayer', () => {
     })
 
     elementMuted = true
-    expect(screen.getByRole('button', { name: 'Mute' })).toBeTruthy()
+    expect(
+      screen.getByRole('button', { name: 'Mute' }),
+      'the control still reads unmuted because no volumechange fired'
+    ).toBeTruthy()
     await userEvent.click(screen.getByRole('button', { name: 'Mute' }))
 
     expect(elementMuted).toBe(false)
@@ -256,5 +256,26 @@ describe('VideoPlayer', () => {
 
     expect(await screen.findByRole('button', { name: 'Play' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Mute' })).toBeTruthy()
+  })
+
+  it.for([{ muteOnly: true }, { persistentControls: true }])(
+    'omits the mute control for a clip with no audio track (%o)',
+    async (mode) => {
+      render(VideoPlayer, {
+        props: { src: 'https://example.com/clip.mp4', hasAudio: false, ...mode }
+      })
+
+      expect(await screen.findByRole('button', { name: 'Play' })).toBeTruthy()
+      expect(screen.queryByRole('button', { name: 'Mute' })).toBeNull()
+      expect(screen.queryByRole('button', { name: 'Unmute' })).toBeNull()
+    }
+  )
+
+  it('shows the mute control in the control bar by default', async () => {
+    render(VideoPlayer, {
+      props: { src: 'https://example.com/clip.mp4', persistentControls: true }
+    })
+
+    expect(await screen.findByRole('button', { name: 'Mute' })).toBeTruthy()
   })
 })
