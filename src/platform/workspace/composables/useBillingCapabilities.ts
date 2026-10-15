@@ -1,4 +1,3 @@
-import type { BillingCapabilitiesResponse } from '@comfyorg/ingest-types'
 import {
   createSharedComposable,
   defaultDocument,
@@ -11,6 +10,7 @@ import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { onCapabilityRevision } from '@/platform/workspace/api/capabilityRevision'
+import type { BillingCapabilitiesRead } from '@/platform/workspace/api/workspaceApi'
 import {
   WorkspaceApiError,
   workspaceApi
@@ -37,7 +37,7 @@ type CapabilityReadState =
       status: 'resolved'
       authUid: string
       workspaceId: string
-      response: BillingCapabilitiesResponse
+      response: BillingCapabilitiesRead
       refreshAt: number
     }
 
@@ -70,7 +70,7 @@ interface ActiveCapabilityRequest {
 function readCapabilitiesResponse(
   signal: AbortSignal,
   revalidating: boolean
-): Promise<BillingCapabilitiesResponse | undefined> {
+): Promise<BillingCapabilitiesRead | undefined> {
   const rail = useBillingReadRail()
   if (rail === null) return workspaceApi.getBillingCapabilities(signal)
   return readOnRail(
@@ -223,7 +223,7 @@ function useBillingCapabilitiesInternal() {
 
   // NaN from an unparseable timestamp fails the comparison and lands on the
   // fixed interval.
-  function nextRefreshAt(response: BillingCapabilitiesResponse): number {
+  function nextRefreshAt(response: BillingCapabilitiesRead): number {
     const now = Date.now()
     const remaining = Date.parse(response.expires_at) - now
     if (remaining >= MIN_REFRESH_DELAY_MS) {
