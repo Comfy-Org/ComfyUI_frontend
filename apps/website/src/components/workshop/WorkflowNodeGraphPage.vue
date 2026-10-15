@@ -78,7 +78,7 @@ const pillClass =
           as="a"
           :href="workflow.downloadUrl"
           download
-          variant="outline"
+          variant="secondaryOutline"
           class="h-auto min-h-11 max-w-full whitespace-normal"
           :aria-label="t('workshop.workflow.download')"
           data-testid="node-graph-download"
