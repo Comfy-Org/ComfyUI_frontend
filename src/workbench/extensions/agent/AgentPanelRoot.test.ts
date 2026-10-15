@@ -8319,9 +8319,9 @@ describe('AgentPanelRoot workflow binding', () => {
           return json(202, ack(staleWorkflowId))
         }
         if (url.includes('/messages')) return json(200, history)
+        if (url.includes(`/workflows/${staleWorkflowId}`)) return json(404, {})
         if (url.includes('/workflows'))
           return json(200, {
-            // Re-targeting the fresh tab saves it as a new cloud workflow.
             data: fresh.isTemporary
               ? []
               : [{ id: 'wf-new', name: 'Unsaved Workflow' }],
