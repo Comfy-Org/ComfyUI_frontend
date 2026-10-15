@@ -6987,18 +6987,20 @@ describe('AgentPanelRoot workflow binding', () => {
   it.for([
     {
       listing: 'omits the workflow',
+      lookup: 'answers 404',
       listingStatus: 200,
       lookupStatus: 404,
       notices: [i18n.global.t('agent.targetWorkflowUnavailable')]
     },
     {
       listing: 'fails',
+      lookup: 'fails',
       listingStatus: 500,
       lookupStatus: 500,
       notices: []
     }
   ])(
-    'restores a stored chat on startup when the workflow listing $listing',
+    'restores a stored chat on startup when the workflow listing $listing and its lookup $lookup',
     async ({ listingStatus, lookupStatus, notices }) => {
       makeTab('wf-42')
       useAgentConversationStore().setThreadId('th-history')
@@ -7058,7 +7060,7 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(useAgentChatHistoryStore().activeId).toBeNull()
   })
 
-  it('toasts a startup restoration failure that lands while history is open without a selection', async () => {
+  it('toasts a startup restoration failure that lands while history is open without a selection (listing fails, no lookup, bound workflow does not open)', async () => {
     let failListing = () => {}
     const listing = new Promise<number>((resolve) => {
       failListing = () => resolve(500)
@@ -8329,25 +8331,35 @@ describe('AgentPanelRoot workflow binding', () => {
       }
     ]
     const bodies: unknown[] = []
-    vi.mocked(fetch).mockImplementation(
-      async (input: RequestInfo | URL, init?: RequestInit) => {
-        const url = String(input)
-
-        if (url.includes('/messages') && init?.method === 'POST') {
-          bodies.push(JSON.parse(String(init.body)))
-          return json(202, ack(staleWorkflowId))
-        }
-        if (url.includes('/messages')) return json(200, history)
-        if (url.includes(`/workflows/${staleWorkflowId}`)) return json(404, {})
-        if (url.includes('/workflows'))
-          return json(200, {
-            data: fresh.isTemporary
-              ? []
-              : [{ id: 'wf-new', name: 'Unsaved Workflow' }],
-            pagination: { offset: 0, limit: 100, total: 0, has_more: false }
-          })
-        return json(200, agentThreadList())
-      }
+    respondToFetch({ method: 'GET', url: /\/agent\/threads/ }, () =>
+      json(200, agentThreadList())
+    )
+    respondToFetch({ method: 'GET', url: /\/messages/ }, () =>
+      json(200, history)
+    )
+    respondToFetch({ method: 'POST', url: /\/messages/ }, (_input, init) => {
+      bodies.push(JSON.parse(String(init?.body)))
+      return json(202, ack(staleWorkflowId))
+    })
+    respondToFetch({ method: 'GET', url: /\/workflows/ }, () =>
+      json(200, {
+        data: fresh.isTemporary
+          ? []
+          : [{ id: 'wf-new', name: 'Unsaved Workflow' }],
+        pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+      })
+    )
+    respondToFetch({ method: 'GET', url: /\/workflows\/wf-abandoned$/ }, () =>
+      json(200, {
+        id: staleWorkflowId,
+        latest_version: 0,
+        created_by: 'user-1',
+        created_at: '2026-09-11T10:00:00Z',
+        updated_at: '2026-09-11T10:00:00Z'
+      })
+    )
+    respondToFetch({ method: 'GET', url: /\/assets/ }, () =>
+      json(200, { assets: [], total: 0, has_more: false })
     )
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
@@ -8355,6 +8367,14 @@ describe('AgentPanelRoot workflow binding', () => {
       expect(useAgentPanelStore().canRestoreWorkflow).toBe(false)
     )
 
+    expect(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.switchWorkflow')
+      })
+    ).toHaveTextContent(i18n.global.t('agent.selectWorkflowForAgent'))
+    expect(
+      screen.queryByText(i18n.global.t('agent.targetWorkflowUnavailable'))
+    ).toBeNull()
     expect(useAgentPanelStore().selectedWorkflow).toBeNull()
     expect(
       useAgentWorkflowTabBindingStore().tabPathFor(staleWorkflowId)
@@ -8904,7 +8924,7 @@ describe('AgentPanelRoot workflow binding', () => {
     )
   })
 
-  it('activates a tab for the chat that History opened over after its startup restoration failed', async () => {
+  it('activates a tab for the chat that History opened over after its startup restoration failed (listing fails, no lookup, bound workflow does not open)', async () => {
     makeTab('wf-42')
     useAgentConversationStore().setThreadId('th-history')
     stubHistoryWithWorkflowListing({ listing: 500, lookup: 404 })
@@ -8941,7 +8961,7 @@ describe('AgentPanelRoot workflow binding', () => {
     )
   })
 
-  it('drops an activation from a history chat that fails to open and is then deleted', async () => {
+  it('drops an activation from a history chat that fails to open and is then deleted (listing fails, no lookup, bound workflow does not open)', async () => {
     const current = makeTab('wf-42')
     await startCurrentChat()
     let finishListing = (_status: number) => {}
@@ -8986,7 +9006,7 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(useAgentChatHistoryStore().activeId).toBe('th-1')
   })
 
-  it('drops an activation from the current chat when reopening it from history fails', async () => {
+  it('drops an activation from the current chat when reopening it from history fails (listing fails, no lookup, bound workflow does not open)', async () => {
     const current = makeTab('wf-42')
     openDeletedTargetChatAtStartup()
     await waitFor(() =>
