@@ -206,9 +206,7 @@ test.describe(
         await expect(panel.getByTestId('user-message-bubble')).toHaveText([
           EARLIER_REQUEST
         ])
-        await panel
-          .getByRole('button', { name: enMessages.agent.showChatHistory })
-          .click()
+        await agentPanel.openHistory()
         await expect(
           agentPanel.currentHistorySection.getByRole('button', {
             name: savedChat.thread.title,

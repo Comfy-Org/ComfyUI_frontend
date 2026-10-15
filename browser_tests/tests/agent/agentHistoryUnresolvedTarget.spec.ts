@@ -24,18 +24,11 @@ test.describe(
       const originalGraph = await serializeGraph()
 
       await test.step('open the chat from History', async () => {
-        await panel
-          .getByRole('button', { name: enMessages.agent.showChatHistory })
-          .click()
-        await panel
-          .getByRole('button', { name: chatTitle, exact: true })
-          .click()
+        await agentPanel.openHistoryChat(chatTitle)
         await expect(panel.getByTestId('user-message-bubble')).toHaveText([
           earlierPrompt
         ])
-        await expect(
-          panel.getByRole('heading', { name: enMessages.agent.history })
-        ).toBeHidden()
+        await expect(agentPanel.historyHeading).toBeHidden()
         await expect(agentPanel.workflowPicker).toHaveText(
           enMessages.agent.selectWorkflowForAgent
         )

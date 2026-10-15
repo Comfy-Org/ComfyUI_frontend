@@ -37,6 +37,8 @@ export class AgentPanel {
   public readonly dockedPanel: Locator
   public readonly dockedPanelShell: Locator
   public readonly fileInput: Locator
+  public readonly historyButton: Locator
+  public readonly historyHeading: Locator
   public readonly nodeSelectionBanner: Locator
   public readonly openButton: Locator
   public readonly root: Locator
@@ -89,6 +91,14 @@ export class AgentPanel {
     this.dockedPanel = page.getByTestId('docked-agent-panel')
     this.dockedPanelShell = page.getByTestId('docked-agent-panel-shell')
     this.fileInput = this.root.getByTestId('agent-file-input')
+    this.historyButton = this.root.getByRole('button', {
+      name: enMessages.agent.showChatHistory,
+      exact: true
+    })
+    this.historyHeading = this.root.getByRole('heading', {
+      name: enMessages.agent.history,
+      exact: true
+    })
     this.nodeSelectionBanner = page.getByTestId('node-selection-mode-banner')
     this.openButton = page.getByRole('button', {
       name: enMessages.agent.entryButton,
@@ -300,6 +310,16 @@ export class AgentPanel {
 
     await expect(this.root).toBeVisible({ timeout })
     return this.root
+  }
+
+  async openHistory(): Promise<void> {
+    await this.historyButton.click()
+    await expect(this.historyHeading).toBeVisible()
+  }
+
+  async openHistoryChat(title: string): Promise<void> {
+    await this.openHistory()
+    await this.root.getByRole('button', { name: title, exact: true }).click()
   }
 
   async close(): Promise<void> {
