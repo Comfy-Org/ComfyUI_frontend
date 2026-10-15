@@ -224,36 +224,85 @@ const label = await comfy.ui.prompt({
 
 The result is `undefined` when the user cancels.
 
-## Backend URLs, requests, and events
+## Pack-relative backend requests and events
 
-### Authenticated API calls
+### Calling this pack's declared endpoints
 
 ```js
-const response = await comfy.backend.fetch('/my-pack/models', {
+const response = await comfy.backend.fetch('presets', {
   method: 'GET'
 })
 ```
 
-`fetch()` delegates credentials and authentication behavior to the host. Its
-route is API-relative and must start with `/`.
+`backend.fetch()` and `backend.ownFetch()` call only endpoints declared by the
+calling Secure Nodes pack. New code uses relative endpoint paths, with no
+leading slash, empty or dot segments, percent-encoded path, scheme, authority,
+backslash, fragment, or control character. Invalid paths are rejected rather
+than decoded or normalized. Query values are re-encoded by the host.
 
-`backend.url(route)` builds the absolute API URL but does not attach credentials
-to a later plain `fetch()`. Prefer `backend.fetch()` for API requests.
+The host assigns the route base from trusted pack identity and constructs
+`/ext/<assigned-base>/<relative-path>` internally. The namespace is stable across
+pack revisions and restarts; it is not an authorization secret. Pack code must
+not choose a base. The host attaches authentication only after
+validating the pack-relative request; a pack cannot select core routes,
+another pack's endpoints, or an external server.
 
-### Static host files
+Backend declarations use the same relative path in `secure-nodes.json`:
 
-```js
-const url = comfy.backend.assetUrl('/extensions/shared/icon.svg')
+```json
+{
+  "routes": [
+    {
+      "method": "get",
+      "path": "presets",
+      "module": "_secure_routes",
+      "handler": "list_presets",
+      "permissions": ["storage"]
+    }
+  ]
+}
 ```
 
-`assetUrl()` does not add the API prefix. For a file next to the current pack's
-module, use the install-location-safe form:
+The runtime mounts declarations beneath the system-assigned base and checks
+the declared method and endpoint. A pack with no declared routes has no endpoint
+to call. Bodies remain bounded data; credentials and server request objects stay
+in the host.
+
+Legacy URL builders (`backend.url()`, `ownUrl()`, and `assetUrl()`) are not a
+supported pack API. Trusted-host adapters retained in declarations are
+deprecated for pack use. Do not construct `/ext/` URLs or use a plain fetch to
+bypass the host broker.
+
+The interim runtime accepts an older `ownFetch()` request carrying the exact
+calling pack's `/ext/<assigned-base>/` prefix, then strips and rebuilds it under
+the host's grant. It also normalizes one legacy leading slash in backend route
+declarations with a deprecation warning. These compatibility forms cannot
+address another namespace; new pack code uses relative paths.
+
+### Shared capabilities = named async API methods
+
+Shared/core operations use named async methods on `comfy.*`, with typed inputs,
+bounded results, host validation, and a declared capability where required.
+For example, `await comfy.system.monitor()` reads a validated snapshot and
+`await comfy.queue.interrupt()` interrupts execution. Queue status has the
+local `comfy.queue.pending()` snapshot and `onPendingChanged()` subscription.
+
+Model catalogues, image view/upload, and other shared operations require their
+published named capabilities. If the current declaration lacks the needed
+method, report an API gap with the intended behavior and bounds. Do not fetch
+`/userdata`, `/settings`, `/internal`, `/queue`, `/view`, `/upload`, or another
+pack's routes. Proposed methods are unavailable until implemented and published.
+
+### Bundled files
+
+For an admitted file next to the pack module, use a module-relative URL:
 
 ```js
 const stylesheet = new URL('./panel.css', import.meta.url)
 ```
 
-Do not guess the pack's install directory.
+The host serves admitted bundled assets. This does not grant a backend route;
+do not guess the pack's install directory or route base.
 
 ### Backend messages and session identity
 
@@ -319,10 +368,18 @@ const names = await comfy.storage.list('MyPack.presets')
 await comfy.storage.remove('MyPack.presets/portrait')
 ```
 
-Names and namespaces must contain a pack prefix and may not contain `..`.
+Names and namespaces are logical keys within the host-selected user/pack scope.
+Keep a dotted prefix for grouping and do not include `..`. Choosing another
+pack's name does not select its data: the host adds the physical namespace from
+trusted identity and returns only logical names. The same key used by two packs
+is isolated. A pack never supplies a user identity or physical storage prefix.
+
+Secure Nodes hosts that have not implemented this isolation reject pack storage
+RPCs. A dotted key alone does not make shared user data safe to expose.
+
 `get()` returns `undefined` for a missing item; `list()` returns an empty frozen
 array when the namespace has no entries.
 
-Storage lives with the user's server-side data and follows the user between
-machines. Use settings for small preferences, and storage for content the user
-expects to retain and manage by name.
+The configured host storage backend owns persistence and cross-machine
+availability. Use settings for small preferences, and storage for content the
+user expects to retain and manage by name.

@@ -41,18 +41,18 @@ See [Registration, lifecycle, and globals](./registration.md).
 
 ### Domain roots
 
-| Member     | Type             | Guide                                                            |
-| ---------- | ---------------- | ---------------------------------------------------------------- |
-| `graph`    | `GraphHandle`    | [Graphs](./graph.md)                                             |
-| `defs`     | `DefRegistry`    | [Nodes and definitions](./nodes.md)                              |
-| `queue`    | `QueueHandle`    | [Execution](./execution.md)                                      |
-| `settings` | `SettingsHandle` | [Services](./services.md#settings)                               |
-| `storage`  | `StorageHandle`  | [Services](./services.md#per-user-storage)                       |
-| `ui`       | `UiHandle`       | [Services](./services.md#sidebar-tabs)                           |
-| `commands` | `CommandsHandle` | [Services](./services.md#commands-keybindings-and-notifications) |
-| `backend`  | `BackendHandle`  | [Services](./services.md#backend-urls-requests-and-events)       |
-| `workflow` | `WorkflowHandle` | [Services](./services.md#workflow-service)                       |
-| `system`   | `SystemHandle`   | [Services](./services.md#system-monitoring)                      |
+| Member     | Type             | Guide                                                               |
+| ---------- | ---------------- | ------------------------------------------------------------------- |
+| `graph`    | `GraphHandle`    | [Graphs](./graph.md)                                                |
+| `defs`     | `DefRegistry`    | [Nodes and definitions](./nodes.md)                                 |
+| `queue`    | `QueueHandle`    | [Execution](./execution.md)                                         |
+| `settings` | `SettingsHandle` | [Services](./services.md#settings)                                  |
+| `storage`  | `StorageHandle`  | [Services](./services.md#per-user-storage)                          |
+| `ui`       | `UiHandle`       | [Services](./services.md#sidebar-tabs)                              |
+| `commands` | `CommandsHandle` | [Services](./services.md#commands-keybindings-and-notifications)    |
+| `backend`  | `BackendHandle`  | [Services](./services.md#pack-relative-backend-requests-and-events) |
+| `workflow` | `WorkflowHandle` | [Services](./services.md#workflow-service)                          |
+| `system`   | `SystemHandle`   | [Services](./services.md#system-monitoring)                         |
 
 ### Lifecycle and observation
 
@@ -612,11 +612,17 @@ icon, optional label/tooltip, and `run(event)`. Their `ChromeItemHandle` can
 
 ### `BackendHandle`
 
-- `url(route): string`
-- `assetUrl(route): string`
+- `ownFetch(route, init?): Promise<Response>`
 - `sessionId(): string | undefined`
 - `on(event, listener): Unsubscribe`
 - `fetch(route, init?): Promise<Response>`
+
+Both fetch methods accept relative paths to the calling pack's own declared
+endpoints, such as `presets`. Absolute paths, traversal, percent-encoded paths,
+schemes, and caller-selected prefixes are rejected. The host assigns and retains
+the base; shared/core operations use named async `comfy.*` capabilities.
+See the [routing contract](./services.md#pack-relative-backend-requests-and-events).
+URL builders retained for trusted host adapters are deprecated for pack use.
 
 ### `WorkflowHandle`
 
