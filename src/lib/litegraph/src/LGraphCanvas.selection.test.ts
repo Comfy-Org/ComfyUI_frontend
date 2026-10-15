@@ -55,7 +55,7 @@ function marquee(
   } as CanvasPointerEvent
   if (canvas.liveSelection) {
     canvas['handleLiveSelect'](event, dragRect, initialSelection)
-    canvas['finalizeLiveSelect'](initialSelection)
+    canvas['reportSelectionChange'](initialSelection)
   } else {
     canvas['_handleMultiSelect'](event, dragRect)
   }
@@ -468,6 +468,15 @@ describe('LGraphCanvas selection', () => {
 
       expect(sizesSeenByHooks).toEqual([1, 2])
       expect(onSelectionChange).toHaveBeenCalledTimes(1)
+    })
+
+    it('selectItems() does not report reselecting the current selection', () => {
+      canvas.select(a)
+      vi.mocked(onSelectionChange).mockClear()
+
+      canvas.selectItems([a])
+
+      expect(onSelectionChange).not.toHaveBeenCalled()
     })
 
     it('continues a batch from selection changed by an earlier hook', () => {

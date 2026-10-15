@@ -2934,7 +2934,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           this.handleLiveSelect(eMove, dragRect, initialSelection)
       }
 
-      pointer.onDragEnd = () => this.finalizeLiveSelect(initialSelection)
+      pointer.onDragEnd = () => this.reportSelectionChange(initialSelection)
     } else {
       // Classic mode: select only when drag ends
       pointer.onDragEnd = (upEvent) =>
@@ -4571,11 +4571,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (replaceCanvasSelection(this, desired)) this.setDirty(true)
   }
 
-  /**
-   * Finalizes the live selection when drag ends.
-   * @param initialSelection The selection state before the drag started
-   */
-  private finalizeLiveSelect(initialSelection: Set<Positionable>): void {
+  private reportSelectionChange(initialSelection: Set<Positionable>): void {
     const { selectedItems } = this
     const unchanged =
       selectedItems.size === initialSelection.size &&
@@ -4701,10 +4697,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       (item) => ownsSelectable(this, item)
     )
     if (itemsToSelect.length === 0 && items?.length) return
-    const cleared = !add_to_current_selection && clearCanvasSelection(this)
-    const added = changeCanvasSelection(this, itemsToSelect, true)
-    if (cleared || added)
-      this.onSelectionChange?.(this.selectionView.selectedNodes)
+    const initialSelection = new Set(this.selectedItems)
+    if (!add_to_current_selection) clearCanvasSelection(this)
+    changeCanvasSelection(this, itemsToSelect, true)
+    this.reportSelectionChange(initialSelection)
     this.setDirty(true)
   }
 
