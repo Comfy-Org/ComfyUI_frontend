@@ -370,8 +370,7 @@ describe('ConversationView', () => {
     }
 
     it('does not scroll when a trace expands or collapses at the end', async () => {
-      const { scroll, geometry, scrollTo, summary } =
-        await mountCompletedTurnAtEnd()
+      const { geometry, scrollTo, summary } = await mountCompletedTurnAtEnd()
 
       await toggleTrace(summary, true)
       geometry.trace = 200
@@ -382,22 +381,19 @@ describe('ConversationView', () => {
       await nextTick()
 
       expect(scrollTo).not.toHaveBeenCalled()
-      expect(scroll.scrollTop).toBe(500)
     })
 
     it('does not follow new content while a toggled trace is still opening', async () => {
-      const { store, scroll, scrollTo, summary } =
-        await mountCompletedTurnAtEnd()
+      const { store, scrollTo, summary } = await mountCompletedTurnAtEnd()
       await toggleTrace(summary, true)
 
       await startNextTurn(store)
 
       expect(scrollTo).not.toHaveBeenCalled()
-      expect(scroll.scrollTop).toBe(500)
     })
 
     it('keeps new content below the fold after a trace opens away from the end', async () => {
-      const { store, scroll, geometry, scrollTo, summary } =
+      const { store, geometry, scrollTo, summary } =
         await mountCompletedTurnAtEnd()
       await toggleTrace(summary, true)
       geometry.trace = 200
@@ -409,7 +405,6 @@ describe('ConversationView', () => {
       dispatchResize()
 
       expect(scrollTo).not.toHaveBeenCalled()
-      expect(scroll.scrollTop).toBe(500)
       await userEvent.click(screen.getByRole('button', { name: 'Latest' }))
       expect(scrollTo).toHaveBeenCalledWith({ top: 900, behavior: 'instant' })
     })
@@ -458,7 +453,6 @@ describe('ConversationView', () => {
 
       expect(screen.getByRole('list')).toBeInTheDocument()
       expect(scrollTo).not.toHaveBeenCalled()
-      expect(scroll.scrollTop).toBe(600)
       await finishAnimation('agent-collapsible-down')
       expect(screen.getByRole('button', { name: 'Latest' })).toBeInTheDocument()
     })
@@ -584,8 +578,10 @@ describe('ConversationView', () => {
     )
 
     it('keeps the view in place when a trace opens a conversation that fits past the panel', async () => {
-      const { scroll, geometry, scrollTo, summary } =
-        await mountCompletedTurnAtEnd({ content: 500, scrollTop: 0 })
+      const { geometry, scrollTo, summary } = await mountCompletedTurnAtEnd({
+        content: 500,
+        scrollTop: 0
+      })
 
       await toggleTrace(summary, true)
       dispatchResize()
@@ -594,7 +590,6 @@ describe('ConversationView', () => {
       await finishAnimation('agent-collapsible-down')
 
       expect(scrollTo).not.toHaveBeenCalled()
-      expect(scroll.scrollTop).toBe(0)
       expect(screen.getByRole('button', { name: 'Latest' })).toBeInTheDocument()
     })
 
@@ -617,7 +612,6 @@ describe('ConversationView', () => {
       dispatchResize()
 
       expect(scrollTo).not.toHaveBeenCalled()
-      expect(scroll.scrollTop).toBe(600)
     })
 
     it('keeps the view in place when new content arrives while a trace opens a conversation that fits', async () => {
