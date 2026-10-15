@@ -4844,7 +4844,7 @@
       "deliveryFailed": "実行は完了しましたが、一部の出力を配信できませんでした。出力の配信を再試行して、この実行から取得してください。",
       "dismissUnknown": "入力に戻る",
       "download": "ワークフロー JSONをダウンロード",
-      "downloadShort": "ダウンロード",
+      "downloadShort": "ワークフローをダウンロード",
       "explore": "可能性を探る",
       "factAuthor": "作成者",
       "factOutput": "出力",

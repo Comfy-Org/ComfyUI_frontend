@@ -91,7 +91,7 @@ describe('WorkflowPage header', () => {
     ).toHaveAttribute('data-variant', 'ghost')
     expect(
       within(paths).getByRole('link', { name: 'Download workflow' })
-    ).toHaveAttribute('data-variant', 'outline')
+    ).toHaveAttribute('data-variant', 'secondaryOutline')
     expect(
       within(paths)
         .getAllByRole('link')
