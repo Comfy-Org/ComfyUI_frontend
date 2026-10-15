@@ -217,7 +217,10 @@ describe('VideoPlayer', () => {
     }
   )
 
-  it('writes the mute toggle to the video element and shows what the element reports', async () => {
+  // The toggle must flip what the element reports, not the player's own flag.
+  // Here the element becomes muted without a volumechange, so the flag still
+  // reads unmuted; flipping the flag would write muted back and leave it muted.
+  it('toggles the muted state the video element reports, even when the control has not caught up', async () => {
     render(VideoPlayer, {
       props: {
         src: 'https://example.com/clip.mp4',
@@ -228,14 +231,21 @@ describe('VideoPlayer', () => {
     const video = screen.getByLabelText('Clip')
     if (!(video instanceof HTMLVideoElement))
       throw new Error('Expected the labelled video element')
-    expect(video.muted).toBe(false)
+    await nextTick()
+    let elementMuted = false
+    Object.defineProperty(video, 'muted', {
+      configurable: true,
+      get: () => elementMuted,
+      set: (value: boolean) => {
+        elementMuted = value
+      }
+    })
 
+    elementMuted = true
+    expect(screen.getByRole('button', { name: 'Mute' })).toBeTruthy()
     await userEvent.click(screen.getByRole('button', { name: 'Mute' }))
-    expect(video.muted).toBe(true)
-    expect(screen.getByRole('button', { name: 'Unmute' })).toBeTruthy()
 
-    await userEvent.click(screen.getByRole('button', { name: 'Unmute' }))
-    expect(video.muted).toBe(false)
+    expect(elementMuted).toBe(false)
     expect(screen.getByRole('button', { name: 'Mute' })).toBeTruthy()
   })
 
