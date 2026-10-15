@@ -5,6 +5,7 @@ import type {
   AgentPostMessageRequest,
   AgentRunMode,
   AgentThreadListResponse,
+  AgentThreadSummary,
   GlobalSetting,
   ListAssetsResponse,
   WorkflowListResponse
@@ -17,10 +18,7 @@ import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import type {
-  AgentThreadSummary,
-  AgentTurnAccepted
-} from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type { AgentTurnAccepted } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { cloudAppFixture, waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
