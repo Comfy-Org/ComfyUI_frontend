@@ -69,7 +69,7 @@ const previewSrc = usePreviewVideo(video, () => active.value?.media?.url, {
     data-testid="section-featured"
   >
     <div
-      class="group relative flex min-h-50 sm:min-h-44 lg:min-h-48"
+      class="group relative flex min-h-52 sm:min-h-40"
       data-testid="featured-slide"
     >
       <a
@@ -107,33 +107,32 @@ const previewSrc = usePreviewVideo(video, () => active.value?.media?.url, {
       />
 
       <div
-        class="pointer-events-none relative flex w-full min-w-0 items-end justify-between gap-4 px-7 pt-7 pb-14 max-sm:px-5 max-sm:pt-5 lg:px-9 lg:pt-8"
+        class="pointer-events-none relative flex w-full min-w-0 items-end justify-between gap-8 px-7 pt-7 pb-17 max-sm:px-5 max-sm:pt-5 lg:px-9 lg:pt-8"
       >
-        <div class="flex max-w-2xl min-w-0 flex-col gap-3">
-          <div class="flex flex-wrap items-center gap-2">
-            <Badge
-              variant="subtle"
-              size="md"
-              class="text-primary-comfy-canvas backdrop-blur-md"
-            >
-              {{ active.kind }}
-            </Badge>
-            <Badge
-              v-for="capability in active.tags"
-              :key="capability"
-              variant="subtle"
-              size="md"
-              class="text-content-secondary backdrop-blur-md max-sm:hidden"
-            >
-              {{ capability }}
-            </Badge>
-          </div>
-
+        <div
+          class="flex max-w-3xl min-w-0 flex-wrap items-center gap-x-3 gap-y-2"
+        >
           <h2
             class="line-clamp-2 text-xl font-bold text-balance text-primary-warm-white max-sm:line-clamp-3 max-sm:text-lg lg:text-2xl"
           >
             {{ active.title }}
           </h2>
+          <Badge
+            variant="subtle"
+            size="md"
+            class="text-primary-comfy-canvas backdrop-blur-md"
+          >
+            {{ active.kind }}
+          </Badge>
+          <Badge
+            v-for="capability in active.tags"
+            :key="capability"
+            variant="subtle"
+            size="md"
+            class="text-content-secondary backdrop-blur-md max-sm:hidden"
+          >
+            {{ capability }}
+          </Badge>
         </div>
 
         <div class="pointer-events-auto flex shrink-0 items-center gap-3">
