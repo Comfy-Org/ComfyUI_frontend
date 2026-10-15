@@ -2085,6 +2085,7 @@
     "enterpriseMsa": "Enterprise MSA",
     "fishAudio": "Fish Audio",
     "flux3": "Flux 3",
+    "flux3ImageKlein": "FLUX 3 Image Klein",
     "geminiOmni": "Gemini Omni 1.1 Flash",
     "language": "语言",
     "location": "美国旧金山",
@@ -5330,6 +5331,37 @@
       },
       "enterprise": "查看企业方案详情",
       "licensing": "MINIMAX 许可"
+    }
+  },
+  "krea3": {
+    "meta": {
+      "title": "Krea 3：参考图驱动的图像编辑 | Comfy",
+      "description": "通过视觉参考编辑图像。探索 Comfy 中用于产品广告、室内设计和角色创作的 Krea 3 工作流。"
+    },
+    "hero": {
+      "title": "KREA 3",
+      "description": "从你的图像出发，掌控每次编辑，保留关键细节。使用 Krea 3 构建参考图驱动的图像工作流。",
+      "cta": "使用 KREA 3 编辑",
+      "references": "参考图驱动的编辑",
+      "image": "图像模型",
+      "workflows": "查看工作流"
+    },
+    "references": "你的参考图，你的创作方向。",
+    "products": "同一产品，不同广告场景。",
+    "interiors": "同一空间，更多可能。",
+    "characters": "保留角色，改变场景。",
+    "steps": {
+      "heading": "构建参考图编辑工作流",
+      "label": "步骤"
+    },
+    "faq": "了解 KREA 3",
+    "closing": {
+      "heading": "将你的下一个创意带入 COMFY",
+      "description": "将参考图、编辑步骤和后续处理连接成可重复使用的工作流。",
+      "cta": "使用 KREA 3 编辑"
+    },
+    "workflows": {
+      "heading": "使用 Krea 3 创作"
     }
   },
   "flux3Image": {

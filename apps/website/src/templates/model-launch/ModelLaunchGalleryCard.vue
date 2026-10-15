@@ -6,6 +6,7 @@ import type { Locale } from '@/i18n/translations'
 import type { ModelLaunchGallery, ModelLaunchGalleryCard } from './types'
 
 import Badge from '@/components/ui/badge/Badge.vue'
+import VideoCompareSlider from '@/components/common/VideoCompareSlider.vue'
 import CopyTextButton from '@/components/ui/copy-text-button/CopyTextButton.vue'
 import IconButton from '@/components/ui/icon-button/IconButton.vue'
 import { translationsFor } from '@/i18n/translations'
@@ -52,7 +53,19 @@ const linkClass = cn(
 
 <template>
   <article>
+    <div v-if="card.comparison" class="aspect-19/10">
+      <VideoCompareSlider
+        media-kind="image"
+        :before-src="card.comparison.beforeSrc"
+        :after-src="card.comparison.afterSrc"
+        :before-label="t('modelLaunch.beforeAfter.before')"
+        :after-label="t('modelLaunch.beforeAfter.after')"
+        :slider-label="t('modelLaunch.beforeAfter.sliderLabel')"
+        class="h-full rounded-4.5xl"
+      />
+    </div>
     <ModelLaunchGalleryCardMedia
+      v-else
       :card
       :locale
       :overlay-caption="overlayCaption"

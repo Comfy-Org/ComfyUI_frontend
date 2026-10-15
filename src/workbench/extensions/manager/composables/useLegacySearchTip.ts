@@ -10,7 +10,8 @@ const LEGACY_MANAGER_KEYWORDS = [
 
 export function useLegacySearchTip(
   searchQuery: Ref<string>,
-  isNewManagerUI: Ref<boolean>
+  isNewManagerUI: Ref<boolean>,
+  rawResultsEmpty: Ref<boolean>
 ) {
   const isLegacyManagerSearch = computed(() => {
     if (!isNewManagerUI.value) return false
@@ -19,7 +20,12 @@ export function useLegacySearchTip(
     return LEGACY_MANAGER_KEYWORDS.some((keyword) => query.includes(keyword))
   })
 
+  const isUnmatchedLegacyManagerSearch = computed(
+    () => isLegacyManagerSearch.value && rawResultsEmpty.value
+  )
+
   return {
-    isLegacyManagerSearch
+    isLegacyManagerSearch,
+    isUnmatchedLegacyManagerSearch
   }
 }
