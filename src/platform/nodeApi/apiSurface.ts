@@ -177,6 +177,7 @@ export const API_MEMBERS: ReadonlySet<string> = new Set([
   'minHeight',
   'minWidth',
   'mode',
+  'models',
   'modify',
   'monitor',
   'mount',

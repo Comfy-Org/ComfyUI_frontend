@@ -81,6 +81,7 @@ are:
 | `comfy.ui`       | Contribute tabs, badges, buttons, dialogs, menus, and prompts.   |
 | `comfy.commands` | Register and run commands, keybindings, and notifications.       |
 | `comfy.backend`  | Call this pack's declared relative endpoints and receive events. |
+| `comfy.models`   | List logical names from a host-selected model catalogue.         |
 | `comfy.workflow` | Open workflow data and apply host text replacements.             |
 
 Root lifecycle and observation methods cover application readiness, workflow
