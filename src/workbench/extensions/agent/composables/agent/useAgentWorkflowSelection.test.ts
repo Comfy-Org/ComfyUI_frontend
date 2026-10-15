@@ -724,7 +724,8 @@ describe('historical workflow restoration', () => {
   })
 
   it('does not reopen a draft closed while its row is being read', async () => {
-    const { selection, workflows, bindings, panel, getCloudWorkflow } = setup()
+    const { selection, workflows, bindings, panel, current, getCloudWorkflow } =
+      setup()
     const draft = openDraftTab(workflows, bindings)
     let readStarted = () => {}
     const started = new Promise<void>((resolve) => {
@@ -755,6 +756,9 @@ describe('historical workflow restoration', () => {
     expect(panel.selectedWorkflow).toBeNull()
     expect(panel.targetUnavailable).toBe(false)
     expect(workflows.openWorkflows).not.toContain(draft)
+    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
+    expect(workflows.activeWorkflow?.path).toBe(current.path)
+    expect(bindings.tabPathFor('wf-draft')).toBeUndefined()
   })
 
   it('leaves a deleted target unavailable when nothing local answers for it', async () => {
