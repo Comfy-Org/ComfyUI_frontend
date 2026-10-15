@@ -8627,25 +8627,19 @@ describe('AgentPanelRoot workflow binding', () => {
       { method: 'POST', url: /\/messages/ },
       () => new Promise<Response>(() => {})
     )
-    await userEvent.click(screen.getByRole('textbox'))
-    await userEvent.paste('work here')
-    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
-    await waitFor(() =>
-      expect(fetchRequests({ method: 'POST', url: /\/messages/ })).toHaveLength(
-        1
-      )
-    )
-    expect(useAgentConversationStore().threadId).toBeNull()
+    await sendFromComposer('work here')
   }
 
   const acknowledgedActivation = {
     activation: 'acknowledged',
     send: () => sendFromComposer('work here'),
+    threadAtActivation: 'th-1',
     event: { workflow_id: 'wf-late', name: 'Late', thread_id: 'th-1' }
   }
   const legacyActivationBeforeAcknowledgment = {
     activation: 'legacy pre-acknowledgment',
     send: sendBeforeAcknowledgment,
+    threadAtActivation: null,
     event: { workflow_id: 'wf-late', name: 'Late' }
   }
   const newChatNavigation = {
@@ -8666,7 +8660,7 @@ describe('AgentPanelRoot workflow binding', () => {
     { ...legacyActivationBeforeAcknowledgment, ...historyNavigation }
   ])(
     'drops an older $activation activation when $navigation navigation happens during the creation delay',
-    async ({ send, event, navigate, targetPath }) => {
+    async ({ send, threadAtActivation, event, navigate, targetPath }) => {
       const current = makeTab('wf-42')
       mockMessagesEndpoint(
         'wf-42',
@@ -8681,6 +8675,7 @@ describe('AgentPanelRoot workflow binding', () => {
       )
       renderWithSelectedTarget()
       await send()
+      expect(useAgentConversationStore().threadId).toBe(threadAtActivation)
       vi.useFakeTimers()
       ws.emit('agent_active_tab', event)
       await vi.advanceTimersByTimeAsync(0)
