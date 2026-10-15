@@ -5345,7 +5345,6 @@
       "openSource": "开源",
       "imageGeneration": "图像生成",
       "imageEdit": "图像编辑",
-      "primaryCta": "运行 FLUX 3 IMAGE KLEIN",
       "secondaryCta": "阅读文档"
     },
     "runOptions": {

@@ -36,11 +36,6 @@ export const flux3ImagePage: ModelLaunchPage = {
       'flux3Image.hero.imageGeneration',
       'flux3Image.hero.imageEdit'
     ],
-    primaryCta: {
-      labelKey: 'flux3Image.hero.primaryCta',
-      href: cloudTemplate,
-      target: '_blank'
-    },
     secondaryCta: {
       labelKey: 'flux3Image.hero.secondaryCta',
       href: docsUrl,

@@ -19,14 +19,11 @@ for (const prefix of ['', '/zh-CN']) {
       'https://media.comfy.org/website/flux-3-image/flux-hero-1280.mp4'
     )
     await expect(
-      page.getByRole('link', {
+      hero.getByRole('link', {
         name: prefix ? '运行 FLUX 3 IMAGE KLEIN' : 'RUN FLUX 3 IMAGE KLEIN',
         exact: true
       })
-    ).toHaveAttribute(
-      'href',
-      'https://cloud.comfy.org/?template=image_flux3_klein_t2i'
-    )
+    ).toHaveCount(0)
     await expect(
       hero.getByRole('link', {
         name: prefix ? '阅读文档' : 'READ DOCS',
