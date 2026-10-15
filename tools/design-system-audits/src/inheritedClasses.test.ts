@@ -187,6 +187,10 @@ describe('applyFindings', () => {
     {
       template: '<div class="text-sm"><p class="text-sm">x</p></div>',
       fixed: '<div class="text-sm"><p>x</p></div>'
+    },
+    {
+      template: '<div class="text-sm"><p class=text-sm>x</p></div>',
+      fixed: '<div class="text-sm"><p>x</p></div>'
     }
   ])('removes the inherited classes from $template', ({ template, fixed }) => {
     const source = sfc(template)

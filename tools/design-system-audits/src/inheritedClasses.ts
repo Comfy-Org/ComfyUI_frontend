@@ -1015,7 +1015,8 @@ export function applyFindings(source: string, findings: Finding[]) {
   let result = source
   for (const { start, end, remove } of edits) {
     const kept = result
-      .slice(start + 1, end - 1)
+      .slice(start, end)
+      .replace(/^["']|["']$/g, '')
       .split(/\s+/)
       .filter((token) => token && !remove.includes(token))
     result = kept.length
