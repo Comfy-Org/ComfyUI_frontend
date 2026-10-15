@@ -1563,10 +1563,10 @@ function followHeldBack(workflow: ComfyWorkflow): boolean {
   return workflow.isTemporary || userEngaged() || chatTargets(workflow)
 }
 
-async function tabWorkflowId(
+async function refreshedCloudIdFor(
   workflow: ComfyWorkflow
 ): Promise<string | undefined> {
-  if (cloudIdFor(workflow) === undefined) await refreshCloudWorkflowIds()
+  await refreshCloudWorkflowIds()
   return cloudIdFor(workflow)
 }
 
@@ -1597,7 +1597,8 @@ async function followTab(workflow: ComfyWorkflow): Promise<void> {
     generation === followGeneration &&
     workflowStore.activeWorkflow?.path === workflow.path &&
     !userEngaged()
-  const workflowId = await tabWorkflowId(workflow)
+  const workflowId =
+    cloudIdFor(workflow) ?? (await refreshedCloudIdFor(workflow))
   if (workflowId === undefined || !isCurrent()) return
   await refreshHistory('none')
   if (!isCurrent()) return

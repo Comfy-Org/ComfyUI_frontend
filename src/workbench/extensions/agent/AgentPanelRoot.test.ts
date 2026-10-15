@@ -5763,6 +5763,30 @@ describe('AgentPanelRoot history', () => {
       )
     })
 
+    it('starts re-listing chats at once for a tab whose cloud id is known', async () => {
+      workflowStore.activeWorkflow = addTab('workflows/first.json')
+      const second = addTab('workflows/second.json')
+      const { listCalls } = stubWorkflowBoundHistory([
+        agentThread({
+          id: 'th-second',
+          title: 'Second chat',
+          last_message_at: '2026-09-22T10:00:00Z',
+          workflow_id: 'wf-second'
+        })
+      ])
+      renderWithSelectedTarget()
+      await vi.waitFor(() =>
+        expect(useAgentChatHistoryStore().sessions).toHaveLength(1)
+      )
+      await settleFollow()
+      const listedBefore = listCalls()
+
+      workflowStore.activeWorkflow = second
+      workflowStore.reportUserActivation(second)
+
+      expect(listCalls()).toBe(listedBefore + 1)
+    })
+
     it('does not re-list chats for a saved tab that has no cloud workflow', async () => {
       workflowStore.activeWorkflow = addTab('workflows/first.json')
       const unlisted = addTab('workflows/fourth.json')
