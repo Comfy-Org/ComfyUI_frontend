@@ -24,6 +24,11 @@ import { deriveWidgetSurfaces } from '@/types/widgetVisibility'
 import { mapUniqueNodes } from '@/utils/graphTraversalUtil'
 import { isSubgraph } from '@/utils/typeGuardUtil'
 
+import {
+  markDynamicGroupController,
+  reportDynamicGroupRowRefusal
+} from './dynamicGroupDiagnostics'
+
 export function dynamicGroupWidget(
   node: LGraphNode,
   inputName: string,
@@ -46,6 +51,7 @@ export function dynamicGroupWidget(
     hidden: true,
     options: { min, max, socketless: true, serialize: false }
   })
+  markDynamicGroupController(controller)
   node.addCustomWidget(
     new DynamicGroupNoticeWidget(
       {
@@ -214,16 +220,29 @@ export function dynamicGroupWidget(
     }
   }
 
+  function renameRowWidgets(oldPrefix: string, newPrefix: string) {
+    for (const widget of node.widgets ?? []) {
+      if (widget.name !== oldPrefix && !widget.name.startsWith(`${oldPrefix}.`))
+        continue
+      const name = newPrefix + widget.name.slice(oldPrefix.length)
+      widget.name = name
+      if (
+        widget.name === name &&
+        widget.serialize !== false &&
+        widget.type !== 'button' &&
+        widget.widgetId
+      )
+        store.announceValue(widget.widgetId)
+    }
+  }
+
   function renameRow(
     oldPrefix: string,
     newPrefix: string,
     hosts: PromotionHostLookup
   ) {
     const rowLabel = rows().find((row) => row.name === oldPrefix)?.label
-    for (const widget of node.widgets ?? []) {
-      if (widget.name === oldPrefix || widget.name.startsWith(`${oldPrefix}.`))
-        widget.name = newPrefix + widget.name.slice(oldPrefix.length)
-    }
+    renameRowWidgets(oldPrefix, newPrefix)
     for (const input of node.inputs) {
       if (!input.name.startsWith(`${oldPrefix}.`)) continue
       input.name = newPrefix + input.name.slice(oldPrefix.length)
@@ -255,7 +274,14 @@ export function dynamicGroupWidget(
       callback: () => {
         if (rows().length <= min) return
         changeRows(() => {
-          removeRow(Number(header.name.slice(inputName.length + 1)))
+          const requested = rows().length - 1
+          if (!removeRow(Number(header.name.slice(inputName.length + 1))))
+            reportDynamicGroupRowRefusal(
+              node,
+              'remove_row',
+              requested,
+              rows().length
+            )
           publish()
         })
       }
@@ -387,6 +413,13 @@ export function dynamicGroupWidget(
       }
       publish()
       announceAddedValues(existing)
+      if (rowCount !== count)
+        reportDynamicGroupRowRefusal(
+          node,
+          rowCount > count ? 'remove_row' : 'add_row',
+          count,
+          rowCount
+        )
     }
   })
   controller.value = initialCount

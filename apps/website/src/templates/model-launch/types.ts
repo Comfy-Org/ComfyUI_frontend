@@ -87,7 +87,7 @@ export interface ModelLaunchGalleryCard {
   id: string
   name: LocalizedText
   tier: ModelLaunchTier
-  note: LocalizedText
+  note?: LocalizedText
   description: LocalizedText
   // The prompt that produced the clip. Cards that have one also offer a copy
   // button; cards still waiting on copy simply omit it.
@@ -102,7 +102,7 @@ export interface ModelLaunchGalleryCard {
 }
 
 export interface ModelLaunchGallery {
-  headingKey: TranslationKey
+  headingKey?: TranslationKey
   // 'accent' paints the per-card link solid yellow. Defaults to the muted
   // treatment /minimax ships, so opting in cannot restyle a live page.
   ctaVariant?: 'muted' | 'accent' | 'none'

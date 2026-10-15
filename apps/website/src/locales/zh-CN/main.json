@@ -5104,7 +5104,7 @@
       "deliveryFailed": "运行已完成，但部分输出未能送达。重试获取此运行的输出即可。",
       "dismissUnknown": "返回输入",
       "download": "下载工作流 JSON",
-      "downloadShort": "下载",
+      "downloadShort": "下载工作流",
       "explore": "探索更多可能",
       "factAuthor": "作者",
       "factOutput": "输出",
@@ -5361,6 +5361,26 @@
     },
     "workflows": {
       "heading": "使用 Krea 3 创作"
+    }
+  },
+  "flux3Image": {
+    "meta": {
+      "title": "FLUX 3 Image Klein Launch {'|'} Comfy"
+    },
+    "breadcrumb": {
+      "updated": "更新于 2026 年 10 月"
+    },
+    "hero": {
+      "title": "FLUX 3 Image Klein",
+      "description": "Black Forest Labs 最新的开放权重模型提供两个版本：标准版和步数蒸馏 turbo 版。两者都能生成和编辑图像。使用标准版创作图像，或使用 turbo 版快速迭代。",
+      "openSource": "开源",
+      "imageGeneration": "图像生成",
+      "imageEdit": "图像编辑",
+      "primaryCta": "运行 FLUX 3 IMAGE KLEIN",
+      "secondaryCta": "阅读文档"
+    },
+    "runOptions": {
+      "subtitle": "在浏览器中构建工作流，在自己的硬件上探索 ComfyUI，或通过 API 连接创作流程。"
     }
   }
 }
