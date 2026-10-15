@@ -5892,6 +5892,10 @@
       "sdk": "EXPLORE THE SDK",
       "platform": "DEVELOPER PLATFORM"
     },
+    "fdc": {
+      "heading": "Build your custom workflows with our Forward Deployed Creatives",
+      "cta": "LEARN MORE"
+    },
     "learning": {
       "heading": "Go inside the workflow.",
       "description": "Follow the cleanplate and sky-replacement walkthroughs when you’re ready to build."
