@@ -21,6 +21,7 @@ export default defineConfig({
     restoreMocks: true,
     unstubEnvs: true,
     unstubGlobals: true,
+    silent: 'passed-only',
     fakeTimers: { shouldAdvanceTime: true },
     environment: 'happy-dom',
     environmentOptions: {
@@ -35,6 +36,7 @@ export default defineConfig({
     include: ['src/**/*.{test,spec}.ts', 'scripts/**/*.{test,spec}.ts'],
     globals: false,
     setupFiles: [
+      join(repoRoot, 'vitest.console.setup.ts'),
       join(repoRoot, 'vitest.network.setup.ts'),
       join(repoRoot, 'vitest.timer.setup.ts'),
       './src/test/setup.ts'

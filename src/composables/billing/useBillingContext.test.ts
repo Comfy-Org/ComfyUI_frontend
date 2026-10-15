@@ -15,10 +15,6 @@ import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useAuthStore } from '@/stores/authStore'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
-import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
-import { prepareChurnkey } from '@/platform/cloud/churnkey/churnkeyClient'
-import { launchCancellationFlow } from '@/platform/cloud/subscription/launchCancellationFlow'
-import { reportError } from '@/platform/telemetry/reportError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useAgentDockMount } from '@/workbench/extensions/agent/composables/useAgentDockMount'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
@@ -35,11 +31,15 @@ import {
   remoteConfigState
 } from '@/platform/remoteConfig/remoteConfig'
 
+import {
+  readCheckoutOperation,
+  refreshBilling
+} from '@/platform/workspace/billing/billingRefresh'
+
 import { useBillingContext as useSharedBillingContext } from './useBillingContext'
 
 vi.mock(import('firebase/auth'))
 vi.mock(import('@/composables/useErrorHandling'))
-vi.mock(import('@/platform/cloud/churnkey/churnkeyClient'))
 vi.mock(import('@/platform/telemetry'))
 vi.mock(import('@/platform/telemetry/reportError'))
 
@@ -107,10 +107,6 @@ vi.mock<unknown>(
       }
     })
   })
-)
-
-vi.mock(
-  import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
 )
 
 vi.mock(import('@/composables/auth/useAuthActions'))
@@ -396,35 +392,6 @@ describe('useBillingContext', () => {
     await expect(fetchStatus()).resolves.toBeUndefined()
   })
 
-  it('reports a failed post-discount refresh through the workspace billing adapter', async () => {
-    mockBillingRail.value = 'stripe'
-    vi.spyOn(
-      useTeamWorkspaceStore(),
-      'activeWorkspaceId',
-      'get'
-    ).mockReturnValue('personal-123')
-    const scope = effectScope()
-    onTestFinished(() => scope.stop())
-    const billing = scope.run(useSharedBillingContext)
-    assert.exists(billing)
-    await vi.waitFor(() => expect(billing.isInitialized.value).toBe(true))
-    const error = new Error('Billing status unavailable')
-    vi.mocked(workspaceApi.getBillingStatus).mockRejectedValue(error)
-    vi.mocked(prepareChurnkey).mockResolvedValue({
-      show: async () => ({ type: 'discount-applied' })
-    })
-    const showFallback = vi.fn()
-
-    await scope.run(() => launchCancellationFlow({ showFallback }))
-
-    expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
-      surface: 'billing',
-      errorType: 'error_refreshing_billing_after_churnkey_discount'
-    })
-    expect(useSubscription().fetchStatus).not.toHaveBeenCalled()
-    expect(showFallback).not.toHaveBeenCalled()
-  })
-
   it('exposes fetchBalance action', async () => {
     const { fetchBalance } = useBillingContext()
     await expect(fetchBalance()).resolves.toBeUndefined()
@@ -569,7 +536,7 @@ describe('useBillingContext', () => {
   ])(
     'finds an operation the server reports after the first read (pending: $pending)',
     async ({ pending, found }) => {
-      const context = useBillingContext()
+      useBillingContext()
       await vi.waitFor(() =>
         expect(workspaceApi.getBillingStatus).toHaveBeenCalled()
       )
@@ -579,7 +546,7 @@ describe('useBillingContext', () => {
         pending_billing_op_id: pending
       }
 
-      await expect(context.readCheckoutOperation()).resolves.toBe(found)
+      await expect(readCheckoutOperation()).resolves.toBe(found)
 
       expect(workspaceApi.getBillingStatus).toHaveBeenCalledOnce()
       expect(workspaceApi.getBillingBalance).not.toHaveBeenCalled()
@@ -600,14 +567,46 @@ describe('useBillingContext', () => {
     expect(canAccessSubscriptionFeatures.value).toBe(true)
   })
 
-  it('exposes requireActiveSubscription action', async () => {
-    const { requireActiveSubscription } = useBillingContext()
-    await expect(requireActiveSubscription()).resolves.toBeUndefined()
-  })
+  describe('announced billing refreshes', () => {
+    it.for([
+      { scope: 'account' as const, status: 1, balance: 1 },
+      { scope: 'subscription' as const, status: 1, balance: 1 }
+    ])(
+      'refetches on the legacy rail for a $scope refresh',
+      async ({ scope, status, balance }) => {
+        mockBillingRail.value = 'legacy_stripe'
+        useBillingContext()
+        await vi.waitFor(() => {
+          expect(useAuthStore().fetchBalance).toHaveBeenCalled()
+        })
+        vi.clearAllMocks()
 
-  it('exposes showSubscriptionDialog action', () => {
-    const { showSubscriptionDialog } = useBillingContext()
-    expect(() => showSubscriptionDialog()).not.toThrow()
+        await refreshBilling(scope)
+
+        expect(useSubscription().fetchStatus).toHaveBeenCalledTimes(status)
+        expect(useAuthStore().fetchBalance).toHaveBeenCalledTimes(balance)
+      }
+    )
+
+    it('stops answering refreshes and checkout reads once its scope stops', async () => {
+      const scope = effectScope()
+      scope.run(useSharedBillingContext)
+      await vi.waitFor(() =>
+        expect(workspaceApi.getBillingStatus).toHaveBeenCalled()
+      )
+      scope.stop()
+      vi.clearAllMocks()
+      mockBillingStatus.value = {
+        ...DEFAULT_BILLING_STATUS,
+        pending_billing_op_id: 'op-1'
+      }
+
+      await refreshBilling('account')
+
+      await expect(readCheckoutOperation()).resolves.toBe(false)
+      expect(workspaceApi.getBillingStatus).not.toHaveBeenCalled()
+      expect(workspaceApi.getBillingBalance).not.toHaveBeenCalled()
+    })
   })
 
   it('reports the rail in effect when cancelSubscription was dispatched, not the one after it resolves', async () => {
@@ -813,42 +812,40 @@ describe('useBillingContext', () => {
       }
     )
 
-    it('holds previewSubscribe and requireActiveSubscription until the workspace loads', async () => {
+    it('holds previewSubscribe until the workspace loads', async () => {
       const loaded = holdWorkspaceUnloaded('team')
       const context = useBillingContext()
       vi.clearAllMocks()
 
       const preview = context.previewSubscribe('creator-annual')
-      const require = context.requireActiveSubscription()
       await nextTick()
       expect(workspaceApi.previewSubscribe).not.toHaveBeenCalled()
 
       loaded.value = true
-      await Promise.all([preview, require])
+      await preview
 
       expect(workspaceApi.previewSubscribe).toHaveBeenCalledOnce()
     })
 
-    it('holds reconcile, checkout-operation reads, plans and the subscription dialog until the workspace loads', async () => {
+    it('holds reconcile, checkout-operation reads, plans and the routing wait until the workspace loads', async () => {
       const loaded = holdWorkspaceUnloaded('team')
       const context = useBillingContext()
       vi.clearAllMocks()
 
       const reconcile = context.reconcileSubscriptionSuccess()
-      const operation = context.readCheckoutOperation()
+      const operation = readCheckoutOperation()
       const plans = context.fetchPlans()
-      context.showSubscriptionDialog({ reason: 'subscription_required' })
+      const routing = context.whenRoutingKnown()
       await nextTick()
       expect(workspaceApi.getBillingStatus).not.toHaveBeenCalled()
       expect(mockFetchPlans).not.toHaveBeenCalled()
-      expect(useSubscriptionDialog().show).not.toHaveBeenCalled()
 
       loaded.value = true
       await Promise.all([reconcile, operation, plans])
 
       expect(workspaceApi.getBillingStatus).toHaveBeenCalled()
       expect(mockFetchPlans).toHaveBeenCalled()
-      expect(useSubscriptionDialog().show).toHaveBeenCalled()
+      await expect(routing).resolves.toBe(true)
     })
 
     it('holds a user-initiated action until the workspace loads', async () => {

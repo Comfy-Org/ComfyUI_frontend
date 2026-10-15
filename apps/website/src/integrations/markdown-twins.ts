@@ -111,7 +111,7 @@ export async function writeMarkdownTwins(
       continue
     }
     if (await exists(target)) {
-      // A page endpoint (e.g. supported-models' [slug].md.ts) already wrote
+      // A page endpoint (e.g. the model files' [slug].md.ts) already wrote
       // this twin. It is a real, current twin — section indexes and
       // llms-full.txt must still include it, just not regenerate it here.
       // Checked ahead of readBuiltPage: a page can ship a markdown twin with

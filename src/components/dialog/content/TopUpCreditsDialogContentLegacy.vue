@@ -166,7 +166,6 @@ import {
   getTopupAmountPreset,
   TOPUP_AMOUNT_PRESETS_USD
 } from '@comfyorg/account-core/billing'
-import { useToast } from 'primevue/usetoast'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -176,7 +175,9 @@ import NumberField from '@/components/ui/number-field/NumberField.vue'
 import NumberFieldDecrement from '@/components/ui/number-field/NumberFieldDecrement.vue'
 import NumberFieldIncrement from '@/components/ui/number-field/NumberFieldIncrement.vue'
 import NumberFieldInput from '@/components/ui/number-field/NumberFieldInput.vue'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@/platform/telemetry'
 import { usePendingTopup } from '@/composables/billing/usePendingTopup'
@@ -270,7 +271,7 @@ async function handleBuy() {
   loading.value = true
   try {
     telemetry?.trackApiCreditTopupButtonPurchaseClicked(payAmount.value)
-    if (authActions.canPurchaseCredits()) {
+    if (useBillingContext().canAccessSubscriptionFeatures.value) {
       telemetry?.trackBillingEvent({
         operation: 'topup',
         stage: 'started',
@@ -279,8 +280,8 @@ async function handleBuy() {
         amount_cents: payAmount.value * 100,
         amount_preset: getTopupAmountPreset(selectedPreset.value)
       })
+      await authActions.purchaseCreditsDirect(payAmount.value)
     }
-    await authActions.purchaseCreditsDirect(payAmount.value)
 
     // Close top-up dialog (keep tracking) and open Plan & Credits to show the
     // updated balance. The destination is the V1 panel for every session: the
@@ -302,10 +303,10 @@ async function handleBuy() {
       payment_intent_source: source,
       ...describeBillingFailure(error)
     })
-    toast.add({
-      severity: 'error',
-      summary: t('credits.topUp.purchaseError'),
-      detail: t('credits.topUp.purchaseErrorDetail', { error: errorMessage })
+    toast.error(t('credits.topUp.purchaseError'), {
+      description: t('credits.topUp.purchaseErrorDetail', {
+        error: errorMessage
+      })
     })
   } finally {
     loading.value = false

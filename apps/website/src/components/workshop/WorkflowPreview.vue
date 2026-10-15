@@ -17,12 +17,11 @@ import WorkflowGraph from './WorkflowGraph.vue'
 
 const {
   model,
-  cloudHref,
   standalone = false,
   active = true
 } = defineProps<{
   model: WorkflowWorkshopModelDetail
-  cloudHref?: string
+  /** Shown as the page's body when the workflow has no Run panel. */
   standalone?: boolean
   /** Whether this tab is showing; the graph waits until it first is. */
   active?: boolean
@@ -38,14 +37,8 @@ const enabled = useWorkshopEnabled()
 const workflowsEnabled = useWorkshopWorkflowsEnabled()
 const modelAnalytics = workshopModelAnalytics(model)
 
-function captureTryInCloud() {
-  if (enabled.value && workflowsEnabled.value)
-    captureWorkshopEvent({
-      name: 'try_in_cloud_clicked',
-      properties: modelAnalytics
-    })
-}
-
+// The page header downloads the default file; only a workflow offering
+// several versions picks one here, and the graph follows the pick.
 function captureWorkflowDownload() {
   if (enabled.value && workflowsEnabled.value)
     captureWorkshopEvent({
@@ -204,31 +197,12 @@ const facts = computed(() => {
 
       <div :class="standalone ? 'min-w-0 lg:order-1' : 'lg:col-span-4'">
         <div class="flex flex-col gap-4 lg:sticky lg:top-24">
-          <div class="flex flex-col gap-3" data-testid="workflow-actions">
-            <Button
-              v-if="cloudHref && model.catalogDetails?.worksOnCloud !== false"
-              as="a"
-              :href="cloudHref"
-              target="_blank"
-              rel="noopener"
-              class="h-auto min-h-11 max-w-full whitespace-normal"
-              @click="captureTryInCloud"
-              >{{ t('workshop.workflow.tryCloud') }}</Button
-            >
-            <Button
-              v-if="downloadHref"
-              as="a"
-              :href="downloadHref"
-              :download="`${model.slug.split('/').pop()}.json`"
-              variant="outline"
-              class="h-auto min-h-11 max-w-full whitespace-normal"
-              @click="captureWorkflowDownload"
-              >{{ t('workshop.workflow.download') }}</Button
-            >
-            <label
-              v-if="files && files.length > 1"
-              class="grid gap-2 text-sm text-primary-warm-gray"
-            >
+          <div
+            v-if="files && files.length > 1"
+            class="flex flex-col gap-3"
+            data-testid="workflow-versions"
+          >
+            <label class="grid gap-2 text-sm text-primary-warm-gray">
               {{ t('cccWorkflow.version') }}
               <select
                 :value="downloadHref"
@@ -245,14 +219,13 @@ const facts = computed(() => {
               </select>
             </label>
             <Button
-              v-if="model.catalogDetails?.documentationURL"
               as="a"
-              :href="model.catalogDetails.documentationURL"
-              target="_blank"
-              rel="noopener noreferrer"
+              :href="downloadHref"
+              :download="`${model.slug.split('/').pop()}.json`"
               variant="outline"
               class="h-auto min-h-11 max-w-full whitespace-normal"
-              >{{ t('workshop.workflow.apiDocs') }}</Button
+              @click="captureWorkflowDownload"
+              >{{ t('workshop.workflow.download') }}</Button
             >
           </div>
 
@@ -332,6 +305,7 @@ const facts = computed(() => {
                         alt=""
                         class="size-6 shrink-0 rounded-full object-cover"
                         referrerpolicy="no-referrer"
+                        data-testid="workflow-author-avatar"
                       />
                       <UserRound
                         v-else

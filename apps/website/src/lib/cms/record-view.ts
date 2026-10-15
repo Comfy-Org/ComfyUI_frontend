@@ -16,6 +16,7 @@ export async function loadRecordView(
   query: URLSearchParams
 ) {
   if (
+    // oxlint-disable-next-line comfy/no-capability-recombination -- SSR route authorization enforcing the server-issued catalog capabilities, not a rendered UI gate
     !session ||
     (!session.can_edit && !session.can_apply) ||
     !z.uuid().safeParse(rawUID).success ||

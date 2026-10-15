@@ -1,7 +1,7 @@
 <template>
   <div
     data-testid="open-shared-workflow-dialog"
-    class="flex w-full flex-col"
+    class="flex w-176 max-w-full flex-col overflow-hidden rounded-2xl border border-border-default bg-base-background shadow-lg"
     :aria-busy="isOpening"
   >
     <header

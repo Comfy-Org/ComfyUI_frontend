@@ -1,6 +1,6 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 
-const NON_MODEL_ROUTES = new Set(['apps', 'showcase', 'workflows'])
+const NON_MODEL_ROUTES = new Set(['apps', 'local', 'showcase', 'workflows'])
 
 if (!existsSync('dist/hub/models'))
   throw new Error('dist/hub/models is missing: build the website first')

@@ -103,7 +103,9 @@ function capabilities(
   if (!tester) return review
   return {
     ...review,
+    // oxlint-disable-next-line comfy/no-capability-recombination -- a local demo/tester role only narrows the server capability; it never grants one
     can_edit: review.can_edit && tester.role !== 'review',
+    // oxlint-disable-next-line comfy/no-capability-recombination -- a local demo/tester role only narrows the server capability; it never grants one
     can_apply: review.can_apply && tester.role === 'publish'
   }
 }

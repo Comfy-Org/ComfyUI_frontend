@@ -12,13 +12,13 @@
 </template>
 
 <script setup lang="ts">
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useSubscriptionPaywall } from '@/composables/billing/useSubscriptionPaywall'
 import UploadModelUpgradeModalBody from '@/platform/assets/components/UploadModelUpgradeModalBody.vue'
 import UploadModelUpgradeModalFooter from '@/platform/assets/components/UploadModelUpgradeModalFooter.vue'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const dialogStore = useDialogStore()
-const { showSubscriptionDialog } = useBillingContext()
+const { showSubscriptionDialog } = useSubscriptionPaywall()
 
 function handleClose() {
   dialogStore.closeDialog({ key: 'upload-model-upgrade' })

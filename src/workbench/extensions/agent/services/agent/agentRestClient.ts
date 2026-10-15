@@ -9,25 +9,36 @@ import {
 } from '@comfyorg/ingest-types/zod'
 import type { z } from 'zod'
 
+import type {
+  AuthRejectionStatus,
+  AuthRejectionTags
+} from '@/platform/auth/authRejection'
+import {
+  authRejectionTags,
+  isAuthRejectionStatus
+} from '@/platform/auth/authRejection'
 import {
   markErrorReported,
   reportError
 } from '@/platform/telemetry/reportError'
-import type { AuthScheme } from '@/scripts/api'
 import { api } from '@/scripts/api'
+import type { AuthCredential, AuthScheme } from '@/types/authTypes'
+
+import { refusedAttachmentsMessage } from '../../utils/attachmentMessages'
 
 import {
-  zAgentAnswerAccepted,
+  zAgentAnswerReceipt,
   zAgentCancelAccepted,
   zAgentError,
   zAgentMessages,
   zAgentRunMode,
   zAgentThreads,
   zAgentTurnAccepted,
+  zAttachmentRejection,
   zCloudWorkflowIndex
 } from '../../schemas/agentApiSchema'
 import type {
-  AgentAnswerAccepted,
+  AgentAnswerReceipt,
   AgentCancelAccepted,
   AgentMessages,
   AgentRunModePreference,
@@ -77,16 +88,54 @@ type AgentApiOperation =
   | 'upload_image'
 
 type ReportedAuthScheme = AuthScheme | 'unreported'
+type ReportedAuthCredential = AuthCredential | 'unreported'
 
 /**
  * The reported message for an auth rejection, constant by construction.
  *
  * The backend's own text is what `AgentApiError` carries to the caller, but it
- * is not what gets reported: it is uncontrolled, is not needed to diagnose
- * PM-1802, and varies enough to fragment issue grouping across what is one
- * failure mode. Status, operation and auth scheme ride as tags instead.
+ * is not the Sentry message: it is uncontrolled and varies enough to fragment
+ * issue grouping across what is one failure mode. Status, operation, auth
+ * scheme, credential kind and an allowlisted classification of the backend's
+ * refusal ride as tags.
  */
 const AUTH_REJECTED_MESSAGE = 'Agent API request rejected by authentication'
+
+interface AuthRejection {
+  status: AuthRejectionStatus
+  operation: AgentApiOperation
+  authScheme: ReportedAuthScheme
+  credential: ReportedAuthCredential
+  body: unknown
+  message: string
+}
+
+function reportAuthRejection({
+  status,
+  operation,
+  authScheme,
+  credential,
+  body,
+  message
+}: AuthRejection): boolean {
+  let backendTags: AuthRejectionTags
+  try {
+    backendTags = authRejectionTags(body, message)
+  } catch {
+    backendTags = {}
+  }
+  try {
+    reportError(new Error(AUTH_REJECTED_MESSAGE), {
+      surface: 'agent',
+      errorType: 'agent_api_auth_rejected',
+      tags: { operation, status, authScheme, credential, ...backendTags },
+      level: 'warning'
+    })
+    return true
+  } catch {
+    return false
+  }
+}
 
 export class AgentApiError extends Error {
   readonly status: number
@@ -214,6 +263,14 @@ function parseErrorBody(text: string): unknown {
 }
 
 function getErrorMessage(body: unknown, fallback: string): string {
+  const refused = zAttachmentRejection.safeParse(body)
+  if (refused.success) {
+    return refusedAttachmentsMessage(
+      refused.data.rejected,
+      refused.data.rejected_count
+    )
+  }
+
   const plain = zAgentError.safeParse(body)
   if (plain.success) {
     return typeof plain.data.error === 'string'
@@ -432,7 +489,8 @@ export function createAgentRestClient() {
   async function toApiError(
     response: Response,
     operation: AgentApiOperation,
-    authScheme: ReportedAuthScheme
+    authScheme: ReportedAuthScheme,
+    credential: ReportedAuthCredential
   ): Promise<AgentApiError> {
     const body = parseErrorBody(await response.text())
     const message = getErrorMessage(body, response.statusText)
@@ -449,13 +507,17 @@ export function createAgentRestClient() {
       body,
       retryAfterSeconds
     )
-    if (response.status === 401 || response.status === 403) {
-      reportError(new Error(AUTH_REJECTED_MESSAGE), {
-        surface: 'agent',
-        errorType: 'agent_api_auth_rejected',
-        tags: { operation, status: response.status, authScheme },
-        level: 'warning'
+    if (
+      isAuthRejectionStatus(response.status) &&
+      reportAuthRejection({
+        status: response.status,
+        operation,
+        authScheme,
+        credential,
+        body,
+        message
       })
+    ) {
       // Callers still receive the backend text for the UI, but their generic
       // catch boundaries must not emit it as a second, separately-grouped
       // report after the complete bounded diagnostic above.
@@ -471,13 +533,19 @@ export function createAgentRestClient() {
     schema: z.ZodType<T>
   ): Promise<T> {
     let authScheme: ReportedAuthScheme = 'unreported'
+    let credential: ReportedAuthCredential = 'unreported'
     const response = await api.fetchApi(route, {
       ...init,
       onAuthScheme: (scheme) => {
         authScheme = scheme
+      },
+      onAuthCredential: (kind) => {
+        credential = kind
       }
     })
-    if (!response.ok) throw await toApiError(response, operation, authScheme)
+    if (!response.ok) {
+      throw await toApiError(response, operation, authScheme, credential)
+    }
     let payload: unknown
     try {
       payload = await response.json()
@@ -584,10 +652,6 @@ export function createAgentRestClient() {
         cursor = nextCursor
       }
     } while (hasMore)
-    if (hasMore)
-      console.warn(
-        `[agent] cloud workflow index truncated at ${entries.length} entries`
-      )
     return { entries, complete: !hasMore }
   }
 
@@ -618,12 +682,12 @@ export function createAgentRestClient() {
     threadId: string,
     askId: string,
     selected: string[]
-  ): Promise<AgentAnswerAccepted> {
+  ): Promise<AgentAnswerReceipt> {
     return request(
       'answer_thread_ask',
       `/agent/threads/${encodeURIComponent(threadId)}/asks/${encodeURIComponent(askId)}/answer`,
       { ...jsonInit('POST', { selected }), timeoutMs: ANSWER_ASK_TIMEOUT_MS },
-      zAgentAnswerAccepted
+      zAgentAnswerReceipt
     )
   }
 

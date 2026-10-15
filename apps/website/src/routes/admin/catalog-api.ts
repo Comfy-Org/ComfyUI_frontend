@@ -21,10 +21,12 @@ import { catalogReview, readReviewResponse } from '@/lib/cms/staging-server'
 export const GET: APIRoute = async (context) => {
   const session = context.locals.catalogAuthoring
   const operation = context.params.operation
+  // oxlint-disable-next-line comfy/no-capability-recombination -- SSR route authorization enforcing the server-issued catalog capabilities, not a rendered UI gate
   if (!session || (!session.can_edit && !session.can_apply))
     return editorFailure(404)
   if (operation !== 'staging' && operation !== 'final-review')
     return editorFailure(404)
+  // oxlint-disable-next-line comfy/no-capability-recombination -- SSR route authorization enforcing the server-issued catalog capabilities, not a rendered UI gate
   if (operation === 'final-review' && !session.can_apply)
     return editorFailure(404)
   const filter = filterFromQuery(context.url.searchParams)
@@ -41,6 +43,7 @@ export const GET: APIRoute = async (context) => {
 export const POST: APIRoute = async (context) => {
   const session = context.locals.catalogAuthoring
   const operation = context.params.operation
+  // oxlint-disable-next-line comfy/no-capability-recombination -- SSR route authorization enforcing the server-issued catalog capabilities, not a rendered UI gate
   if (!session || (!session.can_edit && !session.can_apply))
     return editorFailure(404)
   if (
@@ -51,10 +54,14 @@ export const POST: APIRoute = async (context) => {
     operation !== 'final-review'
   )
     return editorFailure(404)
+  // oxlint-disable-next-line comfy/no-capability-recombination -- SSR route authorization enforcing the server-issued catalog capabilities, not a rendered UI gate
   if (operation === 'staging' && !session.can_apply) return editorFailure(404)
+  // oxlint-disable-next-line comfy/no-capability-recombination -- SSR route authorization enforcing the server-issued catalog capabilities, not a rendered UI gate
   if (operation === 'publish' && !session.can_apply) return editorFailure(404)
+  // oxlint-disable-next-line comfy/no-capability-recombination -- SSR route authorization enforcing the server-issued catalog capabilities, not a rendered UI gate
   if (operation === 'final-review' && !session.can_apply)
     return editorFailure(404)
+  // oxlint-disable-next-line comfy/no-capability-recombination -- SSR route authorization enforcing the server-issued catalog capabilities, not a rendered UI gate
   if (operation === 'discard-changes' && !session.can_edit)
     return editorFailure(404)
   if (context.url.search) return editorFailure(400)

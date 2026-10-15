@@ -158,9 +158,7 @@ test.describe('Cancel subscription rail (FE-2216)', { tag: '@cloud' }, () => {
 
     const dialog = new CancelSubscriptionDialog(page)
     await dialog.open('2099-12-31T12:00:00Z')
-    await dialog.confirmCancelButton.click()
-
-    await expect(dialog.root).toBeHidden()
+    await dialog.confirmCancel()
     expect(cancelRoute.requests).toHaveLength(1)
     expect(cancelRoute.requests[0].method()).toBe('POST')
     expect(idempotencyKey(cancelRoute.requests[0])).toBeUndefined()
@@ -178,9 +176,7 @@ test.describe('Cancel subscription rail (FE-2216)', { tag: '@cloud' }, () => {
 
     const dialog = new CancelSubscriptionDialog(page)
     await dialog.open('2099-12-31T12:00:00Z')
-    await dialog.confirmCancelButton.click()
-
-    await expect(dialog.root).toBeHidden()
+    await dialog.confirmCancel()
     expect(cancelRoute.requests).toHaveLength(1)
     const [issued] = cancelRoute.requests
     expect(issued.method()).toBe('POST')
@@ -203,9 +199,7 @@ test.describe('Cancel subscription rail (FE-2216)', { tag: '@cloud' }, () => {
 
     const dialog = new CancelSubscriptionDialog(page)
     await dialog.open('2099-12-31T12:00:00Z')
-    await dialog.confirmCancelButton.click()
-
-    await expect(dialog.root).toBeHidden()
+    await dialog.confirmCancel()
     await expect.poll(() => cancelRoute.requests.length).toBe(2)
     const [sdkAttempt, legacyAttempt] = cancelRoute.requests
     expect(idempotencyKey(sdkAttempt)).toBeTruthy()

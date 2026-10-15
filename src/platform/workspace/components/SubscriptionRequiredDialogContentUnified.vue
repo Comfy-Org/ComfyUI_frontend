@@ -3,7 +3,7 @@
     ref="contentRoot"
     :class="
       cn(
-        'relative flex h-full flex-col gap-4 overflow-y-auto p-4 pt-6',
+        'relative flex h-full max-h-[90vh] max-w-[min(1280px,95vw)] flex-col gap-4 overflow-y-auto rounded-2xl border border-border-default bg-secondary-background p-4 pt-6 shadow-[0_25px_80px_rgba(5,6,12,0.45)]',
         (checkoutStep === 'pricing' || isEmbeddedPaymentStep) &&
           'xl:min-h-[min(740px,90vh)] xl:w-[min(1280px,95vw)]',
         // Pin the embedded step to the pricing table's exact height (min-h
@@ -85,6 +85,10 @@
         :quote-is-current="quoteIsCurrent"
         :is-applying-promotion-code
         :embedded-checkout-enabled
+        :payment-cancelable
+        :canceling-payment="isCancelingPayment"
+        :cancel-payment-error
+        @cancel-payment="cancelPayment"
         @confirm="handleTeamSubscribe"
         @apply-promotion-code="applyPromotionCode"
         @invalidate-quote="invalidateQuote"
@@ -155,6 +159,10 @@
         :quote-is-current="quoteIsCurrent"
         :is-applying-promotion-code
         :embedded-checkout-enabled
+        :payment-cancelable
+        :canceling-payment="isCancelingPayment"
+        :cancel-payment-error
+        @cancel-payment="cancelPayment"
         @confirm="handleConfirmTransition"
         @apply-promotion-code="applyPromotionCode"
         @invalidate-quote="invalidateQuote"
@@ -183,7 +191,7 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import { resolveStripePublishableKey } from '@/platform/workspace/billing/stripePublishableKey'
-import type { SubscriptionCheckoutSelection } from '@/platform/workspace/composables/useSubscriptionCheckout'
+import type { SubscriptionCheckoutSelection } from '@/composables/billing/types'
 import { useSubscriptionCheckout } from '@/platform/workspace/composables/useSubscriptionCheckout'
 
 import SubscriptionAddPaymentPreviewWorkspace from './SubscriptionAddPaymentPreviewWorkspace.vue'
@@ -240,6 +248,10 @@ const {
   reconciliationOperationId,
   parkedCheckoutRecovery,
   isPolling,
+  paymentCancelable,
+  isCancelingPayment,
+  cancelPaymentError,
+  cancelPayment,
   isTeamCheckout,
   previewVariant,
   handleSubscribeClick,

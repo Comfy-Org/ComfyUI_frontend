@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { expect, it } from 'vitest'
+import { expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import type { PlaygroundExample } from '@/config/workshop-playground'
@@ -122,4 +122,131 @@ it('asks a video example for a frame it can paint before playback', () => {
     'src',
     'https://media.example/clip.mp4#t=0.1'
   )
+})
+
+it('refuses a pick while the form it would fill is busy', async () => {
+  const user = userEvent.setup()
+  const preset = example({ id: 'busy', title: 'Busy' })
+  const { emitted } = render(ExamplesTab, {
+    props: { examples: [preset], galleryLabel: 'Gallery', disabled: true }
+  })
+  await user.click(screen.getByTestId('example-card'))
+  expect(emitted().open).toBeUndefined()
+})
+
+it('marks only the example the page is showing', () => {
+  render(ExamplesTab, {
+    props: {
+      galleryLabel: 'Gallery',
+      activeId: 'second',
+      examples: [
+        example({ id: 'first', title: 'First' }),
+        example({ id: 'second', title: 'Second' })
+      ]
+    }
+  })
+  const [first, second] = screen.getAllByTestId('example-card')
+  expect(first.getAttribute('aria-current')).toBeNull()
+  expect(second.getAttribute('aria-current')).toBe('true')
+  expect(screen.getAllByTestId('example-chosen')).toHaveLength(1)
+  expect(within(second).getByTestId('example-chosen')).toBeTruthy()
+})
+
+// A Draft preview URL carries no extension; the verified MIME is what says
+// the bytes are a clip.
+it('draws an extensionless clip the catalog verified as video as a video', () => {
+  render(ExamplesTab, {
+    props: {
+      galleryLabel: 'Gallery',
+      examples: [
+        example({
+          title: 'Draft clip',
+          outputUrl: '/preview-media/7/clip-uid/clip-version',
+          mediaKind: 'video'
+        })
+      ]
+    }
+  })
+  expect(screen.getByTestId('example-video')).toHaveAttribute(
+    'src',
+    '/preview-media/7/clip-uid/clip-version#t=0.1'
+  )
+  expect(screen.queryByRole('img')).toBeNull()
+})
+
+it('shows a still poster over a clip, and its first frame without one', () => {
+  const clip = example({
+    title: 'Clip',
+    outputUrl: '/preview-media/7/clip-uid/clip-version',
+    mediaKind: 'video'
+  })
+  const { unmount } = render(ExamplesTab, {
+    props: {
+      galleryLabel: 'Gallery',
+      examples: [clip],
+      videoPoster: '/preview-media/7/still-uid/still-version'
+    }
+  })
+  const posted = screen.getByTestId('example-video')
+  expect(posted).toHaveAttribute(
+    'poster',
+    '/preview-media/7/still-uid/still-version'
+  )
+  expect(posted).toHaveAttribute(
+    'src',
+    '/preview-media/7/clip-uid/clip-version'
+  )
+  unmount()
+
+  render(ExamplesTab, { props: { galleryLabel: 'Gallery', examples: [clip] } })
+  const framed = screen.getByTestId('example-video')
+  expect(framed.hasAttribute('poster')).toBe(false)
+  expect(framed).toHaveAttribute(
+    'src',
+    '/preview-media/7/clip-uid/clip-version#t=0.1'
+  )
+})
+
+it('plays and pauses a clip without picking the example', async () => {
+  const user = userEvent.setup()
+  const play = vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue()
+  const pause = vi
+    .spyOn(HTMLMediaElement.prototype, 'pause')
+    .mockImplementation(() => {})
+  const clip = example({
+    id: 'clip',
+    title: 'Clip',
+    outputUrl: '/preview-media/7/clip-uid/clip-version',
+    mediaKind: 'video'
+  })
+  const { emitted } = render(ExamplesTab, {
+    props: { galleryLabel: 'Gallery', examples: [clip], playable: true }
+  })
+  const card = screen.getByTestId('example-card')
+  const toggle = screen.getByRole('button', { name: 'Clip: Play' })
+  expect(card).not.toContainElement(toggle)
+
+  await user.click(toggle)
+  expect(play).toHaveBeenCalledOnce()
+  expect(emitted().open).toBeUndefined()
+
+  const video = screen.getByTestId<HTMLVideoElement>('example-video')
+  vi.spyOn(video, 'paused', 'get').mockReturnValue(false)
+  video.dispatchEvent(new Event('play'))
+  await user.click(await screen.findByRole('button', { name: 'Clip: Pause' }))
+  expect(pause).toHaveBeenCalledOnce()
+  expect(emitted().open).toBeUndefined()
+
+  await user.click(card)
+  expect(emitted().open).toEqual([[clip]])
+})
+
+it('gives a model page gallery no clip controls of its own', () => {
+  render(ExamplesTab, {
+    props: {
+      galleryLabel: 'Gallery',
+      examples: [example({ title: 'Clip', mediaKind: 'video' })]
+    }
+  })
+  expect(screen.queryByTestId('example-playback')).toBeNull()
 })
