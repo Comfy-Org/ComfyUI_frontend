@@ -16,7 +16,7 @@ import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 import MenuItems from './MenuItems.vue'
 import { getMenuAnchorPosition } from './menuAnchor'
 import { menuContentClass } from './menuStyles'
-import type { MenuItem } from './types'
+import type { MenuItem, MenuItemAction } from './types'
 
 defineOptions({ inheritAttrs: false })
 
@@ -29,7 +29,11 @@ const {
   model: MenuItem[]
   reference?: DropdownMenuContentProps['reference']
 }>()
-const emit = defineEmits<{ show: []; hide: [] }>()
+const emit = defineEmits<{
+  show: []
+  hide: []
+  activate: [item: MenuItemAction]
+}>()
 
 const trigger = useTemplateRef<HTMLElement>('trigger')
 const visible = ref(false)
@@ -152,7 +156,12 @@ defineExpose({ hide, show, toggle, visible })
         @close-auto-focus.prevent
         @focus-outside.prevent
       >
-        <MenuItems :items="model" :owner-id @select="hide">
+        <MenuItems
+          :items="model"
+          :owner-id
+          @select="hide"
+          @activate="emit('activate', $event)"
+        >
           <template v-if="$slots.item" #item="slotProps">
             <slot name="item" v-bind="slotProps" />
           </template>

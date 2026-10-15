@@ -1,5 +1,9 @@
 <template>
-  <Menu :items="translatedItems" class="comfy-command-menu">
+  <Menu
+    :items="translatedItems"
+    class="comfy-command-menu"
+    @activate="onMenuItemActivate"
+  >
     <template #trigger="{ open }">
       <Button
         variant="textonly"
@@ -50,6 +54,7 @@ import type { SettingPanelType } from '@/platform/settings/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import { useCommandStore } from '@/stores/commandStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import type { AppMenuItem } from '@/stores/menuItemStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
@@ -59,6 +64,7 @@ import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTyp
 
 const { t } = useI18n()
 const menuItemStore = useMenuItemStore()
+const commandStore = useCommandStore()
 const colorPaletteStore = useColorPaletteStore()
 const colorPaletteService = useColorPaletteService()
 const settingsDialog = useSettingsDialog()
@@ -77,9 +83,27 @@ function onLogoMenuClick() {
   })
 }
 
-function trackMenuItemClick(buttonId: string) {
+const EXTRA_ITEM_BUTTON_IDS: Record<string, string> = {
+  'browse-templates': 'comfy_menu_browse_templates_clicked',
+  'manage-extensions': 'comfy_menu_manage_extensions_clicked'
+}
+
+function commandButtonId(commandId: string) {
+  const isCoreCommand = commandStore.getCommand(commandId)?.source === 'System'
+  return `comfy_menu_${isCoreCommand ? snakeCase(commandId) : 'extension_command'}_clicked`
+}
+
+function menuItemButtonId(item: AppMenuItem) {
+  if ('commandId' in item) return commandButtonId(item.commandId)
+  if (item.key?.startsWith('theme-')) return 'comfy_menu_theme_clicked'
+  return item.key ? EXTRA_ITEM_BUTTON_IDS[item.key] : undefined
+}
+
+function onMenuItemActivate(item: AppMenuItem) {
+  const buttonId = menuItemButtonId(item)
+  if (!buttonId) return
   telemetry?.trackUiButtonClicked({
-    button_id: `comfy_menu_${buttonId}_clicked`,
+    button_id: buttonId,
     element_group: 'comfy_menu'
   })
 }
@@ -116,7 +140,6 @@ const themeMenuItems = computed(() => {
     label: palette.name,
     checked: () => colorPaletteStore.activePaletteId === palette.id,
     command: async () => {
-      trackMenuItemClick('theme')
       await colorPaletteService.loadColorPalette(palette.id)
     }
   }))
@@ -142,10 +165,7 @@ const extraMenuItems = computed<MenuItem[]>(() => [
     key: 'browse-templates',
     label: t('menuLabels.Browse Templates'),
     icon: 'icon-[comfy--template]',
-    command: () => {
-      trackMenuItemClick('browse_templates')
-      useWorkflowTemplateSelectorDialog().show('menu')
-    }
+    command: () => useWorkflowTemplateSelectorDialog().show('menu')
   },
   {
     key: 'settings',
@@ -163,34 +183,11 @@ const extraMenuItems = computed<MenuItem[]>(() => [
     key: 'manage-extensions',
     label: t('menu.manageExtensions'),
     icon: 'icon-[comfy--extensions-blocks]',
-    command: async () => {
-      trackMenuItemClick('manage_extensions')
-      await showManageExtensions()
-    }
+    command: showManageExtensions
   }
 ])
 
 const menuSeparator: MenuItem = { separator: true }
-
-function commandButtonId(commandId: string) {
-  return menuItemStore.isCoreMenuCommand(commandId)
-    ? snakeCase(commandId)
-    : 'extension_command'
-}
-
-function withClickTelemetry(item: AppMenuItem): AppMenuItem {
-  if (item.items) return { ...item, items: item.items.map(withClickTelemetry) }
-  if (!('commandId' in item) || item.pressAndHoldInterval !== undefined)
-    return item
-  const buttonId = commandButtonId(item.commandId)
-  return {
-    ...item,
-    command: (event) => {
-      trackMenuItemClick(buttonId)
-      return item.command?.(event)
-    }
-  }
-}
 
 const translatedItems = computed<AppMenuItem[]>(() => {
   const items = menuItemStore.menuItems.map(translateMenuItem)
@@ -199,7 +196,6 @@ const translatedItems = computed<AppMenuItem[]>(() => {
 
   if (helpIndex !== -1) {
     items[helpIndex].icon = 'mdi mdi-help-circle-outline'
-    // If help is not the last item (i.e. we have extension commands), separate them
     const isLastItem = helpIndex !== items.length - 1
     helpItem = items.splice(
       helpIndex,
@@ -216,7 +212,7 @@ const translatedItems = computed<AppMenuItem[]>(() => {
     ...(helpItem ? [menuSeparator, helpItem] : [])
   )
 
-  return items.map(withClickTelemetry)
+  return items
 })
 
 const onNodes2ToggleChange = async (value: boolean) => {

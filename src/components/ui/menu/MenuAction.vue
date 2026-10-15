@@ -18,6 +18,7 @@ const { allowCommandless = false, item } = defineProps<{
 
 const emit = defineEmits<{
   select: []
+  activate: [item: MenuItemAction]
 }>()
 
 const [DefineItem, ReuseItem] = createReusableTemplate()
@@ -56,6 +57,7 @@ function select(event: Event) {
   if (item.checked !== undefined) {
     event.preventDefault()
     void item.command({ originalEvent: event, item })
+    emit('activate', item)
     return
   }
   if (pointerRepeating) {
@@ -64,6 +66,7 @@ function select(event: Event) {
     return
   }
   void item.command({ originalEvent: event, item })
+  emit('activate', item)
   if (event.defaultPrevented) return
   if (item.pressAndHoldInterval !== undefined) {
     event.preventDefault()

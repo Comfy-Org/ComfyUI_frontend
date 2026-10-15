@@ -5,16 +5,18 @@ import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
+import type * as telemetry from '@/platform/telemetry'
+import { useCommandStore } from '@/stores/commandStore'
 import type { CommandMenuItem } from '@/stores/menuItemStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 
 import ComfyMenuButton from './ComfyMenuButton.vue'
 
-const mocks = vi.hoisted(() => ({ trackUiButtonClicked: vi.fn() }))
+vi.mock(import('@/platform/telemetry'))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => mocks
-}))
+const { useTelemetry } = await vi.importMock<typeof telemetry>(
+  '@/platform/telemetry'
+)
 
 const NODES_2_LABEL = 'Nodes 2.0'
 
@@ -86,10 +88,28 @@ describe('ComfyMenuButton', () => {
     })
   })
 
-  function reportedButtonIds() {
-    return mocks.trackUiButtonClicked.mock.calls.map(
-      ([event]) => event.button_id
-    )
+  function reportedEvents() {
+    return vi
+      .mocked(useTelemetry()?.trackUiButtonClicked)
+      ?.mock.calls.map(([event]) => event)
+  }
+
+  const MENU_OPENED = {
+    button_id: 'sidebar_comfy_menu_opened',
+    element_group: 'sidebar'
+  }
+
+  function comfyMenuEvent(button_id: string) {
+    return { button_id, element_group: 'comfy_menu' }
+  }
+
+  function registerCommand(id: string, source: string) {
+    useCommandStore().registerCommand({
+      id,
+      label: id,
+      function: () => undefined,
+      source
+    })
   }
 
   it.for([
@@ -97,82 +117,152 @@ describe('ComfyMenuButton', () => {
       role: 'menuitem',
       name: 'New',
       expected: [
-        'sidebar_comfy_menu_opened',
-        'comfy_menu_comfy_new_blank_workflow_clicked'
-      ]
+        MENU_OPENED,
+        comfyMenuEvent('comfy_menu_comfy_new_blank_workflow_clicked')
+      ],
+      runsCommand: true
+    },
+    {
+      role: 'menuitem',
+      name: 'Fit View',
+      expected: [
+        MENU_OPENED,
+        comfyMenuEvent('comfy_menu_comfy_canvas_fit_view_clicked')
+      ],
+      runsCommand: true
+    },
+    {
+      role: 'menuitem',
+      name: 'Zoom In',
+      expected: [
+        MENU_OPENED,
+        comfyMenuEvent('comfy_menu_comfy_canvas_zoom_in_clicked')
+      ],
+      runsCommand: true
     },
     {
       role: 'menuitem',
       name: 'Do thing',
       expected: [
-        'sidebar_comfy_menu_opened',
-        'comfy_menu_extension_command_clicked'
-      ]
-    },
-    {
-      role: 'menuitem',
-      name: 'Zoom In',
-      expected: ['sidebar_comfy_menu_opened']
+        MENU_OPENED,
+        comfyMenuEvent('comfy_menu_extension_command_clicked')
+      ],
+      runsCommand: true
     },
     {
       role: 'menuitem',
       name: 'g.settings',
-      expected: ['sidebar_comfy_menu_opened', 'sidebar_settings_menu_opened']
+      expected: [
+        MENU_OPENED,
+        { button_id: 'sidebar_settings_menu_opened', element_group: 'sidebar' }
+      ],
+      runsCommand: false
+    },
+    {
+      role: 'menuitem',
+      name: 'menuLabels.Browse Templates',
+      expected: [
+        MENU_OPENED,
+        comfyMenuEvent('comfy_menu_browse_templates_clicked')
+      ],
+      runsCommand: false
+    },
+    {
+      role: 'menuitem',
+      name: 'menu.manageExtensions',
+      expected: [
+        MENU_OPENED,
+        comfyMenuEvent('comfy_menu_manage_extensions_clicked')
+      ],
+      runsCommand: false
     },
     {
       role: 'menuitemcheckbox',
       name: NODES_2_LABEL,
-      expected: ['sidebar_comfy_menu_opened', 'menu_nodes_2.0_toggle_enabled']
+      expected: [
+        MENU_OPENED,
+        { button_id: 'menu_nodes_2.0_toggle_enabled', element_group: 'sidebar' }
+      ],
+      runsCommand: false
     }
   ] as const)(
-    'reports $expected when $name is clicked',
-    async ({ role, name, expected }) => {
-      useMenuItemStore().menuItems = [
-        { label: 'New', commandId: 'Comfy.NewBlankWorkflow', command: vi.fn() },
+    'reports the button ids for a click on $name',
+    async ({ role, name, expected, runsCommand }) => {
+      const fixtures = [
+        { label: 'New', commandId: 'Comfy.NewBlankWorkflow', source: 'System' },
         {
-          label: 'Do thing',
-          commandId: 'MyExtension.DoThing',
-          command: vi.fn()
+          label: 'Fit View',
+          commandId: 'Comfy.Canvas.FitView',
+          source: 'System'
         },
         {
           label: 'Zoom In',
           commandId: 'Comfy.Canvas.ZoomIn',
-          pressAndHoldInterval: 50,
-          command: vi.fn()
+          source: 'System',
+          pressAndHoldInterval: 50
+        },
+        {
+          label: 'Do thing',
+          commandId: 'MyExtension.DoThing',
+          source: 'MyExtension'
         }
       ]
+      const items = fixtures.map(({ source, ...item }) => {
+        registerCommand(item.commandId, source)
+        return { ...item, command: vi.fn() }
+      })
+      useMenuItemStore().menuItems = items
       const menu = await openMenu()
 
       await menu.user.click(screen.getByRole(role, { name }))
 
-      expect(reportedButtonIds()).toEqual(expected)
+      expect(reportedEvents()).toEqual(expected)
+      expect(
+        items.filter((item) => item.command.mock.calls.length > 0)
+      ).toEqual(runsCommand ? [expect.objectContaining({ label: name })] : [])
     }
   )
 
+  const save = vi.fn()
+
   it.for([
-    { submenu: 'File', expected: 'comfy_menu_comfy_save_workflow_clicked' },
-    { submenu: 'menu.theme', expected: 'comfy_menu_theme_clicked' }
+    {
+      submenu: 'File',
+      menuItems: [
+        {
+          key: 'File',
+          label: 'File',
+          items: [
+            {
+              label: 'Save',
+              commandId: 'Comfy.SaveWorkflow',
+              command: save
+            } satisfies CommandMenuItem
+          ]
+        }
+      ],
+      expected: 'comfy_menu_comfy_save_workflow_clicked',
+      saveCalls: 1
+    },
+    {
+      submenu: 'menu.theme',
+      menuItems: [],
+      expected: 'comfy_menu_theme_clicked',
+      saveCalls: 0
+    }
   ])(
     'reports $expected when the first $submenu submenu item is activated',
-    async ({ submenu, expected }) => {
-      const save: CommandMenuItem = {
-        label: 'Save',
-        commandId: 'Comfy.SaveWorkflow',
-        command: vi.fn()
-      }
-      useMenuItemStore().menuItems = [
-        { key: 'File', label: 'File', items: [save] }
-      ]
+    async ({ submenu, menuItems, expected, saveCalls }) => {
+      registerCommand('Comfy.SaveWorkflow', 'System')
+      useMenuItemStore().menuItems = menuItems
       const menu = await openMenu()
 
       await menu.user.hover(screen.getByRole('menuitem', { name: submenu }))
       await screen.findByRole('menu', { name: submenu })
       await menu.user.keyboard('{ArrowRight}{Enter}')
 
-      expect(reportedButtonIds()).toEqual([
-        'sidebar_comfy_menu_opened',
-        expected
-      ])
+      expect(reportedEvents()).toEqual([MENU_OPENED, comfyMenuEvent(expected)])
+      expect(save).toHaveBeenCalledTimes(saveCalls)
     }
   )
 

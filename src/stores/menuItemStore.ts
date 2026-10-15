@@ -115,19 +115,12 @@ export const useMenuItemStore = defineStore('menuItem', () => {
     }
   }
 
-  const coreMenuCommandIds = new Set(
-    CORE_MENU_COMMANDS.flatMap(([, commandIds]) => commandIds)
-  )
-  const isCoreMenuCommand = (commandId: string) =>
-    coreMenuCommandIds.has(commandId)
-
   return {
     menuItems,
     registerMenuGroup,
     registerCommands,
     loadExtensionMenuCommands,
     registerCoreMenuCommands,
-    isCoreMenuCommand,
     hasSeenLinear,
     commandIdToMenuItem
   }

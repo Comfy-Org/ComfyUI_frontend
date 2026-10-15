@@ -20,13 +20,6 @@ describe('menuItemStore', () => {
     expect(item.trailingIcon).toBe('icon-plus')
   })
 
-  it.for([
-    { commandId: 'Comfy.SaveWorkflow', core: true },
-    { commandId: 'MyExtension.DoThing', core: false }
-  ])('reports $commandId as core: $core', ({ commandId, core }) => {
-    expect(useMenuItemStore().isCoreMenuCommand(commandId)).toBe(core)
-  })
-
   it('drops action-only fields when converting an item to a submenu', () => {
     const store = useMenuItemStore()
     store.menuItems.push({

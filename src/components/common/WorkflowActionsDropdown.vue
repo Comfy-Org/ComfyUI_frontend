@@ -19,7 +19,6 @@ import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useCommandStore } from '@/stores/commandStore'
-import type { WorkflowMenuItem } from '@/types/workflowMenuItem'
 import type { ViewMode } from '@/utils/appMode'
 
 interface ViewModeSegment {
@@ -52,22 +51,14 @@ const { hasUnseenItems, markAsSeen } = useNewMenuItemIndicator(
   () => menuItems.value
 )
 
-function withClickTelemetry(item: WorkflowMenuItem): WorkflowMenuItem {
-  if (item.separator || !item.command) return item
-  const command = item.command
-  return {
-    ...item,
-    command: () => {
-      useTelemetry()?.trackUiButtonClicked({
-        button_id: `workflow_actions_${snakeCase(item.id)}_clicked`,
-        element_group: 'workflow_actions'
-      })
-      return command()
-    }
-  }
+function onMenuItemActivate(item: object) {
+  const action = menuItems.value.find((candidate) => candidate === item)
+  if (!action || action.separator) return
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: `workflow_actions_${snakeCase(action.id)}_clicked`,
+    element_group: 'workflow_actions'
+  })
 }
-
-const trackedMenuItems = computed(() => menuItems.value.map(withClickTelemetry))
 
 const toggleShortcut = computed(() => {
   const shortcut = keybindingStore
@@ -176,13 +167,14 @@ onMounted(async () => {
 <template>
   <Menu
     v-model:open="dropdownOpen"
-    :items="trackedMenuItems"
+    :items="menuItems"
     :modal="false"
     :align
     :side-offset="8"
     :collision-padding="10"
     class="min-w-56"
     @update:open="onOpenChange"
+    @activate="onMenuItemActivate"
   >
     <template #trigger>
       <div

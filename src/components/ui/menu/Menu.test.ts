@@ -32,6 +32,55 @@ describe('Menu', () => {
     expect(command).toHaveBeenCalledOnce()
   })
 
+  it('emits activate once with the item for a click', async () => {
+    const onActivate = vi.fn()
+    const item = { label: 'Rename', command: vi.fn() }
+    render(Menu, {
+      props: { open: true, items: [item], onActivate },
+      slots: { trigger: '<button>Open</button>' }
+    })
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+
+    await user.click(await screen.findByRole('menuitem', { name: 'Rename' }))
+
+    expect(onActivate).toHaveBeenCalledExactlyOnceWith(item)
+  })
+
+  it.for([
+    { gesture: 'a click', hold: 0, activations: 1 },
+    { gesture: 'press-and-hold repeats', hold: 100, activations: 0 }
+  ])(
+    'emits $activations activate events for $gesture on a press-and-hold item',
+    async ({ hold, activations }) => {
+      const onActivate = vi.fn()
+      render(Menu, {
+        props: {
+          open: true,
+          items: [
+            { label: 'Zoom', command: vi.fn(), pressAndHoldInterval: 50 }
+          ],
+          onActivate
+        },
+        slots: { trigger: '<button>Open</button>' }
+      })
+      const item = await screen.findByRole('menuitem', { name: 'Zoom' })
+      vi.useFakeTimers()
+      onTestFinished(() => {
+        vi.useRealTimers()
+      })
+      const user = userEvent.setup({
+        advanceTimers: vi.advanceTimersByTime,
+        pointerEventsCheck: 0
+      })
+
+      await user.pointer({ keys: '[MouseLeft>]', target: item })
+      await vi.advanceTimersByTimeAsync(hold)
+      await user.pointer({ keys: '[/MouseLeft]', target: item })
+
+      expect(onActivate).toHaveBeenCalledTimes(activations)
+    }
+  )
+
   it('does not add a click command after press-and-hold repeats', async () => {
     const command = vi.fn()
     render(Menu, {
