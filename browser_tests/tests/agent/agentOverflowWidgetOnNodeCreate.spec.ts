@@ -188,24 +188,18 @@ test.describe(
         await hostSocket.waitForSubscribe()
       })
 
-      // The follower creates the node from the document it just received.
       const node = vueNodes.getNodeLocator(String(NODE_ID))
       await expect(node).toBeVisible()
       await expect(node.getByText('faithful', { exact: true })).toBeVisible()
 
-      // `_extra_2` is the aliased tail: it must reach `mode.b`.
       await expect(
         node.getByRole('spinbutton', { name: 'mode.b' })
       ).toHaveValue('71')
 
-      // `mode.a` is catalogued, so its named value is applied after `configure`.
       await expect(
         node.getByRole('spinbutton', { name: 'mode.a' })
       ).toHaveValue('91')
 
-      // A later frame can carry a child before the selector that rebuilds
-      // the group. The selector must run first so neither saved child value
-      // is overwritten by the newly selected option's defaults.
       hostSocket.send(
         host.replaceDocumentWidgets(NODE_ID, [
           ['mode.a', 92],

@@ -161,9 +161,6 @@ test.describe(
 
       await bootAgentApp(page, agentFlagEnabled, {
         objectInfo: NODE_DEFINITIONS,
-        // Registered after the boot mocks so these win over their userdata
-        // stub: the saved workflow is in the user's workflow list from boot,
-        // but its tab is never opened.
         beforeNavigate: async (page) => {
           await page.route('**/api/agent/threads?*', (route) =>
             route.fulfill(jsonRoute(threads))

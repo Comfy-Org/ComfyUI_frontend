@@ -456,10 +456,6 @@ export class IdCollisionHarness {
     await page.route('**/api/agent/threads/*/messages', (route) => {
       if (route.request().method() !== 'POST')
         return route.fulfill(jsonRoute([]))
-      // The ack's `workflow_id` is what `useAgentSession` binds for CRDT
-      // purposes (`bindWorkflow(ack.workflow_id)`). `workflow_id` is an
-      // extra beyond the generated `AgentTurnAccepted`, handled deliberately
-      // elsewhere via `zAgentTurnAccepted...passthrough()`.
       const accepted = {
         thread_id: THREAD_ID,
         message_id: MESSAGE_ID,
@@ -478,10 +474,6 @@ export class IdCollisionHarness {
       }
       return route.fulfill(jsonRoute(workflows))
     })
-    // Best-effort background calls the panel makes on mount; none are under
-    // test here, but an unmocked one 502s through Vite's dev proxy (there is
-    // no real backend behind DEV_SERVER_COMFYUI_URL in this repro) and the
-    // panel surfaces that as a toast that can mask the actual assertions.
     const runMode: AgentRunMode = { credit_limit: null, mode: 'ask_approval' }
     await page.route('**/api/agent/run-mode', (route) =>
       route.fulfill(jsonRoute(runMode))

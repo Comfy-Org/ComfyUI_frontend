@@ -193,10 +193,6 @@ async function readImageInputs(page: Page) {
 }
 
 async function setUpFixture(page: Page) {
-  // `objectInfo: 'server'` (passed to `bootAgentApp` below) stops
-  // `mockCloudBootRoutes` from also registering an (empty) handler for
-  // this route — Playwright runs the most-recently-registered handler
-  // first, so a route added here after that call would never fire.
   await page.route('**/api/object_info', (route) =>
     route.fulfill(
       jsonRoute({
@@ -207,10 +203,6 @@ async function setUpFixture(page: Page) {
   )
 
   const host = new HostDoc(WORKFLOW_ID, seed, catalog)
-  // 'apply' because the hand-wire step below mints a real `doc_ops` batch
-  // over this socket (any `registerLinkTopology` placement does, canvas or
-  // agent alike) — the host has to answer it like the relay does instead of
-  // leaving the batch unacked.
   const hostSocket = new AgentFollowerHostSocket(
     page,
     WORKFLOW_ID,
@@ -225,9 +217,6 @@ async function setUpFixture(page: Page) {
   await page.route('**/api/agent/run-mode', (route) =>
     route.fulfill(jsonRoute({ mode: 'ask_approval', credit_limit: null }))
   )
-  // The CRDT follower only binds a workflow once a real turn's ack
-  // names one (`bindWorkflow(ack.workflow_id)` in `useAgentSession.ts`)
-  // — picking a target from the switcher alone does not bind it.
   await page.route('**/api/agent/threads/*/messages', (route) => {
     if (route.request().method() !== 'POST') return route.fulfill(jsonRoute([]))
     return route.fulfill({
@@ -243,19 +232,12 @@ async function setUpFixture(page: Page) {
 
   await bootAgentApp(page, true, {
     objectInfo: 'server',
-    // Only the Vue node renderer projects follower edits onto the
-    // canvas as DOM nodes this test can query.
     settings: {
       'Comfy.VueNodes.Enabled': true,
       'Comfy.Graph.CanvasInfo': false
     }
   })
 
-  // Registered only now, same as `AgentConversationHarness.
-  // selectWorkflowTarget`: `bootAgentApp`'s own mocks blanket-match
-  // `**/api/userdata**` for every method, and Playwright runs the
-  // most-recently-registered matching route first, so this has to
-  // come after it to take over the workflow-save round trip.
   await mockWorkflowPersistence(page, WORKFLOW_ID)
 
   const topbar = new Topbar(page)
@@ -312,10 +294,6 @@ async function setUpFixture(page: Page) {
     }, toNodeId(GPT_NODE_ID))
     expect(freeIndex).toBeGreaterThanOrEqual(0)
 
-    // The same runtime path a UI drag-connect takes (`LGraphNode.connect`
-    // dispatches through `registerLinkTopology`, which the link mint port
-    // listens to for every connect regardless of how it was made) — this is
-    // the user wiring a source into the node without any agent involvement.
     await page.evaluate(
       ({ sourceId, targetId, targetSlot }) => {
         const graph = window.app!.graph
@@ -329,10 +307,6 @@ async function setUpFixture(page: Page) {
         targetSlot: freeIndex
       }
     )
-    // Settles only once the CRDT round trip (now acked by the host, per
-    // `humanOpsHost: 'apply'` above) and autogrow's own client-side growth
-    // have both landed on this freshly booted page — the same CI slowness
-    // the subscribe wait above budgets for.
     await expect
       .poll(() => readImageInputs(page), { timeout: 20_000 })
       .toEqual([

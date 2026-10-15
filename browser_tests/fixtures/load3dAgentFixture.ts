@@ -283,7 +283,6 @@ class Load3dAgentHarness {
     await page.route('**/api/agent/threads/*/messages', (route) =>
       route.fulfill(jsonRoute([]))
     )
-    // No cloud workflow carries the agent's id, so the panel opens a new tab for it.
     await page.route('**/api/workflows**', (route) =>
       route.fulfill(
         jsonRoute({

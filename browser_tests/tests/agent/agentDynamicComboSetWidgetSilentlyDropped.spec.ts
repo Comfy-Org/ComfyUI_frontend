@@ -271,11 +271,6 @@ test.describe(
         )
       })
 
-      // The document now authoritatively records mode: "faithful" (matching
-      // an agent tool call that reports success), so the canvas should grow
-      // the `mode.skin_detail` widget the "faithful" option declares in the
-      // node's real Python schema — exactly what a human clicking the same
-      // dropdown gets.
       const skinDetailField = vueNodes
         .getNodeLocator(String(NODE_ID))
         .getByRole('spinbutton', { name: 'mode.skin_detail' })

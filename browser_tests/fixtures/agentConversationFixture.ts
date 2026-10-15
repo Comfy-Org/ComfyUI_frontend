@@ -698,7 +698,6 @@ export class AgentConversationHarness {
         target === null || target[1] !== THREAD_ID
           ? undefined
           : this.cancelWaiters.get(target[2])
-      // A real server knows nothing about any other message.
       if (release === undefined) return route.fulfill({ status: 404 })
       release()
       const cancelled: AgentCancelAccepted = { status: 'cancelling' }

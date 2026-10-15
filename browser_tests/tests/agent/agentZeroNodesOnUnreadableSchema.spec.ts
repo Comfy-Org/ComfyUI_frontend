@@ -145,17 +145,9 @@ test.describe(
             typeof state_vector_b64 !== 'string'
           )
             return
-          // Simulates the unproven trigger this repro exercises (see file
-          // header): the catch-up frame's merged doc has no readable
-          // meta.schema_version at all.
           host.corruptSchemaVersion()
           send(host.subscribed())
           send(host.catchUp(state_vector_b64))
-          // Sent as its own later-seq frame -- not folded silently into a
-          // later apply()'s delta -- so the fix that stops the latch from
-          // outliving one bad frame is exercised for real: this repair alone
-          // is enough for the gate to pass again before the add_node frame
-          // below arrives.
           send(host.repairSchemaVersion())
         })
       })
@@ -227,8 +219,6 @@ test.describe(
         .click()
       await expect(picker).toHaveText('Unsaved Workflow')
 
-      // Setup checkpoint, still expected to pass: the doc subscription round
-      // trip (with its corrupted catch-up) actually completed.
       await expect.poll(() => socket !== null).toBe(true)
 
       const composer = panel.getByRole('textbox', {
@@ -261,8 +251,6 @@ test.describe(
         }
       })
 
-      // The op lands on the host's own authoritative document, and is sent to
-      // the browser the same way agentConversationFixture's replay does.
       send(
         host.apply([
           {
@@ -301,8 +289,6 @@ test.describe(
         data: { thread_id: THREAD_ID, message_id: MESSAGE_ID, usage: null }
       })
 
-      // Setup checkpoint, still expected to pass: the agent's turn completes
-      // and reports success in the panel — "agent says done".
       await expect(
         panel.getByRole('button', { name: SEND_LABEL })
       ).toBeVisible()
@@ -311,12 +297,6 @@ test.describe(
       )
       await expect(panel.getByRole('button', { name: /^Worked/ })).toBeVisible()
 
-      // The fix under test: the agent said it added the note, and the op is
-      // on the host's own record (asserted above) -- both it and the earlier
-      // schema-version repair were sent as their own frames. The repair
-      // un-latches the schema gate before the add_node frame arrives, so the
-      // node reaches the canvas the user is looking at instead of being
-      // silently dropped alongside it.
       await expect(vueNodes.getNodeLocator(String(ADDED_NODE_ID))).toBeVisible()
     })
   }

@@ -145,10 +145,6 @@ test.describe(
           }
           if (frame.type !== 'doc_subscribe' || frame.stateVector === null)
             return
-          // The reconnect's re-subscribe never gets an answer: the general
-          // realtime channel recovered (chat keeps flowing below), but the
-          // host swallows the doc subscription frame. Only a retry of that
-          // subscribe is answered.
           const swallowed =
             !isFirstConnection && postReconnectSubscribes().length === 1
           if (swallowed) return
@@ -217,8 +213,6 @@ test.describe(
         .click()
       await expect(picker).toHaveText('Unsaved Workflow')
 
-      // Setup checkpoint: the follower actually bound and subscribed once on
-      // the first (and so far only) connection before anything goes wrong.
       await expect.poll(() => connectionCount).toBe(1)
 
       const composer = panel.getByRole('textbox', {
@@ -251,8 +245,6 @@ test.describe(
         }
       })
 
-      // The op lands on the authoritative document (the CRDT event log the
-      // debug report quotes) ...
       const update = host.apply([
         {
           op: 'add_node',
@@ -276,14 +268,9 @@ test.describe(
       ])
       expect(Object.keys(host.graph().nodes)).toContain(String(ADDED_NODE_ID))
 
-      // ... but the transport drops right as that update would go out: the
-      // frame is never sent, and the socket closes under the follower.
       void update
       await socket!.close()
 
-      // The main realtime channel recovers (exactly one reconnect: chat keeps
-      // working below), so the agent can still report success. The follower's
-      // re-subscribe went out on the new socket and is being ignored.
       await expect.poll(() => connectionCount).toBe(2)
       await expect.poll(() => postReconnectDocFrames.length).toBe(1)
       expect(postReconnectDocFrames.map(({ type }) => type)).toEqual([
@@ -303,8 +290,6 @@ test.describe(
         data: { thread_id: THREAD_ID, message_id: MESSAGE_ID, usage: null }
       })
 
-      // Setup checkpoint: the agent's turn completes and reports success in
-      // the panel, exactly as the tester saw it do.
       await expect(
         panel.getByRole('button', { name: SEND_LABEL })
       ).toBeVisible()
@@ -313,16 +298,10 @@ test.describe(
       )
       await expect(panel.getByRole('button', { name: /^Worked/ })).toBeVisible()
 
-      // The agent said it added the note, and the op is in the document's own
-      // record (asserted above). The follower must notice that its subscribe
-      // was never acknowledged, retry it, and land the node on the live canvas.
       await expect(vueNodes.getNodeLocator(String(ADDED_NODE_ID))).toBeVisible({
         timeout: SUBSCRIBE_ACK_TIMEOUT_MS + 10_000
       })
 
-      // The retry is the fix's fingerprint: one more `doc_subscribe` on the
-      // same lineage (unchanged state vector, no unsubscribe in between) after
-      // the ack timeout, never an immediate retarget or a reset.
       await expect
         .poll(() => postReconnectSubscribes().length, {
           message: 'the follower never retried the unanswered doc_subscribe'

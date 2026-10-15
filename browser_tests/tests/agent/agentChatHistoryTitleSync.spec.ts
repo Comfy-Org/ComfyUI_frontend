@@ -83,9 +83,6 @@ test.describe(
         resolveThreadsRefetch?.()
       })
 
-      // The transcript fetch is held until the test has already observed the
-      // stale list entry with no derived title yet, so the "before" state is
-      // driven deterministically instead of raced against hydration.
       let releaseTranscriptHydration: (() => void) | undefined
       const transcriptGate = new Promise<void>((resolve) => {
         releaseTranscriptHydration = resolve
@@ -102,8 +99,6 @@ test.describe(
         route.fulfill(jsonRoute([]))
       )
 
-      // Resume straight into the existing thread, the same way a reopened
-      // app restores its last chat (useAgentSession.start()).
       await page.addInitScript(
         ({ key, threadId }) => localStorage.setItem(key, threadId),
         { key: StorageKeys.agentThread(WORKSPACE_ID), threadId: THREAD_ID }
@@ -131,7 +126,6 @@ test.describe(
         await panel
           .getByRole('button', { name: enMessages.agent.backToPreviousChat })
           .click()
-        // Nothing has hydrated yet, so the header has no derived title either.
         await expect(
           panel.getByRole('button', {
             name: enMessages.agent.newChatTitle,

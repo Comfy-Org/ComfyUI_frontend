@@ -324,12 +324,6 @@ async function driveThroughDocReset(
   await panel.getByRole('button', { name: SEND_LABEL }).click()
   await expect(panel.getByText('Run the workflow.').first()).toBeVisible()
 
-  // The panel doesn't bind (and so doesn't subscribe) the CRDT doc merely
-  // from selecting a workflow as the agent's target -- `boundWorkflowId`
-  // (`useAgentSession.ts`) only changes via `bindWorkflow`, which fires from
-  // this `agent_active_tab` push (`AgentPanelRoot.vue`'s `onAgentActiveTab`).
-  // The first real subscribe -- and so the seed's two nodes -- can only
-  // appear after this frame, not merely after picking the workflow tab.
   send({
     type: 'agent_active_tab',
     data: {
@@ -340,9 +334,6 @@ async function driveThroughDocReset(
     }
   })
 
-  // Baseline: the healthy first subscribe delivers the seed's two nodes,
-  // matching the user's report that the canvas held the workflow's nodes
-  // before the agent started working on the run.
   await expect(vueNodes.getNodeLocator('1')).toBeVisible()
   await expect(vueNodes.getNodeLocator('2')).toBeVisible()
 
@@ -369,17 +360,6 @@ async function driveThroughDocReset(
     }
   })
 
-  // "The moment the agent started working": a lineage break for the active
-  // document right as the run-only turn gets going. This used to be the one
-  // frame able to sweep already-rendered nodes off the canvas; now it only
-  // arms the next frame to replace the graph. From here on the resubscribe's
-  // catch-up is governed by `dropCatchUpAfterReset`.
-  //
-  // Stamped on the live element before the reset so the assertion below can
-  // tell a node that was never unmounted from one that was torn down and
-  // rebuilt. `toBeVisible` cannot: a remounted node is equally visible, and a
-  // remount is what restarts media playback (PM-1790). Vue does not manage
-  // this dataset key, so only a fresh element loses it.
   await page.evaluate((nodeId) => {
     const el = document.querySelector(`[data-node-id="${nodeId}"]`)
     if (el instanceof HTMLElement) el.dataset.identityProbe = 'before-reset'
@@ -421,11 +401,6 @@ async function driveThroughDocReset(
   await expect(vueNodes.getNodeLocator('1')).toBeVisible()
   await expect(vueNodes.getNodeLocator('2')).toBeVisible()
 
-  // The same element, not merely an equivalent one: a reset that went back to
-  // clearing would drop this node and its stamp with it. It does NOT yet say
-  // anything about `GraphCanvas`'s key -- nothing re-renders between the
-  // reset and here, so the stamp survives a randomised key too. That is what
-  // `expectNodeSurvivedReplacement` covers, once content actually lands.
   await expectNodeSurvivedReset(page)
 
   return { vueNodes, send }

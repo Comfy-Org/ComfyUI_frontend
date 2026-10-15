@@ -451,13 +451,6 @@ async function routeTurnLock(
     })
   })
 
-  /**
-   * The glob accepts any thread and any ask id, so without these checks an
-   * answer posted against the wrong ask -- or an option this ask never offered
-   * -- would still be recorded and `answeredAsks()` would report success. The
-   * assertion this fixture exists to support is "the answer left the client for
-   * *this* ask", so the route has to be the thing that enforces it.
-   */
   await page.route('**/api/agent/threads/*/asks/*/answer', (route) => {
     const url = new URL(route.request().url())
     const segments = url.pathname.split('/').map(decodeURIComponent)
