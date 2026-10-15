@@ -160,6 +160,43 @@ describe('WorkflowPreview', () => {
     ).toBeTruthy()
   })
 
+  it('opens a node graph only workflow on Your machine, with the custom nodes it needs', async () => {
+    const user = userEvent.setup()
+    const nodes = ['ComfyUI-KJNodes', 'ComfyUI-Impact-Pack']
+    render(WorkflowPreview, {
+      props: {
+        model: {
+          ...model,
+          workflow: {
+            ...model.workflow,
+            runsOnHub: false,
+            template: { ...template, customNodes: nodes }
+          }
+        }
+      }
+    })
+
+    expect(
+      screen.getByRole('tab', { name: 'Your machine', selected: true })
+    ).toBeTruthy()
+    const custom = screen.getByTestId('workflow-custom-nodes')
+    expect(custom).toHaveTextContent('Requires custom nodes')
+    for (const node of nodes) expect(custom).toHaveTextContent(node)
+
+    await user.click(screen.getByRole('tab', { name: 'Comfy Cloud' }))
+    const panel = screen.getByRole('tabpanel')
+    expect(panel).toHaveTextContent('Open it in Comfy Cloud to run it.')
+    expect(screen.getByTestId('workflow-details')).toHaveTextContent(
+      'Runs in ComfyUI'
+    )
+  })
+
+  it('lists no custom nodes for a workflow that needs none', () => {
+    render(WorkflowPreview, { props: { model } })
+
+    expect(screen.queryByTestId('workflow-custom-nodes')).toBeNull()
+  })
+
   it('moves between the tabs with the arrow keys', async () => {
     const user = userEvent.setup()
     render(WorkflowPreview, { props: { model } })

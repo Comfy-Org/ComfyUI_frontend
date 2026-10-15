@@ -120,7 +120,10 @@ export function workflowRunsHere(
   >
 ): boolean {
   return (
-    model.type === 'CLOUD' && !model.incompleteReason && !!model.workflow.cloud
+    model.type === 'CLOUD' &&
+    !model.incompleteReason &&
+    !!model.workflow.cloud &&
+    model.workflow.runsOnHub !== false
   )
 }
 

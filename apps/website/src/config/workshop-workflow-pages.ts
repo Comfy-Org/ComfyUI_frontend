@@ -103,7 +103,8 @@ function workflowPageFor(
     inputs: page.inputs,
     cloud: entry.cloud,
     outputs: entry.outputs,
-    template: page.template
+    template: page.template,
+    runsOnHub: page.runsOnHub
   }
   const modality = entry.outputs[0]?.kind
   const samples = page.media.samples ?? []

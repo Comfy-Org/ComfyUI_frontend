@@ -115,6 +115,10 @@ describe('WorkflowPage header', () => {
     {
       kind: 'is incomplete',
       change: { incompleteReason: 'missing-input-schema' }
+    },
+    {
+      kind: 'is a node graph only',
+      change: { workflow: { ...model.workflow, runsOnHub: false } }
     }
   ] as const)(
     'offers no run and no API for a workflow that $kind, and makes Try in Cloud its one yellow action',

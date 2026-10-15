@@ -10,6 +10,7 @@ import TabsContent from '@/components/ui/tabs/TabsContent.vue'
 import TabsList from '@/components/ui/tabs/TabsList.vue'
 import TabsTrigger from '@/components/ui/tabs/TabsTrigger.vue'
 import WorkflowCloudFacts from '@/components/workshop/workflow-preview/WorkflowCloudFacts.vue'
+import WorkflowCustomNodes from '@/components/workshop/workflow-preview/WorkflowCustomNodes.vue'
 import WorkflowMachineFiles from '@/components/workshop/workflow-preview/WorkflowMachineFiles.vue'
 import WorkflowRunsOn from '@/components/workshop/workflow-preview/WorkflowRunsOn.vue'
 
@@ -46,17 +47,29 @@ const runsOn = computed(
     }))
 )
 const files = computed(() => model.parts?.files ?? [])
-const runsOnCloud = computed(() => model.type === 'CLOUD')
+const nodeGraphOnly = computed(() => model.workflow.runsOnHub === false)
+const runsOnCloud = computed(
+  () => model.type === 'CLOUD' && !nodeGraphOnly.value
+)
+const customNodes = computed(() => model.workflow.template?.customNodes ?? [])
+const cloudNote = computed<TranslationKey>(() => {
+  if (nodeGraphOnly.value) return 'workshop.workflow.cloudOpen'
+  return runsOnCloud.value
+    ? 'workshop.workflow.cloudReady'
+    : 'workshop.workflow.runsOwn'
+})
+const whereLabel = computed<TranslationKey>(() => {
+  if (nodeGraphOnly.value) return 'workshop.workflow.runsComfyUI'
+  return model.type === 'CLOUD'
+    ? 'workshop.workflow.runsCloud'
+    : 'workshop.workflow.runsOwn'
+})
 
 const facts = computed(() => {
   const rows: { label: TranslationKey; value: string }[] = [
     {
       label: 'workshop.workflow.factWhere',
-      value: t(
-        model.type === 'CLOUD'
-          ? 'workshop.workflow.runsCloud'
-          : 'workshop.workflow.runsOwn'
-      )
+      value: t(whereLabel.value)
     }
   ]
   if (produces.value)
@@ -94,7 +107,8 @@ const facts = computed(() => {
         class="flex flex-col gap-4 px-1"
       >
         <WorkflowRunsOn v-if="runsOn.length" :parts="runsOn" />
-        <WorkflowCloudFacts v-if="where === 'cloud'" :runs-on-cloud :facts />
+        <WorkflowCustomNodes v-if="customNodes.length" :nodes="customNodes" />
+        <WorkflowCloudFacts v-if="where === 'cloud'" :note="cloudNote" :facts />
         <WorkflowMachineFiles v-else :files />
       </TabsContent>
     </Tabs>

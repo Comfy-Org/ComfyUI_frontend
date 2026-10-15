@@ -4676,6 +4676,9 @@
       "onCloud": "Comfy Cloud",
       "onMachine": "你的电脑",
       "cloudReady": "无需下载——Comfy Cloud 已备好所有文件。",
+      "cloudOpen": "在 Comfy Cloud 中打开即可运行。",
+      "requiresCustomNodes": "需要自定义节点",
+      "runsComfyUI": "在 ComfyUI 中运行",
       "fileType": {
         "checkpoint": "Checkpoint",
         "diffusionModel": "扩散模型",

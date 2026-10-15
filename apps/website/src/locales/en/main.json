@@ -664,6 +664,9 @@
       "onCloud": "Comfy Cloud",
       "onMachine": "Your machine",
       "cloudReady": "Nothing to download — Comfy Cloud already has every file.",
+      "cloudOpen": "Open it in Comfy Cloud to run it.",
+      "requiresCustomNodes": "Requires custom nodes",
+      "runsComfyUI": "Runs in ComfyUI",
       "fileType": {
         "checkpoint": "Checkpoint",
         "diffusionModel": "Diffusion model",

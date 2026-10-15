@@ -5,20 +5,14 @@ import { translationsFor } from '@/i18n/translations'
 const { t } = translationsFor('en')
 
 defineProps<{
-  runsOnCloud: boolean
+  note: TranslationKey
   facts: readonly { label: TranslationKey; value: string }[]
 }>()
 </script>
 
 <template>
   <p class="text-sm text-primary-warm-white">
-    {{
-      t(
-        runsOnCloud
-          ? 'workshop.workflow.cloudReady'
-          : 'workshop.workflow.runsOwn'
-      )
-    }}
+    {{ t(note) }}
   </p>
   <dl class="flex flex-col gap-1 text-sm" data-testid="workflow-details">
     <div
