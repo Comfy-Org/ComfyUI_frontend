@@ -20,11 +20,9 @@ import type {
   useAgentWorkflowResolver
 } from './useAgentWorkflowResolver'
 
-type OpenLifecycle = Exclude<CloudWorkflowLifecycle, 'gone'>
-
 type RestorationOutcome =
   | { outcome: 'open'; target: ComfyWorkflow }
-  | { outcome: 'unresolved'; lifecycle: OpenLifecycle }
+  | { outcome: 'unresolved' }
   | { outcome: 'deleted' }
   | { outcome: 'superseded' }
 
@@ -34,7 +32,7 @@ function restorationOutcomeFor(
 ): RestorationOutcome {
   if (lifecycle === 'gone') return { outcome: 'deleted' }
   return target === null
-    ? { outcome: 'unresolved', lifecycle }
+    ? { outcome: 'unresolved' }
     : { outcome: 'open', target }
 }
 
@@ -277,16 +275,11 @@ export function useAgentWorkflowSelection({
       case 'open':
         return openRestoredWorkflow(resolved.target, workflowId, isCurrent)
       case 'unresolved':
-        return restoreUnresolvedWorkflow(
-          resolved.lifecycle,
-          workflowId,
-          isCurrent
-        )
+        return restoreUnresolvedWorkflow(workflowId, isCurrent)
     }
   }
 
   async function restoreUnresolvedWorkflow(
-    lifecycle: OpenLifecycle,
     workflowId: string,
     isCurrent: () => boolean
   ): Promise<boolean> {
@@ -296,13 +289,8 @@ export function useAgentWorkflowSelection({
       const target = storedWorkflowFor(workflowId)
       if (target !== null)
         return await openRestoredWorkflow(target, workflowId, isCurrent)
-      if (lifecycle === 'live') {
-        panelStore.retainUnresolvedTarget()
-        return true
-      }
-      panelStore.setWorkflowTarget(null)
-      warnRestoreFailed()
-      return false
+      panelStore.retainUnresolvedTarget()
+      return true
     } catch {
       if (!isCurrent()) return false
       warnRestoreFailed()

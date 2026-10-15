@@ -6623,13 +6623,31 @@ describe('AgentPanelRoot workflow binding', () => {
   )
 
   it.for([
-    { failure: 'missing messages', status: 404, listingStatus: 200 },
-    { failure: 'message server error', status: 500, listingStatus: 200 },
-    { failure: 'failed workflow listing', status: 200, listingStatus: 500 }
+    {
+      failure: 'missing messages',
+      status: 404,
+      listingStatus: 200,
+      sync: async () => {}
+    },
+    {
+      failure: 'message server error',
+      status: 500,
+      listingStatus: 200,
+      sync: async () => {}
+    },
+    {
+      failure: 'failed workflow sync',
+      status: 200,
+      listingStatus: 500,
+      sync: async (): Promise<never> => {
+        throw new Error('offline')
+      }
+    }
   ])(
     'preserves Current after deleting a chat with $failure',
-    async ({ status, listingStatus }) => {
+    async ({ status, listingStatus, sync }) => {
       makeTab('wf-current')
+      vi.mocked(workflowStore.syncWorkflows).mockImplementation(sync)
       useAgentConversationStore().setThreadId('th-current')
       localStorage.setItem(StorageKeys.agentThread('personal'), 'th-current')
       vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
@@ -6976,21 +6994,17 @@ describe('AgentPanelRoot workflow binding', () => {
       listing: 'omits the workflow',
       listingStatus: 200,
       lookupStatus: 404,
-      notices: [i18n.global.t('agent.targetWorkflowUnavailable')],
-      toasts: [],
-      current: 'th-history'
+      notices: [i18n.global.t('agent.targetWorkflowUnavailable')]
     },
     {
       listing: 'fails',
       listingStatus: 500,
       lookupStatus: 500,
-      notices: [],
-      toasts: [i18n.global.t('agent.targetWorkflowOpenFailed')],
-      current: null
+      notices: []
     }
   ])(
     'restores a stored chat on startup when the workflow listing $listing',
-    async ({ listingStatus, lookupStatus, notices, toasts, current }) => {
+    async ({ listingStatus, lookupStatus, notices }) => {
       makeTab('wf-42')
       useAgentConversationStore().setThreadId('th-history')
       localStorage.setItem(StorageKeys.agentThread('personal'), 'th-history')
@@ -7006,15 +7020,15 @@ describe('AgentPanelRoot workflow binding', () => {
           useToast().toasts.flatMap((toast) =>
             toast.kind === 'warning' ? [toast.title] : []
           )
-        ).toEqual(toasts)
+        ).toEqual([])
         expect(
           screen
             .queryAllByText(i18n.global.t('agent.targetWorkflowUnavailable'))
             .map((notice) => notice.textContent.trim())
         ).toEqual(notices)
+        expect(useAgentChatHistoryStore().activeId).toBe('th-history')
       })
       expect(useAgentPanelStore().selectedWorkflow).toBeNull()
-      expect(useAgentChatHistoryStore().activeId).toBe(current)
     }
   )
 
@@ -7058,6 +7072,9 @@ describe('AgentPanelRoot workflow binding', () => {
     useAgentConversationStore().setThreadId('th-history')
     localStorage.setItem(StorageKeys.agentThread('personal'), 'th-history')
     stubHistoryWithWorkflowListing({ listing, lookup: 500 })
+    vi.mocked(workflowStore.syncWorkflows).mockRejectedValue(
+      new Error('offline')
+    )
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await screen.findAllByText('Historical prompt')
     await userEvent.click(
@@ -8898,6 +8915,9 @@ describe('AgentPanelRoot workflow binding', () => {
     makeTab('wf-42')
     useAgentConversationStore().setThreadId('th-history')
     stubHistoryWithWorkflowListing({ listing: 500, lookup: 500 })
+    vi.mocked(workflowStore.syncWorkflows).mockRejectedValue(
+      new Error('offline')
+    )
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await screen.findAllByText('Historical prompt')
     await vi.waitFor(() =>
@@ -8938,6 +8958,9 @@ describe('AgentPanelRoot workflow binding', () => {
       finishListing = resolve
     })
     stubHistoryWithWorkflowListing({ listing, lookup: 500 })
+    vi.mocked(workflowStore.syncWorkflows).mockRejectedValue(
+      new Error('offline')
+    )
     await userEvent.click(
       screen.getByRole('button', {
         name: i18n.global.t('agent.showChatHistory')
@@ -8985,6 +9008,9 @@ describe('AgentPanelRoot workflow binding', () => {
       finishListing = resolve
     })
     stubHistoryWithWorkflowListing({ listing, lookup: 500 })
+    vi.mocked(workflowStore.syncWorkflows).mockRejectedValue(
+      new Error('offline')
+    )
     await userEvent.click(
       screen.getByRole('button', {
         name: i18n.global.t('agent.showChatHistory')

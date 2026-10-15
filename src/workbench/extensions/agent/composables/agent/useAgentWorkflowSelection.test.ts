@@ -368,7 +368,7 @@ describe('historical workflow restoration', () => {
     expect(warnRestoreFailed).not.toHaveBeenCalled()
   })
 
-  it('keeps a chat with no local target retryable when its direct lookup is refused', async () => {
+  it('reads a chat with no local target when its direct lookup is refused', async () => {
     const {
       selection,
       workflows,
@@ -383,30 +383,31 @@ describe('historical workflow restoration', () => {
       new AgentApiError('Workflow lookup failed', 403, undefined)
     )
 
-    expect(await selection.restoreTarget('wf-saved', () => true)).toBe(false)
+    expect(await selection.restoreTarget('wf-saved', () => true)).toBe(true)
     expect(panel.selectedWorkflow).toBeNull()
+    expect(panel.targetUnresolved).toBe(true)
     expect(panel.targetUnavailable).toBe(false)
     expect(workflows.activeWorkflow?.path).toBe(current.path)
     expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
-    expect(warnRestoreFailed).toHaveBeenCalledOnce()
+    expect(warnRestoreFailed).not.toHaveBeenCalled()
   })
 
-  it('does not accept an unresolved target from an earlier listing when the latest refresh fails', async () => {
+  it('asks the lookup instead of an earlier listing when the latest refresh fails', async () => {
     const {
       selection,
+      panel,
       resolver,
+      cloudRows,
       listCloudWorkflows,
-      getCloudWorkflow,
       warnRestoreFailed
     } = setup()
     expect(await resolver.refreshCloudWorkflowIds()).toBe(true)
     listCloudWorkflows.mockRejectedValueOnce(new Error('listing failed'))
-    getCloudWorkflow.mockRejectedValueOnce(
-      new AgentApiError('upstream failed', 500, undefined)
-    )
+    cloudRows.delete('wf-saved')
 
-    expect(await selection.restoreTarget('wf-saved', () => true)).toBe(false)
-    expect(warnRestoreFailed).toHaveBeenCalledOnce()
+    expect(await selection.restoreTarget('wf-saved', () => true)).toBe(true)
+    expect(panel.targetUnavailable).toBe(true)
+    expect(warnRestoreFailed).not.toHaveBeenCalled()
   })
 
   it.for([
