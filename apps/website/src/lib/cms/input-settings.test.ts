@@ -82,7 +82,7 @@ describe('structured input settings', () => {
     })
     expect(numeric.property.multipleOf).toBe(0.5)
   })
-  it.each(['-', '1e', 'NaN', 'Infinity', '0x10', '9007199254740993', '1e309'])(
+  it.for(['-', '1e', 'NaN', 'Infinity', '0x10', '9007199254740993', '1e309'])(
     'retains invalid numeric buffer %s without emitting a coerced number',
     (text) => {
       const buffer = settingsBuffer(numeric)
@@ -95,7 +95,7 @@ describe('structured input settings', () => {
       expect(parseSettingsNumber(text)).toBeUndefined()
     }
   )
-  it.each(['0', '-1'])('rejects nonpositive step %s', (text) => {
+  it.for(['0', '-1'])('rejects nonpositive step %s', (text) => {
     const buffer = settingsBuffer(numeric)
     buffer.numeric.multipleOf = text
     expect(buildSettings(numeric, buffer)).toEqual({
@@ -196,7 +196,7 @@ describe('structured input settings', () => {
       value: base
     })
   })
-  it.each<Document>([
+  it.for<Document>([
     { ...numeric.property, allOf: [{ minimum: 2 }] },
     { ...numeric.property, $ref: '#/number' },
     { type: 'object', enum: [{ width: 100 }] },
@@ -216,7 +216,7 @@ describe('structured input settings', () => {
     }
   )
 })
-it.each<Document>([
+it.for<Document>([
   { control: 'dropdown' },
   { control: 'dropdown', optionLabels: {} },
   { control: 'dropdown', optionLabels: { unrelated: 'Keep this' } }

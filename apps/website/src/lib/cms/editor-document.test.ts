@@ -56,7 +56,7 @@ describe('complete authored documents', () => {
     expect(Object.getPrototypeOf(parseObject(text))).toBe(Object.prototype)
     expect(Object.hasOwn(Object.prototype, 'literal')).toBe(false)
   })
-  it.each([
+  it.for([
     undefined,
     NaN,
     Infinity,
@@ -113,7 +113,7 @@ describe('complete authored documents', () => {
       savePayload({ ...blankDocument(), ...fields }, 'workflow', 7)
     ).toMatchObject(fields)
   })
-  it.each([
+  it.for([
     { ...flat, is_deleted: 'true' },
     { ...flat, expected_draft_rev: 0 },
     { ...flat, uid: 'slug' },
@@ -129,7 +129,7 @@ describe('complete authored documents', () => {
     })
     expect(snapshot?.document).toEqual(editorSnapshot(flat)?.document)
   })
-  it.each(['[]', 'null', '{', 'true'])('rejects non-object JSON: %s', (text) =>
+  it.for(['[]', 'null', '{', 'true'])('rejects non-object JSON: %s', (text) =>
     expect(parseObject(text)).toBeUndefined()
   )
   it('blocks server identity fields in advanced authoring', () => {
@@ -174,7 +174,7 @@ describe('input definitions', () => {
     expect(JSON.stringify(next)).toContain('"__proto__":{"retain":true}')
     expect(Object.hasOwn(Object.prototype, 'retain')).toBe(false)
   })
-  it.each(['', 2, null])(
+  it.for(['', 2, null])(
     'still rejects invalid literal option labels: %s',
     (label) => {
       expect(
@@ -218,7 +218,7 @@ describe('input definitions', () => {
       required: ['seed', 'prompt']
     })
   })
-  it.each(['', 'spaces here', '__proto__', 'constructor', 'prototype', '9bad'])(
+  it.for(['', 'spaces here', '__proto__', 'constructor', 'prototype', '9bad'])(
     'refuses unsafe parameter names: %s',
     (name) => {
       expect(

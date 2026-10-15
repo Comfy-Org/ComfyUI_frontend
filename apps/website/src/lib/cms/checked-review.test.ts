@@ -14,10 +14,10 @@ describe('exact checked candidate', () => {
       publish_enabled: true
     }
     expect(
-      matchesCheckedReview(before, final, [before.items[0]!.content.uid])
+      matchesCheckedReview(before, final, [before.items[0].content.uid])
     ).toBe(true)
   })
-  it.each([
+  it.for([
     'state',
     'save',
     'duplicate',
@@ -36,21 +36,20 @@ describe('exact checked candidate', () => {
     const cases = {
       state: () => final.state.draft_generation++,
       save: () =>
-        (final.changes[0]!.content.revision_uid =
+        (final.changes[0].content.revision_uid =
           '00000000-0000-4000-8000-000000000099'),
-      duplicate: () => final.changes.push(final.changes[0]!),
+      duplicate: () => final.changes.push(final.changes[0]),
       extra: () =>
-        (final.changes[0]!.content.uid =
-          '00000000-0000-4000-8000-000000000099'),
+        (final.changes[0].content.uid = '00000000-0000-4000-8000-000000000099'),
       missing: () => final.changes.pop(),
       'also excluded': () => Object.assign(final, { deferred: final.changes })
     }
     cases[variant]()
     expect(
-      matchesCheckedReview(before, final, [before.items[0]!.content.uid])
+      matchesCheckedReview(before, final, [before.items[0].content.uid])
     ).toBe(false)
   })
-  it.each([
+  it.for([
     [],
     null,
     ['bad'],

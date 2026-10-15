@@ -168,8 +168,8 @@ try {
     .filter({ hasText: 'BRUCE imported-site verification' })
     .last()
   await row.getByRole('button', { name: 'Revoke' }).click()
-  console.log(
-    'PASS: original LIVE baseline180 -> no Preview banner/anonymous200 -> ngrok invitation -> imported Draft models/workflows/apps -> workflow EDIT/read-only form -> local-bucket workflow bytes; anonymous/range refusal and discovery. No content saves or publication.'
+  process.stdout.write(
+    'PASS: original LIVE baseline180 -> no Preview banner/anonymous200 -> ngrok invitation -> imported Draft models/workflows/apps -> workflow EDIT/read-only form -> local-bucket workflow bytes; anonymous/range refusal and discovery. No content saves or publication.\n'
   )
 } catch (error) {
   console.error('Import browser check failed at:', phase)
@@ -183,9 +183,9 @@ try {
           .slice(0, 500)
       : 'Verification failure'
   )
-  throw new Error(
-    error instanceof Error ? error.name : 'Browser verification failed'
-  )
+  // The bounded summary above is all that is reported; the original error
+  // is not attached as a cause so no further page detail reaches the log.
+  process.exitCode = 1
 } finally {
   await browser.close()
 }

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { previewNavigationPath, updateCatalogPreview } from './preview-client'
 
 describe('Preview navigation', () => {
-  it.each([
+  it.for([
     {
       path: '/hub/models/example/?a=1#inputs',
       locale: 'zh-CN' as const,
@@ -27,7 +27,7 @@ describe('Preview navigation', () => {
       expect(previewNavigationPath(path, locale)).toBe(expected)
     }
   )
-  it.each([
+  it.for([
     'https://evil.test',
     '//evil.test',
     '/%2f%2fevil.test',
@@ -44,7 +44,7 @@ describe('Preview cookie command transport', () => {
     const fetch = vi
       .fn<typeof globalThis.fetch>()
       .mockResolvedValue(new Response(null, { status: 204 }))
-    vi.stubGlobal('fetch', fetch)
+    vi.mocked(globalThis.fetch).mockImplementation(fetch)
     expect(
       await updateCatalogPreview({ view: 'LIVE', now: 'now' }, 'fixture-csrf')
     ).toBe(true)
@@ -64,11 +64,10 @@ describe('Preview cookie command transport', () => {
       })
     )
   })
-  it.each([200, 400, 403, 503])(
+  it.for([200, 400, 403, 503])(
     'does not treat status %s as a committed cookie update',
     async (status) => {
-      vi.stubGlobal(
-        'fetch',
+      vi.mocked(globalThis.fetch).mockImplementation(
         vi
           .fn<typeof globalThis.fetch>()
           .mockResolvedValue(new Response(null, { status }))
@@ -79,8 +78,7 @@ describe('Preview cookie command transport', () => {
     }
   )
   it('fails closed on network failure', async () => {
-    vi.stubGlobal(
-      'fetch',
+    vi.mocked(globalThis.fetch).mockImplementation(
       vi.fn<typeof globalThis.fetch>().mockRejectedValue(new Error('Offline'))
     )
     expect(await updateCatalogPreview({ view: 'DRAFT' }, 'fixture-csrf')).toBe(
@@ -89,7 +87,7 @@ describe('Preview cookie command transport', () => {
   })
   it('does not send a mutation without CSRF', async () => {
     const fetch = vi.fn<typeof globalThis.fetch>()
-    vi.stubGlobal('fetch', fetch)
+    vi.mocked(globalThis.fetch).mockImplementation(fetch)
     expect(await updateCatalogPreview({ view: 'DRAFT' }, '')).toBe(false)
     expect(fetch).not.toHaveBeenCalled()
   })

@@ -1,3 +1,4 @@
+import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import InputSettings from './InputSettings.vue'
@@ -94,7 +95,7 @@ describe('controlled input-settings form', () => {
       'high'
     )
     expect(result.emitted().update).toBeUndefined()
-    await fireEvent.click(
+    await userEvent.click(
       screen.getAllByRole('button', { name: 'Move option down' })[0]
     )
     expect(
@@ -107,7 +108,7 @@ describe('controlled input-settings form', () => {
     ).toHaveLength(2)
     expect(screen.getByRole('button', { name: 'Add option' })).toBeDisabled()
     expect(result.emitted().update).toBeUndefined()
-    await fireEvent.click(
+    await userEvent.click(
       screen.getByRole('button', {
         name: 'Discard buffer and load current settings'
       })
@@ -130,8 +131,8 @@ describe('controlled input-settings form', () => {
     const remove = screen.getAllByRole('button', { name: 'Remove option' })[0]
     expect(add).toBeDisabled()
     expect(remove).toBeDisabled()
-    await fireEvent.click(add)
-    await fireEvent.click(remove)
+    await userEvent.click(add)
+    await userEvent.click(remove)
     await fireEvent.update(
       screen.getAllByRole('textbox', { name: 'Option value' })[0],
       'changed'
@@ -189,7 +190,7 @@ describe('controlled input-settings form', () => {
       'These settings changed'
     )
     expect(result.emitted().update).toBeUndefined()
-    await fireEvent.click(
+    await userEvent.click(
       screen.getByRole('button', {
         name: 'Discard buffer and load current settings'
       })
@@ -277,7 +278,7 @@ describe('controlled input-settings form', () => {
     const result = render(InputSettings, {
       props: { schemaProperty: options, presentation: definition }
     })
-    await fireEvent.click(
+    await userEvent.click(
       screen.getAllByRole('button', { name: 'Move option down' })[0]
     )
     expect(result.emitted().update.at(-1)).toEqual([
@@ -320,7 +321,7 @@ describe('controlled input-settings form', () => {
         presentation: { control: 'dropdown' }
       }
     })
-    await fireEvent.click(
+    await userEvent.click(
       screen.getAllByRole('button', { name: 'Remove option' })[1]
     )
     expect(result.emitted().update).toBeUndefined()

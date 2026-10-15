@@ -56,7 +56,7 @@ describe('private Preview command route', () => {
     expect(currentCatalogPreview(denied).view).toBe('LIVE')
     expect((await POST(context({}, undefined, false))).status).toBe(404)
   })
-  it.each([
+  it.for([
     { view: 'DRAFT', now: 'invalid' },
     { view: 'LIVE', rev: 9 },
     { view: 'DRAFT', locale: 'unknown' }

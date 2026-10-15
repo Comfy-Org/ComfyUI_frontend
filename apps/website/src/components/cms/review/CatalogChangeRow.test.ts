@@ -1,3 +1,4 @@
+import userEvent from '@testing-library/user-event'
 import { render, screen, fireEvent, within } from '@testing-library/vue'
 import { assert, describe, expect, it } from 'vitest'
 import { fixtureReview } from '@/lib/cms/staging-fixture'
@@ -56,7 +57,7 @@ describe('change row previews and record navigation', () => {
     expect(
       screen.getByText('Content: Actual upload page, Another shared use')
     ).toBeVisible()
-    await fireEvent.click(
+    await userEvent.click(
       screen.getByRole('button', { name: /unrelated-name\/photo.png/ })
     )
     expect(await screen.findByRole('dialog')).toBeVisible()

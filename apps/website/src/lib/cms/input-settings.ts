@@ -1,4 +1,5 @@
 import type { Document } from '@/lib/cms/editor-document'
+import { documentField } from '@/lib/cms/editor-document'
 import { validateWorkshopInput } from '@/config/workshop-json-schema'
 
 export type OptionValue = string | number | boolean
@@ -44,7 +45,7 @@ export interface SettingsBuffer {
   options: OptionBuffer[]
   defaultJSON: string
 }
-export type SettingsError =
+type SettingsError =
   | 'number'
   | 'bounds'
   | 'step'
@@ -107,7 +108,7 @@ export function settingsMode({
     !Object.hasOwn(property, 'enum')
   ) {
     return numericSettings.every((key) => {
-      const value = property[key]
+      const value = documentField(property, key)
       return (
         value === undefined ||
         (typeof value === 'number' &&
@@ -123,11 +124,12 @@ export function settingsMode({
     !labelMap(presentation.optionLabels)
   )
     return 'unsupported'
-  if (property.default !== undefined && !scalar(property.default))
-    return 'unsupported'
+  const defaultValue = documentField(property, 'default')
+  if (defaultValue !== undefined && !scalar(defaultValue)) return 'unsupported'
+  const enumValue = documentField(property, 'enum')
   if (
-    property.enum !== undefined &&
-    (!Array.isArray(property.enum) || !property.enum.every(scalar))
+    enumValue !== undefined &&
+    (!Array.isArray(enumValue) || !enumValue.every(scalar))
   )
     return 'unsupported'
   const values = Array.isArray(property.enum) ? property.enum : []
@@ -136,26 +138,21 @@ export function settingsMode({
   if (new Set(values.map(String)).size !== values.length) return 'unsupported'
   return 'options'
 }
+function numericText(property: Document, key: NumericSetting): string {
+  const value = documentField(property, key)
+  return value === undefined ? '' : String(value)
+}
+function jsonText(value: Document[string] | undefined): string {
+  return value === undefined ? '' : JSON.stringify(value)
+}
 export function settingsBuffer(value: InputSettingsValue): SettingsBuffer {
   const labels = labelMap(value.presentation.optionLabels) ?? {}
   return {
     numeric: {
-      minimum:
-        value.property.minimum === undefined
-          ? ''
-          : String(value.property.minimum),
-      maximum:
-        value.property.maximum === undefined
-          ? ''
-          : String(value.property.maximum),
-      default:
-        value.property.default === undefined
-          ? ''
-          : String(value.property.default),
-      multipleOf:
-        value.property.multipleOf === undefined
-          ? ''
-          : String(value.property.multipleOf)
+      minimum: numericText(value.property, 'minimum'),
+      maximum: numericText(value.property, 'maximum'),
+      default: numericText(value.property, 'default'),
+      multipleOf: numericText(value.property, 'multipleOf')
     },
     options: Array.isArray(value.property.enum)
       ? value.property.enum.filter(scalar).map((option) => ({
@@ -172,10 +169,7 @@ export function settingsBuffer(value: InputSettingsValue): SettingsBuffer {
             : ''
         }))
       : [],
-    defaultJSON:
-      value.property.default === undefined
-        ? ''
-        : JSON.stringify(value.property.default)
+    defaultJSON: jsonText(documentField(value.property, 'default'))
   }
 }
 export function parseSettingsNumber(text: string): number | undefined {
@@ -223,9 +217,10 @@ export function buildSettings(
       return { valid: false, error: 'bounds' }
     if (typeof property.multipleOf === 'number' && property.multipleOf <= 0)
       return { valid: false, error: 'step' }
+    const defaultValue = documentField(property, 'default')
     if (
-      property.default !== undefined &&
-      !validateWorkshopInput(property.default, property)
+      defaultValue !== undefined &&
+      !validateWorkshopInput(defaultValue, property)
     )
       return { valid: false, error: 'default' }
   } else {

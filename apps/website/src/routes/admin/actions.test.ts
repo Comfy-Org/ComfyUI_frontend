@@ -96,7 +96,7 @@ function adminPost(
     .mockImplementation(() =>
       Promise.resolve(new Response(null, { status: 204 }))
     )
-  vi.stubGlobal('fetch', upstream)
+  vi.mocked(fetch).mockImplementation(upstream)
   const calls = () =>
     upstream.mock.calls.map(([url, init]) => [
       new URL(String(url)).pathname,

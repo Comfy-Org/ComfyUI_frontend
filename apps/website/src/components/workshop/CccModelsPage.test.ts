@@ -77,7 +77,7 @@ const models: WorkshopModel[] = [
 
 it('renders the supplied grid and the very first workflow/app click without asynchronous catalogue loaders', async () => {
   const fetchData = vi.fn<typeof fetch>()
-  vi.stubGlobal('fetch', fetchData)
+  vi.mocked(fetch).mockImplementation(fetchData)
   render(CccModelsPage, {
     props: { initialModels: models, initialCatalogAvailable: true }
   })

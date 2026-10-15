@@ -42,7 +42,7 @@ describe('catalog preview state', () => {
     expect(ctx.cookies.get(CATALOG_LOCALE_COOKIE)?.value).toBe('zh-CN')
     expect([...ctx.cookies.headers()].join('\n')).toContain('HttpOnly')
   })
-  it.each([
+  it.for([
     '/hub/models/?preview=DRAFT',
     '/hub/models/?preview_at=2030-01-01T00:00:00Z',
     '/hub/models/?now=now'

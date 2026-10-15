@@ -1,10 +1,11 @@
+import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import CatalogPreviewBar from './CatalogPreviewBar.vue'
 import CatalogPreviewTimePicker from './CatalogPreviewTimePicker.vue'
 
 describe('catalog Preview controls', () => {
-  it.each([
+  it.for([
     { active: false, view: 'DRAFT' as const },
     { active: true, view: 'LIVE' as const }
   ])(
@@ -49,9 +50,9 @@ describe('catalog Preview controls', () => {
     expect(
       screen.getByRole('region', { name: 'Catalog preview controls' })
     ).toHaveClass('w-full', 'bg-primary-comfy-yellow')
-    await fireEvent.click(screen.getByRole('button', { name: 'NOW' }))
+    await userEvent.click(screen.getByRole('button', { name: 'NOW' }))
     expect(result.emitted().timewarp).toEqual([[undefined]])
-    await fireEvent.click(screen.getByRole('button', { name: 'EXIT' }))
+    await userEvent.click(screen.getByRole('button', { name: 'EXIT' }))
     expect(result.emitted().exit).toEqual([[]])
     await fireEvent.update(
       screen.getByRole('combobox', { name: 'Preview language' }),
@@ -114,17 +115,17 @@ describe('catalog Preview controls', () => {
         ]
       }
     })
-    await fireEvent.click(screen.getByRole('button', { name: 'Changes' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Changes' }))
     await waitFor(() => expect(screen.getByRole('dialog')).toBeVisible())
     expect(screen.getByText('<img src=x onerror=alert(1)>')).toBeVisible()
     expect(
       screen.queryByRole('button', { name: 'Unsafe link' })
     ).not.toBeInTheDocument()
-    await fireEvent.click(screen.getByText('Changed fields'))
+    await userEvent.click(screen.getByText('Changed fields'))
     expect(screen.getByText('$.examples[0].values.prompt')).toBeVisible()
-    await fireEvent.click(screen.getByRole('button', { name: 'Example' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Example' }))
     expect(result.emitted().navigate).toEqual([['/hub/workflows/example/']])
-    await fireEvent.click(screen.getByRole('button', { name: 'Close' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Close' }))
     await waitFor(() =>
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     )
@@ -162,13 +163,13 @@ describe('catalog Preview controls', () => {
   })
   it('handles date selection as UTC and rejects empty dates', async () => {
     const result = render(CatalogPreviewTimePicker, { props: {} })
-    await fireEvent.click(
+    await userEvent.click(
       screen.getByRole('button', { name: 'Preview date and time' })
     )
     await waitFor(() =>
       expect(screen.getByText('Preview date and time (UTC)')).toBeVisible()
     )
-    await fireEvent.click(
+    await userEvent.click(
       screen.getByRole('button', { name: 'Show this date' })
     )
     expect(screen.getByRole('alert')).toHaveTextContent(
@@ -179,7 +180,7 @@ describe('catalog Preview controls', () => {
       screen.getByLabelText('Preview date and time (UTC)'),
       '2026-10-15T09:00'
     )
-    await fireEvent.click(
+    await userEvent.click(
       screen.getByRole('button', { name: 'Show this date' })
     )
     expect(result.emitted().timewarp).toEqual([['2026-10-15T09:00:00.000Z']])
@@ -192,7 +193,7 @@ describe('catalog Preview controls', () => {
         ]
       }
     })
-    await fireEvent.click(
+    await userEvent.click(
       screen.getByRole('button', { name: 'Preview date and time' })
     )
     await waitFor(() =>
@@ -200,7 +201,7 @@ describe('catalog Preview controls', () => {
         screen.getByRole('button', { name: /Scheduled fixture/ })
       ).toBeVisible()
     )
-    await fireEvent.click(
+    await userEvent.click(
       screen.getByRole('button', { name: /Scheduled fixture/ })
     )
     expect(result.emitted().timewarp).toEqual([['2026-10-15T09:00:00.000Z']])

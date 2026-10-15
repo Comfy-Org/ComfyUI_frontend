@@ -128,7 +128,7 @@ describe('ModelsCatalogue', () => {
 
   it('displays the intended section before navigation completes and replaces it with authoritative props', async () => {
     const fetchData = vi.fn<typeof fetch>()
-    vi.stubGlobal('fetch', fetchData)
+    vi.mocked(fetch).mockImplementation(fetchData)
     const view = render(ModelsCatalogue, {
       props: { models: launchModels, optimisticNavigation: true }
     })

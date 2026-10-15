@@ -1,22 +1,27 @@
-import { fireEvent, render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import CatalogAdminShell from './CatalogAdminShell.vue'
 
 describe('Mar catalog console layout', () => {
   it('anchors the desktop sidebar and LIVE control outside the scrolling action area', () => {
-    const { container } = render(CatalogAdminShell, {
+    render(CatalogAdminShell, {
       props: { current: 'draft', liveRevision: 12 }
     })
-    expect(container.querySelector('aside')).toHaveClass(
+    expect(screen.getByRole('complementary')).toHaveClass(
       'lg:fixed',
       'lg:inset-y-0',
       'lg:left-0',
       'lg:w-60'
     )
-    expect(container.querySelector('section')).toHaveClass('lg:col-start-2')
-    expect(
-      screen.getByRole('button', { name: 'Open live site' }).parentElement
-    ).toHaveClass('shrink-0')
+    expect(screen.getByTestId('catalog-admin-content')).toHaveClass(
+      'lg:col-start-2'
+    )
+    const liveControl = screen.getByTestId('catalog-live-control')
+    expect(liveControl).toHaveClass('shrink-0')
+    expect(liveControl).toContainElement(
+      screen.getByRole('button', { name: 'Open live site' })
+    )
     expect(
       screen.getByRole('navigation', { name: 'Catalog administration' })
     ).toHaveClass('lg:min-h-0', 'lg:overflow-y-auto')
@@ -25,7 +30,7 @@ describe('Mar catalog console layout', () => {
     const result = render(CatalogAdminShell, {
       props: { current: 'draft', liveRevision: 12 }
     })
-    await fireEvent.click(
+    await userEvent.click(
       screen.getByRole('button', { name: 'Open live site' })
     )
     expect(result.emitted().openLive).toEqual([[]])

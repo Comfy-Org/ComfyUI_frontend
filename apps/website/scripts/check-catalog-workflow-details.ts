@@ -3,6 +3,8 @@ import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { websiteRoot } from '@website/paths'
 
+import { isolatedPage, readOnlyRoutes } from './catalog-browser-harness'
+
 const website = 'http://127.0.0.1:4353'
 const browser = await chromium.launch({ headless: true })
 try {
@@ -13,28 +15,26 @@ try {
   const graph = await readFile(
     join(websiteRoot, 'public/workflow-graphs/remove-background.json')
   )
-  await context.route('**/*', async (route) => {
-    const url = new URL(route.request().url())
-    if (url.origin === website && url.pathname.startsWith('/preview-media/')) {
-      await route.fulfill({ contentType: 'application/json', body: graph })
-      return
-    }
-    if (url.href === `${website}/__ccc_readonly_component_check__`) {
+  const writes = await readOnlyRoutes(context, website, {
+    blocked: /^\/api\//,
+    fulfill: async (url, route) => {
+      if (
+        url.origin === website &&
+        url.pathname.startsWith('/preview-media/')
+      ) {
+        await route.fulfill({ contentType: 'application/json', body: graph })
+        return true
+      }
+      if (url.href !== `${website}/__ccc_readonly_component_check__`)
+        return false
       await route.fulfill({
         contentType: 'text/html',
         body: '<!doctype html><html><head></head><body></body></html>'
       })
-      return
+      return true
     }
-    if (url.origin === website && !url.pathname.startsWith('/api/'))
-      await route.continue()
-    else await route.abort()
   })
-  const page = await context.newPage()
-  await page.routeWebSocket('**', (socket) => socket.close())
-  await page.addInitScript('globalThis.__name = (value) => value')
-  const errors: string[] = []
-  page.on('pageerror', (error) => errors.push(error.message))
+  const { page, errors } = await isolatedPage(context)
   await page.goto(`${website}/__ccc_readonly_component_check__`)
   await page.evaluate(async () => {
     const stylePath = '/src/styles/global.css'
@@ -236,8 +236,9 @@ try {
   await expect(page.getByRole('heading', { name: '常见问答' })).toHaveCount(0)
   await expect(page.getByTestId('workflow-facts')).toHaveCount(0)
   expect(errors).toEqual([])
-  console.log(
-    'PASS: read-only desktop/mobile workflow body, Q&A, linked facts, false/zero, empty sections; no catalog writes'
+  expect(writes).toEqual([])
+  process.stdout.write(
+    'PASS: read-only desktop/mobile workflow body, Q&A, linked facts, false/zero, empty sections; no catalog writes\n'
   )
 } finally {
   await browser.close()

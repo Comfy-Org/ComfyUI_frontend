@@ -8,6 +8,18 @@ export const contentTypes = ['model', 'workflow', 'app'] as const
 export type ContentType = (typeof contentTypes)[number]
 export type Document = Record<string, z.infer<ReturnType<typeof z.json>>>
 
+/**
+ * The authored value at `key`, or undefined when the key is absent. The
+ * Document type names every key, but JSON from the backend or an editor
+ * buffer can omit any of them, so presence is read rather than assumed.
+ */
+export function documentField(
+  document: Document,
+  key: string
+): Document[string] | undefined {
+  return Object.hasOwn(document, key) ? document[key] : undefined
+}
+
 // Zod's record output omits literal __proto__ keys. Authored JSON must be
 // lossless: copy own entries without invoking Object.prototype setters.
 function copyJSON(
@@ -182,8 +194,9 @@ export function setInput(
     return undefined
   const presentation = workshopInputDefinitionSchema.safeParse(definition)
   if (!presentation.success) return undefined
-  if (definition.optionLabels !== undefined) {
-    const labels = jsonObject.safeParse(definition.optionLabels)
+  const optionLabels = documentField(definition, 'optionLabels')
+  if (optionLabels !== undefined) {
+    const labels = jsonObject.safeParse(optionLabels)
     const labelSchema =
       workshopInputDefinitionSchema.shape.optionLabels.unwrap().valueType
     if (

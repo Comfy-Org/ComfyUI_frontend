@@ -542,7 +542,11 @@ function discardDetails(raw: unknown) {
             : t('cccStaging.matches', { count: flow.review.items.length })
         }}
       </p>
-      <div v-if="canApply || canEdit" class="flex flex-wrap items-center gap-3">
+      <div
+        v-if="canApply || canEdit"
+        class="flex flex-wrap items-center gap-3"
+        data-testid="catalog-list-actions"
+      >
         <label class="flex items-center gap-2 text-xs text-admin-muted"
           ><input
             type="checkbox"

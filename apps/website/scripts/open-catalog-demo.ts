@@ -27,8 +27,8 @@ await editor.goto(
 )
 await expect(editor.locator('[data-editor-ready=true]')).toBeVisible()
 await page.bringToFront()
-console.log(
-  'Verified local staff demo window open: Draft review and saved-content editor. Publish is unavailable.'
+process.stdout.write(
+  'Verified local staff demo window open: Draft review and saved-content editor. Publish is unavailable.\n'
 )
 process.once('SIGTERM', () => {
   void browser.close()

@@ -1,10 +1,5 @@
-import {
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-  within
-} from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { fixtureReview } from '@/lib/cms/staging-fixture'
 import CatalogStaging from './CatalogStaging.vue'
@@ -12,7 +7,7 @@ import CatalogStaging from './CatalogStaging.vue'
 function reviewed() {
   const review = fixtureReview()
   review.unresolved_count = 0
-  review.items[0]!.decision = 'APPROVED'
+  review.items[0].decision = 'APPROVED'
   return review
 }
 function finalReview() {
@@ -31,13 +26,13 @@ describe('one-page catalog final review', () => {
     const initial = reviewed()
     initial.filter = { search: 'fixture' }
     const final = finalReview()
-    final.changes[0]!.content.document.title = 'Outside the filter'
+    final.changes[0].content.document.title = 'Outside the filter'
     const fetcher = vi.fn().mockResolvedValue(Response.json(final))
-    vi.stubGlobal('fetch', fetcher)
+    vi.mocked(fetch).mockImplementation(fetcher)
     render(CatalogStaging, {
       props: { initial, csrf: 'fixture', canEdit: true, canApply: true }
     })
-    await fireEvent.click(
+    await userEvent.click(
       screen.getByRole('button', { name: 'Review and publish' })
     )
     const dialog = await screen.findByRole('dialog', { name: 'Final review' })
@@ -49,7 +44,7 @@ describe('one-page catalog final review', () => {
       '/admin/catalog-api/final-review',
       expect.objectContaining({ method: 'GET', cache: 'no-store' })
     )
-    await fireEvent.click(
+    await userEvent.click(
       within(dialog).getByRole('button', { name: 'Back to staging' })
     )
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
@@ -58,11 +53,11 @@ describe('one-page catalog final review', () => {
       screen.getByRole('button', { name: 'Review and publish' })
     ).toBeEnabled()
   })
-  it.each([409, 422, 503])(
+  it.for([409, 422, 503])(
     'keeps publication closed when final review returns %i',
     async (status) => {
       const fetcher = vi.fn().mockResolvedValue(new Response(null, { status }))
-      vi.stubGlobal('fetch', fetcher)
+      vi.mocked(fetch).mockImplementation(fetcher)
       render(CatalogStaging, {
         props: {
           initial: reviewed(),
@@ -71,7 +66,7 @@ describe('one-page catalog final review', () => {
           canApply: true
         }
       })
-      await fireEvent.click(
+      await userEvent.click(
         screen.getByRole('button', { name: 'Review and publish' })
       )
       await waitFor(() => expect(screen.getByRole('alert')).toBeVisible())
@@ -88,7 +83,9 @@ describe('one-page catalog final review', () => {
   it('rejects a changed generation rather than silently reviewing new teammate work', async () => {
     const final = finalReview()
     final.state.draft_generation += 1
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json(final)))
+    vi.mocked(fetch).mockImplementation(
+      vi.fn().mockResolvedValue(Response.json(final))
+    )
     render(CatalogStaging, {
       props: {
         initial: reviewed(),
@@ -97,7 +94,7 @@ describe('one-page catalog final review', () => {
         canApply: true
       }
     })
-    await fireEvent.click(
+    await userEvent.click(
       screen.getByRole('button', { name: 'Review and publish' })
     )
     await waitFor(() =>
@@ -117,7 +114,7 @@ describe('one-page catalog final review', () => {
       .fn()
       .mockResolvedValueOnce(Response.json(final))
       .mockReturnValueOnce(publication)
-    vi.stubGlobal('fetch', fetcher)
+    vi.mocked(fetch).mockImplementation(fetcher)
     render(CatalogStaging, {
       props: {
         initial: reviewed(),
@@ -126,17 +123,17 @@ describe('one-page catalog final review', () => {
         canApply: true
       }
     })
-    await fireEvent.click(
+    await userEvent.click(
       screen.getByRole('button', { name: 'Review and publish' })
     )
     const dialog = await screen.findByRole('dialog', { name: 'Final review' })
-    await fireEvent.click(
+    await userEvent.click(
       within(dialog).getByRole('button', { name: 'Publish' })
     )
     expect(
       within(dialog).getByRole('button', { name: 'Back to staging' })
     ).toBeDisabled()
-    await fireEvent.click(
+    await userEvent.click(
       within(dialog).getByRole('button', { name: 'Back to staging' })
     )
     expect(dialog).toBeVisible()
@@ -164,7 +161,7 @@ describe('one-page catalog final review', () => {
   })
   it('never automatically defers unresolved items to open the popup', async () => {
     const fetcher = vi.fn()
-    vi.stubGlobal('fetch', fetcher)
+    vi.mocked(fetch).mockImplementation(fetcher)
     render(CatalogStaging, {
       props: {
         initial: fixtureReview(),
@@ -173,7 +170,7 @@ describe('one-page catalog final review', () => {
         canApply: true
       }
     })
-    await fireEvent.click(
+    await userEvent.click(
       screen.getByRole('button', { name: 'Review and publish' })
     )
     expect(fetcher).not.toHaveBeenCalled()

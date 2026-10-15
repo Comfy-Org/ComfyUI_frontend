@@ -59,7 +59,7 @@ describe('private read-only record view', () => {
           owner_uid: org.toLowerCase()
         })
       )
-    vi.stubGlobal('fetch', fetch)
+    vi.mocked(globalThis.fetch).mockImplementation(fetch)
     const result = await loadRecordView(session, uid, new URLSearchParams())
     assert.isTrue(result.ok)
     expect(result.document.author_uid).toBe(author)
@@ -78,7 +78,7 @@ describe('private read-only record view', () => {
       .fn<typeof globalThis.fetch>()
       .mockResolvedValueOnce(Response.json(raw))
       .mockResolvedValueOnce(Response.json(fixtureReview()))
-    vi.stubGlobal('fetch', fetch)
+    vi.mocked(globalThis.fetch).mockImplementation(fetch)
     const result = await loadRecordView(
       staff(),
       uid,
@@ -109,7 +109,7 @@ describe('private read-only record view', () => {
     'refuses unsupported version selectors before a read: $query',
     async ({ query, status }) => {
       const fetch = vi.fn<typeof globalThis.fetch>()
-      vi.stubGlobal('fetch', fetch)
+      vi.mocked(globalThis.fetch).mockImplementation(fetch)
       const result = await loadRecordView(
         staff(),
         uid,
@@ -125,7 +125,7 @@ describe('private read-only record view', () => {
     const fetch = vi
       .fn<typeof globalThis.fetch>()
       .mockResolvedValue(Response.json({ ...record(), revision_uid: owner }))
-    vi.stubGlobal('fetch', fetch)
+    vi.mocked(globalThis.fetch).mockImplementation(fetch)
     const result = await loadRecordView(
       staff(),
       uid,
@@ -137,8 +137,7 @@ describe('private read-only record view', () => {
   })
   it('refuses another owner even when an upstream response claims success', async () => {
     vi.stubEnv('SITE_CATALOG_API_URL', 'http://127.0.0.1:8109')
-    vi.stubGlobal(
-      'fetch',
+    vi.mocked(globalThis.fetch).mockImplementation(
       vi
         .fn<typeof globalThis.fetch>()
         .mockResolvedValue(Response.json({ ...record(), owner_uid: version }))
@@ -149,7 +148,7 @@ describe('private read-only record view', () => {
   })
   it('does not read records for anonymous requests', async () => {
     const fetch = vi.fn<typeof globalThis.fetch>()
-    vi.stubGlobal('fetch', fetch)
+    vi.mocked(globalThis.fetch).mockImplementation(fetch)
     const result = await loadRecordView(undefined, uid, new URLSearchParams())
     assert.isFalse(result.ok)
     expect(result.response.status).toBe(404)
@@ -157,8 +156,7 @@ describe('private read-only record view', () => {
   })
   it('supports media inspection without enabling a media edit or exposing origin URLs', async () => {
     vi.stubEnv('SITE_CATALOG_API_URL', 'http://127.0.0.1:8109')
-    vi.stubGlobal(
-      'fetch',
+    vi.mocked(globalThis.fetch).mockImplementation(
       vi
         .fn<typeof globalThis.fetch>()
         .mockResolvedValueOnce(

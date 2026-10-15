@@ -269,23 +269,26 @@ try {
     (await context.request.get(`${website}/hub/workflows/${slug}/`)).status()
   ).toBe(404)
   if (errors.length) throw new Error(`Browser errors: ${errors.join('; ')}`)
-  console.log(
-    JSON.stringify({
+  process.stdout.write(
+    `${JSON.stringify({
       passed: true,
       fixture_uid: record.uid,
       slug,
       fixture: 'staff-only, scheduled, Draft-only; retained',
       browser_errors: 0
-    })
+    })}\n`
   )
 } catch (error) {
   const reason =
     error instanceof Error
       ? error.message.split('\n')[0].slice(0, 160)
       : 'unknown'
-  throw new Error(
-    `Local Preview check failed at ${phase}: ${reason.replace(/Bearer\s+\S+/g, '[credential omitted]')}; private request details suppressed`
+  // Report only the redacted reason: the original error can carry private
+  // request details, so it is deliberately not attached as a cause.
+  process.stderr.write(
+    `Local Preview check failed at ${phase}: ${reason.replace(/Bearer\s+\S+/g, '[credential omitted]')}; private request details suppressed\n`
   )
+  process.exitCode = 1
 } finally {
   await browser.close()
 }

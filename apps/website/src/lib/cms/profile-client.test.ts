@@ -12,7 +12,7 @@ describe('private author picker transport', () => {
     const fetcher = vi
       .fn<typeof fetch>()
       .mockResolvedValue(Response.json({ items: [choice] }))
-    vi.stubGlobal('fetch', fetcher)
+    vi.mocked(fetch).mockImplementation(fetcher)
     const result = await searchProfiles(
       'Profile fixture',
       new AbortController().signal
@@ -31,7 +31,7 @@ describe('private author picker transport', () => {
     'refuses unsupported query %j without a request',
     async (query) => {
       const fetcher = vi.fn<typeof fetch>()
-      vi.stubGlobal('fetch', fetcher)
+      vi.mocked(fetch).mockImplementation(fetcher)
       expect(await searchProfiles(query, new AbortController().signal)).toEqual(
         { ok: false }
       )
@@ -44,8 +44,7 @@ describe('private author picker transport', () => {
     { items: [{ ...choice, avatar_url: 'https://secret@example.org/a' }] },
     { items: Array.from({ length: 21 }, () => choice) }
   ])('fails closed for an invalid directory response %#', async (body) => {
-    vi.stubGlobal(
-      'fetch',
+    vi.mocked(fetch).mockImplementation(
       vi.fn<typeof fetch>().mockResolvedValue(Response.json(body))
     )
     expect(

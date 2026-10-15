@@ -1,5 +1,7 @@
 import { chromium, expect } from '@playwright/test'
 
+import { isolatedPage, readOnlyRoutes } from './catalog-browser-harness'
+
 // Local read-only component exercise. This does not create a route, establish
 // credentials, fetch catalog data or simulate/execute a paid workflow.
 const port = process.env.CCC_INPUT_SETTINGS_TEST_PORT ?? '4367'
@@ -12,21 +14,8 @@ try {
   const context = await browser.newContext({
     viewport: { width: 1440, height: 1000 }
   })
-  await context.route('**/*', async (route) => {
-    const url = new URL(route.request().url())
-    if (
-      url.origin === website &&
-      !url.pathname.startsWith('/admin/') &&
-      !url.pathname.startsWith('/api/')
-    )
-      await route.continue()
-    else await route.abort()
-  })
-  const page = await context.newPage()
-  await page.routeWebSocket('**', (socket) => socket.close())
-  await page.addInitScript('globalThis.__name = (value) => value')
-  const errors: string[] = []
-  page.on('pageerror', (error) => errors.push(error.name))
+  const writes = await readOnlyRoutes(context, website)
+  const { page, errors } = await isolatedPage(context)
   await page.goto(`${website}/hub/models/`)
   await page.evaluate(async () => {
     const componentPath = '/src/components/cms/editor/InputSettings.vue'
@@ -195,8 +184,9 @@ try {
     fullPage: true
   })
   expect(errors).toEqual([])
-  console.log(
-    'PASS: isolated structured input controls, exact scalar types/defaults, preservation, invalid-buffer repair, desktop/mobile Chinese; no catalog writes or paid execution'
+  expect(writes).toEqual([])
+  process.stdout.write(
+    'PASS: isolated structured input controls, exact scalar types/defaults, preservation, invalid-buffer repair, desktop/mobile Chinese; no catalog writes or paid execution\n'
   )
 } finally {
   await browser.close()

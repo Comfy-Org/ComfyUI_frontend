@@ -46,7 +46,7 @@ function setup() {
     .mockResolvedValue(
       Response.json({ revision_id: 1, generation: 0, items: rows })
     )
-  vi.stubGlobal('fetch', upstream)
+  vi.mocked(fetch).mockImplementation(upstream)
   return upstream
 }
 

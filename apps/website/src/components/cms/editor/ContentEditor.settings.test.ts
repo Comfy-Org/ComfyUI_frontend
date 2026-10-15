@@ -1,3 +1,4 @@
+import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import ContentEditor from './ContentEditor.vue'
@@ -78,7 +79,7 @@ function setup() {
   })
 }
 async function savedBody() {
-  await fireEvent.click(
+  await userEvent.click(
     screen.getAllByRole('button', { name: 'Save changes' })[0]
   )
   await waitFor(() => expect(editorRequest).toHaveBeenCalledOnce())
@@ -87,7 +88,7 @@ async function savedBody() {
 describe('input settings in the complete content form', () => {
   it('keeps incomplete settings repairable while blocking Save and alternate replacement', async () => {
     setup()
-    await fireEvent.click(screen.getByText('Advanced: complete authored JSON'))
+    await userEvent.click(screen.getByText('Advanced: complete authored JSON'))
     await fireEvent.update(
       screen.getByRole('textbox', { name: 'Maximum' }),
       '1e'
@@ -129,7 +130,7 @@ describe('input settings in the complete content form', () => {
   })
   it('preserves exact typed dropdown values/defaults and unrelated metadata through reorder and label changes', async () => {
     setup()
-    await fireEvent.click(
+    await userEvent.click(
       screen.getAllByRole('button', { name: 'Move option down' })[0]
     )
     await fireEvent.update(
@@ -163,7 +164,7 @@ describe('input settings in the complete content form', () => {
       screen.getByRole('textbox', { name: 'Maximum' }),
       '-'
     )
-    await fireEvent.click(
+    await userEvent.click(
       screen.getByRole('button', { name: 'Remove input width' })
     )
     expect(
@@ -182,7 +183,7 @@ describe('input settings in the complete content form', () => {
   })
   it('freezes numeric/settings mutation during invalid complete JSON and restores controls on repair', async () => {
     setup()
-    await fireEvent.click(screen.getByText('Advanced: complete authored JSON'))
+    await userEvent.click(screen.getByText('Advanced: complete authored JSON'))
     const complete = screen.getByRole('textbox', {
       name: 'Complete content document'
     })

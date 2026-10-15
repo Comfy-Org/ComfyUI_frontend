@@ -52,14 +52,15 @@ describe('WorkshopFilterMenu', () => {
     )
     document.body.append(container)
     phone = true
-    const warn = vi.spyOn(console, 'warn')
-    const error = vi.spyOn(console, 'error')
+    // Only what hydration logs counts; the server render above may warn.
+    vi.mocked(console.warn).mockClear()
+    vi.mocked(console.error).mockClear()
     const app = createSSRApp(WorkshopFilterMenu, props)
     try {
       app.mount(container)
       await nextTick()
-      expect(warn).not.toHaveBeenCalled()
-      expect(error).not.toHaveBeenCalled()
+      expect(console.warn).not.toHaveBeenCalled()
+      expect(console.error).not.toHaveBeenCalled()
       const user = userEvent.setup()
       await user.click(screen.getByTestId('workshop-filter'))
       const dialog = await screen.findByRole('dialog')
@@ -69,8 +70,8 @@ describe('WorkshopFilterMenu', () => {
       await user.click(screen.getByTestId('workshop-filter-backdrop'))
       await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
       expect(document.body).not.toHaveStyle({ overflow: 'hidden' })
-      expect(warn).not.toHaveBeenCalled()
-      expect(error).not.toHaveBeenCalled()
+      expect(console.warn).not.toHaveBeenCalled()
+      expect(console.error).not.toHaveBeenCalled()
     } finally {
       app.unmount()
       container.remove()

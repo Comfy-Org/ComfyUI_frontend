@@ -134,6 +134,7 @@ const itemClass =
       </nav>
       <div
         class="mt-auto hidden shrink-0 gap-1 rounded-lg border border-admin-line p-3 lg:grid"
+        data-testid="catalog-live-control"
       >
         <p class="flex items-center gap-2 text-xs">
           <span
@@ -157,7 +158,10 @@ const itemClass =
       </div>
       <slot name="sidebar-footer" />
     </aside>
-    <section class="min-w-0 px-4 py-6 sm:px-8 lg:col-start-2 lg:py-8">
+    <section
+      class="min-w-0 px-4 py-6 sm:px-8 lg:col-start-2 lg:py-8"
+      data-testid="catalog-admin-content"
+    >
       <div class="mx-auto max-w-8xl"><slot /></div>
     </section>
   </div>

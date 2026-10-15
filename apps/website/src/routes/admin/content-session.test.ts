@@ -41,7 +41,7 @@ function backend(status = 200, body: unknown = authority) {
   vi.stubEnv('SITE_CATALOG_API_URL', 'http://catalog.example')
   vi.stubEnv('VERCEL_ENV', 'preview')
   const fetcher = vi.fn().mockResolvedValue(Response.json(body, { status }))
-  vi.stubGlobal('fetch', fetcher)
+  vi.mocked(fetch).mockImplementation(fetcher)
   return fetcher
 }
 describe('separate CCC authoring sessions', () => {
@@ -66,7 +66,7 @@ describe('separate CCC authoring sessions', () => {
     expect(await response.text()).toBe('')
     expect(response.headers.has('Authorization')).toBe(false)
   })
-  it.each([401, 403])(
+  it.for([401, 403])(
     'does not establish rejected/expired/revoked identity (%s)',
     async (status) => {
       backend(status, { error: 'denied' })

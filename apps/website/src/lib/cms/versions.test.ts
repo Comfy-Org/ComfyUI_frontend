@@ -54,7 +54,7 @@ function upstream() {
           : Response.json([save('b', 'Newer'), save('a', 'Older')])
       )
     )
-  vi.stubGlobal('fetch', fetch)
+  vi.mocked(globalThis.fetch).mockImplementation(fetch)
   return fetch
 }
 

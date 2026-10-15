@@ -186,8 +186,8 @@ async function worker() {
       })
     }
     if (verified.size % 25 === 0)
-      console.log(
-        `Verified ${verified.size}/${urls.length} distinct legacy files; failures=${errors.length}`
+      process.stdout.write(
+        `Verified ${verified.size}/${urls.length} distinct legacy files; failures=${errors.length}\n`
       )
   }
 }
@@ -202,7 +202,9 @@ await writeFile(
   { mode: 0o600 }
 )
 if (errors.length) {
-  console.log(JSON.stringify({ verified: verified.size, errors }))
+  process.stdout.write(
+    `${JSON.stringify({ verified: verified.size, errors })}\n`
+  )
   process.exitCode = 1
 } else {
   manifest.media = manifest.media.map(
@@ -216,7 +218,7 @@ if (errors.length) {
     JSON.stringify(manifest),
     { mode: 0o600 }
   )
-  console.log(
-    `Prepared ${manifest.contents.length} CONTENT and ${manifest.media.length} MEDIA uses (${verified.size} verified distinct files); no database changes.`
+  process.stdout.write(
+    `Prepared ${manifest.contents.length} CONTENT and ${manifest.media.length} MEDIA uses (${verified.size} verified distinct files); no database changes.\n`
   )
 }

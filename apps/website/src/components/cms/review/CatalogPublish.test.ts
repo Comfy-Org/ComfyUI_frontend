@@ -1,4 +1,5 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { fixtureReview } from '@/lib/cms/staging-fixture'
 import { publicationPayload } from '@/lib/cms/staging-review'
@@ -31,7 +32,7 @@ describe('temporary local Publish', () => {
     render(CatalogPublish, { props: { review: final(false), csrf: 'fixture' } })
     const button = screen.getByRole('button', { name: 'Publish' })
     expect(button).toBeDisabled()
-    await fireEvent.click(button)
+    await userEvent.click(button)
     expect(reviewRequest).not.toHaveBeenCalled()
   })
   it('binds the exact final review and redirects only after confirmed fresh state', async () => {
@@ -45,9 +46,9 @@ describe('temporary local Publish', () => {
       .spyOn(window.location, 'assign')
       .mockImplementation(() => {})
     render(CatalogPublish, { props: { review, csrf: 'fixture' } })
-    await fireEvent.click(screen.getByRole('button', { name: 'Publish' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Publish' }))
     await waitFor(() => expect(assign).toHaveBeenCalledWith('/admin/catalog'))
-    const [operation, options] = vi.mocked(reviewRequest).mock.calls[0]!
+    const [operation, options] = vi.mocked(reviewRequest).mock.calls[0]
     expect(operation).toBe('publish')
     expect(options?.csrf).toBe('fixture')
     expect(JSON.parse(options?.body ?? '')).toEqual(publicationPayload(review))
@@ -61,10 +62,10 @@ describe('temporary local Publish', () => {
       .spyOn(window.location, 'assign')
       .mockImplementation(() => {})
     render(CatalogPublish, { props: { review: final(), csrf: 'fixture' } })
-    await fireEvent.click(screen.getByRole('button', { name: 'Publish' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Publish' }))
     await waitFor(() => expect(screen.getByRole('alert')).toBeVisible())
     expect(assign).not.toHaveBeenCalled()
-    await fireEvent.click(screen.getByRole('button', { name: 'Publish' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Publish' }))
     await waitFor(() => expect(assign).toHaveBeenCalled())
     expect(vi.mocked(reviewRequest).mock.calls[0]?.[1]?.key).toBe(
       vi.mocked(reviewRequest).mock.calls[1]?.[1]?.key
@@ -80,7 +81,7 @@ describe('temporary local Publish', () => {
       .spyOn(window.location, 'assign')
       .mockImplementation(() => {})
     render(CatalogPublish, { props: { review: final(), csrf: 'fixture' } })
-    await fireEvent.click(screen.getByRole('button', { name: 'Publish' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Publish' }))
     await waitFor(() =>
       expect(screen.getByRole('alert')).toHaveTextContent(
         'This review is stale.'
@@ -92,7 +93,7 @@ describe('temporary local Publish', () => {
       status: 200,
       data: {}
     })
-    await fireEvent.click(screen.getByRole('button', { name: 'Publish' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Publish' }))
     await waitFor(() =>
       expect(screen.getByRole('alert')).toHaveTextContent(
         'The action could not be confirmed.'

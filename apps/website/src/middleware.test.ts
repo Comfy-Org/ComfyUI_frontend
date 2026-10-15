@@ -56,8 +56,7 @@ describe('separate catalog editor authority', () => {
     async (path) => {
       vi.stubEnv('SITE_CATALOG_API_URL', 'http://catalog.example')
       vi.stubEnv('VERCEL_ENV', 'preview')
-      vi.stubGlobal(
-        'fetch',
+      vi.mocked(fetch).mockImplementation(
         vi.fn(async () => Response.json(authoringContext))
       )
       const context = contextFor(path)
@@ -82,7 +81,7 @@ describe('separate catalog editor authority', () => {
     vi.stubEnv('SITE_CATALOG_API_URL', 'http://catalog.example')
     vi.stubEnv('VERCEL_ENV', 'preview')
     const fetcher = vi.fn(async () => Response.json(authoringContext))
-    vi.stubGlobal('fetch', fetcher)
+    vi.mocked(fetch).mockImplementation(fetcher)
     const context = contextFor('/admin/content/new')
     context.cookies.set(AUTHORING_COOKIE, 'private-local-fixture')
     context.cookies.set(AUTHORING_CSRF_COOKIE, 'a'.repeat(64))
@@ -96,7 +95,7 @@ describe('separate catalog editor authority', () => {
   it('does not read authoring cookies on public discovery routes', async () => {
     vi.stubEnv('SITE_CATALOG_API_URL', 'http://catalog.example')
     const fetcher = vi.fn()
-    vi.stubGlobal('fetch', fetcher)
+    vi.mocked(fetch).mockImplementation(fetcher)
     const context = contextFor('/api/v1/catalog/docs')
     context.cookies.set(AUTHORING_COOKIE, 'expired-local-fixture')
     context.cookies.set(AUTHORING_CSRF_COOKIE, 'a'.repeat(64))

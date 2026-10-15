@@ -45,7 +45,7 @@ try {
   const origin = 'http://127.0.0.1:4349'
   const mutations: string[] = []
   const fixture = fixtureReview()
-  fixture.items[0]!.decision = 'APPROVED'
+  fixture.items[0].decision = 'APPROVED'
   const final = {
     state: fixture.state,
     changes: fixture.items,
@@ -67,7 +67,7 @@ try {
           expected_draft_rev: 7,
           expected_draft_generation: 5
         },
-        selected_uids: [fixture.items[0]!.content.uid]
+        selected_uids: [fixture.items[0].content.uid]
       })
       await route.fulfill({ json: final })
     } else if (request.method() !== 'GET') {
@@ -144,8 +144,8 @@ try {
   await expect(page.getByRole('dialog')).toHaveCount(0)
   expect(mutations).toEqual([])
   expect(errors).toEqual([])
-  console.log(
-    'PASS: isolated compiled review popup, desktop/mobile, Escape/focus, disabled Publish, cancel; no catalog writes/auth claim'
+  process.stdout.write(
+    'PASS: isolated compiled review popup, desktop/mobile, Escape/focus, disabled Publish, cancel; no catalog writes/auth claim\n'
   )
 } finally {
   await browser?.close()

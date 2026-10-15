@@ -1,4 +1,5 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { editorRequest } from '@/lib/cms/editor-client'
 import MediaUpload from './MediaUpload.vue'
@@ -8,14 +9,12 @@ const uid = '00000000-0000-4000-8000-000000000001'
 const revision = '00000000-0000-4000-8000-000000000002'
 const later = '00000000-0000-4000-8000-000000000003'
 async function choose() {
-  await fireEvent.change(
-    screen.getByLabelText('Choose image, video or workflow JSON'),
-    {
-      target: {
-        files: [new File(['png'], 'a file.png', { type: 'image/png' })]
-      }
-    }
-  )
+  await userEvent
+    .setup({ applyAccept: false })
+    .upload(
+      screen.getByLabelText('Choose image, video or workflow JSON'),
+      new File(['png'], 'a file.png', { type: 'image/png' })
+    )
 }
 function setup() {
   return render(MediaUpload, {
@@ -37,7 +36,7 @@ describe('media editing', () => {
       data: { uid: later, revision_uid: revision }
     })
     await choose()
-    await fireEvent.click(
+    await userEvent.click(
       screen.getByRole('button', { name: 'Upload as new media' })
     )
     await waitFor(() => expect(result.emitted().update).toHaveLength(1))
@@ -67,11 +66,11 @@ describe('media editing', () => {
         data: { uid, revision_uid: revision }
       })
     await choose()
-    await fireEvent.click(
+    await userEvent.click(
       screen.getByRole('button', { name: 'Replace this media UID' })
     )
     await waitFor(() => expect(screen.getByRole('alert')).toBeVisible())
-    await fireEvent.click(
+    await userEvent.click(
       screen.getByRole('button', { name: 'Replace this media UID' })
     )
     await waitFor(() => expect(editorRequest).toHaveBeenCalledTimes(3))
@@ -86,7 +85,7 @@ describe('media editing', () => {
     expect(body.get('expected_revision_uid')).toBe(later)
     expect(body.get('media_uid')).toBe(uid)
   })
-  it.each(['mp4', 'webm'])(
+  it.for(['mp4', 'webm'])(
     'allows %s videos through to authoritative byte verification',
     async (extension) => {
       const result = setup()
@@ -95,19 +94,13 @@ describe('media editing', () => {
         status: 201,
         data: { uid: later, revision_uid: revision }
       })
-      await fireEvent.change(
+      await userEvent.setup({ applyAccept: false }).upload(
         screen.getByLabelText('Choose image, video or workflow JSON'),
-        {
-          target: {
-            files: [
-              new File(['video'], `sample.${extension}`, {
-                type: `video/${extension}`
-              })
-            ]
-          }
-        }
+        new File(['video'], `sample.${extension}`, {
+          type: `video/${extension}`
+        })
       )
-      await fireEvent.click(
+      await userEvent.click(
         screen.getByRole('button', { name: 'Upload as new media' })
       )
       await waitFor(() => expect(result.emitted().update).toHaveLength(1))
@@ -119,17 +112,13 @@ describe('media editing', () => {
   )
   it('rejects unsupported media locally without promising arbitrary codecs', async () => {
     setup()
-    await fireEvent.change(
-      screen.getByLabelText('Choose image, video or workflow JSON'),
-      {
-        target: {
-          files: [
-            new File(['video'], 'sample.avi', { type: 'video/x-msvideo' })
-          ]
-        }
-      }
-    )
-    await fireEvent.click(
+    await userEvent
+      .setup({ applyAccept: false })
+      .upload(
+        screen.getByLabelText('Choose image, video or workflow JSON'),
+        new File(['video'], 'sample.avi', { type: 'video/x-msvideo' })
+      )
+    await userEvent.click(
       screen.getByRole('button', { name: 'Upload as new media' })
     )
     expect(screen.getByRole('alert')).toBeVisible()

@@ -166,7 +166,7 @@ function remove(index: number) {
             />
           </div>
           <MediaUpload
-            :entityUID
+            :entity-u-i-d="entityUID"
             :draft
             :csrf
             media-role="example-reference"
@@ -179,7 +179,7 @@ function remove(index: number) {
           <h3 class="text-sm">{{ t('cmsEditor.exampleOutput') }}</h3>
           <MediaUpload
             :reference="example.media ? objectValue(example.media) : undefined"
-            :entityUID
+            :entity-u-i-d="entityUID"
             :draft
             :csrf
             media-role="example-output"

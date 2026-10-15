@@ -1,10 +1,5 @@
-import {
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-  within
-} from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { fixtureReview } from '@/lib/cms/staging-fixture'
 import CatalogStaging from './CatalogStaging.vue'
@@ -21,12 +16,11 @@ describe('actual catalog staging console', () => {
     })
     const add = screen.getByRole('link', { name: 'Add Content' })
     expect(add).toHaveAttribute('href', '/admin/content/new')
-    expect(add.closest('header')).toBeNull()
+    const actions = screen.getByTestId('catalog-list-actions')
+    expect(actions).toContainElement(add)
     expect(
       screen.queryByRole('link', { name: 'New content' })
     ).not.toBeInTheDocument()
-    const actions = add.parentElement
-    if (!actions) throw new Error('Missing list action bar')
     expect(
       within(actions).getByRole('button', { name: 'Approve Selected' })
     ).toBeDisabled()
@@ -53,27 +47,25 @@ describe('actual catalog staging console', () => {
   it('row trash confirms exact scope; cancel writes nothing, edit-only can discard', async () => {
     const initial = fixtureReview()
     const fetcher = vi.fn()
-    vi.stubGlobal('fetch', fetcher)
+    vi.mocked(fetch).mockImplementation(fetcher)
     render(CatalogStaging, {
       props: { initial, csrf: 'a'.repeat(64), canApply: false, canEdit: true }
     })
     expect(
       screen.getByRole('button', { name: 'Delete Changes' })
     ).toBeDisabled()
-    await fireEvent.click(
+    await userEvent.click(
       screen.getByRole('button', { name: 'Delete change for Review fixture' })
     )
     const dialog = screen.getByRole('dialog')
     expect(within(dialog).getByText('Delete 1 changes?')).toBeVisible()
-    expect(
-      within(dialog).getByText(initial.items[0]!.content.uid)
-    ).toBeVisible()
+    expect(within(dialog).getByText(initial.items[0].content.uid)).toBeVisible()
     expect(
       within(dialog).getByText(
         /LIVE stays unchanged and edit history is retained/
       )
     ).toBeVisible()
-    await fireEvent.click(
+    await userEvent.click(
       within(dialog).getByRole('button', { name: 'Cancel' })
     )
     expect(fetcher).not.toHaveBeenCalled()
@@ -92,24 +84,24 @@ describe('actual catalog staging console', () => {
       .fn()
       .mockResolvedValueOnce(Response.json(after))
       .mockResolvedValueOnce(Response.json(after))
-    vi.stubGlobal('fetch', fetcher)
+    vi.mocked(fetch).mockImplementation(fetcher)
     render(CatalogStaging, {
       props: { initial, csrf: 'a'.repeat(64), canApply: true, canEdit: true }
     })
-    await fireEvent.click(
+    await userEvent.click(
       screen.getByRole('checkbox', { name: 'Select Review fixture' })
     )
     expect(
       screen.getByRole('button', { name: 'Delete Changes' })
     ).toBeDisabled()
-    await fireEvent.click(
+    await userEvent.click(
       screen.getByRole('checkbox', { name: /unfiltered action/ })
     )
-    await fireEvent.click(
+    await userEvent.click(
       screen.getByRole('button', { name: 'Delete Changes' })
     )
     expect(fetcher).not.toHaveBeenCalled()
-    await fireEvent.click(
+    await userEvent.click(
       within(screen.getByRole('dialog')).getByRole('button', {
         name: 'Delete Changes'
       })
@@ -133,8 +125,8 @@ describe('actual catalog staging console', () => {
       expected_selection_digest: initial.selection_digest,
       targets: [
         {
-          uid: initial.items[0]!.content.uid,
-          expected_revision_uid: initial.items[0]!.content.revision_uid
+          uid: initial.items[0].content.uid,
+          expected_revision_uid: initial.items[0].content.revision_uid
         }
       ],
       confirm_discard: true
@@ -143,11 +135,11 @@ describe('actual catalog staging console', () => {
       screen.queryByRole('button', { name: 'Delete change for Review fixture' })
     ).not.toBeInTheDocument()
   })
-  it.each([true, false])(
+  it.for([true, false])(
     'toggles bulk delete with all-content acknowledgement (apply=%s)',
     async (canApply) => {
       const fetcher = vi.fn()
-      vi.stubGlobal('fetch', fetcher)
+      vi.mocked(fetch).mockImplementation(fetcher)
       render(CatalogStaging, {
         props: {
           initial: fixtureReview(),
@@ -156,7 +148,7 @@ describe('actual catalog staging console', () => {
           canEdit: true
         }
       })
-      await fireEvent.click(
+      await userEvent.click(
         screen.getByRole('checkbox', { name: 'Select all matching results' })
       )
       const button = screen.getByRole('button', { name: 'Delete Changes' })
@@ -164,24 +156,24 @@ describe('actual catalog staging console', () => {
         name: /unfiltered action/
       })
       expect(button).toBeDisabled()
-      await fireEvent.click(button)
+      await userEvent.click(button)
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-      await fireEvent.click(acknowledge)
+      await userEvent.click(acknowledge)
       expect(button).toBeEnabled()
-      await fireEvent.click(acknowledge)
+      await userEvent.click(acknowledge)
       expect(button).toBeDisabled()
-      await fireEvent.click(acknowledge)
-      await fireEvent.click(button)
+      await userEvent.click(acknowledge)
+      await userEvent.click(button)
       expect(screen.getByRole('dialog')).toBeVisible()
-      await fireEvent.click(
+      await userEvent.click(
         within(screen.getByRole('dialog')).getByRole('button', {
           name: 'Cancel'
         })
       )
-      await fireEvent.click(
+      await userEvent.click(
         screen.getByRole('checkbox', { name: 'Select all matching results' })
       )
-      await fireEvent.click(
+      await userEvent.click(
         screen.getByRole('checkbox', { name: 'Select all matching results' })
       )
       expect(
@@ -194,11 +186,11 @@ describe('actual catalog staging console', () => {
   it('keeps filtered bulk discard available with its confirmation, without all-content acknowledgement', async () => {
     const initial = fixtureReview()
     initial.filter = { search: 'fixture' }
-    vi.stubGlobal('fetch', vi.fn())
+    vi.mocked(fetch).mockImplementation(vi.fn())
     render(CatalogStaging, {
       props: { initial, csrf: 'a'.repeat(64), canApply: false, canEdit: true }
     })
-    await fireEvent.click(
+    await userEvent.click(
       screen.getByRole('checkbox', { name: 'Select all matching results' })
     )
     expect(
@@ -206,12 +198,11 @@ describe('actual catalog staging console', () => {
     ).not.toBeInTheDocument()
     const button = screen.getByRole('button', { name: 'Delete Changes' })
     expect(button).toBeEnabled()
-    await fireEvent.click(button)
+    await userEvent.click(button)
     expect(screen.getByRole('dialog')).toBeVisible()
   })
   it('dependency errors retain the full pending list and display escaped JSON paths', async () => {
-    vi.stubGlobal(
-      'fetch',
+    vi.mocked(fetch).mockImplementation(
       vi.fn().mockResolvedValue(
         Response.json(
           {
@@ -234,10 +225,10 @@ describe('actual catalog staging console', () => {
         canEdit: true
       }
     })
-    await fireEvent.click(
+    await userEvent.click(
       screen.getByRole('button', { name: 'Delete change for Review fixture' })
     )
-    await fireEvent.click(
+    await userEvent.click(
       within(screen.getByRole('dialog')).getByRole('button', {
         name: 'Delete Changes'
       })
@@ -271,7 +262,7 @@ describe('actual catalog staging console', () => {
       'href',
       '/admin/catalog'
     )
-    await fireEvent.click(
+    await userEvent.click(
       screen.getByRole('button', {
         name: 'Review fixture Modified: title, tags, examples'
       })
@@ -289,11 +280,11 @@ describe('actual catalog staging console', () => {
       .fn()
       .mockResolvedValueOnce(Response.json(updated))
       .mockResolvedValueOnce(Response.json(updated))
-    vi.stubGlobal('fetch', fetcher)
+    vi.mocked(fetch).mockImplementation(fetcher)
     render(CatalogStaging, {
       props: { initial, csrf: 'a'.repeat(64), canApply: true, canEdit: true }
     })
-    await fireEvent.click(
+    await userEvent.click(
       screen.getByRole('checkbox', { name: 'Select all matching results' })
     )
     expect(
@@ -301,10 +292,10 @@ describe('actual catalog staging console', () => {
     ).toBeDisabled()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(fetcher).not.toHaveBeenCalled()
-    await fireEvent.click(
+    await userEvent.click(
       screen.getByRole('checkbox', { name: /unfiltered action/ })
     )
-    await fireEvent.click(
+    await userEvent.click(
       screen.getByRole('button', { name: 'Approve Selected' })
     )
     await waitFor(() =>
@@ -330,8 +321,7 @@ describe('actual catalog staging console', () => {
     ).toBeEnabled()
   })
   it('fails stale decisions closed and requires a reload before any next staging action', async () => {
-    vi.stubGlobal(
-      'fetch',
+    vi.mocked(fetch).mockImplementation(
       vi.fn(async () => new Response(null, { status: 409 }))
     )
     render(CatalogStaging, {
@@ -342,14 +332,14 @@ describe('actual catalog staging console', () => {
         canEdit: true
       }
     })
-    await fireEvent.click(
+    await userEvent.click(
       screen.getByRole('checkbox', { name: 'Select all matching results' })
     )
 
-    await fireEvent.click(
+    await userEvent.click(
       screen.getByRole('checkbox', { name: /unfiltered action/ })
     )
-    await fireEvent.click(
+    await userEvent.click(
       screen.getByRole('button', { name: 'Defer Selected' })
     )
     await waitFor(() =>
@@ -369,7 +359,7 @@ describe('actual catalog staging console', () => {
   })
   it('approves a checkbox subset against the full frozen filter without changing unchecked records', async () => {
     const initial = fixtureReview()
-    const first = initial.items[0]
+    const first = initial.items.at(0)
     if (!first) throw new Error('Missing test row')
     initial.items.push({
       ...structuredClone(first),
@@ -388,7 +378,7 @@ describe('actual catalog staging console', () => {
       .fn()
       .mockResolvedValueOnce(Response.json(updated))
       .mockResolvedValueOnce(Response.json(updated))
-    vi.stubGlobal('fetch', fetcher)
+    vi.mocked(fetch).mockImplementation(fetcher)
     render(CatalogStaging, {
       props: { initial, csrf: 'a'.repeat(64), canApply: true, canEdit: true }
     })
@@ -398,10 +388,10 @@ describe('actual catalog staging console', () => {
     expect(
       screen.getByRole('button', { name: 'Approve Selected' })
     ).toBeDisabled()
-    await fireEvent.click(
+    await userEvent.click(
       screen.getByRole('checkbox', { name: 'Select Review fixture' })
     )
-    await fireEvent.click(
+    await userEvent.click(
       screen.getByRole('button', { name: 'Approve Selected' })
     )
     expect(
@@ -429,7 +419,7 @@ describe('actual catalog staging console', () => {
       screen.getByRole('button', { name: 'Approve Selected' })
     ).toBeDisabled()
   })
-  it.each([1, 4])(
+  it.for([1, 4])(
     'blocks final review for %i undecided entries even when filters show only an approved row',
     (count) => {
       const initial = fixtureReview()
@@ -476,7 +466,8 @@ describe('actual catalog staging console', () => {
     expect(
       screen.queryByRole('combobox', { name: 'Decision for Review fixture' })
     ).not.toBeInTheDocument()
-    await fireEvent.keyDown(badge, { key: 'ArrowDown' })
+    badge.focus()
+    await userEvent.keyboard('{ArrowDown}')
     await waitFor(() =>
       expect(screen.getByRole('menuitem', { name: 'APPROVED' })).toBeVisible()
     )

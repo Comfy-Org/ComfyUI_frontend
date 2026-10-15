@@ -22,7 +22,7 @@ function card(href: string) {
 }
 
 describe('Draft card annotations', () => {
-  it.each([
+  it.for([
     { name: 'new', change: { kind: 'added' as const }, expected: 'new' },
     { name: 'changed', change: {}, expected: 'updated' },
     {
@@ -58,7 +58,7 @@ describe('Draft card annotations', () => {
     }
   )
 
-  it.each([
+  it.for([
     { name: 'unrelated card', href: '/hub/workflows/other/', change: fixture },
     {
       name: 'external card',

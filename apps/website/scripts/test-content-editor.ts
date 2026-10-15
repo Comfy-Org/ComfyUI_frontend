@@ -286,8 +286,8 @@ try {
   expect(
     (await context.request.get(`${website}/admin/content/${uid}/edit`)).status()
   ).toBe(404)
-  console.log(
-    JSON.stringify({
+  process.stdout.write(
+    `${JSON.stringify({
       passed: true,
       fixture_uid: uid,
       fixture_state: 'disabled/staff-only Draft; intentionally retained',
@@ -296,7 +296,7 @@ try {
       json_buffer_repair: true,
       literal_json_keys: true,
       structured_input_settings: true
-    })
+    })}\n`
   )
 } catch {
   throw new Error(

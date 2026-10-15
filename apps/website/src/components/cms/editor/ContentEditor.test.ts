@@ -51,8 +51,10 @@ describe('staff page editor', () => {
   it('uploads the API file separately while preserving the downloadable graph pin', async () => {
     setup()
     const input = screen.getByLabelText('API JSON (Cloud Run workflow)')
-    const uploadPanel = input.closest('div')
-    if (!uploadPanel) throw new Error('Missing API upload panel')
+    const uploadPanel = screen.getByRole('group', {
+      name: 'API JSON (Cloud Run workflow) · Upload as new media'
+    })
+    expect(uploadPanel).toContainElement(input)
     vi.mocked(editorRequest)
       .mockResolvedValueOnce({
         ok: true,
@@ -60,18 +62,17 @@ describe('staff page editor', () => {
         data: { uid: next, revision_uid: revision }
       })
       .mockResolvedValueOnce({ ok: false, status: 409, data: undefined })
-    await fireEvent.change(input, {
-      target: {
-        files: [
-          new File(
-            ['{"7":{"class_type":"Example","inputs":{}}}'],
-            'workflow.json',
-            { type: 'application/json' }
-          )
-        ]
-      }
-    })
-    await fireEvent.click(
+    await userEvent
+      .setup({ applyAccept: false })
+      .upload(
+        input,
+        new File(
+          ['{"7":{"class_type":"Example","inputs":{}}}'],
+          'workflow.json',
+          { type: 'application/json' }
+        )
+      )
+    await userEvent.click(
       within(uploadPanel).getByRole('button', { name: 'Upload as new media' })
     )
     await waitFor(() => expect(editorRequest).toHaveBeenCalledOnce())
@@ -80,7 +81,7 @@ describe('staff page editor', () => {
         screen.getAllByRole('button', { name: 'Save changes' })[0]
       ).toBeEnabled()
     )
-    await fireEvent.click(
+    await userEvent.click(
       screen.getAllByRole('button', { name: 'Save changes' })[0]
     )
     await waitFor(() => expect(editorRequest).toHaveBeenCalledTimes(2))
@@ -126,9 +127,9 @@ describe('staff page editor', () => {
     expect(
       screen.getByRole('textbox', { name: 'Python fallback code' })
     ).toBeEnabled()
-    await fireEvent.click(runnable)
+    await userEvent.click(runnable)
     expect(addInput).toBeEnabled()
-    await fireEvent.click(runnable)
+    await userEvent.click(runnable)
     expect(addInput).toBeDisabled()
   })
   it('disabling Runnable preserves inputs, bindings and authored fallback code on save', async () => {
@@ -172,12 +173,12 @@ describe('staff page editor', () => {
       data: undefined
     })
     expect(screen.getByRole('checkbox', { name: 'Runnable' })).toBeChecked()
-    await fireEvent.click(screen.getByRole('checkbox', { name: 'Runnable' }))
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Runnable' }))
     await fireEvent.update(
       screen.getByRole('textbox', { name: 'Python fallback code' }),
       'print("Fallback")\n'
     )
-    await fireEvent.click(
+    await userEvent.click(
       screen.getAllByRole('button', { name: 'Save changes' })[0]
     )
     await waitFor(() => expect(editorRequest).toHaveBeenCalledOnce())
@@ -233,7 +234,7 @@ describe('staff page editor', () => {
       screen.getByRole('combobox', { name: 'Output type' }),
       'video'
     )
-    await fireEvent.click(screen.getByRole('button', { name: 'Add output' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Add output' }))
     await fireEvent.update(
       screen.getByRole('textbox', { name: 'Output 1 ID' }),
       'result'
@@ -250,7 +251,7 @@ describe('staff page editor', () => {
       screen.getByRole('combobox', { name: 'Output 1 type' }),
       'video'
     )
-    await fireEvent.click(screen.getByRole('button', { name: 'Add question' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Add question' }))
     expect(
       screen.getAllByRole('button', { name: 'Save changes' })[0]
     ).toBeDisabled()
@@ -262,7 +263,7 @@ describe('staff page editor', () => {
       screen.getByRole('textbox', { name: 'Answer 1' }),
       'Yes, download it.'
     )
-    await fireEvent.click(
+    await userEvent.click(
       screen.getAllByRole('button', { name: 'Save changes' })[0]
     )
     await waitFor(() => expect(editorRequest).toHaveBeenCalledOnce())
@@ -343,7 +344,7 @@ describe('staff page editor', () => {
       screen.getByRole('textbox', { name: 'Title' }),
       'Changed'
     )
-    await fireEvent.click(
+    await userEvent.click(
       screen.getAllByRole('button', { name: 'Save changes' })[0]
     )
     await waitFor(() =>
@@ -377,7 +378,7 @@ describe('staff page editor', () => {
       screen.getByRole('textbox', { name: 'Title' }),
       'Do not lose this'
     )
-    await fireEvent.click(
+    await userEvent.click(
       screen.getAllByRole('button', { name: 'Save changes' })[0]
     )
     await waitFor(() =>
@@ -386,7 +387,7 @@ describe('staff page editor', () => {
     expect(screen.getByRole('textbox', { name: 'Title' })).toHaveValue(
       'Do not lose this'
     )
-    await fireEvent.click(
+    await userEvent.click(
       screen.getAllByRole('button', { name: 'Save changes' })[0]
     )
     await waitFor(() => expect(editorRequest).toHaveBeenCalledTimes(2))
@@ -404,14 +405,14 @@ describe('staff page editor', () => {
   })
   it('adds editable input and example fields without network or paid generation', async () => {
     setup()
-    await fireEvent.click(screen.getByRole('checkbox', { name: 'Runnable' }))
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Runnable' }))
     await fireEvent.update(
       screen.getByRole('textbox', { name: 'Parameter name' }),
       'prompt'
     )
-    await fireEvent.click(screen.getByRole('button', { name: 'Add input' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Add input' }))
     expect(screen.getByRole('textbox', { name: 'Label' })).toHaveValue('prompt')
-    await fireEvent.click(screen.getByRole('button', { name: 'Add example' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Add example' }))
     await fireEvent.update(
       screen.getByRole('textbox', { name: 'Example title' }),
       'Poster example'
@@ -423,7 +424,7 @@ describe('staff page editor', () => {
   })
   it('blocks saving invalid JSON rather than dropping a complex field', async () => {
     setup()
-    await fireEvent.click(screen.getByText('Advanced: complete authored JSON'))
+    await userEvent.click(screen.getByText('Advanced: complete authored JSON'))
     await fireEvent.update(
       screen.getByRole('textbox', { name: 'Complete content document' }),
       '{bad'

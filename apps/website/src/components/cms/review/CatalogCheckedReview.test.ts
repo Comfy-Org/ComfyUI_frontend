@@ -22,7 +22,7 @@ describe('checkbox-only publication console', () => {
     delete added.before
     initial.items.push(added)
     const fetcher = vi.fn()
-    vi.stubGlobal('fetch', fetcher)
+    vi.mocked(fetch).mockImplementation(fetcher)
     render(CatalogCheckedReview, {
       props: { initial, csrf: 'fixture', canApply: true, canEdit: true }
     })
@@ -51,7 +51,7 @@ describe('checkbox-only publication console', () => {
   it('opens the real frozen JSON changes in Mar’s review drawer and cancels without writes', async () => {
     const user = userEvent.setup()
     const fetcher = vi.fn()
-    vi.stubGlobal('fetch', fetcher)
+    vi.mocked(fetch).mockImplementation(fetcher)
     render(CatalogCheckedReview, {
       props: {
         initial: fixtureReview(),
@@ -80,7 +80,7 @@ describe('checkbox-only publication console', () => {
     const initial = fixtureReview()
     firstItem(initial).decision = 'APPROVED'
     const fetcher = vi.fn()
-    vi.stubGlobal('fetch', fetcher)
+    vi.mocked(fetch).mockImplementation(fetcher)
     render(CatalogCheckedReview, {
       props: { initial, csrf: 'fixture', canApply: true, canEdit: true }
     })
@@ -135,7 +135,7 @@ describe('checkbox-only publication console', () => {
       .fn()
       .mockResolvedValueOnce(Response.json(final))
       .mockResolvedValueOnce(Response.json(state))
-    vi.stubGlobal('fetch', fetcher)
+    vi.mocked(fetch).mockImplementation(fetcher)
     const assign = vi
       .spyOn(window.location, 'assign')
       .mockImplementation(() => {})
@@ -190,7 +190,9 @@ describe('checkbox-only publication console', () => {
       selection_digest: 'b'.repeat(64),
       publish_enabled: true
     }
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json(final)))
+    vi.mocked(fetch).mockImplementation(
+      vi.fn().mockResolvedValue(Response.json(final))
+    )
     render(CatalogCheckedReview, {
       props: { initial, csrf: 'fixture', canApply: true, canEdit: true }
     })
@@ -213,7 +215,7 @@ describe('checkbox-only publication console', () => {
   it('row trash confirms without requiring publisher authority and cancel writes nothing', async () => {
     const user = userEvent.setup()
     const fetcher = vi.fn()
-    vi.stubGlobal('fetch', fetcher)
+    vi.mocked(fetch).mockImplementation(fetcher)
     render(CatalogCheckedReview, {
       props: {
         initial: fixtureReview(),

@@ -30,7 +30,7 @@ describe('verified staff Preview controller', () => {
     const fetch = vi
       .fn<typeof globalThis.fetch>()
       .mockResolvedValue(new Response(null, { status: 204 }))
-    vi.stubGlobal('fetch', fetch)
+    vi.mocked(globalThis.fetch).mockImplementation(fetch)
     const assign = vi
       .spyOn(window.location, 'assign')
       .mockImplementation(() => {})
@@ -50,7 +50,7 @@ describe('verified staff Preview controller', () => {
     'opens ADMIN directly without changing Preview state from $view',
     async (state) => {
       const fetch = vi.fn<typeof globalThis.fetch>()
-      vi.stubGlobal('fetch', fetch)
+      vi.mocked(globalThis.fetch).mockImplementation(fetch)
       const assign = vi
         .spyOn(window.location, 'assign')
         .mockImplementation(() => {})
@@ -70,7 +70,7 @@ describe('verified staff Preview controller', () => {
       const fetch = vi
         .fn<typeof globalThis.fetch>()
         .mockResolvedValue(new Response(null, { status: 204 }))
-      vi.stubGlobal('fetch', fetch)
+      vi.mocked(globalThis.fetch).mockImplementation(fetch)
       const assign = vi
         .spyOn(window.location, 'assign')
         .mockImplementation(() => {})
@@ -88,8 +88,7 @@ describe('verified staff Preview controller', () => {
     }
   )
   it('changes locale only after server commit and preserves detail/query/hash identity', async () => {
-    vi.stubGlobal(
-      'fetch',
+    vi.mocked(globalThis.fetch).mockImplementation(
       vi
         .fn<typeof globalThis.fetch>()
         .mockResolvedValue(new Response(null, { status: 204 }))
@@ -120,7 +119,7 @@ describe('verified staff Preview controller', () => {
     const fetch = vi
       .fn<typeof globalThis.fetch>()
       .mockResolvedValue(new Response(null, { status: 204 }))
-    vi.stubGlobal('fetch', fetch)
+    vi.mocked(globalThis.fetch).mockImplementation(fetch)
     const assign = vi
       .spyOn(window.location, 'assign')
       .mockImplementation(() => {})
@@ -143,7 +142,7 @@ describe('verified staff Preview controller', () => {
     const fetch = vi
       .fn<typeof globalThis.fetch>()
       .mockResolvedValue(new Response(null, { status: 204 }))
-    vi.stubGlobal('fetch', fetch)
+    vi.mocked(globalThis.fetch).mockImplementation(fetch)
     const assign = vi
       .spyOn(window.location, 'assign')
       .mockImplementation(() => {})
@@ -175,7 +174,7 @@ describe('verified staff Preview controller', () => {
         .mockResolvedValue(
           new Response('<script>untrusted</script>', { status })
         )
-      vi.stubGlobal('fetch', fetch)
+      vi.mocked(globalThis.fetch).mockImplementation(fetch)
       const assign = vi
         .spyOn(window.location, 'assign')
         .mockImplementation(() => {})
@@ -203,7 +202,7 @@ describe('verified staff Preview controller', () => {
       commit = resolve
     })
     const fetch = vi.fn<typeof globalThis.fetch>().mockReturnValue(pending)
-    vi.stubGlobal('fetch', fetch)
+    vi.mocked(globalThis.fetch).mockImplementation(fetch)
     const assign = vi
       .spyOn(window.location, 'assign')
       .mockImplementation(() => {})
@@ -223,7 +222,7 @@ describe('verified staff Preview controller', () => {
     const fetch = vi
       .fn<typeof globalThis.fetch>()
       .mockResolvedValue(new Response(null, { status: 204 }))
-    vi.stubGlobal('fetch', fetch)
+    vi.mocked(globalThis.fetch).mockImplementation(fetch)
     const assign = vi
       .spyOn(window.location, 'assign')
       .mockImplementation(() => {})
@@ -241,7 +240,7 @@ describe('verified staff Preview controller', () => {
   })
   it('refuses an external return path before sending any command', async () => {
     const fetch = vi.fn<typeof globalThis.fetch>()
-    vi.stubGlobal('fetch', fetch)
+    vi.mocked(globalThis.fetch).mockImplementation(fetch)
     const assign = vi
       .spyOn(window.location, 'assign')
       .mockImplementation(() => {})

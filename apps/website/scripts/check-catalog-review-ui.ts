@@ -96,11 +96,15 @@ try {
     const repeatedPage = await repeated.get('/admin/catalog-sign-in')
     const repeatedCSRF = field(await repeatedPage.text(), 'csrf')
     if (!repeatedCSRF) throw new Error('Repeat sign-in CSRF missing')
-    expect((await repeated.post('/admin/catalog-demo-session', {
-      headers: { Origin: remote.origin },
-      form: { csrf: repeatedCSRF, code },
-      maxRedirects: 0
-    })).status()).toBe(303)
+    expect(
+      (
+        await repeated.post('/admin/catalog-demo-session', {
+          headers: { Origin: remote.origin },
+          form: { csrf: repeatedCSRF, code },
+          maxRedirects: 0
+        })
+      ).status()
+    ).toBe(303)
     expect((await repeated.get('/admin/catalog')).status()).toBe(200)
     expect((await guest.get('/admin/catalog')).status()).toBe(200)
   } finally {
@@ -117,8 +121,14 @@ try {
     if (url.origin === remote.origin) return route.continue()
     // The unrelated animated public footer needs valid image bytes even when
     // external traffic is blocked; use the normal website E2E placeholder.
-    if (url.hostname === 'media.comfy.org' && url.pathname.startsWith('/website/homepage/footer-logo-seq/'))
-      return route.fulfill({ path: join(websiteRoot, 'e2e/assets/placeholder-1x1.webp'), status: 200 })
+    if (
+      url.hostname === 'media.comfy.org' &&
+      url.pathname.startsWith('/website/homepage/footer-logo-seq/')
+    )
+      return route.fulfill({
+        path: join(websiteRoot, 'e2e/assets/placeholder-1x1.webp'),
+        status: 200
+      })
     return route.abort()
   })
   const page = await context.newPage()
@@ -138,15 +148,11 @@ try {
     ).toBeVisible()
   const add = page.getByRole('link', { name: 'Add Content', exact: true })
   await expect(add).toBeVisible()
-  expect(
-    await add.evaluate((element) =>
-      ['Approve Selected', 'Defer Selected', 'Delete Changes'].every((text) =>
-        Array.from(
-          element.parentElement?.querySelectorAll('button') ?? []
-        ).some((button) => button.textContent?.trim() === text)
-      )
-    )
-  ).toBe(true)
+  const actionBar = add.locator('xpath=..')
+  for (const name of ['Approve Selected', 'Defer Selected', 'Delete Changes'])
+    await expect(
+      actionBar.getByRole('button', { name, exact: true }).first()
+    ).toBeAttached()
   const review = await guest.get('/admin/catalog-api/staging')
   expect(review.status()).toBe(200)
   const snapshot = snapshotSchema.parse(await review.json())
@@ -177,56 +183,60 @@ try {
   await page.evaluate(() => window.scrollTo(0, 0))
   const unresolved = `You still have ${snapshot.unresolved_count} entries not approved or deferred.`
   if (snapshot.unresolved_count > 0) {
-    await expect(page.getByRole('button', { name: 'Next →', exact: true })).toBeDisabled()
+    await expect(
+      page.getByRole('button', { name: 'Next →', exact: true })
+    ).toBeDisabled()
     await expect(page.getByText(unresolved, { exact: true })).toBeVisible()
   } else {
-    await expect(page.getByRole('link', { name: 'Next →', exact: true })).toBeVisible()
+    await expect(
+      page.getByRole('link', { name: 'Next →', exact: true })
+    ).toBeVisible()
   }
   if (snapshot.items.length) {
-  const trash = page.getByRole('button', { name: /^Delete change for / })
-  expect(await trash.count()).toBe(snapshot.items.length)
-  await trash.first().click()
-  await expect(page.getByRole('dialog')).toBeVisible()
-  await page
-    .getByRole('dialog')
-    .getByRole('button', { name: 'Cancel', exact: true })
-    .click()
-  await expect(page.getByRole('dialog')).toHaveCount(0)
-  await page
-    .getByRole('button', { name: /^Decision for / })
-    .first()
-    .click()
-  for (const label of ['APPROVED', 'DEFERRED'])
+    const trash = page.getByRole('button', { name: /^Delete change for / })
+    expect(await trash.count()).toBe(snapshot.items.length)
+    await trash.first().click()
+    await expect(page.getByRole('dialog')).toBeVisible()
+    await page
+      .getByRole('dialog')
+      .getByRole('button', { name: 'Cancel', exact: true })
+      .click()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+    await page
+      .getByRole('button', { name: /^Decision for / })
+      .first()
+      .click()
+    for (const label of ['APPROVED', 'DEFERRED'])
+      await expect(
+        page.getByRole('menuitem', { name: label, exact: true })
+      ).toBeVisible()
     await expect(
-      page.getByRole('menuitem', { name: label, exact: true })
-    ).toBeVisible()
-  await expect(
-    page.getByRole('menuitem', { name: 'NEW', exact: true })
-  ).toHaveCount(0)
-  await page.keyboard.press('Escape')
-  const all = page.getByRole('checkbox', {
-    name: 'Select all matching results',
-    exact: true
-  })
-  await all.check()
-  await expect(
-    page.getByRole('button', { name: 'Delete Changes', exact: true })
-  ).toBeDisabled()
-  await page
-    .getByRole('checkbox', { name: /I understand this unfiltered action/ })
-    .check()
-  await expect(
-    page.getByRole('button', { name: 'Delete Changes', exact: true })
-  ).toBeEnabled()
-  await page
-    .getByRole('button', { name: 'Delete Changes', exact: true })
-    .click()
-  await expect(page.getByRole('dialog')).toBeVisible()
-  await page
-    .getByRole('dialog')
-    .getByRole('button', { name: 'Cancel', exact: true })
-    .click()
-  await all.uncheck()
+      page.getByRole('menuitem', { name: 'NEW', exact: true })
+    ).toHaveCount(0)
+    await page.keyboard.press('Escape')
+    const all = page.getByRole('checkbox', {
+      name: 'Select all matching results',
+      exact: true
+    })
+    await all.check()
+    await expect(
+      page.getByRole('button', { name: 'Delete Changes', exact: true })
+    ).toBeDisabled()
+    await page
+      .getByRole('checkbox', { name: /I understand this unfiltered action/ })
+      .check()
+    await expect(
+      page.getByRole('button', { name: 'Delete Changes', exact: true })
+    ).toBeEnabled()
+    await page
+      .getByRole('button', { name: 'Delete Changes', exact: true })
+      .click()
+    await expect(page.getByRole('dialog')).toBeVisible()
+    await page
+      .getByRole('dialog')
+      .getByRole('button', { name: 'Cancel', exact: true })
+      .click()
+    await all.uncheck()
   }
   if (screenshots)
     await page.screenshot({
@@ -247,20 +257,29 @@ try {
     })
   const final = await guest.get('/admin/catalog/final-review')
   expect(final.status()).toBe(200)
-  if (snapshot.unresolved_count > 0) expect(await final.text()).toContain(unresolved)
+  if (snapshot.unresolved_count > 0)
+    expect(await final.text()).toContain(unresolved)
   else {
     const authority = await guest.get('/admin/catalog-api/final-review')
-    await page.goto(remote.origin + '/admin/catalog/final-review', { waitUntil: 'networkidle' })
+    await page.goto(remote.origin + '/admin/catalog/final-review', {
+      waitUntil: 'networkidle'
+    })
     const button = page.getByRole('button', { name: 'Publish', exact: true })
     if (authority.status() === 200) {
-      const ready = z.object({ publish_enabled: z.boolean() }).parse(await authority.json())
+      const ready = z
+        .object({ publish_enabled: z.boolean() })
+        .parse(await authority.json())
       if (ready.publish_enabled) await expect(button).toBeEnabled()
       else await expect(button).toBeDisabled()
     } else {
       expect(authority.status()).toBe(422)
       await expect(button).toBeDisabled()
     }
-    if (screenshots) await page.screenshot({ path: join(screenshots, 'local-publish-final-review.png'), fullPage: true })
+    if (screenshots)
+      await page.screenshot({
+        path: join(screenshots, 'local-publish-final-review.png'),
+        fullPage: true
+      })
   }
   for (const path of [
     '/hub/models/?preview=DRAFT',
@@ -270,31 +289,58 @@ try {
   ])
     expect((await guest.get(path)).status()).toBe(200)
   // Verified editors see type-specific creation links and exact-UID editing.
-  const cards = z.array(z.object({ href: z.string() })).parse(
-    await (await guest.get('/models/catalogue.json')).json()
-  )
-  for (const [section, type] of [['models', 'model'], ['apps', 'app'], ['workflows', 'workflow']]) {
-    await page.goto(remote.origin + `/hub/${section}/`, { waitUntil: 'networkidle' })
+  const cards = z
+    .array(z.object({ href: z.string() }))
+    .parse(await (await guest.get('/models/catalogue.json')).json())
+  for (const [section, type] of [
+    ['models', 'model'],
+    ['apps', 'app'],
+    ['workflows', 'workflow']
+  ]) {
+    await page.goto(remote.origin + `/hub/${section}/`, {
+      waitUntil: 'networkidle'
+    })
     const create = page.getByRole('link', { name: 'Add Content', exact: true })
-    await expect(create).toHaveAttribute('href', `/admin/content/new?type=${type}`)
+    await expect(create).toHaveAttribute(
+      'href',
+      `/admin/content/new?type=${type}`
+    )
     await create.click()
     try {
-      await expect(page.getByRole('heading', { name: 'New content', exact: true })).toBeVisible()
+      await expect(
+        page.getByRole('heading', { name: 'New content', exact: true })
+      ).toBeVisible()
     } catch (error) {
-      console.error(JSON.stringify({ failedSection: section, currentPath: new URL(page.url()).pathname, pageErrors: errors }))
+      console.error(
+        JSON.stringify({
+          failedSection: section,
+          currentPath: new URL(page.url()).pathname,
+          pageErrors: errors
+        })
+      )
       throw error
     }
     const card = cards.find((item) => item.href.startsWith(`/hub/${section}/`))
     if (!card) throw new Error(`Missing ${section} fixture`)
     await page.goto(remote.origin + card.href, { waitUntil: 'networkidle' })
     const edit = page.getByRole('link', { name: 'Edit', exact: true })
-    await expect(edit).toHaveAttribute('href', /^\/admin\/content\/[0-9a-f-]{36}\/edit$/)
+    await expect(edit).toHaveAttribute(
+      'href',
+      /^\/admin\/content\/[0-9a-f-]{36}\/edit$/
+    )
     await edit.click()
-    await expect(page.getByRole('heading', { name: 'Edit content', exact: true })).toBeVisible()
+    await expect(
+      page.getByRole('heading', { name: 'Edit content', exact: true })
+    ).toBeVisible()
     for (const area of ['header', 'footer']) {
       const actions = page.locator('form').locator(area)
-      const cancel = await actions.getByRole('link', { name: 'Cancel', exact: true }).boundingBox()
-      const save = actions.getByRole('button', { name: 'Save changes', exact: true })
+      const cancel = await actions
+        .getByRole('link', { name: 'Cancel', exact: true })
+        .boundingBox()
+      const save = actions.getByRole('button', {
+        name: 'Save changes',
+        exact: true
+      })
       const bounds = await save.boundingBox()
       if (!cancel || !bounds) throw new Error('Editor actions missing')
       expect(bounds.height).toBe(40)
@@ -309,12 +355,16 @@ try {
   })
   try {
     for (const section of ['models', 'apps', 'workflows']) {
-      const detail = cards.find((item) => item.href.startsWith(`/hub/${section}/`))
+      const detail = cards.find((item) =>
+        item.href.startsWith(`/hub/${section}/`)
+      )
       if (!detail) throw new Error('Missing anonymous detail fixture')
       for (const path of [`/hub/${section}/`, detail.href]) {
         const response = await anonymous.get(path)
         expect(response.status()).toBe(200)
-        expect(await response.text()).not.toMatch(/href="\/admin\/content\/(?:new|[0-9a-f-]{36}\/edit)/)
+        expect(await response.text()).not.toMatch(
+          /href="\/admin\/content\/(?:new|[0-9a-f-]{36}\/edit)/
+        )
       }
     }
   } finally {
@@ -326,8 +376,8 @@ try {
   )
   expect(after.state).toEqual(snapshot.state)
   expect(after.selection_digest).toBe(snapshot.selection_digest)
-  console.log(
-    JSON.stringify({
+  process.stdout.write(
+    `${JSON.stringify({
       result: 'PASS',
       pending: snapshot.items.length,
       unresolved: snapshot.unresolved_count,
@@ -335,7 +385,7 @@ try {
       mobile: true,
       pageErrors: 0,
       contentMutations: 0
-    })
+    })}\n`
   )
 } finally {
   await browser?.close()

@@ -1,5 +1,7 @@
 import { chromium, expect } from '@playwright/test'
 
+import { isolatedPage, readOnlyRoutes } from './catalog-browser-harness'
+
 // Actual compiled Vue/styles with labeled public-profile fixtures only. No
 // credentials, catalog writes, real profile edits or external network requests.
 const port = process.env.CCC_AUTHOR_PICKER_TEST_PORT ?? '4353'
@@ -27,19 +29,13 @@ try {
     const context = await browser.newContext({
       viewport: { width: fixture.width, height: 900 }
     })
-    const writes: string[] = []
-    await context.route('**/*', async (route) => {
-      const request = route.request()
-      const url = new URL(request.url())
-      if (request.method() !== 'GET') {
-        writes.push(request.method())
-        await route.abort()
-        return
-      }
-      if (
-        url.origin === website &&
-        url.pathname === '/admin/content-api/profiles'
-      ) {
+    const writes = await readOnlyRoutes(context, website, {
+      fulfill: async (url, route) => {
+        if (
+          url.origin !== website ||
+          url.pathname !== '/admin/content-api/profiles'
+        )
+          return false
         await route.fulfill({
           json: {
             items: url.searchParams.get('q')?.includes('Profile')
@@ -53,18 +49,10 @@ try {
               : []
           }
         })
-      } else if (
-        url.origin === website &&
-        !/^\/(?:admin|api)\//.test(url.pathname)
-      ) {
-        await route.continue()
-      } else await route.abort()
+        return true
+      }
     })
-    const page = await context.newPage()
-    await page.routeWebSocket('**', (socket) => socket.close())
-    await page.addInitScript('globalThis.__name = (value) => value')
-    const errors: string[] = []
-    page.on('pageerror', (error) => errors.push(error.message))
+    const { page, errors } = await isolatedPage(context)
     await page.goto(`${website}/hub/models/`)
     await page.evaluate(async (locale) => {
       const path = '/src/components/cms/editor/AuthorPicker.vue'

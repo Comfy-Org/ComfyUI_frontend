@@ -56,7 +56,7 @@ function backend(status = 200, body: unknown = fixtureReview()) {
   const fetcher = vi.fn<typeof fetch>(async () =>
     Response.json(body, { status })
   )
-  vi.stubGlobal('fetch', fetcher)
+  vi.mocked(fetch).mockImplementation(fetcher)
   return fetcher
 }
 describe('catalog staging same-origin facade', () => {
@@ -76,7 +76,7 @@ describe('catalog staging same-origin facade', () => {
         expected_draft_rev: 7,
         expected_draft_generation: 5
       },
-      selected_uids: [r.items[0]!.content.uid]
+      selected_uids: [r.items[0].content.uid]
     }
     const ctx = context('final-review', { body })
     ctx.request.headers.delete('Idempotency-Key')
@@ -98,7 +98,7 @@ describe('catalog staging same-origin facade', () => {
         expected_draft_rev: 7,
         expected_draft_generation: 5
       },
-      selected_uids: [fixtureReview().items[0]!.content.uid]
+      selected_uids: [fixtureReview().items[0].content.uid]
     }
     expect(
       (await POST(context('final-review', { body, apply: false }))).status
@@ -112,7 +112,7 @@ describe('catalog staging same-origin facade', () => {
     ).toBe(403)
     expect(fetcher).not.toHaveBeenCalled()
   })
-  it.each([
+  it.for([
     [],
     null,
     ['bad'],
@@ -153,7 +153,7 @@ describe('catalog staging same-origin facade', () => {
         expected_draft_generation: 5
       },
       expected_selection_digest: 'b'.repeat(64),
-      selected_uids: [fixtureReview().items[0]!.content.uid]
+      selected_uids: [fixtureReview().items[0].content.uid]
     }
     expect((await POST(context('publish', { body }))).status).toBe(200)
     expect(JSON.parse(String(fetcher.mock.calls[0]?.[1]?.body))).toEqual(body)
@@ -257,7 +257,7 @@ describe('catalog staging same-origin facade', () => {
     ).toBe(403)
     expect(fetcher).not.toHaveBeenCalled()
   })
-  it.each([{ anonymous: true }, { apply: false }])(
+  it.for([{ anonymous: true }, { apply: false }])(
     'refuses unauthorized staging mutations',
     async (options) => {
       const fetcher = backend()

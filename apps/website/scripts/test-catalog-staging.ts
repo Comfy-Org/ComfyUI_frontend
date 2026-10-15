@@ -170,8 +170,8 @@ try {
     page.getByRole('button', { name: 'Publish', exact: true })
   ).toBeDisabled()
   expect(errors).toEqual([])
-  console.log(
-    JSON.stringify({
+  process.stdout.write(
+    `${JSON.stringify({
       website,
       fixture_uid: fixture.uid,
       authenticated_staging: true,
@@ -183,7 +183,7 @@ try {
       final_review_blocked_safely: true,
       publish_available: false,
       browser_errors: errors.length
-    })
+    })}\n`
   )
 } catch (error) {
   console.error(

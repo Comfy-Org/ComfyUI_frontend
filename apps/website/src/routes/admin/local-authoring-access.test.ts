@@ -7,7 +7,7 @@ import {
   AUTHORING_CSRF_COOKIE
 } from '@/lib/cms/authoring-session'
 import { POST } from './local-access'
-vi.mock('node:fs/promises', () => ({ readFile: vi.fn() }))
+vi.mock(import('node:fs/promises'), () => ({ readFile: vi.fn() }))
 const authority = {
   actor_uid: '00000000-0000-4000-8000-000000000003',
   owner_uid: '00000000-0000-4000-8000-000000000001',
@@ -44,8 +44,7 @@ describe('explicit loopback CCC fixture sign-in', () => {
       '/private/local/fixture.jwt'
     )
     vi.mocked(readFile).mockResolvedValue('signed-local-fixture')
-    vi.stubGlobal(
-      'fetch',
+    vi.mocked(fetch).mockImplementation(
       vi.fn(async () => Response.json(authority))
     )
   })
@@ -63,7 +62,7 @@ describe('explicit loopback CCC fixture sign-in', () => {
     )
     expect(await result.text()).not.toContain('signed-local-fixture')
   })
-  it.each([
+  it.for([
     'forwarded',
     'x-forwarded-for',
     'x-forwarded-host',
@@ -88,15 +87,13 @@ describe('explicit loopback CCC fixture sign-in', () => {
     expect(readFile).not.toHaveBeenCalled()
   })
   it('refuses revoked tokens and non-fixture accounts without setting cookies', async () => {
-    vi.stubGlobal(
-      'fetch',
+    vi.mocked(fetch).mockImplementation(
       vi.fn(async () => new Response(null, { status: 403 }))
     )
     const denied = context()
     expect((await POST(denied)).status).toBe(403)
     expect(denied.cookies.get(AUTHORING_COOKIE)).toBeUndefined()
-    vi.stubGlobal(
-      'fetch',
+    vi.mocked(fetch).mockImplementation(
       vi.fn(async () =>
         Response.json({
           ...authority,

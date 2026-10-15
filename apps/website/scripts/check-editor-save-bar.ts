@@ -1,5 +1,7 @@
 import { chromium, expect } from '@playwright/test'
 
+import { isolatedPage, readOnlyRoutes } from './catalog-browser-harness'
+
 const website = 'http://127.0.0.1:4353'
 const browser = await chromium.launch({ headless: true })
 try {
@@ -32,30 +34,18 @@ try {
     const context = await browser.newContext({
       viewport: { width: fixture.width, height: 900 }
     })
-    const writes: string[] = []
-    await context.route('**/*', async (route) => {
-      const request = route.request()
-      const url = new URL(request.url())
-      if (request.method() !== 'GET') {
-        writes.push(request.method())
-        await route.abort()
-      } else if (
-        url.origin === website &&
-        url.pathname === '/admin/content-api/profiles'
-      ) {
+    const writes = await readOnlyRoutes(context, website, {
+      fulfill: async (url, route) => {
+        if (
+          url.origin !== website ||
+          url.pathname !== '/admin/content-api/profiles'
+        )
+          return false
         await route.fulfill({ json: { items: [] } })
-      } else if (
-        url.origin === website &&
-        !/^\/(?:admin|api)\//.test(url.pathname)
-      ) {
-        await route.continue()
-      } else await route.abort()
+        return true
+      }
     })
-    const page = await context.newPage()
-    await page.routeWebSocket('**', (socket) => socket.close())
-    await page.addInitScript('globalThis.__name = (value) => value')
-    const errors: string[] = []
-    page.on('pageerror', (error) => errors.push(error.message))
+    const { page, errors } = await isolatedPage(context)
     await page.goto(`${website}/hub/models/`)
     await page.evaluate(async (locale) => {
       const path = '/src/components/cms/editor/CatalogEditorPage.vue'

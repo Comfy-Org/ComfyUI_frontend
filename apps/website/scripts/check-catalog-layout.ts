@@ -1,5 +1,7 @@
 import { chromium, expect } from '@playwright/test'
 
+import { isolatedPage, readOnlyRoutes } from './catalog-browser-harness'
+
 // Read-only local component harness, not a routable admin/demo page. It loads
 // our Vite components into an isolated browser document with labeled fixtures;
 // no credentials, catalog mutations, backend requests or production URLs.
@@ -12,23 +14,8 @@ try {
   const context = await browser.newContext({
     viewport: { width: 1440, height: 1000 }
   })
-  await context.route('**/*', async (route) => {
-    const url = new URL(route.request().url())
-    if (
-      url.origin === website &&
-      !url.pathname.startsWith('/admin/') &&
-      !url.pathname.startsWith('/api/')
-    )
-      await route.continue()
-    else await route.abort()
-  })
-  const page = await context.newPage()
-  // Keep this read-only component capture independent of dev-server HMR.
-  await page.routeWebSocket('**', (socket) => socket.close())
-  // tsx preserves function names through this helper in serialized callbacks.
-  await page.addInitScript('globalThis.__name = (value) => value')
-  const errors: string[] = []
-  page.on('pageerror', (error) => errors.push(error.name))
+  const writes = await readOnlyRoutes(context, website)
+  const { page, errors } = await isolatedPage(context)
   await page.goto(`${website}/hub/models/`)
   await page.evaluate(async () => {
     const shellPath = '/src/components/cms/layout/CatalogAdminShell.vue'
@@ -230,8 +217,9 @@ try {
   await page.getByRole('button', { name: '退出', exact: true }).click()
   await expect(page.getByRole('region')).toHaveCount(0)
   expect(errors).toEqual([])
-  console.log(
-    'PASS: isolated Mar shell/Preview layout, desktop/mobile, changes, keyboard focus, UTC/NOW, locale and EXIT; no backend writes or auth claim'
+  expect(writes).toEqual([])
+  process.stdout.write(
+    'PASS: isolated Mar shell/Preview layout, desktop/mobile, changes, keyboard focus, UTC/NOW, locale and EXIT; no backend writes or auth claim\n'
   )
 } finally {
   await browser.close()

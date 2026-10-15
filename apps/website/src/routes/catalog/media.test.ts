@@ -45,7 +45,7 @@ describe('same-origin catalog byte proxy', () => {
           headers: { 'Content-Type': type }
         })
       )
-      vi.stubGlobal('fetch', fetch)
+      vi.mocked(globalThis.fetch).mockImplementation(fetch)
       const ctx = context()
       ctx.request.headers.set('Range', 'bytes=0-')
       const response = await GET(ctx)
@@ -65,7 +65,7 @@ describe('same-origin catalog byte proxy', () => {
     'refuses a video browser range without verified Preview authority: %j',
     async ({ preview, staff }) => {
       const fetch = vi.fn<typeof globalThis.fetch>()
-      vi.stubGlobal('fetch', fetch)
+      vi.mocked(globalThis.fetch).mockImplementation(fetch)
       const ctx = context(preview, staff)
       ctx.request.headers.set('Range', 'bytes=0-')
       expect((await GET(ctx)).status).toBe(404)
@@ -74,8 +74,7 @@ describe('same-origin catalog byte proxy', () => {
   )
   it('never enables public video delivery by adding Preview support', async () => {
     vi.stubEnv('SITE_CATALOG_API_URL', 'http://127.0.0.1:8109')
-    vi.stubGlobal(
-      'fetch',
+    vi.mocked(globalThis.fetch).mockImplementation(
       vi
         .fn<typeof globalThis.fetch>()
         .mockResolvedValue(
@@ -91,7 +90,7 @@ describe('same-origin catalog byte proxy', () => {
         headers: { 'Content-Type': 'image/png' }
       })
     )
-    vi.stubGlobal('fetch', fetch)
+    vi.mocked(globalThis.fetch).mockImplementation(fetch)
     const response = await GET(context())
     expect(response.status).toBe(200)
     expect(await response.text()).toBe('private bytes')
@@ -115,7 +114,7 @@ describe('same-origin catalog byte proxy', () => {
       .mockResolvedValue(
         new Response('bytes', { headers: { 'Content-Type': 'image/png' } })
       )
-    vi.stubGlobal('fetch', fetch)
+    vi.mocked(globalThis.fetch).mockImplementation(fetch)
     await GET(context(false))
     expect(fetch.mock.calls[0]?.[1]?.headers).toBeUndefined()
     expect(String(fetch.mock.calls[0]?.[0])).toContain('/api/v1/catalog/media/')
@@ -128,7 +127,7 @@ describe('same-origin catalog byte proxy', () => {
     'refuses unverified or alternative byte requests before fetching: %j',
     async ({ staff, suffix, range }) => {
       const fetch = vi.fn<typeof globalThis.fetch>()
-      vi.stubGlobal('fetch', fetch)
+      vi.mocked(globalThis.fetch).mockImplementation(fetch)
       expect((await GET(context(true, staff, suffix, range))).status).toBe(404)
       expect(fetch).not.toHaveBeenCalled()
     }
@@ -137,8 +136,7 @@ describe('same-origin catalog byte proxy', () => {
     'refuses executable origin types: %s',
     async (type) => {
       vi.stubEnv('SITE_CATALOG_API_URL', 'http://127.0.0.1:8109')
-      vi.stubGlobal(
-        'fetch',
+      vi.mocked(globalThis.fetch).mockImplementation(
         vi.fn<typeof globalThis.fetch>().mockResolvedValue(
           new Response('<script>untrusted</script>', {
             headers: { 'Content-Type': type }
@@ -152,14 +150,13 @@ describe('same-origin catalog byte proxy', () => {
   )
   it('refuses HEAD without origin access', async () => {
     const fetch = vi.fn<typeof globalThis.fetch>()
-    vi.stubGlobal('fetch', fetch)
+    vi.mocked(globalThis.fetch).mockImplementation(fetch)
     expect((await HEAD(context())).status).toBe(404)
     expect(fetch).not.toHaveBeenCalled()
   })
   it('fails closed on unavailable current authority', async () => {
     vi.stubEnv('SITE_CATALOG_API_URL', 'http://127.0.0.1:8109')
-    vi.stubGlobal(
-      'fetch',
+    vi.mocked(globalThis.fetch).mockImplementation(
       vi
         .fn<typeof globalThis.fetch>()
         .mockRejectedValue(new Error('unavailable'))

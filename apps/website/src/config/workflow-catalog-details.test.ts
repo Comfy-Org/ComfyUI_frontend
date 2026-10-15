@@ -6,7 +6,7 @@ import {
 } from './workflow-catalog-details'
 
 describe('workflow action URL boundaries', () => {
-  it.each([
+  it.for<[string, boolean]>([
     ['https://cloud.comfy.org/?share=abcdef123456', true],
     ['https://testcloud.comfy.org/?share=abcdef123456', true],
     ['https://cloud.comfy.org/?share=abcdef123456&share=abcdef123456', false],
@@ -18,11 +18,11 @@ describe('workflow action URL boundaries', () => {
     ]
   ])(
     'requires an existing-shaped trusted Cloud share, not a catalog UID: %s',
-    (value, accepted) => {
+    ([value, accepted]) => {
       expect(validCloudShareURL(value)).toBe(accepted)
     }
   )
-  it.each([
+  it.for([
     'javascript:alert(1)',
     'http://docs.comfy.org',
     'https://name:password@docs.comfy.org',

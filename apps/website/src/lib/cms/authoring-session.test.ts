@@ -29,7 +29,7 @@ function backend(status = 200, body: unknown = authority) {
   const fetcher = vi
     .fn()
     .mockImplementation(() => Promise.resolve(Response.json(body, { status })))
-  vi.stubGlobal('fetch', fetcher)
+  vi.mocked(fetch).mockImplementation(fetcher)
   return fetcher
 }
 function context() {

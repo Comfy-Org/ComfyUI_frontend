@@ -9,7 +9,7 @@ describe('postDecision', () => {
     ['a broken response', () => new Response('nope'), false]
   ] as const)('reports %s', async ([, reply, saved]) => {
     const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(reply())
-    vi.stubGlobal('fetch', fetch)
+    vi.mocked(globalThis.fetch).mockImplementation(fetch)
     expect(await postDecision('c', ['a', 'b'], 'APPROVED')).toBe(saved)
     const body = fetch.mock.calls[0][1]?.body as FormData
     expect(JSON.parse(String(body.get('decision')))).toEqual({
@@ -31,7 +31,7 @@ describe('postDecision', () => {
         inFlight -= 1
         return Response.json({ ok: true })
       })
-    vi.stubGlobal('fetch', fetch)
+    vi.mocked(globalThis.fetch).mockImplementation(fetch)
     const results = await Promise.all(
       ['a', 'b', 'c'].map((id) => postDecision('c', [id], 'APPROVED'))
     )

@@ -1,5 +1,7 @@
 import { chromium, expect } from '@playwright/test'
 
+import { isolatedPage, readOnlyRoutes } from './catalog-browser-harness'
+
 const website = 'http://127.0.0.1:4353'
 const browser = await chromium.launch()
 try {
@@ -11,25 +13,10 @@ try {
     const context = await browser.newContext({
       viewport: { width: fixture.width, height: 1000 }
     })
-    const writes: string[] = []
-    await context.route('**/*', async (route) => {
-      const request = route.request()
-      const url = new URL(request.url())
-      if (request.method() !== 'GET') {
-        writes.push(`${request.method()} ${url.pathname}`)
-        await route.abort()
-      } else if (
-        url.origin === website &&
-        !/^\/(?:admin|api|preview-media)\//.test(url.pathname)
-      ) {
-        await route.continue()
-      } else await route.abort()
+    const writes = await readOnlyRoutes(context, website, {
+      blocked: /^\/(?:admin|api|preview-media)\//
     })
-    const page = await context.newPage()
-    const errors: string[] = []
-    page.on('pageerror', (error) => errors.push(error.message))
-    await page.routeWebSocket('**', (socket) => socket.close())
-    await page.addInitScript('globalThis.__name = (value) => value')
+    const { page, errors } = await isolatedPage(context)
     await page.goto(`${website}/hub/models/`)
     await page.evaluate(async (locale) => {
       const path = '/src/components/cms/review/CatalogCheckedReview.vue'

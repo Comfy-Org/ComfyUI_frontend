@@ -15,7 +15,7 @@ export const editorialStates = [
   'DEFERRED',
   'DELETED'
 ] as const
-export const decisions = ['NEW', 'APPROVED', 'DEFERRED'] as const
+const decisions = ['NEW', 'APPROVED', 'DEFERRED'] as const
 export type Decision = (typeof decisions)[number]
 export const reviewTypes = [
   'model',

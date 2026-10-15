@@ -64,7 +64,7 @@ function upstream(status = 200, body: unknown = { uid }) {
   vi.stubEnv('SITE_CATALOG_API_URL', 'http://catalog.example')
   vi.stubEnv('VERCEL_ENV', 'preview')
   const fetcher = vi.fn().mockResolvedValue(Response.json(body, { status }))
-  vi.stubGlobal('fetch', fetcher)
+  vi.mocked(fetch).mockImplementation(fetcher)
   return fetcher
 }
 
@@ -94,7 +94,7 @@ describe('staff content proxy', () => {
       })
     )
   })
-  it.each([
+  it.for([
     {
       uid,
       expected_draft_rev: 2,
@@ -120,7 +120,7 @@ describe('staff content proxy', () => {
       expect(fetcher).not.toHaveBeenCalled()
     }
   )
-  it.each([
+  it.for([
     { origin: 'https://other.example', expected: 403 },
     { anonymous: true, expected: 404 },
     { edit: false, expected: 404 }
