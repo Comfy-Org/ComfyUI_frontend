@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { ReshootQuote } from '@/lib/workshop/cinematic-studio/reshoot-engine/transport'
-import { perSecondNote, runQuote } from './price'
+import { perSecondNote, priceReadable, runQuote, swapPriceNote } from './price'
 
 const perFrame: ReshootQuote = {
   free_runs_remaining: 0,
@@ -41,7 +41,7 @@ describe('runQuote', () => {
       ...perFrame,
       price_per_second: {
         tier_input: 'megapixels',
-        credits: { '0.4': 18, '1': 45 }
+        credits: { '0': 1.0416666666, '1': 45 }
       }
     }
 
@@ -63,5 +63,53 @@ describe('perSecondNote', () => {
     expect(
       perSecondNote({ ...perFrame, next_run: 'free' }, 'en')
     ).toBeUndefined()
+  })
+})
+
+describe('priceReadable', () => {
+  it.for<[string, ReshootQuote | undefined, number | undefined, boolean]>([
+    ['no quote', undefined, 5, true],
+    ['a flat price', flat, 5, true],
+    ['a per-frame price and a part', perFrame, 5, true],
+    ['a per-frame price before a part', perFrame, undefined, false],
+    [
+      'a tiered price',
+      {
+        ...perFrame,
+        price_per_second: { tier_input: 'megapixels', credits: { '1': 45 } }
+      },
+      5,
+      false
+    ]
+  ])('with %s: %s', ([, quote, seconds, readable]) => {
+    expect(priceReadable(quote, seconds)).toBe(readable)
+  })
+})
+
+describe('swapPriceNote', () => {
+  const tiered: ReshootQuote = {
+    ...perFrame,
+    price_per_second: { tier_input: 'megapixels', credits: { '1': 45 } }
+  }
+
+  it.for<[string, ReshootQuote, number | undefined, string]>([
+    [
+      'the rate before a part is chosen',
+      perFrame,
+      undefined,
+      '25 credits per second'
+    ],
+    ['the price of the part', perFrame, 5, '125 credits'],
+    ['a flat price as it is', flat, undefined, '40 credits'],
+    ['free runs as free', { ...perFrame, next_run: 'free' }, 5, 'Free'],
+    [
+      'that a price it cannot read is unknown',
+      tiered,
+      5,
+      'Price not available'
+    ],
+    ['the same before a part', tiered, undefined, 'Price not available']
+  ])('shows %s', ([, quote, seconds, note]) => {
+    expect(swapPriceNote(quote, { size: '768p', seconds }, 'en')).toBe(note)
   })
 })

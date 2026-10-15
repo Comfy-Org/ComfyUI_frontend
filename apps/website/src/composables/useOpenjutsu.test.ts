@@ -299,7 +299,9 @@ describe('useOpenjutsu', () => {
   })
 
   it('keeps the page as it was when an example cannot be fetched', async () => {
-    vi.mocked(fetch).mockResolvedValue(new Response('missing', { status: 404 }))
+    vi.mocked(fetch).mockImplementation(() =>
+      Promise.resolve(new Response('missing', { status: 404 }))
+    )
     const swap = start()
 
     await swap.takeExample(SWAP_EXAMPLES[0])
@@ -308,6 +310,60 @@ describe('useOpenjutsu', () => {
     expect(swap.character.value).toBeUndefined()
     expect(swap.target.value).toBe('')
     expect(swap.loadingExample.value).toBeUndefined()
+  })
+
+  it('lets a newer example win over one still loading', async () => {
+    const pending = new Map<string, () => void>()
+    vi.mocked(fetch).mockImplementation(
+      (url) =>
+        new Promise((resolve) =>
+          pending.set(String(url), () =>
+            resolve(new Response(new Blob([String(url)])))
+          )
+        )
+    )
+    const [older, newer] = SWAP_EXAMPLES
+    const swap = start()
+
+    const first = swap.takeExample(older)
+    const second = swap.takeExample(newer)
+    pending.get(older.video)?.()
+    pending.get(older.character)?.()
+    await first
+    expect(swap.loadingExample.value, 'still loading the newer one').toBe(
+      newer.id
+    )
+    pending.get(newer.video)?.()
+    pending.get(newer.character)?.()
+    await second
+
+    expect(swap.target.value).toBe(newer.target)
+    expect(swap.loadingExample.value).toBeUndefined()
+  })
+
+  it('clears a failed example once a video is chosen', async () => {
+    vi.mocked(fetch).mockImplementation(() =>
+      Promise.resolve(new Response('missing', { status: 404 }))
+    )
+    const swap = start()
+    await swap.takeExample(SWAP_EXAMPLES[0])
+
+    swap.takeVideo(clip)
+
+    expect(swap.exampleFailed.value).toBe(false)
+  })
+
+  it('holds Generate back and says so when it cannot read the price', async () => {
+    vi.spyOn(transport, 'quote').mockResolvedValue({
+      free_runs_remaining: 0,
+      price_credits: 0,
+      price_per_second: { tier_input: 'megapixels', credits: { '1': 45 } },
+      next_run: 'paid'
+    })
+    const swap = await ready()
+
+    expect(swap.priceNote.value).toBe('Price not available')
+    expect(swap.canGenerate.value).toBe(false)
   })
 
   it('lets a video picked while an example loads win over the example', async () => {

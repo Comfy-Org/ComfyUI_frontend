@@ -6,7 +6,6 @@ import { refreshWorkshopCredits } from '@/config/workshop-credits'
 import { useWorkshopSession } from '@/config/workshop-session-state'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
-import { quoteNote } from '@/lib/workshop/cinematic-studio/reshoot-engine/notes'
 import type { ReshootQuote } from '@/lib/workshop/cinematic-studio/reshoot-engine/transport'
 import { ReshootError } from '@/lib/workshop/cinematic-studio/reshoot-engine/transport'
 import type { SwapSize, SwapWindow } from '@/lib/workshop/openjutsu/clip'
@@ -18,7 +17,7 @@ import {
   swapSeconds
 } from '@/lib/workshop/openjutsu/clip'
 import type { SwapExample } from '@/lib/workshop/openjutsu/examples'
-import { perSecondNote, runQuote } from '@/lib/workshop/openjutsu/price'
+import { priceReadable, swapPriceNote } from '@/lib/workshop/openjutsu/price'
 import type { SwapOutcome } from '@/lib/workshop/openjutsu/run-report'
 import { swapRunReport } from '@/lib/workshop/openjutsu/run-report'
 import type { SwapJob } from '@/lib/workshop/openjutsu/run-swap'
@@ -111,7 +110,9 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
       resultSize(trim.value.width, trim.value.height, canvas.value)
   )
 
+  const exampleFailed = ref(false)
   function adoptVideo(file: File, next: VideoTrim) {
+    exampleFailed.value = false
     video.value = file
     trim.value = next
     removed.value = undefined
@@ -125,6 +126,7 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
   let videoRequest = 0
   function takeVideo(file: File) {
     videoRequest += 1
+    exampleFailed.value = false
     openTrim(file)
   }
   async function useWholeClip(file: File) {
@@ -169,7 +171,6 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
 
   /** The example being fetched, so its card can show it is on its way. */
   const loadingExample = ref<SwapExample['id']>()
-  const exampleFailed = ref(false)
   let exampleRequest = 0
   async function fileFrom(url: string) {
     const response = await fetch(url)
@@ -184,8 +185,7 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
     const videoAt = ++videoRequest
     loadingExample.value = example.id
     exampleFailed.value = false
-    const stale = () =>
-      request !== exampleRequest || videoAt !== videoRequest || disposed
+    const stale = () => videoAt !== videoRequest || disposed
     try {
       const [clip, image] = await Promise.all([
         fileFrom(example.video),
@@ -308,22 +308,18 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
       missing: missing.value,
       rendering: rendering.value,
       quoteSettled: quoteSettled.value,
-      quote: quote.value
+      quote: quote.value,
+      priceReadable: priceReadable(quote.value, partSeconds.value)
     })
   )
   const priceNote = computed(() => {
-    const answer = quote.value
-    if (!answer)
+    if (!quote.value)
       return quoteFailed.value ? t('reshoot.quote.failed') : undefined
-    if (answer.price_per_second && partSeconds.value === undefined)
-      return perSecondNote(answer, locale)
-    const priced = runQuote(answer, partSeconds.value)
-    return priced
-      ? quoteNote(priced, locale, {
-          size: size.value,
-          seconds: partSeconds.value
-        })
-      : undefined
+    return swapPriceNote(
+      quote.value,
+      { size: size.value, seconds: partSeconds.value },
+      locale
+    )
   })
 
   const noteFor = (error: unknown) =>

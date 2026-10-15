@@ -75,11 +75,13 @@ export const canSwap = (state: {
   readonly rendering: boolean
   readonly quoteSettled: boolean
   readonly quote: ReshootQuote | undefined
+  readonly priceReadable: boolean
 }) =>
   state.gate === 'ready' &&
   state.missing === undefined &&
   !state.rendering &&
   state.quoteSettled &&
+  state.priceReadable &&
   state.quote?.next_run !== 'blocked'
 
 /** What a failed quote means for the page, and whether to ask again. */

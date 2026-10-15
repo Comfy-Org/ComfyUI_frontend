@@ -114,7 +114,8 @@ describe('canSwap', () => {
     missing: undefined,
     rendering: false,
     quoteSettled: true,
-    quote: quote()
+    quote: quote(),
+    priceReadable: true
   } as const
 
   it('lets a run start when nothing stands in the way', () => {
@@ -130,7 +131,8 @@ describe('canSwap', () => {
     ['an input is missing', { missing: 'target' }],
     ['a take is rendering', { rendering: true }],
     ['the price is not known yet', { quoteSettled: false }],
-    ['the quote blocks the run', { quote: quote({ next_run: 'blocked' }) }]
+    ['the quote blocks the run', { quote: quote({ next_run: 'blocked' }) }],
+    ['the page cannot show the price', { priceReadable: false }]
   ])('holds a run back while %s', ([, patch]) => {
     expect(canSwap({ ...ready, ...patch })).toBe(false)
   })

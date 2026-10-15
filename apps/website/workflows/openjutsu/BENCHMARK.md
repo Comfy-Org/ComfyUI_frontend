@@ -13,7 +13,8 @@ One metered operation: the swap. Every run is 20 steps, `res_multistep` /
 `simple`, LoRA strength 1.0, seed 42. Node classes in the job: `BasicGuider`,
 `BasicScheduler`, `CLIPLoader`, `CreateVideo`, `GetVideoComponents`,
 `KSamplerSelect`, `LoadImage`, `LoadVideo`, `LoraLoaderModelOnly`,
-`MiniMaxH3ReferenceToVideo`, `PrimitiveInt`, `RandomNoise`,
+`MiniMaxH3ReferenceToVideo`, `PrimitiveInt` (since removed: the length is now
+a literal on `MiniMaxH3ReferenceToVideo`), `RandomNoise`,
 `SamplerCustomAdvanced`, `SaveVideo`, `UNETLoader`, `VAEDecode`, `VAELoader`,
 `Video Slice`, `VideoFrameSample`. No partner-API node, so no pass-through cost.
 

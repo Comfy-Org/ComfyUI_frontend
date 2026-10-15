@@ -36,6 +36,19 @@ describe('swapWorkflow', () => {
     ).toBeUndefined()
   })
 
+  it.for([
+    [6, 158],
+    [10, 243],
+    [14.375, 345]
+  ])(
+    'puts the length it generates for a %s s part, %s frames, on the model node',
+    ([seconds, frames]) => {
+      const graph = swapWorkflow({ ...request, seconds })
+
+      expect(graph['136'].inputs.length).toBe(frames)
+    }
+  )
+
   it('cuts the result back to the chosen length before saving', () => {
     expect(graph.cut.inputs).toMatchObject({ start_time: 0, duration: 5 })
     expect(graph.out.inputs.video).toEqual(['cut', 0])

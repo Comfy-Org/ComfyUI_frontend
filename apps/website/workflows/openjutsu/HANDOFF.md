@@ -62,12 +62,28 @@ measured costs.
 
 ## How the price works
 
-The app proxy reads it from the submitted graph: `VideoFrameSample.num_frames`
-is the part's frame count at 24 fps, and `seed`, always 0, is the only tier.
-The rate is 25/24 a frame. `runQuote` in `price.ts` works out the same number
-from the quote for the page. Tiering by resolution needs the catalog to derive
-a tier from `width × height` on `MiniMaxH3ReferenceToVideo`, or to read
-`seconds` and `tier` from two nodes; that was asked in cloud#13014.
+**Today (cloud#13014 as written, not yet safe):** the app proxy bills
+`VideoFrameSample.num_frames`, the part's frame count at 24 fps
+(`sourceFrames`), with `seed` (always 0) as the only tier, at 25/24 credits a
+frame: 5 s is 125 credits. `runQuote` in `price.ts` works out the same number
+for the page. That node only samples the reference frames, so a hand-built
+graph can ask for a long run and pay for a short one. This is the open review
+blocker.
+
+**The fix, to land together in the catalog and the website:**
+
+- Bill `MiniMaxH3ReferenceToVideo.length` (node `136`). That is the number of
+  frames generated, so it must stay a literal on that node; `workflow.ts` sets
+  it to `gridFrames`, and a test pins it.
+- The price basis then moves from `sourceFrames` to `gridFrames`: 5 s becomes
+  130 credits, 6 s 165, up to 17 more than today, the same from 14.375 s.
+  `price.ts`, its tests, the e2e fixture and the catalog comments move with it.
+- Node `136` has no `seed`, and its `width`/`height` vary with the clip's
+  shape, so the tier needs a design: a `PriceFor` change that buckets
+  `width × height` with a cap (which also closes unbilled oversized canvases),
+  or an allowlist of the 14 grid lengths 124 to 345.
+- Until then the page refuses to run a quote it cannot price
+  (`priceReadable`), so a catalog change can never charge an unseen price.
 
 ## Still open
 
