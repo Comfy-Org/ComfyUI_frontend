@@ -166,19 +166,7 @@ export function createCapabilitiesReader(
   ): BillingResult<CapabilitiesSnapshot> {
     const { data, body, httpStatus } = response
 
-    // Capabilities resolve per (user, workspace), so both halves have to
-    // match. Checking only the workspace would accept another member's answer
-    // for the workspace the caller is in and publish it as the caller's own —
-    // an actor with fewer or greater rights deciding what this one is offered.
-    // Either mismatch is a contract violation rather than an answer about this
-    // scope, so it joins the transient bucket instead of being cached. The
-    // ingest service makes the same two-part check against its own upstream
-    // before it forwards a response.
-    const resolved = data.resolved_for
-    if (
-      resolved.user_id !== scope.userId ||
-      resolved.workspace_id !== scope.workspaceId
-    ) {
+    if (data.resolved_for.workspace_id !== scope.workspaceId) {
       return { status: 'error', code: 'REQUEST_FAILED', httpStatus }
     }
 

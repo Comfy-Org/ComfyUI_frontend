@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener, useMounted } from '@vueuse/core'
-import { ref, useTemplateRef } from 'vue'
+import { computed, ref, useTemplateRef } from 'vue'
 import type { HTMLAttributes } from 'vue'
+
+import { prefersReducedMotion } from '@/composables/useReducedMotion'
 
 import {
   COMPARE_MAX,
@@ -16,6 +18,9 @@ const SYNC_TOLERANCE_S = 0.15
 const {
   beforeSrc,
   afterSrc,
+  mediaKind = 'video',
+  beforePosterSrc,
+  afterPosterSrc,
   beforeLabel,
   afterLabel,
   sliderLabel,
@@ -23,6 +28,9 @@ const {
 } = defineProps<{
   beforeSrc: string
   afterSrc: string
+  mediaKind?: 'video' | 'image'
+  beforePosterSrc?: string
+  afterPosterSrc?: string
   beforeLabel: string
   afterLabel: string
   sliderLabel: string
@@ -36,6 +44,9 @@ const beforeVideo = useTemplateRef<HTMLVideoElement>('beforeVideo')
 const afterVideo = useTemplateRef<HTMLVideoElement>('afterVideo')
 const isDragging = ref(false)
 const isMounted = useMounted()
+const shouldAutoplay = computed(
+  () => isMounted.value && !prefersReducedMotion()
+)
 
 function moveTo(clientX: number) {
   const bounds = container.value?.getBoundingClientRect()
@@ -91,12 +102,23 @@ function syncAfterToBefore() {
     "
     @pointerdown="onPointerDown"
   >
+    <img
+      v-if="mediaKind === 'image'"
+      :src="beforeSrc"
+      :alt="beforeLabel"
+      loading="lazy"
+      decoding="async"
+      class="absolute inset-0 size-full object-cover"
+    />
     <video
+      v-else
       ref="beforeVideo"
       :key="beforeSrc"
       data-testid="video-compare-before"
       :src="isMounted ? beforeSrc : undefined"
-      autoplay
+      :poster="beforePosterSrc"
+      preload="none"
+      :autoplay="shouldAutoplay"
       loop
       muted
       playsinline
@@ -104,12 +126,24 @@ function syncAfterToBefore() {
       class="absolute inset-0 size-full object-cover"
       @timeupdate="syncAfterToBefore"
     />
+    <img
+      v-if="mediaKind === 'image'"
+      :src="afterSrc"
+      :alt="afterLabel"
+      loading="lazy"
+      decoding="async"
+      class="absolute inset-0 size-full object-cover"
+      :style="{ clipPath: `inset(0 0 0 ${position}%)` }"
+    />
     <video
+      v-else
       ref="afterVideo"
       :key="afterSrc"
       data-testid="video-compare-after"
       :src="isMounted ? afterSrc : undefined"
-      autoplay
+      :poster="afterPosterSrc"
+      preload="none"
+      :autoplay="shouldAutoplay"
       loop
       muted
       playsinline

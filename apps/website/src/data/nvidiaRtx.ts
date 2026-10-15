@@ -18,6 +18,7 @@ const media = {
 const localNote = { en: 'Runs locally', 'zh-CN': '本地运行' }
 
 const clipBase = 'https://media.comfy.org/website/nvidia-rtx'
+const heroClip = `${clipBase}/nvidia-vfx-nodes-ab-720p.mp4`
 
 const beforeAfter: ModelLaunchBeforeAfter = {
   headingKey: 'nvidiaRtx.beforeAfter.heading',
@@ -31,7 +32,9 @@ const beforeAfter: ModelLaunchBeforeAfter = {
         'zh-CN': '使用超分辨率将低分辨率素材放大最高 4 倍。'
       },
       beforeSrc: `${clipBase}/super-resolution-before.mp4`,
-      afterSrc: `${clipBase}/super-resolution-after.mp4`
+      afterSrc: `${clipBase}/super-resolution-after.mp4`,
+      beforePosterSrc: `${clipBase}/nvidia-vfx-super-resolution-before.jpg`,
+      afterPosterSrc: `${clipBase}/nvidia-vfx-super-resolution-after.jpg`
     },
     {
       id: 'frame-generation',
@@ -41,7 +44,9 @@ const beforeAfter: ModelLaunchBeforeAfter = {
         'zh-CN': '使用帧生成将帧率提升最高 16 倍，获得流畅的慢动作。'
       },
       beforeSrc: `${clipBase}/frame-generation-before.mp4`,
-      afterSrc: `${clipBase}/frame-generation-after.mp4`
+      afterSrc: `${clipBase}/frame-generation-after.mp4`,
+      beforePosterSrc: `${clipBase}/nvidia-vfx-frame-generation-before.jpg`,
+      afterPosterSrc: `${clipBase}/nvidia-vfx-frame-generation-after.jpg`
     },
     {
       id: 'sdr-to-hdr',
@@ -51,7 +56,9 @@ const beforeAfter: ModelLaunchBeforeAfter = {
         'zh-CN': '输入 SDR，输出 HDR。建议在 HDR 显示器上观看。'
       },
       beforeSrc: `${clipBase}/sdr-to-hdr-before.mp4`,
-      afterSrc: `${clipBase}/sdr-to-hdr-after.mp4`
+      afterSrc: `${clipBase}/sdr-to-hdr-after.mp4`,
+      beforePosterSrc: `${clipBase}/nvidia-vfx-sdr-to-hdr-before.jpg`,
+      afterPosterSrc: `${clipBase}/nvidia-vfx-sdr-to-hdr-after.jpg`
     }
   ]
 }
@@ -65,10 +72,11 @@ export const nvidiaRtxPage: ModelLaunchPage = {
   hero: {
     layout: 'media-first',
     mediaOutline: 'gray',
-    videoSrc:
-      'https://media.comfy.org/website/nvidia-rtx/nvidia-vfx-nodes-ab-720p.mp4',
+    videoSrc: heroClip,
     posterSrc: '/images/models/nvidia-vfx-hero-poster.jpg',
     mobileFallbackImageSrc: '/images/models/nvidia-vfx-hero-poster.jpg',
+    // The 720p clip is already light enough for phones, so they play it too.
+    mobileVideoSrc: heroClip,
     titleKey: 'nvidiaRtx.hero.title',
     titleSize: 'compact',
     descriptionKey: 'nvidiaRtx.hero.description',

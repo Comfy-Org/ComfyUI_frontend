@@ -1,0 +1,45 @@
+{
+  "id": "async-control",
+  "capability": "Asynchronous work control",
+  "description": "Shared technical module for paged asynchronous work, cancellation, animation-frame coalescing, and idle scheduling. These utilities control when work runs; feature-specific fetches and stores remain external.",
+  "modules": [
+    {
+      "path": "src/utils/pagedList.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/utils/pagedList.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/utils/createCancelToken.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/utils/rafBatch.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/utils/rafBatch.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/base/common/async.ts",
+      "role": "application"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Asynchronous work control preserves its existing behavior",
+      "checks": ["src/utils/pagedList.test.ts", "src/utils/rafBatch.test.ts"]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Inventory preserves existing exports and behavior without granting cross-module permissions. This record describes current responsibilities, not a proposed extraction interface."
+  ],
+  "deepImports": "inventory"
+}
