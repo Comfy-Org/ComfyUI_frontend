@@ -8015,7 +8015,9 @@ describe('AgentPanelRoot workflow binding', () => {
     await waitFor(() =>
       expect(useAgentChatHistoryStore().activeId).toBe('th-history')
     )
-    respondToFetch(/\/workflows/, () => json(500, { error: 'down' }))
+    respondToFetch({ method: 'GET', url: /\/messages/ }, () =>
+      json(500, { error: 'down' })
+    )
 
     await userEvent.click(
       screen.getByRole('button', {
