@@ -8,6 +8,7 @@ vi.mock(import('@/platform/telemetry'))
 
 import { getAgentPanelOpen } from '@/platform/telemetry/utils/getAgentPanelOpen'
 
+import type { AgentPanelView } from './agentPanelStore'
 import { useAgentPanelStore } from './agentPanelStore'
 
 const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
@@ -581,4 +582,65 @@ describe('agentPanelStore width', () => {
     await nextTick()
     expect(getAgentPanelOpen()).toBe(false)
   })
+})
+
+describe('agentPanelStore thread navigation', () => {
+  function historyView(
+    selection: Extract<AgentPanelView, { screen: 'history' }>['selection']
+  ): AgentPanelView {
+    return { screen: 'history', previousThreadId: 'th-open', selection }
+  }
+
+  it.for([
+    {
+      navigation: 'the chat screen',
+      view: { screen: 'chat' } satisfies AgentPanelView,
+      threadId: 'th-other',
+      currentId: null,
+      current: true
+    },
+    {
+      navigation: 'idle History on the Current chat',
+      view: historyView({ status: 'idle' }),
+      threadId: 'th-current',
+      currentId: 'th-current',
+      current: true
+    },
+    {
+      navigation: 'idle History on the chat it opened over',
+      view: historyView({ status: 'idle' }),
+      threadId: 'th-open',
+      currentId: null,
+      current: true
+    },
+    {
+      navigation: 'idle History on another chat',
+      view: historyView({ status: 'idle' }),
+      threadId: 'th-other',
+      currentId: 'th-open',
+      current: false
+    },
+    {
+      navigation: 'History loading the chat',
+      view: historyView({ status: 'loading', id: 'th-other' }),
+      threadId: 'th-other',
+      currentId: 'th-open',
+      current: true
+    },
+    {
+      navigation: 'History failing the Current chat',
+      view: historyView({ status: 'failed', id: 'th-current' }),
+      threadId: 'th-current',
+      currentId: 'th-current',
+      current: false
+    }
+  ])(
+    'keeps a thread current on $navigation: $current',
+    ({ view, threadId, currentId, current }) => {
+      const store = useAgentPanelStore()
+      store.view = view
+
+      expect(store.isThreadNavigationCurrent(threadId, currentId)).toBe(current)
+    }
+  )
 })

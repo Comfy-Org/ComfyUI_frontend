@@ -1045,25 +1045,16 @@ watch(
 let activeTabGeneration = 0
 let activeTabChain: Promise<void> = Promise.resolve()
 
-function isActiveTabNavigationCurrent(): boolean {
-  const view = agentPanelStore.view
-  if (view.screen !== 'history') return true
-  const { selection } = view
-  if (selection.status !== 'idle' && threadId.value === selection.id)
-    return selection.status === 'loading'
-  return (
-    threadId.value === history.activeId ||
-    threadId.value === view.previousThreadId
-  )
-}
-
 function enqueueActiveTab(data: AgentActiveTabData): Promise<boolean> {
   const generation = ++activeTabGeneration
   const ownerThreadId = threadId.value
   function isCurrent(): boolean {
     if (generation !== activeTabGeneration) return false
     if (ownerThreadId !== null && threadId.value !== ownerThreadId) return false
-    return isActiveTabNavigationCurrent()
+    return agentPanelStore.isThreadNavigationCurrent(
+      threadId.value,
+      history.activeId
+    )
   }
   const result = activeTabChain.then(() => onAgentActiveTab(data, isCurrent))
   activeTabChain = result.then(() => undefined)

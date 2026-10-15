@@ -130,6 +130,18 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
       }
   }
 
+  function isThreadNavigationCurrent(
+    threadId: string | null,
+    currentId: string | null
+  ): boolean {
+    const navigation = view.value
+    if (navigation.screen !== 'history') return true
+    const { selection } = navigation
+    if (selection.status !== 'idle' && threadId === selection.id)
+      return selection.status === 'loading'
+    return threadId === currentId || threadId === navigation.previousThreadId
+  }
+
   function initializeTargetTracking(hasThread: boolean): void {
     if (targetTracking.value.mode !== 'uninitialized') return
     targetTracking.value = { mode: hasThread ? 'restoring' : 'following' }
@@ -359,6 +371,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     gateSettled,
     view,
     interruptHistorySelection,
+    isThreadNavigationCurrent,
     flagsSettled,
     reportedExhaustionIdentity,
     width,
