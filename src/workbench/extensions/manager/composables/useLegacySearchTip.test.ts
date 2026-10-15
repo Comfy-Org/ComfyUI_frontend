@@ -5,12 +5,17 @@ import { useLegacySearchTip } from './useLegacySearchTip'
 
 function tipFor(
   searchedQuery: string,
-  { rawResultsEmpty = true, isNewManagerUI = true } = {}
+  {
+    rawResultsEmpty = true,
+    isNewManagerUI = true,
+    showsSearchResults = true
+  } = {}
 ) {
   return useLegacySearchTip(
     ref(searchedQuery),
     ref(isNewManagerUI),
-    ref(rawResultsEmpty)
+    ref(rawResultsEmpty),
+    ref(showsSearchResults)
   ).isUnmatchedLegacyManagerSearch.value
 }
 
@@ -61,6 +66,10 @@ describe('useLegacySearchTip', () => {
     expect(tipFor('comfyui-manager', { rawResultsEmpty: false })).toBe(false)
   })
 
+  it('hides the tip on a tab that does not show registry search results', () => {
+    expect(tipFor('comfyui-manager', { showsSearchResults: false })).toBe(false)
+  })
+
   it('hides the tip in the legacy manager UI', () => {
     expect(tipFor('comfyui-manager', { isNewManagerUI: false })).toBe(false)
   })
@@ -69,6 +78,7 @@ describe('useLegacySearchTip', () => {
     const searchedQuery = ref('comfyui-manager')
     const { isUnmatchedLegacyManagerSearch } = useLegacySearchTip(
       searchedQuery,
+      ref(true),
       ref(true),
       ref(true)
     )

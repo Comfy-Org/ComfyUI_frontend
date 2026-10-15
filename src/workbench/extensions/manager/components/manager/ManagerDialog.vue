@@ -385,7 +385,8 @@ const sortOptions = PACK_SORTABLE_FIELDS
 const { isUnmatchedLegacyManagerSearch } = useLegacySearchTip(
   packs.searchedQuery,
   isNewManagerUI,
-  packs.rawResultsEmpty
+  packs.rawResultsEmpty,
+  isSearchBacked
 )
 const filterOptions = computed(() => [
   { name: t('manager.filter.nodePack'), value: 'packs' },

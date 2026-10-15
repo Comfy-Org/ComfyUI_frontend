@@ -23,11 +23,13 @@ function isLegacyManagerQuery(query: string): boolean {
 export function useLegacySearchTip(
   searchedQuery: Ref<string>,
   isNewManagerUI: Ref<boolean>,
-  rawResultsEmpty: Ref<boolean>
+  rawResultsEmpty: Ref<boolean>,
+  showsSearchResults: Ref<boolean>
 ) {
   const isUnmatchedLegacyManagerSearch = computed(
     () =>
       isNewManagerUI.value &&
+      showsSearchResults.value &&
       rawResultsEmpty.value &&
       isLegacyManagerQuery(searchedQuery.value)
   )
