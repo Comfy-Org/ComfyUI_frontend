@@ -66,25 +66,20 @@ describe('FeaturedBanner', () => {
       props: { slides: modelSlides([base, kling], 'en') }
     })
     expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Flux')
-    expect(screen.getByText('Text to image')).toBeTruthy()
     expect(screen.getByTestId('featured-slide-link').getAttribute('href')).toBe(
       '/models/flux/'
     )
   })
 
   it('localizes the task without leaving its English suffix in the model name', () => {
-    render(FeaturedBanner, {
-      props: {
-        locale: 'zh-CN',
-        slides: modelSlides(
-          [{ ...kling, name: 'Kling Image to Video' }],
-          'zh-CN'
-        )
-      }
-    })
+    const slides = modelSlides(
+      [{ ...kling, name: 'Kling Image to Video' }],
+      'zh-CN'
+    )
+    render(FeaturedBanner, { props: { locale: 'zh-CN', slides } })
 
     expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Kling')
-    expect(screen.getByText('图像转视频')).toBeTruthy()
+    expect(slides[0]?.kind).toBe('图像转视频')
   })
 
   it('shows the model a pagination bar names', async () => {
@@ -271,12 +266,12 @@ describe('FeaturedBanner', () => {
     expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Kling')
   })
 
-  it('carries the title, the kind and one white call to action, without a subtitle', () => {
+  it('carries the title and one white call to action, with no kind badge or subtitle', () => {
     render(FeaturedBanner, {
       props: { slides: modelSlides([base, kling], 'en') }
     })
     expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Flux')
-    expect(screen.getByText('Text to image')).toBeTruthy()
+    expect(screen.queryByText('Text to image')).toBeNull()
     expect(
       screen.queryByText(
         'Photorealistic images with professional text rendering.'
