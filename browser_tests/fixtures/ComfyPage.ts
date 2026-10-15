@@ -716,9 +716,6 @@ export const comfyPageFixture = base.extend<{
         await context.route('**/customers/balance', (route) =>
           route.fulfill({ json: ZERO_BALANCE })
         )
-        // The editor waits for the deployment lookup before it builds the
-        // canvas; the local backend has no such route. Default to the
-        // rollout refusal (Comfy Cloud); a spec's own page route wins.
         await context.route('**/api/workspaces/*/deployments', (route) =>
           route.fulfill({
             status: 403,

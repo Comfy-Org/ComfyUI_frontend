@@ -204,6 +204,15 @@ export class BootstrapTracer {
     }, deadlineMs)
   }
 
+  suspendWatchdog(): void {
+    clearTimeout(this._watchdog)
+    this._watchdog = undefined
+  }
+
+  resumeWatchdog(): void {
+    if (!this._completed && this._watchdog === undefined) this.armWatchdog()
+  }
+
   private _report(
     outcome: BootstrapCompleteMetadata['outcome'],
     pending?: BootstrapPhase[]

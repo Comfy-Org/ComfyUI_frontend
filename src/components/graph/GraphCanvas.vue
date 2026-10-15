@@ -553,6 +553,7 @@ function finishStartup(outcome: 'completed' | 'failed') {
 
 onMounted(async () => {
   activeStartup = startupOwner
+  bootstrapTracer.resumeWatchdog()
   comfyApp.vueAppReady = true
   workspaceStore.spinner = true
   let startupOutcome: StartupOutcome | undefined
@@ -659,7 +660,12 @@ onMounted(async () => {
 
 onUnmounted(() => {
   disposed = true
-  void nextTick(() => finishStartup('failed'))
+  void nextTick(() => {
+    if (activeStartup !== startupOwner) return
+    activeStartup = undefined
+    workspaceStore.spinner = false
+    bootstrapTracer.suspendWatchdog()
+  })
   cleanupErrorHooks?.()
   cleanupErrorHooks = null
 })

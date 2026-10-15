@@ -713,52 +713,61 @@ describe('deployment model options at startup', () => {
       await nextTick()
 
       expect(useWorkspaceStore().spinner).toBe(false)
-      expect(complete).toHaveBeenCalledExactlyOnceWith('failed')
+      expect(complete).not.toHaveBeenCalled()
 
       store.bootDeployment = succeeds ? null : undefined
       finishListing()
       await vi.advanceTimersByTimeAsync(0)
 
       expect(useWorkspaceStore().spinner).toBe(false)
-      expect(complete).toHaveBeenCalledExactlyOnceWith('failed')
+      expect(complete).not.toHaveBeenCalled()
       expect(app.setup).not.toHaveBeenCalled()
     }
   )
 
-  it('lets the replacement editor finish startup after unmount during lookup', async () => {
-    const store = useDeploymentPickStore()
-    let finishListing = () => {}
-    vi.spyOn(store, 'loadOnce').mockReturnValue(
-      new Promise<void>((resolve) => {
-        finishListing = resolve
-      })
-    )
-    let finishSetup = () => {}
-    vi.mocked(app.setup).mockReturnValue(
-      new Promise<void>((resolve) => {
-        finishSetup = resolve
-      })
-    )
-    const complete = vi.spyOn(bootstrapTracer, 'complete')
-    await mountGraphCanvas()
-    cleanup()
-    await mountGraphCanvas()
+  it.for([
+    { name: 'immediate', remount: () => mountGraphCanvas() },
+    {
+      name: 'after a Vue flush',
+      remount: () => nextTick().then(() => mountGraphCanvas())
+    }
+  ])(
+    'lets the replacement editor finish startup: $name',
+    async ({ remount }) => {
+      const store = useDeploymentPickStore()
+      let finishListing = () => {}
+      vi.spyOn(store, 'loadOnce').mockReturnValue(
+        new Promise<void>((resolve) => {
+          finishListing = resolve
+        })
+      )
+      let finishSetup = () => {}
+      vi.mocked(app.setup).mockReturnValue(
+        new Promise<void>((resolve) => {
+          finishSetup = resolve
+        })
+      )
+      const complete = vi.spyOn(bootstrapTracer, 'complete')
+      await mountGraphCanvas()
+      cleanup()
+      await remount()
 
-    store.bootDeployment = null
-    finishListing()
-    await vi.advanceTimersByTimeAsync(0)
+      store.bootDeployment = null
+      finishListing()
+      await vi.advanceTimersByTimeAsync(0)
 
-    expect(app.setup).toHaveBeenCalledOnce()
-    expect(useWorkspaceStore().spinner).toBe(true)
-    expect(complete).not.toHaveBeenCalled()
+      expect(app.setup).toHaveBeenCalledOnce()
+      expect(useWorkspaceStore().spinner).toBe(true)
+      expect(complete).not.toHaveBeenCalled()
 
-    finishSetup()
-    await vi.advanceTimersByTimeAsync(0)
+      finishSetup()
+      await vi.advanceTimersByTimeAsync(0)
 
-    expect(useWorkspaceStore().spinner).toBe(false)
-    expect(complete).toHaveBeenCalledExactlyOnceWith('completed')
-    expect(mocks.initializeWorkflow).toHaveBeenCalledOnce()
-  })
+      expect(useWorkspaceStore().spinner).toBe(false)
+      expect(complete).toHaveBeenCalledExactlyOnceWith('completed')
+      expect(mocks.initializeWorkflow).toHaveBeenCalledOnce()
+    }
+  )
 
   it('stops startup after a failed lookup even if the menu retries successfully', async () => {
     const store = useDeploymentPickStore()
