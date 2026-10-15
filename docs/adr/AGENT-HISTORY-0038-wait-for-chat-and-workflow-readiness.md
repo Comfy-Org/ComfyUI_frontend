@@ -16,9 +16,8 @@ state. Closing a tab does not delete the saved workflow or its conversation.
 ## Decision
 
 Keep the history list visible while a selected chat and its workflow open.
-Show loading on that row and reveal the conversation after transcript loading
-and workflow restoration settle successfully, including the unresolved-target
-exception below.
+Show loading on that row and reveal the conversation only after both succeed,
+except as amended below.
 Keep the row in its existing section until then. The Current marker follows
 successful session activation, not the transport thread ID set before hydration.
 Startup marks the stored session Current only after its transcript and workflow
