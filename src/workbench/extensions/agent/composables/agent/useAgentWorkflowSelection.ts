@@ -19,7 +19,7 @@ import type { useAgentWorkflowResolver } from './useAgentWorkflowResolver'
 
 type RestorationOutcome =
   | { outcome: 'open'; target: ComfyWorkflow }
-  | { outcome: 'unresolved'; retryable: boolean }
+  | { outcome: 'unresolved'; listed: boolean }
   | { outcome: 'deleted' }
   | { outcome: 'superseded' }
 
@@ -237,7 +237,7 @@ export function useAgentWorkflowSelection({
     if (synced !== null) return { outcome: 'open', target: synced }
     return {
       outcome: 'unresolved',
-      retryable: cloudListingStatus(workflowId) !== 'listed'
+      listed: cloudListingStatus(workflowId) === 'listed'
     }
   }
 
@@ -280,7 +280,7 @@ export function useAgentWorkflowSelection({
       case 'open':
         return openRestoredWorkflow(resolved.target, workflowId, isCurrent)
       case 'unresolved':
-        panelStore.retainUnresolvedTarget(resolved.retryable)
+        panelStore.retainUnresolvedTarget(resolved.listed)
         return true
     }
   }

@@ -775,33 +775,33 @@ describe('historical workflow restoration', () => {
       list: async (): Promise<never> => {
         throw new Error('offline')
       },
-      retryable: true
+      listed: false
     },
     {
       listing: 'gives up before reaching it',
       list: async () => listing([{ id: 'wf-current', name: 'current' }], false),
-      retryable: true
+      listed: false
     },
     {
       listing: 'omits it',
       list: async () => listing([]),
-      retryable: true
+      listed: false
     },
     {
       listing: 'names it',
       list: async () => listing([{ id: 'wf-saved', name: 'saved' }]),
-      retryable: false
+      listed: true
     }
   ])(
-    'leaves an unresolved target retryable only when no listing named it (listing $listing)',
-    async ({ list, retryable }) => {
+    'records whether a listing named the workflow of an unresolved target (listing $listing)',
+    async ({ list, listed }) => {
       const { selection, panel, listCloudWorkflows } = setup()
       listCloudWorkflows.mockImplementationOnce(list)
 
       expect(await selection.restoreTarget('wf-saved', () => true)).toBe(true)
 
       expect(panel.targetUnresolved).toBe(true)
-      expect(panel.unresolvedTargetRetryable).toBe(retryable)
+      expect(panel.unresolvedTargetListed).toBe(listed)
     }
   )
 })

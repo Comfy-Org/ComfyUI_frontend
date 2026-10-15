@@ -1476,13 +1476,12 @@ async function onSelectHistory(
   isCurrent: () => boolean
 ): Promise<boolean> {
   if (currentChatReady.value && id === threadId.value) {
-    if (!agentPanelStore.unresolvedTargetRetryable)
-      return (
-        agentPanelStore.targetUnresolved ||
-        onShowTarget(isCurrent, warnRestoreFailed)
-      )
-    agentPanelStore.beginWorkflowRestoration()
-    return onWorkflowRestored(conversationStore.latestWorkflowId, isCurrent)
+    if (agentPanelStore.targetUnresolved) {
+      if (agentPanelStore.unresolvedTargetListed) return true
+      agentPanelStore.beginWorkflowRestoration()
+      return onWorkflowRestored(conversationStore.latestWorkflowId, isCurrent)
+    }
+    return onShowTarget(isCurrent, warnRestoreFailed)
   }
 
   abandonPendingChatWork()
