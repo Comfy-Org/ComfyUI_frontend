@@ -390,7 +390,7 @@ beforeEach(() => {
     }
   )
   vi.mocked(useWorkflowService()).closeWorkflow.mockImplementation(
-    async (tab) => {
+    async (tab, options) => {
       if (workflowStore.activeWorkflow?.path === tab.path) {
         const replacement = workflowStore.openWorkflows.find(
           (candidate) => candidate.path !== tab.path
@@ -398,17 +398,21 @@ beforeEach(() => {
         workflowStore.activeWorkflow = replacement
           ? await replacement.load()
           : null
+        if (replacement && options?.initiator === 'user')
+          workflowStore.reportUserActivation(replacement)
       }
       await workflowStore.closeWorkflow(tab)
       return true
     }
   )
   vi.mocked(useWorkflowService()).openWorkflow.mockImplementation(
-    async (tab) => {
+    async (tab, options) => {
       const known = workflowStore.getWorkflowByPath(tab.path)
       if (known) {
         workflowStore.openWorkflowsInBackground({ right: [tab.path] })
         workflowStore.activeWorkflow = await known.load()
+        if (options?.initiator === 'user')
+          workflowStore.reportUserActivation(known)
       }
       return true
     }
@@ -581,6 +585,10 @@ async function sendFromComposer(text: string): Promise<void> {
 async function renderAndSend(text: string): Promise<void> {
   renderWithSelectedTarget()
   await sendFromComposer(text)
+}
+
+async function activateTabAsUser(tab: ComfyWorkflow): Promise<void> {
+  await useWorkflowService().openWorkflow(tab, { initiator: 'user' })
 }
 
 function addTab(
@@ -5259,7 +5267,7 @@ describe('AgentPanelRoot history', () => {
 
     // Activated while the cloud ids are still in flight, so the follow has
     // nothing to match on yet.
-    workflowStore.activeWorkflow = second
+    await activateTabAsUser(second)
     await nextTick()
     expect(useAgentConversationStore().threadId).toBeNull()
 
@@ -5277,7 +5285,7 @@ describe('AgentPanelRoot history', () => {
       expect(useAgentConversationStore().threadId).toBe('th-second')
     )
 
-    workflowStore.activeWorkflow = first
+    await activateTabAsUser(first)
 
     await vi.waitFor(() =>
       expect(useAgentConversationStore().threadId).toBe('th-first')
@@ -5375,7 +5383,7 @@ describe('AgentPanelRoot history', () => {
       ])
 
       renderWithSelectedTarget()
-      workflowStore.activeWorkflow = first
+      await activateTabAsUser(first)
       await vi.waitFor(() =>
         expect(useAgentConversationStore().threadId).toBe('th-first')
       )
@@ -5383,7 +5391,7 @@ describe('AgentPanelRoot history', () => {
         expect(userPrompts()).toEqual(['Prompt in th-first'])
       )
 
-      workflowStore.activeWorkflow = second
+      await activateTabAsUser(second)
       await settle()
 
       expect(useAgentConversationStore().threadId).toBe('th-first')
@@ -5411,7 +5419,7 @@ describe('AgentPanelRoot history', () => {
       ])
 
       renderWithSelectedTarget()
-      workflowStore.activeWorkflow = first
+      await activateTabAsUser(first)
       await vi.waitFor(() =>
         expect(useAgentConversationStore().threadId).toBe('th-first')
       )
@@ -5483,7 +5491,7 @@ describe('AgentPanelRoot history', () => {
       await vi.waitFor(() =>
         expect(useAgentChatHistoryStore().sessions).toHaveLength(1)
       )
-      workflowStore.activeWorkflow = first
+      await activateTabAsUser(first)
       await nextTick()
       expect(useAgentConversationStore().threadId).toBeNull()
 
@@ -5559,7 +5567,7 @@ describe('AgentPanelRoot history', () => {
       useAgentChatHistoryStore().remove('th-deleted')
 
       renderWithSelectedTarget()
-      workflowStore.activeWorkflow = second
+      await activateTabAsUser(second)
 
       await vi.waitFor(() =>
         expect(useAgentConversationStore().threadId).toBe('th-newer')
@@ -5587,7 +5595,7 @@ describe('AgentPanelRoot history', () => {
       const composer = useAgentComposerStore()
       composer.setText('make it blue')
 
-      workflowStore.activeWorkflow = second
+      await activateTabAsUser(second)
 
       await expect(
         vi.waitFor(() => expect(loadedThreads).toContain('th-second'), {
@@ -5620,7 +5628,7 @@ describe('AgentPanelRoot history', () => {
       const composer = useAgentComposerStore()
       composer.setText('  \n ')
 
-      workflowStore.activeWorkflow = second
+      await activateTabAsUser(second)
 
       await vi.waitFor(() =>
         expect(useAgentConversationStore().threadId).toBe('th-second')
@@ -5645,7 +5653,7 @@ describe('AgentPanelRoot history', () => {
         expect(useAgentChatHistoryStore().sessions).toHaveLength(1)
       )
 
-      workflowStore.activeWorkflow = second
+      await activateTabAsUser(second)
 
       await expect(
         vi.waitFor(() => expect(loadedThreads).toContain('th-second'), {
@@ -5654,6 +5662,46 @@ describe('AgentPanelRoot history', () => {
       ).rejects.toThrow()
       expect(useAgentConversationStore().threadId).toBeNull()
       expect(useAgentPanelStore().selectedWorkflow?.path).toBe(second.path)
+    })
+
+    it('does not follow a tab the app activates on its own, like a restored or linked workflow', async () => {
+      const first = addTab('workflows/first.json')
+      const second = addTab('workflows/second.json')
+      const third = addTab('workflows/third.json')
+      workflowStore.activeWorkflow = third
+      const { loadedThreads } = stubWorkflowBoundHistory([
+        agentThread({
+          id: 'th-first',
+          title: 'First chat',
+          last_message_at: '2026-09-22T08:00:00Z',
+          workflow_id: 'wf-first'
+        }),
+        agentThread({
+          id: 'th-second',
+          title: 'Second chat',
+          last_message_at: '2026-09-22T09:00:00Z',
+          workflow_id: 'wf-second'
+        }),
+        agentThread({
+          id: 'th-third',
+          title: 'Third chat',
+          last_message_at: '2026-09-22T10:00:00Z',
+          workflow_id: 'wf-third'
+        })
+      ])
+      renderWithSelectedTarget()
+      await activateTabAsUser(first)
+      await vi.waitFor(() =>
+        expect(useAgentConversationStore().threadId).toBe('th-first')
+      )
+
+      await useWorkflowService().openWorkflow(second)
+      await activateTabAsUser(third)
+
+      await vi.waitFor(() =>
+        expect(useAgentConversationStore().threadId).toBe('th-third')
+      )
+      expect(loadedThreads).toEqual(['th-first', 'th-third'])
     })
 
     it('does not follow a temporary tab, including one the agent created', async () => {
@@ -5674,7 +5722,7 @@ describe('AgentPanelRoot history', () => {
         expect(useAgentChatHistoryStore().sessions).toHaveLength(1)
       )
 
-      workflowStore.activeWorkflow = scratch
+      await activateTabAsUser(scratch)
 
       await expect(
         vi.waitFor(() => expect(loadedThreads).toContain('th-second'), {
@@ -5718,9 +5766,9 @@ describe('AgentPanelRoot history', () => {
         expect(useAgentChatHistoryStore().sessions).toHaveLength(2)
       )
 
-      workflowStore.activeWorkflow = second
+      await activateTabAsUser(second)
       await vi.waitFor(() => expect(loadedThreads).toEqual(['th-second']))
-      workflowStore.activeWorkflow = third
+      await activateTabAsUser(third)
       await vi.waitFor(() =>
         expect(userPrompts()).toEqual(['Prompt in th-third'])
       )
@@ -5779,7 +5827,7 @@ describe('AgentPanelRoot history', () => {
         expect(userPrompts()).toEqual(['Prompt in th-first'])
       )
 
-      workflowStore.activeWorkflow = second
+      await activateTabAsUser(second)
 
       const failure = i18n.global.t('agent.followedChatOpenFailed', {
         workflowName: 'second'
@@ -5898,7 +5946,7 @@ describe('AgentPanelRoot history', () => {
       await vi.waitFor(() =>
         expect(userPrompts()).toEqual(['Prompt in th-open'])
       )
-      workflowStore.activeWorkflow = second
+      await activateTabAsUser(second)
 
       await userEvent.click(
         await screen.findByRole('button', {
@@ -5934,7 +5982,7 @@ describe('AgentPanelRoot history', () => {
       )
 
       renderWithSelectedTarget()
-      workflowStore.activeWorkflow = second
+      await activateTabAsUser(second)
       await vi.waitFor(() =>
         expect(userPrompts()).toEqual(['Prompt in th-second'])
       )

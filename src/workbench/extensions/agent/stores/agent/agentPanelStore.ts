@@ -114,32 +114,6 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     targetTracking.value = { mode: 'restoring' }
   }
 
-  const panelDestinations: (ComfyWorkflow | null)[] = []
-
-  /**
-   * Runs a tab change the panel makes itself. `null` stands for whichever tab
-   * a close activates.
-   */
-  async function navigateFromPanel<T>(
-    destination: ComfyWorkflow | null,
-    navigate: () => Promise<T>
-  ): Promise<T> {
-    const entry = destination && toRaw(destination)
-    panelDestinations.push(entry)
-    try {
-      return await navigate()
-    } finally {
-      panelDestinations.splice(panelDestinations.indexOf(entry), 1)
-    }
-  }
-
-  /** Whether `workflow` is being activated by the panel rather than the user. */
-  function isPanelNavigation(workflow: ComfyWorkflow): boolean {
-    return panelDestinations.some(
-      (destination) => destination === null || destination === toRaw(workflow)
-    )
-  }
-
   function interruptHistorySelection(): void {
     if (
       view.value.screen === 'history' &&
@@ -431,8 +405,6 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     markWorkflowTargetUnavailable,
     canRestoreWorkflow,
     beginWorkflowRestoration,
-    navigateFromPanel,
-    isPanelNavigation,
     setWorkflowTarget,
     toggle,
     close,

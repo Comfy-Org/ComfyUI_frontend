@@ -1,9 +1,7 @@
-import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'
-import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { api } from '@/scripts/api'
 
 vi.mock(import('@/platform/telemetry'))
@@ -603,41 +601,5 @@ describe('agentPanelStore width', () => {
     store.close('topbar_button')
     await nextTick()
     expect(getAgentPanelOpen()).toBe(false)
-  })
-})
-
-describe('agentPanelStore panel navigation', () => {
-  const destination = fromPartial<ComfyWorkflow>({ path: 'workflows/a.json' })
-  const other = fromPartial<ComfyWorkflow>({ path: 'workflows/b.json' })
-
-  it('claims only its destination while the panel opens a tab', async () => {
-    const store = useAgentPanelStore()
-    let finish!: () => void
-    const opening = store.navigateFromPanel(
-      destination,
-      () => new Promise<void>((resolve) => (finish = resolve))
-    )
-
-    expect(store.isPanelNavigation(destination)).toBe(true)
-    expect(store.isPanelNavigation(other)).toBe(false)
-
-    finish()
-    await opening
-    expect(store.isPanelNavigation(destination)).toBe(false)
-  })
-
-  it('claims every tab while the panel closes one, until the close fails', async () => {
-    const store = useAgentPanelStore()
-    let fail!: (error: Error) => void
-    const closing = store.navigateFromPanel(
-      null,
-      () => new Promise<void>((_resolve, reject) => (fail = reject))
-    )
-
-    expect(store.isPanelNavigation(other)).toBe(true)
-
-    fail(new Error('close failed'))
-    await expect(closing).rejects.toThrow('close failed')
-    expect(store.isPanelNavigation(other)).toBe(false)
   })
 })

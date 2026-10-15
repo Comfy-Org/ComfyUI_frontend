@@ -306,14 +306,14 @@ describe('WorkflowTab - close button', () => {
     )
   })
 
-  it('delegates close to workflow service with the tab workflow', async () => {
+  it('delegates close to workflow service as a user action on the tab workflow', async () => {
     renderTab()
     const user = userEvent.setup()
     await user.click(screen.getByTestId('close-workflow-button'))
 
     expect(useWorkflowService().closeWorkflow).toHaveBeenCalledWith(
       expect.objectContaining({ key: 'test-key' }),
-      expect.anything()
+      expect.objectContaining({ initiator: 'user' })
     )
   })
 })

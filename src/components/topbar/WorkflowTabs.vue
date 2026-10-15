@@ -215,14 +215,15 @@ const options = computed<WorkflowOption[]>(() =>
 async function openWorkflowByPath(path: string | number) {
   const option = options.value.find(({ value }) => value === path)
   if (!option) return
-  await workflowService.openWorkflow(option.workflow)
+  await workflowService.openWorkflow(option.workflow, { initiator: 'user' })
 }
 
 const closeWorkflows = async (options: WorkflowOption[]) => {
   for (const opt of options) {
     if (
       !(await workflowService.closeWorkflow(opt.workflow, {
-        warnIfUnsaved: !workspaceStore.shiftDown
+        warnIfUnsaved: !workspaceStore.shiftDown,
+        initiator: 'user'
       }))
     ) {
       // User cancelled, or the replacement load failed

@@ -27,8 +27,7 @@ const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const bindingStore = useAgentWorkflowTabBindingStore()
 const toast = useToast()
-const panelStore = useAgentPanelStore()
-const { enabled: agentEnabled } = storeToRefs(panelStore)
+const { enabled: agentEnabled } = storeToRefs(useAgentPanelStore())
 const targetNavigation = useAgentTargetNavigation()
 
 const tab = computed(() => {
@@ -64,15 +63,10 @@ useEventListener(
 async function open(): Promise<void> {
   const target = tab.value
   if (!target) return
-  if (locatorId === undefined)
-    await panelStore.navigateFromPanel(target, () =>
-      workflowService.openWorkflow(target)
-    )
+  if (locatorId === undefined) await workflowService.openWorkflow(target)
   else {
     try {
-      await panelStore.navigateFromPanel(target, () =>
-        targetNavigation.navigate({ workflowId, locatorId })
-      )
+      await targetNavigation.navigate({ workflowId, locatorId })
     } catch (error) {
       if (!(error instanceof AgentTargetNavigationError))
         reportError(error, {

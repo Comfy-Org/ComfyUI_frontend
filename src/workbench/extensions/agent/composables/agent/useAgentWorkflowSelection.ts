@@ -298,10 +298,7 @@ export function useAgentWorkflowSelection({
         warnRestoreFailed()
         return false
       }
-      const restored = target
-      const opened = await panelStore.navigateFromPanel(restored, () =>
-        workflowService.openWorkflow(restored, { isCurrent })
-      )
+      const opened = await workflowService.openWorkflow(target, { isCurrent })
       if (!isCurrent()) return false
       if (!opened) {
         panelStore.setWorkflowTarget(null)

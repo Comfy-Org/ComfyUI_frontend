@@ -430,6 +430,7 @@ export const useWorkflowService = () => {
       force?: boolean
       navigationIntentId?: number
       isCurrent?: () => boolean
+      initiator?: 'user'
     } = {}
   ): Promise<boolean> => {
     if (options.isCurrent?.() === false) return Promise.resolve(false)
@@ -485,6 +486,8 @@ export const useWorkflowService = () => {
         showPendingWarnings(undefined, {
           silent: !loadFromRemote && !options.force
         })
+        if (options.initiator === 'user')
+          workflowStore.reportUserActivation(workflow)
         return true
       } catch (error) {
         // A failed load's intent must not stay newest (suppresses the survivor's hash).
@@ -503,7 +506,7 @@ export const useWorkflowService = () => {
    */
   const closeWorkflow = async (
     workflow: ComfyWorkflow,
-    options: { warnIfUnsaved: boolean; hint?: string } = {
+    options: { warnIfUnsaved: boolean; hint?: string; initiator?: 'user' } = {
       warnIfUnsaved: true
     }
   ): Promise<boolean> => {
@@ -571,7 +574,12 @@ export const useWorkflowService = () => {
         // the close (a real configure failure resolves false - the dialog
         // path); a rejection still propagates as before.
         if (replacementWorkflow) {
-          if (!(await openWorkflow(replacementWorkflow))) return false
+          if (
+            !(await openWorkflow(replacementWorkflow, {
+              initiator: options.initiator
+            }))
+          )
+            return false
         } else {
           if ((await loadDefaultWorkflow()) === false) return false
         }
@@ -868,17 +876,21 @@ export const useWorkflowService = () => {
     canvas._deserializeItems(items, options)
   }
 
-  const loadNextOpenedWorkflow = async () => {
+  const loadNextOpenedWorkflow = async (
+    options: { initiator?: 'user' } = {}
+  ) => {
     const nextWorkflow = workflowStore.openedWorkflowIndexShift(1)
     if (nextWorkflow) {
-      await openWorkflow(nextWorkflow)
+      await openWorkflow(nextWorkflow, options)
     }
   }
 
-  const loadPreviousOpenedWorkflow = async () => {
+  const loadPreviousOpenedWorkflow = async (
+    options: { initiator?: 'user' } = {}
+  ) => {
     const previousWorkflow = workflowStore.openedWorkflowIndexShift(-1)
     if (previousWorkflow) {
-      await openWorkflow(previousWorkflow)
+      await openWorkflow(previousWorkflow, options)
     }
   }
 

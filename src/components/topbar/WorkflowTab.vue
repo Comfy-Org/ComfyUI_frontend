@@ -304,7 +304,8 @@ const closeWorkflows = async (options: WorkflowOption[]) => {
     if (
       !(await useWorkflowService().closeWorkflow(opt.workflow, {
         warnIfUnsaved: !workspaceStore.shiftDown,
-        hint: t('sideToolbar.workflowTab.dirtyCloseHint')
+        hint: t('sideToolbar.workflowTab.dirtyCloseHint'),
+        initiator: 'user'
       }))
     ) {
       // User cancelled, or the replacement load failed

@@ -495,7 +495,10 @@ describe('WorkflowTabs selection and overflow', () => {
 
     expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
     expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(
-      firstWorkflow
+      firstWorkflow,
+      {
+        initiator: 'user'
+      }
     )
     expect(screen.getByRole('tab', { name: 'First workflow' })).toHaveAttribute(
       'aria-selected',
@@ -510,7 +513,10 @@ describe('WorkflowTabs selection and overflow', () => {
 
     expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
     expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(
-      secondWorkflow
+      secondWorkflow,
+      {
+        initiator: 'user'
+      }
     )
   })
 
@@ -523,7 +529,10 @@ describe('WorkflowTabs selection and overflow', () => {
 
     expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
     expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(
-      secondWorkflow
+      secondWorkflow,
+      {
+        initiator: 'user'
+      }
     )
   })
 
@@ -536,7 +545,10 @@ describe('WorkflowTabs selection and overflow', () => {
 
     expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
     expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(
-      firstWorkflow
+      firstWorkflow,
+      {
+        initiator: 'user'
+      }
     )
   })
 
