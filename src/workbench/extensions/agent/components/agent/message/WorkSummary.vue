@@ -18,7 +18,7 @@ const { t } = useI18n()
 </script>
 
 <template>
-  <CollapsibleRoot v-slot="{ open }" @update:open="emit('toggle')">
+  <CollapsibleRoot @update:open="emit('toggle')">
     <CollapsibleTrigger
       class="group flex h-8 w-full cursor-pointer items-center gap-2 rounded-lg px-2 text-sm leading-none font-normal text-muted-foreground transition-colors hover:bg-secondary-background-hover hover:text-base-foreground"
     >
@@ -28,7 +28,7 @@ const { t } = useI18n()
       />
     </CollapsibleTrigger>
     <CollapsibleContent class="agent-work-summary overflow-hidden">
-      <ActivityTrace v-if="open" :parts />
+      <ActivityTrace :parts />
     </CollapsibleContent>
   </CollapsibleRoot>
 </template>
