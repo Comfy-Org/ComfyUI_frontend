@@ -7911,7 +7911,7 @@ describe('AgentPanelRoot workflow binding', () => {
     {
       entryPoint: 'history',
       openChat: async () => {
-        const rendered = renderWithSelectedTarget()
+        renderWithSelectedTarget()
         await userEvent.click(
           screen.getByRole('button', {
             name: i18n.global.t('agent.showChatHistory')
@@ -7920,14 +7920,13 @@ describe('AgentPanelRoot workflow binding', () => {
         await userEvent.click(
           await screen.findByRole('button', { name: 'Unresolved target chat' })
         )
-        return rendered
       }
     },
     {
       entryPoint: 'startup',
       openChat: async () => {
         localStorage.setItem(StorageKeys.agentThread('personal'), 'th-history')
-        return render(AgentPanelRoot, { global: { plugins: [i18n] } })
+        render(AgentPanelRoot, { global: { plugins: [i18n] } })
       }
     }
   ]
@@ -7944,17 +7943,11 @@ describe('AgentPanelRoot workflow binding', () => {
   }
 
   it.for(unresolvedChatEntryPoints)(
-    'opens a readable unresolved chat from $entryPoint and keeps it untargeted across a tab change, remount and history revisit',
+    'opens a readable unresolved chat from $entryPoint without targeting or opening a workflow',
     async ({ openChat }) => {
       const current = makeTab('wf-42')
       stubHistoryWithWorkflowListing(unresolvedTargetChat)
-      const rendered = await openChat()
-      const selector = () =>
-        screen.getByRole('button', {
-          name: i18n.global.t('agent.switchWorkflow')
-        })
-      const unavailableNotice = () =>
-        screen.queryByText(i18n.global.t('agent.targetWorkflowUnavailable'))
+      await openChat()
       await screen.findAllByText('Historical prompt')
       expect(
         screen.queryByRole('heading', { name: i18n.global.t('agent.history') })
@@ -7965,50 +7958,77 @@ describe('AgentPanelRoot workflow binding', () => {
       await waitFor(() =>
         expect(useAgentChatHistoryStore().activeId).toBe('th-history')
       )
-      expect(selector()).toHaveTextContent(
-        i18n.global.t('agent.selectWorkflowForAgent')
-      )
-      expect(unavailableNotice()).toBeNull()
+      expect(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.switchWorkflow')
+        })
+      ).toHaveTextContent(i18n.global.t('agent.selectWorkflowForAgent'))
+      expect(
+        screen.queryByText(i18n.global.t('agent.targetWorkflowUnavailable'))
+      ).toBeNull()
       expect(workflowStore.activeWorkflow?.path).toBe(current.path)
       expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
-      await userEvent.click(screen.getByRole('textbox'))
-      await userEvent.paste('Do not edit the visible graph')
-      const other = addTab('workflows/other.json', {
-        activeState: fromPartial<ComfyWorkflowJSON>({ id: 'local-other' })
-      })
-      workflowStore.activeWorkflow = other
-      await nextTick()
-      expect(selector()).toHaveTextContent(
-        i18n.global.t('agent.selectWorkflowForAgent')
-      )
-      expect(unavailableNotice()).toBeNull()
-      rendered.unmount()
-      render(AgentPanelRoot, { global: { plugins: [i18n] } })
-      await screen.findAllByText('Historical prompt')
-      expect(selector()).toHaveTextContent(
-        i18n.global.t('agent.selectWorkflowForAgent')
-      )
-      expect(unavailableNotice()).toBeNull()
-      await userEvent.click(
-        screen.getByRole('button', {
-          name: i18n.global.t('agent.showChatHistory')
-        })
-      )
-      await userEvent.click(
-        await screen.findByRole('button', { name: 'Unresolved target chat' })
-      )
-      await screen.findAllByText('Historical prompt')
-      expect(selector()).toHaveTextContent(
-        i18n.global.t('agent.selectWorkflowForAgent')
-      )
-      expect(unavailableNotice()).toBeNull()
-      expect(workflowStore.activeWorkflow.path).toBe(other.path)
-      expect(
-        screen.getByRole('textbox'),
-        'keeps the draft across the tab change, remount and revisit'
-      ).toHaveTextContent('Do not edit the visible graph')
     }
   )
+
+  it('keeps a readable unresolved chat untargeted with its draft across a tab change, remount and history revisit', async () => {
+    makeTab('wf-42')
+    stubHistoryWithWorkflowListing(unresolvedTargetChat)
+    const rendered = renderWithSelectedTarget()
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Unresolved target chat' })
+    )
+    await waitFor(() =>
+      expect(useAgentChatHistoryStore().activeId).toBe('th-history')
+    )
+    const selector = () =>
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.switchWorkflow')
+      })
+    const unavailableNotice = () =>
+      screen.queryByText(i18n.global.t('agent.targetWorkflowUnavailable'))
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Do not edit the visible graph')
+    const other = addTab('workflows/other.json', {
+      activeState: fromPartial<ComfyWorkflowJSON>({ id: 'local-other' })
+    })
+    workflowStore.activeWorkflow = other
+    await nextTick()
+    expect(selector()).toHaveTextContent(
+      i18n.global.t('agent.selectWorkflowForAgent')
+    )
+    expect(unavailableNotice()).toBeNull()
+    rendered.unmount()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findAllByText('Historical prompt')
+    expect(selector()).toHaveTextContent(
+      i18n.global.t('agent.selectWorkflowForAgent')
+    )
+    expect(unavailableNotice()).toBeNull()
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Unresolved target chat' })
+    )
+    await screen.findAllByText('Historical prompt')
+    expect(selector()).toHaveTextContent(
+      i18n.global.t('agent.selectWorkflowForAgent')
+    )
+    expect(unavailableNotice()).toBeNull()
+    expect(workflowStore.activeWorkflow.path).toBe(other.path)
+    expect(
+      screen.getByRole('textbox'),
+      'keeps the draft across the tab change, remount and revisit'
+    ).toHaveTextContent('Do not edit the visible graph')
+  })
 
   it('keeps a readable unresolved chat open when its Current row is selected again', async () => {
     makeTab('wf-42')
