@@ -391,7 +391,8 @@ beforeEach(() => {
     }
   )
   vi.mocked(useWorkflowService()).openWorkflow.mockImplementation(
-    async (tab) => {
+    async (tab, options) => {
+      if (options?.isCurrent?.() === false) return false
       const known = workflowStore.getWorkflowByPath(tab.path)
       if (known) {
         workflowStore.openWorkflowsInBackground({ right: [tab.path] })
@@ -8731,7 +8732,8 @@ describe('AgentPanelRoot workflow binding', () => {
       navigate: startNewChat,
       prepareTab: () => addTab('workflows/Late.json'),
       cloudRows: [{ id: 'wf-late', name: 'Late' }],
-      targetPath: 'workflows/current.json'
+      targetPath: 'workflows/current.json',
+      workflowPaths: ['workflows/current.json', 'workflows/Late.json']
     },
     {
       kind: 'saved',
@@ -8739,7 +8741,8 @@ describe('AgentPanelRoot workflow binding', () => {
       navigate: openOtherChat,
       prepareTab: () => addTab('workflows/Late.json'),
       cloudRows: [{ id: 'wf-late', name: 'Late' }],
-      targetPath: null
+      targetPath: null,
+      workflowPaths: ['workflows/current.json', 'workflows/Late.json']
     },
     {
       kind: 'new',
@@ -8747,11 +8750,12 @@ describe('AgentPanelRoot workflow binding', () => {
       navigate: startNewChat,
       prepareTab: () => {},
       cloudRows: [],
-      targetPath: 'workflows/current.json'
+      targetPath: 'workflows/current.json',
+      workflowPaths: ['workflows/current.json']
     }
   ])(
     'keeps the newer chat target when an older $kind activation settles after $navigation',
-    async ({ navigate, prepareTab, cloudRows, targetPath }) => {
+    async ({ navigate, prepareTab, cloudRows, targetPath, workflowPaths }) => {
       const current = makeTab('wf-42')
       prepareTab()
       mockMessagesEndpoint(
@@ -8776,13 +8780,18 @@ describe('AgentPanelRoot workflow binding', () => {
       const started = new Promise<void>((resolve) => {
         openStarted = resolve
       })
+      const open = vi
+        .mocked(useWorkflowService().openWorkflow)
+        .getMockImplementation()
+      assert.exists(open)
+      const settledCanvasPaths: (string | undefined)[] = []
       vi.mocked(useWorkflowService().openWorkflow).mockImplementationOnce(
         async (tab, options) => {
           openStarted()
           await opening
-          if (options?.isCurrent?.() === false) return false
-          workflowStore.activeWorkflow = await tab.load()
-          return true
+          const opened = await open(tab, options)
+          settledCanvasPaths.push(workflowStore.activeWorkflow?.path)
+          return opened
         }
       )
       ws.emit('agent_active_tab', {
@@ -8796,7 +8805,11 @@ describe('AgentPanelRoot workflow binding', () => {
       finishOpen()
       await vi.advanceTimersByTimeAsync(0)
 
+      expect(settledCanvasPaths).toEqual([current.path])
       expect(workflowStore.activeWorkflow?.path).toBe(current.path)
+      expect(workflowStore.workflows.map(({ path }) => path)).toEqual(
+        workflowPaths
+      )
       expect(useAgentPanelStore().selectedWorkflow?.path ?? null).toBe(
         targetPath
       )
