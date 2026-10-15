@@ -141,49 +141,48 @@ test.describe(
         route.fulfill(jsonRoute(staleDraft))
       )
 
+      const savedFiles: UserDataFullInfo[] = []
       await bootAgentApp(page, agentFlagEnabled, {
         settings: { 'Comfy.Graph.CanvasInfo': false },
         vueNodes: true,
-        objectInfo: 'server'
-      })
-
-      await test.step('override the boot userdata stub so the fresh tab saves to Cloud', async () => {
-        const savedFiles: UserDataFullInfo[] = []
-        await page.route('**/api/userdata?*', (route) => {
-          const dir = new URL(route.request().url()).searchParams.get('dir')
-          if (dir !== 'workflows') return route.fallback()
-          return route.fulfill(
-            jsonRoute(
-              savedFiles.map((file) => ({
-                ...file,
-                path: file.path.slice('workflows/'.length)
-              }))
+        objectInfo: 'server',
+        beforeNavigate: async (page) => {
+          await page.route('**/api/userdata?*', (route) => {
+            const dir = new URL(route.request().url()).searchParams.get('dir')
+            if (dir !== 'workflows') return route.fallback()
+            return route.fulfill(
+              jsonRoute(
+                savedFiles.map((file) => ({
+                  ...file,
+                  path: file.path.slice('workflows/'.length)
+                }))
+              )
             )
-          )
-        })
-        await page.route('**/api/userdata/*', (route) => {
-          const path = decodeURIComponent(
-            new URL(route.request().url()).pathname.split('/userdata/')[1]
-          )
-          if (!path.startsWith('workflows/')) return route.fallback()
-          if (route.request().method() !== 'POST')
-            return route.fulfill({ status: 404 })
-          cloudWorkflows.push({
-            id: 'a81718a4-02ae-41e6-ae85-000000000001',
-            name: path.slice('workflows/'.length, -'.json'.length),
-            created_by: 'test-user-e2e',
-            created_at: '2026-09-11T10:00:00Z',
-            updated_at: '2026-09-11T10:00:00Z',
-            latest_version: 1
           })
-          const file: UserDataFullInfo = {
-            path,
-            modified: Date.now(),
-            size: route.request().postDataBuffer()?.length ?? 1
-          }
-          savedFiles.push(file)
-          return route.fulfill(jsonRoute(file))
-        })
+          await page.route('**/api/userdata/*', (route) => {
+            const path = decodeURIComponent(
+              new URL(route.request().url()).pathname.split('/userdata/')[1]
+            )
+            if (!path.startsWith('workflows/')) return route.fallback()
+            if (route.request().method() !== 'POST')
+              return route.fulfill({ status: 404 })
+            cloudWorkflows.push({
+              id: 'a81718a4-02ae-41e6-ae85-000000000001',
+              name: path.slice('workflows/'.length, -'.json'.length),
+              created_by: 'test-user-e2e',
+              created_at: '2026-09-11T10:00:00Z',
+              updated_at: '2026-09-11T10:00:00Z',
+              latest_version: 1
+            })
+            const file: UserDataFullInfo = {
+              path,
+              modified: Date.now(),
+              size: route.request().postDataBuffer()?.length ?? 1
+            }
+            savedFiles.push(file)
+            return route.fulfill(jsonRoute(file))
+          })
+        }
       })
 
       const topbar = new Topbar(page)
@@ -193,55 +192,63 @@ test.describe(
       const initialNodeTitles = await page
         .getByTestId('node-title')
         .allTextContents()
-
       const agentPanel = new AgentPanel(page)
-      await agentPanel.open()
-      const panel = agentPanel.root
-      await expect(panel).toBeVisible()
-      await expect(panel.getByTestId('user-message-bubble')).toHaveText([
-        EARLIER_REQUEST
-      ])
-      await panel
-        .getByRole('button', { name: enMessages.agent.showChatHistory })
-        .click()
-      await expect(
-        panel
-          .locator('section')
-          .filter({
-            has: page.getByText(enMessages.agent.historyCurrent, {
-              exact: true
+
+      await test.step('reopening the app restores the earlier chat without a workflow', async () => {
+        const panel = await agentPanel.open()
+        await expect(panel.getByTestId('user-message-bubble')).toHaveText([
+          EARLIER_REQUEST
+        ])
+        await panel
+          .getByRole('button', { name: enMessages.agent.showChatHistory })
+          .click()
+        await expect(
+          panel
+            .locator('section')
+            .filter({
+              has: page.getByText(enMessages.agent.historyCurrent, {
+                exact: true
+              })
             })
-          })
-          .getByRole('button', { name: savedChat.thread.title, exact: true })
-      ).toBeVisible()
-      await panel
-        .getByRole('button', { name: enMessages.agent.backToPreviousChat })
-        .click()
-      await expect(agentPanel.workflowPicker).toHaveText(
-        enMessages.agent.selectWorkflowForAgent
-      )
-      await expect(
-        panel.getByText(enMessages.agent.targetWorkflowUnavailable)
-      ).toBeHidden()
-      if (!socket) throw new Error('the app never opened /ws')
-
-      await agentPanel.selectWorkflow(DEFAULT_TAB_NAME)
-      await agentPanel.sendMessage('continue here')
-      await expect.poll(() => posted.length).toBe(1)
-      expect(posted[0]).toMatchObject({
-        workflow_id: 'a81718a4-02ae-41e6-ae85-000000000001'
+            .getByRole('button', { name: savedChat.thread.title, exact: true })
+        ).toBeVisible()
+        await panel
+          .getByRole('button', { name: enMessages.agent.backToPreviousChat })
+          .click()
+        await expect(agentPanel.workflowPicker).toHaveText(
+          enMessages.agent.selectWorkflowForAgent
+        )
+        await expect(
+          panel.getByText(enMessages.agent.targetWorkflowUnavailable)
+        ).toBeHidden()
+        if (!socket) throw new Error('the app never opened /ws')
       })
 
-      await testInfo.attach('stale-workflow-canvas', {
-        body: await page.screenshot({
-          path: testInfo.outputPath('stale-workflow-canvas.png')
-        }),
-        contentType: 'image/png'
+      await test.step('choosing the fresh tab saves it as its own workflow', async () => {
+        await agentPanel.selectWorkflow(DEFAULT_TAB_NAME)
       })
 
-      await expect(tabs).toHaveCount(1)
-      await expect(topbar.getActiveTab()).toContainText(DEFAULT_TAB_NAME)
-      await expect(page.getByTestId('node-title')).toHaveText(initialNodeTitles)
+      await test.step('sending continues the chat in the fresh workflow', async () => {
+        await agentPanel.sendMessage('continue here')
+        await expect.poll(() => posted.length).toBe(1)
+        expect(posted[0]).toMatchObject({
+          workflow_id: 'a81718a4-02ae-41e6-ae85-000000000001'
+        })
+      })
+
+      await test.step('the fresh tab keeps its own canvas', async () => {
+        await testInfo.attach('stale-workflow-canvas', {
+          body: await page.screenshot({
+            path: testInfo.outputPath('stale-workflow-canvas.png')
+          }),
+          contentType: 'image/png'
+        })
+        await expect(tabs).toHaveCount(1)
+        await expect(topbar.getActiveTab()).toContainText(DEFAULT_TAB_NAME)
+        await expect(page.getByTestId('node-title')).toHaveText(
+          initialNodeTitles
+        )
+      })
     })
   }
 )
