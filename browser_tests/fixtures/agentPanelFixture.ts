@@ -124,9 +124,9 @@ async function mockAgentBoot(
 export async function mockAgentTurnApi(
   page: Page,
   turnAccepted: AgentTurnAccepted,
-  savedThread?: AgentSavedChat
+  savedChat?: AgentSavedChat
 ): Promise<AgentPostMessageRequest[]> {
-  const summaries = savedThread ? [savedThread.thread] : []
+  const summaries = savedChat ? [savedChat.thread] : []
   const threads: AgentThreadListResponse = {
     threads: summaries,
     pagination: {
@@ -149,8 +149,8 @@ export async function mockAgentTurnApi(
   const posted: AgentPostMessageRequest[] = []
   await page.route('**/api/agent/threads/*/messages', (route) => {
     const request = route.request()
-    if (savedThread && request.method() === 'GET')
-      return route.fulfill(jsonRoute(savedThread.messages))
+    if (savedChat && request.method() === 'GET')
+      return route.fulfill(jsonRoute(savedChat.messages))
     if (request.method() === 'POST')
       posted.push(zAgentPostMessageRequest.parse(request.postDataJSON()))
     return route.fulfill(jsonRoute(turnAccepted))
