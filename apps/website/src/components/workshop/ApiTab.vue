@@ -1,11 +1,14 @@
 <script setup lang="ts">
+import { ArrowUpRight, KeyRound } from '@lucide/vue'
 import { computed, ref, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
+import Card from '@/components/ui/card/Card.vue'
 import CopyTextButton from '@/components/ui/copy-text-button/CopyTextButton.vue'
-import { apiKeysLink } from '@/config/routes'
+import CopyableField from '@/components/ui/copyable-field/CopyableField.vue'
+import { apiKeysLink, externalLinks } from '@/config/routes'
 import type { FileValue, FormValues } from '@/config/workshop-playground'
 import { schemaForModel } from '@/config/workshop-playground'
 import { formForContract } from '@/config/workshop-contract'
@@ -13,6 +16,7 @@ import { workshopExampleFile } from '@/config/workshop-example-file'
 import { shouldRehostWorkshopUrl } from '@/config/workshop-url-input'
 import type { SnippetFile, SnippetLanguage } from '@/config/models-snippets'
 import {
+  MODEL_SDK_INSTALL,
   SNIPPET_LANGUAGES,
   buildSnippet,
   hasOmittedCurlFiles
@@ -26,22 +30,23 @@ import type { Locale } from '@/i18n/translations'
 import { useTablist } from '@/composables/useTablist'
 import { translationsFor } from '@/i18n/translations'
 import type { CodeLang } from '@/lib/highlight'
-import ApiFacts from './ApiFacts.vue'
+import ApiStep from './ApiStep.vue'
 import HighlightedCode from './HighlightedCode.vue'
-import SectionHeading from './SectionHeading.vue'
 
 const {
   contract,
   values,
   workspaceId,
   locale = 'en',
-  modelSlug
+  modelSlug,
+  docsHref
 } = defineProps<{
   contract?: WorkshopContract
   values: FormValues
   workspaceId?: string
   locale?: Locale
   modelSlug?: string
+  docsHref?: string
 }>()
 const { t } = translationsFor(locale)
 
@@ -192,10 +197,6 @@ const showFileNotice = computed(() => {
     ? hasOmittedCurlFiles(body, files)
     : hasLocalFiles.value
 })
-const showLocalFilesFact = computed(
-  () => language.value !== 'curl' && hasLocalFiles.value
-)
-
 const languageLabel: Record<SnippetLanguage, string> = {
   python: 'Python',
   typescript: 'TypeScript',
@@ -207,63 +208,97 @@ const highlightLanguage = {
   curl: 'shell'
 } satisfies Record<SnippetLanguage, CodeLang>
 
-const facts = computed(() => [
-  ...(contract
-    ? [
-        {
-          label: t('workshop.api.needsEndpoint'),
-          value: `POST /v2/models/${contract.id}`,
-          mono: true,
-          copyLabel: t('workshop.api.copyEndpoint')
-        }
-      ]
-    : []),
-  {
-    label: t('workshop.api.needsKey'),
-    value: 'COMFY_API_KEY',
-    mono: true
-  },
-  ...(showLocalFilesFact.value
-    ? [
-        {
-          label: t('workshop.api.needsFiles'),
-          value: t('workshop.api.filesRead')
-        }
-      ]
-    : [])
-])
+const endpoint = computed(() =>
+  contract ? `POST /v2/models/${contract.id}` : undefined
+)
 </script>
 
 <template>
-  <section class="flex flex-col gap-6" data-testid="api-tab">
-    <SectionHeading
-      class="lg:max-w-[calc(100%-25.75rem)]"
-      :title="t('workshop.api.heading')"
-      :subtitle="t('workshop.api.body')"
-    />
-
-    <div class="flex flex-col gap-8 lg:flex-row-reverse lg:items-start">
-      <div class="flex w-full flex-col gap-3 lg:w-95 lg:shrink-0">
-        <Button
-          as="a"
-          :href="apiKeyHref"
-          target="_blank"
-          rel="noopener noreferrer"
-          variant="secondaryOutline"
-          class="w-full justify-center"
-          data-testid="api-get-key"
-          @click="emit('getKey')"
+  <Card
+    class="gap-8 max-sm:rounded-none max-sm:bg-transparent max-sm:shadow-none sm:p-8 lg:p-10"
+    data-testid="api-tab"
+  >
+    <div class="flex flex-wrap items-baseline justify-between gap-x-8 gap-y-1">
+      <div class="flex max-w-3xl flex-col gap-3">
+        <h2
+          id="api-heading"
+          class="text-3xl/tight font-light text-primary-warm-white lg:text-4xl/tight"
         >
-          {{ t('workshop.api.getKey') }}
-        </Button>
-        <ApiFacts
-          :where="t('workshop.api.runsOnRouter')"
-          :rows="facts"
-          :locale="locale"
-        />
+          {{ t('workshop.api.heading') }}
+        </h2>
+        <p class="text-base/relaxed text-primary-comfy-canvas">
+          {{ t('workshop.api.body') }}
+        </p>
       </div>
+      <a
+        :href="docsHref ?? externalLinks.docsComfyRouter"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-primary-comfy-yellow transition-opacity hover:opacity-80"
+        data-testid="model-docs-link"
+      >
+        {{ t('hubPages.workflow.apiDocs') }}
+        <span class="sr-only">{{ t('workshop.workflow.opensInNewTab') }}</span>
+        <ArrowUpRight class="size-4" aria-hidden="true" />
+      </a>
+    </div>
 
-      <div class="flex min-w-0 flex-1 flex-col gap-4">
+    <div class="flex flex-col gap-8 lg:gap-6">
+      <ol class="flex flex-col gap-6">
+        <ApiStep
+          :step="1"
+          :title="t('hubPages.workflow.getApiKey')"
+          :body="t('workshop.workflow.apiStepKeyBody')"
+          current
+        >
+          <Button
+            as="a"
+            :href="apiKeyHref"
+            target="_blank"
+            rel="noopener noreferrer"
+            variant="secondaryOutline"
+            class="px-5"
+            data-testid="api-get-key"
+            @click="emit('getKey')"
+          >
+            <template #prepend>
+              <KeyRound class="size-4" aria-hidden="true" />
+            </template>
+            {{ t('hubPages.workflow.getApiKey') }}
+            <span class="sr-only">{{
+              t('workshop.workflow.opensInNewTab')
+            }}</span>
+          </Button>
+        </ApiStep>
+        <ApiStep
+          :step="2"
+          :title="t('workshop.workflow.apiStepSdk')"
+          :body="t('workshop.workflow.apiStepSdkBody')"
+        >
+          <CopyableField
+            :value="MODEL_SDK_INSTALL"
+            :copy-label="t('workshop.workflow.apiCopyInstall')"
+            :copied-label="t('workshop.api.copied')"
+            class="h-10 w-full py-0 lg:w-80"
+          />
+        </ApiStep>
+        <ApiStep
+          :step="3"
+          :title="t('workshop.workflow.apiStepRun')"
+          :body="t('workshop.api.stepRunBody')"
+        >
+          <CopyableField
+            v-if="endpoint"
+            :value="endpoint"
+            :copy-label="t('workshop.api.copyEndpoint')"
+            :copied-label="t('workshop.api.copied')"
+            class="h-10 w-full py-0 lg:w-80"
+            data-testid="api-endpoint"
+          />
+        </ApiStep>
+      </ol>
+
+      <div class="flex min-w-0 flex-col gap-4">
         <div
           v-if="snippet"
           class="overflow-hidden rounded-2xl border border-transparency-white-t20 bg-transparency-white-t4"
@@ -344,5 +379,5 @@ const facts = computed(() => [
         </p>
       </div>
     </div>
-  </section>
+  </Card>
 </template>

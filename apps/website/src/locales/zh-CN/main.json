@@ -4029,24 +4029,16 @@
       "usedBy": "使用它的工作流"
     },
     "api": {
-      "body": "使用试用区的输入调用 Comfy Router。运行前请设置 COMFY_API_KEY，并检查本地文件路径。",
+      "body": "将试用区的输入发送到 Comfy Router。",
+      "stepRunBody": "使用你的 COMFY_API_KEY 调用 Comfy Router 的此接口地址。",
       "copied": "已复制",
       "copy": "复制代码",
-      "docs": "Router 文档",
-      "needs": "你需要准备的",
-      "needsEndpoint": "接口地址",
-      "needsKey": "密钥",
-      "needsFiles": "你的文件",
-      "runsOnRouter": "Comfy Router",
-      "filesRead": "代码运行时从代码中的路径读取",
       "filesOmitted": "cURL 已省略上传的文件，请求可能不完整。请使用 Python 或 TypeScript 包含这些文件。",
-      "getKey": "获取 API 密钥",
       "heading": "从代码中调用该模型",
       "inputInvalid": "请在试用区填写有效的模型参数以生成请求。",
       "localFiles": "代码运行时会读取文件并进行 Base64 编码。请将路径设置为您的本地文件。",
       "mappingUnavailable": "此模型的原生 Router 请求映射尚未验证。调用前请查看 Router 文档。",
-      "copyEndpoint": "复制接口地址",
-      "runsOn": "运行于"
+      "copyEndpoint": "复制接口地址"
     },
     "card": {
       "creditsPerRun": "积分 / 次",

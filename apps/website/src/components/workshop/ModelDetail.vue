@@ -96,7 +96,6 @@ import ExampleReplaceDialog from './ExampleReplaceDialog.vue'
 import RunLeaveDialog from './RunLeaveDialog.vue'
 import SavedAssetsStrip from './SavedAssetsStrip.vue'
 import ModelSamples from '@/components/workshop/model-detail/ModelSamples.vue'
-import ModelApiHeading from '@/components/workshop/model-detail/ModelApiHeading.vue'
 import PlaygroundInputHeader from '@/components/workshop/model-detail/PlaygroundInputHeader.vue'
 import RunGateAction from '@/components/workshop/model-detail/RunGateAction.vue'
 import RunRequestMeta from '@/components/workshop/model-detail/RunRequestMeta.vue'
@@ -1026,8 +1025,8 @@ function retry() {
       :class="apiSectionClass"
       data-testid="api-section"
     >
-      <ModelApiHeading :docs-href :locale />
       <ApiTab
+        :docs-href
         :contract="model.execution"
         :values
         :workspace-id="session?.workspace.id"

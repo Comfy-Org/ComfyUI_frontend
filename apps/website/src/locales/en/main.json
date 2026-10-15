@@ -514,23 +514,15 @@
     },
     "api": {
       "heading": "Call this model from your code",
-      "body": "Call Comfy Router with your Playground inputs. Set COMFY_API_KEY and check any local file paths before running.",
+      "body": "Sends your Playground inputs to Comfy Router.",
+      "stepRunBody": "Calls Comfy Router at this endpoint with your COMFY_API_KEY.",
       "filesOmitted": "cURL cannot carry your uploaded files, so this snippet is incomplete. Use Python or TypeScript instead.",
       "localFiles": "Files are loaded and Base64-encoded when you run the code. Set the paths to your local files.",
       "copy": "Copy snippet",
       "inputInvalid": "Fill in the Playground inputs to generate a request.",
       "mappingUnavailable": "We have not verified this request against the Router yet. Check the docs before you rely on it.",
       "copied": "Copied",
-      "getKey": "Get API key",
-      "docs": "Router docs",
-      "needs": "What you need",
-      "needsEndpoint": "Endpoint",
-      "needsKey": "Key",
-      "needsFiles": "Your files",
-      "runsOnRouter": "Comfy Router",
-      "filesRead": "Read from the paths in the code when it runs",
-      "copyEndpoint": "Copy endpoint",
-      "runsOn": "Runs on"
+      "copyEndpoint": "Copy endpoint"
     },
     "hub": {
       "title": "Browse models",

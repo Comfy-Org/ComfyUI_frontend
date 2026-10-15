@@ -480,7 +480,7 @@ describe('ModelDetail', () => {
     expect(link.getAttribute('href')).toBe(
       'https://docs.comfy.org/development/comfy-router/quickstart#comfy-router-quickstart'
     )
-    expect(link.textContent).toContain('Router docs')
+    expect(link.textContent).toContain('API docs')
   })
 
   it('offers one docs link in the API section', async () => {
@@ -667,7 +667,7 @@ describe('ModelDetail', () => {
     const visitor = user()
     await visitor.click(await screen.findByTestId('snippet-curl'))
     await visitor.click(screen.getByRole('button', { name: 'Copy snippet' }))
-    const getKey = screen.getByRole('link', { name: 'Get API key' })
+    const getKey = screen.getByRole('link', { name: /^Get an API key/ })
     getKey.addEventListener('click', (event) => event.preventDefault(), {
       once: true
     })
@@ -695,7 +695,7 @@ describe('ModelDetail', () => {
     auth.workshopEnabled.value = false
     await nextTick()
     await visitor.click(screen.getByRole('button', { name: 'Copy snippet' }))
-    const getKey = screen.getByRole('link', { name: 'Get API key' })
+    const getKey = screen.getByRole('link', { name: /^Get an API key/ })
     getKey.addEventListener('click', (event) => event.preventDefault(), {
       once: true
     })
@@ -2626,7 +2626,9 @@ describe('ModelDetail', () => {
     expect(screen.queryByRole('tab', { name: 'Playground' })).toBeNull()
     expect(screen.queryByRole('tab', { name: 'API' })).toBeNull()
     const playground = screen.getByRole('region', { name: 'Playground' })
-    const api = screen.getByRole('region', { name: 'API' })
+    const api = screen.getByRole('region', {
+      name: 'Call this model from your code'
+    })
     expect(playground.id).toBe('playground')
     expect(api.id).toBe('api')
     expect(

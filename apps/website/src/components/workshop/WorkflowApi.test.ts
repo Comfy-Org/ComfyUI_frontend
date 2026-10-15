@@ -102,6 +102,23 @@ describe('WorkflowApi', () => {
     expect(snippet.textContent).toContain(graph)
   })
 
+  it('folds the graph into the line that opens it, closing brace included', async () => {
+    render(WorkflowApi, { props: { model, values } })
+    const band = screen.getByRole('button', { name: /Show full graph JSON/ })
+    const snippet = screen.getByTestId('workflow-api-snippet')
+
+    expect(snippet.textContent).toMatch(
+      /from_json\(\{\s*\d+ nodes\s*·\s*Show full graph JSON\s*\}\)/
+    )
+
+    await userEvent.setup().click(band)
+
+    expect(snippet.textContent).toMatch(
+      /from_json\(\{\s*\d+ nodes\s*·\s*Hide full graph JSON/
+    )
+    expect(snippet.textContent).not.toMatch(/Hide full graph JSON\s*\}\)/)
+  })
+
   it('offers the key and the documentation, and no graph to download', () => {
     render(WorkflowApi, { props: { model, values } })
 

@@ -1,17 +1,16 @@
 <script setup lang="ts">
-import { ChevronDown } from '@lucide/vue'
+import { ChevronRight } from '@lucide/vue'
 import { computed, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import Badge from '@/components/ui/badge/Badge.vue'
 import CopyTextButton from '@/components/ui/copy-text-button/CopyTextButton.vue'
 import { useTablist } from '@/composables/useTablist'
 import type { SnippetLanguage } from '@/config/models-snippets'
 import { SNIPPET_LANGUAGES } from '@/config/models-snippets'
 import { snippetGraphFold } from '@/config/workshop-workflow-snippet'
 import { t } from '@/i18n/translations'
-import type { CodeLang } from '@/lib/highlight'
+import type { CodeLang, HighlightToken } from '@/lib/highlight'
 import { highlightLines } from '@/lib/highlight'
 import NumberedCode from './NumberedCode.vue'
 
@@ -38,15 +37,22 @@ const highlightLanguage = {
 } satisfies Record<SnippetLanguage, CodeLang>
 
 const expanded = ref(false)
-const lines = computed(
+const lines = computed<readonly (readonly HighlightToken[])[]>(
   () =>
     highlightLines(code, highlightLanguage[language.value]) ??
     code.split('\n').map((line) => [{ content: line }])
 )
-const fold = computed(() => snippetGraphFold(code.split('\n')))
-const restStart = computed(() => {
-  if (!fold.value) return lines.value.length
-  return expanded.value ? fold.value.start : fold.value.end
+const lineBreak = '\n'
+
+const fold = computed(() => {
+  const graph = snippetGraphFold(code.split('\n'), 0)
+  return graph && { opening: graph.start - 1, closing: graph.end }
+})
+const afterFold = computed(() => {
+  if (!fold.value) return []
+  return lines.value.slice(
+    expanded.value ? fold.value.opening + 1 : fold.value.closing + 1
+  )
 })
 </script>
 
@@ -100,52 +106,64 @@ const restStart = computed(() => {
       class="max-h-96 overflow-y-auto text-sm/relaxed text-primary-warm-white lg:max-h-[min(28rem,calc(100dvh-16rem))]"
       data-testid="workflow-api-snippet"
     >
-      <div class="relative overflow-x-auto px-5 pt-5 pb-2">
-        <NumberedCode
-          :lines="lines.slice(0, fold?.start)"
-          :first-line="1"
-          :ends-code="!fold"
-        />
-        <div
-          v-if="fold && !expanded"
-          aria-hidden="true"
-          class="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-linear-to-b from-transparent to-primary-comfy-ink"
-        />
-      </div>
-      <template v-if="fold">
-        <button
-          type="button"
-          :aria-expanded="expanded"
-          class="flex min-h-11 w-full cursor-pointer items-center gap-3 border-y border-transparency-white-t8 bg-transparency-white-t4 px-5 py-2 text-start text-sm font-medium text-primary-comfy-canvas transition-colors hover:text-primary-warm-white sm:ps-9"
-          data-testid="workflow-api-graph-fold"
-          @click="expanded = !expanded"
-        >
-          <ChevronDown
-            :class="cn('size-4 transition-transform', expanded && 'rotate-180')"
-            aria-hidden="true"
-          />
-          {{
-            expanded
-              ? t('workshop.workflow.apiHideGraph')
-              : t('workshop.workflow.apiShowGraph')
-          }}
-          <Badge variant="subtle" class="ms-auto">
-            {{
-              t(
-                'workshop.workflow.apiGraphNodes',
-                { count: nodeCount },
-                nodeCount
-              )
-            }}
-          </Badge>
-        </button>
-        <div class="overflow-x-auto px-5 pt-4 pb-5">
+      <div class="overflow-x-auto p-5">
+        <NumberedCode v-if="!fold" :lines="lines" :first-line="1" />
+        <template v-else>
           <NumberedCode
-            :lines="lines.slice(restStart)"
-            :first-line="restStart + 1"
+            :lines="lines.slice(0, fold.opening)"
+            :first-line="1"
+            :ends-code="false"
           />
-        </div>
-      </template>
+          <code
+            class="block w-max min-w-full font-mono whitespace-pre"
+            :style="{ counterReset: `line ${fold.opening}` }"
+          >
+            <span
+              class="block [counter-increment:line] before:me-4 before:inline-block before:w-8 before:text-end before:text-primary-warm-gray/70 before:content-[counter(line)] before:select-none"
+              ><span
+                v-for="(token, index) in lines[fold.opening]"
+                :key="index"
+                :style="{ color: token.color }"
+                >{{ token.content }}</span
+              ><button
+                type="button"
+                :aria-expanded="expanded"
+                class="mx-1 inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-primary-comfy-yellow/50 bg-primary-comfy-yellow/15 px-2 align-middle font-mono text-xs/5 text-primary-comfy-yellow transition-colors hover:bg-primary-comfy-yellow/25 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
+                data-testid="workflow-api-graph-fold"
+                @click="expanded = !expanded"
+              >
+                <ChevronRight
+                  :class="
+                    cn('size-3.5 transition-transform', expanded && 'rotate-90')
+                  "
+                  aria-hidden="true"
+                />
+                {{
+                  t(
+                    'workshop.workflow.apiGraphNodes',
+                    { count: nodeCount },
+                    nodeCount
+                  )
+                }}
+                <span aria-hidden="true">·</span>
+                {{
+                  expanded
+                    ? t('workshop.workflow.apiHideGraph')
+                    : t('workshop.workflow.apiShowGraph')
+                }}</button
+              ><template v-if="!expanded"
+                ><span
+                  v-for="(token, index) in lines[fold.closing]"
+                  :key="index"
+                  :style="{ color: token.color }"
+                  >{{ token.content }}</span
+                ></template
+              >{{ lineBreak }}</span
+            >
+          </code>
+          <NumberedCode :lines="afterFold" :first-line="fold.opening + 2" />
+        </template>
+      </div>
     </div>
   </div>
 </template>

@@ -2,7 +2,7 @@ import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 
-import { buildSnippet } from '@/config/models-snippets'
+import { MODEL_SDK_INSTALL, buildSnippet } from '@/config/models-snippets'
 import { workshopContract } from '@/config/workshop-contract-catalog'
 import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from '@/config/workshop-router-content'
 import { initialWorkshopPageState } from '@/config/workshop-page-state'
@@ -18,7 +18,7 @@ describe('ApiTab', () => {
     const { emitted } = render(ApiTab, { props: { contract, values } })
     await visitor.click(await screen.findByRole('tab', { name: 'cURL' }))
     await visitor.click(screen.getByRole('button', { name: 'Copy snippet' }))
-    const getKey = screen.getByRole('link', { name: 'Get API key' })
+    const getKey = screen.getByRole('link', { name: /^Get an API key/ })
     getKey.addEventListener('click', (event) => event.preventDefault(), {
       once: true
     })
@@ -124,48 +124,22 @@ describe('ApiTab', () => {
     expect(screen.queryByRole('button', { name: 'Copy snippet' })).toBeNull()
   })
 
-  it('names the endpoint and the key beside the snippet, and the files only when the code reads them locally', async () => {
-    const file = new File(['pixels'], 'reference.webp', { type: 'image/webp' })
-    const { rerender } = render(ApiTab, {
-      props: { contract, values }
-    })
-    const facts = screen.getByTestId('api-facts')
-    expect(facts.textContent).toContain(`POST /v2/models/${routerId}`)
-    expect(facts.textContent).toContain('COMFY_API_KEY')
-    expect(facts.textContent).not.toContain('Your files')
+  it('walks through the key, the SDK the snippet installs and the endpoint it calls', async () => {
+    render(ApiTab, { props: { contract, values } })
+    const steps = screen.getAllByRole('listitem')
 
-    const model = getRouterWorkshopModelDetail(
-      'byteplus--seedream-4-5--edit-images'
+    expect(
+      screen
+        .getAllByRole('heading', { level: 3 })
+        .map((heading) => heading.textContent)
+    ).toEqual(['Get an API key', 'Install the SDK', 'Run it'])
+    expect(steps[1]).toHaveTextContent(MODEL_SDK_INSTALL)
+    expect(screen.getByTestId('api-endpoint')).toHaveTextContent(
+      `POST /v2/models/${routerId}`
     )
-    if (!model) throw new Error('Missing model')
-    await rerender({
-      contract: model.execution,
-      values: {
-        ...initialWorkshopPageState(model).values,
-        images: [{ file, name: file.name, type: file.type, size: file.size }]
-      }
-    })
-    await waitFor(() => expect(facts.textContent).toContain('Your files'))
-
-    await userEvent.click(screen.getByTestId('snippet-curl'))
-    expect(facts.textContent).not.toContain('Your files')
-    await userEvent.click(screen.getByTestId('snippet-typescript'))
-    expect(facts.textContent).toContain('Your files')
-
-    const fromUrl = getRouterWorkshopModelDetail(
-      'bfl--flux-2-max--generate-images'
+    expect((await screen.findByTestId('snippet')).textContent).toContain(
+      MODEL_SDK_INSTALL
     )
-    if (!fromUrl) throw new Error('Missing model')
-    await rerender({
-      contract: fromUrl.execution,
-      values: initialWorkshopPageState(fromUrl).values
-    })
-    await waitFor(() =>
-      expect(screen.getByTestId('snippet').textContent).toContain(
-        'https://cdn.jsdelivr.net/gh/Comfy-Org/workflow_templates@'
-      )
-    )
-    expect(facts.textContent).not.toContain('Your files')
   })
 
   it('uses local file examples for Base64 inputs without exposing embedded bytes', async () => {
