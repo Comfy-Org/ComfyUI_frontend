@@ -609,7 +609,7 @@ describe('agentPanelStore thread navigation', () => {
   it.for([
     {
       outcome: 'keeps any chat current on the chat screen',
-      view: { screen: 'chat' } satisfies AgentPanelView,
+      view: { screen: 'chat' },
       threadId: 'th-other',
       activeThreadId: null,
       current: true
@@ -621,7 +621,7 @@ describe('agentPanelStore thread navigation', () => {
         screen: 'history',
         previousThreadId: null,
         selection: { status: 'idle' }
-      } satisfies AgentPanelView,
+      },
       threadId: 'th-active',
       activeThreadId: 'th-active',
       current: true
@@ -633,7 +633,7 @@ describe('agentPanelStore thread navigation', () => {
         screen: 'history',
         previousThreadId: 'th-open',
         selection: { status: 'idle' }
-      } satisfies AgentPanelView,
+      },
       threadId: 'th-open',
       activeThreadId: null,
       current: true
@@ -645,7 +645,7 @@ describe('agentPanelStore thread navigation', () => {
         screen: 'history',
         previousThreadId: 'th-open',
         selection: { status: 'idle' }
-      } satisfies AgentPanelView,
+      },
       threadId: 'th-other',
       activeThreadId: 'th-open',
       current: false
@@ -656,7 +656,7 @@ describe('agentPanelStore thread navigation', () => {
         screen: 'history',
         previousThreadId: 'th-open',
         selection: { status: 'loading', id: 'th-other' }
-      } satisfies AgentPanelView,
+      },
       threadId: 'th-other',
       activeThreadId: 'th-open',
       current: true
@@ -667,12 +667,18 @@ describe('agentPanelStore thread navigation', () => {
         screen: 'history',
         previousThreadId: 'th-open',
         selection: { status: 'failed', id: 'th-open' }
-      } satisfies AgentPanelView,
+      },
       threadId: 'th-open',
       activeThreadId: 'th-open',
       current: false
     }
-  ])('$outcome', ({ view, threadId, activeThreadId, current }) => {
+  ] satisfies {
+    outcome: string
+    view: AgentPanelView
+    threadId: string
+    activeThreadId: string | null
+    current: boolean
+  }[])('$outcome', ({ view, threadId, activeThreadId, current }) => {
     const store = useAgentPanelStore()
     store.view = view
 
