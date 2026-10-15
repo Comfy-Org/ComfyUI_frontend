@@ -3,7 +3,8 @@ import { describe, expect, it } from 'vitest'
 import {
   buildPackSearchFallbacks,
   splitOnSeparators,
-  stripRepoOwner
+  stripRepoOwner,
+  toRepoName
 } from '@/utils/searchQueryUtil'
 
 describe('splitOnSeparators', () => {
@@ -118,8 +119,36 @@ describe('stripRepoOwner', () => {
   })
 })
 
+describe('toRepoName', () => {
+  it.for([
+    { query: 'ComfyUI-KJNodes.git', expected: 'ComfyUI-KJNodes' },
+    { query: 'ComfyUI-KJNodes.GIT', expected: 'ComfyUI-KJNodes' },
+    { query: 'comfyui-kjnodes/', expected: 'comfyui-kjnodes' },
+    { query: ' comfyui-kjnodes.git// ', expected: 'comfyui-kjnodes' },
+    { query: 'kijai/comfyui-kjnodes//', expected: 'comfyui-kjnodes' },
+    { query: 'kijai/comfyui-kjnodes.git//', expected: 'comfyui-kjnodes' },
+    {
+      query: 'https://github.com/kijai/ComfyUI-KJNodes.git',
+      expected: 'ComfyUI-KJNodes'
+    },
+    { query: 'gaclove/comfyui.vfi', expected: 'gaclove/comfyui.vfi' },
+    { query: 'image/upscaling/', expected: 'image/upscaling' },
+    { query: 'github', expected: 'github' }
+  ])('reduces "$query" to "$expected"', ({ query, expected }) => {
+    expect(toRepoName(query)).toBe(expected)
+  })
+})
+
 describe('buildPackSearchFallbacks', () => {
   it.for([
+    {
+      query: 'ComfyUI-KJNodes.git',
+      expected: ['ComfyUI-KJNodes', 'ComfyUI KJNodes']
+    },
+    {
+      query: 'kijai/comfyui-KJNodes//',
+      expected: ['comfyui-KJNodes', 'comfyui KJNodes']
+    },
     {
       query: 'kijai/comfyui-KJNodes',
       expected: ['comfyui-KJNodes', 'comfyui KJNodes']

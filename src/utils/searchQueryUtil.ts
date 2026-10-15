@@ -6,6 +6,8 @@ const GITHUB_REPO_URL =
 const BARE_COMPOUND_REPO_SLUG =
   /^[a-z0-9-]+\/([\w.-]*?[a-z0-9][-_][a-z0-9][\w.-]*?)(?:\.git)?\/?$/i
 
+const TRAILING_GIT_OR_SLASHES = /(?:\.git)?\/*$/i
+
 const WORD_SEPARATORS = /[\s_-]+/
 
 const WHITESPACE_RUN = /\s+/g
@@ -16,6 +18,10 @@ export function stripRepoOwner(query: string): string {
     BARE_COMPOUND_REPO_SLUG.exec(query)?.[1] ??
     query
   )
+}
+
+export function toRepoName(query: string): string {
+  return stripRepoOwner(query.trim().replace(TRAILING_GIT_OR_SLASHES, ''))
 }
 
 export function splitOnSeparators(input: string): string {
@@ -29,8 +35,8 @@ function collapseWhitespace(input: string): string {
 export function buildPackSearchFallbacks(query: string): string[] {
   const trimmedQuery = query.trim()
   const normalizedQuery = collapseWhitespace(trimmedQuery)
-  const withoutOwner = stripRepoOwner(trimmedQuery)
-  return uniq([withoutOwner, splitOnSeparators(withoutOwner)]).filter(
+  const repoName = toRepoName(trimmedQuery)
+  return uniq([repoName, splitOnSeparators(repoName)]).filter(
     (candidate) =>
       candidate.length > 0 && collapseWhitespace(candidate) !== normalizedQuery
   )
