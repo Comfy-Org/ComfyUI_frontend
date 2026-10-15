@@ -1037,8 +1037,26 @@ pnpm test:browser:local --update-snapshots
 ### Creating new baselines in CI
 
 1. Write the test with `toHaveScreenshot('filename.png')`.
-2. Open the PR and add the **`New Browser Test Expectations`** label.
-3. CI generates and commits the Linux baselines.
+2. Add the **`New Browser Test Expectations`** label, comment
+   `/update-playwright`, or tick the "Update Playwright expectations"
+   checkbox in the Playwright section of the PR report comment.
+
+The workflow waits for the PR's `CI: Tests E2E` run and commits the actual
+image of every screenshot assertion that failed there (stale or missing
+baseline) without rerunning Playwright. A flaky screenshot that passed on
+retry is never committed, and a run with no failed screenshot assertions
+commits nothing. The workflow fails and says why when there is no run for
+the head commit, the run takes over 45 minutes, a Playwright job did not
+finish, no Playwright job ran, or a Playwright job left no
+`snapshot-updates-*` artifact (for example after a crash or once the
+artifacts expire after 7 days). Push to the branch for a new E2E run and
+trigger the update again, or comment `/update-playwright full` to rerun the
+`@screenshot` suite with `--update-snapshots`.
+
+A failed screenshot assertion ends its test, so only the first stale
+screenshot of each test is committed and the next E2E run fails on the
+following one. Comment `/update-playwright full` when a change affects
+several screenshots in one test.
 
 Fork PRs can't auto-commit screenshots — a maintainer commits them for you.
 

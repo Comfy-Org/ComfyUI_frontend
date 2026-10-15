@@ -68,7 +68,7 @@ const { stop } = useIntersectionObserver(
       class="mx-auto flex max-w-3xl flex-col items-center text-center"
     >
       <h2
-        class="text-3xl font-light tracking-tight text-primary-comfy-canvas lg:text-5xl/tight"
+        class="text-3xl font-light tracking-tight whitespace-pre-line text-primary-comfy-canvas lg:text-5xl/tight"
       >
         {{ t(gallery.headingKey) }}
       </h2>
