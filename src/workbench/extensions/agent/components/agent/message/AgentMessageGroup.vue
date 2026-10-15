@@ -23,7 +23,6 @@ const { group } = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  workSummaryToggle: []
   answer: [askId: string, selection: 'run' | 'cancel']
   openWorkflow: [askId: string, workflowId: string, workflowName?: string]
   approvalShown: [askId: string, workflowId: string | null]
@@ -38,11 +37,7 @@ const emit = defineEmits<{
   />
   <template v-else-if="group.kind === 'trace'">
     <ActivityTrace v-if="streaming" :parts="activityParts" live />
-    <WorkSummary
-      v-else
-      :parts="activityParts"
-      @toggle="emit('workSummaryToggle')"
-    />
+    <WorkSummary v-else :parts="activityParts" />
   </template>
   <div
     v-else-if="group.kind === 'tabLinks'"

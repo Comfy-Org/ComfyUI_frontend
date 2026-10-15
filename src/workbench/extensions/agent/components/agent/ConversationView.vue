@@ -4,7 +4,7 @@ import {
   useIntersectionObserver,
   useResizeObserver
 } from '@vueuse/core'
-import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, provide, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -22,6 +22,7 @@ import type { ConversationEntry } from '../../stores/agent/agentConversationStor
 import type { TurnId } from '../../schemas/agentApiSchema'
 import type { PromptSnapshot } from '../../types/workflowReference'
 
+import { conversationFollowKey } from './conversationFollow'
 import AgentMessage from './message/AgentMessage.vue'
 import UserMessage from './message/UserMessage.vue'
 
@@ -78,6 +79,7 @@ const atBottom = ref(true)
 const bottomGracePx = 16
 const followIntentTolerancePx = 1
 let measuredAtEnd = false
+let measuredScrollHeight = 0
 let pendingProgrammaticScroll: { target: number; frame: number } | undefined
 let pendingConversationId: string | undefined
 
@@ -98,12 +100,23 @@ function distanceFromEnd(element: HTMLElement): number {
   return element.scrollHeight - element.scrollTop - element.clientHeight
 }
 
-function handleUserScrollInput(): void {
+function intentAt(element: HTMLElement): 'latest' | 'reading' {
+  return distanceFromEnd(element) <= followIntentTolerancePx
+    ? 'latest'
+    : 'reading'
+}
+
+function measureAtBottom(element: HTMLElement): boolean {
+  atBottom.value = distanceFromEnd(element) <= bottomGracePx
+  return atBottom.value
+}
+
+function handleUserScrollInput(event: Event): void {
   clearPendingProgrammaticScroll()
   const element = scrollContainer.value
   if (followIntent.value !== 'paused' || !element) return
-  followIntent.value =
-    distanceFromEnd(element) <= followIntentTolerancePx ? 'latest' : 'reading'
+  if (event.type === 'pointerdown' && event.target !== element) return
+  followIntent.value = intentAt(element)
 }
 
 useEventListener(scrollContainer, 'pointerdown', handleUserScrollInput)
@@ -122,6 +135,16 @@ function pauseFollowingForTrace(): void {
   followIntent.value = 'paused'
   measuredAtEnd = false
 }
+
+function measureSettledTrace(): void {
+  const element = scrollContainer.value
+  if (element) measuredAtEnd = measureAtBottom(element)
+}
+
+provide(conversationFollowKey, {
+  pauseForTrace: pauseFollowingForTrace,
+  traceSettled: measureSettledTrace
+})
 
 function scrollToLatest(): void {
   const element = scrollContainer.value
@@ -149,9 +172,7 @@ function scrollToLatest(): void {
 useEventListener(scrollContainer, 'scroll', () => {
   const element = scrollContainer.value
   if (!element) return
-  const distance = distanceFromEnd(element)
-  atBottom.value = distance <= bottomGracePx
-  measuredAtEnd = distance <= followIntentTolerancePx
+  measuredAtEnd = measureAtBottom(element)
   if (
     pendingProgrammaticScroll &&
     Math.abs(element.scrollTop - pendingProgrammaticScroll.target) <=
@@ -160,17 +181,17 @@ useEventListener(scrollContainer, 'scroll', () => {
     clearPendingProgrammaticScroll()
     return
   }
-  if (followIntent.value !== 'paused')
-    followIntent.value = measuredAtEnd ? 'latest' : 'reading'
+  if (followIntent.value !== 'paused') followIntent.value = intentAt(element)
   clearPendingProgrammaticScroll()
 })
 
 function followLatestAfterResize(): void {
   const element = scrollContainer.value
   if (!element || element.clientHeight === 0) return
-  const distance = distanceFromEnd(element)
-  atBottom.value = distance <= bottomGracePx
-  measuredAtEnd = distance <= followIntentTolerancePx
+  const atEnd = measureAtBottom(element)
+  if (element.scrollHeight !== measuredScrollHeight)
+    measuredAtEnd = atEnd && element.scrollHeight < measuredScrollHeight
+  measuredScrollHeight = element.scrollHeight
   if (followIntent.value === 'latest') scrollToLatest()
 }
 
@@ -273,7 +294,6 @@ watch(
               :message="entry"
               :answering-ask-ids
               :paywall-presentation
-              @work-summary-toggle="pauseFollowingForTrace"
               @feedback="emit('feedback', entry.id, $event)"
               @answer-ask="
                 (askId: string, selection: 'run' | 'cancel') =>

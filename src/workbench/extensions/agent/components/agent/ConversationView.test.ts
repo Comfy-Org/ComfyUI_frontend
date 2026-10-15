@@ -478,6 +478,57 @@ describe('ConversationView', () => {
       expect(scrollTo).toHaveBeenCalledWith({ top: 500, behavior: 'instant' })
     })
 
+    it('keeps the view in place when new content arrives while a trace expands a conversation that fits', async () => {
+      const { store, geometry, scrollTo, summary } =
+        await mountCompletedTurnAtEnd({ height: 400, scrollTop: 0 })
+      await userEvent.click(summary)
+      geometry.height = 480
+      dispatchResize()
+
+      await startNextTurn(store)
+      geometry.height = 800
+      dispatchResize()
+
+      expect(scrollTo).not.toHaveBeenCalled()
+    })
+
+    it('follows the next turn once a toggled trace settles in a conversation that fits', async () => {
+      const { store, geometry, scrollTo, summary } =
+        await mountCompletedTurnAtEnd({ height: 400, scrollTop: 0 })
+      await userEvent.click(summary)
+      geometry.height = 480
+      dispatchResize()
+      await fireEvent.animationEnd(screen.getByRole('list'))
+
+      await startNextTurn(store)
+
+      expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'instant' })
+    })
+
+    it('follows the next turn when a toggle leaves the reader within the bottom grace', async () => {
+      const { store, scroll, scrollTo, summary } =
+        await mountCompletedTurnAtEnd()
+      await userEvent.click(summary)
+      scroll.scrollTop = 492
+      await fireEvent.scroll(scroll)
+
+      await startNextTurn(store)
+
+      expect(scrollTo).toHaveBeenCalledWith({ top: 500, behavior: 'instant' })
+    })
+
+    it('keeps following paused while the Worked trigger is pressed at the end', async () => {
+      const { geometry, scrollTo, summary } = await mountCompletedTurnAtEnd()
+      await userEvent.click(summary)
+      const user = userEvent.setup()
+
+      await user.pointer({ keys: '[MouseLeft>]', target: summary })
+      geometry.height = 1_200
+      dispatchResize()
+
+      expect(scrollTo).not.toHaveBeenCalled()
+    })
+
     it('clears a trace pause when the conversation is emptied', async () => {
       const { store, geometry, summary } = await mountCompletedTurnAtEnd()
       await userEvent.click(summary)

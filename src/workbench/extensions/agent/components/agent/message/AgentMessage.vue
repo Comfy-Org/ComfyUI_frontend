@@ -33,7 +33,6 @@ const {
 const { t } = useI18n()
 
 const emit = defineEmits<{
-  workSummaryToggle: []
   feedback: [vote: 'up' | 'down' | null]
   answerAsk: [askId: string, selection: 'run' | 'cancel']
   openWorkflow: [askId: string, workflowId: string, workflowName?: string]
@@ -110,7 +109,6 @@ const status = computed(() => {
         :activity-parts="activityParts"
         :answering-ask-ids="answeringAskIds"
         :paywall-presentation="paywallPresentation"
-        @work-summary-toggle="emit('workSummaryToggle')"
         @answer="(askId, selection) => emit('answerAsk', askId, selection)"
         @approval-shown="
           (askId, workflowId) =>
