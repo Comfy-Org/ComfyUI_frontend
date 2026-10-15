@@ -69,7 +69,7 @@ const previewSrc = usePreviewVideo(video, () => active.value?.media?.url, {
     data-testid="section-featured"
   >
     <div
-      class="group relative flex min-h-60 short:min-h-56"
+      class="group relative flex min-h-50 sm:min-h-44 lg:min-h-48"
       data-testid="featured-slide"
     >
       <a
@@ -107,39 +107,41 @@ const previewSrc = usePreviewVideo(video, () => active.value?.media?.url, {
       />
 
       <div
-        class="pointer-events-none relative flex w-full min-w-0 flex-col justify-end gap-3 px-7 pt-7 pb-16 max-sm:px-5 max-sm:pt-5 sm:max-w-2xl sm:justify-center lg:px-9 lg:pt-8"
+        class="pointer-events-none relative flex w-full min-w-0 items-end justify-between gap-4 px-7 pt-7 pb-14 max-sm:px-5 max-sm:pt-5 lg:px-9 lg:pt-8"
       >
-        <div class="flex flex-wrap items-center gap-2">
-          <Badge
-            variant="subtle"
-            size="md"
-            class="text-primary-comfy-canvas backdrop-blur-md"
+        <div class="flex max-w-2xl min-w-0 flex-col gap-3">
+          <div class="flex flex-wrap items-center gap-2">
+            <Badge
+              variant="subtle"
+              size="md"
+              class="text-primary-comfy-canvas backdrop-blur-md"
+            >
+              {{ active.kind }}
+            </Badge>
+            <Badge
+              v-for="capability in active.tags"
+              :key="capability"
+              variant="subtle"
+              size="md"
+              class="text-content-secondary backdrop-blur-md max-sm:hidden"
+            >
+              {{ capability }}
+            </Badge>
+          </div>
+
+          <h2
+            class="line-clamp-2 text-xl font-bold text-balance text-primary-warm-white max-sm:line-clamp-3 max-sm:text-lg lg:text-2xl"
           >
-            {{ active.kind }}
-          </Badge>
-          <Badge
-            v-for="capability in active.tags"
-            :key="capability"
-            variant="subtle"
-            size="md"
-            class="text-content-secondary backdrop-blur-md max-sm:hidden"
-          >
-            {{ capability }}
-          </Badge>
+            {{ active.title }}
+          </h2>
         </div>
 
-        <h2
-          class="line-clamp-2 text-xl font-bold text-balance text-primary-warm-white lg:text-2xl"
-        >
-          {{ active.title }}
-        </h2>
-
-        <div class="pointer-events-auto flex w-fit items-center gap-3">
+        <div class="pointer-events-auto flex shrink-0 items-center gap-3">
           <Button
             as="a"
             variant="secondary"
             :href="active.href"
-            class="w-fit"
+            class="w-fit max-sm:h-9 max-sm:px-4"
             @click="emit('open', active, shownIndex)"
           >
             {{ active.cta ?? t('workshop.hub.tryNow') }}
