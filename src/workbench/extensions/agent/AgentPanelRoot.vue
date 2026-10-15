@@ -1382,7 +1382,7 @@ onBeforeUnmount(() => {
     invalidateActiveTabGeneration: () => {
       ++activeTabGeneration
     },
-    clearEditingTab: () => {
+    clearAgentTurnTabs: () => {
       tabActivity.setAgentTurnTabs([])
     },
     resetTurnTabResolver: () => {
