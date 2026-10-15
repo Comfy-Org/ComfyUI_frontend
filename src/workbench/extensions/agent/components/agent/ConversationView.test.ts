@@ -282,92 +282,161 @@ describe('ConversationView', () => {
     expect(scrollTo).toHaveBeenCalled()
   })
 
-  it('keeps completed trace toggles anchored until the user returns to Latest', async () => {
-    const { store } = mountHarness()
-    store.recordUser(T, 'make a cat')
-    store.startTurn(T)
-    store.ingest(thinking('msg-1', 'pondering'))
-    store.ingest(delta('msg-1', 'Here is a cat'))
-    store.ingest(done('msg-1'))
-    await nextTick()
-    await nextTick()
+  describe('completed trace toggles', () => {
+    async function mountCompletedTurnAtEnd() {
+      const { store } = mountHarness()
+      store.recordUser(T, 'make a cat')
+      store.startTurn(T)
+      store.ingest(thinking('msg-1', 'pondering'))
+      store.ingest(delta('msg-1', 'Here is a cat'))
+      store.ingest(done('msg-1'))
+      await nextTick()
+      await nextTick()
+      const scroll = screen.getByTestId('agent-conversation-scroll')
+      const geometry = { height: 1_000 }
+      Object.defineProperties(scroll, {
+        scrollHeight: { get: () => geometry.height },
+        scrollTop: { value: 500, writable: true },
+        clientHeight: { value: 500 }
+      })
+      const scrollTo = vi.fn()
+      Element.prototype.scrollTo = scrollTo
+      dispatchResize()
+      scrollTo.mockClear()
+      const summary = screen.getByRole('button', { name: /^worked/i })
+      return { store, scroll, geometry, scrollTo, summary }
+    }
 
-    const scroll = screen.getByTestId('agent-conversation-scroll')
-    let height = 1_000
-    Object.defineProperties(scroll, {
-      scrollHeight: { get: () => height },
-      scrollTop: { value: 500, writable: true },
-      clientHeight: { value: 500 }
+    async function startNextTurn(
+      store: ReturnType<typeof useAgentConversationStore>
+    ) {
+      const next = toTurnId('msg-2')
+      store.recordUser(next, 'make another cat')
+      store.startTurn(next)
+      store.ingest(delta('msg-2', 'More content'))
+      await nextTick()
+      await nextTick()
+    }
+
+    it('does not scroll when a trace expands or collapses at the end', async () => {
+      const { geometry, scrollTo, summary } = await mountCompletedTurnAtEnd()
+
+      await userEvent.click(summary)
+      geometry.height = 1_200
+      dispatchResize()
+      await userEvent.click(summary)
+      geometry.height = 1_000
+      dispatchResize()
+      await nextTick()
+
+      expect(scrollTo).not.toHaveBeenCalled()
     })
-    const scrollTo = vi.fn()
-    Element.prototype.scrollTo = scrollTo
-    const summary = screen.getByRole('button', { name: /^worked/i })
 
-    await userEvent.click(summary)
-    expect(summary).toHaveAttribute('aria-expanded', 'true')
-    height = 1_200
-    dispatchResize()
-    await nextTick()
-    expect(scrollTo).not.toHaveBeenCalled()
-    expect(scroll.scrollTop).toBe(500)
+    it('follows the next turn once a toggle leaves the reader at the end', async () => {
+      const { store, geometry, scrollTo, summary } =
+        await mountCompletedTurnAtEnd()
+      await userEvent.click(summary)
+      geometry.height = 1_200
+      dispatchResize()
+      await userEvent.click(summary)
+      geometry.height = 1_000
+      dispatchResize()
 
-    await userEvent.click(summary)
-    expect(summary).toHaveAttribute('aria-expanded', 'false')
-    height = 1_000
-    dispatchResize()
-    await nextTick()
-    expect(scrollTo).not.toHaveBeenCalled()
-    expect(scroll.scrollTop).toBe(500)
+      await startNextTurn(store)
 
-    await userEvent.click(summary)
-    expect(summary).toHaveAttribute('aria-expanded', 'true')
-    height = 2_000
-    dispatchResize()
-    await nextTick()
-    expect(scrollTo).not.toHaveBeenCalled()
-    expect(scroll.scrollTop).toBe(500)
+      expect(scrollTo).toHaveBeenCalledWith({ top: 500, behavior: 'instant' })
+    })
 
-    await fireEvent.wheel(scroll)
-    scroll.scrollTop = 1_500
-    await fireEvent.scroll(scroll)
-    expect(scroll.scrollTop).toBe(1_500)
+    it('does not follow new content that arrives before the toggled trace is measured', async () => {
+      const { store, scrollTo, summary } = await mountCompletedTurnAtEnd()
+      await userEvent.click(summary)
 
-    await userEvent.click(summary)
-    expect(summary).toHaveAttribute('aria-expanded', 'false')
-    height = 1_000
-    scroll.scrollTop = 500
-    dispatchResize()
-    await fireEvent.scroll(scroll)
-    await nextTick()
-    expect(scrollTo).not.toHaveBeenCalled()
-    expect(scroll.scrollTop).toBe(500)
+      await startNextTurn(store)
 
-    const nextTurn = toTurnId('msg-2')
-    store.recordUser(nextTurn, 'make another cat')
-    store.startTurn(nextTurn)
-    store.ingest(delta('msg-2', 'More content'))
-    await nextTick()
-    await nextTick()
-    expect(screen.getByText('More content')).toBeInTheDocument()
-    height = 1_200
-    dispatchResize()
-    expect(scrollTo).not.toHaveBeenCalled()
-    expect(scroll.scrollTop).toBe(500)
+      expect(scrollTo).not.toHaveBeenCalled()
+    })
 
-    await userEvent.click(screen.getByRole('button', { name: 'Latest' }))
-    scrollTo.mockClear()
-    height = 1_200
-    dispatchResize()
-    expect(scrollTo).toHaveBeenCalled()
+    it('keeps new content below the fold after a trace expands away from the end', async () => {
+      const { store, geometry, scrollTo, summary } =
+        await mountCompletedTurnAtEnd()
+      await userEvent.click(summary)
+      geometry.height = 1_200
+      dispatchResize()
 
-    await userEvent.click(summary)
-    scrollTo.mockClear()
-    await fireEvent.wheel(scroll)
-    scroll.scrollTop = 700
-    await fireEvent.scroll(scroll)
-    height = 1_400
-    dispatchResize()
-    expect(scrollTo).toHaveBeenCalledWith({ top: 900, behavior: 'instant' })
+      await startNextTurn(store)
+      geometry.height = 1_400
+      dispatchResize()
+
+      expect(scrollTo).not.toHaveBeenCalled()
+      await userEvent.click(screen.getByRole('button', { name: 'Latest' }))
+      expect(scrollTo).toHaveBeenCalledWith({ top: 900, behavior: 'instant' })
+    })
+
+    it('hides Latest while a toggled trace leaves the reader at the end', async () => {
+      const { summary } = await mountCompletedTurnAtEnd()
+
+      await userEvent.click(summary)
+      dispatchResize()
+      await nextTick()
+
+      expect(
+        screen.queryByRole('button', { name: 'Latest' })
+      ).not.toBeInTheDocument()
+    })
+
+    it('clears a trace pause when the conversation is emptied', async () => {
+      const { store, geometry, summary } = await mountCompletedTurnAtEnd()
+      await userEvent.click(summary)
+      geometry.height = 1_200
+      dispatchResize()
+      await nextTick()
+      expect(screen.getByRole('button', { name: 'Latest' })).toBeInTheDocument()
+
+      store.reset()
+      await nextTick()
+      await nextTick()
+
+      expect(
+        screen.queryByRole('button', { name: 'Latest' })
+      ).not.toBeInTheDocument()
+    })
+
+    it.for(['wheel', 'touchstart', 'keydown', 'pointerdown'])(
+      'follows again when %s happens at the end after a toggle',
+      async (type) => {
+        const { scroll, geometry, scrollTo, summary } =
+          await mountCompletedTurnAtEnd()
+        await userEvent.click(summary)
+
+        scroll.dispatchEvent(new Event(type))
+        geometry.height = 1_200
+        dispatchResize()
+
+        expect(scrollTo).toHaveBeenCalledWith({ top: 700, behavior: 'instant' })
+      }
+    )
+
+    it('keeps reading when input happens away from the end after a toggle', async () => {
+      const { scroll, geometry, scrollTo, summary } =
+        await mountCompletedTurnAtEnd()
+      await userEvent.click(summary)
+      geometry.height = 1_200
+      dispatchResize()
+
+      await fireEvent.wheel(scroll)
+      geometry.height = 1_400
+      dispatchResize()
+
+      expect(scrollTo).not.toHaveBeenCalled()
+      scroll.scrollTop = 900
+      await fireEvent.scroll(scroll)
+      geometry.height = 1_600
+      dispatchResize()
+      expect(scrollTo).toHaveBeenCalledWith({
+        top: 1_100,
+        behavior: 'instant'
+      })
+    })
   })
 
   it('starts a restored conversation at the latest message', async () => {

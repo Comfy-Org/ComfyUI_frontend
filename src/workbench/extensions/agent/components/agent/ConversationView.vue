@@ -73,14 +73,11 @@ watch([() => skills.enabled, () => skills.scope], () => {
 
 const scrollContainer = ref<HTMLElement>()
 const content = ref<HTMLElement>()
-// 'latest' keeps new content in view; 'reading' means the user scrolled away.
-// 'trace' pauses following after a Worked toggle. Collapsing a trace clamps the
-// scroll position, so scroll events keep the pause; user input, Latest or
-// another conversation ends it.
-const followIntent = ref<'latest' | 'reading' | 'trace'>('latest')
+const followIntent = ref<'latest' | 'reading' | 'paused'>('latest')
 const atBottom = ref(true)
 const bottomGracePx = 16
 const followIntentTolerancePx = 1
+let measuredAtEnd = false
 let pendingProgrammaticScroll: { target: number; frame: number } | undefined
 let pendingConversationId: string | undefined
 
@@ -97,25 +94,33 @@ function clearPendingProgrammaticScroll(): void {
   pendingProgrammaticScroll = undefined
 }
 
-function resumeScrollIntent(): void {
-  clearPendingProgrammaticScroll()
-  if (followIntent.value === 'trace') followIntent.value = 'reading'
+function distanceFromEnd(element: HTMLElement): number {
+  return element.scrollHeight - element.scrollTop - element.clientHeight
 }
 
-useEventListener(scrollContainer, 'pointerdown', resumeScrollIntent)
-useEventListener(scrollContainer, 'keydown', resumeScrollIntent)
-useEventListener(scrollContainer, 'wheel', resumeScrollIntent, {
+function handleUserScrollInput(): void {
+  clearPendingProgrammaticScroll()
+  const element = scrollContainer.value
+  if (followIntent.value !== 'paused' || !element) return
+  followIntent.value =
+    distanceFromEnd(element) <= followIntentTolerancePx ? 'latest' : 'reading'
+}
+
+useEventListener(scrollContainer, 'pointerdown', handleUserScrollInput)
+useEventListener(scrollContainer, 'keydown', handleUserScrollInput)
+useEventListener(scrollContainer, 'wheel', handleUserScrollInput, {
   passive: true
 })
-useEventListener(scrollContainer, 'touchstart', resumeScrollIntent, {
+useEventListener(scrollContainer, 'touchstart', handleUserScrollInput, {
   passive: true
 })
 
 onBeforeUnmount(clearPendingProgrammaticScroll)
 
-function stopFollowingLatest(): void {
+function pauseFollowingForTrace(): void {
   clearPendingProgrammaticScroll()
-  followIntent.value = 'trace'
+  followIntent.value = 'paused'
+  measuredAtEnd = false
 }
 
 function scrollToLatest(): void {
@@ -144,9 +149,9 @@ function scrollToLatest(): void {
 useEventListener(scrollContainer, 'scroll', () => {
   const element = scrollContainer.value
   if (!element) return
-  atBottom.value =
-    element.scrollHeight - element.scrollTop - element.clientHeight <=
-    bottomGracePx
+  const distance = distanceFromEnd(element)
+  atBottom.value = distance <= bottomGracePx
+  measuredAtEnd = distance <= followIntentTolerancePx
   if (
     pendingProgrammaticScroll &&
     Math.abs(element.scrollTop - pendingProgrammaticScroll.target) <=
@@ -155,21 +160,17 @@ useEventListener(scrollContainer, 'scroll', () => {
     clearPendingProgrammaticScroll()
     return
   }
-  if (followIntent.value !== 'trace')
-    followIntent.value =
-      element.scrollHeight - element.scrollTop - element.clientHeight <=
-      followIntentTolerancePx
-        ? 'latest'
-        : 'reading'
+  if (followIntent.value !== 'paused')
+    followIntent.value = measuredAtEnd ? 'latest' : 'reading'
   clearPendingProgrammaticScroll()
 })
 
 function followLatestAfterResize(): void {
   const element = scrollContainer.value
   if (!element || element.clientHeight === 0) return
-  atBottom.value =
-    element.scrollHeight - element.scrollTop - element.clientHeight <=
-    bottomGracePx
+  const distance = distanceFromEnd(element)
+  atBottom.value = distance <= bottomGracePx
+  measuredAtEnd = distance <= followIntentTolerancePx
   if (followIntent.value === 'latest') scrollToLatest()
 }
 
@@ -219,6 +220,8 @@ watch(
 watch(
   latestContentSignal,
   async () => {
+    if (followIntent.value === 'paused' && measuredAtEnd)
+      followIntent.value = 'latest'
     if (followIntent.value !== 'latest') return
     await nextTick()
     if (followIntent.value !== 'latest') return
@@ -264,7 +267,7 @@ watch(
               :message="entry"
               :answering-ask-ids
               :paywall-presentation
-              @work-summary-toggle="stopFollowingLatest"
+              @work-summary-toggle="pauseFollowingForTrace"
               @feedback="emit('feedback', entry.id, $event)"
               @answer-ask="
                 (askId: string, selection: 'run' | 'cancel') =>
@@ -286,7 +289,9 @@ watch(
     </div>
 
     <Button
-      v-if="followIntent !== 'latest'"
+      v-if="
+        followIntent === 'reading' || (followIntent === 'paused' && !atBottom)
+      "
       :tooltip="t('agent.latest')"
       type="button"
       variant="secondary"
