@@ -3,6 +3,7 @@ import './agentPanel.css'
 
 import type { GetFeaturesResponse } from '@comfyorg/ingest-types'
 import { useClipboard } from '@vueuse/core'
+import { maxBy } from 'es-toolkit'
 import { storeToRefs } from 'pinia'
 import {
   computed,
@@ -1548,25 +1549,40 @@ const activeWorkflowId = computed(() => {
   return workflow ? cloudIdFor(workflow) : undefined
 })
 
+function latestChatFor(workflowId: string): string | undefined {
+  const onWorkflow = new Set(
+    threadSummaries.value.flatMap((thread) =>
+      thread.workflow_id === workflowId ? [thread.id] : []
+    )
+  )
+  return maxBy(
+    history.sessions.filter(({ id }) => onWorkflow.has(id)),
+    ({ updatedAt }) => updatedAt
+  )?.id
+}
+
 function followActiveWorkflowChat(): void {
   if (!followOwed.value) return
   // Pointing the composer at a workflow binds the chat the user is in to that
   // workflow. It is not navigation to that workflow's other chats, so a cloud
   // id that first appears while the selection is running must not replace the
-  // open chat.
-  if (workflowSelecting.value) {
+  // open chat. A draft is written for the open chat, and a chat that was
+  // never sent moves its target to the visible tab instead.
+  if (
+    workflowSelecting.value ||
+    composerStore.hasDraft ||
+    agentPanelStore.followsVisibleWorkflow
+  ) {
     followOwed.value = false
     return
   }
   const workflowId = activeWorkflowId.value
   if (workflowId === undefined) return
-  const matchingThread = threadSummaries.value.find(
-    (thread) => thread.workflow_id === workflowId
-  )
-  if (matchingThread === undefined) return
+  const latest = latestChatFor(workflowId)
+  if (latest === undefined) return
   followOwed.value = false
-  if (matchingThread.id === threadId.value) return
-  void openFollowedChat(matchingThread.id, workflowId)
+  if (latest === threadId.value) return
+  void openFollowedChat(latest, workflowId)
 }
 
 // The chat was opened for the tab the user is on, so that tab is its
@@ -1584,6 +1600,8 @@ function restoreChatWorkflow(
 
 async function openFollowedChat(id: string, workflowId: string): Promise<void> {
   followedChat = { threadId: id, workflowId }
+  if (composerStore.prompt.references.length === 0 && !composerStore.hasDraft)
+    composerStore.setText('')
   // Following the active tab carries no navigation intent to invalidate;
   // loadThread's own generation guard already drops a superseded load.
   await selectThread(id, () => true)
