@@ -708,8 +708,15 @@ describe('verifyMediaCandidates', () => {
       fetched: true
     },
     {
-      source: 'store miss without assets',
+      source: 'input store miss without assets',
       name: 'photo.png',
+      assetsEnabled: false,
+      isMissing: true,
+      fetched: false
+    },
+    {
+      source: 'output store miss without assets',
+      name: 'photo.png [output]',
       assetsEnabled: false,
       isMissing: undefined,
       fetched: false
