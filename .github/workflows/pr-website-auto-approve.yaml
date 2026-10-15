@@ -44,7 +44,7 @@ jobs:
             .nvmrc
             tools/cicd/fast-lane
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
 

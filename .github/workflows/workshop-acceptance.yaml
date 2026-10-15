@@ -58,7 +58,7 @@ jobs:
         run: pnpm --filter @comfyorg/website test:acceptance --project "$BROWSER"
       - name: Publish acceptance evidence
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: workshop-acceptance-${{ inputs.suite }}-${{ matrix.browser }}-${{ github.run_id }}
           path: |

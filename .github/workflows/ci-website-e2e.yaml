@@ -53,7 +53,7 @@ jobs:
         run: pnpm --filter @comfyorg/website build:e2e
 
       - name: Upload built website
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: website-dist
           path: apps/website/dist/
@@ -95,7 +95,7 @@ jobs:
           PLAYWRIGHT_BLOB_OUTPUT_DIR: ${{ github.workspace }}/apps/website/blob-report
 
       - name: Upload blob report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: ${{ !cancelled() }}
         with:
           name: website-blob-report-${{ matrix.shardIndex }}
@@ -104,7 +104,7 @@ jobs:
           retention-days: 1
 
       - name: Upload snapshot updates
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: ${{ !cancelled() && github.event_name == 'pull_request' }}
         continue-on-error: true
         with:
@@ -153,7 +153,7 @@ jobs:
           ../../scripts/cicd/prepare-website-e2e-report.sh all-blob-reports 4 "$PLAYWRIGHT_VERSION"
 
       - name: Upload test report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: ${{ !cancelled() && needs.website-e2e-shard.result != 'cancelled' && steps.outcome.outputs.result != 'infrastructure' }}
         with:
           name: website-playwright-report
