@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { injectDialogRootContext } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -16,12 +17,13 @@ const { class: className, onClose } = defineProps<{
 }>()
 
 const { t } = useI18n()
+const dialogRoot = injectDialogRootContext(null)
 </script>
 
 <template>
   <Card :class="cn('flex flex-col shadow-lg', className)">
     <CardHeader>
-      <CardTitle>
+      <CardTitle :id="dialogRoot?.titleId">
         <slot name="title" />
       </CardTitle>
       <Button

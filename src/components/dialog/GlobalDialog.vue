@@ -10,7 +10,8 @@
         <DialogContent
           v-reka-z-index
           v-bind="
-            item.dialogComponentProps.useAutomaticLabeling
+            item.dialogComponentProps.useAutomaticLabeling ||
+            item.dialogComponentProps.headless
               ? {}
               : { 'aria-labelledby': item.key }
           "
