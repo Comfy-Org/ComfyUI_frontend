@@ -480,6 +480,7 @@ overrides:
 
 patchedDependencies:
   '@total-typescript/shoehorn@0.1.2': 8860f8e380c137bc50b1976516d562675229ce1e5b436bb48c7daf65a3dbec15
+  reka-ui@2.6.2: 28318f2ac9275868c061ef714c25c59e31c635c83d6cbb8be4d0b9f75cdbd572
 
 importers:
 
@@ -646,7 +647,7 @@ importers:
         version: 7.0.0
       reka-ui:
         specifier: 'catalog:'
-        version: 2.6.2(typescript@6.0.3)(vue@3.5.42(typescript@6.0.3))
+        version: 2.6.2(patch_hash=28318f2ac9275868c061ef714c25c59e31c635c83d6cbb8be4d0b9f75cdbd572)(typescript@6.0.3)(vue@3.5.42(typescript@6.0.3))
       semver:
         specifier: ^7.7.2
         version: 7.8.5
@@ -977,7 +978,7 @@ importers:
         version: 7.0.0
       reka-ui:
         specifier: 'catalog:'
-        version: 2.6.2(typescript@6.0.3)(vue@3.5.42(typescript@6.0.3))
+        version: 2.6.2(patch_hash=28318f2ac9275868c061ef714c25c59e31c635c83d6cbb8be4d0b9f75cdbd572)(typescript@6.0.3)(vue@3.5.42(typescript@6.0.3))
       vue:
         specifier: 'catalog:'
         version: 3.5.42(typescript@6.0.3)
@@ -1128,7 +1129,7 @@ importers:
         version: 1.402.3
       reka-ui:
         specifier: 'catalog:'
-        version: 2.6.2(typescript@6.0.3)(vue@3.5.42(typescript@6.0.3))
+        version: 2.6.2(patch_hash=28318f2ac9275868c061ef714c25c59e31c635c83d6cbb8be4d0b9f75cdbd572)(typescript@6.0.3)(vue@3.5.42(typescript@6.0.3))
       shaders:
         specifier: 'catalog:'
         version: 3.1.463(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vue@3.5.42(typescript@6.0.3))
@@ -1308,7 +1309,7 @@ importers:
         version: 20.14.5
       reka-ui:
         specifier: 'catalog:'
-        version: 2.6.2(typescript@6.0.3)(vue@3.5.42(typescript@6.0.3))
+        version: 2.6.2(patch_hash=28318f2ac9275868c061ef714c25c59e31c635c83d6cbb8be4d0b9f75cdbd572)(typescript@6.0.3)(vue@3.5.42(typescript@6.0.3))
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -17653,7 +17654,7 @@ snapshots:
       hast-util-to-html: 9.0.5
       unified: 11.0.5
 
-  reka-ui@2.6.2(typescript@6.0.3)(vue@3.5.42(typescript@6.0.3)):
+  reka-ui@2.6.2(patch_hash=28318f2ac9275868c061ef714c25c59e31c635c83d6cbb8be4d0b9f75cdbd572)(typescript@6.0.3)(vue@3.5.42(typescript@6.0.3)):
     dependencies:
       '@floating-ui/dom': 1.8.0
       '@floating-ui/vue': 1.1.11(vue@3.5.42(typescript@6.0.3))
