@@ -25,7 +25,7 @@ const responses: Record<string, RecordedResponse> = recorded.responses
 
 const SUGGESTIONS_INDEX = 'nodes_index_query_suggestions'
 
-vi.mock('algoliasearch/dist/lite/builds/browser', () => ({
+vi.mock(import('algoliasearch/dist/lite/builds/browser'), () => ({
   liteClient: vi.fn()
 }))
 
