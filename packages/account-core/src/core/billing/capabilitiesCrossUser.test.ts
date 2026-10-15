@@ -183,7 +183,7 @@ describe('capabilities read across an account switch in one workspace', () => {
     { order: 'owner answer first', answerOrder: [0, 1] }
   ])(
     'serves the member only their own rights ($order)',
-    async ({ answerOrder }) => {
+    async ({ answerOrder: [firstAnswer, secondAnswer] }) => {
       const session = switchableSession(OWNER_SESSION)
       const network = heldTransport()
       const reader = createCapabilitiesReader({
@@ -197,7 +197,8 @@ describe('capabilities read across an account switch in one workspace', () => {
       const memberRead = reader.read()
       expect(network.requestCount()).toBe(2)
 
-      for (const index of answerOrder) network.answer(index, answers[index])
+      network.answer(firstAnswer, answers[firstAnswer])
+      network.answer(secondAnswer, answers[secondAnswer])
 
       const memberResult = await memberRead
       expect(await ownerRead).toEqual({ status: 'error', code: 'SUPERSEDED' })

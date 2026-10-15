@@ -179,7 +179,11 @@ describe('useBillingCapabilities across an account switch in one workspace', () 
     { rail: 'sdk', switchedRole: 'member', answerOrder: [1, 0] }
   ] as const)(
     'keeps the next account on its own answer when the owner answer lands late ($rail rail, next account is $switchedRole, answers $answerOrder)',
-    async ({ rail, switchedRole, answerOrder }) => {
+    async ({
+      rail,
+      switchedRole,
+      answerOrder: [firstAnswer, secondAnswer]
+    }) => {
       const reads = heldCapabilityReads(rail)
       const billing = mountCapabilities()
       const answers = [
@@ -192,7 +196,8 @@ describe('useBillingCapabilities across an account switch in one workspace', () 
       await nextTick()
       expect(reads.requestCount()).toBe(2)
 
-      for (const index of answerOrder) await reads.answer(index, answers[index])
+      await reads.answer(firstAnswer, answers[firstAnswer])
+      await reads.answer(secondAnswer, answers[secondAnswer])
       await initialized
 
       expect(billing.isReady.value).toBe(true)
