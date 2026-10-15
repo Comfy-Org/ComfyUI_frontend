@@ -42,7 +42,8 @@ publish the same feature, and ComfyUI pushes `agent_status` when it changes;
 while it is `starting` or `failed` the entry button shows that, inert. Builds
 with `VITE_AGENT_STANDALONE=true` (the local agent harness) ignore the feature
 and, in development mode, force the panel on; consent is still required. A
-restored open intent cannot bypass consent.
+plain `pnpm dev` shows the panel only when the ComfyUI it proxies publishes the
+feature. A restored open intent cannot bypass consent.
 
 On first use, click **Agent**, then **Start using Comfy Agent**.
 Acceptance is stored through the hosted Global Settings API under

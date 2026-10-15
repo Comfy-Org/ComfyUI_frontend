@@ -1178,8 +1178,9 @@ export class ComfyApi extends EventTarget {
 
   private async replaceSocket(): Promise<void> {
     const previous = this.socket
-    // serverFeatureFlags deliberately keeps the previous map: clearing it would
-    // downgrade every serverSupportsFeature() caller until the next delivery.
+    // serverFeatureFlags deliberately keeps the previous map (resetSocket drops
+    // only `agent`): clearing it would downgrade every serverSupportsFeature()
+    // caller until the next delivery.
     this.serverFeatureFlagsSettled.value = false
     // Detach before closing so the previous socket's close handler sees it is
     // no longer the active socket and does not start a competing reconnect.
