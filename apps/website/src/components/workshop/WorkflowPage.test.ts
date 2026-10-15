@@ -121,7 +121,7 @@ describe('WorkflowPage header', () => {
       change: { workflow: { ...model.workflow, runsOnHub: false } }
     }
   ] as const)(
-    'offers no run and no API for a workflow that $kind, and makes Try in Cloud its one yellow action',
+    'offers no run and no API for a workflow that $kind, and makes Download workflow its one yellow action',
     ({ change }) => {
       mount({ ...model, ...change })
 
@@ -134,11 +134,11 @@ describe('WorkflowPage header', () => {
           .map((link) => link.textContent.trim())
       ).toEqual(['Download workflow', 'Try in Cloud (opens in a new tab)'])
       expect(
-        within(paths).getByRole('link', { name: /Try in Cloud/ })
+        within(paths).getByRole('link', { name: 'Download workflow' })
       ).toHaveAttribute('data-variant', 'default')
       expect(
-        within(paths).getByRole('link', { name: 'Download workflow' })
-      ).toHaveAttribute('data-variant', 'outline')
+        within(paths).getByRole('link', { name: /Try in Cloud/ })
+      ).toHaveAttribute('data-variant', 'ghost')
       expect(screen.queryByTestId('workflow-playground')).toBeNull()
       expect(screen.getByTestId('workflow-inside')).toBeTruthy()
       expect(screen.queryByTestId('workflow-actions')).toBeNull()
