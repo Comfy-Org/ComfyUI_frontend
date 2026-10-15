@@ -1,13 +1,11 @@
 <script setup lang="ts">
-import { ArrowUpRight, KeyRound } from '@lucide/vue'
+import { ArrowUpRight } from '@lucide/vue'
 import { computed, ref, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import Button from '@/components/ui/button/Button.vue'
 import Card from '@/components/ui/card/Card.vue'
 import CopyTextButton from '@/components/ui/copy-text-button/CopyTextButton.vue'
-import CopyableField from '@/components/ui/copyable-field/CopyableField.vue'
 import { apiKeysLink, externalLinks } from '@/config/routes'
 import type { FileValue, FormValues } from '@/config/workshop-playground'
 import { schemaForModel } from '@/config/workshop-playground'
@@ -16,7 +14,6 @@ import { workshopExampleFile } from '@/config/workshop-example-file'
 import { shouldRehostWorkshopUrl } from '@/config/workshop-url-input'
 import type { SnippetFile, SnippetLanguage } from '@/config/models-snippets'
 import {
-  MODEL_SDK_INSTALL,
   SNIPPET_LANGUAGES,
   buildSnippet,
   hasOmittedCurlFiles
@@ -30,8 +27,8 @@ import type { Locale } from '@/i18n/translations'
 import { useTablist } from '@/composables/useTablist'
 import { translationsFor } from '@/i18n/translations'
 import type { CodeLang } from '@/lib/highlight'
-import ApiStep from './ApiStep.vue'
 import HighlightedCode from './HighlightedCode.vue'
+import ModelApiSteps from './ModelApiSteps.vue'
 
 const {
   contract,
@@ -244,59 +241,12 @@ const endpoint = computed(() =>
     </div>
 
     <div class="flex flex-col gap-8 lg:gap-6">
-      <ol class="flex flex-col gap-6">
-        <ApiStep
-          :step="1"
-          :title="t('hubPages.workflow.getApiKey')"
-          :body="t('workshop.workflow.apiStepKeyBody')"
-          current
-        >
-          <Button
-            as="a"
-            :href="apiKeyHref"
-            target="_blank"
-            rel="noopener noreferrer"
-            variant="secondaryOutline"
-            class="px-5"
-            data-testid="api-get-key"
-            @click="emit('getKey')"
-          >
-            <template #prepend>
-              <KeyRound class="size-4" aria-hidden="true" />
-            </template>
-            {{ t('hubPages.workflow.getApiKey') }}
-            <span class="sr-only">{{
-              t('workshop.workflow.opensInNewTab')
-            }}</span>
-          </Button>
-        </ApiStep>
-        <ApiStep
-          :step="2"
-          :title="t('workshop.workflow.apiStepSdk')"
-          :body="t('workshop.workflow.apiStepSdkBody')"
-        >
-          <CopyableField
-            :value="MODEL_SDK_INSTALL"
-            :copy-label="t('workshop.workflow.apiCopyInstall')"
-            :copied-label="t('workshop.api.copied')"
-            class="h-10 w-full py-0 lg:w-80"
-          />
-        </ApiStep>
-        <ApiStep
-          :step="3"
-          :title="t('workshop.workflow.apiStepRun')"
-          :body="t('workshop.api.stepRunBody')"
-        >
-          <CopyableField
-            v-if="endpoint"
-            :value="endpoint"
-            :copy-label="t('workshop.api.copyEndpoint')"
-            :copied-label="t('workshop.api.copied')"
-            class="h-10 w-full py-0 lg:w-80"
-            data-testid="api-endpoint"
-          />
-        </ApiStep>
-      </ol>
+      <ModelApiSteps
+        :api-key-href="apiKeyHref"
+        :endpoint="endpoint"
+        :locale="locale"
+        @get-key="emit('getKey')"
+      />
 
       <div class="flex min-w-0 flex-col gap-4">
         <div
