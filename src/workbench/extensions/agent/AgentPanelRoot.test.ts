@@ -276,7 +276,10 @@ vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'), {
 
 import type { AgentMessages, TurnId } from './schemas/agentApiSchema'
 import { toTurnId, zAgentWsEvent } from './schemas/agentApiSchema'
-import { MAX_ATTACHMENT_BYTES } from './composables/agent/useAttachment'
+import {
+  MAX_ATTACHMENT_BYTES,
+  MAX_TURN_ATTACHMENTS
+} from './composables/agent/useAttachment'
 import { useBillingIdentity } from './composables/useBillingIdentity'
 import type { AgentChatEvent } from './services/agent/agentEventTransport'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
@@ -2416,6 +2419,10 @@ function dispatchDrag(
 
 const mp4Header = '\0\0\0\x18ftyp'
 
+function unsupportedTypeMessage(name: string): string {
+  return i18n.global.t('agent.attachmentUnsupportedType', { name })
+}
+
 function fileOfSize(name: string, size: number, type: string): File {
   const file = new File([mp4Header], name, { type })
   Object.defineProperty(file, 'size', { value: size })
@@ -3324,6 +3331,52 @@ describe('AgentPanelRoot attach flow', () => {
     expect(telemetry.trackAgentAttachButtonClicked).not.toHaveBeenCalled()
   })
 
+  it.for(['picker', 'drop', 'paste'] as const)(
+    'stages a refused type from the %s as an invalid chip and blocks Send',
+    async (path) => {
+      const uploaded = stubUploadFetch()
+      renderWithSelectedTarget()
+      await nextTick()
+      const user = userEvent.setup({ applyAccept: false })
+      const doc = new File(['x'], 'doc.pdf', { type: 'application/pdf' })
+      const store = useAgentComposerStore()
+      store.setText('Keep this draft')
+      const target = screen.getByRole('textbox')
+
+      if (path === 'picker') {
+        await openAddMenu()
+        await user.click(
+          await screen.findByRole('menuitem', {
+            name: i18n.global.t('agent.attachFiles')
+          })
+        )
+        await user.upload(
+          screen.getByTestId<HTMLInputElement>('agent-file-input'),
+          doc
+        )
+      }
+      if (path === 'drop') dispatchDrag(target, 'drop', { files: [doc] })
+      if (path === 'paste') {
+        const clipboard = new DataTransfer()
+        clipboard.items.add(doc)
+        await user.click(target)
+        await user.paste(clipboard)
+      }
+
+      expect(
+        await screen.findByRole('status', {
+          name: unsupportedTypeMessage('doc.pdf')
+        })
+      ).toBeVisible()
+      expect(
+        screen.getByRole('button', { name: i18n.global.t('agent.send') })
+      ).toHaveAttribute('aria-disabled', 'true')
+      expect(store.draft).toBe('Keep this draft')
+      expect(uploaded).toEqual([])
+      expect(useToast().toasts).toEqual([])
+    }
+  )
+
   it('refuses a text file renamed to mp4 from the picker', async () => {
     const uploaded = stubUploadFetch()
     renderWithSelectedTarget()
@@ -3957,6 +4010,39 @@ describe('AgentPanelRoot attach flow', () => {
     )
   })
 
+  it('uses the fetched asset filename when its display label has no type', async () => {
+    const uploads: File[] = []
+    vi.mocked(fetch).mockImplementation(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input)
+        if (url.includes('/api/view'))
+          return new Response(new Blob(['asset'], { type: 'image/png' }))
+        if (url.endsWith('/api/upload/image')) {
+          if (!(init?.body instanceof FormData))
+            throw new Error('Expected upload form data')
+          const image = init.body.get('image')
+          if (!(image instanceof File)) throw new Error('Expected upload file')
+          uploads.push(image)
+          return json(200, { name: 'uploaded_gen.png' })
+        }
+        return json(200, agentThreadList())
+      }
+    )
+    renderWithSelectedTarget()
+    await nextTick()
+
+    dispatchDrag(screen.getByRole('textbox'), 'drop', {
+      types: ['application/x-comfy-asset-info', 'text/uri-list'],
+      getData: (type: string) =>
+        type === 'application/x-comfy-asset-info'
+          ? JSON.stringify({ display_name: 'My renamed asset', type: 'input' })
+          : 'http://localhost/api/view?filename=gen.png'
+    })
+
+    await vi.waitFor(() => expect(uploads).toHaveLength(1))
+    expect(uploads[0].name).toBe('gen.png')
+  })
+
   it('does not warn after closing the panel during a deferred asset fetch', async () => {
     vi.mocked(fetch).mockImplementation((input) => {
       const url = String(input)
@@ -3997,9 +4083,271 @@ describe('AgentPanelRoot attach flow', () => {
     }
   })
 
-  it('attaches dropped assets and leaves other files to the graph loader', async () => {
-    // The graph loader only opens a dropped workflow while the drop is
-    // unclaimed, so the panel must not claim files it cannot attach.
+  it('aborts a timed-out asset fetch and reports the retrieval failure', async () => {
+    let assetSignal: AbortSignal | undefined
+    vi.mocked(fetch).mockImplementation((input, init) => {
+      const url = String(input)
+      if (url.includes('/api/view')) {
+        assetSignal = init?.signal ?? undefined
+        return new Promise(() => {})
+      }
+      if (url.includes('/assets'))
+        return Promise.resolve(
+          json(200, { assets: [], total: 0, has_more: false })
+        )
+      if (url.includes('/workflows'))
+        return Promise.resolve(
+          json(200, { data: [], total: 0, has_more: false })
+        )
+      return Promise.resolve(json(200, agentThreadList()))
+    })
+    renderWithSelectedTarget()
+    await nextTick()
+    vi.useFakeTimers()
+    try {
+      dispatchDrag(screen.getByRole('textbox'), 'drop', {
+        types: ['application/x-comfy-asset-info', 'text/uri-list'],
+        getData: (type: string) =>
+          type === 'application/x-comfy-asset-info'
+            ? JSON.stringify({ filename: 'gen.png', type: 'input' })
+            : 'http://localhost/api/view?filename=gen.png'
+      })
+      await nextTick()
+      await vi.advanceTimersByTimeAsync(60_000)
+
+      expect(assetSignal?.aborted).toBe(true)
+      expect(
+        useToast().toasts.some(({ title }) =>
+          title.includes('gen.png could not be retrieved')
+        )
+      ).toBe(true)
+      expect(
+        useToast().toasts.some(({ title }) =>
+          title.includes('could not be uploaded')
+        )
+      ).toBe(false)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('stages a rejected asset card as an invalid chip without fetching or uploading it', async () => {
+    const uploaded = stubUploadFetch()
+    renderWithSelectedTarget()
+    await nextTick()
+    const store = useAgentComposerStore()
+
+    dispatchDrag(screen.getByRole('textbox'), 'drop', {
+      types: ['application/x-comfy-asset-info', 'text/uri-list'],
+      getData: (type: string) =>
+        type === 'application/x-comfy-asset-info'
+          ? JSON.stringify({
+              filename: 'scene.usdz',
+              type: 'input',
+              attachment_ref: 'stored_scene.usdz',
+              media_kind: '3D'
+            })
+          : 'http://localhost/api/view?filename=stored_scene.usdz'
+    })
+
+    expect(
+      await screen.findByRole('status', {
+        name: unsupportedTypeMessage('scene.usdz')
+      })
+    ).toBeVisible()
+    expect(store.attachments).toEqual([
+      expect.objectContaining({
+        name: 'scene.usdz',
+        ref: '',
+        validationError: 'unsupported-type'
+      })
+    ])
+    expect(
+      vi
+        .mocked(fetch)
+        .mock.calls.some(([input]) => String(input).includes('/api/view'))
+    ).toBe(false)
+    expect(uploaded).toEqual([])
+    expect(useToast().toasts).toEqual([])
+  })
+
+  it('preserves an opaque asset ref instead of uploading it', async () => {
+    const uploads: File[] = []
+    vi.mocked(fetch).mockImplementation(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input)
+        if (url.includes('/api/view'))
+          return new Response(new Blob(['x'], { type: 'image/png' }))
+        if (url.endsWith('/api/upload/image')) {
+          if (init?.body instanceof FormData) {
+            const image = init.body.get('image')
+            if (image instanceof File) uploads.push(image)
+          }
+          return json(200, { name: 'uploaded.png' })
+        }
+        return json(200, agentThreadList())
+      }
+    )
+    renderWithSelectedTarget()
+    await nextTick()
+
+    dispatchDrag(screen.getByRole('textbox'), 'drop', {
+      types: ['application/x-comfy-asset-info', 'text/uri-list'],
+      getData: (type: string) =>
+        type === 'application/x-comfy-asset-info'
+          ? JSON.stringify({
+              filename: 'photo.png',
+              type: 'input',
+              attachment_ref: 'blake3:abcdef0123456789',
+              media_kind: 'image'
+            })
+          : 'http://localhost/api/view?filename=real.png'
+    })
+
+    await vi.waitFor(() =>
+      expect(useAgentComposerStore().attachments).toEqual([
+        expect.objectContaining({
+          name: 'photo.png',
+          ref: 'blake3:abcdef0123456789'
+        })
+      ])
+    )
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    expect(uploads).toHaveLength(0)
+    expect(useToast().toasts).toEqual([])
+  })
+
+  it('stages an opaque asset card with a rejected label as an invalid chip', async () => {
+    stubUploadFetch()
+    renderWithSelectedTarget()
+    await nextTick()
+
+    dispatchDrag(screen.getByRole('textbox'), 'drop', {
+      types: ['application/x-comfy-asset-info'],
+      getData: () =>
+        JSON.stringify({
+          filename: 'scene.usdz',
+          type: 'input',
+          attachment_ref: 'blake3:abcdef0123456789',
+          media_kind: '3D'
+        })
+    })
+
+    expect(
+      await screen.findByRole('status', {
+        name: unsupportedTypeMessage('scene.usdz')
+      })
+    ).toBeVisible()
+    expect(useToast().toasts).toEqual([])
+  })
+
+  it('keeps a fetched asset of an unaccepted type as an invalid chip under its stored name', async () => {
+    const uploads: File[] = []
+    vi.mocked(fetch).mockImplementation(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input)
+        if (url.includes('/api/view'))
+          return new Response(new Blob(['%PDF'], { type: 'application/pdf' }))
+        if (url.endsWith('/api/upload/image')) {
+          if (init?.body instanceof FormData) {
+            const image = init.body.get('image')
+            if (image instanceof File) uploads.push(image)
+          }
+          return json(200, { name: 'uploaded.pdf' })
+        }
+        return json(200, agentThreadList())
+      }
+    )
+    renderWithSelectedTarget()
+    await nextTick()
+
+    dispatchDrag(screen.getByRole('textbox'), 'drop', {
+      types: ['application/x-comfy-asset-info', 'text/uri-list'],
+      getData: (type: string) =>
+        type === 'application/x-comfy-asset-info'
+          ? JSON.stringify({
+              filename: 'My scan',
+              type: 'input'
+            })
+          : 'http://localhost/api/view?filename=scan.pdf'
+    })
+
+    expect(
+      await screen.findByRole('status', {
+        name: unsupportedTypeMessage('scan.pdf')
+      })
+    ).toBeVisible()
+    expect(uploads).toEqual([])
+    expect(useToast().toasts).toEqual([])
+  })
+
+  it('refuses an asset card once the turn is already full', async () => {
+    stubUploadFetch()
+    renderWithSelectedTarget()
+    await nextTick()
+
+    const card = (index: number) => ({
+      types: ['application/x-comfy-asset-info'],
+      getData: () =>
+        JSON.stringify({
+          filename: `photo${index}.png`,
+          type: 'input',
+          attachment_ref: `stored_photo${index}.png`,
+          media_kind: 'image'
+        })
+    })
+    const target = screen.getByRole('textbox')
+    for (let index = 0; index < MAX_TURN_ATTACHMENTS; index++) {
+      dispatchDrag(target, 'drop', card(index))
+    }
+    await vi.waitFor(() =>
+      expect(
+        within(screen.getByTestId('composer-asset-section')).getAllByTestId(
+          'agent-attachment-chip'
+        )
+      ).toHaveLength(MAX_TURN_ATTACHMENTS)
+    )
+
+    dispatchDrag(target, 'drop', card(MAX_TURN_ATTACHMENTS))
+
+    await vi.waitFor(() =>
+      expect(useToast().toasts.map(({ title }) => title)).toContain(
+        'Only 25 files can be attached to one message'
+      )
+    )
+    expect(
+      within(screen.getByTestId('composer-asset-section')).getAllByTestId(
+        'agent-attachment-chip'
+      )
+    ).toHaveLength(MAX_TURN_ATTACHMENTS)
+  })
+
+  it('judges an asset by its stored filename rather than its display label', async () => {
+    stubUploadFetch()
+    renderWithSelectedTarget()
+    await nextTick()
+
+    dispatchDrag(screen.getByRole('textbox'), 'drop', {
+      types: ['application/x-comfy-asset-info'],
+      getData: () =>
+        JSON.stringify({
+          filename: 'renamed.usdz',
+          type: 'input',
+          attachment_ref: 'stored.png',
+          media_kind: 'image'
+        })
+    })
+
+    expect(
+      within(await screen.findByTestId('composer-asset-section')).getByRole(
+        'group',
+        { name: 'renamed.usdz' }
+      )
+    ).toBeInTheDocument()
+    expect(useToast().toasts).toEqual([])
+  })
+
+  it('attaches a dropped workflow json to the chat instead of the graph loader', async () => {
     stubUploadFetch()
     renderWithSelectedTarget()
     await nextTick()
@@ -4010,17 +4358,11 @@ describe('AgentPanelRoot attach flow', () => {
     const workflow = new File(['{}'], 'flow.json', {
       type: 'application/json'
     })
-    expect(dispatchDrag(target, 'drop', { files: [workflow] })).toBe(false)
-    expect(
-      screen.queryByRole('group', { name: 'flow.json' })
-    ).not.toBeInTheDocument()
-
-    const asset = new File(['x'], 'cat.png', { type: 'image/png' })
-    expect(dispatchDrag(target, 'drop', { files: [asset] })).toBe(true)
+    expect(dispatchDrag(target, 'drop', { files: [workflow] })).toBe(true)
     expect(
       within(await screen.findByTestId('composer-asset-section')).getByRole(
         'group',
-        { name: 'cat.png' }
+        { name: 'flow.json' }
       )
     ).toBeInTheDocument()
   })
@@ -4074,17 +4416,13 @@ describe('AgentPanelRoot attach flow', () => {
     expect(store.prompt).toEqual({ text: 'Keep this draft', references: [] })
   })
 
-  it('attaches only the assets out of a mixed drop', async () => {
+  it('attaches the accepted files out of a mixed drop and keeps the rest as invalid chips', async () => {
     const uploaded = stubUploadFetch()
     renderWithSelectedTarget()
     await nextTick()
 
-    // The non-attachable file comes first: addFiles uploads sequentially, so a
-    // regression that forwards the whole drop would upload flow.json before
-    // cat.png and the settled assertion below could never latch a lucky
-    // intermediate state.
     const files = [
-      new File(['{}'], 'flow.json', { type: 'application/json' }),
+      new File(['x'], 'doc.pdf', { type: 'application/pdf' }),
       new File(['x'], 'cat.png', { type: 'image/png' })
     ]
     dispatchDrag(screen.getByRole('textbox'), 'drop', { files })
@@ -4096,11 +4434,12 @@ describe('AgentPanelRoot attach flow', () => {
       )
     ).toBeInTheDocument()
     await vi.waitFor(() => expect(uploaded).toEqual(['cat.png']))
+    expect(
+      screen.getByRole('status', { name: unsupportedTypeMessage('doc.pdf') })
+    ).toBeVisible()
+    expect(useToast().toasts).toEqual([])
   })
 
-  // Falsifiers for the committed-drop gates: an implementation that emits
-  // before the deferred fetch or upload settles, or ignores their results,
-  // fails these.
   it.for(['failed', 'cancelled'] as const)(
     'emits no drop telemetry for a %s deferred asset',
     async (outcome) => {

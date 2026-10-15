@@ -2,7 +2,9 @@ import { describe, expect, it, vi } from 'vitest'
 
 import {
   AGENT_ATTACH_ACCEPT,
-  attachableClipboardFiles,
+  agentAttachCapability,
+  agentAttachRefVerdict,
+  agentAttachVerdict,
   isAgentAttachable,
   isValidAgentAttachment
 } from './attachableFiles'
@@ -13,12 +15,6 @@ function fileNamed(name: string): File {
   return new File(['x'], name, { type: '' })
 }
 
-function clipboardOf(...files: File[]): DataTransfer {
-  const clipboard = new DataTransfer()
-  for (const file of files) clipboard.items.add(file)
-  return clipboard
-}
-
 describe('isAgentAttachable', () => {
   it.for([
     'clip.mp4',
@@ -26,75 +22,164 @@ describe('isAgentAttachable', () => {
     'movie.mov',
     'song.mp3',
     'sound.wav',
-    'mesh.glb',
-    'notes.md',
-    'prompt.txt'
+    'picture.webp',
+    'music.flac'
   ])('accepts %s regardless of MIME type', (name) => {
     expect(isAgentAttachable(fileNamed(name))).toBe(true)
   })
 
-  it('accepts every image and audio kind, not only the named extensions', () => {
-    expect(isAgentAttachable(fileNamed('picture.webp'))).toBe(true)
-    expect(isAgentAttachable(fileNamed('music.flac'))).toBe(true)
+  it.for([
+    'notes.md',
+    'readme.markdown',
+    'prompt.txt',
+    'workflow.json',
+    'table.csv',
+    'config.yaml',
+    'config.yml',
+    'feed.xml',
+    'server.log',
+    'mesh.glb',
+    'mesh.obj',
+    'mesh.fbx',
+    'mesh.gltf',
+    'mesh.stl',
+    'cloud.ply',
+    'cloud.spz',
+    'cloud.splat',
+    'cloud.ksplat'
+  ])('accepts %s', (name) => {
+    expect(isAgentAttachable(fileNamed(name))).toBe(true)
   })
 
-  it('rejects unsupported formats', () => {
-    expect(isAgentAttachable(fileNamed('archive.zip'))).toBe(false)
-    expect(isAgentAttachable(fileNamed('binary.exe'))).toBe(false)
+  it.for([
+    'page.html',
+    'bundle.js',
+    'style.css',
+    'doc.pdf',
+    'clip.wmv',
+    'clip.flv',
+    'scene.usdz',
+    'env.hdr',
+    'track.aac',
+    'track.aiff',
+    'track.wma',
+    'plate.exr'
+  ])('rejects %s', (name) => {
+    expect(isAgentAttachable(fileNamed(name))).toBe(false)
+  })
+
+  it('rejects a file with no extension to judge', () => {
     expect(isAgentAttachable(fileNamed('noextension'))).toBe(false)
   })
 
-  it('names every approved extension in the picker accept list', () => {
-    const accepted = AGENT_ATTACH_ACCEPT.split(',')
-
-    expect(new Set(accepted)).toEqual(
-      new Set([
-        'image/*',
-        'video/*',
-        'audio/*',
-        '.mp4',
-        '.m4a',
-        '.mov',
-        '.mp3',
-        '.wav',
-        '.glb',
-        '.md',
-        '.txt',
-        '.json',
-        'application/json'
-      ])
-    )
-    expect(accepted).toHaveLength(13)
-  })
-
-  it('rejects .json despite it being in the picker accept list, so a dropped workflow file still falls through to the graph loader', () => {
-    expect(isAgentAttachable(fileNamed('workflow.json'))).toBe(false)
+  it('judges the extension case-insensitively', () => {
+    expect(isAgentAttachable(fileNamed('SHOUTY.PNG'))).toBe(true)
+    expect(isAgentAttachable(fileNamed('NOTES.MD'))).toBe(true)
   })
 })
 
-describe('attachableClipboardFiles', () => {
-  /* Chromium hands a pasted screenshot over as image.png; the name, not the
-     MIME type, is what the attachable check reads. */
-  it('takes the screenshot a clipboard carries', () => {
-    const screenshot = new File(['x'], 'image.png', { type: 'image/png' })
-    expect(attachableClipboardFiles(clipboardOf(screenshot))).toEqual([
-      screenshot
-    ])
+describe('agentAttachCapability', () => {
+  it.for([
+    ['photo.png', 'view'],
+    ['photo.jpg', 'view'],
+    ['photo.jpeg', 'view'],
+    ['photo.gif', 'view'],
+    ['photo.webp', 'view'],
+    ['photo.bmp', 'view'],
+    ['photo.tif', 'view'],
+    ['photo.tiff', 'view'],
+    ['photo.heic', 'view'],
+    ['photo.heif', 'view'],
+    ['clip.mp4', 'probe'],
+    ['clip.webm', 'probe'],
+    ['clip.mov', 'probe'],
+    ['clip.m4v', 'probe'],
+    ['clip.avi', 'probe'],
+    ['clip.mkv', 'probe'],
+    ['song.mp3', 'probe'],
+    ['song.wav', 'probe'],
+    ['song.ogg', 'probe'],
+    ['song.opus', 'probe'],
+    ['song.flac', 'probe'],
+    ['song.m4a', 'probe'],
+    ['notes.md', 'read'],
+    ['notes.markdown', 'read'],
+    ['notes.txt', 'read'],
+    ['workflow.json', 'read'],
+    ['data.csv', 'read'],
+    ['conf.yaml', 'read'],
+    ['conf.yml', 'read'],
+    ['feed.xml', 'read'],
+    ['server.log', 'read'],
+    ['logo.svg', 'read'],
+    ['mesh.glb', 'reference'],
+    ['mesh.obj', 'reference'],
+    ['mesh.fbx', 'reference'],
+    ['mesh.gltf', 'reference'],
+    ['mesh.stl', 'reference'],
+    ['cloud.ply', 'reference'],
+    ['cloud.spz', 'reference'],
+    ['cloud.splat', 'reference'],
+    ['cloud.ksplat', 'reference'],
+    ['photo.avif', 'retain']
+  ] as const)('reports %s as %s', ([name, capability]) => {
+    expect(agentAttachCapability(name)).toBe(capability)
   })
 
-  it('drops clipboard files the composer cannot attach', () => {
+  it('reports nothing for a type outside the accepted list', () => {
+    expect(agentAttachCapability('doc.pdf')).toBeUndefined()
+  })
+})
+
+describe('agentAttachVerdict', () => {
+  it.for([
+    ['photo.png', 'accepted'],
+    ['notes.md', 'accepted'],
+    ['scene.usdz', 'rejected'],
+    ['doc.pdf', 'rejected'],
+    ['blake3:abcdef0123456789', 'unknown'],
+    ['abcdef0123456789', 'unknown'],
+    ['My renamed asset', 'unknown'],
+    ['render v1.2', 'unknown'],
+    ['Empty Ace Step 1.0', 'unknown']
+  ] as const)('reports %s as %s', ([filename, verdict]) => {
+    expect(agentAttachVerdict(filename)).toBe(verdict)
+  })
+})
+
+describe('agentAttachRefVerdict', () => {
+  it.for([
+    ['stored.png', 'accepted'],
+    ['a1b2c3.md', 'accepted'],
+    ['stored.v2', 'rejected'],
+    ['stored.123', 'rejected'],
+    ['stored.verylongextension', 'rejected'],
+    ['stored_scene.usdz', 'rejected'],
+    ['blake3:abcdef0123456789', 'unknown'],
+    ['abcdef0123456789', 'unknown'],
+    ['my.folder/image', 'unknown'],
+    ['my.folder\\image', 'unknown']
+  ] as const)('reports authoritative ref %s as %s', ([ref, verdict]) => {
+    expect(agentAttachRefVerdict(ref)).toBe(verdict)
+  })
+})
+
+describe('AGENT_ATTACH_ACCEPT', () => {
+  it('carries no MIME wildcard', () => {
+    expect(AGENT_ATTACH_ACCEPT).not.toContain('/*')
+  })
+
+  it('offers exactly what the composer will accept', () => {
+    const offered = AGENT_ATTACH_ACCEPT.split(',')
+    expect(offered).toContain('.json')
+    expect(offered).toContain('.md')
+    expect(offered).toContain('.glb')
+    expect(offered).not.toContain('.usdz')
     expect(
-      attachableClipboardFiles(
-        clipboardOf(
-          new File(['x'], 'archive.zip', { type: 'application/zip' }),
-          new File(['x'], 'workflow.json', { type: 'application/json' })
-        )
+      offered.filter(
+        (extension) => !isAgentAttachable(fileNamed(`sample${extension}`))
       )
     ).toEqual([])
-  })
-
-  it('is empty for a text-only clipboard, leaving the paste to the editor', () => {
-    expect(attachableClipboardFiles(clipboardOf())).toEqual([])
   })
 })
 

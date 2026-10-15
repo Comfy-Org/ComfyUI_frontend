@@ -24,6 +24,7 @@ import {
 import { api } from '@/scripts/api'
 import type { AuthCredential, AuthScheme } from '@/types/authTypes'
 
+import { refusedAttachmentsMessage } from '../../utils/attachmentMessages'
 import { withAgentAuth } from './agentAuth'
 
 import {
@@ -35,6 +36,7 @@ import {
   zAgentRunMode,
   zAgentThreads,
   zAgentTurnAccepted,
+  zAttachmentRejection,
   zCloudWorkflowIndex
 } from '../../schemas/agentApiSchema'
 import type {
@@ -265,6 +267,14 @@ function parseErrorBody(text: string): unknown {
 }
 
 function getErrorMessage(body: unknown, fallback: string): string {
+  const refused = zAttachmentRejection.safeParse(body)
+  if (refused.success) {
+    return refusedAttachmentsMessage(
+      refused.data.rejected,
+      refused.data.rejected_count
+    )
+  }
+
   const plain = zAgentError.safeParse(body)
   if (plain.success) {
     return typeof plain.data.error === 'string'

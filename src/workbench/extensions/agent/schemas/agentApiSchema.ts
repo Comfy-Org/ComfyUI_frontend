@@ -1,6 +1,7 @@
 import {
   zAgentAdmissionError,
   zAgentAnswerAccepted,
+  zAgentAttachmentRejected,
   zAgentCancelAccepted,
   zAgentError as zGeneratedAgentError,
   zAgentIdentity as zGeneratedAgentIdentity,
@@ -206,6 +207,12 @@ export type CloudWorkflowEntry = z.infer<
 >['data'][number]
 
 export const zAgentError = z.union([zGeneratedAgentError, zAgentAdmissionError])
+
+export const zAttachmentRejection = zAgentAttachmentRejected.pick({
+  rejected: true,
+  rejected_count: true,
+  type: true
+})
 
 /**
  * The 403 body the agent service returns when it will not serve the turn's
