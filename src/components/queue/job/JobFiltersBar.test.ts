@@ -54,8 +54,7 @@ describe('JobFiltersBar', () => {
         onShowAssets: showAssetsSpy
       },
       global: {
-        plugins: [i18n],
-        directives: { tooltip: () => undefined }
+        plugins: [i18n]
       }
     })
 
@@ -74,8 +73,7 @@ describe('JobFiltersBar', () => {
         hideShowAssetsAction: true
       },
       global: {
-        plugins: [i18n],
-        directives: { tooltip: () => undefined }
+        plugins: [i18n]
       }
     })
 

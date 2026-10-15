@@ -1,0 +1,49 @@
+{
+  "id": "node-badges",
+  "capability": "Node badges",
+  "description": "Node badge bootstrap and API-node pricing: installing badge derivation as the legacy canvas row source, redrawing when badge settings or pricing change, evaluating per-node API pricing from node definitions and widget values, and parity between legacy canvas and Vue node badge rendering. The badge system under src/systems, badge drawing in LiteGraph, and Vue badge partitioning stay with their owners.",
+  "modules": [
+    {
+      "path": "src/composables/node/badgeRendererParity.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/node/useNodeBadge.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/node/useNodeBadge.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/node/useNodePricing.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/node/useNodePricing.ts",
+      "role": "application"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Badge bootstrap installs once and redraws on settings and pricing changes",
+      "checks": ["src/composables/node/useNodeBadge.test.ts"]
+    },
+    {
+      "name": "API node pricing evaluates price badges from widget values",
+      "checks": ["src/composables/node/useNodePricing.test.ts"]
+    },
+    {
+      "name": "Legacy canvas and Vue node badges render the same rows",
+      "checks": ["src/composables/node/badgeRendererParity.test.ts"]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
+  ],
+  "deepImports": "inventory"
+}

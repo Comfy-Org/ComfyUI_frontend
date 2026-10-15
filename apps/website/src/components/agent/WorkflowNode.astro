@@ -39,7 +39,11 @@ const portStyle = (port: Point) =>
 
 <div
   data-node={node.id}
-  class:list={['wf-node', nodeKindClasses[node.kind]]}
+  class:list={[
+    'wf-node',
+    nodeKindClasses[node.kind],
+    { 'wf-has-input': !!node.input }
+  ]}
   style={`left:${node.x / unit}cqw;top:${node.y / unit}cqw;width:${node.width / unit}cqw;height:${node.height / unit}cqw;--wf-animation:${motion.name}`}
 >
   <div class="wf-node-heading">

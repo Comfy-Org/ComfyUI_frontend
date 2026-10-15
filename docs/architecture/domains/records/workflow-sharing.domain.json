@@ -1,0 +1,147 @@
+{
+  "id": "workflow-sharing",
+  "capability": "Workflow sharing",
+  "description": "Sharing workflows by link and publishing them to ComfyHub: share and ComfyHub API schemas and services, the share dialog and copyable share URL, opening a shared workflow from a URL (including logged-out share attribution), and the ComfyHub profile gate and multi-step publish wizard. The workflow store, workflowService, assets store, auth, telemetry, and dialog infrastructure remain external.",
+  "modules": [
+    {
+      "path": "src/platform/workflow/sharing/types/**",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/workflow/sharing/schemas/**",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/workflow/sharing/constants/**",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/workflow/sharing/utils/normalizeTags.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/workflow/sharing/utils/normalizeTags.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/workflow/sharing/utils/shareAuthAttribution.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/workflow/sharing/utils/shareAuthAttribution.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/workflow/sharing/utils/validateFileSize.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/workflow/sharing/composables/lazyShareDialog.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/workflow/sharing/composables/useShareDialog.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/workflow/sharing/composables/useShareFlowContext.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/workflow/sharing/composables/useComfyHubPublishDialog.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/workflow/sharing/composables/useComfyHubProfileGate.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/workflow/sharing/composables/useComfyHubProfileGate.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/workflow/sharing/composables/useComfyHubPublishWizard.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/workflow/sharing/composables/useComfyHubPublishWizard.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/workflow/sharing/composables/useComfyHubPublishSubmission.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/workflow/sharing/composables/useComfyHubPublishSubmission.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/workflow/sharing/composables/useAssetSections.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/workflow/sharing/composables/useSliderFromMouse.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/workflow/sharing/services/**",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/workflow/sharing/components/**",
+      "role": "presentation"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Share and ComfyHub payloads are validated at the API boundary",
+      "checks": [
+        "src/platform/workflow/sharing/schemas/shareSchemas.test.ts",
+        "src/platform/workflow/sharing/services/workflowShareService.test.ts",
+        "src/platform/workflow/sharing/services/comfyHubService.test.ts"
+      ]
+    },
+    {
+      "name": "Opening a shared workflow URL validates the share id, preserves logged-out attribution, and confirms import",
+      "checks": [
+        "src/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader.test.ts",
+        "src/platform/workflow/sharing/utils/shareAuthAttribution.test.ts",
+        "src/platform/workflow/sharing/components/OpenSharedWorkflowDialogContent.test.ts"
+      ]
+    },
+    {
+      "name": "Share dialog publishes a link and warns about bundled assets",
+      "checks": [
+        "src/platform/workflow/sharing/components/ShareWorkflowDialogContent.test.ts",
+        "src/platform/workflow/sharing/components/ShareAssetWarningBox.test.ts"
+      ]
+    },
+    {
+      "name": "ComfyHub publishing gates on a profile and submits wizard state",
+      "checks": [
+        "src/platform/workflow/sharing/composables/useComfyHubProfileGate.test.ts",
+        "src/platform/workflow/sharing/composables/useComfyHubPublishWizard.test.ts",
+        "src/platform/workflow/sharing/composables/useComfyHubPublishSubmission.test.ts",
+        "src/platform/workflow/sharing/components/publish/ComfyHubPublishDialog.test.ts"
+      ]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Share URLs using the existing share query parameter keep opening the shared workflow.",
+    "Unclassified callers may import sharing internals during inventory; imports from classified domains remain subject to cross-domain rules.",
+    "Dialog launchers that load presentation and components that call share services directly remain visible as role-boundary debt; classification does not grant dependency exceptions."
+  ],
+  "deepImports": "inventory"
+}
