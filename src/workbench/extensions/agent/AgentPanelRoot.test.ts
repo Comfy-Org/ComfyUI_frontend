@@ -5424,8 +5424,9 @@ describe('AgentPanelRoot history', () => {
         expect(history.sessions.map(({ id }) => id)).toEqual(['th-new'])
       )
 
-      resolveStale(staleResponse())
-      await new Promise((resolve) => setTimeout(resolve))
+      const stale = staleResponse()
+      resolveStale(stale)
+      await vi.waitFor(() => expect(stale.bodyUsed).toBe(true))
 
       expect(history.sessions.map(({ id }) => id)).toEqual(['th-new'])
       expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
