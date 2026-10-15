@@ -25,6 +25,7 @@ import type {
   TagsOperationResult
 } from '@/platform/assets/schemas/assetSchema'
 import {
+  clearAll,
   useAssetsQuery,
   invalidateAll
 } from '@/platform/assets/composables/useAssetsQuery'
@@ -973,20 +974,14 @@ export const useAssetsStore = defineStore('assets', () => {
     invalidateAllCategories
   } = getModelState()
 
-  /**
-   * Drop every locally cached asset — outputs, inputs and the model inventory —
-   * so the previous account's data stops rendering after an in-session
-   * identity change, aborting the previous identity's requests. Assets API
-   * lists reload in place, so they are only reloaded when an account is
-   * signed in to load them for.
-   */
+  /** Drop the previous account's cached assets and abort its requests. */
   const reset = ({ signedIn = true }: { signedIn?: boolean } = {}) => {
     identityController.abort()
     identityController = new AbortController()
 
     rawInputAssets.value = []
     historyOutputs?.clear()
-    if (flags.assetsEnabled && signedIn) void invalidateAll()
+    if (flags.assetsEnabled) void (signedIn ? invalidateAll() : clearAll())
 
     invalidateAllCategories()
     assetService.invalidateModelBuckets()

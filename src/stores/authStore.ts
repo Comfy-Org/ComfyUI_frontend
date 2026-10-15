@@ -249,8 +249,6 @@ export const useAuthStore = defineStore('auth', () => {
     if (identityChanged) {
       clearOnboardingReplay(previousUserId)
       useTeamWorkspaceStore().resetForIdentityChange()
-      // The previous account's jobs and outputs are still rendered until they
-      // are dropped; nothing else refetches on an identity change.
       resetAccountScopedState({ signedIn: nextUserId !== null })
       invalidateRemoteConfig()
     }

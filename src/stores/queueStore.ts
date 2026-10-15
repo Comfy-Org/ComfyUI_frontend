@@ -427,11 +427,7 @@ export const useQueueStore = defineStore('queue', () => {
     await update()
   }
 
-  /**
-   * Drop every locally cached task so the previous account's queue and history
-   * stop rendering after an in-session identity change. Client state only —
-   * unlike clear(), nothing is deleted server-side.
-   */
+  /** Drop the previous account's tasks locally; nothing is deleted server-side. */
   const reset = () => {
     identityController.abort()
     identityController = new AbortController()

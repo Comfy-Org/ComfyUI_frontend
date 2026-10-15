@@ -1508,24 +1508,37 @@ describe('assetsStore - reset() on identity change', () => {
       )
     })
 
-    it('does not reload assets when no account is signed in', async () => {
-      vi.mocked(api.fetchApi).mockResolvedValue(
-        new Response(
-          JSON.stringify({ assets: [], total: 0, has_more: false }),
-          {
-            headers: { 'Content-Type': 'application/json' }
-          }
-        )
+    it('clears loaded assets without reloading when no account is signed in', async () => {
+      vi.mocked(api.fetchApi).mockImplementation(
+        async () =>
+          new Response(
+            JSON.stringify({
+              assets: [
+                fromPartial<AssetItem>({
+                  id: 'account-a-output',
+                  name: 'account-a.png',
+                  tags: ['output'],
+                  created_at: '2026-09-22T00:00:00Z',
+                  updated_at: '2026-09-22T00:00:00Z'
+                })
+              ],
+              total: 1,
+              has_more: false
+            }),
+            { headers: { 'Content-Type': 'application/json' } }
+          )
       )
       const store = useAssetsStore()
       await vi.waitFor(() =>
-        expect(toValue(store.outputAssets.isLoading)).toBe(false)
+        expect(toValue(store.outputAssets.items)).toHaveLength(1)
       )
       vi.mocked(api.fetchApi).mockClear()
 
       store.reset({ signedIn: false })
       await store.outputAssets.invalidate([])
 
+      expect(toValue(store.outputAssets.items)).toEqual([])
+      expect(toValue(store.inputAssets.items)).toEqual([])
       expect(api.fetchApi).not.toHaveBeenCalled()
     })
   })
