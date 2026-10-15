@@ -431,8 +431,8 @@ function disconnectOrphanedPromotion(
     if (link.origin_id === SUBGRAPH_INPUT_ID)
       disconnectOrphanedPromotion(host.graph, link.origin_slot, hosts)
   }
-  removeFloatingLinksFrom(graph, slot)
   graph.removeInput(input)
+  if (!graph.inputs.includes(input)) removeFloatingLinksFrom(graph, slot)
 }
 
 function removeFloatingLinksFrom(graph: Subgraph, slot: number) {
