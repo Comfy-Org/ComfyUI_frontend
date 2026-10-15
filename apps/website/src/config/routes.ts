@@ -54,6 +54,7 @@ const baseRoutes = {
   wan3: '/wan-3.0/',
   chatgptImage25: '/chatgpt-image-2.5/',
   qwenImage21: '/qwen-image-2.1/',
+  flux3ImageKlein: '/flux-3-image-klein/',
   nanoBanana: '/nano-banana/',
   brand: '/brand/',
   // The hub catalogue. `workshop` keeps its old name.

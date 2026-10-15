@@ -574,7 +574,7 @@
       "graphNote": "The node graph behind this deployment is read-only here. Open it on comfy.org or download the JSON to edit it in ComfyUI.",
       "openComfy": "Open on comfy.org",
       "download": "Download workflow JSON",
-      "downloadShort": "Download",
+      "downloadShort": "Download Workflow",
       "ratings": "Ratings & comments",
       "related": "Related workflows",
       "relatedAll": "Browse all",
@@ -5892,6 +5892,10 @@
       "sdk": "EXPLORE THE SDK",
       "platform": "DEVELOPER PLATFORM"
     },
+    "fdc": {
+      "heading": "Build your custom workflows with our Forward Deployed Creatives",
+      "cta": "LEARN MORE"
+    },
     "learning": {
       "heading": "Go inside the workflow.",
       "description": "Follow the cleanplate and sky-replacement walkthroughs when you’re ready to build."
@@ -5933,6 +5937,26 @@
       },
       "enterprise": "VIEW ENTERPRISE DETAILS",
       "licensing": "MINIMAX LICENSING"
+    }
+  },
+  "flux3Image": {
+    "meta": {
+      "title": "FLUX 3 Image Klein Launch {'|'} Comfy"
+    },
+    "breadcrumb": {
+      "updated": "Updated October 2026"
+    },
+    "hero": {
+      "title": "FLUX 3 Image Klein",
+      "description": "Black Forest Labs' newest open-weight model comes in two variants: standard and step-distilled turbo. Both generate and edit images. Create an image with standard, or iterate fast with turbo.",
+      "openSource": "Open Source",
+      "imageGeneration": "Image generation",
+      "imageEdit": "Image edit",
+      "primaryCta": "RUN FLUX 3 IMAGE KLEIN",
+      "secondaryCta": "READ DOCS"
+    },
+    "runOptions": {
+      "subtitle": "Build workflows in the browser, explore ComfyUI on your own hardware, or connect your creative pipeline through the API."
     }
   }
 }
