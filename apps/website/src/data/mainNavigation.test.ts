@@ -11,7 +11,8 @@ import { getMainNavigation } from './mainNavigation'
 const ALL_SECTIONS: HubSections = {
   workflows: true,
   apps: true,
-  reshoot: true
+  reshoot: true,
+  explore: true
 }
 
 function hubOf(navigation: NavItem[]): NavItem {
@@ -44,15 +45,25 @@ describe('getMainNavigation', () => {
 
   it.for([
     {
-      sections: { workflows: false, apps: false, reshoot: false },
+      sections: {
+        workflows: false,
+        apps: false,
+        reshoot: false,
+        explore: false
+      },
       headers: ['Models']
     },
     {
-      sections: { workflows: true, apps: false, reshoot: false },
+      sections: {
+        workflows: true,
+        apps: false,
+        reshoot: false,
+        explore: false
+      },
       headers: ['Models', 'Workflows']
     },
     {
-      sections: { workflows: false, apps: true, reshoot: true },
+      sections: { workflows: false, apps: true, reshoot: true, explore: false },
       headers: ['Models', 'Apps']
     },
     { sections: ALL_SECTIONS, headers: ['Models', 'Workflows', 'Apps'] }
@@ -345,4 +356,16 @@ describe('getMainNavigation', () => {
       expect(featured?.cta.href).toBe(href)
     }
   )
+})
+
+describe('the way into the Hub home', () => {
+  it('carries it only while the flag is open', () => {
+    const open = hubOf(getMainNavigation('en', ALL_SECTIONS))
+    const closed = hubOf(
+      getMainNavigation('en', { ...ALL_SECTIONS, explore: false })
+    )
+
+    expect(open.exploreLink?.href).toBe(getRoutes('en').hubExplore)
+    expect(closed.exploreLink).toBeUndefined()
+  })
 })

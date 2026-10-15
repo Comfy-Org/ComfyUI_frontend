@@ -3008,6 +3008,8 @@
     "hubApps": "应用",
     "hubAppsDescription": "基于 Comfy 构建的完整工具",
     "hubEditSelectedRegion": "编辑选定区域",
+    "hubExplore": "探索 Hub",
+    "hubExploreHint": "在浏览器中试用、通过 API 调用，或导入 ComfyUI",
     "hubGptImage2": "GPT Image 2",
     "hubImageToVideo": "图像转视频",
     "hubModels": "模型",
