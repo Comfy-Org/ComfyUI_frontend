@@ -53,13 +53,19 @@ export type WorkflowCollection = (typeof WORKFLOW_COLLECTIONS)[number]
 export const MOCK_TASK_KEYWORDS: Partial<
   Record<`${MockModality}:${MockTask}`, readonly string[]>
 > = {
-  'image:edit': ['inpaint', 'remove', 'relight', 'style transfer'],
-  'image:upscale': ['upscale', 'restore'],
+  'image:edit': [
+    'inpaint',
+    'remove',
+    'relight',
+    'style transfer',
+    'edit & clean up photos'
+  ],
+  'image:upscale': ['upscale & restore'],
   'image:control': ['ControlNet', 'depth', 'pose', 'tools'],
-  'video:edit': ['edit video'],
+  'video:edit': ['edit video', 'create & edit videos'],
   'video:motion-transfer': ['VFX', 'motion transfer'],
   'video:lip-sync': ['lip sync', 'avatars', 'talking heads'],
-  'video:upscale': ['upscale', 'restore'],
+  'video:upscale': ['upscale & restore'],
   'video:control': ['ControlNet', 'depth', 'pose', 'tools'],
   'audio:speech': ['voice', 'speech'],
   'audio:music': ['music', 'sound'],
@@ -75,7 +81,7 @@ export const COLLECTION_KEYWORDS: Record<
   characters: ['animate characters', 'swap faces', 'swap characters'],
   'game-assets': ['character sheet', 'sprite sheet', 'game assets'],
   product: [
-    'product',
+    'create product photos & ads',
     'fashion',
     'ads',
     'try-on',

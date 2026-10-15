@@ -10,17 +10,14 @@ import {
   WORKFLOW_COLLECTIONS,
   workflowCatalogueMockEntrySchema
 } from './workflow-catalogue-mock-data'
+import { phraseMatches } from './phrase-search'
 import type { ModalityTaxonomy } from './workflow-modality-tasks'
 
 export interface WorkflowCatalogueMock {
   readonly models: readonly WorkflowWorkshopModel[]
   readonly taxonomy: ModalityTaxonomy
-  /** Whether the search names the workflow's title or a keyword of its task or collections. */
+  /** Whether every word of the search appears in the workflow's title or in one keyword of its task or collections. */
   readonly matches: (model: WorkflowWorkshopModel, query: string) => boolean
-}
-
-function searchable(text: string): string {
-  return text.toLowerCase().replaceAll('-', ' ').trim()
 }
 
 function keywordsOf(entry: WorkflowCatalogueMockEntry): string[] {
@@ -28,7 +25,7 @@ function keywordsOf(entry: WorkflowCatalogueMockEntry): string[] {
     entry.title,
     ...(MOCK_TASK_KEYWORDS[`${entry.modality}:${entry.task}`] ?? []),
     ...entry.collections.flatMap((key) => COLLECTION_KEYWORDS[key])
-  ].map(searchable)
+  ]
 }
 
 function mockWorkflowModel(
@@ -67,13 +64,8 @@ function workflowCatalogueMock(
       collections: WORKFLOW_COLLECTIONS,
       collectionsOf: (model) => bySlug.get(model.slug)?.collections ?? []
     },
-    matches: (model, query) => {
-      const needle = searchable(query)
-      return (
-        needle !== '' &&
-        !!keywords.get(model.slug)?.some((word) => word.includes(needle))
-      )
-    }
+    matches: (model, query) =>
+      !!keywords.get(model.slug)?.some((phrase) => phraseMatches(phrase, query))
   }
 }
 

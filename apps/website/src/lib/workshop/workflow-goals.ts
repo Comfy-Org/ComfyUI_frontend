@@ -4,6 +4,7 @@ import type { Component } from 'vue'
 import type { WorkflowWorkshopModel } from '@/config/models-catalogue'
 import type { TranslationKey } from '@/i18n/translations'
 import type { SidebarChoice } from './sidebar-tab-classes'
+import { phraseMatches } from './phrase-search'
 import type { WorkflowSection } from './workflow-sections'
 
 export const WORKFLOW_TYPES = ['image', 'video', 'audio', '3d'] as const
@@ -90,16 +91,10 @@ export function workflowGoalRows(
   ].filter((row) => row.models.length > 0)
 }
 
-/** Whether a section's full name, in either language, contains the search. */
+/** Whether a section's full name, in either language, holds every word of the search. */
 export function matchesSectionName(
   model: WorkflowWorkshopModel,
   query: string
 ): boolean {
-  const needle = query.trim().toLowerCase()
-  return (
-    needle !== '' &&
-    (model.sectionNames ?? []).some((name) =>
-      name.toLowerCase().includes(needle)
-    )
-  )
+  return (model.sectionNames ?? []).some((name) => phraseMatches(name, query))
 }
