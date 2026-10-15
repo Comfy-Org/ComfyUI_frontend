@@ -1594,6 +1594,48 @@ describe('attachDocOpMinter', () => {
     expect(minted).toEqual([])
   })
 
+  it('reports an unresolved widget owner once per graph and node across flushes', async () => {
+    const staleGraph = new LGraph()
+    const otherGraph = new LGraph()
+    const { source: stale } = seedGraph(staleGraph)
+    const { source: other } = seedGraph(otherGraph)
+    const { source: active } = seedGraph(graph)
+    const sibling = new TestSource()
+    withGraphIntentSource('load', () => staleGraph.add(sibling))
+    expect(other.id).toBe(stale.id)
+
+    stale.widgets![0].value = 21
+    active.widgets![0].value = 31
+    await afterFlush()
+    stale.widgets![0].value = 22
+    other.widgets![0].value = 23
+    sibling.widgets![0].value = 24
+    await afterFlush()
+
+    expect(minted).toEqual([
+      expect.objectContaining({ node_id: active.id, value: 31 })
+    ])
+    expect(
+      vi.mocked(reportError).mock.calls.map(([, options]) => options)
+    ).toEqual([
+      {
+        surface: 'agent',
+        errorType: 'agent_crdt_widget_owner_unresolved',
+        context: { graphId: staleGraph.id, nodeId: stale.id }
+      },
+      {
+        surface: 'agent',
+        errorType: 'agent_crdt_widget_owner_unresolved',
+        context: { graphId: otherGraph.id, nodeId: other.id }
+      },
+      {
+        surface: 'agent',
+        errorType: 'agent_crdt_widget_owner_unresolved',
+        context: { graphId: staleGraph.id, nodeId: sibling.id }
+      }
+    ])
+  })
+
   it('mints a set_widget that names a subgraph owner with the subgraph-node path', async () => {
     const subgraph = createTestSubgraph({ rootGraph: graph })
     const host = createTestSubgraphNode(subgraph)

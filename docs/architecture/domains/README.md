@@ -78,3 +78,9 @@ suppressions of the layer rule (`eslint-disable` or `oxlint-disable` naming
 - `boundaries.json` differs from what the records generate.
 
 `sunset` is review metadata; the check does not fail when the date passes.
+
+`architecture:check` warns, without failing, about `src` code files no domain
+claims and module paths that match no files, so adding, moving, or deleting a
+file does not block a pull request. In GitHub Actions each warning is an
+annotation on the file to categorize or the record to update;
+`architecture:catalog` lists the full `unclassifiedFiles` backlog.

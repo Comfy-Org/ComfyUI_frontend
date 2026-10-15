@@ -2789,8 +2789,8 @@
       },
       "heroCta": "{name}を今すぐ試す",
       "heroSubtitle": "オープンソースの拡散チェックポイントからパートナーAPIまで、主要なあらゆるモデルに、すぐ実行できるコミュニティのワークフローテンプレートを用意しています。",
-      "heroTitleAfter": "",
-      "heroTitleBefore": "ComfyUIの{name}",
+      "heroTitleAfter": "の{name}",
+      "heroTitleBefore": "",
       "label": "モデル"
     },
     "llms": {
@@ -4586,7 +4586,11 @@
         "priceNoUnit": "一般的なコスト：{credits}クレジット。",
         "title": "{name} API & Playground - Comfy",
         "titleApi": "{name} API - Comfy",
-        "titleUnbranded": "{name} API & Playground"
+        "titleUnbranded": "{name} API & Playground",
+        "units": {
+          "image": "画像1枚",
+          "run": "実行1回"
+        }
       },
       "missingInputSchema": "このモデルの入力はまだ不明なため、実行したりコードから呼び出したりすることはできません。このページのその他の機能は引き続き利用できます。",
       "nodePriceDefaults": "公開料金とこのノードのデフォルト設定に基づいています。実際のお支払い額は選択した設定によって異なります。",

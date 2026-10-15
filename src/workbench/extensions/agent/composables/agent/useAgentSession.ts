@@ -1669,7 +1669,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
       }
     }
     trackMalformedStreamEvent(error, type, reportedTurnId, uiTreatment)
-    console.warn('[agent] dropping malformed agent event', error)
   }
 
   function handleMessageDone(
