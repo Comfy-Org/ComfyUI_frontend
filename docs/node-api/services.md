@@ -287,11 +287,34 @@ For example, `await comfy.system.monitor()` reads a validated snapshot and
 `await comfy.queue.interrupt()` interrupts execution. Queue status has the
 local `comfy.queue.pending()` snapshot and `onPendingChanged()` subscription.
 
-Model catalogues, image view/upload, and other shared operations require their
+Model listing uses `comfy.models.list(folder)`. Image view/upload and other
+shared operations require their
 published named capabilities. If the current declaration lacks the needed
 method, report an API gap with the intended behavior and bounds. Do not fetch
 `/userdata`, `/settings`, `/internal`, `/queue`, `/view`, `/upload`, or another
 pack's routes. Proposed methods are unavailable until implemented and published.
+
+### Model catalogues
+
+```js
+const names = await comfy.models.list('loras')
+```
+
+`models.list(folder)` returns distinct logical model names, including logical
+subfolder names. It exposes no filesystem locations or library path indexes.
+`ModelFolder` is closed: `checkpoints`, `clip`, `clip_vision`, `controlnet`,
+`diffusion_models`, `embeddings`, `loras`, `text_encoders`, `unet`,
+`upscale_models`, `vae`, `ipadapter`, and `vae_approx`. Unknown folders reject;
+a pack cannot supply a URL or extend that list by passing a string.
+
+The host selects the model-library route and falls back to the plain-ComfyUI
+catalogue only on HTTP 404. Other HTTP failures and malformed replies reject.
+At most 50,000 names of 1,024 characters are admitted, without control characters,
+absolute/drive paths or traversal. The secure broker shares concurrent requests,
+reuses results for two seconds and allows at most 20 listing starts per ten
+seconds per calling pack. These broker checks also apply when a frontend model
+service handles the request. Model listing does not grant model loading or other
+proposed model operations.
 
 ### Bundled files
 
