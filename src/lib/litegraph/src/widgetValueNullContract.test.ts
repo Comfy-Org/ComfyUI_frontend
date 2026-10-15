@@ -91,6 +91,16 @@ describe('widget value null contract', () => {
       expect(node.serialize().widgets_values).toEqual([null])
     })
 
+    it.for([Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY])(
+      'normalizes non-finite %s in both saved widget registers',
+      (value) => {
+        const { node } = makeGraphWithWidget(value)
+        const serialized = node.serialize()
+        expect(serialized.widgets_values).toEqual([null])
+        expect(serialized.widgets_values_named).toEqual({ prompt: null })
+      }
+    )
+
     it('still honours widget.serialize === false for a null value', () => {
       const { node } = makeGraphWithWidget(null)
       const dropped = node.addWidget('text', 'dropped', 'b', () => undefined)

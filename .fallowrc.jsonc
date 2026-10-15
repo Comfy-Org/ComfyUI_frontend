@@ -23,6 +23,7 @@
         "**/.storybook/{main,preview}.ts",
         "apps/website/src/scripts/**/*.ts",
         "packages/ingest-types/openapi-ts.config.ts",
+        "scripts/node-api/*.mjs",
         "scripts/**/*.{js,ts}"
       ],
       "entryPointRole": "support"
