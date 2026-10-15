@@ -476,6 +476,17 @@ function connectSearchBoxNodeTo(
   )
 }
 
+type DeselectAllOptions = {
+  keepSelected?: Positionable
+  notify?: boolean
+}
+
+function isDeselectAllOptions(
+  value: Positionable | DeselectAllOptions | undefined
+): value is DeselectAllOptions {
+  return value != null && !('boundingRect' in value)
+}
+
 /**
  * This class is in charge of rendering one graph inside a canvas. And provides all the interaction required.
  * Valid callbacks are: onNodeSelected, onNodeDeselected, onShowNodePanel, onNodeDblClicked
@@ -1092,6 +1103,17 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   onNodeMoved?: (node_dragged: LGraphNode | undefined) => void
   /** @deprecated Called with the deprecated {@link selected_nodes} when the selection changes. Replacement not yet impl. */
   onSelectionChange?: (selected: Dictionary<Positionable>) => void
+  private selectionNotificationDepth = 0
+
+  private withSelectionNotificationsSuppressed<T>(action: () => T): T {
+    this.selectionNotificationDepth++
+    try {
+      return action()
+    } finally {
+      this.selectionNotificationDepth--
+    }
+  }
+
   /** called when rendering a tooltip */
   onDrawLinkTooltip?: (
     ctx: CanvasRenderingContext2D,
@@ -2625,11 +2647,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             if (e.altKey) {
               pointer.onClick = (upEvent) => {
                 if (upEvent.altKey) {
-                  // Ensure deselected
-                  if (reroute.selected) {
-                    this.deselect(reroute)
-                    this.onSelectionChange?.(this.selected_nodes)
-                  }
+                  // Ensure deselected - deselect() reports the change itself.
+                  if (reroute.selected) this.deselect(reroute)
                   reroute.remove()
                 }
               }
@@ -3910,8 +3929,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       nodeId: node.id
     })
 
-    this.deselectAll()
-    this.select(node)
+    this.selectItems([node])
     this.isDragging = true
 
     this._startNodeAutoPan()
@@ -4641,27 +4659,27 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const modifySelection =
       eitherModifier || this.multi_select || this.selectOnly
 
-    if (!item) {
-      if (!eitherModifier || this.multi_select) this.deselectAll()
-    } else if (!isCanvasItemSelected(this, item)) {
-      if (!modifySelection) this.deselectAll(item)
-      this.select(item)
-    } else if (modifySelection && !sticky) {
-      if (!ownsSelectable(this, item)) return
-      // Modifier-click toggles only the clicked item, not its children.
-      // Cascade on select is a convenience; cascade on deselect would
-      // remove the user's ability to keep children selected (e.g. for
-      // deletion) after toggling the group off.
-      if (item instanceof LGraphGroup && this.groupSelectChildren) {
-        setCanvasItemSelected(this, item, false)
+    if (item && isCanvasItemSelected(this, item) && sticky) return
+
+    this.withSelectionNotificationsSuppressed(() => {
+      if (!item) {
+        if (!eitherModifier || this.multi_select)
+          this.deselectAll({ notify: false })
+      } else if (!isCanvasItemSelected(this, item)) {
+        if (!modifySelection)
+          this.deselectAll({ keepSelected: item, notify: false })
+        this.select(item, { notify: false })
+      } else if (modifySelection && !sticky) {
+        if (!ownsSelectable(this, item)) return
+        if (item instanceof LGraphGroup && this.groupSelectChildren) {
+          setCanvasItemSelected(this, item, false)
+        } else {
+          this.deselect(item, { notify: false })
+        }
       } else {
-        this.deselect(item)
+        this.deselectAll({ keepSelected: item, notify: false })
       }
-    } else if (!sticky) {
-      this.deselectAll(item)
-    } else {
-      return
-    }
+    })
     this.onSelectionChange?.(this.selected_nodes)
     this.setDirty(true)
   }
@@ -4673,11 +4691,16 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   select<TPositionable extends Positionable = LGraphNode>(
     item: TPositionable,
     {
+      notify = true,
       selectGroupChildren = this.groupSelectChildren
-    }: { selectGroupChildren?: boolean } = {}
+    }: { notify?: boolean; selectGroupChildren?: boolean } = {}
   ): void {
     if (isCanvasItemSelected(this, item)) return
-    changeCanvasSelection(this, [item], true, selectGroupChildren)
+    const changed = this.withSelectionNotificationsSuppressed(() =>
+      changeCanvasSelection(this, [item], true, selectGroupChildren)
+    )
+    if (changed && notify && this.selectionNotificationDepth === 0)
+      this.onSelectionChange?.(this.selected_nodes)
   }
 
   /**
@@ -4685,10 +4708,15 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * @param item The canvas item to remove from the selection.
    */
   deselect<TPositionable extends Positionable = LGraphNode>(
-    item: TPositionable
+    item: TPositionable,
+    { notify = true }: { notify?: boolean } = {}
   ): void {
     if (!isCanvasItemSelected(this, item)) return
-    changeCanvasSelection(this, [item], false)
+    const changed = this.withSelectionNotificationsSuppressed(() =>
+      changeCanvasSelection(this, [item], false)
+    )
+    if (changed && notify && this.selectionNotificationDepth === 0)
+      this.onSelectionChange?.(this.selected_nodes)
   }
 
   /** @deprecated See {@link LGraphCanvas.processSelect} */
@@ -4732,9 +4760,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       (item) => ownsSelectable(this, item)
     )
     if (itemsToSelect.length === 0 && items?.length) return
-    if (!add_to_current_selection) this.deselectAll()
-    changeCanvasSelection(this, itemsToSelect, true)
-    this.onSelectionChange?.(this.selected_nodes)
+    this.withSelectionNotificationsSuppressed(() => {
+      if (!add_to_current_selection) this.deselectAll({ notify: false })
+      changeCanvasSelection(this, itemsToSelect, true)
+    })
+    if (this.selectionNotificationDepth === 0)
+      this.onSelectionChange?.(this.selected_nodes)
     this.setDirty(true)
   }
 
@@ -4751,12 +4782,18 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.deselect(node)
   }
 
-  /**
-   * Deselects all items on the canvas.
-   * @param keepSelected If set, this item will not be removed from the selection.
-   */
-  deselectAll(keepSelected?: Positionable): void {
+  /** Deselects all items on the canvas. */
+  deselectAll(options?: DeselectAllOptions): void
+  /** @deprecated Pass `{ keepSelected }` instead. */
+  deselectAll(keepSelected?: Positionable): void
+  deselectAll(optionsOrKeepSelected?: Positionable | DeselectAllOptions): void {
     if (!this.graph) return
+
+    const { keepSelected, notify = true } = isDeselectAllOptions(
+      optionsOrKeepSelected
+    )
+      ? optionsOrKeepSelected
+      : { keepSelected: optionsOrKeepSelected }
 
     const selected = this.selectedItems
     if (!selected.size) return
@@ -4782,8 +4819,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.current_node = null
 
     const resultingSelectionSize = this.selectedItems.size
-    for (const item of deselected) item.onDeselected?.()
-    if (selected.size !== resultingSelectionSize)
+    this.withSelectionNotificationsSuppressed(() => {
+      for (const item of deselected) item.onDeselected?.()
+    })
+    if (
+      notify &&
+      this.selectionNotificationDepth === 0 &&
+      selected.size !== resultingSelectionSize
+    )
       this.onSelectionChange?.(this.selected_nodes)
   }
 
@@ -4792,10 +4835,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.deselectAll()
   }
 
-  /**
-   * Deletes all selected items from the graph.
-   * @todo Refactor deletion task to LGraph.  Selection is a canvas property, delete is a graph action.
-   */
   deleteSelected(): void {
     const { graph } = this
     if (!graph) throw new NullGraphError()
@@ -4803,21 +4842,22 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.emitBeforeChange()
     graph.beforeChange()
 
-    // Snapshot to prevent mutation during iteration (e.g. group deselect cascade)
     const toDelete = [...this.selectedItems]
-    for (const item of toDelete) {
-      if (item instanceof LGraphNode) {
-        const node = item
-        if (node.block_delete) continue
-        node.connectInputToOutput()
-        graph.remove(node)
-        this.onNodeDeselected?.(node)
-      } else if (item instanceof LGraphGroup) {
-        graph.remove(item)
-      } else if (item instanceof Reroute) {
-        graph.removeReroute(item.id)
+    this.withSelectionNotificationsSuppressed(() => {
+      for (const item of toDelete) {
+        if (item instanceof LGraphNode) {
+          const node = item
+          if (node.block_delete) continue
+          node.connectInputToOutput()
+          graph.remove(node)
+          this.onNodeDeselected?.(node)
+        } else if (item instanceof LGraphGroup) {
+          graph.remove(item)
+        } else if (item instanceof Reroute) {
+          graph.removeReroute(item.id)
+        }
       }
-    }
+    })
 
     applyCanvasSelection(this, { type: 'selection.clear' })
     this.current_node = null
