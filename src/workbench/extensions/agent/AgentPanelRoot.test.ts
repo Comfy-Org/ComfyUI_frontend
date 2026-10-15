@@ -6223,34 +6223,56 @@ describe('AgentPanelRoot history', () => {
       expect(loadedThreads).toEqual(['th-new'])
     })
 
-    it('ranks a chat with no message time by when it was last updated', async () => {
-      workflowStore.activeWorkflow = addTab('workflows/first.json')
-      const second = addTab('workflows/second.json')
-      const { loadedThreads } = stubWorkflowBoundHistory([
-        agentThread({
-          id: 'th-unsent',
-          title: 'Unsent chat',
-          last_message_at: '',
-          updated_at: '2026-09-01T10:00:00Z',
-          created_at: '2026-09-01T09:00:00Z',
-          workflow_id: 'wf-second'
-        }),
-        agentThread({
-          id: 'th-recent',
-          title: 'Recent chat',
-          last_message_at: '2026-09-22T10:00:00Z',
-          workflow_id: 'wf-second'
-        })
-      ])
-      renderWithSelectedTarget()
+    it.for([
+      {
+        stamps: 'no message time',
+        last_message_at: '',
+        updated_at: '2026-09-01T10:00:00Z',
+        created_at: '2026-09-01T09:00:00Z'
+      },
+      {
+        stamps: 'an unparsable message time',
+        last_message_at: 'yesterday',
+        updated_at: '2026-09-01T10:00:00Z',
+        created_at: '2026-09-01T09:00:00Z'
+      },
+      {
+        stamps: 'no valid time at all',
+        last_message_at: '',
+        updated_at: 'unknown',
+        created_at: ''
+      }
+    ])(
+      'ranks a chat with $stamps by its next valid time',
+      async ({ last_message_at, updated_at, created_at }) => {
+        workflowStore.activeWorkflow = addTab('workflows/first.json')
+        const second = addTab('workflows/second.json')
+        const { loadedThreads } = stubWorkflowBoundHistory([
+          agentThread({
+            id: 'th-stale',
+            title: 'Stale chat',
+            last_message_at,
+            updated_at,
+            created_at,
+            workflow_id: 'wf-second'
+          }),
+          agentThread({
+            id: 'th-recent',
+            title: 'Recent chat',
+            last_message_at: '2026-09-22T10:00:00Z',
+            workflow_id: 'wf-second'
+          })
+        ])
+        renderWithSelectedTarget()
 
-      await activateTabAsUser(second)
+        await activateTabAsUser(second)
 
-      await vi.waitFor(() =>
-        expect(useAgentConversationStore().threadId).toBe('th-recent')
-      )
-      expect(loadedThreads).toEqual(['th-recent'])
-    })
+        await vi.waitFor(() =>
+          expect(useAgentConversationStore().threadId).toBe('th-recent')
+        )
+        expect(loadedThreads).toEqual(['th-recent'])
+      }
+    )
 
     it('keeps the open chat when the user returns to the tab it targets', async () => {
       const first = addTab('workflows/first.json')

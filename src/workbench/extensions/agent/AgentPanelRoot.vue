@@ -1408,12 +1408,17 @@ function onFeedback(turnId: string, vote: 'up' | 'down' | null): void {
 }
 
 function toChatSession(thread: AgentThreadSummary): ChatSession {
-  const stamp = thread.last_message_at || thread.updated_at || thread.created_at
-  const updatedAt = stamp ? Date.parse(stamp) : Date.now()
+  const updatedAt = [
+    thread.last_message_at,
+    thread.updated_at,
+    thread.created_at
+  ]
+    .map((stamp) => Date.parse(stamp))
+    .find((time) => !Number.isNaN(time))
   return {
     id: thread.id,
     title: thread.title || thread.preview || t('agent.untitledChat'),
-    updatedAt: Number.isNaN(updatedAt) ? Date.now() : updatedAt,
+    updatedAt: updatedAt ?? 0,
     titleSource: thread.title ? 'server' : 'fallback',
     workflowId: thread.workflow_id || undefined
   }
