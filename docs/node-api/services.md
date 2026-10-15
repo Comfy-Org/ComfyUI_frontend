@@ -391,6 +391,10 @@ const names = await comfy.storage.list('MyPack.presets')
 await comfy.storage.remove('MyPack.presets/portrait')
 ```
 
+Listed keys include the requested logical folder: `list('MyPack.presets')`
+returns keys such as `MyPack.presets/portrait`. Pass each returned key unchanged
+to `get()` or `remove()`; do not add the folder again.
+
 Names and namespaces are logical keys within the host-selected user/pack scope.
 Keep a dotted prefix for grouping and do not include `..`. Choosing another
 pack's name does not select its data: the host adds the physical namespace from
