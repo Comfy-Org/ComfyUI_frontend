@@ -23,6 +23,7 @@ describe('Krea 3 launch draft', () => {
       const { t, te } = translationsFor(locale)
       const keys = [
         krea3Page.hero.titleKey,
+        krea3Page.comparison.headingKey,
         krea3Page.hero.descriptionKey,
         ...krea3Page.galleries.map((gallery) => gallery.headingKey),
         krea3Page.steps.headingKey,
@@ -51,6 +52,8 @@ describe('Krea 3 launch draft', () => {
 
   it('ships every hero and gallery asset locally for private review', () => {
     const sources = [
+      krea3Page.comparison.beforeSrc,
+      krea3Page.comparison.afterSrc,
       krea3Page.hero.videoSrc,
       krea3Page.hero.posterSrc,
       ...krea3Page.galleries.flatMap((gallery) =>

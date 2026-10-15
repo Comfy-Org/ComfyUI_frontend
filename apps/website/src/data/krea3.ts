@@ -1,4 +1,4 @@
-import type { LocalizedText } from '@/i18n/translations'
+import type { LocalizedText, TranslationKey } from '@/i18n/translations'
 import type {
   ModelLaunchGallery,
   ModelLaunchPage
@@ -34,34 +34,16 @@ export const krea3Page = {
     primaryCta: { labelKey: 'krea3.hero.cta', href: '#edit-workflow' },
     badgeKeys: ['krea3.hero.references', 'krea3.hero.image']
   },
+  comparison: {
+    headingKey: 'krea3.references',
+    beforeSrc: `${mediaBase}/reference-before.jpg`,
+    afterSrc: `${mediaBase}/reference-after.jpg`,
+    prompt: text(
+      'Swap the flag for a flamingo pool float',
+      '将旗帜替换为火烈鸟泳圈'
+    )
+  },
   galleries: [
-    {
-      headingKey: 'krea3.references',
-      ctaVariant: 'none',
-      cardMeta: 'none',
-      cards: [
-        card(
-          'reference-before',
-          text('START WITH AN IMAGE', '从一张图像开始'),
-          text(
-            'Choose the image that sets your composition, subject, and viewpoint.',
-            '选择用于确定构图、主体和视角的图像。'
-          )
-        ),
-        card(
-          'reference-after',
-          text('DESCRIBE THE CHANGE', '描述要做的修改'),
-          text(
-            'Ask for a specific edit. Compare the result with the original and decide what to change next.',
-            '提出具体的编辑要求。对比原图与结果，再决定下一步修改。'
-          ),
-          text(
-            'Swap the flag for a flamingo pool float',
-            '将旗帜替换为火烈鸟泳圈'
-          )
-        )
-      ]
-    },
     {
       headingKey: 'krea3.products',
       ctaVariant: 'none',
@@ -208,6 +190,12 @@ export const krea3Page = {
   }
 } satisfies {
   hero: ModelLaunchPage['hero']
+  comparison: {
+    headingKey: TranslationKey
+    beforeSrc: string
+    afterSrc: string
+    prompt: LocalizedText
+  }
   galleries: readonly ModelLaunchGallery[]
   steps: NonNullable<ModelLaunchPage['steps']>
   faq: NonNullable<ModelLaunchPage['faq']>

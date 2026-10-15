@@ -1,4 +1,6 @@
 ---
+import VideoCompareSlider from '@/components/common/VideoCompareSlider.vue'
+import CopyTextButton from '@/components/ui/copy-text-button/CopyTextButton.vue'
 import BaseLayout from '@/layouts/BaseLayout.astro'
 import ModelLaunchHeroSection from './ModelLaunchHeroSection.vue'
 import ModelLaunchGallerySection from './ModelLaunchGallerySection.vue'
@@ -19,6 +21,38 @@ const { t } = Astro.locals
   hideAnnouncementBanner
 >
   <ModelLaunchHeroSection client:load hero={krea3Page.hero} locale={locale} />
+  <section class="mx-auto max-w-7xl px-6 py-16 lg:px-20 lg:py-24">
+    <h2
+      class="mx-auto mb-12 max-w-3xl text-center text-3xl font-light tracking-tight text-primary-comfy-canvas lg:text-5xl/tight"
+    >
+      {t(krea3Page.comparison.headingKey)}
+    </h2>
+    <VideoCompareSlider
+      client:visible
+      mediaKind="image"
+      beforeSrc={krea3Page.comparison.beforeSrc}
+      afterSrc={krea3Page.comparison.afterSrc}
+      beforeLabel={t('modelLaunch.beforeAfter.before')}
+      afterLabel={t('modelLaunch.beforeAfter.after')}
+      sliderLabel={t('modelLaunch.beforeAfter.sliderLabel')}
+      class="rounded-4.5xl"
+    />
+    <div
+      class="mt-6 flex items-center justify-between gap-4 rounded-2xl border border-transparency-white-t8 p-6"
+    >
+      <p class="text-sm font-light text-primary-comfy-canvas">
+        {krea3Page.comparison.prompt[locale] || krea3Page.comparison.prompt.en}
+      </p>
+      <CopyTextButton
+        client:visible
+        value={
+          krea3Page.comparison.prompt[locale] || krea3Page.comparison.prompt.en
+        }
+        label={t('modelLaunch.copyPrompt')}
+        copiedLabel={t('ui.copied')}
+      />
+    </div>
+  </section>
   {krea3Page.galleries.map((gallery) => (
     <ModelLaunchGallerySection
       client:visible
