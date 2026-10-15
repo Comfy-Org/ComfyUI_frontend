@@ -90,11 +90,15 @@ export class UncreditedTopupResponse implements CreateTopupResponse {
   ) {}
 }
 
-/**
- * Most SDK refusals carry no HTTP status, which a status-less API error
- * would otherwise report as a network failure, so each names its category.
- */
 function topupFailureError(failure: TopupFailure): WorkspaceApiError {
+  if (failure.code === 'OPERATION_ALREADY_PENDING') {
+    return new WorkspaceApiError(
+      t('billingOperation.topupAlreadyPendingDetail'),
+      undefined,
+      failure.code,
+      'stale_operation'
+    )
+  }
   const serverCode = 'serverCode' in failure ? failure.serverCode : undefined
   return new WorkspaceApiError(
     t('credits.topUp.unknownError'),

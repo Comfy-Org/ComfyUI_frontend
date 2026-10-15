@@ -1,0 +1,153 @@
+{
+  "id": "video-edit",
+  "capability": "Video edit widget",
+  "description": "Video trim and crop widget presentation and model, crop handles, aspect-ratio locking, playback and scrubbing, filmstrip extraction, frame timing, metadata, and format options.",
+  "modules": [
+    {
+      "path": "src/components/videoEdit/VideoCropOverlay.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/videoEdit/VideoCropOverlay.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/videoEdit/VideoEditPanel.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/videoEdit/VideoEditPanel.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/videoEdit/VideoFilmstripTrim.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/videoEdit/VideoFilmstripTrim.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/videoEdit/WidgetVideoEdit.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/videoEdit/WidgetVideoEdit.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/composables/video/useCropBoxEditor.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/video/useCropBoxEditor.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/video/useCropRatioLock.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/video/useCropRatioLock.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/video/useTimelineScrub.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/video/useTrimPlayback.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/video/useTrimPlayback.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/video/useVideoEditFormats.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/composables/video/useVideoEditFormats.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/composables/video/useVideoEditModel.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/video/useVideoEditModel.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/video/useVideoFilmstrip.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/composables/video/useVideoFilmstrip.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/composables/video/useVideoSourceUrl.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/composables/video/useVideoSourceUrl.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/utils/videoFrameUtil.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/videoFrameUtil.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/videoMetadataUtil.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/utils/videoMetadataUtil.ts",
+      "role": "infrastructure"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Video edit widget trims and crops video and writes the widget value",
+      "checks": [
+        "src/components/videoEdit/WidgetVideoEdit.test.ts",
+        "src/components/videoEdit/VideoEditPanel.test.ts",
+        "src/components/videoEdit/VideoFilmstripTrim.test.ts",
+        "src/components/videoEdit/VideoCropOverlay.test.ts"
+      ]
+    },
+    {
+      "name": "Trim and crop edits update the video edit model with locked ratios and valid formats",
+      "checks": [
+        "src/composables/video/useVideoEditModel.test.ts",
+        "src/composables/video/useCropBoxEditor.test.ts",
+        "src/composables/video/useCropRatioLock.test.ts",
+        "src/composables/video/useVideoEditFormats.test.ts"
+      ]
+    },
+    {
+      "name": "Trim playback, filmstrip frames, and frame timing follow the source video",
+      "checks": [
+        "src/composables/video/useTrimPlayback.test.ts",
+        "src/composables/video/useVideoFilmstrip.test.ts",
+        "src/utils/videoFrameUtil.test.ts",
+        "src/utils/videoMetadataUtil.test.ts",
+        "src/composables/video/useVideoSourceUrl.test.ts"
+      ]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
+  ],
+  "deepImports": "inventory"
+}

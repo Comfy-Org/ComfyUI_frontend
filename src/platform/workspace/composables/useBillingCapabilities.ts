@@ -7,6 +7,7 @@ import {
 import { computed, onScopeDispose, shallowRef, watch } from 'vue'
 
 import { isCloud } from '@/platform/distribution/types'
+import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { onCapabilityRevision } from '@/platform/workspace/api/capabilityRevision'
@@ -17,6 +18,7 @@ import {
 import { readOnRail } from '@/platform/workspace/composables/readOnRail'
 import { useBillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { reportWorkspaceScopeMismatch } from '@/platform/workspace/telemetry/workspaceTelemetryContext'
 import { useAuthStore } from '@/stores/authStore'
 
 type CapabilityReadState =
@@ -136,11 +138,17 @@ function useBillingCapabilitiesInternal() {
   const canChangeSeats = computed(
     () => capabilities.value?.can_change_seats ?? false
   )
-  const canManageMembers = computed(
-    () => capabilities.value?.can_manage_members ?? false
+  const canManageMembers = computed(() =>
+    receiveServerFact(
+      'can_manage_members',
+      capabilities.value?.can_manage_members ?? false
+    )
   )
-  const canInviteMembers = computed(
-    () => capabilities.value?.can_invite_members ?? false
+  const canInviteMembers = computed(() =>
+    receiveServerFact(
+      'can_invite_members',
+      capabilities.value?.can_invite_members ?? false
+    )
   )
   const canDowngradeToPersonal = computed(
     () => capabilities.value?.can_downgrade_to_personal ?? false
@@ -362,6 +370,10 @@ function useBillingCapabilitiesInternal() {
         } else {
           readFailures++
           readState.value = unavailableState(userId, workspaceId)
+          reportWorkspaceScopeMismatch(
+            workspaceId,
+            response.resolved_for.workspace_id
+          )
         }
         scheduleRefresh()
         refetchAfterSettle =

@@ -1,0 +1,63 @@
+{
+  "id": "comfyui-api",
+  "capability": "ComfyUI API contracts",
+  "description": "Shared wire contracts for the ComfyUI backend: prompt, node-error, system-stats, and user-data response types, websocket message and execution-output schemas (result items, task outputs, progress, logs, asset download and export events), and HTTP error payload parsing used by API clients. Job list and detail schemas and the jobs client belong to the job queue; client execution state belongs to execution.",
+  "modules": [
+    {
+      "path": "src/platform/remote/comfyui/errors.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/remote/comfyui/errors.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/remote/comfyui/execution/types.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/remote/comfyui/execution/types.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/remote/comfyui/types.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/createAnnotatedPath.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/createAnnotatedPath.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/schemas/resultItemTypeSchema.ts",
+      "role": "domain"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Websocket execution-output schemas accept backend result items and task outputs",
+      "checks": ["src/platform/remote/comfyui/execution/types.test.ts"]
+    },
+    {
+      "name": "HTTP error payloads parse into stable codes and bounded user-facing messages",
+      "checks": ["src/platform/remote/comfyui/errors.test.ts"]
+    },
+    {
+      "name": "Annotated result paths round-trip folder type and subfolder",
+      "checks": ["src/utils/createAnnotatedPath.test.ts"]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Unclassified callers may import these internals during inventory; imports from classified domains remain subject to cross-domain rules.",
+    "Message and response type names stay stable because scripts/api, extension types, and execution, queue, asset, billing, and workspace callers import them.",
+    "execution/types importing TaskStatus from the tasks record and errors.ts recognizing billing and workspace error shapes remain visible as cross-domain coupling; classification does not grant dependency exceptions."
+  ],
+  "deepImports": "inventory"
+}

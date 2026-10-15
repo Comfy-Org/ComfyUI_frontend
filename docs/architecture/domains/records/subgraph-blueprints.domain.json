@@ -1,0 +1,36 @@
+{
+  "id": "subgraph-blueprints",
+  "capability": "Subgraph blueprints",
+  "description": "Published subgraph blueprints: fetching user and global blueprints, exposing them as node definitions in the node library, publishing, editing, and deleting blueprints, and blueprint distribution filtering. Subgraph definitions and conversion belong to subgraphs.",
+  "modules": [
+    {
+      "path": "src/stores/subgraphStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/subgraphStore.test.ts",
+      "role": "application"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Blueprints publish, list in the node library, edit, delete, and copy safely",
+      "checks": [
+        "src/stores/subgraphStore.test.ts",
+        "browser_tests/tests/dialogs/blueprintOverwriteDialog.spec.ts"
+      ]
+    },
+    {
+      "name": "Subgraph blueprints are addressed by the blueprint type prefix",
+      "checks": ["src/stores/subgraphStore.test.ts"]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
+  ],
+  "deepImports": "inventory"
+}

@@ -25,6 +25,8 @@ import {
 import { api } from '@/scripts/api'
 import type { AuthCredential, AuthScheme } from '@/types/authTypes'
 
+import { refusedAttachmentsMessage } from '../../utils/attachmentMessages'
+
 import {
   zAgentAnswerReceipt,
   zAgentCancelAccepted,
@@ -33,6 +35,7 @@ import {
   zAgentRunMode,
   zAgentThreads,
   zAgentTurnAccepted,
+  zAttachmentRejection,
   zCloudWorkflowIndex
 } from '../../schemas/agentApiSchema'
 import type {
@@ -109,11 +112,6 @@ interface AuthRejection {
   message: string
 }
 
-/**
- * Reports an auth rejection and says whether it was delivered. Diagnostics
- * fail open: nothing in here may change the error the caller receives, so
- * tag-building and the reporter are each allowed to fail on their own.
- */
 function reportAuthRejection({
   status,
   operation,
@@ -122,11 +120,11 @@ function reportAuthRejection({
   body,
   message
 }: AuthRejection): boolean {
-  let backendTags: AuthRejectionTags = {}
+  let backendTags: AuthRejectionTags
   try {
     backendTags = authRejectionTags(body, message)
-  } catch (error) {
-    console.warn('Could not classify the agent auth rejection:', error)
+  } catch {
+    backendTags = {}
   }
   try {
     reportError(new Error(AUTH_REJECTED_MESSAGE), {
@@ -136,8 +134,7 @@ function reportAuthRejection({
       level: 'warning'
     })
     return true
-  } catch (error) {
-    console.warn('Could not report the agent auth rejection:', error)
+  } catch {
     return false
   }
 }
@@ -274,6 +271,14 @@ function parseErrorBody(text: string): unknown {
 }
 
 function getErrorMessage(body: unknown, fallback: string): string {
+  const refused = zAttachmentRejection.safeParse(body)
+  if (refused.success) {
+    return refusedAttachmentsMessage(
+      refused.data.rejected,
+      refused.data.rejected_count
+    )
+  }
+
   const plain = zAgentError.safeParse(body)
   if (plain.success) {
     return typeof plain.data.error === 'string'
@@ -568,7 +573,7 @@ export function createAgentRestClient() {
   }
 
   /**
-   * Reads every page of a cursor-paged list. Stops early, with a warning and
+   * Reads every page of a cursor-paged list. Stops early, with
    * `complete: false`, when the server reports more pages but gives no new
    * cursor.
    */
@@ -579,8 +584,7 @@ export function createAgentRestClient() {
     operation: AgentApiOperation,
     path: string,
     schema: z.ZodType<Page>,
-    itemsOf: (page: Page) => Item[],
-    label: string
+    itemsOf: (page: Page) => Item[]
   ): Promise<{ items: Item[]; complete: boolean }> {
     const items: Item[] = []
     let hasMore: boolean
@@ -603,8 +607,6 @@ export function createAgentRestClient() {
         cursor = nextCursor
       }
     } while (hasMore)
-    if (hasMore)
-      console.warn(`[agent] ${label} truncated at ${items.length} entries`)
     return { items, complete: !hasMore }
   }
 
@@ -649,8 +651,7 @@ export function createAgentRestClient() {
       'list_threads',
       '/agent/threads',
       zAgentThreads,
-      (page) => page.threads,
-      'thread list'
+      (page) => page.threads
     )
     return { threads: items, complete }
   }
@@ -680,8 +681,7 @@ export function createAgentRestClient() {
       'list_cloud_workflows',
       '/workflows',
       zCloudWorkflowIndex,
-      (page) => page.data,
-      'cloud workflow index'
+      (page) => page.data
     )
     return { entries: items, complete }
   }

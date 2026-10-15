@@ -34,7 +34,7 @@
           <span class="menu-label">{{ menuItem.label }}</span>
           <i
             v-if="menuItem.showExternalIcon"
-            class="ml-auto icon-[lucide--external-link] size-4 text-primary"
+            class="ml-auto icon-[lucide--external-link] size-4 text-primary-background"
           />
           <i
             v-if="menuItem.key === 'more'"
@@ -172,6 +172,7 @@ import { getErrorMessage } from '@/utils/errorUtil'
 import { electronAPI } from '@/utils/envUtil'
 import { formatVersionAnchor } from '@/utils/formatUtil'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
+import { useManagerDialog } from '@/workbench/extensions/manager/composables/useManagerDialog'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { useComfyManagerService } from '@/workbench/extensions/manager/services/comfyManagerService'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
@@ -405,7 +406,7 @@ const menuItems = computed<MenuItem[]>(() => {
       showRedDot: shouldShowManagerRedDot.value,
       action: async () => {
         trackResourceClick('manager', false)
-        await useManagerState().openManager({
+        await useManagerDialog().openManager({
           initialTab: ManagerTab.All,
           showToastOnLegacyError: false
         })
@@ -732,7 +733,7 @@ onBeforeUnmount(() => {
   height: 8px;
   background: #ff3b30;
   border-radius: 50%;
-  border: 1.5px solid var(--p-content-background);
+  border: 1.5px solid var(--base-background);
   z-index: 1;
 }
 

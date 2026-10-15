@@ -370,7 +370,6 @@ describe('listThreads pagination', () => {
     ])
     expect(threads.map(({ id }) => id)).toEqual(['th-1', 'th-2', 'th-3'])
     expect(complete).toBe(true)
-    expect(console.warn).not.toHaveBeenCalled()
   })
 
   it.for([
@@ -394,9 +393,6 @@ describe('listThreads pagination', () => {
       expect(api.fetchApi).toHaveBeenCalledTimes(pages.length)
       expect(threads.map(({ id }) => id)).toEqual(listed)
       expect(complete).toBe(false)
-      expect(console.warn).toHaveBeenCalledExactlyOnceWith(
-        `[agent] thread list truncated at ${listed.length} entries`
-      )
     }
   )
 
@@ -617,6 +613,48 @@ describe('success response parsing', () => {
 })
 
 describe('error mapping', () => {
+  it('formats an attachment rejection without parsing the evolving accepted policy', async () => {
+    respond(
+      jsonResponse(422, {
+        accepted: {
+          image: ['.png', '.future-image-format'],
+          text: [],
+          video: []
+        },
+        error: 'server fallback',
+        rejected: ['draft.future-image-format'],
+        rejected_count: 1,
+        type: 'ATTACHMENT_TYPE_NOT_ACCEPTED'
+      })
+    )
+
+    const error = await makeClient()
+      .postMessage('t1', { content: 'try it' })
+      .catch((caught: unknown) => caught)
+
+    expect(error).toBeInstanceOf(AgentApiError)
+    expect((error as AgentApiError).message).toContain(
+      'draft.future-image-format is not a file type the agent accepts'
+    )
+  })
+
+  it('does not treat another error type as an attachment rejection', async () => {
+    respond(
+      jsonResponse(422, {
+        error: 'another route failed',
+        rejected: ['private.pdf'],
+        rejected_count: 1,
+        type: 'OTHER_ERROR'
+      })
+    )
+
+    const error = await makeClient()
+      .getMessages('t1')
+      .catch((caught: unknown) => caught)
+
+    expect(error).toBeInstanceOf(AgentApiError)
+    expect((error as AgentApiError).message).toBe('another route failed')
+  })
   it.for(['', '   '])(
     'gives a status-bearing message when the supplied message is %j',
     (message) => {
@@ -691,7 +729,7 @@ describe('error mapping', () => {
     expect(error.body).toBeUndefined()
   })
 
-  it('falls back to the HTTP status when the response has no error text', async () => {
+  it('falls back to the HTTP status when the response has no error body or status text', async () => {
     respond(new Response('', { status: 503 }))
 
     const error = await makeClient()
