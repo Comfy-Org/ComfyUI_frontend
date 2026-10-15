@@ -1,7 +1,5 @@
 import type {
-  AgentMessage,
   AgentPostMessageRequest,
-  AgentThreadSummary,
   WorkflowListResponse
 } from '@comfyorg/ingest-types'
 
@@ -13,6 +11,7 @@ import {
   mockAgentTurnApi,
   mockWorkflowPersistence
 } from '@e2e/fixtures/agentPanelFixture'
+import { createAgentSavedChat } from '@e2e/fixtures/data/agent/agentSavedChat'
 
 export const agentUnresolvedHistoryTest = agentTest.extend<{
   unresolvedHistory: { posted: AgentPostMessageRequest[]; chosenId: string }
@@ -27,29 +26,12 @@ export const agentUnresolvedHistoryTest = agentTest.extend<{
       message_id: 'd079c950-fc47-44ab-93ea-8397ad8e55b5',
       workflow_id: chosenId
     }
-    const thread: AgentThreadSummary = {
-      id: threadId,
+    const savedChat = createAgentSavedChat({
+      threadId,
+      workflowId: unresolvedId,
       title: 'Unresolved workflow chat',
-      preview: 'Earlier prompt',
-      workflow_id: unresolvedId,
-      status: 'active',
-      message_count: 1,
-      created_at: at,
-      updated_at: at,
-      last_message_at: at
-    }
-    const messages: AgentMessage[] = [
-      {
-        id: 'history-user',
-        thread_id: threadId,
-        turn_id: 'e10506c0-05b2-4645-aade-baff356bc141',
-        seq: 1,
-        role: 'user',
-        status: 'complete',
-        workflow_id: unresolvedId,
-        content: { text: 'Earlier prompt' }
-      }
-    ]
+      prompt: 'Earlier prompt'
+    })
     const listedWorkflows: WorkflowListResponse['data'] = [
       {
         id: unresolvedId,
@@ -60,7 +42,7 @@ export const agentUnresolvedHistoryTest = agentTest.extend<{
         latest_version: 1
       }
     ]
-    const posted = await mockAgentTurnApi(page, accepted, { thread, messages })
+    const posted = await mockAgentTurnApi(page, accepted, savedChat)
     await bootAgentApp(page, agentFlagEnabled, {
       beforeNavigate: (page) =>
         mockWorkflowPersistence(page, chosenId, listedWorkflows)

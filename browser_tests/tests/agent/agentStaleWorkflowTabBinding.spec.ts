@@ -1,11 +1,7 @@
 import { expect } from '@playwright/test'
 import type { WebSocketRoute } from '@playwright/test'
 
-import type {
-  AgentMessage,
-  AgentThreadSummary,
-  WorkflowListResponse
-} from '@comfyorg/ingest-types'
+import type { WorkflowListResponse } from '@comfyorg/ingest-types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
@@ -21,6 +17,7 @@ import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
+import { createAgentSavedChat } from '@e2e/fixtures/data/agent/agentSavedChat'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 const BINDING_KEY = StorageKeys.agentWorkflowTabBindings('personal')
@@ -104,38 +101,21 @@ test.describe(
         )
       })
 
-      const history: AgentMessage[] = [
-        {
-          id: 'user-1',
-          thread_id: THREAD_ID,
-          turn_id: TURN_ID,
-          seq: 1,
-          role: 'user',
-          status: 'complete',
-          workflow_id: staleWorkflowId,
-          content: { text: EARLIER_REQUEST }
-        }
-      ]
-      const thread: AgentThreadSummary = {
-        id: THREAD_ID,
-        title: 'Earlier chat',
-        preview: EARLIER_REQUEST,
-        workflow_id: staleWorkflowId,
-        status: 'active',
-        message_count: 1,
-        created_at: '2026-09-11T10:00:00Z',
-        updated_at: '2026-09-11T10:00:00Z',
-        last_message_at: '2026-09-11T10:00:00Z'
-      }
       const accepted: AgentTurnAccepted = {
         thread_id: THREAD_ID,
         message_id: TURN_ID,
         workflow_id: staleWorkflowId
       }
-      const posted = await mockAgentTurnApi(page, accepted, {
-        thread,
-        messages: history
-      })
+      const posted = await mockAgentTurnApi(
+        page,
+        accepted,
+        createAgentSavedChat({
+          threadId: THREAD_ID,
+          workflowId: staleWorkflowId,
+          title: 'Earlier chat',
+          prompt: EARLIER_REQUEST
+        })
+      )
       const cloudWorkflows: WorkflowListResponse['data'] = []
       await page.route('**/api/workflows?*', (route) =>
         route.fulfill(
