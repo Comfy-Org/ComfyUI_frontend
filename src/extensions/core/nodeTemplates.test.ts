@@ -9,9 +9,7 @@ const getUserData = vi.hoisted(() => vi.fn())
 
 vi.mock(import('@/base/common/downloadUtil'), () => ({ downloadBlob: vi.fn() }))
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 vi.mock(import('@/services/dialogService'))
 
@@ -62,6 +60,7 @@ it('reports invalid persisted node templates before falling back to empty', asyn
 
   await vi.waitFor(() => {
     expect(reportError).toHaveBeenCalledWith(error, {
+      surface: 'graph',
       errorType: 'failure_loading_node_templates',
       tags: {
         failure_kind: 'caught_unexpected',

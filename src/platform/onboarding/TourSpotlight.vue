@@ -84,12 +84,12 @@
         :style="cardStyle"
       >
         <i
-          v-if="cursorEdgeClass"
+          v-if="cursorClass"
           data-testid="coach-cursor"
           :class="
             cn(
               'absolute icon-[lucide--mouse-pointer-2] size-4 text-base-foreground drop-shadow-md',
-              cursorEdgeClass
+              cursorClass
             )
           "
           aria-hidden="true"
@@ -151,7 +151,6 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener, useWindowSize } from '@vueuse/core'
-import { ZIndex } from '@primeuix/utils/zindex'
 import { FocusScope } from 'reka-ui'
 import {
   computed,
@@ -164,8 +163,8 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { MODAL_Z_BASE, MODAL_Z_KEY } from '@/components/dialog/vRekaZIndex'
 import Button from '@/components/ui/button/Button.vue'
+import { raiseModalLayer, releaseModalLayer } from '@/utils/modalLayerStack'
 
 import CoachmarkCard from './CoachmarkCard.vue'
 import {
@@ -174,6 +173,7 @@ import {
   VIEWPORT_MARGIN,
   CARD_GLIDE_MS,
   clampSpotlightRect,
+  cursorEdgeClass,
   hitRegionPath,
   noTargetCardLeft
 } from './coachmarkLayout'
@@ -263,10 +263,7 @@ async function raiseOverlay() {
   await nextTick()
   const el = overlayRef.value
   if (!el) return
-  // ZIndex.set pushes a fresh entry into the shared modal sequence on every
-  // call, so clear the previous one or per-step re-raises leak entries.
-  ZIndex.clear(el)
-  ZIndex.set(MODAL_Z_KEY, el, MODAL_Z_BASE)
+  raiseModalLayer(el)
 }
 
 watch(
@@ -284,7 +281,7 @@ watch(
 )
 
 onBeforeUnmount(() => {
-  if (overlayRef.value) ZIndex.clear(overlayRef.value)
+  if (overlayRef.value) releaseModalLayer(overlayRef.value)
 })
 
 function viewport() {
@@ -346,24 +343,7 @@ const cardStyle = computed(() => {
   return { ...floatingStyles.value, width, maxWidth, opacity }
 })
 
-/** Floats the cursor in the gap on the card edge facing the target. */
-const CURSOR_EDGE_CLASS = {
-  top: '-top-7 left-1/2 -translate-x-1/2 rotate-45',
-  bottom: '-bottom-7 left-1/2 -translate-x-1/2 -rotate-[135deg]',
-  left: '-left-7 top-1/2 -translate-y-1/2 -rotate-45',
-  right: '-right-7 top-1/2 -translate-y-1/2 rotate-[135deg]'
-} as const
-
-const TARGET_FACING_EDGE = {
-  top: 'bottom',
-  bottom: 'top',
-  left: 'right',
-  right: 'left'
-} as const
-
-const cursorEdgeClass = computed(() => {
-  if (!step.cursor || !hasTarget.value) return ''
-  const side = placement.value.split('-')[0] as keyof typeof TARGET_FACING_EDGE
-  return CURSOR_EDGE_CLASS[TARGET_FACING_EDGE[side]]
-})
+const cursorClass = computed(() =>
+  step.cursor && hasTarget.value ? cursorEdgeClass(placement.value) : ''
+)
 </script>

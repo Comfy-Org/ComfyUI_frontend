@@ -1,6 +1,46 @@
-import type { Locale, LocalizedText } from '../../i18n/translations'
+import type { Locale, LocalizedText } from '@/i18n/translations'
 
 const translations = {
+  'agentPage.workflow.mobile.label': {
+    en: 'Comfy Agent workflow preview',
+    'zh-CN': 'Comfy Agent 工作流预览'
+  },
+  'agentPage.workflow.mobile.input': {
+    en: 'Purple keyframe',
+    'zh-CN': '紫色关键帧'
+  },
+  'agentPage.workflow.mobile.inputAlt': {
+    en: 'Purple conditioner bottle surrounded by figs, used as the keyframe',
+    'zh-CN': '作为关键帧的紫色护发素瓶，周围环绕着无花果'
+  },
+  'agentPage.workflow.mobile.motion': {
+    en: 'Motion reference',
+    'zh-CN': '动态参考'
+  },
+  'agentPage.workflow.mobile.motionAlt': {
+    en: 'Grayscale bottle animation used as the motion reference',
+    'zh-CN': '用作动态参考的灰度瓶子动画'
+  },
+  'agentPage.workflow.mobile.generate': {
+    en: 'Generate video',
+    'zh-CN': '生成视频'
+  },
+  'agentPage.workflow.mobile.action': {
+    en: 'Use the motion reference and keyframe to render a video ad.',
+    'zh-CN': '使用动态参考和关键帧生成视频广告。'
+  },
+  'agentPage.workflow.mobile.output': {
+    en: 'Final output',
+    'zh-CN': '最终输出'
+  },
+  'agentPage.workflow.mobile.outputAlt': {
+    en: 'Generated purple conditioner bottle surrounded by figs',
+    'zh-CN': '生成的紫色护发素瓶，周围环绕着无花果'
+  },
+
+  'agentPage.workflow.userTab': { en: 'User', 'zh-CN': '用户' },
+  'agentPage.workflow.agentTab': { en: 'Agent', 'zh-CN': '智能体' },
+
   'agentPage.meta.title': {
     en: 'Comfy Agent — The first agent for craft',
     'zh-CN': 'Comfy Agent — 为创作而生的第一个智能体'
@@ -121,6 +161,10 @@ const translations = {
       '把角色和想象中的世界带入同一条创作流程。智能体帮助塑造画面风格、探索场景并比较生成结果。由一位艺术家使用 Comfy Agent，在 100 小时内完成。'
   },
   'agentPage.usecases.featured.tag': { en: 'Animation', 'zh-CN': '动画' },
+  'agentPage.usecases.featured.cta': {
+    en: "See how it's made",
+    'zh-CN': '了解制作过程'
+  },
   'agentPage.usecases.brief.1.byline': {
     en: 'By Doug Hogan',
     'zh-CN': '作者：Doug Hogan'

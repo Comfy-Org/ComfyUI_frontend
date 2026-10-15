@@ -10,7 +10,7 @@ import type { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInp
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import { toNodeId } from '@/types/nodeId'
 
-import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 
 import { installUnplacedLinkBridge } from './unplacedLinkBridge'
 
@@ -66,7 +66,7 @@ describe('offering a link the connector could not place', () => {
   }
 
   beforeEach(() => {
-    offer.mockReset().mockReturnValue(false)
+    offer.mockReturnValue(false)
     graph = new LGraph()
     const element = document.createElement('canvas')
     document.body.appendChild(element)

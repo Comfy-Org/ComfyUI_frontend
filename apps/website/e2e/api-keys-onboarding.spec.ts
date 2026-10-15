@@ -1,10 +1,9 @@
 import { expect } from '@playwright/test'
 
 import { waitForIsland } from './fixtures/islands'
-import { MODEL_PATH, test } from './fixtures/modelsAccount'
+import { MODEL_ID, MODEL_PATH, test } from './fixtures/modelsAccount'
 
 const API_KEYS = 'https://platform.comfy.org/profile/api-keys'
-const MODEL_SLUG = MODEL_PATH.split('/')[2]
 
 test.describe('API-keys onboarding links @smoke', () => {
   for (const { path, label } of [
@@ -31,7 +30,7 @@ test.describe('API-keys onboarding links @smoke', () => {
     await apiTab.click()
     await expect(page.getByTestId('api-get-key')).toHaveAttribute(
       'href',
-      `${API_KEYS}?onboarding=models&model=${MODEL_SLUG}`
+      `${API_KEYS}?onboarding=models&model=${MODEL_ID}`
     )
   })
 })

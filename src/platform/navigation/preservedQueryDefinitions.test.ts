@@ -20,7 +20,9 @@ describe('PRESERVED_QUERY_DEFINITIONS', () => {
     [PRESERVED_QUERY_NAMESPACES.TOPUP, 'topup'],
     [PRESERVED_QUERY_NAMESPACES.INVITE, 'invite'],
     [PRESERVED_QUERY_NAMESPACES.CREATE_WORKSPACE, 'create_workspace'],
-    [PRESERVED_QUERY_NAMESPACES.PRICING, 'pricing']
+    [PRESERVED_QUERY_NAMESPACES.PRICING, 'pricing'],
+    [PRESERVED_QUERY_NAMESPACES.WORKSPACE, 'workspace'],
+    [PRESERVED_QUERY_NAMESPACES.DEPLOYMENT, 'deployment']
   ])('captures %s so a redirect cannot lose it', ([namespace, key]) => {
     expect(registered.get(namespace)).toContain(key)
   })

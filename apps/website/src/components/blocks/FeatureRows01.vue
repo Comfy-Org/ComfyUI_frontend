@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { Locale } from '../../i18n/translations'
-import GlassCard from '../common/GlassCard.vue'
-import InlineCodeText from '../common/InlineCodeText.vue'
-import SectionHeader from '../common/SectionHeader.vue'
-import VideoPlayer from '../common/VideoPlayer.vue'
-import type { VideoTrack } from '../common/VideoPlayer.vue'
+import type { Locale } from '@/i18n/translations'
+import GlassCard from '@/components/common/GlassCard.vue'
+import InlineCodeText from '@/components/common/InlineCodeText.vue'
+import SectionHeader from '@/components/common/SectionHeader.vue'
+import VideoPlayer from '@/components/common/VideoPlayer.vue'
+import type { VideoTrack } from '@/components/common/VideoPlayer.vue'
 
 type RowMedia =
   | { type: 'image'; src: string; alt?: string; fit?: 'cover' | 'contain' }
@@ -20,6 +20,7 @@ type RowMedia =
       autoplay?: boolean
       loop?: boolean
       minimal?: boolean
+      preview?: boolean
       hideControls?: boolean
       fit?: 'cover' | 'contain'
     }
@@ -132,6 +133,7 @@ function mediaLabel(row: FeatureRow): string {
             :autoplay="row.media.autoplay"
             :loop="row.media.loop"
             :minimal="row.media.minimal"
+            :preview="row.media.preview"
             :hide-controls="row.media.hideControls"
             :fit="row.media.fit"
             :class="

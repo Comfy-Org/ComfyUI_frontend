@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import Badge from '../ui/badge/Badge.vue'
+import Badge from '@/components/ui/badge/Badge.vue'
 
-import { resolveRel } from '../../utils/cta'
-import CardArrow from '../common/CardArrow.vue'
-import ButtonPill from '../ui/button-pill/ButtonPill.vue'
-import Card from '../ui/card/Card.vue'
-import CardContent from '../ui/card/CardContent.vue'
-import CardDescription from '../ui/card/CardDescription.vue'
-import CardFooter from '../ui/card/CardFooter.vue'
-import CardHeader from '../ui/card/CardHeader.vue'
-import CardTitle from '../ui/card/CardTitle.vue'
+import { resolveRel } from '@/utils/cta'
+import CardArrow from '@/components/common/CardArrow.vue'
+import ButtonPill from '@/components/ui/button-pill/ButtonPill.vue'
+import Card from '@/components/ui/card/Card.vue'
+import CardContent from '@/components/ui/card/CardContent.vue'
+import CardDescription from '@/components/ui/card/CardDescription.vue'
+import CardFooter from '@/components/ui/card/CardFooter.vue'
+import CardHeader from '@/components/ui/card/CardHeader.vue'
+import CardTitle from '@/components/ui/card/CardTitle.vue'
 
 type CardArticleMedia = {
   type: 'image' | 'video'

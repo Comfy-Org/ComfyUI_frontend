@@ -26,6 +26,9 @@ export function useWorkspaceTierLabel() {
     isYearly: boolean
   ): string {
     if (!tier) return ''
+    // TEAM has no `tiers.*` catalog entry (it isn't a self-serve personal
+    // plan); reuse the existing team-plan copy instead of adding one.
+    if (tier === 'TEAM') return t('subscription.teamPlanName')
     const key = tierKeyMap[tier]
     if (!key) return ''
     const baseName = t(`subscription.tiers.${key}.name`)

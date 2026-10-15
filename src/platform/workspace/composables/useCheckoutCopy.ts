@@ -58,6 +58,7 @@ export function useCheckoutCopy() {
       'subscription.preview.pendingVerificationDetail'
     ),
     completeVerification: t('subscription.preview.completeVerification'),
+    cancelPaymentAndRetry: t('subscription.preview.cancelPaymentAndRetry'),
     confirmPayment: t('subscription.preview.confirmPayment'),
     startingToday: t('subscription.preview.startingToday'),
     parkedCheckoutDetail: t('subscription.preview.parkedCheckoutDetail'),

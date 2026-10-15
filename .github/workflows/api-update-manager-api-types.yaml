@@ -68,7 +68,7 @@ jobs:
       - name: Lint generated types
         run: |
           echo "Linting generated ComfyUI-Manager API types..."
-          pnpm lint:fix:no-cache -- ./src/workbench/extensions/manager/types/generatedManagerTypes.ts
+          pnpm lint:fix -- ./src/workbench/extensions/manager/types/generatedManagerTypes.ts
 
       - name: Check for changes
         id: check-changes

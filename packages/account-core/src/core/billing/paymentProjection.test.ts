@@ -123,6 +123,19 @@ const ROWS: readonly Row[] = [
     expected: { step: 'declined', reasonKey: 'authentication_failed' }
   },
   {
+    name: 'pending on a payment the customer did not approve is declined as not completed',
+    operation: pending({
+      authenticationState: 'failed_retryable',
+      declineReason: 'payment_not_completed',
+      recoveryAction: 'retry'
+    }),
+    expected: {
+      step: 'declined',
+      reasonKey: 'payment_not_completed',
+      recoveryAction: 'retry'
+    }
+  },
+  {
     name: 'pending with a retryable decline is declined with the coded reason',
     operation: pending({
       authenticationState: 'failed_retryable',

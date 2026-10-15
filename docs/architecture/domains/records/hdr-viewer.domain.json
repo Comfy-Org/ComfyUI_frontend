@@ -1,0 +1,44 @@
+{
+  "id": "hdr-viewer",
+  "capability": "HDR image viewer",
+  "description": "HDR and EXR image inspection: gamut conversion, image statistics and histograms, image loading and rendering, channel and exposure controls, and viewer dialog integration. Shared WebGL viewport and model-viewer dialog configuration remain external dependencies.",
+  "modules": [
+    { "path": "src/renderer/hdr/colorGamut.ts", "role": "domain" },
+    { "path": "src/renderer/hdr/colorGamut.test.ts", "role": "domain" },
+    { "path": "src/renderer/hdr/hdrStats.ts", "role": "domain" },
+    { "path": "src/renderer/hdr/hdrStats.test.ts", "role": "domain" },
+    { "path": "src/renderer/hdr/hdrViewerShader.ts", "role": "infrastructure" },
+    { "path": "src/utils/hdrFormatUtil.ts", "role": "infrastructure" },
+    { "path": "src/utils/hdrFormatUtil.test.ts", "role": "infrastructure" },
+    { "path": "src/composables/useHdrViewer.ts", "role": "application" },
+    { "path": "src/components/hdr/**", "role": "presentation" },
+    { "path": "src/services/hdrViewerService.ts", "role": "integration" },
+    { "path": "src/services/hdrViewerService.test.ts", "role": "integration" }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Gamut conversion and image statistics preserve numeric image interpretation",
+      "checks": [
+        "src/renderer/hdr/colorGamut.test.ts",
+        "src/renderer/hdr/hdrStats.test.ts"
+      ]
+    },
+    {
+      "name": "HDR detection and viewer dialog use full-resolution image URLs",
+      "checks": [
+        "src/utils/hdrFormatUtil.test.ts",
+        "src/services/hdrViewerService.test.ts",
+        "src/components/hdr/HdrViewerContent.test.ts"
+      ]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Image-preview and asset callers keep their existing runtime behavior; classified cross-domain imports remain visible without new dependency permissions.",
+    "The shared WebGL viewport and Load3D dialog configuration remain with their existing domains."
+  ],
+  "deepImports": "inventory"
+}

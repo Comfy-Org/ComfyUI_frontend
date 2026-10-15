@@ -15,9 +15,7 @@ import {
 } from './graphIntents'
 import type { GraphIntent, GraphIntentEvent } from './graphIntents'
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 const CLEAR: GraphIntent = { type: 'clear', graphId: 'g', nodeIds: [] }
 
@@ -34,7 +32,6 @@ function track(detach: () => void): void {
 
 afterEach(() => {
   for (const detach of detachers.splice(0)) detach()
-  vi.mocked(reportError).mockClear()
 })
 
 describe('withGraphIntentSource', () => {
@@ -88,6 +85,7 @@ describe('emitGraphIntent', () => {
 
     expect(events).toEqual([{ ...CLEAR, source: 'local' }])
     expect(reportError).toHaveBeenCalledExactlyOnceWith(failure, {
+      surface: 'graph',
       errorType: 'graph_intent_listener_failed',
       context: { intent: 'clear', source: 'local' }
     })

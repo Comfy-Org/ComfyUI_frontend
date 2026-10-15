@@ -1,4 +1,6 @@
 import { TestRunner, assert, vi } from 'vitest'
+import type { ShallowRef } from 'vue'
+import { shallowRef } from 'vue'
 
 import { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 import { DragAndScale } from '@/lib/litegraph/src/DragAndScale'
@@ -12,6 +14,7 @@ import type {
 type Canvas = Pick<
   RealComfyApp['canvas'],
   | 'canvas'
+  | 'dpr'
   | 'ds'
   | 'graph_mouse'
   | 'graph'
@@ -152,7 +155,7 @@ type AppState = {
     | 'nodePreviewImages'
     | 'vueAppReady']: RealComfyApp[K]
 } & {
-  rootGraph: RealComfyApp['rootGraphOrUndefined']
+  rootGraph: ShallowRef<RealComfyApp['rootGraphOrUndefined']>
   canvas: Canvas
   api: Pick<RealComfyApp['api'], 'clientId'> & typeof apiActions
   ui: Pick<
@@ -166,7 +169,8 @@ type AppState = {
 }
 
 function createState(): AppState {
-  const rootGraph = new LGraph()
+  const graph = new LGraph()
+  const rootGraph = shallowRef<RealComfyApp['rootGraphOrUndefined']>(graph)
   const element = document.createElement('canvas')
   return {
     rootGraph,
@@ -188,9 +192,10 @@ function createState(): AppState {
     clipspace: { clipspace: null, clipspace_return_node: null },
     canvas: {
       ...canvasActions,
-      graph: rootGraph,
+      graph,
       ds: new DragAndScale(element),
       canvas: element,
+      dpr: 1,
       selected_nodes: {},
       selectedItems: new Set(),
       subgraph: undefined,
@@ -227,28 +232,31 @@ export const app = {
   set canvas(value: Canvas) {
     state().canvas = value
   },
+  get canvasOrUndefined() {
+    return state().canvas
+  },
   get rootGraph() {
-    const graph = state().rootGraph
+    const graph = state().rootGraph.value
     assert.exists(graph, 'The test has not initialized a root graph')
     return graph
   },
   set rootGraph(value: RealComfyApp['rootGraph']) {
-    state().rootGraph = value
+    state().rootGraph.value = value
   },
   get rootGraphOrUndefined() {
-    return state().rootGraph
+    return state().rootGraph.value
   },
   set rootGraphOrUndefined(value: RealComfyApp['rootGraphOrUndefined']) {
-    state().rootGraph = value
+    state().rootGraph.value = value
   },
   get graph(): RealComfyApp['rootGraphOrUndefined'] {
-    return state().rootGraph
+    return state().rootGraph.value
   },
   set graph(value: RealComfyApp['graph']) {
-    state().rootGraph = value
+    state().rootGraph.value = value
   },
   get isGraphReady() {
-    return state().rootGraph !== undefined
+    return state().rootGraph.value !== undefined
   },
   get nodeOutputs() {
     return state().nodeOutputs

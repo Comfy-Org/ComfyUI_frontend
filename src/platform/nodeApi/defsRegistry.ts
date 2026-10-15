@@ -996,9 +996,11 @@ export function notifyDefsRefreshed(): void {
     try {
       listener()
     } catch (error) {
-      // One pack's failed rebuild must not stop the packs behind it.
       console.error('[nodeApi] onRefreshed listener threw', error)
-      reportError(error, { errorType: 'node_api_refresh_listener_failure' })
+      reportError(error, {
+        errorType: 'node_api_refresh_listener_failure',
+        surface: 'graph'
+      })
     }
   }
 }
@@ -1084,6 +1086,7 @@ export async function projectedPromptInputOmissions(
     } catch (error) {
       reportError(error, {
         errorType: 'node_api_extension_callback_failure',
+        surface: 'graph',
         tags: { node_type: nodeType, hook: 'onPromptSerialize' }
       })
       failure ??= error
@@ -1459,6 +1462,7 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
         } catch (error) {
           reportError(error, {
             errorType: 'node_api_extension_callback_failure',
+            surface: 'graph',
             tags: { node_type: def.type, hook }
           })
           return undefined
@@ -1474,6 +1478,7 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
         } catch (error) {
           reportError(error, {
             errorType: 'node_api_extension_callback_failure',
+            surface: 'graph',
             tags: { node_type: def.type, hook }
           })
           return undefined
@@ -1544,6 +1549,7 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
             )
             reportError(error, {
               errorType: 'node_api_def_extension_failure',
+              surface: 'graph',
               tags: { node_type: def.type }
             })
           }

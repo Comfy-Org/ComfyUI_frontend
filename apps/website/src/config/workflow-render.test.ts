@@ -125,6 +125,36 @@ describe('shared workflow rendering', () => {
     })
   })
 
+  it('draws a fresh seed for an empty randomize input and keeps an explicit one', async () => {
+    const definition = {
+      ...workflow,
+      inputs: {
+        ...workflow.inputs,
+        seed: { ...workflow.inputs.seed, advanced: true, randomize: true }
+      },
+      inputSchema: {
+        ...workflow.inputSchema,
+        properties: {
+          ...workflow.inputSchema.properties,
+          seed: { type: 'integer', minimum: 0, maximum: 4_294_967_295 }
+        },
+        required: ['enabled']
+      }
+    } satisfies WorkflowWorkshopModelDetail['workflow']
+    const random = {
+      ...model,
+      workflow: definition,
+      form: formForWorkflow(definition)
+    }
+    const signal = new AbortController().signal
+    const spy = vi.spyOn(Math, 'random').mockReturnValueOnce(0.5)
+    const drawn = await prepareWorkflowRender(random, {}, signal)
+    spy.mockRestore()
+    expect(drawn.appInputs.seed).toBe(2_147_483_648)
+    const kept = await prepareWorkflowRender(random, { seed: 7 }, signal)
+    expect(kept.appInputs.seed).toBe(7)
+  })
+
   it('supports a zero-input declaration without requesting any uploads', async () => {
     const definition = {
       ...workflow,

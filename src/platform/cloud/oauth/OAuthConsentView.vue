@@ -13,7 +13,7 @@
             />
           </div>
           <i
-            class="icon-[lucide--arrow-left-right] size-6 text-muted"
+            class="icon-[lucide--arrow-left-right] size-6 text-muted-foreground"
             aria-hidden="true"
           />
           <div
@@ -33,7 +33,7 @@
               })
             }}
           </h1>
-          <p class="m-0 text-sm text-muted">
+          <p class="m-0 text-sm text-muted-foreground">
             {{ t('oauth.consent.subtitle', { resource: resourceName }) }}
           </p>
         </div>
@@ -45,7 +45,7 @@
         </p>
         <div
           v-if="challenge.workspaces.length === 0"
-          class="rounded-lg bg-ink-400 p-3 text-sm text-muted"
+          class="rounded-lg bg-ink-400 p-3 text-sm text-muted-foreground"
         >
           {{ t('oauth.consent.noWorkspaces') }}
         </div>
@@ -94,7 +94,7 @@
           {{ t('oauth.consent.detailsHeader') }}
         </p>
         <div class="flex flex-col gap-1.5 rounded-lg bg-ink-400 p-3">
-          <span class="text-xs text-muted">
+          <span class="text-xs text-muted-foreground">
             {{ t('oauth.consent.permissionsHeader') }}
           </span>
           <ul
@@ -119,7 +119,7 @@
           v-if="challenge.redirect_uri"
           class="flex flex-col gap-1.5 rounded-lg bg-ink-400 p-3"
         >
-          <span class="text-xs text-muted">
+          <span class="text-xs text-muted-foreground">
             {{ t('oauth.consent.redirectNotice') }}
           </span>
           <code
@@ -170,7 +170,7 @@
     >
       {{ errorMessage }}
     </p>
-    <p v-else class="m-0 text-center text-sm text-muted">
+    <p v-else class="m-0 text-center text-sm text-muted-foreground">
       {{ t('oauth.consent.loading') }}
     </p>
   </main>
@@ -274,10 +274,16 @@ function messageForError(error: unknown): string {
   if (error instanceof OAuthApiError) {
     if (error.status === 400) return t('oauth.consent.errorExpired')
     if (error.status === 401) return t('oauth.consent.sessionError')
-    if (error.status === 403) return t('oauth.consent.errorScopeBroadening')
+    if (error.status === 403) return forbiddenMessage(error.code)
     if (error.status === 404) return t('oauth.consent.errorUnavailable')
   }
   return t('oauth.consent.genericError')
+}
+
+function forbiddenMessage(code: string | undefined): string {
+  return code === 'origin_not_allowed' || code === 'cross_site_request'
+    ? t('oauth.consent.errorOriginRefused')
+    : t('oauth.consent.errorScopeBroadening')
 }
 
 async function submit(decision: 'allow' | 'deny') {

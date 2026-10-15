@@ -182,6 +182,15 @@ export class NodeOperationsHelper {
     )
   }
 
+  async getSerializedGraphWithoutViewport() {
+    return this.page.evaluate(() => {
+      const data = window.app!.graph.serialize()
+      const extra = { ...data.extra }
+      delete extra.ds
+      return { ...data, extra }
+    })
+  }
+
   async loadGraph(data: ComfyWorkflowJSON): Promise<void> {
     await this.page.evaluate(
       (d) => window.app!.loadGraphData(d, true, true, null),

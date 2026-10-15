@@ -9,9 +9,13 @@ import {
   verifyAssetSupportedCandidates
 } from '@/platform/missingModel/missingModelScan'
 import type { MissingModelWorkflowData } from '@/platform/missingModel/missingModelScan'
-import type { MissingModelCandidate } from '@/platform/missingModel/types'
+import { cloudReleaseModelOptions } from '@/platform/missingModel/releaseModelOptions'
+import type {
+  MissingModelCandidate,
+  MissingModelPipelineResult
+} from '@/platform/missingModel/types'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -19,17 +23,12 @@ import { api } from '@/scripts/api'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import type { MissingNodeType } from '@/types/comfy'
+import type { MissingNodeType } from '@/platform/nodeReplacement/types'
 import {
   getNodeByExecutionId,
   isCandidateScopeActive,
   isMissingCandidateActive
 } from '@/utils/graphTraversalUtil'
-
-export interface MissingModelPipelineResult {
-  missingModels: ModelFile[]
-  confirmedCandidates: MissingModelCandidate[]
-}
 
 interface MissingModelPipelineStore {
   missingModelCandidates: MissingModelCandidate[] | null
@@ -121,7 +120,8 @@ export async function runMissingModelPipeline({
   const candidates = scanAllModelCandidates(
     graph,
     isAssetBrowserWidget,
-    getDirectory
+    getDirectory,
+    cloudReleaseModelOptions()
   )
 
   const enrichedAll = enrichWithEmbeddedMetadata(candidates, graphData)
@@ -183,15 +183,17 @@ export async function runMissingModelPipeline({
       '[Missing Model Pipeline] Missing model verification failed:',
       err
     )
-    reportError(err, { errorType: 'missing_model_verification_failed' })
-    useToastStore().add({
-      severity: 'warn',
-      summary: st(
+    reportError(err, {
+      surface: 'assets',
+      errorType: 'missing_model_verification_failed'
+    })
+    useToast().warning(
+      st(
         'toastMessages.missingModelVerificationFailed',
         'Failed to verify missing models. Some models may not be shown in the Issues tab.'
       ),
-      life: 5000
-    })
+      { duration: 5000 }
+    )
   }
 
   if (isCloud) {

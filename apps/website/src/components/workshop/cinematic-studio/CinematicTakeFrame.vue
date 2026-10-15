@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import { EyeOff } from '@lucide/vue'
-import { ref, watch } from 'vue'
+import { translationsFor } from '@/i18n/translations'
+import { LoaderCircle } from '@lucide/vue'
+import { computed, ref, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { Take } from '../../../lib/workshop/cinematic-studio/reel'
-import type { Locale } from '../../../i18n/translations'
-import { t } from '../../../i18n/translations'
+import type { Take } from '@/lib/workshop/cinematic-studio/reel'
+import type { Locale } from '@/i18n/translations'
 import { framedStyle } from './aspect-style'
+import CinematicTakeMedia from './CinematicTakeMedia.vue'
 import CinematicTakeNotice from './CinematicTakeNotice.vue'
 import CinematicTakeProgress from './CinematicTakeProgress.vue'
 
@@ -24,6 +25,7 @@ const {
   height?: string
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const emit = defineEmits<{
   retry: []
@@ -32,11 +34,26 @@ const emit = defineEmits<{
 }>()
 
 const revealed = ref(false)
+// A finished take keeps its frame until the picture has loaded: without it
+// the frame has no size for a moment and the whole stage jumps.
+const loaded = defineModel<boolean>('loaded', { default: false })
 watch(
   () => current.id,
   () => {
     revealed.value = false
+    loaded.value = false
   }
+)
+const settled = computed(() => current.status === 'done' && loaded.value)
+// A withheld NSFW clip has no <video> mounted yet, so `loaded` cannot fire and
+// the spinner would sit under the privacy overlay until the reveal. `loaded`
+// stays false on purpose, so the frame keeps its size until real media arrives.
+const withheld = computed(
+  () =>
+    current.status === 'done' &&
+    current.output.kind === 'video' &&
+    !!current.output.nsfw &&
+    !revealed.value
 )
 
 const TONE = {
@@ -50,7 +67,7 @@ const TONE = {
 } as const
 
 function frameTone(take: Take): string | undefined {
-  if (take.status === 'rendering') return 'bg-primary-comfy-ink-light'
+  if (take.status === 'rendering') return 'bg-black/20'
   if (take.status === 'cancelled') return TONE.neutral
   if (take.status !== 'failed') return undefined
   if (take.reason === 'policy' || take.reason === 'validation')
@@ -64,43 +81,25 @@ function frameTone(take: Take): string | undefined {
     :class="
       cn(
         'group relative flex max-w-full items-center justify-center overflow-hidden rounded-md',
-        frameTone(current)
+        current.status === 'done' && !loaded ? TONE.neutral : frameTone(current)
       )
     "
-    :style="
-      current.status === 'done'
-        ? undefined
-        : framedStyle(current.aspect, height)
-    "
+    :style="settled ? undefined : framedStyle(current.aspect, height)"
   >
     <template v-if="current.status === 'done'">
-      <img
-        :src="current.output.url"
-        :alt="current.prompt"
-        :class="
-          cn(
-            'block h-auto w-auto max-w-full',
-            current.output.nsfw && !revealed && 'blur-2xl'
-          )
-        "
-        :style="{ maxHeight: height }"
+      <CinematicTakeMedia
+        v-model:revealed="revealed"
+        :current
+        :height
+        :pending="!loaded"
+        :locale
+        @loaded="loaded = true"
       />
-      <div
-        v-if="current.output.nsfw && !revealed"
-        class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-primary-comfy-ink/40 text-center"
-      >
-        <EyeOff class="size-5 text-primary-warm-white" aria-hidden="true" />
-        <span class="text-sm text-primary-warm-white">
-          {{ t('workshop.output.nsfw', locale) }}
-        </span>
-        <button
-          type="button"
-          class="h-8 rounded-full px-4 text-xs font-bold tracking-wider text-primary-warm-white uppercase ring-1 ring-transparency-white-t20 ring-inset hover:bg-transparency-white-t8"
-          @click="revealed = true"
-        >
-          {{ t('workshop.output.reveal', locale) }}
-        </button>
-      </div>
+      <LoaderCircle
+        v-if="!loaded && !withheld"
+        class="size-5 animate-spin text-primary-warm-gray"
+        :aria-label="t('cinematic.stage.loadingTake')"
+      />
     </template>
     <CinematicTakeProgress
       v-else-if="current.status === 'rendering'"

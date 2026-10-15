@@ -51,7 +51,10 @@ test.describe(
       ).toBe('ready')
 
       const prompt = await comfyPage.workflow.getExportedWorkflow({ api: true })
-      expect(Object.keys(prompt).sort()).toEqual(['13', '14', '3'])
+      expect(Object.keys(prompt)).toHaveLength(3)
+      expect(Object.keys(prompt)).toEqual(
+        expect.arrayContaining(['13', '14', '3'])
+      )
       expect(prompt['3']).toEqual({
         inputs: { text: HOW_TO_TEXT },
         class_type: 'HowToTextOutput',

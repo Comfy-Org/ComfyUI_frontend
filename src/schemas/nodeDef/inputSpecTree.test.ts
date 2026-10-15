@@ -6,9 +6,7 @@ import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 interface BadSpecScenario {
   name: string
@@ -57,6 +55,7 @@ describe('input specification diagnostics', () => {
     expect(reportError).toHaveBeenCalledExactlyOnceWith(
       new Error('Unable to parse dynamic node input specification'),
       {
+        surface: 'graph',
         errorType: 'error_parsing_node_input_spec',
         tags: {
           failure_kind: 'degraded',

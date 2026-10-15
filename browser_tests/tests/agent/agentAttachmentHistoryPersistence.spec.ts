@@ -163,15 +163,13 @@ for (const scenario of [
         return route.fulfill(jsonRoute(messages))
       })
 
-      await new AgentPanel(page).open()
+      const panel = await new AgentPanel(page).open()
       await page
         .getByRole('button', {
           name: enMessages.sideToolbar.newBlankWorkflow,
           exact: true
         })
         .click()
-      const panel = page.locator('#agent-panel-root')
-      await expect(panel).toBeVisible()
       await panel
         .getByRole('button', { name: enMessages.agent.switchWorkflow })
         .click()

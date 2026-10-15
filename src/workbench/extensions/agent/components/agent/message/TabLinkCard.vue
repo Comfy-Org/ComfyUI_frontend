@@ -10,7 +10,7 @@ import { useAgentPanelStore } from '../../../stores/agent/agentPanelStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useAgentWorkflowTabBindingStore } from '../../../stores/agent/agentWorkflowTabBindingStore'
@@ -26,7 +26,7 @@ const { t } = useI18n()
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const bindingStore = useAgentWorkflowTabBindingStore()
-const toast = useToastStore()
+const toast = useToast()
 const { enabled: agentEnabled } = storeToRefs(useAgentPanelStore())
 const targetNavigation = useAgentTargetNavigation()
 
@@ -69,12 +69,11 @@ async function open(): Promise<void> {
       await targetNavigation.navigate({ workflowId, locatorId })
     } catch (error) {
       if (!(error instanceof AgentTargetNavigationError))
-        reportError(error, { errorType: 'agent_target_navigation_failure' })
-      toast.add({
-        severity: 'warn',
-        detail: t('agent.targetNavigationUnavailable'),
-        life: 5000
-      })
+        reportError(error, {
+          surface: 'agent',
+          errorType: 'agent_target_navigation_failure'
+        })
+      toast.warning(t('agent.targetNavigationUnavailable'), { duration: 5000 })
     }
   }
 }

@@ -21,6 +21,10 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 
 import { createDevAgentConfig } from './build/devAgentConfig.ts'
 import { comfyAPIPlugin } from './build/plugins/comfyAPIPlugin.ts'
+import {
+  hasCompleteSentryUploadConfig,
+  resolveSentryUploadConfig
+} from './build/sentryUploadConfig.ts'
 
 dotenvConfig()
 
@@ -145,7 +149,11 @@ const DISTRIBUTION: 'desktop' | 'localhost' | 'cloud' =
     : IS_CLOUD_URL
       ? 'cloud'
       : 'localhost'
-
+const SENTRY_UPLOAD_ENABLED = DISTRIBUTION === 'cloud' && !IS_DEV
+const SENTRY_UPLOAD =
+  SENTRY_UPLOAD_ENABLED && hasCompleteSentryUploadConfig(process.env)
+    ? resolveSentryUploadConfig(process.env)
+    : undefined
 // Nightly builds are from main branch; RC/stable builds are from core/* branches
 // Can be overridden via IS_NIGHTLY env var for testing
 const IS_NIGHTLY = process.env.IS_NIGHTLY === 'true'
@@ -215,17 +223,6 @@ const devAgentConfig = createDevAgentConfig(process.env)
 
 const cloudProxyConfig =
   DISTRIBUTION === 'cloud' ? { secure: false, changeOrigin: true } : {}
-
-// The agent proxy adds the session token, so only the dev server's own pages may use it.
-function isCrossOrigin(req: IncomingMessage): boolean {
-  const origin = req.headers.origin
-  if (origin === undefined) return false
-  try {
-    return new URL(origin).host !== req.headers.host
-  } catch {
-    return true
-  }
-}
 
 function handleGcsRedirect(
   proxyRes: IncomingMessage,
@@ -355,26 +352,7 @@ export default defineConfig({
           }
         : {}),
 
-      ...(devAgentConfig.proxy
-        ? {
-            '/api/agent': {
-              ...devAgentConfig.proxy,
-              ws: true,
-              rewrite: (path: string) => path.replace(/^\/api/, ''),
-              configure: (proxy) => {
-                proxy.on('proxyReqWs', (_proxyReq, req, socket) => {
-                  if (isCrossOrigin(req)) socket.destroy()
-                })
-              },
-              bypass: (req, res) => {
-                if (!res || !isCrossOrigin(req)) return null
-                res.statusCode = 403
-                res.end('The agent proxy serves the dev server origin only')
-                return false
-              }
-            }
-          }
-        : {}),
+      ...(devAgentConfig.proxy ? { '/api/agent': devAgentConfig.proxy } : {}),
 
       '/api': {
         target: DEV_SERVER_COMFYUI_URL,
@@ -671,26 +649,14 @@ export default defineConfig({
     // Sentry sourcemap upload plugin
     // Uploads sourcemaps to both staging and prod Sentry projects so that
     // error stack traces are readable in both environments.
-    ...(DISTRIBUTION === 'cloud' &&
-    process.env.SENTRY_AUTH_TOKEN &&
-    process.env.SENTRY_ORG &&
-    process.env.SENTRY_PROJECT &&
-    !IS_DEV
+    ...(SENTRY_UPLOAD_ENABLED
       ? [
-          sentryVitePlugin({
-            org: process.env.SENTRY_ORG,
-            project: process.env.SENTRY_PROJECT,
-            authToken: process.env.SENTRY_AUTH_TOKEN
-          }),
-          ...(process.env.SENTRY_PROJECT_PROD
-            ? [
-                sentryVitePlugin({
-                  org: process.env.SENTRY_ORG,
-                  project: process.env.SENTRY_PROJECT_PROD,
-                  authToken: process.env.SENTRY_AUTH_TOKEN
-                })
-              ]
-            : [])
+          {
+            name: 'validate-sentry-upload-config',
+            apply: 'build' as const,
+            configResolved: () => resolveSentryUploadConfig(process.env)
+          },
+          ...(SENTRY_UPLOAD ? [sentryVitePlugin(SENTRY_UPLOAD)] : [])
         ]
       : [])
   ],
@@ -782,11 +748,6 @@ export default defineConfig({
             },
 
             // UI component libraries
-            {
-              name: 'vendor-primevue',
-              test: /[\\/]node_modules[\\/](@?primevue|@primeuix)[\\/]/,
-              priority: 15
-            },
             {
               name: 'vendor-reka-ui',
               test: /[\\/]node_modules[\\/]reka-ui[\\/]/,
@@ -893,7 +854,6 @@ export default defineConfig({
 
   optimizeDeps: {
     exclude: ['@comfyorg/comfyui-electron-types'],
-    include: ['primevue/datatable', 'primevue/column'],
     entries: ['index.html']
   },
 
@@ -942,7 +902,11 @@ export default defineConfig({
         extends: true,
         test: {
           name: 'frontend',
-          setupFiles: ['./vitest.timer.setup.ts', './vitest.setup.ts'],
+          setupFiles: [
+            './vitest.console.setup.ts',
+            './vitest.timer.setup.ts',
+            './vitest.setup.ts'
+          ],
           exclude: ISOLATED_STORE_TESTS,
           include: [
             'index.test.ts',
@@ -957,7 +921,10 @@ export default defineConfig({
         test: {
           name: 'isolated-stores',
           environment: 'node',
-          setupFiles: ['./vitest.network.setup.ts'],
+          setupFiles: [
+            './vitest.console.setup.ts',
+            './vitest.network.setup.ts'
+          ],
           include: ISOLATED_STORE_TESTS
         }
       },
@@ -966,7 +933,10 @@ export default defineConfig({
         test: {
           name: 'tooling',
           environment: 'node',
-          setupFiles: ['./vitest.network.setup.ts'],
+          setupFiles: [
+            './vitest.console.setup.ts',
+            './vitest.network.setup.ts'
+          ],
           exclude: FRONTEND_SCRIPT_TESTS,
           include: [
             'scripts/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',

@@ -4,10 +4,13 @@ import { useI18n } from 'vue-i18n'
 
 import type { CheckoutUiState } from '@/config/checkoutUi'
 import { awaitCheckoutUiVariant, settleCheckoutUi } from '@/config/checkoutUi'
+import { useBillingEntry } from '@/entry/billingEntry'
 import CheckoutView from '@/views/CheckoutView.vue'
+import EntryErrorView from '@/views/EntryErrorView.vue'
 import FullPageCheckoutView from '@/views/FullPageCheckoutView.vue'
 
 const { t } = useI18n()
+const { error: unreadableLink } = useBillingEntry()
 const state = shallowRef<CheckoutUiState>({ phase: 'resolving' })
 
 void awaitCheckoutUiVariant().then((variant) => {
@@ -19,6 +22,7 @@ void awaitCheckoutUiVariant().then((variant) => {
   <FullPageCheckoutView
     v-if="state.phase === 'settled' && state.variant === 'full_page'"
   />
+  <EntryErrorView v-else-if="state.phase === 'settled' && unreadableLink" />
   <CheckoutView v-else-if="state.phase === 'settled'" />
   <main
     v-else

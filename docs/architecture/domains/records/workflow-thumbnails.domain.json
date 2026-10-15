@@ -1,0 +1,37 @@
+{
+  "id": "workflow-thumbnails",
+  "capability": "Workflow tab thumbnails",
+  "description": "Offscreen rendering of a graph overview image and per-workflow thumbnail capture and caching for workflow tab hover previews. Reuses the minimap canvas renderer and spatial bounds calculation; the workflow store, workflow service, and tab components remain with their owning domains.",
+  "modules": [
+    {
+      "path": "src/renderer/core/thumbnail/useWorkflowThumbnail.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/core/thumbnail/useWorkflowThumbnail.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/core/thumbnail/graphThumbnailRenderer.ts",
+      "role": "infrastructure"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Workflow thumbnails are captured, cached, and shown on tab hover",
+      "checks": [
+        "src/renderer/core/thumbnail/useWorkflowThumbnail.test.ts",
+        "browser_tests/tests/workflowTabThumbnail.spec.ts"
+      ]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Existing workflow store, workflow service, and workflow tab imports of thumbnail internals remain visible as cross-domain coupling debt; classification does not grant dependency exceptions.",
+    "Thumbnail rendering depends on minimap rendering internals without owning them."
+  ],
+  "deepImports": "inventory"
+}
