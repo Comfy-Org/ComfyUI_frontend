@@ -1,10 +1,7 @@
-import { execFileSync } from 'node:child_process'
-import { readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
+
 import { babelParse, parse } from 'vue/compiler-sfc'
 import type { SFCDescriptor } from 'vue/compiler-sfc'
-
-import { isMainModule } from './isMainModule'
 
 type RootNode = NonNullable<NonNullable<SFCDescriptor['template']>['ast']>
 type ElementNode = Extract<RootNode['children'][number], { tag: string }>
@@ -88,7 +85,7 @@ interface Instance {
   cache: Map<TemplateNode, Map<Category, Values>>
 }
 
-interface Finding {
+export interface Finding {
   file: string
   line: number
   tag: string
@@ -1027,46 +1024,3 @@ export function applyFindings(source: string, findings: Finding[]) {
   }
   return result
 }
-
-const SOURCE_ROOTS = ['src', 'apps/billing-web', 'packages']
-
-function readProject(repoRoot: string) {
-  const listed = execFileSync(
-    'git',
-    ['ls-files', '--', ...SOURCE_ROOTS, 'components.d.ts'],
-    { cwd: repoRoot, encoding: 'utf8', maxBuffer: 1 << 28 }
-  )
-  const files = listed
-    .split('\n')
-    .filter((file) => /\.(vue|css|ts)$/.test(file))
-    .filter((file) => !file.endsWith('.d.ts') || file === 'components.d.ts')
-  return new Map(
-    files.map((file) => [file, readFileSync(path.join(repoRoot, file), 'utf8')])
-  )
-}
-
-function main() {
-  const repoRoot = path.resolve(import.meta.dirname, '..')
-  const write = process.argv.includes('--write')
-  const files = readProject(repoRoot)
-  const findings = findInheritedClasses(files)
-  const byFile = new Map<string, Finding[]>()
-  for (const finding of findings)
-    byFile.set(finding.file, [...(byFile.get(finding.file) ?? []), finding])
-  for (const finding of findings)
-    console.log(
-      `${finding.file}:${finding.line}\t<${finding.tag}>\t${finding.tokens.join(' ')}`
-    )
-  if (write)
-    for (const [file, list] of byFile)
-      writeFileSync(
-        path.join(repoRoot, file),
-        applyFindings(files.get(file)!, list)
-      )
-  const count = findings.reduce((sum, f) => sum + f.tokens.length, 0)
-  console.log(
-    `${count} inherited classes in ${byFile.size} files${write ? ' removed' : ''}`
-  )
-}
-
-if (isMainModule(import.meta.url)) main()

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { applyFindings, findInheritedClasses } from './find-inherited-classes'
+import { applyFindings, findInheritedClasses } from './inheritedClasses'
 
 function sfc(template: string, imports: string[] = []) {
   const script = imports
