@@ -114,7 +114,9 @@ describe('registerWorkflowTabActivityTracker', () => {
     expect(activity.unseenModifiedPaths.has('workflows/a.json')).toBe(false)
 
     activity.markModified('workflows/b.json')
-    activity.setAgentTurnTabs([{ path: 'workflows/b.json' }])
+    activity.setAgentTurnTabs([
+      { path: 'workflows/b.json', awaitingApproval: false }
+    ])
     enabled.value = false
     await nextTick()
 

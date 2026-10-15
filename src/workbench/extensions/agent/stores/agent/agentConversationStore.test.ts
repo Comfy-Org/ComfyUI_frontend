@@ -2169,14 +2169,18 @@ describe('useAgentConversationStore', () => {
       openTab('workflows/a.json')
       const store = storeWithTurnOn(knownTab('workflows/a.json'), true)
       expect(store.activeTurnTabPath).toBeNull()
-      expect(store.turnTabs).toEqual([{ path: 'workflows/a.json' }])
+      expect(store.turnTabs).toEqual([
+        { path: 'workflows/a.json', awaitingApproval: false }
+      ])
 
       store.setThreadId('th')
       store.hydrate([])
       store.resumeBackgroundTurn()
 
       expect(store.activeTurnTabPath).toBe('workflows/a.json')
-      expect(store.turnTabs).toEqual([{ path: 'workflows/a.json' }])
+      expect(store.turnTabs).toEqual([
+        { path: 'workflows/a.json', awaitingApproval: false }
+      ])
     })
 
     const recovered = (ending: 'completed' | 'failed') => (store: Store) =>
@@ -2268,6 +2272,34 @@ describe('useAgentConversationStore', () => {
 
       expect(completed).toEqual(['workflows/a.json'])
     })
+
+    it.for([false, true])(
+      'stops awaiting approval once the ask is being answered (stashed: %s)',
+      (stashed) => {
+        openTab('workflows/a.json')
+        const store = storeWithTurnOn(knownTab('workflows/a.json'), stashed)
+
+        store.ingest(runApproval('t1', 'ask-1'))
+        expect(store.turnTabs).toEqual([
+          { path: 'workflows/a.json', awaitingApproval: true }
+        ])
+
+        store.setAskAnswering('ask-1', true)
+        expect(store.turnTabs).toEqual([
+          { path: 'workflows/a.json', awaitingApproval: false }
+        ])
+
+        store.setAskAnswering('ask-1', false)
+        expect(store.turnTabs).toEqual([
+          { path: 'workflows/a.json', awaitingApproval: true }
+        ])
+
+        store.retireAsk('ask-1', 'th')
+        expect(store.turnTabs).toEqual([
+          { path: 'workflows/a.json', awaitingApproval: false }
+        ])
+      }
+    )
 
     it.for([false, true])(
       'follows the tab of a live turn through a move, a rename and a close (stashed: %s)',

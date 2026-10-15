@@ -299,6 +299,7 @@
     "cancelled": "Cancelled",
     "agentWorking": "Agent is working on this workflow",
     "agentModified": "Agent updated this workflow",
+    "agentNeedsApproval": "Agent needs your approval",
     "job": "Job",
     "asset": "{count} asset | {count} assets",
     "untitled": "Untitled",

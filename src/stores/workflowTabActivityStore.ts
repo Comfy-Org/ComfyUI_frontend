@@ -3,6 +3,7 @@ import { computed, ref, shallowRef } from 'vue'
 
 export interface AgentTurnTab {
   path: string
+  awaitingApproval: boolean
 }
 
 /**
@@ -19,6 +20,14 @@ export const useWorkflowTabActivityStore = defineStore(
 
     const editingPaths = computed(
       () => new Set(agentTurnTabs.value.map(({ path }) => path))
+    )
+    const awaitingApprovalPaths = computed(
+      () =>
+        new Set(
+          agentTurnTabs.value.flatMap(({ path, awaitingApproval }) =>
+            awaitingApproval ? [path] : []
+          )
+        )
     )
 
     function setAgentTurnTabs(tabs: readonly AgentTurnTab[]): void {
@@ -51,6 +60,7 @@ export const useWorkflowTabActivityStore = defineStore(
 
     return {
       editingPaths,
+      awaitingApprovalPaths,
       creatingTab,
       unseenModifiedPaths,
       setAgentTurnTabs,

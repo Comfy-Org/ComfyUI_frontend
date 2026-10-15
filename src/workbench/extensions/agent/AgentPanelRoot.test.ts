@@ -5890,7 +5890,9 @@ describe('AgentPanelRoot lifecycle', () => {
 
   it('clears workflow activity when the panel unmounts', () => {
     const activity = useWorkflowTabActivityStore()
-    activity.setAgentTurnTabs([{ path: 'workflows/active.json' }])
+    activity.setAgentTurnTabs([
+      { path: 'workflows/active.json', awaitingApproval: false }
+    ])
     activity.setCreating(true)
 
     const { unmount } = renderWithSelectedTarget()

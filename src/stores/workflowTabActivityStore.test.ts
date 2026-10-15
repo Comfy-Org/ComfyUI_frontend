@@ -3,21 +3,23 @@ import { describe, expect, it } from 'vitest'
 import { useWorkflowTabActivityStore } from './workflowTabActivityStore'
 
 describe('useWorkflowTabActivityStore', () => {
-  it('spins every tab with a running turn', () => {
+  it('spins every tab with a running turn and marks the ones awaiting approval', () => {
     const store = useWorkflowTabActivityStore()
 
     store.setAgentTurnTabs([
-      { path: 'workflows/a.json' },
-      { path: 'workflows/b.json' }
+      { path: 'workflows/a.json', awaitingApproval: true },
+      { path: 'workflows/b.json', awaitingApproval: false }
     ])
 
     expect([...store.editingPaths]).toEqual([
       'workflows/a.json',
       'workflows/b.json'
     ])
+    expect([...store.awaitingApprovalPaths]).toEqual(['workflows/a.json'])
 
     store.setAgentTurnTabs([])
     expect(store.editingPaths.size).toBe(0)
+    expect(store.awaitingApprovalPaths.size).toBe(0)
   })
 
   it('toggles the tab-creation flag', () => {

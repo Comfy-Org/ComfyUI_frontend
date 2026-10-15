@@ -1,4 +1,5 @@
 import { createEventHook } from '@vueuse/core'
+import { isEqual } from 'es-toolkit'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowReactive, shallowRef } from 'vue'
 
@@ -54,6 +55,7 @@ interface BackgroundTurn {
   skillReference?: SkillReference
   settled: boolean
   tab: TurnTab
+  approvalAskIds: readonly string[]
 }
 
 interface ActiveTurnSlot {
@@ -88,6 +90,12 @@ const ASK_RESOLUTION_GRACE_MS = 15_000
 
 function isLoadSkillPart(part: AssistantMessage['parts'][number]): boolean {
   return part.type === 'tool' && part.name === 'load_skill'
+}
+
+function runApprovalAskIds(message: AssistantMessage): string[] {
+  return message.parts.flatMap((part) =>
+    part.type === 'runApproval' ? [part.askId] : []
+  )
 }
 
 export interface LiveTurn {
@@ -322,7 +330,9 @@ export const useAgentConversationStore = defineStore(
 
     function updateBackgroundTurn(
       turnId: TurnId,
-      change: Partial<Pick<BackgroundTurn, 'settled' | 'tab'>>
+      change: Partial<
+        Pick<BackgroundTurn, 'settled' | 'tab' | 'approvalAskIds'>
+      >
     ): void {
       const entry = backgroundTurns.get(turnId)
       if (entry) backgroundTurns.set(turnId, { ...entry, ...change })
@@ -357,6 +367,15 @@ export const useAgentConversationStore = defineStore(
         (_id, thread, tab) => thread === owner && isProvisional(tab),
         workflowInstanceId
       )
+    }
+
+    function publishMessage(turnId: TurnId, message: AssistantMessage): void {
+      replaceActive(message)
+      const entry = backgroundTurns.get(turnId)
+      if (!entry) return
+      const approvalAskIds = runApprovalAskIds(message)
+      if (!isEqual(approvalAskIds, entry.approvalAskIds))
+        updateBackgroundTurn(turnId, { approvalAskIds })
     }
 
     function recordApprovalShown(askId: string, shownAt: number): boolean {
@@ -615,7 +634,7 @@ export const useAgentConversationStore = defineStore(
         message,
         transport: createAgentEventTransport(
           message,
-          replaceActive,
+          (snapshot) => publishMessage(turnId, snapshot),
           () => canvasSyncGate(),
           () => canvasSyncOutcomeCount(),
           reportUndeliverableAskData
@@ -798,7 +817,8 @@ export const useAgentConversationStore = defineStore(
         userText: userTexts.value.get(slot.message.id),
         skillReference: userSkillReferences.value.get(slot.message.id),
         settled: false,
-        tab: slot.tab
+        tab: slot.tab,
+        approvalAskIds: runApprovalAskIds(slot.message)
       })
       clearActive()
     }
@@ -1257,7 +1277,7 @@ export const useAgentConversationStore = defineStore(
           message: pending.message,
           transport: createAgentEventTransport(
             pending.message,
-            replaceActive,
+            (snapshot) => publishMessage(pending.messageId, snapshot),
             () => canvasSyncGate(),
             () => canvasSyncOutcomeCount(),
             reportUndeliverableAskData
@@ -1359,21 +1379,38 @@ export const useAgentConversationStore = defineStore(
     const activeMessageId = computed(() => activeMessage.value?.id ?? null)
     const isStreaming = computed(() => activeMessage.value?.streaming ?? false)
 
+    function awaitsAnswer(approvalAskIds: readonly string[]): boolean {
+      return approvalAskIds.some((askId) => !answeringAskIds.value.has(askId))
+    }
+
     const activeTurnTabPath = computed(() => {
       const slot = activeSlot.value
       return slot !== null && isStreaming.value ? openPathOf(slot.tab) : null
     })
+    const activeTurnAwaitsAnswer = computed(() =>
+      activeMessage.value
+        ? awaitsAnswer(runApprovalAskIds(activeMessage.value))
+        : false
+    )
     const turnTabs = computed<AgentTurnTab[]>(() => {
       const activePath = activeTurnTabPath.value
       const background = [...backgroundTurns.values()].flatMap(
-        ({ settled, tab }) => {
+        ({ settled, tab, approvalAskIds }) => {
           const path = settled ? null : openPathOf(tab)
-          return path === null ? [] : [{ path }]
+          return path === null
+            ? []
+            : [{ path, awaitingApproval: awaitsAnswer(approvalAskIds) }]
         }
       )
       return activePath === null
         ? background
-        : [{ path: activePath }, ...background]
+        : [
+            {
+              path: activePath,
+              awaitingApproval: activeTurnAwaitsAnswer.value
+            },
+            ...background
+          ]
     })
     const status = computed<ConversationStatus>(() => {
       const message = activeMessage.value

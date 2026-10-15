@@ -1,4 +1,4 @@
-import { respondToFetch } from '@comfyorg/test-utils/fetch'
+import { fetchRequests, respondToFetch } from '@comfyorg/test-utils/fetch'
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import type {
@@ -228,6 +228,23 @@ async function openChat(title: string, threadId: string): Promise<void> {
   )
 }
 
+function emitRunApproval(): void {
+  ws.emit('agent_ask', {
+    thread_id: 'th-1',
+    message_id: 'm-1',
+    ask_id: 'm-1:call-1',
+    kind: 'run_approval',
+    prompt: 'Run it?',
+    options: [
+      { id: 'run', label: 'Run' },
+      { id: 'cancel', label: 'Cancel' }
+    ],
+    min_selections: 1,
+    max_selections: 1,
+    allow_other: false
+  })
+}
+
 function emitDone(): void {
   ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
 }
@@ -324,6 +341,7 @@ beforeEach(() => {
       ...(acks.shift() ?? { message_id: 'm-1', workflow_id: 'wf-42' })
     })
   )
+  respondToFetch(/\/asks\//, () => json(200, { status: 'answered' }))
   workflowStore.activeWorkflow = addBoundTab(runningTab, 'wf-42')
   stopTracker = registerWorkflowTabActivityTracker(ref(true))
 })
@@ -442,6 +460,71 @@ describe('AgentPanelRoot tab activity across chats', () => {
     expect(tabActivity().editingPaths.has(otherTab)).toBe(false)
     expect(tabActivity().unseenModifiedPaths.has(otherTab)).toBe(true)
     expect(tabActivity().unseenModifiedPaths.has(runningTab)).toBe(false)
+  })
+
+  it.for([
+    {
+      asked: 'while the chat is open',
+      switchBefore: false,
+      switchAfter: false
+    },
+    {
+      asked: 'while the chat is in the background',
+      switchBefore: true,
+      switchAfter: false
+    },
+    {
+      asked: 'and then the chat is stashed',
+      switchBefore: false,
+      switchAfter: true
+    }
+  ])(
+    'marks the tab as needing approval when asked $asked',
+    async ({ switchBefore, switchAfter }) => {
+      renderPanel()
+      await send('add an upscaler')
+      if (switchBefore) await openChat('Other chat', 'th-2')
+      expect(tabActivity().awaitingApprovalPaths.size).toBe(0)
+
+      emitRunApproval()
+      await nextTick()
+      if (switchAfter) await openChat('Other chat', 'th-2')
+      expect([...tabActivity().awaitingApprovalPaths]).toEqual([runningTab])
+
+      ws.emit('agent_ask_resolved', {
+        thread_id: 'th-1',
+        message_id: 'm-1',
+        ask_id: 'm-1:call-1',
+        status: 'answered',
+        selected: ['run']
+      })
+      await nextTick()
+
+      expect(tabActivity().awaitingApprovalPaths.size).toBe(0)
+      expect([...tabActivity().editingPaths]).toEqual([runningTab])
+    }
+  )
+
+  it('stops showing needs-approval once the user answers, before the server confirms', async () => {
+    renderPanel()
+    await send('add an upscaler')
+    emitRunApproval()
+    await nextTick()
+    expect([...tabActivity().awaitingApprovalPaths]).toEqual([runningTab])
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Run' }))
+    await vi.waitFor(() =>
+      expect(fetchRequests({ method: 'POST', url: /\/asks\// })).toHaveLength(1)
+    )
+    await nextTick()
+
+    expect(tabActivity().awaitingApprovalPaths.size).toBe(0)
+    expect([...tabActivity().editingPaths]).toEqual([runningTab])
+
+    await openChat('Other chat', 'th-2')
+
+    expect(tabActivity().awaitingApprovalPaths.size).toBe(0)
+    expect([...tabActivity().editingPaths]).toEqual([runningTab])
   })
 
   it('follows the tab when it is renamed mid-turn', async () => {

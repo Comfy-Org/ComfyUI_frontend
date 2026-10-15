@@ -341,7 +341,9 @@ describe('WorkflowSelectorChip', () => {
   it('does not spin for a turn running in a chat that is not open', async () => {
     const conversation = startOpenChatTurn('workflows/portrait.json')
     conversation.stashActiveTurn()
-    expect(conversation.turnTabs).toEqual([{ path: 'workflows/portrait.json' }])
+    expect(conversation.turnTabs).toEqual([
+      { path: 'workflows/portrait.json', awaitingApproval: false }
+    ])
     useWorkflowTabActivityStore().setAgentTurnTabs(conversation.turnTabs)
     const { user } = renderChip()
     const selector = trigger()

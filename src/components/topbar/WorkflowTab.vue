@@ -47,8 +47,14 @@
               )
             "
           >
+            <span
+              v-if="isAgentAwaitingApproval"
+              role="img"
+              :aria-label="t('g.agentNeedsApproval')"
+              class="absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full bg-warning-background"
+            />
             <i
-              v-if="isAgentEditing"
+              v-else-if="isAgentEditing"
               role="img"
               :aria-label="t('g.agentWorking')"
               class="absolute top-1/2 left-1/2 z-10 icon-[lucide--loader-circle] size-4 -translate-1/2 text-smoke-800 motion-safe:animate-spin"
@@ -87,7 +93,7 @@
           :class="
             cn(
               'close-button absolute top-1/2 right-2 size-4 -translate-y-1/2 rounded-none p-0 text-smoke-800 group-focus-within/tab:visible',
-              isActiveTab && !hasStatusIndicator ? 'visible' : 'invisible',
+              closeButtonVisibility,
               revealsCloseOnHover && 'group-hover/tab:visible'
             )
           "
@@ -245,6 +251,10 @@ const workflowStatusIconClasses: Record<WorkflowExecutionStatus, string> = {
 
 const tabActivity = useWorkflowTabActivityStore()
 
+const isAgentAwaitingApproval = computed(() =>
+  tabActivity.awaitingApprovalPaths.has(workflowOption.workflow.path)
+)
+
 const isAgentEditing = computed(() =>
   tabActivity.editingPaths.has(workflowOption.workflow.path)
 )
@@ -272,6 +282,7 @@ const workflowStatusLabel = computed(() =>
 
 const hasStatusIndicator = computed(
   () =>
+    isAgentAwaitingApproval.value ||
     isAgentEditing.value ||
     showUnseenAgentDot.value ||
     workflowStatus.value !== undefined ||
@@ -280,6 +291,10 @@ const hasStatusIndicator = computed(
 
 const revealsCloseOnHover = computed(
   () => isActiveTab.value || !compact || !hasStatusIndicator.value
+)
+
+const closeButtonVisibility = computed(() =>
+  isActiveTab.value && !hasStatusIndicator.value ? 'visible' : 'invisible'
 )
 
 const thumbnailUrl = computed(() => {
