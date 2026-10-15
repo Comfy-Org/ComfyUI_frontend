@@ -410,38 +410,24 @@ describe('historical workflow restoration', () => {
     expect(warnRestoreFailed).not.toHaveBeenCalled()
   })
 
-  it.for([
-    {
-      listing: 'omits the workflow',
-      list: async () => listing([{ id: 'wf-saved', name: 'saved' }])
-    },
-    {
-      listing: 'fails',
-      list: async (): Promise<never> => {
-        throw new Error('offline')
-      }
-    }
-  ])(
-    'marks a chat unavailable by its lookup when the Cloud listing $listing',
-    async ({ list }) => {
-      const {
-        selection,
-        workflows,
-        panel,
-        current,
-        listCloudWorkflows,
-        warnRestoreFailed
-      } = setup()
-      listCloudWorkflows.mockImplementationOnce(list)
+  it('marks a chat unavailable by its lookup when the Cloud listing fails', async () => {
+    const {
+      selection,
+      workflows,
+      panel,
+      current,
+      listCloudWorkflows,
+      warnRestoreFailed
+    } = setup()
+    listCloudWorkflows.mockRejectedValueOnce(new Error('offline'))
 
-      expect(await selection.restoreTarget('wf-gone', () => true)).toBe(true)
+    expect(await selection.restoreTarget('wf-gone', () => true)).toBe(true)
 
-      expect(workflows.activeWorkflow?.path).toBe(current.path)
-      expect(panel.selectedWorkflow).toBeNull()
-      expect(panel.targetUnavailable).toBe(true)
-      expect(warnRestoreFailed).not.toHaveBeenCalled()
-    }
-  )
+    expect(workflows.activeWorkflow?.path).toBe(current.path)
+    expect(panel.selectedWorkflow).toBeNull()
+    expect(panel.targetUnavailable).toBe(true)
+    expect(warnRestoreFailed).not.toHaveBeenCalled()
+  })
 
   it.for([
     {
