@@ -1,12 +1,19 @@
 import { uniq } from 'es-toolkit'
 
-const REPO_OWNER_PREFIX =
-  /^(?:https?:\/\/)?(?:www\.)?(?:github\.com\/)?[A-Za-z0-9-]+\/(\S.*)$/
+const GITHUB_REPO_URL =
+  /^(?:git@github\.com:|(?:https?:\/\/)?(?:www\.)?github\.com\/)[a-z0-9-]+\/([\w.-]+?)(?:\.git)?(?:[/?#].*)?$/i
+
+const BARE_COMPOUND_REPO_SLUG =
+  /^[A-Za-z0-9-]+\/([\w.-]*[A-Za-z0-9][-_.][A-Za-z0-9][\w.-]*)$/
 
 const WORD_SEPARATORS = /[\s_-]+/
 
 export function stripRepoOwner(query: string): string {
-  return REPO_OWNER_PREFIX.exec(query)?.[1] ?? query
+  return (
+    GITHUB_REPO_URL.exec(query)?.[1] ??
+    BARE_COMPOUND_REPO_SLUG.exec(query)?.[1] ??
+    query
+  )
 }
 
 export function splitOnSeparators(input: string): string {

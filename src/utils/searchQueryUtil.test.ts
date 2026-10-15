@@ -58,7 +58,31 @@ describe('stripRepoOwner', () => {
       query: 'https://www.github.com/kijai/ComfyUI-KJNodes',
       expected: 'ComfyUI-KJNodes'
     },
-    { query: 'owner/repo/tree/main', expected: 'repo/tree/main' }
+    { query: 'GitHub.com/kijai/ComfyUI-KJNodes', expected: 'ComfyUI-KJNodes' },
+    { query: 'github.com/kijai/kjnodes', expected: 'kjnodes' },
+    ...[
+      '?tab=readme-ov-file',
+      '/tree/main',
+      '/blob/main/nodes.py',
+      '/issues/123',
+      '/pulls',
+      '.git',
+      '/',
+      '#readme'
+    ].map((tail) => ({
+      query: `https://github.com/kijai/ComfyUI-KJNodes${tail}`,
+      expected: 'ComfyUI-KJNodes'
+    })),
+    {
+      query: 'git@github.com:kijai/ComfyUI-KJNodes.git',
+      expected: 'ComfyUI-KJNodes'
+    },
+    { query: 'kijai/ComfyUI-KJNodes', expected: 'ComfyUI-KJNodes' },
+    { query: 'gaclove/comfyui.vfi', expected: 'comfyui.vfi' },
+    {
+      query: 'ainvfx/comfyui-seedvr2_videoupscaler',
+      expected: 'comfyui-seedvr2_videoupscaler'
+    }
   ])('strips "$query" to "$expected"', ({ query, expected }) => {
     expect(stripRepoOwner(query)).toBe(expected)
   })
@@ -69,7 +93,16 @@ describe('stripRepoOwner', () => {
     'upscale / restore',
     '/leading-slash',
     'trailing-slash/',
-    'SD1.5/SDXL'
+    'SD1.5/SDXL',
+    'image/upscaling',
+    'SDXL/Flux',
+    'upscale/restore',
+    '1/2',
+    'kijai/c',
+    'kijai/comfyui-',
+    'kijai/kjnodes',
+    'owner/repo-name/tree/main',
+    'github.com/kijai'
   ])('keeps %j unchanged', (query) => {
     expect(stripRepoOwner(query)).toBe(query)
   })
@@ -89,7 +122,7 @@ describe('buildPackSearchFallbacks', () => {
       query: 'euler-discrete-scheduler',
       expected: ['euler discrete scheduler']
     },
-    { query: 'kijai/kjnodes', expected: ['kjnodes'] }
+    { query: 'github.com/kijai/kjnodes', expected: ['kjnodes'] }
   ])('yields $expected for "$query"', ({ query, expected }) => {
     expect(buildPackSearchFallbacks(query)).toEqual(expected)
   })
@@ -101,6 +134,8 @@ describe('buildPackSearchFallbacks', () => {
     'LoRA',
     'EulerDiscreteScheduler',
     'sd1.5',
+    'image/upscaling',
+    'kijai/c',
     '',
     '   ',
     'gguf '
