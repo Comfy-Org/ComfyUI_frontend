@@ -1,35 +1,19 @@
 <template>
-  <div
-    class="flex w-full max-w-lg flex-col rounded-2xl border border-border-default bg-base-background"
-  >
-    <div
-      class="flex h-12 items-center justify-between border-b border-border-default px-4"
-    >
-      <h2
-        class="m-0 flex items-center gap-2 text-sm font-normal text-base-foreground"
-      >
-        <template v-if="step === 'invited'">
-          <i class="pi pi-check-circle size-4 text-success-background" />
-          {{
-            $t(
-              'workspacePanel.inviteLinks.sentTitle',
-              { count: invitedEmails.length },
-              invitedEmails.length
-            )
-          }}
-        </template>
-        <template v-else>
-          {{ $t('workspacePanel.inviteMemberDialog.title') }}
-        </template>
-      </h2>
-      <button
-        class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none"
-        :aria-label="$t('g.close')"
-        @click="onClose"
-      >
-        <i class="pi pi-times size-4" />
-      </button>
-    </div>
+  <DialogPanel class="w-full max-w-lg" @close="onClose">
+    <template #title>
+      <template v-if="step === 'invited'">
+        <i class="pi pi-check-circle size-4 text-success-background" />
+        {{
+          $t(
+            'workspacePanel.inviteLinks.sentTitle',
+            { count: invitedEmails.length },
+            invitedEmails.length
+          )
+        }} </template
+      ><template v-else>
+        {{ $t('workspacePanel.inviteMemberDialog.title') }}
+      </template>
+    </template>
 
     <template v-if="step === 'form'">
       <div class="flex flex-col gap-2 p-4">
@@ -100,10 +84,11 @@
         </Button>
       </div>
     </template>
-  </div>
+  </DialogPanel>
 </template>
 
 <script setup lang="ts">
+import DialogPanel from '@/components/ui/dialog/DialogPanel.vue'
 import { refAutoReset } from '@vueuse/core'
 import { computed, ref } from 'vue'
 
