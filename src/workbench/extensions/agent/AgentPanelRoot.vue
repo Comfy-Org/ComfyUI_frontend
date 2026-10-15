@@ -1843,7 +1843,9 @@ function warnAttachment(message: string): void {
 
 function droppedAssetVerdict(asset: DroppedAsset): AgentAttachVerdict {
   const fromRef = asset.ref ? agentAttachRefVerdict(asset.ref) : 'unknown'
-  return fromRef === 'unknown' ? agentAttachVerdict(asset.name) : fromRef
+  return fromRef === 'unknown'
+    ? agentAttachVerdict(asset.filename ?? asset.name)
+    : fromRef
 }
 
 function stageAcceptedAssetCard(
