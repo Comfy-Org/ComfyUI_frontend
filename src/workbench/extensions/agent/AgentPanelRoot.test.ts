@@ -9621,13 +9621,24 @@ describe('AgentPanelRoot workflow binding', () => {
     mockMessagesEndpoint('wf-42', [{ id: 'wf-42', name: 'current' }])
     renderWithSelectedTarget()
     await sendFromComposer('work here')
-    respondToFetch({ method: 'GET', url: /\/threads\/th-1\/messages/ }, () =>
-      json(404, { error: 'thread not found' })
+    const threadMessages = { method: 'GET', url: /\/threads\/th-1\/messages/ }
+    let deleteThread = () => {}
+    const deletion = new Promise<Response>((resolve) => {
+      deleteThread = () => resolve(json(404, { error: 'thread not found' }))
+    })
+    respondToFetch(threadMessages, () => deletion)
+    respondToFetch(
+      threadMessages,
+      () => json(404, { error: 'thread not found' }),
+      { times: 1 }
     )
     vi.useFakeTimers()
     ws.emit('reconnecting')
     ws.emit('reconnected')
-    await vi.advanceTimersByTimeAsync(600)
+    await vi.waitFor(async () => {
+      await vi.advanceTimersToNextTimerAsync()
+      expect(fetchRequests(threadMessages)).toHaveLength(2)
+    })
     ws.emit('agent_active_tab', {
       workflow_id: 'wf-late',
       name: 'Late',
@@ -9635,9 +9646,10 @@ describe('AgentPanelRoot workflow binding', () => {
     })
     await vi.advanceTimersByTimeAsync(0)
     expect(useWorkflowTabActivityStore().creatingTab).toBe(true)
-    await vi.advanceTimersByTimeAsync(400)
+    deleteThread()
+    await vi.advanceTimersByTimeAsync(0)
     expect(useAgentConversationStore().threadId).toBeNull()
-    await vi.advanceTimersByTimeAsync(100)
+    await vi.advanceTimersByTimeAsync(500)
 
     expect(workflowStore.getWorkflowByPath('workflows/Late.json')).toBeNull()
     expect(workflowStore.activeWorkflow?.path).toBe(current.path)
