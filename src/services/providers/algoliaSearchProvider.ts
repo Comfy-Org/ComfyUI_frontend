@@ -134,15 +134,20 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
       }
     }
 
-    const isNodeSearch =
-      params.restrictSearchableAttributes?.includes('comfy_nodes')
-    const fallbackQueries =
-      pageNumber === 0 && !isNodeSearch ? buildPackSearchFallbacks(query) : []
-    const requests: SearchQuery[] = [query, ...fallbackQueries].map(packQuery)
+    async function searchFallbacks(
+      fallbackQueries: string[]
+    ): Promise<SearchResponse<AlgoliaNodePack>[]> {
+      if (fallbackQueries.length === 0) return []
+      const { results } = await searchClient.search<AlgoliaNodePack>({
+        requests: fallbackQueries.map(packQuery),
+        strategy: 'none'
+      })
+      return results as SearchResponse<AlgoliaNodePack>[]
+    }
 
     const shouldQuerySuggestions =
       query.length >= MIN_CHARS_FOR_SUGGESTIONS_ALGOLIA
-
+    const requests: SearchQuery[] = [packQuery(query)]
     if (shouldQuerySuggestions) {
       requests.push({
         indexName: 'nodes_index_query_suggestions',
@@ -157,13 +162,19 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
       strategy: 'none'
     })
 
-    const [nodePacks, ...fallbackResults] = results.slice(
-      0,
-      1 + fallbackQueries.length
-    ) as SearchResponse<AlgoliaNodePack>[]
-    const querySuggestions = results[1 + fallbackQueries.length] as
+    const nodePacks = results[0] as SearchResponse<AlgoliaNodePack>
+    const querySuggestions = results[1] as
       | SearchResponse<NodesIndexSuggestion>
       | undefined
+
+    const isNodeSearch =
+      params.restrictSearchableAttributes?.includes('comfy_nodes')
+    const needsFallbacks =
+      pageNumber === 0 && !isNodeSearch && nodePacks.hits.length < pageSize
+    const fallbackQueries = needsFallbacks
+      ? buildPackSearchFallbacks(query)
+      : []
+    const fallbackResults = await searchFallbacks(fallbackQueries)
 
     const mergedHits = [...nodePacks.hits]
     const seenHitKeys = new Set(nodePacks.hits.map((hit) => hit.objectID))

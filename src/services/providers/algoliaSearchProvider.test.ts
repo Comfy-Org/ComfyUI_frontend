@@ -23,6 +23,15 @@ interface MockSearchClient {
   search: Mock
 }
 
+const packHit = (id: string) => ({
+  objectID: id,
+  id,
+  name: id,
+  publisher_id: 'pub',
+  total_install: 0,
+  comfy_nodes: []
+})
+
 describe('useAlgoliaSearchProvider', () => {
   let mockSearchClient: MockSearchClient
 
@@ -38,6 +47,13 @@ describe('useAlgoliaSearchProvider', () => {
       > as ReturnType<typeof algoliasearch>
     )
   })
+
+  const packQueriesPerRequest = () =>
+    mockSearchClient.search.mock.calls.map(([{ requests }]) =>
+      requests
+        .filter((r: { indexName: string }) => r.indexName === 'nodes_index')
+        .map((r: { query: string }) => r.query)
+    )
 
   afterEach(() => {
     // Clear the module-level cache between tests
@@ -254,28 +270,10 @@ describe('useAlgoliaSearchProvider', () => {
       ).rejects.toThrow('Algolia request failed')
     })
 
-    it('should add no fallback hits when the primary query already fills the page', async () => {
-      const primaryHits = Array.from({ length: 10 }, (_, i) => ({
-        objectID: `primary-${i}`,
-        id: `primary-${i}`,
-        name: `Primary Pack ${i}`,
-        publisher_id: 'pub',
-        total_install: 0,
-        comfy_nodes: []
-      }))
-      const fallbackOnlyHit = {
-        objectID: 'fallback-only',
-        id: 'fallback-only',
-        name: 'Fallback Only Pack',
-        publisher_id: 'pub',
-        total_install: 0,
-        comfy_nodes: []
-      }
-
-      mockSearchClient.search.mockResolvedValue({
+    it('sends no fallback queries when the raw query fills the page', async () => {
+      mockSearchClient.search.mockResolvedValueOnce({
         results: [
-          { hits: primaryHits },
-          { hits: [fallbackOnlyHit] },
+          { hits: Array.from({ length: 10 }, (_, i) => packHit(`raw-${i}`)) },
           { hits: [] }
         ]
       })
@@ -286,35 +284,37 @@ describe('useAlgoliaSearchProvider', () => {
         pageNumber: 0
       })
 
+      expect(packQueriesPerRequest()).toEqual([['euler-discrete-scheduler']])
       expect(result.nodePacks).toHaveLength(10)
-      expect(result.nodePacks.map((pack) => pack.id)).not.toContain(
-        'fallback-only'
-      )
+    })
+
+    it('sends the fallback queries in a second batch when the raw query is short of a page', async () => {
+      mockSearchClient.search
+        .mockResolvedValueOnce({ results: [{ hits: [] }, { hits: [] }] })
+        .mockResolvedValueOnce({ results: [{ hits: [] }, { hits: [] }] })
+
+      const provider = useAlgoliaSearchProvider()
+      await provider.searchPacks('kijai/comfyui-KJNodes', {
+        pageSize: 10,
+        pageNumber: 0
+      })
+
+      expect(packQueriesPerRequest()).toEqual([
+        ['kijai/comfyui-KJNodes'],
+        ['comfyui-KJNodes', 'comfyui KJNodes']
+      ])
     })
 
     it('should cap fallback hits so the merged result never exceeds a page', async () => {
-      const primaryHits = [
-        {
-          objectID: 'primary-0',
-          id: 'primary-0',
-          name: 'Primary Pack',
-          publisher_id: 'pub',
-          total_install: 0,
-          comfy_nodes: []
-        }
-      ]
-      const fallbackHits = Array.from({ length: 5 }, (_, i) => ({
-        objectID: `fallback-${i}`,
-        id: `fallback-${i}`,
-        name: `Fallback Pack ${i}`,
-        publisher_id: 'pub',
-        total_install: 0,
-        comfy_nodes: []
-      }))
-
-      mockSearchClient.search.mockResolvedValue({
-        results: [{ hits: primaryHits }, { hits: fallbackHits }, { hits: [] }]
-      })
+      mockSearchClient.search
+        .mockResolvedValueOnce({
+          results: [{ hits: [packHit('raw-0')] }, { hits: [] }]
+        })
+        .mockResolvedValueOnce({
+          results: [
+            { hits: Array.from({ length: 5 }, (_, i) => packHit(`fb-${i}`)) }
+          ]
+        })
 
       const provider = useAlgoliaSearchProvider()
       const result = await provider.searchPacks('euler-discrete-scheduler', {
@@ -322,32 +322,27 @@ describe('useAlgoliaSearchProvider', () => {
         pageNumber: 0
       })
 
-      expect(result.nodePacks).toHaveLength(3)
       expect(result.nodePacks.map((pack) => pack.id)).toEqual([
-        'primary-0',
-        'fallback-0',
-        'fallback-1'
+        'raw-0',
+        'fb-0',
+        'fb-1'
       ])
     })
 
     it('should merge hits from every fallback query in order, deduped', async () => {
-      const hit = (id: string) => ({
-        objectID: id,
-        id,
-        name: id,
-        publisher_id: 'pub',
-        total_install: 0,
-        comfy_nodes: []
-      })
-
-      mockSearchClient.search.mockResolvedValue({
-        results: [
-          { hits: [hit('primary')] },
-          { hits: [hit('primary'), hit('owner-stripped')] },
-          { hits: [hit('owner-stripped'), hit('separator-split')] },
-          { hits: [] }
-        ]
-      })
+      mockSearchClient.search
+        .mockResolvedValueOnce({
+          results: [
+            { hits: [packHit('primary')] },
+            { hits: [{ query: 'comfyui kjnodes', popularity: 7 }] }
+          ]
+        })
+        .mockResolvedValueOnce({
+          results: [
+            { hits: [packHit('primary'), packHit('owner-stripped')] },
+            { hits: [packHit('owner-stripped'), packHit('separator-split')] }
+          ]
+        })
 
       const provider = useAlgoliaSearchProvider()
       const result = await provider.searchPacks('kijai/comfyui-KJNodes', {
@@ -360,10 +355,13 @@ describe('useAlgoliaSearchProvider', () => {
         'owner-stripped',
         'separator-split'
       ])
+      expect(result.querySuggestions).toEqual([
+        { query: 'comfyui kjnodes', popularity: 7 }
+      ])
     })
 
     it('sends no fallback queries when searching node names', async () => {
-      mockSearchClient.search.mockResolvedValue({
+      mockSearchClient.search.mockResolvedValueOnce({
         results: [{ hits: [] }, { hits: [] }]
       })
 
@@ -374,33 +372,7 @@ describe('useAlgoliaSearchProvider', () => {
         restrictSearchableAttributes: ['comfy_nodes']
       })
 
-      const { requests } = mockSearchClient.search.mock.calls[0][0]
-      expect(
-        requests
-          .filter((r: { indexName: string }) => r.indexName === 'nodes_index')
-          .map((r: { query: string }) => r.query)
-      ).toEqual(['VHS_VideoCombine'])
-    })
-
-    it('reads query suggestions from the response after the fallback queries', async () => {
-      mockSearchClient.search.mockResolvedValue({
-        results: [
-          { hits: [] },
-          { hits: [] },
-          { hits: [] },
-          { hits: [{ query: 'comfyui kjnodes', popularity: 7 }] }
-        ]
-      })
-
-      const provider = useAlgoliaSearchProvider()
-      const result = await provider.searchPacks('kijai/comfyui-KJNodes', {
-        pageSize: 10,
-        pageNumber: 0
-      })
-
-      expect(result.querySuggestions).toEqual([
-        { query: 'comfyui kjnodes', popularity: 7 }
-      ])
+      expect(packQueriesPerRequest()).toEqual([['VHS_VideoCombine']])
     })
   })
 
