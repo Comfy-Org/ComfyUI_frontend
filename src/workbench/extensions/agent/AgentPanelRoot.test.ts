@@ -5687,6 +5687,36 @@ describe('AgentPanelRoot history', () => {
       expect(useAgentComposerStore().draft).toBe('make it blue')
     })
 
+    it('follows the tab that takes over when the user closes the active one', async () => {
+      const first = addTab('workflows/first.json')
+      addTab('workflows/second.json')
+      workflowStore.activeWorkflow = first
+      stubWorkflowBoundHistory([
+        agentThread({
+          id: 'th-second',
+          title: 'Second chat',
+          last_message_at: '2026-09-22T10:00:00Z',
+          workflow_id: 'wf-second'
+        })
+      ])
+      renderWithSelectedTarget()
+      await vi.waitFor(() =>
+        expect(useAgentChatHistoryStore().sessions).toHaveLength(1)
+      )
+
+      await useWorkflowService().closeWorkflow(first, {
+        warnIfUnsaved: true,
+        initiator: 'user'
+      })
+
+      await vi.waitFor(() =>
+        expect(useAgentConversationStore().threadId).toBe('th-second')
+      )
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(
+        'workflows/second.json'
+      )
+    })
+
     it('does not follow a tab the app activates on its own, like a restored or linked workflow', async () => {
       const first = addTab('workflows/first.json')
       const second = addTab('workflows/second.json')
@@ -5935,6 +5965,35 @@ describe('AgentPanelRoot history', () => {
 
       expect(loadedThreads).toEqual([])
       expect(useAgentComposerStore().submission?.phase).toBe('pending')
+    })
+
+    it('follows while a sent message runs once the server has accepted it', async () => {
+      const first = addTab('workflows/first.json')
+      const second = addTab('workflows/second.json')
+      workflowStore.activeWorkflow = first
+      stubWorkflowBoundHistory([
+        agentThread({
+          id: 'th-second',
+          title: 'Second chat',
+          last_message_at: '2026-09-22T10:00:00Z',
+          workflow_id: 'wf-second'
+        })
+      ])
+      renderWithSelectedTarget()
+      await vi.waitFor(() =>
+        expect(useAgentChatHistoryStore().sessions).toHaveLength(1)
+      )
+      await sendFromComposer('make it blue')
+      await vi.waitFor(() =>
+        expect(useAgentComposerStore().submission).toBeNull()
+      )
+      expect(screen.getByRole('button', { name: 'Stop' })).toBeVisible()
+
+      await activateTabAsUser(second)
+
+      await vi.waitFor(() =>
+        expect(useAgentConversationStore().threadId).toBe('th-second')
+      )
     })
 
     it("opens the active tab's chat on mount when the target is another tab", async () => {
