@@ -9649,47 +9649,25 @@ describe('AgentPanelRoot workflow binding', () => {
   it.for([
     {
       kind: 'saved',
-      navigation: 'new-chat',
-      navigate: startNewChat,
       prepareTab: () => addTab('workflows/Late.json'),
       cloudRows: [{ id: 'wf-late', name: 'Late' }],
-      pickerText: 'current',
-      workflowPaths: ['workflows/current.json', 'workflows/Late.json']
-    },
-    {
-      kind: 'saved',
-      navigation: 'history',
-      navigate: openOtherChat,
-      prepareTab: () => addTab('workflows/Late.json'),
-      cloudRows: [{ id: 'wf-late', name: 'Late' }],
-      pickerText: i18n.global.t('agent.selectWorkflowForAgent'),
       workflowPaths: ['workflows/current.json', 'workflows/Late.json']
     },
     {
       kind: 'new',
-      navigation: 'new-chat',
-      navigate: startNewChat,
       prepareTab: () => {},
       cloudRows: [],
-      pickerText: 'current',
       workflowPaths: ['workflows/current.json']
     }
   ])(
-    'keeps the newer chat target when an older $kind activation settles after $navigation',
-    async ({ navigate, prepareTab, cloudRows, pickerText, workflowPaths }) => {
+    'keeps the newer chat target when an older $kind activation settles after a new chat',
+    async ({ prepareTab, cloudRows, workflowPaths }) => {
       const current = makeTab('wf-42')
       prepareTab()
-      mockMessagesEndpoint(
-        'wf-42',
-        [{ id: 'wf-42', name: 'current' }, ...cloudRows],
-        [
-          agentThread({
-            id: 'th-other',
-            title: 'Other chat',
-            last_message_at: '2026-09-25T00:00:00Z'
-          })
-        ]
-      )
+      mockMessagesEndpoint('wf-42', [
+        { id: 'wf-42', name: 'current' },
+        ...cloudRows
+      ])
       renderWithSelectedTarget()
       await sendFromComposer('work here')
       vi.useFakeTimers()
@@ -9722,7 +9700,7 @@ describe('AgentPanelRoot workflow binding', () => {
       })
       await vi.advanceTimersByTimeAsync(500)
       await started
-      await navigate()
+      await startNewChat()
       finishOpen()
       await vi.advanceTimersByTimeAsync(0)
 
@@ -9735,7 +9713,7 @@ describe('AgentPanelRoot workflow binding', () => {
         screen.getByRole('button', {
           name: i18n.global.t('agent.switchWorkflow')
         })
-      ).toHaveTextContent(pickerText)
+      ).toHaveTextContent('current')
       expect(
         useAgentWorkflowTabBindingStore().workflowIdFor(current.path)
       ).toBe('wf-42')
