@@ -90,7 +90,7 @@ function useBillingCapabilitiesInternal() {
   let readFailures = 0
   let invalidatedRequestId = 0
 
-  const capabilities = computed(() => {
+  const resolvedResponse = computed(() => {
     const userId = authStore.userId
     const workspaceId = workspaceStore.activeWorkspaceId
     const state = readState.value
@@ -105,8 +105,11 @@ function useBillingCapabilitiesInternal() {
       return null
     }
 
-    return state.response.capabilities
+    return state.response
   })
+  const capabilities = computed(
+    () => resolvedResponse.value?.capabilities ?? null
+  )
   const hasResolvedCapabilities = computed(() => capabilities.value !== null)
   const readUnavailableForCurrentScope = computed(() => {
     const state = readState.value
@@ -148,6 +151,15 @@ function useBillingCapabilitiesInternal() {
       'can_invite_members',
       capabilities.value?.can_invite_members ?? false
     )
+  )
+  const canDeleteWorkspace = computed(() =>
+    receiveServerFact(
+      'can_delete_workspace',
+      capabilities.value?.can_delete_workspace ?? false
+    )
+  )
+  const deleteWorkspaceDenial = computed<string | undefined>(
+    () => resolvedResponse.value?.denied_reasons?.can_delete_workspace
   )
   const canDowngradeToPersonal = computed(
     () => capabilities.value?.can_downgrade_to_personal ?? false
@@ -482,6 +494,8 @@ function useBillingCapabilitiesInternal() {
     canChangeSeats,
     canInviteMembers,
     canManageMembers,
+    canDeleteWorkspace,
+    deleteWorkspaceDenial,
     canDowngradeToPersonal,
     isReady,
     hasResolvedCapabilities,

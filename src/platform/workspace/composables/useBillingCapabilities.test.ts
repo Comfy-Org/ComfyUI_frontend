@@ -314,6 +314,47 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canDowngradeToPersonal.value).toBe(false)
   })
 
+  it('exposes the delete capability and the reason the server named', async () => {
+    const response = capabilitiesResponse(
+      true,
+      'workspace-1',
+      true,
+      {},
+      { can_delete_workspace: false }
+    )
+    response.denied_reasons = { can_delete_workspace: 'plan_not_ended' }
+    vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce(
+      response
+    )
+
+    expect(billingCapabilities.canDeleteWorkspace.value).toBe(false)
+    expect(billingCapabilities.deleteWorkspaceDenial.value).toBeUndefined()
+
+    await billingCapabilities.initialize()
+
+    expect(billingCapabilities.canDeleteWorkspace.value).toBe(false)
+    expect(billingCapabilities.deleteWorkspaceDenial.value).toBe(
+      'plan_not_ended'
+    )
+  })
+
+  it('grants delete only when the server does', async () => {
+    vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce(
+      capabilitiesResponse(
+        true,
+        'workspace-1',
+        true,
+        {},
+        { can_delete_workspace: true }
+      )
+    )
+
+    await billingCapabilities.initialize()
+
+    expect(billingCapabilities.canDeleteWorkspace.value).toBe(true)
+    expect(billingCapabilities.deleteWorkspaceDenial.value).toBeUndefined()
+  })
+
   it('does not infer member management from an older response', async () => {
     const response = capabilitiesResponse(true)
     Reflect.deleteProperty(response.capabilities, 'can_manage_members')

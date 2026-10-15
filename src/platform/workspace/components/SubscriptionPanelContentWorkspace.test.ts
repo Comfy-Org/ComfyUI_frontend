@@ -4,6 +4,7 @@ import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspa
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { getActivePinia } from 'pinia'
+import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import { computed, nextTick, ref, toRef } from 'vue'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -197,12 +198,6 @@ const mockIsSubscriptionCancelled = computed(
   () => mockSubscription.value?.isCancelled ?? false
 )
 
-const mockIsDeleteDisabled = computed(
-  () =>
-    mockIsActiveSubscription.value &&
-    !(mockSubscription.value?.isCancelled ?? false)
-)
-
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
@@ -310,12 +305,6 @@ describe('SubscriptionPanelContentWorkspace', () => {
     )
     workspaceUI.isTeamPlanCancelled = computed(
       () => mockIsTeamPlanCancelled.value
-    )
-    workspaceUI.isDeleteDisabled = computed(() => mockIsDeleteDisabled.value)
-    workspaceUI.deleteDisabledTooltipKey = computed(() =>
-      mockIsDeleteDisabled.value
-        ? mockUiConfig.value.workspaceMenuDisabledTooltip
-        : null
     )
     mockDistributionState.isCloud = true
     mockBillingBanner.kind = null
@@ -1351,6 +1340,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
     Object.assign(useTeamWorkspaceStore(), { isWorkspaceSubscribed: false })
     mockUiConfig.value = personalUiConfig
     mockCanLeaveWorkspace.value = false
+    useBillingCapabilities().deleteWorkspaceDenial = computed(
+      () => 'personal_workspace'
+    )
     renderComponent()
 
     await user.click(screen.getByRole('button', { name: 'More Options' }))
@@ -1375,6 +1367,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
     Object.assign(useTeamWorkspaceStore(), { isWorkspaceSubscribed: false })
     mockUiConfig.value = personalUiConfig
     mockCanLeaveWorkspace.value = false
+    useBillingCapabilities().deleteWorkspaceDenial = computed(
+      () => 'personal_workspace'
+    )
     renderComponent()
 
     await user.click(screen.getByRole('button', { name: 'More Options' }))
@@ -1458,6 +1453,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
     useBillingCapabilities().canReactivate = computed(() => false)
     useBillingCapabilities().canChangeSeats = computed(() => false)
     useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
+    useBillingCapabilities().deleteWorkspaceDenial = computed(
+      () => 'not_workspace_owner'
+    )
     mockUiConfig.value = memberUiConfig
     renderComponent()
 
@@ -1496,6 +1494,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
 
   it('offers an additional workspace owner Edit, Cancel, Leave, and locked Delete', async () => {
     const user = userEvent.setup()
+    useBillingCapabilities().deleteWorkspaceDenial = computed(
+      () => 'plan_not_ended'
+    )
     renderComponent()
 
     await user.click(screen.getByRole('button', { name: 'More Options' }))
@@ -1515,9 +1516,11 @@ describe('SubscriptionPanelContentWorkspace', () => {
     )
   })
 
-  it('enables Delete for any additional workspace owner once the plan is cancelled', async () => {
+  it('enables Delete once the server grants it', async () => {
     const user = userEvent.setup()
-    mockSubscriptionStatus.value = 'canceled'
+    useBillingCapabilities().canDeleteWorkspace = computed(() =>
+      receiveServerFact('can_delete_workspace', true)
+    )
     renderComponent()
 
     await user.click(screen.getByRole('button', { name: 'More Options' }))
