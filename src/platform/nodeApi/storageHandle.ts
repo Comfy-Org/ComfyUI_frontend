@@ -20,9 +20,8 @@ import { ComfyApiError } from './errors'
  */
 export interface StorageHandle {
   /**
-   * Names filtered by a logical namespace inside this pack's own scope.
-   *
-   * Empty when nothing has been stored yet — absence is not an error.
+   * Lists logical keys including `namespace`, ready for `get()` or `remove()`.
+   * Physical user/pack prefixes stay hidden. Empty folders return an empty array.
    */
   list(namespace: string): Promise<readonly string[]>
   /** The stored text, or `undefined` if there is none. */
