@@ -716,12 +716,6 @@ export const comfyPageFixture = base.extend<{
         await context.route('**/customers/balance', (route) =>
           route.fulfill({ json: ZERO_BALANCE })
         )
-        await context.route('**/api/workspaces/*/deployments', (route) =>
-          route.fulfill({
-            status: 403,
-            json: { error: 'Deployment selection is outside the rollout' }
-          })
-        )
         await mockWorkspace(context, workspace('personal', 'owner'), [])
       }
       if (testInfo.tags.includes('@cloud') || testInfo.tags.includes('@auth')) {

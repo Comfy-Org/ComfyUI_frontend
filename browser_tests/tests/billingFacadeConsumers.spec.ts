@@ -71,12 +71,6 @@ async function mockCloudBoot(
     workspaceBalance: 0
   }
 
-  await page.route('**/api/workspaces/*/deployments', (route) =>
-    route.fulfill({
-      status: 403,
-      json: { error: 'Deployment selection is outside the rollout' }
-    })
-  )
   await page.route('**/api/features', (r) => r.fulfill(jsonRoute(remoteConfig)))
   await page.route('**/api/system_stats', (r) =>
     r.fulfill(jsonRoute(mockSystemStats))
@@ -90,6 +84,8 @@ async function mockCloudBoot(
       })
     )
   )
+  // TutorialCompleted suppresses the new-user template browser, whose modal
+  // overlay would otherwise intercept clicks on the topbar.
   await page.route('**/api/settings', (r) =>
     r.fulfill(jsonRoute({ 'Comfy.TutorialCompleted': true }))
   )
@@ -104,6 +100,7 @@ async function mockCloudBoot(
   await mockWorkspaceTokenMint(page, workspace('personal', 'owner'))
   await page.route('**/releases**', (r) => r.fulfill(jsonRoute([])))
 
+  // Single personal workspace.
   await page.route('**/api/workspaces', (r) =>
     r.fulfill(
       jsonRoute({
@@ -128,6 +125,7 @@ async function mockCloudBoot(
     return r.fulfill(jsonRoute(resolvedSubscriptionStatus))
   })
 
+  // Cloud personal workspaces route through `/api/billing/*`.
   await page.route('**/api/billing/status', (r) => {
     billingRequests.workspaceStatus++
     return r.fulfill(jsonRoute(resolvedSubscriptionStatus))
