@@ -9,6 +9,7 @@ import {
   verifyAssetSupportedCandidates
 } from '@/platform/missingModel/missingModelScan'
 import type { MissingModelWorkflowData } from '@/platform/missingModel/missingModelScan'
+import { cloudReleaseModelOptions } from '@/platform/missingModel/releaseModelOptions'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -121,7 +122,8 @@ export async function runMissingModelPipeline({
   const candidates = scanAllModelCandidates(
     graph,
     isAssetBrowserWidget,
-    getDirectory
+    getDirectory,
+    cloudReleaseModelOptions()
   )
 
   const enrichedAll = enrichWithEmbeddedMetadata(candidates, graphData)
