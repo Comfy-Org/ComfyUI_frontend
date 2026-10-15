@@ -22,27 +22,43 @@ function readProject(repoRoot: string) {
   )
 }
 
+function groupByFile(findings: Finding[]) {
+  const byFile = new Map<string, Finding[]>()
+  for (const finding of findings)
+    byFile.set(finding.file, [...(byFile.get(finding.file) ?? []), finding])
+  return byFile
+}
+
+function formatFinding({ file, line, tag, tokens }: Finding) {
+  return `${file}:${line}\t<${tag}>\t${tokens.join(' ')}\n`
+}
+
+function removeFindings(
+  repoRoot: string,
+  files: ReadonlyMap<string, string>,
+  byFile: ReadonlyMap<string, Finding[]>
+) {
+  for (const [file, list] of byFile)
+    writeFileSync(
+      path.join(repoRoot, file),
+      applyFindings(files.get(file)!, list)
+    )
+}
+
+function summarize(findings: Finding[], fileCount: number, write: boolean) {
+  const count = findings.reduce((sum, f) => sum + f.tokens.length, 0)
+  const suffix = write ? ' removed' : ''
+  return `${count} inherited classes in ${fileCount} files${suffix}\n`
+}
+
 function main(args: string[], repoRoot: string) {
   const write = args.includes('--write')
   const files = readProject(repoRoot)
   const findings = findInheritedClasses(files)
-  const byFile = new Map<string, Finding[]>()
-  for (const finding of findings)
-    byFile.set(finding.file, [...(byFile.get(finding.file) ?? []), finding])
-  for (const finding of findings)
-    process.stdout.write(
-      `${finding.file}:${finding.line}\t<${finding.tag}>\t${finding.tokens.join(' ')}\n`
-    )
-  if (write)
-    for (const [file, list] of byFile)
-      writeFileSync(
-        path.join(repoRoot, file),
-        applyFindings(files.get(file)!, list)
-      )
-  const count = findings.reduce((sum, f) => sum + f.tokens.length, 0)
-  process.stdout.write(
-    `${count} inherited classes in ${byFile.size} files${write ? ' removed' : ''}\n`
-  )
+  const byFile = groupByFile(findings)
+  process.stdout.write(findings.map(formatFinding).join(''))
+  if (write) removeFindings(repoRoot, files, byFile)
+  process.stdout.write(summarize(findings, byFile.size, write))
 }
 
 if (import.meta.main)
