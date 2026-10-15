@@ -95,6 +95,16 @@ export class UncreditedTopupResponse implements CreateTopupResponse {
  * would otherwise report as a network failure, so each names its category.
  */
 function topupFailureError(failure: TopupFailure): WorkspaceApiError {
+  // Nothing was sent or charged: an earlier top-up is still settling, and
+  // finishing that one is what the customer has to do.
+  if (failure.code === 'OPERATION_ALREADY_PENDING') {
+    return new WorkspaceApiError(
+      t('billingOperation.topupAlreadyPendingDetail'),
+      undefined,
+      failure.code,
+      'stale_operation'
+    )
+  }
   const serverCode = 'serverCode' in failure ? failure.serverCode : undefined
   return new WorkspaceApiError(
     t('credits.topUp.unknownError'),
