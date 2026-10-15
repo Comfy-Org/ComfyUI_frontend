@@ -5938,5 +5938,32 @@
       "enterprise": "VIEW ENTERPRISE DETAILS",
       "licensing": "MINIMAX LICENSING"
     }
+  },
+  "krea3": {
+    "meta": {
+      "title": "Krea 3: Reference-driven image editing | Comfy",
+      "description": "Edit images with visual references. Explore Krea 3 workflows for product campaigns, interiors, and character work in Comfy."
+    },
+    "hero": {
+      "title": "KREA 3",
+      "description": "Start with your images. Direct the edit. Keep what matters. Build reference-driven image workflows with Krea 3.",
+      "cta": "SEE THE WORKFLOW",
+      "references": "REFERENCE-DRIVEN EDITING",
+      "image": "IMAGE MODEL"
+    },
+    "references": "YOUR REFERENCES. YOUR DIRECTION.",
+    "products": "ONE PRODUCT. ANOTHER CAMPAIGN.",
+    "interiors": "SAME SPACE. NEW POSSIBILITIES.",
+    "characters": "KEEP THE CHARACTER. CHANGE THE SCENE.",
+    "steps": {
+      "heading": "BUILD YOUR REFERENCE-EDITING WORKFLOW",
+      "label": "STEP"
+    },
+    "faq": "KREA 3, EXPLAINED",
+    "closing": {
+      "heading": "BRING YOUR NEXT IDEA INTO COMFY",
+      "description": "Connect your references, edits, and next steps in a workflow you can return to.",
+      "cta": "OPEN COMFY CLOUD"
+    }
   }
 }

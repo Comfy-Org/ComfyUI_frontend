@@ -1,0 +1,34 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import ModelLaunchHeroSection from './ModelLaunchHeroSection.vue'
+import ModelLaunchGallerySection from './ModelLaunchGallerySection.vue'
+import ModelLaunchStepsSection from './ModelLaunchStepsSection.vue'
+import ModelLaunchFaqSection from './ModelLaunchFaqSection.vue'
+import ModelLaunchCtaSection from './ModelLaunchCtaSection.vue'
+import { krea3Page } from '@/data/krea3'
+import { resolveLocale } from '@/config/locales'
+
+const locale = resolveLocale(Astro.currentLocale)
+const { t } = Astro.locals
+---
+
+<BaseLayout
+  title={t('krea3.meta.title')}
+  description={t('krea3.meta.description')}
+  noindex
+  hideAnnouncementBanner
+>
+  <ModelLaunchHeroSection client:load hero={krea3Page.hero} locale={locale} />
+  {krea3Page.galleries.map((gallery) => (
+    <ModelLaunchGallerySection
+      client:visible
+      gallery={gallery}
+      locale={locale}
+    />
+  ))}
+  <div id="edit-workflow" class="scroll-mt-24">
+    <ModelLaunchStepsSection steps={krea3Page.steps} locale={locale} />
+  </div>
+  <ModelLaunchFaqSection client:visible faq={krea3Page.faq} locale={locale} />
+  <ModelLaunchCtaSection cta={krea3Page.closingCta} locale={locale} />
+</BaseLayout>
