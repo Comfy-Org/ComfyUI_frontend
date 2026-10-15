@@ -16,6 +16,7 @@ import {
 
 import { i18n } from '@/i18n'
 
+import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -499,6 +500,26 @@ describe('DynamicGroup widgets', () => {
         inputs.map((input) => promotedInputWidget(input)?.label)
       )
     ).toEqual([['LoRA #2 strength'], ['LoRA #2 strength']])
+  })
+
+  it('drops the rerouted promotion link of a removed subgraph input', () => {
+    const { node, widget, innerHost } = setupTwiceDeepPromotion()
+    const subgraph = innerHost.subgraph
+    const linkId = node.inputs.find(
+      (input) => input.name === 'loras.1.strength'
+    )?.link
+    const link = linkId == null ? undefined : subgraph.links.get(linkId)
+    assert.exists(link)
+    assert.exists(subgraph.createReroute([0, 0], link))
+
+    widget('loras.1').callback?.(undefined)
+
+    expect(subgraph.inputs).toEqual([])
+    expect(
+      [...subgraph.floatingLinks.values()].filter(
+        (floating) => floating.origin_id === SUBGRAPH_INPUT_ID
+      )
+    ).toEqual([])
   })
 
   it('removes every promoted field of the deleted row through two boundaries', () => {

@@ -436,6 +436,9 @@ function disconnectOrphanedPromotion(
         hosts
       )
   }
+  for (const link of graph.floatingLinks.values())
+    if (link.origin_id === SUBGRAPH_INPUT_ID && link.origin_slot === slot)
+      graph.removeFloatingLink(link)
   graph.removeInput(input)
 }
 
