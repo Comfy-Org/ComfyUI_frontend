@@ -743,19 +743,20 @@ function startAgentCrdtFollower(
       'schema_error',
       event instanceof CustomEvent ? (event.detail ?? null) : null
     )
-    const found = detail?.found
-    if (
-      detail?.workflowId !== undefined &&
-      typeof found === 'number' &&
-      found > SCHEMA_VERSION &&
-      !staleClientNotified.has(detail.workflowId)
-    ) {
-      staleClientNotified.add(detail.workflowId)
-      events.onSyncError?.(
-        `document schema v${found} is newer than this page reads (v${SCHEMA_VERSION})`,
-        'stale_client_schema'
-      )
-    }
+    notifyStaleClient(detail)
+  }
+  function notifyStaleClient(
+    detail: { workflowId?: string; found?: unknown } | null
+  ): void {
+    const found = newerDocSchema(detail?.found)
+    const workflowId = detail?.workflowId
+    if (found === null || workflowId === undefined) return
+    if (staleClientNotified.has(workflowId)) return
+    staleClientNotified.add(workflowId)
+    events.onSyncError?.(
+      `document schema v${found} is newer than this page reads (v${SCHEMA_VERSION})`,
+      'stale_client_schema'
+    )
   }
   const onGap: EventListener = (event) => {
     outcomes.value = { ...outcomes.value, gap: outcomes.value.gap + 1 }
@@ -1033,4 +1034,8 @@ function startAgentCrdtFollower(
     notifyWidgetWriteRefused: () =>
       rejectedOpNotifier.notifyWidgetWriteRefused()
   }
+}
+
+function newerDocSchema(found: unknown): number | null {
+  return typeof found === 'number' && found > SCHEMA_VERSION ? found : null
 }
