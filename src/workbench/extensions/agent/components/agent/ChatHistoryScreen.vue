@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, ref, useId } from 'vue'
 import type { ComponentPublicInstance } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -33,6 +33,8 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+
+const sectionLabelId = useId()
 
 const sections = computed(() =>
   (
@@ -166,10 +168,13 @@ function getSessionMenuItems(session: ChatSession): MenuItem[] {
       <section
         v-for="[key, label, items] in sections"
         :key
-        :aria-label="label"
+        :aria-labelledby="`${sectionLabelId}-${key}`"
         class="mb-3"
       >
-        <p class="my-0 px-2 py-1 text-xs text-muted-foreground">
+        <p
+          :id="`${sectionLabelId}-${key}`"
+          class="my-0 px-2 py-1 text-xs text-muted-foreground"
+        >
           {{ label }}
         </p>
         <div
