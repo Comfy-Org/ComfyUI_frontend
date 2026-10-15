@@ -7096,43 +7096,44 @@ describe('AgentPanelRoot workflow binding', () => {
   ]
 
   function stubUnresolvedTargetChat(): void {
-    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
-      const url = String(input)
-
-      if (url.includes('/messages'))
-        return json(200, [
-          {
-            id: 'history-user',
-            thread_id: 'th-history',
-            seq: 1,
-            role: 'user',
-            status: 'complete',
-            turn_id: 'history-turn',
-            workflow_id: 'wf-unresolved',
-            content: { text: 'Historical prompt' }
-          }
-        ] satisfies AgentMessages)
-      if (url.includes('/agent/threads'))
-        return json(
-          200,
-          agentThreadList([
-            agentThread({
-              id: 'th-history',
-              title: 'Unresolved target chat',
-              last_message_at: '2026-09-01T00:00:00Z'
-            })
-          ])
-        )
-      if (url.includes('/workflows'))
-        return json(200, {
-          data: [
-            { id: 'wf-unresolved', name: 'missing-saved-file' },
-            { id: 'wf-42', name: 'current' }
-          ],
-          pagination: { offset: 0, limit: 100, total: 2, has_more: false }
-        })
-      return json(200, {})
-    })
+    respondToFetch({ method: 'GET', url: /\/agent\/threads/ }, () =>
+      json(
+        200,
+        agentThreadList([
+          agentThread({
+            id: 'th-history',
+            title: 'Unresolved target chat',
+            last_message_at: '2026-09-01T00:00:00Z'
+          })
+        ])
+      )
+    )
+    respondToFetch({ method: 'GET', url: /\/messages/ }, () =>
+      json(200, [
+        {
+          id: 'history-user',
+          thread_id: 'th-history',
+          seq: 1,
+          role: 'user',
+          status: 'complete',
+          turn_id: 'history-turn',
+          workflow_id: 'wf-unresolved',
+          content: { text: 'Historical prompt' }
+        }
+      ] satisfies AgentMessages)
+    )
+    respondToFetch({ method: 'GET', url: /\/workflows/ }, () =>
+      json(200, {
+        data: [
+          { id: 'wf-unresolved', name: 'missing-saved-file' },
+          { id: 'wf-42', name: 'current' }
+        ],
+        pagination: { offset: 0, limit: 100, total: 2, has_more: false }
+      })
+    )
+    respondToFetch({ method: 'GET', url: /\/assets/ }, () =>
+      json(200, { assets: [], total: 0, has_more: false })
+    )
   }
 
   it.for(unresolvedChatEntryPoints)(
