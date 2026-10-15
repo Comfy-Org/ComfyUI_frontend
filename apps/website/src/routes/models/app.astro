@@ -25,7 +25,10 @@ interface Props {
 }
 
 const catalog = cmsEnabled()
-  ? await loadSiteCatalog(Astro.locals.catalogAuthoring ?? Astro.locals.site, Astro.locals.catalogLocale)
+  ? await loadSiteCatalog(
+      Astro.locals.catalogAuthoring ?? Astro.locals.site,
+      Astro.locals.catalogLocale
+    )
   : undefined
 const failure = catalog && !catalog.ok ? catalogUnavailable() : undefined
 if (failure) return failure
@@ -35,12 +38,17 @@ const liveApps = catalog?.ok
 const model = catalog?.ok
   ? liveApps.find(
       (item) =>
-        item.href.replace(/\/$/, '') === Astro.url.pathname.replace(/^\/zh-CN/,'').replace(/\/$/, '')
+        item.href.replace(/\/$/, '') ===
+        Astro.url.pathname.replace(/^\/zh-CN/, '').replace(/\/$/, '')
     )
   : Astro.props.model
 if (!model) return new Response('Not found', { status: 404 })
 const current = catalog?.ok
-  ? catalog.projection.items.find((item) => item.slug === Astro.url.pathname.replace(/^\/zh-CN/, '').replace(/\/$/, ''))
+  ? catalog.projection.items.find(
+      (item) =>
+        item.slug ===
+        Astro.url.pathname.replace(/^\/zh-CN/, '').replace(/\/$/, '')
+    )
   : undefined
 const app = model.appId
 
@@ -64,7 +72,14 @@ if (!models.length) throw new Error('Cinematic Studio has no runnable models')
 >
   <StaffContentActions uid={current?.uid} />
   <CinematicStudioPage
-    apps={liveApps}
+    apps={
+      catalog?.ok
+        ? [model, ...liveApps.filter((app) => app.slug !== model.slug)].slice(
+            0,
+            24
+          )
+        : liveApps
+    }
     models={models}
     initialApp={app}
     client:load

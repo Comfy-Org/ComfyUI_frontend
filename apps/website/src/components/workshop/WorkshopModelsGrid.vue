@@ -27,6 +27,10 @@ import {
   sortOrdersFor,
   sortWorkshopModels
 } from '@/config/models-catalogue'
+import type {
+  CatalogListPages,
+  CatalogListFacets
+} from '@/lib/cms/catalog-list'
 import type { Locale, TranslationKey } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import { HUB_TOOLBAR_ID } from '@/scripts/hubToolbar'
@@ -47,10 +51,14 @@ import WorkshopSortMenu from './WorkshopSortMenu.vue'
 const {
   models,
   initialSearch,
+  serverPage,
+  serverFacets,
   locale = 'en'
 } = defineProps<{
   models: readonly WorkshopModel[]
   initialSearch?: string
+  serverPage?: CatalogListPages['models']
+  serverFacets?: CatalogListFacets['models']
   locale?: Locale
 }>()
 const { t } = translationsFor(locale)
@@ -70,7 +78,23 @@ let scrollReady = false
 function readAddress(search: string) {
   const initial = parseCatalogSearch(search)
   query.value = initial.query ?? ''
-  selectedUseCases.value = openedUseCases(initial.useCase ?? 'all')
+  const params = new URLSearchParams(search)
+  selectedUseCases.value = serverPage
+    ? params
+        .getAll('useCase')
+        .flatMap((value) =>
+          openedUseCases(
+            USE_CASES.find((useCase) => useCase === value) ??
+              (value === 'other' ? 'other' : 'all')
+          )
+        )
+    : openedUseCases(initial.useCase ?? 'all')
+  const order = params.get('sort')
+  if (serverPage)
+    sort.value =
+      order === 'name' || order === 'priceAsc' || order === 'priceDesc'
+        ? order
+        : 'popular'
   legacyModalities.value = [...initial.modalities]
   legacyProviders.value = [...initial.providers]
   legacyCapabilities.value = [...initial.capabilities]
@@ -96,9 +120,17 @@ onBeforeUnmount(() => window.removeEventListener('pageshow', onPageShow))
 
 const toolbar = useTemplateRef<HTMLElement>('toolbar')
 const heading = useTemplateRef<HTMLElement>('heading')
-const sortOrders = sortOrdersFor(models)
+const sortOrders = computed(
+  () => serverFacets?.sortOrders ?? sortOrdersFor(models)
+)
 
 const useCaseOptions = computed<FacetMenuOption[]>(() => {
+  if (serverFacets)
+    return serverFacets.useCases.map(({ value, count }) => ({
+      value,
+      label: t(useCaseLabelKey[value]),
+      count
+    }))
   const counts = countByUseCase(models)
   return USE_CASES.filter((value) => counts[value] > 0).map((value) => ({
     value,
@@ -153,7 +185,57 @@ const sectionTitleKey = computed<TranslationKey>(() =>
 
 // A category names the screen it opens, so the page heading above it would say
 // the catalogue's name twice.
-const emit = defineEmits<{ section: [boolean] }>()
+const emit = defineEmits<{ section: [boolean]; search: [string] }>()
+let searchTimer: ReturnType<typeof setTimeout> | undefined
+watch(
+  () => initialSearch,
+  (search) => {
+    if (serverPage) readAddress(search ?? '')
+  }
+)
+watch(
+  [
+    query,
+    selectedUseCases,
+    legacyModalities,
+    legacyProviders,
+    legacyCapabilities,
+    sort
+  ],
+  () => {
+    if (!serverPage || !scrollReady) return
+    clearTimeout(searchTimer)
+    searchTimer = setTimeout(() => {
+      const params = new URLSearchParams(initialSearch ?? location.search)
+      for (const key of [
+        'q',
+        'useCase',
+        'modality',
+        'provider',
+        'capability',
+        'sort',
+        'p'
+      ])
+        params.delete(key)
+      if (query.value) params.set('q', query.value)
+      for (const value of selectedUseCases.value)
+        params.append('useCase', value)
+      for (const value of legacyModalities.value)
+        params.append('modality', value)
+      for (const value of legacyProviders.value)
+        params.append('provider', value)
+      for (const value of legacyCapabilities.value)
+        params.append('capability', value)
+      if (sort.value !== 'popular') params.set('sort', sort.value)
+      const search = params.toString()
+      const current = new URLSearchParams(initialSearch ?? location.search)
+      current.delete('p')
+      if (search !== current.toString()) emit('search', search)
+    }, 200)
+  },
+  { deep: true }
+)
+onBeforeUnmount(() => clearTimeout(searchTimer))
 watch(inSection, (value) => emit('section', value), { immediate: true })
 // Inside a category the tabs give up the row, and the search takes it.
 const searchClass = computed(() =>
@@ -267,7 +349,7 @@ watch(browseAll, (on) => on && resetFilters())
             <WorkshopFilterMenu
               :use-cases="selectedUseCases"
               :use-case-options="useCaseOptions"
-              :result-count="visible.length"
+              :result-count="serverPage?.total ?? visible.length"
               :locale
               @update:use-cases="applyUseCases"
             />

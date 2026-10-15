@@ -75,12 +75,13 @@ export async function prepareModelPage(
       `Models route ${slug} resolved to ${model.slug}, which has no page`
     )
   if (slug !== model.slug) return { kind: 'redirect', href } as const
-  const related = relatedModels(
+  const matchingRelated = relatedModels(
     model,
     (catalog?.models ?? workshopPages).filter(
       (other) => (other.type ?? 'MODEL') === (model.type ?? 'MODEL')
     )
   )
+  const related = catalog ? matchingRelated.slice(0, 4) : matchingRelated
   const useCase = useCaseFor(model)
   const tags = model.capabilities
     .filter((capability) => describesCapability(capability, model))

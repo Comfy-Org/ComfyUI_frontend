@@ -6016,7 +6016,9 @@
     "name": "Workflow version name",
     "download": "Download JSON (graph workflow)",
     "api": "API JSON (Cloud Run workflow)",
-    "chooseJSON": "Choose workflow JSON"
+    "chooseJSON": "Choose workflow JSON",
+    "apiFileHint": "API JSON; maximum 1 MiB. Kept separate from the download graph.",
+    "downloadFileHint": "Graph/download JSON; maximum 64 MiB."
   },
   "cccMetadata": {
     "runnable": "Runnable",
@@ -6348,5 +6350,11 @@
     "discarded": "Changes discarded. LIVE is unchanged and history is retained.",
     "discardLimit": "Select at most 100 changes to discard in one action.",
     "addContent": "Add Content"
+  },
+  "cccCatalogPage": {
+    "previous": "Previous",
+    "next": "Next",
+    "range": "{start}–{end} of {total}",
+    "navigation": "Catalog pages"
   }
 }

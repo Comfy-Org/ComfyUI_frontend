@@ -170,6 +170,10 @@ No demo credentials, invitations or local media belong in Git.
 Local tester codes are reusable until their existing expiry, with fresh backend
 permission checks and immediate invitation revocation. Repeated sign-in retains
 older active sessions; no production authentication policy changes.
+The independent Linux demo allows an explicit expiry up to thirty days, bounded
+by its local fixture publisher credential. Unspecified expiry still defaults to
+one hour. Invitation labels use shared fixture attribution, not real Comfy
+accounts. This local policy does not extend production tokens or permissions.
 
 Verified CCC editors see `Add Content` on Models, Apps and Workflows lists,
 preselecting that content type, and `Edit` on their content detail pages. Edit
@@ -884,3 +888,53 @@ the hosted script once, and renders the documented embed container.
 - `pnpm test:e2e` — Playwright E2E tests (requires `pnpm build:e2e` first)
 - `pnpm ashby:refresh-snapshot` — refresh the committed careers snapshot
 - `pnpm cloud-nodes:refresh-snapshot` — refresh the committed cloud nodes snapshot
+
+### CCC demo initial catalogue rendering
+
+When the local CCC reader is enabled, the Hub listing routes pass the successful,
+server-selected catalogue and locale to `ModelsPage`. The grid renders in the
+initial HTML and hydration reuses that exact selection instead of fetching
+`/models/catalogue.json` again. An empty selected catalogue stays empty; failed
+CCC reads return the existing unavailable response. Draft/timewarp eligibility
+and staff authorization are still decided by the server. Non-CCC routes retain
+their existing client loading and feature gates.
+
+For successful CCC snapshots, Hub tabs give immediate feedback from the catalogue
+already delivered to the browser while their normal Astro link navigation fetches
+the authoritative next page. The CCC-only wrapper imports all three views before
+hydration and renders the selected catalogue synchronously, so the first click
+does not wait for a lazy view import. No private HTML or new catalog data is prefetched. The displayed heading and
+existing authorized Add action follow the selected type. Modifier clicks retain
+normal browser behavior, the incoming page replaces the snapshot, and a stalled
+navigation restores the original display after five seconds. Non-CCC routes and
+existing feature gates keep their previous behavior.
+
+CCC list islands persist within the same locale while accepting fresh server
+props; they never use persisted props. The swap adapter restores Vue-owned
+video/audio nodes after Astro reifies media, preserving playback/visibility
+observers. It only restores media when the incoming document matches that CCC
+island; a different locale or removed island cannot retain old nodes.
+
+CCC Chinese tab links retain their locale prefix. After a persisted CCC page
+swap, the mobile filter sheet closes and recreates its Teleport target against
+the new body; selected filters remain intact. Legacy route links and portal
+behavior retain their previous defaults.
+
+The selected CCC array retains its identity during navigation preparation;
+search-prop updates cannot discard the pending tab intent. The existing post-swap
+media workaround skips Vue-owned CCC video/audio after the swap adapter restores
+them, while continuing to reify legacy media and iframes.
+
+CCC Hub lists send at most 24 card summaries per tab (72 across all three
+prefetched tabs). The active tab's filters and sort are applied before its page
+is selected, with global counts/facets supplied separately. Native Previous/Next
+links retain locale and search parameters. Unknown document fields, examples,
+workflow definitions and input schemas are omitted from list props. Detail routes
+load their selected record; CCC related cards are capped at four and app links at 24. Upstream currently supplies the complete selected projection server-to-server;
+this change bounds browser results, not database query work.
+
+Before the CCC catalogue hydrates, tab links opt out of Astro navigation and
+follow native navigation so an unhydrated persisted island cannot display the old
+section at a new URL. After hydration the normal immediate tab intent and
+persisted navigation resume. CCC mobile search, like filters, recreates its portal
+target after page body swaps.

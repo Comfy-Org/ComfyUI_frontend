@@ -8,7 +8,13 @@ import {
   watchEffect
 } from 'vue'
 
-import { onClickOutside, useMediaQuery, useWindowSize } from '@vueuse/core'
+import {
+  onClickOutside,
+  useEventListener,
+  useMediaQuery,
+  useMounted,
+  useWindowSize
+} from '@vueuse/core'
 import type { ComponentExposed } from 'vue-component-type-helpers'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -54,6 +60,7 @@ const open = ref(false)
 // A dropdown anchored to a crowded toolbar leaves a phone no room, so there
 // the panel rises from the bottom of the screen instead.
 const isPhone = useMediaQuery('(width < 40rem)')
+const mounted = useMounted()
 const { height: windowHeight } = useWindowSize()
 const { height: visualHeight, offsetTop: visualOffsetTop } = useVisualViewport()
 const phoneBottom = computed(() => {
@@ -64,6 +71,21 @@ const phoneBottom = computed(() => {
   )
 })
 const menu = useTemplateRef<HTMLElement>('menu')
+const portalRevision = ref(0)
+useEventListener(
+  () => (mounted.value ? document : undefined),
+  'astro:after-swap',
+  () => {
+    if (
+      !menu.value?.closest(
+        'astro-island[data-astro-transition-persist^="ccc-hub-catalogue-"]'
+      )
+    )
+      return
+    open.value = false
+    portalRevision.value++
+  }
+)
 const panel =
   useTemplateRef<ComponentExposed<typeof WorkshopFilterPanel>>('panel')
 const trigger = useTemplateRef<HTMLButtonElement>('trigger')
@@ -193,7 +215,7 @@ const sheetLabels = computed(() => ({
       />
     </button>
 
-    <Teleport to="body" :disabled="!isPhone">
+    <Teleport :key="portalRevision" to="body" :disabled="!mounted || !isPhone">
       <div
         v-if="open"
         class="fixed inset-0 z-40 bg-black/60 sm:hidden"

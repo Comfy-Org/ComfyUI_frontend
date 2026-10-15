@@ -141,7 +141,11 @@ async function upload(replace: boolean) {
 }
 </script>
 <template>
-  <div class="grid gap-3 rounded-lg border border-admin-line bg-admin-page p-4">
+  <div
+    role="group"
+    :aria-label="`${fileLabel ?? t('cmsEditor.chooseFile')} · ${t('cmsEditor.uploadNew')}`"
+    class="grid gap-3 rounded-lg border border-admin-line bg-admin-page p-4"
+  >
     <code v-if="reference?.id" class="text-xs break-all text-admin-muted"
       >{{ reference.name }} · {{ reference.id }}</code
     >
@@ -191,7 +195,17 @@ async function upload(replace: boolean) {
         >{{ t('cmsEditor.detach') }}</AdminButton
       >
     </div>
-    <p class="text-xs text-admin-muted">{{ t('cmsEditor.mediaHelp') }}</p>
+    <p class="text-xs text-admin-muted">
+      {{
+        t(
+          jsonOnly
+            ? mediaRole.startsWith('workflow-api-')
+              ? 'cccWorkflowVersions.apiFileHint'
+              : 'cccWorkflowVersions.downloadFileHint'
+            : 'cmsEditor.mediaHelp'
+        )
+      }}
+    </p>
     <p v-if="error" role="alert" class="text-sm text-admin-danger-text">
       {{ error }}
     </p>

@@ -78,3 +78,26 @@ describe('reifyMediaElements', () => {
     expect(frame.parentElement?.tagName).toBe('DIV')
   })
 })
+
+it('preserves Vue-owned CCC catalogue media while retaining legacy and iframe reification', () => {
+  const root = document.createElement('div')
+  root.innerHTML =
+    '<astro-island data-astro-transition-persist="ccc-hub-catalogue-en"><video src="ccc.mp4"></video><audio src="ccc.mp3"></audio><iframe src="/animation.html"></iframe></astro-island><astro-island data-astro-transition-persist="hub-catalogue"><video src="legacy.mp4"></video></astro-island><video src="other.mp4"></video>'
+  const owned = root.querySelector('astro-island')
+  if (!owned) throw new Error('Missing catalogue fixture')
+  const video = owned.querySelector('video')
+  const audio = owned.querySelector('audio')
+  const frame = owned.querySelector('iframe')
+  const legacy = root.querySelector(
+    '[data-astro-transition-persist="hub-catalogue"] video'
+  )
+  const other = root.lastElementChild
+  reifyMediaElements(root)
+  expect(owned.querySelector('video')).toBe(video)
+  expect(owned.querySelector('audio')).toBe(audio)
+  expect(owned.querySelector('iframe')).not.toBe(frame)
+  expect(
+    root.querySelector('[data-astro-transition-persist="hub-catalogue"] video')
+  ).not.toBe(legacy)
+  expect(root.lastElementChild).not.toBe(other)
+})

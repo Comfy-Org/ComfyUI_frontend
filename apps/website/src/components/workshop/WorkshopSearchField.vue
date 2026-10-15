@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Search, X } from '@lucide/vue'
-import { useMounted } from '@vueuse/core'
+import { useEventListener, useMounted } from '@vueuse/core'
 import { computed, ref, useTemplateRef } from 'vue'
 import { DialogContent, DialogPortal, DialogRoot, DialogTitle } from 'reka-ui'
 
@@ -54,6 +54,21 @@ const showLabel = computed(() =>
 const sheetOpen = ref(false)
 const sheetInput = useTemplateRef<HTMLInputElement>('sheetInput')
 const sheetTrigger = useTemplateRef<HTMLButtonElement>('sheetTrigger')
+const portalRevision = ref(0)
+useEventListener(
+  () => (mounted.value ? document : undefined),
+  'astro:after-swap',
+  () => {
+    if (
+      !sheetTrigger.value?.closest(
+        'astro-island[data-astro-transition-persist^="ccc-hub-catalogue-"]'
+      )
+    )
+      return
+    sheetOpen.value = false
+    portalRevision.value++
+  }
+)
 const { height: screen, offsetTop: screenTop } = useVisualViewport()
 const sheetStyle = computed(() =>
   screen.value === null
@@ -137,7 +152,7 @@ const clearButtonClass =
     </div>
 
     <DialogRoot v-model:open="sheetOpen">
-      <DialogPortal>
+      <DialogPortal :key="portalRevision">
         <DialogContent
           class="fixed inset-x-0 top-0 z-50 flex flex-col bg-page sm:hidden"
           :style="sheetStyle"

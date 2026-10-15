@@ -5409,7 +5409,9 @@
     "name": "工作流版本名称",
     "download": "下载 JSON（图工作流）",
     "api": "API JSON（云端运行工作流）",
-    "chooseJSON": "选择工作流 JSON"
+    "chooseJSON": "选择工作流 JSON",
+    "apiFileHint": "API JSON；最大 1 MiB。与下载图形文件分开保存。",
+    "downloadFileHint": "图形/下载 JSON；最大 64 MiB。"
   },
   "cccMetadata": {
     "runnable": "可运行",
@@ -5741,5 +5743,11 @@
     "discarded": "变更已放弃。线上内容未改变，历史已保留。",
     "discardLimit": "单次最多选择 100 项变更。",
     "addContent": "添加内容"
+  },
+  "cccCatalogPage": {
+    "previous": "上一页",
+    "next": "下一页",
+    "range": "第 {start}–{end} 项，共 {total} 项",
+    "navigation": "目录分页"
   }
 }

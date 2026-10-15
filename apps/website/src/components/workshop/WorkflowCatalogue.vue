@@ -1,7 +1,15 @@
 <script setup lang="ts">
 import { ChevronLeft, ChevronRight } from '@lucide/vue'
 import { cn } from '@comfyorg/tailwind-utils'
-import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
+import {
+  computed,
+  nextTick,
+  onMounted,
+  onBeforeUnmount,
+  ref,
+  useTemplateRef,
+  watch
+} from 'vue'
 import type { ComponentExposed } from 'vue-component-type-helpers'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -13,6 +21,10 @@ import {
   filterWorkshopModels,
   sortWorkshopModels
 } from '@/config/models-catalogue'
+import type {
+  CatalogListPages,
+  CatalogListFacets
+} from '@/lib/cms/catalog-list'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import { HUB_TOOLBAR_ID } from '@/scripts/hubToolbar'
@@ -30,10 +42,14 @@ import WorkshopSortMenu from './WorkshopSortMenu.vue'
 const {
   models,
   initialSearch,
+  serverPage,
+  serverFacets,
   locale = 'en'
 } = defineProps<{
   models: readonly WorkflowWorkshopModel[]
   initialSearch?: string
+  serverPage?: CatalogListPages['workflows']
+  serverFacets?: CatalogListFacets['workflows']
   locale?: Locale
 }>()
 const { t } = translationsFor(locale)
@@ -45,7 +61,7 @@ const sort = ref<SortOrder>('popular')
 const filterMenu =
   useTemplateRef<ComponentExposed<typeof WorkshopFilterMenu>>('filterMenu')
 const browseAll = defineModel<boolean>('browseAll', { default: false })
-const emit = defineEmits<{ section: [boolean] }>()
+const emit = defineEmits<{ section: [boolean]; search: [string] }>()
 watch(browseAll, (value) => emit('section', value), { immediate: true })
 // Browsing them all, the tabs give up the row and the search takes it.
 const searchClass = computed(() =>
@@ -55,16 +71,62 @@ watch(browseAll, () => {
   clear()
   void nextTick(() => window.scrollTo({ top: 0 }))
 })
-onMounted(() => {
-  const params = new URLSearchParams(initialSearch ?? location.search)
+function readAddress(search: string) {
+  const params = new URLSearchParams(search)
   query.value = params.get('q') ?? ''
   selected.value = params
     .getAll('category')
-    .filter((id) => models.some((model) => model.category === id))
+    .filter((id) =>
+      serverFacets
+        ? serverFacets.categories.some((category) => category.value === id)
+        : models.some((model) => model.category === id)
+    )
   runsOn.value = params
     .getAll('model')
-    .filter((name) => models.some((model) => model.models?.includes(name)))
+    .filter((name) =>
+      serverFacets
+        ? serverFacets.models.some((model) => model.value === name)
+        : models.some((model) => model.models?.includes(name))
+    )
+  if (serverPage)
+    sort.value = params.get('sort') === 'name' ? 'name' : 'popular'
+}
+let searchReady = false
+let searchTimer: ReturnType<typeof setTimeout> | undefined
+onMounted(() => {
+  readAddress(initialSearch ?? location.search)
+  void nextTick(() => {
+    searchReady = true
+  })
 })
+watch(
+  () => initialSearch,
+  (search) => {
+    if (serverPage) readAddress(search ?? '')
+  }
+)
+watch(
+  [query, selected, runsOn, sort],
+  () => {
+    if (!serverPage || !searchReady) return
+    clearTimeout(searchTimer)
+    searchTimer = setTimeout(() => {
+      const params = new URLSearchParams(initialSearch ?? location.search)
+      for (const key of ['q', 'category', 'model', 'sort', 'p'])
+        params.delete(key)
+      if (query.value) params.set('q', query.value)
+      for (const value of selected.value) params.append('category', value)
+      for (const value of runsOn.value) params.append('model', value)
+      if (sort.value !== 'popular') params.set('sort', sort.value)
+      const search = params.toString()
+      const current = new URLSearchParams(initialSearch ?? location.search)
+      current.delete('p')
+      if (search !== current.toString()) emit('search', search)
+    }, 200)
+  },
+  { deep: true }
+)
+onBeforeUnmount(() => clearTimeout(searchTimer))
 
 const rows = computed(() =>
   models
@@ -89,16 +151,23 @@ const rows = computed(() =>
     }))
     .sort((a, b) => a.order - b.order)
 )
-const options = computed(() =>
-  rows.value.map((category) => ({
-    value: category.id,
-    label: category.label,
-    count: category.models.length
-  }))
+const options = computed(
+  () =>
+    serverFacets?.categories ??
+    rows.value.map((category) => ({
+      value: category.id,
+      label: category.label,
+      count: category.models.length
+    }))
 )
 // An outcome is reached through the model it runs on as often as through the
 // task it performs, and one workflow can stand on several.
 const modelOptions = computed(() => {
+  if (serverFacets)
+    return serverFacets.models.map((model) => ({
+      ...model,
+      label: model.value
+    }))
   const counts = new Map<string, number>()
   for (const model of models)
     for (const name of model.models ?? [])
@@ -222,7 +291,7 @@ function leaveSection() {
           kind="workflows"
           :use-case-options="options"
           :model-options="modelOptions"
-          :result-count="visible.length"
+          :result-count="serverPage?.total ?? visible.length"
           :locale
         />
         <WorkshopSortMenu

@@ -47,7 +47,7 @@ export const GET: APIRoute = async (context) => {
     if (
       !type ||
       (!/^(image\/(png|jpeg|webp)|application\/json)(;|$)/.test(type) &&
-        !(preview && /^video\/mp4(;|$)/.test(type)))
+        !(preview && /^video\/(mp4|webm)(;|$)/.test(type)))
     ) {
       await response.body?.cancel()
       return deny()

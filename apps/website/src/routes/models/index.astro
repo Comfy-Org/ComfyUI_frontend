@@ -3,19 +3,24 @@ import BaseLayout from '@/layouts/BaseLayout.astro'
 import StaffContentActions from '@/components/cms/StaffContentActions.astro'
 import { workshopModels } from '@/config/workshop-browse-content'
 import ModelsPage from '@/components/workshop/ModelsPage.vue'
+import CccModelsPage from '@/components/workshop/CccModelsPage.vue'
+import CatalogNavigation from '@/components/workshop/CatalogNavigation.astro'
 import ModelsShowcase from '@/components/models/ModelsShowcase.astro'
 import { pageContext } from '@/utils/jsonLd'
 import { modelsHubJsonLd } from '@/utils/modelJsonLd'
 import { modelsHubMeta } from './models-hub-meta'
+import { HUB_SECTION_COPY } from './hub-section-copy'
 import { modelsByProvider } from './models-directory'
-import {
-  cmsEnabled,
-  loadSiteCatalog,
-  catalogUnavailable
-} from '@/lib/cms/catalog'
+import { cmsEnabled, catalogUnavailable } from '@/lib/cms/catalog'
+import { loadSiteCatalogList } from '@/lib/cms/catalog-list'
 
 const catalog = cmsEnabled()
-  ? await loadSiteCatalog(Astro.locals.catalogAuthoring ?? Astro.locals.site, Astro.locals.catalogLocale)
+  ? await loadSiteCatalogList(
+      Astro.locals.catalogAuthoring ?? Astro.locals.site,
+      Astro.locals.catalogLocale,
+      'models',
+      Astro.url.searchParams
+    )
   : undefined
 const failure = catalog && !catalog.ok ? catalogUnavailable() : undefined
 if (failure) return failure
@@ -49,18 +54,48 @@ const jsonLd = modelsHubJsonLd({
   mainEntityId={jsonLd.mainEntityId}
   extraJsonLd={jsonLd.extraJsonLd}
 >
+  {cmsEnabled() && <CatalogNavigation />}
   <StaffContentActions create type="model" />
   <script>
     import '@/scripts/hubNavigation'
   </script>
-  <ModelsPage
-    section="models"
-    heading={Astro.locals.t('workshop.catalogue.heading')}
-    client:load
-    transition:persist={cmsEnabled() ? undefined : 'hub-catalogue'}
-  >
-    <ModelsShowcase slot="fallback" />
-  </ModelsPage>
+  {cmsEnabled() ? (
+    <CccModelsPage
+      initialModels={catalog?.ok ? catalog.models : undefined}
+      initialCatalogAvailable={catalog?.ok === true}
+      initialPages={catalog?.ok ? catalog.pages : undefined}
+      initialFacets={catalog?.ok ? catalog.facets : undefined}
+      initialSearch={Astro.url.search}
+      initialHeadings={
+        catalog?.ok
+          ? {
+              models: Astro.locals.t('workshop.catalogue.heading'),
+              workflows: HUB_SECTION_COPY.workflows.heading,
+              apps: HUB_SECTION_COPY.apps.heading
+            }
+          : undefined
+      }
+      locale={Astro.locals.catalogLocale ?? 'en'}
+      section="models"
+      heading={Astro.locals.t('workshop.catalogue.heading')}
+      client:load
+      transition:persist={`ccc-hub-catalogue-${Astro.locals.catalogLocale ?? 'en'}`}
+      transition:name={`ccc-hub-catalogue-${Astro.locals.catalogLocale ?? 'en'}`}
+      transition:animate="none"
+    >
+      <ModelsShowcase slot="fallback" />
+    </CccModelsPage>
+  ) : (
+    <ModelsPage
+      locale={Astro.locals.catalogLocale ?? 'en'}
+      section="models"
+      heading={Astro.locals.t('workshop.catalogue.heading')}
+      client:load
+      transition:persist="hub-catalogue"
+    >
+      <ModelsShowcase slot="fallback" />
+    </ModelsPage>
+  )}
   <section
     aria-labelledby="models-directory-heading"
     class="mx-auto max-w-10xl px-6 pb-16 max-sm:pb-10 lg:px-8 lg:pb-24"

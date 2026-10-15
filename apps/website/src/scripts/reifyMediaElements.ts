@@ -10,6 +10,14 @@
  */
 export function reifyMediaElements(root: ParentNode) {
   for (const media of root.querySelectorAll('video, audio, iframe')) {
+    if (
+      media.localName !== 'iframe' &&
+      media.closest(
+        'astro-island[data-astro-transition-persist^="ccc-hub-catalogue-"]'
+      )
+    )
+      continue
+
     const fresh = document.createElement(media.localName)
     for (const attr of media.attributes) {
       fresh.setAttribute(attr.name, attr.value)

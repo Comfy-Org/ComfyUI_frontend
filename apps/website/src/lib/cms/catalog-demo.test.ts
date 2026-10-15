@@ -30,8 +30,6 @@ beforeEach(async () => {
   )
 })
 afterEach(async () => {
-  vi.useRealTimers()
-  vi.unstubAllEnvs()
   await rm(dir, { recursive: true, force: true })
 })
 describe('explicit local-demo invitations', () => {
@@ -62,17 +60,42 @@ describe('explicit local-demo invitations', () => {
     expect(await resolveDemoSession(active!.token)).toBeUndefined()
     expect(await redeemDemoInvitation(expiring.code)).toBeUndefined()
   })
-  it('rejects explicit expired, malformed, over-seven-day or beyond-parent expiry without creating entries', async () => {
+  it('rejects explicit expired, malformed, over-thirty-day or beyond-parent expiry without creating entries', async () => {
     for (const expiry of [
       NaN,
       Date.now() - 1,
-      Date.now() + 8 * 24 * 60 * 60 * 1000,
+      Date.now() + 31 * 24 * 60 * 60 * 1000,
       Date.now() + 60 * 60 * 1000
     ])
       await expect(
         createDemoInvitation('invalid', 'publish', expiry)
       ).rejects.toThrow()
     expect(await listDemoInvitations()).toEqual([])
+  })
+  it('supports explicit thirty-day reusable access bounded by parent expiry', async () => {
+    const now = Date.now()
+    vi.useFakeTimers()
+    vi.setSystemTime(now)
+    const expiry = now + 30 * 24 * 60 * 60 * 1000
+    await writeFile(
+      join(dir, 'fixture.jwt'),
+      `fixture.${Buffer.from(JSON.stringify({ exp: Math.ceil(expiry / 1000) })).toString('base64url')}.not-a-real-signature`,
+      { mode: 0o600 }
+    )
+    const invite = await createDemoInvitation(
+      'long-lived tester',
+      'publish',
+      expiry
+    )
+    const session = await redeemDemoInvitation(invite.code)
+    vi.setSystemTime(now + 29 * 24 * 60 * 60 * 1000)
+    expect(await redeemDemoInvitation(invite.code)).toEqual(session)
+    expect((await resolveDemoSession(session!.token))?.name).toBe(
+      'long-lived tester'
+    )
+    vi.setSystemTime(expiry)
+    expect(await redeemDemoInvitation(invite.code)).toBeUndefined()
+    expect(await resolveDemoSession(session!.token)).toBeUndefined()
   })
   it('supports repeated and concurrent sign-ins without invalidating sessions or storing secrets', async () => {
     const invite = await createDemoInvitation('tester', 'publish')
@@ -94,7 +117,9 @@ describe('explicit local-demo invitations', () => {
     const legacyToken = 'b'.repeat(64)
     const file = join(dir, 'invitations.json')
     const entries = JSON.parse(await readFile(file, 'utf8'))
-    entries[0].sessionHash = createHash('sha256').update(legacyToken).digest('hex')
+    entries[0].sessionHash = createHash('sha256')
+      .update(legacyToken)
+      .digest('hex')
     await writeFile(file, JSON.stringify(entries), { mode: 0o600 })
     const next = await redeemDemoInvitation(invite.code)
     expect(next).toBeDefined()

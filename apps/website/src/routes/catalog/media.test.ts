@@ -36,28 +36,29 @@ function context(preview = true, staff = true, suffix = '', range = false) {
   return ctx
 }
 describe('same-origin catalog byte proxy', () => {
-  it('serves a verified Preview video as a full authorized GET, not an unchecked partial response', async () => {
-    vi.stubEnv('SITE_CATALOG_API_URL', 'http://127.0.0.1:8109')
-    const fetch = vi
-      .fn<typeof globalThis.fetch>()
-      .mockResolvedValue(
+  it.for(['video/mp4', 'video/webm'])(
+    'serves verified Preview %s as a full authorized GET',
+    async (type) => {
+      vi.stubEnv('SITE_CATALOG_API_URL', 'http://127.0.0.1:8109')
+      const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(
         new Response('verified private video', {
-          headers: { 'Content-Type': 'video/mp4' }
+          headers: { 'Content-Type': type }
         })
       )
-    vi.stubGlobal('fetch', fetch)
-    const ctx = context()
-    ctx.request.headers.set('Range', 'bytes=0-')
-    const response = await GET(ctx)
-    expect(response.status).toBe(200)
-    expect(await response.text()).toBe('verified private video')
-    expect(response.headers.get('Cache-Control')).toBe('private, no-store')
-    expect(response.headers.get('Content-Range')).toBeNull()
-    expect(fetch.mock.calls[0]?.[1]?.headers).toEqual({
-      Authorization: 'Bearer verified-server-only-fixture'
-    })
-  })
-  it.each([
+      vi.stubGlobal('fetch', fetch)
+      const ctx = context()
+      ctx.request.headers.set('Range', 'bytes=0-')
+      const response = await GET(ctx)
+      expect(response.status).toBe(200)
+      expect(await response.text()).toBe('verified private video')
+      expect(response.headers.get('Cache-Control')).toBe('private, no-store')
+      expect(response.headers.get('Content-Range')).toBeNull()
+      expect(fetch.mock.calls[0]?.[1]?.headers).toEqual({
+        Authorization: 'Bearer verified-server-only-fixture'
+      })
+    }
+  )
+  it.for([
     { preview: true, staff: false },
     { preview: false, staff: true }
   ])(
@@ -119,7 +120,7 @@ describe('same-origin catalog byte proxy', () => {
     expect(fetch.mock.calls[0]?.[1]?.headers).toBeUndefined()
     expect(String(fetch.mock.calls[0]?.[0])).toContain('/api/v1/catalog/media/')
   })
-  it.each([
+  it.for([
     { staff: false, suffix: '', range: false },
     { staff: true, suffix: '?preview=DRAFT', range: false },
     { staff: true, suffix: '', range: true }
@@ -132,7 +133,7 @@ describe('same-origin catalog byte proxy', () => {
       expect(fetch).not.toHaveBeenCalled()
     }
   )
-  it.each(['text/html', 'image/svg+xml'])(
+  it.for(['text/html', 'image/svg+xml'])(
     'refuses executable origin types: %s',
     async (type) => {
       vi.stubEnv('SITE_CATALOG_API_URL', 'http://127.0.0.1:8109')

@@ -93,11 +93,11 @@ export async function createDemoInvitation(
     requestedExpiry !== undefined &&
     (!Number.isSafeInteger(requestedExpiry) ||
       requestedExpiry <= now ||
-      requestedExpiry > now + 7 * 24 * 60 * 60 * 1000 ||
+      requestedExpiry > now + 30 * 24 * 60 * 60 * 1000 ||
       requestedExpiry > parent.expires)
   )
     throw new Error(
-      'Explicit expiry must be future, within seven days and parent lifetime'
+      'Explicit expiry must be future, within thirty days and parent lifetime'
     )
   const code = randomBytes(32).toString('hex')
   const item = entry.parse({
@@ -156,7 +156,8 @@ export async function resolveDemoSession(token: string) {
   const item = await transaction((entries) =>
     entries.find(
       (item) =>
-        (item.sessionHash === digest(token) || item.reusableSessionHash === digest(token)) &&
+        (item.sessionHash === digest(token) ||
+          item.reusableSessionHash === digest(token)) &&
         !item.revoked &&
         item.expires > Date.now()
     )

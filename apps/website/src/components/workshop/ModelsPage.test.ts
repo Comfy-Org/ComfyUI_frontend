@@ -1,3 +1,5 @@
+// @vitest-environment happy-dom
+// @vitest-environment-options {"settings":{"navigation":{"disableMainFrameNavigation":true,"disableChildPageNavigation":true}}}
 import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -6,6 +8,7 @@ import type { Ref } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 
 import { workshopModels } from '@/config/workshop-browse-content'
+import type { WorkshopModel } from '@/config/models-catalogue'
 import { workshopPages } from '@/config/workshop-page-content'
 import './ModelPage.vue'
 import './ModelsCatalogue.vue'
@@ -46,6 +49,248 @@ const modelSlug = 'bfl--flux-2-max--generate-images'
 const modelPage = await prepareModelPage(modelSlug)
 
 describe('Models page entry', () => {
+  it('replaces a persisted selected snapshot reactively and keeps its catalogue mounted across sections', async () => {
+    const fetchData = vi.fn<typeof fetch>()
+    vi.stubGlobal('fetch', fetchData)
+    const selected = workshopModels
+      .slice(0, 1)
+      .map((model) => ({ ...model, name: 'Original selected model' }))
+    const view = render(ModelsPage, {
+      props: { initialModels: selected, initialCatalogAvailable: true }
+    })
+    await screen.findAllByText('Original selected model')
+    const hero = screen.getByTestId('workshop-hero')
+    await view.rerender({
+      initialModels: selected.map((model) => ({
+        ...model,
+        name: 'Fresh server model'
+      }))
+    })
+    expect(await screen.findAllByText('Fresh server model')).not.toHaveLength(0)
+    expect(screen.queryByText('Original selected model')).toBeNull()
+    expect(screen.getByTestId('workshop-hero')).toBe(hero)
+    await view.rerender({ section: 'workflows' })
+    expect(await screen.findByTestId('workflow-catalogue')).toBeVisible()
+    expect(screen.getByTestId('workshop-hero')).toBe(hero)
+    expect(fetchData).not.toHaveBeenCalled()
+  })
+
+  it('removes private selected rows when a persisted island receives public non-CMS props', async () => {
+    const pending = Promise.withResolvers<Response>()
+    const fetchData = vi.fn<typeof fetch>().mockReturnValue(pending.promise)
+    vi.stubGlobal('fetch', fetchData)
+    const selected = workshopModels
+      .slice(0, 1)
+      .map((model) => ({ ...model, name: 'Private Draft model' }))
+    const view = render(ModelsPage, {
+      props: { initialModels: selected, initialCatalogAvailable: true }
+    })
+    await screen.findAllByText('Private Draft model')
+    await view.rerender({
+      initialModels: undefined,
+      initialCatalogAvailable: false
+    })
+    await vi.waitFor(() =>
+      expect(screen.queryByText('Private Draft model')).toBeNull()
+    )
+    await vi.waitFor(() =>
+      expect(fetchData).toHaveBeenCalledExactlyOnceWith(
+        '/models/catalogue.json'
+      )
+    )
+    pending.resolve(
+      Response.json(
+        workshopModels
+          .slice(0, 1)
+          .map((model) => ({ ...model, name: 'Public catalogue model' }))
+      )
+    )
+    expect(
+      await screen.findAllByText('Public catalogue model')
+    ).not.toHaveLength(0)
+    expect(screen.queryByText('Private Draft model')).toBeNull()
+  })
+
+  it('changes the heading with the selected snapshot tab before fresh navigation data arrives', async () => {
+    const fetchData = vi.fn<typeof fetch>()
+    vi.stubGlobal('fetch', fetchData)
+    render(ModelsPage, {
+      props: {
+        initialModels: workshopPages,
+        initialCatalogAvailable: true,
+        initialHeadings: {
+          models: 'Models heading',
+          workflows: 'Workflows heading',
+          apps: 'Apps heading'
+        },
+        heading: 'Models heading'
+      }
+    })
+    await screen.findByTestId('catalogue-tab-workflows')
+    await userEvent.setup().click(screen.getByTestId('catalogue-tab-workflows'))
+    expect(
+      await screen.findByRole('heading', {
+        level: 1,
+        name: 'Workflows heading'
+      })
+    ).toBeVisible()
+    expect(await screen.findByTestId('workflow-catalogue')).toBeVisible()
+    expect(fetchData).not.toHaveBeenCalled()
+  })
+
+  it('keeps an existing authorized Add action aligned with the intended tab and restores it on rollback', async () => {
+    const create = document.createElement('a')
+    create.dataset.cccCreateContent = ''
+    create.href = '/admin/content/new?type=model'
+    document.body.append(create)
+    try {
+      render(ModelsPage, {
+        props: { initialModels: workshopPages, initialCatalogAvailable: true }
+      })
+      await screen.findByTestId('catalogue-tab-workflows')
+      await userEvent
+        .setup()
+        .click(screen.getByTestId('catalogue-tab-workflows'))
+      await vi.waitFor(() =>
+        expect(create).toHaveAttribute(
+          'href',
+          '/admin/content/new?type=workflow'
+        )
+      )
+      await vi.advanceTimersByTimeAsync(5_000)
+      await vi.waitFor(() =>
+        expect(create).toHaveAttribute('href', '/admin/content/new?type=model')
+      )
+    } finally {
+      create.remove()
+    }
+  })
+
+  it.for([
+    { section: 'models' },
+    { section: 'workflows' },
+    { section: 'apps' }
+  ] as const)(
+    'server-renders the selected initial $section catalogue without a second data fetch',
+    async ({ section }) => {
+      const catalogues: Record<typeof section, WorkshopModel[]> = {
+        models: [
+          {
+            routerId: 'selected-model',
+            slug: 'selected-model',
+            href: '/hub/models/selected-model/',
+            name: 'Selected model',
+            workflowCount: 0,
+            capabilities: [],
+            useCases: ['generate-images']
+          }
+        ],
+        workflows: [
+          {
+            type: 'CLOUD',
+            workflowId: 'selected-workflow',
+            slug: 'workflows/selected-workflow',
+            href: '/hub/workflows/selected-workflow/',
+            name: 'Selected workflow',
+            workflowCount: 1,
+            capabilities: [],
+            category: 'cleanup'
+          }
+        ],
+        apps: [
+          {
+            type: 'APP',
+            appId: 'studio',
+            slug: 'apps/selected-app',
+            href: '/hub/apps/selected-app/',
+            name: 'Selected app',
+            workflowCount: 0,
+            capabilities: []
+          }
+        ]
+      }
+      const selected = catalogues[section]
+      const fetchData = vi.fn<typeof fetch>()
+      vi.stubGlobal('fetch', fetchData)
+      settled.value = false
+      const html = await renderToString(
+        createSSRApp({
+          render: () =>
+            h(ModelsPage, {
+              section,
+              initialModels: selected,
+              initialCatalogAvailable: true
+            })
+        })
+      )
+      expect(html).toContain(selected[0].name)
+      expect(html).not.toContain('workshop-loading')
+      expect(fetchData).not.toHaveBeenCalled()
+    }
+  )
+
+  it('hydrates the server-selected catalogue without fetching another selection', async () => {
+    const selected = workshopModels.slice(0, 1).map((model) => ({
+      ...model,
+      name: 'Selected Draft model'
+    }))
+    const fetchData = vi.fn<typeof fetch>()
+    vi.stubGlobal('fetch', fetchData)
+    const props = {
+      initialModels: selected,
+      initialCatalogAvailable: true
+    }
+    const container = document.createElement('div')
+    container.innerHTML = await renderToString(createSSRApp(ModelsPage, props))
+    document.body.append(container)
+    const app = createSSRApp(ModelsPage, props)
+    try {
+      app.mount(container)
+      expect(
+        await screen.findAllByText('Selected Draft model')
+      ).not.toHaveLength(0)
+      await vi.waitFor(() =>
+        expect(screen.getByTestId('workshop-search')).toBeEnabled()
+      )
+      expect(screen.queryByTestId('models-loading')).toBeNull()
+      expect(fetchData).not.toHaveBeenCalled()
+    } finally {
+      app.unmount()
+      container.remove()
+    }
+  })
+
+  it('does not treat unverified initial data as an available catalogue', async () => {
+    const fetchData = vi.fn<typeof fetch>()
+    vi.stubGlobal('fetch', fetchData)
+    const html = await renderToString(
+      createSSRApp({
+        render: () => h(ModelsPage, { initialModels: workshopModels })
+      })
+    )
+    expect(html).toContain('workshop-loading')
+    expect(html).not.toContain('workshop-search')
+    expect(fetchData).not.toHaveBeenCalled()
+  })
+
+  it('server-renders an empty selected catalogue without falling back to static records', async () => {
+    const fetchData = vi.fn<typeof fetch>()
+    vi.stubGlobal('fetch', fetchData)
+    const html = await renderToString(
+      createSSRApp({
+        render: () =>
+          h(ModelsPage, {
+            initialModels: [],
+            initialCatalogAvailable: true
+          })
+      })
+    )
+    expect(html).toContain('workshop-search')
+    expect(html).not.toContain(workshopModels[0].name)
+    expect(html).not.toContain('workshop-loading')
+    expect(fetchData).not.toHaveBeenCalled()
+  })
+
   it('gates workflow data and mounts the shared controls when enabled', async () => {
     const slug = 'workflows/change-material'
     const fetchData = vi

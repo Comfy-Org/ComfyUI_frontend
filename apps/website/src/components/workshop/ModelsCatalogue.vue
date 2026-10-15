@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, ref, watch } from 'vue'
+import {
+  computed,
+  defineAsyncComponent,
+  inject,
+  onScopeDispose,
+  ref,
+  watch
+} from 'vue'
 import { useMounted, whenever } from '@vueuse/core'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -26,30 +33,79 @@ import {
   loadWorkflowCatalogue
 } from '@/lib/workshop/catalogue-components'
 import { isWorkshopModelShown } from '@/scripts/workshop-model-flags'
+import { cccCatalogueComponents } from './ccc-catalogue-components'
+import CatalogPagination from './CatalogPagination.vue'
+import type {
+  CatalogListPages,
+  CatalogListFacets
+} from '@/lib/cms/catalog-list'
 
-const WorkflowCatalogue = defineAsyncComponent(loadWorkflowCatalogue)
-const AppCatalogue = defineAsyncComponent(loadAppCatalogue)
+const suppliedComponents = inject(cccCatalogueComponents, undefined)
+const WorkflowCatalogue =
+  suppliedComponents?.workflows ?? defineAsyncComponent(loadWorkflowCatalogue)
+const AppCatalogue =
+  suppliedComponents?.apps ?? defineAsyncComponent(loadAppCatalogue)
 
 const {
   models,
   initialSearch,
   locale = 'en',
-  section = 'models'
+  section = 'models',
+  optimisticNavigation = false,
+  pages,
+  facets
 } = defineProps<{
   models: readonly WorkshopModel[]
   initialSearch?: string
   locale?: Locale
   section?: CatalogueTab
+  optimisticNavigation?: boolean
+  pages?: CatalogListPages
+  facets?: CatalogListFacets
 }>()
 const { t } = translationsFor(locale)
 
 const inSection = ref(false)
 // A category replaces the page's own heading and the switch between
 // catalogues, so the state has to reach the page that renders them.
-const emit = defineEmits<{ section: [boolean] }>()
+const emit = defineEmits<{
+  section: [boolean]
+  displayedSection: [CatalogueTab]
+  search: [string]
+}>()
 watch(inSection, (value) => emit('section', value), { immediate: true })
 const browseAll = ref(false)
 const mounted = useMounted()
+const intendedSection = ref<CatalogueTab>()
+const displayedSection = computed(() => intendedSection.value ?? section)
+let rollback: ReturnType<typeof setTimeout> | undefined
+function resetNavigation() {
+  clearTimeout(rollback)
+  intendedSection.value = undefined
+}
+function navigate(tab: CatalogueTab) {
+  if (!optimisticNavigation || tab === displayedSection.value) return
+  resetNavigation()
+  browseAll.value = false
+  inSection.value = false
+  intendedSection.value = tab
+  rollback = setTimeout(resetNavigation, 5_000)
+}
+watch(
+  [() => section, () => models, () => optimisticNavigation],
+  resetNavigation
+)
+watch(displayedSection, (value) => emit('displayedSection', value), {
+  immediate: true
+})
+onScopeDispose(resetNavigation)
+whenever(
+  () => mounted.value && optimisticNavigation && !suppliedComponents,
+  () => {
+    void Promise.allSettled([loadWorkflowCatalogue(), loadAppCatalogue()])
+  },
+  { once: true }
+)
 const enabled = useWorkshopEnabled()
 const appsEnabled = useWorkshopAppsEnabled()
 const shownModels = computed(() =>
@@ -80,10 +136,12 @@ const appCards = computed<readonly CatalogueApp[]>(() =>
 )
 const availableTabs = computed<readonly CatalogueTab[]>(() => [
   'models',
-  ...(workflows.value.length || section === 'workflows'
+  ...((pages?.workflows.total ?? workflows.value.length) ||
+  displayedSection.value === 'workflows'
     ? (['workflows'] as const)
     : []),
-  ...((appsEnabled.value && apps.value.length) || section === 'apps'
+  ...((appsEnabled.value && (pages?.apps.total ?? apps.value.length)) ||
+  section === 'apps'
     ? (['apps'] as const)
     : [])
 ])
@@ -128,48 +186,58 @@ whenever(
         :class="
           cn(
             'col-start-1 row-start-1',
-            tab === section ? 'animate-soft-in' : 'invisible'
+            tab === displayedSection ? 'animate-soft-in' : 'invisible'
           )
         "
-        :aria-hidden="tab !== section"
+        :aria-hidden="tab !== displayedSection"
       >
         {{ t(subtitle) }}
       </p>
     </div>
   </div>
   <WorkshopModelsGrid
-    v-if="section === 'models'"
+    v-if="displayedSection === 'models'"
     v-model:browse-all="browseAll"
     :models="routerModels"
+    :server-page="pages?.models"
+    :server-facets="facets?.models"
     :initial-search
     :locale
+    @search="emit('search', $event)"
     @section="inSection = $event"
   >
     <template #tabs>
       <CatalogueTabs
         v-if="availableTabs.length > 1 && !inSection"
         :tabs="availableTabs"
-        :model-value="section"
+        :model-value="displayedSection"
         :locale
         links
+        :locale-links="optimisticNavigation"
+        @navigate="navigate"
       />
     </template>
   </WorkshopModelsGrid>
   <WorkflowCatalogue
-    v-else-if="section === 'workflows'"
+    v-else-if="displayedSection === 'workflows'"
     v-model:browse-all="browseAll"
     :models="workflows"
+    :server-page="pages?.workflows"
+    :server-facets="facets?.workflows"
     :initial-search
     :locale
+    @search="emit('search', $event)"
     @section="inSection = $event"
   >
     <template #tabs>
       <CatalogueTabs
         v-if="!inSection"
         :tabs="availableTabs"
-        :model-value="section"
+        :model-value="displayedSection"
         :locale
         links
+        :locale-links="optimisticNavigation"
+        @navigate="navigate"
       />
     </template>
   </WorkflowCatalogue>
@@ -184,10 +252,19 @@ whenever(
       <CatalogueTabs
         v-if="!inSection"
         :tabs="availableTabs"
-        :model-value="section"
+        :model-value="displayedSection"
         :locale
         links
+        :locale-links="optimisticNavigation"
+        @navigate="navigate"
       />
     </template>
   </AppCatalogue>
+  <CatalogPagination
+    v-if="pages"
+    :page="pages[displayedSection]"
+    :section="displayedSection"
+    :initial-search="displayedSection === section ? initialSearch : undefined"
+    :locale
+  />
 </template>
