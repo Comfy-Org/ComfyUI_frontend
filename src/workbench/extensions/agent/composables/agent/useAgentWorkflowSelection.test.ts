@@ -804,4 +804,21 @@ describe('historical workflow restoration', () => {
       expect(panel.unresolvedTargetListed).toBe(listed)
     }
   )
+
+  it('keeps a listed workflow listed when a refresh starts during the catalog sync', async () => {
+    const { selection, panel, listCloudWorkflows, resolver, workflows } =
+      setup()
+    listCloudWorkflows.mockImplementationOnce(async () =>
+      listing([{ id: 'wf-saved', name: 'saved' }])
+    )
+    listCloudWorkflows.mockImplementationOnce(() => new Promise(() => {}))
+    vi.mocked(workflows.syncWorkflows).mockImplementationOnce(async () => {
+      void resolver.refreshCloudWorkflowIds()
+    })
+
+    expect(await selection.restoreTarget('wf-saved', () => true)).toBe(true)
+
+    expect(panel.targetUnresolved).toBe(true)
+    expect(panel.unresolvedTargetListed).toBe(true)
+  })
 })

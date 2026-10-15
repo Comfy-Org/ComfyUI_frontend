@@ -223,7 +223,8 @@ export function useAgentWorkflowSelection({
   ): Promise<RestorationOutcome> {
     await refreshCloudWorkflowIds()
     if (!isCurrent()) return { outcome: 'superseded' }
-    if (needsLifecycleLookup(workflowId)) {
+    const listingStatus = cloudListingStatus(workflowId)
+    if (needsLifecycleLookup(workflowId, listingStatus)) {
       const lifecycle = await cloudWorkflowLifecycle(workflowId)
       if (!isCurrent()) return { outcome: 'superseded' }
       if (lifecycle === 'gone') return { outcome: 'deleted' }
@@ -235,14 +236,14 @@ export function useAgentWorkflowSelection({
     if (!isCurrent()) return { outcome: 'superseded' }
     const synced = storedWorkflowFor(workflowId)
     if (synced !== null) return { outcome: 'open', target: synced }
-    return {
-      outcome: 'unresolved',
-      listed: cloudListingStatus(workflowId) === 'listed'
-    }
+    return { outcome: 'unresolved', listed: listingStatus === 'listed' }
   }
 
-  function needsLifecycleLookup(workflowId: string): boolean {
-    switch (cloudListingStatus(workflowId)) {
+  function needsLifecycleLookup(
+    workflowId: string,
+    listingStatus: ReturnType<typeof cloudListingStatus>
+  ): boolean {
+    switch (listingStatus) {
       case 'listed':
         return false
       case 'omitted':
