@@ -71,17 +71,17 @@ mechanism and preserve the feature.
 `comfy` is installed before custom-node modules are evaluated. Its main domains
 are:
 
-| Member           | Responsibility                                                 |
-| ---------------- | -------------------------------------------------------------- |
-| `comfy.defs`     | Read, extend, and define node and widget types.                |
-| `comfy.graph`    | Work with the graph currently shown by the editor.             |
-| `comfy.queue`    | Submit, guard, observe, and interrupt runs.                    |
-| `comfy.settings` | Declare and observe preferences.                               |
-| `comfy.storage`  | Store per-user pack documents and presets.                     |
-| `comfy.ui`       | Contribute tabs, badges, buttons, dialogs, menus, and prompts. |
-| `comfy.commands` | Register and run commands, keybindings, and notifications.     |
-| `comfy.backend`  | Build URLs, make authenticated requests, and receive events.   |
-| `comfy.workflow` | Open workflow data and apply host text replacements.           |
+| Member           | Responsibility                                                   |
+| ---------------- | ---------------------------------------------------------------- |
+| `comfy.defs`     | Read, extend, and define node and widget types.                  |
+| `comfy.graph`    | Work with the graph currently shown by the editor.               |
+| `comfy.queue`    | Submit, guard, observe, and interrupt runs.                      |
+| `comfy.settings` | Declare and observe preferences.                                 |
+| `comfy.storage`  | Store per-user pack documents and presets.                       |
+| `comfy.ui`       | Contribute tabs, badges, buttons, dialogs, menus, and prompts.   |
+| `comfy.commands` | Register and run commands, keybindings, and notifications.       |
+| `comfy.backend`  | Call this pack's declared relative endpoints and receive events. |
+| `comfy.workflow` | Open workflow data and apply host text replacements.             |
 
 Root lifecycle and observation methods cover application readiness, workflow
 loads, viewport changes, node changes and movement, editor interaction state,
