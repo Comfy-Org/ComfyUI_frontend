@@ -52,7 +52,8 @@ const RETRIEVE_ATTRIBUTES: SearchAttribute[] = [
   'banner_url'
 ]
 
-const REWRITE_ANALYTICS_TAGS = ['rewrite']
+const USER_ANALYTICS_TAG = 'user'
+const REWRITE_ANALYTICS_TAG = 'rewrite'
 
 const searchPacksCache = new QuickLRU<string, SearchPacksResult>({
   maxSize: SEARCH_CACHE_MAX_SIZE
@@ -124,19 +125,16 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
     const { pageSize, pageNumber } = params
     const rest = omit(params, ['pageSize', 'pageNumber'])
 
-    function packQuery(queryText: string): SearchQuery {
+    function packQuery(queryText: string, analyticsTag: string): SearchQuery {
       return {
         query: queryText,
         indexName: 'nodes_index',
         attributesToRetrieve: RETRIEVE_ATTRIBUTES,
         ...rest,
+        analyticsTags: [...(rest.analyticsTags ?? []), analyticsTag],
         hitsPerPage: pageSize,
         page: pageNumber
       }
-    }
-
-    function rewriteQuery(queryText: string): SearchQuery {
-      return { ...packQuery(queryText), analyticsTags: REWRITE_ANALYTICS_TAGS }
     }
 
     async function searchFallbacks(
@@ -145,7 +143,9 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
       if (fallbackQueries.length === 0) return []
       try {
         const { results } = await searchClient.search<AlgoliaNodePack>({
-          requests: fallbackQueries.map(rewriteQuery),
+          requests: fallbackQueries.map((fallbackQuery) =>
+            packQuery(fallbackQuery, REWRITE_ANALYTICS_TAG)
+          ),
           strategy: 'none'
         })
         const hits = (results as SearchResponse<AlgoliaNodePack>[]).flatMap(
@@ -165,7 +165,7 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
 
     const shouldQuerySuggestions =
       query.length >= MIN_CHARS_FOR_SUGGESTIONS_ALGOLIA
-    const requests: SearchQuery[] = [packQuery(query)]
+    const requests: SearchQuery[] = [packQuery(query, USER_ANALYTICS_TAG)]
     if (shouldQuerySuggestions) {
       requests.push({
         indexName: 'nodes_index_query_suggestions',
