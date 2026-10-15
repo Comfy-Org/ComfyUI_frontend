@@ -138,7 +138,8 @@ These cancel a pending activation:
 - the server deleting the open chat;
 - closing the panel.
 
-A failed History selection, including after its row is deleted, drops an
-activation that reaches its next check while the selection is still failed.
+While a History selection has failed, an activation from the chat that failed
+to open is dropped when it reaches its next check. Deleting the failed row
+keeps dropping it.
 
 Cancellation does not make graph activation a rollback transaction.
