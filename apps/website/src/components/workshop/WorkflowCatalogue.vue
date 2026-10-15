@@ -74,6 +74,7 @@ import WorkflowCategoryTabs from './WorkflowCategoryTabs.vue'
 import WorkflowCollectionChips from './WorkflowCollectionChips.vue'
 import type { FacetMenuOption } from './WorkshopFilterMenu.vue'
 import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
+import WorkflowSectionRows from './WorkflowSectionRows.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
 import WorkshopSearchField from './WorkshopSearchField.vue'
 import WorkshopSortMenu from './WorkshopSortMenu.vue'
@@ -566,36 +567,12 @@ function clear() {
           @open="openFeatured"
         />
 
-        <div v-if="sectioned" class="flex flex-col gap-12">
-          <section
-            v-for="section in sections"
-            :id="sectionAnchor(section.id)"
-            :key="section.id"
-            :aria-labelledby="`${sectionAnchor(section.id)}-heading`"
-            class="scroll-mt-44 lg:scroll-mt-52"
-            :data-testid="`workflow-section-${section.id}`"
-          >
-            <h2
-              :id="`${sectionAnchor(section.id)}-heading`"
-              class="mb-5 text-xl font-medium text-primary-warm-white"
-            >
-              {{ section.label }}
-            </h2>
-            <ul
-              :class="CARD_GRID_BESIDE_NAV"
-              :aria-label="section.label"
-              data-testid="workflow-grid"
-            >
-              <li v-for="(model, index) in section.models" :key="model.slug">
-                <WorkshopModelCard
-                  :model
-                  :locale
-                  @click="openWorkflow(model, index, section.id)"
-                />
-              </li>
-            </ul>
-          </section>
-        </div>
+        <WorkflowSectionRows
+          v-if="sectioned"
+          :sections
+          :locale
+          @open="openWorkflow"
+        />
         <template v-else-if="visible.length">
           <ul
             :class="CARD_GRID_BESIDE_NAV"
