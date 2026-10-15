@@ -20,7 +20,7 @@ export const DESIGN_PREVIEW_ROUTES = [
   }
 ] as const
 
-function isDesignPreviewBuild(
+export function isDesignPreviewBuild(
   vercelEnv: string | undefined = process.env.VERCEL_ENV
 ): boolean {
   return vercelEnv !== 'production'
