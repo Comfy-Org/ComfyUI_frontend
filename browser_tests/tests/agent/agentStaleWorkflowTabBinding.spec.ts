@@ -233,10 +233,13 @@ test.describe(
 
       await test.step('sending continues the chat in the fresh workflow', async () => {
         await agentPanel.sendMessage('continue here')
-        await expect.poll(() => posted.length).toBe(1)
-        expect(posted[0]).toMatchObject({
-          workflow_id: 'a81718a4-02ae-41e6-ae85-000000000001'
-        })
+        await expect
+          .poll(() => posted)
+          .toEqual([
+            expect.objectContaining({
+              workflow_id: 'a81718a4-02ae-41e6-ae85-000000000001'
+            })
+          ])
       })
 
       await test.step('the fresh tab keeps its own canvas', async () => {
