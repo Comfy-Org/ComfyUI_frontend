@@ -1045,25 +1045,13 @@ watch(
 let activeTabGeneration = 0
 let activeTabChain: Promise<void> = Promise.resolve()
 
-function isActiveTabNavigationCurrent(
-  activationThreadId: string | null
-): boolean {
+function isActiveTabNavigationCurrent(): boolean {
   const view = agentPanelStore.view
   if (view.screen !== 'history') return true
-  switch (view.selection.status) {
-    case 'idle':
-      return activationThreadId === history.activeId
-    case 'loading':
-      return (
-        activationThreadId === history.activeId ||
-        activationThreadId === view.selection.id
-      )
-    case 'failed':
-      return (
-        activationThreadId !== view.selection.id &&
-        activationThreadId === history.activeId
-      )
-  }
+  const { selection } = view
+  if (selection.status !== 'idle' && threadId.value === selection.id)
+    return selection.status === 'loading'
+  return threadId.value === history.activeId
 }
 
 function enqueueActiveTab(data: AgentActiveTabData): Promise<boolean> {
@@ -1072,7 +1060,7 @@ function enqueueActiveTab(data: AgentActiveTabData): Promise<boolean> {
   function isCurrent(): boolean {
     if (generation !== activeTabGeneration) return false
     if (ownerThreadId !== null && threadId.value !== ownerThreadId) return false
-    return isActiveTabNavigationCurrent(ownerThreadId ?? threadId.value)
+    return isActiveTabNavigationCurrent()
   }
   const result = activeTabChain.then(() => onAgentActiveTab(data, isCurrent))
   activeTabChain = result.then(() => undefined)
@@ -1150,15 +1138,19 @@ async function onAgentActiveTab(
   isCurrent: () => boolean
 ): Promise<boolean> {
   const previousWorkflowId = boundWorkflowId.value
-  const stale = () => !isCurrent()
-  if (stale()) return false
+  if (!isCurrent()) return false
   try {
     const bound = boundOrOpenWorkflowFor(data.workflow_id)
     return bound
-      ? await activateExistingAgentTab(data, bound, previousWorkflowId, stale)
-      : await createAndActivateAgentTab(data, previousWorkflowId, stale)
+      ? await activateExistingAgentTab(
+          data,
+          bound,
+          previousWorkflowId,
+          isCurrent
+        )
+      : await createAndActivateAgentTab(data, previousWorkflowId, isCurrent)
   } catch (error) {
-    if (stale()) return false
+    if (!isCurrent()) return false
     bindWorkflow(data.workflow_id)
     reportError(error, {
       surface: 'agent',
@@ -1179,12 +1171,10 @@ async function activateExistingAgentTab(
   data: AgentActiveTabData,
   bound: ComfyWorkflow,
   previousWorkflowId: string | null,
-  stale: () => boolean
+  isCurrent: () => boolean
 ): Promise<boolean> {
-  const opened = await workflowService.openWorkflow(bound, {
-    isCurrent: () => !stale()
-  })
-  if (stale()) return false
+  const opened = await workflowService.openWorkflow(bound, { isCurrent })
+  if (!isCurrent()) return false
   if (!opened) {
     warnWorkflowUnavailable()
     trackWorkflowOpenFailure('toast')
@@ -1204,7 +1194,7 @@ async function activateExistingAgentTab(
 async function createAndActivateAgentTab(
   data: AgentActiveTabData,
   previousWorkflowId: string | null,
-  stale: () => boolean
+  isCurrent: () => boolean
 ): Promise<boolean> {
   const creatingStartedAt = Date.now()
   tabActivity.setCreating(true)
@@ -1212,7 +1202,7 @@ async function createAndActivateAgentTab(
     CREATING_TAB_MIN_DURATION_MS - (Date.now() - creatingStartedAt)
   if (remainingCreatingTime > 0)
     await new Promise((resolve) => setTimeout(resolve, remainingCreatingTime))
-  if (stale()) return false
+  if (!isCurrent()) return false
   const tab = workflowStore.createNewTemporary(
     agentTabFilename(data.name),
     agentTabGraph
@@ -1220,16 +1210,14 @@ async function createAndActivateAgentTab(
   tabActivity.setCreating(false)
   let opened: boolean
   try {
-    opened = await workflowService.openWorkflow(tab, {
-      isCurrent: () => !stale()
-    })
+    opened = await workflowService.openWorkflow(tab, { isCurrent })
   } catch (error) {
     await workflowService.closeWorkflow(tab, { warnIfUnsaved: false })
     throw error
   }
-  if (stale() || !opened) {
+  if (!isCurrent() || !opened) {
     await workflowService.closeWorkflow(tab, { warnIfUnsaved: false })
-    if (!stale()) {
+    if (isCurrent()) {
       warnWorkflowUnavailable()
       trackWorkflowOpenFailure('toast')
     }
