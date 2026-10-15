@@ -216,11 +216,13 @@ describe('attachDocOpMinter', () => {
 
     expect(minted).toEqual([])
     expect(reportError).toHaveBeenCalledExactlyOnceWith(
-      new Error('failure_syncing_agent_edit_mint_divergence'),
+      new Error('agent_crdt_node_snapshot_missing'),
       expect.objectContaining({
-        fingerprint: ['failure_syncing_agent_edit_mint_divergence'],
+        fingerprint: ['agent_crdt_node_snapshot_missing'],
         context: expect.objectContaining({
           code: 'missing_node_snapshot',
+          graphId: graph.id,
+          nodeId: node.id,
           operations: ['add_node']
         })
       })
@@ -1615,6 +1617,43 @@ describe('attachDocOpMinter', () => {
     await afterFlush()
 
     expect(minted).toEqual([])
+  })
+
+  it('reports an unresolved widget owner once across flushes without suppressing another owner', async () => {
+    const staleGraph = new LGraph()
+    const otherGraph = new LGraph()
+    const { source: stale } = seedGraph(staleGraph)
+    const { source: other } = seedGraph(otherGraph)
+    const { source: active } = seedGraph(graph)
+
+    stale.widgets![0].value = 21
+    active.widgets![0].value = 31
+    await afterFlush()
+    stale.widgets![0].value = 22
+    other.widgets![0].value = 23
+    await afterFlush()
+
+    expect(minted).toEqual([
+      expect.objectContaining({ node_id: active.id, value: 31 })
+    ])
+    expect(
+      vi.mocked(reportError).mock.calls.map(([, options]) => options)
+    ).toEqual([
+      expect.objectContaining({
+        errorType: 'agent_crdt_widget_owner_unresolved',
+        context: expect.objectContaining({
+          graphId: staleGraph.id,
+          nodeId: stale.id
+        })
+      }),
+      expect.objectContaining({
+        errorType: 'agent_crdt_widget_owner_unresolved',
+        context: expect.objectContaining({
+          graphId: otherGraph.id,
+          nodeId: other.id
+        })
+      })
+    ])
   })
 
   it('mints a set_widget that names a subgraph owner with the subgraph-node path', async () => {

@@ -419,33 +419,28 @@ describe('a human edit the doc host rejects', () => {
     ])
   })
 
-  // Schema §4 aborts the remainder of a batch, so the prefix is still applied.
-  // Both partial branches are user-facing copy, so both are exercised: a wrong
-  // key on either would tell the user nothing was saved after a batch that
-  // saved a prefix. The rejected op's KIND picks the branch, so the two rows
-  // differ only in which op the host rejects.
   it.for([
     {
       branch: 'widget',
       ops: [NODE_ADD, WIDGET_EDIT],
       code: 'opaque_widgets',
-      expected: WIDGET_REJECTION_TEXT
+      expected: WIDGET_REJECTION_TEXT,
+      errorType: 'error_applying_agent_widget_edit'
     },
     {
       branch: 'generic',
       ops: [WIDGET_EDIT, NODE_ADD],
       code: 'uncatalogued_widget_write',
-      expected: GENERIC_REJECTION_TEXT
+      expected: GENERIC_REJECTION_TEXT,
+      errorType: 'error_applying_agent_graph_edit'
     }
   ])(
     'does not claim nothing was saved when a batch applied a prefix ($branch)',
-    async ({ ops, code, expected }) => {
+    async ({ ops, code, expected, errorType }) => {
       const { submitBatch } = mountFollower()
-      const frames = await submitBatch(ops)
-      // EXACTLY one frame carrying BOTH ops: across two frames the host could
-      // never answer with one applied id and one failure index.
+      const frames = await submitBatch([NODE_DELETE, ...ops, NODE_DELETE])
       expect(frames).toHaveLength(1)
-      const [[appliedId, rejectedId]] = frames
+      const [[skippedId, appliedId, rejectedId, tailId]] = frames
       expect(rejectedId).toBeDefined()
 
       answerWithOpsResult({
@@ -453,17 +448,23 @@ describe('a human edit the doc host rejects', () => {
         workflow_id: WORKFLOW_ID,
         ok: false,
         applied: [appliedId],
-        skipped: [],
+        skipped: [skippedId],
         failed: {
-          index: 1,
+          index: 2,
           op_id: rejectedId,
           code,
           message: 'node is absent from the pinned catalog'
         }
       })
 
-      // Still carries the canonical substring the e2e spec filters on, so the
-      // partial variant cannot break that contract.
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType,
+          level: 'warning',
+          context: expect.objectContaining({ opIds: [rejectedId, tailId] })
+        })
+      )
       expect(toastDescriptions()).toEqual([expect.stringContaining(expected)])
       expect(toastDescriptions()[0]).toContain('some earlier edits were')
     }

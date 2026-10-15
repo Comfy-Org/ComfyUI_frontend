@@ -106,6 +106,7 @@ const STRUCTURAL_STRING_KEYS = new Set([
   'op',
   'op_id',
   'op_ids',
+  'operations',
   'outcome',
   'phase',
   'prompt_id',

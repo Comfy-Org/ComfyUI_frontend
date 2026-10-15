@@ -203,6 +203,7 @@ describe('devPanelLog', () => {
       applied: [],
       skipped: ['op-1'],
       code: 'op_failed',
+      operations: ['set_widget', 'delete_node', 'private user prose'],
       message: 'unknown node 7',
       failed: { op_id: 'op-1', code: 'unknown_node', message: 'unknown node 7' }
     })
@@ -213,6 +214,7 @@ describe('devPanelLog', () => {
       applied: [],
       skipped: ['op-1'],
       code: 'op_failed',
+      operations: ['set_widget', 'delete_node', 'String(18)'],
       message: 'String(14)',
       failed: { op_id: 'op-1', code: 'unknown_node', message: 'String(14)' }
     })

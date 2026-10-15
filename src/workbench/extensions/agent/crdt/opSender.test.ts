@@ -204,13 +204,13 @@ describe('createOpSender', () => {
   })
 
   it.for([
-    ['undeliverable', false, WORKFLOW, 3_000],
-    ['undeliverable', true, null, 0],
-    ['unconfirmed', true, WORKFLOW, 0],
-    ['unacknowledged', true, WORKFLOW, 20_000]
+    ['undeliverable', false, WORKFLOW, 3_000, 'transport_exhausted'],
+    ['undeliverable', true, null, 0, 'unbound'],
+    ['unconfirmed', true, WORKFLOW, 0, 'detached'],
+    ['unacknowledged', true, WORKFLOW, 20_000, 'result_timeout']
   ] as const)(
     'reports %s exactly once with transport=%s, workflow=%s, elapsed=%s',
-    ([state, available, workflow, elapsed]) => {
+    ([state, available, workflow, elapsed, code]) => {
       transportUp = available
       boundWorkflow = workflow
       const previousClientId = api.clientId
@@ -231,10 +231,11 @@ describe('createOpSender', () => {
         surface: 'agent',
         errorType: `failure_syncing_agent_edit_${state}`,
         fingerprint: [`failure_syncing_agent_edit_${state}`],
+        level: 'error',
         tags: { tab: 'api-tab', outcome: state },
         context: {
-          code: state,
-          workflowId: undefined,
+          code,
+          workflowId: workflow ?? undefined,
           opId: settled[0].ops[0].op_id,
           opIds: settled[0].ops.map((op) => op.op_id),
           operations: ['add_node', 'add_node']
@@ -476,6 +477,15 @@ describe('createOpSender', () => {
     expect(sent).toHaveLength(2)
     expect(sent[1].workflowId).toBe('wf-2')
     expect(settled[0].state).toBe('unconfirmed')
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      expect.any(Error),
+      expect.objectContaining({
+        context: expect.objectContaining({
+          code: 'unbound',
+          workflowId: WORKFLOW
+        })
+      })
+    )
   })
 
   it('drains 20,000 queued batches after unbinding without overflowing the stack', () => {
@@ -1130,6 +1140,17 @@ describe('createOpSender', () => {
     expect(reportsOfType('failure_serializing_agent_op_sender')).toEqual([
       [expect.any(TypeError), expect.objectContaining({ surface: 'agent' })]
     ])
+    expect(reportsOfType('failure_syncing_agent_edit_undeliverable')).toEqual([
+      [
+        expect.any(Error),
+        expect.objectContaining({
+          context: expect.objectContaining({
+            code: 'serialization_failed',
+            workflowId: WORKFLOW
+          })
+        })
+      ]
+    ])
 
     sender.detach()
 
@@ -1492,6 +1513,13 @@ describe('createOpSender', () => {
       )
     ).toEqual([[1], [2], [3]])
     expect(sender.pending()).toBe(0)
+    expect(
+      vi.mocked(reportError).mock.calls.map(([, options]) => options.context)
+    ).toEqual([
+      expect.objectContaining({ code: 'doc_reset', workflowId: WORKFLOW }),
+      expect.objectContaining({ code: 'doc_reset', workflowId: WORKFLOW }),
+      expect.objectContaining({ code: 'doc_reset', workflowId: WORKFLOW })
+    ])
 
     sender.enqueue([addNode(4)])
     expect(sent).toHaveLength(2)

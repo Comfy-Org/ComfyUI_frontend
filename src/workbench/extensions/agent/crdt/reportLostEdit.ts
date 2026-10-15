@@ -15,11 +15,17 @@ type LostEditKind =
 export function reportLostEdit(
   kind: LostEditKind,
   ops: readonly (Pick<Op, 'op'> & Partial<Pick<Op, 'op_id'>>)[],
-  cause: { code: string; errorType?: string; workflowId?: string }
+  cause: {
+    code: string
+    errorType?: string
+    workflowId?: string
+    graphId?: string
+    nodeId?: string | number
+  }
 ): void {
-  const errorType = cause.errorType ?? `failure_syncing_agent_edit_${kind}`
+  const { errorType = `failure_syncing_agent_edit_${kind}`, ...detail } = cause
   const context = {
-    code: cause.code,
+    ...detail,
     workflowId: cause.workflowId,
     opId: ops[0]?.op_id,
     opIds: ops.map((op) => op.op_id),
@@ -29,6 +35,7 @@ export function reportLostEdit(
     surface: 'agent',
     errorType,
     fingerprint: [errorType],
+    level: kind === 'host_rejected' ? 'warning' : 'error',
     tags: { tab: api.clientId, outcome: kind },
     context
   })

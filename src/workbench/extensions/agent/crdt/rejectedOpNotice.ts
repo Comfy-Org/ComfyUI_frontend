@@ -70,11 +70,10 @@ export function createRejectedOpNotifier() {
       const { failed } = result
       const widgetWrite = isRejectedWidgetWrite(ops, failed)
       const code = failed?.code ?? result.code ?? 'unspecified'
+      const accepted = new Set([...result.applied, ...result.skipped])
       reportLostEdit(
         'host_rejected',
-        failed
-          ? [rejectedOp(ops, failed)].filter((op) => op !== undefined)
-          : ops,
+        ops.filter((op) => !accepted.has(op.op_id)),
         {
           code,
           workflowId: result.workflowId,
