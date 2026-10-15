@@ -603,17 +603,19 @@ describe('historical workflow restoration', () => {
 
   it.for([
     {
-      walk: 'before reaching it',
+      outcome: 'marks a chat with no local target unavailable by its lookup',
+      listing: 'stops before reaching it',
       entries: [{ id: 'wf-saved', name: 'saved' }],
       unavailable: true
     },
     {
-      walk: 'after listing it',
+      outcome: 'keeps a chat with no local target readable without a lookup',
+      listing: 'names it before stopping',
       entries: [{ id: 'wf-past-the-cut', name: 'past the cut' }],
       unavailable: false
     }
   ])(
-    'asks the lookup about a chat with no local target only when the listing gave up $walk',
+    '$outcome when an incomplete listing $listing',
     async ({ entries, unavailable }) => {
       const {
         selection,
