@@ -30,7 +30,6 @@ import { expect } from '@playwright/test'
 
 import type {
   AgentRunMode,
-  AgentThreadListResponse,
   AgentTurnAccepted,
   JobsListResponse,
   WorkflowListResponse
@@ -59,6 +58,7 @@ import { ContextMenu } from '@e2e/fixtures/components/ContextMenu'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
@@ -449,10 +449,7 @@ export class IdCollisionHarness {
 
   private async mockAgentApi(): Promise<void> {
     const { page } = this
-    const threads: AgentThreadListResponse = {
-      threads: [],
-      pagination: { has_more: false, limit: 100, offset: 0, total: 0 }
-    }
+    const threads = emptyAgentThreadList()
     await page.route('**/api/agent/threads?*', (route) =>
       route.fulfill(jsonRoute(threads))
     )

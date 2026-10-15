@@ -1,10 +1,7 @@
 import { expect } from '@playwright/test'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-import type {
-  AgentThreadListResponse,
-  WorkflowListResponse
-} from '@comfyorg/ingest-types'
+import type { WorkflowListResponse } from '@comfyorg/ingest-types'
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
@@ -21,6 +18,7 @@ import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { mintWireOps } from '@/workbench/extensions/agent/crdt/opEnvelope'
@@ -136,10 +134,7 @@ test.describe(
       )
       await hostSocket.install()
 
-      const threadList: AgentThreadListResponse = {
-        pagination: { has_more: false, limit: 100, offset: 0, total: 0 },
-        threads: []
-      }
+      const threadList = emptyAgentThreadList()
       await page.route('**/api/agent/threads?*', (route) =>
         route.fulfill(jsonRoute(threadList))
       )

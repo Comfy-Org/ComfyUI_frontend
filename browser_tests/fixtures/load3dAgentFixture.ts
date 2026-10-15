@@ -2,7 +2,6 @@ import type { Page, Request } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-import type { AgentThreadListResponse } from '@comfyorg/ingest-types'
 
 import type { ComfyApiWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
@@ -17,6 +16,7 @@ import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
+import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { assetPath } from '@e2e/fixtures/utils/paths'
@@ -278,12 +278,7 @@ class Load3dAgentHarness {
   private async mockAgentApi(): Promise<void> {
     const { page } = this
     await page.route('**/api/agent/threads?*', (route) =>
-      route.fulfill(
-        jsonRoute({
-          threads: [],
-          pagination: { offset: 0, limit: 100, total: 0, has_more: false }
-        } satisfies AgentThreadListResponse)
-      )
+      route.fulfill(jsonRoute(emptyAgentThreadList()))
     )
     await page.route('**/api/agent/threads/*/messages', (route) =>
       route.fulfill(jsonRoute([]))

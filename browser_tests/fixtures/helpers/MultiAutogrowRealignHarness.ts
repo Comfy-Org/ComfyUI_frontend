@@ -1,10 +1,7 @@
 import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import type {
-  AgentThreadListResponse,
-  JobsListResponse
-} from '@comfyorg/ingest-types'
+import type { JobsListResponse } from '@comfyorg/ingest-types'
 import type { ModelFolderInfo } from '@/platform/assets/schemas/assetSchema'
 import type { PromptResponse } from '@/platform/remote/comfyui/types'
 import type {
@@ -50,6 +47,7 @@ import {
   seed,
   sourceNodeDef
 } from '@e2e/fixtures/data/agent/agentCrdtMultiAutogrowRealignFixture'
+import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 export const SENTINEL_PROMPT = 'multi-autogrow-realign-sentinel-prompt'
@@ -166,10 +164,7 @@ export class MultiAutogrowRealignHarness {
 
     await this.hostSocket.install()
 
-    const threadList: AgentThreadListResponse = {
-      pagination: { has_more: false, limit: 100, offset: 0, total: 0 },
-      threads: []
-    }
+    const threadList = emptyAgentThreadList()
     await page.route('**/api/agent/threads?*', (route) =>
       route.fulfill(jsonRoute(threadList))
     )

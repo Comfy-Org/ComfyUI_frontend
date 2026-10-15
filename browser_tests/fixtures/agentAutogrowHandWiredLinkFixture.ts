@@ -2,7 +2,6 @@ import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-import type { AgentThreadListResponse } from '@comfyorg/ingest-types'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { toNodeId } from '@/types/nodeId'
 
@@ -16,6 +15,7 @@ import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { loadSeedIntoActiveTab } from '@e2e/fixtures/utils/seedActiveTab'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -220,12 +220,7 @@ async function setUpFixture(page: Page) {
   )
   await hostSocket.install()
   await page.route('**/api/agent/threads?*', (route) =>
-    route.fulfill(
-      jsonRoute({
-        threads: [],
-        pagination: { offset: 0, limit: 100, total: 0, has_more: false }
-      } satisfies AgentThreadListResponse)
-    )
+    route.fulfill(jsonRoute(emptyAgentThreadList()))
   )
   await page.route('**/api/agent/run-mode', (route) =>
     route.fulfill(jsonRoute({ mode: 'ask_approval', credit_limit: null }))

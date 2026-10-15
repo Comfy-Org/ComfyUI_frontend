@@ -2,10 +2,7 @@ import type { Locator, Page, WebSocketRoute } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-import type {
-  AgentRunMode,
-  AgentThreadListResponse
-} from '@comfyorg/ingest-types'
+import type { AgentRunMode } from '@comfyorg/ingest-types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
@@ -18,6 +15,7 @@ import {
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
@@ -135,12 +133,7 @@ async function startTurn(
     return route.fulfill(jsonRoute({ status: 'answered' }))
   })
   await page.route('**/api/agent/threads?*', (route) =>
-    route.fulfill(
-      jsonRoute({
-        threads: [],
-        pagination: { offset: 0, limit: 100, total: 0, has_more: false }
-      } satisfies AgentThreadListResponse)
-    )
+    route.fulfill(jsonRoute(emptyAgentThreadList()))
   )
   await page.route('**/api/agent/threads/*/messages', (route) => {
     if (route.request().method() === 'POST') {

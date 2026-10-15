@@ -2,7 +2,6 @@ import { zGlobalSettingValue } from '@comfyorg/ingest-types/zod'
 import type { Page, Route, WebSocketRoute } from '@playwright/test'
 
 import type {
-  AgentThreadListResponse,
   BillingStatusResponse,
   GlobalSetting,
   WorkflowListResponse
@@ -22,6 +21,7 @@ import type {
 import { zAgentAdmissionError } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { mockCloudBootRoutes } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -459,10 +459,7 @@ async function mockAgentBoot(
     }
     return route.fulfill(jsonRoute(workflows))
   })
-  const threads: AgentThreadListResponse = {
-    threads: [],
-    pagination: { offset: 0, limit: 100, total: 0, has_more: false }
-  }
+  const threads = emptyAgentThreadList()
   await page.route('**/api/agent/threads?*', (route) =>
     route.fulfill(jsonRoute(threads))
   )

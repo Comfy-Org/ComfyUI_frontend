@@ -1,10 +1,7 @@
 import type { Locator, Page, TestInfo } from '@playwright/test'
 import { expect } from '@playwright/test'
 import type { ApplyOutcome, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-import type {
-  AgentThreadListResponse,
-  ListAssetsResponse
-} from '@comfyorg/ingest-types'
+import type { ListAssetsResponse } from '@comfyorg/ingest-types'
 import { z } from 'zod'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -52,6 +49,7 @@ import {
 import { agentReplayNodeDefs } from '@e2e/fixtures/data/agentReplayNodeDefs'
 import type { ExpectedTurn } from '@e2e/fixtures/data/agent/agentConversationExpectations'
 import { RECORDED_EXPECTATIONS } from '@e2e/fixtures/data/agent/agentConversationExpectations'
+import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import type { TabSwitchLens, WorkspaceStore } from '@e2e/types/globals'
 
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -673,12 +671,7 @@ export class AgentConversationHarness {
   private async mockAgentApi(): Promise<void> {
     const { page } = this
     await page.route('**/api/agent/threads?*', (route) =>
-      route.fulfill(
-        jsonRoute({
-          threads: [],
-          pagination: { offset: 0, limit: 100, total: 0, has_more: false }
-        } satisfies AgentThreadListResponse)
-      )
+      route.fulfill(jsonRoute(emptyAgentThreadList()))
     )
     await page.route('**/api/agent/threads/*/messages', (route) => {
       const request = route.request()
