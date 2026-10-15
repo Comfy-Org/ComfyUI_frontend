@@ -101,6 +101,7 @@ const NON_COLOR_TEXT =
   /^(left|center|right|justify|start|end|wrap|nowrap|balance|pretty|ellipsis|clip|shadow.*)$/
 const FONT_WEIGHTS =
   /^(thin|extralight|light|normal|medium|semibold|bold|extrabold|black|\[\d+\])$/
+const RELATIVE_SIZE = /\d(?:(?:em|ex|ch|lh)\b|%)|\b(?:smaller|larger)\b/
 const NON_FAMILY_FONT = /^(stretch|features|variant|numeric)/
 
 function sizeLike(value: string) {
@@ -396,7 +397,9 @@ function addLiteral(
 ) {
   for (const token of value.split(/\s+/).filter(Boolean)) {
     const category = classifyToken(token)
-    if (category)
+    if (category === 'size' && RELATIVE_SIZE.test(token))
+      classes.opaque.add(category)
+    else if (category)
       classes.tokens.push({
         token,
         category,
@@ -521,6 +524,7 @@ class Project {
   private readonly globals = new Map<string, string>()
   private readonly contexts = new Map<string, Values>()
   private readonly generic = new Map<ComponentFile, Instance>()
+  private readonly forwarding = new Set<string>()
 
   constructor(private readonly files: ReadonlyMap<string, string>) {
     this.readScriptsAndStyles()
@@ -742,7 +746,14 @@ class Project {
 
   private genericFallthrough(component: ComponentFile, category: Category) {
     if (!component.fallsThrough) return null
-    const setters = component.usages.map((usage) => setterOf(usage, category))
+    const key = `${component.path}|${category}`
+    if (this.forwarding.has(key))
+      return { values: new Set([UNKNOWN]), passes: true }
+    this.forwarding.add(key)
+    const setters = component.usages.map((usage) =>
+      forwardedSetter(usage, category, this.genericInstance(usage.component))
+    )
+    this.forwarding.delete(key)
     if (!setters.some(Boolean)) return null
     return setters.reduce<Setter | null>(
       (merged, setter) =>
@@ -857,7 +868,8 @@ class Project {
     if (!outlets.length) return new Set([UNKNOWN])
     const childInstance: Instance = {
       context: (c) => this.valueAt(host.parent!, instance, c, depth + 1),
-      fallthrough: (c) => (child.fallsThrough ? setterOf(host, c) : null),
+      fallthrough: (c) =>
+        child.fallsThrough ? forwardedSetter(host, c, instance) : null,
       cache: new Map()
     }
     return new Set(
@@ -906,6 +918,17 @@ function setterOf(node: TemplateNode, category: Category): Setter | null {
   else fixed.forEach((t) => values.add(t.token))
   if (opaque) values.add(UNKNOWN)
   return { values, passes: !fixed.length }
+}
+
+function forwardedSetter(
+  usage: TemplateNode,
+  category: Category,
+  instance: Instance
+) {
+  const incoming = usage.component.topLevel.includes(usage)
+    ? instance.fallthrough(category)
+    : null
+  return mergeSetters(setterOf(usage, category), incoming)
 }
 
 function mergeSetters(a: Setter | null, b: Setter | null): Setter | null {

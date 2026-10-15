@@ -126,6 +126,36 @@ describe('findInheritedClasses', () => {
       }
     },
     {
+      name: 'a class forwarded through a wrapper component to the root',
+      files: {
+        'src/App.vue': sfc(
+          '<div class="text-xs"><Wrapper class="text-sm" /></div>',
+          ['Wrapper']
+        ),
+        'src/Wrapper.vue': sfc('<BaseCard />', ['BaseCard']),
+        'src/BaseCard.vue': sfc('<div><p class="text-xs">x</p></div>')
+      }
+    },
+    {
+      name: 'slot content under a class forwarded through a wrapper',
+      files: {
+        'src/App.vue': sfc(
+          '<div class="text-xs"><Wrapper class="text-sm"><p class="text-xs">x</p></Wrapper></div>',
+          ['Wrapper']
+        ),
+        'src/Wrapper.vue': sfc('<Panel><slot /></Panel>', ['Panel']),
+        'src/Panel.vue': sfc('<section><slot /></section>')
+      }
+    },
+    {
+      name: 'a relative font size, which compounds',
+      files: {
+        'src/App.vue': sfc(
+          '<div class="text-[0.9em]"><p class="text-[0.9em]">x</p></div>'
+        )
+      }
+    },
+    {
       name: 'a size that differs only by line height',
       files: {
         'src/App.vue': sfc(
