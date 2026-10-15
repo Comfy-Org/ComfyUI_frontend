@@ -7732,7 +7732,7 @@ describe('AgentPanelRoot workflow binding', () => {
     }
   )
 
-  it('opens a history chat whose workflow the Cloud no longer lists and marks its target unavailable', async () => {
+  it('opens a history chat whose workflow lookup returns 404 and marks its target unavailable', async () => {
     makeTab('wf-42')
     stubHistoryWithWorkflowListing({ listing: 200, lookup: 404 })
     renderWithSelectedTarget()
