@@ -6,7 +6,7 @@ import type {
 
 import Badge from './Badge.vue'
 
-const meta = {
+const meta: Meta<ComponentPropsAndSlots<typeof Badge>> = {
   title: 'Components/Badge',
   component: Badge,
   tags: ['autodocs'],
@@ -16,7 +16,7 @@ const meta = {
     setup: () => ({ args }),
     template: '<Badge v-bind="args">{{ args.default }}</Badge>'
   })
-} satisfies Meta<ComponentPropsAndSlots<typeof Badge>>
+}
 
 export default meta
 type Story = StoryObj<typeof meta>
@@ -27,6 +27,9 @@ export const RemovableChip: Story = {
 }
 export const Count: Story = { args: { variant: 'badge', default: '12' } }
 export const Dot: Story = { args: { variant: 'dot', default: '' } }
+export const Compact: Story = {
+  args: { variant: 'compact', default: 'Downloaded' }
+}
 export const Severities: Story = {
   render: () => ({
     components: { Badge },

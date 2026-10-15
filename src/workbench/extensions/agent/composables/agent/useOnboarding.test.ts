@@ -153,6 +153,24 @@ describe('useOnboarding', () => {
     ).toBeNull()
   })
 
+  it('runs the tour again for another account in the same browser and workspace', async () => {
+    const first = useOnboarding(
+      STEPS,
+      scopedOnboardingKey('user-a', 'workspace-a')!
+    )
+    first.finish()
+    expect(first.active.value).toBe(false)
+    await nextTick()
+
+    const second = useOnboarding(
+      STEPS,
+      scopedOnboardingKey('user-b', 'workspace-a')!
+    )
+
+    expect(second.active.value).toBe(true)
+    expect(second.index.value).toBe(0)
+  })
+
   it('does not complete when there are no cards', () => {
     const tour = useOnboarding([], KEY)
     tour.next()

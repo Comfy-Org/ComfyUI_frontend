@@ -1,5 +1,8 @@
 <template>
-  <div class="flex grow flex-col overflow-auto pt-6">
+  <div
+    class="flex grow flex-col overflow-auto pt-2"
+    @scroll="handlePanelScroll"
+  >
     <!-- Loading state while subscription is being set up -->
     <div
       v-if="isSettingUp"
@@ -134,22 +137,20 @@
                     )
                   }}
                 </Button>
-                <DropdownMenu
+                <Menu
                   v-if="showInactiveTeamSubscription && menuEntries.length > 0"
-                  :entries="menuEntries"
+                  :items="menuEntries"
                 >
-                  <template #button>
+                  <template #trigger>
                     <Button
-                      v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
+                      :tooltip="$t('g.moreOptions')"
                       variant="secondary"
                       size="icon-lg"
-                      class="rounded-lg bg-interface-menu-component-surface-selected text-text-primary"
+                      icon="icon-[lucide--ellipsis]"
                       :aria-label="$t('g.moreOptions')"
-                    >
-                      <i class="pi pi-ellipsis-h" />
-                    </Button>
+                    />
                   </template>
-                </DropdownMenu>
+                </Menu>
               </div>
             </template>
 
@@ -171,7 +172,10 @@
                 <h3 class="m-0 text-base font-bold text-text-primary">
                   {{ $t('subscription.tiers.free.name') }}
                 </h3>
-                <div class="flex items-baseline gap-1 font-inter">
+                <div
+                  v-if="!isPriceCycleUnknown"
+                  class="flex items-baseline gap-1 font-inter"
+                >
                   <span class="text-2xl font-semibold">{{ displayPrice }}</span>
                   <span class="text-base">{{ priceUnitLabel }}</span>
                 </div>
@@ -194,22 +198,17 @@
                 >
                   {{ $t('subscription.subscribe') }}
                 </Button>
-                <DropdownMenu
-                  v-if="menuEntries.length > 0"
-                  :entries="menuEntries"
-                >
-                  <template #button>
+                <Menu v-if="menuEntries.length > 0" :items="menuEntries">
+                  <template #trigger>
                     <Button
-                      v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
+                      :tooltip="$t('g.moreOptions')"
                       variant="secondary"
                       size="icon-lg"
-                      class="rounded-lg bg-interface-menu-component-surface-selected text-text-primary"
+                      icon="icon-[lucide--ellipsis]"
                       :aria-label="$t('g.moreOptions')"
-                    >
-                      <i class="pi pi-ellipsis-h" />
-                    </Button>
+                    />
                   </template>
-                </DropdownMenu>
+                </Menu>
               </div>
             </template>
 
@@ -228,7 +227,7 @@
                   />
                 </div>
                 <div
-                  v-if="!isNonCatalogPlan"
+                  v-if="!isNonCatalogPlan && !isPriceCycleUnknown"
                   class="flex items-baseline gap-1 font-inter"
                 >
                   <span class="text-2xl font-semibold">{{ displayPrice }}</span>
@@ -292,6 +291,7 @@
                   size="lg"
                   variant="secondary"
                   class="rounded-lg bg-interface-menu-component-surface-selected px-4 text-sm font-normal text-text-primary"
+                  :data-dd-action-name="BILLING_ACTION_NAME.upgradePlanPanel"
                   @click="handleUpgrade"
                 >
                   {{
@@ -300,22 +300,17 @@
                       : $t('subscription.changePlan')
                   }}
                 </Button>
-                <DropdownMenu
-                  v-if="menuEntries.length > 0"
-                  :entries="menuEntries"
-                >
-                  <template #button>
+                <Menu v-if="menuEntries.length > 0" :items="menuEntries">
+                  <template #trigger>
                     <Button
-                      v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
+                      :tooltip="$t('g.moreOptions')"
                       variant="secondary"
                       size="icon-lg"
-                      class="rounded-lg bg-interface-menu-component-surface-selected text-text-primary"
+                      icon="icon-[lucide--ellipsis]"
                       :aria-label="$t('g.moreOptions')"
-                    >
-                      <i class="pi pi-ellipsis-h" />
-                    </Button>
+                    />
                   </template>
-                </DropdownMenu>
+                </Menu>
               </div>
             </template>
           </div>
@@ -346,7 +341,7 @@
                   : 'subscription.teamPlanIncludes'
               "
               tag="div"
-              class="text-sm text-muted"
+              class="text-sm text-muted-foreground"
             >
               <template #plan>
                 <span class="text-text-primary">
@@ -354,7 +349,10 @@
                 </span>
               </template>
             </i18n-t>
-            <div v-else-if="isPersonalFree" class="text-sm text-muted">
+            <div
+              v-else-if="isPersonalFree"
+              class="text-sm text-muted-foreground"
+            >
               {{ $t('subscription.whatsIncluded') }}
             </div>
             <div v-else class="text-sm text-text-primary">
@@ -373,7 +371,7 @@
                     cn(
                       'pi pi-check text-xs',
                       showInactiveTeamSubscription
-                        ? 'text-muted'
+                        ? 'text-muted-foreground'
                         : 'text-text-primary'
                     )
                   "
@@ -384,7 +382,7 @@
                 >
                   {{ benefit.value }}
                 </span>
-                <span class="text-sm text-muted">
+                <span class="text-sm text-muted-foreground">
                   {{ benefit.label }}
                 </span>
               </div>
@@ -405,6 +403,8 @@
 </template>
 
 <script setup lang="ts">
+import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
+import { useSettingsHeaderCollapse } from '@/platform/settings/composables/useSettingsHeaderCollapse'
 import { cn } from '@comfyorg/tailwind-utils'
 import { useTimestamp } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
@@ -413,10 +413,11 @@ import { useI18n } from 'vue-i18n'
 
 import CreditsTile from '@/platform/cloud/subscription/components/CreditsTile.vue'
 import SubscriptionFooterLinks from '@/platform/cloud/subscription/components/SubscriptionFooterLinks.vue'
-import DropdownMenu from '@/components/common/DropdownMenu.vue'
+import Menu from '@/components/ui/menu/Menu.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useSubscriptionPaywall } from '@/composables/billing/useSubscriptionPaywall'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
 import {
@@ -426,6 +427,7 @@ import {
 import type { TierBenefit } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { getCommonTierBenefits } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { isCloud } from '@/platform/distribution/types'
+import { useBillingBanner } from '@/platform/workspace/composables/useBillingBanner'
 import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
 import { useScheduledPlanChange } from '@/platform/workspace/composables/useScheduledPlanChange'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
@@ -438,6 +440,8 @@ import {
   formatSubscriptionDate,
   resolveSubscriptionTierKey
 } from './subscriptionPanelWorkspace.logic'
+
+const { handlePanelScroll } = useSettingsHeaderCollapse()
 
 const workspaceStore = useTeamWorkspaceStore()
 const { isWorkspaceSubscribed, isInPersonalWorkspace } =
@@ -470,15 +474,16 @@ const {
   subscriptionStatus,
   isLoading,
   error,
-  showSubscriptionDialog,
   manageSubscription,
   initialize
 } = useBillingContext()
 
 const { showPricingTable } = useSubscriptionDialog()
+const { showSubscriptionDialog } = useSubscriptionPaywall()
 
 const { isResubscribing, handleResubscribe } = useResubscribe()
-const { displayPrice, priceUnitLabel } = useWorkspacePlanPricing()
+const { displayPrice, priceUnitLabel, isPriceCycleUnknown } =
+  useWorkspacePlanPricing()
 const { menuEntries } = useWorkspaceMenuItems()
 
 const isSubscriptionEnded = computed(() => {
@@ -626,13 +631,17 @@ const isQuietEnterpriseEnding = computed(
     !isWithinEnterpriseEndingNotice(subscription.value?.endDate, now.value)
 )
 
+const { kind: billingBannerKind } = useBillingBanner()
+
 // An end-dated Enterprise plan never shows the amber card; inside the notice
-// window the muted ending banner carries the message instead.
+// window the muted ending banner carries the message instead. The banner is
+// still rolling out, so the card stays wherever the ending banner is not shown.
 const showSubscriptionStateCard = computed(
   () =>
     isSubscriptionCancelled.value &&
     !isSubscriptionEnded.value &&
-    !hasScheduledEnterpriseEnd.value
+    !hasScheduledEnterpriseEnd.value &&
+    billingBannerKind.value !== 'ending'
 )
 
 const subscriptionStateCardTitle = computed(() =>
@@ -744,9 +753,3 @@ const tierBenefits = computed((): TierBenefit[] => {
   return getCommonTierBenefits(tierKey.value, t, n)
 })
 </script>
-
-<style scoped>
-:deep(.bg-comfy-menu-secondary) {
-  background-color: transparent;
-}
-</style>

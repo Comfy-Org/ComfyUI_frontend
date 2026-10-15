@@ -1,19 +1,32 @@
-import type { Modality, WorkshopModel } from '../config/models-catalogue'
-import type { RunFailure, RunOutput } from '../config/workshop-run'
+import type { Modality, WorkshopModel } from '@/config/models-catalogue'
+import type { SnippetLanguage } from '@/config/models-snippets'
+import type { RunFailure, RunOutput } from '@/config/workshop-run'
 import type {
   FieldErrorCode,
   FieldErrors,
   FieldSchema
-} from '../config/workshop-playground'
-import type { WorkshopFailureStage } from '../config/workshop-router-errors'
-import { WorkshopRouterError } from '../config/workshop-router-errors'
-import type { WorkshopWorkflowError } from '../config/workshop-workflow-api'
+} from '@/config/workshop-playground'
+import type { WorkshopFailureStage } from '@/config/workshop-router-errors'
+import { WorkshopRouterError } from '@/config/workshop-router-errors'
+import type { WorkshopWorkflowError } from '@/config/workshop-workflow-api'
+import type { WorkflowExecutionFailure } from '@/config/workshop-workflow-response'
 import type { WorkshopExceptionAnalytics } from './workshop-exception'
 import { workshopExceptionAnalytics } from './workshop-exception'
 
+export type WorkshopPageType = 'model' | 'workflow' | 'app'
+
+/** The tab or mode a reader switched to, on a workflow page or in an app. */
+export type WorkshopTabName =
+  | 'playground'
+  | 'workflow'
+  | 'api'
+  | 'image'
+  | 'video'
+
 interface WorkshopModelAnalytics {
   model_slug: string
-  page_type?: 'model' | 'workflow'
+  page_type?: WorkshopPageType
+  app_slug?: string
   render_engine?: 'router' | 'cloud' | 'serverless'
   router_id?: string
   workflow_id?: string
@@ -26,6 +39,22 @@ export interface WorkshopRunAnalytics extends WorkshopModelAnalytics {
   user_id: string
   workspace_id: string
 }
+
+export type HubSurface = 'models' | 'workflows' | 'apps'
+
+export type HubItemKind = 'model' | 'workflow' | 'app'
+
+/** Where a card sits, so featured placement can be told from organic demand. */
+export type HubItemSource =
+  | 'featured_banner'
+  | 'use_case_row'
+  | 'other_formats_row'
+  | 'unplaced_grid'
+  | 'category_row'
+  | 'app_row'
+  | 'results_grid'
+
+export type HubFilter = 'catalogue' | 'use_case' | 'category' | 'model' | 'sort'
 
 export type WorkshopCheckoutFailureStage = 'balance' | 'credential' | 'checkout'
 
@@ -77,11 +106,15 @@ export type WorkshopRouterErrorType =
 export type WorkshopAnalyticsEvent =
   | {
       name: 'catalogue_viewed'
-      properties: { model_count: number; page_type?: 'model' | 'workflow' }
+      properties: { model_count: number; page_type?: WorkshopPageType }
     }
   | {
-      name: 'model_viewed' | 'api_viewed'
+      name: 'model_viewed' | 'api_viewed' | 'api_key_clicked'
       properties: WorkshopModelAnalytics
+    }
+  | {
+      name: 'api_snippet_copied'
+      properties: WorkshopModelAnalytics & { snippet_language: SnippetLanguage }
     }
   | {
       name: 'run_validation_failed'
@@ -115,6 +148,9 @@ export type WorkshopAnalyticsEvent =
               http_status?: number
               router_error_type?: WorkshopRouterErrorType
               workflow_error_code?: WorkshopWorkflowError['code']
+              failed_node_id?: string
+              failed_node_type?: string
+              cloud_exception_type?: string
               failure_stage?: WorkshopFailureStage | 'credential'
               field_error_codes?: FieldErrorCode[]
               field_error_names?: string[]
@@ -124,18 +160,72 @@ export type WorkshopAnalyticsEvent =
     }
   | {
       name: 'checkout_failed'
-      properties: {
-        attempt_id?: string
-        user_id: string
-        workspace_id: string
-        stage: WorkshopCheckoutFailureStage
-        http_status?: number
-        error_code?: WorkshopCheckoutErrorCode
-      }
+      properties:
+        | {
+            attempt_id?: string
+            user_id: string
+            workspace_id: string
+            stage: WorkshopCheckoutFailureStage
+            http_status?: number
+            error_code?: WorkshopCheckoutErrorCode
+          }
+        | { stage: 'no_owner_scope' }
     }
   | {
       name: 'output_download_clicked'
       properties: WorkshopModelAnalytics & { output_kind: RunOutput['kind'] }
+    }
+  | {
+      name: 'try_in_cloud_clicked' | 'workflow_download_clicked'
+      properties: WorkshopModelAnalytics
+    }
+  | {
+      name: 'tab_switched'
+      properties: WorkshopModelAnalytics & { tab: WorkshopTabName }
+    }
+  | {
+      name: 'hub_search_performed'
+      properties: {
+        surface: HubSurface
+        query: string
+        query_length: number
+        results_count: number
+      }
+    }
+  | {
+      name: 'hub_filter_changed'
+      properties: {
+        surface: HubSurface
+        filter: HubFilter
+        value: string
+        previous_value: string
+      }
+    }
+  | {
+      name: 'hub_item_clicked'
+      properties: {
+        surface: HubSurface
+        kind: HubItemKind
+        slug: string
+        source: HubItemSource
+        position: number
+        row?: string
+        query?: string
+      }
+    }
+  | {
+      name: 'hub_row_viewed'
+      properties: {
+        surface: HubSurface
+        source: HubItemSource
+        row?: string
+        item_count: number
+        row_slugs: string[]
+      }
+    }
+  | {
+      name: 'github_clicked'
+      properties: { app_slug: string; page_type: 'app' }
     }
 
 export function workshopModelAnalytics(
@@ -143,7 +233,13 @@ export function workshopModelAnalytics(
 ): WorkshopModelAnalytics {
   return {
     model_slug: model.slug,
-    page_type: model.routerId === undefined ? 'workflow' : 'model',
+    page_type:
+      model.type === 'APP'
+        ? 'app'
+        : model.routerId === undefined
+          ? 'workflow'
+          : 'model',
+    ...(model.type === 'APP' ? { app_slug: model.slug } : {}),
     render_engine:
       model.type === 'CLOUD'
         ? 'cloud'
@@ -197,6 +293,18 @@ export function workshopWorkflowFailureAnalytics(
     field_error_names: schema
       .filter((field) => Object.hasOwn(failure.fieldErrors, field.name))
       .map((field) => field.name)
+  }
+}
+
+export function workshopExecutionFailureAnalytics(
+  failure: WorkflowExecutionFailure | undefined
+) {
+  return {
+    ...(failure?.nodeId && { failed_node_id: failure.nodeId }),
+    ...(failure?.nodeType && { failed_node_type: failure.nodeType }),
+    ...(failure?.exceptionType && {
+      cloud_exception_type: failure.exceptionType
+    })
   }
 }
 

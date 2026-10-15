@@ -14,7 +14,7 @@ import { zeroUuid } from '@/utils/uuid'
 import type {
   INodeInputSlot,
   INodeOutputSlot
-} from '@/lib/litegraph/src/interfaces'
+} from '@/lib/litegraph/src/types/slots'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
@@ -65,14 +65,17 @@ export function createNodeShellState(
   }
 }
 
-/** Writes a shell-state field, emitting `node:property:changed` on change. */
+/**
+ * Writes a shell-state field, emitting `node:property:changed` on change.
+ * Returns whether the value changed.
+ */
 export function setTrackedNodeState<K extends keyof NodeState>(
   node: LGraphNode,
   property: K,
   value: NodeState[K]
-): void {
+): boolean {
   const oldValue = node._state[property]
-  if (oldValue === value) return
+  if (oldValue === value) return false
 
   node._state[property] = value
   node.graph?.trigger('node:property:changed', {
@@ -81,6 +84,7 @@ export function setTrackedNodeState<K extends keyof NodeState>(
     oldValue,
     newValue: value
   })
+  return true
 }
 
 /**
@@ -165,7 +169,6 @@ function transferNodeState(node: LGraphNode, replacement: LGraphNode): void {
     shape: undefined,
     showAdvanced: undefined,
     titleMode: undefined,
-    titleReconcileBaseline: undefined,
     ...replacementState
   } satisfies {
     [K in Exclude<keyof NodeState, 'graphId' | 'id'>]-?:

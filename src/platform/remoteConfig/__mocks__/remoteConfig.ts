@@ -34,13 +34,21 @@ function testScopedRemovableRef<T>(defaultValue: T) {
 
 const remoteConfigStateRef =
   testScopedRef<typeof realRemoteConfig.remoteConfigState.value>('unloaded')
+const authenticatedRemoteConfigStateRef =
+  testScopedRef<typeof realRemoteConfig.authenticatedRemoteConfigState.value>(
+    'unloaded'
+  )
 
 const remoteConfigModule: typeof realRemoteConfig = {
   remoteConfig: testScopedRef({}),
   remoteConfigState: remoteConfigStateRef,
+  authenticatedRemoteConfigState: authenticatedRemoteConfigStateRef,
+  remoteConfigRevision: testScopedRef(0),
   remoteConfigErrorStatus: testScopedRef(null),
   isAuthenticatedConfigLoaded: computed(
-    () => remoteConfigStateRef.value === 'authenticated'
+    () =>
+      authenticatedRemoteConfigStateRef.value === 'authenticated' ||
+      remoteConfigStateRef.value === 'authenticated'
   ),
   configValueOrDefault(remoteConfig, key, defaultValue) {
     return remoteConfig[key] || defaultValue
@@ -48,11 +56,14 @@ const remoteConfigModule: typeof realRemoteConfig = {
   cachedBillingControlEnabled: testScopedRemovableRef(undefined),
   cachedLegacyBillingMigrationEnabled: testScopedRef(undefined),
   cachedV1PaymentRecovery: testScopedRemovableRef(undefined),
-  sessionAgentGrant: testScopedRef(undefined)
+  sessionAgentGrant: testScopedRef(undefined),
+  sessionAgentGrantValidUntil: testScopedRef(undefined)
 }
 
 export const {
   remoteConfigState,
+  authenticatedRemoteConfigState,
+  remoteConfigRevision,
   remoteConfigErrorStatus,
   isAuthenticatedConfigLoaded,
   remoteConfig,
@@ -60,5 +71,6 @@ export const {
   cachedBillingControlEnabled,
   cachedLegacyBillingMigrationEnabled,
   sessionAgentGrant,
+  sessionAgentGrantValidUntil,
   cachedV1PaymentRecovery
 } = remoteConfigModule

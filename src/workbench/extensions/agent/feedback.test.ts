@@ -2,7 +2,7 @@ import { computed } from 'vue'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { openFeedbackDialog as openGeneralFeedbackDialog } from '@/platform/support/feedbackDialog'
+import { FEEDBACK_TYPEFORM_ID } from '@/platform/support/config'
 import { openTypeformDialog } from '@/platform/surveys/openTypeformDialog'
 import { useTelemetry } from '@/platform/telemetry'
 import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
@@ -15,8 +15,9 @@ vi.mock(import('@/platform/surveys/openTypeformDialog'), () => ({
   openTypeformDialog: vi.fn()
 }))
 
-vi.mock(import('@/platform/support/feedbackDialog'), () => ({
-  openFeedbackDialog: vi.fn()
+vi.mock(import('@/platform/distribution/types'), () => ({
+  isCloud: true,
+  isNightly: false
 }))
 
 vi.mock(import('@/platform/telemetry'))
@@ -34,13 +35,18 @@ describe('openFeedbackDialog (agent)', () => {
 
     openFeedbackDialog('agent-panel')
 
-    expect(openGeneralFeedbackDialog).toHaveBeenCalledWith('agent-panel')
-    expect(openTypeformDialog).not.toHaveBeenCalled()
+    expect(openTypeformDialog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        typeformId: FEEDBACK_TYPEFORM_ID,
+        hiddenFields: 'distribution=ccloud,source=agent-panel'
+      })
+    )
   })
 
   it('opens the approved agent form with bounded context when Agent is enabled', () => {
     useAgentPanelStore().enabled = true
     useCurrentUser().userEmail = computed(() => 'alpha@example.com')
+    useCurrentUser().resolvedUserInfo = computed(() => ({ id: 'user-264' }))
     const conversation = useAgentConversationStore()
     conversation.setThreadId('thread-264')
     conversation.recordUser(toTurnId('turn-private'), 'private prompt', [
@@ -54,13 +60,29 @@ describe('openFeedbackDialog (agent)', () => {
       typeformId: 'MZ6cjWIB',
       title: 'Share Feedback',
       hiddenFields: [
-        'email=alpha@example.com',
+        'distribution=ccloud',
         'source=agent-panel',
+        'email=alpha@example.com',
+        'userid=user-264',
         'version=1.55.4',
         'os=MacIntel',
         'session=thread-264'
       ].join(',')
     })
+  })
+
+  it('carries the user id when no thread has started, so the response stays traceable without a session', () => {
+    useAgentPanelStore().enabled = true
+    useCurrentUser().resolvedUserInfo = computed(() => ({ id: 'user-264' }))
+
+    openFeedbackDialog('agent-panel')
+
+    expect(openTypeformDialog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        hiddenFields:
+          'distribution=ccloud,source=agent-panel,userid=user-264,version=1.55.4,os=MacIntel'
+      })
+    )
   })
 
   it('omits missing optional context rather than sending placeholders', () => {
@@ -71,7 +93,7 @@ describe('openFeedbackDialog (agent)', () => {
 
     expect(openTypeformDialog).toHaveBeenCalledWith(
       expect.objectContaining({
-        hiddenFields: 'source=agent-panel,version=1.55.4'
+        hiddenFields: 'distribution=ccloud,source=agent-panel,version=1.55.4'
       })
     )
   })
@@ -87,8 +109,9 @@ describe('openFeedbackDialog (agent)', () => {
     expect(openTypeformDialog).toHaveBeenCalledWith(
       expect.objectContaining({
         hiddenFields: [
-          'email=alpha\\,graph=private@example.com',
+          'distribution=ccloud',
           'source=agent-panel',
+          'email=alpha\\,graph=private@example.com',
           'version=1.55.4',
           'os=MacIntel'
         ].join(',')

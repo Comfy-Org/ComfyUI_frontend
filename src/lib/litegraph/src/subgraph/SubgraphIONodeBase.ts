@@ -7,12 +7,14 @@ import type { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type {
   DefaultConnectionColors,
-  Hoverable,
-  INodeInputSlot,
-  INodeOutputSlot,
   Point,
   Positionable
 } from '@/lib/litegraph/src/interfaces'
+import type { Hoverable } from '@/lib/litegraph/src/types/events'
+import type {
+  INodeInputSlot,
+  INodeOutputSlot
+} from '@/lib/litegraph/src/types/slots'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   CanvasColour,

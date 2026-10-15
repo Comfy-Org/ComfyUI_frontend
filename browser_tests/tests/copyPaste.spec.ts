@@ -2,7 +2,9 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
+import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 
 test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 
@@ -191,6 +193,46 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
     })
   })
 
+  test('Sparse clipboard widget values keep their original indices', async ({
+    comfyPage
+  }) => {
+    const originalNodes = await comfyPage.nodeOps.getNodeRefsByType('KSampler')
+    const originalIds = new Set(originalNodes.map(({ id }) => id))
+
+    await comfyPage.page.evaluate(() => {
+      const node = window
+        .app!.graph.serialize()
+        .nodes.find(({ type }) => type === 'KSampler')
+      if (!node) throw new Error('KSampler node not found')
+      const clipboardNode = {
+        ...node,
+        widgets_values: { 0: 123, 2: 47, length: 3 }
+      }
+      const encoded = btoa(JSON.stringify({ nodes: [clipboardNode] }))
+      const dataTransfer = new DataTransfer()
+      dataTransfer.setData(
+        'text/html',
+        `<meta charset="utf-8"><div><span data-comfy-metadata="${encoded}"></span></div><span style="white-space:pre-wrap;">Text</span>`
+      )
+      document.dispatchEvent(
+        new ClipboardEvent('paste', {
+          clipboardData: dataTransfer,
+          bubbles: true,
+          cancelable: true
+        })
+      )
+    })
+
+    await expect
+      .poll(async () => {
+        const nodes = await comfyPage.nodeOps.getNodeRefsByType('KSampler')
+        const pasted = nodes.find(({ id }) => !originalIds.has(id))
+        if (!pasted) return undefined
+        return await (await pasted.getWidget(2)).getValue()
+      })
+      .toBe(47)
+  })
+
   test('Can undo paste multiple nodes as single action', async ({
     comfyPage
   }) => {
@@ -276,3 +318,44 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
     }
   )
 })
+
+async function selectNode(comfyPage: ComfyPage, node: NodeReference) {
+  await node.click('title')
+  await expect
+    .poll(() => comfyPage.nodeOps.getSelectedNodeIds())
+    .toEqual([node.id])
+}
+
+test.describe(
+  'Pasting onto a selected LoadImage node',
+  { tag: ['@node'] },
+  () => {
+    test.use({ permissions: ['clipboard-write'] })
+
+    test('pastes only the latest copy the clipboard still holds', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow('nodes/load_image_with_ksampler')
+      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(2)
+      const [ksampler] = await comfyPage.nodeOps.getNodeRefsByType('KSampler')
+      const [loadImage] = await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
+
+      await test.step('Ctrl+V after another app replaced the clipboard adds nothing', async () => {
+        await selectNode(comfyPage, ksampler)
+        await comfyPage.clipboard.copy()
+        await comfyPage.clipboard.writeText('copied in another app')
+        await selectNode(comfyPage, loadImage)
+        await comfyPage.clipboard.paste()
+        await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(2)
+      })
+
+      await test.step('Ctrl+V after a fresh Ctrl+C adds one node', async () => {
+        await selectNode(comfyPage, ksampler)
+        await comfyPage.clipboard.copy()
+        await selectNode(comfyPage, loadImage)
+        await comfyPage.clipboard.paste()
+        await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(3)
+      })
+    })
+  }
+)

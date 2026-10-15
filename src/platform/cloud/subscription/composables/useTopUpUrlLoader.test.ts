@@ -1,6 +1,6 @@
 import { computed, ref } from 'vue'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { useDialogService } from '@/services/dialogService'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useRoute, useRouter } from 'vue-router'
 import type { LocationQueryRaw } from 'vue-router'
@@ -22,7 +22,7 @@ vi.mock(
 
 vi.mock(import('vue-router'))
 
-vi.mock(import('@/services/dialogService'))
+vi.mock(import('@/composables/billing/useBillingDialogs'))
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
@@ -45,7 +45,7 @@ describe('useTopUpUrlLoader', () => {
     const { loadTopUpFromUrl } = useTopUpUrlLoader()
     await loadTopUpFromUrl()
 
-    expect(useDialogService().showTopUpCreditsDialog).not.toHaveBeenCalled()
+    expect(useBillingDialogs().showTopUpCreditsDialog).not.toHaveBeenCalled()
     expect(useRouter().replace).not.toHaveBeenCalled()
   })
 
@@ -55,7 +55,9 @@ describe('useTopUpUrlLoader', () => {
     const { loadTopUpFromUrl } = useTopUpUrlLoader()
     await loadTopUpFromUrl()
 
-    expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalledOnce()
+    expect(
+      useBillingDialogs().showTopUpCreditsDialog
+    ).toHaveBeenCalledExactlyOnceWith({ source: 'deep_link' })
     expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
   })
 
@@ -97,7 +99,7 @@ describe('useTopUpUrlLoader', () => {
     await loading
 
     expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
-    expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalledOnce()
+    expect(useBillingDialogs().showTopUpCreditsDialog).toHaveBeenCalledOnce()
   })
 
   it('is a silent no-op when the server denies top-up', async () => {
@@ -107,7 +109,7 @@ describe('useTopUpUrlLoader', () => {
     const { loadTopUpFromUrl } = useTopUpUrlLoader()
     await loadTopUpFromUrl()
 
-    expect(useDialogService().showTopUpCreditsDialog).not.toHaveBeenCalled()
+    expect(useBillingDialogs().showTopUpCreditsDialog).not.toHaveBeenCalled()
     expect(
       useTelemetry()?.trackAddApiCreditButtonClicked
     ).not.toHaveBeenCalled()
@@ -121,7 +123,7 @@ describe('useTopUpUrlLoader', () => {
     const { loadTopUpFromUrl } = useTopUpUrlLoader()
     await loadTopUpFromUrl()
 
-    expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalledOnce()
+    expect(useBillingDialogs().showTopUpCreditsDialog).toHaveBeenCalledOnce()
     expect(
       useTelemetry()?.trackAddApiCreditButtonClicked
     ).not.toHaveBeenCalled()
@@ -134,7 +136,7 @@ describe('useTopUpUrlLoader', () => {
     const { loadTopUpFromUrl } = useTopUpUrlLoader()
     await loadTopUpFromUrl()
 
-    expect(useDialogService().showTopUpCreditsDialog).not.toHaveBeenCalled()
+    expect(useBillingDialogs().showTopUpCreditsDialog).not.toHaveBeenCalled()
     expect(useRouter().replace).toHaveBeenCalledWith({
       query: { other: 'param' }
     })
@@ -155,7 +157,7 @@ describe('useTopUpUrlLoader', () => {
     expect(preservedQueryMocks.hydratePreservedQuery).toHaveBeenCalledWith(
       'topup'
     )
-    expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalledOnce()
+    expect(useBillingDialogs().showTopUpCreditsDialog).toHaveBeenCalledOnce()
   })
 
   it('strips but does not open for an empty param', async () => {
@@ -164,7 +166,7 @@ describe('useTopUpUrlLoader', () => {
     const { loadTopUpFromUrl } = useTopUpUrlLoader()
     await loadTopUpFromUrl()
 
-    expect(useDialogService().showTopUpCreditsDialog).not.toHaveBeenCalled()
+    expect(useBillingDialogs().showTopUpCreditsDialog).not.toHaveBeenCalled()
     expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
     expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
       'topup'
@@ -178,7 +180,7 @@ describe('useTopUpUrlLoader', () => {
     const { loadTopUpFromUrl } = useTopUpUrlLoader()
     await loadTopUpFromUrl()
 
-    expect(useDialogService().showTopUpCreditsDialog).not.toHaveBeenCalled()
+    expect(useBillingDialogs().showTopUpCreditsDialog).not.toHaveBeenCalled()
     expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
   })
 
@@ -188,6 +190,6 @@ describe('useTopUpUrlLoader', () => {
     const { loadTopUpFromUrl } = useTopUpUrlLoader()
     await loadTopUpFromUrl()
 
-    expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalledOnce()
+    expect(useBillingDialogs().showTopUpCreditsDialog).toHaveBeenCalledOnce()
   })
 })

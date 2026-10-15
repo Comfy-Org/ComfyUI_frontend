@@ -1,6 +1,5 @@
 import type { Locator, Page, WebSocketRoute } from '@playwright/test'
 import { expect } from '@playwright/test'
-import { createI18n } from 'vue-i18n'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import type { WorkflowListResponse } from '@comfyorg/ingest-types'
@@ -16,7 +15,9 @@ import {
 } from '@e2e/fixtures/agentPanelFixture'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
 const WORKFLOW_ID = 'b4d7e1f2-8a3c-4d5e-9f60-7a1b2c3d4e5f'
 const THREAD_ID = 'd8c7b6a5-9e1f-4a2b-8c3d-4e5f6a7b8c9d'
@@ -25,15 +26,9 @@ const SOCKET_SID = '8e2f3a4b-5c6d-4e7f-9a01-2b3c4d5e6f70'
 const CATALOG: WidgetCatalog = { types: {} }
 const SEED: WorkflowJSON = { nodes: [], links: [] }
 
-const OPEN_AGENT_LABEL = enMessages.agent.entryButton
 const SEND_LABEL = enMessages.agent.send
 const STOP_LABEL = enMessages.agent.stop
 const WORKING_LABEL = enMessages.agent.working
-const COMPOSER_LABEL = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: { en: enMessages }
-}).global.t('agent.placeholder')
 
 const ids = { thread_id: THREAD_ID, message_id: MESSAGE_ID }
 
@@ -119,10 +114,7 @@ async function startTurn(page: Page, prompt: string): Promise<Turn> {
     'true',
     { timeout: 8_000 }
   )
-  await topbarActions
-    .getByRole('button', { name: OPEN_AGENT_LABEL, exact: true })
-    .click()
-  await expect(panel).toBeVisible({ timeout: 30_000 })
+  await new AgentPanel(page).open(30_000)
 
   let savedName: string | undefined
   await page.route('**/api/userdata/*', (route) => {
@@ -175,7 +167,7 @@ async function startTurn(page: Page, prompt: string): Promise<Turn> {
   await expect(picker).toHaveText('Unsaved Workflow')
   await expect.poll(() => socket !== null).toBe(true)
 
-  await panel.getByRole('textbox', { name: COMPOSER_LABEL }).fill(prompt)
+  await panel.getByRole('textbox', { name: AGENT_COMPOSER_LABEL }).fill(prompt)
   await panel.getByRole('button', { name: SEND_LABEL }).click()
   await expect(panel.getByText(prompt).first()).toBeVisible()
   return { panel, send }

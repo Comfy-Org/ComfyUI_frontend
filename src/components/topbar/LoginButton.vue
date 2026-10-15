@@ -28,7 +28,7 @@
         data-testid="login-button-popover-learn-more"
         :href="apiNodesOverviewUrl"
         target="_blank"
-        class="text-neutral-500 hover:text-primary"
+        class="text-neutral-500 hover:text-primary-background"
         >{{ t('auth.loginButton.tooltipLearnMore') }}</a
       >
     </div>
@@ -36,7 +36,7 @@
 </template>
 
 <script setup lang="ts">
-import Popover from 'primevue/popover'
+import Popover from '@/components/common/ImperativePopover.vue'
 import type { HTMLAttributes } from 'vue'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'

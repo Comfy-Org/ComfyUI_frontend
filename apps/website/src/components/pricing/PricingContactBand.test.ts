@@ -13,7 +13,7 @@ describe('PricingContactBand', () => {
     render(PricingContactBand, { props: { ...baseProps, locale: 'en' } })
 
     const cta = screen.getByRole('link', { name: 'Contact Us' })
-    expect(cta.getAttribute('href')).toBe('/contact')
+    expect(cta.getAttribute('href')).toBe('/contact/')
     expect(cta.getAttribute('target')).toBeNull()
     expect(cta.getAttribute('rel')).toBeNull()
   })
@@ -49,6 +49,6 @@ describe('PricingContactBand', () => {
 
     expect(
       screen.getByRole('link', { name: '联系我们' }).getAttribute('href')
-    ).toBe('/zh-CN/contact')
+    ).toBe('/zh-CN/contact/')
   })
 })

@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 import { spawnSync } from 'node:child_process'
 import {
   existsSync,

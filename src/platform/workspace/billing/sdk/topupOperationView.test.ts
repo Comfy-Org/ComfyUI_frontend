@@ -89,13 +89,13 @@ describe('projectTopupResult', () => {
     ).toMatchObject({ billing_op_id: 'op-1', status: 'failed' })
   })
 
-  it('reports nothing for a purchase this tab stopped observing', () => {
+  it('reports a purchase this tab stopped observing as still pending', () => {
     expect(
       projectTopupResult(
         { status: 'unsettled', operation: settledTopup('timed_out') },
         1000
       )
-    ).toBeUndefined()
+    ).toMatchObject({ billing_op_id: 'op-1', status: 'pending' })
   })
 
   it('throws the API error whose code the dialog already handles', () => {
@@ -112,6 +112,23 @@ describe('projectTopupResult', () => {
       expect.objectContaining({
         name: 'WorkspaceApiError',
         code: 'NO_PAYMENT_METHOD'
+      })
+    )
+  })
+
+  it('names the earlier top-up still settling instead of an unknown error', () => {
+    expect(() =>
+      projectTopupResult(
+        { status: 'error', code: 'OPERATION_ALREADY_PENDING' },
+        1000
+      )
+    ).toThrow(
+      expect.objectContaining({
+        name: 'WorkspaceApiError',
+        code: 'OPERATION_ALREADY_PENDING',
+        failureCategory: 'stale_operation',
+        message:
+          'A top-up you started earlier is still going through. Finish verifying it or wait for it to complete before adding more credits.'
       })
     )
   })

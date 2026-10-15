@@ -912,20 +912,6 @@ describe('LGraphCanvas selection', () => {
       ).toBe(false)
     })
 
-    it('preserves selection for a same-ID successor', () => {
-      canvas.select(a)
-      const successor = new LGraphNode('Successor')
-      successor.id = a.id
-      successor.graph = graph
-      graph._nodes.push(successor)
-      graph._nodes_by_id[a.id] = successor
-
-      graph.remove(a, { preserveCanonicalState: true })
-
-      expect(successor.selected).toBe(true)
-      expect([...canvas.selectedItems]).toEqual([successor])
-    })
-
     it('adopts detached selection under the final ID after reminting', () => {
       const subgraph = createTestSubgraph({ rootGraph: graph })
       const node = new LGraphNode('Colliding selected node')

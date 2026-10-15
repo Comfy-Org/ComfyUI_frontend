@@ -3,7 +3,6 @@ import type { Pinia } from 'pinia'
 import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
 import { fromAny } from '@total-typescript/shoehorn'
-import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -18,7 +17,7 @@ import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNod
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { useComfyRegistryService } from '@/services/comfyRegistryService'
-import type { MissingNodeType } from '@/types/comfy'
+import type { MissingNodeType } from '@/platform/nodeReplacement/types'
 import { toNodeId } from '@/types/nodeId'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
@@ -143,7 +142,13 @@ describe('TabErrors.vue', () => {
     seed?.(pinia)
     render(TabErrors, {
       global: {
-        plugins: [PrimeVue, i18n, pinia]
+        plugins: [i18n, pinia],
+        stubs: {
+          AsyncSearchInput: {
+            template:
+              '<input @input="$emit(\'update:modelValue\', $event.target.value)" />'
+          }
+        }
       }
     })
     return { user }
@@ -156,7 +161,7 @@ describe('TabErrors.vue', () => {
     seed(pinia)
     render(RightSidePanel, {
       global: {
-        plugins: [PrimeVue, i18n, pinia],
+        plugins: [i18n, pinia],
         stubs: {
           EditableText: true,
           TabErrors: true,

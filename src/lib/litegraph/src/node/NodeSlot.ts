@@ -6,13 +6,15 @@ import { LabelPosition, SlotShape, SlotType } from '@/lib/litegraph/src/draw'
 import type {
   CanvasColour,
   DefaultConnectionColors,
-  INodeInputSlot,
-  INodeOutputSlot,
   INodeSlot,
-  ISubgraphInput,
   OptionalProps,
   Point
 } from '@/lib/litegraph/src/interfaces'
+import type {
+  INodeInputSlot,
+  INodeOutputSlot,
+  ISubgraphInput
+} from '@/lib/litegraph/src/types/slots'
 import { LiteGraph, Rectangle } from '@/lib/litegraph/src/litegraph'
 import { getCentre } from '@/lib/litegraph/src/measure'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
@@ -70,17 +72,14 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
   abstract get isWidgetInputSlot(): boolean
 
   constructor(
-    slot: OptionalProps<INodeSlot, 'boundingRect'>,
+    slot:
+      | OptionalProps<INodeSlot, 'boundingRect'>
+      | OptionalProps<ISubgraphInput, 'link' | 'boundingRect'>,
     node: LGraphNode
   ) {
-    // @ts-expect-error Workaround: Ensure internal properties are not copied to the slot (_listenerController
     // https://github.com/Comfy-Org/litegraph.js/issues/1138
-    const maybeSubgraphSlot: OptionalProps<
-      ISubgraphInput,
-      'link' | 'boundingRect'
-    > = slot
-    const { boundingRect, name, type, _listenerController, ...rest } =
-      maybeSubgraphSlot
+    const { boundingRect, name, type, ...rest } = slot
+    if ('_listenerController' in rest) delete rest._listenerController
     const rectangle = boundingRect
       ? Rectangle.ensureRect(boundingRect)
       : new Rectangle()
