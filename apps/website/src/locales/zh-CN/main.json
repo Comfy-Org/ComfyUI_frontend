@@ -5327,5 +5327,30 @@
       "enterprise": "查看企业方案详情",
       "licensing": "MINIMAX 许可"
     }
+  },
+  "flux3Image": {
+    "meta": {
+      "title": "Flux 3 Image Launch {'|'} Comfy"
+    },
+    "breadcrumb": {
+      "updated": "发布预览"
+    },
+    "hero": {
+      "placeholder": "视频主视觉 · 占位",
+      "title": "Flux 3 Image",
+      "description": "认识 Flux 3 Image：提供标准版和步数蒸馏 turbo 版的开源图像模型。在 ComfyUI 中使用标准版进行创作，或使用 turbo 版以 4–16 步、CFG 1 快速迭代。提示词增强功能即将推出。",
+      "openSource": "开源",
+      "imageGeneration": "图像生成",
+      "promptEnhancement": "提示词增强",
+      "primaryCta": "运行 FLUX IMAGE 3",
+      "secondaryCta": "阅读文档"
+    },
+    "runOptions": {
+      "subtitle": "在浏览器中构建工作流，在自己的硬件上探索 ComfyUI，或通过 API 连接创作流程。"
+    },
+    "draft": {
+      "title": "Flux 3 Image · 本地发布草稿",
+      "description": "发布工作流和文档链接尚待确认。图库图像为临时 Qwen 参考示例。定价和常见问题仍为草稿。本页面不包含在生产构建中。"
+    }
   }
 }

@@ -5934,5 +5934,30 @@
       "enterprise": "VIEW ENTERPRISE DETAILS",
       "licensing": "MINIMAX LICENSING"
     }
+  },
+  "flux3Image": {
+    "meta": {
+      "title": "Flux 3 Image Launch {'|'} Comfy"
+    },
+    "breadcrumb": {
+      "updated": "Launch preview"
+    },
+    "hero": {
+      "placeholder": "Video hero · FPO",
+      "title": "Flux 3 Image",
+      "description": "Meet Flux 3 Image, the open-source image model with standard and step-distilled turbo variants. Create in ComfyUI with the standard model, or iterate with turbo at 4–16 steps and CFG 1. Prompt enhancement is coming soon.",
+      "openSource": "Open Source",
+      "imageGeneration": "Image generation",
+      "promptEnhancement": "Prompt enhancement",
+      "primaryCta": "RUN FLUX IMAGE 3",
+      "secondaryCta": "READ DOCS"
+    },
+    "runOptions": {
+      "subtitle": "Build workflows in the browser, explore ComfyUI on your own hardware, or connect your creative pipeline through the API."
+    },
+    "draft": {
+      "title": "Flux 3 Image · local launch draft",
+      "description": "Launch workflow and docs URLs are pending. Gallery images are temporary Qwen reference samples. Pricing and FAQs are draft content. This page is excluded from production builds."
+    }
   }
 }

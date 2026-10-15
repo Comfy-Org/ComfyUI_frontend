@@ -664,7 +664,8 @@ the hosted script once, and renders the documented embed container.
 
 Run the website dev server and open `/flux-3-image/` or
 `/zh-CN/flux-3-image/` to edit the launch draft. The routes are available locally and in Vercel PR previews; production builds
-exclude both the pages and draft translation catalogs. Preview pages stay noindex
+exclude the pages. Their copy lives under `flux3Image` in the standard
+`src/locales/<locale>/main.json` catalogs. Preview pages stay noindex
 and out of sitemap and generated Markdown/LLM catalogs.
 The page reuses the Qwen image launch layout with a video hero placeholder and
 clearly labeled reference samples. Replace the hero footage, sample outputs,
