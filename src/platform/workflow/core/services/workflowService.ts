@@ -482,10 +482,6 @@ export const useWorkflowService = () => {
           await restoreRetainedWorkflow(workflow)
           return false
         }
-        if (loaded === 'superseded') {
-          useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
-          return false
-        }
         showPendingWarnings(undefined, {
           silent: !loadFromRemote && !options.force
         })

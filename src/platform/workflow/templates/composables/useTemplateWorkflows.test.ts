@@ -1407,17 +1407,6 @@ describe('useTemplateWorkflows', () => {
       expect(useFeatureUsageTracker(SURVEY_ID).useCount.value).toBe(0)
     })
 
-    it('does not count or report a template whose graph load was superseded', async () => {
-      vi.mocked(app.loadGraphData).mockResolvedValueOnce('superseded')
-      const { loader } = mountTemplateWorkflows()
-
-      expect(await loader.loadWorkflowTemplate('template1', 'default')).toBe(
-        'not-started'
-      )
-
-      expect(useFeatureUsageTracker(SURVEY_ID).useCount.value).toBe(0)
-    })
-
     it('does not count a custom-node template', async () => {
       const { loader } = mountTemplateWorkflows()
 

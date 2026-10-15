@@ -3109,45 +3109,41 @@ describe('ComfyApp', () => {
       expect(mockImportA1111).toHaveBeenCalledOnce()
     })
 
-    it('finishes terminal hooks before a re-entrant load starts', async () => {
-      const events: string[] = []
-      let reentrantLoad: ReturnType<typeof app.loadGraphData> | undefined
-      let terminalCalls = 0
+    it('rejects a nested load awaited by a lifecycle hook', async () => {
+      let beforeLoadGraphCalls = 0
       mockExtensionService.invokeExtensionsAsync.mockImplementation(
         async (hook) => {
+          if (hook === 'beforeLoadGraph') beforeLoadGraphCalls++
           if (hook !== 'afterLoadGraph') return
-          terminalCalls++
-          if (terminalCalls === 1) {
-            events.push('first-terminal-start')
-            reentrantLoad = app.loadGraphData(createWorkflowGraphData(), true)
-            await Promise.resolve()
-            events.push('first-terminal-end')
-          } else {
-            events.push('second-terminal')
-          }
+          await expect(
+            app.loadGraphData(createWorkflowGraphData(), true)
+          ).rejects.toThrow(
+            'A graph-load lifecycle hook cannot start a nested graph load'
+          )
+          expect(beforeLoadGraphCalls).toBe(1)
         }
       )
 
-      await app.loadGraphData(createWorkflowGraphData(), true)
-      await reentrantLoad
-
-      expect(events).toEqual([
-        'first-terminal-start',
-        'first-terminal-end',
-        'second-terminal'
-      ])
+      await expect(
+        app.loadGraphData(createWorkflowGraphData(), true)
+      ).resolves.toBeTruthy()
+      expect(beforeLoadGraphCalls).toBe(1)
     })
 
     it('cleans before extensions prepare the incoming workflow', async () => {
       const clean = vi.spyOn(app, 'clean')
+      let cleanCallsDuringPreparation: number | undefined
       mockExtensionService.invokeExtensionsAsync.mockImplementation(
         async (hook) => {
           if (hook !== 'beforeConfigureGraph') return
-          expect(clean).toHaveBeenCalledOnce()
+          cleanCallsDuringPreparation = clean.mock.calls.length
         }
       )
 
-      await app.loadGraphData(createWorkflowGraphData(), true)
+      await expect(
+        app.loadGraphData(createWorkflowGraphData(), true)
+      ).resolves.toBeTruthy()
+      expect(cleanCallsDuringPreparation).toBe(1)
     })
   })
 

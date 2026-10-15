@@ -165,7 +165,7 @@ export interface ComfyApp {
     restore_view?: boolean,
     workflow?: string | null | ComfyWorkflow,
     options?: LoadGraphDataOptions
-  ): Promise<LoadedComfyWorkflow | boolean | 'superseded' | undefined>
+  ): Promise<LoadedComfyWorkflow | boolean | undefined>
   refreshMissingModels(options?: {
     silent?: boolean
     reloadDefs?: boolean
