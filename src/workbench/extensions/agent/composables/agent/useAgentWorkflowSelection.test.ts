@@ -318,8 +318,8 @@ describe('historical workflow restoration', () => {
     selection.cancelSelection()
     panel.setWorkflowTarget(current)
     finishSync()
-    await restoration
 
+    expect(await restoration).toBe(false)
     expect(workflows.activeWorkflow?.path).toBe(current.path)
     expect(panel.selectedWorkflow?.path).toBe(current.path)
     expect(workflows.openWorkflows.map(({ path }) => path)).toEqual([
