@@ -333,7 +333,11 @@ export function dynamicGroupWidget(
 
   function announceAddedValues(existing: Set<IBaseWidget>) {
     for (const widget of node.widgets ?? []) {
-      if (!existing.has(widget) && widget.widgetId)
+      if (
+        !existing.has(widget) &&
+        widget.serialize !== false &&
+        widget.widgetId
+      )
         store.announceValue(widget.widgetId)
     }
   }

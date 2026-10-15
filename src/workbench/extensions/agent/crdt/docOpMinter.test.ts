@@ -122,6 +122,21 @@ class TestDynamicGroup extends LGraphNode {
   }
 }
 
+class TestEmptyComboGroup extends LGraphNode {
+  constructor() {
+    super('Test Empty Combo Group')
+    this.serialize_widgets = true
+    useLitegraphService().addNodeInput(this, {
+      name: 'loras',
+      type: 'COMFY_DYNAMICGROUP_V3',
+      isOptional: false,
+      min: 0,
+      max: 3,
+      template: { required: { lora_name: ['COMBO', { options: [] }] } }
+    })
+  }
+}
+
 const CATALOG: WidgetCatalog = {
   types: {
     TestSource: { widget_order: ['steps'] },
@@ -184,6 +199,7 @@ beforeEach(() => {
   LiteGraph.registerNodeType('TestNote', TestNote)
   LiteGraph.registerNodeType('TestPrompt', TestPrompt)
   LiteGraph.registerNodeType('TestDynamicGroup', TestDynamicGroup)
+  LiteGraph.registerNodeType('TestEmptyComboGroup', TestEmptyComboGroup)
 })
 
 describe('attachDocOpMinter', () => {
@@ -1774,6 +1790,19 @@ describe('attachDocOpMinter', () => {
         expect(minted).toEqual([])
       }
     )
+
+    it('mints null for an added field that has no value', async () => {
+      const node = new TestEmptyComboGroup()
+      withGraphIntentSource('load', () => graph.add(node))
+
+      node.widgets?.find((w) => w.name === 'loras.$add')?.callback?.(undefined)
+      await afterFlush()
+
+      expect(minted).toEqual([
+        expect.objectContaining({ widget: 'loras', value: 1 }),
+        expect.objectContaining({ widget: 'loras.0.lora_name', value: null })
+      ])
+    })
 
     it('mints nothing for a row added while the workflow is not doc-bound', async () => {
       const { widget } = seedGroup()

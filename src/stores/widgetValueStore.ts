@@ -345,7 +345,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
       graphId: parseWidgetId(widgetId).graphId,
       nodeId: state.nodeId,
       name: state.name,
-      value: state.value,
+      value: state.value ?? null,
       previous: undefined
     })
   }
