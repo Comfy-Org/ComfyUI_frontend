@@ -104,6 +104,7 @@ export class BootstrapTracer {
   private _spans = new Map<BootstrapPhase, PerfSpan>()
   private _timings: BootstrapPhaseTiming[] = []
   private _completed = false
+  private _timeoutReported = false
   private _watchdog: ReturnType<typeof setTimeout> | undefined
 
   /**
@@ -198,8 +199,10 @@ export class BootstrapTracer {
    */
   armWatchdog(deadlineMs = BOOTSTRAP_WATCHDOG_MS): void {
     clearTimeout(this._watchdog)
+    if (this._completed || this._timeoutReported) return
     this._watchdog = setTimeout(() => {
-      if (this._completed) return
+      if (this._completed || this._timeoutReported) return
+      this._timeoutReported = true
       this._report('timed_out', [...this._spans.keys()])
     }, deadlineMs)
   }

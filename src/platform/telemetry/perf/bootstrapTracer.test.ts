@@ -265,6 +265,36 @@ describe('bootstrapTracer', () => {
     )
   })
 
+  it('reports only one timeout across suspended replacement editors', async () => {
+    const tracer = new BootstrapTracer()
+    tracer.armWatchdog()
+    await vi.advanceTimersByTimeAsync(30_000)
+    tracer.suspendWatchdog()
+    tracer.resumeWatchdog()
+    await vi.advanceTimersByTimeAsync(30_000)
+    tracer.suspendWatchdog()
+    tracer.resumeWatchdog()
+    await vi.advanceTimersByTimeAsync(30_000)
+    tracer.complete()
+
+    expect(
+      addAction.mock.calls.map(([, metadata]) => metadata.outcome)
+    ).toEqual(['timed_out', 'completed'])
+  })
+
+  it('does not report another timeout when explicitly rearmed', async () => {
+    const tracer = new BootstrapTracer()
+    tracer.armWatchdog()
+    await vi.advanceTimersByTimeAsync(30_000)
+    tracer.armWatchdog()
+    await vi.advanceTimersByTimeAsync(30_000)
+    tracer.complete('failed')
+
+    expect(
+      addAction.mock.calls.map(([, metadata]) => metadata.outcome)
+    ).toEqual(['timed_out', 'failed'])
+  })
+
   it('keeps the original watchdog deadline when already active', async () => {
     const tracer = new BootstrapTracer()
     tracer.armWatchdog()
