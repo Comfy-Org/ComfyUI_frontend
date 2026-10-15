@@ -294,9 +294,6 @@ function reportInactiveTrackerCall(method: string, workflowPath: string) {
 
 export class ChangeTracker implements WorkflowChangeTracker {
   static MAX_HISTORY = 50
-  private static graphLoadGeneration = 0
-  private static activeGraphLoadGeneration: number | undefined
-
   /**
    * Guard flag to prevent captureCanvasState from running during loadGraphData.
    * Between rootGraph.configure() and afterLoadNewGraph(), the rootGraph
@@ -304,28 +301,7 @@ export class ChangeTracker implements WorkflowChangeTracker {
    * the OLD workflow. Any captureCanvasState call in that window would
    * serialize the wrong graph into the old workflow's activeState, corrupting it.
    */
-  static get isLoadingGraph(): boolean {
-    return ChangeTracker.activeGraphLoadGeneration !== undefined
-  }
-
-  static set isLoadingGraph(value: boolean) {
-    ChangeTracker.activeGraphLoadGeneration = value
-      ? ++ChangeTracker.graphLoadGeneration
-      : undefined
-  }
-
-  static beginGraphLoad(): () => void {
-    const generation = ++ChangeTracker.graphLoadGeneration
-    ChangeTracker.activeGraphLoadGeneration = generation
-    let closed = false
-    return () => {
-      if (closed) return
-      closed = true
-      if (ChangeTracker.activeGraphLoadGeneration === generation) {
-        ChangeTracker.activeGraphLoadGeneration = undefined
-      }
-    }
-  }
+  static isLoadingGraph = false
   /**
    * The active state of the workflow.
    */

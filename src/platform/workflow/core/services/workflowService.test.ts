@@ -494,9 +494,7 @@ describe('useWorkflowService', () => {
   describe('openWorkflow ordering', () => {
     it('keeps the current workflow when a remote load is superseded', async () => {
       const workflows = useWorkflowStore()
-      const current = createModeTestWorkflow({
-        path: 'workflows/current.json'
-      })
+      const current = createModeTestWorkflow({ path: 'workflows/current.json' })
       const loading = createModeTestWorkflow({
         path: 'workflows/closed.json',
         loaded: false
@@ -533,9 +531,7 @@ describe('useWorkflowService', () => {
 
     it('leaves a saved workflow clean after a superseded load applied its draft', async () => {
       const workflows = useWorkflowStore()
-      const current = createModeTestWorkflow({
-        path: 'workflows/current.json'
-      })
+      const current = createModeTestWorkflow({ path: 'workflows/current.json' })
       const saved = createModeTestWorkflow({
         path: 'workflows/saved.json',
         loaded: false
@@ -570,9 +566,7 @@ describe('useWorkflowService', () => {
 
     it('keeps a temporary workflow openable after a superseded load', async () => {
       const workflows = useWorkflowStore()
-      const current = createModeTestWorkflow({
-        path: 'workflows/current.json'
-      })
+      const current = createModeTestWorkflow({ path: 'workflows/current.json' })
       const draft = new ComfyWorkflowClass({
         path: 'workflows/draft.json',
         modified: Date.now(),
@@ -606,9 +600,7 @@ describe('useWorkflowService', () => {
 
     it('settles an already superseded opening without waiting for queued loads', async () => {
       const workflows = useWorkflowStore()
-      const blocker = createModeTestWorkflow({
-        path: 'workflows/blocker.json'
-      })
+      const blocker = createModeTestWorkflow({ path: 'workflows/blocker.json' })
       const stale = createModeTestWorkflow({
         path: 'workflows/stale.json',
         loaded: false
@@ -638,9 +630,7 @@ describe('useWorkflowService', () => {
 
     it('skips an opening superseded while it waits behind another load', async () => {
       const workflows = useWorkflowStore()
-      const blocker = createModeTestWorkflow({
-        path: 'workflows/blocker.json'
-      })
+      const blocker = createModeTestWorkflow({ path: 'workflows/blocker.json' })
       const stale = createModeTestWorkflow({
         path: 'workflows/stale.json',
         loaded: false
@@ -2473,97 +2463,6 @@ describe('useWorkflowService', () => {
           rootGraphId,
           existingWorkflow.path
         )
-      })
-    })
-
-    describe('when a newer load supersedes this one mid-flight', () => {
-      const newerCamera = { scale: 1.75, offset: [10, 20] as [number, number] }
-      const rootGraphId = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc'
-      let releaseOpen: () => void
-      let setGraph: ReturnType<typeof vi.fn>
-      let originalCanvas: typeof app.canvas
-
-      beforeEach(() => {
-        originalCanvas = app.canvas
-        Reflect.set(app, 'isGraphReady', true)
-        app.rootGraph.id = rootGraphId
-
-        setGraph = vi.fn()
-        Reflect.set(app, 'canvas', {
-          ds: { scale: newerCamera.scale, offset: newerCamera.offset },
-          setGraph,
-          bg_tint: undefined
-        })
-
-        const tracker = new ChangeTracker(existingWorkflow, makeWorkflowData())
-        app.canvas.ds.scale = 0.3
-        app.canvas.ds.offset = [-999, -999]
-        tracker.store()
-        app.canvas.ds.scale = newerCamera.scale
-        app.canvas.ds.offset = newerCamera.offset
-        existingWorkflow.changeTracker = tracker
-
-        const blocked = new Promise<void>((resolve) => {
-          releaseOpen = resolve
-        })
-        vi.mocked(workflowStore.openWorkflow).mockImplementation(async () => {
-          await blocked
-          return existingWorkflow
-        })
-      })
-
-      afterEach(() => {
-        Reflect.deleteProperty(app, 'isGraphReady')
-        Reflect.deleteProperty(app.rootGraph, 'id')
-        Reflect.set(app, 'canvas', originalCanvas)
-      })
-
-      it('does not write the newer graph camera when the predicate says it is stale', async () => {
-        let isCurrent = true
-
-        const supersededLoad = useWorkflowService().afterLoadNewGraph(
-          'repeat',
-          makeWorkflowData(),
-          undefined,
-          { isCurrent: () => isCurrent }
-        )
-        await Promise.resolve()
-
-        expect(app.canvas.ds.scale).toBe(newerCamera.scale)
-
-        isCurrent = false
-        releaseOpen()
-        await supersededLoad
-
-        expect(app.canvas.ds.scale).toBe(newerCamera.scale)
-        expect(app.canvas.ds.offset).toEqual(newerCamera.offset)
-        expect(setGraph).not.toHaveBeenCalled()
-        expect(useExecutionErrorStore().setActiveGraph).not.toHaveBeenCalled()
-        expect(
-          useNodeOutputStore().restorePreviewsForWorkflow
-        ).not.toHaveBeenCalled()
-      })
-
-      it('still activates normally when the load is not superseded', async () => {
-        const liveLoad = useWorkflowService().afterLoadNewGraph(
-          'repeat',
-          makeWorkflowData(),
-          undefined,
-          { isCurrent: () => true }
-        )
-        await Promise.resolve()
-        releaseOpen()
-        await liveLoad
-
-        expect(app.canvas.ds.scale).toBe(0.3)
-        expect(setGraph).toHaveBeenCalled()
-        expect(useExecutionErrorStore().setActiveGraph).toHaveBeenCalledWith(
-          rootGraphId,
-          existingWorkflow.path
-        )
-        expect(
-          useNodeOutputStore().restorePreviewsForWorkflow
-        ).toHaveBeenCalled()
       })
     })
   })

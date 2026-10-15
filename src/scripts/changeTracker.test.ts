@@ -222,13 +222,7 @@ describe('ChangeTracker', () => {
         calls: 0
       },
       { key: 'z', shiftKey: true, history: 'redo', selectOnly: true, calls: 0 },
-      {
-        key: 'y',
-        shiftKey: false,
-        history: 'redo',
-        selectOnly: true,
-        calls: 0
-      }
+      { key: 'y', shiftKey: false, history: 'redo', selectOnly: true, calls: 0 }
     ] as const)(
       'Ctrl+$key shift=$shiftKey with selectOnly=$selectOnly consumes the key and runs $history $calls times',
       async ({ key, shiftKey, history, selectOnly, calls }) => {
@@ -695,17 +689,6 @@ describe('ChangeTracker', () => {
           expect(tracker.activeState).toEqual(changed)
         }
       )
-
-      it('lets the newest graph load release suppression without waiting for an older load', () => {
-        const endOlderLoad = ChangeTracker.beginGraphLoad()
-        const endNewerLoad = ChangeTracker.beginGraphLoad()
-
-        endNewerLoad()
-
-        expect(ChangeTracker.isLoadingGraph).toBe(false)
-        endOlderLoad()
-        expect(ChangeTracker.isLoadingGraph).toBe(false)
-      })
 
       it('does not push when state is identical', () => {
         const state = createState()

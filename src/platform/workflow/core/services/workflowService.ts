@@ -703,29 +703,21 @@ export const useWorkflowService = () => {
   const afterLoadNewGraph = async (
     value: string | ComfyWorkflow | null,
     workflowData: ComfyWorkflowJSON,
-    shareId?: string,
-    options: { isCurrent?: () => boolean } = {}
-  ): Promise<boolean> => {
+    shareId?: string
+  ) => {
     const graphState = useApp().rootGraphOrUndefined?.state
-    if (!(await activateLoadedWorkflow(value, workflowData, shareId, options)))
-      return false
-    if (
-      graphState !== useApp().rootGraphOrUndefined?.state ||
-      options.isCurrent?.() === false
-    )
-      return false
+    await activateLoadedWorkflow(value, workflowData, shareId)
+    if (graphState !== useApp().rootGraphOrUndefined?.state) return
     useNodeOutputStore().restorePreviewsForWorkflow(
       useWorkspaceStore().workflow.activeWorkflow?.path
     )
-    return true
   }
 
   const activateLoadedWorkflow = async (
     value: string | ComfyWorkflow | null,
     workflowData: ComfyWorkflowJSON,
-    shareId?: string,
-    options: { isCurrent?: () => boolean } = {}
-  ): Promise<boolean> => {
+    shareId?: string
+  ) => {
     const graphState = useApp().rootGraphOrUndefined?.state
     const workflowStore = useWorkspaceStore().workflow
     const { isAppMode } = useAppMode()
@@ -777,11 +769,7 @@ export const useWorkflowService = () => {
         ) {
           const loadedWorkflow =
             await workflowStore.openWorkflow(existingWorkflow)
-          if (
-            graphState !== useApp().rootGraphOrUndefined?.state ||
-            options.isCurrent?.() === false
-          )
-            return false
+          if (graphState !== useApp().rootGraphOrUndefined?.state) return
           activateRunErrors(loadedWorkflow)
           if (loadedWorkflow.initialMode === undefined) {
             // Prefer the file's linearMode over the draft's since the file
@@ -803,7 +791,7 @@ export const useWorkflowService = () => {
             )
           )
           loadedWorkflow.changeTracker.restore()
-          return true
+          return
         }
       }
 
@@ -817,21 +805,13 @@ export const useWorkflowService = () => {
       }
       trackIfEnteringApp(tempWorkflow)
       const loadedWorkflow = await workflowStore.openWorkflow(tempWorkflow)
-      if (
-        graphState !== useApp().rootGraphOrUndefined?.state ||
-        options.isCurrent?.() === false
-      )
-        return false
+      if (graphState !== useApp().rootGraphOrUndefined?.state) return
       activateRunErrors(loadedWorkflow)
-      return true
+      return
     }
 
     const loadedWorkflow = await workflowStore.openWorkflow(value)
-    if (
-      graphState !== useApp().rootGraphOrUndefined?.state ||
-      options.isCurrent?.() === false
-    )
-      return false
+    if (graphState !== useApp().rootGraphOrUndefined?.state) return
     activateRunErrors(loadedWorkflow)
     if (shareId) {
       loadedWorkflow.shareId = shareId
@@ -845,7 +825,6 @@ export const useWorkflowService = () => {
       ensureWorkflowId(workflowData, activeStateFallbackId(loadedWorkflow))
     )
     loadedWorkflow.changeTracker.restore()
-    return true
   }
 
   /**
