@@ -200,7 +200,12 @@ function legacyValue<T>(value: T): T | undefined {
 function cloneWidgetValueTwice(
   value: TWidgetValue
 ): [TWidgetValue, TWidgetValue] {
-  if (value == null || typeof value !== 'object') {
+  if (
+    value == null ||
+    typeof value === 'string' ||
+    typeof value === 'boolean' ||
+    (typeof value === 'number' && Number.isFinite(value))
+  ) {
     const primitive = value ?? null
     return [primitive, primitive]
   }
