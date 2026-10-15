@@ -3,6 +3,7 @@ import { toValue } from 'vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { assetResponseSchema } from '@/platform/assets/schemas/assetSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
@@ -23,7 +24,11 @@ export async function resolveWidgetValueAsset(
 
   if (!useFeatureFlags().flags.assetsEnabled) return undefined
 
-  const query = encodeParams({ limit: 1, name_contains: name, tags_all: type })
+  const query = encodeParams(
+    isCloud
+      ? { limit: 1, hash: name }
+      : { limit: 1, name_contains: name, tags_all: type }
+  )
   const resp = await api.fetchApi(`/assets?${query}`, { signal })
   const json = await resp.json().catch(() => {})
   const parseResult = assetResponseSchema.safeParse(json)
