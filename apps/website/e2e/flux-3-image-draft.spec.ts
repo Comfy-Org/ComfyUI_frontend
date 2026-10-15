@@ -35,3 +35,15 @@ for (const prefix of ['', '/zh-CN']) {
     ).toHaveCount(0)
   })
 }
+
+test('plays the FLUX 3 Image Klein hero video on phones', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/flux-3-image-klein/')
+
+  await expect(
+    page.getByTestId('model-launch-hero-block').locator('video')
+  ).toHaveAttribute(
+    'src',
+    'https://media.comfy.org/website/flux-3-image/flux-hero-1280.mp4'
+  )
+})
