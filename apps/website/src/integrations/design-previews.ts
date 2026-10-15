@@ -3,14 +3,20 @@ import { join } from 'node:path'
 
 import { websiteRoot } from '@website/paths'
 
+const nodeGraphWorkflow = join(
+  websiteRoot,
+  'src/routes/design-previews/node-graph-workflow.astro'
+)
+
 /** Mock pages a designer shares from a pull request preview. */
 export const DESIGN_PREVIEW_ROUTES = [
   {
     pattern: '/hub-preview/node-graph-workflow',
-    entrypoint: join(
-      websiteRoot,
-      'src/routes/design-previews/node-graph-workflow.astro'
-    )
+    entrypoint: nodeGraphWorkflow
+  },
+  {
+    pattern: '/zh-CN/hub-preview/node-graph-workflow',
+    entrypoint: nodeGraphWorkflow
   }
 ] as const
 
