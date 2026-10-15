@@ -13131,4 +13131,95 @@ describe('AgentPanelRoot workflow binding', () => {
       toRootGraphId('wf-42-rotated')
     )
   })
+
+  async function openUnresolvedChatOnStartup(): Promise<void> {
+    localStorage.setItem(StorageKeys.agentThread('personal'), 'th-history')
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findAllByText('Historical prompt')
+    await waitFor(() =>
+      expect(useAgentChatHistoryStore().activeId).toBe('th-history')
+    )
+  }
+
+  async function selectCurrentUnresolvedChat(): Promise<void> {
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Unresolved target chat' })
+    )
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('heading', { name: i18n.global.t('agent.history') })
+      ).toBeNull()
+    )
+  }
+
+  const workflowPicker = () =>
+    screen.getByRole('button', { name: i18n.global.t('agent.switchWorkflow') })
+
+  it('opens the saved local workflow from the Current row once Cloud answers after startup could not resolve it', async () => {
+    makeTab('wf-42')
+    const saved = createMockLoadedWorkflow({
+      path: 'workflows/missing-saved-file.json',
+      filename: 'missing-saved-file',
+      isTemporary: false
+    })
+    saved.load = vi.fn(async () => saved)
+    workflowStore.attachWorkflow(saved)
+    stubUnresolvedTargetChat()
+    let cloudStatus = 503
+    respondToFetch({ method: 'GET', url: /\/workflows(\?|$)/ }, () =>
+      json(cloudStatus, {
+        data: [
+          cloudWorkflow({ id: 'wf-unresolved', name: 'missing-saved-file' })
+        ],
+        pagination: { offset: 0, limit: 100, total: 1, has_more: false }
+      } satisfies WorkflowListResponse)
+    )
+    respondToFetch({ method: 'GET', url: /\/workflows\/wf-unresolved/ }, () =>
+      json(503, {})
+    )
+    const transcriptReads = () =>
+      fetchRequests({ method: 'GET', url: /\/messages/ }).length
+    await openUnresolvedChatOnStartup()
+    const transcriptReadsAtStartup = transcriptReads()
+
+    await selectCurrentUnresolvedChat()
+
+    expect(workflowPicker()).toHaveTextContent(
+      i18n.global.t('agent.selectWorkflowForAgent')
+    )
+    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
+
+    cloudStatus = 200
+    await selectCurrentUnresolvedChat()
+
+    expect(workflowPicker()).toHaveTextContent('missing-saved-file')
+    expect(workflowStore.activeWorkflow?.path).toBe(saved.path)
+    expect(transcriptReads()).toBe(transcriptReadsAtStartup)
+    expect(useToast().toasts).not.toContainEqual(
+      expect.objectContaining({ kind: 'warning' })
+    )
+  })
+
+  it('reuses a listed unresolved chat from its Current row without restoring its workflow again', async () => {
+    makeTab('wf-42')
+    stubUnresolvedTargetChat()
+    const reads = () => ({
+      transcript: fetchRequests({ method: 'GET', url: /\/messages/ }).length,
+      workflows: fetchRequests({ method: 'GET', url: /\/workflows/ }).length
+    })
+    await openUnresolvedChatOnStartup()
+    const readsAtStartup = reads()
+
+    await selectCurrentUnresolvedChat()
+
+    expect(reads()).toEqual(readsAtStartup)
+    expect(workflowPicker()).toHaveTextContent(
+      i18n.global.t('agent.selectWorkflowForAgent')
+    )
+  })
 })

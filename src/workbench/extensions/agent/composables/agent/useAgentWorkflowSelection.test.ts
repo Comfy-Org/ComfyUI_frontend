@@ -818,4 +818,40 @@ describe('historical workflow restoration', () => {
     expect(panel.selectedWorkflow?.path).toBe(current.path)
     expect(warnRestoreFailed).not.toHaveBeenCalled()
   })
+
+  it.for([
+    {
+      listing: 'fails',
+      list: async (): Promise<never> => {
+        throw new Error('offline')
+      },
+      retryable: true
+    },
+    {
+      listing: 'gives up before reaching it',
+      list: async () => listing([{ id: 'wf-current', name: 'current' }], false),
+      retryable: true
+    },
+    {
+      listing: 'omits it',
+      list: async () => listing([]),
+      retryable: true
+    },
+    {
+      listing: 'names it',
+      list: async () => listing([{ id: 'wf-saved', name: 'saved' }]),
+      retryable: false
+    }
+  ])(
+    'leaves an unresolved target retryable only when no listing named it (listing $listing)',
+    async ({ list, retryable }) => {
+      const { selection, panel, listCloudWorkflows } = setup()
+      listCloudWorkflows.mockImplementationOnce(list)
+
+      expect(await selection.restoreTarget('wf-saved', () => true)).toBe(true)
+
+      expect(panel.targetUnresolved).toBe(true)
+      expect(panel.unresolvedTargetRetryable).toBe(retryable)
+    }
+  )
 })

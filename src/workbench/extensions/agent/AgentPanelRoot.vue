@@ -1475,11 +1475,15 @@ async function onSelectHistory(
   id: string,
   isCurrent: () => boolean
 ): Promise<boolean> {
-  if (currentChatReady.value && id === threadId.value)
-    return (
-      agentPanelStore.targetUnresolved ||
-      onShowTarget(isCurrent, warnRestoreFailed)
-    )
+  if (currentChatReady.value && id === threadId.value) {
+    if (!agentPanelStore.unresolvedTargetRetryable)
+      return (
+        agentPanelStore.targetUnresolved ||
+        onShowTarget(isCurrent, warnRestoreFailed)
+      )
+    agentPanelStore.beginWorkflowRestoration()
+    return onWorkflowRestored(conversationStore.latestWorkflowId, isCurrent)
+  }
 
   abandonPendingChatWork()
   agentPanelStore.beginWorkflowRestoration()
