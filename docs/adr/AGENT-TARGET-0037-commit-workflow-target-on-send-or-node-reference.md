@@ -79,5 +79,6 @@ the selector-source share; this is an expected change in the interaction mix.
 A retained target with no workflow can also mean that a restored chat's
 workflow could not be found locally and is not known to be gone; the chat stays
 readable. [AGENT-HISTORY-0038](AGENT-HISTORY-0038-wait-for-chat-and-workflow-readiness.md)
-calls this an unresolved target. It is not the unresolved startup above, where
-no target has been decided yet.
+calls this an unresolved target. It records whether a successful Cloud listing
+named the workflow, which decides whether Current resolves it again. It is not
+the unresolved startup above, where no target has been decided yet.

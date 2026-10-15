@@ -68,13 +68,15 @@ loaded, reuse them without fetching the transcript or resolving Cloud identity
 again. The workflow service returns immediately for an already visible target
 when no graph load is queued; otherwise, keep row loading until the target is
 visible. Preserve the draft and active run. The Current label alone does not
-enable this path: the session ID must still match, the session must have completed
-hydration or accepted a turn in this mounted instance, and its target must be
-retained, either as an open workflow or as the unresolved target described
-below; reusing an unresolved target opens no workflow. Any other empty target,
-such as one cleared by closing its tab or by a failed restoration, is restored
-again. A partially restored selection or an interrupted return after remount
-uses the normal guarded restoration path.
+enable this path: the session ID must still match, the session must have
+completed hydration or accepted a turn in this mounted instance, and its target
+must be retained, either as an open workflow or as the unresolved target
+described below. Reusing an unresolved target opens no workflow when a
+successful Cloud listing named it; otherwise Current resolves the workflow again
+from the loaded transcript without fetching it. Any other empty target, such as
+one cleared by closing its tab or by a failed restoration, is restored again. A
+partially restored selection or an interrupted return after remount uses the
+normal guarded restoration path.
 
 Closing-related chat transitions are a separate change. This decision does not
 define whether closing an active Agent target should stop or background its run.
@@ -102,13 +104,17 @@ gone. That covers a workflow a successful Cloud listing includes. It also covers
 one the listing omits or cannot place when the lookup finds it live or cannot
 tell, as with a 403, a server error or no connection. Local identity resolution
 stays conservative: missing files, missing names, ambiguous names and refused
-bindings do not justify choosing another canvas. The chat keeps an unresolved
-target: it has no workflow, and the chat stays readable. Current reuses it
-without restoring again. It leaves the visible graph unchanged and does not show
-the notice that the workflow is no longer available. Sending opens the workflow
-picker and preserves the draft until the user explicitly chooses a target.
-Passive tab changes and panel remounts do not resume following for that
-conversation.
+bindings do not justify choosing another canvas. A failed, timed-out or
+superseded listing also leaves no names to match, so a saved local file can stay
+unresolved until Cloud answers. The chat keeps an unresolved target: it has no
+workflow, and the chat stays readable. When a successful Cloud listing named the
+workflow, Current reuses it without restoring again. Otherwise Current resolves
+the workflow again, and a retry that still cannot place it leaves the chat
+readable with no failure row or warning. An unresolved target leaves the visible
+graph unchanged and does not show the notice that the workflow is no longer
+available. Sending opens the workflow picker and preserves the draft until the
+user explicitly chooses a target. Passive tab changes and panel remounts do not
+resume following for that conversation.
 
 This exception provides conversation access, not workflow restoration. It does
 not materialize Cloud content into a new editor tab or repair identity mapping.
@@ -124,7 +130,8 @@ dropped, so an earlier chat does not set the target of the chat on screen.
 These cancel a pending activation:
 
 - a newer activation;
-- selecting a History row, unless it reuses the loaded Current chat;
+- selecting a History row, unless it reuses the loaded Current chat, including
+  when Current resolves an unresolved target again;
 - New Chat, including deleting the open chat;
 - the server deleting the open chat;
 - closing the panel.
