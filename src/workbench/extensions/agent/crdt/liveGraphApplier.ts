@@ -1059,7 +1059,7 @@ export class LiveGraphApplier {
     widget: IBaseWidget,
     value: WidgetValue
   ) {
-    applyRemoteDynamicGroupRowCount(() =>
+    applyRemoteDynamicGroupRowCount(node, () =>
       this.setWidgetValue(node, widget, value)
     )
     if (reachesDynamicGroupRowCount(widget, value)) return

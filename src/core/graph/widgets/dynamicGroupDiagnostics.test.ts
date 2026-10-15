@@ -7,6 +7,7 @@ import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useLinkStore } from '@/stores/linkStore'
+import { applyRemoteDynamicGroupRowCount } from './dynamicGroupDiagnostics'
 import { toNodeId } from '@/types/nodeId'
 import { followedDoc } from '@/workbench/extensions/agent/crdt/__fixtures__/followedDoc'
 import { LiveGraphApplier } from '@/workbench/extensions/agent/crdt/liveGraphApplier'
@@ -44,7 +45,7 @@ function group(type: string, { min = 0, count = 2 } = {}) {
     return found
   }
   widget('rows').value = count
-  return { widget }
+  return { node, widget }
 }
 
 function refuseInputChanges() {
@@ -164,6 +165,25 @@ describe('DynamicGroup row refusal reports', () => {
       expect(vi.mocked(reportError).mock.calls.length > 0).toBe(reported)
     }
   )
+})
+
+describe('remote DynamicGroup row count writes', () => {
+  it('suppresses only the target node and restores an outer target', () => {
+    const outer = group('OuterRemoteTarget')
+    const inner = group('InnerRemoteTarget')
+    const other = group('LocalDuringRemote')
+    refuseInputChanges()
+
+    applyRemoteDynamicGroupRowCount(outer.node, () => {
+      applyRemoteDynamicGroupRowCount(inner.node, () => {})
+      outer.widget('rows').value = 3
+      other.widget('rows').value = 3
+    })
+
+    expect(
+      vi.mocked(reportError).mock.calls.map(([, options]) => options.tags)
+    ).toEqual([expect.objectContaining({ node_type: 'LocalDuringRemote' })])
+  })
 })
 
 describe('remote DynamicGroup row count reports', () => {
