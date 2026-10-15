@@ -67,9 +67,15 @@ describe('indexing policy', () => {
     expect(isExcludedFromSitemap('https://comfy.org/workshops/')).toBe(false)
   })
 
+  it.for(['/flux-3-image-klein/', '/zh-CN/flux-3-image-klein/'])(
+    'indexes the launched %s page and lists it in the sitemap',
+    (pathname) => {
+      expect(isNoindexPathname(pathname)).toBe(false)
+      expect(isExcludedFromSitemap(`https://comfy.org${pathname}`)).toBe(false)
+    }
+  )
+
   it.for([
-    '/flux-3-image-klein/',
-    '/zh-CN/flux-3-image-klein/',
     '/privacy-policy',
     '/privacy-policy/',
     '/zh-CN/privacy-policy',
