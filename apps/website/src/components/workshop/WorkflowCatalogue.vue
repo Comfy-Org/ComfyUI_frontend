@@ -483,7 +483,7 @@ function clear() {
         :entries="typeEntries"
         :label="t('workshop.taskSidebar.typeLabel')"
         :panel-id="TAB_PANEL_ID"
-        class="max-lg:order-1"
+        class="max-lg:order-1 max-lg:mb-1 max-sm:mb-1"
       />
       <HubChoiceSidebar
         v-else-if="taskSidebar"

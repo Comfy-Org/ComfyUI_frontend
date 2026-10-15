@@ -1,6 +1,7 @@
 <script setup lang="ts" generic="K extends string">
 import { useMediaQuery } from '@vueuse/core'
-import { useTemplateRef } from 'vue'
+import { omit } from 'es-toolkit'
+import { computed, useAttrs, useTemplateRef } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { SidebarChoice } from '@/lib/workshop/sidebar-tab-classes'
@@ -24,7 +25,14 @@ const { entries, label, panelId } = defineProps<{
   panelId: string
 }>()
 
+defineOptions({ inheritAttrs: false })
+
 const selected = defineModel<K>({ required: true })
+const attrs = useAttrs()
+const frameAttrs = computed(() => omit(attrs, ['class']))
+const frameClass = computed(() =>
+  typeof attrs.class === 'string' ? attrs.class : undefined
+)
 const list = useTemplateRef<HTMLElement>('list')
 const vertical = useMediaQuery('(width >= 64rem)')
 
@@ -45,7 +53,7 @@ function onKeydown(event: KeyboardEvent) {
 </script>
 
 <template>
-  <div :class="SIDEBAR_FRAME">
+  <div v-bind="frameAttrs" :class="cn(SIDEBAR_FRAME, frameClass)">
     <div
       ref="list"
       role="tablist"
