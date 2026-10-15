@@ -345,6 +345,33 @@ describe('composer draft presence', () => {
         store.setNodes([{ id: '1', title: 'KSampler' }])
       },
       expected: true
+    },
+    {
+      draft: 'a workflow reference',
+      fill: (store: ComposerStore) =>
+        store.setWorkflowReferences([
+          { id: 'wf-portrait', name: 'portrait', textOffset: 0 }
+        ]),
+      expected: true
+    },
+    {
+      draft: 'a skill reference',
+      fill: (store: ComposerStore) => {
+        store.setSkillScope('workspace-a')
+        store.restorePrompt({
+          text: ' ',
+          references: [
+            {
+              kind: 'skill',
+              name: 'portrait',
+              description: '',
+              scope: 'workspace-a',
+              textOffset: 0
+            }
+          ]
+        })
+      },
+      expected: true
     }
   ])('reports $draft as a draft: $expected', ({ fill, expected }) => {
     const store = useAgentComposerStore()

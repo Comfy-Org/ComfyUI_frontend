@@ -72,12 +72,12 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
       item.kind === 'node' ? [item.node] : []
     )
   )
-  /** Text that isn't only whitespace, an attachment, or a node reference. */
+  /** Text that isn't only whitespace, an attachment, or any reference chip. */
   const hasDraft = computed(
     () =>
       draft.value.trim() !== '' ||
       attachments.value.length > 0 ||
-      nodes.value.length > 0
+      prompt.value.references.length > 0
   )
   const nodeScope = ref<string | null>(null)
   let skillScope: string | null = null

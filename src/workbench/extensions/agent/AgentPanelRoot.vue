@@ -1407,13 +1407,14 @@ function onFeedback(turnId: string, vote: 'up' | 'down' | null): void {
 }
 
 function toChatSession(thread: AgentThreadSummary): ChatSession {
-  const stamp = thread.last_message_at ?? thread.updated_at ?? thread.created_at
+  const stamp = thread.last_message_at || thread.updated_at || thread.created_at
   const updatedAt = stamp ? Date.parse(stamp) : Date.now()
   return {
     id: thread.id,
     title: thread.title || thread.preview || t('agent.untitledChat'),
     updatedAt: Number.isNaN(updatedAt) ? Date.now() : updatedAt,
-    titleSource: thread.title ? 'server' : 'fallback'
+    titleSource: thread.title ? 'server' : 'fallback',
+    workflowId: thread.workflow_id || undefined
   }
 }
 
@@ -1421,10 +1422,9 @@ let historyRefreshGeneration = 0
 let appliedHistoryRefreshGeneration = 0
 const historyRefreshAbort = new AbortController()
 
-// Raw server summaries, kept so an activated workflow tab can resolve its chat.
-const threadSummaries = ref<AgentThreadSummary[]>([])
-
-async function refreshHistory(): Promise<void> {
+async function refreshHistory(
+  uiTreatment: 'error_overlay' | 'none' = 'error_overlay'
+): Promise<void> {
   const { signal } = historyRefreshAbort
   if (signal.aborted) return
   const generation = ++historyRefreshGeneration
@@ -1432,7 +1432,6 @@ async function refreshHistory(): Promise<void> {
     const threads = await listThreads({ signal })
     if (signal.aborted || generation < appliedHistoryRefreshGeneration) return
     appliedHistoryRefreshGeneration = generation
-    threadSummaries.value = threads
     history.replaceAll(threads.map(toChatSession))
   } catch (error) {
     if (signal.aborted || generation !== historyRefreshGeneration) return
@@ -1444,16 +1443,14 @@ async function refreshHistory(): Promise<void> {
           ? { reason: error.reason }
           : undefined
     })
-    surfaceAgentError(
-      'agent_api_failed',
-      error instanceof Error ? error.message : String(error)
-    )
-    trackAgentError(
-      'thread_list_load_failed',
-      'pre_acceptance',
-      'error_overlay',
-      { retryable: isRetryableRequestFailure(error, false) }
-    )
+    if (uiTreatment === 'error_overlay')
+      surfaceAgentError(
+        'agent_api_failed',
+        error instanceof Error ? error.message : String(error)
+      )
+    trackAgentError('thread_list_load_failed', 'pre_acceptance', uiTreatment, {
+      retryable: isRetryableRequestFailure(error, false)
+    })
   }
 }
 
@@ -1483,27 +1480,9 @@ const historyGroups = computed(() => {
   )
 })
 
-/**
- * Whether the panel still owes the active tab its chat. A user's tab
- * activation arms it; a tab the panel opens itself does not. A mount arms it
- * only when the target is another tab: the panel is remounted every time it is
- * minimized and restored, and adopting the tab's chat there would discard an
- * older chat of the same tab the user had open. A temporary tab does not arm
- * it either -- it has no cloud chat to follow, and the id it gets later comes
- * from this panel saving it, which binds the open chat rather than navigating
- * away.
- *
- * It outlives the activation because both the summary list and the tab's cloud
- * id can resolve afterwards, and it is retired the moment the follow is
- * satisfied, held back, or the user picks a chat themselves.
- */
-const followOwed = ref(false)
+let followGeneration = 0
 let followedChat: { threadId: string; workflowId: string } | null = null
-let chatNavigation = 0
-const followFailure = shallowRef<{
-  workflowId: string
-  workflowName: string
-} | null>(null)
+const followFailure = shallowRef<ComfyWorkflow | null>(null)
 
 async function selectThread(
   id: string,
@@ -1523,65 +1502,66 @@ async function selectThread(
   return opened
 }
 
-/**
- * A chat the user picked outranks the one the active tab points at, so it
- * retires the pending follow. Without that, this call's own `refreshHistory()`
- * handed the follow a fresh summary list and the tab's thread was selected
- * back on top of the user's choice.
- */
+function retireFollow(): void {
+  ++followGeneration
+  followedChat = null
+  followFailure.value = null
+}
+
 async function onSelectHistory(
   id: string,
   isCurrent: () => boolean
 ): Promise<boolean> {
-  followOwed.value = false
-  followedChat = null
-  followFailure.value = null
-  ++chatNavigation
+  retireFollow()
   return selectThread(id, isCurrent)
 }
 
-const activeWorkflowId = computed(() => {
-  const workflow = workflowStore.activeWorkflow
-  return workflow ? cloudIdFor(workflow) : undefined
-})
-
 function latestChatFor(workflowId: string): string | undefined {
-  const onWorkflow = new Set(
-    threadSummaries.value.flatMap((thread) =>
-      thread.workflow_id === workflowId ? [thread.id] : []
-    )
-  )
   return maxBy(
-    history.sessions.filter(({ id }) => onWorkflow.has(id)),
+    history.sessions.filter((session) => session.workflowId === workflowId),
     ({ updatedAt }) => updatedAt
   )?.id
 }
 
-function followActiveWorkflowChat(): void {
-  if (!followOwed.value) return
-  // Pointing the composer at a workflow binds the chat the user is in to that
-  // workflow. It is not navigation to that workflow's other chats, so a cloud
-  // id that first appears while the selection is running must not replace the
-  // open chat.
-  if (
-    workflowSelecting.value ||
-    composerStore.hasDraft ||
-    agentPanelStore.followsVisibleWorkflow
-  ) {
-    followOwed.value = false
-    return
-  }
-  const workflow = workflowStore.activeWorkflow
-  const workflowId = activeWorkflowId.value
-  if (workflow === null || workflowId === undefined) return
+function chatTargets(workflow: ComfyWorkflow): boolean {
+  return (
+    !agentPanelStore.followsVisibleWorkflow &&
+    selectedTarget.value?.path === workflow.path
+  )
+}
+
+function userEngaged(): boolean {
+  return composerStore.hasDraft || isSending.value || workflowSelecting.value
+}
+
+function followHeldBack(workflow: ComfyWorkflow): boolean {
+  return workflow.isTemporary || userEngaged() || chatTargets(workflow)
+}
+
+async function tabWorkflowId(
+  workflow: ComfyWorkflow
+): Promise<string | undefined> {
+  if (cloudIdFor(workflow) === undefined) await refreshCloudWorkflowIds()
+  return cloudIdFor(workflow)
+}
+
+async function followTab(workflow: ComfyWorkflow): Promise<void> {
+  const generation = ++followGeneration
+  followFailure.value = null
+  if (followHeldBack(workflow)) return
+  const isCurrent = () =>
+    generation === followGeneration &&
+    workflowStore.activeWorkflow?.path === workflow.path &&
+    !userEngaged()
+  const [workflowId] = await Promise.all([
+    tabWorkflowId(workflow),
+    refreshHistory('none')
+  ])
+  if (!isCurrent() || workflowId === undefined) return
   const latest = latestChatFor(workflowId)
-  if (latest === undefined) return
-  followOwed.value = false
-  if (latest === threadId.value) return
-  void openFollowedChat(latest, {
-    workflowId,
-    workflowName: workflow.filename
-  })
+  if (latest === undefined || latest === threadId.value) return
+  if (!(await openFollowedChat(latest, workflowId, isCurrent)) && isCurrent())
+    followFailure.value = workflow
 }
 
 function restoreChatWorkflow(
@@ -1597,78 +1577,53 @@ function restoreChatWorkflow(
 
 async function openFollowedChat(
   id: string,
-  followed: { workflowId: string; workflowName: string }
-): Promise<void> {
-  const navigation = ++chatNavigation
-  const isCurrent = () => navigation === chatNavigation
+  workflowId: string,
+  isCurrent: () => boolean
+): Promise<boolean> {
   const kept = {
     threadId: threadId.value,
     targetTracking: agentPanelStore.targetTracking
   }
-  followFailure.value = null
-  followedChat = { threadId: id, workflowId: followed.workflowId }
-  if (composerStore.prompt.references.length === 0 && !composerStore.hasDraft)
-    composerStore.setText('')
+  followedChat = { threadId: id, workflowId }
+  composerStore.setText('')
   const opened = await selectThread(id, isCurrent)
   if (followedChat?.threadId === id) followedChat = null
-  if (opened || !isCurrent()) return
-  followFailure.value = followed
+  if (opened || !isCurrent()) return opened
   agentPanelStore.targetTracking = kept.targetTracking
   if (kept.threadId === null) newChat()
   else await loadThread(kept.threadId, isCurrent)
+  return false
 }
 
 function onRetryFollow(): void {
   const failed = followFailure.value
-  followFailure.value = null
-  if (failed === null) return
-  const latest = latestChatFor(failed.workflowId)
-  if (latest !== undefined && latest !== threadId.value)
-    void openFollowedChat(latest, failed)
+  if (failed !== null) void followTab(failed)
 }
 
 onBeforeUnmount(() => {
-  ++chatNavigation
+  ++followGeneration
 })
 
 watch(
   () => workflowStore.activeWorkflow,
   () => {
     followFailure.value = null
-    followOwed.value = false
-  },
-  { flush: 'sync' }
+  }
 )
 
-workflowStore.onUserActivation((workflow) => {
-  followOwed.value = !workflow.isTemporary
-  followActiveWorkflowChat()
+workflowStore.onUserActivation((workflow) => void followTab(workflow))
+
+watch(userEngaged, (engaged) => {
+  if (engaged) retireFollow()
 })
 
-// The active tab's cloud id and the summary list can both resolve after the
-// activation that armed the follow. A refresh with nothing owed is inert,
-// which is what stops `selectThread`'s own refresh from re-asserting the tab's
-// chat over a chat the user picked.
-watch([activeWorkflowId, threadSummaries], () => followActiveWorkflowChat())
-
-// A selection started after the activation retires the follow for the same
-// reason: the user is binding the chat they are in, not asking for another.
-watch(workflowSelecting, (selecting) => {
-  if (selecting) followOwed.value = false
-})
-
-function targetIsAnotherTab(): boolean {
-  const target = selectedTarget.value
-  const active = workflowStore.activeWorkflow
-  return (
-    target !== null &&
-    active !== null &&
-    !active.isTemporary &&
-    target.path !== active.path
-  )
-}
-
-followOwed.value = targetIsAnotherTab()
+const mountedOn = workflowStore.activeWorkflow
+if (
+  mountedOn !== null &&
+  selectedTarget.value !== null &&
+  selectedTarget.value.path !== mountedOn.path
+)
+  void followTab(mountedOn)
 
 function buildTranscriptMarkdown(entries: ConversationEntry[]): string {
   return entries
@@ -1826,12 +1781,7 @@ function onDeleteHistory(id: string): void {
 }
 
 function onNewChat(source?: 'new_chat_button' | 'history_delete'): void {
-  // Starting a chat retires the follow for the same reason a history pick
-  // does: a follow still waiting on a cloud id or a summary list would land
-  // the tab's older thread on top of the chat the user just opened.
-  followOwed.value = false
-  followFailure.value = null
-  ++chatNavigation
+  retireFollow()
   composerStore.invalidateSubmission()
   cancelWorkflowSelection()
   canvasStore.stopNodePicking()
@@ -2231,7 +2181,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
           <p class="my-0 min-w-0 flex-1 text-sm text-base-foreground">
             {{
               t('agent.followedChatOpenFailed', {
-                workflowName: followFailure.workflowName
+                workflowName: followFailure.filename
               })
             }}
             <Button
