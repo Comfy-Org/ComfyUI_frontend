@@ -65,7 +65,7 @@ function keyboard(event: KeyboardEvent) {
 </script>
 
 <template>
-  <div class="grid min-w-0 gap-1.5 text-xs text-admin-muted">
+  <div class="grid min-w-0 grid-cols-1 gap-1.5 text-xs text-admin-muted">
     <span :id="`${id}-label`">{{ t('cmsEditor.useCases') }}</span>
     <PopoverRoot v-model:open="open" @update:open="query = ''">
       <PopoverTrigger as-child>
@@ -73,7 +73,7 @@ function keyboard(event: KeyboardEvent) {
           type="button"
           :disabled
           :aria-labelledby="`${id}-label`"
-          class="flex min-h-10 w-full items-center gap-2 rounded-lg border border-admin-field bg-admin-page px-3 py-2 text-left text-sm text-admin-fg disabled:opacity-50"
+          class="flex min-h-10 w-full min-w-0 items-center gap-2 rounded-lg border border-admin-field bg-admin-page px-3 py-2 text-left text-sm text-admin-fg disabled:opacity-50"
         >
           <span class="min-w-0 flex-1 truncate">{{
             modelValue.join(', ') || t('cccEditorLayout.solutionsPlaceholder')

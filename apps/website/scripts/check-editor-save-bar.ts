@@ -19,6 +19,14 @@ try {
       bar: '有未保存的更改',
       discard: '放弃未保存的编辑',
       suffix: 'mobile-zh'
+    },
+    {
+      locale: 'en',
+      width: 390,
+      title: 'Title',
+      bar: 'Unsaved changes',
+      discard: 'Discard unsaved edits',
+      suffix: 'mobile-en'
     }
   ]) {
     const context = await browser.newContext({
@@ -104,6 +112,11 @@ try {
       exact: true
     })
     await expect(page.getByRole('navigation')).toBeVisible()
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth
+      )
+    ).toBe(true)
     await expect(page.getByRole('region', { name: fixture.bar })).toHaveCount(0)
     const schedule = page.getByLabel(
       fixture.locale === 'en' ? 'Visible from (UTC)' : '可见时间（UTC）'
@@ -174,7 +187,7 @@ try {
     await context.close()
   }
   process.stdout.write(
-    'PASS: desktop/mobile Chinese editor/sidebar, UTC schedule, editorial chooser, sticky save bar/reset and delete confirmation/cancel; no backend writes, page errors or overflow\n'
+    'PASS: desktop/mobile English and Chinese editor/sidebar, UTC schedule, editorial chooser, sticky save bar/reset and delete confirmation/cancel; no backend writes, page errors or overflow\n'
   )
 } finally {
   await browser.close()
