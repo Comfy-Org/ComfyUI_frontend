@@ -30,6 +30,12 @@ const graphLoadLifecycleHooks = new Set([
   'onGraphLoadError'
 ])
 
+const graphLoadEntrypoints = new Set([
+  'loadGraphData',
+  'loadApiJson',
+  'handleFile'
+])
+
 const graphLoadHookApps = new WeakMap<object, ComfyApp>()
 
 function extensionAppForHook(method: string): ComfyApp {
@@ -40,7 +46,10 @@ function extensionAppForHook(method: string): ComfyApp {
   if (!hookApp) {
     hookApp = new Proxy(app, {
       get(target, property, receiver) {
-        if (property === 'loadGraphData') {
+        if (
+          typeof property === 'string' &&
+          graphLoadEntrypoints.has(property)
+        ) {
           return () =>
             Promise.reject(
               new Error(
