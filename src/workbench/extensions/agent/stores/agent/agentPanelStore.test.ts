@@ -596,51 +596,53 @@ describe('agentPanelStore thread navigation', () => {
       navigation: 'the chat screen',
       view: { screen: 'chat' } satisfies AgentPanelView,
       threadId: 'th-other',
-      currentId: null,
+      activeThreadId: null,
       current: true
     },
     {
       navigation: 'idle History on the Current chat',
       view: historyView({ status: 'idle' }),
       threadId: 'th-current',
-      currentId: 'th-current',
+      activeThreadId: 'th-current',
       current: true
     },
     {
       navigation: 'idle History on the chat it opened over',
       view: historyView({ status: 'idle' }),
       threadId: 'th-open',
-      currentId: null,
+      activeThreadId: null,
       current: true
     },
     {
       navigation: 'idle History on another chat',
       view: historyView({ status: 'idle' }),
       threadId: 'th-other',
-      currentId: 'th-open',
+      activeThreadId: 'th-open',
       current: false
     },
     {
       navigation: 'History loading the chat',
       view: historyView({ status: 'loading', id: 'th-other' }),
       threadId: 'th-other',
-      currentId: 'th-open',
+      activeThreadId: 'th-open',
       current: true
     },
     {
       navigation: 'History failing the Current chat',
       view: historyView({ status: 'failed', id: 'th-current' }),
       threadId: 'th-current',
-      currentId: 'th-current',
+      activeThreadId: 'th-current',
       current: false
     }
   ])(
     'keeps a thread current on $navigation: $current',
-    ({ view, threadId, currentId, current }) => {
+    ({ view, threadId, activeThreadId, current }) => {
       const store = useAgentPanelStore()
       store.view = view
 
-      expect(store.isThreadNavigationCurrent(threadId, currentId)).toBe(current)
+      expect(store.isThreadNavigationCurrent(threadId, activeThreadId)).toBe(
+        current
+      )
     }
   )
 })

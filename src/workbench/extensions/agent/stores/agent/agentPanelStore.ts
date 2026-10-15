@@ -132,14 +132,16 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
 
   function isThreadNavigationCurrent(
     threadId: string | null,
-    currentId: string | null
+    activeThreadId: string | null
   ): boolean {
     const navigation = view.value
     if (navigation.screen !== 'history') return true
     const { selection } = navigation
     if (selection.status !== 'idle' && threadId === selection.id)
       return selection.status === 'loading'
-    return threadId === currentId || threadId === navigation.previousThreadId
+    return (
+      threadId === activeThreadId || threadId === navigation.previousThreadId
+    )
   }
 
   function initializeTargetTracking(hasThread: boolean): void {
