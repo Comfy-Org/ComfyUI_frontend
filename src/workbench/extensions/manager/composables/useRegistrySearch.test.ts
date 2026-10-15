@@ -58,11 +58,14 @@ describe('useRegistrySearch', () => {
         rawResultsEmpty
       })
 
-      expect(search.rawResultsEmpty.value).toBe(expected)
+      expect(search.firstPage.value).toEqual({
+        query: 'test',
+        rawResultsEmpty: expected
+      })
     }
   )
 
-  it('reports the query behind the shown results until the next search returns', async () => {
+  it('keeps no first page while the next search loads, then reports its query', async () => {
     let resolveNextSearch: (result: SearchPacksResult) => void = () => {}
     const nextSearch = new Promise<SearchPacksResult>((resolve) => {
       resolveNextSearch = resolve
@@ -78,13 +81,15 @@ describe('useRegistrySearch', () => {
     const search = useRegistrySearch({ query, searchMode: 'packs' })
     await until(search.isLoading).toBe(false)
 
-    expect(search.searchedQuery.value).toBe('kijai/comfyui-kjnodes')
+    expect(search.firstPage.value).toEqual({
+      query: 'kijai/comfyui-kjnodes',
+      rawResultsEmpty: true
+    })
 
     query.value = 'comfyui-manager'
     await until(search.isLoading).toBe(true)
 
-    expect(search.searchedQuery.value).toBe('kijai/comfyui-kjnodes')
-    expect(search.rawResultsEmpty.value).toBe(false)
+    expect(search.firstPage.value).toBeNull()
 
     resolveNextSearch({
       nodePacks: [],
@@ -93,7 +98,49 @@ describe('useRegistrySearch', () => {
     })
     await until(search.isLoading).toBe(false)
 
-    expect(search.searchedQuery.value).toBe('comfyui-manager')
-    expect(search.rawResultsEmpty.value).toBe(true)
+    expect(search.firstPage.value).toEqual({
+      query: 'comfyui-manager',
+      rawResultsEmpty: true
+    })
+  })
+
+  it('reports no first page when the search for it fails', async () => {
+    vi.mocked(useRegistrySearchGateway().searchPacks)
+      .mockResolvedValueOnce({
+        nodePacks: [],
+        querySuggestions: [],
+        rawResultsEmpty: true
+      })
+      .mockRejectedValueOnce(new Error('search unavailable'))
+    const query = ref('comfyui-manager')
+    const search = useRegistrySearch({ query, searchMode: 'packs' })
+    await until(search.isLoading).toBe(false)
+
+    query.value = 'comfyui-kjnodes'
+    await until(search.isLoading).toBe(true)
+    await until(search.isLoading).toBe(false)
+
+    expect(search.firstPage.value).toBeNull()
+    expect(console.error).toHaveBeenCalledWith(new Error('search unavailable'))
+  })
+
+  it('keeps the first page when a later page fails', async () => {
+    vi.mocked(useRegistrySearchGateway().searchPacks)
+      .mockResolvedValueOnce({
+        nodePacks: packs(DEFAULT_PAGE_SIZE),
+        querySuggestions: [],
+        hasMore: true,
+        rawResultsEmpty: false
+      })
+      .mockRejectedValueOnce(new Error('search unavailable'))
+    const search = useRegistrySearch({ query: 'gguf', searchMode: 'packs' })
+    await until(search.isLoading).toBe(false)
+
+    await search.loadMore()
+
+    expect(search.firstPage.value).toEqual({
+      query: 'gguf',
+      rawResultsEmpty: false
+    })
   })
 })

@@ -11,6 +11,11 @@ import type { PagedList } from '@/utils/pagedList'
 
 type RegistryNodePack = components['schemas']['Node']
 
+interface SearchedFirstPage {
+  query: string
+  rawResultsEmpty: boolean
+}
+
 /**
  * Offset-paged registry search as a {@link PagedList}. Query inputs are reactive
  * so a change resets and reloads from the first page. A relevance-ranked index
@@ -22,8 +27,11 @@ export function useRegistrySearch(inputs: {
   searchMode: MaybeRefOrGetter<SearchMode>
 }): PagedList<RegistryNodePack> & {
   suggestions: Readonly<Ref<QuerySuggestion[]>>
-  rawResultsEmpty: Readonly<Ref<boolean>>
-  searchedQuery: Readonly<Ref<string>>
+  /**
+   * The query behind the shown first page and its outcome; null while that
+   * page loads or after it failed.
+   */
+  firstPage: Readonly<Ref<SearchedFirstPage | null>>
 } {
   const { searchPacks } = useRegistrySearchGateway()
 
@@ -31,8 +39,7 @@ export function useRegistrySearch(inputs: {
   const items = ref<RegistryNodePack[]>([])
   const morePages = ref(true)
   const suggestions = ref<QuerySuggestion[]>([])
-  const rawResultsEmpty = ref(false)
-  const searchedQuery = ref('')
+  const firstPage = ref<SearchedFirstPage | null>(null)
   const { enqueue, preempt, running: isLoading } = usePreemptableQueue()
 
   const searchableAttributes = (): SearchAttribute[] =>
@@ -52,8 +59,10 @@ export function useRegistrySearch(inputs: {
       const { nodePacks } = result
       morePages.value = result.hasMore ?? nodePacks.length >= DEFAULT_PAGE_SIZE
       if (pageNumber === 0) {
-        rawResultsEmpty.value = result.rawResultsEmpty ?? nodePacks.length === 0
-        searchedQuery.value = query
+        firstPage.value = {
+          query,
+          rawResultsEmpty: result.rawResultsEmpty ?? nodePacks.length === 0
+        }
       }
       items.value.push(...nodePacks)
       suggestions.value = result.querySuggestions
@@ -68,7 +77,7 @@ export function useRegistrySearch(inputs: {
     preempt(async () => {
       pageNumber = 0
       morePages.value = true
-      rawResultsEmpty.value = false
+      firstPage.value = null
       items.value = []
       await doLoadMore()
     })
@@ -93,7 +102,6 @@ export function useRegistrySearch(inputs: {
     loadNew: reload,
     invalidate: reload,
     suggestions,
-    rawResultsEmpty,
-    searchedQuery
+    firstPage
   }
 }

@@ -200,10 +200,10 @@ import { useManagerDisplayPacks } from '@/workbench/extensions/manager/composabl
 import { useManagerStatePersistence } from '@/workbench/extensions/manager/composables/useManagerStatePersistence'
 import { useRegistrySearch } from '@/workbench/extensions/manager/composables/useRegistrySearch'
 import { useConflictDetectionStore } from '@/workbench/extensions/manager/stores/conflictDetectionStore'
-import { useLegacySearchTip } from '@/workbench/extensions/manager/composables/useLegacySearchTip'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
+import { isLegacyManagerQuery } from '@/workbench/extensions/manager/utils/legacyManagerQuery'
 import { PACK_SORTABLE_FIELDS } from '@/workbench/extensions/manager/utils/nodePackSort'
 
 const { initialTab, initialPackId, onClose } = defineProps<{
@@ -382,12 +382,6 @@ const isSearchLoading = computed(
 const hasMorePacks = computed(() => toValue(packs.hasMore))
 const suggestions = computed(() => toValue(packs.suggestions))
 const sortOptions = PACK_SORTABLE_FIELDS
-const { isUnmatchedLegacyManagerSearch } = useLegacySearchTip(
-  packs.searchedQuery,
-  isNewManagerUI,
-  packs.rawResultsEmpty,
-  isSearchBacked
-)
 const filterOptions = computed(() => [
   { name: t('manager.filter.nodePack'), value: 'packs' },
   { name: t('g.nodes'), value: 'nodes' }
@@ -418,6 +412,17 @@ const {
   isLoading: isTabLoading,
   workflowPacks
 } = useManagerDisplayPacks(selectedNavId, searchResults, searchQuery, sortField)
+
+const isUnmatchedLegacyManagerSearch = computed(() => {
+  const firstPage = packs.firstPage.value
+  return (
+    isNewManagerUI.value &&
+    isSearchBacked.value &&
+    firstPage?.query.trim() === searchQuery.value.trim() &&
+    (firstPage.rawResultsEmpty || displayPacks.value.length === 0) &&
+    isLegacyManagerQuery(firstPage.query)
+  )
+})
 
 // Tab helpers for template
 const isUpdateAvailableTab = computed(
