@@ -17,6 +17,8 @@ export interface SearchPacksResult {
   querySuggestions: QuerySuggestion[]
   /** Whether the raw query has pages past this one; omitted when unknown. */
   hasMore?: boolean
+  /** Whether the raw query matched nothing, even if fallback hits were returned. */
+  rawResultsEmpty?: boolean
 }
 
 export interface NodePackSearchProvider {

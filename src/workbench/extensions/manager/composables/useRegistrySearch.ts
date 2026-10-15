@@ -22,6 +22,7 @@ export function useRegistrySearch(inputs: {
   searchMode: MaybeRefOrGetter<SearchMode>
 }): PagedList<RegistryNodePack> & {
   suggestions: Readonly<Ref<QuerySuggestion[]>>
+  rawResultsEmpty: Readonly<Ref<boolean>>
 } {
   const { searchPacks } = useRegistrySearchGateway()
 
@@ -29,6 +30,7 @@ export function useRegistrySearch(inputs: {
   const items = ref<RegistryNodePack[]>([])
   const morePages = ref(true)
   const suggestions = ref<QuerySuggestion[]>([])
+  const rawResultsEmpty = ref(false)
   const { enqueue, preempt, running: isLoading } = usePreemptableQueue()
 
   const searchableAttributes = (): SearchAttribute[] =>
@@ -39,17 +41,17 @@ export function useRegistrySearch(inputs: {
   async function doLoadMore() {
     if (!morePages.value) return
     try {
-      const { nodePacks, querySuggestions, hasMore } = await searchPacks(
-        toValue(inputs.query),
-        {
-          pageSize: DEFAULT_PAGE_SIZE,
-          pageNumber,
-          restrictSearchableAttributes: searchableAttributes()
-        }
-      )
-      morePages.value = hasMore ?? nodePacks.length >= DEFAULT_PAGE_SIZE
+      const result = await searchPacks(toValue(inputs.query), {
+        pageSize: DEFAULT_PAGE_SIZE,
+        pageNumber,
+        restrictSearchableAttributes: searchableAttributes()
+      })
+      const { nodePacks } = result
+      morePages.value = result.hasMore ?? nodePacks.length >= DEFAULT_PAGE_SIZE
+      if (pageNumber === 0)
+        rawResultsEmpty.value = result.rawResultsEmpty ?? nodePacks.length === 0
       items.value.push(...nodePacks)
-      suggestions.value = querySuggestions
+      suggestions.value = result.querySuggestions
       pageNumber++
     } catch (err) {
       console.error(err)
@@ -61,6 +63,7 @@ export function useRegistrySearch(inputs: {
     preempt(async () => {
       pageNumber = 0
       morePages.value = true
+      rawResultsEmpty.value = false
       items.value = []
       await doLoadMore()
     })
@@ -84,6 +87,7 @@ export function useRegistrySearch(inputs: {
     loadMore,
     loadNew: reload,
     invalidate: reload,
-    suggestions
+    suggestions,
+    rawResultsEmpty
   }
 }

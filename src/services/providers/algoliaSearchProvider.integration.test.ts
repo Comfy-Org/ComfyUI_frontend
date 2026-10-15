@@ -105,11 +105,12 @@ describe('pack search against recorded live Algolia responses', () => {
       expect(nodePacks).toHaveLength(0)
     })
 
-    it('reports no further pages once fallback hits stand in for an empty raw query', async () => {
-      const { nodePacks, hasMore } = await searchPacks('kijai/comfyui-kjnodes')
+    it('flags the raw query as empty, with no further pages, when fallback hits stand in for it', async () => {
+      const result = await searchPacks('kijai/comfyui-kjnodes')
 
-      expect(nodePacks.length).toBeGreaterThan(0)
-      expect(hasMore).toBe(false)
+      expect(result.nodePacks.length).toBeGreaterThan(0)
+      expect(result.rawResultsEmpty).toBe(true)
+      expect(result.hasMore).toBe(false)
     })
 
     it('tries the owner-stripped slug before its separator-split form', async () => {
@@ -130,8 +131,9 @@ describe('pack search against recorded live Algolia responses', () => {
     it.for(['gguf', 'seedvr2', 'qwen3', 'minimax h3', 'ipadapter'])(
       'sends a single index query for %s and returns its results untouched',
       async (query) => {
-        const { nodePacks } = await searchPacks(query)
+        const { nodePacks, rawResultsEmpty } = await searchPacks(query)
 
+        expect(rawResultsEmpty).toBe(false)
         expect(nodesIndexQueries()).toEqual([query])
         expect(nodePacks.map((pack) => pack.name)).toEqual(
           responses[query].hits

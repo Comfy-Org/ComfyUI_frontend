@@ -4,11 +4,8 @@ import { toValue } from 'vue'
 
 import { DEFAULT_PAGE_SIZE } from '@/constants/searchConstants'
 import { useRegistrySearchGateway } from '@/services/gateway/registrySearchGateway'
-import type { components } from '@/types/comfyRegistryTypes'
 import type { SearchPacksResult } from '@/types/searchServiceTypes'
 import { useRegistrySearch } from '@/workbench/extensions/manager/composables/useRegistrySearch'
-
-type RegistryNodePack = components['schemas']['Node']
 
 vi.mock(import('@/services/gateway/registrySearchGateway'), () => {
   const gateway = {
@@ -18,7 +15,7 @@ vi.mock(import('@/services/gateway/registrySearchGateway'), () => {
   return { useRegistrySearchGateway: () => gateway }
 })
 
-const packs = (count: number): RegistryNodePack[] =>
+const packs = (count: number): SearchPacksResult['nodePacks'] =>
   Array.from({ length: count }, (_, i) => ({ id: `pack-${i}` }))
 
 async function searchWith(result: SearchPacksResult) {
@@ -44,6 +41,24 @@ describe('useRegistrySearch', () => {
       })
 
       expect(toValue(search.hasMore)).toBe(expected)
+    }
+  )
+
+  it.for([
+    { rawResultsEmpty: true, count: 3, expected: true },
+    { rawResultsEmpty: false, count: 3, expected: false },
+    { rawResultsEmpty: undefined, count: 0, expected: true },
+    { rawResultsEmpty: undefined, count: 3, expected: false }
+  ])(
+    'reports rawResultsEmpty $expected when the provider says $rawResultsEmpty for $count packs',
+    async ({ rawResultsEmpty, count, expected }) => {
+      const search = await searchWith({
+        nodePacks: packs(count),
+        querySuggestions: [],
+        rawResultsEmpty
+      })
+
+      expect(search.rawResultsEmpty.value).toBe(expected)
     }
   )
 })

@@ -196,7 +196,8 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
     return {
       nodePacks: registryPacks,
       querySuggestions: suggestions,
-      hasMore: pageNumber + 1 < (nodePacks.nbPages ?? 0)
+      hasMore: pageNumber + 1 < (nodePacks.nbPages ?? 0),
+      rawResultsEmpty: nodePacks.hits.length === 0
     }
   }
 
