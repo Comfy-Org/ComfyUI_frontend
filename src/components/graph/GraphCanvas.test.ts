@@ -669,6 +669,30 @@ describe('deployment model options at startup', () => {
     await vi.waitFor(() => expect(app.setup).toHaveBeenCalledOnce())
   })
 
+  it.for([true, false])(
+    'does not resume startup after unmount when deployment lookup succeeds: %s',
+    async (succeeds) => {
+      const store = useDeploymentPickStore()
+      let finishListing = () => {}
+      const listing = new Promise<void>((resolve) => {
+        finishListing = resolve
+      })
+      vi.spyOn(store, 'loadOnce').mockReturnValue(listing)
+      await mountGraphCanvas()
+      expect(store.loadOnce).toHaveBeenCalledOnce()
+      expect(app.setup).not.toHaveBeenCalled()
+
+      cleanup()
+      store.bootDeployment = succeeds ? null : undefined
+      finishListing()
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(app.setup).not.toHaveBeenCalled()
+      expect(mocks.initializeWorkflow).not.toHaveBeenCalled()
+      expect(getActivePinia()?.state.value.toast?.toasts ?? []).toEqual([])
+    }
+  )
+
   it('stops startup after a failed lookup even if the menu retries successfully', async () => {
     const store = useDeploymentPickStore()
     vi.spyOn(store, 'loadOnce').mockResolvedValue()

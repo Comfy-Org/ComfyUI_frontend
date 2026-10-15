@@ -537,6 +537,8 @@ useEventListener(
   }
 )
 
+let disposed = false
+
 onMounted(async () => {
   comfyApp.vueAppReady = true
   workspaceStore.spinner = true
@@ -578,7 +580,9 @@ onMounted(async () => {
 
     const canvas = canvasRef.value
     if (!canvas) throw new TypeError('GraphCanvas mounted without a canvas')
-    if (isCloud && !(await waitForDeploymentPick())) {
+    const deploymentReady = !isCloud || (await waitForDeploymentPick())
+    if (disposed) return
+    if (!deploymentReady) {
       toast.error(t('deploymentSwitcher.lookupTimedOut'))
       return
     }
@@ -640,6 +644,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  disposed = true
   cleanupErrorHooks?.()
   cleanupErrorHooks = null
 })
