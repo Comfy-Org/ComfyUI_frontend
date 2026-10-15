@@ -8,6 +8,7 @@ import type { PropType } from 'vue'
 import { computed, defineComponent, h, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -129,6 +130,22 @@ vi.mock(import('./WorkflowTab.vue'), () => ({
     }
   })
 }))
+
+vi.mock(
+  import('@/platform/workspace/components/DeploymentSwitcher.vue'),
+  () => ({
+    default: defineComponent({
+      name: 'DeploymentSwitcherStub',
+      props: { variant: { type: String, required: true } },
+      render() {
+        return h('div', {
+          'data-testid': 'deployment-switcher',
+          'data-variant': this.variant
+        })
+      }
+    })
+  })
+)
 
 vi.mock(import('./CurrentUserButton.vue'), () => ({
   default: defineComponent({
@@ -774,5 +791,36 @@ describe('WorkflowTabs scrolling', () => {
     expect(scrollIntoView).not.toHaveBeenCalled()
 
     unmount()
+  })
+})
+
+describe('WorkflowTabs deployment switcher', () => {
+  it.for([
+    { session: 'a Cloud sign-in', cloud: true, apiKey: false, shown: true },
+    { session: 'a Cloud API key', cloud: true, apiKey: true, shown: false },
+    { session: 'a local build', cloud: false, apiKey: false, shown: false }
+  ])(
+    'shows the Running on pill for $session: $shown',
+    ({ cloud, apiKey, shown }) => {
+      distribution.isCloud = cloud
+      Object.assign(useCurrentUser(), {
+        isApiKeyLogin: computed(() => apiKey)
+      })
+      renderComponent()
+
+      expect(screen.queryByTestId('deployment-switcher') !== null).toBe(shown)
+    }
+  )
+
+  it('puts the pill at the left of the tab bar, before the tabs', () => {
+    distribution.isCloud = true
+    renderComponent()
+
+    const pill = screen.getByTestId('deployment-switcher')
+    expect(pill).toHaveAttribute('data-variant', 'tab')
+    expect(
+      pill.compareDocumentPosition(screen.getByTestId('workflow-tab-strip')) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
   })
 })

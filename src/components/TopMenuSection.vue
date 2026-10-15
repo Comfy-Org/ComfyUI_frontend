@@ -11,13 +11,18 @@
         :aria-hidden="isActionBarsHidden"
         :class="
           cn(
-            'max-h-16 min-w-0 flex-1 transition-all duration-300 ease-in-out',
+            'max-h-24 min-w-0 flex-1 transition-all duration-300 ease-in-out',
             isActionBarsHidden &&
               'max-h-0 -translate-x-8 overflow-hidden opacity-0'
           )
         "
       >
         <SubgraphBreadcrumb />
+        <DeploymentSwitcher
+          v-if="showDeploymentRow"
+          variant="floating"
+          class="mt-1"
+        />
       </div>
 
       <div class="ml-(--comfy-canvas-gutter) flex flex-col items-end gap-1">
@@ -196,6 +201,7 @@ import { useQueueUIStore } from '@/stores/queueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isCloud } from '@/platform/distribution/types'
+import DeploymentSwitcher from '@/platform/workspace/components/DeploymentSwitcher.vue'
 import {
   openShareDialog,
   prefetchShareDialog
@@ -214,7 +220,13 @@ const canvasStore = useCanvasStore()
 const isActionBarsHidden = computed(() => canvasStore.isPickingNodes)
 const managerState = useManagerState()
 const managerSurveyDialog = useManagerSurveyDialog()
-const { isLoggedIn } = useCurrentUser()
+const { isLoggedIn, isApiKeyLogin } = useCurrentUser()
+const showDeploymentRow = computed(
+  () =>
+    isCloud &&
+    !isApiKeyLogin.value &&
+    settingStore.get('Comfy.Workflow.WorkflowTabsPosition') === 'Sidebar'
+)
 const { t } = useI18n()
 const { toastErrorHandler } = useErrorHandling()
 const executionErrorStore = useExecutionErrorStore()

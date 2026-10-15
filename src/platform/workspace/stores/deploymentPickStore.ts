@@ -18,6 +18,7 @@ import {
   loadedEvent,
   reduceDeploymentPick
 } from '@/platform/workspace/deploymentPickState'
+import { reloadForDeploymentSwitch } from '@/platform/workspace/deploymentSwitchReload'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 /**
@@ -299,7 +300,7 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
       })
     ]).finally(() => clearTimeout(timeout))
     if (workspaceStore.workspaceId !== workspaceId) return { kind: 'unchanged' }
-    if (outcome.kind === 'picked') window.location.reload()
+    if (outcome.kind === 'picked') reloadForDeploymentSwitch()
     else dispatch({ type: 'switchFailed' })
     return outcome
   }
@@ -321,7 +322,7 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
       dispatch({ type: 'switchFailed' })
       return errorMessage(err)
     }
-    window.location.reload()
+    reloadForDeploymentSwitch()
     return null
   }
 
@@ -340,7 +341,7 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
       dispatch({ type: 'switchFailed' })
       return errorMessage(err)
     }
-    window.location.reload()
+    reloadForDeploymentSwitch()
     return null
   }
 
@@ -376,7 +377,7 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
       return errorMessage(err)
     }
     if (followsWorkspace.value) {
-      window.location.reload()
+      reloadForDeploymentSwitch()
       return null
     }
     lastApplied = latestRequest

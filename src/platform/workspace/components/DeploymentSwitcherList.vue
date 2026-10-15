@@ -1,78 +1,214 @@
-<!-- The body of the deployment switcher's panel (FE-2434): Comfy Cloud, the
-     workspace's deployments, and "Use the workspace default" for a browser
-     that picked for itself (BE-17480). -->
 <template>
-  <DeploymentSwitcherRow
-    :label="$t('deploymentSwitcher.comfyCloud')"
-    :caption="$t('deploymentSwitcher.comfyCloudCaption')"
-    :checked="pickedDeployment === null"
-    data-testid="deployment-row-cloud"
-    @click="emit('choose', null)"
-  />
-  <DeploymentSwitcherRow
-    v-for="deployment in deployments"
-    :key="deployment.deployment_id"
-    :label="deploymentLabel(deployment)"
-    :caption="deploymentCaption(deployment)"
-    :checked="deployment.deployment_id === pickedDeploymentId"
-    :data-testid="`deployment-row-${deployment.deployment_id}`"
-    @click="emit('choose', deployment.deployment_id)"
-  />
-  <DeploymentSwitcherRow
-    v-if="canFollow"
-    :label="$t('deploymentSwitcher.followWorkspace')"
-    :caption="followCaption"
-    :checked="null"
-    data-testid="deployment-row-follow"
-    @click="emit('follow')"
-  />
+  <template v-if="notice || changeSinceBoot">
+    <div
+      v-if="notice"
+      role="status"
+      class="flex max-w-84 items-start gap-2 px-2 py-1.5 text-xs text-muted-foreground"
+      data-testid="deployment-switcher-notice"
+    >
+      <i
+        class="mt-px icon-[lucide--triangle-alert] size-3.5 shrink-0 text-warning-background"
+        aria-hidden="true"
+      />
+      <span>{{ notice }}</span>
+    </div>
+    <template v-if="changeSinceBoot">
+      <p
+        role="status"
+        class="m-0 max-w-84 px-2 py-1.5 text-xs text-muted-foreground"
+        data-testid="deployment-switcher-changed"
+      >
+        {{ changeMessage }}
+      </p>
+      <MenuItem
+        class="min-h-7 gap-2 px-2 py-1 text-xs"
+        data-testid="deployment-switcher-reload"
+        @select="reloadForDeploymentSwitch"
+      >
+        <i
+          class="icon-[lucide--refresh-cw] size-3.5 text-muted-foreground"
+          aria-hidden="true"
+        />
+        {{ $t('deploymentSwitcher.reload') }}
+      </MenuItem>
+    </template>
+    <MenuSeparator />
+  </template>
+  <DropdownMenuLabel class="px-2 pt-1.5 pb-1 text-xs text-muted-foreground">
+    {{ $t('deploymentSwitcher.runOn') }}
+  </DropdownMenuLabel>
+  <DropdownMenuRadioGroup :model-value="pickedValue">
+    <DeploymentSwitcherRow
+      :value="COMFY_CLOUD_ROW"
+      :title="$t('deploymentSwitcher.comfyCloud')"
+      :switching="isSwitching && switchingTo === COMFY_CLOUD_ROW"
+      :disabled="isSwitching"
+      data-testid="deployment-row-cloud"
+      @select="choose($event, null)"
+    />
+    <DeploymentSwitcherRow
+      v-for="deployment in deployments"
+      :key="deployment.deployment_id"
+      :value="deployment.deployment_id"
+      :title="deploymentTitle(deployment)"
+      :subtitle="deploymentSubtitle(deployment)"
+      :tone="deploymentStatusTone(deployment.status)"
+      :meta="deploymentMeta(deployment)"
+      :is-default="deployment.deployment_id === defaultDeploymentId"
+      :switching="isSwitching && switchingTo === deployment.deployment_id"
+      :disabled="isSwitching"
+      :data-testid="`deployment-row-${deployment.deployment_id}`"
+      @select="choose($event, deployment.deployment_id)"
+    />
+  </DropdownMenuRadioGroup>
   <p
     v-if="deployments.length === 0"
-    class="m-0 px-4 py-3 text-xs text-muted-foreground"
+    class="m-0 max-w-84 px-2 py-1.5 text-xs text-muted-foreground"
     data-testid="deployment-switcher-empty"
   >
     {{ $t('deploymentSwitcher.noDeployments') }}
   </p>
-  <p v-if="!buildsVisible" class="m-0 px-4 py-2 text-xs text-muted-foreground">
-    {{ $t('deploymentSwitcher.buildsHidden') }}
-  </p>
+  <MenuSeparator v-else />
+  <DeploymentSwitcherDefaultMenu
+    v-if="canSetDefault && (deployments.length > 0 || defaultGone)"
+    :disabled="isSwitching"
+    @set-default="emit('setDefault', $event)"
+  />
+  <MenuItem
+    v-if="canFollow"
+    :disabled="isSwitching"
+    class="min-h-7 gap-2 px-2 py-1 text-xs"
+    data-testid="deployment-row-follow"
+    @select="emit('follow')"
+  >
+    <i
+      class="icon-[lucide--rotate-ccw] size-3.5 shrink-0 text-muted-foreground"
+      aria-hidden="true"
+    />
+    {{ $t('deploymentSwitcher.followWorkspace') }}
+    <span class="ml-auto truncate pl-4 text-muted-foreground">
+      {{ defaultName }}
+    </span>
+  </MenuItem>
+  <TextTooltip
+    :text="$t('deploymentSwitcher.createCustomDeploymentTooltip')"
+    side="right"
+  >
+    <MenuItem as-child class="min-h-7 gap-2 px-2 py-1 text-xs">
+      <a
+        :href="createDeploymentUrl"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="text-base-foreground no-underline"
+        data-testid="deployment-switcher-create"
+      >
+        <i
+          class="icon-[lucide--plus] size-3.5 shrink-0 text-muted-foreground"
+          aria-hidden="true"
+        />
+        {{ $t('deploymentSwitcher.createCustomDeployment') }}
+        <i
+          class="ml-auto icon-[lucide--arrow-up-right] size-3.5 shrink-0 text-muted-foreground"
+          aria-hidden="true"
+        />
+      </a>
+    </MenuItem>
+  </TextTooltip>
+  <template v-if="deployments.length > 0">
+    <MenuSeparator />
+    <p class="m-0 max-w-84 px-2 py-1 text-xs text-muted-foreground">
+      {{ switchingNote }}
+    </p>
+  </template>
 </template>
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
+import { DropdownMenuLabel, DropdownMenuRadioGroup } from 'reka-ui'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import MenuItem from '@/components/ui/menu/MenuItem.vue'
+import MenuSeparator from '@/components/ui/menu/MenuSeparator.vue'
+import TextTooltip from '@/components/ui/tooltip/TextTooltip.vue'
+import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import DeploymentSwitcherDefaultMenu from '@/platform/workspace/components/DeploymentSwitcherDefaultMenu.vue'
 import DeploymentSwitcherRow from '@/platform/workspace/components/DeploymentSwitcherRow.vue'
-import { useDeploymentLabels } from '@/platform/workspace/composables/useDeploymentLabels'
+import {
+  COMFY_CLOUD_ROW,
+  deploymentStatusTone,
+  useDeploymentLabels
+} from '@/platform/workspace/composables/useDeploymentLabels'
+import { reloadForDeploymentSwitch } from '@/platform/workspace/deploymentSwitchReload'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+
+const { switchingTo } = defineProps<{
+  /** The row last picked; it shows progress while a switch is in flight. */
+  switchingTo: string | null
+}>()
 
 const emit = defineEmits<{
   choose: [deploymentId: string | null]
   follow: []
+  setDefault: [deploymentId: string | null]
 }>()
 
 const { t } = useI18n()
+const settingStore = useSettingStore()
 const {
   deployments,
   pickedDeploymentId,
-  pickedDeployment,
   defaultDeploymentId,
+  goneDefaultDeploymentId,
+  goneDeployment,
   followsWorkspace,
-  buildsVisible
+  canSetDefault,
+  isSwitching,
+  changeSinceBoot
 } = storeToRefs(useDeploymentPickStore())
-const { deploymentLabel, deploymentCaption, defaultLabel } =
-  useDeploymentLabels()
+const {
+  deploymentTitle,
+  deploymentSubtitle,
+  deploymentMeta,
+  currentLabel,
+  defaultName
+} = useDeploymentLabels()
 
-/** This browser picked for itself and can go back to the default. */
+const createDeploymentUrl = `${getComfyPlatformBaseUrl()}/deploy`
+
+const pickedValue = computed(() => pickedDeploymentId.value ?? COMFY_CLOUD_ROW)
+const defaultGone = computed(() => goneDefaultDeploymentId.value !== null)
 const canFollow = computed(
   () => defaultDeploymentId.value !== null && !followsWorkspace.value
 )
-const followCaption = computed(() =>
-  t(
-    'deploymentSwitcher.followWorkspaceCaption',
-    { deployment: defaultLabel.value },
-    { escapeParameter: false }
-  )
+
+const notice = computed(() => {
+  if (goneDeployment.value === 'pick') return t('deploymentSwitcher.pickGone')
+  if (goneDeployment.value !== 'default') return null
+  return canSetDefault.value
+    ? t('deploymentSwitcher.defaultGoneOwner')
+    : t('deploymentSwitcher.defaultGone')
+})
+
+const changeMessage = computed(() =>
+  changeSinceBoot.value === 'release'
+    ? t('deploymentSwitcher.releaseChanged')
+    : t(
+        'deploymentSwitcher.deploymentChanged',
+        { deployment: currentLabel.value },
+        { escapeParameter: false }
+      )
 )
+
+const switchingNote = computed(() =>
+  settingStore.get('Comfy.Workflow.Persist')
+    ? t('deploymentSwitcher.switchingNote')
+    : t('deploymentSwitcher.switchingNoteWithoutDrafts')
+)
+
+function choose(event: Event, deploymentId: string | null) {
+  if (deploymentId !== pickedDeploymentId.value) event.preventDefault()
+  emit('choose', deploymentId)
+}
 </script>

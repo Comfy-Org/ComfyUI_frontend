@@ -6,6 +6,24 @@ import { useI18n } from 'vue-i18n'
 import { t as translate } from '@/i18n'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 
+type Translate = (
+  key: string,
+  named: Record<string, string | number>,
+  options: { escapeParameter: boolean }
+) => string
+
+/** The switcher's radio value for Comfy Cloud; deployment rows use their id. */
+export const COMFY_CLOUD_ROW = 'comfy-cloud'
+
+/** How a deployment's status reads at a glance: ready, stopped, or on its way. */
+export type DeploymentStatusTone = 'ready' | 'stopped' | 'pending'
+
+const STATUS_LABEL_KEYS = new Map([
+  ['stopped', 'deploymentSwitcher.status.stopped'],
+  ['starting', 'deploymentSwitcher.status.starting'],
+  ['provisioning', 'deploymentSwitcher.status.provisioning']
+])
+
 /** `dep-f24d36bb` out of `dep-f24d36bb-fd1f-...`: enough to tell two apart. */
 function shortId(deploymentId: string): string {
   return deploymentId.slice(0, 12)
@@ -35,6 +53,56 @@ function labelMessage(
   ]
 }
 
+export function deploymentStatusTone(status: string): DeploymentStatusTone {
+  if (status === 'ready') return 'ready'
+  if (status === 'stopped') return 'stopped'
+  return 'pending'
+}
+
+/** Names a deployment the way the switcher shows it: its Build first, then its own name. */
+function deploymentNames(t: Translate) {
+  const text = (key: string, values: Record<string, string | number> = {}) =>
+    t(key, values, { escapeParameter: false })
+
+  function title(deployment: WorkspaceDeployment): string {
+    if (deployment.build_name) return deployment.build_name
+    const [key, values] = labelMessage(deployment)
+    return text(key, values)
+  }
+
+  function subtitle(deployment: WorkspaceDeployment): string | null {
+    if (!deployment.build_name) return null
+    return deployment.deployment_name || shortId(deployment.deployment_id)
+  }
+
+  function fullLabel(deployment: WorkspaceDeployment | null): string {
+    if (!deployment) return text('deploymentSwitcher.comfyCloud')
+    const name = subtitle(deployment)
+    if (name === null) return title(deployment)
+    return text('deploymentSwitcher.fullLabel', {
+      build: title(deployment),
+      deployment: name
+    })
+  }
+
+  function statusText(status: string): string {
+    const key = STATUS_LABEL_KEYS.get(status)
+    return key ? text(key) : status
+  }
+
+  function meta(deployment: WorkspaceDeployment): string | null {
+    if (deploymentStatusTone(deployment.status) !== 'ready') {
+      return statusText(deployment.status)
+    }
+    if (deployment.release_version === undefined) return null
+    return text('deploymentSwitcher.version', {
+      version: deployment.release_version
+    })
+  }
+
+  return { title, subtitle, fullLabel, meta }
+}
+
 /**
  * The label of the deployment this page booted on, for text outside the
  * switcher that names where the editor runs (FE-2434); undefined on Comfy
@@ -49,70 +117,41 @@ export function useBootDeploymentLabel() {
   })
 }
 
+/** Build and deployment name of where this page booted, or Comfy Cloud; works outside a component. */
+export function useBootDeploymentFullLabel() {
+  const { bootDeployment } = storeToRefs(useDeploymentPickStore())
+  const { fullLabel } = deploymentNames(translate)
+  return computed(() => fullLabel(bootDeployment.value ?? null))
+}
+
 export function useDeploymentLabels() {
   const { t } = useI18n()
-  const { pickedDeployment, defaultDeploymentId, defaultDeployment } =
-    storeToRefs(useDeploymentPickStore())
+  const { pickedDeployment, defaultDeployment } = storeToRefs(
+    useDeploymentPickStore()
+  )
+  const names = deploymentNames(t)
 
-  function deploymentLabel(deployment: WorkspaceDeployment): string {
-    const [key, values] = labelMessage(deployment)
-    return t(key, values, { escapeParameter: false })
-  }
-
-  function deploymentCaption(deployment: WorkspaceDeployment): string {
-    const key =
-      deployment.deployment_id === defaultDeploymentId.value
-        ? 'deploymentSwitcher.captionDefault'
-        : 'deploymentSwitcher.caption'
-    const caption = t(
-      key,
-      { id: shortId(deployment.deployment_id), status: deployment.status },
-      { escapeParameter: false }
-    )
-    if (
-      !deployment.deployment_name ||
-      deployment.build_name === undefined ||
-      deployment.release_version === undefined
-    )
-      return caption
-
-    const release = t(
-      'deploymentSwitcher.deployment',
-      {
-        build: deployment.build_name,
-        version: deployment.release_version
-      },
-      { escapeParameter: false }
-    )
-    return t(
-      'deploymentSwitcher.namedCaption',
-      { release, caption },
-      { escapeParameter: false }
-    )
-  }
-
-  function labelFor(
-    deploymentId: string | null,
-    deployment: WorkspaceDeployment | null
-  ): string {
-    if (deploymentId === null) return t('deploymentSwitcher.comfyCloud')
-    if (deployment) return deploymentLabel(deployment)
-    return t(
-      'deploymentSwitcher.unnamedDeployment',
-      { id: shortId(deploymentId) },
-      { escapeParameter: false }
-    )
-  }
-
-  /** A pick the listing no longer has runs on Comfy Cloud. */
-  const currentLabel = computed(() =>
+  /** The pill names the Build alone; the list adds the deployment. */
+  const currentTitle = computed(() =>
     pickedDeployment.value
-      ? deploymentLabel(pickedDeployment.value)
+      ? names.title(pickedDeployment.value)
       : t('deploymentSwitcher.comfyCloud')
   )
-  const defaultLabel = computed(() =>
-    labelFor(defaultDeploymentId.value, defaultDeployment.value)
+  const currentLabel = computed(() => names.fullLabel(pickedDeployment.value))
+  const defaultName = computed(() =>
+    defaultDeployment.value
+      ? (names.subtitle(defaultDeployment.value) ??
+        names.title(defaultDeployment.value))
+      : null
   )
 
-  return { deploymentLabel, deploymentCaption, currentLabel, defaultLabel }
+  return {
+    deploymentTitle: names.title,
+    deploymentSubtitle: names.subtitle,
+    deploymentFullLabel: names.fullLabel,
+    deploymentMeta: names.meta,
+    currentTitle,
+    currentLabel,
+    defaultName
+  }
 }

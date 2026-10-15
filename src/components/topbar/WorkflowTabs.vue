@@ -7,6 +7,11 @@
       )
     "
   >
+    <DeploymentSwitcher
+      v-if="showDeploymentSwitcher"
+      variant="tab"
+      class="no-drag self-center pl-1"
+    />
     <div
       ref="tabStripRef"
       data-testid="workflow-tab-strip"
@@ -133,6 +138,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import DeploymentSwitcher from '@/platform/workspace/components/DeploymentSwitcher.vue'
 import { useCommandStore } from '@/stores/commandStore'
 import { useTopbarBadgeStore } from '@/stores/topbarBadgeStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -159,7 +165,8 @@ const agentPanelStore = useAgentPanelStore()
 const topbarBadgeStore = useTopbarBadgeStore()
 const { withConsent, isChecking } = useAgentConsent()
 const isOpeningAgent = ref(false)
-const { isLoggedIn } = useCurrentUser()
+const { isLoggedIn, isApiKeyLogin } = useCurrentUser()
+const showDeploymentSwitcher = computed(() => isCloud && !isApiKeyLogin.value)
 
 const showAgentEntry = computed(
   () => agentPanelStore.enabled && !(agentPanelStore.isOpen && isChecking.value)

@@ -43,8 +43,12 @@ const mockData = vi.hoisted(() => ({
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
+const distribution = vi.hoisted(() => ({ isCloud: false }))
+
 vi.mock(import('@/platform/distribution/types'), () => ({
-  isCloud: false,
+  get isCloud() {
+    return distribution.isCloud
+  },
   isNightly: false
 }))
 
@@ -701,5 +705,65 @@ describe('TopMenuSection', () => {
       unmount()
       vi.unstubAllGlobals()
     }
+  })
+})
+
+describe('TopMenuSection deployment row', () => {
+  const DeploymentSwitcherStub = {
+    name: 'DeploymentSwitcher',
+    props: ['variant'],
+    template:
+      '<div data-testid="deployment-switcher" :data-variant="variant" />'
+  }
+
+  it.for([
+    {
+      where: 'Cloud with tabs in the sidebar',
+      cloud: true,
+      tabs: 'Sidebar',
+      shown: true
+    },
+    {
+      where: 'Cloud with tabs in the top bar',
+      cloud: true,
+      tabs: 'Topbar',
+      shown: false
+    },
+    {
+      where: 'a local build with tabs in the sidebar',
+      cloud: false,
+      tabs: 'Sidebar',
+      shown: false
+    }
+  ] as const)(
+    'shows the Running on row under the Graph menu on $where: $shown',
+    ({ cloud, tabs, shown }) => {
+      distribution.isCloud = cloud
+      onTestFinished(() => {
+        distribution.isCloud = false
+      })
+      useSettingStore().$patch({
+        settingValues: { 'Comfy.Workflow.WorkflowTabsPosition': tabs }
+      })
+      createWrapper({ stubs: { DeploymentSwitcher: DeploymentSwitcherStub } })
+
+      expect(screen.queryByTestId('deployment-switcher') !== null).toBe(shown)
+    }
+  )
+
+  it('draws the row as a floating panel like the Graph menu', () => {
+    distribution.isCloud = true
+    onTestFinished(() => {
+      distribution.isCloud = false
+    })
+    useSettingStore().$patch({
+      settingValues: { 'Comfy.Workflow.WorkflowTabsPosition': 'Sidebar' }
+    })
+    createWrapper({ stubs: { DeploymentSwitcher: DeploymentSwitcherStub } })
+
+    expect(screen.getByTestId('deployment-switcher')).toHaveAttribute(
+      'data-variant',
+      'floating'
+    )
   })
 })
