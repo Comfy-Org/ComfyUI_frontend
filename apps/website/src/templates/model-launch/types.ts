@@ -87,7 +87,7 @@ export interface ModelLaunchGalleryCard {
   id: string
   name: LocalizedText
   tier: ModelLaunchTier
-  note: LocalizedText
+  note?: LocalizedText
   description: LocalizedText
   // The prompt that produced the clip. Cards that have one also offer a copy
   // button; cards still waiting on copy simply omit it.
@@ -101,7 +101,7 @@ export interface ModelLaunchGalleryCard {
 }
 
 export interface ModelLaunchGallery {
-  headingKey: TranslationKey
+  headingKey?: TranslationKey
   // 'accent' paints the per-card link solid yellow. Defaults to the muted
   // treatment /minimax ships, so opting in cannot restyle a live page.
   ctaVariant?: 'muted' | 'accent' | 'none'
@@ -124,6 +124,27 @@ export interface ModelLaunchAudioCard {
 
 export interface ModelLaunchAudioGallery {
   cards: readonly ModelLaunchAudioCard[]
+}
+
+interface ModelLaunchListVoice {
+  name: string
+  alias?: string
+}
+
+export interface ModelLaunchListItem {
+  id: string
+  title: LocalizedText
+  prompt: string
+  durationSeconds: number
+  voices: readonly ModelLaunchListVoice[]
+  href: string
+  audioSources: readonly { src: string; type: string }[]
+}
+
+export interface ModelLaunchList {
+  headingKey: TranslationKey
+  ctaKey?: TranslationKey
+  items: readonly ModelLaunchListItem[]
 }
 
 interface ModelLaunchShowcaseCard {
@@ -255,6 +276,7 @@ export type ModelLaunchSection =
   | 'beforeAfter'
   | 'gallery'
   | 'audioGallery'
+  | 'list'
   | 'steps'
   | 'comparison'
   | 'pricing'
@@ -271,6 +293,7 @@ export const DEFAULT_SECTION_ORDER: readonly ModelLaunchSection[] = [
   'beforeAfter',
   'gallery',
   'audioGallery',
+  'list',
   'pricing',
   'faq',
   'highlight',
@@ -294,6 +317,7 @@ export interface ModelLaunchPage {
   // only until the model ships.
   gallery?: ModelLaunchGallery
   audioGallery?: ModelLaunchAudioGallery
+  list?: ModelLaunchList
   pricing?: ModelLaunchPricing
   faq?: ModelLaunchFaqSection
   highlight?: ModelLaunchHighlight

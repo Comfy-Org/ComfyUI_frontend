@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { promotedInputWidget } from '@/core/graph/subgraph/promotedInputWidget'
+import {
+  promotedInputWidget,
+  promotedInputWidgets
+} from '@/core/graph/subgraph/promotedInputWidget'
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
@@ -34,5 +37,25 @@ describe('promoted subgraph widget options reassignment', () => {
     promotedWidget.options = { multiline: true }
 
     expect(promotedWidget.options).toEqual({ multiline: true })
+  })
+})
+
+describe('promotedInputWidgets', () => {
+  it('keeps promoted widgets that are hidden from the right side panel', () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+
+    const interior = new LGraphNode('Painter')
+    subgraph.add(interior)
+    const input = interior.addInput('mask', 'PAINTER')
+    const painter = interior.addWidget('painter', 'mask', '', null, {
+      hideInPanel: true
+    })
+    input.widget = { name: painter.name }
+    expect(promoteValueWidgetViaSubgraphInput(host, interior, painter).ok).toBe(
+      true
+    )
+
+    expect(promotedInputWidgets(host).map(({ name }) => name)).toEqual(['mask'])
   })
 })

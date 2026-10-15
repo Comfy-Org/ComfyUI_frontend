@@ -1,0 +1,196 @@
+{
+  "id": "execution",
+  "capability": "Prompt execution state",
+  "description": "Client-side state of running prompts: websocket-driven execution progress, active and cached nodes, per-node progress, node execution errors and their lifting to subgraph boundaries alongside missing-resource state, node outputs and preview images keyed by node locator across workflow switches, and the latest live preview per job. The job list and history, the wire schemas, and the node execution order store backing litegraph are separate.",
+  "modules": [
+    {
+      "path": "src/stores/executionErrorStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/executionErrorStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/executionStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/executionStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/jobPreviewStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/jobPreviewStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/nodeOutputStore.insertWorkflowOutputs.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/nodeOutputStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/nodeOutputStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/nodeOutputStore.workflowSwitch.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/graph/useErrorClearingHooks.promotion.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/graph/useErrorClearingHooks.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/graph/useErrorClearingHooks.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/graph/useNodeErrorFlagSync.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/graph/useNodeErrorFlagSync.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useBrowserTabTitle.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/composables/useBrowserTabTitle.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/composables/useProgressFavicon.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/composables/useViewErrorsInGraph.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useViewErrorsInGraph.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useWorkflowStatusDismissal.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useWorkflowStatusDismissal.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/utils/__tests__/executionErrorTestUtils.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/utils/__tests__/nodeErrorHelpers.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/utils/errorSeverityClassification.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/errorSeverityClassification.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/executionErrorUtil.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/executionErrorUtil.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/missingResourceAbsorption.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/missingResourceAbsorption.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/nodeOutputUtil.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/nodeOutputUtil.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/objectUrlUtil.ts",
+      "role": "infrastructure"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Execution store tracks progress, completion, interruption, and errors from websocket events",
+      "checks": ["src/stores/executionStore.test.ts"]
+    },
+    {
+      "name": "Execution errors map to nodes, lift to subgraph boundaries, and combine with missing-resource state",
+      "checks": ["src/stores/executionErrorStore.test.ts"]
+    },
+    {
+      "name": "Node outputs survive workflow switches and inserted workflow outputs",
+      "checks": [
+        "src/stores/nodeOutputStore.test.ts",
+        "src/stores/nodeOutputStore.workflowSwitch.test.ts",
+        "src/stores/nodeOutputStore.insertWorkflowOutputs.test.ts"
+      ]
+    },
+    {
+      "name": "Live job previews replace and revoke object URLs per job",
+      "checks": ["src/stores/jobPreviewStore.test.ts"]
+    },
+    {
+      "name": "Execution and validation errors are classified, absorbed into missing-resource state, and flagged on nodes",
+      "checks": [
+        "src/utils/executionErrorUtil.test.ts",
+        "src/utils/errorSeverityClassification.test.ts",
+        "src/utils/missingResourceAbsorption.test.ts",
+        "src/composables/graph/useNodeErrorFlagSync.test.ts"
+      ]
+    },
+    {
+      "name": "Editing widgets, links, and promoted inputs clears the matching node errors",
+      "checks": [
+        "src/composables/graph/useErrorClearingHooks.test.ts",
+        "src/composables/graph/useErrorClearingHooks.promotion.test.ts"
+      ]
+    },
+    {
+      "name": "Execution status surfaces in the browser tab title, workflow status dismissal, error navigation, and input-preview outputs",
+      "checks": [
+        "src/composables/useBrowserTabTitle.test.ts",
+        "src/composables/useWorkflowStatusDismissal.test.ts",
+        "src/composables/useViewErrorsInGraph.test.ts",
+        "src/utils/nodeOutputUtil.test.ts"
+      ]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Unclassified callers may import these internals during inventory; imports from classified domains remain subject to cross-domain rules.",
+    "useExecutionStore, useExecutionErrorStore, useNodeOutputStore, and useJobPreviewStore keep their store ids and exports because extensions, renderer, queue, and error-panel code read them.",
+    "Execution stores reading the workflow store, app instance, scripts/api, canvas store, missing-model, missing-media, and missing-node stores, and error-catalog routing remain visible as cross-domain coupling; classification does not grant dependency exceptions."
+  ],
+  "deepImports": "inventory"
+}

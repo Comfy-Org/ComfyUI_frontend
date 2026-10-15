@@ -70,7 +70,7 @@ import {
 import { $el } from '@/scripts/ui/utils'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import {
   getPreviewExposureHostLocator,
   usePreviewExposureStore

@@ -1,7 +1,6 @@
 /* oxlint-disable testing-library/no-container, testing-library/no-node-access */
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -13,7 +12,8 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import { useExtensionService } from '@/services/extensionService'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import { useCommandStore } from '@/stores/commandStore'
-import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
+import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { createMockCanvas } from '@/utils/__tests__/canvasTestUtils'
 import * as nodeFilterUtil from '@/utils/nodeFilterUtil'
 
@@ -135,7 +135,7 @@ describe('SelectionToolbox', () => {
     const { container } = render(SelectionToolbox, {
       props,
       global: {
-        plugins: [i18n, PrimeVue],
+        plugins: [i18n],
         provide: {
           [Symbol.for('SelectionOverlay')]: mockProvide
         },

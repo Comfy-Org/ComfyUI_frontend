@@ -1,6 +1,6 @@
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -10,6 +10,7 @@ import { onRekaPointerDownOutside } from '@/components/dialog/dialogDismissGuard
 import SetMemberCreditLimitDialogContent from '@/platform/workspace/components/dialogs/SetMemberCreditLimitDialogContent.vue'
 import SubscriptionRequiredDialogContentUnified from '@/platform/workspace/components/SubscriptionRequiredDialogContentUnified.vue'
 import { useDialogStore } from '@/stores/dialogStore'
+import { raiseModalLayer, releaseModalLayer } from '@/utils/modalLayerStack'
 
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useSubscriptionCheckout'),
@@ -407,53 +408,77 @@ describe('shouldPreventRekaDismiss', () => {
     }
   }
 
+  function appendLayer(mark: (layer: HTMLElement) => void) {
+    const layer = document.createElement('div')
+    mark(layer)
+    const inner = document.createElement('button')
+    layer.appendChild(inner)
+    document.body.appendChild(layer)
+    onTestFinished(() => {
+      releaseModalLayer(layer)
+      layer.remove()
+    })
+    return inner
+  }
+
+  function pointerDownOn(target: Element | null) {
+    const event = makeEvent(target)
+    onRekaPointerDownOutside({ dismissOnPointerDownOutside: undefined }, event)
+    return event
+  }
+
   it.for([
-    ['data-reka-popper-content-wrapper', ''],
-    ['role', 'listbox'],
-    ['data-toast-kind', 'info'],
-    ['data-toast-dock', '']
-  ] as const)(
-    'prevents dismiss when target is inside %j',
-    ([attribute, value]) => {
-      const overlay = document.createElement('div')
-      overlay.setAttribute(attribute, value)
-      const inner = document.createElement('button')
-      overlay.appendChild(inner)
-      document.body.appendChild(overlay)
+    {
+      name: 'a Reka dismissable layer',
+      mark: (layer: HTMLElement) =>
+        layer.setAttribute('data-dismissable-layer', '')
+    },
+    {
+      name: 'a Reka popper content wrapper',
+      mark: (layer: HTMLElement) =>
+        layer.setAttribute('data-reka-popper-content-wrapper', '')
+    },
+    { name: 'a raised modal layer', mark: raiseModalLayer },
+    {
+      name: 'a toast',
+      mark: (layer: HTMLElement) =>
+        layer.setAttribute('data-toast-kind', 'info')
+    },
+    {
+      name: 'the toast dock',
+      mark: (layer: HTMLElement) => layer.setAttribute('data-toast-dock', '')
+    }
+  ])('prevents dismiss when the target is inside $name', ({ mark }) => {
+    expect(pointerDownOn(appendLayer(mark)).defaultPrevented).toBe(true)
+  })
 
-      const event = makeEvent(inner)
-      onRekaPointerDownOutside(
-        { dismissOnPointerDownOutside: undefined },
-        event
-      )
-
-      expect(event.defaultPrevented).toBe(true)
-      overlay.remove()
+  it.for(['dialog', 'menu', 'listbox', 'tooltip'])(
+    'allows dismiss from app markup with role=%s that no overlay owns',
+    (role) => {
+      const target = appendLayer((layer) => layer.setAttribute('role', role))
+      expect(pointerDownOn(target).defaultPrevented).toBe(false)
     }
   )
 
+  it('allows dismiss from a dialog scrim raised on the modal stack', () => {
+    const target = appendLayer((layer) => {
+      layer.dataset.slot = 'dialog-overlay'
+      raiseModalLayer(layer)
+    })
+    expect(pointerDownOn(target).defaultPrevented).toBe(false)
+  })
+
   it('allows dismiss when target is outside any portaled layer', () => {
-    const event = makeEvent(document.body)
-    onRekaPointerDownOutside({ dismissOnPointerDownOutside: undefined }, event)
-    expect(event.defaultPrevented).toBe(false)
+    expect(pointerDownOn(document.body).defaultPrevented).toBe(false)
   })
 
   it('allows dismiss from the empty space beside a toast message', () => {
     const container = document.createElement('ol')
     container.setAttribute('data-testid', 'toast-viewport')
     document.body.appendChild(container)
+    onTestFinished(() => container.remove())
 
-    const event = makeEvent(container)
-    onRekaPointerDownOutside({ dismissOnPointerDownOutside: undefined }, event)
-
-    expect(event.defaultPrevented).toBe(false)
-    container.remove()
-  })
-
-  it('allows dismiss on a true outside pointer', () => {
-    const event = makeEvent(document.body)
-    onRekaPointerDownOutside({ dismissOnPointerDownOutside: undefined }, event)
-    expect(event.defaultPrevented).toBe(false)
+    expect(pointerDownOn(container).defaultPrevented).toBe(false)
   })
 
   it('prevents dismiss when dismissOnPointerDownOutside is false even outside an overlay', () => {

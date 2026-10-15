@@ -21,7 +21,7 @@
           :class="
             severity === 'warn'
               ? 'pi pi-exclamation-circle text-warning-background'
-              : 'pi pi-spin pi-spinner text-[#60a5fa]'
+              : 'pi pi-spin pi-spinner text-link'
           "
           aria-hidden="true"
         />

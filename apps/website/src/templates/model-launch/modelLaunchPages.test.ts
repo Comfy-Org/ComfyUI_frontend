@@ -29,6 +29,7 @@ import type {
   ModelLaunchGallery,
   ModelLaunchHero,
   ModelLaunchHighlight,
+  ModelLaunchListItem,
   ModelLaunchPage,
   ModelLaunchPricing,
   ModelLaunchShowcase,
@@ -130,6 +131,8 @@ function pageKeys(page: ModelLaunchPage): TranslationKey[] {
     page.beforeAfter?.headingKey,
     page.beforeAfter?.bodyKey,
     page.gallery?.headingKey,
+    page.list?.headingKey,
+    page.list?.ctaKey,
     ...pricingKeys(page.pricing),
     page.faq?.headingKey,
     page.comparison?.headingKey,
@@ -196,8 +199,17 @@ function expectShowcaseCardsLocalized(
 function expectGalleryCardsLocalized(cards: ModelLaunchGallery['cards']) {
   for (const card of cards) {
     expectLocalized(card.name, card.id, 'name')
-    expectLocalized(card.note, card.id, 'note')
+    if (card.note) expectLocalized(card.note, card.id, 'note')
     expectLocalized(card.description, card.id, 'description')
+  }
+}
+
+function expectListItemsComplete(items: readonly ModelLaunchListItem[]) {
+  for (const item of items) {
+    expectLocalized(item.title, item.id, 'title')
+    expect(item.prompt, `${item.id} prompt`).not.toBe('')
+    expect(item.durationSeconds, `${item.id} length`).toBeGreaterThan(0)
+    expect(item.voices, `${item.id} voices`).not.toHaveLength(0)
   }
 }
 
@@ -261,6 +273,7 @@ function outboundHrefs(page: ModelLaunchPage): string[] {
     ...heroHrefs(page.hero),
     ...sectionCtaHrefs(page),
     ...(page.gallery?.cards.map((card) => card.href) ?? []),
+    ...(page.list?.items.map((item) => item.href) ?? []),
     ...(page.showcases ?? []).map((showcase) => showcase.cta?.href)
   ].filter((href): href is string => href !== undefined)
 }
@@ -268,6 +281,9 @@ function outboundHrefs(page: ModelLaunchPage): string[] {
 function expectHeroStills(hero: ModelLaunchHero) {
   if (hero.videoSrc !== undefined) {
     expect(hero.videoSrc).toMatch(VIDEO_URL)
+  }
+  if (hero.mobileVideoSrc !== undefined) {
+    expect(hero.mobileVideoSrc).toMatch(VIDEO_URL)
   }
   if (hero.posterSrc !== undefined) {
     expect(hero.posterSrc).toMatch(HERO_STILL_URL)
@@ -294,7 +310,8 @@ describe.for(pages)('$name launch page config', ({ page }) => {
     const ids = [
       ...(page.showcases ?? []).flatMap((s) => s.cards.map((card) => card.id)),
       ...(page.gallery?.cards.map((card) => card.id) ?? []),
-      ...(page.audioGallery?.cards.map((card) => card.id) ?? [])
+      ...(page.audioGallery?.cards.map((card) => card.id) ?? []),
+      ...(page.list?.items.map((item) => item.id) ?? [])
     ]
     expect(new Set(ids).size).toBe(ids.length)
   })
@@ -309,6 +326,7 @@ describe.for(pages)('$name launch page config', ({ page }) => {
     expectShowcaseCardsLocalized(page.showcases ?? [])
     expectGalleryCardsLocalized(page.gallery?.cards ?? [])
     expectAudioCardsLocalized(page.audioGallery?.cards ?? [])
+    expectListItemsComplete(page.list?.items ?? [])
     expectComparisonLocalized(page.comparison)
     expectFaqLocalized(page.faq?.items ?? [])
     expectStepsLocalized(page.steps?.items ?? [])
@@ -348,6 +366,14 @@ describe.for(pages)('$name launch page config', ({ page }) => {
     )
 
     expect(audioOffenders.map((card) => card.id)).toEqual([])
+
+    const listAudioOffenders = (page.list?.items ?? []).filter(
+      (item) =>
+        item.audioSources.length === 0 ||
+        item.audioSources.some((source) => !AUDIO_URL.test(source.src))
+    )
+
+    expect(listAudioOffenders.map((item) => item.id)).toEqual([])
   })
 
   it('gives every before/after tab a unique id, localized copy, and a clip pair', () => {
@@ -365,9 +391,10 @@ describe.for(pages)('$name launch page config', ({ page }) => {
   })
 
   it('lists a playable MP3 first in every audio source list', () => {
-    const offenders = (page.audioGallery?.cards ?? []).filter(
-      (card) => card.audioSources[0]?.type !== 'audio/mpeg'
-    )
+    const offenders = [
+      ...(page.audioGallery?.cards ?? []),
+      ...(page.list?.items ?? [])
+    ].filter((track) => track.audioSources[0]?.type !== 'audio/mpeg')
 
     expect(offenders.map((card) => card.id)).toEqual([])
   })

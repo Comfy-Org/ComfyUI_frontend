@@ -6,6 +6,19 @@ const DOCS_HREF =
   'https://docs.comfy.org/tutorials/partner-nodes/fishaudio/drama-3'
 const HERO_POSTER_SRC =
   'https://media.comfy.org/website/fish-audio/fish-audio-poster.jpg'
+const DIRECTED_TEMPLATE_HREF =
+  'https://cloud.comfy.org/?template=api_fishaudio_drama3_directed'
+const DIALOGUE_TEMPLATE_HREF =
+  'https://cloud.comfy.org/?template=api_fishaudio_drama3_dialogue'
+
+function sampleAudio(name: string) {
+  return [
+    {
+      src: `https://media.comfy.org/website/fish-audio/${name}.mp3`,
+      type: 'audio/mpeg'
+    }
+  ]
+}
 
 export const fishAudioPage: ModelLaunchPage = {
   metaTitleKey: 'fishAudio.meta.title',
@@ -18,6 +31,11 @@ export const fishAudioPage: ModelLaunchPage = {
     titleKey: 'fishAudio.hero.titleModel',
     titleRestKey: 'fishAudio.hero.titleRest',
     descriptionKey: 'fishAudio.hero.description',
+    primaryCta: {
+      labelKey: 'fishAudio.hero.primaryCta',
+      href: DIRECTED_TEMPLATE_HREF,
+      target: '_blank'
+    },
     secondaryCta: {
       labelKey: 'fishAudio.hero.secondaryCta',
       href: DOCS_HREF,
@@ -29,10 +47,69 @@ export const fishAudioPage: ModelLaunchPage = {
       'fishAudio.hero.badge3'
     ]
   },
-  sectionOrder: ['steps', 'faq', 'pricing', 'highlight'],
+  sectionOrder: ['list', 'steps', 'faq', 'pricing', 'highlight'],
+  list: {
+    headingKey: 'fishAudio.samples.heading',
+    ctaKey: 'fishAudio.samples.cta',
+    items: [
+      {
+        id: 'hushed-gossip',
+        title: { en: 'Hushed gossip', 'zh-CN': '窃窃私语' },
+        prompt: `[excited, hushed tones] Did you hear, Fish Drama 3 is in Comfy now?! [barely containing a squeal] I know, I know, keep your voice down. <whisper>It does whispering too.</whisper>`,
+        voices: [{ name: 'Friendly Women (en)' }],
+        href: DIRECTED_TEMPLATE_HREF,
+        durationSeconds: 8,
+        audioSources: sampleAudio('hushed-gossip')
+      },
+      {
+        id: 'movie-trailer',
+        title: { en: 'Movie trailer', 'zh-CN': '电影预告片' },
+        prompt: `[deep, gravelly movie trailer voice] In a world... where every node sat in silence... [pause] one model dared to speak. [building to an epic shout] FISH! AUDIO! DRAMA THREE! [suddenly flat and casual] It's in Comfy now. You can just, like, use it.`,
+        voices: [{ name: 'Dramatic Character Male (en)' }],
+        href: DIRECTED_TEMPLATE_HREF,
+        durationSeconds: 18,
+        audioSources: sampleAudio('movie-trailer')
+      },
+      {
+        id: 'sleepy-to-hyped',
+        title: { en: 'Sleepy to hyped', 'zh-CN': '从迷糊到亢奋' },
+        prompt: `[groggy, just woke up, mumbling] Mmm, what time is it... [yawn] why is my phone blowing up. [reading slowly, confused] Fish Drama 3... is in Comfy? [pause] [wide awake, voice cracking with excitement] WAIT. It's in Comfy?! [talking very fast] Okay okay okay, nobody talk to me, I'm opening my laptop, I have forty ideas and no time. [laugh] <emphasis>This is the best morning of my life.</emphasis>`,
+        voices: [{ name: 'Energetic Male (en)' }],
+        href: DIRECTED_TEMPLATE_HREF,
+        durationSeconds: 21,
+        audioSources: sampleAudio('sleepy-to-hyped')
+      },
+      {
+        id: 'two-voices-one-take',
+        title: { en: 'Two voices, one take', 'zh-CN': '两个声音，一镜到底' },
+        prompt: `@Voice1 [leaning in, conspiratorial whisper] Okay, don't freak out. But I have news. @Voice2 [bored, not looking up] If this is about your sourdough starter again, I'm leaving. @Voice1 [giddy, speeding up] Better. Fish Drama 3 is in Comfy now. One node. Both of us. In the same take. @Voice2 [long pause, then slowly, suspicious] ...Wait. Are we in it right now? @Voice1 [delighted] We are literally in it right now! @Voice2 [gasp] [dramatic, theatrical despair] Then everything I have ever said was a prompt. [sigh] @Voice1 [laugh] [warm] Yeah. And you sounded great.`,
+        voices: [
+          { name: 'Sarah (en)', alias: '@Voice1' },
+          { name: 'Adrian (en)', alias: '@Voice2' }
+        ],
+        href: DIALOGUE_TEMPLATE_HREF,
+        durationSeconds: 34,
+        audioSources: sampleAudio('two-voices-one-take')
+      },
+      {
+        id: 'noir-detective',
+        title: { en: 'Noir detective', 'zh-CN': '黑色侦探' },
+        prompt: `[weary noir detective, low and slow] It was three in the morning. The queue was empty, and so was my coffee. [sigh] Then she walked into my workflow. A text to speech node, with a model I'd never seen before. [suspicious, quiet] Drama 3, the dropdown said. Fish Audio. [pause] <whisper>I'd heard the rumors.</whisper> Voices that could laugh. [dry chuckle] Voices that could cry. Voices that could change their mind halfway through a sentence. [voice rising, alarmed] I typed one line and hit Run, and the thing talked back like it meant it! [long exhale, calm again] I've worked a lot of cases in this town, kid. <emphasis>This one's in Comfy now.</emphasis> [soft, almost fond] And I'm not closing it.`,
+        voices: [{ name: 'Narrator (en)' }],
+        href: DIRECTED_TEMPLATE_HREF,
+        durationSeconds: 44,
+        audioSources: sampleAudio('noir-detective')
+      }
+    ]
+  },
   steps: {
     headingKey: 'fishAudio.steps.heading',
     stepLabelKey: 'fishAudio.steps.step',
+    primaryCta: {
+      labelKey: 'fishAudio.steps.primaryCta',
+      href: DIRECTED_TEMPLATE_HREF,
+      target: '_blank'
+    },
     secondaryCta: {
       labelKey: 'fishAudio.steps.secondaryCta',
       href: DOCS_HREF,
