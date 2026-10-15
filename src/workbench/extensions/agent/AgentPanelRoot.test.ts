@@ -13033,7 +13033,7 @@ describe('AgentPanelRoot workflow binding', () => {
     })
     saved.load = vi.fn(async () => saved)
     workflowStore.attachWorkflow(saved)
-    stubUnresolvedTargetChat()
+    stubHistoryWithWorkflowListing(unresolvedTargetChat)
     let cloudStatus = 503
     respondToFetch({ method: 'GET', url: /\/workflows(\?|$)/ }, () =>
       json(cloudStatus, {
@@ -13071,7 +13071,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
   it('reuses a listed unresolved chat from its Current row without restoring its workflow again', async () => {
     makeTab('wf-42')
-    stubUnresolvedTargetChat()
+    stubHistoryWithWorkflowListing(unresolvedTargetChat)
     const reads = () => ({
       transcript: fetchRequests({ method: 'GET', url: /\/messages/ }).length,
       workflows: fetchRequests({ method: 'GET', url: /\/workflows/ }).length
