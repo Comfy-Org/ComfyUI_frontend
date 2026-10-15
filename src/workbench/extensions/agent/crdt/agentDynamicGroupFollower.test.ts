@@ -106,7 +106,6 @@ function interiorWrite(seq: number, widget: string, value: unknown): Op {
   } satisfies GraphOperation & Op
 }
 
-/** `instances` hosts (ids 1, 2, …) of one definition whose interior is a DynamicGroup node with one row. */
 function dynamicGroupDefinitionWorkflow(
   instances: number,
   promoteFirstRow = false
@@ -227,6 +226,7 @@ describe('agent CRDT follower on a DynamicGroup inside a subgraph', () => {
 
   it('refuses an interior DynamicGroup resize on a definition shared by several instances', () => {
     const state = startFollower(2)
+    const before = Y.encodeStateAsUpdate(state.hostDoc)
 
     const result = applyOps(
       state.hostDoc,
@@ -240,5 +240,6 @@ describe('agent CRDT follower on a DynamicGroup inside a subgraph', () => {
         reason: expect.objectContaining({ code: 'shared_definition_unforked' })
       })
     ])
+    expect(Y.encodeStateAsUpdate(state.hostDoc)).toEqual(before)
   })
 })

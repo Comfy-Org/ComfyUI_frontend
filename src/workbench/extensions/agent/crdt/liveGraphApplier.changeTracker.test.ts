@@ -366,7 +366,7 @@ describe('LiveGraphApplier with the real change tracker', () => {
       0.7,
       'tail'
     ])
-    await new Promise((resolve) => setTimeout(resolve, 0))
+    await new Promise<void>((resolve) => queueMicrotask(resolve))
     expect(enqueue).not.toHaveBeenCalled()
 
     const saved = await workflowJson(graph)
