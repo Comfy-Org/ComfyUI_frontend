@@ -500,9 +500,7 @@ function agentThread({
   }
 }
 
-function isThreadListUrl(url: string): boolean {
-  return url.split('?')[0].endsWith('/api/agent/threads')
-}
+const threadListRoute = /\/api\/agent\/threads\?/
 
 function agentThreadList(
   threads: AgentThreadSummary[] = [],
@@ -1925,7 +1923,7 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
       async (input: RequestInfo | URL, init?: RequestInit) => {
         const url = String(input)
 
-        if (isThreadListUrl(url)) return json(200, agentThreadList())
+        if (threadListRoute.test(url)) return json(200, agentThreadList())
         messageBodies.push(JSON.parse(String(init?.body)))
         return json(202, { thread_id: 'th-1', message_id: 'm-1' })
       }
@@ -4876,7 +4874,7 @@ describe('AgentPanelRoot canvas draft on send', () => {
       async (input: RequestInfo | URL, init?: RequestInit) => {
         const url = String(input)
 
-        if (isThreadListUrl(url)) return json(200, agentThreadList())
+        if (threadListRoute.test(url)) return json(200, agentThreadList())
         messageBodies.push(JSON.parse(String(init?.body)))
         return json(202, { thread_id: 'th-1', message_id: 'm-1' })
       }
@@ -4915,7 +4913,7 @@ describe('AgentPanelRoot canvas draft on send', () => {
       async (input: RequestInfo | URL, init?: RequestInit) => {
         const url = String(input)
 
-        if (isThreadListUrl(url)) return json(200, agentThreadList())
+        if (threadListRoute.test(url)) return json(200, agentThreadList())
         messageBodies.push(JSON.parse(String(init?.body)))
         return json(202, { thread_id: 'th-1', message_id: 'm-1' })
       }
@@ -4935,8 +4933,6 @@ describe('AgentPanelRoot canvas draft on send', () => {
 })
 
 describe('AgentPanelRoot history', () => {
-  const threadListRoute = /\/api\/agent\/threads\?/
-
   beforeEach(() => {
     ws.clear()
     respondToFetch({}, () => json(200, []))
@@ -4956,7 +4952,7 @@ describe('AgentPanelRoot history', () => {
   async function renderWithActiveThread(): Promise<void> {
     vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
       const url = String(input)
-      return isThreadListUrl(url)
+      return threadListRoute.test(url)
         ? new Response(
             JSON.stringify(
               agentThreadList([
@@ -5173,7 +5169,7 @@ describe('AgentPanelRoot history', () => {
     vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
       const url = String(input)
 
-      if (isThreadListUrl(url)) {
+      if (threadListRoute.test(url)) {
         return new Response(
           JSON.stringify(
             agentThreadList([
@@ -5218,7 +5214,7 @@ describe('AgentPanelRoot history', () => {
       vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
         const url = String(input)
 
-        if (isThreadListUrl(url))
+        if (threadListRoute.test(url))
           return json(
             200,
             agentThreadList([
@@ -5593,7 +5589,7 @@ describe('AgentPanelRoot history', () => {
   it('marks the restored thread as the current session', async () => {
     vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
       const url = String(input)
-      return isThreadListUrl(url)
+      return threadListRoute.test(url)
         ? new Response(JSON.stringify(agentThreadList()), {
             status: 200,
             headers: { 'Content-Type': 'application/json' }
@@ -5623,7 +5619,7 @@ describe('AgentPanelRoot transcript copy', () => {
     async (loaded) => {
       vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
         const url = String(input)
-        return isThreadListUrl(url)
+        return threadListRoute.test(url)
           ? new Response(
               JSON.stringify(
                 agentThreadList([
