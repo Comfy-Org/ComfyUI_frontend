@@ -1,10 +1,7 @@
 import { expect } from '@playwright/test'
 import type { WebSocketRoute } from '@playwright/test'
 
-import type {
-  AgentMessage,
-  AgentThreadListResponse
-} from '@comfyorg/ingest-types'
+import type { AgentMessage, AgentThreadSummary } from '@comfyorg/ingest-types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
@@ -16,7 +13,8 @@ import type {
 
 import {
   agentTest as test,
-  bootAgentApp
+  bootAgentApp,
+  mockAgentTurnApi
 } from '@e2e/fixtures/agentPanelFixture'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
@@ -117,36 +115,25 @@ test.describe(
           content: { text: EARLIER_REQUEST }
         }
       ]
-      const threads: AgentThreadListResponse = {
-        threads: [
-          {
-            id: THREAD_ID,
-            title: 'Earlier chat',
-            preview: EARLIER_REQUEST,
-            workflow_id: staleWorkflowId,
-            status: 'active',
-            message_count: 1,
-            created_at: '2026-09-11T10:00:00Z',
-            updated_at: '2026-09-11T10:00:00Z',
-            last_message_at: '2026-09-11T10:00:00Z'
-          }
-        ],
-        pagination: { offset: 0, limit: 100, total: 1, has_more: false }
+      const thread: AgentThreadSummary = {
+        id: THREAD_ID,
+        title: 'Earlier chat',
+        preview: EARLIER_REQUEST,
+        workflow_id: staleWorkflowId,
+        status: 'active',
+        message_count: 1,
+        created_at: '2026-09-11T10:00:00Z',
+        updated_at: '2026-09-11T10:00:00Z',
+        last_message_at: '2026-09-11T10:00:00Z'
       }
-      const posted: unknown[] = []
-      await page.route('**/api/agent/threads', (route) =>
-        route.fulfill(jsonRoute(threads))
-      )
-      await page.route('**/api/agent/threads/*/messages', (route) => {
-        if (route.request().method() === 'GET')
-          return route.fulfill(jsonRoute(history))
-        posted.push(route.request().postDataJSON())
-        const accepted: AgentTurnAccepted = {
-          thread_id: THREAD_ID,
-          message_id: TURN_ID,
-          workflow_id: staleWorkflowId
-        }
-        return route.fulfill({ ...jsonRoute(accepted), status: 202 })
+      const accepted: AgentTurnAccepted = {
+        thread_id: THREAD_ID,
+        message_id: TURN_ID,
+        workflow_id: staleWorkflowId
+      }
+      const posted = await mockAgentTurnApi(page, accepted, {
+        thread,
+        messages: history
       })
       const cloudWorkflows: CloudWorkflowEntry[] = []
       await page.route('**/api/workflows?*', (route) =>
