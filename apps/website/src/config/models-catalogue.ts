@@ -131,6 +131,8 @@ interface WorkshopPresentation {
   readonly capabilities: readonly string[]
   readonly creditsPerRun?: number
   readonly priceUsdFrom?: number
+  /** The estimate its model page shows, as the catalogue serves it. */
+  readonly priceEstimate?: string
   readonly thumbnailUrl?: string
   readonly thumbnailLabel?: string
   readonly thumbnail?: {
@@ -515,10 +517,10 @@ export function sortOrdersFor(
       )
 }
 
-export function sortWorkshopModels(
-  list: readonly WorkshopModel[],
+export function sortWorkshopModels<T extends WorkshopModel>(
+  list: readonly T[],
   order: SortOrder
-): WorkshopModel[] {
+): T[] {
   const byName = (a: WorkshopModel, b: WorkshopModel) =>
     a.name.localeCompare(b.name)
   const byExamples = (a: WorkshopModel, b: WorkshopModel) =>

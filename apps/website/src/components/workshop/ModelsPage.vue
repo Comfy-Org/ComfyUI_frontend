@@ -100,6 +100,7 @@ const headingClass = computed(() =>
 // rather than leaving: the page keeps the one heading it is supposed to have,
 // and the category reads as the section of it that it is.
 const inSection = shallowRef(false)
+const heroShown = shallowRef(false)
 const recoveringWorkflow = shallowRef(false)
 const savedWorkflow = shallowRef(false)
 const session =
@@ -235,6 +236,9 @@ function createContent() {
             h(ModelsCatalogue, {
               key: `${section}:${catalogueRevision.value}`,
               initialSearch: catalogueSearch.value,
+              onHero: (shown: boolean) => {
+                heroShown.value = shown
+              },
               onSection: (open: boolean) => {
                 inSection.value = open
               },
@@ -265,7 +269,7 @@ const Content = shallowRef(createContent())
 <template>
   <template v-if="!slug">
     <div
-      v-if="heading && catalogueView !== 'denied'"
+      v-if="heading && catalogueView !== 'denied' && !heroShown"
       class="mx-auto max-w-10xl px-6 pt-8 max-sm:pt-5 lg:px-8 lg:pt-12"
     >
       <div data-testid="workshop-heading" :class="headingClass">

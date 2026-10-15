@@ -5261,6 +5261,110 @@
       "zoomOut": "缩小",
       "zoomReset": "重置",
       "opensInNewTab": "（在新标签页中打开）"
+    },
+    "explorer": {
+      "allModelsLink": "浏览开放权重",
+      "badge": {
+        "api": "API",
+        "run": "运行"
+      },
+      "compare": {
+        "access": "使用方式",
+        "add": "添加模型",
+        "addSlot": "添加模型",
+        "api": "API",
+        "apiFor": "{name} API",
+        "clear": "清除",
+        "copied": "链接已复制",
+        "copyLink": "复制链接",
+        "full": "最多可对比 4 个模型",
+        "label": "对比",
+        "noSample": "这条提示词没有样图",
+        "open": "对比 {count} 个模型 | 对比 {count} 个模型",
+        "openShort": "对比 {count} 个",
+        "picked": "{count} / {max}",
+        "prompt": "提示词",
+        "promptTypes": "提示词类型",
+        "provider": "提供方",
+        "remove": "从对比中移除 {name}",
+        "samePrompt": "同一提示词，各个模型",
+        "samePromptNote": "每一行都给所有模型同一条提示词。样图由 Magnific 生成，它运行的是同样的模型。",
+        "sampleAlt": "{model} 根据提示词生成：{prompt}",
+        "task": "用途",
+        "toggle": "对比 {name}",
+        "trayLabel": "待对比的模型",
+        "try": "试用 {name}",
+        "tryShort": "试用",
+        "upTo": "最多 {max} 个",
+        "viewTitle": "对比 {count} 个模型",
+        "types": {
+          "all": "全部",
+          "portraits": "人像",
+          "product": "产品",
+          "illustration": "插画",
+          "typography": "文字排版",
+          "fusion": "融合与细节"
+        }
+      },
+      "filter": {
+        "api": "API",
+        "run": "在线运行",
+        "label": "使用方式"
+      },
+      "tabs": {
+        "3d": "3D",
+        "all": "全部",
+        "audio": "音频",
+        "edit": "编辑",
+        "groups": {
+          "task": "任务",
+          "type": "类型"
+        },
+        "image": "图像",
+        "label": "模型类别",
+        "llm": "大语言模型",
+        "upscale": "放大",
+        "video": "视频"
+      }
+    },
+    "featured": {
+      "comfyWorkflow": "Comfy 工作流",
+      "new": "新发布",
+      "openWorkflow": "打开工作流",
+      "openWorkflowNamed": "打开工作流 {name}",
+      "tryModel": "试用模型"
+    },
+    "modelsHub": {
+      "back": {
+        "access": {
+          "api": "可通过 API 调用的模型",
+          "run": "可在这里运行的模型"
+        },
+        "search": "“{query}”的结果",
+        "tab": {
+          "3d": "3D 模型",
+          "audio": "音频模型",
+          "edit": "编辑模型",
+          "image": "图像模型",
+          "llm": "语言模型",
+          "upscale": "放大模型",
+          "video": "视频模型"
+        }
+      },
+      "subtitle": "通过一个 API 调用最新模型，先在这里试用，或下载开放权重在 ComfyUI 中使用。"
+    },
+    "resolution": {
+      "all": "全部分辨率",
+      "label": "分辨率"
+    },
+    "taskSidebar": {
+      "editImages": "编辑图像",
+      "editVideos": "编辑视频",
+      "generateImages": "生成图像",
+      "generateVideos": "生成视频",
+      "imageToVideo": "图像生成视频",
+      "label": "按任务浏览",
+      "seeAll": "查看全部 ({n})"
     }
   }
 }

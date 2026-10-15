@@ -1,0 +1,868 @@
+import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor, within } from '@testing-library/vue'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
+
+import { nextTick } from 'vue'
+
+import type {
+  RouterWorkshopModel,
+  WorkshopModel
+} from '@/config/models-catalogue'
+import { lastList } from '@/lib/workshop/hub-list-memory'
+import HubModelsGrid from './HubModelsGrid.vue'
+
+const models: WorkshopModel[] = [
+  {
+    slug: 'kling-ai',
+    name: 'Kling AI',
+    workflowCount: 3,
+    href: '/models/kling-ai/',
+    routerId: 'kling/kling-ai',
+    capabilities: [],
+    provider: 'Kling',
+    modality: 'video',
+    task: 'text-to-video',
+    resolutions: ['1080p', '720p'],
+    creditsPerRun: 24
+  },
+  {
+    slug: 'flux',
+    name: 'Flux',
+    workflowCount: 2,
+    href: '/models/flux/',
+    routerId: 'bfl/flux',
+    capabilities: ['Upscale'],
+    provider: 'Black Forest Labs',
+    modality: 'image',
+    task: 'image-to-image',
+    resolutions: ['2K'],
+    creditsPerRun: 8
+  },
+  {
+    slug: 'mystery',
+    name: 'Mystery',
+    workflowCount: 1,
+    href: '/models/mystery/',
+    routerId: 'comfy/mystery',
+    capabilities: []
+  }
+]
+
+function cardNames() {
+  return screen
+    .queryAllByTestId('workshop-model-card')
+    .map((card) => card.textContent)
+}
+
+function openWeightCards() {
+  return screen.queryAllByTestId('open-weight-model-card')
+}
+
+async function chooseTab(
+  user: ReturnType<typeof userEvent.setup>,
+  name: string
+) {
+  await user.click(screen.getByRole('tab', { name }))
+}
+
+function restoredPageShow() {
+  const event = new Event('pageshow')
+  Object.defineProperty(event, 'persisted', { value: true })
+  return event
+}
+
+function catalogueHeading() {
+  return screen.getByRole('heading', { level: 2, name: /^All models \d+$/ })
+}
+
+async function showEveryPage(user: ReturnType<typeof userEvent.setup>) {
+  let more = screen.queryByRole('button', { name: 'Show more' })
+  while (more) {
+    await user.click(more)
+    more = screen.queryByRole('button', { name: 'Show more' })
+  }
+}
+
+async function search() {
+  const field = screen.getByRole('searchbox', {
+    name: 'Search models, providers, and categories'
+  })
+  await waitFor(() => expect(field).not.toHaveProperty('disabled', true))
+  return field
+}
+
+describe('HubModelsGrid', () => {
+  afterEach(() => {
+    history.replaceState(null, '', '/')
+    sessionStorage.clear()
+  })
+
+  it('searches by name and provider', async () => {
+    const user = userEvent.setup()
+    render(HubModelsGrid, { props: { models } })
+    expect(cardNames()).toHaveLength(3)
+
+    await user.type(await search(), 'forest')
+    expect(cardNames()).toEqual([expect.stringContaining('Flux')])
+  })
+
+  it.for([
+    ['provider=Kling', 'Kling AI'],
+    ['capability=Upscale', 'Flux'],
+    ['modality=video', 'Kling AI']
+  ])('honors the legacy %s deep link', async ([search, expected]) => {
+    history.replaceState(null, '', `/models/?${search}`)
+    render(HubModelsGrid, { props: { models } })
+
+    await waitFor(() =>
+      expect(cardNames()).toEqual([expect.stringContaining(expected)])
+    )
+  })
+
+  it('does not show a duplicate search results panel', async () => {
+    const user = userEvent.setup()
+    render(HubModelsGrid, { props: { models } })
+
+    await user.type(await search(), 'flux')
+    expect(screen.queryByTestId('workshop-search-panel')).toBeNull()
+  })
+
+  it('offers Resolution and no Best for menu in the toolbar', () => {
+    render(HubModelsGrid, { props: { models } })
+    const toolbar = within(screen.getByTestId('workshop-toolbar'))
+
+    expect(toolbar.getByTestId('resolution-menu')).toBeVisible()
+    expect(toolbar.queryByRole('button', { name: /Best for/ })).toBeNull()
+  })
+
+  it('opens the use case the address names on its tab, with no way back to leave', async () => {
+    history.replaceState(null, '', '/models/?useCase=edit-images')
+    const user = userEvent.setup()
+    render(HubModelsGrid, { props: { models } })
+
+    expect(
+      await screen.findByRole('heading', { level: 2, name: 'Edit images 1' })
+    ).toBeTruthy()
+    expect(screen.getByRole('tab', { name: 'Image' })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    )
+    expect(cardNames()).toEqual([expect.stringContaining('Flux')])
+    expect(openWeightCards()).toEqual([])
+    expect(screen.queryByRole('button', { name: /Back to/ })).toBeNull()
+
+    await chooseTab(user, 'All')
+    expect(catalogueHeading()).toHaveTextContent('3')
+    expect(cardNames()).toHaveLength(3)
+  })
+
+  it.for([
+    { useCase: 'generate-videos', tab: 'Video' },
+    { useCase: 'audio', tab: 'Audio' }
+  ])(
+    'opens the tab a deep-linked $useCase belongs to',
+    async ({ useCase, tab }) => {
+      const audio: WorkshopModel = {
+        ...models[0],
+        slug: 'speech',
+        name: 'Speech',
+        href: '/models/speech/',
+        modality: 'audio',
+        task: 'text-to-audio'
+      }
+      history.replaceState(null, '', `/models/?useCase=${useCase}`)
+      render(HubModelsGrid, { props: { models: [...models, audio] } })
+
+      await waitFor(() =>
+        expect(screen.getByRole('tab', { name: tab })).toHaveAttribute(
+          'aria-selected',
+          'true'
+        )
+      )
+      expect(cardNames()).toHaveLength(1)
+    }
+  )
+
+  it('brings the catalogue heading into view as a restored page opens a use case, without leaving the page', async () => {
+    const scrollTo = vi
+      .spyOn(window, 'scrollTo')
+      .mockImplementation(() => undefined)
+    const scrollIntoView = vi
+      .spyOn(HTMLElement.prototype, 'scrollIntoView')
+      .mockImplementation(() => undefined)
+    onTestFinished(() => {
+      scrollTo.mockRestore()
+      scrollIntoView.mockRestore()
+    })
+    render(HubModelsGrid, { props: { models } })
+    await nextTick()
+    expect(scrollIntoView).not.toHaveBeenCalled()
+
+    history.replaceState(null, '', '/models/?useCase=edit-images')
+    window.dispatchEvent(restoredPageShow())
+
+    await vi.waitFor(() =>
+      expect(scrollIntoView.mock.contexts).toContain(
+        screen.getByRole('heading', { level: 2, name: 'Edit images 1' })
+      )
+    )
+    expect(scrollTo).not.toHaveBeenCalledWith({ top: 0 })
+    expect(screen.getByTestId('models-hub-hero')).toBeTruthy()
+  })
+
+  it.for([
+    {
+      search: '?tab=video&useCase=edit-videos',
+      cards: ['Restyle'],
+      heading: 'Edit videos 1'
+    },
+    {
+      search: '?tab=video&useCase=edit-videos,generate-videos',
+      cards: ['Kling AI', 'Restyle'],
+      heading: 'All models 2'
+    }
+  ])(
+    'narrows a tab by the use cases $search names',
+    async ({ search, cards, heading }) => {
+      const restyle: WorkshopModel = {
+        ...models[0],
+        slug: 'restyle',
+        name: 'Restyle',
+        href: '/models/restyle/',
+        task: 'video-to-video'
+      }
+      history.replaceState(null, '', `/models/${search}`)
+      render(HubModelsGrid, { props: { models: [...models, restyle] } })
+
+      expect(
+        await screen.findByRole('heading', { level: 2, name: heading })
+      ).toBeTruthy()
+      expect(cardNames()).toEqual(
+        cards.map((name) => expect.stringContaining(name))
+      )
+      expect(location.search).toBe(search.replace(',', '%2C'))
+    }
+  )
+
+  it('keeps a use case the next tab also offers and lets go of one it does not', async () => {
+    history.replaceState(null, '', '/models/?useCase=edit-images')
+    const user = userEvent.setup()
+    render(HubModelsGrid, { props: { models } })
+    await screen.findByRole('heading', { level: 2, name: 'Edit images 1' })
+
+    await chooseTab(user, 'Edit')
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'Edit images 1' })
+    ).toBeTruthy()
+    expect(location.search).toContain('useCase=edit-images')
+
+    await chooseTab(user, 'Video')
+    expect(location.search).not.toContain('useCase')
+    expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
+  })
+
+  it('finds no open-weight models when the visitor searches for one', async () => {
+    const user = userEvent.setup()
+    render(HubModelsGrid, { props: { models } })
+
+    await user.type(await search(), 'kontext')
+    expect(openWeightCards()).toEqual([])
+    expect(cardNames()).toEqual([])
+    expect(screen.getByText('No models match')).toBeTruthy()
+  })
+
+  it.for([
+    { locale: 'en' as const, name: 'Browse open weights' },
+    { locale: 'zh-CN' as const, name: '浏览开放权重' }
+  ])('links to the open weights page in $locale', ({ locale, name }) => {
+    render(HubModelsGrid, { props: { models, locale } })
+
+    const link = screen.getByTestId('models-all-link')
+    expect(link).toHaveAccessibleName(name)
+    expect(link).toHaveAttribute('href', '/hub/models/local/')
+  })
+
+  it.for([undefined, ''])(
+    'starts from the address again when the browser restores the page (initialSearch: %s)',
+    async (initialSearch) => {
+      const user = userEvent.setup()
+      render(HubModelsGrid, { props: { models, initialSearch } })
+
+      await chooseTab(user, 'Image')
+
+      history.replaceState(null, '', '/models/?useCase=generate-videos')
+      window.dispatchEvent(restoredPageShow())
+
+      expect(
+        await screen.findByRole('heading', {
+          level: 2,
+          name: /Generate videos/
+        })
+      ).toBeTruthy()
+      expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
+    }
+  )
+
+  it('reads the address only on a restored page, not on every pageshow', async () => {
+    history.replaceState(null, '', '/models/?useCase=generate-videos')
+    render(HubModelsGrid, { props: { models, initialSearch: '' } })
+
+    window.dispatchEvent(new Event('pageshow'))
+    await nextTick()
+
+    expect(catalogueHeading()).toHaveTextContent('3')
+    expect(cardNames()).toHaveLength(3)
+  })
+
+  it('sorts by recommendation by default and by name on request', async () => {
+    const user = userEvent.setup()
+    render(HubModelsGrid, { props: { models } })
+    await user.type(await search(), ' ')
+    expect(cardNames()[0]).toContain('Kling AI')
+
+    await user.click(screen.getByRole('button', { name: 'Sort' }))
+    await user.click(
+      await screen.findByRole('menuitemradio', { name: 'Name A to Z' })
+    )
+    expect(cardNames()[0]).toContain('Flux')
+  })
+
+  it('offers no price order, even for models that carry a price', async () => {
+    const user = userEvent.setup()
+    render(HubModelsGrid, { props: { models } })
+
+    await user.click(screen.getByRole('button', { name: 'Sort' }))
+
+    expect(
+      (await screen.findAllByRole('menuitemradio')).map((item) =>
+        item.textContent.trim()
+      )
+    ).toEqual(['Most popular', 'Name A to Z'])
+  })
+
+  it('opens on the whole catalogue with no Trending row, and sorts it by name', async () => {
+    const user = userEvent.setup()
+    render(HubModelsGrid, { props: { models } })
+    expect(catalogueHeading()).toHaveTextContent('3')
+    expect(cardNames()).toHaveLength(3)
+
+    await user.click(screen.getByRole('button', { name: 'Sort' }))
+    await user.click(
+      await screen.findByRole('menuitemradio', { name: 'Name A to Z' })
+    )
+
+    expect(
+      screen.queryByRole('heading', { level: 2, name: 'Trending' })
+    ).toBeNull()
+    expect(
+      cardNames().map((name) => name.match(/Flux|Kling AI|Mystery/)?.[0])
+    ).toEqual(['Flux', 'Kling AI', 'Mystery'])
+  })
+
+  it('does not manufacture a return shelf before a model is opened', () => {
+    sessionStorage.setItem('comfy-models-shelf', 'generate-videos')
+    render(HubModelsGrid, { props: { models } })
+
+    expect(lastList('/models/kling-ai/')).toBeUndefined()
+  })
+
+  it('remembers the category tab a model was opened from', async () => {
+    history.replaceState(null, '', '/hub/models/?tab=video')
+    const user = userEvent.setup()
+    render(HubModelsGrid, { props: { models } })
+    await nextTick()
+
+    await user.click(screen.getByRole('link', { name: /Kling AI/ }))
+
+    expect(lastList('/models/kling-ai/')).toEqual({
+      href: '/hub/models/?tab=video',
+      label: 'Video models'
+    })
+  })
+
+  it('clears search and filters together from the empty state', async () => {
+    const user = userEvent.setup()
+    render(HubModelsGrid, { props: { models } })
+    await user.type(await search(), 'nothing')
+    expect(screen.getByText('No models match')).toBeTruthy()
+
+    await user.click(screen.getByRole('button', { name: 'Clear filters' }))
+    expect(cardNames()).toHaveLength(3)
+  })
+
+  describe('models hub', () => {
+    const wan: WorkshopModel = {
+      slug: 'wan--text-to-video-3.0--generate-videos',
+      name: 'Wan 3.0 Text-to-Video',
+      workflowCount: 1,
+      href: '/models/wan-3/',
+      routerId: 'wan/wan3.0-t2v',
+      capabilities: [],
+      provider: 'Wan',
+      modality: 'video',
+      task: 'text-to-video',
+      thumbnail: { url: 'https://example.com/wan.webp', kind: 'image' }
+    }
+    const launch: WorkshopModel = {
+      slug: 'byteplus--seedance-2-5-text-to-video--generate-videos',
+      name: 'Seedance 2.5 Text-to-Video',
+      workflowCount: 1,
+      href: '/models/seedance-2-5/',
+      routerId: 'byteplus/seedance-2-5',
+      capabilities: [],
+      provider: 'ByteDance',
+      modality: 'video',
+      task: 'text-to-video'
+    }
+    const hub = [...models, wan, launch]
+
+    it('opens on the hero and then the whole catalogue', () => {
+      vi.stubEnv('PUBLIC_WORKSHOP_ROUTER_RUN', '1')
+      render(HubModelsGrid, { props: { models: hub } })
+
+      const hero = screen.getByTestId('models-hub-hero')
+      expect(within(hero).getByTestId('hub-back')).toHaveAttribute(
+        'href',
+        '/hub/'
+      )
+      expect(within(hero).getByRole('heading', { level: 1 })).toHaveTextContent(
+        /^Models$/
+      )
+      expect(
+        within(hero).queryByRole('link', { name: /Run a model|Get an API key/ })
+      ).toBeNull()
+      expect(catalogueHeading()).toHaveAttribute('id', 'models-catalogue')
+      expect(screen.queryByTestId('models-hub-counts')).toBeNull()
+      expect(within(hero).getByTestId('featured-title')).toHaveTextContent(
+        'Seedance 2.5 Text-to-Video'
+      )
+      expect(
+        screen.queryByRole('heading', { level: 2, name: 'Trending' })
+      ).toBeNull()
+      expect(cardNames()).toHaveLength(hub.length)
+    })
+
+    it.for([
+      { narrowing: 'a search', address: '/hub/models/?q=flux' },
+      { narrowing: 'a category', address: '/hub/models/?useCase=edit-images' },
+      { narrowing: 'a tab', address: '/hub/models/?tab=video' },
+      { narrowing: 'a way to use it', address: '/hub/models/?use=api' }
+    ])(
+      'keeps the hero for $narrowing and scrolls to the results',
+      async ({ address }) => {
+        const scrollIntoView = vi
+          .spyOn(HTMLElement.prototype, 'scrollIntoView')
+          .mockImplementation(() => undefined)
+        onTestFinished(() => scrollIntoView.mockRestore())
+        history.replaceState(null, '', address)
+        render(HubModelsGrid, { props: { models: hub } })
+        await nextTick()
+
+        expect(screen.getByTestId('models-hub-hero')).toBeTruthy()
+        await vi.waitFor(() =>
+          expect(scrollIntoView.mock.contexts).toContain(
+            screen.getByRole('heading', { level: 2, name: /\d+$/ })
+          )
+        )
+      }
+    )
+  })
+
+  describe('pages', () => {
+    const many: WorkshopModel[] = Array.from({ length: 110 }, (_, index) => ({
+      slug: `model-${index}`,
+      name: `Model ${String(index).padStart(3, '0')}`,
+      workflowCount: 1,
+      href: `/models/model-${index}/`,
+      routerId: `acme/model-${index}`,
+      capabilities: [],
+      provider: 'Acme'
+    }))
+
+    it('shows forty-eight models, then forty-eight more on each request, until all are shown', async () => {
+      const user = userEvent.setup()
+      render(HubModelsGrid, { props: { models: many } })
+      expect(catalogueHeading()).toHaveTextContent('110')
+      expect(cardNames()).toHaveLength(48)
+
+      await user.click(screen.getByRole('button', { name: 'Show more' }))
+      expect(cardNames()).toHaveLength(96)
+
+      await user.click(screen.getByRole('button', { name: 'Show more' }))
+      expect(cardNames()).toHaveLength(110)
+      expect(screen.queryByRole('button', { name: 'Show more' })).toBeNull()
+    })
+
+    it('starts again from the first page when the search or sort changes', async () => {
+      const user = userEvent.setup()
+      render(HubModelsGrid, { props: { models: many } })
+      await user.click(screen.getByRole('button', { name: 'Show more' }))
+      expect(cardNames()).toHaveLength(96)
+
+      await user.type(await search(), 'model')
+      expect(cardNames()).toHaveLength(48)
+
+      await user.click(screen.getByRole('button', { name: 'Show more' }))
+      await user.click(screen.getByRole('button', { name: 'Sort' }))
+      await user.click(
+        await screen.findByRole('menuitemradio', { name: 'Name A to Z' })
+      )
+      expect(cardNames()).toHaveLength(48)
+    })
+
+    it('shows no more button when one page holds every model', () => {
+      render(HubModelsGrid, { props: { models } })
+      expect(screen.queryByRole('button', { name: 'Show more' })).toBeNull()
+    })
+
+    it('leaves the heading above the toolbar holding the controls', () => {
+      render(HubModelsGrid, { props: { models } })
+
+      const toolbar = screen.getByTestId('workshop-toolbar')
+      const heading = catalogueHeading()
+
+      expect(toolbar).not.toContainElement(heading)
+      expect(
+        heading.compareDocumentPosition(toolbar) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
+      expect(within(toolbar).getByRole('searchbox')).toBeVisible()
+      expect(within(toolbar).getByTestId('workshop-filters')).toBeVisible()
+      expect(within(toolbar).getByTestId('workshop-sort')).toBeVisible()
+    })
+  })
+
+  describe('how you use it', () => {
+    beforeEach(() => {
+      vi.stubEnv('PUBLIC_WORKSHOP_ROUTER_RUN', '1')
+    })
+
+    const withUnwired: WorkshopModel[] = [
+      ...models,
+      {
+        ...models[0],
+        slug: 'unwired',
+        name: 'Unwired',
+        href: '/models/unwired/',
+        incompleteReason: 'missing-input-schema'
+      }
+    ]
+
+    async function chooseAccess(...labels: string[]) {
+      const user = userEvent.setup()
+      await user.click(screen.getByRole('button', { name: 'Filter' }))
+      const dialog = await screen.findByRole('dialog', { name: 'Filter' })
+      for (const label of labels)
+        await user.click(
+          within(dialog).getByRole('button', { name: new RegExp(`^${label} `) })
+        )
+      return { user, dialog }
+    }
+
+    function hostedCards() {
+      return screen.queryAllByTestId('workshop-model-card')
+    }
+
+    it('offers the two ways to use a model with their counts, and no Download', async () => {
+      render(HubModelsGrid, { props: { models: withUnwired } })
+      const { dialog } = await chooseAccess()
+
+      for (const name of [`Run here ${models.length}`, `API ${models.length}`])
+        expect(within(dialog).getByRole('button', { name })).toHaveAttribute(
+          'aria-pressed',
+          'false'
+        )
+      expect(
+        within(dialog).queryByRole('button', { name: /^Download/ })
+      ).toBeNull()
+    })
+
+    it.for([
+      { choice: ['Run here'], hosted: 3 },
+      { choice: ['API'], hosted: 3 },
+      { choice: ['Run here', 'API'], hosted: 3 }
+    ])(
+      'lists $hosted hosted and no open-weight models for $choice',
+      async ({ choice, hosted }) => {
+        render(HubModelsGrid, { props: { models: withUnwired } })
+        const { user } = await chooseAccess(...choice)
+        await user.keyboard('{Escape}')
+        await showEveryPage(user)
+
+        expect(hostedCards()).toHaveLength(hosted)
+        expect(openWeightCards()).toHaveLength(0)
+        expect(screen.getByTestId('workshop-filter-count')).toHaveTextContent(
+          String(choice.length)
+        )
+      }
+    )
+
+    it('lists no hosted model under Run here while running here is off', async () => {
+      vi.stubEnv('PUBLIC_WORKSHOP_ROUTER_RUN', undefined)
+      render(HubModelsGrid, { props: { models } })
+      const { dialog } = await chooseAccess('Run here')
+
+      expect(
+        within(dialog).getByRole('button', { name: 'Run here 0' })
+      ).toBeTruthy()
+      expect(within(dialog).queryByRole('button', { name: /^API / })).toBeNull()
+      expect(hostedCards()).toHaveLength(0)
+    })
+
+    it('opens on the choice the address names and keeps it there', async () => {
+      history.replaceState(null, '', '/hub/models/?use=run')
+      render(HubModelsGrid, { props: { models: withUnwired } })
+      await nextTick()
+
+      expect(hostedCards()).toHaveLength(models.length)
+      expect(screen.getByTestId('models-hub-hero')).toBeTruthy()
+      expect(screen.getByTestId('workshop-filter-count')).toHaveTextContent('1')
+
+      const { user, dialog } = await chooseAccess('API')
+      expect(location.search).toBe('?use=run%2Capi')
+      await user.click(within(dialog).getByTestId('workshop-filter-clear'))
+      expect(location.search).toBe('')
+    })
+
+    it('lets go of the choice with the rest of the filters', async () => {
+      render(HubModelsGrid, { props: { models: withUnwired } })
+      const { user, dialog } = await chooseAccess('API')
+      await user.click(within(dialog).getByTestId('workshop-filter-clear'))
+
+      expect(hostedCards()).toHaveLength(withUnwired.length)
+      expect(screen.queryByTestId('workshop-filter-count')).toBeNull()
+      expect(catalogueHeading()).toHaveTextContent(`${withUnwired.length}`)
+    })
+  })
+
+  describe('resolution', () => {
+    async function openResolutions(user: ReturnType<typeof userEvent.setup>) {
+      await user.click(screen.getByTestId('resolution-menu'))
+      return screen.findByRole('menu')
+    }
+
+    it('lists the resolutions the models offer, highest first, after All', async () => {
+      const user = userEvent.setup()
+      render(HubModelsGrid, { props: { models } })
+      const menu = await openResolutions(user)
+
+      const items = within(menu).getAllByRole('menuitemradio')
+      const names = ['All resolutions', '2K 1', '1080p 1', '720p 1']
+      expect(items).toHaveLength(names.length)
+      for (const [index, name] of names.entries())
+        expect(items[index]).toHaveAccessibleName(name)
+      expect(
+        within(menu).getByRole('menuitemradio', { name: 'All resolutions' })
+      ).toHaveAttribute('aria-checked', 'true')
+    })
+
+    it('keeps only the models that offer the chosen resolution, in the address too', async () => {
+      const user = userEvent.setup()
+      render(HubModelsGrid, { props: { models } })
+      const menu = await openResolutions(user)
+      await user.click(
+        within(menu).getByRole('menuitemradio', { name: '1080p 1' })
+      )
+
+      expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
+      expect(screen.getByTestId('resolution-menu')).toHaveTextContent('1080p')
+      expect(location.search).toBe('?resolution=1080p')
+
+      await user.click(
+        within(await openResolutions(user)).getByRole('menuitemradio', {
+          name: 'All resolutions'
+        })
+      )
+      expect(cardNames()).toHaveLength(3)
+      expect(location.search).toBe('')
+    })
+
+    it.for([
+      { search: '?resolution=2k', shown: ['Flux'] },
+      { search: '?resolution=8K', shown: ['Kling AI', 'Flux', 'Mystery'] }
+    ])('opens $search on $shown', async ({ search, shown }) => {
+      history.replaceState(null, '', `/hub/models/${search}`)
+      render(HubModelsGrid, { props: { models } })
+      await nextTick()
+
+      expect(
+        cardNames().map((card) => shown.find((name) => card.includes(name)))
+      ).toEqual(shown)
+    })
+  })
+
+  describe('compare', () => {
+    const extra = (slug: string, name: string): RouterWorkshopModel => ({
+      slug,
+      name,
+      workflowCount: 0,
+      href: `/models/${slug}/`,
+      routerId: `acme/${slug}`,
+      capabilities: [],
+      provider: 'Acme'
+    })
+    const seedream: WorkshopModel = {
+      ...extra('seedream', 'Seedream'),
+      routerId: 'bytedance/seedream',
+      provider: 'ByteDance'
+    }
+    const catalogue = [...models, seedream, extra('veo', 'Veo')]
+
+    function renderCatalogue() {
+      render(HubModelsGrid, { props: { models: catalogue } })
+      return userEvent.setup()
+    }
+
+    function toggle(name: string) {
+      return screen.getByRole('checkbox', { name: `Compare ${name}` })
+    }
+
+    function compareButton() {
+      return within(screen.getByTestId('compare-tray')).getByTestId(
+        'compare-open'
+      )
+    }
+
+    function columns() {
+      return within(screen.getByTestId('compare-view'))
+        .getAllByRole('columnheader')
+        .map((column) => column.getAttribute('aria-label'))
+    }
+
+    async function compare(
+      user: ReturnType<typeof userEvent.setup>,
+      ...names: string[]
+    ) {
+      for (const name of names) await user.click(toggle(name))
+      await user.click(compareButton())
+    }
+
+    it('offers Compare on every comparable card before anything is chosen', () => {
+      renderCatalogue()
+      expect(
+        screen
+          .getAllByRole('checkbox', { name: /^Compare / })
+          .map((box) => box.getAttribute('aria-label'))
+      ).toEqual(catalogue.map((model) => `Compare ${model.name}`))
+      expect(screen.queryByTestId('compare-tray')).toBeNull()
+    })
+
+    it('collects up to four models in the tray', async () => {
+      const user = renderCatalogue()
+      await user.click(toggle('Kling AI'))
+      expect(compareButton()).toBeDisabled()
+      expect(compareButton()).toHaveAccessibleName('Compare 1 model')
+      expect(compareButton()).toHaveTextContent('Compare 1')
+      expect(screen.getByTestId('compare-count')).toHaveTextContent('1 of 4')
+      expect(screen.getAllByTestId('compare-slot')).toHaveLength(3)
+
+      await user.click(toggle('Flux'))
+      expect(compareButton()).toBeEnabled()
+      expect(screen.getByTestId('compare-count')).toHaveTextContent('2 of 4')
+      expect(screen.getAllByTestId('compare-slot')).toHaveLength(2)
+
+      await user.click(toggle('Mystery'))
+      await user.click(toggle('Seedream'))
+      expect(screen.getByTestId('compare-count')).toHaveTextContent('4 of 4')
+      expect(screen.queryByTestId('compare-slot')).toBeNull()
+      expect(
+        screen.getAllByTestId('compare-pick').map((pick) => pick.textContent)
+      ).toEqual([
+        'KKling AIKling',
+        'FFluxBlack Forest Labs',
+        'MMystery',
+        'SSeedreamByteDance'
+      ])
+      expect(toggle('Veo')).toBeDisabled()
+
+      await user.click(
+        screen.getByRole('button', { name: 'Remove Flux from compare' })
+      )
+      expect(toggle('Flux')).not.toBeChecked()
+      expect(toggle('Veo')).toBeEnabled()
+
+      await user.click(screen.getByTestId('compare-clear'))
+      expect(screen.queryByTestId('compare-tray')).toBeNull()
+      expect(toggle('Kling AI')).not.toBeChecked()
+    })
+
+    it('opens the chosen models side by side and names them in the address', async () => {
+      const user = renderCatalogue()
+      await compare(user, 'Kling AI', 'Seedream')
+
+      expect(
+        await screen.findByRole('heading', {
+          level: 2,
+          name: /^Compare 2 models/
+        })
+      ).toHaveTextContent('up to 4')
+      expect(location.search).toBe('?compare=kling-ai,seedream')
+      expect(screen.queryByTestId('workshop-models-grid')).toBeNull()
+      expect(screen.queryByTestId('compare-tray')).toBeNull()
+      expect(columns()).toEqual(['Kling AI', 'Seedream'])
+      expect(screen.getByRole('row', { name: /^Provider/ })).toHaveTextContent(
+        'ProviderKlingByteDance'
+      )
+      expect(
+        screen
+          .getAllByRole('link', { name: /^Try / })
+          .map((link) => [link.getAttribute('href'), link.textContent.trim()])
+      ).toEqual([
+        ['/models/kling-ai/', 'Try'],
+        ['/models/seedream/', 'Try']
+      ])
+      expect(
+        screen
+          .getAllByRole('link', { name: / API$/ })
+          .map((link) => link.getAttribute('href'))
+      ).toEqual(['/models/kling-ai/#api', '/models/seedream/#api'])
+      expect(screen.getAllByTestId('compare-thumbnail')).toHaveLength(2)
+    })
+
+    it('goes back to the catalogue with the choice kept, and closes when a column leaves', async () => {
+      const user = renderCatalogue()
+      await compare(user, 'Kling AI', 'Flux', 'Seedream')
+
+      await user.click(screen.getByTestId('compare-add'))
+      expect(screen.queryByTestId('compare-view')).toBeNull()
+      expect(location.search).toBe('')
+      expect(compareButton()).toHaveAccessibleName('Compare 3 models')
+
+      await user.click(compareButton())
+      await user.click(
+        await screen.findByRole('button', { name: 'Remove Flux from compare' })
+      )
+      expect(columns()).toEqual(['Kling AI', 'Seedream'])
+      expect(location.search).toBe('?compare=kling-ai,seedream')
+
+      await user.click(
+        screen.getByRole('button', { name: 'Remove Seedream from compare' })
+      )
+      expect(screen.queryByTestId('compare-view')).toBeNull()
+      expect(compareButton()).toHaveAccessibleName('Compare 1 model')
+    })
+
+    it('opens a shared comparison on its models', async () => {
+      history.replaceState(null, '', '/hub/models/?compare=flux,seedream')
+      renderCatalogue()
+      await screen.findByTestId('compare-view')
+      expect(columns()).toEqual(['Flux', 'Seedream'])
+    })
+
+    it('keeps the catalogue when a shared comparison names too few known models', async () => {
+      history.replaceState(null, '', '/hub/models/?compare=flux,unknown')
+      renderCatalogue()
+      await nextTick()
+      expect(screen.queryByTestId('compare-view')).toBeNull()
+      expect(compareButton()).toHaveAccessibleName('Compare 1 model')
+    })
+  })
+})

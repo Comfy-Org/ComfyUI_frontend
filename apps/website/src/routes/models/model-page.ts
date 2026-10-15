@@ -34,6 +34,14 @@ export function modelOgImage(
     : model.thumbnail?.poster
 }
 
+/** The price estimate a model's page shows, for its only use case if it has one. */
+export function modelPriceEstimate(model: WorkshopModel) {
+  return estimateWorkshopNodePrice(
+    model,
+    model.useCases?.length === 1 ? model.useCases[0] : undefined
+  )
+}
+
 async function providerModelRows(model: WorkshopModel) {
   const { provider } = model
   if (!provider) return []
@@ -53,10 +61,7 @@ async function providerModelRows(model: WorkshopModel) {
         getWorkshopPageDetail(other.slug)?.execution?.inputSchema
       )
       const resolution = resolutionRange(other.resolutions)
-      const price = await estimateWorkshopNodePrice(
-        other,
-        other.useCases?.length === 1 ? other.useCases[0] : undefined
-      )
+      const price = await modelPriceEstimate(other)
       return {
         slug: other.slug,
         name: other.name,
@@ -113,10 +118,7 @@ export async function prepareModelPage(
     successor: model.successorSlug
       ? getWorkshopModel(model.successorSlug)
       : undefined,
-    priceEstimate: await estimateWorkshopNodePrice(
-      model,
-      model.useCases?.length === 1 ? model.useCases[0] : undefined
-    ),
+    priceEstimate: await modelPriceEstimate(model),
     useCaseLabel: useCase ? t(useCaseLabelKey[useCase]) : undefined,
     providerModels: await providerModelRows(model),
     workflows: model.routerId ? workflowsUsingModel(model, workshopPages) : [],
