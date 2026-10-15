@@ -82,9 +82,9 @@ The user gets one visible transition into a usable conversation, at the cost of
 waiting for workflow readiness before reading it. Back may need another fetch.
 The session's underlying data can hydrate while history remains visible; the
 panel must not use thread-ID changes alone as proof of navigation success.
-The Cloud listing can omit live, version-less drafts. An omitted identity needs
-a direct lifecycle lookup; only 404 establishes that it is gone. An incomplete
-listing or a listing superseded by a newer refresh does not establish absence.
+The Cloud listing can omit live, version-less drafts. An identity omitted from
+a complete listing needs a direct lifecycle lookup; only 404 establishes that it
+is gone. An incomplete, failed or superseded listing does not establish absence.
 
 ## Amendment (2026-10-06): Readable History with an Unresolved Target
 
