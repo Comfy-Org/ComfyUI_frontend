@@ -6,6 +6,8 @@ import {
   settleStoryTurn,
   startStoryTurn
 } from '@e2e/fixtures/agentExecutionStoryFixture'
+import { QueuePanel } from '@e2e/fixtures/components/QueuePanel'
+import { nextFrame } from '@e2e/fixtures/utils/timing'
 import { TARGET_ID } from '@e2e/fixtures/data/agent/agentCrdtMultiAutogrowRealignFixture'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
@@ -28,14 +30,18 @@ test.describe(
       await expect(executingOutline).toBeVisible()
 
       await Promise.all([
-        page.waitForRequest('**/api/agent/threads/*/messages/*/cancel'),
+        page.waitForResponse('**/api/agent/threads/*/messages/*/cancel'),
         harness.panel
           .getByRole('button', { name: enMessages.agent.stop })
           .click()
       ])
       await settleStoryTurn(harness)
+      await nextFrame(page)
 
       await expect(executingOutline).toBeVisible()
+      const queuePanel = new QueuePanel(page)
+      await queuePanel.open()
+      await expect(queuePanel.jobRow(jobId)).toBeVisible()
       expect(execution.jobCancelRequests()).toEqual([])
     })
   }

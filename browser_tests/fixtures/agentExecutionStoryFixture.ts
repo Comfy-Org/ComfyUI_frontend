@@ -19,8 +19,7 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
  * spec whose subject IS a turn — "run it", or stopping one mid-flight — must
  * drive that turn itself rather than spend the only one on a binding
  * handshake. The panel is open and targeting the workflow; sending the
- * story's message is what acks the turn and binds the CRDT follower. Stop's
- * turn cancel is accepted; the turn still ends only on `settleStoryTurn`.
+ * story's message is what acks the turn and binds the CRDT follower.
  */
 export const agentExecutionStoryTest = agentTest.extend<{
   rig: AgentExecutionRig

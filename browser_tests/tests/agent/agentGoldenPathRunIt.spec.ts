@@ -22,6 +22,7 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 const JOB_ID = 'agent-golden-path-run-1'
 const OUTPUT_FILENAME = 'agent-golden-path-out.png'
 const ASK_ID = `${MESSAGE_ID}:call-run`
+const ANSWER_PATH = `/api/agent/threads/${THREAD_ID}/asks/${ASK_ID}/answer`
 
 const ids = { message_id: MESSAGE_ID, thread_id: THREAD_ID }
 
@@ -50,10 +51,14 @@ test.describe(
     }) => {
       // Run approval is answered over REST; the parked turn then resumes on
       // the socket (`agent_ask_resolved` is the canonical resolution).
-      const answers: string[][] = []
+      const answers: { method: string; path: string; selected: string[] }[] = []
       await page.route('**/api/agent/threads/*/asks/*/answer', (route) => {
         const body = zAgentAnswerRequest.parse(route.request().postDataJSON())
-        answers.push(body.selected)
+        answers.push({
+          method: route.request().method(),
+          path: new URL(route.request().url()).pathname,
+          selected: body.selected
+        })
         const accepted: AgentAnswerAccepted = {
           status: 'answered',
           selected: body.selected
@@ -99,7 +104,11 @@ test.describe(
         })
         .click()
       await expect.poll(() => answers.length).toBe(1)
-      expect(answers[0]).toEqual(['run'])
+      expect(answers[0]).toEqual({
+        method: 'POST',
+        path: ANSWER_PATH,
+        selected: ['run']
+      })
 
       // The turn resumes: the run tool submits the workflow server-side and
       // the job starts, then the agent's turn completes.
