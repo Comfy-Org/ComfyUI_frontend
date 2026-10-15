@@ -53,6 +53,7 @@ See [Registration, lifecycle, and globals](./registration.md).
 | `backend`  | `BackendHandle`  | [Services](./services.md#pack-relative-backend-requests-and-events) |
 | `workflow` | `WorkflowHandle` | [Services](./services.md#workflow-service)                          |
 | `system`   | `SystemHandle`   | [Services](./services.md#system-monitoring)                         |
+| `models`   | `ModelsHandle`   | [Services](./services.md#model-catalogues)                          |
 
 ### Lifecycle and observation
 
@@ -624,6 +625,16 @@ the base; shared/core operations use named async `comfy.*` capabilities.
 See the [routing contract](./services.md#pack-relative-backend-requests-and-events).
 URL builders retained for trusted host adapters are deprecated for pack use.
 
+### `ModelsHandle`
+
+- `list(folder: ModelFolder): Promise<string[]>`
+
+Returns distinct logical model names from one closed catalogue folder. The
+host selects the route and validates responses; unknown folders, malformed
+replies and HTTP failures reject. It does not expose filesystem locations,
+library path indexes or arbitrary file reads. See
+[Model catalogues](./services.md#model-catalogues) for folders and bounds.
+
 ### `WorkflowHandle`
 
 - `open(data: WorkflowData): Promise<void>`
@@ -657,17 +668,18 @@ This block is generated from `CAPABILITIES` in `comfyApi.ts`.
 `defs.inputValues`, `defs.localizedInputNames`, `defs.typeCompatibility`,
 `execution.node`, `graph.nodes`, `graph.selection`,
 `interaction.nodeDragEnd`, `interaction.nodeMoved`, `interaction.state`,
-`node.changeScope`, `node.connectVeto`, `node.fileDrop`, `node.geometry`,
-`node.menu`, `node.onPreview`, `node.onSerialize`, `node.resolve`,
-`node.sizeConstraints`, `queue.disableAutoQueue`, `queue.settings`,
-`serialization.control`, `settings`, `slots.connect`, `slots.connectedType`,
-`slots.dynamic`, `slots.identity`, `slots.layout`, `slots.localizedName`,
-`slots.moveLinks`, `slots.resolvedSource`, `slots.retype`,
-`slots.widgetConfig`, `storage`, `supply.outputs`, `supply.resolved`,
-`system.monitor`, `ui.sidebarTab`, `viewport.changed`, `widgets.canvas`,
-`widgets.create`, `widgets.height`, `widgets.hidden`, `widgets.linked`,
-`widgets.mount`, `widgets.reorder`, `widgets.textInteraction`,
-`widgets.typeContext`, `workflow.open`, `workflow.textReplacements`.
+`models.list`, `node.changeScope`, `node.connectVeto`, `node.fileDrop`,
+`node.geometry`, `node.menu`, `node.onPreview`, `node.onSerialize`,
+`node.resolve`, `node.sizeConstraints`, `queue.disableAutoQueue`,
+`queue.settings`, `serialization.control`, `settings`, `slots.connect`,
+`slots.connectedType`, `slots.dynamic`, `slots.identity`, `slots.layout`,
+`slots.localizedName`, `slots.moveLinks`, `slots.resolvedSource`,
+`slots.retype`, `slots.widgetConfig`, `storage`, `supply.outputs`,
+`supply.resolved`, `system.monitor`, `ui.sidebarTab`, `viewport.changed`,
+`widgets.canvas`, `widgets.create`, `widgets.height`, `widgets.hidden`,
+`widgets.linked`, `widgets.mount`, `widgets.reorder`,
+`widgets.textInteraction`, `widgets.typeContext`, `workflow.open`,
+`workflow.textReplacements`.
 <!-- node-api-capabilities:end -->
 
 Use `comfy.capabilities()` at runtime. The generated block exists for discovery
