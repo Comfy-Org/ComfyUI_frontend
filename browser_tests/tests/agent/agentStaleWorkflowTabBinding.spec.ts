@@ -201,7 +201,7 @@ test.describe(
         .allTextContents()
       const agentPanel = new AgentPanel(page)
 
-      await test.step('reopening the app restores the earlier chat without a workflow', async () => {
+      await test.step('reopening the app restores the earlier chat as Current without a workflow', async () => {
         const panel = await agentPanel.open()
         await expect(panel.getByTestId('user-message-bubble')).toHaveText([
           EARLIER_REQUEST
