@@ -1,31 +1,32 @@
 import type { Ref } from 'vue'
 import { computed } from 'vue'
 
-const LEGACY_MANAGER_KEYWORDS = [
-  'manager',
+import { stripRepoOwner } from '@/utils/searchQueryUtil'
+
+const LEGACY_MANAGER_QUERIES: ReadonlySet<string> = new Set([
   'comfyui-manager',
-  'manager comfyui',
-  'comfyui manager'
-] as const
+  'comfyui manager',
+  'manager comfyui'
+])
+
+function isLegacyManagerQuery(query: string): boolean {
+  const packName = stripRepoOwner(query.trim()).trim().toLowerCase()
+  return LEGACY_MANAGER_QUERIES.has(packName)
+}
 
 export function useLegacySearchTip(
-  searchQuery: Ref<string>,
+  searchedQuery: Ref<string>,
   isNewManagerUI: Ref<boolean>,
   rawResultsEmpty: Ref<boolean>
 ) {
-  const isLegacyManagerSearch = computed(() => {
-    if (!isNewManagerUI.value) return false
-    const query = searchQuery.value.toLowerCase().trim()
-    if (!query) return false
-    return LEGACY_MANAGER_KEYWORDS.some((keyword) => query.includes(keyword))
-  })
-
   const isUnmatchedLegacyManagerSearch = computed(
-    () => isLegacyManagerSearch.value && rawResultsEmpty.value
+    () =>
+      isNewManagerUI.value &&
+      rawResultsEmpty.value &&
+      isLegacyManagerQuery(searchedQuery.value)
   )
 
   return {
-    isLegacyManagerSearch,
     isUnmatchedLegacyManagerSearch
   }
 }

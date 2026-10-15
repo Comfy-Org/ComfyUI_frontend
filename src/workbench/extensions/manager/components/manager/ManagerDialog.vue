@@ -85,7 +85,7 @@
       </div>
 
       <Message
-        :visible="showLegacyTipAboveResults"
+        :visible="isUnmatchedLegacyManagerSearch"
         severity="info"
         class="mx-6 mb-4 w-auto"
       >
@@ -382,8 +382,11 @@ const isSearchLoading = computed(
 const hasMorePacks = computed(() => toValue(packs.hasMore))
 const suggestions = computed(() => toValue(packs.suggestions))
 const sortOptions = PACK_SORTABLE_FIELDS
-const { isLegacyManagerSearch, isUnmatchedLegacyManagerSearch } =
-  useLegacySearchTip(searchQuery, isNewManagerUI, packs.rawResultsEmpty)
+const { isUnmatchedLegacyManagerSearch } = useLegacySearchTip(
+  packs.searchedQuery,
+  isNewManagerUI,
+  packs.rawResultsEmpty
+)
 const filterOptions = computed(() => [
   { name: t('manager.filter.nodePack'), value: 'packs' },
   { name: t('g.nodes'), value: 'nodes' }
@@ -414,10 +417,6 @@ const {
   isLoading: isTabLoading,
   workflowPacks
 } = useManagerDisplayPacks(selectedNavId, searchResults, searchQuery, sortField)
-
-const showLegacyTipAboveResults = computed(
-  () => isUnmatchedLegacyManagerSearch.value && displayPacks.value.length > 0
-)
 
 // Tab helpers for template
 const isUpdateAvailableTab = computed(
@@ -469,13 +468,7 @@ const emptyStateTitle = computed(() => {
 
 const emptyStateMessage = computed(() => {
   if (isManagerErrorRelevant.value) return t('manager.tryAgainLater')
-  if (searchQuery.value) {
-    const baseMessage = t('manager.tryDifferentSearch')
-    if (isLegacyManagerSearch.value) {
-      return `${baseMessage}\n\n${t('manager.legacyManagerSearchTip')}`
-    }
-    return baseMessage
-  }
+  if (searchQuery.value) return t('manager.tryDifferentSearch')
 
   const tabId = selectedTab.value?.id
   const emptyStateKey = tabId ? tabEmptyStateKeys[tabId] : undefined

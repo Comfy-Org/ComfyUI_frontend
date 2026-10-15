@@ -1,6 +1,6 @@
 import { until } from '@vueuse/core'
 import { describe, expect, it, vi } from 'vitest'
-import { toValue } from 'vue'
+import { ref, toValue } from 'vue'
 
 import { DEFAULT_PAGE_SIZE } from '@/constants/searchConstants'
 import { useRegistrySearchGateway } from '@/services/gateway/registrySearchGateway'
@@ -61,4 +61,39 @@ describe('useRegistrySearch', () => {
       expect(search.rawResultsEmpty.value).toBe(expected)
     }
   )
+
+  it('reports the query behind the shown results until the next search returns', async () => {
+    let resolveNextSearch: (result: SearchPacksResult) => void = () => {}
+    const nextSearch = new Promise<SearchPacksResult>((resolve) => {
+      resolveNextSearch = resolve
+    })
+    vi.mocked(useRegistrySearchGateway().searchPacks)
+      .mockResolvedValueOnce({
+        nodePacks: packs(1),
+        querySuggestions: [],
+        rawResultsEmpty: true
+      })
+      .mockReturnValueOnce(nextSearch)
+    const query = ref('kijai/comfyui-kjnodes')
+    const search = useRegistrySearch({ query, searchMode: 'packs' })
+    await until(search.isLoading).toBe(false)
+
+    expect(search.searchedQuery.value).toBe('kijai/comfyui-kjnodes')
+
+    query.value = 'comfyui-manager'
+    await until(search.isLoading).toBe(true)
+
+    expect(search.searchedQuery.value).toBe('kijai/comfyui-kjnodes')
+    expect(search.rawResultsEmpty.value).toBe(false)
+
+    resolveNextSearch({
+      nodePacks: [],
+      querySuggestions: [],
+      rawResultsEmpty: true
+    })
+    await until(search.isLoading).toBe(false)
+
+    expect(search.searchedQuery.value).toBe('comfyui-manager')
+    expect(search.rawResultsEmpty.value).toBe(true)
+  })
 })

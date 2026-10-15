@@ -23,6 +23,7 @@ export function useRegistrySearch(inputs: {
 }): PagedList<RegistryNodePack> & {
   suggestions: Readonly<Ref<QuerySuggestion[]>>
   rawResultsEmpty: Readonly<Ref<boolean>>
+  searchedQuery: Readonly<Ref<string>>
 } {
   const { searchPacks } = useRegistrySearchGateway()
 
@@ -31,6 +32,7 @@ export function useRegistrySearch(inputs: {
   const morePages = ref(true)
   const suggestions = ref<QuerySuggestion[]>([])
   const rawResultsEmpty = ref(false)
+  const searchedQuery = ref('')
   const { enqueue, preempt, running: isLoading } = usePreemptableQueue()
 
   const searchableAttributes = (): SearchAttribute[] =>
@@ -40,16 +42,19 @@ export function useRegistrySearch(inputs: {
 
   async function doLoadMore() {
     if (!morePages.value) return
+    const query = toValue(inputs.query)
     try {
-      const result = await searchPacks(toValue(inputs.query), {
+      const result = await searchPacks(query, {
         pageSize: DEFAULT_PAGE_SIZE,
         pageNumber,
         restrictSearchableAttributes: searchableAttributes()
       })
       const { nodePacks } = result
       morePages.value = result.hasMore ?? nodePacks.length >= DEFAULT_PAGE_SIZE
-      if (pageNumber === 0)
+      if (pageNumber === 0) {
         rawResultsEmpty.value = result.rawResultsEmpty ?? nodePacks.length === 0
+        searchedQuery.value = query
+      }
       items.value.push(...nodePacks)
       suggestions.value = result.querySuggestions
       pageNumber++
@@ -88,6 +93,7 @@ export function useRegistrySearch(inputs: {
     loadNew: reload,
     invalidate: reload,
     suggestions,
-    rawResultsEmpty
+    rawResultsEmpty,
+    searchedQuery
   }
 }

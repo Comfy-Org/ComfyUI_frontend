@@ -1,158 +1,71 @@
-import type { Ref } from 'vue'
-import { beforeEach, describe, expect, it } from 'vitest'
-import { nextTick, ref } from 'vue'
+import { describe, expect, it } from 'vitest'
+import { ref } from 'vue'
 
 import { useLegacySearchTip } from './useLegacySearchTip'
 
+function tipFor(
+  searchedQuery: string,
+  { rawResultsEmpty = true, isNewManagerUI = true } = {}
+) {
+  return useLegacySearchTip(
+    ref(searchedQuery),
+    ref(isNewManagerUI),
+    ref(rawResultsEmpty)
+  ).isUnmatchedLegacyManagerSearch.value
+}
+
 describe('useLegacySearchTip', () => {
-  let searchQuery: Ref<string>
-  let isNewManagerUI: Ref<boolean>
-  let rawResultsEmpty: Ref<boolean>
-
-  beforeEach(() => {
-    searchQuery = ref('')
-    isNewManagerUI = ref(true)
-    rawResultsEmpty = ref(false)
+  it.for([
+    'comfyui-manager',
+    'ComfyUI-Manager',
+    '  comfyui-manager  ',
+    'comfyui manager',
+    'manager comfyui',
+    'ltdrdata/ComfyUI-Manager',
+    'Comfy-Org/comfyui-manager',
+    'ltdrdata/comfyui-manager.git',
+    'https://github.com/ltdrdata/ComfyUI-Manager',
+    'https://github.com/Comfy-Org/ComfyUI-Manager.git',
+    'github.com/ltdrdata/ComfyUI-Manager/tree/main'
+  ])('shows the tip for %j when its raw query found nothing', (query) => {
+    expect(tipFor(query)).toBe(true)
   })
 
-  describe('isLegacyManagerSearch', () => {
-    it('returns true when searching "manager" in new manager UI', async () => {
-      const { isLegacyManagerSearch } = useLegacySearchTip(
-        searchQuery,
-        isNewManagerUI,
-        rawResultsEmpty
-      )
-
-      searchQuery.value = 'manager'
-      await nextTick()
-
-      expect(isLegacyManagerSearch.value).toBe(true)
-    })
-
-    it('returns true when searching "comfyui-manager"', async () => {
-      const { isLegacyManagerSearch } = useLegacySearchTip(
-        searchQuery,
-        isNewManagerUI,
-        rawResultsEmpty
-      )
-
-      searchQuery.value = 'comfyui-manager'
-      await nextTick()
-
-      expect(isLegacyManagerSearch.value).toBe(true)
-    })
-
-    it('returns true when searching "comfyui manager" (space variant)', async () => {
-      const { isLegacyManagerSearch } = useLegacySearchTip(
-        searchQuery,
-        isNewManagerUI,
-        rawResultsEmpty
-      )
-
-      searchQuery.value = 'comfyui manager'
-      await nextTick()
-
-      expect(isLegacyManagerSearch.value).toBe(true)
-    })
-
-    it('returns true when keyword is part of larger query', async () => {
-      const { isLegacyManagerSearch } = useLegacySearchTip(
-        searchQuery,
-        isNewManagerUI,
-        rawResultsEmpty
-      )
-
-      searchQuery.value = 'where is manager'
-      await nextTick()
-
-      expect(isLegacyManagerSearch.value).toBe(true)
-    })
-
-    it('matches case-insensitively', async () => {
-      const { isLegacyManagerSearch } = useLegacySearchTip(
-        searchQuery,
-        isNewManagerUI,
-        rawResultsEmpty
-      )
-
-      searchQuery.value = 'MANAGER'
-      await nextTick()
-
-      expect(isLegacyManagerSearch.value).toBe(true)
-    })
-
-    it('returns false when query is empty', async () => {
-      const { isLegacyManagerSearch } = useLegacySearchTip(
-        searchQuery,
-        isNewManagerUI,
-        rawResultsEmpty
-      )
-
-      searchQuery.value = ''
-      await nextTick()
-
-      expect(isLegacyManagerSearch.value).toBe(false)
-    })
-
-    it('returns false when query is whitespace only', async () => {
-      const { isLegacyManagerSearch } = useLegacySearchTip(
-        searchQuery,
-        isNewManagerUI,
-        rawResultsEmpty
-      )
-
-      searchQuery.value = '   '
-      await nextTick()
-
-      expect(isLegacyManagerSearch.value).toBe(false)
-    })
-
-    it('returns false when searching unrelated terms', async () => {
-      const { isLegacyManagerSearch } = useLegacySearchTip(
-        searchQuery,
-        isNewManagerUI,
-        rawResultsEmpty
-      )
-
-      searchQuery.value = 'controlnet'
-      await nextTick()
-
-      expect(isLegacyManagerSearch.value).toBe(false)
-    })
-
-    it('returns false when isNewManagerUI is false', async () => {
-      isNewManagerUI.value = false
-      const { isLegacyManagerSearch } = useLegacySearchTip(
-        searchQuery,
-        isNewManagerUI,
-        rawResultsEmpty
-      )
-
-      searchQuery.value = 'manager'
-      await nextTick()
-
-      expect(isLegacyManagerSearch.value).toBe(false)
-    })
+  it.for([
+    'willmiao/comfyui-lora-manager',
+    'comfyui-lora-manager',
+    'model-manager',
+    'comfyui-model-manager',
+    'workspace-manager',
+    'comfyui-manager-extras',
+    'where is comfyui-manager',
+    'manager',
+    'controlnet',
+    '',
+    '   '
+  ])('hides the tip for %j', (query) => {
+    expect(tipFor(query)).toBe(false)
   })
 
-  describe('isUnmatchedLegacyManagerSearch', () => {
-    it.for([
-      { query: 'comfyui-manager', rawEmpty: true, expected: true },
-      { query: 'comfyui-manager', rawEmpty: false, expected: false },
-      { query: 'controlnet', rawEmpty: true, expected: false }
-    ])(
-      'is $expected for "$query" when the raw query empty is $rawEmpty',
-      ({ query, rawEmpty, expected }) => {
-        searchQuery.value = query
-        rawResultsEmpty.value = rawEmpty
-        const { isUnmatchedLegacyManagerSearch } = useLegacySearchTip(
-          searchQuery,
-          isNewManagerUI,
-          rawResultsEmpty
-        )
+  it('hides the tip when the raw query found packs', () => {
+    expect(tipFor('comfyui-manager', { rawResultsEmpty: false })).toBe(false)
+  })
 
-        expect(isUnmatchedLegacyManagerSearch.value).toBe(expected)
-      }
+  it('hides the tip in the legacy manager UI', () => {
+    expect(tipFor('comfyui-manager', { isNewManagerUI: false })).toBe(false)
+  })
+
+  it('follows the searched query as each search completes', () => {
+    const searchedQuery = ref('comfyui-manager')
+    const { isUnmatchedLegacyManagerSearch } = useLegacySearchTip(
+      searchedQuery,
+      ref(true),
+      ref(true)
     )
+    expect(isUnmatchedLegacyManagerSearch.value).toBe(true)
+
+    searchedQuery.value = 'willmiao/comfyui-lora-manager'
+
+    expect(isUnmatchedLegacyManagerSearch.value).toBe(false)
   })
 })
