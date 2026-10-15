@@ -512,9 +512,6 @@ export class DocFrameClient extends EventTarget {
       workflow_id: workflowId,
       state_vector_b64: encodeBase64(stateVector),
       supports_reseed: true,
-      // The comfy-multi-player layout this build reads. Cloud compares it with
-      // the doc host's and counts a mismatch as agent.doc.client_schema_skew;
-      // without it every subscribe is tagged client_schema:unknown.
       schema_version: SCHEMA_VERSION
     })
   }
