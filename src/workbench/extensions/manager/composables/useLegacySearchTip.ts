@@ -3,15 +3,21 @@ import { computed } from 'vue'
 
 import { stripRepoOwner } from '@/utils/searchQueryUtil'
 
-const LEGACY_MANAGER_QUERIES: ReadonlySet<string> = new Set([
+const LEGACY_MANAGER_PACK_NAMES: ReadonlySet<string> = new Set([
   'comfyui-manager',
-  'comfyui manager',
-  'manager comfyui'
+  'manager-comfyui'
 ])
 
+const TRAILING_GIT_OR_SLASHES = /(?:\.git)?\/*$/
+
+const WORD_SEPARATOR_RUN = /[\s_-]+/g
+
 function isLegacyManagerQuery(query: string): boolean {
-  const packName = stripRepoOwner(query.trim()).trim().toLowerCase()
-  return LEGACY_MANAGER_QUERIES.has(packName)
+  const packName = stripRepoOwner(query.trim().toLowerCase())
+    .replace(TRAILING_GIT_OR_SLASHES, '')
+    .trim()
+    .replace(WORD_SEPARATOR_RUN, '-')
+  return LEGACY_MANAGER_PACK_NAMES.has(packName)
 }
 
 export function useLegacySearchTip(
