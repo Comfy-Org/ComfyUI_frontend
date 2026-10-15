@@ -241,7 +241,7 @@ describe('useAlgoliaSearchProvider', () => {
             {
               hits: [
                 {
-                  [idField]: 'single-id',
+                  [idField]: `only-${idField}`,
                   name: 'Pack',
                   publisher_id: 'pub',
                   total_install: 0,
@@ -259,7 +259,7 @@ describe('useAlgoliaSearchProvider', () => {
           pageNumber: 0
         })
 
-        expect(result.nodePacks[0].id).toBe('single-id')
+        expect(result.nodePacks[0].id).toBe(`only-${idField}`)
       }
     )
 
