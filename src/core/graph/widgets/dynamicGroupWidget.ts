@@ -1,8 +1,7 @@
 import { t } from '@/i18n'
 import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
-import type { Subgraph } from '@/lib/litegraph/src/LGraph'
+import type { LGraph, Subgraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { VueOnlyWidget } from '@/lib/litegraph/src/widgets/VueOnlyWidget'
@@ -181,7 +180,7 @@ export function dynamicGroupWidget(
     })
     if (isSubgraph(graph))
       for (const input of promotedInputs)
-        disconnectOrphanedPromotion(graph, input, hosts)
+        disconnectOrphanedPromotion(graph, graph.inputs.indexOf(input), hosts)
     return true
   }
 
@@ -418,28 +417,27 @@ function renamePromotedInputLabel(
 }
 
 function disconnectOrphanedPromotion(
-  graph: Subgraph,
-  input: SubgraphInput,
+  graph: LGraph | Subgraph | null,
+  slot: number,
   hosts: PromotionHostLookup
 ) {
-  const slot = graph.inputs.indexOf(input)
-  if (slot === -1 || input.linkIds.length) return
+  if (!isSubgraph(graph) || graph.inputs[slot]?.linkIds.length !== 0) return
+  const input = graph.inputs[slot]
   for (const host of hosts(graph)) {
-    const hostGraph = host.graph
-    const link = hostGraph && inputLink(hostGraph, host.id, slot)
+    const link = host.graph && inputLink(host.graph, host.id, slot)
     if (!link) continue
     host.disconnectInput(slot)
-    if (link.origin_id === SUBGRAPH_INPUT_ID && isSubgraph(hostGraph))
-      disconnectOrphanedPromotion(
-        hostGraph,
-        hostGraph.inputs[link.origin_slot],
-        hosts
-      )
+    if (link.origin_id === SUBGRAPH_INPUT_ID)
+      disconnectOrphanedPromotion(host.graph, link.origin_slot, hosts)
   }
+  removeFloatingLinksFrom(graph, slot)
+  graph.removeInput(input)
+}
+
+function removeFloatingLinksFrom(graph: Subgraph, slot: number) {
   for (const link of graph.floatingLinks.values())
     if (link.origin_id === SUBGRAPH_INPUT_ID && link.origin_slot === slot)
       graph.removeFloatingLink(link)
-  graph.removeInput(input)
 }
 
 class DynamicGroupNoticeWidget extends VueOnlyWidget<IBaseWidget> {

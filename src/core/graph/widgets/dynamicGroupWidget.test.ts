@@ -16,7 +16,6 @@ import {
 
 import { i18n } from '@/i18n'
 
-import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -515,11 +514,7 @@ describe('DynamicGroup widgets', () => {
     widget('loras.1').callback?.(undefined)
 
     expect(subgraph.inputs).toEqual([])
-    expect(
-      [...subgraph.floatingLinks.values()].filter(
-        (floating) => floating.origin_id === SUBGRAPH_INPUT_ID
-      )
-    ).toEqual([])
+    expect(subgraph.floatingLinks.size).toBe(0)
   })
 
   it('removes every promoted field of the deleted row through two boundaries', () => {
