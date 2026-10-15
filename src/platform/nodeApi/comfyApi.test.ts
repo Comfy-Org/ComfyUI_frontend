@@ -7,6 +7,7 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useExecutionStore } from '@/stores/executionStore'
+import { api as backendApi } from '@/scripts/api'
 
 import {
   LATEST_MAJOR,
@@ -24,6 +25,24 @@ describe('comfy API root', () => {
   })
 
   const api = () => createComfyApi(() => graph)
+
+  it('exposes the named model catalogue with capability probing', async ({
+    onTestFinished
+  }) => {
+    const fetch = vi
+      .spyOn(backendApi, 'fetchApi')
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify([{ name: 'a.safetensors', pathIndex: 0 }]))
+      )
+    onTestFinished(() => fetch.mockRestore())
+    const comfy = api()
+    expect(comfy.supports('models.list')).toBe(true)
+    await expect(comfy.models.list('loras')).resolves.toEqual(['a.safetensors'])
+    expect(fetch).toHaveBeenCalledExactlyOnceWith('/experiment/models/loras', {
+      method: 'GET',
+      cache: 'no-store'
+    })
+  })
 
   it('reports a version independent of the app version', () => {
     expect(api().version).toBe(NODE_API_VERSION)
