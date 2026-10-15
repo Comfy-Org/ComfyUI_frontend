@@ -106,11 +106,17 @@ fails with anything other than 404 is inconclusive, like an incomplete, failed
 or superseded listing. During restoration, only a lifecycle 404 shows the
 unavailable-target notice.
 
-History selection and New Chat invalidate pending agent tab activation. Existing
-and newly created tab openers carry that guard into the workflow service so an
-activation from the previous chat cannot load a graph or bind a target after
-navigation supersedes it. This preserves fresh-draft following and explicit
-target ownership. Activation also remains owned by its captured transport thread
-and a Current or still-loading history selection; frames drained after a failed
-selection cannot activate that unreadable chat, including after its retry row is
-deleted. This does not change graph activation into a rollback transaction.
+An agent tab activation applies only if, when it runs, the chat it came from is
+still the open chat or the History row being loaded. An earlier chat therefore
+cannot open a tab or set the target of the chat on screen. These cancel a
+pending activation:
+
+- a newer activation;
+- selecting a History row, unless it reuses the loaded Current chat;
+- New Chat, including deleting the open chat;
+- the server deleting the open chat;
+- the chat failing to restore while History is open, including after its row is
+  deleted;
+- closing the panel.
+
+Cancellation does not make graph activation a rollback transaction.
