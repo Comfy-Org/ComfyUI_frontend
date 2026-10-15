@@ -7767,6 +7767,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
   it.for([
     {
+      outcome: 'marks its target unavailable',
       listing: 'omits the workflow',
       lookup: 'answers 404',
       listingStatus: 200,
@@ -7774,6 +7775,7 @@ describe('AgentPanelRoot workflow binding', () => {
       notices: [i18n.global.t('agent.targetWorkflowUnavailable')]
     },
     {
+      outcome: 'leaves its target unresolved',
       listing: 'fails',
       lookup: 'fails',
       listingStatus: 500,
@@ -7781,7 +7783,7 @@ describe('AgentPanelRoot workflow binding', () => {
       notices: []
     }
   ])(
-    'restores a stored chat on startup when the workflow listing $listing and its lookup $lookup',
+    'opens a stored chat on startup and $outcome when the workflow listing $listing and its lookup $lookup',
     async ({ listingStatus, lookupStatus, notices }) => {
       makeTab('wf-42')
       useAgentConversationStore().setThreadId('th-history')
@@ -7806,7 +7808,11 @@ describe('AgentPanelRoot workflow binding', () => {
         ).toEqual(notices)
         expect(useAgentChatHistoryStore().activeId).toBe('th-history')
       })
-      expect(useAgentPanelStore().selectedWorkflow).toBeNull()
+      expect(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.switchWorkflow')
+        })
+      ).toHaveTextContent(i18n.global.t('agent.selectWorkflowForAgent'))
     }
   )
 
@@ -9172,7 +9178,6 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(
       screen.queryByText(i18n.global.t('agent.targetWorkflowUnavailable'))
     ).toBeNull()
-    expect(useAgentPanelStore().selectedWorkflow).toBeNull()
     expect(
       useAgentWorkflowTabBindingStore().tabPathFor(staleWorkflowId)
     ).toBeUndefined()
@@ -9549,17 +9554,17 @@ describe('AgentPanelRoot workflow binding', () => {
   const newChatNavigation = {
     navigation: 'new-chat',
     navigate: startNewChat,
-    targetPath: 'workflows/current.json'
+    pickerText: 'current'
   }
   const historyNavigation = {
     navigation: 'history',
     navigate: openOtherChat,
-    targetPath: undefined
+    pickerText: i18n.global.t('agent.selectWorkflowForAgent')
   }
 
   it.for([newChatNavigation, historyNavigation])(
     'drops a legacy activation queued before the first send acknowledgment when $navigation navigation happens during the creation delay',
-    async ({ navigate, targetPath }) => {
+    async ({ navigate, pickerText }) => {
       const current = makeTab('wf-42')
       mockMessagesEndpoint(
         'wf-42',
@@ -9584,7 +9589,11 @@ describe('AgentPanelRoot workflow binding', () => {
 
       expect(workflowStore.getWorkflowByPath('workflows/Late.json')).toBeNull()
       expect(workflowStore.activeWorkflow?.path).toBe(current.path)
-      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(targetPath)
+      expect(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.switchWorkflow')
+        })
+      ).toHaveTextContent(pickerText)
       expect(
         useAgentWorkflowTabBindingStore().tabPathFor('wf-late')
       ).toBeUndefined()
@@ -9628,7 +9637,7 @@ describe('AgentPanelRoot workflow binding', () => {
       navigate: startNewChat,
       prepareTab: () => addTab('workflows/Late.json'),
       cloudRows: [{ id: 'wf-late', name: 'Late' }],
-      targetPath: 'workflows/current.json',
+      pickerText: 'current',
       workflowPaths: ['workflows/current.json', 'workflows/Late.json']
     },
     {
@@ -9637,7 +9646,7 @@ describe('AgentPanelRoot workflow binding', () => {
       navigate: openOtherChat,
       prepareTab: () => addTab('workflows/Late.json'),
       cloudRows: [{ id: 'wf-late', name: 'Late' }],
-      targetPath: undefined,
+      pickerText: i18n.global.t('agent.selectWorkflowForAgent'),
       workflowPaths: ['workflows/current.json', 'workflows/Late.json']
     },
     {
@@ -9646,12 +9655,12 @@ describe('AgentPanelRoot workflow binding', () => {
       navigate: startNewChat,
       prepareTab: () => {},
       cloudRows: [],
-      targetPath: 'workflows/current.json',
+      pickerText: 'current',
       workflowPaths: ['workflows/current.json']
     }
   ])(
     'keeps the newer chat target when an older $kind activation settles after $navigation',
-    async ({ navigate, prepareTab, cloudRows, targetPath, workflowPaths }) => {
+    async ({ navigate, prepareTab, cloudRows, pickerText, workflowPaths }) => {
       const current = makeTab('wf-42')
       prepareTab()
       mockMessagesEndpoint(
@@ -9706,7 +9715,11 @@ describe('AgentPanelRoot workflow binding', () => {
       expect(workflowStore.workflows.map(({ path }) => path)).toEqual(
         workflowPaths
       )
-      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(targetPath)
+      expect(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.switchWorkflow')
+        })
+      ).toHaveTextContent(pickerText)
       expect(
         useAgentWorkflowTabBindingStore().workflowIdFor(current.path)
       ).toBe('wf-42')
