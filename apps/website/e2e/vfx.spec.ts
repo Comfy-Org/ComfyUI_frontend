@@ -50,14 +50,25 @@ test('customer-story preview opens playback with sound and pauses when another v
     .toBe(true)
 })
 
-for (const { path, heading, contact, cta, cleanplate, upscale } of [
+for (const {
+  path,
+  heading,
+  contact,
+  cta,
+  cleanplate,
+  upscale,
+  play,
+  sound
+} of [
   {
     path: '/solutions/vfx/',
     heading: 'VFX workflows. Built for your pipeline.',
     contact: '/contact/',
     cta: 'TALK TO COMFY',
     cleanplate: 'OBJECT REMOVAL',
-    upscale: 'SHOT UPSCALING'
+    upscale: 'SHOT UPSCALING',
+    play: 'Play',
+    sound: /^(Mute|Unmute)$/
   },
 
   {
@@ -66,7 +77,9 @@ for (const { path, heading, contact, cta, cleanplate, upscale } of [
     contact: '/zh-CN/contact/',
     cta: '联系 COMFY',
     cleanplate: '物体移除',
-    upscale: '镜头超分辨率'
+    upscale: '镜头超分辨率',
+    play: '播放',
+    sound: /^(静音|取消静音)$/
   }
 ]) {
   test(`${path} proof and inquiry preserve campaign attribution`, async ({
@@ -90,6 +103,10 @@ for (const { path, heading, contact, cta, cleanplate, upscale } of [
       'src',
       'https://media.comfy.org/hub-media/video/8a3a846f-5017-428e-b2a2-24025c55e884.mp4'
     )
+    const hero = page.getByTestId('vfx-proof-hero')
+    await hero.getByRole('button', { name: play, exact: true }).click()
+    await expect(hero.getByTestId('player-control-bar')).toBeVisible()
+    await expect(hero.getByRole('button', { name: sound })).toHaveCount(0)
     await proof.getByRole('button', { name: upscale, exact: true }).click()
     await expect(
       page.getByTestId('vfx-proof-hero').getByRole('slider', {
@@ -113,5 +130,32 @@ for (const { path, heading, contact, cta, cleanplate, upscale } of [
         `${contact}\\?interest=vfx&landing_version=v2&utm_source=linkedin&utm_campaign=vfx-review$`
       )
     )
+  })
+}
+
+for (const { path, heading, cta, href } of [
+  {
+    path: '/solutions/vfx/',
+    heading: 'Build your custom workflows with our Forward Deployed Creatives',
+    cta: 'LEARN MORE',
+    href: '/forward-deployed-creatives/'
+  },
+  {
+    path: '/zh-CN/solutions/vfx/',
+    heading: '与前沿驻场创意人才一起构建你的定制工作流',
+    cta: '了解更多',
+    href: '/zh-CN/forward-deployed-creatives/'
+  }
+]) {
+  test(`${path} links the Forward Deployed Creatives module below the studio section`, async ({
+    page
+  }) => {
+    await page.goto(path)
+    const module = page.locator('section').filter({
+      has: page.getByRole('heading', { name: heading, exact: true })
+    })
+    await expect(
+      module.getByRole('link', { name: cta, exact: true })
+    ).toHaveAttribute('href', href)
   })
 }
