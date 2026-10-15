@@ -9,6 +9,7 @@ type RowOperation = 'add_row' | 'remove_row' | 'remote_apply'
 
 const controllers = new WeakSet<IBaseWidget>()
 const reported = new Set<string>()
+let applyingRemoteRowCount = false
 
 export function markDynamicGroupController(widget: IBaseWidget): void {
   controllers.add(widget)
@@ -17,6 +18,28 @@ export function markDynamicGroupController(widget: IBaseWidget): void {
 /** True for the hidden widget whose value is a DynamicGroup's row count. */
 export function isDynamicGroupController(widget: IBaseWidget): boolean {
   return controllers.has(widget)
+}
+
+/**
+ * Runs a remote row count write. A refusal inside it is reported once, as the
+ * remote mismatch, not also as a local row change.
+ */
+export function applyRemoteDynamicGroupRowCount(write: () => void): void {
+  applyingRemoteRowCount = true
+  try {
+    write()
+  } finally {
+    applyingRemoteRowCount = false
+  }
+}
+
+/** Whether a controller holds the row count its setter derives from `value`. */
+export function reachesDynamicGroupRowCount(
+  widget: IBaseWidget,
+  value: unknown
+): boolean {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return false
+  return widget.value === Math.max(widget.options.min ?? 0, Math.trunc(value))
 }
 
 function reportRowCount(
@@ -55,6 +78,7 @@ export function reportDynamicGroupRowRefusal(
   requested: number,
   actual: number
 ): void {
+  if (applyingRemoteRowCount) return
   reportRowCount(
     node,
     operation,

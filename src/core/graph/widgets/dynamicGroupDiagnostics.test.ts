@@ -54,12 +54,6 @@ function refuseInputChanges() {
   })
 }
 
-function reportsOf(errorType: string) {
-  return vi
-    .mocked(reportError)
-    .mock.calls.filter(([, options]) => options.errorType === errorType)
-}
-
 beforeEach(() => {
   remoteConfig.value = { enable_telemetry: true }
 })
@@ -173,26 +167,30 @@ describe('DynamicGroup row refusal reports', () => {
 })
 
 describe('remote DynamicGroup row count reports', () => {
-  class RemoteDynamicGroup extends LGraphNode {
-    constructor() {
-      super('Remote Dynamic Group')
-      this.serialize_widgets = true
-      addGroup(this)
+  function remoteNodeType(min: number) {
+    return class extends LGraphNode {
+      constructor() {
+        super('Remote Dynamic Group')
+        this.serialize_widgets = true
+        addGroup(this, min)
+      }
     }
   }
 
   beforeEach(() => {
-    LiteGraph.registerNodeType('RemoteDynamicGroup', RemoteDynamicGroup)
+    LiteGraph.registerNodeType('RemoteDynamicGroup', remoteNodeType(0))
+    LiteGraph.registerNodeType('MinOneDynamicGroup', remoteNodeType(1))
+    LiteGraph.registerNodeType('ConsentDynamicGroup', remoteNodeType(0))
   })
 
-  function remoteGroup() {
+  function remoteGroup(type = 'RemoteDynamicGroup') {
     const graph = new LGraph()
     const { doc, collector } = followedDoc(
       {
         nodes: [
           {
             id: 1,
-            type: 'RemoteDynamicGroup',
+            type,
             pos: [0, 0],
             size: [210, 100],
             widgets_values: [1, 0.5]
@@ -202,7 +200,7 @@ describe('remote DynamicGroup row count reports', () => {
       },
       {
         types: {
-          RemoteDynamicGroup: {
+          [type]: {
             widget_order: ['rows', 'rows.0.strength', 'rows.1.strength']
           }
         }
@@ -215,7 +213,7 @@ describe('remote DynamicGroup row count reports', () => {
       .getNodeById(toNodeId(1))
       ?.widgets?.find((widget) => widget.name === 'rows')
     if (!rows) throw new Error('DynamicGroup node 1 was not created')
-    function setRows(count: number) {
+    function setRows(count: unknown) {
       doc.transact(() => {
         const widgets = nodesMap(doc).get('1')?.get('widgets')
         if (!(widgets instanceof Y.Map)) throw new Error('named storage')
@@ -234,13 +232,28 @@ describe('remote DynamicGroup row count reports', () => {
     expect(reportError).not.toHaveBeenCalled()
   })
 
+  it.for([
+    { type: 'RemoteDynamicGroup', value: 2.5, expected: 2 },
+    { type: 'RemoteDynamicGroup', value: -0, expected: 0 },
+    { type: 'MinOneDynamicGroup', value: 0, expected: 1 }
+  ])(
+    'does not report a remote $value the $type setter normalizes',
+    ({ type, value, expected }) => {
+      const { rows, setRows } = remoteGroup(type)
+
+      expect(setRows(value)).toBe(0)
+      expect(rows.value).toBe(expected)
+      expect(reportError).not.toHaveBeenCalled()
+    }
+  )
+
   it('reports a remote row count the live group did not reach, once per node type', () => {
     const { rows, setRows } = remoteGroup()
     refuseInputChanges()
 
     expect([setRows(3), setRows(2)]).toEqual([1, 1])
     expect(rows.value).toBe(1)
-    expect(reportsOf('agent_graph_dynamic_group_rows_mismatch')).toEqual([
+    expect(vi.mocked(reportError).mock.calls).toEqual([
       [
         expect.objectContaining({
           message: 'Remote DynamicGroup row count did not apply'
@@ -264,7 +277,7 @@ describe('remote DynamicGroup row count reports', () => {
 
   it('counts but does not send a mismatch without telemetry consent', () => {
     remoteConfig.value = {}
-    const { setRows } = remoteGroup()
+    const { setRows } = remoteGroup('ConsentDynamicGroup')
     refuseInputChanges()
 
     expect(setRows(2)).toBe(1)
