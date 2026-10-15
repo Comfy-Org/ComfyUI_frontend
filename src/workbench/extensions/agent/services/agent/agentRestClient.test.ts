@@ -1,4 +1,7 @@
-import type { PaginationInfo } from '@comfyorg/ingest-types'
+import type {
+  AgentThreadListResponse,
+  PaginationInfo
+} from '@comfyorg/ingest-types'
 import { describe, expect, it, vi } from 'vitest'
 
 import {
@@ -345,7 +348,7 @@ describe('listThreads pagination', () => {
     return jsonResponse(200, {
       threads,
       pagination: { offset: 0, limit: 100, total: 0, has_more, next_cursor }
-    })
+    } satisfies AgentThreadListResponse)
   }
 
   it('follows next_cursor at the maximum page size until has_more is false', async () => {

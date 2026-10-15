@@ -7,6 +7,7 @@ import type {
   AgentError,
   AgentMessage,
   AgentPendingAsk,
+  AgentThreadListResponse,
   AgentTurnAccepted
 } from '@comfyorg/ingest-types'
 import {
@@ -429,7 +430,7 @@ async function routeTurnLock(
           }
         ],
         pagination: { offset: 0, limit: 100, total: 2, has_more: false }
-      })
+      } satisfies AgentThreadListResponse)
     )
   )
   await page.route('**/api/agent/threads/*/messages', async (route) => {
