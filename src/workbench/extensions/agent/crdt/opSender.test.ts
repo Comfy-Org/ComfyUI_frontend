@@ -232,7 +232,7 @@ describe('createOpSender', () => {
         errorType: `failure_syncing_agent_edit_${state}`,
         fingerprint: [`failure_syncing_agent_edit_${state}`],
         level: 'error',
-        tags: { tab: 'api-tab', outcome: state },
+        tags: { tab: 'api-tab', outcome: state, code },
         context: {
           code,
           workflowId: workflow ?? undefined,
@@ -1520,6 +1520,9 @@ describe('createOpSender', () => {
       expect.objectContaining({ code: 'doc_reset', workflowId: WORKFLOW }),
       expect.objectContaining({ code: 'doc_reset', workflowId: WORKFLOW })
     ])
+    expect(
+      vi.mocked(reportError).mock.calls.map(([, options]) => options.tags?.code)
+    ).toEqual(['doc_reset', 'doc_reset', 'doc_reset'])
 
     sender.enqueue([addNode(4)])
     expect(sent).toHaveLength(2)

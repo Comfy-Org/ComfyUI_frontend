@@ -199,6 +199,7 @@ describe('devPanelLog', () => {
   it('keeps the structural diagnosis on failed frames', () => {
     recordDevEvent('doc_ops_result', {
       workflowId: 'wf-1',
+      graphId: '1ff39644-78b1-48bb-9509-53b671c672f1',
       ok: false,
       applied: [],
       skipped: ['op-1'],
@@ -210,6 +211,7 @@ describe('devPanelLog', () => {
 
     expect(devEvents.value[0]?.detail).toEqual({
       workflowId: 'wf-1',
+      graphId: '1ff39644-78b1-48bb-9509-53b671c672f1',
       ok: false,
       applied: [],
       skipped: ['op-1'],

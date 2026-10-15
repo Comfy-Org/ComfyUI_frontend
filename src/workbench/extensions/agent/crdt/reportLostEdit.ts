@@ -36,7 +36,7 @@ export function reportLostEdit(
     errorType,
     fingerprint: [errorType],
     level: kind === 'host_rejected' ? 'warning' : 'error',
-    tags: { tab: api.clientId, outcome: kind },
+    tags: { tab: api.clientId, outcome: kind, code: cause.code },
     context
   })
   if (kind === 'mint_divergence' || kind === 'host_rejected') {

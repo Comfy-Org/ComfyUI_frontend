@@ -98,6 +98,7 @@ const STRUCTURAL_STRING_KEYS = new Set([
   'doc_id',
   'failed',
   'frame_type',
+  'graph_id',
   'id',
   'kind',
   'level',
