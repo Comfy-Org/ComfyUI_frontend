@@ -30,6 +30,7 @@ export interface RunOutput {
   readonly truncated?: boolean
   readonly urls?: readonly string[]
   readonly fileName: string
+  readonly alt?: string
   // Kept on the output itself so earlier runs stay gated once the run state moves on.
   readonly nsfw?: boolean
 }

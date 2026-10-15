@@ -1,87 +1,49 @@
 <template>
-  <div class="input-knob flex flex-row items-center gap-2">
+  <div class="flex items-center gap-2">
     <Knob
-      :model-value="modelValue"
-      :value-template="displayValue"
-      class="knob-part"
-      :class="knobClass"
-      :min="min"
-      :max="max"
-      :step="step"
+      v-model="modelValue"
+      :min
+      :max
+      :step
+      :disabled
+      :aria-label="ariaLabel"
+      :aria-labelledby="ariaLabelledby"
       v-bind="$attrs"
-      @update:model-value="updateValue"
     />
-    <InputNumber
-      :model-value="modelValue"
-      class="input-part"
-      :max-fraction-digits="3"
-      :class="inputClass"
-      :min="min"
-      :max="max"
-      :step="step"
-      :allow-empty="false"
-      @update:model-value="updateValue"
-    />
+    <NumberField
+      v-model="modelValue"
+      class="w-32"
+      :format-options="{ maximumFractionDigits: 3 }"
+      :min
+      :max
+      :step
+      :step-snapping="step !== 0"
+      :disabled
+    >
+      <NumberFieldDecrement />
+      <NumberFieldInput :aria-label :aria-labelledby="ariaLabelledby" />
+      <NumberFieldIncrement />
+    </NumberField>
   </div>
 </template>
 
 <script setup lang="ts">
-import InputNumber from 'primevue/inputnumber'
-import Knob from 'primevue/knob'
-import { ref, watch } from 'vue'
+import Knob from '@/components/ui/knob/Knob.vue'
+import NumberField from '@/components/ui/number-field/NumberField.vue'
+import NumberFieldDecrement from '@/components/ui/number-field/NumberFieldDecrement.vue'
+import NumberFieldIncrement from '@/components/ui/number-field/NumberFieldIncrement.vue'
+import NumberFieldInput from '@/components/ui/number-field/NumberFieldInput.vue'
 
-const props = defineProps<{
-  modelValue: number
-  inputClass?: string
-  knobClass?: string
-  min?: number
+defineProps<{
+  ariaLabel?: string
+  ariaLabelledby?: string
+  disabled?: boolean
   max?: number
+  min?: number
   step?: number
-  resolution?: number
 }>()
 
-const emit = defineEmits<{
-  (e: 'update:modelValue', value: number): void
-}>()
-
-const localValue = ref(props.modelValue)
-
-watch(
-  () => props.modelValue,
-  (newValue) => {
-    localValue.value = newValue
-  }
-)
-
-const updateValue = (newValue: number | null) => {
-  if (newValue === null) {
-    // If the input is cleared, reset to the minimum value or 0
-    newValue = Number(props.min) || 0
-  }
-
-  const min = Number(props.min ?? Number.NEGATIVE_INFINITY)
-  const max = Number(props.max ?? Number.POSITIVE_INFINITY)
-  const step = Number(props.step) || 1
-
-  // Ensure the value is within the allowed range
-  newValue = Math.max(min, Math.min(max, newValue))
-
-  // Round to the nearest step
-  newValue = Math.round(newValue / step) * step
-
-  // Update local value and emit change
-  localValue.value = newValue
-  emit('update:modelValue', newValue)
-}
-
-const displayValue = (value: number): string => {
-  updateValue(value)
-  const stepString = (props.step ?? 1).toString()
-  const resolution = stepString.includes('.')
-    ? stepString.split('.')[1].length
-    : 0
-  return value.toFixed(props.resolution ?? resolution)
-}
+const modelValue = defineModel<number>({ required: true })
 
 defineOptions({
   inheritAttrs: false

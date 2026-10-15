@@ -30,9 +30,7 @@ function sentOp(raw: string): { type: unknown; op_id: string } {
   return { type, op_id: op.op_id }
 }
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 const WORKFLOW_ID = 'wf-1'
 

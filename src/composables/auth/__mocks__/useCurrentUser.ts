@@ -16,6 +16,7 @@ const defaults: ReturnType<typeof realUseCurrentUser> = {
   isLoggedIn: computed(() => false),
   isApiKeyLogin: computed(() => false),
   isEmailProvider: computed(() => false),
+  needsFirebaseSignIn: computed(() => false),
   userDisplayName: computed(() => undefined),
   userEmail: computed(() => undefined),
   userPhotoUrl: computed(() => undefined),

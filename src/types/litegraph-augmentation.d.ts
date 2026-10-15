@@ -16,7 +16,7 @@ import type {
   ComfyNodeDef as ComfyNodeDefV1,
   InputSpec
 } from '@/schemas/nodeDefSchema'
-import type { DOMWidget, DOMWidgetOptions } from '@/scripts/domWidget'
+import type { DOMWidget, DOMWidgetOptions } from '@/types/domWidget'
 import type { CONFIG, GET_CONFIG } from '@/services/litegraphService'
 import type { SerializedNodeId } from '@/types/nodeId'
 
@@ -102,6 +102,7 @@ declare module '@/lib/litegraph/src/litegraph' {
 
   interface LGraphNode {
     constructor: LGraphNodeConstructor
+    canvasHeight?: number
 
     /**
      * Callback fired on each node after the graph is configured
@@ -152,6 +153,7 @@ declare module '@/lib/litegraph/src/litegraph' {
     runningInternalNodeId?: SerializedNodeId
 
     comfyClass?: string
+    convertWidgetToInput?(): boolean
 
     /**
      * If the node is a frontend only node and should not be serialized into the prompt.

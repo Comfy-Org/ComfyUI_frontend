@@ -1,11 +1,11 @@
 import { onMounted, ref } from 'vue'
 
-import type { ClosedBanners } from '../utils/banner'
+import type { ClosedBanners } from '@/utils/banner'
 import {
   BANNER_DISMISS_ATTR,
   BANNER_STORAGE_KEY,
   toClosedBanners
-} from '../utils/banner'
+} from '@/utils/banner'
 
 function readClosedBanners(): ClosedBanners {
   try {

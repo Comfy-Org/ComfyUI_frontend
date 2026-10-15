@@ -60,6 +60,24 @@ export class PropertiesPanelHelper {
     return this.sectionWidgetsList.locator('.widget-item')
   }
 
+  get widgetActionsButtons(): Locator {
+    return this.root.getByTestId(TestIds.subgraphEditor.widgetActionsMenuButton)
+  }
+
+  get widgetActionsMenu(): Locator {
+    return this.page.getByRole('menu')
+  }
+
+  widgetAction(name: string): Locator {
+    return this.widgetActionsMenu.getByRole('menuitem', { name, exact: true })
+  }
+
+  async widgetActionLabelLeft(name: string): Promise<number> {
+    return this.widgetAction(name)
+      .getByText(name, { exact: true })
+      .evaluate((element) => element.getBoundingClientRect().left)
+  }
+
   /**
    * Drag the widget row at `fromIndex` down onto the row at `toIndex`.
    * Grabs the row by its header strip (`y + 8`): the widget body owns its own

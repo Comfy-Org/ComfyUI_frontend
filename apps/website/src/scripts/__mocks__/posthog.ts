@@ -1,7 +1,7 @@
 import { vi } from 'vitest'
 import { readonly, ref } from 'vue'
 
-import type * as realPosthog from '../posthog'
+import type * as realPosthog from '@/scripts/posthog'
 
 const workshopEnabled = readonly(ref(false))
 const workshopEnabledSettled = readonly(ref(true))
@@ -12,12 +12,14 @@ const posthog: typeof realPosthog = {
   useWorkshopEnabled: vi.fn(() => workshopEnabled),
   useWorkshopWorkflowsEnabled: vi.fn(() => workshopEnabled),
   useWorkshopAppsEnabled: vi.fn(() => workshopEnabled),
+  useWorkshopFlag: vi.fn(() => workshopEnabled),
   useWorkshopEnabledSettled: vi.fn(() => workshopEnabledSettled),
   useWorkshopAuthFlag: vi.fn(() => workshopAuthFlag),
   useWorkshopTurnstileMode: vi.fn(() => workshopTurnstileMode),
   initPostHog: vi.fn(),
   identifyWorkshopUser: vi.fn(),
   capturePageview: vi.fn(),
+  captureVfxLinkClick: vi.fn(),
   captureWorkshopEvent: vi.fn(),
   captureDownloadClick: vi.fn(),
   captureCliConnectionTabClick: vi.fn(),
@@ -32,19 +34,22 @@ const posthog: typeof realPosthog = {
   captureAuthRefreshFailed: vi.fn(),
   captureSignupOpened: vi.fn(),
   captureAuthCompleted: vi.fn(),
-  captureAuthFailed: vi.fn()
+  captureAuthFailed: vi.fn(),
+  captureWebSessionEvent: vi.fn()
 }
 
 const {
   useWorkshopEnabled,
   useWorkshopWorkflowsEnabled,
   useWorkshopAppsEnabled,
+  useWorkshopFlag,
   useWorkshopEnabledSettled,
   useWorkshopAuthFlag,
   useWorkshopTurnstileMode,
   initPostHog,
   identifyWorkshopUser,
   capturePageview,
+  captureVfxLinkClick,
   captureWorkshopEvent,
   captureDownloadClick,
   captureCliConnectionTabClick,
@@ -59,19 +64,22 @@ const {
   captureAuthRefreshFailed,
   captureSignupOpened,
   captureAuthCompleted,
-  captureAuthFailed
+  captureAuthFailed,
+  captureWebSessionEvent
 } = posthog
 
 export {
   useWorkshopEnabled,
   useWorkshopWorkflowsEnabled,
   useWorkshopAppsEnabled,
+  useWorkshopFlag,
   useWorkshopEnabledSettled,
   useWorkshopAuthFlag,
   useWorkshopTurnstileMode,
   initPostHog,
   identifyWorkshopUser,
   capturePageview,
+  captureVfxLinkClick,
   captureWorkshopEvent,
   captureDownloadClick,
   captureCliConnectionTabClick,
@@ -86,5 +94,6 @@ export {
   captureAuthRefreshFailed,
   captureSignupOpened,
   captureAuthCompleted,
-  captureAuthFailed
+  captureAuthFailed,
+  captureWebSessionEvent
 }

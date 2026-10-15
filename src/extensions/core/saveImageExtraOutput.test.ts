@@ -91,4 +91,12 @@ describe('Comfy.SaveImageExtraOutput', () => {
       expect(widget.serializeValue!()).toBe('ComfyUI_12345')
     }
   )
+
+  it('serializes the current widget value, not the value at node creation', async () => {
+    const widget = await createNodeWithFilenamePrefix('SaveImage', 'initial')
+
+    widget.value = 'edited_%Sampler.seed%'
+
+    expect(widget.serializeValue!()).toBe('edited_12345')
+  })
 })

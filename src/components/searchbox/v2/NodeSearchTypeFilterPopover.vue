@@ -68,7 +68,7 @@
                 cn(
                   'flex size-4 shrink-0 items-center justify-center rounded-sm border border-border-default',
                   selectedSet.has(option) &&
-                    'border-primary-background bg-primary-background text-base-background'
+                    'border-primary-background bg-primary-background text-base-foreground'
                 )
               "
             >
@@ -111,7 +111,7 @@ import {
   PopoverTrigger
 } from 'reka-ui'
 
-import type { FilterChip } from '@/components/searchbox/v2/NodeSearchFilterBar.vue'
+import type { FilterChip } from '@/components/searchbox/v2/filterChip'
 import { getLinkTypeColor } from '@/utils/litegraphUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 

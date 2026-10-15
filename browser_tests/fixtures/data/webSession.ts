@@ -1,6 +1,7 @@
 import type {
   CurrentWorkspaceResponse,
   ErrorResponse,
+  ExchangeTokenResponse,
   PromptResponse,
   WebSessionResponse
 } from '@comfyorg/ingest-types'
@@ -8,9 +9,16 @@ import type {
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type { WorkspaceWithRole } from '@/platform/workspace/api/workspaceApi'
 
+import { TEAM_WORKSPACE } from '@e2e/fixtures/data/workspaceSwitcher'
 import { CLOUD_SELF_EMAIL } from '@e2e/fixtures/helpers/CloudAuthHelper'
 
 export const WEB_SESSION_FEATURES: RemoteConfig = { unified_web_session: true }
+
+/** What ingest answers a caller with no client header or cookie. */
+export const WEB_SESSION_ANONYMOUS_FEATURES = {
+  unified_web_session: false,
+  web_session_probe: true
+} satisfies RemoteConfig & { web_session_probe: boolean }
 
 export const WEB_SESSION_COOKIE = {
   name: 'e2e_web_session',
@@ -25,9 +33,22 @@ export const WEB_SESSION: WebSessionResponse = {
     email: CLOUD_SELF_EMAIL,
     email_verified: true
   },
+  has_personal_workspace: true,
   csrf_token: WEB_SESSION_CSRF_TOKEN,
   expires_at: '2099-01-01T00:00:00Z',
   absolute_expires_at: '2099-01-02T00:00:00Z'
+}
+
+export const WEB_SESSION_MINT: ExchangeTokenResponse = {
+  token: 'session-jwt-e2e',
+  expires_at: '2099-01-01T00:00:00Z',
+  workspace: {
+    id: TEAM_WORKSPACE.id,
+    name: TEAM_WORKSPACE.name,
+    type: TEAM_WORKSPACE.type
+  },
+  role: TEAM_WORKSPACE.role,
+  permissions: []
 }
 
 export function currentWorkspace(
@@ -42,9 +63,25 @@ export function currentWorkspace(
   }
 }
 
+/** A Team plan on another user's personal-type workspace, joined as a member. */
+export const SHARED_PERSONAL_TEAM_WORKSPACE: WorkspaceWithRole = {
+  id: 'ws-shared-personal',
+  name: 'Shared Personal Workspace',
+  type: 'personal',
+  subscription_tier: 'TEAM',
+  created_at: '2026-01-01T00:00:00Z',
+  joined_at: '2026-02-01T00:00:00Z',
+  role: 'member'
+}
+
 export const WORKSPACE_ACCESS_DENIED: ErrorResponse = {
   code: 'workspace_access_denied',
   message: 'You no longer have access to this workspace'
+}
+
+export const SESSION_REVOKED: ErrorResponse = {
+  code: 'session_revoked',
+  message: 'This session was revoked'
 }
 
 export const PROMPT_ACCEPTED: PromptResponse = {

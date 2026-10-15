@@ -115,6 +115,17 @@
                 {{ $t('hdrViewer.clipWarnings') }}
               </label>
             </div>
+            <div class="flex items-center gap-2">
+              <input
+                id="hdr-checkerboard"
+                v-model="viewer.checkerboard.value"
+                type="checkbox"
+                class="size-4 cursor-pointer accent-node-component-surface-highlight"
+              />
+              <label for="hdr-checkerboard" class="cursor-pointer">
+                {{ $t('hdrViewer.checkerboard') }}
+              </label>
+            </div>
           </div>
 
           <div v-if="histogramPath" class="space-y-2 p-2">

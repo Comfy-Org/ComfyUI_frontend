@@ -6,7 +6,13 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 
 import type { ExchangeTokenResponse } from '@comfyorg/ingest-types'
 import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
+import type { RequestTarget } from '@comfyorg/account-core/requestAuth'
+import { createRequestAuthorizer } from '@comfyorg/account-core/requestAuth'
+import { createSessionTokenMint } from '@comfyorg/account-core/sessionTokenMint'
 
+import { anonymousApiAuthProvider } from '@/platform/auth/apiAuthProvider'
+import { installCloudApiAuth } from '@/platform/auth/cloudApiAuthProvider'
+import { bootCloudIdentity } from '@/platform/auth/session/cloudIdentityBoot'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { installDesktopLoginRedemption } from '@/platform/cloud/onboarding/desktopLoginRedemption'
@@ -16,6 +22,10 @@ import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { api } from '@/scripts/api'
 import type { ComfyApp } from '@/scripts/app'
+import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
+import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
+import { useAuthStore } from '@/stores/authStore'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import type { useDialogService } from '@/services/dialogService'
 import type { useExtensionService } from '@/services/extensionService'
 import type { ComfyExtension } from '@/types/comfy'
@@ -92,9 +102,7 @@ vi.mock(import('@/services/dialogService'), () => ({
 
 vi.mock(import('@/platform/telemetry'))
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 await import('@/extensions/core/cloudSessionCookie')
 
@@ -180,14 +188,11 @@ function installFetchRecorder(features: Record<string, unknown>) {
     }
   }
 
-  vi.stubGlobal(
-    'fetch',
-    vi.fn<typeof fetch>(async (input, init) => {
-      const request = recordRequest(input, init)
-      all.push(request)
-      return respond(request)
-    })
-  )
+  vi.mocked(fetch).mockImplementation(async (input, init) => {
+    const request = recordRequest(input, init)
+    all.push(request)
+    return respond(request)
+  })
 
   return { all }
 }
@@ -217,6 +222,19 @@ async function sendApiCalls() {
     body: JSON.stringify({ prompt: {} })
   })
 }
+
+const API_KEY_SESSION_ROWS = [
+  {
+    name: 'unified_cloud_auth off, unified_web_session true',
+    uca: false,
+    uws: true
+  },
+  {
+    name: 'unified_cloud_auth on, unified_web_session true',
+    uca: true,
+    uws: true
+  }
+]
 
 const FEATURE_ROWS = [
   { name: 'unified_cloud_auth off, unified_web_session absent', uca: false },
@@ -314,6 +332,7 @@ describe('clients the web session leaves on tokens', () => {
 
   beforeEach(() => {
     identity.reset()
+    installCloudApiAuth()
     vi.mocked(distributionTypes).isCloud = true
   })
 
@@ -323,7 +342,7 @@ describe('clients the web session leaves on tokens', () => {
     remoteConfig.value = {}
   })
 
-  it.for(FEATURE_ROWS)(
+  it.for([...FEATURE_ROWS, ...API_KEY_SESSION_ROWS])(
     "an API-key identity on cloud keeps today's headers and never touches a session ($name)",
     async (row) => {
       localStorage.setItem('comfy_api_key', API_KEY)
@@ -340,10 +359,82 @@ describe('clients the web session leaves on tokens', () => {
     }
   )
 
+  it.for(API_KEY_SESSION_ROWS)(
+    'booting the cloud identity with a stored API key never touches a session ($name)',
+    async (row) => {
+      localStorage.setItem('comfy_api_key', API_KEY)
+      const recorder = installFetchRecorder(featuresFor(row))
+      await refreshRemoteConfig({ useAuth: false })
+      useAuthStore()
+      identity.resolveSignedOut()
+
+      await bootCloudIdentity()
+      await vi.advanceTimersByTimeAsync(0)
+
+      expectNoSessionTraffic(recorder.all)
+      expect(useCloudWebSessionStore().isActive()).toBe(false)
+    }
+  )
+
+  it.for(API_KEY_SESSION_ROWS)(
+    'an API-key workspace switch never touches a session ($name)',
+    async (row) => {
+      localStorage.setItem('comfy_api_key', API_KEY)
+      const recorder = installFetchRecorder(featuresFor(row))
+      await refreshRemoteConfig({ useAuth: false })
+      hooks = wireSessionCookieExtension()
+      identity.resolveSignedOut()
+      await vi.advanceTimersByTimeAsync(0)
+      recorder.all.length = 0
+
+      await useWorkspaceAuthStore()
+        .switchWorkspace('ws-team')
+        .catch(() => {})
+      await vi.advanceTimersByTimeAsync(0)
+
+      expectNoSessionTraffic(recorder.all)
+    }
+  )
+
+  it.for<{ target: RequestTarget; method: string }>([
+    { target: 'ingest', method: 'GET' },
+    { target: 'ingest', method: 'POST' },
+    { target: 'resource', method: 'GET' },
+    { target: 'resource', method: 'POST' }
+  ])(
+    'the web-session request authorizer sends the stored API key header alone on $target $method',
+    async ({ target, method }) => {
+      localStorage.setItem('comfy_api_key', API_KEY)
+      installFetchRecorder({})
+      const getSession = vi.fn(() => undefined)
+      const fetchImpl = vi.fn<typeof fetch>()
+      const mint = createSessionTokenMint({
+        apiBaseUrl: api.apiURL(''),
+        fetchImpl,
+        getSession
+      })
+      const authorize = createRequestAuthorizer({
+        getWorkspaceToken: mint.getWorkspaceToken
+      })
+      const apiKeyStore = useApiKeyAuthStore()
+      await vi.advanceTimersByTimeAsync(0)
+
+      const result = await authorize(
+        { kind: 'apiKey', apiKey: apiKeyStore.getApiKey() ?? '' },
+        { target, method }
+      )
+
+      expect(result).toStrictEqual({ headers: apiKeyStore.getAuthHeader() })
+      expect(getSession).not.toHaveBeenCalled()
+      expect(fetchImpl).not.toHaveBeenCalled()
+    }
+  )
+
   it.for(FEATURE_ROWS)(
     'a localhost frontend signs in, refreshes and calls the API with no session or cloud credential ($name)',
     async (row) => {
       vi.mocked(distributionTypes).isCloud = false
+      api.setAuthProvider(anonymousApiAuthProvider)
       const recorder = installFetchRecorder(featuresFor(row))
       await refreshRemoteConfig({ useAuth: false })
       hooks = wireSessionCookieExtension()

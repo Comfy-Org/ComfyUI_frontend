@@ -13,6 +13,7 @@ const config: KnipConfig = {
         'src/types/index.ts',
         'src/storybook/mocks/**/*.ts',
         'tools/oxlint-plugins/comfyIngestTypes.ts',
+        'tools/oxlint-plugins/serverFacts.ts',
         'tools/oxlint-plugins/vitestCleanup.ts'
       ],
       project: [
@@ -39,6 +40,9 @@ const config: KnipConfig = {
     'packages/tailwind-utils': {
       project: ['src/**/*.{js,ts}']
     },
+    'packages/test-utils': {
+      project: ['src/**/*.ts']
+    },
     'packages/shared-frontend-utils': {
       project: ['src/**/*.{js,ts}']
     },
@@ -54,6 +58,12 @@ const config: KnipConfig = {
       // Executed by models-snippets.test.ts inside the generated Node examples.
       ignoreDependencies: ['mime-types']
     },
+    'tools/cicd/fast-lane': {
+      project: ['src/**/*.ts']
+    },
+    'tools/architecture': {
+      project: ['src/**/*.ts']
+    },
     'tools/test-recorder': {
       project: ['src/**/*.ts']
     }
@@ -62,10 +72,6 @@ const config: KnipConfig = {
     'ffmpeg',
     // Optional host tool the recorder probes for and degrades without
     'xcode-select'
-  ],
-  ignoreDependencies: [
-    // Weird importmap things
-    '@iconify/json'
   ],
   ignore: [
     // Auto generated API types
@@ -87,9 +93,6 @@ const config: KnipConfig = {
     // Animated pill button — retained for reuse after the learning directory
     // switched to ButtonPill; no current consumer
     'apps/website/src/components/ui/button-mask/**',
-    // Pending integration: consumed by the useWorkspaceInvoices seam once
-    // #13591 (Plan & Credits tabs) lands — FE-1245
-    'src/composables/billing/useNextInvoice.ts',
     // Agent review check config, not part of the build
     '.agents/checks/eslint.strict.config.js',
     // Devtools extensions, included dynamically

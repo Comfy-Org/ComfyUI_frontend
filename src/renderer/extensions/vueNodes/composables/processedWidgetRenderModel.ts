@@ -1,8 +1,6 @@
-import type { TooltipOptions } from 'primevue'
-
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
-import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
+import type { INodeInputSlot } from '@/lib/litegraph/src/types/slots'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type {
   IBaseWidget,
@@ -71,18 +69,15 @@ interface WidgetErrorTarget {
 
 export interface ProcessedWidget extends WidgetGridItem {
   handleContextMenu: (e: PointerEvent) => void
-  hasLayoutSize: boolean
   hasError: boolean
-  widgetId: WidgetId
-  tooltipConfig: TooltipOptions
+  hasLayoutSize: boolean
+  tooltipText: string
   updateHandler: (value: WidgetValue) => void
+  widgetId: WidgetId
 }
 
 export interface WidgetUiCallbacks {
-  getTooltipConfig: (
-    widget: WidgetTooltipSource,
-    fullVal?: string
-  ) => TooltipOptions
+  getTooltipText: (widget: WidgetTooltipSource, fullValue?: string) => string
   handleNodeRightClick: (e: PointerEvent, nodeId: NodeId) => void
 }
 
@@ -426,13 +421,13 @@ function processWidget(
       : undefined
   }
 
-  const valueTooltip =
+  const fullValue =
     isTooltipValueType(type) && String(value).length > 10
       ? String(value)
       : undefined
-  const tooltipConfig = ctx.ui.getTooltipConfig(
+  const tooltipText = ctx.ui.getTooltipText(
     { name: widgetState.name, tooltip: renderState?.tooltip },
-    valueTooltip
+    fullValue
   )
   const handleContextMenu = (e: PointerEvent) => {
     e.preventDefault()
@@ -466,7 +461,7 @@ function processWidget(
     visible,
     suppressedByConnection: visibility?.suppression.byConnection ?? false,
     updateHandler,
-    tooltipConfig,
+    tooltipText,
     slotMetadata: slotInfo
   }
 }

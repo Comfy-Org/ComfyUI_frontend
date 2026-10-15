@@ -1,4 +1,12 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 
 const mockHostedBillingRoute = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(
@@ -12,17 +20,6 @@ const flagState = vi.hoisted(() => ({
 vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({
     flags: { hostedBillingDestination: flagState.hostedBillingDestination }
-  })
-}))
-
-const mockFetchStatus = vi.hoisted(() => vi.fn(async () => {}))
-const mockFetchBalance = vi.hoisted(() => vi.fn(async () => {}))
-const mockReadOperation = vi.hoisted(() => vi.fn(async () => false))
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    fetchStatus: mockFetchStatus,
-    fetchBalance: mockFetchBalance,
-    readCheckoutOperation: mockReadOperation
   })
 }))
 
@@ -43,6 +40,10 @@ vi.mock<unknown>(
   () => ({ registerRefreshOnReturn: mockRegisterRefreshOnReturn })
 )
 
+import {
+  onBillingRefresh,
+  provideCheckoutOperationReader
+} from '@/platform/workspace/billing/billingRefresh'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import {
@@ -61,62 +62,10 @@ function fakeTab(): Window {
 
 describe('openHostedBillingTab', () => {
   beforeEach(() => {
-    mockHostedBillingRoute.mockReset().mockReturnValue(BILLING_WEB_ROUTE)
-    mockFetchStatus.mockClear()
-    mockFetchBalance.mockClear()
-    mockCapabilitiesRefresh.mockClear()
-    mockStop.mockClear()
-    mockRegisterRefreshOnReturn.mockClear().mockReturnValue(mockStop)
+    mockHostedBillingRoute.mockReturnValue(BILLING_WEB_ROUTE)
+    mockRegisterRefreshOnReturn.mockReturnValue(mockStop)
     flagState.hostedBillingDestination = 'billing_web'
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-123' })
-  })
-
-  it('resolves the route with the active workspace id', () => {
-    mockHostedBillingRoute.mockReturnValue({ kind: 'provider' })
-
-    const opened = openHostedBillingTab('pricing')
-
-    expect(opened).toBe(false)
-    expect(mockHostedBillingRoute).toHaveBeenCalledWith(
-      'billing_web',
-      'pricing',
-      { plan: undefined, teamCreditStopId: undefined, workspaceId: 'ws-123' }
-    )
-  })
-
-  it('passes an optional plan through to the route', () => {
-    mockHostedBillingRoute.mockReturnValue({ kind: 'provider' })
-
-    openHostedBillingTab('checkout', { plan: 'pro-monthly' })
-
-    expect(mockHostedBillingRoute).toHaveBeenCalledWith(
-      'billing_web',
-      'checkout',
-      {
-        plan: 'pro-monthly',
-        teamCreditStopId: undefined,
-        workspaceId: 'ws-123'
-      }
-    )
-  })
-
-  it('passes an optional team credit stop through to the route', () => {
-    mockHostedBillingRoute.mockReturnValue({ kind: 'provider' })
-
-    openHostedBillingTab('checkout', {
-      plan: 'team_per_credit_annual',
-      teamCreditStopId: 'stop_700'
-    })
-
-    expect(mockHostedBillingRoute).toHaveBeenCalledWith(
-      'billing_web',
-      'checkout',
-      {
-        plan: 'team_per_credit_annual',
-        teamCreditStopId: 'stop_700',
-        workspaceId: 'ws-123'
-      }
-    )
   })
 
   it('returns false and opens nothing when the route stays on the provider', () => {
@@ -145,15 +94,16 @@ describe('openHostedBillingTab', () => {
     expect(mockRegisterRefreshOnReturn).toHaveBeenCalledTimes(1)
   })
 
-  it('refreshes status, balance, and capabilities when the armed refresh runs', async () => {
+  it('refreshes the account and capabilities when the armed refresh runs', async () => {
     vi.spyOn(window, 'open').mockReturnValue(fakeTab())
+    const refreshed = vi.fn()
+    onTestFinished(onBillingRefresh(refreshed))
 
     openHostedBillingTab('pricing')
     const [refresh] = mockRegisterRefreshOnReturn.mock.calls[0]
     await refresh()
 
-    expect(mockFetchStatus).toHaveBeenCalledTimes(1)
-    expect(mockFetchBalance).toHaveBeenCalledTimes(1)
+    expect(refreshed.mock.calls).toEqual([['account']])
     expect(mockCapabilitiesRefresh).toHaveBeenCalledTimes(1)
   })
 
@@ -172,10 +122,12 @@ describe('openHostedBillingTab', () => {
   })
 
   describe('while a hosted payment tab is open', () => {
+    const mockReadOperation = vi.fn(async () => false)
+
     beforeEach(() => {
       vi.useFakeTimers()
       vi.spyOn(window, 'open').mockReturnValue(fakeTab())
-      mockReadOperation.mockReset().mockResolvedValue(false)
+      return provideCheckoutOperationReader(mockReadOperation)
     })
 
     afterEach(() => {

@@ -79,7 +79,7 @@ import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
 import Spinner from '@/components/ui/spinner/Spinner.vue'
 import { useNodeHelpContent } from '@/composables/useNodeHelpContent'
 import { flattenInputSpecs } from '@/schemas/nodeDef/inputSpecUtil'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 
 const { node } = defineProps<{
   node: ComfyNodeDefImpl
@@ -242,7 +242,7 @@ const outputList = computed(() =>
 
 .markdown-content :deep(thead),
 .fallback-content thead {
-  border-bottom: 1px solid var(--p-text-color);
+  border-bottom: 1px solid var(--base-foreground);
 }
 
 .markdown-content :deep(pre),
@@ -256,7 +256,7 @@ const outputList = computed(() =>
   code {
     background-color: transparent;
     padding: 0;
-    color: var(--p-text-color);
+    color: var(--base-foreground);
   }
 }
 

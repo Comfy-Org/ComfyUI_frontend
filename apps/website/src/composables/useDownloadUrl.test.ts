@@ -20,7 +20,9 @@ const UA = {
   windows:
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
   linux:
-    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36'
+    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+  freeBsd:
+    'Mozilla/5.0 (X11; FreeBSD amd64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36'
 } as const
 
 describe('detectDevice', () => {
@@ -57,8 +59,15 @@ describe('detectDevice', () => {
     })
   })
 
-  it('treats desktop Linux as an unknown desktop platform', () => {
+  it('treats desktop Linux as a linux desktop', () => {
     expect(detectDevice(UA.linux, 0)).toEqual({
+      platform: 'linux',
+      isMobileUa: false
+    })
+  })
+
+  it('treats FreeBSD as an unknown desktop platform', () => {
+    expect(detectDevice(UA.freeBsd, 0)).toEqual({
       platform: null,
       isMobileUa: false
     })
@@ -109,9 +118,9 @@ function visitOnWindows(
 
 const DownloadLink = defineComponent({
   setup() {
-    const { downloadUrl, platform } = useDownloadUrl()
+    const { installer } = useDownloadUrl()
     return () =>
-      platform.value ? h('a', { href: downloadUrl.value }, 'Download') : null
+      installer.value ? h('a', { href: installer.value.url }, 'Download') : null
   }
 })
 
@@ -245,4 +254,20 @@ describe('useDownloadUrl on Windows', () => {
       expect(loseContext).toHaveBeenCalledOnce()
     }
   )
+})
+
+describe('useDownloadUrl on Linux', () => {
+  it('links Linux to the x64 AppImage', async () => {
+    vi.stubGlobal('navigator', {
+      userAgent: UA.linux,
+      maxTouchPoints: 0
+    } satisfies Partial<Navigator>)
+
+    render(DownloadLink)
+
+    expect(await screen.findByRole('link')).toHaveAttribute(
+      'href',
+      'https://download.comfy.org/linux/appimage/x64'
+    )
+  })
 })
