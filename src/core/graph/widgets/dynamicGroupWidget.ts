@@ -1,7 +1,8 @@
 import { t } from '@/i18n'
 import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
-import type { LGraph, Subgraph } from '@/lib/litegraph/src/LGraph'
+import type { Subgraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { VueOnlyWidget } from '@/lib/litegraph/src/widgets/VueOnlyWidget'
@@ -150,12 +151,17 @@ export function dynamicGroupWidget(
     const inputs = previous.inputs.filter(
       (input) => !input.name.startsWith(`${prefix}.`)
     )
-    const promotedSlots = previous.inputs.flatMap((input) => {
-      const link = previous.links.get(input)
-      return !inputs.includes(input) && link?.origin_id === SUBGRAPH_INPUT_ID
-        ? [link.origin_slot]
-        : []
-    })
+    const graph = node.graph
+    const promotedInputs = new Set(
+      previous.inputs.flatMap((input) => {
+        const link = previous.links.get(input)
+        return isSubgraph(graph) &&
+          !inputs.includes(input) &&
+          link?.origin_id === SUBGRAPH_INPUT_ID
+          ? [graph.inputs[link.origin_slot]]
+          : []
+      })
+    )
     const result = replaceNodeInputs(
       node,
       previous,
@@ -173,8 +179,9 @@ export function dynamicGroupWidget(
     previous.inputs.forEach((input, slot) => {
       if (!inputs.includes(input)) node.onInputRemoved?.(slot, input)
     })
-    for (const slot of promotedSlots)
-      disconnectOrphanedPromotion(node.graph, slot, hosts)
+    if (isSubgraph(graph))
+      for (const input of promotedInputs)
+        disconnectOrphanedPromotion(graph, input, hosts)
     return true
   }
 
@@ -411,19 +418,23 @@ function renamePromotedInputLabel(
 }
 
 function disconnectOrphanedPromotion(
-  graph: LGraph | Subgraph | null,
-  slot: number,
+  graph: Subgraph,
+  input: SubgraphInput,
   hosts: PromotionHostLookup
 ) {
-  if (!isSubgraph(graph)) return
-  const input = graph.inputs.at(slot)
-  if (!input || input.linkIds.length) return
+  const slot = graph.inputs.indexOf(input)
+  if (slot === -1 || input.linkIds.length) return
   for (const host of hosts(graph)) {
-    const link = host.graph && inputLink(host.graph, host.id, slot)
+    const hostGraph = host.graph
+    const link = hostGraph && inputLink(hostGraph, host.id, slot)
     if (!link) continue
     host.disconnectInput(slot)
-    if (link.origin_id === SUBGRAPH_INPUT_ID)
-      disconnectOrphanedPromotion(host.graph, link.origin_slot, hosts)
+    if (link.origin_id === SUBGRAPH_INPUT_ID && isSubgraph(hostGraph))
+      disconnectOrphanedPromotion(
+        hostGraph,
+        hostGraph.inputs[link.origin_slot],
+        hosts
+      )
   }
   graph.removeInput(input)
 }

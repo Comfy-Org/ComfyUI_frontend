@@ -501,6 +501,32 @@ describe('DynamicGroup widgets', () => {
     ).toEqual([['LoRA #2 strength'], ['LoRA #2 strength']])
   })
 
+  it('removes every promoted field of the deleted row through two boundaries', () => {
+    const { node, widget, innerHost, outerHost } = setupTwiceDeepPromotion()
+    widget('loras').value = 3
+    for (const name of ['loras.1.enabled', 'loras.2.strength']) {
+      expect(
+        promoteValueWidgetViaSubgraphInput(innerHost, node, widget(name)).ok
+      ).toBe(true)
+      const innerPromoted = promotedInputWidget(
+        innerHost.inputs[innerHost.inputs.length - 1]
+      )
+      assert.exists(innerPromoted)
+      expect(
+        promoteValueWidgetViaSubgraphInput(outerHost, innerHost, innerPromoted)
+          .ok
+      ).toBe(true)
+    }
+
+    widget('loras.1').callback?.(undefined)
+
+    expect(
+      [innerHost.inputs, outerHost.inputs].map((inputs) =>
+        inputs.map((input) => promotedInputWidget(input)?.label)
+      )
+    ).toEqual([['LoRA #2 strength'], ['LoRA #2 strength']])
+  })
+
   it('disconnects the deleted row at the outer host while keeping the next row connected', async () => {
     const { node, widget, innerHost, outerHost, outerInput } =
       setupTwiceDeepPromotion()
