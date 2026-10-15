@@ -6,6 +6,7 @@ import type {
   AgentThreadListResponse,
   AgentThreadSummary,
   BillingStatus,
+  PaginationInfo,
   SubscriptionTier
 } from '@comfyorg/ingest-types'
 import { render, screen, waitFor, within } from '@testing-library/vue'
@@ -504,7 +505,8 @@ function isThreadListUrl(url: string): boolean {
 }
 
 function agentThreadList(
-  threads: AgentThreadSummary[] = []
+  threads: AgentThreadSummary[] = [],
+  pagination: Partial<PaginationInfo> = {}
 ): AgentThreadListResponse {
   return {
     threads,
@@ -512,7 +514,8 @@ function agentThreadList(
       has_more: false,
       limit: Math.max(threads.length, 1),
       offset: 0,
-      total: threads.length
+      total: threads.length,
+      ...pagination
     }
   }
 }
@@ -5319,16 +5322,19 @@ describe('AgentPanelRoot history', () => {
       expect(history.sessions.map(({ id }) => id)).toEqual(['th-kept'])
     )
     respondToFetch(/\/api\/agent\/threads\?/, () =>
-      json(200, {
-        ...agentThreadList([
-          agentThread({
-            id: 'th-partial',
-            title: 'Partial chat',
-            last_message_at: '2026-07-07T11:00:00Z'
-          })
-        ]),
-        pagination: { has_more: true, limit: 1, offset: 0, total: 2 }
-      })
+      json(
+        200,
+        agentThreadList(
+          [
+            agentThread({
+              id: 'th-partial',
+              title: 'Partial chat',
+              last_message_at: '2026-07-07T11:00:00Z'
+            })
+          ],
+          { has_more: true, total: 2 }
+        )
+      )
     )
 
     await userEvent.click(
@@ -5446,22 +5452,19 @@ describe('AgentPanelRoot history', () => {
       })
       respondToFetch({}, () => json(200, []))
       respondToFetch(threadListRoute, () =>
-        json(200, {
-          ...agentThreadList([
-            agentThread({
-              id: 'th-old',
-              title: 'Old chat',
-              last_message_at: '2026-07-07T08:00:00Z'
-            })
-          ]),
-          pagination: {
-            has_more: true,
-            next_cursor: 'page-2',
-            limit: 1,
-            offset: 0,
-            total: 2
-          }
-        })
+        json(
+          200,
+          agentThreadList(
+            [
+              agentThread({
+                id: 'th-old',
+                title: 'Old chat',
+                last_message_at: '2026-07-07T08:00:00Z'
+              })
+            ],
+            { has_more: true, next_cursor: 'page-2', total: 2 }
+          )
+        )
       )
       respondToFetch(secondPageRoute, () => staleSecondPage, { times: 1 })
       const closedPanel = renderWithSelectedTarget()
