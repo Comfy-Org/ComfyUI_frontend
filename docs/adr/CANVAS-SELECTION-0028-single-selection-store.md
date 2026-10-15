@@ -218,7 +218,22 @@ Amendment on acceptance, refining decision 6 and decision 7:
   ctrl/meta both toggle. A shift+alt marquee adds, matching the classic
   canvas.
 - Modifier-click on a selected group deselects the group and its cascaded
-  children together; the previous group-only carve-out is removed.
+  children together. This supersedes the group-only carve-out added in
+  #9149, which kept the children selected so they could be deleted after
+  toggling the group off. Reasons:
+  - With `LiteGraph.Group.SelectChildrenOnClick` on, selecting a group
+    selects its children, so toggling the group off should undo that
+    selection. Under the carve-out, the second modifier-click left the
+    children selected instead of restoring the prior selection.
+  - #9149's own description says deselecting a group cascades `deselect()`
+    to its children; the carve-out contradicted it. FE-2040 records the
+    leftover child selection as a reproduced defect.
+  - The deletion workflow keeps a direct path. A marquee selects every node
+    it overlaps but a group only when it encloses the whole group, so
+    dragging over the children selects them without the group, and
+    modifier-click adds or removes single children.
+  - The setting defaults to off, so only users who opted into cascading
+    selection see the change.
 - `LGraphCanvas.selected_nodes` is deprecated. First-party readers use
   `selectedCanvasNodes()` from the selection adapter; the accessor warns once
   per session and remains for extensions.
