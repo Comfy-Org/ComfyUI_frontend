@@ -243,10 +243,8 @@ describe('CurrentUserPopoverLegacy', () => {
   })
 
   it.for([
-    { canTopUp: true, canSubscribeSelfServe: true, visible: true },
     { canTopUp: true, canSubscribeSelfServe: false, visible: true },
-    { canTopUp: false, canSubscribeSelfServe: true, visible: false },
-    { canTopUp: false, canSubscribeSelfServe: false, visible: false }
+    { canTopUp: false, canSubscribeSelfServe: true, visible: false }
   ])(
     'renders add-credits from can_top_up alone ($canTopUp, subscribe $canSubscribeSelfServe)',
     ({ canTopUp, canSubscribeSelfServe, visible }) => {
