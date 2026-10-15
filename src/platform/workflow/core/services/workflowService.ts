@@ -503,7 +503,11 @@ export const useWorkflowService = () => {
    */
   const closeWorkflow = async (
     workflow: ComfyWorkflow,
-    options: { warnIfUnsaved: boolean; hint?: string } = {
+    options: {
+      warnIfUnsaved: boolean
+      hint?: string
+      onReplacementOpened?: (workflow: ComfyWorkflow) => void
+    } = {
       warnIfUnsaved: true
     }
   ): Promise<boolean> => {
@@ -516,7 +520,6 @@ export const useWorkflowService = () => {
         hint: options.hint,
         denyLabel: t('sideToolbar.workflowTab.dirtyCloseAnyway')
       })
-      // Cancel
       if (confirmed === null) return false
 
       if (confirmed) {
@@ -525,7 +528,6 @@ export const useWorkflowService = () => {
       }
     }
 
-    // Captured once: a mid-close rename mutates workflow.path in place.
     const closingPath = workflow.path
     const closing = closingKey(workflow)
     closingWorkflowCounts.set(
@@ -540,8 +542,6 @@ export const useWorkflowService = () => {
         wasActive ||
         (pendingWorkflowLoad && workflowStore.isActive(workflow))
       ) {
-        // Bounded drain: quiesce for the replacement decision without letting
-        // a hot enqueue stream starve the close.
         for (let spins = 0; spins < 16; spins++) {
           const observedOpenTail = workflowLoadTail
           await observedOpenTail
@@ -549,7 +549,6 @@ export const useWorkflowService = () => {
         }
       }
 
-      // If this is the active workflow, load the most recent workflow from history
       if (workflowStore.isActive(workflow)) {
         const mostRecentWorkflow = workflowStore.getMostRecentWorkflow()
         let replacementWorkflow =
@@ -567,16 +566,13 @@ export const useWorkflowService = () => {
             replacementWorkflow = candidate
           }
         }
-        // `=== false` on purpose: only an EXPLICIT failure report aborts
-        // the close (a real configure failure resolves false - the dialog
-        // path); a rejection still propagates as before.
         if (replacementWorkflow) {
           if (!(await openWorkflow(replacementWorkflow))) return false
+          options.onReplacementOpened?.(replacementWorkflow)
         } else {
           if ((await loadDefaultWorkflow()) === false) return false
         }
       } else if (
-        // Read live, post-drain: the awaits above can change the answer.
         workflowStore.openWorkflows.length > 0 &&
         workflowStore.openWorkflows.every((open) =>
           closingWorkflowCounts.has(closingKey(open))
@@ -586,7 +582,6 @@ export const useWorkflowService = () => {
       }
 
       await workflowStore.closeWorkflow(workflow)
-      // Only after the close is real: a still-open tab keeps its draft.
       workflowDraftStore.removeDraft(closingPath)
       useNodeOutputStore().discardPreviewsForWorkflow(closingPath)
       return true
@@ -876,12 +871,25 @@ export const useWorkflowService = () => {
       ...options
     }: { warnIfUnsaved: boolean; hint?: string; initiator?: 'user' }
   ): Promise<void> => {
-    const activeBefore = workflowStore.activeWorkflow
-    for (const workflow of workflows)
-      if (!(await closeWorkflow(workflow, options))) break
-    const active = workflowStore.activeWorkflow
-    if (initiator === 'user' && active !== null && active !== activeBefore)
-      workflowStore.reportUserActivation(active)
+    const opened: { replacement?: ComfyWorkflow } = {}
+    const onReplacementOpened = (replacement: ComfyWorkflow) => {
+      opened.replacement = replacement
+    }
+    try {
+      for (const workflow of workflows)
+        if (
+          !(await closeWorkflow(workflow, { ...options, onReplacementOpened }))
+        )
+          break
+    } finally {
+      const { replacement } = opened
+      if (
+        initiator === 'user' &&
+        replacement !== undefined &&
+        workflowStore.isActive(replacement)
+      )
+        workflowStore.reportUserActivation(replacement)
+    }
   }
 
   const loadNextOpenedWorkflow = async (

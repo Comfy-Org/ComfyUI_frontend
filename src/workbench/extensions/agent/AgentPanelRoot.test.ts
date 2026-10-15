@@ -390,7 +390,7 @@ beforeEach(() => {
     }
   )
   vi.mocked(useWorkflowService()).closeWorkflow.mockImplementation(
-    async (tab) => {
+    async (tab, options) => {
       if (workflowStore.activeWorkflow?.path === tab.path) {
         const replacement = workflowStore.openWorkflows.find(
           (candidate) => candidate.path !== tab.path
@@ -398,6 +398,7 @@ beforeEach(() => {
         workflowStore.activeWorkflow = replacement
           ? await replacement.load()
           : null
+        if (replacement) options?.onReplacementOpened?.(replacement)
       }
       await workflowStore.closeWorkflow(tab)
       return true
@@ -405,12 +406,16 @@ beforeEach(() => {
   )
   vi.mocked(useWorkflowService()).closeWorkflows.mockImplementation(
     async (tabs, { initiator, ...options }) => {
-      const activeBefore = workflowStore.activeWorkflow
+      const opened: { replacement?: ComfyWorkflow } = {}
       for (const tab of tabs)
-        await useWorkflowService().closeWorkflow(tab, options)
-      const active = workflowStore.activeWorkflow
-      if (initiator === 'user' && active !== null && active !== activeBefore)
-        workflowStore.reportUserActivation(active)
+        await useWorkflowService().closeWorkflow(tab, {
+          ...options,
+          onReplacementOpened: (replacement) => {
+            opened.replacement = replacement
+          }
+        })
+      if (initiator === 'user' && opened.replacement)
+        workflowStore.reportUserActivation(opened.replacement)
     }
   )
   vi.mocked(useWorkflowService()).openWorkflow.mockImplementation(
