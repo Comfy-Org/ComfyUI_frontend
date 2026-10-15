@@ -1439,6 +1439,13 @@ async function refreshHistory(): Promise<void> {
 }
 
 void refreshHistory()
+onBeforeUnmount(() =>
+  runPanelTeardown({
+    invalidateHistoryRefreshGeneration: () => {
+      ++historyRefreshGeneration
+    }
+  })
+)
 
 const currentChatReady = computed(
   () =>

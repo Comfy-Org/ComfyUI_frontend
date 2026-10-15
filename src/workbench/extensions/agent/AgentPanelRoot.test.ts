@@ -5349,7 +5349,7 @@ describe('AgentPanelRoot history', () => {
     expect(history.sessions.map(({ id }) => id)).toEqual(['th-kept'])
   })
 
-  it.for([
+  const staleRefreshOutcomes = [
     {
       outcome: 'a list',
       staleResponse: () =>
@@ -5365,7 +5365,9 @@ describe('AgentPanelRoot history', () => {
         )
     },
     { outcome: 'a failure', staleResponse: () => json(500, {}) }
-  ])(
+  ]
+
+  it.for(staleRefreshOutcomes)(
     'ignores an older history refresh that ends with $outcome after a newer one',
     async ({ staleResponse }) => {
       const threadListRoute = /\/api\/agent\/threads\?/
@@ -5430,6 +5432,68 @@ describe('AgentPanelRoot history', () => {
 
       expect(history.sessions.map(({ id }) => id)).toEqual(['th-new'])
       expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
+    }
+  )
+
+  it.for(staleRefreshOutcomes)(
+    'ignores a closed panel history refresh that ends with $outcome after the panel reopens',
+    async ({ staleResponse }) => {
+      const threadListRoute = /\/api\/agent\/threads\?/
+      const secondPageRoute = /\/api\/agent\/threads\?.*after=page-2/
+      let resolveStale!: (response: Response) => void
+      const staleSecondPage = new Promise<Response>((resolve) => {
+        resolveStale = resolve
+      })
+      respondToFetch({}, () => json(200, []))
+      respondToFetch(threadListRoute, () =>
+        json(200, {
+          ...agentThreadList([
+            agentThread({
+              id: 'th-old',
+              title: 'Old chat',
+              last_message_at: '2026-07-07T08:00:00Z'
+            })
+          ]),
+          pagination: {
+            has_more: true,
+            next_cursor: 'page-2',
+            limit: 1,
+            offset: 0,
+            total: 2
+          }
+        })
+      )
+      respondToFetch(secondPageRoute, () => staleSecondPage, { times: 1 })
+      const closedPanel = renderWithSelectedTarget()
+      await vi.waitFor(() =>
+        expect(fetchRequests(secondPageRoute)).toHaveLength(1)
+      )
+      closedPanel.unmount()
+      respondToFetch(threadListRoute, () =>
+        json(
+          200,
+          agentThreadList([
+            agentThread({
+              id: 'th-new',
+              title: 'New chat',
+              last_message_at: '2026-07-07T10:00:00Z'
+            })
+          ])
+        )
+      )
+      renderWithSelectedTarget()
+      const history = useAgentChatHistoryStore()
+      await vi.waitFor(() =>
+        expect(history.sessions.map(({ id }) => id)).toEqual(['th-new'])
+      )
+
+      const stale = staleResponse()
+      resolveStale(stale)
+      await vi.waitFor(() => expect(stale.bodyUsed).toBe(true))
+
+      expect(history.sessions.map(({ id }) => id)).toEqual(['th-new'])
+      expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
+      expect(telemetry.trackAgentError).not.toHaveBeenCalled()
     }
   )
 
