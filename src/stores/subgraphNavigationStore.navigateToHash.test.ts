@@ -484,6 +484,22 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     expect(useWorkflowStore().activeSubgraph).toBe(subgraph)
   })
 
+  it('opens the workflow of a restored page hash without calling it a user change', async () => {
+    const workflow = fromPartial<ComfyWorkflow>({
+      path: 'restored-workflow.json',
+      activeState: { id: ids.deletedSubgraph, definitions: { subgraphs: [] } }
+    })
+    Object.assign(useWorkflowStore(), { openWorkflows: [workflow] })
+    routeHashRef.value = `#${ids.deletedSubgraph}`
+
+    await useSubgraphNavigationStore().updateHash()
+
+    expect(workflowServiceMocks.openWorkflow).toHaveBeenCalledExactlyOnceWith(
+      workflow,
+      { navigationIntentId: expect.any(Number) }
+    )
+  })
+
   it('uses the emitted graph during a synchronous graph-change event', async () => {
     const subgraph = makeSubgraph(ids.validSubgraph)
     const navigationStore = useSubgraphNavigationStore()
@@ -753,7 +769,7 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     await vi.waitFor(() => {
       expect(workflowServiceMocks.openWorkflow).toHaveBeenLastCalledWith(
         secondWorkflow,
-        { navigationIntentId: expect.any(Number), initiator: 'user' }
+        { navigationIntentId: expect.any(Number) }
       )
       expect(app.canvas.graph?.id).toBe(secondId)
       expect(routeHashRef.value).toBe(`#${secondId}`)
