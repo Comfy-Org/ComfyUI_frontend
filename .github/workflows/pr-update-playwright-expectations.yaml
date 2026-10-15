@@ -107,7 +107,7 @@ jobs:
 
           changed=$(git diff --name-only FETCH_HEAD -- "${paths[@]}" | paste -sd ' ')
           if [ -n "$changed" ]; then
-            echo "::warning::This PR modifies ${changed}, but /update-playwright runs the ${DEFAULT_BRANCH} copies. Only the container image is taken from the PR; those changes are NOT in effect for this run."
+            echo "::warning::${changed} differ between this PR and ${DEFAULT_BRANCH}, and /update-playwright runs the ${DEFAULT_BRANCH} copies. Only the container image is taken from the PR."
           fi
 
       - name: Setup frontend
