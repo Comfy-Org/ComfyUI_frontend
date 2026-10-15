@@ -84,11 +84,14 @@ The user gets one visible transition into a usable conversation, at the cost of
 waiting for workflow readiness before reading it. Back may need another fetch.
 The session's underlying data can hydrate while history remains visible; the
 panel must not use thread-ID changes alone as proof of navigation success.
-The Cloud listing can omit live, version-less drafts, and an incomplete, failed
-or superseded listing establishes neither presence nor absence. A direct
-lifecycle lookup decides when a complete listing omits the identity, or when
-such a listing cannot place it and no local target answers. Only 404
-establishes that it is gone; any other failure is inconclusive.
+The Cloud listing can omit live, version-less drafts. A successful listing that
+includes the workflow shows that it exists, even when the listing is
+incomplete. Only a complete listing that omits it points to absence, and a
+failed or superseded listing points to neither. A direct lookup of the workflow
+decides when a complete listing omits it. It also decides when no local target
+answers and the listing cannot place the workflow: the listing failed, was
+superseded, or is incomplete and omits it. Only a 404 from that lookup shows
+that the workflow is gone; any other failure is inconclusive.
 
 ## Amendment (2026-10-06): Readable History with an Unresolved Target
 
