@@ -81,7 +81,6 @@ function draw() {
   const width =
     canvasEl.value.getBoundingClientRect().width ||
     canvasEl.value.parentElement.clientWidth
-  // Priority: computedHeight (from litegraph) > computeLayoutSize > computeSize
   let height = 20
   if (widgetInstance.computedHeight) {
     height = widgetInstance.computedHeight
@@ -91,7 +90,6 @@ function draw() {
     height = widgetInstance.computeSize(width)[1]
   }
   containerHeight.value = height
-  // Set node.canvasHeight for legacy widgets that use it (e.g., Impact Pack)
   node.canvasHeight = height
   widgetInstance.y = 0
   widgetInstance.width = width
