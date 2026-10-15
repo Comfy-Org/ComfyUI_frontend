@@ -212,8 +212,14 @@ export function dynamicGroupWidget(
     for (const widget of node.widgets ?? []) {
       if (widget.name !== oldPrefix && !widget.name.startsWith(`${oldPrefix}.`))
         continue
-      widget.name = newPrefix + widget.name.slice(oldPrefix.length)
-      if (widget.serialize !== false && widget.widgetId)
+      const name = newPrefix + widget.name.slice(oldPrefix.length)
+      widget.name = name
+      if (
+        widget.name === name &&
+        widget.serialize !== false &&
+        widget.type !== 'button' &&
+        widget.widgetId
+      )
         store.announceValue(widget.widgetId)
     }
   }

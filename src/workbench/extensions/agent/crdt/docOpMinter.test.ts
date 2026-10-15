@@ -1853,6 +1853,24 @@ describe('attachDocOpMinter', () => {
       ])
     })
 
+    it('does not mint a shifted field whose rename was refused', async () => {
+      const { node, widget } = seedThreeRows()
+      vi.spyOn(useWidgetValueStore(), 'renameWidget').mockReturnValue(undefined)
+
+      widget('loras.1').callback?.(undefined)
+      await afterFlush()
+
+      expect(minted).toEqual([
+        {
+          op: 'set_widget',
+          node_id: node.id,
+          widget: 'loras',
+          value: 2,
+          old: 3
+        }
+      ])
+    })
+
     it.for(['agent-remote', 'load'] as const)(
       'mints nothing for a row removed by a %s write',
       async (source) => {
