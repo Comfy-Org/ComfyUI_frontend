@@ -2,7 +2,6 @@ import type { BillingTelemetryFailure } from '@comfyorg/account-core/billing'
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import type { DowngradeToPersonalResult } from '@/composables/billing/types'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
@@ -76,22 +75,20 @@ export function useDowngradeToPersonal({
   const { subscribe, previewSubscribe, subscription, fetchStatus } =
     useBillingContext()
   const billingOperationStore = useBillingOperationStore()
-  const { userEmail } = useCurrentUser()
   const { permissions } = useWorkspaceUI()
   const { canDowngradeToPersonal } = useBillingCapabilities()
   const telemetry = useTelemetry()
   let activeTelemetryAttempt: DowngradeTelemetryAttempt | undefined
 
-  const removableMembers = computed(() => {
-    const hasFlag = members.value.some((m) => m.isOriginalOwner)
-    if (hasFlag) return members.value.filter((m) => !m.isOriginalOwner)
-    const email = userEmail.value?.toLowerCase() ?? null
-    return members.value.filter(
-      (m) => m.role !== 'owner' && m.email.toLowerCase() !== email
-    )
-  })
+  const removableMembers = computed(() =>
+    members.value.filter((m) => !m.isOriginalOwner)
+  )
 
   const hasOtherMembers = computed(() => removableMembers.value.length > 0)
+
+  function rejectDowngrade(): never {
+    throw new Error(t('subscription.downgrade.notAllowed'))
+  }
 
   function ensureCanDowngrade(): void {
     if (
@@ -99,8 +96,12 @@ export function useDowngradeToPersonal({
         ? canDowngradeToPersonal.value
         : permissions.value.canDowngradeToPersonal)
     ) {
-      throw new Error(t('subscription.downgrade.notAllowed'))
+      rejectDowngrade()
     }
+  }
+
+  function ensureOriginalOwnerListed(): void {
+    if (!members.value.some((m) => m.isOriginalOwner)) rejectDowngrade()
   }
 
   function hasErrorCode(error: unknown, code: string): boolean {
@@ -162,6 +163,7 @@ export function useDowngradeToPersonal({
     confirmedChargeCents?: number
   ): Promise<DowngradeToPersonalResult | null> {
     ensureCanDowngrade()
+    ensureOriginalOwnerListed()
 
     const membersToRemove = removableMembers.value
     const telemetryAttempt = activeTelemetryAttempt ?? {
