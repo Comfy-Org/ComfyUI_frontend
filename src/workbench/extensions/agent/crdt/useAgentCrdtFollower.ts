@@ -9,6 +9,7 @@ import {
 } from 'vue'
 import type { Ref } from 'vue'
 
+import { SCHEMA_VERSION } from '@comfyorg/comfy-multi-player'
 import type { Op } from '@comfyorg/comfy-multi-player'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
@@ -721,6 +722,7 @@ function startAgentCrdtFollower(
       projection.bind(workflowId, bridge.follower)
     }
   }
+  const staleClientNotified = new Set<string>()
   const onSchemaError: EventListener = (event) => {
     // KA-11 fail-closed: the bridge refused to propagate an unreadable doc, so
     // nothing was projected. Surface it as its own status rather than as a
@@ -730,7 +732,7 @@ function startAgentCrdtFollower(
     lifecycle.clearStaleProbe()
     const detail =
       event instanceof CustomEvent
-        ? (event.detail as { workflowId?: string } | null)
+        ? (event.detail as { workflowId?: string; found?: unknown } | null)
         : null
     if (detail?.workflowId !== undefined) {
       projection.discardPending(detail.workflowId)
@@ -741,6 +743,19 @@ function startAgentCrdtFollower(
       'schema_error',
       event instanceof CustomEvent ? (event.detail ?? null) : null
     )
+    const found = detail?.found
+    if (
+      detail?.workflowId !== undefined &&
+      typeof found === 'number' &&
+      found > SCHEMA_VERSION &&
+      !staleClientNotified.has(detail.workflowId)
+    ) {
+      staleClientNotified.add(detail.workflowId)
+      events.onSyncError?.(
+        `document schema v${found} is newer than this page reads (v${SCHEMA_VERSION})`,
+        'stale_client_schema'
+      )
+    }
   }
   const onGap: EventListener = (event) => {
     outcomes.value = { ...outcomes.value, gap: outcomes.value.gap + 1 }
