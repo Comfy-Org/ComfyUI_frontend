@@ -5221,7 +5221,7 @@ describe('AgentPanelRoot history', () => {
     })
     vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
       const url = String(input)
-      if (url.endsWith('/api/agent/threads'))
+      if (threadListRoute.test(url))
         return json(
           200,
           agentThreadList([
@@ -5299,7 +5299,7 @@ describe('AgentPanelRoot history', () => {
       let listCalls = 0
       vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
         const url = String(input)
-        if (url.endsWith('/api/agent/threads')) {
+        if (threadListRoute.test(url)) {
           listCalls += 1
           return json(200, agentThreadList(threads))
         }
@@ -5445,7 +5445,7 @@ describe('AgentPanelRoot history', () => {
       })
       vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
         const url = String(input)
-        if (url.endsWith('/api/agent/threads'))
+        if (threadListRoute.test(url))
           return json(
             200,
             agentThreadList([
