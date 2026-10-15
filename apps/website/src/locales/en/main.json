@@ -5967,10 +5967,7 @@
       "cta": "EDIT WITH KREA 3"
     },
     "workflows": {
-      "label": "Krea 3 workflows",
-      "edit": "EDIT AN IMAGE",
-      "generate": "GENERATE AN IMAGE",
-      "boxes": "EDIT WITH BOXES"
+      "heading": "Made with Krea 3"
     }
   }
 }

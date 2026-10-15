@@ -19,7 +19,7 @@ describe('Krea 3 launch draft', () => {
 
   it('offers each supplied Krea workflow', () => {
     expect(
-      krea3Page.workflowCtas.map(({ href }) =>
+      krea3Page.workflowGallery.cards.map(({ href }) =>
         new URL(href).searchParams.get('template')
       )
     ).toEqual([
@@ -42,6 +42,7 @@ describe('Krea 3 launch draft', () => {
       const { t, te } = translationsFor(locale)
       const keys = [
         krea3Page.hero.titleKey,
+        krea3Page.workflowGallery.headingKey,
         krea3Page.comparison.headingKey,
         krea3Page.hero.descriptionKey,
         ...krea3Page.galleries.map((gallery) => gallery.headingKey),
@@ -71,6 +72,7 @@ describe('Krea 3 launch draft', () => {
 
   it('ships every hero and gallery asset locally for private review', () => {
     const sources = [
+      ...krea3Page.workflowGallery.cards.map((card) => card.media.src),
       krea3Page.comparison.beforeSrc,
       krea3Page.comparison.afterSrc,
       krea3Page.hero.videoSrc,

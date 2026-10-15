@@ -5360,10 +5360,7 @@
       "cta": "使用 KREA 3 编辑"
     },
     "workflows": {
-      "label": "Krea 3 工作流",
-      "edit": "编辑图像",
-      "generate": "生成图像",
-      "boxes": "使用边界框编辑"
+      "heading": "使用 Krea 3 创作"
     }
   }
 }

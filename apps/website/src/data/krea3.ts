@@ -1,6 +1,5 @@
 import type { LocalizedText, TranslationKey } from '@/i18n/translations'
 import type {
-  ModelLaunchCta,
   ModelLaunchGallery,
   ModelLaunchPage
 } from '@/templates/model-launch/types'
@@ -126,23 +125,46 @@ export const krea3Page = {
       ]
     }
   ],
-  workflowCtas: [
-    {
-      labelKey: 'krea3.workflows.edit',
-      href: krea3Links.imageEdit,
-      target: '_blank'
-    },
-    {
-      labelKey: 'krea3.workflows.generate',
-      href: krea3Links.textToImage,
-      target: '_blank'
-    },
-    {
-      labelKey: 'krea3.workflows.boxes',
-      href: krea3Links.boxes,
-      target: '_blank'
-    }
-  ],
+  workflowGallery: {
+    headingKey: 'krea3.workflows.heading',
+    ctaVariant: 'accent',
+    cardMeta: 'none',
+    cards: [
+      {
+        ...card(
+          'reference-after',
+          text('Krea 3: Image editing', 'Krea 3：图像编辑'),
+          text(
+            'Image editing. Bring a reference image and describe what to change.',
+            '图像编辑。加载参考图，描述需要修改的内容。'
+          )
+        ),
+        href: krea3Links.imageEdit
+      },
+      {
+        ...card(
+          'product-result',
+          text('Krea 3: Text to image', 'Krea 3：文生图'),
+          text(
+            'Text to image. Set the subject, setting, and visual direction with a prompt.',
+            '文生图。通过提示词设定主体、场景和视觉方向。'
+          )
+        ),
+        href: krea3Links.textToImage
+      },
+      {
+        ...card(
+          'finish-after',
+          text('Krea 3: Edit with boxes', 'Krea 3：边界框编辑'),
+          text(
+            'Edit with boxes. Open the workflow for edits guided by bounding boxes.',
+            '边界框编辑。打开通过边界框引导编辑的工作流。'
+          )
+        ),
+        href: krea3Links.boxes
+      }
+    ]
+  },
   steps: {
     headingKey: 'krea3.steps.heading',
     stepLabelKey: 'krea3.steps.label',
@@ -226,7 +248,7 @@ export const krea3Page = {
     prompt: LocalizedText
   }
   galleries: readonly ModelLaunchGallery[]
-  workflowCtas: readonly ModelLaunchCta[]
+  workflowGallery: ModelLaunchGallery
   steps: NonNullable<ModelLaunchPage['steps']>
   faq: NonNullable<ModelLaunchPage['faq']>
   closingCta: NonNullable<ModelLaunchPage['closingCta']>
