@@ -11,15 +11,16 @@ const {
 } = defineProps<{
   expanded?: boolean
   workflowName?: string
-  context?: 'following' | 'mismatch' | 'unavailable'
+  context?: 'following' | 'mismatch' | 'unavailable' | 'followFailed'
 }>()
 
-const emit = defineEmits<{ showTarget: [] }>()
+const emit = defineEmits<{ showTarget: []; retry: [] }>()
 const dismissed = useStorage('Comfy.AgentPanel.runNoticeDismissed', false)
 const contextMessages = {
   following: 'agent.targetFollowsVisibleWorkflow',
   mismatch: 'agent.viewingDifferentWorkflow',
-  unavailable: 'agent.targetWorkflowUnavailable'
+  unavailable: 'agent.targetWorkflowUnavailable',
+  followFailed: 'agent.followedChatOpenFailed'
 } as const satisfies Record<NonNullable<typeof context>, string>
 const defaultNotice = computed(() =>
   expanded ? 'agent.runNoticeExpanded' : 'agent.runNotice'
@@ -38,7 +39,7 @@ const defaultNotice = computed(() =>
     />
     <p class="my-0 min-w-0 flex-1 text-sm text-base-foreground">
       <template v-if="context">
-        {{ $t(contextMessages[context]) }}
+        {{ $t(contextMessages[context], { workflowName }) }}
         <Button
           v-if="context === 'mismatch'"
           type="button"
@@ -49,6 +50,16 @@ const defaultNotice = computed(() =>
         >
           {{ $t('agent.showTarget') }}
           <span class="icon-[lucide--arrow-up-right] size-4" />
+        </Button>
+        <Button
+          v-else-if="context === 'followFailed'"
+          type="button"
+          variant="muted-textonly"
+          size="sm"
+          :aria-label="$t('agent.retryFollowedChat', { workflowName })"
+          @click="emit('retry')"
+        >
+          {{ $t('g.retry') }}
         </Button>
       </template>
       <i18n-t

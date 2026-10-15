@@ -632,6 +632,43 @@ describe('useAgentSession (v1 composition root)', () => {
     }
   )
 
+  it.for(['loads', 'fails'])(
+    'keeps the open chat until a kept-open load %s',
+    async (outcome) => {
+      let answer = (_loaded: boolean) => {}
+      const getMessages = vi.fn(
+        (threadId: string): Promise<AgentMessages> =>
+          threadId === 'th-next'
+            ? new Promise((resolve, reject) => {
+                answer = (loaded) =>
+                  loaded ? resolve([]) : reject(new Error('unavailable'))
+              })
+            : Promise.resolve([])
+      )
+      const session = useAgentSession({
+        rest: fakeRest({ getMessages }),
+        events: fakeEvents().source
+      })
+      session.start()
+      await session.sendMessage('First chat')
+
+      const opening = session.loadThread('th-next', () => true, {
+        keepOpenChatUntilLoaded: true
+      })
+      expect(session.threadId.value).toBe('th-1')
+      expect(session.isTranscriptReady.value).toBe(true)
+
+      answer(outcome === 'loads')
+
+      expect(await opening).toBe(outcome === 'loads')
+      expect(session.threadId.value).toBe(
+        outcome === 'loads' ? 'th-next' : 'th-1'
+      )
+      expect(session.notices.value).toEqual([])
+      session.stop()
+    }
+  )
+
   it('(b) a second send posts to the adopted threadId, not new', async () => {
     const postMessage = vi
       .fn<

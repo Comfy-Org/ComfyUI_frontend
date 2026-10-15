@@ -591,11 +591,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const isCurrent = () =>
       generation === loadGeneration && ownedGeneration === sessionGeneration
     const stashedTurn = beginInitialThread(initialThreadId, surviving)
-    const ready = await hydrateFromServer(
-      initialThreadId,
-      isCurrent,
+    const ready = await hydrateFromServer(initialThreadId, isCurrent, {
       stashedTurn
-    )
+    })
     if (isCurrent()) settleInitialThread(initialThreadId, surviving, ready)
   }
 
@@ -802,11 +800,20 @@ export function useAgentSession(deps: AgentSessionDeps) {
   async function hydrateFromServer(
     threadId: string,
     isCurrent: () => boolean = () => true,
-    stashedTurn = false
+    {
+      stashedTurn = false,
+      openThread,
+      failureNotice = 'error_overlay'
+    }: {
+      stashedTurn?: boolean
+      openThread?: () => void
+      failureNotice?: 'error_overlay' | 'inline_notice'
+    } = {}
   ): Promise<boolean> {
     const buffer = armHydration(threadId)
     try {
       const history = await rest.getMessages(threadId)
+      if (openThread && isCurrent()) openThread()
       if (conversationStore.threadId !== threadId || !isCurrent()) return false
       conversationStore.hydrate(history)
       rememberSnapshotTurn(conversationStore.activeTurnId)
@@ -821,7 +828,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
       if (conversationStore.threadId !== threadId || !isCurrent()) return false
       return true
     } catch (error) {
-      return handleHistoryLoadError(error, threadId, isCurrent, stashedTurn)
+      return handleHistoryLoadError(
+        error,
+        threadId,
+        isCurrent,
+        stashedTurn,
+        failureNotice
+      )
     } finally {
       drainHydration(buffer)
     }
@@ -831,7 +844,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     error: unknown,
     threadId: string,
     isCurrent: () => boolean,
-    stashedTurn: boolean
+    stashedTurn: boolean,
+    failureNotice: 'error_overlay' | 'inline_notice'
   ): false {
     if (!isCurrent()) return false
     if (error instanceof AgentApiError && error.status === 404) {
@@ -845,8 +859,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
       surface: 'agent',
       errorType: 'agent_history_load_failed'
     })
-    pushError(error instanceof Error ? error.message : String(error))
-    trackAgentError('history_load_failed', 'pre_acceptance', 'error_overlay', {
+    if (failureNotice === 'error_overlay')
+      pushError(error instanceof Error ? error.message : String(error))
+    trackAgentError('history_load_failed', 'pre_acceptance', failureNotice, {
       retryable: isRetryableRequestFailure(error, false),
       turnAccepted: stashedTurn
     })
@@ -1601,23 +1616,35 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   async function loadThread(
     threadId: string,
-    isNavigationCurrent: () => boolean = () => true
+    isNavigationCurrent: () => boolean = () => true,
+    { keepOpenChatUntilLoaded = false } = {}
   ): Promise<boolean> {
-    readyThreadId.value = null
-    const generation = ++loadGeneration
-    promptEditState.value = { phase: 'idle' }
+    let generation = loadGeneration
+    let stashedTurn = false
     const isCurrent = () =>
       generation === loadGeneration &&
       ownedGeneration === sessionGeneration &&
       isNavigationCurrent()
-    const stashedTurn = conversationStore.activeTurnId !== null
-    conversationStore.stashActiveTurn()
-    boundWorkflowId.value = null
-    rememberedWorkflowId = null
-    pendingWorkflowBind = null
-    malformedStreamReports.clear()
-    conversationStore.setThreadId(threadId)
-    const hydrated = await hydrateFromServer(threadId, isCurrent, stashedTurn)
+    function openThread(): void {
+      readyThreadId.value = null
+      generation = ++loadGeneration
+      promptEditState.value = { phase: 'idle' }
+      stashedTurn = conversationStore.activeTurnId !== null
+      conversationStore.stashActiveTurn()
+      boundWorkflowId.value = null
+      rememberedWorkflowId = null
+      pendingWorkflowBind = null
+      malformedStreamReports.clear()
+      conversationStore.setThreadId(threadId)
+    }
+    if (!keepOpenChatUntilLoaded) openThread()
+    const hydrated = await hydrateFromServer(
+      threadId,
+      isCurrent,
+      keepOpenChatUntilLoaded
+        ? { openThread, failureNotice: 'inline_notice' }
+        : { stashedTurn }
+    )
     if (hydrated && isCurrent()) {
       localStorage.setItem(threadStorageKey, threadId)
       onThreadActivated?.(threadId)

@@ -314,6 +314,10 @@ export function useAgentWorkflowSelection({
     }
   }
 
+  function adoptTarget(workflow: ComfyWorkflow, workflowId: string): void {
+    commitWorkflowTarget(workflow, workflowId, 'restored')
+  }
+
   function cancelSelection(): void {
     ++composerContextGeneration
     ++targetSelectionGeneration
@@ -328,6 +332,7 @@ export function useAgentWorkflowSelection({
     selectTarget: onSelectWorkflowTarget,
     selectReference: onSelectWorkflowReference,
     restoreTarget: onWorkflowRestored,
+    adoptTarget,
     requestReferences: onRequestWorkflowReferences,
     cancelSelection
   }

@@ -64,7 +64,6 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
-import Button from '@/components/ui/button/Button.vue'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type { RootGraphId } from '@/types/graphScopeId'
@@ -89,6 +88,7 @@ import { useFreeUsePlacement } from './experiments/freeUsePlacement'
 import { useStarterPromptSet } from './experiments/starterPromptSet'
 import AgentPanel from './components/agent/AgentPanel.vue'
 import AgentCreditTransitionNotice from './components/agent/AgentCreditTransitionNotice.vue'
+import RunNoticeBanner from './components/agent/RunNoticeBanner.vue'
 import { agentBoundWorkflowIdKey } from './components/agent/agentBoundWorkflowId'
 import AgentGraphActivityBar from './components/AgentGraphActivityBar.vue'
 import OnboardingCoach from './components/agent/OnboardingCoach.vue'
@@ -431,6 +431,7 @@ const {
   selectTarget: onSelectWorkflowTarget,
   selectReference: onSelectWorkflowReference,
   restoreTarget: onWorkflowRestored,
+  adoptTarget: adoptWorkflowTarget,
   requestReferences: onRequestWorkflowReferences,
   cancelSelection: cancelWorkflowSelection
 } = useAgentWorkflowSelection({
@@ -1481,26 +1482,12 @@ const historyGroups = computed(() => {
 })
 
 let followGeneration = 0
-let followedChat: { threadId: string; workflowId: string } | null = null
+let followedChat: {
+  threadId: string
+  workflow: ComfyWorkflow
+  workflowId: string
+} | null = null
 const followFailure = shallowRef<ComfyWorkflow | null>(null)
-
-async function selectThread(
-  id: string,
-  isCurrent: () => boolean
-): Promise<boolean> {
-  if (currentChatReady.value && id === threadId.value)
-    return onShowTarget(isCurrent, warnRestoreFailed)
-
-  composerStore.invalidateSubmission()
-  cancelWorkflowSelection()
-  agentPanelStore.beginWorkflowRestoration()
-  canvasStore.stopNodePicking()
-  const opened = await loadThread(id, isCurrent)
-  if (opened)
-    useTelemetry()?.trackAgentThreadStarted({ source: 'history_select' })
-  void refreshHistory()
-  return opened
-}
 
 function retireFollow(): void {
   ++followGeneration
@@ -1513,7 +1500,18 @@ async function onSelectHistory(
   isCurrent: () => boolean
 ): Promise<boolean> {
   retireFollow()
-  return selectThread(id, isCurrent)
+  if (currentChatReady.value && id === threadId.value)
+    return onShowTarget(isCurrent, warnRestoreFailed)
+
+  composerStore.invalidateSubmission()
+  cancelWorkflowSelection()
+  agentPanelStore.beginWorkflowRestoration()
+  canvasStore.stopNodePicking()
+  const opened = await loadThread(id, isCurrent)
+  if (opened)
+    useTelemetry()?.trackAgentThreadStarted({ source: 'history_select' })
+  void refreshHistory()
+  return opened
 }
 
 function latestChatFor(workflowId: string): string | undefined {
@@ -1560,39 +1558,26 @@ async function followTab(workflow: ComfyWorkflow): Promise<void> {
   if (!isCurrent() || workflowId === undefined) return
   const latest = latestChatFor(workflowId)
   if (latest === undefined || latest === threadId.value) return
-  if (!(await openFollowedChat(latest, workflowId, isCurrent)) && isCurrent())
-    followFailure.value = workflow
+  followedChat = { threadId: latest, workflow, workflowId }
+  const opened = await loadThread(latest, isCurrent, {
+    keepOpenChatUntilLoaded: true
+  })
+  if (followedChat?.threadId === latest) followedChat = null
+  if (opened) {
+    composerStore.setText('')
+    useTelemetry()?.trackAgentThreadStarted({ source: 'history_select' })
+  } else if (isCurrent()) followFailure.value = workflow
 }
 
 function restoreChatWorkflow(
   workflowId: string | undefined,
   isCurrent: () => boolean
-): Promise<boolean> {
-  const followed =
-    followedChat?.threadId === conversationStore.threadId
-      ? followedChat.workflowId
-      : undefined
-  return onWorkflowRestored(followed ?? workflowId, isCurrent)
-}
-
-async function openFollowedChat(
-  id: string,
-  workflowId: string,
-  isCurrent: () => boolean
-): Promise<boolean> {
-  const kept = {
-    threadId: threadId.value,
-    targetTracking: agentPanelStore.targetTracking
-  }
-  followedChat = { threadId: id, workflowId }
-  composerStore.setText('')
-  const opened = await selectThread(id, isCurrent)
-  if (followedChat?.threadId === id) followedChat = null
-  if (opened || !isCurrent()) return opened
-  agentPanelStore.targetTracking = kept.targetTracking
-  if (kept.threadId === null) newChat()
-  else await loadThread(kept.threadId, isCurrent)
-  return false
+): Promise<boolean> | boolean {
+  const followed = followedChat
+  if (followed?.threadId !== conversationStore.threadId)
+    return onWorkflowRestored(workflowId, isCurrent)
+  adoptWorkflowTarget(followed.workflow, followed.workflowId)
+  return true
 }
 
 function onRetryFollow(): void {
@@ -2168,32 +2153,12 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
         <CrdtDevPanel :status="crdtStatus" :snapshot="crdtDebugSnapshot" />
       </template>
       <template #composerNotice>
-        <div
+        <RunNoticeBanner
           v-if="followFailure"
-          role="status"
-          aria-live="polite"
-          class="relative flex items-start gap-2 overflow-hidden rounded-lg bg-base-background p-4 ring-1 ring-border-subtle before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-warning-background"
-        >
-          <span
-            aria-hidden="true"
-            class="icon-[heroicons--information-circle-20-solid] size-5 shrink-0 text-warning-foreground"
-          />
-          <p class="my-0 min-w-0 flex-1 text-sm text-base-foreground">
-            {{
-              t('agent.followedChatOpenFailed', {
-                workflowName: followFailure.filename
-              })
-            }}
-            <Button
-              type="button"
-              variant="muted-textonly"
-              size="sm"
-              @click="onRetryFollow"
-            >
-              {{ t('g.retry') }}
-            </Button>
-          </p>
-        </div>
+          context="followFailed"
+          :workflow-name="followFailure.filename"
+          @retry="onRetryFollow"
+        />
         <AgentCreditTransitionNotice
           v-if="showCreditTransitionNotice"
           data-testid="agent-credit-transition-notice"

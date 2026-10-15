@@ -85,6 +85,22 @@ describe('RunNoticeBanner', () => {
     expect(screen.queryByRole('button')).toBeNull()
   })
 
+  it('names the workflow whose chat failed to open, with a retry for it', async () => {
+    const { emitted } = render(RunNoticeBanner, {
+      props: { context: 'followFailed', workflowName: 'portrait' },
+      global: { plugins: [i18n] }
+    })
+    expect(screen.getByRole('note')).toHaveTextContent(
+      'Couldn’t open the chat for portrait.'
+    )
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: 'Retry opening the chat for portrait'
+      })
+    )
+    expect(emitted('retry')).toHaveLength(1)
+  })
+
   it('explains all three ways to decide the target', () => {
     render(RunNoticeBanner, {
       props: { context: 'following', workflowName: 'portrait' },
