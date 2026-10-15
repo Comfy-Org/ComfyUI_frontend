@@ -25,6 +25,8 @@ export type BillingBannerKind =
   | 'ending'
   | 'planChange'
 
+export type BillingBannerAudience = 'team' | 'personal'
+
 export interface BillingBannerInputs {
   billingControlEnabled: boolean
   v1PaymentRecovery: boolean
@@ -41,6 +43,7 @@ export interface BillingBannerInputs {
   endDate: string | null
   canManage: boolean
   isPlanEnded: boolean
+  isPlanTerminal: boolean
   planEndedDismissed: boolean
   outOfCreditsDismissed: boolean
   planChangeDismissed: boolean
@@ -96,22 +99,30 @@ function derivePaymentRecoveryBanner(
   return null
 }
 
-function teamNoticesApply(inputs: BillingBannerInputs): boolean {
-  return (
-    inputs.isTeamPlan &&
-    inputs.canAccessSubscriptionFeatures &&
-    inputs.billingControlEnabled
-  )
+// The self-serve plans the billing-control notices speak to. Enterprise and
+// unrecognized tiers have no audience, so they fail closed to no notice.
+function billingBannerAudience(
+  inputs: Pick<
+    BillingBannerInputs,
+    'isTeamPlan' | 'isEnterprise' | 'isKnownPersonalTier'
+  >
+): BillingBannerAudience | null {
+  if (inputs.isEnterprise) return null
+  if (inputs.isTeamPlan) return 'team'
+  return inputs.isKnownPersonalTier ? 'personal' : null
 }
 
 // A self-serve cancellation is user-initiated news, so its ending notice
 // shows at once. A scheduled change is suppressed while cancelled — the
-// ending notice already owns that window — and is owner-only.
+// ending notice already owns that window — and is owner-only. It has no
+// personal design yet, so it stays team-only.
 function deriveLifecycleNotice(
-  inputs: BillingBannerInputs
+  inputs: BillingBannerInputs,
+  audience: BillingBannerAudience
 ): BillingBannerKind | null {
   if (inputs.isCancelled && inputs.endDate) return 'ending'
   const showsPlanChange =
+    audience === 'team' &&
     inputs.hasScheduledChange &&
     !inputs.isCancelled &&
     inputs.canManage &&
@@ -119,16 +130,27 @@ function deriveLifecycleNotice(
   return showsPlanChange ? 'planChange' : null
 }
 
-// The team-only billing-control notices. Any other tier (including
-// unrecognized ones) gets no banner at all.
-function deriveTeamNoticeBanner(
-  inputs: BillingBannerInputs
+function deriveNoticeBanner(
+  inputs: BillingBannerInputs,
+  audience: BillingBannerAudience
 ): BillingBannerKind | null {
-  if (!teamNoticesApply(inputs)) return null
+  if (!inputs.canAccessSubscriptionFeatures) return null
+  if (!inputs.billingControlEnabled) return null
   if (inputs.hasFunds === false && !inputs.outOfCreditsDismissed) {
     return 'outOfCredits'
   }
-  return deriveLifecycleNotice(inputs)
+  return deriveLifecycleNotice(inputs, audience)
+}
+
+// usePlanEnded covers team and sales-managed plans only; a terminal personal
+// plan is read here so the Members panel keeps its personal upsell.
+function hasPlanEnded(
+  inputs: BillingBannerInputs,
+  audience: BillingBannerAudience | null
+): boolean {
+  return (
+    inputs.isPlanEnded || (audience === 'personal' && inputs.isPlanTerminal)
+  )
 }
 
 // The single billing banner slot, in priority order: paused > paymentFailed >
@@ -144,9 +166,12 @@ export function deriveBillingBanner(
     ? null
     : derivePaymentRecoveryBanner(inputs)
   if (recovery) return recovery
-  if (inputs.isPlanEnded) return inputs.planEndedDismissed ? null : 'planEnded'
+  const audience = billingBannerAudience(inputs)
+  if (hasPlanEnded(inputs, audience)) {
+    return inputs.planEndedDismissed ? null : 'planEnded'
+  }
   if (inputs.isEnterprise) return deriveEnterpriseBanner(inputs, now)
-  return deriveTeamNoticeBanner(inputs)
+  return audience ? deriveNoticeBanner(inputs, audience) : null
 }
 
 function classifyTier(
@@ -198,7 +223,7 @@ function useBillingBannerInternal() {
   const { permissions } = useWorkspaceUI()
   const { flags } = useFeatureFlags()
 
-  const { isPlanEnded } = usePlanEnded()
+  const { isPlanEnded, isPlanTerminal } = usePlanEnded()
   const planEndedDismissed = ref(false)
   const outOfCreditsDismissed = ref(false)
   const planChangeDismissed = ref(false)
@@ -216,6 +241,7 @@ function useBillingBannerInternal() {
     billingStatus: billingStatus.value,
     canManage: permissions.value.canManageSubscription,
     isPlanEnded: isPlanEnded.value,
+    isPlanTerminal: isPlanTerminal.value,
     planEndedDismissed: planEndedDismissed.value,
     outOfCreditsDismissed: outOfCreditsDismissed.value,
     planChangeDismissed: planChangeDismissed.value,
@@ -225,6 +251,7 @@ function useBillingBannerInternal() {
   const kind = computed<BillingBannerKind | null>(() =>
     isCloud ? deriveBillingBanner(bannerInputs.value, now.value) : null
   )
+  const audience = computed(() => billingBannerAudience(bannerInputs.value))
 
   // Out-of-credits dismissal lasts one exhaustion episode: reset once the
   // workspace is funded again so a later exhaustion re-shows. Plan ended and
@@ -248,7 +275,7 @@ function useBillingBannerInternal() {
     if (kind.value === 'planChange') planChangeDismissed.value = true
   }
 
-  return { kind, dismiss }
+  return { kind, audience, dismiss }
 }
 
 export const useBillingBanner = createSharedComposable(useBillingBannerInternal)

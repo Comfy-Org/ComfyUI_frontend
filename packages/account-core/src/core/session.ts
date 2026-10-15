@@ -79,7 +79,8 @@ export const SESSION_ERROR_CODES: Readonly<Record<SessionErrorCode, true>> = {
   INVALID_FIREBASE_TOKEN: true,
   ACCESS_DENIED: true,
   WORKSPACE_NOT_FOUND: true,
-  TOKEN_EXCHANGE_FAILED: true
+  TOKEN_EXCHANGE_FAILED: true,
+  SSO_REQUIRED: true
 }
 
 export { SESSION_TELEMETRY_EVENT } from '../telemetry.js'

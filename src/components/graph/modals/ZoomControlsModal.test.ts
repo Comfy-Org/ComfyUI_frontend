@@ -76,7 +76,7 @@ describe('ZoomControlsModal', () => {
     const zoomInButton = screen.getByTestId('zoom-in-action')
     await user.click(zoomInButton)
 
-    expect(vi.mocked(useCommandStore().execute)).toHaveBeenCalledWith(
+    expect(useCommandStore().execute).toHaveBeenCalledWith(
       'Comfy.Canvas.ZoomIn'
     )
   })
@@ -88,7 +88,7 @@ describe('ZoomControlsModal', () => {
     const zoomOutButton = screen.getByTestId('zoom-out-action')
     await user.click(zoomOutButton)
 
-    expect(vi.mocked(useCommandStore().execute)).toHaveBeenCalledWith(
+    expect(useCommandStore().execute).toHaveBeenCalledWith(
       'Comfy.Canvas.ZoomOut'
     )
   })
@@ -100,7 +100,7 @@ describe('ZoomControlsModal', () => {
     const fitViewButton = screen.getByTestId('zoom-to-fit-action')
     await user.click(fitViewButton)
 
-    expect(vi.mocked(useCommandStore().execute)).toHaveBeenCalledWith(
+    expect(useCommandStore().execute).toHaveBeenCalledWith(
       'Comfy.Canvas.FitView'
     )
   })
@@ -120,7 +120,7 @@ describe('ZoomControlsModal', () => {
       await user.keyboard(`${typed}{Enter}`)
 
       expect(
-        vi.mocked(useCanvasStore().setAppZoomFromPercentage)
+        useCanvasStore().setAppZoomFromPercentage
       ).toHaveBeenCalledExactlyOnceWith(applied)
     }
   )

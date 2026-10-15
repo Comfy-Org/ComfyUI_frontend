@@ -1,0 +1,44 @@
+{
+  "id": "error-handling",
+  "capability": "Error normalization and recovery",
+  "description": "Shared technical module for caught-error normalization, user-facing toast handling, and retry/recovery strategies. Reporting errors to telemetry remains in error-reporting.",
+  "modules": [
+    {
+      "path": "src/utils/errorUtil.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/errorUtil.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/composables/useErrorHandling.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useErrorHandling.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/__mocks__/useErrorHandling.ts",
+      "role": "application"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Error normalization and recovery preserves its existing behavior",
+      "checks": [
+        "src/utils/errorUtil.test.ts",
+        "src/composables/useErrorHandling.test.ts"
+      ]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Inventory preserves existing exports and behavior without granting cross-module permissions. This record describes current responsibilities, not a proposed extraction interface."
+  ],
+  "deepImports": "inventory"
+}

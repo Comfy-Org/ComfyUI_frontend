@@ -4,7 +4,7 @@ import { ref } from 'vue'
 import RadioGroup from './RadioGroup.vue'
 import RadioGroupItem from './RadioGroupItem.vue'
 
-const meta = {
+const meta: Meta<typeof RadioGroup> = {
   title: 'Components/RadioGroup',
   component: RadioGroup,
   tags: ['autodocs'],
@@ -12,7 +12,7 @@ const meta = {
     disabled: { control: 'boolean' },
     'onUpdate:modelValue': { action: 'update:modelValue' }
   }
-} satisfies Meta<typeof RadioGroup>
+}
 
 export default meta
 type Story = StoryObj<typeof meta>

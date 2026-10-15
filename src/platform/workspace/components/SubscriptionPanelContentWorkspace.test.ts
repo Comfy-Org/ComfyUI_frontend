@@ -1,5 +1,7 @@
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { useDialogService } from '@/services/dialogService'
+import { useSubscriptionPaywall } from '@/composables/billing/useSubscriptionPaywall'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
+import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { getActivePinia } from 'pinia'
@@ -21,11 +23,29 @@ import type {
   TeamCreditStops,
   TeamCreditStopSummary
 } from '@/platform/workspace/api/workspaceApi'
+import type { BillingBannerKind } from '@/platform/workspace/composables/useBillingBanner'
 
 import SubscriptionPanelContentWorkspace from './SubscriptionPanelContentWorkspace.vue'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 const mockDistributionState = vi.hoisted(() => ({ isCloud: true }))
+const mockBillingBanner = vi.hoisted(() => ({
+  kind: null as BillingBannerKind | null
+}))
+
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useBillingBanner'),
+  async () => {
+    const { computed } = await import('vue')
+    return {
+      useBillingBanner: () => ({
+        kind: computed(() => mockBillingBanner.kind),
+        audience: computed(() => null),
+        dismiss: vi.fn()
+      })
+    }
+  }
+)
 
 vi.mock(import('@/composables/billing/useBillingRouting'))
 
@@ -188,17 +208,13 @@ vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-vi.mock(import('@/services/dialogService'))
+vi.mock(import('@/composables/billing/useBillingDialogs'))
+
+vi.mock(import('@/composables/billing/useSubscriptionPaywall'))
+vi.mock(import('@/platform/workspace/composables/useWorkspaceDialogs'))
 
 vi.mock(
   import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
-)
-
-vi.mock<unknown>(
-  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
-  () => ({
-    useToast: () => ({ add: vi.fn() })
-  })
 )
 
 const i18n = createI18n({
@@ -228,7 +244,6 @@ function renderComponent({ stubFooter = true } = {}) {
   return render(SubscriptionPanelContentWorkspace, {
     global: {
       plugins: [getActivePinia()!, i18n],
-      directives: { tooltip: {} },
       stubs: {
         CreditsTile: CreditsTileStub,
         ...(stubFooter
@@ -305,6 +320,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
         : null
     )
     mockDistributionState.isCloud = true
+    mockBillingBanner.kind = null
     mockSubscriptionStatus.value = 'active'
     mockBillingStatus.value = 'paid'
     mockBillingType.value = 'workspace'
@@ -772,7 +788,6 @@ describe('SubscriptionPanelContentWorkspace', () => {
   })
 
   it('falls back to the per-member price when the subscribed stop id is stale', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     mockCurrentTeamCreditStop.value = {
       id: 'team_unknown',
       credits_monthly: 1,
@@ -782,8 +797,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
 
     expect(screen.getByText('$100')).toBeInTheDocument()
     expect(screen.getByText('USD / mo / member')).toBeInTheDocument()
-    expect(warn).toHaveBeenCalledOnce()
-    warn.mockRestore()
+    expect(console.warn).toHaveBeenCalledOnce()
   })
 
   it('shows cents when the subscribed stop price is not a whole dollar', () => {
@@ -811,7 +825,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(useBillingContext().manageSubscription).toHaveBeenCalledOnce()
 
     await user.click(screen.getByRole('button', { name: 'Change plan' }))
-    expect(useBillingContext().showSubscriptionDialog).toHaveBeenCalledOnce()
+    expect(
+      useSubscriptionPaywall().showSubscriptionDialog
+    ).toHaveBeenCalledOnce()
   })
 
   it('hides Change plan when the server denies seat changes to a client-side owner', () => {
@@ -984,7 +1000,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
       screen.getByRole('button', { name: 'Resume subscription' })
     )
     expect(useBillingContext().resubscribe).toHaveBeenCalledOnce()
-    expect(useBillingContext().showSubscriptionDialog).not.toHaveBeenCalled()
+    expect(
+      useSubscriptionPaywall().showSubscriptionDialog
+    ).not.toHaveBeenCalled()
   })
 
   it('drops the state card for an inactive ended subscription without a date', () => {
@@ -1071,11 +1089,31 @@ describe('SubscriptionPanelContentWorkspace', () => {
       screen.getByRole('button', { name: 'Resume subscription' })
     )
 
-    expect(useBillingContext().showSubscriptionDialog).toHaveBeenCalledWith({
+    expect(
+      useSubscriptionPaywall().showSubscriptionDialog
+    ).toHaveBeenCalledWith({
       reason: 'settings_billing_panel'
     })
     expect(useBillingContext().resubscribe).not.toHaveBeenCalled()
   })
+
+  it.for([
+    { kind: null, showsCard: true },
+    { kind: 'ending', showsCard: false },
+    { kind: 'outOfCredits', showsCard: true },
+    { kind: 'planChange', showsCard: true }
+  ] as const)(
+    'lets the ending banner replace the canceled card (banner: $kind)',
+    ({ kind, showsCard }) => {
+      mockSubscriptionStatus.value = 'canceled'
+      mockBillingBanner.kind = kind
+      renderComponent()
+
+      expect(screen.queryByTestId('subscription-state-card') !== null).toBe(
+        showsCard
+      )
+    }
+  )
 
   it('keeps ended Team credits inactive when self-serve capabilities are unavailable', () => {
     mockSubscriptionStatus.value = 'canceled'
@@ -1280,7 +1318,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(useBillingContext().manageSubscription).toHaveBeenCalledOnce()
 
     await user.click(screen.getByRole('button', { name: 'Subscribe' }))
-    expect(useBillingContext().showSubscriptionDialog).toHaveBeenCalledOnce()
+    expect(
+      useSubscriptionPaywall().showSubscriptionDialog
+    ).toHaveBeenCalledOnce()
   })
 
   it.for([
@@ -1334,7 +1374,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     await user.click(
       screen.getByRole('menuitem', { name: 'Edit workspace details' })
     )
-    expect(useDialogService().showEditWorkspaceDialog).toHaveBeenCalledOnce()
+    expect(useWorkspaceDialogs().showEditWorkspaceDialog).toHaveBeenCalledOnce()
   })
 
   it('offers a subscribed personal workspace Edit and Cancel without Delete', async () => {
@@ -1459,7 +1499,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
 
     await user.click(screen.getByRole('button', { name: 'More Options' }))
     await user.click(screen.getByRole('menuitem', { name: 'Leave Workspace' }))
-    expect(useDialogService().showLeaveWorkspaceDialog).toHaveBeenCalledOnce()
+    expect(
+      useWorkspaceDialogs().showLeaveWorkspaceDialog
+    ).toHaveBeenCalledOnce()
   })
 
   it('offers an additional workspace owner Edit, Cancel, Leave, and locked Delete', async () => {
@@ -1478,7 +1520,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     ).toHaveAttribute('aria-disabled', 'true')
 
     await user.click(screen.getByRole('menuitem', { name: 'Cancel plan' }))
-    expect(useDialogService().showCancelSubscriptionFlow).toHaveBeenCalledWith(
+    expect(useBillingDialogs().showCancelSubscriptionFlow).toHaveBeenCalledWith(
       END_DATE_ISO
     )
   })

@@ -11,7 +11,6 @@ import {
   onBeforeUnmount,
   onMounted,
   provide,
-  readonly,
   ref,
   watch
 } from 'vue'
@@ -22,7 +21,6 @@ import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import type {
   AgentErrorMetadata,
-  AgentFreeUseNoticeMetadata,
   AgentMessageSentMetadata,
   AgentPaywallSurface,
   AgentRunApprovalDecision,
@@ -33,12 +31,19 @@ import { formatWorkflowSyncErrorDetail } from '@/workbench/extensions/agent/crdt
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useAppMode } from '@/composables/useAppMode'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 import { fetchDroppedAsset, getDroppedAsset } from '@/utils/eventUtils'
+import type { DroppedAsset } from '@/utils/eventUtils'
 import { useAssetsStore } from '@/stores/assetsStore'
-import { AGENT_ATTACH_ACCEPT, isAgentAttachable } from './utils/attachableFiles'
+import {
+  AGENT_ATTACH_ACCEPT,
+  agentAttachRefVerdict,
+  agentAttachVerdict,
+  isValidAgentAttachment
+} from './utils/attachableFiles'
+import type { AgentAttachVerdict } from './utils/attachableFiles'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -53,12 +58,11 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { blankGraph } from '@/scripts/defaultGraph'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type { RootGraphId } from '@/types/graphScopeId'
 import { isCloud } from '@/platform/distribution/types'
@@ -79,12 +83,15 @@ import {
 } from './composables/agent/useOnboarding'
 
 import { useFreeUsePlacement } from './experiments/freeUsePlacement'
+import { useStarterPromptSet } from './experiments/starterPromptSet'
 import AgentPanel from './components/agent/AgentPanel.vue'
+import AgentCreditTransitionNotice from './components/agent/AgentCreditTransitionNotice.vue'
 import { agentBoundWorkflowIdKey } from './components/agent/agentBoundWorkflowId'
 import AgentGraphActivityBar from './components/AgentGraphActivityBar.vue'
 import OnboardingCoach from './components/agent/OnboardingCoach.vue'
 import {
   MAX_ATTACHMENT_BYTES,
+  MAX_TURN_ATTACHMENTS,
   useAttachment
 } from './composables/agent/useAttachment'
 import type { ActiveTab } from './types/activeTab'
@@ -105,6 +112,7 @@ import type {
   WorkflowTurnContext
 } from './composables/agent/useAgentSession'
 import type { CoachStep } from './composables/agent/useOnboarding'
+import { useBillingIdentity } from './composables/useBillingIdentity'
 import { useAgentConsent } from './composables/agent/useAgentConsent'
 import { useAgentWorkflowResolver } from './composables/agent/useAgentWorkflowResolver'
 import { useAgentWorkflowSelection } from './composables/agent/useAgentWorkflowSelection'
@@ -134,6 +142,7 @@ import {
 } from './utils/sessionTitle'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentConsentStore } from './stores/agent/agentConsentStore'
+import { isCreditTransitionNoticeShown } from './stores/agent/creditTransitionNoticeState'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentGraphActivityStore } from './stores/agent/agentGraphActivityStore'
 import {
@@ -149,7 +158,7 @@ const CrdtDevPanel = defineAsyncComponent(
 )
 
 const { t } = useI18n()
-const toast = useToastStore()
+const toast = useToast()
 const { open: openAccountPrecondition } = useAccountPreconditionDialog()
 const { workspaceRole } = useWorkspaceUI()
 const {
@@ -157,10 +166,12 @@ const {
   tier: subscriptionTier,
   type: billingType,
   billingStatus,
+  canAccessSubscriptionFeatures,
   fetchStatus: refreshBillingStatus
 } = useBillingContext()
 const conversationStore = useAgentConversationStore()
 const history = useAgentChatHistoryStore()
+const { accepted: consentAccepted } = storeToRefs(useAgentConsentStore())
 watch(
   subscription,
   (currentSubscription) => {
@@ -191,7 +202,6 @@ const sidebarTabStore = useSidebarTabStore()
 const { isBuilderMode } = useAppMode()
 
 const { resolvedUserInfo, userDisplayName } = useCurrentUser()
-const teamWorkspaceStore = useTeamWorkspaceStore()
 const userName = computed(
   () => userDisplayName.value?.trim().split(/\s+/)[0] || undefined
 )
@@ -281,7 +291,11 @@ watch(
  * nothing.
  */
 const agentHasFunds = computed(() => subscription.value?.agentHasFunds)
+const agentScopedHasFunds = computed(
+  () => subscription.value?.agentScopedHasFunds
+)
 const creditsExhausted = computed(() => {
+  if (!consentAccepted.value) return false
   if (billingType.value !== 'workspace') return false
   // Same gate as the impression report above: an unsettled read cannot say
   // which presentation is right, and a card naming the wrong remediation is
@@ -300,36 +314,68 @@ const creditsExhausted = computed(() => {
   )
 })
 
+const unresolvedPaywallPending = computed(() =>
+  conversationEntries.value.some(
+    (entry) =>
+      entry.role === 'assistant' &&
+      entry.parts.some((part) => part.type === 'paywall')
+  )
+)
+
 /**
  * Suppressed while the latest transcript entry is an unresolved inline card:
  * the two render the same copy. An older card may be scrolled away and must not
  * hide the standing recovery path after a later server-side refusal.
  */
-const showStandingPaywall = computed(() => {
-  if (!creditsExhausted.value) return false
+const latestEntryHasPaywall = computed(() => {
   const latestEntry = conversationEntries.value.at(-1)
-  return !(
+  return (
     latestEntry?.role === 'assistant' &&
     latestEntry.parts.some((part) => part.type === 'paywall')
   )
 })
+const showStandingPaywall = computed(() => {
+  if (!creditsExhausted.value) return false
+  return !latestEntryHasPaywall.value
+})
 
 const agentPanelStore = useAgentPanelStore()
-const billingIdentity = computed(
-  () =>
-    `${resolvedUserInfo.value?.id ?? 'anonymous'}:${teamWorkspaceStore.workspaceId ?? 'none'}`
-)
+const billingIdentity = useBillingIdentity()
 
-/**
- * One impression per exhaustion episode, not per render: the surface is
- * standing, so it is visible for as long as the workspace is out of credits and
- * a per-render report would make impressions a function of session length.
- * Reset when funds return, so a later exhaustion reports again — mirroring how
- * `useBillingBanner` scopes its dismissal to one episode.
- */
 watch(billingIdentity, () => {
   agentPanelStore.reportedExhaustionIdentity = null
 })
+
+const showCreditTransitionNotice = computed(
+  () =>
+    isCreditTransitionNoticeShown(
+      agentPanelStore.creditTransitionNotice,
+      billingIdentity.value
+    ) &&
+    consentAccepted.value &&
+    billingType.value === 'workspace' &&
+    capabilityReadSettled.value &&
+    canAccessSubscriptionFeatures.value &&
+    agentScopedHasFunds.value === false &&
+    agentHasFunds.value === true
+)
+
+function onDismissCreditTransitionNotice(): void {
+  useTelemetry()?.trackAgentCreditTransitionNotice({ action: 'dismissed' })
+  agentPanelStore.dismissCreditTransitionNotice(billingIdentity.value)
+}
+
+function onCreditTransitionNoticeShown(): void {
+  const telemetry = useTelemetry()
+  if (!telemetry) return
+  if (
+    !agentPanelStore.claimCreditTransitionNoticeImpression(
+      billingIdentity.value
+    )
+  )
+    return
+  telemetry.trackAgentCreditTransitionNotice({ action: 'shown' })
+}
 
 function onStandingPaywallShown(): void {
   if (
@@ -355,7 +401,6 @@ const composerStore = useAgentComposerStore()
 const { selectedWorkflow: selectedTarget } = storeToRefs(agentPanelStore)
 const { dismissedSelectionSignature, enabled: agentEnabled } =
   storeToRefs(agentPanelStore)
-const agentNodeSelectionStore = useAgentNodeSelectionStore()
 const workflowResolver = useAgentWorkflowResolver({
   workflows: workflowStore,
   bindings: bindingStore,
@@ -484,7 +529,6 @@ onBeforeUnmount(() =>
     }
   })
 )
-const { accepted: consentAccepted } = storeToRefs(useAgentConsentStore())
 const { withConsent } = useAgentConsent()
 const workspaceStore = useTeamWorkspaceStore()
 const onboardingKey = computed(() =>
@@ -567,7 +611,7 @@ const nodeReferenceDisabledReason = computed(() => {
 const selectedNodes = computed<SelectedNode[]>(() =>
   canvasStore.selectedItems.filter(isLGraphNode).map(toSelectedNode)
 )
-composerStore.setNodeScope(selectedTarget.value?.path ?? null)
+composerStore.setNodeScope(selectedTarget.value?.instanceId ?? null)
 const {
   staged: selectionTags,
   consume: consumeSelection,
@@ -584,9 +628,8 @@ const {
   selection: selectedNodes,
   enabled: () => agentEnabled.value && selectedTarget.value !== null,
   isLive: () => agentPanelStore.isOpen,
-  isTracking: () => canReferenceNodes.value && agentNodeSelectionStore.isActive,
-  isPaused: () => agentNodeSelectionStore.isLoadingWorkflow,
-  scope: () => selectedTarget.value?.path ?? null,
+  isTracking: () => canReferenceNodes.value && canvasStore.isPickingNodes,
+  scope: () => selectedTarget.value?.instanceId ?? null,
   dismissedSignature: dismissedSelectionSignature,
   retainStagedNode: (node) => {
     const locator = parseNodeLocatorId(selectedNodeKey(node))
@@ -604,7 +647,9 @@ let nodeReferenceWorkflow = selectionTags.value.length
   : null
 
 function viewedGraphNodes() {
-  return app.canvas?.graph?.nodes ?? app.graph?.nodes ?? []
+  return (
+    (canvasStore.currentGraph ?? app.canvas?.graph ?? app.graph)?.nodes ?? []
+  )
 }
 
 function mentionableNodes(): SelectedNode[] {
@@ -615,31 +660,8 @@ watch(
   selectionTags,
   (tags) => {
     nodeReferenceWorkflow = tags.length ? selectedTarget.value : null
-    if (!agentPanelStore.isOpen || agentNodeSelectionStore.isLoadingWorkflow)
-      return
-    agentNodeSelectionStore.saveNodeIds(
-      selectedTarget.value?.path,
-      tags.map(selectedNodeKey)
-    )
   },
   { deep: true, flush: 'sync' }
-)
-
-watch(
-  [() => agentPanelStore.isOpen, canReferenceNodes],
-  ([open, canReference]) => {
-    if (!open || !canReference || selectionTags.value.length > 0) return
-    const locatorIds = new Set(
-      agentNodeSelectionStore.nodeIds(selectedTarget.value?.path)
-    )
-    replaceSelectionTags(
-      [...locatorIds]
-        .map((locatorId) => getNodeByLocatorId(app.rootGraph, locatorId))
-        .filter((node): node is LGraphNode => node !== null)
-        .map(toSelectedNode)
-    )
-  },
-  { immediate: true }
 )
 
 const workflowDetached = computed(() => selectedTarget.value === null)
@@ -743,22 +765,14 @@ function onWorkflowAdopted(
 }
 
 function warnWorkflowUnavailable(): void {
-  toast.add({
-    severity: 'warn',
-    detail: t('agent.targetNavigationUnavailable'),
-    life: 5000
-  })
+  toast.warning(t('agent.targetNavigationUnavailable'), { duration: 5000 })
 }
 
 function warnRestoreFailed(): void {
   const { view } = agentPanelStore
   // A loading history row reports its own failure.
   if (view.screen === 'history' && view.selection.status === 'loading') return
-  toast.add({
-    severity: 'warn',
-    detail: t('agent.targetWorkflowOpenFailed'),
-    life: 5000
-  })
+  toast.warning(t('agent.targetWorkflowOpenFailed'), { duration: 5000 })
 }
 
 function trackWorkflowOpenFailure(
@@ -876,7 +890,10 @@ const {
   status: crdtStatus,
   debugSnapshot: crdtDebugSnapshot,
   enqueueHumanOperations,
-  docInputNames
+  docInputNames,
+  docPromotedWidgets,
+  mayWritePromotedHost,
+  notifyWidgetWriteRefused
 } = useAgentCrdtFollower(
   boundWorkflowId,
   () => resolvedUserInfo.value?.id ?? null,
@@ -898,12 +915,8 @@ const {
     },
     onReset: graphActivity.resetWorkflow,
     onSyncError: (message, code) =>
-      toast.add({
-        severity: 'error',
-        summary: t('agent.workflowSyncFailedTitle'),
-        detail: formatWorkflowSyncErrorDetail(t, message, code),
-        // A permanent desync remains visible until the person dismisses it.
-        life: 0
+      toast.error(t('agent.workflowSyncFailedTitle'), {
+        description: formatWorkflowSyncErrorDetail(t, message, code)
       })
   },
   {
@@ -935,13 +948,20 @@ const docOpMinter = attachDocOpMinter({
   enqueue: enqueueHumanOperations,
   getGraph: () => (app.isGraphReady ? app.rootGraph : null),
   boundRootGraphId,
-  docInputNames
+  docInputNames,
+  docPromotedWidgets,
+  mayWritePromotedHost,
+  onWidgetWriteRefused: notifyWidgetWriteRefused
 })
 const restoreOpMinter = attachRestoreOpMinter({
   isEnabled: () => agentPanelStore.enabled,
   isDocBound: () => isBoundWorkflowActive.value,
   enqueue: enqueueHumanOperations,
   getGraph: () => (app.isGraphReady ? app.rootGraph : null),
+  docInputNames: (nodeId) => {
+    const parsed = parseNodeId(nodeId)
+    return parsed === null ? null : docInputNames(parsed)
+  },
   isRestoringState: () =>
     workflowStore.activeWorkflow?.changeTracker?._restoringState === true
 })
@@ -1306,9 +1326,7 @@ onBeforeUnmount(() => {
     detachRestoreOpMinter: () => {
       restoreOpMinter.detach()
     },
-    exitNodeSelectionMode: () => {
-      exitNodeSelectionMode()
-    },
+    exitNodeSelectionMode: canvasStore.stopNodePicking,
     stopSession: () => {
       stop()
     },
@@ -1337,16 +1355,31 @@ onBeforeUnmount(() => {
 
 const { copy } = useClipboard({ legacy: true })
 
-/**
- * DES-1221. This component mounts only while the panel is on screen, so
- * reading the flag here keeps the exposure — and the experiment's
- * denominator — to the panel openers the hypothesis is about.
- */
-const { variant: freeUsePlacement } = useFreeUsePlacement()
+// DES-1221. Read while the panel is on screen, so the experiment's denominator
+// is the panel openers the hypothesis is about.
+const { variant: freeUseVariant, reportNotice: onFreeUseNotice } =
+  useFreeUsePlacement()
+const {
+  assignment: starterPromptAssignment,
+  attributeExperiment: attributeStarterPromptExperiment,
+  expose: exposeStarterPromptSet
+} = useStarterPromptSet()
 
-function onFreeUseNotice(metadata: AgentFreeUseNoticeMetadata): void {
-  useTelemetry()?.trackAgentFreeUseNotice(metadata)
-}
+/**
+ * `Try your first chat for free!` is a claim about the Agent's own granted
+ * allowance, so it renders on `scoped_has_funds.agent` as received. `=== true`
+ * is the whole gate: an absent field, an unsettled read and a rail that reports
+ * no scoped balance all fail closed without a separate branch.
+ */
+const freeUseGrantActive = computed(
+  () => subscription.value?.agentScopedHasFunds === true
+)
+
+const freeUsePlacement = computed(() =>
+  !freeUseGrantActive.value || unresolvedPaywallPending.value
+    ? 'control'
+    : freeUseVariant.value
+)
 
 function onFeedback(turnId: string, vote: 'up' | 'down' | null): void {
   const message = entries.value.find(
@@ -1428,7 +1461,7 @@ async function onSelectHistory(
   composerStore.invalidateSubmission()
   cancelWorkflowSelection()
   agentPanelStore.beginWorkflowRestoration()
-  exitNodeSelectionMode()
+  canvasStore.stopNodePicking()
   const opened = await loadThread(id, isCurrent)
   if (opened)
     useTelemetry()?.trackAgentThreadStarted({ source: 'history_select' })
@@ -1452,7 +1485,7 @@ function buildTranscriptMarkdown(entries: ConversationEntry[]): string {
 function onCopyMarkdown(id: string): void {
   if (id === history.activeId && id === threadId.value)
     void copy(buildTranscriptMarkdown(entries.value))
-  else toast.add({ severity: 'info', summary: t('agent.copyUnavailable') })
+  else toast.info(t('agent.copyUnavailable'))
 }
 
 const coachSteps = computed<CoachStep[]>(() => [
@@ -1512,7 +1545,7 @@ const { submit: onSend } = useAgentDraftSubmission({
     workflow: () => nodeReferenceWorkflow,
     consume: consumeSelection,
     replace: replaceSelectionTags,
-    exit: exitNodeSelectionMode
+    exit: canvasStore.stopNodePicking
   },
   // fallow-ignore-next-line complexity -- Existing PR logic; this lane changes only the composing panel test.
   send: async (text, attachments, nodes, references, meta) => {
@@ -1537,7 +1570,12 @@ const { submit: onSend } = useAgentDraftSubmission({
         client_message_id: meta.clientMessageId,
         input_method: meta.inputMethod,
         starter_prompt_id: meta.starterPrompt?.id ?? null,
-        starter_prompt_click_id: meta.starterPrompt?.clickId ?? null
+        starter_prompt_click_id: meta.starterPrompt?.clickId ?? null,
+        ...(meta.starterPrompt?.assignment
+          ? {
+              '$feature/agent-starter-prompt-set': meta.starterPrompt.assignment
+            }
+          : {})
       },
       origin:
         originContext === undefined ? null : { tabPath: originContext.tabPath }
@@ -1589,7 +1627,7 @@ function onDeleteHistory(id: string): void {
 function onNewChat(source?: 'new_chat_button' | 'history_delete'): void {
   composerStore.invalidateSubmission()
   cancelWorkflowSelection()
-  exitNodeSelectionMode()
+  canvasStore.stopNodePicking()
   composerStore.setWorkflowReferences([])
   composerStore.resetPromptHistory()
   newChat(source)
@@ -1597,52 +1635,16 @@ function onNewChat(source?: 'new_chat_button' | 'history_delete'): void {
   else agentPanelStore.startFollowingVisibleWorkflow()
 }
 
-const panelRef = ref<InstanceType<typeof AgentPanel>>()
 const fileInput = ref<HTMLInputElement>()
 const assetDragActive = ref(false)
 let assetDragDepth = 0
-provide('agentAssetDragActive', readonly(assetDragActive))
-let selectingNodes = false
-let nodeSelectionCanvas: LGraphCanvas | undefined
-
-watch(
-  () => canvasStore.selectedItems,
-  (items) => {
-    if (agentNodeSelectionStore.restoredNodeIds !== null) {
-      if (canReferenceNodes.value) {
-        replaceSelectionTags(items.filter(isLGraphNode).map(toSelectedNode))
-      }
-      agentNodeSelectionStore.finishWorkflowLoad()
-    }
-  },
-  { immediate: true }
-)
-
-function exitNodeSelectionMode(): void {
-  const canvas = nodeSelectionCanvas
-  nodeSelectionCanvas = undefined
-  selectingNodes = false
-  if (agentNodeSelectionStore.isActive) agentNodeSelectionStore.exit()
-  if (canvas) {
-    canvas.deselectAll()
-  }
-}
-
-watch(
-  () => agentNodeSelectionStore.isActive,
-  (active) => {
-    if (!active) exitNodeSelectionMode()
-  }
-)
 
 watch(
   selectedTarget,
-  (target, previous) => {
-    exitNodeSelectionMode()
-    composerStore.setNodeScope(target?.path ?? null)
+  (target) => {
+    canvasStore.stopNodePicking()
+    composerStore.setNodeScope(target?.instanceId ?? null)
     nodeReferenceWorkflow = null
-    agentNodeSelectionStore.saveNodeIds(previous?.path, [])
-    agentNodeSelectionStore.saveNodeIds(target?.path, [])
   },
   { flush: 'sync' }
 )
@@ -1650,7 +1652,7 @@ watch(
 watch(
   () => workflowStore.activeWorkflow,
   () => {
-    exitNodeSelectionMode()
+    canvasStore.stopNodePicking()
     onVisibleWorkflowChanged()
   },
   { flush: 'sync' }
@@ -1665,16 +1667,12 @@ start({
       threadId.value === agentPanelStore.view.previousThreadId)
 })
 
-watch(
-  () => canvasStore.currentGraph,
-  () => {
-    if (!agentNodeSelectionStore.isLoadingWorkflow) exitNodeSelectionMode()
-  },
-  { flush: 'sync' }
-)
+watch(() => canvasStore.currentGraph, canvasStore.stopNodePicking, {
+  flush: 'sync'
+})
 
 function onSelectNodes(): void {
-  if (!canReferenceNodes.value || selectingNodes) return
+  if (!canReferenceNodes.value || canvasStore.isPickingNodes) return
   const canvas = app.canvas
   if (!canvas) return
 
@@ -1691,11 +1689,9 @@ function onSelectNodes(): void {
   if (merged.size) {
     canvas.selectItems([...merged.values()])
   }
-  nodeSelectionCanvas = canvas
-  selectingNodes = true
-  agentNodeSelectionStore.enter()
+  canvasStore.startNodePicking()
   void nextTick(() => {
-    if (selectingNodes) canvas.canvas.focus()
+    if (canvasStore.isPickingNodes) canvas.canvas.focus()
   })
 }
 
@@ -1703,6 +1699,7 @@ const assetsStore = useAssetsStore()
 let inputAssetRefresh: Promise<unknown> = Promise.resolve()
 
 const attachment = useAttachment({
+  validate: isValidAgentAttachment,
   upload: async (file, signal) => {
     const uploaded = await rest.uploadImage(file, file.name, signal)
     const filename = uploaded.name ?? file.name
@@ -1727,14 +1724,33 @@ const attachment = useAttachment({
     api.getServerFeature<GetFeaturesResponse['max_upload_size']>(
       'max_upload_size'
     ) ?? MAX_ATTACHMENT_BYTES,
-  // A rejected file is the user's problem to fix, not an agent failure, so it
-  // must not raise the server-error overlay.
-  onError: (message) =>
-    toast.add({ severity: 'warn', detail: message, life: 5000 }),
+  onError: warnAttachment,
+  onDuplicate: notifyDuplicateAttachments,
+  staged: () => composerStore.attachments,
   stage: composerStore.addAttachment,
   update: composerStore.updateAttachment,
   remove: composerStore.removeAttachment
 })
+
+watch(
+  [
+    () => resolvedUserInfo.value?.id,
+    () => workspaceStore.activeWorkspaceId,
+    () => assetsStore.deletingAssetIds.size
+  ],
+  attachment.forgetUploads
+)
+
+function notifyDuplicateAttachments(names: string[]): void {
+  toast.info(
+    t(
+      'agent.attachmentsAlreadyAdded',
+      { name: names[0], count: names.length },
+      names.length
+    ),
+    { duration: 3500 }
+  )
+}
 
 onBeforeUnmount(() =>
   runPanelTeardown({
@@ -1745,7 +1761,7 @@ onBeforeUnmount(() =>
 )
 
 function onAttach(): void {
-  exitNodeSelectionMode()
+  canvasStore.stopNodePicking()
   useTelemetry()?.trackAgentAttachButtonClicked({ method: 'menu' })
   fileInput.value?.click()
 }
@@ -1756,7 +1772,7 @@ async function onAttachFiles(files: File[]): Promise<void> {
 }
 
 function onOpenAssets(): void {
-  exitNodeSelectionMode()
+  canvasStore.stopNodePicking()
   sidebarTabStore.activeSidebarTabId = 'assets'
 }
 
@@ -1775,11 +1791,12 @@ function onRemoveSelectionTag(id: string): void {
   removeSelectionTag(id)
   if (node) {
     canvasStore.canvas?.deselect(node)
+    canvasStore.canvas?.setDirty(true)
   }
 }
 
 function onClosePanel(): void {
-  exitNodeSelectionMode()
+  canvasStore.stopNodePicking()
   useTelemetry()?.trackAgentCloseButtonClicked()
   agentPanelStore.close('close_button')
 }
@@ -1820,38 +1837,66 @@ function onPanelDragLeave(): void {
   if (assetDragDepth === 0) assetDragActive.value = false
 }
 
+function warnAttachment(message: string): void {
+  toast.warning(message, { duration: 5000 })
+}
+
+function droppedAssetVerdict(asset: DroppedAsset): AgentAttachVerdict {
+  const fromRef = asset.ref ? agentAttachRefVerdict(asset.ref) : 'unknown'
+  return fromRef === 'unknown' ? agentAttachVerdict(asset.name) : fromRef
+}
+
+function stageAcceptedAssetCard(
+  asset: DroppedAsset,
+  ref: string,
+  sourceKey: string
+): boolean {
+  if (composerStore.attachments.some((item) => item.ref === ref)) {
+    notifyDuplicateAttachments([asset.name])
+    return false
+  }
+  if (composerStore.attachments.length >= MAX_TURN_ATTACHMENTS) {
+    warnAttachment(
+      t('agent.attachmentCountExceeded', { count: MAX_TURN_ATTACHMENTS })
+    )
+    return false
+  }
+  const added = composerStore.addAttachment({
+    id: `asset:${crypto.randomUUID()}`,
+    name: asset.name,
+    ref,
+    sourceKey,
+    previewUrl: asset.previewUrl,
+    mediaUrl: asset.mediaUrl,
+    mediaKind: asset.kind
+  })
+  if (!added) notifyDuplicateAttachments([asset.name])
+  return added
+}
+
 async function attachDroppedAsset(event: DragEvent): Promise<boolean> {
   const asset = event.dataTransfer && getDroppedAsset(event.dataTransfer)
   if (!asset) {
-    toast.add({
-      severity: 'warn',
-      detail: t('agent.assetNotAttachable'),
-      life: 5000
-    })
+    warnAttachment(t('agent.assetNotAttachable'))
     return false
   }
 
+  const sourceKey = asset.ref ? `asset:${asset.ref}` : `uri:${asset.uri}`
+  if (droppedAssetVerdict(asset) === 'rejected') {
+    attachment.addUnsupportedAsset(asset.name, sourceKey)
+    return false
+  }
   if (asset.ref && asset.kind !== 'other') {
-    return (
-      panelRef.value?.addAttachment({
-        id: `asset:${asset.ref}`,
-        name: asset.name,
-        ref: asset.ref,
-        previewUrl: asset.previewUrl
-      }) ?? false
-    )
+    return stageAcceptedAssetCard(asset, asset.ref, sourceKey)
   }
 
-  const result = await attachment.addDeferredFile(asset.name, async () => {
-    const file = await fetchDroppedAsset(asset)
-    return file && isAgentAttachable(file) ? file : undefined
-  })
-  if (result === 'unsupported')
-    toast.add({
-      severity: 'warn',
-      detail: t('agent.assetNotAttachable'),
-      life: 5000
-    })
+  const result = await attachment.addDeferredFile(
+    asset.name,
+    (signal) => fetchDroppedAsset(asset, { signal, nameFromSource: true }),
+    sourceKey
+  )
+  if (result === 'fetch_failed')
+    warnAttachment(t('agent.assetFetchFailed', { name: asset.name }))
   return result === 'uploaded'
 }
 
@@ -1861,8 +1906,6 @@ function onPanelDragOver(event: DragEvent): void {
 
 async function onPanelDrop(event: DragEvent): Promise<void> {
   clearAssetDrag()
-  // A dropped asset card carries a URI, not a File, so the claim must happen
-  // before the async fetch resolves it into one.
   if ((event.dataTransfer?.files.length ?? 0) === 0 && isAssetDrag(event)) {
     event.preventDefault()
     void attachDroppedAsset(event).then((attached) => {
@@ -1871,11 +1914,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
     })
     return
   }
-  // Anything the composer cannot attach still belongs to the graph loader, which
-  // only runs while the drop is unclaimed, so claim the attachable files alone.
-  const files = Array.from(event.dataTransfer?.files ?? []).filter(
-    isAgentAttachable
-  )
+  const files = Array.from(event.dataTransfer?.files ?? [])
   if (files.length === 0) return
   event.preventDefault()
   if (await attachment.addFiles(files))
@@ -1887,7 +1926,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
   <AgentGraphActivityBar :canvas="canvasStore.canvas" />
   <div
     id="agent-panel-root"
-    class="size-full"
+    class="relative size-full"
     @dragenter="onPanelDragEnter"
     @dragleave="onPanelDragLeave"
     @dragover="onPanelDragOver"
@@ -1903,7 +1942,6 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       @change="onFilesPicked"
     />
     <AgentPanel
-      ref="panelRef"
       :entries
       :editable-turn-id="editableTurnId"
       :answering-ask-ids="answeringAskIds"
@@ -1936,11 +1974,15 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       :paywall-presentation="paywallPresentation"
       :credits-exhausted="showStandingPaywall"
       :free-use-placement="freeUsePlacement"
+      :starter-prompt-assignment="starterPromptAssignment"
+      :attribute-starter-prompt-experiment="attributeStarterPromptExperiment"
+      @starter-prompt-rendered="exposeStarterPromptSet"
       @free-use-notice="onFreeUseNotice"
       @send="onSend"
       @stop="onStop"
       @attach="onAttach"
       @attach-files="onAttachFiles"
+      @remove-attachment="attachment.cancelUpload"
       @open-assets="onOpenAssets"
       @select-nodes="onSelectNodes"
       @remove-tag="onRemoveSelectionTag"
@@ -1968,7 +2010,26 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       <template v-if="isCrdtDevPanelEnabled" #instrument>
         <CrdtDevPanel :status="crdtStatus" :snapshot="crdtDebugSnapshot" />
       </template>
+      <template #composerNotice>
+        <AgentCreditTransitionNotice
+          v-if="showCreditTransitionNotice"
+          data-testid="agent-credit-transition-notice"
+          @shown="onCreditTransitionNoticeShown"
+          @dismiss="onDismissCreditTransitionNotice"
+        />
+      </template>
     </AgentPanel>
+    <div
+      v-if="assetDragActive"
+      role="status"
+      class="pointer-events-none absolute inset-2 z-20 flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-border-default bg-secondary-background/90 p-4 font-inter text-sm/5 text-base-foreground"
+    >
+      <span
+        aria-hidden="true"
+        class="icon-[lucide--upload] size-8 shrink-0 text-muted-foreground"
+      />
+      <span>{{ t('agent.dragAndDropAssets') }}</span>
+    </div>
     <OnboardingCoach
       v-if="consentAccepted && onboardingKey && coachDeferredBy === null"
       :key="onboardingKey"

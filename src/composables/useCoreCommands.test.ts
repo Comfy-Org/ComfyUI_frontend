@@ -1,10 +1,12 @@
 import { useDialogService } from '@/services/dialogService'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { i18n } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
 
+import { useSubscriptionPaywall } from '@/composables/billing/useSubscriptionPaywall'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useExternalLink } from '@/composables/useExternalLink'
@@ -17,7 +19,6 @@ import { app } from '@/scripts/app'
 import { useModelStore } from '@/stores/modelStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { resetOnboardingState } from '@/platform/onboarding/onboardingReset'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -150,8 +151,7 @@ vi.mock(import('@/platform/cloud/subscription/composables/useSubscription'))
 
 const mockBillingState = vi.hoisted(() => ({
   canAccessSubscriptionFeatures: true,
-  subscriptionTier: null as string | null,
-  showSubscriptionDialog: vi.fn()
+  subscriptionTier: null as string | null
 }))
 vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: vi.fn(() => ({
@@ -166,10 +166,11 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
           ? { tier: mockBillingState.subscriptionTier }
           : null
       }
-    },
-    showSubscriptionDialog: mockBillingState.showSubscriptionDialog
+    }
   }))
 }))
+
+vi.mock(import('@/composables/billing/useSubscriptionPaywall'))
 
 describe('useCoreCommands', () => {
   const createMockNode = (id: number, comfyClass: string): LGraphNode => {
@@ -378,9 +379,7 @@ describe('useCoreCommands', () => {
 
       await findCommand().function()
 
-      expect(useToastStore().add).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error' })
-      )
+      expect(useToast().error).toHaveBeenCalled()
       expect(location.assign).not.toHaveBeenCalled()
       expect(location.reload).not.toHaveBeenCalled()
     })
@@ -771,7 +770,9 @@ describe('useCoreCommands', () => {
         await findCmd(id).function()
 
         expect(app.queuePrompt).toHaveBeenCalledWith(num, 1, expect.anything())
-        expect(mockBillingState.showSubscriptionDialog).not.toHaveBeenCalled()
+        expect(
+          useSubscriptionPaywall().showSubscriptionDialog
+        ).not.toHaveBeenCalled()
       }
     )
 
@@ -780,10 +781,10 @@ describe('useCoreCommands', () => {
 
       await findCmd('Comfy.QueueSelectedOutputNodes').function()
 
-      expect(mockBillingState.showSubscriptionDialog).not.toHaveBeenCalled()
-      expect(useToastStore().add).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error' })
-      )
+      expect(
+        useSubscriptionPaywall().showSubscriptionDialog
+      ).not.toHaveBeenCalled()
+      expect(useToast().error).toHaveBeenCalled()
     })
 
     it.for([
@@ -799,7 +800,9 @@ describe('useCoreCommands', () => {
         await findCmd(id).function()
 
         expect(app.queuePrompt).not.toHaveBeenCalled()
-        expect(mockBillingState.showSubscriptionDialog).toHaveBeenCalledWith({
+        expect(
+          useSubscriptionPaywall().showSubscriptionDialog
+        ).toHaveBeenCalledWith({
           reason: 'subscribe_to_run'
         })
       }
@@ -815,10 +818,10 @@ describe('useCoreCommands', () => {
         await findCmd('Comfy.QueuePrompt').function()
 
         expect(app.queuePrompt).not.toHaveBeenCalled()
-        expect(mockBillingState.showSubscriptionDialog).not.toHaveBeenCalled()
-        expect(useToastStore().add).toHaveBeenCalledWith(
-          expect.objectContaining({ severity: 'warn' })
-        )
+        expect(
+          useSubscriptionPaywall().showSubscriptionDialog
+        ).not.toHaveBeenCalled()
+        expect(useToast().warning).toHaveBeenCalled()
       }
     )
 
@@ -902,11 +905,10 @@ describe('useCoreCommands', () => {
         asset,
         'asset_browser'
       )
-      expect(useToastStore().add).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
     })
 
     it('shows an error toast when the asset cannot start a drag', async () => {
-      vi.spyOn(console, 'error').mockImplementation(() => {})
       mockStartModelNodeDrag.mockReturnValue({
         code: 'NO_PROVIDER',
         message: 'No node provider registered',
@@ -915,9 +917,7 @@ describe('useCoreCommands', () => {
 
       await selectAssetFromBrowser()
 
-      expect(useToastStore().add).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error' })
-      )
+      expect(useToast().error).toHaveBeenCalled()
     })
   })
 })

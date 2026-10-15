@@ -10,8 +10,10 @@ import {
   reorderSubgraphInputsByWidgetOrder
 } from '@/core/graph/subgraph/promotionUtils'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import {
   deriveWidgetVisibility,
@@ -30,6 +32,7 @@ const { node } = defineProps<{
 const { t } = useI18n()
 const canvasStore = useCanvasStore()
 const rightSidePanelStore = useRightSidePanelStore()
+const widgetValueStore = useWidgetValueStore()
 const { focusedSection } = storeToRefs(rightSidePanelStore)
 const searchQuery = ref('')
 
@@ -70,12 +73,6 @@ watch(
   { immediate: true }
 )
 
-// `node.inputs` is a plain litegraph array, not Vue-reactive, so promoting or
-// demoting a widget wouldn't otherwise invalidate `widgetsList` or
-// `advancedInputsWidgets` below. Track the same subgraph events
-// SubgraphEditor.vue reacts to so both lists — and the AsyncSearchInput-driven
-// `searchedWidgetsList`, which keys off `widgetsList` — stay in sync when
-// nothing is typed into the search box.
 const promotionVersion = ref(0)
 useEventListener(
   () => node.subgraph.events,
@@ -89,9 +86,21 @@ useEventListener(
   () => promotionVersion.value++
 )
 
+function isPromotedWidgetVisibleInPanel(widget: IBaseWidget): boolean {
+  const visibility = widget.widgetId
+    ? widgetValueStore.getWidgetVisibility(widget.widgetId)
+    : undefined
+  return (
+    !visibility ||
+    isWidgetVisibleOnSurface(visibility, 'panel', { showAdvanced: true })
+  )
+}
+
 const widgetsList = computed((): NodeWidgetsList => {
   void promotionVersion.value
-  return promotedInputWidgets(node).map((widget) => ({ node, widget }))
+  return promotedInputWidgets(node)
+    .filter(isPromotedWidgetVisibleInPanel)
+    .map((widget) => ({ node, widget }))
 })
 
 const advancedInputsWidgets = computed((): NodeWidgetsList => {

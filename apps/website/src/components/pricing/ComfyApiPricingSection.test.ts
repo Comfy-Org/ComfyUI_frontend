@@ -26,9 +26,22 @@ describe('ComfyApiPricingSection', () => {
     expect(screen.getAllByText('RTX PRO 6000').length).toBeGreaterThan(0)
     expect(
       screen.getAllByText(
-        t('pricing.comfyApi.metric.releases', {}, { locale: 'en' })
+        t('pricing.comfyApi.metric.builds', {}, { locale: 'en' })
       ).length
     ).toBeGreaterThan(0)
+  })
+
+  it('omits the plan-limits table when the plan cards already show it', () => {
+    render(ComfyApiPricingSection, {
+      props: { locale: 'en', showPlanLimits: false }
+    })
+
+    expect(screen.getAllByText('RTX PRO 6000').length).toBeGreaterThan(0)
+    expect(
+      screen.queryByText(
+        t('pricing.comfyApi.metric.builds', {}, { locale: 'en' })
+      )
+    ).toBeNull()
   })
 
   it('hides the Learn More CTA by default', () => {

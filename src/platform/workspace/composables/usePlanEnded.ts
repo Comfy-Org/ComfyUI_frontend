@@ -57,5 +57,5 @@ export function usePlanEnded() {
     () => subscription.value?.tier === 'ENTERPRISE'
   )
 
-  return { isPlanEnded, isSalesManagedPlan, isEnterprisePlan }
+  return { isPlanEnded, isPlanTerminal, isSalesManagedPlan, isEnterprisePlan }
 }

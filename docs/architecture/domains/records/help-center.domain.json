@@ -1,0 +1,57 @@
+{
+  "id": "help-center",
+  "capability": "Help center",
+  "description": "Help-center menu, popup state and orchestration, documentation and community links, release-note entry points, and feedback navigation.",
+  "modules": [
+    {
+      "path": "src/components/helpcenter/HelpCenterMenuContent.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/helpcenter/HelpCenterMenuContent.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/helpcenter/HelpCenterPopups.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/helpcenter/HelpCenterPopups.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/sidebar/SidebarHelpCenterIcon.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/sidebar/SidebarHelpCenterIcon.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/stores/helpCenterStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useHelpCenter.ts",
+      "role": "application"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Help center menu lists help links, feedback, and release notes and opens from the side toolbar",
+      "checks": [
+        "src/components/helpcenter/HelpCenterMenuContent.test.ts",
+        "src/components/helpcenter/HelpCenterPopups.test.ts",
+        "src/components/sidebar/SidebarHelpCenterIcon.test.ts"
+      ]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
+  ],
+  "deepImports": "inventory"
+}

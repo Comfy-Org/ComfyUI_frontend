@@ -1,9 +1,6 @@
 <template>
   <div class="flex min-h-0 flex-1 flex-col gap-4">
-    <div
-      ref="tableContainer"
-      class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-interface-stroke/60"
-    >
+    <div ref="tableContainer" class="flex min-h-0 flex-1 flex-col">
       <Table class="min-h-0 flex-1 px-4">
         <TableHeader class="sticky top-0 z-10 bg-base-background">
           <TableRow

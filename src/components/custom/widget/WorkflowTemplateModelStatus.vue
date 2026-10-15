@@ -13,7 +13,7 @@ const emit = defineEmits<{ download: [] }>()
     :href="row.status.href"
     target="_blank"
     rel="noopener noreferrer"
-    class="shrink-0 text-xs text-base-foreground no-underline hover:underline focus-visible:rounded-sm focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none"
+    class="col-start-3 row-start-1 shrink-0 text-xs text-base-foreground no-underline hover:underline focus-visible:rounded-sm focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none"
   >
     {{ row.status.label }}
     <span aria-hidden="true">↗</span>
@@ -29,14 +29,17 @@ const emit = defineEmits<{ download: [] }>()
     role="img"
     :aria-label="row.status.label"
     :title="row.status.label"
-    class="flex size-6 shrink-0 items-center justify-center"
+    class="col-start-3 row-start-1 flex size-8 shrink-0 items-center justify-center"
   >
     <i
       aria-hidden="true"
       class="icon-[lucide--circle-check] size-4 text-success-background"
     />
   </span>
-  <span v-else-if="row.status" class="flex shrink-0 items-center gap-2">
+  <span
+    v-else-if="row.status"
+    class="col-start-3 row-start-1 flex shrink-0 items-center gap-2"
+  >
     <Badge severity="secondary" variant="compact" class="text-muted-foreground">
       {{ row.status.label }}
     </Badge>
