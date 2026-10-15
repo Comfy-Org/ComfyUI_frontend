@@ -89,6 +89,16 @@ describe('findInheritedClasses', () => {
       }
     },
     {
+      name: 'a root class that a TypeScript mount could override',
+      files: {
+        'src/App.vue': sfc('<Label />', ['Label']),
+        'src/Label.vue': sfc(
+          '<div class="text-sm"><span class="text-sm">x</span></div>'
+        ),
+        'src/dialogs.ts': "import Label from './Label.vue'\nexport { Label }\n"
+      }
+    },
+    {
       name: 'a component with no known mount point',
       files: { 'src/Label.vue': label }
     },
@@ -148,10 +158,10 @@ describe('findInheritedClasses', () => {
       }
     },
     {
-      name: 'a relative font size, which compounds',
+      name: 'relative font sizes, which compound',
       files: {
         'src/App.vue': sfc(
-          '<div class="text-[0.9em]"><p class="text-[0.9em]">x</p></div>'
+          '<div class="text-[0.9em]"><p class="text-[0.9em]">x</p></div><div class="text-[1cap]"><p class="text-[1cap]">x</p></div>'
         )
       }
     },

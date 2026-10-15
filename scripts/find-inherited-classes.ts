@@ -101,7 +101,7 @@ const NON_COLOR_TEXT =
   /^(left|center|right|justify|start|end|wrap|nowrap|balance|pretty|ellipsis|clip|shadow.*)$/
 const FONT_WEIGHTS =
   /^(thin|extralight|light|normal|medium|semibold|bold|extrabold|black|\[\d+\])$/
-const RELATIVE_SIZE = /\d(?:(?:em|ex|ch|lh)\b|%)|\b(?:smaller|larger)\b/
+const RELATIVE_SIZE = /\d(?:(?:em|ex|ch|lh|cap|ic)\b|%)|\b(?:smaller|larger)\b/
 const NON_FAMILY_FONT = /^(stretch|features|variant|numeric)/
 
 function sizeLike(value: string) {
@@ -753,6 +753,8 @@ class Project {
     const setters = component.usages.map((usage) =>
       forwardedSetter(usage, category, this.genericInstance(usage.component))
     )
+    if (this.externallyMounted.has(component.path))
+      setters.push({ values: new Set([UNKNOWN]), passes: true })
     this.forwarding.delete(key)
     if (!setters.some(Boolean)) return null
     return setters.reduce<Setter | null>(
