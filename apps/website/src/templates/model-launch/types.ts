@@ -95,6 +95,7 @@ export interface ModelLaunchGalleryCard {
   span?: 'full'
   expandable?: boolean
   media: ModelLaunchMedia
+  comparison?: { beforeSrc: string; afterSrc: string }
   // Brand mark drawn over the card, for pages whose gallery mixes models.
   logoSrc?: string
   href: string

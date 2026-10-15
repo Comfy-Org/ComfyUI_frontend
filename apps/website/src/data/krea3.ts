@@ -23,7 +23,7 @@ const card = (
   description,
   prompt,
   tier: 'premium',
-  note: text('Krea 3 demo', 'Krea 3 演示'),
+  note: text('Pay-as-you-go', '按量付费'),
   media: { kind: 'image', src: `${mediaBase}/${id}.jpg` },
   href: krea3Links.imageEdit,
   expandable: true
@@ -139,6 +139,10 @@ export const krea3Page = {
             '图像编辑。加载参考图，描述需要修改的内容。'
           )
         ),
+        comparison: {
+          beforeSrc: `${mediaBase}/reference-before.jpg`,
+          afterSrc: `${mediaBase}/reference-after.jpg`
+        },
         href: krea3Links.imageEdit
       },
       {

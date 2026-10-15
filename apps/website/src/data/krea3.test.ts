@@ -17,6 +17,8 @@ describe('Krea 3 launch draft', () => {
       props: { gallery: krea3Page.workflowGallery, locale: 'en' }
     })
     expect(screen.getAllByText(/^premium$/i)).toHaveLength(3)
+    expect(screen.getAllByText('Pay-as-you-go')).toHaveLength(3)
+    expect(screen.getByRole('slider')).toBeVisible()
     expect(
       screen.getByRole('link', { name: 'Krea 3: Image editing' })
     ).toHaveAttribute('href', krea3Links.imageEdit)
