@@ -96,24 +96,26 @@ that the workflow is gone; any other failure is inconclusive.
 
 ## Amendment (2026-10-06): Readable History with an Unresolved Target
 
-A loaded conversation remains readable when the complete Cloud listing includes
-its workflow, or a direct identity lookup confirms that a workflow the listing
-omits or cannot place is live, but no local target resolves after saved-catalog
-synchronization. Local identity resolution stays conservative: missing files,
-missing names, ambiguous names and refused bindings do not justify choosing
-another canvas. The chat keeps an unresolved target: it has no workflow, and the
-chat stays readable. Current reuses it without restoring again. It leaves the
-visible graph unchanged and does not show the notice that the workflow is no
-longer available. Sending opens the workflow picker and preserves the draft
-until the user explicitly chooses a target. Passive tab changes and panel
-remounts do not resume following for that conversation.
+A loaded conversation remains readable when no local target resolves after
+saved-catalog synchronization, unless a direct lookup shows that the workflow is
+gone. That covers a workflow a successful Cloud listing includes. It also covers
+one the listing omits or cannot place when the lookup finds it live or cannot
+tell, as with a 403, a server error or no connection. Local identity resolution
+stays conservative: missing files, missing names, ambiguous names and refused
+bindings do not justify choosing another canvas. The chat keeps an unresolved
+target: it has no workflow, and the chat stays readable. Current reuses it
+without restoring again. It leaves the visible graph unchanged and does not show
+the notice that the workflow is no longer available. Sending opens the workflow
+picker and preserves the draft until the user explicitly chooses a target.
+Passive tab changes and panel remounts do not resume following for that
+conversation.
 
 This exception provides conversation access, not workflow restoration. It does
 not materialize Cloud content into a new editor tab or repair identity mapping.
-Transcript failures, failures opening a resolved workflow, and unresolved
-targets whose direct lookup fails with anything other than 404 are retryable
-failures. During restoration, only a 404 from the direct lookup shows the
-notice that the workflow is no longer available.
+Retryable failures remain for a transcript that fails to load, a found workflow
+that fails to open, and a saved-catalog synchronization that fails. During
+restoration, only a 404 from the direct lookup shows the notice that the
+workflow is no longer available.
 
 An agent tab activation applies only if, when it runs, the chat it came from is
 still the open chat. While History is open, that is the Current chat, the chat
