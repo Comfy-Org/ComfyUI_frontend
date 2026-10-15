@@ -7168,6 +7168,8 @@ describe('AgentPanelRoot workflow binding', () => {
         screen.getByRole('button', {
           name: i18n.global.t('agent.switchWorkflow')
         })
+      const unavailableNotice = () =>
+        screen.queryByText(i18n.global.t('agent.targetWorkflowUnavailable'))
       await screen.findAllByText('Historical prompt')
       expect(
         screen.queryByRole('heading', { name: i18n.global.t('agent.history') })
@@ -7181,9 +7183,7 @@ describe('AgentPanelRoot workflow binding', () => {
       expect(selector()).toHaveTextContent(
         i18n.global.t('agent.selectWorkflowForAgent')
       )
-      expect(
-        screen.queryByText(i18n.global.t('agent.targetWorkflowUnavailable'))
-      ).toBeNull()
+      expect(unavailableNotice()).toBeNull()
       expect(workflowStore.activeWorkflow?.path).toBe(current.path)
       expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
       await userEvent.click(screen.getByRole('textbox'))
@@ -7196,12 +7196,14 @@ describe('AgentPanelRoot workflow binding', () => {
       expect(selector()).toHaveTextContent(
         i18n.global.t('agent.selectWorkflowForAgent')
       )
+      expect(unavailableNotice()).toBeNull()
       rendered.unmount()
       render(AgentPanelRoot, { global: { plugins: [i18n] } })
       await screen.findAllByText('Historical prompt')
       expect(selector()).toHaveTextContent(
         i18n.global.t('agent.selectWorkflowForAgent')
       )
+      expect(unavailableNotice()).toBeNull()
       await userEvent.click(
         screen.getByRole('button', {
           name: i18n.global.t('agent.showChatHistory')
@@ -7214,10 +7216,12 @@ describe('AgentPanelRoot workflow binding', () => {
       expect(selector()).toHaveTextContent(
         i18n.global.t('agent.selectWorkflowForAgent')
       )
+      expect(unavailableNotice()).toBeNull()
       expect(workflowStore.activeWorkflow.path).toBe(other.path)
-      expect(screen.getByRole('textbox')).toHaveTextContent(
-        'Do not edit the visible graph'
-      )
+      expect(
+        screen.getByRole('textbox'),
+        'keeps the draft across the tab change, remount and revisit'
+      ).toHaveTextContent('Do not edit the visible graph')
     }
   )
 
