@@ -2,6 +2,8 @@
 import { ArrowUpRight, Code, Download } from '@lucide/vue'
 import { computed } from 'vue'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 import Button from '@/components/ui/button/Button.vue'
 import type { WorkflowWorkshopModelDetail } from '@/config/models-catalogue'
 import { WORKSHOP_CLOUD_BASE_URL } from '@/config/workshop-env'
@@ -95,8 +97,14 @@ function captureDownload() {
           as="a"
           :href="template.downloadUrl"
           download
-          variant="outline"
-          class="px-5 text-primary-warm-white hover:bg-primary-warm-white hover:text-primary-comfy-ink"
+          :variant="paths.run ? 'outline' : 'default'"
+          :class="
+            cn(
+              'px-5',
+              paths.run &&
+                'text-primary-warm-white hover:bg-primary-warm-white hover:text-primary-comfy-ink'
+            )
+          "
           data-testid="workflow-path-download"
           @click="captureDownload"
         >
@@ -111,7 +119,7 @@ function captureDownload() {
           :href="cloudHref"
           target="_blank"
           rel="noopener"
-          :variant="paths.run ? 'ghost' : 'default'"
+          variant="ghost"
           class="font-bold tracking-wider uppercase"
           data-testid="workflow-path-cloud"
           @click="captureTryInCloud"
