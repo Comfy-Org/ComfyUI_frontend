@@ -37,7 +37,7 @@ Forces that constrain where a fix can live:
   `pos` — but the frontend cannot rely on every writer, every version, doing
   so. A client-side invariant is correct regardless of what the server sends.
 - **The layer rule.** The follower lives in `src/workbench/`, and the layered
-  architecture (`eslint.config.ts`, `import-x/no-restricted-paths`) forbids
+  architecture (`.oxlintrc.json`, `comfy/no-restricted-paths`) forbids
   workbench importing from `src/renderer/` — which is where the viewport lives
   (the canvas's `DragAndScale`). Node geometry is readable from the live
   `LGraphNode` (`pos`, `size`) without crossing that line; the viewport is

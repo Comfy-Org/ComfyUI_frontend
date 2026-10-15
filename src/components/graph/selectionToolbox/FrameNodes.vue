@@ -1,9 +1,6 @@
 <template>
   <Button
-    v-tooltip.top="{
-      value: $t('g.frameNodes'),
-      showDelay: 1000
-    }"
+    :tooltip="$t('g.frameNodes')"
     variant="muted-textonly"
     :aria-label="$t('g.frameNodes')"
     @click="frameNodes"

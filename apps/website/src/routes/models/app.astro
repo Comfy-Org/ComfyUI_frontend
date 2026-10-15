@@ -1,13 +1,16 @@
 ---
 import type { GetStaticPaths } from 'astro'
-import BaseLayout from '../../layouts/BaseLayout.astro'
-import CinematicStudioPage from '../../components/workshop/cinematic-studio/CinematicStudioPage.vue'
-import { getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
-import { runnableCinematicModels } from '../../lib/workshop/cinematic-studio/models'
-import { priceCinematicModels } from '../../lib/workshop/cinematic-studio/pricing'
-import { tc } from '../../lib/workshop/cinematic-studio/copy'
-import { appModels, appPagePaths } from '../../config/workshop-app-content'
-import type { AppWorkshopModel } from '../../config/models-catalogue'
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import CinematicStudioPage from '@/components/workshop/cinematic-studio/CinematicStudioPage.vue'
+import { getRouterWorkshopModelDetail } from '@/config/workshop-router-content'
+import {
+  runnableCinematicModels,
+  runnableCinematicVideoModels
+} from '@/lib/workshop/cinematic-studio/models'
+import { priceCinematicModels } from '@/lib/workshop/cinematic-studio/pricing'
+import { appModels, appPagePaths } from '@/config/workshop-app-content'
+import type { AppWorkshopModel } from '@/config/models-catalogue'
+import { modelOgImage } from './model-page'
 
 export const getStaticPaths: GetStaticPaths = () => appPagePaths()
 
@@ -18,17 +21,22 @@ interface Props {
 const { model } = Astro.props
 const app = model.appId
 
-const models = await priceCinematicModels(
-  runnableCinematicModels(getRouterWorkshopModelDetail),
-  getRouterWorkshopModelDetail
-)
+// Video models carry no estimate: the pricing rules have none that match a
+// studio clip, so the credit gate only asks for a positive balance.
+const models = [
+  ...(await priceCinematicModels(
+    runnableCinematicModels(getRouterWorkshopModelDetail),
+    getRouterWorkshopModelDetail
+  )),
+  ...runnableCinematicVideoModels(getRouterWorkshopModelDetail)
+]
 if (!models.length) throw new Error('Cinematic Studio has no runnable models')
 ---
 
 <BaseLayout
   title={`${model.name} - Comfy`}
-  description={model.summary ?? tc('cinematic.meta.description')}
-  ogImage={model.thumbnailUrl}
+  description={model.summary ?? Astro.locals.t('cinematic.meta.description')}
+  ogImage={modelOgImage(model)}
   noindex
 >
   <CinematicStudioPage
@@ -38,6 +46,8 @@ if (!models.length) throw new Error('Cinematic Studio has no runnable models')
     client:load
   />
   <noscript>
-    <p class="p-8 text-center">{tc('cinematic.unavailable.title')}</p>
+    <p class="p-8 text-center">
+      {Astro.locals.t('cinematic.unavailable.title')}
+    </p>
   </noscript>
 </BaseLayout>

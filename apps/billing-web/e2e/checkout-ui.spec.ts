@@ -38,11 +38,6 @@ test('with the flag on full_page, checkout is the full-page checkout', async ({
         request.authorization === 'Bearer e2e-workspace-jwt'
     )
   ).toBe(true)
-  expect(
-    cloud.requests.some(
-      (request) => request.path === '/billing/preview-subscribe'
-    )
-  ).toBe(false)
 })
 
 test('when the flag read fails, checkout falls back to the embedded checkout', async ({

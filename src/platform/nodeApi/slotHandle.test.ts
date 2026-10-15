@@ -692,7 +692,8 @@ describe('slot handles', () => {
         .map((l) => l.id)
 
       const moved = outputs.at(0)!.moveLinksTo({ index: 1 })
-      expect(moved.map((l) => l.id).sort()).toEqual(ids.sort())
+      expect(moved).toHaveLength(ids.length)
+      expect(moved.map((l) => l.id)).toEqual(expect.arrayContaining(ids))
     })
 
     it('is a no-op for an unconnected output', () => {

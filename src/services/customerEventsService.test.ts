@@ -8,7 +8,10 @@ import {
   EventType,
   useCustomerEventsService
 } from '@/services/customerEventsService'
-import { webSessionResourceHeader } from '@/platform/auth/session/webSessionFetch'
+import {
+  WebSessionTokenError,
+  webSessionResourceHeader
+} from '@/platform/auth/session/webSessionFetch'
 import { useAuthStore } from '@/stores/authStore'
 import type { AuthHeader } from '@/types/authTypes'
 
@@ -79,7 +82,6 @@ describe('useCustomerEventsService', () => {
   }
 
   beforeEach(() => {
-    vi.mocked(webSessionResourceHeader).mockReset()
     vi.mocked(webSessionResourceHeader).mockResolvedValue(undefined)
     vi.mocked(useAuthStore().getUserAuthHeader).mockResolvedValue(
       mockAuthHeaders
@@ -105,10 +107,6 @@ describe('useCustomerEventsService', () => {
     it('should initialize with default state', () => {
       expect(service.isLoading.value).toBe(false)
       expect(service.error.value).toBeNull()
-    })
-
-    it('should initialize i18n date formatter', () => {
-      expect(mockI18n.d).toBeDefined()
     })
   })
 
@@ -174,20 +172,26 @@ describe('useCustomerEventsService', () => {
       }
     )
 
-    it('reports a failed mint and stops loading', async () => {
+    it('keeps the mint error message and hides its code', async () => {
       vi.mocked(webSessionResourceHeader).mockRejectedValue(
-        new SessionTokenError({
-          status: 'error',
-          code: 'SESSION_REVOKED',
-          retryable: false
-        })
+        new WebSessionTokenError(
+          new SessionTokenError({
+            status: 'error',
+            code: 'SESSION_REVOKED',
+            retryable: false
+          }),
+          'Your session ended. Sign in again to continue.'
+        )
       )
       vi.mocked(axios.isAxiosError).mockReturnValue(false)
 
       const result = await service.getMyEvents()
 
       expect(result).toBeNull()
-      expect(service.error.value).toContain('SESSION_REVOKED')
+      expect(service.error.value).toContain(
+        'Your session ended. Sign in again to continue.'
+      )
+      expect(service.error.value).not.toContain('SESSION_REVOKED')
       expect(service.isLoading.value).toBe(false)
       expect(mockAxiosInstance.get).not.toHaveBeenCalled()
     })
@@ -444,50 +448,6 @@ describe('useCustomerEventsService', () => {
       }
 
       expect(service.hasAdditionalInfo(event)).toBe(false)
-    })
-  })
-
-  describe('getTooltipContent', () => {
-    it('should generate HTML tooltip content for all parameters', () => {
-      const event = {
-        event_id: 'test',
-        event_type: 'api_usage_completed',
-        params: {
-          transaction_id: 'txn-123',
-          duration: 5000,
-          status: 'completed'
-        },
-        createdAt: '2024-01-01T10:00:00Z'
-      }
-
-      const result = service.getTooltipContent(event)
-
-      expect(result).toContain('<strong>Transaction Id:</strong> txn-123')
-      expect(result).toContain('<strong>Duration:</strong> 5,000')
-      expect(result).toContain('<strong>Status:</strong> completed')
-      expect(result).toContain('<br>')
-    })
-
-    it('should return empty string when no parameters', () => {
-      const event = {
-        event_id: 'test',
-        event_type: 'account_created',
-        params: {},
-        createdAt: '2024-01-01T10:00:00Z'
-      }
-
-      expect(service.getTooltipContent(event)).toBe('')
-    })
-
-    it('should handle undefined params', () => {
-      const event = {
-        event_id: 'test',
-        event_type: 'account_created',
-        params: undefined,
-        createdAt: '2024-01-01T10:00:00Z'
-      }
-
-      expect(service.getTooltipContent(event)).toBe('')
     })
   })
 

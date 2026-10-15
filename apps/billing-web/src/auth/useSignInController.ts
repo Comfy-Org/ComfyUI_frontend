@@ -6,7 +6,10 @@
 import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
 import { authErrorMessage } from '@comfyorg/account-core/firebaseAuthError'
 import type { AuthErrorCopy } from '@comfyorg/account-core/firebaseAuthError'
-import type { SessionErrorCode } from '@comfyorg/account-core/session'
+import type {
+  SessionErrorCode,
+  SessionFailure
+} from '@comfyorg/account-core/session'
 import type { User, UserCredential } from 'firebase/auth'
 import { computed, ref, watch } from 'vue'
 import type { Ref } from 'vue'
@@ -27,21 +30,28 @@ import {
 
 const AUTH_ERROR_COPY: AuthErrorCopy = en.auth.errors
 
+/** Why the workspace session was refused, as far as the sign-in page acts on it. */
+export type SessionRefusal = Pick<SessionFailure, 'code' | 'organizationId'>
+
+export type SessionEstablishment =
+  | { readonly status: 'ok' }
+  | { readonly status: 'error'; readonly code: SessionErrorCode }
+
 /** What the flow signs in against: this origin's session client, or the shared web session. */
 export interface SignInPort {
   /** Non-null once someone is signed in, restored or interactive. */
   readonly user: Readonly<Ref<unknown>>
-  readonly failureCode: Readonly<Ref<SessionErrorCode | undefined>>
+  readonly failure: Readonly<Ref<SessionRefusal | undefined>>
   readonly loadIdentity: () => Promise<FirebaseIdentity | undefined>
-  /** Establishes the workspace session; resolves whether it holds. */
-  readonly establish: (user?: User) => Promise<boolean>
+  /** Establishes the workspace session; resolves whether it holds, and the code when it does not. */
+  readonly establish: (user?: User) => Promise<SessionEstablishment>
 }
 
 export function sessionClientPort(): SignInPort {
   const { user, failure } = useBillingWebSession()
   return {
     user,
-    failureCode: computed(() => failure.value?.code),
+    failure,
     loadIdentity: resolveBillingWebIdentity,
     /**
      * The client no longer auto-mints (see `billingWebSession.ts`), so every
@@ -56,6 +66,8 @@ export function sessionClientPort(): SignInPort {
         { workspaceId: boundWorkspaceId() }
       )
       return result?.status === 'ok'
+        ? { status: 'ok' }
+        : { status: 'error', code: result?.code ?? 'NOT_AUTHENTICATED' }
     }
   }
 }
@@ -112,7 +124,9 @@ export function useSignInController(
 
   async function mint(requestedUser?: User): Promise<void> {
     const held = await port.establish(requestedUser)
-    dispatch(held ? { type: 'mintSucceeded' } : { type: 'mintFailed' })
+    dispatch(
+      held.status === 'ok' ? { type: 'mintSucceeded' } : { type: 'mintFailed' }
+    )
   }
 
   async function completeSignIn(
@@ -181,7 +195,9 @@ export function useSignInController(
     leaving,
     errorMessage,
     /** The mint's own refusal, e.g. naming a workspace this account is not in. */
-    sessionFailureCode: port.failureCode,
+    sessionFailureCode: computed(() => port.failure.value?.code),
+    /** The organization an `SSO_REQUIRED` refusal names, when it names one. */
+    ssoOrganizationId: computed(() => port.failure.value?.organizationId),
     available: computed(() => identity.value !== undefined),
     signInWith,
     submitEmail,

@@ -8,6 +8,7 @@
 import { toRaw } from 'vue'
 
 import type Load3d from '@/extensions/core/load3d/Load3d'
+import { adoptClonedModel } from '@/extensions/core/load3d/quadWireframe/adoptClonedModel'
 import type {
   AnimationItem,
   BackgroundRenderModeType,
@@ -17,6 +18,7 @@ import type {
 } from '@/extensions/core/load3d/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { NodeId } from '@/types/nodeId'
+import { cloneObject3DResources } from '@/extensions/core/load3d/SceneModelManager'
 import type { Object3D } from 'three'
 
 // Type for the useLoad3dViewer composable function
@@ -221,27 +223,32 @@ class Load3dService {
     const sourceModel = source.modelManager.currentModel
 
     const gizmoWasEnabled = target.getGizmoManager().isEnabled()
+    const showSkeleton = target.getModelManager().showSkeleton
     target.getGizmoManager().detach()
 
     if (sourceModel) {
-      // Remove existing model from target scene before adding new one
-      const existingModel = target.getModelManager().currentModel
-      if (existingModel) {
-        target.getSceneManager().scene.remove(existingModel)
-      }
+      target.getModelManager().disposeCurrentModel()
 
       if (source.isSplatModel()) {
         const originalURL = source.modelManager.originalURL
-        if (originalURL && !(await target.loadModel(originalURL))) {
+        if (originalURL && (await target.loadModel(originalURL)) !== 'loaded') {
           return
         }
       } else {
         // Use SkeletonUtils.clone for proper skeletal animation support
         const SkeletonUtils = await loadSkeletonUtils()
         const modelClone = SkeletonUtils.clone(sourceModel)
+        adoptClonedModel(
+          modelClone,
+          sourceModel,
+          source.getModelManager().originalMaterials
+        )
+        cloneObject3DResources(modelClone)
+        target.getModelManager().materialMode = 'original'
 
         target.getModelManager().currentModel = modelClone
         target.getSceneManager().scene.add(modelClone)
+        target.getModelManager().setupModelMaterials(modelClone)
 
         const sourceOriginalModel = source.getModelManager().originalModel
 
@@ -249,19 +256,19 @@ class Load3dService {
           target.getModelManager().originalModel = sourceOriginalModel
         }
 
-        target.getModelManager().materialMode =
-          source.getModelManager().materialMode
-
         target.getModelManager().currentUpDirection =
           source.getModelManager().currentUpDirection
 
+        const appliedTexture = source.getModelManager().appliedTexture
+        if (appliedTexture) {
+          target
+            .getModelManager()
+            .borrowAppliedTexture(appliedTexture.clone(), true)
+        }
+
         target.setMaterialMode(source.getModelManager().materialMode)
         target.setUpDirection(source.getModelManager().currentUpDirection)
-
-        if (source.getModelManager().appliedTexture) {
-          target.getModelManager().appliedTexture =
-            source.getModelManager().appliedTexture
-        }
+        target.setShowSkeleton(showSkeleton)
 
         const sourceInitial = source.getGizmoManager().getInitialTransform()
         modelClone.position.set(

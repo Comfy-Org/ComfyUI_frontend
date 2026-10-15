@@ -1,0 +1,72 @@
+{
+  "id": "system-info",
+  "capability": "System information",
+  "description": "Backend system statistics, About panel version information, device presentation, and copying diagnostic information.",
+  "modules": [
+    {
+      "path": "src/components/common/DeviceInfo.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/DeviceInfo.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/systemStatsColumns.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/components/common/SystemStatsPanel.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/SystemStatsPanel.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/setting/AboutPanel.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/stores/systemStatsStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/systemStatsStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/aboutPanelStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useCopySystemInfo.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useCopySystemInfo.test.ts",
+      "role": "application"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "System stats panel renders system and device information",
+      "checks": [
+        "src/components/common/SystemStatsPanel.test.ts",
+        "src/components/common/DeviceInfo.test.ts"
+      ]
+    },
+    {
+      "name": "System stats load, refetch, and classify the install form factor",
+      "checks": ["src/stores/systemStatsStore.test.ts"]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
+  ],
+  "deepImports": "inventory"
+}

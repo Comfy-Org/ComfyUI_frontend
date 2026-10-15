@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { expectedCharge, liveSettings } from '../acceptance/settings'
+import { expectedCharge, liveSettings } from '@website/acceptance/settings'
 
 describe('live acceptance destinations', () => {
   it.for([

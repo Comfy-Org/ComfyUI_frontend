@@ -17,10 +17,11 @@ function clipboardOf(...files: File[]): DataTransfer {
 function mount() {
   return render(Composer, {
     props: { hasWorkflowTarget: true },
-    global: { plugins: [i18n], directives: { tooltip: () => {} } }
+    global: { plugins: [i18n] }
   })
 }
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
 describe('pasting files into the composer', () => {
   it('hands a pasted screenshot to the host as an attachment', async () => {
     const user = userEvent.setup()

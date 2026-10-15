@@ -29,6 +29,7 @@ function reportGateBlocked(
   apiKeyStore: ApiKeyAuthStore
 ) {
   reportError(new Error(`Partner run gate blocked ${trigger}`), {
+    surface: 'billing',
     errorType: 'partner_run_gate_blocked',
     level: 'warning',
     tags: {

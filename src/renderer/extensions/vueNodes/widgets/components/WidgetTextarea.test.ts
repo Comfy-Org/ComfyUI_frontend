@@ -67,7 +67,7 @@ async function setTextareaValueAndTrigger(
   if (trigger === 'blur') {
     await fireEvent.blur(textarea)
   } else {
-    // eslint-disable-next-line testing-library/prefer-user-event
+    // oxlint-disable-next-line testing-library/prefer-user-event
     await fireEvent.input(textarea)
   }
   return textarea
@@ -180,7 +180,7 @@ describe('WidgetTextarea Value Binding', () => {
       const widget = createTextareaWidget('test')
       const { container } = renderComponent(widget, 'test')
 
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const textareaLabel = container.querySelector('label')
       expect(textareaLabel?.textContent).toBe('test_textarea')
     })
@@ -234,7 +234,7 @@ describe('WidgetTextarea Value Binding', () => {
       const { container } = renderComponent(widget, 'locked value')
 
       // hover class lives on wrapper <div>, not the <textarea>
-      // eslint-disable-next-line testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-node-access
       const wrapper = container.firstElementChild
       expect(wrapper?.className).not.toContain(HOVER_CLASS)
     })
@@ -244,7 +244,7 @@ describe('WidgetTextarea Value Binding', () => {
       const { container } = renderComponent(widget, 'linked value')
 
       // hover class lives on wrapper <div>, not the <textarea>
-      // eslint-disable-next-line testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-node-access
       const wrapper = container.firstElementChild
       expect(wrapper?.className).not.toContain(HOVER_CLASS)
     })
@@ -254,7 +254,7 @@ describe('WidgetTextarea Value Binding', () => {
       const { container } = renderComponent(widget, 'editable value')
 
       // hover class lives on wrapper <div>, not the <textarea>
-      // eslint-disable-next-line testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-node-access
       const wrapper = container.firstElementChild
       expect(wrapper?.className).toContain(HOVER_CLASS)
     })

@@ -38,6 +38,7 @@ export function createUndeliverableAskReporter() {
       reportError(
         new Error(`agent approval ask could not be delivered (${reason})`),
         {
+          surface: 'agent',
           errorType: 'failure_delivering_agent_approval_ask',
           level: 'warning',
           tags: {

@@ -32,15 +32,76 @@ import {
 } from '@/workbench/extensions/agent/crdt/restoreOpMinter'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useExtensionService } from '@/services/extensionService'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
+import { selectedNodeKey } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
 import { useDialogStore } from '@/stores/dialogStore'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
-import { isLGraphNode } from '@/utils/litegraphUtil'
 
 /** Upper bound on how long readiness consumers wait for a gate decision. */
 export const GATE_SETTLE_TIMEOUT_MS = 5_000
 
 const CONSENT_AUTO_SHOWN_PREFIX = 'Comfy.AgentConsent.AutoShown'
+const ACTIVATION_VISITS_STORAGE_KEY = 'Comfy.AgentPanel.activationVisits'
+const AUTOMATIC_ACTIVATION_VISITS = 2
+
+function claimAutomaticActivationVisit(): boolean {
+  try {
+    const storedVisits = Number(
+      localStorage.getItem(ACTIVATION_VISITS_STORAGE_KEY) ?? 0
+    )
+    const priorVisits =
+      Number.isSafeInteger(storedVisits) && storedVisits >= 0 ? storedVisits : 0
+    if (priorVisits >= AUTOMATIC_ACTIVATION_VISITS) return false
+
+    localStorage.setItem(ACTIVATION_VISITS_STORAGE_KEY, String(priorVisits + 1))
+    return true
+  } catch {
+    return false
+  }
+}
+
+function automaticActivationVisitsComplete(): boolean {
+  try {
+    const storedVisits = Number(
+      localStorage.getItem(ACTIVATION_VISITS_STORAGE_KEY) ?? 0
+    )
+    return Number.isSafeInteger(storedVisits)
+      ? storedVisits >= AUTOMATIC_ACTIVATION_VISITS
+      : false
+  } catch {
+    // Storage failures must not turn into an unbounded automatic opener.
+    return true
+  }
+}
+
+function automaticConsentOfferScope(
+  {
+    activationOpenedPanel,
+    panelOpen,
+    userId,
+    workspaceId,
+    workspaceSwitching
+  }: {
+    activationOpenedPanel: boolean
+    panelOpen: boolean
+    userId: string | undefined
+    workspaceId: string | null
+    workspaceSwitching: boolean
+  },
+  onMissingScope: () => void,
+  onActivatedPanel: () => void
+): [userId: string, workspaceId: string] | null {
+  if (!userId || !workspaceId || workspaceSwitching) {
+    onMissingScope()
+    return null
+  }
+  if (activationOpenedPanel && panelOpen) {
+    onActivatedPanel()
+    return null
+  }
+  return [userId, workspaceId]
+}
 
 function writeAutoShown(key: string, shown: boolean): boolean {
   try {
@@ -80,53 +141,24 @@ export function registerAgentPanelExtension(): void {
     name: 'Comfy.AgentPanel',
     beforeLoadGraph() {
       notifyRestoreMintersBeforeGraphLoad()
-      const agentPanelStore = useAgentPanelStore()
-      if (!agentPanelStore.isVisible || !agentPanelStore.consentAccepted) return
-
-      const nodeSelectionStore = useAgentNodeSelectionStore()
-      nodeSelectionStore.beginWorkflowLoad()
+      useCanvasStore().stopNodePicking()
     },
     afterLoadGraph(app) {
-      const agentPanelStore = useAgentPanelStore()
-      const nodeSelectionStore = useAgentNodeSelectionStore()
-      if (!nodeSelectionStore.isLoadingWorkflow) return
-      if (!agentPanelStore.isVisible || !agentPanelStore.consentAccepted) {
-        nodeSelectionStore.finishWorkflowLoad()
+      const composer = useAgentComposerStore()
+      if (composer.nodeScope !== useWorkflowStore().activeWorkflow?.instanceId)
         return
-      }
-
-      try {
-        const canvas = app.canvas
-        const workflowStore = useWorkflowStore()
-        const workflowPath = workflowStore.activeWorkflow?.path
-        const nodes = nodeSelectionStore
-          .nodeIds(workflowPath)
-          .map((locatorId) => getNodeByLocatorId(app.rootGraph, locatorId))
-          .filter(isLGraphNode)
-        if (nodes.length === 0) {
-          // Nothing was saved for this workflow (e.g. a brand-new, never-saved
-          // tab). Disarm the restore guard directly instead of arming it with
-          // an empty selection - otherwise it stays armed until the *next*
-          // unrelated selection change (such as manually adding a node), which
-          // then gets wrongly adopted as "the restored selection".
-          nodeSelectionStore.finishWorkflowLoad()
-          return
-        }
-        nodeSelectionStore.restoreNodeIds(
-          nodes.map((node) => workflowStore.nodeToNodeLocatorId(node))
-        )
-        canvas.selectItems(nodes)
-      } catch (error) {
-        nodeSelectionStore.finishWorkflowLoad()
-        throw error
-      }
+      composer.setNodes(
+        composer.nodes.flatMap((reference) => {
+          const node = getNodeByLocatorId(
+            app.rootGraph,
+            selectedNodeKey(reference)
+          )
+          return node ? [{ ...reference, title: node.title }] : []
+        })
+      )
     },
     onGraphLoadError() {
       notifyRestoreMintersGraphLoadError()
-      const nodeSelectionStore = useAgentNodeSelectionStore()
-      if (nodeSelectionStore.isLoadingWorkflow) {
-        nodeSelectionStore.finishWorkflowLoad()
-      }
     },
     afterConfigureGraph() {
       notifyRestoreMintersAfterGraphConfigure()
@@ -248,6 +280,7 @@ export function registerAgentPanelExtension(): void {
         return userId && workspaceId ? `${userId}.${workspaceId}` : null
       }
       const consentCardSeenIn = new Set<string>()
+      let activationOpenedPanel = false
       whenever(
         () => dialogStore.isDialogOpen(CONSENT_DIALOG_KEY),
         () => {
@@ -322,12 +355,23 @@ export function registerAgentPanelExtension(): void {
           return
         }
 
-        const userId = resolvedUserInfo.value?.id
-        const workspaceId = workspaceStore.activeWorkspaceId
-        if (!userId || !workspaceId || workspaceStore.isSwitching) {
-          reportOfferExit(missingScopeExit(userId), 'offer')
-          return
-        }
+        const candidateUserId = resolvedUserInfo.value?.id
+        const offerScope = automaticConsentOfferScope(
+          {
+            activationOpenedPanel,
+            panelOpen: agentPanelStore.isOpen,
+            userId: candidateUserId,
+            workspaceId: workspaceStore.activeWorkspaceId,
+            workspaceSwitching: workspaceStore.isSwitching
+          },
+          () => reportOfferExit(missingScopeExit(candidateUserId), 'offer'),
+          () => {
+            reportOfferExit('activation_opened_panel', 'offer')
+            dropHold()
+          }
+        )
+        if (!offerScope) return
+        const [userId, workspaceId] = offerScope
         const key = `${CONSENT_AUTO_SHOWN_PREFIX}.${userId}.${workspaceId}`
         const autoShow = prepareAutoShow(key)
         if (autoShow !== 'ready') {
@@ -350,7 +394,12 @@ export function registerAgentPanelExtension(): void {
         void withConsent(
           'first_load',
           () => {
-            if (!agentPanelStore.enabled || agentPanelStore.isOpen) return
+            if (
+              !agentPanelStore.enabled ||
+              automaticActivationVisitsComplete() ||
+              agentPanelStore.isOpen
+            )
+              return
             agentPanelStore.open('automatic_consent')
           },
           {
@@ -381,8 +430,20 @@ export function registerAgentPanelExtension(): void {
         // rather than landing it on a late first-run screen.
         whenStartupDecided()
           .then((decided) => {
-            if (decided) offerConsentUnprompted()
-            else if (offerEligible()) withholdOffer('boot_undecided')
+            if (decided) {
+              // Once the discovery window is over, a closed panel is a
+              // persisted preference. Consent remains available from an
+              // already-open panel or explicit user action.
+              if (
+                automaticActivationVisitsComplete() &&
+                !agentPanelStore.isOpen
+              ) {
+                reportOfferExit('activation_window_complete', 'startup')
+                dropHold()
+                return
+              }
+              offerConsentUnprompted()
+            } else if (offerEligible()) withholdOffer('boot_undecided')
             else {
               // An undecided boot that is also ineligible reported nothing at
               // all: `boot_undecided` is gated on eligibility, so the forfeited
@@ -394,6 +455,7 @@ export function registerAgentPanelExtension(): void {
           .catch((error: unknown) => {
             reportOfferExit('startup_probe_failed', 'startup')
             reportError(error, {
+              surface: 'agent',
               errorType: 'agent_consent_auto_offer_failure'
             })
           })
@@ -409,11 +471,15 @@ export function registerAgentPanelExtension(): void {
           .then((decided) => {
             if (decided && agentPanelStore.enabled) {
               activationOffered = true
-              if (!agentPanelStore.isOpen) agentPanelStore.open('activation')
+              if (claimAutomaticActivationVisit() && !agentPanelStore.isOpen) {
+                agentPanelStore.open('activation')
+                activationOpenedPanel = true
+              }
             }
           })
           .catch((error: unknown) => {
             reportError(error, {
+              surface: 'agent',
               errorType: 'agent_panel_activation_failure'
             })
           })
@@ -445,6 +511,7 @@ export function registerAgentPanelExtension(): void {
           .catch((error: unknown) => {
             reportOfferExit('consent_read_failed', 'load')
             reportError(error, {
+              surface: 'agent',
               errorType: 'agent_consent_setting_load_failure'
             })
           })
@@ -500,11 +567,7 @@ function setupFlagGate(
       agentPanelStore.enabled = enabled
       loadConsentIfEligible()
       openWhenStartupDecided()
-      if (!enabled) {
-        const nodeSelectionStore = useAgentNodeSelectionStore()
-        if (nodeSelectionStore.isLoadingWorkflow)
-          nodeSelectionStore.finishWorkflowLoad()
-      }
+      if (!enabled) useCanvasStore().stopNodePicking()
     },
     { immediate: true }
   )

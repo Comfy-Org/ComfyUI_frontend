@@ -1,15 +1,17 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { MenuItem } from 'primevue/menuitem'
+import type { MenuItem } from '@/components/ui/menu/types'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { isSalesManagedTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import { isCloud } from '@/platform/distribution/types'
+import { formatSubscriptionDate } from '@/platform/workspace/components/subscriptionPanelWorkspace.logic'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
-import { useDialogService } from '@/services/dialogService'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
+import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
 
 /**
  * Builds the Plan & Credits overflow-menu model for the workspace subscription
@@ -18,7 +20,7 @@ import { useDialogService } from '@/services/dialogService'
  * Plan & Credits panel menu.
  */
 export function useWorkspaceMenuItems() {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const { billingStatus, isFreeTier, subscription } = useBillingContext()
   const { shouldUseWorkspaceBilling } = useBillingRouting()
   const { canCancel } = useBillingCapabilities()
@@ -31,12 +33,12 @@ export function useWorkspaceMenuItems() {
     isDeleteDisabled,
     deleteDisabledTooltipKey
   } = useWorkspaceUI()
+  const { showCancelSubscriptionFlow } = useBillingDialogs()
   const {
-    showCancelSubscriptionFlow,
     showEditWorkspaceDialog,
     showDeleteWorkspaceDialog,
     showLeaveWorkspaceDialog
-  } = useDialogService()
+  } = useWorkspaceDialogs()
 
   function editWorkspace() {
     void showEditWorkspaceDialog()
@@ -93,6 +95,14 @@ export function useWorkspaceMenuItems() {
   )
 
   const deleteTooltip = computed(() => {
+    const planEndDate = formatSubscriptionDate(
+      subscription.value?.endDate,
+      locale.value
+    )
+    if (isDeleteDisabled.value && isSubscriptionCancelled.value && planEndDate)
+      return t('workspacePanel.menu.deleteWorkspaceAfterPlanEndsTooltip', {
+        date: planEndDate
+      })
     const key = deleteDisabledTooltipKey.value
     return key ? t(key) : undefined
   })

@@ -3,12 +3,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { readonly, ref, nextTick } from 'vue'
 import type { Ref } from 'vue'
 
-import { modelReleaseLinks } from '../../config/model-release-links'
-import { getRoutes } from '../../config/routes'
-import { useWorkshopEnabled } from '../../scripts/posthog'
+import { modelReleaseLinks } from '@/config/model-release-links'
+import { getRoutes } from '@/config/routes'
+import { useWorkshopEnabled } from '@/scripts/posthog'
 import ModelReleaseSection from './ModelReleaseSection.vue'
 
-vi.mock(import('../../scripts/posthog'))
+vi.mock(import('@/scripts/posthog'))
 
 let enabled: Ref<boolean>
 
@@ -35,12 +35,12 @@ describe('ModelReleaseSection', () => {
 
     const explore = screen.getByRole('link', { name: 'Explore Seedance 2.5' })
     expect(explore.getAttribute('href')).toBe(
-      '/models/byteplus--seedance-2-5-text-to-video--generate-videos/'
+      '/hub/models/seedance-2-5-text-to-video/'
     )
 
     const tryCta = screen.getByRole('link', { name: 'Try Workflow' })
     expect(tryCta.getAttribute('href')).toBe(
-      '/models/byteplus--seedance-2-5-text-to-video--generate-videos/'
+      '/hub/models/seedance-2-5-text-to-video/'
     )
     expect(tryCta.getAttribute('target')).toBeNull()
 
@@ -58,7 +58,7 @@ describe('ModelReleaseSection', () => {
 
     const explore = screen.getByRole('link', { name: '探索 Seedance 2.5' })
     expect(explore.getAttribute('href')).toBe(
-      '/models/byteplus--seedance-2-5-text-to-video--generate-videos/'
+      '/hub/models/seedance-2-5-text-to-video/'
     )
 
     expect(screen.getByRole('link', { name: '试用工作流' })).toBeTruthy()
@@ -87,12 +87,12 @@ describe('ModelReleaseSection', () => {
     enabled.value = false
     render(ModelReleaseSection, { props: { modelLinks: enabledLinks } })
     const explore = screen.getByRole('link', { name: 'Explore Seedance 2.5' })
-    expect(explore.getAttribute('href')).toBe('/seedance-2.5')
+    expect(explore.getAttribute('href')).toBe('/seedance-2.5/')
     enabled.value = true
     await nextTick()
     expect(explore.getAttribute('href')).toBe(enabledLinks['seedance-2-5'])
     enabled.value = false
     await nextTick()
-    expect(explore.getAttribute('href')).toBe('/seedance-2.5')
+    expect(explore.getAttribute('href')).toBe('/seedance-2.5/')
   })
 })

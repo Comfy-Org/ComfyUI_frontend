@@ -1,14 +1,21 @@
 <script setup lang="ts">
-import { ChevronLeft } from '@lucide/vue'
+import { ArrowUpRight, ChevronLeft } from '@lucide/vue'
 import { computed } from 'vue'
 
-import type { WorkflowWorkshopModelDetail } from '../../config/models-catalogue'
-import { useCaseFor } from '../../config/models-catalogue'
-import { getRoutes } from '../../config/routes'
-import { WORKSHOP_CLOUD_BASE_URL } from '../../config/workshop-env'
-import { useWorkshopSession } from '../../config/workshop-session-state'
-import { useCaseLabelKey } from '../../lib/workshop/use-case-label'
-import { t } from '../../i18n/translations'
+import Button from '@/components/ui/button/Button.vue'
+import type { WorkflowWorkshopModelDetail } from '@/config/models-catalogue'
+import { useCaseFor } from '@/config/models-catalogue'
+import { getRoutes } from '@/config/routes'
+import { WORKSHOP_CLOUD_BASE_URL } from '@/config/workshop-env'
+import { useWorkshopSession } from '@/config/workshop-session-state'
+import { useCaseLabelKey } from '@/lib/workshop/use-case-label'
+import { t } from '@/i18n/translations'
+import {
+  captureWorkshopEvent,
+  useWorkshopEnabled,
+  useWorkshopWorkflowsEnabled
+} from '@/scripts/posthog'
+import { workshopModelAnalytics } from '@/scripts/workshop-analytics'
 import WorkflowPlayground from './WorkflowPlayground.vue'
 
 const { model } = defineProps<{ model: WorkflowWorkshopModelDetail }>()
@@ -29,10 +36,9 @@ const shelf = computed(() => {
   return useCase
     ? {
         label: useCaseLabelKey[useCase],
-        href: `${routes.workshop}?${new URLSearchParams({
-          type: 'workflows',
-          ...(category ? { category } : {})
-        })}`
+        href: category
+          ? `${routes.hubWorkflows}?${new URLSearchParams({ category })}`
+          : routes.hubWorkflows
       }
     : undefined
 })
@@ -40,15 +46,36 @@ const pillClass =
   'inline-flex h-7 items-center rounded-full border border-transparency-white-t20 px-3 text-xs leading-none text-primary-comfy-canvas transition-colors hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow'
 
 const template = model.workflow.template
+const downloadUrl = template?.downloadUrl
 const cloudHref = template
   ? `${WORKSHOP_CLOUD_BASE_URL}/?template=${encodeURIComponent(template.id)}`
   : undefined
+
+const enabled = useWorkshopEnabled()
+const workflowsEnabled = useWorkshopWorkflowsEnabled()
+const modelAnalytics = workshopModelAnalytics(model)
+
+function captureTryInCloud() {
+  if (enabled.value && workflowsEnabled.value)
+    captureWorkshopEvent({
+      name: 'try_in_cloud_clicked',
+      properties: modelAnalytics
+    })
+}
+
+function captureWorkflowDownload() {
+  if (enabled.value && workflowsEnabled.value)
+    captureWorkshopEvent({
+      name: 'workflow_download_clicked',
+      properties: modelAnalytics
+    })
+}
 </script>
 
 <template>
   <div class="mx-auto max-w-10xl px-6 pt-5 pb-20 lg:px-8">
     <a
-      href="/models/?type=workflows"
+      :href="routes.hubWorkflows"
       class="mb-7 inline-flex min-h-11 items-center gap-1 text-sm text-primary-warm-gray hover:text-primary-comfy-yellow"
     >
       <ChevronLeft class="size-4" aria-hidden="true" />
@@ -70,28 +97,48 @@ const cloudHref = template
       </h1>
       <p
         v-if="model.summary"
-        class="mt-4 max-w-3xl text-lg text-primary-warm-gray"
+        class="mt-4 text-lg text-primary-warm-gray lg:truncate"
+        :title="model.summary"
       >
         {{ model.summary }}
       </p>
-      <p
-        v-if="template"
-        class="mt-5 text-xs text-primary-warm-gray"
-        data-testid="workflow-author"
+      <div
+        v-if="downloadUrl || cloudHref"
+        class="mt-6 flex flex-wrap items-center gap-2"
+        data-testid="workflow-actions"
       >
-        {{
-          t('workshop.workflow.templateBy', 'en', {
-            author: template.author
-          })
-        }}
-      </p>
+        <Button
+          v-if="downloadUrl"
+          as="a"
+          :href="downloadUrl"
+          download
+          variant="outline"
+          class="h-auto min-h-11 max-w-full whitespace-normal"
+          :aria-label="t('workshop.workflow.download')"
+          @click="captureWorkflowDownload"
+          >{{ t('workshop.workflow.downloadShort') }}</Button
+        >
+        <Button
+          v-if="cloudHref"
+          as="a"
+          :href="cloudHref"
+          target="_blank"
+          rel="noopener"
+          variant="ghost"
+          class="h-auto min-h-11 max-w-full font-bold tracking-wider whitespace-normal uppercase"
+          @click="captureTryInCloud"
+          >{{ t('workshop.workflow.tryCloud') }}
+          <template #append>
+            <ArrowUpRight aria-hidden="true" />
+          </template>
+        </Button>
+      </div>
     </header>
 
     <WorkflowPlayground
       :key="scope"
       :model="model"
       :scope="scope"
-      :cloud-href="cloudHref"
       @recovery="emit('recovery', $event)"
     />
   </div>

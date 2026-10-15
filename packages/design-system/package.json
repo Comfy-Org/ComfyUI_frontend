@@ -34,6 +34,8 @@
     "access": "public"
   },
   "scripts": {
+    "format": "oxfmt --write",
+    "format:check": "oxfmt --check",
     "test": "vitest run",
     "typecheck": "tsx ../../scripts/vue-tsc-native.ts --noEmit"
   },
@@ -43,7 +45,6 @@
     "@iconify/tools": "catalog:",
     "@iconify/utils": "catalog:",
     "cva": "catalog:",
-    "tailwindcss-primeui": "catalog:",
     "tw-animate-css": "catalog:"
   },
   "devDependencies": {
