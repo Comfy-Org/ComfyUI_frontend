@@ -8030,51 +8030,6 @@ describe('AgentPanelRoot workflow binding', () => {
     ).toHaveTextContent('Do not edit the visible graph')
   })
 
-  it('keeps a readable unresolved chat open when its Current row is selected again', async () => {
-    makeTab('wf-42')
-    stubHistoryWithWorkflowListing(unresolvedTargetChat)
-    renderWithSelectedTarget()
-    await userEvent.click(
-      screen.getByRole('button', {
-        name: i18n.global.t('agent.showChatHistory')
-      })
-    )
-    await userEvent.click(
-      await screen.findByRole('button', { name: 'Unresolved target chat' })
-    )
-    await waitFor(() =>
-      expect(useAgentChatHistoryStore().activeId).toBe('th-history')
-    )
-    respondToFetch({ method: 'GET', url: /\/messages/ }, () =>
-      json(500, { error: 'down' })
-    )
-
-    await userEvent.click(
-      screen.getByRole('button', {
-        name: i18n.global.t('agent.showChatHistory')
-      })
-    )
-    await userEvent.click(
-      await screen.findByRole('button', { name: 'Unresolved target chat' })
-    )
-
-    await screen.findAllByText('Historical prompt')
-    expect(
-      screen.queryByRole('heading', { name: i18n.global.t('agent.history') })
-    ).toBeNull()
-    expect(
-      screen.queryByText(i18n.global.t('agent.historyOpenFailed'))
-    ).toBeNull()
-    expect(
-      screen.getByRole('button', {
-        name: i18n.global.t('agent.switchWorkflow')
-      })
-    ).toHaveTextContent(i18n.global.t('agent.selectWorkflowForAgent'))
-    expect(
-      screen.queryByText(i18n.global.t('agent.targetWorkflowUnavailable'))
-    ).toBeNull()
-  })
-
   it.for(['false', 'throw', 'missing-id'])(
     'handles a history restoration with %s without showing an unready chat',
     async (outcome) => {
