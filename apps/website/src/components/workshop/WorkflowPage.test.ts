@@ -75,7 +75,7 @@ describe('WorkflowPage header', () => {
         .getAllByRole('link')
         .map((link) => [link.textContent.trim(), link.getAttribute('href')])
     ).toEqual([
-      ['Download', template.downloadUrl],
+      ['Download workflow', template.downloadUrl],
       ['Try in Cloud', cloudHref]
     ])
     expect(

@@ -13,6 +13,11 @@
     }
   },
   "workshop": {
+    "nodeGraph": {
+      "graphHint": "A read-only preview of the node graph. Open it in Comfy Cloud or download it to edit the nodes.",
+      "previewNotice": "Design preview with sample data. This page is not on the Hub.",
+      "runsWhere": "Runs in ComfyUI"
+    },
     "meta": {
       "title": "Browse Models - Comfy",
       "description": "Browse and run the latest AI image, video and audio models on Comfy."
@@ -574,7 +579,7 @@
       "graphNote": "The node graph behind this deployment is read-only here. Open it on comfy.org or download the JSON to edit it in ComfyUI.",
       "openComfy": "Open on comfy.org",
       "download": "Download workflow JSON",
-      "downloadShort": "Download",
+      "downloadShort": "Download workflow",
       "ratings": "Ratings & comments",
       "related": "Related workflows",
       "relatedAll": "Browse all",
