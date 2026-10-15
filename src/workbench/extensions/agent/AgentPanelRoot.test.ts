@@ -7941,7 +7941,7 @@ describe('AgentPanelRoot workflow binding', () => {
     )
   }
 
-  async function selectUnresolvedChatInHistory(): Promise<void> {
+  async function clickUnresolvedChatInHistory(): Promise<void> {
     await userEvent.click(
       screen.getByRole('button', {
         name: i18n.global.t('agent.showChatHistory')
@@ -7950,6 +7950,10 @@ describe('AgentPanelRoot workflow binding', () => {
     await userEvent.click(
       await screen.findByRole('button', { name: 'Unresolved target chat' })
     )
+  }
+
+  async function selectUnresolvedChatInHistory(): Promise<void> {
+    await clickUnresolvedChatInHistory()
     await waitFor(() =>
       expect(
         screen.queryByRole('heading', { name: i18n.global.t('agent.history') })
@@ -7961,6 +7965,21 @@ describe('AgentPanelRoot workflow binding', () => {
     return screen.getByRole('button', {
       name: i18n.global.t('agent.switchWorkflow')
     })
+  }
+
+  function attachSavedUnresolvedWorkflow(): LoadedComfyWorkflow {
+    const saved = createMockLoadedWorkflow({
+      path: 'workflows/missing-saved-file.json',
+      filename: 'missing-saved-file',
+      isTemporary: false
+    })
+    saved.load = vi.fn(async () => saved)
+    workflowStore.attachWorkflow(saved)
+    return saved
+  }
+
+  function transcriptReads(): number {
+    return fetchRequests({ method: 'GET', url: /\/messages/ }).length
   }
 
   it.for(unresolvedChatEntryPoints)(
@@ -12976,13 +12995,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
   it('opens the saved local workflow from the Current row once Cloud answers after startup could not resolve it', async () => {
     makeTab('wf-42')
-    const saved = createMockLoadedWorkflow({
-      path: 'workflows/missing-saved-file.json',
-      filename: 'missing-saved-file',
-      isTemporary: false
-    })
-    saved.load = vi.fn(async () => saved)
-    workflowStore.attachWorkflow(saved)
+    const saved = attachSavedUnresolvedWorkflow()
     stubHistoryWithWorkflowListing(unresolvedTargetChat)
     let cloudStatus = 503
     respondToFetch({ method: 'GET', url: /\/workflows(\?|$)/ }, () =>
@@ -12993,8 +13006,6 @@ describe('AgentPanelRoot workflow binding', () => {
         pagination: { offset: 0, limit: 100, total: 1, has_more: false }
       } satisfies WorkflowListResponse)
     )
-    const transcriptReads = () =>
-      fetchRequests({ method: 'GET', url: /\/messages/ }).length
     await openUnresolvedChatOnStartup()
     const transcriptReadsAtStartup = transcriptReads()
 
@@ -13016,11 +13027,48 @@ describe('AgentPanelRoot workflow binding', () => {
     )
   })
 
+  it('returns to an unresolved chat on Back during its Current retry and leaves it untargeted once Cloud answers', async () => {
+    const current = makeTab('wf-42')
+    attachSavedUnresolvedWorkflow()
+    stubHistoryWithWorkflowListing({ ...unresolvedTargetChat, listing: 503 })
+    await openUnresolvedChatOnStartup()
+    const transcriptReadsAtStartup = transcriptReads()
+    let answerListing = (_status: number) => {}
+    stubHistoryWithWorkflowListing({
+      ...unresolvedTargetChat,
+      listing: new Promise<number>((resolve) => {
+        answerListing = resolve
+      })
+    })
+    await clickUnresolvedChatInHistory()
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.backToPreviousChat')
+      })
+    )
+
+    await screen.findAllByText('Historical prompt')
+    expect(
+      screen.queryByRole('heading', { name: i18n.global.t('agent.history') })
+    ).toBeNull()
+    expect(transcriptReads()).toBe(transcriptReadsAtStartup)
+
+    answerListing(200)
+    await setImmediate()
+
+    expect(workflowPicker()).toHaveTextContent(
+      i18n.global.t('agent.selectWorkflowForAgent')
+    )
+    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
+    expect(workflowStore.activeWorkflow?.path).toBe(current.path)
+  })
+
   it('reuses a listed unresolved chat from its Current row without restoring its workflow again', async () => {
     makeTab('wf-42')
     stubHistoryWithWorkflowListing(unresolvedTargetChat)
     const reads = () => ({
-      transcript: fetchRequests({ method: 'GET', url: /\/messages/ }).length,
+      transcript: transcriptReads(),
       workflows: fetchRequests({ method: 'GET', url: /\/workflows/ }).length
     })
     await openUnresolvedChatOnStartup()
