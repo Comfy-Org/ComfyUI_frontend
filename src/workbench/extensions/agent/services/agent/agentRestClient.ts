@@ -219,13 +219,52 @@ export interface PostMessageInput {
 }
 
 /**
- * The turn POST body, plus `client_message_id`.
+ * The turn POST body, plus `client_message_id` and `frontend_build_sha`.
  *
  * Widened here rather than in `agentApiSchema.ts` because the generated types are
  * published from the cloud repo's `openapi.yaml`, so the field is only typed
  * locally until the next package release carries it. One line to delete then.
  */
-type TurnPostBody = AgentPostMessageRequest & { client_message_id?: string }
+type TurnPostBody = AgentPostMessageRequest & {
+  client_message_id?: string
+  frontend_build_sha?: string
+}
+
+/**
+ * The commit of the frontend bundle submitting this turn, reported so the
+ * server-emitted `agent_turn_completed` can be attributed to the build the
+ * browser is actually running.
+ *
+ * R-461: that event's `frontend_build_sha` property arrives empty on every
+ * event, because the agent service fills it from its own `FRONTEND_BUILD_SHA`
+ * configuration — a single process-wide constant, and unset in production.
+ * Production serves two frontend arms at once (a weighted canary beside
+ * stable), so no value the agent service knows about itself can separate them:
+ * a canary-only regression is diluted by the stable arm's share of the
+ * denominator before it can reach its alert threshold. The arm identity is a
+ * property of the submitting bundle, so the turn submission is the only place
+ * it can come from.
+ *
+ * Why the body and not a request header: the browser reaches the agent service
+ * through the ingest proxy, which deliberately forwards only `Content-Type`
+ * plus the trusted identity headers it injects itself, and proxies the body
+ * verbatim. A header would be dropped at that hop unless ingest's whitelist
+ * were widened to pass a client-controlled one, which is a security boundary
+ * doing its job. `client_message_id` above is the established precedent for a
+ * client-supplied, telemetry-only string riding this body.
+ *
+ * Named exactly like the PostHog property it lands on, so the wire field and
+ * the event property are the same name rather than a mapping to memorize.
+ *
+ * `__COMFYUI_FRONTEND_COMMIT__` is the literal `'unknown'` when the build had
+ * no git metadata to read, and empty only if a build injects an empty
+ * `FRONTEND_COMMIT_HASH`. Empty is omitted, since it is indistinguishable from
+ * sending nothing; `'unknown'` is deliberately sent, because it separates "this
+ * client does not report its build" from "it reports, and this build has no
+ * commit identity" — which is what tells a reader whether the reporting path
+ * itself works.
+ */
+const FRONTEND_BUILD_SHA = __COMFYUI_FRONTEND_COMMIT__ || undefined
 
 /**
  * Drops keys whose value is `undefined` so an absent optional is omitted from the
@@ -578,7 +617,8 @@ export function createAgentRestClient() {
       attachments: req.attachments,
       draft: req.draft && { content: req.draft.content },
       current_tab_unbound: req.currentTabUnbound,
-      client_message_id: req.clientMessageId
+      client_message_id: req.clientMessageId,
+      frontend_build_sha: FRONTEND_BUILD_SHA
     })
     return request(
       'post_thread_message',
