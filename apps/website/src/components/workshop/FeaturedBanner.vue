@@ -68,8 +68,6 @@ const previewSrc = usePreviewVideo(video, () => active.value?.media?.url, {
     class="relative isolate overflow-hidden rounded-3xl border border-transparency-white-t8"
     data-testid="section-featured"
   >
-    <!-- The floor is the tallest slide, a name that needs two lines, so the
-      frame is the same on every tab while a name that fits keeps to one. -->
     <div
       class="group relative flex min-h-72 short:min-h-60 sm:short:min-h-65"
       data-testid="featured-slide"
@@ -131,14 +129,14 @@ const previewSrc = usePreviewVideo(video, () => active.value?.media?.url, {
         </div>
 
         <h2
-          class="line-clamp-2 text-2xl font-bold text-balance text-primary-warm-white lg:text-3xl"
+          class="line-clamp-2 text-xl font-bold text-balance text-primary-warm-white lg:text-2xl"
         >
           {{ active.title }}
         </h2>
 
         <p
           v-if="active.summary"
-          class="line-clamp-1 max-w-prose shrink-0 text-content-secondary short:hidden"
+          class="line-clamp-1 max-w-prose shrink-0 text-sm text-content-secondary"
         >
           {{ active.summary }}
         </p>

@@ -49,7 +49,11 @@ test('workflow launch groups lead to the existing shared form', async ({
     )
   ).toBeVisible()
   const catalogue = page.getByTestId('workflow-catalogue')
-  await expect(catalogue.getByRole('heading', { level: 2 })).toHaveText([
+  await expect(
+    catalogue
+      .getByTestId(/^workflow-section-/)
+      .getByRole('heading', { level: 2 })
+  ).toHaveText([
     'Create & edit videos',
     'Animate characters',
     'Create product photos & ads',
@@ -65,7 +69,7 @@ test('workflow launch groups lead to the existing shared form', async ({
   await expect(catalogue.getByRole('button', { name: /See all/ })).toHaveCount(
     0
   )
-  await expect(catalogue.getByTestId('featured-pagination')).toHaveCount(0)
+  await expect(catalogue.getByTestId('section-featured')).toBeVisible()
   await expect(page.getByTestId('browse-all-end')).toHaveCount(0)
   await expect(
     catalogue
@@ -392,9 +396,7 @@ test('the workflows narrow by what they start from and what they make, from the 
   ])
   await dialog.getByRole('tab', { name: 'Output' }).click()
   await dialog.getByRole('button', { name: 'Image 16' }).click()
-  await expect(page.getByTestId('workshop-filter-chips')).toContainText(
-    'Image output'
-  )
+  await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
   await expect(outcomes).toHaveCount(16)
 
   await expect(dialog.getByRole('tab')).toHaveText([/^Output/, 'Models'])

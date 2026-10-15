@@ -1,15 +1,6 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import {
-  computed,
-  nextTick,
-  onMounted,
-  ref,
-  shallowRef,
-  useTemplateRef,
-  watch
-} from 'vue'
-import type { ComponentExposed } from 'vue-component-type-helpers'
+import { computed, nextTick, onMounted, ref, shallowRef, watch } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import type {
@@ -73,14 +64,14 @@ import { WORKFLOW_COLLECTIONS } from '@/lib/workshop/workflow-catalogue-mock-dat
 import type { WorkflowCatalogueMock } from '@/lib/workshop/workflow-catalogue-mock'
 import { fetchWorkflowCatalogueMock } from '@/lib/workshop/workflow-catalogue-mock'
 import { usePreviewSwitch } from '@/lib/workshop/preview-switches'
-import { workflowFeatures } from '@/lib/workshop/catalogue-features'
+import { modelSlides } from '@/lib/workshop/featured-slides'
 import CatalogueHero from './CatalogueHero.vue'
+import FeaturedBanner from './FeaturedBanner.vue'
+import type { FeaturedSlide } from './FeaturedBanner.vue'
 import CatalogueShowMore from './CatalogueShowMore.vue'
 import HubChoiceSidebar from './HubChoiceSidebar.vue'
 import WorkflowCategoryTabs from './WorkflowCategoryTabs.vue'
 import WorkflowCollectionChips from './WorkflowCollectionChips.vue'
-import type { FilterChip } from './WorkshopFilterChips.vue'
-import WorkshopFilterChips from './WorkshopFilterChips.vue'
 import type { FacetMenuOption } from './WorkshopFilterMenu.vue'
 import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
@@ -105,12 +96,21 @@ const inputs = ref<Modality[]>([])
 const outputs = ref<Modality[]>([])
 const runsOn = ref<string[]>([])
 const sort = ref<SortOrder>('popular')
-const filterMenu =
-  useTemplateRef<ComponentExposed<typeof WorkshopFilterMenu>>('filterMenu')
 
 const language = locale === 'zh-CN' ? locale : 'en'
 const categories = computed(() => workflowCategories(models, language))
-const features = computed(() => workflowFeatures(models, locale))
+const featuredSlides = computed(() =>
+  modelSlides(
+    models.filter((model) => model.categoryHighlight),
+    locale
+  )
+)
+function openFeatured(slide: FeaturedSlide, position: number) {
+  captureHubItemClick(
+    { kind: 'workflow', slug: slide.key },
+    { surface: 'workflows', source: 'featured_banner', position }
+  )
+}
 const flatGrid = usePreviewSwitch('hub-workflows-flat')
 const modalityTaskOn = usePreviewSwitch('hub-workflows-modality-task')
 const mockSwitch = usePreviewSwitch('hub-workflows-full-catalogue-mock')
@@ -416,6 +416,16 @@ const visible = computed(() => {
 })
 const { shown, total, hasMore, showMore } = usePagedList(visible)
 
+const browsing = computed(
+  () =>
+    !query.value.trim() &&
+    !inputs.value.length &&
+    !outputs.value.length &&
+    !runsOn.value.length &&
+    collection.value === 'all' &&
+    modalityTask.value === 'all'
+)
+
 const sectioned = computed(
   () =>
     !flatGrid.value &&
@@ -430,37 +440,6 @@ const sections = computed(() =>
     ? workflowGoalRows(visible.value, t)
     : workflowSections(visible.value, language)
 )
-
-// What narrowed the list stays legible next to it, so a reader can take one
-// choice off without reopening the menu that made it.
-const chips = computed<FilterChip[]>(() => [
-  ...inputs.value.map((media) => ({
-    key: `input:${media}`,
-    label: t('workshop.filter.inputChip', {
-      media: t(`workshop.filter.${media}`)
-    })
-  })),
-  ...outputs.value.map((media) => ({
-    key: `output:${media}`,
-    label: t('workshop.filter.outputChip', {
-      media: t(`workshop.filter.${media}`)
-    })
-  })),
-  ...runsOn.value.map((name) => ({
-    key: `model:${name}`,
-    label: t('workshop.filter.runsOn', { model: name })
-  }))
-])
-
-function removeChip(key: string) {
-  const [kind, ...rest] = key.split(':')
-  const value = rest.join(':')
-  if (kind === 'input')
-    inputs.value = inputs.value.filter((media) => media !== value)
-  else if (kind === 'output')
-    outputs.value = outputs.value.filter((media) => media !== value)
-  else runsOn.value = runsOn.value.filter((name) => name !== value)
-}
 
 function clearFilters() {
   inputs.value = []
@@ -483,7 +462,7 @@ function clear() {
   <CatalogueHero
     :title="t('workshop.hub.workflows')"
     :subtitle="t('workshop.catalogue.workflowsSubtitle')"
-    :features
+    :features="[]"
     :features-label="t('workshop.featured.workflowsLabel')"
     :locale
     data-testid="workflows-hub-hero"
@@ -548,7 +527,6 @@ function clear() {
             @submit="submitSearch"
           />
           <WorkshopFilterMenu
-            ref="filterMenu"
             v-model:inputs="inputs"
             v-model:outputs="outputs"
             v-model:models="runsOn"
@@ -579,12 +557,13 @@ function clear() {
           :chips="collectionEntries"
           :label="t('workshop.workflowCollections.label')"
         />
-        <WorkshopFilterChips
-          :chips
+        <FeaturedBanner
+          v-if="browsing && featuredSlides.length"
+          :slides="featuredSlides"
           :locale
-          @remove="removeChip"
-          @clear="clearFilters"
-          @emptied="filterMenu?.focus()"
+          :autoplay="false"
+          class="mb-10 short:mb-6"
+          @open="openFeatured"
         />
 
         <div v-if="sectioned" class="flex flex-col gap-12">

@@ -101,21 +101,26 @@ async function navigateObservingCrossfade(
   }
 }
 
-test('leads the Workflows page with a featured workflow to open', async ({
+test('leads the Workflows catalogue with a featured workflow to open', async ({
   page
 }) => {
   await page.goto('/hub/workflows/')
-  const hero = page.getByTestId('workflows-hub-hero')
   await expect(
-    hero.getByRole('heading', { level: 1, name: 'Workflows', exact: true })
+    page
+      .getByTestId('workflows-hub-hero')
+      .getByRole('heading', { level: 1, name: 'Workflows', exact: true })
   ).toBeVisible()
-  const card = hero.getByRole('region', { name: 'Featured workflows' })
-  await expect(card.getByTestId('featured-badge')).toHaveCount(0)
-  await expect(card).toContainText('Comfy workflow')
-  const href = await card.getByTestId('featured-title').getAttribute('href')
+  const banner = page
+    .getByTestId('workflow-catalogue')
+    .getByTestId('section-featured')
+  const href = await banner
+    .getByTestId('featured-slide-link')
+    .getAttribute('href')
   if (!href) throw new Error('The featured workflow has no page')
-  await expect(card.getByTestId('featured-cta')).toHaveAttribute('href', href)
-  await expect(card.getByTestId('featured-cta')).toHaveText(/Open workflow/i)
+  await expect(banner.getByRole('link', { name: 'Try now' })).toHaveAttribute(
+    'href',
+    href
+  )
 })
 
 for (const reducedMotion of ['no-preference', 'reduce'] as const) {

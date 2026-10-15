@@ -294,7 +294,6 @@ describe('WorkflowCatalogue categories', () => {
     expect(listed()).toEqual(['animate', 'connect'])
     expect(sectionHeadings()).toEqual(['videos section'])
     expect(location.search).toBe('?category=image-to-video')
-    expect(screen.queryByTestId('workshop-filter-chips')).toBeNull()
 
     await user.click(within(sidebar()).getByRole('tab', { name: /^All/ }))
     expect(listed()).toEqual(ALL)
@@ -470,25 +469,18 @@ describe('WorkflowCatalogue filters', () => {
     expect(listed()).toEqual(['animate', 'connect'])
   })
 
-  it('names each choice as a chip and takes off only the one pressed', async () => {
+  it('keeps the chosen filters in the Filters menu, with no row of chips', async () => {
     const user = userEvent.setup()
     render(WorkflowCatalogue, { props: { models } })
     await choose(user, 'Output', 'Video')
     await choose(user, 'Model', 'SeedVR2')
-    expect(screen.getByTestId('workshop-filter-chips')).toHaveTextContent(
-      'Video output'
-    )
 
-    await user.click(
-      screen.getByRole('button', { name: 'Remove Video output' })
-    )
-    expect(screen.getByTestId('workshop-filter-chips')).toHaveTextContent(
-      'Runs on SeedVR2'
-    )
-    expect(listed()).toEqual(['connect', 'restore'])
+    expect(screen.queryByTestId('workshop-filter-chips')).toBeNull()
+    expect(screen.getByTestId('workshop-filter-count')).toHaveTextContent('2')
+    expect(listed()).toEqual(['connect'])
   })
 
-  it('lets go of every filter from the chips and keeps the search and category', async () => {
+  it('lets go of every filter from the menu and keeps the search and category', async () => {
     history.replaceState(null, '', '/hub/workflows/?q=image&category=videos')
     const user = userEvent.setup()
     render(WorkflowCatalogue, { props: { models } })
@@ -498,11 +490,10 @@ describe('WorkflowCatalogue filters', () => {
 
     const dialog = await openFilters(user)
     await user.click(within(dialog).getByRole('button', { name: 'SeedVR2 1' }))
-    await user.keyboard('{Escape}')
     expect(listed()).toEqual(['connect'])
 
-    await user.click(screen.getByTestId('workshop-filter-chips-clear'))
-    expect(screen.getByRole('searchbox')).toHaveValue('image')
+    await user.click(within(dialog).getByTestId('workshop-filter-clear'))
+    expect(screen.getByDisplayValue('image')).toHaveRole('searchbox')
     expect(listed()).toEqual(['animate', 'connect'])
   })
 
