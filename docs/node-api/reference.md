@@ -632,8 +632,9 @@ URL builders retained for trusted host adapters are deprecated for pack use.
 
 - `list(folder: ModelFolder): Promise<string[]>`
 
-Returns distinct logical model names from one closed catalogue folder. The
-host selects the route and validates responses; unknown folders, malformed
+`ModelFolder` defines the closed set of catalogue folders. `list()` returns
+distinct logical model names. The host selects the route and validates
+responses; unknown folders, malformed
 replies and HTTP failures reject. It does not expose filesystem locations,
 library path indexes or arbitrary file reads. See
 [Model catalogues](./services.md#model-catalogues) for folders and bounds.
