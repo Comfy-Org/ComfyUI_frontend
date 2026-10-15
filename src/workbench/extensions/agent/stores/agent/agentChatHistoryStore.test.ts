@@ -85,6 +85,28 @@ describe('useAgentChatHistoryStore', () => {
     })
   })
 
+  it('lists the chats on one workflow, most recent first, with renames and without deleted chats', () => {
+    const store = useAgentChatHistoryStore()
+    store.replaceAll([
+      { ...session('older', 1), workflowId: 'wf-portrait' },
+      { ...session('elsewhere', 3), workflowId: 'wf-landscape' },
+      { ...session('newer', 2), workflowId: 'wf-portrait' },
+      { ...session('deleted', 4), workflowId: 'wf-portrait' },
+      session('unbound', 5)
+    ])
+    store.rename('older', 'Renamed portrait chat')
+    store.remove('deleted')
+
+    expect(
+      store.sessionsByWorkflow
+        .get('wf-portrait')
+        ?.map(({ id, title }) => [id, title])
+    ).toEqual([
+      ['newer', 'newer'],
+      ['older', 'Renamed portrait chat']
+    ])
+  })
+
   it('ignores a whitespace-only rename', () => {
     const store = useAgentChatHistoryStore()
     store.rename('a', '   ')

@@ -1,10 +1,21 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, shallowRef } from 'vue'
+
+export interface AgentTabChat {
+  id: string
+  title: string
+  updatedAt: number
+  /** The chat the agent panel is in. */
+  current?: boolean
+}
+
+/** Opens a listed chat, or a new chat on the workflow when `chatId` is null. */
+type AgentTabChatOpener = (workflowPath: string, chatId: string | null) => void
 
 /**
- * Cross-feature workflow-tab activity, keyed by tab path. Feature extensions
- * (the agent panel) write it; the topbar reads it, so the topbar never has to
- * import feature internals.
+ * Cross-feature workflow-tab activity, keyed by workflow path. Feature
+ * extensions (the agent panel) write it; the topbar and the Workflows sidebar
+ * read it, so neither has to import feature internals.
  */
 export const useWorkflowTabActivityStore = defineStore(
   'workflowTabActivity',
@@ -12,6 +23,27 @@ export const useWorkflowTabActivityStore = defineStore(
     const editingTabPath = ref<string | null>(null)
     const creatingTab = ref(false)
     const unseenModifiedPaths = ref<Set<string>>(new Set())
+    const agentChatsByPath = shallowRef<
+      ReadonlyMap<string, readonly AgentTabChat[]>
+    >(new Map())
+    /** Whether saved workflows offer agent chats at all. */
+    const agentChatsEnabled = ref(false)
+    let agentChatOpener: AgentTabChatOpener | null = null
+
+    /** `opener` is null while the agent can't be used. */
+    function setAgentChats(
+      chats: ReadonlyMap<string, readonly AgentTabChat[]>,
+      opener: AgentTabChatOpener | null
+    ): void {
+      agentChatsByPath.value = chats
+      agentChatOpener = opener
+      agentChatsEnabled.value = opener !== null
+    }
+
+    function openAgentChat(workflowPath: string, chatId: string | null): void {
+      agentChatOpener?.(workflowPath, chatId)
+    }
+
     function setEditing(path: string | null): void {
       editingTabPath.value = path
     }
@@ -46,6 +78,10 @@ export const useWorkflowTabActivityStore = defineStore(
       editingTabPath,
       creatingTab,
       unseenModifiedPaths,
+      agentChatsByPath,
+      agentChatsEnabled,
+      setAgentChats,
+      openAgentChat,
       setEditing,
       setCreating,
       markModified,

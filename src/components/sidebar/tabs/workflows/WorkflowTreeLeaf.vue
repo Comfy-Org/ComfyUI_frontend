@@ -1,5 +1,8 @@
 <template>
   <TreeExplorerTreeNode :node="node">
+    <template #trailing>
+      <WorkflowHoverCard v-if="node.data" :workflow="node.data" class="mr-1" />
+    </template>
     <template #actions>
       <Button
         variant="muted-textonly"
@@ -22,6 +25,7 @@
 import { computed } from 'vue'
 
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
+import WorkflowHoverCard from '@/components/topbar/WorkflowHoverCard.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowBookmarkStore } from '@/platform/workflow/management/stores/workflowStore'

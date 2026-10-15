@@ -1,3 +1,4 @@
+import { countBy } from 'es-toolkit'
 import { computed, ref } from 'vue'
 
 import { reportError } from '@/platform/telemetry/reportError'
@@ -51,8 +52,9 @@ export function useAgentWorkflowResolver({
     )
   })
 
-  async function refreshCloudWorkflowIds(): Promise<boolean> {
-    const generation = ++refreshGeneration
+  let latestRefresh: Promise<boolean> = Promise.resolve(false)
+
+  async function readCloudWorkflowIds(generation: number): Promise<boolean> {
     try {
       const { entries, complete } = await listCloudWorkflows()
       if (generation !== refreshGeneration) return false
@@ -70,6 +72,21 @@ export function useAgentWorkflowResolver({
       })
       return false
     }
+  }
+
+  /**
+   * Resolves with the outcome of the newest refresh: a call that a later one
+   * supersedes waits for it rather than reporting its own discarded result.
+   */
+  async function refreshCloudWorkflowIds(): Promise<boolean> {
+    latestRefresh = readCloudWorkflowIds(++refreshGeneration)
+    let refresh: Promise<boolean>
+    let listed: boolean
+    do {
+      refresh = latestRefresh
+      listed = await refresh
+    } while (refresh !== latestRefresh)
+    return listed
   }
 
   /**
@@ -111,6 +128,27 @@ export function useAgentWorkflowResolver({
       ? bound
       : undefined
   }
+
+  /**
+   * Cloud ids by path. An open tab resolves as `cloudIdFor` does; a closed
+   * workflow only by a name no other stored workflow shares.
+   */
+  const cloudIdsByPath = computed(() => {
+    const openPaths = new Set(workflows.openWorkflows.map(({ path }) => path))
+    const saved = workflows.workflows.filter(({ isTemporary }) => !isTemporary)
+    const savedNameCounts = countBy(saved, cloudWorkflowName)
+    const ids = new Map<string, string>()
+    for (const workflow of workflows.workflows) {
+      const name = cloudWorkflowName(workflow)
+      const id = openPaths.has(workflow.path)
+        ? cloudIdFor(workflow)
+        : !workflow.isTemporary && savedNameCounts[name] === 1
+          ? cloudIdsByName.value.get(name)
+          : undefined
+      if (id !== undefined) ids.set(workflow.path, id)
+    }
+    return ids
+  })
 
   function indexedNameFor(workflowId: string): string | undefined {
     return cloudIndex.value.find(({ id }) => id === workflowId)?.name
@@ -254,6 +292,7 @@ export function useAgentWorkflowResolver({
     refreshCloudWorkflowIds,
     forgetCloudWorkflowId,
     cloudIdFor,
+    cloudIdsByPath,
     cloudWorkflowName,
     boundOrOpenWorkflowFor,
     cachedOpenWorkflowFor,

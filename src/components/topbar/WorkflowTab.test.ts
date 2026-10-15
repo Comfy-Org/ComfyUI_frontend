@@ -1,5 +1,5 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { TabsList, TabsRoot } from 'reka-ui'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -30,27 +30,6 @@ vi.mock<unknown>(import('@/composables/useWorkflowActionsMenu'), () => ({
 
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
-vi.mock<unknown>(
-  import('@/renderer/core/thumbnail/useWorkflowThumbnail'),
-
-  () => ({
-    useWorkflowThumbnail: () => ({
-      getThumbnail: vi.fn(() => null)
-    })
-  })
-)
-
-vi.mock<unknown>(import('./WorkflowTabPopover.vue'), () => ({
-  default: {
-    render: () => null,
-    methods: {
-      showPopover: () => {},
-      hidePopover: () => {},
-      togglePopover: () => {}
-    }
-  }
-}))
-
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 type WorkflowTabProps = ComponentProps<typeof WorkflowTab>
@@ -71,8 +50,25 @@ const i18n = createI18n({
   locale: 'en',
   messages: {
     en: {
-      g: { close: 'Close', ...statusAriaLabels, ...agentAriaLabels },
-      agent: { targetForThisChat: 'Agent target for this chat' }
+      g: {
+        close: 'Close',
+        ...statusAriaLabels,
+        ...agentAriaLabels,
+        relativeTime: {
+          now: 'now',
+          hoursAgo: '{count}h ago',
+          daysAgo: '{count}d ago'
+        }
+      },
+      agent: {
+        targetForThisChat: 'Agent target for this chat',
+        workflowChatsCount:
+          '{count} chat on {workflowName} | {count} chats on {workflowName}',
+        newChatOnWorkflow: 'New chat on this workflow'
+      },
+      sideToolbar: {
+        workflowTab: { workflowPreview: 'Preview of {workflowName}' }
+      }
     }
   }
 })
@@ -280,6 +276,182 @@ describe('WorkflowTab - agent activity indicators', () => {
     await nextTick()
     expect(screen.getByTestId('workflow-dirty-indicator')).toBeTruthy()
     expect(screen.queryByTestId('agent-modified-indicator')).toBeNull()
+  })
+})
+
+describe('WorkflowTab - workflow card', () => {
+  const OPEN_DELAY_MS = 200
+  const CLOSE_DELAY_MS = 150
+
+  function setupHover() {
+    vi.useFakeTimers({ shouldAdvanceTime: false })
+    return userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+  }
+
+  function withChats(workflowOption: WorkflowOption, open = vi.fn()) {
+    useWorkflowTabActivityStore().setAgentChats(
+      new Map([
+        [
+          workflowOption.workflow.path,
+          [
+            { id: 'th-recent', title: 'Landscape chat', updatedAt: Date.now() },
+            {
+              id: 'th-older',
+              title: 'Older landscape chat',
+              updatedAt: Date.now() - 3 * 86_400_000
+            }
+          ]
+        ]
+      ]),
+      open
+    )
+    return open
+  }
+
+  it('opens on a hover anywhere on the tab and stays while the pointer is in it, without switching tabs', async () => {
+    const user = setupHover()
+    renderTab()
+
+    await user.hover(screen.getByTestId('close-workflow-button'))
+    await vi.advanceTimersByTimeAsync(OPEN_DELAY_MS)
+    const card = screen.getByRole('menu')
+    expect(within(card).getByText('test.json')).toBeVisible()
+
+    await user.hover(card)
+    await vi.advanceTimersByTimeAsync(CLOSE_DELAY_MS * 2)
+    expect(screen.getByRole('menu')).toBeInTheDocument()
+
+    await user.unhover(card)
+    await vi.advanceTimersByTimeAsync(CLOSE_DELAY_MS)
+    expect(screen.queryByRole('menu')).toBeNull()
+    expect(useWorkflowStore().activeWorkflow?.path).toBe(
+      '/workflows/other.json'
+    )
+  })
+
+  it('closes, and stays closed, once the tab is clicked', async () => {
+    const user = setupHover()
+    renderTab()
+    const tab = screen.getByRole('tab', { name: /test\.json/ })
+    await user.hover(tab)
+    await vi.advanceTimersByTimeAsync(OPEN_DELAY_MS)
+    expect(screen.getByRole('menu')).toBeInTheDocument()
+
+    await user.click(tab)
+    expect(screen.queryByRole('menu')).toBeNull()
+
+    await user.unhover(tab)
+    await user.hover(tab)
+    await user.click(tab)
+    await vi.advanceTimersByTimeAsync(OPEN_DELAY_MS * 2)
+    expect(screen.queryByRole('menu')).toBeNull()
+  })
+
+  it('opens from the chat indicator with the keyboard, focusing its chats, and returns focus on Escape', async () => {
+    const workflowOption = makeWorkflowOption()
+    withChats(workflowOption)
+    renderTab({ workflowOption })
+    const indicator = screen.getByRole('button', {
+      name: '2 chats on test.json'
+    })
+    indicator.focus()
+
+    await userEvent.keyboard('{Enter}')
+    expect(
+      screen.getByRole('menuitem', { name: /^Landscape chat/ })
+    ).toHaveFocus()
+
+    await userEvent.keyboard('{Escape}')
+    await vi.waitFor(() => expect(indicator).toHaveFocus())
+    expect(screen.queryByRole('menu')).toBeNull()
+  })
+
+  it('offers the tab’s chats and a new chat without switching tabs', async () => {
+    const workflowOption = makeWorkflowOption()
+    const open = withChats(workflowOption)
+    renderTab({ workflowOption })
+    const indicator = screen.getByRole('button', {
+      name: '2 chats on test.json'
+    })
+
+    indicator.focus()
+    await userEvent.keyboard('{Enter}')
+    expect(
+      screen.getAllByRole('menuitem').map((item) => item.textContent)
+    ).toEqual([
+      'Landscape chatnow',
+      'Older landscape chat3d ago',
+      'New chat on this workflow'
+    ])
+    await userEvent.click(
+      screen.getByRole('menuitem', { name: /^Older landscape chat/ })
+    )
+    indicator.focus()
+    await userEvent.keyboard('{Enter}')
+    await userEvent.click(
+      screen.getByRole('menuitem', { name: 'New chat on this workflow' })
+    )
+
+    expect(open.mock.calls).toEqual([
+      ['/workflows/test.json', 'th-older'],
+      ['/workflows/test.json', null]
+    ])
+    expect(useWorkflowStore().activeWorkflow?.path).toBe(
+      '/workflows/other.json'
+    )
+  })
+
+  it('dates each chat from when its card opens', async () => {
+    const workflowOption = makeWorkflowOption()
+    withChats(workflowOption)
+    renderTab({ workflowOption })
+    vi.setSystemTime(Date.now() + 2 * 3_600_000)
+
+    screen.getByRole('button', { name: '2 chats on test.json' }).focus()
+    await userEvent.keyboard('{Enter}')
+
+    expect(
+      screen.getByRole('menuitem', { name: /^Landscape chat/ })
+    ).toHaveTextContent('2h ago')
+  })
+
+  it('shows only a chat icon, keeping the chat count in its name', () => {
+    const workflowOption = makeWorkflowOption()
+    useWorkflowTabActivityStore().setAgentChats(
+      new Map([
+        [
+          workflowOption.workflow.path,
+          Array.from({ length: 12 }, (_, index) => ({
+            id: `th-${index}`,
+            title: `Chat ${index}`,
+            updatedAt: Date.now()
+          }))
+        ]
+      ]),
+      vi.fn()
+    )
+    renderTab({ workflowOption })
+
+    expect(
+      screen.getByRole('button', { name: '12 chats on test.json' })
+    ).not.toHaveTextContent(/\S/)
+  })
+
+  it('shows no chat indicator once the agent lists no chats for the tab', async () => {
+    const workflowOption = makeWorkflowOption()
+    const activity = useWorkflowTabActivityStore()
+    withChats(workflowOption)
+    renderTab({ workflowOption })
+    expect(
+      screen.getByRole('button', { name: '2 chats on test.json' })
+    ).toBeInTheDocument()
+
+    activity.setAgentChats(new Map(), vi.fn())
+    await nextTick()
+
+    expect(
+      screen.queryByRole('button', { name: /chats? on test\.json/ })
+    ).toBeNull()
   })
 })
 

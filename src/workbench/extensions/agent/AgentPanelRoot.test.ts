@@ -10,7 +10,15 @@ import type {
 } from '@comfyorg/ingest-types'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import type { Mocked } from 'vitest'
 import {
   computed,
@@ -268,6 +276,7 @@ import {
 } from './composables/agent/useAttachment'
 import { useBillingIdentity } from './composables/useBillingIdentity'
 import type { AgentChatEvent } from './services/agent/agentEventTransport'
+import { registerWorkflowAgentChatsTracker } from './services/agent/workflowAgentChatsTracker'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentConversationStore } from './stores/agent/agentConversationStore'
 import { getMinimapDecorations } from '@/platform/canvas/minimapDecorationRegistry'
@@ -8251,6 +8260,417 @@ describe('AgentPanelRoot workflow binding', () => {
         { workflow_id: 'wf-other', name: 'other' }
       ],
       workflow_references: []
+    })
+  })
+
+  describe('chats on workflow tabs and sidebar rows', () => {
+    const threadListRoute = /\/api\/agent\/threads(\?|$)/
+    const otherWorkflowThreads = [
+      agentThread({
+        id: 'th-other-older',
+        title: 'Older landscape chat',
+        last_message_at: '2026-10-01T10:00:00Z',
+        workflow_id: 'wf-other'
+      }),
+      agentThread({
+        id: 'th-other-recent',
+        title: 'Landscape chat',
+        last_message_at: '2026-10-08T10:00:00Z',
+        workflow_id: 'wf-other'
+      }),
+      agentThread({
+        id: 'th-target',
+        title: 'Another chat on the target',
+        last_message_at: '2026-10-09T10:00:00Z',
+        workflow_id: 'wf-42'
+      })
+    ]
+
+    function setupTargetAndOther() {
+      const {
+        target,
+        references: [other]
+      } = setupWorkflowContext({
+        targetId: 'wf-42',
+        references: [{ path: 'workflows/other.json', workflowId: 'wf-other' }]
+      })
+      return { target, other }
+    }
+
+    function tabChatTitles(path: string): string[] {
+      return (
+        useWorkflowTabActivityStore()
+          .agentChatsByPath.get(path)
+          ?.map(({ title }) => title) ?? []
+      )
+    }
+
+    function trackWorkflowChats(): void {
+      onTestFinished(registerWorkflowAgentChatsTracker(ref(true)))
+    }
+
+    function landscapeMessages(): Response {
+      return json(200, [
+        {
+          id: 'landscape-user',
+          thread_id: 'th-other-recent',
+          seq: 1,
+          role: 'user',
+          status: 'complete',
+          turn_id: 'landscape-turn',
+          workflow_id: 'wf-other',
+          content: { text: 'Earlier landscape request' }
+        }
+      ] satisfies AgentMessages)
+    }
+
+    async function renderWithOtherTabChats() {
+      const tabs = setupTargetAndOther()
+      mockMessagesEndpoint('wf-42', [], otherWorkflowThreads)
+      useAgentConversationStore().setThreadId('th-target-chat')
+      trackWorkflowChats()
+      const { unmount } = renderWithSelectedTarget()
+      await waitFor(() =>
+        expect(tabChatTitles(tabs.other.path)).toEqual([
+          'Landscape chat',
+          'Older landscape chat'
+        ])
+      )
+      return { ...tabs, unmount }
+    }
+
+    it('lists each open tab’s chats without touching the running turn, target or draft', async () => {
+      const { target, other } = setupTargetAndOther()
+      mockMessagesEndpoint('wf-42', [], otherWorkflowThreads)
+      trackWorkflowChats()
+      renderWithSelectedTarget()
+      await sendFromComposer('start editing current')
+      const textbox = screen.getByRole('textbox')
+      await userEvent.click(textbox)
+      await userEvent.paste('next idea')
+
+      workflowStore.activeWorkflow = other
+      await nextTick()
+
+      await waitFor(() =>
+        expect(tabChatTitles(other.path)).toEqual([
+          'Landscape chat',
+          'Older landscape chat'
+        ])
+      )
+      expect(tabChatTitles(target.path)).toEqual(['Another chat on the target'])
+      expect(screen.getByRole('button', { name: 'Stop' })).toBeInTheDocument()
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(target.path)
+      expect(useAgentConversationStore().threadId).toBe('th-1')
+      expect(textbox).toHaveTextContent('next idea')
+    })
+
+    it('opens a chat picked from a tab, with its workflow, and reads the list once', async () => {
+      const { other } = await renderWithOtherTabChats()
+      respondToFetch(/\/th-other-recent\/messages/, landscapeMessages)
+      expect(useAgentChatHistoryStore().activeId).toBe('th-target-chat')
+      const requestsBefore = fetchRequests(threadListRoute).length
+
+      useWorkflowTabActivityStore().openAgentChat(other.path, 'th-other-recent')
+
+      expect(
+        await screen.findByTestId('user-message-bubble')
+      ).toHaveTextContent('Earlier landscape request')
+      expect(useAgentChatHistoryStore().activeId).toBe('th-other-recent')
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(other.path)
+      expect(workflowStore.activeWorkflow?.path).toBe(other.path)
+      expect(
+        useWorkflowTabActivityStore()
+          .agentChatsByPath.get(other.path)
+          ?.map(({ title, current }) => ({ title, current }))
+      ).toEqual([
+        { title: 'Landscape chat', current: true },
+        { title: 'Older landscape chat', current: false }
+      ])
+      await vi.waitFor(() =>
+        expect(fetchRequests(threadListRoute)).toHaveLength(requestsBefore + 1)
+      )
+      await new Promise((resolve) => setTimeout(resolve))
+      expect(fetchRequests(threadListRoute)).toHaveLength(requestsBefore + 1)
+    })
+
+    it.for([
+      { outcome: 'opens', status: 200 },
+      { outcome: 'fails', status: 500 }
+    ])(
+      'shows the picked chat loading in place, then $outcome',
+      async ({ status }) => {
+        const { other } = await renderWithOtherTabChats()
+        let respond = (_response: Response) => {}
+        respondToFetch(
+          /\/th-other-recent\/messages/,
+          () =>
+            new Promise<Response>((resolve) => {
+              respond = resolve
+            })
+        )
+
+        useWorkflowTabActivityStore().openAgentChat(
+          other.path,
+          'th-other-recent'
+        )
+
+        expect(
+          await screen.findByText(i18n.global.t('agent.openingChat'))
+        ).toBeInTheDocument()
+        expect(
+          screen.getByRole('button', { name: 'Landscape chat' })
+        ).toBeDisabled()
+        expect(
+          screen.getByRole('button', {
+            name: i18n.global.t('agent.chatOptions')
+          })
+        ).toBeDisabled()
+        expect(
+          screen.queryByRole('heading', {
+            name: i18n.global.t('agent.history')
+          })
+        ).toBeNull()
+        expect(screen.queryByRole('textbox')).toBeNull()
+
+        respond(
+          status === 200
+            ? json(200, [])
+            : json(500, { error: 'internal server error' })
+        )
+
+        if (status === 200) {
+          await waitFor(() =>
+            expect(useAgentChatHistoryStore().activeId).toBe('th-other-recent')
+          )
+          expect(screen.getByRole('textbox')).toBeInTheDocument()
+          expect(
+            screen.getByRole('button', {
+              name: i18n.global.t('agent.chatOptions')
+            })
+          ).toBeEnabled()
+        } else {
+          expect(
+            await screen.findByText(i18n.global.t('agent.historyOpenFailed'))
+          ).toBeInTheDocument()
+          expect(
+            screen.getByRole('button', {
+              name: i18n.global.t('agent.backToPreviousChat')
+            })
+          ).toBeInTheDocument()
+        }
+      }
+    )
+
+    it('starts a new chat on a background tab after switching to it', async () => {
+      const { other } = await renderWithOtherTabChats()
+
+      useWorkflowTabActivityStore().openAgentChat(other.path, null)
+
+      await waitFor(() =>
+        expect(workflowStore.activeWorkflow?.path).toBe(other.path)
+      )
+      await waitFor(() =>
+        expect(useAgentConversationStore().threadId).toBeNull()
+      )
+      expect(useAgentPanelStore().followsVisibleWorkflow).toBe(true)
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(other.path)
+    })
+
+    it('leaves the panel alone when the user moves on while that tab opens', async () => {
+      const { other } = await renderWithOtherTabChats()
+      let finishOpening = () => {}
+      const opening = new Promise<void>((resolve) => {
+        finishOpening = resolve
+      })
+      const openWorkflow = vi.mocked(useWorkflowService().openWorkflow)
+      const open = openWorkflow.getMockImplementation()
+      assert.exists(open)
+      openWorkflow.mockImplementationOnce(async (...args) => {
+        await opening
+        return open(...args)
+      })
+
+      useWorkflowTabActivityStore().openAgentChat(other.path, null)
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.showChatHistory')
+        })
+      )
+      finishOpening()
+
+      await waitFor(() =>
+        expect(workflowStore.activeWorkflow?.path).toBe(other.path)
+      )
+      await new Promise((resolve) => setTimeout(resolve))
+      expect(
+        screen.getByRole('heading', { name: i18n.global.t('agent.history') })
+      ).toBeInTheDocument()
+      expect(useAgentConversationStore().threadId).toBe('th-target-chat')
+    })
+
+    it('keeps the open panel on its current chat when it is picked, returning from Chat history without loading it again', async () => {
+      const { target } = await renderWithOtherTabChats()
+      const messageReads = fetchRequests(/\/th-target-chat\/messages/).length
+      const historyHeading = () =>
+        screen.queryByRole('heading', { name: i18n.global.t('agent.history') })
+
+      useWorkflowTabActivityStore().openAgentChat(target.path, 'th-target-chat')
+      await nextTick()
+      expect(screen.getByRole('textbox')).toBeInTheDocument()
+
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.showChatHistory')
+        })
+      )
+      expect(historyHeading()).toBeInTheDocument()
+      useWorkflowTabActivityStore().openAgentChat(target.path, 'th-target-chat')
+
+      await waitFor(() => expect(historyHeading()).toBeNull())
+      expect(screen.getByRole('textbox')).toBeInTheDocument()
+      expect(screen.queryByText(i18n.global.t('agent.openingChat'))).toBeNull()
+      expect(useAgentConversationStore().threadId).toBe('th-target-chat')
+      expect(fetchRequests(/\/th-target-chat\/messages/)).toHaveLength(
+        messageReads
+      )
+    })
+
+    it('reopens the closed panel on its current chat without opening the chat again', async () => {
+      const { other, unmount } = await renderWithOtherTabChats()
+      respondToFetch(/\/th-other-recent\/messages/, landscapeMessages)
+      useWorkflowTabActivityStore().openAgentChat(other.path, 'th-other-recent')
+      await waitFor(() =>
+        expect(useAgentChatHistoryStore().activeId).toBe('th-other-recent')
+      )
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.showChatHistory')
+        })
+      )
+      unmount()
+      useAgentPanelStore().close('topbar_button')
+      respondToFetch(
+        /\/th-other-recent\/messages/,
+        () => new Promise<Response>(() => {})
+      )
+
+      useWorkflowTabActivityStore().openAgentChat(other.path, 'th-other-recent')
+      expect(useAgentPanelStore().isOpen).toBe(true)
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+      expect(
+        await screen.findByTestId('user-message-bubble')
+      ).toHaveTextContent('Earlier landscape request')
+      expect(screen.queryByText(i18n.global.t('agent.openingChat'))).toBeNull()
+      expect(
+        screen.queryByRole('heading', { name: i18n.global.t('agent.history') })
+      ).toBeNull()
+    })
+
+    it('shows the picked chat as a failed Chat history row after the panel closes mid-open', async () => {
+      const { other, unmount } = await renderWithOtherTabChats()
+      respondToFetch(
+        /\/th-other-recent\/messages/,
+        () => new Promise<Response>(() => {})
+      )
+      useWorkflowTabActivityStore().openAgentChat(other.path, 'th-other-recent')
+      await screen.findByText(i18n.global.t('agent.openingChat'))
+
+      unmount()
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+      expect(
+        await screen.findByText(i18n.global.t('agent.historyOpenFailed'))
+      ).toBeInTheDocument()
+      expect(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.backToPreviousChat')
+        })
+      ).toBeInTheDocument()
+    })
+
+    async function trackChatOnClosedWorkflow() {
+      setupTargetAndOther()
+      const closed = createMockLoadedWorkflow({
+        instanceId: 'workflows/closed.json',
+        path: 'workflows/closed.json',
+        directory: 'workflows',
+        filename: 'closed',
+        suffix: 'json',
+        isTemporary: false,
+        isModified: false,
+        activeState: null
+      })
+      closed.load = vi.fn(async () => closed)
+      workflowStore.attachWorkflow(closed)
+      mockMessagesEndpoint(
+        'wf-42',
+        [{ id: 'wf-closed', name: 'closed' }],
+        [
+          agentThread({
+            id: 'th-closed',
+            title: 'Chat on a closed workflow',
+            last_message_at: '2026-10-08T10:00:00Z',
+            workflow_id: 'wf-closed'
+          })
+        ]
+      )
+      trackWorkflowChats()
+      await waitFor(() =>
+        expect(tabChatTitles(closed.path)).toEqual([
+          'Chat on a closed workflow'
+        ])
+      )
+      return closed
+    }
+
+    it('starts a new chat on a closed workflow picked while the panel is closed', async () => {
+      const closed = await trackChatOnClosedWorkflow()
+
+      useWorkflowTabActivityStore().openAgentChat(closed.path, null)
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+      await waitFor(() =>
+        expect(workflowStore.activeWorkflow?.path).toBe(closed.path)
+      )
+      expect(useAgentConversationStore().threadId).toBeNull()
+      expect(useAgentPanelStore().followsVisibleWorkflow).toBe(true)
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(closed.path)
+    })
+
+    it('opens a chat on a closed workflow picked while the panel is closed, opening its workflow', async () => {
+      const closed = await trackChatOnClosedWorkflow()
+      respondToFetch(/\/th-closed\/messages/, () =>
+        json(200, [
+          {
+            id: 'closed-user',
+            thread_id: 'th-closed',
+            seq: 1,
+            role: 'user',
+            status: 'complete',
+            turn_id: 'closed-turn',
+            workflow_id: 'wf-closed',
+            content: { text: 'Earlier request on the closed workflow' }
+          }
+        ] satisfies AgentMessages)
+      )
+      localStorage.setItem(StorageKeys.agentThread('personal'), 'th-last')
+
+      useWorkflowTabActivityStore().openAgentChat(closed.path, 'th-closed')
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+      expect(
+        await screen.findByTestId('user-message-bubble')
+      ).toHaveTextContent('Earlier request on the closed workflow')
+      await waitFor(() =>
+        expect(workflowStore.activeWorkflow?.path).toBe(closed.path)
+      )
+      expect(workflowStore.openWorkflows.map(({ path }) => path)).toContain(
+        closed.path
+      )
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(closed.path)
+      expect(fetchRequests(/\/th-last\/messages/)).toHaveLength(0)
     })
   })
 

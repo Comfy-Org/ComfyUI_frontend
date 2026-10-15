@@ -72,6 +72,13 @@
                     >*</span
                   >
                 </template>
+                <template #trailing="{ node: treeNode }">
+                  <WorkflowHoverCard
+                    v-if="treeNode.data"
+                    :workflow="treeNode.data"
+                    class="mr-1"
+                  />
+                </template>
                 <template #actions="{ node: treeNode }">
                   <Button
                     class="close-workflow-button"
@@ -165,6 +172,7 @@ import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import type { MenuItem } from '@/components/ui/menu/types'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import WorkflowTreeLeaf from '@/components/sidebar/tabs/workflows/WorkflowTreeLeaf.vue'
+import WorkflowHoverCard from '@/components/topbar/WorkflowHoverCard.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useAppMode } from '@/composables/useAppMode'

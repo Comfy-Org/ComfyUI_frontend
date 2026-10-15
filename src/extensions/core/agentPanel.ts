@@ -1,6 +1,7 @@
 import { whenever } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, ref, watch } from 'vue'
+import type { Ref } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -131,6 +132,27 @@ function prepareAutoShow(
   }
 }
 
+function trackWorkflowAgentChatsOnceAvailable(
+  available: Readonly<Ref<boolean>>
+): void {
+  whenever(
+    available,
+    () => {
+      void import('@/workbench/extensions/agent/services/agent/workflowAgentChatsTracker')
+        .then(({ registerWorkflowAgentChatsTracker }) => {
+          registerWorkflowAgentChatsTracker(available)
+        })
+        .catch((error: unknown) => {
+          reportError(error, {
+            surface: 'agent',
+            errorType: 'failure_loading_agent_workflow_chats'
+          })
+        })
+    },
+    { once: true }
+  )
+}
+
 let registered = false
 
 export function registerAgentPanelExtension(): void {
@@ -175,6 +197,11 @@ export function registerAgentPanelExtension(): void {
       const onboardingTourStore = useOnboardingTourStore()
       const dialogStore = useDialogStore()
       registerWorkflowTabActivityTracker(enabled)
+      trackWorkflowAgentChatsOnceAvailable(
+        computed(
+          () => enabled.value && isLoggedIn.value && consentStore.accepted
+        )
+      )
 
       watch(
         () => consentStore.accepted,

@@ -1193,9 +1193,7 @@ test.describe('Viewport settings', () => {
       await comfyPage.canvasOps.waitForViewToSettle()
       await comfyMouse.move(DefaultGraphPositions.emptySpace)
 
-      await expect(
-        comfyPage.page.locator('.workflow-popover-fade')
-      ).toHaveCount(0)
+      await expect(comfyPage.menu.topbar.workflowPopover).toHaveCount(0)
     }
 
     await test.step('Save two workflow tabs', async () => {

@@ -172,6 +172,11 @@ const targetNotice = computed(() => {
 const panelStore = useAgentPanelStore()
 const { view } = storeToRefs(panelStore)
 const showHistory = computed(() => view.value.screen === 'history')
+const openingChat = computed(() => view.value.screen === 'opening')
+const showComposer = computed(() => !showHistory.value && !openingChat.value)
+const showTopFreeUseNotice = computed(
+  () => !showHistory.value && freeUsePlacement === 'top-banner'
+)
 const loadingHistoryId = computed(() =>
   view.value.screen === 'history' && view.value.selection.status === 'loading'
     ? view.value.selection.id
@@ -204,32 +209,56 @@ function onOpenHistory(): void {
   }
   emit('openHistory')
 }
-async function onSelectHistory(id: string): Promise<void> {
-  if (view.value.screen !== 'history' || loadingHistoryId.value === id) return
-  const opening: AgentPanelView = {
-    ...view.value,
-    selection: { status: 'loading', id }
-  }
-  view.value = opening
-  const isCurrent = () => view.value === opening
+async function runSelection(
+  id: string,
+  pending: AgentPanelView,
+  failed: AgentPanelView
+): Promise<void> {
+  view.value = pending
+  const isCurrent = () => view.value === pending
   let opened = false
   try {
     opened = await selectHistory(id, isCurrent)
   } finally {
-    if (isCurrent())
-      view.value = opened
-        ? { screen: 'chat' }
-        : { ...opening, selection: { status: 'failed', id } }
+    if (isCurrent()) view.value = opened ? { screen: 'chat' } : failed
   }
+}
+
+async function onSelectHistory(id: string): Promise<void> {
+  if (view.value.screen !== 'history' || loadingHistoryId.value === id) return
+  await runSelection(
+    id,
+    { ...view.value, selection: { status: 'loading', id } },
+    { ...view.value, selection: { status: 'failed', id } }
+  )
+}
+
+const returnsToCurrentChat = computed(
+  () =>
+    view.value.screen === 'history' &&
+    sessionId === view.value.previousThreadId &&
+    (view.value.selection.status === 'idle' || currentChatReady)
+)
+
+async function openChat(id: string): Promise<void> {
+  if (id === sessionId) {
+    if (returnsToCurrentChat.value) view.value = { screen: 'chat' }
+    return
+  }
+  await runSelection(
+    id,
+    { screen: 'opening', id, previousThreadId: sessionId },
+    {
+      screen: 'history',
+      previousThreadId: sessionId,
+      selection: { status: 'failed', id }
+    }
+  )
 }
 
 function onBackFromHistory(): void {
   if (view.value.screen !== 'history') return
-  if (
-    sessionId === view.value.previousThreadId &&
-    (view.value.selection.status === 'idle' || currentChatReady)
-  )
-    view.value = { screen: 'chat' }
+  if (returnsToCurrentChat.value) view.value = { screen: 'chat' }
   else if (view.value.previousThreadId === null) onNewChat()
   else void onSelectHistory(view.value.previousThreadId)
 }
@@ -280,6 +309,17 @@ function onWorkflowTargetRequired(): void {
 const { t } = useI18n()
 
 const sessionTitle = computed(() => customTitle || deriveSessionTitle(entries))
+const headerTitle = computed(() => {
+  const current = view.value
+  const openingTitle =
+    current.screen === 'opening'
+      ? Object.values(historyGroups)
+          .flat()
+          .find(({ id }) => id === current.id)?.title
+      : undefined
+  return openingTitle ?? (sessionTitle.value || t('agent.newChatTitle'))
+})
+const renameDisabled = computed(() => sessionId === null || openingChat.value)
 
 const renaming = ref(false)
 const renameDraft = ref('')
@@ -348,7 +388,13 @@ function onComposerSend(
   else emit('send', text, attachments)
 }
 
-defineExpose({ addAttachment, updateAttachment, removeAttachment })
+defineExpose({
+  addAttachment,
+  updateAttachment,
+  removeAttachment,
+  openChat,
+  startNewChat: onNewChat
+})
 </script>
 
 <template>
@@ -364,7 +410,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
     />
 
     <FreeUseNotice
-      v-if="!showHistory && freeUsePlacement === 'top-banner'"
+      v-if="showTopFreeUseNotice"
       placement="top-banner"
       @notice="emit('freeUseNotice', $event)"
     />
@@ -420,13 +466,11 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             type="button"
             variant="muted-textonly"
             size="sm"
-            :disabled="sessionId === null"
+            :disabled="renameDisabled"
             class="min-w-0 justify-start text-left"
             @click="startRename"
           >
-            <span class="min-w-0 truncate">{{
-              sessionTitle || t('agent.newChatTitle')
-            }}</span>
+            <span class="min-w-0 truncate">{{ headerTitle }}</span>
           </Button>
           <Menu
             v-if="sessionId"
@@ -443,6 +487,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
                 variant="muted-textonly"
                 size="icon-sm"
                 :aria-label="t('agent.chatOptions')"
+                :disabled="openingChat"
                 class="size-6 shrink-0"
               >
                 <span class="icon-[lucide--chevron-down] size-3" />
@@ -453,8 +498,19 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
       </div>
 
       <div class="min-h-0 flex-1">
+        <div
+          v-if="openingChat"
+          role="status"
+          class="flex h-full items-center justify-center gap-2 text-sm text-muted-foreground"
+        >
+          <span
+            aria-hidden="true"
+            class="icon-[lucide--loader-circle] size-4 motion-safe:animate-spin"
+          />
+          {{ t('agent.openingChat') }}
+        </div>
         <EmptyState
-          v-if="!entries.length"
+          v-else-if="!entries.length"
           :user-name
           :assignment="starterPromptAssignment"
           :attribute-experiment="attributeStarterPromptExperiment"
@@ -494,7 +550,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
       </div>
     </template>
 
-    <template v-if="!showHistory">
+    <template v-if="showComposer">
       <slot name="instrument" />
       <footer data-testid="agent-panel-footer" class="shrink-0 py-3">
         <div
