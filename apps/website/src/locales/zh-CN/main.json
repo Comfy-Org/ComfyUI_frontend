@@ -4938,7 +4938,23 @@
         "playground": "Playground"
       },
       "variablePrice": "费用取决于模型和设置。",
-      "versions": "{n} 个版本"
+      "versions": "{n} 个版本",
+      "providerTable": {
+        "subtitle": "比较 {provider} 的其他模型。价格为默认设置下的价格；分辨率和时长显示每个模型提供的完整范围。",
+        "model": "模型",
+        "price": "价格",
+        "resolution": "分辨率",
+        "duration": "时长",
+        "durationRange": "{min} – {max} 秒",
+        "durationOne": "{n} 秒",
+        "durationUpTo": "最长 {max} 秒"
+      },
+      "paths": {
+        "label": "使用此模型的方式",
+        "cloud": "在 Cloud 中打开",
+        "api": "通过 API 使用"
+      },
+      "usedBy": "使用 {name} 的工作流"
     },
     "models": {
       "heading": "模型"
@@ -5243,7 +5259,8 @@
       "tryCloud": "在 Cloud 中试用",
       "zoomIn": "放大",
       "zoomOut": "缩小",
-      "zoomReset": "重置"
+      "zoomReset": "重置",
+      "opensInNewTab": "（在新标签页中打开）"
     }
   }
 }

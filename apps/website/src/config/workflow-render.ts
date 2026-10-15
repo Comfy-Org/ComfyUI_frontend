@@ -113,6 +113,17 @@ async function uploadInput(
   return uploadFile(source, signal)
 }
 
+export function workflowRunsHere(
+  model: Pick<
+    WorkflowWorkshopModelDetail,
+    'type' | 'incompleteReason' | 'workflow'
+  >
+): boolean {
+  return (
+    model.type === 'CLOUD' && !model.incompleteReason && !!model.workflow.cloud
+  )
+}
+
 export async function prepareWorkflowRender(
   model: WorkflowWorkshopModelDetail,
   inputs: FormValues,

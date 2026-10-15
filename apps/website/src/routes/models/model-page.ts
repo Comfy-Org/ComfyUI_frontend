@@ -1,5 +1,9 @@
 import type { WorkshopModel } from '@/config/models-catalogue'
-import { catalogSearch, useCaseFor } from '@/config/models-catalogue'
+import {
+  catalogSearch,
+  sortWorkshopModels,
+  useCaseFor
+} from '@/config/models-catalogue'
 import { getWorkshopModel } from '@/config/workshop-browse-content'
 import {
   getWorkshopPageDetail,
@@ -11,6 +15,8 @@ import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import { describesCapability } from '@/lib/workshop/model-tags'
 import { useCaseLabelKey } from '@/lib/workshop/use-case-label'
+import { workflowsUsingModel } from '@/lib/workshop/model-workflows'
+import { durationsIn, resolutionRange } from '@/lib/workshop/model-ranges'
 
 const TAGS_SHOWN = 3
 
@@ -26,6 +32,42 @@ export function modelOgImage(
   return model.thumbnail?.kind === 'image'
     ? model.thumbnail.url
     : model.thumbnail?.poster
+}
+
+async function providerModelRows(model: WorkshopModel) {
+  const { provider } = model
+  if (!provider) return []
+  const others = sortWorkshopModels(
+    workshopPages.filter(
+      (other) =>
+        other.routerId !== undefined &&
+        other.href !== undefined &&
+        other.slug !== model.slug &&
+        other.provider === provider
+    ),
+    'popular'
+  )
+  return Promise.all(
+    others.map(async (other) => {
+      const duration = durationsIn(
+        getWorkshopPageDetail(other.slug)?.execution?.inputSchema
+      )
+      const resolution = resolutionRange(other.resolutions)
+      const price = await estimateWorkshopNodePrice(
+        other,
+        other.useCases?.length === 1 ? other.useCases[0] : undefined
+      )
+      return {
+        slug: other.slug,
+        name: other.name,
+        href: other.href ?? '',
+        provider,
+        ...(price && { price }),
+        ...(resolution && { resolution }),
+        ...(duration && { duration })
+      }
+    })
+  )
 }
 
 export async function prepareModelPage(
@@ -76,6 +118,8 @@ export async function prepareModelPage(
       model.useCases?.length === 1 ? model.useCases[0] : undefined
     ),
     useCaseLabel: useCase ? t(useCaseLabelKey[useCase]) : undefined,
+    providerModels: await providerModelRows(model),
+    workflows: model.routerId ? workflowsUsingModel(model, workshopPages) : [],
     tags,
     ...splitShownTags(tags)
   }
