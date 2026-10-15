@@ -6,3 +6,6 @@ export const loadWorkflowCatalogue = memoize(
 export const loadAppCatalogue = memoize(
   () => import('@/components/workshop/AppCatalogue.vue')
 )
+export const loadHubAppCatalogue = memoize(
+  () => import('@/components/workshop/HubAppCatalogue.vue')
+)
