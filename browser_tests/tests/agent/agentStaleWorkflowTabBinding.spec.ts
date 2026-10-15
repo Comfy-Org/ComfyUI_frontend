@@ -1,7 +1,10 @@
 import { expect } from '@playwright/test'
 import type { WebSocketRoute } from '@playwright/test'
 
-import type { WorkflowListResponse } from '@comfyorg/ingest-types'
+import type {
+  WorkflowListResponse,
+  WorkflowResponse
+} from '@comfyorg/ingest-types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
@@ -106,16 +109,13 @@ test.describe(
         message_id: TURN_ID,
         workflow_id: staleWorkflowId
       }
-      const posted = await mockAgentTurnApi(
-        page,
-        accepted,
-        createAgentSavedChat({
-          threadId: THREAD_ID,
-          workflowId: staleWorkflowId,
-          title: 'Earlier chat',
-          prompt: EARLIER_REQUEST
-        })
-      )
+      const savedChat = createAgentSavedChat({
+        threadId: THREAD_ID,
+        workflowId: staleWorkflowId,
+        title: 'Earlier chat',
+        prompt: EARLIER_REQUEST
+      })
+      const posted = await mockAgentTurnApi(page, accepted, savedChat)
       const cloudWorkflows: WorkflowListResponse['data'] = []
       await page.route('**/api/workflows?*', (route) =>
         route.fulfill(
@@ -130,8 +130,15 @@ test.describe(
           } satisfies WorkflowListResponse)
         )
       )
+      const staleDraft: WorkflowResponse = {
+        id: staleWorkflowId,
+        created_by: 'test-user-e2e',
+        created_at: '2026-09-11T10:00:00Z',
+        updated_at: '2026-09-11T10:00:00Z',
+        latest_version: 0
+      }
       await page.route(`**/api/workflows/${staleWorkflowId}`, (route) =>
-        route.fulfill({ status: 404 })
+        route.fulfill(jsonRoute(staleDraft))
       )
 
       await bootAgentApp(page, agentFlagEnabled, {
@@ -196,10 +203,28 @@ test.describe(
       await expect(panel.getByTestId('user-message-bubble')).toHaveText([
         EARLIER_REQUEST
       ])
-      const unavailable = panel.getByText(
-        enMessages.agent.targetWorkflowUnavailable
+      await panel
+        .getByRole('button', { name: enMessages.agent.showChatHistory })
+        .click()
+      await expect(
+        panel
+          .locator('section')
+          .filter({
+            has: page.getByText(enMessages.agent.historyCurrent, {
+              exact: true
+            })
+          })
+          .getByRole('button', { name: savedChat.thread.title, exact: true })
+      ).toBeVisible()
+      await panel
+        .getByRole('button', { name: enMessages.agent.backToPreviousChat })
+        .click()
+      await expect(agentPanel.workflowPicker).toHaveText(
+        enMessages.agent.selectWorkflowForAgent
       )
-      await expect(unavailable).toBeVisible()
+      await expect(
+        panel.getByText(enMessages.agent.targetWorkflowUnavailable)
+      ).toBeHidden()
       if (!socket) throw new Error('the app never opened /ws')
 
       const workflowPicker = panel.getByRole('button', {
@@ -210,7 +235,6 @@ test.describe(
         .getByRole('menuitemradio', { name: DEFAULT_TAB_NAME, exact: true })
         .click()
       await expect(workflowPicker).toHaveText(DEFAULT_TAB_NAME)
-      await expect(unavailable).toBeHidden()
       await panel.getByRole('textbox').fill('continue here')
       await panel
         .getByRole('button', { name: enMessages.agent.send, exact: true })
