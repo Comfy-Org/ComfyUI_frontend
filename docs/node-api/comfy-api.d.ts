@@ -150,6 +150,7 @@ interface Comfy {
   readonly storage: StorageHandle
   /** Bounded, host-sampled hardware metrics. */
   readonly system: SystemHandle
+  readonly models: ModelsHandle
   /** The sanctioned slice of app chrome — sidebar tabs. */
   readonly ui: UiHandle
   /** Commands, their keybindings, and notifications. */
@@ -1141,6 +1142,32 @@ interface GroupHandle {
 interface NodeMoveEvent {
   readonly node: NodeHandle
   readonly position: { readonly x: number; readonly y: number }
+}
+
+// ─── modelsHandle.ts ─────────────────────────────────────────────
+
+type ModelFolder =
+  | 'checkpoints'
+  | 'clip'
+  | 'clip_vision'
+  | 'controlnet'
+  | 'diffusion_models'
+  | 'embeddings'
+  | 'loras'
+  | 'text_encoders'
+  | 'unet'
+  | 'upscale_models'
+  | 'vae'
+  | 'ipadapter'
+  | 'vae_approx'
+
+interface ModelsHandle {
+  /**
+   * Lists at most 50,000 distinct logical model names from a known folder.
+   * The host chooses the route; filesystem locations and path indexes are
+   * excluded. Unknown folders, invalid replies and HTTP failures reject.
+   */
+  list(folder: ModelFolder): Promise<string[]>
 }
 
 // ─── nodeChanges.ts ──────────────────────────────────────────────
