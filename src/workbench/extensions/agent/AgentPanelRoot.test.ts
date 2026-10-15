@@ -8562,6 +8562,44 @@ describe('AgentPanelRoot workflow binding', () => {
     )
   })
 
+  it('activates a tab for the chat acknowledged after History opened over its first send', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42', [{ id: 'wf-42', name: 'current' }])
+    let finishSend = (_response: Response) => {}
+    const sending = new Promise<Response>((resolve) => {
+      finishSend = resolve
+    })
+    respondToFetch({ method: 'POST', url: /\/messages/ }, () => sending, {
+      times: 1
+    })
+    renderWithSelectedTarget()
+    await sendFromComposer('work here')
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    finishSend(json(202, ack('wf-42')))
+    await waitFor(() =>
+      expect(useAgentConversationStore().threadId).toBe('th-1')
+    )
+    vi.useFakeTimers()
+    ws.emit('agent_active_tab', {
+      workflow_id: 'wf-late',
+      name: 'Late',
+      thread_id: 'th-1'
+    })
+    await vi.advanceTimersByTimeAsync(500)
+
+    expect(
+      screen.getByRole('heading', { name: i18n.global.t('agent.history') })
+    ).toBeVisible()
+    expect(workflowStore.activeWorkflow?.path).toBe('workflows/Late.json')
+    expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-late')).toBe(
+      'workflows/Late.json'
+    )
+  })
+
   it('agent_active_tab opens an unknown workflow as a blank named tab', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
