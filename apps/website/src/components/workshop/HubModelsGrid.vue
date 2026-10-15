@@ -117,6 +117,7 @@ const { tab, readAddress: readTab } = useModelTab(
 const TAB_PANEL_ID = 'workshop-model-tab-panel'
 const TASK_PARAM = 'task'
 const taskSidebar = usePreviewSwitch('hub-task-sidebar')
+const compareShown = usePreviewSwitch('hub-models-compare')
 const taskEntries = computed(() =>
   hubTaskEntries(models, (listed) => groupModels(listed).length)
 )
@@ -210,6 +211,11 @@ const {
   toggle: toggleCompare,
   clear: clearCompare
 } = useCompareSelection(() => models)
+const comparing = computed(() => compareShown.value && compareOpen.value)
+const trayShown = computed(
+  () =>
+    compareShown.value && comparedModels.value.length > 0 && !compareOpen.value
+)
 watch(compareOpen, () => window.scrollTo({ top: 0 }))
 
 const toolbar = useTemplateRef<HTMLElement>('toolbar')
@@ -391,11 +397,9 @@ function openResult(model: WorkshopModel, event: MouseEvent) {
 </script>
 
 <template>
-  <section
-    :class="cn('gap-10', comparedModels.length && !compareOpen && 'pb-24')"
-  >
+  <section :class="cn('gap-10', trayShown && 'pb-24')">
     <CompareView
-      v-if="compareOpen"
+      v-if="comparing"
       :models="comparedModels"
       toolbar
       removable
@@ -489,6 +493,7 @@ function openResult(model: WorkshopModel, event: MouseEvent) {
               v-else-if="resultCount"
               :families="shownFamilies"
               :compared="comparedSlugs"
+              :comparable="compareShown"
               :limit="cardLimit"
               :total="cardTotal"
               :locale
@@ -508,7 +513,7 @@ function openResult(model: WorkshopModel, event: MouseEvent) {
     </div>
 
     <CompareTray
-      v-if="comparedModels.length && !compareOpen"
+      v-if="trayShown"
       :models="comparedModels"
       :locale
       @remove="toggleCompare"

@@ -17,6 +17,7 @@ import type {
   WorkshopModel
 } from '@/config/models-catalogue'
 import { lastList } from '@/lib/workshop/hub-list-memory'
+import { setPreviewSwitch } from '@/lib/workshop/preview-switches'
 import HubModelsGrid from './HubModelsGrid.vue'
 
 const models: WorkshopModel[] = [
@@ -716,10 +717,21 @@ describe('HubModelsGrid', () => {
     }
     const catalogue = [...models, seedream, extra('veo', 'Veo')]
 
+    beforeEach(() => setPreviewSwitch('hub-models-compare', true))
+    afterEach(() => setPreviewSwitch('hub-models-compare', false))
+
     function renderCatalogue() {
       render(HubModelsGrid, { props: { models: catalogue } })
       return userEvent.setup()
     }
+
+    it('keeps Compare hidden until its design tweak is switched on', () => {
+      setPreviewSwitch('hub-models-compare', false)
+      renderCatalogue()
+
+      expect(screen.queryByRole('checkbox', { name: /^Compare / })).toBeNull()
+      expect(screen.queryByTestId('compare-tray')).toBeNull()
+    })
 
     function toggle(name: string) {
       return screen.getByRole('checkbox', { name: `Compare ${name}` })

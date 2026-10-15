@@ -70,7 +70,6 @@ async function choose(name: string) {
 }
 
 beforeEach(() => {
-  setPreviewSwitch('hub-workflows-modality-task', false)
   history.replaceState(null, '', '/hub/')
 })
 afterEach(() => {

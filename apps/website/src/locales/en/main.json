@@ -5604,14 +5604,18 @@
       "refreshLink": "Refresh download link"
     },
     "preview": {
-      "label": "Preview controls",
-      "community": "From the community",
-      "homePickRemixRun": "Home: Pick · Remix · Run banner",
-      "taskSidebar": "Hub: task sidebar",
-      "workflowsByModality": "Hub: workflows by modality",
-      "workflowsFlat": "Hub: workflows like Models",
-      "workflowsModalityTask": "Hub: workflows by modality › task",
-      "fullCatalogueMock": "Hub: full catalogue mock (Workflows)"
+      "label": "Design tweaks",
+      "homePickRemixRun": "Pick · Remix · Run banner",
+      "taskSidebar": "Browse by task",
+      "note": "Only on preview links, never on comfy.org. Your choices stay in this browser.",
+      "pages": {
+        "home": "comfy.org home",
+        "models": "Hub · Models"
+      },
+      "homePickRemixRunHint": "Shows the three-step banner in the Hub section of the home page.",
+      "taskSidebarHint": "Swaps the category tabs for a sidebar of tasks, like Generate images or Upscale.",
+      "compare": "Compare models",
+      "compareHint": "Lets visitors pick up to 4 models and see them side by side."
     },
     "proto": {
       "version": {

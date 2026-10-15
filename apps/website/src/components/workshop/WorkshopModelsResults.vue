@@ -14,12 +14,15 @@ import CatalogueShowMore from './CatalogueShowMore.vue'
 const {
   families,
   compared = [],
+  comparable = false,
   limit,
   total,
   locale = 'en'
 } = defineProps<{
   families: readonly ModelFamily[]
   compared?: readonly string[]
+  /** Whether each card offers its Compare toggle. */
+  comparable?: boolean
   /** How many cards are shown out of `total`; Show more appears below the rest. */
   limit: number
   total: number
@@ -55,7 +58,7 @@ defineEmits<{
           @click="$emit('open', family.latest, $event)"
         />
         <CompareToggle
-          v-if="canCompare(family.latest)"
+          v-if="comparable && canCompare(family.latest)"
           :model-value="compared.includes(family.latest.slug)"
           :name="family.latest.name"
           :disabled="

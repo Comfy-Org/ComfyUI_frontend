@@ -4997,14 +4997,18 @@
       "useInCode": "在代码中使用这些设置"
     },
     "preview": {
-      "label": "预览控制",
-      "community": "来自社区",
-      "homePickRemixRun": "首页：挑选 · 改编 · 运行横幅",
-      "taskSidebar": "Hub：任务侧栏",
-      "workflowsByModality": "Hub：按模态浏览工作流",
-      "workflowsFlat": "Hub：工作流与模型页同版式",
-      "workflowsModalityTask": "Hub：按模态 › 任务浏览工作流",
-      "fullCatalogueMock": "Hub：完整目录模拟（工作流）"
+      "label": "设计微调",
+      "homePickRemixRun": "挑选 · 改编 · 运行横幅",
+      "taskSidebar": "按任务浏览",
+      "note": "仅在预览链接中生效，不会出现在 comfy.org。你的选择只保存在此浏览器中。",
+      "pages": {
+        "home": "comfy.org 首页",
+        "models": "Hub · 模型"
+      },
+      "homePickRemixRunHint": "在首页的 Hub 区块显示三步横幅。",
+      "taskSidebarHint": "用任务侧边栏（如生成图像、放大）替换分类标签。",
+      "compare": "比较模型",
+      "compareHint": "让访客最多选择 4 个模型并并排查看。"
     },
     "proto": {
       "featured": "显示精选行",

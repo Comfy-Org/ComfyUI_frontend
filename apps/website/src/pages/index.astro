@@ -1,5 +1,7 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro'
+import PreviewControls from '@/components/workshop/PreviewControls.vue'
+import { isProductionBuild } from '@/config/build-env'
 import ProductCardsSection from '@/components/home/ProductCardsSection.vue'
 import HeroGraphSection from '@/components/hero/HeroGraphSection.vue'
 import SocialProofBarSection from '@/components/common/SocialProofBarSection.vue'
@@ -80,4 +82,5 @@ const hubBannerContent = await resolveHubBannerContent(isWorkshopInBuild())
     modelLinks={await modelReleaseLinks(isWorkshopInBuild())}
     client:visible
   />
+  <PreviewControls enabled={!isProductionBuild()} client:idle />
 </BaseLayout>
