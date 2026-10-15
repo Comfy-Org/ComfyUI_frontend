@@ -128,7 +128,14 @@ describe('pack search against recorded live Algolia responses', () => {
     // Every one of these is a top-volume query from the suggestions index.
     // Rewriting must not fire for them: it would cost extra index lookups and
     // could append loosely-related packs beneath the real results.
-    it.for(['gguf', 'seedvr2', 'qwen3', 'minimax h3', 'ipadapter'])(
+    it.for([
+      'gguf',
+      'seedvr2',
+      'qwen3',
+      'minimax h3',
+      'ipadapter',
+      'comfyui-kjnodes'
+    ])(
       'sends a single index query for %s and returns its results untouched',
       async (query) => {
         const { nodePacks, rawResultsEmpty } = await searchPacks(query)

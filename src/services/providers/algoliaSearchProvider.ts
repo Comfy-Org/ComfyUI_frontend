@@ -4,6 +4,7 @@ import type {
   SearchResponse
 } from 'algoliasearch/dist/lite/browser'
 import { liteClient as algoliasearch } from 'algoliasearch/dist/lite/builds/browser'
+import { uniqBy } from 'es-toolkit'
 import { memoize, omit } from 'es-toolkit/compat'
 
 import {
@@ -134,14 +135,17 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
 
     async function searchFallbacks(
       fallbackQueries: string[]
-    ): Promise<SearchResponse<AlgoliaNodePack>[] | undefined> {
+    ): Promise<AlgoliaNodePack[]> {
       if (fallbackQueries.length === 0) return []
       try {
         const { results } = await searchClient.search<AlgoliaNodePack>({
           requests: fallbackQueries.map(packQuery),
           strategy: 'none'
         })
-        return results as SearchResponse<AlgoliaNodePack>[]
+        const hits = (results as SearchResponse<AlgoliaNodePack>[]).flatMap(
+          (result) => result.hits
+        )
+        return uniqBy(hits, (hit) => hit.objectID).slice(0, pageSize)
       } catch (error) {
         reportError(error, {
           errorType: 'error_searching_algolia_fallbacks',
@@ -149,7 +153,7 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
           level: 'warning',
           tags: { outcome: 'degraded' }
         })
-        return undefined
+        return []
       }
     }
 
@@ -178,22 +182,12 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
     const isNodeSearch =
       params.restrictSearchableAttributes?.includes('comfy_nodes')
     const needsFallbacks =
-      pageNumber === 0 && !isNodeSearch && nodePacks.hits.length < pageSize
-    const fallbackQueries = needsFallbacks
-      ? buildPackSearchFallbacks(query)
-      : []
-    const fallbackResults = await searchFallbacks(fallbackQueries)
+      pageNumber === 0 && !isNodeSearch && nodePacks.hits.length === 0
+    const hits = needsFallbacks
+      ? await searchFallbacks(buildPackSearchFallbacks(query))
+      : nodePacks.hits
 
-    const mergedHits = [...nodePacks.hits]
-    const seenHitKeys = new Set(nodePacks.hits.map((hit) => hit.objectID))
-    for (const hit of fallbackResults?.flatMap((result) => result.hits) ?? []) {
-      if (mergedHits.length >= pageSize) break
-      if (seenHitKeys.has(hit.objectID)) continue
-      seenHitKeys.add(hit.objectID)
-      mergedHits.push(hit)
-    }
-
-    const registryPacks = mergedHits.map(toRegistryPack)
+    const registryPacks = hits.map(toRegistryPack)
 
     const suggestions =
       querySuggestions?.hits.map((suggestion) => ({

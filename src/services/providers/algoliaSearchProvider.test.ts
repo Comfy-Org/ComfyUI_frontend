@@ -3,7 +3,9 @@ import { liteClient as algoliasearch } from 'algoliasearch/dist/lite/builds/brow
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { reportError } from '@/platform/telemetry/reportError'
+import { useRegistrySearchGateway } from '@/services/gateway/registrySearchGateway'
 import { useAlgoliaSearchProvider } from '@/services/providers/algoliaSearchProvider'
+import { useComfyRegistrySearchProvider } from '@/services/providers/registrySearchProvider'
 
 type GlobalWithAlgolia = typeof globalThis & {
   __ALGOLIA_APP_ID__: string
@@ -21,6 +23,8 @@ vi.mock(import('algoliasearch/dist/lite/builds/browser'), () => ({
 }))
 
 vi.mock(import('@/platform/telemetry/reportError'))
+
+vi.mock(import('@/services/providers/registrySearchProvider'))
 
 interface MockSearchClient {
   search: Mock
@@ -278,7 +282,7 @@ describe('useAlgoliaSearchProvider', () => {
       mockSearchClient.search
         .mockResolvedValueOnce({
           results: [
-            { hits: [packHit('raw-preserved')], nbPages: 1 },
+            { hits: [], nbPages: 0 },
             { hits: [{ query: 'euler discrete scheduler', popularity: 7 }] }
           ]
         })
@@ -290,11 +294,11 @@ describe('useAlgoliaSearchProvider', () => {
         pageNumber: 0
       })
 
-      expect(result.nodePacks.map((pack) => pack.id)).toEqual(['raw-preserved'])
+      expect(result.nodePacks).toEqual([])
       expect(result.querySuggestions).toEqual([
         { query: 'euler discrete scheduler', popularity: 7 }
       ])
-      expect(result.rawResultsEmpty).toBe(false)
+      expect(result.rawResultsEmpty).toBe(true)
       expect(result.hasMore).toBe(false)
       expect(reportError).toHaveBeenCalledExactlyOnceWith(fallbackError, {
         errorType: 'error_searching_algolia_fallbacks',
@@ -322,7 +326,22 @@ describe('useAlgoliaSearchProvider', () => {
       expect(result.nodePacks).toHaveLength(10)
     })
 
-    it('sends the fallback queries in a second batch when the raw query is short of a page', async () => {
+    it('sends no fallback queries when the raw query has some hits', async () => {
+      mockSearchClient.search.mockResolvedValueOnce({
+        results: [{ hits: [packHit('raw-0')] }, { hits: [] }]
+      })
+
+      const provider = useAlgoliaSearchProvider()
+      const result = await provider.searchPacks('comfyui-kjnodes', {
+        pageSize: 10,
+        pageNumber: 0
+      })
+
+      expect(packQueriesPerRequest()).toEqual([['comfyui-kjnodes']])
+      expect(result.nodePacks.map((pack) => pack.id)).toEqual(['raw-0'])
+    })
+
+    it('sends the fallback queries in a second batch when the raw query has no hits', async () => {
       mockSearchClient.search
         .mockResolvedValueOnce({ results: [{ hits: [] }, { hits: [] }] })
         .mockResolvedValueOnce({ results: [{ hits: [] }, { hits: [] }] })
@@ -341,9 +360,7 @@ describe('useAlgoliaSearchProvider', () => {
 
     it('should cap fallback hits so the merged result never exceeds a page', async () => {
       mockSearchClient.search
-        .mockResolvedValueOnce({
-          results: [{ hits: [packHit('raw-0')] }, { hits: [] }]
-        })
+        .mockResolvedValueOnce({ results: [{ hits: [] }, { hits: [] }] })
         .mockResolvedValueOnce({
           results: [
             { hits: Array.from({ length: 5 }, (_, i) => packHit(`fb-${i}`)) }
@@ -357,9 +374,9 @@ describe('useAlgoliaSearchProvider', () => {
       })
 
       expect(result.nodePacks.map((pack) => pack.id)).toEqual([
-        'raw-0',
         'fb-0',
-        'fb-1'
+        'fb-1',
+        'fb-2'
       ])
     })
 
@@ -367,14 +384,14 @@ describe('useAlgoliaSearchProvider', () => {
       mockSearchClient.search
         .mockResolvedValueOnce({
           results: [
-            { hits: [packHit('primary')] },
+            { hits: [] },
             { hits: [{ query: 'comfyui kjnodes', popularity: 7 }] }
           ]
         })
         .mockResolvedValueOnce({
           results: [
-            { hits: [packHit('primary'), packHit('owner-stripped')] },
-            { hits: [packHit('owner-stripped'), packHit('separator-split')] }
+            { hits: [packHit('owner-stripped'), packHit('shared')] },
+            { hits: [packHit('shared'), packHit('separator-split')] }
           ]
         })
 
@@ -385,8 +402,8 @@ describe('useAlgoliaSearchProvider', () => {
       })
 
       expect(result.nodePacks.map((pack) => pack.id)).toEqual([
-        'primary',
         'owner-stripped',
+        'shared',
         'separator-split'
       ])
       expect(result.querySuggestions).toEqual([
@@ -420,6 +437,30 @@ describe('useAlgoliaSearchProvider', () => {
         expect(result.hasMore).toBe(expected)
       }
     )
+
+    it('does not make the gateway fail over when only the rewrite request fails', async () => {
+      const registrySearchPacks = vi.fn()
+      vi.mocked(useComfyRegistrySearchProvider).mockReturnValue({
+        searchPacks: registrySearchPacks,
+        clearSearchCache: vi.fn()
+      })
+      mockSearchClient.search
+        .mockResolvedValueOnce({ results: [{ hits: [] }, { hits: [] }] })
+        .mockRejectedValueOnce(new Error('Algolia rewrite request failed'))
+
+      const gateway = useRegistrySearchGateway()
+      const result = await gateway.searchPacks('kijai/comfyui-KJNodes', {
+        pageSize: 10,
+        pageNumber: 0
+      })
+
+      expect(packQueriesPerRequest()).toEqual([
+        ['kijai/comfyui-KJNodes'],
+        ['comfyui-KJNodes', 'comfyui KJNodes']
+      ])
+      expect(result.rawResultsEmpty).toBe(true)
+      expect(registrySearchPacks).not.toHaveBeenCalled()
+    })
 
     it('sends no fallback queries when searching node names', async () => {
       mockSearchClient.search.mockResolvedValueOnce({
