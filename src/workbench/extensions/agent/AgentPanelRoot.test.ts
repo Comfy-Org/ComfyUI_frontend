@@ -547,6 +547,14 @@ function stubHistoryWithWorkflowListing({
   )
 }
 
+function bindHistoryTargetThatFailsToOpen(): void {
+  useAgentWorkflowTabBindingStore().bind(
+    'wf-gone',
+    addTab('workflows/gone.json').path
+  )
+  vi.mocked(useWorkflowService()).openWorkflow.mockResolvedValueOnce(false)
+}
+
 function ack(workflowId: string, messageId = 'm-1') {
   return { thread_id: 'th-1', message_id: messageId, workflow_id: workflowId }
 }
@@ -6623,31 +6631,18 @@ describe('AgentPanelRoot workflow binding', () => {
   )
 
   it.for([
-    {
-      failure: 'missing messages',
-      status: 404,
-      listingStatus: 200,
-      sync: async () => {}
-    },
-    {
-      failure: 'message server error',
-      status: 500,
-      listingStatus: 200,
-      sync: async () => {}
-    },
-    {
-      failure: 'failed workflow sync',
-      status: 200,
-      listingStatus: 500,
-      sync: async (): Promise<never> => {
-        throw new Error('offline')
-      }
-    }
+    { failure: 'missing messages', status: 404, listingStatus: 200 },
+    { failure: 'message server error', status: 500, listingStatus: 200 },
+    { failure: 'failed workflow opening', status: 200, listingStatus: 500 }
   ])(
     'preserves Current after deleting a chat with $failure',
-    async ({ status, listingStatus, sync }) => {
+    async ({ status, listingStatus }) => {
       makeTab('wf-current')
-      vi.mocked(workflowStore.syncWorkflows).mockImplementation(sync)
+      useAgentWorkflowTabBindingStore().bind(
+        'wf-unavailable',
+        addTab('workflows/unavailable.json').path
+      )
+      vi.mocked(useWorkflowService()).openWorkflow.mockResolvedValueOnce(false)
       useAgentConversationStore().setThreadId('th-current')
       localStorage.setItem(StorageKeys.agentThread('personal'), 'th-current')
       vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
@@ -7071,10 +7066,8 @@ describe('AgentPanelRoot workflow binding', () => {
     makeTab('wf-42')
     useAgentConversationStore().setThreadId('th-history')
     localStorage.setItem(StorageKeys.agentThread('personal'), 'th-history')
-    stubHistoryWithWorkflowListing({ listing, lookup: 500 })
-    vi.mocked(workflowStore.syncWorkflows).mockRejectedValue(
-      new Error('offline')
-    )
+    stubHistoryWithWorkflowListing({ listing, lookup: 404 })
+    bindHistoryTargetThatFailsToOpen()
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await screen.findAllByText('Historical prompt')
     await userEvent.click(
@@ -8914,10 +8907,8 @@ describe('AgentPanelRoot workflow binding', () => {
   it('activates a tab for the chat that History opened over after its startup restoration failed', async () => {
     makeTab('wf-42')
     useAgentConversationStore().setThreadId('th-history')
-    stubHistoryWithWorkflowListing({ listing: 500, lookup: 500 })
-    vi.mocked(workflowStore.syncWorkflows).mockRejectedValue(
-      new Error('offline')
-    )
+    stubHistoryWithWorkflowListing({ listing: 500, lookup: 404 })
+    bindHistoryTargetThatFailsToOpen()
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await screen.findAllByText('Historical prompt')
     await vi.waitFor(() =>
@@ -8957,10 +8948,8 @@ describe('AgentPanelRoot workflow binding', () => {
     const listing = new Promise<number>((resolve) => {
       finishListing = resolve
     })
-    stubHistoryWithWorkflowListing({ listing, lookup: 500 })
-    vi.mocked(workflowStore.syncWorkflows).mockRejectedValue(
-      new Error('offline')
-    )
+    stubHistoryWithWorkflowListing({ listing, lookup: 404 })
+    bindHistoryTargetThatFailsToOpen()
     await userEvent.click(
       screen.getByRole('button', {
         name: i18n.global.t('agent.showChatHistory')
@@ -9007,10 +8996,8 @@ describe('AgentPanelRoot workflow binding', () => {
     const listing = new Promise<number>((resolve) => {
       finishListing = resolve
     })
-    stubHistoryWithWorkflowListing({ listing, lookup: 500 })
-    vi.mocked(workflowStore.syncWorkflows).mockRejectedValue(
-      new Error('offline')
-    )
+    stubHistoryWithWorkflowListing({ listing, lookup: 404 })
+    bindHistoryTargetThatFailsToOpen()
     await userEvent.click(
       screen.getByRole('button', {
         name: i18n.global.t('agent.showChatHistory')

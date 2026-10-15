@@ -283,19 +283,13 @@ export function useAgentWorkflowSelection({
     workflowId: string,
     isCurrent: () => boolean
   ): Promise<boolean> {
-    try {
-      await workflowStore.syncWorkflows()
-      if (!isCurrent()) return false
-      const target = storedWorkflowFor(workflowId)
-      if (target !== null)
-        return await openRestoredWorkflow(target, workflowId, isCurrent)
-      panelStore.retainUnresolvedTarget()
-      return true
-    } catch {
-      if (!isCurrent()) return false
-      warnRestoreFailed()
-      return false
-    }
+    await workflowStore.syncWorkflows()
+    if (!isCurrent()) return false
+    const target = storedWorkflowFor(workflowId)
+    if (target !== null)
+      return openRestoredWorkflow(target, workflowId, isCurrent)
+    panelStore.retainUnresolvedTarget()
+    return true
   }
 
   async function openRestoredWorkflow(
