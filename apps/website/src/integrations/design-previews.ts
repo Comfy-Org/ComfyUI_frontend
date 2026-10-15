@@ -10,15 +10,11 @@ const nodeGraphWorkflow = join(
 
 /** Mock pages a designer shares from a pull request preview. */
 export const DESIGN_PREVIEW_ROUTES = [
-  {
-    pattern: '/hub-preview/node-graph-workflow',
-    entrypoint: nodeGraphWorkflow
-  },
-  {
-    pattern: '/zh-CN/hub-preview/node-graph-workflow',
-    entrypoint: nodeGraphWorkflow
-  }
-] as const
+  '/hub-preview/node-graph-workflow',
+  '/zh-CN/hub-preview/node-graph-workflow',
+  '/hub-preview/node-graph-workflow-api',
+  '/zh-CN/hub-preview/node-graph-workflow-api'
+].map((pattern) => ({ pattern, entrypoint: nodeGraphWorkflow }))
 
 export function isDesignPreviewBuild(
   vercelEnv: string | undefined = process.env.VERCEL_ENV

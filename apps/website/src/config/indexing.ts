@@ -17,6 +17,7 @@ export const NOINDEX_ROUTES = [
   ...PAYMENT_STATUSES.map((status) => `/payment/${status}`),
   '/individual-submission',
   '/hub-preview/node-graph-workflow',
+  '/hub-preview/node-graph-workflow-api',
   '/booking-confirmation',
   '/login',
   '/signup',

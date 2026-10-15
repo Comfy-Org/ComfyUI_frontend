@@ -4510,10 +4510,8 @@
       "about": "关于此工作流",
       "graphHint": "节点图的只读预览。在 Comfy Cloud 中打开或下载后即可编辑节点。",
       "previewNotice": "使用示例数据的设计预览。此页面不在 Hub 上。",
-      "tabs": {
-        "overview": "概览",
-        "workflow": "工作流"
-      }
+      "apiTitle": "通过代码使用此工作流",
+      "apiHint": "使用你的 API 密钥，将此工作流的 API 版本发送到 Comfy Cloud。"
     },
     "api": {
       "body": "使用试用区的输入调用 Comfy Router。运行前请设置 COMFY_API_KEY，并检查本地文件路径。",

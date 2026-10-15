@@ -16,6 +16,8 @@ export interface NodeGraphWorkflow {
   readonly customNodes: readonly string[]
   readonly author?: string
   readonly examples: readonly PlaygroundExample[]
+  /** The request that runs this workflow through the API, when it has one. */
+  readonly api?: { readonly snippet: string }
 }
 
 const MEDIA =
@@ -74,4 +76,18 @@ export const nodeGraphWorkflowSample: NodeGraphWorkflow = {
       sampleOnly: true
     }
   ]
+}
+
+/** The same sample, for a workflow that also runs through the API. */
+export const nodeGraphWorkflowWithApiSample: NodeGraphWorkflow = {
+  ...nodeGraphWorkflowSample,
+  slug: 'node-graph-preview-api',
+  api: {
+    snippet: [
+      'curl -X POST https://cloud.comfy.org/api/prompt \\',
+      '  -H "X-API-Key: $COMFY_API_KEY" \\',
+      '  -H "Content-Type: application/json" \\',
+      '  -d @character-turnaround.api.json'
+    ].join('\n')
+  }
 }

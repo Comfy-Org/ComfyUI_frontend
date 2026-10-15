@@ -24,10 +24,8 @@
       "about": "About this workflow",
       "graphHint": "A read-only preview of the node graph. Open it in Comfy Cloud or download it to edit the nodes.",
       "previewNotice": "Design preview with sample data. This page is not on the Hub.",
-      "tabs": {
-        "overview": "Overview",
-        "workflow": "Workflow"
-      }
+      "apiTitle": "Use this workflow from code",
+      "apiHint": "Send the API version of this workflow to Comfy Cloud with your API key."
     },
     "meta": {
       "title": "Browse Models - Comfy",

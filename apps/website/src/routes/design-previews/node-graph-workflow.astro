@@ -1,12 +1,19 @@
 ---
 import WorkflowNodeGraphPage from '@/components/workshop/WorkflowNodeGraphPage.vue'
 import BaseLayout from '@/layouts/BaseLayout.astro'
-import { nodeGraphWorkflowSample } from '@/lib/hub/node-graph-workflow'
+import {
+  nodeGraphWorkflowSample,
+  nodeGraphWorkflowWithApiSample
+} from '@/lib/hub/node-graph-workflow'
+
+const workflow = Astro.url.pathname.includes('node-graph-workflow-api')
+  ? nodeGraphWorkflowWithApiSample
+  : nodeGraphWorkflowSample
 ---
 
 <BaseLayout
-  title={`${nodeGraphWorkflowSample.name} - Comfy`}
-  description={nodeGraphWorkflowSample.summary}
+  title={`${workflow.name} - Comfy`}
+  description={workflow.summary}
   noindex
 >
   <p
@@ -16,7 +23,7 @@ import { nodeGraphWorkflowSample } from '@/lib/hub/node-graph-workflow'
     {Astro.locals.t('workshop.nodeGraph.previewNotice')}
   </p>
   <WorkflowNodeGraphPage
-    workflow={nodeGraphWorkflowSample}
+    workflow={workflow}
     locale={Astro.currentLocale === 'zh-CN' ? 'zh-CN' : 'en'}
     client:load
   />
