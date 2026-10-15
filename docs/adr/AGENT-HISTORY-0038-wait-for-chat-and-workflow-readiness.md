@@ -100,11 +100,11 @@ changes and panel remounts do not resume following for that conversation.
 
 This exception provides conversation access, not workflow restoration. It does
 not materialize Cloud content into a new editor tab or repair identity mapping.
-The saved-catalog owner may handle synchronization errors without rejecting;
-known Cloud presence still permits safe read access when the local target
-remains null. Transcript failures, unresolved targets with inconclusive Cloud
-identity, and failures opening an otherwise resolved workflow retain the retry
-behavior. A lifecycle 404 retains the unavailable-target notice.
+Transcript failures, failures opening a resolved workflow, and unresolved
+targets with inconclusive Cloud identity are retryable failures. A lookup that
+fails with anything other than 404 is inconclusive, like an incomplete, failed
+or superseded listing. During restoration, only a lifecycle 404 shows the
+unavailable-target notice.
 
 History selection and New Chat invalidate pending agent tab activation. Existing
 and newly created tab openers carry that guard into the workflow service so an
