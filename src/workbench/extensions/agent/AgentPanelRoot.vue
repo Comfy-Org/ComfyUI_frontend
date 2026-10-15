@@ -1451,6 +1451,17 @@ function reportHistoryLoadFailure(
   })
 }
 
+function ownsHistoryFailure(
+  generation: number,
+  uiTreatment: 'error_overlay' | 'none'
+): boolean {
+  const owner =
+    uiTreatment === 'error_overlay'
+      ? surfacedHistoryRefreshGeneration
+      : historyRefreshGeneration
+  return generation === owner && generation > appliedHistoryRefreshGeneration
+}
+
 async function refreshHistory(
   uiTreatment: 'error_overlay' | 'none' = 'error_overlay'
 ): Promise<void> {
@@ -1465,11 +1476,7 @@ async function refreshHistory(
     appliedHistoryRefreshGeneration = generation
     history.replaceAll(threads.map(toChatSession))
   } catch (error) {
-    const owner =
-      uiTreatment === 'error_overlay'
-        ? surfacedHistoryRefreshGeneration
-        : historyRefreshGeneration
-    if (!signal.aborted && generation === owner)
+    if (!signal.aborted && ownsHistoryFailure(generation, uiTreatment))
       reportHistoryLoadFailure(error, uiTreatment)
   }
 }

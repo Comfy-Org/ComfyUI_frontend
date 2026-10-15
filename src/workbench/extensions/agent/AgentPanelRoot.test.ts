@@ -5934,41 +5934,49 @@ describe('AgentPanelRoot history', () => {
       expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
     })
 
-    it('still reports a failed history load that a follow refreshed past', async () => {
-      workflowStore.activeWorkflow = addTab('workflows/first.json')
-      const second = addTab('workflows/second.json')
-      let failMountList!: () => void
-      const mountList = new Promise<Response>((resolve) => {
-        failMountList = () => resolve(json(500, { error: 'unavailable' }))
-      })
-      const lists = [mountList]
-      stubWorkflowBoundHistory([
-        agentThread({
-          id: 'th-second',
-          title: 'Second chat',
-          last_message_at: '2026-09-22T10:00:00Z',
-          workflow_id: 'wf-second'
+    it.for([
+      { followList: 'still loading', overlays: 1 },
+      { followList: 'already shown', overlays: 0 }
+    ])(
+      'shows $overlays overlay for a failed history load while the follow list is $followList',
+      async ({ followList, overlays }) => {
+        workflowStore.activeWorkflow = addTab('workflows/first.json')
+        const second = addTab('workflows/second.json')
+        let failMountList!: () => void
+        const mountList = new Promise<Response>((resolve) => {
+          failMountList = () => resolve(json(500, { error: 'unavailable' }))
         })
-      ])
-      const served = vi.mocked(fetch).getMockImplementation()
-      assert(served)
-      vi.mocked(fetch).mockImplementation((input, init) =>
-        threadListRoute.test(String(input)) && lists.length > 0
-          ? lists.splice(0, 1)[0]
-          : served(input, init)
-      )
-      renderWithSelectedTarget()
+        const lists =
+          followList === 'still loading'
+            ? [mountList, new Promise<Response>(() => {})]
+            : [mountList]
+        stubWorkflowBoundHistory([
+          agentThread({
+            id: 'th-second',
+            title: 'Second chat',
+            last_message_at: '2026-09-22T10:00:00Z',
+            workflow_id: 'wf-second'
+          })
+        ])
+        const served = vi.mocked(fetch).getMockImplementation()
+        assert(served)
+        let listRequests = 0
+        vi.mocked(fetch).mockImplementation((input, init) => {
+          if (!threadListRoute.test(String(input))) return served(input, init)
+          listRequests += 1
+          return lists.splice(0, 1)[0] ?? served(input, init)
+        })
+        renderWithSelectedTarget()
 
-      await activateTabAsUser(second)
-      await vi.waitFor(() =>
-        expect(useAgentConversationStore().threadId).toBe('th-second')
-      )
-      failMountList()
+        await activateTabAsUser(second)
+        await vi.waitFor(() => expect(listRequests).toBe(2))
+        await settleFollow()
+        failMountList()
+        await settleFollow()
 
-      await vi.waitFor(() =>
-        expect(executionErrors.showErrorOverlay).toHaveBeenCalledOnce()
-      )
-    })
+        expect(executionErrors.showErrorOverlay).toHaveBeenCalledTimes(overlays)
+      }
+    )
 
     it('keeps the open chat untouched when the followed chat fails to open, and retries', async () => {
       const { loadedThreads, restoreTranscripts } =
