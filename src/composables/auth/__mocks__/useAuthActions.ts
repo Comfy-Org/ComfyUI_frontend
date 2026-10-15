@@ -8,7 +8,6 @@ const actions: ReturnType<typeof realUseAuthActions> = {
   sendPasswordReset: vi.fn(async () => true),
   purchaseCredits: vi.fn(async () => undefined),
   purchaseCreditsDirect: vi.fn(async () => undefined),
-  canPurchaseCredits: vi.fn(() => true),
   accessBillingPortal: vi.fn(async () => true),
   accessBillingPortalDirect: vi.fn(async () => true),
   fetchBalance: vi.fn(async () => null),

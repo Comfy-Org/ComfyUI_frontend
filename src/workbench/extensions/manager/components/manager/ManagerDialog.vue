@@ -84,6 +84,17 @@
         </Button>
       </div>
 
+      <Message
+        :visible="showLegacyTipAboveResults"
+        severity="info"
+        class="mx-6 mb-4 w-auto"
+      >
+        <template #icon>
+          <i class="icon-[lucide--info] size-4" />
+        </template>
+        {{ $t('manager.legacyManagerSearchTip') }}
+      </Message>
+
       <!-- Sort Options -->
       <div v-if="isSortable" class="flex justify-end px-6 pb-4">
         <SingleSelect
@@ -165,6 +176,7 @@ import VirtualGrid from '@/components/common/VirtualGrid.vue'
 import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
 import SearchAutocomplete from '@/components/ui/search-input/SearchAutocomplete.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Message from '@/components/ui/message/Message.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import { useExternalLink } from '@/composables/useExternalLink'
@@ -370,10 +382,8 @@ const isSearchLoading = computed(
 const hasMorePacks = computed(() => toValue(packs.hasMore))
 const suggestions = computed(() => toValue(packs.suggestions))
 const sortOptions = PACK_SORTABLE_FIELDS
-const { isLegacyManagerSearch } = useLegacySearchTip(
-  searchQuery,
-  isNewManagerUI
-)
+const { isLegacyManagerSearch, isUnmatchedLegacyManagerSearch } =
+  useLegacySearchTip(searchQuery, isNewManagerUI, packs.rawResultsEmpty)
 const filterOptions = computed(() => [
   { name: t('manager.filter.nodePack'), value: 'packs' },
   { name: t('g.nodes'), value: 'nodes' }
@@ -404,6 +414,10 @@ const {
   isLoading: isTabLoading,
   workflowPacks
 } = useManagerDisplayPacks(selectedNavId, searchResults, searchQuery, sortField)
+
+const showLegacyTipAboveResults = computed(
+  () => isUnmatchedLegacyManagerSearch.value && displayPacks.value.length > 0
+)
 
 // Tab helpers for template
 const isUpdateAvailableTab = computed(

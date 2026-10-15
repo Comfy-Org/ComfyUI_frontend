@@ -32,6 +32,7 @@ import {
   parseAgentWsEvent,
   toTurnId,
   zAgentAdmissionError,
+  zAttachmentRejection,
   zDisownedWorkflowError,
   zTurnInProgressError
 } from '../../schemas/agentApiSchema'
@@ -354,6 +355,22 @@ function parseAdmissionError(error: unknown) {
     parsed.data.error.type === 'PAYMENT_REQUIRED' ? 402 : 503
   if (error.status !== expectedStatus) return undefined
   return { ...parsed.data.error, retryAfterSeconds: error.retryAfterSeconds }
+}
+
+function isAttachmentTypeRejection(error: unknown): boolean {
+  return (
+    error instanceof AgentApiError &&
+    error.status === 422 &&
+    zAttachmentRejection.safeParse(error.body).success
+  )
+}
+
+function reportSendFailure(error: unknown): void {
+  if (isAttachmentTypeRejection(error)) return
+  reportError(error, {
+    surface: 'agent',
+    errorType: 'agent_send_message_failed'
+  })
 }
 
 function disownsWorkflow(error: unknown): boolean {
@@ -1102,10 +1119,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         : `${i18n.global.t('agent.sendFailed')}: ${message}`
     )
     const turnAccepted = accepted || isUnreadableAckFailure(error)
-    reportError(error, {
-      surface: 'agent',
-      errorType: 'agent_send_message_failed'
-    })
+    reportSendFailure(error)
     trackAgentError(
       'request_failed',
       turnAccepted ? 'post_acceptance' : 'pre_acceptance',
@@ -1647,7 +1661,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
       }
     }
     trackMalformedStreamEvent(error, type, reportedTurnId, uiTreatment)
-    console.warn('[agent] dropping malformed agent event', error)
   }
 
   function handleMessageDone(
