@@ -134,16 +134,15 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
       }
     }
 
-    // First page only: useRegistrySearch concatenates pages, so later pages
-    // would re-append these hits.
+    const isNodeSearch =
+      params.restrictSearchableAttributes?.includes('comfy_nodes')
     const fallbackQueries =
-      pageNumber === 0 ? buildPackSearchFallbacks(query) : []
+      pageNumber === 0 && !isNodeSearch ? buildPackSearchFallbacks(query) : []
     const requests: SearchQuery[] = [query, ...fallbackQueries].map(packQuery)
 
     const shouldQuerySuggestions =
       query.length >= MIN_CHARS_FOR_SUGGESTIONS_ALGOLIA
 
-    // If the query is long enough, also query the suggestions index
     if (shouldQuerySuggestions) {
       requests.push({
         indexName: 'nodes_index_query_suggestions',
@@ -175,10 +174,8 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
       mergedHits.push(hit)
     }
 
-    // Convert Algolia hits to RegistryNodePack format
     const registryPacks = mergedHits.map(toRegistryPack)
 
-    // Extract query suggestions from search results
     const suggestions =
       querySuggestions?.hits.map((suggestion) => ({
         query: suggestion.query,

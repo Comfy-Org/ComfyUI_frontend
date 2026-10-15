@@ -362,6 +362,26 @@ describe('useAlgoliaSearchProvider', () => {
       ])
     })
 
+    it('sends no fallback queries when searching node names', async () => {
+      mockSearchClient.search.mockResolvedValue({
+        results: [{ hits: [] }, { hits: [] }]
+      })
+
+      const provider = useAlgoliaSearchProvider()
+      await provider.searchPacks('VHS_VideoCombine', {
+        pageSize: 10,
+        pageNumber: 0,
+        restrictSearchableAttributes: ['comfy_nodes']
+      })
+
+      const { requests } = mockSearchClient.search.mock.calls[0][0]
+      expect(
+        requests
+          .filter((r: { indexName: string }) => r.indexName === 'nodes_index')
+          .map((r: { query: string }) => r.query)
+      ).toEqual(['VHS_VideoCombine'])
+    })
+
     it('reads query suggestions from the response after the fallback queries', async () => {
       mockSearchClient.search.mockResolvedValue({
         results: [
