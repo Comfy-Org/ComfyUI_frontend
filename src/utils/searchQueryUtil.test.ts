@@ -80,6 +80,8 @@ describe('stripRepoOwner', () => {
     { query: 'kijai/ComfyUI-KJNodes', expected: 'ComfyUI-KJNodes' },
     { query: 'kijai/comfyui-kjnodes.git', expected: 'comfyui-kjnodes' },
     { query: 'kijai/ComfyUI-KJNodes.GIT', expected: 'ComfyUI-KJNodes' },
+    { query: 'kijai/comfyui-kjnodes/', expected: 'comfyui-kjnodes' },
+    { query: 'kijai/comfyui-kjnodes.git/', expected: 'comfyui-kjnodes' },
     { query: 'Comfy-Org/ComfyUI-Manager', expected: 'ComfyUI-Manager' },
     { query: 'ZHO-ZHO-ZHO/ComfyUI-Gemini', expected: 'ComfyUI-Gemini' },
     {
@@ -107,6 +109,8 @@ describe('stripRepoOwner', () => {
     'kijai/c',
     'kijai/comfyui-',
     'kijai/kjnodes',
+    'kijai/kjnodes/',
+    'kijai/comfyui-kjnodes//',
     'owner/repo-name/tree/main',
     'github.com/kijai'
   ])('keeps %j unchanged', (query) => {
@@ -118,6 +122,10 @@ describe('buildPackSearchFallbacks', () => {
   it.for([
     {
       query: 'kijai/comfyui-KJNodes',
+      expected: ['comfyui-KJNodes', 'comfyui KJNodes']
+    },
+    {
+      query: 'kijai/comfyui-KJNodes/',
       expected: ['comfyui-KJNodes', 'comfyui KJNodes']
     },
     {
