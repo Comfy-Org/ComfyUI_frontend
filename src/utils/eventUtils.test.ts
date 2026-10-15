@@ -158,7 +158,6 @@ describe('fetchDroppedAsset', () => {
       },
       { nameFromSource: true }
     )
-    expect(file).toBeDefined()
     expect(file?.name).toBe('%E0%A4%A.png')
   })
 

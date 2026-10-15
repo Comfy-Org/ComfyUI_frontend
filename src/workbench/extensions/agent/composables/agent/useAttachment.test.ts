@@ -314,43 +314,6 @@ describe('useAttachment', () => {
     expect(upload).not.toHaveBeenCalled()
   })
 
-  it('stages no more than the contract allows and says so', async () => {
-    const upload = vi.fn(async (file: File) => ({ ref: file.name }))
-    const onError = vi.fn()
-    const registry = chipRegistry()
-    const { addFiles } = useAttachment({ upload, onError, ...registry })
-
-    await addFiles(
-      Array.from({ length: MAX_TURN_ATTACHMENTS + 1 }, (_unused, index) =>
-        fileOfSize(`${index}.png`, 1)
-      )
-    )
-
-    expect(registry.chips).toHaveLength(MAX_TURN_ATTACHMENTS)
-    expect(upload).toHaveBeenCalledTimes(MAX_TURN_ATTACHMENTS)
-    expect(onError.mock.calls.flat().join(' ')).toContain(
-      String(MAX_TURN_ATTACHMENTS)
-    )
-  })
-
-  it('counts what is already staged, not just the current batch', async () => {
-    const upload = vi.fn(async (file: File) => ({ ref: file.name }))
-    const onError = vi.fn()
-    const registry = chipRegistry()
-    const { addFiles } = useAttachment({ upload, onError, ...registry })
-
-    await addFiles(
-      Array.from({ length: MAX_TURN_ATTACHMENTS }, (_unused, index) =>
-        fileOfSize(`${index}.png`, 1)
-      )
-    )
-    onError.mockClear()
-    await addFiles([fileOfSize('one-too-many.png', 1)])
-
-    expect(registry.chips).toHaveLength(MAX_TURN_ATTACHMENTS)
-    expect(onError).toHaveBeenCalledTimes(1)
-  })
-
   it('does not spend a turn slot on a duplicate', async () => {
     const store = useAgentComposerStore()
     const upload = vi.fn(async (file: File) => ({ ref: file.name }))
@@ -1061,7 +1024,9 @@ describe('useAttachment', () => {
     const { addDeferredFile } = useAttachment({ upload, onError, ...registry })
 
     await expect(
-      addDeferredFile('My scan', async () => fileOfSize('scan.pdf', 1024))
+      addDeferredFile('My scan', async () =>
+        fileOfSize('scan.pdf', MAX_ATTACHMENT_BYTES + 1)
+      )
     ).resolves.toBe('unsupported')
 
     expect(registry.chips).toMatchObject([

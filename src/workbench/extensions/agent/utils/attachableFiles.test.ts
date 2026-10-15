@@ -150,10 +150,15 @@ describe('agentAttachVerdict', () => {
 describe('agentAttachRefVerdict', () => {
   it.for([
     ['stored.png', 'accepted'],
+    ['a1b2c3.md', 'accepted'],
     ['stored.v2', 'rejected'],
     ['stored.123', 'rejected'],
     ['stored.verylongextension', 'rejected'],
-    ['blake3:abcdef0123456789', 'unknown']
+    ['stored_scene.usdz', 'rejected'],
+    ['blake3:abcdef0123456789', 'unknown'],
+    ['abcdef0123456789', 'unknown'],
+    ['my.folder/image', 'unknown'],
+    ['my.folder\\image', 'unknown']
   ] as const)('reports authoritative ref %s as %s', ([ref, verdict]) => {
     expect(agentAttachRefVerdict(ref)).toBe(verdict)
   })
@@ -175,21 +180,6 @@ describe('AGENT_ATTACH_ACCEPT', () => {
         (extension) => !isAgentAttachable(fileNamed(`sample${extension}`))
       )
     ).toEqual([])
-  })
-})
-
-describe('agentAttachRefVerdict', () => {
-  it.for([
-    ['stored_photo.png', 'accepted'],
-    ['a1b2c3.md', 'accepted'],
-    ['stored_scene.usdz', 'rejected'],
-    ['doc.pdf', 'rejected'],
-    ['blake3:abcdef0123456789', 'unknown'],
-    ['abcdef0123456789', 'unknown'],
-    ['my.folder/image', 'unknown'],
-    ['my.folder\\image', 'unknown']
-  ] as const)('judges %s as %s', ([ref, verdict]) => {
-    expect(agentAttachRefVerdict(ref)).toBe(verdict)
   })
 })
 

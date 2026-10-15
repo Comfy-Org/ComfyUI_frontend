@@ -4170,8 +4170,14 @@ describe('AgentPanelRoot attach flow', () => {
     })
 
     await vi.waitFor(() =>
-      expect(screen.getByTestId('agent-attachment-chip')).toBeInTheDocument()
+      expect(useAgentComposerStore().attachments).toEqual([
+        expect.objectContaining({
+          name: 'photo.png',
+          ref: 'blake3:abcdef0123456789'
+        })
+      ])
     )
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
     expect(uploads).toHaveLength(0)
     expect(useToast().toasts).toEqual([])
   })
@@ -4270,11 +4276,9 @@ describe('AgentPanelRoot attach flow', () => {
     dispatchDrag(target, 'drop', card(MAX_TURN_ATTACHMENTS))
 
     await vi.waitFor(() =>
-      expect(
-        useToast().toasts.some(({ title }) =>
-          title.includes(String(MAX_TURN_ATTACHMENTS))
-        )
-      ).toBe(true)
+      expect(useToast().toasts.map(({ title }) => title)).toContain(
+        'Only 25 files can be attached to one message'
+      )
     )
     expect(
       within(screen.getByTestId('composer-asset-section')).getAllByTestId(

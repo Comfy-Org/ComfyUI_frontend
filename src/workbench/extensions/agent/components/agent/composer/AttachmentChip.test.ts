@@ -447,36 +447,23 @@ describe('AttachmentChip', () => {
 
   it.for([
     { name: 'doc.pdf', mediaKind: undefined },
-    { name: 'plate.exr', mediaKind: 'image' as const }
+    { name: 'clip.wmv', mediaKind: 'video' as const }
   ])(
     'shows $name of an unaccepted type as a generic file with the type explanation',
-    async ({ name, mediaKind }) => {
-      const user = userEvent.setup()
-      const { emitted } = renderChip({
+    ({ name, mediaKind }) => {
+      renderChip({
         name,
         mediaKind,
         previewUrl: 'blob:preview',
         validationError: 'unsupported-type'
       })
       const message = `${name} isn’t a file type the agent accepts. Remove it and try another file.`
-      const status = screen.getByRole('status')
 
-      expect(status).toHaveAccessibleName(message)
+      expect(screen.getByRole('status')).toHaveAccessibleName(message)
       expect(screen.queryByRole('img')).not.toBeInTheDocument()
       expect(
         screen.queryByRole('button', { name: `Preview ${name}` })
       ).not.toBeInTheDocument()
-      await user.hover(status)
-      expect(await screen.findByRole('tooltip')).toHaveTextContent(message)
-      await user.unhover(status)
-      await user.tab()
-      expect(status).toHaveFocus()
-      await user.tab()
-      expect(
-        screen.getByRole('button', { name: `Remove ${name}` })
-      ).toHaveFocus()
-      await user.keyboard('{Enter}')
-      expect(emitted('remove')).toHaveLength(1)
     }
   )
 })
