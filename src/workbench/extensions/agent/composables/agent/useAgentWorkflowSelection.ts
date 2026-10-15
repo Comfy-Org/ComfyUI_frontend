@@ -241,11 +241,9 @@ export function useAgentWorkflowSelection({
     const target =
       boundOrOpenWorkflowFor(workflowId) ?? storedWorkflowFor(workflowId)
     const listing = refreshed ? cloudListingStatus(workflowId) : 'unknown'
-    if (listing !== 'omitted')
-      return restorationOutcomeFor(
-        listing === 'listed' ? 'live' : 'unknown',
-        target
-      )
+    if (listing === 'listed') return restorationOutcomeFor('live', target)
+    if (listing === 'unknown' && target !== null)
+      return { outcome: 'open', target }
     const lifecycle = await cloudWorkflowLifecycle(workflowId)
     if (!isCurrent()) return { outcome: 'superseded' }
     return restorationOutcomeFor(

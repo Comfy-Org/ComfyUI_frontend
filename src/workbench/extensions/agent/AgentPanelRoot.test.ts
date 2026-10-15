@@ -529,7 +529,10 @@ function stubHistoryWithWorkflowListing(
           })
         ])
       )
-    if (url.includes('/workflows/wf-gone')) return json(404, {})
+    if (url.includes('/workflows/wf-gone')) {
+      const status = await listingStatus
+      return json(status === 200 ? 404 : status, {})
+    }
     if (url.includes('/workflows'))
       return json(await listingStatus, {
         data: [],

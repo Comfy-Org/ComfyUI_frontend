@@ -392,10 +392,18 @@ describe('historical workflow restoration', () => {
   })
 
   it('does not accept an unresolved target from an earlier listing when the latest refresh fails', async () => {
-    const { selection, resolver, listCloudWorkflows, warnRestoreFailed } =
-      setup()
+    const {
+      selection,
+      resolver,
+      listCloudWorkflows,
+      getCloudWorkflow,
+      warnRestoreFailed
+    } = setup()
     expect(await resolver.refreshCloudWorkflowIds()).toBe(true)
     listCloudWorkflows.mockRejectedValueOnce(new Error('listing failed'))
+    getCloudWorkflow.mockRejectedValueOnce(
+      new AgentApiError('upstream failed', 500, undefined)
+    )
 
     expect(await selection.restoreTarget('wf-saved', () => true)).toBe(false)
     expect(warnRestoreFailed).toHaveBeenCalledOnce()
@@ -404,23 +412,17 @@ describe('historical workflow restoration', () => {
   it.for([
     {
       listing: 'omits the workflow',
-      list: async () => listing([{ id: 'wf-saved', name: 'saved' }]),
-      ready: true,
-      unavailable: true,
-      warns: 0
+      list: async () => listing([{ id: 'wf-saved', name: 'saved' }])
     },
     {
       listing: 'fails',
       list: async (): Promise<never> => {
         throw new Error('offline')
-      },
-      ready: false,
-      unavailable: false,
-      warns: 1
+      }
     }
   ])(
-    'restores a chat whose workflow the Cloud listing $listing',
-    async ({ list, ready, unavailable, warns }) => {
+    'marks a chat unavailable by its lookup when the Cloud listing $listing',
+    async ({ list }) => {
       const {
         selection,
         workflows,
@@ -431,12 +433,12 @@ describe('historical workflow restoration', () => {
       } = setup()
       listCloudWorkflows.mockImplementationOnce(list)
 
-      expect(await selection.restoreTarget('wf-gone', () => true)).toBe(ready)
+      expect(await selection.restoreTarget('wf-gone', () => true)).toBe(true)
 
       expect(workflows.activeWorkflow?.path).toBe(current.path)
       expect(panel.selectedWorkflow).toBeNull()
-      expect(panel.targetUnavailable).toBe(unavailable)
-      expect(warnRestoreFailed).toHaveBeenCalledTimes(warns)
+      expect(panel.targetUnavailable).toBe(true)
+      expect(warnRestoreFailed).not.toHaveBeenCalled()
     }
   )
 
@@ -619,26 +621,50 @@ describe('historical workflow restoration', () => {
     expect(warnRestoreFailed).not.toHaveBeenCalled()
   })
 
-  it('does not decide anything from a listing that gave up mid-walk', async () => {
+  it('reads a chat by its lookup when the listing gave up mid-walk', async () => {
     const {
       selection,
       workflows,
       panel,
       current,
+      cloudRows,
       listCloudWorkflows,
       warnRestoreFailed
     } = setup()
+    cloudRows.set('wf-past-the-cut', 1)
     listCloudWorkflows.mockImplementationOnce(async () =>
       listing([{ id: 'wf-saved', name: 'saved' }], false)
     )
 
     expect(await selection.restoreTarget('wf-past-the-cut', () => true)).toBe(
-      false
+      true
     )
 
+    expect(panel.selectedWorkflow).toBeNull()
     expect(panel.targetUnavailable).toBe(false)
-    expect(warnRestoreFailed).toHaveBeenCalledOnce()
+    expect(warnRestoreFailed).not.toHaveBeenCalled()
     expect(workflows.activeWorkflow?.path).toBe(current.path)
+  })
+
+  it('reads a chat by its lookup when a reference request supersedes its listing', async () => {
+    const { selection, panel, listCloudWorkflows, warnRestoreFailed } = setup()
+    let finishListing = () => {}
+    const pendingListing = new Promise<void>((resolve) => {
+      finishListing = resolve
+    })
+    listCloudWorkflows.mockImplementationOnce(async () => {
+      await pendingListing
+      return listing([{ id: 'wf-saved', name: 'saved' }])
+    })
+    const restoration = selection.restoreTarget('wf-saved', () => true)
+
+    selection.requestReferences()
+    finishListing()
+
+    expect(await restoration).toBe(true)
+    expect(panel.selectedWorkflow).toBeNull()
+    expect(panel.targetUnavailable).toBe(false)
+    expect(warnRestoreFailed).not.toHaveBeenCalled()
   })
 
   it('does not mark a superseded restoration unavailable while its row is being read', async () => {
