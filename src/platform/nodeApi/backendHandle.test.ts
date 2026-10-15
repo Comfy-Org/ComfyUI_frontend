@@ -103,4 +103,10 @@ describe('fetch', () => {
     const backend = createBackendApi()
     expect(() => backend.fetch('my-pack/items')).toThrow(/must start with/)
   })
+
+  it('requires a pack sandbox to resolve pack-owned endpoints', () => {
+    expect(() => createBackendApi().ownFetch('presets')).toThrow(
+      /only inside a Secure Nodes pack sandbox/
+    )
+  })
 })
