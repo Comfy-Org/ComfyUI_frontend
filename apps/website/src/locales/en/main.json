@@ -1,4 +1,25 @@
 {
+  "cccEditorDelete": {
+    "heading": "Delete or restore content",
+    "delete": "Delete content",
+    "undelete": "Undelete content",
+    "confirm": "Delete in Draft",
+    "confirmTitle": "Delete “{name}”?",
+    "help": "Delete saves a tombstone in Draft. It affects LIVE only when that deletion is checked and published. Content, media files and history are retained; Undelete saves a new Draft version.",
+    "saveFirst": "Save or discard your unsaved form edits before deleting the saved record.",
+    "deleted": "This Draft version is deleted. Use Undelete content to restore it before editing; this does not publish."
+  },
+  "cccDraftCards": { "new": "New", "updated": "Changed", "scheduled": "Scheduled" },
+  "cccEditorLayout": {
+    "publishing": "Publishing",
+    "activity": "Activity",
+    "utc": "Date and time are UTC. Scheduling changes visibility only; publishing is still required.",
+    "solutionsPlaceholder": "Choose or add editorial use cases",
+    "solutionsSearch": "Search or add a use case",
+    "solutionsHelp": "Choose an existing value or add editorial text. These are not generation types or a shared label registry.",
+    "addSolution": "Add “{name}”",
+    "removeSolution": "Remove use case {name}"
+  },
   "cccEditorActions": {
     "unsaved": "Unsaved changes",
     "discard": "Discard unsaved edits"
@@ -5707,12 +5728,12 @@
     "tags": "Tags",
     "removeTag": "Remove tag {tag}",
     "tagsPlaceholder": "Type a tag, then press Enter or comma",
-    "useCases": "Use cases (comma separated)",
+    "useCases": "Use cases",
     "enabled": "Enabled",
     "visibility": "Audience",
     "staff": "Comfy staff only",
     "public": "Public",
-    "visibleFrom": "Visible from (UTC ISO date/time)",
+    "visibleFrom": "Visible from (UTC)",
     "hero": "Hero media",
     "thumbnail": "Thumbnail",
     "inputs": "Inputs",

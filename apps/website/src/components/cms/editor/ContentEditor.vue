@@ -1,12 +1,19 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, toRaw } from 'vue'
 import { useEventListener } from '@vueuse/core'
-import { ArrowLeft, Save } from '@lucide/vue'
+import { ArrowLeft, Save, Trash2, RotateCcw } from '@lucide/vue'
+import { DialogRoot, DialogTitle, DialogDescription } from 'reka-ui'
 import { z } from 'astro/zod'
-import { zCreateCccItemResponse } from '@comfyorg/ingest-types/zod'
+import {
+  zCreateCccItemResponse,
+  zDeleteCccItemResponse
+} from '@comfyorg/ingest-types/zod'
 import AdminButton from '@/components/cms/ui/AdminButton.vue'
+import AdminDialogContent from '@/components/cms/ui/AdminDialogContent.vue'
 import EditorTags from './EditorTags.vue'
 import EditorSaveBar from './EditorSaveBar.vue'
+import EditorPublishing from './EditorPublishing.vue'
+import EditorUseCases from './EditorUseCases.vue'
 import AuthorPicker from './AuthorPicker.vue'
 import InputsEditor from './InputsEditor.vue'
 import ExamplesEditor from './ExamplesEditor.vue'
@@ -36,6 +43,7 @@ const {
   type: initialType,
   draft: initialDraft,
   csrf,
+  sidebar = false,
   locale = 'en'
 } = defineProps<{
   initial: Document
@@ -43,12 +51,17 @@ const {
   type: ContentType
   draft: number
   csrf: string
+  sidebar?: boolean
   locale?: Locale
 }>()
 const t = translationsFor(locale).t
 const document = ref<Document>(structuredClone(toRaw(initial)))
 const tags = computed(() => {
   const parsed = z.array(z.string()).safeParse(document.value.tags)
+  return parsed.success ? parsed.data : []
+})
+const useCases = computed(() => {
+  const parsed = z.array(z.string()).safeParse(document.value.use_cases)
   return parsed.success ? parsed.data : []
 })
 const snapshot = ref(initialSnapshot)
@@ -75,7 +88,12 @@ const state = ref<'idle' | 'saving' | 'saved' | 'conflict' | 'failed'>('idle')
 const errors = ref<string[]>([])
 const invalidFields = ref(new Set<string>())
 const uploads = ref(0)
-const attempt = ref<{ payload: string; key: string }>()
+const attempt = ref<{
+  payload: string
+  operation: 'save' | 'delete'
+  key: string
+}>()
+const deleting = ref(false)
 const ready = ref(false)
 const editorEpoch = ref(0)
 onMounted(() => {
@@ -95,6 +113,7 @@ const blocked = computed(
 )
 const completeDocumentBlocked = computed(
   () =>
+    snapshot.value?.is_deleted ||
     state.value === 'saving' ||
     uploads.value > 0 ||
     [...invalidFields.value].some((key) => key !== 'document')
@@ -114,6 +133,16 @@ const unsaved = computed(
     dirty.value ||
     invalidFields.value.size > 0 ||
     kind.value !== (snapshot.value?.type ?? initialType)
+)
+const readOnly = computed(
+  () =>
+    state.value === 'saving' ||
+    uploads.value > 0 ||
+    invalidFields.value.has('document') ||
+    snapshot.value?.is_deleted === true
+)
+const saveBlocked = computed(
+  () => blocked.value || snapshot.value?.is_deleted === true
 )
 useEventListener('beforeunload', (event: BeforeUnloadEvent) => {
   if (unsaved.value && state.value !== 'saving') event.preventDefault()
@@ -354,27 +383,51 @@ function workflowVersionName(event: Event) {
   if (event.target instanceof HTMLInputElement)
     setWorkflowVersionField('name', event.target.value)
 }
-async function save() {
-  if (blocked.value) return
+async function save(action: 'save' | 'delete' | 'undelete' = 'save') {
+  if (
+    blocked.value ||
+    (action === 'save' && snapshot.value?.is_deleted) ||
+    (action === 'delete' &&
+      (!snapshot.value || snapshot.value.is_deleted || unsaved.value)) ||
+    (action === 'undelete' && !snapshot.value?.is_deleted)
+  )
+    return
   if (hasReservedFields(document.value)) {
     state.value = 'failed'
     errors.value = [t('cmsEditor.reservedFields')]
     return
   }
-  const body = {
-    ...savePayload(document.value, kind.value, draft.value, snapshot.value),
-    ...(snapshot.value ? { uid: snapshot.value.uid } : {})
-  }
+  const operation = action === 'delete' ? 'delete' : 'save'
+  const body =
+    action === 'delete' && snapshot.value
+      ? {
+          uid: snapshot.value.uid,
+          expected_draft_rev: draft.value,
+          expected_revision_uid: snapshot.value.revision_uid
+        }
+      : {
+          ...savePayload(
+            document.value,
+            kind.value,
+            draft.value,
+            snapshot.value
+          ),
+          ...(snapshot.value ? { uid: snapshot.value.uid } : {})
+        }
   const payload = JSON.stringify(body)
-  if (attempt.value?.payload !== payload)
-    attempt.value = { payload, key: crypto.randomUUID() }
+  if (
+    attempt.value?.payload !== payload ||
+    attempt.value.operation !== operation
+  )
+    attempt.value = { payload, operation, key: crypto.randomUUID() }
   state.value = 'saving'
   errors.value = []
-  const response = await editorRequest('save', {
+  const response = await editorRequest(operation, {
     csrf,
     key: attempt.value?.key,
     body: payload
   })
+  deleting.value = false
   if (!response.ok) {
     state.value = response.status === 409 ? 'conflict' : 'failed'
     const details = z
@@ -399,7 +452,10 @@ async function save() {
         ]
     return
   }
-  const flat = zCreateCccItemResponse.safeParse(response.data)
+  const flat =
+    operation === 'delete'
+      ? zDeleteCccItemResponse.safeParse(response.data)
+      : zCreateCccItemResponse.safeParse(response.data)
   const preserved = jsonObject.safeParse(response.data)
   const next =
     flat.success && preserved.success
@@ -409,7 +465,11 @@ async function save() {
           expected_revision_uid: flat.data.revision_uid
         })
       : undefined
-  if (!next) {
+  if (
+    !next ||
+    (snapshot.value && next.uid !== snapshot.value.uid) ||
+    next.is_deleted !== (action === 'delete')
+  ) {
     state.value = 'failed'
     errors.value = [t('cmsEditor.invalidResponse')]
     return
@@ -418,6 +478,7 @@ async function save() {
   document.value = structuredClone(next.document)
   state.value = 'saved'
   attempt.value = undefined
+  editorEpoch.value++
   // Keep the authoring page at a stable UID route after first creation.
   window.history.replaceState(null, '', `/admin/content/${next.uid}/edit`)
 }
@@ -426,7 +487,7 @@ async function save() {
   <form
     :data-editor-ready="ready"
     class="grid gap-5 pb-24 font-admin text-admin-fg"
-    @submit.prevent="save"
+    @submit.prevent="save()"
   >
     <header class="flex flex-wrap items-center justify-between gap-4">
       <div class="grid gap-2">
@@ -452,13 +513,20 @@ async function save() {
           size="lg"
           class="w-40 bg-primary-comfy-yellow text-primary-comfy-ink hover:bg-primary-comfy-yellow/90 focus-visible:outline-primary-comfy-yellow"
           :icon="Save"
-          :disabled="blocked"
+          :disabled="saveBlocked"
           >{{
             t(state === 'saving' ? 'cmsEditor.saving' : 'cmsEditor.save')
           }}</AdminButton
         >
       </div>
     </header>
+    <p
+      v-if="snapshot?.is_deleted"
+      role="status"
+      class="rounded-xl border border-admin-danger/30 bg-admin-danger/10 p-4 text-sm text-admin-danger-text"
+    >
+      {{ t('cccEditorDelete.deleted') }}
+    </p>
     <p
       v-if="state === 'saved' && !dirty"
       role="status"
@@ -476,245 +544,193 @@ async function save() {
         {{ t('cmsEditor.keepEdits') }}
       </p>
     </div>
-    <fieldset
+    <div
       :key="editorEpoch"
-      :disabled="
-        state === 'saving' || uploads > 0 || invalidFields.has('document')
-      "
-      class="grid min-w-0 gap-5"
+      class="grid min-w-0 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_19rem]"
     >
-      <section
-        class="grid gap-5 rounded-2xl border border-admin-line bg-admin-card p-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]"
-      >
-        <div class="grid content-start gap-4">
-          <h2 class="text-lg font-medium">{{ t('cmsEditor.pageContent') }}</h2>
-          <label class="grid gap-1 text-sm text-admin-muted"
-            >{{ t('cmsEditor.type')
-            }}<select
-              v-model="kind"
-              :disabled="Boolean(snapshot)"
-              :class="inputClass"
-            >
-              <option v-for="item in contentTypes" :key="item" :value="item">
-                {{ item }}
-              </option>
-            </select></label
-          >
-          <label
-            v-for="field in fields"
-            :key="field"
-            class="grid gap-1 text-sm text-admin-muted"
-            >{{
-              field === 'long_description'
-                ? t('cccMetadata.longDescription')
-                : t(`cmsEditor.${field}`)
-            }}<textarea
-              v-if="field === 'long_description'"
-              :value="value(field)"
-              rows="12"
-              maxlength="20000"
-              :class="inputClass"
-              @input="patch(field, $event)" /><input
-              v-else
-              :value="value(field)"
-              :required="field === 'title' || field === 'slug'"
-              :maxlength="
-                field === 'title'
-                  ? snapshot?.schema_version === 1
-                    ? 300
-                    : 80
-                  : field === 'description'
-                    ? snapshot?.schema_version === 1
-                      ? 20000
-                      : 160
-                    : 200
-              "
-              :pattern="field === 'slug' ? '[a-z0-9]+(-[a-z0-9]+)*' : undefined"
-              :class="inputClass"
-              @input="patch(field, $event)"
-          /></label>
-          <AuthorPicker
-            :model-value="value('author_uid')"
-            :locale
-            :disabled="
-              state === 'saving' || uploads > 0 || invalidFields.has('document')
-            "
-            @update:model-value="document = { ...document, author_uid: $event }"
-          />
-          <label class="grid gap-1 text-sm text-admin-muted">
-            {{ t('cccMetadata.documentation') }}
-            <input
-              :value="value('documentation_url')"
-              :class="inputClass"
-              maxlength="2000"
-              @input="patch('documentation_url', $event)"
-            />
-          </label>
-          <p class="text-xs text-admin-muted">
-            {{ t('cccMetadata.ownerFixed') }}
-          </p>
-          <div class="grid gap-3 sm:grid-cols-2">
-            <label
-              v-for="field in ['runs', 'downloads']"
-              :key="field"
-              class="grid gap-1 text-sm text-admin-muted"
-            >
-              {{
-                t(
-                  field === 'runs'
-                    ? 'cccMetadata.runs'
-                    : 'cccMetadata.downloads'
-                )
-              }}
-              <input
-                :value="counterValue(field)"
-                inputmode="numeric"
-                :aria-invalid="invalidFields.has(field)"
-                :class="inputClass"
-                @input="counter(field, $event)"
-              />
-              <span
-                v-if="invalidFields.has(field)"
-                class="text-xs text-admin-danger-text"
-                >{{ t('cccMetadata.invalidCount') }}</span
-              >
-            </label>
-          </div>
-          <template v-if="kind === 'workflow'">
+      <fieldset :disabled="readOnly" class="grid min-w-0 gap-5">
+        <section
+          class="grid gap-5 rounded-xl border border-admin-line bg-admin-card p-5"
+        >
+          <div class="grid content-start gap-4">
+            <h2 class="text-lg font-medium">
+              {{ t('cmsEditor.pageContent') }}
+            </h2>
             <label class="grid gap-1 text-sm text-admin-muted"
-              >{{ t('cccMetadata.cloud') }}
-              <select
-                :value="
-                  typeof document.works_on_cloud === 'boolean'
-                    ? String(document.works_on_cloud)
-                    : ''
-                "
-                :class="inputClass"
-                @change="patch('works_on_cloud', $event)"
-              >
-                <option value="">{{ t('cccMetadata.unspecified') }}</option>
-                <option value="true">{{ t('cccWorkflow.yes') }}</option>
-                <option value="false">{{ t('cccWorkflow.no') }}</option>
-              </select>
-            </label>
-            <label class="grid gap-1 text-sm text-admin-muted"
-              >{{ t('cccMetadata.outputType') }}
-              <select
-                :value="value('output_type')"
-                :class="inputClass"
-                @change="patch('output_type', $event)"
-              >
-                <option value="">{{ t('cccMetadata.unspecified') }}</option>
-                <option
-                  v-for="output in [
-                    'image',
-                    'video',
-                    'audio',
-                    '3d',
-                    'text',
-                    'mixed'
-                  ] as const"
-                  :key="output"
-                  :value="output"
-                >
-                  {{ t(`cccWorkflow.output.${output}`) }}
-                </option>
-              </select>
-            </label>
-            <label class="grid gap-1 text-sm text-admin-muted"
-              >{{ t('cccMetadata.models')
-              }}<input
-                :value="listValue('model_uids')"
-                :class="inputClass"
-                @input="list('model_uids', $event)"
-            /></label>
-            <label class="grid gap-1 text-sm text-admin-muted"
-              >{{ t('cccMetadata.cloudShare')
-              }}<input
-                :value="value('cloud_share_url')"
-                :class="inputClass"
-                maxlength="2000"
-                @input="patch('cloud_share_url', $event)"
-            /></label>
-          </template>
-          <template v-if="kind === 'model'"
-            ><label class="grid gap-1 text-sm text-admin-muted"
-              >{{ t('cmsEditor.provider')
-              }}<input
-                :value="value('provider')"
-                :class="inputClass"
-                @input="patch('provider', $event)" /></label
-            ><label class="grid gap-1 text-sm text-admin-muted"
-              >{{ t('cmsEditor.routerModel')
-              }}<input
-                :value="value('router_model_id')"
-                :class="inputClass"
-                @input="patch('router_model_id', $event)" /></label
-          ></template>
-          <template v-if="kind === 'app'"
-            ><label class="grid gap-1 text-sm text-admin-muted"
-              >{{ t('cmsEditor.implementation')
-              }}<input
-                :value="value('implementation_ref')"
-                :class="inputClass"
-                @input="patch('implementation_ref', $event)" /></label
-            ><label class="grid gap-1 text-sm text-admin-muted"
-              >{{ t('cmsEditor.workflowUID')
-              }}<input
-                :value="value('workflow_uid')"
-                :class="inputClass"
-                @input="patch('workflow_uid', $event)" /></label
-          ></template>
-          <div class="grid gap-1 text-sm text-admin-muted">
-            <span>{{ t('cmsEditor.tags') }}</span>
-            <EditorTags
-              :model-value="tags"
-              :label="t('cmsEditor.tags')"
-              :locale
-              :disabled="
-                state === 'saving' ||
-                uploads > 0 ||
-                invalidFields.has('document')
-              "
-              @update:model-value="document = { ...document, tags: $event }"
-            />
-          </div>
-          <label class="grid gap-1 text-sm text-admin-muted"
-            >{{ t('cmsEditor.useCases')
-            }}<input
-              :value="listValue('use_cases')"
-              :class="inputClass"
-              @input="list('use_cases', $event)"
-          /></label>
-          <div class="grid gap-3 sm:grid-cols-2">
-            <label class="flex items-center gap-2 text-sm"
-              ><input
-                type="checkbox"
-                :checked="document.enabled === true"
-                @change="patch('enabled', $event)"
-              />{{ t('cmsEditor.enabled') }}</label
-            ><label class="grid gap-1 text-sm text-admin-muted"
-              >{{ t('cmsEditor.visibility')
+              >{{ t('cmsEditor.type')
               }}<select
-                :value="value('visibility')"
+                v-model="kind"
+                :disabled="Boolean(snapshot)"
                 :class="inputClass"
-                @change="patch('visibility', $event)"
               >
-                <option value="staff">{{ t('cmsEditor.staff') }}</option>
-                <option value="public">{{ t('cmsEditor.public') }}</option>
+                <option v-for="item in contentTypes" :key="item" :value="item">
+                  {{ item }}
+                </option>
               </select></label
             >
+            <label
+              v-for="field in fields"
+              :key="field"
+              class="grid gap-1 text-sm text-admin-muted"
+              >{{
+                field === 'long_description'
+                  ? t('cccMetadata.longDescription')
+                  : t(`cmsEditor.${field}`)
+              }}<textarea
+                v-if="field === 'long_description'"
+                :value="value(field)"
+                rows="12"
+                maxlength="20000"
+                :class="inputClass"
+                @input="patch(field, $event)" /><input
+                v-else
+                :value="value(field)"
+                :required="field === 'title' || field === 'slug'"
+                :maxlength="
+                  field === 'title'
+                    ? snapshot?.schema_version === 1
+                      ? 300
+                      : 80
+                    : field === 'description'
+                      ? snapshot?.schema_version === 1
+                        ? 20000
+                        : 160
+                      : 200
+                "
+                :pattern="
+                  field === 'slug' ? '[a-z0-9]+(-[a-z0-9]+)*' : undefined
+                "
+                :class="inputClass"
+                @input="patch(field, $event)"
+            /></label>
+            <AuthorPicker
+              :model-value="value('author_uid')"
+              :locale
+              :disabled="readOnly"
+              @update:model-value="
+                document = { ...document, author_uid: $event }
+              "
+            />
+            <label class="grid gap-1 text-sm text-admin-muted">
+              {{ t('cccMetadata.documentation') }}
+              <input
+                :value="value('documentation_url')"
+                :class="inputClass"
+                maxlength="2000"
+                @input="patch('documentation_url', $event)"
+              />
+            </label>
+            <p class="text-xs text-admin-muted">
+              {{ t('cccMetadata.ownerFixed') }}
+            </p>
+            <template v-if="kind === 'workflow'">
+              <label class="grid gap-1 text-sm text-admin-muted"
+                >{{ t('cccMetadata.cloud') }}
+                <select
+                  :value="
+                    typeof document.works_on_cloud === 'boolean'
+                      ? String(document.works_on_cloud)
+                      : ''
+                  "
+                  :class="inputClass"
+                  @change="patch('works_on_cloud', $event)"
+                >
+                  <option value="">{{ t('cccMetadata.unspecified') }}</option>
+                  <option value="true">{{ t('cccWorkflow.yes') }}</option>
+                  <option value="false">{{ t('cccWorkflow.no') }}</option>
+                </select>
+              </label>
+              <label class="grid gap-1 text-sm text-admin-muted"
+                >{{ t('cccMetadata.outputType') }}
+                <select
+                  :value="value('output_type')"
+                  :class="inputClass"
+                  @change="patch('output_type', $event)"
+                >
+                  <option value="">{{ t('cccMetadata.unspecified') }}</option>
+                  <option
+                    v-for="output in [
+                      'image',
+                      'video',
+                      'audio',
+                      '3d',
+                      'text',
+                      'mixed'
+                    ] as const"
+                    :key="output"
+                    :value="output"
+                  >
+                    {{ t(`cccWorkflow.output.${output}`) }}
+                  </option>
+                </select>
+              </label>
+              <label class="grid gap-1 text-sm text-admin-muted"
+                >{{ t('cccMetadata.models')
+                }}<input
+                  :value="listValue('model_uids')"
+                  :class="inputClass"
+                  @input="list('model_uids', $event)"
+              /></label>
+              <label class="grid gap-1 text-sm text-admin-muted"
+                >{{ t('cccMetadata.cloudShare')
+                }}<input
+                  :value="value('cloud_share_url')"
+                  :class="inputClass"
+                  maxlength="2000"
+                  @input="patch('cloud_share_url', $event)"
+              /></label>
+            </template>
+            <template v-if="kind === 'model'"
+              ><label class="grid gap-1 text-sm text-admin-muted"
+                >{{ t('cmsEditor.provider')
+                }}<input
+                  :value="value('provider')"
+                  :class="inputClass"
+                  @input="patch('provider', $event)" /></label
+              ><label class="grid gap-1 text-sm text-admin-muted"
+                >{{ t('cmsEditor.routerModel')
+                }}<input
+                  :value="value('router_model_id')"
+                  :class="inputClass"
+                  @input="patch('router_model_id', $event)" /></label
+            ></template>
+            <template v-if="kind === 'app'"
+              ><label class="grid gap-1 text-sm text-admin-muted"
+                >{{ t('cmsEditor.implementation')
+                }}<input
+                  :value="value('implementation_ref')"
+                  :class="inputClass"
+                  @input="patch('implementation_ref', $event)" /></label
+              ><label class="grid gap-1 text-sm text-admin-muted"
+                >{{ t('cmsEditor.workflowUID')
+                }}<input
+                  :value="value('workflow_uid')"
+                  :class="inputClass"
+                  @input="patch('workflow_uid', $event)" /></label
+            ></template>
+            <div class="grid gap-1 text-sm text-admin-muted">
+              <span>{{ t('cmsEditor.tags') }}</span>
+              <EditorTags
+                :model-value="tags"
+                :label="t('cmsEditor.tags')"
+                :locale
+                :disabled="readOnly"
+                @update:model-value="document = { ...document, tags: $event }"
+              />
+            </div>
+            <EditorUseCases
+              :model-value="useCases"
+              :locale
+              :disabled="readOnly"
+              @update:model-value="
+                document = { ...document, use_cases: $event }
+              "
+            />
           </div>
-          <label class="grid gap-1 text-sm text-admin-muted"
-            >{{ t('cmsEditor.visibleFrom')
-            }}<input
-              :value="value('visible_from')"
-              placeholder="2026-10-15T16:00:00Z"
-              :class="inputClass"
-              @input="patch('visible_from', $event)"
-          /></label>
-        </div>
-        <aside class="grid content-start gap-3">
+        </section>
+        <section
+          class="grid content-start gap-3 rounded-xl border border-admin-line bg-admin-card p-5"
+        >
           <h2 class="text-lg font-medium">{{ t('cmsEditor.hero') }}</h2>
           <MediaUpload
             :reference="document.hero ? objectValue(document.hero) : undefined"
@@ -739,219 +755,317 @@ async function save() {
             @update="media('thumbnail', $event)"
             @busy="busy"
           />
-        </aside>
-      </section>
-      <section
-        class="grid gap-4 rounded-2xl border border-admin-line bg-admin-card p-5"
-      >
-        <div class="flex items-center justify-between gap-3">
-          <h2 class="text-lg font-medium">{{ t('cccMetadata.faq') }}</h2>
-          <AdminButton @click="addFaq">{{
-            t('cccMetadata.addQuestion')
-          }}</AdminButton>
-        </div>
-        <p
-          v-if="invalidFields.has('faq')"
-          class="text-sm text-admin-danger-text"
+        </section>
+        <section
+          class="grid gap-4 rounded-2xl border border-admin-line bg-admin-card p-5"
         >
-          {{ t('cccMetadata.invalidFAQ') }}
+          <div class="flex items-center justify-between gap-3">
+            <h2 class="text-lg font-medium">{{ t('cccMetadata.faq') }}</h2>
+            <AdminButton @click="addFaq">{{
+              t('cccMetadata.addQuestion')
+            }}</AdminButton>
+          </div>
+          <p
+            v-if="invalidFields.has('faq')"
+            class="text-sm text-admin-danger-text"
+          >
+            {{ t('cccMetadata.invalidFAQ') }}
+          </p>
+          <div
+            v-for="(_, index) in arrayObjects(document.faq)"
+            :key="index"
+            class="grid gap-3 rounded-lg border border-admin-line p-4"
+          >
+            <label class="grid gap-1 text-sm text-admin-muted"
+              >{{ t('cccMetadata.question', { count: index + 1 })
+              }}<input
+                :value="faqValue(index, 'question')"
+                maxlength="300"
+                :class="inputClass"
+                @input="faq(index, 'question', $event)"
+            /></label>
+            <label class="grid gap-1 text-sm text-admin-muted"
+              >{{ t('cccMetadata.answer', { count: index + 1 })
+              }}<textarea
+                :value="faqValue(index, 'answer')"
+                rows="5"
+                maxlength="20000"
+                :class="inputClass"
+                @input="faq(index, 'answer', $event)"
+              />
+            </label>
+            <AdminButton @click="removeFaq(index)">{{
+              t('cccMetadata.removeQuestion')
+            }}</AdminButton>
+          </div>
+        </section>
+        <section
+          v-if="kind === 'workflow'"
+          class="grid gap-4 rounded-2xl border border-admin-line bg-admin-card p-5"
+        >
+          <div class="flex items-center justify-between gap-3">
+            <h2 class="text-lg font-medium">{{ t('cccMetadata.outputs') }}</h2>
+            <AdminButton @click="addOutput">{{
+              t('cccMetadata.addOutput')
+            }}</AdminButton>
+          </div>
+          <p
+            v-if="invalidFields.has('outputs')"
+            class="text-sm text-admin-danger-text"
+          >
+            {{ t('cccMetadata.invalidOutputs') }}
+          </p>
+          <div
+            v-for="(entry, index) in arrayObjects(document.outputs)"
+            :key="index"
+            class="grid gap-3 rounded-lg border border-admin-line p-4 sm:grid-cols-2"
+          >
+            <label
+              v-for="field in ['id', 'nodeId', 'key'] as const"
+              :key="field"
+              class="grid gap-1 text-sm text-admin-muted"
+              >{{ t(`cccMetadata.output.${field}`, { count: index + 1 })
+              }}<input
+                :value="typeof entry[field] === 'string' ? entry[field] : ''"
+                :class="inputClass"
+                maxlength="200"
+                @input="output(index, field, $event)"
+            /></label>
+            <label class="grid gap-1 text-sm text-admin-muted"
+              >{{ t('cccMetadata.output.kind', { count: index + 1 })
+              }}<select
+                :value="entry.kind"
+                :class="inputClass"
+                @change="output(index, 'kind', $event)"
+              >
+                <option
+                  v-for="kind in [
+                    'image',
+                    'video',
+                    'audio',
+                    '3d',
+                    'text'
+                  ] as const"
+                  :key="kind"
+                  :value="kind"
+                >
+                  {{ t(`cccWorkflow.output.${kind}`) }}
+                </option>
+              </select></label
+            >
+            <AdminButton @click="removeOutput(index)">{{
+              t('cccMetadata.removeOutput')
+            }}</AdminButton>
+          </div>
+        </section>
+        <label
+          v-if="kind === 'workflow'"
+          class="flex items-center gap-3 text-sm"
+        >
+          <input
+            type="checkbox"
+            :checked="inputsEnabled"
+            @change="patch('runnable', $event)"
+          />
+          {{ t('cccMetadata.runnable') }}
+        </label>
+        <p v-if="kind === 'workflow'" class="text-sm text-admin-muted">
+          {{ t('cccMetadata.runnableHint') }}
         </p>
-        <div
-          v-for="(_, index) in arrayObjects(document.faq)"
-          :key="index"
-          class="grid gap-3 rounded-lg border border-admin-line p-4"
+        <fieldset
+          :disabled="!inputsEnabled"
+          :class="!inputsEnabled ? 'min-w-0 opacity-40' : 'min-w-0'"
         >
-          <label class="grid gap-1 text-sm text-admin-muted"
-            >{{ t('cccMetadata.question', { count: index + 1 })
-            }}<input
-              :value="faqValue(index, 'question')"
-              maxlength="300"
+          <InputsEditor
+            v-model="document"
+            :locale
+            :disabled="!inputsEnabled || readOnly"
+            @validity="validity"
+          />
+        </fieldset>
+        <section
+          v-if="kind === 'workflow'"
+          class="grid gap-4 rounded-2xl border border-admin-line bg-admin-card p-5"
+        >
+          <h2 class="text-lg">{{ t('cccMetadata.scriptCode') }}</h2>
+          <p class="text-sm text-admin-muted">
+            {{ t('cccMetadata.scriptHint') }}
+          </p>
+          <label
+            v-for="language in ['python', 'typescript', 'curl'] as const"
+            :key="language"
+            class="grid gap-2 text-sm text-admin-muted"
+          >
+            {{ t(`cccMetadata.script.${language}`) }}
+            <textarea
+              :value="
+                typeof objectValue(document.script_code)[language] === 'string'
+                  ? String(objectValue(document.script_code)[language])
+                  : ''
+              "
+              rows="8"
+              maxlength="60000"
+              spellcheck="false"
               :class="inputClass"
-              @input="faq(index, 'question', $event)"
-          /></label>
-          <label class="grid gap-1 text-sm text-admin-muted"
-            >{{ t('cccMetadata.answer', { count: index + 1 })
-            }}<textarea
-              :value="faqValue(index, 'answer')"
-              rows="5"
-              maxlength="20000"
-              :class="inputClass"
-              @input="faq(index, 'answer', $event)"
+              @input="scriptCode(language, $event)"
             />
           </label>
-          <AdminButton @click="removeFaq(index)">{{
-            t('cccMetadata.removeQuestion')
-          }}</AdminButton>
-        </div>
-      </section>
-      <section
-        v-if="kind === 'workflow'"
-        class="grid gap-4 rounded-2xl border border-admin-line bg-admin-card p-5"
-      >
-        <div class="flex items-center justify-between gap-3">
-          <h2 class="text-lg font-medium">{{ t('cccMetadata.outputs') }}</h2>
-          <AdminButton @click="addOutput">{{
-            t('cccMetadata.addOutput')
-          }}</AdminButton>
-        </div>
-        <p
-          v-if="invalidFields.has('outputs')"
-          class="text-sm text-admin-danger-text"
+        </section>
+        <ExamplesEditor
+          v-model="document"
+          :entity-u-i-d="snapshot?.uid"
+          :draft
+          :csrf
+          :locale
+          @validity="validity"
+          @busy="busy"
+        />
+        <section
+          v-if="kind === 'workflow'"
+          class="grid gap-4 rounded-2xl border border-admin-line bg-admin-card p-5"
         >
-          {{ t('cccMetadata.invalidOutputs') }}
-        </p>
-        <div
-          v-for="(entry, index) in arrayObjects(document.outputs)"
-          :key="index"
-          class="grid gap-3 rounded-lg border border-admin-line p-4 sm:grid-cols-2"
-        >
-          <label
-            v-for="field in ['id', 'nodeId', 'key'] as const"
-            :key="field"
-            class="grid gap-1 text-sm text-admin-muted"
-            >{{ t(`cccMetadata.output.${field}`, { count: index + 1 })
+          <h2 class="text-lg">{{ t('cccWorkflowVersions.heading') }}</h2>
+          <p class="text-sm text-admin-muted">
+            {{ t('cccWorkflowVersions.help') }}
+          </p>
+          <label class="grid gap-1 text-sm text-admin-muted"
+            >{{ t('cccWorkflowVersions.name')
             }}<input
-              :value="typeof entry[field] === 'string' ? entry[field] : ''"
+              :value="primaryWorkflowVersion.name"
+              :disabled="!snapshot?.uid"
               :class="inputClass"
               maxlength="200"
-              @input="output(index, field, $event)"
+              @input="workflowVersionName"
           /></label>
-          <label class="grid gap-1 text-sm text-admin-muted"
-            >{{ t('cccMetadata.output.kind', { count: index + 1 })
-            }}<select
-              :value="entry.kind"
-              :class="inputClass"
-              @change="output(index, 'kind', $event)"
-            >
-              <option
-                v-for="kind in [
-                  'image',
-                  'video',
-                  'audio',
-                  '3d',
-                  'text'
-                ] as const"
-                :key="kind"
-                :value="kind"
-              >
-                {{ t(`cccWorkflow.output.${kind}`) }}
-              </option>
-            </select></label
-          >
-          <AdminButton @click="removeOutput(index)">{{
-            t('cccMetadata.removeOutput')
-          }}</AdminButton>
-        </div>
-      </section>
-      <label v-if="kind === 'workflow'" class="flex items-center gap-3 text-sm">
-        <input
-          type="checkbox"
-          :checked="inputsEnabled"
-          @change="patch('runnable', $event)"
-        />
-        {{ t('cccMetadata.runnable') }}
-      </label>
-      <p v-if="kind === 'workflow'" class="text-sm text-admin-muted">
-        {{ t('cccMetadata.runnableHint') }}
-      </p>
-      <fieldset
-        :disabled="!inputsEnabled"
-        :class="!inputsEnabled ? 'min-w-0 opacity-40' : 'min-w-0'"
-      >
-        <InputsEditor
-          v-model="document"
-          :locale
-          :disabled="
-            !inputsEnabled ||
-            state === 'saving' ||
-            uploads > 0 ||
-            invalidFields.has('document')
-          "
-          @validity="validity"
-        />
-      </fieldset>
-      <section
-        v-if="kind === 'workflow'"
-        class="grid gap-4 rounded-2xl border border-admin-line bg-admin-card p-5"
-      >
-        <h2 class="text-lg">{{ t('cccMetadata.scriptCode') }}</h2>
-        <p class="text-sm text-admin-muted">
-          {{ t('cccMetadata.scriptHint') }}
-        </p>
-        <label
-          v-for="language in ['python', 'typescript', 'curl'] as const"
-          :key="language"
-          class="grid gap-2 text-sm text-admin-muted"
-        >
-          {{ t(`cccMetadata.script.${language}`) }}
-          <textarea
-            :value="
-              typeof objectValue(document.script_code)[language] === 'string'
-                ? String(objectValue(document.script_code)[language])
-                : ''
-            "
-            rows="8"
-            maxlength="60000"
-            spellcheck="false"
-            :class="inputClass"
-            @input="scriptCode(language, $event)"
+          <h3 class="text-sm">{{ t('cccWorkflowVersions.download') }}</h3>
+          <MediaUpload
+            :reference="objectValue(primaryWorkflowVersion.download)"
+            :entity-u-i-d="snapshot?.uid"
+            :draft
+            :csrf
+            :locale
+            media-role="workflow-download-0"
+            :file-label="t('cccWorkflowVersions.download')"
+            json-only
+            @update="setWorkflowVersionField('download', $event)"
+            @busy="busy"
           />
-        </label>
-      </section>
-      <ExamplesEditor
-        v-model="document"
-        :entity-u-i-d="snapshot?.uid"
-        :draft
-        :csrf
-        :locale
-        @validity="validity"
-        @busy="busy"
-      />
-      <section
-        v-if="kind === 'workflow'"
-        class="grid gap-4 rounded-2xl border border-admin-line bg-admin-card p-5"
+          <h3 class="text-sm">{{ t('cccWorkflowVersions.api') }}</h3>
+          <MediaUpload
+            :reference="objectValue(primaryWorkflowVersion.api)"
+            :entity-u-i-d="snapshot?.uid"
+            :draft
+            :csrf
+            :locale
+            media-role="workflow-api-0"
+            :file-label="t('cccWorkflowVersions.api')"
+            json-only
+            @update="setWorkflowVersionField('api', $event)"
+            @busy="busy"
+          />
+        </section>
+      </fieldset>
+      <aside class="grid min-w-0 content-start gap-5">
+        <EditorPublishing
+          :document
+          :locale
+          :disabled="readOnly"
+          @update="document = $event"
+        />
+        <fieldset
+          :disabled="readOnly"
+          class="grid gap-4 rounded-xl border border-admin-line bg-admin-card p-5"
+        >
+          <h2 class="text-sm font-medium">
+            {{ t('cccEditorLayout.activity') }}
+          </h2>
+          <label
+            v-for="field in ['runs', 'downloads']"
+            :key="field"
+            class="grid gap-1.5 text-xs text-admin-muted"
+          >
+            {{
+              t(field === 'runs' ? 'cccMetadata.runs' : 'cccMetadata.downloads')
+            }}
+            <input
+              :value="counterValue(field)"
+              inputmode="numeric"
+              :aria-invalid="invalidFields.has(field)"
+              :class="inputClass"
+              @input="counter(field, $event)"
+            />
+            <span
+              v-if="invalidFields.has(field)"
+              class="text-xs text-admin-danger-text"
+              >{{ t('cccMetadata.invalidCount') }}</span
+            >
+          </label>
+        </fieldset>
+        <section
+          v-if="snapshot"
+          class="grid gap-3 rounded-xl border border-admin-line bg-admin-card p-5"
+        >
+          <h2 class="text-sm font-medium">
+            {{ t('cccEditorDelete.heading') }}
+          </h2>
+          <p class="text-sm text-admin-muted">
+            {{ t('cccEditorDelete.help') }}
+          </p>
+          <p v-if="unsaved" class="text-xs text-admin-muted">
+            {{ t('cccEditorDelete.saveFirst') }}
+          </p>
+          <div>
+            <AdminButton
+              v-if="snapshot.is_deleted"
+              :icon="RotateCcw"
+              :disabled="blocked"
+              @click="save('undelete')"
+              >{{ t('cccEditorDelete.undelete') }}</AdminButton
+            >
+            <AdminButton
+              v-else
+              variant="dangerGhost"
+              :icon="Trash2"
+              :disabled="blocked || unsaved"
+              @click="deleting = true"
+              >{{ t('cccEditorDelete.delete') }}</AdminButton
+            >
+          </div>
+        </section>
+      </aside>
+    </div>
+    <DialogRoot
+      :open="deleting"
+      @update:open="state !== 'saving' && (deleting = $event)"
+    >
+      <AdminDialogContent
+        v-if="deleting"
+        :close-label="t('cccStaging.close')"
+        :close-disabled="state === 'saving'"
+        @escape-key-down="state === 'saving' && $event.preventDefault()"
+        @pointer-down-outside="state === 'saving' && $event.preventDefault()"
       >
-        <h2 class="text-lg">{{ t('cccWorkflowVersions.heading') }}</h2>
-        <p class="text-sm text-admin-muted">
-          {{ t('cccWorkflowVersions.help') }}
-        </p>
-        <label class="grid gap-1 text-sm text-admin-muted"
-          >{{ t('cccWorkflowVersions.name')
-          }}<input
-            :value="primaryWorkflowVersion.name"
-            :disabled="!snapshot?.uid"
-            :class="inputClass"
-            maxlength="200"
-            @input="workflowVersionName"
-        /></label>
-        <h3 class="text-sm">{{ t('cccWorkflowVersions.download') }}</h3>
-        <MediaUpload
-          :reference="objectValue(primaryWorkflowVersion.download)"
-          :entity-u-i-d="snapshot?.uid"
-          :draft
-          :csrf
-          :locale
-          media-role="workflow-download-0"
-          :file-label="t('cccWorkflowVersions.download')"
-          json-only
-          @update="setWorkflowVersionField('download', $event)"
-          @busy="busy"
-        />
-        <h3 class="text-sm">{{ t('cccWorkflowVersions.api') }}</h3>
-        <MediaUpload
-          :reference="objectValue(primaryWorkflowVersion.api)"
-          :entity-u-i-d="snapshot?.uid"
-          :draft
-          :csrf
-          :locale
-          media-role="workflow-api-0"
-          :file-label="t('cccWorkflowVersions.api')"
-          json-only
-          @update="setWorkflowVersionField('api', $event)"
-          @busy="busy"
-        />
-      </section>
-    </fieldset>
+        <DialogTitle>{{
+          t('cccEditorDelete.confirmTitle', {
+            name: value('title') || snapshot?.uid || ''
+          })
+        }}</DialogTitle>
+        <DialogDescription>{{ t('cccEditorDelete.help') }}</DialogDescription>
+        <div class="flex justify-end gap-2">
+          <AdminButton
+            :disabled="state === 'saving'"
+            @click="deleting = false"
+            >{{ t('cmsEditor.cancel') }}</AdminButton
+          >
+          <AdminButton
+            variant="danger"
+            :disabled="blocked"
+            @click="save('delete')"
+            >{{ t('cccEditorDelete.confirm') }}</AdminButton
+          >
+        </div>
+      </AdminDialogContent>
+    </DialogRoot>
     <details class="rounded-2xl border border-admin-line bg-admin-card p-5">
       <summary class="cursor-pointer text-sm text-admin-muted">
         {{ t('cmsEditor.advancedJSON') }}
@@ -970,7 +1084,8 @@ async function save() {
     </details>
     <EditorSaveBar
       v-if="unsaved"
-      :blocked
+      :blocked="saveBlocked"
+      :sidebar
       :busy="state === 'saving' || uploads > 0"
       :locale
       @discard="discardUnsaved"
@@ -985,7 +1100,7 @@ async function save() {
         size="lg"
         :icon="Save"
         class="w-40 bg-primary-comfy-yellow text-primary-comfy-ink hover:bg-primary-comfy-yellow/90 focus-visible:outline-primary-comfy-yellow"
-        :disabled="blocked"
+        :disabled="saveBlocked"
         >{{ t('cmsEditor.save') }}</AdminButton
       >
     </footer>

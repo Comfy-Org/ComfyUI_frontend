@@ -12,7 +12,7 @@ import {
 } from '@/lib/cms/editor-server'
 
 const uid = z.uuid()
-const allowed = new Set(['state', 'item', 'save', 'upload'])
+const allowed = new Set(['state', 'item', 'save', 'upload', 'delete'])
 
 export const GET: APIRoute = async (context) => {
   const session = context.locals.catalogAuthoring
@@ -75,7 +75,7 @@ export const POST: APIRoute = async (context) => {
   if (
     !operation ||
     !allowed.has(operation) ||
-    !['save', 'upload'].includes(operation)
+    !['save', 'upload', 'delete'].includes(operation)
   )
     return editorFailure(404)
   if (context.url.search) return editorFailure(400)
@@ -87,7 +87,7 @@ export const POST: APIRoute = async (context) => {
     operation === 'upload' ? 65 << 20 : 1 << 20
   )
   if (!bytes) return editorFailure(413)
-  if (operation === 'save') {
+  if (operation === 'save' || operation === 'delete') {
     if (
       !context.request.headers
         .get('Content-Type')
@@ -106,6 +106,30 @@ export const POST: APIRoute = async (context) => {
     const id = Object.hasOwn(parsed.data, 'uid') ? rawUID : undefined
     if (id !== undefined && !uid.safeParse(id).success)
       return editorFailure(400)
+    if (operation === 'delete') {
+      const token = z
+        .object({
+          expected_draft_rev: z
+            .number()
+            .int()
+            .positive()
+            .max(Number.MAX_SAFE_INTEGER),
+          expected_revision_uid: z.uuid()
+        })
+        .strict()
+        .safeParse(body)
+      if (typeof id !== 'string' || !token.success) return editorFailure(400)
+      return privateJSON(
+        await catalogAuthoring(session, `/api/v1/catalog/draft/items/${id}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'Idempotency-Key': key
+          },
+          body: JSON.stringify(token.data)
+        })
+      )
+    }
     const response = await catalogAuthoring(
       session,
       typeof id === 'string'

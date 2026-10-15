@@ -1,5 +1,5 @@
 export async function editorRequest(
-  operation: 'state' | 'item' | 'save' | 'upload',
+  operation: 'state' | 'item' | 'save' | 'upload' | 'delete',
   options: {
     uid?: string
     csrf?: string

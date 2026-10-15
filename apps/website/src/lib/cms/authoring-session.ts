@@ -135,7 +135,7 @@ export function isAuthoringRoute(path: string) {
   return (
     path.replace(/\/$/, '') === '/admin/catalog-preview' ||
     /^\/admin\/content\/(?:new|[0-9a-f-]{36}\/(?:edit|view))\/?$/.test(path) ||
-    /^\/admin\/content-api\/(?:state|item|save|upload|profiles)\/?$/.test(
+    /^\/admin\/content-api\/(?:state|item|save|upload|profiles|delete)\/?$/.test(
       path
     ) ||
     /^\/admin\/catalog(?:\/final-review)?\/?$/.test(path) ||

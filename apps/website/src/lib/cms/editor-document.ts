@@ -106,7 +106,7 @@ export function editorSnapshot(raw: unknown) {
       revision_uid: z.uuid(),
       expected_draft_rev: z.number().int().positive(),
       expected_revision_uid: z.uuid(),
-      is_deleted: z.literal(false)
+      is_deleted: z.boolean()
     })
     .safeParse(flat)
   if (!tokens.success || !document) return undefined

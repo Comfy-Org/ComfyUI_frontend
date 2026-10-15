@@ -114,12 +114,20 @@ describe('complete authored documents', () => {
     ).toMatchObject(fields)
   })
   it.each([
-    { ...flat, is_deleted: true },
+    { ...flat, is_deleted: 'true' },
     { ...flat, expected_draft_rev: 0 },
     { ...flat, uid: 'slug' },
     { ...flat, type: 'media' }
   ])('rejects an unusable editing snapshot', (raw) => {
     expect(editorSnapshot(raw)).toBeUndefined()
+  })
+  it('retains the complete tombstone and exact edit token for explicit undelete', () => {
+    const snapshot = editorSnapshot({ ...flat, is_deleted: true })
+    expect(snapshot).toMatchObject({
+      is_deleted: true,
+      revision_uid: flat.revision_uid
+    })
+    expect(snapshot?.document).toEqual(editorSnapshot(flat)?.document)
   })
   it.each(['[]', 'null', '{', 'true'])('rejects non-object JSON: %s', (text) =>
     expect(parseObject(text)).toBeUndefined()

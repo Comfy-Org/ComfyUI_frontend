@@ -47,6 +47,7 @@ describe('separate catalog editor authority', () => {
   it.for([
     '/admin/content/new',
     '/admin/content-api/state',
+    '/admin/content-api/delete',
     '/admin/catalog',
     '/admin/catalog/final-review',
     '/admin/catalog-api/staging'

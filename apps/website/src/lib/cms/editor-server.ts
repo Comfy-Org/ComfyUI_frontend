@@ -84,6 +84,7 @@ export async function loadEditorData(
       contentTypes.find((kind) => kind === requestedType) ??
       'model',
     draft: snapshot?.expected_draft_rev ?? session.state.draft_rev,
+    liveRevision: session.state.live_rev,
     csrf: session.csrf
   }
 }

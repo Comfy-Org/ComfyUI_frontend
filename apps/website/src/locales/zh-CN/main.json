@@ -1,4 +1,25 @@
 {
+  "cccEditorDelete": {
+    "heading": "删除或恢复内容",
+    "delete": "删除内容",
+    "undelete": "恢复已删除内容",
+    "confirm": "在草稿中删除",
+    "confirmTitle": "删除“{name}”？",
+    "help": "删除会在草稿中保存删除标记。只有勾选并发布此删除操作后，正式网站才会改变。内容、媒体文件和历史记录都会保留；恢复操作会保存新的草稿版本。",
+    "saveFirst": "请先保存或放弃表单中未保存的编辑，再删除已保存的记录。",
+    "deleted": "此草稿版本已删除。请先恢复已删除内容再编辑；恢复不会发布。"
+  },
+  "cccDraftCards": { "new": "新增", "updated": "已修改", "scheduled": "已排期" },
+  "cccEditorLayout": {
+    "publishing": "发布设置",
+    "activity": "使用统计",
+    "utc": "日期和时间采用 UTC。排期只改变可见性；仍需发布。",
+    "solutionsPlaceholder": "选择或添加编辑用途",
+    "solutionsSearch": "搜索或添加用途",
+    "solutionsHelp": "选择已有值或添加用途文字。这不是生成类型，也不是共享标签库。",
+    "addSolution": "添加“{name}”",
+    "removeSolution": "移除用途 {name}"
+  },
   "cccEditorActions": {
     "unsaved": "有未保存的更改",
     "discard": "放弃未保存的编辑"
@@ -5100,12 +5121,12 @@
     "tags": "标签",
     "removeTag": "移除标签 {tag}",
     "tagsPlaceholder": "输入标签后按回车键或逗号",
-    "useCases": "用途（用逗号分隔）",
+    "useCases": "用途",
     "enabled": "启用",
     "visibility": "可见范围",
     "staff": "仅 Comfy 员工",
     "public": "公开",
-    "visibleFrom": "可见时间（UTC ISO 日期和时间）",
+    "visibleFrom": "可见时间（UTC）",
     "hero": "主媒体",
     "thumbnail": "缩略图",
     "inputs": "输入",

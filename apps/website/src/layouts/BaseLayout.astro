@@ -164,6 +164,12 @@ const previewChanges: CatalogPreviewChange[] = previewItems.map((item) => ({
       ? 'modified'
       : 'added',
   summary: item.summary,
+  visibleFrom: typeof item.content.document.visible_from === 'string'
+    ? item.content.document.visible_from : undefined,
+  pagePath: ['model', 'workflow', 'app'].includes(item.content.type) &&
+    typeof item.content.document.slug === 'string'
+    ? `/hub/${item.content.type}s/${encodeURIComponent(item.content.document.slug)}/`
+    : undefined,
   fields: fieldDiff(item.before?.document, item.content.document).map(
     (change) => change.path
   ),

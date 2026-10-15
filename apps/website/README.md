@@ -90,7 +90,7 @@ saves, not additional hidden/filtered items. Publish binds the same UID set and
 candidate digest, uses existing CSRF/idempotency transport, and prevents dismissal
 while a request is unsettled. Cancel does not mutate the catalog. The legacy
 decision component remains only for compatibility; the new console does not use
-it. The rest of Mar's editor, list/history and site-wide redesign is still being
+it. Remaining editor refinements and the list/history screens are still being
 integrated, with real upload/auth/Preview transport retained instead of mocks.
 The editor also adopts Mar's tag chips: Enter or comma adds a tag, and each chip
 has a localized remove action. Enter adds the chip without submitting the form.
@@ -102,6 +102,37 @@ It uses the existing real Save/CAS flow; Discard unsaved edits restores the last
 confirmed form snapshot and resets invalid local buffers, without discarding
 server-side Draft records or uploaded Media. Save/upload in progress disables
 that reset. Conflicts retain local edits, and leaving a dirty form warns first.
+The editor now uses the same bare console/sidebar as review, with Mar's
+two-column composition and a separate publishing/activity sidebar. The sticky
+save bar leaves the fixed desktop sidebar and its LIVE link accessible. The
+date/time control explicitly edits UTC, preserving the original offset and
+subsecond value until a schedule is actually changed. Editorial use cases use
+her searchable picker treatment, adapted to the current array-of-strings
+contract; adding a phrase neither invents a shared registry nor changes a
+generation type. Both these controls preserve unrelated JSON and exact file pins.
+
+`Delete content` in the editor is distinct from review-row trash. With explicit
+confirmation and the current edit/Draft tokens it appends a retained tombstone;
+that deletion becomes LIVE only if selected and published. A tombstoned record
+opens read-only and `Undelete content` sends its complete retained authored JSON
+as a normal CAS replacement, omitting server-owned `is_deleted` metadata. Both
+actions retain history and never erase files or publish automatically. Unsaved
+local form edits must be saved or explicitly discarded before deletion. Retry
+keys remain bound to the exact request, and conflicts retain the existing form.
+
+Mar's New/Changed/Scheduled card outlines and badges appear only under the
+verified DRAFT controller. They use exact same-origin Hub paths from the private
+review snapshot, not title matching or guessed identities. Island-loaded cards
+are marked once; returning to LIVE or unmounting removes the annotations. These
+display marks cannot grant page or media access.
+
+The original staff collection facade is website-eligible, not an administrative
+all-records list; `eligible=false` currently does not include disabled/future
+records. The old review/history facade is not a canonical catalog history.
+Consequently All Content/History are not wired to those incomplete sources.
+Their canonical bounded read adapters remain required; no fake history,
+unconditional rollback, or mock authorization has been imported from Mar's demo.
+
 Row trash and `Delete Changes` discard Draft edits only, with an exact
 scope confirmation; they do not delete LIVE content or immutable history.
 `Add Content` is beside the selection actions. A temporary local Publish control

@@ -10,6 +10,7 @@ export interface CatalogPreviewChange {
   fields?: string[]
   route?: string
   visibleFrom?: string
+  pagePath?: string
 }
 export interface CatalogScheduledPage {
   uid: string

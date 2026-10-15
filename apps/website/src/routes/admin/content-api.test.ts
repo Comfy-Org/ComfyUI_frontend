@@ -69,6 +69,82 @@ function upstream(status = 200, body: unknown = { uid }) {
 }
 
 describe('staff content proxy', () => {
+  it('forwards a tombstone operation only as the fixed DELETE with exact tokens and fresh staff/CSRF protection', async () => {
+    const fetcher = upstream(200, { uid, is_deleted: true })
+    const revision = '00000000-0000-4000-8000-000000000002'
+    const response = await POST(
+      context('delete', {
+        body: JSON.stringify({
+          uid,
+          expected_draft_rev: 2,
+          expected_revision_uid: revision
+        })
+      })
+    )
+    expect(response.status).toBe(200)
+    expect(response.headers.get('Cache-Control')).toBe('private, no-store')
+    expect(fetcher).toHaveBeenCalledWith(
+      new URL(`http://catalog.example/api/v1/catalog/draft/items/${uid}`),
+      expect.objectContaining({
+        method: 'DELETE',
+        body: JSON.stringify({
+          expected_draft_rev: 2,
+          expected_revision_uid: revision
+        })
+      })
+    )
+  })
+  it.each([
+    {
+      uid,
+      expected_draft_rev: 2,
+      expected_revision_uid: uid,
+      is_deleted: false
+    },
+    {
+      uid,
+      expected_draft_rev: 2,
+      expected_revision_uid: uid,
+      title: 'unreviewed'
+    },
+    { uid, expected_draft_rev: 2.5, expected_revision_uid: uid },
+    { uid, expected_draft_rev: 2 },
+    { expected_draft_rev: 2, expected_revision_uid: uid }
+  ])(
+    'refuses malformed or extra delete fields without forwarding',
+    async (body) => {
+      const fetcher = upstream()
+      expect(
+        (await POST(context('delete', { body: JSON.stringify(body) }))).status
+      ).toBe(400)
+      expect(fetcher).not.toHaveBeenCalled()
+    }
+  )
+  it.each([
+    { origin: 'https://other.example', expected: 403 },
+    { anonymous: true, expected: 404 },
+    { edit: false, expected: 404 }
+  ])(
+    'refuses unauthorized tombstone mutations',
+    async ({ expected, ...options }) => {
+      const fetcher = upstream()
+      expect(
+        (
+          await POST(
+            context('delete', {
+              ...options,
+              body: JSON.stringify({
+                uid,
+                expected_draft_rev: 2,
+                expected_revision_uid: uid
+              })
+            })
+          )
+        ).status
+      ).toBe(expected)
+      expect(fetcher).not.toHaveBeenCalled()
+    }
+  )
   it('proxies bounded author search only for verified editing sessions', async () => {
     const body = {
       items: [

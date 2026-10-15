@@ -50,7 +50,7 @@ try {
     page.on('pageerror', (error) => errors.push(error.message))
     await page.goto(`${website}/hub/models/`)
     await page.evaluate(async (locale) => {
-      const path = '/src/components/cms/editor/ContentEditor.vue'
+      const path = '/src/components/cms/editor/CatalogEditorPage.vue'
       const stylePath = '/src/styles/global.css'
       await import(stylePath)
       const source = await (await fetch(path)).text()
@@ -63,6 +63,10 @@ try {
       const document = {
         title: 'Save bar fixture',
         slug: 'save-bar-fixture',
+        enabled: false,
+        visibility: 'staff',
+        visible_from: '2026-10-15T09:30:45.123-07:00',
+        use_cases: ['Portraits, editorial'],
         long_description: 'Preserve this paragraph.',
         faq: [{ question: 'Keep?', answer: 'Yes.' }],
         custom: { nested: ['keep'] }
@@ -79,16 +83,18 @@ try {
       window.document.body.replaceChildren()
       window.document.body.className = 'bg-admin-page text-admin-fg'
       const root = window.document.createElement('main')
-      root.className = 'mx-auto max-w-7xl px-5 py-8 sm:px-8'
       window.document.body.append(root)
       createApp({
         render: () =>
           h(editor, {
-            initial: document,
-            snapshot,
-            type: 'workflow',
-            draft: 7,
-            csrf: 'fixture-no-backend-access',
+            editor: {
+              initial: document,
+              snapshot,
+              type: 'workflow',
+              draft: 7,
+              csrf: 'fixture-no-backend-access'
+            },
+            liveRevision: 6,
             locale
           })
       }).mount(root)
@@ -97,7 +103,22 @@ try {
       name: fixture.title,
       exact: true
     })
+    await expect(page.getByRole('navigation')).toBeVisible()
     await expect(page.getByRole('region', { name: fixture.bar })).toHaveCount(0)
+    const schedule = page.getByLabel(
+      fixture.locale === 'en' ? 'Visible from (UTC)' : '可见时间（UTC）'
+    )
+    await expect(schedule).toHaveValue('2026-10-15T16:30:45')
+    await schedule.fill('2026-11-01T15:16:17')
+    await schedule.press('Tab')
+    const useCases = page.getByRole('button', {
+      name: fixture.locale === 'en' ? 'Use cases' : '用途',
+      exact: true
+    })
+    await useCases.click()
+    await page.getByRole('searchbox').fill('Product photography')
+    await page.getByRole('searchbox').press('Enter')
+    await page.getByRole('searchbox').press('Escape')
     await title.fill('Pending form edit')
     const bar = page.getByRole('region', { name: fixture.bar })
     await expect(bar).toBeVisible()
@@ -107,6 +128,13 @@ try {
     expect(
       Math.abs((bounds?.y ?? 0) + (bounds?.height ?? 0) - 900)
     ).toBeLessThanOrEqual(1)
+    expect(bounds?.x).toBe(fixture.width >= 1024 ? 240 : 0)
+    const live = page.getByRole('button', {
+      name: fixture.locale === 'en' ? 'Open live site' : '打开正式网站'
+    })
+    if (fixture.width >= 1024) {
+      await expect(live).toBeInViewport()
+    }
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth
@@ -117,13 +145,36 @@ try {
     })
     await bar.getByRole('button', { name: fixture.discard }).click()
     await expect(title).toHaveValue('Save bar fixture')
+    await expect(schedule).toHaveValue('2026-10-15T16:30:45')
     await expect(bar).toHaveCount(0)
+    await page.evaluate(() => scrollTo(0, 0))
+    await page.screenshot({
+      path: `/tmp/ccc-bruce-editor-top-${fixture.suffix}.png`
+    })
+    await page
+      .getByRole('button', {
+        name: fixture.locale === 'en' ? 'Delete content' : '删除内容',
+        exact: true
+      })
+      .click()
+    const dialog = page.getByRole('dialog')
+    await expect(dialog).toBeVisible()
+    await page.screenshot({
+      path: `/tmp/ccc-bruce-editor-delete-${fixture.suffix}.png`
+    })
+    await dialog
+      .getByRole('button', {
+        name: fixture.locale === 'en' ? 'Cancel' : '取消',
+        exact: true
+      })
+      .click()
+    await expect(dialog).toHaveCount(0)
     expect(errors).toEqual([])
     expect(writes).toEqual([])
     await context.close()
   }
   process.stdout.write(
-    'PASS: desktop/mobile Chinese sticky save bar and local reset; no backend writes, page errors or overflow\n'
+    'PASS: desktop/mobile Chinese editor/sidebar, UTC schedule, editorial chooser, sticky save bar/reset and delete confirmation/cancel; no backend writes, page errors or overflow\n'
   )
 } finally {
   await browser.close()

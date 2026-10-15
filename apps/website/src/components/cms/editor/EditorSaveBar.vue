@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Save } from '@lucide/vue'
+import { cn } from '@comfyorg/tailwind-utils'
 import AdminButton from '@/components/cms/ui/AdminButton.vue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
@@ -7,10 +8,12 @@ import { translationsFor } from '@/i18n/translations'
 const {
   blocked,
   busy,
+  sidebar = false,
   locale = 'en'
 } = defineProps<{
   blocked: boolean
   busy: boolean
+  sidebar?: boolean
   locale?: Locale
 }>()
 const emit = defineEmits<{ discard: [] }>()
@@ -21,7 +24,12 @@ const { t } = translationsFor(locale)
   <div
     role="region"
     :aria-label="t('cccEditorActions.unsaved')"
-    class="fixed inset-x-0 bottom-0 z-40 border-t border-admin-line bg-admin-chrome/95 backdrop-blur-sm"
+    :class="
+      cn(
+        'fixed inset-x-0 bottom-0 z-40 border-t border-admin-line bg-admin-chrome/95 backdrop-blur-sm',
+        sidebar && 'lg:left-60'
+      )
+    "
   >
     <div
       class="mx-auto flex max-w-7xl flex-wrap items-center justify-end gap-2 px-5 py-3 sm:px-8"

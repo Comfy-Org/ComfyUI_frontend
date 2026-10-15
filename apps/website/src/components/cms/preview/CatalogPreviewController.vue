@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Eye } from '@lucide/vue'
 import { translationsFor } from '@/i18n/translations'
 import type {
@@ -15,6 +15,7 @@ import type {
   CatalogScheduledPage
 } from '@/lib/cms/preview-display'
 import CatalogPreviewBar from './CatalogPreviewBar.vue'
+import { markDraftCards } from '@/lib/cms/draft-card-marks'
 
 // Mounted only by a freshly authorized staff route. This controller cannot
 // establish a session; every command is reauthorized by the server.
@@ -45,6 +46,17 @@ const ready = ref(false)
 onMounted(() => {
   ready.value = true
 })
+let clearMarks: (() => void) | undefined
+watch([ready, () => view, () => changes, () => locale], () => {
+  clearMarks?.()
+  clearMarks =
+    ready.value && view === 'DRAFT'
+      ? markDraftCards(document.body, changes, (state) =>
+          t.value(`cccDraftCards.${state}`)
+        )
+      : undefined
+})
+onBeforeUnmount(() => clearMarks?.())
 const unavailable = computed(() => busy.value || !ready.value)
 const failed = ref(false)
 async function change(command: CatalogPreviewCommand) {
