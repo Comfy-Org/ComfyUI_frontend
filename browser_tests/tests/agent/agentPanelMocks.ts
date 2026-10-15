@@ -302,18 +302,9 @@ function pushTurnEvent(
 export function pushThinking(
   ws: WebSocketRoute,
   delta: string,
-  messageId?: string
+  messageId = TURN_ID
 ): void {
-  if (THINKING_EVENT.type !== 'agent_thinking')
-    throw new Error('thinking fixture has the wrong event type')
-  pushAgentEvent(ws, {
-    type: 'agent_thinking',
-    data: {
-      ...THINKING_EVENT.data,
-      delta,
-      message_id: messageId ?? THINKING_EVENT.data.message_id
-    }
-  })
+  pushTurnEvent(ws, thinkingEvent(delta), messageId)
 }
 
 export function pushDelta(
