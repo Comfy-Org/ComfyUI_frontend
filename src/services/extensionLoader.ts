@@ -1,3 +1,4 @@
+import { resolveExtensionHost } from '@/services/extensionHostProvider'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -41,6 +42,11 @@ async function importCustomExtension(
   ext: string
 ): Promise<ExtensionLoadFailure | undefined> {
   try {
+    const host = resolveExtensionHost(ext)
+    if (host) {
+      await host.load(ext)
+      return
+    }
     await import(/* @vite-ignore */ api.fileURL(ext))
   } catch (error) {
     return { ext, error }

@@ -24,6 +24,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
 import { resetComfyApi } from '@/platform/nodeApi/comfyApi'
 import { loadExtensions } from '@/services/extensionLoader'
+import { installSecureNodesHost } from '@/services/secureNodesBootstrap'
 import { app } from '@/scripts/app'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -132,6 +133,10 @@ vi.mock<unknown>(import('@/scripts/changeTracker'), () => ({
   ChangeTracker: { init: vi.fn() }
 }))
 
+vi.mock(import('@/services/secureNodesBootstrap'), () => ({
+  installSecureNodesHost: vi.fn(async () => {})
+}))
+
 vi.mock(import('@/services/extensionLoader'), () => ({
   loadExtensions: vi.fn(async () => {})
 }))
@@ -235,6 +240,19 @@ async function mountGraphCanvas(stubs: Record<string, unknown> = {}) {
 }
 
 describe('GraphCanvas first-run tour wiring', () => {
+  it('installs the secure host after the API and before custom extension loading', async () => {
+    vi.mocked(installSecureNodesHost).mockImplementation(async () => {
+      expect(window.comfy).toBeDefined()
+      expect(loadExtensions).not.toHaveBeenCalled()
+    })
+    await mountGraphCanvas()
+    await vi.waitFor(() => expect(loadExtensions).toHaveBeenCalledOnce())
+    expect(installSecureNodesHost).toHaveBeenCalledOnce()
+    expect(installSecureNodesHost).toHaveBeenCalledWith({
+      workflowSnapshot: expect.any(Function)
+    })
+  })
+
   beforeEach(() => {
     mocks.initializeWorkflow.mockResolvedValue('url-intent')
     mocks.loadTemplateFromUrlIfPresent.mockResolvedValue('image_to_image')
