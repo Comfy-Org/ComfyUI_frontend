@@ -21,14 +21,11 @@ import {
 } from '@/scripts/posthog'
 import type { CatalogueApp } from '@/lib/workshop/catalogue-apps'
 import { ac } from '@/lib/workshop/catalogue-apps'
-import {
-  loadAppCatalogue,
-  loadWorkflowCatalogue
-} from '@/lib/workshop/catalogue-components'
+import { loadWorkflowCatalogue } from '@/lib/workshop/catalogue-components'
 import { isWorkshopModelShown } from '@/scripts/workshop-model-flags'
+import AppsHalf from './AppsHalf.vue'
 
 const WorkflowCatalogue = defineAsyncComponent(loadWorkflowCatalogue)
-const AppCatalogue = defineAsyncComponent(loadAppCatalogue)
 
 const {
   models,
@@ -173,7 +170,7 @@ whenever(
       />
     </template>
   </WorkflowCatalogue>
-  <AppCatalogue
+  <AppsHalf
     v-else
     v-model:browse-all="browseAll"
     :apps="appCards"
@@ -189,5 +186,5 @@ whenever(
         links
       />
     </template>
-  </AppCatalogue>
+  </AppsHalf>
 </template>
