@@ -309,7 +309,10 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
       rendering: rendering.value,
       quoteSettled: quoteSettled.value,
       quote: quote.value,
-      priceReadable: priceReadable(quote.value, partSeconds.value)
+      priceReadable: priceReadable(quote.value, {
+        seconds: partSeconds.value,
+        canvas: canvas.value
+      })
     })
   )
   const priceNote = computed(() => {
@@ -317,7 +320,7 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
       return quoteFailed.value ? t('reshoot.quote.failed') : undefined
     return swapPriceNote(
       quote.value,
-      { size: size.value, seconds: partSeconds.value },
+      { size: size.value, seconds: partSeconds.value, canvas: canvas.value },
       locale
     )
   })

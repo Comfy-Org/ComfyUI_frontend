@@ -12,7 +12,11 @@ const QUOTE = {
   free_runs_remaining: 0,
   resets_at: null,
   price_credits: 0,
-  price_per_second: { tier_input: 'seed', credits: { '0': 1.0416666666 } },
+  price_per_second: {
+    tier_input: 'megapixels',
+    tier_match: 'at_most',
+    credits: { '0.45': 1.0416666666, '1.1': 1.0416666666 }
+  },
   next_run: 'paid'
 }
 

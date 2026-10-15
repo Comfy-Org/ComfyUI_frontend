@@ -52,7 +52,7 @@ measured costs.
 ## Decisions Rob has made
 
 - 25 credits per second of output at one rate; no free runs for now. A 5 s swap
-  is 125 credits, the longest (345 frames, 14.4 s) is 360.
+  is 130 credits, the longest (345 frames, 14.4 s) is 360.
 - Both qualities stay available, 768p by default. 768p costs about twice what
   480p does to run, so the app stays staff-only until the catalog can tier by
   resolution or the rate changes.
@@ -62,28 +62,20 @@ measured costs.
 
 ## How the price works
 
-**Today (cloud#13014 as written, not yet safe):** the app proxy bills
-`VideoFrameSample.num_frames`, the part's frame count at 24 fps
-(`sourceFrames`), with `seed` (always 0) as the only tier, at 25/24 credits a
-frame: 5 s is 125 credits. `runQuote` in `price.ts` works out the same number
-for the page. That node only samples the reference frames, so a hand-built
-graph can ask for a long run and pay for a short one. This is the open review
-blocker.
+The app proxy prices the run from the node that sets what is generated
+(cloud#13014): `MiniMaxH3ReferenceToVideo.length` (node `136`), the frames
+generated, at 25/24 credits a frame, tiered by that node's `width × height`.
+The quote reports it as `tier_input: megapixels`, `tier_match: at_most`: the
+rate is the smallest tier at or above the canvas area (480p canvases up to
+0.45 MP, 768p up to 1.1 MP), and a larger canvas is refused. 5 s generates 124
+frames, so 130 credits; 14.375 s and up is 345 frames, 360 credits. Both tiers
+use the same rate for now; a lower 480p rate is a catalog change only.
 
-**The fix, to land together in the catalog and the website:**
-
-- Bill `MiniMaxH3ReferenceToVideo.length` (node `136`). That is the number of
-  frames generated, so it must stay a literal on that node; `workflow.ts` sets
-  it to `gridFrames`, and a test pins it.
-- The price basis then moves from `sourceFrames` to `gridFrames`: 5 s becomes
-  130 credits, 6 s 165, up to 17 more than today, the same from 14.375 s.
-  `price.ts`, its tests, the e2e fixture and the catalog comments move with it.
-- Node `136` has no `seed`, and its `width`/`height` vary with the clip's
-  shape, so the tier needs a design: a `PriceFor` change that buckets
-  `width × height` with a cap (which also closes unbilled oversized canvases),
-  or an allowlist of the 14 grid lengths 124 to 345.
-- Until then the page refuses to run a quote it cannot price
-  (`priceReadable`), so a catalog change can never charge an unseen price.
+`136.length` must stay a literal set by `workflow.ts` (`gridFrames`), and
+`price.ts` prices the same frames on the same canvas (`swapCanvas`); a test
+ties the two. If the page cannot read a quote's price, Generate stays off and
+the page says the price is unknown, so the catalog can never charge an unseen
+price.
 
 ## Still open
 

@@ -285,7 +285,11 @@ describe('useOpenjutsu', () => {
     vi.spyOn(transport, 'quote').mockResolvedValue({
       free_runs_remaining: 0,
       price_credits: 0,
-      price_per_second: { tier_input: 'seed', credits: { '0': 1.0416666666 } },
+      price_per_second: {
+        tier_input: 'megapixels',
+        tier_match: 'at_most',
+        credits: { '0.45': 1.0416666666, '1.1': 1.0416666666 }
+      },
       next_run: 'paid'
     })
     const swap = start()
@@ -295,7 +299,7 @@ describe('useOpenjutsu', () => {
 
     swap.takeVideo(clip)
     swap.confirmTrim(trimmed)
-    expect(swap.priceNote.value).toBe('150 credits')
+    expect(swap.priceNote.value).toBe('165 credits')
   })
 
   it('keeps the page as it was when an example cannot be fetched', async () => {
