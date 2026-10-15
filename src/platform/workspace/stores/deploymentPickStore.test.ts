@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { reportError } from '@/platform/telemetry/reportError'
+
 import type { WorkspaceDeploymentList } from '@/platform/workspace/api/workspaceApi'
 
 import { DEPLOYMENT_LISTING_BACKSTOP_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
@@ -32,6 +34,8 @@ vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), async () => {
   return { workspaceApi: mockWorkspaceApi, WorkspaceApiError }
 })
 
+vi.mock(import('@/platform/telemetry/reportError'), { spy: true })
+
 const listing: WorkspaceDeploymentList = {
   builds_visible: true,
   picked_deployment_id: 'dep-2',
@@ -62,12 +66,42 @@ describe('useDeploymentPickStore', () => {
   const reload = vi.fn()
 
   beforeEach(() => {
+    vi.mocked(reportError).mockImplementation(() => undefined)
     Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-1' })
     Object.defineProperty(window, 'location', {
       value: { reload, origin: 'http://localhost' },
       writable: true,
       configurable: true
     })
+  })
+
+  it.for([
+    new WorkspaceApiError('Service unavailable', 503),
+    new WorkspaceApiError('Route unavailable', 404),
+    new TypeError('Network unavailable')
+  ])('reports a failed deployment lookup: %s', async (error) => {
+    mockWorkspaceApi.listDeployments.mockRejectedValueOnce(error)
+    const store = useDeploymentPickStore()
+
+    await store.loadOnce()
+
+    expect(store.bootDeployment).toBeUndefined()
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
+      surface: 'workspace',
+      errorType: 'error_loading_deployment_listing'
+    })
+  })
+
+  it('does not report an expected rollout refusal as an error', async () => {
+    mockWorkspaceApi.listDeployments.mockRejectedValueOnce(
+      new WorkspaceApiError('Outside rollout', 403)
+    )
+    const store = useDeploymentPickStore()
+
+    await store.loadOnce()
+
+    expect(store.bootDeployment).toBeNull()
+    expect(reportError).not.toHaveBeenCalled()
   })
 
   it('keeps Cloud as the boot source when an excluded account later gets a listing', async () => {
@@ -765,11 +799,23 @@ describe('useDeploymentPickStore', () => {
     })
 
     it.for([
-      { then: 'a listing answers', outcome: 'loaded' },
-      { then: 'nothing more answers', outcome: 'refused' }
+      {
+        later: 'a listing answers',
+        async afterRefusal(store: ReturnType<typeof useDeploymentPickStore>) {
+          mockWorkspaceApi.listDeployments.mockResolvedValueOnce(listing)
+          await store.load()
+          expect(store.isVisible).toBe(true)
+        }
+      },
+      {
+        later: 'nothing more answers',
+        async afterRefusal(store: ReturnType<typeof useDeploymentPickStore>) {
+          expect(store.isVisible).toBe(false)
+        }
+      }
     ])(
-      'keeps the switcher locked when a refresh is refused while a pick is in flight and $then',
-      async ({ outcome }) => {
+      'keeps the switcher locked when a refresh is refused while a pick is in flight and $later',
+      async ({ afterRefusal }) => {
         mockWorkspaceApi.listDeployments.mockResolvedValueOnce(listing)
         const store = useDeploymentPickStore()
         await store.load()
@@ -783,11 +829,7 @@ describe('useDeploymentPickStore', () => {
         await store.load()
         expect(store.isVisible).toBe(false)
         expect(store.isSwitching).toBe(true)
-        if (outcome === 'loaded') {
-          mockWorkspaceApi.listDeployments.mockResolvedValueOnce(listing)
-          await store.load()
-          expect(store.isVisible).toBe(true)
-        }
+        await afterRefusal(store)
 
         await expect(store.pick(null)).resolves.toBeNull()
         await expect(store.setDefault('dep-1')).resolves.toBeNull()

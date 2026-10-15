@@ -2,6 +2,7 @@ import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
 import { defineStore } from 'pinia'
 import { computed, shallowRef, watch } from 'vue'
 
+import { reportError } from '@/platform/telemetry/reportError'
 import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import { DEPLOYMENT_LISTING_BACKSTOP_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
 import {
@@ -422,15 +423,14 @@ async function listingEvent(workspaceId: string): Promise<DeploymentPickEvent> {
   }
 }
 
-/**
- * A 403 means the account is outside the rollout: hide the switcher. Any
- * other failure (a 404 from an ingest without these routes, a 5xx, a network
- * error, no signed-in user) hides it too unless a listing is already shown.
- */
 function loadFailure(err: unknown): DeploymentPickEvent {
   if (err instanceof WorkspaceApiError && err.status === 403) {
     return { type: 'loadRefused' }
   }
+  reportError(err, {
+    surface: 'workspace',
+    errorType: 'error_loading_deployment_listing'
+  })
   return { type: 'loadFailed' }
 }
 
