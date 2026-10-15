@@ -32,8 +32,6 @@ const examples = [
   }
 ] as const
 const selectedId = ref<(typeof examples)[number]['id']>('upscale')
-// A clip that fails to load falls back to the workflow's poster card instead of
-// a black player that cannot start.
 const failedIds = ref(new Set<string>())
 const selected = computed(
   () =>

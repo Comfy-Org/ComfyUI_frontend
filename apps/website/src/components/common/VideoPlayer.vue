@@ -171,9 +171,6 @@ function startPlayback() {
   showControls()
 }
 
-// The icon, the element, and the audio must agree: write the element first and
-// read its real `muted` back, so a browser that refuses the change cannot leave
-// the button claiming sound is on.
 function toggleMute() {
   const video = videoEl.value
   if (!video) return
