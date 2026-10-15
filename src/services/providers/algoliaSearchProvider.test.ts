@@ -2,6 +2,7 @@ import type { Mock } from 'vitest'
 import { liteClient as algoliasearch } from 'algoliasearch/dist/lite/builds/browser'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { reportError } from '@/platform/telemetry/reportError'
 import { useAlgoliaSearchProvider } from '@/services/providers/algoliaSearchProvider'
 
 type GlobalWithAlgolia = typeof globalThis & {
@@ -18,6 +19,8 @@ globalWithAlgolia.__ALGOLIA_API_KEY__ = 'test-api-key'
 vi.mock(import('algoliasearch/dist/lite/builds/browser'), () => ({
   liteClient: vi.fn()
 }))
+
+vi.mock(import('@/platform/telemetry/reportError'))
 
 interface MockSearchClient {
   search: Mock
@@ -268,6 +271,37 @@ describe('useAlgoliaSearchProvider', () => {
           pageNumber: 0
         })
       ).rejects.toThrow('Algolia request failed')
+    })
+
+    it('preserves raw results and suggestions when the rewrite request fails', async () => {
+      const fallbackError = new Error('Algolia rewrite request failed')
+      mockSearchClient.search
+        .mockResolvedValueOnce({
+          results: [
+            { hits: [packHit('raw-preserved')], nbPages: 1 },
+            { hits: [{ query: 'euler discrete scheduler', popularity: 7 }] }
+          ]
+        })
+        .mockRejectedValueOnce(fallbackError)
+
+      const provider = useAlgoliaSearchProvider()
+      const result = await provider.searchPacks('euler-discrete-scheduler', {
+        pageSize: 10,
+        pageNumber: 0
+      })
+
+      expect(result.nodePacks.map((pack) => pack.id)).toEqual(['raw-preserved'])
+      expect(result.querySuggestions).toEqual([
+        { query: 'euler discrete scheduler', popularity: 7 }
+      ])
+      expect(result.rawResultsEmpty).toBe(false)
+      expect(result.hasMore).toBe(false)
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(fallbackError, {
+        errorType: 'error_searching_algolia_fallbacks',
+        surface: 'platform',
+        level: 'warning',
+        tags: { outcome: 'degraded' }
+      })
     })
 
     it('sends no fallback queries when the raw query fills the page', async () => {

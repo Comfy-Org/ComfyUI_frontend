@@ -10,6 +10,7 @@ import {
   MIN_CHARS_FOR_SUGGESTIONS_ALGOLIA,
   SEARCH_CACHE_MAX_SIZE
 } from '@/constants/searchConstants'
+import { reportError } from '@/platform/telemetry/reportError'
 import type {
   AlgoliaNodePack,
   NodesIndexSuggestion,
@@ -113,9 +114,6 @@ const toRegistryPack = memoize(
 export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
   const searchClient = algoliasearch(__ALGOLIA_APP_ID__, __ALGOLIA_API_KEY__)
 
-  /**
-   * Search for node packs in Algolia (internal method)
-   */
   const searchPacksInternal = async (
     query: string,
     params: SearchNodePacksParams
@@ -136,13 +134,23 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
 
     async function searchFallbacks(
       fallbackQueries: string[]
-    ): Promise<SearchResponse<AlgoliaNodePack>[]> {
+    ): Promise<SearchResponse<AlgoliaNodePack>[] | undefined> {
       if (fallbackQueries.length === 0) return []
-      const { results } = await searchClient.search<AlgoliaNodePack>({
-        requests: fallbackQueries.map(packQuery),
-        strategy: 'none'
-      })
-      return results as SearchResponse<AlgoliaNodePack>[]
+      try {
+        const { results } = await searchClient.search<AlgoliaNodePack>({
+          requests: fallbackQueries.map(packQuery),
+          strategy: 'none'
+        })
+        return results as SearchResponse<AlgoliaNodePack>[]
+      } catch (error) {
+        reportError(error, {
+          errorType: 'error_searching_algolia_fallbacks',
+          surface: 'platform',
+          level: 'warning',
+          tags: { outcome: 'degraded' }
+        })
+        return undefined
+      }
     }
 
     const shouldQuerySuggestions =
@@ -178,7 +186,7 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
 
     const mergedHits = [...nodePacks.hits]
     const seenHitKeys = new Set(nodePacks.hits.map((hit) => hit.objectID))
-    for (const hit of fallbackResults.flatMap((result) => result.hits)) {
+    for (const hit of fallbackResults?.flatMap((result) => result.hits) ?? []) {
       if (mergedHits.length >= pageSize) break
       if (seenHitKeys.has(hit.objectID)) continue
       seenHitKeys.add(hit.objectID)
