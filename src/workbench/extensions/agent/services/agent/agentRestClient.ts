@@ -170,7 +170,6 @@ export class AgentResponseUnreadableError extends Error {
 
 type PaginationStop = 'missing_cursor' | 'repeated_cursor'
 
-/** The thread list's pagination stopped before its last page. */
 export class AgentThreadListIncompleteError extends Error {
   readonly reason: PaginationStop
 
