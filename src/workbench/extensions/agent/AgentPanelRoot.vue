@@ -1421,7 +1421,30 @@ function toChatSession(thread: AgentThreadSummary): ChatSession {
 
 let historyRefreshGeneration = 0
 let appliedHistoryRefreshGeneration = 0
+let surfacedHistoryRefreshGeneration = 0
 const historyRefreshAbort = new AbortController()
+
+function reportHistoryLoadFailure(
+  error: unknown,
+  uiTreatment: 'error_overlay' | 'none'
+): void {
+  reportError(error, {
+    surface: 'agent',
+    errorType: 'agent_thread_list_load_failed',
+    tags:
+      error instanceof AgentThreadListIncompleteError
+        ? { reason: error.reason }
+        : undefined
+  })
+  if (uiTreatment === 'error_overlay')
+    surfaceAgentError(
+      'agent_api_failed',
+      error instanceof Error ? error.message : String(error)
+    )
+  trackAgentError('thread_list_load_failed', 'pre_acceptance', uiTreatment, {
+    retryable: isRetryableRequestFailure(error, false)
+  })
+}
 
 async function refreshHistory(
   uiTreatment: 'error_overlay' | 'none' = 'error_overlay'
@@ -1429,29 +1452,20 @@ async function refreshHistory(
   const { signal } = historyRefreshAbort
   if (signal.aborted) return
   const generation = ++historyRefreshGeneration
+  if (uiTreatment === 'error_overlay')
+    surfacedHistoryRefreshGeneration = generation
   try {
     const threads = await listThreads({ signal })
     if (signal.aborted || generation < appliedHistoryRefreshGeneration) return
     appliedHistoryRefreshGeneration = generation
     history.replaceAll(threads.map(toChatSession))
   } catch (error) {
-    if (signal.aborted || generation !== historyRefreshGeneration) return
-    reportError(error, {
-      surface: 'agent',
-      errorType: 'agent_thread_list_load_failed',
-      tags:
-        error instanceof AgentThreadListIncompleteError
-          ? { reason: error.reason }
-          : undefined
-    })
-    if (uiTreatment === 'error_overlay')
-      surfaceAgentError(
-        'agent_api_failed',
-        error instanceof Error ? error.message : String(error)
-      )
-    trackAgentError('thread_list_load_failed', 'pre_acceptance', uiTreatment, {
-      retryable: isRetryableRequestFailure(error, false)
-    })
+    const owner =
+      uiTreatment === 'error_overlay'
+        ? surfacedHistoryRefreshGeneration
+        : historyRefreshGeneration
+    if (!signal.aborted && generation === owner)
+      reportHistoryLoadFailure(error, uiTreatment)
   }
 }
 

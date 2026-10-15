@@ -5892,6 +5892,42 @@ describe('AgentPanelRoot history', () => {
       expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
     })
 
+    it('still reports a failed history load that a follow refreshed past', async () => {
+      workflowStore.activeWorkflow = addTab('workflows/first.json')
+      const second = addTab('workflows/second.json')
+      let failMountList!: () => void
+      const mountList = new Promise<Response>((resolve) => {
+        failMountList = () => resolve(json(500, { error: 'unavailable' }))
+      })
+      const lists = [mountList]
+      stubWorkflowBoundHistory([
+        agentThread({
+          id: 'th-second',
+          title: 'Second chat',
+          last_message_at: '2026-09-22T10:00:00Z',
+          workflow_id: 'wf-second'
+        })
+      ])
+      const served = vi.mocked(fetch).getMockImplementation()
+      assert(served)
+      vi.mocked(fetch).mockImplementation((input, init) =>
+        threadListRoute.test(String(input)) && lists.length > 0
+          ? lists.splice(0, 1)[0]
+          : served(input, init)
+      )
+      renderWithSelectedTarget()
+
+      await activateTabAsUser(second)
+      await vi.waitFor(() =>
+        expect(useAgentConversationStore().threadId).toBe('th-second')
+      )
+      failMountList()
+
+      await vi.waitFor(() =>
+        expect(executionErrors.showErrorOverlay).toHaveBeenCalledOnce()
+      )
+    })
+
     it('keeps the open chat untouched when the followed chat fails to open, and retries', async () => {
       const { loadedThreads, restoreTranscripts } =
         await openFirstChatThenLoseTranscripts()
