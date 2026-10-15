@@ -5938,5 +5938,25 @@
       "enterprise": "VIEW ENTERPRISE DETAILS",
       "licensing": "MINIMAX LICENSING"
     }
+  },
+  "flux3Image": {
+    "meta": {
+      "title": "FLUX 3 Image Klein Launch {'|'} Comfy"
+    },
+    "breadcrumb": {
+      "updated": "Updated October 2026"
+    },
+    "hero": {
+      "title": "FLUX 3 Image Klein",
+      "description": "Black Forest Labs' newest open-weight model comes in two variants: standard and step-distilled turbo. Both generate and edit images. Create an image with standard, or iterate fast with turbo.",
+      "openSource": "Open Source",
+      "imageGeneration": "Image generation",
+      "imageEdit": "Image edit",
+      "primaryCta": "RUN FLUX 3 IMAGE KLEIN",
+      "secondaryCta": "READ DOCS"
+    },
+    "runOptions": {
+      "subtitle": "Build workflows in the browser, explore ComfyUI on your own hardware, or connect your creative pipeline through the API."
+    }
   }
 }
