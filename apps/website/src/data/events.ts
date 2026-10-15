@@ -451,47 +451,6 @@ const events: readonly ComfyEvent[] = [
     }
   },
   {
-    id: 'dev-platform-challenge-build-night',
-    category: 'meetup',
-    organizer: 'partner',
-    coords: { lat: 37.7749, lng: -122.4194 },
-    // TODO: start time and venue are not set (luma.com is unreachable from
-    // this session); add a time and endDateTime from the Luma page.
-    title: {
-      en: 'Open Call: ComfyUI Dev Platform Challenge Build Night',
-      'zh-CN': '公开征集：ComfyUI 开发者平台挑战赛创作之夜'
-    },
-    description: {
-      en: 'An in-person build night in San Francisco for the ComfyUI Dev Platform Challenge. Register on Luma.',
-      'zh-CN':
-        '在旧金山举办的线下创作之夜，围绕 ComfyUI 开发者平台挑战赛展开。请通过 Luma 报名。'
-    },
-    location: { en: 'San Francisco, CA', 'zh-CN': '美国加州旧金山' },
-    dateLabel: {
-      en: 'October 13, 2026 · San Francisco',
-      'zh-CN': '2026年10月13日 · 旧金山'
-    },
-    startDateTime: '2026-10-13',
-    link: {
-      href: {
-        en: 'https://luma.com/5mydmvu6',
-        'zh-CN': 'https://luma.com/5mydmvu6'
-      },
-      newTab: true
-    },
-    ctaLabel: { en: 'RSVP', 'zh-CN': '报名' },
-    // TODO: temporarily hosted via GitHub attachment; migrate to
-    // media.comfy.org and switch to eventImage() when available.
-    media: {
-      type: 'image',
-      src: 'https://github.com/user-attachments/assets/f58091d4-909e-44e2-b0bc-5499a8f2b468',
-      alt: {
-        en: 'Open Call: ComfyUI Dev Platform Challenge Build Night',
-        'zh-CN': '公开征集：ComfyUI 开发者平台挑战赛创作之夜'
-      }
-    }
-  },
-  {
     id: 'codex-build-night-agents-everywhere',
     category: 'meetup',
     organizer: 'partner',

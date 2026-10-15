@@ -335,17 +335,10 @@ describe('site event data', () => {
     }
   })
 
-  it('lists the Oct 2026 Build Nights as partner events, latest first', () => {
-    const ids = directoryEvents.map((event) => event.id)
-    const devPlatform = 'dev-platform-challenge-build-night'
-    const codex = 'codex-build-night-agents-everywhere'
-
-    expect(ids.indexOf(devPlatform)).toBeLessThan(ids.indexOf(codex))
-    for (const id of [devPlatform, codex]) {
-      expect(directoryEvents.find((event) => event.id === id)?.organizer).toBe(
-        'partner'
-      )
-    }
+  it('omits the expired Dev Platform Challenge Build Night', () => {
+    expect(directoryEvents).not.toContainEqual(
+      expect.objectContaining({ id: 'dev-platform-challenge-build-night' })
+    )
   })
 
   it('has unique event ids', () => {
