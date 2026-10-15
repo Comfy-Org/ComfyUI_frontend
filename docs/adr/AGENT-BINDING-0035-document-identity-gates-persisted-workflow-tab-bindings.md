@@ -163,8 +163,18 @@ instead of a toast.
 ## Amendment (2026-10-15): Only a lookup 404 marks a workflow gone
 
 [AGENT-HISTORY-0038](AGENT-HISTORY-0038-wait-for-chat-and-workflow-readiness.md)
-narrows the notice in the amendment above. Only a 404 from the direct lifecycle
-lookup marks a workflow gone and shows the in-chat notice. Absence from the
-Cloud listing alone does not, because the listing can omit live, version-less
-drafts. When Cloud confirms the workflow live but no local tab resolves, as with
-a refused binding, the chat opens readable without a target.
+narrows the notice in the amendment above. During restoration, only a 404 from
+the direct lookup of the workflow marks it gone and shows the in-chat notice.
+Absence from the Cloud listing alone does not, because the listing can omit
+live, version-less drafts. When no local tab resolves, as with a refused
+binding, the chat opens readable without a target unless a direct lookup
+returns 404. That includes a lookup that cannot tell, such as a 403, a server
+error or no connection. Send then asks the person to pick a workflow and keeps
+the draft.
+
+This supersedes the boot outcome in the first two Negative consequences. A
+refused binding to a workflow that is not gone no longer shows a warning at
+every boot. The next message on the thread is not posted without a workflow.
+Picking the draft still saves it as a new Cloud workflow and orphans the old
+one. "Couldn’t open the target workflow." remains for a found workflow that
+fails to open and for a saved workflow list that fails to sync.
