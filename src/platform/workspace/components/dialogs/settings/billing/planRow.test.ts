@@ -248,9 +248,9 @@ describe('formatPlanDate', () => {
       expected: 'November 15, 2026'
     },
     {
-      case: 'omits the year when the cadence is unknown',
+      case: 'keeps the year when the cadence is unknown',
       cadence: null,
-      expected: 'November 15'
+      expected: 'November 15, 2026'
     }
   ])('$case', ({ cadence, expected }) => {
     expect(formatPlanDate('2026-11-15T23:30:00Z', 'en-US', cadence)).toBe(

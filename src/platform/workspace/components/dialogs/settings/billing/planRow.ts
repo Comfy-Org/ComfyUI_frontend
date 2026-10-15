@@ -133,7 +133,7 @@ export function deriveBillingTabLoad(
     : 'loading'
 }
 
-/** Full month name, no ordinal; the year only on a yearly plan. */
+/** Full month name, no ordinal; the year unless the plan is monthly. */
 export function formatPlanDate(
   isoDate: string,
   locale: string,
@@ -144,7 +144,7 @@ export function formatPlanDate(
   return new Intl.DateTimeFormat(locale, {
     month: 'long',
     day: 'numeric',
-    ...(cadence === 'yearly' ? { year: 'numeric' } : {}),
+    ...(cadence === 'monthly' ? {} : { year: 'numeric' }),
     timeZone: 'UTC'
   }).format(date)
 }
