@@ -57,10 +57,11 @@ selection and removes the deleted Back destination.
 If the resolver has already fetched the requested Cloud identity and can resolve
 an open tab through its binding and ambiguity checks, restore that tab without
 refreshing the Cloud catalog again. A persisted binding alone cannot take this
-shortcut before the Cloud identity is known. Unknown, forgotten, unresolved and
-closed targets still refresh Cloud metadata. The saved catalog is consulted
-before synchronizing it. This reuses the panel's existing metadata lifetime;
-changes made elsewhere become visible at the next refresh.
+shortcut before the Cloud identity is known. Restoring a target that is
+unknown, forgotten or closed, or that no open tab matches, still refreshes Cloud
+metadata. The saved catalog is consulted before synchronizing it. This reuses
+the panel's existing metadata lifetime; changes made elsewhere become visible at
+the next refresh.
 
 Current remains clickable. When its session and retained target are still
 loaded, reuse them without fetching the transcript or resolving Cloud identity
@@ -100,18 +101,19 @@ its workflow, or a direct identity lookup confirms that a workflow the listing
 omits or cannot place is live, but no local target resolves after saved-catalog
 synchronization. Local identity resolution stays conservative: missing files,
 missing names, ambiguous names and refused bindings do not justify choosing
-another canvas. The panel keeps a retained-null target marked unresolved, which
-Current reuses without restoring again. It leaves the visible graph unchanged
-and does not mark the target deleted. Sending opens the workflow picker and
-preserves the draft until the user explicitly chooses a target. Passive tab
-changes and panel remounts do not resume following for that conversation.
+another canvas. The chat keeps an unresolved target: it has no workflow, and the
+chat stays readable. Current reuses it without restoring again. It leaves the
+visible graph unchanged and does not show the notice that the workflow is no
+longer available. Sending opens the workflow picker and preserves the draft
+until the user explicitly chooses a target. Passive tab changes and panel
+remounts do not resume following for that conversation.
 
 This exception provides conversation access, not workflow restoration. It does
 not materialize Cloud content into a new editor tab or repair identity mapping.
 Transcript failures, failures opening a resolved workflow, and unresolved
 targets whose direct lookup fails with anything other than 404 are retryable
-failures. During restoration, only a lifecycle 404 shows the unavailable-target
-notice.
+failures. During restoration, only a 404 from the direct lookup shows the
+notice that the workflow is no longer available.
 
 An agent tab activation applies only if, when it runs, the chat it came from is
 still the open chat. While History is open, that is the Current chat, the chat
