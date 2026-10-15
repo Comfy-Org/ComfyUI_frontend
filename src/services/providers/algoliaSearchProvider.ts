@@ -52,6 +52,8 @@ const RETRIEVE_ATTRIBUTES: SearchAttribute[] = [
   'banner_url'
 ]
 
+const REWRITE_ANALYTICS_TAGS = ['rewrite']
+
 const searchPacksCache = new QuickLRU<string, SearchPacksResult>({
   maxSize: SEARCH_CACHE_MAX_SIZE
 })
@@ -133,13 +135,17 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
       }
     }
 
+    function rewriteQuery(queryText: string): SearchQuery {
+      return { ...packQuery(queryText), analyticsTags: REWRITE_ANALYTICS_TAGS }
+    }
+
     async function searchFallbacks(
       fallbackQueries: string[]
     ): Promise<AlgoliaNodePack[] | undefined> {
       if (fallbackQueries.length === 0) return []
       try {
         const { results } = await searchClient.search<AlgoliaNodePack>({
-          requests: fallbackQueries.map(packQuery),
+          requests: fallbackQueries.map(rewriteQuery),
           strategy: 'none'
         })
         const hits = (results as SearchResponse<AlgoliaNodePack>[]).flatMap(

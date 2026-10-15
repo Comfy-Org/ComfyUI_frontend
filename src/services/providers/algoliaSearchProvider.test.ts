@@ -385,6 +385,34 @@ describe('useAlgoliaSearchProvider', () => {
       ])
     })
 
+    it('tags only the rewrite requests so analytics can segment them out', async () => {
+      mockSearchClient.search
+        .mockResolvedValueOnce({ results: [{ hits: [] }, { hits: [] }] })
+        .mockResolvedValueOnce({ results: [{ hits: [] }, { hits: [] }] })
+
+      const provider = useAlgoliaSearchProvider()
+      await provider.searchPacks('kijai/comfyui-KJNodes', {
+        pageSize: 10,
+        pageNumber: 0
+      })
+
+      const [[rawBatch], [rewriteBatch]] = mockSearchClient.search.mock.calls
+      expect(rawBatch.requests).toEqual([
+        expect.not.objectContaining({ analyticsTags: expect.anything() }),
+        expect.not.objectContaining({ analyticsTags: expect.anything() })
+      ])
+      expect(rewriteBatch.requests).toEqual([
+        expect.objectContaining({
+          query: 'comfyui-KJNodes',
+          analyticsTags: ['rewrite']
+        }),
+        expect.objectContaining({
+          query: 'comfyui KJNodes',
+          analyticsTags: ['rewrite']
+        })
+      ])
+    })
+
     it('should cap fallback hits so the merged result never exceeds a page', async () => {
       mockSearchClient.search
         .mockResolvedValueOnce({ results: [{ hits: [] }, { hits: [] }] })
