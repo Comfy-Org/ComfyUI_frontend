@@ -414,7 +414,7 @@ describe('useAlgoliaSearchProvider', () => {
     it.for([
       { pageNumber: 0, nbPages: 3, expected: true },
       { pageNumber: 2, nbPages: 3, expected: false },
-      { pageNumber: 0, nbPages: undefined, expected: false }
+      { pageNumber: 0, nbPages: undefined, expected: undefined }
     ])(
       'reports hasMore $expected on page $pageNumber of $nbPages',
       async ({ pageNumber, nbPages, expected }) => {
