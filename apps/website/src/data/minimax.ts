@@ -75,8 +75,8 @@ export const minimaxPage = {
     posterSrc: media.hero.posterSrc,
     mobileFallbackImageSrc: heroFallbackSrc,
     logoSrc: '/icons/ai-models/minimax.svg',
-    titleKey: 'minimax.hero.titleModel',
-    titleRestKey: 'minimax.hero.titleRest',
+    titleKey: 'minimax.hero.headline',
+    titleModelKey: 'minimax.hero.titleModel',
     descriptionKey: 'minimax.hero.description',
     primaryCta: {
       labelKey: 'minimax.hero.primaryCta',

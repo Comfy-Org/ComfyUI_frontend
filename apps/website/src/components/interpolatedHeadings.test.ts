@@ -8,7 +8,12 @@ import { describe, expect, it } from 'vitest'
 import OurValuesSection from './about/OurValuesSection.vue'
 import StorySection from './about/StorySection.vue'
 import WireNodeLayout from './common/WireNodeLayout.vue'
+import CliWhySection from '@/templates/cli/WhySection.vue'
+import CloudNodesWhySection from '@/templates/cloud-nodes/WhySection.vue'
+import McpWhySection from '@/templates/mcp/WhySection.vue'
 import AudienceSection from './product/cloud/AudienceSection.vue'
+import CloudReasonSection from './product/cloud/ReasonSection.vue'
+import DownloadReasonSection from './product/local/ReasonSection.vue'
 
 type HighlightedHeadingCase = {
   name: string
@@ -63,6 +68,76 @@ const highlightedHeadings: HighlightedHeadingCase[] = [
     locale: 'zh-CN',
     heading: '为追求质量、控制与简约的创作者而生。',
     highlight: '创作者'
+  },
+  {
+    name: 'CloudReasonSection',
+    component: CloudReasonSection,
+    locale: 'en',
+    heading: 'Why\nprofessionals\nchoose Cloud',
+    highlight: 'Cloud'
+  },
+  {
+    name: 'CloudReasonSection',
+    component: CloudReasonSection,
+    locale: 'ja',
+    heading: 'プロフェッショナルが\n選ぶ理由 Cloud',
+    highlight: 'Cloud'
+  },
+  {
+    name: 'DownloadReasonSection',
+    component: DownloadReasonSection,
+    locale: 'en',
+    heading: 'Why\nprofessionals\nchoose Desktop',
+    highlight: 'Desktop'
+  },
+  {
+    name: 'DownloadReasonSection',
+    component: DownloadReasonSection,
+    locale: 'zh-CN',
+    heading: '专业人士为何\n选择桌面版',
+    highlight: '桌面版'
+  },
+  {
+    name: 'CliWhySection',
+    component: CliWhySection,
+    locale: 'en',
+    heading: 'Why build on\nComfy CLI?',
+    highlight: 'Comfy CLI?'
+  },
+  {
+    name: 'CliWhySection',
+    component: CliWhySection,
+    locale: 'ja',
+    heading: 'なぜ\nComfy CLI を選ぶのか？',
+    highlight: 'Comfy CLI を選ぶのか？'
+  },
+  {
+    name: 'McpWhySection',
+    component: McpWhySection,
+    locale: 'en',
+    heading: 'Why build on\nComfy MCP?',
+    highlight: 'Comfy MCP?'
+  },
+  {
+    name: 'McpWhySection',
+    component: McpWhySection,
+    locale: 'zh-CN',
+    heading: '为什么选择\nComfy MCP？',
+    highlight: 'Comfy MCP？'
+  },
+  {
+    name: 'CloudNodesWhySection',
+    component: CloudNodesWhySection,
+    locale: 'en',
+    heading: 'Maximum control.\nOffload only the compute.',
+    highlight: 'Offload only the compute.'
+  },
+  {
+    name: 'CloudNodesWhySection',
+    component: CloudNodesWhySection,
+    locale: 'zh-CN',
+    heading: '完全掌控。\n只把算力交给我们。',
+    highlight: '只把算力交给我们。'
   }
 ]
 

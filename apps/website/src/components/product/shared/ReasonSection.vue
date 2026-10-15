@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { Locale, TranslationKey } from '@/i18n/translations'
 
+import { I18nT } from 'vue-i18n'
+
 import { translationsFor } from '@/i18n/translations'
 import SafeRichText from '@/components/common/SafeRichTextContent'
 
@@ -13,15 +15,13 @@ const {
   locale = 'en',
   headingKey,
   headingHighlightKey,
-  headingSuffixKey,
   subtitleKey,
   highlightClass = 'text-white',
   reasons
 } = defineProps<{
   locale?: Locale
   headingKey: TranslationKey
-  headingHighlightKey?: TranslationKey
-  headingSuffixKey?: TranslationKey
+  headingHighlightKey: TranslationKey
   subtitleKey?: TranslationKey
   highlightClass?: string
   reasons: Reason[]
@@ -33,25 +33,24 @@ const { t } = translationsFor(locale)
   <section
     class="mx-auto flex max-w-9xl flex-col gap-4 px-4 py-24 lg:flex-row lg:gap-16 lg:px-20 lg:py-40"
   >
-    <!-- Left heading -->
     <div
       class="sticky top-20 z-10 w-full shrink-0 self-start bg-primary-comfy-ink py-4 lg:top-28 lg:w-115 lg:py-0"
     >
-      <h2
+      <I18nT
+        :keypath="headingKey"
+        tag="h2"
+        :i18n="translationsFor(locale)"
         class="text-4xl/16 font-light whitespace-pre-line text-primary-comfy-canvas lg:text-5xl/16"
       >
-        {{ t(headingKey)
-        }}<span v-if="headingHighlightKey" :class="highlightClass">{{
-          t(headingHighlightKey)
-        }}</span
-        ><template v-if="headingSuffixKey">{{ t(headingSuffixKey) }}</template>
-      </h2>
+        <template #highlight>
+          <span :class="highlightClass">{{ t(headingHighlightKey) }}</span>
+        </template>
+      </I18nT>
       <p v-if="subtitleKey" class="mt-6 text-sm text-primary-comfy-canvas/70">
         {{ t(subtitleKey) }}
       </p>
     </div>
 
-    <!-- Right reasons list -->
     <div class="flex-1">
       <div
         v-for="reason in reasons"

@@ -1001,8 +1001,8 @@
         "description": "1つのアカウント、2つのインターフェース。Comfy MCP ではチャットで、CLI ではスクリプトで利用し、エージェントにタスクごとに適切な方を選ばせられます。どちらの場合も、クラウド出力は同じアセットライブラリに保存されます。",
         "title": "MCP と\n併用可能。"
       },
-      "heading": "なぜ\n",
       "headingHighlight": "Comfy CLI を選ぶのか？",
+      "headline": "なぜ\n{highlight}",
       "mcpLinkLabel": "Comfy MCP をセットアップ",
       "subtitle": "Comfy MCP のターミナル版。スクリプトで使える、同じエンジンと同じアカウントです。"
     }
@@ -1128,8 +1128,8 @@
         "description": "数千人のクリエイターが構築したワークフローを閲覧、実行、リミックスできます。白紙のキャンバスではなく、実証済みのテンプレートから始めましょう。CivitAIやHugging FaceからカスタムLoRAやファインチューニング済みの基盤モデルをアップロードできます。ローカルのComfyUIワークフローの約90%を支えるノードが、今やクラウドで利用できます。",
         "title": "コミュニティのワークフロー、\n<span class=\"whitespace-nowrap\">事前インストール済み</span>の\nカスタムノードによる\n無制限のカスタマイズ"
       },
-      "heading": "プロフェッショナルが\n選ぶ理由 ",
-      "headingHighlight": "Cloud"
+      "headingHighlight": "Cloud",
+      "headline": "プロフェッショナルが\n選ぶ理由 {highlight}"
     }
   },
   "cloudNodes": {
@@ -1304,8 +1304,8 @@
         "description": "すでにあるグラフにノードを追加するだけです。セットアップのほかの部分を変更する必要はありません。",
         "title": "必要なのは1ノード、移行は不要"
       },
-      "heading": "最大限のコントロール。\n",
       "headingHighlight": "オフロードするのはコンピュートだけ。",
+      "headline": "最大限のコントロール。\n{highlight}",
       "subtitle": "あなたのグラフ、あなたのノード、あなたの出力。Comfy Cloud ノードは単一のモデル実行だけを引き渡し、結果をそのまま返します。"
     }
   },
@@ -1527,8 +1527,8 @@
         "description": "機能制限も、トライアル期間も、コア機能のための「プロ」ティアもありません。ベンダーにロックインされたり、プラットフォームから締め出されたりすることはありません。独自のノードを構築し、ComfyUIを自分仕様に変更できます。",
         "title": "無料。オープンソース。\n上限なし。"
       },
-      "heading": "プロフェッショナルが\n選ぶ理由：",
-      "headingHighlight": "Desktop"
+      "headingHighlight": "Desktop",
+      "headline": "プロフェッショナルが\n選ぶ理由：{highlight}"
     }
   },
   "enterprise": {
@@ -1975,10 +1975,10 @@
       "badge2": "複数キャラクターのシーン",
       "badge3": "ローンチ時50%オフ",
       "description": "最初の30日間は50%オフ。Drama 3はFish Audio史上最も感情表現豊かで、制御性に優れたモデルです。複数キャラクターのシーンを1つの会話として書き、単一のワークフローで音声として仕上げられます。",
+      "headline": "{model}がComfyに登場",
       "primaryCta": "DRAMA 3を実行",
       "secondaryCta": "ドキュメントを見る",
-      "titleModel": "Fish Audio Drama 3",
-      "titleRest": "がComfyに登場"
+      "titleModel": "Fish Audio Drama 3"
     },
     "meta": {
       "description": "Fish Audio史上最も感情表現豊かで制御性に優れたモデル、Drama 3は、複数キャラクターのシーンを1つの会話として生成します。初日からComfy Cloudでお試しいただけます。",
@@ -2028,12 +2028,12 @@
     },
     "hero": {
       "description": "Flux 3は、1回の生成で最大20秒のネイティブ音声付き動画を生成します。テキストから動画へ、または画像から動画へ。今すぐComfy Cloudで実行できます。オープンウェイトは近日公開予定です。",
+      "headline": "{model} が登場",
       "primaryCta": "FLUX 3を実行",
       "secondaryCta": "ワークフローを試す",
       "tagOpenWeightsSoon": "オープンウェイトは近日公開予定",
       "tagPartnerNodes": "パートナーノード",
-      "title": "Flux 3",
-      "titleRest": " が登場"
+      "title": "Flux 3"
     },
     "meta": {
       "description": "ComfyでFlux 3を実行：Black Forest Labsのマルチモーダルモデルは、テキスト、画像、動画、キーフレームから、1回の生成で最大20秒のネイティブ音声付き動画を生成します。",
@@ -2126,14 +2126,14 @@
     },
     "hero": {
       "description": "Omni 1.1 FlashはGoogleの新しい動画モデルで、Comfyで利用できるようになりました。高速生成向けに設計されています。1つのノードで、テキストから動画、画像から動画、参照画像から動画、編集、シーン拡張に対応し、最大4K出力とすべてのクリップへの音声追加が可能です。",
+      "headline": "{model}が登場",
       "primaryCta": "今すぐ実行",
       "secondaryCta": "ワークフローを見る",
       "tagImageToVideo": "画像から動画",
       "tagPartnerNode": "パートナーノード",
       "tagReferenceToVideo": "参照画像から動画",
       "tagTextToVideo": "テキストから動画",
-      "titleModel": "Gemini Omni 1.1 Flash",
-      "titleRest": "が登場"
+      "titleModel": "Gemini Omni 1.1 Flash"
     },
     "meta": {
       "description": "ComfyでGemini Omni 1.1 Flashを実行。1つのノードでテキストから動画、画像から動画、参照画像から動画、編集、シーン拡張に対応し、最大4K出力とすべてのクリップへの音声追加が可能です。",
@@ -2556,8 +2556,8 @@
         "description": "Comfy CloudならGPUなしで実行でき、ローカルではエージェントが難しい作業を担います。マシン（モデル、カスタムノード、VRAM）を読み取り、複雑なオープンソースのワークフローを整理し、あなたのハードウェアで実際に実行できるワークフローを構築します。",
         "title": "あなたのGPU、\nまたは私たちのGPU。"
       },
-      "heading": "なぜ\n",
       "headingHighlight": "Comfy MCPを選ぶのか？",
+      "headline": "なぜ\n{highlight}",
       "subtitle": "本番パイプライン向けに構築された初のMCP。信頼できるインフラストラクチャにより、エンジニアやプロフェッショナルはより迅速に提供できます。"
     }
   },
@@ -2576,12 +2576,12 @@
     },
     "hero": {
       "description": "完全なマルチモーダルI/Oとネイティブステレオクリップ。1回の生成で最大2K、5～15秒。ほかのモデルが入力音声を上書きまたは破棄するのに対し、H3は実際に入力音声を条件として利用します。H3はオープンウェイトおよびパートナーノードで利用できます。",
+      "headline": "{model}が登場",
       "primaryCta": "MINIMAX H3を実行",
       "secondaryCta": "ワークフローを試す",
       "tagOpenWeights": "オープンウェイト",
       "tagPartnerNodes": "パートナーノード",
-      "titleModel": "MiniMax H3",
-      "titleRest": "が登場"
+      "titleModel": "MiniMax H3"
     },
     "meta": {
       "description": "ComfyでMiniMax H3を実行：オープンウェイトまたはパートナーノード、マルチモーダル入出力、すべてのクリップでネイティブステレオ音声、1回の生成で最大2K・5～15秒。無料で始められます。",
@@ -2619,12 +2619,12 @@
     },
     "hero": {
       "description": "最長5分のフル楽曲を一度の生成で作成。歌詞と音楽の説明を入力するだけで、一貫性のある構成、表情豊かなボーカル、変化に富むアレンジを得られます。トラック全体を通して品質が安定し、オープンウェイトはMiniMax Community Licenseのもとで、ほとんどの商用利用に無料で使用できます。",
+      "headline": "{model}が登場",
       "primaryCta": "ワークフローを実行",
       "secondaryCta": "詳細を見る",
       "tagOpenWeights": "オープンウェイト",
       "tagTextToMusic": "テキストから音声へ",
-      "titleModel": "MiniMax Music 3",
-      "titleRest": "が登場"
+      "titleModel": "MiniMax Music 3"
     },
     "meta": {
       "description": "ComfyでMiniMax Music 3を実行。テキストから音楽への変換に対応するオープンウェイトを、Comfy Cloudまたは自分のGPU上で、ほかのすべてのモデルと並べてキャンバス上から操作できます。",

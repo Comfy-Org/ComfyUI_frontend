@@ -61,8 +61,7 @@ export interface ModelLaunchHero {
   // Brand mark drawn as a CSS mask over the top-right corner of the video.
   logoSrc?: string
   titleKey: TranslationKey
-  // Rendered muted directly after `titleKey`, for the two-tone Figma heading.
-  titleRestKey?: TranslationKey
+  titleModelKey?: TranslationKey
   descriptionKey?: TranslationKey
   // Shorter copy shown in place of `descriptionKey` below the md breakpoint,
   // for the media-first and content-first layouts.

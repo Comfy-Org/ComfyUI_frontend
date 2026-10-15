@@ -33,7 +33,7 @@ const meta: Meta<typeof ReasonSection> = {
     })
   ],
   args: {
-    headingKey: 'download.reason.heading',
+    headingKey: 'download.reason.headline',
     headingHighlightKey: 'download.reason.headingHighlight',
     highlightClass: 'text-primary-warm-white',
     reasons: defaultReasons

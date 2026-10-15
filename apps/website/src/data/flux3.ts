@@ -46,8 +46,8 @@ export const flux3Page: ModelLaunchPage = {
   breadcrumbUpdatedKey: 'flux3.breadcrumb.updated',
   hero: {
     videoSrc: media.hero.src,
-    titleKey: 'flux3.hero.title',
-    titleRestKey: 'flux3.hero.titleRest',
+    titleKey: 'flux3.hero.headline',
+    titleModelKey: 'flux3.hero.title',
     descriptionKey: 'flux3.hero.description',
     primaryCta: {
       labelKey: 'flux3.hero.primaryCta',
