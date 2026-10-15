@@ -11,6 +11,7 @@ import { isCloud } from './types'
  */
 export function appendCloudResParam(
   params: URLSearchParams,
+  //FIXME the filename param is worthless. just parse from params
   filename?: string
 ): void {
   if (!isCloud) return

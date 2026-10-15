@@ -9,23 +9,24 @@ import {
   getPreviewExposureHostLocator,
   usePreviewExposureStore
 } from '@/stores/previewExposureStore'
+import { parseNodeOutput } from '@/stores/resultItemParsing'
 import type { NodeId } from '@/types/nodeId'
 import {
   appendNodeExecutionId,
   createNodeLocatorId
 } from '@/types/nodeIdentification'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 
 interface PromotedPreview {
   sourceNodeId: NodeId
   sourceWidgetName: string
-  type: 'image' | 'video' | 'audio'
-  urls: string[]
+  type: 'image' | 'video'
+  items: AugmentedResultItem[]
 }
 
 const PREVIEW_TYPES_BY_MEDIA = {
-  video: 'video',
-  audio: 'audio'
+  video: 'video'
 } as const satisfies Partial<Record<string, PromotedPreview['type']>>
 
 function getPreviewMediaType(node: LGraphNode): PromotedPreview['type'] {
@@ -46,9 +47,8 @@ export function usePromotedPreviews(
   function readReactivePreviewUrls(
     leafHost: SubgraphNode,
     leafSourceNodeId: NodeId,
-    leafExecutionId: NodeExecutionId,
-    interiorNode: LGraphNode
-  ): string[] | undefined {
+    leafExecutionId: NodeExecutionId
+  ): AugmentedResultItem[] | undefined {
     const locatorId = createNodeLocatorId(
       leafHost.subgraph.id,
       leafSourceNodeId
@@ -66,13 +66,10 @@ export function usePromotedPreviews(
       reactivePreviews?.length ||
       reactiveExecutionOutputs?.images?.length ||
       reactiveExecutionPreviews?.length
-    if (!hasAnySource) return undefined
-    return (
-      nodeOutputStore.getNodeImageUrlsByExecutionId(
-        leafExecutionId,
-        interiorNode
-      ) ?? nodeOutputStore.getNodeImageUrls(interiorNode)
-    )
+    if (!hasAnySource || !reactiveOutputs) return undefined
+
+    return parseNodeOutput(leafSourceNodeId, reactiveOutputs)
+    //FIXME This can also be previews
   }
 
   const promotedPreviews = computed((): PromotedPreview[] => {
@@ -142,20 +139,19 @@ export function usePromotedPreviews(
       )
       if (!leafExecutionId) return []
 
-      const urls = readReactivePreviewUrls(
+      const items = readReactivePreviewUrls(
         leafHost,
         leaf.sourceNodeId,
-        leafExecutionId,
-        interiorNode
+        leafExecutionId
       )
-      if (!urls?.length) return []
+      if (!items?.length) return []
 
       return [
         {
           sourceNodeId: leaf.sourceNodeId,
           sourceWidgetName: leaf.sourcePreviewName,
           type: getPreviewMediaType(interiorNode),
-          urls
+          items
         }
       ]
     })

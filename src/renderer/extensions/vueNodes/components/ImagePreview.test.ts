@@ -16,6 +16,7 @@ import { openHdrViewer } from '@/services/hdrViewerService'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { resolveNode } from '@/utils/litegraphUtil'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 
 // Mock downloadFile to avoid DOM errors
 vi.mock(import('@/base/common/downloadUtil'), () => ({
@@ -61,13 +62,29 @@ const i18n = createI18n({
   }
 })
 
+function outputItem(
+  filename: string,
+  overrides: Partial<AugmentedResultItem> = {}
+): AugmentedResultItem {
+  return {
+    filename,
+    subfolder: '',
+    type: 'output',
+    mediaType: 'images',
+    nodeId: '1',
+    ...overrides
+  }
+}
+
+function viewUrl(filename: string) {
+  return `/api/view?filename=${filename}&type=output&subfolder=`
+}
+
 describe('ImagePreview', () => {
   const defaultProps = {
-    imageUrls: [
-      '/api/view?filename=test1.png&type=output',
-      '/api/view?filename=test2.png&type=output'
-    ]
+    items: [outputItem('test1.png'), outputItem('test2.png')]
   }
+  const defaultUrls = [viewUrl('test1.png'), viewUrl('test2.png')]
 
   function renderImagePreview(props = {}) {
     return render(ImagePreview, {
@@ -90,8 +107,8 @@ describe('ImagePreview', () => {
     await nextTick()
   }
 
-  it('does not render when no imageUrls provided', () => {
-    const { container } = renderImagePreview({ imageUrls: [] })
+  it('does not render when no items provided', () => {
+    const { container } = renderImagePreview({ items: [] })
 
     expect(container.querySelector('.image-preview')).not.toBeInTheDocument()
   })
@@ -161,17 +178,16 @@ describe('ImagePreview', () => {
   })
 
   it('offers the HDR viewer instead of an <img> for exr outputs', () => {
-    renderImagePreview({
-      imageUrls: ['/api/view?filename=out.exr&type=output']
-    })
+    renderImagePreview({ items: [outputItem('out.exr')] })
 
     expect(screen.getByTestId('hdr-open-button')).toBeInTheDocument()
     expect(screen.queryByTestId('main-image')).not.toBeInTheDocument()
   })
 
   it('shows the server preview of an exr output and still offers the HDR viewer', async () => {
-    const exrUrl = '/api/view?filename=out.exr&type=output&preview_id=p1'
-    renderImagePreview({ imageUrls: [exrUrl] })
+    renderImagePreview({
+      items: [outputItem('out.exr', { preview_id: 'p1' })]
+    })
     const user = userEvent.setup()
 
     expect(screen.getByTestId('main-image')).toHaveAttribute(
@@ -181,13 +197,11 @@ describe('ImagePreview', () => {
 
     await user.click(screen.getByRole('button', { name: 'Open in HDR Viewer' }))
 
-    expect(openHdrViewer).toHaveBeenCalledWith(exrUrl)
+    expect(openHdrViewer).toHaveBeenCalledWith(viewUrl('out.exr'))
   })
 
   it('displays calculating dimensions text in gallery mode', async () => {
-    renderImagePreview({
-      imageUrls: [defaultProps.imageUrls[0]]
-    })
+    renderImagePreview({ items: [defaultProps.items[0]] })
 
     screen.getByText('Calculating dimensions')
   })
@@ -204,9 +218,7 @@ describe('ImagePreview', () => {
   })
 
   it('does not show navigation dots for single image', () => {
-    renderImagePreview({
-      imageUrls: [defaultProps.imageUrls[0]]
-    })
+    renderImagePreview({ items: [defaultProps.items[0]] })
 
     const navigationDots = screen.queryAllByRole('button', {
       name: /View image/
@@ -225,9 +237,7 @@ describe('ImagePreview', () => {
   })
 
   it('hides mask and download buttons when image fails to load', async () => {
-    renderImagePreview({
-      imageUrls: [defaultProps.imageUrls[0]]
-    })
+    renderImagePreview({ items: [defaultProps.items[0]] })
 
     expect(
       screen.getByRole('button', { name: 'Edit or mask image' })
@@ -261,9 +271,7 @@ describe('ImagePreview', () => {
   })
 
   it('handles download button click', async () => {
-    renderImagePreview({
-      imageUrls: [defaultProps.imageUrls[0]]
-    })
+    renderImagePreview({ items: [defaultProps.items[0]] })
     const user = userEvent.setup()
 
     const downloadButton = screen.getByRole('button', {
@@ -271,7 +279,7 @@ describe('ImagePreview', () => {
     })
     await user.click(downloadButton)
 
-    expect(downloadFile).toHaveBeenCalledWith(defaultProps.imageUrls[0])
+    expect(downloadFile).toHaveBeenCalledWith(defaultUrls[0])
   })
 
   it('switches images when navigation dots are clicked', async () => {
@@ -280,10 +288,7 @@ describe('ImagePreview', () => {
     await switchToGallery(user)
 
     // Initially shows first image
-    expect(screen.getByRole('img')).toHaveAttribute(
-      'src',
-      defaultProps.imageUrls[0]
-    )
+    expect(screen.getByRole('img')).toHaveAttribute('src', defaultUrls[0])
 
     // Click second navigation dot
     const navigationDots = screen.getAllByRole('button', {
@@ -292,10 +297,7 @@ describe('ImagePreview', () => {
     await user.click(navigationDots[1])
     await nextTick()
 
-    expect(screen.getByRole('img')).toHaveAttribute(
-      'src',
-      defaultProps.imageUrls[1]
-    )
+    expect(screen.getByRole('img')).toHaveAttribute('src', defaultUrls[1])
   })
 
   it('marks active navigation dot with aria-current', async () => {
@@ -320,9 +322,7 @@ describe('ImagePreview', () => {
   })
 
   it('has proper accessibility attributes', () => {
-    renderImagePreview({
-      imageUrls: [defaultProps.imageUrls[0]]
-    })
+    renderImagePreview({ items: [defaultProps.items[0]] })
 
     expect(screen.getByRole('img')).toHaveAttribute('alt', 'View image 1 of 1')
   })
@@ -356,7 +356,7 @@ describe('ImagePreview', () => {
 
       expect(screen.getByTestId('main-image')).toHaveAttribute(
         'src',
-        defaultProps.imageUrls[1]
+        defaultUrls[1]
       )
     })
 
@@ -374,7 +374,7 @@ describe('ImagePreview', () => {
 
       expect(screen.getByTestId('main-image')).toHaveAttribute(
         'src',
-        defaultProps.imageUrls[0]
+        defaultUrls[0]
       )
     })
 
@@ -391,7 +391,7 @@ describe('ImagePreview', () => {
 
       expect(screen.getByTestId('main-image')).toHaveAttribute(
         'src',
-        defaultProps.imageUrls[0]
+        defaultUrls[0]
       )
     })
 
@@ -406,7 +406,7 @@ describe('ImagePreview', () => {
 
       expect(screen.getByTestId('main-image')).toHaveAttribute(
         'src',
-        defaultProps.imageUrls[1]
+        defaultUrls[1]
       )
     })
 
@@ -424,7 +424,7 @@ describe('ImagePreview', () => {
 
       expect(screen.getByTestId('main-image')).toHaveAttribute(
         'src',
-        defaultProps.imageUrls[0]
+        defaultUrls[0]
       )
     })
 
@@ -439,7 +439,7 @@ describe('ImagePreview', () => {
 
       expect(screen.getByTestId('main-image')).toHaveAttribute(
         'src',
-        defaultProps.imageUrls[1]
+        defaultUrls[1]
       )
     })
 
@@ -460,7 +460,7 @@ describe('ImagePreview', () => {
 
     it('ignores arrow keys for single image', async () => {
       const { container } = renderImagePreview({
-        imageUrls: [defaultProps.imageUrls[0]]
+        items: [defaultProps.items[0]]
       })
 
       const initialSrc = screen.getByRole('img').getAttribute('src')
@@ -484,9 +484,7 @@ describe('ImagePreview', () => {
     })
 
     it('defaults to gallery mode for single image', () => {
-      renderImagePreview({
-        imageUrls: [defaultProps.imageUrls[0]]
-      })
+      renderImagePreview({ items: [defaultProps.items[0]] })
 
       screen.getByRole('region')
       const gridThumbnails = screen.queryAllByRole('button', {
@@ -506,7 +504,7 @@ describe('ImagePreview', () => {
       await nextTick()
 
       const mainImg = screen.getByTestId('main-image')
-      expect(mainImg).toHaveAttribute('src', defaultProps.imageUrls[1])
+      expect(mainImg).toHaveAttribute('src', defaultUrls[1])
     })
 
     it('shows back-to-grid button next to navigation dots', async () => {
@@ -543,10 +541,10 @@ describe('ImagePreview', () => {
 
       // Change URLs
       await rerender({
-        imageUrls: [
-          '/api/view?filename=new1.png&type=output',
-          '/api/view?filename=new2.png&type=output',
-          '/api/view?filename=new3.png&type=output'
+        items: [
+          outputItem('new1.png'),
+          outputItem('new2.png'),
+          outputItem('new3.png')
         ]
       })
       await nextTick()
@@ -564,9 +562,9 @@ describe('ImagePreview', () => {
       const user = userEvent.setup({
         advanceTimers: vi.advanceTimersByTime
       })
-      const sameUrl = '/api/view?filename=test.png&type=output'
+      const sameItem = outputItem('test.png')
       const { container } = renderImagePreview({
-        imageUrls: [sameUrl, sameUrl, sameUrl]
+        items: [sameItem, { ...sameItem }, { ...sameItem }]
       })
       await switchToGallery(user)
 
@@ -594,14 +592,12 @@ describe('ImagePreview', () => {
   })
 
   describe('URL change detection', () => {
-    it('should NOT reset loading state when imageUrls prop is reassigned with identical URLs', async () => {
+    it('should NOT reset loading state when items prop is reassigned with identical URLs', async () => {
       const user = userEvent.setup({
         advanceTimers: vi.advanceTimersByTime
       })
-      const urls = ['/api/view?filename=test.png&type=output']
-      const { container, rerender } = renderImagePreview({
-        imageUrls: urls
-      })
+      const items = [outputItem('test.png')]
+      const { container, rerender } = renderImagePreview({ items })
       void user
 
       // Simulate image load completing
@@ -614,7 +610,7 @@ describe('ImagePreview', () => {
       ).not.toBeInTheDocument()
 
       // Reassign with new array reference but same content
-      await rerender({ imageUrls: [...urls] })
+      await rerender({ items: items.map((item) => ({ ...item })) })
       await nextTick()
 
       // Advance past the 250ms delayed loader timeout
@@ -627,14 +623,12 @@ describe('ImagePreview', () => {
       ).not.toBeInTheDocument()
     })
 
-    it('should reset loading state when imageUrls prop changes to different URLs', async () => {
+    it('should reset loading state when items prop changes to different URLs', async () => {
       const user = userEvent.setup({
         advanceTimers: vi.advanceTimersByTime
       })
-      const urls = ['/api/view?filename=test.png&type=output']
-      const { container, rerender } = renderImagePreview({
-        imageUrls: urls
-      })
+      const items = [outputItem('test.png')]
+      const { container, rerender } = renderImagePreview({ items })
 
       // Simulate image load completing
       await fireEvent.load(screen.getByRole('img'))
@@ -647,9 +641,7 @@ describe('ImagePreview', () => {
 
       void user
       // Change to different URL
-      await rerender({
-        imageUrls: ['/api/view?filename=different.png&type=output']
-      })
+      await rerender({ items: [outputItem('different.png')] })
       await nextTick()
 
       // Advance past the 250ms delayed loader timeout
@@ -660,13 +652,11 @@ describe('ImagePreview', () => {
     })
 
     it('should handle empty to non-empty URL transitions correctly', async () => {
-      const { container, rerender } = renderImagePreview({ imageUrls: [] })
+      const { container, rerender } = renderImagePreview({ items: [] })
 
       expect(container.querySelector('.image-preview')).not.toBeInTheDocument()
 
-      await rerender({
-        imageUrls: ['/api/view?filename=test.png&type=output']
-      })
+      await rerender({ items: [outputItem('test.png')] })
       await nextTick()
 
       expect(container.querySelector('.image-preview')).toBeInTheDocument()

@@ -84,8 +84,8 @@ import { parseNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
 import { isBlueprintType } from '@/utils/blueprintUtils'
 import { markCoreMediaMenuCallback } from '@/utils/coreMediaMenuActionUtils'
-import { getImageFileUrl } from '@/utils/hdrFormatUtil'
 import { getErrorMessage } from '@/utils/errorUtil'
+import { resultItemUrl } from '@/utils/resultItemUrl'
 import type { WidgetId } from '@/types/widgetId'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import {
@@ -717,33 +717,28 @@ export const useLitegraphService = () => {
     }
 
     node.prototype.getExtraMenuOptions = function (canvas, options) {
-      if (this.imgs) {
-        let img
-        if (this.imageIndex != null) {
-          img = this.imgs[this.imageIndex]
-        } else if (this.overIndex != null) {
-          img = this.imgs[this.overIndex]
-        }
-        if (img) {
-          options.unshift(
-            {
-              content: 'Open Image',
-              callback: markCoreMediaMenuCallback(() => {
-                const url = getImageFileUrl(img)
-                void openFileInNewTab(url.toString())
-              }, 'preview')
-            },
-            ...getCopyImageOption(img),
-            {
-              content: 'Save Image',
-              callback: markCoreMediaMenuCallback(() => {
-                const url = getImageFileUrl(img)
-                const filename = new URLSearchParams(url.search).get('filename')
-                downloadFile(url.toString(), filename ?? undefined)
-              }, 'preview')
-            }
-          )
-        }
+      const index = this.imageIndex ?? this.overIndex
+      if (this.imgs && index) {
+        const resultItem = this.images[index]
+        const img = this.imgs[index]
+        const url = resultItemUrl(resultItem)
+        options.unshift(
+          {
+            content: 'Open Image',
+            callback: markCoreMediaMenuCallback(
+              () => openFileInNewTab(url),
+              'preview'
+            )
+          },
+          ...getCopyImageOption(img),
+          {
+            content: 'Save Image',
+            callback: markCoreMediaMenuCallback(
+              () => downloadFile(url, resultItem.filename ?? undefined),
+              'preview'
+            )
+          }
+        )
       }
 
       options.push({

@@ -49,6 +49,17 @@ export function getAssetViewUrl(asset: AssetItem): string {
   return api.apiURL(`/view?${params}`)
 }
 
+export function getAssetPreviewUrl(asset: AssetItem): string {
+  if (asset.preview_url) return asset.preview_url
+  if (asset.preview_id)
+    return api.apiURL(`/assets/${asset.preview_id}/content?disposition=inline`)
+  return getAssetViewUrl(asset)
+}
+
+export function assetContentUrl(id: string): string {
+  return api.apiURL(`/assets/${id}/content?disposition=inline`)
+}
+
 /**
  * Get the subfolder an asset lives in, relative to its type root
  *

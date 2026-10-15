@@ -5,7 +5,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useNodeOutputsExport } from '@/platform/assets/composables/useNodeOutputsExport'
 import { useCommandStore } from '@/stores/commandStore'
 import type { CoreMediaMenuActionKind } from '@/utils/coreMediaMenuActionUtils'
-import { getImageFileUrl } from '@/utils/hdrFormatUtil'
+import { resultItemUrl } from '@/utils/resultItemUrl'
 
 import type { MenuOption } from './menuOption'
 
@@ -54,12 +54,10 @@ export function useImageMenuOptions() {
   }
 
   const openImage = (node: LGraphNode) => {
-    const images = node.imgs
-    if (!images?.length) return
-    const img = images.at(node.imageIndex ?? 0)
+    const img = node.images.at(node.imageIndex ?? 0)
     if (!img) return
-    const url = getImageFileUrl(img)
-    void openFileInNewTab(url.toString())
+    const url = resultItemUrl(img)
+    void openFileInNewTab(url)
   }
 
   const copyImage = async (node: LGraphNode) => {
@@ -95,14 +93,11 @@ export function useImageMenuOptions() {
   }
 
   const saveImage = (node: LGraphNode) => {
-    const images = node.imgs
-    if (!images?.length) return
-    const img = images.at(node.imageIndex ?? 0)
+    const img = node.images.at(node.imageIndex ?? 0)
     if (!img) return
-
+    const url = resultItemUrl(img)
     try {
-      const url = getImageFileUrl(img)
-      downloadFile(url.toString())
+      downloadFile(url)
     } catch (error) {
       console.error('Failed to save image:', error)
     }

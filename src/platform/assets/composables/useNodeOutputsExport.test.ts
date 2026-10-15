@@ -150,7 +150,7 @@ describe('useNodeOutputsExport', () => {
 
     await vi.waitFor(() => {
       expect(vi.mocked(downloadFile).mock.calls).toEqual([
-        ['/api/view?filename=b.png&subfolder=shots&type=output', 'b.png']
+        ['/api/view?filename=b.png&type=output&subfolder=shots', 'b.png']
       ])
     })
     expect(assetService.createAssetExport).not.toHaveBeenCalled()
@@ -200,8 +200,8 @@ describe('useNodeOutputsExport', () => {
 
       await vi.waitFor(() => {
         expect(vi.mocked(downloadFile).mock.calls).toEqual([
-          ['/api/view?filename=a.png&subfolder=shots&type=output', 'a.png'],
-          ['/api/view?filename=b.png&subfolder=&type=temp', 'b.png']
+          ['/api/view?filename=a.png&type=output&subfolder=shots', 'a.png'],
+          ['/api/view?filename=b.png&type=temp&subfolder=', 'b.png']
         ])
       })
       expect(assetService.createAssetExport).not.toHaveBeenCalled()
