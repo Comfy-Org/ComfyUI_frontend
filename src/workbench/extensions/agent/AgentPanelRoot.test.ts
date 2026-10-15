@@ -532,10 +532,16 @@ function cloudWorkflow({
 
 function stubHistoryWithWorkflowListing({
   listing,
-  lookup
+  lookup,
+  title = 'Earlier chat',
+  workflowId = 'wf-gone',
+  listedWorkflows = []
 }: {
   listing: number | Promise<number>
   lookup: number | Promise<number>
+  title?: string
+  workflowId?: string
+  listedWorkflows?: WorkflowResponse[]
 }): void {
   respondToFetch({ method: 'GET', url: /\/agent\/threads(\?|$)/ }, () =>
     json(
@@ -543,7 +549,7 @@ function stubHistoryWithWorkflowListing({
       agentThreadList([
         agentThread({
           id: 'th-history',
-          title: 'Earlier chat',
+          title,
           last_message_at: '2026-09-01T00:00:00Z'
         })
       ])
@@ -558,19 +564,25 @@ function stubHistoryWithWorkflowListing({
         role: 'user',
         status: 'complete',
         turn_id: 'history-turn',
-        workflow_id: 'wf-gone',
+        workflow_id: workflowId,
         content: { text: 'Historical prompt' }
       }
     ] satisfies AgentMessages)
   )
   respondToFetch({ method: 'GET', url: /\/workflows(\?|$)/ }, async () =>
     json(await listing, {
-      data: [],
-      pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+      data: listedWorkflows,
+      pagination: {
+        offset: 0,
+        limit: 100,
+        total: listedWorkflows.length,
+        has_more: false
+      }
     } satisfies WorkflowListResponse)
   )
-  respondToFetch({ method: 'GET', url: /\/workflows\/wf-gone/ }, async () =>
-    json(await lookup, {})
+  respondToFetch(
+    { method: 'GET', url: new RegExp(`/workflows/${workflowId}`) },
+    async () => json(await lookup, {})
   )
   respondToFetch({ method: 'GET', url: /\/assets/ }, () =>
     json(200, { assets: [], total: 0, has_more: false })
@@ -7920,52 +7932,22 @@ describe('AgentPanelRoot workflow binding', () => {
     }
   ]
 
-  function stubUnresolvedTargetChat(): void {
-    respondToFetch({ method: 'GET', url: /\/agent\/threads(\?|$)/ }, () =>
-      json(
-        200,
-        agentThreadList([
-          agentThread({
-            id: 'th-history',
-            title: 'Unresolved target chat',
-            last_message_at: '2026-09-01T00:00:00Z'
-          })
-        ])
-      )
-    )
-    respondToFetch({ method: 'GET', url: /\/messages/ }, () =>
-      json(200, [
-        {
-          id: 'history-user',
-          thread_id: 'th-history',
-          seq: 1,
-          role: 'user',
-          status: 'complete',
-          turn_id: 'history-turn',
-          workflow_id: 'wf-unresolved',
-          content: { text: 'Historical prompt' }
-        }
-      ] satisfies AgentMessages)
-    )
-    respondToFetch({ method: 'GET', url: /\/workflows(\?|$)/ }, () =>
-      json(200, {
-        data: [
-          cloudWorkflow({ id: 'wf-unresolved', name: 'missing-saved-file' }),
-          cloudWorkflow({ id: 'wf-42', name: 'current' })
-        ],
-        pagination: { offset: 0, limit: 100, total: 2, has_more: false }
-      } satisfies WorkflowListResponse)
-    )
-    respondToFetch({ method: 'GET', url: /\/assets/ }, () =>
-      json(200, { assets: [], total: 0, has_more: false })
-    )
+  const unresolvedTargetChat = {
+    listing: 200,
+    lookup: 500,
+    title: 'Unresolved target chat',
+    workflowId: 'wf-unresolved',
+    listedWorkflows: [
+      cloudWorkflow({ id: 'wf-unresolved', name: 'missing-saved-file' }),
+      cloudWorkflow({ id: 'wf-42', name: 'current' })
+    ]
   }
 
   it.for(unresolvedChatEntryPoints)(
     'opens a readable unresolved chat from $entryPoint and keeps it untargeted across a tab change, remount and history revisit',
     async ({ openChat }) => {
       const current = makeTab('wf-42')
-      stubUnresolvedTargetChat()
+      stubHistoryWithWorkflowListing(unresolvedTargetChat)
       const rendered = await openChat()
       const selector = () =>
         screen.getByRole('button', {
@@ -8030,7 +8012,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
   it('keeps a readable unresolved chat open when its Current row is selected again', async () => {
     makeTab('wf-42')
-    stubUnresolvedTargetChat()
+    stubHistoryWithWorkflowListing(unresolvedTargetChat)
     renderWithSelectedTarget()
     await userEvent.click(
       screen.getByRole('button', {
