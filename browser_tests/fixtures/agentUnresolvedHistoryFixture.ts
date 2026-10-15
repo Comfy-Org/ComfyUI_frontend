@@ -1,8 +1,10 @@
 import type {
   AgentMessage,
+  AgentPostMessageRequest,
   AgentThreadListResponse,
   WorkflowListResponse
 } from '@comfyorg/ingest-types'
+import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
 
 import type { AgentTurnAccepted } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
@@ -15,7 +17,7 @@ import {
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 export const agentUnresolvedHistoryTest = agentTest.extend<{
-  unresolvedHistory: { posted: unknown[]; chosenId: string }
+  unresolvedHistory: { posted: AgentPostMessageRequest[]; chosenId: string }
 }>({
   unresolvedHistory: async ({ page, agentFlagEnabled }, use) => {
     const threadId = 'e7b827c1-c5f8-4f92-9a37-5b7e41a03d18'
@@ -55,31 +57,31 @@ export const agentUnresolvedHistoryTest = agentTest.extend<{
         content: { text: 'Earlier prompt' }
       }
     ]
-    const workflows: WorkflowListResponse = {
-      data: [
-        {
-          id: unresolvedId,
-          name: 'Missing saved file',
-          created_by: 'test-user-e2e',
-          created_at: at,
-          updated_at: at,
-          latest_version: 1
-        }
-      ],
-      pagination: { offset: 0, limit: 100, total: 1, has_more: false }
-    }
-    const posted: unknown[] = []
+    const listedWorkflows: WorkflowListResponse['data'] = [
+      {
+        id: unresolvedId,
+        name: 'Missing saved file',
+        created_by: 'test-user-e2e',
+        created_at: at,
+        updated_at: at,
+        latest_version: 1
+      }
+    ]
+    const posted: AgentPostMessageRequest[] = []
     await bootAgentApp(page, agentFlagEnabled, {
       beforeNavigate: async (page) => {
         await mockAgentTurnApi(page, accepted)
-        await mockWorkflowPersistence(page, chosenId, workflows.data)
-        await page.route('**/api/agent/threads', (route) =>
-          route.fulfill(jsonRoute(threads))
+        await mockWorkflowPersistence(page, chosenId, listedWorkflows)
+        await page.route(
+          ({ pathname }) => pathname.endsWith('/api/agent/threads'),
+          (route) => route.fulfill(jsonRoute(threads))
         )
         await page.route('**/api/agent/threads/*/messages', (route) => {
           if (route.request().method() === 'GET')
             return route.fulfill(jsonRoute(messages))
-          posted.push(route.request().postDataJSON())
+          posted.push(
+            zAgentPostMessageRequest.parse(route.request().postDataJSON())
+          )
           return route.fulfill({ ...jsonRoute(accepted), status: 202 })
         })
       }

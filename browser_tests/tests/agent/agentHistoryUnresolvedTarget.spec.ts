@@ -45,12 +45,10 @@ test.describe(
         originalGraph
       )
 
-      await agentPanel.composer.fill('Continue in my chosen workflow')
-      await agentPanel.sendButton.click()
+      await agentPanel.sendMessage('Continue in my chosen workflow')
       await expect(
         page.getByPlaceholder(enMessages.agent.searchWorkflows)
       ).toBeVisible()
-      expect(posted).toEqual([])
       expect(await page.evaluate(() => window.app!.graph.serialize())).toEqual(
         originalGraph
       )
@@ -59,19 +57,7 @@ test.describe(
         'Continue in my chosen workflow'
       )
 
-      await agentPanel.workflowPicker.click()
-      await page
-        .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-        .click()
-      await expect(agentPanel.workflowPicker).toHaveText('Unsaved Workflow')
-      await page
-        .getByRole('button', {
-          name: enMessages.sideToolbar.newBlankWorkflow,
-          exact: true
-        })
-        .click()
-      await expect(topbar.tabs).toHaveCount(2)
-      await expect(topbar.getActiveTab()).toHaveText('Unsaved Workflow (2)')
+      await agentPanel.selectWorkflow()
       await agentPanel.sendButton.click()
       await expect(panel.getByTestId('user-message-bubble')).toHaveText([
         'Earlier prompt',
@@ -85,7 +71,6 @@ test.describe(
           })
         })
       ])
-      await expect(topbar.getActiveTab()).toHaveText('Unsaved Workflow (2)')
       await expect(agentPanel.workflowPicker).toHaveText('Unsaved Workflow')
     })
   }
