@@ -118,7 +118,7 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
   const searchPacksInternal = async (
     query: string,
     params: SearchNodePacksParams
-  ): Promise<SearchPacksResult> => {
+  ): Promise<{ result: SearchPacksResult; fallbacksFailed: boolean }> => {
     const { pageSize, pageNumber } = params
     const rest = omit(params, ['pageSize', 'pageNumber'])
 
@@ -135,7 +135,7 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
 
     async function searchFallbacks(
       fallbackQueries: string[]
-    ): Promise<AlgoliaNodePack[]> {
+    ): Promise<AlgoliaNodePack[] | undefined> {
       if (fallbackQueries.length === 0) return []
       try {
         const { results } = await searchClient.search<AlgoliaNodePack>({
@@ -153,7 +153,7 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
           level: 'warning',
           tags: { outcome: 'degraded' }
         })
-        return []
+        return undefined
       }
     }
 
@@ -187,7 +187,7 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
       ? await searchFallbacks(buildPackSearchFallbacks(query))
       : nodePacks.hits
 
-    const registryPacks = hits.map(toRegistryPack)
+    const registryPacks = (hits ?? []).map(toRegistryPack)
 
     const suggestions =
       querySuggestions?.hits.map((suggestion) => ({
@@ -196,19 +196,19 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
       })) ?? []
 
     return {
-      nodePacks: registryPacks,
-      querySuggestions: suggestions,
-      hasMore:
-        nodePacks.nbPages === undefined
-          ? undefined
-          : pageNumber + 1 < nodePacks.nbPages,
-      rawResultsEmpty: nodePacks.hits.length === 0
+      result: {
+        nodePacks: registryPacks,
+        querySuggestions: suggestions,
+        hasMore:
+          nodePacks.nbPages === undefined
+            ? undefined
+            : pageNumber + 1 < nodePacks.nbPages,
+        rawResultsEmpty: nodePacks.hits.length === 0
+      },
+      fallbacksFailed: hits === undefined
     }
   }
 
-  /**
-   * Search for node packs in Algolia with caching.
-   */
   const searchPacks = async (
     query: string,
     params: SearchNodePacksParams
@@ -217,8 +217,8 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
     const cachedResult = searchPacksCache.get(cacheKey)
     if (cachedResult !== undefined) return cachedResult
 
-    const result = await searchPacksInternal(query, params)
-    searchPacksCache.set(cacheKey, result)
+    const { result, fallbacksFailed } = await searchPacksInternal(query, params)
+    if (!fallbacksFailed) searchPacksCache.set(cacheKey, result)
     return result
   }
 

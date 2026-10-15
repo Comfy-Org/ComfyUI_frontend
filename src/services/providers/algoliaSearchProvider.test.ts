@@ -308,6 +308,33 @@ describe('useAlgoliaSearchProvider', () => {
       })
     })
 
+    it('retries the search after a failed rewrite request instead of serving it from cache', async () => {
+      mockSearchClient.search
+        .mockResolvedValueOnce({ results: [{ hits: [], nbPages: 0 }] })
+        .mockRejectedValueOnce(new Error('Algolia rewrite request failed'))
+        .mockResolvedValueOnce({ results: [{ hits: [], nbPages: 0 }] })
+        .mockResolvedValueOnce({
+          results: [{ hits: [packHit('comfyui-kjnodes')] }, { hits: [] }]
+        })
+
+      const provider = useAlgoliaSearchProvider()
+      const params = { pageSize: 10, pageNumber: 0 }
+      const degraded = await provider.searchPacks(
+        'kijai/comfyui-kjnodes',
+        params
+      )
+      const retried = await provider.searchPacks(
+        'kijai/comfyui-kjnodes',
+        params
+      )
+
+      expect(degraded.nodePacks).toEqual([])
+      expect(retried.nodePacks.map((pack) => pack.id)).toEqual([
+        'comfyui-kjnodes'
+      ])
+      expect(mockSearchClient.search).toHaveBeenCalledTimes(4)
+    })
+
     it('sends no fallback queries when the raw query fills the page', async () => {
       mockSearchClient.search.mockResolvedValueOnce({
         results: [
