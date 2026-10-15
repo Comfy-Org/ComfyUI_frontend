@@ -12,7 +12,8 @@ for (const prefix of ['', '/zh-CN']) {
     await expect(
       page.getByRole('heading', { name: 'FLUX 3 Image Klein', exact: true })
     ).toBeVisible()
-    await expect(page.getByTestId('model-launch-hero-block')).toHaveCount(1)
+    const hero = page.getByTestId('model-launch-hero-block')
+    await expect(hero).toHaveCount(1)
     await expect(
       page.getByRole('link', {
         name: prefix ? '运行 FLUX 3 IMAGE KLEIN' : 'RUN FLUX 3 IMAGE KLEIN',
@@ -23,10 +24,10 @@ for (const prefix of ['', '/zh-CN']) {
       'https://cloud.comfy.org/?template=image_flux3_klein_t2i'
     )
     await expect(
-      page.getByRole('link', {
+      hero.getByRole('link', {
         name: prefix ? '阅读文档' : 'READ DOCS',
         exact: true
       })
-    ).toBeVisible()
+    ).toHaveCount(0)
   })
 }

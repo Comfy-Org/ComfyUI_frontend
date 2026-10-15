@@ -34,10 +34,6 @@ export const flux3ImagePage: ModelLaunchPage = {
       labelKey: 'flux3Image.hero.primaryCta',
       href: cloudTemplate,
       target: '_blank'
-    },
-    secondaryCta: {
-      labelKey: 'flux3Image.hero.secondaryCta',
-      href: '#launch-links'
     }
   },
   gallery: {

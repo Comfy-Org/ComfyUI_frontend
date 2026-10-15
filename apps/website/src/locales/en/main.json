@@ -5948,8 +5948,7 @@
       "openSource": "Open Source",
       "imageGeneration": "Image generation",
       "imageEdit": "Image edit",
-      "primaryCta": "RUN FLUX 3 IMAGE KLEIN",
-      "secondaryCta": "READ DOCS"
+      "primaryCta": "RUN FLUX 3 IMAGE KLEIN"
     },
     "runOptions": {
       "subtitle": "Build workflows in the browser, explore ComfyUI on your own hardware, or connect your creative pipeline through the API."
