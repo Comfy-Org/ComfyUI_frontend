@@ -51,10 +51,6 @@ export function useFreeUsePlacement() {
 
   if (hasQaOverride) {
     if (isFreeUseVariant(override)) assigned.value = override
-    else
-      console.warn(
-        `[agent] ignoring unknown ${FREE_USE_PLACEMENT_FLAG} override ${JSON.stringify(override)}; expected one of ${FREE_USE_VARIANTS.join(', ')}`
-      )
   } else if (isAuthenticatedConfigLoaded.value) {
     assign()
   } else {

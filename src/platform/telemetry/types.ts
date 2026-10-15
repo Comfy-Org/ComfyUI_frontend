@@ -18,18 +18,25 @@ import {
   SSO_TELEMETRY_EVENT
 } from '@comfyorg/account-core/telemetry'
 import type {
+  BillingCycle,
   BillingTelemetryEvent,
   BillingTelemetryEventName,
   CheckoutJourneyTelemetryEvent,
   CheckoutJourneyTelemetryEventName,
   CheckoutJourneyTelemetryEventPayload,
   ResubscribeSource,
+  BillingTierKey as TierKey,
   SubscriptionCheckoutTier,
   SubscriptionCheckoutType
 } from '@comfyorg/account-core/billing'
 import { BILLING_TELEMETRY_EVENTS } from '@comfyorg/account-core/billing'
 import type { BillingSource } from '@comfyorg/billing-contract'
-import type { AgentRunMode, GetFeaturesResponses } from '@comfyorg/ingest-types'
+import type {
+  AgentRunMode,
+  GetFeaturesResponses,
+  SubscriptionTier,
+  WorkspaceWithRole
+} from '@comfyorg/ingest-types'
 import type {
   AuthErrorMetadata,
   AuthFlowAction,
@@ -39,8 +46,6 @@ import type {
 } from '@comfyorg/account-core/telemetry'
 import type { SessionRefreshOutcome } from '@comfyorg/account-core/session'
 
-import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
-import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { AppMode } from '@/utils/appMode'
 
 export type { AuthMethod }
@@ -264,10 +269,31 @@ export interface SurveyResponsesNormalized extends SurveyResponses {
   useCase_raw?: string
 }
 
+type AuthRail = 'web_session' | 'token'
+
+/**
+ * The selected workspace and the auth rail its requests ride on. The RUM
+ * global context and the Run-gate events carry it, so a blocked run or a
+ * failure can be split by the workspace it was scoped to.
+ */
+export interface WorkspaceTelemetryContext {
+  workspace_id: string
+  workspace_type: WorkspaceWithRole['type']
+  workspace_role: WorkspaceWithRole['role']
+  workspace_tier: SubscriptionTier | null
+  auth_rail: AuthRail
+}
+
+/** A billing read for the selected workspace that the server resolved for another. */
+export interface WorkspaceScopeMismatchMetadata extends WorkspaceTelemetryContext {
+  resolved_workspace_id: string
+  resolved_workspace_type: WorkspaceWithRole['type'] | 'unknown'
+}
+
 /**
  * Run button tracking properties
  */
-export interface RunButtonProperties {
+export interface RunButtonProperties extends Partial<WorkspaceTelemetryContext> {
   subscribe_to_run: boolean
   workflow_type: 'template' | 'custom'
   workflow_name: string
@@ -1250,7 +1276,7 @@ export interface CheckoutAttributionMetadata {
   wbraid?: string
 }
 
-export interface SubscriptionMetadata {
+export interface SubscriptionMetadata extends Partial<WorkspaceTelemetryContext> {
   current_tier?: string
   reason?: PaymentIntentSource
 }
@@ -1431,6 +1457,9 @@ export interface TelemetryProvider {
   trackRunButton?(properties: RunButtonProperties): void
 
   trackBillingEvent?(event: BillingTelemetryEvent): void
+
+  setWorkspaceContext?(context: WorkspaceTelemetryContext | undefined): void
+  trackWorkspaceScopeMismatch?(metadata: WorkspaceScopeMismatchMetadata): void
 
   /** Emit a checkout-journey lifecycle event to this provider. */
   trackCheckoutJourneyEvent?(event: CheckoutJourneyTelemetryEvent): void
@@ -1751,7 +1780,9 @@ export const TelemetryEvents = {
   PAGE_VIEW: 'app:page_view',
 
   // Network
-  FETCH_TIMEOUT: 'app:fetch_timeout'
+  FETCH_TIMEOUT: 'app:fetch_timeout',
+
+  WORKSPACE_SCOPE_MISMATCH: 'workspace_scope_mismatch'
 } as const
 
 export type TelemetryEventName =
@@ -1856,3 +1887,4 @@ export type TelemetryEventProperties =
   | AgentPaywallCtaMetadata
   | AgentCreditTransitionNoticeMetadata
   | FetchTimeoutMetadata
+  | WorkspaceScopeMismatchMetadata

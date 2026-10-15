@@ -4833,11 +4833,15 @@
         "ctaShort": "可在浏览器或 API 中运行。",
         "lead": "{who}：{summary}",
         "leadNoSummary": "{who}。",
-        "price": "默认设置下约 {credits} 积分。",
+        "price": "默认设置下每{unit}约 {credits} 积分。",
         "priceNoUnit": "默认设置下约 {credits} 积分。",
         "title": "{name} API 与 Playground - Comfy",
         "titleApi": "{name} API - Comfy",
-        "titleUnbranded": "{name} API 与 Playground"
+        "titleUnbranded": "{name} API 与 Playground",
+        "units": {
+          "image": "张图像",
+          "run": "次运行"
+        }
       },
       "missingInputSchema": "Comfy Router 已列出此模型，但其输入架构尚未提供。你可以查看已有信息；添加架构后将启用运行和 API 代码示例。",
       "nodePriceDefaults": "根据公布的费率或节点默认设置估算。实际费用随设置和用量变化。",
@@ -5149,6 +5153,179 @@
       "zoomIn": "放大",
       "zoomOut": "缩小",
       "zoomReset": "重置"
+    }
+  },
+  "vfx": {
+    "meta": {
+      "title": "Comfy 视觉特效 | 为制作流程打造的工作流",
+      "description": "探索天空替换、净板、减龄、遮罩与帧调整等视觉特效示例和可用的 ComfyUI 工作流。"
+    },
+    "hero": {
+      "heading": "用 Comfy 构建\n你的视觉特效流程。",
+      "subtitle": "从净板到天空替换，将复杂的镜头制作转化为团队可以查看、调整并重复使用的工作流。",
+      "explore": "探索特效工作流",
+      "contact": "联系我们的团队",
+      "videoLabel": "Comfy 精彩展示"
+    },
+    "examples": {
+      "heading": "看看你能做什么。",
+      "eyebrow": "视觉特效实践",
+      "sky": "替换天空，保留镜头。",
+      "skyDescription": "观看 Doug Hogan 在 ComfyUI 中构建天空替换工作流，了解每一步，并将工作流应用于自己的素材。",
+      "clean": "从干净的底板开始。",
+      "cleanDescription": "探索净板工作流，了解 ComfyUI 如何用于镜头清理。在将其引入自己的制作流程前，先跟随教程学习。"
+    },
+    "workflows": {
+      "heading": "热门 VFX 工作流",
+      "description": "探索 Comfy 社区热门视觉特效工作流。打开工作流，开始创作。",
+      "tag": "观看教程并打开工作流",
+      "tryNow": "立即试用",
+      "browse": "浏览全部 VFX 工作流",
+      "featured": "精选工作流",
+      "storyboard": "从故事板到 Seedance",
+      "storyboarding": "故事板"
+    },
+    "why": {
+      "heading": "你的流程。\n你的掌控。",
+      "subtitle": "围绕团队的工作方式构建。",
+      "1": {
+        "title": "查看每一步",
+        "description": "在节点式工作流中连接模型与处理步骤。了解结果的生成过程，再调整镜头所需的部分。"
+      },
+      "2": {
+        "title": "复用有效的流程",
+        "description": "保存工作流，并将其调整用于下一个镜头。为艺术家和技术指导提供可重复使用的共同起点。"
+      },
+      "3": {
+        "title": "选择运行方式",
+        "description": "在本地或 Comfy Cloud 中工作。若有工作室部署需求，请与我们的团队讨论托管构建。"
+      }
+    },
+    "proof": {
+      "heading": "看看创意团队如何使用 Comfy",
+      "title": "走进 Black Math 的创意系统",
+      "description": "Black Math 的艺术家与技术指导分享如何构建可扩展的创意系统，同时让团队掌握艺术指导。"
+    },
+    "contact": {
+      "heading": "将 Comfy 引入工作室的制作流程。",
+      "button": "联系我们的团队",
+      "models": "了解企业方案"
+    },
+    "faq": {
+      "heading": "视觉特效常见问题",
+      "1": {
+        "q": "可以将这些工作流用于自己的素材吗？",
+        "a": "可以。先观看关联教程，打开工作流，然后将示例输入替换为自己的素材。在将输出用于制作前，请检查模型与设置。"
+      },
+      "2": {
+        "q": "在哪里打开工作流？",
+        "a": "每张工作流卡片都会打开 Comfy Hub 中对应的页面，你可以在运行前查看工作流及其要求。"
+      },
+      "3": {
+        "q": "团队可以在本地运行 Comfy 吗？",
+        "a": "可以。ComfyUI 是开源的，可以在本地运行。硬件要求取决于选择的模型与工作流。也可以使用 Comfy Cloud 运行工作流。"
+      },
+      "4": {
+        "q": "如何讨论工作室部署？",
+        "a": "向我们的团队介绍你的部署要求。我们可以讨论托管构建、算力、模型商业条款和实施支持。"
+      },
+      "5": {
+        "q": "这些模型可以商用吗？",
+        "a": "Cloud 上的每个模型均已获得商业使用授权。本地模型的授权因提供商而异。Comfy 提供 MiniMax 商业授权；可与我们的团队讨论本地使用条款。"
+      }
+    }
+  },
+  "vfxV2": {
+    "comfy": {
+      "badge": "视觉特效",
+      "heroTitle": "为制作流程而构建的\n视觉特效工作流。",
+      "heroDescription": "在可查看、可扩展的工作流中移除物体、制作遮罩、重塑视频风格并提升镜头分辨率。在本地运行 ComfyUI，或接入现有制作流程。",
+      "primaryCta": "探索特效工作流",
+      "contactHeading": "将 Comfy 接入工作室制作流程。",
+      "contactButton": "联系 COMFY"
+    },
+    "shared": {
+      "secondaryCta": "了解制作方式"
+    },
+    "proof": {
+      "label": "特效工作流实例",
+      "upscale": "镜头超分辨率",
+      "upscaleDescription": "对比原始画面与提升分辨率后的结果。",
+      "cleanplate": "物体移除",
+      "cleanplateDescription": "遮罩目标物体，通过 LTX 重建背景净板。",
+      "restyling": "视频风格重塑",
+      "restylingDescription": "探索已发布的 MiniMax 视频风格重塑工作流。",
+      "compareHint": "移动分隔线，对比处理前后的效果。",
+      "demoLabel": "已发布的工作流示例"
+    },
+    "workflows": {
+      "heading": "下一个镜头的工作流起点。",
+      "description": "打开节点图，查看各个步骤，并根据你的素材进行调整。",
+      "featured": "精选视觉特效工作流"
+    },
+    "pipeline": {
+      "heading": "融入工作室的制作方式。",
+      "1": {
+        "title": "工作站与渲染基础设施",
+        "description": "在自有硬件上运行 ComfyUI。与技术团队一起规划共享基础设施和部署方式。"
+      },
+      "2": {
+        "title": "在节点图中掌控流程",
+        "description": "查看模型、遮罩、参数和处理步骤。随着镜头需求变化，持续调整工作流。"
+      },
+      "3": {
+        "title": "API 与 SDK",
+        "description": "通过代码运行工作流节点图，并接入现有工具。Comfy SDK 可用于 Cloud 或自行托管的 ComfyUI。"
+      },
+      "4": {
+        "title": "自定义节点与 DCC 工具",
+        "description": "通过自定义节点和社区集成扩展制作流程。根据工作室的工具与要求评估每项集成。"
+      },
+      "download": "在本地运行 COMFYUI",
+      "sdk": "了解 SDK",
+      "platform": "开发者平台"
+    },
+    "learning": {
+      "heading": "深入了解工作流。",
+      "description": "准备开始制作时，可跟随净板和天空替换教程逐步操作。"
+    },
+    "production": {
+      "eyebrow": "MANAGED BUILDS",
+      "heading": "统一的已批准环境。\n供整个团队使用。",
+      "body": "固定 ComfyUI 版本、节点、模型和依赖。无论在哪里制作，团队都能使用一致的构建环境。",
+      "features": {
+        "1": "私有节点与模型",
+        "2": "支持的服务商密钥与现有合同",
+        "3": "通过公司身份分配构建环境"
+      },
+      "releasesLabel": "COMFYUI 版本",
+      "environmentsLabel": "PYTHON · PYTORCH · CUDA",
+      "nodesLabel": "自定义节点",
+      "modelsLabel": "模型",
+      "privateNodes": "studio-nodes（私有）",
+      "privateModel": "brand-lora（私有）",
+      "pinnedLabel": "已固定",
+      "moreOptionsLabel": "更多选项",
+      "nodesUnit": "个节点",
+      "modelsUnit": "个模型",
+      "cta": "讨论 MANAGED BUILDS",
+      "detailsHeading": "需要时，再了解\n制作细节。",
+      "details": {
+        "licensing": {
+          "question": "模型许可与商业使用",
+          "answer": "查看 MiniMax 商业许可方案，并向 Comfy 咨询其他本地模型的服务商条款。模型使用权取决于具体模型和用途。"
+        },
+        "capacity": {
+          "question": "部署、容量与支持",
+          "answer": "讨论 Cloud、开发者平台或自有基础设施方案。专用容量、入驻支持、技术支持和响应承诺将在企业协议中明确。"
+        },
+        "security": {
+          "question": "身份管理与安全审查",
+          "answer": "与 Comfy 讨论公司身份、已批准构建的访问权限、私有素材和工作室安全要求。围绕部署方案确定审查范围。"
+        }
+      },
+      "enterprise": "查看企业方案详情",
+      "licensing": "MINIMAX 许可"
     }
   }
 }

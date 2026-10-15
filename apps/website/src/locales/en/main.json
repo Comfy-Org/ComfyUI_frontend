@@ -94,7 +94,11 @@
         "priceNoUnit": "Typical cost: {credits} credits.",
         "title": "{name} API & Playground - Comfy",
         "titleUnbranded": "{name} API & Playground",
-        "titleApi": "{name} API - Comfy"
+        "titleApi": "{name} API - Comfy",
+        "units": {
+          "image": "image",
+          "run": "run"
+        }
       },
       "tabs": {
         "playground": "Playground",
@@ -5757,5 +5761,178 @@
     "loading": "Loading the latest release notes…",
     "introduction": "The latest ComfyUI features, improvements, and fixes, updated from Comfy docs.",
     "retry": "Try again"
+  },
+  "vfx": {
+    "meta": {
+      "title": "Comfy for VFX | Workflows for your production pipeline",
+      "description": "Explore VFX examples and ready-to-use ComfyUI workflows for sky replacement, cleanplate, de-aging, mattes and frame adjustments."
+    },
+    "hero": {
+      "heading": "Build your VFX pipeline\nwith Comfy.",
+      "subtitle": "From cleanplates to sky replacement, turn complex shot work into workflows your team can inspect, adapt, and use again.",
+      "explore": "Explore VFX workflows",
+      "contact": "Talk to our team",
+      "videoLabel": "Comfy showcase"
+    },
+    "examples": {
+      "heading": "See what you can make.",
+      "eyebrow": "VFX in practice",
+      "sky": "Replace the sky. Keep the shot.",
+      "skyDescription": "Watch Doug Hogan build a sky-replacement workflow in ComfyUI, then explore the steps and adapt the workflow to your footage.",
+      "clean": "Start with a clean plate.",
+      "cleanDescription": "Explore a cleanplate workflow and see how ComfyUI fits into shot cleanup. Follow the walkthrough before bringing it into your own pipeline."
+    },
+    "workflows": {
+      "heading": "Popular VFX workflows",
+      "description": "Explore popular Visual Effects workflows from the Comfy community. Open a workflow and make it your own.",
+      "tag": "Watch + open workflow",
+      "tryNow": "Try now",
+      "browse": "Browse all VFX workflows",
+      "featured": "Featured workflow",
+      "storyboard": "Storyboard to Seedance",
+      "storyboarding": "Storyboarding"
+    },
+    "why": {
+      "heading": "Your pipeline.\nYour control.",
+      "subtitle": "Build around the way your team works.",
+      "1": {
+        "title": "Inspect every step",
+        "description": "Connect models and processing steps in a node-based workflow. See how a result is made, then change the parts your shot needs."
+      },
+      "2": {
+        "title": "Reuse what works",
+        "description": "Save a workflow and adapt it to the next shot. Give artists and technical directors a shared starting point for repeatable work."
+      },
+      "3": {
+        "title": "Choose how you run",
+        "description": "Work locally or in Comfy Cloud. For studio deployment requirements, talk to our team about managed builds."
+      }
+    },
+    "proof": {
+      "heading": "See how creative teams build with Comfy",
+      "title": "Inside Black Math’s creative systems",
+      "description": "Artists and technical directors at Black Math explain how they build extendable creative systems while keeping art direction with the team."
+    },
+    "contact": {
+      "heading": "Bring Comfy into your studio’s pipeline.",
+      "button": "Talk to our team",
+      "models": "Explore Enterprise"
+    },
+    "faq": {
+      "heading": "VFX questions, answered.",
+      "1": {
+        "q": "Can I use these workflows with my own footage?",
+        "a": "Yes. Start with the linked walkthrough, open its workflow, and replace the example inputs with your own. Review the models and settings before using the output in production."
+      },
+      "2": {
+        "q": "Where can I open the workflows?",
+        "a": "Each workflow card opens its page in the Comfy Hub, where you can review the workflow and its requirements before running it."
+      },
+      "3": {
+        "q": "Can my team run Comfy locally?",
+        "a": "Yes. ComfyUI is open source and can run locally. Hardware requirements depend on the models and workflow you choose. Comfy Cloud is another option for running workflows."
+      },
+      "4": {
+        "q": "How do we discuss a studio deployment?",
+        "a": "Bring your deployment requirements to our team. We can discuss Managed Builds, capacity, commercial model terms, and implementation support."
+      },
+      "5": {
+        "q": "Can we use these models commercially?",
+        "a": "On Cloud, every model is licensed for commercial use. Local model licenses vary by provider. Comfy offers MiniMax commercial licenses; discuss local terms with our team."
+      }
+    }
+  },
+  "vfxV2": {
+    "comfy": {
+      "badge": "VFX",
+      "heroTitle": "VFX workflows.\nBuilt for your pipeline.",
+      "heroDescription": "Remove objects, build mattes, restyle footage, and upscale shots in workflows you can inspect and extend. Run ComfyUI locally or connect it to your production pipeline.",
+      "primaryCta": "EXPLORE VFX WORKFLOWS",
+      "contactHeading": "Bring Comfy into your studio pipeline.",
+      "contactButton": "TALK TO COMFY"
+    },
+    "shared": {
+      "secondaryCta": "SEE THE APPROACH"
+    },
+    "proof": {
+      "label": "VFX IN PRACTICE",
+      "upscale": "SHOT UPSCALING",
+      "upscaleDescription": "Compare the source frame with the upscaled result.",
+      "cleanplate": "OBJECT REMOVAL",
+      "cleanplateDescription": "Mask an object and rebuild the background plate with LTX.",
+      "restyling": "VIDEO RESTYLING",
+      "restylingDescription": "Explore a published MiniMax video-restyling workflow.",
+      "compareHint": "Move the divider to compare before and after.",
+      "demoLabel": "Published workflow example"
+    },
+    "workflows": {
+      "heading": "A starting point for the next shot.",
+      "description": "Open the graph, inspect the steps, and adapt it to your footage.",
+      "featured": "FEATURED VFX WORKFLOWS"
+    },
+    "pipeline": {
+      "heading": "Fits the way your studio works.",
+      "1": {
+        "title": "Workstations & render infrastructure",
+        "description": "Run ComfyUI on hardware you control. Scope shared infrastructure and deployment with your technical team."
+      },
+      "2": {
+        "title": "Control in the graph",
+        "description": "Inspect models, masks, parameters, and processing steps. Keep the workflow editable as the shot evolves."
+      },
+      "3": {
+        "title": "API & SDK",
+        "description": "Run workflow graphs from code and connect them to existing tools. Use the Comfy SDK with Cloud or a ComfyUI you host."
+      },
+      "4": {
+        "title": "Custom nodes & DCCs",
+        "description": "Extend the pipeline through custom nodes and community integrations. Evaluate each integration for your studio’s tools and requirements."
+      },
+      "download": "RUN COMFYUI LOCALLY",
+      "sdk": "EXPLORE THE SDK",
+      "platform": "DEVELOPER PLATFORM"
+    },
+    "learning": {
+      "heading": "Go inside the workflow.",
+      "description": "Follow the cleanplate and sky-replacement walkthroughs when you’re ready to build."
+    },
+    "production": {
+      "eyebrow": "MANAGED BUILDS",
+      "heading": "One approved environment.\nAcross your team.",
+      "body": "Pin the ComfyUI release, nodes, models, and dependencies. Give your team a consistent build wherever the work runs.",
+      "features": {
+        "1": "Private nodes and models",
+        "2": "Supported provider keys and existing contracts",
+        "3": "Build assignment through company identity"
+      },
+      "releasesLabel": "COMFYUI RELEASE",
+      "environmentsLabel": "PYTHON · PYTORCH · CUDA",
+      "nodesLabel": "CUSTOM NODES",
+      "modelsLabel": "MODELS",
+      "privateNodes": "studio-nodes (private)",
+      "privateModel": "brand-lora (private)",
+      "pinnedLabel": "pinned",
+      "moreOptionsLabel": "more options",
+      "nodesUnit": "nodes",
+      "modelsUnit": "models",
+      "cta": "DISCUSS MANAGED BUILDS",
+      "detailsHeading": "Production details,\nwhen you need them.",
+      "details": {
+        "licensing": {
+          "question": "Model licensing & commercial use",
+          "answer": "Review the commercial licensing offering for MiniMax and ask Comfy about provider-specific terms for other local models. Model rights depend on the model and intended use."
+        },
+        "capacity": {
+          "question": "Deployment, capacity & support",
+          "answer": "Discuss Cloud, Developer Platform, or infrastructure you control. Dedicated capacity, onboarding, support, and response commitments are scoped in your enterprise agreement."
+        },
+        "security": {
+          "question": "Identity & security review",
+          "answer": "Discuss company identity, approved build access, private assets, and your studio’s security requirements with Comfy. Scope the review around your deployment plan."
+        }
+      },
+      "enterprise": "VIEW ENTERPRISE DETAILS",
+      "licensing": "MINIMAX LICENSING"
+    }
   }
 }

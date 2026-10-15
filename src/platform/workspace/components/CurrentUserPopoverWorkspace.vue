@@ -1,9 +1,6 @@
 <!-- A popover that shows current user information and actions -->
 <template>
-  <div
-    data-testid="current-user-popover"
-    class="current-user-popover -m-3 w-fit max-w-96 min-w-80 rounded-lg border border-border-default bg-base-background p-2 shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
-  >
+  <div data-testid="current-user-popover" class="current-user-popover p-2">
     <!-- User Info Section -->
     <div class="mb-4 flex flex-col items-center px-0 py-3">
       <UserAvatar
@@ -88,6 +85,13 @@
       </template>
     </div>
 
+    <!-- Which developer-platform deployment this browser runs on (FE-2434).
+         The switcher renders nothing until its listing answers, and nothing
+         when the account is outside the rollout or its first listing fails. -->
+    <DeploymentSwitcher
+      v-if="!accountActionsOnly && isCloud && !isApiKeyLogin"
+    />
+
     <!-- Credits Section -->
 
     <div v-if="!accountActionsOnly" class="flex items-center gap-2 px-4 py-2">
@@ -112,6 +116,7 @@
         size="sm"
         class="text-base-foreground"
         data-testid="add-credits-button"
+        :data-dd-action-name="BILLING_ACTION_NAME.addCreditsPopover"
         @click="handleTopUp"
       >
         {{ $t('subscription.addCredits') }}
@@ -173,6 +178,7 @@
       type="button"
       class="flex w-full cursor-pointer appearance-none items-center gap-2 border-0 bg-transparent px-4 py-2 text-left hover:bg-secondary-background-hover focus-visible:bg-secondary-background-hover focus-visible:outline-none"
       data-testid="manage-plan-menu-item"
+      :data-dd-action-name="BILLING_ACTION_NAME.managePlanPopover"
       @click="handleOpenManagePlanSettings"
     >
       <i class="icon-[lucide--credit-card] size-4 text-muted-foreground" />
@@ -254,6 +260,7 @@
 </template>
 
 <script setup lang="ts">
+import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
 import { onClickOutside } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, ref, useTemplateRef } from 'vue'
@@ -262,6 +269,7 @@ import { useI18n } from 'vue-i18n'
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
+import DeploymentSwitcher from '@/platform/workspace/components/DeploymentSwitcher.vue'
 import WorkspaceSwitcherPopover from '@/platform/workspace/components/WorkspaceSwitcherPopover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
