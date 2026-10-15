@@ -7,17 +7,20 @@
  * user's other data, so it follows them between machines — which `localStorage`
  * does not, and which is why packs reached for `api.storeUserData` directly.
  *
- * Names are namespaced for the same reason setting ids are: one flat space is
- * shared with core and every other pack, and a name is where the data lives
- * permanently.
+ * Names are logical within the caller's host-selected user/pack namespace.
+ * A dotted prefix groups documents; it does not establish pack ownership.
  */
 import { api } from '@/scripts/api'
 
 import { ComfyApiError } from './errors'
 
+/**
+ * Logical text documents scoped by host-selected user and pack identity.
+ * Keys never supply or select the physical storage namespace.
+ */
 export interface StorageHandle {
   /**
-   * Names stored under a namespace, which must be one this pack owns.
+   * Names filtered by a logical namespace inside this pack's own scope.
    *
    * Empty when nothing has been stored yet — absence is not an error.
    */
