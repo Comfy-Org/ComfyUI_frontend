@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useStorage } from '@vueuse/core'
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 
@@ -25,6 +26,27 @@ const contextMessages = {
 const defaultNotice = computed(() =>
   expanded ? 'agent.runNoticeExpanded' : 'agent.runNotice'
 )
+const { t } = useI18n()
+const contextAction = computed(() => {
+  switch (context) {
+    case 'mismatch':
+      return {
+        label: t('agent.showTarget'),
+        name: t('agent.showTargetWorkflow', { workflowName }),
+        icon: 'icon-[lucide--arrow-up-right] size-4',
+        run: () => emit('showTarget')
+      }
+    case 'followFailed':
+      return {
+        label: t('g.retry'),
+        name: t('agent.retryFollowedChat', { workflowName }),
+        icon: '',
+        run: () => emit('retry')
+      }
+    default:
+      return undefined
+  }
+})
 </script>
 
 <template>
@@ -41,25 +63,15 @@ const defaultNotice = computed(() =>
       <template v-if="context">
         {{ $t(contextMessages[context], { workflowName }) }}
         <Button
-          v-if="context === 'mismatch'"
+          v-if="contextAction"
           type="button"
           variant="muted-textonly"
           size="sm"
-          :aria-label="$t('agent.showTargetWorkflow', { workflowName })"
-          @click="emit('showTarget')"
+          :aria-label="contextAction.name"
+          @click="contextAction.run"
         >
-          {{ $t('agent.showTarget') }}
-          <span class="icon-[lucide--arrow-up-right] size-4" />
-        </Button>
-        <Button
-          v-else-if="context === 'followFailed'"
-          type="button"
-          variant="muted-textonly"
-          size="sm"
-          :aria-label="$t('agent.retryFollowedChat', { workflowName })"
-          @click="emit('retry')"
-        >
-          {{ $t('g.retry') }}
+          {{ contextAction.label }}
+          <span :class="contextAction.icon" />
         </Button>
       </template>
       <i18n-t

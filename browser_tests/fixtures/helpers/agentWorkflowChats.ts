@@ -74,22 +74,22 @@ export class AgentWorkflowChatsMock {
     await page.route('**/api/workflows?*', (route) =>
       route.fulfill(jsonRoute(cloudWorkflows))
     )
-    await page.route('**/api/userdata?*', (route) => {
-      const dir = new URL(route.request().url()).searchParams.get('dir')
-      if (dir !== 'workflows') return route.fallback()
-      return route.fulfill(jsonRoute(savedFiles))
-    })
-    await page.route('**/api/userdata/*', (route) => {
-      const request = route.request()
-      const path = decodeURIComponent(
-        new URL(request.url()).pathname.split('/userdata/')[1]
+    await page.route(
+      (url) =>
+        url.pathname.endsWith('/api/userdata') &&
+        url.searchParams.get('dir') === 'workflows',
+      (route) => route.fulfill(jsonRoute(savedFiles))
+    )
+    for (const { name, content } of workflows)
+      await page.route(
+        (url) =>
+          decodeURIComponent(url.pathname).endsWith(
+            `/api/userdata/workflows/${name}.json`
+          ),
+        (route) =>
+          route.request().method() === 'GET'
+            ? route.fulfill(jsonRoute(content))
+            : route.fallback()
       )
-      const saved = workflows.find(
-        ({ name }) => path === `workflows/${name}.json`
-      )
-      if (request.method() !== 'GET' || saved === undefined)
-        return route.fallback()
-      return route.fulfill(jsonRoute(saved.content))
-    })
   }
 }

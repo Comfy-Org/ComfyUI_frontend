@@ -5335,6 +5335,17 @@ describe('AgentPanelRoot history', () => {
     } {
       const loadedThreads: string[] = []
       let listCalls = 0
+      function answerMessages(
+        threadId: string,
+        method: string | undefined
+      ): Promise<Response> | Response {
+        if (method === 'POST') return post(threadId)
+        loadedThreads.push(threadId)
+        const transcript = transcripts[threadId]
+        return transcript?.response
+          ? transcript.response()
+          : transcriptFor(threadId, transcript?.workflowId)
+      }
       vi.mocked(fetch).mockImplementation(
         async (input: RequestInfo | URL, init?: RequestInit) => {
           const url = String(input)
@@ -5352,13 +5363,7 @@ describe('AgentPanelRoot history', () => {
               pagination: { offset: 0, limit: 100, total: 3, has_more: false }
             })
           const match = url.match(/\/api\/agent\/threads\/([^/]+)\/messages$/)
-          if (match && init?.method === 'POST') return post(match[1])
-          if (match) {
-            loadedThreads.push(match[1])
-            const transcript = transcripts[match[1]]
-            if (transcript?.response) return transcript.response()
-            return transcriptFor(match[1], transcript?.workflowId)
-          }
+          if (match) return answerMessages(match[1], init?.method)
           return json(200, { data: [], pagination: { has_more: false } })
         }
       )
