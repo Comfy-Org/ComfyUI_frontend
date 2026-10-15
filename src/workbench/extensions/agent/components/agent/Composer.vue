@@ -370,13 +370,11 @@ const SEND_BLOCKED_MESSAGES = {
   'unsupported-type': 'agent.sendBlockedByUnsupportedType'
 } as const satisfies Record<AttachmentValidationError, string>
 
-const invalidAttachments = computed(() =>
-  composer.attachments.value.flatMap(({ name, validationError }) =>
-    validationError ? [{ name, validationError }] : []
-  )
-)
 const sendBlockedReason = computed(() => {
-  const invalid = invalidAttachments.value
+  const invalid = composer.attachments.value.flatMap(
+    ({ name, validationError }) =>
+      validationError ? [{ name, validationError }] : []
+  )
   if (running.value || invalid.length === 0) return undefined
   if (invalid.length > 1)
     return t('agent.sendBlockedByInvalidAttachments', {

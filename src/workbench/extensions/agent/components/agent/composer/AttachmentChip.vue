@@ -41,13 +41,16 @@ const previewMode = defineModel<AssetPreviewMode>('previewMode', {
 const { t } = useI18n()
 
 const kind = computed(() => mediaKind ?? getMediaTypeFromFilename(name))
+const VALIDATION_MESSAGES = {
+  'invalid-video': 'agent.attachmentInvalidVideo',
+  'unsupported-type': 'agent.attachmentUnsupportedType'
+} as const satisfies Record<AttachmentValidationError, string>
+
 const invalidThumbnailKind = computed(() =>
   validationError === 'unsupported-type' ? 'other' : mediaKind
 )
-const validationMessage = computed(() =>
-  validationError === 'unsupported-type'
-    ? t('agent.attachmentUnsupportedType', { name })
-    : t('agent.attachmentInvalidVideo', { name })
+const validationMessage = computed(
+  () => validationError && t(VALIDATION_MESSAGES[validationError], { name })
 )
 </script>
 
