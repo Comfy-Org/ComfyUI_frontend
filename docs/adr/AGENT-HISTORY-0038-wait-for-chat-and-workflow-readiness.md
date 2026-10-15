@@ -26,7 +26,7 @@ it preserves its current identity. A failed startup restoration leaves the
 session unmarked until a successful retry.
 Failures remain in history with a retry affordance and existing error details;
 the selected row is their only feedback. A chat whose recorded workflow returns
-404 from its identity lookup opens without a target, even if a stale local
+404 from its direct lookup opens without a target, even if a stale local
 binding still names a tab, and the
 composer tip says the target workflow is no longer available until a workflow is
 chosen, New Chat starts or another chat is selected. Deleting the saved file of
@@ -119,8 +119,8 @@ the direct lookup shows the notice that the workflow is no longer available.
 
 An agent tab activation applies only if, when it runs, the chat it came from is
 still the open chat. While History is open, that is the Current chat, the chat
-History was opened over, or the row still loading. A Current chat whose own
-History row failed does not count. When the check fails, the activation is
+History was opened over, or the row still loading. A chat whose own History
+row failed does not count. When the check fails, the activation is
 dropped, so an earlier chat does not set the target of the chat on screen.
 These cancel a pending activation:
 
