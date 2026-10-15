@@ -38,8 +38,7 @@ const meta: Meta<typeof HeroSplit01> = {
   },
   args: {
     badgeText: 'DESKTOP',
-    titleHighlight: 'Professional control.',
-    title: ' Run ComfyUI on your own machine.',
+    title: 'Professional control. Run ComfyUI on your own machine.',
     subtitle:
       'Build, iterate, and run visual AI workflows with complete local control.',
     features: [
@@ -70,6 +69,21 @@ export const ImageLeft: Story = {
   args: {
     imagePosition: 'left'
   }
+}
+
+export const HighlightedTitle: Story = {
+  render: (args) => ({
+    components: { HeroSplit01 },
+    setup: () => ({ args }),
+    template: `
+      <HeroSplit01 v-bind="args">
+        <template #title>
+          <span class="text-primary-warm-white">Professional control.</span>
+          Run ComfyUI on your own machine.
+        </template>
+      </HeroSplit01>
+    `
+  })
 }
 
 export const Mobile: Story = {

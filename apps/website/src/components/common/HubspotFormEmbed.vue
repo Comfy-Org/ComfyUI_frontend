@@ -4,12 +4,12 @@ import { onMounted, ref } from 'vue'
 import type { Locale } from '@/i18n/translations'
 
 import { translationsFor } from '@/i18n/translations'
+import { I18nT } from 'vue-i18n'
 
 const { formId, locale = 'en' } = defineProps<{
   formId: string
   locale?: Locale
 }>()
-const { t } = translationsFor(locale)
 
 const HUBSPOT_PORTAL_ID = '244637579'
 const HUBSPOT_REGION = 'na2'
@@ -132,14 +132,19 @@ onMounted(() => {
       class="text-sm/6 text-primary-comfy-canvas"
       role="status"
     >
-      {{ t('hubspotForm.embedLoadErrorPrefix') }}
-      <a
-        class="text-primary-comfy-yellow underline"
-        href="mailto:hello@comfy.org"
+      <I18nT
+        keypath="hubspotForm.embedLoadError"
+        :i18n="translationsFor(locale)"
       >
-        hello@comfy.org
-      </a>
-      {{ t('hubspotForm.embedLoadErrorSuffix') }}
+        <template #email>
+          <a
+            class="text-primary-comfy-yellow underline"
+            href="mailto:hello@comfy.org"
+          >
+            hello@comfy.org
+          </a>
+        </template>
+      </I18nT>
     </p>
     <div
       v-else

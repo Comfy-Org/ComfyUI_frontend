@@ -2,6 +2,7 @@
 import HeroSplit01 from '@/components/blocks/HeroSplit01.vue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
+import { I18nT } from 'vue-i18n'
 import { cloudNodesCtas } from './ctas'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
@@ -25,8 +26,6 @@ const features = featureNumbers.map((n) =>
     class="min-h-[calc(100svh-5rem)] lg:min-h-[calc(100svh-6.75rem)]"
     badge-text="CLOUD NODES"
     beta
-    :title="t('cloudNodesLaunch.hero.title')"
-    :title-highlight="t('cloudNodesLaunch.hero.titleHighlight')"
     :subtitle="t('cloudNodesLaunch.hero.subtitle')"
     :features="features"
     :primary-cta="ctas.getStarted"
@@ -37,5 +36,18 @@ const features = featureNumbers.map((n) =>
     video-autoplay
     video-loop
     video-minimal
-  />
+  >
+    <template #title>
+      <I18nT
+        keypath="cloudNodesLaunch.hero.headline"
+        :i18n="translationsFor(locale)"
+      >
+        <template #highlight>
+          <span class="text-primary-warm-white">{{
+            t('cloudNodesLaunch.hero.titleHighlight')
+          }}</span>
+        </template>
+      </I18nT>
+    </template>
+  </HeroSplit01>
 </template>

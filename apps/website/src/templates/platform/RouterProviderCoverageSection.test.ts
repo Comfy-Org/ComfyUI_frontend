@@ -6,6 +6,7 @@ import {
   ROUTER_COMFY_ONLY_PREVIEW,
   ROUTER_PROVIDER_COVERAGE
 } from '@/config/router-providers'
+import { wholeText } from '@/test/wholeText'
 import RouterProviderCoverageSection from './RouterProviderCoverageSection.vue'
 
 const remaining =
@@ -107,5 +108,17 @@ describe('RouterProviderCoverageSection', () => {
         name: new RegExp(String(ROUTER_CATALOG_MODEL_COUNT))
       })
     ).toHaveAttribute('href', '/hub/models/')
+  })
+
+  it('styles the remaining model count inside the run-on-Comfy line', () => {
+    render(RouterProviderCoverageSection, { props: { locale: 'zh-CN' } })
+
+    const line = screen.getByText(
+      wholeText(`另有 ${remaining} 个模型 在 Comfy 上运行`),
+      { selector: 'p' }
+    )
+    expect(
+      within(line).getByText(`另有 ${remaining} 个模型`)
+    ).toBeInTheDocument()
   })
 })

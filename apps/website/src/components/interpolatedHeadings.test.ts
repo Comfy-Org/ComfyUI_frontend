@@ -8,7 +8,9 @@ import { describe, expect, it } from 'vitest'
 import OurValuesSection from './about/OurValuesSection.vue'
 import StorySection from './about/StorySection.vue'
 import WireNodeLayout from './common/WireNodeLayout.vue'
+import AffiliateHeroSection from '@/templates/affiliate/HeroSection.vue'
 import CliWhySection from '@/templates/cli/WhySection.vue'
+import CloudNodesHeroSection from '@/templates/cloud-nodes/HeroSection.vue'
 import CloudNodesWhySection from '@/templates/cloud-nodes/WhySection.vue'
 import McpWhySection from '@/templates/mcp/WhySection.vue'
 import AudienceSection from './product/cloud/AudienceSection.vue'
@@ -21,6 +23,7 @@ type HighlightedHeadingCase = {
   locale: Locale
   heading: string
   highlight: string
+  level?: 1 | 2
 }
 
 const highlightedHeadings: HighlightedHeadingCase[] = [
@@ -138,16 +141,48 @@ const highlightedHeadings: HighlightedHeadingCase[] = [
     locale: 'zh-CN',
     heading: '完全掌控。\n只把算力交给我们。',
     highlight: '只把算力交给我们。'
+  },
+  {
+    name: 'AffiliateHeroSection',
+    component: AffiliateHeroSection,
+    locale: 'en',
+    heading: 'Earn 30% recurring commission for 3 months.',
+    highlight: 'Earn 30%',
+    level: 1
+  },
+  {
+    name: 'AffiliateHeroSection',
+    component: AffiliateHeroSection,
+    locale: 'zh-CN',
+    heading: '赚取 30% 持续返佣 3 个月。',
+    highlight: '赚取 30%',
+    level: 1
+  },
+  {
+    name: 'CloudNodesHeroSection',
+    component: CloudNodesHeroSection,
+    locale: 'en',
+    heading: 'Your graph. Our GPUs.',
+    highlight: 'Your graph.',
+    level: 1
+  },
+  {
+    name: 'CloudNodesHeroSection',
+    component: CloudNodesHeroSection,
+    locale: 'ja',
+    heading: 'あなたのグラフ。 私たちのGPU。',
+    highlight: 'あなたのグラフ。',
+    level: 1
   }
 ]
 
 describe('interpolated headings', () => {
   it.for(highlightedHeadings)(
     '$name keeps the highlight inside the $locale heading',
-    ({ component, locale, heading, highlight }) => {
+    ({ component, locale, heading, highlight, level = 2 }) => {
       render(component, { props: { locale } })
 
-      const title = screen.getByRole('heading', { level: 2 })
+      const title = screen.getByRole('heading', { level })
       expect(title.textContent).toBe(heading)
       expect(within(title).getByText(highlight)).toBeInTheDocument()
     }

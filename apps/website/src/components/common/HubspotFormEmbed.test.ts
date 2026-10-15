@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -83,10 +83,11 @@ describe('HubspotFormEmbed', () => {
     await nextTick()
 
     expect(screen.queryByTestId('hubspot-form-embed')).toBeNull()
-    expect(screen.getByRole('status').textContent).toContain(
-      'Unable to load the form'
+    const status = screen.getByRole('status')
+    expect(status).toHaveTextContent(
+      "Unable to load the form. Email us at hello@comfy.org and we'll route your request."
     )
-    expect(screen.getByRole('link').getAttribute('href')).toBe(
+    expect(within(status).getByRole('link').getAttribute('href')).toBe(
       'mailto:hello@comfy.org'
     )
   })

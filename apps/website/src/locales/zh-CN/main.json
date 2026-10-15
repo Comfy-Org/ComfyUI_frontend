@@ -80,7 +80,7 @@
       "feature3": "$100 起付",
       "feature4": "每月结算",
       "headingHighlight": "赚取 30%",
-      "headingMuted": "持续返佣 3 个月。",
+      "headline": "{highlight} 持续返佣 3 个月。",
       "imageAlt": "Comfy 联盟计划",
       "label": "联盟"
     },
@@ -246,7 +246,6 @@
         "session": "您已登录，但工作区会话无法启动。请重试，或使用其他账户重新登录。"
       },
       "forgotPassword": "忘记密码？",
-      "freeRunsSuffix": "可获得 5 次免费运行。",
       "github": "使用Github登录",
       "google": "使用Google登录",
       "googleSsoInAppBrowserNotice": "如果您是从应用内浏览器（如 Instagram、LinkedIn）打开的，Google 登录可能无法使用。请使用 GitHub 或邮箱登录，或在设备默认浏览器中打开此页面。",
@@ -261,6 +260,7 @@
       "retry": "重试会话",
       "signOut": "退出登录",
       "signUpLink": "在这里注册",
+      "signUpPrompt": "{link} 可获得 5 次免费运行。",
       "signingIn": "正在为你登录…",
       "ssoRedirecting": "正在前往你所在组织的登录页面…",
       "submit": "登录",
@@ -905,9 +905,8 @@
         },
         "tabsLabel": "选择运行位置"
       },
+      "docs": "所有命令和参数详见{link}。",
       "docsLinkLabel": "命令参考",
-      "docsPrefix": "所有命令和参数详见",
-      "docsSuffix": "。",
       "heading": "配置 Comfy CLI",
       "install": {
         "cloudDescription": "从 PyPI 安装（也支持 Homebrew），然后配置云端连接。它会打开浏览器完成登录。",
@@ -916,22 +915,19 @@
       },
       "label": "快速开始",
       "local": {
-        "requirementLinkLabel": "在 GitHub 上开源",
-        "requirementPrefix": "本地运行在你自己的硬件上完全免费，CLI ",
-        "requirementSuffix": "。"
+        "requirement": "本地运行在你自己的硬件上完全免费，CLI {link}。",
+        "requirementLinkLabel": "在 GitHub 上开源"
       },
       "manual": {
         "step": "想手动完成？在上面的安装之后运行：",
         "tabsLabel": "选择你的客户端"
       },
-      "requirementFootnote": "浏览模板、模型和节点只需一个 Comfy 账户，完全免费。",
+      "requirement": "云端运行消耗 Comfy 积分。添加积分，或使用现有的{link}。浏览模板、模型和节点只需一个 Comfy 账户，完全免费。",
       "requirementLinkLabel": "Comfy Cloud 订阅",
-      "requirementPrefix": "云端运行消耗 Comfy 积分。添加积分，或使用现有的",
-      "requirementSuffix": "。",
       "shell": {
         "ci": {
+          "keyLink": "在此创建密钥：{link}",
           "keyLinkLabel": "platform.comfy.org",
-          "keyLinkPrefix": "在此创建密钥：",
           "stepCloud": "使用 API 密钥认证：设置 COMFY_API_KEY 或传入 --api-key。提交、等待、下载整个流程一行搞定：",
           "stepLocal": "适用于 CI runner 和 devcontainer 的非交互式配置：",
           "title": "无需浏览器"
@@ -981,9 +977,8 @@
       },
       "heading": "你的智能体已经掌握的技能。",
       "label": "智能体技能",
+      "moreSkills": "更多智能体技能见{link}。",
       "moreSkillsLinkLabel": "Comfy Skills 仓库",
-      "moreSkillsPrefix": "更多智能体技能见",
-      "moreSkillsSuffix": "。",
       "subtitle": "一条命令安装五个自带技能，让 Claude Code、Cursor 和任何支持 AGENTS.md 的工具掌握整个 CLI。下面是六个生产简报，每条提示都可以直接粘贴。"
     },
     "why": {
@@ -1236,8 +1231,8 @@
       "feature1": "无需订阅",
       "feature2": "无需下载，没有显存门槛",
       "feature3": "按 GPU 秒数以积分计费",
+      "headline": "{highlight} 我们的 GPU。",
       "subtitle": "Comfy Cloud 节点让你在自己的 ComfyUI 中，用我们的 GPU 运行最新的开源模型。把它放进你已有的工作流，像其他节点一样连线即可。",
-      "title": "我们的 GPU。",
       "titleHighlight": "你的工作流。",
       "videoAlt": "ComfyUI 画布上的 Comfy Cloud Flux 2 文生图节点，连接到 Save Image 节点"
     },
@@ -2184,8 +2179,7 @@
     },
     "step2": {
       "descriptionLink": "社区模板",
-      "descriptionPrefix": "从",
-      "descriptionSuffix": "开始，或自行构建。",
+      "descriptionWithLink": "从{link}开始，或自行构建。",
       "title": "加载工作流"
     },
     "step3": {
@@ -2214,8 +2208,7 @@
     }
   },
   "hubspotForm": {
-    "embedLoadErrorPrefix": "表单无法加载。请发送邮件至",
-    "embedLoadErrorSuffix": "我们会为您处理请求。"
+    "embedLoadError": "表单无法加载。请发送邮件至 {email} 我们会为您处理请求。"
   },
   "industries": {
     "advertising": "广告 & 创意工作室",
@@ -2488,19 +2481,16 @@
           "description": "使用上方命令从 PyPI 安装 comfy-mcp，然后在客户端中注册。客户端会启动服务器，服务器驱动你机器上的 ComfyUI。",
           "title": "安装服务器"
         },
-        "requirementLinkLabel": "在 GitHub 上开源",
-        "requirementPrefix": "本地 ComfyUI 连接在你自己的硬件上免费运行，MCP ",
-        "requirementSuffix": "。"
+        "requirement": "本地 ComfyUI 连接在你自己的硬件上免费运行，MCP {link}。",
+        "requirementLinkLabel": "在 GitHub 上开源"
       },
       "manual": {
         "description": "将此 URL 添加为客户端的自定义连接器或远程 MCP 服务器，然后按提示登录。",
         "tabsLabel": "选择你的客户端",
         "title": "手动安装"
       },
-      "requirementFootnote": "仅充值积分不足以运行生成任务。",
+      "requirement": "如需通过 MCP 使用 Comfy Cloud，你需要{link}。仅充值积分不足以运行生成任务。",
       "requirementLinkLabel": "任意套餐的订阅",
-      "requirementPrefix": "如需通过 MCP 使用 Comfy Cloud，你需要",
-      "requirementSuffix": "。",
       "skillsLink": "在 GitHub 上查看",
       "skillsNote": "在用 Claude Code？Comfy 技能插件提供现成的斜杠命令。",
       "subtitle": "选择运行位置：Comfy Cloud 的 GPU，或你自己的机器。\n自行添加服务器，或让智能体代劳，ComfyUI 全套工具即可进入你的对话。",
@@ -3407,7 +3397,7 @@
         "heading": "同样的模型，更多运行选择。",
         "modelColumn": "模型",
         "moreModels": "另有 {count} 个模型",
-        "moreModelsSuffix": "在 Comfy 上运行",
+        "moreModelsLine": "{models} 在 Comfy 上运行",
         "notServed": "不提供服务",
         "served": "可提供服务"
       },

@@ -32,7 +32,6 @@ const {
   badgeShowLogo = true,
   title,
   titleClass,
-  titleHighlight,
   subtitle,
   subtitleClass,
   mediaWrapperClass,
@@ -64,9 +63,8 @@ const {
   badgeLogoSrc?: string
   badgeLogoAlt?: string
   badgeShowLogo?: boolean
-  title: string
+  title?: string
   titleClass?: HTMLAttributes['class']
-  titleHighlight?: string
   subtitle?: string
   subtitleClass?: HTMLAttributes['class']
   mediaWrapperClass?: HTMLAttributes['class']
@@ -130,11 +128,7 @@ const { t } = translationsFor(locale)
           )
         "
       >
-        <template v-if="titleHighlight">
-          <span class="text-primary-warm-white">{{ titleHighlight }}</span>
-          {{ title }}
-        </template>
-        <template v-else>{{ title }}</template>
+        <slot name="title">{{ title }}</slot>
       </h1>
 
       <p
