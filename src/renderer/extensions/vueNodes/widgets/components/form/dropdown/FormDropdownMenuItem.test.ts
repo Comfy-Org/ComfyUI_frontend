@@ -1,14 +1,9 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed } from 'vue'
-import type { ComputedRef } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { AssetKind } from '@/types/widgetTypes'
-
 import FormDropdownMenuItem from './FormDropdownMenuItem.vue'
-import { AssetKindKey } from './types'
 import type { FormDropdownMenuItemProps } from './types'
 
 const mockFindServerPreviewUrl = vi.hoisted(() => vi.fn())
@@ -40,26 +35,22 @@ const i18n = createI18n({
   messages: { en: { g: { selected: selectedLabel } } }
 })
 
+const imageThumbnail = (src?: string) => ({
+  src,
+  icon: 'icon-[lucide--image]',
+  isVideo: false
+})
+
 function renderItem(
   props: Partial<FormDropdownMenuItemProps> = {},
-  {
-    assetKind,
-    listeners = {}
-  }: {
-    assetKind?: AssetKind
-    listeners?: Record<string, (...args: unknown[]) => void>
-  } = {}
+  listeners: Record<string, (...args: unknown[]) => void> = {}
 ) {
-  const kind: ComputedRef<AssetKind | undefined> = computed(() => assetKind)
   return render(FormDropdownMenuItem, {
-    global: {
-      plugins: [i18n],
-      provide: { [AssetKindKey as symbol]: kind }
-    },
+    global: { plugins: [i18n] },
     props: {
       index: 0,
       selected: false,
-      previewUrl: '',
+      thumbnail: imageThumbnail(),
       name: 'item_name',
       layout: 'list',
       ...props
@@ -98,35 +89,39 @@ describe('FormDropdownMenuItem', () => {
   })
 
   describe('Media rendering', () => {
-    it('renders an img tag when assetKind is image', () => {
-      renderItem({ previewUrl: '/p.png', name: 'pic' }, { assetKind: 'image' })
+    it('renders an img tag for an image thumbnail', () => {
+      renderItem({ thumbnail: imageThumbnail('/p.png'), name: 'pic' })
       const img = screen.getByRole('img', { name: 'pic' })
       expect(img).toHaveAttribute('src', '/p.png')
     })
 
-    it('renders a video tag when assetKind is video', () => {
-      renderItem({ previewUrl: '/v.mp4', name: 'clip' }, { assetKind: 'video' })
+    it('renders a video tag for a video thumbnail', () => {
+      renderItem({
+        thumbnail: {
+          src: '/v.mp4',
+          icon: 'icon-[lucide--video]',
+          isVideo: true
+        },
+        name: 'clip'
+      })
       const video = screen.getByLabelText('clip')
       expect(video.tagName).toBe('VIDEO')
       expect(video).toHaveAttribute('src', '/v.mp4')
     })
 
-    it('renders a placeholder gradient when previewUrl is empty', () => {
-      renderItem({ previewUrl: '' }, { assetKind: 'image' })
+    it('renders the placeholder instead of media when there is no src', () => {
+      renderItem({ thumbnail: imageThumbnail() })
       expect(screen.queryByRole('img', { name: 'item_name' })).toBeNull()
-      expect(screen.queryByLabelText('item_name')).toBeNull()
+      expect(screen.getByTestId('dropdown-item-media-placeholder')).toBeTruthy()
     })
 
     it('omits media area entirely for list-small layout', () => {
-      renderItem(
-        { previewUrl: '/p.png', layout: 'list-small' },
-        { assetKind: 'image' }
-      )
+      renderItem({ thumbnail: imageThumbnail('/p.png'), layout: 'list-small' })
       expect(screen.queryByRole('img', { name: 'item_name' })).toBeNull()
     })
 
-    it('does not look up mesh preview when kind is image', async () => {
-      renderItem({ previewUrl: '/preview.png' }, { assetKind: 'image' })
+    it('does not look up mesh preview for a non-mesh item', async () => {
+      renderItem({ thumbnail: imageThumbnail('/preview.png'), name: 'pic.png' })
       fireIntersection(true)
       await flushPromises()
       expect(mockFindServerPreviewUrl).not.toHaveBeenCalled()
@@ -134,14 +129,14 @@ describe('FormDropdownMenuItem', () => {
   })
 
   describe('Mesh thumbnail resolution', () => {
-    it('shows 3D placeholder icon when mesh preview is unresolved', () => {
-      renderItem({ name: '3d/model.glb' }, { assetKind: 'mesh' })
-      expect(screen.getByTestId('dropdown-item-mesh-placeholder')).toBeTruthy()
+    it('shows the placeholder icon when mesh preview is unresolved', () => {
+      renderItem({ name: '3d/model.glb' })
+      expect(screen.getByTestId('dropdown-item-media-placeholder')).toBeTruthy()
     })
 
     it('looks up preview with basename after intersection fires', async () => {
       mockFindServerPreviewUrl.mockResolvedValue('/api/view?preview=1')
-      renderItem({ name: '3d/sub/model.glb' }, { assetKind: 'mesh' })
+      renderItem({ name: '3d/sub/model.glb' })
       fireIntersection(true)
       await flushPromises()
       expect(mockFindServerPreviewUrl).toHaveBeenCalledWith('model.glb')
@@ -149,7 +144,7 @@ describe('FormDropdownMenuItem', () => {
 
     it('strips [output] suffix before taking basename', async () => {
       mockFindServerPreviewUrl.mockResolvedValue(null)
-      renderItem({ name: 'mesh/scene.glb [output]' }, { assetKind: 'mesh' })
+      renderItem({ name: 'mesh/scene.glb [output]' })
       fireIntersection(true)
       await flushPromises()
       expect(mockFindServerPreviewUrl).toHaveBeenCalledWith('scene.glb')
@@ -157,7 +152,7 @@ describe('FormDropdownMenuItem', () => {
 
     it('renders resolved URL in img once findServerPreviewUrl returns', async () => {
       mockFindServerPreviewUrl.mockResolvedValue('/api/preview/resolved.png')
-      renderItem({ name: '3d/model.glb' }, { assetKind: 'mesh' })
+      renderItem({ name: '3d/model.glb' })
       fireIntersection(true)
       const img = (await screen.findByAltText(
         '3d/model.glb'
@@ -167,7 +162,7 @@ describe('FormDropdownMenuItem', () => {
 
     it('skips lookup when asset preview is unsupported', async () => {
       mockIsAssetPreviewSupported.mockReturnValue(false)
-      renderItem({ name: '3d/model.glb' }, { assetKind: 'mesh' })
+      renderItem({ name: '3d/model.glb' })
       fireIntersection(true)
       await flushPromises()
       expect(mockFindServerPreviewUrl).not.toHaveBeenCalled()
@@ -175,7 +170,7 @@ describe('FormDropdownMenuItem', () => {
 
     it('only looks up once for repeated intersection events', async () => {
       mockFindServerPreviewUrl.mockResolvedValue(null)
-      renderItem({ name: '3d/model.glb' }, { assetKind: 'mesh' })
+      renderItem({ name: '3d/model.glb' })
       fireIntersection(true)
       fireIntersection(true)
       fireIntersection(true)
@@ -184,31 +179,17 @@ describe('FormDropdownMenuItem', () => {
     })
 
     it('does not look up when not yet intersecting', async () => {
-      renderItem({ name: '3d/model.glb' }, { assetKind: 'mesh' })
+      renderItem({ name: '3d/model.glb' })
       fireIntersection(false)
       await flushPromises()
       expect(mockFindServerPreviewUrl).not.toHaveBeenCalled()
-    })
-
-    it('ignores the previewUrl prop for mesh kind', async () => {
-      mockFindServerPreviewUrl.mockResolvedValue(null)
-      renderItem(
-        {
-          name: '3d/model.glb',
-          previewUrl: '/api/view?filename=model.glb&type=input'
-        },
-        { assetKind: 'mesh' }
-      )
-      fireIntersection(true)
-      await flushPromises()
-      expect(screen.queryByAltText('3d/model.glb')).toBeNull()
     })
   })
 
   describe('Events', () => {
     it('emits click with index when the row is clicked', async () => {
       const onClick = vi.fn()
-      renderItem({ index: 3 }, { listeners: { onClick } })
+      renderItem({ index: 3 }, { onClick })
       const user = userEvent.setup()
       await user.click(screen.getByText('item_name'))
       expect(onClick).toHaveBeenCalledWith(3)
@@ -217,8 +198,8 @@ describe('FormDropdownMenuItem', () => {
     it('emits mediaLoad when the image finishes loading', async () => {
       const onMediaLoad = vi.fn()
       renderItem(
-        { previewUrl: '/p.png', name: 'pic' },
-        { assetKind: 'image', listeners: { onMediaLoad } }
+        { thumbnail: imageThumbnail('/p.png'), name: 'pic' },
+        { onMediaLoad }
       )
       await fireEvent.load(screen.getByRole('img', { name: 'pic' }))
       expect(onMediaLoad).toHaveBeenCalledTimes(1)

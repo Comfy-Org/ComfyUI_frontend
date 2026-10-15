@@ -13,7 +13,9 @@
       v-else
       class="flex size-full items-center justify-center bg-modal-card-placeholder-background"
     >
-      <i class="pi pi-image text-3xl text-muted-foreground" />
+      <i
+        :class="cn(iconForFilename(asset.name), 'size-8 text-muted-foreground')"
+      />
     </div>
   </div>
 </template>
@@ -22,6 +24,8 @@
 import { whenever } from '@vueuse/core'
 
 import { useImageQuiet } from '@/composables/useImageQuiet'
+import { iconForFilename } from '@/platform/assets/utils/mediaIconUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 import type { AssetMeta } from '../schemas/mediaAssetSchema'
 import { getAssetDisplayName } from '../utils/assetMetadataUtils'
 

@@ -23,7 +23,7 @@
         "
         @click="openImageInGallery(index)"
       >
-        <div v-if="url" class="pointer-events-none relative size-full" >
+        <div v-if="url" class="pointer-events-none relative size-full">
           <img
             :src="url"
             :alt="`${$t('g.galleryThumbnail')} ${index + 1}`"
@@ -35,9 +35,9 @@
         </div>
         <div
           v-else
-          class="flex size-full flex-col items-center justify-center gap-1 text-base-foreground"
+          class="flex size-full items-center justify-center text-base-foreground"
         >
-          <i :class="cn('size-6', fallbackIcon(items[index]))" />
+          <i :class="cn('size-6', iconForFilename(items[index].filename))" />
         </div>
       </Button>
       <div
@@ -240,6 +240,7 @@ import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useNodeOutputsExport } from '@/platform/assets/composables/useNodeOutputsExport'
+import { iconForFilename } from '@/platform/assets/utils/mediaIconUtil'
 import { useTelemetry } from '@/platform/telemetry'
 import { describeImageLoadFailure } from '@/platform/telemetry/imageFailureDiagnostics'
 import { openHdrViewer } from '@/services/hdrViewerService'
@@ -460,9 +461,5 @@ function handleKeyDown(event: KeyboardEvent) {
       setCurrentIndex(items.length - 1)
       break
   }
-}
-
-function fallbackIcon(item: AugmentedResultItem) {
-  return isHdrResult(item) ? 'icon-[lucide--sun]' : 'icon-[lucide--image]'
 }
 </script>

@@ -6,7 +6,7 @@ import type { FormDropdownItem } from './types'
 function createItem(name: string, label?: string): FormDropdownItem {
   return {
     id: name,
-    preview_url: '',
+    thumbnail: { icon: '', isVideo: false },
     name,
     label
   }
