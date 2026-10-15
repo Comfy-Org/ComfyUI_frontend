@@ -230,6 +230,7 @@ Languages: comfy.org is published in English and Simplified Chinese, with a Japa
 ## Events
 
 - [Events](https://comfy.org/events/): Upcoming livestreams, hackathons, and community meetups, plus recordings of past events.
+- [Open Source Higgsfield](https://comfy.org/open-source-higgsfield/): Two-week competition to rebuild popular creative apps as open-source apps on the Comfy Developer Platform.
 - [Local MCP: Run ComfyUI with Your Agent and Hardware](https://comfy.org/events/local-mcp/): Live walkthrough of running ComfyUI locally through MCP from the tools you already use.
 - [Beyond the Models](https://comfy.org/events/beyond-the-models/): Building custom ComfyUI workflows for commercial and film production.
 - [Comfy Creatives Model Jam](https://comfy.org/events/comfy-creatives-model-jam/): The Comfy Creatives community on MiniMax H3, Seedance 2.5, Wan Animate 2, and more.
