@@ -32,7 +32,10 @@ import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
+import {
+  provideWorkflowService,
+  useSubgraphNavigationStore
+} from '@/stores/subgraphNavigationStore'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
@@ -968,3 +971,5 @@ export const useWorkflowService = () => {
     beforeLoadNewGraph
   }
 }
+
+provideWorkflowService(useWorkflowService)

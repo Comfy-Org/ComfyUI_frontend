@@ -8,6 +8,7 @@ import { createBoundaryLinkedSubgraph } from '@/lib/litegraph/src/subgraph/__fix
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import '@/scripts/changeTracker'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { useComfyRegistryService } from '@/services/comfyRegistryService'
 import type { MissingNodeType } from '@/platform/nodeReplacement/types'

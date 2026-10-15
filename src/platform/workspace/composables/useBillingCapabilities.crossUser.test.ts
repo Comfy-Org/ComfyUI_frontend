@@ -22,7 +22,8 @@ const railState = vi.hoisted((): { rail: BillingReadRail | null } => ({
   rail: null
 }))
 vi.mock(import('@/platform/workspace/composables/useBillingReadRail'), () => ({
-  useBillingReadRail: () => railState.rail
+  useBillingReadRail: () => railState.rail,
+  provideBillingSdkStore: () => {}
 }))
 
 const TEAM_WORKSPACE_ID = 'workspace-team'
