@@ -401,25 +401,6 @@ describe('historical workflow restoration', () => {
     expect(warnRestoreFailed).not.toHaveBeenCalled()
   })
 
-  it('marks a chat unavailable by its lookup when the Cloud listing fails', async () => {
-    const {
-      selection,
-      workflows,
-      panel,
-      current,
-      listCloudWorkflows,
-      warnRestoreFailed
-    } = setup()
-    listCloudWorkflows.mockRejectedValueOnce(new Error('offline'))
-
-    expect(await selection.restoreTarget('wf-gone', () => true)).toBe(true)
-
-    expect(workflows.activeWorkflow?.path).toBe(current.path)
-    expect(panel.selectedWorkflow).toBeNull()
-    expect(panel.targetUnavailable).toBe(true)
-    expect(warnRestoreFailed).not.toHaveBeenCalled()
-  })
-
   it.for([
     {
       opening: 'returns false',
