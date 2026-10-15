@@ -822,3 +822,130 @@ describe('historical workflow restoration', () => {
     expect(panel.unresolvedTargetListed).toBe(true)
   })
 })
+
+describe('Current retry of an unresolved target', () => {
+  beforeEach(() => localStorage.clear())
+
+  type RetryRun = ReturnType<typeof setup> & { sessionCurrent: boolean }
+
+  function startRetry(run: RetryRun, workflowId: string) {
+    run.panel.retainUnresolvedTarget(false)
+    let finishListing = () => {}
+    const pendingListing = new Promise<void>((resolve) => {
+      finishListing = resolve
+    })
+    run.listCloudWorkflows.mockImplementationOnce(async () => {
+      await pendingListing
+      return listing([
+        { id: 'wf-saved', name: 'saved' },
+        { id: 'wf-current', name: 'current' }
+      ])
+    })
+    const retry = run.selection.retryTarget(
+      workflowId,
+      () => run.sessionCurrent
+    )
+    return { retry, finishListing }
+  }
+
+  it.for([
+    {
+      outcome: 'opens the workflow it finds',
+      workflowId: 'wf-current',
+      settled: {
+        selected: 'workflows/current.json',
+        unavailable: false,
+        unresolved: false,
+        listed: false
+      }
+    },
+    {
+      outcome: 'marks a workflow its lookup finds deleted unavailable',
+      workflowId: 'wf-gone',
+      settled: {
+        selected: null,
+        unavailable: true,
+        unresolved: false,
+        listed: false
+      }
+    },
+    {
+      outcome: 'records a listed workflow with no local tab as listed',
+      workflowId: 'wf-saved',
+      settled: {
+        selected: null,
+        unavailable: false,
+        unresolved: true,
+        listed: true
+      }
+    }
+  ])(
+    'keeps the unresolved target while the retry waits for Cloud, then $outcome',
+    async ({ workflowId, settled }) => {
+      const run = { ...setup(), sessionCurrent: true }
+      run.current.load = vi.fn(async () => run.current)
+      const { retry, finishListing } = startRetry(run, workflowId)
+
+      expect(run.panel.targetUnresolved).toBe(true)
+      finishListing()
+
+      expect(await retry).toBe(true)
+      expect({
+        selected: run.panel.selectedWorkflow?.path ?? null,
+        unavailable: run.panel.targetUnavailable,
+        unresolved: run.panel.targetUnresolved,
+        listed: run.panel.unresolvedTargetListed
+      }).toEqual(settled)
+    }
+  )
+
+  it.for([
+    {
+      supersededBy: 'a cancelled selection',
+      supersede: ({ selection }: RetryRun) => selection.cancelSelection(),
+      selected: null,
+      unresolved: true
+    },
+    {
+      supersededBy: 'leaving the chat',
+      supersede: (run: RetryRun) => {
+        run.sessionCurrent = false
+      },
+      selected: null,
+      unresolved: true
+    },
+    {
+      supersededBy: 'a target chosen meanwhile',
+      supersede: ({ panel, current }: RetryRun) =>
+        panel.setWorkflowTarget(current),
+      selected: 'workflows/current.json',
+      unresolved: false
+    }
+  ])(
+    'does not settle a retry superseded by $supersededBy',
+    async ({ supersede, selected, unresolved }) => {
+      const run = { ...setup(), sessionCurrent: true }
+      const { retry, finishListing } = startRetry(run, 'wf-gone')
+
+      supersede(run)
+      finishListing()
+
+      expect(await retry).toBe(false)
+      expect({
+        selected: run.panel.selectedWorkflow?.path ?? null,
+        unavailable: run.panel.targetUnavailable,
+        unresolved: run.panel.targetUnresolved
+      }).toEqual({ selected, unavailable: false, unresolved })
+    }
+  )
+
+  it('does not retry an unresolved target a listing named', async () => {
+    const { selection, panel } = setup()
+    panel.retainUnresolvedTarget(true)
+
+    expect(await selection.retryTarget('wf-current', () => true)).toBe(true)
+
+    expect(panel.selectedWorkflow).toBeNull()
+    expect(panel.unresolvedTargetListed).toBe(true)
+  })
+})

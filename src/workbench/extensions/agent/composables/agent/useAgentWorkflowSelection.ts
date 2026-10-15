@@ -46,8 +46,12 @@ export function useAgentWorkflowSelection({
   const workflowService = useWorkflowService()
   const bindingStore = useAgentWorkflowTabBindingStore()
   const panelStore = useAgentPanelStore()
-  const { selectedWorkflow: selectedTarget, canRestoreWorkflow } =
-    storeToRefs(panelStore)
+  const {
+    selectedWorkflow: selectedTarget,
+    canRestoreWorkflow,
+    targetUnresolved,
+    unresolvedTargetListed
+  } = storeToRefs(panelStore)
   const composerStore = useAgentComposerStore()
   const { workflowReferences } = storeToRefs(composerStore)
   const { t } = useI18n()
@@ -256,17 +260,40 @@ export function useAgentWorkflowSelection({
     }
   }
 
-  async function onWorkflowRestored(
+  function onWorkflowRestored(
     workflowId: string | undefined,
     isSessionCurrent: () => boolean
   ): Promise<boolean> {
+    return restoreWorkflowTarget(
+      workflowId,
+      isSessionCurrent,
+      () => canRestoreWorkflow.value
+    )
+  }
+
+  function retryUnresolvedTarget(
+    workflowId: string | undefined,
+    isSessionCurrent: () => boolean
+  ): Promise<boolean> {
+    return restoreWorkflowTarget(
+      workflowId,
+      isSessionCurrent,
+      () => targetUnresolved.value && !unresolvedTargetListed.value
+    )
+  }
+
+  async function restoreWorkflowTarget(
+    workflowId: string | undefined,
+    isSessionCurrent: () => boolean,
+    isTargetPending: () => boolean
+  ): Promise<boolean> {
     if (!isSessionCurrent()) return false
-    if (!canRestoreWorkflow.value) return true
+    if (!isTargetPending()) return true
     const generation = ++targetSelectionGeneration
     const isCurrent = () =>
       generation === targetSelectionGeneration &&
       isSessionCurrent() &&
-      canRestoreWorkflow.value
+      isTargetPending()
     if (workflowId === undefined) return true
     const cached = cachedOpenWorkflowFor(workflowId)
     if (cached !== null)
@@ -322,6 +349,7 @@ export function useAgentWorkflowSelection({
     selectTarget: onSelectWorkflowTarget,
     selectReference: onSelectWorkflowReference,
     restoreTarget: onWorkflowRestored,
+    retryTarget: retryUnresolvedTarget,
     requestReferences: onRequestWorkflowReferences,
     cancelSelection
   }

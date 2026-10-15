@@ -425,6 +425,7 @@ const {
   selectTarget: onSelectWorkflowTarget,
   selectReference: onSelectWorkflowReference,
   restoreTarget: onWorkflowRestored,
+  retryTarget: retryUnresolvedTarget,
   requestReferences: onRequestWorkflowReferences,
   cancelSelection: cancelWorkflowSelection
 } = useAgentWorkflowSelection({
@@ -1476,11 +1477,11 @@ async function onSelectHistory(
   isCurrent: () => boolean
 ): Promise<boolean> {
   if (currentChatReady.value && id === threadId.value) {
-    if (agentPanelStore.targetUnresolved) {
-      if (agentPanelStore.unresolvedTargetListed) return true
-      agentPanelStore.beginWorkflowRestoration()
-      return onWorkflowRestored(conversationStore.latestWorkflowId, isCurrent)
-    }
+    if (agentPanelStore.targetUnresolved)
+      return (
+        agentPanelStore.unresolvedTargetListed ||
+        retryUnresolvedTarget(conversationStore.latestWorkflowId, isCurrent)
+      )
     return onShowTarget(isCurrent, warnRestoreFailed)
   }
 
