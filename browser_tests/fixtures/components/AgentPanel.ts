@@ -32,6 +32,7 @@ export class AgentPanel {
   public readonly copyReportButton: Locator
   public readonly creditsExhaustedPaywall: Locator
   public readonly creditTransitionNotice: Locator
+  public readonly currentHistorySection: Locator
   public readonly debugHeading: Locator
   public readonly dockedPanel: Locator
   public readonly dockedPanelShell: Locator
@@ -46,6 +47,7 @@ export class AgentPanel {
   public readonly stopButton: Locator
   private readonly toasts: ToastHelper
   public readonly workflowPicker: Locator
+  public readonly workflowSearch: Locator
   public readonly workflowSwitch: Locator
   public readonly workSummary: Locator
 
@@ -79,6 +81,9 @@ export class AgentPanel {
     this.creditTransitionNotice = this.root.getByTestId(
       'agent-credit-transition-notice'
     )
+    this.currentHistorySection = this.root.locator('section').filter({
+      has: page.getByText(enMessages.agent.historyCurrent, { exact: true })
+    })
     this.debugHeading = this.root.getByText('CRDT debug', { exact: true })
     this.dockedPanel = page.getByTestId('docked-agent-panel')
     this.dockedPanelShell = page.getByTestId('docked-agent-panel-shell')
@@ -105,6 +110,9 @@ export class AgentPanel {
     this.workflowPicker = this.root.getByRole('button', {
       name: enMessages.agent.switchWorkflow
     })
+    this.workflowSearch = page.getByPlaceholder(
+      enMessages.agent.searchWorkflows
+    )
     this.workflowSwitch = this.root.getByRole('switch', {
       name: 'Workflow JSON'
     })

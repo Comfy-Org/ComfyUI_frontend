@@ -48,11 +48,10 @@ test.describe(
 
       await test.step('send waits for a workflow pick', async () => {
         await agentPanel.sendMessage('Continue in my chosen workflow')
-        const search = page.getByPlaceholder(enMessages.agent.searchWorkflows)
-        await expect(search).toBeFocused()
+        await expect(agentPanel.workflowSearch).toBeFocused()
         expect(await serializeGraph()).toEqual(originalGraph)
-        await search.press('Escape')
-        await expect(search).toBeHidden()
+        await agentPanel.workflowSearch.press('Escape')
+        await expect(agentPanel.workflowSearch).toBeHidden()
         await expect(agentPanel.composer).toHaveText(
           'Continue in my chosen workflow'
         )

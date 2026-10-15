@@ -210,14 +210,10 @@ test.describe(
           .getByRole('button', { name: enMessages.agent.showChatHistory })
           .click()
         await expect(
-          panel
-            .locator('section')
-            .filter({
-              has: page.getByText(enMessages.agent.historyCurrent, {
-                exact: true
-              })
-            })
-            .getByRole('button', { name: savedChat.thread.title, exact: true })
+          agentPanel.currentHistorySection.getByRole('button', {
+            name: savedChat.thread.title,
+            exact: true
+          })
         ).toBeVisible()
         await panel
           .getByRole('button', { name: enMessages.agent.backToPreviousChat })
