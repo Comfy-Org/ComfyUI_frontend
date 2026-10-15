@@ -7118,7 +7118,7 @@ describe('AgentPanelRoot workflow binding', () => {
   ]
 
   function stubUnresolvedTargetChat(): void {
-    respondToFetch({ method: 'GET', url: /\/agent\/threads/ }, () =>
+    respondToFetch({ method: 'GET', url: /\/agent\/threads(\?|$)/ }, () =>
       json(
         200,
         agentThreadList([
