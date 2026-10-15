@@ -32,6 +32,7 @@ import {
   parseAgentWsEvent,
   toTurnId,
   zAgentAdmissionError,
+  zAttachmentRejection,
   zDisownedWorkflowError,
   zTurnInProgressError
 } from '../../schemas/agentApiSchema'
@@ -357,10 +358,10 @@ function parseAdmissionError(error: unknown) {
 }
 
 function isAttachmentTypeRejection(error: unknown): boolean {
-  if (!(error instanceof AgentApiError) || error.status !== 422) return false
-  if (typeof error.body !== 'object' || error.body === null) return false
   return (
-    (error.body as { type?: unknown }).type === 'ATTACHMENT_TYPE_NOT_ACCEPTED'
+    error instanceof AgentApiError &&
+    error.status === 422 &&
+    zAttachmentRejection.safeParse(error.body).success
   )
 }
 

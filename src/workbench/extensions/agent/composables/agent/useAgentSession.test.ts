@@ -5241,6 +5241,27 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(reportError).not.toHaveBeenCalled()
   })
 
+  it('still reports a 422 send failure that is not an attachment refusal', async () => {
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockRejectedValue(
+        new AgentApiError('content too long', 422, { type: 'VALIDATION_ERROR' })
+      )
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    expect(await session.sendMessage('use this attachment')).toBe(false)
+    expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
+      surface: 'agent',
+      errorType: 'agent_send_message_failed'
+    })
+  })
+
   it('(l) newChat keeps the active turn running instead of cancelling it', async () => {
     const cancelMessage = vi.fn<
       (threadId: string, messageId: string) => Promise<AgentCancelAccepted>

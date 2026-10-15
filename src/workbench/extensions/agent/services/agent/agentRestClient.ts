@@ -4,7 +4,6 @@ import type {
   WorkflowResponse
 } from '@comfyorg/ingest-types'
 import {
-  zAgentAttachmentRejected,
   zUploadImageResponse,
   zWorkflowResponse
 } from '@comfyorg/ingest-types/zod'
@@ -35,6 +34,7 @@ import {
   zAgentRunMode,
   zAgentThreads,
   zAgentTurnAccepted,
+  zAttachmentRejection,
   zCloudWorkflowIndex
 } from '../../schemas/agentApiSchema'
 import type {
@@ -48,12 +48,6 @@ import type {
 } from '../../schemas/agentApiSchema'
 
 const CLOUD_WORKFLOW_PAGE_SIZE = 100
-
-const zAttachmentRejectionMessage = zAgentAttachmentRejected.pick({
-  rejected: true,
-  rejected_count: true,
-  type: true
-})
 
 /**
  * PM-1658: tightens `fetchApi`'s shared 60s header deadline for the one
@@ -275,7 +269,7 @@ function parseErrorBody(text: string): unknown {
 }
 
 function getErrorMessage(body: unknown, fallback: string): string {
-  const refused = zAttachmentRejectionMessage.safeParse(body)
+  const refused = zAttachmentRejection.safeParse(body)
   if (refused.success) {
     return refusedAttachmentsMessage(
       refused.data.rejected,
