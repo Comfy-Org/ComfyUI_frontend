@@ -1,5 +1,4 @@
 /* global document */
-// eslint-disable-next-line import-x/no-unresolved -- provided by the ComfyUI host
 import { comfy } from '/comfy/api/v2.js'
 
 const api = comfy.forMajor(2)
