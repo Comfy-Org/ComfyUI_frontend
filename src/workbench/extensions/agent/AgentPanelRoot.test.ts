@@ -12971,9 +12971,6 @@ describe('AgentPanelRoot workflow binding', () => {
         pagination: { offset: 0, limit: 100, total: 1, has_more: false }
       } satisfies WorkflowListResponse)
     )
-    respondToFetch({ method: 'GET', url: /\/workflows\/wf-unresolved/ }, () =>
-      json(503, {})
-    )
     const transcriptReads = () =>
       fetchRequests({ method: 'GET', url: /\/messages/ }).length
     await openUnresolvedChatOnStartup()
