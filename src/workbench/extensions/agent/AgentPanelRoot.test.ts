@@ -7912,22 +7912,12 @@ describe('AgentPanelRoot workflow binding', () => {
       entryPoint: 'history',
       openChat: async () => {
         renderWithSelectedTarget()
-        await userEvent.click(
-          screen.getByRole('button', {
-            name: i18n.global.t('agent.showChatHistory')
-          })
-        )
-        await userEvent.click(
-          await screen.findByRole('button', { name: 'Unresolved target chat' })
-        )
+        await selectUnresolvedChatInHistory()
       }
     },
     {
       entryPoint: 'startup',
-      openChat: async () => {
-        localStorage.setItem(StorageKeys.agentThread('personal'), 'th-history')
-        render(AgentPanelRoot, { global: { plugins: [i18n] } })
-      }
+      openChat: openUnresolvedChatOnStartup
     }
   ]
 
@@ -7940,6 +7930,37 @@ describe('AgentPanelRoot workflow binding', () => {
       cloudWorkflow({ id: 'wf-unresolved', name: 'missing-saved-file' }),
       cloudWorkflow({ id: 'wf-42', name: 'current' })
     ]
+  }
+
+  async function openUnresolvedChatOnStartup(): Promise<void> {
+    localStorage.setItem(StorageKeys.agentThread('personal'), 'th-history')
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findAllByText('Historical prompt')
+    await waitFor(() =>
+      expect(useAgentChatHistoryStore().activeId).toBe('th-history')
+    )
+  }
+
+  async function selectUnresolvedChatInHistory(): Promise<void> {
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Unresolved target chat' })
+    )
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('heading', { name: i18n.global.t('agent.history') })
+      ).toBeNull()
+    )
+  }
+
+  function workflowPicker(): HTMLElement {
+    return screen.getByRole('button', {
+      name: i18n.global.t('agent.switchWorkflow')
+    })
   }
 
   it.for(unresolvedChatEntryPoints)(
@@ -7958,11 +7979,9 @@ describe('AgentPanelRoot workflow binding', () => {
       await waitFor(() =>
         expect(useAgentChatHistoryStore().activeId).toBe('th-history')
       )
-      expect(
-        screen.getByRole('button', {
-          name: i18n.global.t('agent.switchWorkflow')
-        })
-      ).toHaveTextContent(i18n.global.t('agent.selectWorkflowForAgent'))
+      expect(workflowPicker()).toHaveTextContent(
+        i18n.global.t('agent.selectWorkflowForAgent')
+      )
       expect(
         screen.queryByText(i18n.global.t('agent.targetWorkflowUnavailable'))
       ).toBeNull()
@@ -7975,21 +7994,10 @@ describe('AgentPanelRoot workflow binding', () => {
     makeTab('wf-42')
     stubHistoryWithWorkflowListing(unresolvedTargetChat)
     const rendered = renderWithSelectedTarget()
-    await userEvent.click(
-      screen.getByRole('button', {
-        name: i18n.global.t('agent.showChatHistory')
-      })
-    )
-    await userEvent.click(
-      await screen.findByRole('button', { name: 'Unresolved target chat' })
-    )
+    await selectUnresolvedChatInHistory()
     await waitFor(() =>
       expect(useAgentChatHistoryStore().activeId).toBe('th-history')
     )
-    const selector = () =>
-      screen.getByRole('button', {
-        name: i18n.global.t('agent.switchWorkflow')
-      })
     const unavailableNotice = () =>
       screen.queryByText(i18n.global.t('agent.targetWorkflowUnavailable'))
     await userEvent.click(screen.getByRole('textbox'))
@@ -7999,27 +8007,20 @@ describe('AgentPanelRoot workflow binding', () => {
     })
     workflowStore.activeWorkflow = other
     await nextTick()
-    expect(selector()).toHaveTextContent(
+    expect(workflowPicker()).toHaveTextContent(
       i18n.global.t('agent.selectWorkflowForAgent')
     )
     expect(unavailableNotice()).toBeNull()
     rendered.unmount()
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await screen.findAllByText('Historical prompt')
-    expect(selector()).toHaveTextContent(
+    expect(workflowPicker()).toHaveTextContent(
       i18n.global.t('agent.selectWorkflowForAgent')
     )
     expect(unavailableNotice()).toBeNull()
-    await userEvent.click(
-      screen.getByRole('button', {
-        name: i18n.global.t('agent.showChatHistory')
-      })
-    )
-    await userEvent.click(
-      await screen.findByRole('button', { name: 'Unresolved target chat' })
-    )
+    await selectUnresolvedChatInHistory()
     await screen.findAllByText('Historical prompt')
-    expect(selector()).toHaveTextContent(
+    expect(workflowPicker()).toHaveTextContent(
       i18n.global.t('agent.selectWorkflowForAgent')
     )
     expect(unavailableNotice()).toBeNull()
@@ -12951,34 +12952,6 @@ describe('AgentPanelRoot workflow binding', () => {
     )
   })
 
-  async function openUnresolvedChatOnStartup(): Promise<void> {
-    localStorage.setItem(StorageKeys.agentThread('personal'), 'th-history')
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
-    await screen.findAllByText('Historical prompt')
-    await waitFor(() =>
-      expect(useAgentChatHistoryStore().activeId).toBe('th-history')
-    )
-  }
-
-  async function selectCurrentUnresolvedChat(): Promise<void> {
-    await userEvent.click(
-      screen.getByRole('button', {
-        name: i18n.global.t('agent.showChatHistory')
-      })
-    )
-    await userEvent.click(
-      await screen.findByRole('button', { name: 'Unresolved target chat' })
-    )
-    await waitFor(() =>
-      expect(
-        screen.queryByRole('heading', { name: i18n.global.t('agent.history') })
-      ).toBeNull()
-    )
-  }
-
-  const workflowPicker = () =>
-    screen.getByRole('button', { name: i18n.global.t('agent.switchWorkflow') })
-
   it('opens the saved local workflow from the Current row once Cloud answers after startup could not resolve it', async () => {
     makeTab('wf-42')
     const saved = createMockLoadedWorkflow({
@@ -13006,7 +12979,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await openUnresolvedChatOnStartup()
     const transcriptReadsAtStartup = transcriptReads()
 
-    await selectCurrentUnresolvedChat()
+    await selectUnresolvedChatInHistory()
 
     expect(workflowPicker()).toHaveTextContent(
       i18n.global.t('agent.selectWorkflowForAgent')
@@ -13014,7 +12987,7 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
 
     cloudStatus = 200
-    await selectCurrentUnresolvedChat()
+    await selectUnresolvedChatInHistory()
 
     expect(workflowPicker()).toHaveTextContent('missing-saved-file')
     expect(workflowStore.activeWorkflow?.path).toBe(saved.path)
@@ -13034,7 +13007,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await openUnresolvedChatOnStartup()
     const readsAtStartup = reads()
 
-    await selectCurrentUnresolvedChat()
+    await selectUnresolvedChatInHistory()
 
     expect(reads()).toEqual(readsAtStartup)
     expect(workflowPicker()).toHaveTextContent(
