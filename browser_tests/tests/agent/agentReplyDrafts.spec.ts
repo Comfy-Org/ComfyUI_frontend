@@ -55,9 +55,6 @@ interface Turn {
   send: (frame: AgentWsEvent | HostFrame) => void
 }
 
-// Boots the agent panel on a fresh canvas and sends one user message, answering
-// the document subscription the way the host does, so every frame after it is
-// the agent's.
 async function startTurn(page: Page, prompt: string): Promise<Turn> {
   const host = new HostDoc(WORKFLOW_ID, SEED, CATALOG)
   let socket: WebSocketRoute | null = null

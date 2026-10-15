@@ -110,15 +110,6 @@ function subscribeStateVectorOf(raw: Buffer | string): string | null {
   return state_vector_b64
 }
 
-/**
- * Drives one "add a note to the canvas" turn through to the agent reporting
- * it done -- the tool call's own completion AND the turn's "Worked for Xs"
- * summary, matching the bug report's "every working affordance" -- while the
- * doc host has ALREADY recorded the `add_node` op authoritatively
- * (`host.apply` below) but its broadcast `doc_update` is deliberately held
- * back. Callers decide when (if ever) to release it via the returned
- * `sendDelayedDocUpdate`.
- */
 async function driveThroughToolCallDone(
   page: Page,
   order:

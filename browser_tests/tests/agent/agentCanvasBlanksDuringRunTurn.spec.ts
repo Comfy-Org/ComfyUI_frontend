@@ -167,24 +167,6 @@ async function expectNodeSurvivedReplacement(page: Page): Promise<void> {
   ).toBeVisible()
 }
 
-/**
- * Drives a plain "run the workflow" turn up through a mid-turn `doc_reset`
- * whose post-reset resubscribes have their catch-up withheld per
- * `dropCatchUpAfterReset`, and asserts the canvas keeps its two nodes the
- * moment the reset lands. The host doc gains `RESET_LINEAGE_NODE_ID` right
- * after the reset, so only a delivered catch-up can put a third node on the
- * canvas. Shared by the permanent-drop run (`driveRunTurnThroughRun`) and
- * the transient one-off-drop recovery proof
- * (`driveRunTurnThroughTransientCatchUpDrop`) below -- they differ only in
- * how many of the resubscribes that follow the reset get their catch-up
- * withheld.
- *
- * `dropCatchUpAfterReset` is asked, for each `doc_subscribe` the mock
- * receives AFTER the reset, whether that resubscribe (1-indexed, in receipt
- * order) should have its catch-up withheld. The subscribe sent before the
- * reset (the initial workflow-picker subscribe) always gets its catch-up --
- * matching the baseline "two nodes visible" assertion below.
- */
 async function driveThroughDocReset(
   page: Page,
   dropCatchUpAfterReset: (resubscribeCountAfterReset: number) => boolean
