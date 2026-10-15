@@ -78,7 +78,8 @@ describe('stripRepoOwner', () => {
       expected: 'ComfyUI-KJNodes'
     },
     { query: 'kijai/ComfyUI-KJNodes', expected: 'ComfyUI-KJNodes' },
-    { query: 'gaclove/comfyui.vfi', expected: 'comfyui.vfi' },
+    { query: 'Comfy-Org/ComfyUI-Manager', expected: 'ComfyUI-Manager' },
+    { query: 'ZHO-ZHO-ZHO/ComfyUI-Gemini', expected: 'ComfyUI-Gemini' },
     {
       query: 'ainvfx/comfyui-seedvr2_videoupscaler',
       expected: 'comfyui-seedvr2_videoupscaler'
@@ -94,6 +95,9 @@ describe('stripRepoOwner', () => {
     '/leading-slash',
     'trailing-slash/',
     'SD1.5/SDXL',
+    'sdxl/sd1.5',
+    'sd1.5/comfyui-x',
+    'gaclove/comfyui.vfi',
     'image/upscaling',
     'SDXL/Flux',
     'upscale/restore',
