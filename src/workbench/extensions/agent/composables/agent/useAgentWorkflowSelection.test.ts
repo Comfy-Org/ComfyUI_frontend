@@ -403,21 +403,54 @@ describe('historical workflow restoration', () => {
 
   it.for([
     {
+      attempt: 'restoring the chat',
+      restore: ({ selection }: ReturnType<typeof setup>) =>
+        selection.restoreTarget('wf-saved', () => true),
       opening: 'returns false',
-      open: async () => false
+      open: async () => false,
+      outcome: 'leaves no target',
+      unresolved: false
     },
     {
+      attempt: 'restoring the chat',
+      restore: ({ selection }: ReturnType<typeof setup>) =>
+        selection.restoreTarget('wf-saved', () => true),
       opening: 'throws',
       open: async (): Promise<never> => {
         throw new Error('Cannot open')
-      }
+      },
+      outcome: 'leaves no target',
+      unresolved: false
+    },
+    {
+      attempt: 'a Current retry',
+      restore: ({ selection, panel }: ReturnType<typeof setup>) => {
+        panel.retainUnresolvedTarget(false)
+        return selection.retryTarget('wf-saved', () => true)
+      },
+      opening: 'returns false',
+      open: async () => false,
+      outcome: 'keeps the unresolved target',
+      unresolved: true
+    },
+    {
+      attempt: 'a Current retry',
+      restore: ({ selection, panel }: ReturnType<typeof setup>) => {
+        panel.retainUnresolvedTarget(false)
+        return selection.retryTarget('wf-saved', () => true)
+      },
+      opening: 'throws',
+      open: async (): Promise<never> => {
+        throw new Error('Cannot open')
+      },
+      outcome: 'keeps the unresolved target',
+      unresolved: true
     }
   ])(
-    'reports a failed restore when opening the saved workflow $opening',
-    async ({ open }) => {
-      const { selection, workflows, panel, current, warnRestoreFailed } =
-        setup()
-      workflows.attachWorkflow(
+    'reports a failed restore and $outcome when opening the saved workflow $opening during $attempt',
+    async ({ restore, open, unresolved }) => {
+      const run = setup()
+      run.workflows.attachWorkflow(
         createMockLoadedWorkflow({
           path: 'workflows/saved.json',
           filename: 'saved',
@@ -426,11 +459,21 @@ describe('historical workflow restoration', () => {
       )
       vi.mocked(useWorkflowService().openWorkflow).mockImplementationOnce(open)
 
-      expect(await selection.restoreTarget('wf-saved', () => true)).toBe(false)
+      expect(await restore(run)).toBe(false)
 
-      expect(workflows.activeWorkflow?.path).toBe(current.path)
-      expect(panel.targetUnavailable).toBe(false)
-      expect(warnRestoreFailed).toHaveBeenCalledOnce()
+      expect(run.workflows.activeWorkflow?.path).toBe(run.current.path)
+      expect({
+        selected: run.panel.selectedWorkflow?.path ?? null,
+        unavailable: run.panel.targetUnavailable,
+        unresolved: run.panel.targetUnresolved,
+        listed: run.panel.unresolvedTargetListed
+      }).toEqual({
+        selected: null,
+        unavailable: false,
+        unresolved,
+        listed: false
+      })
+      expect(run.warnRestoreFailed).toHaveBeenCalledOnce()
     }
   )
 
