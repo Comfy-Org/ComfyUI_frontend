@@ -2413,8 +2413,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         this._dirty()
       }
     })
-    this._autoPan.updatePointer(this.mouse[0], this.mouse[1])
-    this._autoPan.start()
+    pointer.onDragStart = () => {
+      this._autoPan?.updatePointer(this.mouse[0], this.mouse[1])
+      this._autoPan?.start()
+    }
   }
 
   /**
