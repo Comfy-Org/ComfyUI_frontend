@@ -3869,6 +3869,8 @@
     "failedToSwitch": "Failed to switch workspace"
   },
   "deploymentSwitcher": {
+    "lookupUnavailable": "Could not check which deployment this editor runs on.",
+    "lookupUnavailableDetail": "The models shown are Comfy Cloud's. Reload to try again.",
     "runningOn": "Running on",
     "comfyCloud": "Comfy Cloud",
     "comfyCloudCaption": "Comfy's own node set",
