@@ -90,7 +90,7 @@ jobs:
             --report "$RUNNER_TEMP/workshop-report.md" "${args[@]}"
       - name: Publish sanitized sweep evidence
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: workshop-model-sweep-${{ matrix.shard }}-${{ github.run_id }}
           path: |
@@ -136,7 +136,7 @@ jobs:
           ' workshop-sweep.json
       - name: Publish complete sweep report
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: workshop-model-sweep-complete-${{ github.run_id }}
           path: workshop-sweep.json

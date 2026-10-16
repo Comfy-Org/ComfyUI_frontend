@@ -48,7 +48,7 @@ jobs:
 
       - name: Upload shard report
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: unit-shard-${{ matrix.shard }}
           path: .vitest/blob/*.json
@@ -82,7 +82,7 @@ jobs:
 
       - name: Upload package coverage
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: unit-package-coverage
           path: packages/*/coverage/lcov.info
@@ -116,7 +116,7 @@ jobs:
 
       - name: Upload unit coverage artifact
         if: always() && github.event_name == 'push'
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: unit-coverage
           path: coverage/lcov.info
