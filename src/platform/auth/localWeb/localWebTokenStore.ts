@@ -4,7 +4,8 @@ import { z } from 'zod'
 /** Where this page keeps its OAuth tokens; swapping it changes the policy. */
 export interface LocalWebTokenStore {
   read(): OAuthTokens | undefined
-  write(tokens: OAuthTokens): void
+  /** False when the storage refused the write, so nothing was persisted. */
+  write(tokens: OAuthTokens): boolean
   clear(): void
   /** Calls back when another tab changes the stored tokens. */
   subscribe(listener: () => void): () => void
@@ -27,6 +28,7 @@ export function createMemoryTokenStore(): LocalWebTokenStore {
     read: () => tokens,
     write: (next) => {
       tokens = next
+      return true
     },
     clear: () => {
       tokens = undefined
@@ -61,27 +63,16 @@ export function createStorageTokenStore(
   storage: TokenStorage,
   storageEvents: Pick<EventTarget, 'addEventListener' | 'removeEventListener'>
 ): LocalWebTokenStore {
-  let cachedRaw: string | null = null
-  let cached: OAuthTokens | undefined
-
   return {
-    read() {
-      const raw = ignoringStorageErrors(
-        () => storage.getItem(LOCAL_WEB_TOKENS_KEY),
-        null
-      )
-      if (raw !== cachedRaw) {
-        cachedRaw = raw
-        cached = parseStoredTokens(raw)
-      }
-      return cached
-    },
-    write(tokens) {
-      ignoringStorageErrors(
-        () => storage.setItem(LOCAL_WEB_TOKENS_KEY, JSON.stringify(tokens)),
-        undefined
-      )
-    },
+    read: () =>
+      parseStoredTokens(
+        ignoringStorageErrors(() => storage.getItem(LOCAL_WEB_TOKENS_KEY), null)
+      ),
+    write: (tokens) =>
+      ignoringStorageErrors(() => {
+        storage.setItem(LOCAL_WEB_TOKENS_KEY, JSON.stringify(tokens))
+        return true
+      }, false),
     clear() {
       ignoringStorageErrors(
         () => storage.removeItem(LOCAL_WEB_TOKENS_KEY),

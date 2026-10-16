@@ -38,7 +38,12 @@ type SignInCallbackOutcome =
   | { kind: 'signed_in' }
   | {
       kind: 'failed'
-      reason: 'state-mismatch' | 'denied' | 'invalid-token' | TokenFailureReason
+      reason:
+        | 'state-mismatch'
+        | 'denied'
+        | 'invalid-token'
+        | 'storage-unavailable'
+        | TokenFailureReason
       error?: string
     }
 
@@ -93,10 +98,11 @@ export function createLocalWebAuthBridge(
     listeners.forEach((listener) => listener(state))
   }
 
-  function adopt(tokens: OAuthTokens): boolean {
-    if (!readAccessTokenIdentity(tokens.accessToken)) return false
-    env.tokens.write(tokens)
-    return true
+  function adopt(
+    tokens: OAuthTokens
+  ): 'adopted' | 'invalid-token' | 'storage-unavailable' {
+    if (!readAccessTokenIdentity(tokens.accessToken)) return 'invalid-token'
+    return env.tokens.write(tokens) ? 'adopted' : 'storage-unavailable'
   }
 
   function signOutLocally(): DesktopHostAuthState {
@@ -115,7 +121,7 @@ export function createLocalWebAuthBridge(
     if (isFresh(stale)) return stale
     const result = await refreshAccessToken(stale.refreshToken, tokenOptions())
     if (env.tokens.read()?.refreshToken !== stale.refreshToken) return undefined
-    if (result.ok && adopt(result.tokens)) return result.tokens
+    if (result.ok && adopt(result.tokens) === 'adopted') return result.tokens
     if (!result.ok && result.reason === 'unavailable') return undefined
     signOutLocally()
     return undefined
@@ -205,9 +211,8 @@ export function createLocalWebAuthBridge(
       if (!result.ok) {
         return { kind: 'failed', reason: result.reason, error: result.error }
       }
-      if (!adopt(result.tokens)) {
-        return { kind: 'failed', reason: 'invalid-token' }
-      }
+      const adopted = adopt(result.tokens)
+      if (adopted !== 'adopted') return { kind: 'failed', reason: adopted }
       emit()
       return { kind: 'signed_in' }
     }

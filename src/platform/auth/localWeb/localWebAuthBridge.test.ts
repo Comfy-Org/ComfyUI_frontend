@@ -263,6 +263,25 @@ describe('completeSignIn', () => {
     }
   )
 
+  it('reports a sign-in it could not persist and stays signed out', async () => {
+    const tokens = { ...createMemoryTokenStore(), write: () => false }
+    const { bridge, storage, states } = setup(
+      'http://127.0.0.1:8188/?code=code-1&state=state-1',
+      { tokens }
+    )
+    storage.setItem(
+      PENDING_KEY,
+      JSON.stringify({ verifier: 'verifier-1', state: 'state-1' })
+    )
+
+    await expect(bridge.completeSignIn()).resolves.toEqual({
+      kind: 'failed',
+      reason: 'storage-unavailable'
+    })
+    expect(states).toEqual([])
+    await expect(bridge.getState()).resolves.toEqual({ status: 'signed_out' })
+  })
+
   it('never exchanges a code whose state did not match', async () => {
     const { bridge, env, storage } = setup(
       'http://127.0.0.1:8188/?code=code-1&state=forged'

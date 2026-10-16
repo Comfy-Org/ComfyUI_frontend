@@ -37,11 +37,29 @@ describe('createStorageTokenStore', () => {
     )
   })
 
-  it('returns the same object until the stored value changes', () => {
-    const store = createStorageTokenStore(memoryStorage(), new EventTarget())
+  it('reads the tokens another tab stored after an earlier read', () => {
+    const storage = memoryStorage()
+    const store = createStorageTokenStore(storage, new EventTarget())
     store.write(TOKENS)
+    store.read()
+    const rotated = { ...TOKENS, refreshToken: 'refresh-2' }
 
-    expect(store.read()).toBe(store.read())
+    createStorageTokenStore(storage, new EventTarget()).write(rotated)
+
+    expect(store.read()).toEqual(rotated)
+  })
+
+  it('reports a write the storage refused and keeps nothing', () => {
+    const storage = {
+      ...memoryStorage(),
+      setItem: () => {
+        throw new DOMException('quota exceeded', 'QuotaExceededError')
+      }
+    }
+    const store = createStorageTokenStore(storage, new EventTarget())
+
+    expect(store.write(TOKENS)).toBe(false)
+    expect(store.read()).toBeUndefined()
   })
 
   it.for([

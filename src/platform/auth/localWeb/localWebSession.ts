@@ -33,7 +33,14 @@ function browserEnvironment(): LocalWebAuthEnvironment {
       setItem: (key, value) => window.sessionStorage.setItem(key, value),
       removeItem: (key) => window.sessionStorage.removeItem(key)
     },
-    tokens: createStorageTokenStore(window.localStorage, window),
+    tokens: createStorageTokenStore(
+      {
+        getItem: (key) => window.localStorage.getItem(key),
+        setItem: (key, value) => window.localStorage.setItem(key, value),
+        removeItem: (key) => window.localStorage.removeItem(key)
+      },
+      window
+    ),
     withRefreshLock: withOriginLock,
     fetchImpl: (input, init) => fetch(input, init),
     now: () => Date.now()
