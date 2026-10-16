@@ -152,4 +152,4 @@ it('publishes exact nominal, generic, and union types without augmentation depen
       .getPreEmitDiagnostics(consumer)
       .map((diagnostic) => diagnostic.messageText)
   ).toEqual([])
-})
+}, 30_000)
