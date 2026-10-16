@@ -288,15 +288,15 @@ export function useAgentWorkflowSelection({
   async function restoreWorkflowTarget(
     workflowId: string | undefined,
     isSessionCurrent: () => boolean,
-    isTargetPending: () => boolean
+    canRestore: () => boolean
   ): Promise<boolean> {
     if (!isSessionCurrent()) return false
-    if (!isTargetPending()) return true
+    if (!canRestore()) return true
     const generation = ++targetSelectionGeneration
     const isCurrent = () =>
       generation === targetSelectionGeneration &&
       isSessionCurrent() &&
-      isTargetPending()
+      canRestore()
     if (workflowId === undefined) return true
     const cached = cachedOpenWorkflowFor(workflowId)
     if (cached !== null)
