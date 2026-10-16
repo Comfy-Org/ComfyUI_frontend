@@ -74,7 +74,6 @@ vi.mock(
 const { default: ManagerDialog } = await import('./ManagerDialog.vue')
 
 const TIP = enMessages.manager.legacyManagerSearchTip
-const SEARCH_DEBOUNCE_MS = 320
 
 const BaseModalLayoutStub = defineComponent({
   setup(_, { slots }) {
@@ -165,7 +164,7 @@ function renderDialog(
 }
 
 async function settleSearch() {
-  await vi.advanceTimersByTimeAsync(SEARCH_DEBOUNCE_MS)
+  await vi.runOnlyPendingTimersAsync()
 }
 
 describe('ManagerDialog legacy-manager tip', () => {
