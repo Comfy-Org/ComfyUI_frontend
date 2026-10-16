@@ -27,6 +27,7 @@ import { isModalOpen } from '@/utils/modalUtil'
 
 import { api } from './api'
 import { useApp } from '@/scripts/appInstance'
+import { provideChangeTracker } from '@/scripts/changeTrackerAccess'
 import { clipspace } from '@/scripts/clipspace'
 
 function clone<T>(obj: T): T {
@@ -799,3 +800,5 @@ export class ChangeTracker implements WorkflowChangeTracker {
     return true
   }
 }
+
+provideChangeTracker(ChangeTracker)

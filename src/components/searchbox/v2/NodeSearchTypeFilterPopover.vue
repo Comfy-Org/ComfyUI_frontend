@@ -111,7 +111,7 @@ import {
   PopoverTrigger
 } from 'reka-ui'
 
-import type { FilterChip } from '@/components/searchbox/v2/NodeSearchFilterBar.vue'
+import type { FilterChip } from '@/components/searchbox/v2/filterChip'
 import { getLinkTypeColor } from '@/utils/litegraphUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 

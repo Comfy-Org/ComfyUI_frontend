@@ -41,8 +41,10 @@ const {
   muteOnly = false,
   hideControls = false,
   hideFullscreen = false,
+  hasAudio = true,
   controlsOnHover = false,
   persistentControls = false,
+  preview = false,
   playButtonVariant = 'solid',
   fit = 'cover',
   noCors = false,
@@ -68,12 +70,14 @@ const {
   muteOnly?: boolean
   hideControls?: boolean
   hideFullscreen?: boolean
+  hasAudio?: boolean
   /** Where the video is the content rather than something to operate, a
    * paused frame should not carry a bar across it: the controls wait for a
    * pointer. */
   controlsOnHover?: boolean
   /** Keep the bottom control bar visible during playback. */
   persistentControls?: boolean
+  preview?: boolean
   /** Style of the centered play/pause button in `minimal` mode. */
   playButtonVariant?: 'solid' | 'overlay'
   fit?: 'cover' | 'contain'
@@ -93,6 +97,15 @@ const emit = defineEmits<{
 const playerEl = useTemplateRef<HTMLDivElement>('playerEl')
 const videoEl = useTemplateRef<HTMLVideoElement>('videoEl')
 const scrubberEl = useTemplateRef<HTMLDivElement>('scrubberEl')
+const activated = shallowRef(false)
+const isPreview = computed(() => preview && !activated.value)
+
+watch(
+  () => src,
+  () => {
+    activated.value = false
+  }
+)
 
 const {
   playing,
@@ -135,6 +148,7 @@ const recentActivity = refAutoReset(false, () => (canHover.value ? 800 : 4000))
 const controlsVisible = computed(
   () =>
     persistentControls ||
+    (preview && activated.value) ||
     focused.value ||
     (controlsOnHover
       ? hovering.value || recentActivity.value
@@ -143,6 +157,33 @@ const controlsVisible = computed(
 
 function showControls() {
   recentActivity.value = true
+}
+
+function startPlayback() {
+  const video = videoEl.value
+  if (!video) return
+  activated.value = true
+  video.currentTime = 0
+  currentTime.value = 0
+  video.muted = false
+  muted.value = false
+  video.play().catch((error: unknown) => {
+    console.warn('VideoPlayer playback failed', error)
+  })
+  showControls()
+}
+
+function toggleMute() {
+  const video = videoEl.value
+  if (!video) return
+  video.muted = !video.muted
+  muted.value = video.muted
+}
+
+function togglePlayback() {
+  if (hideControls || muteOnly) return
+  if (isPreview.value) startPlayback()
+  else playing.value = !playing.value
 }
 
 whenever(playing, () => {
@@ -174,12 +215,17 @@ useEventListener(videoEl, 'durationchange', syncNativeDuration)
 watch(
   [videoEl, () => src],
   async ([el]) => {
-    if (!el || !autoplay) return
+    if (!el) return
+    if (isPreview.value) {
+      el.muted = true
+      muted.value = true
+    }
+    if (!autoplay) return
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       el.pause()
       return
     }
-    if (autoplayUnmuted) {
+    if (autoplayUnmuted && !isPreview.value) {
       el.pause()
       el.muted = false
       muted.value = false
@@ -319,11 +365,11 @@ function toggleFullscreen() {
       :crossorigin="noCors && !tracks.length ? undefined : 'anonymous'"
       playsinline
       :autoplay="autoplay && !lazyAutoplay"
-      :loop
-      :muted="autoplay && !lazyAutoplay"
+      :loop="isPreview || loop"
+      :muted="isPreview || (autoplay && !lazyAutoplay)"
       @loadeddata="emit('loaded', src)"
       @error="emit('failed', src)"
-      @click="hideControls || muteOnly ? undefined : (playing = !playing)"
+      @click="togglePlayback"
     >
       <track
         v-for="track in tracks"
@@ -335,10 +381,21 @@ function toggleFullscreen() {
       />
     </video>
 
+    <div
+      v-if="src && isPreview && !hideControls"
+      class="pointer-events-none absolute inset-0 flex items-center justify-center"
+    >
+      <PlayPauseButton
+        class="pointer-events-auto"
+        :aria-label="t('player.play')"
+        @click="startPlayback"
+      />
+    </div>
+
     <!-- Persistent corner pause and mute toggles. z-30 keeps them above the
       overlay hero's scrim and content layers. -->
     <div
-      v-if="src && muteOnly && !hideControls"
+      v-if="src && muteOnly && !hideControls && !isPreview"
       class="absolute top-4 right-4 z-30 flex gap-2 lg:top-6 lg:right-6"
     >
       <PlayPauseButton
@@ -348,10 +405,11 @@ function toggleFullscreen() {
         @click="playing = !playing"
       />
       <button
+        v-if="hasAudio"
         type="button"
         class="flex size-8 items-center justify-center rounded-lg bg-primary-comfy-yellow lg:size-10"
         :aria-label="muted ? t('player.unmute') : t('player.mute')"
-        @click="muted = !muted"
+        @click="toggleMute"
       >
         <VolumeMutedIcon v-if="muted" class="size-4 text-primary-comfy-ink" />
         <VolumeUnmutedIcon v-else class="size-4 text-primary-comfy-ink" />
@@ -360,7 +418,7 @@ function toggleFullscreen() {
 
     <!-- Minimal centered play/pause button -->
     <div
-      v-if="minimal && src && !hideControls && !muteOnly"
+      v-if="minimal && src && !hideControls && !muteOnly && !isPreview"
       :class="
         cn(
           'absolute inset-0 flex items-center justify-center transition-opacity duration-300',
@@ -379,7 +437,7 @@ function toggleFullscreen() {
 
     <!-- Bottom control bar -->
     <div
-      v-if="src && !minimal && !hideControls && !muteOnly"
+      v-if="src && !minimal && !hideControls && !muteOnly && !isPreview"
       data-testid="player-control-bar"
       :class="
         cn(
@@ -466,10 +524,11 @@ function toggleFullscreen() {
 
       <!-- Mute / Unmute button -->
       <button
+        v-if="hasAudio"
         type="button"
         class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary-comfy-yellow lg:size-10"
         :aria-label="muted ? t('player.unmute') : t('player.mute')"
-        @click="muted = !muted"
+        @click="toggleMute"
       >
         <VolumeMutedIcon
           v-if="muted"

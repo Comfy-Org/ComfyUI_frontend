@@ -50,3 +50,10 @@ export const InvalidVideo: Story = {
     validationError: 'invalid-video'
   }
 }
+
+export const UnsupportedType: Story = {
+  args: {
+    name: 'report.pdf',
+    validationError: 'unsupported-type'
+  }
+}

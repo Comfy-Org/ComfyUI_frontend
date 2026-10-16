@@ -243,8 +243,6 @@ function isSameTurn(data: RecordedFrame['data'], id: TurnIds): boolean {
   return data.thread_id === id.threadId && data.message_id === id.messageId
 }
 
-// The bucket a frame is dropped into, or null when it belongs to a recorded
-// turn and is kept.
 function dropBucket(
   { type, data }: RecordedFrame,
   turn: number,

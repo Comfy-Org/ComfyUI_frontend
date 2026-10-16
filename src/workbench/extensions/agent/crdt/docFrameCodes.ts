@@ -1,4 +1,3 @@
-// Every ServerDocFrame type; docFrameClient.test.ts checks the two agree.
 export const SERVER_DOC_FRAME_TYPES = [
   'doc_update',
   'doc_subscribed',

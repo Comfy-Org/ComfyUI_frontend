@@ -1,13 +1,13 @@
 import { isSsoRequiredRefusal } from '@comfyorg/account-core/sso'
 import { zErrorResponse } from '@comfyorg/ingest-types/zod'
 
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useCurrentUserAccess } from '@/platform/auth/currentUserAccess'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import { isCloud } from '@/platform/distribution/types'
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
-import { useAuthStore } from '@/stores/authStore'
+import { useAuthStoreAccess } from '@/platform/auth/authStoreAccess'
 
 interface InFlightCreateSession {
   ownerUid: string | null
@@ -57,7 +57,7 @@ export const useSessionCookie = () => {
   }
 
   const getSessionHeaderOrThrow = async (): Promise<Record<string, string>> => {
-    const authStore = useAuthStore()
+    const authStore = useAuthStoreAccess()
     const firebaseToken = await authStore.getIdToken()
     if (!firebaseToken) {
       throw new Error('No Firebase token available for session creation')
@@ -70,7 +70,7 @@ export const useSessionCookie = () => {
   const performCreateSession = async (
     expectedOwnerUid: string
   ): Promise<void> => {
-    const authStore = useAuthStore()
+    const authStore = useAuthStoreAccess()
     const authHeader = await getSessionHeaderOrThrow()
 
     if ((authStore.currentUser?.uid ?? null) !== expectedOwnerUid) {
@@ -104,12 +104,12 @@ export const useSessionCookie = () => {
       ownerUid,
       promise: sessionMutationTail
         .then(async () => {
-          if ((useAuthStore().currentUser?.uid ?? null) !== ownerUid) {
+          if ((useAuthStoreAccess().currentUser?.uid ?? null) !== ownerUid) {
             throw new Error('Session identity changed before creation')
           }
           await performCreateSession(ownerUid)
           confirmedSessionOwnerUid = ownerUid
-          if ((useAuthStore().currentUser?.uid ?? null) !== ownerUid) {
+          if ((useAuthStoreAccess().currentUser?.uid ?? null) !== ownerUid) {
             throw new Error('Session identity changed during creation')
           }
         })
@@ -126,7 +126,7 @@ export const useSessionCookie = () => {
   }
 
   const currentOwnerUidOrThrow = (): string => {
-    const ownerUid = useAuthStore().currentUser?.uid
+    const ownerUid = useAuthStoreAccess().currentUser?.uid
     if (!ownerUid) {
       throw new Error('No authenticated user available for session creation')
     }
@@ -135,7 +135,7 @@ export const useSessionCookie = () => {
 
   const isApiKeyOnWebSession = () =>
     useFeatureFlags().flags.unifiedWebSessionEnabled &&
-    useCurrentUser().isApiKeyLogin.value
+    useCurrentUserAccess().isApiKeyLogin.value
 
   const ensureSessionCookie = async (): Promise<void> => {
     if (!isCloud || isApiKeyOnWebSession()) return

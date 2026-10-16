@@ -53,6 +53,26 @@
   ],
   "redirects": [
     {
+      "source": "/vfx",
+      "destination": "/solutions/vfx/",
+      "permanent": true
+    },
+    {
+      "source": "/vfx/",
+      "destination": "/solutions/vfx/",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/vfx",
+      "destination": "/zh-CN/solutions/vfx/",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/vfx/",
+      "destination": "/zh-CN/solutions/vfx/",
+      "permanent": true
+    },
+    {
       "source": "/career",
       "destination": "/careers/",
       "permanent": true

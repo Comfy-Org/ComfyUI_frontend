@@ -18,6 +18,7 @@ const SYNC_TOLERANCE_S = 0.15
 const {
   beforeSrc,
   afterSrc,
+  mediaKind = 'video',
   beforePosterSrc,
   afterPosterSrc,
   beforeLabel,
@@ -27,6 +28,7 @@ const {
 } = defineProps<{
   beforeSrc: string
   afterSrc: string
+  mediaKind?: 'video' | 'image'
   beforePosterSrc?: string
   afterPosterSrc?: string
   beforeLabel: string
@@ -100,7 +102,16 @@ function syncAfterToBefore() {
     "
     @pointerdown="onPointerDown"
   >
+    <img
+      v-if="mediaKind === 'image'"
+      :src="beforeSrc"
+      :alt="beforeLabel"
+      loading="lazy"
+      decoding="async"
+      class="absolute inset-0 size-full object-cover"
+    />
     <video
+      v-else
       ref="beforeVideo"
       :key="beforeSrc"
       data-testid="video-compare-before"
@@ -115,7 +126,17 @@ function syncAfterToBefore() {
       class="absolute inset-0 size-full object-cover"
       @timeupdate="syncAfterToBefore"
     />
+    <img
+      v-if="mediaKind === 'image'"
+      :src="afterSrc"
+      :alt="afterLabel"
+      loading="lazy"
+      decoding="async"
+      class="absolute inset-0 size-full object-cover"
+      :style="{ clipPath: `inset(0 0 0 ${position}%)` }"
+    />
     <video
+      v-else
       ref="afterVideo"
       :key="afterSrc"
       data-testid="video-compare-after"
