@@ -17,7 +17,6 @@
     >
       <Slider
         :model-value="sliderValue"
-        class="w-full"
         :min="min"
         :max="max"
         :step="step"

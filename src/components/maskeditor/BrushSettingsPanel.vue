@@ -15,7 +15,7 @@
       </span>
 
       <div
-        class="flex h-[50px] w-full flex-row items-center gap-2.5 rounded-[10px] bg-secondary-background-hover"
+        class="flex h-[50px] w-full items-center gap-2.5 rounded-[10px] bg-secondary-background-hover"
       >
         <div
           class="maskEditor_sidePanelBrushShapeCircle hover:bg-comfy-menu-bg"
