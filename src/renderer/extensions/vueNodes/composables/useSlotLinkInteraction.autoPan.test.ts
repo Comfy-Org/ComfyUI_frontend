@@ -219,6 +219,7 @@ vi.mock<unknown>(import('@/utils/rafBatch'), () => ({
 }))
 
 import { selectSlotLinks } from '@/lib/litegraph/src/canvas/linkSelection'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
 
 function pointerEvent(
@@ -269,6 +270,7 @@ describe('useSlotLinkInteraction', () => {
     mockDs.scale = 1
     mockLinkConnector.state.snapLinksPos = null
     vi.mocked(selectSlotLinks).mockReturnValue(true)
+    useCanvasStore().isReadOnly = false
     mockGetNodeById.mockImplementation((id: string) => ({
       id,
       inputs: [],
@@ -352,6 +354,33 @@ describe('useSlotLinkInteraction', () => {
 
     expect(selectSlotLinks).toHaveBeenCalledOnce()
     expect(vi.mocked(selectSlotLinks).mock.calls[0][1]).not.toBe(nodeAtRelease)
+  })
+
+  it('a drag made while Space pans the canvas is still a drag', () => {
+    vi.mocked(selectSlotLinks).mockClear()
+    startDrag()
+
+    useCanvasStore().isReadOnly = true
+    capturedHandlers['pointermove'](pointerEvent(460, 300))
+    useCanvasStore().isReadOnly = false
+    capturedHandlers['pointerup'](pointerEvent(400, 300))
+
+    expect(selectSlotLinks).not.toHaveBeenCalled()
+  })
+
+  it('pauses auto-pan while Space pans the canvas and resumes on the next move', () => {
+    startDrag()
+    capturedHandlers['pointermove'](pointerEvent(460, 300))
+    const autoPan = capturedAutoPan.current!
+
+    useCanvasStore().isReadOnly = true
+    capturedHandlers['pointermove'](pointerEvent(470, 300))
+    expect(autoPan.stop).toHaveBeenCalledOnce()
+
+    useCanvasStore().isReadOnly = false
+    autoPan.start.mockClear()
+    capturedHandlers['pointermove'](pointerEvent(480, 300))
+    expect(autoPan.start).toHaveBeenCalledOnce()
   })
 
   it('starts auto-pan once the pointer passes the click drift', () => {
