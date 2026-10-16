@@ -59,8 +59,8 @@ function prototypeVerdict(
 }
 
 /**
- * Stands in for the backend check until it ships: answers with what the
- * prototype switch picks, after a pause. `checking` never answers.
+ * Answers with what the prototype switch picks, after a pause; `checking`
+ * never answers.
  */
 export function prototypeCloudWorkflowChecker(
   pick: () => PrototypeCloudCheck

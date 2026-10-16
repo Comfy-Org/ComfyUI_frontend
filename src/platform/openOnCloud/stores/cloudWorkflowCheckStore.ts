@@ -12,11 +12,7 @@ import {
 } from '@/platform/openOnCloud/cloudWorkflowCheck'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
-/**
- * Whether Comfy Cloud can run the open workflow, checked each time the local
- * engine menu opens. The backend check has not shipped, so a stand-in answers
- * with what the prototype switch picks.
- */
+/** Whether Comfy Cloud can run the open workflow, rechecked on each call. */
 export const useCloudWorkflowCheckStore = defineStore(
   'cloudWorkflowCheck',
   () => {

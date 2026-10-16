@@ -12,10 +12,7 @@ import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudW
 
 import LocalEngineMenu from './LocalEngineMenu.vue'
 
-/**
- * The Run bar engine button on local ComfyUI and Desktop. Storybook has no
- * graph, so opening the menu leaves each story's seeded check state alone.
- */
+/** The Run bar engine menu on local ComfyUI and Desktop, per check state. */
 const meta: Meta<typeof LocalEngineMenu> = {
   title: 'Platform/OpenOnCloud/LocalEngineMenu',
   component: LocalEngineMenu,

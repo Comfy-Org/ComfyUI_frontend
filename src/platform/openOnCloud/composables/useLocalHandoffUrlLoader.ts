@@ -48,11 +48,6 @@ async function openHandedOffWorkflow(
   })
 }
 
-/**
- * Asks the opener for the workflow with the link's nonce and opens what comes
- * back. The local page's origin is unknown here, so only the tab that opened
- * this one, answering with the same nonce, counts.
- */
 function requestWorkflow(opener: Window, nonce: string): void {
   function onMessage(event: MessageEvent) {
     if (event.source !== opener) return
@@ -70,11 +65,7 @@ function requestWorkflow(opener: Window, nonce: string): void {
   opener.postMessage(localHandoffReady(nonce), '*')
 }
 
-/**
- * Opens a workflow handed over from local ComfyUI by a `?from_local=` link,
- * and says where it came from. Survives the sign-in redirect through the
- * preserved-query system; the opener keeps listening long enough for it.
- */
+/** Opens a workflow handed over from local ComfyUI by a `?from_local=` link. */
 export function useLocalHandoffUrlLoader(
   getOpener: () => Window | null = () => window.opener
 ) {

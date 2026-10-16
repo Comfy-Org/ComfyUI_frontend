@@ -29,7 +29,7 @@ export interface CloudTab {
 export interface CloudTabOpener {
   /** A tab that keeps its opener, or undefined when a popup blocker refused it. */
   open(url: string): CloudTab | undefined
-  /** Desktop hands this to the system browser, which keeps no opener. */
+  /** Opens the URL with no opener, as Desktop's system browser does. */
   openDisowned(url: string): void
 }
 
@@ -68,13 +68,6 @@ function downloadWorkflow(filename: string, workflow: ComfyWorkflowJSON) {
   )
 }
 
-/**
- * Answers the tab's ready message with the workflow, once. Only a message
- * from the tab we opened, from Comfy Cloud's origin, carrying this click's
- * nonce counts, and the reply goes to that origin alone. Listening ends when
- * the workflow is sent, the tab closes, or ten minutes pass, so a sign-in on
- * Comfy Cloud has time to finish.
- */
 function armHandoff(
   tab: CloudTab,
   nonce: string,
@@ -104,34 +97,34 @@ function armHandoff(
   window.addEventListener('message', onMessage)
 }
 
+async function openFromDesktop(
+  tabs: CloudTabOpener,
+  filename: string
+): Promise<void> {
+  const workflow = await prepareWorkflow()
+  tabs.openDisowned(cloudEditorUrl())
+  if (!workflow) return
+  downloadWorkflow(filename, workflow)
+  useToast().info(t('openOnCloud.downloaded'), {
+    description: t('openOnCloud.downloadedDetail'),
+    duration: NOTICE_MS
+  })
+}
+
 /**
- * Opens the active workflow on Comfy Cloud in a new browser tab. Call it
- * first in the click handler: the tab has to open inside the click's user
- * activation. Desktop opens the system browser, which keeps no opener, so
- * the workflow is downloaded for the user to drop onto Comfy Cloud.
+ * Opens the active workflow on Comfy Cloud in a new tab; Desktop downloads it
+ * and opens Comfy Cloud instead. Call it first in the click handler.
  */
 export async function openWorkflowOnCloud(
   tabs: CloudTabOpener = browserTabs
 ): Promise<void> {
   const filename = useWorkflowStore().activeWorkflow?.filename ?? 'workflow'
-  const toast = useToast()
-
-  if (isDesktop) {
-    const workflow = await prepareWorkflow()
-    if (workflow) downloadWorkflow(filename, workflow)
-    tabs.openDisowned(cloudEditorUrl())
-    if (workflow)
-      toast.info(t('openOnCloud.downloaded'), {
-        description: t('openOnCloud.downloadedDetail'),
-        duration: NOTICE_MS
-      })
-    return
-  }
+  if (isDesktop) return openFromDesktop(tabs, filename)
 
   const nonce = handoffNonce()
   const tab = tabs.open(cloudEditorUrl(nonce))
   if (!tab) {
-    toast.error(t('openOnCloud.popupBlocked'), { duration: NOTICE_MS })
+    useToast().error(t('openOnCloud.popupBlocked'), { duration: NOTICE_MS })
     return
   }
   const prepared = prepareWorkflow()
