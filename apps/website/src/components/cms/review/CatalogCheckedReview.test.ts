@@ -23,6 +23,43 @@ function firstItem(review: ReturnType<typeof fixtureReview>) {
 }
 
 describe('checkbox-only publication console', () => {
+  it('requests the exact change batch and clears previous checked selection on refresh', async () => {
+    const user = userEvent.setup()
+    const initial = fixtureReview()
+    const filtered = { ...initial, filter: { change_id: 'Workflow-batch_1.2' } }
+    const fetcher = vi
+      .fn()
+      .mockResolvedValue(new Response(JSON.stringify(filtered)))
+    vi.mocked(fetch).mockImplementation(fetcher)
+    render(CatalogCheckedReview, {
+      props: { initial, csrf: 'fixture', canApply: true, canEdit: true }
+    })
+    await user.click(
+      screen.getByRole('checkbox', { name: 'Select Review fixture' })
+    )
+    await user.click(
+      screen.getByText('Apply filters / reload', { selector: 'summary' })
+    )
+    await user.type(
+      screen.getByRole('textbox', { name: 'Change ID (batch)' }),
+      'Workflow-batch_1.2'
+    )
+    await user.click(
+      screen.getByRole('button', { name: 'Apply filters / reload' })
+    )
+    await waitFor(() =>
+      expect(fetcher).toHaveBeenCalledWith(
+        '/admin/catalog-api/staging?change_id=Workflow-batch_1.2',
+        expect.objectContaining({ method: 'GET' })
+      )
+    )
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Review selected (0)' })
+      ).toBeDisabled()
+    )
+    expect(fetcher).toHaveBeenCalledTimes(1)
+  })
   it('uses Mar’s tabs/search/table and keeps a checked hidden change without making writes', async () => {
     const user = userEvent.setup()
     const initial = fixtureReview()

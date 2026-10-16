@@ -79,9 +79,22 @@ const item = z.object({
     })
     .optional()
 })
-export type ReviewFilter = NonNullable<GetCccStagingData['query']>
+export type ReviewFilter = NonNullable<GetCccStagingData['query']> & {
+  change_id?: string
+}
+const stagingQuery = zGetCccStagingQuery
+  .extend({
+    change_id: z
+      .string()
+      .min(1)
+      .max(128)
+      .regex(/^[A-Za-z0-9][A-Za-z0-9._-]*$/)
+      .refine((value) => value.trim() === value)
+      .optional()
+  })
+  .strict()
 export const reviewFilter = z.custom<ReviewFilter>((value) => {
-  const parsed = zGetCccStagingQuery.strict().safeParse(value)
+  const parsed = stagingQuery.safeParse(value)
   return (
     parsed.success &&
     accountID.optional().safeParse(parsed.data.author_uid).success
@@ -174,18 +187,30 @@ export function filterFromQuery(query: URLSearchParams) {
   const permitted = new Set([
     'search',
     'author_uid',
+    'change_id',
     'tags',
     'types',
     'statuses'
   ])
   if ([...query.keys()].some((key) => !permitted.has(key))) return undefined
-  if (['search', 'author_uid'].some((key) => query.getAll(key).length > 1))
+  if (
+    ['search', 'author_uid', 'change_id'].some(
+      (key) => query.getAll(key).length > 1
+    )
+  )
     return undefined
   const raw = Object.fromEntries(
     [...permitted].flatMap((key) => {
       const values = query.getAll(key)
       return values.length
-        ? [[key, ['search', 'author_uid'].includes(key) ? values[0] : values]]
+        ? [
+            [
+              key,
+              ['search', 'author_uid', 'change_id'].includes(key)
+                ? values[0]
+                : values
+            ]
+          ]
         : []
     })
   )
@@ -194,7 +219,7 @@ export function filterFromQuery(query: URLSearchParams) {
 }
 export function filterQuery(filter: ReviewFilter) {
   const query = new URLSearchParams()
-  for (const key of ['search', 'author_uid'] as const) {
+  for (const key of ['search', 'author_uid', 'change_id'] as const) {
     const value = filter[key]
     if (value !== undefined) query.set(key, value)
   }
@@ -207,6 +232,7 @@ export function unfiltered(filter: ReviewFilter) {
   return (
     !filter.search?.trim() &&
     !filter.author_uid &&
+    !filter.change_id &&
     !filter.tags?.length &&
     !filter.types?.length &&
     !filter.statuses?.length

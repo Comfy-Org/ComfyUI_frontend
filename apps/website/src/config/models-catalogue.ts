@@ -136,6 +136,7 @@ interface WorkshopPresentation {
     readonly url: string
     readonly kind: 'image' | 'video' | 'audio'
     readonly poster?: string
+    readonly staticUrl?: string
   }
   readonly useCases?: readonly UseCase[]
   readonly summary?: string

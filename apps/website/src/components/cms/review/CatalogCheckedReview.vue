@@ -58,6 +58,7 @@ const acknowledgeAll = ref(false)
 const form = ref({
   search: initial.filter.search ?? '',
   author: initial.filter.author_uid ?? '',
+  changeID: initial.filter.change_id ?? '',
   tags: initial.filter.tags?.join(', ') ?? '',
   type: initial.filter.types?.[0] ?? ''
 })
@@ -111,7 +112,8 @@ async function reload() {
     ...(form.value.tags.trim()
       ? { tags: form.value.tags.split(',').map((tag) => tag.trim()) }
       : {}),
-    ...(form.value.type ? { types: [form.value.type] } : {})
+    ...(form.value.type ? { types: [form.value.type] } : {}),
+    ...(form.value.changeID ? { change_id: form.value.changeID } : {})
   })
   if (!filter.success) return
   const previous = flow.value.snapshot
@@ -294,6 +296,14 @@ async function exit() {
               <label class="text-xs text-admin-muted"
                 >{{ t('cccStaging.tags')
                 }}<input v-model="form.tags" :class="inputClass"
+              /></label>
+              <label class="text-xs text-admin-muted"
+                >{{ t('cccChecked.changeID')
+                }}<input
+                  v-model="form.changeID"
+                  maxlength="128"
+                  pattern="[A-Za-z0-9][A-Za-z0-9._-]*"
+                  :class="inputClass"
               /></label>
               <label class="text-xs text-admin-muted"
                 >{{ t('cccStaging.type')

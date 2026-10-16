@@ -6233,6 +6233,7 @@
     "currentAccount": "Current account: {id}"
   },
   "cccChecked": {
+    "changeID": "Change ID (batch)",
     "instructions": "Check the changes you want to publish. Unchecked changes stay in Draft; approval fields are not used.",
     "remaining": "Staying in Draft",
     "reviewSelected": "Review selected ({count})",

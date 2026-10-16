@@ -957,3 +957,24 @@ Review and Publish continue to bind the exact selected UIDs and frozen state.
 This bounds mounted rows and their media elements, not the upstream staging
 payload or database query cost. It does not reconcile duplicate source records,
 recover unavailable graph bytes, change Draft/LIVE, or publish any content.
+
+### CCC still-thumbnail consumption and batch filter
+
+CCC presentation consumes the server-resolved `website_media['$.static_thumb']`
+only when its verified MIME is `image/webp`. It adds the distinct card-only
+`thumbnail.staticUrl` and video `poster`; the full-page original URL remains
+separate. Hub cards and search suggestions use the still without swapping to
+or fetching the original. Legacy non-CCC cards retain their existing behavior.
+Publish rows render images or a placeholder, never mount a full video to seek
+its first frame. The runtime review adapter must supply a still-image preview
+from the exact thumbnail reference; this UI does not generate derivative URLs.
+
+The checked-review filter accepts an exact case-sensitive `change_id` batch
+label: 1–128 ASCII letters/digits/dot/underscore/hyphen, starting with a letter
+or digit. It survives query/confirmation scopes; refreshing filters clears old
+checkbox selections. This is an additive local narrowing over the current
+generated staging query pending runtime OpenAPI/SDK reconciliation. The demo
+backend must explicitly accept/validate the parameter before that filter can
+work; unknown or unsupported filters fail instead of silently broadening a
+publish. These changes do not make the full upstream staging/projection payload
+bounded; that read-transport work remains separate.

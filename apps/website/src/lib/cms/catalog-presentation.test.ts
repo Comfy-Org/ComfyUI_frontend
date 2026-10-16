@@ -45,6 +45,30 @@ const record: ContentCatalogRecord = {
   }
 }
 describe('native CONTENT presentation', () => {
+  it('keeps the full-page source distinct from a resolved exact still thumbnail', () => {
+    const view = detailSchema.parse(
+      catalogPresentation({
+        ...record,
+        data: {
+          ...record.data,
+          website_media: {
+            '$.hero': '/preview-media/7/source/exact-version',
+            '$.static_thumb': '/preview-media/7/thumb/exact-version'
+          },
+          website_media_types: {
+            '$.hero': 'video/mp4',
+            '$.static_thumb': 'image/webp'
+          }
+        }
+      })
+    )
+    expect(view.thumbnail).toEqual({
+      url: '/preview-media/7/source/exact-version',
+      kind: 'video',
+      poster: '/preview-media/7/thumb/exact-version',
+      staticUrl: '/preview-media/7/thumb/exact-version'
+    })
+  })
   it('does not echo account IDs or accept mismatched profile/avatar metadata', () => {
     const uid = '00000000-0000-4000-8000-000000000096'
     const view = detailSchema.parse(

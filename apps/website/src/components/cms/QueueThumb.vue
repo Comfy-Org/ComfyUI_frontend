@@ -40,16 +40,8 @@ const isVideo = computed(
     "
     aria-hidden="true"
   >
-    <video
-      v-if="src && isVideo"
-      :src="src.includes('#') ? src : `${src}#t=0.1`"
-      muted
-      playsinline
-      preload="metadata"
-      class="size-full object-cover"
-    />
     <img
-      v-else-if="src"
+      v-if="src && !isVideo"
       :src
       alt=""
       class="size-full object-cover"

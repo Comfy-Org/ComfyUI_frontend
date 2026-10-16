@@ -274,9 +274,17 @@ export function catalogPresentation(
         ? d.downloads
         : undefined
   })
-  const hero = urls.success
+  const originalHero = urls.success
     ? (urls.data['$.hero'] ?? urls.data['$.thumbnail'])
     : undefined
+  const staticThumb =
+    urls.success &&
+    mediaTypes.success &&
+    mediaTypes.data['$.static_thumb'] === 'image/webp' &&
+    typeof urls.data['$.static_thumb'] === 'string'
+      ? urls.data['$.static_thumb']
+      : undefined
+  const hero = typeof originalHero === 'string' ? originalHero : staticThumb
   return {
     ...preserved,
     fields: preserved.fields ?? [],
@@ -314,6 +322,9 @@ export function catalogPresentation(
           thumbnail: {
             url: hero,
             kind:
+              (typeof originalHero !== 'string' && staticThumb
+                ? 'image'
+                : undefined) ??
               mediaKind(
                 urls.success && typeof urls.data['$.hero'] === 'string'
                   ? '$.hero'
@@ -321,9 +332,11 @@ export function catalogPresentation(
               ) ??
               preserved.thumbnailKind ??
               'image',
-            ...(urls.success && typeof urls.data['$.hero_poster'] === 'string'
-              ? { poster: urls.data['$.hero_poster'] }
-              : {})
+            ...(staticThumb
+              ? { poster: staticThumb, staticUrl: staticThumb }
+              : urls.success && typeof urls.data['$.hero_poster'] === 'string'
+                ? { poster: urls.data['$.hero_poster'] }
+                : {})
           }
         }
       : {}),

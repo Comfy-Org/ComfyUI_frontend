@@ -16,7 +16,12 @@ describe('catalog staging view model', () => {
     'author_uid=',
     'author_uid=has+space',
     'statuses=INVALID',
-    'tags='
+    'tags=',
+    'change_id=',
+    'change_id=a&change_id=b',
+    'change_id=two+batches',
+    'change_id=%C3%A9',
+    'change_id=a%0A'
   ])('rejects an unsupported query %s', (query) => {
     expect(filterFromQuery(new URLSearchParams(query))).toBeUndefined()
   })
@@ -56,6 +61,14 @@ describe('catalog staging view model', () => {
     expect(parsed && filterFromQuery(filterQuery(parsed))).toEqual(filter)
     expect(unfiltered({ search: ' ' })).toBe(true)
     expect(unfiltered({ statuses: ['NEW'] })).toBe(false)
+  })
+  it('preserves the exact case-sensitive batch in queries and frozen discard scopes', () => {
+    const filter = { change_id: 'Workflow-batch_1.2' }
+    expect(filterFromQuery(filterQuery(filter))).toEqual(filter)
+    expect(unfiltered(filter)).toBe(false)
+    const snapshot = { ...fixtureReview(), filter }
+    expect(stagingSnapshot(snapshot)?.filter).toEqual(filter)
+    expect(stagePayload(snapshot, 'NEW', false).filter).toEqual(filter)
   })
   it('binds the exact review, complete count and digest to the decision', () => {
     const snapshot = fixtureReview()

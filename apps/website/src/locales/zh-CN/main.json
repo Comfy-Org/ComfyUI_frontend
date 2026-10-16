@@ -4762,6 +4762,7 @@
     "currentAccount": "当前账户：{id}"
   },
   "cccChecked": {
+    "changeID": "更改批次 ID",
     "instructions": "勾选要发布的更改。未勾选的更改保留在草稿中；暂不使用审批字段。",
     "remaining": "保留在草稿中",
     "reviewSelected": "审核所选项（{count}）",

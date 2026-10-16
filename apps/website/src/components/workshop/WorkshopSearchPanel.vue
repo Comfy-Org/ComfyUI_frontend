@@ -54,9 +54,12 @@ function kindOfUrl(url: string) {
 }
 
 function thumbnailOf(model: WorkshopModel) {
-  const url = model.thumbnail?.url ?? model.thumbnailUrl
+  const url =
+    model.thumbnail?.staticUrl ?? model.thumbnail?.url ?? model.thumbnailUrl
   if (!url || failedThumbnails.has(url)) return undefined
-  const kind = model.thumbnail?.kind ?? kindOfUrl(url)
+  const kind = model.thumbnail?.staticUrl
+    ? 'image'
+    : (model.thumbnail?.kind ?? kindOfUrl(url))
   return kind === 'audio' ? undefined : { url, kind }
 }
 
