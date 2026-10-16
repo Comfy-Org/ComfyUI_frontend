@@ -9,6 +9,7 @@
     "format:check": "oxfmt --check"
   },
   "dependencies": {
+    "oxfmt": "catalog:",
     "typescript": "catalog:",
     "zod": "catalog:"
   },

@@ -103,7 +103,7 @@ defineExpose({
             rel="noopener noreferrer"
             variant="secondary"
             size="md"
-            class="w-full text-base-foreground no-underline"
+            class="w-full no-underline"
           >
             {{ t('templateWorkflows.detail.openInCloud') }}
           </Button>

@@ -5,7 +5,7 @@
     class="relative aspect-square overflow-hidden rounded-2xl"
   >
     <Skeleton class="absolute inset-0 rounded-2xl" />
-    <Skeleton class="absolute inset-x-4 bottom-4 h-4 w-2/3 rounded-md" />
+    <Skeleton class="absolute inset-x-4 bottom-4 h-4 w-2/3" />
   </div>
   <div
     v-else
@@ -58,7 +58,7 @@
       <span class="text-center text-xs font-medium text-base-foreground">
         {{ t('gettingStarted.templateFailed') }}
       </span>
-      <span class="text-xs font-semibold text-primary">
+      <span class="text-xs font-semibold text-primary-background">
         {{ t('gettingStarted.retry') }}
       </span>
     </div>

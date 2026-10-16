@@ -1,0 +1,254 @@
+{
+  "id": "settings",
+  "capability": "Settings",
+  "description": "User setting definitions, persistence and migration, global settings API, search and dialog navigation, LiteGraph setting sync, and the legacy app.ui.settings dialog. Keybinding, about, credits, user, workspace, secrets, and skill panels remain separate capabilities.",
+  "modules": [
+    {
+      "path": "src/platform/settings/types.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/settings/constants/agent.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/settings/constants/canvasNavigation.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/settings/constants/canvasNavigation.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/settings/constants/coreSettings.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/settings/constants/errorSystemSettings.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/settings/settingStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/settings/settingStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/settings/missingWarningVisibility.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/settings/missingWarningVisibility.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/settings/globalSettingsApi.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/settings/globalSettingsApi.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/settings/composables/useSettingSearch.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/settings/composables/useSettingSearch.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/settings/composables/useSettingsDialog.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/settings/composables/useSettingsDialog.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/settings/composables/useSettingsDialog.unregistered.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/settings/composables/__mocks__/useSettingsDialog.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/settings/composables/useSettingUI.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/settings/composables/useSettingUI.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/settings/composables/useSettingsHeaderCollapse.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/settings/composables/useLitegraphSettings.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/platform/settings/composables/useLitegraphSettings.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/platform/settings/composables/useLitegraphSettings.reactiveEdge.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/platform/settings/composables/useSettingsUrlLoader.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/platform/settings/composables/useSettingsUrlLoader.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/platform/settings/composables/useSettingsUrlLoader.integration.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/platform/settings/components/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/setting/SettingItem.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/scripts/ui/settings.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/scripts/ui/settings.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/components/common/BackgroundImageUpload.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/CustomFormValue.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/FormColorPicker.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/FormColorPicker.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/FormImageUpload.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/FormItem.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/FormItem.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/FormNumberField.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/FormRadioGroup.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/FormRadioGroup.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/sidebar/SidebarSettingsButton.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/stores/serverConfigStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/serverConfigStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/constants/serverConfig.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/serverArgs.ts",
+      "role": "domain"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Setting store loads, validates, migrates, persists, and reports setting values",
+      "checks": [
+        "src/platform/settings/settingStore.test.ts",
+        "src/platform/settings/globalSettingsApi.test.ts",
+        "src/platform/settings/missingWarningVisibility.test.ts"
+      ]
+    },
+    {
+      "name": "Core setting definitions keep canvas navigation presets and error-system defaults",
+      "checks": [
+        "src/platform/settings/constants/canvasNavigation.test.ts",
+        "src/platform/settings/constants/errorSystemSettings.test.ts"
+      ]
+    },
+    {
+      "name": "Settings dialog search, navigation, panels, and URL opening",
+      "checks": [
+        "src/platform/settings/composables/useSettingSearch.test.ts",
+        "src/platform/settings/composables/useSettingUI.test.ts",
+        "src/platform/settings/composables/useSettingsDialog.test.ts",
+        "src/platform/settings/composables/useSettingsDialog.unregistered.test.ts",
+        "src/platform/settings/composables/useSettingsUrlLoader.test.ts",
+        "src/platform/settings/composables/useSettingsUrlLoader.integration.test.ts",
+        "src/platform/settings/components/SettingDialog.test.ts",
+        "src/platform/settings/components/SettingItem.test.ts",
+        "src/platform/settings/components/ExtensionPanel.test.ts",
+        "src/components/dialog/content/setting/SettingItem.test.ts"
+      ]
+    },
+    {
+      "name": "Setting changes reach LiteGraph and legacy app.ui.settings callers",
+      "checks": [
+        "src/platform/settings/composables/useLitegraphSettings.test.ts",
+        "src/platform/settings/composables/useLitegraphSettings.reactiveEdge.test.ts",
+        "src/scripts/ui/settings.test.ts"
+      ]
+    },
+    {
+      "name": "Setting form items render the field type for each setting and emit values",
+      "checks": [
+        "src/components/common/FormItem.test.ts",
+        "src/components/common/FormRadioGroup.test.ts",
+        "src/components/common/FormColorPicker.test.ts"
+      ]
+    },
+    {
+      "name": "Server config store organizes server settings and produces launch arguments from modified values",
+      "checks": ["src/stores/serverConfigStore.test.ts"]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Unclassified callers may import settings internals during inventory; imports from classified domains remain subject to cross-domain rules.",
+    "The legacy ComfySettingsDialog behind app.ui.settings remains the extension-facing seam for addSetting, getSettingValue, setSettingValue, and per-setting change events.",
+    "The agent consent setting id is classified here while its existing agent CODEOWNERS remain responsible for changes.",
+    "Application code that reaches the backend through scripts/api, and setting definitions that call stores or LiteGraph from onChange, remain visible as role-boundary debt; classification does not grant dependency exceptions."
+  ],
+  "deepImports": "inventory"
+}

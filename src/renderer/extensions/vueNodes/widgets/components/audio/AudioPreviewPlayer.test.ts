@@ -24,8 +24,7 @@ function renderPlayer(modelValue?: string) {
       showOptionsButton: true
     },
     global: {
-      plugins: [i18n],
-      directives: { tooltip: () => {} }
+      plugins: [i18n]
     }
   })
 }
