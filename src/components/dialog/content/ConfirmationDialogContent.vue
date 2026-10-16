@@ -43,7 +43,7 @@
           <template #link>
             <Button
               variant="textonly"
-              class="cursor-pointer p-0 text-sm text-muted-foreground underline hover:bg-transparent"
+              class="p-0 text-sm text-muted-foreground underline hover:bg-transparent"
               @click="openBlueprintOverwriteSetting"
             >
               {{ t('missingModelsDialog.reEnableInSettingsLink') }}

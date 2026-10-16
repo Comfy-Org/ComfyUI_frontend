@@ -35,7 +35,7 @@
       <!-- Loading State -->
       <Skeleton
         v-if="showLoader && !videoError"
-        class="absolute inset-0 size-full rounded-md"
+        class="absolute inset-0 size-full"
       />
 
       <!-- Main Video -->

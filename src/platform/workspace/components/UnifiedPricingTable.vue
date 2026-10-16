@@ -272,7 +272,7 @@
               <Button
                 variant="inverted"
                 :disabled="isTeamButtonDisabled"
-                class="mt-auto h-10 w-full font-inter text-sm/normal font-bold"
+                class="mt-auto h-10 w-full text-sm/normal font-bold"
                 :data-dd-action-name="BILLING_ACTION_NAME.subscribeTeamPlan"
                 @click="handleSubscribeTeam"
               >
@@ -350,7 +350,7 @@
             </span>
             <Button
               variant="secondary"
-              class="mt-auto h-10 w-full border-transparent bg-secondary-background font-bold hover:bg-secondary-background-hover"
+              class="mt-auto h-10 w-full border-transparent font-bold"
               @click="handleViewEnterprise"
             >
               {{ t('subscription.enterprise.cta') }}

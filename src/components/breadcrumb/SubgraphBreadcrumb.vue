@@ -15,7 +15,7 @@
     />
     <Button
       v-if="isInSubgraph"
-      class="pointer-events-auto ml-1.5 size-8 shrink-0 border border-transparent bg-transparent p-0 transition-all hover:rounded-lg hover:border-interface-stroke hover:bg-comfy-menu-bg"
+      class="pointer-events-auto ml-1.5 shrink-0 border border-transparent p-0 transition-all hover:rounded-lg hover:border-interface-stroke hover:bg-comfy-menu-bg"
       data-testid="subgraph-breadcrumb-back"
       variant="muted-textonly"
       size="icon"

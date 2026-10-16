@@ -57,7 +57,7 @@
         v-if="showInviteBlock && invitedEmails.length === 0"
         variant="tertiary"
         size="lg"
-        class="w-full rounded-lg"
+        class="w-full"
         :disabled="!canSendInvites"
         :loading="isSendingInvites"
         @click="handleSendInvites"

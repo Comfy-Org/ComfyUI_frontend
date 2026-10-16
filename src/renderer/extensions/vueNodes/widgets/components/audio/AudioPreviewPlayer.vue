@@ -115,7 +115,6 @@
                 :min="0"
                 :max="10"
                 :step="1"
-                class="w-full"
                 @update:model-value="handleVolumeChange"
               />
             </div>

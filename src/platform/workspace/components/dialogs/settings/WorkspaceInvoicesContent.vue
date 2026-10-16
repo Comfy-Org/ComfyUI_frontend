@@ -23,7 +23,7 @@
       <Button
         variant="secondary"
         size="lg"
-        class="rounded-lg px-4 text-sm font-normal"
+        class="font-normal"
         :loading="isLoading"
         @click="handleRetry"
       >

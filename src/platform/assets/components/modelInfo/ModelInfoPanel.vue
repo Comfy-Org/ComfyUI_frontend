@@ -165,7 +165,6 @@
             size="icon-sm"
             :title="t('g.copyAll')"
             :aria-label="t('g.copyAll')"
-            class="p-0"
             @click="copyToClipboard(triggerPhrases.join(', '))"
           >
             <i class="icon-[lucide--copy] size-4 min-h-4 min-w-4 opacity-60" />

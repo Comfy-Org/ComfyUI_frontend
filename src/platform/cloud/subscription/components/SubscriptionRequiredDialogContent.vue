@@ -73,7 +73,7 @@
     <Button
       size="icon"
       variant="muted-textonly"
-      class="absolute top-2.5 right-2.5 z-10 size-8 rounded-full p-0 text-white hover:bg-white/20"
+      class="absolute top-2.5 right-2.5 z-10 rounded-full p-0 text-white hover:bg-white/20"
       :aria-label="$t('g.close')"
       @click="handleClose"
     >

@@ -8,10 +8,7 @@
     >
       <div class="flex items-center gap-2">
         <slot name="header-icon" />
-        <DialogTitle
-          as="h2"
-          class="m-0 text-sm font-normal text-base-foreground"
-        >
+        <DialogTitle as="h2" class="m-0 text-sm font-normal">
           <slot name="title" />
         </DialogTitle>
       </div>
