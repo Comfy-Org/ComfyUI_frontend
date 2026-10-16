@@ -109,11 +109,17 @@ workflow, and the chat stays readable. When a successful Cloud listing named the
 workflow, Current reuses it without restoring again. Otherwise Current resolves
 the workflow again from the loaded transcript without fetching it; a retry that
 still cannot place it leaves the chat readable with no failure row or warning.
+A retry that finds the workflow but cannot open it marks the row "Could not
+open" and keeps the unresolved target, so Back returns to the chat and Current
+tries again.
 While the retry runs, the chat keeps its unresolved target, so Back from History
 returns to it. Leaving History by Back, another row, New Chat or closing the
-panel cancels the retry, and the retry leaves the target unresolved. An
-unresolved target leaves the visible graph unchanged and does not show the
-notice that the workflow is no longer available. Sending opens the workflow
+panel cancels the retry and leaves the target unresolved; a graph load the retry
+already started still finishes and is not rolled back. An agent tab activation
+does not cancel the retry: when the retry then opens the workflow it found, that
+workflow becomes the target and the visible graph, as at startup. Apart from
+that, an unresolved target leaves the visible graph unchanged and does not show
+the notice that the workflow is no longer available. Sending opens the workflow
 picker and preserves the draft until the user explicitly chooses a target.
 Passive tab changes and panel remounts do not resume following for that
 conversation.
