@@ -26,6 +26,7 @@ server.middlewares.use(path, async (_request, response) => {
       import CatalogCheckedReview from '/src/components/cms/review/CatalogCheckedReview.vue'
       import { fixtureReview } from '/src/lib/cms/staging-fixture.ts'
       import '/src/styles/global.css'
+      import '/src/styles/catalog-staff.css'
       const initial = fixtureReview()
       initial.items[0].content.document.title = 'Local review layout fixture'
       createApp(CatalogCheckedReview, { initial, csrf: 'layout-fixture-only', canApply: true, canEdit: true }).mount('#review')

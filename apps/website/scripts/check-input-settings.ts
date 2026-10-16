@@ -21,6 +21,8 @@ try {
     const componentPath = '/src/components/cms/editor/InputSettings.vue'
     const stylePath = '/src/styles/global.css'
     await import(stylePath)
+    const staffStylePath = '/src/styles/catalog-staff.css'
+    await import(staffStylePath)
     const source = await (await fetch(componentPath)).text()
     const vuePath = source.match(/from\s+["']([^"']*\/vue\.js[^"']*)["']/)?.[1]
     if (!vuePath) throw new Error('Cannot find component Vue runtime')

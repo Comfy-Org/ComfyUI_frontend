@@ -6,8 +6,8 @@ import { isolatedPage, readOnlyRoutes } from './catalog-browser-harness'
 // our Vite components into an isolated browser document with labeled fixtures;
 // no credentials, catalog mutations, backend requests or production URLs.
 const port = process.env.CCC_LAYOUT_TEST_PORT ?? '4367'
-if (!['4349', '4367'].includes(port))
-  throw new Error('Use an isolated local frontend port: 4349 or 4367')
+if (!['4349', '4367', '4391'].includes(port))
+  throw new Error('Use an isolated local frontend port: 4349, 4367 or 4391')
 const website = `http://127.0.0.1:${port}`
 const browser = await chromium.launch({ headless: true })
 try {
@@ -32,7 +32,14 @@ try {
     const previewPath = '/src/components/cms/preview/CatalogPreviewBar.vue'
     const stylePath = '/src/styles/global.css'
     await import(stylePath)
-    // Reuse the exact optimized Vue runtime already imported by these modules.
+    if (
+      getComputedStyle(document.documentElement)
+        .getPropertyValue('--color-admin-chrome')
+        .trim()
+    )
+      throw new Error('Public CSS contains the staff palette')
+    const staffStylePath = '/src/styles/catalog-staff.css'
+    await import(staffStylePath)
     const source = await (await fetch(shellPath)).text()
     const vuePath = source.match(/from\s+["']([^"']*\/vue\.js[^"']*)["']/)?.[1]
     if (!vuePath) throw new Error('Cannot find the component Vue runtime')
@@ -160,6 +167,14 @@ try {
     page.getByRole('region', { name: 'Catalog preview controls' })
   ).toBeVisible()
   await expect(page.getByRole('region')).toHaveClass(/bg-admin-chrome/)
+  await expect(page.getByRole('region')).not.toHaveCSS(
+    'background-color',
+    'rgba(0, 0, 0, 0)'
+  )
+  await expect(page.getByRole('region')).toHaveCSS(
+    'color',
+    'rgb(243, 243, 243)'
+  )
   await page.getByRole('button', { name: 'ADMIN', exact: true }).click()
   expect(
     await page.evaluate(() =>
@@ -174,15 +189,20 @@ try {
     page.getByRole('link', { name: 'All content 45' })
   ).toHaveAttribute('aria-current', 'page')
   await page.screenshot({
-    path: '/tmp/ccc-bruce-mar-preview-desktop.png',
+    path: '/tmp/ccc-bruce-staff-styles-desktop.png',
     fullPage: true
   })
   await page.getByRole('button', { name: 'Changes', exact: true }).click()
   await expect(page.getByRole('dialog')).toBeVisible()
+  await expect(page.getByRole('dialog')).not.toHaveCSS(
+    'background-color',
+    'rgba(0, 0, 0, 0)'
+  )
+  await expect(page.getByRole('dialog')).not.toHaveCSS('box-shadow', 'none')
   await page.getByText('Changed fields').click()
   await expect(page.getByText('$.thumbnail.file_version_uid')).toBeVisible()
   await page.screenshot({
-    path: '/tmp/ccc-bruce-mar-preview-changes.png',
+    path: '/tmp/ccc-bruce-staff-styles-changes.png',
     fullPage: true
   })
   await page.keyboard.press('Escape')
@@ -211,7 +231,7 @@ try {
     )
   ).toBe(true)
   await page.screenshot({
-    path: '/tmp/ccc-bruce-mar-preview-mobile-zh.png',
+    path: '/tmp/ccc-bruce-staff-styles-mobile-zh.png',
     fullPage: true
   })
   await page.getByRole('button', { name: '现在', exact: true }).click()

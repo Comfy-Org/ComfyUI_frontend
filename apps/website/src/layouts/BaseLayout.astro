@@ -3,6 +3,7 @@ import { ClientRouter } from 'astro:transitions'
 import CatalogStaffChrome from '@/components/cms/CatalogStaffChrome.astro'
 import Analytics from '@vercel/analytics/astro'
 import '@/styles/global.css'
+import catalogStaffStyles from '@/styles/catalog-staff.css?url'
 import SiteFooter from '@/components/common/SiteFooter.vue'
 import GoogleTagManager from '@/components/common/GoogleTagManager.astro'
 import HeaderMain from '@/components/common/HeaderMain/HeaderMain.vue'
@@ -156,6 +157,9 @@ const hubApps: HubApp[] = appModels.map(({ appId, flag }) => ({
   data-banner-version={bannerVisible ? bannerVersion : undefined}
 >
   <head>
+    {(Astro.locals.catalogAuthoring || Astro.locals.site) && (
+      <link rel="stylesheet" href={catalogStaffStyles} />
+    )}
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />

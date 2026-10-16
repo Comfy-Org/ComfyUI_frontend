@@ -1034,6 +1034,14 @@ continue through the verified catalog Preview controller; this does not enable
 Mar's demo session or legacy form transport. Admin sidebars only link routes
 supported by the verified caller, not unavailable legacy review pages.
 
+Staff palette tokens and utilities live in `src/styles/catalog-staff.css`,
+not the public stylesheet. BaseLayout emits its versioned stylesheet link only
+for a verified catalog or legacy staff session. Keeping the stylesheet at the
+document level preserves body-portaled popovers and dialogs. Its palette resolves
+the shared design-system colors at build time; it does not override the public
+theme. The CSS asset is not an authorization boundary. `catalog-styles.test.ts`
+compiles the actual production stylesheets and checks this separation.
+
 The global layout does not load the catalog, staging snapshot or field diffs
 for the Preview bar. Its controls use the freshly verified session's view,
 clock and locale. Without explicitly supplied change data, Changes opens the
