@@ -6,6 +6,7 @@ import { assetService } from '@/platform/assets/services/assetService'
 import type * as DistributionTypes from '@/platform/distribution/types'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { api } from '@/scripts/api'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import {
   ResourceState,
   effectiveModelExtensions,
@@ -102,6 +103,57 @@ describe('useModelStore', () => {
     mockDistribution.isCloud = false
     featureState.serverFeatures = reactive({ assets: false })
     remoteConfig.value = {}
+  })
+
+  it('lists and refreshes Release models without asset filtering on a picked deployment', async () => {
+    enableMocks(true)
+    mockDistribution.isCloud = true
+    useDeploymentPickStore().bootDeployment = {
+      deployment_id: 'dep-release',
+      release_id: 'release-1',
+      status: 'ready',
+      created_at: '2026-10-01T00:00:00Z'
+    }
+    vi.mocked(api.getModels).mockResolvedValue([
+      { name: 'release.gguf', pathIndex: 0 }
+    ])
+    store = useModelStore()
+    await store.loadModels()
+    expect(store.models.map((model) => model.file_name)).toEqual([
+      'release.gguf',
+      'release.gguf'
+    ])
+    vi.mocked(api.getModels).mockResolvedValue([
+      { name: 'updated.gguf', pathIndex: 0 }
+    ])
+    await store.refreshModelFolder('checkpoints')
+    expect(store.models.map((model) => model.file_name)).toEqual([
+      'updated.gguf',
+      'release.gguf'
+    ])
+    expect(assetService.getAssetModels).not.toHaveBeenCalled()
+  })
+
+  it('replaces cached Cloud models when the boot deployment arrives late', async () => {
+    enableMocks(true)
+    mockDistribution.isCloud = true
+    store = useModelStore()
+    await store.loadModels()
+    expect(store.models[0].file_name).toBe('sdxl.safetensors')
+    vi.mocked(api.getModels).mockResolvedValue([
+      { name: 'release.safetensors', pathIndex: 0 }
+    ])
+    useDeploymentPickStore().bootDeployment = {
+      deployment_id: 'dep-release',
+      release_id: 'release-1',
+      status: 'ready',
+      created_at: '2026-10-01T00:00:00Z'
+    }
+    await vi.advanceTimersByTimeAsync(500)
+    expect(store.models.map((model) => model.file_name)).toEqual([
+      'release.safetensors',
+      'release.safetensors'
+    ])
   })
 
   it('should load models', async () => {

@@ -105,7 +105,6 @@
             :min="10"
             :max="150"
             :step="1"
-            class="w-full"
             @update:model-value="setFov"
           />
         </div>

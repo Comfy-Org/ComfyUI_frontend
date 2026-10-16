@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -6,6 +7,10 @@ import type {
   ActivityPart,
   AssistantMessage,
   TextPart
+} from '../../../services/agent/agentMessageParts'
+import {
+  askIdOf,
+  isOpenAskPart
 } from '../../../services/agent/agentMessageParts'
 import { htmlReplyAssets } from '../../../utils/replyAssets'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -34,7 +39,7 @@ const { t } = useI18n()
 
 const emit = defineEmits<{
   feedback: [vote: 'up' | 'down' | null]
-  answerAsk: [askId: string, selection: 'run' | 'cancel']
+  answerAsk: [askId: string, answer: AgentAnswerRequest]
   openWorkflow: [askId: string, workflowId: string, workflowName?: string]
   approvalShown: [askId: string, turnId: string, workflowId: string | null]
   paywallAction: [action: AgentPaywallAction]
@@ -51,6 +56,11 @@ const activityParts = computed<readonly ActivityPart[]>(() =>
 
 const groups = computed<Group[]>(() => groupMessageParts(message.parts))
 
+function groupKey(group: Group, index: number): string {
+  const askId = 'part' in group ? askIdOf(group.part) : undefined
+  return askId === undefined ? `group:${index}` : `ask:${askId}`
+}
+
 const markdown = computed(() =>
   message.parts
     .filter((part): part is TextPart => part.type === 'text')
@@ -66,16 +76,13 @@ const replyAssets = computed(() =>
   showActions.value ? htmlReplyAssets(renderMarkdownToHtml(markdown.value)) : []
 )
 
-// The stretch after the last tool settles and before the first reply token, with
-// no approval pending: the turn is still running but nothing on screen moves.
 const composing = computed(
   () =>
     message.streaming &&
     message.parts.length > 0 &&
     message.parts.every(
       (part) =>
-        part.type !== 'runApproval' &&
-        (!('state' in part) || part.state === 'done')
+        !isOpenAskPart(part) && (!('state' in part) || part.state === 'done')
     )
 )
 
@@ -102,14 +109,14 @@ const status = computed(() => {
 
 <template>
   <div class="space-y-2 pb-4">
-    <template v-for="(group, index) in groups" :key="index">
+    <template v-for="(group, index) in groups" :key="groupKey(group, index)">
       <AgentMessageGroup
         :group
         :streaming="message.streaming"
         :activity-parts="activityParts"
         :answering-ask-ids="answeringAskIds"
         :paywall-presentation="paywallPresentation"
-        @answer="(askId, selection) => emit('answerAsk', askId, selection)"
+        @answer="(askId, answer) => emit('answerAsk', askId, answer)"
         @approval-shown="
           (askId, workflowId) =>
             emit('approvalShown', askId, message.id, workflowId)

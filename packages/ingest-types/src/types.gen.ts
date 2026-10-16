@@ -290,84 +290,6 @@ export type AssetInfo = {
 }
 
 /**
- * The workflow to read.
- */
-export type WorkflowPacksRequest = {
-  /**
-   * A ComfyUI workflow as the editor holds it (the UI format: a `nodes` array beside a `links` array, subgraphs under `definitions.subgraphs`). The API format is read too. Passed to comfy-builder as it is.
-   */
-  workflow: {
-    [key: string]: unknown
-  }
-}
-
-/**
- * What a workflow needs. A node class built into ComfyUI, or served by a partner provider, is in none of the lists: there is nothing to install for it.
- */
-export type WorkflowPacks = {
-  /**
-   * Which export format the workflow was read as.
-   */
-  format: 'api' | 'ui'
-  /**
-   * Packs found for the workflow's nodes by Cloud's own map of node classes to packs.
-   */
-  matched_packs: Array<WorkflowPack>
-  /**
-   * Node classes Cloud cannot confirm a pack provides, sorted by class, each with its reason. Empty when every node is built in, served by a partner provider, or placed by Cloud's own map in a listed pack. A `stamped` entry's pack is listed and will be installed, yet the workflow may still not run on Cloud as it is.
-   */
-  missing_nodes: Array<WorkflowMissingNode>
-  /**
-   * Packs the workflow itself names on its nodes (`cnr_id`) for node classes Cloud's map does not know, where the Comfy Registry's class index named the same pack. Cloud's map did not choose them, so Comfy Cloud cannot be assumed to have them installed.
-   */
-  stamped_packs: Array<WorkflowPack>
-}
-
-/**
- * One node class of the workflow that Cloud cannot confirm a pack provides, and why.
- */
-export type WorkflowMissingNode = {
-  /**
-   * The node class, as the workflow names it.
-   */
-  class_type: string
-  /**
-   * The Comfy Registry id the workflow's own stamp names on the node (its `cnr_id`, lowercased, as comfy-builder reads it); present only with reason `stamped`. The pack Cloud installs for the node is in `matched_packs` or `stamped_packs`, but not always under this id: Cloud's map lists some packs by their repository URL instead, with no `id`. So a client cannot count on finding that entry by this id.
-   */
-  pack?: string
-  /**
-   * `github`: the workflow says the node was installed from GitHub (its `aux_id`), and no Registry pack provides it. `unknown`: no pack provides it, or the pack that claims it publishes nothing to fetch, and the workflow names no GitHub source. `unchecked`: the Comfy Registry did not answer about it, so nothing says it is missing; asking again may find its pack. `stamped`: the node names a pack (its `cnr_id`, in `pack`) that will be installed, but Cloud could not confirm that pack provides this node: only the workflow's own stamp ties the node to it, and Cloud's map of node classes does not place it there, so the workflow may not run on Cloud as it is (the node may be newer than the pack version Cloud installs, or not the pack's at all).
-   */
-  reason: 'github' | 'unknown' | 'unchecked' | 'stamped'
-  /**
-   * The GitHub repository (`org/repo`) the workflow names for the node; present only with reason `github`.
-   */
-  repository?: string
-}
-
-/**
- * One node pack the workflow needs, as it would be installed.
- */
-export type WorkflowPack = {
-  /**
-   * The pack's Comfy Registry id. Absent for a pack the Registry publishes no installable version of, which is installed from `repository` instead.
-   */
-  id?: string
-  /**
-   * The pack's name, or its Registry id when it has none.
-   */
-  name: string
-  /**
-   * The repository the pack is installed from, present only when the Registry publishes no installable version of it.
-   */
-  repository?: string
-  /**
-   * The Registry version that would be installed: the newest one published, since a workflow names no versions. Absent when the pack is installed from `repository`.
-   */
-  version?: string
-}
-
-/**
  * Paginated list of saved workflows.
  */
 export type WorkflowListResponse = {
@@ -773,7 +695,7 @@ export type TopupQuoteResponse = {
 }
 
 /**
- * One persisted tool call attached to an assistant message's content.tool_calls (services/agent/internal/persist.ToolCallSummary), so a chat reload can render the tool-call history a turn produced. Display data only — raw arguments/results are never projected here. Only terminal rows (status ok/error) are ever surfaced; a row a dead turn left in pending/running has no wire-status mapping and is dropped rather than shown as a perpetual-progress chip.
+ * One persisted tool call attached to an assistant message's content.tool_calls (services/agent/internal/persist.ToolCallSummary), so a chat reload can render the tool-call history a turn produced. Display data only — raw arguments/results are never projected here. The optional produced_asset field is a strict exception containing only the server-recorded id/hash from a successful asset-producing media call. Only terminal rows (status ok/error) are ever surfaced; a row a dead turn left in pending/running has no wire-status mapping and is dropped rather than shown as a perpetual-progress chip.
  * This object is projected at read time by services/agent/internal/persist.ToolCallsForThread from agent_tool_calls; it is never stored in agent_messages.content, so there is no legacy persisted shape. Because of that projection the contract holds for every row ever served: tool_call_id is always present (it falls back to id for rows written before the column existed), status is always one of the enum values (the audit-table word "ok" is translated by ToolCallWireStatus), and duration_ms is always an integer when present. Clients (the frontend's zPersistedToolCallSummary) must not relax these fields to parse "historical" rows — a row that fails this schema is a server bug (BE-20134).
  */
 export type ToolCallSummary = {
@@ -794,6 +716,19 @@ export type ToolCallSummary = {
    * Mirrors agent_tool_calls.prompt_id at read time. This is the exact-attempt ownership signal an eval driver needs to prove which job a given turn submitted — a model-authored result string, workflow id, or URL in the assistant's final text is not equivalent evidence. It is parsed from the comfy-cli runner's stdout envelope and never cross-checked against the job table, so it is proof of turn-to-job submission only, not proof the job completed or that any output URL belongs to it; a consumer must still authenticate job detail and bind the artifact to this id. Absence does NOT prove no job was submitted: most tool calls never submit one, but a call that submitted a job and then errored (for example while polling) also omits this field, as does any row outside the history window.
    */
   job_id?: string
+  /**
+   * Present only when this exact row is a successful process_media or combine_media call whose persisted audit result contains a complete saved_asset identity. It binds an assistant message and tool call to the asset representing that call's output bytes. Ingest may dedupe identical bytes to an existing asset, so this does not prove the call created the asset, and multiple calls may name the same id. Consumers must still authenticate the asset id and match the hash against the candidate selector. Omitted for failed calls, non-producing tools, malformed/legacy results, and rows outside the history window. Raw results, arguments, asset names, URLs, credentials, notes, and unrelated metadata are never exposed.
+   */
+  produced_asset?: {
+    /**
+     * The canonical asset hash/filename selector recorded by the producing call, including its media extension.
+     */
+    hash: string
+    /**
+     * The server-assigned asset id recorded by the producing call.
+     */
+    id: string
+  }
   started_at?: string
   /**
    * The WIRE status vocabulary (api/agent_events.schema.json's agent_tool_call), translated from the audit-row vocabulary (pending/running/ok/error) via ToolCallWireStatus — the same function the live agent_tool_call broadcast uses, so reloaded history and a live frame for the same call never disagree on the vocabulary. "running" never appears here: only terminal rows are queried, so a call still in flight when its turn died is omitted rather than shown as a perpetually in-progress chip.
@@ -5363,6 +5298,25 @@ export type AssetCreated = Asset & {
 }
 
 /**
+ * Attachment extensions whose content the model can see: the raster formats Go's image
+ * package decodes, plus HEIC/HEIF stills (iPhone photos), which view_asset converts to JPEG
+ * first. view_asset always re-encodes to PNG or JPEG, so the provider's own four-type image
+ * allowlist is satisfied by construction rather than by matching this list.
+ *
+ */
+export type AgentViewableAttachmentExtension =
+  | '.png'
+  | '.jpg'
+  | '.jpeg'
+  | '.gif'
+  | '.webp'
+  | '.bmp'
+  | '.tif'
+  | '.tiff'
+  | '.heic'
+  | '.heif'
+
+/**
  * Acknowledgement that a turn was accepted. The agent runs asynchronously; output streams over the WebSocket (agent_message_delta, agent_tool_call, draft_patch, agent_message_done).
  */
 export type AgentTurnAccepted = {
@@ -5543,6 +5497,78 @@ export type AgentRunApprovalContext = {
 }
 
 /**
+ * Attachment extensions that are accepted so a user can keep them beside a workflow, and
+ * nothing more — the agent can neither read the contents nor wire the file in.
+ *
+ * .avif is the only one: it is an image the turn cannot decode (no registry entry, so
+ * view_asset would fail) and it is not text, so read_asset would return mojibake. It stays
+ * accepted because it was attachable before the policy existed.
+ *
+ */
+export type AgentRetainedAttachmentExtension = '.avif'
+
+/**
+ * Attachment extensions the agent recognizes as 3D models and wires into Load3D's model_file
+ * widget. They are exactly the set Load3D accepts (comfy_extras/nodes_load_3d.py); .usdz is
+ * absent from both lists, so it is not an exclusion this tier makes.
+ *
+ */
+export type AgentReferenceAttachmentExtension =
+  | '.glb'
+  | '.obj'
+  | '.fbx'
+  | '.gltf'
+  | '.stl'
+  | '.ply'
+  | '.spz'
+  | '.splat'
+  | '.ksplat'
+
+/**
+ * Attachment extensions whose contents the agent reads verbatim, with read_asset. The bytes
+ * are decoded as UTF-8 and returned as text, bounded and truncation-marked.
+ *
+ * This tier describes CONTENT ACCESS only and says nothing about whether the file can be
+ * wired into a graph. Those are separate questions, so a format becoming a node input later
+ * does not move it out of this tier.
+ *
+ * .svg is here rather than with the images because it is XML: view_asset cannot decode it,
+ * but its markup is exactly what a caller would want read.
+ *
+ */
+export type AgentReadableAttachmentExtension =
+  | '.md'
+  | '.markdown'
+  | '.txt'
+  | '.json'
+  | '.csv'
+  | '.yaml'
+  | '.yml'
+  | '.xml'
+  | '.log'
+  | '.svg'
+
+/**
+ * Attachment extensions the agent can only describe from metadata. A subset of the containers
+ * ingest sorts into a load node's video/audio lists: that categoriser also accepts .wmv, .flv,
+ * .aac and .wma, which the agreed attachment list rejects.
+ *
+ */
+export type AgentProbeableAttachmentExtension =
+  | '.mp4'
+  | '.webm'
+  | '.mov'
+  | '.m4v'
+  | '.avi'
+  | '.mkv'
+  | '.mp3'
+  | '.wav'
+  | '.ogg'
+  | '.opus'
+  | '.flac'
+  | '.m4a'
+
+/**
  * A user turn posted to the agent.
  */
 export type AgentPostMessageRequest = {
@@ -5551,7 +5577,24 @@ export type AgentPostMessageRequest = {
    */
   ask_kinds?: Array<AgentAskKind>
   /**
-   * Optional input filenames the client already uploaded to the ComfyUI input namespace (via /api/upload/image, which returns the {name, subfolder, type} reference). Images, video and audio are all accepted. The agent wires them into the workflow by filename — it never receives file bytes here, and reads an attachment's contents through its own asset tools when a request depends on them.
+   * Optional input filenames the client already uploaded to the ComfyUI input namespace (via
+   * /api/upload/image, which returns the {name, subfolder, type} reference). The agent never
+   * receives file bytes here; what it can read or wire depends on the policy tier.
+   *
+   * Each entry's extension must appear in AgentAttachmentPolicy; a reference outside it is
+   * rejected with 422 (AgentAttachmentRejected). A reference with NO extension is the one
+   * exception: not every reference is a filename — an asset hash may be a bare hex digest or
+   * "blake3:<hex>" — so one with nothing to judge is admitted here and checked again once it
+   * resolves to a stored name. A refusal there costs the attachment its asset id and its
+   * kind, so the agent gets no tool for it and the turn is not refused; the reference itself
+   * is still echoed back by GET .../messages. Which tier of that policy an extension lands
+   * in says what the agent can do with it, and the tiers differ sharply — a client that
+   * presents them as one flat list misleads the user.
+   *
+   * The constraint is expressed as extension enums rather than on this array because the array
+   * carries FILENAMES, not content types: an extension is what both ends can actually agree
+   * on, and the upload route this list references stores no MIME type for what it accepts.
+   *
    */
   attachments?: Array<string>
   /**
@@ -5842,6 +5885,82 @@ export type AgentCancelUnconfirmed = {
  */
 export type AgentCancelAccepted = {
   status: 'cancelling'
+}
+
+/**
+ * 422 body when a posted attachment's extension is outside the accepted list. It carries the
+ * policy rather than only an error string so a client never has to hardcode the list to
+ * explain the refusal — the same reason the list is expressed as enums the frontend generates
+ * its types from.
+ *
+ */
+export type AgentAttachmentRejected = {
+  accepted: AgentAttachmentPolicy
+  error: string
+  /**
+   * The offending references, in the order they were posted. Capped, so it can be shorter than rejected_count — a client that reports "N were refused" must read that field rather than this array's length.
+   */
+  rejected: Array<string>
+  /**
+   * How many references were refused in total, before the list above was capped.
+   */
+  rejected_count: number
+  type: 'ATTACHMENT_TYPE_NOT_ACCEPTED'
+}
+
+/**
+ * Every extension the agent accepts as an attachment, grouped by what it can actually DO with
+ * one. The grouping is the point: the tiers differ sharply, and a client that renders them as
+ * one flat "supported files" list tells the user something false (PM-1855).
+ *
+ * - `view`: the model sees the content. view_asset decodes the still (converting HEIC/HEIF to
+ * JPEG first) and re-encodes it as PNG/JPEG into the turn, so the model reasons about actual
+ * pixels.
+ * - `probe`: metadata only. probe_media reports duration, resolution, frame rate and codecs;
+ * nothing in the model's input can carry a clip, so the CONTENT stays unreadable. Seeing a
+ * video means cutting a frame out with process_media and viewing that.
+ * - `reference`: the agent knows the file is a 3D model, with its kind and id, and wires its
+ * filename into a Load3D node's model_file widget. No tool opens the mesh itself: the cloud
+ * turn registers neither a shell nor a file-read tool, by design, as it is a shared
+ * multi-tenant pod.
+ * - `read`: the agent reads the contents verbatim with read_asset — UTF-8 decoded, bounded
+ * and truncation-marked. The tier describes CONTENT ACCESS only; whether the file can also
+ * be wired into a graph is a separate axis, so a format gaining an upload-backed node input
+ * later stays in this tier.
+ * - `retain`: the file is attached and nothing more — neither readable nor wirable. Only
+ * .avif, which the turn cannot decode as an image and is not text.
+ *
+ * The union of the five arrays is the accepted list. Anything absent is rejected.
+ *
+ */
+export type AgentAttachmentPolicy = {
+  probe: Array<AgentProbeableAttachmentExtension>
+  read: Array<AgentReadableAttachmentExtension>
+  reference: Array<AgentReferenceAttachmentExtension>
+  retain: Array<AgentRetainedAttachmentExtension>
+  view: Array<AgentViewableAttachmentExtension>
+}
+
+export type AgentAttachmentError =
+  | ({
+      type: 'ATTACHMENT_TYPE_NOT_ACCEPTED'
+    } & AgentAttachmentRejected)
+  | ({
+      type: 'ATTACHMENT_BOUNDS_EXCEEDED'
+    } & AgentAttachmentBoundsExceeded)
+
+export type AgentAttachmentBoundsExceeded = {
+  error: string
+  limits: {
+    max_item_length: number
+    max_items: number
+  }
+  /**
+   * A bounded example of the first overlong reference; empty for count-only violations.
+   */
+  overlong_ref: string
+  received_count: number
+  type: 'ATTACHMENT_BOUNDS_EXCEEDED'
 }
 
 /**
@@ -7143,6 +7262,10 @@ export type AgentPostMessageErrors = {
    * Forbidden (workflow or thread not owned by the caller). An ingest refusal, such as the web session's, is ErrorResponse; the agent service's is AgentError.
    */
   403: ErrorResponse | AgentError
+  /**
+   * One or more attachments name a file type the agent does not accept. The body names the offending references and carries the full accepted policy, so the client can explain the refusal without hardcoding the list.
+   */
+  422: AgentAttachmentError
   /**
    * Internal server error (ingest-raised failures use the standard ErrorResponse shape instead)
    */
@@ -9951,6 +10074,25 @@ export type GetBillingUsageTimeSeriesResponses = {
 
 export type GetBillingUsageTimeSeriesResponse =
   GetBillingUsageTimeSeriesResponses[keyof GetBillingUsageTimeSeriesResponses]
+
+export type GetDefaultWorkflowData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/default_workflow'
+}
+
+export type GetDefaultWorkflowResponses = {
+  /**
+   * Default workflow JSON
+   */
+  200: {
+    [key: string]: unknown
+  }
+}
+
+export type GetDefaultWorkflowResponse =
+  GetDefaultWorkflowResponses[keyof GetDefaultWorkflowResponses]
 
 export type GetEmbeddingsData = {
   body?: never
@@ -15707,66 +15849,6 @@ export type ListWorkspaceDeploymentsResponses = {
 
 export type ListWorkspaceDeploymentsResponse =
   ListWorkspaceDeploymentsResponses[keyof ListWorkspaceDeploymentsResponses]
-
-export type ResolveWorkspaceWorkflowPacksData = {
-  body: WorkflowPacksRequest
-  path: {
-    /**
-     * Workspace ID (w-{uuid} format)
-     */
-    id: string
-  }
-  query?: never
-  url: '/api/workspaces/{id}/workflow-packs'
-}
-
-export type ResolveWorkspaceWorkflowPacksErrors = {
-  /**
-   * The workflow could not be read. `code` is comfy-builder's identifier, which a caller branches on: `INVALID_REQUEST` when no workflow was sent, `INVALID_WORKFLOW` when the payload is not a workflow or holds no nodes, `WORKFLOW_TOO_LARGE` when it names more node classes than one read may carry. While `web_session_enabled` is on, `code` may also be `workspace_id_invalid` (see SessionWorkspaceIDInvalid).
-   */
-  400: ErrorResponse
-  /**
-   * Unauthorized
-   */
-  401: ErrorResponse
-  /**
-   * The caller is not a member of the workspace, or is an API key: the read runs as the caller on a Cloud JWT minted here, which needs a signed-in session. For a web session, `code` may also be one of the SessionWriteForbidden refusals (`csrf_invalid`, `workspace_access_denied`, `origin_not_allowed`, `cross_site_request`).
-   */
-  403: ErrorResponse
-  /**
-   * The rollout flag cloud_on_customer_build_enabled is off for the caller.
-   */
-  404: ErrorResponse
-  /**
-   * The workflow is larger than the 1 MiB one read may carry.
-   */
-  413: ErrorResponse
-  /**
-   * Internal server error
-   */
-  500: ErrorResponse
-  /**
-   * comfy-builder could not be reached, failed, or refused the token minted here; nothing is known about the workflow, so try again.
-   */
-  502: ErrorResponse
-  /**
-   * Reading workflows is not configured in this environment (BUILDER_SERVICE_URL is unset).
-   */
-  503: ErrorResponse
-}
-
-export type ResolveWorkspaceWorkflowPacksError =
-  ResolveWorkspaceWorkflowPacksErrors[keyof ResolveWorkspaceWorkflowPacksErrors]
-
-export type ResolveWorkspaceWorkflowPacksResponses = {
-  /**
-   * The workflow was read; what it needs, and what nothing provides
-   */
-  200: WorkflowPacks
-}
-
-export type ResolveWorkspaceWorkflowPacksResponse =
-  ResolveWorkspaceWorkflowPacksResponses[keyof ResolveWorkspaceWorkflowPacksResponses]
 
 export type GetCurrentWorkspaceData = {
   body?: never

@@ -13,6 +13,7 @@ const config: KnipConfig = {
         'src/types/index.ts',
         'src/storybook/mocks/**/*.ts',
         'tools/oxlint-plugins/comfyIngestTypes.ts',
+        'tools/oxlint-plugins/serverFacts.ts',
         'tools/oxlint-plugins/vitestCleanup.ts'
       ],
       project: [
@@ -57,7 +58,13 @@ const config: KnipConfig = {
       // Executed by models-snippets.test.ts inside the generated Node examples.
       ignoreDependencies: ['mime-types']
     },
+    'tools/cicd/fast-lane': {
+      project: ['src/**/*.ts']
+    },
     'tools/architecture': {
+      project: ['src/**/*.ts']
+    },
+    'tools/design-system-audits': {
       project: ['src/**/*.ts']
     },
     'tools/test-recorder': {

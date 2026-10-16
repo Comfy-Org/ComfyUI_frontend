@@ -53,6 +53,26 @@
   ],
   "redirects": [
     {
+      "source": "/vfx",
+      "destination": "/solutions/vfx/",
+      "permanent": true
+    },
+    {
+      "source": "/vfx/",
+      "destination": "/solutions/vfx/",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/vfx",
+      "destination": "/zh-CN/solutions/vfx/",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/vfx/",
+      "destination": "/zh-CN/solutions/vfx/",
+      "permanent": true
+    },
+    {
       "source": "/career",
       "destination": "/careers/",
       "permanent": true
@@ -90,6 +110,26 @@
     {
       "source": "/zh-CN/about",
       "destination": "/zh-CN/about/",
+      "permanent": true
+    },
+    {
+      "source": "/nvidia-rtx",
+      "destination": "/nvidia-vfx/",
+      "permanent": true
+    },
+    {
+      "source": "/nvidia-rtx/",
+      "destination": "/nvidia-vfx/",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/nvidia-rtx",
+      "destination": "/zh-CN/nvidia-vfx/",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/nvidia-rtx/",
+      "destination": "/zh-CN/nvidia-vfx/",
       "permanent": true
     },
     {

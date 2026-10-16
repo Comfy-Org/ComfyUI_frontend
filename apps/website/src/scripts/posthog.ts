@@ -45,6 +45,7 @@ const ANALYTICS_EVENT = {
   routerRoadmapCardExpanded: 'website:router_roadmap_card_expanded',
   agentFaqExpanded: 'website:agent_faq_expanded',
   agentUsecaseVideoPlayed: 'website:agent_usecase_video_played',
+  vfxLinkClicked: 'website:vfx_link_clicked',
   // Shared with the cloud app so one PostHog funnel covers auth outcomes
   // across every surface.
   authRefreshSucceeded: SESSION_TELEMETRY_EVENT.refreshSucceeded,
@@ -69,6 +70,10 @@ export type RouterRoadmapCardId = 'workflow' | 'strategy' | 'use-case' | 'byok'
 
 type AnalyticsEvent =
   | WebSessionTelemetryEvent
+  | {
+      name: typeof ANALYTICS_EVENT.vfxLinkClicked
+      properties: VfxLinkProperties
+    }
   | {
       name: `website:workshop_${WorkshopAnalyticsEvent['name']}`
       properties: WorkshopAnalyticsEvent['properties']
@@ -125,6 +130,11 @@ type AnalyticsEvent =
     }
 
 let initialized = false
+
+interface VfxLinkProperties {
+  destination: string
+  placement: 'hero' | 'workflows' | 'studio' | 'page'
+}
 
 const WORKSHOP_AUTH_FLAG = 'workshop-auth'
 const WORKSHOP_ENABLED_FLAG = 'workshop-enabled'
@@ -438,6 +448,10 @@ function captureEvent(event: AnalyticsEvent): void {
 
 export function capturePageview(): void {
   captureEvent({ name: ANALYTICS_EVENT.pageview })
+}
+
+export function captureVfxLinkClick(properties: VfxLinkProperties): void {
+  captureEvent({ name: ANALYTICS_EVENT.vfxLinkClicked, properties })
 }
 
 export function captureWorkshopEvent(event: WorkshopAnalyticsEvent): void {

@@ -28,6 +28,7 @@ import {
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import { partnerNodeTokens } from '@/platform/auth/partnerNode/partnerNodeTokens'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
+import { provideEnsureSessionCookie } from '@/platform/auth/session/sessionCookieAccess'
 import type { WebSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import {
   webSessionRequests,
@@ -49,6 +50,7 @@ import { useDialogService } from '@/services/dialogService'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
+import { provideAuthStore } from '@/platform/auth/authStoreAccess'
 import type { AuthHeader } from '@/types/authTypes'
 import type { operations } from '@/types/comfyRegistryTypes'
 import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
@@ -988,8 +990,23 @@ export const useAuthStore = defineStore('auth', () => {
     return result
   }
 
+  const revokePartnerNodeLogin = async (): Promise<void> => {
+    if (isCloud || !flags.partnerNodeTokenEnabled) return
+    const credential = isDesktopHostSignedIn()
+      ? await desktopHostTabToken()
+      : await revokingFirebaseIdToken()
+    void partnerNodeTokens.revokeLogin(credential)
+  }
+
+  const revokingFirebaseIdToken = async (): Promise<string | undefined> => {
+    const user = currentUser.value
+    const token = await user?.getIdToken().catch(() => undefined)
+    return currentUser.value?.uid === user?.uid ? token : undefined
+  }
+
   const logout = async (): Promise<void> =>
     executeAuthAction(async () => {
+      await revokePartnerNodeLogin()
       const signsOutDesktopHost = isDesktopHostSignedIn()
       if (signsOutDesktopHost && !(await requestDesktopHostSignOut())) {
         throw new AuthStoreError(t('auth.desktopHost.signOutFailed'))
@@ -1165,4 +1182,11 @@ export const useAuthStore = defineStore('auth', () => {
     getWorkspaceAuthToken,
     notifyTokenRefreshed
   }
+})
+
+provideAuthStore(useAuthStore)
+provideEnsureSessionCookie(async () => {
+  const { useSessionCookie } =
+    await import('@/platform/auth/session/useSessionCookie')
+  await useSessionCookie().ensureSessionCookie()
 })
