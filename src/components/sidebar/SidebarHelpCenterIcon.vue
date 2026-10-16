@@ -6,7 +6,7 @@
   >
     <template #button>
       <SidebarIcon
-        icon="icon-[lucide--megaphone] size-4"
+        icon="pi pi-question-circle"
         class="comfy-help-center-btn"
         data-testid="help-center-button"
         :label="$t('menu.help')"
