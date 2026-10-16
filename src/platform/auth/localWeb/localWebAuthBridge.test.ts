@@ -450,6 +450,25 @@ describe('across tabs sharing stored tokens', () => {
     expect(second.tokens.read()?.refreshToken).toBe('refresh-2')
   })
 
+  it('signs out only after another tab finishes its refresh, so the refresh cannot restore the tokens', async () => {
+    const { first, second } = tabs()
+    let answer: (response: Response) => void = () => {}
+    first.env.fetchImpl.mockImplementation(
+      () => new Promise((resolve) => (answer = resolve))
+    )
+    const refresh = first.bridge.getWorkspaceToken('ws-1')
+    await vi.waitFor(() => expect(first.env.fetchImpl).toHaveBeenCalledOnce())
+
+    const signOut = second.bridge.signOut()
+    await Promise.resolve()
+    expect(second.tokens.read()?.refreshToken).toBe('refresh-1')
+
+    answer(tokenResponse(WS1_TOKEN, 'refresh-2'))
+    await refresh
+    await expect(signOut).resolves.toEqual({ status: 'signed_out' })
+    expect(first.tokens.read()).toBeUndefined()
+  })
+
   it('tells listeners when another tab signs out', async () => {
     const { first, second, events } = tabs()
 

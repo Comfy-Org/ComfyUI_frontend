@@ -177,7 +177,7 @@ export function createLocalWebAuthBridge(
       return new Promise<DesktopHostAuthState>(() => {})
     },
 
-    signOut: async () => signOutLocally(),
+    signOut: () => env.withRefreshLock(async () => signOutLocally()),
 
     async completeSignIn() {
       const url = new URL(env.pageUrl())
