@@ -18,7 +18,8 @@ const committedFixture: NodesIndexFixture = recorded
 const indexFrom =
   (responses: Record<string, RecordedResponse>) => async (queries: string[]) =>
     queries.map((query) => {
-      if (!(query in responses)) throw new Error(`Unrecorded query "${query}"`)
+      if (!Object.hasOwn(responses, query))
+        throw new Error(`Unrecorded query "${query}"`)
       return responses[query]
     })
 
@@ -88,6 +89,12 @@ describe('recordNodesIndex', () => {
       ).rejects.toThrow(error)
     }
   )
+
+  it('refuses to regenerate from an unrecorded query named like an Object.prototype key', async () => {
+    await expect(
+      indexFrom(committedFixture.responses)(['constructor'])
+    ).rejects.toThrow('Unrecorded query "constructor"')
+  })
 
   it('records a rewrite named like an Object.prototype key', async () => {
     const fixture = await recordNodesIndex(
