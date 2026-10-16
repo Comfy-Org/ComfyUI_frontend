@@ -26,6 +26,7 @@ import { useExecutionOrderStore } from '@/stores/executionOrderStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
+import type { LinkId } from '@/types/linkId'
 import type { GraphScope } from '@/types/graphScopeId'
 import { linkIdReservations, mintLinkId } from './idAllocation'
 import { UNASSIGNED_NODE_ID, toNodeId, serializeNodeId } from '@/types/nodeId'
@@ -3090,33 +3091,23 @@ export class LGraphNode
     )
   }
 
-  /**
-   * Connect an output of this node to an input of another node
-   * @param slot (could be the number of the slot or the string with the name of the slot)
-   * @param target_node the target node
-   * @param target_slot the input slot of the target node (could be the number of the slot or the string with the name of the slot, or -1 to connect a trigger)
-   * @returns the link_info is created, otherwise null
-   */
   connect(
     slot: number | string,
     target_node: LGraphNode | number | null,
     target_slot: number | string,
-    afterRerouteId?: RerouteId
+    afterRerouteId?: RerouteId,
+    options?: { requestedId: LinkId }
   ): LLink | null {
-    // Allow legacy API support for searching target_slot by string, without mutating the input variables
     let targetIndex: number | null
 
     const { graph, outputs } = this
     if (!graph) {
-      // could be connected before adding it to a graph
-      // due to link ids being associated with graphs
       console.error(
         "Connect: Error, node doesn't belong to any graph. Nodes must be added first to a graph before connecting them."
       )
       return null
     }
 
-    // seek for the output slot
     if (typeof slot === 'string') {
       slot = this.findOutputSlot(slot)
       if (slot == -1) {
@@ -3138,10 +3129,8 @@ export class LGraphNode
     }
     if (!target_node) throw 'target node is null'
 
-    // avoid loopback
     if (target_node == this) return null
 
-    // you can specify the slot by name
     if (typeof target_slot === 'string') {
       targetIndex = target_node.findInputSlot(target_slot)
       if (targetIndex == -1) {
@@ -3150,7 +3139,6 @@ export class LGraphNode
         return null
       }
     } else if (target_slot === LiteGraph.EVENT) {
-      // TODO: Events
       if (LiteGraph.do_add_triggers_slots) {
         target_node.changeMode(LGraphEventMode.ON_TRIGGER)
         targetIndex = target_node.findInputSlot('onTrigger')
@@ -3163,9 +3151,7 @@ export class LGraphNode
       targetIndex = 0
     }
 
-    // Allow target node to change slot
     if (target_node.onBeforeConnectInput) {
-      // This way node can choose another slot (or make a new one?)
       const requestedIndex = target_node.onBeforeConnectInput(
         targetIndex,
         target_slot
@@ -3194,23 +3180,22 @@ export class LGraphNode
       }
     }
 
-    const link = this.connectSlots(output, target_node, input, afterRerouteId)
+    const link = this.connectSlots(
+      output,
+      target_node,
+      input,
+      afterRerouteId,
+      options
+    )
     return link ?? null
   }
 
-  /**
-   * Connect two slots between two nodes
-   * @param output The output slot to connect
-   * @param inputNode The node that the input slot is on
-   * @param input The input slot to connect
-   * @param afterRerouteId The reroute ID to use for the link
-   * @returns The link that was created, or null if the connection was blocked
-   */
   connectSlots(
     output: INodeOutputSlot,
     inputNode: LGraphNode,
     input: INodeInputSlot,
-    afterRerouteId: RerouteId | undefined
+    afterRerouteId: RerouteId | undefined,
+    options?: { requestedId: LinkId }
   ): LLink | null | undefined {
     const { graph } = this
     if (!graph) throw new NullGraphError()
@@ -3226,13 +3211,11 @@ export class LGraphNode
       return
     }
 
-    // check targetSlot and check connection types
     if (!LiteGraph.isValidConnection(output.type, input.type)) {
       this.setDirtyCanvas(false, true)
       return null
     }
 
-    // Allow nodes to block connection
     if (
       inputNode.onConnectInput?.(
         inputIndex,
@@ -3262,7 +3245,12 @@ export class LGraphNode
     const maybeCommonType =
       input.type && output.type && commonType(input.type, output.type)
 
-    const linkId = mintLinkId(graph.state, linkIdReservations(graph.rootGraph))
+    const reservedIds = linkIdReservations(graph.rootGraph)
+    const requestedId = options?.requestedId
+    const linkId =
+      requestedId !== undefined && !reservedIds.has(requestedId)
+        ? requestedId
+        : mintLinkId(graph.state, reservedIds)
 
     const link = new LLink(
       linkId,
@@ -3298,7 +3286,6 @@ export class LGraphNode
     anchorRerouteChain(graph, link)
     graph.incrementVersion()
 
-    // link has been created now, so its updated
     this.onConnectionsChange?.(
       NodeSlotType.OUTPUT,
       outputIndex,
