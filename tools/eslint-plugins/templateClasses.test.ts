@@ -42,13 +42,18 @@ ruleTester.run(
       vue('<div class="items-stretch" :class="{ \'items-center\': true }" />'),
       vue('<div class="grid justify-start items-stretch" />'),
       vue('<p class="m-0" />'),
+      vue('<div class="place-items-center items-stretch" />'),
+      vue('<div class="place-content-center justify-start" />'),
+      vue('<div class="space-y-2"><div class="m-0" /><div /></div>'),
+      vue('<ul class="divide-y"><li class="border-0 px-2" /></ul>'),
+      vue('<div class="border-0" />'),
       vue('<div class="border-none border-[3px]" />'),
       vue('<div class="border-0 border-dashed" />'),
       vue('<div class="border-none" style="border-width: 3px" />'),
       vue('<div class="border-none" :[attributeName]="\'border-solid\'" />'),
       {
         filename,
-        code: '<template><div class="m-0" /></template>\n<style>@layer components { div { margin: 1rem } }</style>\n'
+        code: '<template><div><div class="m-0" /></div></template>\n<style>@layer components { div { margin: 1rem } }</style>\n'
       }
     ],
     invalid: [
@@ -74,11 +79,11 @@ ruleTester.run(
         ]
       },
       {
-        ...redundant('<div class="border-0" />', '<div />'),
+        ...redundant('<p><span class="border-0" /></p>', '<p><span /></p>'),
         errors: [
           {
             messageId: 'redundant',
-            data: { token: 'border-0', element: 'div' }
+            data: { token: 'border-0', element: 'span' }
           }
         ]
       },

@@ -195,26 +195,66 @@ function usesGrid(tokens: readonly string[]) {
   return tokens.some((token) => /(^|:)(inline-)?grid$/.test(token))
 }
 
+function hasToken(tokens: readonly string[], pattern: RegExp) {
+  return tokens.some((token) => pattern.test(token))
+}
+
+const TRANSPARENT_COMPONENTS = new Set([
+  'template',
+  'Transition',
+  'TransitionGroup',
+  'transition',
+  'transition-group'
+])
+
+function domParent(node: VElement) {
+  let parent = node.parent
+  while (
+    parent.type === 'VElement' &&
+    TRANSPARENT_COMPONENTS.has(parent.rawName)
+  )
+    parent = parent.parent
+  return parent.type === 'VElement' && isNativeElement(parent) ? parent : null
+}
+
+const SPACING_PARENT = /(^|:)-?space-[xy]-/
+const DIVIDER_PARENT = /(^|:)divide-/
+
+function parentStylesChildren(node: VElement, pattern: RegExp) {
+  const parent = domParent(node)
+  if (!parent || hasBoundClass(parent)) return true
+  const attribute = staticClassAttribute(parent)
+  return attribute ? hasToken(classTokens(attribute), pattern) : false
+}
+
 const DEFAULT_UTILITIES: Record<
   string,
-  (element: string, tokens: readonly string[]) => boolean
+  (node: VElement, tokens: readonly string[]) => boolean
 > = {
-  'flex-row': (_, tokens) =>
-    !tokens.some((token) => /(^|:)flex-col(-reverse)?$/.test(token)),
-  'items-stretch': (_, tokens) => !usesGrid(tokens),
-  'justify-start': (_, tokens) => !usesGrid(tokens),
+  'flex-row': (_, tokens) => !hasToken(tokens, /(^|:)flex-col(-reverse)?$/),
+  'items-stretch': (_, tokens) =>
+    !usesGrid(tokens) && !hasToken(tokens, /(^|:)place-items-/),
+  'justify-start': (_, tokens) =>
+    !usesGrid(tokens) && !hasToken(tokens, /(^|:)place-content-/),
   shrink: () => true,
   'box-border': () => true,
-  'border-solid': (_, tokens) =>
-    tokens.some((token) => BORDER_WIDTH.test(token)),
-  'm-0': (element) => !MARGIN_ELEMENTS.has(element),
-  'p-0': (element) => !PADDED_ELEMENTS.has(element),
-  'bg-transparent': (element) => !BACKGROUND_ELEMENTS.has(element),
-  'border-none': (element, tokens) =>
-    !BORDERED_ELEMENTS.has(element) && !setsBorder('border-none', tokens),
-  'border-0': (element, tokens) =>
-    !BORDERED_ELEMENTS.has(element) && !setsBorder('border-0', tokens),
-  'w-auto': (element) => ['div', 'span', 'p', 'section'].includes(element)
+  'border-solid': (node, tokens) =>
+    hasToken(tokens, BORDER_WIDTH) &&
+    !parentStylesChildren(node, DIVIDER_PARENT),
+  'm-0': (node) =>
+    !MARGIN_ELEMENTS.has(node.rawName) &&
+    !parentStylesChildren(node, SPACING_PARENT),
+  'p-0': (node) => !PADDED_ELEMENTS.has(node.rawName),
+  'bg-transparent': (node) => !BACKGROUND_ELEMENTS.has(node.rawName),
+  'border-none': (node, tokens) =>
+    !BORDERED_ELEMENTS.has(node.rawName) &&
+    !setsBorder('border-none', tokens) &&
+    !parentStylesChildren(node, DIVIDER_PARENT),
+  'border-0': (node, tokens) =>
+    !BORDERED_ELEMENTS.has(node.rawName) &&
+    !setsBorder('border-0', tokens) &&
+    !parentStylesChildren(node, DIVIDER_PARENT),
+  'w-auto': (node) => ['div', 'span', 'p', 'section'].includes(node.rawName)
 }
 
 function conflictsWithAnother(token: string, tokens: readonly string[]) {
@@ -256,7 +296,7 @@ const noDefaultUtilities: Rule.RuleModule = {
       if (!hasOnlyUtilities(tokens)) return
       const redundant = tokens.filter(
         (token) =>
-          DEFAULT_UTILITIES[token]?.(node.rawName, tokens) &&
+          DEFAULT_UTILITIES[token]?.(node, tokens) &&
           !conflictsWithAnother(token, tokens)
       )
       for (const token of redundant) {
@@ -437,14 +477,6 @@ function hasOnlyUtilities(tokens: readonly string[]) {
     UTILITY_PREFIX.test(token.split(':').pop()!.replace(/^!|!$/g, ''))
   )
 }
-
-const TRANSPARENT_COMPONENTS = new Set([
-  'template',
-  'Transition',
-  'TransitionGroup',
-  'transition',
-  'transition-group'
-])
 
 function isUnconditional(token: string) {
   return !token.includes(':')

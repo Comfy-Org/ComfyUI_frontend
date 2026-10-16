@@ -108,7 +108,9 @@
                   class="icon-[lucide--circle-alert] size-4 shrink-0 text-warning-background"
                   aria-hidden="true"
                 />
-                <span class="flex-1 text-left text-sm text-muted-foreground">
+                <span
+                  class="m-0 flex-1 text-left text-sm text-muted-foreground"
+                >
                   {{ $t('openSharedWorkflow.nonPublicAssetsWarningLine1') }}
                 </span>
                 <i
