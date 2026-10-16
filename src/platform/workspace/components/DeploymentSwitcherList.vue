@@ -74,32 +74,17 @@
     :disabled="isSwitching"
     @set-default="emit('setDefault', $event)"
   />
-  <TextTooltip
-    :text="$t('deploymentSwitcher.createCustomDeploymentTooltip')"
-    side="right"
+  <MenuItem
+    :class="switcherItemClass"
+    data-testid="deployment-switcher-create"
+    @select="emit('createCustomDeployment')"
   >
-    <MenuItem as-child :class="switcherItemClass">
-      <a
-        :href="createDeploymentUrl"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="text-base-foreground no-underline"
-        data-testid="deployment-switcher-create"
-      >
-        <i
-          class="icon-[lucide--plus] size-3.5 shrink-0 text-muted-foreground"
-          aria-hidden="true"
-        />
-        {{ $t('deploymentSwitcher.createCustomDeployment') }}
-        <span :class="cn('ml-auto', switcherTrailingSlotClass)">
-          <i
-            class="icon-[lucide--arrow-up-right] size-3.5 text-muted-foreground"
-            aria-hidden="true"
-          />
-        </span>
-      </a>
-    </MenuItem>
-  </TextTooltip>
+    <i
+      class="icon-[lucide--plus] size-3.5 shrink-0 text-muted-foreground"
+      aria-hidden="true"
+    />
+    {{ $t('deploymentSwitcher.createCustomDeployment') }}
+  </MenuItem>
   <template v-if="deployments.length > 0">
     <MenuSeparator />
     <p
@@ -111,7 +96,6 @@
 </template>
 
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import { storeToRefs } from 'pinia'
 import { DropdownMenuLabel, DropdownMenuRadioGroup } from 'reka-ui'
 import { computed } from 'vue'
@@ -119,15 +103,10 @@ import { useI18n } from 'vue-i18n'
 
 import MenuItem from '@/components/ui/menu/MenuItem.vue'
 import MenuSeparator from '@/components/ui/menu/MenuSeparator.vue'
-import TextTooltip from '@/components/ui/tooltip/TextTooltip.vue'
-import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import DeploymentSwitcherDefaultMenu from '@/platform/workspace/components/DeploymentSwitcherDefaultMenu.vue'
 import DeploymentSwitcherRow from '@/platform/workspace/components/DeploymentSwitcherRow.vue'
-import {
-  switcherItemClass,
-  switcherTrailingSlotClass
-} from '@/platform/workspace/components/deploymentSwitcherStyles'
+import { switcherItemClass } from '@/platform/workspace/components/deploymentSwitcherStyles'
 import {
   COMFY_CLOUD_ROW,
   deploymentStatusTone,
@@ -145,6 +124,7 @@ const emit = defineEmits<{
   follow: [deploymentId: string]
   reload: []
   setDefault: [deploymentId: string | null]
+  createCustomDeployment: []
 }>()
 
 const { t } = useI18n()
@@ -162,8 +142,6 @@ const {
 } = storeToRefs(useDeploymentPickStore())
 const { deploymentTitle, deploymentRowSubtitle, deploymentMeta, currentLabel } =
   useDeploymentLabels()
-
-const createDeploymentUrl = `${getComfyPlatformBaseUrl()}/profile/deploy#builds`
 
 const pickedValue = computed(() => pickedDeploymentId.value ?? COMFY_CLOUD_ROW)
 const defaultGone = computed(() => goneDefaultDeploymentId.value !== null)
