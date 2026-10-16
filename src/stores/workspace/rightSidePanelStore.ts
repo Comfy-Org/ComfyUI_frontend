@@ -40,6 +40,7 @@ export const useRightSidePanelStore = defineStore('rightSidePanel', () => {
    */
   const focusedErrorNodeId = ref<string | null>(null)
   const errorDetailsRequest = ref(0)
+  const errorDetailsGroupKeys = ref<string[]>([])
 
   // Auto-close panel when switching to legacy menu mode
   watch(isLegacyMenu, (legacy) => {
@@ -56,8 +57,9 @@ export const useRightSidePanelStore = defineStore('rightSidePanel', () => {
     }
   }
 
-  function requestErrorDetails() {
+  function requestErrorDetails(groupKeys: readonly string[] = []) {
     if (isLegacyMenu.value) return
+    errorDetailsGroupKeys.value = [...groupKeys]
     errorDetailsRequest.value += 1
   }
 
@@ -93,6 +95,7 @@ export const useRightSidePanelStore = defineStore('rightSidePanel', () => {
     focusedSection,
     focusedErrorNodeId,
     errorDetailsRequest,
+    errorDetailsGroupKeys,
     openPanel,
     requestErrorDetails,
     closePanel,

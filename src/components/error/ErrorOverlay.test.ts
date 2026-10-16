@@ -1,3 +1,4 @@
+import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
@@ -14,6 +15,7 @@ import '@/scripts/changeTracker'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { NodeError } from '@/platform/remote/comfyui/types'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 
 import ErrorOverlay from './ErrorOverlay.vue'
 
@@ -361,5 +363,47 @@ describe('ErrorOverlay', () => {
     expect(screen.getByTestId('error-overlay-see-errors')).toHaveTextContent(
       'Show errors in graph'
     )
+  })
+
+  it('scopes view details to the toast groups', async () => {
+    mockAllErrorGroups.value = [
+      {
+        type: 'execution',
+        severity: 'error',
+        groupKey: 'execution:missing_connection',
+        displayTitle: 'Missing connection',
+        count: 1,
+        priority: 0,
+        blockedLastRun: false,
+        cards: [
+          {
+            id: '1',
+            title: 'KSampler',
+            errors: [{ message: 'Required input is missing' }]
+          }
+        ]
+      },
+      {
+        type: 'missing_node',
+        severity: 'missing',
+        groupKey: 'missing_node',
+        displayTitle: 'Missing nodes',
+        count: 1,
+        priority: 1,
+        blockedLastRun: false
+      }
+    ]
+    renderOverlay()
+    useExecutionErrorStore().showErrorOverlay()
+    await nextTick()
+
+    await userEvent
+      .setup()
+      .click(screen.getByTestId('error-overlay-see-errors'))
+
+    expect(useRightSidePanelStore().errorDetailsGroupKeys).toEqual([
+      'execution:missing_connection',
+      'missing_node'
+    ])
   })
 })

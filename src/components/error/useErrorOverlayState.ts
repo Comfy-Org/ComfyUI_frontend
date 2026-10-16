@@ -201,6 +201,10 @@ export function useErrorOverlayState() {
 
   const overlayTitle = computed(() => overlayCopy.value?.title ?? '')
 
+  const overlayGroupKeys = computed(() =>
+    allErrorGroups.value.map((group) => group.groupKey)
+  )
+
   const askAgentContext = computed(() => {
     const groups = allErrorGroups.value
     if (groups.length === 0) return undefined
@@ -232,6 +236,7 @@ export function useErrorOverlayState() {
     isVisible,
     overlayMessage,
     overlayTitle,
+    overlayGroupKeys,
     askAgentContext
   }
 }

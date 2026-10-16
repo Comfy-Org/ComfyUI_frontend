@@ -529,7 +529,15 @@ describe('TabErrors.vue', () => {
     await user.click(screen.getByRole('button', { name: 'Details' }))
     expect(screen.queryByText(/Line 1/)).not.toBeInTheDocument()
 
-    useRightSidePanelStore().errorDetailsRequest = 1
+    const groupKey = screen
+      .getByTestId('error-group-execution')
+      .getAttribute('data-group-key')
+    if (!groupKey) throw new Error('missing group key')
+    useRightSidePanelStore().requestErrorDetails(['execution:unrelated'])
+    await nextTick()
+    expect(screen.queryByText(/Line 1/)).not.toBeInTheDocument()
+
+    useRightSidePanelStore().requestErrorDetails([groupKey])
     await nextTick()
 
     expect(screen.getByText(/Line 1/)).toBeInTheDocument()
@@ -568,7 +576,11 @@ describe('TabErrors.vue', () => {
     await user.click(screen.getByRole('button', { name: 'Collapse' }))
     expect(screen.queryByText('KSampler - positive')).not.toBeInTheDocument()
 
-    useRightSidePanelStore().errorDetailsRequest = 1
+    const groupKey = screen
+      .getByTestId('error-group-execution')
+      .getAttribute('data-group-key')
+    if (!groupKey) throw new Error('missing group key')
+    useRightSidePanelStore().requestErrorDetails([groupKey])
     await nextTick()
 
     expect(screen.getByText('KSampler - positive')).toBeInTheDocument()

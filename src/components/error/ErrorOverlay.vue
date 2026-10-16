@@ -54,7 +54,7 @@
             variant="textonly"
             size="sm"
             data-testid="error-overlay-see-errors"
-            @click="viewErrorsInGraph"
+            @click="viewDetails"
           >
             {{
               appMode
@@ -105,11 +105,21 @@ const executionErrorStore = useExecutionErrorStore()
 const { viewErrorsInGraph } = useViewErrorsInGraph()
 const { canAskAgent, askAgentAboutIssues } = useAskAgentAboutIssues()
 
-const { hasError, isVisible, overlayMessage, overlayTitle, askAgentContext } =
-  useErrorOverlayState()
+const {
+  hasError,
+  isVisible,
+  overlayMessage,
+  overlayTitle,
+  overlayGroupKeys,
+  askAgentContext
+} = useErrorOverlayState()
 
 function dismiss() {
   executionErrorStore.dismissErrorOverlay()
+}
+
+function viewDetails() {
+  viewErrorsInGraph(overlayGroupKeys.value)
 }
 
 function askAgent() {

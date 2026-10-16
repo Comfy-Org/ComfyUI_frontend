@@ -146,6 +146,7 @@
             v-for="group in visibleGroups"
             :key="group.groupKey"
             :data-testid="'error-group-' + group.type.replaceAll('_', '-')"
+            :data-group-key="group.groupKey"
             :title="group.displayTitle"
             :count="group.count"
             :severity="group.severity"
@@ -361,7 +362,11 @@
                 v-for="card in group.cards"
                 :key="card.id"
                 :card="card"
-                :expand-details-token="expandDetailsToken"
+                :expand-details-token="
+                  detailGroupKeys.includes(group.groupKey)
+                    ? expandDetailsToken
+                    : 0
+                "
                 :aria-current="isCardInSelection(card.id) ? 'true' : undefined"
                 :class="
                   cn(
@@ -502,6 +507,7 @@ const emit = defineEmits<{
 
 const searchQuery = ref('')
 const expandDetailsToken = ref(0)
+const detailGroupKeys = ref<string[]>([])
 const expandedExecutionItemDetailKeys = ref(new Set<string>())
 const isSearching = computed(() => searchQuery.value.trim() !== '')
 
@@ -892,19 +898,20 @@ watch(
   { immediate: true }
 )
 
-function openClosedErrorDetails() {
+function openClosedErrorDetails(groupKeys: readonly string[]) {
+  const keys = new Set(groupKeys)
+  const nextKeys = new Set(expandedExecutionItemDetailKeys.value)
   for (const group of allErrorGroups.value) {
+    if (!keys.has(group.groupKey)) continue
     if (isSectionCollapsed(group.groupKey)) {
       setSectionCollapsed(group.groupKey, false)
     }
-  }
-  const nextKeys = new Set(expandedExecutionItemDetailKeys.value)
-  for (const group of allErrorGroups.value) {
     for (const item of getExecutionItemList(group)) {
       if (item.displayDetails) nextKeys.add(item.key)
     }
   }
   expandedExecutionItemDetailKeys.value = nextKeys
+  detailGroupKeys.value = [...keys]
   expandDetailsToken.value += 1
 }
 
@@ -912,8 +919,9 @@ watch(
   () => rightSidePanelStore.errorDetailsRequest,
   (request) => {
     if (request === 0) return
-    openClosedErrorDetails()
+    openClosedErrorDetails(rightSidePanelStore.errorDetailsGroupKeys)
     rightSidePanelStore.errorDetailsRequest = 0
+    rightSidePanelStore.errorDetailsGroupKeys = []
   },
   { immediate: true }
 )
