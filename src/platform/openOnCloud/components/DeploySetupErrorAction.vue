@@ -1,21 +1,23 @@
 <template>
-  <Tooltip v-if="isOffered">
-    <TooltipTrigger as-child>
-      <Button
-        variant="outline"
-        size="unset"
-        class="min-h-8 gap-1.5 rounded-lg px-3 py-2 text-xs font-normal"
-        data-testid="error-overlay-deploy-setup"
-        @click="deploySetup"
-      >
-        <i class="icon-[lucide--cloud] size-3.5" aria-hidden="true" />
-        {{ $t('openOnCloud.deploySetup') }}
-      </Button>
-    </TooltipTrigger>
-    <TooltipContent side="bottom" class="max-w-62.5">
-      {{ $t('openOnCloud.outOfMemoryTooltip') }}
-    </TooltipContent>
-  </Tooltip>
+  <div v-if="isOffered">
+    <Tooltip>
+      <TooltipTrigger as-child>
+        <Button
+          variant="outline"
+          size="unset"
+          class="min-h-8 max-w-full gap-1.5 rounded-lg px-3 py-1.75 text-left text-xs font-normal whitespace-normal"
+          data-testid="deploy-setup-error-action"
+          @click="deploySetup"
+        >
+          <i class="icon-[lucide--cloud] size-3.5" aria-hidden="true" />
+          {{ $t('openOnCloud.deploySetup') }}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent side="bottom" class="max-w-62.5">
+        {{ $t('openOnCloud.outOfMemoryTooltip') }}
+      </TooltipContent>
+    </Tooltip>
+  </div>
 </template>
 
 <script setup lang="ts">

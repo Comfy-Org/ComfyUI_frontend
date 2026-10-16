@@ -242,6 +242,11 @@
               </p>
             </div>
 
+            <DeploySetupErrorAction
+              v-if="isOutOfMemoryGroup(group)"
+              class="px-3 pt-1 pb-2"
+            />
+
             <!-- Missing Node Packs -->
             <MissingNodeCard
               v-if="group.type === 'missing_node'"
@@ -413,6 +418,7 @@ import SwapNodesCard from '@/platform/nodeReplacement/components/SwapNodesCard.v
 import MissingModelCard from '@/platform/missingModel/components/MissingModelCard.vue'
 import MissingMediaCard from '@/platform/missingMedia/components/MissingMediaCard.vue'
 import { isCloud } from '@/platform/distribution/types'
+import DeploySetupErrorAction from '@/platform/openOnCloud/components/DeploySetupErrorAction.vue'
 import Button from '@/components/ui/button/Button.vue'
 import DotSpinner from '@/components/common/DotSpinner.vue'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
@@ -422,6 +428,7 @@ import { useErrorGroups } from './useErrorGroups'
 import type { SwapNodeGroup } from './useErrorGroups'
 import type { ErrorGroup, ErrorGroupSeverity } from './types'
 import { isExecutionItemListGroup } from './executionItemList'
+import { isOutOfMemoryGroup } from './isOutOfMemoryGroup'
 import { selectionEmphasisClass } from './selectionEmphasis'
 import { useNodeReplacement } from '@/platform/nodeReplacement/useNodeReplacement'
 

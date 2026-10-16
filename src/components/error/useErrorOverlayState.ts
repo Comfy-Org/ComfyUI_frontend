@@ -2,9 +2,9 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
 
-import { OUT_OF_MEMORY_CATALOG_ID } from '@/platform/errorCatalog/catalogIds'
 import { isIssuesTabEnabled } from '@/platform/settings/missingWarningVisibility'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { isOutOfMemoryGroup } from '@/components/rightSidePanel/errors/isOutOfMemoryGroup'
 import { useErrorGroups } from '@/components/rightSidePanel/errors/useErrorGroups'
 import type {
   MissingPackGroup,
@@ -49,15 +49,6 @@ function resolveGroupOverlayCopy(group: ErrorGroup): OverlayCopy | undefined {
     title: group.displayTitle,
     message
   }
-}
-
-function hasOutOfMemoryError(group: ErrorGroup): boolean {
-  return (
-    group.type === 'execution' &&
-    group.cards.some((card) =>
-      card.errors.some((error) => error.catalogId === OUT_OF_MEMORY_CATALOG_ID)
-    )
-  )
 }
 
 function countMissingNodeReferences(groups: MissingPackGroup[]): number {
@@ -163,7 +154,7 @@ export function useErrorOverlayState() {
   )
 
   const isOutOfMemory = computed(() =>
-    allErrorGroups.value.some(hasOutOfMemoryError)
+    allErrorGroups.value.some(isOutOfMemoryGroup)
   )
 
   const totalErrorCount = computed(() =>
