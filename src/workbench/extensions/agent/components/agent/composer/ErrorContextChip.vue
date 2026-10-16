@@ -6,6 +6,12 @@ import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { AgentErrorContext } from '../../../types/agentErrorContext'
+import {
+  inlineReferenceChipClass,
+  inlineReferenceRemoveAnchorClass,
+  inlineReferenceRemoveBadgeClass,
+  inlineReferenceRemoveButtonClass
+} from './inlineReferenceChipStyles'
 
 const { context } = defineProps<{ context: AgentErrorContext | null }>()
 const emit = defineEmits<{ remove: [] }>()
@@ -23,16 +29,10 @@ const isError = computed(() => context?.severity === 'error')
     :aria-label="t('agent.errorContext.chipGroupLabel')"
     class="flex max-w-full min-w-0 shrink-0 px-3 pt-3"
   >
-    <div
+    <span
       data-testid="composer-error-context-chip"
-      :class="
-        cn(
-          'flex max-w-full min-w-0 items-center gap-1.5 rounded-md border py-1 pr-1 pl-2 text-xs',
-          isError
-            ? 'border-node-stroke-error/40 bg-destructive-background/10 text-base-foreground'
-            : 'border-warning-foreground/40 bg-warning-background/20 text-base-foreground'
-        )
-      "
+      tabindex="0"
+      :class="cn(inlineReferenceChipClass, 'pr-0 pl-1.5')"
     >
       <i
         aria-hidden="true"
@@ -45,7 +45,7 @@ const isError = computed(() => context?.severity === 'error')
           )
         "
       />
-      <span class="min-w-0 truncate">{{ context.label }}</span>
+      <span class="max-w-56 min-w-0 truncate">{{ context.label }}</span>
       <span
         v-if="context.count > 1"
         data-testid="composer-error-context-count"
@@ -56,21 +56,25 @@ const isError = computed(() => context?.severity === 'error')
             context.count
           )
         "
-        class="shrink-0 rounded-full bg-base-foreground/10 px-1.5 text-2xs/4 font-semibold tabular-nums"
+        class="shrink-0 text-muted-foreground tabular-nums"
       >
         {{ context.count }}
       </span>
-      <Button
-        variant="muted-textonly"
-        size="icon-sm"
-        type="button"
-        class="size-5 shrink-0 rounded-sm"
-        :aria-label="t('agent.errorContext.remove')"
-        data-testid="composer-error-context-remove"
-        @click="emit('remove')"
-      >
-        <i aria-hidden="true" class="icon-[lucide--x] size-3.5" />
-      </Button>
-    </div>
+      <span :class="inlineReferenceRemoveAnchorClass">
+        <Button
+          type="button"
+          variant="textonly"
+          size="icon-sm"
+          :aria-label="t('agent.errorContext.remove')"
+          data-testid="composer-error-context-remove"
+          :class="inlineReferenceRemoveButtonClass"
+          @click.stop="emit('remove')"
+        >
+          <span :class="inlineReferenceRemoveBadgeClass">
+            <span aria-hidden="true" class="icon-[lucide--x] size-2" />
+          </span>
+        </Button>
+      </span>
+    </span>
   </div>
 </template>
