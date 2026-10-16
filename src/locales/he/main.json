@@ -5866,6 +5866,40 @@
     "subscribe": "הרשמה",
     "switchWorkspace": "מעבר בין סביבות עבודה"
   },
+  "openOnCloud": {
+    "runThisWorkflowOn": "הרץ את תהליך העבודה הזה על",
+    "local": "מקומי",
+    "triggerLabel": "רץ על מקומי. בחר היכן הוא ירוץ",
+    "checking": "בודק…",
+    "open": "פתח",
+    "openLabel": "פתח את תהליך העבודה הזה ב-Comfy Cloud בכרטיסייה חדשה בדפדפן",
+    "openTooltip": "פותח את תהליך העבודה הזה ב-Comfy Cloud בכרטיסייה חדשה בדפדפן. הוא נשאר פתוח גם כאן.",
+    "nodesMissing": "חסר צומת {count} | חסרים {count} צמתים",
+    "modelsMissing": "חסר מודל {count} | חסרים {count} מודלים",
+    "missingTooltip": "ב-Comfy Cloud חסרים כמה צמתים או מודלים. פרוס אותם כדי להריץ את תהליך העבודה הזה בענן.",
+    "deploySetup": "פרוס את ההגדרה שלך ל-Comfy Cloud",
+    "deploySetupDialog": {
+      "body": "פעולה זו יוצרת פריסה של ההגדרה שלך ב-Comfy Cloud. את הפריסה מנהלים מ-Comfy Platform.",
+      "pointGpu": "עבוד ב-ComfyUI על ה-GPU שתבחר",
+      "pointApi": "קרא לו מהמוצר שלך כ-API עם שינוי קנה מידה אוטומטי",
+      "pointNodes": "הבא את הצמתים המותאמים אישית והמודלים שלך"
+    },
+    "outOfMemoryTooltip": "מריץ אותו על GPU עם יותר זיכרון. Comfy Cloud בונה ופורס בדיוק את ההגדרה המקומית שלך, תוך 20–30 דקות.",
+    "aboutDeploy": "אודות פריסה ל-Comfy API",
+    "openedFromLocal": "נפתח מ-ComfyUI במחשב שלך",
+    "openedFromLocalDetail": "ב-Comfy Cloud יש כל צומת ומודל שתהליך העבודה הזה משתמש בהם. לחץ על הרצה כשתהיה מוכן.",
+    "handoffFailed": "לא ניתן לפתוח את תהליך העבודה מ-ComfyUI במחשב שלך",
+    "popupBlocked": "הדפדפן שלך חסם את הכרטיסייה של Comfy Cloud. אפשר חלונות קופצים לדף זה ונסה שוב.",
+    "downloaded": "תהליך העבודה הורד",
+    "downloadedDetail": "גרור אותו אל Comfy Cloud בדפדפן כדי לפתוח אותו שם.",
+    "prototype": {
+      "label": "בדיקת Comfy Cloud (אב טיפוס)",
+      "checking": "בודק",
+      "canOpen": "ניתן לפתוח",
+      "missing": "לא ניתן לפתוח",
+      "simulateOutOfMemory": "הדמיית חוסר בזיכרון"
+    }
+  },
   "zoomControls": {
     "hideMinimap": "הסתרת מפת המיני",
     "label": "בקרות זום",

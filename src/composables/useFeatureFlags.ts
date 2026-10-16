@@ -208,6 +208,13 @@ export function useFeatureFlags() {
         isNightly || import.meta.env.DEV
       )
     },
+    get openOnCloudEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.OPEN_ON_CLOUD_ENABLED,
+        remoteConfig.value.open_on_cloud_enabled,
+        false
+      )
+    },
     get comfyHubUploadEnabled() {
       return resolveFlag(
         ServerFeatureFlag.COMFYHUB_UPLOAD_ENABLED,
@@ -247,8 +254,6 @@ export function useFeatureFlags() {
       if (!isCloud) return false
 
       const key = ServerFeatureFlag.UNIFIED_WEB_SESSION
-      // Overrides skip the server's web_session_enabled pairing; whoever overrides
-      // this key must also be in the web_session_enabled set.
       const value =
         getSessionOverride<unknown>(key) ??
         getDevOverride<unknown>(key) ??

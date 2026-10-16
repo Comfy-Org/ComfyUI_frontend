@@ -3930,6 +3930,40 @@
     "linkRefused": "Couldn't open this deployment",
     "linkWorkspaceRefused": "Couldn't switch to that workspace. You're still in {workspaceName}."
   },
+  "openOnCloud": {
+    "runThisWorkflowOn": "Run this workflow on",
+    "local": "Local",
+    "triggerLabel": "Runs on Local. Choose where it runs",
+    "checking": "Checking…",
+    "open": "Open",
+    "openLabel": "Open this workflow on Comfy Cloud in a new browser tab",
+    "openTooltip": "Opens this workflow in Comfy Cloud in a new browser tab. It stays open here too.",
+    "nodesMissing": "{count} node missing | {count} nodes missing",
+    "modelsMissing": "{count} model missing | {count} models missing",
+    "missingTooltip": "Comfy Cloud is missing some nodes or models, deploy these to run this workflow on the cloud.",
+    "deploySetup": "Deploy your setup to Comfy Cloud",
+    "deploySetupDialog": {
+      "body": "This creates a deployment of your setup on Comfy Cloud. You manage it from Comfy Platform.",
+      "pointGpu": "Work in ComfyUI on the GPU you choose",
+      "pointApi": "Call it from your product as an autoscaling API",
+      "pointNodes": "Bring your custom nodes and models"
+    },
+    "outOfMemoryTooltip": "Runs it on a GPU with more memory. Comfy Cloud builds and deploys your exact local setup, takes 20–30 min.",
+    "aboutDeploy": "About Deploy to Comfy API",
+    "openedFromLocal": "Opened from ComfyUI on your computer",
+    "openedFromLocalDetail": "Comfy Cloud has every node and model this workflow uses. Press Run when you're ready.",
+    "handoffFailed": "Couldn't open the workflow from ComfyUI on your computer",
+    "popupBlocked": "Your browser blocked the Comfy Cloud tab. Allow pop-ups for this page and try again.",
+    "downloaded": "Workflow downloaded",
+    "downloadedDetail": "Drop it onto Comfy Cloud in your browser to open it there.",
+    "prototype": {
+      "label": "Comfy Cloud check (prototype)",
+      "checking": "Checking",
+      "canOpen": "Can open",
+      "missing": "Can't open",
+      "simulateOutOfMemory": "Simulate out of memory"
+    }
+  },
   "selectionToolbox": {
     "executeButton": {
       "tooltip": "Execute to selected output nodes (Highlighted with orange border)",

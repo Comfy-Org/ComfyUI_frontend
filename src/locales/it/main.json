@@ -5866,6 +5866,40 @@
     "subscribe": "Abbonati",
     "switchWorkspace": "Cambia workspace"
   },
+  "openOnCloud": {
+    "runThisWorkflowOn": "Esegui questo workflow su",
+    "local": "Locale",
+    "triggerLabel": "In esecuzione in locale. Scegli dove eseguirlo",
+    "checking": "Verifica in corso…",
+    "open": "Apri",
+    "openLabel": "Apri questo workflow su Comfy Cloud in una nuova scheda del browser",
+    "openTooltip": "Apre questo workflow in Comfy Cloud in una nuova scheda del browser. Resta aperto anche qui.",
+    "nodesMissing": "{count} nodo mancante | {count} nodi mancanti",
+    "modelsMissing": "{count} modello mancante | {count} modelli mancanti",
+    "missingTooltip": "In Comfy Cloud mancano alcuni nodi o modelli. Distribuiscili per eseguire questo workflow nel cloud.",
+    "deploySetup": "Distribuisci la tua configurazione su Comfy Cloud",
+    "deploySetupDialog": {
+      "body": "In questo modo viene creato un deployment della tua configurazione su Comfy Cloud. Lo gestisci da Comfy Platform.",
+      "pointGpu": "Lavora in ComfyUI sulla GPU che scegli",
+      "pointApi": "Richiamalo dal tuo prodotto come API con scalabilità automatica",
+      "pointNodes": "Porta i tuoi nodi personalizzati e i tuoi modelli"
+    },
+    "outOfMemoryTooltip": "Lo esegue su una GPU con più memoria. Comfy Cloud compila e distribuisce esattamente la tua configurazione locale, in 20–30 min.",
+    "aboutDeploy": "Informazioni su Distribuisci su Comfy API",
+    "openedFromLocal": "Aperto da ComfyUI sul tuo computer",
+    "openedFromLocalDetail": "Comfy Cloud ha tutti i nodi e i modelli usati da questo workflow. Premi Esegui quando sei pronto.",
+    "handoffFailed": "Impossibile aprire il workflow da ComfyUI sul tuo computer",
+    "popupBlocked": "Il browser ha bloccato la scheda di Comfy Cloud. Consenti i popup per questa pagina e riprova.",
+    "downloaded": "Workflow scaricato",
+    "downloadedDetail": "Trascinalo su Comfy Cloud nel browser per aprirlo lì.",
+    "prototype": {
+      "label": "Verifica Comfy Cloud (prototipo)",
+      "checking": "Verifica",
+      "canOpen": "Può aprire",
+      "missing": "Non può aprire",
+      "simulateOutOfMemory": "Simula memoria esaurita"
+    }
+  },
   "zoomControls": {
     "hideMinimap": "Nascondi minimappa",
     "label": "Controlli zoom",

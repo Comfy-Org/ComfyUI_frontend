@@ -60,5 +60,9 @@ export const PRESERVED_QUERY_DEFINITIONS: PreservedQueryDefinition[] = [
     namespace: PRESERVED_QUERY_NAMESPACES.DEPLOYMENT,
     keys: ['deployment'],
     rejectRepeated: true
+  },
+  {
+    namespace: PRESERVED_QUERY_NAMESPACES.LOCAL_HANDOFF,
+    keys: ['from_local']
   }
 ]

@@ -5866,6 +5866,40 @@
     "subscribe": "サブスクライブ",
     "switchWorkspace": "ワークスペースを切り替え"
   },
+  "openOnCloud": {
+    "runThisWorkflowOn": "このワークフローの実行先",
+    "local": "ローカル",
+    "triggerLabel": "ローカルで実行中。実行先を選択",
+    "checking": "確認中…",
+    "open": "開く",
+    "openLabel": "このワークフローを新しいブラウザタブの Comfy Cloud で開く",
+    "openTooltip": "このワークフローを新しいブラウザタブの Comfy Cloud で開きます。ここでも開いたままです。",
+    "nodesMissing": "{count} 個のノードが不足 | {count} 個のノードが不足",
+    "modelsMissing": "{count} 個のモデルが不足 | {count} 個のモデルが不足",
+    "missingTooltip": "Comfy Cloud に一部のノードまたはモデルがありません。クラウドでこのワークフローを実行するには、それらをデプロイしてください。",
+    "deploySetup": "セットアップを Comfy Cloud にデプロイ",
+    "deploySetupDialog": {
+      "body": "Comfy Cloud 上にあなたのセットアップのデプロイメントが作成されます。管理は Comfy Platform から行います。",
+      "pointGpu": "選んだ GPU 上の ComfyUI で作業",
+      "pointApi": "自動スケーリングする API として自社製品から呼び出し",
+      "pointNodes": "カスタムノードとモデルをそのまま利用"
+    },
+    "outOfMemoryTooltip": "より多くのメモリを持つ GPU で実行します。Comfy Cloud がローカル環境をそのままビルドしてデプロイします（20〜30 分）。",
+    "aboutDeploy": "Comfy API へのデプロイについて",
+    "openedFromLocal": "お使いのコンピューターの ComfyUI から開きました",
+    "openedFromLocalDetail": "Comfy Cloud には、このワークフローが使うすべてのノードとモデルがあります。準備ができたら「実行する」を押してください。",
+    "handoffFailed": "お使いのコンピューターの ComfyUI からワークフローを開けませんでした",
+    "popupBlocked": "ブラウザが Comfy Cloud のタブをブロックしました。このページのポップアップを許可して、もう一度お試しください。",
+    "downloaded": "ワークフローをダウンロードしました",
+    "downloadedDetail": "ブラウザで Comfy Cloud にドロップすると、そこで開けます。",
+    "prototype": {
+      "label": "Comfy Cloud チェック（プロトタイプ）",
+      "checking": "確認中",
+      "canOpen": "開ける",
+      "missing": "開けない",
+      "simulateOutOfMemory": "メモリ不足をシミュレート"
+    }
+  },
   "zoomControls": {
     "hideMinimap": "ミニマップを非表示",
     "label": "ズームコントロール",
