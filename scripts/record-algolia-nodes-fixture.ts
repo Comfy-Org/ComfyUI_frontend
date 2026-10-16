@@ -5,15 +5,15 @@ import type { SearchResponse } from 'algoliasearch/lite'
 import { liteClient } from 'algoliasearch/lite'
 import { uniq, zip } from 'es-toolkit'
 
-import { DEFAULT_PAGE_SIZE } from '../src/constants/searchConstants'
+import {
+  DEFAULT_PAGE_SIZE,
+  PACK_SEARCHABLE_ATTRIBUTES
+} from '../src/constants/searchConstants'
 import type {
   NodesIndexFixture,
   RecordedResponse
 } from '../src/services/providers/__fixtures__/algoliaNodesIndexFixture'
-import {
-  PACK_SEARCHABLE_ATTRIBUTES,
-  buildPackSearchRequest
-} from '../src/services/providers/algoliaPackSearchRequest'
+import { buildPackSearchRequest } from '../src/services/providers/algoliaPackSearchRequest'
 import type {
   AlgoliaNodePack,
   SearchAttribute
@@ -133,7 +133,7 @@ export function toRecordingRequest(query: string) {
     ...buildPackSearchRequest(query, {
       pageSize: DEFAULT_PAGE_SIZE,
       pageNumber: 0,
-      restrictSearchableAttributes: PACK_SEARCHABLE_ATTRIBUTES
+      restrictSearchableAttributes: [...PACK_SEARCHABLE_ATTRIBUTES]
     }),
     attributesToRetrieve: RECORDED_ATTRIBUTES,
     analytics: false

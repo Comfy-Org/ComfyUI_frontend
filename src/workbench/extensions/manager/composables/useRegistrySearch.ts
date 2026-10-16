@@ -3,10 +3,10 @@ import type { MaybeRefOrGetter, Ref } from 'vue'
 
 import {
   DEFAULT_PAGE_SIZE,
+  PACK_SEARCHABLE_ATTRIBUTES,
   USER_SEARCH_ANALYTICS_TAG
 } from '@/constants/searchConstants'
 import { useRegistrySearchGateway } from '@/services/gateway/registrySearchGateway'
-import { PACK_SEARCHABLE_ATTRIBUTES } from '@/services/providers/algoliaPackSearchRequest'
 import type {
   SearchAttribute,
   SearchNodePacksParams
@@ -55,7 +55,7 @@ export function useRegistrySearch(inputs: {
   const searchableAttributes = (): SearchAttribute[] =>
     toValue(inputs.searchMode) === 'nodes'
       ? ['comfy_nodes']
-      : PACK_SEARCHABLE_ATTRIBUTES
+      : [...PACK_SEARCHABLE_ATTRIBUTES]
 
   function analyticsParams(
     query: string

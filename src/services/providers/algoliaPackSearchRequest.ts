@@ -5,11 +5,6 @@ import type {
   SearchNodePacksParams
 } from '@/types/algoliaTypes'
 
-export const PACK_SEARCHABLE_ATTRIBUTES: SearchAttribute[] = [
-  'name',
-  'description'
-]
-
 const RETRIEVE_ATTRIBUTES: SearchAttribute[] = [
   'comfy_nodes',
   'name',
@@ -34,10 +29,7 @@ const RETRIEVE_ATTRIBUTES: SearchAttribute[] = [
   'banner_url'
 ]
 
-/**
- * The nodes_index request for one pack search query. Kept free of runtime
- * imports so the fixture recorder script can send the same request.
- */
+/** The nodes_index request for one pack search query. */
 export function buildPackSearchRequest(
   query: string,
   params: SearchNodePacksParams
