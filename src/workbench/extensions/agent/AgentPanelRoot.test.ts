@@ -1,5 +1,6 @@
 import { fetchRequests, respondToFetch } from '@comfyorg/test-utils/fetch'
 import { fromPartial } from '@total-typescript/shoehorn'
+import { setImmediate } from 'node:timers/promises'
 
 import type {
   AgentThreadListResponse,
@@ -58,6 +59,7 @@ import { useAssetsStore } from '@/stores/assetsStore'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { startAssetDrag } from '@/platform/assets/utils/assetDragUtil'
 import { getFilenameDetails } from '@/utils/formatUtil'
+import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
@@ -261,7 +263,10 @@ vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'), {
 
 import type { AgentMessages, TurnId } from './schemas/agentApiSchema'
 import { toTurnId, zAgentWsEvent } from './schemas/agentApiSchema'
-import { MAX_ATTACHMENT_BYTES } from './composables/agent/useAttachment'
+import {
+  MAX_ATTACHMENT_BYTES,
+  MAX_TURN_ATTACHMENTS
+} from './composables/agent/useAttachment'
 import { useBillingIdentity } from './composables/useBillingIdentity'
 import type { AgentChatEvent } from './services/agent/agentEventTransport'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
@@ -2378,8 +2383,14 @@ function dispatchDrag(
   return event.defaultPrevented
 }
 
+const mp4Header = '\0\0\0\x18ftyp'
+
+function unsupportedTypeMessage(name: string): string {
+  return i18n.global.t('agent.attachmentUnsupportedType', { name })
+}
+
 function fileOfSize(name: string, size: number, type: string): File {
-  const file = new File(['x'], name, { type })
+  const file = new File([mp4Header], name, { type })
   Object.defineProperty(file, 'size', { value: size })
   return file
 }
@@ -2659,6 +2670,37 @@ describe('AgentPanelRoot attach flow', () => {
     const tab = addTab('workflows/current.json')
     workflowStore.activeWorkflow = tab
     useAgentWorkflowTabBindingStore().bind('wf-42', tab.path)
+  })
+
+  it('reads changed developer upload limits without remounting the panel', async () => {
+    getServerFeature.mockImplementation(
+      (name, defaultValue) => getDevOverride(name) ?? defaultValue
+    )
+    const uploaded = stubUploadFetch()
+    localStorage.setItem('ff:max_upload_size', '4')
+    renderWithSelectedTarget()
+    const input = screen.getByTestId<HTMLInputElement>('agent-file-input')
+
+    await userEvent.upload(
+      input,
+      new File(['1234'], 'first.png', { type: 'image/png' })
+    )
+    await waitFor(() => expect(uploaded).toEqual(['first.png']))
+
+    localStorage.setItem('ff:max_upload_size', '1')
+    await userEvent.upload(
+      input,
+      new File(['12'], 'second.png', { type: 'image/png' })
+    )
+    await waitFor(() =>
+      expect(useToast().toasts).toContainEqual(
+        expect.objectContaining({
+          kind: 'warning',
+          title: 'second.png is larger than 1 B'
+        })
+      )
+    )
+    expect(uploaded).toEqual(['first.png'])
   })
 
   it.for([
@@ -3168,7 +3210,7 @@ describe('AgentPanelRoot attach flow', () => {
 
     expect(
       dispatchDrag(screen.getByRole('textbox'), 'drop', {
-        files: [new File(['x'], name, { type })]
+        files: [new File([mp4Header], name, { type })]
       })
     ).toBe(true)
 
@@ -3284,6 +3326,102 @@ describe('AgentPanelRoot attach flow', () => {
     )
     await nextTick()
     expect(telemetry.trackAgentAttachButtonClicked).not.toHaveBeenCalled()
+  })
+
+  it.for(['picker', 'drop', 'paste'] as const)(
+    'stages a refused type from the %s as an invalid chip and blocks Send',
+    async (path) => {
+      const uploaded = stubUploadFetch()
+      renderWithSelectedTarget()
+      await nextTick()
+      const user = userEvent.setup({ applyAccept: false })
+      const doc = new File(['x'], 'doc.pdf', { type: 'application/pdf' })
+      const store = useAgentComposerStore()
+      store.setText('Keep this draft')
+      const target = screen.getByRole('textbox')
+
+      if (path === 'picker') {
+        await openAddMenu()
+        await user.click(
+          await screen.findByRole('menuitem', {
+            name: i18n.global.t('agent.attachFiles')
+          })
+        )
+        await user.upload(
+          screen.getByTestId<HTMLInputElement>('agent-file-input'),
+          doc
+        )
+      }
+      if (path === 'drop') dispatchDrag(target, 'drop', { files: [doc] })
+      if (path === 'paste') {
+        const clipboard = new DataTransfer()
+        clipboard.items.add(doc)
+        await user.click(target)
+        await user.paste(clipboard)
+      }
+
+      expect(
+        await screen.findByRole('status', {
+          name: unsupportedTypeMessage('doc.pdf')
+        })
+      ).toBeVisible()
+      expect(
+        screen.getByRole('button', { name: i18n.global.t('agent.send') })
+      ).toHaveAttribute('aria-disabled', 'true')
+      expect(store.draft).toBe('Keep this draft')
+      expect(uploaded).toEqual([])
+      expect(useToast().toasts).toEqual([])
+    }
+  )
+
+  it('refuses a text file renamed to mp4 from the picker', async () => {
+    const uploaded = stubUploadFetch()
+    renderWithSelectedTarget()
+
+    await openAddMenu()
+    await userEvent.click(
+      await screen.findByRole('menuitem', {
+        name: i18n.global.t('agent.attachFiles')
+      })
+    )
+    await userEvent.upload(
+      screen.getByTestId<HTMLInputElement>('agent-file-input'),
+      new File(['plain text'], 'renamed.mp4', { type: 'video/mp4' })
+    )
+
+    expect(
+      await screen.findByRole('status', {
+        name: i18n.global.t('agent.attachmentInvalidVideo', {
+          name: 'renamed.mp4'
+        })
+      })
+    ).toBeVisible()
+    expect(uploaded).toEqual([])
+    expect(screen.getByRole('group', { name: 'renamed.mp4' })).toBeVisible()
+    expect(useToast().toasts).toEqual([])
+  })
+
+  it('refuses a text file renamed to mp4 from drag and drop', async () => {
+    const uploaded = stubUploadFetch()
+    renderWithSelectedTarget()
+    const renamed = new File(['plain text'], 'renamed.mp4', {
+      type: 'video/mp4'
+    })
+
+    expect(
+      dispatchDrag(screen.getByRole('textbox'), 'drop', { files: [renamed] })
+    ).toBe(true)
+
+    expect(
+      await screen.findByRole('status', {
+        name: i18n.global.t('agent.attachmentInvalidVideo', {
+          name: 'renamed.mp4'
+        })
+      })
+    ).toBeVisible()
+    expect(uploaded).toEqual([])
+    expect(screen.getByRole('group', { name: 'renamed.mp4' })).toBeVisible()
+    expect(useToast().toasts).toEqual([])
   })
 
   it('names every approved format in the picker accept list', async () => {
@@ -3472,7 +3610,7 @@ describe('AgentPanelRoot attach flow', () => {
     }
   )
 
-  it('keeps a removed tray upload retired after completion and stale editor history', async () => {
+  it('cancels a removed tray upload and keeps it retired after stale editor history', async () => {
     const signals: AbortSignal[] = []
     let finishUpload: (response: Response) => void = () => {}
     const upload = new Promise<Response>((resolve) => {
@@ -3505,11 +3643,12 @@ describe('AgentPanelRoot attach flow', () => {
       })
     )
 
-    expect(signals[0].aborted).toBe(false)
+    expect(signals[0].aborted).toBe(true)
     finishUpload(
       json(200, { name: 'uploaded-cat.png', subfolder: '', type: 'input' })
     )
-    await vi.waitFor(() => expect(refresh).toHaveBeenCalledOnce())
+    await setImmediate()
+    expect(refresh).not.toHaveBeenCalled()
     expect(composer.attachments).toEqual([])
     composer.applyEditorPrompt(prompt)
     expect(composer.attachments).toEqual([])
@@ -3632,7 +3771,7 @@ describe('AgentPanelRoot attach flow', () => {
         async (input: RequestInfo | URL, init?: RequestInit) => {
           const url = String(input)
           if (url.includes('/api/view'))
-            return new Response(new Blob(['asset']), {
+            return new Response(new Blob([mp4Header]), {
               headers: { 'Content-Type': mime }
             })
           if (url.endsWith('/api/upload/image'))
@@ -3695,6 +3834,54 @@ describe('AgentPanelRoot attach flow', () => {
       })
     }
   )
+
+  it('keeps an invalid URI-only asset visible and blocks Send until removal', async () => {
+    respondToFetch({}, () => json(200, agentThreadList()))
+    respondToFetch(
+      /\/api\/view/,
+      () =>
+        new Response(new Blob(['plain text']), {
+          headers: { 'Content-Type': 'video/mp4' }
+        })
+    )
+    renderWithSelectedTarget()
+    await nextTick()
+
+    expect(
+      dispatchDrag(screen.getByRole('textbox'), 'drop', {
+        types: ['application/x-comfy-asset-info', 'text/uri-list'],
+        getData: (type: string) =>
+          type === 'application/x-comfy-asset-info'
+            ? JSON.stringify({ filename: 'renamed.mp4', type: 'input' })
+            : 'http://localhost/api/view?filename=renamed.mp4'
+      })
+    ).toBe(true)
+
+    expect(
+      await screen.findByRole('status', {
+        name: 'renamed.mp4 isn’t a valid video file. Remove it and try another file.'
+      })
+    ).toBeVisible()
+    expect(screen.getByRole('group', { name: 'renamed.mp4' })).toBeVisible()
+    await userEvent.type(screen.getByRole('textbox'), 'Describe these files')
+    expect(screen.getByRole('button', { name: 'Send' })).toHaveAttribute(
+      'aria-disabled',
+      'true'
+    )
+    await userEvent.keyboard('{Enter}')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    expect(fetchRequests(/\/messages$/)).toEqual([])
+    expect(useToast().toasts).toEqual([])
+    await userEvent.hover(screen.getByRole('group', { name: 'renamed.mp4' }))
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Remove renamed.mp4' })
+    )
+    expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Send' })).not.toHaveAttribute(
+      'aria-disabled'
+    )
+    expect(fetchRequests(/\/api\/upload\/image$/)).toEqual([])
+  })
 
   it.for([
     { mime: 'image/png', filename: 'gen.png' },
@@ -3820,6 +4007,39 @@ describe('AgentPanelRoot attach flow', () => {
     )
   })
 
+  it('uses the fetched asset filename when its display label has no type', async () => {
+    const uploads: File[] = []
+    vi.mocked(fetch).mockImplementation(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input)
+        if (url.includes('/api/view'))
+          return new Response(new Blob(['asset'], { type: 'image/png' }))
+        if (url.endsWith('/api/upload/image')) {
+          if (!(init?.body instanceof FormData))
+            throw new Error('Expected upload form data')
+          const image = init.body.get('image')
+          if (!(image instanceof File)) throw new Error('Expected upload file')
+          uploads.push(image)
+          return json(200, { name: 'uploaded_gen.png' })
+        }
+        return json(200, agentThreadList())
+      }
+    )
+    renderWithSelectedTarget()
+    await nextTick()
+
+    dispatchDrag(screen.getByRole('textbox'), 'drop', {
+      types: ['application/x-comfy-asset-info', 'text/uri-list'],
+      getData: (type: string) =>
+        type === 'application/x-comfy-asset-info'
+          ? JSON.stringify({ display_name: 'My renamed asset', type: 'input' })
+          : 'http://localhost/api/view?filename=gen.png'
+    })
+
+    await vi.waitFor(() => expect(uploads).toHaveLength(1))
+    expect(uploads[0].name).toBe('gen.png')
+  })
+
   it('does not warn after closing the panel during a deferred asset fetch', async () => {
     vi.mocked(fetch).mockImplementation((input) => {
       const url = String(input)
@@ -3860,9 +4080,271 @@ describe('AgentPanelRoot attach flow', () => {
     }
   })
 
-  it('attaches dropped assets and leaves other files to the graph loader', async () => {
-    // The graph loader only opens a dropped workflow while the drop is
-    // unclaimed, so the panel must not claim files it cannot attach.
+  it('aborts a timed-out asset fetch and reports the retrieval failure', async () => {
+    let assetSignal: AbortSignal | undefined
+    vi.mocked(fetch).mockImplementation((input, init) => {
+      const url = String(input)
+      if (url.includes('/api/view')) {
+        assetSignal = init?.signal ?? undefined
+        return new Promise(() => {})
+      }
+      if (url.includes('/assets'))
+        return Promise.resolve(
+          json(200, { assets: [], total: 0, has_more: false })
+        )
+      if (url.includes('/workflows'))
+        return Promise.resolve(
+          json(200, { data: [], total: 0, has_more: false })
+        )
+      return Promise.resolve(json(200, agentThreadList()))
+    })
+    renderWithSelectedTarget()
+    await nextTick()
+    vi.useFakeTimers()
+    try {
+      dispatchDrag(screen.getByRole('textbox'), 'drop', {
+        types: ['application/x-comfy-asset-info', 'text/uri-list'],
+        getData: (type: string) =>
+          type === 'application/x-comfy-asset-info'
+            ? JSON.stringify({ filename: 'gen.png', type: 'input' })
+            : 'http://localhost/api/view?filename=gen.png'
+      })
+      await nextTick()
+      await vi.advanceTimersByTimeAsync(60_000)
+
+      expect(assetSignal?.aborted).toBe(true)
+      expect(
+        useToast().toasts.some(({ title }) =>
+          title.includes('gen.png could not be retrieved')
+        )
+      ).toBe(true)
+      expect(
+        useToast().toasts.some(({ title }) =>
+          title.includes('could not be uploaded')
+        )
+      ).toBe(false)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('stages a rejected asset card as an invalid chip without fetching or uploading it', async () => {
+    const uploaded = stubUploadFetch()
+    renderWithSelectedTarget()
+    await nextTick()
+    const store = useAgentComposerStore()
+
+    dispatchDrag(screen.getByRole('textbox'), 'drop', {
+      types: ['application/x-comfy-asset-info', 'text/uri-list'],
+      getData: (type: string) =>
+        type === 'application/x-comfy-asset-info'
+          ? JSON.stringify({
+              filename: 'scene.usdz',
+              type: 'input',
+              attachment_ref: 'stored_scene.usdz',
+              media_kind: '3D'
+            })
+          : 'http://localhost/api/view?filename=stored_scene.usdz'
+    })
+
+    expect(
+      await screen.findByRole('status', {
+        name: unsupportedTypeMessage('scene.usdz')
+      })
+    ).toBeVisible()
+    expect(store.attachments).toEqual([
+      expect.objectContaining({
+        name: 'scene.usdz',
+        ref: '',
+        validationError: 'unsupported-type'
+      })
+    ])
+    expect(
+      vi
+        .mocked(fetch)
+        .mock.calls.some(([input]) => String(input).includes('/api/view'))
+    ).toBe(false)
+    expect(uploaded).toEqual([])
+    expect(useToast().toasts).toEqual([])
+  })
+
+  it('preserves an opaque asset ref instead of uploading it', async () => {
+    const uploads: File[] = []
+    vi.mocked(fetch).mockImplementation(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input)
+        if (url.includes('/api/view'))
+          return new Response(new Blob(['x'], { type: 'image/png' }))
+        if (url.endsWith('/api/upload/image')) {
+          if (init?.body instanceof FormData) {
+            const image = init.body.get('image')
+            if (image instanceof File) uploads.push(image)
+          }
+          return json(200, { name: 'uploaded.png' })
+        }
+        return json(200, agentThreadList())
+      }
+    )
+    renderWithSelectedTarget()
+    await nextTick()
+
+    dispatchDrag(screen.getByRole('textbox'), 'drop', {
+      types: ['application/x-comfy-asset-info', 'text/uri-list'],
+      getData: (type: string) =>
+        type === 'application/x-comfy-asset-info'
+          ? JSON.stringify({
+              filename: 'photo.png',
+              type: 'input',
+              attachment_ref: 'blake3:abcdef0123456789',
+              media_kind: 'image'
+            })
+          : 'http://localhost/api/view?filename=real.png'
+    })
+
+    await vi.waitFor(() =>
+      expect(useAgentComposerStore().attachments).toEqual([
+        expect.objectContaining({
+          name: 'photo.png',
+          ref: 'blake3:abcdef0123456789'
+        })
+      ])
+    )
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    expect(uploads).toHaveLength(0)
+    expect(useToast().toasts).toEqual([])
+  })
+
+  it('stages an opaque asset card with a rejected label as an invalid chip', async () => {
+    stubUploadFetch()
+    renderWithSelectedTarget()
+    await nextTick()
+
+    dispatchDrag(screen.getByRole('textbox'), 'drop', {
+      types: ['application/x-comfy-asset-info'],
+      getData: () =>
+        JSON.stringify({
+          filename: 'scene.usdz',
+          type: 'input',
+          attachment_ref: 'blake3:abcdef0123456789',
+          media_kind: '3D'
+        })
+    })
+
+    expect(
+      await screen.findByRole('status', {
+        name: unsupportedTypeMessage('scene.usdz')
+      })
+    ).toBeVisible()
+    expect(useToast().toasts).toEqual([])
+  })
+
+  it('keeps a fetched asset of an unaccepted type as an invalid chip under its stored name', async () => {
+    const uploads: File[] = []
+    vi.mocked(fetch).mockImplementation(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input)
+        if (url.includes('/api/view'))
+          return new Response(new Blob(['%PDF'], { type: 'application/pdf' }))
+        if (url.endsWith('/api/upload/image')) {
+          if (init?.body instanceof FormData) {
+            const image = init.body.get('image')
+            if (image instanceof File) uploads.push(image)
+          }
+          return json(200, { name: 'uploaded.pdf' })
+        }
+        return json(200, agentThreadList())
+      }
+    )
+    renderWithSelectedTarget()
+    await nextTick()
+
+    dispatchDrag(screen.getByRole('textbox'), 'drop', {
+      types: ['application/x-comfy-asset-info', 'text/uri-list'],
+      getData: (type: string) =>
+        type === 'application/x-comfy-asset-info'
+          ? JSON.stringify({
+              filename: 'My scan',
+              type: 'input'
+            })
+          : 'http://localhost/api/view?filename=scan.pdf'
+    })
+
+    expect(
+      await screen.findByRole('status', {
+        name: unsupportedTypeMessage('scan.pdf')
+      })
+    ).toBeVisible()
+    expect(uploads).toEqual([])
+    expect(useToast().toasts).toEqual([])
+  })
+
+  it('refuses an asset card once the turn is already full', async () => {
+    stubUploadFetch()
+    renderWithSelectedTarget()
+    await nextTick()
+
+    const card = (index: number) => ({
+      types: ['application/x-comfy-asset-info'],
+      getData: () =>
+        JSON.stringify({
+          filename: `photo${index}.png`,
+          type: 'input',
+          attachment_ref: `stored_photo${index}.png`,
+          media_kind: 'image'
+        })
+    })
+    const target = screen.getByRole('textbox')
+    for (let index = 0; index < MAX_TURN_ATTACHMENTS; index++) {
+      dispatchDrag(target, 'drop', card(index))
+    }
+    await vi.waitFor(() =>
+      expect(
+        within(screen.getByTestId('composer-asset-section')).getAllByTestId(
+          'agent-attachment-chip'
+        )
+      ).toHaveLength(MAX_TURN_ATTACHMENTS)
+    )
+
+    dispatchDrag(target, 'drop', card(MAX_TURN_ATTACHMENTS))
+
+    await vi.waitFor(() =>
+      expect(useToast().toasts.map(({ title }) => title)).toContain(
+        'Only 25 files can be attached to one message'
+      )
+    )
+    expect(
+      within(screen.getByTestId('composer-asset-section')).getAllByTestId(
+        'agent-attachment-chip'
+      )
+    ).toHaveLength(MAX_TURN_ATTACHMENTS)
+  })
+
+  it('judges an asset by its stored filename rather than its display label', async () => {
+    stubUploadFetch()
+    renderWithSelectedTarget()
+    await nextTick()
+
+    dispatchDrag(screen.getByRole('textbox'), 'drop', {
+      types: ['application/x-comfy-asset-info'],
+      getData: () =>
+        JSON.stringify({
+          filename: 'renamed.usdz',
+          type: 'input',
+          attachment_ref: 'stored.png',
+          media_kind: 'image'
+        })
+    })
+
+    expect(
+      within(await screen.findByTestId('composer-asset-section')).getByRole(
+        'group',
+        { name: 'renamed.usdz' }
+      )
+    ).toBeInTheDocument()
+    expect(useToast().toasts).toEqual([])
+  })
+
+  it('attaches a dropped workflow json to the chat instead of the graph loader', async () => {
     stubUploadFetch()
     renderWithSelectedTarget()
     await nextTick()
@@ -3873,17 +4355,11 @@ describe('AgentPanelRoot attach flow', () => {
     const workflow = new File(['{}'], 'flow.json', {
       type: 'application/json'
     })
-    expect(dispatchDrag(target, 'drop', { files: [workflow] })).toBe(false)
-    expect(
-      screen.queryByRole('group', { name: 'flow.json' })
-    ).not.toBeInTheDocument()
-
-    const asset = new File(['x'], 'cat.png', { type: 'image/png' })
-    expect(dispatchDrag(target, 'drop', { files: [asset] })).toBe(true)
+    expect(dispatchDrag(target, 'drop', { files: [workflow] })).toBe(true)
     expect(
       within(await screen.findByTestId('composer-asset-section')).getByRole(
         'group',
-        { name: 'cat.png' }
+        { name: 'flow.json' }
       )
     ).toBeInTheDocument()
   })
@@ -3937,17 +4413,13 @@ describe('AgentPanelRoot attach flow', () => {
     expect(store.prompt).toEqual({ text: 'Keep this draft', references: [] })
   })
 
-  it('attaches only the assets out of a mixed drop', async () => {
+  it('attaches the accepted files out of a mixed drop and keeps the rest as invalid chips', async () => {
     const uploaded = stubUploadFetch()
     renderWithSelectedTarget()
     await nextTick()
 
-    // The non-attachable file comes first: addFiles uploads sequentially, so a
-    // regression that forwards the whole drop would upload flow.json before
-    // cat.png and the settled assertion below could never latch a lucky
-    // intermediate state.
     const files = [
-      new File(['{}'], 'flow.json', { type: 'application/json' }),
+      new File(['x'], 'doc.pdf', { type: 'application/pdf' }),
       new File(['x'], 'cat.png', { type: 'image/png' })
     ]
     dispatchDrag(screen.getByRole('textbox'), 'drop', { files })
@@ -3959,11 +4431,12 @@ describe('AgentPanelRoot attach flow', () => {
       )
     ).toBeInTheDocument()
     await vi.waitFor(() => expect(uploaded).toEqual(['cat.png']))
+    expect(
+      screen.getByRole('status', { name: unsupportedTypeMessage('doc.pdf') })
+    ).toBeVisible()
+    expect(useToast().toasts).toEqual([])
   })
 
-  // Falsifiers for the committed-drop gates: an implementation that emits
-  // before the deferred fetch or upload settles, or ignores their results,
-  // fails these.
   it.for(['failed', 'cancelled'] as const)(
     'emits no drop telemetry for a %s deferred asset',
     async (outcome) => {
@@ -4082,6 +4555,56 @@ describe('AgentPanelRoot attach flow', () => {
           ).toHaveBeenCalledExactlyOnceWith({ method: 'drag_drop' })
         )
       }
+    }
+  )
+
+  it.for(['valid', 'invalid'] as const)(
+    'removing a video during %s validation cancels it and allows a fresh retry',
+    async (outcome) => {
+      const uploaded = stubUploadFetch()
+      renderWithSelectedTarget()
+      const file = new File(
+        [outcome === 'valid' ? mp4Header : 'plain text'],
+        'clip.mp4',
+        { type: 'video/mp4' }
+      )
+      const header = file.slice(0, 12)
+      const bytes = await header.arrayBuffer()
+      let finishValidation: (bytes: ArrayBuffer) => void = () => {}
+      const validation = new Promise<ArrayBuffer>((resolve) => {
+        finishValidation = resolve
+      })
+      vi.spyOn(file, 'slice').mockReturnValue(header)
+      vi.spyOn(header, 'arrayBuffer').mockReturnValue(validation)
+      const input = screen.getByTestId<HTMLInputElement>('agent-file-input')
+      await userEvent.upload(input, file)
+      await userEvent.click(screen.getByRole('textbox'))
+      await userEvent.paste('Describe the clip')
+      expect(
+        screen.getByRole('group', { name: 'clip.mp4' })
+      ).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled()
+      await userEvent.keyboard('{Enter}')
+      expect(fetchRequests(/\/messages$/)).toHaveLength(0)
+
+      await clearTrayAsset('clip.mp4')
+      expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled()
+      await userEvent.upload(
+        input,
+        new File([mp4Header], 'clip.mp4', { type: 'video/mp4' })
+      )
+      await vi.waitFor(() => expect(uploaded).toEqual(['clip.mp4']))
+      finishValidation(bytes)
+      await setImmediate()
+
+      expect(uploaded).toEqual(['clip.mp4'])
+      expect(
+        useToast().toasts.filter(({ kind }) => kind === 'warning')
+      ).toEqual([])
+      expect(
+        screen.getByRole('group', { name: 'clip.mp4' })
+      ).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled()
     }
   )
 
@@ -5192,6 +5715,59 @@ describe('AgentPanelRoot run approval telemetry', () => {
     )
     expect(fetchRequests({ method: 'POST', url: /\/asks\// })).toHaveLength(1)
     now.mockRestore()
+  })
+})
+
+describe('AgentPanelRoot ask_user answer telemetry', () => {
+  it('never reports an ask_user answer as a run approval, even one named run', async () => {
+    respondToFetch({}, () => json(200, {}))
+    respondToFetch(/\/agent\/threads/, () => json(200, agentThreadList()))
+    respondToFetch({ method: 'POST', url: /\/asks\// }, () =>
+      json(200, { status: 'answered' })
+    )
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const store = useAgentConversationStore()
+    store.setThreadId('th-1')
+    const turnId = toTurnId('turn-question')
+    store.recordUser(turnId, 'go on')
+    store.startTurn(turnId)
+    store.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_ask',
+        data: {
+          thread_id: 'th-1',
+          message_id: turnId,
+          ask_id: 'turn-question:call-1',
+          kind: 'ask_user',
+          prompt: 'Should I run it now?',
+          options: [
+            { id: 'run', label: 'Run now' },
+            { id: 'cancel', label: 'Not yet' }
+          ],
+          min_selections: 1,
+          max_selections: 1,
+          allow_other: false
+        }
+      })
+    )
+
+    await userEvent.click(await screen.findByRole('radio', { name: 'Run now' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Submit' }))
+    await vi.waitFor(() =>
+      expect(fetchRequests({ method: 'POST', url: /\/asks\// })).toHaveLength(1)
+    )
+    ws.emit('agent_ask_resolved', {
+      thread_id: 'th-1',
+      message_id: turnId,
+      ask_id: 'turn-question:call-1',
+      status: 'answered',
+      selected: ['run']
+    })
+    expect(await screen.findByText('Answered')).toBeVisible()
+
+    expect(telemetry.trackAgentRunApprovalShown).not.toHaveBeenCalled()
+    expect(telemetry.trackAgentRunApprovalResolved).not.toHaveBeenCalled()
   })
 })
 

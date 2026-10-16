@@ -16,7 +16,7 @@ const images: ComposerAttachment[] = [
 function renderTray(attachments = images) {
   const view = render(AssetTray, {
     props: { attachments },
-    global: { plugins: [i18n], directives: { tooltip: () => {} } }
+    global: { plugins: [i18n] }
   })
   onTestFinished(async () => {
     view.unmount()

@@ -1,0 +1,33 @@
+{
+  "id": "prompt-authoring",
+  "capability": "Prompt authoring",
+  "description": "Dynamic prompt expansion at serialization and keyboard editing of prompt attention weights. The shared formatUtil module remains outside this capability because it also implements unrelated formatting.",
+  "modules": [
+    { "path": "src/extensions/core/dynamicPrompts.ts", "role": "integration" },
+    { "path": "src/extensions/core/dynamicPrompts.test.ts", "role": "domain" },
+    { "path": "src/extensions/core/editAttention.ts", "role": "integration" },
+    {
+      "path": "src/extensions/core/editAttention.test.ts",
+      "role": "integration"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Dynamic prompt parsing expands alternatives and strips comments",
+      "checks": ["src/extensions/core/dynamicPrompts.test.ts"]
+    },
+    {
+      "name": "Attention editing finds enclosures and adjusts numeric weights",
+      "checks": ["src/extensions/core/editAttention.test.ts"]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Extension names, prompt serialization, and keyboard behavior remain unchanged.",
+    "Inventory adds no dependency permissions or supported public entry points."
+  ],
+  "deepImports": "inventory"
+}

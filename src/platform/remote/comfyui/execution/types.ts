@@ -1,7 +1,7 @@
 import type { PromptInfo } from '@comfyorg/ingest-types'
 import { z } from 'zod'
 import { zNodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { TaskStatus } from '@/platform/tasks/services/taskService'
+import type { TaskStatus } from '@/platform/tasks/services/taskSchema'
 import { resultItemType } from '@/schemas/resultItemTypeSchema'
 
 export type JobId = string
@@ -141,6 +141,14 @@ export interface AssetExportWsMessage {
   progress: number
   status: TaskStatus
   error?: string
+}
+export interface AssetSeedCompletedWsMessage {
+  created: number
+  elapsed: number
+  enriched: number
+  phase: 'fast' | 'enrich' | 'full'
+  skipped: number
+  total: number
 }
 
 export const zTaskOutput = z.record(zNodeId, zOutputs)

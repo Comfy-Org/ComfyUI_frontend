@@ -1,0 +1,29 @@
+{
+  "id": "runtime-guards",
+  "capability": "Runtime type guards",
+  "description": "Shared technical module for runtime narrowing of abort errors, nullable values, graph entities, slots, and result-item variants. The combined file imports types from multiple modules and remains an extraction candidate.",
+  "modules": [
+    {
+      "path": "src/utils/typeGuardUtil.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/typeGuardUtil.test.ts",
+      "role": "domain"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Runtime type guards preserves its existing behavior",
+      "checks": ["src/utils/typeGuardUtil.test.ts"]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Inventory preserves existing exports and behavior without granting cross-module permissions. This record describes current responsibilities, not a proposed extraction interface."
+  ],
+  "deepImports": "inventory"
+}

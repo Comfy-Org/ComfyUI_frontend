@@ -17,7 +17,7 @@
           <template #mode>
             <PopoverTrigger as-child>
               <Button
-                class="-ml-0.5 h-6 gap-1 rounded-md border-none bg-transparent px-1.5 text-sm text-interface-builder-mode-button-foreground hover:bg-interface-builder-mode-button-background/70"
+                class="-ml-0.5 h-6 gap-1 rounded-md bg-transparent px-1.5 text-sm text-interface-builder-mode-button-foreground hover:bg-interface-builder-mode-button-background/70"
               >
                 {{
                   isAppMode

@@ -1,5 +1,5 @@
 <template>
-  <div class="relative size-full bg-transparent">
+  <div class="relative size-full">
     <p
       v-if="errorMessage"
       data-testid="terminal-error-message"
@@ -44,13 +44,3 @@ const terminalCreated = (
   terminal.value = instance
 }
 </script>
-
-<style scoped>
-:deep(.p-terminal) .xterm {
-  overflow-x: auto;
-}
-
-:deep(.p-terminal) .xterm-screen {
-  overflow-y: hidden;
-}
-</style>

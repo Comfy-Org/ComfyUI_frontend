@@ -73,6 +73,7 @@
   <!-- TransformPane for Vue node rendering -->
   <TransformPane
     v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
+    ref="transformPaneRef"
     :canvas="comfyApp.canvas"
     :inert="canvasStore.isPickingNodes"
     @wheel.capture="canvasInteractions.forwardEventToCanvas"
@@ -118,6 +119,10 @@
     <DomWidgets v-if="!shouldRenderVueNodes" />
   </template>
 </template>
+
+<script lang="ts">
+let activeStartup: symbol | undefined
+</script>
 
 <script setup lang="ts">
 import { until, useEventListener } from '@vueuse/core'
@@ -175,6 +180,8 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLitegraphSettings } from '@/platform/settings/composables/useLitegraphSettings'
 import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { isCloud } from '@/platform/distribution/types'
+import { waitForDeploymentPick } from '@/platform/workspace/composables/waitForDeploymentPick'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -225,6 +232,12 @@ const emit = defineEmits<{
   ready: []
 }>()
 const canvasRef = ref<HTMLCanvasElement | null>(null)
+const transformPaneRef =
+  useTemplateRef<InstanceType<typeof TransformPane>>('transformPaneRef')
+const vueNodeDropTarget = computed(() => {
+  const element: unknown = transformPaneRef.value?.$el
+  return element instanceof HTMLElement ? element : null
+})
 const canvasPanelBoundsRef = useTemplateRef('canvasPanelBoundsRef')
 const nodeSearchboxPopoverRef = shallowRef<InstanceType<
   typeof NodeSearchboxPopover
@@ -491,6 +504,7 @@ const comfyAppReady = ref(false)
 const workflowPersistence = useWorkflowPersistence()
 const { runUrlActionLoaders } = useUrlActionLoaders()
 useCanvasDrop(canvasRef)
+useCanvasDrop(vueNodeDropTarget)
 useLitegraphSettings()
 useNodeBadge()
 
@@ -527,7 +541,19 @@ useEventListener(
   }
 )
 
+let disposed = false
+const startupOwner = Symbol()
+
+function finishStartup(outcome: 'completed' | 'failed') {
+  if (activeStartup !== startupOwner) return
+  activeStartup = undefined
+  workspaceStore.spinner = false
+  bootstrapTracer.complete(outcome)
+}
+
 onMounted(async () => {
+  activeStartup = startupOwner
+  bootstrapTracer.resumeWatchdog()
   comfyApp.vueAppReady = true
   workspaceStore.spinner = true
   let startupOutcome: StartupOutcome | undefined
@@ -568,6 +594,24 @@ onMounted(async () => {
 
     const canvas = canvasRef.value
     if (!canvas) throw new TypeError('GraphCanvas mounted without a canvas')
+    const deploymentConfirmed = !isCloud || (await waitForDeploymentPick())
+    if (disposed) return
+    if (!deploymentConfirmed) {
+      // The pick is an HttpOnly cookie the editor cannot read, so with no
+      // listing it cannot tell a browser on a deployment from one on Comfy
+      // Cloud. It boots on Comfy Cloud's models, as it did before
+      // deployments, so a failed lookup never blocks the editor. A browser
+      // that is on a deployment then offers models its Release may not have
+      // (its nodes and jobs are still the deployment's), so the toast says
+      // so and stays until closed, with a reload to try again.
+      toast.error(t('deploymentSwitcher.lookupUnavailable'), {
+        description: t('deploymentSwitcher.lookupUnavailableDetail'),
+        action: {
+          label: t('deploymentSwitcher.reload'),
+          onClick: () => window.location.reload()
+        }
+      })
+    }
     await comfyApp.setup(canvas)
     canvasStore.canvas = comfyApp.canvas
     canvasStore.canvas.render_canvas_border = false
@@ -595,8 +639,9 @@ onMounted(async () => {
     await useFirstRunEntry().handleStartupOutcome(startupOutcome)
     bootstrapOutcome = 'completed'
   } finally {
-    workspaceStore.spinner = false
-    bootstrapTracer.complete(bootstrapOutcome)
+    if (!disposed) {
+      finishStartup(bootstrapOutcome)
+    }
   }
   const sharedStatus =
     await workflowPersistence.loadSharedWorkflowFromUrlIfPresent()
@@ -626,6 +671,13 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  disposed = true
+  void nextTick(() => {
+    if (activeStartup !== startupOwner) return
+    activeStartup = undefined
+    workspaceStore.spinner = false
+    bootstrapTracer.suspendWatchdog()
+  })
   cleanupErrorHooks?.()
   cleanupErrorHooks = null
 })
