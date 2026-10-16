@@ -18,7 +18,11 @@ import {
   loadedEvent,
   reduceDeploymentPick
 } from '@/platform/workspace/deploymentPickState'
-import { reloadForDeploymentSwitch } from '@/platform/workspace/deploymentSwitchReload'
+import type { DiscardedWork } from '@/platform/workspace/deploymentSwitchReload'
+import {
+  NOTHING_DISCARDED,
+  reloadForDeploymentSwitch
+} from '@/platform/workspace/deploymentSwitchReload'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 /**
@@ -241,13 +245,17 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
    * Choosing what this browser already runs on does nothing, so a browser
    * that follows the workspace default keeps following it. Picking Comfy
    * Cloud while following a default is this browser's own choice: it wins
-   * over the default, until `followWorkspace` drops it.
+   * over the default, until `followWorkspace` drops it. `discarded` is the
+   * unsaved work the user chose to drop, so the reload need not ask about it.
    */
-  async function pick(deploymentId: string | null): Promise<string | null> {
+  async function pick(
+    deploymentId: string | null,
+    discarded: DiscardedWork = NOTHING_DISCARDED
+  ): Promise<string | null> {
     const id = workspaceStore.workspaceId
     if (!id || state.value.phase !== 'ready') return null
     if (deploymentId === pickedDeploymentId.value) return null
-    return pickAndReload(id, deploymentId)
+    return pickAndReload(id, deploymentId, discarded)
   }
 
   /**
@@ -305,13 +313,13 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
       })
     ]).finally(() => clearTimeout(timeout))
     if (workspaceStore.workspaceId !== workspaceId) return { kind: 'unchanged' }
-    if (outcome.kind === 'picked') reloadAfterSwitch()
+    if (outcome.kind === 'picked') reloadAfterSwitch(NOTHING_DISCARDED)
     else dispatch({ type: 'switchFailed' })
     return outcome
   }
 
-  function reloadAfterSwitch() {
-    reloadForDeploymentSwitch(() => {
+  function reloadAfterSwitch(discarded: DiscardedWork) {
+    reloadForDeploymentSwitch(discarded, () => {
       dispatch({ type: 'switchFailed' })
       void load()
     })
@@ -319,7 +327,8 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
 
   async function pickAndReload(
     workspaceId: string,
-    deploymentId: string | null
+    deploymentId: string | null,
+    discarded: DiscardedWork
   ): Promise<string | null> {
     dispatch({ type: 'switchStarted', target: deploymentId })
     try {
@@ -334,7 +343,7 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
       dispatch({ type: 'switchFailed' })
       return errorMessage(err)
     }
-    reloadAfterSwitch()
+    reloadAfterSwitch(discarded)
     return null
   }
 
@@ -353,7 +362,9 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
    * (its default deployment, or Comfy Cloud), then reload. Resolves like `pick`.
    * An own pick of the default itself is dropped without a reload.
    */
-  async function followWorkspace(): Promise<string | null> {
+  async function followWorkspace(
+    discarded: DiscardedWork = NOTHING_DISCARDED
+  ): Promise<string | null> {
     const id = workspaceStore.workspaceId
     if (!id || state.value.phase !== 'ready') return null
     if (followsWorkspace.value) return null
@@ -367,10 +378,11 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
       dispatch({ type: 'switchFailed' })
       return errorMessage(err)
     }
-    reloadAfterSwitch()
+    reloadAfterSwitch(discarded)
     return null
   }
 
+  /** True when making this the workspace default changes what this browser runs on. */
   function defaultMovesThisBrowser(deploymentId: string | null): boolean {
     return followsWorkspace.value && deploymentId !== pickedDeploymentId.value
   }
@@ -386,7 +398,8 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
    * Resolves to the server's refusal, or null when the default took.
    */
   async function setDefault(
-    deploymentId: string | null
+    deploymentId: string | null,
+    discarded: DiscardedWork = NOTHING_DISCARDED
   ): Promise<string | null> {
     const id = workspaceStore.workspaceId
     if (!id || state.value.phase !== 'ready') return null
@@ -407,7 +420,7 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
       return errorMessage(err)
     }
     if (defaultMovesThisBrowser(deploymentId)) {
-      reloadAfterSwitch()
+      reloadAfterSwitch(discarded)
       return null
     }
     lastApplied = latestRequest
@@ -438,7 +451,8 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     pick,
     pickFromLink,
     followWorkspace,
-    setDefault
+    setDefault,
+    defaultMovesThisBrowser
   }
 })
 

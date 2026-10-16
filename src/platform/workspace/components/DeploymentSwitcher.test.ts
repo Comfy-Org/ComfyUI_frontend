@@ -1,17 +1,22 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import type { WorkspaceDeploymentList } from '@/platform/workspace/api/workspaceApi'
 
 import enMessages from '@/locales/en/main.json'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useToast } from '@/components/ui/toast/toastStore'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useDialogService } from '@/services/dialogService'
 
 import DeploymentSwitcher from './DeploymentSwitcher.vue'
 
@@ -38,6 +43,8 @@ vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), async () => {
 })
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
+vi.mock(import('@/services/dialogService'))
+vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
 const distribution = vi.hoisted(() => ({ isCloud: true }))
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -774,71 +781,257 @@ describe('DeploymentSwitcher', () => {
     expect(reload).not.toHaveBeenCalled()
   })
 
-  it('changes nothing when an owner re-picks the current default', async () => {
-    asOwner()
-    mockWorkspaceApi.listDeployments.mockResolvedValue({
-      ...listing,
-      picked_deployment_id: D2,
-      pick_source: 'workspace_default',
-      default_deployment_id: D2
-    })
-    const user = renderSwitcher()
-    await openList(user)
-    await openDefaultMenu(user)
-
-    await user.click(screen.getByTestId(`default-row-${D2}`))
-
-    expect(mockWorkspaceApi.setDefaultDeployment).not.toHaveBeenCalled()
-  })
-
-  it('does not reload when an owner clears a deleted default this browser follows', async () => {
-    asOwner()
-    mockWorkspaceApi.listDeployments.mockResolvedValue({
-      ...listing,
-      gone_default_deployment_id: GONE
-    })
-    mockWorkspaceApi.clearDefaultDeployment.mockResolvedValue(undefined)
-    const user = renderSwitcher()
-    await openList(user)
-    await openDefaultMenu(user)
-
-    await user.click(screen.getByTestId('default-row-cloud'))
-
-    await waitFor(() =>
-      expect(mockWorkspaceApi.clearDefaultDeployment).toHaveBeenCalledWith(
-        'ws-1'
-      )
-    )
-    expect(reload).not.toHaveBeenCalled()
-  })
-
-  it('drops an own pick of the default itself without reloading', async () => {
-    const ownPickOfDefault = {
-      ...listing,
-      picked_deployment_id: D2,
-      pick_source: 'browser',
-      default_deployment_id: D2
-    } satisfies WorkspaceDeploymentList
-    mockWorkspaceApi.listDeployments
-      .mockResolvedValueOnce(ownPickOfDefault)
-      .mockResolvedValueOnce(ownPickOfDefault)
-      .mockResolvedValue({
-        ...ownPickOfDefault,
-        pick_source: 'workspace_default'
+  describe('with unsaved workflows', () => {
+    beforeEach(() => {
+      Object.assign(useWorkflowStore(), {
+        modifiedWorkflows: [
+          fromPartial<ComfyWorkflow>({
+            path: 'workflows/portrait.json',
+            key: 'portrait.json',
+            filename: 'portrait',
+            isLoaded: true,
+            isModified: true
+          })
+        ]
       })
-    mockWorkspaceApi.clearDeployment.mockResolvedValue(undefined)
-    const user = renderSwitcher()
-    await openList(user)
-
-    await user.click(screen.getByTestId(`deployment-row-${D2}`))
-
-    await waitFor(() =>
-      expect(useDeploymentPickStore().followsWorkspace).toBe(true)
-    )
-    expect(mockWorkspaceApi.clearDeployment).toHaveBeenCalledWith('ws-1', {
-      follow: 'workspace'
     })
-    expect(reload).not.toHaveBeenCalled()
+
+    it.for([
+      {
+        path: 'picking a deployment',
+        owner: false,
+        boot: listing,
+        next: listing,
+        act: (user: ReturnType<typeof userEvent.setup>) =>
+          user.click(screen.getByTestId(`deployment-row-${D2}`)),
+        target: 'Studio Build · production'
+      },
+      {
+        path: 'picking Comfy Cloud',
+        owner: false,
+        boot: { ...listing, picked_deployment_id: D2, pick_source: 'browser' },
+        next: { ...listing, picked_deployment_id: D2, pick_source: 'browser' },
+        act: (user: ReturnType<typeof userEvent.setup>) =>
+          user.click(screen.getByTestId('deployment-row-cloud')),
+        target: 'Comfy Cloud'
+      },
+      {
+        path: 'following the workspace default',
+        owner: false,
+        boot: {
+          ...listing,
+          picked_deployment_id: D1,
+          pick_source: 'browser',
+          default_deployment_id: D2
+        },
+        next: {
+          ...listing,
+          picked_deployment_id: D1,
+          pick_source: 'browser',
+          default_deployment_id: D2
+        },
+        act: (user: ReturnType<typeof userEvent.setup>) =>
+          user.click(screen.getByTestId(`deployment-row-${D2}`)),
+        target: 'Studio Build · production'
+      },
+      {
+        path: 'changing the default this browser follows',
+        owner: true,
+        boot: listing,
+        next: listing,
+        act: async (user: ReturnType<typeof userEvent.setup>) => {
+          await openDefaultMenu(user)
+          await user.click(screen.getByTestId(`default-row-${D1}`))
+        },
+        target: 'Studio Build · staging'
+      },
+      {
+        path: 'reloading after its deployment changed',
+        owner: false,
+        boot: { ...listing, picked_deployment_id: D2, pick_source: 'browser' },
+        next: {
+          ...listing,
+          picked_deployment_id: D2,
+          pick_source: 'browser',
+          items: [
+            { ...listing.items[0], release_id: 'r-3', release_version: 3 },
+            ...listing.items.slice(1)
+          ]
+        },
+        act: async (user: ReturnType<typeof userEvent.setup>) =>
+          user.click(await screen.findByTestId('deployment-switcher-reload')),
+        target: 'Studio Build · production'
+      }
+    ] satisfies {
+      path: string
+      owner: boolean
+      boot: WorkspaceDeploymentList
+      next: WorkspaceDeploymentList
+      act: (user: ReturnType<typeof userEvent.setup>) => Promise<void>
+      target: string
+    }[])(
+      'asks to save them first when $path, and changes nothing on Cancel',
+      async ({ owner, boot, next, act, target }) => {
+        if (owner) asOwner()
+        mockWorkspaceApi.listDeployments
+          .mockResolvedValueOnce(boot)
+          .mockResolvedValue(next)
+        vi.mocked(useDialogService().confirm).mockResolvedValueOnce(null)
+        const user = renderSwitcher()
+        await screen.findByTestId('deployment-switcher-trigger')
+        await openList(user)
+
+        await act(user)
+
+        await waitFor(() =>
+          expect(useDialogService().confirm).toHaveBeenCalledWith(
+            expect.objectContaining({
+              message: `Switching to ${target} reloads the tab. These workflows have changes that aren't saved yet.`,
+              itemList: ['portrait.json']
+            })
+          )
+        )
+        expect(mockWorkspaceApi.pickDeployment).not.toHaveBeenCalled()
+        expect(mockWorkspaceApi.clearDeployment).not.toHaveBeenCalled()
+        expect(mockWorkspaceApi.setDefaultDeployment).not.toHaveBeenCalled()
+        expect(reload).not.toHaveBeenCalled()
+        expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+      }
+    )
+
+    it('neither asks nor changes anything when an owner re-picks the current default', async () => {
+      asOwner()
+      mockWorkspaceApi.listDeployments.mockResolvedValue({
+        ...listing,
+        picked_deployment_id: D2,
+        pick_source: 'workspace_default',
+        default_deployment_id: D2
+      })
+      const user = renderSwitcher()
+      await openList(user)
+      await openDefaultMenu(user)
+
+      await user.click(screen.getByTestId(`default-row-${D2}`))
+
+      expect(useDialogService().confirm).not.toHaveBeenCalled()
+      expect(mockWorkspaceApi.setDefaultDeployment).not.toHaveBeenCalled()
+    })
+
+    it('reloads onto where this browser now runs when the switch became a no-op during the prompt', async () => {
+      const boot = {
+        ...listing,
+        picked_deployment_id: D2,
+        pick_source: 'browser'
+      }
+      mockWorkspaceApi.listDeployments
+        .mockResolvedValueOnce(boot)
+        .mockResolvedValueOnce(boot)
+        .mockResolvedValue({ ...boot, picked_deployment_id: D1 })
+      vi.mocked(useDialogService().confirm).mockImplementationOnce(async () => {
+        await useDeploymentPickStore().load()
+        return false
+      })
+      const user = renderSwitcher()
+      await openList(user)
+
+      await user.click(screen.getByTestId(`deployment-row-${D1}`))
+
+      await waitFor(() => expect(reload).toHaveBeenCalledOnce())
+      expect(mockWorkspaceApi.pickDeployment).not.toHaveBeenCalled()
+    })
+
+    it('neither asks nor reloads when an owner clears a deleted default this browser follows', async () => {
+      asOwner()
+      mockWorkspaceApi.listDeployments.mockResolvedValue({
+        ...listing,
+        gone_default_deployment_id: GONE
+      })
+      mockWorkspaceApi.clearDefaultDeployment.mockResolvedValue(undefined)
+      const user = renderSwitcher()
+      await openList(user)
+      await openDefaultMenu(user)
+
+      await user.click(screen.getByTestId('default-row-cloud'))
+
+      await waitFor(() =>
+        expect(mockWorkspaceApi.clearDefaultDeployment).toHaveBeenCalledWith(
+          'ws-1'
+        )
+      )
+      expect(useDialogService().confirm).not.toHaveBeenCalled()
+      expect(reload).not.toHaveBeenCalled()
+    })
+
+    it('drops an own pick of the default itself without asking or reloading', async () => {
+      const ownPickOfDefault = {
+        ...listing,
+        picked_deployment_id: D2,
+        pick_source: 'browser',
+        default_deployment_id: D2
+      } satisfies WorkspaceDeploymentList
+      mockWorkspaceApi.listDeployments
+        .mockResolvedValueOnce(ownPickOfDefault)
+        .mockResolvedValueOnce(ownPickOfDefault)
+        .mockResolvedValue({
+          ...ownPickOfDefault,
+          pick_source: 'workspace_default'
+        })
+      mockWorkspaceApi.clearDeployment.mockResolvedValue(undefined)
+      const user = renderSwitcher()
+      await openList(user)
+
+      await user.click(screen.getByTestId(`deployment-row-${D2}`))
+
+      await waitFor(() =>
+        expect(useDeploymentPickStore().followsWorkspace).toBe(true)
+      )
+      expect(mockWorkspaceApi.clearDeployment).toHaveBeenCalledWith('ws-1', {
+        follow: 'workspace'
+      })
+      expect(useDialogService().confirm).not.toHaveBeenCalled()
+      expect(reload).not.toHaveBeenCalled()
+    })
+
+    it('keeps the engine button disabled while it saves, then switches', async () => {
+      mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+      mockWorkspaceApi.pickDeployment.mockResolvedValue(undefined)
+      vi.mocked(useDialogService().confirm).mockResolvedValueOnce(true)
+      let saved: (done: boolean) => void = () => {}
+      vi.mocked(useWorkflowService().saveWorkflow).mockReturnValueOnce(
+        new Promise<boolean>((resolve) => {
+          saved = resolve
+        })
+      )
+      const user = renderSwitcher()
+      await openList(user)
+
+      await user.click(screen.getByTestId(`deployment-row-${D2}`))
+
+      await waitFor(() =>
+        expect(screen.getByTestId('deployment-switcher-trigger')).toBeDisabled()
+      )
+      expect(mockWorkspaceApi.pickDeployment).not.toHaveBeenCalled()
+      saved(true)
+      await waitFor(() => expect(reload).toHaveBeenCalledOnce())
+      expect(mockWorkspaceApi.pickDeployment).toHaveBeenCalledWith('ws-1', {
+        deployment_id: D2
+      })
+    })
+
+    it('switches and reloads when the user switches without saving', async () => {
+      mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+      mockWorkspaceApi.pickDeployment.mockResolvedValue(undefined)
+      vi.mocked(useDialogService().confirm).mockResolvedValueOnce(false)
+      const user = renderSwitcher()
+      await openList(user)
+
+      await user.click(screen.getByTestId(`deployment-row-${D2}`))
+
+      await waitFor(() => expect(reload).toHaveBeenCalledOnce())
+      expect(mockWorkspaceApi.pickDeployment).toHaveBeenCalledWith('ws-1', {
+        deployment_id: D2
+      })
+    })
   })
 
   describe('with the app i18n, which escapes message parameters', () => {

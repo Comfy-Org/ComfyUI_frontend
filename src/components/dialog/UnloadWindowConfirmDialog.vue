@@ -1,12 +1,5 @@
 <template>
-  <div>
-    <!--
-    UnloadWindowConfirmDialog: This component does not render
-    anything visible. It is used to confirm the user wants to
-    close the window, and if they do, it will call the
-    beforeunload event.
-    -->
-  </div>
+  <div />
 </template>
 
 <script setup lang="ts">
@@ -14,14 +7,22 @@ import { onBeforeUnmount, onMounted } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import {
+  takeDeploymentSwitchDiscard,
+  wasDiscardedOnSwitch
+} from '@/platform/workspace/deploymentSwitchReload'
 
 const settingStore = useSettingStore()
 const workflowStore = useWorkflowStore()
 
 const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+  const discarded = takeDeploymentSwitchDiscard()
+  const leavesUnsavedWork = workflowStore.modifiedWorkflows.some(
+    (workflow) => !wasDiscardedOnSwitch(discarded, workflow)
+  )
   if (
     settingStore.get('Comfy.Window.UnloadConfirmation') &&
-    workflowStore.modifiedWorkflows.length > 0
+    leavesUnsavedWork
   ) {
     event.preventDefault()
     return true
