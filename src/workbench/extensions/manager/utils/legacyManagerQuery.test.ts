@@ -19,6 +19,7 @@ describe('isLegacyManagerQuery', () => {
     'comfyui-manager/',
     'ltdrdata/ComfyUI-Manager/',
     'ltdrdata/ComfyUI-Manager//',
+    'ltdrdata/ComfyUI-Manager /',
     'ltdrdata/comfyui_manager',
     'ltdrdata/ComfyUI-Manager',
     'Comfy-Org/comfyui-manager',

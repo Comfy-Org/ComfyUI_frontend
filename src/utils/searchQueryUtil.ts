@@ -23,7 +23,9 @@ function stripRepoOwner(query: string): string {
 }
 
 export function toRepoName(query: string): string {
-  return stripRepoOwner(query.trim().replace(TRAILING_GIT_OR_SLASHES, ''))
+  return stripRepoOwner(
+    query.trim().replace(TRAILING_GIT_OR_SLASHES, '').trimEnd()
+  )
 }
 
 export function splitOnSeparators(input: string): string {
@@ -31,7 +33,11 @@ export function splitOnSeparators(input: string): string {
 }
 
 function toComparableQuery(input: string): string {
-  return input.trim().replace(TRAILING_SLASHES, '').replace(WHITESPACE_RUN, ' ')
+  return input
+    .trim()
+    .replace(TRAILING_SLASHES, '')
+    .trimEnd()
+    .replace(WHITESPACE_RUN, ' ')
 }
 
 export function buildPackSearchFallbacks(query: string): string[] {
