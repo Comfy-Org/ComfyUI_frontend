@@ -39,17 +39,21 @@ export async function loadSiteCatalog(session?: SiteSession) {
   if (!projection.success) return { ok: false, status: 503 } as const
   const normalized = normalizeProjection(projection.data)
   if (!normalized) return { ok: false, status: 503 } as const
-  // One unreadable item drops out instead of taking every Hub page down.
-  const models = projection.data.items.flatMap((item) => {
-    const parsed = modelSchema.safeParse(item.data)
-    return parsed.success ? [parsed.data] : []
+  // An item that fails either schema drops out of every list, so its page
+  // returns 404 instead of taking every Hub page down.
+  const readable = normalized.items.flatMap((item) => {
+    const model = modelSchema.safeParse(item.data)
+    const detail =
+      item.kind === 'APP' ? undefined : detailSchema.safeParse(item.data)
+    if (!model.success || detail?.success === false) return []
+    return [{ item, model: model.data, detail: detail?.data }]
   })
-  const details = projection.data.items.flatMap((item) => {
-    if (item.kind === 'APP') return []
-    const parsed = detailSchema.safeParse(item.data)
-    return parsed.success ? [parsed.data] : []
-  })
-  return { ok: true, projection: normalized, models, details } as const
+  return {
+    ok: true,
+    projection: { ...normalized, items: readable.map(({ item }) => item) },
+    models: readable.map(({ model }) => model),
+    details: readable.flatMap(({ detail }) => (detail ? [detail] : []))
+  } as const
 }
 
 export function catalogUnavailable() {

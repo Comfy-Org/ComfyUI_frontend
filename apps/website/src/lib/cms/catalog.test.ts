@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { entries } from '@website/scripts/export-cms-seed'
 import { cmsEnabled, loadSiteCatalog } from '@/lib/cms/catalog'
 import { fieldsForDefinition } from '@/config/workshop-form-definition'
+import { workshopWorkflowDefinitionSchema } from '@/config/workshop-workflow-definition'
 
 describe('website CMS boundary', () => {
   it('retains the legacy source unless opted in', () => {
@@ -83,6 +84,63 @@ describe('website CMS boundary', () => {
     expect(result.models).toHaveLength(valid.length)
     expect(result.models.some((model) => model.slug === broken.data.slug)).toBe(
       false
+    )
+  })
+
+  it('drops a workflow whose inputs do not match its schema and keeps the rest', async () => {
+    vi.stubEnv('SITE_CATALOG_API_URL', 'http://localhost:8099')
+    const broken = entries.find((item) => 'workflow' in item.data)
+    if (!broken || !('workflow' in broken.data))
+      throw new Error('The seed has no workflow entry')
+    const workflow = workshopWorkflowDefinitionSchema.parse(
+      broken.data.workflow
+    )
+    const mismatched = {
+      ...broken,
+      data: {
+        ...broken.data,
+        workflow: {
+          ...workflow,
+          inputSchema: {
+            ...workflow.inputSchema,
+            properties: {
+              ...workflow.inputSchema.properties,
+              undeclared: { type: 'string' }
+            }
+          }
+        }
+      }
+    }
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>().mockResolvedValue(
+        Response.json({
+          revision_id: 1,
+          generation: 0,
+          items: entries
+            .map((item) => (item === broken ? mismatched : item))
+            .map((item) => ({
+              ...item,
+              revision: 1,
+              deleted: false,
+              edit_version: item.uid
+            }))
+        })
+      )
+    )
+    const result = await loadSiteCatalog()
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    const isBroken = (model: { slug: string }) =>
+      model.slug === broken.data.slug
+    expect(result.projection.items.map((item) => item.uid)).toEqual(
+      entries.filter((item) => item !== broken).map((item) => item.uid)
+    )
+    expect(result.models.some(isBroken)).toBe(false)
+    expect(result.details.some(isBroken)).toBe(false)
+    expect(result.models).toHaveLength(entries.length - 1)
+    expect(result.details).toHaveLength(
+      entries.filter((item) => item.kind !== 'APP').length - 1
     )
   })
 
