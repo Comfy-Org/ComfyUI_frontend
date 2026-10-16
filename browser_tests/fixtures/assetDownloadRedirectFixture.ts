@@ -51,15 +51,13 @@ export const assetDownloadRedirectTest = webSessionTest.extend<{
       networkPolicy.origins.add(storageOrigin)
 
       try {
-        await page
-          .context()
-          .addCookies([
-            {
-              name: 'storage_session',
-              value: 'storage-only',
-              url: storageOrigin
-            }
-          ])
+        await page.context().addCookies([
+          {
+            name: 'storage_session',
+            value: 'storage-only',
+            url: storageOrigin
+          }
+        ])
         await mockViewFiles(page, { [STABLE_OUTPUT.name]: {} })
         await page.route(/\/api\/assets(?:\?.*)?$/, (route) => {
           const params = new URL(route.request().url()).searchParams
