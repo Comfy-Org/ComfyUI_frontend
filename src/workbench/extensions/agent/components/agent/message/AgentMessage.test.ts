@@ -4,12 +4,18 @@ import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { i18n } from '@/i18n'
 import type { TurnId } from '../../../schemas/agentApiSchema'
+import { toTurnId } from '../../../schemas/agentApiSchema'
 import { createAgentEventTransport } from '../../../services/agent/agentEventTransport'
 import type {
+  AskUserResolution,
   AssistantMessage,
+  DeleteApprovalPart,
   RunApprovalPart
 } from '../../../services/agent/agentMessageParts'
-import { createAssistantMessage } from '../../../services/agent/agentMessageParts'
+import {
+  createAssistantMessage,
+  toAskOrNoticePart
+} from '../../../services/agent/agentMessageParts'
 
 import AgentMessage from './AgentMessage.vue'
 import { agentBoundWorkflowIdKey } from '../agentBoundWorkflowId'
@@ -633,8 +639,8 @@ describe('AgentMessage run approval', () => {
       ['turn-1:call-1', 'msg-approval', 'workflow-1']
     ])
     expect(emitted().answerAsk).toEqual([
-      ['turn-1:call-1', 'cancel'],
-      ['turn-1:call-1', 'run']
+      ['turn-1:call-1', { selected: ['cancel'] }],
+      ['turn-1:call-1', { selected: ['run'] }]
     ])
   })
 
@@ -703,4 +709,295 @@ describe('AgentMessage run approval', () => {
       }
     }
   )
+})
+
+describe('AgentMessage ask_user question', () => {
+  const askMessage = (): AssistantMessage => ({
+    id: toTurnId('msg-ask'),
+    role: 'assistant',
+    parts: [
+      {
+        type: 'askUser',
+        askId: 'turn-1:call-1',
+        prompt: 'Which model should I use?',
+        options: [
+          { id: 'sdxl', label: 'SDXL', description: 'Fast, 1024px' },
+          { id: 'flux', label: 'Flux Dev' }
+        ],
+        minSelections: 1,
+        maxSelections: 1,
+        allowOther: false
+      }
+    ],
+    streaming: true,
+    thinking: false
+  })
+
+  it('renders the question card without a working spinner and forwards the answer', async () => {
+    const { emitted } = render(AgentMessage, {
+      props: { message: askMessage() },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByText('Which model should I use?')).toBeInTheDocument()
+    expect(screen.queryByText('Working...')).not.toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('radio', { name: 'Flux Dev' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Submit' }))
+
+    expect(emitted().answerAsk).toEqual([
+      ['turn-1:call-1', { selected: ['flux'] }]
+    ])
+  })
+
+  it('keeps an in-progress answer when an earlier ask in the message resolves', async () => {
+    const message = askMessage()
+    const withApproval: AssistantMessage = {
+      ...message,
+      parts: [
+        { type: 'runApproval', askId: 'turn-1:call-0', workflowName: 'Draft' },
+        ...message.parts
+      ]
+    }
+    const { rerender } = render(AgentMessage, {
+      props: { message: withApproval },
+      global: { plugins: [i18n] }
+    })
+    await userEvent.click(screen.getByRole('radio', { name: 'Flux Dev' }))
+
+    await rerender({ message })
+
+    expect(screen.getByRole('radio', { name: 'Flux Dev' })).toBeChecked()
+  })
+
+  it('disables the card while its answer is in flight', () => {
+    render(AgentMessage, {
+      props: {
+        message: askMessage(),
+        answeringAskIds: new Set(['turn-1:call-1'])
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByRole('button', { name: 'Submit' })).toBeDisabled()
+  })
+})
+
+describe('AgentMessage delete approval', () => {
+  type AskFrame = Parameters<typeof toAskOrNoticePart>[0]
+
+  const deleteFrame = (frame: Partial<AskFrame> = {}): AskFrame => ({
+    kind: 'delete_approval',
+    ask_id: 'turn-2:call-4',
+    prompt: 'Delete the 2 nodes you added?',
+    options: [
+      { id: 'delete', label: 'Delete' },
+      { id: 'keep', label: 'Keep' }
+    ],
+    min_selections: 1,
+    max_selections: 1,
+    allow_other: false,
+    context: {
+      action: 'delete_nodes',
+      nodes: [
+        { id: '12', type: 'KSampler', title: 'Hero sampler' },
+        { id: '13', type: 'VAEDecode', title: '' }
+      ]
+    },
+    ...frame
+  })
+
+  const deleteMessage = (frame: Partial<AskFrame> = {}): AssistantMessage => ({
+    id: toTurnId('msg-delete'),
+    role: 'assistant',
+    parts: [toAskOrNoticePart(deleteFrame(frame))],
+    streaming: true,
+    thinking: false
+  })
+
+  it('lists the nodes it would delete', () => {
+    render(AgentMessage, {
+      props: { message: deleteMessage() },
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen.getByText('Delete the 2 nodes you added?')
+    ).toBeInTheDocument()
+    const nodes = within(
+      screen.getByRole('list', {
+        name: 'Nodes the agent asked to delete'
+      })
+    )
+    expect(
+      nodes.getAllByRole('listitem').map((item) => item.textContent.trim())
+    ).toEqual([
+      expect.stringMatching(/^Hero sampler\s*#12$/),
+      expect.stringMatching(/^VAEDecode\s*#13$/)
+    ])
+  })
+
+  it.for([
+    { button: 'Keep', selected: 'keep' },
+    { button: 'Delete', selected: 'delete' }
+  ])('answers $selected from $button', async ({ button, selected }) => {
+    const { emitted } = render(AgentMessage, {
+      props: { message: deleteMessage() },
+      global: { plugins: [i18n] }
+    })
+
+    await userEvent.click(screen.getByRole('button', { name: button }))
+
+    expect(emitted().answerAsk).toEqual([
+      ['turn-2:call-4', { selected: [selected] }]
+    ])
+  })
+
+  it('disables both buttons while the answer is in flight', () => {
+    render(AgentMessage, {
+      props: {
+        message: deleteMessage(),
+        answeringAskIds: new Set(['turn-2:call-4'])
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByRole('button', { name: 'Keep' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Delete' })).toBeDisabled()
+  })
+
+  it('says how many delete targets the list leaves out', () => {
+    render(AgentMessage, {
+      props: {
+        message: deleteMessage({
+          context: {
+            action: 'delete_nodes',
+            nodes: [{ id: '12', type: 'KSampler' }],
+            hidden_node_count: 3
+          }
+        })
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByText('3 more nodes not listed')).toBeVisible()
+  })
+
+  const deleteCard: DeleteApprovalPart = {
+    type: 'deleteApproval',
+    askId: 'turn-2:call-4',
+    prompt: 'Delete the 2 nodes you added?',
+    nodes: [
+      { id: '12', name: 'Hero sampler' },
+      { id: '13', name: 'VAEDecode' }
+    ],
+    hiddenNodeCount: 0
+  }
+
+  const renderResolved = (part: DeleteApprovalPart) =>
+    render(AgentMessage, {
+      props: { message: { ...deleteMessage(), parts: [part] } },
+      global: { plugins: [i18n] }
+    })
+
+  it.for<{ name: string; resolution: AskUserResolution; text: string }>([
+    {
+      name: 'delete',
+      resolution: { status: 'answered', selected: ['delete'] },
+      text: 'Answered: delete them'
+    },
+    {
+      name: 'keep',
+      resolution: { status: 'answered', selected: ['keep'] },
+      text: 'Answered: keep them'
+    },
+    {
+      name: 'an answer the server did not name',
+      resolution: { status: 'answered', selected: [] },
+      text: 'Answered'
+    },
+    {
+      name: 'no answer',
+      resolution: { status: 'closed' },
+      text: 'This request was closed without an answer.'
+    },
+    {
+      name: 'a local retirement',
+      resolution: { status: 'retired' },
+      text: 'This request is no longer open here.'
+    },
+    {
+      name: 'an unconfirmed answer',
+      resolution: { status: 'unconfirmed' },
+      text: "We couldn't confirm your answer. Check the canvas before trying again."
+    }
+  ])(
+    'reads back $name once resolved, with no buttons left',
+    ({ resolution, text }) => {
+      renderResolved({ ...deleteCard, resolution })
+
+      expect(screen.getByRole('status').textContent.trim()).toBe(text)
+      expect(
+        screen.queryByRole('button', { name: 'Delete' })
+      ).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Keep' })
+      ).not.toBeInTheDocument()
+    }
+  )
+
+  it.for([
+    {
+      name: 'one listed node',
+      hiddenNodeCount: 0,
+      text: 'Answered: delete it'
+    },
+    {
+      name: 'one listed and two unlisted nodes',
+      hiddenNodeCount: 2,
+      text: 'Answered: delete them'
+    }
+  ])('reads back a delete of $name', ({ hiddenNodeCount, text }) => {
+    renderResolved({
+      ...deleteCard,
+      nodes: [{ id: '12' }],
+      hiddenNodeCount,
+      resolution: { status: 'answered', selected: ['delete'] }
+    })
+
+    expect(screen.getByRole('status').textContent.trim()).toBe(text)
+  })
+})
+
+describe('AgentMessage ask the panel cannot render', () => {
+  it('shows the warning notice instead of a card, without a working spinner', () => {
+    render(AgentMessage, {
+      props: {
+        message: {
+          id: toTurnId('msg-unknown'),
+          role: 'assistant',
+          parts: [
+            toAskOrNoticePart({
+              kind: 'paused',
+              ask_id: 'turn-2:call-4',
+              prompt: 'Erase everything?',
+              options: [{ id: 'yes', label: 'Yes' }],
+              min_selections: 1,
+              max_selections: 1,
+              allow_other: false
+            })
+          ],
+          streaming: true,
+          thinking: false
+        }
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen.getByText("The agent is waiting on a step this panel can't show.")
+    ).toBeInTheDocument()
+    expect(screen.queryByText('Erase everything?')).not.toBeInTheDocument()
+    expect(screen.queryByText('Working...')).not.toBeInTheDocument()
+  })
 })

@@ -1,35 +1,37 @@
 <template>
-  <BuilderDialog @close="emit('close')">
+  <DialogPanel class="w-xl max-w-full min-w-116" @close="emit('close')">
     <template #title>
       {{ $t('builderToolbar.saveAs') }}
     </template>
 
-    <div class="flex flex-col gap-2">
-      <DialogDescription as-child>
-        <label :for="inputId" class="text-sm text-muted-foreground">
-          {{ $t('builderToolbar.filename') }}
-        </label>
-      </DialogDescription>
-      <input
-        :id="inputId"
-        v-model="filename"
-        autofocus
-        type="text"
-        class="flex h-10 min-h-8 items-center self-stretch rounded-lg border-none bg-secondary-background pl-4 text-sm text-base-foreground focus-visible:ring-border-default"
-        @keydown.enter="
-          filename.trim() && emit('save', filename.trim(), openAsApp)
-        "
-      />
-    </div>
+    <div class="flex flex-1 flex-col gap-4 p-4">
+      <div class="flex flex-col gap-2">
+        <DialogDescription as-child>
+          <label :for="inputId" class="text-sm text-muted-foreground">
+            {{ $t('builderToolbar.filename') }}
+          </label>
+        </DialogDescription>
+        <input
+          :id="inputId"
+          v-model="filename"
+          autofocus
+          type="text"
+          class="flex h-10 min-h-8 items-center self-stretch rounded-lg border-none bg-secondary-background pl-4 text-sm text-base-foreground focus-visible:ring-border-default"
+          @keydown.enter="
+            filename.trim() && emit('save', filename.trim(), openAsApp)
+          "
+        />
+      </div>
 
-    <div class="flex flex-col gap-2">
-      <label :id="radioGroupLabelId" class="text-sm text-muted-foreground">
-        {{ $t('builderToolbar.defaultViewLabel') }}
-      </label>
-      <ViewTypeRadioGroup
-        v-model="openAsApp"
-        :aria-labelledby="radioGroupLabelId"
-      />
+      <div class="flex flex-col gap-2">
+        <label :id="radioGroupLabelId" class="text-sm text-muted-foreground">
+          {{ $t('builderToolbar.defaultViewLabel') }}
+        </label>
+        <ViewTypeRadioGroup
+          v-model="openAsApp"
+          :aria-labelledby="radioGroupLabelId"
+        />
+      </div>
     </div>
 
     <template #footer>
@@ -45,7 +47,7 @@
         {{ $t('g.save') }}
       </Button>
     </template>
-  </BuilderDialog>
+  </DialogPanel>
 </template>
 
 <script setup lang="ts">
@@ -53,8 +55,8 @@ import { ref, useId } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import DialogDescription from '@/components/ui/dialog/DialogDescription.vue'
+import DialogPanel from '@/components/ui/dialog/DialogPanel.vue'
 
-import BuilderDialog from './BuilderDialog.vue'
 import ViewTypeRadioGroup from './ViewTypeRadioGroup.vue'
 
 const { defaultFilename, defaultOpenAsApp = true } = defineProps<{

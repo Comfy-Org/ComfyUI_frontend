@@ -5,19 +5,28 @@ import type {
   SubscriptionCheckoutTier,
   SubscriptionCheckoutType,
   SubscriptionCheckoutUi,
-  SubscriptionPreview
+  SubscriptionPreview,
+  TerminalBillingOperation
 } from '@comfyorg/account-core/billing'
 import { isAnnualDuration } from '@comfyorg/account-ui/billing/checkout'
 
+import { operationPlanOf } from '@/checkout/operationPlan'
 import type { AttemptEvents } from '@/telemetry/attemptTelemetry'
-import { createAttemptTelemetry } from '@/telemetry/attemptTelemetry'
+import {
+  createAttemptTelemetry,
+  outcomeOfOperation
+} from '@/telemetry/attemptTelemetry'
 import { billingWebTelemetry } from '@/telemetry/billingWebTelemetry'
+import { trackOncePerTab } from '@/telemetry/trackOncePerTab'
 
-/** What a pay press chooses: the plan the quote prices and where the customer came from. */
+/**
+ * What a pay press chooses: the plan the quote prices and where the customer
+ * came from. An attempt read back from its operation knows only the plan.
+ */
 export interface CheckoutAttempt {
   readonly tier?: SubscriptionCheckoutTier
-  readonly cycle: BillingCycle
-  readonly checkoutType: SubscriptionCheckoutType
+  readonly cycle?: BillingCycle
+  readonly checkoutType?: SubscriptionCheckoutType
   readonly source?: PaymentIntentSource
 }
 
@@ -110,4 +119,34 @@ export function createSubscriptionCheckoutTelemetry({
     track,
     now
   })
+}
+
+function attemptOfOperation(
+  operation: TerminalBillingOperation
+): CheckoutAttempt {
+  const plan = operationPlanOf(operation)
+  if (plan === undefined) return {}
+  return {
+    tier: plan.tier === undefined ? undefined : checkoutTierOf(plan.tier),
+    cycle: isAnnualDuration(plan.duration) ? 'yearly' : 'monthly'
+  }
+}
+
+/** Reports, once per operation, the terminal of a subscribe this tab awaited and a provider page sent back. */
+export function reportReturnedSubscriptionCheckout(
+  operation: TerminalBillingOperation,
+  {
+    ui,
+    now = Date.now
+  }: { readonly ui: SubscriptionCheckoutUi; readonly now?: () => number }
+): void {
+  if (operation.kind !== 'subscription' || !operation.awaitedHere) return
+  trackOncePerTab(
+    subscriptionCheckoutEvents(ui).end(
+      attemptOfOperation(operation),
+      outcomeOfOperation(operation),
+      now() - operation.attemptStartedAt
+    ),
+    operation.id
+  )
 }

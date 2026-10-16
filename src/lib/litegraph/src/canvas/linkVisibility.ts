@@ -6,6 +6,7 @@ import type { GraphScope } from '@/types/graphScopeId'
 import type { LinkId } from '@/types/linkId'
 
 import type { LGraph } from '../LGraph'
+import { Subgraph } from '../subgraph/Subgraph'
 import type { LLink } from '../LLink'
 import type { Reroute } from '../Reroute'
 import type { CanvasPointerEvent } from '../types/events'
@@ -14,7 +15,7 @@ import {
   startLinkHideTransitions
 } from './linkHideTransition'
 
-interface LinkMutationHost {
+export interface LinkMutationHost {
   emitBeforeChange(): void
   emitAfterChange(): void
   setDirty(fgcanvas: boolean, bgcanvas?: boolean): void
@@ -62,6 +63,26 @@ export function hideLinks(
         newlyHidden.push(linkId)
     }
     startLinkHideTransitions(scope.rootGraphId, newlyHidden, performance.now())
+  })
+}
+
+export function deleteLinks(
+  host: LinkMutationHost,
+  graph: LGraph,
+  links: Iterable<LLink>
+): void {
+  mutateLink(host, () => {
+    for (const link of links) {
+      const outputSlot =
+        link.targetIsIoNode && graph instanceof Subgraph
+          ? graph.outputNode.slots[link.target_slot]
+          : undefined
+      if (outputSlot?.linkIds.includes(link.id)) {
+        outputSlot.disconnect()
+      } else {
+        graph.removeLink(link.id)
+      }
+    }
   })
 }
 

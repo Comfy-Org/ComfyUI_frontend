@@ -1,10 +1,17 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import { cn } from '@comfyorg/tailwind-utils'
 
 import TagRemoveButton from '@/components/chip/TagRemoveButton.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 
+import type { AttachmentValidationError } from '../../../types/composerAttachment'
 import type { AssetPreviewMode } from '../../../types/assetPreview'
 import AssetHoverPreview from './AssetHoverPreview.vue'
 import AssetThumbnail from './AssetThumbnail.vue'
@@ -15,6 +22,7 @@ const {
   mediaUrl,
   mediaKind,
   uploading = false,
+  validationError,
   highlighted = false
 } = defineProps<{
   name: string
@@ -22,6 +30,7 @@ const {
   mediaUrl?: string
   mediaKind?: MediaKind
   uploading?: boolean
+  validationError?: AttachmentValidationError
   highlighted?: boolean
 }>()
 const emit = defineEmits<{ remove: [] }>()
@@ -29,7 +38,20 @@ const previewMode = defineModel<AssetPreviewMode>('previewMode', {
   default: 'closed'
 })
 
+const { t } = useI18n()
+
 const kind = computed(() => mediaKind ?? getMediaTypeFromFilename(name))
+const VALIDATION_MESSAGES = {
+  'invalid-video': 'agent.attachmentInvalidVideo',
+  'unsupported-type': 'agent.attachmentUnsupportedType'
+} as const satisfies Record<AttachmentValidationError, string>
+
+const invalidThumbnailKind = computed(() =>
+  validationError === 'unsupported-type' ? 'other' : mediaKind
+)
+const validationMessage = computed(
+  () => validationError && t(VALIDATION_MESSAGES[validationError], { name })
+)
 </script>
 
 <template>
@@ -39,9 +61,43 @@ const kind = computed(() => mediaKind ?? getMediaTypeFromFilename(name))
     :data-highlighted="highlighted || undefined"
     role="group"
     :aria-label="name"
-    class="group/attachment relative flex size-20 shrink-0 items-center justify-center rounded-lg p-1 data-highlighted:ring-2 data-highlighted:ring-base-foreground data-highlighted:ring-inset"
+    :class="
+      cn(
+        'group/attachment relative flex size-20 shrink-0 items-center justify-center rounded-lg p-1 data-highlighted:ring-2 data-highlighted:ring-base-foreground data-highlighted:ring-inset',
+        validationError && 'ring-1 ring-border-default ring-inset'
+      )
+    "
   >
+    <Tooltip v-if="validationError">
+      <TooltipTrigger as-child>
+        <span
+          role="status"
+          tabindex="0"
+          :aria-label="validationMessage"
+          class="flex size-full items-center justify-center rounded-sm"
+        >
+          <AssetThumbnail
+            :name
+            :media-kind="invalidThumbnailKind"
+            variant="tray"
+            class="size-full"
+          />
+          <span
+            aria-hidden="true"
+            class="pointer-events-none absolute right-1 bottom-1 flex size-5 items-center justify-center rounded-full bg-base-background/80"
+          >
+            <span
+              class="icon-[lucide--triangle-alert] size-3 text-destructive-background"
+            />
+          </span>
+        </span>
+      </TooltipTrigger>
+      <TooltipContent side="top" class="max-w-56">
+        {{ validationMessage }}
+      </TooltipContent>
+    </Tooltip>
     <AssetHoverPreview
+      v-else
       v-model:mode="previewMode"
       :name
       :preview-url

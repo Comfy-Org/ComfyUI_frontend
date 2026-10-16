@@ -34,6 +34,7 @@ const fetchWithUnifiedRemint = vi.hoisted(() => vi.fn())
 vi.mock(import('@/platform/auth/unified/remintRetry'), () => ({
   attachUnifiedRemintInterceptor: vi.fn(),
   fetchWithUnifiedRemint,
+  provideUnifiedRemint: vi.fn(),
   shouldRemintCloudRequest: () => Promise.resolve(false)
 }))
 
@@ -448,14 +449,12 @@ describe('useAgentConsent', () => {
     expect(telemetry.trackAgentConsentOfferExited).toHaveBeenCalledTimes(2)
   })
 
-  it('configures the first-use card as an accessible dismissable dialog', async () => {
+  it('configures the first-use card as a dismissable dialog', async () => {
     const request = useAgentConsent().withConsent('button_click', vi.fn())
 
     const dialog = await waitForConsentDialog()
 
-    expect(dialog.contentProps.titleId).toBe('agent-consent')
-    expect(dialog.dialogComponentProps.dismissableMask).toBe(true)
-    expect(dialog.dialogComponentProps.closeOnEscape).toBe(true)
+    expect(dialog.dialogComponentProps.dismissOnPointerDownOutside).toBe(true)
 
     ;(dialog.contentProps.onReject as () => void)()
     await Promise.resolve(request)

@@ -28,7 +28,7 @@ import { computed } from 'vue'
 import MultiSelect from '@/components/ui/multi-select/MultiSelect.vue'
 import type { SelectOption } from '@/components/ui/select/types'
 import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { ComponentWidget } from '@/scripts/domWidget'
+import type { ComponentWidget } from '@/types/domWidget'
 
 const selectedItems = defineModel<string[]>({ required: true })
 const { widget } = defineProps<{
