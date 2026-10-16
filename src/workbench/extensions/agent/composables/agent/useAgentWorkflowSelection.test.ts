@@ -875,7 +875,8 @@ describe('Current retry of an unresolved target', () => {
       unresolved: true
     },
     {
-      supersededBy: 'a target chosen meanwhile',
+      supersededBy:
+        'a target set on the panel store without cancelling the selection',
       supersede: ({ panel, current }) => panel.setWorkflowTarget(current),
       selected: 'workflows/current.json',
       unresolved: false
