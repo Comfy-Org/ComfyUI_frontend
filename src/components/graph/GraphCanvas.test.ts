@@ -14,6 +14,7 @@ import {
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import type { Toast } from '@/components/ui/toast/toastStore'
 import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/controlWidgetMarker'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -769,19 +770,25 @@ describe('deployment model options at startup', () => {
     }
   )
 
-  it('stops startup after a failed lookup even if the menu retries successfully', async () => {
+  it('boots on Comfy Cloud models with a Reload toast after a failed lookup', async () => {
     const store = useDeploymentPickStore()
     vi.spyOn(store, 'loadOnce').mockResolvedValue()
+    const reload = vi.spyOn(window.location, 'reload').mockReturnValue()
     await mountGraphCanvas()
-    expect(app.setup).not.toHaveBeenCalled()
-    expect(getActivePinia()?.state.value.toast?.toasts).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          kind: 'error',
-          title: 'deploymentSwitcher.lookupTimedOut'
-        })
-      ])
+    await vi.waitFor(() => expect(app.setup).toHaveBeenCalledOnce())
+    expect(store.bootDeployment).toBeNull()
+    const toasts: Toast[] = getActivePinia()?.state.value.toast?.toasts ?? []
+    const toast = toasts.find(
+      (t) => t.title === 'deploymentSwitcher.lookupUnavailable'
     )
+    expect(toast).toMatchObject({
+      kind: 'error',
+      description: 'deploymentSwitcher.lookupUnavailableDetail',
+      duration: Number.POSITIVE_INFINITY,
+      action: { label: 'deploymentSwitcher.reload' }
+    })
+    toast?.action?.onClick()
+    expect(reload).toHaveBeenCalledOnce()
     store.bootDeployment = {
       deployment_id: 'dep-1',
       release_id: 'r-1',
@@ -792,7 +799,17 @@ describe('deployment model options at startup', () => {
       created_at: ''
     }
     await nextTick()
-    expect(app.setup).not.toHaveBeenCalled()
+    expect(app.setup).toHaveBeenCalledOnce()
+  })
+
+  it('shows no lookup toast when the lookup settles the boot source', async () => {
+    const store = useDeploymentPickStore()
+    vi.spyOn(store, 'loadOnce').mockImplementation(async () => {
+      store.bootDeployment = null
+    })
+    await mountGraphCanvas()
+    await vi.waitFor(() => expect(app.setup).toHaveBeenCalledOnce())
+    expect(getActivePinia()?.state.value.toast?.toasts ?? []).toEqual([])
   })
 
   it('does not wait for a deployment lookup on a local build', async () => {
@@ -805,21 +822,24 @@ describe('deployment model options at startup', () => {
     expect(useDeploymentPickStore().loadOnce).not.toHaveBeenCalled()
   })
 
-  it('does not construct workflow widgets if the deployment lookup never settles', async () => {
+  it('boots on Comfy Cloud models if the deployment lookup never settles', async () => {
     vi.spyOn(useDeploymentPickStore(), 'loadOnce').mockReturnValue(
       new Promise(() => {})
     )
     await mountGraphCanvas()
-    await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_BACKSTOP_MS)
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_BACKSTOP_MS - 1)
+    expect(app.setup).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(1)
     expect(getActivePinia()?.state.value.toast?.toasts).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           kind: 'error',
-          title: 'deploymentSwitcher.lookupTimedOut'
+          title: 'deploymentSwitcher.lookupUnavailable'
         })
       ])
     )
-    expect(app.setup).not.toHaveBeenCalled()
-    expect(mocks.initializeWorkflow).not.toHaveBeenCalled()
+    expect(useDeploymentPickStore().bootDeployment).toBeNull()
+    await vi.waitFor(() => expect(app.setup).toHaveBeenCalledOnce())
+    expect(mocks.initializeWorkflow).toHaveBeenCalledOnce()
   })
 })
