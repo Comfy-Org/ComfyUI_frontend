@@ -1,7 +1,14 @@
+import { readFileSync } from 'node:fs'
+
 import { describe, expect, it } from 'vitest'
+import { parse } from 'yaml'
 
 import {
   compareLines,
+  DEFAULT_MAX_PER_RUN,
+  labelsToNote,
+  retirementMarker,
+  runRetirement,
   groupByPr,
   labelPath,
   oldestLine,
@@ -11,6 +18,7 @@ import {
   reportLine,
   retirementComment
 } from './retire-backport-labels'
+import type { PrRef, RetireDeps } from './retire-backport-labels'
 
 const LABELS = [
   'needs-backport',
@@ -115,7 +123,8 @@ describe('planRetirement', () => {
     const { retire } = planRetirement({
       labels: LABELS,
       product: 'cloud',
-      keepFrom: parseLine('1.57')!
+      keepFrom: parseLine('1.57')!,
+      maxPerRun: 5
     })
     expect(retire).not.toContain('cloud/1.57')
     expect(retire).toHaveLength(5)
@@ -191,5 +200,219 @@ describe('reportLine', () => {
     ).toBe(
       '• Would delete `cloud/1.54`; would comment on <https://github.com/o/r/pull/18949|#18949>; still open against the branch: <https://github.com/o/r/pull/19300|#19300>'
     )
+  })
+})
+
+describe('planRetirement cap', () => {
+  const labels = [
+    'cloud/1.50',
+    'cloud/1.51',
+    'cloud/1.52',
+    'cloud/1.53',
+    'cloud/1.54',
+    'cloud/1.55'
+  ]
+
+  it('allows exactly the cap, which covers the first run backlog', () => {
+    expect(
+      planRetirement({ labels, product: 'cloud', keepFrom: parseLine('1.54')! })
+        .retire
+    ).toHaveLength(DEFAULT_MAX_PER_RUN)
+  })
+
+  it('refuses to delete more than the cap in one run', () => {
+    expect(() =>
+      planRetirement({ labels, product: 'cloud', keepFrom: parseLine('1.55')! })
+    ).toThrow(/more than the 4 allowed per run/)
+  })
+
+  it('takes a deliberate higher cap', () => {
+    expect(
+      planRetirement({
+        labels,
+        product: 'cloud',
+        keepFrom: parseLine('1.55')!,
+        maxPerRun: 5
+      }).retire
+    ).toHaveLength(5)
+  })
+})
+
+describe('labelsToNote', () => {
+  it('skips labels an earlier run already commented on', () => {
+    const earlier = retirementComment(['cloud/1.52'], 'cloud', '1.56')
+    expect(earlier).toContain(retirementMarker('cloud/1.52'))
+    expect(
+      labelsToNote(['unrelated', earlier], ['cloud/1.52', 'cloud/1.53'])
+    ).toEqual(['cloud/1.53'])
+  })
+})
+
+// --- Orchestration, with fake I/O --------------------------------------------
+
+const SHA = 'a'.repeat(40)
+const pr = (n: number): PrRef => ({
+  number: n,
+  title: `PR ${n}`,
+  html_url: `https://github.com/o/r/pull/${n}`
+})
+
+function fakeDeps(overrides: Partial<RetireDeps> = {}) {
+  const writes: string[] = []
+  const deps: RetireDeps = {
+    servedCloudSha: async () => SHA,
+    cloudBranchesContaining: () => ['1.56', '1.57'],
+    latestComfyUITag: async () => 'v0.41.0',
+    requirementsAt: async () => 'comfyui-frontend-package==1.55.17\n',
+    listLabels: () => LABELS,
+    prsWaitingOn: (label) =>
+      label === 'cloud/1.55' ? [pr(1), pr(2)] : [pr(1)],
+    openPrsAgainst: () => [],
+    commentBodies: () => [],
+    postComment: (n, body) =>
+      writes.push(
+        `comment #${n}: ${body
+          .split('\n')
+          .filter((l) => l.startsWith('<!--'))
+          .join(' ')}`
+      ),
+    deleteLabel: (label) => writes.push(`delete ${label}`),
+    ...overrides
+  }
+  return { deps, writes }
+}
+
+describe('runRetirement: fails closed before any write', () => {
+  const cases: [string, Partial<RetireDeps>, 'cloud' | 'core'][] = [
+    [
+      'no x-frontend-version header',
+      { servedCloudSha: async () => null },
+      'cloud'
+    ],
+    [
+      'a header that is not a SHA',
+      { servedCloudSha: async () => 'nightly' },
+      'cloud'
+    ],
+    [
+      'a SHA on no cloud/* branch',
+      { cloudBranchesContaining: () => [] },
+      'cloud'
+    ],
+    [
+      'the cloud signal read throwing',
+      {
+        servedCloudSha: async () => {
+          throw new Error('HTTP 503')
+        }
+      },
+      'cloud'
+    ],
+    ['no ComfyUI release', { latestComfyUITag: async () => null }, 'core'],
+    ['no frontend pin', { requirementsAt: async () => 'torch\n' }, 'core'],
+    [
+      'a live line past every label',
+      { cloudBranchesContaining: () => ['1.60'] },
+      'cloud'
+    ],
+    [
+      'more deletions than the cap',
+      { listLabels: () => [...LABELS, 'cloud/1.48', 'cloud/1.49'] },
+      'cloud'
+    ]
+  ]
+
+  for (const [name, overrides, product] of cases) {
+    it(`writes nothing on ${name}`, async () => {
+      const { deps, writes } = fakeDeps(overrides)
+      await expect(
+        runRetirement({ product, dryRun: false }, deps)
+      ).rejects.toThrow()
+      expect(writes).toEqual([])
+    })
+  }
+})
+
+describe('runRetirement: writes', () => {
+  it('posts every comment before deleting any label, one comment per PR', async () => {
+    const { deps, writes } = fakeDeps()
+    const { retired } = await runRetirement(
+      { product: 'cloud', dryRun: false },
+      deps
+    )
+
+    expect(retired).toEqual([
+      'cloud/1.52',
+      'cloud/1.53',
+      'cloud/1.54',
+      'cloud/1.55'
+    ])
+    const lastComment = writes.findLastIndex((w) => w.startsWith('comment'))
+    const firstDelete = writes.findIndex((w) => w.startsWith('delete'))
+    expect(lastComment).toBeLessThan(firstDelete)
+    expect(writes.filter((w) => w.startsWith('comment #1'))).toHaveLength(1)
+    expect(writes.filter((w) => w.startsWith('comment #2'))).toHaveLength(1)
+  })
+
+  it('does not comment again on a PR an earlier run already covered', async () => {
+    const earlier = retirementComment(
+      ['cloud/1.52', 'cloud/1.53', 'cloud/1.54', 'cloud/1.55'],
+      'cloud',
+      '1.56'
+    )
+    const { deps, writes } = fakeDeps({
+      commentBodies: (n) => (n === 1 ? [earlier] : [])
+    })
+    await runRetirement({ product: 'cloud', dryRun: false }, deps)
+    expect(writes.some((w) => w.startsWith('comment #1'))).toBe(false)
+    expect(writes.some((w) => w.startsWith('comment #2'))).toBe(true)
+    expect(writes.filter((w) => w.startsWith('delete'))).toHaveLength(4)
+  })
+
+  it('keeps the oldest pinned core line', async () => {
+    const { deps } = fakeDeps({
+      requirementsAt: async (ref) =>
+        `comfyui-frontend-package==${ref === 'master' ? '1.56.2' : '1.55.17'}\n`
+    })
+    const { retired } = await runRetirement(
+      { product: 'core', dryRun: true },
+      deps
+    )
+    expect(retired).toEqual(['core/1.52', 'core/1.53', 'core/1.54'])
+  })
+
+  it('writes nothing on a dry run', async () => {
+    const { deps, writes } = fakeDeps()
+    const { lines } = await runRetirement(
+      { product: 'cloud', dryRun: true },
+      deps
+    )
+    expect(lines[0]).toMatch(/^• Would delete `cloud\/1\.52`/)
+    expect(writes).toEqual([])
+  })
+})
+
+describe('GitHub access stays on REST', () => {
+  // `gh pr edit` and friends need `read:org`, which the workflow token lacks
+  // (see backport-token-scopes.test.ts).
+  it('the script only shells out to gh through `gh api`', () => {
+    const source = readFileSync(
+      'scripts/cicd/retire-backport-labels.ts',
+      'utf8'
+    )
+    expect(source.match(/run\('gh'/g)).toEqual(["run('gh'"])
+    expect(source).toContain("run('gh', ['api', ...args])")
+  })
+
+  it('the workflow runs no gh pr, issue or label subcommands', () => {
+    const workflow = parse(
+      readFileSync('.github/workflows/release-label-retire.yaml', 'utf8')
+    ) as { jobs: Record<string, { steps: { run?: string }[] }> }
+    const runs = Object.values(workflow.jobs)
+      .flatMap((job) => job.steps)
+      .map((step) => step.run ?? '')
+    for (const script of runs) {
+      expect(script).not.toMatch(/\bgh\s+(pr|issue|label)\b/)
+    }
   })
 })

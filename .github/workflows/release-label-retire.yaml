@@ -23,6 +23,10 @@ on:
         description: 'Report what would be deleted without changing anything'
         type: boolean
         default: true
+      max_per_run:
+        description: 'Most labels to delete per product in this run (raise only after checking the live line)'
+        type: number
+        default: 4
 
 permissions:
   contents: read
@@ -64,9 +68,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           PRODUCT: ${{ matrix.product }}
           DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+          MAX_PER_RUN: ${{ inputs.max_per_run || 4 }}
         run: |
           set -o pipefail
-          ARGS=(--product "$PRODUCT" --report report.md)
+          ARGS=(--product "$PRODUCT" --max-per-run "$MAX_PER_RUN" --report report.md)
           if [ "$DRY_RUN" = "true" ]; then ARGS+=(--dry-run); fi
           pnpm exec tsx scripts/cicd/retire-backport-labels.ts "${ARGS[@]}" 2>&1 | tee log.txt
 
