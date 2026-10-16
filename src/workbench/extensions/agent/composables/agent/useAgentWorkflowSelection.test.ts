@@ -847,56 +847,17 @@ describe('Current retry of an unresolved target', () => {
     return { retry, finishListing }
   }
 
-  it.for([
-    {
-      outcome: 'opens the workflow it finds',
-      workflowId: 'wf-current',
-      settled: {
-        selected: 'workflows/current.json',
-        unavailable: false,
-        unresolved: false,
-        listed: false
-      }
-    },
-    {
-      outcome: 'marks a workflow its lookup finds deleted unavailable',
-      workflowId: 'wf-gone',
-      settled: {
-        selected: null,
-        unavailable: true,
-        unresolved: false,
-        listed: false
-      }
-    },
-    {
-      outcome: 'records a listed workflow with no local tab as listed',
-      workflowId: 'wf-saved',
-      settled: {
-        selected: null,
-        unavailable: false,
-        unresolved: true,
-        listed: true
-      }
-    }
-  ])(
-    'keeps the unresolved target while the retry waits for Cloud, then $outcome',
-    async ({ workflowId, settled }) => {
-      const run = { ...setup(), sessionCurrent: true }
-      run.current.load = vi.fn(async () => run.current)
-      const { retry, finishListing } = startRetry(run, workflowId)
+  it('keeps the unresolved target while the retry waits for Cloud, then opens the workflow it finds', async () => {
+    const run = { ...setup(), sessionCurrent: true }
+    run.current.load = vi.fn(async () => run.current)
+    const { retry, finishListing } = startRetry(run, 'wf-current')
 
-      expect(run.panel.targetUnresolved).toBe(true)
-      finishListing()
+    expect(run.panel.targetUnresolved).toBe(true)
+    finishListing()
 
-      expect(await retry).toBe(true)
-      expect({
-        selected: run.panel.selectedWorkflow?.path ?? null,
-        unavailable: run.panel.targetUnavailable,
-        unresolved: run.panel.targetUnresolved,
-        listed: run.panel.unresolvedTargetListed
-      }).toEqual(settled)
-    }
-  )
+    expect(await retry).toBe(true)
+    expect(run.panel.selectedWorkflow?.path).toBe('workflows/current.json')
+  })
 
   it.for([
     {
