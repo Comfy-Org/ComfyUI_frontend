@@ -1,0 +1,357 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import HeroCentered01 from '@/components/blocks/HeroCentered01.vue'
+import { PRIZE_PATH, PRIZE_VIEWBOX } from '@/assets/events/prize-amount'
+import LaunchesHeroLogo from '@/templates/drops/LaunchesHeroLogo.vue'
+import VideoPlayer from '@/components/common/VideoPlayer.vue'
+import PrizeTiers01 from '@/components/blocks/PrizeTiers01.vue'
+import HowToEnterSection from '@/templates/challenge/HowToEnterSection.vue'
+import StepsGrid01 from '@/components/blocks/StepsGrid01.vue'
+import CardWorkflow01 from '@/components/blocks/CardWorkflow01.vue'
+import FAQSplit01 from '@/components/blocks/FAQSplit01.vue'
+import CtaCenter01 from '@/components/blocks/CtaCenter01.vue'
+import SectionHeader from '@/components/common/SectionHeader.vue'
+import Button from '@/components/ui/button/Button.vue'
+import EventsDirectoryRow from '@/templates/events/EventsDirectoryRow.vue'
+import { translationsFor } from '@/i18n/translations'
+import type { Locale, LocalizedText } from '@/i18n/translations'
+import type { ComfyEvent } from '@/data/events'
+import { eventsDerivedAt } from '@/data/events'
+import { directoryRows } from '@/utils/eventsDirectory'
+import { appModels } from '@/config/workshop-app-content'
+import { ac } from '@/lib/workshop/catalogue-apps'
+import { challengeStaticPaths } from './_challengePaths'
+
+export const getStaticPaths = challengeStaticPaths
+
+interface Props {
+  locale: Locale
+}
+
+const { locale }: Props = Astro.props
+const { t } = translationsFor(locale)
+const entry = {
+  label: t('eventChallenge.submit'),
+  href: 'https://form.typeform.com/to/V1dSQrkS'
+}
+const rules = 'https://blog.comfy.org/p/higgsfield-promised-to-open-source'
+const entrySteps = ['Repo', 'Demo', 'Link', 'Social'] as const
+const requirements = [1, 2, 3, 4, 5, 6] as const
+const hubApps = [
+  { appId: 'studio', name: 'studioName', task: 'studioTask' },
+  { appId: 'reshoot', name: 'reshootName', task: 'reshootTask' }
+] as const
+const examples = [
+  ...hubApps.flatMap(({ appId, name, task }) => {
+    const app = appModels.find((model) => model.appId === appId)
+    if (!app?.thumbnail) return []
+    return [
+      {
+        id: app.slug,
+        title: ac(name, locale),
+        description: ac(task, locale),
+        href: app.href,
+        media: {
+          type:
+            app.thumbnail.kind === 'video'
+              ? ('video' as const)
+              : ('image' as const),
+          src: app.thumbnail.url,
+          poster: app.thumbnail.poster,
+          alt: ac(name, locale)
+        }
+      }
+    ]
+  }),
+  {
+    id: 'openjutsu',
+    title: t('eventChallenge.openjutsu'),
+    tags: [t('eventChallenge.comingSoon')],
+    media: { type: 'image' as const, src: '/icons/logomark.svg', alt: '' }
+  }
+]
+const categoryPrizes = ['Innovative', 'Viral', 'OpenWeights'] as const
+const bonusPrizes = ['Ltx', 'Flux', 'Minimax'] as const
+const milestones = ['Signup', 'Window', 'Nights', 'Winner'] as const
+const tabs = [
+  { label: 'how', anchor: 'challenge-content' },
+  { label: 'timeline', anchor: 'timeline' },
+  { label: 'submitNav', anchor: 'submit' }
+] as const
+const localizedText = (key: string): LocalizedText => ({
+  en: translationsFor('en').t(key),
+  'zh-CN': translationsFor('zh-CN').t(key)
+})
+const meetups = [
+  {
+    id: 'Sf',
+    startDateTime: '2026-10-28T18:00:00-07:00',
+    registration: 'https://luma.com/5mydmvu6'
+  },
+  {
+    id: 'La',
+    startDateTime: '2026-10-29T18:00:00-07:00',
+    registration: 'https://luma.com/73q6c0ln'
+  }
+] as const
+const meetupEvents: ComfyEvent[] = meetups.map(
+  ({ id, startDateTime, registration }) => ({
+    id: `challenge-meetup-${id.toLowerCase()}`,
+    category: 'hackathon',
+    title: localizedText(`eventChallenge.meetup${id}Title`),
+    description: localizedText(`eventChallenge.meetup${id}Body`),
+    location: localizedText(`eventChallenge.meetup${id}Location`),
+    dateLabel: localizedText(`eventChallenge.meetup${id}Date`),
+    startDateTime,
+    link: {
+      href: { en: registration, 'zh-CN': registration },
+      newTab: true
+    },
+    ctaLabel: localizedText('eventChallenge.meetupCta')
+  })
+)
+const meetupRows = directoryRows(meetupEvents, locale, eventsDerivedAt).map(
+  (row) => ({ ...row, calendar: undefined })
+)
+const faqs = ['Demo', 'Event', 'License', 'Bonus'] as const
+---
+
+<BaseLayout
+  title={`${t('eventChallenge.name')} · Comfy`}
+  description={t('eventChallenge.description')}
+  ogImage="https://media.comfy.org/website/open-source-higgsfield/og-open-source-higgsfield.png"
+  ogImageAlt={t('eventChallenge.shareImageAlt')}
+  hideAnnouncementBanner
+  smoothScroll
+>
+  <div>
+    <div class="mx-auto max-w-9xl px-6 pt-8">
+      <VideoPlayer
+        locale={locale}
+        src="https://media.comfy.org/website/open-source-higgsfield/Open%20Source%20Higgsfield%20Launch%20Video%20-%20v05.mp4"
+        poster="https://media.comfy.org/website/open-source-higgsfield/open-source-higgsfield-poster.jpg"
+        ariaLabel={t('eventChallenge.name')}
+        fit="contain"
+        autoplay
+        controlsOnHover
+        class="aspect-video overflow-hidden rounded-3xl"
+        client:load
+      />
+    </div>
+    <nav
+      aria-label={t('eventChallenge.details')}
+      class="sticky top-20 z-40 mt-8 flex w-full justify-center gap-2 bg-primary-comfy-ink px-4 py-3 lg:top-26"
+    >
+      {tabs.map((tab) => <Button href={`#${tab.anchor}`} variant="ghost">
+        {t(`eventChallenge.${tab.label}`)}
+      </Button>)}
+    </nav>
+    <div
+      class="mx-auto mt-12 flex max-w-9xl flex-col items-center px-6 text-center"
+    >
+      <LaunchesHeroLogo
+        label={t('eventChallenge.totalPrize')}
+        path={PRIZE_PATH}
+        viewBox={PRIZE_VIEWBOX}
+        extrudeDepth={200}
+        client:visible
+      />
+      <p class="text-sm text-primary-comfy-yellow uppercase">
+        {t('eventChallenge.totalPrizeCaption')}
+      </p>
+    </div>
+    <HeroCentered01
+      title={t('eventChallenge.name')}
+      subtitle={t('eventChallenge.description')}
+      class="pt-6 pb-12 lg:pt-8 lg:pb-16"
+    >
+      <p class="mt-8 text-xl text-primary-comfy-canvas lg:text-2xl">
+        {t('eventChallenge.prizeTeaser')}
+        <span class="block">{t('eventChallenge.prizeTeaserBonus')}</span>
+      </p>
+      <div class="mt-8">
+        <Button href={entry.href} size="lg">{entry.label}</Button>
+      </div>
+    </HeroCentered01>
+    <section
+      aria-label={t('eventChallenge.partners')}
+      class="mx-auto flex max-w-9xl flex-col items-center gap-6 px-6 pb-8 lg:gap-8 lg:pb-12"
+    >
+      <div class="flex items-center gap-5.5 text-timeline-neutral/60 lg:gap-10">
+        <span
+          role="img"
+          aria-label="NVIDIA"
+          class="aspect-975/180 h-5.5 icon-mask mask-[url('/icons/partners/nvidia.svg')] lg:h-8.5"
+        ></span>
+        <span
+          aria-hidden="true"
+          class="h-8 w-px bg-timeline-neutral/40 lg:h-11"
+        ></span>
+        <span
+          role="img"
+          aria-label="Runpod"
+          class="aspect-907/206 h-6.5 icon-mask mask-[url('/icons/partners/runpod.svg')] lg:h-10"
+        ></span>
+      </div>
+      <div class="flex items-center gap-6 text-timeline-neutral/40 lg:gap-7">
+        <span
+          role="img"
+          aria-label="LTX"
+          class="aspect-1287/561 h-4 icon-mask mask-[url('/icons/partners/ltx.svg')] lg:h-6"
+        ></span>
+        <span
+          role="img"
+          aria-label="Black Forest Labs"
+          class="aspect-571/141 h-4 icon-mask mask-[url('/icons/partners/black-forest-labs.svg')] lg:h-6"
+        ></span>
+        <span
+          role="img"
+          aria-label="MiniMax"
+          class="aspect-1296/314 h-4 icon-mask mask-[url('/icons/partners/minimax.svg')] lg:h-6"
+        ></span>
+      </div>
+    </section>
+    <PrizeTiers01
+      heading={t('eventChallenge.prizes')}
+      mainLabel={t('eventChallenge.prizeMainLabel')}
+      grand={{
+        id: 'overall',
+        title: t('eventChallenge.prizeOverall'),
+        award: t('eventChallenge.prizeOverallAward'),
+        description: t('eventChallenge.prizeOverallBody')
+      }}
+      categories={categoryPrizes.map((prize) => ({
+        id: prize,
+        title: t(`eventChallenge.prize${prize}`),
+        award: t('eventChallenge.gpu'),
+        description: t(`eventChallenge.prize${prize}Body`)
+      }))}
+      runnerUp={{
+        id: 'runner-up',
+        title: t('eventChallenge.prizeRunnerUp'),
+        award: t('eventChallenge.prizeRunnerUpAward')
+      }}
+      bonusLabel={t('eventChallenge.prizeBonusLabel')}
+      bonuses={bonusPrizes.map((prize) => ({
+        id: prize,
+        title: t(`eventChallenge.prize${prize}`),
+        award: t(`eventChallenge.prize${prize}Award`),
+        description: t(`eventChallenge.prize${prize}Body`)
+      }))}
+    >
+      <Button href={entry.href}>{entry.label}</Button>
+      <p
+        class="mt-2 basis-full text-center text-base font-light text-balance text-primary-comfy-canvas/70 lg:text-lg"
+      >
+        {t('eventChallenge.winnersFeatured')}
+      </p>
+    </PrizeTiers01>
+    <section class="mx-auto max-w-9xl px-6 py-16 lg:py-24">
+      <div
+        class="grid grid-cols-1 gap-12 lg:grid-cols-2 lg:items-start lg:gap-20"
+      >
+        <div class="lg:pt-5">
+          <h2
+            class="text-3xl font-light text-balance text-primary-comfy-canvas lg:text-5xl/tight"
+          >
+            {t('eventChallenge.meetupHeading')}
+          </h2>
+          <p
+            class="mt-6 max-w-xl text-base text-primary-comfy-canvas/70 lg:text-lg"
+          >
+            {t('eventChallenge.meetupBody')}
+          </p>
+        </div>
+        <ul
+          class="divide-y divide-white/10 border-y border-white/10"
+          aria-label={t('eventChallenge.meetupHeading')}
+        >
+          {meetupRows.map((row) => (
+            <EventsDirectoryRow
+              row={row}
+              locale={locale}
+              titleClass="text-base lg:text-lg"
+            />
+          ))}
+        </ul>
+      </div>
+    </section>
+    <div id="timeline" class="scroll-mt-40">
+      <StepsGrid01
+        heading={t('eventChallenge.timeline')}
+        layout="timeline"
+        highlightedId="Window"
+        steps={milestones.map((milestone) => ({
+          id: milestone,
+          title: t(`eventChallenge.timeline${milestone}Title`),
+          label: t(`eventChallenge.timeline${milestone}Date`),
+          description: t(`eventChallenge.timeline${milestone}Body`)
+        }))}
+      />
+    </div>
+    <div id="challenge-content" class="scroll-mt-40">
+      <HowToEnterSection
+        id="how-to-enter"
+        class="scroll-mt-40"
+        heading={t('eventChallenge.enter')}
+        facts={[
+          {
+            id: 'what',
+            term: t('eventChallenge.what'),
+            description: t('eventChallenge.whatBody')
+          },
+          {
+            id: 'deadline',
+            term: t('eventChallenge.deadline'),
+            description: t('eventChallenge.closeDate')
+          }
+        ]}
+        intro={t('eventChallenge.enterIntro')}
+        deliverables={entrySteps.map((step) => ({
+          id: step,
+          title: t(`eventChallenge.enter${step}`),
+          description: t(`eventChallenge.enter${step}Body`)
+        }))}
+        requirementsHeading={t('eventChallenge.requirementsHeading')}
+        requirements={requirements.map((item) =>
+          t(`eventChallenge.requirement${item}`)
+        )}
+        note={t('eventChallenge.enterNote')}
+      />
+      <section class="mx-auto max-w-9xl px-6 py-16 lg:py-24">
+        <SectionHeader
+          >{t('eventChallenge.examples')}
+          <p
+            slot="subtitle"
+            class="mx-auto mt-6 max-w-2xl text-base text-primary-comfy-canvas/70"
+          >
+            {t('eventChallenge.examplesBody')}
+          </p></SectionHeader
+        >
+        <div class="mt-12 grid grid-cols-1 gap-4 md:grid-cols-3">
+          {examples.map((example) => (
+            <CardWorkflow01 item={example} />
+          ))}
+        </div>
+      </section>
+    </div>
+  </div>
+  <FAQSplit01
+    heading={t('eventChallenge.questions')}
+    faqs={faqs.map((faq) => ({
+      id: `challenge-${faq}`,
+      question: t(`eventChallenge.faq${faq}`),
+      answer: t(`eventChallenge.faq${faq}Body`)
+    }))}
+    client:visible
+  />
+  <div id="submit" class="scroll-mt-40">
+    <CtaCenter01
+      heading={t('eventChallenge.closing')}
+      headingClass="text-3xl lg:text-5xl/tight"
+      subtitle={t('eventChallenge.closingBody')}
+      primaryCta={entry}
+      termsLink={{ label: t('eventChallenge.rulesLink'), href: rules }}
+    />
+  </div>
+</BaseLayout>

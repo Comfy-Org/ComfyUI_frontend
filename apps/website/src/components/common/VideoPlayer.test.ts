@@ -217,6 +217,38 @@ describe('VideoPlayer', () => {
     }
   )
 
+  it('toggles the muted state the video element reports, even when the control has not caught up', async () => {
+    render(VideoPlayer, {
+      props: {
+        src: 'https://example.com/clip.mp4',
+        ariaLabel: 'Clip',
+        persistentControls: true
+      }
+    })
+    const video = screen.getByLabelText('Clip')
+    if (!(video instanceof HTMLVideoElement))
+      throw new Error('Expected the labelled video element')
+    await nextTick()
+    let elementMuted = false
+    Object.defineProperty(video, 'muted', {
+      configurable: true,
+      get: () => elementMuted,
+      set: (value: boolean) => {
+        elementMuted = value
+      }
+    })
+
+    elementMuted = true
+    expect(
+      screen.getByRole('button', { name: 'Mute' }),
+      'the control still reads unmuted because no volumechange fired'
+    ).toBeTruthy()
+    await userEvent.click(screen.getByRole('button', { name: 'Mute' }))
+
+    expect(elementMuted).toBe(false)
+    expect(screen.getByRole('button', { name: 'Mute' })).toBeTruthy()
+  })
+
   it('shows play and mute for a paused, unmuted video', async () => {
     render(VideoPlayer, {
       props: { src: 'https://example.com/clip.mp4', muteOnly: true }
@@ -224,5 +256,26 @@ describe('VideoPlayer', () => {
 
     expect(await screen.findByRole('button', { name: 'Play' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Mute' })).toBeTruthy()
+  })
+
+  it.for([{ muteOnly: true }, { persistentControls: true }])(
+    'omits the mute control for a clip with no audio track (%o)',
+    async (mode) => {
+      render(VideoPlayer, {
+        props: { src: 'https://example.com/clip.mp4', hasAudio: false, ...mode }
+      })
+
+      expect(await screen.findByRole('button', { name: 'Play' })).toBeTruthy()
+      expect(screen.queryByRole('button', { name: 'Mute' })).toBeNull()
+      expect(screen.queryByRole('button', { name: 'Unmute' })).toBeNull()
+    }
+  )
+
+  it('shows the mute control in the control bar by default', async () => {
+    render(VideoPlayer, {
+      props: { src: 'https://example.com/clip.mp4', persistentControls: true }
+    })
+
+    expect(await screen.findByRole('button', { name: 'Mute' })).toBeTruthy()
   })
 })

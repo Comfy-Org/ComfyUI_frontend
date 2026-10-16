@@ -20,17 +20,15 @@
         <!-- Decorative initial for "Personal" workspace icon; not user-facing text -->
         P
       </div>
-      <i18n-t
-        keypath="subscription.plansForWorkspace"
-        tag="h2"
-        class="m-0 font-inter text-2xl font-semibold text-base-foreground"
-      >
-        <template #workspace>
-          <span class="text-muted-foreground">
-            {{ $t('subscription.personalWorkspace') }}
-          </span>
-        </template>
-      </i18n-t>
+      <DialogTitle class="m-0 font-inter text-2xl">
+        <i18n-t keypath="subscription.plansForWorkspace">
+          <template #workspace>
+            <span class="text-muted-foreground">
+              {{ $t('subscription.personalWorkspace') }}
+            </span>
+          </template>
+        </i18n-t>
+      </DialogTitle>
     </div>
 
     <PricingTable
@@ -102,13 +100,13 @@
       <div>
         <div class="flex flex-col gap-6">
           <div class="inline-flex items-center gap-2">
-            <div class="text-sm text-text-primary">
+            <DialogTitle class="m-0 text-sm font-normal text-text-primary">
               {{
                 reason === 'out_of_credits'
                   ? $t('credits.topUp.insufficientTitle')
                   : $t('subscription.required.title')
               }}
-            </div>
+            </DialogTitle>
             <CloudBadge
               reverse-order
               no-padding
@@ -156,6 +154,7 @@ import { computed, watch } from 'vue'
 
 import CloudBadge from '@/components/topbar/CloudBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
+import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import { MONTHLY_SUBSCRIPTION_PRICE } from '@/config/subscriptionPricesConfig'
 import PricingTable from '@/platform/cloud/subscription/components/PricingTable.vue'
 import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'

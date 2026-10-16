@@ -8,6 +8,7 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { outputLinks } from '@/lib/litegraph/src/node/slotLinks'
+import { selectedCanvasNodes } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 import { slotTypeKey } from '@/lib/litegraph/src/utils/type'
 import type { SerializedNodeId } from '@/types/nodeId'
 import { parseNodeId } from '@/types/nodeId'
@@ -910,7 +911,7 @@ export class GroupNodeHandler {
       let left: number | undefined
       // deserialiseAndCreate selects the created nodes in creation order, which
       // matches nodeData.nodes order.
-      const selectedIds = Object.keys(app.canvas.selected_nodes)
+      const selectedIds = selectedCanvasNodes(app.canvas).map((n) => n.id)
       const newNodes: LGraphNode[] = []
       // Shared across every inner node processed below, in nodeData.nodes
       // order, so a widget already paired to one inner node's value can

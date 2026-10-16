@@ -1,6 +1,6 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
+import { fireEvent, render, screen } from '@testing-library/vue'
+import { describe, expect, it, vi } from 'vitest'
 
 import { translationsFor } from '@/i18n/translations'
 import VfxProofHero from './VfxProofHero.vue'
@@ -49,6 +49,41 @@ describe('VfxProofHero', () => {
       screen.getByRole('button', { name: t('vfxV2.proof.restyling') })
     )
     expect(screen.queryByLabelText(t('vfxV2.proof.cleanplate'))).toBeNull()
+    expect(screen.getByLabelText(t('vfxV2.proof.restyling'))).toHaveAttribute(
+      'src',
+      'https://media.comfy.org/hub-media/video/93d4af64-c1a4-4a44-8d5a-e1f4d0ea28e3.mp4'
+    )
+    expect(screen.queryByAltText('Minimax H3 Video Restyling')).toBeNull()
+  })
+
+  it('falls back to the workflow poster when the restyling clip cannot load', async () => {
+    const user = userEvent.setup()
+    render(VfxProofHero, { props })
+
+    await user.click(
+      screen.getByRole('button', { name: t('vfxV2.proof.restyling') })
+    )
+    await fireEvent.error(screen.getByLabelText(t('vfxV2.proof.restyling')))
+
+    expect(screen.queryByLabelText(t('vfxV2.proof.restyling'))).toBeNull()
     expect(screen.getByAltText('Minimax H3 Video Restyling')).toBeTruthy()
   })
+
+  it.for(['cleanplate', 'restyling'] as const)(
+    'plays the %s clip without a sound control because it has no audio track',
+    async (id) => {
+      vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined)
+      const user = userEvent.setup()
+      render(VfxProofHero, { props })
+
+      await user.click(
+        screen.getByRole('button', { name: t(`vfxV2.proof.${id}`) })
+      )
+      await user.click(screen.getByRole('button', { name: 'Play' }))
+
+      expect(screen.getByTestId('player-control-bar')).toBeTruthy()
+      expect(screen.queryByRole('button', { name: 'Mute' })).toBeNull()
+      expect(screen.queryByRole('button', { name: 'Unmute' })).toBeNull()
+    }
+  )
 })
