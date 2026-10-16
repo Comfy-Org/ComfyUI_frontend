@@ -4,7 +4,7 @@
     <div
       class="flex min-w-0 shrink-0 items-center border-b border-interface-stroke px-4 pt-1 pb-4"
     >
-      <AsyncSearchInput v-model="searchQuery" class="flex-1" />
+      <AsyncSearchInput v-model="searchQuery" />
       <CollapseToggleButton
         v-model="isAllCollapsed"
         :show="!isSearching && allErrorGroups.length > 1"
@@ -195,7 +195,7 @@
                 data-testid="missing-model-header-refresh"
                 variant="muted-textonly"
                 size="icon"
-                class="shrink-0 rounded-lg hover:bg-transparent hover:text-base-foreground"
+                class="shrink-0 hover:bg-transparent hover:text-base-foreground"
                 :aria-label="t('rightSidePanel.missingModels.refresh')"
                 :aria-busy="missingModelStore.isRefreshingMissingModels"
                 :aria-disabled="missingModelStore.isRefreshingMissingModels"

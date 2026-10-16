@@ -16,7 +16,7 @@
         v-if="subscriptionActionUrl && permissions.canManageSubscription"
         variant="primary"
         size="lg"
-        class="rounded-lg px-4 text-sm font-normal"
+        class="font-normal"
         @click="openSubscriptionVerification"
       >
         {{ $t('subscription.preview.completeVerification') }}
@@ -46,7 +46,7 @@
       <Button
         variant="secondary"
         size="lg"
-        class="rounded-lg px-4 text-sm font-normal"
+        class="font-normal"
         :loading="isLoading"
         @click="handleRetry"
       >
@@ -118,7 +118,7 @@
                   "
                   size="lg"
                   variant="secondary"
-                  class="rounded-lg bg-interface-menu-component-surface-selected px-4 text-sm font-normal text-text-primary"
+                  class="bg-interface-menu-component-surface-selected font-normal text-text-primary"
                   @click="manageSubscription"
                 >
                   {{ $t('subscription.billingAndInvoices') }}
@@ -126,7 +126,7 @@
                 <Button
                   variant="primary"
                   size="lg"
-                  class="rounded-lg px-4 py-2 text-sm font-normal"
+                  class="font-normal"
                   @click="handleSubscribeWorkspace"
                 >
                   {{
@@ -185,7 +185,7 @@
                   v-if="isCloud && permissions.canManageSubscription"
                   size="lg"
                   variant="secondary"
-                  class="rounded-lg bg-interface-menu-component-surface-selected px-4 text-sm font-normal text-text-primary"
+                  class="bg-interface-menu-component-surface-selected font-normal text-text-primary"
                   @click="manageSubscription"
                 >
                   {{ $t('subscription.billingAndInvoices') }}
@@ -193,7 +193,7 @@
                 <Button
                   variant="primary"
                   size="lg"
-                  class="rounded-lg px-4 text-sm font-normal"
+                  class="font-normal"
                   @click="handleSubscribeWorkspace"
                 >
                   {{ $t('subscription.subscribe') }}
@@ -258,7 +258,7 @@
                   "
                   size="lg"
                   variant="secondary"
-                  class="rounded-lg bg-interface-menu-component-surface-selected px-4 text-sm font-normal text-text-primary"
+                  class="bg-interface-menu-component-surface-selected font-normal text-text-primary"
                   @click="manageSubscription"
                 >
                   {{
@@ -276,7 +276,7 @@
                   v-if="isSubscriptionCancelled && canReactivatePlan"
                   size="lg"
                   variant="primary"
-                  class="rounded-lg px-4 text-sm font-normal"
+                  class="font-normal"
                   :loading="isResubscribing"
                   @click="handleResubscribe"
                 >
@@ -290,7 +290,7 @@
                   "
                   size="lg"
                   variant="secondary"
-                  class="rounded-lg bg-interface-menu-component-surface-selected px-4 text-sm font-normal text-text-primary"
+                  class="bg-interface-menu-component-surface-selected font-normal text-text-primary"
                   :data-dd-action-name="BILLING_ACTION_NAME.upgradePlanPanel"
                   @click="handleUpgrade"
                 >

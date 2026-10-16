@@ -4,40 +4,12 @@
   "description": "The workflow document contract: zod schemas for workflow JSON and API-format prompts, load-time validation with link repair, the supported workflow-bearing file formats, subgraph flattening, and model-requirement extraction from workflow documents. Open workflows, the workflow store, and graph entity implementation remain external.",
   "modules": [
     {
-      "path": "src/platform/workflow/core/types/formats.ts",
+      "path": "src/platform/workflow/**",
       "role": "domain"
     },
     {
-      "path": "src/platform/workflow/core/utils/modelRequirements.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/workflow/core/utils/modelRequirements.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/workflow/core/utils/workflowFlattening.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/workflow/core/utils/workflowFlattening.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/workflow/validation/composables/useWorkflowValidation.test.ts",
+      "path": "src/platform/workflow/validation/composables/**",
       "role": "application"
-    },
-    {
-      "path": "src/platform/workflow/validation/composables/useWorkflowValidation.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/workflow/validation/schemas/workflowSchema.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/workflow/validation/schemas/workflowSchema.ts",
-      "role": "domain"
     },
     {
       "path": "src/utils/executionUtil.stability.test.ts",
@@ -76,11 +48,7 @@
       "role": "domain"
     },
     {
-      "path": "src/utils/migration/migrateReroute.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/utils/migration/migrateReroute.ts",
+      "path": "src/utils/migration/**",
       "role": "domain"
     }
   ],
