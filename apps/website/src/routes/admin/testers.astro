@@ -1,5 +1,11 @@
 ---
-import BaseLayout from '@/layouts/BaseLayout.astro'
+import AdminShell from '@/components/cms/AdminShell.astro'
+import { adminButtonVariants } from '@/components/cms/ui/adminButton'
+import PageHeader from '@/components/cms/ui/PageHeader.vue'
+import StatusLabel from '@/components/cms/ui/StatusLabel.vue'
+import type { StatusTone } from '@/components/cms/ui/status'
+import { resolveLocale } from '@/config/locales'
+import { formatUtc } from '@/lib/cms/format'
 import { isLocalAccess } from './local-access'
 import {
   TESTER_COOKIE,
@@ -44,20 +50,42 @@ const publicOrigin = (process.env.SITE_CATALOG_WEBSITE_ORIGINS ?? '')
 const signInURL = publicOrigin
   ? new URL('/admin/sign-in', publicOrigin).href
   : undefined
+const locale = resolveLocale(Astro.currentLocale)
+const state = (entry: (typeof entries)[number]) =>
+  entry.revoked
+    ? 'revoked'
+    : entry.expires <= Date.now()
+      ? 'expired'
+      : entry.redeemed
+        ? 'used'
+        : 'unused'
+const tones: Record<ReturnType<typeof state>, StatusTone> = {
+  unused: 'info',
+  used: 'success',
+  expired: 'muted',
+  revoked: 'muted'
+}
+const field =
+  'h-8 w-full rounded-lg border border-admin-field bg-admin-page px-2.5 text-sm text-admin-fg outline-none placeholder:text-admin-subtle hover:border-ash-800 focus-visible:border-admin-control'
 ---
 
-<BaseLayout title={t('cmsTesters.title')} noindex>
-  <section class="mx-auto max-w-4xl px-6 py-12">
-    <a href="/admin/changes/" class="text-primary-comfy-yellow"
-      >← {t('cmsTesters.back')}</a
-    >
-    <h1 class="my-6 text-3xl">{t('cmsTesters.title')}</h1>
-    <p class="mb-6 text-primary-comfy-canvas">{t('cmsTesters.notice')}</p>
-    {signInURL && <p class="mb-6 break-all">
-      <a href={signInURL} class="text-primary-comfy-yellow">{signInURL}</a>
+<AdminShell current="testers">
+  <div class="grid gap-5">
+    <PageHeader
+      title={t('cmsTesters.title')}
+      description={t('cmsTesters.notice')}
+    />
+    {signInURL && <p class="text-xs text-admin-muted">
+      <a
+        href={signInURL}
+        target="_blank"
+        rel="noopener"
+        class="break-all text-admin-fg underline-offset-4 hover:underline"
+        >{signInURL}</a
+      >
     </p>}
     {code && <div
-      class="mb-6 rounded-xl border border-primary-comfy-yellow p-5"
+      class="grid gap-2 rounded-lg border border-admin-info/25 bg-admin-info/10 p-3 text-sm"
     >
       <p>{t('cmsTesters.copy')}</p>
       <input
@@ -66,61 +94,63 @@ const signInURL = publicOrigin
         value={code}
         data-private
         data-dd-privacy="mask"
-        class="mt-3 w-full rounded-lg bg-site-bg-soft p-3 font-mono"
+        class:list={[field, 'font-mono']}
       />
     </div>}
     <form
       method="post"
       data-astro-reload
-      class="mb-8 grid gap-4 rounded-xl border border-white/10 p-5"
+      class="grid items-end gap-3 rounded-lg border border-admin-line bg-admin-card p-4 sm:grid-cols-[minmax(0,1fr)_12rem_auto]"
     >
       <input type="hidden" name="csrf" value={csrf} />
-      <label class="grid gap-2"
+      <label class="grid gap-1.5 text-xs text-admin-muted"
         >{t('cmsTesters.name')}<input
           name="name"
           required
           maxlength="100"
-          class="rounded-lg bg-site-bg-soft p-3"
+          class={field}
       /></label>
-      <label class="grid gap-2"
-        >{t('cmsTesters.access')}<select
-          name="role"
-          class="rounded-lg bg-site-bg-soft p-3"
-        >
+      <label class="grid gap-1.5 text-xs text-admin-muted"
+        >{t('cmsTesters.access')}<select name="role" class={field}>
           <option value="review">{t('cmsTesters.review')}</option>
           <option value="edit">{t('cmsTesters.edit')}</option>
           <option value="publish">{t('cmsTesters.publish')}</option>
         </select></label
       >
-      <button
-        class="rounded-full bg-primary-comfy-yellow px-6 py-3 text-primary-comfy-ink"
-      >
+      <button class={adminButtonVariants({ variant: 'primary' })}>
         {t('cmsTesters.create')}
       </button>
     </form>
-    <ul class="grid gap-4">
-      {entries.map((e) => <li class="rounded-xl border border-white/10 p-5">
-        <p>
-          {e.name} · {t(`cmsTesters.${e.role}`)} ·
-          {t(
-            `cmsTesters.${e.revoked ? 'revoked' : e.expires <= Date.now() ? 'expired' : e.redeemed ? 'used' : 'unused'}`
-          )}
-        </p>
-        <p class="my-2 text-sm text-primary-comfy-canvas">
-          {t('cmsTesters.expires', { date: new Date(e.expires).toISOString() })}
-        </p>
+    {entries.length > 0 && <ul
+      class="overflow-hidden rounded-lg border border-admin-line"
+    >
+      {entries.map((e) => <li
+        class="flex min-h-14 flex-wrap items-center gap-x-4 gap-y-1 border-b border-admin-hover px-4 py-2 text-sm last:border-b-0"
+      >
+        <div class="grid min-w-0 flex-1 gap-1">
+          <p class="flex flex-wrap items-center gap-3">
+            {e.name}
+            <StatusLabel
+              tone={tones[state(e)]}
+              label={t(`cmsTesters.${state(e)}`)}
+            />
+          </p>
+          <p class="text-xs text-admin-muted">
+            {t(`cmsTesters.${e.role}`)} ·{' '}
+            {t('cmsTesters.expires', {
+              date: formatUtc(new Date(e.expires).toISOString(), locale)
+            })}
+          </p>
+        </div>
         {!e.revoked && <form method="post" data-astro-reload>
-          <input type="hidden" name="csrf" value={csrf} /><input
-            type="hidden"
-            name="action"
-            value="revoke"
-          /><input type="hidden" name="id" value={e.id} /><button
-            class="text-primary-comfy-yellow"
-          >
+          <input type="hidden" name="csrf" value={csrf} />
+          <input type="hidden" name="action" value="revoke" />
+          <input type="hidden" name="id" value={e.id} />
+          <button class={adminButtonVariants({ variant: 'dangerGhost' })}>
             {t('cmsTesters.revoke')}
           </button>
         </form>}
       </li>)}
-    </ul>
-  </section>
-</BaseLayout>
+    </ul>}
+  </div>
+</AdminShell>

@@ -116,6 +116,52 @@
   /* The workspace monogram reads as a lighter step of the panel it sits on
      rather than a colour of its own, so it tints with whatever is behind it. */
   --color-workspace-mark: var(--color-transparency-white-t20);
+
+  /* Staff tools (the Hub admin and the preview bar) take the developer
+     platform's graphite palette rather than the marketing site's ink and
+     yellow: a work surface, not a page. Values follow platform.comfy.org. */
+  --text-admin-title: 1.375rem;
+  --font-admin: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --color-admin-page: color-mix(
+    in oklab,
+    var(--color-charcoal-800) 72%,
+    var(--color-black)
+  );
+  --color-admin-chrome: color-mix(
+    in oklab,
+    var(--color-charcoal-700) 76%,
+    var(--color-black)
+  );
+  --color-admin-card: var(--color-charcoal-800);
+  --color-admin-raised: var(--color-charcoal-600);
+  --color-admin-fg: var(--color-smoke-100);
+  --color-admin-muted: var(--color-smoke-500);
+  --color-admin-subtle: var(--color-smoke-800);
+  --color-admin-hover: color-mix(
+    in srgb,
+    var(--color-smoke-100) 4%,
+    transparent
+  );
+  --color-admin-line: color-mix(
+    in srgb,
+    var(--color-smoke-100) 7%,
+    transparent
+  );
+  --color-admin-selected: color-mix(
+    in srgb,
+    var(--color-smoke-100) 11%,
+    transparent
+  );
+  --color-admin-field: var(--color-charcoal-400);
+  --color-admin-control: var(--color-ash-500);
+  --color-admin-success: #4ade80;
+  --color-admin-warning: #eab308;
+  --color-admin-danger: #ef4444;
+  --color-admin-danger-text: #f87171;
+  --color-admin-info: #60a5fa;
+  --shadow-admin-popover: 0 8px 24px -4px rgb(0 0 0 / 0.5);
+  --shadow-admin-dialog: 0 16px 40px -12px rgb(0 0 0 / 0.55);
+  --shadow-admin-drawer: -16px 0 40px -12px rgb(0 0 0 / 0.55);
 }
 
 @utility content-auto {

@@ -111,4 +111,30 @@ describe('expired staff sessions', () => {
       expect(cookieOptions(contextFor('/admin/')).maxAge).toBe(hours * 60 * 60)
     }
   )
+
+  function noSession(demo: string) {
+    vi.stubEnv('SITE_CATALOG_API_URL', 'http://localhost:8099')
+    vi.stubEnv('SITE_CATALOG_DEMO', demo)
+    vi.stubEnv('VERCEL_ENV', 'preview')
+    return createContext({
+      request: new Request('http://127.0.0.1:4329/admin'),
+      defaultLocale: 'en',
+      clientAddress: '127.0.0.1'
+    })
+  }
+
+  it('sends a demo visitor without a session to the demo entry', async () => {
+    const next = vi.fn(() => Promise.resolve(new Response('Admin')))
+    const response = await onRequest(noSession('1'), next)
+    expect(response?.status).toBe(303)
+    expect(response?.headers.get('Location')).toBe('/admin/local-access')
+    expect(next).not.toHaveBeenCalled()
+  })
+
+  it('keeps the admin hidden from visitors without a session outside the demo', async () => {
+    const next = vi.fn(() => Promise.resolve(new Response('Admin')))
+    const response = await onRequest(noSession(''), next)
+    expect(response?.status).toBe(404)
+    expect(next).not.toHaveBeenCalled()
+  })
 })

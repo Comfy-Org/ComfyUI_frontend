@@ -28,10 +28,14 @@ const workflowDetailSchema = generatedModelSchema
   .extend(workflowModelSchema.shape)
   .extend({ workflow: workshopWorkflowDefinitionSchema })
   .refine((model) => model.workflowId === model.workflow.id)
-  .transform((model) => ({
-    ...model,
-    form: formForWorkflow(model.workflow)
-  }))
+  .transform((model, ctx) => {
+    try {
+      return { ...model, form: formForWorkflow(model.workflow) }
+    } catch (error) {
+      ctx.addIssue({ code: 'custom', message: String(error) })
+      return z.NEVER
+    }
+  })
 
 export const detailSchema = z.union([routerDetailSchema, workflowDetailSchema])
 

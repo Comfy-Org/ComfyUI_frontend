@@ -57,6 +57,8 @@ interface Props {
   mainEntityId?: string
   extraJsonLd?: (JsonLdNode | null | undefined)[]
   minimal?: boolean
+  /** No site header, banner or footer: the page brings its own chrome. */
+  bare?: boolean
   hideAnnouncementBanner?: boolean
   banner?: BannerConfig
   /** PP Formula faces this page renders above the fold beyond the site-wide set. */
@@ -77,6 +79,7 @@ const {
   mainEntityId,
   extraJsonLd,
   minimal = false,
+  bare = false,
   hideAnnouncementBanner = false,
   banner,
   preloadFonts = []
@@ -300,7 +303,7 @@ const structuredData = head.emitStructuredData
     <PreviewBanner />
     <StaffTools />
 
-    {bannerVisible && !minimal && (
+    {bannerVisible && !minimal && !bare && (
       <AnnouncementBanner
         data={bannerData}
         version={bannerVersion}
@@ -308,7 +311,7 @@ const structuredData = head.emitStructuredData
         client:load
       />
     )}
-    {minimal ? (
+    {bare ? null : minimal ? (
       <div class="mx-auto max-w-7xl px-6 py-8 lg:px-8">
         <a
           href={getRoutes(locale).home}
@@ -334,7 +337,7 @@ const structuredData = head.emitStructuredData
     <main class="overflow-x-clip">
       <slot />
     </main>
-    {!minimal && (
+    {!minimal && !bare && (
       <SiteFooter locale={locale} client:visible={{ rootMargin: '200px' }} />
     )}
 

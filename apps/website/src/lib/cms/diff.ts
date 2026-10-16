@@ -215,7 +215,3 @@ export function contentDiff(
 ) {
   return fieldDiff(fields(before), fields(after))
 }
-
-export function displayValue(value: unknown) {
-  return typeof value === 'string' ? value : JSON.stringify(value, null, 2)
-}

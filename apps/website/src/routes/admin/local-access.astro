@@ -1,34 +1,43 @@
 ---
+import { adminButtonVariants } from '@/components/cms/ui/adminButton'
 import BaseLayout from '@/layouts/BaseLayout.astro'
 import { isLocalAccess } from './local-access'
-if (!isLocalAccess(Astro)) return new Response('Not found', { status: 404 })
+const demo = Boolean(Astro.locals.siteDemo)
+if (!demo && !isLocalAccess(Astro))
+  return new Response('Not found', { status: 404 })
 const t = Astro.locals.t
 ---
 
-<BaseLayout title={t('cmsAdmin.title')} minimal noindex>
-  <section class="mx-auto max-w-xl px-6 py-16 md:py-24">
+<BaseLayout title={t('cmsAdmin.title')} bare noindex>
+  <section
+    class="grid min-h-screen place-items-center bg-admin-page px-4 font-admin text-admin-fg"
+  >
     <div
-      class="rounded-3xl border border-white/10 bg-primary-comfy-ink-light p-8 md:p-10"
+      class="grid w-full max-w-sm gap-4 rounded-xl border border-admin-line bg-admin-card p-6"
     >
-      <p
-        class="mb-4 text-xs tracking-widest text-primary-comfy-yellow uppercase"
-      >
-        {t('cmsAdmin.localReview')}
-      </p>
-      <h1 class="mb-4 text-4xl">{t('cmsAdmin.title')}</h1>
-      <p class="mb-8 leading-relaxed text-primary-comfy-canvas">
-        {t('cmsAdmin.localHelp')}
+      <div class="grid gap-1">
+        <p class="text-xs text-admin-muted">
+          {t(demo ? 'cmsAdmin.demo' : 'cmsAdmin.localReview')}
+        </p>
+        <h1 class="text-admin-title leading-tight">{t('cmsAdmin.title')}</h1>
+      </div>
+      <p class="text-sm leading-relaxed text-admin-muted">
+        {t(demo ? 'cmsAdmin.demoHelp' : 'cmsAdmin.localHelp')}
       </p>
       <form method="post" action="/admin/local-session" data-astro-reload>
         <button
-          class="w-full rounded-full bg-primary-comfy-yellow px-6 py-4 text-primary-comfy-ink transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-comfy-yellow"
+          class={adminButtonVariants({
+            variant: 'primary',
+            size: 'lg',
+            class: 'w-full'
+          })}
         >
           {t('cmsAdmin.openAdmin')}
         </button>
       </form>
       <a
         href="/hub/models/"
-        class="mt-6 inline-block text-sm text-primary-comfy-canvas hover:text-primary-comfy-yellow"
+        class="text-xs text-admin-muted hover:text-admin-fg"
         >← {t('cmsAdmin.hub')}</a
       >
     </div>

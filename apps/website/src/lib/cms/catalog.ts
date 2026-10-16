@@ -1,18 +1,17 @@
 import { zContentCatalogProjection } from '@comfyorg/ingest-types/zod'
-import { z } from 'astro/zod'
 
 import { modelSchema } from '@/config/models-catalogue-data'
 import { detailSchema } from '@/config/models-page-data'
 import type { SiteSession } from './admin'
 import { normalizeProjection } from './catalog-contract'
+import { cmsEnabled } from './cms-enabled'
+import { catalogFetch } from './demo'
 
-// Server-only configuration. Browser islands read same-origin JSON endpoints.
-export const cmsEnabled = () => Boolean(process.env.SITE_CATALOG_API_URL)
+export { cmsEnabled }
 
 export async function loadSiteCatalog(session?: SiteSession) {
   const origin = process.env.SITE_CATALOG_API_URL
-  if (!origin || process.env.VERCEL_ENV === 'production')
-    return { ok: false, status: 503 } as const
+  if (!origin || !cmsEnabled()) return { ok: false, status: 503 } as const
   let data: unknown
   try {
     const url = new URL(
@@ -24,7 +23,7 @@ export async function loadSiteCatalog(session?: SiteSession) {
       url.searchParams.set('eligible', 'true')
       if (session.preview?.now) url.searchParams.set('now', session.preview.now)
     }
-    const response = await fetch(url, {
+    const response = await catalogFetch(url, {
       ...(session
         ? { headers: { Authorization: `Bearer ${session.credential}` } }
         : {}),
@@ -40,23 +39,20 @@ export async function loadSiteCatalog(session?: SiteSession) {
   if (!projection.success) return { ok: false, status: 503 } as const
   const normalized = normalizeProjection(projection.data)
   if (!normalized) return { ok: false, status: 503 } as const
-  const models = z
-    .array(modelSchema)
-    .safeParse(projection.data.items.map((item) => item.data))
-  const details = z
-    .array(detailSchema)
-    .safeParse(
-      projection.data.items
-        .filter((item) => item.kind !== 'APP')
-        .map((item) => item.data)
-    )
-  if (!models.success || !details.success)
-    return { ok: false, status: 503 } as const
+  // An item that fails either schema drops out of every list, so its page
+  // returns 404 instead of taking every Hub page down.
+  const readable = normalized.items.flatMap((item) => {
+    const model = modelSchema.safeParse(item.data)
+    const detail =
+      item.kind === 'APP' ? undefined : detailSchema.safeParse(item.data)
+    if (!model.success || detail?.success === false) return []
+    return [{ item, model: model.data, detail: detail?.data }]
+  })
   return {
     ok: true,
-    projection: normalized,
-    models: models.data,
-    details: details.data
+    projection: { ...normalized, items: readable.map(({ item }) => item) },
+    models: readable.map(({ model }) => model),
+    details: readable.flatMap(({ detail }) => (detail ? [detail] : []))
   } as const
 }
 
