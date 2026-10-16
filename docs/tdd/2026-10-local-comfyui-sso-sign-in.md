@@ -93,6 +93,7 @@ flowchart LR
   D2 --> B5
   B5 --> B4
   B3a --> F1
+  B3b --> F1
   F2 --> F3
   B5 --> F3
   F3 --> F4
@@ -120,7 +121,7 @@ mint off in prod until F6 passes.
 | --- | ----------------------------------------------------------------------------------------- | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | D1  | Approve the partner-node token design and its five decisions; the fate of core #16242     | Christian, security reviewer | **Approved Oct 13** (Christian on #proj-sso: "True, no objections"). Core #16242 closed as superseded by C1. Cloud GPU job token expiry, and Christian's single-use token idea, moved to FE-3424 as separate follow-up. |
 | D2  | When is local SSO in scope, and for which customers                                       | Anupreet                     | Open                                                                                                                                                                                                                    |
-| D3  | May a refresh token live in browser storage, or is sign-in per browser session acceptable | Christian, security          | Open. F4 keeps tokens in memory only until this is decided.                                                                                                                                                             |
+| D3  | May a refresh token live in browser storage, or is sign-in per browser session acceptable | Christian, security          | **Proposed: B (`localStorage`)**, matching Firebase sign-in on Local, with refresh under a cross-tab Web Lock (#21168, awaiting Christian's review). Until it merges, F4 keeps tokens in memory only.                   |
 | K1  | Ship B3a with the mint off in prod                                                        | Jaewon, Simon (on-call)      | **Decided Oct 13**: `IngestConfig.PartnerNodeTokenMintDisabled: true` (cloud#13131), merged only after the release carrying B3a is on prod, since ingest rejects unknown config keys. Turned off after F6.              |
 
 ### Backend
@@ -139,7 +140,7 @@ mint off in prod until F6 passes.
 
 | #   | Action                                                                                                                                                                             | Ticket           | Depends on |
 | --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- | ---------- |
-| F1  | Request the partner-node token at queue time behind a flag; fall back to the workspace token; revoke on logout and account switch                                                  | FE-2170          | B3a        |
+| F1  | Request the partner-node token at queue time behind a flag; fall back to the workspace token; revoke on logout and account switch                                                  | FE-2170          | B3a, B3b   |
 | F2  | PKCE module in `packages/account-core`: verifier, S256 challenge, `state`, authorize URL, code exchange and refresh, with unit tests                                               | FE-3099          | none       |
 | F3  | Browser auth bridge with the `DesktopHostAuthBridge` shape, started from `src/main.ts` behind flag `local_web_sso`; read and check `code`/`state` on boot, exchange, clean the URL | FE-3099          | F2, B5     |
 | F4  | Token storage and refresh: access token in memory, refresh token per D3; clear both on sign-out                                                                                    | FE-3099          | F3, D3     |
