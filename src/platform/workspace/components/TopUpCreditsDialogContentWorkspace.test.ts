@@ -643,6 +643,57 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       expect(useToast().error).not.toHaveBeenCalled()
     })
 
+    it('refreshes the workspace balance and status when the user returns from checkout', async () => {
+      refuseForNoPaymentMethod()
+      vi.spyOn(workspaceApi, 'createTopupCheckout').mockResolvedValue({
+        checkout_url: checkoutUrl
+      })
+      const open = vi.spyOn(window, 'open').mockReturnValue({} as Window)
+      const { unmount } = renderDialog()
+      await clickAddCredits()
+      await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Continue to checkout' })
+      )
+      await waitFor(() => expect(open).toHaveBeenCalled())
+      unmount()
+      const billing = mockBillingContext()
+      vi.mocked(billing.fetchBalance).mockClear()
+      vi.mocked(billing.fetchStatus).mockClear()
+
+      window.dispatchEvent(new Event('focus'))
+
+      await waitFor(() => {
+        expect(billing.fetchBalance).toHaveBeenCalled()
+        expect(billing.fetchStatus).toHaveBeenCalled()
+      })
+    })
+
+    it('abandons a checkout that resolves after the dialog was dismissed', async () => {
+      refuseForNoPaymentMethod()
+      let resolveCheckout: (value: { checkout_url: string }) => void = () => {}
+      vi.spyOn(workspaceApi, 'createTopupCheckout').mockReturnValue(
+        new Promise((resolve) => {
+          resolveCheckout = resolve
+        })
+      )
+      const open = vi.spyOn(window, 'open')
+      const { unmount } = renderDialog()
+      await clickAddCredits()
+      await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Continue to checkout' })
+      )
+
+      unmount()
+      resolveCheckout({ checkout_url: checkoutUrl })
+      await new Promise((resolve) => setTimeout(resolve))
+
+      expect(open).not.toHaveBeenCalled()
+      expect(mockStartPendingTopup).not.toHaveBeenCalled()
+      expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
+    })
+
     it('keeps the dialog open and explains a checkout that could not start', async () => {
       refuseForNoPaymentMethod()
       vi.spyOn(workspaceApi, 'createTopupCheckout').mockRejectedValue(

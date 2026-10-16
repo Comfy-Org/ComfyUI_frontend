@@ -309,7 +309,7 @@ import {
   TOPUP_AMOUNT_PRESETS_USD
 } from '@comfyorg/account-core/billing'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { creditsToUsd, usdToCredits } from '@/base/credits/comfyCredits'
@@ -319,6 +319,7 @@ import NumberField from '@/components/ui/number-field/NumberField.vue'
 import NumberFieldDecrement from '@/components/ui/number-field/NumberFieldDecrement.vue'
 import NumberFieldIncrement from '@/components/ui/number-field/NumberFieldIncrement.vue'
 import NumberFieldInput from '@/components/ui/number-field/NumberFieldInput.vue'
+import { watchForTopupBalanceUpdate } from '@/composables/billing/topupBalanceRefresh'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@/platform/telemetry'
@@ -363,7 +364,7 @@ const settingsDialog = useSettingsDialog()
 const telemetry = useTelemetry()
 const toast = useToast()
 const { buildDocsUrl, docsPaths } = useExternalLink()
-const { fetchBalance, fetchStatus } = useBillingContext()
+const { balance, fetchBalance, fetchStatus } = useBillingContext()
 const { canTopUp } = useBillingCapabilities()
 
 const workspaceStore = useTeamWorkspaceStore()
@@ -720,6 +721,11 @@ function isNoPaymentMethodRefusal(error: unknown): boolean {
   )
 }
 
+let unmounted = false
+onUnmounted(() => {
+  unmounted = true
+})
+
 async function continueToCheckout() {
   if (!(canTopUp.value && isValidAmount.value && !paymentLocked.value)) {
     return
@@ -730,12 +736,21 @@ async function continueToCheckout() {
       payAmount.value * 100,
       window.location.href
     )
+    if (unmounted) return
     usePendingTopup().startPendingTopup()
+    watchForTopupBalanceUpdate({
+      current: () => balance.value?.amountMicros ?? null,
+      fetch: async () => {
+        await Promise.allSettled([fetchBalance(), fetchStatus()])
+        return balance.value?.amountMicros ?? null
+      }
+    })
     if (!window.open(checkoutUrl, '_blank')) {
       globalThis.location.href = checkoutUrl
     }
     handleClose(false)
   } catch (error) {
+    if (unmounted) return
     toast.error(t('credits.topUp.purchaseError'), {
       description: purchaseErrorDetail(error)
     })
