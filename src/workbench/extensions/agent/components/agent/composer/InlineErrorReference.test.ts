@@ -38,6 +38,7 @@ describe('InlineErrorReference', () => {
     const icon = screen.getByTestId('error-reference-icon')
     expect(icon).toHaveClass('icon-[lucide--circle-alert]', 'size-3')
     expect(icon).not.toHaveClass('text-destructive-background')
+    expect(icon).not.toHaveClass('text-destructive-background-hover')
     expect(screen.getByTestId('error-reference-chip').className).toContain(
       'text-modal-card-tag-foreground'
     )
@@ -52,6 +53,7 @@ describe('InlineErrorReference', () => {
     const icon = screen.getByTestId('error-reference-icon')
     expect(icon).toHaveClass('icon-[lucide--triangle-alert]', 'size-3')
     expect(icon).not.toHaveClass('text-warning-foreground')
+    expect(icon).not.toHaveClass('text-warning-background')
     expect(screen.getByTestId('error-reference-chip').className).toContain(
       'text-modal-card-tag-foreground'
     )
