@@ -349,3 +349,9 @@ When using `take_snapshot` to inspect dropdowns, listboxes, or other components 
 - Put scripts used under `/temp/scripts/`
 - Put summaries of work performed under `/temp/summaries/`
 - Put TODOs and status updates under `/temp/in_progress/`
+
+## Cursor Cloud specific instructions
+
+- Node `26.12.0` and pnpm `11.13.1` live in `/usr/local/bin`. Prepend that directory to `PATH` when `node -v` is not 26.x. The agent shell can expose an older Node first.
+- On boot, the environment starts a local ComfyUI API stub on `127.0.0.1:8188` and `pnpm dev` on port `5173` with `VITE_REMOTE_DEV=true`. The stub answers the endpoints the graph UI needs, including a Note node. It does not execute workflows.
+- `pnpm dev:cloud` proxies to `https://testcloud.comfy.org/` and shows the cloud login page. This environment has no cloud test account.
