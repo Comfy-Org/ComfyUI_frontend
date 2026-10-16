@@ -1478,9 +1478,9 @@ async function onSelectHistory(
 ): Promise<boolean> {
   if (currentChatReady.value && id === threadId.value) {
     if (agentPanelStore.targetUnresolved)
-      return (
-        agentPanelStore.unresolvedTargetListed ||
-        retryUnresolvedTarget(conversationStore.latestWorkflowId, isCurrent)
+      return retryUnresolvedTarget(
+        conversationStore.latestWorkflowId,
+        isCurrent
       )
     return onShowTarget(isCurrent, warnRestoreFailed)
   }
