@@ -13,6 +13,7 @@ import type {
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
+import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import {
   mockWorkspaceTokenMint,
@@ -136,6 +137,9 @@ async function mockCloudBoot(
   })
   await page.route('**/api/billing/plans', (r) =>
     r.fulfill(jsonRoute({ plans: [] }))
+  )
+  await page.route('**/api/billing/capabilities', (r) =>
+    r.fulfill(jsonRoute(createBillingCapabilities('ws-personal')))
   )
 
   return billingRequests

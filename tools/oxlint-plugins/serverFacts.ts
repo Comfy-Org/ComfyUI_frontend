@@ -835,10 +835,58 @@ export const noServerFactLiterals: Rule = {
   }
 }
 
+const FACT_CONSTRUCTOR = 'receiveServerFact'
+const FACT_PROVIDERS = [
+  /(?:^|\/)src\/platform\/serverFacts\/serverFact\.ts$/,
+  /(?:^|\/)src\/platform\/workspace\/composables\/useBillingCapabilities\.ts$/,
+  /\.(?:test|spec|stories)\.ts$/,
+  /(?:^|\/)__mocks__\//,
+  /(?:^|\/)src\/storybook\//
+]
+
+export const noStrayServerFactConstructor: Rule = {
+  meta: {
+    type: 'problem',
+    docs: {
+      description:
+        'Restrict receiveServerFact to the modules that decode an API response or answer a fact locally'
+    },
+    schema: [],
+    messages: {
+      stray: `\`${FACT_CONSTRUCTOR}\` is used outside a fact provider. Only the module that decodes the API response, or a local provider listed in FACT_PROVIDERS, may mint a ServerFact; a gate receives it from there. ${GUIDANCE}`
+    }
+  },
+  create(context) {
+    const filename = context.filename.replaceAll('\\', '/')
+    if (FACT_PROVIDERS.some((provider) => provider.test(filename))) return {}
+    return {
+      ImportSpecifier(node) {
+        const imported = node.imported
+        const name =
+          imported.type === 'Identifier' ? imported.name : imported.value
+        if (name !== FACT_CONSTRUCTOR) return
+        context.report({ node, messageId: 'stray' })
+      },
+      MemberExpression(node) {
+        const property = node.property
+        const name =
+          property.type === 'Identifier' && !node.computed
+            ? property.name
+            : property.type === 'Literal'
+              ? property.value
+              : undefined
+        if (name !== FACT_CONSTRUCTOR) return
+        context.report({ node, messageId: 'stray' })
+      }
+    }
+  }
+}
+
 export default {
   meta: { name: 'comfy' },
   rules: {
     'no-capability-recombination': noCapabilityRecombination,
-    'no-server-fact-literals': noServerFactLiterals
+    'no-server-fact-literals': noServerFactLiterals,
+    'no-stray-server-fact-constructor': noStrayServerFactConstructor
   }
 }

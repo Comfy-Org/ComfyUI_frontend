@@ -4,16 +4,16 @@ import { useRouter } from 'vue-router'
 import { ssoStartUrl } from '@comfyorg/account-core/sso'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import type { SsoRequiredContext } from '@/platform/auth/sso/ssoRequired'
+import type { SsoRequiredContext } from '@/platform/auth/sso/ssoRequiredContext'
 import { toSsoReturnPath } from '@/platform/auth/sso/ssoReturnPath'
 import { trackSsoContinueClicked } from '@/platform/auth/sso/ssoTelemetry'
 import { SSO_ENTRY_OPEN_QUERY } from '@/platform/cloud/onboarding/sso/ssoEntryQuery'
-import { useAuthStore } from '@/stores/authStore'
+import { useAuthStoreAccess } from '@/platform/auth/authStoreAccess'
 
 /** Signs out of Firebase and leaves for the refusing organization's SSO. */
 export function useContinueWithSso(context: () => SsoRequiredContext) {
   const router = useRouter()
-  const authStore = useAuthStore()
+  const authStore = useAuthStoreAccess()
   const { toastErrorHandler } = useErrorHandling()
   const knownEmail = computed(() => context().email ?? authStore.userEmail)
   const leaving = ref(false)

@@ -1,15 +1,13 @@
-import type { ServerDocFrame } from './docFrameClient'
+export const SERVER_DOC_FRAME_TYPES = [
+  'doc_update',
+  'doc_subscribed',
+  'doc_ops_result',
+  'doc_reset',
+  'doc_reseed_result',
+  'awareness'
+] as const
 
-const SERVER_DOC_FRAMES: Record<ServerDocFrame['type'], true> = {
-  doc_update: true,
-  doc_subscribed: true,
-  doc_ops_result: true,
-  doc_reset: true,
-  doc_reseed_result: true,
-  awareness: true
-}
-
-export const SERVER_DOC_FRAME_TYPES = Object.keys(SERVER_DOC_FRAMES)
+export type ServerDocFrameType = (typeof SERVER_DOC_FRAME_TYPES)[number]
 
 export const STALE_SCHEMA_RESEED_REQUIRED = 'stale_schema_reseed_required'
 export const RESEED_CONFLICT = 'conflict'

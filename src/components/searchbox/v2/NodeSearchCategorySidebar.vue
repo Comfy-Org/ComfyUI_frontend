@@ -65,7 +65,7 @@ import NodeSearchCategoryTreeNode, {
 import Button from '@/components/ui/button/Button.vue'
 import type { CategoryNode } from '@/components/searchbox/v2/NodeSearchCategoryTreeNode.vue'
 import { nodeOrganizationService } from '@/services/nodeOrganizationService'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { TreeNode } from '@/types/treeExplorerTypes'
 import { cn } from '@comfyorg/tailwind-utils'

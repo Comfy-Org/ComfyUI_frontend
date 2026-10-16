@@ -4,6 +4,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { i18n } from '@/i18n'
 import { useDialogStore } from '@/stores/dialogStore'
+import type {
+  generateModelThumbnail as generateModelThumbnailContract,
+  ModelThumbnailResult
+} from '@/components/load3d/modelThumbnail'
 
 import type { ReplyAsset } from '../../../utils/replyAssets'
 import ReplyAssetGroup from './ReplyAssetGroup.vue'
@@ -22,7 +26,9 @@ vi.mock<unknown>(import('@/platform/assets/utils/assetPreviewUtil'), () => ({
 }))
 
 const generateModelThumbnail = vi.hoisted(() =>
-  vi.fn(async (): Promise<string | null> => null)
+  vi.fn<typeof generateModelThumbnailContract>(
+    async (): Promise<ModelThumbnailResult> => ({ status: 'failed' })
+  )
 )
 vi.mock(import('@/components/load3d/modelThumbnail'), () => ({
   generateModelThumbnail
@@ -44,7 +50,7 @@ const audio: ReplyAsset = {
   kind: 'audio'
 }
 const model: ReplyAsset = {
-  url: 'https://x/mesh.glb',
+  url: 'https://x/api/view?filename=mesh.glb',
   filename: 'mesh.glb',
   kind: '3D'
 }
@@ -80,7 +86,7 @@ describe('ReplyAssetGroup', () => {
     isAssetPreviewSupported.mockReturnValue(false)
     findServerPreviewUrl.mockResolvedValue(null)
     findOutputAsset.mockResolvedValue(undefined)
-    generateModelThumbnail.mockResolvedValue(null)
+    generateModelThumbnail.mockResolvedValue({ status: 'failed' })
   })
 
   it('T-09 / PM-652 / FE-1326 renders image and video previews inline', () => {
@@ -187,7 +193,7 @@ describe('ReplyAssetGroup', () => {
       expect.objectContaining({
         key: 'asset-3d-viewer',
         title: 'mesh.glb',
-        props: { modelUrl: 'https://x/mesh.glb' }
+        props: { modelUrl: 'https://x/api/view?filename=mesh.glb' }
       })
     )
     expect(screen.queryByTestId('lightbox')).not.toBeInTheDocument()
@@ -236,15 +242,113 @@ describe('ReplyAssetGroup', () => {
 
   it('generates a thumbnail offscreen when the server has none', async () => {
     isAssetPreviewSupported.mockReturnValue(true)
-    generateModelThumbnail.mockResolvedValue('data:image/png;base64,gen')
+    generateModelThumbnail.mockResolvedValue({
+      status: 'rendered',
+      dataUrl: 'data:image/png;base64,gen'
+    })
     renderGroup([model])
 
     const thumb = await screen.findByRole('img', { name: 'mesh.glb' })
     expect(thumb).toHaveAttribute('src', 'data:image/png;base64,gen')
     expect(generateModelThumbnail).toHaveBeenCalledWith(
-      'https://x/mesh.glb',
-      'mesh.glb'
+      'https://x/api/view?filename=mesh.glb',
+      'mesh.glb',
+      expect.any(AbortSignal)
     )
+  })
+
+  it('retries offscreen generation when the renderer queue is busy', async () => {
+    isAssetPreviewSupported.mockReturnValue(true)
+    generateModelThumbnail
+      .mockResolvedValueOnce({ status: 'busy' })
+      .mockResolvedValueOnce({
+        status: 'rendered',
+        dataUrl: 'data:image/png;base64,retried'
+      })
+    renderGroup([model])
+
+    await waitFor(() => expect(generateModelThumbnail).toHaveBeenCalledOnce())
+    await vi.advanceTimersToNextTimerAsync()
+
+    const thumbnail = await screen.findByRole('img', { name: 'mesh.glb' })
+    expect(generateModelThumbnail).toHaveBeenCalledTimes(2)
+    expect(thumbnail).toHaveAttribute('src', 'data:image/png;base64,retried')
+  })
+
+  it('cancels a pending busy retry on teardown', async () => {
+    isAssetPreviewSupported.mockReturnValue(true)
+    generateModelThumbnail.mockResolvedValue({ status: 'busy' })
+    const wrapper = renderGroup([model])
+    await waitFor(() => expect(generateModelThumbnail).toHaveBeenCalledOnce())
+
+    wrapper.unmount()
+    await vi.advanceTimersByTimeAsync(2000)
+
+    expect(generateModelThumbnail).toHaveBeenCalledOnce()
+  })
+
+  it('stops retrying when the renderer queue stays busy', async () => {
+    isAssetPreviewSupported.mockReturnValue(true)
+    generateModelThumbnail.mockResolvedValue({ status: 'busy' })
+    renderGroup([model])
+    await waitFor(() => expect(generateModelThumbnail).toHaveBeenCalledOnce())
+
+    await vi.runAllTimersAsync()
+
+    expect(generateModelThumbnail).toHaveBeenCalledTimes(30)
+  })
+
+  it('generates thumbnails only for model URLs that name a filename query', async () => {
+    isAssetPreviewSupported.mockReturnValue(true)
+    const pathStyleModel: ReplyAsset = {
+      url: 'https://x/models/scene.glb',
+      filename: 'scene.glb',
+      kind: '3D'
+    }
+    renderGroup([pathStyleModel, model])
+
+    await waitFor(() => expect(generateModelThumbnail).toHaveBeenCalledOnce())
+    expect(generateModelThumbnail).toHaveBeenCalledWith(
+      'https://x/api/view?filename=mesh.glb',
+      'mesh.glb',
+      expect.any(AbortSignal)
+    )
+  })
+
+  it('cancels thumbnail rendering on teardown and remounts with a fresh signal', async () => {
+    isAssetPreviewSupported.mockReturnValue(true)
+    generateModelThumbnail.mockImplementationOnce(
+      async (_url, _filename, signal) =>
+        new Promise<ModelThumbnailResult>((resolve) => {
+          signal?.addEventListener(
+            'abort',
+            () => resolve({ status: 'cancelled' }),
+            { once: true }
+          )
+        })
+    )
+
+    const first = renderGroup([model])
+    await waitFor(() => expect(generateModelThumbnail).toHaveBeenCalledOnce())
+    const firstSignal = generateModelThumbnail.mock.calls[0][2]
+
+    first.unmount()
+
+    expect(firstSignal).toBeInstanceOf(AbortSignal)
+    expect(firstSignal?.aborted).toBe(true)
+
+    generateModelThumbnail.mockResolvedValueOnce({
+      status: 'rendered',
+      dataUrl: 'data:image/png;base64,remounted'
+    })
+    renderGroup([model])
+
+    const thumbnail = await screen.findByRole('img', { name: 'mesh.glb' })
+    const secondSignal = generateModelThumbnail.mock.calls[1][2]
+    expect(secondSignal).toBeInstanceOf(AbortSignal)
+    expect(secondSignal).not.toBe(firstSignal)
+    expect(secondSignal?.aborted).toBe(false)
+    expect(thumbnail).toHaveAttribute('src', 'data:image/png;base64,remounted')
   })
 
   it('refreshes the tile thumbnail after the viewer closes', async () => {

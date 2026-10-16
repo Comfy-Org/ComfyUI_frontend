@@ -97,3 +97,10 @@ unanswered, or unreadable), or the identity lookup is rejected, turns seed the
 draft again. An identity lookup that is still retrying keeps withholding the
 draft. A reconnect retries the document and withholds it until that attempt
 settles.
+
+## Ask cards
+
+An `ask_user` question stays on screen, read-only, after it resolves, until
+the thread is loaded again. The server's transcript keeps only a pending ask
+(`pending_ask`), so a reload, or opening another chat and coming back, drops a
+card whose ask has resolved.

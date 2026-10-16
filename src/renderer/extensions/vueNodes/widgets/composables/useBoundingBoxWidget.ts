@@ -53,7 +53,8 @@ export const useBoundingBoxWidget = (): ComfyWidgetConstructorV2 => {
             subWidget.value = widget.value[field]
           }
         }
-      }
+      },
+      { hideInPanel: true }
     )
 
     if (!isBoundingBoxLikeWidget(rawWidget)) {

@@ -9,6 +9,7 @@ import {
 } from 'vue'
 import type { Ref } from 'vue'
 
+import { SCHEMA_VERSION } from '@comfyorg/comfy-multi-player'
 import type { Op } from '@comfyorg/comfy-multi-player'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
@@ -20,12 +21,16 @@ import type { NodeId } from '@/types/nodeId'
 import { createUuidv4 } from '@/utils/uuid'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
+import type {
+  AgentCrdtOutcomeCounters,
+  AgentCrdtTerminalState,
+  AgentCrdtStatus
+} from './agentCrdtStatus'
 import {
   AgentCrdtDocLifecycle,
   STALE_AFTER_MS,
   SUBSCRIBE_CATCHUP_GRACE_MS
 } from './agentCrdtDocLifecycle'
-import type { SubscribeGiveUpReason } from './agentCrdtDocLifecycle'
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import type { DocNodeDelta, FrameOutcome } from './agentCrdtProjection'
 import { createLoggedTransport } from './agentCrdtTransport'
@@ -47,54 +52,6 @@ import type { BatchOutcome, OpsResultView } from './opSender'
 import { createRejectedOpNotifier } from './rejectedOpNotice'
 
 export { STALE_AFTER_MS, SUBSCRIBE_CATCHUP_GRACE_MS }
-
-/**
- * s5-metrics-1: per-outcome counters for every `doc_update` the composable's
- * listeners observe, replacing the single overloaded `updatesApplied`
- * observable. Each counter increments exactly once, at the boundary where
- * that outcome is decided — never inferred after the fact. `received` counts
- * only frames the bridge re-dispatched as `doc_update`, so
- * `received === applied + skipped` always holds; `errored`, `gap` and
- * `dropped` are disjoint from it because the bridge returns before
- * re-dispatching in each of those cases (schema gate, FEB-2 seq jump,
- * stale/duplicate discard). Frames the bridge drops for a workflowId other
- * than its `sentWorkflowId` emit no event and are not counted anywhere.
- * `applied` is tracked independently of `bridge.follower.updatesApplied`
- * (which counts Yjs merges, including frames this composable skips) so a
- * divergence between the two is visible instead of hidden behind one number.
- * No payload bodies or actor identifiers are recorded here — see
- * `recordDevEvent` call sites for the (dev-only) frame detail surface.
- */
-interface AgentCrdtOutcomeCounters {
-  /** Every `doc_update` event the composable's listener was invoked with. */
-  received: number
-  /** Passed this composable's own filter and the adapter had a bound session to apply it to. */
-  applied: number
-  /**
-   * PM-1575: same as `applied`, excluding a subscribe's own catch-up frame
-   * (`update.catchUp`) -- the one-time state-vector sync that lands whenever
-   * a workflow is (re)subscribed to, unrelated to any in-flight tool call.
-   * `applied` alone is unusable as a canvas-sync gate for that reason: a tool
-   * call's baseline, captured before that catch-up lands, would otherwise
-   * read the catch-up itself as "the matching update already arrived" for
-   * whichever tool call happens to be first after a (re)subscribe. Consumers
-   * that need "did a LIVE update land" (agentEventTransport.ts's canvas-sync
-   * baseline) must read this field, not `applied`.
-   */
-  appliedLive: number
-  /** Received but not applied: inactive target, workflow mismatch, or no bound adapter session. */
-  skipped: number
-  /** The merged doc failed the KA-11 read gate (`schema_error`). */
-  errored: number
-  /** A seq jump was detected upstream; the frame was withheld and a resubscribe forced (`doc_gap`). */
-  gap: number
-  /** An explicit lineage break (`doc_reset`). */
-  reset: number
-  /** A stale/duplicate frame the bridge discarded before it became a `doc_update` event (`doc_stale`). */
-  dropped: number
-}
-
-type AgentCrdtTerminalState = SubscribeGiveUpReason | 'schema_error' | null
 
 interface ProjectionFrameId {
   opIds?: readonly string[]
@@ -219,22 +176,6 @@ function hasNodes(
   canvas: Record<string, unknown> | null
 ): canvas is Record<string, unknown> {
   return Array.isArray(canvas?.nodes) && canvas.nodes.length > 0
-}
-
-export interface AgentCrdtStatus {
-  enabled: boolean
-  connected: boolean
-  workflowId: string | null
-  terminal: AgentCrdtTerminalState
-  /**
-   * Mirror of `bridge.follower.updatesApplied` (Yjs merges, reset to 0 on
-   * `doc_reset` / `follower_replaced`). Not interchangeable with
-   * `outcomes.applied`, which is monotonic and counts only frames that passed
-   * this composable's filter. Kept for AgentPanelRoot.vue and CrdtDevPanel.vue.
-   */
-  updatesApplied: number
-  lastFrameType: string | null
-  outcomes: AgentCrdtOutcomeCounters
 }
 
 type OpsResultDropReason = 'inactive_target' | 'workflow_mismatch'
@@ -806,6 +747,7 @@ function startAgentCrdtFollower(
       projection.bind(workflowId, bridge.follower)
     }
   }
+  const staleClientNotified = new Set<string>()
   const onSchemaError: EventListener = (event) => {
     // KA-11 fail-closed: the bridge refused to propagate an unreadable doc, so
     // nothing was projected. Surface it as its own status rather than as a
@@ -816,7 +758,7 @@ function startAgentCrdtFollower(
     lifecycle.clearStaleProbe()
     const detail =
       event instanceof CustomEvent
-        ? (event.detail as { workflowId?: string } | null)
+        ? (event.detail as { workflowId?: string; found?: unknown } | null)
         : null
     if (detail?.workflowId !== undefined) {
       projection.discardPending(detail.workflowId)
@@ -826,6 +768,20 @@ function startAgentCrdtFollower(
     recordDevEvent(
       'schema_error',
       event instanceof CustomEvent ? (event.detail ?? null) : null
+    )
+    notifyStaleClient(detail)
+  }
+  function notifyStaleClient(
+    detail: { workflowId?: string; found?: unknown } | null
+  ): void {
+    const found = newerDocSchema(detail?.found)
+    const workflowId = detail?.workflowId
+    if (found === null || workflowId === undefined) return
+    if (staleClientNotified.has(workflowId)) return
+    staleClientNotified.add(workflowId)
+    events.onSyncError?.(
+      `document schema v${found} is newer than this page reads (v${SCHEMA_VERSION})`,
+      'stale_client_schema'
     )
   }
   const onGap: EventListener = (event) => {
@@ -1089,4 +1045,8 @@ function startAgentCrdtFollower(
       bridge.subscribedWorkflowId !== null &&
       bridge.subscribedWorkflowId === subscribedWorkflowId.value
   }
+}
+
+function newerDocSchema(found: unknown): number | null {
+  return typeof found === 'number' && found > SCHEMA_VERSION ? found : null
 }
