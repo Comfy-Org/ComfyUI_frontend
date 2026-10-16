@@ -85,7 +85,11 @@ const visible = computed(() =>
       matchesListing(filter.value, query.value, item.kind, [
         item.title,
         item.source === 'submission' ? item.author : item.provider,
-        item.source === 'submission' ? item.shareId : item.slug
+        item.source === 'submission' ? item.shareId : item.slug,
+        item.source === 'catalog' &&
+        typeof item.canonical?.content.document.change_id === 'string'
+          ? item.canonical.content.document.change_id
+          : undefined
       ])
     )
     .toSorted((a, b) => Number(b.change === 'new') - Number(a.change === 'new'))

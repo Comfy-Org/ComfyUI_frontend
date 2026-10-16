@@ -993,6 +993,11 @@ the key when cleared. Invalid labels block Save until repaired; the same validat
 is used by the publish filter. Labels such as `workflows_1016` group related
 changes without changing resource identity or granting publication permission.
 
+The publish table's main search also matches string-valued `change_id` labels
+on canonical rows. This narrows the currently loaded review rows without issuing
+an authoring request; the explicit Change ID filter still binds the reviewed
+server selection. Neither search automatically selects or publishes a batch.
+
 The checked-review filter accepts an exact case-sensitive `change_id` batch
 label: 1–128 ASCII letters/digits/dot/underscore/hyphen, starting with a letter
 or digit. It survives query/confirmation scopes; refreshing filters clears old

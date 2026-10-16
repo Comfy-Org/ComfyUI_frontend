@@ -23,6 +23,30 @@ function firstItem(review: ReturnType<typeof fixtureReview>) {
 }
 
 describe('checkbox-only publication console', () => {
+  it('finds a batch label in the main search bar without writes', async () => {
+    const user = userEvent.setup()
+    const initial = fixtureReview()
+    firstItem(initial).content.document.change_id = 'workfl_1016'
+    const other = structuredClone(firstItem(initial))
+    other.content.uid = '00000000-0000-4000-8000-000000000025'
+    other.content.document.title = 'Unrelated change'
+    other.content.document.change_id = 'another_batch'
+    initial.items.push(other)
+    const fetcher = vi.fn<typeof fetch>()
+    vi.mocked(fetch).mockImplementation(fetcher)
+    render(CatalogCheckedReview, {
+      props: { initial, csrf: 'fixture', canApply: true, canEdit: true }
+    })
+    await user.type(screen.getByRole('searchbox'), 'workfl_1016')
+    expect(
+      screen.getByRole('checkbox', { name: 'Select Review fixture' })
+    ).toBeVisible()
+    expect(
+      screen.queryByRole('checkbox', { name: 'Select Unrelated change' })
+    ).not.toBeInTheDocument()
+    expect(fetcher).not.toHaveBeenCalled()
+  })
+
   it('keeps server filters reachable when a batch has no matches', async () => {
     const user = userEvent.setup()
     const initial = fixtureReview()
