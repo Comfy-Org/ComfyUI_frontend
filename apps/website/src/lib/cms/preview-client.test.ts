@@ -34,8 +34,12 @@ describe('Preview navigation', () => {
     '/\\evil.test',
     '/bad%00path',
     '/bad%ZZ'
-  ])('rejects unsafe return path %s', (path) => {
+  ])('rejects unsafe return path %s with or without a locale', (path) => {
     expect(previewNavigationPath(path, 'zh-CN')).toBeUndefined()
+    expect(previewNavigationPath(path)).toBeUndefined()
+  })
+  it('keeps a same-origin path unchanged without a locale', () => {
+    expect(previewNavigationPath('/admin/catalog')).toBe('/admin/catalog')
   })
 })
 
