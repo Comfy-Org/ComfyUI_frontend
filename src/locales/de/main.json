@@ -5866,6 +5866,32 @@
     "subscribe": "Abonnieren",
     "switchWorkspace": "Arbeitsbereich wechseln"
   },
+  "openOnCloud": {
+    "runThisWorkflowOn": "Diesen Workflow ausführen auf",
+    "local": "Lokal",
+    "triggerLabel": "Läuft lokal. Wählen Sie, wo er läuft",
+    "checking": "Wird geprüft…",
+    "open": "Öffnen",
+    "openLabel": "Diesen Workflow in Comfy Cloud in einem neuen Browser-Tab öffnen",
+    "openTooltip": "Öffnet diesen Workflow in Comfy Cloud in einem neuen Browser-Tab. Hier bleibt er ebenfalls geöffnet.",
+    "nodesMissing": "{count} Node fehlt | {count} Nodes fehlen",
+    "modelsMissing": "{count} Modell fehlt | {count} Modelle fehlen",
+    "missingTooltip": "Comfy Cloud fehlen einige Nodes oder Modelle. Stellen Sie sie bereit, um diesen Workflow in der Cloud auszuführen.",
+    "deploySetup": "Ihr Setup in Comfy Cloud bereitstellen",
+    "aboutDeploy": "Über „In Comfy API bereitstellen“",
+    "openedFromLocal": "Aus ComfyUI auf Ihrem Computer geöffnet",
+    "openedFromLocalDetail": "Comfy Cloud hat alle Nodes und Modelle, die dieser Workflow verwendet. Klicken Sie auf Ausführen, wenn Sie bereit sind.",
+    "handoffFailed": "Der Workflow aus ComfyUI auf Ihrem Computer konnte nicht geöffnet werden",
+    "popupBlocked": "Ihr Browser hat den Comfy Cloud-Tab blockiert. Erlauben Sie Pop-ups für diese Seite und versuchen Sie es erneut.",
+    "downloaded": "Workflow heruntergeladen",
+    "downloadedDetail": "Ziehen Sie ihn in Ihrem Browser auf Comfy Cloud, um ihn dort zu öffnen.",
+    "prototype": {
+      "label": "Comfy Cloud-Prüfung (Prototyp)",
+      "checking": "Wird geprüft",
+      "canOpen": "Kann öffnen",
+      "missing": "Kann nicht öffnen"
+    }
+  },
   "zoomControls": {
     "hideMinimap": "Minimap ausblenden",
     "label": "Zoom-Steuerung",

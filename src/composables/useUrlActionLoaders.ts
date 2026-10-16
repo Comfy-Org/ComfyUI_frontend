@@ -10,6 +10,8 @@ import {
   STRIPE_RETURN_PARAMS
 } from '@/platform/cloud/subscription/utils/paymentReturnUrl'
 import { isCloud } from '@/platform/distribution/types'
+import { useLocalHandoffUrlLoader } from '@/platform/openOnCloud/composables/useLocalHandoffUrlLoader'
+import { LOCAL_HANDOFF_PARAM } from '@/platform/openOnCloud/localHandoffProtocol'
 import { useSettingsUrlLoader } from '@/platform/settings/composables/useSettingsUrlLoader'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useCreateWorkspaceUrlLoader } from '@/platform/workspace/composables/useCreateWorkspaceUrlLoader'
@@ -38,6 +40,7 @@ type UrlActionLoaders = {
   settingsUrlLoader: ReturnType<typeof useSettingsUrlLoader> | null
   assetsUrlLoader: ReturnType<typeof useAssetsUrlLoader> | null
   paymentReturnUrlLoader: ReturnType<typeof usePaymentReturnUrlLoader> | null
+  localHandoffUrlLoader: ReturnType<typeof useLocalHandoffUrlLoader> | null
 }
 
 /**
@@ -67,6 +70,7 @@ const HANDLED_PARAMS = [
   'topup',
   'settings',
   'assets',
+  LOCAL_HANDOFF_PARAM,
   ...STRIPE_RETURN_PARAMS,
   ...BILLING_WEB_RETURN_PARAMS
 ]
@@ -145,6 +149,13 @@ function buildUrlActionSteps(
     steps.push({
       failureMessage: 'Failed to open assets panel from URL:',
       run: () => loader.loadAssetsFromUrl()
+    })
+  }
+  if (loaders.localHandoffUrlLoader) {
+    const loader = loaders.localHandoffUrlLoader
+    steps.push({
+      failureMessage: 'Failed to open the workflow handed over from local:',
+      run: () => loader.loadLocalHandoffFromUrl()
     })
   }
   // Handles the return leg of a redirect payment (Stripe appends
@@ -237,6 +248,7 @@ export function useUrlActionLoaders() {
   const settingsUrlLoader = useIfCloud(useSettingsUrlLoader)
   const assetsUrlLoader = useIfCloud(useAssetsUrlLoader)
   const paymentReturnUrlLoader = useIfCloud(usePaymentReturnUrlLoader)
+  const localHandoffUrlLoader = useIfCloud(useLocalHandoffUrlLoader)
   const subscriptionDialog = useIfCloud(useSubscriptionDialog)
 
   const steps = isCloud
@@ -250,7 +262,8 @@ export function useUrlActionLoaders() {
           topUpUrlLoader,
           settingsUrlLoader,
           assetsUrlLoader,
-          paymentReturnUrlLoader
+          paymentReturnUrlLoader,
+          localHandoffUrlLoader
         },
         router
       )

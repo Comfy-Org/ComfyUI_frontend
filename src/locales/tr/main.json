@@ -5866,6 +5866,32 @@
     "subscribe": "Abone Ol",
     "switchWorkspace": "Çalışma alanı değiştir"
   },
+  "openOnCloud": {
+    "runThisWorkflowOn": "Bu iş akışını şurada çalıştır",
+    "local": "Yerel",
+    "triggerLabel": "Yerelde çalışıyor. Nerede çalışacağını seçin",
+    "checking": "Kontrol ediliyor…",
+    "open": "Aç",
+    "openLabel": "Bu iş akışını Comfy Cloud'da yeni bir tarayıcı sekmesinde aç",
+    "openTooltip": "Bu iş akışını Comfy Cloud'da yeni bir tarayıcı sekmesinde açar. Burada da açık kalır.",
+    "nodesMissing": "{count} düğüm eksik | {count} düğüm eksik",
+    "modelsMissing": "{count} model eksik | {count} model eksik",
+    "missingTooltip": "Comfy Cloud'da bazı düğümler veya modeller eksik. Bu iş akışını bulutta çalıştırmak için bunları dağıtın.",
+    "deploySetup": "Kurulumunuzu Comfy Cloud'a dağıtın",
+    "aboutDeploy": "Comfy API'ye Dağıt hakkında",
+    "openedFromLocal": "Bilgisayarınızdaki ComfyUI'dan açıldı",
+    "openedFromLocalDetail": "Comfy Cloud'da bu iş akışının kullandığı tüm düğümler ve modeller var. Hazır olduğunuzda Çalıştır'a basın.",
+    "handoffFailed": "Bilgisayarınızdaki ComfyUI'dan iş akışı açılamadı",
+    "popupBlocked": "Tarayıcınız Comfy Cloud sekmesini engelledi. Bu sayfa için açılır pencerelere izin verin ve tekrar deneyin.",
+    "downloaded": "İş akışı indirildi",
+    "downloadedDetail": "Orada açmak için tarayıcınızda Comfy Cloud'a bırakın.",
+    "prototype": {
+      "label": "Comfy Cloud kontrolü (prototip)",
+      "checking": "Kontrol ediliyor",
+      "canOpen": "Açılabilir",
+      "missing": "Açılamaz"
+    }
+  },
   "zoomControls": {
     "hideMinimap": "Mini Haritayı Gizle",
     "label": "Yakınlaştırma Kontrolleri",

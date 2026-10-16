@@ -5866,6 +5866,32 @@
     "subscribe": "S’abonner",
     "switchWorkspace": "Changer d’espace de travail"
   },
+  "openOnCloud": {
+    "runThisWorkflowOn": "Exécuter ce flux de travail sur",
+    "local": "Local",
+    "triggerLabel": "S’exécute en local. Choisissez où il s’exécute",
+    "checking": "Vérification…",
+    "open": "Ouvrir",
+    "openLabel": "Ouvrir ce flux de travail sur Comfy Cloud dans un nouvel onglet du navigateur",
+    "openTooltip": "Ouvre ce flux de travail dans Comfy Cloud dans un nouvel onglet du navigateur. Il reste aussi ouvert ici.",
+    "nodesMissing": "{count} nœud manquant | {count} nœuds manquants",
+    "modelsMissing": "{count} modèle manquant | {count} modèles manquants",
+    "missingTooltip": "Il manque des nœuds ou des modèles à Comfy Cloud. Déployez-les pour exécuter ce flux de travail dans le cloud.",
+    "deploySetup": "Déployer votre configuration sur Comfy Cloud",
+    "aboutDeploy": "À propos de Déployer sur l’API Comfy",
+    "openedFromLocal": "Ouvert depuis ComfyUI sur votre ordinateur",
+    "openedFromLocalDetail": "Comfy Cloud dispose de tous les nœuds et modèles utilisés par ce flux de travail. Appuyez sur Exécuter quand vous êtes prêt.",
+    "handoffFailed": "Impossible d’ouvrir le flux de travail depuis ComfyUI sur votre ordinateur",
+    "popupBlocked": "Votre navigateur a bloqué l’onglet Comfy Cloud. Autorisez les fenêtres pop-up pour cette page et réessayez.",
+    "downloaded": "Flux de travail téléchargé",
+    "downloadedDetail": "Déposez-le sur Comfy Cloud dans votre navigateur pour l’ouvrir là-bas.",
+    "prototype": {
+      "label": "Vérification Comfy Cloud (prototype)",
+      "checking": "Vérification",
+      "canOpen": "Peut ouvrir",
+      "missing": "Ne peut pas ouvrir"
+    }
+  },
   "zoomControls": {
     "hideMinimap": "Masquer la mini-carte",
     "label": "Contrôles de zoom",

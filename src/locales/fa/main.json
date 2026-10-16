@@ -5866,6 +5866,32 @@
     "subscribe": "اشتراک",
     "switchWorkspace": "تغییر محیط کاری"
   },
+  "openOnCloud": {
+    "runThisWorkflowOn": "اجرای این workflow روی",
+    "local": "محلی",
+    "triggerLabel": "روی محلی اجرا می‌شود. انتخاب کنید کجا اجرا شود",
+    "checking": "در حال بررسی…",
+    "open": "باز کردن",
+    "openLabel": "باز کردن این workflow در Comfy Cloud در یک برگه جدید مرورگر",
+    "openTooltip": "این workflow را در Comfy Cloud در یک برگه جدید مرورگر باز می‌کند. اینجا هم باز می‌ماند.",
+    "nodesMissing": "{count} نود موجود نیست | {count} نود موجود نیست",
+    "modelsMissing": "{count} مدل موجود نیست | {count} مدل موجود نیست",
+    "missingTooltip": "Comfy Cloud برخی نودها یا مدل‌ها را ندارد. آن‌ها را مستقر کنید تا این workflow روی ابر اجرا شود.",
+    "deploySetup": "استقرار تنظیمات شما در Comfy Cloud",
+    "aboutDeploy": "درباره استقرار در Comfy API",
+    "openedFromLocal": "از ComfyUI روی رایانه شما باز شد",
+    "openedFromLocalDetail": "Comfy Cloud همه نودها و مدل‌هایی را که این workflow استفاده می‌کند دارد. هر وقت آماده بودید، اجرا را بزنید.",
+    "handoffFailed": "باز کردن workflow از ComfyUI روی رایانه شما ممکن نشد",
+    "popupBlocked": "مرورگر شما برگه Comfy Cloud را مسدود کرد. پنجره‌های بازشو را برای این صفحه مجاز کنید و دوباره امتحان کنید.",
+    "downloaded": "workflow دانلود شد",
+    "downloadedDetail": "آن را در مرورگر روی Comfy Cloud رها کنید تا آنجا باز شود.",
+    "prototype": {
+      "label": "بررسی Comfy Cloud (نمونه اولیه)",
+      "checking": "در حال بررسی",
+      "canOpen": "قابل باز شدن",
+      "missing": "قابل باز شدن نیست"
+    }
+  },
   "zoomControls": {
     "hideMinimap": "مخفی‌سازی نقشه کوچک",
     "label": "کنترل‌های بزرگ‌نمایی",

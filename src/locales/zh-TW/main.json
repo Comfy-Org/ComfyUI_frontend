@@ -5866,6 +5866,32 @@
     "subscribe": "訂閱",
     "switchWorkspace": "切換工作區"
   },
+  "openOnCloud": {
+    "runThisWorkflowOn": "在以下位置執行此工作流程",
+    "local": "本機",
+    "triggerLabel": "在本機執行。選擇執行位置",
+    "checking": "正在檢查…",
+    "open": "開啟",
+    "openLabel": "在新的瀏覽器分頁中以 Comfy Cloud 開啟此工作流程",
+    "openTooltip": "在新的瀏覽器分頁中以 Comfy Cloud 開啟此工作流程。這裡也會保持開啟。",
+    "nodesMissing": "缺少 {count} 個節點 | 缺少 {count} 個節點",
+    "modelsMissing": "缺少 {count} 個模型 | 缺少 {count} 個模型",
+    "missingTooltip": "Comfy Cloud 缺少部分節點或模型，部署它們即可在雲端執行此工作流程。",
+    "deploySetup": "將你的設定部署到 Comfy Cloud",
+    "aboutDeploy": "關於部署至 Comfy API",
+    "openedFromLocal": "已從你電腦上的 ComfyUI 開啟",
+    "openedFromLocalDetail": "Comfy Cloud 擁有此工作流程使用的所有節點和模型。準備好後按「執行」。",
+    "handoffFailed": "無法從你電腦上的 ComfyUI 開啟工作流程",
+    "popupBlocked": "你的瀏覽器封鎖了 Comfy Cloud 分頁。請允許此頁面的彈出式視窗後再試一次。",
+    "downloaded": "工作流程已下載",
+    "downloadedDetail": "在瀏覽器中將其拖放到 Comfy Cloud 上即可在那裡開啟。",
+    "prototype": {
+      "label": "Comfy Cloud 檢查（原型）",
+      "checking": "正在檢查",
+      "canOpen": "可以開啟",
+      "missing": "無法開啟"
+    }
+  },
   "zoomControls": {
     "hideMinimap": "隱藏小地圖",
     "label": "縮放控制",

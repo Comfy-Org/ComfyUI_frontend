@@ -5866,6 +5866,32 @@
     "subscribe": "Suscribirse",
     "switchWorkspace": "Cambiar espacio de trabajo"
   },
+  "openOnCloud": {
+    "runThisWorkflowOn": "Ejecutar este flujo de trabajo en",
+    "local": "Local",
+    "triggerLabel": "Se ejecuta en Local. Elige dónde se ejecuta",
+    "checking": "Comprobando…",
+    "open": "Abrir",
+    "openLabel": "Abrir este flujo de trabajo en Comfy Cloud en una nueva pestaña del navegador",
+    "openTooltip": "Abre este flujo de trabajo en Comfy Cloud en una nueva pestaña del navegador. También sigue abierto aquí.",
+    "nodesMissing": "Falta {count} nodo | Faltan {count} nodos",
+    "modelsMissing": "Falta {count} modelo | Faltan {count} modelos",
+    "missingTooltip": "A Comfy Cloud le faltan algunos nodos o modelos. Impleméntalos para ejecutar este flujo de trabajo en la nube.",
+    "deploySetup": "Implementa tu configuración en Comfy Cloud",
+    "aboutDeploy": "Acerca de Implementar en la API de Comfy",
+    "openedFromLocal": "Abierto desde ComfyUI en tu computadora",
+    "openedFromLocalDetail": "Comfy Cloud tiene todos los nodos y modelos que usa este flujo de trabajo. Pulsa Ejecutar cuando estés listo.",
+    "handoffFailed": "No se pudo abrir el flujo de trabajo desde ComfyUI en tu computadora",
+    "popupBlocked": "Tu navegador bloqueó la pestaña de Comfy Cloud. Permite las ventanas emergentes para esta página e inténtalo de nuevo.",
+    "downloaded": "Flujo de trabajo descargado",
+    "downloadedDetail": "Suéltalo en Comfy Cloud en tu navegador para abrirlo allí.",
+    "prototype": {
+      "label": "Comprobación de Comfy Cloud (prototipo)",
+      "checking": "Comprobando",
+      "canOpen": "Se puede abrir",
+      "missing": "No se puede abrir"
+    }
+  },
   "zoomControls": {
     "hideMinimap": "Ocultar minimapa",
     "label": "Controles de zoom",

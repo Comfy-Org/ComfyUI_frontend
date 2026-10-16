@@ -26,6 +26,7 @@
           "
         />
         <DeploymentSwitcher />
+        <LocalEngineMenu />
         <div v-coachmark="FIRST_RUN_COACH_IDS.runButton" class="inline-flex">
           <Suspense @resolve="comfyRunButtonResolved">
             <ComfyRunButton />
@@ -107,6 +108,7 @@ import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
 import FreeTierQuota from '@/platform/cloud/subscription/components/FreeTierQuota.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import DeploymentSwitcher from '@/platform/workspace/components/DeploymentSwitcher.vue'
+import LocalEngineMenu from '@/platform/openOnCloud/components/LocalEngineMenu.vue'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'

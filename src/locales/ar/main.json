@@ -5866,6 +5866,32 @@
     "subscribe": "اشترك",
     "switchWorkspace": "تبديل مساحة العمل"
   },
+  "openOnCloud": {
+    "runThisWorkflowOn": "تشغيل سير العمل هذا على",
+    "local": "محلي",
+    "triggerLabel": "يعمل على المحلي. اختر مكان التشغيل",
+    "checking": "جارٍ التحقق…",
+    "open": "فتح",
+    "openLabel": "فتح سير العمل هذا على Comfy Cloud في علامة تبويب جديدة في المتصفح",
+    "openTooltip": "يفتح سير العمل هذا في Comfy Cloud في علامة تبويب جديدة في المتصفح. ويبقى مفتوحًا هنا أيضًا.",
+    "nodesMissing": "{count} عقدة مفقودة | {count} عقدة مفقودة",
+    "modelsMissing": "{count} نموذج مفقود | {count} نماذج مفقودة",
+    "missingTooltip": "يفتقد Comfy Cloud بعض العقد أو النماذج. انشرها لتشغيل سير العمل هذا على السحابة.",
+    "deploySetup": "انشر إعدادك على Comfy Cloud",
+    "aboutDeploy": "حول النشر إلى Comfy API",
+    "openedFromLocal": "فُتح من ComfyUI على جهازك",
+    "openedFromLocalDetail": "يحتوي Comfy Cloud على كل عقدة ونموذج يستخدمه سير العمل هذا. اضغط تشغيل عندما تكون جاهزًا.",
+    "handoffFailed": "تعذّر فتح سير العمل من ComfyUI على جهازك",
+    "popupBlocked": "حظر متصفحك علامة تبويب Comfy Cloud. اسمح بالنوافذ المنبثقة لهذه الصفحة وحاول مرة أخرى.",
+    "downloaded": "تم تنزيل سير العمل",
+    "downloadedDetail": "أفلته على Comfy Cloud في متصفحك لفتحه هناك.",
+    "prototype": {
+      "label": "فحص Comfy Cloud (نموذج أولي)",
+      "checking": "جارٍ التحقق",
+      "canOpen": "يمكن الفتح",
+      "missing": "لا يمكن الفتح"
+    }
+  },
   "zoomControls": {
     "hideMinimap": "إخفاء الخريطة المصغرة",
     "label": "عناصر التحكم في التكبير",
