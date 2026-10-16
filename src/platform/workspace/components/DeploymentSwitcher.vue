@@ -15,23 +15,22 @@
       v-model:open="isOpen"
       :modal="false"
       :side-offset="variant === 'floating' ? 8 : 4"
-      class="max-w-100 min-w-84"
+      :class="cn('max-w-100 min-w-84', switcherMenuMotionClass)"
       @update:open="onOpenChange"
     >
       <template #trigger>
         <Button
-          :variant="variant === 'floating' ? 'textonly' : 'secondary'"
+          variant="textonly"
           size="unset"
           :disabled="isSwitching"
-          :tooltip="stoppedTooltip"
+          :tooltip="hoverTooltip"
           tooltip-side="bottom"
           :aria-label="triggerLabel"
           :class="
             cn(
-              'max-w-64 gap-2 rounded-lg pr-2 pl-2.5 font-normal',
-              variant === 'floating'
-                ? 'h-8 data-[state=open]:bg-secondary-background'
-                : 'h-7 data-[state=open]:bg-secondary-background-hover'
+              'group max-w-64 gap-2 rounded-lg border border-border-subtle bg-interface-panel-surface pr-2 pl-2.5 font-normal',
+              'hover:border-border-default hover:bg-secondary-background data-[state=open]:border-border-default data-[state=open]:bg-secondary-background',
+              variant === 'floating' ? 'h-8' : 'h-7'
             )
           "
           data-testid="deployment-switcher-trigger"
@@ -39,20 +38,13 @@
           <DeploymentStatusIcon
             :tone="currentTone"
             icon-class="size-4"
-            :ring-class="
-              cn(
-                'ring-2',
-                variant === 'floating'
-                  ? 'ring-interface-panel-surface'
-                  : 'ring-secondary-background'
-              )
-            "
+            ring-class="ring-2 ring-interface-panel-surface group-hover:ring-secondary-background group-data-[state=open]:ring-secondary-background"
           />
           <span class="truncate" data-testid="deployment-switcher-current">
             {{ currentTitle }}
           </span>
           <i
-            class="icon-[lucide--chevron-down] size-3 shrink-0 text-muted-foreground"
+            class="icon-[lucide--chevron-down] size-3 shrink-0 text-muted-foreground transition-transform duration-150 group-data-[state=open]:rotate-180"
             aria-hidden="true"
           />
         </Button>
@@ -83,6 +75,7 @@ import Menu from '@/components/ui/menu/Menu.vue'
 import { useToast } from '@/components/ui/toast/toastStore'
 import DeploymentStatusIcon from '@/platform/workspace/components/DeploymentStatusIcon.vue'
 import DeploymentSwitcherList from '@/platform/workspace/components/DeploymentSwitcherList.vue'
+import { switcherMenuMotionClass } from '@/platform/workspace/components/deploymentSwitcherStyles'
 import {
   COMFY_CLOUD_ROW,
   deploymentStatusTone,
@@ -123,14 +116,14 @@ const triggerLabel = computed(() =>
     { escapeParameter: false }
   )
 )
-const stoppedTooltip = computed(() =>
-  currentTone.value === 'stopped'
-    ? t(
-        'deploymentSwitcher.stoppedTooltip',
-        { deployment: currentLabel.value },
-        { escapeParameter: false }
-      )
-    : ''
+const hoverTooltip = computed(() =>
+  t(
+    currentTone.value === 'stopped'
+      ? 'deploymentSwitcher.stoppedTooltip'
+      : 'deploymentSwitcher.currentTooltip',
+    { deployment: currentLabel.value },
+    { escapeParameter: false }
+  )
 )
 
 function report(summary: string, refusal: string | null) {

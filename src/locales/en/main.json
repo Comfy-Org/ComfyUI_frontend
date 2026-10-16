@@ -3881,7 +3881,8 @@
       "provisioning": "Starting"
     },
     "triggerLabel": "Running on {deployment}. Choose where this editor runs",
-    "stoppedTooltip": "{deployment} is stopped, so jobs won't run. Start it on the Developer Platform.",
+    "currentTooltip": "Running on {deployment}",
+    "stoppedTooltip": "Running on {deployment}. It's stopped, so jobs won't run until it's started on the Developer Platform.",
     "switching": "Switching",
     "switchingNote": "Switching reloads the editor. Your open workflows stay open.",
     "switchingNoteWithoutDrafts": "Switching reloads the editor.",

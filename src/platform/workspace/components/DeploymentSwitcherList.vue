@@ -10,18 +10,18 @@
         class="mt-px icon-[lucide--triangle-alert] size-3.5 shrink-0 text-warning-background"
         aria-hidden="true"
       />
-      <span>{{ notice }}</span>
+      <span class="text-pretty">{{ notice }}</span>
     </div>
     <template v-if="changeSinceBoot">
       <p
         role="status"
-        class="m-0 max-w-84 px-2 py-1.5 text-xs text-muted-foreground"
+        class="m-0 max-w-84 px-2 py-1.5 text-xs text-pretty text-muted-foreground"
         data-testid="deployment-switcher-changed"
       >
         {{ changeMessage }}
       </p>
       <MenuItem
-        class="min-h-7 gap-2 px-2 py-1 text-xs"
+        :class="switcherItemClass"
         data-testid="deployment-switcher-reload"
         @select="reloadForDeploymentSwitch"
       >
@@ -63,7 +63,7 @@
   </DropdownMenuRadioGroup>
   <p
     v-if="deployments.length === 0"
-    class="m-0 max-w-84 px-2 py-1.5 text-xs text-muted-foreground"
+    class="m-0 max-w-84 px-2 py-1.5 text-xs text-pretty text-muted-foreground"
     data-testid="deployment-switcher-empty"
   >
     {{ $t('deploymentSwitcher.noDeployments') }}
@@ -77,7 +77,7 @@
   <MenuItem
     v-if="canFollow"
     :disabled="isSwitching"
-    class="min-h-7 gap-2 px-2 py-1 text-xs"
+    :class="switcherItemClass"
     data-testid="deployment-row-follow"
     @select="emit('follow')"
   >
@@ -89,12 +89,13 @@
     <span class="ml-auto truncate pl-4 text-muted-foreground">
       {{ defaultName }}
     </span>
+    <span :class="switcherTrailingSlotClass" />
   </MenuItem>
   <TextTooltip
     :text="$t('deploymentSwitcher.createCustomDeploymentTooltip')"
     side="right"
   >
-    <MenuItem as-child class="min-h-7 gap-2 px-2 py-1 text-xs">
+    <MenuItem as-child :class="switcherItemClass">
       <a
         :href="createDeploymentUrl"
         target="_blank"
@@ -107,22 +108,27 @@
           aria-hidden="true"
         />
         {{ $t('deploymentSwitcher.createCustomDeployment') }}
-        <i
-          class="ml-auto icon-[lucide--arrow-up-right] size-3.5 shrink-0 text-muted-foreground"
-          aria-hidden="true"
-        />
+        <span :class="cn('ml-auto', switcherTrailingSlotClass)">
+          <i
+            class="icon-[lucide--arrow-up-right] size-3.5 text-muted-foreground"
+            aria-hidden="true"
+          />
+        </span>
       </a>
     </MenuItem>
   </TextTooltip>
   <template v-if="deployments.length > 0">
     <MenuSeparator />
-    <p class="m-0 max-w-84 px-2 py-1 text-xs text-muted-foreground">
+    <p
+      class="m-0 max-w-84 px-2 py-1.5 text-xs text-pretty text-muted-foreground"
+    >
       {{ switchingNote }}
     </p>
   </template>
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { storeToRefs } from 'pinia'
 import { DropdownMenuLabel, DropdownMenuRadioGroup } from 'reka-ui'
 import { computed } from 'vue'
@@ -135,6 +141,10 @@ import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import DeploymentSwitcherDefaultMenu from '@/platform/workspace/components/DeploymentSwitcherDefaultMenu.vue'
 import DeploymentSwitcherRow from '@/platform/workspace/components/DeploymentSwitcherRow.vue'
+import {
+  switcherItemClass,
+  switcherTrailingSlotClass
+} from '@/platform/workspace/components/deploymentSwitcherStyles'
 import {
   COMFY_CLOUD_ROW,
   deploymentStatusTone,

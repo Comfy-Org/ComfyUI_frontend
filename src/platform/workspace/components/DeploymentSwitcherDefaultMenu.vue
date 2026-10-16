@@ -2,7 +2,9 @@
   <DropdownMenuSub v-slot="{ open }">
     <MenuSubTrigger
       :disabled
-      class="min-h-7 gap-2 px-2 py-1 text-xs"
+      :class="
+        cn(switcherItemClass, 'data-[state=open]:bg-secondary-background-hover')
+      "
       data-testid="deployment-switcher-default"
     >
       <i
@@ -21,17 +23,19 @@
       >
         {{ currentDefault }}
       </span>
-      <i
-        class="icon-[lucide--chevron-right] size-3.5 shrink-0 text-muted-foreground"
-        aria-hidden="true"
-      />
+      <span :class="switcherTrailingSlotClass">
+        <i
+          class="icon-[lucide--chevron-right] size-3.5 text-muted-foreground group-data-[state=open]:text-base-foreground"
+          aria-hidden="true"
+        />
+      </span>
     </MenuSubTrigger>
     <DropdownMenuPortal>
       <MenuSubContent
         :open
         :side-offset="2"
         :align-offset="-5"
-        class="max-w-100 min-w-72"
+        :class="cn('max-w-100 min-w-72', switcherMenuMotionClass)"
       >
         <DropdownMenuLabel
           class="px-2 pt-1.5 pb-1 text-xs text-muted-foreground"
@@ -76,6 +80,11 @@ import { useI18n } from 'vue-i18n'
 import MenuSubContent from '@/components/ui/menu/MenuSubContent.vue'
 import MenuSubTrigger from '@/components/ui/menu/MenuSubTrigger.vue'
 import DeploymentSwitcherRow from '@/platform/workspace/components/DeploymentSwitcherRow.vue'
+import {
+  switcherItemClass,
+  switcherMenuMotionClass,
+  switcherTrailingSlotClass
+} from '@/platform/workspace/components/deploymentSwitcherStyles'
 import {
   COMFY_CLOUD_ROW,
   deploymentStatusTone,

@@ -164,6 +164,28 @@ describe('DeploymentSwitcher', () => {
     }
   )
 
+  it.for([
+    { status: 'ready', text: 'Running on Studio Build · production' },
+    {
+      status: 'stopped',
+      text: "Running on Studio Build · production. It's stopped, so jobs won't run until it's started on the Developer Platform."
+    }
+  ])(
+    'names the deployment the pill leaves out when hovered, $status',
+    async ({ status, text }) => {
+      mockWorkspaceApi.listDeployments.mockResolvedValue({
+        ...listing,
+        picked_deployment_id: D2,
+        items: [{ ...listing.items[0], status }, ...listing.items.slice(1)]
+      })
+      const user = renderSwitcher()
+
+      await user.hover(await screen.findByTestId('deployment-switcher-trigger'))
+
+      expect(await screen.findByRole('tooltip')).toHaveTextContent(text)
+    }
+  )
+
   it('renders nothing when the account is outside the rollout', async () => {
     mockWorkspaceApi.listDeployments.mockRejectedValue(
       new WorkspaceApiError('not enabled for this account yet', 403)
