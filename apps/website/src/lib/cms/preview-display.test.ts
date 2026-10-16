@@ -14,7 +14,10 @@ describe('preview display boundaries', () => {
     '/%5cevil.test',
     '/%2fevil.test',
     '/bad%0apath',
-    '/invalid%'
+    '/invalid%',
+    '/.//evil.com',
+    '/a/..//evil.com',
+    '/%2e//evil.com'
   ])('refuses unsafe navigation %s', (path) => {
     expect(safeInternalPath(path)).toBeUndefined()
   })
