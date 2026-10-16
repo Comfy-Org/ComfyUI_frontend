@@ -427,33 +427,43 @@ describe('useAgentSession (v1 composition root)', () => {
     telemetry.trackAgentStopClicked.mockClear()
   })
 
-  it('does not persist a late acknowledgement under a replacement account', async () => {
-    const identity = ref({ id: 'user-1' })
-    useCurrentUser().resolvedUserInfo = computed(() => identity.value)
-    let complete!: (ack: AgentTurnAccepted) => void
-    const postMessage = vi.fn<AgentRestClient['postMessage']>(
-      () =>
-        new Promise((resolve) => {
-          complete = resolve
-        })
-    )
-    const session = useAgentSession({
-      rest: fakeRest({ postMessage }),
-      events: fakeEvents().source
-    })
-    session.start()
-    const pending = session.sendMessage('make a cat')
-    await vi.waitFor(() => expect(postMessage).toHaveBeenCalled())
-    identity.value = { id: 'user-2' }
-    complete({ thread_id: 'alice-thread', message_id: 'msg-1' })
-    await pending
-    expect(
-      localStorage.getItem(
-        StorageKeys.agentThread(accountScope('user-2', 'personal')!)
+  it.for([{ initialWorkspace: 'personal' }, { initialWorkspace: null }])(
+    'does not persist a late acknowledgement under a replacement account with initial workspace $initialWorkspace',
+    async ({ initialWorkspace }) => {
+      const identity = ref({ id: 'user-1' })
+      useCurrentUser().resolvedUserInfo = computed(() => identity.value)
+      const workspace = ref(initialWorkspace)
+      vi.spyOn(
+        useTeamWorkspaceStore(),
+        'activeWorkspaceId',
+        'get'
+      ).mockImplementation(() => workspace.value)
+      let complete!: (ack: AgentTurnAccepted) => void
+      const postMessage = vi.fn<AgentRestClient['postMessage']>(
+        () =>
+          new Promise((resolve) => {
+            complete = resolve
+          })
       )
-    ).toBeNull()
-    session.stop()
-  })
+      const session = useAgentSession({
+        rest: fakeRest({ postMessage }),
+        events: fakeEvents().source
+      })
+      session.start()
+      const pending = session.sendMessage('make a cat')
+      await vi.waitFor(() => expect(postMessage).toHaveBeenCalled())
+      identity.value = { id: 'user-2' }
+      workspace.value = 'personal'
+      complete({ thread_id: 'alice-thread', message_id: 'msg-1' })
+      await pending
+      expect(
+        localStorage.getItem(
+          StorageKeys.agentThread(accountScope('user-2', 'personal')!)
+        )
+      ).toBeNull()
+      session.stop()
+    }
+  )
 
   it.for<{
     kind: string
@@ -6623,27 +6633,63 @@ describe('thread resume (B17)', () => {
     )
   })
 
-  it.for([{ initialIdentity: null }, { initialIdentity: { id: 'user-1' } }])(
-    'persists the thread on send and clears it on newChat with initial identity $initialIdentity',
-    async ({ initialIdentity }) => {
+  it.for([
+    {
+      initialIdentity: null,
+      initialWorkspace: 'personal',
+      resolvedUserId: 'user-1',
+      expectedThread: 'th-1'
+    },
+    {
+      initialIdentity: { id: 'user-1' },
+      initialWorkspace: 'personal',
+      resolvedUserId: 'user-1',
+      expectedThread: 'th-1'
+    },
+    {
+      initialIdentity: { id: 'user-1' },
+      initialWorkspace: null,
+      resolvedUserId: 'user-1',
+      expectedThread: 'th-1'
+    },
+    {
+      initialIdentity: { id: 'user-1' },
+      initialWorkspace: null,
+      resolvedUserId: 'user-2',
+      expectedThread: null
+    }
+  ])(
+    'persists only the sending account thread and clears it on newChat: $initialIdentity / $initialWorkspace → $resolvedUserId',
+    async ({
+      initialIdentity,
+      initialWorkspace,
+      resolvedUserId,
+      expectedThread
+    }) => {
       const identity = ref(initialIdentity)
       useCurrentUser().resolvedUserInfo = computed(() => identity.value)
+      const workspace = ref(initialWorkspace)
+      vi.spyOn(
+        useTeamWorkspaceStore(),
+        'activeWorkspaceId',
+        'get'
+      ).mockImplementation(() => workspace.value)
+      const resolvedScope = accountScope(resolvedUserId, 'personal')
+      assert.exists(resolvedScope)
+      const key = StorageKeys.agentThread(resolvedScope)
       const session = useAgentSession({
         rest: fakeRest(),
         events: fakeEvents().source
       })
       session.start()
       await session.sendMessage('hello')
-      identity.value = { id: 'user-1' }
+      identity.value = { id: resolvedUserId }
+      workspace.value = 'personal'
       await nextTick()
-      expect(
-        localStorage.getItem(StorageKeys.agentThread(PERSONAL_SCOPE))
-      ).toBe('th-1')
+      expect(localStorage.getItem(key)).toBe(expectedThread)
 
       session.newChat()
-      expect(
-        localStorage.getItem(StorageKeys.agentThread(PERSONAL_SCOPE))
-      ).toBeNull()
+      expect(localStorage.getItem(key)).toBeNull()
       expect(useAgentConversationStore().threadId).toBeNull()
       session.stop()
     }

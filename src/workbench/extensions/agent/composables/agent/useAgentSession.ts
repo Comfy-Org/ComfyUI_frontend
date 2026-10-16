@@ -5,6 +5,7 @@ import { delay, xor } from 'es-toolkit'
 import { computed, ref, watch } from 'vue'
 import { ZodError } from 'zod'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { i18n } from '@/i18n'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import { useTelemetry } from '@/platform/telemetry'
@@ -430,6 +431,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     onAskResolved,
     workflow
   } = deps
+  const { resolvedUserInfo } = useCurrentUser()
+  let loadGeneration = 0
   const scope = useAccountScope()
   const owner = ref(scope.value)
   const pendingThread = ref<string | null>()
@@ -450,8 +453,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   })
   watch(
-    scope,
-    (next) => {
+    [scope, () => resolvedUserInfo.value?.id],
+    ([next, nextUserId], [, previousUserId]) => {
+      if (previousUserId !== undefined && nextUserId !== previousUserId) {
+        pendingThread.value = undefined
+        loadGeneration++
+      }
       if (owner.value !== null || next === null) return
       owner.value = next
       if (pendingThread.value === undefined) return
@@ -1294,9 +1301,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
       )
       return true
     } catch (error) {
-      // Before the generation guard: the binding store is page-global and
-      // persisted, so a refusal that lands after newChat()/loadThread() has
-      // moved on still has to release, or the dead id survives the reload.
       releaseDisownedWorkflow(sentContext, error)
       if (generation !== loadGeneration) return false
       const reattached = await reattachRefusedTurn(
@@ -1604,7 +1608,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
-  let loadGeneration = 0
   let refusedTurnReattachGeneration = 0
 
   function newChat(
