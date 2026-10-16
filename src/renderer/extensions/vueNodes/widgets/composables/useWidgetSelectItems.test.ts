@@ -114,11 +114,11 @@ describe('useWidgetSelectItems', () => {
       expect(pagedItems(dropdownItems.value)[0].label).toBe('Friendly Name')
     })
 
-    it('passes the asset preview_url through unchanged', () => {
+    it('uses the asset preview_url as the thumbnail src', () => {
       const previewUrl = '/api/view?filename=img_001.png&type=input'
       storeAssets.input = [makeInput('input-0', 'img_001.png', previewUrl)]
       const { dropdownItems } = useWidgetSelectItems(createDefaultOptions())
-      expect(pagedItems(dropdownItems.value)[0].preview_url).toBe(previewUrl)
+      expect(pagedItems(dropdownItems.value)[0].thumbnail.src).toBe(previewUrl)
     })
 
     it('annotates output assets with [output]', async () => {
@@ -237,32 +237,36 @@ describe('useWidgetSelectItems', () => {
       )
     })
 
-    it('builds the fallback preview via getMediaUrl for image kind', () => {
+    it('builds the fallback thumbnail from the input directory', () => {
       const { dropdownItems } = useWidgetSelectItems(
         createDefaultOptions({ modelValue: ref('template_image.png') })
       )
-      const { preview_url } = pagedItems(dropdownItems.value)[0]
-      expect(preview_url).toContain('filename=template_image.png')
-      expect(preview_url).toContain('type=input')
+      const { src } = pagedItems(dropdownItems.value)[0].thumbnail
+      expect(src).toContain('filename=template_image.png')
+      expect(src).toContain('type=input')
     })
 
     it('resolves an output-annotated fallback against the output directory', () => {
       const { dropdownItems } = useWidgetSelectItems(
         createDefaultOptions({ modelValue: ref('gone.png [output]') })
       )
-      const { preview_url } = pagedItems(dropdownItems.value)[0]
-      expect(preview_url).toContain('filename=gone.png')
-      expect(preview_url).toContain('type=output')
+      const { src } = pagedItems(dropdownItems.value)[0].thumbnail
+      expect(src).toContain('filename=gone.png')
+      expect(src).toContain('type=output')
     })
 
-    it('leaves the fallback preview empty for mesh kind', () => {
+    it('gives the fallback for a mesh an icon instead of a src', () => {
       const { dropdownItems } = useWidgetSelectItems(
         createDefaultOptions({
           modelValue: ref('3d/model.glb'),
           assetKind: () => 'mesh'
         })
       )
-      expect(pagedItems(dropdownItems.value)[0].preview_url).toBe('')
+      expect(pagedItems(dropdownItems.value)[0].thumbnail).toEqual({
+        src: undefined,
+        icon: 'icon-[lucide--box]',
+        isVideo: false
+      })
     })
 
     it('does not add a fallback when modelValue matches a base asset', () => {

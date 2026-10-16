@@ -7,7 +7,7 @@ import type {
 } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
-import { resultItemUrlWithTimestamp } from '@/utils/resultItemUrl'
+import { resultItemPreviewUrl } from '@/utils/resultItemUrl'
 import { isImageResult } from '@/utils/resultItem'
 import { jobStateFromTask } from '@/utils/queueUtil'
 
@@ -261,9 +261,9 @@ export const useQueueNotificationBanners = () => {
       if (state === 'completed') {
         completedCount++
         const preview = task.previewOutput
-        if (preview && isImageResult(preview)) {
-          imagePreviews.push(resultItemUrlWithTimestamp(preview))
-        }
+        const previewUrl =
+          preview && isImageResult(preview) && resultItemPreviewUrl(preview)
+        if (previewUrl) imagePreviews.push(previewUrl)
       } else if (state === 'failed') {
         failedCount++
       }

@@ -1,23 +1,29 @@
 import { useI18n } from 'vue-i18n'
+import type { CreateAssetExportData } from '@comfyorg/ingest-types'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import NodeOutputsExportDialog from '@/platform/assets/components/NodeOutputsExportDialog.vue'
 import { useAssetDownload } from '@/platform/assets/composables/useAssetDownload'
 import { useAssetZipExport } from '@/platform/assets/composables/useAssetZipExport'
-import type { DownloadableOutput } from '@/platform/assets/utils/outputExportUtil'
-import {
-  buildOutputsExportRequest,
-  isDownloadableOutput,
-  outputFileUrl
-} from '@/platform/assets/utils/outputExportUtil'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { hdrPreviewAssetUrl, isHdrImageFilename } from '@/utils/hdrFormatUtil'
-import { getGridThumbnailUrl } from '@/utils/imageUtil'
+import { parseNodeOutput } from '@/stores/resultItemParsing'
+import type { AugmentedResultItem } from '@/utils/resultItem'
+import { resultItemPreviewUrl, resultItemUrl } from '@/utils/resultItemUrl'
 
 const EXPORT_DIALOG_KEY = 'node-outputs-export'
+
+function buildOutputsExportRequest(
+  outputs: AugmentedResultItem[]
+): CreateAssetExportData['body'] | undefined {
+  const assetIds = outputs.map((output) => output.id)
+  if (assetIds.length === 0 || !assetIds.every((id): id is string => !!id)) {
+    return undefined
+  }
+  return { asset_ids: assetIds, naming_strategy: 'preserve' }
+}
 
 export function useNodeOutputsExport() {
   const { t } = useI18n()
@@ -28,21 +34,16 @@ export function useNodeOutputsExport() {
   const { downloadFiles } = useAssetDownload()
   const { startZipExport } = useAssetZipExport()
 
-  function getDownloadableOutputs(node: LGraphNode): DownloadableOutput[] {
-    return (nodeOutputStore.getNodeOutputs(node)?.images ?? []).filter(
-      isDownloadableOutput
-    )
+  function getDownloadableOutputs(node: LGraphNode): AugmentedResultItem[] {
+    return parseNodeOutput(node.id, nodeOutputStore.getNodeOutputs(node))
   }
 
   function hasMultipleOutputs(node: LGraphNode): boolean {
     return getDownloadableOutputs(node).length > 1
   }
 
-  function thumbnailUrl(output: DownloadableOutput): string | undefined {
-    if (!isHdrImageFilename(output.filename)) {
-      return getGridThumbnailUrl(outputFileUrl(output))
-    }
-    return output.preview_id ? hdrPreviewAssetUrl(output.preview_id) : undefined
+  function thumbnailUrl(output: AugmentedResultItem): string {
+    return resultItemPreviewUrl(output)
   }
 
   function closeExportDialog() {
@@ -71,7 +72,7 @@ export function useNodeOutputsExport() {
     })
   }
 
-  async function exportOutputs(outputs: DownloadableOutput[]): Promise<void> {
+  async function exportOutputs(outputs: AugmentedResultItem[]): Promise<void> {
     const request =
       outputs.length > 1 && flags.assetsEnabled
         ? buildOutputsExportRequest(outputs)
@@ -84,7 +85,7 @@ export function useNodeOutputsExport() {
     await downloadFiles(
       outputs.map((output) => ({
         mode: 'direct',
-        url: outputFileUrl(output),
+        url: resultItemUrl(output),
         filename: output.filename
       }))
     )

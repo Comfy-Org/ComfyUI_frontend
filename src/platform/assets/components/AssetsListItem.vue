@@ -71,7 +71,12 @@
           <i
             v-else
             aria-hidden="true"
-            class="absolute inset-0 m-auto icon-[lucide--image] size-4 text-text-secondary"
+            :class="
+              cn(
+                'absolute inset-0 m-auto size-4 text-text-secondary',
+                iconName ?? 'icon-[lucide--image]'
+              )
+            "
           />
         </div>
         <div

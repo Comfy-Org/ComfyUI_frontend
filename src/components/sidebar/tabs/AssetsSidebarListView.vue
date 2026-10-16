@@ -21,7 +21,7 @@
             :aria-label="
               t('assetBrowser.ariaLabel.assetCard', {
                 name: getAssetDisplayName(item.asset),
-                type: getAssetMediaType(item.asset)
+                type: getMediaTypeFromFilename(item.asset.name)
               })
             "
             :class="
@@ -30,10 +30,10 @@
                 item.isChild && 'pl-6'
               )
             "
-            :preview-url="getAssetPreviewUrl(item.asset)"
+            :preview-url="assetThumbnail(item.asset).src"
             :preview-alt="getAssetDisplayName(item.asset)"
-            :icon-name="iconForMediaType(getAssetMediaType(item.asset))"
-            :is-video-preview="isVideoAsset(item.asset)"
+            :icon-name="assetThumbnail(item.asset).icon"
+            :is-video-preview="assetThumbnail(item.asset).isVideo"
             :primary-text="getAssetPrimaryText(item.asset)"
             :secondary-text="getAssetSecondaryText(item.asset)"
             :stack-count="getStackCount(item.asset)"
@@ -79,7 +79,7 @@ import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataS
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { startAssetDrag } from '@/platform/assets/utils/assetDragUtil'
 import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
-import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
+import { assetThumbnail } from '@/platform/assets/utils/assetThumbnailUtil'
 import { useAssetsStore } from '@/stores/assetsStore'
 import {
   formatDuration,
@@ -87,7 +87,6 @@ import {
   getMediaTypeFromFilename,
   truncateFilename
 } from '@/utils/formatUtil'
-import { hdrPreviewAssetUrl, isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import type { PagedList } from '@/utils/pagedList'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -125,24 +124,6 @@ const listGridStyle = {
 
 function getAssetPrimaryText(asset: AssetItem): string {
   return truncateFilename(getAssetDisplayName(asset))
-}
-
-function getAssetMediaType(asset: AssetItem) {
-  return getMediaTypeFromFilename(asset.name)
-}
-
-function isVideoAsset(asset: AssetItem): boolean {
-  return getAssetMediaType(asset) === 'video'
-}
-
-function getAssetPreviewUrl(asset: AssetItem): string {
-  const mediaType = getAssetMediaType(asset)
-  if (asset.preview_id && isHdrImageFilename(asset.name))
-    return hdrPreviewAssetUrl(asset.preview_id)
-  if (mediaType === 'image' || mediaType === 'video') {
-    return asset.preview_url || ''
-  }
-  return ''
 }
 
 function getAssetSecondaryText(asset: AssetItem): string {

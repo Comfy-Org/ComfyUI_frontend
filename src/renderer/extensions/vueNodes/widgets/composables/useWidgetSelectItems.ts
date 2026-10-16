@@ -3,10 +3,11 @@ import { computed, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
 import { t } from '@/i18n'
-import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+import { mapInputFileToAssetItem } from '@/platform/assets/composables/media/assetMappers'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
+import { assetThumbnail } from '@/platform/assets/utils/assetThumbnailUtil'
 import {
   filterItemByBaseModels,
   filterItemByOwnership
@@ -16,6 +17,7 @@ import {
   getAssetDisplayName,
   getAssetUrlFilename
 } from '@/platform/assets/utils/assetMetadataUtils'
+import { iconForFilename } from '@/platform/assets/utils/mediaIconUtil'
 import type {
   FilterOption,
   OwnershipOption
@@ -39,16 +41,6 @@ function getDisplayLabel(value: string, getLabel?: (v: string) => string) {
   }
 }
 
-function getMediaUrl(
-  filename: string,
-  type: 'input' | 'output',
-  assetKind: AssetKind | undefined
-): string {
-  if (!['image', 'video', 'audio'].includes(assetKind ?? '')) return ''
-  const params = new URLSearchParams({ filename, type })
-  appendCloudResParam(params, filename)
-  return `/api/view?${params}`
-}
 function assetRoot(asset: AssetItem): 'input' | 'output' | 'temp' | undefined {
   for (const testTag of ['input', 'output', 'temp'] as const) {
     if (asset.tags.includes(testTag)) return testTag
@@ -114,7 +106,6 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
     const currentValue = toValue(modelValue)
     if (!currentValue) return undefined
     const labelFn = toValue(options.getOptionLabel)
-    const kind = toValue(options.assetKind)
 
     if (missingMediaValues.value.has(currentValue)) return undefined
 
@@ -126,7 +117,7 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
 
       return {
         id: `missing-${currentValue}`,
-        preview_url: '',
+        thumbnail: { icon: iconForFilename(currentValue), isVideo: false },
         name: currentValue,
         label: getDisplayLabel(currentValue, labelFn)
       }
@@ -146,10 +137,8 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
 
     return {
       id: `missing-${currentValue}`,
-      preview_url: getMediaUrl(
-        strippedValue,
-        isOutput ? 'output' : 'input',
-        kind
+      thumbnail: assetThumbnail(
+        mapInputFileToAssetItem(strippedValue, 0, isOutput ? 'output' : 'input')
       ),
       name: currentValue,
       label: getDisplayLabel(currentValue, labelFn)
@@ -171,7 +160,7 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
       id: asset.id,
       name: itemNameFor(asset),
       label: getAssetDisplayName(asset),
-      preview_url: asset.preview_url,
+      thumbnail: assetThumbnail(asset),
       is_immutable: asset.is_immutable,
       base_models: getAssetBaseModels(asset)
     }

@@ -14,7 +14,7 @@ import { DROPDOWN_PANEL_CLASS } from './shared'
 import type { FormDropdownItem } from './types'
 
 function createItem(id: string, name: string): FormDropdownItem {
-  return { id, preview_url: '', name, label: name }
+  return { id, thumbnail: { icon: '', isVideo: false }, name, label: name }
 }
 
 const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })

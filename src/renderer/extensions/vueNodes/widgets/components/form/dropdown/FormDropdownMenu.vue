@@ -143,7 +143,7 @@ const onWheel = (event: WheelEvent) => {
           :index
           :candidate="index === candidateIndex"
           :selected="isSelected(item, index)"
-          :preview-url="item.preview_url ?? ''"
+          :thumbnail="item.thumbnail"
           :name="item.name"
           :label="item.label"
           :layout="layoutMode"

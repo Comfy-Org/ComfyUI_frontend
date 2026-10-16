@@ -133,8 +133,16 @@ describe('WidgetSelectDropdown', () => {
 
   it('renders the dropdown component', () => {
     mockItemsRef.value = [
-      { id: 'input-0', name: 'img_001.png' },
-      { id: 'input-1', name: 'photo_abc.jpg' }
+      {
+        id: 'input-0',
+        name: 'img_001.png',
+        thumbnail: { icon: '', isVideo: false }
+      },
+      {
+        id: 'input-1',
+        name: 'photo_abc.jpg',
+        thumbnail: { icon: '', isVideo: false }
+      }
     ]
     mockSelectedSetRef.value = new Set(['input-0'])
     const widget = createMockWidget<string | undefined>({
@@ -174,7 +182,13 @@ describe('WidgetSelectDropdown', () => {
         tags: []
       })
     ]
-    mockItemsRef.value = [{ id: 'asset-1', name: 'model_a.safetensors' }]
+    mockItemsRef.value = [
+      {
+        id: 'asset-1',
+        name: 'model_a.safetensors',
+        thumbnail: { icon: '', isVideo: false }
+      }
+    ]
     mockSelectedSetRef.value = new Set(['asset-1'])
     const widget = createMockWidget<string | undefined>({
       value: 'model_a.safetensors',
@@ -194,8 +208,18 @@ describe('WidgetSelectDropdown', () => {
 
   describe('composable wiring', () => {
     const items: FormDropdownItem[] = [
-      { id: 'input-0', name: 'cat.png', label: 'cat.png' },
-      { id: 'input-1', name: 'dog.png', label: 'dog.png' }
+      {
+        id: 'input-0',
+        name: 'cat.png',
+        label: 'cat.png',
+        thumbnail: { icon: '', isVideo: false }
+      },
+      {
+        id: 'input-1',
+        name: 'dog.png',
+        label: 'dog.png',
+        thumbnail: { icon: '', isVideo: false }
+      }
     ]
 
     function renderDefault() {

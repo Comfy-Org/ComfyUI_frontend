@@ -1,6 +1,7 @@
 import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
 import type { SerializedNodeId } from '@/types/nodeId'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 
 export interface AugmentedResultItem extends ResultItem {
   filename: string
@@ -39,6 +40,9 @@ export function isVideoResult(item: AugmentedResultItem): boolean {
     isVideoBySuffix(item) ||
     (isVideoByType && !isImageBySuffix(item) && !isAudioBySuffix(item))
   )
+}
+export function isHdrResult(item: AugmentedResultItem): boolean {
+  return isHdrImageFilename(item.filename)
 }
 
 export function isImageResult(item: AugmentedResultItem): boolean {
