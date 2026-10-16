@@ -6,7 +6,7 @@ import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
-import type { SubscriptionCheckoutSelection } from '@/platform/workspace/composables/useSubscriptionCheckout'
+import type { SubscriptionCheckoutSelection } from '@/composables/billing/types'
 
 import SubscriptionRequiredDialogContentWorkspace from './SubscriptionRequiredDialogContentWorkspace.vue'
 
@@ -216,10 +216,11 @@ describe('SubscriptionRequiredDialogContentWorkspace', () => {
     expect(onClose).toHaveBeenCalledOnce()
   })
 
-  it('leaves the back action to the preview step that renders its own', () => {
+  it('leaves the header and back action to the preview step that renders its own', () => {
     mockCheckoutStep.value = 'preview'
     mockPreviewData.value = { transition_type: 'new_subscription' }
     renderComponent()
+    expect(screen.queryByText('Team Workspace')).not.toBeInTheDocument()
     expect(screen.getAllByRole('button', { name: 'Back' })).toHaveLength(1)
   })
 

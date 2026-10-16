@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import type { WidgetId } from './widgetId'
 import {
@@ -29,12 +29,11 @@ describe('ensureUniqueWidgetNames', () => {
   })
 
   it('logs and leaves all names unchanged when a duplicate cannot be renamed', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const widgets = [{ name: 'seed' }, Object.freeze({ name: 'seed' })]
 
     expect(ensureUniqueWidgetNames(widgets)).toBe(false)
     expect(widgets.map(({ name }) => name)).toEqual(['seed', 'seed'])
-    expect(warn).toHaveBeenCalledOnce()
+    expect(console.warn).toHaveBeenCalledOnce()
   })
 })
 

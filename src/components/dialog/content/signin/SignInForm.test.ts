@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useAuthStore } from '@/stores/authStore'
@@ -12,14 +13,6 @@ vi.mock(import('firebase/auth'))
 
 // Mock the auth composables and stores
 vi.mock(import('@/composables/auth/useAuthActions'))
-
-// Mock toast
-const mockToastAdd = vi.fn()
-vi.mock<unknown>(import('primevue/usetoast'), () => ({
-  useToast: vi.fn(() => ({
-    add: mockToastAdd
-  }))
-}))
 
 const forgotPasswordText = enMessages.auth.login.forgotPassword
 const loginButtonText = enMessages.auth.login.loginButton
@@ -54,22 +47,16 @@ describe('SignInForm', () => {
   }
 
   describe('Forgot Password Link', () => {
-    it('shows toast and focuses email input when clicked while disabled', async () => {
+    it('flags the empty email field and focuses it instead of sending a reset', async () => {
       const { user } = renderComponent()
-
-      const emailInput = getEmailInput()
-      const focusSpy = vi.spyOn(emailInput, 'focus')
 
       await user.click(screen.getByText(forgotPasswordText))
 
-      expect(mockToastAdd).toHaveBeenCalledWith({
-        severity: 'warn',
-        summary: enMessages.auth.login.emailPlaceholder,
-        life: 5000
-      })
-
-      expect(focusSpy).toHaveBeenCalled()
-
+      await waitFor(() =>
+        expect(getEmailInput()).toHaveAttribute('aria-invalid', 'true')
+      )
+      expect(getEmailInput()).toHaveFocus()
+      expect(useToast().toasts).toEqual([])
       expect(useAuthActions().sendPasswordReset).not.toHaveBeenCalled()
     })
   })
@@ -174,10 +161,12 @@ describe('SignInForm', () => {
       ).toHaveFocus()
       await user.keyboard('{Enter}')
 
-      expect(useAuthActions().sendPasswordReset).toHaveBeenCalledWith(
-        'test@example.com'
+      await waitFor(() =>
+        expect(useAuthActions().sendPasswordReset).toHaveBeenCalledWith(
+          'test@example.com'
+        )
       )
-      expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
     })
   })
 })

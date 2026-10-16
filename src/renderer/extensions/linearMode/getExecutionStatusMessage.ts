@@ -1,4 +1,4 @@
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 
 type ExecutionStatusKey =
   | 'generating'

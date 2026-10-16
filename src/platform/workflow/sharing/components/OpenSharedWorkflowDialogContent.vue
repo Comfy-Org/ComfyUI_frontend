@@ -1,27 +1,15 @@
 <template>
-  <div
+  <DialogPanel
     data-testid="open-shared-workflow-dialog"
-    class="flex w-full flex-col"
+    class="w-176 max-w-full"
     :aria-busy="isOpening"
+    @close="onCancel"
   >
-    <header
-      class="flex h-12 items-center justify-between gap-2 border-b border-border-default px-4"
-    >
-      <h2
-        data-testid="open-shared-workflow-title"
-        class="text-sm text-base-foreground"
-      >
+    <template #title>
+      <span data-testid="open-shared-workflow-title">
         {{ $t('openSharedWorkflow.dialogTitle') }}
-      </h2>
-      <Button
-        data-testid="open-shared-workflow-close"
-        size="icon"
-        :aria-label="$t('g.close')"
-        @click="onCancel"
-      >
-        <i class="icon-[lucide--x] size-4" />
-      </Button>
-    </header>
+      </span>
+    </template>
 
     <template v-if="isLoading">
       <main class="flex gap-8 px-8 pt-4 pb-6">
@@ -37,8 +25,8 @@
       <footer
         class="flex items-center justify-end gap-2.5 border-t border-border-default px-8 py-4"
       >
-        <Skeleton class="h-10 w-24 rounded-md" />
-        <Skeleton class="h-10 w-40 rounded-md" />
+        <Skeleton class="h-10 w-24" />
+        <Skeleton class="h-10 w-40" />
       </footer>
     </template>
 
@@ -172,7 +160,7 @@
         </Button>
       </footer>
     </template>
-  </div>
+  </DialogPanel>
 </template>
 
 <script setup lang="ts">
@@ -188,6 +176,7 @@ import type { SharedWorkflowPayload } from '@/platform/workflow/sharing/types/sh
 import AssetSectionList from '@/platform/workflow/sharing/components/AssetSectionList.vue'
 import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
 import Button from '@/components/ui/button/Button.vue'
+import DialogPanel from '@/components/ui/dialog/DialogPanel.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { cn } from '@comfyorg/tailwind-utils'
 

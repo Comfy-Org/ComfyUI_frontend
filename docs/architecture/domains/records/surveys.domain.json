@@ -1,0 +1,101 @@
+{
+  "id": "surveys",
+  "capability": "In-app surveys",
+  "description": "Feature-usage-triggered and error-panel Typeform surveys: the survey registry, eligibility and usage tracking persisted to localStorage, the nightly survey popover and controller, the error-panel survey call to action, and the Typeform embed and dialog. User-initiated feedback is the support-feedback record; the cloud onboarding survey is the cloud record.",
+  "modules": [
+    {
+      "path": "src/platform/surveys/**",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/surveys/ErrorPanelSurveyCta.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/surveys/ErrorPanelSurveyCta.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/surveys/NightlySurveyController.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/surveys/NightlySurveyPopover.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/surveys/NightlySurveyPopover.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/surveys/TypeformDialogContent.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/surveys/TypeformEmbed.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/surveys/TypeformEmbed.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/surveys/appModeFeedback.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/surveys/surveyRegistry.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/surveys/surveyRegistry.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/surveys/useTypeformEmbed.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/surveys/useTypeformEmbed.ts",
+      "role": "presentation"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Survey eligibility follows feature usage, distribution, and dismissal state",
+      "checks": [
+        "src/platform/surveys/useSurveyEligibility.test.ts",
+        "src/platform/surveys/useFeatureUsageTracker.test.ts",
+        "src/platform/surveys/useSurveyFeatureTracking.test.ts",
+        "src/platform/surveys/surveyRegistry.test.ts"
+      ]
+    },
+    {
+      "name": "Error surveys open from the error panel after tracked execution errors",
+      "checks": [
+        "src/platform/surveys/useErrorSurveyTracking.test.ts",
+        "src/platform/surveys/useErrorSurveyPopoverState.test.ts",
+        "src/platform/surveys/ErrorPanelSurveyCta.test.ts",
+        "src/platform/surveys/NightlySurveyPopover.test.ts"
+      ]
+    },
+    {
+      "name": "Typeform embeds load once and open in a dialog",
+      "checks": [
+        "src/platform/surveys/useTypeformEmbed.test.ts",
+        "src/platform/surveys/TypeformEmbed.test.ts",
+        "src/platform/surveys/openTypeformDialog.test.ts"
+      ]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Unclassified callers may import these internals during inventory; imports from classified domains remain subject to cross-domain rules.",
+    "Survey state and feature-usage localStorage keys keep their persisted names.",
+    "openTypeformDialog importing its dialog component and surveyRegistry typing against useSurveyEligibility remain visible as role-boundary debt; classification does not grant dependency exceptions."
+  ],
+  "deepImports": "inventory"
+}

@@ -1,6 +1,6 @@
+import type { LGraphNode } from '@/lib/litegraph/src/types/entityRegistry'
 import { shallowReactive } from 'vue'
 
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -13,7 +13,7 @@ import {
 } from '@/types/widgetId'
 
 import { createArrayMutationView } from '../infrastructure/createMutationView'
-import type { INodeInputSlot } from '../interfaces'
+import type { INodeInputSlot } from '../types/slots'
 import { isNodeBindable } from '../utils/type'
 import { getWidgetIds } from '../utils/widget'
 import { BaseWidget } from '../widgets/BaseWidget'

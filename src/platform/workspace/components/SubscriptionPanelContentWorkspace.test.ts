@@ -1,5 +1,7 @@
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { useDialogService } from '@/services/dialogService'
+import { useSubscriptionPaywall } from '@/composables/billing/useSubscriptionPaywall'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
+import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { getActivePinia } from 'pinia'
@@ -206,17 +208,13 @@ vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-vi.mock(import('@/services/dialogService'))
+vi.mock(import('@/composables/billing/useBillingDialogs'))
+
+vi.mock(import('@/composables/billing/useSubscriptionPaywall'))
+vi.mock(import('@/platform/workspace/composables/useWorkspaceDialogs'))
 
 vi.mock(
   import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
-)
-
-vi.mock<unknown>(
-  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
-  () => ({
-    useToast: () => ({ add: vi.fn() })
-  })
 )
 
 const i18n = createI18n({
@@ -246,7 +244,6 @@ function renderComponent({ stubFooter = true } = {}) {
   return render(SubscriptionPanelContentWorkspace, {
     global: {
       plugins: [getActivePinia()!, i18n],
-      directives: { tooltip: {} },
       stubs: {
         CreditsTile: CreditsTileStub,
         ...(stubFooter
@@ -791,7 +788,6 @@ describe('SubscriptionPanelContentWorkspace', () => {
   })
 
   it('falls back to the per-member price when the subscribed stop id is stale', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     mockCurrentTeamCreditStop.value = {
       id: 'team_unknown',
       credits_monthly: 1,
@@ -801,8 +797,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
 
     expect(screen.getByText('$100')).toBeInTheDocument()
     expect(screen.getByText('USD / mo / member')).toBeInTheDocument()
-    expect(warn).toHaveBeenCalledOnce()
-    warn.mockRestore()
+    expect(console.warn).toHaveBeenCalledOnce()
   })
 
   it('shows cents when the subscribed stop price is not a whole dollar', () => {
@@ -830,7 +825,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(useBillingContext().manageSubscription).toHaveBeenCalledOnce()
 
     await user.click(screen.getByRole('button', { name: 'Change plan' }))
-    expect(useBillingContext().showSubscriptionDialog).toHaveBeenCalledOnce()
+    expect(
+      useSubscriptionPaywall().showSubscriptionDialog
+    ).toHaveBeenCalledOnce()
   })
 
   it('hides Change plan when the server denies seat changes to a client-side owner', () => {
@@ -1003,7 +1000,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
       screen.getByRole('button', { name: 'Resume subscription' })
     )
     expect(useBillingContext().resubscribe).toHaveBeenCalledOnce()
-    expect(useBillingContext().showSubscriptionDialog).not.toHaveBeenCalled()
+    expect(
+      useSubscriptionPaywall().showSubscriptionDialog
+    ).not.toHaveBeenCalled()
   })
 
   it('drops the state card for an inactive ended subscription without a date', () => {
@@ -1090,7 +1089,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
       screen.getByRole('button', { name: 'Resume subscription' })
     )
 
-    expect(useBillingContext().showSubscriptionDialog).toHaveBeenCalledWith({
+    expect(
+      useSubscriptionPaywall().showSubscriptionDialog
+    ).toHaveBeenCalledWith({
       reason: 'settings_billing_panel'
     })
     expect(useBillingContext().resubscribe).not.toHaveBeenCalled()
@@ -1317,7 +1318,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(useBillingContext().manageSubscription).toHaveBeenCalledOnce()
 
     await user.click(screen.getByRole('button', { name: 'Subscribe' }))
-    expect(useBillingContext().showSubscriptionDialog).toHaveBeenCalledOnce()
+    expect(
+      useSubscriptionPaywall().showSubscriptionDialog
+    ).toHaveBeenCalledOnce()
   })
 
   it.for([
@@ -1371,7 +1374,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     await user.click(
       screen.getByRole('menuitem', { name: 'Edit workspace details' })
     )
-    expect(useDialogService().showEditWorkspaceDialog).toHaveBeenCalledOnce()
+    expect(useWorkspaceDialogs().showEditWorkspaceDialog).toHaveBeenCalledOnce()
   })
 
   it('offers a subscribed personal workspace Edit and Cancel without Delete', async () => {
@@ -1496,7 +1499,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
 
     await user.click(screen.getByRole('button', { name: 'More Options' }))
     await user.click(screen.getByRole('menuitem', { name: 'Leave Workspace' }))
-    expect(useDialogService().showLeaveWorkspaceDialog).toHaveBeenCalledOnce()
+    expect(
+      useWorkspaceDialogs().showLeaveWorkspaceDialog
+    ).toHaveBeenCalledOnce()
   })
 
   it('offers an additional workspace owner Edit, Cancel, Leave, and locked Delete', async () => {
@@ -1515,7 +1520,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     ).toHaveAttribute('aria-disabled', 'true')
 
     await user.click(screen.getByRole('menuitem', { name: 'Cancel plan' }))
-    expect(useDialogService().showCancelSubscriptionFlow).toHaveBeenCalledWith(
+    expect(useBillingDialogs().showCancelSubscriptionFlow).toHaveBeenCalledWith(
       END_DATE_ISO
     )
   })

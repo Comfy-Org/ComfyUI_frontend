@@ -1,5 +1,5 @@
 <template>
-  <div class="relative flex min-h-6 flex-row items-center gap-2.5">
+  <div class="relative flex min-h-6 items-center gap-2.5">
     <span class="text-left font-sans text-xs text-(--descrip-text)">{{
       label
     }}</span>

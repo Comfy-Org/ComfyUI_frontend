@@ -11,9 +11,9 @@
         <i class="icon-[lucide--users] text-lg" />
       </div>
       <div class="flex min-w-0 flex-1 flex-col">
-        <h2 class="m-0 text-lg font-semibold text-base-foreground">
+        <DialogTitle class="m-0 text-lg">
           {{ $t('teamWorkspacesDialog.title') }}
-        </h2>
+        </DialogTitle>
         <p class="m-0 text-sm text-muted-foreground">
           {{
             ownedTeamWorkspaces.length > 0
@@ -69,7 +69,7 @@
                 </span>
               </div>
             </div>
-            <span class="shrink-0 text-sm font-medium text-muted-foreground">
+            <span class="shrink-0 text-sm font-medium text-base-foreground">
               {{ $t('teamWorkspacesDialog.switch') }}
               <i class="pi pi-arrow-right text-xs" aria-hidden="true" />
             </span>
@@ -136,17 +136,19 @@
 </template>
 
 <script setup lang="ts">
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { storeToRefs } from 'pinia'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import { useWorkspaceSwitch } from '@/platform/workspace/composables/useWorkspaceSwitch'
 import { useWorkspaceTierLabel } from '@/platform/workspace/composables/useWorkspaceTierLabel'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import { getErrorMessage } from '@/utils/errorUtil'
 
 const { onConfirm } = defineProps<{
   onConfirm?: (name: string) => void | Promise<void>
@@ -191,10 +193,8 @@ async function handleSwitch(workspaceId: string) {
     await switchWorkspace(workspaceId)
     dialogStore.closeDialog({ key: DIALOG_KEY })
   } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: t('workspaceSwitcher.failedToSwitch'),
-      detail: error instanceof Error ? error.message : t('g.unknownError')
+    toast.error(t('workspaceSwitcher.failedToSwitch'), {
+      description: getErrorMessage(error) ?? t('g.unknownError')
     })
   }
 }
@@ -207,20 +207,16 @@ async function onCreate() {
     try {
       await workspaceStore.createWorkspace(name)
     } catch (error) {
-      toast.add({
-        severity: 'error',
-        summary: t('workspacePanel.toast.failedToCreateWorkspace'),
-        detail: error instanceof Error ? error.message : t('g.unknownError')
+      toast.error(t('workspacePanel.toast.failedToCreateWorkspace'), {
+        description: getErrorMessage(error) ?? t('g.unknownError')
       })
       return
     }
     try {
       await onConfirm?.(name)
     } catch (error) {
-      toast.add({
-        severity: 'error',
-        summary: t('teamWorkspacesDialog.confirmCallbackFailed'),
-        detail: error instanceof Error ? error.message : t('g.unknownError')
+      toast.error(t('teamWorkspacesDialog.confirmCallbackFailed'), {
+        description: getErrorMessage(error) ?? t('g.unknownError')
       })
     }
     dialogStore.closeDialog({ key: DIALOG_KEY })

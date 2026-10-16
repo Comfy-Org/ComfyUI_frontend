@@ -7,14 +7,15 @@ import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { createLoad3d } from '@/extensions/core/load3d/createLoad3d'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { useToastStore } from '@/platform/updates/common/toastStore'
-import { useLoad3dService } from '@/services/load3dService'
+import { useToast } from '@/components/ui/toast/toastStore'
+import {
+  copyLoad3dState,
+  handleViewportRefresh
+} from '@/extensions/core/load3d/load3dInstances'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { api } from '@/scripts/api'
 
-vi.mock(import('@/services/load3dService'), () => ({
-  useLoad3dService: vi.fn()
-}))
+vi.mock(import('@/extensions/core/load3d/load3dInstances'))
 
 vi.mock<unknown>(import('@/extensions/core/load3d/Load3dUtils'), () => ({
   default: {
@@ -67,8 +68,6 @@ function createMockSceneManager(): Load3d['sceneManager'] {
 describe('useLoad3dViewer', () => {
   let mockLoad3d: Partial<Load3d>
   let mockSourceLoad3d: Partial<Load3d>
-  let mockLoad3dService: ReturnType<typeof useLoad3dService>
-  let mockToastStore: ReturnType<typeof useToastStore>
   let mockNode: LGraphNode
 
   beforeEach(() => {
@@ -124,7 +123,7 @@ describe('useLoad3dViewer', () => {
       forceRender: vi.fn(),
       remove: vi.fn(),
       setTargetSize: vi.fn(),
-      loadModel: vi.fn().mockResolvedValue(true),
+      loadModel: vi.fn().mockResolvedValue('loaded'),
       captureThumbnail: vi.fn().mockResolvedValue('data:image/png;base64,x'),
       setCameraState: vi.fn(),
       addEventListener: vi.fn(),
@@ -180,16 +179,7 @@ describe('useLoad3dViewer', () => {
     })
     vi.mocked(createLoad3d).mockImplementation(() => mockLoad3d as Load3d)
 
-    mockLoad3dService = {
-      copyLoad3dState: vi.fn().mockResolvedValue(undefined),
-      handleViewportRefresh: vi.fn(),
-      getLoad3d: vi.fn().mockReturnValue(mockSourceLoad3d)
-    } as Partial<ReturnType<typeof useLoad3dService>> as ReturnType<
-      typeof useLoad3dService
-    >
-    vi.mocked(useLoad3dService).mockReturnValue(mockLoad3dService)
-
-    mockToastStore = useToastStore()
+    vi.mocked(copyLoad3dState).mockResolvedValue(undefined)
   })
 
   describe('initialization', () => {
@@ -206,10 +196,7 @@ describe('useLoad3dViewer', () => {
         isViewerMode: false
       })
 
-      expect(mockLoad3dService.copyLoad3dState).toHaveBeenCalledWith(
-        mockSourceLoad3d,
-        mockLoad3d
-      )
+      expect(copyLoad3dState).toHaveBeenCalledWith(mockSourceLoad3d, mockLoad3d)
 
       expect(viewer.cameraType.value).toBe('perspective')
       expect(viewer.backgroundColor.value).toBe('#282828')
@@ -250,7 +237,7 @@ describe('useLoad3dViewer', () => {
 
       await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
 
-      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
+      expect(useToast().warning).toHaveBeenCalledWith(
         'toastMessages.failedToInitializeLoad3dViewer'
       )
     })
@@ -272,7 +259,7 @@ describe('useLoad3dViewer', () => {
       viewer.backgroundColor.value = '#ff0000'
       await nextTick()
 
-      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
+      expect(useToast().warning).toHaveBeenCalledWith(
         'toastMessages.failedToUpdateBackgroundColor'
       )
     })
@@ -302,7 +289,7 @@ describe('useLoad3dViewer', () => {
 
       await viewer.exportModel('glb')
 
-      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
+      expect(useToast().warning).toHaveBeenCalledWith(
         'toastMessages.failedToExportModel'
       )
     })
@@ -437,10 +424,7 @@ describe('useLoad3dViewer', () => {
         (mockNode.properties['Scene Config'] as Record<string, unknown>)
           .showGrid
       ).toBe(false)
-      expect(mockLoad3dService.copyLoad3dState).toHaveBeenCalledWith(
-        mockLoad3d,
-        mockSourceLoad3d
-      )
+      expect(copyLoad3dState).toHaveBeenCalledWith(mockLoad3d, mockSourceLoad3d)
       expect(mockSourceLoad3d.forceRender).toHaveBeenCalled()
       expect(mockNode.graph!.setDirtyCanvas).toHaveBeenCalledWith(true, true)
     })
@@ -495,9 +479,7 @@ describe('useLoad3dViewer', () => {
 
       viewer.refreshViewport()
 
-      expect(mockLoad3dService.handleViewportRefresh).toHaveBeenCalledWith(
-        mockLoad3d
-      )
+      expect(handleViewportRefresh).toHaveBeenCalledWith(mockLoad3d)
     })
   })
 
@@ -603,7 +585,7 @@ describe('useLoad3dViewer', () => {
       const file = new File([''], 'test.jpg', { type: 'image/jpeg' })
       await viewer.handleBackgroundImageUpdate(file)
 
-      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
+      expect(useToast().warning).toHaveBeenCalledWith(
         'toastMessages.failedToUploadBackgroundImage'
       )
     })
@@ -629,7 +611,7 @@ describe('useLoad3dViewer', () => {
       vi.mocked(Load3dUtils.uploadFile).mockResolvedValueOnce(
         '3d/superseded.glb'
       )
-      vi.mocked(mockLoad3d.loadModel!).mockResolvedValueOnce(false)
+      vi.mocked(mockLoad3d.loadModel!).mockResolvedValueOnce('cancelled')
       const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
       await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
@@ -688,9 +670,7 @@ describe('useLoad3dViewer', () => {
       const file = new File([''], 'whatever.glb')
       await viewer.handleModelDrop(file)
 
-      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
-        'toastMessages.no3dScene'
-      )
+      expect(useToast().warning).toHaveBeenCalledWith('toastMessages.no3dScene')
       expect(mockLoad3d.loadModel).not.toHaveBeenCalled()
     })
 
@@ -705,7 +685,7 @@ describe('useLoad3dViewer', () => {
       const file = new File([''], 'whatever.glb')
       await viewer.handleModelDrop(file)
 
-      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
+      expect(useToast().warning).toHaveBeenCalledWith(
         'toastMessages.fileUploadFailed'
       )
       expect(mockLoad3d.loadModel).not.toHaveBeenCalled()
@@ -773,10 +753,7 @@ describe('useLoad3dViewer', () => {
   describe('standalone thumbnail persistence', () => {
     beforeEach(() => {
       isAssetPreviewSupported.mockReturnValue(false)
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue({ blob: () => Promise.resolve(new Blob()) })
-      )
+      vi.mocked(fetch).mockImplementation(async () => new Response(new Blob()))
     })
 
     it('captures and persists a thumbnail after a standalone model loads', async () => {
@@ -851,6 +828,24 @@ describe('useLoad3dViewer', () => {
       expect(viewer.backgroundColor.value).toBe('#282828')
     })
 
+    it('warns when loading another model into the standalone viewer fails', async () => {
+      const viewer = useLoad3dViewer()
+      const containerRef = document.createElement('div')
+      await viewer.initializeStandaloneViewer(containerRef, 'model1.glb')
+      vi.mocked(mockLoad3d.loadModel!).mockRejectedValueOnce(
+        new Error('parse failed')
+      )
+
+      await viewer.initializeStandaloneViewer(containerRef, 'model2.glb')
+
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          kind: 'warning',
+          title: 'toastMessages.failedToLoadModel'
+        })
+      ])
+    })
+
     it('should save configuration during cleanup in standalone mode', async () => {
       const viewer = useLoad3dViewer()
       const containerRef = document.createElement('div')
@@ -868,15 +863,15 @@ describe('useLoad3dViewer', () => {
     })
 
     it('completes viewer setup when a concurrent call supersedes the first load', async () => {
-      let settleFirstLoad!: (accepted: boolean) => void
+      let settleFirstLoad!: (outcome: 'cancelled') => void
       vi.mocked(mockLoad3d.loadModel!)
         .mockImplementationOnce(
           () =>
-            new Promise<boolean>((resolve) => {
+            new Promise<'cancelled'>((resolve) => {
               settleFirstLoad = resolve
             })
         )
-        .mockResolvedValueOnce(true)
+        .mockResolvedValueOnce('loaded')
       const viewer = useLoad3dViewer()
       const containerRef = document.createElement('div')
 
@@ -885,7 +880,7 @@ describe('useLoad3dViewer', () => {
         containerRef,
         'b.glb'
       )
-      settleFirstLoad(false)
+      settleFirstLoad('cancelled')
       await Promise.all([first, replacement])
 
       expect(createLoad3d).toHaveBeenCalledTimes(1)
