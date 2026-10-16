@@ -1,8 +1,3 @@
-import {
-  isClaimedBy,
-  listUnclassifiedFiles,
-  matchesModulePath
-} from './records'
 import type { ArchitectureConfiguration } from './records'
 
 interface CodeownersRule {
@@ -32,22 +27,28 @@ function ownersOf(filename: string, rules: CodeownersRule[]): string[] {
 }
 
 export function buildCatalog(
-  { exceptions, records, sourceFiles }: ArchitectureConfiguration,
+  {
+    claims,
+    exceptions,
+    records,
+    sourceFiles,
+    unclassifiedFiles
+  }: ArchitectureConfiguration,
   codeowners: CodeownersRule[]
 ) {
-  const unclassifiedFiles = listUnclassifiedFiles(records, sourceFiles)
+  const claimed = [...claims]
   return {
     domains: records.map((record) => ({
       ...record,
-      sourceFileCount: sourceFiles.filter((file) => isClaimedBy(file, record))
+      sourceFileCount: claimed.filter(([, claim]) => claim.record === record)
         .length,
       modules: record.modules.map((module) => ({
         ...module,
         owners: [
           ...new Set(
-            sourceFiles
-              .filter((file) => matchesModulePath(file, module.path))
-              .flatMap((file) => ownersOf(file, codeowners))
+            claimed
+              .filter(([, claim]) => claim.module === module)
+              .flatMap(([file]) => ownersOf(file, codeowners))
           )
         ].sort()
       }))

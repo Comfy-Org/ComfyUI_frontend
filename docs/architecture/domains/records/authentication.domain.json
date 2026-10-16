@@ -4,39 +4,71 @@
   "description": "Account identity and credentials: Firebase identity, the auth, API-key, and local multi-user stores, sign-in actions and dialogs, social and SSO sign-in, shared web session cookie and request authorization, unified re-mint retry, desktop-host sessions, partner-node token exchange and run gate, and workspace-scoped token minting with its auth gate. Cloud session store, cloud identity boot, and the cloud API auth adapter stay in the cloud record. Workspace membership and billing remain separate capabilities; the account packages outside src are not in this catalog.",
   "modules": [
     {
-      "path": "src/platform/auth/localWeb/accessTokenIdentity.ts",
-      "role": "domain"
+      "path": "src/components/actionbar/PartnerNodesRunCaption.vue",
+      "role": "presentation"
     },
     {
-      "path": "src/platform/auth/localWeb/localWebAuthBridge.ts",
-      "role": "infrastructure"
+      "path": "src/components/dialog/content/ApiNodesSignInContent.test.ts",
+      "role": "presentation"
     },
     {
-      "path": "src/platform/auth/localWeb/localWebAuthBridge.test.ts",
-      "role": "infrastructure"
+      "path": "src/components/dialog/content/ApiNodesSignInContent.vue",
+      "role": "presentation"
     },
     {
-      "path": "src/platform/auth/localWeb/localWebSession.ts",
-      "role": "infrastructure"
+      "path": "src/components/dialog/content/SignInContent.test.ts",
+      "role": "presentation"
     },
     {
-      "path": "src/platform/auth/localWeb/localWebSession.test.ts",
-      "role": "infrastructure"
+      "path": "src/components/dialog/content/SignInContent.vue",
+      "role": "presentation"
     },
     {
-      "path": "src/platform/auth/localWeb/localWebTokenStore.ts",
-      "role": "infrastructure"
+      "path": "src/components/dialog/content/UpdatePasswordContent.vue",
+      "role": "presentation"
     },
     {
-      "path": "src/platform/auth/localWeb/pendingSignIn.ts",
-      "role": "infrastructure"
+      "path": "src/components/dialog/content/setting/CurrentUserMessage.vue",
+      "role": "presentation"
     },
     {
-      "path": "src/platform/auth/partnerNode/partnerNodeTokenSource.reload.test.ts",
-      "role": "infrastructure"
+      "path": "src/components/dialog/content/setting/UserPanel.test.ts",
+      "role": "presentation"
     },
     {
-      "path": "src/platform/auth/sso/SsoAccountOutsideOrganizationDialogContent.vue",
+      "path": "src/components/dialog/content/setting/UserPanel.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/signin/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/header/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/sidebar/SidebarLogoutIcon.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/topbar/CurrentUserButton.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/topbar/CurrentUserButton.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/topbar/CurrentUserPopoverLegacy.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/topbar/CurrentUserPopoverLegacy.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/topbar/LoginButton.vue",
       "role": "presentation"
     },
     {
@@ -54,6 +86,18 @@
     {
       "path": "src/composables/billing/usePartnerNodesRunGate.ts",
       "role": "application"
+    },
+    {
+      "path": "src/composables/node/usePartnerNodesInGraph.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/node/usePartnerNodesInGraph.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/config/**",
+      "role": "infrastructure"
     },
     {
       "path": "src/platform/auth/apiAuthProvider.ts",
@@ -92,8 +136,20 @@
       "role": "infrastructure"
     },
     {
+      "path": "src/platform/auth/localWeb/**",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/auth/localWeb/accessTokenIdentity.ts",
+      "role": "domain"
+    },
+    {
       "path": "src/platform/auth/nonWebClientsStayOnTokens.test.ts",
       "role": "integration"
+    },
+    {
+      "path": "src/platform/auth/partnerNode/**",
+      "role": "infrastructure"
     },
     {
       "path": "src/platform/auth/partnerNode/partnerNodeQueueToken.test.ts",
@@ -102,18 +158,6 @@
     {
       "path": "src/platform/auth/partnerNode/partnerNodeQueueToken.ts",
       "role": "application"
-    },
-    {
-      "path": "src/platform/auth/partnerNode/partnerNodeTokens.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/platform/auth/partnerNode/partnerNodeTokenSource.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/platform/auth/partnerNode/partnerNodeTokenSource.ts",
-      "role": "infrastructure"
     },
     {
       "path": "src/platform/auth/session/components/**",
@@ -152,6 +196,18 @@
       "role": "application"
     },
     {
+      "path": "src/platform/auth/sso/SsoAccountOutsideOrganizationDialogContent.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/auth/sso/SsoRequiredDialogContent.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/auth/sso/SsoRequiredDialogContent.vue",
+      "role": "presentation"
+    },
+    {
       "path": "src/platform/auth/sso/ssoRequired.test.ts",
       "role": "application"
     },
@@ -162,14 +218,6 @@
     {
       "path": "src/platform/auth/sso/ssoRequiredChunkFailure.test.ts",
       "role": "application"
-    },
-    {
-      "path": "src/platform/auth/sso/SsoRequiredDialogContent.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/auth/sso/SsoRequiredDialogContent.vue",
-      "role": "presentation"
     },
     {
       "path": "src/platform/auth/sso/ssoRequiredDialogKey.ts",
@@ -240,6 +288,14 @@
       "role": "application"
     },
     {
+      "path": "src/schemas/signInSchema.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/stores/__tests__/**",
+      "role": "application"
+    },
+    {
       "path": "src/stores/apiKeyAuthStore.integration.test.ts",
       "role": "application"
     },
@@ -264,120 +320,16 @@
       "role": "application"
     },
     {
-      "path": "src/components/actionbar/PartnerNodesRunCaption.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/dialog/content/ApiNodesSignInContent.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/dialog/content/ApiNodesSignInContent.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/dialog/content/setting/CurrentUserMessage.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/dialog/content/setting/UserPanel.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/dialog/content/setting/UserPanel.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/dialog/content/signin/ApiKeyForm.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/dialog/content/signin/ApiKeyForm.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/dialog/content/signin/PasswordFields.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/dialog/content/signin/SignInForm.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/dialog/content/signin/SignInForm.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/dialog/content/signin/SignUpForm.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/dialog/content/signin/SignUpForm.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/dialog/content/signin/TurnstileWidget.render.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/dialog/content/signin/TurnstileWidget.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/dialog/content/signin/TurnstileWidget.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/dialog/content/SignInContent.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/dialog/content/SignInContent.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/dialog/content/UpdatePasswordContent.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/dialog/header/ComfyOrgHeader.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/sidebar/SidebarLogoutIcon.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/topbar/CurrentUserButton.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/topbar/CurrentUserButton.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/topbar/CurrentUserPopoverLegacy.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/topbar/CurrentUserPopoverLegacy.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/topbar/LoginButton.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/stores/__tests__/authTokenPriority.test.ts",
+      "path": "src/storybook/mocks/useCurrentUser.ts",
       "role": "application"
     },
     {
-      "path": "src/composables/node/usePartnerNodesInGraph.test.ts",
-      "role": "application"
+      "path": "src/types/authTypes.ts",
+      "role": "domain"
     },
     {
-      "path": "src/composables/node/usePartnerNodesInGraph.ts",
-      "role": "application"
+      "path": "src/types/axios-augmentation.d.ts",
+      "role": "infrastructure"
     },
     {
       "path": "src/utils/__tests__/stubAccountIdentityPort.ts",
@@ -392,44 +344,12 @@
       "role": "domain"
     },
     {
-      "path": "src/config/firebase.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/config/firebase.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/config/turnstile.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/config/turnstile.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/schemas/signInSchema.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/types/authTypes.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/types/axios-augmentation.d.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/views/UserSelectView.vue",
-      "role": "presentation"
-    },
-    {
       "path": "src/views/UserSelectView.test.ts",
       "role": "presentation"
     },
     {
-      "path": "src/storybook/mocks/useCurrentUser.ts",
-      "role": "application"
+      "path": "src/views/UserSelectView.vue",
+      "role": "presentation"
     }
   ],
   "publicEntryPoints": [],
