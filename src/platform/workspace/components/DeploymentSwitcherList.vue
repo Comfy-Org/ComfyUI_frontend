@@ -77,23 +77,10 @@
     :disabled="isSwitching"
     @set-default="emit('setDefault', $event)"
   />
-  <TextTooltip :text="buildsLink.tooltip" side="right">
-    <MenuItem as-child :class="switcherItemClass">
-      <a
-        :href="buildsUrl"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="text-foreground no-underline"
-        data-testid="deployment-switcher-builds"
-      >
-        <i
-          :class="cn(buildsLink.icon, 'size-3.5 text-muted-foreground')"
-          aria-hidden="true"
-        />
-        {{ buildsLink.label }}
-      </a>
-    </MenuItem>
-  </TextTooltip>
+  <DeploymentSwitcherBuildAction
+    :has-deployments="deployments.length > 0"
+    @create-custom-deployment="emit('createCustomDeployment')"
+  />
   <template v-if="deployments.length > 0">
     <MenuSeparator />
     <p
@@ -113,9 +100,8 @@ import { useI18n } from 'vue-i18n'
 
 import MenuItem from '@comfyorg/design-system/menu/MenuItem'
 import MenuSeparator from '@comfyorg/design-system/menu/MenuSeparator'
-import TextTooltip from '@comfyorg/design-system/tooltip/TextTooltip'
-import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import DeploymentSwitcherBuildAction from '@/platform/workspace/components/DeploymentSwitcherBuildAction.vue'
 import DeploymentSwitcherDefaultMenu from '@/platform/workspace/components/DeploymentSwitcherDefaultMenu.vue'
 import DeploymentSwitcherRow from '@/platform/workspace/components/DeploymentSwitcherRow.vue'
 import { switcherItemClass } from '@/platform/workspace/components/deploymentSwitcherStyles'
@@ -125,7 +111,6 @@ import { useKeepRowFocus } from '@/platform/workspace/composables/useKeepRowFocu
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 
 const { switchingTo } = defineProps<{
-  /** The row last picked; it shows progress while a switch is in flight. */
   switchingTo: string | null
 }>()
 
@@ -134,6 +119,7 @@ const emit = defineEmits<{
   follow: [deploymentId: string]
   reload: []
   setDefault: [deploymentId: string | null]
+  createCustomDeployment: []
 }>()
 
 const { t } = useI18n()
@@ -153,22 +139,6 @@ const { currentLabel } = useDeploymentLabels()
 const { sections, pickedValue } = useDeploymentRows()
 const sectionLabelId = useId()
 useKeepRowFocus(sections)
-
-const buildsUrl = `${getComfyPlatformBaseUrl()}/profile/builds`
-
-const buildsLink = computed(() =>
-  deployments.value.length > 0
-    ? {
-        label: t('deploymentSwitcher.manageDeployments'),
-        tooltip: t('deploymentSwitcher.manageDeploymentsTooltip'),
-        icon: 'icon-[lucide--arrow-up-right]'
-      }
-    : {
-        label: t('deploymentSwitcher.createCustomDeployment'),
-        tooltip: t('deploymentSwitcher.createCustomDeploymentTooltip'),
-        icon: 'icon-[lucide--plus]'
-      }
-)
 
 const listedSections = computed(() =>
   sections.value.map((section, index) => ({
