@@ -30,6 +30,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
 import { DatadogRumTelemetryProvider } from '@/platform/telemetry/providers/cloud/DatadogRumTelemetryProvider'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
@@ -646,8 +647,14 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         .spyOn(workspaceApi, 'createTopupCheckout')
         .mockResolvedValue({ checkout_url: checkoutUrl })
       const { tab, open } = stubCheckoutTab()
+      const { continueButton } = await payAndGetRefused()
+      expect(
+        screen.getByText(
+          'This workspace has no card saved for one-click top-ups. Pay on a checkout page instead.'
+        )
+      ).toBeInTheDocument()
 
-      await userEvent.click((await payAndGetRefused()).continueButton)
+      await userEvent.click(continueButton)
 
       await waitFor(() => expect(tab.location.href).toBe(checkoutUrl))
       expect(open).toHaveBeenCalledExactlyOnceWith('', '_blank')
@@ -732,12 +739,13 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       }
     })
 
-    it('hands checkout to the Desktop host without navigating the app away', async () => {
+    it('hands checkout to the Desktop host and returns it to the billing-web return page', async () => {
       refuseForNoPaymentMethod()
-      vi.spyOn(workspaceApi, 'createTopupCheckout').mockResolvedValue({
-        checkout_url: checkoutUrl
-      })
+      const createCheckout = vi
+        .spyOn(workspaceApi, 'createTopupCheckout')
+        .mockResolvedValue({ checkout_url: checkoutUrl })
       window.__comfyDesktop2 = {}
+      remoteConfig.value = { billing_web_url: 'https://testbilling.comfy.org' }
       const open = vi.spyOn(window, 'open').mockReturnValue(null)
       const appUrl = window.location.href
 
@@ -749,11 +757,35 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
             key: 'top-up-credits'
           })
         )
+        expect(createCheckout).toHaveBeenCalledWith(
+          5000,
+          'https://testbilling.comfy.org/return/desktop-topup'
+        )
         expect(open).toHaveBeenCalledWith(checkoutUrl, '_blank')
         expect(window.location.href).toBe(appUrl)
       } finally {
         delete window.__comfyDesktop2
+        remoteConfig.value = {}
       }
+    })
+
+    it('keeps the app in place and says so when the browser blocks the checkout tab', async () => {
+      refuseForNoPaymentMethod()
+      const createCheckout = vi.spyOn(workspaceApi, 'createTopupCheckout')
+      vi.spyOn(window, 'open').mockReturnValue(null)
+      const appUrl = window.location.href
+
+      await userEvent.click((await payAndGetRefused()).continueButton)
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        "Checkout didn't open"
+      )
+      expect(createCheckout).not.toHaveBeenCalled()
+      expect(window.location.href).toBe(appUrl)
+      expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
+      expect(
+        screen.getByRole('button', { name: 'Continue to checkout' })
+      ).toBeEnabled()
     })
 
     it('abandons a checkout that resolves after the dialog was dismissed', async () => {
@@ -786,11 +818,10 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
 
       await userEvent.click((await payAndGetRefused()).continueButton)
 
-      await waitFor(() =>
-        expect(useToast().error).toHaveBeenCalledWith('Purchase Failed', {
-          description: 'Failed to purchase credits: Bad return url'
-        })
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        "The payment page couldn't open. Nothing was charged. Try again."
       )
+      expect(useToast().error).not.toHaveBeenCalled()
       expect(tab.close).toHaveBeenCalledOnce()
       expect(mockStartPendingTopup).not.toHaveBeenCalled()
       expect(

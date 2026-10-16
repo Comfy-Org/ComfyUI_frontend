@@ -64,10 +64,29 @@
         </div>
       </div>
       <p
-        v-if="noPaymentMethodRefused"
+        v-if="checkoutRecovery === 'refused'"
         class="m-0 px-8 pt-4 text-sm text-muted-foreground"
       >
         {{ $t('credits.topUp.noPaymentMethodCheckoutHint') }}
+      </p>
+      <div
+        v-else-if="checkoutRecovery === 'blocked'"
+        role="alert"
+        class="flex flex-col gap-1 px-8 pt-4 text-sm"
+      >
+        <span class="font-semibold text-base-foreground">
+          {{ $t('credits.topUp.checkoutBlockedTitle') }}
+        </span>
+        <span class="text-muted-foreground">
+          {{ $t('credits.topUp.checkoutBlockedBody') }}
+        </span>
+      </div>
+      <p
+        v-else-if="checkoutRecovery === 'failed'"
+        role="alert"
+        class="m-0 px-8 pt-4 text-sm text-destructive-background"
+      >
+        {{ $t('credits.topUp.checkoutOpenFailed') }}
       </p>
     </template>
 
@@ -255,7 +274,7 @@
           {{ $t('subscription.preview.completeVerification') }}
         </Button>
         <Button
-          v-if="step === 'confirm' && noPaymentMethodRefused"
+          v-if="step === 'confirm' && checkoutRecovery"
           variant="primary"
           size="lg"
           class="h-10 justify-center"
@@ -331,6 +350,7 @@ import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDi
 import type { CreateTopupResponse } from '@/platform/workspace/api/workspaceApi'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import { reserveBillingTab } from '@/platform/workspace/billing/billingTab'
+import { topupCheckoutReturnUrl } from '@/platform/workspace/billing/topupCheckoutReturnUrl'
 import { isBlockedOnCustomerPhase } from '@/platform/workspace/billing/customerAttention'
 import { UncreditedTopupResponse } from '@/platform/workspace/billing/sdk/topupOperationView'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
@@ -458,7 +478,7 @@ const selectedPreset = ref<number | null>(50)
 const payAmount = ref(50)
 const loading = ref(false)
 const paymentSubmitted = ref(false)
-const noPaymentMethodRefused = ref(false)
+const checkoutRecovery = ref<'refused' | 'blocked' | 'failed' | null>(null)
 const step = ref<'amount' | 'confirm' | 'verifying'>(
   topupOperation.value && canTopUp.value ? 'verifying' : 'amount'
 )
@@ -568,7 +588,7 @@ function resumeTopupAuthentication() {
 }
 
 function showAmountStep() {
-  noPaymentMethodRefused.value = false
+  checkoutRecovery.value = null
   step.value = 'amount'
 }
 
@@ -595,7 +615,7 @@ async function handleBuy() {
   purchaseAttempt += 1
   const attempt = purchaseAttempt
   const isCurrentAttempt = () => attempt === purchaseAttempt
-  noPaymentMethodRefused.value = false
+  checkoutRecovery.value = null
   loading.value = true
   paymentSubmitted.value = true
   const attemptStartedAt = Date.now()
@@ -714,7 +734,7 @@ function reportPurchaseError(
     billingOpId
   )
   if (isNoPaymentMethodRefusal(error)) {
-    if (currentAttempt) noPaymentMethodRefused.value = true
+    if (currentAttempt) checkoutRecovery.value = 'refused'
     return
   }
   toast.error(t('credits.topUp.purchaseError'), {
@@ -737,15 +757,24 @@ async function continueToCheckout() {
   if (!(canTopUp.value && isValidAmount.value && !paymentLocked.value)) {
     return
   }
+  const returnUrl = topupCheckoutReturnUrl()
+  if (!returnUrl) {
+    checkoutRecovery.value = 'failed'
+    return
+  }
   const checkoutTab = reserveBillingTab()
+  if (!checkoutTab) {
+    checkoutRecovery.value = 'blocked'
+    return
+  }
   loading.value = true
   try {
     const checkoutUrl = await createHostedCheckout(
       payAmount.value * 100,
-      window.location.href
+      returnUrl
     )
     if (unmounted) {
-      checkoutTab?.close()
+      checkoutTab.close()
       return
     }
     usePendingTopup().startPendingTopup()
@@ -760,15 +789,13 @@ async function continueToCheckout() {
         return balance.value?.amountMicros ?? null
       }
     })
-    if (checkoutTab) checkoutTab.navigate(checkoutUrl)
-    else globalThis.location.href = checkoutUrl
+    checkoutTab.navigate(checkoutUrl)
     handleClose(false)
   } catch (error) {
-    checkoutTab?.close()
+    checkoutTab.close()
+    console.error('Hosted top-up checkout failed to open', error)
     if (unmounted) return
-    toast.error(t('credits.topUp.purchaseError'), {
-      description: purchaseErrorDetail(error)
-    })
+    checkoutRecovery.value = 'failed'
   } finally {
     loading.value = false
   }
