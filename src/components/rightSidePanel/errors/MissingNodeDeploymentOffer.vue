@@ -1,10 +1,3 @@
-<!-- Under the missing-nodes message, the workspace's deployments that have
-     every node type the open workflow uses, Comfy Cloud included, each a
-     button that picks it through the deployment switcher (BE-19374). Up to
-     three are named; "and N more" opens the switcher. When each was checked
-     and none has them all, it says so. Renders nothing where the user popover
-     does not offer the switcher (useDeploymentSwitcherOffered), where the
-     deployment listing hides it, or before the check answers. -->
 <template>
   <div
     v-if="offer !== null"

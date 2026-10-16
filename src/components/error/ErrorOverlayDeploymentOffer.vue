@@ -1,8 +1,3 @@
-<!-- In the error notice for missing nodes, the first deployment that has
-     every node the workflow needs, with a Switch that picks it through the
-     deployment switcher; "N more" opens the switcher (BE-19374). Renders
-     nothing when none qualifies, the switcher is not offered, or the check
-     has no answer. -->
 <template>
   <div
     v-if="first"

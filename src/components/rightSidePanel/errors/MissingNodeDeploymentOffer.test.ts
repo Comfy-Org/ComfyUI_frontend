@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed } from 'vue'
+import { computed, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -111,6 +111,18 @@ function answer(
 
 function renderOffer() {
   return render(MissingNodeDeploymentOffer, { global: { plugins: [i18n] } })
+}
+
+async function compatibilityAnswered() {
+  await waitFor(() =>
+    expect(workspaceApi.checkDeploymentCompatibility).toHaveBeenCalled()
+  )
+  await Promise.allSettled(
+    vi
+      .mocked(workspaceApi.checkDeploymentCompatibility)
+      .mock.results.map((result) => result.value)
+  )
+  await nextTick()
 }
 
 describe('MissingNodeDeploymentOffer', () => {
@@ -237,24 +249,25 @@ describe('MissingNodeDeploymentOffer', () => {
     expect(reload).not.toHaveBeenCalled()
   })
 
-  it.for([
-    {
-      when: 'the switcher is not shown',
-      state: { phase: 'hidden' } satisfies DeploymentPickState,
-      check: () => Promise.resolve(answer([agencyA], []))
-    },
-    {
-      when: 'the check fails',
-      state: readyOn([plain, agencyA]),
-      check: () => Promise.reject(new Error('404'))
-    }
-  ])('renders nothing when $when', async (scenario) => {
-    useDeploymentPickStore().state = scenario.state
-    vi.mocked(workspaceApi.checkDeploymentCompatibility).mockImplementation(
-      scenario.check
+  it('renders nothing and sends no check when the switcher is not shown', async () => {
+    useDeploymentPickStore().state = { phase: 'hidden' }
+    vi.mocked(workspaceApi.checkDeploymentCompatibility).mockResolvedValue(
+      answer([agencyA], [])
     )
     renderOffer()
-    await new Promise((resolve) => setTimeout(resolve))
+    await nextTick()
+
+    expect(workspaceApi.checkDeploymentCompatibility).not.toHaveBeenCalled()
+    expect(screen.queryByTestId('missing-node-deployment-offer')).toBeNull()
+  })
+
+  it('renders nothing when the check fails', async () => {
+    useDeploymentPickStore().state = readyOn([plain, agencyA])
+    vi.mocked(workspaceApi.checkDeploymentCompatibility).mockRejectedValue(
+      new Error('404')
+    )
+    renderOffer()
+    await compatibilityAnswered()
 
     expect(screen.queryByTestId('missing-node-deployment-offer')).toBeNull()
   })
@@ -297,10 +310,7 @@ describe('MissingNodeDeploymentOffer', () => {
         check
       )
       renderOffer()
-      await waitFor(() =>
-        expect(workspaceApi.checkDeploymentCompatibility).toHaveBeenCalled()
-      )
-      await new Promise((resolve) => setTimeout(resolve))
+      await compatibilityAnswered()
 
       expect(screen.queryByTestId('missing-node-deployment-offer')).toBeNull()
     }
@@ -327,10 +337,7 @@ describe('MissingNodeDeploymentOffer', () => {
         answer([agencyA], [plain], true)
       )
       renderOffer()
-      await waitFor(() =>
-        expect(workspaceApi.checkDeploymentCompatibility).toHaveBeenCalled()
-      )
-      await new Promise((resolve) => setTimeout(resolve))
+      await compatibilityAnswered()
 
       expect(screen.queryAllByRole('button')).toEqual([])
     }

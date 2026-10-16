@@ -17,11 +17,7 @@ type MissingNodeDeploymentOffer =
   | { kind: 'none' }
   | { kind: 'choices'; choices: DeploymentChoice[] }
 
-/**
- * The deployments to offer where the editor says the open workflow has
- * missing nodes (BE-19374): the side panel's missing-nodes message and the
- * error notice shown on open. Both read the one shared compatibility answer.
- */
+/** The deployments to offer where the editor reports missing nodes. */
 export function useMissingNodeDeploymentOffer() {
   const { t } = useI18n()
   const pickStore = useDeploymentPickStore()
@@ -37,14 +33,6 @@ export function useMissingNodeDeploymentOffer() {
     )
   }
 
-  /**
-   * Nothing without an answer, "none" when Comfy Cloud and every listed
-   * deployment were checked and each lacks a node type, else the ones to
-   * offer, Comfy Cloud first. A deployment ingest could not check, or one the
-   * answer leaves out, may have them all, so it rules out "none". The one
-   * this browser runs on is never offered; when only it has them all, there
-   * is nothing to say.
-   */
   const offer = computed<MissingNodeDeploymentOffer | null>(() => {
     const runIt = deploymentsThatRunIt.value
     if (!switcherOffered.value || runIt === null) return null

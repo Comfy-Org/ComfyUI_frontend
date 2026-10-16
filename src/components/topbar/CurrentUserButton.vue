@@ -134,9 +134,6 @@ function isOnScreen(element: HTMLElement | null): element is HTMLElement {
   return element !== null && element.getClientRects().length > 0
 }
 
-// The missing-nodes message asks for the deployment switcher, which lives in
-// this popover (BE-19374). Only the button on screen whose popover offers the
-// switcher takes the ask and hands it to the switcher.
 watch(switcherOpenAsks, () => {
   const anchor = root.value
   if (!switcherOffered.value || !popover.value || !isOnScreen(anchor)) return

@@ -1,7 +1,7 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, defineComponent, h } from 'vue'
+import { computed, defineComponent, h, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -235,7 +235,7 @@ describe('CurrentUserButton', () => {
       renderComponent()
 
       useDeploymentPickStore().requestSwitcherOpen()
-      await new Promise((resolve) => setTimeout(resolve))
+      await nextTick()
 
       expect(
         screen.queryByText('Workspace Popover Content')

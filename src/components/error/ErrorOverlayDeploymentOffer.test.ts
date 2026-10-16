@@ -1,6 +1,7 @@
-import { render, screen, within } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { ErrorGroup } from '@/components/rightSidePanel/errors/types'
@@ -142,8 +143,16 @@ function renderNotice() {
   return render(ErrorOverlay, { global: { plugins: [i18n] } })
 }
 
-function settle() {
-  return new Promise((resolve) => setTimeout(resolve))
+async function compatibilityAnswered() {
+  await waitFor(() =>
+    expect(workspaceApi.checkDeploymentCompatibility).toHaveBeenCalled()
+  )
+  await Promise.allSettled(
+    vi
+      .mocked(workspaceApi.checkDeploymentCompatibility)
+      .mock.results.map((result) => result.value)
+  )
+  await nextTick()
 }
 
 function expectNoticeAsToday() {
@@ -213,11 +222,6 @@ describe('ErrorOverlay deployment offer', () => {
       check: () => Promise.resolve(answer([], [plain, agencyA]))
     },
     {
-      when: 'the switcher is not shown',
-      state: { phase: 'hidden' } satisfies DeploymentPickState,
-      check: () => Promise.resolve(answer([agencyA], [plain]))
-    },
-    {
       when: 'the compatibility check fails',
       state: readyOn([plain, agencyA]),
       check: () => Promise.reject(new Error('404'))
@@ -228,12 +232,24 @@ describe('ErrorOverlay deployment offer', () => {
       scenario.check
     )
     renderNotice()
-    await settle()
+    await compatibilityAnswered()
 
     expectNoticeAsToday()
   })
 
-  it('offers no deployment when the notice is not about missing nodes', async () => {
+  it('leaves the notice as it was and sends no check when the switcher is not shown', async () => {
+    useDeploymentPickStore().state = { phase: 'hidden' }
+    vi.mocked(workspaceApi.checkDeploymentCompatibility).mockResolvedValue(
+      answer([agencyA], [plain])
+    )
+    renderNotice()
+    await nextTick()
+
+    expect(workspaceApi.checkDeploymentCompatibility).not.toHaveBeenCalled()
+    expectNoticeAsToday()
+  })
+
+  it('offers no deployment and sends no check when the notice is not about missing nodes', async () => {
     hoisted.errorGroups.allErrorGroups.value = [
       { ...missingNodeGroup, type: 'missing_model', groupKey: 'missing_model' }
     ]
@@ -242,8 +258,9 @@ describe('ErrorOverlay deployment offer', () => {
       answer([agencyA], [plain])
     )
     renderNotice()
-    await settle()
+    await nextTick()
 
+    expect(workspaceApi.checkDeploymentCompatibility).not.toHaveBeenCalled()
     expectNoticeAsToday()
   })
 })
