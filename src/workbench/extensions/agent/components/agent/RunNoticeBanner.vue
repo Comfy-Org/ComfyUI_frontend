@@ -36,7 +36,7 @@ const defaultNotice = computed(() =>
     <span
       class="icon-[heroicons--information-circle-20-solid] size-5 shrink-0 text-muted-foreground"
     />
-    <p class="my-0 min-w-0 flex-1 text-sm text-base-foreground">
+    <p class="my-0 min-w-0 flex-1 text-sm">
       <template v-if="context">
         {{ $t(contextMessages[context]) }}
         <Button

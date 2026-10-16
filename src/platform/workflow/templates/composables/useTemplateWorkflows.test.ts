@@ -33,6 +33,7 @@ async function flushPromises() {
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
     getServerFeature: vi.fn(() => false),
     internalURL: vi.fn((path) => `mock-internal-url${path}`),
     fileURL: vi.fn((path) => `mock-file-url${path}`),

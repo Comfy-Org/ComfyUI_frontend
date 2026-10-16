@@ -23,9 +23,9 @@
       v-if="checkoutStep === 'pricing'"
       class="flex flex-col items-center gap-3"
     >
-      <h2 class="m-0 font-inter text-2xl font-semibold text-base-foreground">
+      <DialogTitle class="m-0 font-inter text-2xl">
         {{ $t('subscription.descriptionWorkspace') }}
-      </h2>
+      </DialogTitle>
     </div>
 
     <div v-if="reason === 'out_of_credits'" class="text-center">
@@ -128,6 +128,7 @@ import { useEventListener } from '@vueuse/core'
 import { onMounted } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import type { SubscriptionCheckoutSelection } from '@/composables/billing/types'
 import { useSubscriptionCheckout } from '@/platform/workspace/composables/useSubscriptionCheckout'

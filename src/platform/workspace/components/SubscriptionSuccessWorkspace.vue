@@ -14,7 +14,7 @@
         <h3 class="m-0 text-base font-normal text-base-foreground">
           {{ $t('subscription.success.inviteTitle') }}
         </h3>
-        <p class="m-0 text-sm text-muted-foreground">
+        <p class="m-0 text-muted-foreground">
           {{ $t('subscription.success.inviteSubtext') }}
         </p>
         <div aria-live="polite">
@@ -22,7 +22,7 @@
             v-if="invitedEmails.length > 0"
             ref="invitedMessage"
             tabindex="-1"
-            class="m-0 text-sm text-success-background"
+            class="m-0 text-success-background"
           >
             {{
               $t(
@@ -51,7 +51,7 @@
         v-if="showInviteBlock && invitedEmails.length === 0"
         variant="tertiary"
         size="lg"
-        class="w-full rounded-lg"
+        class="w-full"
         :disabled="!canSendInvites"
         :loading="isSendingInvites"
         @click="handleSendInvites"

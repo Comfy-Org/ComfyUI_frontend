@@ -61,7 +61,7 @@
         >
           <div class="px-2 pt-2">
             <div
-              class="flex items-center gap-2 rounded-lg border border-solid border-border-default px-3 py-1.5"
+              class="flex items-center gap-2 rounded-lg border border-border-default px-3 py-1.5"
             >
               <i class="icon-[lucide--search] text-muted-foreground" />
               <ComboboxInput

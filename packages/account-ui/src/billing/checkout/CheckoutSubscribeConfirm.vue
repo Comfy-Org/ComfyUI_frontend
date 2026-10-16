@@ -12,9 +12,9 @@
         >
           <i class="pi pi-arrow-left text-base" />
         </CheckoutButton>
-        <h2 :class="layout.title">
+        <CheckoutTitle :class="layout.title">
           {{ copy.confirmPayment }}
-        </h2>
+        </CheckoutTitle>
       </div>
       <slot v-if="summaryReplaced" name="summary" />
       <template v-else>
@@ -93,6 +93,7 @@ import CheckoutPromotionCode from './CheckoutPromotionCode.vue'
 import CheckoutSavedMethods from './CheckoutSavedMethods.vue'
 import CheckoutSubscribeActions from './CheckoutSubscribeActions.vue'
 import CheckoutSubscribeSummary from './CheckoutSubscribeSummary.vue'
+import CheckoutTitle from './CheckoutTitle.vue'
 import type { CheckoutCopy } from './checkoutCopy'
 import type { CheckoutBillingCycle, CheckoutPlan } from './checkoutQuote'
 import type { CheckoutPayAction } from './checkoutRecovery'

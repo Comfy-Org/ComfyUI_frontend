@@ -156,6 +156,7 @@
     "zod-validation-error": "catalog:"
   },
   "devDependencies": {
+    "@comfyorg/design-system-audits": "workspace:*",
     "@comfyorg/ingest-types": "workspace:*",
     "@comfyorg/test-utils": "workspace:*",
     "@comfyorg/website": "workspace:*",
