@@ -14,7 +14,10 @@
         >
           <i class="icon-[lucide--arrow-left] size-5" />
         </button>
-        <DialogTitle v-if="step !== 'verifying'" class="m-0 font-bold">
+        <DialogTitle
+          v-if="step === 'amount' || step === 'confirm'"
+          class="m-0 font-bold"
+        >
           {{
             step === 'confirm'
               ? $t('credits.topUp.confirmTitle')
@@ -69,18 +72,6 @@
       >
         {{ $t('credits.topUp.noPaymentMethodCheckoutHint') }}
       </p>
-      <div
-        v-else-if="checkoutRecovery === 'blocked'"
-        role="alert"
-        class="flex flex-col gap-1 px-8 pt-4 text-sm"
-      >
-        <span class="font-semibold text-base-foreground">
-          {{ $t('credits.topUp.checkoutBlockedTitle') }}
-        </span>
-        <span class="text-muted-foreground">
-          {{ $t('credits.topUp.checkoutBlockedBody') }}
-        </span>
-      </div>
       <p
         v-else-if="checkoutRecovery === 'failed'"
         role="alert"
@@ -89,6 +80,18 @@
         {{ $t('credits.topUp.checkoutOpenFailed') }}
       </p>
     </template>
+
+    <div
+      v-if="step === 'checkoutBlocked'"
+      class="flex flex-col items-center gap-3 px-8 text-center"
+    >
+      <DialogTitle class="m-0 text-center text-xl lg:text-2xl">
+        {{ $t('credits.topUp.checkoutBlockedTitle') }}
+      </DialogTitle>
+      <p class="m-0 text-sm text-balance text-muted-foreground">
+        {{ $t('credits.topUp.checkoutBlockedBody') }}
+      </p>
+    </div>
 
     <template v-if="step === 'verifying'">
       <div class="flex flex-col items-center gap-3 px-8 text-center">
@@ -263,6 +266,16 @@
           {{ $t('subscription.preview.completeVerification') }}
         </Button>
       </div>
+      <Button
+        v-else-if="step === 'checkoutBlocked'"
+        variant="primary"
+        size="lg"
+        class="h-10 w-full justify-center"
+        @click="openBlockedCheckout"
+      >
+        {{ $t('credits.topUp.openCheckout') }}
+        <i class="icon-[lucide--external-link] size-4" />
+      </Button>
       <div v-else class="flex flex-col gap-2">
         <Button
           v-if="step === 'confirm' && topupActionUrl && canTopUp"
@@ -283,6 +296,7 @@
           @click="continueToCheckout"
         >
           {{ $t('credits.topUp.continueToCheckout') }}
+          <i class="icon-[lucide--external-link] size-4" />
         </Button>
         <Button
           v-else
@@ -349,6 +363,7 @@ import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFai
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import type { CreateTopupResponse } from '@/platform/workspace/api/workspaceApi'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
+import type { BillingTab } from '@/platform/workspace/billing/billingTab'
 import { reserveBillingTab } from '@/platform/workspace/billing/billingTab'
 import { topupCheckoutReturnUrl } from '@/platform/workspace/billing/topupCheckoutReturnUrl'
 import { isBlockedOnCustomerPhase } from '@/platform/workspace/billing/customerAttention'
@@ -478,8 +493,9 @@ const selectedPreset = ref<number | null>(50)
 const payAmount = ref(50)
 const loading = ref(false)
 const paymentSubmitted = ref(false)
-const checkoutRecovery = ref<'refused' | 'blocked' | 'failed' | null>(null)
-const step = ref<'amount' | 'confirm' | 'verifying'>(
+const checkoutRecovery = ref<'refused' | 'failed' | null>(null)
+const blockedCheckoutUrl = ref<string | null>(null)
+const step = ref<'amount' | 'confirm' | 'verifying' | 'checkoutBlocked'>(
   topupOperation.value && canTopUp.value ? 'verifying' : 'amount'
 )
 
@@ -753,6 +769,23 @@ onUnmounted(() => {
   unmounted = true
 })
 
+function handOffToCheckout(checkoutTab: BillingTab, checkoutUrl: string) {
+  checkoutTab.navigate(checkoutUrl)
+  usePendingTopup().startPendingTopup()
+  watchForTopupBalanceUpdate({
+    current: () => balance.value?.amountMicros ?? null,
+    fetch: async () => {
+      const [balanceRead] = await Promise.allSettled([
+        fetchBalance(),
+        fetchStatus()
+      ])
+      if (balanceRead.status === 'rejected') throw balanceRead.reason
+      return balance.value?.amountMicros ?? null
+    }
+  })
+  handleClose(false)
+}
+
 async function continueToCheckout() {
   if (!(canTopUp.value && isValidAmount.value && !paymentLocked.value)) {
     return
@@ -763,10 +796,6 @@ async function continueToCheckout() {
     return
   }
   const checkoutTab = reserveBillingTab()
-  if (!checkoutTab) {
-    checkoutRecovery.value = 'blocked'
-    return
-  }
   loading.value = true
   try {
     const checkoutUrl = await createHostedCheckout(
@@ -774,31 +803,29 @@ async function continueToCheckout() {
       returnUrl
     )
     if (unmounted) {
-      checkoutTab.close()
+      checkoutTab?.close()
       return
     }
-    usePendingTopup().startPendingTopup()
-    watchForTopupBalanceUpdate({
-      current: () => balance.value?.amountMicros ?? null,
-      fetch: async () => {
-        const [balanceRead] = await Promise.allSettled([
-          fetchBalance(),
-          fetchStatus()
-        ])
-        if (balanceRead.status === 'rejected') throw balanceRead.reason
-        return balance.value?.amountMicros ?? null
-      }
-    })
-    checkoutTab.navigate(checkoutUrl)
-    handleClose(false)
+    if (checkoutTab) {
+      handOffToCheckout(checkoutTab, checkoutUrl)
+      return
+    }
+    blockedCheckoutUrl.value = checkoutUrl
+    step.value = 'checkoutBlocked'
   } catch (error) {
-    checkoutTab.close()
+    checkoutTab?.close()
     console.error('Hosted top-up checkout failed to open', error)
     if (unmounted) return
     checkoutRecovery.value = 'failed'
   } finally {
     loading.value = false
   }
+}
+
+function openBlockedCheckout() {
+  const checkoutUrl = blockedCheckoutUrl.value
+  const checkoutTab = checkoutUrl ? reserveBillingTab() : null
+  if (checkoutUrl && checkoutTab) handOffToCheckout(checkoutTab, checkoutUrl)
 }
 
 /**

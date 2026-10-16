@@ -769,23 +769,35 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       }
     })
 
-    it('keeps the app in place and says so when the browser blocks the checkout tab', async () => {
+    it('keeps the app in place when the browser blocks the checkout tab and reopens it on request', async () => {
       refuseForNoPaymentMethod()
-      const createCheckout = vi.spyOn(workspaceApi, 'createTopupCheckout')
-      vi.spyOn(window, 'open').mockReturnValue(null)
+      checkoutOpensAt(checkoutUrl)
+      const tab = { opener: window, location: { href: '' }, close: vi.fn() }
+      const open = vi
+        .spyOn(window, 'open')
+        .mockReturnValueOnce(null)
+        .mockReturnValueOnce(tab as never)
       const appUrl = window.location.href
 
       await userEvent.click((await payAndGetRefused()).continueButton)
 
-      expect(await screen.findByRole('alert')).toHaveTextContent(
-        "Checkout didn't open"
-      )
-      expect(createCheckout).not.toHaveBeenCalled()
-      expect(window.location.href).toBe(appUrl)
-      expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
       expect(
-        screen.getByRole('button', { name: 'Continue to checkout' })
-      ).toBeEnabled()
+        await screen.findByRole('heading', { name: "Checkout didn't open" })
+      ).toBeInTheDocument()
+      expect(window.location.href).toBe(appUrl)
+      expect(mockStartPendingTopup).not.toHaveBeenCalled()
+      expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
+
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Open checkout' })
+      )
+
+      expect(open).toHaveBeenCalledTimes(2)
+      expect(tab.location.href).toBe(checkoutUrl)
+      expect(mockStartPendingTopup).toHaveBeenCalledOnce()
+      expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
+        key: 'top-up-credits'
+      })
     })
 
     it('abandons a checkout that resolves after the dialog was dismissed', async () => {
