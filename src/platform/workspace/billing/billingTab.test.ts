@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { openBillingUrl, reserveBillingTab } from './billingTab'
+import { reserveBillingTab } from './billingTab'
 
 const distribution = vi.hoisted(() => ({ isDesktop: false }))
 
@@ -12,13 +12,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 
 const checkoutUrl = 'https://checkout.stripe.com/c/pay/cs_test'
 
-function stubBlankTab() {
-  const tab = { opener: window, location: { href: '' }, close: vi.fn() }
-  const open = vi.spyOn(window, 'open').mockReturnValue(tab as never)
-  return { tab, open }
-}
-
-describe('billing tab', () => {
+describe('reserveBillingTab', () => {
   beforeEach(() => {
     distribution.isDesktop = false
     delete window.__comfyDesktop2
@@ -30,7 +24,8 @@ describe('billing tab', () => {
 
   describe('on the web', () => {
     it('reserves a disowned blank tab and navigates it once the URL is known', () => {
-      const { tab, open } = stubBlankTab()
+      const tab = { opener: window, location: { href: '' }, close: vi.fn() }
+      const open = vi.spyOn(window, 'open').mockReturnValue(tab as never)
 
       const reserved = reserveBillingTab()
       expect(open).toHaveBeenCalledWith('', '_blank')
@@ -40,18 +35,10 @@ describe('billing tab', () => {
       expect(tab.location.href).toBe(checkoutUrl)
     })
 
-    it('opens a known URL directly', () => {
-      const { open } = stubBlankTab()
-
-      expect(openBillingUrl(checkoutUrl)).toBe(true)
-      expect(open).toHaveBeenCalledWith(checkoutUrl, '_blank')
-    })
-
     it('reports a blocked tab', () => {
       vi.spyOn(window, 'open').mockReturnValue(null)
 
       expect(reserveBillingTab()).toBeNull()
-      expect(openBillingUrl(checkoutUrl)).toBe(false)
     })
   })
 
@@ -71,20 +58,15 @@ describe('billing tab', () => {
   ])('on $host', ({ arrange }) => {
     beforeEach(arrange)
 
-    it('opens nothing until the URL is known, then hands it to the host', () => {
+    it('opens nothing until the URL is known, then hands it to the host despite a null handle', () => {
       const open = vi.spyOn(window, 'open').mockReturnValue(null)
 
       const reserved = reserveBillingTab()
+      expect(reserved).not.toBeNull()
       expect(open).not.toHaveBeenCalled()
 
       reserved?.navigate(checkoutUrl)
       expect(open).toHaveBeenCalledWith(checkoutUrl, '_blank')
-    })
-
-    it('treats the null handle as opened', () => {
-      vi.spyOn(window, 'open').mockReturnValue(null)
-
-      expect(openBillingUrl(checkoutUrl)).toBe(true)
     })
   })
 })

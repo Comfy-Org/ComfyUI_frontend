@@ -10,7 +10,7 @@
           class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground disabled:pointer-events-none disabled:opacity-40"
           :disabled="paymentLocked"
           :aria-label="$t('g.back')"
-          @click="step = 'amount'"
+          @click="showAmountStep"
         >
           <i class="icon-[lucide--arrow-left] size-5" />
         </button>
@@ -330,7 +330,7 @@ import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFai
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import type { CreateTopupResponse } from '@/platform/workspace/api/workspaceApi'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
-import { openBillingUrl } from '@/platform/workspace/billing/billingTab'
+import { reserveBillingTab } from '@/platform/workspace/billing/billingTab'
 import { isBlockedOnCustomerPhase } from '@/platform/workspace/billing/customerAttention'
 import { UncreditedTopupResponse } from '@/platform/workspace/billing/sdk/topupOperationView'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
@@ -567,12 +567,17 @@ function resumeTopupAuthentication() {
   void retryPaymentAuthentication(operation.opId)
 }
 
+function showAmountStep() {
+  noPaymentMethodRefused.value = false
+  step.value = 'amount'
+}
+
 function startOverTopup() {
   purchaseAttempt += 1
   const operation = topupOperation.value
   if (operation) dismissOperation(operation.opId)
   paymentSubmitted.value = false
-  step.value = 'amount'
+  showAmountStep()
 }
 
 function handleClose(clearTracking = true) {
@@ -590,6 +595,7 @@ async function handleBuy() {
   purchaseAttempt += 1
   const attempt = purchaseAttempt
   const isCurrentAttempt = () => attempt === purchaseAttempt
+  noPaymentMethodRefused.value = false
   loading.value = true
   paymentSubmitted.value = true
   const attemptStartedAt = Date.now()
@@ -731,26 +737,34 @@ async function continueToCheckout() {
   if (!(canTopUp.value && isValidAmount.value && !paymentLocked.value)) {
     return
   }
+  const checkoutTab = reserveBillingTab()
   loading.value = true
   try {
     const checkoutUrl = await createHostedCheckout(
       payAmount.value * 100,
       window.location.href
     )
-    if (unmounted) return
+    if (unmounted) {
+      checkoutTab?.close()
+      return
+    }
     usePendingTopup().startPendingTopup()
     watchForTopupBalanceUpdate({
       current: () => balance.value?.amountMicros ?? null,
       fetch: async () => {
-        await Promise.allSettled([fetchBalance(), fetchStatus()])
+        const [balanceRead] = await Promise.allSettled([
+          fetchBalance(),
+          fetchStatus()
+        ])
+        if (balanceRead.status === 'rejected') throw balanceRead.reason
         return balance.value?.amountMicros ?? null
       }
     })
-    if (!openBillingUrl(checkoutUrl)) {
-      globalThis.location.href = checkoutUrl
-    }
+    if (checkoutTab) checkoutTab.navigate(checkoutUrl)
+    else globalThis.location.href = checkoutUrl
     handleClose(false)
   } catch (error) {
+    checkoutTab?.close()
     if (unmounted) return
     toast.error(t('credits.topUp.purchaseError'), {
       description: purchaseErrorDetail(error)

@@ -619,10 +619,25 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     }
 
     async function payAndGetRefused() {
-      renderDialog()
+      const rendered = renderDialog()
       await clickAddCredits()
       await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
-      return screen.findByRole('button', { name: 'Continue to checkout' })
+      const continueButton = await screen.findByRole('button', {
+        name: 'Continue to checkout'
+      })
+      return { ...rendered, continueButton }
+    }
+
+    function stubCheckoutTab() {
+      const tab = { opener: window, location: { href: '' }, close: vi.fn() }
+      const open = vi.spyOn(window, 'open').mockReturnValue(tab as never)
+      return { tab, open }
+    }
+
+    function checkoutOpensAt(url: string) {
+      vi.spyOn(workspaceApi, 'createTopupCheckout').mockResolvedValue({
+        checkout_url: url
+      })
     }
 
     it('offers hosted checkout for the selected amount instead of a dead-end error', async () => {
@@ -630,13 +645,12 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       const createCheckout = vi
         .spyOn(workspaceApi, 'createTopupCheckout')
         .mockResolvedValue({ checkout_url: checkoutUrl })
-      const open = vi.spyOn(window, 'open').mockReturnValue({} as Window)
+      const { tab, open } = stubCheckoutTab()
 
-      await userEvent.click(await payAndGetRefused())
+      await userEvent.click((await payAndGetRefused()).continueButton)
 
-      await waitFor(() =>
-        expect(open).toHaveBeenCalledWith(checkoutUrl, '_blank')
-      )
+      await waitFor(() => expect(tab.location.href).toBe(checkoutUrl))
+      expect(open).toHaveBeenCalledExactlyOnceWith('', '_blank')
       expect(createCheckout).toHaveBeenCalledWith(5000, window.location.href)
       expect(mockStartPendingTopup).toHaveBeenCalledOnce()
       expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
@@ -646,19 +660,28 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       expect(useToast().error).not.toHaveBeenCalled()
     })
 
+    it('offers Pay again once the user goes back to change the amount', async () => {
+      refuseForNoPaymentMethod()
+      await payAndGetRefused()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Back' }))
+      await userEvent.click(screen.getByRole('button', { name: 'Add credits' }))
+
+      expect(
+        screen.getByRole('button', { name: 'Pay $50.00' })
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Continue to checkout' })
+      ).not.toBeInTheDocument()
+    })
+
     it('refreshes the workspace balance and status when the user returns from checkout', async () => {
       refuseForNoPaymentMethod()
-      vi.spyOn(workspaceApi, 'createTopupCheckout').mockResolvedValue({
-        checkout_url: checkoutUrl
-      })
-      const open = vi.spyOn(window, 'open').mockReturnValue({} as Window)
-      const { unmount } = renderDialog()
-      await clickAddCredits()
-      await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
-      await userEvent.click(
-        await screen.findByRole('button', { name: 'Continue to checkout' })
-      )
-      await waitFor(() => expect(open).toHaveBeenCalled())
+      checkoutOpensAt(checkoutUrl)
+      const { tab } = stubCheckoutTab()
+      const { unmount, continueButton } = await payAndGetRefused()
+      await userEvent.click(continueButton)
+      await waitFor(() => expect(tab.location.href).toBe(checkoutUrl))
       unmount()
       const billing = mockBillingContext()
       vi.mocked(billing.fetchBalance).mockClear()
@@ -672,6 +695,43 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       })
     })
 
+    it('keeps watching after a failed balance read instead of treating it as zero', async () => {
+      refuseForNoPaymentMethod()
+      checkoutOpensAt(checkoutUrl)
+      const { tab } = stubCheckoutTab()
+      const billing = mockBillingContext()
+      const balanceMicros = ref<number | null>(null)
+      Object.assign(billing, {
+        balance: computed(() =>
+          balanceMicros.value === null
+            ? null
+            : { amountMicros: balanceMicros.value, currency: 'usd' }
+        )
+      })
+      const { unmount, continueButton } = await payAndGetRefused()
+      await userEvent.click(continueButton)
+      await waitFor(() => expect(tab.location.href).toBe(checkoutUrl))
+      unmount()
+      vi.mocked(billing.fetchBalance)
+        .mockReset()
+        .mockRejectedValueOnce(new Error('balance unavailable'))
+        .mockImplementation(async () => {
+          balanceMicros.value = 1_000_000
+        })
+      vi.useFakeTimers()
+
+      try {
+        window.dispatchEvent(new Event('focus'))
+        await vi.advanceTimersByTimeAsync(2_000)
+        expect(billing.fetchBalance).toHaveBeenCalledTimes(2)
+
+        await vi.advanceTimersByTimeAsync(5_000)
+        expect(billing.fetchBalance).toHaveBeenCalledTimes(3)
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
     it('hands checkout to the Desktop host without navigating the app away', async () => {
       refuseForNoPaymentMethod()
       vi.spyOn(workspaceApi, 'createTopupCheckout').mockResolvedValue({
@@ -682,7 +742,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       const appUrl = window.location.href
 
       try {
-        await userEvent.click(await payAndGetRefused())
+        await userEvent.click((await payAndGetRefused()).continueButton)
 
         await waitFor(() =>
           expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
@@ -704,19 +764,15 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
           resolveCheckout = resolve
         })
       )
-      const open = vi.spyOn(window, 'open')
-      const { unmount } = renderDialog()
-      await clickAddCredits()
-      await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
-      await userEvent.click(
-        await screen.findByRole('button', { name: 'Continue to checkout' })
-      )
+      const { tab } = stubCheckoutTab()
+      const { unmount, continueButton } = await payAndGetRefused()
+      await userEvent.click(continueButton)
 
       unmount()
       resolveCheckout({ checkout_url: checkoutUrl })
-      await new Promise((resolve) => setTimeout(resolve))
 
-      expect(open).not.toHaveBeenCalled()
+      await waitFor(() => expect(tab.close).toHaveBeenCalledOnce())
+      expect(tab.location.href).toBe('')
       expect(mockStartPendingTopup).not.toHaveBeenCalled()
       expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
     })
@@ -726,16 +782,16 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       vi.spyOn(workspaceApi, 'createTopupCheckout').mockRejectedValue(
         new WorkspaceApiError('Bad return url', 400, 'INVALID_RETURN_URL')
       )
-      const open = vi.spyOn(window, 'open')
+      const { tab } = stubCheckoutTab()
 
-      await userEvent.click(await payAndGetRefused())
+      await userEvent.click((await payAndGetRefused()).continueButton)
 
       await waitFor(() =>
         expect(useToast().error).toHaveBeenCalledWith('Purchase Failed', {
           description: 'Failed to purchase credits: Bad return url'
         })
       )
-      expect(open).not.toHaveBeenCalled()
+      expect(tab.close).toHaveBeenCalledOnce()
       expect(mockStartPendingTopup).not.toHaveBeenCalled()
       expect(
         screen.getByRole('button', { name: 'Continue to checkout' })
@@ -1518,7 +1574,8 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         url: checkoutUrl
       })
       vi.mocked(useFeatureFlags().flags).billingSdkTopupRailEnabled = true
-      const open = vi.spyOn(window, 'open').mockReturnValue({} as Window)
+      const tab = { opener: window, location: { href: '' }, close: vi.fn() }
+      vi.spyOn(window, 'open').mockReturnValue(tab as never)
 
       renderDialog()
       await clickAddCredits()
@@ -1527,9 +1584,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         await screen.findByRole('button', { name: 'Continue to checkout' })
       )
 
-      await waitFor(() =>
-        expect(open).toHaveBeenCalledWith(checkoutUrl, '_blank')
-      )
+      await waitFor(() => expect(tab.location.href).toBe(checkoutUrl))
       expect(harness.sdk.topup.createHostedTopupCheckout).toHaveBeenCalledWith({
         amountCents: 5000,
         returnUrl: window.location.href
