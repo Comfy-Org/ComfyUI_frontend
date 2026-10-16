@@ -163,11 +163,7 @@ export type BillingRecoveryAction = NonNullable<
 export type { WorkspaceDeployment }
 export type { WorkspaceDeploymentList }
 
-/**
- * Which of a workflow's node types each of the workspace's deployments, and
- * Comfy Cloud, does not have (BE-19372). A deployment whose Release has no
- * node list (not built yet, or gone) is listed with `unknown: true`.
- */
+/** The node types each deployment, and Comfy Cloud, lacks for a workflow. */
 export interface DeploymentCompatibility {
   deployments: {
     deployment_id: string
@@ -436,9 +432,7 @@ export const workspaceApi = {
   },
 
   /**
-   * Ask which of these node types each of the workspace's deployments, and
-   * Comfy Cloud, does not have. A POST because a workflow's type list does
-   * not fit a query string. Members only, like the listing.
+   * Ask which of these node types each deployment, and Comfy Cloud, lacks.
    * POST /api/workspaces/:id/deployments/compatibility
    */
   async checkDeploymentCompatibility(

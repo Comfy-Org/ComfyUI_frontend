@@ -13,6 +13,7 @@ import DeploymentSwitcher from './DeploymentSwitcher.vue'
  * with the Build and Release it runs now in its caption; a pick follows the deployment when its owner updates it. Each story seeds the store's state directly; the
  * Storybook team-workspace stub has no active workspace, so the store never
  * calls the listing route here. Click the trigger to open the panel.
+ * Cloud-only: run with `DISTRIBUTION=cloud pnpm storybook`.
  */
 const meta: Meta<typeof DeploymentSwitcher> = {
   title: 'Components/DeploymentSwitcher',
@@ -63,9 +64,17 @@ const experiments: WorkspaceDeployment = {
   created_at: '2026-09-15T12:00:00Z'
 }
 
-// The store is seeded from a component's setup(), where the app's Pinia is
-// injected; a story beforeEach runs before any component and has no active
-// Pinia.
+const ready = {
+  phase: 'ready',
+  deployments: [studioProd, experiments, studioStaging],
+  pickedDeploymentId: null,
+  pickSource: null,
+  defaultDeploymentId: null,
+  gonePickedDeploymentId: null,
+  goneDefaultDeploymentId: null,
+  buildsVisible: true
+} satisfies DeploymentPickState
+
 function seeded(state: DeploymentPickState): Story {
   return {
     decorators: [
@@ -81,27 +90,13 @@ function seeded(state: DeploymentPickState): Story {
 }
 
 /** Nothing picked: this browser runs on Comfy Cloud. */
-export const Default: Story = seeded({
-  phase: 'ready',
-  deployments: [studioProd, experiments, studioStaging],
-  pickedDeploymentId: null,
-  pickSource: null,
-  defaultDeploymentId: null,
-  gonePickedDeploymentId: null,
-  goneDefaultDeploymentId: null,
-  buildsVisible: true
-})
+export const Default: Story = seeded(ready)
 
 /** A deployment picked; the trigger names it. */
 export const Picked: Story = seeded({
-  phase: 'ready',
-  deployments: [studioProd, experiments, studioStaging],
+  ...ready,
   pickedDeploymentId: studioProd.deployment_id,
-  pickSource: 'browser',
-  defaultDeploymentId: null,
-  gonePickedDeploymentId: null,
-  goneDefaultDeploymentId: null,
-  buildsVisible: true
+  pickSource: 'browser'
 })
 
 /**
@@ -109,14 +104,10 @@ export const Picked: Story = seeded({
  * of its own, so it follows it; the trigger says so.
  */
 export const FollowingWorkspaceDefault: Story = seeded({
-  phase: 'ready',
-  deployments: [studioProd, experiments, studioStaging],
+  ...ready,
   pickedDeploymentId: studioProd.deployment_id,
   pickSource: 'workspace_default',
-  defaultDeploymentId: studioProd.deployment_id,
-  gonePickedDeploymentId: null,
-  goneDefaultDeploymentId: null,
-  buildsVisible: true
+  defaultDeploymentId: studioProd.deployment_id
 })
 
 /**
@@ -124,14 +115,10 @@ export const FollowingWorkspaceDefault: Story = seeded({
  * panel offers the default as a row to go back to.
  */
 export const OwnPickOverWorkspaceDefault: Story = seeded({
-  phase: 'ready',
-  deployments: [studioProd, experiments, studioStaging],
+  ...ready,
   pickedDeploymentId: experiments.deployment_id,
   pickSource: 'browser',
-  defaultDeploymentId: studioProd.deployment_id,
-  gonePickedDeploymentId: null,
-  goneDefaultDeploymentId: null,
-  buildsVisible: true
+  defaultDeploymentId: studioProd.deployment_id
 })
 
 /**
@@ -139,27 +126,13 @@ export const OwnPickOverWorkspaceDefault: Story = seeded({
  * longer the workspace's): ingest serves Comfy Cloud, and the trigger says why.
  */
 export const DefaultGone: Story = seeded({
-  phase: 'ready',
+  ...ready,
   deployments: [studioProd, experiments],
-  pickedDeploymentId: null,
-  pickSource: null,
-  defaultDeploymentId: null,
-  gonePickedDeploymentId: null,
-  goneDefaultDeploymentId: studioStaging.deployment_id,
-  buildsVisible: true
+  goneDefaultDeploymentId: studioStaging.deployment_id
 })
 
 /** A workspace with no deployments yet. */
-export const Empty: Story = seeded({
-  phase: 'ready',
-  deployments: [],
-  pickedDeploymentId: null,
-  pickSource: null,
-  defaultDeploymentId: null,
-  gonePickedDeploymentId: null,
-  goneDefaultDeploymentId: null,
-  buildsVisible: true
-})
+export const Empty: Story = seeded({ ...ready, deployments: [] })
 
 /**
  * comfy-builder refused the caller (its routes sit behind the Builds beta):
@@ -167,7 +140,7 @@ export const Empty: Story = seeded({
  * unnamed one by id, and the panel says why.
  */
 export const BuildsHidden: Story = seeded({
-  phase: 'ready',
+  ...ready,
   deployments: [
     {
       deployment_id: studioProd.deployment_id,
@@ -185,14 +158,11 @@ export const BuildsHidden: Story = seeded({
   ],
   pickedDeploymentId: studioProd.deployment_id,
   pickSource: 'browser',
-  defaultDeploymentId: null,
-  gonePickedDeploymentId: null,
-  goneDefaultDeploymentId: null,
   buildsVisible: false
 })
 
 export const NamedDeployments: Story = seeded({
-  phase: 'ready',
+  ...ready,
   deployments: [
     { ...studioProd, deployment_name: 'Agency A production' },
     {
@@ -204,8 +174,5 @@ export const NamedDeployments: Story = seeded({
   ],
   pickedDeploymentId: studioProd.deployment_id,
   pickSource: 'workspace_default',
-  defaultDeploymentId: studioProd.deployment_id,
-  gonePickedDeploymentId: null,
-  goneDefaultDeploymentId: null,
-  buildsVisible: true
+  defaultDeploymentId: studioProd.deployment_id
 })

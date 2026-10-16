@@ -1,7 +1,3 @@
-<!-- One row of the deployment switcher's list (FE-2434): a label, a caption,
-     and a check on the row this browser runs on. `checked: null` makes it an
-     action row rather than a choice. `mark` says whether the deployment can
-     run the open workflow (BE-19373); without one the row says nothing. -->
 <template>
   <button
     type="button"

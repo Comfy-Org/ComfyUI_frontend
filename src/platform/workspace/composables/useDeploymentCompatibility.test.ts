@@ -1,6 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { effectScope } from 'vue'
+import { effectScope, nextTick } from 'vue'
 import type { EffectScope } from 'vue'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -12,6 +12,7 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import type {
@@ -31,6 +32,7 @@ import {
 } from './useDeploymentCompatibility'
 
 vi.mock(import('@/platform/workspace/api/workspaceApi'))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 const hoisted = vi.hoisted(() => ({
   rootGraph: undefined as unknown
@@ -142,8 +144,6 @@ function setup() {
   scope = effectScope()
   return scope.run(() => useDeploymentCompatibility())!
 }
-
-const settle = () => new Promise((resolve) => setTimeout(resolve))
 
 describe('workflowNodeTypes', () => {
   it('lists the backend node types once each, subgraphs included', () => {
@@ -307,14 +307,15 @@ describe('useDeploymentCompatibility', () => {
 
   it('asks once with the workflow node types and marks each deployment and Comfy Cloud', async () => {
     const { markFor } = setup()
-    await settle()
+    await vi.waitFor(() =>
+      expect(markFor('dep-rgthree')).toEqual({ kind: 'runs' })
+    )
 
     expect(workspaceApi.checkDeploymentCompatibility).toHaveBeenCalledOnce()
     expect(workspaceApi.checkDeploymentCompatibility).toHaveBeenCalledWith(
       'ws-1',
       ['KSampler', 'Power Lora Loader (rgthree)']
     )
-    expect(markFor('dep-rgthree')).toEqual({ kind: 'runs' })
     expect(markFor('dep-plain')).toEqual({
       kind: 'missing',
       nodeTypes: ['Power Lora Loader (rgthree)']
@@ -353,27 +354,45 @@ describe('useDeploymentCompatibility', () => {
     hoisted.rootGraph = scenario.rootGraph()
 
     const { markFor } = setup()
-    await settle()
+    await nextTick()
 
     expect(workspaceApi.checkDeploymentCompatibility).not.toHaveBeenCalled()
     expect(markFor(null)).toBeNull()
   })
 
-  it('marks nothing when the check fails', async () => {
-    vi.mocked(workspaceApi.checkDeploymentCompatibility).mockRejectedValue(
-      new Error('404')
-    )
+  it('marks nothing and reports once when two checks fail', async () => {
+    vi.useFakeTimers()
+    const firstFailure = Promise.reject(new Error('404'))
+    const secondFailure = Promise.reject(new Error('503'))
+    vi.mocked(workspaceApi.checkDeploymentCompatibility)
+      .mockReturnValueOnce(firstFailure)
+      .mockReturnValueOnce(secondFailure)
 
     const { markFor } = setup()
-    await settle()
+    await firstFailure.catch(() => {})
 
+    hoisted.rootGraph = graph({ type: 'KSampler' })
+    __dispatchGraphChanged()
+    await vi.advanceTimersByTimeAsync(200)
+    expect(workspaceApi.checkDeploymentCompatibility).toHaveBeenCalledTimes(2)
+    await secondFailure.catch(() => {})
+
+    expect(reportError).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({ message: '404' }),
+      expect.objectContaining({
+        surface: 'workspace',
+        errorType: 'deployment_compatibility_check_failure'
+      })
+    )
     expect(markFor('dep-rgthree')).toBeNull()
     expect(markFor(null)).toBeNull()
   })
 
   it('does not ask again when an edit keeps the same node types', async () => {
+    vi.useFakeTimers()
     setup()
-    await settle()
+    expect(workspaceApi.checkDeploymentCompatibility).toHaveBeenCalledOnce()
 
     hoisted.rootGraph = graph(
       { type: 'Power Lora Loader (rgthree)' },
@@ -381,18 +400,19 @@ describe('useDeploymentCompatibility', () => {
       { type: 'KSampler' }
     )
     __dispatchGraphChanged()
-    await settle()
+    await vi.advanceTimersByTimeAsync(200)
 
     expect(workspaceApi.checkDeploymentCompatibility).toHaveBeenCalledOnce()
   })
 
   it('asks again when another workflow opens, and drops the old marks until it answers', async () => {
     const { markFor } = setup()
-    await settle()
-    expect(markFor('dep-plain')).toEqual({
-      kind: 'missing',
-      nodeTypes: ['Power Lora Loader (rgthree)']
-    })
+    await vi.waitFor(() =>
+      expect(markFor('dep-plain')).toEqual({
+        kind: 'missing',
+        nodeTypes: ['Power Lora Loader (rgthree)']
+      })
+    )
 
     let answerCoreOnly!: (value: DeploymentCompatibility) => void
     vi.mocked(workspaceApi.checkDeploymentCompatibility).mockReturnValue(
@@ -404,7 +424,7 @@ describe('useDeploymentCompatibility', () => {
     useWorkflowStore().activeWorkflow = fromPartial<LoadedComfyWorkflow>({
       path: 'workflows/core-only.json'
     })
-    await settle()
+    await nextTick()
 
     expect(workspaceApi.checkDeploymentCompatibility).toHaveBeenLastCalledWith(
       'ws-1',
@@ -416,9 +436,10 @@ describe('useDeploymentCompatibility', () => {
       deployments: [{ deployment_id: 'dep-plain', missing_node_types: [] }],
       cloud: { missing_node_types: [] }
     })
-    await settle()
 
-    expect(markFor('dep-plain')).toEqual({ kind: 'runs' })
+    await vi.waitFor(() =>
+      expect(markFor('dep-plain')).toEqual({ kind: 'runs' })
+    )
     expect(markFor(null)).toEqual({ kind: 'runs' })
   })
 
@@ -435,8 +456,9 @@ describe('useDeploymentCompatibility', () => {
     'asks again and shows the new answer when a deployment $change',
     async ({ moved }) => {
       const { markFor } = setup()
-      await settle()
-      expect(markFor('dep-building')).toEqual({ kind: 'unknown' })
+      await vi.waitFor(() =>
+        expect(markFor('dep-building')).toEqual({ kind: 'unknown' })
+      )
 
       vi.mocked(workspaceApi.checkDeploymentCompatibility).mockResolvedValue({
         ...answer,
@@ -447,33 +469,35 @@ describe('useDeploymentCompatibility', () => {
         deployment('dep-plain'),
         moved
       ])
-      await settle()
 
+      await vi.waitFor(() =>
+        expect(markFor('dep-building')).toEqual({ kind: 'runs' })
+      )
       expect(workspaceApi.checkDeploymentCompatibility).toHaveBeenCalledTimes(2)
-      expect(markFor('dep-building')).toEqual({ kind: 'runs' })
     }
   )
 
   it('ignores an answer for node types the workflow no longer has', async () => {
+    vi.useFakeTimers()
     let answerFirst!: (value: DeploymentCompatibility) => void
+    const firstAnswer = new Promise<DeploymentCompatibility>((resolve) => {
+      answerFirst = resolve
+    })
     vi.mocked(workspaceApi.checkDeploymentCompatibility)
       .mockResolvedValue({
         deployments: [{ deployment_id: 'dep-plain', missing_node_types: [] }],
         cloud: { missing_node_types: [] }
       })
-      .mockReturnValueOnce(
-        new Promise((resolve) => {
-          answerFirst = resolve
-        })
-      )
+      .mockReturnValueOnce(firstAnswer)
     const { markFor } = setup()
-    await settle()
 
     hoisted.rootGraph = graph({ type: 'KSampler' })
     __dispatchGraphChanged()
-    await settle()
+    await vi.advanceTimersByTimeAsync(200)
+    expect(markFor('dep-plain')).toEqual({ kind: 'runs' })
+
     answerFirst(answer)
-    await settle()
+    await firstAnswer
 
     expect(markFor('dep-plain')).toEqual({ kind: 'runs' })
   })
@@ -486,9 +510,10 @@ describe('useDeploymentCompatibility', () => {
     })
 
     setup()
-    await settle()
 
-    expect(workspaceApi.listDeployments).toHaveBeenCalledWith('ws-1')
+    await vi.waitFor(() =>
+      expect(workspaceApi.listDeployments).toHaveBeenCalledWith('ws-1')
+    )
     await vi.waitFor(() =>
       expect(workspaceApi.checkDeploymentCompatibility).toHaveBeenCalledOnce()
     )
@@ -504,8 +529,10 @@ describe('useDeploymentCompatibility', () => {
     const booting = useDeploymentPickStore().loadOnce()
     setup()
     await booting
-    await settle()
 
+    await vi.waitFor(() =>
+      expect(workspaceApi.checkDeploymentCompatibility).toHaveBeenCalledOnce()
+    )
     expect(workspaceApi.listDeployments).toHaveBeenCalledOnce()
   })
 })

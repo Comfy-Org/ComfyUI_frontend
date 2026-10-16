@@ -78,11 +78,6 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
       ? state.value.goneDefaultDeploymentId
       : null
   )
-  /**
-   * Set once a listing says ingest found this browser's own pick gone and
-   * cleared it. Only that one listing says so, so the page keeps it until a
-   * later listing shows a deployment picked again.
-   */
   const sawPickGone = shallowRef(false)
   const goneDeployment = computed<'pick' | 'default' | null>(() => {
     if (sawPickGone.value) return 'pick'
@@ -152,17 +147,6 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     return changeBetween(boot, pickedDeployment.value)
   })
 
-  /**
-   * Orders the answers. Each `load()` takes the next number (`latestRequest`);
-   * `lastApplied` is the number of the newest answer put on screen. A listing
-   * or a 403 applies when it is newer than that, so a listing that answered
-   * stays shown when a newer load fails or never answers; an older listing
-   * still passes on a gone pick it reports. A plain failure
-   * applies only when it is the latest load asked for and nothing newer has
-   * applied, so it never replaces a listing that may still arrive. A default
-   * the server took moves `lastApplied` up to `latestRequest`, which drops
-   * every listing asked for before the change.
-   */
   let latestRequest = 0
   let lastApplied = 0
 
@@ -183,8 +167,8 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
       retryDelaysMs,
       () => workspaceStore.workspaceId === id
     )
-    // The workspace may have changed while the listing was in flight.
-    if (workspaceStore.workspaceId !== id) return
+    const workspaceChangedMeanwhile = workspaceStore.workspaceId !== id
+    if (workspaceChangedMeanwhile) return
     applyAnswer(request, event)
   }
 

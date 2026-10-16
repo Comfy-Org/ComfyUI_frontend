@@ -13,6 +13,7 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { ExecutableNodeDTO } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { DeploymentCompatibility } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
@@ -21,11 +22,7 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 
-/**
- * Whether a deployment (or Comfy Cloud) can run the open workflow: it has
- * every node type, it lacks some, or ingest could not check it because its
- * Release has no node list.
- */
+/** Whether a deployment, or Comfy Cloud, can run the open workflow. */
 export type DeploymentCompatibilityMark =
   | { kind: 'runs' }
   | { kind: 'missing'; nodeTypes: string[] }
@@ -35,13 +32,7 @@ function isSkippedByExecution(mode: LGraphEventMode | undefined): boolean {
   return mode === LGraphEventMode.NEVER || mode === LGraphEventMode.BYPASS
 }
 
-/**
- * The node types the prompt for a graph sends to the backend, distinct and
- * sorted. It expands nodes the way graphToPrompt does: it skips muted and
- * bypassed root nodes, expands every root subgraph instance that runs into
- * its inner nodes at any depth (nested instances whatever their mode), then
- * drops muted, bypassed and frontend-only nodes (notes, reroutes).
- */
+/** The distinct, sorted node types graphToPrompt would send for a graph. */
 export function workflowNodeTypes(graph: LGraph): string[] {
   const types = new Set<string>()
   const executableNodes = new Map<ExecutionId, ExecutableLGraphNode>()
@@ -65,13 +56,7 @@ function missingMark(missing: string[]): DeploymentCompatibilityMark {
     : { kind: 'missing', nodeTypes: missing }
 }
 
-/**
- * Which of the workspace's deployments, and Comfy Cloud, can run the open
- * workflow (BE-19373), from ingest's compatibility answer (BE-19372). Asks
- * once per distinct set of node types, so editing a widget value sends
- * nothing, and only in a workspace that shows the deployment switcher with at
- * least one deployment. A failed or outdated answer gives no marks at all.
- */
+/** Which of the workspace's deployments, and Comfy Cloud, can run the open workflow. */
 export const useDeploymentCompatibility = createSharedComposable(() => {
   const pickStore = useDeploymentPickStore()
   const { deployments, isVisible } = storeToRefs(pickStore)
@@ -103,11 +88,6 @@ export const useDeploymentCompatibility = createSharedComposable(() => {
     { immediate: true }
   )
 
-  /**
-   * What the current answer must be for: null when there is nothing to ask.
-   * Each deployment's Release and status are part of it, so a new deployment,
-   * one moved to another Release, or one that finishes building gets checked.
-   */
   const request = computed(() => {
     const workspaceId = workspaceStore.workspaceId
     if (!workspaceId || !isVisible.value || deployments.value.length === 0) {
@@ -130,6 +110,7 @@ export const useDeploymentCompatibility = createSharedComposable(() => {
     key: string
     compatibility: DeploymentCompatibility
   } | null>(null)
+  let checkFailureReported = false
 
   watch(
     requestKey,
@@ -142,8 +123,14 @@ export const useDeploymentCompatibility = createSharedComposable(() => {
           current.nodeTypes
         )
         if (requestKey.value === key) answer.value = { key, compatibility }
-      } catch {
-        // A failed check shows no marks rather than wrong ones.
+      } catch (error) {
+        if (checkFailureReported) return
+        checkFailureReported = true
+        reportError(error, {
+          surface: 'workspace',
+          errorType: 'deployment_compatibility_check_failure',
+          level: 'warning'
+        })
       }
     },
     { immediate: true }
@@ -155,10 +142,6 @@ export const useDeploymentCompatibility = createSharedComposable(() => {
       : null
   )
 
-  /**
-   * The mark for one deployment, or Comfy Cloud with null; null when there
-   * is no answer for the open workflow or it does not list the deployment.
-   */
   function markFor(
     deploymentId: string | null
   ): DeploymentCompatibilityMark | null {
@@ -175,11 +158,6 @@ export const useDeploymentCompatibility = createSharedComposable(() => {
     return missingMark(entry.missing_node_types)
   }
 
-  /**
-   * Comfy Cloud (as null) and the deployments that have every node type the
-   * open workflow uses, Comfy Cloud first, then in listing order; null
-   * when there is no answer for the open workflow.
-   */
   const deploymentsThatRunIt = computed<(string | null)[] | null>(() => {
     if (compatibility.value === null) return null
     return [null, ...deployments.value.map((d) => d.deployment_id)].filter(

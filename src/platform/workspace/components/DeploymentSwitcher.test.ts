@@ -114,6 +114,7 @@ describe('DeploymentSwitcher', () => {
   const reload = vi.fn()
 
   beforeEach(() => {
+    hoisted.rootGraph = undefined
     Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-1' })
     Object.defineProperty(window, 'location', {
       value: { reload, origin: 'http://localhost' },

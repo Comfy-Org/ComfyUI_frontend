@@ -1,7 +1,3 @@
-<!-- The body of the deployment switcher's panel (FE-2434): Comfy Cloud, the
-     workspace's deployments, and "Use the workspace default" for a browser
-     that picked for itself (BE-17480). Comfy Cloud and each deployment are
-     marked with whether they can run the open workflow (BE-19373). -->
 <template>
   <DeploymentSwitcherRow
     :label="$t('deploymentSwitcher.comfyCloud')"
