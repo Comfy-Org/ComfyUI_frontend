@@ -1,7 +1,7 @@
 import { assert, describe, expect, it } from 'vitest'
 
 import { buildBoundaries } from './boundaries'
-import { matchesModulePath } from './records'
+import { claimFiles, matchesModulePath } from './records'
 import type { DomainRecord } from './schema'
 
 function domain(
@@ -26,7 +26,11 @@ function domain(
 }
 
 function fallowAllows(records: DomainRecord[], from: string, to: string) {
-  const { zones, rules } = buildBoundaries(records).boundaries
+  const claims = claimFiles(
+    records,
+    records.flatMap(({ publicEntryPoints }) => publicEntryPoints)
+  )
+  const { zones, rules } = buildBoundaries({ records, claims }).boundaries
   const zoneOf = (file: string) =>
     zones.find(({ patterns }) =>
       patterns.some((pattern) => matchesModulePath(file, pattern))

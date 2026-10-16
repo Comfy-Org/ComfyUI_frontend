@@ -1,5 +1,5 @@
-import { claimFiles, matchesModulePath } from './records'
-import type { Claim } from './records'
+import { contains, modulesBySpecificity, sameRole } from './records'
+import type { ArchitectureConfiguration, Claim } from './records'
 import { ROLES, ROLE_DEPENDENCIES } from './schema'
 import type { ArchitecturalRole, DomainRecord } from './schema'
 
@@ -22,12 +22,9 @@ export interface FallowBoundaries {
   }
 }
 
-type Layers = ReadonlyMap<string, number>
-
-const contains = (outer: string, inner: string) =>
-  outer !== inner &&
-  outer.endsWith('/**') &&
-  matchesModulePath(inner.replace(/\*\*$/, ''), outer)
+interface LayeredModule extends Claim {
+  layer: number
+}
 
 /**
  * Fallow puts a file in the first zone whose patterns match it. A path that
@@ -35,48 +32,33 @@ const contains = (outer: string, inner: string) =>
  * so the more specific path claims the files it names. Records without
  * nested paths keep one layer.
  */
-function moduleLayers(records: DomainRecord[]): Layers {
-  const modules = records.flatMap((record) =>
-    record.modules.map(({ path, role }) => ({
-      path,
-      key: `${record.id}/${role}`
-    }))
-  )
-  const layers = new Map<string, number>()
-  const layerOf = (module: (typeof modules)[number]): number => {
-    const known = layers.get(module.path)
-    if (known !== undefined) return known
+function moduleLayers(records: DomainRecord[]): LayeredModule[] {
+  const layered: LayeredModule[] = []
+  for (const outer of modulesBySpecificity(records)) {
     const layer = Math.max(
       0,
-      ...modules
-        .filter((inner) => contains(module.path, inner.path))
-        .map((inner) => layerOf(inner) + (inner.key === module.key ? 0 : 1))
+      ...layered
+        .filter((inner) => contains(outer.module.path, inner.module.path))
+        .map((inner) => inner.layer + Number(!sameRole(inner, outer)))
     )
-    layers.set(module.path, layer)
-    return layer
+    layered.push({ ...outer, layer })
   }
-  for (const module of modules) layerOf(module)
-  return layers
+  return layered
 }
 
 function domainZones(
   domain: DomainRecord,
-  layers: Layers,
-  entryClaims: ReadonlyMap<string, Claim>
+  layered: LayeredModule[],
+  claims: ReadonlyMap<string, Claim>
 ): Zone[] {
   return ROLES.flatMap((role) => {
-    const paths = domain.modules
-      .filter((module) => module.role === role)
-      .map(({ path }) => path)
-    const entries = domain.publicEntryPoints.filter((entry) => {
-      const claim = entryClaims.get(entry)
-      return claim?.record === domain && claim.module.role === role
-    })
-    const byLayer = new Map<number, string[]>()
-    for (const path of paths) {
-      const layer = layers.get(path) ?? 0
-      byLayer.set(layer, [...(byLayer.get(layer) ?? []), path])
-    }
+    const own = layered.filter(
+      ({ record, module }) => record === domain && module.role === role
+    )
+    const entries = domain.publicEntryPoints.filter((entry) =>
+      own.some(({ module }) => module === claims.get(entry)?.module)
+    )
+    const layers = [...new Set(own.map(({ layer }) => layer))]
     return [
       {
         domain,
@@ -86,12 +68,18 @@ function domainZones(
         role,
         layer: -1
       },
-      ...[...byLayer].map(([layer, patterns]) => ({
+      ...layers.map((layer) => ({
         domain,
         name: layer
           ? `${domain.id}/${role}/outer-${layer}`
           : `${domain.id}/${role}`,
-        patterns,
+        patterns: domain.modules
+          .filter((module) =>
+            own.some(
+              (inner) => inner.module === module && inner.layer === layer
+            )
+          )
+          .map(({ path }) => path),
         isPublic: false,
         role,
         layer
@@ -124,14 +112,13 @@ function allowedTargets(source: Zone, zones: Zone[]): string[] {
     .map(({ name }) => name)
 }
 
-export function buildBoundaries(records: DomainRecord[]): FallowBoundaries {
-  const layers = moduleLayers(records)
-  const entryClaims = claimFiles(
-    records,
-    records.flatMap(({ publicEntryPoints }) => publicEntryPoints)
-  )
+export function buildBoundaries({
+  records,
+  claims
+}: Pick<ArchitectureConfiguration, 'records' | 'claims'>): FallowBoundaries {
+  const layered = moduleLayers(records)
   const zones = records.flatMap((record) =>
-    domainZones(record, layers, entryClaims)
+    domainZones(record, layered, claims)
   )
   const ordered = zones.toSorted((a, b) => a.layer - b.layer)
   return {

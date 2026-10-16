@@ -157,12 +157,19 @@ describe('runArchitecture', () => {
     ).toContain('"patterns": ["src/images/**"]')
   })
 
-  it('warns about unclassified files and stale module paths without failing', () => {
+  it('warns about unclassified files and stale or redundant module paths without failing', () => {
+    const file = 'docs/architecture/domains/records/images.domain.json'
     const root = createRepository(
       {
-        modules: [...record.modules, { path: 'src/gone/**', role: 'domain' }]
+        modules: [
+          ...record.modules,
+          { path: 'src/gone/**', role: 'domain' },
+          { path: 'src/images/index.ts', role: 'application' },
+          { path: 'src/images/index.test.ts', role: 'application' },
+          { path: 'src/images/extra/**', role: 'domain' }
+        ]
       },
-      { 'src/brandNew.ts': '' }
+      { 'src/brandNew.ts': '', 'src/images/extra/a.ts': '' }
     )
     runArchitecture(root, 'update')
     expect(runArchitecture(root, 'check')).toEqual({
@@ -170,9 +177,21 @@ describe('runArchitecture', () => {
       warnings: [
         {
           message: expect.stringContaining(
+            'images path claims no source files because more specific paths claim all of them: src/images/**'
+          ),
+          file
+        },
+        {
+          message: expect.stringContaining(
             'images path matches no source files: src/gone/**'
           ),
-          file: 'docs/architecture/domains/records/images.domain.json'
+          file
+        },
+        {
+          message: expect.stringContaining(
+            'images path repeats the role of the enclosing src/images/**: src/images/extra/**'
+          ),
+          file
         },
         {
           message: expect.stringContaining(

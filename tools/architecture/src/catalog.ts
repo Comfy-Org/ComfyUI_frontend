@@ -1,4 +1,3 @@
-import { claimFiles } from './records'
 import type { ArchitectureConfiguration } from './records'
 
 interface CodeownersRule {
@@ -28,12 +27,16 @@ function ownersOf(filename: string, rules: CodeownersRule[]): string[] {
 }
 
 export function buildCatalog(
-  { exceptions, records, sourceFiles }: ArchitectureConfiguration,
+  {
+    claims,
+    exceptions,
+    records,
+    sourceFiles,
+    unclassifiedFiles
+  }: ArchitectureConfiguration,
   codeowners: CodeownersRule[]
 ) {
-  const claims = claimFiles(records, sourceFiles)
   const claimed = [...claims]
-  const unclassifiedFiles = sourceFiles.filter((file) => !claims.has(file))
   return {
     domains: records.map((record) => ({
       ...record,

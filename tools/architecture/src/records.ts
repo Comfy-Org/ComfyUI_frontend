@@ -22,6 +22,8 @@ export interface ArchitectureConfiguration {
   exceptions: ArchitectureException[]
   records: DomainRecord[]
   sourceFiles: string[]
+  claims: Map<string, Claim>
+  unclassifiedFiles: string[]
   warnings: ArchitectureWarning[]
 }
 
@@ -50,9 +52,26 @@ export interface Claim {
   module: Module
 }
 
-/** A file path outranks any directory, and a deeper directory outranks a shallower one. */
 const specificity = (path: string) =>
   path.endsWith('/**') ? path.length : Number.MAX_SAFE_INTEGER
+
+/**
+ * Every module, most specific path first: a file path outranks any directory,
+ * and a deeper directory outranks a shallower one. A path only comes after
+ * the paths it contains.
+ */
+export const modulesBySpecificity = (records: DomainRecord[]): Claim[] =>
+  records
+    .flatMap((record) => record.modules.map((module) => ({ record, module })))
+    .toSorted((a, b) => specificity(b.module.path) - specificity(a.module.path))
+
+export const contains = (outer: string, inner: string) =>
+  outer !== inner &&
+  outer.endsWith('/**') &&
+  inner.startsWith(outer.slice(0, -2))
+
+export const sameRole = (a: Claim, b: Claim) =>
+  a.record === b.record && a.module.role === b.module.role
 
 /**
  * Maps each file to the most specific module path that matches it, so a
@@ -63,9 +82,7 @@ export function claimFiles(
   records: DomainRecord[],
   files: string[]
 ): Map<string, Claim> {
-  const modules = records
-    .flatMap((record) => record.modules.map((module) => ({ record, module })))
-    .sort((a, b) => specificity(b.module.path) - specificity(a.module.path))
+  const modules = modulesBySpecificity(records)
   const claims = new Map<string, Claim>()
   for (const file of files) {
     const claim = modules.find(({ module }) =>
@@ -74,14 +91,6 @@ export function claimFiles(
     if (claim) claims.set(file, claim)
   }
   return claims
-}
-
-export const listUnclassifiedFiles = (
-  records: DomainRecord[],
-  sourceFiles: string[]
-) => {
-  const claims = claimFiles(records, sourceFiles)
-  return sourceFiles.filter((file) => !claims.has(file))
 }
 
 function parseFile<T>(
@@ -147,12 +156,9 @@ function referenceErrors(records: DomainRecord[]): string[] {
 
 function stalePathWarnings(
   records: { filename: string; record: DomainRecord }[],
-  sourceFiles: string[]
+  sourceFiles: string[],
+  claims: Map<string, Claim>
 ): ArchitectureWarning[] {
-  const claims = claimFiles(
-    records.map(({ record }) => record),
-    sourceFiles
-  )
   const claimed = new Set([...claims.values()].map(({ module }) => module))
   return records.flatMap(({ filename, record }) =>
     record.modules
@@ -163,6 +169,31 @@ function stalePathWarnings(
           : `${record.id} path matches no source files: ${path}. Remove or update it in ${filename}.`,
         file: filename
       }))
+  )
+}
+
+/**
+ * A path is redundant when the nearest path enclosing it has the same domain
+ * and role: removing it hands its files to that path unchanged.
+ */
+function redundantPathWarnings(
+  records: { filename: string; record: DomainRecord }[]
+): ArchitectureWarning[] {
+  const modules = modulesBySpecificity(records.map(({ record }) => record))
+  return records.flatMap(({ filename, record }) =>
+    record.modules.flatMap((module) => {
+      const outer = modules.find((enclosing) =>
+        contains(enclosing.module.path, module.path)
+      )
+      return outer && sameRole(outer, { record, module })
+        ? [
+            {
+              message: `${record.id} path repeats the role of the enclosing ${outer.module.path}: ${module.path}. Remove it from ${filename}.`,
+              file: filename
+            }
+          ]
+        : []
+    })
   )
 }
 
@@ -183,25 +214,30 @@ function overlapErrors(records: DomainRecord[]): string[] {
 
 function referencedFileErrors(
   repositoryRoot: string,
-  records: DomainRecord[]
+  records: DomainRecord[],
+  claims: Map<string, Claim>
 ): string[] {
-  return records.flatMap((record) => [
-    ...[
+  return records.flatMap((record) => {
+    const missing = [
       ...record.publicEntryPoints,
       ...record.characterizationScenarios.flatMap(({ checks }) => checks),
       ...record.adrs
+    ].filter((filename) => !existsSync(join(repositoryRoot, filename)))
+    return [
+      ...missing.map(
+        (filename) => `${record.id} references missing file ${filename}`
+      ),
+      ...record.publicEntryPoints
+        .filter(
+          (entry) =>
+            !missing.includes(entry) && claims.get(entry)?.record !== record
+        )
+        .map(
+          (entry) =>
+            `${record.id} public entry point is outside its modules: ${entry}`
+        )
     ]
-      .filter((filename) => !existsSync(join(repositoryRoot, filename)))
-      .map((filename) => `${record.id} references missing file ${filename}`),
-    ...record.publicEntryPoints
-      .filter(
-        (entry) => claimFiles(records, [entry]).get(entry)?.record !== record
-      )
-      .map(
-        (entry) =>
-          `${record.id} public entry point is outside its modules: ${entry}`
-      )
-  ])
+  })
 }
 
 export function loadArchitectureConfiguration(
@@ -219,10 +255,11 @@ export function loadArchitectureConfiguration(
     }
   const records = recordFiles.value.map(({ record }) => record)
   const { exceptions } = ledger.value
+  const claims = claimFiles(records, sourceFiles.value)
   const errors = [
     ...referenceErrors(records),
     ...overlapErrors(records),
-    ...referencedFileErrors(repositoryRoot, records),
+    ...referencedFileErrors(repositoryRoot, records, claims),
     ...duplicates(exceptions.map(({ id }) => id)).map(
       (id) => `Exception id ${id} is declared more than once`
     )
@@ -234,7 +271,12 @@ export function loadArchitectureConfiguration(
       exceptions,
       records,
       sourceFiles: sourceFiles.value,
-      warnings: stalePathWarnings(recordFiles.value, sourceFiles.value)
+      claims,
+      unclassifiedFiles: sourceFiles.value.filter((file) => !claims.has(file)),
+      warnings: [
+        ...stalePathWarnings(recordFiles.value, sourceFiles.value, claims),
+        ...redundantPathWarnings(recordFiles.value)
+      ]
     }
   }
 }
