@@ -8,13 +8,14 @@ import { createLoad3d } from '@/extensions/core/load3d/createLoad3d'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { useLoad3dService } from '@/services/load3dService'
+import {
+  copyLoad3dState,
+  handleViewportRefresh
+} from '@/extensions/core/load3d/load3dInstances'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { api } from '@/scripts/api'
 
-vi.mock(import('@/services/load3dService'), () => ({
-  useLoad3dService: vi.fn()
-}))
+vi.mock(import('@/extensions/core/load3d/load3dInstances'))
 
 vi.mock<unknown>(import('@/extensions/core/load3d/Load3dUtils'), () => ({
   default: {
@@ -67,7 +68,6 @@ function createMockSceneManager(): Load3d['sceneManager'] {
 describe('useLoad3dViewer', () => {
   let mockLoad3d: Partial<Load3d>
   let mockSourceLoad3d: Partial<Load3d>
-  let mockLoad3dService: ReturnType<typeof useLoad3dService>
   let mockNode: LGraphNode
 
   beforeEach(() => {
@@ -179,14 +179,7 @@ describe('useLoad3dViewer', () => {
     })
     vi.mocked(createLoad3d).mockImplementation(() => mockLoad3d as Load3d)
 
-    mockLoad3dService = {
-      copyLoad3dState: vi.fn().mockResolvedValue(undefined),
-      handleViewportRefresh: vi.fn(),
-      getLoad3d: vi.fn().mockReturnValue(mockSourceLoad3d)
-    } as Partial<ReturnType<typeof useLoad3dService>> as ReturnType<
-      typeof useLoad3dService
-    >
-    vi.mocked(useLoad3dService).mockReturnValue(mockLoad3dService)
+    vi.mocked(copyLoad3dState).mockResolvedValue(undefined)
   })
 
   describe('initialization', () => {
@@ -203,10 +196,7 @@ describe('useLoad3dViewer', () => {
         isViewerMode: false
       })
 
-      expect(mockLoad3dService.copyLoad3dState).toHaveBeenCalledWith(
-        mockSourceLoad3d,
-        mockLoad3d
-      )
+      expect(copyLoad3dState).toHaveBeenCalledWith(mockSourceLoad3d, mockLoad3d)
 
       expect(viewer.cameraType.value).toBe('perspective')
       expect(viewer.backgroundColor.value).toBe('#282828')
@@ -434,10 +424,7 @@ describe('useLoad3dViewer', () => {
         (mockNode.properties['Scene Config'] as Record<string, unknown>)
           .showGrid
       ).toBe(false)
-      expect(mockLoad3dService.copyLoad3dState).toHaveBeenCalledWith(
-        mockLoad3d,
-        mockSourceLoad3d
-      )
+      expect(copyLoad3dState).toHaveBeenCalledWith(mockLoad3d, mockSourceLoad3d)
       expect(mockSourceLoad3d.forceRender).toHaveBeenCalled()
       expect(mockNode.graph!.setDirtyCanvas).toHaveBeenCalledWith(true, true)
     })
@@ -492,9 +479,7 @@ describe('useLoad3dViewer', () => {
 
       viewer.refreshViewport()
 
-      expect(mockLoad3dService.handleViewportRefresh).toHaveBeenCalledWith(
-        mockLoad3d
-      )
+      expect(handleViewportRefresh).toHaveBeenCalledWith(mockLoad3d)
     })
   })
 

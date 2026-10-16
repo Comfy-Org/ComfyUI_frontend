@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
 import { useTimeout } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, nextTick, onScopeDispose, ref, watch } from 'vue'
@@ -155,7 +156,7 @@ const emit = defineEmits<{
   copyHistory: [id: string]
   renameHistory: [id: string, title: string]
   renameChat: [title: string]
-  answerAsk: [askId: string, selection: 'run' | 'cancel']
+  answerAsk: [askId: string, answer: AgentAnswerRequest]
   openWorkflow: [askId: string, workflowId: string, workflowName?: string]
   approvalShown: [askId: string, turnId: string, workflowId: string | null]
   openReferenceWorkflow: [workflowId: string, workflowName: string]

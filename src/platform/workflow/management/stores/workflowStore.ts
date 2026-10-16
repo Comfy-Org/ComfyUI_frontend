@@ -22,7 +22,7 @@ import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
-import { ChangeTracker } from '@/scripts/changeTracker'
+import { ChangeTrackerAccess } from '@/scripts/changeTrackerAccess'
 import { defaultGraph } from '@/scripts/defaultGraph'
 import { useDialogService } from '@/services/dialogService'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -46,7 +46,7 @@ export { ComfyWorkflow, type LoadedComfyWorkflow }
 
 registerWorkflowRuntime({
   createChangeTracker: (workflow, initialState) =>
-    new ChangeTracker(workflow, initialState),
+    new ChangeTrackerAccess(workflow, initialState),
   getDraft: (path) => useWorkflowDraftStoreV2().getDraft(path),
   removeDraft: (path) => useWorkflowDraftStoreV2().removeDraft(path),
   markDraftUsed: (path) => useWorkflowDraftStoreV2().markDraftUsed(path),

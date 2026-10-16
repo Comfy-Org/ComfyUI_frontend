@@ -2427,15 +2427,24 @@ describe('billing on a tab that arrived by session', () => {
   })
 
   it.for([
-    { name: 'resolves', capabilitiesDown: false, authoritative: true },
     {
-      name: 'is unavailable, falling back to the owner',
+      name: 'resolves',
+      capabilitiesDown: false,
+      canTopUp: true,
+      authoritative: true
+    },
+    {
+      name: 'is unavailable, withholding top-up',
       capabilitiesDown: true,
+      canTopUp: false,
       authoritative: false
     }
   ])(
     'billing capabilities for the session user: the read $name',
-    async ({ capabilitiesDown, authoritative }, { onTestFinished }) => {
+    async (
+      { capabilitiesDown, canTopUp, authoritative },
+      { onTestFinished }
+    ) => {
       const { ingest } = await bootSessionOnly()
       ingest.capabilitiesDown = capabilitiesDown
       localStorage.setItem(WORKSPACE_STORAGE_KEYS.LAST_WORKSPACE_ID, 'ws-team')
@@ -2451,7 +2460,7 @@ describe('billing on a tab that arrived by session', () => {
         isReady: capabilities.isReady.value,
         canTopUp: capabilities.canTopUp.value,
         authoritative: capabilities.snapshotAuthoritative.value
-      }).toEqual({ isReady: true, canTopUp: true, authoritative })
+      }).toEqual({ isReady: true, canTopUp, authoritative })
     }
   )
 })
