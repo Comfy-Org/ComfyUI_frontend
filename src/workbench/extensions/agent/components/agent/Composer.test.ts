@@ -124,7 +124,7 @@ describe('Composer', () => {
     expect(emitted().send).toBeUndefined()
   })
 
-  it('attaches the error context chip and serializes it into the sent message', async () => {
+  it('attaches the error context as an inline reference and serializes it into the sent message', async () => {
     useAgentComposerStore().setErrorContext({
       scope: 'card',
       count: 1,
@@ -141,7 +141,7 @@ describe('Composer', () => {
     })
     const view = mount()
 
-    expect(screen.getByTestId('composer-error-context-chip')).toBeVisible()
+    expect(await screen.findByTestId('error-reference-chip')).toBeVisible()
     await userEvent.click(screen.getByRole('textbox'))
     await userEvent.paste('Can you fix this?')
     await userEvent.keyboard('{Enter}')
@@ -154,7 +154,7 @@ describe('Composer', () => {
     expect(text).toContain('RuntimeError: boom')
   })
 
-  it('removes the attached error context chip on request', async () => {
+  it('removes the inline error reference on request', async () => {
     useAgentComposerStore().setErrorContext({
       scope: 'card',
       count: 2,
@@ -168,11 +168,30 @@ describe('Composer', () => {
     mount()
 
     expect(
-      screen.getByTestId('composer-error-context-count')
+      await screen.findByTestId('error-reference-count')
     ).toHaveTextContent('2')
-    await userEvent.click(screen.getByTestId('composer-error-context-remove'))
+    await userEvent.click(screen.getByTestId('error-reference-remove'))
 
-    expect(screen.queryByTestId('composer-error-context-chip')).toBeNull()
+    expect(screen.queryByTestId('error-reference-chip')).toBeNull()
+    expect(useAgentComposerStore().errorContext).toBeNull()
+  })
+
+  it('deletes the inline error reference with Backspace', async () => {
+    useAgentComposerStore().setErrorContext({
+      scope: 'card',
+      count: 1,
+      label: 'Execution failed',
+      severity: 'error',
+      problems: [{ category: 'execution_failure', message: 'boom' }]
+    })
+    mount()
+
+    await screen.findByTestId('error-reference-chip')
+    const editor = screen.getByRole('textbox')
+    await userEvent.click(editor)
+    await userEvent.keyboard('{Backspace}{Backspace}')
+
+    expect(screen.queryByTestId('error-reference-chip')).toBeNull()
     expect(useAgentComposerStore().errorContext).toBeNull()
   })
 

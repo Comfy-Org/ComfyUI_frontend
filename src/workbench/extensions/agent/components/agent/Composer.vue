@@ -28,7 +28,6 @@ import type {
 } from '../../types/composerAttachment'
 import type { MentionSection } from '../../composables/agent/mentionPickerState'
 import { useComposer } from '../../composables/agent/useComposer'
-import type { AgentErrorContext } from '../../types/agentErrorContext'
 import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
 import type {
   PromptSnapshot,
@@ -40,7 +39,6 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import AssetTray from './composer/AssetTray.vue'
 import ComposerAddMenu from './composer/ComposerAddMenu.vue'
-import ErrorContextChip from './composer/ErrorContextChip.vue'
 import ComposerPlaceholder from './composer/ComposerPlaceholder.vue'
 import MentionMenuItem from './composer/MentionMenuItem.vue'
 import MentionMenuStatus from './composer/MentionMenuStatus.vue'
@@ -499,15 +497,9 @@ function removeAttachment(id: string): void {
   emit('removeAttachment', id)
 }
 
-function setErrorContext(context: AgentErrorContext): void {
-  composer.setErrorContext(context)
-  editorRef.value?.focus()
-}
-
 defineExpose({
   insert,
   replaceDraft,
-  setErrorContext,
   addAttachment: composer.addAttachment,
   updateAttachment: composer.updateAttachment,
   removeAttachment: composer.removeAttachment
@@ -579,10 +571,6 @@ defineExpose({
       class="relative -m-px flex max-h-[50dvh] min-h-28 min-w-0 flex-col rounded-lg border border-border-subtle bg-secondary-background transition-colors focus-within:border-muted-foreground"
     >
       <slot name="insideInput" />
-      <ErrorContextChip
-        :context="composer.errorContext.value"
-        @remove="composer.clearErrorContext"
-      />
       <AssetTray
         v-if="composer.attachments.value.length"
         :attachments="composer.attachments.value"

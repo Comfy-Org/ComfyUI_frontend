@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, onScopeDispose, ref, shallowReactive, shallowRef } from 'vue'
+import { v4 as uuidv4 } from 'uuid'
 
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
@@ -76,7 +77,12 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
   const nodeScope = ref<string | null>(null)
   let skillScope: string | null = null
   const promptEpoch = ref(0)
-  const errorContext = shallowRef<AgentErrorContext | null>(null)
+  const errorContext = computed<AgentErrorContext | null>(() => {
+    const reference = prompt.value.references.find(
+      (item) => item.kind === 'error'
+    )
+    return reference?.kind === 'error' ? reference.context : null
+  })
   // Set by the affordance that supplied the text; read once at submission and
   // reset there, so it describes the message being sent rather than the panel.
   const promptOrigin = ref<AgentInputMethod>('typed')
@@ -137,7 +143,6 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     revision: number
     origin: AgentInputMethod
     starterPrompt: AgentStarterPromptSource | null
-    errorContext: AgentErrorContext | null
     snapshot: SubmittedDraft
   } | null>(null)
   let revision = 0
@@ -203,6 +208,11 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
       promptOrigin.value = 'typed'
       starterPrompt.value = null
     }
+    if (
+      promptOrigin.value === 'error_context' &&
+      !references.some((item) => item.kind === 'error')
+    )
+      promptOrigin.value = 'typed'
     if (metadataOnly) draftState.value = { text: next.text, references }
     else updateDraft({ text: next.text, references })
   }
@@ -232,14 +242,32 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
   }
 
   function setErrorContext(context: AgentErrorContext): void {
-    errorContext.value = context
+    const references = prompt.value.references.filter(
+      (item) => item.kind !== 'error'
+    )
+    const inserted = insertComposerReference(
+      { text: draft.value, references },
+      { kind: 'error', id: uuidv4(), context, textOffset: 0 },
+      insertionPoint.value
+    )
+    insertionPoint.value = inserted.insertion
     promptOrigin.value = 'error_context'
     starterPrompt.value = null
+    resetPromptHistory()
+    updateDraft(inserted.prompt)
   }
 
   function clearErrorContext(): void {
-    errorContext.value = null
+    const references = prompt.value.references.filter(
+      (item) => item.kind !== 'error'
+    )
+    if (references.length === prompt.value.references.length) return
     if (promptOrigin.value === 'error_context') promptOrigin.value = 'typed'
+    resetPromptHistory()
+    updateDraft({
+      text: resetTextWhenReferencesCleared(draft.value, references),
+      references
+    })
   }
 
   function snapshotReferences(next: PromptSnapshot): ComposerReference[] {
@@ -517,10 +545,8 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     // prompt the first attempt did.
     const origin = promptOrigin.value
     const chip = starterPrompt.value
-    const attachedErrorContext = errorContext.value
     promptOrigin.value = 'typed'
     starterPrompt.value = null
-    errorContext.value = null
     attachmentIds.value = []
     updateDraft({ text: '', references: [] })
     insertionPoint.value = { textOffset: 0, referenceIndex: 0 }
@@ -531,7 +557,6 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
       revision,
       origin,
       starterPrompt: chip,
-      errorContext: attachedErrorContext,
       snapshot
     }
     return id
@@ -554,7 +579,6 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     if (failed.revision !== revision) return
     promptOrigin.value = failed.origin
     starterPrompt.value = failed.starterPrompt
-    errorContext.value = failed.errorContext
     return failed.snapshot
   }
 

@@ -3,18 +3,22 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import '../../../agentPanel.css'
 
 import type { AgentErrorContext } from '../../../types/agentErrorContext'
-import ErrorContextChip from './ErrorContextChip.vue'
+import InlineErrorReference from './InlineErrorReference.vue'
 
-const meta: Meta<typeof ErrorContextChip> = {
-  title: 'Agent/Composer/ErrorContextChip',
-  component: ErrorContextChip,
+const meta: Meta<typeof InlineErrorReference> = {
+  title: 'Agent/Composer/InlineErrorReference',
+  component: InlineErrorReference,
   parameters: { layout: 'centered' },
   decorators: [
     () => ({
       template:
-        '<div class="agent-scope flex w-96 flex-col rounded-lg border border-border-subtle bg-secondary-background"><story /><div class="px-3 pt-2 pb-3 text-sm text-base-foreground">Can you fix this issue for me?</div></div>'
+        '<div class="agent-scope w-96 rounded-lg border border-border-subtle bg-secondary-background p-3 font-inter text-[14px]/5 wrap-anywhere whitespace-pre-wrap text-base-foreground"><story />&#32;Can you fix this issue for me?</div>'
     })
-  ]
+  ],
+  args: {
+    removeLabel: 'Remove attached issue',
+    countLabel: '3 problems'
+  }
 }
 
 export default meta
@@ -42,4 +46,6 @@ const error: AgentErrorContext = {
 
 export const Warning: Story = { args: { context: warning } }
 
-export const Error: Story = { args: { context: error } }
+export const Error: Story = {
+  args: { context: error, countLabel: '1 problem' }
+}

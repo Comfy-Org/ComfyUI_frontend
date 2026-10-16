@@ -31,8 +31,7 @@ export function useComposer(options: UseComposerOptions) {
     () =>
       (draft.value.trim().length > 0 ||
         prompt.value.references.length > 0 ||
-        attachments.value.length > 0 ||
-        errorContext.value !== null) &&
+        attachments.value.length > 0) &&
       !attachments.value.some((item) => item.uploading || item.validationError)
   )
 

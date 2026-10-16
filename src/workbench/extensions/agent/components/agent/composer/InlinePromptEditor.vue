@@ -35,6 +35,7 @@ import type { PromptEditor } from '../../../types/promptEditor'
 import type { WorkflowReferenceMetadata } from '../../../types/workflowReference'
 import type { SkillReferenceMetadata } from '../../../types/skillReference'
 import InlineAssetReference from './InlineAssetReference.vue'
+import InlineErrorReference from './InlineErrorReference.vue'
 import {
   inlineReferenceChipClass,
   inlineReferenceRemoveAnchorClass,
@@ -146,6 +147,7 @@ function referenceClipboardText(node: Node): string {
   const name = composerReferenceName(reference)
   if (reference.kind === 'skill') return `/${name}`
   if (reference.kind === 'workflow') return `@[Workflow: ${name}]`
+  if (reference.kind === 'error') return ''
   return reference.kind === 'node'
     ? nodeReferenceText(name)
     : assetReferenceText(name)
@@ -301,6 +303,42 @@ function assetReferenceView(
       else if (!activeAssetReferences.delete(dom)) return
       emit('highlightAssets', [...new Set(activeAssetReferences.values())])
     },
+    onRemove: () => {
+      const position = getPos()
+      if (position === undefined) return
+      editor.dispatch(deleteReference(editor.state, position, node))
+      editor.focus()
+    }
+  })
+  vnode.appContext = appContext ?? null
+  render(vnode, dom)
+  return {
+    dom,
+    stopEvent: () => true,
+    ignoreMutation: () => true,
+    destroy: () => render(null, dom)
+  }
+}
+
+function errorReferenceView(
+  node: Node,
+  editor: EditorView,
+  getPos: () => number | undefined
+) {
+  const dom = document.createElement('span')
+  const reference = promptNodeReference(node, 0)
+  if (reference?.kind !== 'error') return { dom }
+  dom.contentEditable = 'false'
+  dom.className =
+    'inline-flex rounded-sm align-middle ring-offset-base-background [&.ProseMirror-selectednode]:ring-2 [&.ProseMirror-selectednode]:ring-base-foreground [&.ProseMirror-selectednode]:ring-offset-1'
+  const vnode = h(InlineErrorReference, {
+    context: reference.context,
+    removeLabel: t('agent.errorContext.remove'),
+    countLabel: t(
+      'agent.errorContext.problemCount',
+      { count: reference.context.count },
+      reference.context.count
+    ),
     onRemove: () => {
       const position = getPos()
       if (position === undefined) return
@@ -533,6 +571,7 @@ onMounted(() => {
       },
       node: (node, editor, getPos) => nodeReferenceView(node, editor, getPos),
       asset: assetReferenceView,
+      error: errorReferenceView,
       workflow(node, editor, getPos) {
         const id: unknown = node.attrs.id
         const name: unknown = node.attrs.name

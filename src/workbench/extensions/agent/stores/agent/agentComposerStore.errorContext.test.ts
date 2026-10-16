@@ -20,22 +20,37 @@ function errorContext(
 }
 
 describe('agentComposerStore error context', () => {
-  it('attaches context and marks the draft origin as error context', () => {
+  it('attaches the context as an inline reference and marks the origin', () => {
     const store = useAgentComposerStore()
 
     store.setErrorContext(errorContext())
 
     expect(store.errorContext).toEqual(errorContext())
+    expect(
+      store.prompt.references.filter((r) => r.kind === 'error')
+    ).toHaveLength(1)
     expect(store.promptOrigin).toBe('error_context')
   })
 
-  it('clears context and restores the typed origin on removal', () => {
+  it('replaces an existing error reference rather than stacking', () => {
+    const store = useAgentComposerStore()
+    store.setErrorContext(errorContext({ label: 'First' }))
+
+    store.setErrorContext(errorContext({ label: 'Second' }))
+
+    const errors = store.prompt.references.filter((r) => r.kind === 'error')
+    expect(errors).toHaveLength(1)
+    expect(store.errorContext?.label).toBe('Second')
+  })
+
+  it('removes the reference and restores the typed origin on clear', () => {
     const store = useAgentComposerStore()
     store.setErrorContext(errorContext())
 
     store.clearErrorContext()
 
     expect(store.errorContext).toBeNull()
+    expect(store.prompt.references.some((r) => r.kind === 'error')).toBe(false)
     expect(store.promptOrigin).toBe('typed')
   })
 
@@ -47,7 +62,17 @@ describe('agentComposerStore error context', () => {
     store.clearErrorContext()
 
     expect(store.errorContext).toBeNull()
-    expect(store.draft).toBe('explain this')
+    expect(store.draft.trim()).toBe('explain this')
+  })
+
+  it('resets the error-context origin when the reference is removed via the editor', () => {
+    const store = useAgentComposerStore()
+    store.setErrorContext(errorContext())
+
+    store.applyEditorPrompt({ text: '', references: [] })
+
+    expect(store.errorContext).toBeNull()
+    expect(store.promptOrigin).toBe('typed')
   })
 
   it('drops the attached context when a submission starts', () => {
@@ -55,7 +80,7 @@ describe('agentComposerStore error context', () => {
     store.setErrorContext(errorContext())
 
     store.startSubmission({
-      prompt: { text: '', references: [] },
+      prompt: store.prompt,
       attachments: [],
       nodes: [],
       target: { isTemporary: true } as never
@@ -68,17 +93,19 @@ describe('agentComposerStore error context', () => {
     const store = useAgentComposerStore()
     const context = errorContext()
     store.setErrorContext(context)
+    const snapshotPrompt = store.prompt
 
     const id = store.startSubmission({
-      prompt: { text: '', references: [] },
+      prompt: snapshotPrompt,
       attachments: [],
       nodes: [],
       target: { isTemporary: true } as never
     })
     store.settleSubmission(id, false)
     const snapshot = store.takeFailedSubmission()
-
     expect(snapshot).toBeDefined()
+    store.restorePrompt(snapshot!.prompt)
+
     expect(store.errorContext).toEqual(context)
     expect(store.promptOrigin).toBe('error_context')
   })
