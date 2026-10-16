@@ -1016,6 +1016,12 @@ returning from a detail page; returning to the unpaginated root restores categor
 browsing. This applies only to catalogues with server pagination, leaving legacy
 static category pages unchanged.
 
+Previous/Next links opt out of Astro's speculative prefetch. These dynamic,
+private no-store pages must be read on navigation, not requested once on hover
+and again on click. Ben's October 15 navigation trace showed overlapping
+prefetch/navigation requests for pages 8 and 9. This avoids that duplicate work;
+it does not make the remaining full-catalog upstream read bounded.
+
 Workflow category menus show a localized Uncategorized label for missing or
 empty category IDs; blank translated labels fall back to the existing category
 ID. Missing and empty IDs form one group. Selecting that group preserves the

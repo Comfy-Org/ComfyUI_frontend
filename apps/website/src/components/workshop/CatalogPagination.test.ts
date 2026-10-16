@@ -4,6 +4,29 @@ import { describe, expect, it } from 'vitest'
 import CatalogPagination from './CatalogPagination.vue'
 
 describe('bounded catalogue pagination', () => {
+  it.for(['catalog-previous', 'catalog-next'])(
+    'does not speculatively request %s before navigation',
+    (testId) => {
+      render(CatalogPagination, {
+        props: {
+          section: 'workflows',
+          page: {
+            page: 2,
+            pageSize: 24,
+            total: 72,
+            totalPages: 3,
+            hasPrevious: true,
+            hasNext: true
+          }
+        }
+      })
+      expect(screen.getByTestId(testId)).toHaveAttribute(
+        'data-astro-prefetch',
+        'false'
+      )
+    }
+  )
+
   it('shows the selected range and preserves repeated filters in localized links', () => {
     render(CatalogPagination, {
       props: {

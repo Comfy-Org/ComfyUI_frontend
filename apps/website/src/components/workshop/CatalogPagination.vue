@@ -44,6 +44,7 @@ const linkClass =
       :href="href(page.page - 1)"
       :class="linkClass"
       data-testid="catalog-previous"
+      data-astro-prefetch="false"
       >{{ t('cccCatalogPage.previous') }}</a
     >
     <span class="text-sm text-primary-warm-gray tabular-nums">{{
@@ -54,6 +55,7 @@ const linkClass =
       :href="href(page.page + 1)"
       :class="linkClass"
       data-testid="catalog-next"
+      data-astro-prefetch="false"
       >{{ t('cccCatalogPage.next') }}</a
     >
   </nav>
