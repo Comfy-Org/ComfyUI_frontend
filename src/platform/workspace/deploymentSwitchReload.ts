@@ -1,10 +1,9 @@
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 const SWITCH_LANDING_KEY = 'Comfy.DeploymentSwitch.Reloading'
 
-/** Unsaved workflows the user chose to drop on a switch, each with the state they agreed to lose. */
-export type DiscardedWork = ReadonlyMap<ComfyWorkflow, ComfyWorkflowJSON | null>
+/** Unsaved workflows the user chose to drop on a switch, each with the serialized state they agreed to lose. */
+export type DiscardedWork = ReadonlyMap<ComfyWorkflow, string | null>
 
 export const NOTHING_DISCARDED: DiscardedWork = new Map()
 
@@ -70,6 +69,13 @@ export function takeDeploymentSwitchDiscard(): DiscardedWork | null {
   return discarded
 }
 
+/** A workflow's state as a switch records what the user agreed to lose. */
+export function discardableState(workflow: ComfyWorkflow): string | null {
+  return workflow.activeState === null
+    ? null
+    : JSON.stringify(workflow.activeState)
+}
+
 /**
  * True when a switch reload may drop this workflow: it is not loaded, so
  * nothing of it is in memory, or the user chose to drop its state as it is now.
@@ -79,7 +85,9 @@ export function wasDiscardedOnSwitch(
   workflow: ComfyWorkflow
 ): boolean {
   if (discarded === null) return false
-  return !workflow.isLoaded || discarded.get(workflow) === workflow.activeState
+  return (
+    !workflow.isLoaded || discarded.get(workflow) === discardableState(workflow)
+  )
 }
 
 /** True once, on the first boot after a deployment switch reloaded this tab. */

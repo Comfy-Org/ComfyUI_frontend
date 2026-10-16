@@ -392,18 +392,16 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
   }
 
   /**
-   * Set the workspace's default deployment (owner only), or clear it with null.
-   * Members with no pick of their own move to it at their next boot. This
-   * browser reloads only when it has no pick of its own, since only then
-   * does the new default change what it runs on. Otherwise the new default
-   * shows at once and the listing is refreshed to confirm it; a failed
-   * refresh keeps the new default on screen, since the server has it, and a
-   * listing asked for before the change is dropped when it lands.
+   * Sets the workspace default (owner only; null clears it), then reloads with
+   * `reloadWith` or shows it and refreshes the listing. `reloadWith` defaults
+   * to whether the new default moves this browser, decided before the request.
    * Resolves to the server's refusal, or null when the default took.
    */
   async function setDefault(
     deploymentId: string | null,
-    discarded: DiscardedWork = NOTHING_DISCARDED
+    reloadWith: DiscardedWork | null = defaultMovesThisBrowser(deploymentId)
+      ? NOTHING_DISCARDED
+      : null
   ): Promise<string | null> {
     const id = workspaceStore.workspaceId
     if (!id || state.value.phase !== 'ready') return null
@@ -423,8 +421,8 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
       dispatch({ type: 'switchFailed' })
       return errorMessage(err)
     }
-    if (defaultMovesThisBrowser(deploymentId)) {
-      reloadAfterSwitch(discarded)
+    if (reloadWith !== null) {
+      reloadAfterSwitch(reloadWith)
       return null
     }
     lastApplied = latestRequest
