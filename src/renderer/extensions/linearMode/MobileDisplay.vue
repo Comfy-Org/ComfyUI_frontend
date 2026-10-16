@@ -149,7 +149,7 @@ const menuEntries = computed<MenuItem[]>(() => [
   },
   {
     label: t('linearMode.giveFeedback'),
-    icon: 'icon-[lucide--megaphone]',
+    icon: 'icon-[lucide--megaphone] size-4',
     command: () =>
       window.open(APP_MODE_FEEDBACK_FORM_URL, '_blank', 'noopener,noreferrer')
   },
