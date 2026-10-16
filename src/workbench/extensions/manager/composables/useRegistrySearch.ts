@@ -6,6 +6,7 @@ import {
   PACK_SEARCHABLE_ATTRIBUTES,
   USER_SEARCH_ANALYTICS_TAG
 } from '@/constants/searchConstants'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useRegistrySearchGateway } from '@/services/gateway/registrySearchGateway'
 import type {
   SearchAttribute,
@@ -88,8 +89,11 @@ export function useRegistrySearch(inputs: {
       items.value.push(...nodePacks)
       suggestions.value = result.querySuggestions
       pageNumber++
-    } catch (err) {
-      console.error(err)
+    } catch (error) {
+      reportError(error, {
+        errorType: 'error_searching_registry_packs',
+        surface: 'platform'
+      })
       morePages.value = false
     }
   }

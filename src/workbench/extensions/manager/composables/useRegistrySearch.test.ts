@@ -3,9 +3,12 @@ import { describe, expect, it, vi } from 'vitest'
 import { nextTick, ref, toValue } from 'vue'
 
 import { DEFAULT_PAGE_SIZE } from '@/constants/searchConstants'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useRegistrySearchGateway } from '@/services/gateway/registrySearchGateway'
 import type { SearchPacksResult } from '@/types/searchServiceTypes'
 import { useRegistrySearch } from '@/workbench/extensions/manager/composables/useRegistrySearch'
+
+vi.mock(import('@/platform/telemetry/reportError'))
 
 vi.mock(import('@/services/gateway/registrySearchGateway'), () => {
   const gateway = {
@@ -121,7 +124,10 @@ describe('useRegistrySearch', () => {
     await until(search.isLoading).toBe(false)
 
     expect(search.firstPage.value).toBeNull()
-    expect(console.error).toHaveBeenCalledWith(new Error('search unavailable'))
+    expect(reportError).toHaveBeenCalledWith(new Error('search unavailable'), {
+      errorType: 'error_searching_registry_packs',
+      surface: 'platform'
+    })
   })
 
   it('searches the trimmed query and ignores edits that only change surrounding whitespace', async () => {
