@@ -816,6 +816,42 @@ function onWorkflowAdopted(
   }
 }
 
+/**
+ * FE-1969: a reload leaves the session with no in-memory binding, and the
+ * thread's own transcript is the only thing that names the workflow it was
+ * bound to. Restoring that target reopens its tab and repaints the picker, so
+ * the panel looks attached - but without a session binding the follower never
+ * resubscribes, and every host edit until the NEXT turn ack reaches nobody.
+ * Bind the restored workflow as well, from the id the server's transcript
+ * carries rather than from anything this page persisted.
+ */
+async function onWorkflowRestoredAndBound(
+  workflowId: string | undefined,
+  isCurrent: () => boolean
+): Promise<boolean> {
+  const restored = await onWorkflowRestored(workflowId, isCurrent)
+  if (!restored || workflowId === undefined || !isCurrent()) return restored
+  if (boundWorkflowId.value !== workflowId && isRestoredTargetLive(workflowId))
+    bindWorkflow(workflowId)
+  return restored
+}
+
+/**
+ * `onWorkflowRestored` also reports true when there was nothing to restore -
+ * an already-decided target on a remount - so it cannot be the only condition
+ * for binding. This is: the restored workflow is BOTH the panel's selected
+ * target and the active tab, which is what a restoration itself produces, so a
+ * background target can never be subscribed.
+ */
+function isRestoredTargetLive(workflowId: string): boolean {
+  const restoredTab = boundOrOpenWorkflowFor(workflowId)
+  if (restoredTab === null) return false
+  return (
+    selectedTarget.value?.path === restoredTab.path &&
+    workflowStore.activeWorkflow?.path === restoredTab.path
+  )
+}
+
 function warnWorkflowUnavailable(): void {
   toast.warning(t('agent.targetNavigationUnavailable'), { duration: 5000 })
 }
@@ -900,7 +936,7 @@ const {
     initialize: agentPanelStore.initializeTargetTracking,
     current: targetWorkflowTurnContext,
     adopted: onWorkflowAdopted,
-    restored: onWorkflowRestored,
+    restored: onWorkflowRestoredAndBound,
     prepare: async () => {
       try {
         await refreshCloudWorkflowIds()

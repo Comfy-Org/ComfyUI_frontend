@@ -353,6 +353,47 @@ export class AgentConversationHarness {
     await mockSavedWorkflowPersistence(this.page, this.conversation.workflow.id)
   }
 
+  /**
+   * Serve a stored transcript for this thread that names the bound workflow,
+   * the way the service does once a turn has run. {@link mockAgentApi} answers
+   * history with an empty array, which is a thread that never ran: a reloaded
+   * page then has nothing to restore its target from, so the panel's own
+   * restore path cannot run and no reload case can observe what it does.
+   * Registered after that handler, so this one wins for GET and sends every
+   * other method back to it.
+   */
+  async persistThreadTranscript(assistantText = 'Done.'): Promise<void> {
+    const workflowId = this.conversation.workflow.id
+    const { content } = this.conversation.turns[0].request
+    const history: AgentMessages = [
+      {
+        id: 'restored-user-1',
+        thread_id: THREAD_ID,
+        turn_id: 'restored-turn-1',
+        seq: 1,
+        role: 'user',
+        status: 'complete',
+        workflow_id: workflowId,
+        content: { text: content }
+      },
+      {
+        id: 'restored-assistant-1',
+        thread_id: THREAD_ID,
+        turn_id: 'restored-turn-1',
+        seq: 2,
+        role: 'assistant',
+        status: 'complete',
+        workflow_id: workflowId,
+        content: { text: assistantText }
+      }
+    ]
+    await this.page.route('**/api/agent/threads/*/messages', (route) =>
+      route.request().method() === 'GET'
+        ? route.fulfill(jsonRoute(history))
+        : route.fallback()
+    )
+  }
+
   async sendPrompt(turn = 0): Promise<void> {
     const { content } = this.conversation.turns[turn].request
     await this.composer.fill(content)
