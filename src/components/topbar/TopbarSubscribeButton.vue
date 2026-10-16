@@ -1,10 +1,11 @@
 <template>
   <Button
     v-if="isCloud && isFreeTier && !subscribeToRunPromptVisible"
-    class="mr-2 shrink-0 whitespace-nowrap"
+    class="mr-2 shrink-0"
     variant="subscribe"
     size="sm"
     data-testid="topbar-subscribe-button"
+    :data-dd-action-name="BILLING_ACTION_NAME.subscribeTopbar"
     @click="handleClick"
   >
     {{ $t('subscription.subscribeForMore') }}
@@ -12,6 +13,7 @@
 </template>
 
 <script setup lang="ts">
+import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useSubscribeToRunPromptPresence } from '@/platform/cloud/subscription/composables/useSubscribeCtaPresence'

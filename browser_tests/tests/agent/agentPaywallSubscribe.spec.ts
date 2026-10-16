@@ -29,7 +29,7 @@ const NO_FUNDS_ERROR = zAgentAdmissionError.parse({
   }
 })
 
-const DIALOG_SELECTOR = '[aria-labelledby="subscription-required"]'
+const DIALOG_SELECTOR = '[data-dialog-key="subscription-required"]'
 
 /**
  * Re-mocks `/features` (the subscription gate) and `/billing/capabilities`

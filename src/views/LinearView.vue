@@ -144,7 +144,7 @@ function dragDrop(e: DragEvent) {
     >
       <WorkflowTabs />
     </div>
-    <div class="flex min-h-0 flex-1 flex-row bg-secondary-background">
+    <div class="flex min-h-0 flex-1 bg-secondary-background">
       <div
         ref="workspace"
         data-testid="linear-workspace-column"

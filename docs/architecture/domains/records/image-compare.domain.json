@@ -4,31 +4,31 @@
   "description": "Image comparison presentation, image selection behavior, Vue-node adaptation, extension registration, and LiteGraph widget integration.",
   "modules": [
     {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetImageCompare.vue",
-      "role": "presentation"
+      "path": "src/extensions/core/imageCompare.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgets/ImageCompareWidget.ts",
+      "role": "integration"
     },
     {
       "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetImageCompare.test.ts",
       "role": "presentation"
     },
     {
-      "path": "src/renderer/extensions/vueNodes/widgets/composables/useImageCompareImages.ts",
-      "role": "application"
+      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetImageCompare.vue",
+      "role": "presentation"
     },
     {
       "path": "src/renderer/extensions/vueNodes/widgets/composables/useImageCompareImages.test.ts",
       "role": "application"
     },
     {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useImageCompareImages.ts",
+      "role": "application"
+    },
+    {
       "path": "src/renderer/extensions/vueNodes/widgets/composables/useImageCompareWidget.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/extensions/core/imageCompare.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/lib/litegraph/src/widgets/ImageCompareWidget.ts",
       "role": "integration"
     }
   ],

@@ -216,10 +216,11 @@ describe('SubscriptionRequiredDialogContentWorkspace', () => {
     expect(onClose).toHaveBeenCalledOnce()
   })
 
-  it('leaves the back action to the preview step that renders its own', () => {
+  it('leaves the header and back action to the preview step that renders its own', () => {
     mockCheckoutStep.value = 'preview'
     mockPreviewData.value = { transition_type: 'new_subscription' }
     renderComponent()
+    expect(screen.queryByText('Team Workspace')).not.toBeInTheDocument()
     expect(screen.getAllByRole('button', { name: 'Back' })).toHaveLength(1)
   })
 

@@ -16,7 +16,7 @@
   >
     <div class="flex min-w-0 items-center justify-between gap-1">
       <!-- Collapse/Expand Button -->
-      <div class="relative mr-auto flex min-w-0 shrink items-center gap-1">
+      <div class="relative mr-auto flex min-w-0 items-center gap-1">
         <div class="flex shrink-0 items-center px-0.5">
           <Button
             size="icon-sm"

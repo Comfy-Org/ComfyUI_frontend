@@ -1,8 +1,8 @@
 <template>
   <BaseModalLayout
-    content-title=""
+    :content-title="$t('g.settings')"
     data-testid="settings-dialog"
-    size="full"
+    size="md"
     :content-padding="isWorkspaceCategoryActive ? 'none' : 'default'"
     header-padding="symmetric"
   >
@@ -317,7 +317,7 @@ watch(activeCategoryKey, (newKey, oldKey) => {
   30% {
     background-color: color-mix(
       in srgb,
-      var(--p-primary-color) 15%,
+      var(--primary-background) 15%,
       transparent
     );
   }

@@ -47,7 +47,10 @@ const railState = vi.hoisted(() => ({
 }))
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useBillingReadRail'),
-  () => ({ useBillingReadRail: () => railState.rail })
+  () => ({
+    useBillingReadRail: () => railState.rail,
+    provideBillingSdkStore: () => {}
+  })
 )
 
 function capabilitiesResponse(
@@ -349,7 +352,7 @@ describe('useBillingCapabilities', () => {
     )
   })
 
-  it('keeps top-up available for owners when the endpoint is unavailable', async () => {
+  it('withholds top-up from owners when the endpoint is unavailable', async () => {
     vi.mocked(workspaceApi.getBillingCapabilities).mockRejectedValueOnce(
       new Error('unavailable')
     )
@@ -357,7 +360,7 @@ describe('useBillingCapabilities', () => {
     await billingCapabilities.initialize()
 
     expect(billingCapabilities.hasResolvedCapabilities.value).toBe(false)
-    expect(billingCapabilities.canTopUp.value).toBe(true)
+    expect(billingCapabilities.canTopUp.value).toBe(false)
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(false)
     expect(billingCapabilities.canCancel.value).toBe(false)
     expect(billingCapabilities.canReactivate.value).toBe(false)
@@ -433,7 +436,7 @@ describe('useBillingCapabilities', () => {
     await billingCapabilities.initialize()
 
     expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledOnce()
-    expect(billingCapabilities.canTopUp.value).toBe(true)
+    expect(billingCapabilities.canTopUp.value).toBe(false)
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(false)
     expect(billingCapabilities.canCancel.value).toBe(false)
     expect(billingCapabilities.canReactivate.value).toBe(false)
@@ -1020,7 +1023,7 @@ describe('useBillingCapabilities', () => {
     expect(mockReportError).toHaveBeenCalledOnce()
   })
 
-  it('keeps the owner top-up fallback readable while a retry is in flight', async () => {
+  it('keeps top-up withheld from owners while a retry is in flight', async () => {
     vi.spyOn(Math, 'random').mockReturnValue(0)
     let resolveRetry!: (value: BillingCapabilitiesResponse) => void
     vi.mocked(workspaceApi.getBillingCapabilities)
@@ -1033,17 +1036,17 @@ describe('useBillingCapabilities', () => {
       )
 
     await billingCapabilities.initialize()
-    expect(billingCapabilities.canTopUp.value).toBe(true)
+    expect(billingCapabilities.canTopUp.value).toBe(false)
 
     await vi.advanceTimersByTimeAsync(31_000)
     expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
-    expect(billingCapabilities.canTopUp.value).toBe(true)
+    expect(billingCapabilities.canTopUp.value).toBe(false)
     expect(billingCapabilities.isReady.value).toBe(true)
 
     resolveRetry(capabilitiesResponse(true))
     await vi.advanceTimersByTimeAsync(0)
 
-    expect(billingCapabilities.canSubscribeSelfServe.value).toBe(true)
+    expect(billingCapabilities.canTopUp.value).toBe(true)
   })
 
   it('retries as soon as a hidden tab with an unreadable endpoint returns', async () => {
@@ -1142,7 +1145,7 @@ describe('useBillingCapabilities on the SDK rail', () => {
     {
       failure: 'REQUEST_FAILED at 503',
       result: { status: 'error', code: 'REQUEST_FAILED', httpStatus: 503 },
-      canTopUp: true,
+      canTopUp: false,
       authoritative: false,
       reads: 2
     }

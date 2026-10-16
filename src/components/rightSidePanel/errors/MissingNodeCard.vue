@@ -78,7 +78,7 @@
       variant="secondary"
       size="sm"
       :disabled="isRestarting"
-      class="mt-2 h-8 w-full min-w-0 rounded-md text-xs"
+      class="mt-2 h-8 w-full min-w-0 rounded-md"
       @click="applyChanges()"
     >
       <DotSpinner v-if="isRestarting" duration="1s" :size="12" />
