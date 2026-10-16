@@ -51,6 +51,8 @@ export interface LocalWebAuthEnvironment {
   replaceUrl: (url: string) => void
   sessionStorage: Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
   tokens: LocalWebTokenStore
+  /** Runs a refresh while no other tab of this origin is refreshing. */
+  withRefreshLock: <T>(task: () => Promise<T>) => Promise<T>
   fetchImpl: typeof fetch
   now: () => number
 }
@@ -103,9 +105,16 @@ export function createLocalWebAuthBridge(
     return currentState()
   }
 
-  async function refresh(stale: OAuthTokens): Promise<OAuthTokens | undefined> {
+  function isFresh(tokens: OAuthTokens): boolean {
+    return tokens.expiresAt - env.now() > REFRESH_MARGIN_MS
+  }
+
+  async function refreshStoredTokens(): Promise<OAuthTokens | undefined> {
+    const stale = env.tokens.read()
+    if (!stale) return undefined
+    if (isFresh(stale)) return stale
     const result = await refreshAccessToken(stale.refreshToken, tokenOptions())
-    if (env.tokens.read() !== stale) return undefined
+    if (env.tokens.read()?.refreshToken !== stale.refreshToken) return undefined
     if (result.ok && adopt(result.tokens)) return result.tokens
     if (!result.ok && result.reason === 'unavailable') return undefined
     signOutLocally()
@@ -115,12 +124,14 @@ export function createLocalWebAuthBridge(
   async function freshTokens(): Promise<OAuthTokens | undefined> {
     const tokens = env.tokens.read()
     if (!tokens) return undefined
-    if (tokens.expiresAt - env.now() > REFRESH_MARGIN_MS) return tokens
-    refreshing ??= refresh(tokens).finally(() => {
+    if (isFresh(tokens)) return tokens
+    refreshing ??= env.withRefreshLock(refreshStoredTokens).finally(() => {
       refreshing = undefined
     })
     return refreshing
   }
+
+  env.tokens.subscribe(emit)
 
   return {
     getState: async () => currentState(),
