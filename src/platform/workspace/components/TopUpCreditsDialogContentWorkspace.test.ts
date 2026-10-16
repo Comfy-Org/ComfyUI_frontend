@@ -57,7 +57,10 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
-const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
+const mockDistributionTypes = vi.hoisted(() => ({
+  isCloud: true,
+  isDesktop: false
+}))
 
 vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 
@@ -667,6 +670,30 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         expect(billing.fetchBalance).toHaveBeenCalled()
         expect(billing.fetchStatus).toHaveBeenCalled()
       })
+    })
+
+    it('hands checkout to the Desktop host without navigating the app away', async () => {
+      refuseForNoPaymentMethod()
+      vi.spyOn(workspaceApi, 'createTopupCheckout').mockResolvedValue({
+        checkout_url: checkoutUrl
+      })
+      window.__comfyDesktop2 = {}
+      const open = vi.spyOn(window, 'open').mockReturnValue(null)
+      const appUrl = window.location.href
+
+      try {
+        await userEvent.click(await payAndGetRefused())
+
+        await waitFor(() =>
+          expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
+            key: 'top-up-credits'
+          })
+        )
+        expect(open).toHaveBeenCalledWith(checkoutUrl, '_blank')
+        expect(window.location.href).toBe(appUrl)
+      } finally {
+        delete window.__comfyDesktop2
+      }
     })
 
     it('abandons a checkout that resolves after the dialog was dismissed', async () => {

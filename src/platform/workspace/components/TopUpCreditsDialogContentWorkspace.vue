@@ -330,6 +330,7 @@ import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFai
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import type { CreateTopupResponse } from '@/platform/workspace/api/workspaceApi'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
+import { openBillingUrl } from '@/platform/workspace/billing/billingTab'
 import { isBlockedOnCustomerPhase } from '@/platform/workspace/billing/customerAttention'
 import { UncreditedTopupResponse } from '@/platform/workspace/billing/sdk/topupOperationView'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
@@ -745,7 +746,7 @@ async function continueToCheckout() {
         return balance.value?.amountMicros ?? null
       }
     })
-    if (!window.open(checkoutUrl, '_blank')) {
+    if (!openBillingUrl(checkoutUrl)) {
       globalThis.location.href = checkoutUrl
     }
     handleClose(false)
