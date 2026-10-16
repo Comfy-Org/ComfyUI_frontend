@@ -21,6 +21,7 @@ type RegistryNodePack = components['schemas']['Node']
 
 interface SearchedFirstPage {
   query: string
+  searchMode: SearchMode
   rawResultsEmpty: boolean
 }
 
@@ -38,8 +39,8 @@ export function useRegistrySearch(inputs: {
 }): PagedList<RegistryNodePack> & {
   suggestions: Readonly<Ref<QuerySuggestion[]>>
   /**
-   * The query behind the shown first page and its outcome; null while that
-   * page loads or after it failed.
+   * The query and mode behind the shown first page and its outcome; null
+   * while that page loads or after it failed.
    */
   firstPage: Readonly<Ref<SearchedFirstPage | null>>
 } {
@@ -53,10 +54,8 @@ export function useRegistrySearch(inputs: {
   const { enqueue, preempt, running: isLoading } = usePreemptableQueue()
   const searchedQuery = () => toValue(inputs.query).trim()
 
-  const searchableAttributes = (): SearchAttribute[] =>
-    toValue(inputs.searchMode) === 'nodes'
-      ? ['comfy_nodes']
-      : [...PACK_SEARCHABLE_ATTRIBUTES]
+  const searchableAttributes = (searchMode: SearchMode): SearchAttribute[] =>
+    searchMode === 'nodes' ? ['comfy_nodes'] : [...PACK_SEARCHABLE_ATTRIBUTES]
 
   function analyticsParams(
     query: string
@@ -71,11 +70,12 @@ export function useRegistrySearch(inputs: {
   async function doLoadMore() {
     if (!morePages.value) return
     const query = searchedQuery()
+    const searchMode = toValue(inputs.searchMode)
     try {
       const result = await searchPacks(query, {
         pageSize: DEFAULT_PAGE_SIZE,
         pageNumber,
-        restrictSearchableAttributes: searchableAttributes(),
+        restrictSearchableAttributes: searchableAttributes(searchMode),
         ...analyticsParams(query)
       })
       const { nodePacks } = result
@@ -83,6 +83,7 @@ export function useRegistrySearch(inputs: {
       if (pageNumber === 0) {
         firstPage.value = {
           query,
+          searchMode,
           rawResultsEmpty: result.rawResultsEmpty ?? nodePacks.length === 0
         }
       }

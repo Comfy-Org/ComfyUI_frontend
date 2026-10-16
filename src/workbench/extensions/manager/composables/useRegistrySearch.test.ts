@@ -5,7 +5,7 @@ import { nextTick, ref, toValue } from 'vue'
 import { DEFAULT_PAGE_SIZE } from '@/constants/searchConstants'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useRegistrySearchGateway } from '@/services/gateway/registrySearchGateway'
-import type { SearchPacksResult } from '@/types/searchServiceTypes'
+import type { SearchMode, SearchPacksResult } from '@/types/searchServiceTypes'
 import { useRegistrySearch } from '@/workbench/extensions/manager/composables/useRegistrySearch'
 
 vi.mock(import('@/platform/telemetry/reportError'))
@@ -63,6 +63,7 @@ describe('useRegistrySearch', () => {
 
       expect(search.firstPage.value).toEqual({
         query: 'test',
+        searchMode: 'packs',
         rawResultsEmpty: expected
       })
     }
@@ -86,6 +87,7 @@ describe('useRegistrySearch', () => {
 
     expect(search.firstPage.value).toEqual({
       query: 'kijai/comfyui-kjnodes',
+      searchMode: 'packs',
       rawResultsEmpty: true
     })
 
@@ -103,8 +105,32 @@ describe('useRegistrySearch', () => {
 
     expect(search.firstPage.value).toEqual({
       query: 'comfyui-manager',
+      searchMode: 'packs',
       rawResultsEmpty: true
     })
+  })
+
+  it('reports the mode a first page was searched in, not one switched to while it loaded', async () => {
+    let resolveSearch: (result: SearchPacksResult) => void = () => {}
+    vi.mocked(useRegistrySearchGateway().searchPacks).mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveSearch = resolve
+      })
+    )
+    const searchMode = ref<SearchMode>('nodes')
+    const search = useRegistrySearch({ query: 'comfyui-manager', searchMode })
+    await until(search.isLoading).toBe(true)
+
+    searchMode.value = 'packs'
+    await nextTick()
+    resolveSearch({
+      nodePacks: [],
+      querySuggestions: [],
+      rawResultsEmpty: true
+    })
+    await until(search.isLoading).toBe(false)
+
+    expect(search.firstPage.value?.searchMode).toBe('nodes')
   })
 
   it('reports no first page when the search for it fails', async () => {
@@ -168,6 +194,7 @@ describe('useRegistrySearch', () => {
 
     expect(search.firstPage.value).toEqual({
       query: 'gguf',
+      searchMode: 'packs',
       rawResultsEmpty: false
     })
   })
