@@ -580,7 +580,6 @@ defineExpose({
     >
       <slot name="insideInput" />
       <ErrorContextChip
-        v-if="composer.errorContext.value"
         :context="composer.errorContext.value"
         @remove="composer.clearErrorContext"
       />

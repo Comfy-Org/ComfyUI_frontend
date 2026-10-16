@@ -54,7 +54,6 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAskAgentAboutIssues } from '@/workbench/extensions/agent/composables/agent/useAskAgentAboutIssues'
 
 import ErrorGroupList from './ErrorGroupList.vue'
@@ -72,7 +71,6 @@ const ErrorPanelSurveyCta =
 const { t } = useI18n()
 const { openGitHubIssues, contactSupport } = useErrorActions()
 
-const workflowStore = useWorkflowStore()
 const { canAskAgent, askAgentAboutIssues } = useAskAgentAboutIssues()
 const {
   allErrorGroups,
@@ -92,10 +90,7 @@ function askAgentAboutAll() {
         missingModelGroups: missingModelGroups.value,
         missingMediaGroups: missingMediaGroups.value
       },
-      {
-        label: t('agent.errorContext.allLabel'),
-        workflowName: workflowStore.activeWorkflow?.filename
-      }
+      { label: t('agent.errorContext.allLabel') }
     )
   )
 }

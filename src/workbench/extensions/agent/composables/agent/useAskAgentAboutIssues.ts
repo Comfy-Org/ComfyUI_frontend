@@ -1,5 +1,7 @@
 import { computed } from 'vue'
 
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 import { useAgentPanelStore } from '../../stores/agent/agentPanelStore'
 import type { AgentErrorContext } from '../../types/agentErrorContext'
@@ -8,6 +10,7 @@ import type { AgentErrorContext } from '../../types/agentErrorContext'
 export function useAskAgentAboutIssues() {
   const panelStore = useAgentPanelStore()
   const composerStore = useAgentComposerStore()
+  const workflowStore = useWorkflowStore()
 
   const canAskAgent = computed(() => panelStore.enabled)
 
@@ -15,7 +18,11 @@ export function useAskAgentAboutIssues() {
     if (!panelStore.enabled) return
     panelStore.view = { screen: 'chat' }
     panelStore.open('error_context')
-    composerStore.setErrorContext(context)
+    composerStore.setErrorContext({
+      ...context,
+      workflowName:
+        context.workflowName ?? workflowStore.activeWorkflow?.filename
+    })
   }
 
   return { canAskAgent, askAgentAboutIssues }

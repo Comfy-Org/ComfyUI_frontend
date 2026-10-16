@@ -33,7 +33,7 @@ describe('useAskAgentAboutIssues', () => {
 
     expect(panel.isOpen).toBe(true)
     expect(panel.view).toEqual({ screen: 'chat' })
-    expect(composer.errorContext).toEqual(CONTEXT)
+    expect(composer.errorContext).toMatchObject(CONTEXT)
   })
 
   it('does nothing when the agent is unavailable', () => {

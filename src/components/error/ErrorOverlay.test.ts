@@ -14,10 +14,27 @@ import '@/scripts/changeTracker'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { NodeError } from '@/platform/remote/comfyui/types'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
-import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import ErrorOverlay from './ErrorOverlay.vue'
+
+const askAgentMock = vi.hoisted(() => ({
+  canAskAgent: undefined as unknown as { value: boolean },
+  askAgentAboutIssues: vi.fn()
+}))
+
+vi.mock<unknown>(
+  import('@/workbench/extensions/agent/composables/agent/useAskAgentAboutIssues'),
+  async () => {
+    const { ref } = await import('vue')
+    askAgentMock.canAskAgent = ref(true)
+    return {
+      useAskAgentAboutIssues: () => ({
+        canAskAgent: askAgentMock.canAskAgent,
+        askAgentAboutIssues: askAgentMock.askAgentAboutIssues
+      })
+    }
+  }
+)
 
 const mockErrorGroups = vi.hoisted(() => ({
   allErrorGroups: { value: [] as ErrorGroup[] },
@@ -111,6 +128,8 @@ describe('ErrorOverlay', () => {
     mockErrorGroups.missingModelGroups.value = []
     mockErrorGroups.missingMediaGroups.value = []
     mockErrorGroups.swapNodeGroups.value = []
+    askAgentMock.canAskAgent.value = true
+    askAgentMock.askAgentAboutIssues.mockClear()
     useCanvasStore().linearMode = false
     useCanvasStore().canvas = null
     useCanvasStore().currentGraph = null
@@ -215,7 +234,6 @@ describe('ErrorOverlay', () => {
         ]
       }
     ]
-    useAgentPanelStore().enabled = true
     renderOverlay()
 
     const executionErrorStore = useExecutionErrorStore()
@@ -228,17 +246,17 @@ describe('ErrorOverlay', () => {
     askAgent.click()
     await nextTick()
 
-    const composer = useAgentComposerStore()
-    expect(composer.errorContext).toMatchObject({
+    expect(askAgentMock.askAgentAboutIssues).toHaveBeenCalledTimes(1)
+    const [context] = askAgentMock.askAgentAboutIssues.mock.calls[0]
+    expect(context).toMatchObject({
       scope: 'card',
       label: 'Execution failed',
       severity: 'error'
     })
-    expect(composer.errorContext?.problems[0]).toMatchObject({
+    expect(context.problems[0]).toMatchObject({
       category: 'validation',
       message: 'Only error'
     })
-    expect(useAgentPanelStore().isOpen).toBe(true)
   })
 
   it('omits the Ask agent toast action when the agent is unavailable', async () => {
@@ -256,6 +274,7 @@ describe('ErrorOverlay', () => {
         ]
       }
     ]
+    askAgentMock.canAskAgent.value = false
     renderOverlay()
     useExecutionErrorStore().showErrorOverlay()
     await nextTick()

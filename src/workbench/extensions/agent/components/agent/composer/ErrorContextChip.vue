@@ -7,16 +7,17 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { AgentErrorContext } from '../../../types/agentErrorContext'
 
-const { context } = defineProps<{ context: AgentErrorContext }>()
+const { context } = defineProps<{ context: AgentErrorContext | null }>()
 const emit = defineEmits<{ remove: [] }>()
 
 const { t } = useI18n()
 
-const isError = computed(() => context.severity === 'error')
+const isError = computed(() => context?.severity === 'error')
 </script>
 
 <template>
   <div
+    v-if="context"
     data-testid="composer-error-context"
     role="group"
     :aria-label="t('agent.errorContext.chipGroupLabel')"

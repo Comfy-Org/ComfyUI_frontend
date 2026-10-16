@@ -14,8 +14,6 @@ import {
   buildGroupErrorContext
 } from '@/components/rightSidePanel/errors/buildAgentErrorContext'
 import type { ErrorGroup } from '@/components/rightSidePanel/errors/types'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { AgentErrorContext } from '@/workbench/extensions/agent/types/agentErrorContext'
 import type { MissingMediaGroup } from '@/platform/missingMedia/types'
 import type { MissingModelGroup } from '@/platform/missingModel/types'
 
@@ -203,9 +201,7 @@ export function useErrorOverlayState() {
 
   const overlayTitle = computed(() => overlayCopy.value?.title ?? '')
 
-  const workflowStore = useWorkflowStore()
-
-  const askAgentContext = computed<AgentErrorContext | undefined>(() => {
+  const askAgentContext = computed(() => {
     const groups = allErrorGroups.value
     if (groups.length === 0) return undefined
     const context = {
@@ -214,12 +210,9 @@ export function useErrorOverlayState() {
       missingModelGroups: missingModelGroups.value,
       missingMediaGroups: missingMediaGroups.value
     }
-    const workflowName = workflowStore.activeWorkflow?.filename
-    if (groups.length === 1)
-      return buildGroupErrorContext(groups[0], context, { workflowName })
+    if (groups.length === 1) return buildGroupErrorContext(groups[0], context)
     return buildAllErrorContext(groups, context, {
-      label: t('agent.errorContext.allLabel'),
-      workflowName
+      label: t('agent.errorContext.allLabel')
     })
   })
 

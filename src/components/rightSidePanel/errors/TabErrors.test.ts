@@ -16,8 +16,6 @@ import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
-import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import type { useComfyRegistryService } from '@/services/comfyRegistryService'
 import type { MissingNodeType } from '@/platform/nodeReplacement/types'
 import { toNodeId } from '@/types/nodeId'
@@ -38,6 +36,25 @@ vi.mock(import('@/services/comfyRegistryService'), () => ({
 const { mockFocusNode } = vi.hoisted(() => ({
   mockFocusNode: vi.fn()
 }))
+
+const askAgentMock = vi.hoisted(() => ({
+  canAskAgent: undefined as unknown as { value: boolean },
+  askAgentAboutIssues: vi.fn()
+}))
+
+vi.mock<unknown>(
+  import('@/workbench/extensions/agent/composables/agent/useAskAgentAboutIssues'),
+  async () => {
+    const { ref } = await import('vue')
+    askAgentMock.canAskAgent = ref(true)
+    return {
+      useAskAgentAboutIssues: () => ({
+        canAskAgent: askAgentMock.canAskAgent,
+        askAgentAboutIssues: askAgentMock.askAgentAboutIssues
+      })
+    }
+  }
+)
 
 vi.mock(import('@/scripts/app'))
 
@@ -76,6 +93,8 @@ describe('TabErrors.vue', () => {
   let i18n: ReturnType<typeof createI18n>
 
   beforeEach(() => {
+    askAgentMock.canAskAgent.value = true
+    askAgentMock.askAgentAboutIssues.mockClear()
     i18n = createI18n({
       legacy: false,
       locale: 'en',
@@ -356,7 +375,6 @@ describe('TabErrors.vue', () => {
     )
 
     const { user } = renderComponent((pinia) => {
-      useAgentPanelStore(pinia).enabled = true
       useExecutionErrorStore(pinia).recordExecutionError({
         prompt_id: 'abc',
         node_id: '10',
@@ -369,27 +387,21 @@ describe('TabErrors.vue', () => {
       })
     })
 
-    const composer = useAgentComposerStore()
-
     await user.click(screen.getByTestId('error-card-ask-agent'))
-    expect(composer.errorContext).toMatchObject({
-      scope: 'card',
-      severity: 'error'
-    })
-    expect(composer.errorContext?.problems[0]).toMatchObject({
+    const [cardContext] = askAgentMock.askAgentAboutIssues.mock.calls.at(-1)!
+    expect(cardContext).toMatchObject({ scope: 'card', severity: 'error' })
+    expect(cardContext.problems[0]).toMatchObject({
       category: 'execution_failure',
       nodeType: 'KSampler'
     })
-    expect(useAgentPanelStore().isOpen).toBe(true)
 
     await user.click(screen.getByTestId('errors-footer-ask-agent'))
-    expect(composer.errorContext).toMatchObject({
-      scope: 'all',
-      label: 'All issues'
-    })
+    const [allContext] = askAgentMock.askAgentAboutIssues.mock.calls.at(-1)!
+    expect(allContext).toMatchObject({ scope: 'all', label: 'All issues' })
   })
 
   it('omits the agent actions when the agent is unavailable', () => {
+    askAgentMock.canAskAgent.value = false
     renderComponent((pinia) => {
       useExecutionErrorStore(pinia).recordExecutionError({
         prompt_id: 'abc',
