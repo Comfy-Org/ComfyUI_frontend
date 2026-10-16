@@ -6,6 +6,20 @@ import CatalogPreviewTimePicker from './CatalogPreviewTimePicker.vue'
 
 describe('catalog Preview controls', () => {
   it.for([
+    { count: 0, label: '0 Draft changes' },
+    { count: 1, label: '1 Draft change' },
+    { count: 2, label: '2 Draft changes' }
+  ])('pluralizes the Draft summary as $label', ({ count, label }) => {
+    const changes = Array.from({ length: count }, (_, index) => ({
+      uid: `change-${index}`,
+      title: `Change ${index}`,
+      kind: 'modified' as const,
+      summary: 'Updated'
+    }))
+    render(CatalogPreviewBar, { props: { active: true, changes } })
+    expect(screen.getByText(label)).toBeInTheDocument()
+  })
+  it.for([
     { active: false, view: 'DRAFT' as const },
     { active: true, view: 'LIVE' as const }
   ])(

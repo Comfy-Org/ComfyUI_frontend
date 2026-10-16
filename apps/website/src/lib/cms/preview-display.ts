@@ -24,7 +24,8 @@ export function safeInternalPath(path: string | undefined): string | undefined {
     if (decoded.startsWith('//') || /[\\\u0000-\u0020\u007f]/.test(decoded))
       return
     const url = new URL(path, 'https://comfy.org')
-    if (url.origin !== 'https://comfy.org') return
+    if (url.origin !== 'https://comfy.org' || url.pathname.startsWith('//'))
+      return
     return `${url.pathname}${url.search}${url.hash}`
   } catch {
     return

@@ -7,6 +7,10 @@ in production leaves the existing static website and routes selected. Detail
 loading remains bounded to one record; a workflow whose declared inputs do not
 match its schema is rejected as an unreadable detail rather than throwing from
 the schema transform. It cannot prevent other detail requests from rendering.
+The middleware uses the same gate: stale CMS cookies and preview query strings
+cannot trigger catalog authentication, redirects or cache/header mutations on
+production public pages. Preview navigation rejects paths that normalize into
+protocol-relative URLs, and the Draft count uses the locale's plural rules.
 Workflow `runnable` controls the website playground, not code examples. With
 no declared inputs or `runnable:false`, the page uses a standalone graph/media
 and sticky details/download/Cloud sidebar, prose, code and FAQ flow based on

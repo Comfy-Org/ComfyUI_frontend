@@ -32,6 +32,7 @@ import {
   verifySiteSession
 } from './lib/cms/admin'
 import { narrowToLocalRole } from '@/lib/cms/catalog-capabilities'
+import { cmsEnabled } from '@/lib/cms/cms-enabled'
 
 function isAdmin(path: string) {
   return path === '/admin' || path.startsWith('/admin/')
@@ -257,8 +258,9 @@ async function siteResponse(
   const failure = await authenticateSite(context, cms)
   if (failure) return failure
   const publicDocumentation = isPublicCatalogDocumentation(context)
-  const selection = publicDocumentation ? undefined : selectPreview(context)
-  if (!publicDocumentation && context.url.searchParams.has('preview_at'))
+  const selection =
+    cms && !publicDocumentation ? selectPreview(context) : undefined
+  if (cms && !publicDocumentation && context.url.searchParams.has('preview_at'))
     return denied()
   if (selection) return selection
   const response = await next()
@@ -282,7 +284,7 @@ async function respond(context: APIContext, next: MiddlewareNext) {
   setRequestLocale(context)
   if (context.isPrerendered)
     return isAdmin(context.url.pathname) ? denied(404) : next()
-  const cms = Boolean(process.env.SITE_CATALOG_API_URL)
+  const cms = cmsEnabled()
   if (context.url.pathname.startsWith('/catalog-media/')) return next()
   const editor = await editorRouteResponse(context, next, cms)
   if (editor) return editor
@@ -305,9 +307,7 @@ async function editorRouteResponse(
 }
 
 export const onRequest = defineMiddleware(async (context, next) => {
-  const cms =
-    Boolean(process.env.SITE_CATALOG_API_URL) &&
-    process.env.VERCEL_ENV !== 'production'
+  const cms = cmsEnabled()
   const response = await respond(context, next)
   return cms && mutableCatalogPath(context.url.pathname)
     ? catalogResponseNoStore(response)

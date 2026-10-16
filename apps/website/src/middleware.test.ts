@@ -259,6 +259,36 @@ describe('expired staff sessions', () => {
 })
 
 describe('provider bypass on the complete CMS middleware chain', () => {
+  it.for(['/hub/models/', '/hub/workflows/?preview=DRAFT', '/?now=now'])(
+    'does not run CMS middleware on a production request to %s',
+    async (path) => {
+      vi.stubEnv('SITE_CATALOG_API_URL', 'https://catalog.example')
+      vi.stubEnv('VERCEL_ENV', 'production')
+      const fetcher = vi.fn<typeof fetch>()
+      vi.mocked(fetch).mockImplementation(fetcher)
+      const context = contextFor(path)
+      context.cookies.set(AUTHORING_COOKIE, 'expired-fixture')
+      const original = new Response('Existing site', {
+        headers: {
+          'Cache-Control': 'public, max-age=60',
+          'CDN-Cache-Control': 'public, max-age=3600'
+        }
+      })
+      const next = vi.fn(async () => original)
+      const response = await onRequest(context, next)
+      expect(response).toBe(original)
+      expect(next).toHaveBeenCalledOnce()
+      expect(response?.headers.get('Cache-Control')).toBe('public, max-age=60')
+      expect(response?.headers.has('X-Comfy-Content-Source')).toBe(false)
+      expect(response?.headers.has('X-Robots-Tag')).toBe(false)
+      expect(response?.headers.has('Location')).toBe(false)
+      expect(context.cookies.get(SESSION_COOKIE)?.value).toBe(
+        'expired-test-session'
+      )
+      expect(fetcher).not.toHaveBeenCalled()
+      expect(verifySiteSession).not.toHaveBeenCalled()
+    }
+  )
   it.for(['/admin/content/new', '/admin/catalog-api/staging'])(
     'covers early authorization refusal for %s',
     async (path) => {

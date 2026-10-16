@@ -42,7 +42,7 @@ const t = computed(() => translationsFor(locale).t)
     </span>
     <span class="hidden text-xs text-admin-muted sm:inline">
       <template v-if="view === 'DRAFT' && count !== undefined">
-        {{ t('cccPreview.summary', { count: count }) }}
+        {{ t('cccPreview.summary', { count }, { plural: count }) }}
       </template>
       <template v-if="now">
         <template v-if="view === 'DRAFT' && count !== undefined"> · </template>
