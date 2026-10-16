@@ -5,6 +5,7 @@ import { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { LinkSegment, ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
+import { LinkRenderType } from '@/lib/litegraph/src/types/globalEnums'
 import { setLinkPolyline } from '@/renderer/core/canvas/linkPolylines'
 import type { Point } from '@/renderer/core/layout/types'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
@@ -217,6 +218,13 @@ describe('link marquee selection', () => {
 })
 
 describe('slot link selection', () => {
+  function slotHost(
+    graph: LGraph,
+    links_render_mode: number = LinkRenderType.SPLINE_LINK
+  ) {
+    return { graph, links_render_mode, deselectAll: vi.fn() }
+  }
+
   function hide(graph: LGraph, links: LLink[]) {
     for (const link of links)
       useLinkPresentationStore().patch(graphScopeOf(graph), link.id, {
@@ -225,7 +233,7 @@ describe('slot link selection', () => {
   }
 
   function selectSourceOutput(graph: LGraph) {
-    const host = { graph, deselectAll: vi.fn() }
+    const host = slotHost(graph)
     const source = graph.nodes[0]
     return {
       host,
@@ -246,7 +254,7 @@ describe('slot link selection', () => {
 
   it('anchors the toolbox at the slot when no selected link is drawn', () => {
     const { graph } = createGraphWithLinks()
-    const host = { graph, deselectAll: vi.fn() }
+    const host = slotHost(graph)
 
     selectSlotLinks(host, graph.nodes[0], 'output', 0, { x: 30, y: 40 })
 
@@ -257,7 +265,7 @@ describe('slot link selection', () => {
     const { graph, links } = createGraphWithLinks()
     for (const [index, link] of links.entries()) drawHorizontalLink(link, index)
     hide(graph, links)
-    const host = { graph, deselectAll: vi.fn() }
+    const host = slotHost(graph)
 
     selectSlotLinks(host, graph.nodes[0], 'output', 0, { x: 30, y: 40 })
 
@@ -269,7 +277,7 @@ describe('slot link selection', () => {
     drawHorizontalLink(links[0], 5)
     drawHorizontalLink(links[1], 50)
     hide(graph, [links[0]])
-    const host = { graph, deselectAll: vi.fn() }
+    const host = slotHost(graph)
 
     selectSlotLinks(host, graph.nodes[0], 'output', 0, { x: 30, y: 40 })
 
@@ -278,7 +286,7 @@ describe('slot link selection', () => {
 
   it('selects the one link of an input', () => {
     const { graph, links } = createGraphWithLinks()
-    const host = { graph, deselectAll: vi.fn() }
+    const host = slotHost(graph)
 
     selectSlotLinks(host, graph.nodes[2], 'input', 0, { x: 0, y: 0 })
 
@@ -288,7 +296,7 @@ describe('slot link selection', () => {
   it('ignores a node from another graph', () => {
     const { graph } = createGraphWithLinks()
     const other = createGraphWithLinks().graph
-    const host = { graph: other, deselectAll: vi.fn() }
+    const host = slotHost(other)
 
     expect(
       selectSlotLinks(host, graph.nodes[0], 'output', 0, { x: 0, y: 0 })
@@ -299,9 +307,20 @@ describe('slot link selection', () => {
   it('does nothing for a slot without links', () => {
     const graph = new LGraph()
     const node = createTestNode(graph, [], ['number'])
-    const host = { graph, deselectAll: vi.fn() }
+    const host = slotHost(graph)
 
     expect(selectSlotLinks(host, node, 'output', 0, { x: 0, y: 0 })).toBe(false)
+    expect(host.deselectAll).not.toHaveBeenCalled()
+    expect(getSelectedLinkIds(graph)).toEqual([])
+  })
+
+  it('does nothing while links are hidden on the whole canvas', () => {
+    const { graph } = createGraphWithLinks()
+    const host = slotHost(graph, LinkRenderType.HIDDEN_LINK)
+
+    expect(
+      selectSlotLinks(host, graph.nodes[0], 'output', 0, { x: 0, y: 0 })
+    ).toBe(false)
     expect(host.deselectAll).not.toHaveBeenCalled()
     expect(getSelectedLinkIds(graph)).toEqual([])
   })
@@ -338,6 +357,32 @@ describe('slot link selection', () => {
           presentation.getPresentation(graphScopeOf(graph), link.id)?.hidden
       )
     ).toEqual([true, true])
+  })
+
+  it.for([
+    {
+      name: 'Show with every link visible',
+      hidden: [],
+      act: showSelectedLinks
+    },
+    {
+      name: 'Hide with every link hidden',
+      hidden: [0, 1],
+      act: hideSelectedLinks
+    }
+  ])('$name changes nothing and keeps the selection', ({ hidden, act }) => {
+    const { graph, links } = createGraphWithLinks()
+    hide(
+      graph,
+      hidden.map((index) => links[index])
+    )
+    selectSourceOutput(graph)
+    const events: string[] = []
+
+    expect(act(createHost(graph, events))).toBe(false)
+
+    expect(events).toEqual([])
+    expect(getSelectedLinkIds(graph)).toEqual(links.map((link) => link.id))
   })
 
   it('shows every selected link in one change and clears the selection', () => {

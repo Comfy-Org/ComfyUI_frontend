@@ -11,7 +11,8 @@ const {
   mockDs,
   mockSetDirty,
   mockLinkConnector,
-  mockAdapter
+  mockAdapter,
+  mockGetNodeById
 } = vi.hoisted(() => {
   const capturedHandlers: Record<string, (...args: unknown[]) => void> = {}
   const mockLinkConnector = {
@@ -33,6 +34,7 @@ const {
     capturedHandlers,
     mockDs: { offset: [0, 0] as [number, number], scale: 1 },
     mockSetDirty: vi.fn(),
+    mockGetNodeById: vi.fn(),
     mockLinkConnector,
     mockAdapter: {
       beginFromOutput: vi.fn(),
@@ -66,11 +68,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
       graph: {
         rootGraph: { id: 'autopan-graph' },
         nodes: [],
-        getNodeById: (id: string) => ({
-          id,
-          inputs: [],
-          outputs: [{ name: 'out', type: '*', links: [] }]
-        }),
+        getNodeById: mockGetNodeById,
         getLink: () => null,
         getReroute: () => null
       },
@@ -210,9 +208,7 @@ vi.mock<unknown>(import('@/lib/litegraph/src/LLink'), () => ({
   slotFloatingLinks: () => []
 }))
 
-vi.mock(import('@/lib/litegraph/src/canvas/linkSelection'), () => ({
-  selectSlotLinks: vi.fn(() => true)
-}))
+vi.mock(import('@/lib/litegraph/src/canvas/linkSelection'), { spy: true })
 
 vi.mock<unknown>(import('@/utils/rafBatch'), () => ({
   createRafBatch: (fn: () => void) => ({
@@ -272,6 +268,12 @@ describe('useSlotLinkInteraction', () => {
     mockDs.offset = [0, 0]
     mockDs.scale = 1
     mockLinkConnector.state.snapLinksPos = null
+    vi.mocked(selectSlotLinks).mockReturnValue(true)
+    mockGetNodeById.mockImplementation((id: string) => ({
+      id,
+      inputs: [],
+      outputs: [{ name: 'out', type: '*', links: [] }]
+    }))
   })
 
   it.for([
@@ -338,6 +340,18 @@ describe('useSlotLinkInteraction', () => {
       0,
       { x: 100, y: 200 }
     )
+  })
+
+  it('selects the links of the node pressed, not of a node looked up at release', () => {
+    vi.mocked(selectSlotLinks).mockClear()
+    startDrag()
+    const nodeAtRelease = { id: toNodeId('node1'), inputs: [], outputs: [] }
+    mockGetNodeById.mockReturnValue(nodeAtRelease)
+
+    capturedHandlers['pointerup'](pointerEvent(400, 300))
+
+    expect(selectSlotLinks).toHaveBeenCalledOnce()
+    expect(vi.mocked(selectSlotLinks).mock.calls[0][1]).not.toBe(nodeAtRelease)
   })
 
   it('starts auto-pan once the pointer passes the click drift', () => {

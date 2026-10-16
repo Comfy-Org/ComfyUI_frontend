@@ -813,6 +813,36 @@ describe('LGraphCanvas pointer gestures', () => {
       }
     )
 
+    it.for([
+      {
+        name: 'Shift-click on an input',
+        point: () => b.getInputPos(0),
+        modifiers: { shiftKey: true }
+      },
+      {
+        name: 'Ctrl-click on an output',
+        point: () => a.getOutputPos(0),
+        modifiers: { ctrlKey: true }
+      },
+      {
+        name: 'Meta-click on an output',
+        point: () => a.getOutputPos(0),
+        modifiers: { metaKey: true }
+      }
+    ])(
+      'a $name keeps the canvas selection and selects no links',
+      ({ point, modifiers }) => {
+        LiteGraph.leftMouseClickBehavior = 'select'
+        connectTwoOutputLinks()
+        canvas.selectItems([b])
+
+        gesture.click(point(), modifiers)
+
+        expect(getSelectedLinkIds(graph)).toEqual([])
+        expect(selectedTitles(canvas)).toEqual(['B'])
+      }
+    )
+
     it('dragging from an output selects no links', () => {
       connectTwoOutputLinks()
 

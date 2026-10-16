@@ -93,6 +93,7 @@ import {
 import {
   clearLinkSelection,
   getSelectedLinkIds,
+  hasModifierKey,
   selectLinksInMarquee,
   selectSlotLinks
 } from './canvas/linkSelection'
@@ -2414,6 +2415,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
     })
     pointer.onDragStart = () => {
+      if (this._spaceKeyHeld) return
       this._autoPan?.updatePointer(this.mouse[0], this.mouse[1])
       this._autoPan?.start()
     }
@@ -3024,6 +3026,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           pointer.onClick = () => {
             node.onOutputClick?.(i, e)
             if (
+              !hasModifierKey(e) &&
               selectSlotLinks(this, node, 'output', i, {
                 x: link_pos[0],
                 y: link_pos[1]
@@ -3049,6 +3052,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           pointer.onClick = () => {
             node.onInputClick?.(i, e)
             if (
+              !hasModifierKey(e) &&
               selectSlotLinks(this, node, 'input', i, {
                 x: link_pos[0],
                 y: link_pos[1]
@@ -4211,7 +4215,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         this.dragging_canvas = held.draggingCanvas && this.pointer.isDown
         if (
           this.pointer.isDown &&
-          (this.isDragging || this.linkConnector.isConnecting)
+          (this.isDragging ||
+            (this.linkConnector.isConnecting && this.pointer.dragStarted))
         ) {
           this._autoPan?.updatePointer(this.mouse[0], this.mouse[1])
           this._autoPan?.start()
