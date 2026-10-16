@@ -9449,6 +9449,42 @@ describe('AgentPanelRoot workflow binding', () => {
     }
   )
 
+  it('lets the Current retry of an unresolved chat target its saved workflow over an agent tab opened while Cloud answers, keeping that tab open', async () => {
+    makeTab('wf-42')
+    const saved = attachSavedUnresolvedWorkflow()
+    stubHistoryWithWorkflowListing({ ...unresolvedTargetChat, listing: 503 })
+    await openUnresolvedChatOnStartup()
+    let answerListing = (_status: number) => {}
+    stubHistoryWithWorkflowListing({
+      ...unresolvedTargetChat,
+      listing: new Promise<number>((resolve) => {
+        answerListing = resolve
+      })
+    })
+    await clickUnresolvedChatInHistory()
+    vi.useFakeTimers()
+    ws.emit('agent_active_tab', {
+      workflow_id: 'wf-late',
+      name: 'Late',
+      thread_id: 'th-history'
+    })
+    await vi.advanceTimersByTimeAsync(500)
+    expect(workflowStore.activeWorkflow?.path).toBe('workflows/Late.json')
+
+    answerListing(200)
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('heading', { name: i18n.global.t('agent.history') })
+      ).toBeNull()
+    )
+
+    expect(workflowStore.activeWorkflow?.path).toBe(saved.path)
+    expect(workflowPicker()).toHaveTextContent('missing-saved-file')
+    expect(workflowStore.openWorkflows.map(({ path }) => path)).toContain(
+      'workflows/Late.json'
+    )
+  })
+
   it('agent_active_tab opens an unknown workflow as a blank named tab', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
