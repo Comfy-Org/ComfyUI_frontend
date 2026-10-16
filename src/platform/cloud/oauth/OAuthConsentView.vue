@@ -123,7 +123,7 @@
             {{ t('oauth.consent.redirectNotice') }}
           </span>
           <code
-            class="m-0 block truncate rounded-md bg-ink-200 px-3 py-2 font-mono text-xs text-base-foreground"
+            class="block truncate rounded-md bg-ink-200 px-3 py-2 font-mono text-xs text-base-foreground"
             :title="challenge.redirect_uri"
           >
             {{ challenge.redirect_uri }}
@@ -134,7 +134,7 @@
       <p
         v-show="errorMessage"
         role="alert"
-        class="m-0 rounded-md border border-solid border-destructive-background bg-destructive-background/10 p-3 text-sm text-destructive-background"
+        class="m-0 rounded-md border border-destructive-background bg-destructive-background/10 p-3 text-sm text-destructive-background"
       >
         {{ errorMessage }}
       </p>
@@ -166,7 +166,7 @@
     <p
       v-else-if="errorMessage"
       role="alert"
-      class="m-0 rounded-md border border-solid border-destructive-background bg-destructive-background/10 p-3 text-center text-sm text-destructive-background"
+      class="m-0 rounded-md border border-destructive-background bg-destructive-background/10 p-3 text-center text-sm text-destructive-background"
     >
       {{ errorMessage }}
     </p>

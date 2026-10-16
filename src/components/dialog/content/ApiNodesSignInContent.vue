@@ -1,7 +1,7 @@
 <template>
   <div
     data-testid="api-signin-dialog"
-    class="relative flex max-h-[85vh] min-h-100 w-[min(44rem,90vw)] items-stretch rounded-3xl border border-border-subtle bg-base-background p-2"
+    class="relative flex max-h-[85vh] min-h-100 w-[min(44rem,90vw)] rounded-3xl border border-border-subtle bg-base-background p-2"
   >
     <Button
       variant="muted-textonly"

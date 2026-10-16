@@ -94,7 +94,7 @@
          falling back to TIER_PRICING). -->
       <div
         v-if="planMode === 'personal'"
-        class="flex flex-col items-stretch gap-6 xl:flex-1 xl:flex-row xl:justify-center"
+        class="flex flex-col gap-6 xl:flex-1 xl:flex-row xl:justify-center"
       >
         <div
           v-for="tier in tiers"
@@ -102,7 +102,7 @@
           class="flex flex-col rounded-2xl border border-border-default bg-base-background shadow-[0_0_12px_rgba(0,0,0,0.1)] xl:w-80"
         >
           <div class="flex flex-1 flex-col gap-4 p-6 pb-0">
-            <div class="flex flex-row items-center justify-between gap-2">
+            <div class="flex items-center justify-between gap-2">
               <span
                 class="font-inter text-base/normal font-bold text-base-foreground"
               >
@@ -116,7 +116,7 @@
               </div>
             </div>
             <div class="flex flex-col gap-2">
-              <div class="flex flex-row items-baseline gap-2">
+              <div class="flex items-baseline gap-2">
                 <span
                   class="font-inter text-[28px] leading-normal font-semibold text-base-foreground tabular-nums"
                 >
@@ -154,7 +154,7 @@
               <div
                 v-for="feature in tier.features"
                 :key="feature"
-                class="flex flex-row items-start gap-2"
+                class="flex items-start gap-2"
               >
                 <i class="pi pi-check mt-0.5 text-xs text-base-foreground" />
                 <span class="text-sm font-normal text-muted-foreground">
@@ -166,7 +166,7 @@
             <!-- Credit grant + template-based video estimate, pinned to the
                  card bottom so the figures align across tiers. -->
             <div class="mt-auto flex flex-col gap-1">
-              <div class="flex flex-row items-center gap-2">
+              <div class="flex items-center gap-2">
                 <i
                   class="icon-[lucide--coins] size-4 shrink-0 bg-credit"
                   aria-hidden="true"
@@ -215,7 +215,7 @@
       <!-- TEAM PLAN: [Team Plan | Details] card + Enterprise card -->
       <div v-else class="flex min-h-0 flex-col gap-6 xl:flex-1">
         <div
-          class="flex flex-col items-stretch gap-6 xl:flex-1 xl:flex-row xl:justify-center"
+          class="flex flex-col gap-6 xl:flex-1 xl:flex-row xl:justify-center"
         >
           <!-- Team Plan + Details share one card, split by a divider. -->
           <div
@@ -245,7 +245,7 @@
 
               <!-- Selected credit grant + template-based video estimate -->
               <div class="flex flex-col gap-1">
-                <div class="flex flex-row items-center gap-2">
+                <div class="flex items-center gap-2">
                   <i
                     class="icon-[lucide--coins] size-4 shrink-0 bg-credit"
                     aria-hidden="true"
@@ -304,7 +304,7 @@
                 <div
                   v-for="perk in teamDetailPerks"
                   :key="perk"
-                  class="flex flex-row items-start gap-2"
+                  class="flex items-start gap-2"
                 >
                   <i class="pi pi-check mt-0.5 text-xs text-base-foreground" />
                   <span class="text-sm font-normal text-muted-foreground">
@@ -317,7 +317,7 @@
                 <span class="text-sm text-muted-foreground">
                   {{ t('subscription.teamPlan.comingSoonLabel') }}
                 </span>
-                <div class="flex flex-row items-start gap-2">
+                <div class="flex items-start gap-2">
                   <i class="pi pi-clock mt-0.5 text-xs text-muted-foreground" />
                   <span class="text-sm font-normal text-muted-foreground">
                     {{ t('subscription.teamPlan.perkProjectAssets') }}

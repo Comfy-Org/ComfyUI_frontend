@@ -19,10 +19,7 @@
       </div>
     </div>
     <div class="flex shrink-0 flex-wrap justify-end gap-4">
-      <div
-        v-if="type === 'overwriteBlueprint'"
-        class="flex flex-col justify-start gap-1"
-      >
+      <div v-if="type === 'overwriteBlueprint'" class="flex flex-col gap-1">
         <div class="flex gap-4">
           <input
             id="doNotAskAgain"

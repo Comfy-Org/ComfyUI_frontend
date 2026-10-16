@@ -5,7 +5,7 @@
         <p class="m-0 text-base-foreground">
           {{ $t('assetBrowser.uploadModelDescription1Generic') }}
         </p>
-        <div class="m-0">
+        <div>
           <p class="m-0 text-muted-foreground">
             {{ $t('assetBrowser.uploadModelDescription2Generic') }}
           </p>

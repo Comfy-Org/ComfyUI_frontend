@@ -18,7 +18,7 @@
     }}</span>
 
     <div
-      class="relative -mt-2 -mb-1.5 flex h-[50px] min-h-6 w-full flex-row items-center gap-2.5 rounded-[10px]"
+      class="relative -mt-2 -mb-1.5 flex h-[50px] min-h-6 w-full items-center gap-2.5 rounded-[10px]"
     >
       <select
         class="maskEditor_sidePanelDropdown"
@@ -35,7 +35,7 @@
       t('maskEditor.maskLayer')
     }}</span>
     <div
-      class="relative flex h-[50px] min-h-6 w-full flex-row items-center gap-2.5 rounded-[10px] bg-secondary-background-hover"
+      class="relative flex h-[50px] min-h-6 w-full items-center gap-2.5 rounded-[10px] bg-secondary-background-hover"
       :style="{
         border: store.activeLayer === 'mask' ? '2px solid #007acc' : 'none'
       }"
@@ -68,7 +68,7 @@
       t('maskEditor.paintLayer')
     }}</span>
     <div
-      class="relative flex h-[50px] min-h-6 w-full flex-row items-center gap-2.5 rounded-[10px] bg-secondary-background-hover"
+      class="relative flex h-[50px] min-h-6 w-full items-center gap-2.5 rounded-[10px] bg-secondary-background-hover"
       :style="{
         border: store.activeLayer === 'rgb' ? '2px solid #007acc' : 'none'
       }"
@@ -108,7 +108,7 @@
       t('maskEditor.baseImageLayer')
     }}</span>
     <div
-      class="relative flex h-[50px] min-h-6 w-full flex-row items-center gap-2.5 rounded-[10px] bg-secondary-background-hover"
+      class="relative flex h-[50px] min-h-6 w-full items-center gap-2.5 rounded-[10px] bg-secondary-background-hover"
     >
       <input
         type="checkbox"

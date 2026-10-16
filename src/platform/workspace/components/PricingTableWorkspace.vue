@@ -25,7 +25,7 @@
         </ToggleGroupItem>
       </ToggleGroup>
     </div>
-    <div class="flex flex-col items-stretch gap-4 xl:flex-row">
+    <div class="flex flex-col gap-4 xl:flex-row">
       <div
         v-for="tier in tiers"
         :key="tier.id"
@@ -37,7 +37,7 @@
         "
       >
         <div class="flex flex-col gap-4 p-6 pb-0">
-          <div class="flex flex-row items-center justify-between gap-2">
+          <div class="flex items-center justify-between gap-2">
             <span
               class="font-inter text-base/normal font-bold text-base-foreground"
             >
@@ -52,7 +52,7 @@
           </div>
           <div class="flex flex-col">
             <div class="flex flex-col gap-2">
-              <div class="flex flex-row items-baseline gap-2">
+              <div class="flex items-baseline gap-2">
                 <span
                   class="font-inter text-[28px] leading-normal font-semibold text-base-foreground"
                 >
@@ -111,11 +111,11 @@
           </div>
 
           <div class="flex flex-1 flex-col gap-3 pb-0">
-            <div class="flex flex-row items-center justify-between">
+            <div class="flex items-center justify-between">
               <span class="text-sm font-normal text-base-foreground">
                 {{ t(creditsPerMemberLabelKey) }}
               </span>
-              <div class="flex flex-row items-center gap-1">
+              <div class="flex items-center gap-1">
                 <i class="icon-[lucide--coins] size-4 text-credit" />
                 <span
                   class="font-inter text-sm/normal font-bold text-base-foreground"
@@ -125,7 +125,7 @@
               </div>
             </div>
 
-            <div class="flex flex-row items-center justify-between">
+            <div class="flex items-center justify-between">
               <span class="text-sm font-normal text-base-foreground">
                 {{ t('subscription.maxMembersLabel') }}
               </span>
@@ -136,7 +136,7 @@
               </span>
             </div>
 
-            <div class="flex flex-row items-center justify-between">
+            <div class="flex items-center justify-between">
               <span class="text-sm font-normal text-base-foreground">
                 {{ t('subscription.maxDurationLabel') }}
               </span>
@@ -147,21 +147,21 @@
               </span>
             </div>
 
-            <div class="flex flex-row items-center justify-between">
+            <div class="flex items-center justify-between">
               <span class="text-sm font-normal text-base-foreground">
                 {{ t('subscription.gpuLabel') }}
               </span>
               <i class="pi pi-check text-xs text-success-background" />
             </div>
 
-            <div class="flex flex-row items-center justify-between">
+            <div class="flex items-center justify-between">
               <span class="text-sm font-normal text-base-foreground">
                 {{ t('subscription.addCreditsLabel') }}
               </span>
               <i class="pi pi-check text-xs text-success-background" />
             </div>
 
-            <div class="flex flex-row items-center justify-between">
+            <div class="flex items-center justify-between">
               <span class="text-sm font-normal text-base-foreground">
                 {{ t('subscription.customLoRAsLabel') }}
               </span>
@@ -173,14 +173,14 @@
             </div>
 
             <div class="flex flex-col gap-2">
-              <div class="flex flex-row items-start justify-between">
+              <div class="flex items-start justify-between">
                 <div class="flex flex-col gap-2">
                   <span
                     class="text-sm/relaxed font-normal text-base-foreground"
                   >
                     {{ t('subscription.videoEstimateLabel') }}
                   </span>
-                  <div class="group flex flex-row items-center gap-2 pt-2">
+                  <div class="group flex items-center gap-2 pt-2">
                     <i
                       class="pi pi-question-circle text-xs text-muted-foreground group-hover:text-base-foreground"
                     />

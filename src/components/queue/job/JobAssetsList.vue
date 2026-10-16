@@ -13,14 +13,14 @@
       <template v-for="{ row, virtualItem } in virtualRows" :key="row.key">
         <div
           v-if="row.type === 'header'"
-          class="box-border px-3 pb-2 text-xs leading-none text-text-secondary"
+          class="px-3 pb-2 text-xs leading-none text-text-secondary"
           :style="getVirtualRowStyle(virtualItem)"
         >
           {{ row.label }}
         </div>
         <div
           v-else-if="row.type === 'job'"
-          class="box-border px-3"
+          class="px-3"
           :style="getVirtualRowStyle(virtualItem)"
         >
           <div

@@ -41,7 +41,7 @@
 
     <UsageLogsTable v-if="!embedded" ref="usageLogsTableRef" />
 
-    <div v-if="!embedded" class="flex flex-row gap-2">
+    <div v-if="!embedded" class="flex gap-2">
       <Button variant="muted-textonly" @click="handleFaqClick">
         <i class="pi pi-question-circle" />
         {{ $t('credits.faqs') }}

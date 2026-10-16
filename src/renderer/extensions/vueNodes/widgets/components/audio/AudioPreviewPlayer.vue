@@ -2,7 +2,7 @@
   <div class="relative" @pointerdown.stop>
     <div
       v-if="!hideWhenEmpty || modelValue"
-      class="relative box-border flex h-16 w-full items-center justify-start gap-4 rounded-lg bg-component-node-widget-background px-4 py-0"
+      class="relative flex h-16 w-full items-center gap-4 rounded-lg bg-component-node-widget-background px-4 py-0"
     >
       <!-- Hidden audio element -->
       <audio
@@ -14,7 +14,7 @@
       />
 
       <!-- Left Actions -->
-      <div class="relative flex shrink-0 items-center justify-start gap-2">
+      <div class="relative flex shrink-0 items-center gap-2">
         <!-- Play/Pause Button -->
         <Button
           variant="textonly"
@@ -55,7 +55,7 @@
       </div>
 
       <!-- Right Actions -->
-      <div class="relative flex shrink-0 items-center justify-start gap-2">
+      <div class="relative flex shrink-0 items-center gap-2">
         <!-- Volume Button -->
         <Button
           variant="textonly"

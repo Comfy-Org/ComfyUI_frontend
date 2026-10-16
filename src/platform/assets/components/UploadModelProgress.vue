@@ -17,7 +17,7 @@
       </p>
 
       <div
-        class="flex flex-row items-center gap-3 rounded-lg bg-modal-card-background p-4"
+        class="flex items-center gap-3 rounded-lg bg-modal-card-background p-4"
       >
         <img
           v-if="previewImage"
@@ -48,7 +48,7 @@
       </p>
 
       <div
-        class="flex flex-row items-center gap-3 rounded-lg bg-modal-card-background p-4"
+        class="flex items-center gap-3 rounded-lg bg-modal-card-background p-4"
       >
         <img
           v-if="previewImage"

@@ -1,5 +1,5 @@
 <template>
-  <div class="flex h-16 w-full items-stretch" @pointerdown.stop>
+  <div class="flex h-16 w-full" @pointerdown.stop>
     <div
       ref="trackRef"
       data-testid="trim-track"
@@ -60,7 +60,7 @@
 
       <div
         data-testid="filmstrip-track"
-        class="pointer-events-none absolute top-2 flex h-12 items-stretch overflow-hidden"
+        class="pointer-events-none absolute top-2 flex h-12 overflow-hidden"
         :style="{
           left: `${HANDLE_WIDTH_PX}px`,
           right: `${HANDLE_WIDTH_PX}px`

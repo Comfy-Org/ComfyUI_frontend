@@ -88,7 +88,7 @@
         loop
         muted
         playsinline
-        class="h-full min-w-[125%] object-cover p-0"
+        class="h-full min-w-[125%] object-cover"
         style="margin-left: -20%"
       >
         <source
