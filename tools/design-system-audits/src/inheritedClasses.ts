@@ -573,8 +573,8 @@ class Project {
     const base = this.specifierBase(specifier, from)
     if (!base) return null
     return (
-      [base, `${base}.vue`, `${base}.ts`, `${base}/index.ts`].find(
-        (candidate) => this.files.has(candidate)
+      [base, `${base}.ts`, `${base}/index.ts`].find((candidate) =>
+        this.files.has(candidate)
       ) ?? null
     )
   }
