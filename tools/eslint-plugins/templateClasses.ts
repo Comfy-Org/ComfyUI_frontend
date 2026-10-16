@@ -68,9 +68,8 @@ function hasBoundAttribute(node: VElement, name: string) {
     (attribute) =>
       attribute.directive &&
       attribute.key.name.name === 'bind' &&
-      (attribute.key.argument === null ||
-        (attribute.key.argument.type === 'VIdentifier' &&
-          attribute.key.argument.name === name))
+      (attribute.key.argument?.type !== 'VIdentifier' ||
+        attribute.key.argument.name === name)
   )
 }
 

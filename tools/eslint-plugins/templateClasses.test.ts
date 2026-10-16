@@ -45,6 +45,7 @@ ruleTester.run(
       vue('<div class="border-none border-[3px]" />'),
       vue('<div class="border-0 border-dashed" />'),
       vue('<div class="border-none" style="border-width: 3px" />'),
+      vue('<div class="border-none" :[attributeName]="\'border-solid\'" />'),
       {
         filename,
         code: '<template><div class="m-0" /></template>\n<style>@layer components { div { margin: 1rem } }</style>\n'
