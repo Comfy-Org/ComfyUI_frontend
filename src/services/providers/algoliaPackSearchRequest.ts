@@ -40,8 +40,7 @@ const RETRIEVE_ATTRIBUTES: SearchAttribute[] = [
  */
 export function buildPackSearchRequest(
   query: string,
-  params: SearchNodePacksParams,
-  extraAnalyticsTag?: string
+  params: SearchNodePacksParams
 ): SearchQuery {
   const { pageSize, pageNumber, ...rest } = params
   return {
@@ -49,9 +48,6 @@ export function buildPackSearchRequest(
     indexName: 'nodes_index',
     attributesToRetrieve: RETRIEVE_ATTRIBUTES,
     ...rest,
-    ...(extraAnalyticsTag !== undefined && {
-      analyticsTags: [...(rest.analyticsTags ?? []), extraAnalyticsTag]
-    }),
     hitsPerPage: pageSize,
     page: pageNumber
   }

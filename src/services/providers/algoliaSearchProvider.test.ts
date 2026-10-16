@@ -409,7 +409,7 @@ describe('useAlgoliaSearchProvider', () => {
       ])
     })
 
-    it("sends the caller's analytics tags on the query and adds rewrite to its rewrites", async () => {
+    it("sends the caller's analytics tags on the query and tags its rewrites rewrite instead of user", async () => {
       mockSearchClient.search
         .mockResolvedValueOnce({ results: [{ hits: [] }, { hits: [] }] })
         .mockResolvedValueOnce({ results: [{ hits: [] }, { hits: [] }] })
@@ -418,16 +418,16 @@ describe('useAlgoliaSearchProvider', () => {
       await provider.searchPacks('kijai/comfyui-KJNodes', {
         pageSize: 10,
         pageNumber: 0,
-        analyticsTags: ['user']
+        analyticsTags: ['user', 'dialog']
       })
 
       const [[rawBatch]] = mockSearchClient.search.mock.calls
       expect(rawBatch.requests[1]).not.toHaveProperty('analyticsTags')
       expect(packTagsPerRequest()).toEqual([
-        [['user']],
+        [['user', 'dialog']],
         [
-          ['user', 'rewrite'],
-          ['user', 'rewrite']
+          ['dialog', 'rewrite'],
+          ['dialog', 'rewrite']
         ]
       ])
     })

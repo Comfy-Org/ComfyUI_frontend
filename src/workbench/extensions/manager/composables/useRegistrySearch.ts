@@ -1,7 +1,10 @@
 import { computed, ref, toValue, watch } from 'vue'
 import type { MaybeRefOrGetter, Ref } from 'vue'
 
-import { DEFAULT_PAGE_SIZE } from '@/constants/searchConstants'
+import {
+  DEFAULT_PAGE_SIZE,
+  USER_SEARCH_ANALYTICS_TAG
+} from '@/constants/searchConstants'
 import { useRegistrySearchGateway } from '@/services/gateway/registrySearchGateway'
 import { PACK_SEARCHABLE_ATTRIBUTES } from '@/services/providers/algoliaPackSearchRequest'
 import type {
@@ -60,7 +63,7 @@ export function useRegistrySearch(inputs: {
       pageNumber === 0 &&
       query.trim() !== '' &&
       (toValue(inputs.isTypedQuery) ?? false)
-    return isTypedSearch ? { analyticsTags: ['user'] } : {}
+    return isTypedSearch ? { analyticsTags: [USER_SEARCH_ANALYTICS_TAG] } : {}
   }
 
   async function doLoadMore() {

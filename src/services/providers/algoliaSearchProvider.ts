@@ -9,7 +9,8 @@ import { memoize } from 'es-toolkit/compat'
 
 import {
   MIN_CHARS_FOR_SUGGESTIONS_ALGOLIA,
-  SEARCH_CACHE_MAX_SIZE
+  SEARCH_CACHE_MAX_SIZE,
+  USER_SEARCH_ANALYTICS_TAG
 } from '@/constants/searchConstants'
 import { reportError } from '@/platform/telemetry/reportError'
 import { buildPackSearchRequest } from '@/services/providers/algoliaPackSearchRequest'
@@ -29,6 +30,18 @@ import { buildPackSearchFallbacks } from '@/utils/searchQueryUtil'
 type RegistryNodePack = components['schemas']['Node']
 
 const REWRITE_ANALYTICS_TAG = 'rewrite'
+
+const toRewriteParams = (
+  params: SearchNodePacksParams
+): SearchNodePacksParams => ({
+  ...params,
+  analyticsTags: [
+    ...(params.analyticsTags ?? []).filter(
+      (tag) => tag !== USER_SEARCH_ANALYTICS_TAG
+    ),
+    REWRITE_ANALYTICS_TAG
+  ]
+})
 
 const searchPacksCache = new QuickLRU<string, SearchPacksResult>({
   maxSize: SEARCH_CACHE_MAX_SIZE
@@ -106,7 +119,7 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
       try {
         const { results } = await searchClient.search<AlgoliaNodePack>({
           requests: fallbackQueries.map((fallbackQuery) =>
-            buildPackSearchRequest(fallbackQuery, params, REWRITE_ANALYTICS_TAG)
+            buildPackSearchRequest(fallbackQuery, toRewriteParams(params))
           ),
           strategy: 'none'
         })
