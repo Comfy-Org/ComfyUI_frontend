@@ -207,12 +207,17 @@ const TRANSPARENT_COMPONENTS = new Set([
   'transition-group'
 ])
 
+function isTransparent(element: VElement) {
+  return (
+    TRANSPARENT_COMPONENTS.has(element.rawName) &&
+    staticAttributeValue(element, 'tag') === undefined &&
+    !hasBoundAttribute(element, 'tag')
+  )
+}
+
 function domParent(node: VElement) {
   let parent = node.parent
-  while (
-    parent.type === 'VElement' &&
-    TRANSPARENT_COMPONENTS.has(parent.rawName)
-  )
+  while (parent.type === 'VElement' && isTransparent(parent))
     parent = parent.parent
   return parent.type === 'VElement' && isNativeElement(parent) ? parent : null
 }
@@ -519,7 +524,7 @@ function inheritedValue(node: VElement, category: Category) {
     ancestor.type === 'VElement';
     ancestor = ancestor.parent
   ) {
-    if (TRANSPARENT_COMPONENTS.has(ancestor.rawName)) continue
+    if (isTransparent(ancestor)) continue
     if (!isNativeElement(ancestor)) return null
     const value = ancestorValue(ancestor, category)
     if (value !== undefined) return value

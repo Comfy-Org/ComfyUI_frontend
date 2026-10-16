@@ -46,6 +46,9 @@ ruleTester.run(
       vue('<div class="place-content-center justify-start" />'),
       vue('<div class="space-y-2"><div class="m-0" /><div /></div>'),
       vue('<ul class="divide-y"><li class="border-0 px-2" /></ul>'),
+      vue(
+        '<section><TransitionGroup tag="div" class="space-y-2"><div key="a" class="m-0" /></TransitionGroup></section>'
+      ),
       vue('<div class="border-0" />'),
       vue('<div class="border-none border-[3px]" />'),
       vue('<div class="border-0 border-dashed" />'),
@@ -182,6 +185,9 @@ ruleTester.run(
       ),
       vue('<div class="text-sm"><h2 class="text-sm font-normal">x</h2></div>'),
       vue('<div class="text-sm"><button class="text-sm">x</button></div>'),
+      vue(
+        '<p class="text-sm"><TransitionGroup tag="div" class="text-lg"><span key="a" class="text-sm" /></TransitionGroup></p>'
+      ),
       vue('<div class="text-sm"><h3><span class="text-sm">x</span></h3></div>'),
       vue(
         '<div class="text-sm md:text-base"><span class="text-sm">x</span></div>'
