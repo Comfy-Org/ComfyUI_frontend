@@ -30,6 +30,8 @@ type WorkflowResolverDeps = {
 
 export type CloudWorkflowLifecycle = 'live' | 'gone' | 'unknown'
 
+export type CloudListingStatus = 'listed' | 'omitted' | 'unknown'
+
 export function useAgentWorkflowResolver({
   workflows,
   bindings,
@@ -162,9 +164,7 @@ export function useAgentWorkflowResolver({
       : null
   }
 
-  function cloudListingStatus(
-    workflowId: string
-  ): 'listed' | 'omitted' | 'unknown' {
+  function cloudListingStatus(workflowId: string): CloudListingStatus {
     if (listing.value === null) return 'unknown'
     if (listing.value.ids.has(workflowId)) return 'listed'
     return listing.value.complete ? 'omitted' : 'unknown'

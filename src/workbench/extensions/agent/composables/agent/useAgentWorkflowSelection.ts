@@ -15,7 +15,10 @@ import type {
   WorkflowReferenceMetadata,
   WorkflowReferenceOption
 } from '../../types/workflowReference'
-import type { useAgentWorkflowResolver } from './useAgentWorkflowResolver'
+import type {
+  CloudListingStatus,
+  useAgentWorkflowResolver
+} from './useAgentWorkflowResolver'
 
 type RestorationOutcome =
   | { outcome: 'open'; target: ComfyWorkflow }
@@ -245,7 +248,7 @@ export function useAgentWorkflowSelection({
 
   function needsLifecycleLookup(
     workflowId: string,
-    listingStatus: ReturnType<typeof cloudListingStatus>
+    listingStatus: CloudListingStatus
   ): boolean {
     switch (listingStatus) {
       case 'listed':
