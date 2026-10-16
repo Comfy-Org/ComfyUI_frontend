@@ -1,4 +1,5 @@
 import { z } from 'astro/zod'
+import { toRaw } from 'vue'
 import { zJobCancelResponse, zPromptResponse } from '@comfyorg/ingest-types/zod'
 import type { PromptRequest } from '@comfyorg/ingest-types'
 
@@ -76,7 +77,7 @@ export function workflowCloudRequest(
     request.definitionVersion !== definition.definitionVersion
   )
     throw new WorkshopWorkflowError('definition_incompatible')
-  const prompt = structuredClone(definition.cloud.workflow)
+  const prompt = structuredClone(toRaw(definition.cloud.workflow))
   for (const [name, value] of Object.entries(request.appInputs)) {
     if (!Object.hasOwn(definition.cloud.inputBindings, name))
       throw new WorkshopWorkflowError('invalid_input', { [name]: 'rejected' })

@@ -9,21 +9,29 @@ import type {
   WorkshopModel
 } from '@/config/models-catalogue'
 import { formForContract } from '@/config/workshop-contract'
-import { t } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import type { Locale } from '@/i18n/translations'
 import CatalogueBackLink from './CatalogueBackLink.vue'
 import ModelPrice from './ModelPrice.vue'
 import ModelDetail from './ModelDetail.vue'
 import ModelStatus from './ModelStatus.vue'
 import ModelSupport from './ModelSupport.vue'
-import TagOverflow from './TagOverflow.vue'
+import ModelTags from './ModelTags.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
+import CatalogRelatedModels from './CatalogRelatedModels.vue'
 
 interface ModelTag {
   label: string
   search: string
 }
 
-const { page } = defineProps<{
+const {
+  page,
+  embedded = false,
+  locale = 'en'
+} = defineProps<{
+  locale?: Locale
+  embedded?: boolean
   page: {
     model: RouterWorkshopModelDetail
     related: readonly WorkshopModel[]
@@ -36,6 +44,7 @@ const { page } = defineProps<{
     restTagCount: number
   }
 }>()
+const { t } = translationsFor(locale)
 const routes = getRoutes()
 const model = computed(() =>
   page.model.execution
@@ -54,8 +63,12 @@ const restTags = computed(() =>
 </script>
 
 <template>
-  <div class="mx-auto max-w-10xl px-6 py-10 lg:px-8 lg:py-14">
-    <div class="mb-8 sm:px-8 lg:px-10">
+  <div
+    :class="
+      embedded ? undefined : 'mx-auto max-w-10xl px-6 py-10 lg:px-8 lg:py-14'
+    "
+  >
+    <div v-if="!embedded" class="mb-8 sm:px-8 lg:px-10">
       <CatalogueBackLink />
     </div>
     <header class="mb-12 sm:mx-8 lg:mx-10" data-testid="model-hero">
@@ -82,11 +95,14 @@ const restTags = computed(() =>
             </a>
           </div>
 
-          <h1 class="text-3xl font-bold text-primary-comfy-canvas lg:text-4xl">
+          <h1
+            v-if="!embedded"
+            class="text-3xl font-bold text-primary-comfy-canvas lg:text-4xl"
+          >
             {{ page.model.name }}
           </h1>
           <p
-            v-if="page.model.summary"
+            v-if="page.model.summary && !embedded"
             class="text-sm/relaxed text-primary-warm-gray"
           >
             {{ page.model.summary }}
@@ -95,23 +111,12 @@ const restTags = computed(() =>
 
         <div class="flex flex-col gap-4 lg:items-end">
           <ModelPrice :estimate="page.priceEstimate" />
-          <ul
-            v-if="page.shownTags.length > 0"
-            class="scrollbar-hide flex items-center gap-2 max-sm:overflow-x-auto sm:flex-wrap lg:justify-end"
-            data-testid="model-tags"
-          >
-            <li v-for="tag in page.shownTags" :key="tag.search">
-              <a
-                :href="`${routes.workshop}${tag.search}`"
-                class="inline-flex h-7 shrink-0 items-center rounded-full bg-transparency-white-t8 px-3 text-xs/none whitespace-nowrap text-primary-comfy-canvas transition-colors hover:bg-transparency-white-t20 hover:text-primary-comfy-yellow"
-              >
-                {{ tag.label }}
-              </a>
-            </li>
-            <li v-if="page.restTagCount > 0">
-              <TagOverflow :tags="restTags" />
-            </li>
-          </ul>
+          <ModelTags
+            :tags="page.shownTags"
+            :rest-tags="restTags"
+            :rest-count="page.restTagCount"
+            :base-href="routes.workshop"
+          />
         </div>
       </div>
 
@@ -123,9 +128,11 @@ const restTags = computed(() =>
     </header>
 
     <div class="sm:px-8 lg:px-10">
-      <ModelDetail :model />
+      <ModelDetail :model :locale />
 
+      <CatalogRelatedModels v-if="embedded" :model="page.model" :locale />
       <section
+        v-else
         class="mt-24 border-t border-transparency-white-t8 pt-12"
         data-testid="related-models"
       >

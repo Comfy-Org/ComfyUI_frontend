@@ -1,4 +1,4 @@
-import type { AstroIntegration } from 'astro'
+import type { AstroIntegration, HookParameters } from 'astro'
 import { envField } from 'astro/config'
 // Both imported statically. A dynamic `import()` inside the hook throws
 // "Vite module runner has been closed" — by `astro:build:done` the runner that
@@ -19,6 +19,7 @@ import {
 import { websiteRoot } from '@website/paths'
 import { unregisteredModelsPaths } from '@/config/models-url-registry'
 import { markdownTwinPath } from '@/lib/markdown-twin-path'
+import { cmsEnabled } from '@/lib/cms/cms-enabled'
 
 import {
   assertWorkshopCloudEnvForBuild,
@@ -107,6 +108,63 @@ async function filesLinkingOldModels(
   return found
 }
 
+function installCmsRoutes(
+  injectRoute: HookParameters<'astro:config:setup'>['injectRoute']
+) {
+  if (!cmsEnabled()) return
+  for (const [pattern, file] of [
+    ['/admin/sign-in', 'sign-in.astro'],
+    ['/admin/tester-session', 'tester-session.ts'],
+    ['/admin/testers', 'testers.astro'],
+    ['/admin/[...page]', 'index.astro'],
+    ['/admin/session', 'session.ts'],
+    ['/admin/local-access', 'local-access.astro'],
+    ['/admin/local-session', 'local-access.ts'],
+    ['/admin/actions', 'actions.ts'],
+    ['/admin/content/new', 'content-editor.astro'],
+    ['/admin/content/[uid]/edit', 'content-editor.astro'],
+    ['/admin/content/[uid]/view', 'content-view.astro'],
+    ['/admin/content-api/[operation]', 'content-api.ts'],
+    ['/admin/content-session', 'content-session.ts'],
+    ['/admin/catalog', 'catalog.astro'],
+    ['/admin/catalog-sign-in', 'catalog-sign-in.astro'],
+    ['/admin/catalog-demo-session', 'catalog-demo-session.ts'],
+    ['/admin/catalog-testers', 'catalog-testers.astro'],
+    ['/admin/catalog-preview', 'catalog-preview.ts'],
+    ['/admin/catalog/final-review', 'catalog-final-review.ts'],
+    ['/admin/catalog-api/[operation]', 'catalog-api.ts']
+  ]) {
+    injectRoute({
+      pattern,
+      entrypoint: './src/routes/admin/' + file,
+      prerender: false
+    })
+  }
+  for (const [pattern, file] of [
+    ['/agents', 'agents.ts'],
+    ['/preview-media/[rev]/[uid]/[version]', 'media.ts'],
+    ['/catalog-media/[uid]/[version]', 'media.ts'],
+    ['/openapi.json', 'openapi.json.ts'],
+    ['/api/v1/catalog/agents', 'agents.ts'],
+    ['/api/v1/catalog/openapi.json', 'openapi.json.ts'],
+    ['/api/v1/catalog/docs', 'docs.ts']
+  ]) {
+    injectRoute({
+      pattern,
+      entrypoint: './src/routes/catalog/' + file,
+      prerender: false
+    })
+  }
+}
+
+function cmsRendering(route: ReturnType<typeof modelsBuildRoutes>[number]) {
+  const dynamic =
+    route.pattern.startsWith('/hub/') ||
+    route.pattern === '/models/catalogue.json' ||
+    route.pattern === '/models/[...slug]/page.json'
+  return cmsEnabled() && dynamic ? { prerender: false } : {}
+}
+
 export function workshopReleaseGate(): AstroIntegration {
   return {
     name: 'workshop-release-gate',
@@ -141,8 +199,23 @@ export function workshopReleaseGate(): AstroIntegration {
             plugins: [workshopClientBoundary()]
           }
         })
+        installCmsRoutes(injectRoute)
         for (const route of modelsBuildRoutes(isWorkshopInBuild()))
-          injectRoute(route)
+          injectRoute({
+            ...route,
+            ...cmsRendering(route)
+          })
+        if (cmsEnabled()) {
+          for (const route of modelsBuildRoutes(isWorkshopInBuild()).filter(
+            (route) => route.pattern.startsWith('/hub/')
+          )) {
+            injectRoute({
+              ...route,
+              pattern: `/zh-CN${route.pattern}`,
+              prerender: false
+            })
+          }
+        }
       },
       'astro:build:start': () => {
         assertWorkshopCloudEnvForBuild()

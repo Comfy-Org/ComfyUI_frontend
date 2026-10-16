@@ -5,16 +5,26 @@ import {
   computed,
   defineAsyncComponent,
   h,
+  inject,
   onScopeDispose,
   shallowRef,
   watch
 } from 'vue'
-import type { FunctionalComponent } from 'vue'
+import type { Component, FunctionalComponent } from 'vue'
 
 import { isWorkflowSlug } from '@/config/models-catalogue'
+import type {
+  WorkshopModel,
+  WorkflowWorkshopModelDetail
+} from '@/config/models-catalogue'
 import { fetchModelsCatalogue } from '@/config/models-catalogue-data'
 import { useWorkshopSession } from '@/config/workshop-session-state'
 import { translationsFor } from '@/i18n/translations'
+import type { Locale } from '@/i18n/translations'
+import type {
+  CatalogListPages,
+  CatalogListFacets
+} from '@/lib/cms/catalog-list'
 import {
   useWorkshopAppsEnabled,
   useWorkshopEnabled,
@@ -23,6 +33,9 @@ import {
 } from '@/scripts/posthog'
 
 import type { CatalogueTab } from './CatalogueTabs.vue'
+import { cccCatalogueComponents } from './ccc-catalogue-components'
+import { skipCatalogueTransition } from './catalogue-transitions'
+import { preserveCatalogueMedia } from './persisted-catalogue-media'
 import WorkshopGate from './WorkshopGate.vue'
 import WorkshopLoading from './WorkshopLoading.vue'
 import {
@@ -30,29 +43,97 @@ import {
   workshopHeadingClass
 } from './workshopHeadingClasses'
 
-const { t } = translationsFor('en')
 const {
   slug,
   workflowId,
   heading,
-  section = 'models'
+  section = 'models',
+  initialModels,
+  initialCatalogAvailable = false,
+  initialHeadings,
+  initialPages,
+  initialFacets,
+  initialSearch,
+  initialWorkflow,
+  locale = 'en'
 } = defineProps<{
   slug?: string
   workflowId?: string
   heading?: string
   section?: CatalogueTab
+  initialModels?: readonly WorkshopModel[]
+  initialCatalogAvailable?: boolean
+  initialHeadings?: Readonly<Record<CatalogueTab, string>>
+  initialPages?: CatalogListPages
+  initialFacets?: CatalogListFacets
+  initialSearch?: string
+  initialWorkflow?: WorkflowWorkshopModelDetail
+  locale?: Locale
 }>()
+const { t } = translationsFor(locale)
+const emit = defineEmits<{
+  search: [search: string, history: 'push' | 'replace']
+}>()
+const hasInitialCatalog = computed(
+  () => !slug && initialCatalogAvailable && initialModels !== undefined
+)
+// CMS detail authority/visibility was already checked by the server. A legacy
+// marketing rollout flag must not replace that record with the Grok showcase.
+const hasInitialWorkflow = computed(() =>
+  Boolean(
+    slug &&
+    initialWorkflow?.slug === slug &&
+    initialWorkflow.workflowId === workflowId
+  )
+)
+const displayedSection = shallowRef(section)
+watch(
+  () => section,
+  (value) => {
+    displayedSection.value = value
+  }
+)
+const displayedHeading = computed(() => {
+  if (displayedSection.value === section) return heading
+  return initialHeadings?.[displayedSection.value] ?? heading
+})
 
 const loadingLabel = t('workshop.load.pending')
 const isWorkflow = computed(() => (slug ? isWorkflowSlug(slug) : false))
 const mounted = useMounted()
+function displaySection(value: CatalogueTab) {
+  displayedSection.value = value
+  if (!hasInitialCatalog.value || !mounted.value) return
+  const type =
+    value === 'models' ? 'model' : value === 'workflows' ? 'workflow' : 'app'
+  document
+    .querySelectorAll<HTMLAnchorElement>('a[data-ccc-create-content]')
+    .forEach((anchor) => {
+      anchor.href = `/admin/content/new?type=${type}`
+    })
+}
 const catalogueRevision = shallowRef(0)
-const catalogueSearch = shallowRef<string>()
+const catalogueSearch = shallowRef(initialSearch)
+watch(
+  () => initialSearch,
+  (search) => {
+    catalogueSearch.value = search
+  }
+)
 useEventListener<DocumentEventMap['astro:before-swap']>(
   () => (mounted.value ? document : undefined),
   'astro:before-swap',
   (event) => {
     if (slug) return
+    if (hasInitialCatalog.value) {
+      const island = document.querySelector<HTMLElement>(
+        'astro-island[data-astro-transition-persist^="ccc-hub-catalogue-"]'
+      )
+      if (island) {
+        skipCatalogueTransition(event, island)
+        preserveCatalogueMedia(event, island)
+      }
+    }
     catalogueSearch.value = event.to.search
     if (event.from.pathname !== event.to.pathname) return
     document.addEventListener(
@@ -67,10 +148,12 @@ const settled = useWorkshopEnabledSettled()
 const workflowsEnabled = useWorkshopWorkflowsEnabled()
 const appsEnabled = useWorkshopAppsEnabled()
 const gateAllows = computed(() => {
+  if (hasInitialWorkflow.value) return undefined
   if (isWorkflow.value || section === 'workflows') return workflowsEnabled.value
   return section === 'apps' ? appsEnabled.value : undefined
 })
 const catalogueView = computed(() => {
+  if (hasInitialCatalog.value) return 'granted'
   if (!mounted.value || (section !== 'models' && !settled.value))
     return 'loading'
   return section === 'models' || (enabled.value && gateAllows.value)
@@ -161,61 +244,107 @@ const LoadError: FunctionalComponent<{ error?: unknown }> = () =>
   )
 LoadError.props = ['error']
 
-function createContent() {
-  return defineAsyncComponent({
-    loader: async () => {
-      if (slug) {
-        const preload = isWorkflowSlug(slug)
-          ? import('./WorkflowPage.vue')
-          : import('./ModelPage.vue')
-        void preload.catch(() => undefined)
-        const { fetchModelsPage } = await import('@/config/models-page-data')
-        const { model, ...page } = await fetchModelsPage(slug)
-        if (model.routerId === undefined) {
-          const { default: WorkflowPage } = await import('./WorkflowPage.vue')
-          return () =>
-            h(WorkflowPage, {
-              model,
-              onRecovery: (active: boolean) => {
-                recoveringWorkflow.value = active
-              }
-            })
-        }
-        const { default: ModelPage } = await import('./ModelPage.vue')
-        return () => h(ModelPage, { page: { ...page, model } })
-      }
-      const forwarding = forwardLegacyLink()
-      const catalogue = Promise.all([
-        import('./ModelsCatalogue.vue'),
-        fetchModelsCatalogue()
-      ])
-      void catalogue.catch(() => undefined)
-      await forwarding
-      const [{ default: ModelsCatalogue }, models] = await catalogue
-      return () =>
-        h(
-          'div',
-          {
-            class: 'max-w-10xl mx-auto px-6 pb-16 max-sm:pb-10 lg:px-8 lg:pb-24'
-          },
-          [
-            h(ModelsCatalogue, {
-              key: `${section}:${catalogueRevision.value}`,
-              initialSearch: catalogueSearch.value,
-              onSection: (open: boolean) => {
-                inSection.value = open
-              },
-              models: models.filter(
-                (model) =>
-                  model.routerId !== undefined ||
-                  model.type === 'APP' ||
-                  workflowsEnabled.value
-              ),
-              section
-            })
-          ]
-        )
+function updateSearch(search: string, history: 'push' | 'replace' = 'replace') {
+  if (!hasInitialCatalog.value || !initialPages) return
+  const params = new URLSearchParams(search)
+  if (inSection.value && !params.has('p')) params.set('p', '1')
+  emit('search', params.toString(), history)
+}
+
+const suppliedComponents = inject(cccCatalogueComponents, undefined)
+
+function renderCatalogue(
+  component: Component,
+  models?: readonly WorkshopModel[]
+) {
+  return h(
+    'div',
+    {
+      class: 'max-w-10xl mx-auto px-6 pb-16 max-sm:pb-10 lg:px-8 lg:pb-24'
     },
+    [
+      h(component, {
+        key: hasInitialCatalog.value
+          ? 'ccc-hub-catalogue'
+          : `${section}:${catalogueRevision.value}`,
+        initialSearch: catalogueSearch.value,
+        pages: initialPages,
+        facets: initialFacets,
+        onSearch: updateSearch,
+        onPage: (search: string) => updateSearch(search, 'push'),
+        onSection: (open: boolean) => {
+          inSection.value = open
+        },
+        models: hasInitialCatalog.value
+          ? (initialModels ?? [])
+          : (models ?? []).filter(
+              (model) =>
+                (model.type ?? 'MODEL') === 'MODEL' ||
+                model.type === 'APP' ||
+                workflowsEnabled.value
+            ),
+        locale,
+        optimisticNavigation: hasInitialCatalog.value,
+        onDisplayedSection: displaySection,
+        section
+      })
+    ]
+  )
+}
+
+async function workflowContent(model: WorkflowWorkshopModelDetail) {
+  const { default: WorkflowPage } = await import('./WorkflowPage.vue')
+  return () =>
+    h(WorkflowPage, {
+      model,
+      onRecovery: (active: boolean) => {
+        recoveringWorkflow.value = active
+      }
+    })
+}
+
+async function loadDetailContent(slug: string) {
+  if (
+    initialWorkflow?.slug === slug &&
+    initialWorkflow.workflowId === workflowId
+  )
+    return workflowContent(initialWorkflow)
+  const preload = isWorkflowSlug(slug)
+    ? import('./WorkflowPage.vue')
+    : import('./ModelPage.vue')
+  void preload.catch(() => undefined)
+  const { fetchModelsPage } = await import('@/config/models-page-data')
+  const { model, ...page } = await fetchModelsPage(slug)
+  if (model.workflowId !== undefined) return workflowContent(model)
+  if (model.routerId === undefined) {
+    const { default: LocalModelPage } = await import('./LocalModelPage.vue')
+    return () => h(LocalModelPage, { model, locale })
+  }
+  const { default: ModelPage } = await import('./ModelPage.vue')
+  return () => h(ModelPage, { page: { ...page, model } })
+}
+async function loadCatalogueContent() {
+  const forwarding = hasInitialCatalog.value
+    ? Promise.resolve()
+    : forwardLegacyLink()
+  const catalogue = Promise.all([
+    import('./ModelsCatalogue.vue'),
+    hasInitialCatalog.value && initialModels !== undefined
+      ? undefined
+      : fetchModelsCatalogue()
+  ])
+  void catalogue.catch(() => undefined)
+  await forwarding
+  const [{ default: ModelsCatalogue }, models] = await catalogue
+  return () => renderCatalogue(ModelsCatalogue, models)
+}
+function createContent() {
+  if (hasInitialCatalog.value && suppliedComponents) {
+    const catalogue = suppliedComponents.catalogue
+    return () => renderCatalogue(catalogue)
+  }
+  return defineAsyncComponent({
+    loader: () => (slug ? loadDetailContent(slug) : loadCatalogueContent()),
     loadingComponent: Loading,
     errorComponent: LoadError,
     onError: (_error, retry, fail, attempts) => {
@@ -227,12 +356,15 @@ function createContent() {
 }
 
 const Content = shallowRef(createContent())
+watch([hasInitialCatalog, () => slug, () => initialWorkflow], () => {
+  Content.value = createContent()
+})
 </script>
 
 <template>
   <template v-if="!slug">
     <div
-      v-if="heading && catalogueView !== 'denied'"
+      v-if="displayedHeading && catalogueView !== 'denied'"
       class="mx-auto max-w-10xl px-6 pt-8 max-sm:pt-5 lg:px-8 lg:pt-12"
     >
       <div
@@ -242,7 +374,7 @@ const Content = shallowRef(createContent())
         <p :class="workshopEyebrowClass">
           {{ t('workshop.catalogue.eyebrow') }}
         </p>
-        <h1 :class="workshopHeadingClass">{{ heading }}</h1>
+        <h1 :class="workshopHeadingClass">{{ displayedHeading }}</h1>
       </div>
     </div>
     <component :is="Content" v-if="catalogueView === 'granted'" />

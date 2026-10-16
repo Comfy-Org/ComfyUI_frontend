@@ -1,6 +1,303 @@
 # @comfyorg/website
 
 Marketing/brand website built with Astro + Vue.
+CMS configuration, dynamic Hub routes, localized CMS routes and the Vercel
+adapter share one production-disabled gate. Setting the catalog address alone
+in production leaves the existing static website and routes selected. Detail
+loading remains bounded to one record; a workflow whose declared inputs do not
+match its schema is rejected as an unreadable detail rather than throwing from
+the schema transform. It cannot prevent other detail requests from rendering.
+The middleware uses the same gate: stale CMS cookies and preview query strings
+cannot trigger catalog authentication, redirects or cache/header mutations on
+production public pages. Preview navigation rejects paths that normalize into
+protocol-relative URLs, and the Draft count uses the locale's plural rules.
+Workflow `runnable` controls the website playground, not code examples. With
+no declared inputs or `runnable:false`, the page uses a standalone graph/media
+and sticky details/download/Cloud sidebar, prose, code and FAQ flow based on
+workflow_templates/site's original TemplateDetailPage. No run composables,
+input form or generated-output panel are mounted. Legacy records with inputs
+and no flag retain their playground. The editor's Runnable checkbox enables
+input editing; disabling it preserves definitions/bindings and exact file pins.
+Code remains independent: infer Python/TypeScript/cURL from the real executable
+graph and current/default input values whenever possible. Optional `script_code`
+language snippets are inert fallback text only when inference is unavailable;
+unsupported/blank languages and empty download-only code sections are omitted.
+No Cloud execution availability or paid validation is implied by stored code.
+The new layout is selected only by CCC detail data; the existing non-CCC
+website consumer stays unchanged until catalog activation/cutover.
+The editor exposes the short name/one-line description, large multi-paragraph
+long description, editable credited-author account ID, optional documentation/Cloud
+share links, counts, Cloud compatibility, output type, model UID references,
+typed output bindings and question/answer rows. New records use schema v2;
+opening an existing v1 record keeps its version and prose limits without
+truncation. Owner/editor bookkeeping remains server-protected. Temporary invalid
+counts or incomplete FAQ/output rows block saves until repaired or removed.
+New content defaults its editable credited author to the freshly verified actor;
+opening an existing record preserves its author rather than reassigning it to
+the editor. The server still fixes Owner and records the actual saving actor.
+Account identities are opaque, case-sensitive canonical Comfy `users.id`
+strings, not resource UUIDs. Author input, current authority, staging author
+filters and private record views accept existing Firebase-style staff IDs and
+UUID-shaped SSO IDs without normalization. Resource/edit/media UID validation
+remains UUID-based. Empty/control-bearing identities fail closed, and ownership
+still compares exact canonical IDs supplied by the verified backend.
+The staff Author picker searches existing public profile names/usernames or an
+exact account ID and displays names/avatars while saving only the canonical
+account ID. Search text alone never changes attribution. Lookup failures retain
+the existing ID, and direct account-ID entry remains available. Its authenticated
+same-origin proxy permits only bounded profile queries and rejects private
+fields/unsafe avatar URLs in responses. No email search or account creation is
+provided; the fixed Owner is not an editable reference.
+The plain Apps/Workflows link-list fallback is now noscript-only; the hydrated
+catalog does not paint a second unstyled list. The collapsed Models directory
+is retained.
+Native CCC workflow pages reuse the workflow graph/details card and the site's
+FAQ accordion. `long_description` renders as escaped multi-paragraph text;
+`faq` renders complete question/answer pairs only. Empty sections and details
+are omitted, while explicit false Cloud compatibility and zero runs/downloads
+remain visible. Model links resolve exact `model_uids` against the selected
+catalog, not filenames or slugs; unresolved models display their UID without a
+guessed link. Public translations must be reviewed; Draft may preview machine
+translations. These optional CCC facts do not alter legacy workflow pages or
+enable the catalog in production.
+Workflow actions use authored `cloud_share_url` (an existing, real Comfy Cloud
+share), optional HTTPS `documentation_url`, and named `workflow_files` resolved
+by the backend into exact protected media URLs. The last available declared
+file is the default; a version selector offers other available files. Declared
+but unavailable files never revive a stale legacy template link. The API tab's
+generated examples still require a real executable API graph plus input bindings;
+writing prose or adding a documentation link does not manufacture that graph.
+Body/FAQ/action metadata is decoded only in the detail view, not list cards.
+The review header reuses Mar's presentational `PageHeader` from PR #20640
+(source `b6eeab96dd33b9c17c6dcf3b079af8492d5fa9b8`). The first integration of
+her newer one-page review layout (`83744da`) uses `AdminDialogContent` and opens
+Final review in a popup. Her bare-page option lets the admin shell provide its
+own navigation without an extra marketing header/footer or redundant floating
+staff-entry controls over the list; active Draft/timewarp controls remain
+available. Ordinary pages retain their existing chrome. The site header also
+uses her Preview-height offset so
+it docks below the authenticated yellow bar instead of scrolling over it.
+The button/sidebar
+palette remains in use; her sandbox publication/authentication transports are
+not merged into the real catalog, nor is the required yellow Preview warning
+replaced by a graphite bar.
+Staff review rows may include a small protected image/video-frame preview and a
+read-only exact-version record link. Media context lists actual extracted
+references and upload provenance, including shared parents; names are not
+inferred from filenames. Missing/stale context is labeled unavailable, never
+treated as approval evidence. The private video proxy accepts a browser's
+initial `Range: bytes=0-` request only after staff verification, does not forward
+it, and returns a freshly authorized complete 200 response. Other ranges,
+HEAD, raw-origin redirects and public video requests remain denied.
+The local CCC review console publishes the checked changes only; the stored
+approval field is unused. Unchecked work stays in Draft, even when it previously
+had an approval. There is no Defer control or all-NEW-items-resolved prerequisite.
+All/New content/Updates tabs and the sticky selection bar follow Mar's newer
+layout. Selection itself makes no request or editorial save.
+Opening Final review posts expected LIVE/Draft/generation and explicit checked
+UIDs. It verifies that the returned candidate contains exactly those immutable
+saves, not additional hidden/filtered items. Publish binds the same UID set and
+candidate digest, uses existing CSRF/idempotency transport, and prevents dismissal
+while a request is unsettled. Cancel does not mutate the catalog.
+Final review and Publish validation errors are distinct from discard failures.
+The authenticated same-origin proxy retains only bounded field paths/messages
+(64 KiB response, at most 100 entries), never arbitrary upstream debug fields.
+The console renders these as escaped text; a validation failure never silently
+adds dependencies, retries a publish or invokes discard.
+The legacy decision component remains only for compatibility; the new console does not use
+it. Remaining editor refinements and the list/history screens are still being
+integrated, with real upload/auth/Preview transport retained instead of mocks.
+The editor also adopts Mar's tag chips: Enter or comma adds a tag, and each chip
+has a localized remove action. Enter adds the chip without submitting the form.
+Tags stay an array throughout editing and saving;
+existing tag text is not split merely by opening the form. Upload/save and
+invalid complete-JSON states block the chip controls with the rest of the form.
+Mar's sticky unsaved-changes bar is also adapted from PR #20640 (83744da).
+It uses the existing real Save/CAS flow; Discard unsaved edits restores the last
+confirmed form snapshot and resets invalid local buffers, without discarding
+server-side Draft records or uploaded Media. Save/upload in progress disables
+that reset. Conflicts retain local edits, and leaving a dirty form warns first.
+The editor now uses the same bare console/sidebar as review, with Mar's
+two-column composition and a separate publishing/activity sidebar. The sticky
+save bar leaves the fixed desktop sidebar and its LIVE link accessible. The
+date/time control explicitly edits UTC, preserving the original offset and
+subsecond value until a schedule is actually changed. Editorial use cases use
+her searchable picker treatment, adapted to the current array-of-strings
+contract; adding a phrase neither invents a shared registry nor changes a
+generation type. Both these controls preserve unrelated JSON and exact file pins.
+
+`Delete content` in the editor is distinct from review-row trash. With explicit
+confirmation and the current edit/Draft tokens it appends a retained tombstone;
+that deletion becomes LIVE only if selected and published. A tombstoned record
+opens read-only and `Undelete content` sends its complete retained authored JSON
+as a normal CAS replacement, omitting server-owned `is_deleted` metadata. Both
+actions retain history and never erase files or publish automatically. Unsaved
+local form edits must be saved or explicitly discarded before deletion. Retry
+keys remain bound to the exact request, and conflicts retain the existing form.
+
+Mar's New/Changed/Scheduled card outlines and badges appear only under the
+verified DRAFT controller. They use exact same-origin Hub paths from the private
+review snapshot, not title matching or guessed identities. Island-loaded cards
+are marked once; returning to LIVE or unmounting removes the annotations. These
+display marks cannot grant page or media access.
+
+The original staff collection facade is website-eligible, not an administrative
+all-records list; `eligible=false` currently does not include disabled/future
+records. The old review/history facade is not a canonical catalog history.
+Consequently All Content/History are not wired to those incomplete sources.
+Their canonical bounded read adapters remain required; no fake history,
+unconditional rollback, or mock authorization is used by the canonical catalog.
+
+PR #20640 is merged as an actual Git parent rather than reconstructed from
+screenshots. The canonical Draft route renders Mar's `DraftQueue`,
+`ListingFilters`, `DraftTable`, `QueueRow`, `ReviewSheet` and
+`FinalReviewDialog`. A controlled adapter supplies the reviewed canonical
+records and selected UIDs; final review, publish and confirmed trash retain
+the existing state/digest/CAS/idempotency contracts. Checking/filtering never
+implicitly approves, defers or saves a record. Protected thumbnail MIME is
+carried into the table without guessing from extensionless Preview URLs.
+Author/tag/server filters remain available in a folded advanced section.
+Drawer dismissal restores keyboard focus to the row.
+
+Mar's old projection-shaped editor is retained as `LegacyContentEditor` with
+separate legacy field adapters, not substituted for the canonical authoring
+controller or its exact media pins. Her isolated sample-data sandbox remains
+behind the explicit non-production `SITE_CATALOG_DEMO` build flag; real catalog
+sessions and uploads never use it. A verified canonical session at `/admin/`
+redirects to the real Draft console. No production consumer is activated.
+
+The legacy `/admin/actions` mutation handler and projection-shaped admin pages
+are sample-data-only: without `SITE_CATALOG_DEMO=1` outside production they
+return 404 before any write. Preview cookie controls remain separate. Real
+publication uses `/admin/catalog-api/publish`, forwarding one checked selection
+and the same idempotency key to the catalog transaction; it never follows that
+write with legacy Hub approvals. A backend 409 remains a conflict, not success.
+This isolates the old multi-command design flow rather than attempting a
+non-atomic retry across the legacy Hub and catalog stores.
+
+`scripts/check-mar-admin.ts` mounts the actual merged components with labeled
+local visual fixtures. It checks desktop/mobile English and Chinese layouts,
+checkboxes, the right-hand drawer and Escape/focus restoration while refusing
+all backend mutations. This is separate from authenticated runtime evidence.
+
+Row trash and `Delete Changes` discard Draft edits only, with an exact
+scope confirmation; they do not delete LIVE content or immutable history.
+`Add Content` is beside the selection actions. A temporary local Publish control
+is available only when the backend explicitly enables it in Final review. It
+advances LIVE, rebuilds its projection and opens a new DRAFT; it does not enable
+production publishing or certify the remaining media/evidence acceptance gates.
+
+`scripts/check-catalog-review-ui.ts` checks the real local/ngrok console on
+desktop/mobile using an explicitly supplied fixture credential file. It creates
+and revokes only its own invitation and makes no catalog content mutations.
+No demo credentials, invitations or local media belong in Git.
+Local tester codes are reusable until their existing expiry, with fresh backend
+permission checks and immediate invitation revocation. Repeated sign-in retains
+older active sessions; no production authentication policy changes.
+The Mac development loop uses Astro's Vite server and a private loopback SSH
+forward to the existing demo backend. Only an explicit non-production,
+invitation-configured, loopback-backend demo allows a 16 MiB staging snapshot
+and a 60-second Publish response wait; ordinary/production budgets remain
+8 MiB and 15 seconds. Compact review receipts retain their separate 16 KiB cap,
+and backend transaction/statement/lock deadlines are unchanged. These are
+temporary demo compatibility limits, not substitutes for bounded list queries.
+The independent Linux demo allows an explicit expiry up to thirty days, bounded
+by its local fixture publisher credential. Unspecified expiry still defaults to
+one hour. Invitation labels use shared fixture attribution, not real Comfy
+accounts. This local policy does not extend production tokens or permissions.
+
+Verified CCC editors see `Add Content` on Models, Apps and Workflows lists,
+preselecting that content type, and `Edit` on their content detail pages. Edit
+uses the exact catalog resource UID, never a guessed slug or execution ID, and
+opens the existing Draft without creating a save. Both HTML and island JSON
+reads prefer the freshly verified CCC authoring session, so Draft/timewarp
+selection remains consistent. Anonymous or non-editing visitors see no authoring
+links; the editor API separately rechecks authorization on every operation.
+
+## CCC review discovery
+
+Catalog models without `router_model_id` remain read-only model pages, not
+synthetic Router endpoints or workflows. Their cards stay in the Models tab;
+detail pages show media, descriptions and FAQ without Run or API-key controls.
+Model grouping uses recognized `use_cases` values; workflow generation grouping
+uses `generation_type`. Explicit CMS classification takes precedence over legacy
+`compatibility.website` presentation. Unknown solution IDs are not promoted to
+execution capabilities or silently turned into Router IDs.
+
+Catalog search, filters and Previous/Next update only the mounted results and
+facets. The same-origin `/models/catalogue.json?format=page&section=workflows`
+representation returns the bounded 24-card page envelope (legacy array output
+is unchanged without `format=page`). The client caps it at 512 KiB, validates
+cards/page/facets and cancels superseded requests. Failed reads show an error
+and retry instead of presenting retained cards as current. Returning to a retained list after
+detail navigation, focus, visibility restoration or BFCache instead revalidates
+one bounded page and hides old cards until success; refusal shows retry, not
+stale content. The same events refresh an idle detail without replaying a run.
+Active runs are not replaced by automatic refresh. No HTML navigation or
+complete catalog fetch occurs.
+Search replaces the address query; pagination pushes a history entry, and
+same-section Back/Forward restores results in place. Browse-all mode, search
+focus and newer in-flight typing survive responses. Exact backend cursor,
+eligibility, owner and fresh Preview authorization checks remain unchanged.
+
+In non-production CMS mode the complete middleware response chain, including
+early auth errors and redirects, explicitly sets browser/private no-store and
+all three provider CDN no-store directives. Mutable Hub HTML/JSON, localized
+discovery outputs, admin routes and protected media cannot acquire an edge TTL.
+Static hashed assets remain excluded. Without a catalog URL, or in Vercel
+production, this new wrapper leaves existing response policy unchanged. This
+does not activate CMS production serving or change existing router cache rules.
+Publish and forward Revert must both select a new increasing Live authority;
+cache TTL/purge delay cannot be their freshness mechanism. See
+[the cache decision](../../docs/adr/WEBSITE-CACHE-0044-catalog-publication-freshness.md).
+
+Workflow info cards use backend-resolved Comfy account display names and public
+profile avatars, bound to the credited author UID. Unknown/synthetic demo authors
+show an unavailable label and standard avatar icon; no guessed name/photo/email.
+Runs-on relationships keep their canonical UIDs internally while showing eligible
+localized model titles, with a localized unavailable label for unresolved models.
+
+Workflow editors expose element 0 of `workflow_versions`: named `download` graph
+JSON and `api` execution JSON, separately uploaded and exactly pinned in Media.
+The initial name is V1; later stored pairs are preserved but ignored by the site.
+Workflow code sections offer `Download API JSON` for that first pair's exact API
+media file, separate from the graph JSON download. The protected link is omitted
+when no eligible API file is resolved. Generated snippets already embed their API
+graph and remain self-contained; the existing generated-graph download remains
+available for legacy workflows without a stored API-file link.
+API files are at most 1 MiB and shape-validated by the backend, not executed on Save.
+Graph preview/download never becomes an API execution fallback. Historical
+`workflow_files` remains readable until ordinary versioned Draft conversion.
+
+CCC editor uploads accept PNG/JPEG/WebP, MP4/WebM and workflow JSON, up to 64 MiB
+per file (the proxy allows 65 MiB for multipart overhead). Video bytes are verified
+by the backend's ffprobe runtime; the browser never supplies trusted hashes/MIME.
+Upload/replace remain authenticated, exact-pin, private Draft operations. The
+server-resolved website media MIME selects video hero/thumbnail and example
+rendering, including extensionless private URLs. Workflow examples are drawn by
+the model page's gallery (`ExamplesTab`); a workflow page passes it only an image
+hero or the hero's still poster as the video examples' poster, never the hero
+video itself. Without a still, the example loads its own first frame. On a
+workflow page each video example has its own Play/Pause control beside the card
+that selects the example inputs, so watching the clip does not change inputs or
+run a workflow.
+Unsupported codecs, unavailable verifier and configured lower limits still fail
+closed; this local demo change does not activate any production media service.
+
+With `SITE_CATALOG_API_URL` configured in a non-production review environment,
+`/api/v1/catalog/agents`, `/api/v1/catalog/openapi.json` and
+`/api/v1/catalog/docs` proxy the deployed catalog's editing instructions,
+OpenAPI and self-contained read-only viewer unchanged. Temporary `/agents` and
+`/openapi.json` aliases use scoped upstream paths. The backend owns their contract version, environment and
+type schemas; this website does not generate a second authoring contract. No
+staff credentials or Preview cookies are forwarded to these public documentation
+requests. Unavailable/mismatched upstream documentation returns 503, not stale
+instructions. These routes do not grant edit access.
+
+The existing `/agent/` Comfy Agent product page remains unchanged. Dedicated
+database authoring, delegated credentials and full website lifecycle integration
+are still being accepted separately; documentation availability is not a claim
+that the entire CCC deliverable is ready.
 
 ## Linting
 
@@ -677,3 +974,210 @@ route, navigation entry, or launch date is enabled by this draft.
 `/solutions/vfx/` and `/zh-CN/solutions/vfx/` render the latest V2 design. This change publishes no agency-led or other vertical campaign routes. V1 remains saved on `codex/vfx-landing`.
 
 Contact links preserve incoming UTMs and record `website:vfx_link_clicked`. Link-click tracking does not establish form-submission tracking.
+
+### CCC demo initial catalogue rendering
+
+When the local CCC reader is enabled, the Hub listing routes pass the successful,
+server-selected catalogue and locale to `ModelsPage`. The grid renders in the
+initial HTML and hydration reuses that exact selection instead of fetching
+`/models/catalogue.json` again. An empty selected catalogue stays empty; failed
+CCC reads return the existing unavailable response. Draft/timewarp eligibility
+and staff authorization are still decided by the server. Non-CCC routes retain
+their existing client loading and feature gates.
+
+For successful CCC snapshots, Hub tabs give immediate feedback from the catalogue
+already delivered to the browser while their normal Astro link navigation fetches
+the authoritative next page. The CCC-only wrapper imports all three views before
+hydration and renders the selected catalogue synchronously, so the first click
+does not wait for a lazy view import. No private HTML or new catalog data is prefetched. The displayed heading and
+existing authorized Add action follow the selected type. Modifier clicks retain
+normal browser behavior, the incoming page replaces the snapshot, and a stalled
+navigation restores the original display after five seconds. Non-CCC routes and
+existing feature gates keep their previous behavior.
+
+CCC list islands persist within the same locale while accepting fresh server
+props; they never use persisted props. The swap adapter restores Vue-owned
+video/audio nodes after Astro reifies media, preserving playback/visibility
+observers. It only restores media when the incoming document matches that CCC
+island; a different locale or removed island cannot retain old nodes.
+
+CCC Chinese tab links retain their locale prefix. After a persisted CCC page
+swap, the mobile filter sheet closes and recreates its Teleport target against
+the new body; selected filters remain intact. Legacy route links and portal
+behavior retain their previous defaults.
+
+The selected CCC array retains its identity during navigation preparation;
+search-prop updates cannot discard the pending tab intent. The existing post-swap
+media workaround skips Vue-owned CCC video/audio after the swap adapter restores
+them, while continuing to reify legacy media and iframes.
+
+CCC Hub lists send at most 24 card summaries per tab (72 across all three
+prefetched tabs). The active tab's filters and sort are applied before its page
+is selected, with global counts/facets supplied separately. Native Previous/Next
+links retain locale and search parameters. Unknown document fields, examples,
+workflow definitions and input schemas are omitted from list props. Detail routes
+load their selected record; CCC related cards are capped at four and app links at 24. Upstream currently supplies the complete selected projection server-to-server;
+this change bounds browser results, not database query work.
+
+Before the CCC catalogue hydrates, tab links opt out of Astro navigation and
+follow native navigation so an unhydrated persisted island cannot display the old
+section at a new URL. After hydration the normal immediate tab intent and
+persisted navigation resume. CCC mobile search, like filters, recreates its portal
+target after page body swaps.
+
+### CCC Draft table rendering bound
+
+The Draft table mounts at most 50 change rows at once. Previous/Next controls
+use normal page flow, without an inner scrolling list. Picks survive page
+navigation. The header checkbox still selects the complete matching set, not
+just the current page; when paged, its label names that scope and count.
+Review and Publish continue to bind the exact selected UIDs and frozen state.
+This bounds mounted rows and their media elements, not the upstream staging
+payload or database query cost. It does not reconcile duplicate source records,
+recover unavailable graph bytes, change Draft/LIVE, or publish any content.
+
+### CCC Preview presentation
+
+The authenticated catalog Preview bar follows Mar's graphite admin chrome:
+blue Draft state and page outline, green Live-timewarp state, segmented Draft/Live
+controls, language popover and shared admin button styling. Normal Live without
+a time override still has no Preview banner. NOW, EXIT, locale and view changes
+continue through the verified catalog Preview controller; this does not enable
+Mar's demo session or legacy form transport. Admin sidebars only link routes
+supported by the verified caller, not unavailable legacy review pages.
+
+Staff palette tokens and utilities live in `src/styles/catalog-staff.css`,
+not the public stylesheet. BaseLayout emits its versioned stylesheet link only
+for a verified catalog or legacy staff session. Keeping the stylesheet at the
+document level preserves body-portaled popovers and dialogs. Its palette resolves
+the shared design-system colors at build time; it does not override the public
+theme. The CSS asset is not an authorization boundary. `catalog-styles.test.ts`
+compiles the actual production stylesheets and checks this separation.
+
+The global layout does not load the catalog, staging snapshot or field diffs
+for the Preview bar. Its controls use the freshly verified session's view,
+clock and locale. Without explicitly supplied change data, Changes opens the
+review page on demand and no fabricated zero count or empty drawer is shown.
+The date picker still accepts arbitrary UTC time without querying content.
+Page-specific Draft card markers and scheduled content must be supplied by
+bounded page readers, not a global full-staging request; that adapter is separate.
+
+### CCC still-thumbnail consumption and batch filter
+
+CCC presentation consumes the server-resolved `website_media['$.static_thumb']`
+only when its verified MIME is `image/webp`. It adds the distinct card-only
+`thumbnail.staticUrl` and video `poster`; the full-page original URL remains
+separate. Hub cards and search suggestions use the still without swapping to
+or fetching the original. Legacy non-CCC cards retain their existing behavior.
+Publish rows render images or a placeholder, never mount a full video to seek
+its first frame. The runtime review adapter must supply a still-image preview
+from the exact thumbnail reference; this UI does not generate derivative URLs.
+
+The content editor includes an optional Change ID text field for every content
+type. It saves `change_id` in authored JSON, preserves existing values and removes
+the key when cleared. Invalid labels block Save until repaired; the same validator
+is used by the publish filter. Labels such as `workflows_1016` group related
+changes without changing resource identity or granting publication permission.
+
+The publish table's main search also matches string-valued `change_id` labels
+on canonical rows. This narrows the currently loaded review rows without issuing
+an authoring request; the explicit Change ID filter still binds the reviewed
+server selection. Neither search automatically selects or publishes a batch.
+
+The checked-review filter accepts an exact case-sensitive `change_id` batch
+label: 1–128 ASCII letters/digits/dot/underscore/hyphen, starting with a letter
+or digit. It survives query/confirmation scopes; refreshing filters clears old
+checkbox selections. This is an additive local narrowing over the current
+generated staging query pending runtime OpenAPI/SDK reconciliation. The demo
+backend must explicitly accept/validate the parameter before that filter can
+work; unknown or unsupported filters fail instead of silently broadening a
+publish. Batch fields are validated separately from the unmodified generated
+query schema, avoiding constructor mixing between legacy generated Zod v3 and
+current Astro Zod v4. The admin staging read still needs its own bounded
+transport; the Hub card reader below does not change publication selection.
+
+CCC paginated Hub URLs restore Browse All on first render and when Astro reuses
+the catalogue island. The page number, search and repeated filters survive
+returning from a detail page; returning to the unpaginated root restores category
+browsing. This applies only to catalogues with server pagination, leaving legacy
+static category pages unchanged.
+
+Previous/Next links opt out of Astro's speculative prefetch. These dynamic,
+private no-store pages must be read on navigation, not requested once on hover
+and again on click. Ben's October 15 navigation trace showed overlapping
+prefetch/navigation requests for pages 8 and 9. This avoids that duplicate work;
+it does not by itself make an upstream read bounded.
+
+Checked Final review uses the additive authenticated
+`POST /api/v1/catalog/draft/final-review/receipt` through the CSRF-protected
+same-origin `review-receipt` facade. That exact facade path uses the existing
+fresh authoring-session middleware; no wildcard route or legacy-session fallback
+is introduced. Publisher capability and CSRF remain checked by the facade and
+the backend. The generated versioned receipt contains
+state, selected/unchecked counts and digests, never documents or graph data.
+The browser verifies its selected UID/exact-version SHA256 against the frozen
+already loaded snapshot before opening confirmation. It fails closed on stale,
+unsupported, malformed or oversized receipts; it never falls back to a full
+review fetch. Success bytes are streamed with a 16 KiB cap, error diagnostics
+retain their separate 64 KiB cap. The old full-review API remains compatible.
+Final review renders at most 50 rows per page; its total and publication request
+still cover the complete exact checked set. Publish retains its original digest,
+fresh permissions, state checks, dependency validation and durable retry key.
+This does not remove the separate initial full Staging snapshot or activate any
+production route or content.
+
+The CCC Hub list reader uses `/api/v1/catalog/cards`, or the freshly authorized
+`/admin/api/site/catalog/cards` for staff. It requests only the active content
+kind, at most 24 cards, with bounded facet and available-kind metadata. It never
+loads the other tabs' cards to discover whether their tabs should be shown.
+Search, sort and repeated filters run on the server; the browser preserves the
+returned ranking instead of repeating substring filtering on model IDs. Public
+responses omit totals, generations and facet counts; the UI does not invent
+them from one page. Staff-only response metadata is refused on anonymous reads.
+
+Previous/Next links carry the returned signed cursors and preserve filters.
+Changing filters removes the old cursor. An old `p>1` link without a cursor
+explicitly restarts on the first page; a stale/expired cursor permits one bounded
+first-page retry with a visible reset notice. It never walks earlier pages to
+simulate an offset. The response stream is capped at 256 KiB before JSON parsing,
+validated against the generated card schema, then stripped to card presentation
+fields. Invalid/unavailable responses fail closed, without a whole-catalog
+fallback or shared staff-data cache. The existing production activation guard
+is unchanged. Backend deployment and real navigation latency must be verified
+separately; passing adapter tests is not a performance completion claim.
+
+Card types are generated with the standard Cloud `openapi-project -fe` and this
+package's `pnpm generate`, not copied into website source. The input preserves
+the existing frontend Cloud pin `f6bbc48` plus the already-present agent contract
+from `f742878aab`, merged with runtime CCC contract `cc37923b7a` and the bounded
+cards contract (SHA-256 `48e920f5bd371bb7f31f57d55cb38f20c01eabec7ee80054232ceda98e4830d4`).
+Internal/admin operations remain excluded by the standard projection.
+
+Workflow category menus show a localized Uncategorized label for missing or
+empty category IDs; blank translated labels fall back to the existing category
+ID. Missing and empty IDs form one group. Selecting that group preserves the
+explicit `category=` query through navigation and filters only uncategorized
+workflows; omitting the parameter still means all categories. Authored category
+values are not rewritten or assigned a synthetic taxonomy ID.
+
+CCC model/workflow cards open the actual detail component in place, updating the
+URL immediately and supplying only the already displayed card presentation.
+The detail component owns its authenticated, bounded `page.json` request. The
+same title/summary remain mounted as details arrive; graphs and media load in
+their own sections. The primary JSON read does not fetch related-card lists;
+models load their optional related shelf near the viewport independently.
+No temporary replacement document or speculative full-detail
+prefetch is used. Modified clicks retain ordinary links. Back restores the
+mounted list, query and scroll without fetching it again; Forward reloads detail
+authority. Pending reads abort on navigation and stale replies cannot repaint
+another route. Preview commands use the current browser URL, not an old island
+prop. These retained browser DOM/card values are not a Redis or cross-user cache.
+
+Direct CCC model/workflow links serve the destination component without awaiting
+the CMS record. Its JSON request uses the canonical path, checks current
+visibility/Preview authority, validates the response schema and route identity,
+and rejects payloads over 4 MiB. Missing/unavailable records show an in-page error;
+the JSON endpoint retains the corresponding error status. CCC demo HTML remains
+noindex; this client-loaded demo is not a production SEO cutover. Existing
+non-CMS production pages keep their server-rendered metadata and behavior. The
+current scope is model/workflow detail pages, not the app studio.

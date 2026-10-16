@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Check, X } from '@lucide/vue'
+import { X } from '@lucide/vue'
 import { useMediaQuery, useWindowSize } from '@vueuse/core'
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 import { computed, ref, useId, watch } from 'vue'
@@ -7,6 +7,7 @@ import { computed, ref, useId, watch } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { SheetRest } from '@/composables/useBottomSheet'
+import FacetOptions from './FacetOptions.vue'
 import { heightAt, restAt } from '@/composables/useBottomSheet'
 import { prefersReducedMotion } from '@/composables/useReducedMotion'
 import { useVisualViewport } from '@/composables/useVisualViewport'
@@ -14,7 +15,7 @@ import { useVisualViewport } from '@/composables/useVisualViewport'
 interface FacetSheetOption {
   readonly value: string
   readonly label: string
-  readonly count: number
+  readonly count?: number
 }
 
 export interface FacetSheetGroup {
@@ -31,6 +32,7 @@ interface FacetSheetLabels {
   readonly applied: (count: number) => string
   readonly clearAll: string
   readonly show: (count: number) => string
+  readonly showAll?: string
   readonly close: string
   readonly resize: string
 }
@@ -42,7 +44,7 @@ const { groups, labels, resultCount } = defineProps<{
   groups: readonly FacetSheetGroup[]
   labels: FacetSheetLabels
   /** What the catalogue holds under the current choices, for the way out. */
-  resultCount: number
+  resultCount?: number
 }>()
 
 const emit = defineEmits<{
@@ -263,48 +265,12 @@ function visibleOptions(group: FacetSheetGroup) {
         <!-- On a phone the list takes whatever the sheet's own height leaves,
           so switching tab does not resize it under the thumb. On a pointer the
           popover hugs its list instead of standing half empty. -->
-        <ul
-          class="scrollbar-thin overflow-y-auto py-1 max-sm:min-h-0 max-sm:flex-1 sm:max-h-72 sm:min-h-32"
-          :aria-label="group.label"
-        >
-          <li v-for="option in visibleOptions(group)" :key="option.value">
-            <button
-              type="button"
-              :aria-pressed="group.selected.includes(option.value)"
-              :data-testid="`filter-${group.key}-${option.value}`"
-              class="flex w-full cursor-pointer items-center gap-2.5 px-3 py-2 text-left text-xs text-content-secondary transition-colors outline-none hover:bg-white/5 hover:text-content focus-visible:bg-white/5 max-sm:py-2.5 max-sm:text-sm"
-              @click="emit('toggle', group.key, option.value)"
-            >
-              <span
-                :class="
-                  cn(
-                    'flex size-4 shrink-0 items-center justify-center rounded-sm border transition-colors',
-                    group.selected.includes(option.value)
-                      ? 'border-brand bg-brand text-page'
-                      : 'border-white/25'
-                  )
-                "
-                aria-hidden="true"
-              >
-                <Check
-                  v-if="group.selected.includes(option.value)"
-                  class="size-3"
-                  :stroke-width="3"
-                />
-              </span>
-              <span class="flex-1 truncate">{{ option.label }}</span>
-              <span class="shrink-0 text-content/30 tabular-nums">
-                {{ option.count }}
-              </span>
-            </button>
-          </li>
-          <li
-            v-if="!visibleOptions(group).length"
-            class="px-3 py-2 text-xs text-content-muted max-sm:py-10 max-sm:text-center max-sm:text-sm"
-          >
-            {{ labels.noMatches }}
-          </li>
-        </ul>
+        <FacetOptions
+          :group
+          :options="visibleOptions(group)"
+          :no-matches="labels.noMatches"
+          @toggle="(key, value) => emit('toggle', key, value)"
+        />
       </TabsContent>
     </TabsRoot>
 
@@ -347,9 +313,15 @@ function visibleOptions(group: FacetSheetGroup) {
         type="button"
         class="h-11 flex-1 cursor-pointer rounded-2xl bg-primary-comfy-yellow text-sm font-bold text-primary-comfy-ink hover:bg-primary-comfy-yellow/90"
         data-testid="workshop-filter-show"
-        @click="resultCount > 0 ? emit('close') : emit('clearAll')"
+        @click="resultCount === 0 ? emit('clearAll') : emit('close')"
       >
-        {{ resultCount > 0 ? labels.show(resultCount) : labels.clearAll }}
+        {{
+          resultCount === undefined
+            ? (labels.showAll ?? labels.title)
+            : resultCount > 0
+              ? labels.show(resultCount)
+              : labels.clearAll
+        }}
       </button>
     </div>
   </div>

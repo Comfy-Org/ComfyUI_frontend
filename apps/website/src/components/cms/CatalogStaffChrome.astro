@@ -1,0 +1,23 @@
+---
+import PreviewBanner from '@/components/cms/PreviewBanner.astro'
+import CatalogPreviewController from '@/components/cms/preview/CatalogPreviewController.vue'
+import StaffTools from '@/components/cms/StaffTools.astro'
+interface Props {
+  bare: boolean
+}
+const { bare } = Astro.props
+---
+
+{Astro.locals.catalogAuthoring ? (
+  <CatalogPreviewController
+    csrf={Astro.locals.catalogAuthoring.csrf}
+    view={Astro.locals.catalogAuthoring.preview?.view ?? 'LIVE'}
+    now={Astro.locals.catalogAuthoring.preview?.now}
+    locale={Astro.locals.catalogLocale ?? 'en'}
+    currentPath={Astro.url.pathname + Astro.url.search}
+    showEntry={!bare}
+    client:load
+  />
+) : (
+  <><PreviewBanner /><StaffTools /></>
+)}

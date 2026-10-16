@@ -2634,6 +2634,42 @@ export const zCreateHubProfileRequest = z.object({
   workspace_id: z.string()
 })
 
+export const zContentCatalogRecord = z.object({
+  data: z.record(z.string(), z.unknown()),
+  deleted: z.boolean(),
+  edit_version: z.string(),
+  enabled: z.boolean(),
+  kind: z.enum(['MODEL', 'WORKFLOW', 'APP']),
+  revision: z.coerce
+    .bigint()
+    .gte(BigInt(1))
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  slug: z.string(),
+  uid: z.string(),
+  visibility: z.enum(['PUBLIC', 'STAFF']),
+  visible_from: z.iso.datetime().optional()
+})
+
+export const zContentCatalogProjection = z.object({
+  generation: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  items: z.array(zContentCatalogRecord),
+  revision_id: z.coerce
+    .bigint()
+    .gte(BigInt(1))
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+})
+
 /**
  * Credentials the Churnkey embed requires to launch the cancel flow.
  * `auth_hash` is hex-encoded HMAC-SHA256 of `customer_id` signed with the
@@ -2669,6 +2705,106 @@ export const zCancelSubscriptionRequest = z.object({
 export const zCancelSubscriptionAcceptedResponse = z.object({
   billing_op_id: z.string(),
   status: z.enum(['pending'])
+})
+
+export const zCccWebsiteCardFacet = z.object({
+  count: z.int().gte(0).optional(),
+  label: z.string(),
+  value: z.string()
+})
+
+export const zCccWebsiteCardFacets = z.object({
+  categories: z.array(zCccWebsiteCardFacet).max(100),
+  models: z.array(zCccWebsiteCardFacet).max(100),
+  use_cases: z.array(zCccWebsiteCardFacet).max(100)
+})
+
+export const zCccWebsiteCardsPage = z.object({
+  available_kinds: z.array(z.enum(['MODEL', 'WORKFLOW', 'APP'])).max(3),
+  facets: zCccWebsiteCardFacets,
+  generation: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  has_more: z.boolean(),
+  items: z.array(zContentCatalogRecord).max(24),
+  next_cursor: z.string().max(4096).optional(),
+  page_size: z.int().gte(1).lte(24),
+  previous_cursor: z.string().max(4096).optional(),
+  revision_id: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  sort_orders: z
+    .array(z.enum(['popular', 'name', 'priceAsc', 'priceDesc']))
+    .max(4),
+  total: z.int().gte(0).optional()
+})
+
+/**
+ * Flat type-versioned CCC JSON. Domain schemas constrain authored fields; server metadata and expected concurrency tokens are explicit and never caller-owned persistence fields.
+ */
+export const zCccjson = z.record(z.string(), z.unknown())
+
+export const zCccCatalogState = z.object({
+  draft_generation: z.coerce
+    .bigint()
+    .gte(BigInt(0))
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  draft_rev: z.coerce
+    .bigint()
+    .gte(BigInt(1))
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  live_rev: z.coerce
+    .bigint()
+    .gte(BigInt(1))
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  next_rev: z.coerce
+    .bigint()
+    .gte(BigInt(1))
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  previous_live_rev: z.coerce
+    .bigint()
+    .gte(BigInt(1))
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .nullable()
+})
+
+export const zCccCheckedReviewReceipt = z.object({
+  publish_enabled: z.boolean(),
+  receipt_version: z.literal(1),
+  selected_count: z.int().gte(1).lte(5000),
+  selected_versions_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  selection_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  state: zCccCatalogState,
+  unchecked_count: z.int().gte(0).lte(5000)
+})
+
+export const zCccAuthoringContext = z.object({
+  actor_uid: z.string().min(1),
+  can_apply: z.boolean(),
+  can_edit: z.boolean(),
+  owner_uid: z.string().min(1),
+  state: zCccCatalogState
 })
 
 /**
@@ -3835,6 +3971,16 @@ export const zGetCustomNodeProxyPath = z.object({
 export const zPostCustomNodeProxyPath = z.object({
   path: z.string()
 })
+
+/**
+ * Editing instructions from this deployed API build
+ */
+export const zGetCccAgentInstructionsResponse = z.string()
+
+/**
+ * Editing instructions from this deployed API build
+ */
+export const zGetCccAgentsInstructionsResponse = z.string()
 
 export const zAgentGetDraftQuery = z.object({
   workflow_id: z.string()
@@ -5197,6 +5343,463 @@ export const zGetUsersInfoResponse = z.object({
   storage: z.string()
 })
 
+/**
+ * Editing instructions from this deployed catalog API build
+ */
+export const zGetCatalogAgentInstructionsResponse = z.string()
+
+/**
+ * Current verified authoring context; private no-store
+ */
+export const zGetCccAuthoringContextResponse = zCccAuthoringContext
+
+export const zListCccWebsiteCardsQuery = z.object({
+  kind: z.enum(['MODEL', 'WORKFLOW', 'APP']),
+  limit: z.int().gte(1).lte(24).optional().default(24),
+  cursor: z.string().max(4096).optional(),
+  locale: z.enum(['en', 'zh-CN']).optional().default('en'),
+  q: z.string().max(300).optional(),
+  sort: z
+    .enum(['popular', 'name', 'priceAsc', 'priceDesc'])
+    .optional()
+    .default('popular'),
+  category: z.array(z.string().max(200)).max(30).optional(),
+  model: z.array(z.string().max(200)).max(30).optional(),
+  use: z.array(z.string().max(200)).max(30).optional(),
+  modality: z.array(z.string().max(200)).max(30).optional(),
+  provider: z.array(z.string().max(200)).max(30).optional(),
+  capability: z.array(z.string().max(200)).max(30).optional()
+})
+
+/**
+ * At most 24 card summaries; no graphs, inputs, examples or long bodies. Anonymous responses omit total, generation and facet counts. Cursors are audience, filter, clock and state bound and expire after five minutes.
+ */
+export const zListCccWebsiteCardsResponse = zCccWebsiteCardsPage
+
+/**
+ * Build-coupled catalog instructions, permissions and endpoint contracts
+ */
+export const zGetCatalogDocsResponse = z.string()
+
+export const zArchiveCccDraftBody = z.object({
+  expected_draft_generation: z.coerce
+    .bigint()
+    .gte(BigInt(0))
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  expected_draft_rev: z.coerce
+    .bigint()
+    .gte(BigInt(1))
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+})
+
+export const zArchiveCccDraftHeaders = z.object({
+  'Idempotency-Key': z.string().min(1).max(200)
+})
+
+/**
+ * Archived revision and fresh Draft/state
+ */
+export const zArchiveCccDraftResponse = zCccjson
+
+export const zBatchCccItemsBody = z.object({
+  expected_draft_rev: z.coerce
+    .bigint()
+    .gte(BigInt(1))
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  items: z.array(zCccjson).min(1).max(100)
+})
+
+export const zBatchCccItemsHeaders = z.object({
+  'Idempotency-Key': z.string().min(1).max(200)
+})
+
+/**
+ * Flat immutable edits in request order; retry returns identical UIDs/tokens
+ */
+export const zBatchCccItemsResponse = z.array(zCccjson)
+
+export const zDiscardCccChangesBody = zCccjson
+
+export const zDiscardCccChangesHeaders = z.object({
+  'Idempotency-Key': z.string().min(1).max(200)
+})
+
+/**
+ * Updated complete unfiltered private staging snapshot and global unresolved_count
+ */
+export const zDiscardCccChangesResponse = zCccjson
+
+/**
+ * Private exact approved changes, deferred work, state and selection digest
+ */
+export const zGetCccFinalReviewResponse = zCccjson
+
+export const zReviewCccCheckedPublicationBody = zCccjson
+
+/**
+ * Exact checked changes and unchecked private work with state and selection digest
+ */
+export const zReviewCccCheckedPublicationResponse = zCccjson
+
+export const zReviewCccCheckedReceiptBody = zCccjson
+
+/**
+ * Exact checked-version receipt after complete candidate validation
+ */
+export const zReviewCccCheckedReceiptResponse = zCccCheckedReviewReceipt
+
+export const zCreateCccItemBody = zCccjson
+
+export const zCreateCccItemHeaders = z.object({
+  'Idempotency-Key': z.string().min(1).max(200)
+})
+
+/**
+ * Flat immutable Content edit with exact concurrency tokens
+ */
+export const zCreateCccItemResponse = zCccjson
+
+export const zDeleteCccItemBody = z.object({
+  expected_draft_rev: z.coerce
+    .bigint()
+    .gte(BigInt(1))
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  expected_revision_uid: z.uuid()
+})
+
+export const zDeleteCccItemHeaders = z.object({
+  'Idempotency-Key': z.string().min(1).max(200)
+})
+
+export const zDeleteCccItemPath = z.object({
+  uid: z.uuid()
+})
+
+/**
+ * Flat retained Content with is_deleted=true and new exact edit token
+ */
+export const zDeleteCccItemResponse = zCccjson
+
+export const zGetCccDraftItemPath = z.object({
+  uid: z.uuid()
+})
+
+/**
+ * Current complete authored JSON with exact working-save tokens and read-only metadata
+ */
+export const zGetCccDraftItemResponse = zCccjson
+
+export const zReplaceCccItemBody = zCccjson
+
+export const zReplaceCccItemHeaders = z.object({
+  'Idempotency-Key': z.string().min(1).max(200)
+})
+
+export const zReplaceCccItemPath = z.object({
+  uid: z.uuid()
+})
+
+/**
+ * New immutable edit; owner stays fixed, author attribution is versioned and saved_by_uid records the actual editor
+ */
+export const zReplaceCccItemResponse = zCccjson
+
+export const zRestoreCccItemVersionBody = z.object({
+  expected_draft_rev: z.coerce
+    .bigint()
+    .gte(BigInt(1))
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  expected_revision_uid: z.uuid(),
+  source_revision_uid: z.uuid()
+})
+
+export const zRestoreCccItemVersionHeaders = z.object({
+  'Idempotency-Key': z.string().min(1).max(200)
+})
+
+export const zRestoreCccItemVersionPath = z.object({
+  uid: z.uuid()
+})
+
+/**
+ * New immutable forward Draft save and exact concurrency tokens
+ */
+export const zRestoreCccItemVersionResponse = zCccjson
+
+export const zRestoreCccLiveItemBody = z.object({
+  expected_draft_rev: z.coerce
+    .bigint()
+    .gte(BigInt(1))
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  expected_revision_uid: z.uuid()
+})
+
+export const zRestoreCccLiveItemHeaders = z.object({
+  'Idempotency-Key': z.string().min(1).max(200)
+})
+
+export const zRestoreCccLiveItemPath = z.object({
+  uid: z.uuid()
+})
+
+/**
+ * Flat new immutable Draft save, original owner/author and updated edit tokens
+ */
+export const zRestoreCccLiveItemResponse = zCccjson
+
+export const zUploadCccMediaBody = z.object({
+  change_id: z
+    .string()
+    .min(1)
+    .max(128)
+    .regex(/^[A-Za-z0-9][A-Za-z0-9._-]*$/)
+    .optional(),
+  expected_draft_rev: z.int().gte(1),
+  file: z.string(),
+  name: z.string().min(1).max(500),
+  originating_entity_uid: z.uuid(),
+  role: z.string().min(1).max(500)
+})
+
+export const zUploadCccMediaHeaders = z.object({
+  'Idempotency-Key': z.string().min(1).max(200)
+})
+
+/**
+ * Private verified media metadata and exact Draft/edit tokens; bytes remain unreleased
+ */
+export const zUploadCccMediaResponse = zCccjson
+
+export const zDeleteCccMediaBody = zCccjson
+
+export const zDeleteCccMediaHeaders = z.object({
+  'Idempotency-Key': z.string().min(1).max(200)
+})
+
+export const zDeleteCccMediaPath = z.object({
+  uid: z.uuid()
+})
+
+/**
+ * New tombstone version and Draft generation; history bytes retained
+ */
+export const zDeleteCccMediaResponse = zCccjson
+
+export const zReplaceCccMediaFileBody = z.object({
+  change_id: z
+    .string()
+    .min(1)
+    .max(128)
+    .regex(/^[A-Za-z0-9][A-Za-z0-9._-]*$/)
+    .optional(),
+  expected_draft_rev: z.int().gte(1),
+  expected_revision_uid: z.uuid(),
+  file: z.string(),
+  name: z.string().min(1).max(500)
+})
+
+export const zReplaceCccMediaFileHeaders = z.object({
+  'Idempotency-Key': z.string().min(1).max(200)
+})
+
+export const zReplaceCccMediaFilePath = z.object({
+  uid: z.uuid()
+})
+
+/**
+ * New immutable Draft file-version metadata under the same media UID
+ */
+export const zReplaceCccMediaFileResponse = zCccjson
+
+export const zPublishCccDraftBody = zCccjson
+
+export const zPublishCccDraftHeaders = z.object({
+  'Idempotency-Key': z.string().min(1).max(200)
+})
+
+/**
+ * New Live, previous Live and fresh Draft state after atomic commit
+ */
+export const zPublishCccDraftResponse = zCccjson
+
+export const zGetCccStagingQuery = z.object({
+  search: z.string().max(300).optional(),
+  author_uid: z.string().min(1).optional(),
+  change_id: z
+    .string()
+    .min(1)
+    .max(128)
+    .regex(/^[A-Za-z0-9][A-Za-z0-9._-]*$/)
+    .optional(),
+  tags: z.array(z.string().min(1).max(200)).max(30).optional(),
+  types: z
+    .array(z.enum(['model', 'workflow', 'app', 'media', 'template_set']))
+    .max(5)
+    .optional(),
+  statuses: z
+    .array(z.enum(['NEW', 'APPROVED', 'DEFERRED', 'DELETED']))
+    .max(4)
+    .optional()
+})
+
+/**
+ * Private complete matching changes and exact Draft generation
+ */
+export const zGetCccStagingResponse = zCccjson
+
+export const zStageCccChangesBody = zCccjson
+
+export const zStageCccChangesHeaders = z.object({
+  'Idempotency-Key': z.string().min(1).max(200)
+})
+
+/**
+ * Atomic matching-set decisions and updated private staging state
+ */
+export const zStageCccChangesResponse = zCccjson
+
+export const zListContentCatalogItemsQuery = z.object({
+  q: z.string().max(200).optional(),
+  slug: z.string().optional(),
+  kind: z.enum(['MODEL', 'WORKFLOW', 'APP']).optional(),
+  workflow_slug: z.string().min(1).max(300).optional()
+})
+
+/**
+ * LIVE projection
+ */
+export const zListContentCatalogItemsResponse = zContentCatalogProjection
+
+export const zGetContentCatalogItemPath = z.object({
+  uid: z.string()
+})
+
+/**
+ * Website content record
+ */
+export const zGetContentCatalogItemResponse = zContentCatalogRecord
+
+export const zGetCccItemHistoryPath = z.object({
+  uid: z.uuid()
+})
+
+export const zGetCccItemHistoryQuery = z.object({
+  limit: z.int().gte(1).lte(100).optional().default(20),
+  cursor: z.string().max(256).optional()
+})
+
+/**
+ * Flat immutable items with catalog_status and saved_at, has_more and optional opaque next_cursor; no total
+ */
+export const zGetCccItemHistoryResponse = zCccjson
+
+export const zGetCccPublicMediaBytesPath = z.object({
+  uid: z.uuid(),
+  version: z.uuid()
+})
+
+/**
+ * Exact current LIVE bytes; authority checked before byte access; no-store
+ */
+export const zGetCccPublicMediaBytesResponse = z.string()
+
+export const zHeadCccPublicMediaBytesPath = z.object({
+  uid: z.uuid(),
+  version: z.uuid()
+})
+
+/**
+ * Catalog OpenAPI with contract fingerprint and environment
+ */
+export const zGetCatalogOpenApiResponse = zCccjson
+
+export const zGetCccPreviewMediaBytesPath = z.object({
+  rev: z.int().gte(1),
+  uid: z.uuid(),
+  version: z.uuid()
+})
+
+/**
+ * Verified selected bytes; private no-store; no origin redirect
+ */
+export const zGetCccPreviewMediaBytesResponse = z.string()
+
+export const zHeadCccPreviewMediaBytesPath = z.object({
+  rev: z.int().gte(1),
+  uid: z.uuid(),
+  version: z.uuid()
+})
+
+export const zGetCccRevisionItemPath = z.object({
+  rev: z.coerce.bigint().gte(BigInt(1)).max(BigInt('9223372036854775807'), {
+    error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+  }),
+  uid: z.uuid()
+})
+
+/**
+ * Flat Content and exact edit/revision context
+ */
+export const zGetCccRevisionItemResponse = zCccjson
+
+export const zReopenCccRevisionBody = z.object({
+  archive_draft: z.literal(true),
+  expected_draft_generation: z.coerce
+    .bigint()
+    .gte(BigInt(0))
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  expected_draft_rev: z.coerce
+    .bigint()
+    .gte(BigInt(1))
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+})
+
+export const zReopenCccRevisionHeaders = z.object({
+  'Idempotency-Key': z.string().min(1).max(200)
+})
+
+export const zReopenCccRevisionPath = z.object({
+  rev: z.coerce.bigint().gte(BigInt(1)).max(BigInt('9223372036854775807'), {
+    error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+  })
+})
+
+/**
+ * New Draft/state and reopened-from revision
+ */
+export const zReopenCccRevisionResponse = zCccjson
+
+export const zGetCccTypeSchemaPath = z.object({
+  type: z.enum(['model', 'workflow', 'app', 'template_set', 'media']),
+  schema_version: z.int().gte(1)
+})
+
+/**
+ * Build-coupled OpenAPI 3.0 schema object, type, version and API environment
+ */
+export const zGetCccTypeSchemaResponse = zCccjson
+
+/**
+ * Private state; never cacheable
+ */
+export const zGetCccStateResponse = zCccjson
+
 export const zGetVhsQueryVideoQuery = z.object({
   filename: z.string(),
   workspace_id: z.string().optional()
@@ -5701,6 +6304,11 @@ export const zPostOAuthTokenBody = z.object({
  * New token pair
  */
 export const zPostOAuthTokenResponse = zOAuthTokenResponse
+
+/**
+ * OpenAPI JSON with CCC contract version and environment
+ */
+export const zGetCccOpenApiResponse = zCccjson
 
 export const zGetTemplateProxyPath = z.object({
   path: z.string()

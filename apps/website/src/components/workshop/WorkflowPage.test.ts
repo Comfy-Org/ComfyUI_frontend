@@ -1,5 +1,5 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen, within } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import { assert, describe, expect, it, vi } from 'vitest'
 import { readonly, ref } from 'vue'
 
@@ -20,13 +20,224 @@ assert(model, 'the catalogue no longer carries the fixture workflow')
 const template = model.workflow.template
 assert(template, 'the fixture workflow no longer carries a template')
 
+// The run itself is WorkflowPlayground's to test; here only whether the page
+// offers it matters.
+const playgroundStub = { template: '<div data-testid="workflow-playground" />' }
+
 const mount = (selected = model) =>
   render(WorkflowPage, {
     props: { model: selected },
-    global: { stubs: { WorkflowPlayground: true } }
+    global: { stubs: { WorkflowPlayground: playgroundStub } }
   })
 
 describe('WorkflowPage header', () => {
+  it('does not switch the legacy consumer layout before catalog activation', () => {
+    mount({
+      ...model,
+      workflow: { ...model.workflow, inputs: {} }
+    })
+    expect(screen.getByTestId('workflow-playground')).toBeTruthy()
+  })
+  it.for([false, true, undefined])(
+    'keeps a workflow with no inputs download-only (runnable=%s)',
+    (runnable) => {
+      const emptyWorkflow = {
+        ...model.workflow,
+        inputs: {},
+        inputSchema: {
+          type: 'object' as const,
+          properties: {},
+          required: [],
+          additionalProperties: false as const
+        },
+        cloud: undefined
+      }
+      render(WorkflowPage, {
+        props: {
+          model: {
+            ...model,
+            workflow: emptyWorkflow,
+            form: {
+              parameters: emptyWorkflow.inputSchema,
+              inputs: {},
+              roles: [],
+              advancedFields: []
+            },
+            catalogDetails: {
+              locale: 'en',
+              faqs: [],
+              models: [],
+              runnable,
+              scriptCode: { python: 'print("Download-only example")' }
+            }
+          }
+        },
+        global: {
+          stubs: {
+            WorkflowPlayground: playgroundStub,
+            WorkflowGraph: true,
+            HighlightedCode: {
+              props: ['code'],
+              template: '<code>{{code}}</code>'
+            }
+          }
+        }
+      })
+      expect(screen.queryByTestId('workflow-playground')).toBeNull()
+      expect(screen.queryByRole('tab', { name: 'Playground' })).toBeNull()
+      expect(
+        screen.getByRole('link', { name: 'Download workflow JSON' })
+      ).toHaveAttribute('href', template.downloadUrl)
+      expect(screen.getByTestId('workflow-api-snippet')).toHaveTextContent(
+        'Download-only example'
+      )
+      expect(screen.queryByTestId('workflow-api-endpoint')).toBeNull()
+    }
+  )
+  it('turns off the run layout without disabling generated code for a workflow with inputs', () => {
+    render(WorkflowPage, {
+      props: {
+        model: {
+          ...model,
+          catalogDetails: {
+            locale: 'en',
+            faqs: [],
+            models: [],
+            runnable: false
+          }
+        }
+      },
+      global: {
+        stubs: {
+          WorkflowPlayground: true,
+          WorkflowGraph: true,
+          HighlightedCode: {
+            props: ['code'],
+            template: '<code>{{code}}</code>'
+          }
+        }
+      }
+    })
+    expect(screen.queryByTestId('workflow-playground')).toBeNull()
+    expect(screen.getByTestId('workflow-api-snippet')).toHaveTextContent(
+      'from comfy_sdk import Comfy'
+    )
+    expect(screen.getByRole('tab', { name: 'cURL' })).toBeVisible()
+  })
+  it('offers an actual Cloud share link without inventing a share ID from the catalog UID', () => {
+    mount({
+      ...model,
+      catalogDetails: {
+        locale: 'en',
+        faqs: [],
+        models: [],
+        cloudShareURL: 'https://cloud.comfy.org/?share=abcdef123456'
+      }
+    })
+    expect(screen.getByRole('link', { name: 'Try in Cloud' })).toHaveAttribute(
+      'href',
+      'https://cloud.comfy.org/?share=abcdef123456'
+    )
+  })
+  it('offers no Try in Cloud for a catalog workflow that does not work on Cloud', () => {
+    mount({
+      ...model,
+      catalogDetails: {
+        locale: 'en',
+        faqs: [],
+        models: [],
+        worksOnCloud: false,
+        cloudShareURL: 'https://cloud.comfy.org/?share=abcdef123456'
+      }
+    })
+    expect(screen.queryByRole('link', { name: 'Try in Cloud' })).toBeNull()
+    expect(
+      screen.getByRole('link', { name: 'Download workflow JSON' })
+    ).toBeVisible()
+  })
+  it('downloads the catalog graph JSON up top, beside its API documentation', () => {
+    const uid = '00000000-0000-4000-8000-000000000080'
+    const graph = `/preview-media/7/${uid}/00000000-0000-4000-8000-000000000081`
+    mount({
+      ...model,
+      catalogDetails: {
+        locale: 'en',
+        faqs: [],
+        models: [],
+        documentationURL: 'https://docs.comfy.org/api-reference/',
+        workflowFiles: [{ name: 'V1', uid, href: graph }],
+        apiWorkflowFile: {
+          name: 'V1',
+          uid,
+          version: '00000000-0000-4000-8000-000000000082',
+          href: `/preview-media/7/${uid}/00000000-0000-4000-8000-000000000082`
+        }
+      }
+    })
+    const actions = screen.getByTestId('workflow-actions')
+    const download = within(actions).getByRole('link', {
+      name: 'Download workflow JSON'
+    })
+    expect(download).toHaveAttribute('href', graph)
+    expect(download).toHaveAttribute('download', 'remove-background.json')
+    expect(
+      within(actions).getByRole('link', { name: 'API documentation' })
+    ).toHaveAttribute('href', 'https://docs.comfy.org/api-reference/')
+  })
+  it('does not fall back to the legacy template download when declared catalog files are unavailable', () => {
+    mount({
+      ...model,
+      catalogDetails: { locale: 'en', faqs: [], models: [], workflowFiles: [] }
+    })
+    expect(
+      screen.queryByRole('link', { name: 'Download workflow JSON' })
+    ).toBeNull()
+  })
+  it('renders multi-paragraph body and expandable Q&A using authored copy, not HTML', async () => {
+    mount({
+      ...model,
+      catalogDetails: {
+        locale: 'en',
+        models: [],
+        longDescription: 'First paragraph.\n\nSecond paragraph.',
+        faqs: [
+          {
+            id: 'first',
+            question: 'Can I customize it?',
+            answer: 'Yes, edit the downloaded JSON.'
+          }
+        ]
+      }
+    })
+    expect(
+      screen.getByRole('heading', { name: 'About this workflow' })
+    ).toBeVisible()
+    expect(screen.getByText('First paragraph.')).toBeVisible()
+    expect(screen.getByText('Second paragraph.')).toBeVisible()
+    const question = screen.getByRole('button', { name: 'Can I customize it?' })
+    question.click()
+    await waitFor(() =>
+      expect(screen.getByText('Yes, edit the downloaded JSON.')).toBeVisible()
+    )
+  })
+
+  it('does not show empty body or Q&A sections', () => {
+    mount({
+      ...model,
+      catalogDetails: {
+        locale: 'en',
+        models: [],
+        longDescription: ' \n ',
+        faqs: [{ id: 'empty', question: ' ', answer: '' }]
+      }
+    })
+    expect(
+      screen.queryByRole('heading', { name: 'About this workflow' })
+    ).toBeNull()
+    expect(
+      screen.queryByRole('heading', { name: 'Questions & answers' })
+    ).toBeNull()
+  })
   it('sends the shelf it names to that shelf, filtered', () => {
     mount()
 

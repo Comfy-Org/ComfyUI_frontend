@@ -1,15 +1,17 @@
 <script setup lang="ts">
-import { ArrowUpRight, ChevronLeft } from '@lucide/vue'
+import { ChevronLeft } from '@lucide/vue'
 import { computed } from 'vue'
+import FAQSplit01 from '@/components/blocks/FAQSplit01.vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import WorkflowActions from './WorkflowActions.vue'
 import type { WorkflowWorkshopModelDetail } from '@/config/models-catalogue'
 import { useCaseFor } from '@/config/models-catalogue'
 import { getRoutes } from '@/config/routes'
 import { WORKSHOP_CLOUD_BASE_URL } from '@/config/workshop-env'
 import { useWorkshopSession } from '@/config/workshop-session-state'
 import { useCaseLabelKey } from '@/lib/workshop/use-case-label'
-import { t } from '@/i18n/translations'
+import { initialWorkshopPageState } from '@/config/workshop-page-state'
+import { translationsFor } from '@/i18n/translations'
 import {
   captureWorkshopEvent,
   useWorkshopEnabled,
@@ -17,8 +19,34 @@ import {
 } from '@/scripts/posthog'
 import { workshopModelAnalytics } from '@/scripts/workshop-analytics'
 import WorkflowPlayground from './WorkflowPlayground.vue'
+import WorkflowPreview from './WorkflowPreview.vue'
+import WorkflowApi from './WorkflowApi.vue'
 
-const { model } = defineProps<{ model: WorkflowWorkshopModelDetail }>()
+const { model, embedded = false } = defineProps<{
+  model: WorkflowWorkshopModelDetail
+  embedded?: boolean
+}>()
+const runnable = computed(
+  () =>
+    !model.catalogDetails ||
+    (model.catalogDetails.runnable !== false &&
+      Object.keys(model.workflow.inputs).length > 0)
+)
+const snippetValues = computed(() => initialWorkshopPageState(model).values)
+const t = computed(
+  () => translationsFor(model.catalogDetails?.locale ?? 'en').t
+)
+const paragraphs = computed(() =>
+  (model.catalogDetails?.longDescription ?? '')
+    .split(/\n\s*\n/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean)
+)
+const faqs = computed(() =>
+  (model.catalogDetails?.faqs ?? []).filter(
+    (faq) => faq.question.trim() && faq.answer.trim()
+  )
+)
 const emit = defineEmits<{ recovery: [active: boolean] }>()
 const { session } = useWorkshopSession()
 const scope = computed(() =>
@@ -45,11 +73,26 @@ const shelf = computed(() => {
 const pillClass =
   'inline-flex h-7 items-center rounded-full border border-transparency-white-t20 px-3 text-xs leading-none text-primary-comfy-canvas transition-colors hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow'
 
-const template = model.workflow.template
-const downloadUrl = template?.downloadUrl
-const cloudHref = template
-  ? `${WORKSHOP_CLOUD_BASE_URL}/?template=${encodeURIComponent(template.id)}`
-  : undefined
+const cloudHref = computed(() =>
+  model.catalogDetails?.worksOnCloud === false
+    ? undefined
+    : (model.catalogDetails?.cloudShareURL ??
+      (model.workflow.template
+        ? `${WORKSHOP_CLOUD_BASE_URL}/?template=${encodeURIComponent(model.workflow.template.id)}`
+        : undefined))
+)
+// A catalog workflow downloads its own stored graph JSON (the first version's
+// download file), never the API JSON the Run panel submits.
+const workflowFiles = computed(() => model.catalogDetails?.workflowFiles)
+const downloadUrl = computed(() =>
+  workflowFiles.value
+    ? workflowFiles.value.at(-1)?.href
+    : model.workflow.template?.downloadUrl
+)
+const downloadName = computed(() =>
+  workflowFiles.value ? `${model.slug.split('/').pop()}.json` : true
+)
+const documentationURL = computed(() => model.catalogDetails?.documentationURL)
 
 const enabled = useWorkshopEnabled()
 const workflowsEnabled = useWorkshopWorkflowsEnabled()
@@ -73,8 +116,11 @@ function captureWorkflowDownload() {
 </script>
 
 <template>
-  <div class="mx-auto max-w-10xl px-6 pt-5 pb-20 lg:px-8">
+  <div
+    :class="embedded ? undefined : 'mx-auto max-w-10xl px-6 pt-5 pb-20 lg:px-8'"
+  >
     <a
+      v-if="!embedded"
       :href="routes.hubWorkflows"
       class="mb-7 inline-flex min-h-11 items-center gap-1 text-sm text-primary-warm-gray hover:text-primary-comfy-yellow"
     >
@@ -82,7 +128,10 @@ function captureWorkflowDownload() {
       {{ t('workshop.catalogue.backToWorkflows') }}
     </a>
     <header class="mb-9" data-testid="workflow-hero">
-      <div v-if="shelf" class="mb-3 flex flex-wrap items-center gap-3">
+      <div
+        v-if="shelf && !embedded"
+        class="mb-3 flex flex-wrap items-center gap-3"
+      >
         <a
           :href="shelf.href"
           :class="pillClass"
@@ -91,55 +140,71 @@ function captureWorkflowDownload() {
         >
       </div>
       <h1
+        v-if="!embedded"
         class="max-w-4xl text-3xl font-light text-primary-comfy-canvas lg:text-5xl"
       >
         {{ model.name }}
       </h1>
       <p
-        v-if="model.summary"
+        v-if="model.summary && !embedded"
         class="mt-4 text-lg text-primary-warm-gray lg:truncate"
         :title="model.summary"
       >
         {{ model.summary }}
       </p>
-      <div
-        v-if="downloadUrl || cloudHref"
-        class="mt-6 flex flex-wrap items-center gap-2"
-        data-testid="workflow-actions"
-      >
-        <Button
-          v-if="downloadUrl"
-          as="a"
-          :href="downloadUrl"
-          download
-          variant="secondaryOutline"
-          class="h-auto min-h-11 max-w-full whitespace-normal"
-          :aria-label="t('workshop.workflow.download')"
-          @click="captureWorkflowDownload"
-          >{{ t('workshop.workflow.downloadShort') }}</Button
-        >
-        <Button
-          v-if="cloudHref"
-          as="a"
-          :href="cloudHref"
-          target="_blank"
-          rel="noopener"
-          variant="ghost"
-          class="h-auto min-h-11 max-w-full font-bold tracking-wider whitespace-normal uppercase"
-          @click="captureTryInCloud"
-          >{{ t('workshop.workflow.tryCloud') }}
-          <template #append>
-            <ArrowUpRight aria-hidden="true" />
-          </template>
-        </Button>
-      </div>
+      <WorkflowActions
+        :download-url="downloadUrl"
+        :download-name="downloadName"
+        :cloud-href="cloudHref"
+        :documentation-u-r-l="documentationURL"
+        :locale="model.catalogDetails?.locale ?? 'en'"
+        @download="captureWorkflowDownload"
+        @try-cloud="captureTryInCloud"
+      />
     </header>
 
     <WorkflowPlayground
+      v-if="runnable"
       :key="scope"
       :model="model"
       :scope="scope"
       @recovery="emit('recovery', $event)"
+    />
+    <WorkflowPreview v-else :model standalone />
+    <section
+      v-if="paragraphs.length"
+      class="mt-16 max-w-4xl"
+      aria-labelledby="workflow-about-heading"
+    >
+      <h2
+        id="workflow-about-heading"
+        class="mb-6 text-2xl font-light text-primary-comfy-canvas"
+      >
+        {{ t('cccWorkflow.about') }}
+      </h2>
+      <div class="space-y-5 text-base leading-relaxed text-primary-warm-gray">
+        <p
+          v-for="(paragraph, index) in paragraphs"
+          :key="index"
+          class="wrap-break-word whitespace-pre-line"
+        >
+          {{ paragraph }}
+        </p>
+      </div>
+    </section>
+    <WorkflowApi
+      v-if="!runnable"
+      class="mt-16"
+      :model
+      :values="snippetValues"
+      download-only
+    />
+    <FAQSplit01
+      v-if="faqs.length"
+      id="workflow-faq"
+      :heading="t('cccWorkflow.faq')"
+      :faqs
+      compact
     />
   </div>
 </template>

@@ -8,6 +8,10 @@
   "entry": [
     // Astro injects these routes when WORKSHOP_IN_BUILD is enabled.
     "apps/website/src/routes/models/*.{astro,ts}",
+    // CMS routes are also injected by the Astro release-gate integration.
+    "apps/website/src/routes/admin/*.{astro,ts}",
+    // Public catalog documentation and media routes, injected the same way.
+    "apps/website/src/routes/catalog/*.{astro,ts}",
     "index.html",
     "src/main.ts"
   ],
@@ -21,6 +25,10 @@
       "entryPoints": [
         "**/.storybook/{main,preview}.ts",
         "apps/website/src/scripts/**/*.ts",
+        "apps/website/scripts/export-cms*.ts",
+        // CMS verification and local-demo CLIs, run by path with tsx.
+        "apps/website/scripts/{check,test}-*.ts",
+        "apps/website/scripts/{open,prepare}-catalog-demo.ts",
         "packages/ingest-types/openapi-ts.config.ts",
         "scripts/**/*.{js,ts}"
       ],

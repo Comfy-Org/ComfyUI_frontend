@@ -53,8 +53,18 @@ const config: KnipConfig = {
       project: ['src/**/*.{js,ts}']
     },
     'apps/website': {
-      // Models pages are registered by the release-gate integration.
-      entry: ['src/scripts/**/*.ts', 'src/routes/models/*.{astro,ts}'],
+      // Models and CMS administration routes are registered by the release-gate
+      // integration, not Astro's conventional src/pages discovery.
+      entry: [
+        'src/scripts/**/*.ts',
+        'src/routes/models/*.{astro,ts}',
+        'src/routes/admin/*.{astro,ts}',
+        'src/routes/catalog/*.{astro,ts}',
+        'scripts/export-cms*.ts',
+        // CMS verification and local-demo CLIs, run by path with tsx.
+        'scripts/{check,test}-*.ts',
+        'scripts/{open,prepare}-catalog-demo.ts'
+      ],
       // Executed by models-snippets.test.ts inside the generated Node examples.
       ignoreDependencies: ['mime-types']
     },

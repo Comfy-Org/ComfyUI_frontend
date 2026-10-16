@@ -14,8 +14,18 @@ const previewSrc = usePreviewVideo(video, () => model.thumbnail?.url)
 <template>
   <!-- The card names itself in its heading and marks its provider over the
     artwork, so a third reading of the name here is noise in the link. -->
+  <img
+    v-if="model.thumbnail?.staticUrl"
+    :src="model.thumbnail.staticUrl"
+    alt=""
+    class="size-full object-cover transition-transform duration-300 select-none group-hover:scale-105"
+    data-testid="model-card-media"
+    loading="lazy"
+    decoding="async"
+    draggable="false"
+  />
   <video
-    v-if="model.thumbnail?.kind === 'video'"
+    v-else-if="model.thumbnail?.kind === 'video'"
     ref="video"
     :src="previewSrc"
     :poster="model.thumbnail.poster"

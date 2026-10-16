@@ -4382,6 +4382,33 @@ export type CreateHubProfileRequest = {
   workspace_id: string
 }
 
+export type ContentCatalogRecord = {
+  data: {
+    [key: string]: unknown
+  }
+  deleted: boolean
+  edit_version: string
+  enabled: boolean
+  kind: 'MODEL' | 'WORKFLOW' | 'APP'
+  /**
+   * Integer revision supplying this entity; may precede the requested catalog revision.
+   */
+  revision: number
+  /**
+   * Canonical website pathname; identity is always UID.
+   */
+  slug: string
+  uid: string
+  visibility: 'PUBLIC' | 'STAFF'
+  visible_from?: string
+}
+
+export type ContentCatalogProjection = {
+  generation: number
+  items: Array<ContentCatalogRecord>
+  revision_id: number
+}
+
 /**
  * Credentials the Churnkey embed requires to launch the cancel flow.
  * `auth_hash` is hex-encoded HMAC-SHA256 of `customer_id` signed with the
@@ -4452,6 +4479,74 @@ export type CancelSubscriptionAcceptedResponse = {
    * Always `pending` — the cancellation is still executing. Poll the billing operation for the final outcome.
    */
   status: 'pending'
+}
+
+export type CccWebsiteCardsPage = {
+  available_kinds: Array<'MODEL' | 'WORKFLOW' | 'APP'>
+  facets: CccWebsiteCardFacets
+  /**
+   * Staff-only Draft generation
+   */
+  generation?: number
+  has_more: boolean
+  items: Array<ContentCatalogRecord>
+  next_cursor?: string
+  page_size: number
+  previous_cursor?: string
+  revision_id: number
+  sort_orders: Array<'popular' | 'name' | 'priceAsc' | 'priceDesc'>
+  /**
+   * Staff-only filtered count; omitted for anonymous callers
+   */
+  total?: number
+}
+
+export type CccWebsiteCardFacet = {
+  /**
+   * Staff-only eligible facet count
+   */
+  count?: number
+  label: string
+  value: string
+}
+
+export type CccWebsiteCardFacets = {
+  categories: Array<CccWebsiteCardFacet>
+  models: Array<CccWebsiteCardFacet>
+  use_cases: Array<CccWebsiteCardFacet>
+}
+
+/**
+ * Flat type-versioned CCC JSON. Domain schemas constrain authored fields; server metadata and expected concurrency tokens are explicit and never caller-owned persistence fields.
+ */
+export type Cccjson = {
+  [key: string]: unknown
+}
+
+export type CccCheckedReviewReceipt = {
+  publish_enabled: boolean
+  receipt_version: 1
+  selected_count: number
+  selected_versions_digest: string
+  selection_digest: string
+  state: CccCatalogState
+  unchecked_count: number
+}
+
+export type CccCatalogState = {
+  draft_generation: number
+  draft_rev: number
+  live_rev: number
+  next_rev: number
+  previous_live_rev: number | null
+}
+
+export type CccAuthoringContext = {
+  actor_uid: string
+  can_apply: boolean
+  can_edit: boolean
+  owner_uid: string
+  state: CccCatalogState
 }
 
 /**
@@ -6400,6 +6495,40 @@ export type PostCustomNodeProxyResponses = {
    */
   200: unknown
 }
+
+export type GetCccAgentInstructionsData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/agent'
+}
+
+export type GetCccAgentInstructionsResponses = {
+  /**
+   * Editing instructions from this deployed API build
+   */
+  200: string
+}
+
+export type GetCccAgentInstructionsResponse =
+  GetCccAgentInstructionsResponses[keyof GetCccAgentInstructionsResponses]
+
+export type GetCccAgentsInstructionsData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/agents'
+}
+
+export type GetCccAgentsInstructionsResponses = {
+  /**
+   * Editing instructions from this deployed API build
+   */
+  200: string
+}
+
+export type GetCccAgentsInstructionsResponse =
+  GetCccAgentsInstructionsResponses[keyof GetCccAgentsInstructionsResponses]
 
 export type AgentGetDraftData = {
   body?: never
@@ -13726,6 +13855,1312 @@ export type GetUsersInfoResponses = {
 export type GetUsersInfoResponse =
   GetUsersInfoResponses[keyof GetUsersInfoResponses]
 
+export type GetCatalogAgentInstructionsData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/v1/catalog/agents'
+}
+
+export type GetCatalogAgentInstructionsResponses = {
+  /**
+   * Editing instructions from this deployed catalog API build
+   */
+  200: string
+}
+
+export type GetCatalogAgentInstructionsResponse =
+  GetCatalogAgentInstructionsResponses[keyof GetCatalogAgentInstructionsResponses]
+
+export type GetCccAuthoringContextData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/v1/catalog/authoring-context'
+}
+
+export type GetCccAuthoringContextErrors = {
+  /**
+   * Unsupported query parameters
+   */
+  400: unknown
+  /**
+   * Verified staff edit or apply permission required
+   */
+  403: unknown
+  /**
+   * Dedicated catalog unavailable
+   */
+  503: unknown
+}
+
+export type GetCccAuthoringContextResponses = {
+  /**
+   * Current verified authoring context; private no-store
+   */
+  200: CccAuthoringContext
+}
+
+export type GetCccAuthoringContextResponse =
+  GetCccAuthoringContextResponses[keyof GetCccAuthoringContextResponses]
+
+export type ListCccWebsiteCardsData = {
+  body?: never
+  path?: never
+  query: {
+    kind: 'MODEL' | 'WORKFLOW' | 'APP'
+    limit?: number
+    cursor?: string
+    locale?: 'en' | 'zh-CN'
+    q?: string
+    sort?: 'popular' | 'name' | 'priceAsc' | 'priceDesc'
+    category?: Array<string>
+    model?: Array<string>
+    use?: Array<string>
+    modality?: Array<string>
+    provider?: Array<string>
+    capability?: Array<string>
+  }
+  url: '/api/v1/catalog/cards'
+}
+
+export type ListCccWebsiteCardsErrors = {
+  /**
+   * Invalid or unsupported query or cursor
+   */
+  400: unknown
+  /**
+   * Verified staff permission required for Preview
+   */
+  403: unknown
+  /**
+   * Cursor selection changed or expired; restart from first page
+   */
+  409: unknown
+  /**
+   * Catalog unavailable or card budget exceeded
+   */
+  503: unknown
+}
+
+export type ListCccWebsiteCardsResponses = {
+  /**
+   * At most 24 card summaries; no graphs, inputs, examples or long bodies. Anonymous responses omit total, generation and facet counts. Cursors are audience, filter, clock and state bound and expire after five minutes.
+   */
+  200: CccWebsiteCardsPage
+}
+
+export type ListCccWebsiteCardsResponse =
+  ListCccWebsiteCardsResponses[keyof ListCccWebsiteCardsResponses]
+
+export type GetCatalogDocsData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/v1/catalog/docs'
+}
+
+export type GetCatalogDocsResponses = {
+  /**
+   * Build-coupled catalog instructions, permissions and endpoint contracts
+   */
+  200: string
+}
+
+export type GetCatalogDocsResponse =
+  GetCatalogDocsResponses[keyof GetCatalogDocsResponses]
+
+export type ArchiveCccDraftData = {
+  body: {
+    expected_draft_generation: number
+    expected_draft_rev: number
+  }
+  headers: {
+    'Idempotency-Key': string
+  }
+  path?: never
+  query?: never
+  url: '/api/v1/catalog/draft/archive'
+}
+
+export type ArchiveCccDraftErrors = {
+  /**
+   * Invalid review tokens or unsupported fields
+   */
+  400: Cccjson
+  /**
+   * Verified staff edit permission required
+   */
+  403: unknown
+  /**
+   * Stale reviewed Draft or idempotency mismatch
+   */
+  409: unknown
+  /**
+   * Dedicated catalog unavailable
+   */
+  503: unknown
+}
+
+export type ArchiveCccDraftError =
+  ArchiveCccDraftErrors[keyof ArchiveCccDraftErrors]
+
+export type ArchiveCccDraftResponses = {
+  /**
+   * Archived revision and fresh Draft/state
+   */
+  200: Cccjson
+}
+
+export type ArchiveCccDraftResponse =
+  ArchiveCccDraftResponses[keyof ArchiveCccDraftResponses]
+
+export type BatchCccItemsData = {
+  body: {
+    expected_draft_rev: number
+    items: Array<Cccjson>
+  }
+  headers: {
+    'Idempotency-Key': string
+  }
+  path?: never
+  query?: never
+  url: '/api/v1/catalog/draft/batch'
+}
+
+export type BatchCccItemsErrors = {
+  /**
+   * Structured validation failure with item field paths
+   */
+  400: Cccjson
+  /**
+   * Verified staff edit permission required
+   */
+  403: unknown
+  /**
+   * Existing target absent from owner-scoped Draft
+   */
+  404: unknown
+  /**
+   * Stale Draft/edit token or idempotency mismatch
+   */
+  409: unknown
+  /**
+   * Dedicated catalog unavailable
+   */
+  503: unknown
+}
+
+export type BatchCccItemsError = BatchCccItemsErrors[keyof BatchCccItemsErrors]
+
+export type BatchCccItemsResponses = {
+  /**
+   * Flat immutable edits in request order; retry returns identical UIDs/tokens
+   */
+  200: Array<Cccjson>
+}
+
+export type BatchCccItemsResponse =
+  BatchCccItemsResponses[keyof BatchCccItemsResponses]
+
+export type DiscardCccChangesData = {
+  body: Cccjson
+  headers: {
+    'Idempotency-Key': string
+  }
+  path?: never
+  query?: never
+  url: '/api/v1/catalog/draft/discard-changes'
+}
+
+export type DiscardCccChangesErrors = {
+  /**
+   * Verified staff edit permission on every target required
+   */
+  403: unknown
+  /**
+   * Stale state/selection/exact version or idempotency mismatch; no partial discard
+   */
+  409: unknown
+  /**
+   * Invalid confirmed selection or remaining Draft dependency/pin conflict; no partial discard
+   */
+  422: Cccjson
+  /**
+   * Catalog unavailable
+   */
+  503: unknown
+}
+
+export type DiscardCccChangesError =
+  DiscardCccChangesErrors[keyof DiscardCccChangesErrors]
+
+export type DiscardCccChangesResponses = {
+  /**
+   * Updated complete unfiltered private staging snapshot and global unresolved_count
+   */
+  200: Cccjson
+}
+
+export type DiscardCccChangesResponse =
+  DiscardCccChangesResponses[keyof DiscardCccChangesResponses]
+
+export type GetCccFinalReviewData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/v1/catalog/draft/final-review'
+}
+
+export type GetCccFinalReviewErrors = {
+  /**
+   * Unsupported query parameters
+   */
+  400: unknown
+  /**
+   * Verified publisher permission required
+   */
+  403: unknown
+  /**
+   * Unreviewed work, no approved changes, or invalid selective candidate
+   */
+  422: unknown
+  /**
+   * Dedicated catalog unavailable
+   */
+  503: unknown
+}
+
+export type GetCccFinalReviewResponses = {
+  /**
+   * Private exact approved changes, deferred work, state and selection digest
+   */
+  200: Cccjson
+}
+
+export type GetCccFinalReviewResponse =
+  GetCccFinalReviewResponses[keyof GetCccFinalReviewResponses]
+
+export type ReviewCccCheckedPublicationData = {
+  body: Cccjson
+  path?: never
+  query?: never
+  url: '/api/v1/catalog/draft/final-review'
+}
+
+export type ReviewCccCheckedPublicationErrors = {
+  /**
+   * Unsupported query parameters
+   */
+  400: unknown
+  /**
+   * Verified publisher permission required
+   */
+  403: unknown
+  /**
+   * Stale reviewed state or selected item no longer pending
+   */
+  409: unknown
+  /**
+   * Invalid explicit selection or candidate dependencies
+   */
+  422: unknown
+  /**
+   * Dedicated catalog unavailable
+   */
+  503: unknown
+}
+
+export type ReviewCccCheckedPublicationResponses = {
+  /**
+   * Exact checked changes and unchecked private work with state and selection digest
+   */
+  200: Cccjson
+}
+
+export type ReviewCccCheckedPublicationResponse =
+  ReviewCccCheckedPublicationResponses[keyof ReviewCccCheckedPublicationResponses]
+
+export type ReviewCccCheckedReceiptData = {
+  body: Cccjson
+  path?: never
+  query?: never
+  url: '/api/v1/catalog/draft/final-review/receipt'
+}
+
+export type ReviewCccCheckedReceiptErrors = {
+  /**
+   * Unsupported query parameters
+   */
+  400: unknown
+  /**
+   * Verified publisher permission required
+   */
+  403: unknown
+  /**
+   * Stale reviewed state or selected item no longer pending
+   */
+  409: unknown
+  /**
+   * Invalid explicit selection or candidate dependencies; bounded field_errors include affected resource_uid
+   */
+  422: Cccjson
+  /**
+   * Dedicated catalog unavailable
+   */
+  503: unknown
+}
+
+export type ReviewCccCheckedReceiptError =
+  ReviewCccCheckedReceiptErrors[keyof ReviewCccCheckedReceiptErrors]
+
+export type ReviewCccCheckedReceiptResponses = {
+  /**
+   * Exact checked-version receipt after complete candidate validation
+   */
+  200: CccCheckedReviewReceipt
+}
+
+export type ReviewCccCheckedReceiptResponse =
+  ReviewCccCheckedReceiptResponses[keyof ReviewCccCheckedReceiptResponses]
+
+export type CreateCccItemData = {
+  body: Cccjson
+  headers: {
+    'Idempotency-Key': string
+  }
+  path?: never
+  query?: never
+  url: '/api/v1/catalog/draft/items'
+}
+
+export type CreateCccItemErrors = {
+  /**
+   * Structured document or token validation errors
+   */
+  400: Cccjson
+  /**
+   * Verified staff edit permission required
+   */
+  403: unknown
+  /**
+   * Stale Draft/edit token or idempotency payload mismatch
+   */
+  409: unknown
+  /**
+   * Dedicated catalog unavailable
+   */
+  503: unknown
+}
+
+export type CreateCccItemError = CreateCccItemErrors[keyof CreateCccItemErrors]
+
+export type CreateCccItemResponses = {
+  /**
+   * Flat immutable Content edit with exact concurrency tokens
+   */
+  201: Cccjson
+}
+
+export type CreateCccItemResponse =
+  CreateCccItemResponses[keyof CreateCccItemResponses]
+
+export type DeleteCccItemData = {
+  body: {
+    expected_draft_rev: number
+    expected_revision_uid: string
+  }
+  headers: {
+    'Idempotency-Key': string
+  }
+  path: {
+    uid: string
+  }
+  query?: never
+  url: '/api/v1/catalog/draft/items/{uid}'
+}
+
+export type DeleteCccItemErrors = {
+  /**
+   * Invalid tokens; generic Media mutation refused
+   */
+  400: Cccjson
+  /**
+   * Verified staff edit permission required
+   */
+  403: unknown
+  /**
+   * Resource absent from owner-scoped Draft
+   */
+  404: unknown
+  /**
+   * Stale Draft/edit token or idempotency mismatch
+   */
+  409: unknown
+  /**
+   * Dedicated catalog unavailable
+   */
+  503: unknown
+}
+
+export type DeleteCccItemError = DeleteCccItemErrors[keyof DeleteCccItemErrors]
+
+export type DeleteCccItemResponses = {
+  /**
+   * Flat retained Content with is_deleted=true and new exact edit token
+   */
+  200: Cccjson
+}
+
+export type DeleteCccItemResponse =
+  DeleteCccItemResponses[keyof DeleteCccItemResponses]
+
+export type GetCccDraftItemData = {
+  body?: never
+  path: {
+    uid: string
+  }
+  query?: never
+  url: '/api/v1/catalog/draft/items/{uid}'
+}
+
+export type GetCccDraftItemErrors = {
+  /**
+   * Invalid UID or unsupported query parameters
+   */
+  400: unknown
+  /**
+   * Verified staff read permission required
+   */
+  403: unknown
+  /**
+   * Resource missing or outside canonical owner scope
+   */
+  404: unknown
+  /**
+   * Dedicated catalog unavailable
+   */
+  503: unknown
+}
+
+export type GetCccDraftItemResponses = {
+  /**
+   * Current complete authored JSON with exact working-save tokens and read-only metadata
+   */
+  200: Cccjson
+}
+
+export type GetCccDraftItemResponse =
+  GetCccDraftItemResponses[keyof GetCccDraftItemResponses]
+
+export type ReplaceCccItemData = {
+  body: Cccjson
+  headers: {
+    'Idempotency-Key': string
+  }
+  path: {
+    uid: string
+  }
+  query?: never
+  url: '/api/v1/catalog/draft/items/{uid}'
+}
+
+export type ReplaceCccItemErrors = {
+  /**
+   * Structured document or token validation errors
+   */
+  400: Cccjson
+  /**
+   * Verified staff edit permission required
+   */
+  403: unknown
+  /**
+   * Resource not found in the selected Draft/owner scope
+   */
+  404: unknown
+  /**
+   * Stale Draft/edit token or idempotency payload mismatch
+   */
+  409: unknown
+  /**
+   * Dedicated catalog unavailable
+   */
+  503: unknown
+}
+
+export type ReplaceCccItemError =
+  ReplaceCccItemErrors[keyof ReplaceCccItemErrors]
+
+export type ReplaceCccItemResponses = {
+  /**
+   * New immutable edit; owner stays fixed, author attribution is versioned and saved_by_uid records the actual editor
+   */
+  200: Cccjson
+}
+
+export type ReplaceCccItemResponse =
+  ReplaceCccItemResponses[keyof ReplaceCccItemResponses]
+
+export type RestoreCccItemVersionData = {
+  body: {
+    expected_draft_rev: number
+    expected_revision_uid: string
+    source_revision_uid: string
+  }
+  headers: {
+    'Idempotency-Key': string
+  }
+  path: {
+    uid: string
+  }
+  query?: never
+  url: '/api/v1/catalog/draft/items/{uid}/restore'
+}
+
+export type RestoreCccItemVersionErrors = {
+  /**
+   * Invalid tokens or unsupported historical schema
+   */
+  400: Cccjson
+  /**
+   * Verified staff edit permission required
+   */
+  403: unknown
+  /**
+   * Current or source edit not found in the target UID/owner scope
+   */
+  404: unknown
+  /**
+   * Stale Draft/edit token or idempotency mismatch
+   */
+  409: unknown
+  /**
+   * Dedicated catalog unavailable
+   */
+  503: unknown
+}
+
+export type RestoreCccItemVersionError =
+  RestoreCccItemVersionErrors[keyof RestoreCccItemVersionErrors]
+
+export type RestoreCccItemVersionResponses = {
+  /**
+   * New immutable forward Draft save and exact concurrency tokens
+   */
+  200: Cccjson
+}
+
+export type RestoreCccItemVersionResponse =
+  RestoreCccItemVersionResponses[keyof RestoreCccItemVersionResponses]
+
+export type RestoreCccLiveItemData = {
+  body: {
+    expected_draft_rev: number
+    expected_revision_uid: string
+  }
+  headers: {
+    'Idempotency-Key': string
+  }
+  path: {
+    uid: string
+  }
+  query?: never
+  url: '/api/v1/catalog/draft/items/{uid}/restore-live'
+}
+
+export type RestoreCccLiveItemErrors = {
+  /**
+   * Invalid tokens or generic Media mutation refused
+   */
+  400: Cccjson
+  /**
+   * Verified staff edit permission required
+   */
+  403: unknown
+  /**
+   * Resource absent from organization-scoped Draft
+   */
+  404: unknown
+  /**
+   * Stale Draft/edit token or idempotency mismatch
+   */
+  409: unknown
+  /**
+   * Dedicated catalog unavailable
+   */
+  503: unknown
+}
+
+export type RestoreCccLiveItemError =
+  RestoreCccLiveItemErrors[keyof RestoreCccLiveItemErrors]
+
+export type RestoreCccLiveItemResponses = {
+  /**
+   * Flat new immutable Draft save, original owner/author and updated edit tokens
+   */
+  200: Cccjson
+}
+
+export type RestoreCccLiveItemResponse =
+  RestoreCccLiveItemResponses[keyof RestoreCccLiveItemResponses]
+
+export type UploadCccMediaData = {
+  body: {
+    /**
+     * Optional case-sensitive editorial batch label; not identity or approval.
+     */
+    change_id?: string
+    expected_draft_rev: number
+    file: Blob | File
+    /**
+     * Safe contextual filename/path; normally entity-slug/filename.
+     */
+    name: string
+    originating_entity_uid: string
+    role: string
+  }
+  headers: {
+    'Idempotency-Key': string
+  }
+  path?: never
+  query?: never
+  url: '/api/v1/catalog/draft/media'
+}
+
+export type UploadCccMediaErrors = {
+  /**
+   * Malformed multipart request
+   */
+  400: unknown
+  /**
+   * Verified staff edit permission required
+   */
+  403: unknown
+  /**
+   * Origin is absent or outside owner scope
+   */
+  404: unknown
+  /**
+   * Stale Draft or reused retry key with different input
+   */
+  409: unknown
+  /**
+   * Request body exceeds bounded upload envelope
+   */
+  413: unknown
+  /**
+   * Invalid fields or unsupported/unsafe bytes
+   */
+  422: Cccjson
+  /**
+   * Private storage or dedicated catalog unavailable
+   */
+  503: unknown
+}
+
+export type UploadCccMediaError =
+  UploadCccMediaErrors[keyof UploadCccMediaErrors]
+
+export type UploadCccMediaResponses = {
+  /**
+   * Private verified media metadata and exact Draft/edit tokens; bytes remain unreleased
+   */
+  201: Cccjson
+}
+
+export type UploadCccMediaResponse =
+  UploadCccMediaResponses[keyof UploadCccMediaResponses]
+
+export type DeleteCccMediaData = {
+  body: Cccjson
+  headers: {
+    'Idempotency-Key': string
+  }
+  path: {
+    uid: string
+  }
+  query?: never
+  url: '/api/v1/catalog/draft/media/{uid}'
+}
+
+export type DeleteCccMediaErrors = {
+  /**
+   * Verified staff edit permission required
+   */
+  403: unknown
+  /**
+   * Logical media is absent or outside owner scope
+   */
+  404: unknown
+  /**
+   * Stale Draft/edit token or retry mismatch
+   */
+  409: unknown
+  /**
+   * Invalid exact edit tokens or non-Media target
+   */
+  422: Cccjson
+  /**
+   * Dedicated catalog unavailable
+   */
+  503: unknown
+}
+
+export type DeleteCccMediaError =
+  DeleteCccMediaErrors[keyof DeleteCccMediaErrors]
+
+export type DeleteCccMediaResponses = {
+  /**
+   * New tombstone version and Draft generation; history bytes retained
+   */
+  200: Cccjson
+}
+
+export type DeleteCccMediaResponse =
+  DeleteCccMediaResponses[keyof DeleteCccMediaResponses]
+
+export type ReplaceCccMediaFileData = {
+  body: {
+    /**
+     * Optional case-sensitive editorial batch label; not identity or approval.
+     */
+    change_id?: string
+    expected_draft_rev: number
+    expected_revision_uid: string
+    file: Blob | File
+    name: string
+  }
+  headers: {
+    'Idempotency-Key': string
+  }
+  path: {
+    uid: string
+  }
+  query?: never
+  url: '/api/v1/catalog/draft/media/{uid}/file'
+}
+
+export type ReplaceCccMediaFileErrors = {
+  /**
+   * Malformed multipart request
+   */
+  400: unknown
+  /**
+   * Verified staff edit permission required
+   */
+  403: unknown
+  /**
+   * Logical media is absent or outside owner scope
+   */
+  404: unknown
+  /**
+   * Stale Draft/edit token or retry mismatch
+   */
+  409: unknown
+  /**
+   * Request body exceeds bounded upload envelope
+   */
+  413: unknown
+  /**
+   * Invalid fields or unsupported/unsafe bytes
+   */
+  422: Cccjson
+  /**
+   * Private storage or dedicated catalog unavailable
+   */
+  503: unknown
+}
+
+export type ReplaceCccMediaFileError =
+  ReplaceCccMediaFileErrors[keyof ReplaceCccMediaFileErrors]
+
+export type ReplaceCccMediaFileResponses = {
+  /**
+   * New immutable Draft file-version metadata under the same media UID
+   */
+  200: Cccjson
+}
+
+export type ReplaceCccMediaFileResponse =
+  ReplaceCccMediaFileResponses[keyof ReplaceCccMediaFileResponses]
+
+export type PublishCccDraftData = {
+  body: Cccjson
+  headers: {
+    'Idempotency-Key': string
+  }
+  path?: never
+  query?: never
+  url: '/api/v1/catalog/draft/publish'
+}
+
+export type PublishCccDraftErrors = {
+  /**
+   * Unsupported query parameters
+   */
+  400: unknown
+  /**
+   * Verified publisher permission required
+   */
+  403: unknown
+  /**
+   * Stale reviewed state or decisions or conflicting retry; nothing published
+   */
+  409: unknown
+  /**
+   * Invalid review, unfinished decisions or reference/dependency validation failed; nothing published
+   */
+  422: unknown
+  /**
+   * Local publication is disabled or catalog unavailable
+   */
+  503: unknown
+}
+
+export type PublishCccDraftResponses = {
+  /**
+   * New Live, previous Live and fresh Draft state after atomic commit
+   */
+  200: Cccjson
+}
+
+export type PublishCccDraftResponse =
+  PublishCccDraftResponses[keyof PublishCccDraftResponses]
+
+export type GetCccStagingData = {
+  body?: never
+  path?: never
+  query?: {
+    search?: string
+    author_uid?: string
+    change_id?: string
+    tags?: Array<string>
+    types?: Array<'model' | 'workflow' | 'app' | 'media' | 'template_set'>
+    statuses?: Array<'NEW' | 'APPROVED' | 'DEFERRED' | 'DELETED'>
+  }
+  url: '/api/v1/catalog/draft/staging'
+}
+
+export type GetCccStagingErrors = {
+  /**
+   * Unknown, repeated scalar or invalid filter; bounded result exceeded
+   */
+  400: unknown
+  /**
+   * Verified staff read permission required
+   */
+  403: unknown
+  /**
+   * Dedicated catalog unavailable
+   */
+  503: unknown
+}
+
+export type GetCccStagingResponses = {
+  /**
+   * Private complete matching changes and exact Draft generation
+   */
+  200: Cccjson
+}
+
+export type GetCccStagingResponse =
+  GetCccStagingResponses[keyof GetCccStagingResponses]
+
+export type StageCccChangesData = {
+  body: Cccjson
+  headers: {
+    'Idempotency-Key': string
+  }
+  path?: never
+  query?: never
+  url: '/api/v1/catalog/draft/staging'
+}
+
+export type StageCccChangesErrors = {
+  /**
+   * Publisher permission required; edit alone is insufficient
+   */
+  403: unknown
+  /**
+   * Stale review, changed matching count or conflicting retry
+   */
+  409: unknown
+  /**
+   * Invalid status/filter/tokens/count or missing unfiltered confirmation
+   */
+  422: unknown
+  /**
+   * Dedicated catalog unavailable
+   */
+  503: unknown
+}
+
+export type StageCccChangesResponses = {
+  /**
+   * Atomic matching-set decisions and updated private staging state
+   */
+  200: Cccjson
+}
+
+export type StageCccChangesResponse =
+  StageCccChangesResponses[keyof StageCccChangesResponses]
+
+export type ListContentCatalogItemsData = {
+  body?: never
+  path?: never
+  query?: {
+    q?: string
+    slug?: string
+    kind?: 'MODEL' | 'WORKFLOW' | 'APP'
+    /**
+     * Optional canonical workflow path or website detail slug. Expand the verified primary API file for this one eligible workflow only; collection reads otherwise never open API blobs.
+     */
+    workflow_slug?: string
+  }
+  url: '/api/v1/catalog/items'
+}
+
+export type ListContentCatalogItemsErrors = {
+  /**
+   * Catalog disabled or unavailable
+   */
+  503: unknown
+}
+
+export type ListContentCatalogItemsResponses = {
+  /**
+   * LIVE projection
+   */
+  200: ContentCatalogProjection
+}
+
+export type ListContentCatalogItemsResponse =
+  ListContentCatalogItemsResponses[keyof ListContentCatalogItemsResponses]
+
+export type GetContentCatalogItemData = {
+  body?: never
+  path: {
+    uid: string
+  }
+  query?: never
+  url: '/api/v1/catalog/items/{uid}'
+}
+
+export type GetContentCatalogItemErrors = {
+  /**
+   * Not found or not publicly eligible
+   */
+  404: unknown
+  /**
+   * Catalog disabled or unavailable
+   */
+  503: unknown
+}
+
+export type GetContentCatalogItemResponses = {
+  /**
+   * Website content record
+   */
+  200: ContentCatalogRecord
+}
+
+export type GetContentCatalogItemResponse =
+  GetContentCatalogItemResponses[keyof GetContentCatalogItemResponses]
+
+export type GetCccItemHistoryData = {
+  body?: never
+  path: {
+    uid: string
+  }
+  query?: {
+    limit?: number
+    cursor?: string
+  }
+  url: '/api/v1/catalog/items/{uid}/history'
+}
+
+export type GetCccItemHistoryErrors = {
+  /**
+   * Invalid limit, cursor or unsupported query parameter
+   */
+  400: unknown
+  /**
+   * Verified staff permission required
+   */
+  403: unknown
+  /**
+   * Resource outside organization scope or absent
+   */
+  404: unknown
+  /**
+   * Dedicated catalog unavailable
+   */
+  503: unknown
+}
+
+export type GetCccItemHistoryResponses = {
+  /**
+   * Flat immutable items with catalog_status and saved_at, has_more and optional opaque next_cursor; no total
+   */
+  200: Cccjson
+}
+
+export type GetCccItemHistoryResponse =
+  GetCccItemHistoryResponses[keyof GetCccItemHistoryResponses]
+
+export type GetCccPublicMediaBytesData = {
+  body?: never
+  path: {
+    uid: string
+    version: string
+  }
+  query?: never
+  url: '/api/v1/catalog/media/{uid}/{version}'
+}
+
+export type GetCccPublicMediaBytesErrors = {
+  /**
+   * Missing or unverifiable authority, unpublished/scheduled/private, or unsupported HEAD/range/query
+   */
+  404: unknown
+}
+
+export type GetCccPublicMediaBytesResponses = {
+  /**
+   * Exact current LIVE bytes; authority checked before byte access; no-store
+   */
+  200: Blob | File
+}
+
+export type GetCccPublicMediaBytesResponse =
+  GetCccPublicMediaBytesResponses[keyof GetCccPublicMediaBytesResponses]
+
+export type HeadCccPublicMediaBytesData = {
+  body?: never
+  path: {
+    uid: string
+    version: string
+  }
+  query?: never
+  url: '/api/v1/catalog/media/{uid}/{version}'
+}
+
+export type HeadCccPublicMediaBytesErrors = {
+  /**
+   * HEAD is unsupported; no-store with no bytes or redirects
+   */
+  404: unknown
+}
+
+export type GetCatalogOpenApiData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/v1/catalog/openapi.json'
+}
+
+export type GetCatalogOpenApiResponses = {
+  /**
+   * Catalog OpenAPI with contract fingerprint and environment
+   */
+  200: Cccjson
+}
+
+export type GetCatalogOpenApiResponse =
+  GetCatalogOpenApiResponses[keyof GetCatalogOpenApiResponses]
+
+export type GetCccPreviewMediaBytesData = {
+  body?: never
+  path: {
+    rev: number
+    uid: string
+    version: string
+  }
+  query?: never
+  url: '/api/v1/catalog/preview-media/{rev}/{uid}/{version}'
+}
+
+export type GetCccPreviewMediaBytesErrors = {
+  /**
+   * Authentication required
+   */
+  401: unknown
+  /**
+   * Unauthorized, unavailable, unselected, or unsupported HEAD/range/query
+   */
+  404: unknown
+}
+
+export type GetCccPreviewMediaBytesResponses = {
+  /**
+   * Verified selected bytes; private no-store; no origin redirect
+   */
+  200: Blob | File
+}
+
+export type GetCccPreviewMediaBytesResponse =
+  GetCccPreviewMediaBytesResponses[keyof GetCccPreviewMediaBytesResponses]
+
+export type HeadCccPreviewMediaBytesData = {
+  body?: never
+  path: {
+    rev: number
+    uid: string
+    version: string
+  }
+  query?: never
+  url: '/api/v1/catalog/preview-media/{rev}/{uid}/{version}'
+}
+
+export type HeadCccPreviewMediaBytesErrors = {
+  /**
+   * Authentication required
+   */
+  401: unknown
+  /**
+   * HEAD is unsupported; private no-store with no bytes or redirects
+   */
+  404: unknown
+}
+
+export type GetCccRevisionItemData = {
+  body?: never
+  path: {
+    rev: number
+    uid: string
+  }
+  query?: never
+  url: '/api/v1/catalog/revisions/{rev}/items/{uid}'
+}
+
+export type GetCccRevisionItemErrors = {
+  /**
+   * Verified staff permission required
+   */
+  403: unknown
+  /**
+   * Resource/revision not found in organization scope
+   */
+  404: unknown
+  /**
+   * Dedicated catalog unavailable
+   */
+  503: unknown
+}
+
+export type GetCccRevisionItemResponses = {
+  /**
+   * Flat Content and exact edit/revision context
+   */
+  200: Cccjson
+}
+
+export type GetCccRevisionItemResponse =
+  GetCccRevisionItemResponses[keyof GetCccRevisionItemResponses]
+
+export type ReopenCccRevisionData = {
+  body: {
+    archive_draft: true
+    expected_draft_generation: number
+    expected_draft_rev: number
+  }
+  headers: {
+    'Idempotency-Key': string
+  }
+  path: {
+    rev: number
+  }
+  query?: never
+  url: '/api/v1/catalog/revisions/{rev}/reopen'
+}
+
+export type ReopenCccRevisionErrors = {
+  /**
+   * Invalid review tokens or missing explicit archive consent
+   */
+  400: Cccjson
+  /**
+   * Verified staff edit permission required
+   */
+  403: unknown
+  /**
+   * Stale reviewed Draft or idempotency mismatch
+   */
+  409: unknown
+  /**
+   * Dedicated catalog unavailable or retained schema cannot be reopened
+   */
+  503: unknown
+}
+
+export type ReopenCccRevisionError =
+  ReopenCccRevisionErrors[keyof ReopenCccRevisionErrors]
+
+export type ReopenCccRevisionResponses = {
+  /**
+   * New Draft/state and reopened-from revision
+   */
+  200: Cccjson
+}
+
+export type ReopenCccRevisionResponse =
+  ReopenCccRevisionResponses[keyof ReopenCccRevisionResponses]
+
+export type GetCccTypeSchemaData = {
+  body?: never
+  path: {
+    type: 'model' | 'workflow' | 'app' | 'template_set' | 'media'
+    schema_version: number
+  }
+  query?: never
+  url: '/api/v1/catalog/schemas/{type}/{schema_version}'
+}
+
+export type GetCccTypeSchemaErrors = {
+  /**
+   * Unsupported type or schema version
+   */
+  404: unknown
+}
+
+export type GetCccTypeSchemaResponses = {
+  /**
+   * Build-coupled OpenAPI 3.0 schema object, type, version and API environment
+   */
+  200: Cccjson
+}
+
+export type GetCccTypeSchemaResponse =
+  GetCccTypeSchemaResponses[keyof GetCccTypeSchemaResponses]
+
+export type GetCccStateData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/v1/catalog/state'
+}
+
+export type GetCccStateErrors = {
+  /**
+   * Verified staff permission required
+   */
+  403: unknown
+  /**
+   * Dedicated catalog unavailable; no legacy fallback
+   */
+  503: unknown
+}
+
+export type GetCccStateResponses = {
+  /**
+   * Private state; never cacheable
+   */
+  200: Cccjson
+}
+
+export type GetCccStateResponse =
+  GetCccStateResponses[keyof GetCccStateResponses]
+
 export type GetLegacyUserdataV2Data = {
   body?: never
   path?: never
@@ -16283,6 +17718,23 @@ export type PostOAuthTokenResponses = {
 
 export type PostOAuthTokenResponse =
   PostOAuthTokenResponses[keyof PostOAuthTokenResponses]
+
+export type GetCccOpenApiData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/openapi.json'
+}
+
+export type GetCccOpenApiResponses = {
+  /**
+   * OpenAPI JSON with CCC contract version and environment
+   */
+  200: Cccjson
+}
+
+export type GetCccOpenApiResponse =
+  GetCccOpenApiResponses[keyof GetCccOpenApiResponses]
 
 export type GetTemplateProxyData = {
   body?: never

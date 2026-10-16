@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { respondToFetch } from '@comfyorg/test-utils/fetch'
-import { render, screen, waitFor } from '@testing-library/vue'
+import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import { assert, beforeEach, describe, expect, it } from 'vitest'
 
 import { workflowDetailsBySlug } from '@/config/workshop-workflow-content'
@@ -32,6 +32,184 @@ beforeEach(() => {
 })
 
 describe('WorkflowPreview', () => {
+  it('links a resolved Runs on model to its catalog detail page', () => {
+    render(WorkflowPreview, {
+      props: {
+        model: {
+          ...model,
+          catalogDetails: {
+            locale: 'en',
+            faqs: [],
+            models: [
+              {
+                uid: 'catalog-model',
+                name: 'Flux Pro',
+                href: '/hub/models/flux-pro/'
+              },
+              { uid: 'unresolved-model', name: 'Model unavailable' }
+            ]
+          }
+        }
+      }
+    })
+    expect(screen.getByRole('link', { name: 'Flux Pro' })).toHaveAttribute(
+      'href',
+      '/hub/models/flux-pro/'
+    )
+    expect(screen.getByRole('link', { name: 'Flux Pro' })).toHaveClass(
+      'underline'
+    )
+    expect(screen.getByText('Model unavailable')).toBeVisible()
+    expect(
+      screen.queryByRole('link', { name: 'Model unavailable' })
+    ).not.toBeInTheDocument()
+  })
+  it('shows a readable author and decorative avatar, not an account identifier', () => {
+    render(WorkflowPreview, {
+      props: {
+        model: {
+          ...model,
+          catalogDetails: {
+            locale: 'en',
+            faqs: [],
+            models: [{ uid: 'opaque-model-id', name: 'Flux Pro' }],
+            author: 'Ben Cooley',
+            authorAvatarURL: 'https://media.comfy.org/ben-avatar.png'
+          }
+        }
+      }
+    })
+    expect(screen.getByText('Ben Cooley')).toBeVisible()
+    expect(screen.getByText('Flux Pro')).toBeVisible()
+    expect(screen.queryByText('opaque-model-id')).not.toBeInTheDocument()
+    const avatar = screen.getByTestId('workflow-author-avatar')
+    expect(avatar).toHaveAttribute(
+      'src',
+      'https://media.comfy.org/ben-avatar.png'
+    )
+    expect(avatar).toHaveAttribute('referrerpolicy', 'no-referrer')
+    expect(avatar).toHaveAttribute('alt', '')
+  })
+  it('picks among several declared files and draws the picked one', async () => {
+    const uid = '00000000-0000-4000-8000-000000000080'
+    const first = `/preview-media/7/${uid}/00000000-0000-4000-8000-000000000081`
+    const second = `/preview-media/7/${uid}/00000000-0000-4000-8000-000000000082`
+    render(WorkflowPreview, {
+      props: {
+        model: {
+          ...model,
+          catalogDetails: {
+            locale: 'en',
+            faqs: [],
+            models: [],
+            workflowFiles: [
+              { name: 'Version one', uid, href: first },
+              { name: 'Version two', uid, href: second }
+            ]
+          }
+        }
+      }
+    })
+    expect(
+      screen.getByRole('link', { name: 'Download workflow JSON' })
+    ).toHaveAttribute('href', second)
+    await fireEvent.update(
+      screen.getByRole('combobox', { name: 'Workflow version' }),
+      first
+    )
+    expect(
+      screen.getByRole('link', { name: 'Download workflow JSON' })
+    ).toHaveAttribute('href', first)
+    expect(screen.getByTestId('workflow-graph-full')).toHaveAttribute(
+      'href',
+      first
+    )
+  })
+
+  it('does not resurrect a legacy download when declared CCC files are unavailable', () => {
+    render(WorkflowPreview, {
+      props: {
+        model: {
+          ...model,
+          catalogDetails: {
+            locale: 'en',
+            faqs: [],
+            models: [],
+            workflowFiles: []
+          }
+        }
+      }
+    })
+    expect(
+      screen.queryByRole('link', { name: 'Download workflow JSON' })
+    ).toBeNull()
+    expect(screen.queryByTestId('workflow-graph')).toBeNull()
+  })
+  it('shows CCC facts and linked models without inheriting stale template facts', () => {
+    render(WorkflowPreview, {
+      props: {
+        model: {
+          ...model,
+          catalogDetails: {
+            locale: 'en',
+            faqs: [],
+            worksOnCloud: false,
+            outputType: 'text',
+            runs: 0,
+            downloads: 4,
+            models: [
+              {
+                uid: 'model-uid',
+                name: 'Verified model',
+                href: '/hub/models/verified/'
+              }
+            ]
+          }
+        }
+      }
+    })
+    const details = screen.getByTestId('workflow-details')
+    expect(details).toHaveTextContent('Comfy CloudNo')
+    expect(details).toHaveTextContent('Text')
+    expect(details).toHaveTextContent('Runs0')
+    expect(details).toHaveTextContent('Downloads4')
+    expect(
+      screen.getByRole('link', { name: 'Verified model' })
+    ).toHaveAttribute('href', '/hub/models/verified/')
+    expect(details).not.toHaveTextContent(model.author ?? 'impossible-author')
+  })
+
+  it('hides the CCC details card entirely when there are no facts or models', () => {
+    render(WorkflowPreview, {
+      props: {
+        model: {
+          ...model,
+          catalogDetails: { locale: 'en', faqs: [], models: [] }
+        }
+      }
+    })
+    expect(screen.queryByTestId('workflow-facts')).toBeNull()
+  })
+
+  it('localizes CCC details labels and preserves false and zero', () => {
+    render(WorkflowPreview, {
+      props: {
+        model: {
+          ...model,
+          catalogDetails: {
+            locale: 'zh-CN',
+            faqs: [],
+            models: [],
+            worksOnCloud: true,
+            runs: 0,
+            outputType: 'image'
+          }
+        }
+      }
+    })
+    expect(screen.getByTestId('workflow-details')).toHaveTextContent('运行次数')
+    expect(screen.getByTestId('workflow-details')).toHaveTextContent('图像')
+  })
   it('puts the graph beside what it runs on', () => {
     render(WorkflowPreview, { props: { model } })
 

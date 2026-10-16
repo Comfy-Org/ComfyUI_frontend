@@ -1,20 +1,43 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro'
+import StaffContentActions from '@/components/cms/StaffContentActions.astro'
 import ModelsPage from '@/components/workshop/ModelsPage.vue'
+import CccModelsPage from '@/components/workshop/CccModelsPage.vue'
+import CatalogNavigation from '@/components/workshop/CatalogNavigation.astro'
 import type { CatalogueTab } from '@/components/workshop/CatalogueTabs.vue'
 import ModelsShowcase from '@/components/models/ModelsShowcase.astro'
 import { HUB_APPS_PATH, HUB_WORKFLOWS_PATH } from '@/config/hub-models'
 import { isIndexableModelPage } from '@/config/indexing'
 import { HUB_SECTION_COPY } from './hub-section-copy'
+import { cmsEnabled, catalogUnavailable } from '@/lib/cms/catalog'
+import { loadSiteCatalogList } from '@/lib/cms/catalog-list'
 
 const SECTIONS: Readonly<Record<string, Exclude<CatalogueTab, 'models'>>> = {
   [HUB_WORKFLOWS_PATH]: 'workflows',
   [HUB_APPS_PATH]: 'apps'
 }
-const section = SECTIONS[Astro.routePattern]
+const section = SECTIONS[Astro.routePattern.replace(/^\/zh-CN/, '')]
 if (!section)
   throw new Error(`No hub section is built at ${Astro.routePattern}`)
+const catalog = cmsEnabled()
+  ? await loadSiteCatalogList(
+      Astro.locals.catalogAuthoring ?? Astro.locals.site,
+      Astro.locals.catalogLocale,
+      section,
+      Astro.url.searchParams
+    )
+  : undefined
+const failure = catalog && !catalog.ok ? catalogUnavailable() : undefined
+if (failure) return failure
+
 const copy = HUB_SECTION_COPY[section]
+const records = catalog?.ok
+  ? catalog.models.filter((item) =>
+      section === 'apps'
+        ? item.type === 'APP'
+        : item.type === 'CLOUD' || item.type === 'SERVERLESS'
+    )
+  : []
 ---
 
 <BaseLayout
@@ -23,18 +46,58 @@ const copy = HUB_SECTION_COPY[section]
   noindex={!isIndexableModelPage(Astro.url.pathname)}
   preloadFonts={['Medium']}
 >
+  {cmsEnabled() && <CatalogNavigation />}
+  <StaffContentActions create type={section === 'apps' ? 'app' : 'workflow'} />
   <script>
     import '@/scripts/hubNavigation'
   </script>
-  <ModelsPage
-    section={section}
-    heading={copy.heading}
-    client:load
-    transition:persist="hub-catalogue"
-  >
-    <ModelsShowcase slot="fallback" />
-  </ModelsPage>
+  {cmsEnabled() ? (
+    <CccModelsPage
+      initialModels={catalog?.ok ? catalog.models : undefined}
+      initialCatalogAvailable={catalog?.ok === true}
+      initialPages={catalog?.ok ? catalog.pages : undefined}
+      initialFacets={catalog?.ok ? catalog.facets : undefined}
+      initialSearch={Astro.url.search}
+      initialHeadings={
+        catalog?.ok
+          ? {
+              models: Astro.locals.t('workshop.catalogue.heading'),
+              workflows: HUB_SECTION_COPY.workflows.heading,
+              apps: HUB_SECTION_COPY.apps.heading
+            }
+          : undefined
+      }
+      locale={Astro.locals.catalogLocale ?? 'en'}
+      section={section}
+      heading={copy.heading}
+      client:load
+      transition:persist={`ccc-hub-catalogue-${Astro.locals.catalogLocale ?? 'en'}`}
+      transition:name={`ccc-hub-catalogue-${Astro.locals.catalogLocale ?? 'en'}`}
+      transition:animate="none"
+    >
+      <ModelsShowcase slot="fallback" />
+    </CccModelsPage>
+  ) : (
+    <ModelsPage
+      locale={Astro.locals.catalogLocale ?? 'en'}
+      section={section}
+      heading={copy.heading}
+      client:load
+      transition:persist="hub-catalogue"
+    >
+      <ModelsShowcase slot="fallback" />
+    </ModelsPage>
+  )}
   <noscript>
     <ModelsShowcase />
   </noscript>
+  {catalog?.ok && <noscript
+    ><section class="mx-auto max-w-10xl px-6 pb-16 lg:px-8">
+      <ul>
+        {records.map((record) => <li>
+          <a href={record.href}>{record.name}</a>
+        </li>)}
+      </ul>
+    </section></noscript
+  >}
 </BaseLayout>

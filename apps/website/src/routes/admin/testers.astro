@@ -1,0 +1,156 @@
+---
+import AdminShell from '@/components/cms/AdminShell.astro'
+import { adminButtonVariants } from '@/components/cms/ui/adminButton'
+import PageHeader from '@/components/cms/ui/PageHeader.vue'
+import StatusLabel from '@/components/cms/ui/StatusLabel.vue'
+import type { StatusTone } from '@/components/cms/ui/status'
+import { resolveLocale } from '@/config/locales'
+import { formatUtc } from '@/lib/cms/format'
+import { isLocalAccess } from './local-access'
+import {
+  TESTER_COOKIE,
+  createInvitation,
+  listInvitations,
+  revokeInvitation
+} from '@/lib/cms/testers'
+import { validMutation } from '@/lib/cms/admin'
+if (
+  !Astro.locals.site ||
+  !isLocalAccess(Astro) ||
+  Astro.cookies.has(TESTER_COOKIE)
+)
+  return new Response('Not found', { status: 404 })
+let code: string | undefined
+if (Astro.request.method === 'POST') {
+  const body = await Astro.request.formData()
+  if (!validMutation(Astro, body.get('csrf')))
+    return new Response('Access denied', { status: 403 })
+  if (body.get('action') === 'revoke')
+    await revokeInvitation(String(body.get('id')))
+  else {
+    const role = body.get('role')
+    const name = body.get('name')
+    if (
+      typeof name !== 'string' ||
+      !name.trim() ||
+      name.length > 100 ||
+      !['review', 'edit', 'publish'].includes(String(role))
+    )
+      return new Response('Invalid invitation', { status: 400 })
+    if (role === 'review' || role === 'edit' || role === 'publish')
+      code = await createInvitation(name, role)
+  }
+}
+const entries = await listInvitations()
+const csrf = Astro.locals.site.csrf
+const t = Astro.locals.t
+const publicOrigin = (process.env.SITE_CATALOG_WEBSITE_ORIGINS ?? '')
+  .split(',')
+  .filter(Boolean)[0]
+const signInURL = publicOrigin
+  ? new URL('/admin/sign-in', publicOrigin).href
+  : undefined
+const locale = resolveLocale(Astro.currentLocale)
+const state = (entry: (typeof entries)[number]) =>
+  entry.revoked
+    ? 'revoked'
+    : entry.expires <= Date.now()
+      ? 'expired'
+      : entry.redeemed
+        ? 'used'
+        : 'unused'
+const tones: Record<ReturnType<typeof state>, StatusTone> = {
+  unused: 'info',
+  used: 'success',
+  expired: 'muted',
+  revoked: 'muted'
+}
+const field =
+  'h-8 w-full rounded-lg border border-admin-field bg-admin-page px-2.5 text-sm text-admin-fg outline-none placeholder:text-admin-subtle hover:border-ash-800 focus-visible:border-admin-control'
+---
+
+<AdminShell current="testers">
+  <div class="grid gap-5">
+    <PageHeader
+      title={t('cmsTesters.title')}
+      description={t('cmsTesters.notice')}
+    />
+    {signInURL && <p class="text-xs text-admin-muted">
+      <a
+        href={signInURL}
+        target="_blank"
+        rel="noopener"
+        class="break-all text-admin-fg underline-offset-4 hover:underline"
+        >{signInURL}</a
+      >
+    </p>}
+    {code && <div
+      class="grid gap-2 rounded-lg border border-admin-info/25 bg-admin-info/10 p-3 text-sm"
+    >
+      <p>{t('cmsTesters.copy')}</p>
+      <input
+        aria-label={t('cmsTesters.newCode')}
+        readonly
+        value={code}
+        data-private
+        data-dd-privacy="mask"
+        class:list={[field, 'font-mono']}
+      />
+    </div>}
+    <form
+      method="post"
+      data-astro-reload
+      class="grid items-end gap-3 rounded-lg border border-admin-line bg-admin-card p-4 sm:grid-cols-[minmax(0,1fr)_12rem_auto]"
+    >
+      <input type="hidden" name="csrf" value={csrf} />
+      <label class="grid gap-1.5 text-xs text-admin-muted"
+        >{t('cmsTesters.name')}<input
+          name="name"
+          required
+          maxlength="100"
+          class={field}
+      /></label>
+      <label class="grid gap-1.5 text-xs text-admin-muted"
+        >{t('cmsTesters.access')}<select name="role" class={field}>
+          <option value="review">{t('cmsTesters.review')}</option>
+          <option value="edit">{t('cmsTesters.edit')}</option>
+          <option value="publish">{t('cmsTesters.publish')}</option>
+        </select></label
+      >
+      <button class={adminButtonVariants({ variant: 'primary' })}>
+        {t('cmsTesters.create')}
+      </button>
+    </form>
+    {entries.length > 0 && <ul
+      class="overflow-hidden rounded-lg border border-admin-line"
+    >
+      {entries.map((e) => <li
+        class="flex min-h-14 flex-wrap items-center gap-x-4 gap-y-1 border-b border-admin-hover px-4 py-2 text-sm last:border-b-0"
+      >
+        <div class="grid min-w-0 flex-1 gap-1">
+          <p class="flex flex-wrap items-center gap-3">
+            {e.name}
+            <StatusLabel
+              tone={tones[state(e)]}
+              label={t(`cmsTesters.${state(e)}`)}
+            />
+          </p>
+          <p class="text-xs text-admin-muted">
+            {t(`cmsTesters.${e.role}`)} ·{' '}
+            {t('cmsTesters.expires', {
+              date: formatUtc(new Date(e.expires).toISOString(), locale)
+            })}
+          </p>
+        </div>
+        {!e.revoked && <form method="post" data-astro-reload>
+          <input type="hidden" name="csrf" value={csrf} />
+          <input type="hidden" name="action" value="revoke" />
+          <input type="hidden" name="id" value={e.id} />
+          <button class={adminButtonVariants({ variant: 'dangerGhost' })}>
+            {t('cmsTesters.revoke')}
+          </button>
+        </form>}
+      </li>)}
+    </ul>}
+  </div>
+</AdminShell>

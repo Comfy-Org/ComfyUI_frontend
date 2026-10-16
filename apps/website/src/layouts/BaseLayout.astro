@@ -1,5 +1,7 @@
 ---
 import { ClientRouter } from 'astro:transitions'
+import CatalogStaffChrome from '@/components/cms/CatalogStaffChrome.astro'
+import CatalogStaffStyles from '@/components/cms/CatalogStaffStyles.astro'
 import Analytics from '@vercel/analytics/astro'
 import '@/styles/global.css'
 import SiteFooter from '@/components/common/SiteFooter.vue'
@@ -58,6 +60,7 @@ interface Props {
   mainEntityId?: string
   extraJsonLd?: (JsonLdNode | null | undefined)[]
   minimal?: boolean
+  bare?: boolean
   hideAnnouncementBanner?: boolean
   smoothScroll?: boolean
   banner?: BannerConfig
@@ -79,6 +82,7 @@ const {
   mainEntityId,
   extraJsonLd,
   minimal = false,
+  bare = false,
   hideAnnouncementBanner = false,
   smoothScroll = false,
   banner,
@@ -139,6 +143,7 @@ const structuredData = head.emitStructuredData
       ...(extraJsonLd ?? [])
     )
   : undefined
+
 const hubApps: HubApp[] = appModels.map(({ appId, flag }) => ({
   appId,
   ...(flag && { flag })
@@ -155,6 +160,7 @@ const hubApps: HubApp[] = appModels.map(({ appId, flag }) => ({
   data-banner-version={bannerVisible ? bannerVersion : undefined}
 >
   <head>
+    <CatalogStaffStyles />
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
@@ -272,6 +278,23 @@ const hubApps: HubApp[] = appModels.map(({ appId, flag }) => ({
 
     <GoogleTagManager part="head" />
 
+    {process.env.SITE_CATALOG_API_URL &&
+      process.env.VERCEL_ENV !== 'production' && <script is:inline>
+        // Run before Astro's module installs its window popstate listener. Vue's
+        // mounted listeners are otherwise too late to claim same-app history.
+        if (!window.__comfyCatalogHistoryRelay) {
+          window.__comfyCatalogHistoryRelay = true
+          window.addEventListener('popstate', (event) => {
+            const claimed = !document.dispatchEvent(
+              new CustomEvent('ccc:history', {
+                detail: event,
+                cancelable: true
+              })
+            )
+            if (claimed) event.stopImmediatePropagation()
+          })
+        }
+      </script>}
     <ClientRouter />
 
     <!-- Chrome initializes a video's muted state from the `muted` attribute
@@ -306,8 +329,9 @@ const hubApps: HubApp[] = appModels.map(({ appId, flag }) => ({
     class="overflow-x-clip bg-primary-comfy-ink font-formula text-white antialiased"
   >
     <GoogleTagManager part="noscript" />
+    <CatalogStaffChrome bare={bare} />
 
-    {bannerVisible && !minimal && (
+    {bannerVisible && !minimal && !bare && (
       <AnnouncementBanner
         data={bannerData}
         version={bannerVersion}
@@ -315,7 +339,7 @@ const hubApps: HubApp[] = appModels.map(({ appId, flag }) => ({
         client:load
       />
     )}
-    {minimal ? (
+    {bare ? null : minimal ? (
       <div class="mx-auto max-w-7xl px-6 py-8 lg:px-8">
         <a
           href={getRoutes(locale).home}
@@ -342,7 +366,7 @@ const hubApps: HubApp[] = appModels.map(({ appId, flag }) => ({
     <main class="overflow-x-clip">
       <slot />
     </main>
-    {!minimal && (
+    {!minimal && !bare && (
       <SiteFooter
         locale={locale}
         alternates={languageAlternates}

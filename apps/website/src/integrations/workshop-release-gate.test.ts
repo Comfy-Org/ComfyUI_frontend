@@ -77,42 +77,81 @@ async function buildDone(
   })
 }
 
+async function configSetup() {
+  const config = await validateConfig({}, root, 'build')
+  // Applies each update with the same merge Astro's hook runner uses, so the
+  // assertion is on the configuration Astro would actually build with, not
+  // on the argument the integration happened to pass.
+  let applied = config
+  const updateConfig = vi.fn<
+    HookParameters<'astro:config:setup'>['updateConfig']
+  >((update) => {
+    applied = mergeConfig(applied, update)
+    return applied
+  })
+  const injectRoute =
+    vi.fn<HookParameters<'astro:config:setup'>['injectRoute']>()
+  const hook = workshopReleaseGate().hooks['astro:config:setup']
+  if (!hook) throw new Error('Missing config setup hook')
+  await hook({
+    config,
+    command: 'build',
+    isRestart: false,
+    updateConfig,
+    injectRoute,
+    injectScript: vi.fn(),
+    addRenderer: vi.fn(),
+    addWatchFile: vi.fn(),
+    addClientDirective: vi.fn(),
+    addDevToolbarApp: vi.fn(),
+    addMiddleware: vi.fn(),
+    createCodegenDir: () => pathToFileURL(`${root}/.astro/`),
+    logger
+  })
+  return {
+    updateConfig,
+    applied,
+    routes: injectRoute.mock.calls.map(([route]) => route)
+  }
+}
+
 describe('Workshop release output', () => {
   it('registers the catalogue client boundary during Astro setup', async () => {
     vi.stubEnv('WORKSHOP_IN_BUILD', '0')
-    const config = await validateConfig({}, root, 'build')
-    // Applies each update with the same merge Astro's hook runner uses, so the
-    // assertion is on the configuration Astro would actually build with, not
-    // on the argument the integration happened to pass.
-    let applied = config
-    const updateConfig = vi.fn<
-      HookParameters<'astro:config:setup'>['updateConfig']
-    >((update) => {
-      applied = mergeConfig(applied, update)
-      return applied
-    })
-    const hook = workshopReleaseGate().hooks['astro:config:setup']
-    if (!hook) throw new Error('Missing config setup hook')
-    await hook({
-      config,
-      command: 'build',
-      isRestart: false,
-      updateConfig,
-      injectRoute: vi.fn(),
-      injectScript: vi.fn(),
-      addRenderer: vi.fn(),
-      addWatchFile: vi.fn(),
-      addClientDirective: vi.fn(),
-      addDevToolbarApp: vi.fn(),
-      addMiddleware: vi.fn(),
-      createCodegenDir: () => pathToFileURL(`${root}/.astro/`),
-      logger
-    })
+    const { updateConfig, applied } = await configSetup()
     expect(updateConfig).toHaveBeenCalledOnce()
     expect(pluginNames(applied.vite.plugins)).toContain(
       'workshop-client-boundary'
     )
   })
+
+  it.for([
+    { env: 'production', rendersOnDemand: false },
+    { env: 'preview', rendersOnDemand: true }
+  ])(
+    'renders CMS routes only where the CMS is enabled ($env)',
+    async ({ env, rendersOnDemand }) => {
+      vi.stubEnv('WORKSHOP_IN_BUILD', '0')
+      vi.stubEnv('VERCEL_ENV', env)
+      vi.stubEnv('SITE_CATALOG_API_URL', 'http://localhost:8099')
+      const { routes } = await configSetup()
+      const hubRoutes = routes.filter(({ pattern }) =>
+        pattern.startsWith('/hub/')
+      )
+      const onDemand = hubRoutes.filter(({ prerender }) => prerender === false)
+      expect(hubRoutes).not.toHaveLength(0)
+      expect(onDemand).toEqual(rendersOnDemand ? hubRoutes : [])
+      expect(routes.some(({ pattern }) => pattern === '/admin/catalog')).toBe(
+        rendersOnDemand
+      )
+      expect(
+        routes.some(({ pattern }) => pattern.startsWith('/zh-CN/hub/'))
+      ).toBe(rendersOnDemand)
+      expect(
+        routes.some(({ pattern }) => pattern === '/api/v1/catalog/agents')
+      ).toBe(rendersOnDemand)
+    }
+  )
 
   it('rejects an invalid Cloud family before building', () => {
     vi.stubEnv('VERCEL_ENV', 'preview')

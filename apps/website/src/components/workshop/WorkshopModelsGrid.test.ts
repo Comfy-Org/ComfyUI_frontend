@@ -56,6 +56,35 @@ async function search() {
 }
 
 describe('WorkshopModelsGrid', () => {
+  it('keeps the bounded server-ranked page instead of applying client substring search again', async () => {
+    render(WorkshopModelsGrid, {
+      props: {
+        models,
+        initialSearch: '?q=semantic&sort=name&p=2&cursor=current',
+        serverPage: {
+          mode: 'cursor',
+          page: 2,
+          pageSize: 24,
+          count: 3,
+          hasPrevious: true,
+          hasNext: true
+        }
+      }
+    })
+    await waitFor(() =>
+      expect(
+        screen.getByRole('searchbox', {
+          name: 'Search models, providers, and categories'
+        })
+      ).toHaveValue('semantic')
+    )
+    expect(
+      screen
+        .getAllByTestId('workshop-model-card')
+        .map((card) => card.getAttribute('href'))
+    ).toEqual(['/models/kling-ai/', '/models/flux/', '/models/mystery/'])
+  })
+
   afterEach(() => {
     history.replaceState(null, '', '/')
     sessionStorage.clear()

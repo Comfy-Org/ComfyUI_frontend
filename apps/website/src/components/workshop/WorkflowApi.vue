@@ -1,11 +1,8 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import WorkflowApiSteps from './WorkflowApiSteps.vue'
+import { computed, ref, watch } from 'vue'
+import { Download } from '@lucide/vue'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
-import Button from '@/components/ui/button/Button.vue'
-import CopyTextButton from '@/components/ui/copy-text-button/CopyTextButton.vue'
-import { useTablist } from '@/composables/useTablist'
 import type { WorkflowWorkshopModelDetail } from '@/config/models-catalogue'
 import type { SnippetLanguage } from '@/config/models-snippets'
 import { SNIPPET_LANGUAGES } from '@/config/models-snippets'
@@ -14,6 +11,7 @@ import type { FormValues } from '@/config/workshop-playground'
 import { urlUploadField } from '@/config/workshop-playground'
 import { OBJECT_URL_LIFETIME_MS } from '@/config/workshop-output-download'
 import { initialWorkshopPageState } from '@/config/workshop-page-state'
+import { WorkshopWorkflowError } from '@/config/workshop-workflow-api'
 import { useWorkshopSession } from '@/config/workshop-session-state'
 import { WORKSHOP_CLOUD_BASE_URL } from '@/config/workshop-env'
 import { workspaceLinkedHref } from '@/config/workshop-workspace-link'
@@ -24,16 +22,25 @@ import {
   workflowSnippetRequest,
   workflowTypeScript
 } from '@/config/workshop-workflow-snippet'
-import { t } from '@/i18n/translations'
-import type { CodeLang } from '@/lib/highlight'
-import ApiFacts from './ApiFacts.vue'
-import HighlightedCode from './HighlightedCode.vue'
+import { translationsFor } from '@/i18n/translations'
+import WorkflowApiSetup from './WorkflowApiSetup.vue'
+import WorkflowSnippet from './WorkflowSnippet.vue'
 import SectionHeading from './SectionHeading.vue'
 
-const { model, values } = defineProps<{
+const {
+  model,
+  values,
+  downloadOnly = false
+} = defineProps<{
   model: WorkflowWorkshopModelDetail
   values: FormValues
+  downloadOnly?: boolean
 }>()
+const locale = computed(() => model.catalogDetails?.locale ?? 'en')
+const t = computed(() => translationsFor(locale.value).t)
+const documentationURL = computed(
+  () => model.catalogDetails?.documentationURL ?? externalLinks.docsApi
+)
 const emit = defineEmits<{ copy: [language: SnippetLanguage]; getKey: [] }>()
 const { session } = useWorkshopSession()
 const keyHref = computed(() =>
@@ -42,20 +49,40 @@ const keyHref = computed(() =>
     session.value?.workspace.id
   )
 )
-const request = computed(() => {
-  if (model.type !== 'CLOUD') return undefined
+const inferred = computed(() => {
+  if (model.type !== 'CLOUD') return { fallback: true }
   try {
-    return workflowSnippetRequest(model, values)
-  } catch {
-    return undefined
+    return { request: workflowSnippetRequest(model, values), fallback: false }
+  } catch (error) {
+    return {
+      fallback: !(
+        error instanceof WorkshopWorkflowError && error.code === 'invalid_input'
+      )
+    }
   }
 })
+const request = computed(() => inferred.value.request)
 const language = ref<SnippetLanguage>('python')
-const { onKeydown: onLanguageKeydown } = useTablist(
-  () => SNIPPET_LANGUAGES,
-  language
+const languages = computed(() =>
+  request.value
+    ? SNIPPET_LANGUAGES
+    : SNIPPET_LANGUAGES.filter(
+        (lang) =>
+          inferred.value.fallback &&
+          model.catalogDetails?.scriptCode?.[lang]?.trim()
+      )
+)
+watch(
+  languages,
+  (available) => {
+    if (!available.includes(language.value))
+      language.value = available[0] ?? 'python'
+  },
+  { immediate: true }
 )
 const code = computed(() => {
+  if (!request.value && inferred.value.fallback)
+    return model.catalogDetails?.scriptCode?.[language.value] ?? ''
   if (!request.value) return ''
   if (language.value === 'curl') return workflowCurl(request.value)
   const plan = workflowSdkPlan(model, values, request.value)
@@ -63,17 +90,23 @@ const code = computed(() => {
     ? workflowPython(plan)
     : workflowTypeScript(plan)
 })
-const languageLabel: Record<SnippetLanguage, string> = {
-  python: 'Python',
-  typescript: 'TypeScript',
-  curl: 'cURL'
-}
-const highlightLanguage = {
-  python: 'python',
-  typescript: 'typescript',
-  curl: 'shell'
-} satisfies Record<SnippetLanguage, CodeLang>
 const graphFile = `${model.slug.split('/').pop()}-api.json`
+const apiFile = computed(() => model.catalogDetails?.apiWorkflowFile)
+const visible = computed(
+  () =>
+    !downloadOnly || request.value || languages.value.length || apiFile.value
+)
+const heading = computed(() =>
+  t.value(downloadOnly ? 'cccWorkflow.codeHeading' : 'workshop.api.heading')
+)
+const hint = computed(() =>
+  t.value(downloadOnly ? 'cccWorkflow.codeHint' : 'workshop.workflow.apiHint')
+)
+const unavailableText = computed(() =>
+  t.value(
+    downloadOnly ? 'cccWorkflow.codeUnavailable' : 'workshop.api.inputInvalid'
+  )
+)
 
 function downloadGraph() {
   if (!request.value) return
@@ -99,24 +132,24 @@ const facts = computed(() => {
       ? []
       : [
           {
-            label: t('workshop.api.needsEndpoint'),
+            label: t.value('workshop.api.needsEndpoint'),
             value: `POST ${endpoint}`,
             mono: true,
-            copyLabel: t('workshop.api.copyEndpoint')
+            copyLabel: t.value('workshop.api.copyEndpoint')
           }
         ]),
     {
-      label: t('workshop.api.needsKey'),
+      label: t.value('workshop.api.needsKey'),
       value: sdk ? 'COMFY_API_KEY' : 'X-API-Key + extra_data.api_key_comfy_org',
       mono: true
     },
     ...(hasMedia
       ? [
           {
-            label: t('workshop.api.needsFiles'),
+            label: t.value('workshop.api.needsFiles'),
             value: sdk
-              ? t('workshop.api.filesSdk')
-              : t('workshop.api.filesUploaded')
+              ? t.value('workshop.api.filesSdk')
+              : t.value('workshop.api.filesUploaded')
           }
         ]
       : [])
@@ -125,144 +158,55 @@ const facts = computed(() => {
 </script>
 
 <template>
-  <section class="flex flex-col gap-6" aria-labelledby="workflow-api-heading">
+  <section
+    v-if="visible"
+    class="flex flex-col gap-6"
+    aria-labelledby="workflow-api-heading"
+  >
     <SectionHeading
       title-id="workflow-api-heading"
-      :title="t('workshop.api.heading')"
-      :subtitle="t('workshop.workflow.apiHint')"
+      :title="heading"
+      :subtitle="hint"
     />
     <div class="flex flex-col gap-8 lg:flex-row-reverse lg:items-start">
-      <div
-        class="flex w-full flex-col gap-3 lg:sticky lg:top-24 lg:w-95 lg:shrink-0"
-      >
-        <Button
-          as="a"
-          :href="keyHref"
-          target="_blank"
-          rel="noopener"
-          variant="outline"
-          class="w-full justify-between"
-          data-testid="api-get-key"
-          @click="emit('getKey')"
-        >
-          <template #prepend>
-            <span
-              class="inline-flex size-6 items-center justify-center rounded-full bg-primary-comfy-yellow/15 text-xs font-bold"
-              aria-hidden="true"
-              >1</span
-            >
-          </template>
-          {{ t('workshop.api.getKey') }}
-          <template #append><span aria-hidden="true">↗</span></template>
-        </Button>
-        <Button
-          v-if="request"
-          variant="outline"
-          class="w-full justify-between"
-          @click="downloadGraph"
-        >
-          <template #prepend>
-            <span
-              class="inline-flex size-6 items-center justify-center rounded-full bg-primary-comfy-yellow/15 text-xs font-bold"
-              aria-hidden="true"
-              >2</span
-            >
-          </template>
-          {{ t('workshop.api.downloadGraph') }}
-          <template #append><span aria-hidden="true">↓</span></template>
-        </Button>
-        <div data-testid="workflow-api-endpoint">
-          <ApiFacts
-            :where="t('workshop.api.runsOnCloud')"
-            :rows="facts"
-            :note="t('workshop.workflow.apiNote')"
-          />
-        </div>
-      </div>
-
+      <WorkflowApiSetup
+        v-if="request || !downloadOnly"
+        :key-href="keyHref"
+        :show-download="Boolean(request) && !apiFile"
+        :facts
+        :locale
+        @get-key="emit('getKey')"
+        @download="downloadGraph"
+      />
       <div class="flex min-w-0 flex-1 flex-col gap-4">
-        <div
-          v-if="code"
-          class="overflow-hidden rounded-2xl border border-transparency-white-t20"
+        <a
+          v-if="apiFile"
+          :href="apiFile.href"
+          :download="graphFile"
+          class="inline-flex min-h-11 items-center gap-2 self-start rounded-lg border border-transparency-white-t20 px-4 py-2 text-sm font-medium text-primary-comfy-yellow hover:border-primary-comfy-yellow hover:text-primary-warm-white focus-visible:outline-2 focus-visible:outline-primary-comfy-yellow"
         >
-          <div
-            class="flex items-center justify-between border-b border-transparency-white-t8 px-3 py-2"
-          >
-            <div
-              role="tablist"
-              :aria-label="t('workshop.api.heading')"
-              class="flex gap-1"
-              @keydown="onLanguageKeydown"
-            >
-              <button
-                v-for="option in SNIPPET_LANGUAGES"
-                :id="`workflow-snippet-tab-${option}`"
-                :key="option"
-                type="button"
-                role="tab"
-                :aria-selected="language === option"
-                aria-controls="workflow-api-snippet"
-                :tabindex="language === option ? 0 : -1"
-                :class="
-                  cn(
-                    'cursor-pointer rounded-xl px-3 py-1.5 text-xs font-bold tracking-wider uppercase transition-colors',
-                    language === option
-                      ? 'bg-primary-comfy-yellow text-primary-comfy-ink'
-                      : 'text-primary-comfy-canvas hover:bg-transparency-white-t8 hover:text-primary-warm-white'
-                  )
-                "
-                @click="language = option"
-              >
-                {{ languageLabel[option] }}
-              </button>
-            </div>
-            <CopyTextButton
-              :value="code"
-              :label="t('workshop.api.copy')"
-              :copied-label="t('workshop.api.copied')"
-              @click="emit('copy', language)"
-            />
-          </div>
-          <pre
-            id="workflow-api-snippet"
-            role="tabpanel"
-            :aria-labelledby="`workflow-snippet-tab-${language}`"
-            tabindex="0"
-            class="max-h-168 overflow-auto bg-primary-comfy-ink p-6 text-sm/relaxed text-primary-warm-white"
-            data-testid="workflow-api-snippet"
-          ><HighlightedCode :code="code" :language="highlightLanguage[language]" /></pre>
-        </div>
+          <Download class="size-4" aria-hidden="true" />
+          {{ t('cccWorkflow.downloadApiJSON') }}
+        </a>
+        <WorkflowSnippet
+          v-if="code"
+          v-model="language"
+          :code
+          :languages
+          :locale
+          @copy="emit('copy', $event)"
+        />
         <p v-else role="status" class="text-sm text-primary-warm-gray">
-          {{ t('workshop.api.inputInvalid') }}
+          {{ unavailableText }}
         </p>
 
-        <details
-          v-if="language === 'curl'"
-          class="rounded-2xl border border-transparency-white-t8 px-5"
-          data-testid="workflow-api-steps"
-        >
-          <summary
-            class="cursor-pointer list-none py-4 text-sm font-medium text-primary-comfy-canvas marker:hidden hover:text-primary-warm-white"
-          >
-            {{ t('workshop.workflow.apiSteps') }}
-          </summary>
-          <div class="space-y-2 pb-5 text-sm/relaxed text-primary-warm-gray">
-            <template v-if="hasMedia">
-              <h3 class="font-medium text-primary-comfy-canvas">
-                {{ t('workshop.workflow.apiUploads') }}
-              </h3>
-              <ol class="list-decimal space-y-1 ps-5">
-                <li>{{ t('workshop.workflow.apiUploadGrant') }}</li>
-                <li>{{ t('workshop.workflow.apiUploadPut') }}</li>
-                <li>{{ t('workshop.workflow.apiUploadFinalize') }}</li>
-              </ol>
-            </template>
-            <p>{{ t('workshop.workflow.apiPoll') }}</p>
-          </div>
-        </details>
-
+        <WorkflowApiSteps
+          v-if="request && language === 'curl'"
+          :has-media="hasMedia"
+          :locale
+        />
         <a
-          :href="externalLinks.docsApi"
+          :href="documentationURL"
           target="_blank"
           rel="noopener noreferrer"
           class="inline-flex min-h-11 items-center gap-2 self-start text-sm font-medium text-primary-comfy-yellow hover:text-primary-warm-white"
