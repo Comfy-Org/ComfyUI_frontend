@@ -2,7 +2,7 @@ import {
   catalogResponseNoStore,
   mutableCatalogPath
 } from '@/lib/cms/response-cache'
-import type { APIContext } from 'astro'
+import type { APIContext, MiddlewareNext } from 'astro'
 import type { ContentCatalogReview } from './lib/cms/review-contract'
 import { defineMiddleware } from 'astro:middleware'
 import { resolveLocale } from './config/locales'
@@ -163,7 +163,7 @@ function selectPreview(context: APIContext) {
   return context.redirect(context.url.pathname + context.url.search, 303)
 }
 
-const respond = defineMiddleware(async (context, next) => {
+async function respond(context: APIContext, next: MiddlewareNext) {
   context.locals.catalogLocale =
     context.url.pathname.startsWith('/zh-CN/') ||
     context.cookies.get(CATALOG_LOCALE_COOKIE)?.value === 'zh-CN'
@@ -251,14 +251,14 @@ const respond = defineMiddleware(async (context, next) => {
     response.headers.set('X-Comfy-Content-Source', 'cms')
   }
   return response
-})
+}
 
 export const onRequest = defineMiddleware(async (context, next) => {
   const cms =
     Boolean(process.env.SITE_CATALOG_API_URL) &&
     process.env.VERCEL_ENV !== 'production'
   const response = await respond(context, next)
-  return response && cms && mutableCatalogPath(context.url.pathname)
+  return cms && mutableCatalogPath(context.url.pathname)
     ? catalogResponseNoStore(response)
     : response
 })
