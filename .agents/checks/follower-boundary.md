@@ -143,3 +143,8 @@ from `src/base/assert.ts` (DEV throws, prod reports to Sentry), with a message t
 the broken invariant and links this ADR, e.g. `assert(!isFollower, 'followers never write
 the shared doc — see FOLLOWER')`. Flag a follower-boundary change that adds no such guard
 where one is warranted.
+
+`pnpm follower-invariants:check` parses the current follower-core TypeScript files and
+fails closed on a missing source or a direct shared-document mutation. The sole permitted
+raw Yjs integration is `FollowerDoc.applyRemoteUpdate`, which applies a host-delivered
+update to its local follower document.
