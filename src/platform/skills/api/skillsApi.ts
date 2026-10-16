@@ -46,7 +46,7 @@ async function toApiError(response: Response): Promise<SkillPacksApiError> {
 }
 
 export async function listSkillPacks(): Promise<SkillPack[]> {
-  const response = await api.fetchApi('/agent/skills')
+  const response = await api.fetchApi(api.agentRoute('/agent/skills'))
   if (!response.ok) throw await toApiError(response)
   return zAgentSkillListResponse.parse(await response.json()).skills
 }
@@ -55,7 +55,7 @@ export async function listSkillPacks(): Promise<SkillPack[]> {
 export async function publishSkillPack(
   payload: SkillPackPublishRequest
 ): Promise<SkillPack> {
-  const response = await api.fetchApi('/agent/skills', {
+  const response = await api.fetchApi(api.agentRoute('/agent/skills'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
@@ -69,7 +69,7 @@ export async function deleteSkillPack(name: string): Promise<void> {
     throw new SkillPacksApiError('Invalid skill pack name', 400)
   }
   const response = await api.fetchApi(
-    `/agent/skills/${encodeURIComponent(name)}`,
+    api.agentRoute(`/agent/skills/${encodeURIComponent(name)}`),
     { method: 'DELETE' }
   )
   if (!response.ok) throw await toApiError(response)
