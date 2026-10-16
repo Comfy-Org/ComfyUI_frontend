@@ -8,7 +8,7 @@
     >
       <i
         aria-hidden="true"
-        class="mt-0.5 icon-[lucide--triangle-alert] size-4 shrink-0 text-warning-background"
+        class="mt-0.5 icon-[comfy--triangle-alert-filled] size-4 shrink-0 text-warning-background"
       />
       <div class="flex flex-col gap-1.5 text-xs/relaxed text-muted-foreground">
         <p class="m-0">

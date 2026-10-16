@@ -25,8 +25,8 @@
               cn(
                 'mt-0.5 size-5 shrink-0',
                 hasError
-                  ? 'icon-[lucide--circle-x] text-destructive-background'
-                  : 'icon-[lucide--triangle-alert] text-warning-foreground'
+                  ? 'icon-[comfy--circle-alert-filled] text-destructive-background-hover'
+                  : 'icon-[comfy--triangle-alert-filled] text-warning-background'
               )
             "
           />
