@@ -34,7 +34,7 @@ const AUTH_ERROR_COPY: AuthErrorCopy = en.auth.errors
 export type SessionRefusal = Pick<SessionFailure, 'code' | 'organizationId'>
 
 /** Whether this origin can offer sign-in: still asking, able to, or refused its configuration. */
-export type IdentityStatus = 'resolving' | 'ready' | 'unavailable'
+type IdentityStatus = 'resolving' | 'ready' | 'unavailable'
 
 export type SessionEstablishment =
   | { readonly status: 'ok' }
