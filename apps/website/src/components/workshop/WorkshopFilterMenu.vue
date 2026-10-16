@@ -29,7 +29,7 @@ import type { FacetSheetGroup } from './FacetSheet.vue'
 export interface FacetMenuOption<T extends string = UseCase> {
   readonly value: T
   readonly label: string
-  readonly count: number
+  readonly count?: number
 }
 
 const WorkshopFilterPanel = defineAsyncComponent(
@@ -47,7 +47,7 @@ const {
   /** The models the listing runs on, where it stands on more than its own. */
   modelOptions?: readonly FacetMenuOption<string>[]
   /** What the catalogue holds under the current choices, for the way out. */
-  resultCount: number
+  resultCount?: number
   kind?: 'models' | 'workflows'
   locale?: Locale
 }>()
@@ -163,6 +163,7 @@ const sheetLabels = computed(() => ({
   noMatches: t('workshop.filter.noMatches'),
   applied: (n: number) => t('workshop.filter.applied', { n }),
   clearAll: t('workshop.filter.clearAll'),
+  showAll: t('cccCatalogPage.showResults'),
   show: (n: number) =>
     t(
       kind === 'models'

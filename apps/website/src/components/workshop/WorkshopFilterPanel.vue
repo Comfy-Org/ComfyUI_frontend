@@ -8,7 +8,7 @@ type SheetProps = ComponentProps<typeof FacetSheet>
 const { groups, labels, resultCount, isPhone, bottom } = defineProps<{
   groups: SheetProps['groups']
   labels: SheetProps['labels']
-  resultCount: number
+  resultCount?: number
   isPhone: boolean
   bottom?: number
 }>()

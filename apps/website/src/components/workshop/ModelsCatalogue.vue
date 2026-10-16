@@ -145,11 +145,14 @@ const appCards = computed<readonly CatalogueApp[]>(() =>
 )
 const availableTabs = computed<readonly CatalogueTab[]>(() => [
   'models',
-  ...((pages?.workflows.total ?? workflows.value.length) ||
+  ...((pages?.workflows.available ??
+    pages?.workflows.total ??
+    workflows.value.length) ||
   displayedSection.value === 'workflows'
     ? (['workflows'] as const)
     : []),
-  ...((appsEnabled.value && (pages?.apps.total ?? apps.value.length)) ||
+  ...((appsEnabled.value &&
+    (pages?.apps.available ?? pages?.apps.total ?? apps.value.length)) ||
   section === 'apps'
     ? (['apps'] as const)
     : [])

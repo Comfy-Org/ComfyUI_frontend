@@ -147,7 +147,7 @@ watch(
     clearTimeout(searchTimer)
     searchTimer = setTimeout(() => {
       const params = new URLSearchParams(initialSearch ?? location.search)
-      for (const key of ['q', 'category', 'model', 'sort', 'p'])
+      for (const key of ['q', 'category', 'model', 'sort', 'p', 'cursor'])
         params.delete(key)
       if (query.value) params.set('q', query.value)
       for (const value of selected.value) params.append('category', value)
@@ -156,6 +156,7 @@ watch(
       const search = params.toString()
       const current = new URLSearchParams(initialSearch ?? location.search)
       current.delete('p')
+      current.delete('cursor')
       if (search !== current.toString()) emit('search', search)
     }, 200)
   },
@@ -205,7 +206,7 @@ const modelOptions = computed(() => {
   if (serverFacets)
     return serverFacets.models.map((model) => ({
       ...model,
-      label: model.value
+      label: model.label ?? model.value
     }))
   const counts = new Map<string, number>()
   for (const model of models)
@@ -230,6 +231,7 @@ const searched = computed(
   () => new Set(searchWorkshopModels(models, { query: query.value }))
 )
 const visible = computed(() => {
+  if (serverPage?.mode === 'cursor') return models
   const matching = matchingCategories.value.filter((model) =>
     searched.value.has(model)
   )
@@ -260,7 +262,11 @@ const chips = computed<FilterChip[]>(() => [
   })),
   ...runsOn.value.map((name) => ({
     key: `model:${name}`,
-    label: t('workshop.filter.runsOn', { model: name })
+    label: t('workshop.filter.runsOn', {
+      model:
+        modelOptions.value.find((option) => option.value === name)?.label ??
+        name
+    })
   }))
 ])
 
@@ -334,7 +340,7 @@ function leaveSection() {
           kind="workflows"
           :use-case-options="options"
           :model-options="modelOptions"
-          :result-count="serverPage?.total ?? visible.length"
+          :result-count="serverPage ? serverPage.total : visible.length"
           :locale
         />
         <WorkshopSortMenu

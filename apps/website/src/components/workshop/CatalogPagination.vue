@@ -20,13 +20,28 @@ const {
   locale?: Locale
 }>()
 const { t } = translationsFor(locale)
-const start = computed(() =>
-  page.total ? (page.page - 1) * page.pageSize + 1 : 0
+const count = computed(() =>
+  page.mode === 'cursor'
+    ? (page.count ?? 0)
+    : Math.max(
+        0,
+        Math.min(
+          page.pageSize,
+          (page.total ?? 0) - (page.page - 1) * page.pageSize
+        )
+      )
 )
-const end = computed(() => Math.min(page.page * page.pageSize, page.total))
-function href(value: number) {
+const start = computed(() =>
+  count.value ? (page.page - 1) * page.pageSize + 1 : 0
+)
+const end = computed(() => (count.value ? start.value + count.value - 1 : 0))
+function href(value: number, cursor?: string) {
   const params = new URLSearchParams(initialSearch)
   params.set('p', String(value))
+  if (page.mode === 'cursor') {
+    params.delete('cursor')
+    if (cursor) params.set('cursor', cursor)
+  }
   return `${locale === 'zh-CN' ? '/zh-CN' : ''}/hub/${section}/?${params}`
 }
 const linkClass =
@@ -34,6 +49,13 @@ const linkClass =
 </script>
 
 <template>
+  <p
+    v-if="page.reset"
+    role="status"
+    class="mt-6 text-center text-sm text-primary-warm-gray"
+  >
+    {{ t('cccCatalogPage.reset') }}
+  </p>
   <nav
     class="mt-8 flex flex-wrap items-center justify-center gap-4"
     :aria-label="t('cccCatalogPage.navigation')"
@@ -41,18 +63,20 @@ const linkClass =
   >
     <a
       v-if="page.hasPrevious"
-      :href="href(page.page - 1)"
+      :href="href(page.page - 1, page.previousCursor)"
       :class="linkClass"
       data-testid="catalog-previous"
       data-astro-prefetch="false"
       >{{ t('cccCatalogPage.previous') }}</a
     >
     <span class="text-sm text-primary-warm-gray tabular-nums">{{
-      t('cccCatalogPage.range', { start, end, total: page.total })
+      page.total === undefined
+        ? t('cccCatalogPage.rangeWithoutTotal', { start, end })
+        : t('cccCatalogPage.range', { start, end, total: page.total })
     }}</span>
     <a
       v-if="page.hasNext"
-      :href="href(page.page + 1)"
+      :href="href(page.page + 1, page.nextCursor)"
       :class="linkClass"
       data-testid="catalog-next"
       data-astro-prefetch="false"

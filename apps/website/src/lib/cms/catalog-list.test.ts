@@ -1,6 +1,9 @@
+import type {
+  CccWebsiteCardsPage,
+  ContentCatalogRecord
+} from '@comfyorg/ingest-types'
 import { assert, describe, expect, it, vi } from 'vitest'
 
-import { entries } from '@website/scripts/export-cms-seed'
 import { loadSiteCatalogList } from './catalog-list'
 import type { AuthoringSession } from './authoring-session'
 
@@ -21,76 +24,97 @@ const session: AuthoringSession = {
   preview: { view: 'DRAFT', now: '2026-10-15T09:00:00Z' }
 }
 
-function setup() {
-  vi.stubEnv('SITE_CATALOG_API_URL', 'http://localhost:8099')
-  vi.stubEnv('VERCEL_ENV', 'development')
-  const item = entries.find((entry) => entry.kind === 'MODEL')
-  if (!item) throw new Error('Expected an existing card fixture')
-  const rows = Array.from({ length: 60 }, (_, i) => ({
-    ...item,
-    uid: `00000000-0000-4000-8000-${String(i + 1).padStart(12, '0')}`,
+function card(): ContentCatalogRecord {
+  return {
+    uid: '00000000-0000-4000-8000-000000000010',
+    edit_version: '00000000-0000-4000-8000-000000000011',
     revision: 1,
     deleted: false,
-    edit_version: '00000000-0000-4000-8000-000000000100',
-    data: {
-      ...item.data,
-      name: `Card ${String(i).padStart(2, '0')}`,
-      slug: `card-${i}`,
-      provider: i >= 30 ? 'wanted' : 'other',
-      unknownLargeDocument: 'large'.repeat(1000),
-      examples: [{ invalidDetail: true }]
+    enabled: true,
+    visibility: 'PUBLIC',
+    kind: 'WORKFLOW',
+    slug: '/hub/workflows/card-only',
+    data: { type: 'workflow', title: 'Workflow card', slug: 'card-only' }
+  }
+}
+
+function page(): CccWebsiteCardsPage {
+  return {
+    revision_id: 4,
+    items: [card()],
+    page_size: 24,
+    has_more: true,
+    next_cursor: 'signed-next',
+    available_kinds: ['MODEL', 'WORKFLOW', 'APP'],
+    sort_orders: ['popular', 'name'],
+    facets: {
+      categories: [{ value: '', label: '' }],
+      models: [{ value: 'model-uid', label: 'Model name' }],
+      use_cases: []
     }
-  }))
+  }
+}
+
+function setup(data: unknown = page()) {
+  vi.stubEnv('SITE_CATALOG_API_URL', 'http://localhost:8099')
+  vi.stubEnv('VERCEL_ENV', 'development')
   const upstream = vi
     .fn<typeof fetch>()
-    .mockResolvedValue(
-      Response.json({ revision_id: 1, generation: 0, items: rows })
-    )
+    .mockImplementation(async () => Response.json(data))
   vi.mocked(fetch).mockImplementation(upstream)
   return upstream
 }
 
-describe('bounded website catalog summaries', () => {
+describe('bounded website catalog transport', () => {
+  it('requests only the active kind and retains server order, cursors and global metadata', async () => {
+    const response = page()
+    response.previous_cursor = 'signed-back'
+    const upstream = setup(response)
+    const result = await loadSiteCatalogList(
+      undefined,
+      'en',
+      'workflows',
+      new URLSearchParams(
+        'p=3&cursor=signed-current&q=semantic+match&model=model-uid&category=&sort=name'
+      )
+    )
+    assert.isTrue(result.ok)
+    const url = new URL(String(upstream.mock.calls[0][0]))
+    expect(url.pathname).toBe('/api/v1/catalog/cards')
+    expect(Object.fromEntries(url.searchParams)).toMatchObject({
+      kind: 'WORKFLOW',
+      limit: '24',
+      cursor: 'signed-current',
+      q: 'semantic match',
+      model: 'model-uid',
+      category: '',
+      sort: 'name'
+    })
+    expect(url.searchParams.has('p')).toBe(false)
+    expect(result.models.map((item) => item.name)).toEqual(['Workflow card'])
+    expect(result.pages.workflows).toMatchObject({
+      page: 3,
+      count: 1,
+      nextCursor: 'signed-next',
+      previousCursor: 'signed-back',
+      hasPrevious: true,
+      hasNext: true
+    })
+    expect(result.pages.workflows.total).toBeUndefined()
+    expect(result.pages.apps.available).toBe(true)
+    expect(result.facets.workflows.models).toEqual([
+      { value: 'model-uid', label: 'Model name' }
+    ])
+    expect(upstream).toHaveBeenCalledTimes(1)
+  })
+
   it.for([
     { locale: 'en', label: 'Uncategorized' },
     { locale: 'zh-CN', label: '未分类' }
   ])(
-    'retains the empty category filter and a readable facet label in $locale',
+    'retains an explicit empty category and localized label in $locale',
     async ({ locale, label }) => {
       const upstream = setup()
-      const fixture = entries.find((entry) => entry.kind === 'WORKFLOW')
-      assert.exists(fixture)
-      upstream.mockResolvedValueOnce(
-        Response.json({
-          revision_id: 1,
-          generation: 0,
-          items: [
-            {
-              ...fixture,
-              revision: 1,
-              edit_version: fixture.uid,
-              deleted: false,
-              data: {
-                ...fixture.data,
-                category: '',
-                categoryLabel: { en: ' ', 'zh-CN': '' }
-              }
-            },
-            {
-              ...fixture,
-              uid: '00000000-0000-4000-8000-000000000099',
-              revision: 1,
-              edit_version: fixture.uid,
-              deleted: false,
-              data: {
-                ...fixture.data,
-                category: 'video',
-                categoryLabel: { en: 'Video', 'zh-CN': '视频' }
-              }
-            }
-          ]
-        })
-      )
       const result = await loadSiteCatalogList(
         undefined,
         locale,
@@ -98,224 +122,148 @@ describe('bounded website catalog summaries', () => {
         new URLSearchParams('category=')
       )
       assert.isTrue(result.ok)
-      expect(result.pages.workflows.total).toBe(1)
-      expect(result.models).toHaveLength(1)
-      expect(result.models[0]).toHaveProperty('category', '')
-      expect(result.facets.workflows.categories[0]).toEqual({
-        value: '',
-        label,
-        count: 1
-      })
+      expect(result.facets.workflows.categories).toEqual([{ value: '', label }])
+      expect(String(upstream.mock.calls[0][0])).toContain('category=')
     }
   )
 
-  it('keeps workflow body, FAQ and detailed facts out of card summaries', async () => {
-    const upstream = setup()
-    const workflow = entries.find((entry) => entry.kind === 'WORKFLOW')
-    if (!workflow) throw new Error('Expected a workflow fixture')
-    upstream.mockResolvedValueOnce(
-      Response.json({
-        revision_id: 1,
-        generation: 0,
-        items: [
-          {
-            ...workflow,
-            revision: 1,
-            deleted: false,
-            edit_version: workflow.uid,
-            data: {
-              type: 'workflow',
-              title: 'Workflow card',
-              slug: 'card-only',
-              long_description: 'Detail only body '.repeat(100),
-              faq: [
-                {
-                  question: 'Detail only question',
-                  answer: 'Detail only answer'
-                }
-              ],
-              works_on_cloud: false,
-              runs: 0,
-              downloads: 123
-            }
-          }
-        ]
-      })
-    )
+  it('keeps authored details out of the serialized card model', async () => {
+    const response = page()
+    Object.assign(response.items[0].data, {
+      long_description: 'Private detail body',
+      examples: [{ invalidDetail: true }],
+      faq: [{ question: 'Question?', answer: 'Answer' }],
+      unknownLargeDocument: 'not a card'
+    })
+    setup(response)
     const result = await loadSiteCatalogList(undefined, 'en', 'workflows')
-    expect(result.ok).toBe(true)
-    if (!result.ok) return
+    assert.isTrue(result.ok)
     expect(result.models).toHaveLength(1)
-    expect(result.models[0].name).toBe('Workflow card')
+    expect(result.models[0]).not.toHaveProperty('examples')
     expect(result.models[0]).not.toHaveProperty('catalogDetails')
-    expect(JSON.stringify(result.models)).not.toContain('Detail only')
+    expect(JSON.stringify(result)).not.toContain('Private detail body')
+    expect(JSON.stringify(result)).not.toContain('unknownLargeDocument')
   })
 
-  it('bounds every tab independently while retaining global facet counts', async () => {
-    const upstream = setup()
-    const workflow = entries.find((entry) => entry.kind === 'WORKFLOW')
-    const app = entries.find((entry) => entry.kind === 'APP')
-    if (!workflow || !app) throw new Error('Expected workflow and app fixtures')
-    upstream.mockResolvedValueOnce(
-      Response.json({
-        revision_id: 1,
-        generation: 0,
-        items: [workflow, app].flatMap((entry, kind) =>
-          Array.from({ length: 50 }, (_, i) => ({
-            ...entry,
-            uid: `00000000-0000-4000-8000-${String(kind * 100 + i + 1).padStart(12, '0')}`,
-            revision: 1,
-            deleted: false,
-            edit_version: '00000000-0000-4000-8000-000000000200',
-            data: {
-              ...entry.data,
-              category: 'test',
-              categoryLabel: { en: 'Test', 'zh-CN': '测试' },
-              models: ['Model X']
-            }
-          }))
-        )
-      })
-    )
-    const result = await loadSiteCatalogList(
-      undefined,
-      'zh-CN',
-      'workflows',
-      new URLSearchParams('category=test&model=Model+X&p=2')
-    )
-    expect(result.ok).toBe(true)
-    if (!result.ok) return
-    expect(result.models).toHaveLength(48)
-    expect(result.pages.workflows).toMatchObject({ total: 50, page: 2 })
-    expect(result.pages.apps).toMatchObject({ total: 50, page: 1 })
-    expect(result.facets.workflows.categories).toEqual([
-      { value: 'test', label: '测试', count: 50 }
-    ])
-    expect(result.facets.workflows.models).toEqual([
-      { value: 'Model X', count: 50 }
-    ])
-  })
-
-  it('uses unreviewed localized titles only for selected Draft', async () => {
-    const upstream = setup()
-    const fixture = entries.find((entry) => entry.kind === 'MODEL')
-    if (!fixture) throw new Error('Expected model fixture')
-    const native = {
-      ...fixture,
-      revision: 1,
-      deleted: false,
-      edit_version: fixture.uid,
-      data: {
-        type: 'model',
-        title: 'Source',
-        slug: 'native',
-        translations: { 'zh-CN': { title: '草稿', review_state: 'machine' } }
-      }
+  it('uses unreviewed localized titles only in selected Draft', async () => {
+    const response = page()
+    response.items[0].data.translations = {
+      'zh-CN': { title: '草稿', review_state: 'machine' }
     }
-    const respond = () =>
-      Response.json({ revision_id: 1, generation: 0, items: [native] })
-    upstream.mockImplementation(async () => respond())
-    const live = await loadSiteCatalogList(undefined, 'zh-CN')
-    const draft = await loadSiteCatalogList(session, 'zh-CN')
-    expect(live.ok && live.models[0].name).toBe('Source')
+    setup(response)
+    const live = await loadSiteCatalogList(undefined, 'zh-CN', 'workflows')
+    const draft = await loadSiteCatalogList(session, 'zh-CN', 'workflows')
+    expect(live.ok && live.models[0].name).toBe('Workflow card')
     expect(draft.ok && draft.models[0].name).toBe('草稿')
   })
 
-  it('caps cards and excludes authored detail and arbitrary fields', async () => {
-    setup()
-    const result = await loadSiteCatalogList(undefined)
-    expect(result.ok).toBe(true)
-    if (!result.ok) return
-    expect(result.models).toHaveLength(24)
-    expect(result.pages.models).toMatchObject({
-      total: 60,
-      totalPages: 3,
-      page: 1,
-      hasNext: true
-    })
-    expect(result.models[0]).not.toHaveProperty('unknownLargeDocument')
-    expect(result.models[0]).not.toHaveProperty('examples')
-    expect(result.models[0]).not.toHaveProperty('execution')
-    expect(result).not.toHaveProperty('projection')
-    expect(result).not.toHaveProperty('details')
-  })
-
-  it('filters and sorts the complete selected list before taking page two', async () => {
-    setup()
-    const result = await loadSiteCatalogList(
-      undefined,
-      'en',
-      'models',
-      new URLSearchParams('provider=wanted&sort=name&p=2')
-    )
-    expect(result.ok).toBe(true)
-    if (!result.ok) return
-    expect(result.pages.models).toMatchObject({
-      total: 30,
-      page: 2,
-      hasPrevious: true,
-      hasNext: false
-    })
-    expect(result.models.map((m) => m.name)).toEqual([
-      'Card 54',
-      'Card 55',
-      'Card 56',
-      'Card 57',
-      'Card 58',
-      'Card 59'
-    ])
-  })
-
-  it.for(['0', '-1', '1.5', 'Infinity', '9007199254740992', 'bad'])(
-    'defaults invalid page %s to page one',
-    async (p) => {
-      setup()
-      const result = await loadSiteCatalogList(
-        undefined,
-        'en',
-        'models',
-        new URLSearchParams({ p })
-      )
-      expect(result.ok && result.pages.models.page).toBe(1)
-    }
-  )
-
-  it('clamps a valid beyond-last page', async () => {
-    setup()
-    const result = await loadSiteCatalogList(
-      undefined,
-      'en',
-      'models',
-      new URLSearchParams('p=999')
-    )
-    expect(result.ok && result.pages.models.page).toBe(3)
-    expect(result.ok && result.models.length).toBe(12)
-  })
-
-  it('retains selected staff view, time and no-store authorization', async () => {
+  it('retains fresh staff authorization, selected view, clock and no-store', async () => {
     const upstream = setup()
-    await loadSiteCatalogList(session, 'zh-CN')
-    expect(String(upstream.mock.calls[0][0])).toBe(
-      'http://localhost:8099/admin/api/site/catalog?view=DRAFT&eligible=true&now=2026-10-15T09%3A00%3A00Z'
-    )
+    await loadSiteCatalogList(session, 'zh-CN', 'workflows')
+    const url = new URL(String(upstream.mock.calls[0][0]))
+    expect(url.pathname).toBe('/admin/api/site/catalog/cards')
+    expect(Object.fromEntries(url.searchParams)).toMatchObject({
+      view: 'DRAFT',
+      now: '2026-10-15T09:00:00Z',
+      locale: 'zh-CN'
+    })
     expect(upstream.mock.calls[0][1]).toMatchObject({
       headers: { Authorization: 'Bearer test-credential' },
       cache: 'no-store'
     })
   })
 
-  it('rejects malformed projection and request failures without fallback', async () => {
+  it('restarts an old page-only link explicitly without walking offsets', async () => {
     const upstream = setup()
-    upstream.mockResolvedValueOnce(Response.json({ items: [] }))
-    expect(await loadSiteCatalogList(undefined)).toEqual({
-      ok: false,
-      status: 503
-    })
+    const result = await loadSiteCatalogList(
+      undefined,
+      'en',
+      'workflows',
+      new URLSearchParams('p=999')
+    )
+    assert.isTrue(result.ok)
+    expect(result.pages.workflows).toMatchObject({ page: 1, reset: true })
+    expect(upstream).toHaveBeenCalledTimes(1)
+    expect(String(upstream.mock.calls[0][0])).not.toContain('cursor=')
+  })
+
+  it('retries a stale cursor once on the first page with unchanged filters', async () => {
+    const upstream = setup()
+    upstream.mockResolvedValueOnce(new Response(null, { status: 409 }))
+    const result = await loadSiteCatalogList(
+      undefined,
+      'en',
+      'workflows',
+      new URLSearchParams('p=3&cursor=expired&category=video')
+    )
+    assert.isTrue(result.ok)
+    expect(result.pages.workflows).toMatchObject({ page: 1, reset: true })
+    expect(upstream).toHaveBeenCalledTimes(2)
+    expect(String(upstream.mock.calls[1][0])).toContain('category=video')
+    expect(String(upstream.mock.calls[1][0])).not.toContain('cursor=')
+  })
+
+  it.for([
+    {
+      name: 'more than 24 cards',
+      data: { ...page(), items: Array.from({ length: 25 }, card) }
+    },
+    {
+      name: 'unbounded full projection',
+      data: { revision_id: 4, generation: 0, items: [card()] }
+    },
+    {
+      name: 'missing next cursor',
+      data: { ...page(), next_cursor: undefined }
+    },
+    {
+      name: 'wrong kind',
+      data: { ...page(), items: [{ ...card(), kind: 'MODEL' }] }
+    },
+    {
+      name: 'future record revision',
+      data: { ...page(), items: [{ ...card(), revision: 5 }] }
+    },
+    {
+      name: 'unsafe revision',
+      data: { ...page(), revision_id: 9007199254740992 }
+    },
+    { name: 'public total count leak', data: { ...page(), total: 50 } },
+    { name: 'public generation leak', data: { ...page(), generation: 10 } },
+    {
+      name: 'public facet count leak',
+      data: {
+        ...page(),
+        facets: {
+          ...page().facets,
+          models: [{ value: 'uid', label: 'Name', count: 50 }]
+        }
+      }
+    },
+    {
+      name: 'oversized response',
+      data: { ...page(), padding: 'x'.repeat(262144) }
+    }
+  ])(
+    'fails closed for $name without a full-list fallback',
+    async ({ data }) => {
+      const upstream = setup(data)
+      expect(await loadSiteCatalogList(undefined, 'en', 'workflows')).toEqual({
+        ok: false,
+        status: 503
+      })
+      expect(upstream).toHaveBeenCalledTimes(1)
+    }
+  )
+
+  it('fails closed for an unavailable service without another endpoint', async () => {
+    const upstream = setup()
     upstream.mockRejectedValueOnce(new Error('offline'))
-    expect(await loadSiteCatalogList(undefined)).toEqual({
+    expect(await loadSiteCatalogList(undefined, 'en', 'workflows')).toEqual({
       ok: false,
       status: 503
     })
+    expect(upstream).toHaveBeenCalledTimes(1)
   })
 
   it('rejects production before requesting data', async () => {

@@ -5122,6 +5122,9 @@
     "addContent": "添加内容"
   },
   "cccCatalogPage": {
+    "showResults": "显示结果",
+    "rangeWithoutTotal": "第 {start}–{end} 项",
+    "reset": "此分页链接已失效。现显示当前结果的第一页。",
     "previous": "上一页",
     "next": "下一页",
     "range": "第 {start}–{end} 项，共 {total} 项",

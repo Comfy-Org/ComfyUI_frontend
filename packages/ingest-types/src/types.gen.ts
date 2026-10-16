@@ -4481,6 +4481,41 @@ export type CancelSubscriptionAcceptedResponse = {
   status: 'pending'
 }
 
+export type CccWebsiteCardsPage = {
+  available_kinds: Array<'MODEL' | 'WORKFLOW' | 'APP'>
+  facets: CccWebsiteCardFacets
+  /**
+   * Staff-only Draft generation
+   */
+  generation?: number
+  has_more: boolean
+  items: Array<ContentCatalogRecord>
+  next_cursor?: string
+  page_size: number
+  previous_cursor?: string
+  revision_id: number
+  sort_orders: Array<'popular' | 'name' | 'priceAsc' | 'priceDesc'>
+  /**
+   * Staff-only filtered count; omitted for anonymous callers
+   */
+  total?: number
+}
+
+export type CccWebsiteCardFacet = {
+  /**
+   * Staff-only eligible facet count
+   */
+  count?: number
+  label: string
+  value: string
+}
+
+export type CccWebsiteCardFacets = {
+  categories: Array<CccWebsiteCardFacet>
+  models: Array<CccWebsiteCardFacet>
+  use_cases: Array<CccWebsiteCardFacet>
+}
+
 /**
  * Flat type-versioned CCC JSON. Domain schemas constrain authored fields; server metadata and expected concurrency tokens are explicit and never caller-owned persistence fields.
  */
@@ -4497,15 +4532,9 @@ export type CccCatalogState = {
 }
 
 export type CccAuthoringContext = {
-  /**
-   * Canonical authenticated Comfy account ID (users.id).
-   */
   actor_uid: string
   can_apply: boolean
   can_edit: boolean
-  /**
-   * Server-configured comfy.org canonical account ID (users.id).
-   */
   owner_uid: string
   state: CccCatalogState
 }
@@ -13865,6 +13894,55 @@ export type GetCccAuthoringContextResponses = {
 export type GetCccAuthoringContextResponse =
   GetCccAuthoringContextResponses[keyof GetCccAuthoringContextResponses]
 
+export type ListCccWebsiteCardsData = {
+  body?: never
+  path?: never
+  query: {
+    kind: 'MODEL' | 'WORKFLOW' | 'APP'
+    limit?: number
+    cursor?: string
+    locale?: 'en' | 'zh-CN'
+    q?: string
+    sort?: 'popular' | 'name' | 'priceAsc' | 'priceDesc'
+    category?: Array<string>
+    model?: Array<string>
+    use?: Array<string>
+    modality?: Array<string>
+    provider?: Array<string>
+    capability?: Array<string>
+  }
+  url: '/api/v1/catalog/cards'
+}
+
+export type ListCccWebsiteCardsErrors = {
+  /**
+   * Invalid or unsupported query or cursor
+   */
+  400: unknown
+  /**
+   * Verified staff permission required for Preview
+   */
+  403: unknown
+  /**
+   * Cursor selection changed or expired; restart from first page
+   */
+  409: unknown
+  /**
+   * Catalog unavailable or card budget exceeded
+   */
+  503: unknown
+}
+
+export type ListCccWebsiteCardsResponses = {
+  /**
+   * At most 24 card summaries; no graphs, inputs, examples or long bodies. Anonymous responses omit total, generation and facet counts. Cursors are audience, filter, clock and state bound and expire after five minutes.
+   */
+  200: CccWebsiteCardsPage
+}
+
+export type ListCccWebsiteCardsResponse =
+  ListCccWebsiteCardsResponses[keyof ListCccWebsiteCardsResponses]
+
 export type GetCatalogDocsData = {
   body?: never
   path?: never
@@ -14052,6 +14130,46 @@ export type GetCccFinalReviewResponses = {
 
 export type GetCccFinalReviewResponse =
   GetCccFinalReviewResponses[keyof GetCccFinalReviewResponses]
+
+export type ReviewCccCheckedPublicationData = {
+  body: Cccjson
+  path?: never
+  query?: never
+  url: '/api/v1/catalog/draft/final-review'
+}
+
+export type ReviewCccCheckedPublicationErrors = {
+  /**
+   * Unsupported query parameters
+   */
+  400: unknown
+  /**
+   * Verified publisher permission required
+   */
+  403: unknown
+  /**
+   * Stale reviewed state or selected item no longer pending
+   */
+  409: unknown
+  /**
+   * Invalid explicit selection or candidate dependencies
+   */
+  422: unknown
+  /**
+   * Dedicated catalog unavailable
+   */
+  503: unknown
+}
+
+export type ReviewCccCheckedPublicationResponses = {
+  /**
+   * Exact checked changes and unchecked private work with state and selection digest
+   */
+  200: Cccjson
+}
+
+export type ReviewCccCheckedPublicationResponse =
+  ReviewCccCheckedPublicationResponses[keyof ReviewCccCheckedPublicationResponses]
 
 export type CreateCccItemData = {
   body: Cccjson
@@ -14335,6 +14453,10 @@ export type RestoreCccLiveItemResponse =
 
 export type UploadCccMediaData = {
   body: {
+    /**
+     * Optional case-sensitive editorial batch label; not identity or approval.
+     */
+    change_id?: string
     expected_draft_rev: number
     file: Blob | File
     /**
@@ -14446,6 +14568,10 @@ export type DeleteCccMediaResponse =
 
 export type ReplaceCccMediaFileData = {
   body: {
+    /**
+     * Optional case-sensitive editorial batch label; not identity or approval.
+     */
+    change_id?: string
     expected_draft_rev: number
     expected_revision_uid: string
     file: Blob | File
@@ -14553,10 +14679,8 @@ export type GetCccStagingData = {
   path?: never
   query?: {
     search?: string
-    /**
-     * Exact canonical Comfy account ID (users.id); preserve case.
-     */
     author_uid?: string
+    change_id?: string
     tags?: Array<string>
     types?: Array<'model' | 'workflow' | 'app' | 'media' | 'template_set'>
     statuses?: Array<'NEW' | 'APPROVED' | 'DEFERRED' | 'DELETED'>

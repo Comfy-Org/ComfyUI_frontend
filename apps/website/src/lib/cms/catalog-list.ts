@@ -1,62 +1,45 @@
-import { zContentCatalogProjection } from '@comfyorg/ingest-types/zod'
-import { z } from 'astro/zod'
+import type { CccWebsiteCardsPage } from '@comfyorg/ingest-types'
+import { zListCccWebsiteCardsQuery } from '@comfyorg/ingest-types/zod'
 
-import {
-  countByUseCase,
-  filterWorkshopModels,
-  parseCatalogSearch,
-  sortWorkshopModels,
-  USE_CASES,
-  sortOrdersFor
-} from '@/config/models-catalogue'
-import type {
-  UseCase,
-  SortOrder,
-  WorkshopModel
-} from '@/config/models-catalogue'
+import { USE_CASES } from '@/config/models-catalogue'
+import type { UseCase, SortOrder } from '@/config/models-catalogue'
 import { modelSchema } from '@/config/models-catalogue-data'
+import { workflowCategoryLabel } from '@/lib/workshop/workflow-category-label'
 import type { SiteSession } from './admin'
 import type { AuthoringSession } from './authoring-session'
-import { normalizeProjection } from './catalog-contract'
+import { readCatalogCards } from './catalog-cards-response'
 import { catalogPresentation } from './catalog-presentation'
-import { workflowCategoryLabel } from '@/lib/workshop/workflow-category-label'
 
 export type CatalogListSection = 'models' | 'workflows' | 'apps'
-const CATALOG_PAGE_SIZE = 24
 
 export interface CatalogListPage {
   page: number
   pageSize: number
-  total: number
-  totalPages: number
+  total?: number
+  totalPages?: number
   hasPrevious: boolean
   hasNext: boolean
+  mode?: 'cursor'
+  count?: number
+  nextCursor?: string
+  previousCursor?: string
+  available?: boolean
+  reset?: boolean
 }
 
 export interface CatalogListFacets {
   models: {
-    useCases: { value: UseCase; count: number }[]
+    useCases: { value: UseCase; count?: number }[]
     sortOrders: readonly SortOrder[]
   }
   workflows: {
-    categories: {
-      value: string
-      label: string
-      count: number
-    }[]
-    models: { value: string; count: number }[]
+    categories: { value: string; label: string; count?: number }[]
+    models: { value: string; label?: string; count?: number }[]
   }
 }
 
 export type CatalogListPages = Record<CatalogListSection, CatalogListPage>
-
-function sectionFor(model: WorkshopModel): CatalogListSection {
-  return model.type === 'APP'
-    ? 'apps'
-    : model.type === 'CLOUD' || model.type === 'SERVERLESS'
-      ? 'workflows'
-      : 'models'
-}
+const KINDS = { models: 'MODEL', workflows: 'WORKFLOW', apps: 'APP' } as const
 
 function pageNumber(value: string | null) {
   if (!value || !/^[1-9]\d*$/.test(value)) return 1
@@ -64,172 +47,172 @@ function pageNumber(value: string | null) {
   return Number.isSafeInteger(page) ? page : 1
 }
 
-function orderFor(value: string | null): SortOrder {
-  return value === 'name' || value === 'priceAsc' || value === 'priceDesc'
-    ? value
-    : 'popular'
+function cardQuery(
+  params: URLSearchParams,
+  section: CatalogListSection,
+  locale: string
+) {
+  return zListCccWebsiteCardsQuery.safeParse({
+    kind: KINDS[section],
+    limit: 24,
+    locale,
+    cursor: params.get('cursor') || undefined,
+    q: params.get('q') ?? undefined,
+    sort: params.get('sort') ?? 'popular',
+    category: params.getAll('category'),
+    model: params.getAll('model'),
+    use: [...params.getAll('use'), ...params.getAll('useCase')].flatMap(
+      (value) =>
+        value === 'all'
+          ? []
+          : value === 'other'
+            ? ['text', '3d', 'audio']
+            : [value]
+    ),
+    modality: params.getAll('modality'),
+    provider: params.getAll('provider'),
+    capability: params.getAll('capability')
+  })
+}
+
+function listPages(
+  value: CccWebsiteCardsPage,
+  section: CatalogListSection,
+  page: number,
+  reset: boolean
+): CatalogListPages {
+  function entry(tab: CatalogListSection): CatalogListPage {
+    const active = tab === section
+    return {
+      mode: 'cursor',
+      page: active ? page : 1,
+      pageSize: value.page_size,
+      available: value.available_kinds.includes(KINDS[tab]),
+      count: active ? value.items.length : 0,
+      ...(active
+        ? {
+            total: value.total,
+            nextCursor: value.next_cursor,
+            previousCursor: value.previous_cursor,
+            reset
+          }
+        : {}),
+      hasPrevious: active && Boolean(value.previous_cursor),
+      hasNext: active && value.has_more
+    }
+  }
+  return {
+    models: entry('models'),
+    workflows: entry('workflows'),
+    apps: entry('apps')
+  }
 }
 
 function listFacets(
-  models: readonly WorkshopModel[],
+  value: CccWebsiteCardsPage,
   locale: string
 ): CatalogListFacets {
-  const counts = countByUseCase(
-    models.filter((m) => sectionFor(m) === 'models')
-  )
-  const categories = new Map<
-    string,
-    { value: string; label: string; count: number }
-  >()
-  const runsOn = new Map<string, number>()
-  for (const model of models) {
-    if (model.type !== 'CLOUD' && model.type !== 'SERVERLESS') continue
-    const value = model.category ?? ''
-    const prior = categories.get(value)
-    categories.set(value, {
-      value,
-      label: workflowCategoryLabel(model, locale),
-      count: (prior?.count ?? 0) + 1
-    })
-    for (const name of new Set(model.models ?? []))
-      runsOn.set(name, (runsOn.get(name) ?? 0) + 1)
-  }
   return {
     models: {
-      useCases: USE_CASES.map((value) => ({ value, count: counts[value] })),
-      sortOrders: sortOrdersFor(
-        models.filter((m) => sectionFor(m) === 'models')
-      )
+      useCases: value.facets.use_cases.flatMap((facet) => {
+        const useCase = USE_CASES.find((useCase) => useCase === facet.value)
+        return useCase ? [{ value: useCase, count: facet.count }] : []
+      }),
+      sortOrders: value.sort_orders
     },
     workflows: {
-      categories: [...categories.values()].slice(0, 100),
-      models: [...runsOn]
-        .slice(0, 100)
-        .map(([value, count]) => ({ value, count }))
+      categories: value.facets.categories.map((facet) => ({
+        ...facet,
+        label:
+          facet.label.trim() ||
+          workflowCategoryLabel({ category: facet.value }, locale)
+      })),
+      models: value.facets.models
     }
   }
 }
 
-// Server-only reader. Upstream currently supplies a complete selected projection;
-// the browser receives only bounded, schema-stripped card summaries and counts.
 export async function loadSiteCatalogList(
   session: SiteSession | AuthoringSession | undefined,
   locale = 'en',
   section: CatalogListSection = 'models',
   params = new URLSearchParams()
 ) {
+  const unavailable = { ok: false, status: 503 } as const
   const origin = process.env.SITE_CATALOG_API_URL
-  if (!origin || process.env.VERCEL_ENV === 'production')
-    return { ok: false, status: 503 } as const
-  let data: unknown
+  if (!origin || process.env.VERCEL_ENV === 'production') return unavailable
+  const query = cardQuery(params, section, locale)
+  if (!query.success) return unavailable
+  let page = pageNumber(params.get('p'))
+  let reset = page > 1 && !query.data.cursor
+  if (reset) page = 1
   try {
     const url = new URL(
-      session ? '/admin/api/site/catalog' : '/api/v1/catalog/items',
+      session ? '/admin/api/site/catalog/cards' : '/api/v1/catalog/cards',
       origin
     )
+    for (const [key, value] of Object.entries(query.data)) {
+      if (Array.isArray(value))
+        value.forEach((entry) => url.searchParams.append(key, entry))
+      else if (typeof value === 'string' || typeof value === 'number')
+        url.searchParams.set(key, String(value))
+    }
     if (session) {
       url.searchParams.set('view', session.preview?.view ?? 'LIVE')
-      url.searchParams.set('eligible', 'true')
       if (session.preview?.now) url.searchParams.set('now', session.preview.now)
     }
-    const response = await fetch(url, {
+    const options: RequestInit = {
       ...(session
         ? { headers: { Authorization: `Bearer ${session.credential}` } }
         : {}),
       signal: AbortSignal.timeout(5000),
       cache: 'no-store'
-    })
-    if (!response.ok) return { ok: false, status: 503 } as const
-    data = await response.json()
+    }
+    let response = await fetch(url, options)
+    if (response.status === 409 && url.searchParams.has('cursor')) {
+      await response.body?.cancel()
+      url.searchParams.delete('cursor')
+      page = 1
+      reset = true
+      response = await fetch(url, options)
+    }
+    if (!response.ok) return unavailable
+    const value = await readCatalogCards(response)
+    if (
+      !value ||
+      value.items.some(
+        (item) =>
+          item.kind !== KINDS[section] ||
+          item.deleted ||
+          !item.enabled ||
+          (!session && item.visibility !== 'PUBLIC')
+      )
+    )
+      return unavailable
+    if (
+      !session &&
+      (value.total !== undefined ||
+        value.generation !== undefined ||
+        Object.values(value.facets).some((facets) =>
+          facets.some((facet) => facet.count !== undefined)
+        ))
+    )
+      return unavailable
+    const models = modelSchema
+      .array()
+      .safeParse(
+        value.items.map((item) =>
+          catalogPresentation(item, locale, session?.preview?.view === 'DRAFT')
+        )
+      )
+    if (!models.success) return unavailable
+    return {
+      ok: true,
+      models: models.data,
+      pages: listPages(value, section, page, reset),
+      facets: listFacets(value, locale)
+    } as const
   } catch {
-    return { ok: false, status: 503 } as const
-  }
-  const projection = zContentCatalogProjection.safeParse(data)
-  if (!projection.success) return { ok: false, status: 503 } as const
-  const normalized = normalizeProjection(projection.data)
-  if (!normalized) return { ok: false, status: 503 } as const
-  const parsed = z
-    .array(modelSchema)
-    .safeParse(
-      normalized.items.map((item) =>
-        catalogPresentation(item, locale, session?.preview?.view === 'DRAFT')
-      )
-    )
-  if (!parsed.success) return { ok: false, status: 503 } as const
-  const facets = listFacets(parsed.data, locale)
-  const pages: CatalogListPages = {
-    models: emptyPage(),
-    workflows: emptyPage(),
-    apps: emptyPage()
-  }
-  const models = (['models', 'workflows', 'apps'] as const).flatMap((tab) => {
-    let matching: WorkshopModel[] = parsed.data.filter(
-      (m) => sectionFor(m) === tab
-    )
-    const active = tab === section
-    const order = active ? orderFor(params.get('sort')) : 'popular'
-    if (active) {
-      matching = filterWorkshopModels(matching, {
-        ...parseCatalogSearch(params.toString()),
-        useCase: 'all',
-        useCases: [
-          ...params.getAll('use'),
-          ...params.getAll('useCase')
-        ].flatMap((value) =>
-          value === 'other'
-            ? USE_CASES.filter((useCase) =>
-                ['text', '3d', 'audio'].includes(useCase)
-              )
-            : USE_CASES.filter((useCase) => useCase === value)
-        )
-      })
-      if (tab === 'workflows') {
-        const categories = params.getAll('category')
-        const runsOn = params.getAll('model').filter(Boolean)
-        matching = matching.filter(
-          (m) =>
-            (m.type === 'CLOUD' || m.type === 'SERVERLESS') &&
-            (!categories.length || categories.includes(m.category ?? '')) &&
-            (!runsOn.length || m.models?.some((name) => runsOn.includes(name)))
-        )
-      }
-    }
-    matching = sortWorkshopModels(matching, order)
-    if (tab === 'workflows' && order === 'popular')
-      matching.sort((a, b) =>
-        a.type === 'CLOUD' || a.type === 'SERVERLESS'
-          ? b.type === 'CLOUD' || b.type === 'SERVERLESS'
-            ? (a.categoryOrder ?? Infinity) - (b.categoryOrder ?? Infinity) ||
-              (a.recommendedRank ?? Infinity) - (b.recommendedRank ?? Infinity)
-            : 0
-          : 0
-      )
-    const total = matching.length
-    const totalPages = Math.max(1, Math.ceil(total / CATALOG_PAGE_SIZE))
-    const page = Math.min(active ? pageNumber(params.get('p')) : 1, totalPages)
-    pages[tab] = {
-      page,
-      pageSize: CATALOG_PAGE_SIZE,
-      total,
-      totalPages,
-      hasPrevious: page > 1,
-      hasNext: page < totalPages
-    }
-    return matching.slice(
-      (page - 1) * CATALOG_PAGE_SIZE,
-      page * CATALOG_PAGE_SIZE
-    )
-  })
-  return { ok: true, models, pages, facets } as const
-}
-
-function emptyPage(): CatalogListPage {
-  return {
-    page: 1,
-    pageSize: CATALOG_PAGE_SIZE,
-    total: 0,
-    totalPages: 1,
-    hasPrevious: false,
-    hasNext: false
+    return unavailable
   }
 }

@@ -6594,6 +6594,9 @@
     "addContent": "Add Content"
   },
   "cccCatalogPage": {
+    "showResults": "Show results",
+    "rangeWithoutTotal": "{start}–{end}",
+    "reset": "This page link is out of date. Showing the first page of the current results.",
     "previous": "Previous",
     "next": "Next",
     "range": "{start}–{end} of {total}",

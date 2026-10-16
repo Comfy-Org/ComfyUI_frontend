@@ -1007,8 +1007,8 @@ backend must explicitly accept/validate the parameter before that filter can
 work; unknown or unsupported filters fail instead of silently broadening a
 publish. Batch fields are validated separately from the unmodified generated
 query schema, avoiding constructor mixing between legacy generated Zod v3 and
-current Astro Zod v4. These changes do not make the full upstream
-staging/projection payload bounded; that read-transport work remains separate.
+current Astro Zod v4. The admin staging read still needs its own bounded
+transport; the Hub card reader below does not change publication selection.
 
 CCC paginated Hub URLs restore Browse All on first render and when Astro reuses
 the catalogue island. The page number, search and repeated filters survive
@@ -1020,7 +1020,34 @@ Previous/Next links opt out of Astro's speculative prefetch. These dynamic,
 private no-store pages must be read on navigation, not requested once on hover
 and again on click. Ben's October 15 navigation trace showed overlapping
 prefetch/navigation requests for pages 8 and 9. This avoids that duplicate work;
-it does not make the remaining full-catalog upstream read bounded.
+it does not by itself make an upstream read bounded.
+
+The CCC Hub list reader uses `/api/v1/catalog/cards`, or the freshly authorized
+`/admin/api/site/catalog/cards` for staff. It requests only the active content
+kind, at most 24 cards, with bounded facet and available-kind metadata. It never
+loads the other tabs' cards to discover whether their tabs should be shown.
+Search, sort and repeated filters run on the server; the browser preserves the
+returned ranking instead of repeating substring filtering on model IDs. Public
+responses omit totals, generations and facet counts; the UI does not invent
+them from one page. Staff-only response metadata is refused on anonymous reads.
+
+Previous/Next links carry the returned signed cursors and preserve filters.
+Changing filters removes the old cursor. An old `p>1` link without a cursor
+explicitly restarts on the first page; a stale/expired cursor permits one bounded
+first-page retry with a visible reset notice. It never walks earlier pages to
+simulate an offset. The response stream is capped at 256 KiB before JSON parsing,
+validated against the generated card schema, then stripped to card presentation
+fields. Invalid/unavailable responses fail closed, without a whole-catalog
+fallback or shared staff-data cache. The existing production activation guard
+is unchanged. Backend deployment and real navigation latency must be verified
+separately; passing adapter tests is not a performance completion claim.
+
+Card types are generated with the standard Cloud `openapi-project -fe` and this
+package's `pnpm generate`, not copied into website source. The input preserves
+the existing frontend Cloud pin `f6bbc48` plus the already-present agent contract
+from `f742878aab`, merged with runtime CCC contract `cc37923b7a` and the bounded
+cards contract (SHA-256 `48e920f5bd371bb7f31f57d55cb38f20c01eabec7ee80054232ceda98e4830d4`).
+Internal/admin operations remain excluded by the standard projection.
 
 Workflow category menus show a localized Uncategorized label for missing or
 empty category IDs; blank translated labels fall back to the existing category

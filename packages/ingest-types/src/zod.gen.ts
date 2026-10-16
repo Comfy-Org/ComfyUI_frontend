@@ -2707,6 +2707,49 @@ export const zCancelSubscriptionAcceptedResponse = z.object({
   status: z.enum(['pending'])
 })
 
+export const zCccWebsiteCardFacet = z.object({
+  count: z.int().gte(0).optional(),
+  label: z.string(),
+  value: z.string()
+})
+
+export const zCccWebsiteCardFacets = z.object({
+  categories: z.array(zCccWebsiteCardFacet).max(100),
+  models: z.array(zCccWebsiteCardFacet).max(100),
+  use_cases: z.array(zCccWebsiteCardFacet).max(100)
+})
+
+export const zCccWebsiteCardsPage = z.object({
+  available_kinds: z.array(z.enum(['MODEL', 'WORKFLOW', 'APP'])).max(3),
+  facets: zCccWebsiteCardFacets,
+  generation: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  has_more: z.boolean(),
+  items: z.array(zContentCatalogRecord).max(24),
+  next_cursor: z.string().max(4096).optional(),
+  page_size: z.int().gte(1).lte(24),
+  previous_cursor: z.string().max(4096).optional(),
+  revision_id: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  sort_orders: z
+    .array(z.enum(['popular', 'name', 'priceAsc', 'priceDesc']))
+    .max(4),
+  total: z.int().gte(0).optional()
+})
+
 /**
  * Flat type-versioned CCC JSON. Domain schemas constrain authored fields; server metadata and expected concurrency tokens are explicit and never caller-owned persistence fields.
  */
@@ -5300,6 +5343,29 @@ export const zGetCatalogAgentInstructionsResponse = z.string()
  */
 export const zGetCccAuthoringContextResponse = zCccAuthoringContext
 
+export const zListCccWebsiteCardsQuery = z.object({
+  kind: z.enum(['MODEL', 'WORKFLOW', 'APP']),
+  limit: z.int().gte(1).lte(24).optional().default(24),
+  cursor: z.string().max(4096).optional(),
+  locale: z.enum(['en', 'zh-CN']).optional().default('en'),
+  q: z.string().max(300).optional(),
+  sort: z
+    .enum(['popular', 'name', 'priceAsc', 'priceDesc'])
+    .optional()
+    .default('popular'),
+  category: z.array(z.string().max(200)).max(30).optional(),
+  model: z.array(z.string().max(200)).max(30).optional(),
+  use: z.array(z.string().max(200)).max(30).optional(),
+  modality: z.array(z.string().max(200)).max(30).optional(),
+  provider: z.array(z.string().max(200)).max(30).optional(),
+  capability: z.array(z.string().max(200)).max(30).optional()
+})
+
+/**
+ * At most 24 card summaries; no graphs, inputs, examples or long bodies. Anonymous responses omit total, generation and facet counts. Cursors are audience, filter, clock and state bound and expire after five minutes.
+ */
+export const zListCccWebsiteCardsResponse = zCccWebsiteCardsPage
+
 /**
  * Build-coupled catalog instructions, permissions and endpoint contracts
  */
@@ -5363,6 +5429,13 @@ export const zDiscardCccChangesResponse = zCccjson
  * Private exact approved changes, deferred work, state and selection digest
  */
 export const zGetCccFinalReviewResponse = zCccjson
+
+export const zReviewCccCheckedPublicationBody = zCccjson
+
+/**
+ * Exact checked changes and unchecked private work with state and selection digest
+ */
+export const zReviewCccCheckedPublicationResponse = zCccjson
 
 export const zCreateCccItemBody = zCccjson
 
@@ -5470,6 +5543,12 @@ export const zRestoreCccLiveItemPath = z.object({
 export const zRestoreCccLiveItemResponse = zCccjson
 
 export const zUploadCccMediaBody = z.object({
+  change_id: z
+    .string()
+    .min(1)
+    .max(128)
+    .regex(/^[A-Za-z0-9][A-Za-z0-9._-]*$/)
+    .optional(),
   expected_draft_rev: z.int().gte(1),
   file: z.string(),
   name: z.string().min(1).max(500),
@@ -5502,6 +5581,12 @@ export const zDeleteCccMediaPath = z.object({
 export const zDeleteCccMediaResponse = zCccjson
 
 export const zReplaceCccMediaFileBody = z.object({
+  change_id: z
+    .string()
+    .min(1)
+    .max(128)
+    .regex(/^[A-Za-z0-9][A-Za-z0-9._-]*$/)
+    .optional(),
   expected_draft_rev: z.int().gte(1),
   expected_revision_uid: z.uuid(),
   file: z.string(),
@@ -5535,6 +5620,12 @@ export const zPublishCccDraftResponse = zCccjson
 export const zGetCccStagingQuery = z.object({
   search: z.string().max(300).optional(),
   author_uid: z.string().min(1).optional(),
+  change_id: z
+    .string()
+    .min(1)
+    .max(128)
+    .regex(/^[A-Za-z0-9][A-Za-z0-9._-]*$/)
+    .optional(),
   tags: z.array(z.string().min(1).max(200)).max(30).optional(),
   types: z
     .array(z.enum(['model', 'workflow', 'app', 'media', 'template_set']))

@@ -14,7 +14,7 @@ import { useVisualViewport } from '@/composables/useVisualViewport'
 interface FacetSheetOption {
   readonly value: string
   readonly label: string
-  readonly count: number
+  readonly count?: number
 }
 
 export interface FacetSheetGroup {
@@ -31,6 +31,7 @@ interface FacetSheetLabels {
   readonly applied: (count: number) => string
   readonly clearAll: string
   readonly show: (count: number) => string
+  readonly showAll?: string
   readonly close: string
   readonly resize: string
 }
@@ -42,7 +43,7 @@ const { groups, labels, resultCount } = defineProps<{
   groups: readonly FacetSheetGroup[]
   labels: FacetSheetLabels
   /** What the catalogue holds under the current choices, for the way out. */
-  resultCount: number
+  resultCount?: number
 }>()
 
 const emit = defineEmits<{
@@ -293,7 +294,10 @@ function visibleOptions(group: FacetSheetGroup) {
                 />
               </span>
               <span class="flex-1 truncate">{{ option.label }}</span>
-              <span class="shrink-0 text-content/30 tabular-nums">
+              <span
+                v-if="option.count !== undefined"
+                class="shrink-0 text-content/30 tabular-nums"
+              >
                 {{ option.count }}
               </span>
             </button>
@@ -347,9 +351,15 @@ function visibleOptions(group: FacetSheetGroup) {
         type="button"
         class="h-11 flex-1 cursor-pointer rounded-2xl bg-primary-comfy-yellow text-sm font-bold text-primary-comfy-ink hover:bg-primary-comfy-yellow/90"
         data-testid="workshop-filter-show"
-        @click="resultCount > 0 ? emit('close') : emit('clearAll')"
+        @click="resultCount === 0 ? emit('clearAll') : emit('close')"
       >
-        {{ resultCount > 0 ? labels.show(resultCount) : labels.clearAll }}
+        {{
+          resultCount === undefined
+            ? (labels.showAll ?? labels.title)
+            : resultCount > 0
+              ? labels.show(resultCount)
+              : labels.clearAll
+        }}
       </button>
     </div>
   </div>

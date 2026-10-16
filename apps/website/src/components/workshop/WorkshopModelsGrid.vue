@@ -159,16 +159,18 @@ const useCaseOptions = computed<FacetMenuOption[]>(() => {
 
 const visible = computed(() =>
   groupModels(
-    sortWorkshopModels(
-      searchWorkshopModels(models, {
-        query: query.value,
-        useCases: selectedUseCases.value,
-        modalities: legacyModalities.value,
-        providers: legacyProviders.value,
-        capabilities: legacyCapabilities.value
-      }),
-      sort.value
-    )
+    serverPage?.mode === 'cursor'
+      ? models
+      : sortWorkshopModels(
+          searchWorkshopModels(models, {
+            query: query.value,
+            useCases: selectedUseCases.value,
+            modalities: legacyModalities.value,
+            providers: legacyProviders.value,
+            capabilities: legacyCapabilities.value
+          }),
+          sort.value
+        )
   )
 )
 const isFiltered = computed(
@@ -232,7 +234,8 @@ watch(
         'provider',
         'capability',
         'sort',
-        'p'
+        'p',
+        'cursor'
       ])
         params.delete(key)
       if (query.value) params.set('q', query.value)
@@ -248,6 +251,7 @@ watch(
       const search = params.toString()
       const current = new URLSearchParams(initialSearch ?? location.search)
       current.delete('p')
+      current.delete('cursor')
       if (search !== current.toString()) emit('search', search)
     }, 200)
   },
@@ -388,7 +392,7 @@ watch(browseAll, (on) => on && resetFilters())
             <WorkshopFilterMenu
               :use-cases="selectedUseCases"
               :use-case-options="useCaseOptions"
-              :result-count="serverPage?.total ?? visible.length"
+              :result-count="serverPage ? serverPage.total : visible.length"
               :locale
               @update:use-cases="applyUseCases"
             />

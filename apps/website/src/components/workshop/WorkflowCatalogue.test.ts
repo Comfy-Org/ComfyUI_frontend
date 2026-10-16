@@ -56,6 +56,37 @@ function visibleOutcomes() {
 beforeEach(() => history.replaceState(null, '', '/hub/workflows/'))
 
 describe('workflow catalogue ordering and shared links', () => {
+  it('keeps the server-ranked page when query and model IDs are not card text', async () => {
+    render(WorkflowCatalogue, {
+      props: {
+        models: [models[0], models[2]],
+        initialSearch:
+          '?q=semantic&model=canonical-model-uid&sort=name&p=3&cursor=current',
+        serverPage: {
+          mode: 'cursor',
+          page: 3,
+          pageSize: 24,
+          count: 2,
+          hasPrevious: true,
+          hasNext: true
+        },
+        serverFacets: {
+          categories: [],
+          models: [{ value: 'canonical-model-uid', label: 'SeedVR2' }]
+        }
+      }
+    })
+    await waitFor(() =>
+      expect(screen.getByTestId('workshop-filter-chips')).toHaveTextContent(
+        'SeedVR2'
+      )
+    )
+    expect(visibleOutcomes()).toEqual([
+      '/models/workflows/restore/',
+      '/models/workflows/animate/'
+    ])
+  })
+
   it.for([
     { locale: 'en' as const, label: 'Uncategorized' },
     { locale: 'zh-CN' as const, label: '未分类' }
