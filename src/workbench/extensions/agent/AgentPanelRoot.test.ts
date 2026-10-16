@@ -35,6 +35,7 @@ import { useFreeUsePlacement } from './experiments/freeUsePlacement'
 
 setupInlinePromptEditorDom()
 
+import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -261,6 +262,7 @@ vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'), {
   spy: true
 })
 
+import type { ComposerReference } from './types/composerPrompt'
 import type { AgentMessages, TurnId } from './schemas/agentApiSchema'
 import { toTurnId, zAgentWsEvent } from './schemas/agentApiSchema'
 import {
@@ -5624,6 +5626,30 @@ describe('AgentPanelRoot history', () => {
         drafted: (composer: Composer) =>
           composer.workflowReferences.map(({ id }) => id),
         clear: (composer: Composer) => composer.setWorkflowReferences([])
+      },
+      {
+        draft: 'only a scoped skill reference',
+        fill: (composer: Composer) =>
+          composer.restorePrompt({
+            text: '',
+            references: [
+              {
+                kind: 'skill',
+                name: 'portrait',
+                description: 'Keep the subject recognizable',
+                scope: useSkillPacksStore().scope,
+                textOffset: 0
+              } satisfies ComposerReference
+            ]
+          }),
+        drafted: (composer: Composer) => ({
+          text: composer.prompt.text,
+          references: composer.prompt.references.map((reference) => ({
+            ...reference
+          }))
+        }),
+        clear: (composer: Composer) =>
+          composer.restorePrompt({ text: '', references: [] })
       }
     ])(
       'keeps the chat, draft and target when the composer holds $draft',
@@ -5631,26 +5657,44 @@ describe('AgentPanelRoot history', () => {
         const first = addTab('workflows/first.json')
         const second = addTab('workflows/second.json')
         workflowStore.activeWorkflow = first
-        const { loadedThreads } = stubWorkflowBoundHistory([
-          agentThread({
-            id: 'th-second',
-            title: 'Second chat',
-            last_message_at: '2026-09-22T10:00:00Z',
-            workflow_id: 'wf-second'
-          })
-        ])
+        const { loadedThreads } = stubWorkflowBoundHistory(
+          [
+            agentThread({
+              id: 'th-first',
+              title: 'First chat',
+              last_message_at: '2026-09-22T09:00:00Z',
+              workflow_id: 'wf-first'
+            }),
+            agentThread({
+              id: 'th-second',
+              title: 'Second chat',
+              last_message_at: '2026-09-22T10:00:00Z',
+              workflow_id: 'wf-second'
+            })
+          ],
+          { 'th-first': { workflowId: 'wf-first' } }
+        )
         renderWithSelectedTarget()
+        await userEvent.click(
+          screen.getByRole('button', {
+            name: i18n.global.t('agent.showChatHistory')
+          })
+        )
+        await userEvent.click(await screen.findByText('First chat'))
         await vi.waitFor(() =>
-          expect(useAgentChatHistoryStore().sessions).toHaveLength(1)
+          expect(userPrompts()).toEqual(['Prompt in th-first'])
         )
         const composer = useAgentComposerStore()
         fill(composer)
         const before = drafted(composer)
+        expect(composer.hasDraft).toBe(true)
 
         await activateTabAsUser(second)
         await settleFollow()
 
-        expect(loadedThreads).toEqual([])
+        expect(loadedThreads).toEqual(['th-first'])
+        expect(useAgentConversationStore().threadId).toBe('th-first')
+        expect(userPrompts()).toEqual(['Prompt in th-first'])
         expect(drafted(composer)).toEqual(before)
         expect(useAgentPanelStore().selectedWorkflow?.path).toBe(first.path)
         expect(screen.getByRole('note')).toHaveTextContent(
@@ -5659,9 +5703,77 @@ describe('AgentPanelRoot history', () => {
 
         clear(composer)
         await settleFollow()
-        expect(loadedThreads).toEqual([])
+        expect(loadedThreads).toEqual(['th-first'])
       }
     )
+
+    it('sends a pinned draft to its original chat and workflow while another tab is active', async () => {
+      const firstState = fromPartial<ComfyWorkflowJSON>({
+        nodes: [{ id: 17, type: 'FirstWorkflowNode' }],
+        links: []
+      })
+      const first = addTab('workflows/first.json', { activeState: firstState })
+      const second = addTab('workflows/second.json', {
+        activeState: fromPartial<ComfyWorkflowJSON>({
+          nodes: [{ id: 83, type: 'SecondWorkflowNode' }],
+          links: []
+        })
+      })
+      workflowStore.activeWorkflow = first
+      stubWorkflowBoundHistory(
+        [
+          agentThread({
+            id: 'th-first',
+            title: 'First chat',
+            last_message_at: '2026-09-22T09:00:00Z',
+            workflow_id: 'wf-first'
+          }),
+          agentThread({
+            id: 'th-second',
+            title: 'Second chat',
+            last_message_at: '2026-09-22T10:00:00Z',
+            workflow_id: 'wf-second'
+          })
+        ],
+        { 'th-first': { workflowId: 'wf-first' } }
+      )
+      respondToFetch(/\/assets(?:\?|$)/, () =>
+        json(200, { assets: [], total: 0, has_more: false })
+      )
+      renderWithSelectedTarget()
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.showChatHistory')
+        })
+      )
+      await userEvent.click(await screen.findByText('First chat'))
+      await vi.waitFor(() =>
+        expect(userPrompts()).toEqual(['Prompt in th-first'])
+      )
+      await userEvent.click(screen.getByRole('textbox'))
+      await userEvent.paste('Keep this request on the first workflow')
+
+      await activateTabAsUser(second)
+      await settleFollow()
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(first.path)
+      await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+      await vi.waitFor(() =>
+        expect(
+          fetchRequests({ method: 'POST', url: /\/messages$/ })
+        ).toHaveLength(1)
+      )
+      const [request] = fetchRequests({ method: 'POST', url: /\/messages$/ })
+      expect(request.url).toBe('/api/agent/threads/th-first/messages')
+      expect(JSON.parse(String(request.body))).toMatchObject({
+        content: 'Keep this request on the first workflow',
+        workflow_id: 'wf-first',
+        draft: { content: firstState }
+      })
+      expect(useAgentConversationStore().threadId).toBe('th-first')
+      expect(workflowStore.activeWorkflow.path).toBe(second.path)
+      expect(useAgentComposerStore().draft).toBe('')
+    })
 
     it('switches past a whitespace-only draft and clears it', async () => {
       workflowStore.activeWorkflow = addTab('workflows/first.json')
@@ -5947,6 +6059,91 @@ describe('AgentPanelRoot history', () => {
       expect(useAgentPanelStore().selectedWorkflow?.path).toBe(third.path)
       expect(loadedThreads).toEqual(['th-second', 'th-third'])
     })
+
+    it.for([
+      {
+        outcome: 'succeeds',
+        answer: () => transcriptFor('th-second', 'wf-second')
+      },
+      {
+        outcome: 'fails',
+        answer: () => json(500, { error: 'unavailable' })
+      }
+    ])(
+      'keeps the original chat unlocked when pending second-tab messages $outcome after returning to first',
+      async ({ answer }) => {
+        const first = addTab('workflows/first.json')
+        const second = addTab('workflows/second.json')
+        workflowStore.activeWorkflow = first
+        let answerSecond!: () => void
+        const secondMessages = new Promise<Response>((resolve) => {
+          answerSecond = () => resolve(answer())
+        })
+        const { loadedThreads } = stubWorkflowBoundHistory(
+          [
+            agentThread({
+              id: 'th-first',
+              title: 'First chat',
+              last_message_at: '2026-09-22T09:00:00Z',
+              workflow_id: 'wf-first'
+            }),
+            agentThread({
+              id: 'th-second',
+              title: 'Second chat',
+              last_message_at: '2026-09-22T10:00:00Z',
+              workflow_id: 'wf-second'
+            })
+          ],
+          {
+            'th-first': { workflowId: 'wf-first' },
+            'th-second': { response: () => secondMessages }
+          }
+        )
+        renderWithSelectedTarget()
+        await userEvent.click(
+          screen.getByRole('button', {
+            name: i18n.global.t('agent.showChatHistory')
+          })
+        )
+        await userEvent.click(await screen.findByText('First chat'))
+        await vi.waitFor(() =>
+          expect(userPrompts()).toEqual(['Prompt in th-first'])
+        )
+
+        await activateTabAsUser(second)
+        await vi.waitFor(() =>
+          expect(loadedThreads).toEqual(['th-first', 'th-second'])
+        )
+        expect(
+          await screen.findByRole('status', {
+            name: 'Opening chat for second…'
+          })
+        ).toBeVisible()
+        await activateTabAsUser(first)
+        await waitFor(() =>
+          expect(screen.getByTestId('agent-panel-footer')).not.toHaveAttribute(
+            'inert'
+          )
+        )
+        expect(useAgentConversationStore().threadId).toBe('th-first')
+        expect(useAgentPanelStore().selectedWorkflow?.path).toBe(first.path)
+
+        answerSecond()
+        await settleFollow()
+
+        expect(workflowStore.activeWorkflow.path).toBe(first.path)
+        expect(useAgentConversationStore().threadId).toBe('th-first')
+        expect(useAgentPanelStore().selectedWorkflow?.path).toBe(first.path)
+        expect(userPrompts()).toEqual(['Prompt in th-first'])
+        expect(screen.queryByRole('status')).toBeNull()
+        expect(screen.getByTestId('agent-panel-footer')).not.toHaveAttribute(
+          'inert'
+        )
+        expect(screen.getByRole('textbox')).toHaveTextContent(/^$/)
+        expect(screen.queryByText(followFailure())).toBeNull()
+        expect(loadedThreads).toEqual(['th-first', 'th-second'])
+      }
+    )
 
     async function openFirstChatThenLoseTranscripts(): Promise<{
       loadedThreads: string[]

@@ -352,15 +352,18 @@ afterEach(() => {
 })
 
 describe('AgentPanelRoot tab activity across chats', () => {
-  it('keeps A spinning through the veil and B hydration until A finishes', async () => {
+  it('keeps A and B spinning independently after following their chats to C', async () => {
     const other = addBoundTab(otherTab, 'wf-other')
+    const thirdTab = 'workflows/third.json'
+    const third = addBoundTab(thirdTab, 'wf-third')
     respondToFetch(/\/workflows(?:\?|$)/, () =>
       json(200, {
         data: [
           { id: 'wf-42', name: 'current' },
-          { id: 'wf-other', name: 'other' }
+          { id: 'wf-other', name: 'other' },
+          { id: 'wf-third', name: 'third' }
         ],
-        pagination: { offset: 0, limit: 100, total: 2, has_more: false }
+        pagination: { offset: 0, limit: 100, total: 3, has_more: false }
       })
     )
     respondToFetch(/\/agent\/threads(?:\?|$)/, () =>
@@ -368,8 +371,10 @@ describe('AgentPanelRoot tab activity across chats', () => {
         ...threadList,
         threads: [
           { ...agentThread('th-1', 'Running chat'), workflow_id: 'wf-42' },
-          { ...agentThread('th-2', 'Other chat'), workflow_id: 'wf-other' }
-        ]
+          { ...agentThread('th-2', 'Other chat'), workflow_id: 'wf-other' },
+          { ...agentThread('th-3', 'Third chat'), workflow_id: 'wf-third' }
+        ],
+        pagination: { has_more: false, limit: 3, offset: 0, total: 3 }
       })
     )
     let answerOther!: () => void
@@ -402,13 +407,34 @@ describe('AgentPanelRoot tab activity across chats', () => {
     )
     expect(useAgentPanelStore().selectedWorkflow?.path).toBe(otherTab)
     expect([...tabActivity().editingPaths]).toEqual([otherTab, runningTab])
-    expect(tabActivity().unseenModifiedPaths.has(runningTab)).toBe(false)
+    expect([...tabActivity().unseenModifiedPaths]).toEqual([])
+
+    await useWorkflowService().openWorkflow(third, { initiator: 'user' })
+    await vi.waitFor(() =>
+      expect(useAgentChatHistoryStore().activeId).toBe('th-3')
+    )
+
+    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(thirdTab)
+    expect(useAgentConversationStore().threadId).toBe('th-3')
+    expect(tabActivity().editingPaths).toEqual(new Set([runningTab, otherTab]))
+    expect([...tabActivity().unseenModifiedPaths]).toEqual([])
 
     emitDone()
     await nextTick()
 
     expect([...tabActivity().editingPaths]).toEqual([otherTab])
-    expect(tabActivity().unseenModifiedPaths.has(runningTab)).toBe(true)
+    expect([...tabActivity().unseenModifiedPaths]).toEqual([runningTab])
+    expect(useAgentConversationStore().threadId).toBe('th-3')
+
+    ws.emit('agent_message_done', { message_id: 'm-2', thread_id: 'th-2' })
+    await nextTick()
+
+    expect([...tabActivity().editingPaths]).toEqual([])
+    expect(tabActivity().unseenModifiedPaths).toEqual(
+      new Set([runningTab, otherTab])
+    )
+    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(thirdTab)
+    expect(useAgentConversationStore().threadId).toBe('th-3')
   })
 
   it('keeps the spinner on the tab while its chat runs in the background', async () => {
