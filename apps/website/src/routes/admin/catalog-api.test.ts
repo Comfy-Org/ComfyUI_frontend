@@ -329,6 +329,55 @@ describe('catalog staging same-origin facade', () => {
     expect((await POST(context('publish', { body }))).status).toBe(200)
     expect(JSON.parse(String(fetcher.mock.calls[0]?.[1]?.body))).toEqual(body)
   })
+  it('retries an ambiguous publish with the same key and selection without legacy follow-up writes', async () => {
+    const state = {
+      ...fixtureReview().state,
+      live_rev: 7,
+      draft_rev: 8,
+      next_rev: 9
+    }
+    const body = {
+      ...checkedReviewPayload(fixtureReview(), [
+        fixtureReview().items[0].content.uid
+      ]),
+      expected_selection_digest: 'b'.repeat(64)
+    }
+    const fetcher = backend(200, state)
+    fetcher.mockRejectedValueOnce(new TypeError('Connection lost after commit'))
+    expect((await POST(context('publish', { body }))).status).toBe(503)
+    const retried = await POST(context('publish', { body }))
+    expect(retried.status).toBe(200)
+    expect(await retried.json()).toEqual(state)
+    const expected = {
+      path: '/api/v1/catalog/draft/publish',
+      key: 'review-fixture-key',
+      body
+    }
+    expect(
+      fetcher.mock.calls.map(([url, init]) => ({
+        path: new URL(String(url)).pathname,
+        key: new Headers(init?.headers).get('Idempotency-Key'),
+        body: JSON.parse(String(init?.body))
+      }))
+    ).toEqual([expected, expected])
+  })
+
+  it('never treats a publication conflict as successful approval', async () => {
+    const body = {
+      ...checkedReviewPayload(fixtureReview(), [
+        fixtureReview().items[0].content.uid
+      ]),
+      expected_selection_digest: 'b'.repeat(64)
+    }
+    const fetcher = backend(409, {
+      message: 'Submission changed or already reviewed'
+    })
+    const response = await POST(context('publish', { body }))
+    expect(response.status).toBe(409)
+    expect(fetcher).toHaveBeenCalledOnce()
+    expect(response.headers.get('Location')).toBeNull()
+  })
+
   it('requires publisher authority and CSRF for temporary publication', async () => {
     const r = fixtureReview()
     const payload = {

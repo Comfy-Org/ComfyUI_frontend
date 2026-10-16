@@ -9,6 +9,7 @@ import {
 import { saveDraftItem, undoDraftItem } from '@/lib/cms/save-item'
 import { saveStaging } from '@/lib/cms/staging'
 import { restoreVersion } from '@/lib/cms/versions'
+import { demoMode } from '@/lib/cms/demo'
 
 function returnPath(value: FormDataEntryValue | null) {
   return typeof value === 'string' && /^\/(?![/\\])[^\s]*$/.test(value)
@@ -169,6 +170,7 @@ export const POST: APIRoute = async (context) => {
     return new Response('Access denied', { status: 403 })
   if (['exit', 'preview', 'now'].includes(String(body.get('action'))))
     return previewAction(context, body)
+  if (!demoMode()) return new Response('Not found', { status: 404 })
   const edit = edits.get(String(body.get('action')))
   if (edit)
     return Response.json(await edit(session, body), {

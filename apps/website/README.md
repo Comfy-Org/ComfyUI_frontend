@@ -166,6 +166,15 @@ behind the explicit non-production `SITE_CATALOG_DEMO` build flag; real catalog
 sessions and uploads never use it. A verified canonical session at `/admin/`
 redirects to the real Draft console. No production consumer is activated.
 
+The legacy `/admin/actions` mutation handler and projection-shaped admin pages
+are sample-data-only: without `SITE_CATALOG_DEMO=1` outside production they
+return 404 before any write. Preview cookie controls remain separate. Real
+publication uses `/admin/catalog-api/publish`, forwarding one checked selection
+and the same idempotency key to the catalog transaction; it never follows that
+write with legacy Hub approvals. A backend 409 remains a conflict, not success.
+This isolates the old multi-command design flow rather than attempting a
+non-atomic retry across the legacy Hub and catalog stores.
+
 `scripts/check-mar-admin.ts` mounts the actual merged components with labeled
 local visual fixtures. It checks desktop/mobile English and Chinese layouts,
 checkboxes, the right-hand drawer and Escape/focus restoration while refusing

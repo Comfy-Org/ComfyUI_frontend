@@ -13,8 +13,10 @@ import { buildQueue, contentRows } from '@/lib/cms/queue'
 import { loadStaging } from '@/lib/cms/staging'
 import { loadSubmissions } from '@/lib/cms/submissions'
 import { loadVersions } from '@/lib/cms/versions'
+import { demoMode } from '@/lib/cms/demo'
 
 if (Astro.locals.catalogAuthoring) return Astro.redirect('/admin/catalog', 303)
+if (!demoMode()) return new Response('Not found', { status: 404 })
 const session = Astro.locals.site
 if (!session) return new Response('Not found', { status: 404 })
 const t = Astro.locals.t

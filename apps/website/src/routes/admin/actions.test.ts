@@ -6,6 +6,9 @@ import type { ContentCatalogReview } from '@/lib/cms/review-contract'
 import { describe, expect, it, vi } from 'vitest'
 import { POST } from './actions'
 import { CONTEXT_COOKIE, CSRF_COOKIE } from '@/lib/cms/admin'
+import { demoMode } from '@/lib/cms/demo'
+
+vi.mock(import('@/lib/cms/demo'), { spy: true })
 
 const review: ContentCatalogReview = {
   draft: { revision_id: 2, generation: 1, items: [] },
@@ -67,6 +70,7 @@ function adminPost(
   fields: ReadonlyArray<readonly [string, string]>,
   canApply = true
 ) {
+  vi.mocked(demoMode).mockReturnValue(true)
   vi.stubEnv('SITE_CATALOG_API_URL', 'https://ingest.example')
   vi.stubEnv('SITE_CATALOG_WEBSITE_ORIGINS', 'https://preview.example')
   const csrf = 'b'.repeat(64)
