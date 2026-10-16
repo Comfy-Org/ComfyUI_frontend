@@ -21,6 +21,7 @@ import { toCurrentTier } from '@/platform/cloud/subscription/utils/billingPlanTe
 import { useBillingSdkStore } from '@/platform/workspace/billing/sdk/billingSdkStore'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { getWorkspaceTelemetryContext } from '@/platform/workspace/telemetry/workspaceTelemetryContext'
 import { useAuthStore } from '@/stores/authStore'
 import {
   clearPendingSubscriptionCheckout,
@@ -69,7 +70,8 @@ export const useSubscriptionDialog = () => {
     const { tier } = useBillingContext()
     useTelemetry()?.trackSubscription('modal_opened', {
       current_tier: tier.value?.toLowerCase(),
-      reason
+      reason,
+      ...getWorkspaceTelemetryContext()
     })
   }
 

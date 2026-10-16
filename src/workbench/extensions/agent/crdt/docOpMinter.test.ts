@@ -102,6 +102,41 @@ class TestPrompt extends LGraphNode {
   }
 }
 
+class TestDynamicGroup extends LGraphNode {
+  constructor() {
+    super('Test Dynamic Group')
+    this.serialize_widgets = true
+    useLitegraphService().addNodeInput(this, {
+      name: 'loras',
+      type: 'COMFY_DYNAMICGROUP_V3',
+      isOptional: false,
+      min: 0,
+      max: 3,
+      template: {
+        required: {
+          lora_name: ['COMBO', { options: ['A', 'B'] }],
+          seed: ['INT', { default: 1, control_after_generate: true }]
+        }
+      }
+    })
+  }
+}
+
+class TestEmptyComboGroup extends LGraphNode {
+  constructor() {
+    super('Test Empty Combo Group')
+    this.serialize_widgets = true
+    useLitegraphService().addNodeInput(this, {
+      name: 'loras',
+      type: 'COMFY_DYNAMICGROUP_V3',
+      isOptional: false,
+      min: 0,
+      max: 3,
+      template: { required: { lora_name: ['COMBO', { options: [] }] } }
+    })
+  }
+}
+
 const CATALOG: WidgetCatalog = {
   types: {
     TestSource: { widget_order: ['steps'] },
@@ -163,6 +198,8 @@ beforeEach(() => {
   LiteGraph.registerNodeType('TestAutogrowSink', TestAutogrowSink)
   LiteGraph.registerNodeType('TestNote', TestNote)
   LiteGraph.registerNodeType('TestPrompt', TestPrompt)
+  LiteGraph.registerNodeType('TestDynamicGroup', TestDynamicGroup)
+  LiteGraph.registerNodeType('TestEmptyComboGroup', TestEmptyComboGroup)
 })
 
 describe('attachDocOpMinter', () => {
@@ -1594,6 +1631,48 @@ describe('attachDocOpMinter', () => {
     expect(minted).toEqual([])
   })
 
+  it('reports an unresolved widget owner once per graph and node across flushes', async () => {
+    const staleGraph = new LGraph()
+    const otherGraph = new LGraph()
+    const { source: stale } = seedGraph(staleGraph)
+    const { source: other } = seedGraph(otherGraph)
+    const { source: active } = seedGraph(graph)
+    const sibling = new TestSource()
+    withGraphIntentSource('load', () => staleGraph.add(sibling))
+    expect(other.id).toBe(stale.id)
+
+    stale.widgets![0].value = 21
+    active.widgets![0].value = 31
+    await afterFlush()
+    stale.widgets![0].value = 22
+    other.widgets![0].value = 23
+    sibling.widgets![0].value = 24
+    await afterFlush()
+
+    expect(minted).toEqual([
+      expect.objectContaining({ node_id: active.id, value: 31 })
+    ])
+    expect(
+      vi.mocked(reportError).mock.calls.map(([, options]) => options)
+    ).toEqual([
+      {
+        surface: 'agent',
+        errorType: 'agent_crdt_widget_owner_unresolved',
+        context: { graphId: staleGraph.id, nodeId: stale.id }
+      },
+      {
+        surface: 'agent',
+        errorType: 'agent_crdt_widget_owner_unresolved',
+        context: { graphId: otherGraph.id, nodeId: other.id }
+      },
+      {
+        surface: 'agent',
+        errorType: 'agent_crdt_widget_owner_unresolved',
+        context: { graphId: staleGraph.id, nodeId: sibling.id }
+      }
+    ])
+  })
+
   it('mints a set_widget that names a subgraph owner with the subgraph-node path', async () => {
     const subgraph = createTestSubgraph({ rootGraph: graph })
     const host = createTestSubgraphNode(subgraph)
@@ -1696,6 +1775,87 @@ describe('attachDocOpMinter', () => {
       'agent_crdt_op_for_unbound_graph',
       'agent_crdt_op_for_unbound_graph'
     ])
+  })
+
+  describe('DynamicGroup rows', () => {
+    function seedGroup() {
+      const node = new TestDynamicGroup()
+      function widget(name: string) {
+        const found = node.widgets?.find((w) => w.name === name)
+        if (!found) throw new Error(`Missing widget ${name}`)
+        return found
+      }
+      withGraphIntentSource('load', () => {
+        graph.add(node)
+        widget('loras').value = 2
+        widget('loras.1.lora_name').value = 'B'
+        widget('loras.1.seed').value = 5
+        widget('loras.1.seed.0').value = 'fixed'
+      })
+      return { node, widget }
+    }
+
+    it('mints the default of every field of a row added after a removal', async () => {
+      const { node, widget } = seedGroup()
+
+      widget('loras.1').callback?.(undefined)
+      widget('loras.$add').callback?.(undefined)
+      await afterFlush()
+
+      const setWidget = (name: string, value: unknown, old: unknown) => ({
+        op: 'set_widget',
+        node_id: node.id,
+        widget: name,
+        value,
+        old
+      })
+      expect(minted).toEqual([
+        setWidget('loras', 1, 2),
+        setWidget('loras', 2, 1),
+        setWidget('loras.1.lora_name', 'A', undefined),
+        setWidget('loras.1.seed', 1, undefined),
+        setWidget('loras.1.seed.0', 'randomize', undefined)
+      ])
+    })
+
+    it.for(['agent-remote', 'load'] as const)(
+      'mints nothing for a row added by a %s write',
+      async (source) => {
+        const { widget } = seedGroup()
+
+        withGraphIntentSource(source, () => {
+          widget('loras').value = 3
+        })
+        await afterFlush()
+
+        expect(widget('loras.2.lora_name').value).toBe('A')
+        expect(minted).toEqual([])
+      }
+    )
+
+    it('mints null for an added field that has no value', async () => {
+      const node = new TestEmptyComboGroup()
+      withGraphIntentSource('load', () => graph.add(node))
+
+      node.widgets?.find((w) => w.name === 'loras.$add')?.callback?.(undefined)
+      await afterFlush()
+
+      expect(minted).toEqual([
+        expect.objectContaining({ widget: 'loras', value: 1 }),
+        expect.objectContaining({ widget: 'loras.0.lora_name', value: null })
+      ])
+    })
+
+    it('mints nothing for a row added while the workflow is not doc-bound', async () => {
+      const { widget } = seedGroup()
+      bound = false
+
+      widget('loras.$add').callback?.(undefined)
+      await afterFlush()
+
+      expect(widget('loras.2.lora_name').value).toBe('A')
+      expect(minted).toEqual([])
+    })
   })
 
   it('stops minting after detach', async () => {

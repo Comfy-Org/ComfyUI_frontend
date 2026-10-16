@@ -38,7 +38,7 @@
 import type { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { KeyComboImpl } from '@/platform/keybindings/keyCombo'
 
-import type { EditKeybindingDialogState } from '@/composables/useEditKeybindingDialog'
+import type { EditKeybindingDialogState } from '@/components/dialog/content/setting/keybinding/editKeybindingDialogState'
 
 const { dialogState, onUpdateCombo, existingKeybindingOnCombo } = defineProps<{
   dialogState: EditKeybindingDialogState

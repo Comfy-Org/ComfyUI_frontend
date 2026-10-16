@@ -23,34 +23,8 @@ import { useGroupMenuOptions } from './useGroupMenuOptions'
 import { useImageMenuOptions } from './useImageMenuOptions'
 import { useNodeMenuOptions } from './useNodeMenuOptions'
 import { useSelectionMenuOptions } from './useSelectionMenuOptions'
+import type { MenuOption } from './menuOption'
 import { useSelectionState } from './useSelectionState'
-
-export interface MenuOption {
-  label?: string
-  icon?: string
-  shortcut?: string
-  hasSubmenu?: boolean
-  type?: 'divider' | 'category'
-  action?: () => void
-  submenu?: SubMenuOption[]
-  badge?: BadgeVariant
-  disabled?: boolean
-  source?: 'litegraph' | 'vue'
-  isColorPicker?: boolean
-  isShapePicker?: boolean
-}
-
-export interface SubMenuOption {
-  label: string
-  icon?: string
-  action: () => void
-  color?: string
-  disabled?: boolean
-}
-
-export enum BadgeVariant {
-  NEW = 'new'
-}
 
 // Global singleton for NodeOptions component reference
 let nodeOptionsInstance: null | NodeOptionsInstance = null

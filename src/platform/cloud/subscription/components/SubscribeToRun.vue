@@ -6,6 +6,7 @@
     variant="subscribe"
     size="unset"
     data-testid="subscribe-to-run-button"
+    :data-dd-action-name="BILLING_ACTION_NAME.subscribeToRun"
     @click="handleSubscribeToRun"
   >
     <i class="pi pi-lock" />
@@ -14,6 +15,7 @@
 </template>
 
 <script setup lang="ts">
+import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
 import { registerSubscribeToRunPrompt } from '@/platform/cloud/subscription/composables/useSubscribeCtaPresence'
 
 import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
@@ -21,7 +23,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useSubscriptionPaywall } from '@/composables/billing/useSubscriptionPaywall'
 import { useRunButtonTelemetry } from '@/composables/useRunButtonTelemetry'
 import { isCloud } from '@/platform/distribution/types'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
@@ -34,7 +36,7 @@ const breakpoints = useBreakpoints(breakpointsTailwind)
 const isMdOrLarger = breakpoints.greaterOrEqual('md')
 
 const { permissions } = useWorkspaceUI()
-const { showSubscriptionDialog } = useBillingContext()
+const { showSubscriptionDialog } = useSubscriptionPaywall()
 const { trackRunButton } = useRunButtonTelemetry()
 
 const canResubscribe = computed(() => permissions.value.canManageSubscription)
