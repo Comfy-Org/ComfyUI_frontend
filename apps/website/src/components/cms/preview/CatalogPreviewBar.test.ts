@@ -28,47 +28,46 @@ describe('catalog Preview controls', () => {
       }
     })
     expect(screen.getByRole('region')).toBeVisible()
-    expect(
-      screen.getByRole('combobox', { name: 'Catalog version' })
-    ).toHaveValue('LIVE')
-    expect(screen.queryByText('0 Draft changes')).not.toBeInTheDocument()
-    await fireEvent.update(
-      screen.getByRole('combobox', { name: 'Catalog version' }),
-      'DRAFT'
+    expect(screen.getByRole('button', { name: 'LIVE' })).toHaveAttribute(
+      'aria-pressed',
+      'true'
     )
+    expect(screen.queryByText('0 Draft changes')).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'DRAFT' }))
     expect(result.emitted().view).toEqual([['DRAFT']])
-    expect(
-      screen.getByRole('combobox', { name: 'Catalog version' })
-    ).toHaveValue('LIVE')
+    expect(screen.getByRole('button', { name: 'LIVE' })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    )
     await result.rerender({ now: undefined })
     expect(screen.queryByRole('region')).not.toBeInTheDocument()
   })
-  it('shows a full-width yellow banner with distinct NOW/EXIT/locale intents, without optimistic changes', async () => {
+  it('uses Mar’s graphite chrome and blue Draft state while preserving NOW/EXIT/locale intents', async () => {
     const result = render(CatalogPreviewBar, {
       props: { active: true, changes: [], now: '2026-10-15T09:00:00Z' }
     })
     expect(
       screen.getByRole('region', { name: 'Catalog preview controls' })
-    ).toHaveClass('w-full', 'bg-primary-comfy-yellow')
+    ).toHaveClass('w-full', 'bg-admin-chrome', 'border-t-admin-info')
     await userEvent.click(screen.getByRole('button', { name: 'NOW' }))
     expect(result.emitted().timewarp).toEqual([[undefined]])
     await userEvent.click(screen.getByRole('button', { name: 'EXIT' }))
     expect(result.emitted().exit).toEqual([[]])
-    await fireEvent.update(
-      screen.getByRole('combobox', { name: 'Preview language' }),
-      'zh-CN'
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Preview language' })
     )
+    await userEvent.click(screen.getByRole('button', { name: '中文' }))
     expect(result.emitted().locale).toEqual([['zh-CN']])
     expect(screen.getByRole('region')).toBeVisible()
     expect(
-      screen.getByRole('combobox', { name: 'Preview language' })
-    ).toHaveValue('en')
+      screen.getByRole('button', { name: 'Preview language' })
+    ).toHaveTextContent('EN')
     await result.rerender({ locale: 'zh-CN' })
     expect(
       screen.getByRole('region', { name: '内容目录预览控件' })
     ).toBeVisible()
-    expect(screen.getByRole('combobox', { name: '预览语言' })).toHaveValue(
-      'zh-CN'
+    expect(screen.getByRole('button', { name: '预览语言' })).toHaveTextContent(
+      '中'
     )
   })
   it('disables mutation intents during an outstanding request and displays caller failure as text', async () => {
@@ -83,13 +82,17 @@ describe('catalog Preview controls', () => {
     expect(screen.getByRole('button', { name: 'NOW' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'EXIT' })).toBeDisabled()
     expect(
-      screen.getByRole('combobox', { name: 'Preview language' })
+      screen.getByRole('button', { name: 'Preview language' })
     ).toBeDisabled()
     expect(screen.getByRole('alert')).toHaveTextContent('<script>fail</script>')
-    await fireEvent.update(
-      screen.getByRole('combobox', { name: 'Preview language' }),
-      'zh-CN'
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Preview language' })
     )
+    expect(
+      screen.queryByRole('button', { name: '中文' })
+    ).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'LIVE' }))
+    expect(result.emitted().view).toBeUndefined()
     expect(result.emitted().locale).toBeUndefined()
   })
   it('renders compact change summaries, field paths and safe navigation without injected HTML', async () => {

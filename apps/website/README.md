@@ -958,6 +958,24 @@ This bounds mounted rows and their media elements, not the upstream staging
 payload or database query cost. It does not reconcile duplicate source records,
 recover unavailable graph bytes, change Draft/LIVE, or publish any content.
 
+### CCC Preview presentation
+
+The authenticated catalog Preview bar follows Mar's graphite admin chrome:
+blue Draft state and page outline, green Live-timewarp state, segmented Draft/Live
+controls, language popover and shared admin button styling. Normal Live without
+a time override still has no Preview banner. NOW, EXIT, locale and view changes
+continue through the verified catalog Preview controller; this does not enable
+Mar's demo session or legacy form transport. Admin sidebars only link routes
+supported by the verified caller, not unavailable legacy review pages.
+
+The global layout does not load the catalog, staging snapshot or field diffs
+for the Preview bar. Its controls use the freshly verified session's view,
+clock and locale. Without explicitly supplied change data, Changes opens the
+review page on demand and no fabricated zero count or empty drawer is shown.
+The date picker still accepts arbitrary UTC time without querying content.
+Page-specific Draft card markers and scheduled content must be supplied by
+bounded page readers, not a global full-staging request; that adapter is separate.
+
 ### CCC still-thumbnail consumption and batch filter
 
 CCC presentation consumes the server-resolved `website_media['$.static_thumb']`
@@ -986,3 +1004,16 @@ publish. Batch fields are validated separately from the unmodified generated
 query schema, avoiding constructor mixing between legacy generated Zod v3 and
 current Astro Zod v4. These changes do not make the full upstream
 staging/projection payload bounded; that read-transport work remains separate.
+
+CCC paginated Hub URLs restore Browse All on first render and when Astro reuses
+the catalogue island. The page number, search and repeated filters survive
+returning from a detail page; returning to the unpaginated root restores category
+browsing. This applies only to catalogues with server pagination, leaving legacy
+static category pages unchanged.
+
+CCC workflow detail pages pass their already authorized, schema-validated
+selected workflow to the island, avoiding a second complete catalog read from
+`page.json` during hydration. The workflow gate and recovery controls remain in
+place. Initial data must match the route and workflow identity; legacy pages
+without selected data keep their existing detail endpoint. No browser or shared
+cross-request cache of staff data is introduced.

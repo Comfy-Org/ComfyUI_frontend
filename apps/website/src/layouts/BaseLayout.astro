@@ -2,13 +2,6 @@
 import { ClientRouter } from 'astro:transitions'
 import PreviewBanner from '@/components/cms/PreviewBanner.astro'
 import CatalogPreviewController from '@/components/cms/preview/CatalogPreviewController.vue'
-import { catalogReview, readReviewResponse } from '@/lib/cms/staging-server'
-import { itemTitle } from '@/lib/cms/staging-review'
-import { fieldDiff } from '@/lib/cms/diff'
-import type {
-  CatalogPreviewChange,
-  CatalogScheduledPage
-} from '@/lib/cms/preview-display'
 import StaffTools from '@/components/cms/StaffTools.astro'
 import Analytics from '@vercel/analytics/astro'
 import '@/styles/global.css'
@@ -150,46 +143,6 @@ const structuredData = head.emitStructuredData
     )
   : undefined
 
-const catalogSession = Astro.locals.catalogAuthoring
-const previewReview =
-  catalogSession && catalogSession.preview?.view === 'DRAFT'
-    ? await readReviewResponse(await catalogReview(catalogSession, 'staging'))
-    : undefined
-const previewItems =
-  previewReview?.ok && 'items' in previewReview.snapshot
-    ? previewReview.snapshot.items
-    : []
-const previewChanges: CatalogPreviewChange[] = previewItems.map((item) => ({
-  uid: item.content.uid,
-  title: itemTitle(item),
-  kind: item.content.is_deleted
-    ? 'deleted'
-    : item.before
-      ? 'modified'
-      : 'added',
-  summary: item.summary,
-  visibleFrom:
-    typeof item.content.document.visible_from === 'string'
-      ? item.content.document.visible_from
-      : undefined,
-  pagePath:
-    ['model', 'workflow', 'app'].includes(item.content.type) &&
-    typeof item.content.document.slug === 'string'
-      ? `/hub/${item.content.type}s/${encodeURIComponent(item.content.document.slug)}/`
-      : undefined,
-  fields: fieldDiff(item.before?.document, item.content.document).map(
-    (change) => change.path
-  ),
-  route: ['model', 'workflow', 'app'].includes(item.content.type)
-    ? `/admin/content/${item.content.uid}/edit`
-    : undefined
-}))
-const previewLaunches: CatalogScheduledPage[] = previewItems.flatMap((item) => {
-  const at = item.content.document.visible_from
-  return typeof at === 'string' && !item.content.is_deleted
-    ? [{ uid: item.content.uid, title: itemTitle(item), at }]
-    : []
-})
 const hubApps: HubApp[] = appModels.map(({ appId, flag }) => ({
   appId,
   ...(flag && { flag })
@@ -363,8 +316,6 @@ const hubApps: HubApp[] = appModels.map(({ appId, flag }) => ({
         now={Astro.locals.catalogAuthoring.preview?.now}
         locale={Astro.locals.catalogLocale ?? 'en'}
         currentPath={Astro.url.pathname + Astro.url.search}
-        changes={previewChanges}
-        launches={previewLaunches}
         showEntry={!bare}
         client:load
       />

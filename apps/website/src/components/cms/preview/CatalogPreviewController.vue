@@ -25,7 +25,7 @@ const {
   now,
   locale = 'en',
   currentPath,
-  changes = [],
+  changes,
   launches = [],
   showEntry = true
 } = defineProps<{
@@ -51,7 +51,7 @@ watch([ready, () => view, () => changes, () => locale], () => {
   clearMarks?.()
   clearMarks =
     ready.value && view === 'DRAFT'
-      ? markDraftCards(document.body, changes, (state) =>
+      ? markDraftCards(document.body, changes ?? [], (state) =>
           t.value(`cccDraftCards.${state}`)
         )
       : undefined

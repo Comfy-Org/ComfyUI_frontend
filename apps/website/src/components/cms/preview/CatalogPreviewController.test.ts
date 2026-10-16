@@ -14,6 +14,21 @@ const props = {
 }
 
 describe('verified staff Preview controller', () => {
+  it('renders session controls without a data request or fake change count, and opens the review page explicitly', async () => {
+    const assign = vi
+      .spyOn(window.location, 'assign')
+      .mockImplementation(() => {})
+    render(CatalogPreviewController, {
+      props: { ...props, changes: undefined }
+    })
+    await nextTick()
+    expect(screen.queryByText('0 Draft changes')).toBeNull()
+    expect(fetch).not.toHaveBeenCalled()
+    await userEvent.click(screen.getByRole('button', { name: 'Changes' }))
+    expect(assign).toHaveBeenCalledExactlyOnceWith('/admin/catalog')
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(fetch).not.toHaveBeenCalled()
+  })
   it('hides redundant normal-LIVE entry controls in the admin shell', () => {
     render(CatalogPreviewController, {
       props: { ...props, view: 'LIVE', now: undefined, showEntry: false }
@@ -98,18 +113,18 @@ describe('verified staff Preview controller', () => {
       .mockImplementation(() => {})
     render(CatalogPreviewController, { props })
     await nextTick()
-    await fireEvent.update(
-      screen.getByRole('combobox', { name: 'Preview language' }),
-      'zh-CN'
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Preview language' })
     )
+    await userEvent.click(screen.getByRole('button', { name: '中文' }))
     await waitFor(() =>
       expect(assign).toHaveBeenCalledWith(
         '/zh-CN/hub/workflows/example/?q=keep#inputs'
       )
     )
     expect(
-      screen.getByRole('combobox', { name: 'Preview language' })
-    ).toHaveValue('en')
+      screen.getByRole('button', { name: 'Preview language' })
+    ).toHaveTextContent('EN')
     expect(fetch).toHaveBeenCalledWith(
       '/admin/catalog-preview',
       expect.objectContaining({ body: '{"view":"DRAFT","locale":"zh-CN"}' })
@@ -125,18 +140,16 @@ describe('verified staff Preview controller', () => {
       .mockImplementation(() => {})
     render(CatalogPreviewController, { props })
     await nextTick()
-    await fireEvent.update(
-      screen.getByRole('combobox', { name: 'Catalog version' }),
-      'LIVE'
-    )
+    await userEvent.click(screen.getByRole('button', { name: 'LIVE' }))
     await waitFor(() => expect(assign).toHaveBeenCalledOnce())
     expect(fetch).toHaveBeenCalledWith(
       '/admin/catalog-preview',
       expect.objectContaining({ body: '{"view":"LIVE"}' })
     )
-    expect(
-      screen.getByRole('combobox', { name: 'Catalog version' })
-    ).toHaveValue('DRAFT')
+    expect(screen.getByRole('button', { name: 'DRAFT' })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    )
   })
   it('posts a UTC timewarp chosen in the date picker', async () => {
     const fetch = vi
@@ -180,18 +193,18 @@ describe('verified staff Preview controller', () => {
         .mockImplementation(() => {})
       render(CatalogPreviewController, { props })
       await nextTick()
-      await fireEvent.update(
-        screen.getByRole('combobox', { name: 'Preview language' }),
-        'zh-CN'
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Preview language' })
       )
+      await userEvent.click(screen.getByRole('button', { name: '中文' }))
       await waitFor(() =>
         expect(screen.getByRole('alert')).toHaveTextContent(
           'Your view is unchanged'
         )
       )
       expect(
-        screen.getByRole('combobox', { name: 'Preview language' })
-      ).toHaveValue('en')
+        screen.getByRole('button', { name: 'Preview language' })
+      ).toHaveTextContent('EN')
       expect(screen.getByRole('button', { name: 'EXIT' })).toBeEnabled()
       expect(assign).not.toHaveBeenCalled()
     }

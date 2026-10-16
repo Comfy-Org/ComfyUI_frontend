@@ -14,9 +14,19 @@ try {
   const context = await browser.newContext({
     viewport: { width: 1440, height: 1000 }
   })
-  const writes = await readOnlyRoutes(context, website)
+  const fixturePath = '/__ccc-layout-check'
+  const writes = await readOnlyRoutes(context, website, {
+    fulfill: async (url, route) => {
+      if (url.pathname !== fixturePath) return false
+      await route.fulfill({
+        contentType: 'text/html',
+        body: '<!doctype html><html><head></head><body></body></html>'
+      })
+      return true
+    }
+  })
   const { page, errors } = await isolatedPage(context)
-  await page.goto(`${website}/hub/models/`)
+  await page.goto(`${website}${fixturePath}`)
   await page.evaluate(async () => {
     const shellPath = '/src/components/cms/layout/CatalogAdminShell.vue'
     const previewPath = '/src/components/cms/preview/CatalogPreviewBar.vue'
@@ -149,29 +159,22 @@ try {
   await expect(
     page.getByRole('region', { name: 'Catalog preview controls' })
   ).toBeVisible()
-  await expect(page.getByRole('region')).toHaveCSS(
-    'background-color',
-    'rgb(242, 255, 89)'
-  )
+  await expect(page.getByRole('region')).toHaveClass(/bg-admin-chrome/)
   await page.getByRole('button', { name: 'ADMIN', exact: true }).click()
   expect(
     await page.evaluate(() =>
       document.body.firstElementChild?.getAttribute('data-navigation')
     )
   ).toBe('/admin/catalog')
-  await page
-    .getByRole('combobox', { name: 'Catalog version' })
-    .selectOption('LIVE')
+  await page.getByRole('button', { name: 'LIVE', exact: true }).click()
   await expect(page.getByRole('region')).toBeVisible()
   await expect(page.getByRole('region')).not.toContainText('2 Draft changes')
-  await page
-    .getByRole('combobox', { name: 'Catalog version' })
-    .selectOption('DRAFT')
+  await page.getByRole('button', { name: 'DRAFT', exact: true }).click()
   await expect(
     page.getByRole('link', { name: 'All content 45' })
   ).toHaveAttribute('aria-current', 'page')
   await page.screenshot({
-    path: '/tmp/ccc-buck-layout-desktop.png',
+    path: '/tmp/ccc-bruce-mar-preview-desktop.png',
     fullPage: true
   })
   await page.getByRole('button', { name: 'Changes', exact: true }).click()
@@ -179,7 +182,7 @@ try {
   await page.getByText('Changed fields').click()
   await expect(page.getByText('$.thumbnail.file_version_uid')).toBeVisible()
   await page.screenshot({
-    path: '/tmp/ccc-buck-layout-changes.png',
+    path: '/tmp/ccc-bruce-mar-preview-changes.png',
     fullPage: true
   })
   await page.keyboard.press('Escape')
@@ -195,9 +198,8 @@ try {
   await expect(
     page.getByRole('button', { name: 'Preview date and time', exact: true })
   ).toContainText('UTC')
-  await page
-    .getByRole('combobox', { name: 'Preview language' })
-    .selectOption('zh-CN')
+  await page.getByRole('button', { name: 'Preview language' }).click()
+  await page.getByRole('button', { name: '中文', exact: true }).click()
   await expect(
     page.getByRole('region', { name: '内容目录预览控件' })
   ).toBeVisible()
@@ -209,7 +211,7 @@ try {
     )
   ).toBe(true)
   await page.screenshot({
-    path: '/tmp/ccc-buck-layout-mobile-zh.png',
+    path: '/tmp/ccc-bruce-mar-preview-mobile-zh.png',
     fullPage: true
   })
   await page.getByRole('button', { name: '现在', exact: true }).click()

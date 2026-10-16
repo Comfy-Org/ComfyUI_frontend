@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { Clock, ChevronDown } from '@lucide/vue'
+import { cn } from '@comfyorg/tailwind-utils'
+import { adminButtonVariants } from '@/components/cms/ui/adminButton'
 import {
   PopoverRoot,
   PopoverTrigger,
@@ -21,11 +23,13 @@ const {
   now,
   launches = [],
   busy = false,
+  triggerClass,
   locale = 'en'
 } = defineProps<{
   now?: string
   launches?: CatalogScheduledPage[]
   busy?: boolean
+  triggerClass?: string
   locale?: Locale
 }>()
 const emit = defineEmits<{ timewarp: [at: string | undefined] }>()
@@ -59,9 +63,21 @@ function submit() {
     <PopoverTrigger
       :disabled="busy"
       :aria-label="t('cccPreview.time')"
-      class="inline-flex h-8 items-center gap-2 rounded-full border border-primary-comfy-ink/40 px-3 text-xs focus-visible:outline-2 focus-visible:outline-primary-comfy-ink disabled:opacity-40"
+      :class="
+        triggerClass ??
+        adminButtonVariants({ class: 'data-[state=open]:bg-admin-hover' })
+      "
     >
       <Clock class="size-4" aria-hidden="true" />
+      <span
+        :class="
+          cn(
+            'size-1.5 rounded-full',
+            now ? 'bg-admin-warning' : 'bg-admin-success'
+          )
+        "
+        aria-hidden="true"
+      />
       {{ now ? formatPreviewUtc(now, locale) : t('cccPreview.realTime') }}
       <ChevronDown class="size-3" aria-hidden="true" />
     </PopoverTrigger>
