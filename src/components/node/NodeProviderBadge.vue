@@ -11,7 +11,7 @@
 import { computed } from 'vue'
 
 import BadgePill from '@/components/common/BadgePill.vue'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import {
   getProviderBorderStyle,
   getProviderIcon,

@@ -1,0 +1,119 @@
+{
+  "id": "light-authoring",
+  "capability": "Light authoring",
+  "description": "CreateLightInfo node viewport: light entry types and value normalization, light-to-orbit transforms, Three.js light overlays and viewport, the useLightInfo widget-state composable, Vue editor widgets, and extension registration. CameraInfo handles and orbit math, the shared Three.js renderer, Load3D viewport factory, load3d components, and viewport node wiring remain external host dependencies.",
+  "modules": [
+    { "path": "src/types/lightInfo.ts", "role": "domain" },
+    {
+      "path": "src/lib/litegraph/src/widgets/LightInfoWidget.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgets/LightInfoWidget.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useLightInfoWidget.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useLightInfoWidget.test.ts",
+      "role": "integration"
+    },
+    { "path": "src/extensions/core/lightInfo/types.ts", "role": "domain" },
+    {
+      "path": "src/extensions/core/lightInfo/lightsValue.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/extensions/core/lightInfo/lightsValue.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/extensions/core/lightInfo/lightTransform.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/extensions/core/lightInfo/lightTransform.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/extensions/core/lightInfo/LightInfoViewport.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/extensions/core/lightInfo/LightInfoViewport.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/components/lightInfo/useLightInfo.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/components/lightInfo/useLightInfo.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/extensions/core/lightInfo/LightInfoOverlay.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/lightInfo/LightInfoOverlay.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/components/lightInfo/LightInfo.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/lightInfo/LightInfo.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/lightInfo/LightInfoLightEditor.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/lightInfo/LightInfoViewportToolbar.vue",
+      "role": "presentation"
+    },
+    { "path": "src/extensions/core/lightInfo.ts", "role": "integration" },
+    { "path": "src/extensions/core/lightInfo.test.ts", "role": "integration" }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Light values normalize and light positions convert to and from orbit state",
+      "checks": [
+        "src/extensions/core/lightInfo/lightsValue.test.ts",
+        "src/extensions/core/lightInfo/lightTransform.test.ts"
+      ]
+    },
+    {
+      "name": "Light viewport and overlay pick, drag, render, and dispose light gizmos",
+      "checks": [
+        "src/extensions/core/lightInfo/LightInfoViewport.test.ts",
+        "src/extensions/core/lightInfo/LightInfoOverlay.test.ts"
+      ]
+    },
+    {
+      "name": "Light widget state, editor controls, and node registration preserve light authoring",
+      "checks": [
+        "src/lib/litegraph/src/widgets/LightInfoWidget.test.ts",
+        "src/renderer/extensions/vueNodes/widgets/composables/useLightInfoWidget.test.ts",
+        "src/components/lightInfo/useLightInfo.test.ts",
+        "src/components/lightInfo/LightInfo.test.ts",
+        "src/extensions/core/lightInfo.test.ts"
+      ]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Unclassified callers may continue importing light internals during inventory; classified callers receive no new dependency permissions.",
+    "Classification does not move CameraInfo handles or orbit math, the shared Three.js renderer, Load3D viewport factory, load3d components, or viewport node wiring into light authoring.",
+    "The CreateLightInfo widget value shape remains unchanged."
+  ],
+  "deepImports": "inventory"
+}

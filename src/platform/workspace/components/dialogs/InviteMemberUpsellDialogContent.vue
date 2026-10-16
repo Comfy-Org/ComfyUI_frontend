@@ -48,12 +48,12 @@
 <script setup lang="ts">
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import { useSubscriptionDialogAccess } from '@/platform/cloud/subscription/composables/subscriptionDialogAccess'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const dialogStore = useDialogStore()
 const { canAccessSubscriptionFeatures } = useBillingContext()
-const subscriptionDialog = useSubscriptionDialog()
+const subscriptionDialog = useSubscriptionDialogAccess()
 
 function onDismiss() {
   dialogStore.closeDialog({ key: 'invite-member-upsell' })

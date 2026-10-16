@@ -49,6 +49,25 @@ describe('useLegacyBilling', () => {
       expect(useLegacyBilling().renewalInvoice.value).toEqual(invoice)
     })
 
+    it('maps the legacy Agent-scoped balance when the server reports it', () => {
+      useSubscription().subscriptionStatus.value = statusWith({
+        scoped_has_funds: { agent: false }
+      })
+
+      expect(useLegacyBilling().subscription.value?.agentScopedHasFunds).toBe(
+        false
+      )
+    })
+
+    it('uses the Agent-effective funds verdict for legacy admission', () => {
+      useAuthStore().balance = { currency: 'usd', amount_micros: 1 }
+      useSubscription().subscriptionStatus.value = statusWith({
+        scoped_effective_has_funds: { agent: false }
+      })
+
+      expect(useLegacyBilling().subscription.value?.agentHasFunds).toBe(false)
+    })
+
     it('keeps a tierless past-due status as a subscription', () => {
       useInactiveStatus(
         statusWith({
@@ -224,6 +243,26 @@ describe('useLegacyBilling', () => {
       expect(useSubscription().subscribeDirect).toHaveBeenCalledOnce()
       expect(useSubscription().subscribe).not.toHaveBeenCalled()
     })
+  })
+
+  describe('topup', () => {
+    it.for([
+      { canAccess: true, purchases: [[5]] },
+      { canAccess: false, purchases: [] }
+    ])(
+      'buys credits in dollars only when subscription features are available ($canAccess)',
+      async ({ canAccess, purchases }) => {
+        Object.assign(useSubscription(), {
+          canAccessSubscriptionFeatures: computed(() => canAccess)
+        })
+
+        await useLegacyBilling().topup(500)
+
+        expect(
+          vi.mocked(useAuthActions().purchaseCreditsDirect).mock.calls
+        ).toEqual(purchases)
+      }
+    )
   })
 
   describe('actions whose caller does not show a result', () => {

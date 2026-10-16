@@ -120,7 +120,14 @@ test('workflow launch groups lead to the existing shared form', async ({
   await page.getByTestId('example-replace-keep').click()
   await expect(prompt).toHaveValue('Use the material from the second image.')
   await page.getByRole('tab', { name: 'Details', exact: true }).click()
-  await expect(page.getByRole('link', { name: 'Try in Cloud' })).toHaveCount(0)
+  await expect(
+    page
+      .getByTestId('workflow-hero')
+      .getByRole('link', { name: 'Try in Cloud' })
+  ).toHaveAttribute(
+    'href',
+    'https://testcloud.comfy.org/?template=image_qwen_image_edit_2511'
+  )
   const graphFiles = [
     {
       link: page.getByRole('link', { name: 'Open full-size workflow preview' }),
@@ -478,7 +485,9 @@ test('keeps Run on screen beside a workflow form taller than the window', async 
   await page.goto('/hub/workflows/extend-image-borders/')
 
   const run = page.getByTestId('workflow-run-footer')
-  await expect(run.getByRole('link', { name: 'Sign in to run' })).toBeVisible()
+  await expect(
+    run.getByRole('link', { name: 'Run', exact: true })
+  ).toBeVisible()
   await page
     .getByRole('heading', { name: 'Input', exact: true })
     .evaluate((heading) => heading.scrollIntoView({ block: 'start' }))
@@ -620,7 +629,7 @@ test('the examples below the form read and mark themselves like a model page', a
     name: /A softer finish for a leather sofa/
   })
   await expect(example).toHaveAttribute('aria-current', 'true')
-  await expect(page.getByTestId('workflow-example-chosen')).toHaveCount(1)
+  await expect(page.getByTestId('example-chosen')).toHaveCount(1)
 })
 
 test('the examples belong to the playground, not to Details or API', async ({

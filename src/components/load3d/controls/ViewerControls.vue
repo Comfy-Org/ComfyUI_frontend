@@ -48,5 +48,3 @@ const openIn3DViewer = () => {
   })
 }
 </script>
-
-<style scoped></style>

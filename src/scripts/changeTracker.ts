@@ -5,9 +5,16 @@ import { assert } from '@/base/assert'
 import { LAYER_EDITOR_DIALOG_KEY } from '@/renderer/extensions/layerEditor/layerEditorDialogKey'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import type {
+  ComfyWorkflow,
+  WorkflowChangeTracker
+} from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import {
+  collectSubgraphDefinitions,
+  parseFlattenableSubgraphDefinitions
+} from '@/platform/workflow/core/utils/workflowFlattening'
 import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -20,6 +27,7 @@ import { isModalOpen } from '@/utils/modalUtil'
 
 import { api } from './api'
 import { useApp } from '@/scripts/appInstance'
+import { provideChangeTracker } from '@/scripts/changeTrackerAccess'
 import { clipspace } from '@/scripts/clipspace'
 
 function clone<T>(obj: T): T {
@@ -28,6 +36,40 @@ function clone<T>(obj: T): T {
 
 function withoutExecutionOrder(nodes: ComfyWorkflowJSON['nodes']) {
   return nodes.map((node) => _.omit(node, ['order']))
+}
+
+function withNormalizedNodeSizes(state: ComfyWorkflowJSON): ComfyWorkflowJSON {
+  const comparable = clone(state)
+  const subgraphs = collectSubgraphDefinitions(
+    parseFlattenableSubgraphDefinitions(comparable.definitions?.subgraphs ?? [])
+  )
+  const nodes = [
+    ...comparable.nodes,
+    ...subgraphs.flatMap((subgraph) => subgraph.nodes)
+  ]
+  for (const node of nodes) {
+    if ('size' in node) node.size = [0, 0]
+  }
+  return comparable
+}
+
+function matchesRestoredTarget(
+  actual: ComfyWorkflowJSON,
+  target: ComfyWorkflowJSON,
+  previous: ComfyWorkflowJSON
+): boolean {
+  if (ChangeTracker.graphEqual(actual, target)) return true
+  const comparableTarget = withNormalizedNodeSizes(target)
+  return (
+    ChangeTracker.graphEqual(
+      withNormalizedNodeSizes(actual),
+      comparableTarget
+    ) &&
+    !ChangeTracker.graphEqual(
+      comparableTarget,
+      withNormalizedNodeSizes(previous)
+    )
+  )
 }
 
 function isActiveTracker(tracker: ChangeTracker): boolean {
@@ -251,7 +293,7 @@ function reportInactiveTrackerCall(method: string, workflowPath: string) {
   assert(false, `ChangeTracker.${method}() called on inactive tracker`)
 }
 
-export class ChangeTracker {
+export class ChangeTracker implements WorkflowChangeTracker {
   static MAX_HISTORY = 50
   /**
    * Guard flag to prevent captureCanvasState from running during loadGraphData.
@@ -272,6 +314,7 @@ export class ChangeTracker {
    * Whether the redo/undo restoring is in progress.
    */
   _restoringState: boolean = false
+  private restoreChain?: Promise<void>
 
   ds?: { scale: number; offset: [number, number] }
   nodeOutputs?: Partial<Record<string, ExecutedWsMessage['output']>>
@@ -297,10 +340,9 @@ export class ChangeTracker {
    * Save the current state as the initial state.
    */
   reset(state?: ComfyWorkflowJSON) {
-    // Do not reset the state if we are restoring.
+    if (state) this.activeState = clone(state)
     if (this._restoringState) return
 
-    if (state) this.activeState = clone(state)
     this.initialState = clone(this.activeState)
   }
 
@@ -473,22 +515,49 @@ export class ChangeTracker {
   }
 
   async updateState(source: ComfyWorkflowJSON[], target: ComfyWorkflowJSON[]) {
-    const prevState = source.pop()
-    if (prevState) {
-      const previousState = this.activeState
-      target.push(previousState)
-      this._restoringState = true
-      try {
-        await useApp().loadGraphData(prevState, false, false, this.workflow, {
-          checkForRerouteMigration: false,
-          silentAssetErrors: true
-        })
-        this.activeState = prevState
-        this.updateModified(previousState)
-      } finally {
-        this._restoringState = false
+    const restore = async () => {
+      if (this._restoringState || source.length === 0) return
+      const prevState = source.pop()
+      if (prevState) {
+        const previousState = this.activeState
+        const restoresSavedState = ChangeTracker.graphEqual(
+          prevState,
+          this.initialState
+        )
+        let restored = false
+        this._restoringState = true
+        try {
+          const result = await useApp().loadGraphData(
+            prevState,
+            false,
+            false,
+            this.workflow,
+            {
+              checkForRerouteMigration: false,
+              silentAssetErrors: true
+            }
+          )
+          restored = result !== false && result !== undefined
+        } finally {
+          this._restoringState = false
+          restored ||=
+            !ChangeTracker.graphEqual(this.activeState, previousState) &&
+            matchesRestoredTarget(this.activeState, prevState, previousState)
+          if (restored) {
+            target.push(previousState)
+            if (restoresSavedState) this.initialState = clone(this.activeState)
+          } else {
+            source.push(prevState)
+          }
+          if (restored) this.updateModified(previousState)
+        }
       }
     }
+    this.restoreChain = (this.restoreChain ?? Promise.resolve()).then(
+      restore,
+      restore
+    )
+    return this.restoreChain
   }
 
   async undo() {
@@ -731,3 +800,5 @@ export class ChangeTracker {
     return true
   }
 }
+
+provideChangeTracker(ChangeTracker)

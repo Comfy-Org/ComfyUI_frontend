@@ -197,12 +197,25 @@ describe('agentRestClient route + method', () => {
 
   it('answerAsk POSTs the selected option to the encoded ask path', async () => {
     respond(jsonResponse(202, { status: 'answered' }))
-    await makeClient().answerAsk('t7/x', 'turn-1:call/1', ['run'])
+    await makeClient().answerAsk('t7/x', 'turn-1:call/1', { selected: ['run'] })
 
     const { route, init } = lastCall()
     expect(route).toBe('/agent/threads/t7%2Fx/asks/turn-1%3Acall%2F1/answer')
     expect(init.method).toBe('POST')
     expect(JSON.parse(init.body as string)).toEqual({ selected: ['run'] })
+  })
+
+  it('answerAsk sends free text as other_text alongside the chosen ids', async () => {
+    respond(jsonResponse(202, { status: 'answered' }))
+    await makeClient().answerAsk('t7', 'ask-1', {
+      selected: ['a'],
+      other_text: 'something else'
+    })
+
+    expect(JSON.parse(String(lastCall().init.body))).toEqual({
+      selected: ['a'],
+      other_text: 'something else'
+    })
   })
 
   it.for([
@@ -218,7 +231,7 @@ describe('agentRestClient route + method', () => {
     respond(jsonResponse(202, body))
 
     await expect(
-      makeClient().answerAsk('t7', 'ask-1', ['run'])
+      makeClient().answerAsk('t7', 'ask-1', { selected: ['run'] })
     ).resolves.toEqual(body)
   })
 
@@ -375,6 +388,7 @@ describe('postMessage wire body', () => {
     const parsed = JSON.parse(init.body as string) as Record<string, unknown>
     expect(parsed).toEqual({
       content: 'build it',
+      ask_kinds: ['run_approval', 'ask_user'],
       workflow_id: 'wf-9',
       selection: { nodeId: 3 },
       attachments: ['a1']
@@ -386,11 +400,10 @@ describe('postMessage wire body', () => {
     respond(jsonResponse(202, turnAccepted))
     await makeClient().postMessage('t1', { content: 'just text' })
 
-    const parsed = JSON.parse(lastCall().init.body as string) as Record<
-      string,
-      unknown
-    >
-    expect(Object.keys(parsed)).toEqual(['content'])
+    expect(JSON.parse(String(lastCall().init.body))).toEqual({
+      content: 'just text',
+      ask_kinds: ['run_approval', 'ask_user']
+    })
   })
 
   // The id this send already reports on app:agent_message_sent has to reach the
@@ -406,6 +419,7 @@ describe('postMessage wire body', () => {
 
     expect(JSON.parse(String(lastCall().init.body))).toEqual({
       content: 'build it',
+      ask_kinds: ['run_approval', 'ask_user'],
       client_message_id: '3f2504e0-4f89-41d3-9a0c-0305e82c3301'
     })
   })
@@ -428,6 +442,7 @@ describe('postMessage wire body', () => {
 
     expect(JSON.parse(String(lastCall().init.body))).toEqual({
       content: "what's on my canvas",
+      ask_kinds: ['run_approval', 'ask_user'],
       draft: { content: { nodes: [{ id: 1, type: 'LoadImage' }], links: [] } }
     })
   })
@@ -510,6 +525,48 @@ describe('success response parsing', () => {
 })
 
 describe('error mapping', () => {
+  it('formats an attachment rejection without parsing the evolving accepted policy', async () => {
+    respond(
+      jsonResponse(422, {
+        accepted: {
+          image: ['.png', '.future-image-format'],
+          text: [],
+          video: []
+        },
+        error: 'server fallback',
+        rejected: ['draft.future-image-format'],
+        rejected_count: 1,
+        type: 'ATTACHMENT_TYPE_NOT_ACCEPTED'
+      })
+    )
+
+    const error = await makeClient()
+      .postMessage('t1', { content: 'try it' })
+      .catch((caught: unknown) => caught)
+
+    expect(error).toBeInstanceOf(AgentApiError)
+    expect((error as AgentApiError).message).toContain(
+      'draft.future-image-format is not a file type the agent accepts'
+    )
+  })
+
+  it('does not treat another error type as an attachment rejection', async () => {
+    respond(
+      jsonResponse(422, {
+        error: 'another route failed',
+        rejected: ['private.pdf'],
+        rejected_count: 1,
+        type: 'OTHER_ERROR'
+      })
+    )
+
+    const error = await makeClient()
+      .getMessages('t1')
+      .catch((caught: unknown) => caught)
+
+    expect(error).toBeInstanceOf(AgentApiError)
+    expect((error as AgentApiError).message).toBe('another route failed')
+  })
   it.for(['', '   '])(
     'gives a status-bearing message when the supplied message is %j',
     (message) => {
@@ -861,7 +918,7 @@ describe('error mapping', () => {
       'cloud-auth-header'
     )
     await makeClient()
-      .answerAsk('t-secret', 'ask-secret', ['run'])
+      .answerAsk('t-secret', 'ask-secret', { selected: ['run'] })
       .catch((e: unknown) => e)
 
     expect(reportedTags()).toEqual({

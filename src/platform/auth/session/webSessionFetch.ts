@@ -71,7 +71,14 @@ export async function fetchOnWebSession(
     )
     const merged = new Headers(init.headers)
     for (const [name, value] of Object.entries(headers)) merged.set(name, value)
-    return fetch(url, { ...init, headers: merged, credentials })
+    return fetch(url, {
+      ...init,
+      headers: merged,
+      credentials:
+        new URL(url, location.href).origin === location.origin
+          ? 'same-origin'
+          : credentials
+    })
   }
 
   const response = await send(scope)

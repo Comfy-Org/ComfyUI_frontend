@@ -3,7 +3,7 @@
     :class="
       cn(
         '@container relative flex flex-col gap-6 rounded-2xl border border-interface-stroke bg-modal-panel-background px-6 py-5',
-        inactivePlan && 'text-muted'
+        inactivePlan && 'text-muted-foreground'
       )
     "
   >
@@ -19,10 +19,10 @@
     </Button>
 
     <div class="flex flex-col gap-1">
-      <div class="text-sm text-muted">
+      <div class="text-sm text-muted-foreground">
         {{ $t('subscription.totalCredits') }}
       </div>
-      <Skeleton v-if="isLoadingBalance" width="8rem" height="2rem" />
+      <Skeleton v-if="isLoadingBalance" class="h-8 w-32" />
       <div v-else class="flex items-baseline gap-2">
         <i
           :class="
@@ -33,7 +33,7 @@
           "
         />
         <span class="text-2xl leading-none font-bold">{{ displayTotal }}</span>
-        <span class="text-sm text-muted @max-[300px]:hidden">{{
+        <span class="text-sm text-muted-foreground @max-[300px]:hidden">{{
           $t('subscription.remaining')
         }}</span>
       </div>
@@ -49,7 +49,9 @@
         />
         <div class="flex flex-col gap-1">
           <span class="text-base-foreground">{{ emptyStateNotice.title }}</span>
-          <span class="text-muted">{{ emptyStateNotice.description }}</span>
+          <span class="text-muted-foreground">{{
+            emptyStateNotice.description
+          }}</span>
         </div>
       </div>
 
@@ -59,7 +61,7 @@
       >
         <div class="flex items-center justify-between text-sm">
           <span class="text-text-primary">{{ allowanceLabel }}</span>
-          <span class="text-muted">
+          <span class="text-muted-foreground">
             {{ refillsLabel }}
           </span>
         </div>
@@ -79,14 +81,12 @@
         <div class="flex items-center justify-between gap-2 text-sm">
           <Skeleton
             v-if="isLoadingBalance"
-            class="@max-[300px]:hidden"
-            width="5rem"
-            height="1rem"
+            class="h-4 w-20 @max-[300px]:hidden"
           />
-          <span v-else class="text-muted @max-[300px]:hidden">
+          <span v-else class="text-muted-foreground @max-[300px]:hidden">
             {{ $t('subscription.creditsUsed', { used: usedDisplay }) }}
           </span>
-          <Skeleton v-if="isLoadingBalance" width="9rem" height="1rem" />
+          <Skeleton v-if="isLoadingBalance" class="h-4 w-36" />
           <span
             v-else
             class="flex items-center gap-1 font-bold text-text-primary"
@@ -125,7 +125,7 @@
               variant="muted-textonly"
               size="icon-sm"
               :aria-label="$t('subscription.additionalCreditsInfo')"
-              class="text-muted"
+              class="text-muted-foreground"
             >
               <i class="icon-[lucide--info] size-4" />
             </Button>
@@ -136,7 +136,7 @@
               {{ $t('subscription.additionalCreditsInUse') }}
             </span>
           </span>
-          <Skeleton v-if="isLoadingBalance" width="3rem" height="1rem" />
+          <Skeleton v-if="isLoadingBalance" class="h-4 w-12" />
           <span
             v-else
             class="flex items-center gap-1 font-bold text-text-primary"
@@ -147,7 +147,7 @@
         </div>
         <span
           v-if="!isDurationUnknown"
-          class="text-sm text-muted @max-[300px]:hidden"
+          class="text-sm text-muted-foreground @max-[300px]:hidden"
         >
           {{ usedAfterAllowanceLabel }}
         </span>
@@ -165,7 +165,7 @@
               variant="muted-textonly"
               size="icon-sm"
               :aria-label="$t('subscription.additionalCreditsInfo')"
-              class="text-muted"
+              class="text-muted-foreground"
             >
               <i class="icon-[lucide--info] size-4" />
             </Button>
@@ -181,9 +181,8 @@
       </div>
     </template>
 
-    <div v-if="showActionButton" class="flex flex-col gap-3">
+    <div v-if="canTopUp" class="flex flex-col gap-3">
       <Button
-        v-if="canTopUp"
         :variant="isOutOfCredits ? 'inverted' : 'secondary'"
         size="lg"
         :class="
@@ -193,36 +192,32 @@
               'bg-interface-menu-component-surface-selected text-text-primary'
           )
         "
+        :data-dd-action-name="BILLING_ACTION_NAME.addCreditsTile"
         @click="handleAddCredits"
       >
         {{ $t('subscription.addCredits') }}
       </Button>
-      <Button
-        v-else
-        variant="subscribe"
-        size="lg"
-        class="w-full font-normal"
-        @click="handleUpgradeToAddCredits"
-      >
-        {{ $t('subscription.upgradeToAddCredits') }}
-      </Button>
+      <span v-if="creditsUseNote" class="text-sm text-muted-foreground">
+        {{ creditsUseNote }}
+      </span>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
 import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener } from '@vueuse/core'
-import Skeleton from 'primevue/skeleton'
 import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 
 import { formatCredits } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useSubscriptionCredits } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
-import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import {
   DEFAULT_TIER_KEY,
   isSalesManagedTier,
@@ -251,10 +246,11 @@ const {
   balance,
   canAccessSubscriptionFeatures,
   currentTeamCreditStop,
+  subscriptionStatus,
   fetchBalance,
   fetchStatus
 } = useBillingContext()
-const { canTopUp, canSubscribeSelfServe } = useBillingCapabilities()
+const { canTopUp } = useBillingCapabilities()
 const {
   prepaidCredits,
   totalCredits,
@@ -263,7 +259,6 @@ const {
   isLoadingBalance
 } = useSubscriptionCredits()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
-const { showPricingTable } = useSubscriptionDialog()
 const customerEventsService = useCustomerEventsService()
 const { showTopUpCreditsDialog } = useBillingDialogs()
 const telemetry = useTelemetry()
@@ -301,12 +296,6 @@ const creditPoolTotalCredits = computed<number | null>(() => {
   return isAnnualBilling.value ? monthlyCredits * 12 : monthlyCredits
 })
 
-// Tier decides the note, not the state: a lapsed sales-managed plan gets the
-// same disabled shape as self-serve (cloud#8001 closed its can_top_up, so the
-// old exclusion left a bare balance with no explanation) — only the route
-// back differs, the account manager rather than a Reactivate button. The
-// state keys on the prop rather than can_top_up because that capability is
-// rollout-defaulted and fails open for owners on an unreadable snapshot.
 const showsInactivePlanState = computed(() => inactivePlan === true)
 
 const inactiveCreditsNote = computed(() => {
@@ -429,12 +418,21 @@ const showBar = computed(
     creditPoolTotalCredits.value !== null &&
     creditPoolTotalCredits.value > 0
 )
-const showActionButton = computed(
-  () =>
-    (canTopUp.value || canSubscribeSelfServe.value) &&
-    !zeroState &&
-    !showsInactivePlanState.value
-)
+const creditsUseNote = computed(() => {
+  if (
+    !isCloud ||
+    canAccessSubscriptionFeatures.value ||
+    zeroState ||
+    showsInactivePlanState.value
+  ) {
+    return null
+  }
+  return t(
+    subscriptionStatus.value === 'ended'
+      ? 'subscription.resubscribeToUseCredits'
+      : 'subscription.subscribeToUseCredits'
+  )
+})
 
 const isMonthlyDepleted = computed(
   () =>
@@ -557,10 +555,6 @@ function handleAddCredits() {
   void showTopUpCreditsDialog({
     source: paymentIntentSourceForAddCreditsClick('credits_panel')
   })
-}
-
-function handleUpgradeToAddCredits() {
-  showPricingTable({ reason: 'upgrade_to_add_credits' })
 }
 
 async function handleWindowFocus() {

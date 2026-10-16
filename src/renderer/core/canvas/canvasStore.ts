@@ -15,7 +15,6 @@ import type {
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import { resolveSelectable } from '@/renderer/core/canvas/litegraph/selectionAdapter'
-import { promoteRecommendedWidgets } from '@/core/graph/subgraph/promotionUtils'
 import { useSelectionStore } from '@/core/selection/selectionStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
@@ -23,6 +22,15 @@ import { graphScopeOf } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { createPositionBounds } from '@/utils/positionBounds'
+
+let promoteRecommendedWidgets: (subgraphNode: SubgraphNode) => void
+
+/** Called by `promotionUtils` when it loads; it imports this store. */
+export function providePromoteRecommendedWidgets(
+  promote: (subgraphNode: SubgraphNode) => void
+): void {
+  promoteRecommendedWidgets = promote
+}
 
 export const useTitleEditorStore = defineStore('titleEditor', () => {
   const titleEditorTarget = shallowRef<LGraphNode | LGraphGroup | null>(null)
