@@ -21,6 +21,7 @@ import {
 import { matchesCheckedReview } from '@/lib/cms/checked-review'
 import { reviewRequest } from '@/lib/cms/staging-client'
 import { canonicalQueue } from '@/lib/cms/canonical-queue'
+import { reviewFieldErrors } from '@/lib/cms/review-errors'
 
 const {
   initial,
@@ -42,7 +43,8 @@ type Flow =
   | {
       kind: 'failed'
       snapshot: StagingReview
-      reason: 'stale' | 'failed' | 'dependency'
+      reason: 'stale' | 'failed' | 'dependency' | 'publicationDependency'
+      fields?: ReturnType<typeof reviewFieldErrors>
     }
   | { kind: 'discard'; snapshot: StagingReview; uids: string[]; key: string }
   | {
@@ -150,8 +152,9 @@ async function review(event: MouseEvent) {
             result.status === 409 || (result.ok && Boolean(final))
               ? 'stale'
               : result.status === 422
-                ? 'dependency'
-                : 'failed'
+                ? 'publicationDependency'
+                : 'failed',
+          fields: result.status === 422 ? reviewFieldErrors(result.data) : []
         }
 }
 function requestDiscard(uids: string[]) {
@@ -196,7 +199,8 @@ async function discard() {
           ? 'stale'
           : result.status === 422
             ? 'dependency'
-            : 'failed'
+            : 'failed',
+      fields: result.status === 422 ? reviewFieldErrors(result.data) : []
     }
     return
   }
@@ -232,13 +236,19 @@ async function exit() {
     :locale
     @open-live="exit"
   >
-    <p
+    <div
       v-if="flow.kind === 'failed'"
       role="alert"
       class="mb-5 text-sm text-admin-danger-text"
     >
       {{ t(`cccStaging.errors.${flow.reason}`) }}
-    </p>
+      <ul v-if="flow.fields?.length" class="mt-2 space-y-1">
+        <li v-for="(field, index) in flow.fields" :key="index">
+          <code class="break-all">{{ field.path }}</code>
+          <span class="ml-2 wrap-break-word">{{ field.message }}</span>
+        </li>
+      </ul>
+    </div>
     <DraftQueue
       :items="queue"
       :csrf

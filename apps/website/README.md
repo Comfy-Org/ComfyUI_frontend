@@ -88,8 +88,13 @@ Opening Final review posts expected LIVE/Draft/generation and explicit checked
 UIDs. It verifies that the returned candidate contains exactly those immutable
 saves, not additional hidden/filtered items. Publish binds the same UID set and
 candidate digest, uses existing CSRF/idempotency transport, and prevents dismissal
-while a request is unsettled. Cancel does not mutate the catalog. The legacy
-decision component remains only for compatibility; the new console does not use
+while a request is unsettled. Cancel does not mutate the catalog.
+Final review and Publish validation errors are distinct from discard failures.
+The authenticated same-origin proxy retains only bounded field paths/messages
+(64 KiB response, at most 100 entries), never arbitrary upstream debug fields.
+The console renders these as escaped text; a validation failure never silently
+adds dependencies, retries a publish or invokes discard.
+The legacy decision component remains only for compatibility; the new console does not use
 it. Remaining editor refinements and the list/history screens are still being
 integrated, with real upload/auth/Preview transport retained instead of mocks.
 The editor also adopts Mar's tag chips: Enter or comma adds a tag, and each chip

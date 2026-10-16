@@ -5,6 +5,7 @@ import { translationsFor } from '@/i18n/translations'
 import type { FinalReview } from '@/lib/cms/staging-review'
 import { publicationPayload, publicationState } from '@/lib/cms/staging-review'
 import { reviewRequest } from '@/lib/cms/staging-client'
+import { reviewFieldErrors } from '@/lib/cms/review-errors'
 import AdminButton from '@/components/cms/ui/AdminButton.vue'
 const {
   review,
@@ -20,7 +21,8 @@ const {
 const t = computed(() => translationsFor(locale).t)
 const emit = defineEmits<{ busy: [value: boolean] }>()
 const busy = ref(false)
-const failure = ref<'stale' | 'failed' | undefined>()
+const failure = ref<'stale' | 'failed' | 'publicationDependency' | undefined>()
+const fields = ref<ReturnType<typeof reviewFieldErrors>>([])
 // Retain the same retry key after an uncertain response; never publish twice.
 const key = crypto.randomUUID()
 async function publish() {
@@ -28,6 +30,7 @@ async function publish() {
   busy.value = true
   emit('busy', true)
   failure.value = undefined
+  fields.value = []
   const response = await reviewRequest('publish', {
     csrf,
     key,
@@ -42,7 +45,13 @@ async function publish() {
     window.location.assign('/admin/catalog')
     return
   }
-  failure.value = response.status === 409 ? 'stale' : 'failed'
+  failure.value =
+    response.status === 409
+      ? 'stale'
+      : response.status === 422
+        ? 'publicationDependency'
+        : 'failed'
+  if (response.status === 422) fields.value = reviewFieldErrors(response.data)
   busy.value = false
   emit('busy', false)
 }
@@ -66,9 +75,19 @@ async function publish() {
         )
       }}
     </p>
-    <p v-if="failure" role="alert" class="mt-3 text-sm text-admin-danger-text">
+    <div
+      v-if="failure"
+      role="alert"
+      class="mt-3 text-sm text-admin-danger-text"
+    >
       {{ t(`cccStaging.errors.${failure}`) }}
-    </p>
+      <ul v-if="fields.length" class="mt-2 space-y-1">
+        <li v-for="(field, index) in fields" :key="index">
+          <code class="break-all">{{ field.path }}</code>
+          <span class="ml-2 wrap-break-word">{{ field.message }}</span>
+        </li>
+      </ul>
+    </div>
     <a
       v-if="failure"
       :href="selectedUids ? '/admin/catalog' : '/admin/catalog/final-review'"

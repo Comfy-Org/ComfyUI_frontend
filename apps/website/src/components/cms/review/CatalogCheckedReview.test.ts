@@ -23,6 +23,44 @@ function firstItem(review: ReturnType<typeof fixtureReview>) {
 }
 
 describe('checkbox-only publication console', () => {
+  it('reports final-review validation without claiming a discard or attempting a write', async () => {
+    const user = userEvent.setup()
+    const initial = fixtureReview()
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(
+      Response.json(
+        {
+          field_errors: [
+            {
+              path: '$.workflow_versions[0].download',
+              message: 'Pinned media is not in the publication candidate'
+            }
+          ]
+        },
+        { status: 422 }
+      )
+    )
+    vi.mocked(fetch).mockImplementation(fetcher)
+    render(CatalogCheckedReview, {
+      props: { initial, csrf: 'fixture', canApply: true, canEdit: true }
+    })
+    await user.click(
+      screen.getByRole('checkbox', { name: 'Select Review fixture' })
+    )
+    await user.click(
+      screen.getByRole('button', { name: 'Review selected (1)' })
+    )
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('The selected changes cannot be published')
+    expect(alert).not.toHaveTextContent('discarded')
+    expect(screen.getByText('$.workflow_versions[0].download')).toBeVisible()
+    expect(
+      screen.getByText('Pinned media is not in the publication candidate')
+    ).toBeVisible()
+    expect(fetcher.mock.calls.map(([url]) => url)).toEqual([
+      '/admin/catalog-api/final-review'
+    ])
+  })
+
   it('finds a batch label in the main search bar without writes', async () => {
     const user = userEvent.setup()
     const initial = fixtureReview()

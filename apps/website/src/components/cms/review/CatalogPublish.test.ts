@@ -28,6 +28,31 @@ function published() {
   }
 }
 describe('temporary local Publish', () => {
+  it('shows publication validation details without redirecting or calling discard', async () => {
+    vi.mocked(reviewRequest).mockResolvedValue({
+      ok: false,
+      status: 422,
+      data: {
+        field_errors: [
+          { path: '$.thumbnail', message: '<script>not HTML</script>' }
+        ]
+      }
+    })
+    const assign = vi
+      .spyOn(window.location, 'assign')
+      .mockImplementation(() => {})
+    render(CatalogPublish, { props: { review: final(), csrf: 'fixture' } })
+    await userEvent.click(screen.getByRole('button', { name: 'Publish' }))
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('The selected changes cannot be published')
+    expect(alert).not.toHaveTextContent('discarded')
+    expect(alert).toHaveTextContent('$.thumbnail')
+    expect(alert).toHaveTextContent('<script>not HTML</script>')
+    expect(assign).not.toHaveBeenCalled()
+    expect(
+      vi.mocked(reviewRequest).mock.calls.map(([operation]) => operation)
+    ).toEqual(['publish'])
+  })
   it.for([
     {
       locale: 'en' as const,

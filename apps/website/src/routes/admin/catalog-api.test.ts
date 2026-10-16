@@ -61,6 +61,87 @@ function backend(status = 200, body: unknown = fixtureReview()) {
 }
 describe('catalog staging same-origin facade', () => {
   it.for([
+    {
+      operation: 'final-review',
+      body: {
+        review: {
+          expected_live_rev: 1,
+          expected_draft_rev: 7,
+          expected_draft_generation: 5
+        },
+        selected_uids: ['00000000-0000-4000-8000-000000000001']
+      }
+    },
+    {
+      operation: 'publish',
+      body: {
+        review: {
+          expected_live_rev: 1,
+          expected_draft_rev: 7,
+          expected_draft_generation: 5
+        },
+        selected_uids: ['00000000-0000-4000-8000-000000000001'],
+        expected_selection_digest: 'b'.repeat(64)
+      }
+    }
+  ])(
+    'preserves only bounded validation details for $operation',
+    async ({ operation, body }) => {
+      backend(422, {
+        field_errors: [
+          { path: '$.workflow_versions[0].download', message: 'Missing media' }
+        ],
+        debug_secret: 'never forward'
+      })
+      const response = await POST(context(operation, { body }))
+      expect(response.status).toBe(422)
+      expect(await response.json()).toEqual({
+        field_errors: [
+          { path: '$.workflow_versions[0].download', message: 'Missing media' }
+        ]
+      })
+      expect(response.headers.get('Cache-Control')).toBe('private, no-store')
+    }
+  )
+
+  it.for(['final-review', 'publish', 'discard-changes'])(
+    'does not forward malformed or oversized authority errors for %s',
+    async (operation) => {
+      const snapshot = fixtureReview()
+      const body =
+        operation === 'discard-changes'
+          ? discardPayload(
+              snapshot,
+              snapshot.items.map((item) => item.content.uid)
+            )
+          : {
+              review: {
+                expected_live_rev: 1,
+                expected_draft_rev: 7,
+                expected_draft_generation: 5
+              },
+              selected_uids: ['00000000-0000-4000-8000-000000000001'],
+              ...(operation === 'publish'
+                ? { expected_selection_digest: 'b'.repeat(64) }
+                : {})
+            }
+      for (const error of [
+        { field_errors: [{ path: 3, message: 'never forward' }] },
+        { field_errors: [{ path: '$', message: 'x'.repeat(65537) }] },
+        { field_errors: [{ path: '$', message: 'x'.repeat(1001) }] }
+      ]) {
+        backend(422, error)
+        const response = await POST(context(operation, { body }))
+        expect([422, 503]).toContain(response.status)
+        expect(response.headers.get('Cache-Control')).toBe('private, no-store')
+        const text = await response.text()
+        expect(text).not.toContain('field_errors')
+        expect(text).not.toContain('never forward')
+      }
+    }
+  )
+
+  it.for([
     { edit: false, apply: false, staging: 404, exit: 404 },
     { edit: true, apply: false, staging: 200, exit: 204 },
     { edit: false, apply: true, staging: 200, exit: 204 },

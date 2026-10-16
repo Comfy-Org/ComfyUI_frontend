@@ -18,6 +18,7 @@ import {
 import { z } from 'astro/zod'
 import { catalogReview, readReviewResponse } from '@/lib/cms/staging-server'
 import { hasCatalogCapability } from '@/lib/cms/catalog-capabilities'
+import { reviewErrors } from '@/lib/cms/review-errors'
 
 type Operation =
   | 'staging'
@@ -124,6 +125,28 @@ export const POST: APIRoute = async (context) => {
       body: JSON.stringify(parsed.data)
     }
   )
+  if (
+    upstream.status === 422 &&
+    (operation === 'final-review' ||
+      operation === 'publish' ||
+      operation === 'discard-changes')
+  ) {
+    const bytes = await boundedBody(upstream, 64 << 10)
+    if (!bytes) return editorFailure(503)
+    try {
+      const result = reviewErrors.safeParse(
+        JSON.parse(new TextDecoder().decode(bytes))
+      )
+      if (result.success)
+        return Response.json(result.data, {
+          status: 422,
+          headers: editorHeaders
+        })
+    } catch {
+      /* Malformed authority responses fail closed. */
+    }
+    return editorFailure(422)
+  }
   if (operation === 'final-review') {
     const result = await readReviewResponse(upstream, true)
     return result.ok
@@ -144,32 +167,6 @@ export const POST: APIRoute = async (context) => {
     } catch {
       return editorFailure(503)
     }
-  }
-  if (operation === 'discard-changes' && upstream.status === 422) {
-    const bytes = await boundedBody(upstream, 64 << 10)
-    if (!bytes) return editorFailure(503)
-    try {
-      const result = z
-        .object({
-          field_errors: z
-            .array(
-              z.object({
-                path: z.string().max(2000),
-                message: z.string().max(1000)
-              })
-            )
-            .max(100)
-        })
-        .safeParse(JSON.parse(new TextDecoder().decode(bytes)))
-      if (result.success)
-        return Response.json(result.data, {
-          status: 422,
-          headers: editorHeaders
-        })
-    } catch {
-      /* Malformed authority responses fail closed. */
-    }
-    return editorFailure(422)
   }
   const result = await readReviewResponse(upstream)
   return result.ok

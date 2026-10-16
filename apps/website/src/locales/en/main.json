@@ -6561,7 +6561,8 @@
       "stale": "This review is stale. Apply filters / reload before trying again. No decision was applied by this request.",
       "failed": "The action could not be confirmed. Reload the authoritative list before retrying; do not assume it was applied.",
       "invalid": "Check the original author UUID, tags and filters, then apply them again.",
-      "dependency": "These changes could not be discarded because the remaining Draft would be invalid. Nothing was changed. Review the dependencies below."
+      "dependency": "These changes could not be discarded because the remaining Draft would be invalid. Nothing was changed. Review the dependencies below.",
+      "publicationDependency": "The selected changes cannot be published because validation failed. Review the details below. Unchecked dependencies may need to be included."
     },
     "back": "Back to staging",
     "finalBlocked": "Final review is blocked: some changes are still NEW, no changes are approved, or candidate validation failed. Return to staging to review them.",
