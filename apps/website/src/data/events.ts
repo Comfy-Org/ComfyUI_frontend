@@ -451,6 +451,46 @@ const events: readonly ComfyEvent[] = [
     }
   },
   {
+    id: 'dev-platform-challenge-build-night',
+    category: 'meetup',
+    organizer: 'partner',
+    coords: { lat: 37.7749, lng: -122.4194 },
+    title: {
+      en: 'Open Source Higgsfield: ComfyUI Dev Platform Build Night',
+      'zh-CN': '开源版 Higgsfield：ComfyUI 开发者平台创作之夜'
+    },
+    description: {
+      en: 'An in-person build night at Frontier Tower in San Francisco for open source builders and creators on the ComfyUI Dev Platform. Register on Luma.',
+      'zh-CN':
+        '在旧金山 Frontier Tower 举办的线下创作之夜，面向使用 ComfyUI 开发者平台的开源开发者与创作者。请通过 Luma 报名。'
+    },
+    location: { en: 'San Francisco, CA', 'zh-CN': '美国加州旧金山' },
+    dateLabel: {
+      en: 'October 28, 2026 · 3-10 PM PT',
+      'zh-CN': '2026年10月28日 · 下午3点至10点（PT）'
+    },
+    startDateTime: '2026-10-28T15:00:00-07:00',
+    endDateTime: '2026-10-28T22:00:00-07:00',
+    link: {
+      href: {
+        en: 'https://luma.com/5mydmvu6',
+        'zh-CN': 'https://luma.com/5mydmvu6'
+      },
+      newTab: true
+    },
+    ctaLabel: { en: 'RSVP', 'zh-CN': '报名' },
+    // TODO: temporarily hosted via GitHub attachment; migrate to
+    // media.comfy.org and switch to eventImage() when available.
+    media: {
+      type: 'image',
+      src: 'https://github.com/user-attachments/assets/f58091d4-909e-44e2-b0bc-5499a8f2b468',
+      alt: {
+        en: 'Open Source Higgsfield: ComfyUI Dev Platform Build Night',
+        'zh-CN': '开源版 Higgsfield：ComfyUI 开发者平台创作之夜'
+      }
+    }
+  },
+  {
     id: 'codex-build-night-agents-everywhere',
     category: 'meetup',
     organizer: 'partner',
