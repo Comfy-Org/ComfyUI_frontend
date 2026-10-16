@@ -2,7 +2,8 @@
  * Storybook mock for `useFeatureFlags`.
  *
  * The real composable resolves flags from authenticated remote config, which is
- * unavailable in Storybook. This stub enables billing controls.
+ * unavailable in Storybook. This stub enables billing controls and the local
+ * engine menu.
  */
 export function useFeatureFlags() {
   return {
@@ -10,6 +11,7 @@ export function useFeatureFlags() {
       billingControlEnabled: true,
       hostedBillingDestination: 'stripe',
       hostedBillingWebEnabled: false,
+      openOnCloudEnabled: true,
       v1PaymentRecovery: true
     }
   }

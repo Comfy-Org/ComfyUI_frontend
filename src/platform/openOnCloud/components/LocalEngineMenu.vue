@@ -13,7 +13,7 @@
       "
       :label="$t('openOnCloud.triggerLabel')"
       trigger-testid="local-engine-menu-trigger"
-      menu-class="w-66"
+      menu-class="w-67"
       @update:open="onOpenChange"
     >
       <template #icon>
@@ -36,62 +36,75 @@
           </template>
         </DeploymentSwitcherRow>
       </DropdownMenuRadioGroup>
-      <TextTooltip :text="cloudTooltip" side="left">
-        <MenuItem
-          :disabled="!canOpen"
-          :aria-label="canOpen ? $t('openOnCloud.openLabel') : undefined"
-          :class="
-            cn(switcherItemClass, canOpen && 'data-highlighted:bg-transparent')
-          "
-          data-testid="engine-row-cloud"
-          @select="openOnCloud"
-        >
-          <svg
-            v-if="canOpen"
-            class="size-3.5 shrink-0 fill-none stroke-muted-foreground stroke-2"
-            viewBox="0 0 24 24"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            aria-hidden="true"
-            data-testid="cloud-ready-icon"
+      <Tooltip :disabled="!cloudTooltip">
+        <TooltipTrigger as-child>
+          <MenuItem
+            :disabled="!canOpen"
+            :aria-label="canOpen ? $t('openOnCloud.openLabel') : undefined"
+            :class="
+              cn(
+                switcherItemClass,
+                canOpen && 'data-highlighted:bg-transparent'
+              )
+            "
+            data-testid="engine-row-cloud"
+            @select="openOnCloud"
           >
-            <path
-              d="M5 17.743A7 7 0 1 1 15.71 10h1.79a4.5 4.5 0 0 1 1.5 8.742"
-            />
-            <path class="stroke-success-background" d="m17 15-5.5 5.5L9 18" />
-          </svg>
-          <i
-            v-else
-            class="icon-[lucide--cloud] size-3.5 shrink-0 text-muted-foreground"
-            aria-hidden="true"
-          />
-          <span class="min-w-0 truncate text-base-foreground">
-            {{ $t('deploymentSwitcher.comfyCloud') }}
-          </span>
-          <span
-            class="ml-auto flex shrink-0 items-center gap-1.5 pl-4 text-muted-foreground"
-          >
-            <template v-if="!verdict">
-              <i
-                class="icon-[lucide--loader-circle] size-3 animate-spin"
-                aria-hidden="true"
-              />
-              {{ $t('openOnCloud.checking') }}
-            </template>
-            <span
-              v-else-if="canOpen"
-              class="-mr-1.5 flex h-5 items-center gap-1 rounded-sm bg-secondary-background pr-1.5 pl-2 font-medium text-base-foreground group-data-highlighted:bg-secondary-background-hover"
+            <svg
+              v-if="canOpen"
+              class="size-3.5 shrink-0 fill-none stroke-muted-foreground stroke-2"
+              viewBox="0 0 24 24"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+              data-testid="cloud-ready-icon"
             >
-              {{ $t('openOnCloud.open') }}
-              <i
-                class="icon-[lucide--square-arrow-out-up-right] size-3 text-muted-foreground"
-                aria-hidden="true"
+              <path
+                d="M5 17.743A7 7 0 1 1 15.71 10h1.79a4.5 4.5 0 0 1 1.5 8.742"
               />
+              <path class="stroke-success-background" d="m17 15-5.5 5.5L9 18" />
+            </svg>
+            <i
+              v-else
+              class="icon-[lucide--cloud] size-3.5 shrink-0 text-muted-foreground"
+              aria-hidden="true"
+            />
+            <span class="min-w-0 truncate text-base-foreground">
+              {{ $t('deploymentSwitcher.comfyCloud') }}
             </span>
-            <span v-else>{{ missingLabel }}</span>
-          </span>
-        </MenuItem>
-      </TextTooltip>
+            <span
+              class="ml-auto flex shrink-0 items-center gap-1.5 pl-4 text-muted-foreground"
+            >
+              <template v-if="!verdict">
+                <i
+                  class="icon-[lucide--loader-circle] size-3 animate-spin"
+                  aria-hidden="true"
+                />
+                {{ $t('openOnCloud.checking') }}
+              </template>
+              <span
+                v-else-if="canOpen"
+                class="-mr-1.5 flex h-5 items-center gap-1 rounded-sm bg-secondary-background pr-1.5 pl-2 font-medium text-base-foreground group-data-highlighted:bg-secondary-background-hover"
+              >
+                {{ $t('openOnCloud.open') }}
+                <i
+                  class="icon-[lucide--square-arrow-out-up-right] size-3 text-muted-foreground"
+                  aria-hidden="true"
+                />
+              </span>
+              <span v-else>{{ missingLabel }}</span>
+            </span>
+          </MenuItem>
+        </TooltipTrigger>
+        <TooltipContent
+          side="left"
+          align="start"
+          :side-offset="12"
+          class="max-w-60"
+        >
+          {{ cloudTooltip }}
+        </TooltipContent>
+      </Tooltip>
       <template v-if="gaps">
         <MenuSeparator />
         <MenuItem
@@ -127,7 +140,9 @@ import { useI18n } from 'vue-i18n'
 
 import MenuItem from '@/components/ui/menu/MenuItem.vue'
 import MenuSeparator from '@/components/ui/menu/MenuSeparator.vue'
-import TextTooltip from '@/components/ui/tooltip/TextTooltip.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
