@@ -194,6 +194,9 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
     query: string,
     params: SearchNodePacksParams
   ): Promise<SearchPacksResult> => {
+    // Known limitation: analyticsTags are left out of the cache key, so a
+    // repeated query served from the cache sends no request and logs no
+    // analytics event.
     const { analyticsTags: _analyticsTags, ...resultParams } = params
     const cacheKey = paramsToCacheKey({ query, ...resultParams })
     const cachedResult = searchPacksCache.get(cacheKey)
