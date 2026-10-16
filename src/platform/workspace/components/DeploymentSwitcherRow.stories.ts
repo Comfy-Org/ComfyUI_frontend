@@ -1,12 +1,20 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
+import type { DeploymentCompatibilityMark } from '@/platform/workspace/composables/useDeploymentCompatibility'
+
 import DeploymentSwitcherRow from './DeploymentSwitcherRow.vue'
 
-/**
- * One row of the deployment switcher's list. With a workflow open, a row says
- * whether its deployment can run it: it runs it, it is missing nodes (named on
- * hover), or ingest could not check it because its Release has no node list.
- */
+const marks = {
+  none: null,
+  runs: { kind: 'runs' },
+  missing: {
+    kind: 'missing',
+    nodeTypes: ['Power Lora Loader (rgthree)', 'Image Saver']
+  },
+  unknown: { kind: 'unknown' }
+} satisfies Record<string, DeploymentCompatibilityMark | null>
+
+/** One row of the deployment switcher, with its workflow compatibility mark. */
 const meta: Meta<typeof DeploymentSwitcherRow> = {
   title: 'Components/DeploymentSwitcher/Row',
   component: DeploymentSwitcherRow,
@@ -15,7 +23,15 @@ const meta: Meta<typeof DeploymentSwitcherRow> = {
   args: {
     label: 'Studio Build v2',
     caption: 'dep-f24d36bb, ready',
-    checked: false
+    checked: false,
+    mark: null
+  },
+  argTypes: {
+    mark: {
+      control: 'select',
+      options: Object.keys(marks),
+      mapping: marks
+    }
   },
   decorators: [
     () => ({
@@ -28,29 +44,19 @@ const meta: Meta<typeof DeploymentSwitcherRow> = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** No workflow open, or the check failed: the row says nothing more. */
 export const Default: Story = {}
 
-export const RunsThisWorkflow: Story = {
-  args: { mark: { kind: 'runs' } }
-}
-
-/** Hover the mark to see the missing node types. */
-export const MissingNodes: Story = {
-  args: {
-    mark: {
-      kind: 'missing',
-      nodeTypes: ['Power Lora Loader (rgthree)', 'Image Saver']
-    }
-  }
-}
-
-/** The deployment's Release has no node list (not built yet, or gone). */
-export const NotChecked: Story = {
-  args: { mark: { kind: 'unknown' } }
+/** Every mark side by side: none, runs, missing nodes, not checked. */
+export const AllMarks: Story = {
+  render: (args) => ({
+    components: { DeploymentSwitcherRow },
+    setup: () => ({ args, marks: Object.values(marks) }),
+    template:
+      '<DeploymentSwitcherRow v-for="(mark, index) in marks" :key="index" v-bind="args" :mark="mark" />'
+  })
 }
 
 /** The row this browser runs on, marked as able to run the workflow. */
 export const CheckedAndRuns: Story = {
-  args: { checked: true, mark: { kind: 'runs' } }
+  args: { checked: true, mark: marks.runs }
 }

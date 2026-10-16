@@ -35,12 +35,14 @@ vi.mock(import('@/platform/workspace/api/workspaceApi'))
 vi.mock(import('@/platform/telemetry/reportError'))
 
 const hoisted = vi.hoisted(() => ({
-  rootGraph: undefined as unknown
+  rootGraph: undefined as unknown,
+  rootGraphReads: 0
 }))
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     get rootGraph() {
+      hoisted.rootGraphReads++
       return hoisted.rootGraph
     },
     get isGraphReady() {
@@ -290,6 +292,7 @@ describe('workflowNodeTypes', () => {
 describe('useDeploymentCompatibility', () => {
   beforeEach(() => {
     hoisted.rootGraph = rgthreeWorkflow()
+    hoisted.rootGraphReads = 0
     Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-1' })
     useDeploymentPickStore().state = ready([
       deployment('dep-rgthree'),
@@ -358,6 +361,24 @@ describe('useDeploymentCompatibility', () => {
 
     expect(workspaceApi.checkDeploymentCompatibility).not.toHaveBeenCalled()
     expect(markFor(null)).toBeNull()
+  })
+
+  it('reads the graph only once a check can be sent', async () => {
+    vi.useFakeTimers()
+    useDeploymentPickStore().state = { phase: 'hidden' }
+
+    setup()
+    __dispatchGraphChanged()
+    await vi.advanceTimersByTimeAsync(200)
+    expect(hoisted.rootGraphReads).toBe(0)
+
+    useDeploymentPickStore().state = ready([deployment('dep-rgthree')])
+    await nextTick()
+
+    expect(workspaceApi.checkDeploymentCompatibility).toHaveBeenCalledWith(
+      'ws-1',
+      ['KSampler', 'Power Lora Loader (rgthree)']
+    )
   })
 
   it('marks nothing and reports once when two checks fail', async () => {

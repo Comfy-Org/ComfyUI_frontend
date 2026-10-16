@@ -3,6 +3,7 @@
     type="button"
     :role="checked === null ? 'menuitem' : 'menuitemradio'"
     :aria-checked="checked ?? undefined"
+    :aria-describedby="missingNodeNames ? missingNodesId : undefined"
     :class="
       cn(
         'flex w-full cursor-pointer appearance-none items-center gap-2 border-0 border-b border-border-default bg-transparent px-4 py-3 text-left',
@@ -24,7 +25,7 @@
             mark.kind === 'unknown' && 'text-muted-foreground'
           )
         "
-        :title="mark.kind === 'missing' ? mark.nodeTypes.join(', ') : undefined"
+        :title="missingNodeNames"
         data-testid="deployment-row-mark"
       >
         <i
@@ -39,6 +40,9 @@
         />
         {{ markText }}
       </span>
+      <span v-if="missingNodeNames" :id="missingNodesId" hidden>
+        {{ missingNodeNames }}
+      </span>
     </div>
     <i
       v-if="checked"
@@ -49,7 +53,7 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { computed } from 'vue'
+import { computed, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { DeploymentCompatibilityMark } from '@/platform/workspace/composables/useDeploymentCompatibility'
@@ -67,6 +71,12 @@ const {
 }>()
 
 const { t } = useI18n()
+
+const missingNodesId = useId()
+
+const missingNodeNames = computed(() =>
+  mark?.kind === 'missing' ? mark.nodeTypes.join(', ') : undefined
+)
 
 const markText = computed(() => {
   if (mark === null) return ''

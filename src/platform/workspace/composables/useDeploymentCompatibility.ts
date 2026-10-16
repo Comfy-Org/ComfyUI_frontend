@@ -65,8 +65,16 @@ export const useDeploymentCompatibility = createSharedComposable(() => {
 
   const nodeTypes = shallowRef<string[]>([])
 
+  const canAsk = computed(
+    () =>
+      !!workspaceStore.workspaceId &&
+      isVisible.value &&
+      deployments.value.length > 0
+  )
+
   function readNodeTypes() {
-    nodeTypes.value = app.isGraphReady ? workflowNodeTypes(app.rootGraph) : []
+    nodeTypes.value =
+      canAsk.value && app.isGraphReady ? workflowNodeTypes(app.rootGraph) : []
   }
   const throttledRead = useThrottleFn(readNodeTypes, 200, true, true)
   const onGraphChanged = () => {
@@ -76,7 +84,9 @@ export const useDeploymentCompatibility = createSharedComposable(() => {
   tryOnScopeDispose(() => {
     api.removeEventListener('graphChanged', onGraphChanged)
   })
-  watch(() => workflowStore.activeWorkflow, readNodeTypes, { immediate: true })
+  watch([() => workflowStore.activeWorkflow, canAsk], readNodeTypes, {
+    immediate: true
+  })
 
   watch(
     () => workspaceStore.workspaceId,
@@ -90,10 +100,9 @@ export const useDeploymentCompatibility = createSharedComposable(() => {
 
   const request = computed(() => {
     const workspaceId = workspaceStore.workspaceId
-    if (!workspaceId || !isVisible.value || deployments.value.length === 0) {
+    if (!workspaceId || !canAsk.value || nodeTypes.value.length === 0) {
       return null
     }
-    if (nodeTypes.value.length === 0) return null
     return {
       workspaceId,
       nodeTypes: nodeTypes.value,

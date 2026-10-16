@@ -744,7 +744,7 @@ describe('DeploymentSwitcher', () => {
       mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
     })
 
-    it('says which rows run it, which miss nodes (named on hover), and which were not checked', async () => {
+    it('says which rows run it, which miss nodes (named on hover and in the row description), and which were not checked', async () => {
       mockWorkspaceApi.checkDeploymentCompatibility.mockResolvedValue({
         deployments: [
           { deployment_id: D2, missing_node_types: [] },
@@ -781,6 +781,12 @@ describe('DeploymentSwitcher', () => {
         'title',
         'Power Lora Loader (rgthree)'
       )
+      expect(
+        screen.getByTestId(`deployment-row-${D1}`)
+      ).toHaveAccessibleDescription('Power Lora Loader (rgthree)')
+      expect(
+        screen.getByTestId(`deployment-row-${D2}`)
+      ).not.toHaveAccessibleDescription()
       expect(screen.getByTestId(`deployment-row-${D9}`)).toHaveTextContent(
         'Not checked'
       )
@@ -791,6 +797,9 @@ describe('DeploymentSwitcher', () => {
         'title',
         'Power Lora Loader (rgthree), Image Saver'
       )
+      expect(
+        screen.getByTestId('deployment-row-cloud')
+      ).toHaveAccessibleDescription('Power Lora Loader (rgthree), Image Saver')
     })
 
     it('shows the rows as before when the check fails', async () => {
