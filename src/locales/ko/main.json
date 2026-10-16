@@ -5878,6 +5878,12 @@
     "modelsMissing": "모델 {count}개 없음 | 모델 {count}개 없음",
     "missingTooltip": "Comfy Cloud에 일부 노드나 모델이 없습니다. 클라우드에서 이 워크플로를 실행하려면 배포하세요.",
     "deploySetup": "내 설정을 Comfy Cloud에 배포",
+    "deploySetupDialog": {
+      "body": "Comfy Cloud에 설정의 배포가 생성됩니다. 배포는 Comfy Platform에서 관리합니다.",
+      "pointGpu": "선택한 GPU에서 ComfyUI로 작업",
+      "pointApi": "자동 확장 API로 제품에서 호출",
+      "pointNodes": "사용자 지정 노드와 모델을 그대로 사용"
+    },
     "aboutDeploy": "Comfy API에 배포 정보",
     "openedFromLocal": "내 컴퓨터의 ComfyUI에서 열었습니다",
     "openedFromLocalDetail": "Comfy Cloud에 이 워크플로가 사용하는 모든 노드와 모델이 있습니다. 준비되면 실행을 누르세요.",

@@ -5878,6 +5878,12 @@
     "modelsMissing": "{count} مدل موجود نیست | {count} مدل موجود نیست",
     "missingTooltip": "Comfy Cloud برخی نودها یا مدل‌ها را ندارد. آن‌ها را مستقر کنید تا این workflow روی ابر اجرا شود.",
     "deploySetup": "استقرار تنظیمات شما در Comfy Cloud",
+    "deploySetupDialog": {
+      "body": "این کار یک استقرار از تنظیمات شما در Comfy Cloud ایجاد می‌کند. آن را از Comfy Platform مدیریت می‌کنید.",
+      "pointGpu": "در ComfyUI روی GPU دلخواه خود کار کنید",
+      "pointApi": "آن را از محصول خود به‌عنوان یک API با مقیاس‌پذیری خودکار فراخوانی کنید",
+      "pointNodes": "نودهای سفارشی و مدل‌های خود را بیاورید"
+    },
     "aboutDeploy": "درباره استقرار در Comfy API",
     "openedFromLocal": "از ComfyUI روی رایانه شما باز شد",
     "openedFromLocalDetail": "Comfy Cloud همه نودها و مدل‌هایی را که این workflow استفاده می‌کند دارد. هر وقت آماده بودید، اجرا را بزنید.",

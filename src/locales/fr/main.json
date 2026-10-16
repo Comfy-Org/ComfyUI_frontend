@@ -5878,6 +5878,12 @@
     "modelsMissing": "{count} modèle manquant | {count} modèles manquants",
     "missingTooltip": "Il manque des nœuds ou des modèles à Comfy Cloud. Déployez-les pour exécuter ce flux de travail dans le cloud.",
     "deploySetup": "Déployer votre configuration sur Comfy Cloud",
+    "deploySetupDialog": {
+      "body": "Cela crée un déploiement de votre configuration sur Comfy Cloud. Vous le gérez depuis Comfy Platform.",
+      "pointGpu": "Travaillez dans ComfyUI sur le GPU de votre choix",
+      "pointApi": "Appelez-le depuis votre produit comme une API à mise à l'échelle automatique",
+      "pointNodes": "Apportez vos nœuds personnalisés et vos modèles"
+    },
     "aboutDeploy": "À propos de Déployer sur l’API Comfy",
     "openedFromLocal": "Ouvert depuis ComfyUI sur votre ordinateur",
     "openedFromLocalDetail": "Comfy Cloud dispose de tous les nœuds et modèles utilisés par ce flux de travail. Appuyez sur Exécuter quand vous êtes prêt.",

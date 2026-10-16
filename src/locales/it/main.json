@@ -5878,6 +5878,12 @@
     "modelsMissing": "{count} modello mancante | {count} modelli mancanti",
     "missingTooltip": "In Comfy Cloud mancano alcuni nodi o modelli. Distribuiscili per eseguire questo workflow nel cloud.",
     "deploySetup": "Distribuisci la tua configurazione su Comfy Cloud",
+    "deploySetupDialog": {
+      "body": "In questo modo viene creato un deployment della tua configurazione su Comfy Cloud. Lo gestisci da Comfy Platform.",
+      "pointGpu": "Lavora in ComfyUI sulla GPU che scegli",
+      "pointApi": "Richiamalo dal tuo prodotto come API con scalabilità automatica",
+      "pointNodes": "Porta i tuoi nodi personalizzati e i tuoi modelli"
+    },
     "aboutDeploy": "Informazioni su Distribuisci su Comfy API",
     "openedFromLocal": "Aperto da ComfyUI sul tuo computer",
     "openedFromLocalDetail": "Comfy Cloud ha tutti i nodi e i modelli usati da questo workflow. Premi Esegui quando sei pronto.",

@@ -5878,6 +5878,12 @@
     "modelsMissing": "Falta {count} modelo | Faltan {count} modelos",
     "missingTooltip": "A Comfy Cloud le faltan algunos nodos o modelos. Impleméntalos para ejecutar este flujo de trabajo en la nube.",
     "deploySetup": "Implementa tu configuración en Comfy Cloud",
+    "deploySetupDialog": {
+      "body": "Esto crea un despliegue de tu configuración en Comfy Cloud. Lo gestionas desde Comfy Platform.",
+      "pointGpu": "Trabaja en ComfyUI con la GPU que elijas",
+      "pointApi": "Llámalo desde tu producto como una API con escalado automático",
+      "pointNodes": "Trae tus nodos personalizados y tus modelos"
+    },
     "aboutDeploy": "Acerca de Implementar en la API de Comfy",
     "openedFromLocal": "Abierto desde ComfyUI en tu computadora",
     "openedFromLocalDetail": "Comfy Cloud tiene todos los nodos y modelos que usa este flujo de trabajo. Pulsa Ejecutar cuando estés listo.",

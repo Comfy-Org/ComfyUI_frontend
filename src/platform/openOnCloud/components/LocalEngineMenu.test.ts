@@ -6,8 +6,8 @@ import { createI18n } from 'vue-i18n'
 import enMessages from '@/locales/en/main.json'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { PROTOTYPE_CHECK_MS } from '@/platform/openOnCloud/cloudWorkflowCheck'
+import { openDeploySetupDialog } from '@/platform/openOnCloud/openDeploySetupDialog'
 import { openWorkflowOnCloud } from '@/platform/openOnCloud/openWorkflowOnCloud'
-import { openDeployToComfyApiDialog } from '@/platform/workflow/deploy/composables/lazyDeployToComfyApiDialog'
 import { defaultGraph } from '@/scripts/defaultGraph'
 
 import LocalEngineMenu from './LocalEngineMenu.vue'
@@ -26,10 +26,9 @@ vi.mock(import('@/composables/useErrorHandling'))
 vi.mock(import('@/platform/openOnCloud/openWorkflowOnCloud'), () => ({
   openWorkflowOnCloud: vi.fn(async () => {})
 }))
-vi.mock(
-  import('@/platform/workflow/deploy/composables/lazyDeployToComfyApiDialog'),
-  () => ({ openDeployToComfyApiDialog: vi.fn(async () => {}) })
-)
+vi.mock(import('@/platform/openOnCloud/openDeploySetupDialog'), () => ({
+  openDeploySetupDialog: vi.fn(async () => {})
+}))
 vi.mock(import('@/platform/openOnCloud/serializeRootGraph'), () => ({
   serializeRootGraph: vi.fn(() => defaultGraph)
 }))
@@ -146,7 +145,7 @@ describe('LocalEngineMenu', () => {
       })
     )
 
-    expect(openDeployToComfyApiDialog).toHaveBeenCalledOnce()
+    expect(openDeploySetupDialog).toHaveBeenCalledOnce()
   })
 
   it('stays on Checking… while the switch says so', async () => {

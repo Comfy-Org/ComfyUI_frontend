@@ -5878,6 +5878,12 @@
     "modelsMissing": "{count} modelo ausente | {count} modelos ausentes",
     "missingTooltip": "O Comfy Cloud não tem alguns nós ou modelos. Implante-os para executar este fluxo de trabalho na nuvem.",
     "deploySetup": "Implante sua configuração no Comfy Cloud",
+    "deploySetupDialog": {
+      "body": "Isso cria uma implantação da sua configuração no Comfy Cloud. Você a gerencia pelo Comfy Platform.",
+      "pointGpu": "Trabalhe no ComfyUI na GPU que você escolher",
+      "pointApi": "Chame-a do seu produto como uma API com escalonamento automático",
+      "pointNodes": "Traga seus nós personalizados e modelos"
+    },
     "aboutDeploy": "Sobre Implantar na API do Comfy",
     "openedFromLocal": "Aberto do ComfyUI no seu computador",
     "openedFromLocalDetail": "O Comfy Cloud tem todos os nós e modelos que este fluxo de trabalho usa. Pressione Executar quando estiver pronto.",

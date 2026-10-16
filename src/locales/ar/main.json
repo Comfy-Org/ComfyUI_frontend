@@ -5878,6 +5878,12 @@
     "modelsMissing": "{count} نموذج مفقود | {count} نماذج مفقودة",
     "missingTooltip": "يفتقد Comfy Cloud بعض العقد أو النماذج. انشرها لتشغيل سير العمل هذا على السحابة.",
     "deploySetup": "انشر إعدادك على Comfy Cloud",
+    "deploySetupDialog": {
+      "body": "يُنشئ هذا نشرًا لإعدادك على Comfy Cloud. وتديره من Comfy Platform.",
+      "pointGpu": "اعمل في ComfyUI على وحدة معالجة الرسومات التي تختارها",
+      "pointApi": "استدعِه من منتجك كواجهة API تتوسع تلقائيًا",
+      "pointNodes": "أحضر عقدك المخصصة ونماذجك"
+    },
     "aboutDeploy": "حول النشر إلى Comfy API",
     "openedFromLocal": "فُتح من ComfyUI على جهازك",
     "openedFromLocalDetail": "يحتوي Comfy Cloud على كل عقدة ونموذج يستخدمه سير العمل هذا. اضغط تشغيل عندما تكون جاهزًا.",

@@ -5878,6 +5878,12 @@
     "modelsMissing": "{count} 個のモデルが不足 | {count} 個のモデルが不足",
     "missingTooltip": "Comfy Cloud に一部のノードまたはモデルがありません。クラウドでこのワークフローを実行するには、それらをデプロイしてください。",
     "deploySetup": "セットアップを Comfy Cloud にデプロイ",
+    "deploySetupDialog": {
+      "body": "Comfy Cloud 上にあなたのセットアップのデプロイメントが作成されます。管理は Comfy Platform から行います。",
+      "pointGpu": "選んだ GPU 上の ComfyUI で作業",
+      "pointApi": "自動スケーリングする API として自社製品から呼び出し",
+      "pointNodes": "カスタムノードとモデルをそのまま利用"
+    },
     "aboutDeploy": "Comfy API へのデプロイについて",
     "openedFromLocal": "お使いのコンピューターの ComfyUI から開きました",
     "openedFromLocalDetail": "Comfy Cloud には、このワークフローが使うすべてのノードとモデルがあります。準備ができたら「実行する」を押してください。",

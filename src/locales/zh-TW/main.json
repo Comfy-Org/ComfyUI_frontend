@@ -5878,6 +5878,12 @@
     "modelsMissing": "缺少 {count} 個模型 | 缺少 {count} 個模型",
     "missingTooltip": "Comfy Cloud 缺少部分節點或模型，部署它們即可在雲端執行此工作流程。",
     "deploySetup": "將你的設定部署到 Comfy Cloud",
+    "deploySetupDialog": {
+      "body": "這會在 Comfy Cloud 上為你的設定建立一個部署。你可以在 Comfy Platform 中管理它。",
+      "pointGpu": "在你選擇的 GPU 上使用 ComfyUI",
+      "pointApi": "在你的產品中以自動擴縮的 API 呼叫它",
+      "pointNodes": "帶上你的自訂節點和模型"
+    },
     "aboutDeploy": "關於部署至 Comfy API",
     "openedFromLocal": "已從你電腦上的 ComfyUI 開啟",
     "openedFromLocalDetail": "Comfy Cloud 擁有此工作流程使用的所有節點和模型。準備好後按「執行」。",

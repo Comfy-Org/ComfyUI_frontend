@@ -5878,6 +5878,12 @@
     "modelsMissing": "חסר מודל {count} | חסרים {count} מודלים",
     "missingTooltip": "ב-Comfy Cloud חסרים כמה צמתים או מודלים. פרוס אותם כדי להריץ את תהליך העבודה הזה בענן.",
     "deploySetup": "פרוס את ההגדרה שלך ל-Comfy Cloud",
+    "deploySetupDialog": {
+      "body": "פעולה זו יוצרת פריסה של ההגדרה שלך ב-Comfy Cloud. את הפריסה מנהלים מ-Comfy Platform.",
+      "pointGpu": "עבוד ב-ComfyUI על ה-GPU שתבחר",
+      "pointApi": "קרא לו מהמוצר שלך כ-API עם שינוי קנה מידה אוטומטי",
+      "pointNodes": "הבא את הצמתים המותאמים אישית והמודלים שלך"
+    },
     "aboutDeploy": "אודות פריסה ל-Comfy API",
     "openedFromLocal": "נפתח מ-ComfyUI במחשב שלך",
     "openedFromLocalDetail": "ב-Comfy Cloud יש כל צומת ומודל שתהליך העבודה הזה משתמש בהם. לחץ על הרצה כשתהיה מוכן.",

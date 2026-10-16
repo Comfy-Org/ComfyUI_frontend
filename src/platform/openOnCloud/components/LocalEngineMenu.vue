@@ -147,10 +147,10 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import CloudCheckPrototypeSwitch from '@/platform/openOnCloud/components/CloudCheckPrototypeSwitch.vue'
+import { openDeploySetupDialog } from '@/platform/openOnCloud/openDeploySetupDialog'
 import { openWorkflowOnCloud } from '@/platform/openOnCloud/openWorkflowOnCloud'
 import { serializeRootGraph } from '@/platform/openOnCloud/serializeRootGraph'
 import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
-import { openDeployToComfyApiDialog } from '@/platform/workflow/deploy/composables/lazyDeployToComfyApiDialog'
 import DeploymentSwitcherRow from '@/platform/workspace/components/DeploymentSwitcherRow.vue'
 import EngineMenu from '@/platform/workspace/components/EngineMenu.vue'
 import {
@@ -201,6 +201,6 @@ function openOnCloud() {
 }
 
 function deploySetup() {
-  openDeployToComfyApiDialog().catch(toastErrorHandler)
+  openDeploySetupDialog().catch(toastErrorHandler)
 }
 </script>

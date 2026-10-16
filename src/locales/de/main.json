@@ -5878,6 +5878,12 @@
     "modelsMissing": "{count} Modell fehlt | {count} Modelle fehlen",
     "missingTooltip": "Comfy Cloud fehlen einige Nodes oder Modelle. Stellen Sie sie bereit, um diesen Workflow in der Cloud auszuführen.",
     "deploySetup": "Ihr Setup in Comfy Cloud bereitstellen",
+    "deploySetupDialog": {
+      "body": "Dadurch wird ein Deployment Ihres Setups in Comfy Cloud erstellt. Sie verwalten es über Comfy Platform.",
+      "pointGpu": "Arbeiten Sie in ComfyUI auf der GPU Ihrer Wahl",
+      "pointApi": "Rufen Sie es aus Ihrem Produkt als automatisch skalierende API auf",
+      "pointNodes": "Bringen Sie Ihre eigenen Nodes und Modelle mit"
+    },
     "aboutDeploy": "Über „In Comfy API bereitstellen“",
     "openedFromLocal": "Aus ComfyUI auf Ihrem Computer geöffnet",
     "openedFromLocalDetail": "Comfy Cloud hat alle Nodes und Modelle, die dieser Workflow verwendet. Klicken Sie auf Ausführen, wenn Sie bereit sind.",

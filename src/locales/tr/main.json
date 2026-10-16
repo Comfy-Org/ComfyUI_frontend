@@ -5878,6 +5878,12 @@
     "modelsMissing": "{count} model eksik | {count} model eksik",
     "missingTooltip": "Comfy Cloud'da bazı düğümler veya modeller eksik. Bu iş akışını bulutta çalıştırmak için bunları dağıtın.",
     "deploySetup": "Kurulumunuzu Comfy Cloud'a dağıtın",
+    "deploySetupDialog": {
+      "body": "Bu, kurulumunuzun Comfy Cloud'da bir dağıtımını oluşturur. Onu Comfy Platform'dan yönetirsiniz.",
+      "pointGpu": "ComfyUI'da seçtiğiniz GPU üzerinde çalışın",
+      "pointApi": "Ürününüzden otomatik ölçeklenen bir API olarak çağırın",
+      "pointNodes": "Özel düğümlerinizi ve modellerinizi getirin"
+    },
     "aboutDeploy": "Comfy API'ye Dağıt hakkında",
     "openedFromLocal": "Bilgisayarınızdaki ComfyUI'dan açıldı",
     "openedFromLocalDetail": "Comfy Cloud'da bu iş akışının kullandığı tüm düğümler ve modeller var. Hazır olduğunuzda Çalıştır'a basın.",
