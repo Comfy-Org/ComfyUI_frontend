@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test'
 
 import type { Point } from '@/lib/litegraph/src/interfaces'
+import type { NodeId } from '@/types/nodeId'
 
 import {
   comfyExpect as expect,
@@ -172,12 +173,56 @@ test.describe('Marquee link selection', { tag: '@canvas' }, () => {
   })
 })
 
+async function linkPresentation(comfyPage: ComfyPage) {
+  return (
+    (await comfyPage.workflow.getExportedWorkflow()).extra?.linkPresentation ??
+    {}
+  )
+}
+
+async function expectOutputLinksHideAndShow(
+  comfyPage: ComfyPage,
+  clickOutput: () => Promise<void>,
+  linkIds: string[]
+) {
+  const toolbox = comfyPage.selectionToolbox
+
+  await test.step('Hide every link of the output from the toolbox', async () => {
+    await clickOutput()
+    await toolbox.getByTestId(TestIds.selectionToolbox.hideLinks).click()
+
+    await expect
+      .poll(() => linkPresentation(comfyPage))
+      .toEqual(Object.fromEntries(linkIds.map((id) => [id, { hidden: true }])))
+  })
+
+  await test.step('Show the hidden links again from the toolbox', async () => {
+    await clickOutput()
+    await expect(
+      toolbox.getByTestId(TestIds.selectionToolbox.hideLinks)
+    ).toBeHidden()
+    await toolbox.getByTestId(TestIds.selectionToolbox.showLinks).click()
+
+    await expect.poll(() => linkPresentation(comfyPage)).toEqual({})
+  })
+}
+
 test.describe('Socket click link selection', { tag: '@canvas' }, () => {
   test.use({ initialSettings: { 'Comfy.Canvas.SelectionToolbox': true } })
 
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('default')
   })
+
+  async function clipLinkIds(comfyPage: ComfyPage, loaderId: NodeId) {
+    const linkIds = await comfyPage.page.evaluate(
+      (id) =>
+        (window.app!.graph.getNodeById(id)?.outputs[1].links ?? []).map(String),
+      loaderId
+    )
+    expect(linkIds).toHaveLength(2)
+    return linkIds
+  }
 
   test('clicking an output hides and shows its links, and dragging it still connects', async ({
     comfyPage
@@ -194,51 +239,15 @@ test.describe('Socket click link selection', { tag: '@canvas' }, () => {
         (id) => window.app!.graph.getNodeById(id)?.inputs[0].link ?? null,
         encoder.id
       )
-    const clipLinkIds = await comfyPage.page.evaluate(
-      (id) =>
-        (window.app!.graph.getNodeById(id)?.outputs[1].links ?? []).map(String),
-      loader.id
+
+    await expectOutputLinksHideAndShow(
+      comfyPage,
+      async () => {
+        const position = await clipOutput.getPosition()
+        await comfyPage.page.mouse.click(position.x, position.y)
+      },
+      await clipLinkIds(comfyPage, loader.id)
     )
-    expect(clipLinkIds).toHaveLength(2)
-
-    await test.step('Hide both links from the toolbox', async () => {
-      const position = await clipOutput.getPosition()
-      await comfyPage.page.mouse.click(position.x, position.y)
-      await comfyPage.selectionToolbox
-        .getByTestId(TestIds.selectionToolbox.hideLinks)
-        .click()
-
-      await expect
-        .poll(
-          async () =>
-            (await comfyPage.workflow.getExportedWorkflow()).extra
-              ?.linkPresentation
-        )
-        .toMatchObject(
-          Object.fromEntries(clipLinkIds.map((id) => [id, { hidden: true }]))
-        )
-    })
-
-    await test.step('Show both hidden links from the toolbox', async () => {
-      const position = await clipOutput.getPosition()
-      await comfyPage.page.mouse.click(position.x, position.y)
-      await expect(
-        comfyPage.selectionToolbox.getByTestId(
-          TestIds.selectionToolbox.hideLinks
-        )
-      ).toBeHidden()
-      await comfyPage.selectionToolbox
-        .getByTestId(TestIds.selectionToolbox.showLinks)
-        .click()
-
-      await expect
-        .poll(
-          async () =>
-            (await comfyPage.workflow.getExportedWorkflow()).extra
-              ?.linkPresentation ?? {}
-        )
-        .toEqual({})
-    })
 
     await test.step('Drag from the same output to reconnect an input', async () => {
       const previousLinkId = await inputLinkId()
@@ -251,4 +260,24 @@ test.describe('Socket click link selection', { tag: '@canvas' }, () => {
       await expect.poll(() => clipOutput.getLinkCount()).toBe(2)
     })
   })
+
+  test(
+    'clicking a Vue node output hides and shows its links',
+    { tag: '@vue-nodes' },
+    async ({ comfyPage }) => {
+      const [loader] = await comfyPage.nodeOps.getNodeRefsByType(
+        'CheckpointLoaderSimple'
+      )
+      const clipOutput = comfyPage.vueNodes.getOutputSlotConnectionDot(
+        String(loader.id),
+        1
+      )
+
+      await expectOutputLinksHideAndShow(
+        comfyPage,
+        () => clipOutput.click(),
+        await clipLinkIds(comfyPage, loader.id)
+      )
+    }
+  )
 })
