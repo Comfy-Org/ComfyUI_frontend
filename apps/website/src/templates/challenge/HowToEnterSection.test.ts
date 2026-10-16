@@ -49,13 +49,25 @@ describe('HowToEnterSection', () => {
       href: '/platform/'
     },
     {
+      locale: 'en',
+      step: '2. App requirements',
+      name: 'Comfy SDK',
+      href: 'https://docs.comfy.org/development/api-development/sdks'
+    },
+    {
       locale: 'zh-CN',
       step: '2. 应用要求',
       name: '开发者平台',
       href: '/zh-CN/platform/'
+    },
+    {
+      locale: 'zh-CN',
+      step: '2. 应用要求',
+      name: 'Comfy SDK',
+      href: 'https://docs.comfy.org/zh/development/api-development/sdks'
     }
   ] as const)(
-    'links the $locale platform requirement to $href',
+    'links the $locale "$name" requirement to $href',
     async ({ locale, step, name, href }) => {
       render(HowToEnterSection, { props: { ...props, locale } })
 
@@ -74,7 +86,7 @@ describe('HowToEnterSection', () => {
     const region = await openStep('2. App requirements')
 
     expect(textsOf(within(region).getAllByRole('listitem'))).toEqual([
-      'Your work must be built using the Comfy Developer Platform (Comfy API, Comfy Router, and/or Comfy SDK)',
+      'Your work must be built using the Comfy Developer Platform (Comfy Router and/or Comfy SDK)',
       'Your repo must include an open-source license and enough setup detail that someone else can run it on their own machine',
       'Any other tools, models, or techniques you want to combine with it are fair game and must be explained in your demo video',
       'All submissions must be lawful, SFW, and must not contain unlicensed IP or likenesses',
