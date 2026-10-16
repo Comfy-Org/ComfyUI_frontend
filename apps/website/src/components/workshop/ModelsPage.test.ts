@@ -49,8 +49,115 @@ beforeEach(() => {
 const CATALOGUE_URL = '/models/catalogue.json'
 const modelSlug = 'bfl--flux-2-max--generate-images'
 const modelPage = await prepareModelPage(modelSlug)
+const selectedWorkflowPage = await prepareModelPage('workflows/change-material')
+if (
+  selectedWorkflowPage.kind !== 'page' ||
+  selectedWorkflowPage.model.routerId !== undefined
+)
+  throw new Error('Missing workflow detail fixture')
+const selectedWorkflow = selectedWorkflowPage.model
 
 describe('Models page entry', () => {
+  it('uses the selected server workflow without fetching its detail twice and keeps the existing gate', async () => {
+    enabled.value = true
+    render(ModelsPage, {
+      props: {
+        slug: selectedWorkflow.slug,
+        workflowId: selectedWorkflow.workflowId,
+        initialWorkflow: {
+          ...selectedWorkflow,
+          name: 'Selected Draft workflow'
+        }
+      },
+      slots: { fallback: '<h1>Public Models</h1>' }
+    })
+    expect(
+      await screen.findByRole('heading', { name: 'Public Models' })
+    ).toBeVisible()
+    expect(
+      screen.queryByRole('heading', { name: 'Selected Draft workflow' })
+    ).toBeNull()
+    workflowsEnabled.value = true
+    expect(
+      await screen.findByRole('heading', { name: 'Selected Draft workflow' })
+    ).toBeVisible()
+    expect(
+      screen.getByRole('textbox', { name: 'What should change?' })
+    ).toBeVisible()
+    expect(fetch).not.toHaveBeenCalled()
+    workflowsEnabled.value = false
+    await nextTick()
+    expect(screen.getByRole('heading', { name: 'Public Models' })).toBeVisible()
+    expect(screen.getByTestId('workflow-hero')).not.toBeVisible()
+  })
+
+  it('replaces a selected workflow snapshot without reusing stale detail data', async () => {
+    enabled.value = true
+    workflowsEnabled.value = true
+    const view = render(ModelsPage, {
+      props: {
+        slug: selectedWorkflow.slug,
+        workflowId: selectedWorkflow.workflowId,
+        initialWorkflow: {
+          ...selectedWorkflow,
+          name: 'First selected workflow'
+        }
+      }
+    })
+    expect(
+      await screen.findByRole('heading', { name: 'First selected workflow' })
+    ).toBeVisible()
+    await view.rerender({
+      initialWorkflow: { ...selectedWorkflow, name: 'Fresh selected workflow' }
+    })
+    expect(
+      await screen.findByRole('heading', { name: 'Fresh selected workflow' })
+    ).toBeVisible()
+    expect(
+      screen.queryByRole('heading', { name: 'First selected workflow' })
+    ).toBeNull()
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    {
+      slug: 'workflows/another-route',
+      workflowId: 'workflows/change-material'
+    },
+    {
+      slug: 'workflows/change-material',
+      workflowId: 'workflows/another-workflow'
+    }
+  ])(
+    'refuses initial workflow data with mismatched identity $slug / $workflowId',
+    async (identity) => {
+      enabled.value = true
+      workflowsEnabled.value = true
+      respondToFetch('/models/workflows/change-material/page.json', () =>
+        Response.json(selectedWorkflowPage)
+      )
+      render(ModelsPage, {
+        props: {
+          slug: selectedWorkflow.slug,
+          workflowId: selectedWorkflow.workflowId,
+          initialWorkflow: {
+            ...selectedWorkflow,
+            ...identity,
+            name: 'Wrong workflow'
+          }
+        }
+      })
+      expect(
+        await screen.findByRole('heading', { name: 'Change a material' })
+      ).toBeVisible()
+      expect(
+        screen.queryByRole('heading', { name: 'Wrong workflow' })
+      ).toBeNull()
+      expect(fetch).toHaveBeenCalledExactlyOnceWith(
+        '/models/workflows/change-material/page.json'
+      )
+    }
+  )
   it('replaces a persisted selected snapshot reactively and keeps its catalogue mounted across sections', async () => {
     const selected = workshopModels
       .slice(0, 1)

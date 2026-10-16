@@ -13,7 +13,10 @@ import {
 import type { Component, FunctionalComponent } from 'vue'
 
 import { isWorkflowSlug } from '@/config/models-catalogue'
-import type { WorkshopModel } from '@/config/models-catalogue'
+import type {
+  WorkshopModel,
+  WorkflowWorkshopModelDetail
+} from '@/config/models-catalogue'
 import { fetchModelsCatalogue } from '@/config/models-catalogue-data'
 import { useWorkshopSession } from '@/config/workshop-session-state'
 import { translationsFor } from '@/i18n/translations'
@@ -51,6 +54,7 @@ const {
   initialPages,
   initialFacets,
   initialSearch,
+  initialWorkflow,
   locale = 'en'
 } = defineProps<{
   slug?: string
@@ -63,6 +67,7 @@ const {
   initialPages?: CatalogListPages
   initialFacets?: CatalogListFacets
   initialSearch?: string
+  initialWorkflow?: WorkflowWorkshopModelDetail
   locale?: Locale
 }>()
 const { t } = translationsFor(locale)
@@ -275,6 +280,17 @@ function renderCatalogue(
   )
 }
 
+async function workflowContent(model: WorkflowWorkshopModelDetail) {
+  const { default: WorkflowPage } = await import('./WorkflowPage.vue')
+  return () =>
+    h(WorkflowPage, {
+      model,
+      onRecovery: (active: boolean) => {
+        recoveringWorkflow.value = active
+      }
+    })
+}
+
 function createContent() {
   if (hasInitialCatalog.value && suppliedComponents) {
     const catalogue = suppliedComponents.catalogue
@@ -283,22 +299,18 @@ function createContent() {
   return defineAsyncComponent({
     loader: async () => {
       if (slug) {
+        if (
+          initialWorkflow?.slug === slug &&
+          initialWorkflow.workflowId === workflowId
+        )
+          return workflowContent(initialWorkflow)
         const preload = isWorkflowSlug(slug)
           ? import('./WorkflowPage.vue')
           : import('./ModelPage.vue')
         void preload.catch(() => undefined)
         const { fetchModelsPage } = await import('@/config/models-page-data')
         const { model, ...page } = await fetchModelsPage(slug)
-        if (model.routerId === undefined) {
-          const { default: WorkflowPage } = await import('./WorkflowPage.vue')
-          return () =>
-            h(WorkflowPage, {
-              model,
-              onRecovery: (active: boolean) => {
-                recoveringWorkflow.value = active
-              }
-            })
-        }
+        if (model.routerId === undefined) return workflowContent(model)
         const { default: ModelPage } = await import('./ModelPage.vue')
         return () => h(ModelPage, { page: { ...page, model } })
       }
@@ -327,7 +339,7 @@ function createContent() {
 }
 
 const Content = shallowRef(createContent())
-watch(hasInitialCatalog, () => {
+watch([hasInitialCatalog, () => slug, () => initialWorkflow], () => {
   Content.value = createContent()
 })
 </script>

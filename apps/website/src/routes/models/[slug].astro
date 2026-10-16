@@ -40,17 +40,29 @@ export const getStaticPaths: GetStaticPaths = ({ routePattern }) =>
       }))
 
 const catalog = cmsEnabled()
-  ? await loadSiteCatalog(Astro.locals.catalogAuthoring ?? Astro.locals.site, Astro.locals.catalogLocale, Astro.url.pathname.replace(/^\/zh-CN/, '').replace(/\/$/, ''))
+  ? await loadSiteCatalog(
+      Astro.locals.catalogAuthoring ?? Astro.locals.site,
+      Astro.locals.catalogLocale,
+      Astro.url.pathname.replace(/^\/zh-CN/, '').replace(/\/$/, '')
+    )
   : undefined
 const failure = catalog && !catalog.ok ? catalogUnavailable() : undefined
 if (failure) return failure
 const current = catalog?.ok
   ? catalog.projection.items.find(
-      (item) => item.slug === Astro.url.pathname.replace(/^\/zh-CN/, '').replace(/\/$/, '')
+      (item) =>
+        item.slug ===
+        Astro.url.pathname.replace(/^\/zh-CN/, '').replace(/\/$/, '')
     )
   : undefined
 if (catalog?.ok && !current) return new Response('Not found', { status: 404 })
-const id = current ? catalog?.ok ? catalog.models.find(item => item.href?.replace(/\/$/,'')===current.slug)?.slug : undefined : Astro.props.id
+const id = current
+  ? catalog?.ok
+    ? catalog.models.find(
+        (item) => item.href?.replace(/\/$/, '') === current.slug
+      )?.slug
+    : undefined
+  : Astro.props.id
 if (typeof id !== 'string') return new Response('Not found', { status: 404 })
 const page = await prepareModelPage(id, 'en', catalog?.ok ? catalog : undefined)
 if (page.kind === 'redirect')
@@ -86,7 +98,12 @@ const ogImage = modelOgImage(model)
   <StaffContentActions uid={current?.uid} />
   {model.routerId === undefined ? (
     <>
-      <ModelsPage slug={model.slug} workflowId={model.workflowId} client:load>
+      <ModelsPage
+        slug={model.slug}
+        workflowId={model.workflowId}
+        initialWorkflow={catalog?.ok ? model : undefined}
+        client:load
+      >
         <ModelsShowcase slot="fallback" />
       </ModelsPage>
       <noscript>
