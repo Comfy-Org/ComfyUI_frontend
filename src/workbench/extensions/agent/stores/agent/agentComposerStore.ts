@@ -6,6 +6,7 @@ import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 import type { AgentInputMethod } from '@/platform/telemetry/types'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
+import type { AgentErrorContext } from '../../types/agentErrorContext'
 import type { ComposerAttachment } from '../../types/composerAttachment'
 import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
 import { selectedNodeKey } from '../../composables/agent/useCanvasSelection'
@@ -75,6 +76,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
   const nodeScope = ref<string | null>(null)
   let skillScope: string | null = null
   const promptEpoch = ref(0)
+  const errorContext = shallowRef<AgentErrorContext | null>(null)
   // Set by the affordance that supplied the text; read once at submission and
   // reset there, so it describes the message being sent rather than the panel.
   const promptOrigin = ref<AgentInputMethod>('typed')
@@ -135,6 +137,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     revision: number
     origin: AgentInputMethod
     starterPrompt: AgentStarterPromptSource | null
+    errorContext: AgentErrorContext | null
     snapshot: SubmittedDraft
   } | null>(null)
   let revision = 0
@@ -226,6 +229,17 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     // Cleared, not left stale, when the affordance did not identify itself: an
     // unattributed insert is not the previous chip's click.
     starterPrompt.value = source ?? null
+  }
+
+  function setErrorContext(context: AgentErrorContext): void {
+    errorContext.value = context
+    promptOrigin.value = 'error_context'
+    starterPrompt.value = null
+  }
+
+  function clearErrorContext(): void {
+    errorContext.value = null
+    if (promptOrigin.value === 'error_context') promptOrigin.value = 'typed'
   }
 
   function snapshotReferences(next: PromptSnapshot): ComposerReference[] {
@@ -503,8 +517,10 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     // prompt the first attempt did.
     const origin = promptOrigin.value
     const chip = starterPrompt.value
+    const attachedErrorContext = errorContext.value
     promptOrigin.value = 'typed'
     starterPrompt.value = null
+    errorContext.value = null
     attachmentIds.value = []
     updateDraft({ text: '', references: [] })
     insertionPoint.value = { textOffset: 0, referenceIndex: 0 }
@@ -515,6 +531,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
       revision,
       origin,
       starterPrompt: chip,
+      errorContext: attachedErrorContext,
       snapshot
     }
     return id
@@ -537,6 +554,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     if (failed.revision !== revision) return
     promptOrigin.value = failed.origin
     starterPrompt.value = failed.starterPrompt
+    errorContext.value = failed.errorContext
     return failed.snapshot
   }
 
@@ -556,9 +574,12 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     promptEpoch,
     promptOrigin,
     starterPrompt,
+    errorContext,
     insertionPoint,
     submission,
     setText,
+    setErrorContext,
+    clearErrorContext,
     setInsertionPoint,
     resetPromptHistory,
     applyEditorPrompt,

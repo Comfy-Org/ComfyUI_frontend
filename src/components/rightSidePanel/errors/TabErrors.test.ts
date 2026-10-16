@@ -16,6 +16,8 @@ import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import type { useComfyRegistryService } from '@/services/comfyRegistryService'
 import type { MissingNodeType } from '@/platform/nodeReplacement/types'
 import { toNodeId } from '@/types/nodeId'
@@ -114,6 +116,9 @@ describe('TabErrors.vue', () => {
             expand: 'Expand',
             collapse: 'Collapse',
             errorHelp: 'Error help',
+            askAgent: 'Ask agent',
+            askAgentAbout: 'Ask the agent about {title}',
+            askAgentAboutAll: 'Ask agent about all issues',
             errorLog: 'Error log',
             findOnGithubTooltip: 'Search GitHub issues',
             getHelpTooltip: 'Get help',
@@ -129,6 +134,11 @@ describe('TabErrors.vue', () => {
             },
             missingMedia: {
               missingMediaTitle: 'Missing Inputs'
+            }
+          },
+          agent: {
+            errorContext: {
+              allLabel: 'All issues'
             }
           }
         }
@@ -334,6 +344,67 @@ describe('TabErrors.vue', () => {
     expect(screen.queryByText('Input: model')).not.toBeInTheDocument()
     expect(screen.queryByText('Input: positive')).not.toBeInTheDocument()
     expect(screen.queryByText('Input: clip')).not.toBeInTheDocument()
+  })
+
+  it('hands a card and all issues to the agent without sending when enabled', async () => {
+    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    vi.mocked(getNodeByExecutionId).mockReturnValue(
+      fromAny<NonNullable<ReturnType<typeof getNodeByExecutionId>>, unknown>({
+        id: '10',
+        title: 'KSampler'
+      })
+    )
+
+    const { user } = renderComponent((pinia) => {
+      useAgentPanelStore(pinia).enabled = true
+      useExecutionErrorStore(pinia).recordExecutionError({
+        prompt_id: 'abc',
+        node_id: '10',
+        node_type: 'KSampler',
+        executed: [],
+        exception_message: 'Out of memory',
+        exception_type: 'RuntimeError',
+        traceback: ['Line 1', 'Line 2'],
+        timestamp: Date.now()
+      })
+    })
+
+    const composer = useAgentComposerStore()
+
+    await user.click(screen.getByTestId('error-card-ask-agent'))
+    expect(composer.errorContext).toMatchObject({
+      scope: 'card',
+      severity: 'error'
+    })
+    expect(composer.errorContext?.problems[0]).toMatchObject({
+      category: 'execution_failure',
+      nodeType: 'KSampler'
+    })
+    expect(useAgentPanelStore().isOpen).toBe(true)
+
+    await user.click(screen.getByTestId('errors-footer-ask-agent'))
+    expect(composer.errorContext).toMatchObject({
+      scope: 'all',
+      label: 'All issues'
+    })
+  })
+
+  it('omits the agent actions when the agent is unavailable', () => {
+    renderComponent((pinia) => {
+      useExecutionErrorStore(pinia).recordExecutionError({
+        prompt_id: 'abc',
+        node_id: '10',
+        node_type: 'KSampler',
+        executed: [],
+        exception_message: 'Out of memory',
+        exception_type: 'RuntimeError',
+        traceback: ['Line 1'],
+        timestamp: Date.now()
+      })
+    })
+
+    expect(screen.queryByTestId('error-card-ask-agent')).toBeNull()
+    expect(screen.queryByTestId('errors-footer-ask-agent')).toBeNull()
   })
 
   it('renders runtime execution errors from WebSocket', async () => {

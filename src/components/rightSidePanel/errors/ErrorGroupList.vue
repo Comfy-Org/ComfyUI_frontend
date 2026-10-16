@@ -228,6 +228,21 @@
                     : ''
                 }}
               </span>
+              <Button
+                v-if="canAskAgent"
+                variant="secondary"
+                size="sm"
+                class="shrink-0"
+                data-testid="error-card-ask-agent"
+                :aria-label="
+                  t('rightSidePanel.askAgentAbout', {
+                    title: group.displayTitle
+                  })
+                "
+                @click.stop="handleAskAgent(group)"
+              >
+                {{ t('rightSidePanel.askAgent') }}
+              </Button>
             </template>
 
             <div
@@ -424,6 +439,9 @@ import type { ErrorGroup, ErrorGroupSeverity } from './types'
 import { isExecutionItemListGroup } from './executionItemList'
 import { selectionEmphasisClass } from './selectionEmphasis'
 import { useNodeReplacement } from '@/platform/nodeReplacement/useNodeReplacement'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useAskAgentAboutIssues } from '@/workbench/extensions/agent/composables/agent/useAskAgentAboutIssues'
+import { buildGroupErrorContext } from './buildAgentErrorContext'
 
 interface ExecutionItemListEntry {
   key: string
@@ -478,6 +496,8 @@ const { missingNodePacks } = useMissingNodes()
 const { isInstalling: isInstallingAll, installAllPacks: installAll } =
   usePackInstall(() => missingNodePacks.value)
 const { replaceGroup, replaceAllGroups } = useNodeReplacement()
+const workflowStore = useWorkflowStore()
+const { canAskAgent, askAgentAboutIssues } = useAskAgentAboutIssues()
 
 const searchQuery = ref('')
 const expandedExecutionItemDetailKeys = ref(new Set<string>())
@@ -898,5 +918,20 @@ function handleReplaceGroup(group: SwapNodeGroup) {
 
 function handleReplaceAll() {
   replaceAllGroups(swapNodeGroups.value)
+}
+
+const missingGroupContext = computed(() => ({
+  missingPackGroups: missingPackGroups.value,
+  swapNodeGroups: swapNodeGroups.value,
+  missingModelGroups: missingModelGroups.value,
+  missingMediaGroups: missingMediaGroups.value
+}))
+
+function handleAskAgent(group: ErrorGroup) {
+  askAgentAboutIssues(
+    buildGroupErrorContext(group, missingGroupContext.value, {
+      workflowName: workflowStore.activeWorkflow?.filename
+    })
+  )
 }
 </script>

@@ -263,6 +263,39 @@ describe('useComposer', () => {
     ])
   })
 
+  it('allows sending with only an attached error context', () => {
+    const { composer, onSend } = setup()
+
+    composer.setErrorContext({
+      scope: 'card',
+      count: 1,
+      label: 'Execution failed',
+      severity: 'error',
+      problems: [{ category: 'execution_failure', message: 'boom' }]
+    })
+
+    expect(composer.errorContext.value).not.toBeNull()
+    expect(composer.canSend.value).toBe(true)
+    composer.submit()
+    expect(onSend).toHaveBeenCalledWith('', [])
+  })
+
+  it('clearing the error context blocks an otherwise empty send', () => {
+    const { composer } = setup()
+    composer.setErrorContext({
+      scope: 'card',
+      count: 1,
+      label: 'Execution failed',
+      severity: 'error',
+      problems: [{ category: 'execution_failure', message: 'boom' }]
+    })
+
+    composer.clearErrorContext()
+
+    expect(composer.errorContext.value).toBeNull()
+    expect(composer.canSend.value).toBe(false)
+  })
+
   it('removeAttachment drops the matching staged attachment', () => {
     const { composer } = setup()
     composer.addAttachment({ id: 'a1', name: 'a.png', ref: 'ra' })

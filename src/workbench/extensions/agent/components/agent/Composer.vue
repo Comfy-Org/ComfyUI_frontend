@@ -17,6 +17,7 @@ import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 
 import InlinePromptEditor from './composer/InlinePromptEditor.vue'
 import { composerPromptForSubmission } from '../../utils/composerPrompt'
+import { formatAgentErrorContext } from '../../utils/formatAgentErrorContext'
 import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
 import { useAgentMentionPicker } from '../../composables/agent/useAgentMentionPicker'
 import { useSkillMenuDescription } from '../../composables/agent/useSkillMenuDescription'
@@ -27,6 +28,7 @@ import type {
 } from '../../types/composerAttachment'
 import type { MentionSection } from '../../composables/agent/mentionPickerState'
 import { useComposer } from '../../composables/agent/useComposer'
+import type { AgentErrorContext } from '../../types/agentErrorContext'
 import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
 import type {
   PromptSnapshot,
@@ -38,6 +40,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import AssetTray from './composer/AssetTray.vue'
 import ComposerAddMenu from './composer/ComposerAddMenu.vue'
+import ErrorContextChip from './composer/ErrorContextChip.vue'
 import ComposerPlaceholder from './composer/ComposerPlaceholder.vue'
 import MentionMenuItem from './composer/MentionMenuItem.vue'
 import MentionMenuStatus from './composer/MentionMenuStatus.vue'
@@ -114,7 +117,7 @@ const composer = useComposer({
       const end = Math.max(draft.trimEnd().length, ...offsets)
       emit(
         'send',
-        draft.slice(start, end),
+        withErrorContext(draft.slice(start, end)),
         attachments,
         references.map((reference) => ({
           ...reference,
@@ -124,7 +127,7 @@ const composer = useComposer({
           )
         }))
       )
-    } else emit('send', prepared.text.trim(), attachments)
+    } else emit('send', withErrorContext(prepared.text.trim()), attachments)
   },
   isRunning: () => running.value,
   onStop: () => emit('stop', 'button')
@@ -138,6 +141,12 @@ watch(
   { immediate: true, flush: 'sync' }
 )
 const { workflowReferences } = composer
+
+function withErrorContext(text: string): string {
+  const context = composer.errorContext.value
+  return context ? formatAgentErrorContext(context, text) : text
+}
+
 const placeholderLabel = computed(() =>
   t(skills.enabled ? 'agent.placeholder' : 'agent.placeholderWithoutSkills')
 )
@@ -490,9 +499,15 @@ function removeAttachment(id: string): void {
   emit('removeAttachment', id)
 }
 
+function setErrorContext(context: AgentErrorContext): void {
+  composer.setErrorContext(context)
+  editorRef.value?.focus()
+}
+
 defineExpose({
   insert,
   replaceDraft,
+  setErrorContext,
   addAttachment: composer.addAttachment,
   updateAttachment: composer.updateAttachment,
   removeAttachment: composer.removeAttachment
@@ -564,6 +579,11 @@ defineExpose({
       class="relative -m-px flex max-h-[50dvh] min-h-28 min-w-0 flex-col rounded-lg border border-border-subtle bg-secondary-background transition-colors focus-within:border-muted-foreground"
     >
       <slot name="insideInput" />
+      <ErrorContextChip
+        v-if="composer.errorContext.value"
+        :context="composer.errorContext.value"
+        @remove="composer.clearErrorContext"
+      />
       <AssetTray
         v-if="composer.attachments.value.length"
         :attachments="composer.attachments.value"

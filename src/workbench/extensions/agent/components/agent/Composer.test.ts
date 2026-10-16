@@ -124,6 +124,58 @@ describe('Composer', () => {
     expect(emitted().send).toBeUndefined()
   })
 
+  it('attaches the error context chip and serializes it into the sent message', async () => {
+    useAgentComposerStore().setErrorContext({
+      scope: 'card',
+      count: 1,
+      label: 'Execution failed',
+      severity: 'error',
+      problems: [
+        {
+          category: 'execution_failure',
+          message: 'RuntimeError: boom',
+          nodeId: '5',
+          nodeType: 'KSampler'
+        }
+      ]
+    })
+    const view = mount()
+
+    expect(screen.getByTestId('composer-error-context-chip')).toBeVisible()
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Can you fix this?')
+    await userEvent.keyboard('{Enter}')
+
+    const sent = view.emitted().send as [string, ...unknown[]][]
+    expect(sent).toHaveLength(1)
+    const [text] = sent[0]
+    expect(text).toContain('Can you fix this?')
+    expect(text).toContain('[Execution failure]')
+    expect(text).toContain('RuntimeError: boom')
+  })
+
+  it('removes the attached error context chip on request', async () => {
+    useAgentComposerStore().setErrorContext({
+      scope: 'card',
+      count: 2,
+      label: 'Missing Inputs',
+      severity: 'warning',
+      problems: [
+        { category: 'missing_media', message: 'image missing' },
+        { category: 'missing_media', message: 'video missing' }
+      ]
+    })
+    mount()
+
+    expect(
+      screen.getByTestId('composer-error-context-count')
+    ).toHaveTextContent('2')
+    await userEvent.click(screen.getByTestId('composer-error-context-remove'))
+
+    expect(screen.queryByTestId('composer-error-context-chip')).toBeNull()
+    expect(useAgentComposerStore().errorContext).toBeNull()
+  })
+
   it('blocks all node entry points and explains why while workflow references remain available', async () => {
     const reason = 'Please select a workflow first'
     const props = {

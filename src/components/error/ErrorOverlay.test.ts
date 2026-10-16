@@ -14,6 +14,8 @@ import '@/scripts/changeTracker'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { NodeError } from '@/platform/remote/comfyui/types'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import ErrorOverlay from './ErrorOverlay.vue'
 
@@ -63,7 +65,13 @@ function createTestI18n() {
           multipleIssueCount: '{count} issue found | {count} issues found',
           multipleIssuesMessage:
             'Resolve these issues before running the workflow.',
-          viewDetails: 'View details'
+          viewDetails: 'View details',
+          askAgent: 'Ask agent'
+        },
+        agent: {
+          errorContext: {
+            allLabel: 'All issues'
+          }
         },
         linearMode: {
           error: {
@@ -185,6 +193,74 @@ describe('ErrorOverlay', () => {
       'Close'
     )
     expect(screen.queryByRole('list')).not.toBeInTheDocument()
+  })
+
+  it('hands the toast error to the agent without sending when enabled', async () => {
+    mockAllErrorGroups.value = [
+      {
+        type: 'execution',
+        severity: 'error',
+        groupKey: 'execution:KSampler',
+        displayTitle: 'Execution failed',
+        count: 1,
+        priority: 0,
+        blockedLastRun: false,
+        cards: [
+          {
+            id: '1',
+            title: 'KSampler',
+            graphNodeId: '1',
+            errors: [{ message: 'Only error' }]
+          }
+        ]
+      }
+    ]
+    useAgentPanelStore().enabled = true
+    renderOverlay()
+
+    const executionErrorStore = useExecutionErrorStore()
+    executionErrorStore.recordNodeErrors({ '1': makeNodeError(['Only error']) })
+    executionErrorStore.showErrorOverlay()
+    await nextTick()
+
+    const askAgent = screen.getByTestId('error-overlay-ask-agent')
+    expect(askAgent).toHaveTextContent('Ask agent')
+    askAgent.click()
+    await nextTick()
+
+    const composer = useAgentComposerStore()
+    expect(composer.errorContext).toMatchObject({
+      scope: 'card',
+      label: 'Execution failed',
+      severity: 'error'
+    })
+    expect(composer.errorContext?.problems[0]).toMatchObject({
+      category: 'validation',
+      message: 'Only error'
+    })
+    expect(useAgentPanelStore().isOpen).toBe(true)
+  })
+
+  it('omits the Ask agent toast action when the agent is unavailable', async () => {
+    mockAllErrorGroups.value = [
+      {
+        type: 'execution',
+        severity: 'error',
+        groupKey: 'execution:KSampler',
+        displayTitle: 'Execution failed',
+        count: 1,
+        priority: 0,
+        blockedLastRun: false,
+        cards: [
+          { id: '1', title: 'KSampler', errors: [{ message: 'Only error' }] }
+        ]
+      }
+    ]
+    renderOverlay()
+    useExecutionErrorStore().showErrorOverlay()
+    await nextTick()
+
+    expect(screen.queryByTestId('error-overlay-ask-agent')).toBeNull()
   })
 
   it('keeps the app mode button label', async () => {
