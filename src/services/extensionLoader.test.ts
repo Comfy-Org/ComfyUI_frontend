@@ -120,8 +120,8 @@ describe('extension loading', () => {
         [
           {
             ext: `/extensions/comfyui-foo/${'a'.repeat(488)}`,
-            message: 'm'.repeat(4096),
-            stack: 's'.repeat(4096)
+            message: 'm'.repeat(2048),
+            stack: 's'.repeat(2048)
           }
         ]
       )

@@ -11,6 +11,10 @@ import { isRumErrorNoise } from '@comfyorg/shared-frontend-utils/telemetry'
 import { ASSERTION_FAILURE_PREFIX, hasRumAssertReporter } from '@/base/assert'
 
 import {
+  EXTENSION_LOAD_ERROR_TYPE,
+  getExtensionFailureSignals
+} from './extensionLoadTelemetry'
+import {
   redactTelemetryUrls,
   redactTelemetryValues
 } from './redactTelemetryUrls'
@@ -143,17 +147,7 @@ function getExtensionFailureOrigins(
   if (!Array.isArray(failures)) return []
 
   return failures.map((failure: unknown) => {
-    if (typeof failure !== 'object' || failure === null) {
-      return { origin: 'third_party' } as const
-    }
-    const signals = [
-      'ext' in failure && typeof failure.ext === 'string'
-        ? failure.ext
-        : undefined,
-      'stack' in failure && typeof failure.stack === 'string'
-        ? failure.stack
-        : undefined
-    ]
+    const signals = getExtensionFailureSignals(failure)
     const origins = signals.map(classifyRumErrorOrigin)
     return (
       origins.find((origin) => origin.origin === 'extension') ??
@@ -191,7 +185,7 @@ function classifyExtensionLoadReport(
 }
 
 function isExtensionLoadReport(context: Record<string, unknown>): boolean {
-  return context.error_type === 'error_loading_extension'
+  return context.error_type === EXTENSION_LOAD_ERROR_TYPE
 }
 
 export const rumBeforeSend: RumBeforeSend = (event) => {

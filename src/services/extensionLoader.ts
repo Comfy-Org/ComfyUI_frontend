@@ -1,4 +1,6 @@
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { EXTENSION_LOAD_ERROR_TYPE } from '@/platform/telemetry/extensionLoadTelemetry'
+import type { ExtensionFailureDiagnostic } from '@/platform/telemetry/extensionLoadTelemetry'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
@@ -19,7 +21,7 @@ export function shouldLoadExtension(
 }
 
 const MAX_EXTENSION_PATH_LENGTH = 512
-const MAX_EXTENSION_DIAGNOSTIC_LENGTH = 4096
+const MAX_EXTENSION_DIAGNOSTIC_LENGTH = 2048
 const MAX_REPORTED_FAILURES = 10
 
 export interface ExtensionLoadFailure {
@@ -27,56 +29,25 @@ export interface ExtensionLoadFailure {
   error: unknown
 }
 
-interface ExtensionFailureDiagnostic {
-  ext: string
-  message: string
-  stack?: string
-}
-
-function normalizeFailure(error: unknown): {
-  normalized: Error
-  retainStack: boolean
-} {
-  try {
-    const message = getErrorMessage(error)
-    if (message) {
-      const retainStack = error instanceof Error
-      return {
-        normalized: retainStack ? error : new Error(message),
-        retainStack
-      }
-    }
-    const normalized = toError(error)
-    return {
-      normalized: getErrorMessage(normalized)
-        ? normalized
-        : new Error('Unknown extension load failure'),
-      retainStack: false
-    }
-  } catch {
-    return {
-      normalized: new Error('Unknown extension load failure'),
-      retainStack: false
-    }
-  }
-}
-
-function truncateExtensionPath(ext: string): string {
-  return ext.slice(0, MAX_EXTENSION_PATH_LENGTH)
-}
-
 function toFailureDiagnostic({
   ext,
   error
 }: ExtensionLoadFailure): ExtensionFailureDiagnostic {
-  const { normalized, retainStack } = normalizeFailure(error)
-
-  return {
-    ext: truncateExtensionPath(ext),
-    message: normalized.message.slice(0, MAX_EXTENSION_DIAGNOSTIC_LENGTH),
-    stack: retainStack
-      ? normalized.stack?.slice(0, MAX_EXTENSION_DIAGNOSTIC_LENGTH)
-      : undefined
+  const path = ext.slice(0, MAX_EXTENSION_PATH_LENGTH)
+  try {
+    return {
+      ext: path,
+      message: (getErrorMessage(error) ?? toError(error).message).slice(
+        0,
+        MAX_EXTENSION_DIAGNOSTIC_LENGTH
+      ),
+      stack:
+        error instanceof Error
+          ? error.stack?.slice(0, MAX_EXTENSION_DIAGNOSTIC_LENGTH)
+          : undefined
+    }
+  } catch {
+    return { ext: path, message: 'Unknown extension load failure' }
   }
 }
 
@@ -117,7 +88,7 @@ export function reportExtensionLoadFailures(
   aggregate.stack = `${aggregate.stack ?? aggregate.message}\nFailed extensions: ${reportedFailures.map(({ ext }) => ext).join(', ')}`
 
   reportError(aggregate, {
-    errorType: 'error_loading_extension',
+    errorType: EXTENSION_LOAD_ERROR_TYPE,
     surface: 'platform',
     level: 'warning',
     tags: { failed_extension_count: failures.length },

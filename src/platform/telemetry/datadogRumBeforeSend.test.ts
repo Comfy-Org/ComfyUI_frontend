@@ -9,6 +9,7 @@ import type {
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { setAssertReporter } from '@/base/assert'
+import { EXTENSION_LOAD_ERROR_TYPE } from '@/platform/telemetry/extensionLoadTelemetry'
 
 import { classifyRumErrorOrigin, rumBeforeSend } from './datadogRumBeforeSend'
 
@@ -328,7 +329,7 @@ describe('rumBeforeSend', () => {
       'Error loading extensions',
       'at reportExtensionLoadFailures (https://cloud.comfy.org/assets/app.js:1:2)'
     )
-    event.context = { error_type: 'error_loading_extension', failures }
+    event.context = { error_type: EXTENSION_LOAD_ERROR_TYPE, failures }
 
     rumBeforeSend(event, fromPartial({}))
 
@@ -343,21 +344,21 @@ describe('rumBeforeSend', () => {
     {
       name: 'non-array failures',
       context: {
-        error_type: 'error_loading_extension',
+        error_type: EXTENSION_LOAD_ERROR_TYPE,
         failures: { ext: '/extensions/comfyui-foo/main.js' }
       }
     },
     {
       name: 'null failure',
       context: {
-        error_type: 'error_loading_extension',
+        error_type: EXTENSION_LOAD_ERROR_TYPE,
         failures: [null, { ext: '/extensions/comfyui-foo/main.js' }]
       }
     },
     {
       name: 'non-string details',
       context: {
-        error_type: 'error_loading_extension',
+        error_type: EXTENSION_LOAD_ERROR_TYPE,
         failures: [{ ext: ['/extensions/comfyui-foo/main.js'] }]
       }
     }
