@@ -18,8 +18,8 @@ import type { Positionable } from '@/lib/litegraph/src/interfaces'
 import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { Reroute } from '@/lib/litegraph/src/Reroute'
-import { Subgraph } from '@/lib/litegraph/src/LGraph'
 import { SubgraphIONodeBase } from '@/lib/litegraph/src/subgraph/SubgraphIONodeBase'
+import { isSubgraph } from '@/lib/litegraph/src/subgraph/subgraphTypeGuards'
 
 import { useSelectionStore } from '@/core/selection/selectionStore'
 import { graphScopeOf } from '@/types/graphScopeId'
@@ -55,7 +55,7 @@ export function resolveSelectable(
     case 'reroute':
       return graph.getReroute(toRerouteId(Number(id)))
     case 'io':
-      if (!(graph instanceof Subgraph)) return undefined
+      if (!isSubgraph(graph)) return undefined
       return [graph.inputNode, graph.outputNode].find(
         (ioNode) => String(ioNode.id) === id
       )
