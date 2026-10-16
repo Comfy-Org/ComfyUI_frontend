@@ -94,6 +94,29 @@ const VirtualGridStub = defineComponent({
   }
 })
 
+const SingleSelectStub = defineComponent({
+  props: {
+    options: {
+      type: Array as PropType<{ name: string; value: string }[]>,
+      required: true
+    }
+  },
+  emits: ['update:modelValue'],
+  setup(props, { emit }) {
+    return () =>
+      h(
+        'div',
+        props.options.map((option) =>
+          h(
+            'button',
+            { onClick: () => emit('update:modelValue', option.value) },
+            option.name
+          )
+        )
+      )
+  }
+})
+
 const result = (
   nodePacks: NodePack[],
   rawResultsEmpty: boolean,
@@ -127,6 +150,7 @@ function renderDialog(
       stubs: {
         BaseModalLayout: BaseModalLayoutStub,
         VirtualGrid: VirtualGridStub,
+        SingleSelect: SingleSelectStub,
         LeftSidePanel: true,
         InfoPanel: true,
         InfoPanelMultiItem: true,
@@ -364,6 +388,24 @@ describe('ManagerDialog search analytics tags', () => {
     expect(searchedTags()).toEqual([
       ['comfyui-kjnodes', undefined],
       ['comfyui-kjnodes2', ['user']]
+    ])
+  })
+
+  it('leaves the deep-link pack search untagged after an edit that was undone before it searched', async () => {
+    vi.mocked(useRegistrySearchGateway().searchPacks).mockResolvedValue(
+      result([], false)
+    )
+    const { user, searchBox } = renderDialog(ManagerTab.All, 'comfyui-kjnodes')
+    await settleSearch()
+
+    await user.type(searchBox, '2{Backspace}')
+    await settleSearch()
+    await user.click(screen.getByRole('button', { name: enMessages.g.nodes }))
+    await settleSearch()
+
+    expect(searchedTags()).toEqual([
+      ['comfyui-kjnodes', undefined],
+      ['comfyui-kjnodes', undefined]
     ])
   })
 })
