@@ -336,6 +336,49 @@ describe('ErrorOverlay', () => {
     expect(screen.queryByTestId('error-overlay-ask-agent')).toBeNull()
   })
 
+  it('shows a filled error icon for an execution failure', async () => {
+    mockAllErrorGroups.value = [
+      {
+        type: 'execution',
+        severity: 'error',
+        groupKey: 'execution:KSampler',
+        displayTitle: 'Execution failed',
+        count: 1,
+        priority: 0,
+        blockedLastRun: false,
+        cards: [{ id: '1', title: 'KSampler', errors: [{ message: 'boom' }] }]
+      }
+    ]
+    renderOverlay()
+    useExecutionErrorStore().showErrorOverlay()
+    await nextTick()
+
+    expect(screen.getByTestId('error-overlay-icon').className).toContain(
+      'icon-[comfy--circle-alert-filled]'
+    )
+  })
+
+  it('shows a filled warning icon for a missing input', async () => {
+    mockAllErrorGroups.value = [
+      {
+        type: 'missing_media',
+        severity: 'missing',
+        groupKey: 'missing_media',
+        displayTitle: 'Missing Inputs',
+        count: 1,
+        priority: 0,
+        blockedLastRun: false
+      }
+    ]
+    renderOverlay()
+    useExecutionErrorStore().showErrorOverlay()
+    await nextTick()
+
+    expect(screen.getByTestId('error-overlay-icon').className).toContain(
+      'icon-[comfy--triangle-alert-filled]'
+    )
+  })
+
   it('keeps the app mode button label', async () => {
     mockAllErrorGroups.value = [
       {

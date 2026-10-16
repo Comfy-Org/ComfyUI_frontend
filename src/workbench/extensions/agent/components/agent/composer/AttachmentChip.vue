@@ -87,7 +87,7 @@ const validationMessage = computed(
             class="pointer-events-none absolute right-1 bottom-1 flex size-5 items-center justify-center rounded-full bg-base-background/80"
           >
             <span
-              class="icon-[lucide--triangle-alert] size-3 text-destructive-background"
+              class="icon-[comfy--triangle-alert-filled] size-3 text-destructive-background-hover"
             />
           </span>
         </span>
