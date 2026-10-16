@@ -428,6 +428,12 @@ describe('AttachmentChip', () => {
     expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
     expect(status).toHaveAccessibleName(errorMessage)
     expect(
+      within(status).getByTestId('attachment-validation-icon')
+    ).toHaveClass(
+      'icon-[comfy--circle-alert-filled]',
+      'text-destructive-background-hover'
+    )
+    expect(
       screen.queryByRole('button', { name: 'Preview bad.mov' })
     ).not.toBeInTheDocument()
     await user.hover(status)
