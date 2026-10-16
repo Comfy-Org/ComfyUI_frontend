@@ -179,7 +179,7 @@ test.describe('Socket click link selection', { tag: '@canvas' }, () => {
     await comfyPage.workflow.loadWorkflow('default')
   })
 
-  test('clicking an output hides its links, and dragging it still connects', async ({
+  test('clicking an output hides and shows its links, and dragging it still connects', async ({
     comfyPage
   }) => {
     const [loader] = await comfyPage.nodeOps.getNodeRefsByType(
@@ -217,6 +217,27 @@ test.describe('Socket click link selection', { tag: '@canvas' }, () => {
         .toMatchObject(
           Object.fromEntries(clipLinkIds.map((id) => [id, { hidden: true }]))
         )
+    })
+
+    await test.step('Show both hidden links from the toolbox', async () => {
+      const position = await clipOutput.getPosition()
+      await comfyPage.page.mouse.click(position.x, position.y)
+      await expect(
+        comfyPage.selectionToolbox.getByTestId(
+          TestIds.selectionToolbox.hideLinks
+        )
+      ).toBeHidden()
+      await comfyPage.selectionToolbox
+        .getByTestId(TestIds.selectionToolbox.showLinks)
+        .click()
+
+      await expect
+        .poll(
+          async () =>
+            (await comfyPage.workflow.getExportedWorkflow()).extra
+              ?.linkPresentation ?? {}
+        )
+        .toEqual({})
     })
 
     await test.step('Drag from the same output to reconnect an input', async () => {
