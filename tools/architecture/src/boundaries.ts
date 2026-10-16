@@ -34,7 +34,7 @@ const contains = (outer: string, inner: string) =>
  * so the more specific path claims the files it names. Records without
  * nested paths keep one layer.
  */
-export function moduleLayers(records: DomainRecord[]): Layers {
+function moduleLayers(records: DomainRecord[]): Layers {
   const modules = records.flatMap((record) =>
     record.modules.map(({ path, role }) => ({
       path,
