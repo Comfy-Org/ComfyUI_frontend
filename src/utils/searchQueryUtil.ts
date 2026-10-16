@@ -8,6 +8,8 @@ const BARE_COMPOUND_REPO_SLUG =
 
 const TRAILING_GIT_OR_SLASHES = /(?:\.git)?\/*$/i
 
+const TRAILING_SLASHES = /\/+$/
+
 const WORD_SEPARATORS = /[\s_-]+/
 
 const WHITESPACE_RUN = /\s+/g
@@ -28,16 +30,15 @@ export function splitOnSeparators(input: string): string {
   return input.split(WORD_SEPARATORS).filter(Boolean).join(' ')
 }
 
-function collapseWhitespace(input: string): string {
-  return input.replace(WHITESPACE_RUN, ' ')
+function toComparableQuery(input: string): string {
+  return input.trim().replace(TRAILING_SLASHES, '').replace(WHITESPACE_RUN, ' ')
 }
 
 export function buildPackSearchFallbacks(query: string): string[] {
-  const trimmedQuery = query.trim()
-  const normalizedQuery = collapseWhitespace(trimmedQuery)
-  const repoName = toRepoName(trimmedQuery)
+  const comparableQuery = toComparableQuery(query)
+  const repoName = toRepoName(query)
   return uniq([repoName, splitOnSeparators(repoName)]).filter(
     (candidate) =>
-      candidate.length > 0 && collapseWhitespace(candidate) !== normalizedQuery
+      candidate.length > 0 && toComparableQuery(candidate) !== comparableQuery
   )
 }
