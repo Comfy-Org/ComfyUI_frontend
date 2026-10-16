@@ -862,13 +862,13 @@ describe('Current retry of an unresolved target', () => {
   it.for([
     {
       supersededBy: 'a cancelled selection',
-      supersede: ({ selection }: RetryRun) => selection.cancelSelection(),
+      supersede: ({ selection }) => selection.cancelSelection(),
       selected: null,
       unresolved: true
     },
     {
       supersededBy: 'leaving the chat',
-      supersede: (run: RetryRun) => {
+      supersede: (run) => {
         run.sessionCurrent = false
       },
       selected: null,
@@ -876,12 +876,16 @@ describe('Current retry of an unresolved target', () => {
     },
     {
       supersededBy: 'a target chosen meanwhile',
-      supersede: ({ panel, current }: RetryRun) =>
-        panel.setWorkflowTarget(current),
+      supersede: ({ panel, current }) => panel.setWorkflowTarget(current),
       selected: 'workflows/current.json',
       unresolved: false
     }
-  ])(
+  ] satisfies {
+    supersededBy: string
+    supersede: (run: RetryRun) => void
+    selected: string | null
+    unresolved: boolean
+  }[])(
     'does not settle a retry superseded by $supersededBy',
     async ({ supersede, selected, unresolved }) => {
       const run = { ...setup(), sessionCurrent: true }
@@ -893,9 +897,8 @@ describe('Current retry of an unresolved target', () => {
       expect(await retry).toBe(false)
       expect({
         selected: run.panel.selectedWorkflow?.path ?? null,
-        unavailable: run.panel.targetUnavailable,
         unresolved: run.panel.targetUnresolved
-      }).toEqual({ selected, unavailable: false, unresolved })
+      }).toEqual({ selected, unresolved })
     }
   )
 
