@@ -320,8 +320,6 @@ describe('useUrlActionLoaders', () => {
     ).toBe('build')
   })
 
-  // The workflows folder stays beside a deployment link so the boot after the
-  // pick's reload opens it; a link that did not reload must not keep it.
   it('clears a workflows folder a deployment link left when it did not reload', async () => {
     await router.replace({
       path: '/',
@@ -334,9 +332,6 @@ describe('useUrlActionLoaders', () => {
     expect(router.currentRoute.value.query).toEqual({ workflow: 'keep-me' })
   })
 
-  // After the onboarding redirect the folder rides only in the stash; a
-  // deployment link that did not reload must not leave it to reopen the
-  // folder on the next reload.
   it('clears a workflows folder stash a deployment link left when it did not reload', async () => {
     capturePreservedQuery(
       PRESERVED_QUERY_NAMESPACES.WORKFLOWS,

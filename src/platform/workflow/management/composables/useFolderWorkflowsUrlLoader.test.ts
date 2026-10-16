@@ -49,8 +49,6 @@ function serveWorkflowFiles(paths: string[]) {
 const WORKFLOWS_NAMESPACE = PRESERVED_QUERY_NAMESPACES.WORKFLOWS
 const DEPLOYMENT_NAMESPACE = PRESERVED_QUERY_NAMESPACES.DEPLOYMENT
 
-/** What the router's preserved-query tracker stashes before a redirect (sign
- * in, the onboarding survey) drops the query. */
 function stashLinkParam(namespace: string, key: string, value: string) {
   capturePreservedQuery(namespace, { [key]: value }, [key])
 }
@@ -141,6 +139,43 @@ describe('useFolderWorkflowsUrlLoader', () => {
     }
   )
 
+  it.for([
+    { condition: 'a repeated param', marker: 'a,b' },
+    { condition: 'a bare param', marker: ',' }
+  ])(
+    'opens nothing when the stash holds the tracker marker for $condition',
+    async ({ marker }) => {
+      serveWorkflowFiles([`${marker}/x.json`])
+      stashLinkParam(WORKFLOWS_NAMESPACE, 'workflows', marker)
+
+      const opened =
+        await useFolderWorkflowsUrlLoader().openFolderWorkflowsFromUrl()
+
+      expect(opened).toBe(false)
+      expect(openTabPaths()).toEqual([])
+      expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
+      expect(
+        getPreservedQueryParam(WORKFLOWS_NAMESPACE, 'workflows')
+      ).toBeUndefined()
+    }
+  )
+
+  it('opens nothing for a repeated param in the URL that the tracker also stashed', async () => {
+    serveWorkflowFiles(['a/x.json', 'b/y.json', 'a,b/z.json'])
+    Object.assign(useRoute().query, { workflows: ['a', 'b'], other: 'keep' })
+    stashLinkParam(WORKFLOWS_NAMESPACE, 'workflows', 'a,b')
+
+    const opened =
+      await useFolderWorkflowsUrlLoader().openFolderWorkflowsFromUrl()
+
+    expect(opened).toBe(false)
+    expect(openTabPaths()).toEqual([])
+    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
+    expect(useRouter().replace).toHaveBeenCalledWith({
+      query: { other: 'keep' }
+    })
+  })
+
   it('keeps the param while a Cloud deployment link is still to pick, for the boot after its reload', async () => {
     distribution.isCloud = true
     serveWorkflowFiles(['build/a.json'])
@@ -157,8 +192,6 @@ describe('useFolderWorkflowsUrlLoader', () => {
     expect(useRouter().replace).not.toHaveBeenCalled()
   })
 
-  // A new Cloud user is sent to the onboarding survey with the query dropped,
-  // then lands on `/` with none: only the stash still names the folder.
   it('opens the folder a redirect stashed, then clears the stash', async () => {
     serveWorkflowFiles(['build/b.json', 'build/a.json'])
     stashLinkParam(WORKFLOWS_NAMESPACE, 'workflows', 'build')
@@ -235,4 +268,30 @@ describe('useFolderWorkflowsUrlLoader', () => {
     )
     expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
   })
+
+  it.for([
+    {
+      outcome: 'rejects',
+      fail: () => Promise.reject(new Error('load failed'))
+    },
+    { outcome: 'resolves false', fail: () => Promise.resolve(false) }
+  ])(
+    'leaves the open tabs unchanged when the first workflow $outcome',
+    async ({ fail }) => {
+      serveWorkflowFiles(['mine.json', 'build/a.json', 'build/b.json'])
+      const workflowStore = useWorkflowStore()
+      await workflowStore.loadWorkflows()
+      workflowStore.openWorkflowsInBackground({
+        right: ['workflows/mine.json']
+      })
+      vi.mocked(useWorkflowService().openWorkflow).mockImplementation(fail)
+      Object.assign(useRoute().query, { workflows: 'build' })
+
+      const opened =
+        await useFolderWorkflowsUrlLoader().openFolderWorkflowsFromUrl()
+
+      expect(opened).toBe(false)
+      expect(openTabPaths()).toEqual(['workflows/mine.json'])
+    }
+  )
 })

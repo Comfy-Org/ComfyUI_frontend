@@ -25,7 +25,8 @@ function isFolderName(value: unknown): value is string {
     value !== '' &&
     !value.includes('/') &&
     !value.includes('\\') &&
-    !value.includes('..')
+    !value.includes('..') &&
+    !value.includes(',')
   )
 }
 
@@ -33,12 +34,14 @@ function isFolderName(value: unknown): value is string {
  * Opens the saved workflows of the folder a link names (BE-21147):
  * `?workflows=<folder>` opens every `.json` directly in `workflows/<folder>/`
  * as a tab, in name order, with the first in front. A tab already open is
- * reused. A folder name that is not one path segment, or a folder with no
- * workflows, opens nothing. The param survives the sign-in and onboarding
- * redirects through the preserved-query stash. It is then dropped, stash
- * included, except while a Cloud deployment link (in the URL or its own
- * stash) is still to pick, since that pick reloads the page and the boot
- * after it opens the folder again.
+ * reused. A folder name that is not one path segment, a repeated or bare
+ * param (which the preserved-query tracker stashes joined with `,`), or a
+ * folder with no workflows, opens nothing. If the first workflow fails to
+ * open, the tabs are left as they were. The param survives the sign-in and
+ * onboarding redirects through the preserved-query stash. It is then dropped,
+ * stash included, except while a Cloud deployment link (in the URL or its own
+ * stash) is still to pick, since that pick reloads the page and the boot after
+ * it opens the folder again.
  */
 export function useFolderWorkflowsUrlLoader() {
   const route = useRoute()
@@ -61,10 +64,12 @@ export function useFolderWorkflowsUrlLoader() {
       await workflowStore.loadWorkflows()
       const workflows = workflowsIn(folder)
       if (workflows.length === 0) return false
+      const opened = await useWorkflowService().openWorkflow(workflows[0])
+      if (!opened) return false
       workflowStore.openWorkflowsInBackground({
         right: workflows.map((workflow) => workflow.path)
       })
-      return await useWorkflowService().openWorkflow(workflows[0])
+      return true
     } catch (error) {
       reportError(error, {
         surface: 'graph',
@@ -74,7 +79,6 @@ export function useFolderWorkflowsUrlLoader() {
     }
   }
 
-  /** The link's query: the URL's, plus what a redirect stashed. */
   function linkQuery() {
     hydratePreservedQuery(WORKFLOWS_NAMESPACE)
     return (
