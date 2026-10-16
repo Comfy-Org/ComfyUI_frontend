@@ -45,12 +45,11 @@ test.describe('Top-up without a saved payment method', () => {
     await page.route('**/api/billing/topup/checkout', (route) =>
       route.fulfill({ json: { checkout_url: CHECKOUT_URL } })
     )
-    await page.evaluate(() => {
-      window.open = (url) => {
-        document.documentElement.dataset.openedUrl = String(url)
-        return window
-      }
-    })
+    await page
+      .context()
+      .route(CHECKOUT_URL, (route) =>
+        route.fulfill({ contentType: 'text/html', body: 'checkout' })
+      )
 
     const topUpDialog = await openTopUpDialog(page)
     await topUpDialog.root
@@ -63,19 +62,19 @@ test.describe('Top-up without a saved payment method', () => {
     ).toBeVisible()
     await expect(comfyPage.toast.toastErrors).toHaveCount(0)
 
+    const appUrl = page.url()
     const checkoutRequest = page.waitForRequest('**/api/billing/topup/checkout')
+    const checkoutPage = page.context().waitForEvent('page')
     await topUpDialog.root
       .getByRole('button', { name: 'Continue to checkout' })
       .click()
 
     expect((await checkoutRequest).postDataJSON()).toMatchObject({
       amount_cents: 5000,
-      return_url: page.url()
+      return_url: appUrl
     })
-    await expect(page.locator('html')).toHaveAttribute(
-      'data-opened-url',
-      CHECKOUT_URL
-    )
+    await expect(await checkoutPage).toHaveURL(CHECKOUT_URL)
+    await expect(page).toHaveURL(appUrl)
     await expect(topUpDialog.root).toBeHidden()
   })
 })
