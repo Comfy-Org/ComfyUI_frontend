@@ -73,7 +73,7 @@ export type DeploymentPickEvent =
   /** A 403: the account is outside the rollout, whatever was shown before. */
   | { type: 'loadRefused' }
   /** Any other failure: keep a listing already shown, else stay hidden. */
-  | { type: 'loadFailed' }
+  | { type: 'loadFailed'; routesMissing?: true }
   | { type: 'switchStarted'; target: string | null }
   /** The server refused the switch. */
   | { type: 'switchFailed' }

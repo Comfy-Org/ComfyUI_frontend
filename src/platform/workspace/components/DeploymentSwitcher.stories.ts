@@ -7,12 +7,11 @@ import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPi
 import DeploymentSwitcher from './DeploymentSwitcher.vue'
 
 /**
- * The deployment switcher under the workspace selector in the user popover:
- * which developer-platform deployment this browser runs its Cloud jobs on,
- * and the list it may pick from. Each row is titled by the deployment's name,
- * with the Build and Release it runs now in its caption; a pick follows the deployment when its owner updates it. Each story seeds the store's state directly; the
- * Storybook team-workspace stub has no active workspace, so the store never
- * calls the listing route here. Click the trigger to open the panel.
+ * The engine button in the Run bar: which deployment this editor runs on,
+ * and the list it may pick from. Each story seeds the store's state
+ * directly; the Storybook team-workspace stub has no active workspace, so
+ * the store never calls the listing route here. Click the button to open
+ * the list.
  */
 const meta: Meta<typeof DeploymentSwitcher> = {
   title: 'Components/DeploymentSwitcher',
@@ -23,7 +22,7 @@ const meta: Meta<typeof DeploymentSwitcher> = {
     (story) => ({
       components: { story },
       template:
-        '<div class="ml-96 w-80 rounded-lg border border-border-default bg-base-background p-2"><story /></div>'
+        '<div class="flex h-10 items-center gap-2 floating-panel"><story /></div>'
     })
   ]
 }
@@ -92,7 +91,7 @@ export const Default: Story = seeded({
   buildsVisible: true
 })
 
-/** A deployment picked; the trigger names it. */
+/** A deployment picked; the button shows its status dot. */
 export const Picked: Story = seeded({
   phase: 'ready',
   deployments: [studioProd, experiments, studioStaging],
@@ -106,7 +105,7 @@ export const Picked: Story = seeded({
 
 /**
  * An owner set a workspace default (BE-17480) and this browser has no pick
- * of its own, so it follows it; the trigger says so.
+ * of its own, so it follows it; the list tags that row Default.
  */
 export const FollowingWorkspaceDefault: Story = seeded({
   phase: 'ready',
@@ -121,7 +120,7 @@ export const FollowingWorkspaceDefault: Story = seeded({
 
 /**
  * This browser picked for itself while the workspace has a default: the
- * panel offers the default as a row to go back to.
+ * picking the default's row goes back to following it.
  */
 export const OwnPickOverWorkspaceDefault: Story = seeded({
   phase: 'ready',
@@ -136,7 +135,7 @@ export const OwnPickOverWorkspaceDefault: Story = seeded({
 
 /**
  * The workspace default this browser followed is gone (deleted, or no
- * longer the workspace's): ingest serves Comfy Cloud, and the trigger says why.
+ * longer the workspace's): ingest serves Comfy Cloud, and the list says why.
  */
 export const DefaultGone: Story = seeded({
   phase: 'ready',
@@ -163,8 +162,8 @@ export const Empty: Story = seeded({
 
 /**
  * comfy-builder refused the caller (its routes sit behind the Builds beta):
- * the deployments are listed by name without their Build and Release, an
- * unnamed one by id, and the panel says why.
+ * the deployments are listed by name without their Build and Release, and
+ * an unnamed one by id.
  */
 export const BuildsHidden: Story = seeded({
   phase: 'ready',
