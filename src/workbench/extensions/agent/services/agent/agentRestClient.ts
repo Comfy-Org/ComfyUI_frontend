@@ -143,12 +143,20 @@ export class AgentApiError extends Error {
   readonly status: number
   readonly body: unknown
   readonly retryAfterSeconds?: number
+  /**
+   * The {@link AgentApiOperation} that raised this error, carried so a
+   * generic catch boundary can still tag a Sentry/Datadog report with it
+   * (PM-2103) without re-deriving it from the (unbounded-cardinality)
+   * request path.
+   */
+  readonly operation?: string
 
   constructor(
     message: string,
     status: number,
     body: unknown,
-    retryAfterSeconds?: number
+    retryAfterSeconds?: number,
+    operation?: string
   ) {
     super(
       message.trim().length > 0
@@ -159,6 +167,7 @@ export class AgentApiError extends Error {
     this.status = status
     this.body = body
     this.retryAfterSeconds = retryAfterSeconds
+    this.operation = operation
   }
 }
 
@@ -498,7 +507,8 @@ export function createAgentRestClient() {
       message,
       response.status,
       body,
-      retryAfterSeconds
+      retryAfterSeconds,
+      operation
     )
     if (
       isAuthRejectionStatus(response.status) &&
