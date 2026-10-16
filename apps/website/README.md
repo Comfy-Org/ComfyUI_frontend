@@ -976,5 +976,7 @@ checkbox selections. This is an additive local narrowing over the current
 generated staging query pending runtime OpenAPI/SDK reconciliation. The demo
 backend must explicitly accept/validate the parameter before that filter can
 work; unknown or unsupported filters fail instead of silently broadening a
-publish. These changes do not make the full upstream staging/projection payload
-bounded; that read-transport work remains separate.
+publish. Batch fields are validated separately from the unmodified generated
+query schema, avoiding constructor mixing between legacy generated Zod v3 and
+current Astro Zod v4. These changes do not make the full upstream
+staging/projection payload bounded; that read-transport work remains separate.

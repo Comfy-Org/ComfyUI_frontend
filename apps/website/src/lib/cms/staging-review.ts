@@ -82,24 +82,36 @@ const item = z.object({
 export type ReviewFilter = NonNullable<GetCccStagingData['query']> & {
   change_id?: string
 }
-const stagingQuery = zGetCccStagingQuery
-  .extend({
-    change_id: z
-      .string()
-      .min(1)
-      .max(128)
-      .regex(/^[A-Za-z0-9][A-Za-z0-9._-]*$/)
-      .refine((value) => value.trim() === value)
-      .optional()
+const changeID = z
+  .string()
+  .min(1)
+  .max(128)
+  .regex(/^[A-Za-z0-9][A-Za-z0-9._-]*$/)
+  .refine((value) => value.trim() === value)
+  .optional()
+export function reviewFilterWith(query: {
+  strict(): {
+    safeParse(
+      value: unknown
+    ): { success: true; data: { author_uid?: string } } | { success: false }
+  }
+}) {
+  return z.custom<ReviewFilter>((value) => {
+    if (!value || typeof value !== 'object' || Array.isArray(value))
+      return false
+    if (!changeID.safeParse(Reflect.get(value, 'change_id')).success)
+      return false
+    const base = Object.fromEntries(
+      Object.entries(value).filter(([key]) => key !== 'change_id')
+    )
+    const parsed = query.strict().safeParse(base)
+    return (
+      parsed.success &&
+      accountID.optional().safeParse(parsed.data.author_uid).success
+    )
   })
-  .strict()
-export const reviewFilter = z.custom<ReviewFilter>((value) => {
-  const parsed = stagingQuery.safeParse(value)
-  return (
-    parsed.success &&
-    accountID.optional().safeParse(parsed.data.author_uid).success
-  )
-})
+}
+export const reviewFilter = reviewFilterWith(zGetCccStagingQuery)
 const digest = z.string().regex(/^[a-f0-9]{64}$/)
 // View models are narrowed from the deployed, generated open-JSON contract.
 // Preserve authored literal keys rather than using the record parser's output.
