@@ -92,6 +92,7 @@ Guardrails: agents must use `comfyPage` fixture (not bare `page`), never add `wa
 - `pnpm format` / `pnpm format:check`: oxfmt
 - `pnpm typecheck`: Vue TSC type checking
 - `pnpm deps:audit`: Report `src/` import cycles with dependency-cruiser (warnings only, not a gate)
+- `pnpm audit:inherited-classes [--write]`: Report text color, size, weight and family classes that repeat a value every render context already inherits, following slots and component usages (manual, not a gate)
 - `pnpm storybook`: Start Storybook development server
 
 > **`vue-tsc` needs its own `node_modules` in the checkout.** `vue-tsc --noEmit`
