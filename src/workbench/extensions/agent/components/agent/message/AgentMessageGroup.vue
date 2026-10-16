@@ -9,6 +9,7 @@ import ActivityTrace from './ActivityTrace.vue'
 import AgentNoticeCard from './AgentNoticeCard.vue'
 import AgentPaywallCard from './AgentPaywallCard.vue'
 import AskUserCard from './AskUserCard.vue'
+import DeleteApprovalCard from './DeleteApprovalCard.vue'
 import MarkdownStream from './MarkdownStream.vue'
 import RunApprovalCard from './RunApprovalCard.vue'
 import TabLinkCard from './TabLinkCard.vue'
@@ -71,6 +72,14 @@ const emit = defineEmits<{
     :part="group.part"
     :answering="answeringAskIds.has(group.part.askId)"
     @answer="(askId, answer) => emit('answer', askId, answer)"
+  />
+  <DeleteApprovalCard
+    v-else-if="group.kind === 'deleteApproval'"
+    :part="group.part"
+    :answering="answeringAskIds.has(group.part.askId)"
+    @answer="
+      (askId, selection) => emit('answer', askId, { selected: [selection] })
+    "
   />
   <AgentPaywallCard
     v-else-if="group.kind === 'paywall'"
