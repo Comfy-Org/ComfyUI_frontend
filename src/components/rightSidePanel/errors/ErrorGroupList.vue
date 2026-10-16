@@ -28,22 +28,54 @@
         v-else
         class="overflow-hidden rounded-lg border border-secondary-background"
       >
-        <div
-          v-if="hasMixedSeverityTotals"
-          data-testid="errors-summary-hero"
-          class="bg-base-foreground/5"
-        >
-          <span class="sr-only">
-            {{
-              t('rightSidePanel.severityCountsStatus', {
-                errors: errorCount,
-                setup: missingCount
-              })
-            }}
-          </span>
+        <div data-testid="errors-summary-hero" class="bg-base-foreground/5">
+          <div role="status" class="flex items-center gap-2 p-2">
+            <span v-if="hasMixedSeverityTotals" class="sr-only">
+              {{
+                t('rightSidePanel.severityCountsStatus', {
+                  errors: errorCount,
+                  setup: missingCount
+                })
+              }}
+            </span>
+            <span
+              :class="
+                cn(
+                  'flex h-12 min-w-9 shrink-0 items-center justify-center px-1 text-[2rem]/none font-extrabold tabular-nums',
+                  hero.countClass
+                )
+              "
+            >
+              {{ hero.count }}
+            </span>
+            <span
+              aria-hidden="true"
+              class="h-9 w-px shrink-0 bg-interface-stroke"
+            />
+            <div class="flex min-w-0 flex-1 flex-col gap-1 px-2">
+              <span class="text-xs/tight font-semibold text-base-foreground">
+                {{ hero.title }}
+              </span>
+              <span class="text-xs/tight text-muted-foreground">
+                {{ hero.description }}
+              </span>
+            </div>
+            <Button
+              v-if="canAskAgent"
+              variant="outline"
+              size="sm"
+              class="shrink-0"
+              data-testid="error-card-ask-agent"
+              :aria-label="askAgentLabel"
+              @click.stop="handleAskAgent"
+            >
+              {{ t('rightSidePanel.askAgent') }}
+            </Button>
+          </div>
           <div
+            v-if="hasMixedSeverityTotals"
             data-testid="errors-summary-filters"
-            class="flex flex-wrap items-center gap-2 p-2"
+            class="flex flex-wrap items-center gap-2 px-2 pb-2"
           >
             <Button
               v-for="chip in severityChips"
@@ -121,31 +153,6 @@
             class="border-t border-secondary-background first:border-t-0"
             @update:collapse="setSectionCollapsed(group.groupKey, $event)"
           >
-            <template #header>
-              <div class="flex min-w-0 flex-1 flex-col gap-0.5">
-                <span class="text-xs font-semibold text-base-foreground">
-                  {{ cardHeader(group).title }}
-                </span>
-                <span class="text-2xs/tight text-muted-foreground">
-                  {{ cardHeader(group).description }}
-                </span>
-              </div>
-              <Button
-                v-if="canAskAgent"
-                variant="secondary"
-                size="sm"
-                class="shrink-0"
-                data-testid="error-card-ask-agent"
-                :aria-label="
-                  t('rightSidePanel.askAgentAbout', {
-                    title: group.displayTitle
-                  })
-                "
-                @click.stop="handleAskAgent(group)"
-              >
-                {{ t('rightSidePanel.askAgent') }}
-              </Button>
-            </template>
             <template #title-badge>
               <span
                 v-if="group.blockedLastRun"
@@ -428,7 +435,10 @@ import { isExecutionItemListGroup } from './executionItemList'
 import { selectionEmphasisClass } from './selectionEmphasis'
 import { useNodeReplacement } from '@/platform/nodeReplacement/useNodeReplacement'
 import { useAskAgentAboutIssues } from '@/workbench/extensions/agent/composables/agent/useAskAgentAboutIssues'
-import { buildGroupErrorContext } from './buildAgentErrorContext'
+import {
+  buildAllErrorContext,
+  buildGroupErrorContext
+} from './buildAgentErrorContext'
 
 interface ExecutionItemListEntry {
   key: string
@@ -573,6 +583,9 @@ const missingCount = computed(() =>
     .filter((group) => group.severity === 'missing')
     .reduce((sum, group) => sum + group.count, 0)
 )
+const hasMixedSeverity = computed(
+  () => errorCount.value > 0 && missingCount.value > 0
+)
 const severityTotals = computed(() => {
   const totals: Record<ErrorGroupSeverity, number> = { error: 0, missing: 0 }
   for (const group of allErrorGroups.value) {
@@ -688,6 +701,32 @@ watch(selectionEmphasisSignature, () => {
     (group) => matchedKeys.has(group.groupKey) && group.severity === hidden
   )
   if (selectionHasHiddenSeverity) severityFilter.value = null
+})
+
+const hero = computed(() => {
+  if (hasMixedSeverity.value) {
+    const total = errorCount.value + missingCount.value
+    return {
+      count: total,
+      countClass: 'text-base-foreground',
+      title: t('rightSidePanel.issuesDetected', total),
+      description: t('rightSidePanel.resolveBeforeRun')
+    }
+  }
+  if (missingCount.value > 0) {
+    return {
+      count: missingCount.value,
+      countClass: 'text-warning-foreground',
+      title: t('rightSidePanel.setupRequired'),
+      description: t('rightSidePanel.finishSetupBeforeRun')
+    }
+  }
+  return {
+    count: errorCount.value,
+    countClass: 'text-destructive-background-hover',
+    title: t('rightSidePanel.errorsDetected', errorCount.value),
+    description: t('rightSidePanel.resolveErrorsBeforeRun')
+  }
 })
 
 const severityChips = computed(() => [
@@ -883,19 +922,25 @@ const missingGroupContext = computed(() => ({
   missingMediaGroups: missingMediaGroups.value
 }))
 
-function handleAskAgent(group: ErrorGroup) {
-  askAgentAboutIssues(buildGroupErrorContext(group, missingGroupContext.value))
-}
+const askAgentLabel = computed(() => {
+  const groups = filteredGroups.value
+  const title = groups.length === 1 ? groups[0].displayTitle : hero.value.title
+  return t('rightSidePanel.askAgentAbout', { title })
+})
 
-function cardHeader(group: ErrorGroup): { title: string; description: string } {
-  if (group.severity === 'error')
-    return {
-      title: t('rightSidePanel.errorsDetected', group.count),
-      description: t('rightSidePanel.resolveErrorsBeforeRun')
-    }
-  return {
-    title: t('rightSidePanel.setupRequired'),
-    description: t('rightSidePanel.finishSetupBeforeRun')
+function handleAskAgent() {
+  const groups = filteredGroups.value
+  if (groups.length === 1) {
+    askAgentAboutIssues(
+      buildGroupErrorContext(groups[0], missingGroupContext.value)
+    )
+    return
   }
+  askAgentAboutIssues(
+    buildAllErrorContext(groups, missingGroupContext.value, {
+      label: t('agent.errorContext.allLabel'),
+      searchQuery: searchQuery.value
+    })
+  )
 }
 </script>

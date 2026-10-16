@@ -4811,6 +4811,8 @@
     "errorNodeSummary": "{nodes} node — {count} error | {nodes} node — {count} errors",
     "errorNodesSummary": "{nodes} nodes — {count} error | {nodes} nodes — {count} errors",
     "errorsSummary": "{count} error | {count} errors",
+    "resolveBeforeRun": "Resolve before running the workflow",
+    "issuesDetected": "Issue detected | Issues detected",
     "resolveErrorsBeforeRun": "Resolve errors before running the workflow",
     "setupRequired": "Setup required",
     "finishSetupBeforeRun": "Finish setup before running the workflow",
