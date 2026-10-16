@@ -20,6 +20,7 @@ import { useI18n } from 'vue-i18n'
 
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 
+import { useAgentComposerStore } from '../../../stores/agent/agentComposerStore'
 import type { ComposerPrompt } from '../../../types/composerPrompt'
 import {
   composerReferenceKey,
@@ -405,6 +406,27 @@ function nodeReferenceView(
   return { dom, stopEvent: () => true, ignoreMutation: () => true }
 }
 
+function pendingErrorChipCaret(doc: Node): number | undefined {
+  const composer = useAgentComposerStore()
+  if (!composer.takePendingErrorCaret()) return
+  return Math.min(
+    promptDocumentPosition(doc, composer.insertionPoint.textOffset),
+    doc.content.size
+  )
+}
+
+function focusPendingErrorChip(doc: Node): void {
+  if (!view) return
+  const caret = pendingErrorChipCaret(doc)
+  if (caret === undefined) return
+  view.dispatch(
+    view.state.tr
+      .setSelection(TextSelection.create(view.state.doc, caret))
+      .scrollIntoView()
+  )
+  view.focus()
+}
+
 onMounted(() => {
   if (!host.value) return
   view = new EditorView(host.value, {
@@ -637,6 +659,7 @@ onMounted(() => {
       }
     }
   })
+  focusPendingErrorChip(view.state.doc)
 })
 
 watch(
@@ -647,12 +670,15 @@ watch(
     if (epoch !== previousEpoch) {
       insertions.clear()
       const state = createState()
-      const position = Math.min(view.state.selection.head, doc.content.size)
+      const errorCaret = pendingErrorChipCaret(state.doc)
+      const position =
+        errorCaret ?? Math.min(view.state.selection.head, doc.content.size)
       view.updateState(
         state.apply(
           state.tr.setSelection(TextSelection.create(state.doc, position))
         )
       )
+      if (errorCaret !== undefined) view.focus()
       emit('selectionChange')
       return
     }

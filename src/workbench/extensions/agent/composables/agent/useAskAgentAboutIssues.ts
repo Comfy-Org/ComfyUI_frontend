@@ -6,7 +6,7 @@ import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 import { useAgentPanelStore } from '../../stores/agent/agentPanelStore'
 import type { AgentErrorContext } from '../../types/agentErrorContext'
 
-/** Opens the agent composer and attaches the problems as an editable chip; never sends. */
+/** Opens the agent composer, attaches the problems as an editable chip, and leaves the caret after it; never sends. */
 export function useAskAgentAboutIssues() {
   const panelStore = useAgentPanelStore()
   const composerStore = useAgentComposerStore()

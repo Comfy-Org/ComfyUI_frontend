@@ -94,6 +94,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     textOffset: 0,
     referenceIndex: 0
   })
+  const pendingErrorCaret = ref(false)
   const retiredAssets = new Set<string>()
   const thumbnailJobs = new Map<
     string,
@@ -254,7 +255,14 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     promptOrigin.value = 'error_context'
     starterPrompt.value = null
     resetPromptHistory()
+    pendingErrorCaret.value = true
     updateDraft(inserted.prompt)
+  }
+
+  function takePendingErrorCaret(): boolean {
+    if (!pendingErrorCaret.value) return false
+    pendingErrorCaret.value = false
+    return true
   }
 
   function clearErrorContext(): void {
@@ -601,6 +609,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     errorContext,
     insertionPoint,
     submission,
+    takePendingErrorCaret,
     setText,
     setErrorContext,
     clearErrorContext,
