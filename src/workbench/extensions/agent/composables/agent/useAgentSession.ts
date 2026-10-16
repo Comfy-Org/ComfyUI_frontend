@@ -394,9 +394,6 @@ function reportSendFailure(error: unknown): void {
   reportError(error, {
     surface: 'agent',
     errorType: 'agent_send_message_failed',
-    // PM-2103: a send failure outside the known admission/attachment shapes
-    // (e.g. a bare upstream 503) used to report with no status or endpoint,
-    // leaving a one-line alert with nothing to diagnose from.
     tags:
       error instanceof AgentApiError
         ? {

@@ -143,12 +143,7 @@ export class AgentApiError extends Error {
   readonly status: number
   readonly body: unknown
   readonly retryAfterSeconds?: number
-  /**
-   * The {@link AgentApiOperation} that raised this error, carried so a
-   * generic catch boundary can still tag a Sentry/Datadog report with it
-   * (PM-2103) without re-deriving it from the (unbounded-cardinality)
-   * request path.
-   */
+  /** The {@link AgentApiOperation} that raised this error. */
   readonly operation?: string
 
   constructor(

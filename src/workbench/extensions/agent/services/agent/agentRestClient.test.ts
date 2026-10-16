@@ -661,9 +661,9 @@ describe('error mapping', () => {
       .postMessage('t1', { content: 'try it' })
       .catch((caught: unknown) => caught)
 
-    expect(error).toBeInstanceOf(AgentApiError)
-    expect((error as AgentApiError).operation).toBe('post_thread_message')
-    expect((error as AgentApiError).status).toBe(503)
+    if (!(error instanceof AgentApiError)) throw error
+    expect(error.operation).toBe('post_thread_message')
+    expect(error.status).toBe(503)
   })
 
   it('throws zod when a success body violates the response schema (anti-drift)', async () => {
