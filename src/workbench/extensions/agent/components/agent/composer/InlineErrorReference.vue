@@ -27,13 +27,13 @@ const isError = computed(() => context.severity === 'error')
   <span
     data-testid="error-reference-chip"
     tabindex="0"
-    :class="cn(inlineReferenceChipClass, 'pr-0 pl-1.5')"
+    :class="inlineReferenceChipClass"
   >
     <i
       aria-hidden="true"
       :class="
         cn(
-          'size-3.5 shrink-0',
+          'size-3 shrink-0',
           isError
             ? 'icon-[lucide--circle-x] text-destructive-background'
             : 'icon-[lucide--triangle-alert] text-warning-foreground'

@@ -497,7 +497,7 @@ const { isInstalling: isInstallingAll, installAllPacks: installAll } =
 const { replaceGroup, replaceAllGroups } = useNodeReplacement()
 const { canAskAgent, askAgentAboutIssues } = useAskAgentAboutIssues()
 
-const searchQuery = ref('')
+const searchQuery = defineModel<string>('search', { default: '' })
 const expandedExecutionItemDetailKeys = ref(new Set<string>())
 const isSearching = computed(() => searchQuery.value.trim() !== '')
 

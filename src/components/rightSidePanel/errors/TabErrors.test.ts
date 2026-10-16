@@ -137,7 +137,10 @@ describe('TabErrors.vue', () => {
             errorHelp: 'Error help',
             askAgent: 'Ask agent',
             askAgentAbout: 'Ask the agent about {title}',
-            askAgentAboutAll: 'Ask agent about all issues',
+            askAgentAboutAll:
+              'Ask agent about {count} issue | Ask agent about all {count} issues',
+            askAgentAboutFiltered:
+              'Ask agent about {count} filtered issue | Ask agent about {count} filtered issues',
             errorLog: 'Error log',
             findOnGithubTooltip: 'Search GitHub issues',
             getHelpTooltip: 'Get help',
@@ -395,9 +398,56 @@ describe('TabErrors.vue', () => {
       nodeType: 'KSampler'
     })
 
-    await user.click(screen.getByTestId('errors-footer-ask-agent'))
+    const footer = screen.getByTestId('errors-footer-ask-agent')
+    expect(footer).toHaveTextContent('Ask agent about 1 issue')
+    await user.click(footer)
     const [allContext] = askAgentMock.askAgentAboutIssues.mock.calls.at(-1)!
-    expect(allContext).toMatchObject({ scope: 'all', label: 'All issues' })
+    expect(allContext).toMatchObject({
+      scope: 'all',
+      label: 'All issues',
+      count: 1
+    })
+    expect(allContext.searchQuery).toBeUndefined()
+  })
+
+  it('scopes the footer action to the active search filter', async () => {
+    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
+      fromAny<NonNullable<ReturnType<typeof getNodeByExecutionId>>, unknown>({
+        id: nodeId,
+        title: nodeId === '1' ? 'KSampler' : 'CLIPTextEncode'
+      })
+    )
+
+    const { user } = renderComponent((pinia) => {
+      useExecutionErrorStore(pinia).recordNodeErrors({
+        '1': nodeError(
+          [validationError('unknown', undefined, {}, 'Out of memory', '')],
+          'KSampler'
+        ),
+        '2': nodeError(
+          [validationError('unknown', undefined, {}, 'Missing text input', '')],
+          'CLIPTextEncode'
+        )
+      })
+    })
+
+    expect(screen.getByTestId('errors-footer-ask-agent')).toHaveTextContent(
+      'Ask agent about all 2 issues'
+    )
+
+    await user.type(screen.getByRole('textbox'), 'Missing text input')
+
+    expect(screen.getByTestId('errors-footer-ask-agent')).toHaveTextContent(
+      'Ask agent about 1 filtered issue'
+    )
+    await user.click(screen.getByTestId('errors-footer-ask-agent'))
+    const [context] = askAgentMock.askAgentAboutIssues.mock.calls.at(-1)!
+    expect(context).toMatchObject({
+      scope: 'all',
+      count: 1,
+      searchQuery: 'Missing text input'
+    })
   })
 
   it('omits the agent actions when the agent is unavailable', () => {
