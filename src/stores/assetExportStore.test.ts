@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { assetService } from '@/platform/assets/services/assetService'
-import type { TaskResponse } from '@/platform/tasks/services/taskService'
+import type { TaskResponse } from '@/platform/tasks/services/taskSchema'
 import type { AssetExportWsMessage } from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
 import { useAssetExportStore } from '@/stores/assetExportStore'

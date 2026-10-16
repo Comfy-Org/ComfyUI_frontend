@@ -5128,7 +5128,12 @@
     "rules": [
       {
         "from": "agent/domain",
-        "allow": ["agent/domain", "authentication/domain", "unclassified"]
+        "allow": [
+          "agent/domain",
+          "authentication/domain",
+          "design-system/domain",
+          "unclassified"
+        ]
       },
       {
         "from": "agent/application",
@@ -5139,6 +5144,9 @@
           "authentication/domain",
           "authentication/application",
           "authentication/infrastructure",
+          "design-system/domain",
+          "design-system/application",
+          "design-system/infrastructure",
           "unclassified"
         ]
       },
@@ -5151,6 +5159,9 @@
           "authentication/domain",
           "authentication/application",
           "authentication/infrastructure",
+          "design-system/domain",
+          "design-system/application",
+          "design-system/infrastructure",
           "unclassified"
         ]
       },
@@ -5163,6 +5174,9 @@
           "authentication/domain",
           "authentication/application",
           "authentication/presentation",
+          "design-system/domain",
+          "design-system/application",
+          "design-system/presentation",
           "unclassified"
         ]
       },
@@ -5179,6 +5193,10 @@
           "authentication/infrastructure",
           "authentication/presentation",
           "authentication/integration",
+          "design-system/domain",
+          "design-system/application",
+          "design-system/infrastructure",
+          "design-system/presentation",
           "unclassified"
         ]
       },

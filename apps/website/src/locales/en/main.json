@@ -574,7 +574,7 @@
       "graphNote": "The node graph behind this deployment is read-only here. Open it on comfy.org or download the JSON to edit it in ComfyUI.",
       "openComfy": "Open on comfy.org",
       "download": "Download workflow JSON",
-      "downloadShort": "Download",
+      "downloadShort": "Download Workflow",
       "ratings": "Ratings & comments",
       "related": "Related workflows",
       "relatedAll": "Browse all",
@@ -2564,6 +2564,7 @@
     "nanoBanana": "Nano Banana 2.1",
     "fishAudio": "Fish Audio",
     "nvidiaVfx": "Nvidia VFX",
+    "flux3ImageKlein": "FLUX 3 Image Klein",
     "cloudNodes": "Comfy Cloud Nodes",
     "modelCatalogue": "ComfyUI Models",
     "changelog": "Changelog"
@@ -5762,6 +5763,106 @@
     "introduction": "The latest ComfyUI features, improvements, and fixes, updated from Comfy docs.",
     "retry": "Try again"
   },
+  "eventChallenge": {
+    "name": "Open Source Higgsfield",
+    "description": "Higgsfield said they’d open source their platform. Let’s help. You have two weeks to rebuild their most popular apps and more on the Comfy Developer Platform.",
+    "submit": "Submit your entry",
+    "how": "How to enter",
+    "prizeTeaser": "$10,000 grand prize + three GeForce RTX 5090s",
+    "prizeTeaserBonus": "+ Bonuses from LTX, Black Forest Labs & MiniMax",
+    "winnersFeatured": "All winner submissions will be featured on comfy.org/hub with credit.",
+    "examples": "You’ve seen the outputs. Now build the apps",
+    "examplesBody": "Start with a recognizable output: a performance effect, a cinematic camera move, or a music-video transformation. Build a working app that makes it easy for someone else to create their own. These are inspiration prompts for your entry.",
+    "comingSoon": "Coming soon",
+    "openjutsu": "Openjutsu",
+    "enter": "How to enter",
+    "enterNote": "About the demo video: we’re judging the work, not your video editing or quality. The best demo shows your work in action with an explanation of how it was built.",
+    "enterIntro": "Every submission must include:",
+    "requirementsHeading": "Requirements",
+    "requirement1": "Your work must be built using the Comfy Developer Platform (Comfy API, Comfy Router, and/or Comfy SDK)",
+    "requirement2": "Your repo must include an open-source license and enough setup detail that someone else can run it on their own machine",
+    "requirement3": "Any other tools, models, or techniques you want to combine with it are fair game and must be explained in your demo video",
+    "requirement4": "All submissions must be lawful, SFW, and must not contain unlicensed IP or likenesses",
+    "requirement5": "By submitting, you agree to allow ComfyUI, NVIDIA, Runpod, LTX, Black Forest Labs, and MiniMax to feature your work with credit across our channels",
+    "requirement6": "One submission per person",
+    "enterRepo": "GitHub repo",
+    "enterRepoBody": "Your app code, workflow files, an open-source license, and instructions to run it locally.",
+    "enterDemo": "Demo video",
+    "enterDemoBody": "Two minutes max, in case we can’t get it running ourselves.",
+    "enterLink": "A link to try it",
+    "enterLinkBody": "Optional, but strongly encouraged: the deployed app or endpoint.",
+    "enterSocial": "Social post",
+    "enterSocialBody": "Link to your demo video on Reddit, X, IG, LI, YT, or TikTok tagging #OpenSourceHiggsfield",
+    "timelineNightsTitle": "Build Nights",
+    "timelineNightsDate": "10/28 – 10/29",
+    "timelineNightsBody": "SF 10/28 · LA 10/29. Register above.",
+    "prizes": "Prizes & Categories",
+    "partners": "Partners",
+    "prizeMainLabel": "Main prizes",
+    "prizeOverall": "Best Overall",
+    "prizeOverallAward": "$10,000",
+    "prizeOverallBody": "Best overall build. Every entry is automatically considered.",
+    "prizeInnovative": "Most Innovative",
+    "prizeInnovativeBody": "An app that’s never been done, novel custom node packs or uses of ComfyUI. Demo video must explain why the submission is innovative.",
+    "prizeViral": "Most Viral",
+    "prizeViralBody": "Delightful to use and made to be shared.",
+    "prizeOpenWeights": "Open Weights Only",
+    "prizeOpenWeightsBody": "No partner nodes or APIs, open-weights models only.",
+    "prizeRunnerUp": "10 Runner Ups",
+    "prizeRunnerUpAward": "$250 in Comfy Credits",
+    "prizeBonusLabel": "OSS Ecosystem Bonuses",
+    "prizeLtx": "VFX Workflow Built with LTX",
+    "prizeLtxAward": "$2,000 cash",
+    "prizeLtxBody": "LTX must be the core video model in the workflow to qualify.",
+    "prizeFlux": "Built with FLUX",
+    "prizeFluxAward": "$1,000 / $500 / $250 in Flux API credits",
+    "prizeFluxBody": "FLUX 3 must be the core model in the workflow to qualify.",
+    "prizeMinimax": "Built with MiniMax H3",
+    "prizeMinimaxAward": "$1,000 in API credits",
+    "prizeMinimaxBody": "MiniMax H3 must be the core model in the workflow to qualify.",
+    "totalPrize": "$25,000",
+    "totalPrizeCaption": "total worth in prizes",
+    "shareImageAlt": "Open Source Higgsfield: $25,000 in prizes",
+    "gpu": "GeForce RTX 5090",
+    "details": "The details",
+    "timeline": "Timeline",
+    "timelineSignupDate": "10/15",
+    "timelineSignupBody": "Registration opens for the online competition.",
+    "timelineSignupTitle": "Signups open",
+    "timelineWindowTitle": "Build",
+    "timelineWindowDate": "10/15 – 10/30",
+    "timelineWindowBody": "Submission window closes: October 30 · 9am PT.",
+    "closeDate": "October 30 · 9am PT",
+    "timelineWinnerDate": "11/6",
+    "timelineWinnerTitle": "Winners announced",
+    "timelineWinnerBody": "Winning entries are featured on comfy.org/hub with credit.",
+    "rulesLink": "Read the full published rules",
+    "meetupHeading": "Build together IRL",
+    "meetupBody": "Bring your laptop and join the Comfy team and community for building, demos, and meeting the people behind the workflows.",
+    "meetupCta": "Register",
+    "meetupSfTitle": "Comfy Build Night: San Francisco",
+    "meetupSfBody": "Hosted by the Comfy team.",
+    "meetupSfLocation": "Frontier Tower, San Francisco, CA",
+    "meetupSfDate": "October 28, 2026",
+    "meetupLaTitle": "Comfy Build Night: Los Angeles",
+    "meetupLaBody": "In partnership with AI On The Lot.",
+    "meetupLaLocation": "Los Angeles, CA",
+    "meetupLaDate": "October 29, 2026",
+    "closing": "Your next creative app starts here",
+    "closingBody": "Make it work. Make it open. Show us what you built.",
+    "what": "What you make",
+    "whatBody": "A working creative app built with Comfy, with a usable interface and example outputs.",
+    "deadline": "Submission deadline",
+    "questions": "Q & A",
+    "faqDemo": "Do I need a polished demo video?",
+    "faqDemoBody": "We’re judging the work, not your video editing or quality. The best demo shows your work in action with an explanation of how it was built.",
+    "faqEvent": "Do I have to attend a Build Night?",
+    "faqEventBody": "The online competition and the Build Nights are separate. Use the submission form to enter the competition and register for a Build Night above.",
+    "faqLicense": "Does my repo need a license?",
+    "faqLicenseBody": "Yes. Publish your app code with an open-source license and setup instructions. You may use partner models; only the Open Weights Only category requires open-weights models with no partner nodes or APIs.",
+    "faqBonus": "Can I win a main prize and a bonus prize?",
+    "faqBonusBody": "Each entry is eligible for both a main category and a model-provider bonus category. See the published rules for model requirements."
+  },
   "vfx": {
     "meta": {
       "title": "Comfy for VFX | Workflows for your production pipeline",
@@ -5937,6 +6038,57 @@
       },
       "enterprise": "VIEW ENTERPRISE DETAILS",
       "licensing": "MINIMAX LICENSING"
+    }
+  },
+  "krea3": {
+    "meta": {
+      "title": "Krea 3: Reference-driven image editing | Comfy",
+      "description": "Edit images with visual references. Explore Krea 3 workflows for product campaigns, interiors, and character work in Comfy."
+    },
+    "hero": {
+      "title": "KREA 3",
+      "description": "Start with your images. Direct the edit. Keep what matters. Build reference-driven image workflows with Krea 3.",
+      "cta": "EDIT WITH KREA 3",
+      "references": "REFERENCE-DRIVEN EDITING",
+      "image": "IMAGE MODEL",
+      "workflows": "VIEW WORKFLOWS"
+    },
+    "references": "YOUR REFERENCES. YOUR DIRECTION.",
+    "products": "ONE PRODUCT.\nANOTHER CAMPAIGN.",
+    "interiors": "SAME SPACE. NEW POSSIBILITIES.",
+    "characters": "KEEP THE CHARACTER. CHANGE THE SCENE.",
+    "steps": {
+      "heading": "BUILD YOUR REFERENCE-EDITING WORKFLOW",
+      "label": "STEP"
+    },
+    "faq": "KREA 3, EXPLAINED",
+    "closing": {
+      "heading": "BRING YOUR NEXT IDEA INTO COMFY",
+      "description": "Connect your references, edits, and next steps in a workflow you can return to.",
+      "cta": "EDIT WITH KREA 3"
+    },
+    "workflows": {
+      "heading": "Made with Krea 3"
+    }
+  },
+  "flux3Image": {
+    "meta": {
+      "title": "FLUX 3 Image Klein Launch {'|'} Comfy"
+    },
+    "breadcrumb": {
+      "updated": "Updated October 2026"
+    },
+    "hero": {
+      "title": "FLUX 3 Image Klein",
+      "description": "Black Forest Labs' newest open-weight model comes in two variants: standard and step-distilled turbo. Both generate and edit images. Create an image with standard, or iterate fast with turbo.",
+      "openSource": "Open Source",
+      "imageGeneration": "Image generation",
+      "imageEdit": "Image edit",
+      "primaryCta": "RUN FLUX 3 IMAGE KLEIN",
+      "secondaryCta": "READ DOCS"
+    },
+    "runOptions": {
+      "subtitle": "Build workflows in the browser, explore ComfyUI on your own hardware, or connect your creative pipeline through the API."
     }
   }
 }

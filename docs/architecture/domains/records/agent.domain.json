@@ -761,7 +761,7 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["authentication"],
+  "allowedDependencies": ["authentication", "design-system"],
   "allowedConsumers": [],
   "characterizationScenarios": [
     {

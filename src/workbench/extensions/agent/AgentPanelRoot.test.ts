@@ -5721,6 +5721,59 @@ describe('AgentPanelRoot run approval telemetry', () => {
   })
 })
 
+describe('AgentPanelRoot ask_user answer telemetry', () => {
+  it('never reports an ask_user answer as a run approval, even one named run', async () => {
+    respondToFetch({}, () => json(200, {}))
+    respondToFetch(/\/agent\/threads/, () => json(200, agentThreadList()))
+    respondToFetch({ method: 'POST', url: /\/asks\// }, () =>
+      json(200, { status: 'answered' })
+    )
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const store = useAgentConversationStore()
+    store.setThreadId('th-1')
+    const turnId = toTurnId('turn-question')
+    store.recordUser(turnId, 'go on')
+    store.startTurn(turnId)
+    store.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_ask',
+        data: {
+          thread_id: 'th-1',
+          message_id: turnId,
+          ask_id: 'turn-question:call-1',
+          kind: 'ask_user',
+          prompt: 'Should I run it now?',
+          options: [
+            { id: 'run', label: 'Run now' },
+            { id: 'cancel', label: 'Not yet' }
+          ],
+          min_selections: 1,
+          max_selections: 1,
+          allow_other: false
+        }
+      })
+    )
+
+    await userEvent.click(await screen.findByRole('radio', { name: 'Run now' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Submit' }))
+    await vi.waitFor(() =>
+      expect(fetchRequests({ method: 'POST', url: /\/asks\// })).toHaveLength(1)
+    )
+    ws.emit('agent_ask_resolved', {
+      thread_id: 'th-1',
+      message_id: turnId,
+      ask_id: 'turn-question:call-1',
+      status: 'answered',
+      selected: ['run']
+    })
+    expect(await screen.findByText('Answered')).toBeVisible()
+
+    expect(telemetry.trackAgentRunApprovalShown).not.toHaveBeenCalled()
+    expect(telemetry.trackAgentRunApprovalResolved).not.toHaveBeenCalled()
+  })
+})
+
 describe('AgentPanelRoot lifecycle', () => {
   beforeEach(() => {
     ws.clear()

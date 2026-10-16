@@ -1,5 +1,6 @@
 import type { Page, WebSocketRoute } from '@playwright/test'
 import type { ApplyOutcome } from '@comfyorg/comfy-multi-player'
+import type { AgentAskServerFrame } from '@comfyorg/ingest-types'
 
 import {
   DOC_PROTOCOL_VERSION,
@@ -157,7 +158,7 @@ export class AgentFollowerHostSocket {
     })
   }
 
-  send(frame: AgentWsEvent | HostFrame): void {
+  send(frame: AgentWsEvent | AgentAskServerFrame | HostFrame): void {
     if (frame.type.startsWith('doc_') || frame.type === 'awareness') {
       if (parseServerDocFrame(frame) === null)
         throw new Error(`host frame ${frame.type} is not a valid doc frame`)

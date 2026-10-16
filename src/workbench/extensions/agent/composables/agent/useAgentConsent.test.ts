@@ -34,6 +34,7 @@ const fetchWithUnifiedRemint = vi.hoisted(() => vi.fn())
 vi.mock(import('@/platform/auth/unified/remintRetry'), () => ({
   attachUnifiedRemintInterceptor: vi.fn(),
   fetchWithUnifiedRemint,
+  provideUnifiedRemint: vi.fn(),
   shouldRemintCloudRequest: () => Promise.resolve(false)
 }))
 

@@ -3273,14 +3273,6 @@
         "count": 4
       }
     },
-    "src/services/load3dService.ts": {
-      "complexity_high": {
-        "count": 1
-      },
-      "crap_high": {
-        "count": 1
-      }
-    },
     "src/services/mediaCacheService.ts": {
       "complexity_high": {
         "count": 1
@@ -3565,6 +3557,11 @@
     "vite.config.mts": {
       "crap_moderate": {
         "count": 2
+      }
+    },
+    "src/extensions/core/load3d/load3dInstances.ts": {
+      "complexity_high": {
+        "count": 1
       }
     }
   },
