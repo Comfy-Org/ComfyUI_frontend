@@ -67,7 +67,8 @@ import type { NodeReplacement } from '@/platform/nodeReplacement/types'
 import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
 import type { NodeError } from '@/platform/remote/comfyui/types'
 import * as litegraphUtil from '@/utils/litegraphUtil'
-import { createNode, executeWidgetsCallback } from '@/utils/litegraphUtil'
+import { createNode } from '@/utils/createNode'
+import { executeWidgetsCallback } from '@/utils/litegraphUtil'
 import { graphToPrompt } from '@/utils/executionUtil'
 import { applyTextReplacements } from '@/utils/searchAndReplace'
 import { zComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -155,6 +156,7 @@ vi.mock(
 )
 
 vi.mock(import('@/utils/litegraphUtil'), { spy: true })
+vi.mock(import('@/utils/createNode'), { spy: true })
 
 vi.mock(import('@/composables/usePaste'), () => ({
   pasteAudioNode: vi.fn(),

@@ -769,7 +769,7 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
+  "allowedDependencies": ["design-system"],
   "allowedConsumers": [],
   "characterizationScenarios": [
     {

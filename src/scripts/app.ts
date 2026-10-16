@@ -169,11 +169,11 @@ import {
 } from '@/utils/graphTraversalUtil'
 import {
   executeWidgetsCallback,
-  createNode,
   isImageNode,
   isSelectOnly,
   isVideoNode
 } from '@/utils/litegraphUtil'
+import { createNode } from '@/utils/createNode'
 import {
   createSharedObjectUrl,
   releaseSharedObjectUrl

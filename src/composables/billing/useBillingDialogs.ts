@@ -10,6 +10,8 @@ import type {
 } from '@/composables/billing/types'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { t } from '@/i18n'
+import { provideBillingDialogs } from '@/platform/cloud/subscription/composables/billingDialogsAccess'
+import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { CancellationFlowDialogOptions } from '@/platform/cloud/subscription/launchCancellationFlow'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
@@ -20,13 +22,6 @@ import { useBillingCapabilities } from '@/platform/workspace/composables/useBill
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { getErrorMessage } from '@/utils/errorUtil'
-
-function topUpFallbackReason(
-  options?: TopUpCreditsDialogOptions
-): PaymentIntentSource {
-  if (options?.isInsufficientCredits) return 'out_of_credits'
-  return options?.source ?? 'top_up_blocked'
-}
 
 export function useBillingDialogs() {
   const dialogStore = useDialogStore()
@@ -41,19 +36,9 @@ export function useBillingDialogs() {
         (options?.isInsufficientCredits ? 'out_of_credits' : undefined)
     })
     const { type } = useBillingContext()
-    const { canTopUp, canSubscribeSelfServe, isReady, initialize } =
-      useBillingCapabilities()
-    // A capability read still in flight has to be awaited here, or a top-up
-    // triggered during that window is silently dropped with no recovery UI.
+    const { canTopUp, isReady, initialize } = useBillingCapabilities()
     if (!isReady.value) await initialize()
     if (!isReady.value) return
-    if (!canTopUp.value && canSubscribeSelfServe.value) {
-      await showSubscriptionRequiredDialog({
-        reason: topUpFallbackReason(options),
-        paymentIntentSource: options?.source
-      })
-      return
-    }
 
     if (!canTopUp.value && type.value === 'workspace') {
       return dialogStore.showDialog({
@@ -123,8 +108,6 @@ export function useBillingDialogs() {
       return
     }
 
-    const { useSubscriptionDialog } =
-      await import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
     const { show } = useSubscriptionDialog()
     show(options)
   }
@@ -320,3 +303,5 @@ export function useBillingDialogs() {
     showDowngradeToPersonalDialog
   }
 }
+
+provideBillingDialogs(useBillingDialogs)
