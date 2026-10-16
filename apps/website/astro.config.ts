@@ -11,14 +11,15 @@ import { indexNowManifest } from './src/integrations/indexnow-manifest'
 import { markdownTwins } from './src/integrations/markdown-twins'
 import { workshopReleaseGate } from './src/integrations/workshop-release-gate'
 import { sitemapAlternates } from './src/lib/hreflang'
+import { cmsEnabled } from './src/lib/cms/cms-enabled'
 
 export default defineConfig({
   site: 'https://comfy.org',
   output: 'static',
-  adapter: process.env.SITE_CATALOG_API_URL ? vercel() : undefined,
+  adapter: cmsEnabled() ? vercel() : undefined,
   security: {
     checkOrigin: true,
-    allowedDomains: process.env.SITE_CATALOG_API_URL
+    allowedDomains: cmsEnabled()
       ? (process.env.SITE_CATALOG_WEBSITE_ORIGINS ?? '')
           .split(',')
           .filter(Boolean)
@@ -67,9 +68,7 @@ export default defineConfig({
     plugins: [tailwindcss()],
     // gsap ships ESM files in a package Node reads as CommonJS, which the
     // Vercel function cannot import by name; bundle it into server output.
-    ...(process.env.SITE_CATALOG_API_URL
-      ? { ssr: { noExternal: ['gsap'] } }
-      : {}),
+    ...(cmsEnabled() ? { ssr: { noExternal: ['gsap'] } } : {}),
     define: {
       __VUE_I18N_LEGACY_API__: false,
       __VUE_I18N_FULL_INSTALL__: false,

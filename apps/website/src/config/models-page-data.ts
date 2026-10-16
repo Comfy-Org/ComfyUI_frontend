@@ -33,10 +33,14 @@ const workflowDetailSchema = generatedModelSchema
     catalogDetails: workflowCatalogDetailsSchema.optional()
   })
   .refine((model) => model.workflowId === model.workflow.id)
-  .transform((model) => ({
-    ...model,
-    form: formForWorkflow(model.workflow)
-  }))
+  .transform((model, ctx) => {
+    try {
+      return { ...model, form: formForWorkflow(model.workflow) }
+    } catch (error) {
+      ctx.addIssue({ code: 'custom', message: String(error) })
+      return z.NEVER
+    }
+  })
 
 const localDetailSchema = generatedModelSchema
   .extend(localModelSchema.shape)

@@ -1,5 +1,4 @@
 import { zContentCatalogProjection } from '@comfyorg/ingest-types/zod'
-import { z } from 'astro/zod'
 
 import { modelSchema } from '@/config/models-catalogue-data'
 import { detailSchema } from '@/config/models-page-data'
@@ -9,9 +8,9 @@ import { catalogPresentation } from './catalog-presentation'
 import { normalizeProjection } from './catalog-contract'
 import { boundedBody } from './editor-server'
 import { loadSiteCatalogList } from './catalog-list'
+import { cmsEnabled } from './cms-enabled'
 
-// Server-only configuration. Browser islands read same-origin JSON endpoints.
-export const cmsEnabled = () => Boolean(process.env.SITE_CATALOG_API_URL)
+export { cmsEnabled }
 
 async function fetchDetail(
   origin: string,
@@ -58,17 +57,24 @@ function parseDetail(data: unknown, locale: string, preview: boolean) {
   if (!projection.success || projection.data.items.length > 1) return undefined
   const normalized = normalizeProjection(projection.data)
   if (!normalized) return undefined
-  const presented = normalized.items.map((item) =>
-    catalogPresentation(item, locale, preview, normalized.items)
-  )
-  const models = z.array(modelSchema).safeParse(presented)
-  const details = z
-    .array(detailSchema)
-    .safeParse(
-      presented.filter((_, index) => normalized.items[index].kind !== 'APP')
+  const readable = normalized.items.flatMap((item) => {
+    const presented = catalogPresentation(
+      item,
+      locale,
+      preview,
+      normalized.items
     )
-  if (!models.success || !details.success) return undefined
-  return { normalized, models: models.data, details: details.data }
+    const model = modelSchema.safeParse(presented)
+    const detail =
+      item.kind === 'APP' ? undefined : detailSchema.safeParse(presented)
+    if (!model.success || detail?.success === false) return []
+    return [{ item, model: model.data, detail: detail?.data }]
+  })
+  return {
+    normalized: { ...normalized, items: readable.map(({ item }) => item) },
+    models: readable.map(({ model }) => model),
+    details: readable.flatMap(({ detail }) => (detail ? [detail] : []))
+  }
 }
 export async function loadSiteCatalog(
   session?: SiteSession | AuthoringSession,
@@ -77,7 +83,7 @@ export async function loadSiteCatalog(
   includeRelated = true
 ) {
   const origin = process.env.SITE_CATALOG_API_URL
-  if (!origin || !workflowSlug || process.env.VERCEL_ENV === 'production')
+  if (!origin || !workflowSlug || !cmsEnabled())
     return { ok: false, status: 503 } as const
   const data = await fetchDetail(origin, workflowSlug, session)
   const parsed = parseDetail(data, locale, session?.preview?.view === 'DRAFT')

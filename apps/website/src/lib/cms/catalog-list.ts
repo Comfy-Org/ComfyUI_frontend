@@ -12,6 +12,7 @@ import type { SiteSession } from './admin'
 import type { AuthoringSession } from './authoring-session'
 import { readCatalogCards } from './catalog-cards-response'
 import { catalogPresentation } from './catalog-presentation'
+import { cmsEnabled } from './cms-enabled'
 
 export type CatalogListSection = 'models' | 'workflows' | 'apps'
 type ListCccWebsiteCardsQuery = NonNullable<ListCccWebsiteCardsData['query']>
@@ -146,7 +147,7 @@ export async function loadSiteCatalogList(
 ) {
   const unavailable = { ok: false, status: 503 } as const
   const origin = process.env.SITE_CATALOG_API_URL
-  if (!origin || process.env.VERCEL_ENV === 'production') return unavailable
+  if (!origin || !cmsEnabled()) return unavailable
   const query = cardQuery(params, section, locale)
   if (!query.success) return unavailable
   let page = pageNumber(params.get('p'))

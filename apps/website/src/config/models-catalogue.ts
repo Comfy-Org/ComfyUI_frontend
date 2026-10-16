@@ -167,7 +167,7 @@ export type WorkflowWorkshopModel = WorkshopPresentation & {
   readonly author?: string
 }
 
-export type LocalWorkshopModel = WorkshopPresentation & {
+type LocalWorkshopModel = WorkshopPresentation & {
   readonly type: 'MODEL'
   readonly href: string
   readonly routerId?: never

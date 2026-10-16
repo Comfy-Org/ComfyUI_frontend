@@ -1,9 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
+import { createContext } from 'astro/middleware'
 
 import { entries } from '@website/scripts/export-cms-seed'
 import { cmsEnabled, loadSiteCatalog } from '@/lib/cms/catalog'
 import { fieldsForDefinition } from '@/config/workshop-form-definition'
 import type { AuthoringSession } from './authoring-session'
+import { workshopWorkflowDefinitionSchema } from '@/config/workshop-workflow-definition'
+import { GET } from '@/routes/models/page.json'
 
 describe('website CMS boundary', () => {
   it('reads the verified authoring session Draft and timewarp through the private projection', async () => {
@@ -104,9 +107,74 @@ describe('website CMS boundary', () => {
   it('rejects production before making an upstream request', async () => {
     vi.stubEnv('SITE_CATALOG_API_URL', 'http://localhost:8099')
     vi.stubEnv('VERCEL_ENV', 'production')
+    expect(cmsEnabled()).toBe(false)
     const upstream = vi.fn<typeof fetch>()
     vi.mocked(fetch).mockImplementation(upstream)
     expect((await loadSiteCatalog()).ok).toBe(false)
     expect(upstream).not.toHaveBeenCalled()
+  })
+
+  it('drops a mismatched workflow without throwing or hiding a healthy detail', async () => {
+    vi.stubEnv('SITE_CATALOG_API_URL', 'http://localhost:8099')
+    const broken = entries.find((item) => 'workflow' in item.data)
+    if (!broken || !('workflow' in broken.data))
+      throw new Error('The seed has no workflow entry')
+    const workflow = workshopWorkflowDefinitionSchema.parse(
+      broken.data.workflow
+    )
+    const mismatched = {
+      ...broken,
+      data: {
+        ...broken.data,
+        workflow: {
+          ...workflow,
+          inputSchema: {
+            ...workflow.inputSchema,
+            properties: {
+              ...workflow.inputSchema.properties,
+              undeclared: { type: 'string' }
+            }
+          }
+        }
+      }
+    }
+    vi.mocked(fetch).mockImplementation((input) => {
+      const slug = new URL(String(input)).searchParams.get('workflow_slug')
+      const item =
+        slug === broken.slug
+          ? mismatched
+          : entries.find((entry) => entry.slug === slug)
+      return Promise.resolve(
+        Response.json({
+          revision_id: 1,
+          generation: 0,
+          items: item
+            ? [{ ...item, revision: 1, deleted: false, edit_version: item.uid }]
+            : []
+        })
+      )
+    })
+    const result = await loadSiteCatalog(undefined, 'en', broken.slug, false)
+    expect(result).toMatchObject({
+      ok: true,
+      projection: { items: [] },
+      models: [],
+      details: []
+    })
+    const response = await GET(
+      createContext({
+        request: new Request(
+          `https://comfy.org/models/${broken.slug}/page.json`
+        ),
+        params: { slug: broken.slug },
+        defaultLocale: 'en'
+      })
+    )
+    expect(response.status).toBe(404)
+    const healthy = entries.find((entry) => entry.kind === 'MODEL')
+    if (!healthy) throw new Error('The seed has no model entry')
+    const other = await loadSiteCatalog(undefined, 'en', healthy.slug, false)
+    expect(other.ok).toBe(true)
+    if (other.ok) expect(other.details).toHaveLength(1)
   })
 })

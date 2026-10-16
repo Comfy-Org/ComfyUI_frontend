@@ -19,6 +19,7 @@ import {
 import { websiteRoot } from '@website/paths'
 import { unregisteredModelsPaths } from '@/config/models-url-registry'
 import { markdownTwinPath } from '@/lib/markdown-twin-path'
+import { cmsEnabled } from '@/lib/cms/cms-enabled'
 
 import {
   assertWorkshopCloudEnvForBuild,
@@ -110,7 +111,7 @@ async function filesLinkingOldModels(
 function installCmsRoutes(
   injectRoute: HookParameters<'astro:config:setup'>['injectRoute']
 ) {
-  if (!process.env.SITE_CATALOG_API_URL) return
+  if (!cmsEnabled()) return
   for (const [pattern, file] of [
     ['/admin/sign-in', 'sign-in.astro'],
     ['/admin/tester-session', 'tester-session.ts'],
@@ -161,7 +162,7 @@ function cmsRendering(route: ReturnType<typeof modelsBuildRoutes>[number]) {
     route.pattern.startsWith('/hub/') ||
     route.pattern === '/models/catalogue.json' ||
     route.pattern === '/models/[...slug]/page.json'
-  return process.env.SITE_CATALOG_API_URL && dynamic ? { prerender: false } : {}
+  return cmsEnabled() && dynamic ? { prerender: false } : {}
 }
 
 export function workshopReleaseGate(): AstroIntegration {
@@ -204,7 +205,7 @@ export function workshopReleaseGate(): AstroIntegration {
             ...route,
             ...cmsRendering(route)
           })
-        if (process.env.SITE_CATALOG_API_URL) {
+        if (cmsEnabled()) {
           for (const route of modelsBuildRoutes(isWorkshopInBuild()).filter(
             (route) => route.pattern.startsWith('/hub/')
           )) {

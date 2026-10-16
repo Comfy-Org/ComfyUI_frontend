@@ -1,6 +1,12 @@
 # @comfyorg/website
 
 Marketing/brand website built with Astro + Vue.
+CMS configuration, dynamic Hub routes, localized CMS routes and the Vercel
+adapter share one production-disabled gate. Setting the catalog address alone
+in production leaves the existing static website and routes selected. Detail
+loading remains bounded to one record; a workflow whose declared inputs do not
+match its schema is rejected as an unreadable detail rather than throwing from
+the schema transform. It cannot prevent other detail requests from rendering.
 Workflow `runnable` controls the website playground, not code examples. With
 no declared inputs or `runnable:false`, the page uses a standalone graph/media
 and sticky details/download/Cloud sidebar, prose, code and FAQ flow based on
