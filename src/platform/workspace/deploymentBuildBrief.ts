@@ -1,5 +1,8 @@
 import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
-import { BUILD_RECIPE_SECTION } from '@/platform/workspace/customDeploymentBrief'
+import {
+  BUILD_RECIPE_SECTION,
+  CUT_AND_REPORT_SECTION
+} from '@/platform/workspace/customDeploymentBrief'
 
 /** Node types a deployment lacks, under the registry pack that has them, or null when no pack is known. */
 export interface MissingBuildPack {
@@ -29,6 +32,16 @@ function listSection(title: string, lines: readonly string[]): string[] {
   return lines.length > 0 ? [`## ${title}`, '', ...lines, ''] : []
 }
 
+function missingSections(
+  packs: readonly MissingBuildPack[],
+  models: readonly MissingBuildModel[]
+): string[] {
+  return [
+    ...listSection('Custom nodes', packs.map(packLine)),
+    ...listSection('Models', models.map(modelLine))
+  ]
+}
+
 function buildReference(deployment: WorkspaceDeployment): string {
   if (!deployment.build_id) return 'its Build'
   const name = deployment.build_name ?? deployment.build_id
@@ -50,8 +63,7 @@ export function deploymentBuildBrief(
     `${buildReference(deployment)} on the Comfy developer platform. That release`,
     'lacks these custom nodes and models the workflow uses:',
     '',
-    ...listSection('Custom nodes', packs.map(packLine)),
-    ...listSection('Models', models.map(modelLine)),
+    ...missingSections(packs, models),
     BUILD_RECIPE_SECTION,
     '',
     '## Where the user decides',
@@ -64,5 +76,30 @@ export function deploymentBuildBrief(
     '',
     'Report the release id, and whether it is deployable. Ask the user before',
     `you deploy it to **${deploymentName}**.`
+  ].join('\n')
+}
+
+/** Brief an agent follows to create a custom deployment that runs a workflow Comfy Cloud lacks nodes or models for. */
+export function workflowDeploymentBrief(
+  packs: readonly MissingBuildPack[],
+  models: readonly MissingBuildModel[]
+): string {
+  return [
+    '# Create a custom deployment that runs a workflow',
+    '',
+    'The user opened a ComfyUI workflow on Comfy Cloud that uses custom nodes',
+    'and models Comfy Cloud does not have. Help the user create a **custom',
+    'deployment** on the Comfy developer platform that runs it. Once it is',
+    'deployed, it appears under **Run on** in the ComfyUI editor for everyone in',
+    "the user's workspace.",
+    '',
+    ...missingSections(packs, models),
+    BUILD_RECIPE_SECTION,
+    '',
+    '## Where the user decides',
+    '',
+    'Find the pack for any node under an unknown pack, and a download link for',
+    'any model without one. Ask the user which GPU the deployment should run on.',
+    CUT_AND_REPORT_SECTION
   ].join('\n')
 }
