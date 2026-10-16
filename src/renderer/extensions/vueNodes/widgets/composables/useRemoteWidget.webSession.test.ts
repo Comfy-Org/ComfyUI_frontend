@@ -139,7 +139,7 @@ const sessionRequest = (path: string, workspace: string): IngestRequest => ({
   method: 'GET',
   path,
   headers: { 'x-comfy-client': COMFY_CLIENT, ...workspaceHeader(workspace) },
-  credentials: 'include'
+  credentials: 'same-origin'
 })
 
 describe('remote widgets on the shared web session', () => {
