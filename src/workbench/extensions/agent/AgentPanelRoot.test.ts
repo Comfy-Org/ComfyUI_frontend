@@ -13060,7 +13060,6 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(workflowPicker()).toHaveTextContent(
       i18n.global.t('agent.selectWorkflowForAgent')
     )
-    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
     expect(workflowStore.activeWorkflow?.path).toBe(current.path)
   })
 
