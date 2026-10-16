@@ -10,6 +10,8 @@ import {
   STRIPE_RETURN_PARAMS
 } from '@/platform/cloud/subscription/utils/paymentReturnUrl'
 import { isCloud } from '@/platform/distribution/types'
+import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
+import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useSettingsUrlLoader } from '@/platform/settings/composables/useSettingsUrlLoader'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useCreateWorkspaceUrlLoader } from '@/platform/workspace/composables/useCreateWorkspaceUrlLoader'
@@ -55,8 +57,8 @@ type UrlActionLoaders = {
  * runs, so it never re-strips a live workspace switch. `deployment` likewise:
  * the deployment link keeps both params only across its own switch reload,
  * which also stops the loop first. `workflows` is opened at boot, which keeps
- * it beside a deployment link for the boot after the pick's reload; a link
- * that did not reload ends here.
+ * it (and its preserved-query stash) beside a deployment link for the boot
+ * after the pick's reload; a link that did not reload ends here, stash too.
  */
 const HANDLED_PARAMS = [
   'workspace',
@@ -164,6 +166,7 @@ function buildUrlActionSteps(
   steps.push({
     failureMessage: 'Failed to clear handled deep-link params from the URL:',
     run: async () => {
+      clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.WORKFLOWS)
       const query = { ...router.currentRoute.value.query }
       if (!HANDLED_PARAMS.some((param) => param in query)) return
       for (const param of HANDLED_PARAMS) delete query[param]
