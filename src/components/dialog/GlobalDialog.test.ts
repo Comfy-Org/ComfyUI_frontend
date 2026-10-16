@@ -26,16 +26,11 @@ vi.mock<unknown>(
         isResubscribing: ref(false),
         previewData: ref(null),
         reactivationRequired: ref(false),
-        quoteIsCurrent: ref(false),
-        savedPaymentMethods: ref([]),
-        selectedSavedPaymentMethodId: ref(null),
         selectedTierKey: ref(null),
         selectedTeamStop: ref(null),
         selectedBillingCycle: ref('yearly'),
         activeCheckoutActionUrl: ref(null),
         authenticationState: ref(null),
-        authenticationError: ref(null),
-        reconciliationOperationId: ref(null),
         isPolling: ref(false),
         isTeamCheckout: computed(() => false),
         previewVariant: computed(() => null),
@@ -46,10 +41,6 @@ vi.mock<unknown>(
         handleAddCreditCard: vi.fn(),
         handleConfirmTransition: vi.fn(),
         handleTeamSubscribe: vi.fn(),
-        handleSubscriptionPayment: vi.fn(),
-        handleTeamSubscriptionPayment: vi.fn(),
-        applyPromotionCode: vi.fn(),
-        invalidateQuote: vi.fn(),
         handleResubscribe: vi.fn()
       })
     }

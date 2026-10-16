@@ -940,11 +940,6 @@
       "count": 1
     }
   },
-  "src/platform/workspace/components/SubscriptionAddPaymentPreviewWorkspace.stripe.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
   "src/platform/workspace/components/SubscriptionTransitionPreviewWorkspaceReactivation.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
@@ -997,12 +992,12 @@
   },
   "src/platform/workspace/composables/useSubscriptionCheckout.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
-      "count": 3
+      "count": 2
     }
   },
   "src/platform/workspace/composables/useSubscriptionCheckout.ts": {
     "comfy/no-new-error-throw": {
-      "count": 6
+      "count": 3
     }
   },
   "src/platform/workspace/composables/useTeamPlan.test.ts": {
@@ -1018,11 +1013,6 @@
   "src/platform/workspace/composables/useWorkspaceUI.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 4
-    }
-  },
-  "src/platform/workspace/stores/billingOperationStore.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
     }
   },
   "src/platform/workspace/stores/teamWorkspaceStore.test.ts": {

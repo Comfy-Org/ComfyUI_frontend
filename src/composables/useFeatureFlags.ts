@@ -292,12 +292,6 @@ export function useFeatureFlags() {
         cachedLegacyBillingMigrationEnabled
       )
     },
-    get embeddedCheckoutEnabled() {
-      return resolveStrictBooleanFlag(
-        ServerFeatureFlag.EMBEDDED_CHECKOUT_ENABLED,
-        remoteConfig.value.embedded_checked_enabled
-      )
-    },
     get billingSdkTopupEnabled() {
       return resolveStrictBooleanFlag(
         ServerFeatureFlag.BILLING_SDK_TOPUP_ENABLED,
@@ -413,8 +407,6 @@ export function startFeatureFlagTelemetry() {
         flags.memberCreditLimitsEnabled,
       [ServerFeatureFlag.LEGACY_BILLING_MIGRATION_ENABLED]:
         flags.legacyBillingMigrationEnabled,
-      [ServerFeatureFlag.EMBEDDED_CHECKOUT_ENABLED]:
-        flags.embeddedCheckoutEnabled,
       [ServerFeatureFlag.BILLING_SDK_TOPUP_ENABLED]:
         flags.billingSdkTopupEnabled,
       [ServerFeatureFlag.BILLING_SDK_SUBSCRIPTION_ENABLED]:

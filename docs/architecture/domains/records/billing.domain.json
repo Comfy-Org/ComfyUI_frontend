@@ -224,10 +224,6 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/platform/workspace/billing/stripePublishableKey.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/platform/workspace/billing/subscribeInput.ts",
       "role": "infrastructure"
     },
@@ -293,10 +289,6 @@
     },
     {
       "path": "src/platform/workspace/components/PricingTableWorkspace.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/workspace/components/SubscriptionAddPaymentPreviewWorkspace.stripe.test.ts",
       "role": "presentation"
     },
     {
