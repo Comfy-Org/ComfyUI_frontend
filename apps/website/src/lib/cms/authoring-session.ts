@@ -143,7 +143,7 @@ export function isAuthoringRoute(path: string) {
       path
     ) ||
     /^\/admin\/catalog(?:\/final-review)?\/?$/.test(path) ||
-    /^\/admin\/catalog-api\/(?:staging|final-review|exit|discard-changes|publish)\/?$/.test(
+    /^\/admin\/catalog-api\/(?:staging|final-review|review-receipt|exit|discard-changes|publish)\/?$/.test(
       path
     )
   )

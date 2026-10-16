@@ -1029,7 +1029,10 @@ it does not by itself make an upstream read bounded.
 
 Checked Final review uses the additive authenticated
 `POST /api/v1/catalog/draft/final-review/receipt` through the CSRF-protected
-same-origin `review-receipt` facade. The generated versioned receipt contains
+same-origin `review-receipt` facade. That exact facade path uses the existing
+fresh authoring-session middleware; no wildcard route or legacy-session fallback
+is introduced. Publisher capability and CSRF remain checked by the facade and
+the backend. The generated versioned receipt contains
 state, selected/unchecked counts and digests, never documents or graph data.
 The browser verifies its selected UID/exact-version SHA256 against the frozen
 already loaded snapshot before opening confirmation. It fails closed on stale,

@@ -50,7 +50,8 @@ describe('separate catalog editor authority', () => {
     '/admin/content-api/delete',
     '/admin/catalog',
     '/admin/catalog/final-review',
-    '/admin/catalog-api/staging'
+    '/admin/catalog-api/staging',
+    '/admin/catalog-api/review-receipt'
   ])(
     'authorizes %s without trusting or clearing legacy session state',
     async (path) => {
