@@ -13,16 +13,20 @@ const item: CardWorkflowItem = {
 
 describe('CardWorkflow01', () => {
   it.for([
-    { newTab: undefined, target: '_blank' },
-    { newTab: true, target: '_blank' },
-    { newTab: false, target: null }
-  ])('sets target $target when newTab is $newTab', ({ newTab, target }) => {
-    render(CardWorkflow01, { props: { item: { ...item, newTab } } })
+    { newTab: undefined, target: '_blank', rel: 'noopener noreferrer' },
+    { newTab: true, target: '_blank', rel: 'noopener noreferrer' },
+    { newTab: false, target: null, rel: null }
+  ])(
+    'sets target $target and rel $rel when newTab is $newTab',
+    ({ newTab, target, rel }) => {
+      render(CardWorkflow01, { props: { item: { ...item, newTab } } })
 
-    const link = screen.getByRole('link', { name: 'Cinematic Studio' })
-    expect(link).toHaveAttribute('href', item.href)
-    expect(link.getAttribute('target')).toBe(target)
-  })
+      const link = screen.getByRole('link', { name: 'Cinematic Studio' })
+      expect(link).toHaveAttribute('href', item.href)
+      expect(link.getAttribute('target')).toBe(target)
+      expect(link.getAttribute('rel')).toBe(rel)
+    }
+  )
 
   it('renders no link without an href', () => {
     render(CardWorkflow01, { props: { item: { ...item, href: undefined } } })
