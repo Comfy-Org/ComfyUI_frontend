@@ -200,7 +200,12 @@ function legacyValue<T>(value: T): T | undefined {
 function cloneWidgetValueTwice(
   value: TWidgetValue
 ): [TWidgetValue, TWidgetValue] {
-  if (value == null || typeof value !== 'object') {
+  if (
+    value == null ||
+    typeof value === 'string' ||
+    typeof value === 'boolean' ||
+    (typeof value === 'number' && Number.isFinite(value))
+  ) {
     const primitive = value ?? null
     return [primitive, primitive]
   }
@@ -208,12 +213,38 @@ function cloneWidgetValueTwice(
   return [JSON.parse(json), JSON.parse(json)]
 }
 
+function cloneWorkflowValueTwice(
+  value: TWidgetValue,
+  widgetName: string
+): [TWidgetValue, TWidgetValue] {
+  if (
+    value == null ||
+    typeof value === 'string' ||
+    typeof value === 'boolean' ||
+    (typeof value === 'number' && Number.isFinite(value))
+  ) {
+    return cloneWidgetValueTwice(value)
+  }
+  try {
+    const json = legacyValue(JSON.stringify(value))
+    if (json === undefined) throw new TypeError()
+    return [JSON.parse(json), JSON.parse(json)]
+  } catch (cause) {
+    throw new TypeError(
+      `Widget '${widgetName}' returned a non-serializable workflow value.`,
+      { cause }
+    )
+  }
+}
+
 function serialiseWidgetValues(widgets: IBaseWidget[]) {
   const positional: TWidgetValue[] = []
   const named: Record<string, TWidgetValue> = {}
   for (const widget of widgets) {
     if (widget.serialize === false) continue
-    const [positionalValue, namedValue] = cloneWidgetValueTwice(widget.value)
+    const [positionalValue, namedValue] = widget.serializeWorkflowValue
+      ? cloneWorkflowValueTwice(widget.serializeWorkflowValue(), widget.name)
+      : cloneWidgetValueTwice(widget.value)
     positional.push(positionalValue)
     Object.defineProperty(named, widget.name, {
       value: namedValue,
@@ -776,6 +807,15 @@ export class LGraphNode
   declare comfyDynamic?: Record<string, object>
   declare comfyClass?: string
   declare isVirtualNode?: boolean
+  /**
+   * A virtual node whose outputs the prompt builder's RESOLUTION pass
+   * substitutes. Execution-time link walking must stop at this node and
+   * report it as the origin — the legacy virtual shapes below
+   * (`resolveVirtualOutput`, same-slot `getInputLink` pass-through) cannot
+   * express a computed source like Get/Set, and guessing with them silently
+   * drops the consumer's input.
+   */
+  declare resolutionOwned?: boolean
   applyToGraph?(extraLinks?: LLink[]): void
 
   isSubgraphNode(): this is SubgraphNode {
