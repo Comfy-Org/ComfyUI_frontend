@@ -50,6 +50,7 @@ export function useRegistrySearch(inputs: {
   const suggestions = ref<QuerySuggestion[]>([])
   const firstPage = ref<SearchedFirstPage | null>(null)
   const { enqueue, preempt, running: isLoading } = usePreemptableQueue()
+  const searchedQuery = () => toValue(inputs.query).trim()
 
   const searchableAttributes = (): SearchAttribute[] =>
     toValue(inputs.searchMode) === 'nodes'
@@ -61,14 +62,14 @@ export function useRegistrySearch(inputs: {
   ): Pick<SearchNodePacksParams, 'analyticsTags'> {
     const isTypedSearch =
       pageNumber === 0 &&
-      query.trim() !== '' &&
+      query !== '' &&
       (toValue(inputs.isTypedQuery) ?? false)
     return isTypedSearch ? { analyticsTags: [USER_SEARCH_ANALYTICS_TAG] } : {}
   }
 
   async function doLoadMore() {
     if (!morePages.value) return
-    const query = toValue(inputs.query)
+    const query = searchedQuery()
     try {
       const result = await searchPacks(query, {
         pageSize: DEFAULT_PAGE_SIZE,
@@ -109,7 +110,7 @@ export function useRegistrySearch(inputs: {
   }
 
   watch(
-    () => [toValue(inputs.query), toValue(inputs.searchMode)],
+    [searchedQuery, () => toValue(inputs.searchMode)],
     () => void reload(),
     { immediate: true }
   )

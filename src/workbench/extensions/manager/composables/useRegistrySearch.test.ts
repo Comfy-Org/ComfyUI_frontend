@@ -1,6 +1,6 @@
 import { until } from '@vueuse/core'
 import { describe, expect, it, vi } from 'vitest'
-import { ref, toValue } from 'vue'
+import { nextTick, ref, toValue } from 'vue'
 
 import { DEFAULT_PAGE_SIZE } from '@/constants/searchConstants'
 import { useRegistrySearchGateway } from '@/services/gateway/registrySearchGateway'
@@ -122,6 +122,28 @@ describe('useRegistrySearch', () => {
 
     expect(search.firstPage.value).toBeNull()
     expect(console.error).toHaveBeenCalledWith(new Error('search unavailable'))
+  })
+
+  it('searches the trimmed query and ignores edits that only change surrounding whitespace', async () => {
+    vi.mocked(useRegistrySearchGateway().searchPacks).mockResolvedValue({
+      nodePacks: packs(1),
+      querySuggestions: [],
+      rawResultsEmpty: false
+    })
+    const query = ref(' comfyui-manager')
+    const search = useRegistrySearch({ query, searchMode: 'packs' })
+    await until(search.isLoading).toBe(false)
+
+    query.value = 'comfyui-manager '
+    await nextTick()
+
+    expect(toValue(search.isLoading)).toBe(false)
+    expect(search.firstPage.value?.query).toBe('comfyui-manager')
+    expect(
+      vi
+        .mocked(useRegistrySearchGateway().searchPacks)
+        .mock.calls.map(([searched]) => searched)
+    ).toEqual(['comfyui-manager'])
   })
 
   it('keeps the first page when a later page fails', async () => {
