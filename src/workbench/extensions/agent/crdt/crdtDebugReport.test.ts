@@ -1,4 +1,5 @@
-import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
+import type { MockInstance } from 'vitest'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -15,18 +16,19 @@ import type {
 } from '../services/agent/agentMessageParts'
 import { createAssistantMessage } from '../services/agent/agentMessageParts'
 
-const getSystemStats = vi.mocked(api.getSystemStats)
-const getLogs = vi.mocked(api.getLogs)
-const getSettings = vi.mocked(api.getSettings)
+let getSystemStats: MockInstance<typeof api.getSystemStats>
+let getLogs: MockInstance<typeof api.getLogs>
+let getSettings: MockInstance<typeof api.getSettings>
 
 const { reportError } = vi.hoisted(() => ({
   reportError: vi.fn()
 }))
 
-vi.mock(import('@/scripts/api'))
-
 beforeEach(() => {
-  vi.mocked(api.apiURL).mockImplementation((path) => `http://backend${path}`)
+  getSystemStats = vi.spyOn(api, 'getSystemStats')
+  getLogs = vi.spyOn(api, 'getLogs')
+  getSettings = vi.spyOn(api, 'getSettings')
+  vi.spyOn(api, 'apiURL').mockImplementation((path) => `http://backend${path}`)
   useExtensionStore().registerExtension({ name: 'Comfy.TestExtension' })
 })
 
@@ -891,8 +893,9 @@ describe('collectCrdtDebugReport', () => {
   })
 
   it('renders the report when device entries are malformed', async () => {
-    getSystemStats.mockResolvedValue(
-      fromAny({
+    getSystemStats.mockRestore()
+    vi.spyOn(api, 'fetchApi').mockResolvedValue(
+      Response.json({
         system: {},
         devices: [null, { index: 1, name: 'GPU', type: 'cuda' }]
       })
