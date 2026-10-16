@@ -41,9 +41,16 @@ function previewAction(context: APIContext, body: FormData) {
 interface SiteCommand {
   path: string
   payload: Record<string, unknown>
+  /** A 409 means an earlier attempt already applied this write. */
+  settledOnConflict?: boolean
 }
 
-function submissionReviews(body: FormData, field: string, status: string) {
+function submissionReviews(
+  body: FormData,
+  field: string,
+  status: string,
+  settledOnConflict = false
+) {
   const entries = body.getAll(field).map(String)
   if (!entries.every((entry) => /^[a-zA-Z0-9_-]+:[a-zA-Z0-9_.-]+$/.test(entry)))
     return undefined
@@ -51,7 +58,8 @@ function submissionReviews(body: FormData, field: string, status: string) {
     const [shareID, versionID] = entry.split(':')
     return {
       path: `/admin/api/site/submissions/${shareID}/review`,
-      payload: { version_id: versionID, status }
+      payload: { version_id: versionID, status },
+      settledOnConflict
     }
   })
 }
@@ -59,13 +67,15 @@ function submissionReviews(body: FormData, field: string, status: string) {
 const UID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 function publishCommand(body: FormData) {
-  const approvals = submissionReviews(body, 'approve', 'approved')
+  const approvals = submissionReviews(body, 'approve', 'approved', true)
   const approvedItems = body.getAll('approve_item').map(String)
   if (!approvals || !approvedItems.every((uid) => UID.test(uid)))
     return new Response('Invalid submission', { status: 400 })
+  // The catalog publish goes first: if it is refused, no submission has been
+  // approved on the Hub yet, and a retry after it lands re-sends approvals
+  // that the API answers with 409.
   return {
     commands: [
-      ...approvals,
       {
         path: '/admin/api/site/publish',
         payload: {
@@ -74,7 +84,8 @@ function publishCommand(body: FormData) {
           // Only these catalog changes go live; deferred ones stay in the draft.
           approved_uids: approvedItems
         }
-      }
+      },
+      ...approvals
     ],
     destination: '/admin/history/'
   }
@@ -143,11 +154,12 @@ async function runCommands(
   commands: SiteCommand[],
   credential: string
 ): Promise<Response | undefined> {
-  for (const { path, payload } of commands) {
+  for (const { path, payload, settledOnConflict } of commands) {
     const response = await siteAPI(path, credential, {
       method: 'POST',
       body: JSON.stringify(payload)
     })
+    if (settledOnConflict && response.status === 409) continue
     if (!response.ok)
       return new Response(
         response.status === 409
