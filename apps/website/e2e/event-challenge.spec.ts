@@ -13,6 +13,7 @@ const locales = [
     howToEnter: 'How to enter',
     partners: 'Partners',
     timeline: 'Timeline',
+    submitNav: 'Submit',
     deadline: 'October 30 · 9am PT',
     submit: 'Submit your entry',
     buildNight: 'Comfy Build Night: San Francisco',
@@ -26,6 +27,7 @@ const locales = [
     howToEnter: '如何参赛',
     partners: '合作伙伴',
     timeline: '时间线',
+    submitNav: '提交',
     deadline: '10 月 30 日 · 太平洋时间上午 9 点',
     submit: '提交作品',
     buildNight: 'Comfy 构建之夜：旧金山',
@@ -88,6 +90,15 @@ for (const locale of locales) {
     await expect(page).toHaveURL(`${base}#challenge-content`)
     await expect(
       page.getByRole('heading', { name: locale.howToEnter, exact: true })
+    ).toBeInViewport()
+
+    await page
+      .getByRole('navigation', { name: locale.details })
+      .getByRole('link', { name: locale.submitNav, exact: true })
+      .click()
+    await expect(page).toHaveURL(`${base}#submit`)
+    await expect(
+      page.locator('#submit').getByRole('link', { name: locale.submit })
     ).toBeInViewport()
   })
 }
