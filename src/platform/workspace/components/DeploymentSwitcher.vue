@@ -28,7 +28,7 @@
           :aria-label="triggerLabel"
           :class="
             cn(
-              'group max-w-64 gap-2 rounded-lg border border-border-subtle bg-interface-panel-surface pr-2 pl-2.5 font-normal',
+              'group max-w-64 gap-2 rounded-lg border border-solid border-border-subtle bg-interface-panel-surface pr-2 pl-2.5 font-normal',
               'hover:border-border-default hover:bg-secondary-background data-[state=open]:border-border-default data-[state=open]:bg-secondary-background',
               variant === 'floating' ? 'h-8' : 'h-7'
             )
