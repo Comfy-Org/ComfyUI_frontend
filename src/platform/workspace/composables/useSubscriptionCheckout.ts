@@ -12,6 +12,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import type { CheckoutTierKey } from '@/composables/billing/types'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
+import { useBillingDialogsAccess } from '@/platform/cloud/subscription/composables/billingDialogsAccess'
 import { paymentReturnUrl } from '@/platform/cloud/subscription/utils/paymentReturnUrl'
 import { amountDueTodayChanged } from '@comfyorg/account-ui/billing/checkout'
 import { getTeamPlanSlug } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
@@ -816,13 +817,12 @@ export function useSubscriptionCheckout(
     planSlug: string,
     tierKey: CheckoutTierKey
   ): Promise<void> {
-    const { useBillingDialogs } =
-      await import('@/composables/billing/useBillingDialogs')
-    const result = await useBillingDialogs().showDowngradeToPersonalDialog({
-      planName: t(`subscription.tiers.${tierKey}.name`),
-      planSlug,
-      paymentIntentSource
-    })
+    const result =
+      await useBillingDialogsAccess().showDowngradeToPersonalDialog({
+        planName: t(`subscription.tiers.${tierKey}.name`),
+        planSlug,
+        paymentIntentSource
+      })
     if (!result) return
 
     previewData.value = result.preview

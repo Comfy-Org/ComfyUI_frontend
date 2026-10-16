@@ -5130,7 +5130,7 @@
     "rules": [
       {
         "from": "agent/domain",
-        "allow": ["agent/domain", "unclassified"]
+        "allow": ["agent/domain", "design-system/domain", "unclassified"]
       },
       {
         "from": "agent/application",
@@ -5138,6 +5138,9 @@
           "agent/domain",
           "agent/application",
           "agent/infrastructure",
+          "design-system/domain",
+          "design-system/application",
+          "design-system/infrastructure",
           "unclassified"
         ]
       },
@@ -5147,6 +5150,9 @@
           "agent/domain",
           "agent/application",
           "agent/infrastructure",
+          "design-system/domain",
+          "design-system/application",
+          "design-system/infrastructure",
           "unclassified"
         ]
       },
@@ -5156,6 +5162,9 @@
           "agent/domain",
           "agent/application",
           "agent/presentation",
+          "design-system/domain",
+          "design-system/application",
+          "design-system/presentation",
           "unclassified"
         ]
       },
@@ -5167,6 +5176,10 @@
           "agent/infrastructure",
           "agent/presentation",
           "agent/integration",
+          "design-system/domain",
+          "design-system/application",
+          "design-system/infrastructure",
+          "design-system/presentation",
           "unclassified"
         ]
       },

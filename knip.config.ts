@@ -64,6 +64,9 @@ const config: KnipConfig = {
     'tools/architecture': {
       project: ['src/**/*.ts']
     },
+    'tools/design-system-audits': {
+      project: ['src/**/*.ts']
+    },
     'tools/test-recorder': {
       project: ['src/**/*.ts']
     }
