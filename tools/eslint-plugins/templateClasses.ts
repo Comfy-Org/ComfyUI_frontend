@@ -300,17 +300,11 @@ function componentDefaultClasses(file: string) {
 }
 
 function staticAttributeValue(node: VElement, name: string) {
-  for (const attribute of node.startTag.attributes) {
-    if (!attribute.directive && attribute.key.name === name)
-      return { bound: false, value: attribute.value?.value }
-    if (
-      attribute.directive &&
-      attribute.key.argument?.type === 'VIdentifier' &&
-      attribute.key.argument.name === name
-    )
-      return { bound: true, value: undefined }
-  }
-  return { bound: false, value: undefined }
+  const attribute = node.startTag.attributes.find(
+    (candidate): candidate is VAttribute =>
+      !candidate.directive && candidate.key.name === name
+  )
+  return attribute?.value?.value
 }
 
 const buttonVariantNames: readonly string[] = FOR_STORIES.variants
@@ -329,11 +323,12 @@ function isButtonSize(
 }
 
 function buttonDefaultClasses(node: VElement) {
+  if (hasBoundAttribute(node, 'variant') || hasBoundAttribute(node, 'size'))
+    return null
   const variant = staticAttributeValue(node, 'variant')
   const size = staticAttributeValue(node, 'size')
-  if (variant.bound || size.bound) return null
-  if (!isButtonVariant(variant.value) || !isButtonSize(size.value)) return null
-  return buttonVariants({ variant: variant.value, size: size.value })
+  if (!isButtonVariant(variant) || !isButtonSize(size)) return null
+  return buttonVariants({ variant, size })
 }
 
 function importedUiComponents(context: Rule.RuleContext) {

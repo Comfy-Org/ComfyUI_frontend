@@ -78,6 +78,10 @@ ruleTester.run(
       vue(
         '<Button :variant="kind" class="rounded-lg">Go</Button>',
         buttonImport
+      ),
+      vue(
+        '<Button v-bind="buttonProps" class="rounded-lg">Go</Button>',
+        buttonImport
       )
     ],
     invalid: [
@@ -95,6 +99,19 @@ ruleTester.run(
           {
             messageId: 'redundant',
             data: { token: 'px-4', component: 'Button' }
+          }
+        ]
+      },
+      {
+        ...redundant(
+          '<Button @size="onSize" size="lg" class="h-10">Go</Button>',
+          '<Button @size="onSize" size="lg">Go</Button>',
+          buttonImport
+        ),
+        errors: [
+          {
+            messageId: 'redundant',
+            data: { token: 'h-10', component: 'Button' }
           }
         ]
       },
