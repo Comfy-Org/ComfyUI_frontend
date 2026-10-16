@@ -29,7 +29,6 @@ export function useAuthDialogs() {
         component: ApiNodesSignInContent,
         props: {
           apiNodeNames,
-          titleId: key,
           onLogin: () => showSignInDialog().then((result) => resolve(result)),
           onCancel: () => resolve(false)
         },
@@ -81,6 +80,7 @@ export function useAuthDialogs() {
       component: UpdatePasswordContent,
       headerComponent: ComfyOrgHeader,
       props: {
+        requestSignIn: showSignInDialog,
         onSuccess: () =>
           dialogStore.closeDialog({ key: 'global-update-password' })
       },

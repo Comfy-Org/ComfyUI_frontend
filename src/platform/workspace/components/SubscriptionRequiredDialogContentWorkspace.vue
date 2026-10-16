@@ -12,8 +12,10 @@
       <i class="pi pi-times text-xl" />
     </Button>
 
-    <div class="flex flex-col items-center gap-3">
-      <!-- Decorative workspace-initial icon; not user-facing text -->
+    <div
+      v-if="checkoutStep === 'pricing'"
+      class="flex flex-col items-center gap-3"
+    >
       <div
         :class="
           cn(
@@ -25,23 +27,21 @@
       >
         {{ isPersonal ? 'P' : 'T' }}
       </div>
-      <i18n-t
-        keypath="subscription.plansForWorkspace"
-        tag="h2"
-        class="m-0 font-inter text-2xl font-semibold text-base-foreground"
-      >
-        <template #workspace>
-          <span
-            :class="isPersonal ? 'text-muted-foreground' : 'text-emerald-400'"
-          >
-            {{
-              isPersonal
-                ? $t('subscription.personalWorkspace')
-                : $t('subscription.teamWorkspace')
-            }}
-          </span>
-        </template>
-      </i18n-t>
+      <DialogTitle class="m-0 font-inter text-2xl">
+        <i18n-t keypath="subscription.plansForWorkspace">
+          <template #workspace>
+            <span
+              :class="isPersonal ? 'text-muted-foreground' : 'text-emerald-400'"
+            >
+              {{
+                isPersonal
+                  ? $t('subscription.personalWorkspace')
+                  : $t('subscription.teamWorkspace')
+              }}
+            </span>
+          </template>
+        </i18n-t>
+      </DialogTitle>
     </div>
 
     <div v-if="reason === 'out_of_credits'" class="text-center">
@@ -128,6 +128,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { onMounted } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import type { SubscriptionCheckoutSelection } from '@/composables/billing/types'
 import { useSubscriptionCheckout } from '@/platform/workspace/composables/useSubscriptionCheckout'
@@ -195,13 +196,3 @@ onMounted(() => {
   }
 })
 </script>
-
-<style scoped>
-.legacy-dialog :deep(.bg-comfy-menu-secondary) {
-  background-color: transparent;
-}
-
-.legacy-dialog :deep(.p-button) {
-  color: white;
-}
-</style>

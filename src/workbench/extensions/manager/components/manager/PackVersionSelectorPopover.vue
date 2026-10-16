@@ -7,7 +7,7 @@
     </div>
     <div
       v-if="isBusy"
-      class="flex flex-col items-center py-4 text-center text-muted"
+      class="flex flex-col items-center py-4 text-center text-muted-foreground"
     >
       <Spinner class="mb-2 size-8" />
       {{ $t('manager.loadingVersions') }}
@@ -59,12 +59,12 @@
             />
           </div>
           <ListboxItemIndicator as-child>
-            <i class="icon-[lucide--check] text-highlight" />
+            <i class="icon-[lucide--check] text-primary-background" />
           </ListboxItemIndicator>
         </ListboxItem>
       </ListboxContent>
     </ListboxRoot>
-    <p role="status" class="px-3 text-sm text-muted">
+    <p role="status" class="px-3 text-sm text-muted-foreground">
       {{ latestUnavailableMessage }}
     </p>
     <ContentDivider class="my-2" />

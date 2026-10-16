@@ -1,0 +1,546 @@
+---
+import type { Locale } from '@/i18n/translations'
+import VideoPlayer from '@/components/common/VideoPlayer.vue'
+import { tAgent } from './agentTranslations'
+
+interface Props {
+  locale: Locale
+}
+
+const { locale } = Astro.props
+const imageRoot = 'https://media.comfy.org/website/comfy-agent/conditioner'
+const badgeClass =
+  'absolute left-2 top-2 z-10 flex max-w-[calc(100%-1rem)] items-center gap-1 rounded bg-secondary-deep-plum px-1.5 py-1 text-[11px]/tight font-bold uppercase text-primary-comfy-yellow'
+---
+
+<section
+  class="mobile-workflow mx-auto mt-10 flex max-w-md flex-col items-center px-6 pt-14 lg:hidden"
+  aria-label={tAgent('agentPage.workflow.mobile.label', locale)}
+>
+  <mobile-workflow-connections
+    class="relative flex w-full flex-col items-center"
+  >
+    <svg
+      class="pointer-events-none absolute inset-0 z-10 size-full overflow-visible text-primary-comfy-yellow"
+      fill="none"
+      aria-hidden="true"
+    >
+      <path
+        class="mobile-workflow-process"
+        data-from="purple"
+        data-to="generate-input"
+        stroke="currentColor"
+      />
+      <path
+        class="mobile-workflow-process"
+        data-from="motion"
+        data-to="generate-input"
+        stroke="currentColor"
+      />
+      <path
+        class="mobile-workflow-output"
+        data-from="generate-output"
+        data-to="output"
+        stroke="currentColor"
+      />
+    </svg>
+    <div class="relative grid w-full grid-cols-2 gap-4">
+      <div
+        data-mobile-node
+        class="mobile-workflow-input relative overflow-hidden rounded-xl"
+      >
+        <h3 class={badgeClass}>
+          <span
+            data-mobile-port="purple"
+            class="size-1.5 shrink-0 rounded-full bg-primary-comfy-yellow"
+            aria-hidden="true"
+          ></span>
+          {tAgent('agentPage.workflow.mobile.input', locale)}
+        </h3>
+        <img
+          src={`${imageRoot}/keyframe-purple.webp`}
+          alt={tAgent('agentPage.workflow.mobile.inputAlt', locale)}
+          width="256"
+          height="192"
+          loading="lazy"
+          class="aspect-4/3 w-full object-cover"
+        />
+      </div>
+      <div
+        data-mobile-node
+        class="mobile-workflow-reference relative overflow-hidden rounded-xl"
+      >
+        <h3 class={badgeClass}>
+          <span
+            data-mobile-port="motion"
+            class="size-1.5 shrink-0 rounded-full bg-primary-comfy-yellow"
+            aria-hidden="true"
+          ></span>
+          {tAgent('agentPage.workflow.mobile.motion', locale)}
+        </h3>
+        <VideoPlayer
+          client:visible
+          locale={locale}
+          src={`${imageRoot}/motion-reference.mp4`}
+          poster={`${imageRoot}/motion-reference-poster.webp`}
+          aria-label={tAgent('agentPage.workflow.mobile.motionAlt', locale)}
+          loop
+          hide-controls
+          class="rounded-none border-0"
+          style="aspect-ratio: 4 / 3"
+        />
+        <span
+          class="mobile-workflow-video-cue"
+          style="animation-delay: 0.96s"
+          aria-hidden="true"
+        ></span>
+      </div>
+      <div
+        class="mobile-workflow-cursor mobile-workflow-user"
+        role="img"
+        aria-label={tAgent('agentPage.workflow.userCursorLabel', locale)}
+      >
+        <img
+          class="mobile-workflow-pointer"
+          src="https://media.comfy.org/website/comfy-agent/user-pointer.svg"
+          alt=""
+          width="16"
+          height="18"
+        />
+        <span class="mobile-workflow-cursor-badge">
+          <span class="mobile-workflow-cursor-text"
+            >{tAgent('agentPage.workflow.userTab', locale)}</span
+          >
+        </span>
+      </div>
+    </div>
+    <div class="h-10" aria-hidden="true"></div>
+    <div class="relative flex w-full flex-col items-center pb-12">
+      <div
+        data-mobile-node
+        class="mobile-workflow-process w-4/5 rounded-xl border border-white/12 bg-secondary-charcoal p-2"
+      >
+        <h3
+          class="flex items-center gap-2 px-1 pb-2 text-xs font-bold text-primary-comfy-canvas uppercase"
+        >
+          <span
+            data-mobile-port="generate-input"
+            class="size-1.5 shrink-0 rounded-full bg-primary-comfy-yellow"
+            aria-hidden="true"
+          ></span>
+          {tAgent('agentPage.workflow.mobile.generate', locale)}
+          <span
+            data-mobile-port="generate-output"
+            class="ml-auto size-1.5 shrink-0 rounded-full bg-primary-comfy-yellow"
+            aria-hidden="true"
+          ></span>
+        </h3>
+        <p
+          class="rounded-lg bg-white/10 p-3 text-sm/relaxed text-primary-comfy-canvas"
+        >
+          {tAgent('agentPage.workflow.mobile.action', locale)}
+        </p>
+      </div>
+      <div class="h-8" aria-hidden="true"></div>
+      <div
+        data-mobile-node
+        class="mobile-workflow-output relative w-full overflow-hidden rounded-2xl"
+      >
+        <h3 class={badgeClass}>
+          <span
+            data-mobile-port="output"
+            class="size-1.5 shrink-0 rounded-full bg-primary-comfy-yellow"
+            aria-hidden="true"
+          ></span>
+          {tAgent('agentPage.workflow.mobile.output', locale)}
+        </h3>
+        <VideoPlayer
+          client:visible
+          locale={locale}
+          src={`${imageRoot}/result-purple.mp4`}
+          poster={`${imageRoot}/keyframe-purple.webp`}
+          aria-label={tAgent('agentPage.workflow.mobile.outputAlt', locale)}
+          loop
+          hide-controls
+          class="rounded-none border-0"
+        />
+        <span
+          class="mobile-workflow-video-cue"
+          style="animation-delay: 3.12s"
+          aria-hidden="true"
+        ></span>
+      </div>
+      <div
+        class="mobile-workflow-cursor mobile-workflow-agent-cursor"
+        role="img"
+        aria-label="Comfy Agent"
+      >
+        <img
+          class="mobile-workflow-pointer"
+          src="/images/comfy-agent/agent-pointer.svg"
+          alt=""
+          width="16"
+          height="18"
+        />
+        <span class="mobile-workflow-cursor-badge">
+          <img
+            class="mobile-workflow-cursor-logo"
+            src="/images/comfy-agent/agent-logo.svg"
+            alt=""
+            width="12"
+            height="14"
+          />
+          <span class="mobile-workflow-cursor-text"
+            >{tAgent('agentPage.workflow.agentTab', locale)}</span
+          >
+        </span>
+      </div>
+    </div>
+  </mobile-workflow-connections>
+</section>
+
+<style>
+  .mobile-workflow-cursor {
+    position: absolute;
+    z-index: 20;
+    pointer-events: none;
+    transform-origin: top left;
+  }
+  .mobile-workflow-pointer {
+    width: 16px;
+    height: 18px;
+    transform: rotate(-34.18deg);
+  }
+  .mobile-workflow-cursor-badge {
+    position: absolute;
+    top: 20px;
+    left: 9px;
+    display: flex;
+    align-items: center;
+    width: max-content;
+    gap: 6px;
+    height: 24px;
+    padding-inline: 10px;
+    font-family: var(--font-formula-narrow);
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1;
+    text-transform: uppercase;
+    white-space: nowrap;
+    isolation: isolate;
+  }
+  .mobile-workflow-cursor-logo {
+    width: 12px;
+    height: 14px;
+    flex-shrink: 0;
+  }
+  .mobile-workflow-cursor-text {
+    display: block;
+    transform: translateY(1px);
+  }
+  .mobile-workflow-cursor-badge::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: 5px;
+    transform: skewX(-15deg);
+    background: var(--cursor-fill);
+  }
+  .mobile-workflow-user {
+    --cursor-fill: var(--color-primary-comfy-plum);
+    color: var(--color-primary-warm-white);
+    left: 66%;
+    top: -52px;
+    animation: workflow-mobile-user 12s ease-in-out infinite;
+  }
+  .mobile-workflow-agent-cursor {
+    --cursor-fill: var(--color-primary-comfy-yellow);
+    color: var(--color-primary-comfy-ink);
+    left: calc(100% - 88px);
+    top: calc(100% - 42px);
+    animation: workflow-mobile-agent 12s ease-in-out infinite;
+  }
+  @keyframes workflow-mobile-user {
+    0%,
+    3% {
+      left: 16%;
+      top: 45%;
+      opacity: 1;
+      transform: scale(1);
+    }
+    4% {
+      left: 16%;
+      top: 45%;
+      transform: scale(0.85);
+    }
+    6% {
+      left: 16%;
+      top: 45%;
+      transform: scale(1);
+    }
+    11% {
+      left: 66%;
+      top: 45%;
+      transform: scale(1);
+    }
+    12% {
+      left: 66%;
+      top: 45%;
+      transform: scale(0.85);
+    }
+    14% {
+      left: 66%;
+      top: 45%;
+      transform: scale(1);
+    }
+    18%,
+    94% {
+      left: 66%;
+      top: -52px;
+      opacity: 1;
+    }
+    100% {
+      left: 66%;
+      top: -52px;
+      opacity: 0;
+    }
+  }
+  @keyframes workflow-mobile-agent {
+    0%,
+    14% {
+      left: 12%;
+      top: 24px;
+      opacity: 0;
+      transform: scale(1);
+    }
+    17% {
+      left: 22%;
+      top: 24px;
+      opacity: 1;
+      transform: scale(1);
+    }
+    18% {
+      left: 22%;
+      top: 24px;
+      opacity: 1;
+      transform: scale(0.85);
+    }
+    20%,
+    23% {
+      left: 22%;
+      top: 24px;
+      opacity: 1;
+      transform: scale(1);
+    }
+    29% {
+      left: 54%;
+      top: calc(100% - 120px);
+      transform: scale(1);
+    }
+    30% {
+      left: 54%;
+      top: calc(100% - 120px);
+      transform: scale(0.85);
+    }
+    32% {
+      left: 54%;
+      top: calc(100% - 120px);
+      transform: scale(1);
+    }
+    38%,
+    94% {
+      left: calc(100% - 88px);
+      top: calc(100% - 42px);
+      opacity: 1;
+    }
+    100% {
+      left: calc(100% - 88px);
+      top: calc(100% - 42px);
+      opacity: 0;
+    }
+  }
+  .mobile-workflow-input {
+    animation: workflow-mobile-input 12s ease-in-out infinite;
+  }
+  .mobile-workflow-reference {
+    animation: workflow-mobile-reference 12s ease-in-out infinite;
+  }
+  .mobile-workflow-process {
+    animation: workflow-mobile-process 12s ease-in-out infinite;
+  }
+  .mobile-workflow-output {
+    animation: workflow-mobile-output 12s ease-in-out infinite;
+  }
+  @keyframes workflow-mobile-input {
+    0%,
+    100% {
+      opacity: 0;
+    }
+    6%,
+    94% {
+      opacity: 1;
+    }
+  }
+  @keyframes workflow-mobile-reference {
+    0%,
+    8%,
+    100% {
+      opacity: 0;
+    }
+    14%,
+    94% {
+      opacity: 1;
+    }
+  }
+  @keyframes workflow-mobile-process {
+    0%,
+    16%,
+    100% {
+      opacity: 0;
+    }
+    22%,
+    94% {
+      opacity: 1;
+    }
+  }
+  @keyframes workflow-mobile-output {
+    0%,
+    26%,
+    100% {
+      opacity: 0;
+    }
+    34%,
+    94% {
+      opacity: 1;
+    }
+  }
+  .mobile-workflow-video-cue {
+    position: absolute;
+    visibility: hidden;
+    animation: workflow-mobile-video-cue 12s linear infinite;
+  }
+  @keyframes workflow-mobile-video-cue {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  mobile-workflow-connections[data-paused] * {
+    animation-play-state: paused;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .mobile-workflow-cursor,
+    .mobile-workflow-input,
+    .mobile-workflow-reference,
+    .mobile-workflow-process,
+    .mobile-workflow-output,
+    .mobile-workflow-video-cue {
+      animation: none;
+    }
+  }
+</style>
+
+<script>
+  class MobileWorkflowConnections extends HTMLElement {
+    private observer?: ResizeObserver
+    private stopMotion?: () => void
+
+    connectedCallback() {
+      const draw = () => {
+        const bounds = this.getBoundingClientRect()
+        if (!bounds.width) return
+        for (const path of this.querySelectorAll<SVGPathElement>(
+          'path[data-from]'
+        )) {
+          const source = this.querySelector<HTMLElement>(
+            `[data-mobile-port="${path.dataset.from}"]`
+          )
+          const target = this.querySelector<HTMLElement>(
+            `[data-mobile-port="${path.dataset.to}"]`
+          )
+          const sourceCard = source?.closest('[data-mobile-node]')
+          const targetCard = target?.closest('[data-mobile-node]')
+          if (!source || !target || !sourceCard || !targetCard) continue
+          const from = source.getBoundingClientRect()
+          const to = target.getBoundingClientRect()
+          const sourceBounds = sourceCard.getBoundingClientRect()
+          const targetBounds = targetCard.getBoundingClientRect()
+          const sx = from.left + from.width / 2 - bounds.left
+          const sy = from.top + from.height / 2 - bounds.top
+          const tx = to.left + to.width / 2 - bounds.left
+          const ty = to.top + to.height / 2 - bounds.top
+          const isOutput = path.dataset.from === 'generate-output'
+          const exitX =
+            (isOutput ? sourceBounds.right + 8 : sourceBounds.left - 8) -
+            bounds.left
+          const entryX = targetBounds.left - bounds.left - 8
+          const corridorY =
+            (isOutput ? targetBounds.top - 16 : sourceBounds.bottom + 20) -
+            bounds.top
+          path.setAttribute(
+            'd',
+            `M${sx} ${sy} H${exitX} V${corridorY} H${entryX} V${ty} H${tx}`
+          )
+          path.setAttribute('stroke-linejoin', 'round')
+        }
+      }
+      this.observer = new ResizeObserver(draw)
+      this.observer.observe(this)
+      this.querySelectorAll('[data-mobile-node]').forEach((node) =>
+        this.observer?.observe(node)
+      )
+      draw()
+
+      const controller = new AbortController()
+      const startedVideos = new WeakSet<HTMLVideoElement>()
+      const play = (video: HTMLVideoElement) => {
+        video.muted = true
+        void video.play().catch(() => {})
+      }
+      const revealVideo = (event: AnimationEvent) => {
+        const cue = event.target
+        if (!(cue instanceof HTMLElement)) return
+        if (!cue.classList.contains('mobile-workflow-video-cue')) return
+        const video = cue.parentElement?.querySelector('video')
+        if (!video) return
+        video.currentTime = 0
+        startedVideos.add(video)
+        play(video)
+      }
+      this.addEventListener('animationstart', revealVideo, {
+        signal: controller.signal
+      })
+      this.addEventListener('animationiteration', revealVideo, {
+        signal: controller.signal
+      })
+      this.toggleAttribute('data-paused', true)
+      const viewObserver = new IntersectionObserver(([entry]) => {
+        this.toggleAttribute('data-paused', !entry.isIntersecting)
+        for (const video of this.querySelectorAll('video')) {
+          if (!entry.isIntersecting) video.pause()
+          else if (startedVideos.has(video)) play(video)
+        }
+      })
+      viewObserver.observe(this)
+      this.stopMotion = () => {
+        controller.abort()
+        viewObserver.disconnect()
+      }
+    }
+
+    disconnectedCallback() {
+      this.observer?.disconnect()
+      this.stopMotion?.()
+    }
+  }
+
+  if (!customElements.get('mobile-workflow-connections')) {
+    customElements.define(
+      'mobile-workflow-connections',
+      MobileWorkflowConnections
+    )
+  }
+</script>

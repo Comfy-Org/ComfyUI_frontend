@@ -20,17 +20,15 @@
         <!-- Decorative initial for "Personal" workspace icon; not user-facing text -->
         P
       </div>
-      <i18n-t
-        keypath="subscription.plansForWorkspace"
-        tag="h2"
-        class="m-0 font-inter text-2xl font-semibold text-base-foreground"
-      >
-        <template #workspace>
-          <span class="text-muted-foreground">
-            {{ $t('subscription.personalWorkspace') }}
-          </span>
-        </template>
-      </i18n-t>
+      <DialogTitle class="m-0 font-inter text-2xl">
+        <i18n-t keypath="subscription.plansForWorkspace">
+          <template #workspace>
+            <span class="text-muted-foreground">
+              {{ $t('subscription.personalWorkspace') }}
+            </span>
+          </template>
+        </i18n-t>
+      </DialogTitle>
     </div>
 
     <PricingTable
@@ -67,7 +65,7 @@
   </div>
   <div
     v-else
-    class="legacy-dialog relative grid h-full max-h-[90vh] w-[calc(100vw-1rem)] grid-cols-5 rounded-2xl border border-border-default bg-secondary-background shadow-[0_25px_80px_rgba(5,6,12,0.45)] sm:max-w-7xl"
+    class="relative grid h-full max-h-[90vh] w-[calc(100vw-1rem)] grid-cols-5 rounded-2xl border border-border-default bg-secondary-background shadow-[0_25px_80px_rgba(5,6,12,0.45)] sm:max-w-7xl"
   >
     <!-- Custom close button -->
     <Button
@@ -102,13 +100,13 @@
       <div>
         <div class="flex flex-col gap-6">
           <div class="inline-flex items-center gap-2">
-            <div class="text-sm text-text-primary">
+            <DialogTitle class="m-0 text-sm font-normal text-text-primary">
               {{
                 reason === 'out_of_credits'
                   ? $t('credits.topUp.insufficientTitle')
                   : $t('subscription.required.title')
               }}
-            </div>
+            </DialogTitle>
             <CloudBadge
               reverse-order
               no-padding
@@ -130,7 +128,7 @@
           </div>
         </div>
 
-        <SubscriptionBenefits class="mt-6 text-muted" />
+        <SubscriptionBenefits class="mt-6 text-muted-foreground" />
       </div>
 
       <div class="flex flex-col pt-8">
@@ -156,6 +154,7 @@ import { computed, watch } from 'vue'
 
 import CloudBadge from '@/components/topbar/CloudBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
+import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import { MONTHLY_SUBSCRIPTION_PRICE } from '@/config/subscriptionPricesConfig'
 import PricingTable from '@/platform/cloud/subscription/components/PricingTable.vue'
 import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
@@ -241,13 +240,3 @@ const handleViewEnterprise = () => {
   window.open('https://comfy.org/cloud/enterprise/', '_blank')
 }
 </script>
-
-<style scoped>
-.legacy-dialog :deep(.bg-comfy-menu-secondary) {
-  background-color: transparent;
-}
-
-.legacy-dialog :deep(.p-button) {
-  color: white;
-}
-</style>
