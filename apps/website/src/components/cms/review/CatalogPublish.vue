@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
-import type { FinalReview } from '@/lib/cms/staging-review'
+import type { PublicationReview } from '@/lib/cms/staging-review'
 import { publicationPayload, publicationState } from '@/lib/cms/staging-review'
 import { reviewRequest } from '@/lib/cms/staging-client'
 import { reviewFieldErrors } from '@/lib/cms/review-errors'
@@ -13,7 +13,7 @@ const {
   selectedUids,
   locale = 'en'
 } = defineProps<{
-  review: FinalReview
+  review: PublicationReview
   csrf: string
   selectedUids?: string[]
   locale?: Locale

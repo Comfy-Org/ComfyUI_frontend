@@ -124,6 +124,10 @@ const finalReview = z.object({
   publish_enabled: z.boolean().optional().default(false)
 })
 export type FinalReview = z.infer<typeof finalReview>
+export type PublicationReview = Pick<
+  FinalReview,
+  'state' | 'selection_digest' | 'publish_enabled'
+>
 export const publishBody = z
   .object({
     review: z
@@ -159,7 +163,7 @@ export function checkedReviewPayload(snapshot: StagingReview, uids: string[]) {
   }
 }
 export function publicationPayload(
-  snapshot: FinalReview,
+  snapshot: PublicationReview,
   selectedUIDs?: string[]
 ) {
   return {

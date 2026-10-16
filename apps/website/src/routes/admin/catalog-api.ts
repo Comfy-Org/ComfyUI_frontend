@@ -19,6 +19,7 @@ import { z } from 'astro/zod'
 import { catalogReview, readReviewResponse } from '@/lib/cms/staging-server'
 import { hasCatalogCapability } from '@/lib/cms/catalog-capabilities'
 import { reviewErrors } from '@/lib/cms/review-errors'
+import { reviewReceipt } from '@/lib/cms/review-receipt'
 
 type Operation =
   | 'staging'
@@ -26,6 +27,7 @@ type Operation =
   | 'discard-changes'
   | 'publish'
   | 'final-review'
+  | 'review-receipt'
 
 // Each operation needs one backend capability, read as received and
 // mirroring the backend's own check on the forwarded request. `exit` only
@@ -38,6 +40,7 @@ function requiredCapability(
     case 'staging':
     case 'publish':
     case 'final-review':
+    case 'review-receipt':
       return session.can_apply
     case 'discard-changes':
       return session.can_edit
@@ -74,7 +77,8 @@ export const POST: APIRoute = async (context) => {
     operation !== 'exit' &&
     operation !== 'discard-changes' &&
     operation !== 'publish' &&
-    operation !== 'final-review'
+    operation !== 'final-review' &&
+    operation !== 'review-receipt'
   )
     return editorFailure(404)
   if (!requiredCapability(session, operation)) return editorFailure(404)
@@ -87,6 +91,7 @@ export const POST: APIRoute = async (context) => {
   const key = context.request.headers.get('Idempotency-Key')
   if (
     operation !== 'final-review' &&
+    operation !== 'review-receipt' &&
     (!key || key.length > 200 || /[\r\n]/.test(key))
   )
     return editorFailure(400)
@@ -103,7 +108,7 @@ export const POST: APIRoute = async (context) => {
     return editorFailure(400)
   }
   const parsed = (
-    operation === 'final-review'
+    operation === 'final-review' || operation === 'review-receipt'
       ? checkedReviewBody
       : operation === 'publish'
         ? z.union([checkedPublishBody, publishBody])
@@ -128,6 +133,7 @@ export const POST: APIRoute = async (context) => {
   if (
     upstream.status === 422 &&
     (operation === 'final-review' ||
+      operation === 'review-receipt' ||
       operation === 'publish' ||
       operation === 'discard-changes')
   ) {
@@ -146,6 +152,20 @@ export const POST: APIRoute = async (context) => {
       /* Malformed authority responses fail closed. */
     }
     return editorFailure(422)
+  }
+  if (operation === 'review-receipt') {
+    if (upstream.status !== 200)
+      return editorFailure(upstream.ok ? 503 : upstream.status)
+    const bytes = await boundedBody(upstream, 16 << 10)
+    if (!bytes) return editorFailure(503)
+    try {
+      const receipt = reviewReceipt(JSON.parse(new TextDecoder().decode(bytes)))
+      return receipt
+        ? Response.json(receipt, { headers: editorHeaders })
+        : editorFailure(503)
+    } catch {
+      return editorFailure(503)
+    }
   }
   if (operation === 'final-review') {
     const result = await readReviewResponse(upstream, true)

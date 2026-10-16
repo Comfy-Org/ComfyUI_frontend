@@ -6,6 +6,7 @@ import ChangeTag from '@/components/cms/ChangeTag.vue'
 import ReadinessFlag from '@/components/cms/ReadinessFlag.vue'
 
 import AdminButton from '@/components/cms/ui/AdminButton.vue'
+import AdminPagination from '@/components/cms/ui/AdminPagination.vue'
 import AdminDialogContent from '@/components/cms/ui/AdminDialogContent.vue'
 import Dialog from '@/components/ui/dialog/Dialog.vue'
 import type { Locale } from '@/i18n/translations'
@@ -48,6 +49,21 @@ const { t } = translationsFor(locale)
 const form = ref<HTMLFormElement>()
 const publishing = ref(false)
 const blocked = computed(() => busy || publishing.value)
+const requestedPage = ref(1)
+const pageSize = 50
+const page = computed({
+  get: () =>
+    Math.min(
+      requestedPage.value,
+      Math.max(1, Math.ceil(items.length / pageSize))
+    ),
+  set: (value: number) => {
+    requestedPage.value = value
+  }
+})
+const visibleItems = computed(() =>
+  items.slice((page.value - 1) * pageSize, page.value * pageSize)
+)
 async function restoreFocus(event: Event) {
   if (!returnFocus) return
   event.preventDefault()
@@ -89,7 +105,7 @@ const flagged = computed(
         class="grid max-h-64 overflow-y-auto rounded-lg border border-admin-line"
       >
         <li
-          v-for="item in items"
+          v-for="item in visibleItems"
           :key="item.id"
           class="grid grid-cols-[6rem_minmax(0,1fr)] items-center gap-3 border-b border-admin-hover px-3 py-2 text-sm last:border-b-0"
         >
@@ -105,6 +121,13 @@ const flagged = computed(
           </span>
         </li>
       </ul>
+      <AdminPagination
+        v-if="items.length > pageSize"
+        v-model="page"
+        :total="items.length"
+        :page-size="pageSize"
+        :locale
+      />
       <DialogDescription class="grid gap-2 text-sm text-admin-muted">
         <span>{{
           t('cmsAdmin.finalReview.body', { count: items.length }, items.length)

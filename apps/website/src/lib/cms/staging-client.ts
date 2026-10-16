@@ -1,10 +1,12 @@
 import type { ReviewFilter } from './staging-review'
 import { filterQuery } from './staging-review'
+import { receiptResponseJSON } from './review-receipt'
 
 export async function reviewRequest(
   operation:
     | 'staging'
     | 'final-review'
+    | 'review-receipt'
     | 'exit'
     | 'discard-changes'
     | 'publish',
@@ -30,14 +32,20 @@ export async function reviewRequest(
         headers,
         credentials: 'same-origin',
         cache: 'no-store',
-        redirect: 'error'
+        redirect: 'error',
+        ...(operation === 'review-receipt'
+          ? { signal: AbortSignal.timeout(20000) }
+          : {})
       }
     )
     if (response.status === 204)
       return { ok: true, status: 204, data: undefined }
     let data: unknown
     try {
-      data = await response.json()
+      data =
+        operation === 'review-receipt'
+          ? await receiptResponseJSON(response)
+          : await response.json()
     } catch {
       data = undefined
     }

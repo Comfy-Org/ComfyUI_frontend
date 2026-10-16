@@ -2789,6 +2789,16 @@ export const zCccCatalogState = z.object({
     .nullable()
 })
 
+export const zCccCheckedReviewReceipt = z.object({
+  publish_enabled: z.boolean(),
+  receipt_version: z.literal(1),
+  selected_count: z.int().gte(1).lte(5000),
+  selected_versions_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  selection_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  state: zCccCatalogState,
+  unchecked_count: z.int().gte(0).lte(5000)
+})
+
 export const zCccAuthoringContext = z.object({
   actor_uid: z.string().min(1),
   can_apply: z.boolean(),
@@ -5436,6 +5446,13 @@ export const zReviewCccCheckedPublicationBody = zCccjson
  * Exact checked changes and unchecked private work with state and selection digest
  */
 export const zReviewCccCheckedPublicationResponse = zCccjson
+
+export const zReviewCccCheckedReceiptBody = zCccjson
+
+/**
+ * Exact checked-version receipt after complete candidate validation
+ */
+export const zReviewCccCheckedReceiptResponse = zCccCheckedReviewReceipt
 
 export const zCreateCccItemBody = zCccjson
 

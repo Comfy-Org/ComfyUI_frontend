@@ -5,20 +5,20 @@ import CatalogAdminShell from '@/components/cms/layout/CatalogAdminShell.vue'
 import AdminButton from '@/components/cms/ui/AdminButton.vue'
 import AdminDialogContent from '@/components/cms/ui/AdminDialogContent.vue'
 import DraftQueue from '@/components/cms/DraftQueue.vue'
-import CatalogFinalReviewDialog from './CatalogFinalReviewDialog.vue'
+import CatalogCheckedReceiptDialog from './CatalogCheckedReceiptDialog.vue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
-import type { FinalReview, StagingReview } from '@/lib/cms/staging-review'
+import type { StagingReview } from '@/lib/cms/staging-review'
 import {
   checkedReviewPayload,
   discardPayload,
-  finalSnapshot,
   reviewFilter,
   reviewTypes,
   stagingSnapshot,
   unfiltered
 } from '@/lib/cms/staging-review'
-import { matchesCheckedReview } from '@/lib/cms/checked-review'
+import { matchesReviewReceipt, reviewReceipt } from '@/lib/cms/review-receipt'
+import type { ReviewReceipt } from '@/lib/cms/review-receipt'
 import { reviewRequest } from '@/lib/cms/staging-client'
 import { canonicalQueue } from '@/lib/cms/canonical-queue'
 import { reviewFieldErrors } from '@/lib/cms/review-errors'
@@ -50,7 +50,7 @@ type Flow =
   | {
       kind: 'final'
       snapshot: StagingReview
-      final: FinalReview
+      receipt: ReviewReceipt
       uids: string[]
       trigger?: HTMLElement
     }
@@ -65,6 +65,12 @@ const form = ref({
   type: initial.filter.types?.[0] ?? ''
 })
 const queue = computed(() => canonicalQueue(flow.value.snapshot.items))
+const finalChanges = computed(() => {
+  const current = flow.value
+  if (current.kind !== 'final') return []
+  const checked = new Set(current.uids)
+  return current.snapshot.items.filter((item) => checked.has(item.content.uid))
+})
 const blocked = computed(() => flow.value.kind !== 'ready')
 const busy = computed(
   () => flow.value.kind === 'loading' || flow.value.kind === 'saving'
@@ -137,19 +143,19 @@ async function review(event: MouseEvent) {
   const trigger =
     event.currentTarget instanceof HTMLElement ? event.currentTarget : undefined
   flow.value = { kind: 'loading', snapshot }
-  const result = await reviewRequest('final-review', {
+  const result = await reviewRequest('review-receipt', {
     csrf,
     body: JSON.stringify(checkedReviewPayload(snapshot, uids))
   })
-  const final = result.ok ? finalSnapshot(result.data) : undefined
+  const receipt = result.ok ? reviewReceipt(result.data) : undefined
   flow.value =
-    final && matchesCheckedReview(snapshot, final, uids)
-      ? { kind: 'final', snapshot, final, uids, trigger }
+    receipt && (await matchesReviewReceipt(snapshot, receipt, uids))
+      ? { kind: 'final', snapshot, receipt, uids, trigger }
       : {
           kind: 'failed',
           snapshot,
           reason:
-            result.status === 409 || (result.ok && Boolean(final))
+            result.status === 409 || (result.ok && Boolean(receipt))
               ? 'stale'
               : result.status === 422
                 ? 'publicationDependency'
@@ -380,9 +386,10 @@ async function exit() {
         </div>
       </AdminDialogContent>
     </DialogRoot>
-    <CatalogFinalReviewDialog
+    <CatalogCheckedReceiptDialog
       v-if="flow.kind === 'final'"
-      :review="flow.final"
+      :receipt="flow.receipt"
+      :changes="finalChanges"
       :selected-uids="flow.uids"
       :return-focus="flow.trigger"
       :csrf

@@ -4,7 +4,12 @@ import { describe, expect, it, vi } from 'vitest'
 import { AUTHORING_CSRF_COOKIE } from '@/lib/cms/authoring-session'
 import { CONTEXT_COOKIE } from '@/lib/cms/admin'
 import { fixtureReview } from '@/lib/cms/staging-fixture'
-import { stagePayload, discardPayload } from '@/lib/cms/staging-review'
+import { fixtureReceipt } from '@/lib/cms/review-receipt-fixture'
+import {
+  stagePayload,
+  discardPayload,
+  checkedReviewPayload
+} from '@/lib/cms/staging-review'
 import { GET, POST } from './catalog-api'
 
 function context(
@@ -60,6 +65,73 @@ function backend(status = 200, body: unknown = fixtureReview()) {
   return fetcher
 }
 describe('catalog staging same-origin facade', () => {
+  it('forwards a bounded generated receipt without fetching full records or requiring a write retry key', async () => {
+    const snapshot = fixtureReview()
+    const ids = snapshot.items.map((item) => item.content.uid)
+    const receipt = await fixtureReceipt(snapshot, ids)
+    const fetcher = backend(200, receipt)
+    const body = checkedReviewPayload(snapshot, ids)
+    const ctx = context('review-receipt', { body })
+    ctx.request.headers.delete('Idempotency-Key')
+    const response = await POST(ctx)
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual(receipt)
+    expect(response.headers.get('Cache-Control')).toBe('private, no-store')
+    expect(fetcher).toHaveBeenCalledOnce()
+    const [url, request] = fetcher.mock.calls[0] ?? []
+    expect(String(url)).toBe(
+      'http://catalog.example/api/v1/catalog/draft/final-review/receipt'
+    )
+    expect(JSON.parse(String(request?.body))).toEqual(body)
+  })
+  it.for([
+    { label: 'anonymous', options: { anonymous: true }, expected: 404 },
+    { label: 'no apply permission', options: { apply: false }, expected: 404 },
+    {
+      label: 'cross origin',
+      options: { origin: 'https://evil.example' },
+      expected: 403
+    },
+    { label: 'unknown query', options: { query: '?all=true' }, expected: 400 }
+  ])(
+    'refuses receipt $label before forwarding',
+    async ({ options, expected }) => {
+      const snapshot = fixtureReview()
+      const fetcher = backend()
+      const body = checkedReviewPayload(
+        snapshot,
+        snapshot.items.map((item) => item.content.uid)
+      )
+      expect(
+        (await POST(context('review-receipt', { ...options, body }))).status
+      ).toBe(expected)
+      expect(fetcher).not.toHaveBeenCalled()
+    }
+  )
+  it.for(['full records', 'oversized', 'truncated', 'future receipt'] as const)(
+    'refuses %s instead of falling back to full review',
+    async (variant) => {
+      const snapshot = fixtureReview()
+      const receipt = await fixtureReceipt(
+        snapshot,
+        snapshot.items.map((item) => item.content.uid)
+      )
+      const responses = {
+        'full records': Response.json({ ...receipt, changes: snapshot.items }),
+        oversized: new Response('x'.repeat((16 << 10) + 1)),
+        truncated: new Response('{"receipt_version":'),
+        'future receipt': Response.json({ ...receipt, receipt_version: 2 })
+      }
+      const fetcher = backend()
+      fetcher.mockResolvedValueOnce(responses[variant])
+      const body = checkedReviewPayload(
+        snapshot,
+        snapshot.items.map((item) => item.content.uid)
+      )
+      expect((await POST(context('review-receipt', { body }))).status).toBe(503)
+      expect(fetcher).toHaveBeenCalledOnce()
+    }
+  )
   it.for([
     {
       operation: 'final-review',
@@ -104,7 +176,7 @@ describe('catalog staging same-origin facade', () => {
     }
   )
 
-  it.for(['final-review', 'publish', 'discard-changes'])(
+  it.for(['final-review', 'review-receipt', 'publish', 'discard-changes'])(
     'does not forward malformed or oversized authority errors for %s',
     async (operation) => {
       const snapshot = fixtureReview()

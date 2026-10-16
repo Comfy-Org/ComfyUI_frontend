@@ -2,6 +2,7 @@ import { render, screen, waitFor, within } from '@testing-library/vue'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import userEvent from '@testing-library/user-event'
 import { fixtureReview } from '@/lib/cms/staging-fixture'
+import { fixtureReceipt } from '@/lib/cms/review-receipt-fixture'
 import { resolveAuthorProfile } from '@/lib/cms/author-profiles'
 import CatalogCheckedReview from './CatalogCheckedReview.vue'
 
@@ -61,7 +62,7 @@ describe('checkbox-only publication console', () => {
       screen.getByText('Pinned media is not in the publication candidate')
     ).toBeVisible()
     expect(fetcher.mock.calls.map(([url]) => url)).toEqual([
-      '/admin/catalog-api/final-review'
+      '/admin/catalog-api/review-receipt'
     ])
   })
 
@@ -279,13 +280,9 @@ describe('checkbox-only publication console', () => {
     unchecked.decision = 'APPROVED'
     initial.items.push(unchecked)
     initial.unresolved_count = 2
-    const final = {
-      state: initial.state,
-      changes: [initial.items[0]],
-      deferred: [unchecked],
-      selection_digest: 'b'.repeat(64),
-      publish_enabled: true
-    }
+    const final = await fixtureReceipt(initial, [
+      firstItem(initial).content.uid
+    ])
     const state = {
       ...initial.state,
       live_rev: 7,
@@ -317,7 +314,7 @@ describe('checkbox-only publication console', () => {
     await user.click(within(dialog).getByRole('button', { name: 'Publish' }))
     await waitFor(() => expect(assign).toHaveBeenCalledWith('/admin/catalog'))
     expect(fetcher.mock.calls.map(([url]) => url)).toEqual([
-      '/admin/catalog-api/final-review',
+      '/admin/catalog-api/review-receipt',
       '/admin/catalog-api/publish'
     ])
     const [first, second] = fetcher.mock.calls
@@ -346,13 +343,10 @@ describe('checkbox-only publication console', () => {
   it('refuses an extra or newer server candidate and keeps publication closed', async () => {
     const user = userEvent.setup()
     const initial = fixtureReview()
-    const final = {
-      state: { ...initial.state, draft_generation: 6 },
-      changes: initial.items,
-      deferred: [],
-      selection_digest: 'b'.repeat(64),
-      publish_enabled: true
-    }
+    const final = await fixtureReceipt(initial, [
+      firstItem(initial).content.uid
+    ])
+    final.state = { ...final.state, draft_generation: 6 }
     vi.mocked(fetch).mockImplementation(
       vi.fn().mockResolvedValue(Response.json(final))
     )

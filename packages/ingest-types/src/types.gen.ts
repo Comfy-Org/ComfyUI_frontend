@@ -4523,6 +4523,16 @@ export type Cccjson = {
   [key: string]: unknown
 }
 
+export type CccCheckedReviewReceipt = {
+  publish_enabled: boolean
+  receipt_version: 1
+  selected_count: number
+  selected_versions_digest: string
+  selection_digest: string
+  state: CccCatalogState
+  unchecked_count: number
+}
+
 export type CccCatalogState = {
   draft_generation: number
   draft_rev: number
@@ -14170,6 +14180,49 @@ export type ReviewCccCheckedPublicationResponses = {
 
 export type ReviewCccCheckedPublicationResponse =
   ReviewCccCheckedPublicationResponses[keyof ReviewCccCheckedPublicationResponses]
+
+export type ReviewCccCheckedReceiptData = {
+  body: Cccjson
+  path?: never
+  query?: never
+  url: '/api/v1/catalog/draft/final-review/receipt'
+}
+
+export type ReviewCccCheckedReceiptErrors = {
+  /**
+   * Unsupported query parameters
+   */
+  400: unknown
+  /**
+   * Verified publisher permission required
+   */
+  403: unknown
+  /**
+   * Stale reviewed state or selected item no longer pending
+   */
+  409: unknown
+  /**
+   * Invalid explicit selection or candidate dependencies; bounded field_errors include affected resource_uid
+   */
+  422: Cccjson
+  /**
+   * Dedicated catalog unavailable
+   */
+  503: unknown
+}
+
+export type ReviewCccCheckedReceiptError =
+  ReviewCccCheckedReceiptErrors[keyof ReviewCccCheckedReceiptErrors]
+
+export type ReviewCccCheckedReceiptResponses = {
+  /**
+   * Exact checked-version receipt after complete candidate validation
+   */
+  200: CccCheckedReviewReceipt
+}
+
+export type ReviewCccCheckedReceiptResponse =
+  ReviewCccCheckedReceiptResponses[keyof ReviewCccCheckedReceiptResponses]
 
 export type CreateCccItemData = {
   body: Cccjson

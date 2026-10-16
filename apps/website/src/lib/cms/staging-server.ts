@@ -5,7 +5,12 @@ import { filterQuery, stagingSnapshot, finalSnapshot } from './staging-review'
 
 export async function catalogReview(
   session: AuthoringSession,
-  operation: 'staging' | 'final-review' | 'discard-changes' | 'publish',
+  operation:
+    | 'staging'
+    | 'final-review'
+    | 'review-receipt'
+    | 'discard-changes'
+    | 'publish',
   filter: ReviewFilter = {},
   init: RequestInit = {}
 ) {
@@ -13,7 +18,9 @@ export async function catalogReview(
   if (!origin || process.env.VERCEL_ENV === 'production')
     return editorFailure(503)
   const query = operation === 'staging' ? filterQuery(filter).toString() : ''
-  const url = new URL(`/api/v1/catalog/draft/${operation}`, origin)
+  const path =
+    operation === 'review-receipt' ? 'final-review/receipt' : operation
+  const url = new URL(`/api/v1/catalog/draft/${path}`, origin)
   url.search = query
   try {
     const headers = new Headers(init.headers)

@@ -1027,6 +1027,21 @@ and again on click. Ben's October 15 navigation trace showed overlapping
 prefetch/navigation requests for pages 8 and 9. This avoids that duplicate work;
 it does not by itself make an upstream read bounded.
 
+Checked Final review uses the additive authenticated
+`POST /api/v1/catalog/draft/final-review/receipt` through the CSRF-protected
+same-origin `review-receipt` facade. The generated versioned receipt contains
+state, selected/unchecked counts and digests, never documents or graph data.
+The browser verifies its selected UID/exact-version SHA256 against the frozen
+already loaded snapshot before opening confirmation. It fails closed on stale,
+unsupported, malformed or oversized receipts; it never falls back to a full
+review fetch. Success bytes are streamed with a 16 KiB cap, error diagnostics
+retain their separate 64 KiB cap. The old full-review API remains compatible.
+Final review renders at most 50 rows per page; its total and publication request
+still cover the complete exact checked set. Publish retains its original digest,
+fresh permissions, state checks, dependency validation and durable retry key.
+This does not remove the separate initial full Staging snapshot or activate any
+production route or content.
+
 The CCC Hub list reader uses `/api/v1/catalog/cards`, or the freshly authorized
 `/admin/api/site/catalog/cards` for staff. It requests only the active content
 kind, at most 24 cards, with bounded facet and available-kind metadata. It never
