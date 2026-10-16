@@ -236,6 +236,60 @@ test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
       ).toBeVisible()
     })
 
+    test('Download all queues every portable model in one request', async ({
+      comfyPage
+    }) => {
+      await comfyPage.page.route('**/api/models/download', (route) =>
+        route.fulfill({
+          status: 202,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            batch_id: 'batch-e2e',
+            models: [
+              'fake_model_a.safetensors',
+              'fake_model_b.safetensors'
+            ].map((name) => ({
+              name,
+              directory: 'checkpoints',
+              status: 'queued',
+              bytes_downloaded: 0,
+              bytes_total: null,
+              error: null
+            }))
+          })
+        })
+      )
+      await loadWorkflowAndOpenErrorsTab(
+        comfyPage,
+        'missing/missing_models_distinct'
+      )
+
+      const requestPromise = comfyPage.page.waitForRequest(
+        (request) =>
+          request.url().endsWith('/api/models/download') &&
+          request.method() === 'POST'
+      )
+      await comfyPage.page
+        .getByTestId(TestIds.dialogs.missingModelDownloadAll)
+        .click()
+      const request = await requestPromise
+
+      expect(request.postDataJSON()).toEqual({
+        models: [
+          {
+            name: 'fake_model_a.safetensors',
+            directory: 'checkpoints',
+            url: 'http://localhost:8188/api/devtools/fake_model.safetensors'
+          },
+          {
+            name: 'fake_model_b.safetensors',
+            directory: 'checkpoints',
+            url: 'http://localhost:8188/api/devtools/fake_model.safetensors'
+          }
+        ]
+      })
+    })
+
     test('Should clear resolved missing model when Refresh is clicked', async ({
       comfyPage
     }) => {
