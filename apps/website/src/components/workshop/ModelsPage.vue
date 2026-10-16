@@ -97,6 +97,12 @@ function displaySection(value: CatalogueTab) {
 }
 const catalogueRevision = shallowRef(0)
 const catalogueSearch = shallowRef(initialSearch)
+watch(
+  () => initialSearch,
+  (search) => {
+    catalogueSearch.value = search
+  }
+)
 useEventListener<DocumentEventMap['astro:before-swap']>(
   () => (mounted.value ? document : undefined),
   'astro:before-swap',

@@ -74,7 +74,16 @@ const emit = defineEmits<{
   search: [string]
 }>()
 watch(inSection, (value) => emit('section', value), { immediate: true })
-const browseAll = ref(false)
+function paginatedBrowse() {
+  const page = new URLSearchParams(initialSearch).get('p') ?? ''
+  return Boolean(
+    pages && /^[1-9]\d*$/.test(page) && Number.isSafeInteger(Number(page))
+  )
+}
+const browseAll = ref(paginatedBrowse())
+watch([() => initialSearch, () => Boolean(pages)], () => {
+  browseAll.value = paginatedBrowse()
+})
 const mounted = useMounted()
 const intendedSection = ref<CatalogueTab>()
 const displayedSection = computed(() => intendedSection.value ?? section)

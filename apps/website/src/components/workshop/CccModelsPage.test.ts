@@ -7,6 +7,7 @@ import { nextTick, readonly, ref } from 'vue'
 import type { AppConfig } from 'vue'
 
 import type { WorkshopModel } from '@/config/models-catalogue'
+import type { CatalogListPages } from '@/lib/cms/catalog-list'
 import {
   loadAppCatalogue,
   loadWorkflowCatalogue
@@ -74,6 +75,107 @@ const models: WorkshopModel[] = [
     capabilities: []
   }
 ]
+
+const pages: CatalogListPages = {
+  models: {
+    page: 1,
+    pageSize: 24,
+    total: 1,
+    totalPages: 1,
+    hasPrevious: false,
+    hasNext: false
+  },
+  workflows: {
+    page: 3,
+    pageSize: 24,
+    total: 100,
+    totalPages: 5,
+    hasPrevious: true,
+    hasNext: true
+  },
+  apps: {
+    page: 1,
+    pageSize: 24,
+    total: 1,
+    totalPages: 1,
+    hasPrevious: false,
+    hasNext: false
+  }
+}
+
+it('restores the Browse All grid when returning directly to a paginated workflow URL', () => {
+  render(CccModelsPage, {
+    props: {
+      initialModels: models,
+      initialCatalogAvailable: true,
+      section: 'workflows',
+      initialPages: pages,
+      initialSearch: '?p=3'
+    }
+  })
+  expect(screen.getByTestId('workflow-search-results')).toBeVisible()
+  expect(screen.queryByTestId('browse-all-end')).toBeNull()
+  expect(screen.getByTestId('catalog-next')).toHaveAttribute(
+    'href',
+    '/hub/workflows/?p=4'
+  )
+  expect(fetch).not.toHaveBeenCalled()
+})
+
+it('restores paginated grid state and filters on a persisted catalogue then resets on the root URL', async () => {
+  const view = render(CccModelsPage, {
+    props: {
+      initialModels: models,
+      initialCatalogAvailable: true,
+      section: 'workflows',
+      initialPages: pages,
+      initialSearch: ''
+    }
+  })
+  expect(screen.getByTestId('browse-all-end')).toBeVisible()
+  await view.rerender({ initialSearch: '?p=3&q=Selected&category=cleanup' })
+  expect(screen.getByTestId('workflow-search-results')).toBeVisible()
+  expect(screen.queryByTestId('browse-all-end')).toBeNull()
+  expect(screen.getByTestId('workshop-search')).toHaveValue('Selected')
+  expect(screen.getByTestId('catalog-next')).toHaveAttribute(
+    'href',
+    '/hub/workflows/?p=4&q=Selected&category=cleanup'
+  )
+  await view.rerender({ initialSearch: '' })
+  expect(screen.getByTestId('browse-all-end')).toBeVisible()
+  expect(screen.getByTestId('workshop-search')).toHaveValue('')
+  expect(fetch).not.toHaveBeenCalled()
+})
+
+it('does not change the legacy category layout for an unrelated page parameter', () => {
+  render(CccModelsPage, {
+    props: {
+      initialModels: models,
+      initialCatalogAvailable: true,
+      section: 'workflows',
+      initialSearch: '?p=3'
+    }
+  })
+  expect(screen.getByTestId('browse-all-end')).toBeVisible()
+  expect(screen.queryByTestId('workflow-search-results')).toBeNull()
+})
+
+it.for(['?p=0', '?p=-1', '?p=1.5', '?p=9007199254740992'])(
+  'keeps category browsing for invalid pagination %s',
+  (initialSearch) => {
+    render(CccModelsPage, {
+      props: {
+        initialModels: models,
+        initialCatalogAvailable: true,
+        section: 'workflows',
+        initialPages: pages,
+        initialSearch
+      }
+    })
+    expect(screen.getByTestId('browse-all-end')).toBeVisible()
+    expect(screen.queryByTestId('workflow-search-results')).toBeNull()
+  }
+)
 
 it('renders the supplied grid and the very first workflow/app click without asynchronous catalogue loaders', async () => {
   const fetchData = vi.fn<typeof fetch>()
