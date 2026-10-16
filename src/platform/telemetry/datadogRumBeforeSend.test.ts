@@ -273,125 +273,105 @@ describe('rumBeforeSend', () => {
     })
   })
 
-  it('uses batched extension failure context to preserve custom attribution', () => {
-    const event = createErrorEvent(
-      'Error loading 1 extension',
-      'at reportExtensionLoadFailures (https://cloud.comfy.org/assets/app.js:1:2)'
-    )
-    event.context = {
-      error_type: 'error_loading_extension',
+  it.for([
+    {
+      name: 'its path when the preserved stack is first-party',
       failures: [
         {
           ext: '/extensions/comfyui-foo/main.js',
-          message: 'ReferenceError: broken',
-          stack:
-            'ReferenceError: broken\n    at load (https://cloud.comfy.org/assets/app.js:12:3)'
+          stack: 'at load (https://cloud.comfy.org/assets/app.js:12:3)'
         }
-      ]
-    }
-
-    expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
-    expect(event.context).toMatchObject({
-      error: { origin: 'extension', extension: 'comfyui-foo' }
-    })
-  })
-
-  it('extracts custom attribution from a preserved stack without an extension path', () => {
-    const event = createErrorEvent(
-      'Error loading 1 extension',
-      'at reportExtensionLoadFailures (https://cloud.comfy.org/assets/app.js:1:2)'
-    )
-    event.context = {
-      error_type: 'error_loading_extension',
+      ],
+      expected: { origin: 'extension', extension: 'comfyui-foo' }
+    },
+    {
+      name: 'its preserved stack when no path is present',
       failures: [
         {
-          message: 'ReferenceError: broken',
           stack:
-            'ReferenceError: broken\n    at load (https://cloud.comfy.org/extensions/comfyui-foo/main.js:12:3)'
+            'at load (https://cloud.comfy.org/extensions/comfyui-foo/main.js:12:3)'
         }
-      ]
-    }
-
-    expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
-    expect(event.context).toMatchObject({
-      error: { origin: 'extension', extension: 'comfyui-foo' }
-    })
-  })
-
-  it('extracts custom attribution from an extension path without a stack', () => {
-    const event = createErrorEvent(
-      'Error loading 1 extension',
-      'at reportExtensionLoadFailures (https://cloud.comfy.org/assets/app.js:1:2)'
-    )
-    event.context = {
-      error_type: 'error_loading_extension',
+      ],
+      expected: { origin: 'extension', extension: 'comfyui-foo' }
+    },
+    {
+      name: 'its path when no stack is present',
+      failures: [{ ext: '/extensions/comfyui-foo/main.js' }],
+      expected: { origin: 'extension', extension: 'comfyui-foo' }
+    },
+    {
+      name: 'the folder every failure shares',
       failures: [
-        {
-          ext: '/extensions/comfyui-foo/main.js',
-          message: 'ReferenceError: broken'
-        }
-      ]
-    }
-
-    expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
-    expect(event.context).toMatchObject({
-      error: { origin: 'extension', extension: 'comfyui-foo' }
-    })
-  })
-
-  it('keeps mixed extension batches in first-party telemetry', () => {
-    const event = createErrorEvent(
-      'Error loading 2 extensions',
-      'at reportExtensionLoadFailures (https://cloud.comfy.org/assets/app.js:1:2)'
-    )
-    event.context = {
-      error_type: 'error_loading_extension',
+        { ext: '/extensions/comfyui-foo/main.js' },
+        { ext: '/extensions/comfyui-foo/nodes.js' }
+      ],
+      expected: { origin: 'extension', extension: 'comfyui-foo' }
+    },
+    {
+      name: 'first-party when failures span two folders',
       failures: [
         { ext: '/extensions/comfyui-foo/main.js' },
         { ext: '/extensions/comfyui-bar/main.js' }
-      ]
+      ],
+      expected: { origin: 'first_party' }
+    },
+    {
+      name: 'first-party when one failure has no extension signal',
+      failures: [
+        { ext: '/extensions/comfyui-foo/main.js' },
+        { message: 'broken' }
+      ],
+      expected: { origin: 'first_party' }
     }
+  ])('attributes a batched load failure to $name', ({ failures, expected }) => {
+    const event = createErrorEvent(
+      'Error loading extensions',
+      'at reportExtensionLoadFailures (https://cloud.comfy.org/assets/app.js:1:2)'
+    )
+    event.context = { error_type: 'error_loading_extension', failures }
 
-    expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
-    expect(event.context).toMatchObject({
-      error: { origin: 'first_party' }
-    })
+    rumBeforeSend(event, fromPartial({}))
+
+    expect(event.context.error).toEqual(expected)
   })
 
-  const malformedContexts: Array<[string, Record<string, unknown>]> = [
-    ['missing error type', { failures: [] }],
-    [
-      'non-array failures',
-      { error_type: 'error_loading_extension', failures: {} }
-    ],
-    [
-      'null failure',
-      { error_type: 'error_loading_extension', failures: [null] }
-    ],
-    [
-      'non-string details',
-      {
+  it.for([
+    {
+      name: 'missing error type',
+      context: { failures: [{ ext: '/extensions/comfyui-foo/main.js' }] }
+    },
+    {
+      name: 'non-array failures',
+      context: {
         error_type: 'error_loading_extension',
-        failures: [{ stack: 42, ext: false }]
+        failures: { ext: '/extensions/comfyui-foo/main.js' }
       }
-    ]
-  ]
-
-  it.for(malformedContexts)(
-    'keeps malformed batched context first-party: %s',
-    ([_name, context]) => {
-      const event = createErrorEvent(
-        'Error loading extensions',
-        'at report (https://cloud.comfy.org/assets/app.js:1:2)'
-      )
-      event.context = context
-
-      expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
-      expect(event.context).toMatchObject({
-        error: { origin: 'first_party' }
-      })
+    },
+    {
+      name: 'null failure',
+      context: {
+        error_type: 'error_loading_extension',
+        failures: [null, { ext: '/extensions/comfyui-foo/main.js' }]
+      }
+    },
+    {
+      name: 'non-string details',
+      context: {
+        error_type: 'error_loading_extension',
+        failures: [{ ext: ['/extensions/comfyui-foo/main.js'] }]
+      }
     }
-  )
+  ])('keeps malformed batched context first-party: $name', ({ context }) => {
+    const event = createErrorEvent(
+      'Error loading extensions',
+      'at report (https://cloud.comfy.org/assets/app.js:1:2)'
+    )
+    event.context = context
+
+    rumBeforeSend(event, fromPartial({}))
+
+    expect(event.context.error).toEqual({ origin: 'first_party' })
+  })
 
   it('groups Firebase pending-promise errors without rewriting them', () => {
     for (const message of [

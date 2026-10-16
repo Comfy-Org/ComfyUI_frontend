@@ -3,6 +3,8 @@ import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { useExtensionStore } from '@/stores/extensionStore'
+import { getErrorMessage, toError } from '@/utils/errorUtil'
+
 const INLINED_CLOUD_EXTENSIONS = new Set([
   '/extensions/cloud/rum.js',
   '/extensions/cloud/sentry.js'
@@ -16,9 +18,9 @@ export function shouldLoadExtension(
   return !isCloudBuild || !INLINED_CLOUD_EXTENSIONS.has(extension)
 }
 
-const MAX_EXTENSION_PATH_LENGTH = 256
+const MAX_EXTENSION_PATH_LENGTH = 512
 const MAX_EXTENSION_DIAGNOSTIC_LENGTH = 4096
-const MAX_NAMED_FAILED_EXTENSIONS = 10
+const MAX_REPORTED_FAILURES = 10
 
 export interface ExtensionLoadFailure {
   ext: string
@@ -31,60 +33,50 @@ interface ExtensionFailureDiagnostic {
   stack?: string
 }
 
-function readStringProperty(
-  value: object,
-  property: string
-): string | undefined {
+function normalizeFailure(error: unknown): {
+  normalized: Error
+  retainStack: boolean
+} {
   try {
-    const result = Reflect.get(value, property)
-    return typeof result === 'string' ? result : undefined
+    const message = getErrorMessage(error)
+    if (message) {
+      const retainStack = error instanceof Error
+      return {
+        normalized: retainStack ? error : new Error(message),
+        retainStack
+      }
+    }
+    const normalized = toError(error)
+    return {
+      normalized: getErrorMessage(normalized)
+        ? normalized
+        : new Error('Unknown extension load failure'),
+      retainStack: false
+    }
   } catch {
-    return undefined
-  }
-}
-
-function readFailureMessage(error: unknown): string {
-  if (typeof error === 'string') return error
-  if (typeof error === 'object' && error !== null) {
-    const message = readStringProperty(error, 'message')
-    if (message) return message
-    if (error instanceof Error) return 'Unknown extension load failure'
-  }
-
-  try {
-    const serialized = JSON.stringify(error)
-    if (typeof serialized === 'string') return serialized
-  } catch {
-    return 'Unknown extension load failure'
-  }
-
-  try {
-    return String(error)
-  } catch {
-    return 'Unknown extension load failure'
+    return {
+      normalized: new Error('Unknown extension load failure'),
+      retainStack: false
+    }
   }
 }
 
 function truncateExtensionPath(ext: string): string {
-  if (ext.length <= MAX_EXTENSION_PATH_LENGTH) return ext
-  const limit = ext.lastIndexOf('/', MAX_EXTENSION_PATH_LENGTH)
-  return ext.slice(0, Math.max(limit, MAX_EXTENSION_PATH_LENGTH))
+  return ext.slice(0, MAX_EXTENSION_PATH_LENGTH)
 }
 
 function toFailureDiagnostic({
   ext,
   error
 }: ExtensionLoadFailure): ExtensionFailureDiagnostic {
-  const stack =
-    error instanceof Error ? readStringProperty(error, 'stack') : undefined
+  const { normalized, retainStack } = normalizeFailure(error)
 
   return {
     ext: truncateExtensionPath(ext),
-    message: readFailureMessage(error).slice(
-      0,
-      MAX_EXTENSION_DIAGNOSTIC_LENGTH
-    ),
-    stack: stack?.slice(0, MAX_EXTENSION_DIAGNOSTIC_LENGTH)
+    message: normalized.message.slice(0, MAX_EXTENSION_DIAGNOSTIC_LENGTH),
+    stack: retainStack
+      ? normalized.stack?.slice(0, MAX_EXTENSION_DIAGNOSTIC_LENGTH)
+      : undefined
   }
 }
 
@@ -110,25 +102,18 @@ async function importCustomExtension(
   }
 }
 
-/**
- * Keep the error message stable so Sentry and Datadog group systemic failures
- * together. The bounded paths and original stacks stay in context, where they
- * remain available for diagnosing the individual failed extension.
- */
 export function reportExtensionLoadFailures(
   failures: ExtensionLoadFailure[]
 ): void {
   if (failures.length === 0) return
 
-  const noun = failures.length === 1 ? 'extension' : 'extensions'
   const reportedFailures = failures
-    .slice(0, MAX_NAMED_FAILED_EXTENSIONS)
+    .slice(0, MAX_REPORTED_FAILURES)
     .map(toFailureDiagnostic)
-  const errors = reportedFailures.map(({ message }) => new Error(message))
-  const aggregate = new AggregateError(
-    errors,
-    `Error loading ${failures.length} ${noun}`
+  const errors = reportedFailures.map(({ message, stack }) =>
+    Object.assign(new Error(message), stack ? { stack } : {})
   )
+  const aggregate = new AggregateError(errors, 'Error loading extensions')
   aggregate.stack = `${aggregate.stack ?? aggregate.message}\nFailed extensions: ${reportedFailures.map(({ ext }) => ext).join(', ')}`
 
   reportError(aggregate, {

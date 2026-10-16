@@ -142,23 +142,25 @@ function getExtensionFailureOrigins(
   const failures = context.failures
   if (!Array.isArray(failures)) return []
 
-  return failures.flatMap((failure) => {
-    if (typeof failure !== 'object' || failure === null) return []
-    const signals = ['ext', 'stack'].flatMap((key) => {
-      try {
-        const value = Reflect.get(failure, key)
-        return typeof value === 'string' ? [value] : []
-      } catch {
-        return []
-      }
-    })
-    const origins = signals.map(classifyRumErrorOrigin)
-    return [
-      origins.find((origin) => origin.origin === 'extension') ??
-        origins.find((origin) => origin.origin === 'first_party') ?? {
-          origin: 'third_party'
-        }
+  return failures.map((failure: unknown) => {
+    if (typeof failure !== 'object' || failure === null) {
+      return { origin: 'third_party' } as const
+    }
+    const signals = [
+      'ext' in failure && typeof failure.ext === 'string'
+        ? failure.ext
+        : undefined,
+      'stack' in failure && typeof failure.stack === 'string'
+        ? failure.stack
+        : undefined
     ]
+    const origins = signals.map(classifyRumErrorOrigin)
+    return (
+      origins.find((origin) => origin.origin === 'extension') ??
+      origins.find((origin) => origin.origin === 'first_party') ?? {
+        origin: 'third_party'
+      }
+    )
   })
 }
 
@@ -167,11 +169,6 @@ function classifyExtensionLoadReport(
   stack?: string
 ): RumErrorOrigin {
   const origins = getExtensionFailureOrigins(context)
-  const extensionNames = new Set(
-    origins.flatMap((origin) =>
-      origin.origin === 'extension' ? [origin.extension] : []
-    )
-  )
   const extensionOrigin = origins.find(
     (origin): origin is Extract<RumErrorOrigin, { origin: 'extension' }> =>
       origin.origin === 'extension'
@@ -179,9 +176,11 @@ function classifyExtensionLoadReport(
 
   if (
     extensionOrigin &&
-    origins.length > 0 &&
-    origins.every((origin) => origin.origin === 'extension') &&
-    extensionNames.size === 1
+    origins.every(
+      (origin) =>
+        origin.origin === 'extension' &&
+        origin.extension === extensionOrigin.extension
+    )
   ) {
     return extensionOrigin
   }

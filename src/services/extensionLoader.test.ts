@@ -67,9 +67,8 @@ describe('extension loading', () => {
 
       expect(reportError).toHaveBeenCalledOnce()
       const [cause, options] = vi.mocked(reportError).mock.calls[0]
-      assert(cause instanceof Error)
-      expect(cause.message).toBe('Error loading 2 extensions')
-      expect(cause).toBeInstanceOf(AggregateError)
+      assert(cause instanceof AggregateError)
+      expect(cause.message).toBe('Error loading extensions')
       expect(cause.stack).toContain(
         `Failed extensions: ${BROKEN}, /extensions/b/b.js`
       )
@@ -101,41 +100,70 @@ describe('extension loading', () => {
       reportExtensionLoadFailures(failures)
 
       const [cause, options] = vi.mocked(reportError).mock.calls[0]
-      assert(cause instanceof Error)
-      expect(cause.message).toBe('Error loading 13 extensions')
+      assert(cause instanceof AggregateError)
+      expect(cause.message).toBe('Error loading extensions')
+      expect(cause.errors).toHaveLength(10)
+      expect(cause.stack).not.toContain('/extensions/pack-10/main.js')
       expect(options.tags).toMatchObject({ failed_extension_count: 13 })
       expect(options.context?.failures).toHaveLength(10)
-      expect((cause as AggregateError).errors).toHaveLength(10)
     })
 
-    it('keeps hostile extension failures from aborting bootstrap', () => {
-      const hostile = Object.create(null)
-      Object.defineProperties(hostile, {
-        message: {
-          get: () => {
-            throw new Error('message getter failed')
-          }
-        },
-        stack: {
-          get: () => {
-            throw new Error('stack getter failed')
-          }
-        },
-        toJSON: {
-          value: () => {
-            throw new Error('serialization failed')
-          }
-        },
-        toString: {
-          value: () => {
-            throw new Error('conversion failed')
-          }
-        }
-      })
+    it('caps each failure path, message, and stack', () => {
+      const error = new Error('m'.repeat(5000))
+      error.stack = 's'.repeat(5000)
 
-      expect(() =>
-        reportExtensionLoadFailures([{ ext: BROKEN, error: hostile }])
-      ).not.toThrow()
+      reportExtensionLoadFailures([
+        { ext: `/extensions/comfyui-foo/${'a'.repeat(600)}.js`, error }
+      ])
+
+      expect(vi.mocked(reportError).mock.calls[0][1].context?.failures).toEqual(
+        [
+          {
+            ext: `/extensions/comfyui-foo/${'a'.repeat(488)}`,
+            message: 'm'.repeat(4096),
+            stack: 's'.repeat(4096)
+          }
+        ]
+      )
+    })
+
+    it.for([
+      {
+        name: 'an unserializable non-Error value',
+        error: Object.create(null, {
+          toJSON: {
+            value: () => {
+              throw new Error('serialization failed')
+            }
+          }
+        })
+      },
+      {
+        name: 'an Error whose message and stack getters throw',
+        error: Object.defineProperties(new Error('unused'), {
+          message: {
+            get: () => {
+              throw new Error('message getter failed')
+            }
+          },
+          stack: {
+            get: () => {
+              throw new Error('stack getter failed')
+            }
+          }
+        })
+      },
+      {
+        name: 'a revoked proxy',
+        error: (() => {
+          const { proxy, revoke } = Proxy.revocable({}, {})
+          revoke()
+          return proxy
+        })()
+      }
+    ])('reports $name as an unknown load failure', ({ error }) => {
+      reportExtensionLoadFailures([{ ext: BROKEN, error }])
+
       expect(vi.mocked(reportError).mock.calls[0][1].context?.failures).toEqual(
         [
           {
@@ -147,31 +175,20 @@ describe('extension loading', () => {
       )
     })
 
-    it('keeps hostile error details from aborting telemetry', () => {
-      const error = new Error('unused')
-      Object.defineProperty(error, 'message', {
-        get() {
-          throw new Error('message getter failed')
-        }
-      })
-      Object.defineProperty(error, 'stack', {
-        get() {
-          throw new Error('stack getter failed')
-        }
-      })
-
-      expect(() =>
-        reportExtensionLoadFailures([{ ext: BROKEN, error }])
-      ).not.toThrow()
-
-      const [, options] = vi.mocked(reportError).mock.calls[0]
-      expect(options.context?.failures).toEqual([
+    it('records a stack only when the rejection is an Error', () => {
+      reportExtensionLoadFailures([
         {
           ext: BROKEN,
-          message: 'Unknown extension load failure',
-          stack: undefined
+          error: {
+            message: 'thrown object',
+            stack: 'at run (/extensions/comfyui-other/main.js:1:1)'
+          }
         }
       ])
+
+      expect(vi.mocked(reportError).mock.calls[0][1].context?.failures).toEqual(
+        [{ ext: BROKEN, message: 'thrown object', stack: undefined }]
+      )
     })
 
     it('does not pair its own console line with the report', () => {
@@ -193,8 +210,8 @@ describe('extension loading', () => {
 
       expect(reportError).toHaveBeenCalledOnce()
       const [cause, options] = vi.mocked(reportError).mock.calls[0]
-      assert(cause instanceof Error)
-      expect(cause.message).toBe('Error loading 2 extensions')
+      assert(cause instanceof AggregateError)
+      expect(cause.message).toBe('Error loading extensions')
       expect(options.tags).toEqual({ failed_extension_count: 2 })
       expect(console.error).not.toHaveBeenCalled()
     })
@@ -216,8 +233,8 @@ describe('extension loading', () => {
       await loadExtensions()
 
       const [cause] = vi.mocked(reportError).mock.calls[0]
-      assert(cause instanceof Error)
-      expect(cause.message).toBe('Error loading 1 extension')
+      assert(cause instanceof AggregateError)
+      expect(cause.message).toBe('Error loading extensions')
     })
 
     it('times the core and custom imports as separate subphases', async () => {
