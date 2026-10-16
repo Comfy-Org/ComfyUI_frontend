@@ -1,22 +1,8 @@
 <template>
-  <div
-    class="flex w-full max-w-lg flex-col rounded-2xl border border-border-default bg-base-background"
-  >
-    <div
-      class="flex h-12 items-center justify-between border-b border-border-default px-4"
-    >
-      <h2 class="m-0 text-sm font-normal text-base-foreground">
-        {{ t('auth.sso.required.title') }}
-      </h2>
-      <Button
-        size="icon"
-        variant="muted-textonly"
-        :aria-label="t('g.close')"
-        @click="dismiss"
-      >
-        <i class="icon-[lucide--x] size-4" />
-      </Button>
-    </div>
+  <DialogPanel class="w-full max-w-lg" @close="dismiss">
+    <template #title>
+      {{ t('auth.sso.required.title') }}
+    </template>
 
     <p class="m-0 p-4 text-sm text-muted-foreground">
       {{
@@ -26,7 +12,7 @@
       }}
     </p>
 
-    <div class="flex items-center justify-end gap-4 p-4">
+    <template #footer>
       <Button variant="muted-textonly" @click="dismiss">
         {{ t('auth.sso.required.dismiss') }}
       </Button>
@@ -39,11 +25,12 @@
       >
         {{ t('auth.sso.continueWithSso') }}
       </Button>
-    </div>
-  </div>
+    </template>
+  </DialogPanel>
 </template>
 
 <script setup lang="ts">
+import DialogPanel from '@/components/ui/dialog/DialogPanel.vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'

@@ -4,11 +4,11 @@
   >
     <div class="flex flex-col items-center gap-4 pt-8">
       <i class="pi pi-check-circle text-5xl text-success-background" />
-      <h2
+      <CheckoutTitle
         class="m-0 text-center text-xl font-semibold text-base-foreground lg:text-2xl"
       >
         {{ copy.allSet }}
-      </h2>
+      </CheckoutTitle>
       <p class="m-0 text-center text-sm text-muted-foreground">
         {{ copy.planUpdated }}
         {{ copy.receiptEmailed }}
@@ -90,6 +90,7 @@ import type { SubscriptionPreview } from '@comfyorg/account-core/billing'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import CheckoutButton from './CheckoutButton.vue'
+import CheckoutTitle from './CheckoutTitle.vue'
 import type { CheckoutSuccessCopy } from './checkoutCopy'
 import type { CheckoutBillingCycle, CheckoutPlan } from './checkoutQuote'
 import { formatNumber, isYearlyCheckout } from './checkoutQuote'

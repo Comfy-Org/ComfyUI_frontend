@@ -17,6 +17,7 @@ import type {
   SubscriptionDialogOptions
 } from '@/composables/billing/types'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { provideSubscriptionDialog } from '@/platform/cloud/subscription/composables/subscriptionDialogAccess'
 import { toCurrentTier } from '@/platform/cloud/subscription/utils/billingPlanTelemetry'
 import { useBillingSdkStore } from '@/platform/workspace/billing/sdk/billingSdkStore'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
@@ -352,3 +353,5 @@ export const useSubscriptionDialog = () => {
     resumePendingPricingFlow
   }
 }
+
+provideSubscriptionDialog(useSubscriptionDialog)

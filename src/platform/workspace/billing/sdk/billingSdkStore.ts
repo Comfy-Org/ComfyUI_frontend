@@ -58,6 +58,7 @@ import {
 } from '@/platform/workspace/billing/customerAttention'
 import { resolveStripePublishableKey } from '@/platform/workspace/billing/stripePublishableKey'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { provideBillingSdkStore } from '@/platform/workspace/composables/useBillingReadRail'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { getCheckoutJourneyPaymentIntentSource } from '@/platform/workspace/utils/checkoutJourney'
@@ -669,3 +670,5 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     dismissOperation
   }
 })
+
+provideBillingSdkStore(useBillingSdkStore)

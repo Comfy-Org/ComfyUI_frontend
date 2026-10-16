@@ -1052,7 +1052,7 @@
   },
   "src/renderer/core/canvas/litegraph/selectionAdapter.ts": {
     "comfy/no-positional-boolean-params": {
-      "count": 3
+      "count": 2
     }
   },
   "src/renderer/core/canvas/litegraph/slotCalculations.ts": {
