@@ -40,6 +40,8 @@ const closedWithoutSaving = fromPartial<ComfyWorkflow>({
 
 const portrait = unsaved('portrait')
 const upscale = unsaved('upscale')
+const sketch = unsaved('sketch')
+const DROPPED = JSON.stringify(SAVED_STATE)
 
 function savedWorkflows() {
   return vi
@@ -49,14 +51,26 @@ function savedWorkflows() {
 
 describe('settleUnsavedWorkBeforeSwitch', () => {
   beforeEach(() => {
-    Object.assign(portrait, {
-      activeState: SAVED_STATE,
-      isModified: true,
-      changeTracker: { initialState: SAVED_STATE }
-    })
+    for (const workflow of [portrait, upscale, sketch]) {
+      Object.assign(workflow, {
+        isLoaded: true,
+        activeState: SAVED_STATE,
+        isModified: workflow !== sketch,
+        changeTracker: { initialState: SAVED_STATE }
+      })
+    }
     Object.assign(useWorkflowStore(), {
-      modifiedWorkflows: [portrait, closedWithoutSaving, upscale]
+      modifiedWorkflows: [portrait, closedWithoutSaving, upscale, sketch],
+      activeWorkflow: null,
+      getWorkflowByPath: (path: string) =>
+        [portrait, upscale, sketch].find((open) => open.path === path) ?? null
     })
+    vi.mocked(useWorkflowService().saveWorkflow).mockImplementation(
+      async (workflow) => {
+        workflow.isModified = false
+        return true
+      }
+    )
   })
 
   it('goes on without asking when nothing is unsaved', async () => {
@@ -109,8 +123,8 @@ describe('settleUnsavedWorkBeforeSwitch', () => {
 
     expect(await settleUnsavedWorkBeforeSwitch('Comfy Cloud')).toEqual(
       new Map([
-        [portrait, portrait.activeState],
-        [upscale, upscale.activeState]
+        [portrait, DROPPED],
+        [upscale, DROPPED]
       ])
     )
     expect(savedWorkflows()).toEqual([])
@@ -123,6 +137,61 @@ describe('settleUnsavedWorkBeforeSwitch', () => {
       NOTHING_DISCARDED
     )
     expect(savedWorkflows()).toEqual([portrait, upscale])
+  })
+
+  it('counts edits the open workflow has not captured yet', async () => {
+    Object.assign(useWorkflowStore(), {
+      activeWorkflow: {
+        changeTracker: {
+          prepareForSave: () => {
+            sketch.isModified = true
+          }
+        }
+      }
+    })
+    vi.mocked(useDialogService().confirm).mockResolvedValueOnce(null)
+
+    await settleUnsavedWorkBeforeSwitch('Comfy Cloud')
+
+    expect(useDialogService().confirm).toHaveBeenCalledWith(
+      expect.objectContaining({
+        itemList: ['portrait.json', 'upscale.json', 'sketch.json']
+      })
+    )
+  })
+
+  it('skips a workflow closed while an earlier one saves', async () => {
+    vi.mocked(useDialogService().confirm).mockResolvedValueOnce(true)
+    vi.mocked(useWorkflowService().saveWorkflow).mockImplementationOnce(
+      async (workflow) => {
+        workflow.isModified = false
+        Object.assign(upscale, { isLoaded: false, activeState: null })
+        return true
+      }
+    )
+
+    expect(await settleUnsavedWorkBeforeSwitch('Comfy Cloud')).toBe(
+      NOTHING_DISCARDED
+    )
+    expect(savedWorkflows()).toEqual([portrait])
+  })
+
+  it('asks about a workflow first edited while the saves ran', async () => {
+    vi.mocked(useDialogService().confirm)
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(null)
+    vi.mocked(useWorkflowService().saveWorkflow).mockImplementationOnce(
+      async (workflow) => {
+        workflow.isModified = false
+        sketch.isModified = true
+        return true
+      }
+    )
+
+    expect(await settleUnsavedWorkBeforeSwitch('Comfy Cloud')).toBeNull()
+    expect(useDialogService().confirm).toHaveBeenLastCalledWith(
+      expect.objectContaining({ itemList: ['sketch.json'] })
+    )
   })
 
   it('asks again about a workflow edited while its save was in flight', async () => {

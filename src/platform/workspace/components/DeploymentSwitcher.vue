@@ -56,7 +56,6 @@ import Menu from '@/components/ui/menu/Menu.vue'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { isCloud } from '@/platform/distribution/types'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import DeploymentStatusIcon from '@/platform/workspace/components/DeploymentStatusIcon.vue'
 import DeploymentSwitcherList from '@/platform/workspace/components/DeploymentSwitcherList.vue'
 import { switcherMenuMotionClass } from '@/platform/workspace/components/deploymentSwitcherStyles'
@@ -70,7 +69,10 @@ import {
   NOTHING_DISCARDED,
   reloadForDeploymentSwitch
 } from '@/platform/workspace/deploymentSwitchReload'
-import { settleUnsavedWorkBeforeSwitch } from '@/platform/workspace/settleUnsavedWorkBeforeSwitch'
+import {
+  settleUnsavedWorkBeforeSwitch,
+  unsavedWorkBeforeSwitch
+} from '@/platform/workspace/settleUnsavedWorkBeforeSwitch'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 
 const { t } = useI18n()
@@ -83,7 +85,6 @@ const {
   isSwitching,
   listingRefused
 } = storeToRefs(store)
-const workflowStore = useWorkflowStore()
 const { isApiKeyLogin } = useCurrentUser()
 const isOffered = computed(() => isCloud && !isApiKeyLogin.value)
 const { currentLabel, deploymentFullLabel } = useDeploymentLabels()
@@ -168,7 +169,7 @@ async function settleBeforeSwitch(
   deployment: string
 ): Promise<DiscardedWork | null> {
   if (isSettling.value) return null
-  if (workflowStore.modifiedWorkflows.length > 0) isOpen.value = false
+  if (unsavedWorkBeforeSwitch().length > 0) isOpen.value = false
   isSettling.value = true
   try {
     return await settleUnsavedWorkBeforeSwitch(deployment)
@@ -208,10 +209,12 @@ async function choose(deploymentId: string | null) {
 }
 
 async function follow(deploymentId: string) {
-  const discarded =
-    deploymentId === pickedDeployment.value?.deployment_id
-      ? NOTHING_DISCARDED
-      : await settleBeforeSwitch(targetLabel(deploymentId))
+  const staysPut =
+    deploymentId === pickedDeployment.value?.deployment_id &&
+    changeSinceBoot.value === null
+  const discarded = staysPut
+    ? NOTHING_DISCARDED
+    : await settleBeforeSwitch(targetLabel(deploymentId))
   if (discarded === null) return
   await switchTo(deploymentId, discarded, () =>
     store.followWorkspace(discarded)
@@ -219,20 +222,21 @@ async function follow(deploymentId: string) {
 }
 
 async function changeDefault(deploymentId: string | null) {
-  const discarded = store.defaultMovesThisBrowser(deploymentId)
+  const reloadsThisBrowser = store.defaultMovesThisBrowser(deploymentId)
+  const discarded = reloadsThisBrowser
     ? await settleBeforeSwitch(targetLabel(deploymentId))
     : NOTHING_DISCARDED
   if (discarded === null) return
   switchingTo.value = null
   report(
     t('deploymentSwitcher.failedToSetDefault'),
-    await store.setDefault(deploymentId, discarded)
+    await store.setDefault(deploymentId, reloadsThisBrowser ? discarded : null)
   )
 }
 
 async function reload() {
   if (isSwitching.value) return
   const discarded = await settleBeforeSwitch(currentLabel.value)
-  if (discarded !== null) reloadOnto(discarded)
+  if (discarded !== null && !isSwitching.value) reloadOnto(discarded)
 }
 </script>
