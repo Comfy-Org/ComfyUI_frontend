@@ -98,7 +98,10 @@ const result = (
   rawResultsEmpty
 })
 
-function renderDialog(initialTab: ManagerTab = ManagerTab.All) {
+function renderDialog(
+  initialTab: ManagerTab = ManagerTab.All,
+  initialPackId?: string
+) {
   const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
   const i18n = createI18n({
     legacy: false,
@@ -106,7 +109,7 @@ function renderDialog(initialTab: ManagerTab = ManagerTab.All) {
     messages: { en: enMessages }
   })
   render(ManagerDialog, {
-    props: { initialTab, onClose: vi.fn() },
+    props: { initialTab, initialPackId, onClose: vi.fn() },
     global: {
       plugins: [i18n],
       stubs: {
@@ -240,4 +243,43 @@ describe('ManagerDialog legacy-manager tip', () => {
       )
     }
   )
+})
+
+describe('ManagerDialog search analytics tags', () => {
+  const searchedTags = () =>
+    vi
+      .mocked(useRegistrySearchGateway().searchPacks)
+      .mock.calls.map(([query, params]) => [query, params.analyticsTags])
+
+  it('tags only the search the user typed, not the listing shown on open', async () => {
+    vi.mocked(useRegistrySearchGateway().searchPacks).mockResolvedValue(
+      result([], false)
+    )
+    const { user, searchBox } = renderDialog()
+    await settleSearch()
+
+    await user.type(searchBox, 'gguf')
+    await settleSearch()
+
+    expect(searchedTags()).toEqual([
+      ['', undefined],
+      ['gguf', ['user']]
+    ])
+  })
+
+  it('leaves the deep-link pack search untagged until the user edits it', async () => {
+    vi.mocked(useRegistrySearchGateway().searchPacks).mockResolvedValue(
+      result([], false)
+    )
+    const { user, searchBox } = renderDialog(ManagerTab.All, 'comfyui-kjnodes')
+    await settleSearch()
+
+    await user.type(searchBox, '2')
+    await settleSearch()
+
+    expect(searchedTags()).toEqual([
+      ['comfyui-kjnodes', undefined],
+      ['comfyui-kjnodes2', ['user']]
+    ])
+  })
 })

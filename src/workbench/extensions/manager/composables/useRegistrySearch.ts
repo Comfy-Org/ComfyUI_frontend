@@ -25,6 +25,8 @@ interface SearchedFirstPage {
 export function useRegistrySearch(inputs: {
   query: MaybeRefOrGetter<string>
   searchMode: MaybeRefOrGetter<SearchMode>
+  /** Whether the query came from the user typing, for analytics tagging. */
+  isTypedQuery?: MaybeRefOrGetter<boolean>
 }): PagedList<RegistryNodePack> & {
   suggestions: Readonly<Ref<QuerySuggestion[]>>
   /**
@@ -50,11 +52,16 @@ export function useRegistrySearch(inputs: {
   async function doLoadMore() {
     if (!morePages.value) return
     const query = toValue(inputs.query)
+    const isTypedSearch =
+      pageNumber === 0 &&
+      query.trim() !== '' &&
+      (toValue(inputs.isTypedQuery) ?? false)
     try {
       const result = await searchPacks(query, {
         pageSize: DEFAULT_PAGE_SIZE,
         pageNumber,
-        restrictSearchableAttributes: searchableAttributes()
+        restrictSearchableAttributes: searchableAttributes(),
+        ...(isTypedSearch && { analyticsTags: ['user'] })
       })
       const { nodePacks } = result
       morePages.value = result.hasMore ?? nodePacks.length >= DEFAULT_PAGE_SIZE

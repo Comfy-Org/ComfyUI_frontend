@@ -371,9 +371,19 @@ const isSearchBacked = computed(() => {
     (searchQuery.value !== '' && tab !== ManagerTab.Unresolved)
   )
 })
+// The opening query (a deep link or the restored one) was not typed now.
+const hasEditedSearchQuery = ref(false)
+watch(
+  searchQuery,
+  () => {
+    hasEditedSearchQuery.value = true
+  },
+  { once: true }
+)
 const packs = useRegistrySearch({
   query: refDebounced(searchQuery, SEARCH_DEBOUNCE_MS),
-  searchMode
+  searchMode,
+  isTypedQuery: hasEditedSearchQuery
 })
 const searchResults = computed(() => [...toValue(packs.items)])
 const isSearchLoading = computed(

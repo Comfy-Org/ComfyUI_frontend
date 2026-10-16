@@ -118,7 +118,6 @@ describe('useAlgoliaSearchProvider', () => {
             query: 'test',
             indexName: 'nodes_index',
             attributesToRetrieve: expect.any(Array),
-            analyticsTags: ['user'],
             hitsPerPage: 10,
             page: 0
           },
@@ -393,7 +392,7 @@ describe('useAlgoliaSearchProvider', () => {
       ])
     })
 
-    it('tags the typed query as user and the rewrites as rewrite so analytics can tell them apart', async () => {
+    it('leaves an untagged query untagged and tags its rewrites as rewrite', async () => {
       mockSearchClient.search
         .mockResolvedValueOnce({ results: [{ hits: [] }, { hits: [] }] })
         .mockResolvedValueOnce({ results: [{ hits: [] }, { hits: [] }] })
@@ -404,27 +403,13 @@ describe('useAlgoliaSearchProvider', () => {
         pageNumber: 0
       })
 
-      const [[rawBatch], [rewriteBatch]] = mockSearchClient.search.mock.calls
-      expect(rawBatch.requests).toEqual([
-        expect.objectContaining({
-          query: 'kijai/comfyui-KJNodes',
-          analyticsTags: ['user']
-        }),
-        expect.not.objectContaining({ analyticsTags: expect.anything() })
-      ])
-      expect(rewriteBatch.requests).toEqual([
-        expect.objectContaining({
-          query: 'comfyui-KJNodes',
-          analyticsTags: ['rewrite']
-        }),
-        expect.objectContaining({
-          query: 'comfyui KJNodes',
-          analyticsTags: ['rewrite']
-        })
+      expect(packTagsPerRequest()).toEqual([
+        [undefined],
+        [['rewrite'], ['rewrite']]
       ])
     })
 
-    it("keeps the caller's analytics tags on the typed query and its rewrites", async () => {
+    it("sends the caller's analytics tags on the query and adds rewrite to its rewrites", async () => {
       mockSearchClient.search
         .mockResolvedValueOnce({ results: [{ hits: [] }, { hits: [] }] })
         .mockResolvedValueOnce({ results: [{ hits: [] }, { hits: [] }] })
@@ -433,14 +418,16 @@ describe('useAlgoliaSearchProvider', () => {
       await provider.searchPacks('kijai/comfyui-KJNodes', {
         pageSize: 10,
         pageNumber: 0,
-        analyticsTags: ['manager-dialog']
+        analyticsTags: ['user']
       })
 
+      const [[rawBatch]] = mockSearchClient.search.mock.calls
+      expect(rawBatch.requests[1]).not.toHaveProperty('analyticsTags')
       expect(packTagsPerRequest()).toEqual([
-        [['manager-dialog', 'user']],
+        [['user']],
         [
-          ['manager-dialog', 'rewrite'],
-          ['manager-dialog', 'rewrite']
+          ['user', 'rewrite'],
+          ['user', 'rewrite']
         ]
       ])
     })

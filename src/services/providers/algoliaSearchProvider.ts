@@ -52,7 +52,6 @@ const RETRIEVE_ATTRIBUTES: SearchAttribute[] = [
   'banner_url'
 ]
 
-const USER_ANALYTICS_TAG = 'user'
 const REWRITE_ANALYTICS_TAG = 'rewrite'
 
 const searchPacksCache = new QuickLRU<string, SearchPacksResult>({
@@ -125,13 +124,15 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
     const { pageSize, pageNumber } = params
     const rest = omit(params, ['pageSize', 'pageNumber'])
 
-    function packQuery(queryText: string, analyticsTag: string): SearchQuery {
+    function packQuery(queryText: string, extraTag?: string): SearchQuery {
       return {
         query: queryText,
         indexName: 'nodes_index',
         attributesToRetrieve: RETRIEVE_ATTRIBUTES,
         ...rest,
-        analyticsTags: [...(rest.analyticsTags ?? []), analyticsTag],
+        ...(extraTag !== undefined && {
+          analyticsTags: [...(rest.analyticsTags ?? []), extraTag]
+        }),
         hitsPerPage: pageSize,
         page: pageNumber
       }
@@ -165,7 +166,7 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
 
     const shouldQuerySuggestions =
       query.length >= MIN_CHARS_FOR_SUGGESTIONS_ALGOLIA
-    const requests: SearchQuery[] = [packQuery(query, USER_ANALYTICS_TAG)]
+    const requests: SearchQuery[] = [packQuery(query)]
     if (shouldQuerySuggestions) {
       requests.push({
         indexName: 'nodes_index_query_suggestions',

@@ -144,3 +144,45 @@ describe('useRegistrySearch', () => {
     })
   })
 })
+
+describe('useRegistrySearch analytics tags', () => {
+  const searchedTags = () =>
+    vi
+      .mocked(useRegistrySearchGateway().searchPacks)
+      .mock.calls.map(([, params]) => params.analyticsTags)
+
+  function searchFor(query: string, isTypedQuery: boolean) {
+    vi.mocked(useRegistrySearchGateway().searchPacks).mockResolvedValue({
+      nodePacks: packs(DEFAULT_PAGE_SIZE),
+      querySuggestions: [],
+      hasMore: true
+    })
+    return useRegistrySearch({ query, searchMode: 'packs', isTypedQuery })
+  }
+
+  it('tags the first page of a typed query as user', async () => {
+    const search = searchFor('gguf', true)
+    await until(search.isLoading).toBe(false)
+
+    expect(searchedTags()).toEqual([['user']])
+  })
+
+  it.for([
+    { query: '', isTypedQuery: true, case: 'the empty listing' },
+    { query: 'comfyui-kjnodes', isTypedQuery: false, case: 'a deep link' }
+  ])('leaves $case untagged', async ({ query, isTypedQuery }) => {
+    const search = searchFor(query, isTypedQuery)
+    await until(search.isLoading).toBe(false)
+
+    expect(searchedTags()).toEqual([undefined])
+  })
+
+  it('leaves later pages of a typed query untagged', async () => {
+    const search = searchFor('gguf', true)
+    await until(search.isLoading).toBe(false)
+
+    await search.loadMore()
+
+    expect(searchedTags()).toEqual([['user'], undefined])
+  })
+})
