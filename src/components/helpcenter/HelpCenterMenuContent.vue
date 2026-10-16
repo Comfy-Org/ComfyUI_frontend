@@ -313,7 +313,7 @@ const menuItems = computed<MenuItem[]>(() => {
     {
       key: 'feedback',
       type: 'item',
-      icon: 'icon-[lucide--megaphone]',
+      icon: 'icon-[lucide--megaphone] size-4',
       label: t('helpCenter.feedback'),
       showExternalIcon: isCloud || isNightly,
       action: () => {
