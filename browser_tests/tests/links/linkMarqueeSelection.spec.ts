@@ -186,10 +186,13 @@ async function expectOutputLinksHideAndShow(
   linkIds: string[]
 ) {
   const toolbox = comfyPage.selectionToolbox
+  const hideLinks = toolbox.getByTestId(TestIds.selectionToolbox.hideLinks)
+  const showLinks = toolbox.getByTestId(TestIds.selectionToolbox.showLinks)
 
   await test.step('Hide every link of the output from the toolbox', async () => {
     await clickOutput()
-    await toolbox.getByTestId(TestIds.selectionToolbox.hideLinks).click()
+    await comfyPage.nextFrame()
+    await hideLinks.click()
 
     await expect
       .poll(() => linkPresentation(comfyPage))
@@ -198,10 +201,10 @@ async function expectOutputLinksHideAndShow(
 
   await test.step('Show the hidden links again from the toolbox', async () => {
     await clickOutput()
-    await expect(
-      toolbox.getByTestId(TestIds.selectionToolbox.hideLinks)
-    ).toBeHidden()
-    await toolbox.getByTestId(TestIds.selectionToolbox.showLinks).click()
+    await comfyPage.nextFrame()
+    await expect(showLinks).toBeVisible()
+    await expect(hideLinks).toBeHidden()
+    await showLinks.click()
 
     await expect.poll(() => linkPresentation(comfyPage)).toEqual({})
   })
