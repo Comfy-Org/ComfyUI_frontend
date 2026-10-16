@@ -51,6 +51,51 @@ const workflow: WorkflowWorkshopModel = {
 afterEach(() => history.replaceState(null, '', '/'))
 
 describe('bounded catalogue server controls', () => {
+  it('requests and restores uncategorized results without dropping the empty category value', async () => {
+    const user = userEvent.setup()
+    const { emitted, rerender } = render(WorkflowCatalogue, {
+      props: {
+        models: [workflow],
+        serverPage: page,
+        initialSearch: '?p=2',
+        serverFacets: {
+          categories: [
+            { value: '', label: '', count: 30 },
+            { value: 'image', label: 'Image', count: 30 }
+          ],
+          models: [{ value: 'Image model', count: 30 }]
+        }
+      }
+    })
+    await nextTick()
+    await user.click(screen.getByTestId('workshop-filter'))
+    await user.click(await screen.findByTestId('workshop-facet-useCase'))
+    expect(screen.getByTestId('filter-useCase-')).toHaveTextContent(
+      'Uncategorized'
+    )
+    await user.click(screen.getByTestId('filter-useCase-'))
+    await waitFor(() => expect(emitted('search')).toHaveLength(1))
+    const search = new URLSearchParams(emitted<[string]>('search')[0][0])
+    expect(search.getAll('category')).toEqual([''])
+    expect(search.has('p')).toBe(false)
+    await rerender({
+      models: [
+        { ...workflow, category: undefined, name: 'Uncategorized result' }
+      ],
+      initialSearch: '?category='
+    })
+    expect(screen.getByTestId('filter-useCase-')).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    )
+    expect(screen.getByTestId('workshop-filter-chips')).toHaveTextContent(
+      'Uncategorized'
+    )
+    expect(screen.getByTestId('workshop-model-card')).toHaveTextContent(
+      'Uncategorized result'
+    )
+  })
+
   it('offers a use case absent from the page, requests it without p, then displays fresh matching cards', async () => {
     const user = userEvent.setup()
     const { emitted, rerender } = render(WorkshopModelsGrid, {

@@ -39,6 +39,7 @@ import FeaturedBanner from './FeaturedBanner.vue'
 import type { FeaturedSlide } from './FeaturedBanner.vue'
 import { CARD_GRID, SHELF_CARD } from '@/lib/workshop/card-layout'
 import { modelSlides } from '@/lib/workshop/featured-slides'
+import { workflowCategoryLabel } from '@/lib/workshop/workflow-category-label'
 import type { FilterChip } from './WorkshopFilterChips.vue'
 import WorkshopFilterChips from './WorkshopFilterChips.vue'
 import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
@@ -113,7 +114,7 @@ function readAddress(search: string) {
     .filter((id) =>
       serverFacets
         ? serverFacets.categories.some((category) => category.value === id)
-        : models.some((model) => model.category === id)
+        : models.some((model) => (model.category ?? '') === id)
     )
   runsOn.value = params
     .getAll('model')
@@ -166,17 +167,16 @@ const rows = computed(() =>
   models
     .filter(
       (model, index) =>
-        models.findIndex((other) => other.category === model.category) === index
+        models.findIndex(
+          (other) => (other.category ?? '') === (model.category ?? '')
+        ) === index
     )
     .map((category) => ({
       id: category.category ?? '',
-      label:
-        category.categoryLabel?.[locale === 'zh-CN' ? locale : 'en'] ??
-        category.category ??
-        '',
+      label: workflowCategoryLabel(category, locale),
       order: category.categoryOrder ?? Infinity,
       models: models
-        .filter((model) => model.category === category.category)
+        .filter((model) => (model.category ?? '') === (category.category ?? ''))
         .sort((a, b) =>
           sort.value === 'name'
             ? a.name.localeCompare(b.name)
@@ -187,7 +187,12 @@ const rows = computed(() =>
 )
 const options = computed(
   () =>
-    serverFacets?.categories ??
+    serverFacets?.categories.map((category) => ({
+      ...category,
+      label:
+        category.label.trim() ||
+        workflowCategoryLabel({ category: category.value }, locale)
+    })) ??
     rows.value.map((category) => ({
       value: category.id,
       label: category.label,

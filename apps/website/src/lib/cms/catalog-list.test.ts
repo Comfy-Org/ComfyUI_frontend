@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 
 import { entries } from '@website/scripts/export-cms-seed'
 import { loadSiteCatalogList } from './catalog-list'
@@ -51,6 +51,64 @@ function setup() {
 }
 
 describe('bounded website catalog summaries', () => {
+  it.for([
+    { locale: 'en', label: 'Uncategorized' },
+    { locale: 'zh-CN', label: '未分类' }
+  ])(
+    'retains the empty category filter and a readable facet label in $locale',
+    async ({ locale, label }) => {
+      const upstream = setup()
+      const fixture = entries.find((entry) => entry.kind === 'WORKFLOW')
+      assert.exists(fixture)
+      upstream.mockResolvedValueOnce(
+        Response.json({
+          revision_id: 1,
+          generation: 0,
+          items: [
+            {
+              ...fixture,
+              revision: 1,
+              edit_version: fixture.uid,
+              deleted: false,
+              data: {
+                ...fixture.data,
+                category: '',
+                categoryLabel: { en: ' ', 'zh-CN': '' }
+              }
+            },
+            {
+              ...fixture,
+              uid: '00000000-0000-4000-8000-000000000099',
+              revision: 1,
+              edit_version: fixture.uid,
+              deleted: false,
+              data: {
+                ...fixture.data,
+                category: 'video',
+                categoryLabel: { en: 'Video', 'zh-CN': '视频' }
+              }
+            }
+          ]
+        })
+      )
+      const result = await loadSiteCatalogList(
+        undefined,
+        locale,
+        'workflows',
+        new URLSearchParams('category=')
+      )
+      assert.isTrue(result.ok)
+      expect(result.pages.workflows.total).toBe(1)
+      expect(result.models).toHaveLength(1)
+      expect(result.models[0]).toHaveProperty('category', '')
+      expect(result.facets.workflows.categories[0]).toEqual({
+        value: '',
+        label,
+        count: 1
+      })
+    }
+  )
+
   it('keeps workflow body, FAQ and detailed facts out of card summaries', async () => {
     const upstream = setup()
     const workflow = entries.find((entry) => entry.kind === 'WORKFLOW')

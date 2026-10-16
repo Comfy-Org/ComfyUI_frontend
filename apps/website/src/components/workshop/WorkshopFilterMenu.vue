@@ -144,7 +144,7 @@ function toggle(facet: string, value: string) {
     return
   }
   const useCase = useCaseOptions.find((option) => option.value === value)?.value
-  if (!useCase) return
+  if (useCase === undefined) return
   useCases.value = useCases.value.includes(useCase)
     ? useCases.value.filter((item) => item !== useCase)
     : [...useCases.value, useCase]

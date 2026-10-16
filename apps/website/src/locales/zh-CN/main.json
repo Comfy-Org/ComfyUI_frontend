@@ -5401,6 +5401,7 @@
       "backToWorkflows": "返回工作流",
       "browseAllWorkflows": "浏览全部工作流",
       "categories": "分类",
+      "uncategorized": "未分类",
       "directory": "全部模型（按提供商）",
       "directoryCount": "{count} 个模型",
       "eyebrow": "Hub",

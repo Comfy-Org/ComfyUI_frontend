@@ -1011,6 +1011,13 @@ returning from a detail page; returning to the unpaginated root restores categor
 browsing. This applies only to catalogues with server pagination, leaving legacy
 static category pages unchanged.
 
+Workflow category menus show a localized Uncategorized label for missing or
+empty category IDs; blank translated labels fall back to the existing category
+ID. Missing and empty IDs form one group. Selecting that group preserves the
+explicit `category=` query through navigation and filters only uncategorized
+workflows; omitting the parameter still means all categories. Authored category
+values are not rewritten or assigned a synthetic taxonomy ID.
+
 CCC workflow detail pages pass their already authorized, schema-validated
 selected workflow to the island, avoiding a second complete catalog read from
 `page.json` during hydration. The workflow gate and recovery controls remain in

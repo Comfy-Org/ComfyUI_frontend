@@ -19,6 +19,7 @@ import type { SiteSession } from './admin'
 import type { AuthoringSession } from './authoring-session'
 import { normalizeProjection } from './catalog-contract'
 import { catalogPresentation } from './catalog-presentation'
+import { workflowCategoryLabel } from '@/lib/workshop/workflow-category-label'
 
 export type CatalogListSection = 'models' | 'workflows' | 'apps'
 const CATALOG_PAGE_SIZE = 24
@@ -87,8 +88,7 @@ function listFacets(
     const prior = categories.get(value)
     categories.set(value, {
       value,
-      label:
-        model.categoryLabel?.[locale === 'zh-CN' ? 'zh-CN' : 'en'] ?? value,
+      label: workflowCategoryLabel(model, locale),
       count: (prior?.count ?? 0) + 1
     })
     for (const name of new Set(model.models ?? []))
@@ -184,7 +184,7 @@ export async function loadSiteCatalogList(
         )
       })
       if (tab === 'workflows') {
-        const categories = params.getAll('category').filter(Boolean)
+        const categories = params.getAll('category')
         const runsOn = params.getAll('model').filter(Boolean)
         matching = matching.filter(
           (m) =>

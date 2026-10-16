@@ -56,6 +56,37 @@ function visibleOutcomes() {
 beforeEach(() => history.replaceState(null, '', '/hub/workflows/'))
 
 describe('workflow catalogue ordering and shared links', () => {
+  it.for([
+    { locale: 'en' as const, label: 'Uncategorized' },
+    { locale: 'zh-CN' as const, label: '未分类' }
+  ])(
+    'labels and filters workflows without a category in $locale',
+    async ({ locale, label }) => {
+      const user = userEvent.setup()
+      render(WorkflowCatalogue, {
+        props: {
+          locale,
+          models: [
+            { ...models[0], category: undefined, name: 'No category' },
+            { ...models[1], category: '', name: 'Blank category' },
+            models[2]
+          ]
+        }
+      })
+      await user.click(screen.getByTestId('workshop-filter'))
+      await user.click(await screen.findByTestId('workshop-facet-useCase'))
+      expect(screen.getByTestId('filter-useCase-')).toHaveTextContent(label)
+      await user.click(screen.getByTestId('filter-useCase-'))
+      expect(screen.getByTestId('workshop-filter-chips')).toHaveTextContent(
+        label
+      )
+      expect(visibleOutcomes()).toEqual([
+        '/models/workflows/restore/',
+        '/models/workflows/connect/'
+      ])
+    }
+  )
+
   it('uses editorial category and outcome order, then sorts all results by name', async () => {
     const user = userEvent.setup()
     render(WorkflowCatalogue, { props: { models } })
