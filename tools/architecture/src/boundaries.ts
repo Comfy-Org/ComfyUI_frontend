@@ -1,4 +1,5 @@
-import { matchesModulePath } from './records'
+import { claimFiles, matchesModulePath } from './records'
+import type { Claim } from './records'
 import { ROLES, ROLE_DEPENDENCIES } from './schema'
 import type { ArchitecturalRole, DomainRecord } from './schema'
 
@@ -58,14 +59,19 @@ function moduleLayers(records: DomainRecord[]): Layers {
   return layers
 }
 
-function domainZones(domain: DomainRecord, layers: Layers): Zone[] {
+function domainZones(
+  domain: DomainRecord,
+  layers: Layers,
+  entryClaims: ReadonlyMap<string, Claim>
+): Zone[] {
   return ROLES.flatMap((role) => {
     const paths = domain.modules
       .filter((module) => module.role === role)
       .map(({ path }) => path)
-    const entries = domain.publicEntryPoints.filter((entry) =>
-      paths.some((path) => matchesModulePath(entry, path))
-    )
+    const entries = domain.publicEntryPoints.filter((entry) => {
+      const claim = entryClaims.get(entry)
+      return claim?.record === domain && claim.module.role === role
+    })
     const byLayer = new Map<number, string[]>()
     for (const path of paths) {
       const layer = layers.get(path) ?? 0
@@ -120,7 +126,13 @@ function allowedTargets(source: Zone, zones: Zone[]): string[] {
 
 export function buildBoundaries(records: DomainRecord[]): FallowBoundaries {
   const layers = moduleLayers(records)
-  const zones = records.flatMap((record) => domainZones(record, layers))
+  const entryClaims = claimFiles(
+    records,
+    records.flatMap(({ publicEntryPoints }) => publicEntryPoints)
+  )
+  const zones = records.flatMap((record) =>
+    domainZones(record, layers, entryClaims)
+  )
   const ordered = zones.toSorted((a, b) => a.layer - b.layer)
   return {
     boundaries: {

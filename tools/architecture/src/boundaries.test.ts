@@ -164,6 +164,21 @@ describe('buildBoundaries', () => {
       allowed: true
     },
     {
+      name: 'a public entry point under a nested path takes that path’s role',
+      records: [
+        images({
+          modules: [
+            ...images().modules,
+            { path: 'src/images/model/view/**', role: 'presentation' }
+          ],
+          publicEntryPoints: ['src/images/model/view/index.ts']
+        })
+      ],
+      from: 'src/images/model/view/index.ts',
+      to: 'src/images/ui/a.vue',
+      allowed: true
+    },
+    {
       name: 'role direction applies across approved domains',
       records: approved,
       from: 'src/editor/model/a.ts',
