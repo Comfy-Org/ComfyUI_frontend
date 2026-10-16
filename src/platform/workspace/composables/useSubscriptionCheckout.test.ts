@@ -1,5 +1,6 @@
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { provideBillingDialogs } from '@/platform/cloud/subscription/composables/billingDialogsAccess'
 import { render } from '@testing-library/vue'
 import type { Mock } from 'vitest'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -363,10 +364,15 @@ vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingDialogs'), () => ({
+  useBillingDialogs: () => ({
     showDowngradeToPersonalDialog: mockShowDowngradeToPersonalDialog
   })
+}))
+
+provideBillingDialogs(() => ({
+  showSubscriptionRequiredDialog: vi.fn(),
+  showDowngradeToPersonalDialog: mockShowDowngradeToPersonalDialog
 }))
 
 vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
@@ -401,7 +407,10 @@ const railState = vi.hoisted(() => ({
 }))
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useBillingReadRail'),
-  () => ({ useBillingReadRail: () => railState.rail })
+  () => ({
+    useBillingReadRail: () => railState.rail,
+    provideBillingSdkStore: () => {}
+  })
 )
 
 vi.mock(import('@/config/comfyApi'), () => ({

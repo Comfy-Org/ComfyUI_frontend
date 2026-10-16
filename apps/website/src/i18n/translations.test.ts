@@ -82,13 +82,13 @@ describe('site translations', () => {
   it('falls back from Japanese to English', () => {
     const { t } = translationsFor('ja')
     expect(t('hero.title')).toBe('ビジュアルAIを自在にコントロール')
-    expect(t('tags.partnerNodes')).toBe('Partner Nodes')
+    expect(t('tos.effectiveDateLabel')).toBe('Effective Date')
   })
 
   it.for([
     ['en', '42 models'],
     ['zh-CN', '42 个模型'],
-    ['ja', '42 models']
+    ['ja', '42件のモデル']
   ] as const)('renders the model directory count in %s', ([locale, text]) => {
     expect(
       translationsFor(locale).t('workshop.catalogue.directoryCount', {

@@ -1,4 +1,13 @@
-import type { TurnId } from '../../schemas/agentApiSchema'
+import type { AgentAskConflict, AgentAskOption } from '@comfyorg/ingest-types'
+import { zAgentRunApprovalContext } from '@comfyorg/ingest-types/zod'
+import { uniqBy } from 'es-toolkit'
+
+import type {
+  AgentMessages,
+  RenderedAskKind,
+  TurnId
+} from '../../schemas/agentApiSchema'
+import { RENDERED_ASK_KINDS } from '../../schemas/agentApiSchema'
 
 export type PartState = 'streaming' | 'done'
 
@@ -39,6 +48,11 @@ export interface NoticePart {
   retryAfterSeconds?: number
 }
 
+export interface AskUnavailablePart {
+  type: 'askUnavailable'
+  askId: string
+}
+
 export interface TabLinkPart {
   type: 'tabLink'
   workflowId: string
@@ -53,6 +67,174 @@ export interface RunApprovalPart {
   workflowName?: string
 }
 
+export type AskUserResolution =
+  | { status: 'answered'; selected: string[]; otherText?: string }
+  | { status: 'closed' | 'unconfirmed' | 'retired' }
+
+const UNANSWERED_SCORE: Record<
+  Exclude<AskUserResolution['status'], 'answered'>,
+  number
+> = { retired: 0, unconfirmed: 1, closed: 2 }
+
+function resolutionScore(resolution: AskUserResolution): number {
+  if (resolution.status !== 'answered')
+    return UNANSWERED_SCORE[resolution.status]
+  return resolution.selected.length > 0 || resolution.otherText !== undefined
+    ? 3
+    : 2
+}
+
+export function settleResolution(
+  shown: AskUserResolution | undefined,
+  next: AskUserResolution
+): AskUserResolution {
+  return shown === undefined || resolutionScore(next) > resolutionScore(shown)
+    ? next
+    : shown
+}
+
+export function toAskResolution({
+  status,
+  selected,
+  other_text: otherText
+}: Pick<
+  AgentAskConflict,
+  'status' | 'selected' | 'other_text'
+>): AskUserResolution {
+  if (status === undefined) return { status: 'retired' }
+  if (status !== 'answered') return { status: 'closed' }
+  return otherText
+    ? { status: 'answered', selected: selected ?? [], otherText }
+    : { status: 'answered', selected: selected ?? [] }
+}
+
+export interface AskUserPart {
+  type: 'askUser'
+  askId: string
+  prompt: string
+  options: AgentAskOption[]
+  minSelections: number
+  maxSelections: number
+  allowOther: boolean
+  resolution?: AskUserResolution
+}
+
+export type AskPart = RunApprovalPart | AskUserPart
+
+export function isPendingAskPart(part: MessagePart): part is AskPart {
+  return (
+    part.type === 'runApproval' ||
+    (part.type === 'askUser' && part.resolution === undefined)
+  )
+}
+
+export function isOpenAskPart(part: MessagePart): boolean {
+  return isPendingAskPart(part) || part.type === 'askUnavailable'
+}
+
+export function askIdOf(part: MessagePart): string | undefined {
+  return 'askId' in part ? part.askId : undefined
+}
+
+export function retireAskParts(
+  parts: MessagePart[],
+  askId: string,
+  resolution: AskUserResolution
+): MessagePart[] {
+  const next = parts.flatMap((part): MessagePart[] => {
+    if (askIdOf(part) !== askId) return [part]
+    if (part.type !== 'askUser') return []
+    const settled = settleResolution(part.resolution, resolution)
+    return [
+      settled === part.resolution ? part : { ...part, resolution: settled }
+    ]
+  })
+  return next.length === parts.length &&
+    next.every((part, index) => part === parts[index])
+    ? parts
+    : next
+}
+
+type PendingAsk = NonNullable<AgentMessages[number]['pending_ask']>
+
+type AskInput = Omit<PendingAsk, 'message_id'>
+
+const ASK_USER_LIMITS = {
+  options: 50,
+  prompt: 2000,
+  label: 200,
+  description: 500
+} as const
+
+function clip(text: string, max: number): string {
+  return text.length > max ? `${text.slice(0, max - 1)}\u2026` : text
+}
+
+function toAskUserOptions(options: AgentAskOption[]): AgentAskOption[] {
+  return uniqBy(options, ({ id }) => id)
+    .slice(0, ASK_USER_LIMITS.options)
+    .map(({ id, label, description }) => ({
+      id,
+      label: clip(label, ASK_USER_LIMITS.label),
+      description:
+        clip(description?.trim() ?? '', ASK_USER_LIMITS.description) ||
+        undefined
+    }))
+}
+
+export function choosableCount({
+  options,
+  allowOther
+}: Pick<AskUserPart, 'options' | 'allowOther'>): number {
+  return options.length + (allowOther ? 1 : 0)
+}
+
+function toAskUserPart(ask: AskInput): AskUserPart | undefined {
+  const options = toAskUserOptions(ask.options)
+  const choosable = choosableCount({ options, allowOther: ask.allow_other })
+  const maxSelections = Math.min(ask.max_selections, choosable)
+  if (maxSelections < 1 || ask.min_selections > maxSelections) return undefined
+  return {
+    type: 'askUser',
+    askId: ask.ask_id,
+    prompt: clip(ask.prompt, ASK_USER_LIMITS.prompt),
+    options,
+    minSelections: Math.max(0, ask.min_selections),
+    maxSelections,
+    allowOther: ask.allow_other
+  }
+}
+
+const ASK_PART_BUILDERS: Record<
+  RenderedAskKind,
+  (ask: AskInput) => AskPart | undefined
+> = {
+  run_approval: (ask) => {
+    const context = zAgentRunApprovalContext.safeParse(ask.context).data
+    return {
+      type: 'runApproval',
+      askId: ask.ask_id,
+      workflowId: context?.workflow_id || undefined,
+      workflowName: context?.workflow_name || undefined
+    }
+  },
+  ask_user: toAskUserPart
+}
+
+function isRenderedAskKind(kind: AskInput['kind']): kind is RenderedAskKind {
+  return RENDERED_ASK_KINDS.some((rendered) => rendered === kind)
+}
+
+export function toAskPart(ask: AskInput): AskPart | undefined {
+  return isRenderedAskKind(ask.kind)
+    ? ASK_PART_BUILDERS[ask.kind](ask)
+    : undefined
+}
+
+export function toAskOrNoticePart(ask: AskInput): AskPart | AskUnavailablePart {
+  return toAskPart(ask) ?? { type: 'askUnavailable', askId: ask.ask_id }
+}
+
 export interface PaywallPart {
   type: 'paywall'
   message?: string
@@ -65,8 +247,10 @@ export type MessagePart =
   | ThinkingPart
   | ToolPart
   | NoticePart
+  | AskUnavailablePart
   | TabLinkPart
   | RunApprovalPart
+  | AskUserPart
   | PaywallPart
 
 export interface AssistantMessage {

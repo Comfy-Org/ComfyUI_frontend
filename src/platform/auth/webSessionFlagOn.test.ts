@@ -26,6 +26,7 @@ import { OPERATION_POLL_TIMING } from '@comfyorg/account-core/billing'
 import { MISSING_CUSTOMER_MESSAGE } from '@comfyorg/account-core/customerRecovery'
 import { COMFY_CLIENT } from '@comfyorg/account-core/requestAuth'
 import { SessionTokenError } from '@comfyorg/account-core/sessionTokenMint'
+import { ssoFlowStore } from '@comfyorg/account-core/telemetry'
 
 import {
   clearPreservedQuery,
@@ -64,6 +65,7 @@ import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { installWorkspaceApiAuth } from '@/platform/workspace/api/workspaceApiAuth'
 import { NoWorkspaceAccessError } from '@/platform/workspace/api/workspaceApiError'
 import {
   getGlobalSetting,
@@ -180,6 +182,7 @@ await import('@/extensions/core/cloudSessionCookie')
 const { default: router } = await import('@/router')
 
 installCloudApiAuth()
+installWorkspaceApiAuth()
 
 const TEN_MINUTES_MS = 10 * 60 * 1000
 
@@ -621,11 +624,12 @@ function currentWorkspaceResponse(workspaceId: string | undefined): Response {
     return jsonResponse({ code: 'workspace_access_denied', message: 'no' }, 403)
   }
   const isTeam = workspaceId === 'ws-team'
+  const isSharedPersonal = workspaceId === 'ws-shared-personal'
   return jsonResponse({
     id: workspaceId ?? 'ws-personal',
     name: isTeam ? 'Team' : 'Personal',
     type: isTeam ? 'team' : 'personal',
-    role: 'owner',
+    role: isSharedPersonal ? 'member' : 'owner',
     auth_method: 'web_session',
     permissions: ['owner:*']
   })
@@ -855,7 +859,7 @@ const sessionRequest = (
   method,
   path,
   headers: { 'x-comfy-client': COMFY_CLIENT, ...headers },
-  credentials: 'include'
+  credentials: 'same-origin'
 })
 
 const LISTED = {
@@ -923,7 +927,10 @@ describe('cloud API requests on the shared web session', () => {
       sessionRequest('GET', '/api/workspaces/current', {
         'x-comfy-workspace-id': 'ws-personal'
       }),
-      sessionRequest('GET', '/api/queue', { 'comfy-user': '' })
+      sessionRequest('GET', '/api/queue', {
+        'x-comfy-workspace-id': 'ws-personal',
+        'comfy-user': ''
+      })
     ])
     expect(workspaceAuth.currentWorkspace).toEqual({
       id: 'ws-personal',
@@ -977,6 +984,28 @@ describe('cloud API requests on the shared web session', () => {
       ).toEqual(tokens)
     }
   )
+
+  it("names a member's Team-plan workspace on requests even when its type is personal", async () => {
+    const ingest = await bootOnSession()
+    const workspaceAuth = useWorkspaceAuthStore()
+    await workspaceAuth.switchWorkspace('ws-shared-personal')
+    ingest.requests.length = 0
+
+    await postPrompt()
+
+    expect(workspaceAuth.currentWorkspace).toMatchObject({
+      id: 'ws-shared-personal',
+      type: 'personal',
+      role: 'member'
+    })
+    expect(ingest.requests).toEqual([
+      sessionRequest('POST', '/api/prompt', {
+        'x-comfy-workspace-id': 'ws-shared-personal',
+        ...PROMPT_HEADERS,
+        'x-csrf-token': 'csrf-1'
+      })
+    ])
+  })
 
   it('workspace_access_denied drops the selection, is never replayed, and never falls back to Personal while the reload is held', async () => {
     const ingest = await bootOnSession()
@@ -1094,7 +1123,10 @@ describe('workspace API and global settings on the shared web session', () => {
 
   it.for<{ workspace: string; headers: Record<string, string> }>([
     { workspace: 'ws-team', headers: { 'x-comfy-workspace-id': 'ws-team' } },
-    { workspace: 'ws-personal', headers: {} }
+    {
+      workspace: 'ws-personal',
+      headers: { 'x-comfy-workspace-id': 'ws-personal' }
+    }
   ])(
     'reads billing status in $workspace on the session cookie',
     async ({ workspace, headers }) => {
@@ -1305,7 +1337,9 @@ describe('live updates and media on the shared web session', () => {
     )
     await workspaceAuth.switchWorkspace('ws-personal')
     await vi.waitFor(() =>
-      expect(api.socket).toEqual(expect.objectContaining({ path: '/ws' }))
+      expect(api.socket).toEqual(
+        expect.objectContaining({ path: '/ws?workspace_id=ws-personal' })
+      )
     )
 
     expect(api.socket).toBe(FakeSocket.created.at(-1))
@@ -1323,9 +1357,9 @@ describe('live updates and media on the shared web session', () => {
 
   it.for([
     { workspace: 'ws-team', suffix: '&workspace_id=ws-team' },
-    { workspace: 'ws-personal', suffix: '' }
+    { workspace: 'ws-personal', suffix: '&workspace_id=ws-personal' }
   ])(
-    'media URLs name the workspace only for a team ($workspace)',
+    'media URLs name the selected workspace ($workspace)',
     async ({ workspace, suffix }) => {
       await bootOnSession()
       await useWorkspaceAuthStore().switchWorkspace(workspace)
@@ -1732,7 +1766,7 @@ describe('billing SDK rails on a tab that arrived by session', () => {
   })
 
   it.for([
-    { workspace: 'ws-personal', mintedFor: 'personal' },
+    { workspace: 'ws-personal', mintedFor: 'ws-personal' },
     { workspace: 'ws-team', mintedFor: 'ws-team' }
   ])(
     'reads billing in $workspace with a token minted from the session cookie alone',
@@ -1770,7 +1804,7 @@ describe('billing SDK rails on a tab that arrived by session', () => {
       status: 'completed'
     })
     expect(useAuthStore().currentUser).toBeNull()
-    expect(ingest.mintedFor).toEqual(['personal'])
+    expect(ingest.mintedFor).toEqual(['ws-personal'])
     expect(
       sent(ingest).filter(({ path }) => path === '/api/billing/topup')
     ).toEqual([
@@ -1820,7 +1854,7 @@ describe('billing SDK rails on a tab that arrived by session', () => {
     await useWorkspaceAuthStore().switchWorkspace('ws-team')
     await rail.readStatus()
 
-    expect(ingest.mintedFor).toEqual(['personal', 'ws-team'])
+    expect(ingest.mintedFor).toEqual(['ws-personal', 'ws-team'])
     expect(
       sent(ingest)
         .filter(({ path }) => path === '/api/billing/status')
@@ -1898,6 +1932,7 @@ describe.for([{ unified: false }, { unified: true }])(
       const authStore = useAuthStore()
       const workspaceAuth = useWorkspaceAuthStore()
 
+      await workspaceAuth.switchWorkspace('ws-personal')
       const personal = await authStore.getWorkspaceAuthToken()
       await workspaceAuth.switchWorkspace('ws-team')
       const team = await authStore.getWorkspaceAuthToken()
@@ -1909,7 +1944,7 @@ describe.for([{ unified: false }, { unified: true }])(
         'session-jwt-2',
         'session-jwt-1'
       ])
-      expect(ingest.mintedFor).toEqual(['personal', 'ws-team'])
+      expect(ingest.mintedFor).toEqual(['ws-personal', 'ws-team'])
     })
 
     it('resolves undefined for a revoked session and mints again once it recovers', async () => {
@@ -2392,15 +2427,24 @@ describe('billing on a tab that arrived by session', () => {
   })
 
   it.for([
-    { name: 'resolves', capabilitiesDown: false, authoritative: true },
     {
-      name: 'is unavailable, falling back to the owner',
+      name: 'resolves',
+      capabilitiesDown: false,
+      canTopUp: true,
+      authoritative: true
+    },
+    {
+      name: 'is unavailable, withholding top-up',
       capabilitiesDown: true,
+      canTopUp: false,
       authoritative: false
     }
   ])(
     'billing capabilities for the session user: the read $name',
-    async ({ capabilitiesDown, authoritative }, { onTestFinished }) => {
+    async (
+      { capabilitiesDown, canTopUp, authoritative },
+      { onTestFinished }
+    ) => {
       const { ingest } = await bootSessionOnly()
       ingest.capabilitiesDown = capabilitiesDown
       localStorage.setItem(WORKSPACE_STORAGE_KEYS.LAST_WORKSPACE_ID, 'ws-team')
@@ -2416,7 +2460,7 @@ describe('billing on a tab that arrived by session', () => {
         isReady: capabilities.isReady.value,
         canTopUp: capabilities.canTopUp.value,
         authoritative: capabilities.snapshotAuthoritative.value
-      }).toEqual({ isReady: true, canTopUp: true, authoritative })
+      }).toEqual({ isReady: true, canTopUp, authoritative })
     }
   )
 })
@@ -2743,7 +2787,7 @@ describe.for([{ unified: false }, { unified: true }])(
       await vi.advanceTimersByTimeAsync(60_000)
       await response
       expect(queueReads().map(([, init]) => init?.credentials)).toEqual([
-        'include'
+        'same-origin'
       ])
     })
 
@@ -3198,6 +3242,93 @@ describe('a lapsed SSO session signs in again through SSO (sso_enabled)', () => 
     await vi.advanceTimersByTimeAsync(TEN_MINUTES_MS)
     return landings
   }
+
+  describe('the sign-in telemetry', () => {
+    afterEach(() => {
+      ssoFlowStore.finish()
+    })
+
+    const ssoSignIns = () =>
+      vi
+        .mocked(useTelemetry()!.trackSsoEvent)
+        .mock.calls.filter(
+          ([event]) => event.name === 'app:sso_sign_in_completed'
+        )
+
+    it('reports an SSO session after an attempt this tab continued, by id only', async () => {
+      const attempt = ssoFlowStore.markContinued('cloud_login')
+
+      await loadPage(SSO_SESSION)
+
+      expect(ssoSignIns()).toEqual([
+        [
+          {
+            name: 'app:sso_sign_in_completed',
+            properties: { surface: 'cloud_login', flow_id: attempt.flowId }
+          }
+        ]
+      ])
+      expect(ssoFlowStore.current()).toBeUndefined()
+      expect(useTelemetry()?.trackAuth).not.toHaveBeenCalled()
+    })
+
+    it('reports a lapse sent straight to SSO, then the SSO session it brings back', async () => {
+      await inAppThenLapsed(true)
+      await vi.waitFor(() => expect(assign).toHaveBeenCalledOnce())
+      const [[shown]] = vi.mocked(useTelemetry()!.trackSsoEvent).mock.calls
+      expect(shown).toEqual({
+        name: 'app:sso_required_shown',
+        properties: {
+          surface: 'cloud_app',
+          trigger: 'session_expired',
+          presentation: 'redirect',
+          flow_id: expect.any(String)
+        }
+      })
+
+      await loadPage(SSO_SESSION)
+
+      expect(ssoSignIns()).toEqual([
+        [
+          {
+            name: 'app:sso_sign_in_completed',
+            properties: {
+              surface: 'cloud_app',
+              flow_id: shown.properties.flow_id
+            }
+          }
+        ]
+      ])
+    })
+
+    it.for<{
+      name: string
+      arrange: () => void
+      session: ServerSession
+    }>([
+      {
+        name: 'an SSO session with no attempt',
+        arrange: () => {},
+        session: SSO_SESSION
+      },
+      {
+        name: 'an SSO session after an attempt only shown, never continued',
+        arrange: () => ssoFlowStore.start('cloud_login'),
+        session: SSO_SESSION
+      },
+      {
+        name: 'a Google session during an attempt',
+        arrange: () => ssoFlowStore.markContinued('cloud_login'),
+        session: { userId: 'user-a' }
+      }
+    ])('reports nothing for $name', async ({ arrange, session }) => {
+      arrange()
+
+      await loadPage(session)
+
+      expect(ssoSignIns()).toEqual([])
+    })
+  })
 
   describe('the hint', () => {
     it.for<{

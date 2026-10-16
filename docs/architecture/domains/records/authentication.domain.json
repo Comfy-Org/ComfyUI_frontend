@@ -1,0 +1,546 @@
+{
+  "id": "authentication",
+  "capability": "Authentication",
+  "description": "Account identity and credentials: Firebase identity, the auth, API-key, and local multi-user stores, sign-in actions and dialogs, social and SSO sign-in, shared web session cookie and request authorization, unified re-mint retry, desktop-host sessions, partner-node token exchange and run gate, and workspace-scoped token minting with its auth gate. Cloud session store, cloud identity boot, and the cloud API auth adapter stay in the cloud record. Workspace membership and billing remain separate capabilities; the account packages outside src are not in this catalog.",
+  "modules": [
+    {
+      "path": "src/platform/auth/localWeb/accessTokenIdentity.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/auth/localWeb/localWebAuthBridge.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/auth/localWeb/localWebAuthBridge.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/auth/localWeb/localWebSession.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/auth/localWeb/localWebSession.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/auth/localWeb/localWebTokenStore.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/auth/localWeb/pendingSignIn.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/auth/partnerNode/partnerNodeTokenSource.reload.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/auth/sso/SsoAccountOutsideOrganizationDialogContent.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/composables/auth/**",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/billing/usePartnerNodesRunGate.cloud.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/billing/usePartnerNodesRunGate.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/billing/usePartnerNodesRunGate.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/auth/apiAuthProvider.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/auth/authCredential.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/auth/authCredential.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/auth/authRejection.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/auth/authRejection.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/auth/desktopHost/**",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/auth/firebaseIdentity.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/auth/firebaseIdentity.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/auth/firebaseIdentityPopupWatch.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/auth/nonWebClientsStayOnTokens.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/platform/auth/partnerNode/partnerNodeQueueToken.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/auth/partnerNode/partnerNodeQueueToken.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/auth/partnerNode/partnerNodeTokens.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/auth/partnerNode/partnerNodeTokenSource.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/auth/partnerNode/partnerNodeTokenSource.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/auth/session/components/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/auth/session/interactiveSignInMarker.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/auth/session/sessionMediaUrl.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/auth/session/ssoReentryStorage.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/auth/session/useSessionCookie.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/auth/session/useSessionCookie.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/auth/session/webSessionFetch.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/auth/session/webSessionUser.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/auth/social/**",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/auth/sso/ssoRequired.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/auth/sso/ssoRequired.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/auth/sso/ssoRequiredChunkFailure.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/auth/sso/SsoRequiredDialogContent.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/auth/sso/SsoRequiredDialogContent.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/auth/sso/ssoRequiredDialogKey.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/auth/sso/ssoRequiredInline.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/auth/sso/ssoRequiredInline.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/auth/sso/ssoReturnPath.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/auth/sso/ssoReturnPath.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/auth/sso/ssoTelemetry.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/auth/sso/useContinueWithSso.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/auth/unified/**",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/auth/webSessionFlagOff.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/platform/auth/webSessionFlagOn.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/platform/workspace/auth/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/workspace/stores/legacyWorkspaceTokenRail.lifecycle.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/workspace/stores/legacyWorkspaceTokenRail.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/workspace/stores/legacyWorkspaceTokenRail.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/workspace/stores/useWorkspaceAuth.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/workspace/stores/workspaceAuthError.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/workspace/stores/workspaceAuthStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/apiKeyAuthStore.integration.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/apiKeyAuthStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/authStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/authStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/userStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/userStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/components/actionbar/PartnerNodesRunCaption.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/ApiNodesSignInContent.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/ApiNodesSignInContent.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/setting/CurrentUserMessage.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/setting/UserPanel.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/setting/UserPanel.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/signin/ApiKeyForm.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/signin/ApiKeyForm.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/signin/PasswordFields.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/signin/SignInForm.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/signin/SignInForm.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/signin/SignUpForm.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/signin/SignUpForm.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/signin/TurnstileWidget.render.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/signin/TurnstileWidget.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/signin/TurnstileWidget.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/SignInContent.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/SignInContent.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/content/UpdatePasswordContent.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/header/ComfyOrgHeader.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/sidebar/SidebarLogoutIcon.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/topbar/CurrentUserButton.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/topbar/CurrentUserButton.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/topbar/CurrentUserPopoverLegacy.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/topbar/CurrentUserPopoverLegacy.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/topbar/LoginButton.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/stores/__tests__/authTokenPriority.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/node/usePartnerNodesInGraph.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/node/usePartnerNodesInGraph.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/utils/__tests__/stubAccountIdentityPort.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/utils/hostWhitelist.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/hostWhitelist.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/config/firebase.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/config/firebase.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/config/turnstile.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/config/turnstile.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/schemas/signInSchema.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/authTypes.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/axios-augmentation.d.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/views/UserSelectView.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/views/UserSelectView.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/storybook/mocks/useCurrentUser.ts",
+      "role": "application"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Firebase identity drives sign-in, sign-out, current-user projection, and auth headers",
+      "checks": [
+        "src/stores/authStore.test.ts",
+        "src/platform/auth/firebaseIdentity.test.ts",
+        "src/platform/auth/firebaseIdentityPopupWatch.test.ts",
+        "src/composables/auth/useAuthActions.test.ts",
+        "src/composables/auth/authErrorEnumeration.test.ts",
+        "src/composables/auth/useCurrentUser.test.ts",
+        "src/platform/auth/social/useSocialSignIn.test.ts"
+      ]
+    },
+    {
+      "name": "Workspace-scoped credentials are valid on read, re-mint once on rejection, and fail closed",
+      "checks": [
+        "src/platform/workspace/stores/useWorkspaceAuth.test.ts",
+        "src/platform/workspace/stores/legacyWorkspaceTokenRail.test.ts",
+        "src/platform/workspace/stores/legacyWorkspaceTokenRail.lifecycle.test.ts",
+        "src/platform/auth/unified/remintRetry.test.ts",
+        "src/platform/auth/authRejection.test.ts",
+        "src/platform/auth/authCredential.test.ts",
+        "src/platform/workspace/auth/WorkspaceAuthGate.test.ts"
+      ]
+    },
+    {
+      "name": "Shared web session cookie and SSO-required refusals reach the right sign-in surface",
+      "checks": [
+        "src/platform/auth/session/useSessionCookie.test.ts",
+        "src/platform/auth/session/components/SessionReconnecting.test.ts",
+        "src/platform/auth/webSessionFlagOn.test.ts",
+        "src/platform/auth/webSessionFlagOff.test.ts",
+        "src/platform/auth/nonWebClientsStayOnTokens.test.ts",
+        "src/platform/auth/sso/ssoRequired.test.ts",
+        "src/platform/auth/sso/ssoRequiredInline.test.ts",
+        "src/platform/auth/sso/ssoRequiredChunkFailure.test.ts",
+        "src/platform/auth/sso/SsoRequiredDialogContent.test.ts",
+        "src/platform/auth/sso/ssoReturnPath.test.ts"
+      ]
+    },
+    {
+      "name": "Desktop host, API key, partner-node token, Turnstile, and local multi-user sign-in paths",
+      "checks": [
+        "src/platform/auth/desktopHost/desktopHostSession.test.ts",
+        "src/stores/apiKeyAuthStore.integration.test.ts",
+        "src/platform/auth/partnerNode/partnerNodeQueueToken.test.ts",
+        "src/platform/auth/partnerNode/partnerNodeTokenSource.test.ts",
+        "src/composables/billing/usePartnerNodesRunGate.test.ts",
+        "src/composables/billing/usePartnerNodesRunGate.cloud.test.ts",
+        "src/composables/auth/useTurnstile.test.ts",
+        "src/stores/userStore.test.ts"
+      ]
+    },
+    {
+      "name": "Sign-in dialog switches between sign-in, sign-up, and API key forms and guards sign-up with Turnstile",
+      "checks": [
+        "src/components/dialog/content/SignInContent.test.ts",
+        "src/components/dialog/content/signin/SignInForm.test.ts",
+        "src/components/dialog/content/signin/SignUpForm.test.ts",
+        "src/components/dialog/content/signin/ApiKeyForm.test.ts",
+        "src/components/dialog/content/signin/TurnstileWidget.test.ts",
+        "src/components/dialog/content/ApiNodesSignInContent.test.ts"
+      ]
+    },
+    {
+      "name": "Current user button, legacy popover, and user panel reflect the signed-in account",
+      "checks": [
+        "src/components/topbar/CurrentUserButton.test.ts",
+        "src/components/topbar/CurrentUserPopoverLegacy.test.ts",
+        "src/components/dialog/content/setting/UserPanel.test.ts"
+      ]
+    },
+    {
+      "name": "Auth header and token resolution prefer workspace, unified, Firebase, then API-key credentials",
+      "checks": ["src/stores/__tests__/authTokenPriority.test.ts"]
+    },
+    {
+      "name": "Partner nodes in the graph feed the run gate, and sign-in hosts are whitelisted",
+      "checks": [
+        "src/composables/node/usePartnerNodesInGraph.test.ts",
+        "src/composables/billing/usePartnerNodesRunGate.test.ts",
+        "src/utils/hostWhitelist.test.ts",
+        "src/stores/authStore.test.ts"
+      ]
+    },
+    {
+      "name": "Firebase and Turnstile configuration resolve per-environment keys with remote-config overrides",
+      "checks": ["src/config/firebase.test.ts", "src/config/turnstile.test.ts"]
+    },
+    {
+      "name": "Local multi-user select view lists users, creates a user, and routes after selection",
+      "checks": ["src/views/UserSelectView.test.ts"]
+    }
+  ],
+  "adrs": [
+    "docs/adr/AUTH-IDENTITY-0033-account-package-owns-identity-taken-at-construction.md",
+    "docs/adr/AUTH-IDENTITY-0028-account-package-firebase-entry-delivers-cloud-identity.md",
+    "docs/adr/AUTH-CREDENTIALS-0011-cloud-credential-lifecycle-invariants.md",
+    "docs/adr/AUTH-SESSION-0037-shared-web-session-on-a-host-only-cookie.md",
+    "docs/adr/AUTH-LOCAL-0043-local-comfyui-signs-in-through-cloud-oauth.md"
+  ],
+  "compatibilityPromises": [
+    "Unclassified callers, the cloud record, workspace, billing, and app bootstrap code may continue importing authentication internals during inventory; imports from classified domains remain subject to cross-domain rules.",
+    "authStore, useCurrentUser, apiKeyAuthStore, and userStore remain the app-wide identity seams; authStore stays a projection over the account-package identity and pushes nothing into the session client.",
+    "workspaceAuthStore keeps constructing the session client with the package Firebase identity, and the legacy workspace-token rail remains until the unified_cloud_auth flag retires it.",
+    "Balance, customer, and credit-purchase calls still living in authStore, usePartnerNodesRunGate living under composables/billing, and stores or composables that open dialogs or call scripts/api remain visible as responsibility and role-boundary debt; classification does not grant dependency exceptions."
+  ],
+  "deepImports": "inventory"
+}

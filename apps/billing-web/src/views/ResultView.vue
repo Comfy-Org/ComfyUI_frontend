@@ -6,10 +6,11 @@
  * pointer — and the projection over it is what the page shows. The trip back
  * to the product carries the coarse outcome and the operation id.
  */
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
+import { isTerminal } from '@comfyorg/account-core/billing'
 import {
   CheckoutSteps,
   useBillingClient,
@@ -22,6 +23,7 @@ import HostedSurface from '@/components/HostedSurface.vue'
 import { useHostedCopy } from '@/composables/useHostedCopy'
 import { awaitBillingWebStripeKey } from '@/config/stripeKey'
 import { createDeferredStripeChallengePort } from '@/session/stripeChallengePort'
+import { reportReturnedSubscriptionCheckout } from '@/telemetry/subscriptionCheckoutTelemetry'
 
 const { t } = useI18n()
 const { coded } = useHostedCopy()
@@ -35,6 +37,14 @@ const checkout = useCheckout({
   // Deferred: reads the key at challenge time, not this setup's snapshot.
   challengePort: createDeferredStripeChallengePort(awaitBillingWebStripeKey)
 })
+
+watch(
+  () => checkout.operation.value,
+  (operation) => {
+    if (operation !== undefined && isTerminal(operation))
+      reportReturnedSubscriptionCheckout(operation, { ui: 'embedded' })
+  }
+)
 
 const recovering = ref(true)
 const recoveryFailure = ref<string | undefined>()

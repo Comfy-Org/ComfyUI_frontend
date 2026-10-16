@@ -22,8 +22,7 @@ function renderButton(nodePacks = [pack]) {
   return render(PackUpdateButton, {
     props: { nodePacks },
     global: {
-      plugins: [createI18n({ legacy: false, locale: 'en', messages: { en } })],
-      directives: { tooltip: {} }
+      plugins: [createI18n({ legacy: false, locale: 'en', messages: { en } })]
     }
   })
 }

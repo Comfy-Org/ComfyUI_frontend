@@ -9,7 +9,10 @@ import type {
   BillingTelemetryEvent,
   CheckoutJourneyTelemetryEvent
 } from '@comfyorg/account-core/billing'
-import type { WebSessionTelemetryEvent } from '@comfyorg/account-core/telemetry'
+import type {
+  SsoTelemetryEvent,
+  WebSessionTelemetryEvent
+} from '@comfyorg/account-core/telemetry'
 import type { CaptureResult, PostHog } from 'posthog-js'
 import { watch } from 'vue'
 import type { WatchStopHandle } from 'vue'
@@ -35,10 +38,12 @@ import type {
   AgentConsentOfferExitedMetadata,
   AgentConsentResolvedMetadata,
   AgentConsentShownMetadata,
+  AgentCreditTransitionNoticeMetadata,
   AgentEntryButtonClickedMetadata,
   AgentErrorMetadata,
   AgentFreeUseExposureMetadata,
   AgentFreeUseNoticeMetadata,
+  AgentGraphProjectionMetadata,
   AgentPaywallCtaMetadata,
   AgentPaywallShownMetadata,
   AgentMessageSentMetadata,
@@ -467,6 +472,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(event.name, event.properties)
   }
 
+  trackSsoEvent(event: SsoTelemetryEvent): void {
+    this.trackEvent(event.name, event.properties)
+  }
+
   trackImageLoadFailed(metadata: ImageLoadFailureMetadata): void {
     this.trackEvent(TelemetryEvents.IMAGE_LOAD_FAILED, metadata)
   }
@@ -561,6 +570,12 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackAgentPaywallCtaClicked(metadata: AgentPaywallCtaMetadata): void {
     this.trackEvent(TelemetryEvents.AGENT_PAYWALL_CTA_CLICKED, metadata)
+  }
+
+  trackAgentCreditTransitionNotice(
+    metadata: AgentCreditTransitionNoticeMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.AGENT_CREDIT_TRANSITION_NOTICE, metadata)
   }
 
   trackRunButton(properties: RunButtonProperties): void {
@@ -872,6 +887,11 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackAgentWorkflowApplied(metadata: AgentWorkflowAppliedMetadata): void {
     this.trackEvent(TelemetryEvents.AGENT_WORKFLOW_APPLIED, metadata)
+  }
+
+  // fallow-ignore-next-line unused-class-member
+  trackAgentGraphProjection(metadata: AgentGraphProjectionMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_GRAPH_PROJECTION, metadata)
   }
 
   // fallow-ignore-next-line unused-class-member

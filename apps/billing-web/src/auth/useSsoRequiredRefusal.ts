@@ -12,6 +12,10 @@ import type { Ref } from 'vue'
 import { CLOUD_BASE_URL } from '@/config/env'
 import { resolveBillingWebIdentity } from '@/config/firebase'
 import { readBillingWebSsoEnabled } from '@/config/ssoEnabled'
+import {
+  reportSsoContinueClicked,
+  reportSsoRequiredShown
+} from '@/telemetry/ssoTelemetry'
 
 interface SsoRequiredRefusal {
   readonly code: Readonly<Ref<SessionErrorCode | undefined>>
@@ -64,12 +68,18 @@ export function useSsoRequiredRefusal(refusal: SsoRequiredRefusal) {
       : undefined
   })
 
+  const offered = computed(() => destination.value !== undefined)
+  watch(offered, (shown) => {
+    if (shown) reportSsoRequiredShown()
+  })
+
   const leaving = ref(false)
   const signOutFailed = ref(false)
 
   async function continueWithSso(): Promise<void> {
     const target = destination.value
     if (target === undefined || leaving.value) return
+    reportSsoContinueClicked()
     leaving.value = true
     signOutFailed.value = false
     if (!(await signOutOfFirebase())) {
@@ -81,7 +91,7 @@ export function useSsoRequiredRefusal(refusal: SsoRequiredRefusal) {
   }
 
   return {
-    offered: computed(() => destination.value !== undefined),
+    offered,
     email,
     leaving,
     signOutFailed,

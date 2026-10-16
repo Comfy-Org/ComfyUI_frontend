@@ -118,8 +118,10 @@ export const TestIds = {
     loginButtonPopover: 'login-button-popover',
     loginButtonPopoverLearnMore: 'login-button-popover-learn-more',
     workflowTabs: 'topbar-workflow-tabs',
+    workflowTabStrip: 'workflow-tab-strip',
     workflowTab: 'workflow-tab',
     closeWorkflowButton: 'close-workflow-button',
+    workflowDirtyIndicator: 'workflow-dirty-indicator',
     integratedTabBarActions: 'integrated-tab-bar-actions',
     actionBarButtons: 'action-bar-buttons',
     actionBarCard: 'action-bar-card',
@@ -180,7 +182,9 @@ export const TestIds = {
     colorBlue: 'blue',
     colorRed: 'red',
     convertSubgraph: 'convert-to-subgraph-button',
-    bypass: 'bypass-button'
+    bypass: 'bypass-button',
+    hideLinks: 'hide-links-button',
+    deleteLinks: 'delete-links-button'
   },
   helpCenter: {
     button: 'help-center-button',

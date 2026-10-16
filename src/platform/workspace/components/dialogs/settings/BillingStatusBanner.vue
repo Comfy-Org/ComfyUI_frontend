@@ -36,6 +36,7 @@
           v-if="banner.action === 'addCredits'"
           variant="secondary"
           size="lg"
+          :data-dd-action-name="BILLING_ACTION_NAME.addCreditsStatusBanner"
           @click="handleAddCredits"
         >
           {{ $t('workspacePanel.billingStatus.outOfCredits.addCredits') }}
@@ -88,6 +89,7 @@
 </template>
 
 <script setup lang="ts">
+import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -107,7 +109,7 @@ import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
 import { useScheduledPlanChange } from '@/platform/workspace/composables/useScheduledPlanChange'
 import { useWorkspaceTierLabel } from '@/platform/workspace/composables/useWorkspaceTierLabel'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
-import { useDialogService } from '@/services/dialogService'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 
 type BannerAction =
   | 'addCredits'
@@ -133,7 +135,7 @@ const {
   planName: scheduledPlanName,
   isDisplayable: canShowScheduledChange
 } = useScheduledPlanChange()
-const dialogService = useDialogService()
+const { showTopUpCreditsDialog } = useBillingDialogs()
 const subscriptionDialog = useSubscriptionDialog()
 const { isSalesManagedPlan, isEnterprisePlan: isEndedEnterprisePlan } =
   usePlanEnded()
@@ -362,7 +364,7 @@ const banner = computed<BannerView | null>(() =>
 )
 
 function handleAddCredits() {
-  void dialogService.showTopUpCreditsDialog()
+  void showTopUpCreditsDialog()
 }
 function handleResubscribePlan() {
   subscriptionDialog.show({

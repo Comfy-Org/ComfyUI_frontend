@@ -1,7 +1,7 @@
 import type { PromptInfo } from '@comfyorg/ingest-types'
 import { z } from 'zod'
 import { zNodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { TaskStatus } from '@/platform/tasks/services/taskService'
+import type { TaskStatus } from '@/platform/tasks/services/taskSchema'
 import { resultItemType } from '@/schemas/resultItemTypeSchema'
 
 export type JobId = string
@@ -11,7 +11,8 @@ export const zResultItem = z.object({
   subfolder: z.string().optional(),
   type: resultItemType.optional(),
   display_name: z.string().optional(),
-  id: z.string().optional()
+  id: z.string().optional(),
+  preview_id: z.string().optional()
 })
 export type ResultItem = z.infer<typeof zResultItem>
 // Uses .passthrough() because custom nodes can output arbitrary keys.

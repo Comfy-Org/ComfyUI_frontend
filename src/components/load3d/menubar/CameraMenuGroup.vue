@@ -1,6 +1,9 @@
 <template>
-  <button
-    v-tooltip.bottom="tip(t('load3d.menuBar.switchProjection'))"
+  <Button
+    variant="textonly"
+    size="unset"
+    :tooltip="t('load3d.menuBar.switchProjection')"
+    tooltip-side="bottom"
     :class="actionClass(false)"
     type="button"
     :aria-label="compact ? t('load3d.menuBar.switchProjection') : undefined"
@@ -8,11 +11,14 @@
   >
     <i class="icon-[lucide--camera] size-4" />
     <span v-if="!compact">{{ cameraTypeLabel }}</span>
-  </button>
+  </Button>
 
-  <button
+  <Button
     v-if="hasCustomUp"
-    v-tooltip.bottom="tip(upActionLabel)"
+    variant="textonly"
+    size="unset"
+    :tooltip="upActionLabel"
+    tooltip-side="bottom"
     :class="actionClass(false)"
     type="button"
     :aria-label="compact ? upActionLabel : undefined"
@@ -27,19 +33,22 @@
       "
     />
     <span v-if="!compact">{{ upLabel }}</span>
-  </button>
+  </Button>
 
   <Popover v-if="isPerspective" v-model:open="fovOpen">
     <PopoverTrigger as-child>
-      <button
-        v-tooltip.bottom="tip(t('load3d.menuBar.fov'))"
+      <Button
+        variant="textonly"
+        size="unset"
+        :tooltip="t('load3d.menuBar.fov')"
+        tooltip-side="bottom"
         :class="actionClass(false)"
         type="button"
         :aria-label="compact ? t('load3d.menuBar.fov') : undefined"
       >
         <i class="icon-[lucide--focus] size-4" />
         <span v-if="!compact">{{ t('load3d.menuBar.fov') }}</span>
-      </button>
+      </Button>
     </PopoverTrigger>
     <PopoverContent
       side="bottom"
@@ -63,21 +72,22 @@
 </template>
 
 <script setup lang="ts">
+import { PopoverTrigger } from 'reka-ui'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 import {
   actionClass,
-  formPanelClass,
-  tip
+  formPanelClass
 } from '@/components/load3d/menubar/menuBarStyles'
 import { usePopoverExclusivity } from '@/components/load3d/menubar/usePopoverExclusivity'
+import Button from '@/components/ui/button/Button.vue'
 import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import Slider from '@/components/ui/slider/Slider.vue'
 import type { CameraConfig } from '@/extensions/core/load3d/interfaces'
-import { cn } from '@comfyorg/tailwind-utils'
-import { PopoverTrigger } from 'reka-ui'
 
 const { compact = false } = defineProps<{
   compact?: boolean

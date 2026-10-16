@@ -1,4 +1,4 @@
-import type { Op } from '@comfyorg/comfy-multi-player'
+import { SCHEMA_VERSION } from '@comfyorg/comfy-multi-player'
 import type { DocResetData } from '@comfyorg/ingest-types'
 
 import { reportError } from '@/platform/telemetry/reportError'
@@ -511,7 +511,8 @@ export class DocFrameClient extends EventTarget {
       v: DOC_PROTOCOL_VERSION,
       workflow_id: workflowId,
       state_vector_b64: encodeBase64(stateVector),
-      supports_reseed: true
+      supports_reseed: true,
+      schema_version: SCHEMA_VERSION
     })
   }
 
@@ -537,7 +538,7 @@ export class DocFrameClient extends EventTarget {
   }
 
   /** @returns whether the ops frame actually left the transport. */
-  sendOps(workflowId: string, tab: string, ops: DocOp[] | Op[]): boolean {
+  sendOps(workflowId: string, tab: string, ops: readonly DocOp[]): boolean {
     return this.send('doc_ops', {
       v: DOC_PROTOCOL_VERSION,
       workflow_id: workflowId,

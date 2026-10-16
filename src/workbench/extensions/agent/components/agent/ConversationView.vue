@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
 import {
   useEventListener,
   useIntersectionObserver,
@@ -9,7 +10,6 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
-import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -42,7 +42,7 @@ const {
 const emit = defineEmits<{
   feedback: [turnId: string, vote: 'up' | 'down' | null]
   editPrompt: [prompt: PromptSnapshot]
-  answerAsk: [askId: string, selection: 'run' | 'cancel']
+  answerAsk: [askId: string, answer: AgentAnswerRequest]
   openWorkflow: [askId: string, workflowId: string, workflowName?: string]
   approvalShown: [askId: string, turnId: string, workflowId: string | null]
   openReferenceWorkflow: [workflowId: string, workflowName: string]
@@ -254,10 +254,7 @@ watch(
               :answering-ask-ids
               :paywall-presentation
               @feedback="emit('feedback', entry.id, $event)"
-              @answer-ask="
-                (askId: string, selection: 'run' | 'cancel') =>
-                  emit('answerAsk', askId, selection)
-              "
+              @answer-ask="(askId, answer) => emit('answerAsk', askId, answer)"
               @approval-shown="
                 (askId, turnId, workflowId) =>
                   emit('approvalShown', askId, turnId, workflowId)
@@ -275,7 +272,7 @@ watch(
 
     <Button
       v-if="!shouldFollowLatest"
-      v-tooltip.top="buildTooltipConfig(t('agent.latest'))"
+      :tooltip="t('agent.latest')"
       type="button"
       variant="secondary"
       size="icon"
