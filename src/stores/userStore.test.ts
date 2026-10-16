@@ -1,19 +1,16 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { useUserStore } from './userStore'
+import { api } from '@/scripts/api'
 
-const getUserConfig = vi.fn()
+const getUserConfig = vi.mocked(api.getUserConfig)
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    getUserConfig: (...args: unknown[]) => getUserConfig(...args)
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 describe('userStore', () => {
   describe('initialize', () => {
     it('fetches user config on first call', async () => {
-      getUserConfig.mockResolvedValue({})
+      getUserConfig.mockResolvedValue({ storage: 'server' })
       const store = useUserStore()
 
       await store.initialize()
@@ -23,7 +20,7 @@ describe('userStore', () => {
     })
 
     it('is a no-op once already initialized', async () => {
-      getUserConfig.mockResolvedValue({})
+      getUserConfig.mockResolvedValue({ storage: 'server' })
       const store = useUserStore()
       await store.initialize()
       getUserConfig.mockClear()
@@ -35,7 +32,7 @@ describe('userStore', () => {
 
     it('retries on a subsequent call when the first fetch failed', async () => {
       getUserConfig.mockRejectedValueOnce(new Error('network down'))
-      getUserConfig.mockResolvedValueOnce({})
+      getUserConfig.mockResolvedValueOnce({ storage: 'server' })
       const store = useUserStore()
 
       await expect(store.initialize()).rejects.toThrow('network down')
@@ -47,7 +44,9 @@ describe('userStore', () => {
     })
 
     it('deduplicates concurrent calls before the first fetch resolves', async () => {
-      let resolveConfig: (value: unknown) => void = () => {}
+      let resolveConfig: (
+        value: Awaited<ReturnType<typeof api.getUserConfig>>
+      ) => void = () => {}
       getUserConfig.mockImplementation(
         () =>
           new Promise((resolve) => {
@@ -58,7 +57,7 @@ describe('userStore', () => {
 
       const a = store.initialize()
       const b = store.initialize()
-      resolveConfig({})
+      resolveConfig({ storage: 'server' })
       await Promise.all([a, b])
 
       expect(getUserConfig).toHaveBeenCalledTimes(1)

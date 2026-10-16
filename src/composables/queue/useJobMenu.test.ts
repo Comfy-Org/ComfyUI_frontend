@@ -44,14 +44,11 @@ vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
 let workflowStoreMock: ReturnType<typeof useWorkflowStore>
 
-const cancelJobMock = vi.fn()
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    cancelJob: (jobId: string) => cancelJobMock(jobId)
-  }
-}))
+vi.mock(import('@/scripts/api'))
+
+import { api } from '@/scripts/api'
+
+const cancelJobMock = vi.mocked(api.cancelJob)
 
 const downloadBlobMock = vi.fn()
 

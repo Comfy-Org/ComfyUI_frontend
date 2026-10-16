@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AssetInfo, HubWorkflowDetail } from '@comfyorg/ingest-types'
 
 import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
+import { api } from '@/scripts/api'
 
 const mockApp = vi.hoisted(() => ({
   rootGraph: {} as object | null,
@@ -17,20 +18,10 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: mockApp
 }))
 
-const mockGetShareableAssets = vi.fn()
-const mockFetchApi = vi.fn()
+const mockGetShareableAssets = vi.mocked(api.getShareableAssets)
+const mockFetchApi = vi.mocked(api.fetchApi)
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    getServerFeature: (_name: string, defaultValue: unknown) => defaultValue,
-    getShareableAssets: (...args: unknown[]) => mockGetShareableAssets(...args),
-    fetchApi: (...args: unknown[]) => mockFetchApi(...args),
-    apiURL: (route: string) => `/api${route}`,
-    fileURL: (route: string) => route
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 beforeEach(() => {
   vi.spyOn(useAssetsStore().inputAssets, 'invalidate').mockResolvedValue(

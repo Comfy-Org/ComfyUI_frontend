@@ -65,18 +65,7 @@ const createTaskOutput = (
 type QueueResponse = { Running: JobListItem[]; Pending: JobListItem[] }
 type QueueResolver = (value: QueueResponse) => void
 
-// Mock API
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    getQueue: vi.fn(),
-    getHistory: vi.fn(),
-    clearItems: vi.fn(),
-    deleteItem: vi.fn(),
-    apiURL: vi.fn((path) => `/api${path}`),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn()
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 describe('useQueuePendingTaskCountStore', () => {
   it.for([

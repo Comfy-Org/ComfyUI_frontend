@@ -6,17 +6,11 @@ import { createI18n } from 'vue-i18n'
 
 import LogsTerminal from '@/components/bottomPanel/tabs/terminal/LogsTerminal.vue'
 import { useExecutionStore } from '@/stores/executionStore'
+import { api } from '@/scripts/api'
 
-const apiMock = vi.hoisted(
-  () =>
-    new (class extends EventTarget {
-      clientId: string | null = 'test-client'
-      getRawLogs = vi.fn(async () => ({ entries: [{ m: 'log line\n' }] }))
-      subscribeLogs = vi.fn(async () => {})
-    })()
-)
+const apiMock = vi.mocked(api)
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({ api: apiMock }))
+vi.mock(import('@/scripts/api'))
 
 const terminalMock = vi.hoisted(() => ({
   open: vi.fn(),
@@ -79,21 +73,25 @@ const renderLogsTerminal = () =>
     }
   })
 
-// Resolve a getRawLogs call manually to drive deterministic timing in tests
-// that need to observe behavior mid-fetch.
 const deferredRawLogs = () => {
-  let resolve!: (value: { entries: { m: string }[] }) => void
+  let resolve!: (value: Awaited<ReturnType<typeof api.getRawLogs>>) => void
   let reject!: (err: unknown) => void
-  const promise = new Promise<{ entries: { m: string }[] }>((res, rej) => {
-    resolve = res
-    reject = rej
-  })
+  const promise = new Promise<Awaited<ReturnType<typeof api.getRawLogs>>>(
+    (res, rej) => {
+      resolve = res
+      reject = rej
+    }
+  )
   return { promise, resolve, reject }
 }
 
 describe('LogsTerminal', () => {
   beforeEach(() => {
     apiMock.clientId = 'test-client'
+    apiMock.getRawLogs.mockResolvedValue({
+      entries: [{ t: '00:00:00', m: 'log line\n' }],
+      size: { cols: 80, row: 24 }
+    })
     useExecutionStore().clientId = 'test-client'
   })
 
@@ -114,7 +112,7 @@ describe('LogsTerminal', () => {
       expect(apiMock.subscribeLogs).toHaveBeenCalledWith(true)
     })
 
-    apiMock.dispatchEvent(new CustomEvent('reconnected'))
+    apiMock.dispatchCustomEvent('reconnected')
 
     await vi.waitFor(() => {
       expect(apiMock.getRawLogs).toHaveBeenCalledTimes(2)
@@ -124,7 +122,6 @@ describe('LogsTerminal', () => {
       expect(apiMock.subscribeLogs).toHaveBeenLastCalledWith(true)
     })
 
-    // The full sequence must be: reset -> write -> scroll -> subscribe
     const resetOrder = terminalMock.reset.mock.invocationCallOrder[0]
     const writeOrder = terminalMock.write.mock.invocationCallOrder.at(-1)!
     const scrollOrder = terminalMock.scrollToBottom.mock.invocationCallOrder[0]
@@ -141,25 +138,26 @@ describe('LogsTerminal', () => {
       expect(apiMock.subscribeLogs).toHaveBeenCalledWith(true)
     })
 
-    // First resync hangs on getRawLogs
     const first = deferredRawLogs()
     apiMock.getRawLogs.mockImplementationOnce(() => first.promise)
-    apiMock.dispatchEvent(new CustomEvent('reconnected'))
+    apiMock.dispatchCustomEvent('reconnected')
     await vi.waitFor(() => {
       expect(apiMock.getRawLogs).toHaveBeenCalledTimes(2)
     })
 
-    // Second resync resolves immediately
     apiMock.getRawLogs.mockImplementationOnce(async () => ({
-      entries: [{ m: 'fresh\n' }]
+      entries: [{ t: '00:00:00', m: 'fresh\n' }],
+      size: { cols: 80, row: 24 }
     }))
-    apiMock.dispatchEvent(new CustomEvent('reconnected'))
+    apiMock.dispatchCustomEvent('reconnected')
     await vi.waitFor(() => {
       expect(terminalMock.reset).toHaveBeenCalledTimes(1)
     })
 
-    // Now resolve the first (aborted) resync — none of its side effects must apply
-    first.resolve({ entries: [{ m: 'stale\n' }] })
+    first.resolve({
+      entries: [{ t: '00:00:00', m: 'stale\n' }],
+      size: { cols: 80, row: 24 }
+    })
     await nextTick()
     await nextTick()
 
@@ -169,7 +167,6 @@ describe('LogsTerminal', () => {
   })
 
   it('aborts an in-flight mount fetch when "reconnected" arrives first', async () => {
-    // Mount's getRawLogs hangs so we can drive the race deterministically.
     const mount = deferredRawLogs()
     apiMock.getRawLogs.mockImplementationOnce(() => mount.promise)
     renderLogsTerminal()
@@ -177,18 +174,20 @@ describe('LogsTerminal', () => {
       expect(apiMock.getRawLogs).toHaveBeenCalledTimes(1)
     })
 
-    // Resync wins the race and writes the post-reboot snapshot.
     apiMock.getRawLogs.mockImplementationOnce(async () => ({
-      entries: [{ m: 'fresh\n' }]
+      entries: [{ t: '00:00:00', m: 'fresh\n' }],
+      size: { cols: 80, row: 24 }
     }))
-    apiMock.dispatchEvent(new CustomEvent('reconnected'))
+    apiMock.dispatchCustomEvent('reconnected')
     await vi.waitFor(() => {
       expect(terminalMock.reset).toHaveBeenCalledTimes(1)
       expect(terminalMock.write).toHaveBeenCalledWith('fresh\n')
     })
 
-    // Mount's late response must not stomp on the freshly-reset terminal.
-    mount.resolve({ entries: [{ m: 'stale-mount\n' }] })
+    mount.resolve({
+      entries: [{ t: '00:00:00', m: 'stale-mount\n' }],
+      size: { cols: 80, row: 24 }
+    })
     await nextTick()
     await nextTick()
 
@@ -203,7 +202,7 @@ describe('LogsTerminal', () => {
 
     apiMock.getRawLogs.mockRejectedValueOnce(new Error('boom'))
 
-    apiMock.dispatchEvent(new CustomEvent('reconnected'))
+    apiMock.dispatchCustomEvent('reconnected')
 
     await vi.waitFor(() => {
       expect(
@@ -227,7 +226,10 @@ describe('LogsTerminal', () => {
   it('recovers from an initial load failure when a reconnect arrives', async () => {
     apiMock.getRawLogs
       .mockRejectedValueOnce(new Error('initial fail'))
-      .mockResolvedValueOnce({ entries: [{ m: 'recovered\n' }] })
+      .mockResolvedValueOnce({
+        entries: [{ t: '00:00:00', m: 'recovered\n' }],
+        size: { cols: 80, row: 24 }
+      })
 
     renderLogsTerminal()
 
@@ -237,7 +239,7 @@ describe('LogsTerminal', () => {
       ).toContain('Unable to load logs')
     })
 
-    apiMock.dispatchEvent(new CustomEvent('reconnected'))
+    apiMock.dispatchCustomEvent('reconnected')
 
     await vi.waitFor(() => {
       expect(screen.queryByTestId('terminal-error-message')).toBeNull()
@@ -257,11 +259,10 @@ describe('LogsTerminal', () => {
       expect(apiMock.subscribeLogs).toHaveBeenCalledWith(false)
     })
 
-    apiMock.dispatchEvent(new CustomEvent('reconnected'))
+    apiMock.dispatchCustomEvent('reconnected')
     await nextTick()
 
     expect(terminalMock.reset).not.toHaveBeenCalled()
-    // No additional getRawLogs beyond the mount-time call
     expect(apiMock.getRawLogs).toHaveBeenCalledTimes(1)
   })
 
@@ -275,7 +276,10 @@ describe('LogsTerminal', () => {
     })
 
     unmount()
-    pending.resolve({ entries: [{ m: 'late\n' }] })
+    pending.resolve({
+      entries: [{ t: '00:00:00', m: 'late\n' }],
+      size: { cols: 80, row: 24 }
+    })
     await nextTick()
     await nextTick()
 

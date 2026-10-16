@@ -26,15 +26,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 vi.mock(import('@/composables/useFeatureFlags'))
 const mockInvalidateInputAssets = vi.hoisted(() => vi.fn())
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    fetchApi: vi.fn(),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    addCustomEventListener: vi.fn(),
-    removeCustomEventListener: vi.fn()
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 vi.mock(import('@/i18n'))
 

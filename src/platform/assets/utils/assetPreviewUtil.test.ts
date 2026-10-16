@@ -10,23 +10,15 @@ import {
   resolvePreviewUrl
 } from '@/platform/assets/utils/assetPreviewUtil'
 
-const mockFetchApi = vi.hoisted(() => vi.fn())
-const mockApiURL = vi.hoisted(() =>
-  vi.fn((path: string) => `http://localhost:8188${path}`)
-)
+import { api } from '@/scripts/api'
+
+const mockFetchApi = vi.mocked(api.fetchApi)
+const mockApiURL = vi.mocked(api.apiURL)
 const mockUploadAssetFromBase64 = vi.hoisted(() => vi.fn())
 const mockUpdateAsset = vi.hoisted(() => vi.fn())
 const mockInvalidateOutputAssets = vi.hoisted(() => vi.fn())
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    fetchApi: mockFetchApi,
-    apiURL: mockApiURL,
-    api_base: ''
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
@@ -37,10 +29,7 @@ vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
 }))
 
 function mockFetchResponse(assets: Record<string, unknown>[]) {
-  mockFetchApi.mockResolvedValueOnce({
-    ok: true,
-    json: () => Promise.resolve({ assets })
-  })
+  mockFetchApi.mockResolvedValueOnce(Response.json({ assets }))
 }
 
 function mockFetchEmpty() {
@@ -48,7 +37,7 @@ function mockFetchEmpty() {
 }
 
 function mockFetchError() {
-  mockFetchApi.mockResolvedValueOnce({ ok: false })
+  mockFetchApi.mockResolvedValueOnce(new Response(null, { status: 500 }))
 }
 
 const cloudAsset = {
@@ -80,6 +69,7 @@ const localAssetWithPreview = {
 }
 
 beforeEach(() => {
+  mockApiURL.mockImplementation((path) => `http://localhost:8188${path}`)
   vi.spyOn(useAssetsStore().outputAssets, 'invalidate').mockImplementation(
     mockInvalidateOutputAssets
   )

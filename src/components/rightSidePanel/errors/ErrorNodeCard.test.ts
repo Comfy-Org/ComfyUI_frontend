@@ -15,17 +15,14 @@ import { validationError } from '@/utils/__tests__/nodeErrorHelpers'
 
 import ErrorNodeCard from './ErrorNodeCard.vue'
 import type { ErrorCardData } from './types'
+import { api } from '@/scripts/api'
 
-const mockGetLogs = vi.fn(() => Promise.resolve('mock server logs'))
+const mockGetLogs = vi.mocked(api.getLogs)
 const mockGenerateErrorReport = vi.fn(
   (_data?: unknown) => '# ComfyUI Error Report\n...'
 )
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    getLogs: () => mockGetLogs()
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 vi.mock(import('@/scripts/app'))
 

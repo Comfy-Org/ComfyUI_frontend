@@ -3,10 +3,14 @@ import { defineComponent, nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import { render } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { api } from '@/scripts/api'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import type { DocOp } from './docFrameClient'
 import type { GraphOperation } from './graphOperations'
+
+const apiEvents: EventTarget = api
 
 const bridgeState = vi.hoisted(() => {
   const transport = { up: true }
@@ -79,23 +83,6 @@ const devLogState = vi.hoisted(() => ({
   recordDevEvent: vi.fn()
 }))
 
-const apiState = vi.hoisted(() => {
-  const target = new EventTarget()
-  return {
-    target,
-    api: {
-      socket: { readyState: 1, send: vi.fn() },
-      addCustomEventListener: vi.fn(),
-      removeCustomEventListener: vi.fn(),
-      addEventListener: (type: string, listener: EventListener) =>
-        target.addEventListener(type, listener),
-      removeEventListener: vi.fn((type: string, listener: EventListener) =>
-        target.removeEventListener(type, listener)
-      )
-    }
-  }
-})
-
 vi.mock<unknown>(import('./layoutFollowerBridge'), () => ({
   LayoutFollowerBridge: class {
     constructor() {
@@ -132,7 +119,7 @@ vi.mock(import('./devPanelLog'), () => ({
   recordDevEvent: devLogState.recordDevEvent
 }))
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({ api: apiState.api }))
+vi.mock(import('@/scripts/api'))
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { graph: null, canvas: null }
 }))
@@ -190,6 +177,7 @@ function dispatchOpsResult(detail: unknown): void {
 }
 
 beforeEach(() => {
+  api.socket = fromPartial<WebSocket>({ readyState: 1, send: vi.fn() })
   useAgentPanelStore().enabled = true
   bridgeState.current = null
   bridgeState.transport.up = true
@@ -445,7 +433,7 @@ describe('a human edit made while the document connection is down', () => {
     expect(clientState.sent).toHaveLength(0)
 
     clientState.transportUp = true
-    apiState.target.dispatchEvent(new Event('reconnected'))
+    apiEvents.dispatchEvent(new Event('reconnected'))
     expect(bridge().reconnect).toHaveBeenCalledOnce()
     expect(clientState.sent).toHaveLength(0)
   })
@@ -494,7 +482,7 @@ describe('a human edit made while the document connection is down', () => {
         ops: [expect.objectContaining({ op_id: replayedOperationId })]
       })
     )
-    apiState.target.dispatchEvent(new Event('reconnected'))
+    apiEvents.dispatchEvent(new Event('reconnected'))
     ackResubscribe('wf-a')
 
     expect(clientState.sent).toHaveLength(1)

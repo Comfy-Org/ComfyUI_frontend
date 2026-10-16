@@ -7,12 +7,9 @@ import { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import type { KeybindingPreset } from '@/platform/keybindings/types'
 
-const mockApi = vi.hoisted(() => ({
-  listUserDataFullInfo: vi.fn(),
-  getUserData: vi.fn(),
-  storeUserData: vi.fn(),
-  deleteUserData: vi.fn()
-}))
+import { api } from '@/scripts/api'
+
+const mockApi = vi.mocked(api)
 
 const mockDownloadBlob = vi.hoisted(() => vi.fn())
 const mockUploadFile = vi.hoisted(() => vi.fn())
@@ -23,9 +20,7 @@ const mockPersistUserKeybindings = vi.hoisted(() =>
   vi.fn(async () => undefined)
 )
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: mockApi
-}))
+vi.mock(import('@/scripts/api'))
 
 vi.mock(import('@/base/common/downloadUtil'), () => ({
   downloadBlob: mockDownloadBlob
