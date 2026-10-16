@@ -189,6 +189,7 @@ import FreeTierQuota from '@/platform/cloud/subscription/components/FreeTierQuot
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { openDeployCustomNodesDialog } from '@/platform/workspace/openCustomDeploymentDialog'
+import { useDeploymentSwitcherOffered } from '@/platform/workspace/composables/useDeploymentSwitcherOffered'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -217,6 +218,7 @@ const isActionBarsHidden = computed(() => canvasStore.isPickingNodes)
 const managerState = useManagerState()
 const managerSurveyDialog = useManagerSurveyDialog()
 const deploymentPickStore = useDeploymentPickStore()
+const deploymentSwitcherOffered = useDeploymentSwitcherOffered()
 const { isLoggedIn } = useCurrentUser()
 const { t } = useI18n()
 const { toastErrorHandler } = useErrorHandling()
@@ -350,10 +352,16 @@ onBeforeUnmount(() => {
   cancelAnimationFrame(legacyContentCheckRafId)
 })
 
+async function pitchDeployingCustomNodes(): Promise<boolean> {
+  if (!deploymentSwitcherOffered.value) return false
+  await deploymentPickStore.loadOnce()
+  if (!deploymentPickStore.buildsVisible) return false
+  return openDeployCustomNodesDialog()
+}
+
 const openCustomNodeManager = async () => {
   if (isCloud) {
-    if (deploymentPickStore.isVisible) await openDeployCustomNodesDialog()
-    else managerSurveyDialog.show()
+    if (!(await pitchDeployingCustomNodes())) managerSurveyDialog.show()
     return
   }
   try {

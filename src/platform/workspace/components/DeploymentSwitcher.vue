@@ -47,7 +47,7 @@
         @follow="follow"
         @set-default="changeDefault"
         @reload="reload"
-        @create-custom-deployment="openCreateCustomDeploymentDialog"
+        @create-custom-deployment="createCustomDeployment"
       />
     </Menu>
   </div>
@@ -63,9 +63,8 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import DeploymentStatusIcon from '@/platform/workspace/components/DeploymentStatusIcon.vue'
 import DeploymentSwitcherList from '@/platform/workspace/components/DeploymentSwitcherList.vue'
@@ -82,6 +81,7 @@ import {
 } from '@/platform/workspace/deploymentSwitchReload'
 import { openCreateCustomDeploymentDialog } from '@/platform/workspace/openCustomDeploymentDialog'
 import { settleUnsavedWorkBeforeSwitch } from '@/platform/workspace/settleUnsavedWorkBeforeSwitch'
+import { useDeploymentSwitcherOffered } from '@/platform/workspace/composables/useDeploymentSwitcherOffered'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 
 const { t } = useI18n()
@@ -96,8 +96,7 @@ const {
 } = storeToRefs(store)
 const workflowStore = useWorkflowStore()
 const settingStore = useSettingStore()
-const { isApiKeyLogin } = useCurrentUser()
-const isOffered = computed(() => isCloud && !isApiKeyLogin.value)
+const isOffered = useDeploymentSwitcherOffered()
 const { currentLabel, deploymentFullLabel } = useDeploymentLabels()
 
 const isOpen = ref(false)
@@ -120,12 +119,31 @@ useEventListener(window, 'focus', () => {
   })
 })
 
-const isNew = computed(() => !settingStore.get('Comfy.DeploymentSwitcher.Seen'))
+const markedUntilClose = ref(false)
+const isNew = computed(
+  () =>
+    markedUntilClose.value || !settingStore.get('Comfy.DeploymentSwitcher.Seen')
+)
+
+function rememberSeen() {
+  markedUntilClose.value = true
+  settingStore
+    .set('Comfy.DeploymentSwitcher.Seen', true)
+    .catch((error: unknown) =>
+      reportError(error, {
+        errorType: 'error_saving_deployment_switcher_seen',
+        surface: 'platform'
+      })
+    )
+}
 
 function onOpenChange(open: boolean) {
-  if (open) void store.load()
-  else if (isNew.value)
-    void settingStore.set('Comfy.DeploymentSwitcher.Seen', true)
+  if (!open) {
+    markedUntilClose.value = false
+    return
+  }
+  void store.load()
+  if (!settingStore.get('Comfy.DeploymentSwitcher.Seen')) rememberSeen()
 }
 
 const currentTone = computed(() =>
@@ -253,6 +271,10 @@ async function changeDefault(deploymentId: string | null) {
     t('deploymentSwitcher.failedToSetDefault'),
     await store.setDefault(deploymentId, discarded)
   )
+}
+
+function createCustomDeployment() {
+  void openCreateCustomDeploymentDialog()
 }
 
 async function reload() {

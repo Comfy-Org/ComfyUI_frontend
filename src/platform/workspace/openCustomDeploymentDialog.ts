@@ -1,3 +1,4 @@
+import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
 import {
   DEPLOY_VIDEO_POSTER_SRC,
@@ -9,9 +10,16 @@ import { useDialogStore } from '@/stores/dialogStore'
 async function openCustomDeploymentDialog(
   key: string,
   pitch: CustomDeploymentPitch
-): Promise<void> {
-  const { default: CustomDeploymentCard } =
-    await import('@/platform/workspace/components/CustomDeploymentCard.vue')
+): Promise<boolean> {
+  const CustomDeploymentCard =
+    await import('@/platform/workspace/components/CustomDeploymentCard.vue').then(
+      (module) => module.default,
+      (error: unknown) => {
+        useErrorHandling().toastErrorHandler(error)
+        return null
+      }
+    )
+  if (CustomDeploymentCard === null) return false
   const dialogStore = useDialogStore()
   const hide = () => dialogStore.closeDialog({ key })
   dialogStore.showDialog({
@@ -29,10 +37,11 @@ async function openCustomDeploymentDialog(
       headless: true
     }
   })
+  return true
 }
 
-/** Opens the dialog behind Create a custom deployment in the Run on list. */
-export function openCreateCustomDeploymentDialog(): Promise<void> {
+/** Opens the dialog behind Create a custom deployment in the Run on list; false when it could not load. */
+export function openCreateCustomDeploymentDialog(): Promise<boolean> {
   return openCustomDeploymentDialog('global-create-custom-deployment', {
     title: t('deploymentSwitcher.customDeployment.title'),
     body: t('deploymentSwitcher.customDeployment.body'),
@@ -45,8 +54,8 @@ export function openCreateCustomDeploymentDialog(): Promise<void> {
   })
 }
 
-/** Opens the dialog the Extensions button shows on Comfy Cloud. */
-export function openDeployCustomNodesDialog(): Promise<void> {
+/** Opens the dialog the Extensions button shows on Comfy Cloud; false when it could not load. */
+export function openDeployCustomNodesDialog(): Promise<boolean> {
   return openCustomDeploymentDialog('global-deploy-custom-nodes', {
     title: t('deploymentSwitcher.deployCustomNodes.title'),
     body: t('deploymentSwitcher.deployCustomNodes.body'),

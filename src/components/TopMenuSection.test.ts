@@ -621,21 +621,35 @@ describe('TopMenuSection', () => {
   })
 
   it.for([
-    { listing: 'serves this account', offered: true },
-    { listing: 'refused this account', offered: false }
-  ])(
+    {
+      listing: 'shows Builds to this account',
+      state: 'buildsVisible',
+      pitches: true
+    },
+    {
+      listing: 'hides Builds from this account',
+      state: 'buildsHidden',
+      pitches: false
+    },
+    { listing: 'refused this account', state: 'hidden', pitches: false }
+  ] as const)(
     'on Comfy Cloud, Extensions pitches deploying custom nodes only when the deployments listing $listing',
-    async ({ offered }) => {
+    async ({ state, pitches }) => {
       distribution.isCloud = true
       onTestFinished(() => {
         distribution.isCloud = false
       })
-      useDeploymentPickStore().state = offered
-        ? reduceDeploymentPick(
-            { phase: 'idle' },
-            loadedEvent({ builds_visible: true, items: [] })
-          )
-        : { phase: 'hidden' }
+      vi.mocked(openDeployCustomNodesDialog).mockResolvedValue(true)
+      useDeploymentPickStore().state =
+        state === 'hidden'
+          ? { phase: 'hidden' }
+          : reduceDeploymentPick(
+              { phase: 'idle' },
+              loadedEvent({
+                builds_visible: state === 'buildsVisible',
+                items: []
+              })
+            )
       const { user } = createWrapper()
 
       await user.click(
@@ -644,7 +658,7 @@ describe('TopMenuSection', () => {
 
       await waitFor(() =>
         expect(vi.mocked(openDeployCustomNodesDialog).mock.calls.length).toBe(
-          offered ? 1 : 0
+          pitches ? 1 : 0
         )
       )
     }

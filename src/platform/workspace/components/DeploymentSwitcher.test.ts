@@ -289,7 +289,7 @@ describe('DeploymentSwitcher', () => {
     expect(screen.queryByTestId('deployment-switcher-default')).toBeNull()
   })
 
-  it('marks the engine button until its first open closes, then remembers it on every device', async () => {
+  it('marks the engine button until its first open closes, and remembers it on every device as soon as it opens', async () => {
     useSettingStore().$patch({
       settingValues: { 'Comfy.DeploymentSwitcher.Seen': false }
     })
@@ -302,6 +302,10 @@ describe('DeploymentSwitcher', () => {
     )
 
     await openList(user)
+    expect(api.storeSetting).toHaveBeenCalledWith(
+      'Comfy.DeploymentSwitcher.Seen',
+      true
+    )
     expect(screen.getByTestId('deployment-switcher-new')).toBeInTheDocument()
     await user.keyboard('{Escape}')
 
@@ -309,10 +313,6 @@ describe('DeploymentSwitcher', () => {
       expect(
         screen.queryByTestId('deployment-switcher-new')
       ).not.toBeInTheDocument()
-    )
-    expect(api.storeSetting).toHaveBeenCalledWith(
-      'Comfy.DeploymentSwitcher.Seen',
-      true
     )
     expect(trigger).toHaveAccessibleName(
       'Running on Comfy Cloud. Choose where this editor runs'
