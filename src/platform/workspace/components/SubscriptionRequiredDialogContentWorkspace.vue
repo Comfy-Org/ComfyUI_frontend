@@ -12,8 +12,10 @@
       <i class="pi pi-times text-xl" />
     </Button>
 
-    <div class="flex flex-col items-center gap-3">
-      <!-- Decorative workspace-initial icon; not user-facing text -->
+    <div
+      v-if="checkoutStep === 'pricing'"
+      class="flex flex-col items-center gap-3"
+    >
       <div
         :class="
           cn(
