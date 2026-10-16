@@ -27,10 +27,13 @@ import { useClipboard } from '@vueuse/core'
 vi.mock(import('firebase/auth'))
 
 import { i18n } from '@/i18n'
+import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
+import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { setupInlinePromptEditorDom } from './components/agent/composer/inlinePromptEditorTestSetup'
 import { useFreeUsePlacement } from './experiments/freeUsePlacement'
+import { resolveAgentPaywallPresentation } from './services/agent/agentPaywallPresentation'
 
 setupInlinePromptEditorDom()
 
@@ -104,6 +107,8 @@ vi.mock<unknown>(import('@/composables/canvas/useFocusNode'), () => ({
 
 vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock(import('./experiments/freeUsePlacement'), { spy: true })
+vi.mock(import('@/platform/serverFacts/pendingServerFact'), { spy: true })
+vi.mock(import('./services/agent/agentPaywallPresentation'), { spy: true })
 
 const ws = vi.hoisted(() => {
   type Listener = (event: { detail?: unknown }) => void
@@ -645,6 +650,23 @@ describe('AgentPanelRoot first-use experience', () => {
     return screen.findByRole('note', { name: 'Free use notice' })
   }
 
+  it('renders the free-use notice from scoped funds without plan eligibility', async () => {
+    placeFundedFreeUseNotice()
+    paywallWorkspace.role = 'member'
+    paywallBilling.tier = null
+    paywallBilling.isActive = false
+    paywallCapabilities.canTopUp = false
+    paywallCapabilities.canSubscribeSelfServe = false
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    expect(await freeUseNotice()).toBeInTheDocument()
+    paywallAgentScopedHasFunds.value = false
+    await waitFor(() =>
+      expect(screen.queryByRole('note', { name: 'Free use notice' })).toBeNull()
+    )
+  })
+
   it('forwards free-use notice interactions to the experiment', async () => {
     placeFundedFreeUseNotice()
 
@@ -696,6 +718,78 @@ describe('AgentPanelRoot first-use experience', () => {
     conversation.resolvePaywalls()
 
     expect(await freeUseNotice()).toBeInTheDocument()
+  })
+})
+
+describe('AgentPanelRoot entitlement facts', () => {
+  it('renders an admission paywall even when the billing snapshot has funds', async () => {
+    paywallHasFunds.value = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    useAgentConversationStore().recordPaywall(
+      toTurnId('server-denial'),
+      'retry'
+    )
+
+    expect(await findInlinePaywallButton('Add credits')).toBeInTheDocument()
+  })
+
+  it('offers both run modes without a plan or billing permissions', async () => {
+    paywallWorkspace.role = 'member'
+    paywallBilling.tier = null
+    paywallBilling.isActive = false
+    paywallCapabilities.canTopUp = false
+    paywallCapabilities.canSubscribeSelfServe = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Ask' }))
+
+    expect(
+      screen.getByRole('menuitemradio', { name: /Ask before a workflow runs/ })
+    ).not.toHaveAttribute('data-disabled')
+    expect(
+      screen.getByRole('menuitemradio', { name: /Auto-run without approval/ })
+    ).not.toHaveAttribute('data-disabled')
+  })
+
+  it.for([true, false])(
+    'renders standing credit exhaustion from the pending fact=%s alone',
+    async (exhausted) => {
+      vi.mocked(resolveAgentPaywallPresentation).mockReturnValue({
+        kind: 'subscribed',
+        showUpgrade: false
+      })
+      vi.mocked(pendingServerFact).mockReturnValue(
+        receiveServerFact('agent.entitlement.credits_exhausted', exhausted)
+      )
+      paywallHasFunds.value = exhausted
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      await screen.findByRole('textbox')
+
+      expect(
+        screen.queryByTestId('agent-credits-exhausted-paywall') !== null
+      ).toBe(exhausted)
+    }
+  )
+
+  it('renders the pending CTA fact despite contradictory billing capabilities', async () => {
+    vi.mocked(resolveAgentPaywallPresentation).mockReturnValue(
+      receiveServerFact('agent.entitlement.paywall', {
+        kind: 'subscribed' as const,
+        showUpgrade: true
+      })
+    )
+    paywallWorkspace.role = 'member'
+    paywallBilling.tier = 'ENTERPRISE'
+    paywallCapabilities.canTopUp = false
+    paywallCapabilities.canSubscribeSelfServe = false
+    paywallCapabilities.hasResolvedCapabilities = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentConversationStore().recordPaywall(toTurnId('fact-denial'), 'retry')
+
+    expect(await findInlinePaywallButton('Upgrade plan')).toBeInTheDocument()
+    expect(await findInlinePaywallButton('Add credits')).toBeInTheDocument()
   })
 })
 
@@ -1651,6 +1745,26 @@ describe('AgentPanelRoot Agent credit transition notice', () => {
     paywallHasFunds.value = true
     paywallAgentHasFunds.value = true
   })
+
+  it.for([true, false])(
+    'renders the credit transition from the pending fact=%s alone',
+    async (eligible) => {
+      vi.mocked(resolveAgentPaywallPresentation).mockReturnValue({
+        kind: 'unavailable'
+      })
+      vi.mocked(pendingServerFact).mockReturnValue(
+        receiveServerFact('agent.entitlement.credit_transition', eligible)
+      )
+      paywallBilling.isActive = !eligible
+      observeAgentScopedFunds(true)
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      await screen.findByRole('textbox')
+      observeAgentScopedFunds(false)
+      await nextTick()
+
+      expect(screen.queryByTestId(NOTICE) !== null).toBe(eligible)
+    }
+  )
 
   it('shows only after the Agent-scoped balance changes from available to exhausted', async () => {
     observeAgentScopedFunds(true)
