@@ -4,13 +4,10 @@ import { modelSchema } from '@/config/models-catalogue-data'
 import { detailSchema } from '@/config/models-page-data'
 import type { SiteSession } from './admin'
 import { normalizeProjection } from './catalog-contract'
+import { cmsEnabled } from './cms-enabled'
 import { catalogFetch } from './demo'
 
-// Server-only configuration. Browser islands read same-origin JSON endpoints.
-// Production keeps the static Hub even if the variable is set there.
-export const cmsEnabled = () =>
-  Boolean(process.env.SITE_CATALOG_API_URL) &&
-  process.env.VERCEL_ENV !== 'production'
+export { cmsEnabled }
 
 export async function loadSiteCatalog(session?: SiteSession) {
   const origin = process.env.SITE_CATALOG_API_URL

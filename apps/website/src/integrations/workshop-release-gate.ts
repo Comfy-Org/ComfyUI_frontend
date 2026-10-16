@@ -19,6 +19,7 @@ import {
 import { websiteRoot } from '@website/paths'
 import { unregisteredModelsPaths } from '@/config/models-url-registry'
 import { markdownTwinPath } from '@/lib/markdown-twin-path'
+import { cmsEnabled } from '@/lib/cms/cms-enabled'
 
 import {
   assertWorkshopCloudEnvForBuild,
@@ -137,7 +138,7 @@ function cmsRendering(route: ReturnType<typeof modelsBuildRoutes>[number]) {
     route.pattern.startsWith('/hub/') ||
     route.pattern === '/models/catalogue.json' ||
     route.pattern === '/models/[...slug]/page.json'
-  return process.env.SITE_CATALOG_API_URL && dynamic ? { prerender: false } : {}
+  return cmsEnabled() && dynamic ? { prerender: false } : {}
 }
 
 export function workshopReleaseGate(): AstroIntegration {
