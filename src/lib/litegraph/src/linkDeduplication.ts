@@ -259,6 +259,72 @@ export function realignGroupWidgetChildLinks(
 }
 
 /**
+ * Moves each link to the slot of the serialized input that references it,
+ * without firing connection callbacks. A move onto a slot held by a link no
+ * serialized input references is skipped.
+ */
+export function realignInputLinksToSerialisedSlots(
+  node: LGraphNode,
+  info: Pick<ISerialisedNode, 'inputs'>
+): void {
+  const { graph } = node
+  if (!graph) return
+
+  const moving = new Map<LinkId, { link: LLink; slot: number }>()
+  for (const [link, slots] of serialisedSlotsByLink(node, info)) {
+    if (slots.includes(link.target_slot)) continue
+    moving.set(link.id, { link, slot: slots[0] })
+  }
+  const scope = graphScopeOf(graph)
+  const store = useLinkStore()
+  const occupantOf = (slot: number) =>
+    store.getInputSlotLink(scope, node.id, slot)?.id
+  dropBlockedMoves(moving, occupantOf)
+  if (!moving.size) return
+
+  const updates: EndpointUpdate[] = [...moving.values()].map(
+    ({ link, slot }) => ({ topology: link._state, patch: { targetSlot: slot } })
+  )
+  const result = store.updateEndpoints(scope, updates)
+  if (!result.ok) {
+    console.error(
+      'Failed to align input links to serialised slots',
+      result.error
+    )
+  }
+}
+
+function serialisedSlotsByLink(
+  node: LGraphNode,
+  info: Pick<ISerialisedNode, 'inputs'>
+): Map<LLink, number[]> {
+  const slotsByLink = new Map<LLink, number[]>()
+  for (const [slot, input] of (info.inputs ?? []).entries()) {
+    if (input.link == null) continue
+    const link = node.graph?.links.get(toLinkId(input.link))
+    if (!link || link.target_id !== node.id) continue
+    slotsByLink.set(link, [...(slotsByLink.get(link) ?? []), slot])
+  }
+  return slotsByLink
+}
+
+function dropBlockedMoves(
+  moving: Map<LinkId, { slot: number }>,
+  occupantOf: (slot: number) => LinkId | undefined
+): void {
+  let blocked: LinkId[]
+  do {
+    blocked = [...moving]
+      .filter(([, { slot }]) => {
+        const occupant = occupantOf(slot)
+        return occupant !== undefined && !moving.has(occupant)
+      })
+      .map(([id]) => id)
+    for (const id of blocked) moving.delete(id)
+  } while (blocked.length)
+}
+
+/**
  * Re-points each link's `target_slot` at the configured input with the same
  * name as the serialized input that references it. Replays moved connections
  * because dynamic inputs may grow additional named slots in response.
