@@ -160,6 +160,7 @@ beforeEach(() => {
 describe('useWorkflowService', () => {
   beforeEach(() => {
     vi.mocked(app.loadGraphData).mockResolvedValue(true)
+    vi.mocked(app.loadGraphDataWithinLoad).mockResolvedValue(true)
     resetWorkflowLoadQueueForTests()
     vi.mocked(useWorkflowDraftStoreV2().saveDraft).mockReturnValue(true)
   })
@@ -2473,7 +2474,7 @@ describe('useWorkflowService', () => {
     const openPaths = () =>
       useWorkflowStore().openWorkflows.map((open) => open.path)
     const loadedGraphs = () =>
-      vi.mocked(app.loadGraphData).mock.calls.map(([graph]) => graph)
+      vi.mocked(app.loadGraphDataWithinLoad).mock.calls.map(([graph]) => graph)
 
     function createUnfetchableWorkflow(path: string) {
       const workflow = new ComfyWorkflowClass({
@@ -2499,7 +2500,7 @@ describe('useWorkflowService', () => {
       const unfetchable = createUnfetchableWorkflow('workflows/dup.json')
       workflowStore.attachWorkflow(unfetchable, options.unfetchableTabIndex)
       workflowStore.activeWorkflow = retained
-      vi.mocked(app.loadGraphData).mockClear()
+      vi.mocked(app.loadGraphDataWithinLoad).mockClear()
       return { retained, unfetchable }
     }
 
@@ -2575,13 +2576,13 @@ describe('useWorkflowService', () => {
 
       await useWorkflowService().afterLoadNewGraph('dup', makeWorkflowData())
 
-      expect(app.loadGraphData).not.toHaveBeenCalled()
+      expect(app.loadGraphDataWithinLoad).not.toHaveBeenCalled()
       expect(openPaths()).toContain('workflows/dup.json')
     })
 
     it('loads a blank graph when the retained repaint resolves false', async () => {
       const { retained } = setUpRetainedWithUnfetchable()
-      vi.mocked(app.loadGraphData).mockResolvedValueOnce(false)
+      vi.mocked(app.loadGraphDataWithinLoad).mockResolvedValueOnce(false)
 
       await expect(
         useWorkflowService().afterLoadNewGraph('dup', makeWorkflowData())
@@ -2597,7 +2598,9 @@ describe('useWorkflowService', () => {
         createUnfetchableWorkflow('workflows/dup.json')
       )
       workflowStore.activeWorkflow = null
-      vi.mocked(app.loadGraphData).mockClear().mockResolvedValueOnce(false)
+      vi.mocked(app.loadGraphDataWithinLoad)
+        .mockClear()
+        .mockResolvedValueOnce(false)
 
       await expect(
         useWorkflowService().afterLoadNewGraph('dup', makeWorkflowData())
@@ -2613,15 +2616,17 @@ describe('useWorkflowService', () => {
     it('does not recover again when the retained repaint fails to activate', async () => {
       const { retained } = setUpRetainedWithUnfetchable()
       const service = useWorkflowService()
-      vi.mocked(app.loadGraphData).mockImplementationOnce(async () => {
-        vi.mocked(retained.changeTracker.reset).mockImplementationOnce(() => {
-          throw new Error('repaint activation failed')
-        })
-        await expect(
-          service.afterLoadNewGraph(retained, makeWorkflowData())
-        ).rejects.toThrow('repaint activation failed')
-        return false
-      })
+      vi.mocked(app.loadGraphDataWithinLoad).mockImplementationOnce(
+        async () => {
+          vi.mocked(retained.changeTracker.reset).mockImplementationOnce(() => {
+            throw new Error('repaint activation failed')
+          })
+          await expect(
+            service.afterLoadNewGraph(retained, makeWorkflowData())
+          ).rejects.toThrow('repaint activation failed')
+          return false
+        }
+      )
 
       await expect(
         service.afterLoadNewGraph('dup', makeWorkflowData())
@@ -2638,7 +2643,7 @@ describe('useWorkflowService', () => {
       })
       workflowStore.attachWorkflow(retained, 0)
       workflowStore.activeWorkflow = retained as LoadedComfyWorkflow
-      vi.mocked(app.loadGraphData).mockClear()
+      vi.mocked(app.loadGraphDataWithinLoad).mockClear()
       vi.mocked(
         useNodeOutputStore().restorePreviewsForWorkflow
       ).mockImplementationOnce(() => {
@@ -2650,7 +2655,7 @@ describe('useWorkflowService', () => {
       ).rejects.toThrow('previews failed')
 
       expect(workflowStore.activeWorkflow.path).toBe('workflows/fresh.json')
-      expect(app.loadGraphData).not.toHaveBeenCalled()
+      expect(app.loadGraphDataWithinLoad).not.toHaveBeenCalled()
     })
   })
 

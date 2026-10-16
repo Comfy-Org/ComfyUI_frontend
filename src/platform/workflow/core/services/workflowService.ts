@@ -32,7 +32,10 @@ import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
+import {
+  provideWorkflowService,
+  useSubgraphNavigationStore
+} from '@/stores/subgraphNavigationStore'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
@@ -80,6 +83,8 @@ const pendingWorkflowLoadsByPath = new Map<string, Promise<unknown>>()
 // The workflows (null: the blank fallback) a failed-activation recovery is
 // repainting, so the repaint's own activation failure does not recover again.
 const activationRecoveries = new Set<ComfyWorkflow | null>()
+
+type GraphLoader = ReturnType<typeof useApp>['loadGraphData']
 // Object identity, not path: a mid-close rename would strand a path key.
 const closingWorkflowCounts = new Map<ComfyWorkflow, number>()
 
@@ -405,8 +410,11 @@ export const useWorkflowService = () => {
    * already be inside a queued load, and chaining onto the tail it is
    * itself holding would deadlock.
    */
-  const repaintWorkflow = async (workflow: ComfyWorkflow) => {
-    const loaded = await useApp().loadGraphData(
+  const repaintWorkflow = async (
+    workflow: ComfyWorkflow,
+    load: GraphLoader = (...args) => useApp().loadGraphData(...args)
+  ) => {
+    const loaded = await load(
       toRaw(workflow.activeState) as ComfyWorkflowJSON,
       /* clean=*/ true,
       /* restore_view=*/ true,
@@ -423,6 +431,8 @@ export const useWorkflowService = () => {
   /**
    * Repaint the workflow the editor showed before an activation that
    * rejected after the nodes were built, falling back to a blank graph.
+   * Activation runs inside the app's graph-load queue, so the repaint loads
+   * within that held load instead of queueing behind it.
    */
   const repaintAfterFailedActivation = async (
     retained: ComfyWorkflow | null
@@ -431,8 +441,14 @@ export const useWorkflowService = () => {
     if (activationRecoveries.has(key)) return
     activationRecoveries.add(key)
     try {
-      if (retained?.isLoaded && (await repaintWorkflow(retained))) return
-      if ((await useApp().loadGraphData(blankGraph)) !== false) return
+      const loadWithinActivation: GraphLoader = (...args) =>
+        useApp().loadGraphDataWithinLoad(...args)
+      if (
+        retained?.isLoaded &&
+        (await repaintWorkflow(retained, loadWithinActivation))
+      )
+        return
+      if ((await loadWithinActivation(blankGraph)) !== false) return
       reportError(
         new Error('Neither the retained workflow nor a blank graph loaded'),
         { surface: 'graph', errorType: 'workflow_load_recovery_failure' }
@@ -1060,3 +1076,5 @@ export const useWorkflowService = () => {
     beforeLoadNewGraph
   }
 }
+
+provideWorkflowService(useWorkflowService)

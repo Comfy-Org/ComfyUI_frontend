@@ -4,11 +4,10 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { useManagerSurveyDialog } from '@/workbench/extensions/manager/composables/useManagerSurveyDialog'
 
 describe('useManagerSurveyDialog', () => {
-  it('show() opens the survey dialog under its own key via the Reka layout renderer', () => {
+  it('show() opens the survey dialog under its own key', () => {
     useManagerSurveyDialog().show()
     const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
     expect(args.key).toBe('global-manager-survey')
-    expect(args.dialogComponentProps?.renderer).toBe('reka')
   })
 
   it('show() wires onClose to close the survey dialog', () => {

@@ -2,6 +2,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useMissingModelStore } from './missingModelStore'
+import '@/scripts/changeTracker'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
@@ -11,6 +12,8 @@ import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode, LGraphEventMode } from '@/lib/litegraph/src/litegraph'
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
+import type { ReleaseModelOptions } from '@/platform/missingModel/missingModelScan'
+import { cloudReleaseModelOptions } from '@/platform/missingModel/releaseModelOptions'
 import type {
   ComfyWorkflowJSON,
   ModelFile
@@ -47,7 +50,8 @@ const { mockHandles } = vi.hoisted(() => {
         (
           _graph: LGraph,
           _isAssetSupported: (nodeType: string, widgetName: string) => boolean,
-          _getDirectory?: (nodeType: string) => string | undefined
+          _getDirectory?: (nodeType: string) => string | undefined,
+          _releaseModelOptions?: ReleaseModelOptions
         ): MissingModelCandidate[] => []
       ),
       enrichWithEmbeddedMetadata: vi.fn(
@@ -97,9 +101,15 @@ vi.mock<unknown>(import('@/platform/missingModel/missingModelScan'), () => ({
   scanAllModelCandidates: (
     graph: LGraph,
     isAssetSupported: (nodeType: string, widgetName: string) => boolean,
-    getDirectory?: (nodeType: string) => string | undefined
+    getDirectory?: (nodeType: string) => string | undefined,
+    releaseModelOptions?: ReleaseModelOptions
   ) =>
-    mockHandles.scanAllModelCandidates(graph, isAssetSupported, getDirectory),
+    mockHandles.scanAllModelCandidates(
+      graph,
+      isAssetSupported,
+      getDirectory,
+      releaseModelOptions
+    ),
   enrichWithEmbeddedMetadata: (
     candidates: readonly MissingModelCandidate[],
     graphData: ComfyWorkflowJSON
@@ -114,6 +124,11 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getFolderPaths: () => mockHandles.api.getFolderPaths()
   }
+}))
+
+vi.mock(import('@/platform/missingModel/releaseModelOptions'), () => ({
+  cloudReleaseModelOptions: vi.fn(),
+  releaseModelOptions: vi.fn()
 }))
 
 vi.mock(import('@/platform/missingModel/missingModelDownload'), () => ({
@@ -777,6 +792,25 @@ describe('missingModelPipeline', () => {
       ).toHaveBeenCalledWith([staticCandidate, remoteCandidate], {
         silent: false
       })
+    })
+
+    it('hands the scan the lookup of the models the boot Release has', async () => {
+      const releaseModelOptions = vi.fn(async () => ['release.safetensors'])
+      vi.mocked(cloudReleaseModelOptions).mockReturnValue(releaseModelOptions)
+      const graph = createGraph()
+
+      await runMissingModelPipeline({
+        graph,
+        graphData: createWorkflowGraphData(),
+        missingModelStore: useMissingModelStore()
+      })
+
+      expect(mockHandles.scanAllModelCandidates).toHaveBeenCalledWith(
+        graph,
+        expect.any(Function),
+        expect.any(Function),
+        releaseModelOptions
+      )
     })
 
     it('returns confirmed missing models and caches pending warning candidates', async () => {

@@ -139,7 +139,7 @@ export function useAgentConsent() {
           },
           dialogComponentProps: {
             closable: true,
-            dismissableMask: true
+            dismissOnPointerDownOutside: true
           }
         })
       }
@@ -152,7 +152,7 @@ export function useAgentConsent() {
           contentProps: { accepting: true, error: '' },
           dialogComponentProps: {
             closable: false,
-            dismissableMask: false
+            dismissOnPointerDownOutside: false
           }
         })
 
@@ -204,14 +204,8 @@ export function useAgentConsent() {
           }
         },
         dialogComponentProps: {
-          renderer: 'reka',
-          dismissableMask: true,
-          closeOnEscape: true,
-          modal: true,
+          dismissOnPointerDownOutside: true,
           headless: true,
-          overlayClass: 'bg-black/55',
-          contentClass:
-            'w-[min(640px,calc(100vw-2rem))] border-none bg-transparent shadow-none sm:max-w-[640px]',
           onClose: () => {
             if (settled) return
             settled = true

@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { TaskResponse } from '@/platform/tasks/services/taskSchema'
 import type {
   CancelTaskOutcome,
-  TaskResponse,
   TaskResult
 } from '@/platform/tasks/services/taskService'
 import {

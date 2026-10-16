@@ -1,9 +1,3 @@
-/**
- * Widget prop filtering utilities
- * Filters out style-related and customization props from PrimeVue components
- * to maintain consistent widget appearance across the application
- */
-
 // Props to exclude based on the widget interface specifications
 export const STANDARD_EXCLUDED_PROPS = [
   'style',

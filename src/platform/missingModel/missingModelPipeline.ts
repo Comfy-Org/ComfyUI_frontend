@@ -9,6 +9,7 @@ import {
   verifyAssetSupportedCandidates
 } from '@/platform/missingModel/missingModelScan'
 import type { MissingModelWorkflowData } from '@/platform/missingModel/missingModelScan'
+import { cloudReleaseModelOptions } from '@/platform/missingModel/releaseModelOptions'
 import type {
   MissingModelCandidate,
   MissingModelPipelineResult
@@ -119,7 +120,8 @@ export async function runMissingModelPipeline({
   const candidates = scanAllModelCandidates(
     graph,
     isAssetBrowserWidget,
-    getDirectory
+    getDirectory,
+    cloudReleaseModelOptions()
   )
 
   const enrichedAll = enrichWithEmbeddedMetadata(candidates, graphData)

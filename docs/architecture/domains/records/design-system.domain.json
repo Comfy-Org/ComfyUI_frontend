@@ -1,0 +1,790 @@
+{
+  "id": "design-system",
+  "capability": "Shared UI component library",
+  "description": "Feature-agnostic Vue controls and display primitives: the Reka-based components under ui/ (buttons, inputs, selects, menus, dialogs, popovers, tooltips, tables, tabs, trees, charts, color picker), the toast queue and its viewport, the card, chip, tab, loader, and icon kits, the generic common/ widgets (editable text, imperative popover, virtual grid, lazy and lightbox images, video and video-compare players, sanitized HTML, tickers, badges, spinners, URL and number inputs, avatars), and the value editors for curves, ranges, gradients, and palette swatches with their pure interpolation and gradient math. Feature-owned files in the same directories stay with their features: settings form fields, system stats, node library tree explorers and bookmark customization, workflow actions, node-search filter chips, credit display, the team-plan credit slider, asset download progress toasts, subgraph breadcrumbs, the execution error overlay, workflow template dialogs, and the node widget adapters WidgetCurve, WidgetRange, and WidgetColors.",
+  "modules": [
+    {
+      "path": "src/components/ui/badge/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/button/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/button-group/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/chart/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/checkbox/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/color-picker/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/dialog/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/field/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/hover-card/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/input/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/input-group/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/knob/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/label/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/menu/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/message/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/multi-select/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/number-field/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/pagination/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/popover/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/radio-group/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/search-input/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/select/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/single-select/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/skeleton/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/slider/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/spinner/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/splitter/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/switch/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/table/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/tabs/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/tags-input/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/textarea/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/toggle-group/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/tooltip/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/tree/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/Popover.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/ZoomPane.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/toast/ToastClose.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/toast/ToastDescription.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/toast/ToastDock.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/toast/ToastDock.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/toast/ToastPanel.stories.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/toast/ToastPanel.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/toast/ToastPanel.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/toast/ToastRoot.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/toast/ToastTitle.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/toast/ToastViewport.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/toast/Toaster.stories.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/toast/Toaster.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/toast/Toaster.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/toast/toastStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/components/ui/toast/toastStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/components/button/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/card/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/chip/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/icons/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/loader/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/tab/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/BadgePill.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/BadgePill.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/ComfyImage.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/ContentDivider.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/Dialogue.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/DotSpinner.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/DraggableList.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/EditableText.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/EditableText.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/FilterDropdown.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/FilterDropdown.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/ImageLightbox.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/ImageLightbox.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/ImperativePopover.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/ImperativePopover.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/InputKnob.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/InputKnob.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/InputSlider.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/LazyImage.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/LoadingOverlay.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/MarqueeLine.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/MarqueeLine.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/NoResultsPlaceholder.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/NotificationPopup.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/NotificationPopup.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/OverlayIcon.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/SanitizedHtml.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/SanitizedHtml.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/ScrubableNumberInput.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/ScrubableNumberInput.stories.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/StatusBadge.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/statusBadge.variants.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/TextDivider.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/TextTicker.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/TextTicker.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/TextTickerMultiLine.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/TextTickerMultiLine.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/UrlInput.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/UrlInput.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/UserAvatar.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/UserAvatar.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/Video.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/Video.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/VideoCompareSlider.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/VideoCompareSlider.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/VirtualGrid.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/VirtualGrid.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/curve/CurveEditor.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/curve/CurveEditor.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/curve/curveUtils.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/components/curve/curveUtils.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/components/curve/types.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/components/range/RangeEditor.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/range/RangeEditor.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/range/rangeUtils.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/components/range/rangeUtils.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/components/palette/PaletteSwatchRow.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/palette/PaletteSwatchRow.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/gradientslider/GradientSlider.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/gradientslider/GradientSlider.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/gradientslider/gradients.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/components/actionbar/TinyChevronIcon.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/rightSidePanel/layout/PropertiesAccordionItem.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/rightSidePanel/layout/PropertiesAccordionItem.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/rightSidePanel/layout/TransitionCollapse.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/widget/layout/BaseModalLayout.stories.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/widget/layout/BaseModalLayout.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/widget/layout/BaseModalLayout.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/widget/nav/NavIcon.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/widget/nav/NavItem.stories.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/widget/nav/NavItem.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/widget/nav/NavItem.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/widget/nav/NavTitle.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/widget/panel/LeftSidePanel.stories.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/widget/panel/LeftSidePanel.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/services/mediaCacheService.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/services/mediaCacheService.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/composables/palette/usePaletteSwatchRow.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/palette/usePaletteSwatchRow.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/tree/useTreeFolderOperations.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useAttrsClass.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useCurveEditor.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useCurveEditor.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useImageQuiet.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useIntersectionObserver.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useModalLiftedZIndex.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useModalLiftedZIndex.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/usePopoverSizing.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useRangeEditor.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useRangeEditor.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useTreeExpansion.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/utils/gridUtil.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/utils/histogramUtil.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/histogramUtil.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/mouseDownUtil.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/utils/textTickerUtils.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/textTickerUtils.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/treeUtil.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/treeUtil.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/validationUtil.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/toastId.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/toastOptions.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/navTypes.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/composables/element/useOverflowObserver.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/utils/zodTypedSchema.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/utils/zodTypedSchema.test.ts",
+      "role": "infrastructure"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": ["agent"],
+  "characterizationScenarios": [
+    {
+      "name": "Form controls preserve value binding, validation state, and accessible semantics",
+      "checks": [
+        "src/components/ui/button/Button.test.ts",
+        "src/components/ui/checkbox/Checkbox.test.ts",
+        "src/components/ui/number-field/NumberField.test.ts",
+        "src/components/ui/input/PasswordInput.test.ts",
+        "src/components/ui/switch/Switch.test.ts",
+        "src/components/ui/textarea/Textarea.test.ts",
+        "src/components/common/UrlInput.test.ts",
+        "src/components/common/EditableText.test.ts"
+      ]
+    },
+    {
+      "name": "Selection and search controls preserve filtering, keyboard selection, and emitted values",
+      "checks": [
+        "src/components/ui/multi-select/MultiSelect.test.ts",
+        "src/components/ui/single-select/SingleSelect.test.ts",
+        "src/components/ui/select/useSelectSearch.test.ts",
+        "src/components/ui/search-input/SearchInput.test.ts",
+        "src/components/ui/search-input/AsyncSearchInput.test.ts",
+        "src/components/ui/search-input/SearchAutocomplete.test.ts",
+        "src/components/ui/tags-input/TagsInput.test.ts",
+        "src/components/ui/radio-group/RadioGroup.test.ts",
+        "src/components/ui/toggle-group/ToggleGroup.test.ts",
+        "src/components/common/FilterDropdown.test.ts"
+      ]
+    },
+    {
+      "name": "Floating layers stack above lifted modals and anchor to their triggers",
+      "checks": [
+        "src/components/ui/menu/Menu.test.ts",
+        "src/components/ui/menu/Menu.zindex.test.ts",
+        "src/components/ui/menu/menuAnchor.test.ts",
+        "src/components/ui/select/SelectContent.zindex.test.ts",
+        "src/components/ui/search-input/SearchAutocomplete.zindex.test.ts",
+        "src/components/ui/popover/PopoverContent.test.ts",
+        "src/components/ui/hover-card/HoverCard.test.ts",
+        "src/components/ui/tooltip/Tooltip.test.ts",
+        "src/components/common/ImperativePopover.test.ts"
+      ]
+    },
+    {
+      "name": "Toast queue replaces entries by id and renders them in the dock",
+      "checks": [
+        "src/components/ui/toast/toastStore.test.ts",
+        "src/components/ui/toast/Toaster.test.ts",
+        "src/components/ui/toast/ToastDock.test.ts",
+        "src/components/ui/toast/ToastPanel.test.ts"
+      ]
+    },
+    {
+      "name": "Data and media display primitives preserve sorting, paging, virtualization, and media fallbacks",
+      "checks": [
+        "src/components/ui/table/TableSortHead.test.ts",
+        "src/components/ui/table/tableUtils.test.ts",
+        "src/components/ui/pagination/Pagination.test.ts",
+        "src/components/ui/tree/Tree.test.ts",
+        "src/components/ui/chart/Chart.test.ts",
+        "src/components/common/VirtualGrid.test.ts",
+        "src/components/common/Video.test.ts",
+        "src/components/common/VideoCompareSlider.test.ts",
+        "src/components/common/ImageLightbox.test.ts",
+        "src/components/common/SanitizedHtml.test.ts",
+        "src/components/common/UserAvatar.test.ts"
+      ]
+    },
+    {
+      "name": "Value editors preserve curve interpolation, range clamping, gradient stops, and color selection",
+      "checks": [
+        "src/components/curve/curveUtils.test.ts",
+        "src/components/curve/CurveEditor.test.ts",
+        "src/components/range/rangeUtils.test.ts",
+        "src/components/range/RangeEditor.test.ts",
+        "src/components/gradientslider/GradientSlider.test.ts",
+        "src/components/palette/PaletteSwatchRow.test.ts",
+        "src/components/ui/color-picker/useColorPicker.test.ts",
+        "src/components/ui/color-picker/ColorPickerPanel.test.ts",
+        "src/components/ui/slider/Slider.test.ts"
+      ]
+    },
+    {
+      "name": "Modal layout, navigation items, and accordion items render feature-agnostic structure",
+      "checks": [
+        "src/components/widget/layout/BaseModalLayout.test.ts",
+        "src/components/widget/nav/NavItem.test.ts",
+        "src/components/rightSidePanel/layout/PropertiesAccordionItem.test.ts"
+      ]
+    },
+    {
+      "name": "Media cache fetches, reuses, and evicts object URLs for lazy images",
+      "checks": ["src/services/mediaCacheService.test.ts"]
+    },
+    {
+      "name": "Curve, range, and palette swatch editors keep value shapes, drag behaviour, and histogram paths",
+      "checks": [
+        "src/composables/useCurveEditor.test.ts",
+        "src/composables/useRangeEditor.test.ts",
+        "src/composables/palette/usePaletteSwatchRow.test.ts",
+        "src/utils/histogramUtil.test.ts"
+      ]
+    },
+    {
+      "name": "Modal z-index lifting keeps overlays visible above dialogs",
+      "checks": ["src/composables/useModalLiftedZIndex.test.ts"]
+    },
+    {
+      "name": "Tree data helpers and ticker text splitting stay pure",
+      "checks": [
+        "src/utils/treeUtil.test.ts",
+        "src/utils/textTickerUtils.test.ts"
+      ]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Unclassified callers may import these internals during inventory; imports from classified domains remain subject to cross-domain rules until a tested public entry point and dependency approval exist.",
+    "Component file paths, props, emits, and slots stay stable because extensions, renderer widgets, platform features, and stories import them directly.",
+    "The toast store keeps its Pinia id and the add, update, and remove contract used by api, app, and service callers.",
+    "Curve and range value shapes stay compatible with the litegraph widget types and GLSL uniform consumers that read them.",
+    "No-test holes remain for dialog, field, input-group, label, the select primitives, skeleton, splitter, tabs, button-group, the tab, card, loader, and icon kits, ui/Popover, ZoomPane, ScrubableNumberInput, StatusBadge, LazyImage, LoadingOverlay, DraggableList, InputSlider, and the divider, spinner, and placeholder widgets; classification does not claim coverage for them."
+  ],
+  "deepImports": "inventory"
+}

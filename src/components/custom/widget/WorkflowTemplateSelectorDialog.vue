@@ -389,7 +389,7 @@
         ref="loadTrigger"
         class="mt-4 flex h-4 w-full items-center justify-center px-6"
       >
-        <div v-if="isLoadingMore" class="text-sm text-muted">
+        <div v-if="isLoadingMore" class="text-sm text-muted-foreground">
           {{ $t('templateWorkflows.loadingMore', 'Loading more...') }}
         </div>
       </div>
@@ -398,7 +398,7 @@
       <div
         v-if="!isLoading"
         v-show="!activeDetail"
-        class="mt-6 px-6 pb-10 text-sm text-muted"
+        class="mt-6 px-6 pb-10 text-sm text-muted-foreground"
       >
         {{
           $t('templateWorkflows.resultsCount', {

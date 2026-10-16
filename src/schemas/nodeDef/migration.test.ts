@@ -6,7 +6,7 @@ import {
   transformNodeDefV1ToV2
 } from '@/schemas/nodeDef/migration'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
-import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 
 describe('NodeDef Migration', () => {
   it('should correctly transform required input specs', () => {
