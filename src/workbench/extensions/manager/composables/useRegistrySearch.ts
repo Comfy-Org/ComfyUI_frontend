@@ -4,7 +4,10 @@ import type { MaybeRefOrGetter, Ref } from 'vue'
 import { DEFAULT_PAGE_SIZE } from '@/constants/searchConstants'
 import { useRegistrySearchGateway } from '@/services/gateway/registrySearchGateway'
 import { PACK_SEARCHABLE_ATTRIBUTES } from '@/services/providers/algoliaPackSearchRequest'
-import type { SearchAttribute } from '@/types/algoliaTypes'
+import type {
+  SearchAttribute,
+  SearchNodePacksParams
+} from '@/types/algoliaTypes'
 import type { components } from '@/types/comfyRegistryTypes'
 import type { QuerySuggestion, SearchMode } from '@/types/searchServiceTypes'
 import { usePreemptableQueue } from '@/utils/pagedList'
@@ -50,19 +53,25 @@ export function useRegistrySearch(inputs: {
       ? ['comfy_nodes']
       : PACK_SEARCHABLE_ATTRIBUTES
 
-  async function doLoadMore() {
-    if (!morePages.value) return
-    const query = toValue(inputs.query)
+  function analyticsParams(
+    query: string
+  ): Pick<SearchNodePacksParams, 'analyticsTags'> {
     const isTypedSearch =
       pageNumber === 0 &&
       query.trim() !== '' &&
       (toValue(inputs.isTypedQuery) ?? false)
+    return isTypedSearch ? { analyticsTags: ['user'] } : {}
+  }
+
+  async function doLoadMore() {
+    if (!morePages.value) return
+    const query = toValue(inputs.query)
     try {
       const result = await searchPacks(query, {
         pageSize: DEFAULT_PAGE_SIZE,
         pageNumber,
         restrictSearchableAttributes: searchableAttributes(),
-        ...(isTypedSearch && { analyticsTags: ['user'] })
+        ...analyticsParams(query)
       })
       const { nodePacks } = result
       morePages.value = result.hasMore ?? nodePacks.length >= DEFAULT_PAGE_SIZE
