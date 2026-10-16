@@ -813,8 +813,19 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         )
       }
 
+      function savedCards(...defaults: boolean[]) {
+        return defaults.map((isDefault, index) => ({
+          id: `pm_${index}`,
+          type: 'card',
+          is_default: isDefault
+        }))
+      }
+
       it('opens the portal on the payment-method update flow and returns to Pay', async () => {
         refuseForNoPaymentMethod()
+        vi.spyOn(workspaceApi, 'listSavedPaymentMethods').mockResolvedValue(
+          savedCards(true)
+        )
         const getPortal = portalOpensAt(portalUrl)
         const { tab, open } = stubCheckoutTab()
         await payAndGetRefused()
@@ -842,23 +853,51 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         ).toBeEnabled()
       })
 
+      it('keeps the refusal until a return finds a default card', async () => {
+        refuseForNoPaymentMethod()
+        const listCards = vi
+          .spyOn(workspaceApi, 'listSavedPaymentMethods')
+          .mockResolvedValueOnce([])
+          .mockResolvedValueOnce(savedCards(false))
+          .mockResolvedValue(savedCards(false, true))
+        portalOpensAt(portalUrl)
+        const { tab } = stubCheckoutTab()
+        await payAndGetRefused()
+        await clickSetDefaultCard()
+        await waitFor(() => expect(tab.location.href).toBe(portalUrl))
+
+        for (const expectedReads of [1, 2]) {
+          window.dispatchEvent(new Event('focus'))
+          await waitFor(() =>
+            expect(listCards).toHaveBeenCalledTimes(expectedReads)
+          )
+          expect(
+            screen.getByRole('button', { name: 'Set a default card' })
+          ).toBeEnabled()
+          window.dispatchEvent(new Event('blur'))
+        }
+
+        window.dispatchEvent(new Event('focus'))
+        expect(
+          await screen.findByRole('button', { name: 'Pay $50.00' })
+        ).toBeEnabled()
+      })
+
       it.for([
         {
           failure: 'a rejected request',
           arrange: () =>
             vi
               .spyOn(workspaceApi, 'getPaymentPortalUrl')
-              .mockRejectedValue(new WorkspaceApiError('Portal down', 502)),
-          description: 'Portal down'
+              .mockRejectedValue(new WorkspaceApiError('Portal down', 502))
         },
         {
           failure: 'an empty portal URL',
-          arrange: () => portalOpensAt(''),
-          description: 'An unknown error occurred'
+          arrange: () => portalOpensAt('')
         }
       ])(
-        'closes the reserved tab and explains $failure',
-        async ({ arrange, description }) => {
+        'closes the reserved tab and explains $failure without the server message',
+        async ({ arrange }) => {
           refuseForNoPaymentMethod()
           arrange()
           const { tab } = stubCheckoutTab()
@@ -869,7 +908,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
           await waitFor(() =>
             expect(useToast().error).toHaveBeenCalledWith(
               "Couldn't open card settings",
-              { description }
+              { description: 'An unknown error occurred' }
             )
           )
           expect(tab.close).toHaveBeenCalledOnce()

@@ -756,15 +756,22 @@ const openingDefaultCardPortal = ref(false)
 
 function refreshOnDefaultCardReturn() {
   stopDefaultCardReturnRefresh?.()
-  stopDefaultCardReturnRefresh = registerRefreshOnReturn(() => {
-    stopDefaultCardReturnRefresh?.()
-    stopDefaultCardReturnRefresh = null
-    noPaymentMethodRefused.value = false
-    return Promise.allSettled([
+  stopDefaultCardReturnRefresh = registerRefreshOnReturn(async () => {
+    const [paymentMethods] = await Promise.allSettled([
+      workspaceApi.listSavedPaymentMethods(),
       fetchStatus(),
       fetchBalance(),
       billingCapabilities.refresh()
     ])
+    if (
+      paymentMethods.status !== 'fulfilled' ||
+      !paymentMethods.value.some((method) => method.is_default)
+    ) {
+      return
+    }
+    stopDefaultCardReturnRefresh?.()
+    stopDefaultCardReturnRefresh = null
+    noPaymentMethodRefused.value = false
   })
 }
 
@@ -786,21 +793,18 @@ async function setDefaultCard() {
     if (!url) return reportDefaultCardPortalFailure(portalTab)
     portalTab.navigate(url)
     if (!unmounted) refreshOnDefaultCardReturn()
-  } catch (error) {
-    reportDefaultCardPortalFailure(portalTab, error)
+  } catch {
+    reportDefaultCardPortalFailure(portalTab)
   } finally {
     openingDefaultCardPortal.value = false
   }
 }
 
-function reportDefaultCardPortalFailure(
-  portalTab: BillingTab,
-  error?: unknown
-) {
+function reportDefaultCardPortalFailure(portalTab: BillingTab) {
   portalTab.close()
   if (unmounted) return
   toast.error(t('credits.topUp.setDefaultCardError'), {
-    description: getErrorMessage(error) ?? t('credits.topUp.unknownError')
+    description: t('credits.topUp.unknownError')
   })
 }
 
