@@ -40,10 +40,6 @@ export function resultItemVhsAdvancedPreviewUrl(
   return api.apiURL('/viewvideo?' + resultItemUrlParams(item))
 }
 
-export function resultItemUrlWithTimestamp(item: AugmentedResultItem): string {
-  return `${resultItemUrl(item)}&t=${+new Date()}`
-}
-
 export function findResultIndexByUrl(
   items: readonly AugmentedResultItem[],
   url?: string
