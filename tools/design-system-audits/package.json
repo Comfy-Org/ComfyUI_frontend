@@ -4,10 +4,6 @@
   "private": true,
   "description": "Manual audits of Tailwind class usage across Vue templates",
   "type": "module",
-  "scripts": {
-    "format": "oxfmt --write",
-    "format:check": "oxfmt --check"
-  },
   "dependencies": {
     "vue": "catalog:"
   },
