@@ -194,7 +194,8 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
     query: string,
     params: SearchNodePacksParams
   ): Promise<SearchPacksResult> => {
-    const cacheKey = paramsToCacheKey({ query, ...params })
+    const { analyticsTags: _analyticsTags, ...resultParams } = params
+    const cacheKey = paramsToCacheKey({ query, ...resultParams })
     const cachedResult = searchPacksCache.get(cacheKey)
     if (cachedResult !== undefined) return cachedResult
 

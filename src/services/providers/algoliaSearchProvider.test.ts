@@ -240,6 +240,19 @@ describe('useAlgoliaSearchProvider', () => {
       expect(mockSearchClient.search).toHaveBeenCalledTimes(2)
     })
 
+    it('serves a search with analytics tags from the cache of the same untagged search', async () => {
+      mockSearchClient.search.mockResolvedValue({
+        results: [{ hits: [packHit('pack-1')] }, { hits: [] }]
+      })
+
+      const provider = useAlgoliaSearchProvider()
+      const params = { pageSize: 10, pageNumber: 0 }
+      await provider.searchPacks('test', params)
+      await provider.searchPacks('test', { ...params, analyticsTags: ['user'] })
+
+      expect(mockSearchClient.search).toHaveBeenCalledTimes(1)
+    })
+
     it.for(['id', 'objectID'])(
       'should take the pack id from a hit that has only %s',
       async (idField) => {
