@@ -2,7 +2,6 @@ import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import { t } from '@/i18n/translations'
 import HowToEnterSection from './HowToEnterSection.vue'
 
 const props = {
@@ -10,115 +9,112 @@ const props = {
   submitHref: 'https://example.com/submit'
 }
 
+const textsOf = (elements: HTMLElement[]) =>
+  elements.map((element) => element.textContent.trim())
+
+async function openStep(name: string) {
+  await userEvent.click(screen.getByRole('button', { name }))
+  return screen.findByRole('region', { name })
+}
+
 describe('HowToEnterSection', () => {
   it('renders the localized heading and open sign-up step', () => {
     render(HowToEnterSection, { props: { ...props, locale: 'zh-CN' } })
 
     expect(
-      screen.getByRole('heading', {
-        level: 2,
-        name: t('eventChallenge.enter', {}, { locale: 'zh-CN' })
-      })
+      screen.getByRole('heading', { level: 2, name: '如何参赛' })
     ).toBeInTheDocument()
-    expect(
-      screen.getByRole('link', {
-        name: t('eventChallenge.enterSignupLink', {}, { locale: 'zh-CN' })
-      })
-    ).toHaveAttribute('href', props.signupHref)
+    expect(screen.getByRole('link', { name: '点此报名' })).toHaveAttribute(
+      'href',
+      props.signupHref
+    )
   })
 
   it('numbers the four steps in order', () => {
     render(HowToEnterSection, { props })
 
-    const titles = [
-      'enterSignupTitle',
-      'enterRequirementsTitle',
-      'enterPrepareTitle',
-      'enterSubmitTitle'
-    ].map((key, index) => `${index + 1}. ${t(`eventChallenge.${key}`)}`)
-    for (const name of titles) {
-      expect(screen.getByRole('button', { name })).toBeInTheDocument()
-    }
+    expect(textsOf(screen.getAllByRole('button'))).toEqual([
+      '1. Sign up',
+      '2. App requirements',
+      '3. Prepare your submission',
+      '4. Submit'
+    ])
   })
 
   it.for([
-    { locale: 'en', name: 'Developer Platform', href: '/platform/' },
-    { locale: 'zh-CN', name: '开发者平台', href: '/zh-CN/platform/' }
+    {
+      locale: 'en',
+      step: '2. App requirements',
+      name: 'Developer Platform',
+      href: '/platform/'
+    },
+    {
+      locale: 'zh-CN',
+      step: '2. 应用要求',
+      name: '开发者平台',
+      href: '/zh-CN/platform/'
+    }
   ] as const)(
     'links the $locale platform requirement to $href',
-    async ({ locale, name, href }) => {
+    async ({ locale, step, name, href }) => {
       render(HowToEnterSection, { props: { ...props, locale } })
 
-      await userEvent.click(
-        screen.getByRole('button', {
-          name: `2. ${t('eventChallenge.enterRequirementsTitle', {}, { locale })}`
-        })
-      )
+      const region = await openStep(step)
 
-      expect(await screen.findByRole('link', { name })).toHaveAttribute(
+      expect(within(region).getByRole('link', { name })).toHaveAttribute(
         'href',
         href
       )
     }
   )
 
-  it('lists every other app requirement', async () => {
+  it('lists every app requirement in order', async () => {
     render(HowToEnterSection, { props })
 
-    await userEvent.click(
-      screen.getByRole('button', {
-        name: `2. ${t('eventChallenge.enterRequirementsTitle')}`
-      })
-    )
+    const region = await openStep('2. App requirements')
 
-    for (const item of [2, 3, 4, 5, 6]) {
-      expect(
-        await screen.findByText(t(`eventChallenge.requirement${item}`))
-      ).toBeInTheDocument()
-    }
+    expect(textsOf(within(region).getAllByRole('listitem'))).toEqual([
+      'Your work must be built using the Comfy Developer Platform (Comfy API, Comfy Router, and/or Comfy SDK)',
+      'Your repo must include an open-source license and enough setup detail that someone else can run it on their own machine',
+      'Any other tools, models, or techniques you want to combine with it are fair game and must be explained in your demo video',
+      'All submissions must be lawful, SFW, and must not contain unlicensed IP or likenesses',
+      'By submitting, you agree to allow ComfyUI, NVIDIA, Runpod, LTX, Black Forest Labs, and MiniMax to feature your work with credit across our channels',
+      'One submission per person'
+    ])
   })
 
-  it('lists the four deliverables', async () => {
+  it('lists the four deliverables in order', async () => {
     render(HowToEnterSection, { props })
 
-    await userEvent.click(
-      screen.getByRole('button', {
-        name: `3. ${t('eventChallenge.enterPrepareTitle')}`
-      })
-    )
+    const region = await openStep('3. Prepare your submission')
 
-    for (const item of ['Repo', 'Demo', 'Link', 'Social']) {
-      expect(
-        await screen.findByText(t(`eventChallenge.enter${item}`))
-      ).toBeInTheDocument()
-    }
+    expect(textsOf(within(region).getAllByRole('listitem'))).toEqual([
+      expect.stringMatching(/^GitHub repo/),
+      expect.stringMatching(/^Demo video/),
+      expect.stringMatching(/^A link to try it/),
+      expect.stringMatching(/^Social post/)
+    ])
   })
 
   it('stacks sign-up and submit calls to action under the heading', () => {
     render(HowToEnterSection, { props })
 
+    expect(screen.getByRole('link', { name: 'Sign up' })).toHaveAttribute(
+      'href',
+      props.signupHref
+    )
     expect(
-      screen.getByRole('link', { name: t('eventChallenge.enterSignupCta') })
-    ).toHaveAttribute('href', props.signupHref)
-    expect(
-      screen.getByRole('link', { name: t('eventChallenge.submit') })
+      screen.getByRole('link', { name: 'Submit your entry' })
     ).toHaveAttribute('href', props.submitHref)
   })
 
   it('ends the steps with the submit entry call to action', async () => {
     render(HowToEnterSection, { props })
 
-    await userEvent.click(
-      screen.getByRole('button', {
-        name: `4. ${t('eventChallenge.enterSubmitTitle')}`
-      })
-    )
+    const region = await openStep('4. Submit')
 
-    const step = await screen.findByRole('region', {
-      name: `4. ${t('eventChallenge.enterSubmitTitle')}`
-    })
     expect(
-      within(step).getByRole('link', { name: t('eventChallenge.submit') })
+      within(region).getByRole('link', { name: 'Submit your entry' })
     ).toHaveAttribute('href', props.submitHref)
   })
 })

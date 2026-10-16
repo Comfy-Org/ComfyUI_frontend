@@ -55,9 +55,8 @@ for (const locale of locales) {
       ).toHaveAttribute('content', locale.shareAlt)
     }
     const partners = page.getByRole('region', { name: locale.partners })
-    for (const name of ['Runpod', 'LTX']) {
-      await expect(partners.getByRole('img', { name })).toBeVisible()
-    }
+    await expect(partners.getByRole('img', { name: 'Runpod' })).toBeVisible()
+    await expect(partners.getByRole('img', { name: 'LTX' })).toBeVisible()
     await expect(partners.getByRole('img', { name: 'NVIDIA' })).toHaveCount(0)
     await expect(
       page.getByRole('link', { name: locale.signup }).first()
