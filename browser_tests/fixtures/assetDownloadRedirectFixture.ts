@@ -81,12 +81,13 @@ export const assetDownloadRedirectTest = webSessionTest.extend<{
           `**/api/assets/${STABLE_OUTPUT.id}/content**`,
           async (route) => {
             const headers = await route.request().allHeaders()
+            const cookie = new Headers(headers).get('cookie')
             requestHeaders.push(headers)
             const workspace =
               initialLocalStorage['Comfy.Workspace.LastWorkspaceId'] ??
               'ws-personal'
             if (
-              !headers.cookie.includes(
+              !cookie?.includes(
                 `${WEB_SESSION_COOKIE.name}=${WEB_SESSION_COOKIE.value}`
               )
             ) {
