@@ -19,7 +19,9 @@ import type { Component } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTelemetry } from '@/platform/telemetry'
+import { openDeployToComfyApiDialog } from '@/platform/workflow/deploy/composables/lazyDeployToComfyApiDialog'
 
 import QueueNotificationBannerHost from '@/components/queue/QueueNotificationBannerHost.vue'
 import TopMenuSection from '@/components/TopMenuSection.vue'
@@ -33,6 +35,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 vi.mock(import('firebase/auth'))
@@ -43,10 +46,19 @@ const mockData = vi.hoisted(() => ({
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
+const distribution = vi.hoisted(() => ({ isCloud: false }))
 vi.mock(import('@/platform/distribution/types'), () => ({
-  isCloud: false,
+  get isCloud() {
+    return distribution.isCloud
+  },
   isNightly: false
 }))
+
+vi.mock(import('@/composables/useFeatureFlags'))
+vi.mock(
+  import('@/platform/workflow/deploy/composables/lazyDeployToComfyApiDialog'),
+  () => ({ openDeployToComfyApiDialog: vi.fn(async () => {}) })
+)
 
 vi.mock<unknown>(
   import('@/workbench/extensions/manager/composables/useConflictAcknowledgment'),
@@ -116,6 +128,9 @@ function createWrapper({
         },
         rightSidePanel: {
           togglePanel: 'Toggle properties panel'
+        },
+        deployToComfyApi: {
+          buttonLabel: 'Deploy to Comfy API'
         }
       }
     }
@@ -631,6 +646,74 @@ describe('TopMenuSection', () => {
     expect(container.querySelector('.actionbar-container')).not.toHaveClass(
       'w-0'
     )
+  })
+
+  describe('Deploy to Comfy API button', () => {
+    it.for([
+      {
+        when: 'on local with the flag on',
+        flag: true,
+        onCloud: false,
+        shown: true
+      },
+      {
+        when: 'while the flag is off',
+        flag: false,
+        onCloud: false,
+        shown: false
+      },
+      { when: 'on Comfy Cloud', flag: true, onCloud: true, shown: false }
+    ])('shows ($shown) $when', ({ flag, onCloud, shown }) => {
+      distribution.isCloud = onCloud
+      onTestFinished(() => {
+        distribution.isCloud = false
+      })
+      vi.mocked(useFeatureFlags().flags).runBarDeployEnabled = flag
+
+      createWrapper({ stubs: { FreeTierQuota: true } })
+
+      expect(
+        screen.queryByRole('button', { name: 'Deploy to Comfy API' }) !== null
+      ).toBe(shown)
+    })
+
+    it('sits left of the panel toggle and opens the Deploy to Comfy API dialog', async () => {
+      vi.mocked(useFeatureFlags().flags).runBarDeployEnabled = true
+      const { user } = createWrapper()
+      const deploy = screen.getByRole('button', {
+        name: 'Deploy to Comfy API'
+      })
+
+      expect(
+        deploy.compareDocumentPosition(
+          screen.getByRole('button', { name: 'Toggle properties panel' })
+        ) & Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy()
+      await user.click(deploy)
+
+      expect(openDeployToComfyApiDialog).toHaveBeenCalledOnce()
+    })
+
+    it('keeps the floating actionbar container open for the deploy button', async () => {
+      localStorage.setItem('Comfy.MenuPosition.Docked', 'false')
+      useManagerState().shouldShowExtensionsButton = computed(() => false)
+      vi.mocked(useFeatureFlags().flags).runBarDeployEnabled = true
+      const pinia = getActivePinia()
+      assert.exists(pinia)
+      vi.mocked(useSettingStore(pinia).get).mockImplementation((key) => {
+        if (key === 'Comfy.UseNewMenu') return 'Top'
+        if (key === 'Comfy.UI.TabBarLayout') return 'Integrated'
+        return undefined
+      })
+      useRightSidePanelStore(pinia).isOpen = true
+
+      const { container } = createWrapper({ pinia })
+      await nextTick()
+
+      expect(container.querySelector('.actionbar-container')).not.toHaveClass(
+        'w-0'
+      )
+    })
   })
 
   it('coalesces legacy topbar mutation scans to one check per frame', async () => {

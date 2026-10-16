@@ -16,6 +16,7 @@ export enum ServerFeatureFlag {
   USER_SECRETS_ENABLED = 'user_secrets_enabled',
   NODE_REPLACEMENTS = 'node_replacements',
   NODE_LIBRARY_ESSENTIALS_ENABLED = 'node_library_essentials_enabled',
+  RUN_BAR_DEPLOY_ENABLED = 'run_bar_deploy_enabled',
   COMFYHUB_UPLOAD_ENABLED = 'comfyhub_upload_enabled',
   COMFYHUB_PROFILE_GATE_ENABLED = 'comfyhub_profile_gate_enabled',
   HOSTED_BILLING_DESTINATION = 'hosted_billing_destination',

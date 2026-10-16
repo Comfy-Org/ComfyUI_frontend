@@ -87,6 +87,20 @@
                 />
               </Button>
               <Button
+                v-if="isDeployButtonShown"
+                :tooltip="t('deployToComfyApi.buttonLabel')"
+                tooltip-side="bottom"
+                variant="secondary"
+                size="icon"
+                :aria-label="t('deployToComfyApi.buttonLabel')"
+                data-testid="run-bar-deploy"
+                @click="
+                  () => openDeployToComfyApiDialog().catch(toastErrorHandler)
+                "
+              >
+                <i class="icon-[lucide--rocket] size-4" />
+              </Button>
+              <Button
                 v-if="isCloud"
                 :tooltip="t('actionbar.shareTooltip')"
                 tooltip-side="bottom"
@@ -185,6 +199,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import FreeTierQuota from '@/platform/cloud/subscription/components/FreeTierQuota.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
@@ -196,6 +211,7 @@ import { useQueueUIStore } from '@/stores/queueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isCloud } from '@/platform/distribution/types'
+import { openDeployToComfyApiDialog } from '@/platform/workflow/deploy/composables/lazyDeployToComfyApiDialog'
 import {
   openShareDialog,
   prefetchShareDialog
@@ -217,6 +233,10 @@ const managerSurveyDialog = useManagerSurveyDialog()
 const { isLoggedIn } = useCurrentUser()
 const { t } = useI18n()
 const { toastErrorHandler } = useErrorHandling()
+const { flags } = useFeatureFlags()
+const isDeployButtonShown = computed(
+  () => !isCloud && flags.runBarDeployEnabled
+)
 const executionErrorStore = useExecutionErrorStore()
 const actionBarButtonStore = useActionBarButtonStore()
 const queueUIStore = useQueueUIStore()
@@ -233,16 +253,12 @@ const isActionbarEnabled = computed(
 const isActionbarFloating = computed(
   () => isActionbarEnabled.value && !isActionbarDocked.value
 )
-/**
- * Whether the actionbar container has any visible docked buttons
- * (excluding ComfyActionbar, which uses position:fixed when floating
- * and does not contribute to the container's visual layout).
- */
 const hasDockedButtons = computed(() => {
   if (actionBarButtonStore.buttons.length > 0) return true
   if (hasLegacyContent.value) return true
   if (!isIntegratedTabBar.value) return true
   if (managerState.shouldShowExtensionsButton.value) return true
+  if (isDeployButtonShown.value) return true
   if (isCloud) return true
   if (!isRightSidePanelOpen.value) return true
   return false
