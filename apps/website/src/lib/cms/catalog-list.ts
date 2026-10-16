@@ -121,12 +121,14 @@ function listFacets(
       sortOrders: value.sort_orders
     },
     workflows: {
-      categories: value.facets.categories.map((facet) => ({
-        ...facet,
-        label:
-          facet.label.trim() ||
-          workflowCategoryLabel({ category: facet.value }, locale)
-      })),
+      categories: value.facets.categories
+        .filter((facet) => facet.value.trim())
+        .map((facet) => ({
+          ...facet,
+          label:
+            facet.label.trim() ||
+            workflowCategoryLabel({ category: facet.value }, locale)
+        })),
       models: value.facets.models
     }
   }

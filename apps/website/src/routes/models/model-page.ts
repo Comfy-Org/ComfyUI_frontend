@@ -30,7 +30,7 @@ export function modelOgImage(
 
 type PageCatalog = {
   details: NonNullable<ReturnType<typeof getWorkshopPageDetail>>[]
-  models: WorkshopModel[]
+  models: readonly WorkshopModel[]
 }
 
 function pageModel(slug: string | undefined, catalog?: PageCatalog) {

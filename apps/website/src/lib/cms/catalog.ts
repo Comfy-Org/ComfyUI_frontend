@@ -7,6 +7,8 @@ import type { SiteSession } from './admin'
 import type { AuthoringSession } from './authoring-session'
 import { catalogPresentation } from './catalog-presentation'
 import { normalizeProjection } from './catalog-contract'
+import { boundedBody } from './editor-server'
+import { loadSiteCatalogList } from './catalog-list'
 
 // Server-only configuration. Browser islands read same-origin JSON endpoints.
 export const cmsEnabled = () => Boolean(process.env.SITE_CATALOG_API_URL)
@@ -14,10 +16,11 @@ export const cmsEnabled = () => Boolean(process.env.SITE_CATALOG_API_URL)
 export async function loadSiteCatalog(
   session?: SiteSession | AuthoringSession,
   locale = 'en',
-  workflowSlug?: string
+  workflowSlug?: string,
+  includeRelated = true
 ) {
   const origin = process.env.SITE_CATALOG_API_URL
-  if (!origin || process.env.VERCEL_ENV === 'production')
+  if (!origin || !workflowSlug || process.env.VERCEL_ENV === 'production')
     return { ok: false, status: 503 } as const
   let data: unknown
   try {
@@ -32,7 +35,7 @@ export async function loadSiteCatalog(
     }
     // Only detail routes opt in. Lists/cards do not read private API files or
     // expand their graph payloads for every workflow in the catalog.
-    if (workflowSlug) url.searchParams.set('workflow_slug', workflowSlug)
+    url.searchParams.set('workflow_slug', workflowSlug)
     const response = await fetch(url, {
       ...(session
         ? { headers: { Authorization: `Bearer ${session.credential}` } }
@@ -41,12 +44,15 @@ export async function loadSiteCatalog(
       cache: 'no-store'
     })
     if (!response.ok) return { ok: false, status: 503 } as const
-    data = await response.json()
+    const bytes = await boundedBody(response, 4 << 20)
+    if (!bytes) return { ok: false, status: 503 } as const
+    data = JSON.parse(new TextDecoder().decode(bytes))
   } catch {
     return { ok: false, status: 503 } as const
   }
   const projection = zContentCatalogProjection.safeParse(data)
-  if (!projection.success) return { ok: false, status: 503 } as const
+  if (!projection.success || projection.data.items.length > 1)
+    return { ok: false, status: 503 } as const
   const normalized = normalizeProjection(projection.data)
   if (!normalized) return { ok: false, status: 503 } as const
   const presented = normalized.items.map((item) =>
@@ -65,10 +71,24 @@ export async function loadSiteCatalog(
     )
   if (!models.success || !details.success)
     return { ok: false, status: 503 } as const
+  const kind = normalized.items[0]?.kind
+  const related =
+    includeRelated && normalized.items.length > 0
+      ? await loadSiteCatalogList(
+          session,
+          locale,
+          kind === 'APP' ? 'apps' : kind === 'WORKFLOW' ? 'workflows' : 'models'
+        )
+      : undefined
+  const cards = related?.ok ? related.models : []
+  const ownSlugs = new Set(models.data.map((item) => item.slug))
   return {
     ok: true,
     projection: normalized,
-    models: models.data,
+    models: [
+      ...models.data,
+      ...cards.filter((item) => !ownSlugs.has(item.slug))
+    ],
     details: details.data
   } as const
 }

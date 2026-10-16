@@ -4,6 +4,39 @@ import { describe, expect, it } from 'vitest'
 import CatalogPagination from './CatalogPagination.vue'
 
 describe('bounded catalogue pagination', () => {
+  it('updates results in place for ordinary clicks but retains modified-click links', () => {
+    const { emitted } = render(CatalogPagination, {
+      props: {
+        section: 'workflows',
+        page: {
+          mode: 'cursor',
+          page: 2,
+          pageSize: 24,
+          count: 24,
+          hasNext: true,
+          hasPrevious: false,
+          nextCursor: 'next'
+        }
+      }
+    })
+    const link = screen.getByTestId('catalog-next')
+    const modified = new MouseEvent('click', {
+      bubbles: true,
+      cancelable: true,
+      ctrlKey: true
+    })
+    link.dispatchEvent(modified)
+    expect(modified.defaultPrevented).toBe(false)
+    expect(emitted('navigate')).toBeUndefined()
+    const ordinary = new MouseEvent('click', {
+      bubbles: true,
+      cancelable: true
+    })
+    link.dispatchEvent(ordinary)
+    expect(ordinary.defaultPrevented).toBe(true)
+    expect(emitted('navigate')).toEqual([['p=3&cursor=next']])
+  })
+
   it('uses signed page cursors while preserving repeated filters and omitting unknown totals', () => {
     render(CatalogPagination, {
       props: {

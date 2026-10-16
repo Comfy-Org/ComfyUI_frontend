@@ -61,7 +61,13 @@ const unavailable = computed(() => busy.value || !ready.value)
 const failed = ref(false)
 async function change(command: CatalogPreviewCommand) {
   if (unavailable.value) return
-  const target = previewNavigationPath(currentPath, command.locale)
+  // In-place Hub navigation updates the real URL without replacing this island.
+  const target = previewNavigationPath(
+    ready.value
+      ? location.pathname + location.search + location.hash
+      : currentPath,
+    command.locale
+  )
   if (!target) {
     failed.value = true
     return

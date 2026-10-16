@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { provide } from 'vue'
+import {
+  onBeforeUnmount,
+  onMounted,
+  provide,
+  ref,
+  shallowRef,
+  watch
+} from 'vue'
 
 import type { WorkshopModel } from '@/config/models-catalogue'
 import type {
@@ -7,6 +14,15 @@ import type {
   CatalogListFacets
 } from '@/lib/cms/catalog-list'
 import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import { fetchCataloguePage } from '@/lib/cms/catalogue-page-client'
+import {
+  catalogBrowseNavigation,
+  catalogDetailNavigation,
+  catalogDetailPath,
+  listenCatalogHistory
+} from '@/lib/cms/detail-route'
+import CatalogDetailPage from './CatalogDetailPage.vue'
 import AppCatalogue from './AppCatalogue.vue'
 import { cccCatalogueComponents } from './ccc-catalogue-components'
 import type { CatalogueTab } from './CatalogueTabs.vue'
@@ -16,7 +32,7 @@ import WorkflowCatalogue from './WorkflowCatalogue.vue'
 
 defineOptions({ inheritAttrs: false })
 
-defineProps<{
+const props = defineProps<{
   slug?: string
   workflowId?: string
   heading?: string
@@ -30,6 +46,173 @@ defineProps<{
   locale?: Locale
 }>()
 
+const models = shallowRef(props.initialModels)
+const pages = shallowRef(props.initialPages)
+const facets = shallowRef(props.initialFacets)
+const search = ref(props.initialSearch)
+const failed = ref(false)
+const { t } = translationsFor(props.locale ?? 'en')
+const detail = shallowRef<{ path: string; preview?: WorkshopModel }>()
+let browseHref = ''
+let browseScroll = 0
+let browseTitle = ''
+function openDetail(event: MouseEvent, model: WorkshopModel) {
+  if (
+    event.defaultPrevented ||
+    event.button !== 0 ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.shiftKey ||
+    event.altKey
+  )
+    return
+  if (!model.href) return
+  const target = new URL(model.href, location.href)
+  if (target.origin !== location.origin || !catalogDetailPath(target.pathname))
+    return
+  if (props.locale === 'zh-CN' && !target.pathname.startsWith('/zh-CN/'))
+    target.pathname = '/zh-CN' + target.pathname
+  event.preventDefault()
+  event.stopPropagation()
+  if (!detail.value) {
+    browseHref = location.pathname + location.search + location.hash
+    browseScroll = scrollY
+    browseTitle = document.title
+  }
+  request?.abort()
+  sequence++
+  detail.value = { path: target.pathname, preview: model }
+  window.history.pushState(
+    { ...window.history.state, cccDetailPath: target.pathname },
+    '',
+    target.pathname + target.search + target.hash
+  )
+  document.title = `${model.name} - Comfy`
+  window.scrollTo({ top: 0, behavior: 'instant' })
+}
+provide(catalogDetailNavigation, openDetail)
+provide(catalogBrowseNavigation, (event) => {
+  if (
+    !detail.value ||
+    !browseHref ||
+    event.defaultPrevented ||
+    event.button !== 0 ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.shiftKey ||
+    event.altKey
+  )
+    return
+  event.preventDefault()
+  event.stopPropagation()
+  window.history.pushState(window.history.state, '', browseHref)
+  detail.value = undefined
+  document.title = browseTitle
+  requestAnimationFrame(() =>
+    window.scrollTo({ top: browseScroll, behavior: 'instant' })
+  )
+})
+let request: AbortController | undefined
+let sequence = 0
+watch(
+  () => [
+    props.initialModels,
+    props.initialPages,
+    props.initialFacets,
+    props.initialSearch
+  ],
+  () => {
+    request?.abort()
+    sequence++
+    detail.value = undefined
+    models.value = props.initialModels
+    pages.value = props.initialPages
+    facets.value = props.initialFacets
+    search.value = props.initialSearch
+    failed.value = false
+  }
+)
+
+async function updateResults(
+  query: string,
+  history: 'push' | 'replace' | 'none' = 'replace'
+) {
+  request?.abort()
+  request = new AbortController()
+  const current = ++sequence
+  const target = new URL(location.href)
+  target.search = query
+  const url = new URL('/models/catalogue.json', location.origin)
+  url.search = target.search
+  url.searchParams.set('section', props.section ?? 'models')
+  url.searchParams.set('format', 'page')
+  url.searchParams.set('locale', props.locale ?? 'en')
+  failed.value = false
+  try {
+    const result = await fetchCataloguePage(
+      url,
+      AbortSignal.any([request.signal, AbortSignal.timeout(10000)])
+    )
+    if (current !== sequence) return
+    const activePage = result.pages[props.section ?? 'models']
+    if (activePage.reset) {
+      target.searchParams.delete('cursor')
+      target.searchParams.set('p', String(activePage.page))
+    }
+    models.value = result.models
+    pages.value = result.pages
+    facets.value = result.facets
+    search.value = target.search
+    if (history !== 'none')
+      window.history[`${history}State`](
+        window.history.state,
+        '',
+        target.pathname + target.search + target.hash
+      )
+  } catch {
+    if (current === sequence && !request.signal.aborted) failed.value = true
+  }
+}
+function restoreResults(event: PopStateEvent) {
+  const prefix = props.locale === 'zh-CN' ? '/zh-CN' : ''
+  if (catalogDetailPath(location.pathname)) {
+    event.stopImmediatePropagation()
+    detail.value = {
+      path: location.pathname,
+      preview: models.value?.find(
+        (model) =>
+          model.href &&
+          new URL(model.href, location.origin).pathname === location.pathname
+      )
+    }
+    return true
+  }
+  if (location.pathname !== `${prefix}/hub/${props.section ?? 'models'}/`)
+    return false
+  event.stopImmediatePropagation()
+  if (detail.value) {
+    detail.value = undefined
+    if (location.pathname + location.search + location.hash === browseHref) {
+      document.title = browseTitle
+      requestAnimationFrame(() =>
+        window.scrollTo({ top: browseScroll, behavior: 'instant' })
+      )
+      return true
+    }
+  }
+  void updateResults(location.search, 'none')
+  return true
+}
+let stopHistory: (() => void) | undefined
+onMounted(() => {
+  stopHistory = listenCatalogHistory(restoreResults)
+})
+onBeforeUnmount(() => {
+  sequence++
+  request?.abort()
+  stopHistory?.()
+})
+
 provide(cccCatalogueComponents, {
   catalogue: ModelsCatalogue,
   workflows: WorkflowCatalogue,
@@ -38,7 +221,30 @@ provide(cccCatalogueComponents, {
 </script>
 
 <template>
-  <ModelsPage v-bind="$props">
-    <template #fallback><slot name="fallback" /></template>
-  </ModelsPage>
+  <CatalogDetailPage
+    v-if="detail"
+    :key="detail.path"
+    :path="detail.path"
+    :preview="detail.preview"
+    :locale="props.locale"
+  />
+  <div v-show="!detail">
+    <p
+      v-if="failed"
+      role="alert"
+      class="mx-auto max-w-10xl px-6 py-3 text-primary-warm-gray"
+    >
+      {{ t('workshop.load.failed') }}
+    </p>
+    <ModelsPage
+      v-bind="$props"
+      :initial-models="models"
+      :initial-pages="pages"
+      :initial-facets="facets"
+      :initial-search="search"
+      @search="updateResults"
+    >
+      <template #fallback><slot name="fallback" /></template>
+    </ModelsPage>
+  </div>
 </template>

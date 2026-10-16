@@ -91,10 +91,10 @@ const { submitSearch, quietly } = useHubCatalogueTracking('models', {
   ]
 })
 
-function readAddress(search: string) {
+function readAddress(search: string, preserveQuery = false) {
   quietly(() => {
     const initial = parseCatalogSearch(search)
-    query.value = initial.query ?? ''
+    if (!preserveQuery) query.value = initial.query ?? ''
     const params = new URLSearchParams(search)
     selectedUseCases.value = serverPage
       ? params
@@ -185,7 +185,7 @@ const isFiltered = computed(
 watch(
   [openedShelf, browseAll, () => query.value.trim() !== ''],
   ([nextShelf, nextBrowse], [previousShelf, previousBrowse]) => {
-    if (!scrollReady) return
+    if (!scrollReady || serverPage) return
     const sectionChanged =
       nextShelf !== previousShelf || nextBrowse !== previousBrowse
     void nextTick(() => {
@@ -207,10 +207,17 @@ const sectionTitleKey = computed<TranslationKey>(() =>
 // the catalogue's name twice.
 const emit = defineEmits<{ section: [boolean]; search: [string] }>()
 let searchTimer: ReturnType<typeof setTimeout> | undefined
+let requestedQuery: string | undefined
 watch(
   () => initialSearch,
   (search) => {
-    if (serverPage) readAddress(search ?? '')
+    if (serverPage) {
+      const receivedQuery = new URLSearchParams(search).get('q') ?? ''
+      readAddress(
+        search ?? '',
+        receivedQuery === requestedQuery && query.value !== receivedQuery
+      )
+    }
   }
 )
 watch(
@@ -252,7 +259,10 @@ watch(
       const current = new URLSearchParams(initialSearch ?? location.search)
       current.delete('p')
       current.delete('cursor')
-      if (search !== current.toString()) emit('search', search)
+      if (search !== current.toString()) {
+        requestedQuery = query.value
+        emit('search', search)
+      }
     }, 200)
   },
   { deep: true }

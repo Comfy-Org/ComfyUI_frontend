@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, inject } from 'vue'
+import { cccCatalogueComponents } from './ccc-catalogue-components'
 
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
@@ -14,6 +15,7 @@ const { app, locale = 'en' } = defineProps<{
   locale?: Locale
 }>()
 const { t } = translationsFor(locale)
+const cmsCatalogue = inject(cccCatalogueComponents, undefined)
 
 const logo = computed(() => getLogoPath(app.name))
 </script>
@@ -21,6 +23,7 @@ const logo = computed(() => getLogoPath(app.name))
 <template>
   <a
     :href="app.href"
+    :data-astro-prefetch="cmsCatalogue ? 'false' : undefined"
     class="group flex cursor-pointer flex-col gap-3 overflow-hidden rounded-3xl bg-hub-surface px-2 pt-2 pb-4 transition-colors duration-200 outline-none hover:bg-hub-surface-hover focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
     data-testid="workshop-app-card"
   >

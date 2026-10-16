@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { ArrowUpRight, Trash2 } from '@lucide/vue'
-import { useTemplateRef } from 'vue'
+import { computed, useTemplateRef } from 'vue'
 
 import AuthorName from '@/components/cms/AuthorName.vue'
 import ChangeTag from '@/components/cms/ChangeTag.vue'
@@ -40,6 +40,9 @@ function open() {
   if (!disabled) emit('open', title.value ?? undefined)
 }
 const { t } = translationsFor(locale)
+const changeID = computed(() =>
+  item.source === 'catalog' ? item.changeID?.trim() : undefined
+)
 
 const later = isFuture(item.source === 'catalog' ? item.visibleFrom : undefined)
 // A model names its provider; otherwise the credited author's public profile
@@ -109,6 +112,13 @@ const when =
       >
         <ChangeTag :change="item.change" :locale />
         {{ t(`cmsAdmin.kind.${item.kind}`) }}
+        <span
+          v-if="changeID"
+          :aria-label="t('cccChecked.changeChip', { id: changeID })"
+          :title="t('cccChecked.changeChip', { id: changeID })"
+          class="max-w-full truncate rounded-full border border-admin-line bg-admin-chrome px-2 py-0.5 font-mono text-[11px] leading-4 text-admin-muted"
+          >{{ changeID }}</span
+        >
         <ReadinessFlag
           v-if="item.source === 'catalog' && !item.canonical"
           :gaps="item.gaps"

@@ -86,6 +86,19 @@ export function catalogPresentation(
         : fallback
   const schema = jsonObject.safeParse(d.inputSchema)
   const inputs = jsonObject.safeParse(d.inputs)
+  // CMS presentation hints are optional; the executable UI contract requires
+  // explicit defaults. Authored hints still override these and are validated.
+  const inputPresentation = Object.fromEntries(
+    Object.entries(inputs.success ? inputs.data : {}).map(([name, raw]) => {
+      const hints = jsonObject.safeParse(raw)
+      return [
+        name,
+        hints.success
+          ? { help: '', hidden: false, advanced: false, ...hints.data }
+          : raw
+      ]
+    })
+  )
   const workflowId = `workflows/${record.uid}`
   const rawSchema = schema.success ? schema.data : {}
   const inputSchema = {
@@ -115,6 +128,12 @@ export function catalogPresentation(
     return undefined
   }
   const faq = Array.isArray(local.faq) ? local.faq : d.faq
+  const localizedModelLabels = objectPresentation(
+    d.website_model_labels_localized
+  )
+  const modelLabels = Array.isArray(localizedModelLabels[locale])
+    ? localizedModelLabels[locale]
+    : []
   const catalogDetails = workflowCatalogDetailsSchema.safeParse({
     locale: ['en', 'zh-CN', 'ja'].includes(locale) ? locale : 'en',
     cloudShareURL:
@@ -232,6 +251,13 @@ export function catalogPresentation(
               candidate.data.type === 'model' &&
               !candidate.deleted
           )
+          const label = modelLabels
+            .map(objectPresentation)
+            .find(
+              (entry) =>
+                typeof entry.uid === 'string' &&
+                entry.uid.toLowerCase() === uid.toLowerCase()
+            )
           const translation = objectPresentation(
             objectPresentation(resource?.data.translations)[locale]
           )
@@ -239,8 +265,9 @@ export function catalogPresentation(
             typeof translation.title === 'string' &&
             (preview || translation.review_state === 'reviewed')
               ? translation.title
-              : resource?.data.title
-          const href = resource?.slug
+              : (label?.title ?? resource?.data.title)
+          const href =
+            typeof label?.href === 'string' ? label.href : resource?.slug
           return [
             {
               uid,
@@ -364,7 +391,7 @@ export function catalogPresentation(
                 execution: {
                   ...objectPresentation(preserved.execution),
                   inputSchema,
-                  inputs: inputs.success ? inputs.data : {}
+                  inputs: inputPresentation
                 }
               }
             : {})
@@ -384,7 +411,7 @@ export function catalogPresentation(
               ? record.edit_version
               : (workflowPresentation.definitionVersion ?? record.edit_version),
             inputSchema,
-            inputs: inputs.success ? inputs.data : {},
+            inputs: inputPresentation,
             ...(hasWorkflowVersions && Object.keys(apiWorkflow ?? {}).length
               ? {
                   cloud: {

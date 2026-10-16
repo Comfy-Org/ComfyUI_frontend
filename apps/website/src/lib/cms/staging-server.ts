@@ -30,7 +30,9 @@ export async function catalogReview(
       headers,
       cache: 'no-store',
       redirect: 'error',
-      signal: AbortSignal.timeout(15000)
+      signal: AbortSignal.timeout(
+        operation === 'publish' && isLocalDemo() ? 60000 : 15000
+      )
     })
   } catch {
     return editorFailure(503)
@@ -38,7 +40,8 @@ export async function catalogReview(
 }
 export async function readReviewResponse(response: Response, final = false) {
   if (!response.ok) return { ok: false as const, status: response.status }
-  const bytes = await boundedBody(response, 8 << 20)
+  // Temporary demo compatibility, not an ordinary/production response budget.
+  const bytes = await boundedBody(response, isLocalDemo() ? 16 << 20 : 8 << 20)
   if (!bytes) return { ok: false as const, status: 503 }
   let raw: unknown
   try {
@@ -49,4 +52,15 @@ export async function readReviewResponse(response: Response, final = false) {
   const snapshot = final ? finalSnapshot(raw) : stagingSnapshot(raw)
   if (!snapshot) return { ok: false as const, status: 503 }
   return { ok: true as const, snapshot }
+}
+
+function isLocalDemo() {
+  return (
+    process.env.NODE_ENV !== 'production' &&
+    process.env.VERCEL_ENV !== 'production' &&
+    Boolean(process.env.SITE_CATALOG_DEMO_INVITATIONS_FILE) &&
+    /^http:\/\/127\.0\.0\.1:\d+\/?$/.test(
+      process.env.SITE_CATALOG_API_URL ?? ''
+    )
+  )
 }

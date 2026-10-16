@@ -175,6 +175,13 @@ No demo credentials, invitations or local media belong in Git.
 Local tester codes are reusable until their existing expiry, with fresh backend
 permission checks and immediate invitation revocation. Repeated sign-in retains
 older active sessions; no production authentication policy changes.
+The Mac development loop uses Astro's Vite server and a private loopback SSH
+forward to the existing demo backend. Only an explicit non-production,
+invitation-configured, loopback-backend demo allows a 16 MiB staging snapshot
+and a 60-second Publish response wait; ordinary/production budgets remain
+8 MiB and 15 seconds. Compact review receipts retain their separate 16 KiB cap,
+and backend transaction/statement/lock deadlines are unchanged. These are
+temporary demo compatibility limits, not substitutes for bounded list queries.
 The independent Linux demo allows an explicit expiry up to thirty days, bounded
 by its local fixture publisher credential. Unspecified expiry still defaults to
 one hour. Invitation labels use shared fixture attribution, not real Comfy
@@ -189,6 +196,17 @@ selection remains consistent. Anonymous or non-editing visitors see no authoring
 links; the editor API separately rechecks authorization on every operation.
 
 ## CCC review discovery
+
+Catalog search, filters and Previous/Next update only the mounted results and
+facets. The same-origin `/models/catalogue.json?format=page&section=workflows`
+representation returns the bounded 24-card page envelope (legacy array output
+is unchanged without `format=page`). The client caps it at 512 KiB, validates
+cards/page/facets, cancels superseded requests and preserves the prior results
+with an error on failure. No HTML navigation or complete catalog fetch occurs.
+Search replaces the address query; pagination pushes a history entry, and
+same-section Back/Forward restores results in place. Browse-all mode, search
+focus and newer in-flight typing survive responses. Exact backend cursor,
+eligibility, owner and fresh Preview authorization checks remain unchanged.
 
 Workflow info cards use backend-resolved Comfy account display names and public
 profile avatars, bound to the credited author UID. Unknown/synthetic demo authors
@@ -1079,9 +1097,24 @@ explicit `category=` query through navigation and filters only uncategorized
 workflows; omitting the parameter still means all categories. Authored category
 values are not rewritten or assigned a synthetic taxonomy ID.
 
-CCC workflow detail pages pass their already authorized, schema-validated
-selected workflow to the island, avoiding a second complete catalog read from
-`page.json` during hydration. The workflow gate and recovery controls remain in
-place. Initial data must match the route and workflow identity; legacy pages
-without selected data keep their existing detail endpoint. No browser or shared
-cross-request cache of staff data is introduced.
+CCC model/workflow cards open the actual detail component in place, updating the
+URL immediately and supplying only the already displayed card presentation.
+The detail component owns its authenticated, bounded `page.json` request. The
+same title/summary remain mounted as details arrive; graphs and media load in
+their own sections. The primary JSON read does not fetch related-card lists;
+models load their optional related shelf near the viewport independently.
+No temporary replacement document or speculative full-detail
+prefetch is used. Modified clicks retain ordinary links. Back restores the
+mounted list, query and scroll without fetching it again; Forward reloads detail
+authority. Pending reads abort on navigation and stale replies cannot repaint
+another route. Preview commands use the current browser URL, not an old island
+prop. These retained browser DOM/card values are not a Redis or cross-user cache.
+
+Direct CCC model/workflow links serve the destination component without awaiting
+the CMS record. Its JSON request uses the canonical path, checks current
+visibility/Preview authority, validates the response schema and route identity,
+and rejects payloads over 4 MiB. Missing/unavailable records show an in-page error;
+the JSON endpoint retains the corresponding error status. CCC demo HTML remains
+noindex; this client-loaded demo is not a production SEO cutover. Existing
+non-CMS production pages keep their server-rendered metadata and behavior. The
+current scope is model/workflow detail pages, not the app studio.

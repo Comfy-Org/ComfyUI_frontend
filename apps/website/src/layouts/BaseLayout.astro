@@ -275,6 +275,23 @@ const hubApps: HubApp[] = appModels.map(({ appId, flag }) => ({
 
     <GoogleTagManager part="head" />
 
+    {process.env.SITE_CATALOG_API_URL &&
+      process.env.VERCEL_ENV !== 'production' && <script is:inline>
+        // Run before Astro's module installs its window popstate listener. Vue's
+        // mounted listeners are otherwise too late to claim same-app history.
+        if (!window.__comfyCatalogHistoryRelay) {
+          window.__comfyCatalogHistoryRelay = true
+          window.addEventListener('popstate', (event) => {
+            const claimed = !document.dispatchEvent(
+              new CustomEvent('ccc:history', {
+                detail: event,
+                cancelable: true
+              })
+            )
+            if (claimed) event.stopImmediatePropagation()
+          })
+        }
+      </script>}
     <ClientRouter />
 
     <!-- Chrome initializes a video's muted state from the `muted` attribute

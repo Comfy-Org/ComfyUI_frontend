@@ -51,6 +51,25 @@ const workflow: WorkflowWorkshopModel = {
 afterEach(() => history.replaceState(null, '', '/'))
 
 describe('bounded catalogue server controls', () => {
+  it('keeps newer typing and focus when an earlier workflow search response arrives', async () => {
+    const user = userEvent.setup()
+    const { emitted, rerender } = render(WorkflowCatalogue, {
+      props: { models: [workflow], serverPage: page, initialSearch: '?p=2' },
+      attrs: { browseAll: true }
+    })
+    await nextTick()
+    const input = screen.getByRole('searchbox')
+    await user.type(input, 'f')
+    await waitFor(() => expect(emitted('search')).toHaveLength(1))
+    await user.type(input, 'l')
+    await rerender({ initialSearch: '?q=f&p=1', models: [workflow] })
+    expect(screen.getByRole('searchbox')).toBe(input)
+    expect(input).toHaveValue('fl')
+    expect(input).toHaveFocus()
+    await user.type(input, 'ux')
+    expect(input).toHaveValue('flux')
+  })
+
   it('requests and restores uncategorized results without dropping the empty category value', async () => {
     const user = userEvent.setup()
     const { emitted, rerender } = render(WorkflowCatalogue, {

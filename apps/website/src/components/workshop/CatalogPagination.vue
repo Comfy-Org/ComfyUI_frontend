@@ -20,6 +20,21 @@ const {
   locale?: Locale
 }>()
 const { t } = translationsFor(locale)
+const emit = defineEmits<{ navigate: [search: string] }>()
+function navigate(event: MouseEvent) {
+  if (
+    event.defaultPrevented ||
+    event.button !== 0 ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.shiftKey ||
+    event.altKey
+  )
+    return
+  if (!(event.currentTarget instanceof HTMLAnchorElement)) return
+  event.preventDefault()
+  emit('navigate', new URL(event.currentTarget.href).search.slice(1))
+}
 const count = computed(() =>
   page.mode === 'cursor'
     ? (page.count ?? 0)
@@ -67,6 +82,7 @@ const linkClass =
       :class="linkClass"
       data-testid="catalog-previous"
       data-astro-prefetch="false"
+      @click="navigate"
       >{{ t('cccCatalogPage.previous') }}</a
     >
     <span class="text-sm text-primary-warm-gray tabular-nums">{{
@@ -80,6 +96,7 @@ const linkClass =
       :class="linkClass"
       data-testid="catalog-next"
       data-astro-prefetch="false"
+      @click="navigate"
       >{{ t('cccCatalogPage.next') }}</a
     >
   </nav>

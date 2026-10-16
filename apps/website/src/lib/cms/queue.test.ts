@@ -39,6 +39,13 @@ function review(
 }
 
 describe('draft review queue', () => {
+  it('carries the batch ID into legacy queue rows without changing the data', () => {
+    const draft = record('wan', 'a', { name: 'Wan', change_id: 'workfl_1016' })
+    expect(buildQueue(review([], [draft]), [])[0]).toMatchObject({
+      changeID: 'workfl_1016'
+    })
+    expect(draft.data.change_id).toBe('workfl_1016')
+  })
   it('groups nested differences under the field an editor recognises', () => {
     const before = record('seedream', 'a', {
       name: 'Seedream',

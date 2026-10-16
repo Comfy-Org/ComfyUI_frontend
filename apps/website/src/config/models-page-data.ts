@@ -41,7 +41,7 @@ export const detailSchema = z.union([routerDetailSchema, workflowDetailSchema])
 
 const tagSchema = z.object({ label: z.string(), search: z.string() })
 
-const modelsPageDataSchema = z.object({
+export const modelsPageDataSchema = z.object({
   kind: z.literal('page'),
   model: detailSchema,
   related: z.array(modelSchema),
@@ -52,7 +52,9 @@ const modelsPageDataSchema = z.object({
   tags: z.array(tagSchema),
   shownTags: z.array(tagSchema),
   restTags: z.array(tagSchema),
-  restTagCount: z.number()
+  restTagCount: z.number(),
+  catalogUID: z.uuid().optional(),
+  canEdit: z.boolean().optional()
 })
 
 export type ModelsPageData = z.output<typeof modelsPageDataSchema>

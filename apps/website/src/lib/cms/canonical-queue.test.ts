@@ -13,6 +13,7 @@ describe('canonical records in Mar’s queue', () => {
     const item = fixtureReview().items[0]
     assert.exists(item)
     item.content.type = type
+    item.content.document.change_id = 'workfl_1016'
     const previewSrc =
       '/preview-media/7/00000000-0000-4000-8000-000000000020/00000000-0000-4000-8000-000000000021'
     item.presentation = { preview: { kind: 'video', src: previewSrc } }
@@ -23,11 +24,23 @@ describe('canonical records in Mar’s queue', () => {
       kind,
       title: 'Review fixture',
       change: 'updated',
+      changeID: 'workfl_1016',
       thumbnail: previewSrc
     })
     expect(row.canonical).toBe(item)
     expect(item.decision).toBe('NEW')
   })
+
+  it.for([undefined, null, 123])(
+    'ignores non-text change IDs (%s)',
+    (value) => {
+      const item = fixtureReview().items[0]
+      assert.exists(item)
+      if (value === undefined) delete item.content.document.change_id
+      else item.content.document.change_id = value
+      expect(canonicalQueue([item])[0]?.changeID).toBeUndefined()
+    }
+  )
 
   it('keeps tombstones as removals even when the original resource never went Live', () => {
     const item = fixtureReview().items[0]

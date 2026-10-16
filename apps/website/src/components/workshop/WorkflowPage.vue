@@ -22,7 +22,10 @@ import WorkflowPlayground from './WorkflowPlayground.vue'
 import WorkflowPreview from './WorkflowPreview.vue'
 import WorkflowApi from './WorkflowApi.vue'
 
-const { model } = defineProps<{ model: WorkflowWorkshopModelDetail }>()
+const { model, embedded = false } = defineProps<{
+  model: WorkflowWorkshopModelDetail
+  embedded?: boolean
+}>()
 const runnable = computed(
   () =>
     !model.catalogDetails ||
@@ -113,8 +116,11 @@ function captureWorkflowDownload() {
 </script>
 
 <template>
-  <div class="mx-auto max-w-10xl px-6 pt-5 pb-20 lg:px-8">
+  <div
+    :class="embedded ? undefined : 'mx-auto max-w-10xl px-6 pt-5 pb-20 lg:px-8'"
+  >
     <a
+      v-if="!embedded"
       :href="routes.hubWorkflows"
       class="mb-7 inline-flex min-h-11 items-center gap-1 text-sm text-primary-warm-gray hover:text-primary-comfy-yellow"
     >
@@ -122,7 +128,10 @@ function captureWorkflowDownload() {
       {{ t('workshop.catalogue.backToWorkflows') }}
     </a>
     <header class="mb-9" data-testid="workflow-hero">
-      <div v-if="shelf" class="mb-3 flex flex-wrap items-center gap-3">
+      <div
+        v-if="shelf && !embedded"
+        class="mb-3 flex flex-wrap items-center gap-3"
+      >
         <a
           :href="shelf.href"
           :class="pillClass"
@@ -131,12 +140,13 @@ function captureWorkflowDownload() {
         >
       </div>
       <h1
+        v-if="!embedded"
         class="max-w-4xl text-3xl font-light text-primary-comfy-canvas lg:text-5xl"
       >
         {{ model.name }}
       </h1>
       <p
-        v-if="model.summary"
+        v-if="model.summary && !embedded"
         class="mt-4 text-lg text-primary-warm-gray lg:truncate"
         :title="model.summary"
       >

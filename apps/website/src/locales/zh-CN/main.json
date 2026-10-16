@@ -4767,6 +4767,7 @@
     "invalid": "请输入 1–128 个英文字母、数字、点、下划线或连字符，并以字母或数字开头。"
   },
   "cccChecked": {
+    "changeChip": "更改 ID：{id}",
     "changeID": "更改批次 ID",
     "instructions": "勾选要发布的更改。未勾选的更改保留在草稿中；暂不使用审批字段。",
     "remaining": "保留在草稿中",
@@ -5123,6 +5124,9 @@
     "addContent": "添加内容"
   },
   "cccCatalogPage": {
+    "retry": "重试",
+    "notFound": "未找到内容",
+    "searchApps": "搜索应用",
     "showResults": "显示结果",
     "rangeWithoutTotal": "第 {start}–{end} 项",
     "reset": "此分页链接已失效。现显示当前结果的第一页。",

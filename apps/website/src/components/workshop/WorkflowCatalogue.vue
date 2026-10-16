@@ -106,9 +106,9 @@ function openFeatured(slide: FeaturedSlide, position: number) {
     { surface: 'workflows', source: 'featured_banner', position }
   )
 }
-function readAddress(search: string) {
+function readAddress(search: string, preserveQuery = false) {
   const params = new URLSearchParams(search)
-  query.value = params.get('q') ?? ''
+  if (!preserveQuery) query.value = params.get('q') ?? ''
   selected.value = params
     .getAll('category')
     .filter((id) =>
@@ -127,6 +127,7 @@ function readAddress(search: string) {
     sort.value = params.get('sort') === 'name' ? 'name' : 'popular'
 }
 let searchReady = false
+let requestedQuery: string | undefined
 let searchTimer: ReturnType<typeof setTimeout> | undefined
 onMounted(() => {
   quietly(() => readAddress(initialSearch ?? location.search))
@@ -137,7 +138,15 @@ onMounted(() => {
 watch(
   () => initialSearch,
   (search) => {
-    if (serverPage) quietly(() => readAddress(search ?? ''))
+    if (serverPage) {
+      const receivedQuery = new URLSearchParams(search).get('q') ?? ''
+      quietly(() =>
+        readAddress(
+          search ?? '',
+          receivedQuery === requestedQuery && query.value !== receivedQuery
+        )
+      )
+    }
   }
 )
 watch(
@@ -157,7 +166,10 @@ watch(
       const current = new URLSearchParams(initialSearch ?? location.search)
       current.delete('p')
       current.delete('cursor')
-      if (search !== current.toString()) emit('search', search)
+      if (search !== current.toString()) {
+        requestedQuery = query.value
+        emit('search', search)
+      }
     }, 200)
   },
   { deep: true }

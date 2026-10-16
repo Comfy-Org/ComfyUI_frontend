@@ -4,25 +4,3 @@ const nativeFeedback = `(${installNativeCatalogueTabNavigation.toString()})();`
 ---
 
 <script is:inline set:html={nativeFeedback}></script>
-<script>
-  import { navigate } from 'astro:transitions/client'
-
-  document.addEventListener('ccc:catalog-search', (event) => {
-    if (!(event instanceof CustomEvent) || typeof event.detail !== 'string')
-      return
-    const current = new URL(location.href)
-    const target = new URL(event.detail, current)
-    if (
-      target.origin !== current.origin ||
-      target.pathname !== current.pathname
-    )
-      return
-    if (
-      !document.querySelector(
-        'astro-island[data-astro-transition-persist^="ccc-hub-catalogue-"]'
-      )
-    )
-      return
-    void navigate(target.pathname + target.search)
-  })
-</script>

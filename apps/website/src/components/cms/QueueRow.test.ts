@@ -1,4 +1,5 @@
 import { respondToFetch } from '@comfyorg/test-utils/fetch'
+import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
@@ -19,6 +20,68 @@ const item = (overrides: Partial<CatalogQueueItem>): CatalogQueueItem => ({
 })
 
 const fromCell = () => screen.getByTestId('queue-row-from')
+
+describe('Draft change ID chip', () => {
+  it.for(['new', 'updated', 'removed'] as const)(
+    'shows the batch on %s changes without changing selection',
+    async (change) => {
+      const user = userEvent.setup()
+      const view = render(QueueRow, {
+        props: {
+          item: item({ changeID: 'workfl_1016', change }),
+          active: false,
+          selectable: true,
+          selected: true
+        }
+      })
+      const chip = screen.getByLabelText('Change ID: workfl_1016')
+      expect(chip).toHaveTextContent('workfl_1016')
+      expect(chip).toHaveAttribute('title', 'Change ID: workfl_1016')
+      expect(chip.tagName).toBe('SPAN')
+      await user.click(chip)
+      expect(screen.getByRole('checkbox')).toBeChecked()
+      expect(view.emitted('select')).toBeUndefined()
+      expect(view.emitted('discard')).toBeUndefined()
+    }
+  )
+
+  it.for([undefined, '', '   '])('hides an empty batch (%s)', (changeID) => {
+    render(QueueRow, {
+      props: { item: item({ changeID }), active: false }
+    })
+    expect(screen.queryByLabelText(/^Change ID:/)).toBeNull()
+  })
+
+  it('updates the chip when the same row receives a new exact save', async () => {
+    const view = render(QueueRow, {
+      props: { item: item({ changeID: 'workfl_1016' }), active: false }
+    })
+    await view.rerender({ item: item({ changeID: 'workfl_1017' }) })
+    expect(screen.queryByLabelText('Change ID: workfl_1016')).toBeNull()
+    expect(screen.getByLabelText('Change ID: workfl_1017')).toBeVisible()
+  })
+
+  it('localizes the label and keeps a long batch bounded', () => {
+    const changeID = 'w'.repeat(128)
+    render(QueueRow, {
+      props: { item: item({ changeID }), active: false, locale: 'zh-CN' }
+    })
+    const chip = screen.getByLabelText(`更改 ID：${changeID}`)
+    expect(chip).toHaveTextContent(changeID)
+    expect(chip).toHaveClass('max-w-full', 'truncate')
+  })
+
+  it('renders a label as text rather than interpreting markup', () => {
+    const changeID = '<img src=x onerror=alert(1)>'
+    render(QueueRow, {
+      props: { item: item({ changeID }), active: false }
+    })
+    expect(screen.getByLabelText(`Change ID: ${changeID}`)).toHaveTextContent(
+      changeID
+    )
+    expect(screen.queryByRole('img')).toBeNull()
+  })
+})
 
 describe('Draft table "From" column', () => {
   it('shows the credited author as their public profile, not their account ID', async () => {

@@ -1,28 +1,15 @@
 ---
 import type { GetStaticPaths } from 'astro'
 import BaseLayout from '@/layouts/BaseLayout.astro'
-import StaffContentActions from '@/components/cms/StaffContentActions.astro'
-import ModelPage from '@/components/workshop/ModelPage.vue'
-import ModelsPage from '@/components/workshop/ModelsPage.vue'
-import ModelsShowcase from '@/components/models/ModelsShowcase.astro'
+import CatalogDetailPage from '@/components/workshop/CatalogDetailPage.vue'
+import LegacyDetailPage from '@/components/workshop/LegacyDetailPage.astro'
 import {
   HUB_MODELS_PATH,
   hubModelSlugs,
   hubWorkflowName
 } from '@/config/hub-models'
-import { isIndexableModelPage } from '@/config/indexing'
 import { workshopPagePaths } from '@/config/workshop-page-content'
-import { modelDeveloper } from '@/config/model-vendors'
-import { modelMetaDescription } from '@/lib/workshop/model-meta-description'
-import { modelTitle } from '@/lib/workshop/model-title'
-import { pageContext } from '@/utils/jsonLd'
-import { modelPageJsonLd } from '@/utils/modelJsonLd'
-import { modelOgImage, prepareModelPage } from './model-page'
-import {
-  cmsEnabled,
-  loadSiteCatalog,
-  catalogUnavailable
-} from '@/lib/cms/catalog'
+import { cmsEnabled } from '@/lib/cms/catalog'
 
 interface Props {
   id: string
@@ -39,81 +26,17 @@ export const getStaticPaths: GetStaticPaths = ({ routePattern }) =>
         props: { id: slug }
       }))
 
-const catalog = cmsEnabled()
-  ? await loadSiteCatalog(
-      Astro.locals.catalogAuthoring ?? Astro.locals.site,
-      Astro.locals.catalogLocale,
-      Astro.url.pathname.replace(/^\/zh-CN/, '').replace(/\/$/, '')
-    )
-  : undefined
-const failure = catalog && !catalog.ok ? catalogUnavailable() : undefined
-if (failure) return failure
-const current = catalog?.ok
-  ? catalog.projection.items.find(
-      (item) =>
-        item.slug ===
-        Astro.url.pathname.replace(/^\/zh-CN/, '').replace(/\/$/, '')
-    )
-  : undefined
-if (catalog?.ok && !current) return new Response('Not found', { status: 404 })
-const id = current
-  ? catalog?.ok
-    ? catalog.models.find(
-        (item) => item.href?.replace(/\/$/, '') === current.slug
-      )?.slug
-    : undefined
-  : Astro.props.id
-if (typeof id !== 'string') return new Response('Not found', { status: 404 })
-const page = await prepareModelPage(id, 'en', catalog?.ok ? catalog : undefined)
-if (page.kind === 'redirect')
-  throw new Error(`${Astro.props.id} is an alias, not a page`)
-const { model } = page
-const { siteUrl, url } = pageContext(
-  Astro.site,
-  Astro.url.pathname,
-  Astro.currentLocale
-)
-const jsonLd = modelPageJsonLd({
-  model,
-  useCaseLabel: page.useCaseLabel,
-  url,
-  siteUrl,
-  developer: modelDeveloper(model.provider)
-})
-const ogImage = modelOgImage(model)
+const catalog = cmsEnabled() && process.env.VERCEL_ENV !== 'production'
 ---
 
-<BaseLayout
-  title={modelTitle(model)}
-  description={modelMetaDescription(page)}
-  ogImage={ogImage}
-  ogImageAlt={ogImage && `${model.name} example output`}
-  canonicalPath={model.href}
-  noindex={!isIndexableModelPage(Astro.url.pathname)}
-  pageType={jsonLd.pageType}
-  breadcrumbs={jsonLd.breadcrumbs}
-  mainEntityId={jsonLd.mainEntityId}
-  extraJsonLd={jsonLd.extraJsonLd}
->
-  <StaffContentActions uid={current?.uid} />
-  {model.routerId === undefined ? (
-    <>
-      <ModelsPage
-        slug={model.slug}
-        workflowId={model.workflowId}
-        initialWorkflow={catalog?.ok ? model : undefined}
-        client:load
-      >
-        <ModelsShowcase slot="fallback" />
-      </ModelsPage>
-      <noscript>
-        <ModelsShowcase />
-      </noscript>
-    </>
-  ) : (
-    <ModelPage
-      page={{ ...page, model: { ...model, form: undefined } }}
+{catalog ? (
+  <BaseLayout title="Comfy Hub" canonicalPath={Astro.url.pathname} noindex>
+    <CatalogDetailPage
+      path={Astro.url.pathname}
+      locale={Astro.locals.catalogLocale ?? 'en'}
       client:load
     />
-  )}
-</BaseLayout>
+  </BaseLayout>
+) : (
+  <LegacyDetailPage id={Astro.props.id} />
+)}

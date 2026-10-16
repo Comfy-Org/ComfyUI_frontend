@@ -1,0 +1,61 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import ModelPage from './ModelPage.vue'
+import ModelsPage from './ModelsPage.vue'
+import ModelsShowcase from '@/components/models/ModelsShowcase.astro'
+import { isIndexableModelPage } from '@/config/indexing'
+import { modelDeveloper } from '@/config/model-vendors'
+import { modelMetaDescription } from '@/lib/workshop/model-meta-description'
+import { modelTitle } from '@/lib/workshop/model-title'
+import { pageContext } from '@/utils/jsonLd'
+import { modelPageJsonLd } from '@/utils/modelJsonLd'
+import { modelOgImage, prepareModelPage } from '@/routes/models/model-page'
+
+interface Props {
+  id: string
+}
+const page = await prepareModelPage(Astro.props.id, 'en')
+if (page.kind === 'redirect')
+  throw new Error(`${Astro.props.id} is an alias, not a page`)
+const { model } = page
+const { siteUrl, url } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale
+)
+const jsonLd = modelPageJsonLd({
+  model,
+  useCaseLabel: page.useCaseLabel,
+  url,
+  siteUrl,
+  developer: modelDeveloper(model.provider)
+})
+const ogImage = modelOgImage(model)
+---
+
+<BaseLayout
+  title={modelTitle(model)}
+  description={modelMetaDescription(page)}
+  ogImage={ogImage}
+  ogImageAlt={ogImage && `${model.name} example output`}
+  canonicalPath={model.href}
+  noindex={!isIndexableModelPage(Astro.url.pathname)}
+  pageType={jsonLd.pageType}
+  breadcrumbs={jsonLd.breadcrumbs}
+  mainEntityId={jsonLd.mainEntityId}
+  extraJsonLd={jsonLd.extraJsonLd}
+>
+  {model.routerId === undefined ? (
+    <>
+      <ModelsPage slug={model.slug} workflowId={model.workflowId} client:load>
+        <ModelsShowcase slot="fallback" />
+      </ModelsPage>
+      <noscript><ModelsShowcase /></noscript>
+    </>
+  ) : (
+    <ModelPage
+      page={{ ...page, model: { ...model, form: undefined } }}
+      client:load
+    />
+  )}
+</BaseLayout>

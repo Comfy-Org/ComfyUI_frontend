@@ -6239,6 +6239,7 @@
     "invalid": "Use 1–128 letters, numbers, dots, underscores or hyphens; start with a letter or number."
   },
   "cccChecked": {
+    "changeChip": "Change ID: {id}",
     "changeID": "Change ID (batch)",
     "instructions": "Check the changes you want to publish. Unchecked changes stay in Draft; approval fields are not used.",
     "remaining": "Staying in Draft",
@@ -6595,6 +6596,9 @@
     "addContent": "Add Content"
   },
   "cccCatalogPage": {
+    "retry": "Try again",
+    "notFound": "Content not found",
+    "searchApps": "Search apps",
     "showResults": "Show results",
     "rangeWithoutTotal": "{start}–{end}",
     "reset": "This page link is out of date. Showing the first page of the current results.",

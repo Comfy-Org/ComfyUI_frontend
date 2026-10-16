@@ -71,8 +71,20 @@ const {
   locale?: Locale
 }>()
 const { t } = translationsFor(locale)
+const emit = defineEmits<{
+  search: [search: string, history: 'push' | 'replace']
+}>()
 const hasInitialCatalog = computed(
   () => !slug && initialCatalogAvailable && initialModels !== undefined
+)
+// CMS detail authority/visibility was already checked by the server. A legacy
+// marketing rollout flag must not replace that record with the Grok showcase.
+const hasInitialWorkflow = computed(() =>
+  Boolean(
+    slug &&
+    initialWorkflow?.slug === slug &&
+    initialWorkflow.workflowId === workflowId
+  )
 )
 const displayedSection = shallowRef(section)
 watch(
@@ -136,6 +148,7 @@ const settled = useWorkshopEnabledSettled()
 const workflowsEnabled = useWorkshopWorkflowsEnabled()
 const appsEnabled = useWorkshopAppsEnabled()
 const gateAllows = computed(() => {
+  if (hasInitialWorkflow.value) return undefined
   if (isWorkflow.value || section === 'workflows') return workflowsEnabled.value
   return section === 'apps' ? appsEnabled.value : undefined
 })
@@ -231,13 +244,11 @@ const LoadError: FunctionalComponent<{ error?: unknown }> = () =>
   )
 LoadError.props = ['error']
 
-function updateSearch(search: string) {
+function updateSearch(search: string, history: 'push' | 'replace' = 'replace') {
   if (!hasInitialCatalog.value || !initialPages) return
-  const url = new URL(location.href)
-  url.search = search
-  document.dispatchEvent(
-    new CustomEvent('ccc:catalog-search', { detail: url.pathname + url.search })
-  )
+  const params = new URLSearchParams(search)
+  if (inSection.value && !params.has('p')) params.set('p', '1')
+  emit('search', params.toString(), history)
 }
 
 const suppliedComponents = inject(cccCatalogueComponents, undefined)
@@ -260,6 +271,7 @@ function renderCatalogue(
         pages: initialPages,
         facets: initialFacets,
         onSearch: updateSearch,
+        onPage: (search: string) => updateSearch(search, 'push'),
         onSection: (open: boolean) => {
           inSection.value = open
         },

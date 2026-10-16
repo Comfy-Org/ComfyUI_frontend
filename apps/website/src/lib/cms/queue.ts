@@ -30,6 +30,7 @@ export interface CatalogQueueItem extends QueueBase {
   source: 'catalog'
   kind: ContentCatalogRecord['kind'] | 'MEDIA' | 'TEMPLATE_SET'
   canonical?: ReviewItem
+  changeID?: string
   slug: string
   provider?: string
   /** Canonical account ID of the credited author; shown as its profile. */
@@ -127,6 +128,7 @@ function catalogItem(
     change: changeOf(before, after),
     title: text(record.data.name) ?? record.slug,
     slug: record.slug,
+    changeID: text(record.data.change_id),
     provider: text(record.data.provider),
     thumbnail: text(record.data.thumbnailUrl),
     visibleFrom: shown?.visible_from,

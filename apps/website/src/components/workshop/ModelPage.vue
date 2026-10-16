@@ -9,7 +9,8 @@ import type {
   WorkshopModel
 } from '@/config/models-catalogue'
 import { formForContract } from '@/config/workshop-contract'
-import { t } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import type { Locale } from '@/i18n/translations'
 import CatalogueBackLink from './CatalogueBackLink.vue'
 import ModelPrice from './ModelPrice.vue'
 import ModelDetail from './ModelDetail.vue'
@@ -17,13 +18,20 @@ import ModelStatus from './ModelStatus.vue'
 import ModelSupport from './ModelSupport.vue'
 import TagOverflow from './TagOverflow.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
+import CatalogRelatedModels from './CatalogRelatedModels.vue'
 
 interface ModelTag {
   label: string
   search: string
 }
 
-const { page } = defineProps<{
+const {
+  page,
+  embedded = false,
+  locale = 'en'
+} = defineProps<{
+  locale?: Locale
+  embedded?: boolean
   page: {
     model: RouterWorkshopModelDetail
     related: readonly WorkshopModel[]
@@ -36,6 +44,7 @@ const { page } = defineProps<{
     restTagCount: number
   }
 }>()
+const { t } = translationsFor(locale)
 const routes = getRoutes()
 const model = computed(() =>
   page.model.execution
@@ -54,8 +63,12 @@ const restTags = computed(() =>
 </script>
 
 <template>
-  <div class="mx-auto max-w-10xl px-6 py-10 lg:px-8 lg:py-14">
-    <div class="mb-8 sm:px-8 lg:px-10">
+  <div
+    :class="
+      embedded ? undefined : 'mx-auto max-w-10xl px-6 py-10 lg:px-8 lg:py-14'
+    "
+  >
+    <div v-if="!embedded" class="mb-8 sm:px-8 lg:px-10">
       <CatalogueBackLink />
     </div>
     <header class="mb-12 sm:mx-8 lg:mx-10" data-testid="model-hero">
@@ -82,11 +95,14 @@ const restTags = computed(() =>
             </a>
           </div>
 
-          <h1 class="text-3xl font-bold text-primary-comfy-canvas lg:text-4xl">
+          <h1
+            v-if="!embedded"
+            class="text-3xl font-bold text-primary-comfy-canvas lg:text-4xl"
+          >
             {{ page.model.name }}
           </h1>
           <p
-            v-if="page.model.summary"
+            v-if="page.model.summary && !embedded"
             class="text-sm/relaxed text-primary-warm-gray"
           >
             {{ page.model.summary }}
@@ -123,9 +139,11 @@ const restTags = computed(() =>
     </header>
 
     <div class="sm:px-8 lg:px-10">
-      <ModelDetail :model />
+      <ModelDetail :model :locale />
 
+      <CatalogRelatedModels v-if="embedded" :model="page.model" :locale />
       <section
+        v-else
         class="mt-24 border-t border-transparency-white-t8 pt-12"
         data-testid="related-models"
       >

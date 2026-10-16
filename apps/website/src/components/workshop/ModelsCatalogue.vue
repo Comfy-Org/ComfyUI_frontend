@@ -72,6 +72,7 @@ const emit = defineEmits<{
   section: [boolean]
   displayedSection: [CatalogueTab]
   search: [string]
+  page: [string]
 }>()
 watch(inSection, (value) => emit('section', value), { immediate: true })
 function paginatedBrowse() {
@@ -257,8 +258,11 @@ whenever(
     v-else
     v-model:browse-all="browseAll"
     :apps="appCards"
+    :initial-search
+    :server-page="pages?.apps"
     :locale
     @section="inSection = $event"
+    @search="emit('search', $event)"
   >
     <template #tabs>
       <CatalogueTabs
@@ -278,5 +282,6 @@ whenever(
     :section="displayedSection"
     :initial-search="displayedSection === section ? initialSearch : undefined"
     :locale
+    @navigate="emit('page', $event)"
   />
 </template>

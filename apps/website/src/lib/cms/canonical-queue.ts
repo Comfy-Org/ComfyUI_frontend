@@ -18,6 +18,8 @@ export function canonicalQueue(items: ReviewItem[]): CatalogQueueItem[] {
       id: item.content.uid,
       kind: kinds[item.content.type],
       canonical: item,
+      changeID:
+        typeof document.change_id === 'string' ? document.change_id : undefined,
       title: itemTitle(item),
       change: item.content.is_deleted
         ? 'removed'
