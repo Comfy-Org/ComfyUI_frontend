@@ -44,6 +44,17 @@ vi.mock(
   })
 )
 
+const folderWorkflowsUrlLoader = vi.hoisted(() => ({
+  openFolderWorkflowsFromUrl: vi.fn(async () => false)
+}))
+
+vi.mock(
+  import('@/platform/workflow/management/composables/useFolderWorkflowsUrlLoader'),
+  () => ({
+    useFolderWorkflowsUrlLoader: () => folderWorkflowsUrlLoader
+  })
+)
+
 const routeMocks = vi.hoisted(() => ({
   query: {} as Record<string, unknown>
 }))
@@ -652,6 +663,58 @@ describe('useWorkflowPersistenceV2', () => {
         expect(loadBlankWorkflowMock).toHaveBeenCalled()
       }
     )
+  })
+
+  describe('a link that names a workflows folder', () => {
+    it('opens the folder instead of restoring the last workflow', async () => {
+      const workflowStore = useWorkflowStore()
+      vi.spyOn(workflowStore, 'loadWorkflows').mockResolvedValue()
+      const lastWorkflow = workflowStore.createTemporary('Last.json')
+      writeActivePath(lastWorkflow.path)
+      folderWorkflowsUrlLoader.openFolderWorkflowsFromUrl.mockResolvedValue(
+        true
+      )
+
+      const { initializeWorkflow } = mountWorkflowPersistence()
+
+      await expect(initializeWorkflow()).resolves.toBe('restored')
+      expect(openWorkflowMock).not.toHaveBeenCalled()
+      expect(mocks.loadGraphDataMock).not.toHaveBeenCalled()
+    })
+
+    it('keeps the saved tabs open behind the folder without bringing the last one to front', async () => {
+      const workflowStore = useWorkflowStore()
+      vi.spyOn(workflowStore, 'loadWorkflows').mockResolvedValue()
+      const workflowA = workflowStore.createTemporary('WorkflowA.json')
+      const workflowB = workflowStore.createTemporary('WorkflowB.json')
+      writeTabState([workflowA.path, workflowB.path], 1)
+      folderWorkflowsUrlLoader.openFolderWorkflowsFromUrl.mockResolvedValue(
+        true
+      )
+
+      const { initializeWorkflow, restoreWorkflowTabsState } =
+        mountWorkflowPersistence()
+      await initializeWorkflow()
+      await restoreWorkflowTabsState()
+
+      expect(workflowStore.openWorkflows).toEqual([workflowA, workflowB])
+      expect(openWorkflowMock).not.toHaveBeenCalled()
+    })
+
+    it('restores the last workflow as before when the folder opened nothing', async () => {
+      const workflowStore = useWorkflowStore()
+      vi.spyOn(workflowStore, 'loadWorkflows').mockResolvedValue()
+      const lastWorkflow = workflowStore.createTemporary('Last.json')
+      writeActivePath(lastWorkflow.path)
+      folderWorkflowsUrlLoader.openFolderWorkflowsFromUrl.mockResolvedValue(
+        false
+      )
+
+      const { initializeWorkflow } = mountWorkflowPersistence()
+      await initializeWorkflow()
+
+      expect(openWorkflowMock).toHaveBeenCalledWith(lastWorkflow)
+    })
   })
 
   it('flushes a pending workflow edit when the page is unloaded', async () => {

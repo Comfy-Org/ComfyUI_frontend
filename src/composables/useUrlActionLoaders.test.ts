@@ -292,7 +292,7 @@ describe('useUrlActionLoaders', () => {
   it('stops before every other step, the sweep included, when the deployment link reloads', async () => {
     await router.replace({
       path: '/',
-      query: { workspace: 'w-2', deployment: 'dep-1' }
+      query: { workspace: 'w-2', deployment: 'dep-1', workflows: 'build' }
     })
     mocks.loadDeployment.mockResolvedValueOnce(true)
 
@@ -302,8 +302,23 @@ describe('useUrlActionLoaders', () => {
     expect(mocks.loadWorkspace).not.toHaveBeenCalled()
     expect(router.currentRoute.value.query).toEqual({
       workspace: 'w-2',
-      deployment: 'dep-1'
+      deployment: 'dep-1',
+      workflows: 'build'
     })
+  })
+
+  // The workflows folder stays beside a deployment link so the boot after the
+  // pick's reload opens it; a link that did not reload must not keep it.
+  it('clears a workflows folder a deployment link left when it did not reload', async () => {
+    await router.replace({
+      path: '/',
+      query: { deployment: 'dep-1', workflows: 'build', workflow: 'keep-me' }
+    })
+
+    const { runUrlActionLoaders } = useUrlActionLoaders()
+    await runUrlActionLoaders()
+
+    expect(router.currentRoute.value.query).toEqual({ workflow: 'keep-me' })
   })
 
   it('clears a deployment param no loader acted on', async () => {

@@ -54,11 +54,14 @@ type UrlActionLoaders = {
  * successful switch reloads the page and stops the loop before this step
  * runs, so it never re-strips a live workspace switch. `deployment` likewise:
  * the deployment link keeps both params only across its own switch reload,
- * which also stops the loop first.
+ * which also stops the loop first. `workflows` is opened at boot, which keeps
+ * it beside a deployment link for the boot after the pick's reload; a link
+ * that did not reload ends here.
  */
 const HANDLED_PARAMS = [
   'workspace',
   'deployment',
+  'workflows',
   'invite',
   'create_workspace',
   'pricing',
