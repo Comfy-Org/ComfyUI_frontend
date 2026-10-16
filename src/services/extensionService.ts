@@ -94,6 +94,44 @@ export function reportExtensionLoadFailures(
   )
 }
 
+const graphLoadLifecycleHooks = new Set<string>([
+  'beforeLoadGraph',
+  'beforeConfigureGraph',
+  'afterConfigureGraph',
+  'afterLoadGraph',
+  'onGraphLoadError'
+] satisfies (keyof ComfyExtension)[])
+
+const graphLoadEntrypoints = new Set<PropertyKey>([
+  'loadGraphData',
+  'loadApiJson',
+  'handleFile'
+] satisfies (keyof ComfyApp)[])
+
+function rejectNestedGraphLoad() {
+  return Promise.reject(
+    new Error('A graph-load lifecycle hook cannot start a nested graph load')
+  )
+}
+
+function createGraphLoadHookApp(app: ComfyApp) {
+  let dispatching = true
+  const hookApp = new Proxy(app, {
+    get(target, property) {
+      if (dispatching && graphLoadEntrypoints.has(property))
+        return rejectNestedGraphLoad
+      const value: unknown = Reflect.get(target, property, target)
+      return typeof value === 'function' ? value.bind(target) : value
+    }
+  })
+  return {
+    hookApp,
+    endDispatch: () => {
+      dispatching = false
+    }
+  }
+}
+
 export const useExtensionService = () => {
   const extensionStore = useExtensionStore()
   const settingStore = useSettingStore()
@@ -278,44 +316,52 @@ export const useExtensionService = () => {
     method: T,
     ...args: Parameters<ComfyExtensionParamsWithoutApp<T>>
   ) => {
-    return await Promise.all(
-      extensionStore.enabledExtensions.map(async (ext) => {
-        if (method in ext) {
-          try {
-            const fn = ext[method]
-            if (typeof fn !== 'function') {
-              return
+    const graphLoadHook = graphLoadLifecycleHooks.has(method)
+      ? createGraphLoadHookApp(app)
+      : undefined
+    const hookApp = graphLoadHook?.hookApp ?? app
+    try {
+      return await Promise.all(
+        extensionStore.enabledExtensions.map(async (ext) => {
+          if (method in ext) {
+            try {
+              const fn = ext[method]
+              if (typeof fn !== 'function') {
+                return
+              }
+
+              // Set current extension name for legacy compatibility tracking
+              if (method === 'setup') {
+                legacyMenuCompat.setCurrentExtension(ext.name)
+              }
+
+              const result = await fn.call(ext, ...args, hookApp)
+
+              // Clear current extension after setup
+              if (method === 'setup') {
+                legacyMenuCompat.setCurrentExtension(null)
+              }
+
+              return result
+            } catch (error) {
+              // Clear current extension on error too
+              if (method === 'setup') {
+                legacyMenuCompat.setCurrentExtension(null)
+              }
+
+              console.error(
+                `Error calling extension '${ext.name}' method '${method}'`,
+                { error },
+                { extension: ext },
+                { args }
+              )
             }
-
-            // Set current extension name for legacy compatibility tracking
-            if (method === 'setup') {
-              legacyMenuCompat.setCurrentExtension(ext.name)
-            }
-
-            const result = await fn.call(ext, ...args, app)
-
-            // Clear current extension after setup
-            if (method === 'setup') {
-              legacyMenuCompat.setCurrentExtension(null)
-            }
-
-            return result
-          } catch (error) {
-            // Clear current extension on error too
-            if (method === 'setup') {
-              legacyMenuCompat.setCurrentExtension(null)
-            }
-
-            console.error(
-              `Error calling extension '${ext.name}' method '${method}'`,
-              { error },
-              { extension: ext },
-              { args }
-            )
           }
-        }
-      })
-    )
+        })
+      )
+    } finally {
+      graphLoadHook?.endDispatch()
+    }
   }
 
   return {
