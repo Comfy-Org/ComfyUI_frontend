@@ -297,15 +297,10 @@ defineExpose({
           <span class="flex min-w-0 flex-1 items-center gap-2">
             <i
               v-if="nodeHasError"
-              class="icon-[lucide--octagon-alert] size-4 shrink-0 text-destructive-background-hover"
+              class="icon-[lucide--octagon-alert] size-4 shrink-0 text-destructive/90"
             />
             <span
-              :class="
-                cn(
-                  'truncate',
-                  nodeHasError && 'text-destructive-background-hover'
-                )
-              "
+              :class="cn('truncate', nodeHasError && 'text-destructive/90')"
             >
               <slot name="label">
                 {{ displayLabel }}
@@ -332,7 +327,7 @@ defineExpose({
             v-if="!isEmpty"
             variant="muted-textonly"
             size="icon-sm"
-            class="subbutton size-8 shrink-0 hover:text-base-foreground"
+            class="subbutton size-8 shrink-0 hover:text-foreground"
             :title="t('rightSidePanel.resetAllParameters')"
             :aria-label="t('rightSidePanel.resetAllParameters')"
             @click.stop="handleResetAllWidgets"
@@ -343,7 +338,7 @@ defineExpose({
             v-if="canShowLocateButton"
             variant="muted-textonly"
             size="icon-sm"
-            class="subbutton mr-3 size-8 shrink-0 hover:text-base-foreground"
+            class="subbutton mr-3 size-8 shrink-0 hover:text-foreground"
             :title="t('rightSidePanel.locateNode')"
             :aria-label="t('rightSidePanel.locateNode')"
             @click.stop="handleLocateNode"

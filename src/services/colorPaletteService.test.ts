@@ -1,5 +1,9 @@
 import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
 
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+
+import { themeSchema } from '@/schemas/colorPaletteSchema'
 import type { ComfyApp } from '@/scripts/app'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
@@ -14,36 +18,239 @@ vi.mock(import('@/scripts/app'), async () => {
 })
 
 const SHADOW_PROPERTY = '--interface-floating-panel-shadow'
-const SHADOW_FALLBACK = 'var(--palette-interface-floating-panel-shadow)'
 
-function readRootShadow() {
-  return document.documentElement.style.getPropertyValue(SHADOW_PROPERTY)
+function readRootProperty(property: string) {
+  return document.documentElement.style.getPropertyValue(property)
 }
 
-function restoreRootShadowAfterTest() {
-  const previous = readRootShadow()
+function clearRootThemeAfterTest() {
   onTestFinished(() => {
-    document.documentElement.style.setProperty(SHADOW_PROPERTY, previous)
+    for (const key of themeSchema.keyof().options) {
+      document.documentElement.style.removeProperty(`--${key}`)
+    }
   })
 }
 
-describe('useColorPaletteService', () => {
+describe('useColorPaletteService theme variables', () => {
   it.for([
-    { paletteId: 'dark', expected: SHADOW_FALLBACK },
-    { paletteId: 'light', expected: '0 2px 16px 0 rgba(0, 0, 0, 0.2)' }
+    {
+      paletteId: 'dark',
+      expected: {
+        '--background': '#171718',
+        '--node': 'var(--card)',
+        '--node-header': '#202121',
+        '--node-foreground': '#a0a0a0',
+        '--secondary': '#262729',
+        '--border': '#494a50'
+      }
+    },
+    {
+      paletteId: 'light',
+      expected: {
+        '--background': '#ffffff',
+        '--node': 'var(--card)',
+        '--node-header': 'var(--secondary)',
+        '--node-foreground': '#444444',
+        '--secondary': '#e9e9e9',
+        '--border': '#b4b4b4'
+      }
+    },
+    {
+      paletteId: 'nord',
+      expected: {
+        '--background': '#161b22',
+        '--node': '#161b22',
+        '--node-header': '#2e3440',
+        '--node-foreground': '#bcc2c8',
+        '--secondary': '#2e3440',
+        '--border': 'color-mix(in srgb, #161b22 75.5%, #fff)'
+      }
+    },
+    {
+      paletteId: 'solarized',
+      expected: {
+        '--background': '#073642',
+        '--node': '#073642',
+        '--node-header': '#094656',
+        '--node-foreground': '#657b83',
+        '--secondary': '#094656',
+        '--border': 'color-mix(in srgb, #073642 75.5%, #fff)'
+      }
+    }
   ])(
-    'resolves the floating panel shadow through the palette contract ($paletteId)',
+    'applies the $paletteId palette to the theme variables',
     async ({ paletteId, expected }) => {
-      restoreRootShadowAfterTest()
+      clearRootThemeAfterTest()
 
       await useColorPaletteService().loadColorPalette(paletteId)
 
-      expect(readRootShadow()).toBe(expected)
+      expect({
+        '--background': readRootProperty('--background'),
+        '--node': readRootProperty('--node'),
+        '--node-header': readRootProperty('--node-header'),
+        '--node-foreground': readRootProperty('--node-foreground'),
+        '--secondary': readRootProperty('--secondary'),
+        '--border': readRootProperty('--border')
+      }).toEqual(expected)
     }
   )
 
-  it('lets a custom palette own the floating panel shadow and falls back once the next palette omits it', async () => {
-    restoreRootShadowAfterTest()
+  it('lets a palette theme override derived values and restores the core theme when a core palette loads', async () => {
+    clearRootThemeAfterTest()
+    const store = useColorPaletteStore()
+    const nord = store.palettesLookup.nord
+    assert.exists(nord)
+    store.addCustomPalette({
+      ...nord,
+      id: 'custom-theme',
+      colors: { ...nord.colors, theme: { node: '#123456', muted: '#654321' } }
+    })
+    const service = useColorPaletteService()
+
+    await service.loadColorPalette('custom-theme')
+    expect([
+      readRootProperty('--node'),
+      readRootProperty('--muted'),
+      readRootProperty('--background')
+    ]).toEqual(['#123456', '#654321', '#161b22'])
+
+    await service.loadColorPalette('dark')
+    expect([
+      readRootProperty('--node'),
+      readRootProperty('--muted'),
+      readRootProperty('--background')
+    ]).toEqual(['var(--card)', '#3c3d42', '#171718'])
+  })
+
+  it('starts a light custom palette without a theme from the light theme', async () => {
+    clearRootThemeAfterTest()
+    const store = useColorPaletteStore()
+    const nord = store.palettesLookup.nord
+    assert.exists(nord)
+    store.addCustomPalette({ ...nord, id: 'custom-light', light_theme: true })
+
+    await useColorPaletteService().loadColorPalette('custom-light')
+
+    expect({
+      '--primary': readRootProperty('--primary'),
+      '--warning': readRootProperty('--warning'),
+      colorScheme: document.documentElement.style.colorScheme
+    }).toEqual({
+      '--primary': '#31b9f4',
+      '--warning': '#c77700',
+      colorScheme: 'light'
+    })
+  })
+
+  it('re-enables transitions when applying a palette fails', async () => {
+    clearRootThemeAfterTest()
+    vi.useFakeTimers({ toFake: ['requestAnimationFrame'] })
+    vi.spyOn(
+      CSSStyleDeclaration.prototype,
+      'setProperty'
+    ).mockImplementationOnce(() => {
+      throw new Error('style not writable')
+    })
+
+    await useColorPaletteService().loadColorPalette('nord')
+    vi.runAllTimers()
+
+    expect(document.documentElement.dataset.paletteSwitching).toBeUndefined()
+  })
+
+  it('keeps transitions off until the latest of two quick switches settles', async () => {
+    clearRootThemeAfterTest()
+    vi.useFakeTimers({ toFake: ['requestAnimationFrame'] })
+    const service = useColorPaletteService()
+
+    await service.loadColorPalette('nord')
+    vi.advanceTimersToNextFrame()
+    await service.loadColorPalette('solarized')
+    vi.advanceTimersToNextFrame()
+
+    expect(document.documentElement.dataset.paletteSwitching).toBe('')
+    vi.runAllTimers()
+    expect(document.documentElement.dataset.paletteSwitching).toBeUndefined()
+  })
+
+  it('leaves legacy palette variables to the theme aliases for core palettes', async () => {
+    clearRootThemeAfterTest()
+    onTestFinished(() => {
+      document.documentElement.style.removeProperty('--comfy-menu-bg')
+    })
+    const service = useColorPaletteService()
+
+    await service.loadColorPalette('nord')
+    const nordMenuBg = readRootProperty('--comfy-menu-bg')
+    await service.loadColorPalette('dark')
+
+    expect([nordMenuBg, readRootProperty('--comfy-menu-bg')]).toEqual([
+      '#161b22',
+      ''
+    ])
+  })
+
+  it('keeps the dark palette theme equal to the stylesheet defaults', () => {
+    const cssDir = join(
+      process.cwd(),
+      'packages',
+      'design-system',
+      'src',
+      'css'
+    )
+    const paletteCss = readFileSync(join(cssDir, '_palette.css'), 'utf8')
+    const styleCss = readFileSync(join(cssDir, 'style.css'), 'utf8')
+    const palette = Object.fromEntries(
+      [...paletteCss.matchAll(/--color-([\w-]+):\s*(#[0-9a-f]{6});/gi)].map(
+        ([, name, hex]) => [name, hex.toLowerCase()]
+      )
+    )
+    palette.white = '#ffffff'
+    const rootBlock = styleCss.slice(
+      styleCss.indexOf(':root {'),
+      styleCss.indexOf('}', styleCss.indexOf(':root {'))
+    )
+    const stylesheetDefaults = Object.fromEntries(
+      [...rootBlock.matchAll(/--([\w-]+):\s*([^;]+);/g)].map(
+        ([, token, value]) => [
+          token,
+          palette[/^var\(--color-([\w-]+)\)$/.exec(value)?.[1] ?? ''] ?? value
+        ]
+      )
+    )
+    const darkTheme = useColorPaletteStore().palettesLookup.dark?.colors.theme
+
+    expect(darkTheme).toEqual(
+      Object.fromEntries(
+        Object.keys(darkTheme ?? {}).map((token) => [
+          token,
+          stylesheetDefaults[token]
+        ])
+      )
+    )
+  })
+})
+
+describe('useColorPaletteService', () => {
+  it.for([
+    { paletteId: 'dark', expected: 'rgb(0 0 0 / 0.4)' },
+    { paletteId: 'light', expected: 'rgb(0 0 0 / 0.15)' }
+  ])(
+    'sets the shadow color from the $paletteId palette theme',
+    async ({ paletteId, expected }) => {
+      clearRootThemeAfterTest()
+
+      await useColorPaletteService().loadColorPalette(paletteId)
+
+      expect(readRootProperty('--shadow-color')).toBe(expected)
+    }
+  )
+
+  it('removes a custom palette legacy shadow once the next palette omits it', async () => {
+    clearRootThemeAfterTest()
+    onTestFinished(() => {
+      document.documentElement.style.removeProperty(SHADOW_PROPERTY)
+    })
     const store = useColorPaletteStore()
     const dark = store.palettesLookup.dark
     assert.exists(dark)
@@ -62,9 +269,12 @@ describe('useColorPaletteService', () => {
     const service = useColorPaletteService()
 
     await service.loadColorPalette('custom-shadow')
-    expect(readRootShadow()).toBe(customShadow)
-
+    const customValue = readRootProperty(SHADOW_PROPERTY)
     await service.loadColorPalette('dark')
-    expect(readRootShadow()).toBe(SHADOW_FALLBACK)
+
+    expect([customValue, readRootProperty(SHADOW_PROPERTY)]).toEqual([
+      customShadow,
+      ''
+    ])
   })
 })

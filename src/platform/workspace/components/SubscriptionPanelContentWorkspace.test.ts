@@ -235,9 +235,9 @@ const SubscriptionFooterLinksStub = {
     '<div data-testid="subscription-footer-links" :data-show-invoice-history="String(showInvoiceHistory)" />'
 }
 
-const StatusBadgeStub = {
-  props: ['label', 'severity'],
-  template: '<span :data-severity="severity">{{ label }}</span>'
+const BadgeStub = {
+  props: ['severity'],
+  template: '<span :data-severity="severity"><slot /></span>'
 }
 
 function renderComponent({ stubFooter = true } = {}) {
@@ -249,7 +249,7 @@ function renderComponent({ stubFooter = true } = {}) {
         ...(stubFooter
           ? { SubscriptionFooterLinks: SubscriptionFooterLinksStub }
           : {}),
-        StatusBadge: StatusBadgeStub
+        Badge: BadgeStub
       }
     }
   })

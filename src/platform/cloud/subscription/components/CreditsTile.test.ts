@@ -632,8 +632,8 @@ describe('CreditsTile', () => {
     )
     expect(screen.getByText('In use')).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Add credits' })).toHaveClass(
-      'bg-interface-menu-component-surface-selected',
-      'hover:bg-secondary-background-hover'
+      'bg-muted',
+      'hover:bg-secondary/80'
     )
   })
 
@@ -653,7 +653,7 @@ describe('CreditsTile', () => {
     )
     expect(screen.queryByText('In use')).toBeNull()
     expect(screen.getByRole('button', { name: 'Add credits' })).toHaveClass(
-      'bg-base-foreground'
+      'bg-foreground'
     )
   })
 

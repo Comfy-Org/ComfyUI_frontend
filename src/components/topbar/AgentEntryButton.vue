@@ -5,7 +5,7 @@
     :class="
       cn(
         'group no-drag shrink-0 gap-1 rounded-lg',
-        active && 'bg-secondary-background-hover',
+        active && 'bg-accent',
         inviting && !active && 'agent-shimmer-outline'
       )
     "

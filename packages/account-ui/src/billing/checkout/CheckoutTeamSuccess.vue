@@ -15,10 +15,10 @@
     </template>
     <template #details>
       <div v-if="showInviteBlock" class="mt-4 flex w-full flex-col gap-2">
-        <h3 class="m-0 text-base font-normal text-base-foreground">
+        <h3 class="m-0 text-base font-normal text-foreground">
           {{ inviteCopy.title }}
         </h3>
-        <p class="m-0 text-sm text-muted-foreground">
+        <p class="m-0 text-muted-foreground">
           {{ inviteCopy.subtext }}
         </p>
         <div aria-live="polite">
@@ -26,7 +26,7 @@
             v-if="invitedEmails.length > 0"
             ref="invitedMessage"
             tabindex="-1"
-            class="m-0 text-sm text-success-background"
+            class="m-0 text-success"
           >
             {{
               inviteCopy.invitedMessage(
@@ -156,8 +156,8 @@ const inviting = computed(
 )
 const inputClass = computed(() =>
   darkSurface
-    ? 'min-h-10 w-full bg-secondary-background px-3 focus-within:bg-secondary-background hover:bg-secondary-background-hover'
-    : 'min-h-10 w-full bg-tertiary-background px-3 focus-within:bg-tertiary-background hover:bg-tertiary-background-hover'
+    ? 'min-h-10 w-full bg-secondary px-3 focus-within:bg-secondary hover:bg-secondary/80'
+    : 'min-h-10 w-full bg-muted px-3 focus-within:bg-muted hover:bg-muted/80'
 )
 
 const invalidEmails = computed(() =>

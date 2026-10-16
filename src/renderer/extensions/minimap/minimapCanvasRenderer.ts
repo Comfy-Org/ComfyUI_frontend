@@ -1,3 +1,4 @@
+import { toLightThemeNodeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
@@ -12,29 +13,54 @@ import type {
 
 export const MINIMAP_DECORATION_POP_MS = 260
 
-/**
- * Get theme-aware colors for the minimap
- */
-function getMinimapColors() {
-  const colorPaletteStore = useColorPaletteStore()
-  const palette = colorPaletteStore.completedActivePalette
-  const isLightTheme = palette.light_theme
+const BYPASS_COLOR = '#6a246a'
 
+type MinimapColors = ReturnType<typeof readMinimapColors>
+
+let cachedColors: { key: string; colors: MinimapColors } | undefined
+
+function resolveThemeColor(token: string): string {
+  const probe = document.createElement('span')
+  probe.style.color = `var(--${token})`
+  document.body.append(probe)
+  const { color } = getComputedStyle(probe)
+  probe.remove()
+  return color
+}
+
+function readMinimapColors(isLightTheme: boolean, activityOutline: string) {
+  const primary = resolveThemeColor('primary')
+  const mutedForeground = resolveThemeColor('muted-foreground')
   return {
-    nodeColor: isLightTheme ? '#3DA8E099' : '#0B8CE999',
-    nodeColorDefault: isLightTheme ? '#D9D9D9' : '#353535',
-    linkColor: isLightTheme ? '#616161' : '#B3B3B3',
-    slotColor: isLightTheme ? '#616161' : '#B3B3B3',
-    groupColor: isLightTheme ? '#A2D3EC' : '#1F547A',
-    groupColorDefault: isLightTheme ? '#283640' : '#B3C1CB',
-    bypassColor: isLightTheme ? '#DBDBDB' : '#4B184B',
+    nodeColor: adjustColor(primary, { opacity: 0.6 }),
+    nodeColorDefault: resolveThemeColor('muted'),
+    linkColor: mutedForeground,
+    slotColor: mutedForeground,
+    groupColor: adjustColor(primary, { opacity: 0.4 }),
+    groupColorDefault: mutedForeground,
+    bypassColor: BYPASS_COLOR,
     errorColor: '#FF0000',
     runningColor: '#00FF00',
     successColor: '#239B23',
-    activityOutlineColor:
-      palette.colors.litegraph_base.NODE_SELECTED_TITLE_COLOR,
+    activityOutlineColor: activityOutline,
     isLightTheme
   }
+}
+
+function getMinimapColors(): MinimapColors {
+  const colorPaletteStore = useColorPaletteStore()
+  const palette = colorPaletteStore.completedActivePalette
+  const key = `${palette.id}:${colorPaletteStore.colorScheme}`
+  if (cachedColors?.key !== key) {
+    cachedColors = {
+      key,
+      colors: readMinimapColors(
+        colorPaletteStore.colorScheme === 'light',
+        palette.colors.litegraph_base.NODE_SELECTED_TITLE_COLOR
+      )
+    }
+  }
+  return cachedColors.colors
 }
 
 /**
@@ -43,7 +69,7 @@ function getMinimapColors() {
 function getNodeColor(
   node: MinimapNodeData,
   settings: MinimapRenderContext['settings'],
-  colors: ReturnType<typeof getMinimapColors>
+  colors: MinimapColors
 ): string {
   if (settings.renderBypass && node.mode === LGraphEventMode.BYPASS) {
     return colors.bypassColor
@@ -52,7 +78,7 @@ function getNodeColor(
   if (settings.nodeColors) {
     if (node.bgcolor) {
       return colors.isLightTheme
-        ? adjustColor(node.bgcolor, { lightness: 0.5 })
+        ? toLightThemeNodeColor(node.bgcolor)
         : node.bgcolor
     }
     return colors.nodeColorDefault
@@ -70,7 +96,7 @@ function renderGroups(
   offsetX: number,
   offsetY: number,
   context: MinimapRenderContext,
-  colors: ReturnType<typeof getMinimapColors>
+  colors: MinimapColors
 ) {
   const groups = dataSource.getGroups()
   if (groups.length === 0) return
@@ -102,7 +128,7 @@ function renderNodeDecorations(
   offsetX: number,
   offsetY: number,
   context: MinimapRenderContext,
-  colors: ReturnType<typeof getMinimapColors>
+  colors: MinimapColors
 ) {
   const decorations = new Map(
     (context.decorations ?? []).map((decoration) => [
@@ -145,7 +171,7 @@ function renderNodes(
   offsetX: number,
   offsetY: number,
   context: MinimapRenderContext,
-  colors: ReturnType<typeof getMinimapColors>
+  colors: MinimapColors
 ) {
   const nodes = dataSource.getNodes()
   if (nodes.length === 0) return
@@ -231,7 +257,7 @@ function renderConnections(
   offsetX: number,
   offsetY: number,
   context: MinimapRenderContext,
-  colors: ReturnType<typeof getMinimapColors>
+  colors: MinimapColors
 ) {
   const links = dataSource.getLinks()
   if (links.length === 0) return

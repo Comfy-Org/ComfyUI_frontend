@@ -192,7 +192,10 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
 
     await test.step('Switch the app to its light palette', async () => {
       await comfyPage.settings.setSetting('Comfy.ColorPalette', 'light')
-      await expect(page.locator('html')).not.toHaveClass(/dark-theme/)
+      await expect(page.locator('body')).toHaveCSS(
+        'background-color',
+        'rgb(255, 255, 255)'
+      )
     })
 
     await test.step('Consent keeps its dark surface and readable heading', async () => {
@@ -257,6 +260,40 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
         await expect(accept).toBeFocused()
         await page.keyboard.press('Tab')
         await expect(reject).toBeFocused()
+      })
+    })
+  })
+
+  test.describe('with the light palette', { tag: '@screenshot' }, () => {
+    test.use({ initialSettings: { 'Comfy.ColorPalette': 'light' } })
+
+    test('keeps the dark card readable', async ({ comfyPage }) => {
+      const page = comfyPage.page
+      const dialog = page.getByRole('dialog', {
+        name: enMessages.agent.consent.title
+      })
+
+      await requestConsentFromOpenPanel(page)
+      await expect(dialog).toBeVisible()
+      const title = dialog.getByRole('heading', {
+        name: enMessages.agent.consent.title
+      })
+      const colors = await title.evaluate((heading) => {
+        let surface: Element | null = heading
+        while (
+          surface &&
+          getComputedStyle(surface).backgroundColor === 'rgba(0, 0, 0, 0)'
+        ) {
+          surface = surface.parentElement
+        }
+        return {
+          text: getComputedStyle(heading).color,
+          surface: surface ? getComputedStyle(surface).backgroundColor : ''
+        }
+      })
+      expect(colors.text).not.toBe(colors.surface)
+      await expect(dialog).toHaveScreenshot('agent-consent-light-palette.png', {
+        mask: [dialog.locator('video')]
       })
     })
   })

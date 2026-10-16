@@ -128,8 +128,8 @@ export function useWorkspaceMenuItems() {
       items.push({
         label: t('workspacePanel.menu.deleteWorkspace'),
         class: isDeleteDisabled.value
-          ? 'data-disabled:cursor-not-allowed data-disabled:text-destructive-background/50 data-disabled:pointer-events-auto'
-          : 'text-destructive-background',
+          ? 'data-disabled:cursor-not-allowed data-disabled:text-destructive/50 data-disabled:pointer-events-auto'
+          : 'text-destructive',
         disabled: isDeleteDisabled.value,
         tooltip: deleteTooltip.value,
         command: isDeleteDisabled.value ? undefined : deleteWorkspace

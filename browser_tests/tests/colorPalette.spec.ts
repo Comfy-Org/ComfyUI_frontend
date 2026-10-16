@@ -190,6 +190,42 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
     )
   })
 
+  test(
+    'Derived palette keeps @vue-nodes widget borders subtle',
+    { tag: '@vue-nodes' },
+    async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
+      await comfyPage.settings.setSetting('Comfy.ColorPalette', 'nord')
+      const node = await comfyPage.vueNodes.getFixtureByTitle('Load Image')
+      await expect(node.root).toHaveScreenshot('vue-node-nord-load-image.png')
+    }
+  )
+
+  test.describe('Custom light palette', () => {
+    test.use({
+      initialSettings: {
+        'Comfy.UseNewMenu': 'Top',
+        'Comfy.CustomColorPalettes': customColorPalettes,
+        'Comfy.ColorPalette': 'light_red'
+      }
+    })
+
+    test('fills selected surfaces with a visible muted color', async ({
+      comfyPage
+    }) => {
+      const menuButton = comfyPage.page.getByTestId('comfy-menu-button')
+      await menuButton.click()
+      await expect
+        .poll(() =>
+          menuButton.evaluate((el) => getComputedStyle(el).backgroundColor)
+        )
+        .not.toBe('rgba(0, 0, 0, 0)')
+      await expect(comfyPage.page).toHaveScreenshot(
+        'custom-light-palette-menu-open.png'
+      )
+    })
+  })
+
   test('Palette can modify @vue-nodes color', async ({ comfyPage }) => {
     const node = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
     const getColor = () =>
