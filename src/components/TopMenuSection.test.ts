@@ -3,7 +3,7 @@
 import { getActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import type { MenuItem } from '@/components/ui/menu/types'
 import {
   assert,
@@ -28,6 +28,12 @@ import type {
   JobStatus
 } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import {
+  loadedEvent,
+  reduceDeploymentPick
+} from '@/platform/workspace/deploymentPickState'
+import { openDeployCustomNodesDialog } from '@/platform/workspace/openCustomDeploymentDialog'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
@@ -43,8 +49,11 @@ const mockData = vi.hoisted(() => ({
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
+const distribution = vi.hoisted(() => ({ isCloud: false }))
 vi.mock(import('@/platform/distribution/types'), () => ({
-  isCloud: false,
+  get isCloud() {
+    return distribution.isCloud
+  },
   isNightly: false
 }))
 
@@ -85,6 +94,8 @@ vi.mock<unknown>(
 )
 
 vi.mock(import('@/scripts/app'))
+vi.mock(import('@/platform/workspace/openCustomDeploymentDialog'))
+
 vi.mock(import('@/workbench/extensions/manager/composables/useManagerDialog'))
 
 vi.mock(import('@/platform/telemetry'))
@@ -608,6 +619,36 @@ describe('TopMenuSection', () => {
 
     expect(container.querySelector('span.bg-red-500')).not.toBeNull()
   })
+
+  it.for([
+    { listing: 'serves this account', offered: true },
+    { listing: 'refused this account', offered: false }
+  ])(
+    'on Comfy Cloud, Extensions pitches deploying custom nodes only when the deployments listing $listing',
+    async ({ offered }) => {
+      distribution.isCloud = true
+      onTestFinished(() => {
+        distribution.isCloud = false
+      })
+      useDeploymentPickStore().state = offered
+        ? reduceDeploymentPick(
+            { phase: 'idle' },
+            loadedEvent({ builds_visible: true, items: [] })
+          )
+        : { phase: 'hidden' }
+      const { user } = createWrapper()
+
+      await user.click(
+        screen.getByRole('button', { name: 'menu.manageExtensions' })
+      )
+
+      await waitFor(() =>
+        expect(vi.mocked(openDeployCustomNodesDialog).mock.calls.length).toBe(
+          offered ? 1 : 0
+        )
+      )
+    }
+  )
 
   it('keeps the floating actionbar container open for the extensions button', async () => {
     localStorage.setItem('Comfy.MenuPosition.Docked', 'false')

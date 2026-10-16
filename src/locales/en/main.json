@@ -3884,6 +3884,7 @@
     },
     "triggerLabel": "Running on {deployment}. Choose where this editor runs",
     "triggerLabelNotReady": "{status} Choose where this editor runs",
+    "triggerLabelNew": "New. {label}",
     "currentTooltip": "Running on {deployment}",
     "stoppedTooltip": "Running on {deployment}. It's stopped, so jobs won't run until it's started on the Developer Platform.",
     "notReadyTooltip": "Running on {deployment}. It isn't ready, so jobs won't run until it is.",
@@ -3897,7 +3898,19 @@
     "defaultGoneOwner": "The workspace default was deleted, so members start on Comfy Cloud. Choose a new one under Workspace default.",
     "noDeployments": "This workspace has no deployments yet.",
     "createCustomDeployment": "Create a custom deployment",
-    "createCustomDeploymentTooltip": "Run the editor with your own custom nodes and models. Set it up on the Developer Platform.",
+    "customDeployment": {
+      "title": "Create a custom Deployment",
+      "body": "A custom deployment adds the custom nodes and models Comfy Cloud doesn't have. You set it up on Platform, and it appears under Run on for your workspace.",
+      "pointNodes": "Use custom nodes and models that aren't on Comfy Cloud",
+      "pointGpu": "Work in ComfyUI on the GPU you choose",
+      "pointApi": "Call it from your product as an autoscaling API",
+      "createOnPlatform": "Create on Platform"
+    },
+    "deployCustomNodes": {
+      "title": "Deploy Custom Nodes on Comfy Cloud",
+      "body": "Create a custom deployment that runs your custom nodes and models on Comfy Cloud, and appears under Run on for your workspace.",
+      "pointNodes": "Deploy the custom or private node packs your workflows need"
+    },
     "releaseChanged": "This deployment now runs a different Release. Reload to get its nodes.",
     "deploymentChanged": "This browser now runs on {deployment}. Reload to get its nodes.",
     "reload": "Reload",

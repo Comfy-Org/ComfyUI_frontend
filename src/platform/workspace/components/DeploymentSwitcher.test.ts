@@ -12,11 +12,14 @@ import enMessages from '@/locales/en/main.json'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
+import { useDialogStore } from '@/stores/dialogStore'
+import { api } from '@/scripts/api'
 
 import DeploymentSwitcher from './DeploymentSwitcher.vue'
 
@@ -43,6 +46,7 @@ vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), async () => {
 })
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
+vi.mock(import('@/scripts/api'))
 vi.mock(import('@/services/dialogService'))
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
@@ -130,6 +134,9 @@ describe('DeploymentSwitcher', () => {
 
   beforeEach(() => {
     sessionStorage.clear()
+    useSettingStore().$patch({
+      settingValues: { 'Comfy.DeploymentSwitcher.Seen': true }
+    })
     Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-1' })
     Object.defineProperty(window, 'location', {
       value: { reload, origin: 'http://localhost' },
@@ -282,6 +289,36 @@ describe('DeploymentSwitcher', () => {
     expect(screen.queryByTestId('deployment-switcher-default')).toBeNull()
   })
 
+  it('marks the engine button until its first open closes, then remembers it on every device', async () => {
+    useSettingStore().$patch({
+      settingValues: { 'Comfy.DeploymentSwitcher.Seen': false }
+    })
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    const user = renderSwitcher()
+    const trigger = await screen.findByTestId('deployment-switcher-trigger')
+    expect(screen.getByTestId('deployment-switcher-new')).toBeInTheDocument()
+    expect(trigger).toHaveAccessibleName(
+      'New. Running on Comfy Cloud. Choose where this editor runs'
+    )
+
+    await openList(user)
+    expect(screen.getByTestId('deployment-switcher-new')).toBeInTheDocument()
+    await user.keyboard('{Escape}')
+
+    await waitFor(() =>
+      expect(
+        screen.queryByTestId('deployment-switcher-new')
+      ).not.toBeInTheDocument()
+    )
+    expect(api.storeSetting).toHaveBeenCalledWith(
+      'Comfy.DeploymentSwitcher.Seen',
+      true
+    )
+    expect(trigger).toHaveAccessibleName(
+      'Running on Comfy Cloud. Choose where this editor runs'
+    )
+  })
+
   it('refreshes the listing each time the list opens', async () => {
     mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
     const user = renderSwitcher()
@@ -291,18 +328,18 @@ describe('DeploymentSwitcher', () => {
     )
   })
 
-  it('links to the Developer Platform to create a custom deployment, in a new tab', async () => {
+  it('opens the custom deployment dialog from Create a custom deployment', async () => {
     mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
     const user = renderSwitcher()
     await openList(user)
 
-    const create = screen.getByTestId('deployment-switcher-create')
-    expect(create).toHaveTextContent('Create a custom deployment')
-    expect(create).toHaveAttribute(
-      'href',
-      expect.stringMatching(/\/profile\/deploy#builds$/)
+    await user.click(screen.getByTestId('deployment-switcher-create'))
+
+    await waitFor(() =>
+      expect(
+        useDialogStore().isDialogOpen('global-create-custom-deployment')
+      ).toBe(true)
     )
-    expect(create).toHaveAttribute('target', '_blank')
   })
 
   it('says a workspace with no deployments has none yet, and still offers to create one', async () => {

@@ -22,11 +22,19 @@
           class="group h-8 gap-1 rounded-lg pr-1.5 pl-2 data-[state=open]:bg-secondary-background-hover"
           data-testid="deployment-switcher-trigger"
         >
-          <DeploymentStatusIcon
-            :tone="currentTone"
-            icon-class="size-4"
-            ring-class="ring-2 ring-secondary-background group-hover:ring-secondary-background-hover group-data-[state=open]:ring-secondary-background-hover"
-          />
+          <span class="relative flex">
+            <DeploymentStatusIcon
+              :tone="currentTone"
+              icon-class="size-4"
+              ring-class="ring-2 ring-secondary-background group-hover:ring-secondary-background-hover group-data-[state=open]:ring-secondary-background-hover"
+            />
+            <span
+              v-if="isNew"
+              class="absolute -top-0.75 -right-0.75 size-2 rounded-full bg-base-foreground ring-2 ring-secondary-background group-hover:ring-secondary-background-hover group-data-[state=open]:ring-secondary-background-hover"
+              aria-hidden="true"
+              data-testid="deployment-switcher-new"
+            />
+          </span>
           <i
             class="icon-[lucide--chevron-down] size-3 shrink-0 text-muted-foreground transition-transform duration-150 group-data-[state=open]:rotate-180"
             aria-hidden="true"
@@ -39,6 +47,7 @@
         @follow="follow"
         @set-default="changeDefault"
         @reload="reload"
+        @create-custom-deployment="openCreateCustomDeploymentDialog"
       />
     </Menu>
   </div>
@@ -56,6 +65,7 @@ import Menu from '@/components/ui/menu/Menu.vue'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { isCloud } from '@/platform/distribution/types'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import DeploymentStatusIcon from '@/platform/workspace/components/DeploymentStatusIcon.vue'
 import DeploymentSwitcherList from '@/platform/workspace/components/DeploymentSwitcherList.vue'
@@ -70,6 +80,7 @@ import {
   NOTHING_DISCARDED,
   reloadForDeploymentSwitch
 } from '@/platform/workspace/deploymentSwitchReload'
+import { openCreateCustomDeploymentDialog } from '@/platform/workspace/openCustomDeploymentDialog'
 import { settleUnsavedWorkBeforeSwitch } from '@/platform/workspace/settleUnsavedWorkBeforeSwitch'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 
@@ -84,6 +95,7 @@ const {
   listingRefused
 } = storeToRefs(store)
 const workflowStore = useWorkflowStore()
+const settingStore = useSettingStore()
 const { isApiKeyLogin } = useCurrentUser()
 const isOffered = computed(() => isCloud && !isApiKeyLogin.value)
 const { currentLabel, deploymentFullLabel } = useDeploymentLabels()
@@ -108,8 +120,12 @@ useEventListener(window, 'focus', () => {
   })
 })
 
+const isNew = computed(() => !settingStore.get('Comfy.DeploymentSwitcher.Seen'))
+
 function onOpenChange(open: boolean) {
   if (open) void store.load()
+  else if (isNew.value)
+    void settingStore.set('Comfy.DeploymentSwitcher.Seen', true)
 }
 
 const currentTone = computed(() =>
@@ -120,7 +136,7 @@ const currentTone = computed(() =>
 const isReady = computed(
   () => currentTone.value === undefined || currentTone.value === 'ready'
 )
-const triggerLabel = computed(() =>
+const statusLabel = computed(() =>
   isReady.value
     ? t(
         'deploymentSwitcher.triggerLabel',
@@ -132,6 +148,15 @@ const triggerLabel = computed(() =>
         { status: hoverTooltip.value },
         { escapeParameter: false }
       )
+)
+const triggerLabel = computed(() =>
+  isNew.value
+    ? t(
+        'deploymentSwitcher.triggerLabelNew',
+        { label: statusLabel.value },
+        { escapeParameter: false }
+      )
+    : statusLabel.value
 )
 function tooltipKey(): string {
   if (isReady.value) return 'deploymentSwitcher.currentTooltip'

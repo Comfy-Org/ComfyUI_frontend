@@ -188,6 +188,8 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import FreeTierQuota from '@/platform/cloud/subscription/components/FreeTierQuota.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
+import { openDeployCustomNodesDialog } from '@/platform/workspace/openCustomDeploymentDialog'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -214,6 +216,7 @@ const canvasStore = useCanvasStore()
 const isActionBarsHidden = computed(() => canvasStore.isPickingNodes)
 const managerState = useManagerState()
 const managerSurveyDialog = useManagerSurveyDialog()
+const deploymentPickStore = useDeploymentPickStore()
 const { isLoggedIn } = useCurrentUser()
 const { t } = useI18n()
 const { toastErrorHandler } = useErrorHandling()
@@ -349,7 +352,8 @@ onBeforeUnmount(() => {
 
 const openCustomNodeManager = async () => {
   if (isCloud) {
-    managerSurveyDialog.show()
+    if (deploymentPickStore.isVisible) await openDeployCustomNodesDialog()
+    else managerSurveyDialog.show()
     return
   }
   try {
