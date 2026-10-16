@@ -35,8 +35,10 @@ describe('InlineErrorReference', () => {
   it('renders an outline error icon and the label for error severity', () => {
     renderChip(context())
 
-    expect(screen.getByTestId('error-reference-icon').className).toContain(
-      'icon-[lucide--circle-x]'
+    expect(screen.getByTestId('error-reference-icon')).toHaveClass(
+      'icon-[lucide--circle-alert]',
+      'size-3',
+      'text-destructive-background'
     )
     expect(screen.getByText('Execution failed')).toBeVisible()
   })
@@ -46,8 +48,10 @@ describe('InlineErrorReference', () => {
       context({ severity: 'warning', label: 'Missing Inputs', count: 3 })
     )
 
-    expect(screen.getByTestId('error-reference-icon').className).toContain(
-      'icon-[lucide--triangle-alert]'
+    expect(screen.getByTestId('error-reference-icon')).toHaveClass(
+      'icon-[lucide--triangle-alert]',
+      'size-3',
+      'text-warning-foreground'
     )
     expect(screen.getByTestId('error-reference-count')).toHaveTextContent('3')
   })
