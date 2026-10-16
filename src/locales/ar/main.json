@@ -1179,7 +1179,7 @@
       "minRequired": "الحد الأدنى {credits} أرصدة",
       "minimumPurchase": "الحد الأدنى ${amount} ({credits} أرصدة)",
       "needMore": "تحتاج المزيد؟",
-      "noPaymentMethodError": "لا توجد طريقة دفع محفوظة لمساحة العمل هذه. أضف واحدة عبر الإعدادات ← الخطة والأرصدة ← إدارة الفوترة، ثم أعد محاولة شحن الرصيد.",
+      "noPaymentMethodError": "لا توجد طريقة دفع محفوظة لمساحة العمل هذه. أضف واحدة عبر الإعدادات ← {section} ← {action}، ثم أعد محاولة شحن الرصيد.",
       "payAmount": "ادفع {amount}",
       "purchaseError": "فشل الشراء",
       "purchaseErrorDetail": "فشل شراء الرصيد: {error}",

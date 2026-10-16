@@ -1179,7 +1179,7 @@
       "minRequired": "Mindestens {credits} Credits",
       "minimumPurchase": "${amount} Mindestbetrag ({credits} Credits)",
       "needMore": "Benötigen Sie mehr?",
-      "noPaymentMethodError": "Für diesen Workspace ist keine Zahlungsmethode gespeichert. Fügen Sie eine unter Einstellungen → Tarif & Guthaben → Abrechnung verwalten hinzu und versuchen Sie die Aufladung dann erneut.",
+      "noPaymentMethodError": "Für diesen Workspace ist keine Zahlungsmethode gespeichert. Fügen Sie eine unter Einstellungen → {section} → {action} hinzu und versuchen Sie die Aufladung dann erneut.",
       "payAmount": "{amount} bezahlen",
       "purchaseError": "Kauf fehlgeschlagen",
       "purchaseErrorDetail": "Credits konnten nicht gekauft werden: {error}",

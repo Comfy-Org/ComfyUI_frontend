@@ -1179,7 +1179,7 @@
       "minRequired": "最少{credits}积分",
       "minimumPurchase": "最低${amount}（{credits}积分）",
       "needMore": "需要更多？",
-      "noPaymentMethodError": "此工作区未保存付款方式。请通过“设置 → 套餐与积分 → 管理账单”添加付款方式，然后重试充值。",
+      "noPaymentMethodError": "此工作区未保存付款方式。请通过“设置 → {section} → {action}”添加付款方式，然后重试充值。",
       "payAmount": "支付 {amount}",
       "purchaseError": "购买失败",
       "purchaseErrorDetail": "购买积分失败：{error}",

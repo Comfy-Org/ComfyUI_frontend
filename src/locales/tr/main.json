@@ -1179,7 +1179,7 @@
       "minRequired": "En az {credits} kredi",
       "minimumPurchase": "En az ${amount} ({credits} kredi)",
       "needMore": "Daha fazlasına mı ihtiyacınız var?",
-      "noPaymentMethodError": "Bu çalışma alanı için kayıtlı bir ödeme yöntemi yok. Ayarlar → Plan ve Krediler → Faturalandırmayı yönet üzerinden bir tane ekleyin, ardından kredi yüklemeyi yeniden deneyin.",
+      "noPaymentMethodError": "Bu çalışma alanı için kayıtlı bir ödeme yöntemi yok. Ayarlar → {section} → {action} üzerinden bir tane ekleyin, ardından kredi yüklemeyi yeniden deneyin.",
       "payAmount": "{amount} öde",
       "purchaseError": "Satın Alma Başarısız",
       "purchaseErrorDetail": "Kredi satın alınamadı: {error}",

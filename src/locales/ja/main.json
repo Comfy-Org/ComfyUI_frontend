@@ -1179,7 +1179,7 @@
       "minRequired": "最低{credits}クレジット",
       "minimumPurchase": "最低購入額：${amount}（{credits}クレジット）",
       "needMore": "さらに必要ですか？",
-      "noPaymentMethodError": "このワークスペースには支払い方法が保存されていません。［設定］→［プランとクレジット］→［請求を管理］から追加してから、チャージを再試行してください。",
+      "noPaymentMethodError": "このワークスペースには支払い方法が保存されていません。［設定］→［{section}］→［{action}］から追加してから、チャージを再試行してください。",
       "payAmount": "{amount} を支払う",
       "purchaseError": "購入に失敗しました",
       "purchaseErrorDetail": "クレジットの購入に失敗しました: {error}",

@@ -1179,7 +1179,7 @@
       "minRequired": "最低需購買 {credits} 點",
       "minimumPurchase": "最低購買 ${amount}（${credits} 點）",
       "needMore": "需要更多？",
-      "noPaymentMethodError": "此工作區尚未儲存付款方式。請依序前往「設定」→「方案與點數」→「管理帳務」新增付款方式，然後再試一次儲值。",
+      "noPaymentMethodError": "此工作區尚未儲存付款方式。請依序前往「設定」→「{section}」→「{action}」新增付款方式，然後再試一次儲值。",
       "payAmount": "支付 {amount}",
       "purchaseError": "購買失敗",
       "purchaseErrorDetail": "購買點數失敗：{error}",

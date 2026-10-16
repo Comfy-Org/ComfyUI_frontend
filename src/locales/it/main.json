@@ -1179,7 +1179,7 @@
       "minRequired": "Minimo {credits} crediti",
       "minimumPurchase": "Minimo ${amount} ({credits} crediti)",
       "needMore": "Hai bisogno di più?",
-      "noPaymentMethodError": "Non è stato salvato alcun metodo di pagamento per questo spazio di lavoro. Aggiungine uno tramite Impostazioni → Piano e crediti → Gestisci fatturazione, quindi riprova la ricarica.",
+      "noPaymentMethodError": "Non è stato salvato alcun metodo di pagamento per questo spazio di lavoro. Aggiungine uno tramite Impostazioni → {section} → {action}, quindi riprova la ricarica.",
       "payAmount": "Paga {amount}",
       "purchaseError": "Acquisto fallito",
       "purchaseErrorDetail": "Impossibile acquistare crediti: {error}",

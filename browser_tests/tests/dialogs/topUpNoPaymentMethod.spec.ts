@@ -49,7 +49,7 @@ test.describe('Top-up without a saved payment method', () => {
 
     await expect(
       comfyPage.toast.toastErrors.filter({
-        hasText: /Add one via Settings → Plan & Credits → Manage billing/
+        hasText: 'Add one via Settings → Plan & Credits → Billing & invoices'
       })
     ).toBeVisible()
   })

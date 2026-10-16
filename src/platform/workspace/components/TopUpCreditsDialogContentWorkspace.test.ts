@@ -611,7 +611,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     await waitFor(() =>
       expect(useToast().error).toHaveBeenCalledWith('Purchase Failed', {
         description:
-          'No payment method is saved for this workspace. Add one via Settings → Plan & Credits → Manage billing, then retry the top-up.'
+          'No payment method is saved for this workspace. Add one via Settings → Plan & Credits → Billing & invoices, then retry the top-up.'
       })
     )
   })

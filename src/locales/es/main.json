@@ -1179,7 +1179,7 @@
       "minRequired": "Mínimo {credits} créditos",
       "minimumPurchase": "Mínimo ${amount} ({credits} créditos)",
       "needMore": "¿Necesitas más?",
-      "noPaymentMethodError": "No hay ningún método de pago guardado para este espacio de trabajo. Añade uno en Configuración → Plan y créditos → Gestionar facturación y vuelve a intentar la recarga.",
+      "noPaymentMethodError": "No hay ningún método de pago guardado para este espacio de trabajo. Añade uno en Configuración → {section} → {action} y vuelve a intentar la recarga.",
       "payAmount": "Pagar {amount}",
       "purchaseError": "Compra fallida",
       "purchaseErrorDetail": "No se pudo comprar créditos: {error}",
