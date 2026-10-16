@@ -22,7 +22,7 @@ const page = z.object({
   available: z.boolean().optional(),
   reset: z.boolean().optional()
 })
-export const cataloguePageSchema = z.object({
+const cataloguePageSchema = z.object({
   models: modelSchema.array().max(24),
   pages: z.object({ models: page, workflows: page, apps: page }),
   facets: z.object({
