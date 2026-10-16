@@ -860,7 +860,7 @@ const sessionRequest = (
   method,
   path,
   headers: { 'x-comfy-client': COMFY_CLIENT, ...headers },
-  credentials: 'include'
+  credentials: 'same-origin'
 })
 
 const LISTED = {
@@ -2781,7 +2781,7 @@ describe.for([{ unified: false }, { unified: true }])(
       await vi.advanceTimersByTimeAsync(60_000)
       await response
       expect(queueReads().map(([, init]) => init?.credentials)).toEqual([
-        'include'
+        'same-origin'
       ])
     })
 
