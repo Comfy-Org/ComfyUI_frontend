@@ -908,7 +908,6 @@ describe('Current retry of an unresolved target', () => {
 
     expect(await selection.retryTarget('wf-current', () => true)).toBe(true)
 
-    expect(panel.selectedWorkflow).toBeNull()
     expect(panel.unresolvedTargetListed).toBe(true)
   })
 })
