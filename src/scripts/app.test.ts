@@ -1,5 +1,7 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { ComfyApp, app as singletonApp } from './app'
+import { loadSerialisedNode } from '@/core/graph/loadSerialisedNode'
+import { withGraphConfiguring } from '@/core/graph/withGraphConfiguring'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
@@ -357,6 +359,123 @@ describe('ComfyApp', () => {
   })
 
   describe('loadGraphData', () => {
+    it.for([false, true])(
+      'matches individual node loading with invalid-value reset %s',
+      async (resetInvalidValues) => {
+        const alwaysSnapToGrid = LiteGraph.alwaysSnapToGrid
+        LiteGraph.alwaysSnapToGrid = true
+        onTestFinished(() => {
+          LiteGraph.alwaysSnapToGrid = alwaysSnapToGrid
+        })
+        class KSampler extends LGraphNode {
+          constructor(title = 'KSampler') {
+            super(title)
+            this.serialize_widgets = true
+            this.addWidget('combo', 'sampler_name', 'euler', () => {}, {
+              values: ['euler', 'heun']
+            })
+            this.addWidget(
+              'combo',
+              'control_after_generate',
+              'fixed',
+              () => {},
+              {
+                values: ['fixed', 'randomize']
+              }
+            )
+            this.addWidget('combo', 'scheduler', 'normal', () => {}, {
+              values: ['normal', 'karras']
+            })
+          }
+        }
+        LiteGraph.registerNodeType('KSampler', KSampler)
+        const fixture = {
+          ...createWorkflowGraphData(),
+          last_node_id: 3,
+          nodes: [
+            {
+              id: 1,
+              type: 'KSampler',
+              pos: [13, 27],
+              size: [200, 100],
+              flags: {},
+              order: 0,
+              mode: 0,
+              properties: {},
+              widgets_values: ['sample_heun', true, 'invalid']
+            },
+            {
+              id: 2,
+              type: 'KSampler',
+              pos: [313, 27],
+              size: [200, 100],
+              flags: {},
+              order: 1,
+              mode: 0,
+              properties: {},
+              widgets_values: ['sample_euler', false, null]
+            },
+            {
+              id: 3,
+              type: 'MissingParityNode',
+              title: 'Unavailable node',
+              pos: [413, 57],
+              size: [237, 119],
+              flags: {},
+              order: 2,
+              mode: 0,
+              properties: { preserved: 'value' },
+              widgets_values: ['unknown']
+            }
+          ]
+        } satisfies ComfyWorkflowJSON
+        useSettingStore().settingValues['Comfy.Validation.Workflows'] = true
+        mockValidateWorkflow.mockResolvedValue({ graphData: fixture })
+        app.canvasElRef.value = document.createElement('canvas')
+        Reflect.set(app, 'rootGraphInternal', new LGraph())
+
+        await app.loadGraphData(
+          resetInvalidValues ? undefined : fixture,
+          false,
+          true,
+          null
+        )
+        const graph = new LGraph()
+        const individuallyLoaded = withGraphConfiguring(() =>
+          fixture.nodes.map((info) =>
+            loadSerialisedNode(graph, structuredClone(info), {
+              resetInvalidValues
+            })
+          )
+        )
+
+        expect(individuallyLoaded.map((node) => node.serialize())).toEqual(
+          app.rootGraph.nodes.map((node) => node.serialize())
+        )
+        expect(
+          individuallyLoaded.map((node) => node.serialize().widgets_values)
+        ).toEqual([
+          ['heun', 'randomize', resetInvalidValues ? 'normal' : 'invalid'],
+          ['euler', 'fixed', 'normal'],
+          ['unknown']
+        ])
+        expect(individuallyLoaded[2].has_errors).toBe(true)
+      }
+    )
+
+    it('keeps configuring state through nested callbacks and clears it after failure', () => {
+      const failure = new Error('extension failed')
+      expect(() =>
+        withGraphConfiguring(() => {
+          expect(app.configuringGraph).toBe(true)
+          withGraphConfiguring(() => expect(app.configuringGraph).toBe(true))
+          expect(app.configuringGraph).toBe(true)
+          throw failure
+        })
+      ).toThrow(failure)
+      expect(app.configuringGraph).toBe(false)
+    })
+
     function prepareResourceReload() {
       app.canvasElRef.value = document.createElement('canvas')
       Reflect.set(app, 'rootGraphInternal', new LGraph())
