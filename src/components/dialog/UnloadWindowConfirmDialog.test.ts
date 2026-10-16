@@ -16,7 +16,11 @@ import {
 import UnloadWindowConfirmDialog from './UnloadWindowConfirmDialog.vue'
 
 const DROPPED_STATE = fromPartial<ComfyWorkflowJSON>({ nodes: [] })
-const LATER_STATE = fromPartial<ComfyWorkflowJSON>({ nodes: [] })
+const LATER_STATE = fromPartial<ComfyWorkflowJSON>({
+  nodes: [],
+  extra: { edited: true }
+})
+const DROPPED = JSON.stringify(DROPPED_STATE)
 
 const portrait = fromPartial<ComfyWorkflow>({
   path: 'portrait.json',
@@ -68,29 +72,36 @@ describe('UnloadWindowConfirmDialog', () => {
     {
       leaving: 'for a switch whose unsaved work the user chose to drop',
       switching: true,
-      discarded: new Map([[portrait, DROPPED_STATE]]),
+      discarded: new Map([[portrait, DROPPED]]),
       editedSince: false,
+      prompts: false
+    },
+    {
+      leaving: 'for a switch after an equal copy of that work replaced it',
+      switching: true,
+      discarded: new Map([[portrait, DROPPED]]),
+      editedSince: fromPartial<ComfyWorkflowJSON>({ nodes: [] }),
       prompts: false
     },
     {
       leaving: 'for a switch after edits made since the user chose to drop it',
       switching: true,
-      discarded: new Map([[portrait, DROPPED_STATE]]),
-      editedSince: true,
+      discarded: new Map([[portrait, DROPPED]]),
+      editedSince: LATER_STATE,
       prompts: true
     }
   ] satisfies {
     leaving: string
     switching: boolean
     discarded: DiscardedWork
-    editedSince: boolean
+    editedSince: false | ComfyWorkflowJSON
     prompts: boolean
   }[])(
     'asks before leaving $leaving: $prompts',
     ({ switching, discarded, editedSince, prompts }) => {
       render(UnloadWindowConfirmDialog)
       if (switching) reloadForDeploymentSwitch(discarded, () => {})
-      if (editedSince) Object.assign(portrait, { activeState: LATER_STATE })
+      if (editedSince) Object.assign(portrait, { activeState: editedSince })
 
       expect(leavePage().defaultPrevented).toBe(prompts)
     }
@@ -114,7 +125,7 @@ describe('UnloadWindowConfirmDialog', () => {
 
   it('asks again on a later unload when the switch reload did not happen', () => {
     render(UnloadWindowConfirmDialog)
-    reloadForDeploymentSwitch(new Map([[portrait, DROPPED_STATE]]), () => {})
+    reloadForDeploymentSwitch(new Map([[portrait, DROPPED]]), () => {})
 
     expect(leavePage().defaultPrevented).toBe(false)
     expect(leavePage().defaultPrevented).toBe(true)

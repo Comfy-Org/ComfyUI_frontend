@@ -820,17 +820,25 @@ describe('DeploymentSwitcher', () => {
 
   describe('with unsaved workflows', () => {
     beforeEach(() => {
-      Object.assign(useWorkflowStore(), {
-        modifiedWorkflows: [
-          fromPartial<ComfyWorkflow>({
-            path: 'workflows/portrait.json',
-            key: 'portrait.json',
-            filename: 'portrait',
-            isLoaded: true,
-            isModified: true
-          })
-        ]
+      const portrait = fromPartial<ComfyWorkflow>({
+        path: 'workflows/portrait.json',
+        key: 'portrait.json',
+        filename: 'portrait',
+        isLoaded: true,
+        isModified: true
       })
+      Object.assign(useWorkflowStore(), {
+        modifiedWorkflows: [portrait],
+        activeWorkflow: null,
+        getWorkflowByPath: (path: string) =>
+          path === portrait.path ? portrait : null
+      })
+      vi.mocked(useWorkflowService().saveWorkflow).mockImplementation(
+        async (workflow) => {
+          workflow.isModified = false
+          return true
+        }
+      )
     })
 
     it.for([
@@ -881,6 +889,29 @@ describe('DeploymentSwitcher', () => {
           await user.click(screen.getByTestId(`default-row-${D1}`))
         },
         target: 'Studio Build · staging'
+      },
+      {
+        path: 'following the default it already runs on, after its release changed',
+        owner: false,
+        boot: {
+          ...listing,
+          picked_deployment_id: D2,
+          pick_source: 'browser',
+          default_deployment_id: D2
+        },
+        next: {
+          ...listing,
+          picked_deployment_id: D2,
+          pick_source: 'browser',
+          default_deployment_id: D2,
+          items: [
+            { ...listing.items[0], release_id: 'r-3', release_version: 3 },
+            ...listing.items.slice(1)
+          ]
+        },
+        act: (user: ReturnType<typeof userEvent.setup>) =>
+          user.click(screen.getByTestId(`deployment-row-${D2}`)),
+        target: 'Studio Build · production'
       },
       {
         path: 'reloading after its deployment changed',
@@ -1033,11 +1064,15 @@ describe('DeploymentSwitcher', () => {
       mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
       mockWorkspaceApi.pickDeployment.mockResolvedValue(undefined)
       vi.mocked(useDialogService().confirm).mockResolvedValueOnce(true)
-      let saved: (done: boolean) => void = () => {}
-      vi.mocked(useWorkflowService().saveWorkflow).mockReturnValueOnce(
-        new Promise<boolean>((resolve) => {
-          saved = resolve
-        })
+      let finishSave: () => void = () => {}
+      vi.mocked(useWorkflowService().saveWorkflow).mockImplementationOnce(
+        async (workflow) => {
+          await new Promise<void>((resolve) => {
+            finishSave = resolve
+          })
+          workflow.isModified = false
+          return true
+        }
       )
       const user = renderSwitcher()
       await openList(user)
@@ -1048,7 +1083,7 @@ describe('DeploymentSwitcher', () => {
         expect(screen.getByTestId('deployment-switcher-trigger')).toBeDisabled()
       )
       expect(mockWorkspaceApi.pickDeployment).not.toHaveBeenCalled()
-      saved(true)
+      finishSave()
       await waitFor(() => expect(reload).toHaveBeenCalledOnce())
       expect(mockWorkspaceApi.pickDeployment).toHaveBeenCalledWith('ws-1', {
         deployment_id: D2
