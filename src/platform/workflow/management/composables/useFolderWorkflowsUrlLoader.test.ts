@@ -1,6 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useRoute, useRouter } from 'vue-router'
 
+import {
+  capturePreservedQuery,
+  clearPreservedQuery,
+  getPreservedQueryParam
+} from '@/platform/navigation/preservedQueryManager'
+import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -40,6 +46,15 @@ function serveWorkflowFiles(paths: string[]) {
   )
 }
 
+const WORKFLOWS_NAMESPACE = PRESERVED_QUERY_NAMESPACES.WORKFLOWS
+const DEPLOYMENT_NAMESPACE = PRESERVED_QUERY_NAMESPACES.DEPLOYMENT
+
+/** What the router's preserved-query tracker stashes before a redirect (sign
+ * in, the onboarding survey) drops the query. */
+function stashLinkParam(namespace: string, key: string, value: string) {
+  capturePreservedQuery(namespace, { [key]: value }, [key])
+}
+
 function openTabPaths() {
   return useWorkflowStore().openWorkflows.map((workflow) => workflow.path)
 }
@@ -47,6 +62,8 @@ function openTabPaths() {
 describe('useFolderWorkflowsUrlLoader', () => {
   beforeEach(() => {
     distribution.isCloud = false
+    clearPreservedQuery(WORKFLOWS_NAMESPACE)
+    clearPreservedQuery(DEPLOYMENT_NAMESPACE)
   })
 
   it('opens every workflow in the folder as a tab in name order, the first in front', async () => {
@@ -138,6 +155,54 @@ describe('useFolderWorkflowsUrlLoader', () => {
 
     expect(opened).toBe(true)
     expect(useRouter().replace).not.toHaveBeenCalled()
+  })
+
+  // A new Cloud user is sent to the onboarding survey with the query dropped,
+  // then lands on `/` with none: only the stash still names the folder.
+  it('opens the folder a redirect stashed, then clears the stash', async () => {
+    serveWorkflowFiles(['build/b.json', 'build/a.json'])
+    stashLinkParam(WORKFLOWS_NAMESPACE, 'workflows', 'build')
+
+    const opened =
+      await useFolderWorkflowsUrlLoader().openFolderWorkflowsFromUrl()
+
+    expect(opened).toBe(true)
+    expect(openTabPaths()).toEqual([
+      'workflows/build/a.json',
+      'workflows/build/b.json'
+    ])
+    expect(
+      getPreservedQueryParam(WORKFLOWS_NAMESPACE, 'workflows'),
+      'a stash left behind would reopen the folder on every reload'
+    ).toBeUndefined()
+    expect(sessionStorage.getItem('Comfy.PreservedQuery.workflows')).toBeNull()
+  })
+
+  it('clears the stash the tracker took from the URL once the folder is open', async () => {
+    serveWorkflowFiles(['build/a.json'])
+    Object.assign(useRoute().query, { workflows: 'build' })
+    stashLinkParam(WORKFLOWS_NAMESPACE, 'workflows', 'build')
+
+    await useFolderWorkflowsUrlLoader().openFolderWorkflowsFromUrl()
+
+    expect(getPreservedQueryParam(WORKFLOWS_NAMESPACE, 'workflows')).toBe(
+      undefined
+    )
+  })
+
+  it('keeps the stash while a stashed Cloud deployment link is still to pick', async () => {
+    distribution.isCloud = true
+    serveWorkflowFiles(['build/a.json'])
+    stashLinkParam(DEPLOYMENT_NAMESPACE, 'deployment', 'dep-1')
+    stashLinkParam(WORKFLOWS_NAMESPACE, 'workflows', 'build')
+
+    const opened =
+      await useFolderWorkflowsUrlLoader().openFolderWorkflowsFromUrl()
+
+    expect(opened).toBe(true)
+    expect(getPreservedQueryParam(WORKFLOWS_NAMESPACE, 'workflows')).toBe(
+      'build'
+    )
   })
 
   it('does nothing when the URL names no folder', async () => {

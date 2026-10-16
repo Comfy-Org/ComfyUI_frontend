@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createMemoryHistory, createRouter, useRouter } from 'vue-router'
+import {
+  capturePreservedQuery,
+  getPreservedQueryParam
+} from '@/platform/navigation/preservedQueryManager'
+import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 
 import { useUrlActionLoaders } from './useUrlActionLoaders'
@@ -276,6 +281,11 @@ describe('useUrlActionLoaders', () => {
       path: '/',
       query: { workspace: 'w-2', deployment: 'dep-1', workflows: 'build' }
     })
+    capturePreservedQuery(
+      PRESERVED_QUERY_NAMESPACES.WORKFLOWS,
+      { workflows: 'build' },
+      ['workflows']
+    )
     mocks.loadDeployment.mockResolvedValueOnce(true)
 
     const { runUrlActionLoaders } = useUrlActionLoaders()
@@ -287,6 +297,9 @@ describe('useUrlActionLoaders', () => {
       deployment: 'dep-1',
       workflows: 'build'
     })
+    expect(
+      getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.WORKFLOWS, 'workflows')
+    ).toBe('build')
   })
 
   // The workflows folder stays beside a deployment link so the boot after the
@@ -301,6 +314,24 @@ describe('useUrlActionLoaders', () => {
     await runUrlActionLoaders()
 
     expect(router.currentRoute.value.query).toEqual({ workflow: 'keep-me' })
+  })
+
+  // After the onboarding redirect the folder rides only in the stash; a
+  // deployment link that did not reload must not leave it to reopen the
+  // folder on the next reload.
+  it('clears a workflows folder stash a deployment link left when it did not reload', async () => {
+    capturePreservedQuery(
+      PRESERVED_QUERY_NAMESPACES.WORKFLOWS,
+      { workflows: 'build' },
+      ['workflows']
+    )
+
+    const { runUrlActionLoaders } = useUrlActionLoaders()
+    await runUrlActionLoaders()
+
+    expect(
+      getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.WORKFLOWS, 'workflows')
+    ).toBeUndefined()
   })
 
   it('clears a deployment param no loader acted on', async () => {
