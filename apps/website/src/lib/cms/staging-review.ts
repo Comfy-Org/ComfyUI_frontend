@@ -8,6 +8,7 @@ import {
 import type { Document } from './editor-document'
 import { jsonObject } from './editor-document'
 import { accountID } from './account-id'
+import { changeID } from './change-id'
 
 export const editorialStates = [
   'NEW',
@@ -82,13 +83,6 @@ const item = z.object({
 export type ReviewFilter = NonNullable<GetCccStagingData['query']> & {
   change_id?: string
 }
-const changeID = z
-  .string()
-  .min(1)
-  .max(128)
-  .regex(/^[A-Za-z0-9][A-Za-z0-9._-]*$/)
-  .refine((value) => value.trim() === value)
-  .optional()
 export function reviewFilterWith(query: {
   strict(): {
     safeParse(

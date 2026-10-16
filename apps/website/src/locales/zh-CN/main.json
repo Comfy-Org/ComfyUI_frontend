@@ -4761,6 +4761,11 @@
     "manual": "直接输入账户 ID",
     "currentAccount": "当前账户：{id}"
   },
+  "cccEditorBatch": {
+    "label": "更改 ID",
+    "help": "可选的批次标签，例如 workflows_1016。在发布页面使用相同标签查找相关更改。",
+    "invalid": "请输入 1–128 个英文字母、数字、点、下划线或连字符，并以字母或数字开头。"
+  },
   "cccChecked": {
     "changeID": "更改批次 ID",
     "instructions": "勾选要发布的更改。未勾选的更改保留在草稿中；暂不使用审批字段。",

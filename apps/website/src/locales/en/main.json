@@ -6232,6 +6232,11 @@
     "manual": "Enter an account ID directly",
     "currentAccount": "Current account: {id}"
   },
+  "cccEditorBatch": {
+    "label": "Change ID",
+    "help": "Optional batch label, such as workflows_1016. Use the same label to find related changes on the publish page.",
+    "invalid": "Use 1–128 letters, numbers, dots, underscores or hyphens; start with a letter or number."
+  },
   "cccChecked": {
     "changeID": "Change ID (batch)",
     "instructions": "Check the changes you want to publish. Unchecked changes stay in Draft; approval fields are not used.",

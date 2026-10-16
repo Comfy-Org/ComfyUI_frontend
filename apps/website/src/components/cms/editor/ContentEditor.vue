@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, toRaw } from 'vue'
+import { computed, onMounted, ref, toRaw, useId } from 'vue'
 import { useEventListener } from '@vueuse/core'
 import { ArrowLeft, Save, Trash2, RotateCcw } from '@lucide/vue'
 import { DialogRoot, DialogTitle, DialogDescription } from 'reka-ui'
@@ -34,6 +34,7 @@ import {
   savePayload
 } from '@/lib/cms/editor-document'
 import { editorRequest } from '@/lib/cms/editor-client'
+import { changeID } from '@/lib/cms/change-id'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 
@@ -56,6 +57,10 @@ const {
 }>()
 const t = translationsFor(locale).t
 const document = ref<Document>(structuredClone(toRaw(initial)))
+const changeIDHelp = useId()
+const validChangeID = computed(
+  () => changeID.safeParse(document.value.change_id).success
+)
 const tags = computed(() => {
   const parsed = z.array(z.string()).safeParse(document.value.tags)
   return parsed.success ? parsed.data : []
@@ -103,6 +108,7 @@ const blocked = computed(
   () =>
     state.value === 'saving' ||
     uploads.value > 0 ||
+    !validChangeID.value ||
     invalidFields.value.size > 0 ||
     (Array.isArray(document.value.workflow_versions) &&
       arrayObjects(document.value.workflow_versions).some(
@@ -185,6 +191,7 @@ function patch(name: string, event: Event) {
       'implementation_ref',
       'router_model_id',
       'author_uid',
+      'change_id',
       'documentation_url',
       'cloud_share_url',
       'output_type',
@@ -603,6 +610,29 @@ async function save(action: 'save' | 'delete' | 'undelete' = 'save') {
                 :class="inputClass"
                 @input="patch(field, $event)"
             /></label>
+            <div class="grid gap-1">
+              <label class="grid gap-1 text-sm text-admin-muted">
+                {{ t('cccEditorBatch.label') }}
+                <input
+                  :value="value('change_id')"
+                  :class="inputClass"
+                  maxlength="128"
+                  :aria-invalid="!validChangeID"
+                  :aria-describedby="changeIDHelp"
+                  @input="patch('change_id', $event)"
+                />
+              </label>
+              <p :id="changeIDHelp" class="text-xs text-admin-muted">
+                {{ t('cccEditorBatch.help') }}
+              </p>
+              <p
+                v-if="!validChangeID"
+                role="alert"
+                class="text-xs text-admin-danger-text"
+              >
+                {{ t('cccEditorBatch.invalid') }}
+              </p>
+            </div>
             <AuthorPicker
               :model-value="value('author_uid')"
               :locale

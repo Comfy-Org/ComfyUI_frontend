@@ -969,6 +969,12 @@ Publish rows render images or a placeholder, never mount a full video to seek
 its first frame. The runtime review adapter must supply a still-image preview
 from the exact thumbnail reference; this UI does not generate derivative URLs.
 
+The content editor includes an optional Change ID text field for every content
+type. It saves `change_id` in authored JSON, preserves existing values and removes
+the key when cleared. Invalid labels block Save until repaired; the same validator
+is used by the publish filter. Labels such as `workflows_1016` group related
+changes without changing resource identity or granting publication permission.
+
 The checked-review filter accepts an exact case-sensitive `change_id` batch
 label: 1–128 ASCII letters/digits/dot/underscore/hyphen, starting with a letter
 or digit. It survives query/confirmation scopes; refreshing filters clears old
