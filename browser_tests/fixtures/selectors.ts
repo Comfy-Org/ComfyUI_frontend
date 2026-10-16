@@ -182,7 +182,9 @@ export const TestIds = {
     colorBlue: 'blue',
     colorRed: 'red',
     convertSubgraph: 'convert-to-subgraph-button',
-    bypass: 'bypass-button'
+    bypass: 'bypass-button',
+    hideLinks: 'hide-links-button',
+    deleteLinks: 'delete-links-button'
   },
   helpCenter: {
     button: 'help-center-button',
