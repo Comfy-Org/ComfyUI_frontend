@@ -2,7 +2,9 @@ import { render, screen } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import { useDialogStore } from '@/stores/dialogStore'
 
 import SubscriptionRequiredDialogContent from './SubscriptionRequiredDialogContent.vue'
 
@@ -42,6 +44,13 @@ const PricingTableStub = {
   template: '<div data-testid="pricing-table">{{ reason ?? "none" }}</div>'
 }
 
+const stubs = {
+  PricingTable: PricingTableStub,
+  CloudBadge: { template: '<div />' },
+  SubscribeButton: { template: '<div />' },
+  SubscriptionBenefits: { template: '<div />' }
+}
+
 function renderComponent(props: {
   reason?: PaymentIntentSource
   paymentIntentSource: PaymentIntentSource | undefined
@@ -50,12 +59,7 @@ function renderComponent(props: {
     props: { onClose: vi.fn(), ...props },
     global: {
       plugins: [i18n],
-      stubs: {
-        PricingTable: PricingTableStub,
-        CloudBadge: { template: '<div />' },
-        SubscribeButton: { template: '<div />' },
-        SubscriptionBenefits: { template: '<div />' }
-      }
+      stubs
     }
   })
 }
@@ -82,15 +86,24 @@ describe('SubscriptionRequiredDialogContent', () => {
     )
   })
 
-  it('still branches the legacy panel copy on the reason', () => {
+  it('names the legacy panel dialog by its reason-specific title', async () => {
     window.__CONFIG__ = { subscription_required: false }
 
-    renderComponent({
-      reason: 'out_of_credits',
-      paymentIntentSource: 'agent_paywall'
+    render(GlobalDialog, { global: { plugins: [i18n], stubs } })
+    useDialogStore().showDialog({
+      key: 'subscription-required',
+      component: SubscriptionRequiredDialogContent,
+      props: {
+        onClose: vi.fn(),
+        reason: 'out_of_credits',
+        paymentIntentSource: 'agent_paywall'
+      },
+      dialogComponentProps: { headless: true }
     })
 
+    expect(
+      await screen.findByRole('dialog', { name: 'Insufficient Credits' })
+    ).toBeInTheDocument()
     expect(screen.queryByTestId('pricing-table')).not.toBeInTheDocument()
-    expect(screen.getByText('Insufficient Credits')).toBeInTheDocument()
   })
 })

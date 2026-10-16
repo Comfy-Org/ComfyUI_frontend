@@ -32,6 +32,7 @@ import {
 import { useSelectionStore } from '@/core/selection/selectionStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
+import { changeCanvasSelection } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import type { LinkPresentation } from '@/types/linkPresentation'
 import { useLinkStore } from '@/stores/linkStore'
@@ -1525,7 +1526,7 @@ export class LGraph
     if (node instanceof LGraphGroup) {
       if (!this._groups.includes(node)) return
 
-      this.canvasAction((c) => c.deselect(node))
+      this.canvasAction((c) => changeCanvasSelection(c, [node], false))
       useSelectionStore().apply(graphScopeOf(this), {
         type: 'selection.remove',
         key: toSelectableKey('group', node.id)
@@ -1613,8 +1614,7 @@ export class LGraph
         const { list_of_graphcanvas } = this
         if (list_of_graphcanvas) {
           for (const canvas of list_of_graphcanvas) {
-            delete canvas.selected_nodes[node.id]
-            canvas.deselect(node)
+            changeCanvasSelection(canvas, [node], false)
           }
         }
         useSelectionStore().apply(graphScopeOf(this), {
@@ -2087,7 +2087,7 @@ export class LGraph
     const reroute = reroutes.get(id)
     if (!reroute) return
 
-    this.canvasAction((c) => c.deselect(reroute))
+    this.canvasAction((c) => changeCanvasSelection(c, [reroute], false))
     useSelectionStore().apply(graphScopeOf(this), {
       type: 'selection.remove',
       key: toSelectableKey('reroute', reroute.id)

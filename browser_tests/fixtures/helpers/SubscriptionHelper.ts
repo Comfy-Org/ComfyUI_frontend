@@ -256,7 +256,7 @@ export class SubscriptionHelper {
    */
   async dismissSubscriptionDialogIfOpen(): Promise<void> {
     const dialog = this.page.locator(
-      '[aria-labelledby="subscription-required"]'
+      '[data-dialog-key="subscription-required"]'
     )
     // `expect().toBeVisible()` throws a Playwright AssertionError (not
     // errors.TimeoutError) when the element is absent — both cases mean
