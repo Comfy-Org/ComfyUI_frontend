@@ -7556,6 +7556,85 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(useWorkflowService().saveWorkflowAs).not.toHaveBeenCalled()
   })
 
+  // FE-1969: the transcript is the only thing that names the workflow a
+  // reloaded page was bound to, so restoring the target has to restore the
+  // session binding too. Without it the panel reads as attached while the
+  // follower stays unsubscribed and the minter stays off until the next turn
+  // ack, so every host edit in between reaches nobody. Browser-visible
+  // coverage: `agentFollowerRestoredBindingReload.spec.ts`.
+  it('binds the session to the workflow its transcript restored', async () => {
+    const restored = addTab('workflows/restored.json', {
+      activeState: fromPartial<ComfyWorkflowJSON>({ id: 'graph-restored' })
+    })
+    useAgentConversationStore().setThreadId('th-1')
+    const history: AgentMessages = [
+      {
+        id: 'row',
+        thread_id: 'th-1',
+        seq: 1,
+        role: 'user',
+        status: 'complete',
+        turn_id: 'turn',
+        workflow_id: 'wf-restored',
+        content: { text: 'Earlier request' }
+      }
+    ]
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input)
+
+      if (url.includes('/messages')) return json(200, history)
+      if (url.includes('/workflows'))
+        return json(200, {
+          data: [{ id: 'wf-restored', name: 'restored' }],
+          pagination: { offset: 0, limit: 100, total: 1, has_more: false }
+        })
+      return json(200, agentThreadList())
+    })
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await vi.waitFor(() =>
+      expect(useAgentPanelStore().selectedWorkflow).toEqual(restored)
+    )
+    await vi.waitFor(() =>
+      expect(docOpMinterDeps.current?.isDocBound()).toBe(true)
+    )
+    expect(useToast().toasts).toHaveLength(0)
+  })
+
+  it('leaves the session unbound when its transcript restores nothing', async () => {
+    useAgentConversationStore().setThreadId('th-1')
+    const history: AgentMessages = [
+      {
+        id: 'row',
+        thread_id: 'th-1',
+        seq: 1,
+        role: 'user',
+        status: 'complete',
+        turn_id: 'turn',
+        content: { text: 'Earlier request' }
+      }
+    ]
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input)
+
+      if (url.includes('/messages')) return json(200, history)
+      if (url.includes('/workflows'))
+        return json(200, {
+          data: [],
+          pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+        })
+      return json(200, agentThreadList())
+    })
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await screen.findAllByText('Earlier request')
+    await nextTick()
+    expect(docOpMinterDeps.current?.isDocBound()).toBe(false)
+    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
+  })
+
   it.for(['wf-old', '', 'missing'])(
     'retains the explicit target when reopening history for %s',
     async (restoredId) => {
