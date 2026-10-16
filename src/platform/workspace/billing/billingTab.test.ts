@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { reserveBillingTab } from './billingTab'
+import { openBillingUrl, reserveBillingTab } from './billingTab'
 
 const distribution = vi.hoisted(() => ({ isDesktop: false }))
 
@@ -68,5 +68,53 @@ describe('reserveBillingTab', () => {
       reserved?.navigate(checkoutUrl)
       expect(open).toHaveBeenCalledWith(checkoutUrl, '_blank')
     })
+  })
+})
+
+describe('openBillingUrl', () => {
+  beforeEach(() => {
+    distribution.isDesktop = false
+    delete window.__comfyDesktop2
+  })
+
+  afterEach(() => {
+    delete window.__comfyDesktop2
+  })
+
+  it.for([
+    {
+      host: 'the web, opened',
+      arrange: () => {},
+      handle: window,
+      opened: true
+    },
+    {
+      host: 'the web, blocked',
+      arrange: () => {},
+      handle: null,
+      opened: false
+    },
+    {
+      host: 'local Desktop',
+      arrange: () => {
+        distribution.isDesktop = true
+      },
+      handle: null,
+      opened: true
+    },
+    {
+      host: 'cloud Desktop',
+      arrange: () => {
+        window.__comfyDesktop2 = {}
+      },
+      handle: null,
+      opened: true
+    }
+  ])('on $host reports opened=$opened', ({ arrange, handle, opened }) => {
+    arrange()
+    const open = vi.spyOn(window, 'open').mockReturnValue(handle)
+
+    expect(openBillingUrl(checkoutUrl)).toBe(opened)
+    expect(open).toHaveBeenCalledWith(checkoutUrl, '_blank')
   })
 })

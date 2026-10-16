@@ -1,3 +1,4 @@
+import { openBillingUrl } from '@/platform/workspace/billing/billingTab'
 /**
  * The app's single billing SDK instance and the top-up effects the poller
  * performs today, moved onto the lifecycle's state: the progress toast, the
@@ -369,7 +370,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     const offered = offeredActions.get(state.id) ?? new Set<string>()
     if (offered.has(actionUrl)) return
     offeredActions.set(state.id, offered.add(actionUrl))
-    if (window.open(actionUrl, '_blank')) {
+    if (openBillingUrl(actionUrl)) {
       sdk.lifecycle.reportHostedStepOpened(state.id, 'new_tab')
       return
     }
