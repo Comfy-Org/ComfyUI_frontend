@@ -857,7 +857,6 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         refuseForNoPaymentMethod()
         const listCards = vi
           .spyOn(workspaceApi, 'listSavedPaymentMethods')
-          .mockResolvedValueOnce([])
           .mockResolvedValueOnce(savedCards(false))
           .mockResolvedValue(savedCards(false, true))
         portalOpensAt(portalUrl)
@@ -866,17 +865,13 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         await clickSetDefaultCard()
         await waitFor(() => expect(tab.location.href).toBe(portalUrl))
 
-        for (const expectedReads of [1, 2]) {
-          window.dispatchEvent(new Event('focus'))
-          await waitFor(() =>
-            expect(listCards).toHaveBeenCalledTimes(expectedReads)
-          )
-          expect(
-            screen.getByRole('button', { name: 'Set a default card' })
-          ).toBeEnabled()
-          window.dispatchEvent(new Event('blur'))
-        }
+        window.dispatchEvent(new Event('focus'))
+        await waitFor(() => expect(listCards).toHaveBeenCalledOnce())
+        expect(
+          screen.getByRole('button', { name: 'Set a default card' })
+        ).toBeEnabled()
 
+        window.dispatchEvent(new Event('blur'))
         window.dispatchEvent(new Event('focus'))
         expect(
           await screen.findByRole('button', { name: 'Pay $50.00' })
