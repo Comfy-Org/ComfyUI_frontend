@@ -327,6 +327,22 @@ describe('ManagerDialog legacy-manager tip', () => {
     }
   )
 
+  it('hides the tip on the installed tab when the search found the ComfyUI-Manager pack', async () => {
+    useNewManagerUI()
+    vi.mocked(useRegistrySearchGateway().searchPacks).mockResolvedValue(
+      result([{ id: 'comfyui-manager', name: 'ComfyUI-Manager' }], false)
+    )
+    const { user, searchBox } = renderDialog(ManagerTab.AllInstalled)
+
+    await user.type(searchBox, 'comfyui-manager')
+    await settleSearch()
+
+    expect(
+      screen.getByText(enMessages.manager.noResultsFound)
+    ).toBeInTheDocument()
+    expect(screen.queryByText(TIP, { exact: false })).not.toBeInTheDocument()
+  })
+
   it('hides the tip on the installed tab while the installed packs load', async () => {
     useNewManagerUI()
     const { isLoading } = useInstalledPacks()
