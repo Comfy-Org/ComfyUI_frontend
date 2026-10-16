@@ -1,68 +1,124 @@
+import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
-import type { ComponentProps } from 'vue-component-type-helpers'
 
+import { t } from '@/i18n/translations'
 import HowToEnterSection from './HowToEnterSection.vue'
 
 const props = {
-  heading: 'How to enter',
-  facts: [
-    { id: 'what', term: 'What you make', description: 'A working app.' },
-    {
-      id: 'deadline',
-      term: 'Submission deadline',
-      description: 'October 30'
-    }
-  ],
-  intro: 'Every submission must include:',
-  deliverables: [
-    { id: 'repo', title: 'GitHub repo', description: 'Your app code.' },
-    { id: 'demo', title: 'Demo video', description: 'Two minutes max.' }
-  ],
-  requirementsHeading: 'Requirements',
-  requirements: ['One submission per person', 'Lawful and SFW'],
-  note: 'About the demo video.'
-} satisfies ComponentProps<typeof HowToEnterSection>
-
-const textOf = (elements: HTMLElement[]) =>
-  elements.map((element) => element.textContent.trim())
+  signupHref: 'https://example.com/signup',
+  submitHref: 'https://example.com/submit'
+}
 
 describe('HowToEnterSection', () => {
-  it('pairs each fact term with its description', () => {
+  it('renders the localized heading and open sign-up step', () => {
+    render(HowToEnterSection, { props: { ...props, locale: 'zh-CN' } })
+
+    expect(
+      screen.getByRole('heading', {
+        level: 2,
+        name: t('eventChallenge.enter', {}, { locale: 'zh-CN' })
+      })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('link', {
+        name: t('eventChallenge.enterSignupLink', {}, { locale: 'zh-CN' })
+      })
+    ).toHaveAttribute('href', props.signupHref)
+  })
+
+  it('numbers the four steps in order', () => {
+    render(HowToEnterSection, { props })
+
+    const titles = [
+      'enterSignupTitle',
+      'enterRequirementsTitle',
+      'enterPrepareTitle',
+      'enterSubmitTitle'
+    ].map((key, index) => `${index + 1}. ${t(`eventChallenge.${key}`)}`)
+    for (const name of titles) {
+      expect(screen.getByRole('button', { name })).toBeInTheDocument()
+    }
+  })
+
+  it.for([
+    { locale: 'en', name: 'Developer Platform', href: '/platform/' },
+    { locale: 'zh-CN', name: '开发者平台', href: '/zh-CN/platform/' }
+  ] as const)(
+    'links the $locale platform requirement to $href',
+    async ({ locale, name, href }) => {
+      render(HowToEnterSection, { props: { ...props, locale } })
+
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: `2. ${t('eventChallenge.enterRequirementsTitle', {}, { locale })}`
+        })
+      )
+
+      expect(await screen.findByRole('link', { name })).toHaveAttribute(
+        'href',
+        href
+      )
+    }
+  )
+
+  it('lists every other app requirement', async () => {
+    render(HowToEnterSection, { props })
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: `2. ${t('eventChallenge.enterRequirementsTitle')}`
+      })
+    )
+
+    for (const item of [2, 3, 4, 5, 6]) {
+      expect(
+        await screen.findByText(t(`eventChallenge.requirement${item}`))
+      ).toBeInTheDocument()
+    }
+  })
+
+  it('lists the four deliverables', async () => {
+    render(HowToEnterSection, { props })
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: `3. ${t('eventChallenge.enterPrepareTitle')}`
+      })
+    )
+
+    for (const item of ['Repo', 'Demo', 'Link', 'Social']) {
+      expect(
+        await screen.findByText(t(`eventChallenge.enter${item}`))
+      ).toBeInTheDocument()
+    }
+  })
+
+  it('stacks sign-up and submit calls to action under the heading', () => {
     render(HowToEnterSection, { props })
 
     expect(
-      screen.getByRole('heading', { level: 2, name: 'How to enter' })
-    ).toBeInTheDocument()
-    expect(textOf(screen.getAllByRole('term'))).toEqual([
-      'What you make',
-      'Submission deadline'
-    ])
-    expect(textOf(screen.getAllByRole('definition'))).toEqual([
-      'A working app.',
-      'October 30'
-    ])
+      screen.getByRole('link', { name: t('eventChallenge.enterSignupCta') })
+    ).toHaveAttribute('href', props.signupHref)
+    expect(
+      screen.getByRole('link', { name: t('eventChallenge.submit') })
+    ).toHaveAttribute('href', props.submitHref)
   })
 
-  it('numbers the deliverables in order', () => {
+  it('ends the steps with the submit entry call to action', async () => {
     render(HowToEnterSection, { props })
 
-    expect(textOf(screen.getAllByText(/^0\d$/))).toEqual(['01', '02'])
-    expect(textOf(screen.getAllByRole('heading', { level: 3 }))).toEqual([
-      'GitHub repo',
-      'Demo video'
-    ])
-  })
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: `4. ${t('eventChallenge.enterSubmitTitle')}`
+      })
+    )
 
-  it('shows the requirements open by default with the demo note', () => {
-    render(HowToEnterSection, { props })
-
-    const requirements = screen.getByRole('group')
-    expect(requirements).toHaveAttribute('open')
-    expect(textOf(within(requirements).getAllByRole('listitem'))).toEqual([
-      'One submission per person',
-      'Lawful and SFW'
-    ])
-    expect(screen.getByText('About the demo video.')).toBeInTheDocument()
+    const step = await screen.findByRole('region', {
+      name: `4. ${t('eventChallenge.enterSubmitTitle')}`
+    })
+    expect(
+      within(step).getByRole('link', { name: t('eventChallenge.submit') })
+    ).toHaveAttribute('href', props.submitHref)
   })
 })

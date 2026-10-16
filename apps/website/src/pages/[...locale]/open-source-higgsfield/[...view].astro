@@ -34,9 +34,10 @@ const entry = {
   label: t('eventChallenge.submit'),
   href: 'https://form.typeform.com/to/V1dSQrkS'
 }
-const rules = 'https://blog.comfy.org/p/higgsfield-promised-to-open-source'
-const entrySteps = ['Repo', 'Demo', 'Link', 'Social'] as const
-const requirements = [1, 2, 3, 4, 5, 6] as const
+const signup = {
+  label: t('eventChallenge.signup'),
+  href: 'https://form.typeform.com/to/Ayn9Cwfj'
+}
 const hubApps = [
   { appId: 'studio', name: 'studioName', task: 'studioTask' },
   { appId: 'reshoot', name: 'reshootName', task: 'reshootTask' }
@@ -51,6 +52,7 @@ const examples = [
         title: ac(name, locale),
         description: ac(task, locale),
         href: app.href,
+        newTab: false,
         media: {
           type:
             app.thumbnail.kind === 'video'
@@ -74,9 +76,9 @@ const categoryPrizes = ['Innovative', 'Viral', 'OpenWeights'] as const
 const bonusPrizes = ['Ltx', 'Flux', 'Minimax'] as const
 const milestones = ['Signup', 'Window', 'Nights', 'Winner'] as const
 const tabs = [
-  { label: 'how', anchor: 'challenge-content' },
-  { label: 'timeline', anchor: 'timeline' },
-  { label: 'submitNav', anchor: 'submit' }
+  { label: 'how', href: '#challenge-content' },
+  { label: 'timeline', href: '#timeline' },
+  { label: 'submitNav', href: '#submit' }
 ] as const
 const localizedText = (key: string): LocalizedText => ({
   en: translationsFor('en').t(key),
@@ -128,8 +130,8 @@ const faqs = ['Demo', 'Event', 'License', 'Bonus'] as const
     <div class="mx-auto max-w-9xl px-6 pt-8">
       <VideoPlayer
         locale={locale}
-        src="https://media.comfy.org/website/open-source-higgsfield/Open%20Source%20Higgsfield%20Launch%20Video%20-%20v05.mp4"
-        poster="https://media.comfy.org/website/open-source-higgsfield/open-source-higgsfield-poster.jpg"
+        src="https://media.comfy.org/website/open-source-higgsfield/open-source-higgsfield-launch-v06.mp4"
+        poster="https://media.comfy.org/website/open-source-higgsfield/Open_Source_Higgsfield_Launch_Video_v06_poster.jpg"
         ariaLabel={t('eventChallenge.name')}
         fit="contain"
         autoplay
@@ -142,7 +144,7 @@ const faqs = ['Demo', 'Event', 'License', 'Bonus'] as const
       aria-label={t('eventChallenge.details')}
       class="sticky top-20 z-40 mt-8 flex w-full justify-center gap-2 bg-primary-comfy-ink px-4 py-3 lg:top-26"
     >
-      {tabs.map((tab) => <Button href={`#${tab.anchor}`} variant="ghost">
+      {tabs.map((tab) => <Button href={tab.href} variant="ghost">
         {t(`eventChallenge.${tab.label}`)}
       </Button>)}
     </nav>
@@ -165,28 +167,18 @@ const faqs = ['Demo', 'Event', 'License', 'Bonus'] as const
       subtitle={t('eventChallenge.description')}
       class="pt-6 pb-12 lg:pt-8 lg:pb-16"
     >
-      <p class="mt-8 text-xl text-primary-comfy-canvas lg:text-2xl">
-        {t('eventChallenge.prizeTeaser')}
-        <span class="block">{t('eventChallenge.prizeTeaserBonus')}</span>
-      </p>
       <div class="mt-8">
-        <Button href={entry.href} size="lg">{entry.label}</Button>
+        <Button href={signup.href} size="lg">{signup.label}</Button>
       </div>
+      <p class="mt-4 text-base text-primary-comfy-canvas/70 lg:text-lg">
+        {t('eventChallenge.signupCredits')}
+      </p>
     </HeroCentered01>
     <section
       aria-label={t('eventChallenge.partners')}
       class="mx-auto flex max-w-9xl flex-col items-center gap-6 px-6 pb-8 lg:gap-8 lg:pb-12"
     >
       <div class="flex items-center gap-5.5 text-timeline-neutral/60 lg:gap-10">
-        <span
-          role="img"
-          aria-label="NVIDIA"
-          class="aspect-975/180 h-5.5 icon-mask mask-[url('/icons/partners/nvidia.svg')] lg:h-8.5"
-        ></span>
-        <span
-          aria-hidden="true"
-          class="h-8 w-px bg-timeline-neutral/40 lg:h-11"
-        ></span>
         <span
           role="img"
           aria-label="Runpod"
@@ -239,7 +231,7 @@ const faqs = ['Demo', 'Event', 'License', 'Bonus'] as const
         description: t(`eventChallenge.prize${prize}Body`)
       }))}
     >
-      <Button href={entry.href}>{entry.label}</Button>
+      <Button href={signup.href}>{signup.label}</Button>
       <p
         class="mt-2 basis-full text-center text-base font-light text-balance text-primary-comfy-canvas/70 lg:text-lg"
       >
@@ -291,32 +283,10 @@ const faqs = ['Demo', 'Event', 'License', 'Bonus'] as const
     </div>
     <div id="challenge-content" class="scroll-mt-40">
       <HowToEnterSection
-        id="how-to-enter"
-        class="scroll-mt-40"
-        heading={t('eventChallenge.enter')}
-        facts={[
-          {
-            id: 'what',
-            term: t('eventChallenge.what'),
-            description: t('eventChallenge.whatBody')
-          },
-          {
-            id: 'deadline',
-            term: t('eventChallenge.deadline'),
-            description: t('eventChallenge.closeDate')
-          }
-        ]}
-        intro={t('eventChallenge.enterIntro')}
-        deliverables={entrySteps.map((step) => ({
-          id: step,
-          title: t(`eventChallenge.enter${step}`),
-          description: t(`eventChallenge.enter${step}Body`)
-        }))}
-        requirementsHeading={t('eventChallenge.requirementsHeading')}
-        requirements={requirements.map((item) =>
-          t(`eventChallenge.requirement${item}`)
-        )}
-        note={t('eventChallenge.enterNote')}
+        locale={locale}
+        signupHref={signup.href}
+        submitHref={entry.href}
+        client:visible
       />
       <section class="mx-auto max-w-9xl px-6 py-16 lg:py-24">
         <SectionHeader
@@ -349,9 +319,7 @@ const faqs = ['Demo', 'Event', 'License', 'Bonus'] as const
     <CtaCenter01
       heading={t('eventChallenge.closing')}
       headingClass="text-3xl lg:text-5xl/tight"
-      subtitle={t('eventChallenge.closingBody')}
       primaryCta={entry}
-      termsLink={{ label: t('eventChallenge.rulesLink'), href: rules }}
     />
   </div>
 </BaseLayout>
