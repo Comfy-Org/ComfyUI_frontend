@@ -142,7 +142,7 @@ const faqs = ['Demo', 'Event', 'License', 'Bonus'] as const
     </div>
     <nav
       aria-label={t('eventChallenge.details')}
-      class="sticky top-20 z-40 mt-8 flex w-full justify-center gap-2 bg-primary-comfy-ink px-4 py-3 lg:top-26"
+      class="sticky top-20 z-40 mt-8 scrollbar-none flex w-full justify-center-safe gap-2 overflow-x-auto overscroll-x-contain bg-primary-comfy-ink px-4 py-3 lg:top-26"
     >
       {tabs.map((tab) => <Button href={tab.href} variant="ghost">
         {t(`eventChallenge.${tab.label}`)}
