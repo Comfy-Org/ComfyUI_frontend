@@ -16,6 +16,7 @@ import type {
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import { fetchCataloguePage } from '@/lib/cms/catalogue-page-client'
+import { workshopRunInFlight } from '@/config/workshop-run-state'
 import {
   catalogBrowseNavigation,
   catalogDetailNavigation,
@@ -51,6 +52,7 @@ const pages = shallowRef(props.initialPages)
 const facets = shallowRef(props.initialFacets)
 const search = ref(props.initialSearch)
 const failed = ref(false)
+const revalidating = ref(false)
 const { t } = translationsFor(props.locale ?? 'en')
 const detail = shallowRef<{ path: string; preview?: WorkshopModel }>()
 let browseHref = ''
@@ -81,6 +83,7 @@ function openDetail(event: MouseEvent, model: WorkshopModel) {
   }
   request?.abort()
   sequence++
+  revalidating.value = false
   detail.value = { path: target.pathname, preview: model }
   window.history.pushState(
     { ...window.history.state, cccDetailPath: target.pathname },
@@ -108,9 +111,7 @@ provide(catalogBrowseNavigation, (event) => {
   window.history.pushState(window.history.state, '', browseHref)
   detail.value = undefined
   document.title = browseTitle
-  requestAnimationFrame(() =>
-    window.scrollTo({ top: browseScroll, behavior: 'instant' })
-  )
+  void refreshBrowse(browseScroll)
 })
 let request: AbortController | undefined
 let sequence = 0
@@ -130,16 +131,19 @@ watch(
     facets.value = props.initialFacets
     search.value = props.initialSearch
     failed.value = false
+    revalidating.value = false
   }
 )
 
 async function updateResults(
   query: string,
-  history: 'push' | 'replace' | 'none' = 'replace'
+  history: 'push' | 'replace' | 'none' = 'replace',
+  validate = false
 ) {
   request?.abort()
   request = new AbortController()
   const current = ++sequence
+  revalidating.value = validate
   const target = new URL(location.href)
   target.search = query
   const url = new URL('/models/catalogue.json', location.origin)
@@ -163,15 +167,25 @@ async function updateResults(
     pages.value = result.pages
     facets.value = result.facets
     search.value = target.search
-    if (history !== 'none')
-      window.history[`${history}State`](
+    if (history !== 'none' || activePage.reset)
+      window.history[`${history === 'none' ? 'replace' : history}State`](
         window.history.state,
         '',
         target.pathname + target.search + target.hash
       )
+    return true
   } catch {
     if (current === sequence && !request.signal.aborted) failed.value = true
+    return false
+  } finally {
+    if (current === sequence) revalidating.value = false
   }
+}
+async function refreshBrowse(top = scrollY) {
+  if (detail.value || workshopRunInFlight.value) return
+  const ready = await updateResults(location.search, 'none', true)
+  if (ready && !detail.value)
+    requestAnimationFrame(() => window.scrollTo({ top, behavior: 'instant' }))
 }
 function restoreResults(event: PopStateEvent) {
   const prefix = props.locale === 'zh-CN' ? '/zh-CN' : ''
@@ -190,27 +204,41 @@ function restoreResults(event: PopStateEvent) {
   if (location.pathname !== `${prefix}/hub/${props.section ?? 'models'}/`)
     return false
   event.stopImmediatePropagation()
-  if (detail.value) {
-    detail.value = undefined
-    if (location.pathname + location.search + location.hash === browseHref) {
-      document.title = browseTitle
-      requestAnimationFrame(() =>
-        window.scrollTo({ top: browseScroll, behavior: 'instant' })
-      )
-      return true
-    }
-  }
-  void updateResults(location.search, 'none')
+  const top = detail.value ? browseScroll : scrollY
+  detail.value = undefined
+  if (location.pathname + location.search + location.hash === browseHref)
+    document.title = browseTitle
+  void refreshBrowse(top)
   return true
 }
 let stopHistory: (() => void) | undefined
+function refreshVisible() {
+  if (
+    document.visibilityState === 'hidden' ||
+    detail.value ||
+    workshopRunInFlight.value
+  )
+    return
+  const prefix = props.locale === 'zh-CN' ? '/zh-CN' : ''
+  if (location.pathname === `${prefix}/hub/${props.section ?? 'models'}/`)
+    void refreshBrowse()
+}
+function restorePage(event: PageTransitionEvent) {
+  if (event.persisted) refreshVisible()
+}
 onMounted(() => {
   stopHistory = listenCatalogHistory(restoreResults)
+  window.addEventListener('focus', refreshVisible)
+  window.addEventListener('pageshow', restorePage)
+  document.addEventListener('visibilitychange', refreshVisible)
 })
 onBeforeUnmount(() => {
   sequence++
   request?.abort()
   stopHistory?.()
+  window.removeEventListener('focus', refreshVisible)
+  window.removeEventListener('pageshow', restorePage)
+  document.removeEventListener('visibilitychange', refreshVisible)
 })
 
 provide(cccCatalogueComponents, {
@@ -235,16 +263,32 @@ provide(cccCatalogueComponents, {
       class="mx-auto max-w-10xl px-6 py-3 text-primary-warm-gray"
     >
       {{ t('workshop.load.failed') }}
+      <button
+        type="button"
+        class="ml-3 text-primary-comfy-yellow"
+        @click="refreshVisible"
+      >
+        {{ t('cccCatalogPage.retry') }}
+      </button>
     </p>
-    <ModelsPage
-      v-bind="$props"
-      :initial-models="models"
-      :initial-pages="pages"
-      :initial-facets="facets"
-      :initial-search="search"
-      @search="updateResults"
+    <p
+      v-if="revalidating"
+      role="status"
+      class="mx-auto max-w-10xl px-6 py-3 text-primary-warm-gray"
     >
-      <template #fallback><slot name="fallback" /></template>
-    </ModelsPage>
+      {{ t('workshop.load.pending') }}
+    </p>
+    <div v-show="!revalidating && !failed">
+      <ModelsPage
+        v-bind="$props"
+        :initial-models="models"
+        :initial-pages="pages"
+        :initial-facets="facets"
+        :initial-search="search"
+        @search="updateResults"
+      >
+        <template #fallback><slot name="fallback" /></template>
+      </ModelsPage>
+    </div>
   </div>
 </template>

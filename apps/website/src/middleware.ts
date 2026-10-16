@@ -1,3 +1,7 @@
+import {
+  catalogResponseNoStore,
+  mutableCatalogPath
+} from '@/lib/cms/response-cache'
 import type { APIContext } from 'astro'
 import type { ContentCatalogReview } from './lib/cms/review-contract'
 import { defineMiddleware } from 'astro:middleware'
@@ -159,7 +163,7 @@ function selectPreview(context: APIContext) {
   return context.redirect(context.url.pathname + context.url.search, 303)
 }
 
-export const onRequest = defineMiddleware(async (context, next) => {
+const respond = defineMiddleware(async (context, next) => {
   context.locals.catalogLocale =
     context.url.pathname.startsWith('/zh-CN/') ||
     context.cookies.get(CATALOG_LOCALE_COOKIE)?.value === 'zh-CN'
@@ -215,7 +219,6 @@ export const onRequest = defineMiddleware(async (context, next) => {
         response.headers.set(name, value)
       return response
     }
-    // Never silently downgrade an attempted private Preview to anonymous Live.
     if (
       context.cookies.has('comfy_catalog_preview') ||
       context.url.searchParams.has('preview') ||
@@ -229,8 +232,6 @@ export const onRequest = defineMiddleware(async (context, next) => {
     cms && (isLocalAccess(context) || context.locals.siteDemo)
   const signIn = isSignIn(context)
   const publicDocumentation = isPublicCatalogDocumentation(context)
-  // Discovery is public and does not read staff state or act on Preview controls.
-  // An expired staff/tester cookie must not block it or grant content authority.
   if (cms && !signIn && !publicDocumentation) {
     const failure = await authenticate(context)
     if (failure) return failure
@@ -245,10 +246,19 @@ export const onRequest = defineMiddleware(async (context, next) => {
   if (selection) return selection
   const response = await next()
   if (cms) {
-    // Private test preview, not the production cache policy.
     response.headers.set('Cache-Control', 'private, no-store')
     response.headers.set('X-Robots-Tag', 'noindex, nofollow')
     response.headers.set('X-Comfy-Content-Source', 'cms')
   }
   return response
+})
+
+export const onRequest = defineMiddleware(async (context, next) => {
+  const cms =
+    Boolean(process.env.SITE_CATALOG_API_URL) &&
+    process.env.VERCEL_ENV !== 'production'
+  const response = await respond(context, next)
+  return response && cms && mutableCatalogPath(context.url.pathname)
+    ? catalogResponseNoStore(response)
+    : response
 })

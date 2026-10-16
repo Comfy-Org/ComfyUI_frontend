@@ -257,3 +257,62 @@ describe('expired staff sessions', () => {
     expect(next).not.toHaveBeenCalled()
   })
 })
+
+describe('provider bypass on the complete CMS middleware chain', () => {
+  it.for(['/admin/content/new', '/admin/catalog-api/staging'])(
+    'covers early authorization refusal for %s',
+    async (path) => {
+      vi.stubEnv('SITE_CATALOG_API_URL', 'http://catalog.example')
+      vi.stubEnv('VERCEL_ENV', 'preview')
+      vi.mocked(fetch).mockImplementation(
+        vi.fn(async () => new Response(null, { status: 403 }))
+      )
+      const context = contextFor(path)
+      context.cookies.set(AUTHORING_COOKIE, 'fixture')
+      context.cookies.set(AUTHORING_CSRF_COOKIE, 'a'.repeat(64))
+      const next = vi.fn(async () => new Response('Must not run'))
+      const response = await onRequest(context, next)
+      expect(response?.status).toBe(403)
+      expect(next).not.toHaveBeenCalled()
+      expect(response?.headers.get('Vercel-CDN-Cache-Control')).toBe('no-store')
+      expect(response?.headers.get('Cloudflare-CDN-Cache-Control')).toBe(
+        'no-store'
+      )
+      expect(response?.headers.get('X-Comfy-Content-Source')).toBe('cms')
+    }
+  )
+
+  it('leaves provider policy unchanged when CMS is disabled', async () => {
+    vi.stubEnv('SITE_CATALOG_API_URL', '')
+    const context = contextFor('/hub/models/')
+    const response = await onRequest(
+      context,
+      async () =>
+        new Response('Existing site', {
+          headers: { 'CDN-Cache-Control': 'public, max-age=3600' }
+        })
+    )
+    expect(response?.headers.get('CDN-Cache-Control')).toBe(
+      'public, max-age=3600'
+    )
+    expect(response?.headers.has('X-Comfy-Content-Source')).toBe(false)
+  })
+
+  it('does not activate the new cache policy in production even with a catalog URL', async () => {
+    vi.stubEnv('SITE_CATALOG_API_URL', 'https://catalog.example')
+    vi.stubEnv('VERCEL_ENV', 'production')
+    const response = await onRequest(
+      contextFor('/api/v1/catalog/docs'),
+      async () =>
+        new Response('Existing response', {
+          headers: { 'CDN-Cache-Control': 'public, max-age=3600' }
+        })
+    )
+    expect(response?.status).toBe(200)
+    expect(response?.headers.get('CDN-Cache-Control')).toBe(
+      'public, max-age=3600'
+    )
+    expect(response?.headers.has('Vercel-CDN-Cache-Control')).toBe(false)
+    expect(response?.headers.has('Cloudflare-CDN-Cache-Control')).toBe(false)
+  })
+})

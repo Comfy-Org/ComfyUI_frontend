@@ -201,12 +201,28 @@ Catalog search, filters and Previous/Next update only the mounted results and
 facets. The same-origin `/models/catalogue.json?format=page&section=workflows`
 representation returns the bounded 24-card page envelope (legacy array output
 is unchanged without `format=page`). The client caps it at 512 KiB, validates
-cards/page/facets, cancels superseded requests and preserves the prior results
-with an error on failure. No HTML navigation or complete catalog fetch occurs.
+cards/page/facets and cancels superseded requests. Failed reads show an error
+and retry instead of presenting retained cards as current. Returning to a retained list after
+detail navigation, focus, visibility restoration or BFCache instead revalidates
+one bounded page and hides old cards until success; refusal shows retry, not
+stale content. The same events refresh an idle detail without replaying a run.
+Active runs are not replaced by automatic refresh. No HTML navigation or
+complete catalog fetch occurs.
 Search replaces the address query; pagination pushes a history entry, and
 same-section Back/Forward restores results in place. Browse-all mode, search
 focus and newer in-flight typing survive responses. Exact backend cursor,
 eligibility, owner and fresh Preview authorization checks remain unchanged.
+
+In non-production CMS mode the complete middleware response chain, including
+early auth errors and redirects, explicitly sets browser/private no-store and
+all three provider CDN no-store directives. Mutable Hub HTML/JSON, localized
+discovery outputs, admin routes and protected media cannot acquire an edge TTL.
+Static hashed assets remain excluded. Without a catalog URL, or in Vercel
+production, this new wrapper leaves existing response policy unchanged. This
+does not activate CMS production serving or change existing router cache rules.
+Publish and forward Revert must both select a new increasing Live authority;
+cache TTL/purge delay cannot be their freshness mechanism. See
+[the cache decision](../../docs/adr/WEBSITE-CACHE-0044-catalog-publication-freshness.md).
 
 Workflow info cards use backend-resolved Comfy account display names and public
 profile avatars, bound to the credited author UID. Unknown/synthetic demo authors

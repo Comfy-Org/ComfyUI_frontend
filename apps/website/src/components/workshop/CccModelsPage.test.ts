@@ -20,6 +20,7 @@ import {
   useWorkshopAuthFlag
 } from '@/scripts/posthog'
 import CccModelsPage from './CccModelsPage.vue'
+import { reportWorkshopRun } from '@/config/workshop-run-state'
 
 vi.mock(import('@/scripts/posthog'))
 vi.mock(import('@/lib/workshop/catalogue-components'), () => ({
@@ -260,4 +261,136 @@ it('keeps Astro transition attributes on the island boundary rather than passing
   await view.rerender({ section: 'workflows', initialModels: [...models] })
   expect(screen.getByText('Selected workflow')).toBeVisible()
   expect(warnHandler).not.toHaveBeenCalled()
+})
+
+function changedPage(name: string) {
+  return Response.json({
+    models: [{ ...models[1], name }],
+    pages,
+    facets: {
+      models: { useCases: [], sortOrders: ['popular'] },
+      workflows: {
+        categories: [{ value: 'cleanup', label: 'Cleanup' }],
+        models: []
+      }
+    }
+  })
+}
+function retainedPage() {
+  history.replaceState(null, '', '/hub/workflows/?p=3&q=Selected')
+  return render(CccModelsPage, {
+    props: {
+      initialModels: [models[1]],
+      initialCatalogAvailable: true,
+      section: 'workflows',
+      initialPages: pages,
+      initialSearch: '?p=3&q=Selected'
+    },
+    global: {
+      stubs: {
+        CatalogDetailPage: { template: '<div data-testid="isolated-detail" />' }
+      }
+    }
+  })
+}
+function backToList() {
+  history.replaceState(null, '', '/hub/workflows/?p=3&q=Selected')
+  document.dispatchEvent(
+    new CustomEvent('ccc:history', {
+      detail: new PopStateEvent('popstate'),
+      cancelable: true
+    })
+  )
+}
+
+it.for(['publish', 'revert'])(
+  'revalidates the retained page on Back after %s instead of showing its old cards',
+  async (operation) => {
+    let finish: ((response: Response) => void) | undefined
+    const fetcher = vi.fn<typeof fetch>(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve
+        })
+    )
+    vi.mocked(fetch).mockImplementation(fetcher)
+    retainedPage()
+    const original = screen.getByText('Selected workflow')
+    await userEvent.setup().click(original)
+    expect(screen.getByTestId('isolated-detail')).toBeVisible()
+    backToList()
+    await nextTick()
+    expect(original).not.toBeVisible()
+    expect(fetcher).toHaveBeenCalledOnce()
+    const url = new URL(String(fetcher.mock.calls[0][0]))
+    expect(url.pathname).toBe('/models/catalogue.json')
+    expect(url.searchParams.get('format')).toBe('page')
+    expect(url.searchParams.get('section')).toBe('workflows')
+    expect(url.searchParams.get('p')).toBe('3')
+    expect(url.searchParams.get('q')).toBe('Selected')
+    finish?.(changedPage(`Selected workflow after ${operation}`))
+    expect(
+      await screen.findByText(`Selected workflow after ${operation}`)
+    ).toBeVisible()
+    expect(screen.queryByText('Selected workflow')).toBeNull()
+    expect(screen.getByTestId('workshop-search')).toHaveValue('Selected')
+  }
+)
+
+it('shows a refusal and retry instead of exposing retained cards when Back revalidation fails', async () => {
+  const fetcher = vi
+    .fn<typeof fetch>()
+    .mockResolvedValueOnce(new Response(null, { status: 503 }))
+  vi.mocked(fetch).mockImplementation(fetcher)
+  retainedPage()
+  await userEvent.setup().click(screen.getByText('Selected workflow'))
+  backToList()
+  expect(await screen.findByRole('alert')).toBeVisible()
+  expect(screen.getByText('Selected workflow')).not.toBeVisible()
+  fetcher.mockResolvedValueOnce(changedPage('Selected workflow recovered'))
+  await userEvent
+    .setup()
+    .click(screen.getByRole('button', { name: 'Try again' }))
+  expect(await screen.findByText('Selected workflow recovered')).toBeVisible()
+})
+
+it('refreshes after focus and persisted pageshow; a late older reply cannot restore stale cards', async () => {
+  const pending: ((response: Response) => void)[] = []
+  const fetcher = vi.fn<typeof fetch>(
+    () => new Promise((resolve) => pending.push(resolve))
+  )
+  vi.mocked(fetch).mockImplementation(fetcher)
+  retainedPage()
+  window.dispatchEvent(new Event('focus'))
+  await nextTick()
+  window.dispatchEvent(
+    Object.assign(new Event('pageshow'), { persisted: true })
+  )
+  await nextTick()
+  expect(fetcher).toHaveBeenCalledTimes(2)
+  pending[1](changedPage('Selected workflow current'))
+  expect(await screen.findByText('Selected workflow current')).toBeVisible()
+  pending[0](changedPage('Selected workflow obsolete'))
+  await nextTick()
+  expect(screen.queryByText('Selected workflow obsolete')).toBeNull()
+  expect(screen.getByText('Selected workflow current')).toBeVisible()
+})
+
+it('does not replace an active run on focus or BFCache restoration', async () => {
+  const fetcher = vi.fn<typeof fetch>()
+  vi.mocked(fetch).mockImplementation(fetcher)
+  retainedPage()
+  reportWorkshopRun(() => undefined)
+  try {
+    window.dispatchEvent(new Event('focus'))
+    window.dispatchEvent(
+      Object.assign(new Event('pageshow'), { persisted: true })
+    )
+    document.dispatchEvent(new Event('visibilitychange'))
+    await nextTick()
+    expect(fetcher).not.toHaveBeenCalled()
+    expect(screen.getByText('Selected workflow')).toBeVisible()
+  } finally {
+    reportWorkshopRun(undefined)
+  }
 })

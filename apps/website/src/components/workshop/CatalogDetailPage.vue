@@ -15,6 +15,7 @@ import type { ModelsPageData } from '@/config/models-page-data'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import { fetchCatalogDetail } from '@/lib/cms/detail-page-client'
+import { workshopRunInFlight } from '@/config/workshop-run-state'
 import {
   catalogBrowseNavigation,
   catalogDetailNavigation,
@@ -125,10 +126,26 @@ function restoreDetail(event: PopStateEvent) {
   activePath.value = location.pathname
   return true
 }
+function refreshVisible() {
+  if (
+    document.visibilityState === 'hidden' ||
+    workshopRunInFlight.value ||
+    location.pathname.replace(/\/$/, '') !== activePath.value.replace(/\/$/, '')
+  )
+    return
+  activePreview.value = undefined
+  void load()
+}
+function restorePage(event: PageTransitionEvent) {
+  if (event.persisted) refreshVisible()
+}
 let stopHistory: (() => void) | undefined
 onMounted(() => {
   void load()
   stopHistory = listenCatalogHistory(restoreDetail)
+  window.addEventListener('focus', refreshVisible)
+  window.addEventListener('pageshow', restorePage)
+  document.addEventListener('visibilitychange', refreshVisible)
 })
 watch(
   () => path,
@@ -142,6 +159,9 @@ onScopeDispose(() => {
   sequence++
   request?.abort()
   stopHistory?.()
+  window.removeEventListener('focus', refreshVisible)
+  window.removeEventListener('pageshow', restorePage)
+  document.removeEventListener('visibilitychange', refreshVisible)
 })
 </script>
 
