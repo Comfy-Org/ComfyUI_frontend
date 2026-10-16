@@ -324,12 +324,6 @@ export function useFeatureFlags() {
         cachedV1PaymentRecovery
       )
     },
-    get paymentMethodUpdatePortalEnabled() {
-      return resolveStrictBooleanFlag(
-        ServerFeatureFlag.PAYMENT_METHOD_UPDATE_PORTAL_ENABLED,
-        remoteConfig.value.payment_method_update_portal_enabled
-      )
-    },
     get freeTierJobAllowanceEnabled() {
       const config = remoteConfig.value as typeof remoteConfig.value & {
         free_tier_job_allowance_enabled?: boolean
@@ -426,8 +420,6 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.BILLING_SDK_SUBSCRIPTION_ENABLED]:
         flags.billingSdkSubscriptionEnabled,
       [ServerFeatureFlag.V1_PAYMENT_RECOVERY]: flags.v1PaymentRecovery,
-      [ServerFeatureFlag.PAYMENT_METHOD_UPDATE_PORTAL_ENABLED]:
-        flags.paymentMethodUpdatePortalEnabled,
       [ServerFeatureFlag.FREE_TIER_JOB_ALLOWANCE_ENABLED]:
         flags.freeTierJobAllowanceEnabled,
       [ServerFeatureFlag.SIGNUP_TURNSTILE]: flags.signupTurnstileMode,

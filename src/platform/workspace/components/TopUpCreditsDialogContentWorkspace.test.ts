@@ -801,11 +801,6 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     describe('setting a default card', () => {
       const portalUrl = 'https://billing.stripe.com/p/session/flow_test'
 
-      function enableDefaultCardPortal() {
-        vi.mocked(useFeatureFlags().flags).paymentMethodUpdatePortalEnabled =
-          true
-      }
-
       function portalOpensAt(url: string) {
         return vi
           .spyOn(workspaceApi, 'getPaymentPortalUrl')
@@ -818,21 +813,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         )
       }
 
-      it('is not offered while the portal flow is not enabled', async () => {
-        refuseForNoPaymentMethod()
-
-        await payAndGetRefused()
-
-        expect(
-          screen.queryByRole('button', { name: 'Set a default card' })
-        ).not.toBeInTheDocument()
-        expect(
-          screen.getByText(/Settings → Plan & Credits → Billing & invoices/)
-        ).toBeInTheDocument()
-      })
-
       it('opens the portal on the payment-method update flow and returns to Pay', async () => {
-        enableDefaultCardPortal()
         refuseForNoPaymentMethod()
         const getPortal = portalOpensAt(portalUrl)
         const { tab, open } = stubCheckoutTab()
@@ -878,7 +859,6 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       ])(
         'closes the reserved tab and explains $failure',
         async ({ arrange, description }) => {
-          enableDefaultCardPortal()
           refuseForNoPaymentMethod()
           arrange()
           const { tab } = stubCheckoutTab()
@@ -901,7 +881,6 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       )
 
       it('asks for pop-ups instead of minting a portal session when the tab is blocked', async () => {
-        enableDefaultCardPortal()
         refuseForNoPaymentMethod()
         const getPortal = portalOpensAt(portalUrl)
         vi.spyOn(window, 'open').mockReturnValue(null)

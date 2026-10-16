@@ -139,7 +139,6 @@ export type RemoteConfig = Partial<GetFeaturesResponses[200]> & {
   member_credit_limits_enabled?: boolean
   legacy_billing_migration_enabled?: boolean
   v1_payment_recovery?: boolean
-  payment_method_update_portal_enabled?: boolean
   sentry_dsn?: string
   turnstile_sitekey?: string
   /** Absent when the backend has no key configured, not an empty string; always sanitize with the reader before trusting it. */

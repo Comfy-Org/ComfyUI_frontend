@@ -67,11 +67,7 @@
         v-if="noPaymentMethodRefused"
         class="m-0 px-8 pt-4 text-sm text-muted-foreground"
       >
-        {{
-          flags.paymentMethodUpdatePortalEnabled
-            ? $t('credits.topUp.noPaymentMethodDefaultCardHint')
-            : $t('credits.topUp.noPaymentMethodCheckoutHint')
-        }}
+        {{ $t('credits.topUp.noPaymentMethodCheckoutHint') }}
       </p>
     </template>
 
@@ -288,11 +284,7 @@
           }}
         </Button>
         <Button
-          v-if="
-            step === 'confirm' &&
-            noPaymentMethodRefused &&
-            flags.paymentMethodUpdatePortalEnabled
-          "
+          v-if="step === 'confirm' && noPaymentMethodRefused"
           variant="secondary"
           size="lg"
           class="h-10 justify-center"
@@ -341,7 +333,6 @@ import NumberFieldInput from '@/components/ui/number-field/NumberFieldInput.vue'
 import { watchForTopupBalanceUpdate } from '@/composables/billing/topupBalanceRefresh'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTelemetry } from '@/platform/telemetry'
 import { usePendingTopup } from '@/composables/billing/usePendingTopup'
 import { isCloud } from '@/platform/distribution/types'
@@ -393,7 +384,6 @@ const { buildDocsUrl, docsPaths } = useExternalLink()
 const { balance, fetchBalance, fetchStatus } = useBillingContext()
 const billingCapabilities = useBillingCapabilities()
 const { canTopUp } = billingCapabilities
-const { flags } = useFeatureFlags()
 
 const workspaceStore = useTeamWorkspaceStore()
 
