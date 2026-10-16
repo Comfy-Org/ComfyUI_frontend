@@ -210,10 +210,13 @@ export function useErrorOverlayState() {
       missingModelGroups: missingModelGroups.value,
       missingMediaGroups: missingMediaGroups.value
     }
-    if (groups.length === 1) return buildGroupErrorContext(groups[0], context)
-    return buildAllErrorContext(groups, context, {
-      label: t('agent.errorContext.allLabel')
-    })
+    const base =
+      groups.length === 1
+        ? buildGroupErrorContext(groups[0], context)
+        : buildAllErrorContext(groups, context, {
+            label: t('agent.errorContext.allLabel')
+          })
+    return overlayTitle.value ? { ...base, label: overlayTitle.value } : base
   })
 
   const isVisible = computed(

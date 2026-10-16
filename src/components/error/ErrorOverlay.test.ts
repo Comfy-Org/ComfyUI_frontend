@@ -259,6 +259,54 @@ describe('ErrorOverlay', () => {
     })
   })
 
+  it('labels the toast chip with the toast title, not the group title', async () => {
+    mockAllErrorGroups.value = [
+      {
+        type: 'missing_media',
+        severity: 'missing',
+        groupKey: 'missing_media',
+        displayTitle: 'Missing Inputs',
+        toastTitle: 'Media input missing',
+        toastMessage: 'Load image is missing a required media file.',
+        count: 1,
+        priority: 0,
+        blockedLastRun: false
+      }
+    ]
+    mockErrorGroups.missingMediaGroups.value = [
+      {
+        mediaType: 'image',
+        items: [
+          {
+            name: 'portrait.png',
+            mediaType: 'image',
+            representative: {
+              nodeId: '3',
+              nodeType: 'LoadImage',
+              widgetName: 'image',
+              mediaType: 'image',
+              name: 'portrait.png',
+              isMissing: true
+            },
+            referencingNodes: [
+              { nodeId: '3', nodeType: 'LoadImage', widgetName: 'image' }
+            ]
+          }
+        ]
+      }
+    ]
+    renderOverlay()
+    useExecutionErrorStore().showErrorOverlay()
+    await nextTick()
+
+    const askAgent = screen.getByTestId('error-overlay-ask-agent')
+    askAgent.click()
+    await nextTick()
+
+    const [context] = askAgentMock.askAgentAboutIssues.mock.calls.at(-1)!
+    expect(context.label).toBe('Media input missing')
+  })
+
   it('omits the Ask agent toast action when the agent is unavailable', async () => {
     mockAllErrorGroups.value = [
       {
