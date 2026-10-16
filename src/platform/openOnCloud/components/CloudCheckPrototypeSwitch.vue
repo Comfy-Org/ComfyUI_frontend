@@ -20,6 +20,16 @@
           {{ option.label }}
         </ToggleGroupItem>
       </ToggleGroup>
+      <Button
+        variant="secondary"
+        size="sm"
+        class="h-7"
+        data-testid="prototype-simulate-out-of-memory"
+        @click="simulateOutOfMemory"
+      >
+        <i class="icon-[lucide--memory-stick] size-3.5" aria-hidden="true" />
+        {{ $t('openOnCloud.prototype.simulateOutOfMemory') }}
+      </Button>
     </div>
   </Teleport>
 </template>
@@ -29,9 +39,13 @@ import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import type { PrototypeCloudCheck } from '@/platform/openOnCloud/cloudWorkflowCheck'
+import { prototypeOutOfMemoryError } from '@/platform/openOnCloud/prototypeOutOfMemory'
 import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
+import { app } from '@/scripts/app'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 
 const { t } = useI18n()
 const options = computed<{ value: PrototypeCloudCheck; label: string }[]>(
@@ -43,4 +57,12 @@ const options = computed<{ value: PrototypeCloudCheck; label: string }[]>(
 )
 
 const { prototypeCheck } = storeToRefs(useCloudWorkflowCheckStore())
+const executionErrorStore = useExecutionErrorStore()
+
+function simulateOutOfMemory() {
+  const error = prototypeOutOfMemoryError(app.rootGraph.nodes, Date.now())
+  if (!error) return
+  executionErrorStore.recordExecutionError(error)
+  executionErrorStore.showExecutionError(error)
+}
 </script>

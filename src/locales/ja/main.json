@@ -5884,6 +5884,7 @@
       "pointApi": "自動スケーリングする API として自社製品から呼び出し",
       "pointNodes": "カスタムノードとモデルをそのまま利用"
     },
+    "outOfMemoryTooltip": "より多くのメモリを持つ GPU で実行します。Comfy Cloud がローカル環境をそのままビルドしてデプロイします（20〜30 分）。",
     "aboutDeploy": "Comfy API へのデプロイについて",
     "openedFromLocal": "お使いのコンピューターの ComfyUI から開きました",
     "openedFromLocalDetail": "Comfy Cloud には、このワークフローが使うすべてのノードとモデルがあります。準備ができたら「実行する」を押してください。",
@@ -5895,7 +5896,8 @@
       "label": "Comfy Cloud チェック（プロトタイプ）",
       "checking": "確認中",
       "canOpen": "開ける",
-      "missing": "開けない"
+      "missing": "開けない",
+      "simulateOutOfMemory": "メモリ不足をシミュレート"
     }
   },
   "zoomControls": {

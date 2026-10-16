@@ -49,7 +49,8 @@
           </p>
         </div>
 
-        <div class="flex w-full items-center justify-end pt-2">
+        <div class="flex w-full items-center justify-end gap-2 pt-2">
+          <DeploySetupErrorAction v-if="isOutOfMemory" />
           <Button
             variant="secondary"
             size="unset"
@@ -88,6 +89,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useErrorOverlayState } from '@/components/error/useErrorOverlayState'
 import { useViewErrorsInGraph } from '@/composables/useViewErrorsInGraph'
+import DeploySetupErrorAction from '@/platform/openOnCloud/components/DeploySetupErrorAction.vue'
 
 const { appMode = false } = defineProps<{ appMode?: boolean }>()
 
@@ -95,7 +97,7 @@ const { t } = useI18n()
 const executionErrorStore = useExecutionErrorStore()
 const { viewErrorsInGraph } = useViewErrorsInGraph()
 
-const { hasError, isVisible, overlayMessage, overlayTitle } =
+const { hasError, isOutOfMemory, isVisible, overlayMessage, overlayTitle } =
   useErrorOverlayState()
 
 function dismiss() {

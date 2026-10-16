@@ -5884,6 +5884,7 @@
       "pointApi": "在你的产品中以自动扩缩的 API 调用它",
       "pointNodes": "带上你的自定义节点和模型"
     },
+    "outOfMemoryTooltip": "在内存更大的 GPU 上运行。Comfy Cloud 会按你的本地配置原样构建并部署，需要 20–30 分钟。",
     "aboutDeploy": "关于部署到 Comfy API",
     "openedFromLocal": "已从你电脑上的 ComfyUI 打开",
     "openedFromLocalDetail": "Comfy Cloud 拥有此工作流使用的所有节点和模型。准备好后按“运行”。",
@@ -5895,7 +5896,8 @@
       "label": "Comfy Cloud 检查（原型）",
       "checking": "正在检查",
       "canOpen": "可以打开",
-      "missing": "无法打开"
+      "missing": "无法打开",
+      "simulateOutOfMemory": "模拟内存不足"
     }
   },
   "zoomControls": {

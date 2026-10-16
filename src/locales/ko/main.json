@@ -5884,6 +5884,7 @@
       "pointApi": "자동 확장 API로 제품에서 호출",
       "pointNodes": "사용자 지정 노드와 모델을 그대로 사용"
     },
+    "outOfMemoryTooltip": "메모리가 더 큰 GPU에서 실행합니다. Comfy Cloud가 로컬 설정을 그대로 빌드하고 배포하며, 20~30분이 걸립니다.",
     "aboutDeploy": "Comfy API에 배포 정보",
     "openedFromLocal": "내 컴퓨터의 ComfyUI에서 열었습니다",
     "openedFromLocalDetail": "Comfy Cloud에 이 워크플로가 사용하는 모든 노드와 모델이 있습니다. 준비되면 실행을 누르세요.",
@@ -5895,7 +5896,8 @@
       "label": "Comfy Cloud 확인(프로토타입)",
       "checking": "확인 중",
       "canOpen": "열 수 있음",
-      "missing": "열 수 없음"
+      "missing": "열 수 없음",
+      "simulateOutOfMemory": "메모리 부족 시뮬레이션"
     }
   },
   "zoomControls": {

@@ -3948,6 +3948,7 @@
       "pointApi": "Call it from your product as an autoscaling API",
       "pointNodes": "Bring your custom nodes and models"
     },
+    "outOfMemoryTooltip": "Runs it on a GPU with more memory. Comfy Cloud builds and deploys your exact local setup, takes 20–30 min.",
     "aboutDeploy": "About Deploy to Comfy API",
     "openedFromLocal": "Opened from ComfyUI on your computer",
     "openedFromLocalDetail": "Comfy Cloud has every node and model this workflow uses. Press Run when you're ready.",
@@ -3959,7 +3960,8 @@
       "label": "Comfy Cloud check (prototype)",
       "checking": "Checking",
       "canOpen": "Can open",
-      "missing": "Can't open"
+      "missing": "Can't open",
+      "simulateOutOfMemory": "Simulate out of memory"
     }
   },
   "selectionToolbox": {

@@ -5884,6 +5884,7 @@
       "pointApi": "Llámalo desde tu producto como una API con escalado automático",
       "pointNodes": "Trae tus nodos personalizados y tus modelos"
     },
+    "outOfMemoryTooltip": "Lo ejecuta en una GPU con más memoria. Comfy Cloud compila y despliega tu configuración local exacta; tarda 20–30 min.",
     "aboutDeploy": "Acerca de Implementar en la API de Comfy",
     "openedFromLocal": "Abierto desde ComfyUI en tu computadora",
     "openedFromLocalDetail": "Comfy Cloud tiene todos los nodos y modelos que usa este flujo de trabajo. Pulsa Ejecutar cuando estés listo.",
@@ -5895,7 +5896,8 @@
       "label": "Comprobación de Comfy Cloud (prototipo)",
       "checking": "Comprobando",
       "canOpen": "Se puede abrir",
-      "missing": "No se puede abrir"
+      "missing": "No se puede abrir",
+      "simulateOutOfMemory": "Simular falta de memoria"
     }
   },
   "zoomControls": {

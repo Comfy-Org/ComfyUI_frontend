@@ -5884,6 +5884,7 @@
       "pointApi": "استدعِه من منتجك كواجهة API تتوسع تلقائيًا",
       "pointNodes": "أحضر عقدك المخصصة ونماذجك"
     },
+    "outOfMemoryTooltip": "يشغّله على وحدة معالجة رسومات بذاكرة أكبر. يبني Comfy Cloud إعدادك المحلي كما هو تمامًا وينشره، ويستغرق ذلك 20–30 دقيقة.",
     "aboutDeploy": "حول النشر إلى Comfy API",
     "openedFromLocal": "فُتح من ComfyUI على جهازك",
     "openedFromLocalDetail": "يحتوي Comfy Cloud على كل عقدة ونموذج يستخدمه سير العمل هذا. اضغط تشغيل عندما تكون جاهزًا.",
@@ -5895,7 +5896,8 @@
       "label": "فحص Comfy Cloud (نموذج أولي)",
       "checking": "جارٍ التحقق",
       "canOpen": "يمكن الفتح",
-      "missing": "لا يمكن الفتح"
+      "missing": "لا يمكن الفتح",
+      "simulateOutOfMemory": "محاكاة نفاد الذاكرة"
     }
   },
   "zoomControls": {

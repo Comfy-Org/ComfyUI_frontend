@@ -5884,6 +5884,7 @@
       "pointApi": "קרא לו מהמוצר שלך כ-API עם שינוי קנה מידה אוטומטי",
       "pointNodes": "הבא את הצמתים המותאמים אישית והמודלים שלך"
     },
+    "outOfMemoryTooltip": "מריץ אותו על GPU עם יותר זיכרון. Comfy Cloud בונה ופורס בדיוק את ההגדרה המקומית שלך, תוך 20–30 דקות.",
     "aboutDeploy": "אודות פריסה ל-Comfy API",
     "openedFromLocal": "נפתח מ-ComfyUI במחשב שלך",
     "openedFromLocalDetail": "ב-Comfy Cloud יש כל צומת ומודל שתהליך העבודה הזה משתמש בהם. לחץ על הרצה כשתהיה מוכן.",
@@ -5895,7 +5896,8 @@
       "label": "בדיקת Comfy Cloud (אב טיפוס)",
       "checking": "בודק",
       "canOpen": "ניתן לפתוח",
-      "missing": "לא ניתן לפתוח"
+      "missing": "לא ניתן לפתוח",
+      "simulateOutOfMemory": "הדמיית חוסר בזיכרון"
     }
   },
   "zoomControls": {

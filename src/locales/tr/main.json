@@ -5884,6 +5884,7 @@
       "pointApi": "Ürününüzden otomatik ölçeklenen bir API olarak çağırın",
       "pointNodes": "Özel düğümlerinizi ve modellerinizi getirin"
     },
+    "outOfMemoryTooltip": "Daha fazla belleğe sahip bir GPU'da çalıştırır. Comfy Cloud yerel kurulumunuzun aynısını derleyip dağıtır, 20–30 dk sürer.",
     "aboutDeploy": "Comfy API'ye Dağıt hakkında",
     "openedFromLocal": "Bilgisayarınızdaki ComfyUI'dan açıldı",
     "openedFromLocalDetail": "Comfy Cloud'da bu iş akışının kullandığı tüm düğümler ve modeller var. Hazır olduğunuzda Çalıştır'a basın.",
@@ -5895,7 +5896,8 @@
       "label": "Comfy Cloud kontrolü (prototip)",
       "checking": "Kontrol ediliyor",
       "canOpen": "Açılabilir",
-      "missing": "Açılamaz"
+      "missing": "Açılamaz",
+      "simulateOutOfMemory": "Bellek yetersizliğini simüle et"
     }
   },
   "zoomControls": {
