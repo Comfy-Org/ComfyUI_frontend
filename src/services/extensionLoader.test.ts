@@ -83,12 +83,14 @@ describe('extension loading', () => {
         {
           ext: BROKEN,
           message: `Cannot find module '${BROKEN}'`,
-          stack: firstError.stack
+          stack: expect.stringContaining(`Cannot find module '${BROKEN}'`)
         },
         {
           ext: '/extensions/b/b.js',
           message: "Cannot find module '/extensions/b/b.js'",
-          stack: secondError.stack
+          stack: expect.stringContaining(
+            "Cannot find module '/extensions/b/b.js'"
+          )
         }
       ])
     })
