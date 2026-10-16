@@ -111,8 +111,6 @@ describe('TabErrors.vue', () => {
             noErrors: 'No issues',
             noneSearchDesc: 'No results found',
             errorsDetected: 'Error detected | Errors detected',
-            resolveBeforeRun: 'Resolve before running the workflow',
-            issuesDetected: 'Issue detected | Issues detected',
             resolveErrorsBeforeRun:
               'Resolve errors before running the workflow',
             setupRequired: 'Setup required',
@@ -306,12 +304,7 @@ describe('TabErrors.vue', () => {
     ).getByTestId('error-section-count-badge')
     expect(sectionBadge).toHaveTextContent('3')
     expect(sectionBadge).toHaveAttribute('data-severity', 'error')
-    expect(
-      within(screen.getByTestId('errors-summary-hero')).getByText('3')
-    ).toBeInTheDocument()
-    expect(
-      screen.queryByTestId('errors-summary-filters')
-    ).not.toBeInTheDocument()
+    expect(screen.queryByTestId('errors-summary-hero')).not.toBeInTheDocument()
     expect(screen.getByText('Errors detected')).toBeInTheDocument()
     expect(
       screen.getByText('Resolve errors before running the workflow')
@@ -531,8 +524,10 @@ describe('TabErrors.vue', () => {
       1
     )
     expect(
-      within(screen.getByTestId('errors-summary-hero')).getByText('1')
-    ).toBeInTheDocument()
+      within(screen.getByTestId('error-group-execution')).getByTestId(
+        'error-section-count-badge'
+      )
+    ).toHaveTextContent('1')
     expect(screen.queryByText('KSampler')).not.toBeInTheDocument()
   })
 
@@ -647,11 +642,10 @@ describe('TabErrors.vue', () => {
     ).getByTestId('error-section-count-badge')
     expect(sectionBadge).toHaveTextContent('2')
     expect(sectionBadge).toHaveAttribute('data-severity', 'missing')
-    const hero = screen.getByTestId('errors-summary-hero')
-    expect(within(hero).getByText('2')).toBeInTheDocument()
-    expect(within(hero).getByText('Setup required')).toBeInTheDocument()
+    const cardHeader = screen.getByTestId('error-card-header')
+    expect(within(cardHeader).getByText('Setup required')).toBeInTheDocument()
     expect(
-      within(hero).getByText('Finish setup before running the workflow')
+      within(cardHeader).getByText('Finish setup before running the workflow')
     ).toBeInTheDocument()
     expect(
       screen.queryByTestId('errors-summary-filters')
@@ -794,9 +788,10 @@ describe('TabErrors.vue', () => {
       })
     })
 
-    const hero = screen.getByTestId('errors-summary-hero')
-    expect(within(hero).getByText('2')).toBeInTheDocument()
-    expect(within(hero).getByText('Setup required')).toBeInTheDocument()
+    expect(screen.queryByTestId('errors-summary-hero')).not.toBeInTheDocument()
+    expect(screen.getAllByText('Setup required').length).toBeGreaterThanOrEqual(
+      1
+    )
     expect(
       screen.queryByTestId('errors-summary-filters')
     ).not.toBeInTheDocument()
@@ -880,9 +875,7 @@ describe('TabErrors.vue', () => {
     expect(
       within(screen.getByTestId('error-group-missing-media')).getByText('2')
     ).toBeInTheDocument()
-    expect(
-      within(screen.getByTestId('errors-summary-hero')).getByText('2')
-    ).toBeInTheDocument()
+    expect(screen.queryByTestId('errors-summary-hero')).not.toBeInTheDocument()
 
     await user.click(
       screen.getByRole('button', { name: 'Second Loader - image' })
@@ -954,8 +947,6 @@ describe('TabErrors.vue', () => {
     })
 
     const hero = screen.getByTestId('errors-summary-hero')
-    expect(within(hero).getByText('5')).toBeInTheDocument()
-    expect(within(hero).getByText('Issues detected')).toBeInTheDocument()
     expect(screen.getByTestId('errors-summary-filter-error')).toHaveTextContent(
       '3 Errors'
     )
@@ -1159,9 +1150,7 @@ describe('TabErrors.vue', () => {
     expect(
       screen.queryByTestId('error-group-missing-media')
     ).not.toBeInTheDocument()
-    expect(
-      within(screen.getByTestId('errors-summary-hero')).getByText('2')
-    ).toBeInTheDocument()
+    expect(screen.getByTestId('errors-summary-hero')).toBeInTheDocument()
 
     await user.click(errorChip)
 

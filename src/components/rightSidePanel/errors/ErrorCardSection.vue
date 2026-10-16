@@ -1,5 +1,12 @@
 <template>
   <section :class="cn('group flex min-w-0 flex-col py-2', className)">
+    <div
+      v-if="$slots.header"
+      data-testid="error-card-header"
+      class="mb-1 flex items-start gap-2 bg-base-foreground/5 px-3 py-2"
+    >
+      <slot name="header" />
+    </div>
     <div class="flex min-h-8 w-full items-center gap-2 px-3">
       <button
         type="button"
