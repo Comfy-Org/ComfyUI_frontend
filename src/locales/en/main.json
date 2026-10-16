@@ -4837,8 +4837,8 @@
     "errorHelpSupport": "contact our support",
     "askAgent": "Ask agent",
     "askAgentAbout": "Ask the agent about {title}",
-    "askAgentAboutAll": "Ask agent about {count} issue | Ask agent about all {count} issues",
-    "askAgentAboutFiltered": "Ask agent about {count} filtered issue | Ask agent about {count} filtered issues",
+    "askAgentAboutAll": "Ask agent about all issues ({count})",
+    "askAgentAboutFiltered": "Ask agent about all filtered issues ({count})",
     "resetToDefault": "Reset to default",
     "resetAllParameters": "Reset all parameters",
     "missingNodePacks": {

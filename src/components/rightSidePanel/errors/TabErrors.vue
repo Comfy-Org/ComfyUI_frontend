@@ -18,16 +18,12 @@
       >
         {{
           isSearching
-            ? t(
-                'rightSidePanel.askAgentAboutFiltered',
-                { count: allIssuesContext.count },
-                allIssuesContext.count
-              )
-            : t(
-                'rightSidePanel.askAgentAboutAll',
-                { count: allIssuesContext.count },
-                allIssuesContext.count
-              )
+            ? t('rightSidePanel.askAgentAboutFiltered', {
+                count: allIssuesContext.count
+              })
+            : t('rightSidePanel.askAgentAboutAll', {
+                count: allIssuesContext.count
+              })
         }}
       </Button>
       <i18n-t
