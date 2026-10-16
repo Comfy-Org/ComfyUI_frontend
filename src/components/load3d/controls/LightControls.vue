@@ -9,7 +9,6 @@
       }}</span>
       <Slider
         :model-value="sliderValue"
-        class="w-full"
         :min="sliderMin"
         :max="sliderMax"
         :step="sliderStep"
@@ -41,7 +40,6 @@
       >
         <Slider
           :model-value="sliderValue"
-          class="w-full"
           :min="sliderMin"
           :max="sliderMax"
           :step="sliderStep"

@@ -12,6 +12,7 @@
     "architecture:check": "tsx tools/architecture/src/cli.ts --check",
     "architecture:update": "tsx tools/architecture/src/cli.ts --update",
     "adr:check": "tsx scripts/check-adrs.ts",
+    "audit:inherited-classes": "tsx tools/design-system-audits/src/cli.ts",
     "build:dist": "vite build --config vite.config.mts",
     "build:cloud": "cross-env DISTRIBUTION=cloud vite build --config vite.config.mts",
     "build:desktop-dist": "cross-env DISTRIBUTION=desktop vite build --config vite.config.mts",
@@ -155,6 +156,7 @@
     "zod-validation-error": "catalog:"
   },
   "devDependencies": {
+    "@comfyorg/design-system-audits": "workspace:*",
     "@comfyorg/ingest-types": "workspace:*",
     "@comfyorg/test-utils": "workspace:*",
     "@comfyorg/website": "workspace:*",

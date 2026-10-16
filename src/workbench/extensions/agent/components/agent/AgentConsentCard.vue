@@ -6,11 +6,11 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 import Video from '@/components/common/Video.vue'
 import Button from '@/components/ui/button/Button.vue'
 import DialogFooter from '@/components/ui/dialog/DialogFooter.vue'
+import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import Message from '@/components/ui/message/Message.vue'
 
 const {
   title,
-  titleId,
   paragraphs,
   videoSources = [],
   posterSrc = '',
@@ -19,7 +19,6 @@ const {
   error = ''
 } = defineProps<{
   title: string
-  titleId?: string
   paragraphs: string[]
   videoSources?: ComponentProps<typeof Video>['sources']
   posterSrc?: string
@@ -101,12 +100,9 @@ function choose(action: 'accept' | 'reject'): void {
 
       <section class="flex flex-col gap-4 px-4 py-2">
         <div class="flex flex-col gap-4">
-          <h2
-            :id="titleId"
-            class="my-0 text-base font-semibold text-base-foreground"
-          >
+          <DialogTitle class="my-0">
             {{ title }}
-          </h2>
+          </DialogTitle>
           <p
             v-for="(paragraph, index) in paragraphs"
             :key="index"

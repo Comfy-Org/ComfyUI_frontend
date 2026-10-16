@@ -83,7 +83,7 @@ watchDebounced(
     />
     <pre
       v-else
-      class="overflow-x-auto p-4 font-mono text-sm text-base-foreground"
+      class="overflow-x-auto p-4 font-mono text-sm"
     ><code>{{ code }}</code></pre>
   </div>
 </template>

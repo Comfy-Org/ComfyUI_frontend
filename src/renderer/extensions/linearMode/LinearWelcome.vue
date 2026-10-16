@@ -39,7 +39,7 @@ const templateSelectorDialog = useWorkflowTemplateSelectorDialog()
       <p class="mt-0">{{ t('linearMode.welcome.controls') }}</p>
       <p class="mt-0">{{ t('linearMode.welcome.sharing') }}</p>
     </div>
-    <div v-if="hasOutputs" class="flex flex-row gap-2 text-[14px]">
+    <div v-if="hasOutputs" class="flex gap-2 text-[14px]">
       <p class="mt-0 text-base-foreground">
         <i18n-t keypath="linearMode.welcome.getStarted" tag="span">
           <template #runButton>
@@ -72,7 +72,7 @@ const templateSelectorDialog = useWorkflowTemplateSelectorDialog()
           </template>
         </i18n-t>
       </p>
-      <div class="flex flex-row gap-2">
+      <div class="flex gap-2">
         <Button
           data-testid="linear-welcome-back-to-workflow"
           variant="textonly"

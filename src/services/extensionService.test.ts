@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
+import { useApp } from '@/scripts/appInstance'
 import { useExtensionStore } from '@/stores/extensionStore'
 
 import { useExtensionService } from './extensionService'
@@ -145,6 +146,61 @@ describe('invokeExtensionsAsync', () => {
     expect(hook.mock.calls[0]).toHaveLength(2)
     expect(hook.mock.calls[0][0]).toBe(defs)
     expect(hook.mock.contexts[0]).toBe(useExtensionStore().extensions[0])
+  })
+
+  type HookApp = ReturnType<typeof useApp>
+
+  it.for([
+    {
+      entrypoint: 'loadGraphData',
+      call: (app: HookApp) => app.loadGraphData()
+    },
+    {
+      entrypoint: 'loadApiJson',
+      call: (app: HookApp) => app.loadApiJson({}, 'nested.json')
+    },
+    {
+      entrypoint: 'handleFile',
+      call: (app: HookApp) => app.handleFile(new File([], 'nested.png'))
+    }
+  ])(
+    'rejects $entrypoint started after an await in a graph-load hook',
+    async ({ call }) => {
+      let nested: Promise<unknown> | undefined
+      register({
+        name: 'nested-loader',
+        beforeLoadGraph: async (app: HookApp) => {
+          await Promise.resolve()
+          nested = call(app)
+          await nested.catch(() => {})
+        }
+      })
+
+      await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+
+      await expect(nested).rejects.toThrow(
+        'A graph-load lifecycle hook cannot start a nested graph load'
+      )
+    }
+  )
+
+  it('lets a retained hook app load once the hook dispatch has finished', async () => {
+    let retained: HookApp | undefined
+    register({
+      name: 'retaining-extension',
+      afterLoadGraph: (app: HookApp) => {
+        retained = app
+      }
+    })
+    await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
+    const handleFile = vi
+      .spyOn(useApp(), 'handleFile')
+      .mockResolvedValue(undefined)
+    const file = new File([], 'later.png')
+
+    await retained?.handleFile(file)
+
+    expect(handleFile).toHaveBeenCalledWith(file)
   })
 
   it('silently ignores a non-function property of the same name', async () => {

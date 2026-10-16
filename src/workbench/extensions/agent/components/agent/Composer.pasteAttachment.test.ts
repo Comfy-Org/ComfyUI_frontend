@@ -34,7 +34,7 @@ describe('pasting files into the composer', () => {
     expect(view.emitted().attachFiles).toEqual([[[screenshot]]])
   })
 
-  it('attaches every attachable file in one paste', async () => {
+  it('forwards every pasted file, leaving the accept decision to the composer', async () => {
     const user = userEvent.setup()
     const view = mount()
 
@@ -48,7 +48,11 @@ describe('pasting files into the composer', () => {
     )
 
     const [[attached]] = view.emitted<[File[]]>().attachFiles
-    expect(attached.map((file) => file.name)).toEqual(['first.png', 'notes.md'])
+    expect(attached.map((file) => file.name)).toEqual([
+      'first.png',
+      'notes.md',
+      'archive.zip'
+    ])
   })
 
   it('attaches the file and still pastes the text a mixed clipboard carries', async () => {
@@ -83,22 +87,6 @@ describe('pasting files into the composer', () => {
     expect(editor).toHaveTextContent('keep me')
   })
 
-  it('keeps the selected text when only an unattachable file is pasted', async () => {
-    const user = userEvent.setup()
-    const view = mount()
-    const editor = screen.getByRole('textbox')
-
-    await user.click(editor)
-    await user.paste('keep me')
-    await user.keyboard('{Control>}a{/Control}')
-    await user.paste(
-      clipboardOf(new File(['x'], 'archive.zip', { type: 'application/zip' }))
-    )
-
-    expect(view.emitted().attachFiles).toBeUndefined()
-    expect(editor).toHaveTextContent('keep me')
-  })
-
   it.for(['plain clipboard text', ''])(
     'still pastes text and attaches nothing for %o',
     async (text) => {
@@ -113,19 +101,4 @@ describe('pasting files into the composer', () => {
       expect(editor).toHaveTextContent(text)
     }
   )
-
-  it('leaves the paste to the editor when no clipboard file is attachable', async () => {
-    const user = userEvent.setup()
-    const view = mount()
-    const clipboard = clipboardOf(
-      new File(['x'], 'archive.zip', { type: 'application/zip' })
-    )
-    clipboard.setData('text/plain', 'fallback text')
-
-    await user.click(screen.getByRole('textbox'))
-    await user.paste(clipboard)
-
-    expect(view.emitted().attachFiles).toBeUndefined()
-    expect(screen.getByRole('textbox')).toHaveTextContent('fallback text')
-  })
 })

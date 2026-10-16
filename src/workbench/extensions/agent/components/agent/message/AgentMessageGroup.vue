@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import Message from '@/components/ui/message/Message.vue'
-
+import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
 import type { ActivityPart } from '../../../services/agent/agentMessageParts'
 import type {
   AgentPaywallAction,
   AgentPaywallPresentation
 } from '../../../services/agent/agentPaywallPresentation'
 import ActivityTrace from './ActivityTrace.vue'
+import AgentNoticeCard from './AgentNoticeCard.vue'
 import AgentPaywallCard from './AgentPaywallCard.vue'
+import AskUserCard from './AskUserCard.vue'
+import DeleteApprovalCard from './DeleteApprovalCard.vue'
 import MarkdownStream from './MarkdownStream.vue'
 import RunApprovalCard from './RunApprovalCard.vue'
 import TabLinkCard from './TabLinkCard.vue'
@@ -23,7 +25,7 @@ const { group } = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  answer: [askId: string, selection: 'run' | 'cancel']
+  answer: [askId: string, answer: AgentAnswerRequest]
   openWorkflow: [askId: string, workflowId: string, workflowName?: string]
   approvalShown: [askId: string, workflowId: string | null]
   paywallAction: [action: AgentPaywallAction]
@@ -56,11 +58,27 @@ const emit = defineEmits<{
     v-else-if="group.kind === 'runApproval'"
     :part="group.part"
     :answering="answeringAskIds.has(group.part.askId)"
-    @answer="(askId, selection) => emit('answer', askId, selection)"
+    @answer="
+      (askId, selection) => emit('answer', askId, { selected: [selection] })
+    "
     @shown="(askId, workflowId) => emit('approvalShown', askId, workflowId)"
     @open-workflow="
       (askId, workflowId, workflowName) =>
         emit('openWorkflow', askId, workflowId, workflowName)
+    "
+  />
+  <AskUserCard
+    v-else-if="group.kind === 'askUser'"
+    :part="group.part"
+    :answering="answeringAskIds.has(group.part.askId)"
+    @answer="(askId, answer) => emit('answer', askId, answer)"
+  />
+  <DeleteApprovalCard
+    v-else-if="group.kind === 'deleteApproval'"
+    :part="group.part"
+    :answering="answeringAskIds.has(group.part.askId)"
+    @answer="
+      (askId, selection) => emit('answer', askId, { selected: [selection] })
     "
   />
   <AgentPaywallCard
@@ -69,27 +87,5 @@ const emit = defineEmits<{
     :message="group.part.message"
     @paywall-action="emit('paywallAction', $event)"
   />
-  <Message
-    v-else
-    :severity="group.part.level"
-    :role="group.part.level === 'error' ? 'alert' : 'status'"
-    :aria-live="group.part.level === 'error' ? 'assertive' : 'polite'"
-  >
-    <template #icon>
-      <span class="mt-0.5 icon-[lucide--triangle-alert] block size-4" />
-    </template>
-    <span class="flex flex-col gap-0.5">
-      <span>{{ group.part.text }}</span>
-      <span
-        v-if="group.part.retryAfterSeconds !== undefined"
-        class="text-xs text-muted-foreground"
-      >
-        {{
-          $t('agent.retryAfterSeconds', {
-            seconds: group.part.retryAfterSeconds
-          })
-        }}
-      </span>
-    </span>
-  </Message>
+  <AgentNoticeCard v-else :part="group.part" />
 </template>

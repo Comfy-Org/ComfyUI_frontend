@@ -4,7 +4,7 @@
       <Button
         v-if="showUsageActivity"
         variant="muted-textonly"
-        class="text-xs text-text-secondary"
+        class="text-text-secondary"
         @click="handleFullUsageActivity"
       >
         <i class="pi pi-external-link text-xs text-text-secondary" />
@@ -13,7 +13,7 @@
       <Button
         v-if="showPlansLink"
         variant="muted-textonly"
-        class="text-xs text-text-secondary"
+        class="text-text-secondary"
         @click="$emit('viewPlans')"
       >
         <i class="pi pi-external-link text-xs text-text-secondary" />
@@ -21,7 +21,7 @@
       </Button>
       <Button
         variant="muted-textonly"
-        class="text-xs text-text-secondary"
+        class="text-text-secondary"
         @click="handleOpenPartnerNodesInfo"
       >
         <i class="pi pi-question-circle text-xs text-text-secondary" />
@@ -29,7 +29,7 @@
       </Button>
       <Button
         variant="muted-textonly"
-        class="text-xs text-text-secondary"
+        class="text-text-secondary"
         :loading="isLoadingSupport"
         @click="handleMessageSupport"
       >
@@ -41,7 +41,7 @@
     <Button
       v-if="!isCloud && showInvoiceHistory"
       variant="muted-textonly"
-      class="text-xs text-text-secondary"
+      class="text-text-secondary"
       @click="handleInvoiceHistory"
     >
       {{ $t('subscription.invoiceHistory') }}

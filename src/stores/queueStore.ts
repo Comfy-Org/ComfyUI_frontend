@@ -16,7 +16,7 @@ import type { AugmentedResultItem } from '@/utils/resultItem'
 import { filterPreviewableResults } from '@/utils/resultItem'
 import { parseTaskOutput } from '@/stores/resultItemParsing'
 import type { ComfyApp } from '@/types/comfy'
-import { useExtensionService } from '@/services/extensionService'
+import { useExtensionServiceAccess } from '@/services/extensionServiceAccess'
 import { getJobDetail } from '@/services/jobOutputCache'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -246,7 +246,7 @@ export class TaskItemImpl {
         rawOutputs[rawNodeExecutionId]
       )
     }
-    useExtensionService().invokeExtensions(
+    useExtensionServiceAccess().invokeExtensions(
       'onNodeOutputsUpdated',
       app.nodeOutputs
     )

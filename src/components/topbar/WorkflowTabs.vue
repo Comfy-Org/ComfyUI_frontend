@@ -50,7 +50,7 @@
     />
     <Button
       :tooltip="$t('sideToolbar.newBlankWorkflow')"
-      class="new-blank-workflow-button no-drag shrink-0 self-center rounded-lg"
+      class="new-blank-workflow-button no-drag shrink-0 self-center"
       variant="muted-textonly"
       size="icon"
       :aria-label="$t('sideToolbar.newBlankWorkflow')"

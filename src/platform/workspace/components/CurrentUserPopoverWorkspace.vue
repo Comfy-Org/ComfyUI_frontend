@@ -85,6 +85,13 @@
       </template>
     </div>
 
+    <!-- Which developer-platform deployment this browser runs on (FE-2434).
+         The switcher renders nothing until its listing answers, and nothing
+         when the account is outside the rollout or its first listing fails. -->
+    <DeploymentSwitcher
+      v-if="!accountActionsOnly && isCloud && !isApiKeyLogin"
+    />
+
     <!-- Credits Section -->
 
     <div v-if="!accountActionsOnly" class="flex items-center gap-2 px-4 py-2">
@@ -107,21 +114,11 @@
         v-if="canTopUp"
         variant="secondary"
         size="sm"
-        class="text-base-foreground"
         data-testid="add-credits-button"
         :data-dd-action-name="BILLING_ACTION_NAME.addCreditsPopover"
         @click="handleTopUp"
       >
         {{ $t('subscription.addCredits') }}
-      </Button>
-      <Button
-        v-else-if="canSubscribeSelfServe"
-        variant="subscribe"
-        size="sm"
-        data-testid="upgrade-to-add-credits-button"
-        @click="handleUpgradeToAddCredits"
-      >
-        {{ $t('subscription.upgradeToAddCredits') }}
       </Button>
       <!-- Subscribe/Resubscribe (only when not subscribed or cancelled) -->
       <SubscribeButton
@@ -262,6 +259,7 @@ import { useI18n } from 'vue-i18n'
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
+import DeploymentSwitcher from '@/platform/workspace/components/DeploymentSwitcher.vue'
 import WorkspaceSwitcherPopover from '@/platform/workspace/components/WorkspaceSwitcherPopover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
@@ -430,11 +428,6 @@ const handleOpenManagePlanSettings = () => {
 
 const handleOpenPlanCreditsSettings = () => {
   settingsDialog.show('workspace')
-  emit('close')
-}
-
-const handleUpgradeToAddCredits = () => {
-  subscriptionDialog.showPricingTable({ reason: 'upgrade_to_add_credits' })
   emit('close')
 }
 

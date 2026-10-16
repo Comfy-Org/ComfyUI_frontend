@@ -62,7 +62,7 @@ const existingOutput = computed(() => {
     </p>
 
     <div class="flex w-lg flex-col gap-1 text-[14px] text-muted-foreground">
-      <p class="mt-0 p-0">{{ t('linearMode.arrange.switchToOutputs') }}</p>
+      <p class="mt-0">{{ t('linearMode.arrange.switchToOutputs') }}</p>
 
       <i18n-t keypath="linearMode.arrange.connectAtLeastOne" tag="div">
         <template #atLeastOne>
@@ -72,9 +72,9 @@ const existingOutput = computed(() => {
         </template>
       </i18n-t>
 
-      <p class="mt-0 p-0">{{ t('linearMode.arrange.outputExamples') }}</p>
+      <p class="mt-0">{{ t('linearMode.arrange.outputExamples') }}</p>
     </div>
-    <div class="flex flex-row gap-2">
+    <div class="flex gap-2">
       <Button
         variant="primary"
         size="lg"
