@@ -135,6 +135,35 @@ describe('buildBoundaries', () => {
       allowed: false
     },
     {
+      name: 'a nested directory claims its files from the enclosing directory',
+      records: [
+        images(),
+        domain('viewer', [
+          { path: 'src/images/ui/viewer/**', role: 'presentation' }
+        ])
+      ],
+      from: 'src/images/ui/viewer/a.vue',
+      to: 'src/images/app/store.ts',
+      allowed: false
+    },
+    {
+      name: 'a file path claims its file from a directory nested inside its own domain',
+      records: [
+        domain('viewer', [
+          { path: 'src/images/ui/viewer/**', role: 'presentation' }
+        ]),
+        images({
+          modules: [
+            ...images().modules,
+            { path: 'src/images/ui/viewer/legacy.ts', role: 'application' }
+          ]
+        })
+      ],
+      from: 'src/images/ui/viewer/legacy.ts',
+      to: 'src/images/app/store.ts',
+      allowed: true
+    },
+    {
       name: 'role direction applies across approved domains',
       records: approved,
       from: 'src/editor/model/a.ts',

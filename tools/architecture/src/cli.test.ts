@@ -82,14 +82,14 @@ describe('loadArchitectureConfiguration', () => {
       error: 'images references unknown domain media'
     },
     {
-      name: 'overlapping module paths',
+      name: 'a module path claimed twice',
       overrides: {
         modules: [
           ...record.modules,
-          { path: 'src/images/index.ts', role: 'application' }
+          { path: 'src/images/**', role: 'application' }
         ]
       },
-      error: 'src/images/index.ts is claimed by more than one module'
+      error: 'src/images/** is claimed by more than one module'
     },
     {
       name: 'a missing characterization check',
@@ -306,6 +306,37 @@ describe('buildCatalog', () => {
     expect(catalog.domains[0].modules).toEqual([
       { path: 'src/images/**', role: 'domain', owners: ['@images-team'] },
       { path: 'src/imageView.vue', role: 'presentation', owners: ['@fallback'] }
+    ])
+  })
+
+  it('gives files under a nested path to that path instead of the enclosing directory', () => {
+    const root = createRepository(
+      {},
+      {
+        'src/images/viewer/Viewer.vue': '<template />',
+        'docs/architecture/domains/records/viewer.domain.json': JSON.stringify({
+          ...record,
+          id: 'viewer',
+          modules: [{ path: 'src/images/viewer/**', role: 'presentation' }],
+          publicEntryPoints: []
+        })
+      }
+    )
+    const catalog = buildCatalog(
+      loadValidConfiguration(root),
+      parseCodeowners(
+        '/src/images/ @images-team\n/src/images/viewer/ @viewer-team\n'
+      )
+    )
+    expect(
+      catalog.domains.map(({ id, sourceFileCount, modules }) => ({
+        id,
+        sourceFileCount,
+        owners: modules[0].owners
+      }))
+    ).toEqual([
+      { id: 'images', sourceFileCount: 3, owners: ['@images-team'] },
+      { id: 'viewer', sourceFileCount: 1, owners: ['@viewer-team'] }
     ])
   })
 

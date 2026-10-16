@@ -43,16 +43,46 @@ export function matchesModulePath(filename: string, path: string): boolean {
     : filename === path
 }
 
-export const isClaimedBy = (file: string, record: DomainRecord) =>
-  record.modules.some(({ path }) => matchesModulePath(file, path))
+type Module = DomainRecord['modules'][number]
+
+export interface Claim {
+  record: DomainRecord
+  module: Module
+}
+
+/** A file path outranks any directory, and a deeper directory outranks a shallower one. */
+const specificity = (path: string) =>
+  path.endsWith('/**') ? path.length : Number.MAX_SAFE_INTEGER
+
+/**
+ * Maps each file to the most specific module path that matches it, so a
+ * directory can claim everything below it while nested paths override parts
+ * of it.
+ */
+export function claimFiles(
+  records: DomainRecord[],
+  files: string[]
+): Map<string, Claim> {
+  const modules = records
+    .flatMap((record) => record.modules.map((module) => ({ record, module })))
+    .sort((a, b) => specificity(b.module.path) - specificity(a.module.path))
+  const claims = new Map<string, Claim>()
+  for (const file of files) {
+    const claim = modules.find(({ module }) =>
+      matchesModulePath(file, module.path)
+    )
+    if (claim) claims.set(file, claim)
+  }
+  return claims
+}
 
 export const listUnclassifiedFiles = (
   records: DomainRecord[],
   sourceFiles: string[]
-) =>
-  sourceFiles.filter(
-    (file) => !records.some((record) => isClaimedBy(file, record))
-  )
+) => {
+  const claims = claimFiles(records, sourceFiles)
+  return sourceFiles.filter((file) => !claims.has(file))
+}
 
 function parseFile<T>(
   repositoryRoot: string,
@@ -119,33 +149,36 @@ function stalePathWarnings(
   records: { filename: string; record: DomainRecord }[],
   sourceFiles: string[]
 ): ArchitectureWarning[] {
+  const claims = claimFiles(
+    records.map(({ record }) => record),
+    sourceFiles
+  )
+  const claimed = new Set([...claims.values()].map(({ module }) => module))
   return records.flatMap(({ filename, record }) =>
     record.modules
-      .filter(
-        ({ path }) => !sourceFiles.some((f) => matchesModulePath(f, path))
-      )
+      .filter((module) => !claimed.has(module))
       .map(({ path }) => ({
-        message: `${record.id} path matches no source files: ${path}. Remove or update it in ${filename}.`,
+        message: sourceFiles.some((f) => matchesModulePath(f, path))
+          ? `${record.id} path claims no source files because more specific paths claim all of them: ${path}. Remove it from ${filename}.`
+          : `${record.id} path matches no source files: ${path}. Remove or update it in ${filename}.`,
         file: filename
       }))
   )
 }
 
-function overlapErrors(
-  records: DomainRecord[],
-  sourceFiles: string[]
-): string[] {
-  const modules = records.flatMap((record) =>
-    record.modules.map(({ path }) => ({ domain: record.id, path }))
-  )
-  return sourceFiles.flatMap((file) => {
-    const owners = modules.filter(({ path }) => matchesModulePath(file, path))
-    return owners.length > 1
-      ? [
-          `${file} is claimed by more than one module: ${owners.map(({ domain, path }) => `${domain} ${path}`).join(', ')}`
-        ]
-      : []
-  })
+function overlapErrors(records: DomainRecord[]): string[] {
+  const claimants = new Map<string, string[]>()
+  for (const record of records) {
+    for (const { path } of record.modules) {
+      claimants.set(path, [...(claimants.get(path) ?? []), record.id])
+    }
+  }
+  return [...claimants]
+    .filter(([, domains]) => domains.length > 1)
+    .map(
+      ([path, domains]) =>
+        `${path} is claimed by more than one module: ${domains.join(', ')}`
+    )
 }
 
 function referencedFileErrors(
@@ -162,8 +195,7 @@ function referencedFileErrors(
       .map((filename) => `${record.id} references missing file ${filename}`),
     ...record.publicEntryPoints
       .filter(
-        (entry) =>
-          !record.modules.some(({ path }) => matchesModulePath(entry, path))
+        (entry) => claimFiles(records, [entry]).get(entry)?.record !== record
       )
       .map(
         (entry) =>
@@ -189,7 +221,7 @@ export function loadArchitectureConfiguration(
   const { exceptions } = ledger.value
   const errors = [
     ...referenceErrors(records),
-    ...overlapErrors(records, sourceFiles.value),
+    ...overlapErrors(records),
     ...referencedFileErrors(repositoryRoot, records),
     ...duplicates(exceptions.map(({ id }) => id)).map(
       (id) => `Exception id ${id} is declared more than once`

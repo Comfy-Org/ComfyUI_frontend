@@ -25,6 +25,15 @@ pnpm test:unit tools/architecture
 
 Owners come from `CODEOWNERS`; records do not repeat them.
 
+## Module paths
+
+A module path is a `src/` file or a `src/` directory ending in `/**`. Prefer
+directories: a file added under a claimed directory joins its domain without a
+record change. Paths may nest. Each file belongs to the most specific path that
+matches it: a file path beats any directory, and a deeper directory beats a
+shallower one. Claim a directory for its main domain and role, then claim the
+exceptions inside it. Two modules may not name the same path.
+
 `architecture:catalog` also reports classification coverage: each domain's
 `sourceFileCount`, and a top-level `coverage` object with `total`,
 `classified`, and `unclassified` counts plus the sorted `unclassifiedFiles`
@@ -35,7 +44,9 @@ assets, so 100% coverage means every `src` code file belongs to a domain.
 ## Boundaries
 
 Each record role becomes a Fallow zone (`<domain>/<role>`), and each public
-entry point becomes a `<domain>/<role>/public` zone. Every other `src` file
+entry point becomes a `<domain>/<role>/public` zone. Fallow puts a file in the
+first zone that matches it, so a path that contains another domain's or role's
+path moves to a later `<domain>/<role>/outer-<n>` zone with the same rules. Every other `src` file
 falls into the `unclassified` zone. The generated rules allow:
 
 - imports within a domain that follow role direction:
