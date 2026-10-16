@@ -3,11 +3,12 @@ import type { Pinia } from 'pinia'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import { testI18n } from '@/utils/__tests__/testI18n'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import {
@@ -46,6 +47,20 @@ vi.mock<unknown>(import('@/scripts/app'), () => {
     }
   }
 })
+
+const distribution = vi.hoisted(() => ({ isCloud: false }))
+vi.mock(
+  import('@/platform/distribution/types'),
+  () =>
+    ({
+      DISTRIBUTION: 'localhost',
+      get isCloud() {
+        return distribution.isCloud
+      },
+      isDesktop: false,
+      isNightly: false
+    }) as const
+)
 
 vi.mock(import('@/utils/graphTraversalUtil'), () => ({
   getNodeByExecutionId: vi.fn(),
@@ -297,6 +312,59 @@ describe('ErrorGroupList selection emphasis', () => {
       expect(strip).toHaveTextContent('2 nodes — 2 errors')
     })
   })
+
+  it.for([
+    { runsOn: 'a deployment', sendsToBuild: true },
+    { runsOn: 'Comfy Cloud', sendsToBuild: false }
+  ])(
+    'on $runsOn, the summary sends a missing model to the Build: $sendsToBuild',
+    ({ sendsToBuild }) => {
+      distribution.isCloud = true
+      onTestFinished(() => {
+        distribution.isCloud = false
+      })
+      const pinia = getActivePinia()!
+      useDeploymentPickStore(pinia).bootDeployment = sendsToBuild
+        ? {
+            deployment_id: 'dep-1',
+            deployment_name: 'production',
+            build_id: 'build-7',
+            build_name: 'video-minimax-h3 copy',
+            release_id: 'rel-3',
+            status: 'ready',
+            created_at: '2026-10-01T00:00:00Z'
+          }
+        : null
+      useMissingModelStore(pinia).setMissingModels([
+        {
+          nodeId: '1',
+          nodeType: 'VAELoader',
+          widgetName: 'vae_name',
+          name: 'qwen_image_2.1_vae.safetensors',
+          directory: 'vae',
+          isMissing: true,
+          isAssetSupported: true
+        }
+      ])
+      renderList(pinia)
+
+      const hero = screen.getByTestId('errors-summary-hero')
+      expect(
+        within(hero).queryByText(
+          "Add these to production's build on Platform, then deploy a new release."
+        ) !== null
+      ).toBe(sendsToBuild)
+      expect(
+        within(hero).queryByRole('link', { name: /Edit build on Platform/ }) !==
+          null
+      ).toBe(sendsToBuild)
+      expect(
+        within(hero).queryByRole('button', {
+          name: /Build with your agent/
+        }) !== null
+      ).toBe(sendsToBuild)
+    }
+  )
 
   it('labels a missing-only selection as an issue', async () => {
     const pinia = getActivePinia()!

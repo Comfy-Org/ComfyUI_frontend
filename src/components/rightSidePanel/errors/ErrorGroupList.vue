@@ -62,6 +62,12 @@
               </span>
             </div>
           </div>
+          <DeploymentBuildActions
+            v-if="buildDeployment"
+            :deployment="buildDeployment"
+            :missing-pack-groups="missingPackGroups"
+            :missing-model-groups="missingModelGroups"
+          />
           <div
             v-if="hasMixedSeverityTotals"
             data-testid="errors-summary-filters"
@@ -368,6 +374,7 @@
               v-if="group.type === 'missing_model'"
               :missing-model-groups="missingModelGroups"
               :highlighted-node-ids="selectionMatchedAssetNodeIds"
+              :on-deployment="runsOnDeployment"
               @locate-model="handleLocateAssetNode"
             />
 
@@ -390,6 +397,7 @@ import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
 import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 
+import { storeToRefs } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -409,10 +417,13 @@ import ErrorCardSection from './ErrorCardSection.vue'
 import ErrorNodeCard from './ErrorNodeCard.vue'
 import LocateNodeButton from './LocateNodeButton.vue'
 import MissingNodeCard from './MissingNodeCard.vue'
+import DeploymentBuildActions from './DeploymentBuildActions.vue'
 import SwapNodesCard from '@/platform/nodeReplacement/components/SwapNodesCard.vue'
 import MissingModelCard from '@/platform/missingModel/components/MissingModelCard.vue'
 import MissingMediaCard from '@/platform/missingMedia/components/MissingMediaCard.vue'
 import { isCloud } from '@/platform/distribution/types'
+import { useBootDeploymentLabel } from '@/platform/workspace/composables/useDeploymentLabels'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import Button from '@/components/ui/button/Button.vue'
 import DotSpinner from '@/components/common/DotSpinner.vue'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
@@ -571,6 +582,29 @@ const hasMixedSeverity = computed(
   () => errorCount.value > 0 && missingCount.value > 0
 )
 
+const BUILD_FIXABLE_TYPES: ReadonlySet<ErrorGroup['type']> = new Set([
+  'missing_node',
+  'missing_model'
+])
+const { bootDeployment } = storeToRefs(useDeploymentPickStore())
+const bootDeploymentLabel = useBootDeploymentLabel()
+const runsOnDeployment = computed(() => isCloud && !!bootDeployment.value)
+const buildDeployment = computed(() => {
+  if (!runsOnDeployment.value || !bootDeployment.value) return undefined
+  const buildFixes = filteredGroups.value.some((group) =>
+    BUILD_FIXABLE_TYPES.has(group.type)
+  )
+  return buildFixes ? bootDeployment.value : undefined
+})
+const buildFixesAllSetup = computed(
+  () =>
+    buildDeployment.value !== undefined &&
+    filteredGroups.value.every(
+      (group) =>
+        group.severity !== 'missing' || BUILD_FIXABLE_TYPES.has(group.type)
+    )
+)
+
 const severityTotals = computed(() => {
   const totals: Record<ErrorGroupSeverity, number> = { error: 0, missing: 0 }
   for (const group of allErrorGroups.value) {
@@ -703,7 +737,11 @@ const hero = computed(() => {
       count: missingCount.value,
       countClass: 'text-warning-foreground',
       title: t('rightSidePanel.setupRequired'),
-      description: t('rightSidePanel.finishSetupBeforeRun')
+      description: buildFixesAllSetup.value
+        ? t('rightSidePanel.addToDeploymentBuild', {
+            deployment: bootDeploymentLabel.value
+          })
+        : t('rightSidePanel.finishSetupBeforeRun')
     }
   }
   return {

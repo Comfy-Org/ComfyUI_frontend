@@ -67,7 +67,7 @@ function resolveMissingNodeDisplayMessage(source: MissingNodeSource): string {
   const onDeployment = deploymentMessage(
     source,
     'errorCatalog.missingErrors.missing_node.displayMessageDeployment',
-    "These nodes aren't on {deployment}. Replace them, or pick a deployment that has them."
+    "These nodes aren't on {deployment}. Add their packs to its build, or replace them."
   )
   if (onDeployment) return onDeployment
   const key = source.isCloud
@@ -225,7 +225,7 @@ function resolveMissingModelDisplayMessage(source: MissingModelSource): string {
   const onDeployment = deploymentMessage(
     source,
     'errorCatalog.missingErrors.missing_model.displayMessageDeployment',
-    "These models aren't on {deployment}. Open the node to choose one it has."
+    "These models aren't on {deployment}. Add them to its build, or open the node to choose one it has."
   )
   if (onDeployment) return onDeployment
   const key = source.isCloud
