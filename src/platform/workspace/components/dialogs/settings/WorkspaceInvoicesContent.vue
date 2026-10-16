@@ -46,7 +46,7 @@
         </span>
         <p class="m-0 text-2xl font-semibold text-base-foreground">
           {{ upcomingAmount }}
-          <span class="text-base font-normal text-base-foreground">
+          <span class="text-base font-normal">
             {{ $t('workspacePanel.invoices.usd') }}
           </span>
         </p>

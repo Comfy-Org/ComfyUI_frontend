@@ -23,11 +23,11 @@
         role="alert"
         class="flex flex-auto flex-col items-center justify-center bg-muted-background py-8 text-center text-base-foreground"
       >
-        <i class="mb-2 icon-[lucide--video-off] size-12 text-base-foreground" />
-        <p class="text-sm text-base-foreground">
+        <i class="mb-2 icon-[lucide--video-off] size-12" />
+        <p class="text-sm">
           {{ $t('g.videoFailedToLoad') }}
         </p>
-        <p class="mt-1 text-xs text-base-foreground">
+        <p class="mt-1 text-xs">
           {{ getVideoFilename(currentVideoUrl) }}
         </p>
       </div>

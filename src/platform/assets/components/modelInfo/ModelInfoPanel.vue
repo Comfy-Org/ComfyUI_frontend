@@ -91,7 +91,7 @@
           <div
             aria-disabled="true"
             :aria-describedby="modelTypeReadonlyReasonId"
-            class="cursor-not-allowed p-2 text-sm text-muted-foreground"
+            class="cursor-not-allowed p-2 text-muted-foreground"
           >
             {{
               modelTypes.find((o) => o.value === selectedModelType)?.name ??
@@ -189,7 +189,7 @@
         v-if="description"
         :label="t('assetBrowser.modelInfo.description')"
       >
-        <p class="text-sm whitespace-pre-wrap">{{ description }}</p>
+        <p class="whitespace-pre-wrap">{{ description }}</p>
       </ModelInfoField>
       <ModelInfoField :label="t('assetBrowser.modelInfo.description')">
         <textarea
