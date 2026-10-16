@@ -798,6 +798,125 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       ).toBeEnabled()
     })
 
+    describe('setting a default card', () => {
+      const portalUrl = 'https://billing.stripe.com/p/session/flow_test'
+
+      function enableDefaultCardPortal() {
+        vi.mocked(useFeatureFlags().flags).paymentMethodUpdatePortalEnabled =
+          true
+      }
+
+      function portalOpensAt(url: string) {
+        return vi
+          .spyOn(workspaceApi, 'getPaymentPortalUrl')
+          .mockResolvedValue({ url })
+      }
+
+      async function clickSetDefaultCard() {
+        await userEvent.click(
+          screen.getByRole('button', { name: 'Set a default card' })
+        )
+      }
+
+      it('is not offered while the portal flow is not enabled', async () => {
+        refuseForNoPaymentMethod()
+
+        await payAndGetRefused()
+
+        expect(
+          screen.queryByRole('button', { name: 'Set a default card' })
+        ).not.toBeInTheDocument()
+        expect(
+          screen.getByText(/Settings → Plan & Credits → Billing & invoices/)
+        ).toBeInTheDocument()
+      })
+
+      it('opens the portal on the payment-method update flow and returns to Pay', async () => {
+        enableDefaultCardPortal()
+        refuseForNoPaymentMethod()
+        const getPortal = portalOpensAt(portalUrl)
+        const { tab, open } = stubCheckoutTab()
+        await payAndGetRefused()
+
+        await clickSetDefaultCard()
+
+        await waitFor(() => expect(tab.location.href).toBe(portalUrl))
+        expect(open).toHaveBeenCalledExactlyOnceWith('', '_blank')
+        expect(getPortal).toHaveBeenCalledExactlyOnceWith(
+          window.location.href,
+          'payment_method_update'
+        )
+        expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
+
+        const billing = mockBillingContext()
+        vi.mocked(billing.fetchStatus).mockClear()
+        window.dispatchEvent(new Event('focus'))
+
+        await waitFor(() => {
+          expect(billing.fetchStatus).toHaveBeenCalled()
+          expect(useBillingCapabilities().refresh).toHaveBeenCalled()
+        })
+        expect(
+          await screen.findByRole('button', { name: 'Pay $50.00' })
+        ).toBeEnabled()
+      })
+
+      it.for([
+        {
+          failure: 'a rejected request',
+          arrange: () =>
+            vi
+              .spyOn(workspaceApi, 'getPaymentPortalUrl')
+              .mockRejectedValue(new WorkspaceApiError('Portal down', 502)),
+          description: 'Portal down'
+        },
+        {
+          failure: 'an empty portal URL',
+          arrange: () => portalOpensAt(''),
+          description: 'An unknown error occurred'
+        }
+      ])(
+        'closes the reserved tab and explains $failure',
+        async ({ arrange, description }) => {
+          enableDefaultCardPortal()
+          refuseForNoPaymentMethod()
+          arrange()
+          const { tab } = stubCheckoutTab()
+          await payAndGetRefused()
+
+          await clickSetDefaultCard()
+
+          await waitFor(() =>
+            expect(useToast().error).toHaveBeenCalledWith(
+              "Couldn't open card settings",
+              { description }
+            )
+          )
+          expect(tab.close).toHaveBeenCalledOnce()
+          expect(tab.location.href).toBe('')
+          expect(
+            screen.getByRole('button', { name: 'Set a default card' })
+          ).toBeEnabled()
+        }
+      )
+
+      it('asks for pop-ups instead of minting a portal session when the tab is blocked', async () => {
+        enableDefaultCardPortal()
+        refuseForNoPaymentMethod()
+        const getPortal = portalOpensAt(portalUrl)
+        vi.spyOn(window, 'open').mockReturnValue(null)
+        await payAndGetRefused()
+
+        await clickSetDefaultCard()
+
+        expect(useToast().warning).toHaveBeenCalledWith('Warning', {
+          description:
+            "Couldn't open the billing page. Allow pop-ups for this site and try again."
+        })
+        expect(getPortal).not.toHaveBeenCalled()
+      })
+    })
+
     it('does not offer checkout for any other refusal', async () => {
       vi.mocked(mockBillingContext().topup).mockRejectedValue(
         new WorkspaceApiError(

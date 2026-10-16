@@ -285,6 +285,33 @@ describe('useFeatureFlags', () => {
     })
   })
 
+  describe('paymentMethodUpdatePortalEnabled', () => {
+    it.for([
+      ['missing', undefined, false],
+      ['malformed', 'true', false],
+      ['true', true, true]
+    ] as const)('is fail-closed for %s values', ([, value, expected]) => {
+      vi.mocked(api.getServerFeature).mockReturnValue(value)
+
+      expect(useFeatureFlags().flags.paymentMethodUpdatePortalEnabled).toBe(
+        expected
+      )
+      expect(api.getServerFeature).toHaveBeenCalledWith(
+        ServerFeatureFlag.PAYMENT_METHOD_UPDATE_PORTAL_ENABLED,
+        false
+      )
+    })
+
+    it('reads the flag off /features', () => {
+      vi.mocked(api.getServerFeature).mockReturnValue(undefined)
+      remoteConfig.value = { payment_method_update_portal_enabled: true }
+
+      expect(useFeatureFlags().flags.paymentMethodUpdatePortalEnabled).toBe(
+        true
+      )
+    })
+  })
+
   describe('billingSdkTopupRailEnabled', () => {
     afterEach(() => {
       vi.mocked(distributionTypes).isCloud = false

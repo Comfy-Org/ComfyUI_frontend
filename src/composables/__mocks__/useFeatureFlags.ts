@@ -40,6 +40,7 @@ const defaultFlags: FeatureFlags = {
   billingSdkSubscriptionEnabled: false,
   billingSdkSubscriptionRailEnabled: false,
   v1PaymentRecovery: false,
+  paymentMethodUpdatePortalEnabled: false,
   freeTierJobAllowanceEnabled: false,
   signupTurnstileMode: 'off',
   supportsModelTypeTags: false,

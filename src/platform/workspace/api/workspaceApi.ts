@@ -109,6 +109,9 @@ export type { TeamCreditStopSummary }
 
 type SubscribeBillingCycle = 'monthly' | 'yearly'
 
+/** Not in the generated `PaymentPortalRequest` until the ingest-types sync picks up cloud#13970. */
+type PaymentPortalFlowType = 'payment_method_update'
+
 export interface SubscribeOptions {
   confirmationToken?: string
   promotionCode?: string
@@ -861,13 +864,19 @@ export const workspaceApi = {
    * POST /api/billing/payment-portal
    */
   async getPaymentPortalUrl(
-    returnUrl?: string
+    returnUrl?: string,
+    flowType?: PaymentPortalFlowType
   ): Promise<PaymentPortalResponse> {
     const auth = await requestAuth()
     try {
       const response = await workspaceApiClient.post<PaymentPortalResponse>(
         workspaceApiUrl('/billing/payment-portal'),
-        { return_url: returnUrl } satisfies PaymentPortalRequest,
+        {
+          return_url: returnUrl,
+          flow_type: flowType
+        } satisfies PaymentPortalRequest & {
+          flow_type?: PaymentPortalFlowType
+        },
         auth
       )
       return response.data
