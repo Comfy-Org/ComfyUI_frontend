@@ -191,13 +191,6 @@ export function useFeatureFlags() {
         remoteConfig.value.partner_node_token
       )
     },
-    get userSecretsEnabled() {
-      return resolveFlag(
-        ServerFeatureFlag.USER_SECRETS_ENABLED,
-        remoteConfig.value.user_secrets_enabled,
-        false
-      )
-    },
     get nodeReplacementsEnabled() {
       return api.getServerFeature(ServerFeatureFlag.NODE_REPLACEMENTS, false)
     },
@@ -395,7 +388,6 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.LINEAR_TOGGLE_ENABLED]: flags.linearToggleEnabled,
       [ServerFeatureFlag.PARTNER_NODE_GOVERNANCE_ENABLED]:
         flags.partnerNodeGovernanceEnabled,
-      [ServerFeatureFlag.USER_SECRETS_ENABLED]: flags.userSecretsEnabled,
       [ServerFeatureFlag.NODE_REPLACEMENTS]: flags.nodeReplacementsEnabled,
       [ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED]:
         flags.nodeLibraryEssentialsEnabled,

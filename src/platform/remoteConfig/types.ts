@@ -116,7 +116,6 @@ export type RemoteConfig = Partial<GetFeaturesResponses[200]> & {
   partner_run_gate_enabled?: boolean
   /** Local prompts carry a renewable partner-node token instead of the workspace token. */
   partner_node_token?: boolean
-  user_secrets_enabled?: boolean
   node_library_essentials_enabled?: boolean
   supports_model_type_tags?: boolean
   free_tier_credits?: number

@@ -58,7 +58,7 @@
     </div>
 
     <div class="flex flex-col gap-6 text-sm text-muted-foreground">
-      <div v-if="showSecretsHint">
+      <div>
         <i18n-t keypath="assetBrowser.apiKeyHint" tag="span">
           <template #link>
             <Button
@@ -84,13 +84,9 @@ import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 
-const { flags } = useFeatureFlags()
 const settingsDialog = useSettingsDialog()
-
-const showSecretsHint = computed(() => flags.userSecretsEnabled)
 
 function openSecretsSettings() {
   settingsDialog.show('secrets')

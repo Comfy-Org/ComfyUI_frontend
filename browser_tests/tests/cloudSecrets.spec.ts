@@ -7,7 +7,6 @@ import {
 } from '@e2e/fixtures/cloudAppFixture'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import {
-  SECRETS_BOOT_FEATURES,
   SECRETS_BOOT_SETTINGS,
   mockSecretsBackend,
   openSecretsPanel
@@ -39,7 +38,7 @@ test.describe('Cloud user secrets (API keys)', { tag: '@cloud' }, () => {
     request
   }) => {
     await mockCloudBoot(page, {
-      features: SECRETS_BOOT_FEATURES,
+      features: {},
       settings: SECRETS_BOOT_SETTINGS
     })
     await bootCloud(page)
@@ -131,7 +130,7 @@ test.describe('Cloud user secrets (API keys)', { tag: '@cloud' }, () => {
     request
   }) => {
     await mockCloudBoot(page, {
-      features: SECRETS_BOOT_FEATURES,
+      features: {},
       settings: SECRETS_BOOT_SETTINGS
     })
     await bootCloud(page)
@@ -162,7 +161,7 @@ test.describe('Cloud user secrets (API keys)', { tag: '@cloud' }, () => {
     request
   }) => {
     await mockCloudBoot(page, {
-      features: SECRETS_BOOT_FEATURES,
+      features: {},
       settings: SECRETS_BOOT_SETTINGS
     })
     await bootCloud(page)

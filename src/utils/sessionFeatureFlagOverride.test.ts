@@ -66,16 +66,16 @@ describe('getSessionOverride', () => {
   })
 
   it('applies every flag in a repeated query param', () => {
-    visit('/?ff=user_secrets_enabled&ff=signup_turnstile:shadow')
+    visit('/?ff=partner_run_gate_enabled&ff=signup_turnstile:shadow')
 
-    expect(getSessionOverride('user_secrets_enabled')).toBe(true)
+    expect(getSessionOverride('partner_run_gate_enabled')).toBe(true)
     expect(getSessionOverride('signup_turnstile')).toBe('shadow')
   })
 
   it('returns undefined for a flag nobody requested', () => {
     visit('/?ff=onboarding_tour_enabled')
 
-    expect(getSessionOverride('user_secrets_enabled')).toBeUndefined()
+    expect(getSessionOverride('partner_run_gate_enabled')).toBeUndefined()
   })
 
   it('survives navigation away from the ?ff= URL', () => {

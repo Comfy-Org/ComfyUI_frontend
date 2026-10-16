@@ -216,9 +216,7 @@ export function useSettingUI(
     )
   }
 
-  const shouldShowSecretsPanel = computed(
-    () => flags.userSecretsEnabled && isLoggedIn.value
-  )
+  const shouldShowSecretsPanel = computed(() => isCloud && isLoggedIn.value)
 
   const skillPacksPanel: SettingPanelItem = {
     node: {

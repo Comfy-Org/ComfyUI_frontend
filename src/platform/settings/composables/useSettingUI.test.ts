@@ -199,7 +199,6 @@ describe('useSettingUI', () => {
   describe('workspace panels', () => {
     beforeEach(() => {
       useCurrentUser().isLoggedIn = computed(() => true)
-      vi.mocked(useFeatureFlags().flags).userSecretsEnabled = true
     })
 
     it('shows Plan & Credits and Members on cloud', () => {
@@ -255,7 +254,7 @@ describe('useSettingUI', () => {
         ).toEqual([
           'user',
           'root/Comfy',
-          'secrets',
+          ...(isCloud ? ['secrets'] : []),
           'root/LiteGraph',
           'root/Appearance',
           'keybinding',
