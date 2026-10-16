@@ -139,7 +139,7 @@ import Video from '@/components/common/Video.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
-import AgentMarks from '@/platform/openOnCloud/components/AgentMarks.vue'
+import AgentMarks from '@/platform/workflow/deploy/components/AgentMarks.vue'
 import { useAgentHandoff } from '@/platform/workflow/deploy/composables/useAgentHandoff'
 
 const { videoSources = [], posterSrc = '' } = defineProps<{
