@@ -117,7 +117,7 @@ jobs:
 
       # Upload built dist/ (containerized test jobs will pnpm install without cache)
       - name: Upload built frontend
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: frontend-dist
           path: dist/
@@ -240,7 +240,7 @@ jobs:
 
       - name: Upload rewritten snapshots
         if: steps.changed-snapshots.outputs.has-changes == 'true'
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: snapshot-updates-shard-${{ matrix.shard }}
           path: ${{ steps.changed-snapshots.outputs.path }}
@@ -248,7 +248,7 @@ jobs:
           overwrite: true
 
       - name: Upload test report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: playwright-report-shard-${{ matrix.shard }}

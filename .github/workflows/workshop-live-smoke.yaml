@@ -54,7 +54,7 @@ jobs:
         run: pnpm --filter @comfyorg/website test:acceptance --project chromium
       - name: Publish acceptance evidence
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: workshop-live-smoke-${{ github.run_id }}
           path: |
