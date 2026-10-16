@@ -58,7 +58,7 @@ test.describe('Top-up deep link', { tag: '@cloud' }, () => {
     await expect(page).not.toHaveURL(/[?&]topup=/)
   })
 
-  test('routes a lapsed subscriber to the subscription paywall', async ({
+  test('strips a denied top-up deep link without opening a plan', async ({
     page
   }) => {
     test.slow()
@@ -75,11 +75,13 @@ test.describe('Top-up deep link', { tag: '@cloud' }, () => {
 
     await page.goto(`${APP_URL}/?topup=1`)
 
+    await page.waitForURL((url) => !url.searchParams.has('topup'), {
+      timeout: 45_000
+    })
     await expect(
       page.getByRole('heading', { name: 'Choose a Plan' })
-    ).toBeVisible({ timeout: 45_000 })
+    ).toHaveCount(0)
     await expect(topUpDialog(page)).toBeHidden()
-    await expect(page).not.toHaveURL(/[?&]topup=/)
   })
 
   test('is a silent no-op for a team member', async ({ page }) => {
@@ -144,7 +146,7 @@ test.describe('Top-up deep link', { tag: '@cloud' }, () => {
     await expect(page).not.toHaveURL(/[?&]topup=/)
   })
 
-  test('uses the top-up fallback when capabilities are unavailable', async ({
+  test('strips the deep link when capabilities are unavailable', async ({
     page
   }) => {
     test.slow()
@@ -155,7 +157,9 @@ test.describe('Top-up deep link', { tag: '@cloud' }, () => {
 
     await page.goto(`${APP_URL}/?topup=1`)
 
-    await expect(topUpDialog(page)).toBeVisible({ timeout: 45_000 })
-    await expect(page).not.toHaveURL(/[?&]topup=/)
+    await page.waitForURL((url) => !url.searchParams.has('topup'), {
+      timeout: 45_000
+    })
+    await expect(topUpDialog(page)).toBeHidden()
   })
 })

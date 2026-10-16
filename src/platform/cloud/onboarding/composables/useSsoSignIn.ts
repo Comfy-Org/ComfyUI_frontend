@@ -3,7 +3,12 @@ import { computed, onScopeDispose, readonly, ref } from 'vue'
 import type { RouteLocationNormalizedLoaded, Router } from 'vue-router'
 import { useRoute, useRouter } from 'vue-router'
 
-import { discoverSso, ssoStartUrl } from '@comfyorg/account-core/sso'
+import {
+  discoverSso,
+  sendsToSso,
+  ssoStartUrl
+} from '@comfyorg/account-core/sso'
+import type { SsoSignInVia } from '@comfyorg/account-core/sso'
 import type { SsoSurface } from '@comfyorg/account-core/telemetry'
 
 import { toSsoReturnPath } from '@/platform/auth/sso/ssoReturnPath'
@@ -79,7 +84,10 @@ export function useSsoSignIn(surface: SsoSurface) {
    * sign-in from here (a redirect, or a check already in flight); false means
    * the caller carries on with its own sign-in.
    */
-  async function trySso(email: string): Promise<boolean> {
+  async function trySso(
+    email: string,
+    via: SsoSignInVia = 'sso-entry'
+  ): Promise<boolean> {
     if (busy.value) return true
     dispatch({ type: 'submitted' })
     const discovery = await discoverSso(email, {
@@ -87,8 +95,8 @@ export function useSsoSignIn(surface: SsoSurface) {
       signal: disposal.signal
     })
     if (disposal.signal.aborted) return true
-    dispatch({ type: 'discovered', discovery })
-    if (discovery.kind !== 'sso') return false
+    dispatch({ type: 'discovered', discovery, via })
+    if (!sendsToSso(discovery, via)) return false
     trackSsoContinueClicked(surface)
     window.location.assign(
       ssoStartUrl({

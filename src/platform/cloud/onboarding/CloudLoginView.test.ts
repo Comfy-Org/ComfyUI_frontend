@@ -521,6 +521,31 @@ describe('CloudLoginView SSO', () => {
       expect(useAuthActions().signInWithEmail).not.toHaveBeenCalled()
     })
 
+    it('lets an email of an organization in optional mode sign in with its password', async () => {
+      discoverReplies({ sso: true, required: false })
+      await renderLoginView()
+
+      await signInWithPassword('ada@acme.com')
+
+      await waitFor(() =>
+        expect(useAuthActions().signInWithEmail).toHaveBeenCalledWith(
+          'ada@acme.com',
+          'hunter22'
+        )
+      )
+      expect(assign).not.toHaveBeenCalled()
+    })
+
+    it('still sends an optional-mode email chosen for SSO to SSO', async () => {
+      discoverReplies({ sso: true, required: false })
+      await renderLoginView()
+
+      await continueWithSso('ada@acme.com')
+
+      await waitFor(() => expect(assign).toHaveBeenCalledOnce())
+      expect(startParams(assign).email).toBe('ada@acme.com')
+    })
+
     it.for<{ name: string; status: number; body: unknown }>([
       { name: 'a non-SSO email', status: 200, body: { sso: false } },
       {

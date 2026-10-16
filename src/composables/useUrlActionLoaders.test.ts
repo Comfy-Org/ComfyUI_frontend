@@ -14,6 +14,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 
 const mocks = vi.hoisted(() => ({
   reportError: vi.fn(),
+  loadDeployment: vi.fn(async (): Promise<boolean> => false),
   loadWorkspace: vi.fn(async (): Promise<boolean | undefined> => undefined),
   loadInvite: vi.fn(async () => undefined),
   loadCreateWorkspace: vi.fn(async () => undefined),
@@ -22,6 +23,7 @@ const mocks = vi.hoisted(() => ({
   loadSettings: vi.fn(),
   loadAssets: vi.fn(async () => undefined),
   loadPaymentReturn: vi.fn(async () => undefined),
+  useDeployment: vi.fn(),
   useWorkspace: vi.fn(),
   useInvite: vi.fn(),
   useCreateWorkspace: vi.fn(),
@@ -30,6 +32,9 @@ const mocks = vi.hoisted(() => ({
   useSettings: vi.fn(),
   useAssets: vi.fn(),
   usePaymentReturn: vi.fn()
+}))
+mocks.useDeployment.mockImplementation(() => ({
+  loadDeploymentFromUrl: mocks.loadDeployment
 }))
 mocks.useWorkspace.mockImplementation(() => ({
   loadWorkspaceFromUrl: mocks.loadWorkspace
@@ -66,6 +71,12 @@ const router = createRouter({
   routes: [{ path: '/:pathMatch(.*)*', component: { template: '<div />' } }]
 })
 
+vi.mock(
+  import('@/platform/workspace/composables/useDeploymentUrlLoader'),
+  () => ({
+    useDeploymentUrlLoader: mocks.useDeployment
+  })
+)
 vi.mock(
   import('@/platform/workspace/composables/useWorkspaceUrlLoader'),
   () => ({
@@ -111,6 +122,9 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
 describe('useUrlActionLoaders', () => {
   beforeEach(async () => {
     mockIsCloud.value = true
+    mocks.useDeployment.mockImplementation(() => ({
+      loadDeploymentFromUrl: mocks.loadDeployment
+    }))
     mocks.useWorkspace.mockImplementation(() => ({
       loadWorkspaceFromUrl: mocks.loadWorkspace
     }))
@@ -204,6 +218,7 @@ describe('useUrlActionLoaders', () => {
     const { runUrlActionLoaders } = useUrlActionLoaders()
     await runUrlActionLoaders()
 
+    expect(mocks.useDeployment).not.toHaveBeenCalled()
     expect(mocks.useWorkspace).not.toHaveBeenCalled()
     expect(mocks.useInvite).not.toHaveBeenCalled()
     expect(mocks.useCreateWorkspace).not.toHaveBeenCalled()
@@ -213,6 +228,7 @@ describe('useUrlActionLoaders', () => {
     expect(mocks.useAssets).not.toHaveBeenCalled()
     expect(mocks.usePaymentReturn).not.toHaveBeenCalled()
     expect(useSubscriptionDialog).not.toHaveBeenCalled()
+    expect(mocks.loadDeployment).not.toHaveBeenCalled()
     expect(mocks.loadWorkspace).not.toHaveBeenCalled()
     expect(mocks.loadInvite).not.toHaveBeenCalled()
     expect(mocks.loadCreateWorkspace).not.toHaveBeenCalled()
@@ -230,6 +246,7 @@ describe('useUrlActionLoaders', () => {
     const { runUrlActionLoaders } = useUrlActionLoaders()
     await runUrlActionLoaders()
 
+    expect(mocks.loadDeployment).toHaveBeenCalledOnce()
     expect(mocks.loadWorkspace).toHaveBeenCalledOnce()
     expect(mocks.loadInvite).toHaveBeenCalledOnce()
     expect(mocks.loadCreateWorkspace).toHaveBeenCalledOnce()
@@ -256,6 +273,49 @@ describe('useUrlActionLoaders', () => {
     expect(mocks.loadWorkspace.mock.invocationCallOrder[0]).toBeLessThan(
       mocks.loadAssets.mock.invocationCallOrder[0]
     )
+  })
+
+  // With ?deployment the deployment link owns ?workspace too: the workspace
+  // loader alone would strip ?workspace and switch, and the boot after that
+  // reload would find a link with no workspace in it.
+  it('reads a deployment link before the workspace link', async () => {
+    const { runUrlActionLoaders } = useUrlActionLoaders()
+    await runUrlActionLoaders()
+
+    expect(mocks.loadDeployment.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.loadWorkspace.mock.invocationCallOrder[0]
+    )
+  })
+
+  // The deployment link keeps both params across its own workspace switch,
+  // so the boot after the reload can pick; nothing may strip them first.
+  it('stops before every other step, the sweep included, when the deployment link reloads', async () => {
+    await router.replace({
+      path: '/',
+      query: { workspace: 'w-2', deployment: 'dep-1' }
+    })
+    mocks.loadDeployment.mockResolvedValueOnce(true)
+
+    const { runUrlActionLoaders } = useUrlActionLoaders()
+    await runUrlActionLoaders()
+
+    expect(mocks.loadWorkspace).not.toHaveBeenCalled()
+    expect(router.currentRoute.value.query).toEqual({
+      workspace: 'w-2',
+      deployment: 'dep-1'
+    })
+  })
+
+  it('clears a deployment param no loader acted on', async () => {
+    await router.replace({
+      path: '/',
+      query: { deployment: 'dep-1', workflow: 'keep-me' }
+    })
+
+    const { runUrlActionLoaders } = useUrlActionLoaders()
+    await runUrlActionLoaders()
+
+    expect(router.currentRoute.value.query).toEqual({ workflow: 'keep-me' })
   })
 
   it('isolates a workspace-loader failure so it does not abort the boot chain', async () => {

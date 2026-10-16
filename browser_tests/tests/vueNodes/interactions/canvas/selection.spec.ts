@@ -215,10 +215,6 @@ test.describe(
         await comfyPage.nextFrame()
         await shift.disposeAsync()
 
-        test.fail(
-          true,
-          'FE-2040 / #7454: toggling a group off leaves its cascaded children selected'
-        )
         await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(0)
         await expect(comfyPage.selectionToolbox).toBeHidden()
       })

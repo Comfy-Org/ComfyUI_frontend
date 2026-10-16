@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { i18n } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
 
+import { useSubscriptionPaywall } from '@/composables/billing/useSubscriptionPaywall'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useExternalLink } from '@/composables/useExternalLink'
@@ -14,6 +15,9 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
+import { LGraph } from '@/lib/litegraph/src/LGraph'
+import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
+import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
 import { app } from '@/scripts/app'
 import { useModelStore } from '@/stores/modelStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
@@ -150,8 +154,7 @@ vi.mock(import('@/platform/cloud/subscription/composables/useSubscription'))
 
 const mockBillingState = vi.hoisted(() => ({
   canAccessSubscriptionFeatures: true,
-  subscriptionTier: null as string | null,
-  showSubscriptionDialog: vi.fn()
+  subscriptionTier: null as string | null
 }))
 vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: vi.fn(() => ({
@@ -166,10 +169,11 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
           ? { tier: mockBillingState.subscriptionTier }
           : null
       }
-    },
-    showSubscriptionDialog: mockBillingState.showSubscriptionDialog
+    }
   }))
 }))
+
+vi.mock(import('@/composables/billing/useSubscriptionPaywall'))
 
 describe('useCoreCommands', () => {
   const createMockNode = (id: number, comfyClass: string): LGraphNode => {
@@ -484,6 +488,35 @@ describe('useCoreCommands', () => {
       expect(app.canvas.setDirty).toHaveBeenCalledWith(true, true)
     })
 
+    it('should delete selected links when no items are selected', async () => {
+      const graph = new LGraph()
+      const source = createTestNode(graph, [], ['number'])
+      const target = createTestNode(graph, ['number'])
+      const link = source.connect(0, target, 0)
+      if (!link) throw new Error('connect failed')
+      const previousGraph = app.canvas.graph
+      Object.assign(app.canvas, {
+        graph,
+        selectedItems: new Set(),
+        emitBeforeChange: vi.fn(),
+        emitAfterChange: vi.fn()
+      })
+      useLinkSelectionStore().select({
+        links: [link],
+        marquee: { x: 0, y: 0, width: 10, height: 10 },
+        anchorX: 0
+      })
+
+      try {
+        await findCommand('Comfy.Canvas.DeleteSelectedItems').function()
+
+        expect(graph.getLink(link.id)).toBeUndefined()
+        expect(app.canvas.deleteSelected).not.toHaveBeenCalled()
+      } finally {
+        app.canvas.graph = previousGraph
+      }
+    })
+
     it('should preserve selected items in selection-only mode', async () => {
       const selectedItem = {}
       app.canvas.selectedItems = new Set([
@@ -769,7 +802,9 @@ describe('useCoreCommands', () => {
         await findCmd(id).function()
 
         expect(app.queuePrompt).toHaveBeenCalledWith(num, 1, expect.anything())
-        expect(mockBillingState.showSubscriptionDialog).not.toHaveBeenCalled()
+        expect(
+          useSubscriptionPaywall().showSubscriptionDialog
+        ).not.toHaveBeenCalled()
       }
     )
 
@@ -778,7 +813,9 @@ describe('useCoreCommands', () => {
 
       await findCmd('Comfy.QueueSelectedOutputNodes').function()
 
-      expect(mockBillingState.showSubscriptionDialog).not.toHaveBeenCalled()
+      expect(
+        useSubscriptionPaywall().showSubscriptionDialog
+      ).not.toHaveBeenCalled()
       expect(useToast().error).toHaveBeenCalled()
     })
 
@@ -795,7 +832,9 @@ describe('useCoreCommands', () => {
         await findCmd(id).function()
 
         expect(app.queuePrompt).not.toHaveBeenCalled()
-        expect(mockBillingState.showSubscriptionDialog).toHaveBeenCalledWith({
+        expect(
+          useSubscriptionPaywall().showSubscriptionDialog
+        ).toHaveBeenCalledWith({
           reason: 'subscribe_to_run'
         })
       }
@@ -811,7 +850,9 @@ describe('useCoreCommands', () => {
         await findCmd('Comfy.QueuePrompt').function()
 
         expect(app.queuePrompt).not.toHaveBeenCalled()
-        expect(mockBillingState.showSubscriptionDialog).not.toHaveBeenCalled()
+        expect(
+          useSubscriptionPaywall().showSubscriptionDialog
+        ).not.toHaveBeenCalled()
         expect(useToast().warning).toHaveBeenCalled()
       }
     )

@@ -37,7 +37,7 @@ const workflowLabel = computed(
     class="flex w-full flex-col gap-2 overflow-hidden rounded-lg border border-component-node-border bg-secondary-background p-4 shadow-interface"
   >
     <div class="flex min-w-0 flex-col gap-0.5 text-sm/5">
-      <p class="m-0 text-base-foreground">
+      <p class="m-0">
         {{
           t(
             hideWorkflowName

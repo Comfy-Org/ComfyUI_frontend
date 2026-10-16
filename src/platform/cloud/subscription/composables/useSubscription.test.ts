@@ -1,4 +1,3 @@
-import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -160,7 +159,6 @@ vi.mock<unknown>(
 )
 
 vi.mock(import('@/services/dialogService'))
-vi.mock(import('@/composables/billing/useBillingDialogs'))
 
 vi.mock(import('@/platform/auth/session/webSessionFetch'), { spy: true })
 
@@ -2620,40 +2618,6 @@ describe('useSubscription', () => {
       expect(mockReadStatus).toHaveBeenCalledOnce()
       expect(subscriptionStatus.value).toEqual(buildStatus())
       expect(isInitialized.value).toBe(true)
-    })
-  })
-
-  describe('requireActiveSubscription', () => {
-    it('should not show dialog when subscription is active', async () => {
-      mockGetBillingStatus.mockResolvedValue({
-        is_active: true,
-        has_funds: true,
-        renewal_date: '2025-11-16'
-      })
-
-      const { requireActiveSubscription } = useSubscriptionWithScope()
-
-      await requireActiveSubscription()
-
-      expect(
-        useBillingDialogs().showSubscriptionRequiredDialog
-      ).not.toHaveBeenCalled()
-    })
-
-    it('should show dialog when subscription is inactive', async () => {
-      mockGetBillingStatus.mockResolvedValue({
-        is_active: false,
-        has_funds: true,
-        renewal_date: '2025-11-16'
-      })
-
-      const { requireActiveSubscription } = useSubscriptionWithScope()
-
-      await requireActiveSubscription()
-
-      expect(
-        useBillingDialogs().showSubscriptionRequiredDialog
-      ).toHaveBeenCalled()
     })
   })
 

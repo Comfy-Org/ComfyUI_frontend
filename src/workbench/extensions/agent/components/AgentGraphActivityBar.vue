@@ -104,7 +104,6 @@ function viewNodes(): void {
               v-if="liveNodes.length > 0"
               variant="secondary"
               size="sm"
-              class="whitespace-nowrap"
               @click="viewNodes"
             >
               {{ t('agent.viewAddedNodes', liveNodes.length) }}

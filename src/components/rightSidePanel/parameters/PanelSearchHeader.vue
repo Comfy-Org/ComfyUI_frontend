@@ -27,7 +27,6 @@ defineOptions({ inheritAttrs: false })
       v-model="query"
       :searcher
       :update-key="updateKey"
-      class="flex-1"
       @enter="emit('enter', $event)"
     />
     <slot />

@@ -71,6 +71,7 @@ runs:
             'billing-contract-release',
             'ingest-types-release',
             'playwright',
+            'playwright-update',
             'storybook',
             'chromatic',
             'custom-nodes-e2e',

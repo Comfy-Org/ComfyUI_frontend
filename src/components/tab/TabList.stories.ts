@@ -140,7 +140,7 @@ export const Interactive: Story = {
           </TabList>
         </div>
         
-        <div class="p-4 bg-gray-50 dark:bg-gray-800 rounded">
+        <div class="p-4 bg-secondary-background rounded">
           <div v-if="activeTab === 'input'">
             <p>Showing imported assets...</p>
           </div>
