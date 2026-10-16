@@ -211,6 +211,13 @@ export function useFeatureFlags() {
         isNightly || import.meta.env.DEV
       )
     },
+    get runBarDeployEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.RUN_BAR_DEPLOY_ENABLED,
+        remoteConfig.value.run_bar_deploy_enabled,
+        false
+      )
+    },
     get comfyHubUploadEnabled() {
       return resolveFlag(
         ServerFeatureFlag.COMFYHUB_UPLOAD_ENABLED,
@@ -250,8 +257,6 @@ export function useFeatureFlags() {
       if (!isCloud) return false
 
       const key = ServerFeatureFlag.UNIFIED_WEB_SESSION
-      // Overrides skip the server's web_session_enabled pairing; whoever overrides
-      // this key must also be in the web_session_enabled set.
       const value =
         getSessionOverride<unknown>(key) ??
         getDevOverride<unknown>(key) ??
@@ -402,6 +407,7 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.NODE_REPLACEMENTS]: flags.nodeReplacementsEnabled,
       [ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED]:
         flags.nodeLibraryEssentialsEnabled,
+      [ServerFeatureFlag.RUN_BAR_DEPLOY_ENABLED]: flags.runBarDeployEnabled,
       [ServerFeatureFlag.COMFYHUB_UPLOAD_ENABLED]: flags.comfyHubUploadEnabled,
       [ServerFeatureFlag.COMFYHUB_PROFILE_GATE_ENABLED]:
         flags.comfyHubProfileGateEnabled,
