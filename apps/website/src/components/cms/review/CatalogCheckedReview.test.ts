@@ -23,6 +23,54 @@ function firstItem(review: ReturnType<typeof fixtureReview>) {
 }
 
 describe('checkbox-only publication console', () => {
+  it('keeps server filters reachable when a batch has no matches', async () => {
+    const user = userEvent.setup()
+    const initial = fixtureReview()
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            ...initial,
+            filter: { change_id: 'empty-batch' },
+            items: []
+          })
+        )
+      )
+      .mockResolvedValueOnce(new Response(JSON.stringify(initial)))
+    vi.mocked(fetch).mockImplementation(fetcher)
+    render(CatalogCheckedReview, {
+      props: { initial, csrf: 'fixture', canApply: true, canEdit: true }
+    })
+    await user.click(
+      screen.getByText('Apply filters / reload', { selector: 'summary' })
+    )
+    await user.type(
+      screen.getByRole('textbox', { name: 'Change ID (batch)' }),
+      'empty-batch'
+    )
+    await user.click(
+      screen.getByRole('button', { name: 'Apply filters / reload' })
+    )
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('checkbox', { name: 'Select Review fixture' })
+      ).not.toBeInTheDocument()
+    )
+    await user.click(
+      screen.getByText('Apply filters / reload', { selector: 'summary' })
+    )
+    await user.clear(screen.getByRole('textbox', { name: 'Change ID (batch)' }))
+    await user.click(
+      screen.getByRole('button', { name: 'Apply filters / reload' })
+    )
+    await screen.findByRole('checkbox', { name: 'Select Review fixture' })
+    expect(fetcher).toHaveBeenNthCalledWith(
+      2,
+      '/admin/catalog-api/staging',
+      expect.objectContaining({ method: 'GET' })
+    )
+  })
   it('requests the exact change batch and clears previous checked selection on refresh', async () => {
     const user = userEvent.setup()
     const initial = fixtureReview()

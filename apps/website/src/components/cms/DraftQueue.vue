@@ -188,6 +188,7 @@ function review(event: MouseEvent) {
       {{ t('cmsAdmin.applyOnly') }}
     </p>
 
+    <slot v-if="items.length === 0" name="filters" />
     <div
       v-if="items.length === 0"
       class="grid justify-items-center gap-1 rounded-lg border border-dashed border-admin-line px-6 py-14 text-center"
