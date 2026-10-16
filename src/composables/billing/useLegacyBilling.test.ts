@@ -17,8 +17,20 @@ vi.mock(import('@/platform/cloud/subscription/composables/useSubscription'))
 
 vi.mock(import('@/composables/auth/useAuthActions'))
 
-const statusWith = (partial: Partial<BillingStatusResponse>) =>
-  ({ is_active: true, ...partial }) as BillingStatusResponse
+const statusWith = (
+  partial: Partial<BillingStatusResponse>
+): BillingStatusResponse =>
+  Object.assign(
+    {
+      is_active: true,
+      has_funds: false,
+      max_seats: 0,
+      occupied_seats: 0,
+      scheduled_change: null,
+      team_credit_stop: null
+    } satisfies BillingStatusResponse,
+    partial
+  )
 
 const refusal = () =>
   new AuthStoreError('refused', 409, 'WORKSPACE_BILLING_REQUIRED')
