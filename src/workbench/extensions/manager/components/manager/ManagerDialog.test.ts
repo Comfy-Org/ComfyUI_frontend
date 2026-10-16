@@ -8,8 +8,10 @@ import { createI18n } from 'vue-i18n'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useRegistrySearchGateway } from '@/services/gateway/registrySearchGateway'
 import type { SearchPacksResult } from '@/types/searchServiceTypes'
+import { useInstalledPacks } from '@/workbench/extensions/manager/composables/nodePack/useInstalledPacks'
 import { useWorkflowPacks } from '@/workbench/extensions/manager/composables/nodePack/useWorkflowPacks'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
+import { useComfyManagerService } from '@/workbench/extensions/manager/services/comfyManagerService'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
 type NodePack = SearchPacksResult['nodePacks'][number]
@@ -27,17 +29,20 @@ vi.mock(import('@/workbench/extensions/manager/composables/useManagerState'))
 
 vi.mock<unknown>(
   import('@/workbench/extensions/manager/services/comfyManagerService'),
-  () => ({
-    useComfyManagerService: () => ({
-      listInstalledPacks: vi.fn(async () => ({}))
-    })
-  })
+  () => {
+    const service = {
+      listInstalledPacks: vi.fn(async () => ({})),
+      isLoading: ref(false),
+      error: ref<string | null>(null)
+    }
+    return { useComfyManagerService: () => service }
+  }
 )
 
 vi.mock(
   import('@/workbench/extensions/manager/composables/nodePack/useInstalledPacks'),
-  () => ({
-    useInstalledPacks: () => ({
+  () => {
+    const installedPacks: ReturnType<typeof useInstalledPacks> = {
       error: ref(null),
       isLoading: ref(false),
       isReady: ref(true),
@@ -45,8 +50,9 @@ vi.mock(
       installedPacksWithVersions: computed(() => []),
       startFetchInstalled: vi.fn(async () => {}),
       filterInstalledPack: (): NodePack[] => []
-    })
-  })
+    }
+    return { useInstalledPacks: () => installedPacks }
+  }
 )
 
 vi.mock(
@@ -90,13 +96,19 @@ const VirtualGridStub = defineComponent({
 
 const result = (
   nodePacks: NodePack[],
-  rawResultsEmpty: boolean
+  rawResultsEmpty: boolean,
+  hasMore = false
 ): SearchPacksResult => ({
   nodePacks,
   querySuggestions: [],
-  hasMore: false,
+  hasMore,
   rawResultsEmpty
 })
+
+const LORA_MANAGER: NodePack = {
+  id: 'comfyui-lora-manager',
+  name: 'LoRA Manager'
+}
 
 function renderDialog(
   initialTab: ManagerTab = ManagerTab.All,
@@ -231,7 +243,7 @@ describe('ManagerDialog legacy-manager tip', () => {
     async ({ tab, tipCount }) => {
       useNewManagerUI()
       vi.mocked(useRegistrySearchGateway().searchPacks).mockResolvedValue(
-        result([{ id: 'comfyui-lora-manager', name: 'LoRA Manager' }], false)
+        result([LORA_MANAGER], false)
       )
       const { user, searchBox } = renderDialog(tab)
 
@@ -243,6 +255,78 @@ describe('ManagerDialog legacy-manager tip', () => {
       )
     }
   )
+
+  it.for([
+    'ltdrdata/ComfyUI-Manager',
+    'https://github.com/ltdrdata/ComfyUI-Manager'
+  ])(
+    'hides the tip when a rewrite of %s shows the ComfyUI-Manager pack',
+    async (query) => {
+      useNewManagerUI()
+      vi.mocked(useRegistrySearchGateway().searchPacks).mockResolvedValue(
+        result([{ id: 'comfyui-manager', name: 'ComfyUI-Manager' }], true)
+      )
+      const { user, searchBox } = renderDialog()
+
+      await user.type(searchBox, query)
+      await settleSearch()
+
+      expect(screen.getByText('ComfyUI-Manager')).toBeInTheDocument()
+      expect(screen.queryByText(TIP, { exact: false })).not.toBeInTheDocument()
+    }
+  )
+
+  it('hides the tip on the installed tab while the installed packs load', async () => {
+    useNewManagerUI()
+    const { isLoading } = useInstalledPacks()
+    isLoading.value = true
+    onTestFinished(() => {
+      isLoading.value = false
+    })
+    vi.mocked(useRegistrySearchGateway().searchPacks).mockResolvedValue(
+      result([LORA_MANAGER], false)
+    )
+    const { user, searchBox } = renderDialog(ManagerTab.AllInstalled)
+
+    await user.type(searchBox, 'comfyui-manager')
+    await settleSearch()
+
+    expect(screen.queryByText(TIP, { exact: false })).not.toBeInTheDocument()
+  })
+
+  it('hides the tip on the installed tab when the manager API errored', async () => {
+    useNewManagerUI()
+    const { error } = useComfyManagerService()
+    error.value = 'Manager unavailable'
+    onTestFinished(() => {
+      error.value = null
+    })
+    vi.mocked(useRegistrySearchGateway().searchPacks).mockResolvedValue(
+      result([LORA_MANAGER], false)
+    )
+    const { user, searchBox } = renderDialog(ManagerTab.AllInstalled)
+
+    await user.type(searchBox, 'comfyui-manager')
+    await settleSearch()
+
+    expect(
+      screen.getByText(enMessages.manager.errorConnecting)
+    ).toBeInTheDocument()
+    expect(screen.queryByText(TIP, { exact: false })).not.toBeInTheDocument()
+  })
+
+  it('hides the tip on the installed tab while more result pages can still load', async () => {
+    useNewManagerUI()
+    vi.mocked(useRegistrySearchGateway().searchPacks).mockResolvedValue(
+      result([LORA_MANAGER], false, true)
+    )
+    const { user, searchBox } = renderDialog(ManagerTab.AllInstalled)
+
+    await user.type(searchBox, 'comfyui-manager')
+    await settleSearch()
+
+    expect(screen.queryByText(TIP, { exact: false })).not.toBeInTheDocument()
+  })
 })
 
 describe('ManagerDialog search analytics tags', () => {

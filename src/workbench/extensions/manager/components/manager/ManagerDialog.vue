@@ -423,17 +423,6 @@ const {
   workflowPacks
 } = useManagerDisplayPacks(selectedNavId, searchResults, searchQuery, sortField)
 
-const isUnmatchedLegacyManagerSearch = computed(() => {
-  const firstPage = packs.firstPage.value
-  return (
-    isNewManagerUI.value &&
-    isSearchBacked.value &&
-    firstPage?.query.trim() === searchQuery.value.trim() &&
-    (firstPage.rawResultsEmpty || displayPacks.value.length === 0) &&
-    isLegacyManagerQuery(firstPage.query)
-  )
-})
-
 // Tab helpers for template
 const isUpdateAvailableTab = computed(
   () => selectedTab.value?.id === ManagerTab.UpdateAvailable
@@ -507,6 +496,26 @@ const isLoading = computed(() => {
   if (isSearchLoading.value) return searchResults.value.length === 0
   if (isTabLoading.value) return true
   return isInitialLoad.value
+})
+
+const isSettledWithNoPacks = computed(
+  () =>
+    displayPacks.value.length === 0 &&
+    !isLoading.value &&
+    !isManagerErrorRelevant.value &&
+    !hasMorePacks.value
+)
+
+const isUnmatchedLegacyManagerSearch = computed(() => {
+  const firstPage = packs.firstPage.value
+  return (
+    isNewManagerUI.value &&
+    isSearchBacked.value &&
+    firstPage?.query === searchQuery.value.trim() &&
+    isLegacyManagerQuery(firstPage.query) &&
+    !displayPacks.value.some((pack) => isLegacyManagerQuery(pack.id ?? '')) &&
+    (firstPage.rawResultsEmpty || isSettledWithNoPacks.value)
+  )
 })
 
 const resultsWithKeys = computed(
