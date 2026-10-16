@@ -16,6 +16,7 @@ import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { defaultGraph, defaultGraphJSON } from '@/scripts/defaultGraph'
+import '@/scripts/changeTracker'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import type { NodeLocatorId } from '@/types/nodeIdentification'

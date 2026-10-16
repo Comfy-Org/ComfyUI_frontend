@@ -121,15 +121,6 @@
       >
         {{ $t('subscription.addCredits') }}
       </Button>
-      <Button
-        v-else-if="canSubscribeSelfServe"
-        variant="subscribe"
-        size="sm"
-        data-testid="upgrade-to-add-credits-button"
-        @click="handleUpgradeToAddCredits"
-      >
-        {{ $t('subscription.upgradeToAddCredits') }}
-      </Button>
       <!-- Subscribe/Resubscribe (only when not subscribed or cancelled) -->
       <SubscribeButton
         v-if="showSubscribeAction && isPersonalWorkspace"
@@ -438,11 +429,6 @@ const handleOpenManagePlanSettings = () => {
 
 const handleOpenPlanCreditsSettings = () => {
   settingsDialog.show('workspace')
-  emit('close')
-}
-
-const handleUpgradeToAddCredits = () => {
-  subscriptionDialog.showPricingTable({ reason: 'upgrade_to_add_credits' })
   emit('close')
 }
 

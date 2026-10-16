@@ -85,7 +85,7 @@
       </div>
 
       <Message
-        :visible="showLegacyTipAboveResults"
+        :visible="isUnmatchedLegacyManagerSearch"
         severity="info"
         class="mx-6 mb-4 w-auto"
       >
@@ -200,10 +200,10 @@ import { useManagerDisplayPacks } from '@/workbench/extensions/manager/composabl
 import { useManagerStatePersistence } from '@/workbench/extensions/manager/composables/useManagerStatePersistence'
 import { useRegistrySearch } from '@/workbench/extensions/manager/composables/useRegistrySearch'
 import { useConflictDetectionStore } from '@/workbench/extensions/manager/stores/conflictDetectionStore'
-import { useLegacySearchTip } from '@/workbench/extensions/manager/composables/useLegacySearchTip'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
+import { isLegacyManagerQuery } from '@/workbench/extensions/manager/utils/legacyManagerQuery'
 import { PACK_SORTABLE_FIELDS } from '@/workbench/extensions/manager/utils/nodePackSort'
 
 const { initialTab, initialPackId, onClose } = defineProps<{
@@ -371,9 +371,12 @@ const isSearchBacked = computed(() => {
     (searchQuery.value !== '' && tab !== ManagerTab.Unresolved)
   )
 })
+const openingSearchQuery = searchQuery.value.trim()
+const debouncedSearchQuery = refDebounced(searchQuery, SEARCH_DEBOUNCE_MS)
 const packs = useRegistrySearch({
-  query: refDebounced(searchQuery, SEARCH_DEBOUNCE_MS),
-  searchMode
+  query: debouncedSearchQuery,
+  searchMode,
+  isTypedQuery: () => debouncedSearchQuery.value.trim() !== openingSearchQuery
 })
 const searchResults = computed(() => [...toValue(packs.items)])
 const isSearchLoading = computed(
@@ -382,8 +385,6 @@ const isSearchLoading = computed(
 const hasMorePacks = computed(() => toValue(packs.hasMore))
 const suggestions = computed(() => toValue(packs.suggestions))
 const sortOptions = PACK_SORTABLE_FIELDS
-const { isLegacyManagerSearch, isUnmatchedLegacyManagerSearch } =
-  useLegacySearchTip(searchQuery, isNewManagerUI, packs.rawResultsEmpty)
 const filterOptions = computed(() => [
   { name: t('manager.filter.nodePack'), value: 'packs' },
   { name: t('g.nodes'), value: 'nodes' }
@@ -414,10 +415,6 @@ const {
   isLoading: isTabLoading,
   workflowPacks
 } = useManagerDisplayPacks(selectedNavId, searchResults, searchQuery, sortField)
-
-const showLegacyTipAboveResults = computed(
-  () => isUnmatchedLegacyManagerSearch.value && displayPacks.value.length > 0
-)
 
 // Tab helpers for template
 const isUpdateAvailableTab = computed(
@@ -469,13 +466,7 @@ const emptyStateTitle = computed(() => {
 
 const emptyStateMessage = computed(() => {
   if (isManagerErrorRelevant.value) return t('manager.tryAgainLater')
-  if (searchQuery.value) {
-    const baseMessage = t('manager.tryDifferentSearch')
-    if (isLegacyManagerSearch.value) {
-      return `${baseMessage}\n\n${t('manager.legacyManagerSearchTip')}`
-    }
-    return baseMessage
-  }
+  if (searchQuery.value) return t('manager.tryDifferentSearch')
 
   const tabId = selectedTab.value?.id
   const emptyStateKey = tabId ? tabEmptyStateKeys[tabId] : undefined
@@ -498,6 +489,26 @@ const isLoading = computed(() => {
   if (isSearchLoading.value) return searchResults.value.length === 0
   if (isTabLoading.value) return true
   return isInitialLoad.value
+})
+
+const isSettledWithNoPacks = computed(
+  () =>
+    displayPacks.value.length === 0 &&
+    !isLoading.value &&
+    !isManagerErrorRelevant.value &&
+    !hasMorePacks.value
+)
+
+const isUnmatchedLegacyManagerSearch = computed(() => {
+  const firstPage = packs.firstPage.value
+  return (
+    isNewManagerUI.value &&
+    isSearchBacked.value &&
+    firstPage?.query === searchQuery.value.trim() &&
+    isLegacyManagerQuery(firstPage.query) &&
+    !displayPacks.value.some((pack) => isLegacyManagerQuery(pack.id ?? '')) &&
+    (firstPage.rawResultsEmpty || isSettledWithNoPacks.value)
+  )
 })
 
 const resultsWithKeys = computed(

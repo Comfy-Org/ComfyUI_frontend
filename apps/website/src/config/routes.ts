@@ -16,6 +16,7 @@ const baseRoutes = {
   enterprise: '/enterprise/',
   managedBuilds: '/enterprise/managed-builds/',
   events: '/events/',
+  eventChallenge: '/open-source-higgsfield/',
   about: '/about/',
   careers: '/careers/',
   customers: '/customers/',

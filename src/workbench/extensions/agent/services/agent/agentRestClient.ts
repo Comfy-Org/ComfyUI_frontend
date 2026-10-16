@@ -1,4 +1,5 @@
 import type {
+  AgentAnswerRequest,
   AgentPostMessageRequest,
   UploadImageResponse,
   WorkflowResponse
@@ -27,6 +28,7 @@ import type { AuthCredential, AuthScheme } from '@/types/authTypes'
 import { refusedAttachmentsMessage } from '../../utils/attachmentMessages'
 
 import {
+  RENDERED_ASK_KINDS,
   zAgentAnswerReceipt,
   zAgentCancelAccepted,
   zAgentError,
@@ -51,7 +53,7 @@ const CLOUD_WORKFLOW_PAGE_SIZE = 100
 
 /**
  * PM-1658: tightens `fetchApi`'s shared 60s header deadline for the one
- * request a consent card's buttons wait on, since the card is held disabled
+ * request an ask card's Submit waits on, since the card is held disabled
  * from the click until this settles. A quarter of it, rather than merely lower, so that
  * the caller's single re-drive still fits inside the 60s the card used to be
  * able to wait. Goes through `timeoutMs` rather than a raw signal so a timeout
@@ -141,12 +143,15 @@ export class AgentApiError extends Error {
   readonly status: number
   readonly body: unknown
   readonly retryAfterSeconds?: number
+  /** The {@link AgentApiOperation} that raised this error. */
+  readonly operation?: string
 
   constructor(
     message: string,
     status: number,
     body: unknown,
-    retryAfterSeconds?: number
+    retryAfterSeconds?: number,
+    operation?: string
   ) {
     super(
       message.trim().length > 0
@@ -157,6 +162,7 @@ export class AgentApiError extends Error {
     this.status = status
     this.body = body
     this.retryAfterSeconds = retryAfterSeconds
+    this.operation = operation
   }
 }
 
@@ -217,15 +223,6 @@ export interface PostMessageInput {
    */
   clientMessageId?: string
 }
-
-/**
- * The turn POST body, plus `client_message_id`.
- *
- * Widened here rather than in `agentApiSchema.ts` because the generated types are
- * published from the cloud repo's `openapi.yaml`, so the field is only typed
- * locally until the next package release carries it. One line to delete then.
- */
-type TurnPostBody = AgentPostMessageRequest & { client_message_id?: string }
 
 /**
  * Drops keys whose value is `undefined` so an absent optional is omitted from the
@@ -505,7 +502,8 @@ export function createAgentRestClient() {
       message,
       response.status,
       body,
-      retryAfterSeconds
+      retryAfterSeconds,
+      operation
     )
     if (
       isAuthRejectionStatus(response.status) &&
@@ -568,8 +566,9 @@ export function createAgentRestClient() {
     threadId: string,
     req: PostMessageInput
   ): Promise<AgentTurnAccepted> {
-    const body = withoutUndefined<TurnPostBody>({
+    const body = withoutUndefined<AgentPostMessageRequest>({
       content: req.content,
+      ask_kinds: [...RENDERED_ASK_KINDS],
       workflow_id: req.workflowId,
       open_tabs: req.tabs?.open_tabs,
       current_tab: req.tabs?.current_tab,
@@ -681,12 +680,12 @@ export function createAgentRestClient() {
   async function answerAsk(
     threadId: string,
     askId: string,
-    selected: string[]
+    answer: AgentAnswerRequest
   ): Promise<AgentAnswerReceipt> {
     return request(
       'answer_thread_ask',
       `/agent/threads/${encodeURIComponent(threadId)}/asks/${encodeURIComponent(askId)}/answer`,
-      { ...jsonInit('POST', { selected }), timeoutMs: ANSWER_ASK_TIMEOUT_MS },
+      { ...jsonInit('POST', answer), timeoutMs: ANSWER_ASK_TIMEOUT_MS },
       zAgentAnswerReceipt
     )
   }
