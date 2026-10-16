@@ -1179,7 +1179,7 @@
       "minRequired": "Mínimo de {credits} créditos",
       "minimumPurchase": "Mínimo de ${amount} ({credits} créditos)",
       "needMore": "Precisa de mais?",
-      "noPaymentMethodError": "Nenhuma forma de pagamento está salva neste espaço de trabalho. Adicione uma em Configurações → {section} → {action} e tente recarregar novamente.",
+      "noPaymentMethodError": "Nenhuma forma de pagamento está salva neste espaço de trabalho. Adicione uma em Configurações → Plano & Créditos → Faturamento e faturas e tente recarregar novamente.",
       "payAmount": "Pagar {amount}",
       "purchaseError": "Falha na compra",
       "purchaseErrorDetail": "Falha ao comprar créditos: {error}",

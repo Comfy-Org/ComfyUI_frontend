@@ -765,10 +765,7 @@ function reportTerminal(
 function purchaseErrorDetail(error?: unknown): string {
   const code = error instanceof WorkspaceApiError ? error.code : undefined
   if (code === 'NO_PAYMENT_METHOD') {
-    return t('credits.topUp.noPaymentMethodError', {
-      section: t('settingsCategories.PlanCredits'),
-      action: t('subscription.billingAndInvoices')
-    })
+    return t('credits.topUp.noPaymentMethodError')
   }
   // Only one billing operation is open at a time, so this refusal means the
   // previous purchase has not settled or expired yet — not that anything failed.

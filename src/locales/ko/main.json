@@ -1179,7 +1179,7 @@
       "minRequired": "최소 {credits} 크레딧",
       "minimumPurchase": "최소 ${amount} ({credits} 크레딧)",
       "needMore": "더 필요하신가요?",
-      "noPaymentMethodError": "이 워크스페이스에 저장된 결제 수단이 없습니다. 설정 → {section} → {action}에서 결제 수단을 추가한 후 크레딧 충전을 다시 시도하세요.",
+      "noPaymentMethodError": "이 워크스페이스에 저장된 결제 수단이 없습니다. 설정 → 플랜 및 크레딧 → 결제 및 인보이스에서 결제 수단을 추가한 후 크레딧 충전을 다시 시도하세요.",
       "payAmount": "{amount} 결제하기",
       "purchaseError": "구매 실패",
       "purchaseErrorDetail": "크레딧 구매 실패: {error}",

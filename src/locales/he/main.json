@@ -1179,7 +1179,7 @@
       "minRequired": "{credits} קרדיטים מינימום",
       "minimumPurchase": "{amount}$ מינימום ({credits} קרדיטים)",
       "needMore": "צריך עוד?",
-      "noPaymentMethodError": "לא נשמר אמצעי תשלום עבור סביבת עבודה זו. הוסיפו אמצעי תשלום דרך הגדרות → {section} → {action}, ולאחר מכן נסו שוב לבצע את ההטענה.",
+      "noPaymentMethodError": "לא נשמר אמצעי תשלום עבור סביבת עבודה זו. הוסיפו אמצעי תשלום דרך הגדרות → מנוי וקרדיטים → חיוב וחשבוניות, ולאחר מכן נסו שוב לבצע את ההטענה.",
       "payAmount": "שלם {amount}",
       "purchaseError": "הרכישה נכשלה",
       "purchaseErrorDetail": "רכישת הקרדיטים נכשלה: {error}",

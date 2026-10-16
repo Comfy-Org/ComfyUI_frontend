@@ -2950,7 +2950,7 @@
       "addMoreCreditsToRun": "Add more credits to run",
       "insufficientWorkflowMessage": "You don't have enough credits to run this workflow.",
       "creditsDescription": "Credits are used to run workflows or partner nodes.",
-      "noPaymentMethodError": "No payment method is saved for this workspace. Add one via Settings → {section} → {action}, then retry the top-up.",
+      "noPaymentMethodError": "No payment method is saved for this workspace. Add one via Settings → Plan & Credits → Billing & invoices, then retry the top-up.",
       "confirmSubtitle": "Credits are added to this workspace as soon as payment completes.",
       "confirmTitle": "Confirm",
       "howManyCredits": "How many credits would you like to add?",
