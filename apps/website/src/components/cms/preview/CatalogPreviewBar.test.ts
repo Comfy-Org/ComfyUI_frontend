@@ -18,6 +18,19 @@ describe('catalog Preview controls', () => {
       ).not.toBeInTheDocument()
     }
   )
+  it.for([
+    { count: 1, label: '1 Draft change' },
+    { count: 2, label: '2 Draft changes' }
+  ])('pluralizes the Draft summary as $label', ({ count, label }) => {
+    const changes = Array.from({ length: count }, (_, index) => ({
+      uid: `change-${index}`,
+      title: `Change ${index}`,
+      kind: 'modified' as const,
+      summary: 'Updated'
+    }))
+    render(CatalogPreviewBar, { props: { active: true, changes } })
+    expect(screen.getByText(label)).toBeInTheDocument()
+  })
   it('shows the warning for Live timewarp and hides it when NOW clears the override', async () => {
     const result = render(CatalogPreviewBar, {
       props: {

@@ -120,7 +120,13 @@ onBeforeUnmount(clearOffset)
         <span class="font-semibold">{{ t('cccPreview.mode') }}</span>
         <span class="hidden text-xs sm:inline">
           <template v-if="view === 'DRAFT'">
-            {{ t('cccPreview.summary', { count: changes.length }) }}
+            {{
+              t(
+                'cccPreview.summary',
+                { count: changes.length },
+                { plural: changes.length }
+              )
+            }}
           </template>
           <template v-if="now">
             <template v-if="view === 'DRAFT'"> · </template>

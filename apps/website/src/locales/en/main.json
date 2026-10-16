@@ -21,7 +21,7 @@
     "live": "LIVE",
     "label": "Catalog preview controls",
     "mode": "PREVIEW",
-    "summary": "{count} Draft changes",
+    "summary": "{count} Draft change | {count} Draft changes",
     "timeTravel": "Scheduled content",
     "time": "Preview date and time",
     "realTime": "Real time",
