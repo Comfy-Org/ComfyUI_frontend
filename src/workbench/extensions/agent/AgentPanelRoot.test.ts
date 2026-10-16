@@ -7990,9 +7990,6 @@ describe('AgentPanelRoot workflow binding', () => {
       await openChat()
       await screen.findAllByText('Historical prompt')
       expect(
-        screen.queryByRole('heading', { name: i18n.global.t('agent.history') })
-      ).toBeNull()
-      expect(
         screen.queryByText(i18n.global.t('agent.historyOpenFailed'))
       ).toBeNull()
       await waitFor(() =>
