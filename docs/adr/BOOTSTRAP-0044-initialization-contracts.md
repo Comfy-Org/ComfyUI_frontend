@@ -48,8 +48,9 @@ extensions retain the existing manager contract. Remove the dialog registry.
 
 Registry tests exercise unregistered access with `DEV` both true and false.
 The bootstrap regression verifies that the handler reports the failure and
-that initialization after the accessor does not run. The App test exercises
-the composed dialog through `app.extensionManager`.
+that initialization after the accessor does not run. Browser tests exercise
+the composed dialog through the public extension API and assert its rendered
+message without importing stores across domain boundaries.
 
 Early startup reporting may precede telemetry initialization. `reportError`
 logs immediately and queues remote delivery. Remote delivery requires an

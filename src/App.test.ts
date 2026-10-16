@@ -3,8 +3,6 @@ import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
-import { app } from '@/scripts/app'
-import { useDialogStore } from '@/stores/dialogStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 import App from './App.vue'
@@ -25,24 +23,6 @@ vi.mock<unknown>(
 )
 
 describe('App', () => {
-  it('exposes working dialogs on the extension manager after composition', () => {
-    render(App, { global: { stubs: { RouterView: true } } })
-
-    app.extensionManager.dialog.showErrorDialog('Extension startup failed')
-
-    expect(app.extensionManager).toBe(useWorkspaceStore())
-    expect(useDialogStore().dialogStack).toEqual([
-      expect.objectContaining({
-        key: 'global-error',
-        contentProps: expect.objectContaining({
-          error: expect.objectContaining({
-            exceptionMessage: 'Extension startup failed'
-          })
-        })
-      })
-    ])
-  })
-
   it('blocks existing dialogs while loading and keeps a stable readiness hook', async () => {
     const workspaceStore = useWorkspaceStore()
     workspaceStore.spinner = true
