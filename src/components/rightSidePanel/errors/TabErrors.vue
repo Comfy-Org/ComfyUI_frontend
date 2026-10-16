@@ -14,7 +14,6 @@
         size="sm"
         class="mb-3 w-full"
         data-testid="errors-footer-ask-agent"
-        @click="askAgentAboutAll"
       >
         {{
           isSearching
@@ -83,7 +82,7 @@ const { openGitHubIssues, contactSupport } = useErrorActions()
 const searchQuery = ref('')
 const isSearching = computed(() => searchQuery.value.trim() !== '')
 
-const { canAskAgent, askAgentAboutIssues } = useAskAgentAboutIssues()
+const { canAskAgent } = useAskAgentAboutIssues()
 const {
   filteredGroups,
   missingPackGroups,
@@ -104,8 +103,4 @@ const allIssuesContext = computed(() =>
     { label: t('agent.errorContext.allLabel'), searchQuery: searchQuery.value }
   )
 )
-
-function askAgentAboutAll() {
-  askAgentAboutIssues(allIssuesContext.value)
-}
 </script>

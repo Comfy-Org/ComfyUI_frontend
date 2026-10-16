@@ -67,7 +67,6 @@
               class="shrink-0"
               data-testid="error-card-ask-agent"
               :aria-label="askAgentLabel"
-              @click.stop="handleAskAgent"
             >
               {{ t('rightSidePanel.askAgent') }}
             </Button>
@@ -435,10 +434,6 @@ import { isExecutionItemListGroup } from './executionItemList'
 import { selectionEmphasisClass } from './selectionEmphasis'
 import { useNodeReplacement } from '@/platform/nodeReplacement/useNodeReplacement'
 import { useAskAgentAboutIssues } from '@/workbench/extensions/agent/composables/agent/useAskAgentAboutIssues'
-import {
-  buildAllErrorContext,
-  buildGroupErrorContext
-} from './buildAgentErrorContext'
 
 interface ExecutionItemListEntry {
   key: string
@@ -493,7 +488,7 @@ const { missingNodePacks } = useMissingNodes()
 const { isInstalling: isInstallingAll, installAllPacks: installAll } =
   usePackInstall(() => missingNodePacks.value)
 const { replaceGroup, replaceAllGroups } = useNodeReplacement()
-const { canAskAgent, askAgentAboutIssues } = useAskAgentAboutIssues()
+const { canAskAgent } = useAskAgentAboutIssues()
 
 const searchQuery = defineModel<string>('search', { default: '' })
 const expandedExecutionItemDetailKeys = ref(new Set<string>())
@@ -915,32 +910,9 @@ function handleReplaceAll() {
   replaceAllGroups(swapNodeGroups.value)
 }
 
-const missingGroupContext = computed(() => ({
-  missingPackGroups: missingPackGroups.value,
-  swapNodeGroups: swapNodeGroups.value,
-  missingModelGroups: missingModelGroups.value,
-  missingMediaGroups: missingMediaGroups.value
-}))
-
 const askAgentLabel = computed(() => {
   const groups = filteredGroups.value
   const title = groups.length === 1 ? groups[0].displayTitle : hero.value.title
   return t('rightSidePanel.askAgentAbout', { title })
 })
-
-function handleAskAgent() {
-  const groups = filteredGroups.value
-  if (groups.length === 1) {
-    askAgentAboutIssues(
-      buildGroupErrorContext(groups[0], missingGroupContext.value)
-    )
-    return
-  }
-  askAgentAboutIssues(
-    buildAllErrorContext(groups, missingGroupContext.value, {
-      label: t('agent.errorContext.allLabel'),
-      searchQuery: searchQuery.value
-    })
-  )
-}
 </script>

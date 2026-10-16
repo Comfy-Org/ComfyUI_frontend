@@ -32,22 +32,22 @@ function renderChip(ctx: AgentErrorContext) {
 }
 
 describe('InlineErrorReference', () => {
-  it('renders a filled error icon and the label for error severity', () => {
+  it('renders an outline error icon and the label for error severity', () => {
     renderChip(context())
 
     expect(screen.getByTestId('error-reference-icon').className).toContain(
-      'icon-[comfy--circle-alert-filled]'
+      'icon-[lucide--circle-x]'
     )
     expect(screen.getByText('Execution failed')).toBeVisible()
   })
 
-  it('renders a filled warning icon and the count for warning severity', () => {
+  it('renders an outline warning icon and the count for warning severity', () => {
     renderChip(
       context({ severity: 'warning', label: 'Missing Inputs', count: 3 })
     )
 
     expect(screen.getByTestId('error-reference-icon').className).toContain(
-      'icon-[comfy--triangle-alert-filled]'
+      'icon-[lucide--triangle-alert]'
     )
     expect(screen.getByTestId('error-reference-count')).toHaveTextContent('3')
   })

@@ -36,8 +36,8 @@ const isError = computed(() => context.severity === 'error')
         cn(
           'size-3 shrink-0',
           isError
-            ? 'icon-[comfy--circle-alert-filled] text-destructive-background-hover'
-            : 'icon-[comfy--triangle-alert-filled] text-warning-foreground'
+            ? 'icon-[lucide--circle-x] text-destructive-background'
+            : 'icon-[lucide--triangle-alert] text-warning-foreground'
         )
       "
     />

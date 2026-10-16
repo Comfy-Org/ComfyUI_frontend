@@ -368,7 +368,7 @@ describe('TabErrors.vue', () => {
     expect(screen.queryByText('Input: clip')).not.toBeInTheDocument()
   })
 
-  it('hands a card and all issues to the agent without sending when enabled', async () => {
+  it('shows the card and footer Ask agent buttons without handing issues over', async () => {
     const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
     vi.mocked(getNodeByExecutionId).mockReturnValue(
       fromAny<NonNullable<ReturnType<typeof getNodeByExecutionId>>, unknown>({
@@ -390,27 +390,17 @@ describe('TabErrors.vue', () => {
       })
     })
 
-    await user.click(screen.getByTestId('error-card-ask-agent'))
-    const [cardContext] = askAgentMock.askAgentAboutIssues.mock.calls.at(-1)!
-    expect(cardContext).toMatchObject({ scope: 'card', severity: 'error' })
-    expect(cardContext.problems[0]).toMatchObject({
-      category: 'execution_failure',
-      nodeType: 'KSampler'
-    })
+    const card = screen.getByTestId('error-card-ask-agent')
+    expect(card).toHaveTextContent('Ask agent')
+    await user.click(card)
 
     const footer = screen.getByTestId('errors-footer-ask-agent')
     expect(footer).toHaveTextContent('Ask agent about 1 issue')
     await user.click(footer)
-    const [allContext] = askAgentMock.askAgentAboutIssues.mock.calls.at(-1)!
-    expect(allContext).toMatchObject({
-      scope: 'all',
-      label: 'All issues',
-      count: 1
-    })
-    expect(allContext.searchQuery).toBeUndefined()
+    expect(askAgentMock.askAgentAboutIssues).not.toHaveBeenCalled()
   })
 
-  it('scopes the footer action to the active search filter', async () => {
+  it('labels the footer with the filtered issue count', async () => {
     const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
     vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
       fromAny<NonNullable<ReturnType<typeof getNodeByExecutionId>>, unknown>({
@@ -441,13 +431,7 @@ describe('TabErrors.vue', () => {
     expect(screen.getByTestId('errors-footer-ask-agent')).toHaveTextContent(
       'Ask agent about 1 filtered issue'
     )
-    await user.click(screen.getByTestId('errors-footer-ask-agent'))
-    const [context] = askAgentMock.askAgentAboutIssues.mock.calls.at(-1)!
-    expect(context).toMatchObject({
-      scope: 'all',
-      count: 1,
-      searchQuery: 'Missing text input'
-    })
+    expect(askAgentMock.askAgentAboutIssues).not.toHaveBeenCalled()
   })
 
   it('omits the agent actions when the agent is unavailable', () => {
