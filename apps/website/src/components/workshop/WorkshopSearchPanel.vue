@@ -72,7 +72,7 @@ const rows = computed(() =>
 
 function sourceOf(model: WorkshopModel): string | undefined {
   if (model.type === 'APP') return t('workshop.card.comfyApp')
-  if (model.routerId === undefined) return model.models?.join(', ')
+  if (model.workflowId !== undefined) return model.models?.join(', ')
   return model.provider ?? t('workshop.card.partnerNode')
 }
 </script>

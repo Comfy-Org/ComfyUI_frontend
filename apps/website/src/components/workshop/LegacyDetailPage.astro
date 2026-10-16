@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro'
 import ModelPage from './ModelPage.vue'
+import LocalModelPage from './LocalModelPage.vue'
 import ModelsPage from './ModelsPage.vue'
 import ModelsShowcase from '@/components/models/ModelsShowcase.astro'
 import { isIndexableModelPage } from '@/config/indexing'
@@ -45,13 +46,15 @@ const ogImage = modelOgImage(model)
   mainEntityId={jsonLd.mainEntityId}
   extraJsonLd={jsonLd.extraJsonLd}
 >
-  {model.routerId === undefined ? (
+  {model.workflowId !== undefined ? (
     <>
       <ModelsPage slug={model.slug} workflowId={model.workflowId} client:load>
         <ModelsShowcase slot="fallback" />
       </ModelsPage>
       <noscript><ModelsShowcase /></noscript>
     </>
+  ) : model.routerId === undefined ? (
+    <LocalModelPage model={model} client:load />
   ) : (
     <ModelPage
       page={{ ...page, model: { ...model, form: undefined } }}

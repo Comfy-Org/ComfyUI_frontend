@@ -39,6 +39,9 @@ const loadWorkflowPage = () => import('./WorkflowPage.vue')
 const loadModelPage = () => import('./ModelPage.vue')
 const WorkflowPage = defineAsyncComponent(loadWorkflowPage)
 const ModelPage = defineAsyncComponent(loadModelPage)
+const LocalModelPage = defineAsyncComponent(
+  () => import('./LocalModelPage.vue')
+)
 const { t } = translationsFor(locale)
 const activePath = ref(path)
 const activePreview = shallowRef(preview)
@@ -70,8 +73,14 @@ const failed = ref(false)
 const missing = ref(false)
 const currentModel = computed(() => page.value?.model ?? activePreview.value)
 const workflow = computed(() =>
-  page.value?.model.routerId === undefined ? page.value?.model : undefined
+  page.value?.model.workflowId !== undefined ? page.value.model : undefined
 )
+const localModel = computed(() => {
+  const model = page.value?.model
+  return model?.type === 'MODEL' && model.routerId === undefined
+    ? model
+    : undefined
+})
 const routerPage = computed(() => {
   const value = page.value
   return value && value.model.routerId !== undefined
@@ -215,6 +224,12 @@ onScopeDispose(() => {
       v-else-if="routerPage"
       :key="routerPage.model.slug"
       :page="routerPage"
+      :locale
+      embedded
+    />
+    <LocalModelPage
+      v-else-if="localModel"
+      :model="localModel"
       :locale
       embedded
     />

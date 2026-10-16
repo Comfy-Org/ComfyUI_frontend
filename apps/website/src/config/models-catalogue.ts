@@ -167,6 +167,13 @@ export type WorkflowWorkshopModel = WorkshopPresentation & {
   readonly author?: string
 }
 
+export type LocalWorkshopModel = WorkshopPresentation & {
+  readonly type: 'MODEL'
+  readonly href: string
+  readonly routerId?: never
+  readonly workflowId?: never
+}
+
 export type AppWorkshopModel = WorkshopPresentation & {
   readonly type: 'APP'
   readonly href: string
@@ -178,6 +185,7 @@ export type AppWorkshopModel = WorkshopPresentation & {
 
 export type WorkshopModel =
   | RouterWorkshopModel
+  | LocalWorkshopModel
   | WorkflowWorkshopModel
   | AppWorkshopModel
 
@@ -205,6 +213,14 @@ export type WorkflowWorkshopModelDetail = WorkshopDetailPresentation &
 export type WorkshopModelDetail =
   | RouterWorkshopModelDetail
   | WorkflowWorkshopModelDetail
+  | LocalWorkshopModelDetail
+
+export type LocalWorkshopModelDetail = WorkshopDetailPresentation &
+  LocalWorkshopModel & {
+    readonly catalogDetails?: WorkflowCatalogDetails
+    readonly execution?: never
+    readonly workflow?: never
+  }
 
 export function isWorkflowSlug(slug: string): boolean {
   return slug.startsWith('workflows/')

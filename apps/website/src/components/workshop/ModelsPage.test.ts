@@ -52,7 +52,7 @@ const modelPage = await prepareModelPage(modelSlug)
 const selectedWorkflowPage = await prepareModelPage('workflows/change-material')
 if (
   selectedWorkflowPage.kind !== 'page' ||
-  selectedWorkflowPage.model.routerId !== undefined
+  selectedWorkflowPage.model.workflowId === undefined
 )
   throw new Error('Missing workflow detail fixture')
 const selectedWorkflow = selectedWorkflowPage.model

@@ -2,6 +2,7 @@ import type { ContentCatalogRecord } from '@comfyorg/ingest-types'
 import { jsonObject } from './editor-document'
 import type { Document } from './editor-document'
 import { translationsFor } from '@/i18n/translations'
+import { USE_CASES } from '@/config/models-catalogue'
 import {
   workflowCatalogDetailsSchema,
   validCloudShareURL,
@@ -422,10 +423,17 @@ function contentPresentation(
     return workflowPresentation(record, d, preserved, details)
   if (d.type === 'app') return { type: 'APP', appId: d.implementation_ref }
   if (d.type !== 'model') return {}
+  const routerId = trimmedText(d.router_model_id)
+  if (!routerId)
+    return {
+      type: 'MODEL',
+      routerId: undefined,
+      execution: undefined,
+      ...(details.success ? { catalogDetails: details.data } : {})
+    }
   return {
     type: 'MODEL',
-    routerId:
-      typeof d.router_model_id === 'string' ? d.router_model_id : record.uid,
+    routerId,
     ...(preserved.execution
       ? {
           execution: {
@@ -435,6 +443,17 @@ function contentPresentation(
         }
       : {})
   }
+}
+
+function catalogUseCases(d: Document) {
+  const authored = d.use_cases
+  if (d.type === 'model' && Array.isArray(authored))
+    return {
+      useCases: USE_CASES.filter((value) => authored.includes(value))
+    }
+  return typeof d.generation_type === 'string'
+    ? { useCases: [d.generation_type] }
+    : {}
 }
 
 export function catalogPresentation(
@@ -473,9 +492,7 @@ export function catalogPresentation(
     href: `${record.slug}/`,
     workflowCount: preserved.workflowCount ?? 0,
     capabilities: Array.isArray(d.tags) ? d.tags : [],
-    ...(typeof d.generation_type === 'string'
-      ? { useCases: [d.generation_type] }
-      : {}),
+    ...catalogUseCases(d),
     ...(typeof d.provider === 'string' ? { provider: d.provider } : {}),
     ...contentPresentation(record, d, preserved, details)
   }

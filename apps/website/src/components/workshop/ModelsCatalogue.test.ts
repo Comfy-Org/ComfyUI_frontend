@@ -96,6 +96,27 @@ const launchModels: WorkshopModel[] = [
 ]
 
 describe('ModelsCatalogue', () => {
+  it('includes local models in their authored category without a router ID', async () => {
+    render(ModelsCatalogue, {
+      props: {
+        section: 'models',
+        models: [
+          {
+            type: 'MODEL',
+            slug: 'local-model',
+            name: 'Local model',
+            href: '/hub/models/local-model/',
+            workflowCount: 0,
+            capabilities: [],
+            useCases: ['generate-images']
+          }
+        ]
+      }
+    })
+    expect(
+      await screen.findByRole('link', { name: /Local model/ })
+    ).toHaveAttribute('href', '/hub/models/local-model/')
+  })
   it.for(['models', 'workflows', 'apps'] as const)(
     'keeps all native tab hrefs in Chinese for the selected CMS %s section',
     async (section) => {

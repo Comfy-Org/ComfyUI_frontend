@@ -197,6 +197,14 @@ links; the editor API separately rechecks authorization on every operation.
 
 ## CCC review discovery
 
+Catalog models without `router_model_id` remain read-only model pages, not
+synthetic Router endpoints or workflows. Their cards stay in the Models tab;
+detail pages show media, descriptions and FAQ without Run or API-key controls.
+Model grouping uses recognized `use_cases` values; workflow generation grouping
+uses `generation_type`. Explicit CMS classification takes precedence over legacy
+`compatibility.website` presentation. Unknown solution IDs are not promoted to
+execution capabilities or silently turned into Router IDs.
+
 Catalog search, filters and Previous/Next update only the mounted results and
 facets. The same-origin `/models/catalogue.json?format=page&section=workflows`
 representation returns the bounded 24-card page envelope (legacy array output

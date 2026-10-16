@@ -279,7 +279,7 @@ function renderCatalogue(
           ? (initialModels ?? [])
           : (models ?? []).filter(
               (model) =>
-                model.routerId !== undefined ||
+                (model.type ?? 'MODEL') === 'MODEL' ||
                 model.type === 'APP' ||
                 workflowsEnabled.value
             ),
@@ -315,7 +315,11 @@ async function loadDetailContent(slug: string) {
   void preload.catch(() => undefined)
   const { fetchModelsPage } = await import('@/config/models-page-data')
   const { model, ...page } = await fetchModelsPage(slug)
-  if (model.routerId === undefined) return workflowContent(model)
+  if (model.workflowId !== undefined) return workflowContent(model)
+  if (model.routerId === undefined) {
+    const { default: LocalModelPage } = await import('./LocalModelPage.vue')
+    return () => h(LocalModelPage, { model, locale })
+  }
   const { default: ModelPage } = await import('./ModelPage.vue')
   return () => h(ModelPage, { page: { ...page, model } })
 }

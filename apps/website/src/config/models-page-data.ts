@@ -4,6 +4,7 @@ import { workflowCatalogDetailsSchema } from './workflow-catalog-details'
 import {
   modelSchema,
   routerModelSchema,
+  localModelSchema,
   workflowModelSchema,
   readModelsData
 } from './models-catalogue-data'
@@ -37,7 +38,15 @@ const workflowDetailSchema = generatedModelSchema
     form: formForWorkflow(model.workflow)
   }))
 
-export const detailSchema = z.union([routerDetailSchema, workflowDetailSchema])
+const localDetailSchema = generatedModelSchema
+  .extend(localModelSchema.shape)
+  .extend({ catalogDetails: workflowCatalogDetailsSchema.optional() })
+
+export const detailSchema = z.union([
+  routerDetailSchema,
+  workflowDetailSchema,
+  localDetailSchema
+])
 
 const tagSchema = z.object({ label: z.string(), search: z.string() })
 

@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro'
+import type { WorkshopModel } from '@/config/models-catalogue'
 import StaffContentActions from '@/components/cms/StaffContentActions.astro'
 import { workshopModels } from '@/config/workshop-browse-content'
 import ModelsPage from '@/components/workshop/ModelsPage.vue'
@@ -24,8 +25,8 @@ const catalog = cmsEnabled()
   : undefined
 const failure = catalog && !catalog.ok ? catalogUnavailable() : undefined
 if (failure) return failure
-const liveModels = catalog?.ok
-  ? catalog.models.filter((model) => model.routerId !== undefined)
+const liveModels: readonly WorkshopModel[] = catalog?.ok
+  ? catalog.models.filter((model) => (model.type ?? 'MODEL') === 'MODEL')
   : workshopModels
 
 const { title, description } = modelsHubMeta(liveModels)

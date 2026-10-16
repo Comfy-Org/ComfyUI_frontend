@@ -2,6 +2,7 @@ import type { ContentCatalogRecord } from '@comfyorg/ingest-types'
 import { describe, expect, it } from 'vitest'
 import { detailSchema } from '@/config/models-page-data'
 import { modelSchema } from '@/config/models-catalogue-data'
+import { useCasesFor } from '@/config/models-catalogue'
 import { workflowCloudRequest } from '@/config/workshop-workflow-api'
 import { examplesForModel } from '@/config/workshop-playground'
 import {
@@ -45,6 +46,61 @@ const record: ContentCatalogRecord = {
   }
 }
 describe('native CONTENT presentation', () => {
+  it('keeps a local model readable without inventing a router or execution contract', () => {
+    const model = detailSchema.parse(
+      catalogPresentation({
+        ...record,
+        kind: 'MODEL',
+        slug: '/hub/models/local-model',
+        data: {
+          type: 'model',
+          slug: 'local-model',
+          title: 'Local model',
+          description: 'Run locally',
+          use_cases: ['generate-images', 'edit-images'],
+          compatibility: {
+            website: { routerId: 'stale/router', useCases: ['audio'] }
+          }
+        }
+      })
+    )
+    expect(model).toMatchObject({ type: 'MODEL', name: 'Local model' })
+    expect(model.routerId).toBeUndefined()
+    expect(model).not.toHaveProperty('execution')
+    expect(useCasesFor(model)).toEqual(['generate-images', 'edit-images'])
+  })
+
+  it.for([
+    {
+      type: 'model',
+      use_cases: ['audio'],
+      generation_type: undefined,
+      expected: ['audio']
+    },
+    {
+      type: 'workflow',
+      use_cases: ['product-photos'],
+      generation_type: 'edit-images',
+      expected: ['edit-images']
+    }
+  ])(
+    'uses canonical $type classification instead of legacy website metadata',
+    ({ type, use_cases, generation_type, expected }) => {
+      const model = modelSchema.parse(
+        catalogPresentation({
+          ...record,
+          data: {
+            ...record.data,
+            type,
+            use_cases,
+            ...(generation_type ? { generation_type } : {}),
+            compatibility: { website: { useCases: ['generate-videos'] } }
+          }
+        })
+      )
+      expect(useCasesFor(model)).toEqual(expected)
+    }
+  )
   it('keeps the full-page source distinct from a resolved exact still thumbnail', () => {
     const view = detailSchema.parse(
       catalogPresentation({

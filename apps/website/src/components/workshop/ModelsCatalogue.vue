@@ -120,7 +120,7 @@ const shownModels = computed(() =>
   models.filter((model) => isWorkshopModelShown(model))
 )
 const routerModels = computed(() =>
-  shownModels.value.filter((model) => model.routerId !== undefined)
+  shownModels.value.filter((model) => (model.type ?? 'MODEL') === 'MODEL')
 )
 const workflows = computed(() =>
   shownModels.value.filter(

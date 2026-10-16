@@ -86,7 +86,9 @@ describe('website CMS boundary', () => {
     )
     expect(
       details.some((model) =>
-        model.form ? fieldsForDefinition(model.form).length > 0 : false
+        'form' in model && model.form
+          ? fieldsForDefinition(model.form).length > 0
+          : false
       )
     ).toBe(true)
   })

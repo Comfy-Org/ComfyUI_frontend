@@ -1,4 +1,7 @@
-import type { WorkshopModel } from '@/config/models-catalogue'
+import type {
+  WorkshopModel,
+  WorkshopModelDetail
+} from '@/config/models-catalogue'
 import { catalogSearch, useCaseFor } from '@/config/models-catalogue'
 import { getWorkshopModel } from '@/config/workshop-browse-content'
 import {
@@ -29,7 +32,7 @@ export function modelOgImage(
 }
 
 type PageCatalog = {
-  details: NonNullable<ReturnType<typeof getWorkshopPageDetail>>[]
+  details: readonly WorkshopModelDetail[]
   models: readonly WorkshopModel[]
 }
 
