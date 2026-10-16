@@ -351,9 +351,9 @@ const STRING_LITERAL = /^'([^'\\]*)'$/
 
 function mergedDefaults(args: readonly string[]) {
   if (!CLASS_PROP.test(args.at(-1) ?? '')) return null
-  const literals = args.slice(0, -1).map((arg) => arg.match(STRING_LITERAL))
-  if (!literals.length || literals.some((literal) => !literal)) return null
-  return literals.map((literal) => literal![1]).join(' ')
+  const literals = args.slice(0, -1).map((arg) => STRING_LITERAL.exec(arg)?.[1])
+  if (!literals.length || literals.includes(undefined)) return null
+  return literals.join(' ')
 }
 
 function componentDefaultClasses(file: string) {
@@ -474,7 +474,9 @@ const UTILITY_PREFIX =
 
 function hasOnlyUtilities(tokens: readonly string[]) {
   return tokens.every((token) =>
-    UTILITY_PREFIX.test(token.split(':').pop()!.replace(/^!|!$/g, ''))
+    UTILITY_PREFIX.test(
+      token.slice(token.lastIndexOf(':') + 1).replace(/^!|!$/g, '')
+    )
   )
 }
 

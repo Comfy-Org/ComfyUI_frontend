@@ -30,7 +30,7 @@ function fontCategory(value: string): Category | null {
 }
 
 export function classifyToken(token: string): Category | null {
-  const utility = token.split(':').at(-1)!.replace(/^!|!$/g, '')
+  const utility = token.slice(token.lastIndexOf(':') + 1).replace(/^!|!$/g, '')
   if (utility.startsWith('leading-')) return 'size'
   const [, prefix, value] = utility.match(/^(text|font)-(.+)$/) ?? []
   if (prefix === 'text') return textCategory(value)
