@@ -41,7 +41,14 @@ ruleTester.run(
       vue('<button class="p-0" />'),
       vue('<div class="items-stretch" :class="{ \'items-center\': true }" />'),
       vue('<div class="grid justify-start items-stretch" />'),
-      vue('<p class="m-0" />')
+      vue('<p class="m-0" />'),
+      vue('<div class="border-none border-[3px]" />'),
+      vue('<div class="border-0 border-dashed" />'),
+      vue('<div class="border-none" style="border-width: 3px" />'),
+      {
+        filename,
+        code: '<template><div class="m-0" /></template>\n<style>@layer components { div { margin: 1rem } }</style>\n'
+      }
     ],
     invalid: [
       {
@@ -63,6 +70,24 @@ ruleTester.run(
         ),
         errors: [
           { messageId: 'redundant', data: { token: 'p-0', element: 'span' } }
+        ]
+      },
+      {
+        ...redundant('<div class="border-0" />', '<div />'),
+        errors: [
+          {
+            messageId: 'redundant',
+            data: { token: 'border-0', element: 'div' }
+          }
+        ]
+      },
+      {
+        ...redundant(
+          '<div class="p-0 content-[&quot;x&quot;]" />',
+          '<div class="content-[&quot;x&quot;]" />'
+        ),
+        errors: [
+          { messageId: 'redundant', data: { token: 'p-0', element: 'div' } }
         ]
       }
     ]

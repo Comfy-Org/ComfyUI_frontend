@@ -87,15 +87,33 @@ function setsInlineStyle(node: VElement) {
   )
 }
 
+function hasStyleBlock(context: Rule.RuleContext) {
+  return /<style[\s>]/.test(context.sourceCode.text)
+}
+
 function classTokens(attribute: VAttribute) {
   return (attribute.value?.value ?? '').split(/\s+/).filter(Boolean)
 }
 
-function removeTokensFix(attribute: VAttribute, remove: ReadonlySet<string>) {
+function removeTokensFix(
+  context: Rule.RuleContext,
+  attribute: VAttribute,
+  remove: ReadonlySet<string>
+) {
   return (fixer: Rule.RuleFixer) => {
-    const kept = classTokens(attribute).filter((token) => !remove.has(token))
+    const value = attribute.value
+    if (!value) return null
+    const raw = context.sourceCode.text.slice(...value.range)
+    const quote = /^["']/.test(raw) ? raw[0] : ''
+    const rawTokens = raw
+      .slice(quote.length, raw.length - quote.length)
+      .split(/\s+/)
+      .filter(Boolean)
+    const tokens = classTokens(attribute)
+    if (rawTokens.length !== tokens.length) return null
+    const kept = rawTokens.filter((_, index) => !remove.has(tokens[index]))
     return kept.length
-      ? fixer.replaceTextRange(attribute.range, `class="${kept.join(' ')}"`)
+      ? fixer.replaceTextRange(value.range, quote + kept.join(' ') + quote)
       : fixer.removeRange([attribute.range[0] - 1, attribute.range[1]])
   }
 }
@@ -162,7 +180,17 @@ const BACKGROUND_ELEMENTS = new Set([
   'option'
 ])
 const BORDER_WIDTH = /^border(-[trblxy])?(-\d+|-\[[^\]]+\])?$/
-const ANY_BORDER_WIDTH = /(^|:)border(-[trblxy])?(-\d+)?$/
+const ANY_BORDER_WIDTH =
+  /(^|:)border(-[trblxy])?(-\d+|-\[[^\]]+\]|-\([^)]+\))?$/
+const BORDER_STYLE = /(^|:)border-(solid|dashed|dotted|double|hidden)$/
+
+function setsBorder(token: string, tokens: readonly string[]) {
+  return tokens.some(
+    (other) =>
+      other !== token &&
+      (ANY_BORDER_WIDTH.test(other) || BORDER_STYLE.test(other))
+  )
+}
 
 function usesGrid(tokens: readonly string[]) {
   return tokens.some((token) => /(^|:)(inline-)?grid$/.test(token))
@@ -184,11 +212,9 @@ const DEFAULT_UTILITIES: Record<
   'p-0': (element) => !PADDED_ELEMENTS.has(element),
   'bg-transparent': (element) => !BACKGROUND_ELEMENTS.has(element),
   'border-none': (element, tokens) =>
-    !BORDERED_ELEMENTS.has(element) &&
-    !tokens.some((token) => ANY_BORDER_WIDTH.test(token)),
+    !BORDERED_ELEMENTS.has(element) && !setsBorder('border-none', tokens),
   'border-0': (element, tokens) =>
-    !BORDERED_ELEMENTS.has(element) &&
-    !tokens.some((token) => ANY_BORDER_WIDTH.test(token)),
+    !BORDERED_ELEMENTS.has(element) && !setsBorder('border-0', tokens),
   'w-auto': (element) => ['div', 'span', 'p', 'section'].includes(element)
 }
 
@@ -217,8 +243,14 @@ const noDefaultUtilities: Rule.RuleModule = {
     schema: []
   },
   create(context) {
+    if (hasStyleBlock(context)) return {}
     return templateVisitor(context, (node) => {
-      if (!isNativeElement(node) || hasBoundClass(node)) return
+      if (
+        !isNativeElement(node) ||
+        hasBoundClass(node) ||
+        setsInlineStyle(node)
+      )
+        return
       const attribute = staticClassAttribute(node)
       if (!attribute) return
       const tokens = classTokens(attribute)
@@ -233,7 +265,7 @@ const noDefaultUtilities: Rule.RuleModule = {
           node: attribute,
           messageId: 'redundant',
           data: { token, element: node.rawName },
-          fix: removeTokensFix(attribute, new Set(redundant))
+          fix: removeTokensFix(context, attribute, new Set(redundant))
         })
       }
     })
@@ -391,7 +423,7 @@ const noRedundantComponentClasses: Rule.RuleModule = {
           node: attribute,
           messageId: 'redundant',
           data: { token, component: node.rawName },
-          fix: removeTokensFix(attribute, redundant)
+          fix: removeTokensFix(context, attribute, redundant)
         })
       }
     })
@@ -501,7 +533,7 @@ const noInheritedUtilities: Rule.RuleModule = {
     schema: []
   },
   create(context) {
-    if (/<style[\s>]/.test(context.sourceCode.text)) return {}
+    if (hasStyleBlock(context)) return {}
     return templateVisitor(context, (node) => {
       if (
         !isNativeElement(node) ||
@@ -519,7 +551,7 @@ const noInheritedUtilities: Rule.RuleModule = {
           node: attribute,
           messageId: 'redundant',
           data: { token, element: node.rawName },
-          fix: removeTokensFix(attribute, redundant)
+          fix: removeTokensFix(context, attribute, redundant)
         })
       }
     })

@@ -2,7 +2,7 @@
   <div
     data-testid="subgraph-breadcrumb"
     :data-collapsed="collapseTabs || undefined"
-    class="flex min-w-30 flex-auto shrink-10000 items-center overflow-hidden drop-shadow-(--interface-panel-drop-shadow)"
+    class="flex w-auto min-w-30 flex-auto shrink-10000 items-center overflow-hidden drop-shadow-(--interface-panel-drop-shadow)"
     :style="{
       '--breadcrumb-item-margin': `${ITEM_GAP / 2}px`,
       '--breadcrumb-item-min-width': `${MIN_WIDTH}px`,

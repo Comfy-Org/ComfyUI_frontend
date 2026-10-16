@@ -58,7 +58,7 @@
           v-if="inlineEditor"
           ref="inlineEditorEl"
           v-model="inlineEditor.value"
-          class="absolute resize-none rounded-sm border-2 bg-black/90 p-1 font-mono text-xs text-white outline-none"
+          class="absolute box-border resize-none rounded-sm border-2 bg-black/90 p-1 font-mono text-xs text-white outline-none"
           :style="inlineEditor.style"
           data-capture-wheel="true"
           @keydown.stop="onInlineKeyDown"

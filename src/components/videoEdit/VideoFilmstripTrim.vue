@@ -60,7 +60,7 @@
 
       <div
         data-testid="filmstrip-track"
-        class="pointer-events-none absolute top-2 flex h-12 overflow-hidden"
+        class="pointer-events-none absolute top-2 flex h-12 items-stretch overflow-hidden"
         :style="{
           left: `${HANDLE_WIDTH_PX}px`,
           right: `${HANDLE_WIDTH_PX}px`
