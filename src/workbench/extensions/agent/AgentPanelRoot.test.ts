@@ -35,6 +35,7 @@ import { useFreeUsePlacement } from './experiments/freeUsePlacement'
 
 setupInlinePromptEditorDom()
 
+import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -261,6 +262,7 @@ vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'), {
   spy: true
 })
 
+import type { ComposerReference } from './types/composerPrompt'
 import type { AgentMessages, TurnId } from './schemas/agentApiSchema'
 import { toTurnId, zAgentWsEvent } from './schemas/agentApiSchema'
 import {
@@ -390,7 +392,7 @@ beforeEach(() => {
     }
   )
   vi.mocked(useWorkflowService()).closeWorkflow.mockImplementation(
-    async (tab) => {
+    async (tab, options) => {
       if (workflowStore.activeWorkflow?.path === tab.path) {
         const replacement = workflowStore.openWorkflows.find(
           (candidate) => candidate.path !== tab.path
@@ -398,17 +400,34 @@ beforeEach(() => {
         workflowStore.activeWorkflow = replacement
           ? await replacement.load()
           : null
+        if (replacement) options?.onReplacementOpened?.(replacement)
       }
       await workflowStore.closeWorkflow(tab)
       return true
     }
   )
+  vi.mocked(useWorkflowService()).closeWorkflows.mockImplementation(
+    async (tabs, { initiator, ...options }) => {
+      const opened: { replacement?: ComfyWorkflow } = {}
+      for (const tab of tabs)
+        await useWorkflowService().closeWorkflow(tab, {
+          ...options,
+          onReplacementOpened: (replacement) => {
+            opened.replacement = replacement
+          }
+        })
+      if (initiator === 'user' && opened.replacement)
+        workflowStore.reportUserActivation(opened.replacement)
+    }
+  )
   vi.mocked(useWorkflowService()).openWorkflow.mockImplementation(
-    async (tab) => {
+    async (tab, options) => {
       const known = workflowStore.getWorkflowByPath(tab.path)
       if (known) {
         workflowStore.openWorkflowsInBackground({ right: [tab.path] })
         workflowStore.activeWorkflow = await known.load()
+        if (options?.initiator === 'user')
+          workflowStore.reportUserActivation(known)
       }
       return true
     }
@@ -581,6 +600,14 @@ async function sendFromComposer(text: string): Promise<void> {
 async function renderAndSend(text: string): Promise<void> {
   renderWithSelectedTarget()
   await sendFromComposer(text)
+}
+
+async function activateTabAsUser(tab: ComfyWorkflow): Promise<void> {
+  await useWorkflowService().openWorkflow(tab, { initiator: 'user' })
+}
+
+async function settleFollow(): Promise<void> {
+  await setImmediate()
 }
 
 function addTab(
@@ -5209,6 +5236,1547 @@ describe('AgentPanelRoot history', () => {
     })
   })
 
+  it('lists a chat with no valid time among today’s chats', async () => {
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) =>
+      threadListRoute.test(String(input))
+        ? json(
+            200,
+            agentThreadList([
+              agentThread({
+                id: 'th-stampless',
+                title: 'Stampless chat',
+                last_message_at: '',
+                updated_at: 'unknown',
+                created_at: ''
+              })
+            ])
+          )
+        : json(200, [])
+    )
+
+    renderWithSelectedTarget()
+
+    const history = useAgentChatHistoryStore()
+    await vi.waitFor(() =>
+      expect(history.grouped.today.map(({ id }) => id)).toEqual([
+        'th-stampless'
+      ])
+    )
+  })
+
+  it('switches to the chat bound to the active workflow tab', async () => {
+    const first = addTab('workflows/first.json')
+    const second = addTab('workflows/second.json')
+    workflowStore.activeWorkflow = first
+
+    const loadedThreads: string[] = []
+    let resolveWorkflows!: () => void
+    const workflowsListed = new Promise<void>((resolve) => {
+      resolveWorkflows = resolve
+    })
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (threadListRoute.test(url))
+        return json(
+          200,
+          agentThreadList([
+            agentThread({
+              id: 'th-first',
+              title: 'First chat',
+              last_message_at: '2026-09-22T10:00:00Z',
+              workflow_id: 'wf-first'
+            }),
+            agentThread({
+              id: 'th-second',
+              title: 'Second chat',
+              last_message_at: '2026-09-22T09:00:00Z',
+              workflow_id: 'wf-second'
+            })
+          ])
+        )
+      if (url.includes('/api/workflows')) {
+        await workflowsListed
+        return json(200, {
+          data: [
+            { id: 'wf-first', name: 'first' },
+            { id: 'wf-second', name: 'second' }
+          ],
+          pagination: { offset: 0, limit: 100, total: 2, has_more: false }
+        })
+      }
+      const match = url.match(/\/api\/agent\/threads\/([^/]+)\/messages$/)
+      if (match) {
+        loadedThreads.push(match[1])
+        return json(200, [])
+      }
+      return json(200, { data: [], pagination: { has_more: false } })
+    })
+
+    renderWithSelectedTarget()
+    await vi.waitFor(() =>
+      expect(useAgentChatHistoryStore().sessions).toHaveLength(2)
+    )
+    expect(useAgentConversationStore().threadId).toBeNull()
+
+    await activateTabAsUser(second)
+    await settleFollow()
+    expect(useAgentConversationStore().threadId).toBeNull()
+
+    resolveWorkflows()
+
+    await vi.waitFor(() =>
+      expect(useAgentConversationStore().threadId).toBe('th-second')
+    )
+
+    await activateTabAsUser(first)
+
+    await vi.waitFor(() =>
+      expect(useAgentConversationStore().threadId).toBe('th-first')
+    )
+    expect(loadedThreads).toEqual(['th-second', 'th-first'])
+  })
+
+  describe('following the active workflow tab', () => {
+    function transcriptFor(threadId: string, workflowId?: string): Response {
+      return json(200, [
+        {
+          id: `${threadId}-user`,
+          thread_id: threadId,
+          seq: 1,
+          role: 'user',
+          status: 'complete',
+          turn_id: `${threadId}-turn`,
+          workflow_id: workflowId,
+          content: { text: `Prompt in ${threadId}` }
+        }
+      ] satisfies AgentMessages)
+    }
+
+    function stubWorkflowBoundHistory(
+      threads: AgentThreadSummary[],
+      transcripts: Partial<
+        Record<
+          string,
+          { workflowId?: string; response?: () => Promise<Response> }
+        >
+      > = {},
+      {
+        post = async (threadId: string) =>
+          json(202, { thread_id: threadId, message_id: `${threadId}-sent` })
+      }: { post?: (threadId: string) => Promise<Response> } = {}
+    ): {
+      loadedThreads: string[]
+      listCalls: () => number
+    } {
+      const loadedThreads: string[] = []
+      let listCalls = 0
+      function answerMessages(
+        threadId: string,
+        method: string | undefined
+      ): Promise<Response> | Response {
+        if (method === 'POST') return post(threadId)
+        loadedThreads.push(threadId)
+        const transcript = transcripts[threadId]
+        return transcript?.response
+          ? transcript.response()
+          : transcriptFor(threadId, transcript?.workflowId)
+      }
+      vi.mocked(fetch).mockImplementation(
+        async (input: RequestInfo | URL, init?: RequestInit) => {
+          const url = String(input)
+          if (threadListRoute.test(url)) {
+            listCalls += 1
+            return json(200, agentThreadList(threads))
+          }
+          if (url.includes('/api/workflows'))
+            return json(200, {
+              data: [
+                { id: 'wf-first', name: 'first' },
+                { id: 'wf-second', name: 'second' },
+                { id: 'wf-third', name: 'third' }
+              ],
+              pagination: { offset: 0, limit: 100, total: 3, has_more: false }
+            })
+          const match = url.match(/\/api\/agent\/threads\/([^/]+)\/messages$/)
+          if (match) return answerMessages(match[1], init?.method)
+          return json(200, { data: [], pagination: { has_more: false } })
+        }
+      )
+      return { loadedThreads, listCalls: () => listCalls }
+    }
+
+    function userPrompts(): string[] {
+      return useAgentConversationStore().entries.flatMap((entry) =>
+        entry.role === 'user' ? [entry.text] : []
+      )
+    }
+
+    it('keeps the current chat when the active tab has no matching thread', async () => {
+      const first = addTab('workflows/first.json')
+      const second = addTab('workflows/second.json')
+      workflowStore.activeWorkflow = second
+      const { loadedThreads } = stubWorkflowBoundHistory([
+        agentThread({
+          id: 'th-first',
+          title: 'First chat',
+          last_message_at: '2026-09-22T10:00:00Z',
+          workflow_id: 'wf-first'
+        })
+      ])
+
+      renderWithSelectedTarget()
+      await activateTabAsUser(first)
+      await vi.waitFor(() =>
+        expect(useAgentConversationStore().threadId).toBe('th-first')
+      )
+      await vi.waitFor(() =>
+        expect(userPrompts()).toEqual(['Prompt in th-first'])
+      )
+
+      await activateTabAsUser(second)
+      await settleFollow()
+
+      expect(useAgentConversationStore().threadId).toBe('th-first')
+      expect(userPrompts()).toEqual(['Prompt in th-first'])
+      expect(loadedThreads).toEqual(['th-first'])
+    })
+
+    it('does not pull a manually selected chat back to the active tab', async () => {
+      const first = addTab('workflows/first.json')
+      const second = addTab('workflows/second.json')
+      workflowStore.activeWorkflow = second
+      const { loadedThreads, listCalls } = stubWorkflowBoundHistory([
+        agentThread({
+          id: 'th-first',
+          title: 'First chat',
+          last_message_at: '2026-09-22T10:00:00Z',
+          workflow_id: 'wf-first'
+        }),
+        agentThread({
+          id: 'th-other',
+          title: 'Other chat',
+          last_message_at: '2026-09-22T09:00:00Z',
+          workflow_id: 'wf-second'
+        })
+      ])
+
+      renderWithSelectedTarget()
+      await activateTabAsUser(first)
+      await vi.waitFor(() =>
+        expect(useAgentConversationStore().threadId).toBe('th-first')
+      )
+      const callsBeforeSelect = listCalls()
+
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.showChatHistory')
+        })
+      )
+      await userEvent.click(await screen.findByText('Other chat'))
+      await vi.waitFor(() =>
+        expect(useAgentConversationStore().threadId).toBe('th-other')
+      )
+      await vi.waitFor(() =>
+        expect(listCalls()).toBeGreaterThan(callsBeforeSelect)
+      )
+      await settleFollow()
+
+      expect(useAgentConversationStore().threadId).toBe('th-other')
+      expect(loadedThreads).toEqual(['th-first', 'th-other'])
+    })
+
+    async function activateWhileTabIdsLoad(): Promise<{
+      resolveWorkflows: () => void
+      loadedThreads: string[]
+    }> {
+      const first = addTab('workflows/first.json')
+      const second = addTab('workflows/second.json')
+      workflowStore.activeWorkflow = second
+
+      const loadedThreads: string[] = []
+      let resolveWorkflows!: () => void
+      const workflowsListed = new Promise<void>((resolve) => {
+        resolveWorkflows = resolve
+      })
+      vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+        const url = String(input)
+        if (threadListRoute.test(url))
+          return json(
+            200,
+            agentThreadList([
+              agentThread({
+                id: 'th-first',
+                title: 'First chat',
+                last_message_at: '2026-09-22T10:00:00Z',
+                workflow_id: 'wf-first'
+              })
+            ])
+          )
+        if (url.includes('/api/workflows')) {
+          await workflowsListed
+          return json(200, {
+            data: [{ id: 'wf-first', name: 'first' }],
+            pagination: { offset: 0, limit: 100, total: 1, has_more: false }
+          })
+        }
+        const match = url.match(/\/api\/agent\/threads\/([^/]+)\/messages$/)
+        if (match) {
+          loadedThreads.push(match[1])
+          return json(200, [])
+        }
+        return json(200, { data: [], pagination: { has_more: false } })
+      })
+
+      renderWithSelectedTarget()
+      await vi.waitFor(() =>
+        expect(useAgentChatHistoryStore().sessions).toHaveLength(1)
+      )
+      await activateTabAsUser(first)
+      await settleFollow()
+      expect(loadedThreads).toEqual([])
+
+      return { loadedThreads, resolveWorkflows }
+    }
+
+    it.for([
+      { meanwhile: 'nothing', act: async () => {}, loads: ['th-first'] },
+      {
+        meanwhile: 'a new chat',
+        act: () =>
+          userEvent.click(
+            screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+          ),
+        loads: []
+      },
+      {
+        meanwhile: 'a draft typed and cleared',
+        act: async () => {
+          const composer = useAgentComposerStore()
+          composer.setText('make it blue')
+          await nextTick()
+          composer.setText('')
+          await nextTick()
+        },
+        loads: []
+      }
+    ])(
+      'after $meanwhile, a follow waiting on the tab id loads $loads',
+      async ({ act, loads }) => {
+        const { resolveWorkflows, loadedThreads } =
+          await activateWhileTabIdsLoad()
+
+        await act()
+        resolveWorkflows()
+        await settleFollow()
+
+        expect(loadedThreads).toEqual(loads)
+      }
+    )
+
+    it("opens the newest of the tab's chats that is not deleted", async () => {
+      workflowStore.activeWorkflow = addTab('workflows/first.json')
+      const second = addTab('workflows/second.json')
+      const { loadedThreads } = stubWorkflowBoundHistory([
+        agentThread({
+          id: 'th-older',
+          title: 'Older chat',
+          last_message_at: '2026-09-22T08:00:00Z',
+          workflow_id: 'wf-second'
+        }),
+        agentThread({
+          id: 'th-newer',
+          title: 'Newer chat',
+          last_message_at: '2026-09-22T10:00:00Z',
+          workflow_id: 'wf-second'
+        }),
+        agentThread({
+          id: 'th-deleted',
+          title: 'Deleted chat',
+          last_message_at: '2026-09-22T11:00:00Z',
+          workflow_id: 'wf-second'
+        })
+      ])
+      useAgentChatHistoryStore().remove('th-deleted')
+
+      renderWithSelectedTarget()
+      await activateTabAsUser(second)
+
+      await vi.waitFor(() =>
+        expect(useAgentConversationStore().threadId).toBe('th-newer')
+      )
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(second.path)
+      expect(loadedThreads).toEqual(['th-newer'])
+    })
+
+    type Composer = ReturnType<typeof useAgentComposerStore>
+
+    it.for([
+      {
+        draft: 'text',
+        fill: (composer: Composer) => composer.setText('make it blue'),
+        drafted: (composer: Composer) => composer.draft,
+        clear: (composer: Composer) => composer.setText('')
+      },
+      {
+        draft: 'a workflow reference',
+        fill: (composer: Composer) =>
+          composer.setWorkflowReferences([
+            { id: 'wf-third', name: 'third', textOffset: 0 }
+          ]),
+        drafted: (composer: Composer) =>
+          composer.workflowReferences.map(({ id }) => id),
+        clear: (composer: Composer) => composer.setWorkflowReferences([])
+      },
+      {
+        draft: 'only a scoped skill reference',
+        fill: (composer: Composer) =>
+          composer.restorePrompt({
+            text: '',
+            references: [
+              {
+                kind: 'skill',
+                name: 'portrait',
+                description: 'Keep the subject recognizable',
+                scope: useSkillPacksStore().scope,
+                textOffset: 0
+              } satisfies ComposerReference
+            ]
+          }),
+        drafted: (composer: Composer) => ({
+          text: composer.prompt.text,
+          references: composer.prompt.references.map((reference) => ({
+            ...reference
+          }))
+        }),
+        clear: (composer: Composer) =>
+          composer.restorePrompt({ text: '', references: [] })
+      }
+    ])(
+      'keeps the chat, draft and target when the composer holds $draft',
+      async ({ fill, drafted, clear }) => {
+        const first = addTab('workflows/first.json')
+        const second = addTab('workflows/second.json')
+        workflowStore.activeWorkflow = first
+        const { loadedThreads } = stubWorkflowBoundHistory(
+          [
+            agentThread({
+              id: 'th-first',
+              title: 'First chat',
+              last_message_at: '2026-09-22T09:00:00Z',
+              workflow_id: 'wf-first'
+            }),
+            agentThread({
+              id: 'th-second',
+              title: 'Second chat',
+              last_message_at: '2026-09-22T10:00:00Z',
+              workflow_id: 'wf-second'
+            })
+          ],
+          { 'th-first': { workflowId: 'wf-first' } }
+        )
+        renderWithSelectedTarget()
+        await userEvent.click(
+          screen.getByRole('button', {
+            name: i18n.global.t('agent.showChatHistory')
+          })
+        )
+        await userEvent.click(await screen.findByText('First chat'))
+        await vi.waitFor(() =>
+          expect(userPrompts()).toEqual(['Prompt in th-first'])
+        )
+        const composer = useAgentComposerStore()
+        fill(composer)
+        const before = drafted(composer)
+        expect(composer.hasDraft).toBe(true)
+
+        await activateTabAsUser(second)
+        await settleFollow()
+
+        expect(loadedThreads).toEqual(['th-first'])
+        expect(useAgentConversationStore().threadId).toBe('th-first')
+        expect(userPrompts()).toEqual(['Prompt in th-first'])
+        expect(drafted(composer)).toEqual(before)
+        expect(useAgentPanelStore().selectedWorkflow?.path).toBe(first.path)
+        expect(screen.getByRole('note')).toHaveTextContent(
+          i18n.global.t('agent.viewingDifferentWorkflow')
+        )
+
+        clear(composer)
+        await settleFollow()
+        expect(loadedThreads).toEqual(['th-first'])
+      }
+    )
+
+    it('sends a pinned draft to its original chat and workflow while another tab is active', async () => {
+      const firstState = fromPartial<ComfyWorkflowJSON>({
+        nodes: [{ id: 17, type: 'FirstWorkflowNode' }],
+        links: []
+      })
+      const first = addTab('workflows/first.json', { activeState: firstState })
+      const second = addTab('workflows/second.json', {
+        activeState: fromPartial<ComfyWorkflowJSON>({
+          nodes: [{ id: 83, type: 'SecondWorkflowNode' }],
+          links: []
+        })
+      })
+      workflowStore.activeWorkflow = first
+      stubWorkflowBoundHistory(
+        [
+          agentThread({
+            id: 'th-first',
+            title: 'First chat',
+            last_message_at: '2026-09-22T09:00:00Z',
+            workflow_id: 'wf-first'
+          }),
+          agentThread({
+            id: 'th-second',
+            title: 'Second chat',
+            last_message_at: '2026-09-22T10:00:00Z',
+            workflow_id: 'wf-second'
+          })
+        ],
+        { 'th-first': { workflowId: 'wf-first' } }
+      )
+      respondToFetch(/\/assets(?:\?|$)/, () =>
+        json(200, { assets: [], total: 0, has_more: false })
+      )
+      renderWithSelectedTarget()
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.showChatHistory')
+        })
+      )
+      await userEvent.click(await screen.findByText('First chat'))
+      await vi.waitFor(() =>
+        expect(userPrompts()).toEqual(['Prompt in th-first'])
+      )
+      await userEvent.click(screen.getByRole('textbox'))
+      await userEvent.paste('Keep this request on the first workflow')
+
+      await activateTabAsUser(second)
+      await settleFollow()
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(first.path)
+      await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+      await vi.waitFor(() =>
+        expect(
+          fetchRequests({ method: 'POST', url: /\/messages$/ })
+        ).toHaveLength(1)
+      )
+      const [request] = fetchRequests({ method: 'POST', url: /\/messages$/ })
+      expect(request.url).toBe('/api/agent/threads/th-first/messages')
+      expect(JSON.parse(String(request.body))).toMatchObject({
+        content: 'Keep this request on the first workflow',
+        workflow_id: 'wf-first',
+        draft: { content: firstState }
+      })
+      expect(useAgentConversationStore().threadId).toBe('th-first')
+      expect(workflowStore.activeWorkflow.path).toBe(second.path)
+      expect(useAgentComposerStore().draft).toBe('')
+    })
+
+    it('switches past a whitespace-only draft and clears it', async () => {
+      workflowStore.activeWorkflow = addTab('workflows/first.json')
+      const second = addTab('workflows/second.json')
+      stubWorkflowBoundHistory([
+        agentThread({
+          id: 'th-second',
+          title: 'Second chat',
+          last_message_at: '2026-09-22T10:00:00Z',
+          workflow_id: 'wf-second'
+        })
+      ])
+      renderWithSelectedTarget()
+      const composer = useAgentComposerStore()
+      composer.setText('  \n ')
+
+      await activateTabAsUser(second)
+
+      await vi.waitFor(() =>
+        expect(useAgentConversationStore().threadId).toBe('th-second')
+      )
+      expect(composer.draft).toBe('')
+    })
+
+    it("opens the tab's chat from an empty chat that was never sent", async () => {
+      workflowStore.activeWorkflow = addTab('workflows/first.json')
+      const second = addTab('workflows/second.json')
+      stubWorkflowBoundHistory([
+        agentThread({
+          id: 'th-second',
+          title: 'Second chat',
+          last_message_at: '2026-09-22T10:00:00Z',
+          workflow_id: 'wf-second'
+        })
+      ])
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+      await activateTabAsUser(second)
+
+      await vi.waitFor(() =>
+        expect(useAgentConversationStore().threadId).toBe('th-second')
+      )
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(second.path)
+    })
+
+    it('moves the target of a drafted chat that was never sent instead of switching', async () => {
+      workflowStore.activeWorkflow = addTab('workflows/first.json')
+      const second = addTab('workflows/second.json')
+      const { loadedThreads } = stubWorkflowBoundHistory([
+        agentThread({
+          id: 'th-second',
+          title: 'Second chat',
+          last_message_at: '2026-09-22T10:00:00Z',
+          workflow_id: 'wf-second'
+        })
+      ])
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      await vi.waitFor(() =>
+        expect(useAgentChatHistoryStore().sessions).toHaveLength(1)
+      )
+      useAgentComposerStore().setText('make it blue')
+
+      await activateTabAsUser(second)
+      await settleFollow()
+
+      expect(loadedThreads).toEqual([])
+      expect(useAgentConversationStore().threadId).toBeNull()
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(second.path)
+      expect(useAgentComposerStore().draft).toBe('make it blue')
+    })
+
+    it('follows the tab that takes over when the user closes the active one', async () => {
+      const first = addTab('workflows/first.json')
+      addTab('workflows/second.json')
+      workflowStore.activeWorkflow = first
+      stubWorkflowBoundHistory([
+        agentThread({
+          id: 'th-second',
+          title: 'Second chat',
+          last_message_at: '2026-09-22T10:00:00Z',
+          workflow_id: 'wf-second'
+        })
+      ])
+      renderWithSelectedTarget()
+      await vi.waitFor(() =>
+        expect(useAgentChatHistoryStore().sessions).toHaveLength(1)
+      )
+
+      await useWorkflowService().closeWorkflows([first], {
+        warnIfUnsaved: true,
+        initiator: 'user'
+      })
+
+      await vi.waitFor(() =>
+        expect(useAgentConversationStore().threadId).toBe('th-second')
+      )
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(
+        'workflows/second.json'
+      )
+    })
+
+    it('starts re-listing chats at once for a tab whose cloud id is known', async () => {
+      workflowStore.activeWorkflow = addTab('workflows/first.json')
+      const second = addTab('workflows/second.json')
+      const { listCalls } = stubWorkflowBoundHistory([
+        agentThread({
+          id: 'th-second',
+          title: 'Second chat',
+          last_message_at: '2026-09-22T10:00:00Z',
+          workflow_id: 'wf-second'
+        })
+      ])
+      renderWithSelectedTarget()
+      await vi.waitFor(() =>
+        expect(useAgentChatHistoryStore().sessions).toHaveLength(1)
+      )
+      await settleFollow()
+      const listedBefore = listCalls()
+
+      workflowStore.activeWorkflow = second
+      workflowStore.reportUserActivation(second)
+
+      expect(listCalls()).toBe(listedBefore + 1)
+    })
+
+    it('does not re-list chats for a saved tab that has no cloud workflow', async () => {
+      workflowStore.activeWorkflow = addTab('workflows/first.json')
+      const unlisted = addTab('workflows/fourth.json')
+      const { listCalls, loadedThreads } = stubWorkflowBoundHistory([
+        agentThread({
+          id: 'th-first',
+          title: 'First chat',
+          last_message_at: '2026-09-22T10:00:00Z',
+          workflow_id: 'wf-first'
+        })
+      ])
+      renderWithSelectedTarget()
+      await vi.waitFor(() =>
+        expect(useAgentChatHistoryStore().sessions).toHaveLength(1)
+      )
+      const listedBefore = listCalls()
+
+      await activateTabAsUser(unlisted)
+      await settleFollow()
+
+      expect(listCalls()).toBe(listedBefore)
+      expect(loadedThreads).toEqual([])
+    })
+
+    it('does not follow a tab the app activates on its own, like a restored or linked workflow', async () => {
+      const first = addTab('workflows/first.json')
+      const second = addTab('workflows/second.json')
+      const third = addTab('workflows/third.json')
+      workflowStore.activeWorkflow = third
+      const { loadedThreads } = stubWorkflowBoundHistory([
+        agentThread({
+          id: 'th-first',
+          title: 'First chat',
+          last_message_at: '2026-09-22T08:00:00Z',
+          workflow_id: 'wf-first'
+        }),
+        agentThread({
+          id: 'th-second',
+          title: 'Second chat',
+          last_message_at: '2026-09-22T09:00:00Z',
+          workflow_id: 'wf-second'
+        }),
+        agentThread({
+          id: 'th-third',
+          title: 'Third chat',
+          last_message_at: '2026-09-22T10:00:00Z',
+          workflow_id: 'wf-third'
+        })
+      ])
+      renderWithSelectedTarget()
+      await activateTabAsUser(first)
+      await vi.waitFor(() =>
+        expect(useAgentConversationStore().threadId).toBe('th-first')
+      )
+
+      await useWorkflowService().openWorkflow(second)
+      await activateTabAsUser(third)
+
+      await vi.waitFor(() =>
+        expect(useAgentConversationStore().threadId).toBe('th-third')
+      )
+      expect(loadedThreads).toEqual(['th-first', 'th-third'])
+    })
+
+    it('does not follow a temporary tab, including one the agent created', async () => {
+      const first = addTab('workflows/first.json')
+      const scratch = addTab('workflows/second.json', { isTemporary: true })
+      workflowStore.activeWorkflow = first
+      useAgentWorkflowTabBindingStore().bind('wf-second', scratch.path)
+      const { loadedThreads } = stubWorkflowBoundHistory([
+        agentThread({
+          id: 'th-second',
+          title: 'Second chat',
+          last_message_at: '2026-09-22T10:00:00Z',
+          workflow_id: 'wf-second'
+        })
+      ])
+      renderWithSelectedTarget()
+      await vi.waitFor(() =>
+        expect(useAgentChatHistoryStore().sessions).toHaveLength(1)
+      )
+
+      await activateTabAsUser(scratch)
+
+      await settleFollow()
+      expect(loadedThreads).not.toContain('th-second')
+      expect(useAgentConversationStore().threadId).toBeNull()
+    })
+
+    it('lands the chat of the last activated tab when activations overlap', async () => {
+      workflowStore.activeWorkflow = addTab('workflows/first.json')
+      const second = addTab('workflows/second.json')
+      const third = addTab('workflows/third.json')
+      let answerSecond!: () => void
+      let answerThird!: () => void
+      const { loadedThreads } = stubWorkflowBoundHistory(
+        [
+          agentThread({
+            id: 'th-second',
+            title: 'Second chat',
+            last_message_at: '2026-09-22T09:00:00Z',
+            workflow_id: 'wf-second'
+          }),
+          agentThread({
+            id: 'th-third',
+            title: 'Third chat',
+            last_message_at: '2026-09-22T10:00:00Z',
+            workflow_id: 'wf-third'
+          })
+        ],
+        {
+          'th-second': {
+            response: () =>
+              new Promise<Response>((resolve) => {
+                answerSecond = () => resolve(json(200, []))
+              })
+          },
+          'th-third': {
+            response: () =>
+              new Promise<Response>((resolve) => {
+                answerThird = () =>
+                  resolve(transcriptFor('th-third', 'wf-third'))
+              })
+          }
+        }
+      )
+      renderWithSelectedTarget()
+      await vi.waitFor(() =>
+        expect(useAgentChatHistoryStore().sessions).toHaveLength(2)
+      )
+
+      await activateTabAsUser(second)
+      await vi.waitFor(() => expect(loadedThreads).toEqual(['th-second']))
+      expect(
+        await screen.findByRole('status', { name: 'Opening chat for second…' })
+      ).toBeVisible()
+      await activateTabAsUser(third)
+      expect(
+        await screen.findByRole('status', { name: 'Opening chat for third…' })
+      ).toBeVisible()
+      await vi.waitFor(() =>
+        expect(loadedThreads).toEqual(['th-second', 'th-third'])
+      )
+      answerSecond()
+      await settleFollow()
+
+      expect(
+        screen.getByRole('status', { name: 'Opening chat for third…' })
+      ).toBeVisible()
+      expect(screen.getByTestId('agent-panel-footer')).toHaveAttribute('inert')
+      answerThird()
+      await vi.waitFor(() =>
+        expect(userPrompts()).toEqual(['Prompt in th-third'])
+      )
+
+      expect(useAgentConversationStore().threadId).toBe('th-third')
+      expect(userPrompts()).toEqual(['Prompt in th-third'])
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(third.path)
+      expect(loadedThreads).toEqual(['th-second', 'th-third'])
+    })
+
+    it.for([
+      {
+        outcome: 'succeeds',
+        answer: () => transcriptFor('th-second', 'wf-second')
+      },
+      {
+        outcome: 'fails',
+        answer: () => json(500, { error: 'unavailable' })
+      }
+    ])(
+      'keeps the original chat unlocked when pending second-tab messages $outcome after returning to first',
+      async ({ answer }) => {
+        const first = addTab('workflows/first.json')
+        const second = addTab('workflows/second.json')
+        workflowStore.activeWorkflow = first
+        let answerSecond!: () => void
+        const secondMessages = new Promise<Response>((resolve) => {
+          answerSecond = () => resolve(answer())
+        })
+        const { loadedThreads } = stubWorkflowBoundHistory(
+          [
+            agentThread({
+              id: 'th-first',
+              title: 'First chat',
+              last_message_at: '2026-09-22T09:00:00Z',
+              workflow_id: 'wf-first'
+            }),
+            agentThread({
+              id: 'th-second',
+              title: 'Second chat',
+              last_message_at: '2026-09-22T10:00:00Z',
+              workflow_id: 'wf-second'
+            })
+          ],
+          {
+            'th-first': { workflowId: 'wf-first' },
+            'th-second': { response: () => secondMessages }
+          }
+        )
+        renderWithSelectedTarget()
+        await userEvent.click(
+          screen.getByRole('button', {
+            name: i18n.global.t('agent.showChatHistory')
+          })
+        )
+        await userEvent.click(await screen.findByText('First chat'))
+        await vi.waitFor(() =>
+          expect(userPrompts()).toEqual(['Prompt in th-first'])
+        )
+
+        await activateTabAsUser(second)
+        await vi.waitFor(() =>
+          expect(loadedThreads).toEqual(['th-first', 'th-second'])
+        )
+        expect(
+          await screen.findByRole('status', {
+            name: 'Opening chat for second…'
+          })
+        ).toBeVisible()
+        await activateTabAsUser(first)
+        await waitFor(() =>
+          expect(screen.getByTestId('agent-panel-footer')).not.toHaveAttribute(
+            'inert'
+          )
+        )
+        expect(useAgentConversationStore().threadId).toBe('th-first')
+        expect(useAgentPanelStore().selectedWorkflow?.path).toBe(first.path)
+
+        answerSecond()
+        await settleFollow()
+
+        expect(workflowStore.activeWorkflow.path).toBe(first.path)
+        expect(useAgentConversationStore().threadId).toBe('th-first')
+        expect(useAgentPanelStore().selectedWorkflow?.path).toBe(first.path)
+        expect(userPrompts()).toEqual(['Prompt in th-first'])
+        expect(screen.queryByRole('status')).toBeNull()
+        expect(screen.getByTestId('agent-panel-footer')).not.toHaveAttribute(
+          'inert'
+        )
+        expect(screen.getByRole('textbox')).toHaveTextContent(/^$/)
+        expect(screen.queryByText(followFailure())).toBeNull()
+        expect(loadedThreads).toEqual(['th-first', 'th-second'])
+      }
+    )
+
+    async function openFirstChatThenLoseTranscripts(): Promise<{
+      loadedThreads: string[]
+      restoreTranscripts: () => void
+    }> {
+      const first = addTab('workflows/first.json')
+      addTab('workflows/second.json')
+      workflowStore.activeWorkflow = first
+      let transcriptsUp = true
+      const answer = (threadId: string, workflowId?: string) => async () =>
+        transcriptsUp
+          ? transcriptFor(threadId, workflowId)
+          : json(500, { error: 'unavailable' })
+      const { loadedThreads } = stubWorkflowBoundHistory(
+        [
+          agentThread({
+            id: 'th-first',
+            title: 'First chat',
+            last_message_at: '2026-09-22T09:00:00Z',
+            workflow_id: 'wf-first'
+          }),
+          agentThread({
+            id: 'th-second',
+            title: 'Second chat',
+            last_message_at: '2026-09-22T10:00:00Z',
+            workflow_id: 'wf-second'
+          })
+        ],
+        {
+          'th-first': { response: answer('th-first', 'wf-first') },
+          'th-second': { response: answer('th-second') }
+        }
+      )
+      renderWithSelectedTarget()
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.showChatHistory')
+        })
+      )
+      await userEvent.click(await screen.findByText('First chat'))
+      await vi.waitFor(() =>
+        expect(userPrompts()).toEqual(['Prompt in th-first'])
+      )
+      transcriptsUp = false
+      return { loadedThreads, restoreTranscripts: () => (transcriptsUp = true) }
+    }
+
+    const followFailure = () =>
+      i18n.global.t('agent.followedChatOpenFailed', { workflowName: 'second' })
+
+    it('keeps the current conversation covered until the followed chat is ready', async () => {
+      await openFirstChatThenLoseTranscripts()
+      const second = workflowStore.getWorkflowByPath('workflows/second.json')
+      assert(second)
+      const serve = vi.mocked(fetch).getMockImplementation()
+      assert(serve)
+      let answerList!: () => void
+      const listing = new Promise<Response>((resolve) => {
+        answerList = () =>
+          resolve(
+            json(
+              200,
+              agentThreadList([
+                agentThread({
+                  id: 'th-second',
+                  title: 'Second chat',
+                  last_message_at: '2026-09-22T10:00:00Z',
+                  workflow_id: 'wf-second'
+                })
+              ])
+            )
+          )
+      })
+      let answerMessages!: () => void
+      const transcript = new Promise<Response>((resolve) => {
+        answerMessages = () => resolve(transcriptFor('th-second', 'wf-second'))
+      })
+      let markMessagesRequested!: () => void
+      const messagesRequested = new Promise<void>((resolve) => {
+        markMessagesRequested = resolve
+      })
+      vi.mocked(fetch).mockImplementation((input, init) => {
+        if (threadListRoute.test(String(input))) return listing
+        if (String(input).endsWith('/threads/th-second/messages')) {
+          markMessagesRequested()
+          return transcript
+        }
+        return serve(input, init)
+      })
+
+      await activateTabAsUser(second)
+
+      expect(screen.getByTestId('agent-panel-footer')).toHaveAttribute('inert')
+      expect(
+        await screen.findByRole('status', {
+          name: 'Opening chat for second…'
+        })
+      ).toBeVisible()
+      expect(
+        within(screen.getByTestId('agent-conversation')).getByText(
+          'Prompt in th-first'
+        )
+      ).toBeInTheDocument()
+
+      answerList()
+      await messagesRequested
+
+      expect(
+        screen.getByRole('status', { name: 'Opening chat for second…' })
+      ).toBeVisible()
+      expect(userPrompts()).toEqual(['Prompt in th-first'])
+
+      answerMessages()
+      await within(screen.getByTestId('agent-conversation')).findByText(
+        'Prompt in th-second'
+      )
+
+      await vi.waitFor(() =>
+        expect(
+          screen.queryByRole('status', { name: 'Opening chat for second…' })
+        ).toBeNull()
+      )
+      expect(screen.getByTestId('agent-panel-footer')).not.toHaveAttribute(
+        'inert'
+      )
+    })
+
+    it('reports a followed chat that fails to open only in its notice', async () => {
+      await openFirstChatThenLoseTranscripts()
+      const second = workflowStore.getWorkflowByPath('workflows/second.json')
+      assert(second)
+
+      await activateTabAsUser(second)
+
+      expect(await screen.findByText(followFailure())).toBeVisible()
+      expect(executionErrors.recordPromptError).not.toHaveBeenCalled()
+      expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
+    })
+
+    it.for([
+      { followList: 'still loading', overlays: 1 },
+      { followList: 'already shown', overlays: 0 }
+    ])(
+      'shows $overlays overlay for a failed history load while the follow list is $followList',
+      async ({ followList, overlays }) => {
+        workflowStore.activeWorkflow = addTab('workflows/first.json')
+        const second = addTab('workflows/second.json')
+        let failMountList!: () => void
+        const mountList = new Promise<Response>((resolve) => {
+          failMountList = () => resolve(json(500, { error: 'unavailable' }))
+        })
+        const lists =
+          followList === 'still loading'
+            ? [mountList, new Promise<Response>(() => {})]
+            : [mountList]
+        stubWorkflowBoundHistory([
+          agentThread({
+            id: 'th-second',
+            title: 'Second chat',
+            last_message_at: '2026-09-22T10:00:00Z',
+            workflow_id: 'wf-second'
+          })
+        ])
+        const served = vi.mocked(fetch).getMockImplementation()
+        assert(served)
+        let listRequests = 0
+        vi.mocked(fetch).mockImplementation((input, init) => {
+          if (!threadListRoute.test(String(input))) return served(input, init)
+          listRequests += 1
+          return lists.splice(0, 1)[0] ?? served(input, init)
+        })
+        renderWithSelectedTarget()
+
+        await activateTabAsUser(second)
+        await vi.waitFor(() => expect(listRequests).toBe(2))
+        await settleFollow()
+        failMountList()
+        await settleFollow()
+
+        expect(executionErrors.showErrorOverlay).toHaveBeenCalledTimes(overlays)
+      }
+    )
+
+    it('keeps the open chat untouched when the followed chat fails to open, and retries', async () => {
+      const { loadedThreads, restoreTranscripts } =
+        await openFirstChatThenLoseTranscripts()
+      const second = workflowStore.getWorkflowByPath('workflows/second.json')
+      assert(second)
+
+      await activateTabAsUser(second)
+
+      expect(await screen.findByText(followFailure())).toBeVisible()
+      expect(userPrompts()).toEqual(['Prompt in th-first'])
+      expect(useAgentConversationStore().threadId).toBe('th-first')
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(
+        'workflows/first.json'
+      )
+      expect(workflowStore.activeWorkflow?.path).toBe(second.path)
+      expect(loadedThreads).toEqual(['th-first', 'th-second'])
+
+      restoreTranscripts()
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.retryFollowedChat', {
+            workflowName: 'second'
+          })
+        })
+      )
+
+      await vi.waitFor(() =>
+        expect(useAgentConversationStore().threadId).toBe('th-second')
+      )
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(second.path)
+      expect(screen.queryByText(followFailure())).toBeNull()
+    })
+
+    it('drops the follow failure notice once the user sends in the open chat', async () => {
+      await openFirstChatThenLoseTranscripts()
+      const second = workflowStore.getWorkflowByPath('workflows/second.json')
+      assert(second)
+      await activateTabAsUser(second)
+      expect(await screen.findByText(followFailure())).toBeVisible()
+
+      await sendFromComposer('keep going here')
+
+      expect(screen.queryByText(followFailure())).toBeNull()
+      expect(useAgentConversationStore().threadId).toBe('th-first')
+    })
+
+    it('holds the follow back while a message is still being sent', async () => {
+      const first = addTab('workflows/first.json')
+      const second = addTab('workflows/second.json')
+      workflowStore.activeWorkflow = first
+      const { loadedThreads } = stubWorkflowBoundHistory(
+        [
+          agentThread({
+            id: 'th-second',
+            title: 'Second chat',
+            last_message_at: '2026-09-22T10:00:00Z',
+            workflow_id: 'wf-second'
+          })
+        ],
+        {},
+        { post: () => new Promise<Response>(() => {}) }
+      )
+      renderWithSelectedTarget()
+      await vi.waitFor(() =>
+        expect(useAgentChatHistoryStore().sessions).toHaveLength(1)
+      )
+      await sendFromComposer('make it blue')
+
+      await activateTabAsUser(second)
+      await settleFollow()
+
+      expect(loadedThreads).toEqual([])
+      expect(useAgentComposerStore().submission?.phase).toBe('pending')
+    })
+
+    it('follows while a sent message runs once the server has accepted it', async () => {
+      const first = addTab('workflows/first.json')
+      const second = addTab('workflows/second.json')
+      workflowStore.activeWorkflow = first
+      stubWorkflowBoundHistory([
+        agentThread({
+          id: 'th-second',
+          title: 'Second chat',
+          last_message_at: '2026-09-22T10:00:00Z',
+          workflow_id: 'wf-second'
+        })
+      ])
+      renderWithSelectedTarget()
+      await vi.waitFor(() =>
+        expect(useAgentChatHistoryStore().sessions).toHaveLength(1)
+      )
+      await sendFromComposer('make it blue')
+      await vi.waitFor(() =>
+        expect(useAgentComposerStore().submission).toBeNull()
+      )
+      expect(screen.getByRole('button', { name: 'Stop' })).toBeVisible()
+
+      await activateTabAsUser(second)
+
+      await vi.waitFor(() =>
+        expect(useAgentConversationStore().threadId).toBe('th-second')
+      )
+    })
+
+    it("opens the active tab's chat on mount when the target is another tab", async () => {
+      const first = addTab('workflows/first.json')
+      const second = addTab('workflows/second.json')
+      workflowStore.activeWorkflow = second
+      useAgentPanelStore().setWorkflowTarget(first)
+      stubWorkflowBoundHistory([
+        agentThread({
+          id: 'th-second',
+          title: 'Second chat',
+          last_message_at: '2026-09-22T10:00:00Z',
+          workflow_id: 'wf-second'
+        })
+      ])
+
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+      await vi.waitFor(() =>
+        expect(useAgentConversationStore().threadId).toBe('th-second')
+      )
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(second.path)
+    })
+
+    it('keeps a chat picked in Chat history when restoring it opens its tab', async () => {
+      const first = addTab('workflows/first.json')
+      const second = addTab('workflows/second.json')
+      workflowStore.activeWorkflow = first
+      const { loadedThreads } = stubWorkflowBoundHistory(
+        [
+          agentThread({
+            id: 'th-newest',
+            title: 'Newest chat',
+            last_message_at: '2026-09-22T10:00:00Z',
+            workflow_id: 'wf-second'
+          }),
+          agentThread({
+            id: 'th-picked',
+            title: 'Picked chat',
+            last_message_at: '2026-09-22T09:00:00Z',
+            workflow_id: 'wf-second'
+          })
+        ],
+        { 'th-picked': { workflowId: 'wf-second' } }
+      )
+
+      renderWithSelectedTarget()
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.showChatHistory')
+        })
+      )
+      await userEvent.click(await screen.findByText('Picked chat'))
+      await vi.waitFor(() =>
+        expect(workflowStore.activeWorkflow?.path).toBe(second.path)
+      )
+
+      await settleFollow()
+      expect(loadedThreads).not.toContain('th-newest')
+      expect(useAgentConversationStore().threadId).toBe('th-picked')
+      expect(loadedThreads).toEqual(['th-picked'])
+    })
+
+    it('keeps the open chat when Show target opens its tab', async () => {
+      const first = addTab('workflows/first.json')
+      const second = addTab('workflows/second.json')
+      workflowStore.activeWorkflow = first
+      const { loadedThreads } = stubWorkflowBoundHistory(
+        [
+          agentThread({
+            id: 'th-newest',
+            title: 'Newest chat',
+            last_message_at: '2026-09-22T10:00:00Z',
+            workflow_id: 'wf-first'
+          }),
+          agentThread({
+            id: 'th-open',
+            title: 'Open chat',
+            last_message_at: '2026-09-22T09:00:00Z',
+            workflow_id: 'wf-first'
+          })
+        ],
+        { 'th-open': { workflowId: 'wf-first' } }
+      )
+      renderWithSelectedTarget()
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.showChatHistory')
+        })
+      )
+      await userEvent.click(await screen.findByText('Open chat'))
+      await vi.waitFor(() =>
+        expect(userPrompts()).toEqual(['Prompt in th-open'])
+      )
+      await activateTabAsUser(second)
+
+      await userEvent.click(
+        await screen.findByRole('button', {
+          name: 'Show target workflow: first'
+        })
+      )
+      await vi.waitFor(() =>
+        expect(workflowStore.activeWorkflow?.path).toBe(first.path)
+      )
+
+      await settleFollow()
+      expect(loadedThreads).not.toContain('th-newest')
+      expect(useAgentConversationStore().threadId).toBe('th-open')
+    })
+
+    it('keeps the user on the activated tab when the followed chat last ran on another', async () => {
+      const first = addTab('workflows/first.json')
+      const second = addTab('workflows/second.json')
+      workflowStore.activeWorkflow = first
+      stubWorkflowBoundHistory(
+        [
+          agentThread({
+            id: 'th-second',
+            title: 'Second chat',
+            last_message_at: '2026-09-22T10:00:00Z',
+            workflow_id: 'wf-second'
+          })
+        ],
+        { 'th-second': { workflowId: 'wf-first' } }
+      )
+
+      renderWithSelectedTarget()
+      await activateTabAsUser(second)
+      await vi.waitFor(() =>
+        expect(userPrompts()).toEqual(['Prompt in th-second'])
+      )
+      await settleFollow()
+
+      expect(workflowStore.activeWorkflow.path).toBe(second.path)
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(second.path)
+      expect(useAgentConversationStore().threadId).toBe('th-second')
+    })
+
+    it('requests the activated tab chat before the next macrotask', async () => {
+      workflowStore.activeWorkflow = addTab('workflows/first.json')
+      const second = addTab('workflows/second.json')
+      const { loadedThreads } = stubWorkflowBoundHistory([
+        agentThread({
+          id: 'th-second',
+          title: 'Second chat',
+          last_message_at: '2026-09-22T10:00:00Z',
+          workflow_id: 'wf-second'
+        })
+      ])
+      renderWithSelectedTarget()
+      await vi.waitFor(() =>
+        expect(useAgentChatHistoryStore().sessions).toHaveLength(1)
+      )
+
+      await activateTabAsUser(second)
+      await settleFollow()
+
+      expect(loadedThreads).toEqual(['th-second'])
+    })
+
+    it("opens the tab's newest chat when it started after the list loaded", async () => {
+      workflowStore.activeWorkflow = addTab('workflows/first.json')
+      const second = addTab('workflows/second.json')
+      const threads = [
+        agentThread({
+          id: 'th-old',
+          title: 'Old chat',
+          last_message_at: '2026-09-22T09:00:00Z',
+          workflow_id: 'wf-second'
+        })
+      ]
+      const { loadedThreads } = stubWorkflowBoundHistory(threads)
+      renderWithSelectedTarget()
+      await vi.waitFor(() =>
+        expect(useAgentChatHistoryStore().sessions).toHaveLength(1)
+      )
+      threads.push(
+        agentThread({
+          id: 'th-new',
+          title: 'New chat',
+          last_message_at: '2026-09-22T11:00:00Z',
+          workflow_id: 'wf-second'
+        })
+      )
+
+      await activateTabAsUser(second)
+
+      await vi.waitFor(() =>
+        expect(useAgentConversationStore().threadId).toBe('th-new')
+      )
+      expect(loadedThreads).toEqual(['th-new'])
+    })
+
+    it.for([
+      {
+        stamps: 'no message time',
+        last_message_at: '',
+        updated_at: '2026-09-01T10:00:00Z',
+        created_at: '2026-09-01T09:00:00Z'
+      },
+      {
+        stamps: 'an unparsable message time',
+        last_message_at: 'yesterday',
+        updated_at: '2026-09-01T10:00:00Z',
+        created_at: '2026-09-01T09:00:00Z'
+      },
+      {
+        stamps: 'no valid time at all',
+        last_message_at: '',
+        updated_at: 'unknown',
+        created_at: ''
+      }
+    ])(
+      'ranks a chat with $stamps by its next valid time',
+      async ({ last_message_at, updated_at, created_at }) => {
+        workflowStore.activeWorkflow = addTab('workflows/first.json')
+        const second = addTab('workflows/second.json')
+        const { loadedThreads } = stubWorkflowBoundHistory([
+          agentThread({
+            id: 'th-stale',
+            title: 'Stale chat',
+            last_message_at,
+            updated_at,
+            created_at,
+            workflow_id: 'wf-second'
+          }),
+          agentThread({
+            id: 'th-recent',
+            title: 'Recent chat',
+            last_message_at: '2026-09-22T10:00:00Z',
+            workflow_id: 'wf-second'
+          })
+        ])
+        renderWithSelectedTarget()
+
+        await activateTabAsUser(second)
+
+        await vi.waitFor(() =>
+          expect(useAgentConversationStore().threadId).toBe('th-recent')
+        )
+        expect(loadedThreads).toEqual(['th-recent'])
+      }
+    )
+
+    it('keeps the open chat when the user returns to the tab it targets', async () => {
+      const first = addTab('workflows/first.json')
+      const second = addTab('workflows/second.json')
+      const third = addTab('workflows/third.json')
+      workflowStore.activeWorkflow = first
+      const { loadedThreads } = stubWorkflowBoundHistory(
+        [
+          agentThread({
+            id: 'th-newer',
+            title: 'Newer chat',
+            last_message_at: '2026-09-22T10:00:00Z',
+            workflow_id: 'wf-first'
+          }),
+          agentThread({
+            id: 'th-older',
+            title: 'Older chat',
+            last_message_at: '2026-09-22T09:00:00Z',
+            workflow_id: 'wf-first'
+          }),
+          agentThread({
+            id: 'th-third',
+            title: 'Third chat',
+            last_message_at: '2026-09-22T08:00:00Z',
+            workflow_id: 'wf-third'
+          })
+        ],
+        { 'th-older': { workflowId: 'wf-first' } }
+      )
+      renderWithSelectedTarget()
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.showChatHistory')
+        })
+      )
+      await userEvent.click(await screen.findByText('Older chat'))
+      await vi.waitFor(() =>
+        expect(userPrompts()).toEqual(['Prompt in th-older'])
+      )
+
+      await activateTabAsUser(second)
+      await activateTabAsUser(first)
+      await settleFollow()
+
+      expect(useAgentConversationStore().threadId).toBe('th-older')
+      expect(loadedThreads).toEqual(['th-older'])
+
+      await activateTabAsUser(third)
+      await vi.waitFor(() =>
+        expect(useAgentConversationStore().threadId).toBe('th-third')
+      )
+      expect(loadedThreads).toEqual(['th-older', 'th-third'])
+    })
+    it.for([
+      { outcome: 'opens', answer: () => json(200, []) },
+      {
+        outcome: 'fails',
+        answer: () => json(500, { error: 'unavailable' })
+      }
+    ])(
+      'leaves the user on a later tab when an earlier follow $outcome',
+      async ({ answer }) => {
+        workflowStore.activeWorkflow = addTab('workflows/first.json')
+        const second = addTab('workflows/second.json')
+        const scratch = addTab('workflows/scratch.json', { isTemporary: true })
+        let answerSecond!: () => void
+        const { loadedThreads } = stubWorkflowBoundHistory(
+          [
+            agentThread({
+              id: 'th-second',
+              title: 'Second chat',
+              last_message_at: '2026-09-22T10:00:00Z',
+              workflow_id: 'wf-second'
+            })
+          ],
+          {
+            'th-second': {
+              response: () =>
+                new Promise<Response>((resolve) => {
+                  answerSecond = () => resolve(answer())
+                })
+            }
+          }
+        )
+        renderWithSelectedTarget()
+        await activateTabAsUser(second)
+        await vi.waitFor(() => expect(loadedThreads).toEqual(['th-second']))
+
+        await activateTabAsUser(scratch)
+        answerSecond()
+        await settleFollow()
+
+        expect(workflowStore.activeWorkflow.path).toBe(scratch.path)
+        expect(useAgentConversationStore().threadId).toBeNull()
+        expect(
+          screen.queryByText(
+            i18n.global.t('agent.followedChatOpenFailed', {
+              workflowName: 'second'
+            })
+          )
+        ).toBeNull()
+      }
+    )
+  })
+
   describe('history row title for the active chat', () => {
     function stubActiveThread(serverTitle: string): void {
       vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
@@ -6231,14 +7799,16 @@ describe('AgentPanelRoot lifecycle', () => {
 
   it('clears workflow activity when the panel unmounts', () => {
     const activity = useWorkflowTabActivityStore()
-    activity.setEditing('workflows/active.json')
+    activity.setAgentTurnTabs([
+      { path: 'workflows/active.json', awaitingApproval: false }
+    ])
     activity.setCreating(true)
 
     const { unmount } = renderWithSelectedTarget()
 
     unmount()
 
-    expect(activity.$state.editingTabPath).toBeNull()
+    expect(activity.editingPaths.size).toBe(0)
     expect(activity.$state.creatingTab).toBe(false)
   })
 })
@@ -8791,11 +10361,11 @@ describe('AgentPanelRoot workflow binding', () => {
     await renderAndSend('add an upscaler')
 
     const activity = useWorkflowTabActivityStore()
-    expect(activity.editingTabPath).toBe('workflows/current.json')
+    expect([...activity.editingPaths]).toEqual(['workflows/current.json'])
 
     ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
     await screen.findByRole('button', { name: 'Send' })
-    expect(activity.editingTabPath).toBeNull()
+    expect(activity.editingPaths.size).toBe(0)
     expect(activity.unseenModifiedPaths.has('workflows/current.json')).toBe(
       true
     )
@@ -8809,12 +10379,12 @@ describe('AgentPanelRoot workflow binding', () => {
     await sendFromComposer('add an upscaler')
 
     const activity = useWorkflowTabActivityStore()
-    expect(activity.editingTabPath).toBe('workflows/current.json')
+    expect([...activity.editingPaths]).toEqual(['workflows/current.json'])
     activity.setCreating(true)
 
     unmount()
 
-    expect(activity.editingTabPath).toBeNull()
+    expect(activity.editingPaths.size).toBe(0)
     expect(activity.creatingTab).toBe(false)
   })
 
@@ -8917,7 +10487,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await renderAndSend('add an upscaler')
 
     const activity = useWorkflowTabActivityStore()
-    expect(activity.editingTabPath).toBe('workflows/current.json')
+    expect([...activity.editingPaths]).toEqual(['workflows/current.json'])
   })
 
   // PM-1575 regression: the canvas-sync gate was wired to
@@ -8979,7 +10549,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
     await renderAndSend('work here')
     const activity = useWorkflowTabActivityStore()
-    expect(activity.editingTabPath).toBe('workflows/current.json')
+    expect([...activity.editingPaths]).toEqual(['workflows/current.json'])
     vi.useFakeTimers()
 
     ws.emit('agent_active_tab', {
@@ -8990,7 +10560,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await vi.advanceTimersByTimeAsync(500)
 
     await vi.waitFor(() =>
-      expect(activity.editingTabPath).toBe('workflows/Video test.json')
+      expect([...activity.editingPaths]).toEqual(['workflows/Video test.json'])
     )
   })
 
@@ -9002,10 +10572,10 @@ describe('AgentPanelRoot workflow binding', () => {
     await sendFromComposer('add an upscaler')
 
     const activity = useWorkflowTabActivityStore()
-    expect(activity.editingTabPath).toBe('workflows/current.json')
+    expect([...activity.editingPaths]).toEqual(['workflows/current.json'])
 
     unmount()
-    expect(activity.editingTabPath).toBeNull()
+    expect(activity.editingPaths.size).toBe(0)
 
     const other = addTab('workflows/other.json')
     useAgentWorkflowTabBindingStore().bind('wf-other', other.path)
@@ -9020,11 +10590,11 @@ describe('AgentPanelRoot workflow binding', () => {
 
     renderWithSelectedTarget()
     await vi.waitFor(() =>
-      expect(activity.editingTabPath).toBe('workflows/current.json')
+      expect([...activity.editingPaths]).toEqual(['workflows/current.json'])
     )
 
     ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
-    await vi.waitFor(() => expect(activity.editingTabPath).toBeNull())
+    await vi.waitFor(() => expect(activity.editingPaths.size).toBe(0))
   })
 
   it("sends the active tab's saved workflow id with the turn", async () => {
@@ -9156,17 +10726,17 @@ describe('AgentPanelRoot workflow binding', () => {
 
     await sendFromComposer('attached turn')
     const activity = useWorkflowTabActivityStore()
-    expect(activity.editingTabPath).toBe('workflows/current.json')
+    expect([...activity.editingPaths]).toEqual(['workflows/current.json'])
 
     ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
-    await vi.waitFor(() => expect(activity.editingTabPath).toBeNull())
+    await vi.waitFor(() => expect(activity.editingPaths.size).toBe(0))
 
     await userEvent.click(
       screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
     )
     await sendFromComposer('detached turn')
 
-    expect(activity.editingTabPath).toBe('workflows/current.json')
+    expect([...activity.editingPaths]).toEqual(['workflows/current.json'])
   })
 
   it('agent_active_tab activates the bound tab', async () => {
@@ -9515,7 +11085,9 @@ describe('AgentPanelRoot workflow binding', () => {
         useAgentWorkflowTabBindingStore().tabPathFor('wf-other')
       ).toBeUndefined()
       expect(useTelemetry()!.trackAgentWorkflowApplied).not.toHaveBeenCalled()
-      expect(useWorkflowTabActivityStore().editingTabPath).toBe(current.path)
+      expect([...useWorkflowTabActivityStore().editingPaths]).toEqual([
+        current.path
+      ])
       expect(useWorkflowTabActivityStore().creatingTab).toBe(false)
       expect(
         Boolean(workflowStore.getWorkflowByPath('workflows/Other.json'))
@@ -9591,7 +11163,7 @@ describe('AgentPanelRoot workflow binding', () => {
         useAgentWorkflowTabBindingStore().tabPathFor('wf-late')
       ).toBeUndefined()
       expect(useTelemetry()!.trackAgentWorkflowApplied).not.toHaveBeenCalled()
-      expect(useWorkflowTabActivityStore().editingTabPath).toBeNull()
+      expect(useWorkflowTabActivityStore().editingPaths.size).toBe(0)
       if (kind === 'new') expect(workflowStore.activeWorkflow).toEqual(current)
       expect(
         Boolean(workflowStore.getWorkflowByPath('workflows/Late.json'))
@@ -9791,13 +11363,15 @@ describe('AgentPanelRoot workflow binding', () => {
 
     const activity = useWorkflowTabActivityStore()
     await vi.waitFor(() =>
-      expect(activity.editingTabPath).toBe(
+      expect([...activity.editingPaths]).toEqual([
         'workflows/Unsaved Workflow (2).json'
-      )
+      ])
     )
     ws.emit('agent_active_tab', { workflow_id: 'wf-a', thread_id: 'th-1' })
     await vi.waitFor(() =>
-      expect(activity.editingTabPath).toBe('workflows/Unsaved Workflow.json')
+      expect([...activity.editingPaths]).toEqual([
+        'workflows/Unsaved Workflow.json'
+      ])
     )
   })
 

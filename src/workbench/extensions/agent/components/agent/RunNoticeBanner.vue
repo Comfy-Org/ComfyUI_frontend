@@ -11,26 +11,48 @@ const {
 } = defineProps<{
   expanded?: boolean
   workflowName?: string
-  context?: 'following' | 'mismatch' | 'unavailable'
+  context?: 'following' | 'mismatch' | 'unavailable' | 'followFailed'
 }>()
 
-const emit = defineEmits<{ showTarget: [] }>()
+const emit = defineEmits<{ showTarget: []; retry: [] }>()
 const dismissed = useStorage('Comfy.AgentPanel.runNoticeDismissed', false)
 const contextMessages = {
   following: 'agent.targetFollowsVisibleWorkflow',
   mismatch: 'agent.viewingDifferentWorkflow',
-  unavailable: 'agent.targetWorkflowUnavailable'
+  unavailable: 'agent.targetWorkflowUnavailable',
+  followFailed: 'agent.followedChatOpenFailed'
 } as const satisfies Record<NonNullable<typeof context>, string>
 const defaultNotice = computed(() =>
   expanded ? 'agent.runNoticeExpanded' : 'agent.runNotice'
 )
+const shown = computed(() => context !== undefined || !dismissed.value)
+const liveness = computed(() => (context ? 'polite' : undefined))
+const contextAction = computed(() => {
+  switch (context) {
+    case 'mismatch':
+      return {
+        label: 'agent.showTarget',
+        name: 'agent.showTargetWorkflow',
+        icon: 'icon-[lucide--arrow-up-right] size-4',
+        run: () => emit('showTarget')
+      }
+    case 'followFailed':
+      return {
+        label: 'g.retry',
+        name: 'agent.retryFollowedChat',
+        run: () => emit('retry')
+      }
+    default:
+      return undefined
+  }
+})
 </script>
 
 <template>
   <div
-    v-if="context || !dismissed"
+    v-if="shown"
     role="note"
-    :aria-live="context ? 'polite' : undefined"
+    :aria-live="liveness"
     class="relative flex items-start gap-2 overflow-hidden rounded-lg bg-base-background p-4 ring-1 ring-border-subtle before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-muted-background"
   >
     <span
@@ -38,17 +60,17 @@ const defaultNotice = computed(() =>
     />
     <p class="my-0 min-w-0 flex-1 text-sm text-base-foreground">
       <template v-if="context">
-        {{ $t(contextMessages[context]) }}
+        {{ $t(contextMessages[context], { workflowName }) }}
         <Button
-          v-if="context === 'mismatch'"
+          v-if="contextAction"
           type="button"
           variant="muted-textonly"
           size="sm"
-          :aria-label="$t('agent.showTargetWorkflow', { workflowName })"
-          @click="emit('showTarget')"
+          :aria-label="$t(contextAction.name, { workflowName })"
+          @click="contextAction.run"
         >
-          {{ $t('agent.showTarget') }}
-          <span class="icon-[lucide--arrow-up-right] size-4" />
+          {{ $t(contextAction.label) }}
+          <span v-if="contextAction.icon" :class="contextAction.icon" />
         </Button>
       </template>
       <i18n-t

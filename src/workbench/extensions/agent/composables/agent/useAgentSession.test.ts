@@ -15,10 +15,12 @@ import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/platform/skills/api/skillsApi'), { spy: true })
 import { reportError } from '@/platform/telemetry/reportError'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import { api } from '@/scripts/api'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
+import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
 import type {
   AgentAnswerAccepted,
@@ -660,6 +662,113 @@ describe('useAgentSession (v1 composition root)', () => {
       session.stop()
     }
   )
+
+  it.for(['loads', 'fails'])(
+    'keeps the open chat until a kept-open load %s',
+    async (outcome) => {
+      let answer = (_loaded: boolean) => {}
+      const getMessages = vi.fn(
+        (threadId: string): Promise<AgentMessages> =>
+          threadId === 'th-next'
+            ? new Promise((resolve, reject) => {
+                answer = (loaded) =>
+                  loaded ? resolve([]) : reject(new Error('unavailable'))
+              })
+            : Promise.resolve([])
+      )
+      const session = useAgentSession({
+        rest: fakeRest({ getMessages }),
+        events: fakeEvents().source
+      })
+      session.start()
+      await session.sendMessage('First chat')
+
+      const opening = session.loadThread('th-next', () => true, {
+        keepOpenChatUntilLoaded: true
+      })
+      expect(session.threadId.value).toBe('th-1')
+      expect(session.isTranscriptReady.value).toBe(true)
+
+      answer(outcome === 'loads')
+
+      expect(await opening).toBe(outcome === 'loads')
+      expect(session.threadId.value).toBe(
+        outcome === 'loads' ? 'th-next' : 'th-1'
+      )
+      expect(session.notices.value).toEqual([])
+      session.stop()
+    }
+  )
+
+  function keptOpenSession(
+    restored: (isCurrent: () => boolean) => Promise<boolean> | boolean
+  ) {
+    const onThreadActivated = vi.fn()
+    const session = useAgentSession({
+      rest: fakeRest(),
+      events: fakeEvents().source,
+      onThreadActivated,
+      workflow: {
+        current: () => undefined,
+        adopted: vi.fn(),
+        restored: (_workflowId, isCurrent) => restored(isCurrent)
+      }
+    })
+    session.start()
+    return { session, onThreadActivated }
+  }
+
+  it.for([
+    { restore: 'fails', restored: () => false },
+    {
+      restore: 'throws',
+      restored: (): boolean => {
+        throw new Error('restore failed')
+      }
+    }
+  ])(
+    'reports a kept-open switch whose workflow restore $restore as failed, without activating it',
+    async ({ restored }) => {
+      const { session, onThreadActivated } = keptOpenSession(restored)
+
+      const opened = await session.loadThread('th-next', () => true, {
+        keepOpenChatUntilLoaded: true
+      })
+
+      expect(opened).toBe(false)
+      expect(onThreadActivated).not.toHaveBeenCalledWith('th-next')
+      expect(
+        localStorage.getItem(StorageKeys.agentThread('personal'))
+      ).toBeNull()
+      expect(session.notices.value).toEqual([])
+      session.stop()
+    }
+  )
+
+  it('finishes, but no longer navigates for, a kept-open switch the user moved on from', async () => {
+    let navigationCurrent = true
+    let restoreWasCurrent: boolean | undefined
+    const { session, onThreadActivated } = keptOpenSession((isCurrent) => {
+      navigationCurrent = false
+      restoreWasCurrent = isCurrent()
+      return true
+    })
+
+    const opened = await session.loadThread(
+      'th-next',
+      () => navigationCurrent,
+      { keepOpenChatUntilLoaded: true }
+    )
+
+    expect(restoreWasCurrent).toBe(false)
+    expect(opened).toBe(false)
+    expect(session.threadId.value).toBe('th-next')
+    expect(onThreadActivated).toHaveBeenLastCalledWith('th-next')
+    expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBe(
+      'th-next'
+    )
+    session.stop()
+  })
 
   it('(b) a second send posts to the adopted threadId, not new', async () => {
     const postMessage = vi
@@ -4148,6 +4257,61 @@ describe('useAgentSession (v1 composition root)', () => {
       }
     ])
   })
+
+  it.for([
+    { statuses: ['complete'], completes: true },
+    { statuses: ['error'], completes: false },
+    { statuses: ['interrupted'], completes: false },
+    { statuses: ['interrupted', 'complete'], completes: true },
+    { statuses: ['complete', 'error'], completes: false }
+  ] as const)(
+    'reports a turn recovered with rows $statuses as completed: $completes',
+    async ({ statuses, completes }) => {
+      const rest = fakeRest({
+        getMessages: vi.fn(
+          async (): Promise<AgentMessages> => [
+            historyRow(1, 'user', 'msg-1', 'go'),
+            ...statuses.map((rowStatus, index) => ({
+              ...historyRow(
+                2 + index,
+                'assistant',
+                'msg-1',
+                'answer',
+                index === 0 ? 'msg-1' : `msg-1-${index}`
+              ),
+              status: rowStatus
+            }))
+          ]
+        )
+      })
+      useWorkflowStore().attachWorkflow(
+        createMockLoadedWorkflow({
+          path: 'workflows/a.json',
+          instanceId: 'tab-a'
+        }),
+        0
+      )
+      const conversation = useAgentConversationStore()
+      conversation.setTurnTabResolver(() => ({
+        status: 'known',
+        workflowInstanceId: 'tab-a'
+      }))
+      const completed: string[] = []
+      conversation.onTurnCompleted((path) => completed.push(path))
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+
+      await session.sendMessage('go')
+      emit(delta('msg-1', 'partial'))
+      status(false)
+      status(true)
+
+      await vi.waitFor(() => expect(session.isStreaming.value).toBe(false))
+      expect(completed).toEqual(completes ? ['workflows/a.json'] : [])
+    }
+  )
 
   it('an empty interrupted row preserves the locally streamed reply', async () => {
     const interruptedWithoutParts = {

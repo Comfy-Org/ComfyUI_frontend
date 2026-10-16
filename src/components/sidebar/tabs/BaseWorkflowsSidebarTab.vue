@@ -238,8 +238,9 @@ const dummyExpandedKeys = ref<Record<string, boolean>>({})
 
 const handleCloseWorkflow = async (workflow?: ComfyWorkflow) => {
   if (workflow) {
-    await workflowService.closeWorkflow(workflow, {
-      warnIfUnsaved: !workspaceStore.shiftDown
+    await workflowService.closeWorkflows([workflow], {
+      warnIfUnsaved: !workspaceStore.shiftDown,
+      initiator: 'user'
     })
   }
 }
@@ -342,7 +343,7 @@ const renderTreeNode = (
     e: MouseEvent
   ) {
     if (this.leaf && workflow) {
-      await workflowService.openWorkflow(workflow)
+      await workflowService.openWorkflow(workflow, { initiator: 'user' })
     } else {
       toggleNodeOnEvent(e, this)
     }

@@ -299,6 +299,7 @@
     "cancelled": "Cancelled",
     "agentWorking": "Agent is working on this workflow",
     "agentModified": "Agent updated this workflow",
+    "agentNeedsApproval": "Agent needs your approval",
     "job": "Job",
     "asset": "{count} asset | {count} assets",
     "untitled": "Untitled",
@@ -5664,6 +5665,10 @@
     "showTarget": "Show target",
     "targetWorkflowUnavailable": "The target workflow is no longer available.",
     "targetWorkflowOpenFailed": "Couldn’t open the target workflow.",
+    "openingWorkflowChat": "Opening chat for {workflowName}…",
+    "openingChat": "Opening chat…",
+    "followedChatOpenFailed": "Couldn’t open the chat for {workflowName}.",
+    "retryFollowedChat": "Retry opening the chat for {workflowName}",
     "showTargetWorkflow": "Show target workflow: {workflowName}",
     "runApproval": {
       "lead": "This tool wants to run the workflow:",

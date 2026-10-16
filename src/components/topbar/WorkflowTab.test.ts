@@ -63,7 +63,8 @@ const statusAriaLabels: Record<WorkflowExecutionStatus, string> = {
 
 const agentAriaLabels = {
   agentWorking: 'Agent is working on this workflow',
-  agentModified: 'Agent updated this workflow'
+  agentModified: 'Agent updated this workflow',
+  agentNeedsApproval: 'Agent needs your approval'
 }
 
 const i18n = createI18n({
@@ -219,7 +220,9 @@ describe('WorkflowTab - agent activity indicators', () => {
 
   it('T-17 / PM-658 / FE-1289 renders the active workflow tab loading state', async () => {
     renderTab({ activeWorkflowKey: 'test-key' })
-    useWorkflowTabActivityStore().setEditing('/workflows/test.json')
+    useWorkflowTabActivityStore().setAgentTurnTabs([
+      { path: '/workflows/test.json', awaitingApproval: false }
+    ])
     await nextTick()
 
     expect(
@@ -230,7 +233,9 @@ describe('WorkflowTab - agent activity indicators', () => {
   it('the agent spinner wins over the unseen-changes dot', async () => {
     renderTab()
     const activity = useWorkflowTabActivityStore()
-    activity.setEditing('/workflows/test.json')
+    activity.setAgentTurnTabs([
+      { path: '/workflows/test.json', awaitingApproval: false }
+    ])
     activity.markModified('/workflows/test.json')
     await nextTick()
 
@@ -238,6 +243,33 @@ describe('WorkflowTab - agent activity indicators', () => {
       screen.getByRole('img', { name: agentAriaLabels.agentWorking })
     ).toBeTruthy()
     expect(screen.queryByTestId('agent-modified-indicator')).toBeNull()
+  })
+
+  it('the needs-approval dot wins over the agent spinner', async () => {
+    renderTab()
+    const activity = useWorkflowTabActivityStore()
+    activity.setAgentTurnTabs([
+      { path: '/workflows/test.json', awaitingApproval: true }
+    ])
+    await nextTick()
+
+    expect(
+      screen.getByRole('img', { name: agentAriaLabels.agentNeedsApproval })
+    ).toBeVisible()
+    expect(
+      screen.queryByRole('img', { name: agentAriaLabels.agentWorking })
+    ).toBeNull()
+
+    activity.setAgentTurnTabs([
+      { path: '/workflows/test.json', awaitingApproval: false }
+    ])
+    await nextTick()
+    expect(
+      screen.queryByRole('img', { name: agentAriaLabels.agentNeedsApproval })
+    ).toBeNull()
+    expect(
+      screen.getByRole('img', { name: agentAriaLabels.agentWorking })
+    ).toBeVisible()
   })
 
   it('shows the unseen-changes dot ahead of non-failed execution status', async () => {
@@ -294,7 +326,9 @@ describe('WorkflowTab - close button', () => {
 
   it('keeps the close button hidden while an active status indicator shows', async () => {
     renderTab({ activeWorkflowKey: 'test-key' })
-    useWorkflowTabActivityStore().setEditing('/workflows/test.json')
+    useWorkflowTabActivityStore().setAgentTurnTabs([
+      { path: '/workflows/test.json', awaitingApproval: false }
+    ])
     await nextTick()
 
     expect(
@@ -306,14 +340,14 @@ describe('WorkflowTab - close button', () => {
     )
   })
 
-  it('delegates close to workflow service with the tab workflow', async () => {
+  it('delegates close to workflow service as a user action on the tab workflow', async () => {
     renderTab()
     const user = userEvent.setup()
     await user.click(screen.getByTestId('close-workflow-button'))
 
-    expect(useWorkflowService().closeWorkflow).toHaveBeenCalledWith(
-      expect.objectContaining({ key: 'test-key' }),
-      expect.anything()
+    expect(useWorkflowService().closeWorkflows).toHaveBeenCalledWith(
+      [expect.objectContaining({ key: 'test-key' })],
+      expect.objectContaining({ initiator: 'user' })
     )
   })
 })
@@ -401,14 +435,16 @@ describe('WorkflowTab - Agent target', () => {
     panel.enabled = true
     panel.setWorkflowTarget(workflowOption.workflow)
     const activity = useWorkflowTabActivityStore()
-    activity.setEditing(workflowOption.workflow.path)
+    activity.setAgentTurnTabs([
+      { path: workflowOption.workflow.path, awaitingApproval: false }
+    ])
     await nextTick()
     expect(screen.getByRole('img', { name: targetLabel })).toBeVisible()
     expect(
       screen.getByRole('img', { name: agentAriaLabels.agentWorking })
     ).toBeVisible()
 
-    activity.setEditing(null)
+    activity.setAgentTurnTabs([])
     activity.markModified(workflowOption.workflow.path)
     await nextTick()
     expect(screen.getByRole('img', { name: targetLabel })).toBeVisible()
@@ -419,9 +455,9 @@ describe('WorkflowTab - Agent target', () => {
     expect(screen.getByRole('img', { name: targetLabel })).toBeVisible()
     expect(screen.getByTestId('workflow-dirty-indicator')).toBeVisible()
     await userEvent.setup().click(screen.getByTestId('close-workflow-button'))
-    expect(useWorkflowService().closeWorkflow).toHaveBeenCalledWith(
-      workflowOption.workflow,
-      expect.anything()
+    expect(useWorkflowService().closeWorkflows).toHaveBeenCalledWith(
+      [workflowOption.workflow],
+      expect.objectContaining({ initiator: 'user' })
     )
   })
 })
