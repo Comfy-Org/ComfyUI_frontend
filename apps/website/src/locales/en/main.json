@@ -5863,7 +5863,7 @@
     "faqLicense": "Does my repo need a license?",
     "faqLicenseBody": "Yes. Publish your app code with an open-source license and setup instructions. You may use partner models; only the Open Weights Only category requires open-weights models with no partner nodes or APIs.",
     "faqBonus": "Can I win a main prize and a bonus prize?",
-    "faqBonusBody": "Each entry is eligible for both a main category and a model-provider bonus category. See the published rules for model requirements."
+    "faqBonusBody": "Each entry is eligible for both a main category and a model-provider bonus category."
   },
   "vfx": {
     "meta": {
