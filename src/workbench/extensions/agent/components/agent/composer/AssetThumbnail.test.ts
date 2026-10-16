@@ -42,3 +42,39 @@ describe('asset poster loading', () => {
     }
   )
 })
+
+describe('EXR without a stored preview', () => {
+  it('shows its name on a plain tile in the tray', () => {
+    render(AssetThumbnail, {
+      props: { name: 'plate.EXR', mediaKind: 'image', variant: 'tray' },
+      global: { plugins: [i18n] }
+    })
+    expect(screen.getByText('plate.EXR')).toBeVisible()
+    expect(screen.queryByRole('img')).not.toBeInTheDocument()
+  })
+
+  it('shows the stored preview when there is one', () => {
+    render(AssetThumbnail, {
+      props: {
+        name: 'plate.exr',
+        mediaKind: 'image',
+        previewUrl: '/api/assets/preview-1/content',
+        variant: 'tray'
+      },
+      global: { plugins: [i18n] }
+    })
+    expect(screen.getByAltText('plate.exr')).toHaveAttribute(
+      'src',
+      '/api/assets/preview-1/content'
+    )
+    expect(screen.queryByText('plate.exr')).not.toBeInTheDocument()
+  })
+
+  it('keeps the file icon for a refused file', () => {
+    render(AssetThumbnail, {
+      props: { name: 'env.hdr', mediaKind: 'other', variant: 'tray' },
+      global: { plugins: [i18n] }
+    })
+    expect(screen.queryByText('env.hdr')).not.toBeInTheDocument()
+  })
+})

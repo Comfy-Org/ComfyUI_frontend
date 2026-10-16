@@ -37,7 +37,9 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useAppMode } from '@/composables/useAppMode'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
+import { findServerPreviewUrl } from '@/platform/assets/utils/assetPreviewUtil'
 import { fetchDroppedAsset, getDroppedAsset } from '@/utils/eventUtils'
+import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import type { DroppedAsset } from '@/utils/eventUtils'
 import { useAssetsStore } from '@/stores/assetsStore'
 import {
@@ -1715,11 +1717,17 @@ const attachment = useAttachment({
   upload: async (file, signal) => {
     const uploaded = await rest.uploadImage(file, file.name, signal)
     const filename = uploaded.name ?? file.name
+    // The browser cannot decode an EXR, so its chip shows the stored preview
+    // the asset system keeps for it, never the uploaded file itself.
+    const previewUrl = isHdrImageFilename(filename)
+      ? ((await findServerPreviewUrl(filename)) ?? undefined)
+      : undefined
     return {
       ref: filename,
       url: api.apiURL(
         `/view?filename=${encodeURIComponent(filename)}&type=input`
-      )
+      ),
+      previewUrl
     }
   },
   // The library caches input assets; without this refresh a just-uploaded file
