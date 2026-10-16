@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  NOTHING_DISCARDED,
   reloadForDeploymentSwitch,
+  takeDeploymentSwitchDiscard,
   takeDeploymentSwitchLanding
 } from './deploymentSwitchReload'
 
@@ -10,13 +12,18 @@ describe('deployment switch reload', () => {
 
   beforeEach(() => {
     sessionStorage.clear()
+    takeDeploymentSwitchDiscard()
     vi.stubGlobal('location', { reload })
   })
 
-  it('reloads, and lets only the next boot know a switch caused it', () => {
-    reloadForDeploymentSwitch(() => {})
+  it('reloads, and lets only the next unload and the next boot know a switch caused it', () => {
+    expect(takeDeploymentSwitchDiscard()).toBeNull()
+
+    reloadForDeploymentSwitch(NOTHING_DISCARDED, () => {})
 
     expect(reload).toHaveBeenCalledOnce()
+    expect(takeDeploymentSwitchDiscard()).toBe(NOTHING_DISCARDED)
+    expect(takeDeploymentSwitchDiscard()).toBeNull()
     expect(takeDeploymentSwitchLanding()).toBe(true)
     expect(takeDeploymentSwitchLanding()).toBe(false)
   })
@@ -25,7 +32,7 @@ describe('deployment switch reload', () => {
     'hands the page back once, without a landing toast, when it is still in use after the reload: %s',
     (type) => {
       const onStay = vi.fn()
-      reloadForDeploymentSwitch(onStay)
+      reloadForDeploymentSwitch(NOTHING_DISCARDED, onStay)
       expect(onStay).not.toHaveBeenCalled()
 
       window.dispatchEvent(new Event(type))
@@ -41,7 +48,7 @@ describe('deployment switch reload', () => {
       throw new DOMException('quota', 'QuotaExceededError')
     })
 
-    reloadForDeploymentSwitch(() => {})
+    reloadForDeploymentSwitch(NOTHING_DISCARDED, () => {})
 
     expect(reload).toHaveBeenCalledOnce()
     expect(takeDeploymentSwitchLanding()).toBe(false)

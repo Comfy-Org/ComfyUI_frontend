@@ -3902,6 +3902,13 @@
     "deploymentChanged": "This browser now runs on {deployment}. Reload to get its nodes.",
     "reload": "Reload",
     "failedToSwitch": "Could not switch",
+    "unsaved": {
+      "title": "Save your workflows before switching?",
+      "message": "Switching to {deployment} reloads the tab. These workflows have changes that aren't saved yet.",
+      "tabsReturn": "Your open tabs come back after the reload either way.",
+      "switchWithoutSaving": "Switch without saving",
+      "saveAndSwitch": "Save and switch"
+    },
     "workspaceDefault": "Workspace default",
     "membersStartOn": "Members without their own pick start on",
     "defaultDeleted": "Deleted",
