@@ -3,14 +3,14 @@ import { getCollection, render } from 'astro:content'
 
 import RoadmapEntry from '@/components/roadmap/RoadmapEntry.astro'
 import RoadmapFeedback from '@/components/roadmap/RoadmapFeedback.astro'
+import RoadmapGroup from '@/components/roadmap/RoadmapGroup.astro'
 import RoadmapLink from '@/components/roadmap/RoadmapLink.astro'
-import { ROADMAP_STAGES } from '@/content/roadmap.schema'
 import type { Locale } from '@/i18n/translations'
 import {
   areasInUse,
   entriesForLocale,
   shippedEntries,
-  upcomingEntries
+  upcomingGroups
 } from './roadmapTimeline'
 
 interface Props {
@@ -35,7 +35,12 @@ async function withContent(list: typeof entries) {
 }
 
 const shippedItems = await withContent(shippedEntries(entries))
-const upcomingItems = await withContent(upcomingEntries(entries))
+const groups = await Promise.all(
+  upcomingGroups(entries).map(async (group) => ({
+    stage: group.stage,
+    items: await withContent(group.entries)
+  }))
+)
 const areas = areasInUse(entries)
 
 const chip =
@@ -45,25 +50,9 @@ const filterChip = `${chip} cursor-pointer border-primary-comfy-canvas/20 text-p
 
 <section
   id="roadmap"
-  class="mx-auto max-w-9xl px-4 pt-8 pb-16 lg:px-20 lg:pt-10 lg:pb-24"
+  class="mx-auto max-w-9xl px-4 pt-4 pb-16 lg:px-20 lg:pb-24"
 >
-  <dl
-    class="flex flex-wrap items-baseline gap-x-8 gap-y-2 border-b border-primary-comfy-canvas/10 pb-8"
-    aria-label={t('roadmap.legendLabel')}
-  >
-    {ROADMAP_STAGES.map((stage) => <div class="flex items-baseline gap-2">
-      <dt
-        class="text-2xs font-bold tracking-widest text-primary-comfy-yellow uppercase"
-      >
-        {t(`roadmap.stage.${stage}`)}
-      </dt>
-      <dd class="text-xs font-light text-primary-comfy-canvas/50">
-        {t(`roadmap.stageDescription.${stage}`)}
-      </dd>
-    </div>)}
-  </dl>
-
-  <fieldset class="mt-8 flex flex-wrap items-center gap-2">
+  <fieldset class="flex flex-wrap items-center gap-2">
     <legend class="sr-only">{t('roadmap.filter.label')}</legend>
 
     <div class="contents">
@@ -92,15 +81,12 @@ const filterChip = `${chip} cursor-pointer border-primary-comfy-canvas/20 text-p
     </div>)}
   </fieldset>
 
-  <div
-    class="relative mt-10 border-l border-primary-comfy-canvas/15 pl-7 lg:mt-12"
-  >
-    <ol class="list-none">
+  <div class="mt-6">
+    {shippedItems.length > 0 && <RoadmapGroup stage="shipped">
       {shippedItems.map((item) => <RoadmapEntry
         id={item.id}
         title={item.title}
         areaLabel={t(`roadmap.area.${item.area}`)}
-        stageLabel={t(`roadmap.stage.${item.stage}`)}
         date={item.date}
         link={item.link}
         area={item.area}
@@ -108,39 +94,44 @@ const filterChip = `${chip} cursor-pointer border-primary-comfy-canvas/20 text-p
       >
         <item.Content components={{ a: RoadmapLink }} />
       </RoadmapEntry>)}
-    </ol>
+    </RoadmapGroup>}
 
-    <div class="relative pb-10" role="separator" aria-label={t('roadmap.now')}>
+    <div
+      class="flex items-center gap-4 py-2"
+      role="separator"
+      aria-label={t('roadmap.now')}
+    >
+      <span class="relative flex size-3" aria-hidden="true">
+        <span
+          class="absolute inline-flex size-full rounded-full bg-primary-comfy-yellow/60 motion-safe:animate-ping"
+        ></span>
+        <span
+          class="relative size-3 rounded-full bg-primary-comfy-yellow"
+        ></span>
+      </span>
       <span
-        class="absolute top-1/2 -left-7 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-primary-comfy-yellow bg-primary-comfy-ink"
+        class="text-xs font-bold tracking-widest text-primary-comfy-yellow uppercase"
+      >
+        {t('roadmap.now')}
+      </span>
+      <span
+        class="h-px flex-1 bg-primary-comfy-yellow/40"
         aria-hidden="true"
       ></span>
-      <div class="flex items-center gap-4">
-        <span
-          class="text-2xs font-bold tracking-widest text-primary-comfy-yellow uppercase"
-        >
-          {t('roadmap.now')}
-        </span>
-        <span
-          class="h-px flex-1 bg-primary-comfy-yellow/30"
-          aria-hidden="true"
-        ></span>
-      </div>
     </div>
 
-    <ol class="list-none">
-      {upcomingItems.map((item) => <RoadmapEntry
+    {groups.map((group) => <RoadmapGroup stage={group.stage}>
+      {group.items.map((item) => <RoadmapEntry
         id={item.id}
         title={item.title}
         areaLabel={t(`roadmap.area.${item.area}`)}
-        stageLabel={t(`roadmap.stage.${item.stage}`)}
         date={item.date}
         link={item.link}
         area={item.area}
       >
         <item.Content components={{ a: RoadmapLink }} />
       </RoadmapEntry>)}
-    </ol>
+    </RoadmapGroup>)}
   </div>
 
   <RoadmapFeedback />
@@ -160,6 +151,22 @@ const filterChip = `${chip} cursor-pointer border-primary-comfy-canvas/20 text-p
     .roadmap-item:not([data-area='platform']),
   #roadmap:has(#roadmap-area-community:checked)
     .roadmap-item:not([data-area='community']) {
+    display: none;
+  }
+  
+  /* A stage with nothing in the chosen area drops out with its entries. */
+  #roadmap:has(#roadmap-area-engine:checked)
+    .roadmap-group:not(:has(.roadmap-item[data-area='engine'])),
+  #roadmap:has(#roadmap-area-cloud:checked)
+    .roadmap-group:not(:has(.roadmap-item[data-area='cloud'])),
+  #roadmap:has(#roadmap-area-frontend:checked)
+    .roadmap-group:not(:has(.roadmap-item[data-area='frontend'])),
+  #roadmap:has(#roadmap-area-desktop:checked)
+    .roadmap-group:not(:has(.roadmap-item[data-area='desktop'])),
+  #roadmap:has(#roadmap-area-platform:checked)
+    .roadmap-group:not(:has(.roadmap-item[data-area='platform'])),
+  #roadmap:has(#roadmap-area-community:checked)
+    .roadmap-group:not(:has(.roadmap-item[data-area='community'])) {
     display: none;
   }
   

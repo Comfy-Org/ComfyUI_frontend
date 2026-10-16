@@ -5,7 +5,8 @@ import {
   areasInUse,
   entriesForLocale,
   shippedEntries,
-  upcomingEntries
+  upcomingEntries,
+  upcomingGroups
 } from './roadmapTimeline'
 
 function entry(
@@ -102,5 +103,22 @@ describe('areasInUse', () => {
       entry('en/b', 'building', 2, 'engine')
     ]
     expect(areasInUse(entries)).toEqual(['engine'])
+  })
+})
+
+describe('upcomingGroups', () => {
+  it('groups by stage in page order and skips empty stages', () => {
+    const entries = [
+      entry('en/x', 'exploring', 1),
+      entry('en/b2', 'building', 2),
+      entry('en/s', 'shipped', 1),
+      entry('en/b1', 'building', 1)
+    ]
+    expect(
+      upcomingGroups(entries).map((g) => [g.stage, ids(g.entries)])
+    ).toEqual([
+      ['building', ['en/b1', 'en/b2']],
+      ['exploring', ['en/x']]
+    ])
   })
 })

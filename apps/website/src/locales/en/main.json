@@ -5172,7 +5172,6 @@
       "shipping": "done or nearly done, and rolling out now",
       "shipped": "already out, with the month it landed"
     },
-    "legendLabel": "What the stages mean",
     "filter": {
       "label": "Filter the roadmap by area",
       "all": "All"

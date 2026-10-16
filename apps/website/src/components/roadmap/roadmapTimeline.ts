@@ -45,3 +45,14 @@ export function areasInUse(entries: readonly TimelineEntry[]): RoadmapArea[] {
     entries.some((entry) => entry.data.area === area)
   )
 }
+
+/** Below-NOW entries split by stage, in page order, skipping empty stages. */
+export function upcomingGroups<T extends TimelineEntry>(
+  entries: readonly T[]
+): { stage: RoadmapStage; entries: T[] }[] {
+  const upcoming = upcomingEntries(entries)
+  return ROADMAP_BELOW_NOW.map((stage) => ({
+    stage,
+    entries: upcoming.filter((entry) => entry.data.stage === stage)
+  })).filter((group) => group.entries.length > 0)
+}
