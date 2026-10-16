@@ -398,7 +398,7 @@ export class ComfyApp {
 
   private configuringGraphLevel: number = 0
   private graphLoadSequence = 0
-  private committedGraphLoadSequence = 0
+  private graphLoadQueue: Promise<void> = Promise.resolve()
   private pendingCamera:
     | { id: number; workflow: string | null | ComfyWorkflow }
     | undefined
@@ -1312,6 +1312,15 @@ export class ComfyApp {
     await useExtensionService().invokeExtensionsAsync('onGraphLoadError', error)
   }
 
+  private enqueueGraphLoad<T>(operation: () => Promise<T>): Promise<T> {
+    const result = this.graphLoadQueue.then(operation)
+    this.graphLoadQueue = result.then(
+      () => undefined,
+      () => undefined
+    )
+    return result
+  }
+
   async loadGraphData(
     graphData?: ComfyWorkflowJSON,
     clean: boolean = true,
@@ -1326,6 +1335,26 @@ export class ComfyApp {
       silentAssetErrors?: boolean
       workflowNavigationId?: number
     } = {}
+  ): Promise<LoadedComfyWorkflow | boolean | undefined> {
+    return this.enqueueGraphLoad(() =>
+      this.loadGraphDataNow(graphData, clean, restore_view, workflow, options)
+    )
+  }
+
+  private async loadGraphDataNow(
+    graphData: ComfyWorkflowJSON | undefined,
+    clean: boolean,
+    restore_view: boolean,
+    workflow: string | null | ComfyWorkflow,
+    options: {
+      checkForRerouteMigration?: boolean
+      openSource?: WorkflowOpenSource
+      shareId?: string
+      deferWarnings?: boolean
+      skipAssetScans?: boolean
+      silentAssetErrors?: boolean
+      workflowNavigationId?: number
+    }
   ): Promise<LoadedComfyWorkflow | boolean | undefined> {
     const canvasScheduler = useCanvasScheduler()
     const loadId = ++this.graphLoadSequence
@@ -1342,6 +1371,7 @@ export class ComfyApp {
     useWorkflowService().beforeLoadNewGraph(clean)
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
 
+    ChangeTracker.isLoadingGraph = true
     let reset_invalid_values = false
     const missingNodeTypes: MissingNodeType[] = []
     try {
@@ -1494,7 +1524,11 @@ export class ComfyApp {
       // below. Left unhandled, that would both reject silently and leak any
       // suppression/loading-state a `beforeLoadGraph` listener opened for
       // this load, since nothing ever notifies it the load ended.
-      await this.reportGraphLoadFailure(error)
+      try {
+        await this.reportGraphLoadFailure(error)
+      } finally {
+        ChangeTracker.isLoadingGraph = false
+      }
       void useSubgraphNavigationStore().updateHash(
         'workflow-load',
         workflowNavigationId
@@ -1542,17 +1576,6 @@ export class ComfyApp {
     let resourceScanLoadCompleted = false
     try {
       try {
-        if (loadId < this.committedGraphLoadSequence) {
-          await useExtensionService().invokeExtensionsAsync(
-            'onGraphLoadError',
-            new DOMException(
-              'Graph load superseded by a newer load',
-              'AbortError'
-            )
-          )
-          return undefined
-        }
-
         this.rootGraph.configure(graphData as ISerialisedGraph)
 
         // Save original renderer version before scaling (it gets modified during scaling)
@@ -1571,10 +1594,6 @@ export class ComfyApp {
           )
         }
 
-        this.committedGraphLoadSequence = Math.max(
-          loadId,
-          this.committedGraphLoadSequence
-        )
         const preservesPendingCamera =
           !restore_view &&
           workflow !== null &&
@@ -1611,6 +1630,14 @@ export class ComfyApp {
         // Resolves rather than throws: the close/replacement guards read this outcome.
         return false
       }
+      const configuredGraphState = this.rootGraph.state
+      const isCurrentGraphLoad = () =>
+        configuredGraphState === this.rootGraph.state
+      const cancelReplacedLoad = () =>
+        useExtensionService().invokeExtensionsAsync(
+          'onGraphLoadError',
+          new DOMException('Workflow load was replaced', 'AbortError')
+        )
       const snapTo = LiteGraph.alwaysSnapToGrid
         ? this.rootGraph.getSnapToGridSize()
         : 0
@@ -1696,6 +1723,11 @@ export class ComfyApp {
         effectiveShareId
       )
       await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
+      if (!isCurrentGraphLoad()) {
+        await cancelReplacedLoad()
+        return undefined
+      }
+      ChangeTracker.isLoadingGraph = false
       // Capture the workflow this load activated before the asset-scan awaits
       // below can hand control back and let the user switch to another one.
       activatedWorkflow = useWorkflowStore().activeWorkflow ?? undefined
@@ -2280,55 +2312,61 @@ export class ComfyApp {
 
     // Use parameters strictly as the final fallback
     if (parameters && typeof parameters === 'string') {
-      const outcome = await importA1111(
-        this.rootGraph,
-        parameters,
-        async () => {
-          try {
-            // false: final destination; no later load republishes the hash.
-            useWorkflowService().beforeLoadNewGraph(false)
-            await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
-          } finally {
-            useMissingNodesErrorStore().setMissingNodeTypes([])
+      return await this.enqueueGraphLoad(async () => {
+        const outcome = await importA1111(
+          this.rootGraph,
+          parameters,
+          async () => {
+            try {
+              // false: final destination; no later load republishes the hash.
+              useWorkflowService().beforeLoadNewGraph(false)
+              await useExtensionService().invokeExtensionsAsync(
+                'beforeLoadGraph'
+              )
+            } finally {
+              useMissingNodesErrorStore().setMissingNodeTypes([])
+            }
+            this.canvas.setGraph(this.rootGraph)
           }
-          this.canvas.setGraph(this.rootGraph)
+        )
+        switch (outcome) {
+          case 'core-nodes-unavailable':
+            useToastStore().addAlert(
+              t('toastMessages.a1111CoreNodesUnavailable')
+            )
+            return
+          case 'not-a1111':
+            this.showErrorOnFileLoad(file)
+            return
+          case 'imported-without-embeddings':
+            useToastStore().add({
+              severity: 'warn',
+              summary: t('g.warning'),
+              detail: t('toastMessages.a1111EmbeddingsUnavailable')
+            })
+            break
+          case 'imported':
+            break
+          default: {
+            const unexpectedOutcome: never = outcome
+            throw new Error(
+              `Unhandled A1111 import outcome: ${unexpectedOutcome}`
+            )
+          }
         }
-      )
-      switch (outcome) {
-        case 'core-nodes-unavailable':
-          useToastStore().addAlert(t('toastMessages.a1111CoreNodesUnavailable'))
-          return
-        case 'not-a1111':
-          this.showErrorOnFileLoad(file)
-          return
-        case 'imported-without-embeddings':
-          useToastStore().add({
-            severity: 'warn',
-            summary: t('g.warning'),
-            detail: t('toastMessages.a1111EmbeddingsUnavailable')
-          })
-          break
-        case 'imported':
-          break
-        default: {
-          const unexpectedOutcome: never = outcome
-          throw new Error(
-            `Unhandled A1111 import outcome: ${unexpectedOutcome}`
-          )
-        }
-      }
-      // Intentionally no beforeConfigureGraph: A1111 has no mutable
-      // workflow JSON before graph construction, so there is no payload.
-      await useExtensionService().invokeExtensionsAsync(
-        'afterConfigureGraph',
-        []
-      )
-      await useWorkflowService().afterLoadNewGraph(
-        fileName,
-        this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
-      )
-      await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
-      return
+        // Intentionally no beforeConfigureGraph: A1111 has no mutable
+        // workflow JSON before graph construction, so there is no payload.
+        await useExtensionService().invokeExtensionsAsync(
+          'afterConfigureGraph',
+          []
+        )
+        await useWorkflowService().afterLoadNewGraph(
+          fileName,
+          this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
+        )
+        await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
+        return
+      })
     }
 
     this.showErrorOnFileLoad(file)
@@ -2460,6 +2498,16 @@ export class ComfyApp {
     apiData: ComfyApiWorkflow,
     fileName: string,
     options: { deferWarnings?: boolean } = {}
+  ): Promise<void> {
+    return this.enqueueGraphLoad(() =>
+      this.loadApiJsonNow(apiData, fileName, options)
+    )
+  }
+
+  private async loadApiJsonNow(
+    apiData: ComfyApiWorkflow,
+    fileName: string,
+    options: { deferWarnings?: boolean }
   ): Promise<void> {
     // false: no workflow load follows to republish the hash.
     useWorkflowService().beforeLoadNewGraph(false)

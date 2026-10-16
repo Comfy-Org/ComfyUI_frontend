@@ -4,6 +4,7 @@ import type { Route } from '@playwright/test'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { openErrorsTab } from '@e2e/fixtures/helpers/ErrorsTabHelper'
+import defaultWorkflow from '@e2e/assets/default.json' with { type: 'json' }
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 
 test.describe('Workflows sidebar', () => {
@@ -451,6 +452,6 @@ test.describe('Workflows sidebar', () => {
     // Wait for nodes to be inserted after drag-drop with retryable assertion
     await expect
       .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-      .toBe(nodeCount * 2)
+      .toBe(nodeCount + defaultWorkflow.nodes.length)
   })
 })
