@@ -26,7 +26,7 @@
                 'mt-0.5 size-5 shrink-0',
                 hasError
                   ? 'icon-[comfy--circle-alert-filled] text-destructive-background-hover'
-                  : 'icon-[comfy--triangle-alert-filled] text-warning-foreground'
+                  : 'icon-[comfy--triangle-alert-filled] text-warning-background'
               )
             "
           />

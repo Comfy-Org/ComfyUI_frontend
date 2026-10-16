@@ -374,8 +374,10 @@ describe('ErrorOverlay', () => {
     useExecutionErrorStore().showErrorOverlay()
     await nextTick()
 
-    expect(screen.getByTestId('error-overlay-icon').className).toContain(
-      'icon-[comfy--triangle-alert-filled]'
+    expect(screen.getByTestId('error-overlay-icon')).toHaveClass(
+      'icon-[comfy--triangle-alert-filled]',
+      'text-warning-background',
+      'size-5'
     )
   })
 
