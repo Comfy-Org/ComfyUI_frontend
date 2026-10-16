@@ -10,12 +10,7 @@ export const ROADMAP_AREA_ORDER = [
   'community'
 ] as const
 
-export const ROADMAP_STAGES = [
-  'exploring',
-  'building',
-  'shipping',
-  'shipped'
-] as const
+const ROADMAP_STAGES = ['exploring', 'building', 'shipping', 'shipped'] as const
 
 // Below the NOW marker, closest to done first. `shipped` sorts above it.
 export const ROADMAP_BELOW_NOW = ['shipping', 'building', 'exploring'] as const
