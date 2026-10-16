@@ -4,7 +4,7 @@ const GITHUB_REPO_URL =
   /^(?:git@github\.com:|(?:https?:\/\/)?(?:www\.)?github\.com\/)[a-z0-9-]+\/([\w.-]+?)(?:\.git)?(?:[/?#].*)?$/i
 
 const BARE_COMPOUND_REPO_SLUG =
-  /^[a-z0-9-]+\/([\w.-]*?[a-z0-9][-_][a-z0-9][\w.-]*?)(?:\.git)?\/?$/i
+  /^[A-Za-z0-9-]+\/([\w.-]*[A-Za-z0-9][-_][A-Za-z0-9][\w.-]*)$/
 
 const TRAILING_GIT_OR_SLASHES = /(?:\.git)?\/*$/i
 
@@ -12,7 +12,7 @@ const WORD_SEPARATORS = /[\s_-]+/
 
 const WHITESPACE_RUN = /\s+/g
 
-export function stripRepoOwner(query: string): string {
+function stripRepoOwner(query: string): string {
   return (
     GITHUB_REPO_URL.exec(query)?.[1] ??
     BARE_COMPOUND_REPO_SLUG.exec(query)?.[1] ??
