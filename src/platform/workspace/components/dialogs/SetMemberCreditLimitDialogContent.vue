@@ -1,28 +1,12 @@
 <template>
-  <div
-    class="flex w-lg max-w-full flex-col rounded-2xl border border-border-default bg-base-background"
-  >
-    <div
-      class="flex h-12 items-center justify-between border-b border-border-default px-4"
-    >
-      <h2
-        id="set-member-credit-limit"
-        class="m-0 text-sm font-normal text-base-foreground"
-      >
-        {{
-          $t('workspacePanel.members.creditLimitDialog.title', {
-            name: memberName
-          })
-        }}
-      </h2>
-      <button
-        class="cursor-pointer rounded-sm border-none bg-transparent p-1 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none"
-        :aria-label="$t('g.close')"
-        @click="onClose"
-      >
-        <i class="pi pi-times size-4" />
-      </button>
-    </div>
+  <DialogPanel class="w-lg max-w-full" @close="onClose">
+    <template #title>
+      {{
+        $t('workspacePanel.members.creditLimitDialog.title', {
+          name: memberName
+        })
+      }}
+    </template>
 
     <div class="flex flex-col gap-6 p-4">
       <p class="m-0 text-sm text-muted-foreground">
@@ -91,7 +75,7 @@
       </p>
     </div>
 
-    <div class="flex items-center justify-end gap-4 p-4">
+    <template #footer>
       <Button variant="muted-textonly" @click="onClose">
         {{ $t('g.cancel') }}
       </Button>
@@ -103,11 +87,12 @@
       >
         {{ $t('workspacePanel.members.creditLimitDialog.update') }}
       </Button>
-    </div>
-  </div>
+    </template>
+  </DialogPanel>
 </template>
 
 <script setup lang="ts">
+import DialogPanel from '@/components/ui/dialog/DialogPanel.vue'
 import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 

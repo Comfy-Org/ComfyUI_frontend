@@ -50,8 +50,11 @@ describe('catalog stylesheet delivery', () => {
   it('builds staff palette and portal surfaces separately', async () => {
     const css = await stylesheet('catalog-staff.css')
     expect(css).toContain('--color-admin-chrome:')
-    expect(css).toContain('--color-admin-card: #171718')
-    expect(css).toContain('--color-admin-fg: #f3f3f3')
+    expect(css).toContain('--catalog-palette-charcoal-800: #171718')
+    expect(css).toContain('--catalog-palette-smoke-100: #f3f3f3')
+    expect(css).not.toContain('theme(')
+    expect(css).not.toContain('--color-primary-comfy-ink:')
+    expect(css).not.toContain('--font-formula:')
     const palette = css.match(/--color-admin-[\w-]+:[^;]+;/g)?.join('\n')
     expect(palette).toBeDefined()
     expect(palette).not.toContain('var(--color-charcoal-')

@@ -26,7 +26,7 @@ const t = computed(() => translationsFor(locale).t)
       as="a"
       :href="downloadUrl"
       :download="downloadName"
-      variant="outline"
+      variant="secondaryOutline"
       class="h-auto min-h-11 max-w-full whitespace-normal"
       :aria-label="t('workshop.workflow.download')"
       @click="emit('download')"

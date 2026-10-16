@@ -29,7 +29,6 @@
           :min="sliderMin"
           :max="sliderMax"
           :step="sliderStep"
-          class="w-full"
           @update:model-value="onIntensityUpdate"
         />
       </div>

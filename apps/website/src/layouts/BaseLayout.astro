@@ -62,6 +62,7 @@ interface Props {
   minimal?: boolean
   bare?: boolean
   hideAnnouncementBanner?: boolean
+  smoothScroll?: boolean
   banner?: BannerConfig
   /** PP Formula faces this page renders above the fold beyond the site-wide set. */
   preloadFonts?: readonly PPFormulaFace[]
@@ -83,6 +84,7 @@ const {
   minimal = false,
   bare = false,
   hideAnnouncementBanner = false,
+  smoothScroll = false,
   banner,
   preloadFonts = []
 } = Astro.props
@@ -154,6 +156,7 @@ const hubApps: HubApp[] = appModels.map(({ appId, flag }) => ({
      visible. The horizontal clip lives on <body>. */}
 <html
   lang={locale}
+  class:list={{ 'scroll-smooth motion-reduce:scroll-auto': smoothScroll }}
   data-banner-version={bannerVisible ? bannerVersion : undefined}
 >
   <head>

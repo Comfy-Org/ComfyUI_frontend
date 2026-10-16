@@ -20,7 +20,7 @@
         />
       </div>
       <div class="px-3 pt-1 pb-2">
-        <span class="block truncate text-sm font-medium text-text-primary">
+        <span class="block truncate text-sm font-medium">
           {{ workflowFilename }}
         </span>
       </div>

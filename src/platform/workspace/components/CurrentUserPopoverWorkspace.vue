@@ -114,21 +114,11 @@
         v-if="canTopUp"
         variant="secondary"
         size="sm"
-        class="text-base-foreground"
         data-testid="add-credits-button"
         :data-dd-action-name="BILLING_ACTION_NAME.addCreditsPopover"
         @click="handleTopUp"
       >
         {{ $t('subscription.addCredits') }}
-      </Button>
-      <Button
-        v-else-if="canSubscribeSelfServe"
-        variant="subscribe"
-        size="sm"
-        data-testid="upgrade-to-add-credits-button"
-        @click="handleUpgradeToAddCredits"
-      >
-        {{ $t('subscription.upgradeToAddCredits') }}
       </Button>
       <!-- Subscribe/Resubscribe (only when not subscribed or cancelled) -->
       <SubscribeButton
@@ -438,11 +428,6 @@ const handleOpenManagePlanSettings = () => {
 
 const handleOpenPlanCreditsSettings = () => {
   settingsDialog.show('workspace')
-  emit('close')
-}
-
-const handleUpgradeToAddCredits = () => {
-  subscriptionDialog.showPricingTable({ reason: 'upgrade_to_add_credits' })
   emit('close')
 }
 

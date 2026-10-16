@@ -11,9 +11,9 @@
         <i class="icon-[lucide--users] text-lg" />
       </div>
       <div class="flex min-w-0 flex-1 flex-col">
-        <h2 class="m-0 text-lg font-semibold text-base-foreground">
+        <DialogTitle class="m-0 text-lg">
           {{ $t('teamWorkspacesDialog.title') }}
-        </h2>
+        </DialogTitle>
         <p class="m-0 text-sm text-muted-foreground">
           {{
             ownedTeamWorkspaces.length > 0
@@ -142,6 +142,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import { useWorkspaceSwitch } from '@/platform/workspace/composables/useWorkspaceSwitch'
 import { useWorkspaceTierLabel } from '@/platform/workspace/composables/useWorkspaceTierLabel'

@@ -68,10 +68,10 @@ const config: KnipConfig = {
       // Executed by models-snippets.test.ts inside the generated Node examples.
       ignoreDependencies: ['mime-types']
     },
-    'tools/cicd/fast-lane': {
+    'tools/architecture': {
       project: ['src/**/*.ts']
     },
-    'tools/architecture': {
+    'tools/design-system-audits': {
       project: ['src/**/*.ts']
     },
     'tools/test-recorder': {

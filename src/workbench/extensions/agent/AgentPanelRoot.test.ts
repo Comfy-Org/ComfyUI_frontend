@@ -59,6 +59,7 @@ import { useAssetsStore } from '@/stores/assetsStore'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { startAssetDrag } from '@/platform/assets/utils/assetDragUtil'
 import { getFilenameDetails } from '@/utils/formatUtil'
+import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
@@ -2669,6 +2670,37 @@ describe('AgentPanelRoot attach flow', () => {
     const tab = addTab('workflows/current.json')
     workflowStore.activeWorkflow = tab
     useAgentWorkflowTabBindingStore().bind('wf-42', tab.path)
+  })
+
+  it('reads changed developer upload limits without remounting the panel', async () => {
+    getServerFeature.mockImplementation(
+      (name, defaultValue) => getDevOverride(name) ?? defaultValue
+    )
+    const uploaded = stubUploadFetch()
+    localStorage.setItem('ff:max_upload_size', '4')
+    renderWithSelectedTarget()
+    const input = screen.getByTestId<HTMLInputElement>('agent-file-input')
+
+    await userEvent.upload(
+      input,
+      new File(['1234'], 'first.png', { type: 'image/png' })
+    )
+    await waitFor(() => expect(uploaded).toEqual(['first.png']))
+
+    localStorage.setItem('ff:max_upload_size', '1')
+    await userEvent.upload(
+      input,
+      new File(['12'], 'second.png', { type: 'image/png' })
+    )
+    await waitFor(() =>
+      expect(useToast().toasts).toContainEqual(
+        expect.objectContaining({
+          kind: 'warning',
+          title: 'second.png is larger than 1 B'
+        })
+      )
+    )
+    expect(uploaded).toEqual(['first.png'])
   })
 
   it.for([
@@ -5683,6 +5715,59 @@ describe('AgentPanelRoot run approval telemetry', () => {
     )
     expect(fetchRequests({ method: 'POST', url: /\/asks\// })).toHaveLength(1)
     now.mockRestore()
+  })
+})
+
+describe('AgentPanelRoot ask_user answer telemetry', () => {
+  it('never reports an ask_user answer as a run approval, even one named run', async () => {
+    respondToFetch({}, () => json(200, {}))
+    respondToFetch(/\/agent\/threads/, () => json(200, agentThreadList()))
+    respondToFetch({ method: 'POST', url: /\/asks\// }, () =>
+      json(200, { status: 'answered' })
+    )
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const store = useAgentConversationStore()
+    store.setThreadId('th-1')
+    const turnId = toTurnId('turn-question')
+    store.recordUser(turnId, 'go on')
+    store.startTurn(turnId)
+    store.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_ask',
+        data: {
+          thread_id: 'th-1',
+          message_id: turnId,
+          ask_id: 'turn-question:call-1',
+          kind: 'ask_user',
+          prompt: 'Should I run it now?',
+          options: [
+            { id: 'run', label: 'Run now' },
+            { id: 'cancel', label: 'Not yet' }
+          ],
+          min_selections: 1,
+          max_selections: 1,
+          allow_other: false
+        }
+      })
+    )
+
+    await userEvent.click(await screen.findByRole('radio', { name: 'Run now' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Submit' }))
+    await vi.waitFor(() =>
+      expect(fetchRequests({ method: 'POST', url: /\/asks\// })).toHaveLength(1)
+    )
+    ws.emit('agent_ask_resolved', {
+      thread_id: 'th-1',
+      message_id: turnId,
+      ask_id: 'turn-question:call-1',
+      status: 'answered',
+      selected: ['run']
+    })
+    expect(await screen.findByText('Answered')).toBeVisible()
+
+    expect(telemetry.trackAgentRunApprovalShown).not.toHaveBeenCalled()
+    expect(telemetry.trackAgentRunApprovalResolved).not.toHaveBeenCalled()
   })
 })
 

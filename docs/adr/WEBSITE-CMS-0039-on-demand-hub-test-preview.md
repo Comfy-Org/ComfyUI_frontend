@@ -4,7 +4,32 @@ Date: 2026-10-06
 
 ## Status
 
-Proposed
+Superseded
+
+## Integrated replacement
+
+The canonical CCC integration supersedes the transport and Preview rules below.
+The rest of this record describes the historical prototype, retained for the
+isolated design demo; it is not the current catalog wire contract.
+
+`CatalogStaffChrome` chooses one staff surface. A server-verified catalog session
+uses `CatalogPreviewController` and `/admin/catalog`; the legacy design-demo
+session uses its fixture UI. They are mutually exclusive, never two simultaneous
+Preview bars. Canonical Draft and Live with a simulated clock show the graphite
+bar; ordinary Live shows only the staff entry controls. NOW clears the simulated
+clock without changing the selected view; EXIT selects Live and clears the clock.
+
+Checked publication uses one idempotent catalog transaction, not sequential
+catalog publication and legacy Hub approvals. Legacy mutation forms and the old
+projection admin are restricted to the explicit non-production in-memory demo.
+Production CMS rendering and authentication remain disabled by the shared gate.
+
+The canonical implementation preserves the design's shared staff palette but
+loads its stylesheet only for verified staff sessions, including body-portaled
+menus. Keeping both real transports or independently merging both historical
+frontend PRs is rejected: it would restore contradictory contracts and controls.
+The integration branch is the replacement review surface. Runtime publication
+freshness follows [WEBSITE-CACHE-0044](WEBSITE-CACHE-0044-catalog-publication-freshness.md).
 
 ## Context
 

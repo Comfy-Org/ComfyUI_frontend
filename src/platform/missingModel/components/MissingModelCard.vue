@@ -73,7 +73,7 @@
         data-testid="missing-model-download-all"
         variant="secondary"
         size="sm"
-        class="h-8 min-w-0 flex-1 rounded-md text-xs"
+        class="h-8 min-w-0 flex-1 rounded-md"
         :aria-describedby="showGatedModelsHint ? gatedHintId : undefined"
         @click="downloadAllModels"
       >

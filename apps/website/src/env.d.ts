@@ -23,6 +23,7 @@ declare global {
   }
 
   interface ImportMetaEnv {
+    readonly PUBLIC_LAUNCH_DRAFTS: boolean
     /**
      * Which Cloud family Workshop talks to: 'prod', 'staging' or 'test'. Unset
      * means staging for local builds. Deployed builds that include Workshop must

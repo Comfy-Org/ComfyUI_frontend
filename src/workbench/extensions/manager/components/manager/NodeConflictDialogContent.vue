@@ -30,10 +30,7 @@
             }}</span>
           </div>
           <div>
-            <Button
-              variant="textonly"
-              class="bg-transparent text-muted-foreground"
-            >
+            <Button variant="textonly" class="text-muted-foreground">
               <i
                 :class="
                   importFailedExpanded
@@ -82,10 +79,7 @@
             }}</span>
           </div>
           <div>
-            <Button
-              variant="textonly"
-              class="bg-transparent text-muted-foreground"
-            >
+            <Button variant="textonly" class="text-muted-foreground">
               <i
                 :class="
                   conflictsExpanded
@@ -134,10 +128,7 @@
             }}</span>
           </div>
           <div>
-            <Button
-              variant="textonly"
-              class="bg-transparent text-muted-foreground"
-            >
+            <Button variant="textonly" class="text-muted-foreground">
               <i
                 :class="
                   extensionsExpanded

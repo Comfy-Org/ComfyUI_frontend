@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import './agentPanel.css'
 
-import type { GetFeaturesResponse } from '@comfyorg/ingest-types'
+import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
 import { useClipboard } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import {
@@ -17,6 +17,7 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import type {
@@ -1299,12 +1300,21 @@ function forgetApproval(askId: string): void {
 
 async function onAnswerAsk(
   askId: string,
-  selection: 'run' | 'cancel'
+  answer: AgentAnswerRequest
 ): Promise<void> {
   const shownAt = conversationStore.approvalShownAt(askId)
   const decidedAt = Date.now()
-  if (await answerAsk(askId, selection))
-    trackApprovalResolved(askId, selection, decidedAt, shownAt)
+  const decision = runApprovalDecision(answer)
+  if ((await answerAsk(askId, answer)) && decision)
+    trackApprovalResolved(askId, decision, decidedAt, shownAt)
+}
+
+function runApprovalDecision(
+  answer: AgentAnswerRequest
+): 'run' | 'cancel' | undefined {
+  if (answer.selected.length !== 1 || answer.other_text) return undefined
+  const [choice] = answer.selected
+  return choice === 'run' || choice === 'cancel' ? choice : undefined
 }
 
 void refreshCloudWorkflowIds()
@@ -1697,6 +1707,7 @@ function onSelectNodes(): void {
 
 const assetsStore = useAssetsStore()
 let inputAssetRefresh: Promise<unknown> = Promise.resolve()
+const { flags } = useFeatureFlags()
 
 const attachment = useAttachment({
   validate: isValidAgentAttachment,
@@ -1720,10 +1731,7 @@ const attachment = useAttachment({
       .then(() => assetsStore.inputAssets.loadNew())
       .catch(() => undefined)
   },
-  maxBytes: () =>
-    api.getServerFeature<GetFeaturesResponse['max_upload_size']>(
-      'max_upload_size'
-    ) ?? MAX_ATTACHMENT_BYTES,
+  maxBytes: () => flags.maxUploadSize ?? MAX_ATTACHMENT_BYTES,
   onError: warnAttachment,
   onDuplicate: notifyDuplicateAttachments,
   staged: () => composerStore.attachments,

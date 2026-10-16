@@ -35,7 +35,7 @@
     </PopoverTrigger>
     <PopoverContent
       align="start"
-      class="w-auto max-w-xs min-w-40 border-border-default bg-base-background p-3"
+      class="w-auto max-w-xs min-w-40 border-border-default p-3"
       @open-auto-focus.prevent="badgeContent?.focus()"
     >
       <div

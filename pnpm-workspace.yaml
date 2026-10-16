@@ -166,6 +166,7 @@ catalog:
   typescript-native-bridge: 6.0.3-bridge.17.tsgo.7.0.2
   dependency-cruiser: ^18.5.0
   '@astrojs/vercel': ^11.0.12
+  '@microsoft/api-extractor': 7.58.9
 
 cleanupUnusedCatalogs: true
 

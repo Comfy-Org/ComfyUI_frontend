@@ -31,7 +31,7 @@
           <Button
             ref="workspaceSwitcherTrigger"
             variant="muted-textonly"
-            class="flex h-auto w-full items-center justify-between rounded-lg px-4 py-2 hover:bg-secondary-background-hover"
+            class="flex h-auto w-full justify-between px-4 py-2"
             :aria-expanded="isWorkspaceSwitcherOpen"
             aria-haspopup="menu"
             aria-controls="workspace-switcher-panel"
@@ -90,10 +90,9 @@
         <i class="icon-[lucide--circle-help]" />
       </Button>
       <Button
-        v-if="showAddCredits"
+        v-if="canTopUp"
         variant="secondary"
         size="sm"
-        class="text-base-foreground"
         data-testid="add-credits-button"
         :data-dd-action-name="BILLING_ACTION_NAME.addCreditsPopover"
         @click="handleTopUp"
@@ -228,10 +227,7 @@ const showWorkspaceSwitcher = computed(
   () => initState.value === 'ready' && workspaces.value.length > 0
 )
 
-const { canTopUp, canSubscribeSelfServe } = useBillingCapabilities()
-const showAddCredits = computed(
-  () => canTopUp.value || canSubscribeSelfServe.value
-)
+const { canTopUp } = useBillingCapabilities()
 
 const subscriptionTierName = computed(() =>
   formatTierName(tier.value, subscription.value?.duration === 'ANNUAL')
@@ -256,8 +252,6 @@ const handleOpenUserSettings = () => {
 }
 
 const handleOpenPlanAndCreditsSettings = () => {
-  // 'workspace' is the V1 Plan & Credits panel; the legacy 'credits' panel is
-  // hidden from the settings menu and only reachable by key.
   settingsDialog.show('workspace')
   emit('close')
 }
