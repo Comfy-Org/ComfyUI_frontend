@@ -207,6 +207,10 @@ describe('ErrorOverlay', () => {
 
     expect(screen.getByRole('status')).toHaveTextContent('Only error')
     expect(screen.getByRole('status')).not.toHaveTextContent('1 ERROR')
+    expect(screen.getByTestId('error-overlay-icon')).toHaveClass('size-5')
+    expect(screen.getByTestId('error-overlay-message-spacer')).toHaveClass(
+      'size-5'
+    )
     expect(screen.getByTestId('error-overlay-see-errors')).toHaveTextContent(
       'View details'
     )

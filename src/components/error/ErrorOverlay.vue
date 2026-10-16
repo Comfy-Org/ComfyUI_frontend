@@ -20,9 +20,10 @@
         <div class="flex w-full items-start gap-2 pr-8">
           <i
             aria-hidden="true"
+            data-testid="error-overlay-icon"
             :class="
               cn(
-                'mt-0.5 size-4 shrink-0',
+                'mt-0.5 size-5 shrink-0',
                 hasError
                   ? 'icon-[lucide--circle-x] text-destructive-background'
                   : 'icon-[lucide--triangle-alert] text-warning-foreground'
@@ -41,7 +42,11 @@
           class="flex w-full items-start gap-2 pr-8"
           data-testid="error-overlay-messages"
         >
-          <span class="size-4 shrink-0" aria-hidden="true" />
+          <span
+            data-testid="error-overlay-message-spacer"
+            class="size-5 shrink-0"
+            aria-hidden="true"
+          />
           <p
             class="m-0 line-clamp-3 min-w-0 flex-1 text-sm/snug wrap-break-word whitespace-pre-wrap text-muted-foreground"
           >
