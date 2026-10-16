@@ -2,7 +2,7 @@ import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useDeploymentCompatibility } from '@/platform/workspace/composables/useDeploymentCompatibility'
 import { useDeploymentLabels } from '@/platform/workspace/composables/useDeploymentLabels'
 import { useDeploymentSwitcherOffered } from '@/platform/workspace/composables/useDeploymentSwitcherOffered'
@@ -68,11 +68,9 @@ export function useMissingNodeDeploymentOffer() {
   async function choose(deploymentId: string | null) {
     const refusal = await pickStore.pick(deploymentId)
     if (refusal === null) return
-    useToastStore().add({
-      severity: 'error',
-      summary: t('deploymentSwitcher.failedToSwitch'),
-      detail: refusal,
-      life: 8000
+    useToast().error(t('deploymentSwitcher.failedToSwitch'), {
+      description: refusal,
+      duration: 8000
     })
   }
 

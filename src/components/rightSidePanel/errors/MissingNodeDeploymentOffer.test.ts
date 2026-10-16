@@ -10,7 +10,7 @@ import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { createTestRootGraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import enMessages from '@/locales/en/main.json'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import type {
   DeploymentCompatibility,
   WorkspaceDeployment
@@ -226,11 +226,11 @@ describe('MissingNodeDeploymentOffer', () => {
     )
 
     await waitFor(() =>
-      expect(useToastStore().messagesToAdd).toContainEqual(
+      expect(useToast().toasts).toContainEqual(
         expect.objectContaining({
-          severity: 'error',
-          summary: 'Could not switch',
-          detail: 'deployment is gone'
+          kind: 'error',
+          title: 'Could not switch',
+          description: 'deployment is gone'
         })
       )
     )
