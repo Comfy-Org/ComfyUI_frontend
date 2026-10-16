@@ -66,7 +66,7 @@ const sizeToggleLabel = computed(() =>
         :aria-label="t('agent.newChat')"
         @click="emit('newChat')"
       >
-        <span class="icon-[lucide--message-circle-plus] size-4" />
+        <span class="icon-[lucide--plus] size-4" />
       </Button>
       <Button
         :tooltip="sizeToggleLabel"
