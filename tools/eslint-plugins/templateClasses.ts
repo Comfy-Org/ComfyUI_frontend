@@ -351,6 +351,7 @@ function callArguments(source: string, masked: string, open: number) {
   return []
 }
 
+const CN_CALL = /\bcn\(/g
 const CLASS_PROP = /^(className|customClass|props\.class|\$?attrs\.class)$/
 const STRING_LITERAL = /^'([^'\\]*)'$/
 
@@ -366,9 +367,13 @@ function componentDefaultClasses(file: string) {
   if (cached !== undefined) return cached
   const source = existsSync(file) ? readFileSync(file, 'utf8') : ''
   const masked = blankQuotedText(source)
-  const calls = [...masked.matchAll(/\bcn\(/g)].map((match) =>
-    callArguments(source, masked, match.index + 2)
-  )
+  const callStarts = [...masked.matchAll(CN_CALL)]
+  const calls =
+    callStarts.length === [...source.matchAll(CN_CALL)].length
+      ? callStarts.map((match) =>
+          callArguments(source, masked, match.index + 2)
+        )
+      : []
   const classMerges = calls.filter((args) => CLASS_PROP.test(args.at(-1) ?? ''))
   const base = classMerges.length === 1 ? mergedDefaults(classMerges[0]) : null
   componentDefaultsCache.set(file, base)
