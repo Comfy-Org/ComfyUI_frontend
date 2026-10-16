@@ -5,17 +5,17 @@ import type {
 } from 'algoliasearch/dist/lite/browser'
 import { liteClient as algoliasearch } from 'algoliasearch/dist/lite/builds/browser'
 import { uniqBy } from 'es-toolkit'
-import { omit } from 'es-toolkit/compat'
 
 import {
   MIN_CHARS_FOR_SUGGESTIONS_ALGOLIA,
-  SEARCH_CACHE_MAX_SIZE
+  SEARCH_CACHE_MAX_SIZE,
+  USER_SEARCH_ANALYTICS_TAG
 } from '@/constants/searchConstants'
 import { reportError } from '@/platform/telemetry/reportError'
+import { buildPackSearchRequest } from '@/services/providers/algoliaPackSearchRequest'
 import type {
   AlgoliaNodePack,
   NodesIndexSuggestion,
-  SearchAttribute,
   SearchNodePacksParams
 } from '@/types/algoliaTypes'
 import type { components } from '@/types/comfyRegistryTypes'
@@ -28,29 +28,19 @@ import { buildPackSearchFallbacks } from '@/utils/searchQueryUtil'
 
 type RegistryNodePack = components['schemas']['Node']
 
-const RETRIEVE_ATTRIBUTES: SearchAttribute[] = [
-  'comfy_nodes',
-  'name',
-  'description',
-  'latest_version',
-  'status',
-  'publisher_id',
-  'total_install',
-  'create_time',
-  'update_time',
-  'license',
-  'repository_url',
-  'latest_version_status',
-  'comfy_node_extract_status',
-  'id',
-  'icon_url',
-  'github_stars',
-  'supported_os',
-  'supported_comfyui_version',
-  'supported_comfyui_frontend_version',
-  'supported_accelerators',
-  'banner_url'
-]
+const REWRITE_ANALYTICS_TAG = 'rewrite'
+
+const toRewriteParams = (
+  params: SearchNodePacksParams
+): SearchNodePacksParams => ({
+  ...params,
+  analyticsTags: [
+    ...(params.analyticsTags ?? []).filter(
+      (tag) => tag !== USER_SEARCH_ANALYTICS_TAG
+    ),
+    REWRITE_ANALYTICS_TAG
+  ]
+})
 
 const searchPacksCache = new QuickLRU<string, SearchPacksResult>({
   maxSize: SEARCH_CACHE_MAX_SIZE
@@ -114,18 +104,6 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
     params: SearchNodePacksParams
   ): Promise<{ result: SearchPacksResult; fallbacksFailed: boolean }> => {
     const { pageSize, pageNumber } = params
-    const rest = omit(params, ['pageSize', 'pageNumber'])
-
-    function packQuery(queryText: string): SearchQuery {
-      return {
-        query: queryText,
-        indexName: 'nodes_index',
-        attributesToRetrieve: RETRIEVE_ATTRIBUTES,
-        ...rest,
-        hitsPerPage: pageSize,
-        page: pageNumber
-      }
-    }
 
     async function searchFallbacks(
       fallbackQueries: string[]
@@ -133,7 +111,9 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
       if (fallbackQueries.length === 0) return []
       try {
         const { results } = await searchClient.search<AlgoliaNodePack>({
-          requests: fallbackQueries.map(packQuery),
+          requests: fallbackQueries.map((fallbackQuery) =>
+            buildPackSearchRequest(fallbackQuery, toRewriteParams(params))
+          ),
           strategy: 'none'
         })
         const hits = (results as SearchResponse<AlgoliaNodePack>[]).flatMap(
@@ -153,7 +133,7 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
 
     const shouldQuerySuggestions =
       query.length >= MIN_CHARS_FOR_SUGGESTIONS_ALGOLIA
-    const requests: SearchQuery[] = [packQuery(query)]
+    const requests: SearchQuery[] = [buildPackSearchRequest(query, params)]
     if (shouldQuerySuggestions) {
       requests.push({
         indexName: 'nodes_index_query_suggestions',
@@ -207,7 +187,8 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
     query: string,
     params: SearchNodePacksParams
   ): Promise<SearchPacksResult> => {
-    const cacheKey = paramsToCacheKey({ query, ...params })
+    const { analyticsTags: _analyticsTags, ...resultParams } = params
+    const cacheKey = paramsToCacheKey({ query, ...resultParams })
     const cachedResult = searchPacksCache.get(cacheKey)
     if (cachedResult !== undefined) return cachedResult
 

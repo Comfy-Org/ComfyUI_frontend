@@ -62,6 +62,13 @@ describe('useAlgoliaSearchProvider', () => {
         .map((r: { query: string }) => r.query)
     )
 
+  const packTagsPerRequest = () =>
+    mockSearchClient.search.mock.calls.map(([{ requests }]) =>
+      requests
+        .filter((r: { indexName: string }) => r.indexName === 'nodes_index')
+        .map((r: { analyticsTags?: string[] }) => r.analyticsTags)
+    )
+
   afterEach(() => {
     // Clear the module-level cache between tests
     const provider = useAlgoliaSearchProvider()
@@ -233,6 +240,19 @@ describe('useAlgoliaSearchProvider', () => {
       expect(mockSearchClient.search).toHaveBeenCalledTimes(2)
     })
 
+    it('serves a search with analytics tags from the cache of the same untagged search', async () => {
+      mockSearchClient.search.mockResolvedValue({
+        results: [{ hits: [packHit('pack-1')] }, { hits: [] }]
+      })
+
+      const provider = useAlgoliaSearchProvider()
+      const params = { pageSize: 10, pageNumber: 0 }
+      await provider.searchPacks('test', params)
+      await provider.searchPacks('test', { ...params, analyticsTags: ['user'] })
+
+      expect(mockSearchClient.search).toHaveBeenCalledTimes(1)
+    })
+
     it.for(['id', 'objectID'])(
       'should take the pack id from a hit that has only %s',
       async (idField) => {
@@ -241,7 +261,7 @@ describe('useAlgoliaSearchProvider', () => {
             {
               hits: [
                 {
-                  [idField]: 'single-id',
+                  [idField]: `only-${idField}`,
                   name: 'Pack',
                   publisher_id: 'pub',
                   total_install: 0,
@@ -259,7 +279,7 @@ describe('useAlgoliaSearchProvider', () => {
           pageNumber: 0
         })
 
-        expect(result.nodePacks[0].id).toBe('single-id')
+        expect(result.nodePacks[0].id).toBe(`only-${idField}`)
       }
     )
 
@@ -382,6 +402,46 @@ describe('useAlgoliaSearchProvider', () => {
       expect(packQueriesPerRequest()).toEqual([
         ['kijai/comfyui-KJNodes'],
         ['comfyui-KJNodes', 'comfyui KJNodes']
+      ])
+    })
+
+    it('leaves an untagged query untagged and tags its rewrites as rewrite', async () => {
+      mockSearchClient.search
+        .mockResolvedValueOnce({ results: [{ hits: [] }, { hits: [] }] })
+        .mockResolvedValueOnce({ results: [{ hits: [] }, { hits: [] }] })
+
+      const provider = useAlgoliaSearchProvider()
+      await provider.searchPacks('kijai/comfyui-KJNodes', {
+        pageSize: 10,
+        pageNumber: 0
+      })
+
+      expect(packTagsPerRequest()).toEqual([
+        [undefined],
+        [['rewrite'], ['rewrite']]
+      ])
+    })
+
+    it("sends the caller's analytics tags on the query and tags its rewrites rewrite instead of user", async () => {
+      mockSearchClient.search
+        .mockResolvedValueOnce({ results: [{ hits: [] }, { hits: [] }] })
+        .mockResolvedValueOnce({ results: [{ hits: [] }, { hits: [] }] })
+
+      const provider = useAlgoliaSearchProvider()
+      await provider.searchPacks('kijai/comfyui-KJNodes', {
+        pageSize: 10,
+        pageNumber: 0,
+        analyticsTags: ['user', 'dialog']
+      })
+
+      const [[rawBatch]] = mockSearchClient.search.mock.calls
+      expect(rawBatch.requests[1]).not.toHaveProperty('analyticsTags')
+      expect(packTagsPerRequest()).toEqual([
+        [['user', 'dialog']],
+        [
+          ['dialog', 'rewrite'],
+          ['dialog', 'rewrite']
+        ]
       ])
     })
 

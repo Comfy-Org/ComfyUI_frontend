@@ -32,7 +32,10 @@ vi.mock<unknown>(import('@/platform/distribution/types'), () => ({
 }))
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useBillingReadRail'),
-  () => ({ useBillingReadRail: () => null })
+  () => ({
+    useBillingReadRail: () => null,
+    provideBillingSdkStore: () => {}
+  })
 )
 
 beforeEach(() => {

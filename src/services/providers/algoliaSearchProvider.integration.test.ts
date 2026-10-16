@@ -6,20 +6,7 @@ import { DEFAULT_PAGE_SIZE } from '@/constants/searchConstants'
 import { useAlgoliaSearchProvider } from '@/services/providers/algoliaSearchProvider'
 
 import recorded from './__fixtures__/algoliaNodesIndex.json'
-
-type RecordedResponse = {
-  nbHits: number
-  hits: {
-    objectID: string
-    id: string
-    name: string
-    description: string
-    total_install: number
-    publisher_id: string
-    latest_version: string
-    comfy_nodes: string[]
-  }[]
-}
+import type { RecordedResponse } from './__fixtures__/algoliaNodesIndexFixture'
 
 const responses: Record<string, RecordedResponse> = recorded.responses
 
@@ -34,19 +21,29 @@ const replay = (request: {
   page?: number
   hitsPerPage?: number
 }) => {
-  if (!(request.query in responses)) {
+  if (!Object.hasOwn(responses, request.query)) {
     throw new Error(
       `No recorded Algolia response for query "${request.query}". ` +
-        `Re-record the fixture if the query rewriting changed.`
+        `Re-record it with scripts/record-algolia-nodes-fixture.ts.`
     )
   }
-  const recordedHits = responses[request.query].hits
+  const { hits: recordedHits, nbHits } = responses[request.query]
   const hitsPerPage = request.hitsPerPage ?? DEFAULT_PAGE_SIZE
   const page = request.page ?? 0
+  const pageStart = page * hitsPerPage
+  if (
+    pageStart + hitsPerPage > recordedHits.length &&
+    recordedHits.length < nbHits
+  ) {
+    throw new Error(
+      `Only the first ${recordedHits.length} of ${nbHits} hits for ` +
+        `"${request.query}" are recorded, so page ${page} cannot be replayed.`
+    )
+  }
   return {
-    hits: recordedHits.slice(page * hitsPerPage, (page + 1) * hitsPerPage),
-    nbHits: responses[request.query].nbHits,
-    nbPages: Math.ceil(responses[request.query].nbHits / hitsPerPage)
+    hits: recordedHits.slice(pageStart, pageStart + hitsPerPage),
+    nbHits,
+    nbPages: Math.ceil(nbHits / hitsPerPage)
   }
 }
 
@@ -70,14 +67,24 @@ beforeEach(() => {
   useAlgoliaSearchProvider().clearSearchCache()
 })
 
-const searchPacks = (query: string, pageNumber = 0) =>
+const searchPacks = (
+  query: string,
+  pageNumber = 0,
+  pageSize = DEFAULT_PAGE_SIZE
+) =>
   useAlgoliaSearchProvider().searchPacks(query, {
-    pageSize: DEFAULT_PAGE_SIZE,
+    pageSize,
     pageNumber,
     restrictSearchableAttributes: ['name', 'description']
   })
 
 describe('pack search against recorded live Algolia responses', () => {
+  it('refuses to replay an unrecorded query named like an Object.prototype key', async () => {
+    await expect(searchPacks('constructor')).rejects.toThrow(
+      'No recorded Algolia response for query "constructor"'
+    )
+  })
+
   describe('pasted owner/repo slugs', () => {
     it.for([
       ['kijai/comfyui-kjnodes', 'ComfyUI-KJNodes'],
@@ -144,6 +151,24 @@ describe('pack search against recorded live Algolia responses', () => {
   })
 
   describe('pagination', () => {
+    it('reports more pages when the recorded index has more hits than fit on one', async () => {
+      const { hasMore } = await searchPacks('qwen3')
+
+      expect(hasMore).toBe(true)
+    })
+
+    it('refuses to replay a page past the recorded hits', async () => {
+      await expect(searchPacks('qwen3', 1)).rejects.toThrow(
+        'Only the first 64 of 138 hits for "qwen3" are recorded'
+      )
+    })
+
+    it('refuses to replay a page that runs past the recorded hits', async () => {
+      await expect(searchPacks('qwen3', 1, 50)).rejects.toThrow(
+        'Only the first 64 of 138 hits for "qwen3" are recorded'
+      )
+    })
+
     it('requests no fallbacks beyond the first page', async () => {
       await searchPacks('kijai/comfyui-kjnodes', 1)
 
