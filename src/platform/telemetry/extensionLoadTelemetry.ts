@@ -1,4 +1,5 @@
 export const EXTENSION_LOAD_ERROR_TYPE = 'error_loading_extension'
+export const EXTENSION_FAILURES_TRUNCATED_FIELD = 'failures_truncated'
 
 export interface ExtensionFailureDiagnostic {
   ext: string

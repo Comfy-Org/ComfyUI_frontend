@@ -9,7 +9,10 @@ import type {
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { setAssertReporter } from '@/base/assert'
-import { EXTENSION_LOAD_ERROR_TYPE } from '@/platform/telemetry/extensionLoadTelemetry'
+import {
+  EXTENSION_FAILURES_TRUNCATED_FIELD,
+  EXTENSION_LOAD_ERROR_TYPE
+} from '@/platform/telemetry/extensionLoadTelemetry'
 
 import { classifyRumErrorOrigin, rumBeforeSend } from './datadogRumBeforeSend'
 
@@ -334,6 +337,24 @@ describe('rumBeforeSend', () => {
     rumBeforeSend(event, fromPartial({}))
 
     expect(event.context.error).toEqual(expected)
+  })
+
+  it('keeps a truncated batch unattributed when its reported prefix shares a folder', () => {
+    const event = createErrorEvent(
+      'Error loading extensions',
+      'at reportExtensionLoadFailures (https://cloud.comfy.org/assets/app.js:1:2)'
+    )
+    event.context = {
+      error_type: EXTENSION_LOAD_ERROR_TYPE,
+      failures: Array.from({ length: 10 }, () => ({
+        ext: '/extensions/comfyui-foo/main.js'
+      })),
+      [EXTENSION_FAILURES_TRUNCATED_FIELD]: true
+    }
+
+    rumBeforeSend(event, fromPartial({}))
+
+    expect(event.context.error).toEqual({ origin: 'first_party' })
   })
 
   it.for([

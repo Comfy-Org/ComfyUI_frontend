@@ -1,5 +1,6 @@
 import { assert, describe, expect, it, vi } from 'vitest'
 
+import { EXTENSION_FAILURES_TRUNCATED_FIELD } from '@/platform/telemetry/extensionLoadTelemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 
@@ -106,6 +107,7 @@ describe('extension loading', () => {
       expect(cause.stack).not.toContain('/extensions/pack-10/main.js')
       expect(options.tags).toMatchObject({ failed_extension_count: 13 })
       expect(options.context?.failures).toHaveLength(10)
+      expect(options.context?.[EXTENSION_FAILURES_TRUNCATED_FIELD]).toBe(true)
     })
 
     it('caps each failure path, message, and stack', () => {

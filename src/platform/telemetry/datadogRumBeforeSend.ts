@@ -11,6 +11,7 @@ import { isRumErrorNoise } from '@comfyorg/shared-frontend-utils/telemetry'
 import { ASSERTION_FAILURE_PREFIX, hasRumAssertReporter } from '@/base/assert'
 
 import {
+  EXTENSION_FAILURES_TRUNCATED_FIELD,
   EXTENSION_LOAD_ERROR_TYPE,
   getExtensionFailureSignals
 } from './extensionLoadTelemetry'
@@ -162,6 +163,10 @@ function classifyExtensionLoadReport(
   context: Record<string, unknown>,
   stack?: string
 ): RumErrorOrigin {
+  if (context[EXTENSION_FAILURES_TRUNCATED_FIELD] === true) {
+    return { origin: 'first_party' }
+  }
+
   const origins = getExtensionFailureOrigins(context)
   const extensionOrigin = origins.find(
     (origin): origin is Extract<RumErrorOrigin, { origin: 'extension' }> =>

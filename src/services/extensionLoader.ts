@@ -1,5 +1,8 @@
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { EXTENSION_LOAD_ERROR_TYPE } from '@/platform/telemetry/extensionLoadTelemetry'
+import {
+  EXTENSION_FAILURES_TRUNCATED_FIELD,
+  EXTENSION_LOAD_ERROR_TYPE
+} from '@/platform/telemetry/extensionLoadTelemetry'
 import type { ExtensionFailureDiagnostic } from '@/platform/telemetry/extensionLoadTelemetry'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -93,7 +96,10 @@ export function reportExtensionLoadFailures(
     level: 'warning',
     tags: { failed_extension_count: failures.length },
     context: {
-      failures: reportedFailures
+      failures: reportedFailures,
+      ...(failures.length > MAX_REPORTED_FAILURES && {
+        [EXTENSION_FAILURES_TRUNCATED_FIELD]: true
+      })
     }
   })
 }
