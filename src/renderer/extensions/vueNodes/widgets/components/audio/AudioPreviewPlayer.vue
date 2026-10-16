@@ -2,7 +2,7 @@
   <div class="relative" @pointerdown.stop>
     <div
       v-if="!hideWhenEmpty || modelValue"
-      class="relative box-border flex h-16 w-full items-center justify-start gap-4 rounded-lg bg-component-node-widget-background px-4 py-0"
+      class="relative flex h-16 w-full items-center gap-4 rounded-lg bg-component-node-widget-background px-4 py-0"
     >
       <!-- Hidden audio element -->
       <audio
@@ -14,7 +14,7 @@
       />
 
       <!-- Left Actions -->
-      <div class="relative flex shrink-0 items-center justify-start gap-2">
+      <div class="relative flex shrink-0 items-center gap-2">
         <!-- Play/Pause Button -->
         <Button
           variant="textonly"
@@ -55,7 +55,7 @@
       </div>
 
       <!-- Right Actions -->
-      <div class="relative flex shrink-0 items-center justify-start gap-2">
+      <div class="relative flex shrink-0 items-center gap-2">
         <!-- Volume Button -->
         <Button
           variant="textonly"
@@ -115,7 +115,6 @@
                 :min="0"
                 :max="10"
                 :step="1"
-                class="w-full"
                 @update:model-value="handleVolumeChange"
               />
             </div>
@@ -132,7 +131,7 @@ import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { whenever } from '@vueuse/core'
 
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast/toastStore'
 
 import { downloadFile } from '@/base/common/downloadUtil'
 import Button from '@/components/ui/button/Button.vue'
@@ -188,11 +187,7 @@ const handleDownload = () => {
   try {
     downloadFile(modelValue.value)
   } catch {
-    toast.add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: t('g.failedToDownloadFile')
-    })
+    toast.error(t('g.error'), { description: t('g.failedToDownloadFile') })
   }
 }
 

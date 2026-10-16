@@ -45,7 +45,8 @@ const REFUSAL_COPY: Readonly<Record<CapabilityDenialReason, RefusalCopy>> = {
 
 /**
  * The full-page screen a checkout ends on, and the code support can act on.
- * `success` names the plan its quote priced: this page's own Pay sent it.
+ * `success` names the plan the server reports for the operation, or, for this
+ * page's own Pay settled without that report, the plan its quote priced.
  * `completed` is money this page watched settle without sending it;
  * `already_completed` was through before the page could offer a form. Those
  * two name a plan only from the `receipt` the server reported for the

@@ -60,9 +60,7 @@ pnpm container:start
 
 The command mounts `tools/devtools` and starts ComfyUI at `localhost:8188`.
 Leave it running. Use another terminal for `pnpm dev:test` and a third for
-`pnpm test:browser:local`. `dev:test` sets `VITE_USE_LEGACY_DEFAULT_GRAPH=true`
-as CI does. Plain `pnpm dev` loads a different default workflow, so tests that
-use the default graph fail.
+`pnpm test:browser:local`.
 
 Run browser tests against port 5173 when using this container. Port 8188 serves
 the frontend bundled into the container, not the current frontend checkout.
@@ -123,6 +121,10 @@ pnpm exec playwright install chromium webkit --with-deps
 
 ### Environment
 
+Start the dev server with `pnpm dev:test`. It removes the Vue dev overlay that
+blocks UI elements (`DISABLE_VUE_PLUGINS`) and loads the default workflow CI
+builds with (`VITE_USE_LEGACY_DEFAULT_GRAPH`).
+
 Create `.env` from the template and set the debugging keys:
 
 ```bash
@@ -130,9 +132,6 @@ cp .env_example .env
 ```
 
 ```bash
-# Remove Vue dev overlay that blocks UI elements
-DISABLE_VUE_PLUGINS=true
-
 # Test against dev server (recommended) or backend directly
 PLAYWRIGHT_TEST_URL=http://localhost:5173      # Dev server
 # PLAYWRIGHT_TEST_URL=http://localhost:8188     # Direct backend
@@ -525,6 +524,13 @@ properties in methods rather than rebuilding locators.
 - When multiple nodes share a title, disambiguate:
   `vueNodes.getNodeByTitle(name).nth(n)` — strict mode fails on ambiguous
   locators.
+- Never locate a toast by its copy with `getByText` or
+  `getByRole('alert' | 'status').filter({ hasText })`: `Toaster` repeats every
+  toast's text in live regions with those roles. Use
+  `comfyPage.toast.withText(text)` and its kind locators such as
+  `toastErrors`. Tests without `comfyPage` (`cloudAppFixture`, `agentTest`,
+  or a `page`-only test) destructure the `toast` fixture instead. Specs may
+  not construct a `ToastHelper`; lint allows only type imports.
 
 ### Node references over coordinates
 
@@ -1062,8 +1068,26 @@ pnpm test:browser:local --update-snapshots
 ### Creating new baselines in CI
 
 1. Write the test with `toHaveScreenshot('filename.png')`.
-2. Open the PR and add the **`New Browser Test Expectations`** label.
-3. CI generates and commits the Linux baselines.
+2. Add the **`New Browser Test Expectations`** label, comment
+   `/update-playwright`, or tick the "Update Playwright expectations"
+   checkbox in the Playwright section of the PR report comment.
+
+The workflow waits for the PR's `CI: Tests E2E` run and commits the actual
+image of every screenshot assertion that failed there (stale or missing
+baseline) without rerunning Playwright. A flaky screenshot that passed on
+retry is never committed, and a run with no failed screenshot assertions
+commits nothing. The workflow fails and says why when there is no run for
+the head commit, the run takes over 45 minutes, a Playwright job did not
+finish, no Playwright job ran, or a Playwright job left no
+`snapshot-updates-*` artifact (for example after a crash or once the
+artifacts expire after 7 days). Push to the branch for a new E2E run and
+trigger the update again, or comment `/update-playwright full` to rerun the
+`@screenshot` suite with `--update-snapshots`.
+
+A failed screenshot assertion ends its test, so only the first stale
+screenshot of each test is committed and the next E2E run fails on the
+following one. Comment `/update-playwright full` when a change affects
+several screenshots in one test.
 
 Fork PRs can't auto-commit screenshots — a maintainer commits them for you.
 

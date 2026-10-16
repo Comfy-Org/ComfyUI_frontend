@@ -8,30 +8,11 @@ import { createI18n } from 'vue-i18n'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import '@/scripts/changeTracker'
 import { StorageKeys } from '../base/storageKeys'
 import * as storageIO from '../base/storageIO'
 import { useWorkflowDraftStoreV2 } from '../stores/workflowDraftStoreV2'
 import { useWorkflowPersistenceV2 } from './useWorkflowPersistenceV2'
-
-const mockToastAdd = vi.fn()
-vi.mock<unknown>(
-  import('primevue'), // oxlint-disable-line comfy/no-primevue-imports
-  () => ({
-    useToast: () => ({
-      add: mockToastAdd
-    })
-  })
-)
-
-vi.mock<unknown>(
-  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
-
-  () => ({
-    useToast: () => ({
-      add: mockToastAdd
-    })
-  })
-)
 
 vi.mock(
   import('@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'),
@@ -415,7 +396,6 @@ describe('useWorkflowPersistenceV2', () => {
 
     it('falls back to the default workflow when metadata loading fails', async () => {
       const workflowStore = useWorkflowStore()
-      vi.spyOn(console, 'error').mockImplementation(() => {})
       vi.spyOn(workflowStore, 'loadWorkflows').mockRejectedValue(
         new Error('metadata failed')
       )

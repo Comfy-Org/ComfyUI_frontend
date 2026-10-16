@@ -45,6 +45,75 @@ export type WorkspaceSummary = {
 }
 
 /**
+ * The deployments a browser in this workspace may pick, newest first by created_at (always present). A row without a Build name keeps its place in that order.
+ */
+export type WorkspaceDeploymentList = {
+  /**
+   * False when comfy-builder refused the caller's token when asked to name the rows' Releases, or its Builds listing (401 or 403); no row then carries a Build name or Release version. True does not mean every row is named: a row whose Release comfy-builder does not name carries none either, nor does one it could not name because a read of its Builds or their Releases failed (one Build's Releases refused with 401 or 403 included), or because its Build is past the first 50 Builds its Builds listing shows (on a comfy-builder released before it could name the rows for any member).
+   */
+  builds_visible: boolean
+  /**
+   * The workspace's default deployment, set by an owner through PUT /api/workspaces/{id}/default-deployment; absent when none is set, or when the one set is gone (see gone_default_deployment_id). Present whether or not this browser follows it, so the switcher can label the row.
+   */
+  default_deployment_id?: string
+  /**
+   * The workspace's default deployment, present only when it is no longer one of the workspace's live deployments (deleted, or no longer the workspace's). Members with no pick of their own run on Comfy Cloud, and default_deployment_id is absent. The default stays recorded until an owner sets or clears it, so this is reported on every listing until then.
+   */
+  gone_default_deployment_id?: string
+  /**
+   * The deployment this browser had picked, present only when it is no longer one of the workspace's live deployments (deleted, or no longer the workspace's). Every catalog read and submit already ran this browser on Comfy Cloud for it, and this response clears the pick: the pick cookie is rewritten as the explicit Comfy Cloud pick (pick_source `browser`), whether or not the workspace has a live default, so a default an owner sets later does not move this browser. The browser is on Comfy Cloud and picked_deployment_id is absent. The next listing no longer carries it, so the editor tells the person on this response.
+   */
+  gone_picked_deployment_id?: string
+  items: Array<WorkspaceDeployment>
+  /**
+   * Where the current pick came from: `browser`, this browser's own pick cookie (a deployment, or Comfy Cloud with picked_deployment_id absent); `workspace_default`, the workspace's default deployment because the browser has no pick. Absent when there is neither.
+   */
+  pick_source?: 'browser' | 'workspace_default'
+  /**
+   * The deployment this browser is on: its own pick, read from its pick cookie, or the workspace's default deployment when the browser has no pick (BE-17480); absent when the browser runs on Comfy Cloud. It is always one of the listed deployments: a pick or a default whose deployment is not among them (deleted, or no longer the workspace's) runs on Comfy Cloud, and is reported in gone_picked_deployment_id or gone_default_deployment_id instead. pick_source says which of the two it is.
+   */
+  picked_deployment_id?: string
+}
+
+/**
+ * One live deployment of the workspace, as the editor's switcher shows it.
+ */
+export type WorkspaceDeployment = {
+  /**
+   * The Build the Release was cut from. Absent when comfy-builder did not name the Release (see builds_visible).
+   */
+  build_id?: string
+  /**
+   * The Build's name. Absent when comfy-builder did not name the Release (see builds_visible).
+   */
+  build_name?: string
+  /**
+   * When the deployment was created.
+   */
+  created_at: string
+  /**
+   * Developer-platform deployment id; what PUT /api/workspaces/{id}/deployment takes.
+   */
+  deployment_id: string
+  /**
+   * The deployment's name in comfy-deploy: the one its owner gave it, or the default comfy-deploy gives it at create. It is unique among its Build's live deployments, and it stays the same when the deployment moves to another Release. Absent only on a deployment created before deployments had names, until it is given one.
+   */
+  deployment_name?: string
+  /**
+   * The Release the deployment runs now. It changes when the deployment's owner updates it; a browser that picked the deployment follows.
+   */
+  release_id: string
+  /**
+   * The Release's version number within its Build. Absent when comfy-builder did not name the Release (see builds_visible).
+   */
+  release_version?: number
+  /**
+   * The deployment's status (ready, provisioning, stopped, ...). Any of them may be picked; a job is taken only while it is ready.
+   */
+  status: string
+}
+
+/**
  * Metadata for a workspace-scoped API key (secret is never returned).
  */
 export type WorkspaceApiKeyInfo = {
@@ -415,20 +484,56 @@ export type UsageTimeSeries = {
   summary: UsageSummary
 }
 
+/**
+ * Current remaining balance, mirroring /billing/balance. Every amount is CENTS of `currency`; the `*_micros` names are a misnomer kept for wire compatibility.
+ */
 export type UsageBalance = {
+  /**
+   * The total remaining balance. Cents of `currency`, the same value as `amount_micros`, which is misnamed. A fractional `number`, deliberately not the integer-cents convention other `*_cents` fields in this spec use -- do not decode it as an integer.
+   */
+  amount_cents?: number
+  /**
+   * DEPRECATED misnomer: this value is CENTS, not micros. Divide by 100. Use `amount_cents`. The total remaining balance.
+   *
+   * @deprecated
+   */
   amount_micros?: number
+  /**
+   * The remaining balance from cloud credits (subscription). Cents of `currency`, the same value as `cloud_credit_balance_micros`, which is misnamed. A fractional `number`, deliberately not the integer-cents convention other `*_cents` fields in this spec use -- do not decode it as an integer.
+   */
+  cloud_credit_balance_cents?: number
+  /**
+   * DEPRECATED misnomer: this value is CENTS, not micros. Divide by 100. Use `cloud_credit_balance_cents`. The remaining balance from cloud credits (subscription).
+   *
+   * @deprecated
+   */
   cloud_credit_balance_micros?: number
   currency?: string
+  /**
+   * The remaining balance from prepaid commits (top-ups). Cents of `currency`, the same value as `prepaid_balance_micros`, which is misnamed. A fractional `number`, deliberately not the integer-cents convention other `*_cents` fields in this spec use -- do not decode it as an integer.
+   */
+  prepaid_balance_cents?: number
+  /**
+   * DEPRECATED misnomer: this value is CENTS, not micros. Divide by 100. Use `prepaid_balance_cents`. The remaining balance from prepaid commits (top-ups).
+   *
+   * @deprecated
+   */
   prepaid_balance_micros?: number
 }
 
+/**
+ * Mixed units, deliberately. `spend_micros` here (and `cost_micros` on UsageBucket / UsageBreakdownRow) is genuinely MICROS -- 1/1,000,000 of the currency unit -- because it comes from Metronome's usage figures. The `balance` breakdown below is CENTS, and its `*_micros` names are a misnomer; use its `*_cents` fields.
+ */
 export type UsageSummary = {
   balance?: UsageBalance
+  /**
+   * Total gross spend over the range, in microamount (1/1,000,000 of the currency unit). Genuinely micros, unlike the balance breakdown.
+   */
   spend_micros: number
 }
 
 /**
- * Present, with empty groups, buckets and breakdown, when the requested grouping has no data source yet. Render as unavailable, not as zero spend.
+ * Present, with empty groups, buckets and breakdown, when the requested grouping is not served for this workspace. Render as unavailable, not as zero spend.
  */
 export type UsageNotAvailable = {
   reason: 'no_attribution_source'
@@ -590,7 +695,8 @@ export type TopupQuoteResponse = {
 }
 
 /**
- * One persisted tool call attached to an assistant message's content.tool_calls (services/agent/internal/persist.ToolCallSummary), so a chat reload can render the tool-call history a turn produced. Display data only — raw arguments/results are never projected here. Only terminal rows (status ok/error) are ever surfaced; a row a dead turn left in pending/running has no wire-status mapping and is dropped rather than shown as a perpetual-progress chip.
+ * One persisted tool call attached to an assistant message's content.tool_calls (services/agent/internal/persist.ToolCallSummary), so a chat reload can render the tool-call history a turn produced. Display data only — raw arguments/results are never projected here. The optional produced_asset field is a strict exception containing only the server-recorded id/hash from a successful asset-producing media call. Only terminal rows (status ok/error) are ever surfaced; a row a dead turn left in pending/running has no wire-status mapping and is dropped rather than shown as a perpetual-progress chip.
+ * This object is projected at read time by services/agent/internal/persist.ToolCallsForThread from agent_tool_calls; it is never stored in agent_messages.content, so there is no legacy persisted shape. Because of that projection the contract holds for every row ever served: tool_call_id is always present (it falls back to id for rows written before the column existed), status is always one of the enum values (the audit-table word "ok" is translated by ToolCallWireStatus), and duration_ms is always an integer when present. Clients (the frontend's zPersistedToolCallSummary) must not relax these fields to parse "historical" rows — a row that fails this schema is a server bug (BE-20134).
  */
 export type ToolCallSummary = {
   /**
@@ -606,6 +712,23 @@ export type ToolCallSummary = {
    * This tool-call row's own primary key.
    */
   id: string
+  /**
+   * Mirrors agent_tool_calls.prompt_id at read time. This is the exact-attempt ownership signal an eval driver needs to prove which job a given turn submitted — a model-authored result string, workflow id, or URL in the assistant's final text is not equivalent evidence. It is parsed from the comfy-cli runner's stdout envelope and never cross-checked against the job table, so it is proof of turn-to-job submission only, not proof the job completed or that any output URL belongs to it; a consumer must still authenticate job detail and bind the artifact to this id. Absence does NOT prove no job was submitted: most tool calls never submit one, but a call that submitted a job and then errored (for example while polling) also omits this field, as does any row outside the history window.
+   */
+  job_id?: string
+  /**
+   * Present only when this exact row is a successful process_media or combine_media call whose persisted audit result contains a complete saved_asset identity. It binds an assistant message and tool call to the asset representing that call's output bytes. Ingest may dedupe identical bytes to an existing asset, so this does not prove the call created the asset, and multiple calls may name the same id. Consumers must still authenticate the asset id and match the hash against the candidate selector. Omitted for failed calls, non-producing tools, malformed/legacy results, and rows outside the history window. Raw results, arguments, asset names, URLs, credentials, notes, and unrelated metadata are never exposed.
+   */
+  produced_asset?: {
+    /**
+     * The canonical asset hash/filename selector recorded by the producing call, including its media extension.
+     */
+    hash: string
+    /**
+     * The server-assigned asset id recorded by the producing call.
+     */
+    id: string
+  }
   started_at?: string
   /**
    * The WIRE status vocabulary (api/agent_events.schema.json's agent_tool_call), translated from the audit-row vocabulary (pending/running/ok/error) via ToolCallWireStatus — the same function the live agent_tool_call broadcast uses, so reloaded history and a live frame for the same call never disagree on the vocabulary. "running" never appears here: only terminal rows are queried, so a call still in flight when its turn died is omitted rather than shown as a perpetually in-progress chip.
@@ -1306,6 +1429,10 @@ export type SsoDiscoverResponse = {
    * Display name of the organization, when `sso` is true
    */
   organization_name?: string
+  /**
+   * When `sso` is true: whether the organization requires SSO (true) or only offers it (false, an organization in optional mode, whose people keep their other sign-ins). Absent means required.
+   */
+  required?: boolean
   /**
    * The email signs in through its organization's SSO
    */
@@ -2051,6 +2178,16 @@ export type Plan = {
 }
 
 /**
+ * Which developer-platform deployment this browser should run on.
+ */
+export type PickWorkspaceDeploymentRequest = {
+  /**
+   * Developer-platform deployment id: one of this workspace's, not deleted. The error message names which check failed.
+   */
+  deployment_id: string
+}
+
+/**
  * An outstanding workspace invitation that has not yet been accepted.
  */
 export type PendingInvite = {
@@ -2213,7 +2350,7 @@ export type OAuthRegisterRequest = {
    */
   response_types?: Array<'code'>
   /**
-   * **ACCEPTED AND IGNORED.** Dynamic clients do not pick scopes — the server assigns scopes from the active MCP resource's published list, so a caller-supplied value cannot escalate. The field is accepted (RFC 7591 §2 defines it and the MCP SDK always sends it) but the value is dropped: it is never persisted and never echoed in the registration response.
+   * **ACCEPTED AND IGNORED.** Dynamic clients do not pick scopes — the server grants the published scope lists of `comfy-mcp` and, when active, `comfy-router`, so a caller-supplied value cannot escalate. The field is accepted (RFC 7591 §2 defines it and the MCP SDK always sends it) but the value is dropped: it is never persisted and never echoed in the registration response.
    *
    */
   scope?: string | null
@@ -2297,6 +2434,17 @@ export type OAuthConsentChallenge = {
    * Human-readable name of the OAuth client requesting authorization, from oauth_clients.display_name.
    */
   client_display_name: string
+  /**
+   * Whether the client requesting authorization is a seeded first-party
+   * client (`first_party`) or was created through RFC 7591 dynamic client
+   * registration (`dynamic`). Derived from the client_id: every dynamically
+   * registered client carries the `comfy-dyn-` prefix. `client_display_name`
+   * on a `dynamic` client is registrant-supplied and unverified; the consent
+   * UI must present it as such. Consumers must treat an absent value as
+   * `dynamic`.
+   *
+   */
+  client_provenance: 'first_party' | 'dynamic'
   /**
    * Per-row CSRF token bound to this authorization request (not to the session). Must be echoed back on POST.
    */
@@ -2507,6 +2655,23 @@ export type MediaBadRequestError = ErrorResponse | MediaQueryError
  * Paginated list of workspaces the authenticated user belongs to.
  */
 export type ListWorkspacesResponse = {
+  /**
+   * Whether `POST /api/workspaces` accepts this account. False for an
+   * account an SSO organization holds (its email is on the
+   * organization's verified domains): the organization manages its
+   * workspaces, and signing in again does not change it. Lets a client
+   * disable workspace creation up front instead of after the request
+   * is refused with 403 `FORBIDDEN`.
+   *
+   */
+  can_create_workspace: boolean
+  /**
+   * The workspace the app should open on sign-in: the workspace of the
+   * SSO organization that manages the caller's account, when the caller
+   * is a member of it. Absent for accounts no SSO organization manages.
+   *
+   */
+  default_workspace_id?: string
   workspaces: Array<WorkspaceWithRole>
 }
 
@@ -2966,6 +3131,44 @@ export type JobDetailResponse = {
    * Count of outputs classified as previewable media types (images, video, audio, 3D, text) — a subset of outputs_count (omitted for non-terminal states)
    */
   previewable_outputs_count?: number
+  /**
+   * 1-based position of this job among the caller's OWN jobs held
+   * behind the same concurrency cap (same user, workspace and auth
+   * method), in the dispatcher's admission order — i.e. the number of
+   * the caller's own capped jobs that will be admitted before this
+   * one, plus one. It is NOT a fleet-wide queue position and says
+   * nothing about other users' jobs. (For an admin reading someone
+   * else's job, the set is that job owner's, not the admin's — the
+   * same scoping `workspace_id`/`user_id` already describe.)
+   *
+   * Null unless `queue_reason` is `concurrency_limit`. May also be
+   * null in that state on the rare rows whose admission ordering
+   * cannot be determined (no recorded state-change timestamp), or if
+   * the count query fails — a missing position never fails the
+   * request.
+   *
+   */
+  queue_position?: number | null
+  /**
+   * Why a still-queued job has not started yet. Present only while
+   * `status` is `pending`; null for every other status.
+   *
+   * `status` deliberately folds every waiting state into `pending`
+   * (the frontend's filter categories depend on that), so this field
+   * is the one that tells the two kinds of waiting apart:
+   *
+   * - `concurrency_limit` — the job is held behind the caller's OWN
+   * per-user/per-auth-method concurrent-job cap. Nothing in the
+   * fleet is blocking it; the caller's other running jobs are.
+   * - `capacity` — the job is past that cap and admitted, and is now
+   * waiting for an inference worker to become free.
+   *
+   * Detail-only: this field is NOT present on the list view's
+   * `JobEntry`, because deriving `queue_position` for a page of jobs
+   * would cost one extra query per row.
+   *
+   */
+  queue_reason?: 'concurrency_limit' | 'capacity'
   /**
    * User-friendly job status
    */
@@ -3912,7 +4115,7 @@ export type CreateWorkspaceApiKeyResponse = {
    */
   description: string
   /**
-   * When the key expires (if set)
+   * The effective expiration timestamp, which may differ from the one requested: a key minted by an OAuth-authenticated session is capped to the OAuth refresh-token lifetime, so clients must read the lifetime they actually got from this field rather than assume the requested one. Absent only for first-party keys created with no expiry.
    */
   expires_at?: string
   /**
@@ -3942,7 +4145,7 @@ export type CreateWorkspaceApiKeyRequest = {
    */
   description?: string
   /**
-   * Optional expiration timestamp
+   * Optional expiration timestamp. Keys created by an OAuth-authenticated session (an access token issued by the Comfy OAuth server to a registered client) are always capped to the OAuth refresh-token lifetime (OAUTH_REFRESH_TOKEN_TTL, 30 days by default): omitting this field yields that cap, a longer value is reduced to it, and a shorter value is honoured as-is. Keys created by a first-party session (browser workspace JWT, Firebase) are unaffected and may still be created with no expiry.
    */
   expires_at?: string
   /**
@@ -4442,6 +4645,19 @@ export type BillingOpStatusResponse = {
     | 'failed_retryable'
     | 'succeeded'
     | 'reconciliation_needed'
+  /**
+   * true exactly when POST /api/billing/ops/{id}/cancel would deliver
+   * the abandon for this caller: a pending plan change or initial
+   * subscription whose workflow is waiting on the customer's
+   * authentication. An already-canceled operation is false even though
+   * the cancel call still answers 200 for it. Decided by the same
+   * check the cancel endpoint runs, so clients must not derive it from
+   * status, phase or authentication_state. false for terminal
+   * operations, other operation types and callers who may not cancel.
+   * Absent when it could not be determined; absent means no claim.
+   *
+   */
+  cancelable?: boolean
   charge_breakdown?: BillingOpChargeBreakdown
   /**
    * When the operation completed (success or failure)
@@ -4536,14 +4752,51 @@ export type BillingOpStatusResponse = {
 
 /**
  * Display only. The plan the operation targets; for a scheduled change,
- * the plan it switches to at period end. Present only for succeeded
- * plan changes, initial subscriptions and resubscribes. Visible to any
- * workspace member who can read the operation.
+ * the plan it switches to at period end. Present for plan changes,
+ * initial subscriptions and resubscribes in every status (pending,
+ * failed and succeeded alike), so a recovered pending operation can be
+ * labelled with its own plan. Absent when the target plan could not be
+ * resolved. Visible to any workspace member who can read the operation.
+ * tier and the price fields are absent when the server cannot describe
+ * the plan, as for the retired seat-based Team plans, whose rows carry a
+ * personal tier and whose price depends on the workspace's seats.
  *
  */
 export type BillingOpReceiptPlan = {
+  /**
+   * ISO 4217 currency of price_cents, lowercase (e.g. usd). Present
+   * exactly when price_cents is present.
+   *
+   */
+  currency?: string
   duration: SubscriptionDuration
+  /**
+   * price_cents divided by 12 and rounded half up to the nearest cent,
+   * as on the subscribe preview's new_plan. Display only. Present
+   * exactly when price_cents is present on an ANNUAL plan.
+   *
+   */
+  monthly_price_cents?: number
+  /**
+   * The plan's recurring price for one billing period, at
+   * team_credit_stop_id for a per-credit Team plan: a whole year for
+   * ANNUAL. The same figure as new_plan.price_cents on the subscribe
+   * preview, before tax, promotions, account balance and proration,
+   * so it is not what the operation charged; amount_charged_cents is.
+   * Present together with currency, and absent when the plan could
+   * not be priced, including the retired seat-based Team plans.
+   *
+   */
+  price_cents?: number
   slug: string
+  /**
+   * The per-credit Team credit stop the operation targets (e.g.
+   * team_200). Absent for personal plans and for Team plans without a
+   * credit stop.
+   *
+   */
+  team_credit_stop_id?: string
+  tier?: SubscriptionTier
 }
 
 /**
@@ -4801,6 +5054,10 @@ export type BillingCapabilities = {
   can_change_seats: boolean
   can_downgrade_to_personal: boolean
   can_invite_members: boolean
+  /**
+   * Workspace owner may manage members independently of seat quantity and subscription lifecycle. Individual target restrictions still apply.
+   */
+  can_manage_members: boolean
   can_reactivate: boolean
   /**
    * Stripe-billed only; false within 1 hour of the change.
@@ -4811,15 +5068,27 @@ export type BillingCapabilities = {
 }
 
 /**
- * Current credit balance and usage details for a workspace.
+ * Current credit balance and usage details for a workspace. Every amount here is CENTS of `currency`. The `*_micros` fields are a misnamed legacy set kept for wire compatibility; the `*_cents` fields beside them carry the identical values under honest names. `amount_micros` stays required and `amount_cents` is optional so existing strict clients are unaffected.
  */
 export type BillingBalanceResponse = {
   /**
-   * The total remaining balance in microamount (1/1,000,000 of the currency unit)
+   * The total remaining balance. Cents of `currency`, the same value as `amount_micros`, which is misnamed. A fractional `number`, deliberately not the integer-cents convention other `*_cents` fields in this spec use -- do not decode it as an integer.
+   */
+  amount_cents?: number
+  /**
+   * DEPRECATED misnomer: this value is CENTS, not micros. Divide by 100. Use `amount_cents`. The total remaining balance.
+   *
+   * @deprecated
    */
   amount_micros: number
   /**
-   * The remaining balance from cloud credits in microamount
+   * The remaining balance from cloud credits (subscription). Cents of `currency`, the same value as `cloud_credit_balance_micros`, which is misnamed. A fractional `number`, deliberately not the integer-cents convention other `*_cents` fields in this spec use -- do not decode it as an integer.
+   */
+  cloud_credit_balance_cents?: number
+  /**
+   * DEPRECATED misnomer: this value is CENTS, not micros. Divide by 100. Use `cloud_credit_balance_cents`. The remaining balance from cloud credits (subscription).
+   *
+   * @deprecated
    */
   cloud_credit_balance_micros?: number
   /**
@@ -4827,15 +5096,37 @@ export type BillingBalanceResponse = {
    */
   currency: string
   /**
-   * The effective balance (total balance minus pending charges). Can be negative if pending charges exceed the balance.
+   * False when pending charges could not be read. effective_balance_* and pending_charges_* are then omitted, because total minus an unread pending amount would overstate spendable credit. Present on every 200: the zero-balance response for an unprovisioned workspace reports true, because no draft-invoice read happened there to fail. Treat an absent flag as "server predates this field", not as false.
+   */
+  effective_balance_authoritative?: boolean
+  /**
+   * The total balance minus pending charges; negative when charges exceed credit. Cents of `currency`, the same value as `effective_balance_micros`, which is misnamed. A fractional `number`, deliberately not the integer-cents convention other `*_cents` fields in this spec use -- do not decode it as an integer.
+   */
+  effective_balance_cents?: number
+  /**
+   * DEPRECATED misnomer: this value is CENTS, not micros. Divide by 100. Use `effective_balance_cents`. The total balance minus pending charges; negative when charges exceed credit.
+   *
+   * @deprecated
    */
   effective_balance_micros?: number
   /**
-   * The total amount of pending/unbilled charges from draft invoices in microamount
+   * Pending/unbilled charges from draft invoices. Cents of `currency`, the same value as `pending_charges_micros`, which is misnamed. A fractional `number`, deliberately not the integer-cents convention other `*_cents` fields in this spec use -- do not decode it as an integer.
+   */
+  pending_charges_cents?: number
+  /**
+   * DEPRECATED misnomer: this value is CENTS, not micros. Divide by 100. Use `pending_charges_cents`. Pending/unbilled charges from draft invoices.
+   *
+   * @deprecated
    */
   pending_charges_micros?: number
   /**
-   * The remaining balance from prepaid commits in microamount
+   * The remaining balance from prepaid commits (top-ups). Cents of `currency`, the same value as `prepaid_balance_micros`, which is misnamed. A fractional `number`, deliberately not the integer-cents convention other `*_cents` fields in this spec use -- do not decode it as an integer.
+   */
+  prepaid_balance_cents?: number
+  /**
+   * DEPRECATED misnomer: this value is CENTS, not micros. Divide by 100. Use `prepaid_balance_cents`. The remaining balance from prepaid commits (top-ups).
+   *
+   * @deprecated
    */
   prepaid_balance_micros?: number
 }
@@ -5005,6 +5296,25 @@ export type AssetCreated = Asset & {
    */
   created_new: boolean
 }
+
+/**
+ * Attachment extensions whose content the model can see: the raster formats Go's image
+ * package decodes, plus HEIC/HEIF stills (iPhone photos), which view_asset converts to JPEG
+ * first. view_asset always re-encodes to PNG or JPEG, so the provider's own four-type image
+ * allowlist is satisfied by construction rather than by matching this list.
+ *
+ */
+export type AgentViewableAttachmentExtension =
+  | '.png'
+  | '.jpg'
+  | '.jpeg'
+  | '.gif'
+  | '.webp'
+  | '.bmp'
+  | '.tif'
+  | '.tiff'
+  | '.heic'
+  | '.heif'
 
 /**
  * Acknowledgement that a turn was accepted. The agent runs asynchronously; output streams over the WebSocket (agent_message_delta, agent_tool_call, draft_patch, agent_message_done).
@@ -5187,6 +5497,78 @@ export type AgentRunApprovalContext = {
 }
 
 /**
+ * Attachment extensions that are accepted so a user can keep them beside a workflow, and
+ * nothing more — the agent can neither read the contents nor wire the file in.
+ *
+ * .avif is the only one: it is an image the turn cannot decode (no registry entry, so
+ * view_asset would fail) and it is not text, so read_asset would return mojibake. It stays
+ * accepted because it was attachable before the policy existed.
+ *
+ */
+export type AgentRetainedAttachmentExtension = '.avif'
+
+/**
+ * Attachment extensions the agent recognizes as 3D models and wires into Load3D's model_file
+ * widget. They are exactly the set Load3D accepts (comfy_extras/nodes_load_3d.py); .usdz is
+ * absent from both lists, so it is not an exclusion this tier makes.
+ *
+ */
+export type AgentReferenceAttachmentExtension =
+  | '.glb'
+  | '.obj'
+  | '.fbx'
+  | '.gltf'
+  | '.stl'
+  | '.ply'
+  | '.spz'
+  | '.splat'
+  | '.ksplat'
+
+/**
+ * Attachment extensions whose contents the agent reads verbatim, with read_asset. The bytes
+ * are decoded as UTF-8 and returned as text, bounded and truncation-marked.
+ *
+ * This tier describes CONTENT ACCESS only and says nothing about whether the file can be
+ * wired into a graph. Those are separate questions, so a format becoming a node input later
+ * does not move it out of this tier.
+ *
+ * .svg is here rather than with the images because it is XML: view_asset cannot decode it,
+ * but its markup is exactly what a caller would want read.
+ *
+ */
+export type AgentReadableAttachmentExtension =
+  | '.md'
+  | '.markdown'
+  | '.txt'
+  | '.json'
+  | '.csv'
+  | '.yaml'
+  | '.yml'
+  | '.xml'
+  | '.log'
+  | '.svg'
+
+/**
+ * Attachment extensions the agent can only describe from metadata. A subset of the containers
+ * ingest sorts into a load node's video/audio lists: that categoriser also accepts .wmv, .flv,
+ * .aac and .wma, which the agreed attachment list rejects.
+ *
+ */
+export type AgentProbeableAttachmentExtension =
+  | '.mp4'
+  | '.webm'
+  | '.mov'
+  | '.m4v'
+  | '.avi'
+  | '.mkv'
+  | '.mp3'
+  | '.wav'
+  | '.ogg'
+  | '.opus'
+  | '.flac'
+  | '.m4a'
+
+/**
  * A user turn posted to the agent.
  */
 export type AgentPostMessageRequest = {
@@ -5195,9 +5577,30 @@ export type AgentPostMessageRequest = {
    */
   ask_kinds?: Array<AgentAskKind>
   /**
-   * Optional input filenames the client already uploaded to the ComfyUI input namespace (via /api/upload/image, which returns the {name, subfolder, type} reference). Images, video and audio are all accepted. The agent wires them into the workflow by filename — it never receives file bytes here, and reads an attachment's contents through its own asset tools when a request depends on them.
+   * Optional input filenames the client already uploaded to the ComfyUI input namespace (via
+   * /api/upload/image, which returns the {name, subfolder, type} reference). The agent never
+   * receives file bytes here; what it can read or wire depends on the policy tier.
+   *
+   * Each entry's extension must appear in AgentAttachmentPolicy; a reference outside it is
+   * rejected with 422 (AgentAttachmentRejected). A reference with NO extension is the one
+   * exception: not every reference is a filename — an asset hash may be a bare hex digest or
+   * "blake3:<hex>" — so one with nothing to judge is admitted here and checked again once it
+   * resolves to a stored name. A refusal there costs the attachment its asset id and its
+   * kind, so the agent gets no tool for it and the turn is not refused; the reference itself
+   * is still echoed back by GET .../messages. Which tier of that policy an extension lands
+   * in says what the agent can do with it, and the tiers differ sharply — a client that
+   * presents them as one flat list misleads the user.
+   *
+   * The constraint is expressed as extension enums rather than on this array because the array
+   * carries FILENAMES, not content types: an extension is what both ends can actually agree
+   * on, and the upload route this list references stores no MIME type for what it accepts.
+   *
    */
   attachments?: Array<string>
+  /**
+   * The client's live ComfyUI WebSocket clientId (the `sid` the server hands back on the socket's first status message). Local runs the agent submits on the caller's behalf are submitted under this id, so ComfyUI addresses their execution events — node highlights, progress and outputs — to this client instead of to the short-lived CLI socket that submitted them. Additive and advisory; omitting it restores the previous behaviour, where an agent-started run leaves the canvas with no execution feedback. Ignored on the cloud target, which fans execution events out per user/workspace regardless of submitter. A value that could not be a ComfyUI socket id is DROPPED, not rejected — no turn fails over it — so an id longer than 128 bytes, or one containing whitespace or non-printable characters, or one starting with `-`, is accepted with 202 and behaves exactly like omitting the field. Surrounding whitespace is trimmed.
+   */
+  client_id?: string
   /**
    * Client-generated identifier for this send attempt. The frontend emits the same value on app:agent_message_sent; the agent echoes it on agent_turn_started so accepted turns can be joined to their originating sends without using timestamp proximity. Retries mint a new value. Older clients may omit it.
    */
@@ -5393,9 +5796,16 @@ export type AgentPendingAsk =
  */
 export type AgentMessage = {
   /**
-   * Message payload. User turns carry {text, attachments?, attachment_refs?, workflow_references?}. Attachments are the input-image filenames from the request. attachment_refs is the server's own resolution of those same filenames to library assets, as {name, id?, kind?} objects, and exists so a later turn in the thread can reach an earlier turn's file — clients should keep reading attachments. workflow_references is an optional array of explicit non-target references, each with workflow_id and name (an empty string when no name was supplied). An optional unavailable: true records that the reference could not be authorized at turn start, without distinguishing unknown IDs, inaccessible workflows, or lookup failures. These entries preserve the user's reference intent without exposing workflow content; the frontend restores reference chips from this metadata. The field is omitted when there are no references. Assistant turns carry {text} — the final answer text (or error copy on a failed turn). Omitted when empty (e.g. an assistant message still streaming). Per-turn token accounting is NOT included here; it is surfaced on the agent_message_done WebSocket broadcast. tool_calls is an optional array of ToolCallSummary, attached to an assistant message that has persisted terminal (ok/error) tool-call rows — it lets a chat reload render the tool history a turn produced instead of showing nothing until the next live turn. Omitted when the message has no such rows.
+   * Message payload. User turns carry {text, attachments?, attachment_refs?, workflow_references?}. Attachments are the input-image filenames from the request. attachment_refs is the server's own resolution of those same filenames to library assets, as {name, id?, kind?, display_name?} objects. display_name preserves the original user-facing filename when name is an opaque storage key. To bound denormalized data, repeated entries with the same name carry display_name only on the first occurrence; clients should apply it to every entry sharing that name. The sibling exists so a later turn in the thread can reach an earlier turn's file — clients should keep reading attachments. workflow_references is an optional array of explicit non-target references, each with workflow_id and name (an empty string when no name was supplied). An optional unavailable: true records that the reference could not be authorized at turn start, without distinguishing unknown IDs, inaccessible workflows, or lookup failures. These entries preserve the user's reference intent without exposing workflow content; the frontend restores reference chips from this metadata. The field is omitted when there are no references. Assistant turns carry {text} — the final answer text (or error copy on a failed turn). Omitted when empty (e.g. an assistant message still streaming). Per-turn token accounting is NOT included here; it is surfaced on the agent_message_done WebSocket broadcast. tool_calls is an optional array of ToolCallSummary, attached to an assistant message that has persisted terminal (ok/error) tool-call rows — it lets a chat reload render the tool history a turn produced instead of showing nothing until the next live turn. Omitted when the message has no such rows.
    */
   content?: {
+    attachment_refs?: Array<{
+      display_name?: string
+      id?: string
+      kind?: string
+      name?: string
+      [key: string]: unknown
+    }>
     tool_calls?: Array<ToolCallSummary>
     [key: string]: unknown
   }
@@ -5475,6 +5885,82 @@ export type AgentCancelUnconfirmed = {
  */
 export type AgentCancelAccepted = {
   status: 'cancelling'
+}
+
+/**
+ * 422 body when a posted attachment's extension is outside the accepted list. It carries the
+ * policy rather than only an error string so a client never has to hardcode the list to
+ * explain the refusal — the same reason the list is expressed as enums the frontend generates
+ * its types from.
+ *
+ */
+export type AgentAttachmentRejected = {
+  accepted: AgentAttachmentPolicy
+  error: string
+  /**
+   * The offending references, in the order they were posted. Capped, so it can be shorter than rejected_count — a client that reports "N were refused" must read that field rather than this array's length.
+   */
+  rejected: Array<string>
+  /**
+   * How many references were refused in total, before the list above was capped.
+   */
+  rejected_count: number
+  type: 'ATTACHMENT_TYPE_NOT_ACCEPTED'
+}
+
+/**
+ * Every extension the agent accepts as an attachment, grouped by what it can actually DO with
+ * one. The grouping is the point: the tiers differ sharply, and a client that renders them as
+ * one flat "supported files" list tells the user something false (PM-1855).
+ *
+ * - `view`: the model sees the content. view_asset decodes the still (converting HEIC/HEIF to
+ * JPEG first) and re-encodes it as PNG/JPEG into the turn, so the model reasons about actual
+ * pixels.
+ * - `probe`: metadata only. probe_media reports duration, resolution, frame rate and codecs;
+ * nothing in the model's input can carry a clip, so the CONTENT stays unreadable. Seeing a
+ * video means cutting a frame out with process_media and viewing that.
+ * - `reference`: the agent knows the file is a 3D model, with its kind and id, and wires its
+ * filename into a Load3D node's model_file widget. No tool opens the mesh itself: the cloud
+ * turn registers neither a shell nor a file-read tool, by design, as it is a shared
+ * multi-tenant pod.
+ * - `read`: the agent reads the contents verbatim with read_asset — UTF-8 decoded, bounded
+ * and truncation-marked. The tier describes CONTENT ACCESS only; whether the file can also
+ * be wired into a graph is a separate axis, so a format gaining an upload-backed node input
+ * later stays in this tier.
+ * - `retain`: the file is attached and nothing more — neither readable nor wirable. Only
+ * .avif, which the turn cannot decode as an image and is not text.
+ *
+ * The union of the five arrays is the accepted list. Anything absent is rejected.
+ *
+ */
+export type AgentAttachmentPolicy = {
+  probe: Array<AgentProbeableAttachmentExtension>
+  read: Array<AgentReadableAttachmentExtension>
+  reference: Array<AgentReferenceAttachmentExtension>
+  retain: Array<AgentRetainedAttachmentExtension>
+  view: Array<AgentViewableAttachmentExtension>
+}
+
+export type AgentAttachmentError =
+  | ({
+      type: 'ATTACHMENT_TYPE_NOT_ACCEPTED'
+    } & AgentAttachmentRejected)
+  | ({
+      type: 'ATTACHMENT_BOUNDS_EXCEEDED'
+    } & AgentAttachmentBoundsExceeded)
+
+export type AgentAttachmentBoundsExceeded = {
+  error: string
+  limits: {
+    max_item_length: number
+    max_items: number
+  }
+  /**
+   * A bounded example of the first overlong reference; empty for count-only violations.
+   */
+  overlong_ref: string
+  received_count: number
+  type: 'ATTACHMENT_BOUNDS_EXCEEDED'
 }
 
 /**
@@ -6189,6 +6675,68 @@ export type AgentLlmMessagesResponses = {
 export type AgentLlmMessagesResponse =
   AgentLlmMessagesResponses[keyof AgentLlmMessagesResponses]
 
+export type AgentLlmTracesData = {
+  /**
+   * An OTLP ExportTraceServiceRequest, optionally gzip-encoded (Content-Encoding gzip); at most 4 MiB encoded and decoded, and 4096 spans.
+   */
+  body: Blob | File
+  path?: never
+  query?: never
+  url: '/api/agent/llm/v1/traces'
+}
+
+export type AgentLlmTracesErrors = {
+  /**
+   * Malformed export, or Langfuse rejected it (not retryable).
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   */
+  403: ForbiddenError
+  /**
+   * The agent in-app experience is disabled for this caller (FlagAgentInAppExperience off), or the relay is not enabled on the agent service (AGENT_LOCAL_TRACES off).
+   */
+  404: ErrorResponse
+  /**
+   * The export exceeds 4 MiB or 4096 spans.
+   */
+  413: ErrorResponse
+  /**
+   * Not application/x-protobuf, or an unsupported Content-Encoding.
+   */
+  415: ErrorResponse
+  /**
+   * The caller's trace rate limit is exhausted.
+   */
+  429: ErrorResponse
+  /**
+   * The agent service or Langfuse is unavailable (retryable).
+   */
+  502: ErrorResponse
+  /**
+   * The agent proxy is not configured to forward safely (a non-local agent service URL with no shared machine-to-machine secret).
+   */
+  503: ErrorResponse
+}
+
+export type AgentLlmTracesError =
+  AgentLlmTracesErrors[keyof AgentLlmTracesErrors]
+
+export type AgentLlmTracesResponses = {
+  /**
+   * Accepted; the body is an empty OTLP ExportTraceServiceResponse.
+   */
+  200: Blob | File
+}
+
+export type AgentLlmTracesResponse =
+  AgentLlmTracesResponses[keyof AgentLlmTracesResponses]
+
 export type AgentGetRunModeData = {
   body?: never
   path?: never
@@ -6715,6 +7263,10 @@ export type AgentPostMessageErrors = {
    */
   403: ErrorResponse | AgentError
   /**
+   * One or more attachments name a file type the agent does not accept. The body names the offending references and carries the full accepted policy, so the client can explain the refusal without hardcoding the list.
+   */
+  422: AgentAttachmentError
+  /**
    * Internal server error (ingest-raised failures use the standard ErrorResponse shape instead)
    */
   500: AgentError
@@ -6957,7 +7509,7 @@ export type CreateAssetData = {
      */
     hash?: string
     /**
-     * Optional asset ID for idempotent creation. If provided and asset exists, returns existing asset.
+     * Optional caller-chosen asset ID. If the upload's content matches an asset you already own in this workspace, that asset is returned and its `id` may differ from the one requested. Otherwise, an ID already taken by any asset is refused with 400 `ASSET_ID_UNAVAILABLE`.
      */
     id?: string
     /**
@@ -6969,7 +7521,7 @@ export type CreateAssetData = {
      */
     name?: string
     /**
-     * Optional preview asset ID. If not provided, images will use their own ID as preview.
+     * Optional preview asset ID. Must be your own asset in this workspace; anything else (including a catalog asset, another user's published asset, or an ID that does not exist) is refused with 400 `INVALID_PREVIEW_ID`. If not provided, images use their own ID as preview, except OpenEXR and Radiance HDR, which get no preview; a preview_id equal to the asset's own id is ignored for those.
      */
     preview_id?: string
     /**
@@ -6988,7 +7540,7 @@ export type CreateAssetData = {
 
 export type CreateAssetErrors = {
   /**
-   * Invalid request (bad file, invalid content type, etc.)
+   * Invalid request (bad file, invalid content type, etc.), `INVALID_PREVIEW_ID` when `preview_id` is not your own asset in this workspace, or `ASSET_ID_UNAVAILABLE` when a caller-chosen `id` is already taken
    */
   400: ErrorResponse
   /**
@@ -7144,7 +7696,7 @@ export type UpdateAssetData = {
      */
     name?: string
     /**
-     * Updated preview asset ID
+     * Updated preview asset ID. Must be your own asset in this workspace.
      */
     preview_id?: string
     /**
@@ -7181,8 +7733,9 @@ export type UpdateAssetErrors = {
   403: ForbiddenError
   /**
    * Asset not found — returned both when the asset being updated does
-   * not exist and when `preview_id` does not reference an asset
-   * accessible to the caller.
+   * not exist and when `preview_id` is not your own asset in this
+   * workspace (a catalog asset or another user's published asset
+   * does not qualify).
    *
    */
   404: ErrorResponse
@@ -7379,7 +7932,7 @@ export type AddAssetTagsResponse =
 export type CreateAssetDownloadData = {
   body: {
     /**
-     * Optional preview asset ID to associate with the downloaded asset
+     * Optional preview asset ID to associate with the downloaded asset. Must be your own asset in this workspace; otherwise the request is refused with 400 `INVALID_PREVIEW_ID`.
      */
     preview_id?: string
     /**
@@ -7404,7 +7957,7 @@ export type CreateAssetDownloadData = {
 
 export type CreateAssetDownloadErrors = {
   /**
-   * Invalid URL or unsupported source
+   * Invalid URL or unsupported source, or `INVALID_PREVIEW_ID` when `preview_id` is not your own asset in this workspace
    */
   400: ErrorResponse
   /**
@@ -9465,9 +10018,14 @@ export type GetBillingUsageTimeSeriesData = {
      * Third-Party Partner API, Comfy Cloud, Serverless) plus an
      * `unattributed` bucket that is always counted in the total.
      * `person` and `source` attribute spend to the member or to the API
-     * key (`spend_source`) that caused it; until a data source serves
-     * them the response is an empty series with `not_available` set.
-     * Group keys for those three carry a matching entry in `group_labels`.
+     * key (`spend_source`) that caused it, read from the usage ledger
+     * where the workspace is enabled for it (feature
+     * `usage_attribution_enabled`): owners see every member and every
+     * key, a member's `person` and `source` views hold only their own
+     * rows, and an `unattributed` group carries spend with no usable
+     * identity so the groups still sum to the total. Elsewhere the response is an empty series with
+     * `not_available` set. Group keys for those three carry a matching
+     * entry in `group_labels`.
      *
      */
     group_by?:
@@ -9516,6 +10074,25 @@ export type GetBillingUsageTimeSeriesResponses = {
 
 export type GetBillingUsageTimeSeriesResponse =
   GetBillingUsageTimeSeriesResponses[keyof GetBillingUsageTimeSeriesResponses]
+
+export type GetDefaultWorkflowData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/default_workflow'
+}
+
+export type GetDefaultWorkflowResponses = {
+  /**
+   * Default workflow JSON
+   */
+  200: {
+    [key: string]: unknown
+  }
+}
+
+export type GetDefaultWorkflowResponse =
+  GetDefaultWorkflowResponses[keyof GetDefaultWorkflowResponses]
 
 export type GetEmbeddingsData = {
   body?: never
@@ -9719,6 +10296,19 @@ export type GetExtensionsData = {
   url: '/api/extensions'
 }
 
+export type GetExtensionsErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * `code` is `workspace_access_denied`: the selected workspace is unknown, deleted, or the user is not a member; the three look the same. This route also serves anonymous callers, so the session's other refusals fall back to an anonymous request. See the `WebSessionAuth` scheme.
+   */
+  403: ErrorResponse
+}
+
+export type GetExtensionsError = GetExtensionsErrors[keyof GetExtensionsErrors]
+
 export type GetExtensionsResponses = {
   /**
    * URL paths (relative to web root) of available extension JS files
@@ -9755,9 +10345,9 @@ export type GetFeaturesResponses = {
    */
   200: {
     /**
-     * Authenticated assignment for the Agent free-use notice placement experiment. Always present and defaults to control when the caller is unauthenticated, evaluation is unavailable, or no treatment is assigned.
+     * Authenticated assignment for the Agent free-use notice placement experiment. Current Cloud responses include it and default to control when the caller is unauthenticated, evaluation is unavailable, or no treatment is assigned. It remains optional in the client contract, as agent-starter-prompt-set does, so older environments mid-rolling-deploy and partial feature fixtures fail closed rather than decoding an absent field as the empty string, which is not a member of this enum.
      */
-    'agent-free-use-message-placement':
+    'agent-free-use-message-placement'?:
       | 'control'
       | 'top-banner'
       | 'near-composer'
@@ -10974,13 +11564,6 @@ export type InterruptJobErrors = {
    */
   404: ErrorResponse
   /**
-   * The job interrupt would act on runs on a Build's deployment and
-   * cannot be interrupted from here yet. Code GATEWAY_JOB_NOT_CANCELLABLE;
-   * the message names that job, and nothing was cancelled.
-   *
-   */
-  409: ErrorResponse
-  /**
    * Internal server error
    */
   500: ErrorResponse
@@ -11203,6 +11786,56 @@ export type ListJobsResponses = {
 
 export type ListJobsResponse = ListJobsResponses[keyof ListJobsResponses]
 
+export type DeleteJobData = {
+  body?: never
+  path: {
+    /**
+     * Job identifier (UUID)
+     */
+    job_id: string
+  }
+  query?: never
+  url: '/api/jobs/{job_id}'
+}
+
+export type DeleteJobErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized - Authentication required
+   */
+  401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   */
+  403: ForbiddenError
+  /**
+   * Job not found or does not belong to the user
+   */
+  404: ErrorResponse
+  /**
+   * A linked asset cannot be deleted because it is referenced by another resource, e.g. a workflow version (error code: ASSET_IN_USE); the job is left in place
+   */
+  409: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type DeleteJobError = DeleteJobErrors[keyof DeleteJobErrors]
+
+export type DeleteJobResponses = {
+  /**
+   * Job and its assets deleted successfully, or the job was not in a deletable state (pending/in-progress/already-deleted) and no change was made (no-op)
+   */
+  204: void
+}
+
+export type DeleteJobResponse = DeleteJobResponses[keyof DeleteJobResponses]
+
 export type GetJobDetailData = {
   body?: never
   path: {
@@ -11342,13 +11975,6 @@ export type CancelJobErrors = {
    */
   404: ErrorResponse
   /**
-   * The job runs on a Build's deployment, is still pending or running,
-   * and cannot be cancelled from here yet. Code
-   * GATEWAY_JOB_NOT_CANCELLABLE; nothing was cancelled.
-   *
-   */
-  409: ErrorResponse
-  /**
    * Internal server error - cancellation failed
    */
   500: ErrorResponse
@@ -11389,14 +12015,6 @@ export type CancelJobsErrors = {
    * One or more job IDs not found for this user (no jobs cancelled)
    */
   404: ErrorResponse
-  /**
-   * One or more jobs run on a Build's deployment, are still pending or
-   * running, and cannot be cancelled from here yet. Code
-   * GATEWAY_JOB_NOT_CANCELLABLE; the message names those jobs, and no
-   * jobs were cancelled.
-   *
-   */
-  409: ErrorResponse
   /**
    * Internal server error - cancellation failed
    */
@@ -11478,11 +12096,13 @@ export type GetNodeInfoData = {
   path?: never
   query?: {
     /**
-     * Also list the caller's own imported models (assets tagged `models`)
-     * in the model dropdown of the directory each one installs under, so
-     * a client that validates widget values against this catalog accepts
-     * a model the user imported. Off by default: the frontend reads
-     * imported models through the asset browser instead.
+     * Also list the models the caller can run that the models config
+     * does not: their own imported models and the public model assets the
+     * asset library shows them (assets tagged `models`), each in the model
+     * dropdown of the directory it installs under, so a client that
+     * validates widget values against this catalog accepts a model that
+     * would run. Off by default: the frontend reads these models through
+     * the asset browser instead.
      *
      */
     include_user_models?: boolean
@@ -11602,7 +12222,7 @@ export type ExecutePromptErrors = {
    */
   413: PromptErrorResponse
   /**
-   * Retryable backpressure, disambiguated by the body's `error.type`: `QUEUE_LIMIT` (this workspace's bounded job queue is full - retrying after some queued jobs complete will succeed) or `FREE_TIER_UNAVAILABLE` (the free tier is switched off for now - retrying once it is back will succeed), or `BILLING_UNAVAILABLE` with `error.reason` `funds_unavailable` (ingest got no billing verdict for the workspace because the billing service was unreachable or rejected the check, or the billing-status read behind a no-funds verdict failed - nothing was queued, and retrying the same submission after `Retry-After` seconds will succeed once billing answers). Of the billing outcomes, a plan or billing policy refusal is a 402; only billing being unavailable is a 429.
+   * Retryable backpressure, disambiguated by the body's `error.type`: `QUEUE_LIMIT` (this workspace's bounded job queue is full - retrying after some queued jobs complete will succeed) or `FREE_TIER_UNAVAILABLE` (the free tier is switched off for now - retrying once it is back will succeed), or `BILLING_UNAVAILABLE` with `error.reason` `funds_unavailable` (ingest got no billing verdict for the workspace because the billing service was unreachable or rejected the check, or the billing-status read behind a no-funds verdict failed - nothing was queued, and retrying the same submission after `Retry-After` seconds will succeed once billing answers). Of the billing outcomes, a plan or billing policy refusal is a 402; only billing being unavailable is a 429. For a browser that picked a developer-platform deployment, also `PLATFORM_REFUSED` with `error.details` `deployment_not_ready` (the deployment is on its way to ready - nothing was queued, and retrying after `Retry-After` seconds will succeed once it is ready) or another platform 429 passed through.
    */
   429: PromptErrorResponse
   /**
@@ -11739,14 +12359,6 @@ export type ManageQueueErrors = {
    * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
-  /**
-   * A job listed in `delete` runs on a Build's deployment, is still
-   * pending or running, and cannot be cancelled from here yet. Code
-   * GATEWAY_JOB_NOT_CANCELLABLE; the message names those jobs, and no
-   * jobs were cancelled.
-   *
-   */
-  409: ErrorResponse
   /**
    * Internal server error
    */
@@ -14416,7 +15028,7 @@ export type LeaveWorkspaceErrors = {
    */
   401: ErrorResponse
   /**
-   * Cannot leave as the only owner or cannot leave personal workspace
+   * Cannot leave as the only owner (`ONLY_OWNER`), cannot leave a personal workspace (`PERSONAL_WORKSPACE`), or `code` is `membership_managed_by_directory` with `message` "Your organization's admin manages membership" for an account the workspace's attached SSO organization holds.
    */
   403: ErrorResponse
   /**
@@ -14973,6 +15585,271 @@ export type UpdateWorkspaceResponses = {
 export type UpdateWorkspaceResponse =
   UpdateWorkspaceResponses[keyof UpdateWorkspaceResponses]
 
+export type ClearWorkspaceDefaultDeploymentData = {
+  body?: never
+  path: {
+    /**
+     * Workspace ID (w-{uuid} format)
+     */
+    id: string
+  }
+  query?: never
+  url: '/api/workspaces/{id}/default-deployment'
+}
+
+export type ClearWorkspaceDefaultDeploymentErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Not the workspace owner. For a web session, `code` may also be one of the SessionWriteForbidden refusals (`csrf_invalid`, `workspace_access_denied`, `origin_not_allowed`, `cross_site_request`).
+   */
+  403: ErrorResponse
+  /**
+   * Workspace not found, or the caller is not a member of it
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type ClearWorkspaceDefaultDeploymentError =
+  ClearWorkspaceDefaultDeploymentErrors[keyof ClearWorkspaceDefaultDeploymentErrors]
+
+export type ClearWorkspaceDefaultDeploymentResponses = {
+  /**
+   * Cleared
+   */
+  204: void
+}
+
+export type ClearWorkspaceDefaultDeploymentResponse =
+  ClearWorkspaceDefaultDeploymentResponses[keyof ClearWorkspaceDefaultDeploymentResponses]
+
+export type SetWorkspaceDefaultDeploymentData = {
+  body: PickWorkspaceDeploymentRequest
+  path: {
+    /**
+     * Workspace ID (w-{uuid} format)
+     */
+    id: string
+  }
+  query?: never
+  url: '/api/workspaces/{id}/default-deployment'
+}
+
+export type SetWorkspaceDefaultDeploymentErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Not the workspace owner, an API key (setting the default needs a signed-in session), or the rollout flag is off for this account. For a web session, `code` may also be one of the SessionWriteForbidden refusals (`csrf_invalid`, `workspace_access_denied`, `origin_not_allowed`, `cross_site_request`).
+   */
+  403: ErrorResponse
+  /**
+   * Workspace not found
+   */
+  404: ErrorResponse
+  /**
+   * Validation error, including a deployment_id that is not one of the workspace's deployments or has been deleted
+   */
+  422: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+  /**
+   * comfy-deploy could not be asked whether the deployment is valid, or deployment picking is not configured in this environment
+   */
+  503: ErrorResponse
+}
+
+export type SetWorkspaceDefaultDeploymentError =
+  SetWorkspaceDefaultDeploymentErrors[keyof SetWorkspaceDefaultDeploymentErrors]
+
+export type SetWorkspaceDefaultDeploymentResponses = {
+  /**
+   * Set; members with no pick are on this deployment from their next request
+   */
+  204: void
+}
+
+export type SetWorkspaceDefaultDeploymentResponse =
+  SetWorkspaceDefaultDeploymentResponses[keyof SetWorkspaceDefaultDeploymentResponses]
+
+export type ClearWorkspaceDeploymentData = {
+  body?: never
+  path: {
+    /**
+     * Workspace ID (w-{uuid} format)
+     */
+    id: string
+  }
+  query?: {
+    /**
+     * `workspace`: drop this browser's own pick and follow the workspace's default deployment (BE-17480).
+     */
+    follow?: 'workspace'
+  }
+  url: '/api/workspaces/{id}/deployment'
+}
+
+export type ClearWorkspaceDeploymentErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * For a web session, one of the SessionWriteForbidden refusals (`csrf_invalid`, `workspace_access_denied`, `origin_not_allowed`, `cross_site_request`).
+   */
+  403: ErrorResponse
+  /**
+   * Workspace not found, or the caller is not a member of it
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type ClearWorkspaceDeploymentError =
+  ClearWorkspaceDeploymentErrors[keyof ClearWorkspaceDeploymentErrors]
+
+export type ClearWorkspaceDeploymentResponses = {
+  /**
+   * Cleared
+   */
+  204: void
+}
+
+export type ClearWorkspaceDeploymentResponse =
+  ClearWorkspaceDeploymentResponses[keyof ClearWorkspaceDeploymentResponses]
+
+export type PickWorkspaceDeploymentData = {
+  body: PickWorkspaceDeploymentRequest
+  path: {
+    /**
+     * Workspace ID (w-{uuid} format)
+     */
+    id: string
+  }
+  query?: never
+  url: '/api/workspaces/{id}/deployment'
+}
+
+export type PickWorkspaceDeploymentErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * An API key (picking a deployment needs a signed-in session), or the rollout flag is off for this account. For a web session, `code` may also be one of the SessionWriteForbidden refusals (`csrf_invalid`, `workspace_access_denied`, `origin_not_allowed`, `cross_site_request`).
+   */
+  403: ErrorResponse
+  /**
+   * Workspace not found, or the caller is not a member of it
+   */
+  404: ErrorResponse
+  /**
+   * Validation error, including a deployment_id that is not one of the workspace's deployments or has been deleted
+   */
+  422: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+  /**
+   * comfy-deploy could not be asked whether the deployment is valid, or deployment picking is not configured in this environment
+   */
+  503: ErrorResponse
+}
+
+export type PickWorkspaceDeploymentError =
+  PickWorkspaceDeploymentErrors[keyof PickWorkspaceDeploymentErrors]
+
+export type PickWorkspaceDeploymentResponses = {
+  /**
+   * Picked; the cookie on this response carries it
+   */
+  204: void
+}
+
+export type PickWorkspaceDeploymentResponse =
+  PickWorkspaceDeploymentResponses[keyof PickWorkspaceDeploymentResponses]
+
+export type ListWorkspaceDeploymentsData = {
+  body?: never
+  path: {
+    /**
+     * Workspace ID (w-{uuid} format)
+     */
+    id: string
+  }
+  query?: never
+  url: '/api/workspaces/{id}/deployments'
+}
+
+export type ListWorkspaceDeploymentsErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Not in the rollout, or an API key: listing needs a signed-in session
+   */
+  403: ErrorResponse
+  /**
+   * Workspace not found, or the caller is not a member
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+  /**
+   * The platform could not be asked, or deployment picking is not configured in this environment
+   */
+  503: ErrorResponse
+}
+
+export type ListWorkspaceDeploymentsError =
+  ListWorkspaceDeploymentsErrors[keyof ListWorkspaceDeploymentsErrors]
+
+export type ListWorkspaceDeploymentsResponses = {
+  /**
+   * The workspace's live deployments, newest first
+   */
+  200: WorkspaceDeploymentList
+}
+
+export type ListWorkspaceDeploymentsResponse =
+  ListWorkspaceDeploymentsResponses[keyof ListWorkspaceDeploymentsResponses]
+
 export type GetCurrentWorkspaceData = {
   body?: never
   path?: never
@@ -15030,10 +15907,26 @@ export type GetStaticExtensionsData = {
 
 export type GetStaticExtensionsErrors = {
   /**
-   * File not found
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
    */
-  404: unknown
+  400: ErrorResponse
+  /**
+   * `code` is `workspace_access_denied`: the selected workspace is unknown, deleted, or the user is not a member; the three look the same. This route also serves anonymous callers, so the session's other refusals fall back to an anonymous request. See the `WebSessionAuth` scheme.
+   */
+  403: ErrorResponse
+  /**
+   * File not found. A Release-scoped path answers the same 404 whether
+   * the file is missing, the caller is not a member of the workspace the
+   * path names, the Release is not that workspace's, or the browser
+   * labels the request as included by a page other than Cloud's own
+   * (`Sec-Fetch-Site` other than `same-origin` or `none`).
+   *
+   */
+  404: ErrorResponse
 }
+
+export type GetStaticExtensionsError =
+  GetStaticExtensionsErrors[keyof GetStaticExtensionsErrors]
 
 export type GetStaticExtensionsResponses = {
   /**

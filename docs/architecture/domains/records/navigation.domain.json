@@ -1,0 +1,67 @@
+{
+  "id": "navigation",
+  "capability": "Router navigation policy",
+  "description": "Router-level navigation helpers installed from router.ts: query parameters preserved across redirects by namespace (session-storage backed, with a router guard), and the redirect of unmatched paths to root with a bounded warning report. Combined because both are router guards installed at the same seam with no other owner.",
+  "modules": [
+    {
+      "path": "src/platform/navigation/preservedQueryNamespaces.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/navigation/preservedQueryDefinitions.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/navigation/preservedQueryDefinitions.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/navigation/preservedQueryManager.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/navigation/preservedQueryManager.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/navigation/preservedQueryTracker.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/platform/navigation/preservedQueryTracker.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/platform/navigation/unmatchedRoute.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/navigation/unmatchedRoute.test.ts",
+      "role": "application"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Preserved query parameters survive redirects and are merged back by namespace",
+      "checks": [
+        "src/platform/navigation/preservedQueryManager.test.ts",
+        "src/platform/navigation/preservedQueryTracker.test.ts",
+        "src/platform/navigation/preservedQueryDefinitions.test.ts"
+      ]
+    },
+    {
+      "name": "Unmatched routes redirect to root and report a bounded path",
+      "checks": ["src/platform/navigation/unmatchedRoute.test.ts"]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Unclassified callers may import these internals during inventory; imports from classified domains remain subject to cross-domain rules.",
+    "Preserved-query namespaces and the Comfy.PreservedQuery session-storage prefix keep their names because auth, workspace, and settings URL loaders read them.",
+    "preservedQueryDefinitions typing against the tracker remains visible as role-boundary debt; classification does not grant dependency exceptions."
+  ],
+  "deepImports": "inventory"
+}

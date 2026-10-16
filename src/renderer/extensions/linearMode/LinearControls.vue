@@ -165,22 +165,19 @@ function replayAppModeTour() {
         v-text="workflowStore.activeWorkflow?.filename"
       />
       <Button
-        v-tooltip.bottom="{
-          value: t('onboardingCoachmarks.appMode.replay'),
-          showDelay: 300,
-          hideDelay: 300
-        }"
+        :tooltip="t('onboardingCoachmarks.appMode.replay')"
+        tooltip-side="bottom"
         variant="textonly"
         size="icon"
         :aria-label="t('onboardingCoachmarks.appMode.replay')"
-        class="rounded-lg border border-solid border-border-default text-muted-foreground hover:border-interface-stroke hover:text-base-foreground"
+        class="border border-solid border-border-default text-muted-foreground hover:border-interface-stroke hover:text-base-foreground"
         @click="replayAppModeTour"
       >
         <i class="icon-[lucide--circle-question-mark] size-4" />
       </Button>
     </section>
     <div
-      class="flex h-full flex-col gap-2 border-x border-(--interface-stroke) bg-comfy-menu-bg px-2 md:border-y"
+      class="flex h-full flex-col gap-2 border-x border-interface-stroke bg-comfy-menu-bg px-2 md:border-y"
     >
       <section
         v-coachmark="COACH_IDS.inputsList"
@@ -293,7 +290,7 @@ function replayAppModeTour() {
               />
             </Popover>
             <Button
-              variant="primary"
+              variant="inverted"
               class="grow"
               size="lg"
               :aria-describedby="
@@ -340,8 +337,8 @@ function replayAppModeTour() {
           />
           <Button
             v-else
-            variant="primary"
-            class="mt-4 w-full text-sm"
+            variant="inverted"
+            class="mt-4 w-full"
             size="lg"
             :aria-describedby="
               isPreparingInputDownloads

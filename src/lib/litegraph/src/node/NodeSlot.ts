@@ -6,13 +6,15 @@ import { LabelPosition, SlotShape, SlotType } from '@/lib/litegraph/src/draw'
 import type {
   CanvasColour,
   DefaultConnectionColors,
-  INodeInputSlot,
-  INodeOutputSlot,
   INodeSlot,
-  ISubgraphInput,
   OptionalProps,
   Point
 } from '@/lib/litegraph/src/interfaces'
+import type {
+  INodeInputSlot,
+  INodeOutputSlot,
+  ISubgraphInput
+} from '@/lib/litegraph/src/types/slots'
 import { LiteGraph, Rectangle } from '@/lib/litegraph/src/litegraph'
 import { getCentre } from '@/lib/litegraph/src/measure'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'

@@ -2,8 +2,8 @@ import type { BillingTelemetryFailure } from '@comfyorg/account-core/billing'
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import type { DowngradeToPersonalResult } from '@/composables/billing/types'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
@@ -15,16 +15,15 @@ import { useTelemetry } from '@/platform/telemetry'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
 import type { SettledSubscribeResponse } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
-import { SettledOperationError } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
+import {
+  SettledOperationError,
+  billingClientOf
+} from '@/platform/workspace/billing/sdk/subscriptionOperationView'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useSubscriptionRail } from '@/platform/workspace/composables/useSubscriptionRail'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-
-export interface DowngradeToPersonalResult {
-  preview: PreviewSubscribeResponse
-  response: SettledSubscribeResponse
-}
 
 export interface DowngradePreview {
   preview: PreviewSubscribeResponse
@@ -76,22 +75,20 @@ export function useDowngradeToPersonal({
   const { subscribe, previewSubscribe, subscription, fetchStatus } =
     useBillingContext()
   const billingOperationStore = useBillingOperationStore()
-  const { userEmail } = useCurrentUser()
   const { permissions } = useWorkspaceUI()
   const { canDowngradeToPersonal } = useBillingCapabilities()
   const telemetry = useTelemetry()
   let activeTelemetryAttempt: DowngradeTelemetryAttempt | undefined
 
-  const removableMembers = computed(() => {
-    const hasFlag = members.value.some((m) => m.isOriginalOwner)
-    if (hasFlag) return members.value.filter((m) => !m.isOriginalOwner)
-    const email = userEmail.value?.toLowerCase() ?? null
-    return members.value.filter(
-      (m) => m.role !== 'owner' && m.email.toLowerCase() !== email
-    )
-  })
+  const removableMembers = computed(() =>
+    members.value.filter((m) => !m.isOriginalOwner)
+  )
 
   const hasOtherMembers = computed(() => removableMembers.value.length > 0)
+
+  function rejectDowngrade(): never {
+    throw new Error(t('subscription.downgrade.notAllowed'))
+  }
 
   function ensureCanDowngrade(): void {
     if (
@@ -99,8 +96,12 @@ export function useDowngradeToPersonal({
         ? canDowngradeToPersonal.value
         : permissions.value.canDowngradeToPersonal)
     ) {
-      throw new Error(t('subscription.downgrade.notAllowed'))
+      rejectDowngrade()
     }
+  }
+
+  function ensureOriginalOwnerListed(): void {
+    if (!members.value.some((m) => m.isOriginalOwner)) rejectDowngrade()
   }
 
   function hasErrorCode(error: unknown, code: string): boolean {
@@ -162,6 +163,7 @@ export function useDowngradeToPersonal({
     confirmedChargeCents?: number
   ): Promise<DowngradeToPersonalResult | null> {
     ensureCanDowngrade()
+    ensureOriginalOwnerListed()
 
     const membersToRemove = removableMembers.value
     const telemetryAttempt = activeTelemetryAttempt ?? {
@@ -212,6 +214,7 @@ export function useDowngradeToPersonal({
         stage: 'succeeded',
         outcome: 'success',
         operation_type: 'subscription',
+        billing_client: billingClientOf(useSubscriptionRail()),
         tier: telemetryAttempt.targetTier,
         cycle: telemetryAttempt.targetCycle,
         checkout_type: 'change',
@@ -295,6 +298,7 @@ export function useDowngradeToPersonal({
           stage: 'started',
           outcome: 'pending',
           operation_type: 'subscription',
+          billing_client: billingClientOf(useSubscriptionRail()),
           tier: telemetryAttempt.targetTier,
           cycle: telemetryAttempt.targetCycle,
           checkout_type: 'change',
@@ -433,6 +437,7 @@ export function useDowngradeToPersonal({
             stage: 'failed',
             outcome: 'failure',
             operation_type: 'subscription',
+            billing_client: billingClientOf(useSubscriptionRail()),
             tier: telemetryAttempt.targetTier,
             cycle: telemetryAttempt.targetCycle,
             checkout_type: 'change',

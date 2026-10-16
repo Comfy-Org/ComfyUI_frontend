@@ -1,10 +1,12 @@
 import { watch, watchEffect } from 'vue'
 
+import { clearLinkSelection } from '@/lib/litegraph/src/canvas/linkSelection'
 import {
   CanvasPointer,
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
+import { LinkRenderType } from '@/lib/litegraph/src/types/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -74,6 +76,8 @@ export const useLitegraphSettings = () => {
     ([linkRenderMode, canvas]) => {
       if (canvas) {
         canvas.links_render_mode = linkRenderMode
+        if (linkRenderMode === LinkRenderType.HIDDEN_LINK)
+          clearLinkSelection(canvas)
         canvas.setDirty(false, true)
       }
     },
@@ -130,10 +134,6 @@ export const useLitegraphSettings = () => {
     CanvasPointer.doubleClickTime = settingStore.get(
       'Comfy.Pointer.DoubleClickTime'
     )
-  })
-
-  watchEffect(() => {
-    CanvasPointer.bufferTime = settingStore.get('Comfy.Pointer.ClickBufferTime')
   })
 
   watchEffect(() => {

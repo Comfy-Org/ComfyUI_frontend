@@ -1,0 +1,238 @@
+{
+  "id": "telemetry",
+  "capability": "Product telemetry",
+  "description": "Product-analytics event dispatch: the TelemetryRegistry fan-out and useTelemetry accessor, event names and metadata types, the desktop host telemetry sink and its enablement gate, host user-id sync, store-readiness gating for store-backed providers, node-added and search-query tracking, and the metadata builders that enrich events (execution context, shell layout, checkout attribution, payment intent source, survey normalization, billing failure categories). Cloud vendor providers and initTelemetry belong to the cloud record; error reporting and startup tracing are separate records.",
+  "modules": [
+    {
+      "path": "src/platform/telemetry/types.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/telemetry/TelemetryRegistry.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/telemetry/TelemetryRegistry.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/telemetry/index.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/telemetry/useTelemetry.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/telemetry/__mocks__/index.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/telemetry/hostTelemetryEnabled.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/telemetry/storeReadiness.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/telemetry/storeReadiness.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/telemetry/initHostTelemetry.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/platform/telemetry/initHostTelemetry.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/platform/telemetry/hostUserIdSync.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/platform/telemetry/hostUserIdSync.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/platform/telemetry/providers/host/**",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/telemetry/nodeAdded/installNodeAddedTelemetry.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/platform/telemetry/nodeAdded/installNodeAddedTelemetry.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/platform/telemetry/nodeAdded/nodeAddSource.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/telemetry/searchQuery/**",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/telemetry/utils/billingFailureCategory.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/telemetry/utils/billingFailureCategory.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/telemetry/utils/groupMissingNodesByPack.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/telemetry/utils/groupMissingNodesByPack.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/telemetry/utils/normalizeEmail.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/telemetry/utils/normalizeEmail.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/telemetry/utils/paymentIntentSource.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/telemetry/utils/paymentIntentSource.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/telemetry/utils/surveyNormalization.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/telemetry/utils/__tests__/surveyNormalization.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/telemetry/utils/workflowExecutionContext.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/telemetry/utils/workflowExecutionContext.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/telemetry/utils/billingPortalTelemetry.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/telemetry/utils/getExecutionContext.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/telemetry/utils/getExecutionContext.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/telemetry/utils/getShellLayoutSnapshot.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/telemetry/utils/getShellLayoutSnapshot.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/telemetry/utils/checkoutAttribution.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/telemetry/utils/__tests__/checkoutAttribution.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/telemetry/utils/getActionbarDockState.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/telemetry/utils/getActionbarDockState.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/telemetry/utils/getAgentPanelOpen.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/telemetry/utils/getAgentPanelOpen.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/composables/useRunButtonTelemetry.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useRunButtonTelemetry.ts",
+      "role": "application"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "TelemetryRegistry fans each event out to every registered provider and useTelemetry exposes the active registry",
+      "checks": [
+        "src/platform/telemetry/TelemetryRegistry.test.ts",
+        "src/platform/telemetry/useTelemetry.test.ts"
+      ]
+    },
+    {
+      "name": "Desktop host telemetry replaces the registry with the host sink and keeps the host user id in sync",
+      "checks": [
+        "src/platform/telemetry/initHostTelemetry.test.ts",
+        "src/platform/telemetry/providers/host/HostTelemetrySink.test.ts",
+        "src/platform/telemetry/hostUserIdSync.test.ts",
+        "src/platform/telemetry/storeReadiness.test.ts"
+      ]
+    },
+    {
+      "name": "Node-added and search-query events carry their source and debounced query",
+      "checks": [
+        "src/platform/telemetry/nodeAdded/installNodeAddedTelemetry.test.ts",
+        "src/platform/telemetry/searchQuery/useSearchQueryTracking.test.ts"
+      ]
+    },
+    {
+      "name": "Event metadata builders describe execution, layout, checkout attribution, payment intent, and survey answers",
+      "checks": [
+        "src/platform/telemetry/utils/getExecutionContext.test.ts",
+        "src/platform/telemetry/utils/workflowExecutionContext.test.ts",
+        "src/platform/telemetry/utils/getShellLayoutSnapshot.test.ts",
+        "src/platform/telemetry/utils/getActionbarDockState.test.ts",
+        "src/platform/telemetry/utils/getAgentPanelOpen.test.ts",
+        "src/platform/telemetry/utils/__tests__/checkoutAttribution.test.ts",
+        "src/platform/telemetry/utils/paymentIntentSource.test.ts",
+        "src/platform/telemetry/utils/__tests__/surveyNormalization.test.ts",
+        "src/platform/telemetry/utils/billingFailureCategory.test.ts",
+        "src/platform/telemetry/utils/groupMissingNodesByPack.test.ts",
+        "src/platform/telemetry/utils/normalizeEmail.test.ts"
+      ]
+    },
+    {
+      "name": "Run button telemetry reports trigger source and shell context",
+      "checks": ["src/composables/useRunButtonTelemetry.test.ts"]
+    }
+  ],
+  "adrs": [
+    "docs/adr/TELEMETRY-ROUTING-0013-telemetry-routing-across-consumers.md",
+    "docs/adr/BILLING-CHECKOUT-0031-checkout-journey-instrumentation-contract.md"
+  ],
+  "compatibilityPromises": [
+    "Unclassified callers may import these internals during inventory; imports from classified domains remain subject to cross-domain rules.",
+    "useTelemetry() returning null until a registry is installed remains the contract every caller and cloud provider relies on.",
+    "Cloud providers under providers/cloud and initTelemetry stay in the cloud record and may keep importing storeReadiness and types during inventory.",
+    "Metadata builders that read workflow, setting, node-definition, panel, workspace-billing, and auth stores, and the localStorage keys duplicated from their writers, remain visible as coupling debt; classification does not grant dependency exceptions."
+  ],
+  "deepImports": "inventory"
+}

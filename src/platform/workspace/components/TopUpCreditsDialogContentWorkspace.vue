@@ -14,10 +14,7 @@
         >
           <i class="icon-[lucide--arrow-left] size-5" />
         </button>
-        <h2
-          v-if="step !== 'verifying'"
-          class="m-0 text-base font-bold text-base-foreground"
-        >
+        <DialogTitle v-if="step !== 'verifying'" class="m-0 font-bold">
           {{
             step === 'confirm'
               ? $t('credits.topUp.confirmTitle')
@@ -25,7 +22,7 @@
                 ? $t('credits.topUp.addMoreCreditsToRun')
                 : $t('credits.topUp.addMoreCredits')
           }}
-        </h2>
+        </DialogTitle>
       </div>
       <button
         class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none"
@@ -65,19 +62,6 @@
             {{ displayTotal }}
           </span>
         </div>
-        <p
-          v-if="hasSavedPaymentMethod !== null"
-          class="m-0 text-xs text-muted-foreground"
-        >
-          {{ paymentNote }}
-          <button
-            v-if="hasSavedPaymentMethod === false"
-            class="cursor-pointer border-none bg-transparent p-0 text-xs text-base-foreground underline"
-            @click="openManageBilling"
-          >
-            {{ $t('subscription.manageBilling') }}
-          </button>
-        </p>
       </div>
     </template>
 
@@ -86,11 +70,9 @@
         <i
           class="icon-[lucide--shield-alert] size-10 text-warning-background"
         />
-        <h2
-          class="m-0 text-center text-xl font-semibold text-base-foreground lg:text-2xl"
-        >
+        <DialogTitle class="m-0 text-center text-xl lg:text-2xl">
           {{ $t('credits.topUp.verifyTitle') }}
-        </h2>
+        </DialogTitle>
         <p class="m-0 text-sm text-balance text-muted-foreground">
           {{ verifyingBody }}
         </p>
@@ -218,7 +200,7 @@
           v-if="topupCanResumeAuthentication"
           variant="primary"
           size="lg"
-          class="h-10 w-full justify-center"
+          class="w-full"
           :loading="topupIsAuthenticating"
           :disabled="!canTopUp"
           @click="resumeTopupAuthentication"
@@ -229,7 +211,7 @@
           v-else-if="topupIsFailedRetryable"
           variant="primary"
           size="lg"
-          class="h-10 w-full justify-center"
+          class="w-full"
           @click="startOverTopup"
         >
           {{ $t('credits.topUp.startOver') }}
@@ -238,7 +220,7 @@
           v-else-if="topupIsParkedWithoutLink"
           variant="secondary"
           size="lg"
-          class="h-10 w-full justify-center"
+          class="w-full"
           @click="() => handleClose(false)"
         >
           {{ $t('g.ok') }}
@@ -247,7 +229,7 @@
           v-else-if="!topupReconciliationOperationId"
           variant="primary"
           size="lg"
-          class="h-10 w-full justify-center"
+          class="w-full"
           :disabled="!topupActionUrl || !canTopUp"
           :loading="!topupActionUrl"
           :aria-label="$t('subscription.preview.completeVerification')"
@@ -261,7 +243,6 @@
           v-if="step === 'confirm' && topupActionUrl && canTopUp"
           variant="primary"
           size="lg"
-          class="h-10 justify-center"
           @click="openTopupVerification"
         >
           {{ $t('subscription.preview.completeVerification') }}
@@ -274,6 +255,7 @@
           "
           size="lg"
           class="h-10 justify-center tabular-nums"
+          :data-dd-action-name="BILLING_ACTION_NAME.topUpPrimary"
           @click="handlePrimaryAction"
         >
           {{
@@ -301,17 +283,19 @@
 </template>
 
 <script setup lang="ts">
+import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
 import type { BillingOperationTerminal } from '@comfyorg/account-core/billing'
 import {
   getTopupAmountPreset,
   TOPUP_AMOUNT_PRESETS_USD
 } from '@comfyorg/account-core/billing'
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { creditsToUsd, usdToCredits } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
+import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import NumberField from '@/components/ui/number-field/NumberField.vue'
 import NumberFieldDecrement from '@/components/ui/number-field/NumberFieldDecrement.vue'
 import NumberFieldIncrement from '@/components/ui/number-field/NumberFieldIncrement.vue'
@@ -324,13 +308,11 @@ import { isCloud } from '@/platform/distribution/types'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import { reportError } from '@/platform/telemetry/reportError'
 import type { CreateTopupResponse } from '@/platform/workspace/api/workspaceApi'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import { isBlockedOnCustomerPhase } from '@/platform/workspace/billing/customerAttention'
 import { UncreditedTopupResponse } from '@/platform/workspace/billing/sdk/topupOperationView'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { useHasSavedPaymentMethod } from '@/platform/workspace/composables/useHasSavedPaymentMethod'
 import { useTopupOperation } from '@/platform/workspace/composables/useTopupOperation'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
@@ -348,6 +330,7 @@ import {
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import { getErrorMessage } from '@/utils/errorUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { isInsufficientCredits = false, source } = defineProps<{
@@ -361,7 +344,7 @@ const settingsDialog = useSettingsDialog()
 const telemetry = useTelemetry()
 const toast = useToast()
 const { buildDocsUrl, docsPaths } = useExternalLink()
-const { fetchBalance, fetchStatus, manageSubscription } = useBillingContext()
+const { fetchBalance, fetchStatus } = useBillingContext()
 const { canTopUp } = useBillingCapabilities()
 
 const workspaceStore = useTeamWorkspaceStore()
@@ -389,6 +372,7 @@ function enterTopupJourney(): void {
 onMounted(enterTopupJourney)
 useCheckoutJourneyExit()
 const {
+  billingClient,
   isAddingCredits,
   topupOperation,
   topup,
@@ -456,17 +440,9 @@ const step = ref<'amount' | 'confirm' | 'verifying'>(
   topupOperation.value && canTopUp.value ? 'verifying' : 'amount'
 )
 
-const { hasSavedPaymentMethod } = useHasSavedPaymentMethod()
-
 // Computed
 const pricingUrl = computed(() =>
   buildDocsUrl(docsPaths.partnerNodesPricing, { includeLocale: true })
-)
-
-const paymentNote = computed(() =>
-  hasSavedPaymentMethod.value
-    ? t('credits.topUp.chargedImmediatelyNote')
-    : t('credits.topUp.paymentDetailsRequiredNote')
 )
 
 const creditsModel = computed({
@@ -557,20 +533,6 @@ function handlePrimaryAction() {
   void handleBuy()
 }
 
-function openManageBilling() {
-  void manageSubscription().catch((error) => {
-    reportError(error, {
-      surface: 'billing',
-      errorType: 'billing_portal_open_failure'
-    })
-    toast.add({
-      severity: 'error',
-      summary: t('credits.topUp.manageBillingError'),
-      life: 5000
-    })
-  })
-}
-
 function openTopupVerification() {
   if (!topupActionUrl.value) return
   window.open(topupActionUrl.value, '_blank', 'noopener,noreferrer')
@@ -623,7 +585,8 @@ async function handleBuy() {
       operation: 'operation',
       stage: 'started',
       outcome: 'pending',
-      operation_type: 'topup'
+      operation_type: 'topup',
+      billing_client: billingClient
     })
 
     const submittingJourney = getActiveCheckoutJourney()
@@ -668,11 +631,7 @@ async function handleBuy() {
       ) {
         clearCheckoutJourney()
       }
-      toast.add({
-        severity: 'success',
-        summary: t('credits.topUp.purchaseSuccess'),
-        life: 5000
-      })
+      toast.success(t('credits.topUp.purchaseSuccess'), { duration: 5000 })
       await Promise.allSettled([fetchBalance(), fetchStatus()])
       if (!isCurrentAttempt()) return
       handleClose(false)
@@ -695,10 +654,8 @@ async function handleBuy() {
         })
     } else {
       if (isCurrentAttempt()) paymentSubmitted.value = false
-      toast.add({
-        severity: 'error',
-        summary: t('credits.topUp.purchaseError'),
-        detail: t('credits.topUp.unknownError')
+      toast.error(t('credits.topUp.purchaseError'), {
+        description: t('credits.topUp.unknownError')
       })
     }
   } catch (error) {
@@ -727,10 +684,8 @@ function reportPurchaseError(
     },
     billingOpId
   )
-  toast.add({
-    severity: 'error',
-    summary: t('credits.topUp.purchaseError'),
-    detail: purchaseErrorDetail(error)
+  toast.error(t('credits.topUp.purchaseError'), {
+    description: purchaseErrorDetail(error)
   })
 }
 
@@ -796,6 +751,7 @@ function reportTerminal(
   telemetry?.trackBillingEvent({
     operation: 'operation',
     operation_type: 'topup',
+    billing_client: billingClient,
     ...terminal,
     ...attempt
   })
@@ -812,8 +768,7 @@ function purchaseErrorDetail(error?: unknown): string {
     return t('credits.topUp.changeInProgressError')
   }
   return t('credits.topUp.purchaseErrorDetail', {
-    error:
-      error instanceof Error ? error.message : t('credits.topUp.unknownError')
+    error: getErrorMessage(error) ?? t('credits.topUp.unknownError')
   })
 }
 </script>

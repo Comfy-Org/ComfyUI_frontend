@@ -9,7 +9,7 @@ import {
 } from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Ref } from 'vue'
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
@@ -101,8 +101,7 @@ function renderMenuBar(overrides: RenderProps = {}) {
       ...overrides
     },
     global: {
-      plugins: [i18n],
-      directives: { tooltip: () => {} }
+      plugins: [i18n]
     }
   })
   return { ...result, user: userEvent.setup() }
@@ -282,6 +281,19 @@ describe('Load3DMenuBar', () => {
     const trigger = screen.getByTestId('load3d-category-menu')
     expect(trigger).not.toHaveTextContent('Scene')
     expect(trigger).toHaveAccessibleName('Scene')
+  })
+
+  it('keeps focus on the category trigger when the bar turns narrow', async () => {
+    mockedTopBarWidth = ref(600)
+    renderMenuBar()
+    const trigger = screen.getByTestId('load3d-category-menu')
+    trigger.focus()
+
+    mockedTopBarWidth.value = 300
+    await nextTick()
+
+    expect(screen.getByTestId('load3d-category-menu')).toBe(trigger)
+    expect(trigger).toHaveFocus()
   })
 
   it('still lists labeled categories in the menu when the bar is narrow', async () => {

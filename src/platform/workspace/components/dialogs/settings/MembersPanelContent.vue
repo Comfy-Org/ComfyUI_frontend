@@ -38,7 +38,10 @@
           )
         "
       >
-        <div v-if="showViewTabs" class="flex items-center gap-2">
+        <div
+          v-if="showViewTabs && uiConfig.showPendingTab"
+          class="flex items-center gap-2"
+        >
           <Button
             :variant="activeView === 'active' ? 'secondary' : 'muted-textonly'"
             size="lg"
@@ -65,22 +68,24 @@
             size="lg"
             class="w-64"
           />
-          <Button
-            v-if="showInviteButton"
-            v-tooltip="
-              inviteTooltip
-                ? { value: inviteTooltip, showDelay: 0 }
-                : { value: $t('workspacePanel.inviteMember'), showDelay: 300 }
-            "
-            variant="secondary"
-            size="lg"
-            :disabled="isInviteDisabled"
-            :aria-label="$t('workspacePanel.inviteMember')"
-            @click="handleInviteMember"
-          >
-            {{ $t('workspacePanel.invite') }}
-            <i class="pi pi-plus text-sm" />
-          </Button>
+          <Tooltip v-if="showInviteButton">
+            <TooltipTrigger as-child>
+              <span class="inline-flex">
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  :aria-label="$t('workspacePanel.inviteMember')"
+                  @click="handleInviteMember"
+                >
+                  {{ $t('workspacePanel.invite') }}
+                  <i class="pi pi-plus text-sm" />
+                </Button>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>{{
+              $t('workspacePanel.inviteMember')
+            }}</TooltipContent>
+          </Tooltip>
           <WorkspaceMenuButton v-if="permissions.canAccessWorkspaceMenu" />
         </div>
       </div>
@@ -93,7 +98,9 @@
         <div class="min-h-0 flex-1 overflow-y-auto" @scroll="handlePanelScroll">
           <!-- Table Header with Tab Buttons and Column Headers -->
           <div
-            v-if="uiConfig.showMembersList && showViewTabs"
+            v-if="
+              uiConfig.showMembersList && (showViewTabs || hasMultipleMembers)
+            "
             :class="
               cn(
                 'sticky -top-px z-10 grid w-full items-center bg-base-background px-2 pt-[calc(--spacing(2)+1px)] pb-2',
@@ -165,7 +172,11 @@
 
           <!-- Active Members -->
           <template v-if="activeView === 'active'">
-            <template v-if="isInPersonalWorkspace && maxSeats === 1">
+            <template
+              v-if="
+                isInPersonalWorkspace && maxSeats === 1 && !hasMultipleMembers
+              "
+            >
               <MemberListItem
                 :member="personalWorkspaceMember"
                 :is-current-user="true"
@@ -199,7 +210,7 @@
 
           <!-- Pending Invites -->
           <PendingInvitesList
-            v-if="activeView === 'pending'"
+            v-if="activeView === 'pending' && permissions.canViewPendingInvites"
             :invites="filteredPendingInvites"
             :grid-cols="uiConfig.pendingGridCols"
             :search-query="searchQuery"
@@ -268,6 +279,9 @@ import { useSettingsHeaderCollapse } from '@/platform/settings/composables/useSe
 
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import WorkspaceMenuButton from '@/platform/workspace/components/dialogs/settings/WorkspaceMenuButton.vue'
 import MemberListItem from '@/platform/workspace/components/dialogs/settings/MemberListItem.vue'
 import MemberUpsellBanner from '@/platform/workspace/components/dialogs/settings/MemberUpsellBanner.vue'
@@ -296,8 +310,6 @@ const {
   showSearch,
   showViewTabs,
   showInviteButton,
-  isInviteDisabled,
-  inviteTooltip,
   handleInviteMember,
   personalWorkspaceMember,
   filteredMembers,
@@ -342,7 +354,12 @@ const emptyStateMessage = computed(() => {
   if (!uiConfig.value.showMembersList) return null
   if (!membersLoaded.value) return null
   if (activeView.value !== 'active') return null
-  if (isInPersonalWorkspace.value && maxSeats.value === 1) return null
+  if (
+    isInPersonalWorkspace.value &&
+    maxSeats.value === 1 &&
+    !hasMultipleMembers.value
+  )
+    return null
   if (filteredMembers.value.length > 0) return null
 
   const query = searchQuery.value.trim()

@@ -7,7 +7,7 @@ import { createI18n } from 'vue-i18n'
 import Load3D from '@/components/load3d/Load3D.vue'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { ComponentWidget } from '@/scripts/domWidget'
+import type { ComponentWidget } from '@/types/domWidget'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import { resolveNode } from '@/utils/litegraphUtil'
@@ -130,9 +130,6 @@ function renderLoad3D(options: RenderOptions = {}) {
             name: 'ViewerControls',
             template: '<div data-testid="viewer-controls" />'
           }
-        },
-        directives: {
-          tooltip: () => {}
         }
       }
     }),

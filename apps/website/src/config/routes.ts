@@ -9,14 +9,14 @@ import type { AppWorkshopModel } from './models-catalogue'
 
 const baseRoutes = {
   home: '/',
+  changelog: '/changelog/',
   download: '/download/',
   cloud: '/cloud/',
   pricing: '/pricing/',
   enterprise: '/enterprise/',
   managedBuilds: '/enterprise/managed-builds/',
-  gallery: '/gallery/',
-  launches: '/launches/',
   events: '/events/',
+  eventChallenge: '/open-source-higgsfield/',
   about: '/about/',
   careers: '/careers/',
   customers: '/customers/',
@@ -24,6 +24,7 @@ const baseRoutes = {
   customerVideoSilversideAi: '/customers/videos/silverside-ai/',
   demos: '/demos/',
   learning: '/learning/',
+  vfx: '/solutions/vfx/',
   termsOfService: '/terms-of-service/',
   enterpriseMsa: '/enterprise-msa/',
   privacyPolicy: '/privacy-policy/',
@@ -42,6 +43,8 @@ const baseRoutes = {
   minimaxMusic3: '/minimax-music-3/',
   minimaxLicense: '/minimax/license/',
   minimaxLicenseProfessionalRequest: '/minimax/license/professional-request/',
+  fishAudio: '/fish-audio/',
+  nvidiaVfx: '/nvidia-vfx/',
   flux3: '/flux-3/',
   seedance: '/seedance-2.5/',
   fdct: '/forward-deployed-creatives/',
@@ -52,6 +55,8 @@ const baseRoutes = {
   wan3: '/wan-3.0/',
   chatgptImage25: '/chatgpt-image-2.5/',
   qwenImage21: '/qwen-image-2.1/',
+  krea3: '/krea-3/',
+  flux3ImageKlein: '/flux-3-image-klein/',
   nanoBanana: '/nano-banana/',
   brand: '/brand/',
   // The hub catalogue. `workshop` keeps its old name.
@@ -95,7 +100,11 @@ type Routes = Readonly<Record<RouteKey, string>>
 // built from a single English-language caption track — a "translated" watch
 // page would either duplicate the English video under a Chinese path or lie
 // about having Chinese captions, so these are intentionally English-only.
+//
+// changelog: renders the English Comfy docs changelog in the browser. No
+// localized page reads the translated docs sources yet.
 const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
+  'changelog',
   'affiliates',
   'affiliateTerms',
   'termsOfService',
@@ -123,6 +132,7 @@ const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
 // workshop: the catalog is English-only. It is also build-gated until launch,
 // but enabled previews must not advertise a localized page that does not exist.
 const LOCALE_INVARIANT_EXTRA_PATHS = [
+  '/comfy-agent',
   // Auth surfaces render one page for every locale (copy localizes in the
   // island); a /zh-CN twin does not exist and must not be advertised.
   '/forgot-password',

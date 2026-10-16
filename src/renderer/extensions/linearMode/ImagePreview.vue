@@ -49,7 +49,7 @@ function onImageLoad() {
   />
   <span
     v-if="executionStatusMessage"
-    class="animate-pulse self-center text-muted md:z-10"
+    class="animate-pulse self-center text-muted-foreground md:z-10"
   >
     {{ executionStatusMessage }}
   </span>
