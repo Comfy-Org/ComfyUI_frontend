@@ -1,3 +1,5 @@
+import assert from 'node:assert/strict'
+
 import {
   comfyPageFixture as test,
   comfyExpect as expect
@@ -454,9 +456,10 @@ test.describe(
           await comfyPage.command.executeCommand('Comfy.Canvas.SelectAll')
           await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(2)
           await comfyPage.command.executeCommand('Comfy.Canvas.CopySelected')
-          const bounds = (await comfyPage.vueNodes
+          const bounds = await comfyPage.vueNodes
             .getNodeLocator('2')
-            .boundingBox())!
+            .boundingBox()
+          assert(bounds)
           await comfyPage.page.mouse.move(
             bounds.x + bounds.width + 40,
             bounds.y
@@ -473,12 +476,12 @@ test.describe(
             await comfyPage.nodeOps.getNodeRefsByTitle('New Subgraph')
           const originalRef = hostRefs.find(
             (node) => String(node.id) === originalId
-          )!
+          )
           const copyRef = hostRefs.find(
             (node) => String(node.id) !== originalId
-          )!
-          expect(originalRef).toBeDefined()
-          expect(copyRef).toBeDefined()
+          )
+          assert(originalRef)
+          assert(copyRef)
           expect(await copyRef.getType()).not.toBe(await originalRef.getType())
           const original = comfyPage.vueNodes.getNodeLocator(originalId)
           const copy = comfyPage.vueNodes.getNodeLocator(String(copyRef.id))
@@ -842,9 +845,10 @@ test.describe(
       await comfyPage.command.executeCommand('Comfy.Canvas.SelectAll')
       await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(2)
       await comfyPage.command.executeCommand('Comfy.Canvas.CopySelected')
-      const previewBounds = (await comfyPage.vueNodes
+      const previewBounds = await comfyPage.vueNodes
         .getNodeLocator('2')
-        .boundingBox())!
+        .boundingBox()
+      assert(previewBounds)
       await comfyPage.page.mouse.move(
         previewBounds.x + previewBounds.width + 40,
         previewBounds.y
@@ -954,7 +958,11 @@ test.describe(
           .getByRole('spinbutton')
       ).toHaveValue('0.2')
 
-      const queued = comfyPage.page.waitForResponse('**/api/prompt')
+      const queued = comfyPage.page.waitForResponse(
+        (response) =>
+          response.url().endsWith('/api/prompt') &&
+          response.request().method() === 'POST'
+      )
       await comfyPage.command.executeCommand('Comfy.QueuePrompt')
       const response = await queued
       expect(response.status()).toBe(400)
