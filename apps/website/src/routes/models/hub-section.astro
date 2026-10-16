@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro'
 import StaffContentActions from '@/components/cms/StaffContentActions.astro'
+import { challengeBannerConfig } from '@/config/banner'
 import ModelsPage from '@/components/workshop/ModelsPage.vue'
 import CccModelsPage from '@/components/workshop/CccModelsPage.vue'
 import CatalogNavigation from '@/components/workshop/CatalogNavigation.astro'
@@ -45,6 +46,7 @@ const records = catalog?.ok
   description={copy.description}
   noindex={!isIndexableModelPage(Astro.url.pathname)}
   preloadFonts={['Medium']}
+  banner={challengeBannerConfig}
 >
   {cmsEnabled() && <CatalogNavigation />}
   <StaffContentActions create type={section === 'apps' ? 'app' : 'workflow'} />

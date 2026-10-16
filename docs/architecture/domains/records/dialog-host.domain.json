@@ -50,7 +50,7 @@
   ],
   "publicEntryPoints": [],
   "allowedDependencies": [],
-  "allowedConsumers": [],
+  "allowedConsumers": ["settings"],
   "characterizationScenarios": [
     {
       "name": "Global dialog renders stacked dialogs and restores body pointer events on close",
@@ -85,7 +85,7 @@
   ],
   "adrs": [],
   "compatibilityPromises": [
-    "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
+    "Inventory preserves existing exports and runtime behavior without granting public entry points; settings is an approved consumer of dialog-host internals, and imports from other classified domains remain subject to cross-domain rules."
   ],
   "deepImports": "inventory"
 }

@@ -66,7 +66,7 @@ export const localModelSchema = presentationSchema.extend({
 
 const appModelSchema = presentationSchema.extend({
   type: z.literal('APP'),
-  appId: z.enum(['studio', 'reshoot']),
+  appId: z.enum(['studio', 'reshoot', 'openjutsu']),
   routerId: z.never().optional(),
   workflowId: z.never().optional()
 })

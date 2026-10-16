@@ -4,7 +4,7 @@
       {{ t('sideToolbar.queueProgressOverlay.clearHistoryDialogTitle') }}
     </template>
 
-    <div class="flex flex-col gap-4 p-4 text-[14px] text-text-secondary">
+    <div class="flex flex-col gap-4 p-4 text-[14px] text-muted-foreground">
       <p class="m-0">
         {{
           t('sideToolbar.queueProgressOverlay.clearHistoryDialogDescription')

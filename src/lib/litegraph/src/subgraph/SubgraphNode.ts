@@ -27,7 +27,7 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
 import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
 import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
-import type { SerializedNodeId } from '@/types/nodeId'
+import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 
 import type {
   ExportedSubgraphInstance,
@@ -818,6 +818,12 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   override getWidgetFromSlot(slot: INodeInputSlot): IBaseWidget | undefined {
     if (slot._widget) return slot._widget
     return super.getWidgetFromSlot(slot)
+  }
+
+  resolvePromotedTarget(
+    inputName: string
+  ): { nodeId: NodeId; widgetName: string } | undefined {
+    return resolveSubgraphInputTarget(this, inputName)
   }
 
   override getInputLink(slot: number): LLink | null {

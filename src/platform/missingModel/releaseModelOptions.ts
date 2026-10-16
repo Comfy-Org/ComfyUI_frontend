@@ -1,6 +1,7 @@
 import { isCloud } from '@/platform/distribution/types'
 import type { ReleaseModelOptions } from '@/platform/missingModel/missingModelScan'
 import { DEPLOYMENT_LISTING_BACKSTOP_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
+import { couldBootOnDeployment } from '@/platform/workspace/composables/waitForDeploymentPick'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { isComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -31,11 +32,12 @@ export const releaseModelOptions: ReleaseModelOptions = async (
 }
 
 /**
- * `releaseModelOptions` where the page can boot on a deployment (Comfy
- * Cloud), undefined elsewhere so a scan never waits on the listing.
+ * `releaseModelOptions` on Comfy Cloud unless this page is known to boot on
+ * Comfy Cloud's own models (`couldBootOnDeployment`), undefined elsewhere
+ * so a scan never waits on the listing.
  */
 export function cloudReleaseModelOptions(): ReleaseModelOptions | undefined {
-  return isCloud ? releaseModelOptions : undefined
+  return isCloud && couldBootOnDeployment() ? releaseModelOptions : undefined
 }
 
 /**

@@ -295,12 +295,6 @@ export function useFeatureFlags() {
         cachedLegacyBillingMigrationEnabled
       )
     },
-    get embeddedCheckoutEnabled() {
-      return resolveStrictBooleanFlag(
-        ServerFeatureFlag.EMBEDDED_CHECKOUT_ENABLED,
-        remoteConfig.value.embedded_checked_enabled
-      )
-    },
     get billingSdkTopupEnabled() {
       return resolveStrictBooleanFlag(
         ServerFeatureFlag.BILLING_SDK_TOPUP_ENABLED,
@@ -319,6 +313,22 @@ export function useFeatureFlags() {
     },
     get billingSdkSubscriptionRailEnabled() {
       return this.billingSdkSubscriptionEnabled && this.unifiedCloudAuthEnabled
+    },
+    get unifiedBillingSettingsEnabled() {
+      if (!isCloud) return false
+
+      return resolveStrictBooleanFlag(
+        ServerFeatureFlag.UNIFIED_BILLING_SETTINGS,
+        remoteConfig.value.unified_billing_settings
+      )
+    },
+    get autoTopUpEnabled() {
+      if (!isCloud) return false
+
+      return resolveStrictBooleanFlag(
+        ServerFeatureFlag.AUTO_TOP_UP_ENABLED,
+        remoteConfig.value.auto_top_up_enabled
+      )
     },
     get v1PaymentRecovery() {
       return resolveAuthGatedFlag(
@@ -416,12 +426,13 @@ export function startFeatureFlagTelemetry() {
         flags.memberCreditLimitsEnabled,
       [ServerFeatureFlag.LEGACY_BILLING_MIGRATION_ENABLED]:
         flags.legacyBillingMigrationEnabled,
-      [ServerFeatureFlag.EMBEDDED_CHECKOUT_ENABLED]:
-        flags.embeddedCheckoutEnabled,
       [ServerFeatureFlag.BILLING_SDK_TOPUP_ENABLED]:
         flags.billingSdkTopupEnabled,
       [ServerFeatureFlag.BILLING_SDK_SUBSCRIPTION_ENABLED]:
         flags.billingSdkSubscriptionEnabled,
+      [ServerFeatureFlag.UNIFIED_BILLING_SETTINGS]:
+        flags.unifiedBillingSettingsEnabled,
+      [ServerFeatureFlag.AUTO_TOP_UP_ENABLED]: flags.autoTopUpEnabled,
       [ServerFeatureFlag.V1_PAYMENT_RECOVERY]: flags.v1PaymentRecovery,
       [ServerFeatureFlag.FREE_TIER_JOB_ALLOWANCE_ENABLED]:
         flags.freeTierJobAllowanceEnabled,

@@ -81,7 +81,7 @@ function rowSignature(row: ActivityRow): string {
         />
         <span
           v-if="index < rows.length - 1"
-          class="mt-1 w-px flex-1 bg-component-node-border"
+          class="mt-1 w-px flex-1 bg-border"
         />
       </div>
       <div class="flex min-w-0 flex-1 items-start gap-2 pb-3">

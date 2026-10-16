@@ -43,9 +43,9 @@ const existingOutput = computed(() => {
     class="mx-auto flex h-full w-3/4 flex-col items-center justify-center gap-6 p-8"
   >
     <div
-      class="flex h-4/5 w-full flex-col items-center justify-center rounded-2xl border-2 border-dashed border-warning-background p-12"
+      class="flex h-4/5 w-full flex-col items-center justify-center rounded-2xl border-2 border-dashed border-warning p-12"
     >
-      <p class="mb-0 font-bold text-base-foreground">
+      <p class="mb-0 font-bold text-foreground">
         {{ t('linearMode.arrange.outputs') }}
       </p>
       <p class="text-center">{{ t('linearMode.arrange.resultsLabel') }}</p>
@@ -57,7 +57,7 @@ const existingOutput = computed(() => {
     data-testid="linear-arrange-no-outputs"
     class="mx-auto flex h-full w-lg flex-col items-center justify-center gap-6 p-8 text-center"
   >
-    <p class="m-0 text-base-foreground">
+    <p class="m-0 text-foreground">
       {{ t('linearMode.arrange.noOutputs') }}
     </p>
 

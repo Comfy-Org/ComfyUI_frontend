@@ -30,8 +30,7 @@ vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
         return (
           flagState.billingSdkTopupEnabled && flagState.unifiedCloudAuthEnabled
         )
-      },
-      embeddedCheckoutEnabled: false
+      }
     }
   })
 }))
@@ -59,7 +58,7 @@ beforeEach(() => {
 })
 
 describe('useTopupOperation', () => {
-  it('reads and drives the poller while the SDK flag is off', async () => {
+  it('reads and drives the poller while the SDK flag is off', () => {
     flagState.billingSdkTopupEnabled = false
     const store = useBillingOperationStore()
     Object.assign(store, {
@@ -71,12 +70,10 @@ describe('useTopupOperation', () => {
     })
 
     const view = useTopupOperation()
-    await view.retryPaymentAuthentication('op-poller')
     view.dismissOperation('op-poller')
 
     expect(view.isAddingCredits.value).toBe(true)
     expect(view.topupOperation.value?.opId).toBe('op-poller')
-    expect(store.retryPaymentAuthentication).toHaveBeenCalledWith('op-poller')
     expect(store.dismissOperation).toHaveBeenCalledWith('op-poller')
     expect(mockCreateBillingSdk).not.toHaveBeenCalled()
   })
@@ -168,7 +165,7 @@ describe('useTopupOperation', () => {
         expect(store.startOperation).toHaveBeenCalledWith(
           'op-pending',
           'topup',
-          { attemptStartedAt: 1000, autoHandleRequiresAction: true }
+          { attemptStartedAt: 1000 }
         )
       }
     }
