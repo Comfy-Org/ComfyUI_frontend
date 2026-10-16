@@ -80,8 +80,6 @@ vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
 vi.mock(import('@/services/dialogService'))
 
-vi.mock(import('@/composables/billing/useBillingContext'))
-
 vi.mock(import('@/composables/useErrorHandling'))
 
 function makeWorkflow(path: string): ModifiedWorkflow {

@@ -8,8 +8,8 @@ import {
 } from '@comfyorg/account-core/firebaseAuthError'
 import type { AuthErrorCopy } from '@comfyorg/account-core/firebaseAuthError'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { watchForTopupBalanceUpdate } from '@/composables/billing/topupBalanceRefresh'
+import { refreshBilling } from '@/platform/workspace/billing/billingRefresh'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st, t } from '@/i18n'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -210,8 +210,9 @@ export const useAuthActions = () => {
         t('subscription.preview.paymentPopupBlocked')
       )
     }
-    const billing = useBillingContext()
-    watchForTopupBalanceUpdate(() => billing.fetchStatus())
+    watchForTopupBalanceUpdate(async () => {
+      await refreshBilling('account')
+    })
   }
 
   const purchaseCredits = wrapWithErrorHandlingAsync(
