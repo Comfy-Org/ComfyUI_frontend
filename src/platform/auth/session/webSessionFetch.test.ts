@@ -27,7 +27,8 @@ describe('web-session request credentials', () => {
   ] as const)(
     'keeps cookie authentication for $name',
     async ({ url, credentials }) => {
-      const send = vi.mocked(fetch).mockResolvedValue(new Response('asset'))
+      const send = vi.fn(async () => new Response('asset'))
+      vi.stubGlobal('fetch', send)
       const scope: WebSessionRequestScope = {
         epoch: 1,
         workspaceId: 'team-workspace',
