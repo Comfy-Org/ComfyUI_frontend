@@ -62,13 +62,6 @@ vi.mock<unknown>(
     })
   })
 )
-vi.mock<unknown>(
-  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
-  () => ({
-    useToast: () => ({ add: vi.fn(), remove: vi.fn(), removeGroup: vi.fn() })
-  })
-)
-
 const CREDENTIAL: AccountCredential = {
   token: 'workspace-jwt',
   expiresAt: Date.now() + 60 * 60 * 1000,
@@ -160,6 +153,7 @@ const CAPABILITIES = {
     can_change_seats: false,
     can_downgrade_to_personal: false,
     can_invite_members: false,
+    can_manage_members: false,
     can_reactivate: true,
     can_revert_scheduled_change: false,
     can_subscribe_self_serve: true,
@@ -347,6 +341,18 @@ async function driveDowngrade() {
     ...permissions.value,
     canDowngradeToPersonal: true
   }))
+  Object.assign(useTeamWorkspaceStore(), {
+    members: [
+      {
+        id: 'owner',
+        name: 'Owner',
+        email: 'owner@example.com',
+        joinDate: new Date('2026-01-01T00:00:00Z'),
+        role: 'owner',
+        isOriginalOwner: true
+      }
+    ]
+  })
   await useDowngradeToPersonal()
     .downgradeToPersonal('standard-yearly')
     .catch(() => undefined)

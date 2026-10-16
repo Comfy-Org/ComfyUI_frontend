@@ -900,9 +900,7 @@ describe('CinematicStudio', () => {
         })
       )
 
-      await vi.waitFor(() =>
-        expect(vi.mocked(router_render)).toHaveBeenCalledTimes(3)
-      )
+      await vi.waitFor(() => expect(router_render).toHaveBeenCalledTimes(3))
       const [, , retry] = vi.mocked(router_render).mock.calls[2]
       if (settlement === 'pending') {
         expect(retry.idempotencyKey).toBe(first[1].key)

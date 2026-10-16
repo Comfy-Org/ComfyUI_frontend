@@ -16,6 +16,9 @@ import Composer from './Composer.vue'
 import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
 
 setupInlinePromptEditorDom()
+vi.mock(import('@/composables/auth/useCurrentUser'))
+vi.mock(import('@/scripts/api'))
+vi.mock(import('@/platform/telemetry'))
 
 const asset = {
   id: 'source',
@@ -30,7 +33,7 @@ type MediaSurfaces = {
   menuItem: HTMLElement
 }
 
-function setup() {
+function setup({ streaming = false }: { streaming?: boolean } = {}) {
   const store = useAgentComposerStore()
   store.setNodeScope('workflow-a')
   const send = vi.fn()
@@ -39,11 +42,12 @@ function setup() {
       h(Composer, {
         hasWorkflowTarget: true,
         selectionTags: store.nodes,
+        streaming,
         onSend: send
       })
   })
   const view = render(Host, {
-    global: { plugins: [i18n], directives: { tooltip: () => {} } }
+    global: { plugins: [i18n] }
   })
   return { ...view, store, send, editor: screen.getByRole('textbox') }
 }
@@ -269,6 +273,100 @@ describe('composer asset tray', () => {
     ])
   })
 
+  it('explains on hover and focus that invalid videos block Send', async () => {
+    const user = userEvent.setup()
+    const { store, editor, send } = setup()
+    store.addAttachment({
+      id: 'bad',
+      name: 'bad.mov',
+      ref: '',
+      validationError: 'invalid-video'
+    })
+    await user.type(editor, 'Keep my draft')
+    const sendButton = screen.getByRole('button', { name: 'Send' })
+    expect(sendButton).toHaveAttribute('aria-disabled', 'true')
+    expect(sendButton).toHaveAccessibleDescription(
+      'bad.mov isn’t a valid video. Remove it to send.'
+    )
+    await user.hover(sendButton)
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      'bad.mov isn’t a valid video. Remove it to send.'
+    )
+    await user.click(sendButton)
+    await user.click(editor)
+    await user.keyboard('{Enter}')
+    expect(send).not.toHaveBeenCalled()
+    expect(store.draft).toBe('Keep my draft')
+
+    store.addAttachment({
+      id: 'worse',
+      name: 'worse.pdf',
+      ref: '',
+      validationError: 'unsupported-type'
+    })
+    await user.unhover(sendButton)
+    sendButton.focus()
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      '2 files can’t be sent. Remove them to send.'
+    )
+    expect(sendButton).toHaveAccessibleDescription(
+      '2 files can’t be sent. Remove them to send.'
+    )
+
+    store.removeAttachment('bad')
+    store.removeAttachment('worse')
+    await waitFor(() => expect(sendButton).not.toHaveAttribute('aria-disabled'))
+    expect(sendButton).toBeEnabled()
+    await user.click(sendButton)
+    expect(send).toHaveBeenCalledExactlyOnceWith('Keep my draft', [])
+  })
+
+  it('names an unaccepted file type as the reason Send is blocked until it is removed', async () => {
+    const user = userEvent.setup()
+    const { store, editor, send } = setup()
+    store.addAttachment(asset)
+    store.addAttachment({
+      id: 'doc',
+      name: 'doc.pdf',
+      ref: '',
+      validationError: 'unsupported-type'
+    })
+    await user.type(editor, 'Keep my draft')
+    const sendButton = screen.getByRole('button', { name: 'Send' })
+    const reason =
+      'doc.pdf isn’t a file type the agent accepts. Remove it to send.'
+
+    expect(sendButton).toHaveAttribute('aria-disabled', 'true')
+    expect(sendButton).toHaveAccessibleDescription(reason)
+    await user.hover(sendButton)
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(reason)
+    await user.click(editor)
+    await user.keyboard('{Enter}')
+    expect(send).not.toHaveBeenCalled()
+
+    store.removeAttachment('doc')
+    await waitFor(() => expect(sendButton).not.toHaveAttribute('aria-disabled'))
+    await user.click(sendButton)
+    expect(send).toHaveBeenCalledExactlyOnceWith('Keep my draft', [
+      expect.objectContaining({ id: asset.id })
+    ])
+  })
+
+  it('keeps Stop usable without the blocked-Send explanation while the agent runs', async () => {
+    const user = userEvent.setup()
+    const { store } = setup({ streaming: true })
+    store.addAttachment({
+      id: 'bad',
+      name: 'bad.mov',
+      ref: '',
+      validationError: 'invalid-video'
+    })
+    const stopButton = await screen.findByRole('button', { name: 'Stop' })
+    expect(stopButton).not.toHaveAttribute('aria-disabled')
+    await user.hover(stopButton)
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('Stop Esc')
+  })
+
   it('offers bounded page scrolling without changing the draft or included assets', async () => {
     const resize = trackResizes()
     const { store, editor } = setup()
@@ -450,6 +548,37 @@ describe('composer asset tray', () => {
     expect(screen.getByTestId('asset-reference-chip')).toHaveTextContent(
       asset.name
     )
+  })
+
+  it('leaves invalid videos and unaccepted types out of @ asset mentions', async () => {
+    const { store, editor } = setup()
+    store.addAttachment(asset)
+    store.addAttachment({
+      id: 'bad',
+      name: 'bad.mov',
+      ref: '',
+      validationError: 'invalid-video'
+    })
+    store.addAttachment({
+      id: 'doc',
+      name: 'doc.pdf',
+      ref: '',
+      validationError: 'unsupported-type'
+    })
+    await userEvent.type(editor, '@')
+    expect(screen.getByRole('menuitem', { name: asset.name })).toBeVisible()
+    expect(
+      screen.queryByRole('menuitem', { name: 'bad.mov' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('menuitem', { name: 'doc.pdf' })
+    ).not.toBeInTheDocument()
+    await userEvent.keyboard('bad')
+    expect(
+      screen.queryByRole('menuitem', { name: 'bad.mov' })
+    ).not.toBeInTheDocument()
+    await userEvent.keyboard('{Enter}')
+    expect(screen.queryByTestId('asset-reference-chip')).not.toBeInTheDocument()
   })
 
   it('allows repeated asset mentions, deletes only one, and sends the attachment once', async () => {

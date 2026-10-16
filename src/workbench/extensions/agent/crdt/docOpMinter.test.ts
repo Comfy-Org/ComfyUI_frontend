@@ -102,6 +102,41 @@ class TestPrompt extends LGraphNode {
   }
 }
 
+class TestDynamicGroup extends LGraphNode {
+  constructor() {
+    super('Test Dynamic Group')
+    this.serialize_widgets = true
+    useLitegraphService().addNodeInput(this, {
+      name: 'loras',
+      type: 'COMFY_DYNAMICGROUP_V3',
+      isOptional: false,
+      min: 0,
+      max: 3,
+      template: {
+        required: {
+          lora_name: ['COMBO', { options: ['A', 'B'] }],
+          seed: ['INT', { default: 1, control_after_generate: true }]
+        }
+      }
+    })
+  }
+}
+
+class TestEmptyComboGroup extends LGraphNode {
+  constructor() {
+    super('Test Empty Combo Group')
+    this.serialize_widgets = true
+    useLitegraphService().addNodeInput(this, {
+      name: 'loras',
+      type: 'COMFY_DYNAMICGROUP_V3',
+      isOptional: false,
+      min: 0,
+      max: 3,
+      template: { required: { lora_name: ['COMBO', { options: [] }] } }
+    })
+  }
+}
+
 const CATALOG: WidgetCatalog = {
   types: {
     TestSource: { widget_order: ['steps'] },
@@ -163,6 +198,8 @@ beforeEach(() => {
   LiteGraph.registerNodeType('TestAutogrowSink', TestAutogrowSink)
   LiteGraph.registerNodeType('TestNote', TestNote)
   LiteGraph.registerNodeType('TestPrompt', TestPrompt)
+  LiteGraph.registerNodeType('TestDynamicGroup', TestDynamicGroup)
+  LiteGraph.registerNodeType('TestEmptyComboGroup', TestEmptyComboGroup)
 })
 
 describe('attachDocOpMinter', () => {
@@ -174,6 +211,8 @@ describe('attachDocOpMinter', () => {
   let bound: boolean
   let docInputNames: DocOpMinterDeps['docInputNames']
   let docPromotedWidgets: DocOpMinterDeps['docPromotedWidgets']
+  let mayWrite: boolean
+  let refusals: number
 
   beforeEach(() => {
     graph = new LGraph()
@@ -183,6 +222,8 @@ describe('attachDocOpMinter', () => {
     bound = true
     docInputNames = () => null
     docPromotedWidgets = () => null
+    mayWrite = true
+    refusals = 0
     minter = attachDocOpMinter({
       isEnabled: () => enabled,
       isDocBound: () => bound,
@@ -190,7 +231,11 @@ describe('attachDocOpMinter', () => {
       getGraph: () => graph,
       boundRootGraphId: () => rootGraphId,
       docInputNames: (nodeId) => docInputNames(nodeId),
-      docPromotedWidgets: (nodeId) => docPromotedWidgets(nodeId)
+      docPromotedWidgets: (nodeId) => docPromotedWidgets(nodeId),
+      mayWritePromotedHost: () => mayWrite,
+      onWidgetWriteRefused: () => {
+        refusals += 1
+      }
     })
   })
 
@@ -479,7 +524,9 @@ describe('attachDocOpMinter', () => {
       getGraph: () => graph,
       boundRootGraphId: () => rootGraphId,
       docInputNames: () => null,
-      docPromotedWidgets: () => null
+      docPromotedWidgets: () => null,
+      mayWritePromotedHost: () => true,
+      onWidgetWriteRefused: () => {}
     })
 
     const added = new TestSink()
@@ -944,6 +991,66 @@ describe('attachDocOpMinter', () => {
         (node) => String(node.id) === String(host.id)
       )?.widgets_values
     ).toEqual([null, 'pasted'])
+    doc.destroy()
+  })
+
+  it.for([
+    {
+      name: 'an unpromoted host widget',
+      errorType: 'agent_crdt_promoted_widget_not_promoted',
+      act: (host: ReturnType<typeof createTestSubgraphNode>) => {
+        host.addWidget('text', 'extra', 'before', () => {}).value = 'after'
+      }
+    },
+    {
+      name: 'a drifted host layout',
+      errorType: 'agent_crdt_promoted_widget_order_drift',
+      act: (host: ReturnType<typeof createTestSubgraphNode>) => {
+        docPromotedWidgets = () => ({
+          valueCount: 2,
+          declaredNames: ['text', 'prefix'],
+          promotedNames: ['text', 'prefix']
+        })
+        host.widgets[1].value = 'misplaced'
+      }
+    },
+    {
+      name: 'a host the document cannot vouch for yet',
+      errorType: 'agent_crdt_promoted_widget_doc_not_synced',
+      act: (host: ReturnType<typeof createTestSubgraphNode>) => {
+        mayWrite = false
+        host.widgets[1].value = 'too early'
+      }
+    }
+  ])(
+    'reports and notifies a refused write to $name',
+    async ({ errorType, act }) => {
+      const { host, doc } = seedPromotedHost()
+
+      act(host)
+      await afterFlush()
+
+      expect(minted).toEqual([])
+      expect(refusals).toBe(1)
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({ errorType })
+      )
+      doc.destroy()
+    }
+  )
+
+  it('still mints for a host the caught-up document does not hold yet', async () => {
+    const { host, doc } = seedPromotedHost()
+    docPromotedWidgets = () => null
+
+    host.widgets[1].value = 'pasted'
+    await afterFlush()
+
+    expect(minted).toEqual([
+      expect.objectContaining({ node_id: host.id, widget: 'text' })
+    ])
+    expect(refusals).toBe(0)
     doc.destroy()
   })
 
@@ -1524,6 +1631,48 @@ describe('attachDocOpMinter', () => {
     expect(minted).toEqual([])
   })
 
+  it('reports an unresolved widget owner once per graph and node across flushes', async () => {
+    const staleGraph = new LGraph()
+    const otherGraph = new LGraph()
+    const { source: stale } = seedGraph(staleGraph)
+    const { source: other } = seedGraph(otherGraph)
+    const { source: active } = seedGraph(graph)
+    const sibling = new TestSource()
+    withGraphIntentSource('load', () => staleGraph.add(sibling))
+    expect(other.id).toBe(stale.id)
+
+    stale.widgets![0].value = 21
+    active.widgets![0].value = 31
+    await afterFlush()
+    stale.widgets![0].value = 22
+    other.widgets![0].value = 23
+    sibling.widgets![0].value = 24
+    await afterFlush()
+
+    expect(minted).toEqual([
+      expect.objectContaining({ node_id: active.id, value: 31 })
+    ])
+    expect(
+      vi.mocked(reportError).mock.calls.map(([, options]) => options)
+    ).toEqual([
+      {
+        surface: 'agent',
+        errorType: 'agent_crdt_widget_owner_unresolved',
+        context: { graphId: staleGraph.id, nodeId: stale.id }
+      },
+      {
+        surface: 'agent',
+        errorType: 'agent_crdt_widget_owner_unresolved',
+        context: { graphId: otherGraph.id, nodeId: other.id }
+      },
+      {
+        surface: 'agent',
+        errorType: 'agent_crdt_widget_owner_unresolved',
+        context: { graphId: staleGraph.id, nodeId: sibling.id }
+      }
+    ])
+  })
+
   it('mints a set_widget that names a subgraph owner with the subgraph-node path', async () => {
     const subgraph = createTestSubgraph({ rootGraph: graph })
     const host = createTestSubgraphNode(subgraph)
@@ -1608,7 +1757,7 @@ describe('attachDocOpMinter', () => {
 
     expect(subgraph.nodes).toEqual([])
     expect(minted).toEqual([])
-    expect(vi.mocked(reportError)).not.toHaveBeenCalled()
+    expect(reportError).not.toHaveBeenCalled()
   })
 
   it('refuses to mint a command on a graph other than the bound root, reporting once per tick', async () => {
@@ -1626,6 +1775,155 @@ describe('attachDocOpMinter', () => {
       'agent_crdt_op_for_unbound_graph',
       'agent_crdt_op_for_unbound_graph'
     ])
+  })
+
+  describe('DynamicGroup rows', () => {
+    function seedGroup() {
+      const node = new TestDynamicGroup()
+      function widget(name: string) {
+        const found = node.widgets?.find((w) => w.name === name)
+        if (!found) throw new Error(`Missing widget ${name}`)
+        return found
+      }
+      withGraphIntentSource('load', () => {
+        graph.add(node)
+        widget('loras').value = 2
+        widget('loras.1.lora_name').value = 'B'
+        widget('loras.1.seed').value = 5
+        widget('loras.1.seed.0').value = 'fixed'
+      })
+      return { node, widget }
+    }
+
+    it('mints the default of every field of a row added after a removal', async () => {
+      const { node, widget } = seedGroup()
+
+      widget('loras.1').callback?.(undefined)
+      widget('loras.$add').callback?.(undefined)
+      await afterFlush()
+
+      const setWidget = (name: string, value: unknown, old: unknown) => ({
+        op: 'set_widget',
+        node_id: node.id,
+        widget: name,
+        value,
+        old
+      })
+      expect(minted).toEqual([
+        setWidget('loras', 1, 2),
+        setWidget('loras', 2, 1),
+        setWidget('loras.1.lora_name', 'A', undefined),
+        setWidget('loras.1.seed', 1, undefined),
+        setWidget('loras.1.seed.0', 'randomize', undefined)
+      ])
+    })
+
+    function seedThreeRows() {
+      const seeded = seedGroup()
+      const { widget } = seeded
+      withGraphIntentSource('load', () => {
+        widget('loras').value = 3
+        widget('loras.0.seed').value = 10
+        widget('loras.1.seed').value = 11
+        widget('loras.1.seed.0').value = 'increment'
+        widget('loras.2.seed').value = 12
+        widget('loras.2.seed.0').value = 'decrement'
+      })
+      return seeded
+    }
+
+    it('mints the shifted field values after a middle row is removed', async () => {
+      const { node, widget } = seedThreeRows()
+
+      widget('loras.1').callback?.(undefined)
+      await afterFlush()
+
+      const setWidget = (name: string, value: unknown, old: unknown) => ({
+        op: 'set_widget',
+        node_id: node.id,
+        widget: name,
+        value,
+        old
+      })
+      expect(minted).toEqual([
+        setWidget('loras.1.lora_name', 'A', undefined),
+        setWidget('loras.1.seed', 12, undefined),
+        setWidget('loras.1.seed.0', 'decrement', undefined),
+        setWidget('loras', 2, 3)
+      ])
+    })
+
+    it('does not mint a shifted field whose rename was refused', async () => {
+      const { node, widget } = seedThreeRows()
+      vi.spyOn(useWidgetValueStore(), 'renameWidget').mockReturnValue(undefined)
+
+      widget('loras.1').callback?.(undefined)
+      await afterFlush()
+
+      expect(minted).toEqual([
+        {
+          op: 'set_widget',
+          node_id: node.id,
+          widget: 'loras',
+          value: 2,
+          old: 3
+        }
+      ])
+    })
+
+    it.for(['agent-remote', 'load'] as const)(
+      'mints nothing for a row removed by a %s write',
+      async (source) => {
+        const { widget } = seedThreeRows()
+
+        withGraphIntentSource(source, () => {
+          widget('loras.1').callback?.(undefined)
+        })
+        await afterFlush()
+
+        expect(widget('loras.1.seed').value).toBe(12)
+        expect(minted).toEqual([])
+      }
+    )
+
+    it.for(['agent-remote', 'load'] as const)(
+      'mints nothing for a row added by a %s write',
+      async (source) => {
+        const { widget } = seedGroup()
+
+        withGraphIntentSource(source, () => {
+          widget('loras').value = 3
+        })
+        await afterFlush()
+
+        expect(widget('loras.2.lora_name').value).toBe('A')
+        expect(minted).toEqual([])
+      }
+    )
+
+    it('mints null for an added field that has no value', async () => {
+      const node = new TestEmptyComboGroup()
+      withGraphIntentSource('load', () => graph.add(node))
+
+      node.widgets?.find((w) => w.name === 'loras.$add')?.callback?.(undefined)
+      await afterFlush()
+
+      expect(minted).toEqual([
+        expect.objectContaining({ widget: 'loras', value: 1 }),
+        expect.objectContaining({ widget: 'loras.0.lora_name', value: null })
+      ])
+    })
+
+    it('mints nothing for a row added while the workflow is not doc-bound', async () => {
+      const { widget } = seedGroup()
+      bound = false
+
+      widget('loras.$add').callback?.(undefined)
+      await afterFlush()
+
+      expect(widget('loras.2.lora_name').value).toBe('A')
+      expect(minted).toEqual([])
+    })
   })
 
   it('stops minting after detach', async () => {

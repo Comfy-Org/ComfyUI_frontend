@@ -2,6 +2,7 @@
  * Known server feature flags (top-level, not extensions)
  */
 export enum ServerFeatureFlag {
+  USED_HEADLESSLY = 'used_headlessly',
   SUPPORTS_PREVIEW_METADATA = 'supports_preview_metadata',
   MAX_UPLOAD_SIZE = 'max_upload_size',
   MANAGER_SUPPORTS_V4 = 'extension.manager.supports_v4',
@@ -12,6 +13,7 @@ export enum ServerFeatureFlag {
   LINEAR_TOGGLE_ENABLED = 'linear_toggle_enabled',
   PARTNER_NODE_GOVERNANCE_ENABLED = 'partner_node_governance_enabled',
   PARTNER_RUN_GATE_ENABLED = 'partner_run_gate_enabled',
+  PARTNER_NODE_TOKEN = 'partner_node_token',
   USER_SECRETS_ENABLED = 'user_secrets_enabled',
   NODE_REPLACEMENTS = 'node_replacements',
   NODE_LIBRARY_ESSENTIALS_ENABLED = 'node_library_essentials_enabled',
@@ -22,6 +24,7 @@ export enum ServerFeatureFlag {
   UNIFIED_CLOUD_AUTH = 'unified_cloud_auth',
   UNIFIED_WEB_SESSION = 'unified_web_session',
   SSO_ENABLED = 'sso_enabled',
+  LOCAL_WEB_SSO = 'local_web_sso',
   BILLING_CONTROL_ENABLED = 'billing_control_enabled',
   MEMBER_CREDIT_LIMITS_ENABLED = 'member_credit_limits_enabled',
   LEGACY_BILLING_MIGRATION_ENABLED = 'legacy_billing_migration_enabled',

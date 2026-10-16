@@ -37,7 +37,7 @@ import type {
   INumericWidget,
   IStringWidget
 } from '@/lib/litegraph/src/types/widgets'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import type {
   NodeExecutionOutput,
   NodeOutputWith
@@ -64,6 +64,7 @@ import { useLoad3dService } from '@/services/load3dService'
 import { useDialogStore } from '@/stores/dialogStore'
 import type { ComfyExtension } from '@/types/comfy'
 import { isLoad3dNode } from '@/utils/litegraphUtil'
+import { selectedCanvasNodes } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 
 const inputSpecLoad3D: CustomInputSpec = {
   name: 'image',
@@ -94,7 +95,7 @@ async function handleModelUpload(files: FileList, node: LGraphNode) {
     const uploadPath = await Load3dUtils.uploadFile(files[0], subfolder)
 
     if (!uploadPath) {
-      useToastStore().addAlert(t('toastMessages.fileUploadFailed'))
+      useToast().warning(t('toastMessages.fileUploadFailed'))
       return
     }
 
@@ -109,7 +110,7 @@ async function handleModelUpload(files: FileList, node: LGraphNode) {
       try {
         await load3d.loadModel(modelUrl)
       } catch {
-        useToastStore().addAlert(t('toastMessages.failedToLoadModel'))
+        useToast().warning(t('toastMessages.failedToLoadModel'))
       }
     })
 
@@ -124,7 +125,7 @@ async function handleModelUpload(files: FileList, node: LGraphNode) {
     markLoad3dSceneDirty(node)
   } catch (error) {
     console.error('Model upload failed:', error)
-    useToastStore().addAlert(t('toastMessages.fileUploadFailed'))
+    useToast().warning(t('toastMessages.fileUploadFailed'))
   }
 }
 
@@ -142,7 +143,7 @@ async function handleResourcesUpload(files: FileList, node: LGraphNode) {
     markLoad3dSceneDirty(node)
   } catch (error) {
     console.error('Extra resources upload failed:', error)
-    useToastStore().addAlert(t('toastMessages.extraResourcesUploadFailed'))
+    useToast().warning(t('toastMessages.extraResourcesUploadFailed'))
   }
 }
 
@@ -267,11 +268,10 @@ useExtensionService().registerExtension({
       icon: 'pi pi-pencil',
       label: 'Open 3D Viewer (Beta) for Selected Node',
       function: () => {
-        const selectedNodes = app.canvas.selected_nodes
-        if (Object.keys(selectedNodes).length !== 1) return
+        const selectedNodes = selectedCanvasNodes(app.canvas)
+        if (selectedNodes.length !== 1) return
 
-        const selectedNode = selectedNodes[Object.keys(selectedNodes)[0]]
-
+        const [selectedNode] = selectedNodes
         if (!isLoad3dNode(selectedNode)) return
 
         ComfyApp.copyToClipspace(selectedNode)
@@ -666,7 +666,7 @@ useExtensionService().registerExtension({
           if (!filePath) {
             const msg = t('toastMessages.unableToGetModelFilePath')
             console.error(msg)
-            useToastStore().addAlert(msg)
+            useToast().warning(msg)
           }
 
           const cameraState = result?.[1]
@@ -903,7 +903,7 @@ function createPreview3DAdvancedExtension(
           if (!reported) {
             const msg = t('toastMessages.unableToGetModelFilePath')
             console.error(msg)
-            useToastStore().addAlert(msg)
+            useToast().warning(msg)
             return
           }
 

@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+import { matchesWidgetName } from '@/utils/widgetBinding'
+
 import { isModelFileName } from '@/platform/missingModel/missingModelScan'
 import { getCnrIdFromProperties } from '@/platform/nodeReplacement/cnrIdUtil'
 import {
@@ -97,17 +99,23 @@ function workflowParts(graph: unknown): {
   }
 }
 
-export type ModelInputLookup = (nodeType: string) => readonly string[]
+export type ModelInputLookup = (
+  nodeType: string
+) => readonly (string | RegExp)[]
 
 function loaderModelValues(
   values: FlattenableWorkflowNode['widgets_values'],
-  inputs: readonly string[]
+  inputs: readonly (string | RegExp)[]
 ): string[] {
   if (!values) return []
   if (Array.isArray(values))
     return widgetStrings(values).filter(isModelFileName)
   return Object.entries(values).flatMap(([name, value]) =>
-    inputs.includes(name) && typeof value === 'string' && value ? [value] : []
+    inputs.some((selector) => matchesWidgetName(name, selector)) &&
+    typeof value === 'string' &&
+    value
+      ? [value]
+      : []
   )
 }
 

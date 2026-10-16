@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useTelemetry } from '@/platform/telemetry'
+import { getWorkspaceTelemetryContext } from '@/platform/workspace/telemetry/workspaceTelemetryContext'
 
 const state = vi.hoisted(() => ({
   executionContext: {
@@ -18,6 +19,7 @@ const state = vi.hoisted(() => ({
 }))
 
 vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@/platform/workspace/telemetry/workspaceTelemetryContext'))
 
 vi.mock<unknown>(
   import('@/platform/telemetry/utils/getExecutionContext'),
@@ -79,6 +81,27 @@ describe('useRunButtonTelemetry', () => {
 
     expect(getRunButtonTelemetryProperties()).toMatchObject({
       agent_panel_open: true
+    })
+  })
+
+  it('splits a subscribe-to-run click by the selected workspace and rail', () => {
+    vi.mocked(getWorkspaceTelemetryContext).mockReturnValue({
+      workspace_id: 'owner-personal-team-plan',
+      workspace_type: 'personal',
+      workspace_role: 'member',
+      workspace_tier: 'TEAM',
+      auth_rail: 'web_session'
+    })
+
+    expect(
+      getRunButtonTelemetryProperties({ subscribe_to_run: true })
+    ).toMatchObject({
+      subscribe_to_run: true,
+      workspace_id: 'owner-personal-team-plan',
+      workspace_type: 'personal',
+      workspace_role: 'member',
+      workspace_tier: 'TEAM',
+      auth_rail: 'web_session'
     })
   })
 

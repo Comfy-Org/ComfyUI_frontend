@@ -1,6 +1,6 @@
 {
   "name": "@comfyorg/account-core",
-  "version": "1.0.0-alpha.3",
+  "version": "1.0.0-alpha.4",
   "description": "Shared account layer: a framework-free session core that exchanges a signed-in identity for the workspace-scoped Cloud JWT with valid-on-read freshness, plus the package-owned Firebase identity entry. It has no view layer and no Vue dependency; the composables and unstyled components ship from @comfyorg/account-ui",
   "keywords": [],
   "homepage": "https://comfy.org",
@@ -44,6 +44,7 @@
     "./workspaceLink": "./src/workspaceLink.ts",
     "./telemetry": "./src/telemetry.ts",
     "./webviewDetection": "./src/webviewDetection.ts",
+    "./oauthPkce": "./src/oauthPkce.ts",
     "./package.json": "./package.json"
   },
   "publishConfig": {
@@ -135,6 +136,10 @@
       "./webviewDetection": {
         "types": "./dist/webviewDetection.d.ts",
         "import": "./dist/webviewDetection.js"
+      },
+      "./oauthPkce": {
+        "types": "./dist/oauthPkce.d.ts",
+        "import": "./dist/oauthPkce.js"
       },
       "./package.json": "./package.json"
     },

@@ -8,6 +8,7 @@ export const startFeatureFlagTelemetry = vi.fn(() => watchEffect(() => {}))
 type FeatureFlags = ReturnType<typeof realUseFeatureFlags>['flags']
 
 const defaultFlags: FeatureFlags = {
+  usedHeadlessly: false,
   supportsPreviewMetadata: false,
   maxUploadSize: 0,
   supportsManagerV4: false,
@@ -18,6 +19,7 @@ const defaultFlags: FeatureFlags = {
   linearToggleEnabled: false,
   partnerNodeGovernanceEnabled: false,
   partnerRunGateEnabled: false,
+  partnerNodeTokenEnabled: false,
   userSecretsEnabled: false,
   nodeReplacementsEnabled: false,
   nodeLibraryEssentialsEnabled: false,
@@ -29,6 +31,7 @@ const defaultFlags: FeatureFlags = {
   unifiedCloudAuthEnabled: false,
   unifiedWebSessionEnabled: false,
   ssoEnabled: false,
+  localWebSsoEnabled: false,
   billingControlEnabled: false,
   memberCreditLimitsEnabled: false,
   legacyBillingMigrationEnabled: false,

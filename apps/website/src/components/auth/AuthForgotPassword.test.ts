@@ -3,7 +3,7 @@ import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, readonly, ref } from 'vue'
 
-import { removeAllToasts, useAuthToasts } from '@/config/auth-toast-state'
+import { dismissAllAuthToasts, useAuthToasts } from '@/config/auth-toast-state'
 import { sendWorkshopPasswordReset } from '@/config/workshop-firebase'
 import { captureAuthFailed, useWorkshopAuthFlag } from '@/scripts/posthog'
 import AuthForgotPassword from './AuthForgotPassword.vue'
@@ -12,7 +12,7 @@ vi.mock(import('@/scripts/posthog'))
 vi.mock(import('@/config/workshop-firebase'))
 
 const flag = ref(true)
-const { messages: toasts } = useAuthToasts()
+const { toasts } = useAuthToasts()
 const assign = vi.fn<(url: string | URL) => void>()
 
 async function typeEmail(value: string) {
@@ -35,7 +35,7 @@ const flushMicrotasks = async () => {
 beforeEach(() => {
   flag.value = true
   vi.mocked(useWorkshopAuthFlag).mockReturnValue(readonly(flag))
-  removeAllToasts()
+  dismissAllAuthToasts()
   window.history.replaceState({}, '', '/')
   vi.spyOn(window.location, 'assign').mockImplementation(assign)
 })
@@ -66,14 +66,12 @@ describe('AuthForgotPassword', () => {
     expect((await screen.findByRole('alert')).textContent).toContain(
       'Password reset sent'
     )
-    expect(vi.mocked(sendWorkshopPasswordReset)).toHaveBeenCalledWith(
-      'user@example.com'
-    )
+    expect(sendWorkshopPasswordReset).toHaveBeenCalledWith('user@example.com')
     expect(toasts.value).toEqual([
       expect.objectContaining({
-        severity: 'success',
-        summary: 'Password reset email sent',
-        life: 5000
+        kind: 'success',
+        title: 'Password reset email sent',
+        duration: 5000
       })
     ])
 
@@ -107,7 +105,7 @@ describe('AuthForgotPassword', () => {
     ['auth/network-request-failed', 'Network error']
   ] as const)(
     'keeps %s an error: no confirmation, no redirect, and the send can be retried',
-    async ([code, detail]) => {
+    async ([code, description]) => {
       vi.mocked(sendWorkshopPasswordReset).mockRejectedValue({
         code,
         message: 'x'
@@ -118,9 +116,9 @@ describe('AuthForgotPassword', () => {
 
       await waitFor(() =>
         expect(toasts.value[0]).toMatchObject({
-          severity: 'error',
-          summary: 'Error',
-          detail: expect.stringContaining(detail)
+          kind: 'error',
+          title: 'Error',
+          description: expect.stringContaining(description)
         })
       )
       expect(
@@ -150,8 +148,8 @@ describe('AuthForgotPassword', () => {
 
     await waitFor(() =>
       expect(toasts.value[0]).toMatchObject({
-        severity: 'warn',
-        summary: 'Warning'
+        kind: 'warning',
+        title: 'Warning'
       })
     )
   })
@@ -164,7 +162,7 @@ describe('AuthForgotPassword', () => {
     expect((await screen.findByRole('alert')).textContent).toContain(
       'valid email'
     )
-    expect(vi.mocked(sendWorkshopPasswordReset)).not.toHaveBeenCalled()
+    expect(sendWorkshopPasswordReset).not.toHaveBeenCalled()
   })
 
   it('sends once: the button stays disabled after a confirmed send', async () => {
@@ -176,7 +174,7 @@ describe('AuthForgotPassword', () => {
     const send = screen.getByRole('button', { name: /send/i })
     expect(send.hasAttribute('disabled')).toBe(true)
     await clickSend()
-    expect(vi.mocked(sendWorkshopPasswordReset)).toHaveBeenCalledOnce()
+    expect(sendWorkshopPasswordReset).toHaveBeenCalledOnce()
   })
 
   it('blocks a double submit while a send is in flight', async () => {
@@ -192,7 +190,7 @@ describe('AuthForgotPassword', () => {
 
     release()
     await waitFor(() =>
-      expect(vi.mocked(sendWorkshopPasswordReset)).toHaveBeenCalledOnce()
+      expect(sendWorkshopPasswordReset).toHaveBeenCalledOnce()
     )
   })
 

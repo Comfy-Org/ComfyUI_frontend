@@ -14,10 +14,7 @@
         >
           <i class="icon-[lucide--arrow-left] size-5" />
         </button>
-        <h2
-          v-if="step !== 'verifying'"
-          class="m-0 text-base font-bold text-base-foreground"
-        >
+        <DialogTitle v-if="step !== 'verifying'" class="m-0 font-bold">
           {{
             step === 'confirm'
               ? $t('credits.topUp.confirmTitle')
@@ -25,7 +22,7 @@
                 ? $t('credits.topUp.addMoreCreditsToRun')
                 : $t('credits.topUp.addMoreCredits')
           }}
-        </h2>
+        </DialogTitle>
       </div>
       <button
         class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none"
@@ -73,11 +70,9 @@
         <i
           class="icon-[lucide--shield-alert] size-10 text-warning-background"
         />
-        <h2
-          class="m-0 text-center text-xl font-semibold text-base-foreground lg:text-2xl"
-        >
+        <DialogTitle class="m-0 text-center text-xl lg:text-2xl">
           {{ $t('credits.topUp.verifyTitle') }}
-        </h2>
+        </DialogTitle>
         <p class="m-0 text-sm text-balance text-muted-foreground">
           {{ verifyingBody }}
         </p>
@@ -261,6 +256,7 @@
           "
           size="lg"
           class="h-10 justify-center tabular-nums"
+          :data-dd-action-name="BILLING_ACTION_NAME.topUpPrimary"
           @click="handlePrimaryAction"
         >
           {{
@@ -288,17 +284,19 @@
 </template>
 
 <script setup lang="ts">
+import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
 import type { BillingOperationTerminal } from '@comfyorg/account-core/billing'
 import {
   getTopupAmountPreset,
   TOPUP_AMOUNT_PRESETS_USD
 } from '@comfyorg/account-core/billing'
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { creditsToUsd, usdToCredits } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
+import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import NumberField from '@/components/ui/number-field/NumberField.vue'
 import NumberFieldDecrement from '@/components/ui/number-field/NumberFieldDecrement.vue'
 import NumberFieldIncrement from '@/components/ui/number-field/NumberFieldIncrement.vue'
@@ -333,6 +331,7 @@ import {
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import { getErrorMessage } from '@/utils/errorUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { isInsufficientCredits = false, source } = defineProps<{
@@ -633,11 +632,7 @@ async function handleBuy() {
       ) {
         clearCheckoutJourney()
       }
-      toast.add({
-        severity: 'success',
-        summary: t('credits.topUp.purchaseSuccess'),
-        life: 5000
-      })
+      toast.success(t('credits.topUp.purchaseSuccess'), { duration: 5000 })
       await Promise.allSettled([fetchBalance(), fetchStatus()])
       if (!isCurrentAttempt()) return
       handleClose(false)
@@ -660,10 +655,8 @@ async function handleBuy() {
         })
     } else {
       if (isCurrentAttempt()) paymentSubmitted.value = false
-      toast.add({
-        severity: 'error',
-        summary: t('credits.topUp.purchaseError'),
-        detail: t('credits.topUp.unknownError')
+      toast.error(t('credits.topUp.purchaseError'), {
+        description: t('credits.topUp.unknownError')
       })
     }
   } catch (error) {
@@ -692,10 +685,8 @@ function reportPurchaseError(
     },
     billingOpId
   )
-  toast.add({
-    severity: 'error',
-    summary: t('credits.topUp.purchaseError'),
-    detail: purchaseErrorDetail(error)
+  toast.error(t('credits.topUp.purchaseError'), {
+    description: purchaseErrorDetail(error)
   })
 }
 
@@ -778,8 +769,7 @@ function purchaseErrorDetail(error?: unknown): string {
     return t('credits.topUp.changeInProgressError')
   }
   return t('credits.topUp.purchaseErrorDetail', {
-    error:
-      error instanceof Error ? error.message : t('credits.topUp.unknownError')
+    error: getErrorMessage(error) ?? t('credits.topUp.unknownError')
   })
 }
 </script>

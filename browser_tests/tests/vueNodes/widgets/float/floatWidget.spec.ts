@@ -4,6 +4,35 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Vue Float Widget', { tag: '@vue-nodes' }, () => {
+  test('steps the Float primitive by the increment its node definition declares', async ({
+    comfyPage
+  }) => {
+    const floatNode = await comfyPage.nodeOps.addNode(
+      'PrimitiveFloat',
+      {},
+      { x: 400, y: 200 }
+    )
+
+    const valueWidget = comfyPage.vueNodes
+      .getWidgetByName('Float', 'value')
+      .first()
+    const controls = comfyPage.vueNodes.getInputNumberControls(valueWidget)
+
+    await expect(controls.input).toHaveValue('0.0')
+
+    await controls.incrementButton.click()
+    await expect(controls.input).toHaveValue('0.1')
+
+    await controls.incrementButton.click()
+    await expect(controls.input).toHaveValue('0.2')
+
+    await controls.decrementButton.click()
+    await expect(controls.input).toHaveValue('0.1')
+
+    const graphWidget = await floatNode.getWidgetByName('value')
+    await expect.poll(() => graphWidget.getValue()).toBe(0.1)
+  })
+
   test('evaluates expression input using the widget precision', async ({
     comfyPage
   }) => {

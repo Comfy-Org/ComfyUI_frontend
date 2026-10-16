@@ -1,4 +1,6 @@
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { provideBillingDialogs } from '@/platform/cloud/subscription/composables/billingDialogsAccess'
 import { render } from '@testing-library/vue'
 import type { Mock } from 'vitest'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -198,9 +200,6 @@ const {
   mockReportError,
   mockPlans,
   mockResubscribe,
-  mockToastAdd,
-  mockToastRemove,
-  mockToastRemoveGroup,
   mockListSavedPaymentMethods,
   mockShowDowngradeToPersonalDialog,
   mockIsTeamPlan,
@@ -225,9 +224,6 @@ const {
     mockReportError: vi.fn(),
     mockPlans: { value: [] as Plan[] },
     mockResubscribe: vi.fn(),
-    mockToastAdd: vi.fn(),
-    mockToastRemove: vi.fn(),
-    mockToastRemoveGroup: vi.fn(),
     mockListSavedPaymentMethods: vi.fn(),
     mockShowDowngradeToPersonalDialog: vi.fn(),
     mockIsTeamPlan: { value: false },
@@ -368,10 +364,15 @@ vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingDialogs'), () => ({
+  useBillingDialogs: () => ({
     showDowngradeToPersonalDialog: mockShowDowngradeToPersonalDialog
   })
+}))
+
+provideBillingDialogs(() => ({
+  showSubscriptionRequiredDialog: vi.fn(),
+  showDowngradeToPersonalDialog: mockShowDowngradeToPersonalDialog
 }))
 
 vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
@@ -406,29 +407,27 @@ const railState = vi.hoisted(() => ({
 }))
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useBillingReadRail'),
-  () => ({ useBillingReadRail: () => railState.rail })
+  () => ({
+    useBillingReadRail: () => railState.rail,
+    provideBillingSdkStore: () => {}
+  })
 )
 
 vi.mock(import('@/config/comfyApi'), () => ({
   getComfyPlatformBaseUrl: () => 'https://platform.comfy.org'
 }))
 
-vi.mock<unknown>(
-  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
-  () => ({
-    useToast: () => ({
-      add: mockToastAdd,
-      remove: mockToastRemove,
-      removeGroup: mockToastRemoveGroup
-    })
-  })
-)
-
 vi.mock(import('@/platform/telemetry'))
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
+
+function latestPaymentRecoveryAction() {
+  const toast = useToast().toasts.at(-1)
+  assert(toast?.kind === 'warning' && toast.action)
+  return toast.action.onClick
+}
 
 const i18n = createI18n({
   legacy: false,
@@ -437,9 +436,11 @@ const i18n = createI18n({
     en: {
       g: { error: 'Error', warning: 'Warning' },
       subscription: {
-        subscribeFailed: 'Subscription failed',
-        resubscribeSuccess: 'Subscription restored',
         planLoadErrorRetry: 'Try again',
+        planNotAvailable: 'This plan is not available',
+        resubscribeSuccess: 'Subscription restored',
+        subscribeFailed: 'Subscription failed',
+        unableToSubscribe: 'Unable to subscribe',
         tiers: {
           standard: { name: 'Standard' },
           creator: { name: 'Creator' }
@@ -1112,9 +1113,10 @@ describe('useSubscriptionCheckout', () => {
       await checkout.handleConfirmTransition()
 
       expect(mockSubscribe).not.toHaveBeenCalled()
-      expect(mockToastAdd).toHaveBeenCalledWith(
+      expect(useToast().error).toHaveBeenCalledWith(
+        'Error',
         expect.objectContaining({
-          detail: 'Apply quote before continuing'
+          description: 'Apply quote before continuing'
         })
       )
     })
@@ -1229,8 +1231,9 @@ describe('useSubscriptionCheckout', () => {
 
       expect(checkout.checkoutStep.value).toBe('preview')
       expect(checkout.previewData.value?.quote_id).toBe('quote_new')
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ detail: 'Quote changed' })
+      expect(useToast().error).toHaveBeenCalledWith(
+        'Error',
+        expect.objectContaining({ description: 'Quote changed' })
       )
     })
 
@@ -1258,10 +1261,9 @@ describe('useSubscriptionCheckout', () => {
 
       expect(checkout.checkoutStep.value).toBe('pricing')
       expect(checkout.previewData.value).toBeNull()
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          detail: 'Quote refresh failed'
-        })
+      expect(useToast().error).toHaveBeenCalledWith(
+        'Error',
+        expect.objectContaining({ description: 'Quote refresh failed' })
       )
     })
 
@@ -1382,7 +1384,6 @@ describe('useSubscriptionCheckout', () => {
         ...refreshedQuote
       }
       mockPreviewSubscribe.mockResolvedValueOnce(refreshedPreview)
-      mockToastAdd.mockClear()
 
       await checkout.handleConfirmTransition()
 
@@ -1437,9 +1438,9 @@ describe('useSubscriptionCheckout', () => {
         expect(mockSubscribe).not.toHaveBeenCalled()
         expect(checkout.previewData.value).toStrictEqual(refreshedPreview)
         expect(checkout.checkoutStep.value).not.toBe('pricing')
-        expect(mockToastAdd).toHaveBeenCalledWith(
-          expect.objectContaining({ detail: 'Reactivation amount changed' })
-        )
+        expect(useToast().error).toHaveBeenCalledWith('Error', {
+          description: 'Reactivation amount changed'
+        })
       }
     )
 
@@ -1496,9 +1497,9 @@ describe('useSubscriptionCheckout', () => {
       await checkout.handleConfirmTransition()
 
       expect(checkout.reactivationRequired.value).toBe(false)
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ detail: 'Reactivate first' })
-      )
+      expect(useToast().error).toHaveBeenCalledWith('Error', {
+        description: 'Reactivate first'
+      })
     })
 
     it('returns to confirmation without an error when a subscribe reactivation block stands', async () => {
@@ -1530,8 +1531,8 @@ describe('useSubscriptionCheckout', () => {
       await checkout.handleConfirmTransition()
 
       expect(checkout.reactivationRequired.value).toBe(true)
-      expect(mockToastAdd).not.toHaveBeenCalledWith(
-        expect.objectContaining({ detail: 'Reactivate first' })
+      expect(useToast().toasts).not.toContainEqual(
+        expect.objectContaining({ description: 'Reactivate first' })
       )
     })
 
@@ -1561,9 +1562,9 @@ describe('useSubscriptionCheckout', () => {
       await checkout.handleTeamSubscribe()
 
       expect(checkout.reactivationRequired.value).toBe(false)
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ detail: 'Reactivate first' })
-      )
+      expect(useToast().error).toHaveBeenCalledWith('Error', {
+        description: 'Reactivate first'
+      })
     })
 
     it('shows error toast when preview is disallowed', async () => {
@@ -1579,11 +1580,9 @@ describe('useSubscriptionCheckout', () => {
       })
 
       expect(checkout.checkoutStep.value).toBe('pricing')
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          detail: 'Not allowed'
-        })
+      expect(useToast().error).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ description: 'Not allowed' })
       )
     })
 
@@ -1619,7 +1618,7 @@ describe('useSubscriptionCheckout', () => {
       }
     )
 
-    it('offers a retry action when the billing portal popup is blocked', async () => {
+    it('warns when the billing portal popup is blocked', async () => {
       mockOpen.mockReturnValueOnce(null)
       const checkout = await submitRejectedPreview(
         'SUBSCRIPTION_PAYMENT_REQUIRED'
@@ -1629,26 +1628,23 @@ describe('useSubscriptionCheckout', () => {
       expect(globalThis.location.href).toBe(
         'https://app.test/subscribe?invite=secret#token'
       )
-      expect(mockToastAdd).toHaveBeenCalledWith(
+      expect(useToast().toasts).toEqual([
         expect.objectContaining({
-          group: 'payment-recovery',
-          severity: 'warn',
-          detail: expect.objectContaining({
-            text: 'Payment popup blocked',
-            actionLabel: 'Try again',
-            onAction: expect.any(Function)
-          })
+          action: { label: 'Try again', onClick: expect.any(Function) },
+          description: 'Payment popup blocked',
+          kind: 'warning',
+          title: 'Warning'
         })
-      )
+      ])
     })
 
     it('opens the portal and arms the focus refresh when the retry action is clicked', async () => {
       mockOpen.mockReturnValueOnce(null)
       await submitRejectedPreview('SUBSCRIPTION_PAYMENT_REQUIRED')
-      const [{ detail }] = mockToastAdd.mock.calls.at(-1)!
+      const onAction = latestPaymentRecoveryAction()
 
       mockOpen.mockReturnValueOnce({})
-      detail.onAction()
+      onAction()
 
       expect(mockOpen).toHaveBeenLastCalledWith(
         'https://billing.stripe.com/portal',
@@ -1663,13 +1659,13 @@ describe('useSubscriptionCheckout', () => {
       const checkout = await submitRejectedPreview(
         'SUBSCRIPTION_PAYMENT_REQUIRED'
       )
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ group: 'payment-recovery' })
-      )
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({ action: expect.any(Object), kind: 'warning' })
+      ])
 
       checkout.handleBackToPricing()
 
-      expect(mockToastRemoveGroup).toHaveBeenCalledWith('payment-recovery')
+      expect(useToast().toasts).toEqual([])
     })
 
     it('removes the retry toast when the checkout composable is disposed', async () => {
@@ -1691,13 +1687,13 @@ describe('useSubscriptionCheckout', () => {
         tierKey: 'standard',
         billingCycle: 'yearly'
       })
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ group: 'payment-recovery' })
-      )
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({ action: expect.any(Object), kind: 'warning' })
+      ])
 
       unmount()
 
-      expect(mockToastRemoveGroup).toHaveBeenCalledWith('payment-recovery')
+      expect(useToast().toasts).toEqual([])
     })
 
     it('refreshes status on return even after checkout is disposed', async () => {
@@ -1719,13 +1715,13 @@ describe('useSubscriptionCheckout', () => {
         tierKey: 'standard',
         billingCycle: 'yearly'
       })
-      const [{ detail }] = mockToastAdd.mock.calls.at(-1)!
+      const onAction = latestPaymentRecoveryAction()
 
       // Click retry (a real gesture opens the popup this time), then close
       // checkout — completing payment in that popup and returning must still
       // refresh status even though the checkout that armed this is gone.
       mockOpen.mockReturnValueOnce({})
-      detail.onAction()
+      onAction()
       unmount()
 
       window.dispatchEvent(new Event('focus'))
@@ -1764,8 +1760,9 @@ describe('useSubscriptionCheckout', () => {
         'Plan change is unavailable'
       )
       expect(mockGetPaymentPortalUrl).not.toHaveBeenCalled()
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ detail: 'Plan change is unavailable' })
+      expect(useToast().error).toHaveBeenCalledWith(
+        'Error',
+        expect.objectContaining({ description: 'Plan change is unavailable' })
       )
     })
 
@@ -1783,9 +1780,10 @@ describe('useSubscriptionCheckout', () => {
       expect(globalThis.location.href).toBe(
         'https://app.test/subscribe?invite=secret#token'
       )
-      expect(mockToastAdd).toHaveBeenCalledWith(
+      expect(useToast().error).toHaveBeenCalledWith(
+        'Error',
         expect.objectContaining({
-          detail: 'Update your payment method before changing plans'
+          description: 'Update your payment method before changing plans'
         })
       )
     })
@@ -1806,8 +1804,9 @@ describe('useSubscriptionCheckout', () => {
         surface: 'workspace',
         errorType: 'billing_portal_open_failure'
       })
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ detail: 'Portal unavailable' })
+      expect(useToast().error).toHaveBeenCalledWith(
+        'Error',
+        expect.objectContaining({ description: 'Portal unavailable' })
       )
     })
 
@@ -1840,9 +1839,10 @@ describe('useSubscriptionCheckout', () => {
       expect(globalThis.location.href).toBe(
         'https://app.test/subscribe?invite=secret#token'
       )
-      expect(mockToastAdd).toHaveBeenCalledWith(
+      expect(useToast().error).toHaveBeenCalledWith(
+        'Error',
         expect.objectContaining({
-          detail: 'Update your payment method before changing plans'
+          description: 'Update your payment method before changing plans'
         })
       )
     })
@@ -1976,9 +1976,10 @@ describe('useSubscriptionCheckout', () => {
           surface: 'workspace',
           errorType: 'billing_portal_open_failure'
         })
-        expect(mockToastAdd).toHaveBeenCalledWith(
+        expect(useToast().error).toHaveBeenCalledWith(
+          'Error',
           expect.objectContaining({
-            detail: 'Update your payment method before changing plans'
+            description: 'Update your payment method before changing plans'
           })
         )
       })
@@ -2072,9 +2073,9 @@ describe('useSubscriptionCheckout', () => {
           }
         ])
 
-        const [{ detail }] = mockToastAdd.mock.calls.at(-1)!
+        const onAction = latestPaymentRecoveryAction()
         mockOpen.mockReturnValueOnce({})
-        detail.onAction()
+        onAction()
         leaveAndReturn()
 
         expect(portalEvents().slice(1)).toEqual([
@@ -2099,9 +2100,9 @@ describe('useSubscriptionCheckout', () => {
         mockOpen.mockReturnValueOnce(null)
         await submitRejectedPreview('SUBSCRIPTION_PAYMENT_REQUIRED')
 
-        const [{ detail }] = mockToastAdd.mock.calls.at(-1)!
+        const onAction = latestPaymentRecoveryAction()
         mockOpen.mockReturnValueOnce(null)
-        detail.onAction()
+        onAction()
         leaveAndReturn()
 
         const blocked = {
@@ -2194,11 +2195,9 @@ describe('useSubscriptionCheckout', () => {
         billingCycle: 'yearly'
       })
 
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          detail: 'This plan is not available'
-        })
+      expect(useToast().error).toHaveBeenCalledWith(
+        'Unable to subscribe',
+        expect.objectContaining({ description: 'This plan is not available' })
       )
       expect(mockFetchPlans).toHaveBeenCalledOnce()
     })
@@ -2253,11 +2252,9 @@ describe('useSubscriptionCheckout', () => {
         billingCycle: 'yearly'
       })
 
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          detail: 'Network error'
-        })
+      expect(useToast().error).toHaveBeenCalledWith(
+        'Error',
+        expect.objectContaining({ description: 'Network error' })
       )
     })
 
@@ -2435,7 +2432,7 @@ describe('useSubscriptionCheckout', () => {
       expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledExactlyOnceWith(
         expect.objectContaining({ stage: 'intent', outcome: 'pending' })
       )
-      expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
       expect(useTelemetry()?.trackBeginCheckout).toHaveBeenCalledWith(
         expect.objectContaining({
           tier: 'creator',
@@ -2493,12 +2490,9 @@ describe('useSubscriptionCheckout', () => {
       expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledExactlyOnceWith(
         expect.objectContaining({ stage: 'intent', outcome: 'pending' })
       )
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'success',
-          summary: 'Subscription updated'
-        })
-      )
+      expect(useToast().success).toHaveBeenCalledWith('Subscription updated', {
+        duration: 5000
+      })
     })
 
     it('does not duplicate telemetry owned by the Team downgrade orchestration', async () => {
@@ -2656,7 +2650,9 @@ describe('useSubscriptionCheckout', () => {
 
         expect(checkout.checkoutStep.value).toBe('pricing')
         expect(checkout.previewData.value).toBeNull()
-        expect(mockToastAdd).toHaveBeenCalledOnce()
+        expect(useToast().toasts).toEqual([
+          expect.objectContaining({ kind: 'error' })
+        ])
       })
 
       it.for([false, true])(
@@ -2673,7 +2669,9 @@ describe('useSubscriptionCheckout', () => {
           expect(mockPreviewSubscribe).not.toHaveBeenCalled()
           expect(checkout.checkoutStep.value).toBe('pricing')
           expect(checkout.selectedTeamStop.value).toBeNull()
-          expect(mockToastAdd).toHaveBeenCalledOnce()
+          expect(useToast().toasts).toEqual([
+            expect.objectContaining({ kind: 'error' })
+          ])
         }
       )
     })
@@ -2860,20 +2858,20 @@ describe('useSubscriptionCheckout', () => {
       )
       expect(checkout.checkoutStep.value).toBe('pricing')
       expect(mockOpen).not.toHaveBeenCalled()
-      expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
     })
 
     it('does nothing when the retry action is clicked after returning to pricing', async () => {
       mockOpen.mockReturnValueOnce(null)
       const { checkout, selection } = await startTeamPaymentRecovery()
       await selection
-      const [{ detail }] = mockToastAdd.mock.calls.at(-1)!
+      const onAction = latestPaymentRecoveryAction()
 
       // The retry toast can survive a reset that raced ahead of removing it;
       // its action must still refuse to reopen a URL from the old attempt.
       checkout.handleBackToPricing()
       mockOpen.mockClear()
-      detail.onAction()
+      onAction()
 
       expect(mockOpen).not.toHaveBeenCalled()
     })
@@ -2889,12 +2887,13 @@ describe('useSubscriptionCheckout', () => {
 
       expect(checkout.checkoutStep.value).toBe('pricing')
       expect(checkout.selectedTeamStop.value).toBeNull()
-      expect(mockToastAdd).toHaveBeenCalledOnce()
-      expect(mockToastAdd).toHaveBeenCalledWith(
+      expect(useToast().toasts).toEqual([
         expect.objectContaining({
-          detail: 'Update your payment method before changing plans'
+          description: 'Update your payment method before changing plans',
+          kind: 'error',
+          title: 'Error'
         })
-      )
+      ])
     })
 
     it('keeps the backend quote for a fresh subscription', async () => {
@@ -3023,7 +3022,7 @@ describe('useSubscriptionCheckout', () => {
 
       expect(checkout.previewData.value).toEqual(preview)
       expect(checkout.previewVariant.value).toBe('team-change')
-      expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
 
       mockPreviewSubscribe.mockResolvedValueOnce({
         ...preview,
@@ -3067,8 +3066,8 @@ describe('useSubscriptionCheckout', () => {
       expect(checkout.previewData.value).toBeNull()
       expect(checkout.checkoutStep.value).toBe('pricing')
       expect(checkout.selectedTeamStop.value).toBeNull()
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error' })
+      expect(useToast().toasts).toContainEqual(
+        expect.objectContaining({ kind: 'error' })
       )
     })
 
@@ -3096,7 +3095,7 @@ describe('useSubscriptionCheckout', () => {
       expect(checkout.checkoutStep.value).toBe('preview')
       expect(checkout.previewVariant.value).toBe('team-new')
       expect(checkout.reactivationRequired.value).toBe(false)
-      expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
     })
 
     it('bounces a cancelled subscriber back to pricing when the preview request fails', async () => {
@@ -3117,8 +3116,9 @@ describe('useSubscriptionCheckout', () => {
 
       expect(checkout.previewData.value).toBeNull()
       expect(checkout.checkoutStep.value).toBe('pricing')
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error', detail: 'not supported' })
+      expect(useToast().error).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ description: 'not supported' })
       )
     })
 
@@ -3214,8 +3214,9 @@ describe('useSubscriptionCheckout', () => {
         })
 
         expect(mockOpenHostedBillingTab).not.toHaveBeenCalled()
-        expect(mockToastAdd).toHaveBeenCalledWith(
-          expect.objectContaining({ detail: 'Team plan unavailable' })
+        expect(useToast().error).toHaveBeenCalledWith(
+          'Team plan',
+          expect.objectContaining({ description: 'Team plan unavailable' })
         )
       })
 
@@ -3559,9 +3560,10 @@ describe('useSubscriptionCheckout', () => {
       expect(checkout.previewData.value?.credits_next_period_cents).toBe(
         300_000
       )
-      expect(mockToastAdd).toHaveBeenCalledWith(
+      expect(useToast().error).toHaveBeenCalledWith(
+        'Error',
         expect.objectContaining({
-          detail: 'Reactivation confirmation required'
+          description: 'Reactivation confirmation required'
         })
       )
     })
@@ -3615,9 +3617,10 @@ describe('useSubscriptionCheckout', () => {
       expect(checkout.previewData.value?.proration_at).toBe(
         '2026-07-29T12:16:00Z'
       )
-      expect(mockToastAdd).toHaveBeenCalledWith(
+      expect(useToast().error).toHaveBeenCalledWith(
+        'Error',
         expect.objectContaining({
-          detail: 'Reactivation confirmation required'
+          description: 'Reactivation confirmation required'
         })
       )
       expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith(
@@ -3676,8 +3679,8 @@ describe('useSubscriptionCheckout', () => {
       await checkout.handleTeamSubscribe()
 
       expect(mockSubscribe).not.toHaveBeenCalled()
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error' })
+      expect(useToast().toasts).toContainEqual(
+        expect.objectContaining({ kind: 'error' })
       )
       expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledExactlyOnceWith(
         expect.objectContaining({ stage: 'intent', outcome: 'pending' })
@@ -3715,11 +3718,9 @@ describe('useSubscriptionCheckout', () => {
       await checkout.handleTeamSubscribe(true)
 
       expect(mockSubscribe).not.toHaveBeenCalled()
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          detail: 'Reactivation amount changed'
-        })
+      expect(useToast().error).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ description: 'Reactivation amount changed' })
       )
       expect(checkout.previewData.value?.cost_today_cents).toBe(120_000)
 
@@ -3763,11 +3764,9 @@ describe('useSubscriptionCheckout', () => {
 
       expect(checkout.isSubscribing.value).toBe(false)
       expect(mockSubscribe).not.toHaveBeenCalled()
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          detail: 'status unavailable'
-        })
+      expect(useToast().error).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ description: 'status unavailable' })
       )
       expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledExactlyOnceWith(
         expect.objectContaining({ stage: 'intent', outcome: 'pending' })
@@ -3808,8 +3807,8 @@ describe('useSubscriptionCheckout', () => {
       expect(mockSubscribe).not.toHaveBeenCalled()
       expect(checkout.checkoutStep.value).toBe('pricing')
       expect(checkout.previewData.value).toBeNull()
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error' })
+      expect(useToast().toasts).toContainEqual(
+        expect.objectContaining({ kind: 'error' })
       )
     })
 
@@ -3865,9 +3864,10 @@ describe('useSubscriptionCheckout', () => {
 
       expect(checkout.reactivationRequired.value).toBe(true)
       expect(checkout.previewData.value).toStrictEqual(preview)
-      expect(mockToastAdd).toHaveBeenCalledWith(
+      expect(useToast().error).toHaveBeenCalledWith(
+        'Error',
         expect.objectContaining({
-          detail: 'Reactivation confirmation required'
+          description: 'Reactivation confirmation required'
         })
       )
       expect(useTelemetry()?.trackBillingEvent).not.toHaveBeenCalledWith(
@@ -3975,8 +3975,8 @@ describe('useSubscriptionCheckout', () => {
       await checkout.handleTeamSubscribe()
 
       expect(mockSubscribe).not.toHaveBeenCalled()
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error' })
+      expect(useToast().toasts).toContainEqual(
+        expect.objectContaining({ kind: 'error' })
       )
     })
 
@@ -3995,11 +3995,9 @@ describe('useSubscriptionCheckout', () => {
 
       await checkout.handleTeamSubscribe()
 
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          detail: 'Team payment failed'
-        })
+      expect(useToast().error).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ description: 'Team payment failed' })
       )
       expect(useTelemetry()?.trackBeginCheckout).not.toHaveBeenCalled()
       expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
@@ -4032,8 +4030,9 @@ describe('useSubscriptionCheckout', () => {
 
       expect(mockSubscribe).not.toHaveBeenCalled()
       expect(checkout.checkoutStep.value).toBe('pricing')
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ detail: 'not supported' })
+      expect(useToast().error).toHaveBeenCalledWith(
+        'Team plan',
+        expect.objectContaining({ description: 'not supported' })
       )
     })
 
@@ -4072,8 +4071,8 @@ describe('useSubscriptionCheckout', () => {
       await checkout.handleTeamSubscribe()
 
       expect(mockSubscribe).not.toHaveBeenCalled()
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error' })
+      expect(useToast().toasts).toContainEqual(
+        expect.objectContaining({ kind: 'error' })
       )
       expect(checkout.previewData.value?.cost_today_cents).toBe(110_000)
 
@@ -4922,17 +4921,14 @@ describe('useSubscriptionCheckout', () => {
 
       await checkout.handleAddCreditCard()
 
-      expect(mockToastAdd).toHaveBeenCalledWith(
+      expect(useToast().toasts).toEqual([
         expect.objectContaining({
-          group: 'payment-recovery',
-          severity: 'warn',
-          detail: expect.objectContaining({
-            text: 'Payment popup blocked',
-            actionLabel: 'Try again',
-            onAction: expect.any(Function)
-          })
+          action: { label: 'Try again', onClick: expect.any(Function) },
+          description: 'Payment popup blocked',
+          kind: 'warning',
+          title: 'Warning'
         })
-      )
+      ])
       expect(useBillingOperationStore().startOperation).toHaveBeenCalledWith(
         'op-blocked',
         'subscription',
@@ -4940,14 +4936,18 @@ describe('useSubscriptionCheckout', () => {
         'https://stripe.com/pay'
       )
 
-      const [{ detail }] = mockToastAdd.mock.calls.at(-1)!
-      openSpy.mockClear().mockReturnValue({} as Window)
-      detail.onAction()
-      expect(openSpy).toHaveBeenLastCalledWith(
+      const onAction = latestPaymentRecoveryAction()
+      openSpy.mockClear().mockReturnValue(window)
+      onAction()
+      expect(openSpy).toHaveBeenCalledExactlyOnceWith(
         'https://stripe.com/pay',
         '_blank'
       )
 
+      checkout.handleBackToPricing()
+      openSpy.mockClear()
+      onAction()
+      expect(openSpy).not.toHaveBeenCalled()
       openSpy.mockRestore()
     })
 
@@ -4965,11 +4965,9 @@ describe('useSubscriptionCheckout', () => {
 
       expect(openSpy).not.toHaveBeenCalled()
       expect(useBillingOperationStore().startOperation).not.toHaveBeenCalled()
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          detail: 'Stripe unavailable'
-        })
+      expect(useToast().error).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ description: 'Stripe unavailable' })
       )
       openSpy.mockRestore()
     })
@@ -5365,11 +5363,9 @@ describe('useSubscriptionCheckout', () => {
 
       await checkout.handleAddCreditCard()
 
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          detail: 'Payment failed'
-        })
+      expect(useToast().error).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ description: 'Payment failed' })
       )
       expect(useTelemetry()?.trackBeginCheckout).not.toHaveBeenCalled()
       expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
@@ -5470,12 +5466,13 @@ describe('useSubscriptionCheckout', () => {
         new Error('Your bank declined this payment.')
       )
       await checkout.handleConfirmTransition()
-      const declineToast = mockToastAdd.mock.calls
-        .map(([message]) => message)
-        .find(
-          (message) => message.detail === 'Your bank declined this payment.'
-        )
-      expect(declineToast).toBeDefined()
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          description: 'Your bank declined this payment.',
+          kind: 'error',
+          title: 'Error'
+        })
+      ])
 
       mockSubscribe.mockResolvedValueOnce({
         status: 'subscribed',
@@ -5484,7 +5481,7 @@ describe('useSubscriptionCheckout', () => {
       await checkout.handleConfirmTransition()
 
       expect(checkout.checkoutStep.value).toBe('success')
-      expect(mockToastRemove).toHaveBeenCalledWith(declineToast)
+      expect(useToast().toasts).toEqual([])
     })
 
     it('counts the conversion and announces a subscribe the server charged for', async () => {
@@ -5510,12 +5507,9 @@ describe('useSubscriptionCheckout', () => {
         payment_intent_source: undefined,
         billing_op_id: 'op-3'
       })
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'success',
-          summary: 'Subscription updated'
-        })
-      )
+      expect(useToast().success).toHaveBeenCalledWith('Subscription updated', {
+        duration: 5000
+      })
     })
 
     it('counts neither for a subscribe the server activated without a payment', async () => {
@@ -5536,7 +5530,7 @@ describe('useSubscriptionCheckout', () => {
       expect(
         useTelemetry()?.trackMonthlySubscriptionSucceeded
       ).not.toHaveBeenCalled()
-      expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
     })
 
     it('shows error toast on failure', async () => {
@@ -5547,11 +5541,9 @@ describe('useSubscriptionCheckout', () => {
 
       await checkout.handleConfirmTransition()
 
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          detail: 'Transition error'
-        })
+      expect(useToast().error).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ description: 'Transition error' })
       )
     })
 
@@ -5592,7 +5584,7 @@ describe('useSubscriptionCheckout', () => {
         'https://billing.stripe.com/portal',
         '_blank'
       )
-      expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
     })
 
     it('forwards confirmReactivation true when the disclosure banner reports consent', async () => {
@@ -5659,9 +5651,10 @@ describe('useSubscriptionCheckout', () => {
 
       expect(checkout.reactivationRequired.value).toBe(true)
       expect(checkout.previewData.value).toStrictEqual(preview)
-      expect(mockToastAdd).toHaveBeenCalledWith(
+      expect(useToast().error).toHaveBeenCalledWith(
+        'Error',
         expect.objectContaining({
-          detail: 'Reactivation confirmation required'
+          description: 'Reactivation confirmation required'
         })
       )
       expect(useTelemetry()?.trackBillingEvent).not.toHaveBeenCalledWith(
@@ -5776,10 +5769,9 @@ describe('useSubscriptionCheckout', () => {
       expect(checkout.previewData.value?.proration_at).toBe(
         '2026-07-29T12:16:00Z'
       )
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          detail: 'Reactivation amount changed'
-        })
+      expect(useToast().error).toHaveBeenCalledWith(
+        'Error',
+        expect.objectContaining({ description: 'Reactivation amount changed' })
       )
       expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -5844,13 +5836,12 @@ describe('useSubscriptionCheckout', () => {
       await checkout.handleConfirmTransition(true)
 
       expect(checkout.checkoutStep.value).toBe('preview')
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ detail: 'Preview offline' })
+      expect(useToast().error).toHaveBeenCalledWith(
+        'Error',
+        expect.objectContaining({ description: 'Preview offline' })
       )
-      expect(mockToastAdd).not.toHaveBeenCalledWith(
-        expect.objectContaining({
-          detail: 'Reactivation unavailable'
-        })
+      expect(useToast().toasts).not.toContainEqual(
+        expect.objectContaining({ description: 'Reactivation unavailable' })
       )
     })
 
@@ -5863,8 +5854,8 @@ describe('useSubscriptionCheckout', () => {
       await checkout.handleConfirmTransition()
 
       expect(mockSubscribe).not.toHaveBeenCalled()
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error' })
+      expect(useToast().toasts).toContainEqual(
+        expect.objectContaining({ kind: 'error' })
       )
       expect(useTelemetry()?.trackBillingEvent).not.toHaveBeenCalled()
     })
@@ -5890,11 +5881,9 @@ describe('useSubscriptionCheckout', () => {
       await checkout.handleConfirmTransition(true)
 
       expect(mockSubscribe).not.toHaveBeenCalled()
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          detail: 'Reactivation amount changed'
-        })
+      expect(useToast().error).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ description: 'Reactivation amount changed' })
       )
       expect(checkout.previewData.value?.cost_today_cents).toBe(2000)
 
@@ -5980,7 +5969,7 @@ describe('useSubscriptionCheckout', () => {
       expect(mockSubscribe).not.toHaveBeenCalled()
       expect(useTelemetry()?.trackBeginCheckout).not.toHaveBeenCalled()
       expect(emit).not.toHaveBeenCalled()
-      expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
     })
 
     it('refreshes a required reactivation before submit and lets a retry succeed', async () => {
@@ -6010,8 +5999,8 @@ describe('useSubscriptionCheckout', () => {
       await checkout.handleConfirmTransition()
 
       expect(mockSubscribe).not.toHaveBeenCalled()
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error' })
+      expect(useToast().toasts).toContainEqual(
+        expect.objectContaining({ kind: 'error' })
       )
       expect(checkout.checkoutStep.value).toBe('preview')
       expect(checkout.previewData.value?.cost_today_cents).toBe(1600)
@@ -6127,10 +6116,10 @@ describe('useSubscriptionCheckout', () => {
 
       await checkout.handleResubscribe()
 
-      expect(mockToastAdd).toHaveBeenCalledWith(
+      expect(useToast().error).toHaveBeenCalledWith(
+        'Error',
         expect.objectContaining({
-          severity: 'error',
-          detail: 'Resubscribe failed for person@example.com'
+          description: 'Resubscribe failed for person@example.com'
         })
       )
       expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({

@@ -1,4 +1,6 @@
-import { useModelToNodeStore } from '@/stores/modelToNodeStore'
+import { fromPartial } from '@total-typescript/shoehorn'
+
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -12,6 +14,7 @@ import {
   assetService
 } from '@/platform/assets/services/assetService'
 import { api } from '@/scripts/api'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
 
@@ -28,6 +31,7 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     fetchApi: vi.fn(),
     addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
     addCustomEventListener: vi.fn(),
     removeCustomEventListener: vi.fn()
   }
@@ -84,19 +88,13 @@ function validAsset(overrides: Partial<AssetItem> = {}): AssetItem {
 }
 
 beforeEach(() => {
-  const registeredNodeTypes: Record<string, string> = {
-    CheckpointLoaderSimple: 'ckpt_name',
-    LoraLoader: 'lora_name'
-  }
-  const nodeTypeCategories: Record<string, string> = {
-    CheckpointLoaderSimple: 'checkpoints',
-    LoraLoader: 'loras'
-  }
-  vi.mocked(useModelToNodeStore().getRegisteredNodeTypes).mockImplementation(
-    () => registeredNodeTypes
-  )
-  vi.mocked(useModelToNodeStore().getCategoryForNodeType).mockImplementation(
-    (nodeType: string) => nodeTypeCategories[nodeType]
+  useNodeDefStore().nodeDefsByName = Object.fromEntries(
+    [
+      'CheckpointLoaderSimple',
+      'LoraLoader',
+      'LoadLoraModel',
+      'LoadLoraTextEncoder'
+    ].map((name) => [name, fromPartial({ name })])
   )
   vi.spyOn(useAssetsStore().inputAssets, 'invalidate').mockImplementation(
     mockInvalidateInputAssets
@@ -106,6 +104,24 @@ beforeEach(() => {
 describe(assetService.shouldUseWidgetAssetPicker, () => {
   beforeEach(() => {
     mockDistributionState.isCloud = false
+  })
+
+  it.for([
+    { node: 'CheckpointLoaderSimple', input: 'ckpt_name' },
+    { node: 'LoraLoader', input: 'lora_name' },
+    { node: 'LoadLoraModel', input: 'lora_name' },
+    { node: 'LoadLoraTextEncoder', input: 'lora_name' }
+  ])('uses catalog options for $node on a deployment', ({ node, input }) => {
+    mockDistributionState.isCloud = true
+    useDeploymentPickStore().bootDeployment = {
+      deployment_id: 'dep-release',
+      release_id: 'release-1',
+      status: 'ready',
+      created_at: '2026-10-01T00:00:00Z'
+    }
+
+    expect(assetService.shouldUseWidgetAssetPicker(node, input)).toBe(false)
+    expect(assetService.isWidgetAssetPickerEnabled()).toBe(false)
   })
 
   it('returns false when not on cloud', () => {
@@ -136,6 +152,41 @@ describe(assetService.shouldUseWidgetAssetPicker, () => {
         'ckpt_name'
       )
     ).toBe(true)
+  })
+
+  it.for([
+    ['LoadLoraModel', 'loras.0.lora_name'],
+    ['LoadLoraModel', 'loras.1.lora_name'],
+    ['LoadLoraModel', 'loras.19.lora_name'],
+    ['LoadLoraTextEncoder', 'loras.0.lora_name'],
+    ['LoadLoraTextEncoder', 'loras.1.lora_name'],
+    ['LoadLoraTextEncoder', 'loras.19.lora_name']
+  ])('uses the asset picker for %s / %s on cloud', ([nodeType, name]) => {
+    mockDistributionState.isCloud = true
+    expect(assetService.shouldUseWidgetAssetPicker(nodeType, name)).toBe(true)
+  })
+
+  it.for(['LoadLoraModel', 'LoadLoraTextEncoder'])(
+    'keeps the combo widget for %s outside cloud',
+    (nodeType) => {
+      mockDistributionState.isCloud = false
+      expect(
+        assetService.shouldUseWidgetAssetPicker(nodeType, 'loras.1.lora_name')
+      ).toBe(false)
+    }
+  )
+
+  it.for([
+    ['LoadLoraModel', 'loras.1.strength'],
+    ['LoadLoraModel', 'loras.-1.lora_name'],
+    ['LoadLoraModel', 'loras.01.lora_name'],
+    ['LoadLoraModel', 'prefix.loras.1.lora_name'],
+    ['LoadLoraModel', 'loras.1.lora_name.suffix'],
+    ['LoraLoader', 'loras.1.lora_name'],
+    ['UnknownNode', 'loras.1.lora_name']
+  ])('does not treat %s / %s as an asset input', ([nodeType, name]) => {
+    mockDistributionState.isCloud = true
+    expect(assetService.shouldUseWidgetAssetPicker(nodeType, name)).toBe(false)
   })
 
   it('returns false when nodeType is undefined', () => {

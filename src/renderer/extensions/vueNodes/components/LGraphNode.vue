@@ -79,7 +79,7 @@
           errorSeverity === 'error' && 'ring-destructive-background',
           bypassed && bypassOverlayClass,
           muted && mutedOverlayClass,
-          isDraggingOver && 'bg-primary-500/10 ring-4 ring-primary-500'
+          isDraggingOver && 'bg-node-accent/10 ring-4 ring-node-accent'
         )
       "
       :style="{
@@ -308,8 +308,7 @@ import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { isVideoOutput } from '@/utils/litegraphUtil'
 import {
   getNodeByLocatorId,
-  locatorIdFromState,
-  subgraphIdFromState
+  locatorIdFromState
 } from '@/utils/graphTraversalUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 import { isTransparent } from '@/utils/colorUtil'
@@ -481,7 +480,7 @@ const hasCustomContent = computed(() => {
 })
 
 // Computed classes and conditions for better reusability
-const progressClasses = 'h-2 bg-primary-500 transition-all duration-300'
+const progressClasses = 'h-2 bg-node-accent transition-all duration-300'
 
 const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
   () => nodeData.id,
@@ -612,11 +611,6 @@ const handleEnterSubgraph = () => {
 
 const nodeOutputs = useNodeOutputStore()
 
-const nodeOutputLocatorId = computed(() => {
-  const subgraphId = subgraphIdFromState(nodeData, canvasStore.rootGraphId)
-  return subgraphId ? `${subgraphId}:${nodeData.id}` : nodeData.id
-})
-
 function resolveLGraphNode() {
   const locatorId = nodeLocatorId.value
   if (!locatorId) return null
@@ -698,7 +692,8 @@ const hasVideoEditWidget = computed(() =>
 )
 
 const nodeMedia = computed(() => {
-  const newOutputs = nodeOutputs.nodeOutputs[nodeOutputLocatorId.value]
+  const locatorId = nodeLocatorId.value
+  const newOutputs = locatorId ? nodeOutputs.nodeOutputs[locatorId] : undefined
   const node = lgraphNode.value
 
   if (
@@ -746,8 +741,8 @@ function handleDragLeave() {
   isDraggingOver.value = false
 }
 
-function handleDrop() {
+function handleDrop(event: DragEvent) {
   isDraggingOver.value = false
-  app.dragOverNode = resolveLGraphNode()
+  app.dragOverNode = event.defaultPrevented ? null : resolveLGraphNode()
 }
 </script>

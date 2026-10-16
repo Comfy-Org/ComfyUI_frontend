@@ -1,7 +1,7 @@
 <template>
   <div
     data-testid="cloud-notification-dialog"
-    class="relative grid h-full grid-cols-5"
+    class="relative grid h-full w-170 max-w-full grid-cols-5 overflow-hidden rounded-2xl border border-border-default bg-base-background shadow-lg"
   >
     <Button
       size="unset"
@@ -33,9 +33,9 @@
     <div class="col-span-3 flex flex-col justify-between p-8">
       <div>
         <div class="flex flex-col gap-4">
-          <div class="text-sm font-semibold text-text-primary">
+          <DialogTitle class="m-0 text-sm text-text-primary">
             {{ t('cloudNotification.title') }}
-          </div>
+          </DialogTitle>
           <p class="m-0 text-sm text-text-secondary">
             {{ t('cloudNotification.message') }}
           </p>
@@ -80,6 +80,7 @@ import { onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import { useTelemetry } from '@/platform/telemetry'
 import { useDialogStore } from '@/stores/dialogStore'
 

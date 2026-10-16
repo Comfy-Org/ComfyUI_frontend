@@ -15,7 +15,7 @@ export class WorkspaceApiError extends Error {
 
 export const workspaceApi = vi.mockObject<typeof realWorkspaceApi>(
   {
-    list: async () => ({ workspaces: [] }),
+    list: async () => ({ workspaces: [], can_create_workspace: true }),
     getCurrentWorkspace: async () => ({
       id: 'workspace-1',
       name: 'Personal',
@@ -39,6 +39,11 @@ export const workspaceApi = vi.mockObject<typeof realWorkspaceApi>(
       created_at: '2026-01-01T00:00:00Z',
       joined_at: '2026-01-01T00:00:00Z'
     }),
+    listDeployments: async () => ({ items: [], builds_visible: true }),
+    pickDeployment: async () => {},
+    clearDeployment: async () => {},
+    setDefaultDeployment: async () => {},
+    clearDefaultDeployment: async () => {},
     delete: async () => {},
     leave: async () => {},
     listMembers: async () => ({
@@ -93,6 +98,7 @@ export const workspaceApi = vi.mockObject<typeof realWorkspaceApi>(
           can_change_seats: false,
           can_downgrade_to_personal: false,
           can_invite_members: false,
+          can_manage_members: false,
           can_reactivate: false,
           can_revert_scheduled_change: false,
           can_subscribe_self_serve: false,

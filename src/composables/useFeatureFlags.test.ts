@@ -46,6 +46,19 @@ vi.mock(import('@/platform/telemetry'))
 
 describe('useFeatureFlags', () => {
   describe('flags object', () => {
+    it.for([
+      { value: undefined, enabled: false },
+      { value: false, enabled: false },
+      { value: 'true', enabled: false },
+      { value: true, enabled: true }
+    ])('reads the headless-use server flag: $value', ({ value, enabled }) => {
+      vi.mocked(api.getServerFeature).mockImplementation((path, fallback) =>
+        path === ServerFeatureFlag.USED_HEADLESSLY ? value : fallback
+      )
+
+      expect(useFeatureFlags().flags.usedHeadlessly).toBe(enabled)
+    })
+
     it('should provide reactive readonly flags', () => {
       const { flags } = useFeatureFlags()
 
@@ -399,6 +412,34 @@ describe('useFeatureFlags', () => {
       })
 
       expect(useFeatureFlags().flags.ssoEnabled).toBe(false)
+    })
+  })
+
+  describe('localWebSsoEnabled', () => {
+    afterEach(() => {
+      vi.mocked(distributionTypes).isCloud = false
+    })
+
+    it.for([
+      {
+        case: 'missing locally',
+        cloud: false,
+        value: undefined,
+        expected: false
+      },
+      {
+        case: 'malformed locally',
+        cloud: false,
+        value: 'true',
+        expected: false
+      },
+      { case: 'true locally', cloud: false, value: true, expected: true },
+      { case: 'true on cloud', cloud: true, value: true, expected: false }
+    ])('is $expected when $case', ({ cloud, value, expected }) => {
+      vi.mocked(distributionTypes).isCloud = cloud
+      vi.mocked(api.getServerFeature).mockReturnValue(value)
+
+      expect(useFeatureFlags().flags.localWebSsoEnabled).toBe(expected)
     })
   })
 
@@ -887,6 +928,36 @@ describe('useFeatureFlags', () => {
         true
       )
     })
+
+    it.for([
+      { served: true, override: undefined, reported: true },
+      { served: undefined, override: undefined, reported: false },
+      { served: false, override: true, reported: true }
+    ])(
+      'reports unified_web_session as $reported when the server serves $served and the session override is $override',
+      ({ served, override, reported }) => {
+        vi.mocked(getSessionOverride).mockImplementation((flagKey) =>
+          flagKey === ServerFeatureFlag.UNIFIED_WEB_SESSION
+            ? override
+            : undefined
+        )
+        vi.mocked(distributionTypes).isCloud = true
+        remoteConfigState.value = 'authenticated'
+        authenticatedRemoteConfigState.value = 'authenticated'
+        remoteConfig.value = { unified_web_session: served }
+        vi.mocked(api.getServerFeature).mockImplementation(
+          (_path, defaultValue) => defaultValue
+        )
+
+        const stop = startFeatureFlagTelemetry()
+        onTestFinished(stop)
+
+        expect(useTelemetry()?.trackFeatureFlagEvaluation).toHaveBeenCalledWith(
+          ServerFeatureFlag.UNIFIED_WEB_SESSION,
+          reported
+        )
+      }
+    )
 
     it('does not report when getters are only read', () => {
       vi.mocked(api.getServerFeature).mockReturnValue(false)

@@ -1239,33 +1239,29 @@ describe('resolveStripePublishableKey', () => {
   })
 })
 
-describe('resolveWebSessionProbe', () => {
+describe.for([
+  ['resolveWebSessionProbe', 'web_session_probe'],
+  ['resolveSsoEnabled', 'sso_enabled']
+] as const)('%s', ([resolver, key]) => {
   it.for([
     { body: { stripe_publishable_key: 'pk' }, expected: false },
-    {
-      body: { stripe_publishable_key: 'pk', web_session_probe: false },
-      expected: false
-    },
-    {
-      body: { stripe_publishable_key: 'pk', web_session_probe: true },
-      expected: true
-    }
+    { body: { stripe_publishable_key: 'pk', [key]: false }, expected: false },
+    { body: { stripe_publishable_key: 'pk', [key]: true }, expected: true }
   ])(
     'reads $body from the fetch resolveStripePublishableKey already shares',
     async ({ body, expected }) => {
       respondToFetch('https://probe.example/api/features', () =>
         Response.json(body)
       )
-      const { resolveStripePublishableKey, resolveWebSessionProbe } =
-        await import('./index.js')
+      const index = await import('./index.js')
       const options = { cloudBaseUrl: 'https://probe.example', timeoutMs: 4000 }
 
-      const [, probe] = await Promise.all([
-        resolveStripePublishableKey(options),
-        resolveWebSessionProbe(options)
+      const [, flag] = await Promise.all([
+        index.resolveStripePublishableKey(options),
+        index[resolver](options)
       ])
 
-      expect(probe).toBe(expected)
+      expect(flag).toBe(expected)
       expect(fetch).toHaveBeenCalledOnce()
     }
   )
