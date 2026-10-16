@@ -4,10 +4,13 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import { agentAskTest as test } from '@e2e/fixtures/agentAskTurnFixture'
 import {
+  DELETE_APPROVAL_PROMPT,
   RUN_ASK_ID,
   answerPath,
   askResolved,
   askTurnIds,
+  askIdFor,
+  deleteApprovalFrame,
   runApprovalAsk,
   toolCall
 } from '@e2e/fixtures/data/agent/agentAskFrames'
@@ -153,6 +156,73 @@ test.describe(
       expect(answers()).toHaveLength(0)
       await expect(runButton).toBeEnabled()
       await expect(cardLead).toBeVisible()
+    })
+  }
+)
+
+test.describe(
+  'Agent delete approval',
+  { tag: ['@cloud', '@agent', '@screenshot'] },
+  () => {
+    test.use({ viewport: { width: 1920, height: 1280 } })
+
+    test('the card names the nodes and answers only the ask it shows', async ({
+      startAskTurn
+    }) => {
+      const askId = askIdFor('call-delete')
+      const { panel, send, answers, holdAnswer } = await startAskTurn(
+        'Tidy up.',
+        'auto'
+      )
+      const nodes = panel.getByRole('list', {
+        name: enMessages.agent.deleteApproval.nodes
+      })
+      const deleteButton = panel.getByRole('button', {
+        name: enMessages.agent.deleteApproval.delete,
+        exact: true
+      })
+      const keepButton = panel.getByRole('button', {
+        name: enMessages.agent.deleteApproval.keep,
+        exact: true
+      })
+
+      await test.step('the card lists the nodes it would delete', async () => {
+        send(deleteApprovalFrame(askId))
+        await expect(panel.getByText(DELETE_APPROVAL_PROMPT)).toBeVisible()
+        await expect(nodes.getByRole('listitem')).toHaveText([
+          /Hero sampler\s*#12/,
+          /VAEDecode\s*#13/
+        ])
+        await expect(deleteButton).toBeEnabled()
+        await expect(keepButton).toBeEnabled()
+        await expect(
+          panel.getByRole('group', {
+            name: enMessages.agent.deleteApproval.card
+          })
+        ).toHaveScreenshot('agent-delete-approval-card.png')
+      })
+
+      await test.step('the click posts once, to that ask, and locks the card', async () => {
+        const release = await holdAnswer(askId)
+        await deleteButton.click()
+        await expect(deleteButton).toBeDisabled()
+        await expect(keepButton).toBeDisabled()
+
+        release()
+        await expect.poll(() => answers().length).toBe(1)
+        expect(answers()[0]).toEqual({
+          path: answerPath(askId),
+          body: { selected: ['delete'] }
+        })
+      })
+
+      await test.step('the resolved card reads back the answer', async () => {
+        send(askResolved(['delete'], askId))
+        await expect(
+          panel.getByRole('status').filter({ hasText: 'Answered: delete them' })
+        ).toBeVisible()
+        await expect(deleteButton).toHaveCount(0)
+      })
     })
   }
 )

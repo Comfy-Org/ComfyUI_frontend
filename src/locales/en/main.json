@@ -5694,6 +5694,19 @@
       "retired": "This question is no longer open here.",
       "answerRejected": "The agent couldn't accept that answer. Change your choices or stop the turn."
     },
+    "deleteApproval": {
+      "card": "Delete request from the agent",
+      "nodes": "Nodes the agent asked to delete",
+      "moreNodes": "{count} more node not listed | {count} more nodes not listed",
+      "delete": "Delete",
+      "keep": "Keep",
+      "deleted": "Answered: delete it | Answered: delete them",
+      "kept": "Answered: keep it | Answered: keep them",
+      "answered": "Answered",
+      "unconfirmed": "We couldn't confirm your answer. Check the canvas before trying again.",
+      "closed": "This request was closed without an answer.",
+      "retired": "This request is no longer open here."
+    },
     "dismiss": "Dismiss",
     "latest": "Latest",
     "copyUnavailable": "Only the current conversation can be copied in this version",

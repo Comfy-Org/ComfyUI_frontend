@@ -1,6 +1,9 @@
 import type { AgentAskConflict, AgentAskOption } from '@comfyorg/ingest-types'
-import { zAgentRunApprovalContext } from '@comfyorg/ingest-types/zod'
-import { uniqBy } from 'es-toolkit'
+import {
+  zAgentDeleteApprovalContext,
+  zAgentRunApprovalContext
+} from '@comfyorg/ingest-types/zod'
+import { isEqual, uniqBy } from 'es-toolkit'
 
 import type {
   AgentMessages,
@@ -119,12 +122,35 @@ export interface AskUserPart {
   resolution?: AskUserResolution
 }
 
-export type AskPart = RunApprovalPart | AskUserPart
+interface DeleteTarget {
+  id: string
+  name?: string
+}
+
+/** The agent asking before it deletes nodes the user added. */
+export interface DeleteApprovalPart {
+  type: 'deleteApproval'
+  askId: string
+  prompt: string
+  nodes: DeleteTarget[]
+  hiddenNodeCount: number
+  resolution?: AskUserResolution
+}
+
+export type AskPart = RunApprovalPart | AskUserPart | DeleteApprovalPart
+
+function isAskPart(part: MessagePart): part is AskPart {
+  return (
+    part.type === 'runApproval' ||
+    part.type === 'askUser' ||
+    part.type === 'deleteApproval'
+  )
+}
 
 export function isPendingAskPart(part: MessagePart): part is AskPart {
   return (
     part.type === 'runApproval' ||
-    (part.type === 'askUser' && part.resolution === undefined)
+    (isAskPart(part) && part.resolution === undefined)
   )
 }
 
@@ -143,7 +169,7 @@ export function retireAskParts(
 ): MessagePart[] {
   const next = parts.flatMap((part): MessagePart[] => {
     if (askIdOf(part) !== askId) return [part]
-    if (part.type !== 'askUser') return []
+    if (!isAskPart(part) || part.type === 'runApproval') return []
     const settled = settleResolution(part.resolution, resolution)
     return [
       settled === part.resolution ? part : { ...part, resolution: settled }
@@ -159,7 +185,7 @@ type PendingAsk = NonNullable<AgentMessages[number]['pending_ask']>
 
 type AskInput = Omit<PendingAsk, 'message_id'>
 
-const ASK_USER_LIMITS = {
+const ASK_LIMITS = {
   options: 50,
   prompt: 2000,
   label: 200,
@@ -172,13 +198,12 @@ function clip(text: string, max: number): string {
 
 function toAskUserOptions(options: AgentAskOption[]): AgentAskOption[] {
   return uniqBy(options, ({ id }) => id)
-    .slice(0, ASK_USER_LIMITS.options)
+    .slice(0, ASK_LIMITS.options)
     .map(({ id, label, description }) => ({
       id,
-      label: clip(label, ASK_USER_LIMITS.label),
+      label: clip(label, ASK_LIMITS.label),
       description:
-        clip(description?.trim() ?? '', ASK_USER_LIMITS.description) ||
-        undefined
+        clip(description?.trim() ?? '', ASK_LIMITS.description) || undefined
     }))
 }
 
@@ -197,11 +222,43 @@ function toAskUserPart(ask: AskInput): AskUserPart | undefined {
   return {
     type: 'askUser',
     askId: ask.ask_id,
-    prompt: clip(ask.prompt, ASK_USER_LIMITS.prompt),
+    prompt: clip(ask.prompt, ASK_LIMITS.prompt),
     options,
     minSelections: Math.max(0, ask.min_selections),
     maxSelections,
     allowOther: ask.allow_other
+  }
+}
+
+function toDeleteTargets(
+  context: AskInput['context']
+): Pick<DeleteApprovalPart, 'nodes' | 'hiddenNodeCount'> | undefined {
+  const parsed = zAgentDeleteApprovalContext.safeParse(context)
+  if (!parsed.success) return undefined
+  const { nodes, hidden_node_count: hiddenNodeCount = 0 } = parsed.data
+  if (nodes.some(({ id }) => id.trim() === '')) return undefined
+  return {
+    nodes: uniqBy(nodes, ({ id }) => id).map(({ id, title, type }) => {
+      const name = title?.trim() || type?.trim()
+      return { id, name: name ? clip(name, ASK_LIMITS.label) : undefined }
+    }),
+    hiddenNodeCount
+  }
+}
+
+function toDeleteApprovalPart(ask: AskInput): DeleteApprovalPart | undefined {
+  const offersDeleteOrKeep =
+    isEqual(ask.options.map(({ id }) => id).sort(), ['delete', 'keep']) &&
+    ask.min_selections === 1 &&
+    ask.max_selections === 1 &&
+    !ask.allow_other
+  const targets = toDeleteTargets(ask.context)
+  if (!offersDeleteOrKeep || !targets) return undefined
+  return {
+    type: 'deleteApproval',
+    askId: ask.ask_id,
+    prompt: clip(ask.prompt, ASK_LIMITS.prompt),
+    ...targets
   }
 }
 
@@ -218,7 +275,8 @@ const ASK_PART_BUILDERS: Record<
       workflowName: context?.workflow_name || undefined
     }
   },
-  ask_user: toAskUserPart
+  ask_user: toAskUserPart,
+  delete_approval: toDeleteApprovalPart
 }
 
 function isRenderedAskKind(kind: AskInput['kind']): kind is RenderedAskKind {
@@ -251,6 +309,7 @@ export type MessagePart =
   | TabLinkPart
   | RunApprovalPart
   | AskUserPart
+  | DeleteApprovalPart
   | PaywallPart
 
 export interface AssistantMessage {
