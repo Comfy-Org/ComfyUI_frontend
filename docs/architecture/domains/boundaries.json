@@ -169,6 +169,7 @@
           "src/workbench/extensions/agent/crdt/__fixtures__/docHostMintedSink.ts",
           "src/workbench/extensions/agent/AgentPanelRoot.vue",
           "src/workbench/extensions/agent/AgentPanelRoot.test.ts",
+          "src/workbench/extensions/agent/AgentPanelRoot.tabActivity.test.ts",
           "src/workbench/extensions/agent/composables/useAgentDockMount.ts",
           "src/workbench/extensions/agent/composables/useAgentDockMount.test.ts",
           "src/workbench/extensions/agent/composables/agent/useAgentTargetNavigation.ts",

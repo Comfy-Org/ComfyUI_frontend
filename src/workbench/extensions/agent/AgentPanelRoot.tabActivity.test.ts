@@ -1,0 +1,722 @@
+import { fetchRequests, respondToFetch } from '@comfyorg/test-utils/fetch'
+import { fromPartial } from '@total-typescript/shoehorn'
+
+import type {
+  AgentThreadListResponse,
+  AgentThreadSummary
+} from '@comfyorg/ingest-types'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, nextTick, ref } from 'vue'
+
+vi.mock(import('firebase/auth'))
+
+import { i18n } from '@/i18n'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
+import { getFilenameDetails } from '@/utils/formatUtil'
+import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
+
+import AgentPanelRoot from './AgentPanelRoot.vue'
+import { setupInlinePromptEditorDom } from './components/agent/composer/inlinePromptEditorTestSetup'
+import type { AgentMessages } from './schemas/agentApiSchema'
+import { zAgentMessages } from './schemas/agentApiSchema'
+import { registerWorkflowTabActivityTracker } from './services/agent/workflowTabActivityTracker'
+import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
+import { useAgentConsentStore } from './stores/agent/agentConsentStore'
+import { useAgentConversationStore } from './stores/agent/agentConversationStore'
+import { useAgentPanelStore } from './stores/agent/agentPanelStore'
+import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
+
+setupInlinePromptEditorDom()
+
+const ws = vi.hoisted(() => {
+  type Listener = (event: { detail?: unknown }) => void
+  const listeners = new Map<string, Set<Listener>>()
+  return {
+    add(type: string, listener: Listener): void {
+      const set = listeners.get(type) ?? new Set()
+      set.add(listener)
+      listeners.set(type, set)
+    },
+    remove(type: string, listener: Listener): void {
+      listeners.get(type)?.delete(listener)
+    },
+    emit(type: string, data?: unknown): void {
+      const event = new CustomEvent(type, { detail: data })
+      for (const listener of listeners.get(type) ?? []) listener(event)
+    },
+    clear(): void {
+      listeners.clear()
+    }
+  }
+})
+
+vi.mock<unknown>(import('@/scripts/api'), () => ({
+  api: {
+    apiURL: (route: string) => `/api${route}`,
+    fetchApi: (route: string, options?: RequestInit) =>
+      fetch(route.startsWith('/api') ? route : `/api${route}`, options),
+    getServerFeature: (_name: string, defaultValue?: unknown) => defaultValue,
+    socket: { readyState: 1, send: vi.fn() },
+    dispatchCustomEvent: vi.fn(),
+    addEventListener: ws.add,
+    removeEventListener: ws.remove,
+    addCustomEventListener: ws.add,
+    removeCustomEventListener: ws.remove
+  }
+}))
+
+vi.mock<unknown>(import('@/scripts/app'), () => {
+  const graph = {
+    nodes: [],
+    _nodes: [],
+    _nodes_by_id: {},
+    subgraphs: new Map(),
+    serialize: () => ({ version: 0.4, nodes: [] })
+  }
+  return {
+    app: {
+      graph,
+      rootGraph: graph,
+      isGraphReady: false,
+      canvas: undefined,
+      ui: { autoQueueEnabled: false }
+    }
+  }
+})
+
+vi.mock<unknown>(import('./composables/agent/useAgentConsent'), () => ({
+  useAgentConsent: () => ({
+    withConsent: async (_trigger: unknown, onAccept: () => void) => onAccept()
+  })
+}))
+vi.mock<unknown>(import('@/composables/canvas/useFocusNode'), () => ({
+  useFocusNode: () => ({ focusNodeInstance: vi.fn() })
+}))
+vi.mock<unknown>(
+  import('@/platform/cloud/subscription/composables/useAccountPreconditionDialog'),
+  () => ({ useAccountPreconditionDialog: () => ({ open: vi.fn() }) })
+)
+vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
+vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('@/composables/auth/useCurrentUser'))
+vi.mock(import('@/platform/workflow/core/services/workflowService'))
+vi.mock(import('@/composables/billing/useBillingContext'), { spy: true })
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'), {
+  spy: true
+})
+vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'), {
+  spy: true
+})
+
+const runningTab = 'workflows/current.json'
+const otherTab = 'workflows/other.json'
+
+let workflowStore: ReturnType<typeof useWorkflowStore>
+let stopTracker: () => void
+let transcripts: Partial<Record<string, AgentMessages>> = {}
+let acks: { message_id: string; workflow_id?: string }[] = []
+
+function json(status: number, body: unknown): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json' }
+  })
+}
+
+const threadMessagesUrl = /\/threads\/([^/]+)\/messages/
+
+function threadTranscript(input: RequestInfo | URL): Response {
+  const [, thread = ''] = threadMessagesUrl.exec(String(input)) ?? []
+  return json(200, transcripts[thread] ?? [])
+}
+
+function agentThread(id: string, title: string): AgentThreadSummary {
+  return {
+    created_at: '2026-10-15T10:00:00Z',
+    id,
+    last_message_at: '2026-10-15T10:00:00Z',
+    message_count: 0,
+    preview: '',
+    status: 'active',
+    title,
+    updated_at: '2026-10-15T10:00:00Z',
+    workflow_id: ''
+  }
+}
+
+const threadList = {
+  threads: [
+    agentThread('th-1', 'Running chat'),
+    agentThread('th-2', 'Other chat')
+  ],
+  pagination: { has_more: false, limit: 2, offset: 0, total: 2 }
+} satisfies AgentThreadListResponse
+
+function addTab(
+  path: string,
+  overrides: Partial<LoadedComfyWorkflow> = {}
+): LoadedComfyWorkflow {
+  const slash = path.lastIndexOf('/')
+  const { filename, suffix } = getFilenameDetails(path.slice(slash + 1))
+  const tab = createMockLoadedWorkflow({
+    instanceId: path,
+    path,
+    directory: path.slice(0, slash),
+    filename,
+    suffix,
+    isTemporary: false,
+    isModified: false,
+    activeState: null,
+    ...overrides
+  })
+  tab.load = vi.fn(async () => tab)
+  tab.unload = vi.fn()
+  tab.rename = vi.fn(async (newPath: string) => {
+    const renamed = getFilenameDetails(
+      newPath.slice(newPath.lastIndexOf('/') + 1)
+    )
+    Object.assign(tab, { path: newPath, ...renamed })
+    return tab
+  })
+  workflowStore.attachWorkflow(tab, workflowStore.openWorkflows.length)
+  workflowStore.openWorkflowsInBackground({ right: [tab.path] })
+  return tab
+}
+
+function addBoundTab(path: string, workflowId: string): LoadedComfyWorkflow {
+  const tab = addTab(path, {
+    activeState: fromPartial<ComfyWorkflowJSON>({ id: workflowId })
+  })
+  useAgentWorkflowTabBindingStore().bind(workflowId, tab.path)
+  return tab
+}
+
+function renderPanel() {
+  const active = workflowStore.activeWorkflow
+  useAgentPanelStore().setWorkflowTarget(
+    active ? fromPartial<ComfyWorkflow>(active) : null
+  )
+  return render(AgentPanelRoot, { global: { plugins: [i18n] } })
+}
+
+async function send(text: string): Promise<void> {
+  await userEvent.click(screen.getByRole('textbox'))
+  await userEvent.paste(text)
+  await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+  await screen.findByRole('button', { name: 'Stop' })
+}
+
+async function openChat(title: string, threadId: string): Promise<void> {
+  await userEvent.click(
+    screen.getByRole('button', { name: i18n.global.t('agent.showChatHistory') })
+  )
+  await userEvent.click(await screen.findByRole('button', { name: title }))
+  await vi.waitFor(() =>
+    expect(useAgentChatHistoryStore().activeId).toBe(threadId)
+  )
+}
+
+function emitRunApproval(): void {
+  ws.emit('agent_ask', {
+    thread_id: 'th-1',
+    message_id: 'm-1',
+    ask_id: 'm-1:call-1',
+    kind: 'run_approval',
+    prompt: 'Run it?',
+    options: [
+      { id: 'run', label: 'Run' },
+      { id: 'cancel', label: 'Cancel' }
+    ],
+    min_selections: 1,
+    max_selections: 1,
+    allow_other: false
+  })
+}
+
+function emitDone(): void {
+  ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
+}
+
+function userRow(threadId: string, workflowId?: string) {
+  return {
+    id: `u-${threadId}`,
+    thread_id: threadId,
+    seq: 1,
+    role: 'user',
+    status: 'complete',
+    turn_id: `turn-${threadId}`,
+    content: { text: 'make it blue' },
+    ...(workflowId === undefined ? {} : { workflow_id: workflowId })
+  }
+}
+
+function liveOtherThread(workflowId?: string): AgentMessages {
+  return zAgentMessages.parse([
+    userRow('th-2', workflowId),
+    {
+      id: 'm-2',
+      thread_id: 'th-2',
+      seq: 2,
+      role: 'assistant',
+      status: 'streaming',
+      turn_id: 'turn-th-2',
+      content: { text: '' }
+    }
+  ])
+}
+
+function tabActivity() {
+  return useWorkflowTabActivityStore()
+}
+
+beforeEach(() => {
+  vi.useRealTimers()
+  ws.clear()
+  localStorage.clear()
+  localStorage.setItem('Comfy.AgentPanel.onboarded', 'true')
+  transcripts = {}
+  acks = []
+  useCurrentUser().isLoggedIn = computed(() => true)
+  useCurrentUser().resolvedUserInfo = computed(() => ({ id: 'account-a' }))
+  Object.assign(useAgentConsentStore(), { accepted: true })
+  vi.mocked(useWorkspaceUI).mockReturnValue(
+    fromPartial({ workspaceRole: computed(() => 'owner' as const) })
+  )
+  vi.mocked(useBillingContext).mockReturnValue(
+    fromPartial({
+      subscription: computed(() =>
+        fromPartial({ hasFunds: true, agentHasFunds: true })
+      ),
+      tier: computed(() => 'STANDARD' as const),
+      type: computed(() => 'legacy' as const),
+      billingStatus: computed(() => 'paid' as const),
+      canAccessSubscriptionFeatures: computed(() => true),
+      fetchStatus: vi.fn(async () => {})
+    })
+  )
+  vi.mocked(useBillingCapabilities).mockReturnValue(
+    fromPartial({
+      canTopUp: computed(() => true),
+      canSubscribeSelfServe: computed(() => true),
+      isReady: computed(() => true),
+      hasResolvedCapabilities: computed(() => true),
+      snapshotAuthoritative: computed(() => true)
+    })
+  )
+  workflowStore = useWorkflowStore()
+  vi.mocked(workflowStore.syncWorkflows).mockResolvedValue(undefined)
+  vi.mocked(useWorkflowService()).openWorkflow.mockImplementation(
+    async (tab, options) => {
+      workflowStore.activeWorkflow = await tab.load()
+      if (options?.initiator === 'user') workflowStore.reportUserActivation(tab)
+      return true
+    }
+  )
+  vi.mocked(useWorkflowService()).closeWorkflow.mockImplementation(
+    async (tab) => {
+      await workflowStore.closeWorkflow(tab)
+      return true
+    }
+  )
+  vi.mocked(fetch).mockImplementation(async () => json(200, {}))
+  respondToFetch(/\/assets/, () =>
+    json(200, { assets: [], total: 0, has_more: false })
+  )
+  respondToFetch(/\/agent\/threads/, () => json(200, threadList))
+  respondToFetch(threadMessagesUrl, threadTranscript)
+  respondToFetch({ method: 'POST', url: /\/messages/ }, () =>
+    json(202, {
+      thread_id: 'th-1',
+      ...(acks.shift() ?? { message_id: 'm-1', workflow_id: 'wf-42' })
+    })
+  )
+  respondToFetch(/\/asks\//, () => json(200, { status: 'answered' }))
+  workflowStore.activeWorkflow = addBoundTab(runningTab, 'wf-42')
+  stopTracker = registerWorkflowTabActivityTracker(ref(true))
+})
+
+afterEach(() => {
+  stopTracker()
+})
+
+describe('AgentPanelRoot tab activity across chats', () => {
+  it('keeps A spinning through the veil and B hydration until A finishes', async () => {
+    const other = addBoundTab(otherTab, 'wf-other')
+    respondToFetch(/\/workflows(?:\?|$)/, () =>
+      json(200, {
+        data: [
+          { id: 'wf-42', name: 'current' },
+          { id: 'wf-other', name: 'other' }
+        ],
+        pagination: { offset: 0, limit: 100, total: 2, has_more: false }
+      })
+    )
+    respondToFetch(/\/agent\/threads(?:\?|$)/, () =>
+      json(200, {
+        ...threadList,
+        threads: [
+          { ...agentThread('th-1', 'Running chat'), workflow_id: 'wf-42' },
+          { ...agentThread('th-2', 'Other chat'), workflow_id: 'wf-other' }
+        ]
+      })
+    )
+    let answerOther!: () => void
+    const otherTranscript = new Promise<Response>((resolve) => {
+      answerOther = () => resolve(json(200, liveOtherThread('wf-42')))
+    })
+    respondToFetch('/api/agent/threads/th-2/messages', () => otherTranscript)
+    renderPanel()
+    await send('add an upscaler')
+
+    await useWorkflowService().openWorkflow(other, { initiator: 'user' })
+
+    expect(screen.getByTestId('agent-panel-footer')).toHaveAttribute('inert')
+    expect(
+      await screen.findByRole('status', { name: 'Opening chat for other…' })
+    ).toBeVisible()
+    expect([...tabActivity().editingPaths]).toEqual([runningTab])
+    expect(useAgentConversationStore().threadId).toBe('th-1')
+
+    answerOther()
+    await vi.waitFor(() =>
+      expect(useAgentChatHistoryStore().activeId).toBe('th-2')
+    )
+
+    expect(
+      screen.queryByRole('status', { name: 'Opening chat for other…' })
+    ).toBeNull()
+    expect(screen.getByTestId('agent-panel-footer')).not.toHaveAttribute(
+      'inert'
+    )
+    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(otherTab)
+    expect([...tabActivity().editingPaths]).toEqual([otherTab, runningTab])
+    expect(tabActivity().unseenModifiedPaths.has(runningTab)).toBe(false)
+
+    emitDone()
+    await nextTick()
+
+    expect([...tabActivity().editingPaths]).toEqual([otherTab])
+    expect(tabActivity().unseenModifiedPaths.has(runningTab)).toBe(true)
+  })
+
+  it('keeps the spinner on the tab while its chat runs in the background', async () => {
+    renderPanel()
+    await send('add an upscaler')
+    expect([...tabActivity().editingPaths]).toEqual([runningTab])
+
+    await openChat('Other chat', 'th-2')
+
+    expect([...tabActivity().editingPaths]).toEqual([runningTab])
+    expect(tabActivity().unseenModifiedPaths.has(runningTab)).toBe(false)
+  })
+
+  it.for([
+    { chat: 'open', frame: 'done', modified: true },
+    { chat: 'open', frame: 'malformed done', modified: false },
+    { chat: 'background', frame: 'done', modified: true },
+    { chat: 'background', frame: 'malformed done', modified: false }
+  ])(
+    'stops the spinner when the $chat chat gets a $frame frame',
+    async ({ chat, frame, modified }) => {
+      renderPanel()
+      await send('add an upscaler')
+      if (chat === 'background') await openChat('Other chat', 'th-2')
+      expect([...tabActivity().editingPaths]).toEqual([runningTab])
+
+      ws.emit(
+        'agent_message_done',
+        frame === 'done'
+          ? { message_id: 'm-1', thread_id: 'th-1' }
+          : { message_id: 'm-1' }
+      )
+      await nextTick()
+
+      expect(tabActivity().editingPaths.size).toBe(0)
+      expect(tabActivity().unseenModifiedPaths.has(runningTab)).toBe(modified)
+    }
+  )
+
+  it('keeps the spinner on a reopened running chat until its turn ends', async () => {
+    renderPanel()
+    await send('add an upscaler')
+    await openChat('Other chat', 'th-2')
+    await openChat('Running chat', 'th-1')
+    expect(screen.getByRole('button', { name: 'Stop' })).toBeEnabled()
+    expect([...tabActivity().editingPaths]).toEqual([runningTab])
+    expect(tabActivity().unseenModifiedPaths.has(runningTab)).toBe(false)
+
+    emitDone()
+    await nextTick()
+
+    expect(tabActivity().editingPaths.size).toBe(0)
+    expect(tabActivity().unseenModifiedPaths.has(runningTab)).toBe(true)
+  })
+
+  it('keeps a background chat spinning across a panel remount and marks it when it completes', async () => {
+    const { unmount } = renderPanel()
+    await send('add an upscaler')
+    await openChat('Other chat', 'th-2')
+
+    unmount()
+    renderPanel()
+    await vi.waitFor(() =>
+      expect(useAgentChatHistoryStore().activeId).toBe('th-2')
+    )
+
+    expect([...tabActivity().editingPaths]).toEqual([runningTab])
+
+    emitDone()
+    await nextTick()
+
+    expect(tabActivity().editingPaths.size).toBe(0)
+    expect(tabActivity().unseenModifiedPaths.has(runningTab)).toBe(true)
+  })
+
+  it('moves the tab of the chat that asked for it when the user switches chats mid-open', async () => {
+    addBoundTab(otherTab, 'wf-other')
+    transcripts['th-2'] = liveOtherThread()
+    renderPanel()
+    await send('add an upscaler')
+    let finishOpening!: () => void
+    vi.mocked(useWorkflowService()).openWorkflow.mockImplementationOnce(
+      (tab) =>
+        new Promise((resolve) => {
+          finishOpening = () => {
+            workflowStore.activeWorkflow = tab as LoadedComfyWorkflow
+            resolve(true)
+          }
+        })
+    )
+
+    ws.emit('agent_active_tab', { workflow_id: 'wf-other', thread_id: 'th-1' })
+    await vi.waitFor(() =>
+      expect(useWorkflowService().openWorkflow).toHaveBeenCalled()
+    )
+    await openChat('Other chat', 'th-2')
+    finishOpening()
+    await vi.waitFor(() =>
+      expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-other')).toBe(
+        otherTab
+      )
+    )
+    await nextTick()
+    expect(tabActivity().editingPaths.has(otherTab)).toBe(true)
+
+    emitDone()
+    await nextTick()
+
+    expect(tabActivity().editingPaths.has(otherTab)).toBe(false)
+    expect(tabActivity().unseenModifiedPaths.has(otherTab)).toBe(true)
+    expect(tabActivity().unseenModifiedPaths.has(runningTab)).toBe(false)
+  })
+
+  it.for([
+    {
+      asked: 'while the chat is open',
+      switchBefore: false,
+      switchAfter: false
+    },
+    {
+      asked: 'while the chat is in the background',
+      switchBefore: true,
+      switchAfter: false
+    },
+    {
+      asked: 'and then the chat is stashed',
+      switchBefore: false,
+      switchAfter: true
+    }
+  ])(
+    'marks the tab as needing approval when asked $asked',
+    async ({ switchBefore, switchAfter }) => {
+      renderPanel()
+      await send('add an upscaler')
+      if (switchBefore) await openChat('Other chat', 'th-2')
+      expect(tabActivity().awaitingApprovalPaths.size).toBe(0)
+
+      emitRunApproval()
+      await nextTick()
+      if (switchAfter) await openChat('Other chat', 'th-2')
+      expect([...tabActivity().awaitingApprovalPaths]).toEqual([runningTab])
+
+      ws.emit('agent_ask_resolved', {
+        thread_id: 'th-1',
+        message_id: 'm-1',
+        ask_id: 'm-1:call-1',
+        status: 'answered',
+        selected: ['run']
+      })
+      await nextTick()
+
+      expect(tabActivity().awaitingApprovalPaths.size).toBe(0)
+      expect([...tabActivity().editingPaths]).toEqual([runningTab])
+    }
+  )
+
+  it('stops showing needs-approval once the user answers, before the server confirms', async () => {
+    renderPanel()
+    await send('add an upscaler')
+    emitRunApproval()
+    await nextTick()
+    expect([...tabActivity().awaitingApprovalPaths]).toEqual([runningTab])
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Run' }))
+    await vi.waitFor(() =>
+      expect(fetchRequests({ method: 'POST', url: /\/asks\// })).toHaveLength(1)
+    )
+    await nextTick()
+
+    expect(tabActivity().awaitingApprovalPaths.size).toBe(0)
+    expect([...tabActivity().editingPaths]).toEqual([runningTab])
+
+    await openChat('Other chat', 'th-2')
+
+    expect(tabActivity().awaitingApprovalPaths.size).toBe(0)
+    expect([...tabActivity().editingPaths]).toEqual([runningTab])
+  })
+
+  it('follows the tab when it is renamed mid-turn', async () => {
+    const tab = workflowStore.activeWorkflow!
+    renderPanel()
+    await send('add an upscaler')
+
+    await workflowStore.renameWorkflow(tab, 'workflows/renamed.json')
+    await nextTick()
+
+    expect([...tabActivity().editingPaths]).toEqual(['workflows/renamed.json'])
+
+    emitDone()
+    await nextTick()
+
+    expect(tabActivity().editingPaths.size).toBe(0)
+    expect(
+      tabActivity().unseenModifiedPaths.has('workflows/renamed.json')
+    ).toBe(true)
+  })
+
+  it('drops the spinner when the tab closes mid-turn, even for a new tab with the same name', async () => {
+    addTab(otherTab)
+    const tab = workflowStore.activeWorkflow!
+    renderPanel()
+    await send('add an upscaler')
+
+    await workflowStore.closeWorkflow(tab)
+    await nextTick()
+    expect(tabActivity().editingPaths.size).toBe(0)
+
+    addTab(runningTab, { instanceId: 'same-name-replacement' })
+    await nextTick()
+    expect(tabActivity().editingPaths.size).toBe(0)
+  })
+
+  it.for([
+    { workflow: 'wf-other', spinning: [otherTab] },
+    { workflow: undefined, spinning: [] }
+  ])(
+    'spins the tab of a running chat opened from history once its workflow ($workflow) is restored',
+    async ({ workflow, spinning }) => {
+      addBoundTab(otherTab, 'wf-other')
+      transcripts['th-2'] = liveOtherThread(workflow)
+      renderPanel()
+
+      await openChat('Other chat', 'th-2')
+      await vi.waitFor(() =>
+        expect(useAgentConversationStore().activeTurnId).toBe('m-2')
+      )
+      await nextTick()
+
+      await vi.waitFor(() =>
+        expect([...tabActivity().editingPaths]).toEqual(spinning)
+      )
+    }
+  )
+
+  it("keeps a guessed turn on its tab when a remount finds the chat's workflow already decided", async () => {
+    addBoundTab(otherTab, 'wf-other')
+    transcripts['th-1'] = zAgentMessages.parse([userRow('th-1', 'wf-other')])
+    acks = [{ message_id: 'm-1' }]
+    const { unmount } = renderPanel()
+    await send('add an upscaler')
+    expect([...tabActivity().editingPaths]).toEqual([runningTab])
+
+    unmount()
+    renderPanel()
+    await vi.waitFor(() =>
+      expect(useAgentConversationStore().activeTurnId).toBe('m-1')
+    )
+    await nextTick()
+
+    expect([...tabActivity().editingPaths]).toEqual([runningTab])
+  })
+
+  it('moves the tab of the turn named by agent_active_tab, not the latest one', async () => {
+    addBoundTab(otherTab, 'wf-other')
+    acks = [
+      { message_id: 'm-1', workflow_id: 'wf-42' },
+      { message_id: 'm-2', workflow_id: 'wf-42' }
+    ]
+    renderPanel()
+    await send('first')
+    emitDone()
+    await screen.findByRole('button', { name: 'Send' })
+    await send('second')
+
+    ws.emit('agent_active_tab', {
+      workflow_id: 'wf-other',
+      thread_id: 'th-1',
+      message_id: 'm-1'
+    })
+    await vi.waitFor(() =>
+      expect(workflowStore.activeWorkflow?.path).toBe(otherTab)
+    )
+    await nextTick()
+
+    expect([...tabActivity().editingPaths]).toEqual([runningTab])
+  })
+
+  it('marks a completed tab once after a remount and stops listening when unmounted', async () => {
+    const first = renderPanel()
+    await send('add an upscaler')
+    first.unmount()
+    renderPanel()
+    await vi.waitFor(() =>
+      expect(useAgentConversationStore().activeTurnId).toBe('m-1')
+    )
+    const markModified = vi.spyOn(tabActivity(), 'markModified')
+
+    emitDone()
+
+    expect(markModified.mock.calls).toEqual([[runningTab]])
+  })
+
+  it("does not move a reopened chat's turn onto the workflow restored for that chat", async () => {
+    const tab = workflowStore.activeWorkflow!
+    addBoundTab(otherTab, 'wf-other')
+    transcripts['th-1'] = zAgentMessages.parse([userRow('th-1', 'wf-other')])
+    renderPanel()
+    await send('add an upscaler')
+    await workflowStore.closeWorkflow(tab)
+    await openChat('Other chat', 'th-2')
+
+    await openChat('Running chat', 'th-1')
+    await vi.waitFor(() =>
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(otherTab)
+    )
+    await nextTick()
+
+    expect(screen.getByRole('button', { name: 'Stop' })).toBeEnabled()
+    expect([...tabActivity().editingPaths]).toEqual([])
+  })
+})

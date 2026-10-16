@@ -5881,6 +5881,7 @@ describe('AgentPanelRoot history', () => {
       const second = addTab('workflows/second.json')
       const third = addTab('workflows/third.json')
       let answerSecond!: () => void
+      let answerThird!: () => void
       const { loadedThreads } = stubWorkflowBoundHistory(
         [
           agentThread({
@@ -5902,6 +5903,13 @@ describe('AgentPanelRoot history', () => {
               new Promise<Response>((resolve) => {
                 answerSecond = () => resolve(json(200, []))
               })
+          },
+          'th-third': {
+            response: () =>
+              new Promise<Response>((resolve) => {
+                answerThird = () =>
+                  resolve(transcriptFor('th-third', 'wf-third'))
+              })
           }
         }
       )
@@ -5912,12 +5920,27 @@ describe('AgentPanelRoot history', () => {
 
       await activateTabAsUser(second)
       await vi.waitFor(() => expect(loadedThreads).toEqual(['th-second']))
+      expect(
+        await screen.findByRole('status', { name: 'Opening chat for second…' })
+      ).toBeVisible()
       await activateTabAsUser(third)
+      expect(
+        await screen.findByRole('status', { name: 'Opening chat for third…' })
+      ).toBeVisible()
       await vi.waitFor(() =>
-        expect(userPrompts()).toEqual(['Prompt in th-third'])
+        expect(loadedThreads).toEqual(['th-second', 'th-third'])
       )
       answerSecond()
       await settleFollow()
+
+      expect(
+        screen.getByRole('status', { name: 'Opening chat for third…' })
+      ).toBeVisible()
+      expect(screen.getByTestId('agent-panel-footer')).toHaveAttribute('inert')
+      answerThird()
+      await vi.waitFor(() =>
+        expect(userPrompts()).toEqual(['Prompt in th-third'])
+      )
 
       expect(useAgentConversationStore().threadId).toBe('th-third')
       expect(userPrompts()).toEqual(['Prompt in th-third'])
@@ -5973,6 +5996,83 @@ describe('AgentPanelRoot history', () => {
 
     const followFailure = () =>
       i18n.global.t('agent.followedChatOpenFailed', { workflowName: 'second' })
+
+    it('keeps the current conversation covered until the followed chat is ready', async () => {
+      await openFirstChatThenLoseTranscripts()
+      const second = workflowStore.getWorkflowByPath('workflows/second.json')
+      assert(second)
+      const serve = vi.mocked(fetch).getMockImplementation()
+      assert(serve)
+      let answerList!: () => void
+      const listing = new Promise<Response>((resolve) => {
+        answerList = () =>
+          resolve(
+            json(
+              200,
+              agentThreadList([
+                agentThread({
+                  id: 'th-second',
+                  title: 'Second chat',
+                  last_message_at: '2026-09-22T10:00:00Z',
+                  workflow_id: 'wf-second'
+                })
+              ])
+            )
+          )
+      })
+      let answerMessages!: () => void
+      const transcript = new Promise<Response>((resolve) => {
+        answerMessages = () => resolve(transcriptFor('th-second', 'wf-second'))
+      })
+      let markMessagesRequested!: () => void
+      const messagesRequested = new Promise<void>((resolve) => {
+        markMessagesRequested = resolve
+      })
+      vi.mocked(fetch).mockImplementation((input, init) => {
+        if (threadListRoute.test(String(input))) return listing
+        if (String(input).endsWith('/threads/th-second/messages')) {
+          markMessagesRequested()
+          return transcript
+        }
+        return serve(input, init)
+      })
+
+      await activateTabAsUser(second)
+
+      expect(screen.getByTestId('agent-panel-footer')).toHaveAttribute('inert')
+      expect(
+        await screen.findByRole('status', {
+          name: 'Opening chat for second…'
+        })
+      ).toBeVisible()
+      expect(
+        within(screen.getByTestId('agent-conversation')).getByText(
+          'Prompt in th-first'
+        )
+      ).toBeInTheDocument()
+
+      answerList()
+      await messagesRequested
+
+      expect(
+        screen.getByRole('status', { name: 'Opening chat for second…' })
+      ).toBeVisible()
+      expect(userPrompts()).toEqual(['Prompt in th-first'])
+
+      answerMessages()
+      await within(screen.getByTestId('agent-conversation')).findByText(
+        'Prompt in th-second'
+      )
+
+      await vi.waitFor(() =>
+        expect(
+          screen.queryByRole('status', { name: 'Opening chat for second…' })
+        ).toBeNull()
+      )
+      expect(screen.getByTestId('agent-panel-footer')).not.toHaveAttribute(
+        'inert'
+      )
+    })
 
     it('reports a followed chat that fails to open only in its notice', async () => {
       await openFirstChatThenLoseTranscripts()
@@ -7449,14 +7549,16 @@ describe('AgentPanelRoot lifecycle', () => {
 
   it('clears workflow activity when the panel unmounts', () => {
     const activity = useWorkflowTabActivityStore()
-    activity.setEditing('workflows/active.json')
+    activity.setAgentTurnTabs([
+      { path: 'workflows/active.json', awaitingApproval: false }
+    ])
     activity.setCreating(true)
 
     const { unmount } = renderWithSelectedTarget()
 
     unmount()
 
-    expect(activity.$state.editingTabPath).toBeNull()
+    expect(activity.editingPaths.size).toBe(0)
     expect(activity.$state.creatingTab).toBe(false)
   })
 })
@@ -10009,11 +10111,11 @@ describe('AgentPanelRoot workflow binding', () => {
     await renderAndSend('add an upscaler')
 
     const activity = useWorkflowTabActivityStore()
-    expect(activity.editingTabPath).toBe('workflows/current.json')
+    expect([...activity.editingPaths]).toEqual(['workflows/current.json'])
 
     ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
     await screen.findByRole('button', { name: 'Send' })
-    expect(activity.editingTabPath).toBeNull()
+    expect(activity.editingPaths.size).toBe(0)
     expect(activity.unseenModifiedPaths.has('workflows/current.json')).toBe(
       true
     )
@@ -10027,12 +10129,12 @@ describe('AgentPanelRoot workflow binding', () => {
     await sendFromComposer('add an upscaler')
 
     const activity = useWorkflowTabActivityStore()
-    expect(activity.editingTabPath).toBe('workflows/current.json')
+    expect([...activity.editingPaths]).toEqual(['workflows/current.json'])
     activity.setCreating(true)
 
     unmount()
 
-    expect(activity.editingTabPath).toBeNull()
+    expect(activity.editingPaths.size).toBe(0)
     expect(activity.creatingTab).toBe(false)
   })
 
@@ -10135,7 +10237,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await renderAndSend('add an upscaler')
 
     const activity = useWorkflowTabActivityStore()
-    expect(activity.editingTabPath).toBe('workflows/current.json')
+    expect([...activity.editingPaths]).toEqual(['workflows/current.json'])
   })
 
   // PM-1575 regression: the canvas-sync gate was wired to
@@ -10197,7 +10299,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
     await renderAndSend('work here')
     const activity = useWorkflowTabActivityStore()
-    expect(activity.editingTabPath).toBe('workflows/current.json')
+    expect([...activity.editingPaths]).toEqual(['workflows/current.json'])
     vi.useFakeTimers()
 
     ws.emit('agent_active_tab', {
@@ -10208,7 +10310,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await vi.advanceTimersByTimeAsync(500)
 
     await vi.waitFor(() =>
-      expect(activity.editingTabPath).toBe('workflows/Video test.json')
+      expect([...activity.editingPaths]).toEqual(['workflows/Video test.json'])
     )
   })
 
@@ -10220,10 +10322,10 @@ describe('AgentPanelRoot workflow binding', () => {
     await sendFromComposer('add an upscaler')
 
     const activity = useWorkflowTabActivityStore()
-    expect(activity.editingTabPath).toBe('workflows/current.json')
+    expect([...activity.editingPaths]).toEqual(['workflows/current.json'])
 
     unmount()
-    expect(activity.editingTabPath).toBeNull()
+    expect(activity.editingPaths.size).toBe(0)
 
     const other = addTab('workflows/other.json')
     useAgentWorkflowTabBindingStore().bind('wf-other', other.path)
@@ -10238,11 +10340,11 @@ describe('AgentPanelRoot workflow binding', () => {
 
     renderWithSelectedTarget()
     await vi.waitFor(() =>
-      expect(activity.editingTabPath).toBe('workflows/current.json')
+      expect([...activity.editingPaths]).toEqual(['workflows/current.json'])
     )
 
     ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
-    await vi.waitFor(() => expect(activity.editingTabPath).toBeNull())
+    await vi.waitFor(() => expect(activity.editingPaths.size).toBe(0))
   })
 
   it("sends the active tab's saved workflow id with the turn", async () => {
@@ -10374,17 +10476,17 @@ describe('AgentPanelRoot workflow binding', () => {
 
     await sendFromComposer('attached turn')
     const activity = useWorkflowTabActivityStore()
-    expect(activity.editingTabPath).toBe('workflows/current.json')
+    expect([...activity.editingPaths]).toEqual(['workflows/current.json'])
 
     ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
-    await vi.waitFor(() => expect(activity.editingTabPath).toBeNull())
+    await vi.waitFor(() => expect(activity.editingPaths.size).toBe(0))
 
     await userEvent.click(
       screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
     )
     await sendFromComposer('detached turn')
 
-    expect(activity.editingTabPath).toBe('workflows/current.json')
+    expect([...activity.editingPaths]).toEqual(['workflows/current.json'])
   })
 
   it('agent_active_tab activates the bound tab', async () => {
@@ -10733,7 +10835,9 @@ describe('AgentPanelRoot workflow binding', () => {
         useAgentWorkflowTabBindingStore().tabPathFor('wf-other')
       ).toBeUndefined()
       expect(useTelemetry()!.trackAgentWorkflowApplied).not.toHaveBeenCalled()
-      expect(useWorkflowTabActivityStore().editingTabPath).toBe(current.path)
+      expect([...useWorkflowTabActivityStore().editingPaths]).toEqual([
+        current.path
+      ])
       expect(useWorkflowTabActivityStore().creatingTab).toBe(false)
       expect(
         Boolean(workflowStore.getWorkflowByPath('workflows/Other.json'))
@@ -10809,7 +10913,7 @@ describe('AgentPanelRoot workflow binding', () => {
         useAgentWorkflowTabBindingStore().tabPathFor('wf-late')
       ).toBeUndefined()
       expect(useTelemetry()!.trackAgentWorkflowApplied).not.toHaveBeenCalled()
-      expect(useWorkflowTabActivityStore().editingTabPath).toBeNull()
+      expect(useWorkflowTabActivityStore().editingPaths.size).toBe(0)
       if (kind === 'new') expect(workflowStore.activeWorkflow).toEqual(current)
       expect(
         Boolean(workflowStore.getWorkflowByPath('workflows/Late.json'))
@@ -11009,13 +11113,15 @@ describe('AgentPanelRoot workflow binding', () => {
 
     const activity = useWorkflowTabActivityStore()
     await vi.waitFor(() =>
-      expect(activity.editingTabPath).toBe(
+      expect([...activity.editingPaths]).toEqual([
         'workflows/Unsaved Workflow (2).json'
-      )
+      ])
     )
     ws.emit('agent_active_tab', { workflow_id: 'wf-a', thread_id: 'th-1' })
     await vi.waitFor(() =>
-      expect(activity.editingTabPath).toBe('workflows/Unsaved Workflow.json')
+      expect([...activity.editingPaths]).toEqual([
+        'workflows/Unsaved Workflow.json'
+      ])
     )
   })
 

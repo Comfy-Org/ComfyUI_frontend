@@ -572,6 +572,10 @@
       "role": "integration"
     },
     {
+      "path": "src/workbench/extensions/agent/AgentPanelRoot.tabActivity.test.ts",
+      "role": "integration"
+    },
+    {
       "path": "src/workbench/extensions/agent/composables/useAgentDockMount.ts",
       "role": "integration"
     },
@@ -819,6 +823,7 @@
       "name": "Panel root and conversation views render replies, paywall, history, and onboarding",
       "checks": [
         "src/workbench/extensions/agent/AgentPanelRoot.test.ts",
+        "src/workbench/extensions/agent/AgentPanelRoot.tabActivity.test.ts",
         "src/workbench/extensions/agent/components/agent/AgentPanel.test.ts",
         "src/workbench/extensions/agent/components/agent/ConversationView.test.ts",
         "src/workbench/extensions/agent/components/agent/message/AgentMessage.test.ts",

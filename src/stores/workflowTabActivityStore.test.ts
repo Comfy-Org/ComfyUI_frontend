@@ -3,14 +3,23 @@ import { describe, expect, it } from 'vitest'
 import { useWorkflowTabActivityStore } from './workflowTabActivityStore'
 
 describe('useWorkflowTabActivityStore', () => {
-  it('tracks and clears the tab being edited', () => {
+  it('spins every tab with a running turn and marks the ones awaiting approval', () => {
     const store = useWorkflowTabActivityStore()
 
-    store.setEditing('workflows/a.json')
-    expect(store.editingTabPath).toBe('workflows/a.json')
+    store.setAgentTurnTabs([
+      { path: 'workflows/a.json', awaitingApproval: true },
+      { path: 'workflows/b.json', awaitingApproval: false }
+    ])
 
-    store.setEditing(null)
-    expect(store.editingTabPath).toBeNull()
+    expect([...store.editingPaths]).toEqual([
+      'workflows/a.json',
+      'workflows/b.json'
+    ])
+    expect([...store.awaitingApprovalPaths]).toEqual(['workflows/a.json'])
+
+    store.setAgentTurnTabs([])
+    expect(store.editingPaths.size).toBe(0)
+    expect(store.awaitingApprovalPaths.size).toBe(0)
   })
 
   it('toggles the tab-creation flag', () => {
@@ -38,25 +47,14 @@ describe('useWorkflowTabActivityStore', () => {
     expect(store.unseenModifiedPaths.size).toBe(1)
   })
 
-  it('prunes state for tabs that are no longer open', () => {
+  it('prunes unseen dots for tabs that are no longer open', () => {
     const store = useWorkflowTabActivityStore()
-    store.setEditing('workflows/closed.json')
     store.markModified('workflows/closed.json')
     store.markModified('workflows/open.json')
 
     store.pruneClosed(['workflows/open.json'])
 
-    expect(store.editingTabPath).toBeNull()
     expect(store.unseenModifiedPaths.has('workflows/closed.json')).toBe(false)
     expect(store.unseenModifiedPaths.has('workflows/open.json')).toBe(true)
-  })
-
-  it('keeps the editing path when its tab stays open', () => {
-    const store = useWorkflowTabActivityStore()
-    store.setEditing('workflows/open.json')
-
-    store.pruneClosed(['workflows/open.json'])
-
-    expect(store.editingTabPath).toBe('workflows/open.json')
   })
 })

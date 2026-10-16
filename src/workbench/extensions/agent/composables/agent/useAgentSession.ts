@@ -181,7 +181,11 @@ const TURN_RECOVERY_DELAYS_MS = [0, 1000, 2000, 4000, 8000, 16000]
 const TURN_RECOVERY_DEADLINE_MS = 60_000
 
 type TurnOutcome =
-  | { kind: 'terminal'; parts: AssistantMessage['parts'] | undefined }
+  | {
+      kind: 'terminal'
+      parts: AssistantMessage['parts'] | undefined
+      ending: 'completed' | 'failed'
+    }
   | { kind: 'thread-missing' }
   | { kind: 'streaming' }
   | { kind: 'error'; message: string }
@@ -1927,7 +1931,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
           if (usage) usage.used = true
         }
         finishSkillTurn(turn)
-        conversationStore.settleTurn(turn, outcome.parts)
+        conversationStore.settleTurn(turn, outcome.parts, outcome.ending)
         markStoppedTurnReady(turn)
         return true
       case 'thread-missing':
@@ -1976,7 +1980,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
         return { kind: 'streaming' }
       return {
         kind: 'terminal',
-        parts: terminalRecoveryParts(rows)
+        parts: terminalRecoveryParts(rows),
+        ending: rows.at(-1)?.status === 'complete' ? 'completed' : 'failed'
       }
     } catch (error) {
       if (signal.aborted) throw error
@@ -1987,7 +1992,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function forgetDeletedThread(turn: LiveTurn): void {
     skillTurnUsage.delete(recoveryKey(turn))
     if (conversationStore.threadId !== turn.threadId) {
-      conversationStore.settleTurn(turn, undefined)
+      conversationStore.settleTurn(turn, undefined, 'failed')
       return
     }
     conversationStore.reset()
