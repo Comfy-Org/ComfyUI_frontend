@@ -26,6 +26,11 @@ import {
 } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 import { useSelectionStore } from '@/core/selection/selectionStore'
 import { graphScopeOf } from '@/types/graphScopeId'
+import { toLinkId } from '@/types/linkId'
+import type { LLink } from '@/lib/litegraph/src/LLink'
+import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
+import { getSelectedLinkIds } from '@/lib/litegraph/src/canvas/linkSelection'
+import { setLinkPolyline } from '@/renderer/core/canvas/linkPolylines'
 
 vi.mock(import('@/renderer/core/layout/store/layoutStore'))
 
@@ -55,7 +60,7 @@ function marquee(
   } as CanvasPointerEvent
   if (canvas.liveSelection) {
     canvas['handleLiveSelect'](event, dragRect, initialSelection)
-    canvas['reportSelectionChange'](initialSelection)
+    canvas['finalizeLiveSelect'](event, dragRect, initialSelection)
   } else {
     canvas['_handleMultiSelect'](event, dragRect)
   }
@@ -703,6 +708,31 @@ describe('LGraphCanvas selection', () => {
       expect(a.selected).toBeFalsy()
     })
 
+    it.for<{ name: string; act: (canvas: LGraphCanvas) => void }>([
+      { name: 'setGraph()', act: (canvas) => canvas.setGraph(new LGraph()) },
+      {
+        name: 'Escape',
+        act: (canvas) => canvas.processKey(keyEvent('keydown', 'Escape'))
+      },
+      { name: 'clicking a node', act: (canvas) => click(canvas, 60, 60) },
+      {
+        name: 'clicking empty canvas',
+        act: (canvas) => click(canvas, 600, 500)
+      },
+      { name: 'deselectAll()', act: (canvas) => canvas.deselectAll() }
+    ])('$name clears the link selection', ({ act }) => {
+      const linkSelection = useLinkSelectionStore()
+      linkSelection.select({
+        links: [fromPartial<LLink>({ id: toLinkId(1) })],
+        marquee: { x: 0, y: 0, width: 10, height: 10 },
+        anchorX: 10
+      })
+
+      act(canvas)
+
+      expect(linkSelection.selection).toBeNull()
+    })
+
     it('deselectAll() reports only when something was selected', () => {
       canvas.deselectAll()
       expect(onSelectionChange).not.toHaveBeenCalled()
@@ -985,6 +1015,103 @@ describe('LGraphCanvas selection', () => {
         })
       }
     )
+
+    describe('over a drawn link', () => {
+      let link: LLink
+
+      beforeEach(() => {
+        a.addOutput('out', 'number')
+        b.addInput('in', 'number')
+        const connected = a.connect(0, b, 0)
+        if (!connected) throw new Error('connect failed')
+        link = connected
+        setLinkPolyline(link, () => [
+          { x: 0, y: 200 },
+          { x: 400, y: 200 }
+        ])
+        canvas.renderedPaths.add(link)
+      })
+
+      it.for<{
+        name: string
+        liveSelection: boolean
+        from: [number, number]
+        to: [number, number]
+        modifiers?: Modifiers
+        selectOnly?: boolean
+        selected: boolean
+      }>([
+        {
+          name: 'live, dragged down-right',
+          liveSelection: true,
+          from: [200, 150],
+          to: [250, 250],
+          selected: true
+        },
+        {
+          name: 'live, dragged up-left',
+          liveSelection: true,
+          from: [250, 250],
+          to: [200, 150],
+          selected: true
+        },
+        {
+          name: 'classic, dragged up-left',
+          liveSelection: false,
+          from: [250, 250],
+          to: [200, 150],
+          selected: true
+        },
+        {
+          name: 'live, also capturing a node',
+          liveSelection: true,
+          from: [0, 0],
+          to: [250, 250],
+          selected: false
+        },
+        {
+          name: 'classic, also capturing a node',
+          liveSelection: false,
+          from: [0, 0],
+          to: [250, 250],
+          selected: false
+        },
+        {
+          name: 'with shift',
+          liveSelection: false,
+          from: [200, 150],
+          to: [250, 250],
+          modifiers: { shiftKey: true },
+          selected: false
+        },
+        {
+          name: 'with alt',
+          liveSelection: false,
+          from: [200, 150],
+          to: [250, 250],
+          modifiers: { altKey: true },
+          selected: false
+        },
+        {
+          name: 'in select-only mode',
+          liveSelection: false,
+          from: [200, 150],
+          to: [250, 250],
+          selectOnly: true,
+          selected: false
+        }
+      ])(
+        '$name: link selected is $selected',
+        ({ liveSelection, from, to, modifiers = {}, selectOnly, selected }) => {
+          canvas.liveSelection = liveSelection
+          canvas.selectOnly = !!selectOnly
+
+          marquee(canvas, from, to, modifiers)
+
+          expect(getSelectedLinkIds(graph)).toEqual(selected ? [link.id] : [])
+        }
+      )
+    })
 
     it('shift+alt marquee resolves the same way in both modes', () => {
       click(canvas, 60, 60)

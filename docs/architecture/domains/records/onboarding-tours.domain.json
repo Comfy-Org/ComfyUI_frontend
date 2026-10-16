@@ -1,0 +1,185 @@
+{
+  "id": "onboarding-tours",
+  "capability": "Onboarding coachmark tours",
+  "description": "In-app coachmark tours for the first-run and app-mode entry paths: tour definitions and the pure tour reducer, the tour and overlay stores, coachmark target registration and the v-coachmark directive, spotlight and card layout, landing dialog, replay and reset of onboarding state. Cloud sign-up onboarding and the onboarding survey belong to the cloud record.",
+  "modules": [
+    {
+      "path": "src/platform/onboarding/onboardingTours.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/onboarding/onboardingTours.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/onboarding/tourState.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/onboarding/tourState.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/onboarding/onboardingTourStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/onboarding/onboardingTourStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/onboarding/onboardingTourStore.registeredTour.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/onboarding/onboardingOverlayStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/onboarding/onboardingOverlayStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/onboarding/coachmarkRegistry.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/onboarding/coachmarkRegistry.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/onboarding/fixtures/coachmarkTargets.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/onboarding/onboardingReset.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/onboarding/onboardingReset.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/onboarding/useTourTriggers.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/onboarding/onboardingReplay.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/onboarding/onboardingReplay.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/onboarding/coachmarkLayout.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/onboarding/coachmarkLayout.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/onboarding/useCoachmarkTarget.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/onboarding/useCoachmarkTarget.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/onboarding/vCoachmark.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/onboarding/vCoachmark.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/onboarding/CoachmarkCard.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/onboarding/CoachmarkCard.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/onboarding/CoachmarkLanding.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/onboarding/CoachmarkLanding.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/onboarding/TourOverlay.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/onboarding/TourOverlay.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/onboarding/TourSpotlight.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/onboarding/TourSpotlight.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/onboarding/TourSpotlight.interactive.test.ts",
+      "role": "presentation"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Tour reducer and store start, advance, skip, and finish tours per entry path",
+      "checks": [
+        "src/platform/onboarding/tourState.test.ts",
+        "src/platform/onboarding/onboardingTours.test.ts",
+        "src/platform/onboarding/onboardingTourStore.test.ts",
+        "src/platform/onboarding/onboardingTourStore.registeredTour.test.ts",
+        "src/platform/onboarding/onboardingOverlayStore.test.ts"
+      ]
+    },
+    {
+      "name": "Coachmark targets register, lay out, and position the spotlight and card",
+      "checks": [
+        "src/platform/onboarding/coachmarkRegistry.test.ts",
+        "src/platform/onboarding/vCoachmark.test.ts",
+        "src/platform/onboarding/useCoachmarkTarget.test.ts",
+        "src/platform/onboarding/coachmarkLayout.test.ts",
+        "src/platform/onboarding/TourSpotlight.test.ts",
+        "src/platform/onboarding/TourSpotlight.interactive.test.ts",
+        "src/platform/onboarding/CoachmarkCard.test.ts",
+        "src/platform/onboarding/CoachmarkLanding.test.ts",
+        "src/platform/onboarding/TourOverlay.test.ts"
+      ]
+    },
+    {
+      "name": "Onboarding replay and reset restore first-run state",
+      "checks": [
+        "src/platform/onboarding/onboardingReplay.test.ts",
+        "src/platform/onboarding/onboardingReset.test.ts"
+      ]
+    },
+    {
+      "name": "Coachmark tours run end to end in the browser",
+      "checks": [
+        "browser_tests/tests/tour.spec.ts",
+        "browser_tests/tests/firstRunTourRolePins.spec.ts"
+      ]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Unclassified callers may import these internals during inventory; imports from classified domains remain subject to cross-domain rules.",
+    "TOUR_SEEN_SETTING and the replay session-storage key keep their persisted names.",
+    "The release-notes store reading the tour and overlay stores to defer popups, and onboardingReset calling the backend through scripts/api and the auth store, remain visible as coupling debt; classification does not grant dependency exceptions."
+  ],
+  "deepImports": "inventory"
+}

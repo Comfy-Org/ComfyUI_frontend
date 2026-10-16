@@ -35,7 +35,7 @@ const getMetadata = (directory: string, filename: string): Adr => {
   const title = new RegExp(`^# ADR-${id}: (.+)$`, 'm').exec(contents)?.[1]
   const date = /^Date: (\d{4}-\d{2}-\d{2})$/m.exec(contents)?.[1]
   const status =
-    /^## Status\s+\n+(?:\s*\n)*?(Proposed|Accepted|Rejected|Deprecated|Superseded)\b/m.exec(
+    /^## Status\s+\n+(?:\s*\n)*(Proposed|Accepted|Rejected|Deprecated|Superseded)\b/m.exec(
       contents
     )?.[1]
 

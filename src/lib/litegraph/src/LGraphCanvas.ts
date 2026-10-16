@@ -98,6 +98,11 @@ import {
   showLink
 } from './canvas/linkVisibility'
 import {
+  clearLinkSelection,
+  getSelectedLinkIds,
+  selectLinksInMarquee
+} from './canvas/linkSelection'
+import {
   resolvePointerTarget,
   resolveSelectableTarget
 } from './canvas/resolvePointerTarget'
@@ -480,6 +485,15 @@ function connectSearchBoxNodeTo(
     nodeTo instanceof SubgraphOutputNode
       ? nodeTo.slots[slotIndex].type
       : nodeTo.inputs[slotIndex].type
+  )
+}
+
+function marqueeSelectsLinks(
+  canvas: LGraphCanvas,
+  e: Pick<CanvasPointerEvent, 'shiftKey' | 'altKey'>
+): boolean {
+  return (
+    !canvas.selectOnly && !canvas.selectedItems.size && !e.shiftKey && !e.altKey
   )
 }
 
@@ -2144,15 +2158,16 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    */
   setGraph(newGraph: LGraph | Subgraph): void {
     const { graph } = this
-    if (graph && clearRootLinkReveals(graphScopeOf(graph).rootGraphId))
-      this.dirty_bgcanvas = true
-    if (newGraph === graph) return
+    if (graph) clearRootLinkReveals(graphScopeOf(graph).rootGraphId)
     clearLinkBadgeHitAreas(this)
+    this.dirty_bgcanvas = true
+    if (newGraph === graph) return
 
     // Drop any in-flight ghost so listeners don't outlive the graph it belongs to
     if (this.state.ghostNodeId != null) this.finalizeGhostPlacement(true)
 
     releaseCanvasSelection(this)
+    clearLinkSelection(this)
     newGraph.attachCanvas(this)
     this.selectionViewCache = {
       graph: newGraph,
@@ -2934,7 +2949,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           this.handleLiveSelect(eMove, dragRect, initialSelection)
       }
 
-      pointer.onDragEnd = () => this.reportSelectionChange(initialSelection)
+      pointer.onDragEnd = (upEvent) =>
+        this.finalizeLiveSelect(upEvent, dragRect, initialSelection)
     } else {
       // Classic mode: select only when drag ends
       pointer.onDragEnd = (upEvent) =>
@@ -4211,7 +4227,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           this.pointer.isDown || !!this.linkConnector.renderLinks.length
         block_default = true
       } else if (e.key === 'Escape') {
-        // esc
+        clearLinkSelection(this)
         if (this.linkConnector.isConnecting) {
           this.linkConnector.reset()
           e.preventDefault()
@@ -4571,6 +4587,27 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (replaceCanvasSelection(this, desired)) this.setDirty(true)
   }
 
+  private finalizeLiveSelect(
+    e: CanvasPointerEvent,
+    dragRect: Rect,
+    initialSelection: Set<Positionable>
+  ): void {
+    const normalizedRect: Rect = [
+      dragRect[0],
+      dragRect[1],
+      dragRect[2],
+      dragRect[3]
+    ]
+    this._normalizeDragRect(normalizedRect)
+    if (marqueeSelectsLinks(this, e)) {
+      selectLinksInMarquee(this, normalizedRect, e.canvasX)
+    } else {
+      clearLinkSelection()
+    }
+    this.setDirty(true, true)
+    this.reportSelectionChange(initialSelection)
+  }
+
   private reportSelectionChange(initialSelection: Set<Positionable>): void {
     const { selectedItems } = this
     const unchanged =
@@ -4598,10 +4635,15 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       this.selectedItems,
       this._getItemsInRect(normalizedRect)
     )
-    if (!replaceCanvasSelection(this, desired)) return
+    const changed = replaceCanvasSelection(this, desired)
 
-    this.onSelectionChange?.(this.selectionView.selectedNodes)
-    this.setDirty(true)
+    if (marqueeSelectsLinks(this, e)) {
+      selectLinksInMarquee(this, normalizedRect, e.canvasX)
+    } else {
+      clearLinkSelection()
+    }
+    this.setDirty(true, true)
+    if (changed) this.onSelectionChange?.(this.selectionView.selectedNodes)
   }
 
   /**
@@ -4617,6 +4659,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     e: Pick<MouseEvent, 'shiftKey' | 'ctrlKey' | 'metaKey'> | undefined,
     sticky: boolean = false
   ): void {
+    clearLinkSelection(this)
     const intent = resolveClickSelection({
       hasItem: !!item,
       isSelected: !!item && isCanvasItemSelected(this, item),
@@ -4641,6 +4684,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       selectGroupChildren = this.groupSelectChildren
     }: { selectGroupChildren?: boolean } = {}
   ): void {
+    clearLinkSelection(this)
     if (!changeCanvasSelection(this, [item], true, selectGroupChildren)) return
     this.onSelectionChange?.(this.selectionView.selectedNodes)
   }
@@ -4697,6 +4741,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       (item) => ownsSelectable(this, item)
     )
     if (itemsToSelect.length === 0 && items?.length) return
+    clearLinkSelection(this)
     const initialSelection = new Set(this.selectedItems)
     if (!add_to_current_selection) clearCanvasSelection(this)
     changeCanvasSelection(this, itemsToSelect, true)
@@ -4722,6 +4767,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * @param keepSelected If set, this item will not be removed from the selection.
    */
   deselectAll(keepSelected?: Positionable): void {
+    clearLinkSelection(this)
     if (!clearCanvasSelection(this, keepSelected)) return
 
     this.onSelectionChange?.(this.selectionView.selectedNodes)
@@ -6022,8 +6068,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       this._renderAllLinkSegments(
         ctx,
         link,
-        hiddenLayout?.outputTip ?? startPos,
-        hiddenLayout?.inputTip ?? endPos,
+        hiddenLayout?.output.tip ?? startPos,
+        hiddenLayout?.input.tip ?? endPos,
         visibleReroutes,
         renderedRerouteSegments,
         now,
@@ -6402,7 +6448,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    */
   private buildLinkRenderContext(): LinkRenderContext {
     return {
-      // Canvas settings
       renderMode: this.links_render_mode,
       connectionWidth: this.connections_width,
       renderBorder: this.render_connections_border,
@@ -6412,14 +6457,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       linkMarkerShape: this.linkMarkerShape,
       renderConnectionArrows: this.render_connection_arrows,
 
-      // State
-      highlightedLinks: new Set(Object.keys(this.highlighted_links)),
+      highlightedLinks: new Set([
+        ...Object.keys(this.highlighted_links),
+        ...(this.graph ? getSelectedLinkIds(this.graph) : [])
+      ]),
 
-      // Colors
       defaultLinkColor: this.default_link_color,
       linkTypeColors: LGraphCanvas.link_type_colors,
 
-      // Pattern for disabled links
       disabledPattern: this._pattern
     }
   }

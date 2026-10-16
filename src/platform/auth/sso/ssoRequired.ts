@@ -7,9 +7,9 @@ import {
   ssoRequiredOrganizationId
 } from '@comfyorg/account-core/sso'
 
-import { SELF_STYLED_PANEL_CONTENT_CLASS } from '@/components/ui/dialog/dialog.variants'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
+import type { SsoRequiredContext } from '@/platform/auth/sso/ssoRequiredContext'
 import {
   ACCOUNT_OUTSIDE_ORGANIZATION_DIALOG_KEY,
   SSO_REQUIRED_DIALOG_KEY
@@ -22,14 +22,6 @@ import {
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
-
-export interface SsoRequiredContext {
-  readonly email?: string
-  /** Where SSO sends the person back; the current page when absent. */
-  readonly returnTo?: string
-  /** The organization the refusal names; its SSO, not the email's. */
-  readonly organizationId?: string
-}
 
 /**
  * Shows the one SSO-required screen. False while `sso_enabled` is off, so the
@@ -66,9 +58,7 @@ export function presentSsoRequired(
         component,
         props: known,
         dialogComponentProps: {
-          renderer: 'reka',
           headless: true,
-          contentClass: SELF_STYLED_PANEL_CONTENT_CLASS,
           onClose: abandonSsoFlow
         }
       })
@@ -97,9 +87,7 @@ function presentAccountOutsideOrganization(): boolean {
         key: ACCOUNT_OUTSIDE_ORGANIZATION_DIALOG_KEY,
         component,
         dialogComponentProps: {
-          renderer: 'reka',
-          headless: true,
-          contentClass: SELF_STYLED_PANEL_CONTENT_CLASS
+          headless: true
         }
       })
     })

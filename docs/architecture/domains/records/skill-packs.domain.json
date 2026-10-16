@@ -1,0 +1,55 @@
+{
+  "id": "skill-packs",
+  "capability": "Skill packs",
+  "description": "User-published agent skill packs: skills REST client and name and size validation, the skill packs store scoped to the current user and team workspace, list and publish composables, and the settings panel, list item, and form dialog. Agent composer skill selection remains in the agent capability.",
+  "modules": [
+    {
+      "path": "src/platform/skills/types.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/skills/api/**",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/skills/stores/**",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/skills/composables/**",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/skills/components/**",
+      "role": "presentation"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Skills API lists, publishes, and deletes packs and the store scopes them to the active user and workspace",
+      "checks": [
+        "src/platform/skills/api/skillsApi.test.ts",
+        "src/platform/skills/stores/skillPacksStore.test.ts"
+      ]
+    },
+    {
+      "name": "Skill pack panel and form validate names and sizes and publish packs",
+      "checks": [
+        "src/platform/skills/composables/useSkillPackForm.test.ts",
+        "src/platform/skills/components/SkillPacksPanel.test.ts",
+        "src/platform/skills/components/SkillPackFormDialog.test.ts",
+        "src/platform/skills/components/SkillPackListItem.test.ts"
+      ]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Unclassified callers may import these internals during inventory; imports from classified domains remain subject to cross-domain rules.",
+    "The settings dialog and agent surfaces may keep importing skill pack internals during inventory.",
+    "skillPacksStore reading the current user and team workspace store, and skillsApi calling scripts/api, remain visible as coupling; classification does not grant dependency exceptions."
+  ],
+  "deepImports": "inventory"
+}

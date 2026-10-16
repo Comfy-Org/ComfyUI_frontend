@@ -30,7 +30,6 @@ function mount(
     },
     global: {
       plugins: [i18n],
-      directives: { tooltip: {} },
       stubs: { WorkflowSelectorChip: true }
     }
   })
