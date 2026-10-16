@@ -176,7 +176,7 @@ describe('buildAllErrorContext', () => {
     const context = buildAllErrorContext(
       [executionGroup(), missingModelErrorGroup()],
       { ...EMPTY_CONTEXT, missingModelGroups: [missingModelGroup()] },
-      { label: 'All issues', workflowName: 'My Workflow', searchQuery: '  ' }
+      { label: 'All issues', workflowName: 'My Workflow' }
     )
 
     expect(context).toMatchObject({
@@ -185,17 +185,17 @@ describe('buildAllErrorContext', () => {
       severity: 'error',
       label: 'All issues'
     })
-    expect(context.searchQuery).toBeUndefined()
   })
 
-  it('preserves a non-empty search filter', () => {
+  it('can label one card that contains several groups', () => {
     const context = buildAllErrorContext(
       [missingMediaErrorGroup()],
       { ...EMPTY_CONTEXT, missingMediaGroups: [missingMediaGroup()] },
-      { label: 'All issues', searchQuery: 'load' }
+      { label: 'Setup required', scope: 'card' }
     )
 
+    expect(context.scope).toBe('card')
     expect(context.severity).toBe('warning')
-    expect(context.searchQuery).toBe('load')
+    expect(context.label).toBe('Setup required')
   })
 })

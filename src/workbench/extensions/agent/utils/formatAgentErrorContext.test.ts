@@ -72,16 +72,6 @@ describe('formatAgentErrorContext', () => {
     expect(block).toContain('2. [Execution failure]\n   RuntimeError: boom')
   })
 
-  it('surfaces the panel filter only for the all scope', () => {
-    const all = formatAgentErrorContext(
-      context({ scope: 'all', count: 3, searchQuery: 'load' })
-    )
-    expect(all).toContain('Issues panel filter in effect: "load"')
-
-    const card = formatAgentErrorContext(context({ searchQuery: 'load' }))
-    expect(card).not.toContain('filter in effect')
-  })
-
   it('includes and indents details, truncating very long logs', () => {
     const withDetails = formatAgentErrorContext(
       context({

@@ -14,6 +14,7 @@ export function useViewErrorsInGraph() {
     }
 
     rightSidePanelStore.openPanel('errors')
+    rightSidePanelStore.requestErrorDetails()
     executionErrorStore.dismissErrorOverlay()
   }
 

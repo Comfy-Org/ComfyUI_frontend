@@ -155,7 +155,7 @@ export function buildGroupErrorContext(
 
 interface BuildAllOptions extends BuildOptions {
   label: string
-  searchQuery?: string
+  scope?: AgentErrorContextScope
 }
 
 /** Context for every currently listed issue (overview footer action). */
@@ -170,15 +170,12 @@ export function buildAllErrorContext(
   )
     ? 'error'
     : 'warning'
-  const searchQuery = options.searchQuery?.trim()
-  const scope: AgentErrorContextScope = 'all'
   return {
-    scope,
+    scope: options.scope ?? 'all',
     count: problems.length,
     problems,
     label: options.label,
     severity,
-    workflowName: options.workflowName,
-    ...(searchQuery ? { searchQuery } : {})
+    workflowName: options.workflowName
   }
 }

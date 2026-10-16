@@ -67,6 +67,7 @@
               class="shrink-0"
               data-testid="error-card-ask-agent"
               :aria-label="askAgentLabel"
+              @click="handleAskAgent"
             >
               {{ t('rightSidePanel.askAgent') }}
             </Button>
@@ -360,6 +361,7 @@
                 v-for="card in group.cards"
                 :key="card.id"
                 :card="card"
+                :expand-details-token="expandDetailsToken"
                 :aria-current="isCardInSelection(card.id) ? 'true' : undefined"
                 :class="
                   cn(
@@ -427,6 +429,10 @@ import DotSpinner from '@/components/common/DotSpinner.vue'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { usePackInstall } from '@/workbench/extensions/manager/composables/nodePack/usePackInstall'
 import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
+import {
+  buildAllErrorContext,
+  buildGroupErrorContext
+} from './buildAgentErrorContext'
 import { useErrorGroups } from './useErrorGroups'
 import type { SwapNodeGroup } from './useErrorGroups'
 import type { ErrorGroup, ErrorGroupSeverity } from './types'
@@ -488,9 +494,14 @@ const { missingNodePacks } = useMissingNodes()
 const { isInstalling: isInstallingAll, installAllPacks: installAll } =
   usePackInstall(() => missingNodePacks.value)
 const { replaceGroup, replaceAllGroups } = useNodeReplacement()
-const { canAskAgent } = useAskAgentAboutIssues()
+const { canAskAgent, askAgentAboutIssues } = useAskAgentAboutIssues()
 
-const searchQuery = defineModel<string>('search', { default: '' })
+const emit = defineEmits<{
+  issueCount: [count: number]
+}>()
+
+const searchQuery = ref('')
+const expandDetailsToken = ref(0)
 const expandedExecutionItemDetailKeys = ref(new Set<string>())
 const isSearching = computed(() => searchQuery.value.trim() !== '')
 
@@ -881,6 +892,32 @@ watch(
   { immediate: true }
 )
 
+function openClosedErrorDetails() {
+  for (const group of allErrorGroups.value) {
+    if (isSectionCollapsed(group.groupKey)) {
+      setSectionCollapsed(group.groupKey, false)
+    }
+  }
+  const nextKeys = new Set(expandedExecutionItemDetailKeys.value)
+  for (const group of allErrorGroups.value) {
+    for (const item of getExecutionItemList(group)) {
+      if (item.displayDetails) nextKeys.add(item.key)
+    }
+  }
+  expandedExecutionItemDetailKeys.value = nextKeys
+  expandDetailsToken.value += 1
+}
+
+watch(
+  () => rightSidePanelStore.errorDetailsRequest,
+  (request) => {
+    if (request === 0) return
+    openClosedErrorDetails()
+    rightSidePanelStore.errorDetailsRequest = 0
+  },
+  { immediate: true }
+)
+
 function handleLocateNode(nodeId: string) {
   focusNode(nodeId, errorNodeCache.value)
 }
@@ -910,9 +947,52 @@ function handleReplaceAll() {
   replaceAllGroups(swapNodeGroups.value)
 }
 
+const missingGroupContext = computed(() => ({
+  missingPackGroups: missingPackGroups.value,
+  swapNodeGroups: swapNodeGroups.value,
+  missingModelGroups: missingModelGroups.value,
+  missingMediaGroups: missingMediaGroups.value
+}))
+
 const askAgentLabel = computed(() => {
   const groups = filteredGroups.value
   const title = groups.length === 1 ? groups[0].displayTitle : hero.value.title
   return t('rightSidePanel.askAgentAbout', { title })
 })
+
+const allIssuesContext = computed(() =>
+  buildAllErrorContext(allErrorGroups.value, missingGroupContext.value, {
+    label: t('agent.errorContext.allLabel')
+  })
+)
+
+watch(
+  () => allIssuesContext.value.count,
+  (count) => emit('issueCount', count),
+  { immediate: true }
+)
+
+function handleAskAgent() {
+  const groups = filteredGroups.value
+  if (groups.length === 0) return
+  if (groups.length === 1) {
+    askAgentAboutIssues(
+      buildGroupErrorContext(groups[0], missingGroupContext.value)
+    )
+    return
+  }
+  askAgentAboutIssues(
+    buildAllErrorContext(groups, missingGroupContext.value, {
+      label: hero.value.title,
+      scope: 'card'
+    })
+  )
+}
+
+function askAboutAllIssues() {
+  if (allIssuesContext.value.count === 0) return
+  askAgentAboutIssues(allIssuesContext.value)
+}
+
+defineExpose({ askAboutAllIssues })
 </script>

@@ -70,10 +70,6 @@ export function formatAgentErrorContext(
   ]
   if (context.workflowName?.trim())
     header.push(`Workflow: ${context.workflowName.trim()}`)
-  if (context.scope === 'all' && context.searchQuery?.trim())
-    header.push(
-      `Issues panel filter in effect: "${context.searchQuery.trim()}"`
-    )
 
   const block = [
     ...header,

@@ -70,6 +70,7 @@ describe('useViewErrorsInGraph', () => {
     expect(canvasStore.selectedItems).toEqual([])
     expect(rightSidePanelStore.activeTab).toBe('errors')
     expect(rightSidePanelStore.isOpen).toBe(true)
+    expect(rightSidePanelStore.errorDetailsRequest).toBe(1)
     expect(executionErrorStore.isErrorOverlayOpen).toBe(false)
   })
 
@@ -84,6 +85,7 @@ describe('useViewErrorsInGraph', () => {
 
     expect(rightSidePanelStore.activeTab).toBe('errors')
     expect(rightSidePanelStore.isOpen).toBe(true)
+    expect(rightSidePanelStore.errorDetailsRequest).toBe(1)
     expect(executionErrorStore.isErrorOverlayOpen).toBe(false)
   })
 })

@@ -16,6 +16,7 @@ import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import type { useComfyRegistryService } from '@/services/comfyRegistryService'
 import type { MissingNodeType } from '@/platform/nodeReplacement/types'
 import { toNodeId } from '@/types/nodeId'
@@ -139,8 +140,6 @@ describe('TabErrors.vue', () => {
             askAgentAbout: 'Ask the agent about {title}',
             askAgentAboutAll:
               'Ask agent about {count} issue | Ask agent about all {count} issues',
-            askAgentAboutFiltered:
-              'Ask agent about {count} filtered issue | Ask agent about {count} filtered issues',
             errorLog: 'Error log',
             findOnGithubTooltip: 'Search GitHub issues',
             getHelpTooltip: 'Get help',
@@ -368,7 +367,7 @@ describe('TabErrors.vue', () => {
     expect(screen.queryByText('Input: clip')).not.toBeInTheDocument()
   })
 
-  it('shows the card and footer Ask agent buttons without handing issues over', async () => {
+  it('inserts a card chip and an all-issues chip from the panel buttons', async () => {
     const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
     vi.mocked(getNodeByExecutionId).mockReturnValue(
       fromAny<NonNullable<ReturnType<typeof getNodeByExecutionId>>, unknown>({
@@ -397,10 +396,22 @@ describe('TabErrors.vue', () => {
     const footer = screen.getByTestId('errors-footer-ask-agent')
     expect(footer).toHaveTextContent('Ask agent about 1 issue')
     await user.click(footer)
-    expect(askAgentMock.askAgentAboutIssues).not.toHaveBeenCalled()
+
+    expect(askAgentMock.askAgentAboutIssues).toHaveBeenCalledTimes(2)
+    expect(askAgentMock.askAgentAboutIssues.mock.calls[0][0]).toMatchObject({
+      scope: 'card',
+      severity: 'error',
+      count: 1,
+      label: 'Execution failed'
+    })
+    expect(askAgentMock.askAgentAboutIssues.mock.calls[1][0]).toMatchObject({
+      scope: 'all',
+      label: 'All issues',
+      count: 1
+    })
   })
 
-  it('labels the footer with the filtered issue count', async () => {
+  it('keeps the footer on every issue while search narrows the list', async () => {
     const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
     vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
       fromAny<NonNullable<ReturnType<typeof getNodeByExecutionId>>, unknown>({
@@ -422,6 +433,7 @@ describe('TabErrors.vue', () => {
       })
     })
 
+    await nextTick()
     expect(screen.getByTestId('errors-footer-ask-agent')).toHaveTextContent(
       'Ask agent about all 2 issues'
     )
@@ -429,9 +441,15 @@ describe('TabErrors.vue', () => {
     await user.type(screen.getByRole('textbox'), 'Missing text input')
 
     expect(screen.getByTestId('errors-footer-ask-agent')).toHaveTextContent(
-      'Ask agent about 1 filtered issue'
+      'Ask agent about all 2 issues'
     )
-    expect(askAgentMock.askAgentAboutIssues).not.toHaveBeenCalled()
+    await user.click(screen.getByTestId('errors-footer-ask-agent'))
+    expect(askAgentMock.askAgentAboutIssues).toHaveBeenCalledTimes(1)
+    expect(askAgentMock.askAgentAboutIssues.mock.calls[0][0]).toMatchObject({
+      scope: 'all',
+      count: 2,
+      label: 'All issues'
+    })
   })
 
   it('omits the agent actions when the agent is unavailable', () => {
@@ -485,6 +503,78 @@ describe('TabErrors.vue', () => {
     await user.click(screen.getByRole('button', { name: 'Details' }))
 
     expect(screen.queryByText(/Line 1/)).not.toBeInTheDocument()
+  })
+
+  it('opens a closed runtime error log when view details is requested', async () => {
+    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    vi.mocked(getNodeByExecutionId).mockReturnValue(
+      fromAny<NonNullable<ReturnType<typeof getNodeByExecutionId>>, unknown>({
+        title: 'KSampler'
+      })
+    )
+
+    const { user } = renderComponent((pinia) => {
+      useExecutionErrorStore(pinia).recordExecutionError({
+        prompt_id: 'abc',
+        node_id: '10',
+        node_type: 'KSampler',
+        executed: [],
+        exception_message: 'Out of memory',
+        exception_type: 'RuntimeError',
+        traceback: ['Line 1', 'Line 2'],
+        timestamp: Date.now()
+      })
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Details' }))
+    expect(screen.queryByText(/Line 1/)).not.toBeInTheDocument()
+
+    useRightSidePanelStore().errorDetailsRequest = 1
+    await nextTick()
+
+    expect(screen.getByText(/Line 1/)).toBeInTheDocument()
+    expect(useRightSidePanelStore().errorDetailsRequest).toBe(0)
+  })
+
+  it('opens closed issue details when view details is requested', async () => {
+    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
+      fromAny<NonNullable<ReturnType<typeof getNodeByExecutionId>>, unknown>({
+        title: nodeId === '1' ? 'KSampler' : 'CLIP Text Encode'
+      })
+    )
+
+    const { user } = renderComponent((pinia) => {
+      useExecutionErrorStore(pinia).recordNodeErrors({
+        '1': nodeError(
+          [
+            validationError(
+              'required_input_missing',
+              'positive',
+              {},
+              'Required input is missing',
+              'Input: positive'
+            )
+          ],
+          'KSampler'
+        )
+      })
+    })
+
+    expect(
+      screen.queryByText('KSampler is missing a required input: positive')
+    ).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Collapse' }))
+    expect(screen.queryByText('KSampler - positive')).not.toBeInTheDocument()
+
+    useRightSidePanelStore().errorDetailsRequest = 1
+    await nextTick()
+
+    expect(screen.getByText('KSampler - positive')).toBeInTheDocument()
+    expect(
+      screen.getByText('KSampler is missing a required input: positive')
+    ).toBeInTheDocument()
   })
 
   it('filters errors based on search query', async () => {

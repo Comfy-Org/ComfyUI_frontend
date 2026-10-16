@@ -4840,7 +4840,6 @@
     "askAgent": "Ask agent",
     "askAgentAbout": "Ask the agent about {title}",
     "askAgentAboutAll": "Ask agent about all issues ({count})",
-    "askAgentAboutFiltered": "Ask agent about all filtered issues ({count})",
     "resetToDefault": "Reset to default",
     "resetAllParameters": "Reset all parameters",
     "missingNodePacks": {
@@ -5729,7 +5728,6 @@
     "placeholder": "Describe ideas, / use skills, {'@'} add references, drag in assets",
     "placeholderWithoutSkills": "Describe ideas, {'@'} add references, drag in assets",
     "errorContext": {
-      "chipGroupLabel": "Attached issue",
       "remove": "Remove attached issue",
       "problemCount": "{count} problem | {count} problems",
       "allLabel": "All issues"

@@ -36,6 +36,4 @@ export interface AgentErrorContext {
   severity: AgentErrorContextSeverity
   /** Originating workflow name, when known. */
   workflowName?: string
-  /** Search/filter text in effect when the `all` scope was captured. */
-  searchQuery?: string
 }

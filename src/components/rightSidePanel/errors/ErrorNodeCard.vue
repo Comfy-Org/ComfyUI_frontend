@@ -164,7 +164,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -177,8 +177,9 @@ import type { ErrorCardData, ErrorItem } from './types'
 import { useErrorActions } from './useErrorActions'
 import { useErrorReport } from './useErrorReport'
 
-const { card } = defineProps<{
+const { card, expandDetailsToken = 0 } = defineProps<{
   card: ErrorCardData
+  expandDetailsToken?: number
 }>()
 
 const emit = defineEmits<{
@@ -190,6 +191,14 @@ const { t } = useI18n()
 const { displayedDetailsMap } = useErrorReport(() => card)
 const { findOnGitHub, contactSupport: handleGetHelp } = useErrorActions()
 const runtimeDetailsExpanded = ref(true)
+
+watch(
+  () => expandDetailsToken,
+  (token) => {
+    if (token > 0) runtimeDetailsExpanded.value = true
+  },
+  { immediate: true }
+)
 const hasRuntimeError = computed(() =>
   card.errors.some((error) => error.isRuntimeError)
 )
