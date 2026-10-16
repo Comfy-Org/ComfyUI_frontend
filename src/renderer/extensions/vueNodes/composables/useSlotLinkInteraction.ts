@@ -177,7 +177,6 @@ export function useSlotLinkInteraction({
         event.clientX - press.client.x,
         event.clientY - press.client.y
       ) > CanvasPointer.maxClickDrift
-    if (hasDragged) autoPan?.start()
   }
 
   const isSlotClick = (event: PointerEvent) => {
@@ -498,13 +497,18 @@ export function useSlotLinkInteraction({
   const canvas = app.canvas
   const node = nodeId ? canvas.graph?.getNodeById(nodeId) : null
   const handlePointerMove = (event: PointerEvent) => {
-    if (!pointerSession.matches(event) || canvasStore.isReadOnly) return
+    if (!pointerSession.matches(event)) return
+    latchDragPastClickDrift(event)
+    if (canvasStore.isReadOnly) {
+      autoPan?.stop()
+      return
+    }
 
     event.stopPropagation()
 
     app.canvas.last_mouse = [event.clientX, event.clientY]
-    latchDragPastClickDrift(event)
     autoPan?.updatePointer(event.clientX, event.clientY)
+    if (hasDragged) autoPan?.start()
 
     if (canvas.subgraph && node) {
       augmentToCanvasPointerEvent(event, node, canvas)
