@@ -1,7 +1,7 @@
+import type { LGraphNode } from '@/lib/litegraph/src/types/entityRegistry'
 import { getCnrIdFromNode } from '@/platform/nodeReplacement/cnrIdUtil'
 import { useTelemetry } from '@/platform/telemetry'
 
-import type { LGraphNode } from '../LGraphNode'
 import type { NamedValuesShadowDiffResult } from './namedValuesShadowDiff'
 
 const SHADOW_DIFF_SUMMARY_SAMPLE_RATE = 0.05

@@ -1,4 +1,5 @@
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@/lib/litegraph/src/types/entityRegistry'
+
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { parseNodeId } from '@/types/nodeId'
 

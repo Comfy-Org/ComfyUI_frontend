@@ -1,5 +1,8 @@
-import type { LGraphCanvas } from '../LGraphCanvas'
-import type { LGraphGroup } from '../LGraphGroup'
+import type {
+  LGraphCanvas,
+  LGraphGroup
+} from '@/lib/litegraph/src/types/entityRegistry'
+
 import { LLink } from '../LLink'
 import { Reroute } from '../Reroute'
 import type { LinkSegment } from '../interfaces'
