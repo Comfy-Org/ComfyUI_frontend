@@ -7,7 +7,8 @@ export const reviewErrors = z.object({
     .array(
       z.object({
         path: z.string().max(2000),
-        message: z.string().max(1000)
+        message: z.string().max(1000),
+        resource_uid: z.uuid().optional()
       })
     )
     .max(100)

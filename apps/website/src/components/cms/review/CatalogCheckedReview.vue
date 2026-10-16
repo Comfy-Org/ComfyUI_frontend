@@ -244,6 +244,9 @@ async function exit() {
       {{ t(`cccStaging.errors.${flow.reason}`) }}
       <ul v-if="flow.fields?.length" class="mt-2 space-y-1">
         <li v-for="(field, index) in flow.fields" :key="index">
+          <code v-if="field.resource_uid" class="mr-2 break-all">{{
+            field.resource_uid
+          }}</code>
           <code class="break-all">{{ field.path }}</code>
           <span class="ml-2 wrap-break-word">{{ field.message }}</span>
         </li>

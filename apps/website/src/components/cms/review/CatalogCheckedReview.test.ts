@@ -32,7 +32,8 @@ describe('checkbox-only publication console', () => {
           field_errors: [
             {
               path: '$.workflow_versions[0].download',
-              message: 'Pinned media is not in the publication candidate'
+              message: 'Pinned media is not in the publication candidate',
+              resource_uid: initial.items[0]?.content.uid
             }
           ]
         },
@@ -53,6 +54,9 @@ describe('checkbox-only publication console', () => {
     expect(alert).toHaveTextContent('The selected changes cannot be published')
     expect(alert).not.toHaveTextContent('discarded')
     expect(screen.getByText('$.workflow_versions[0].download')).toBeVisible()
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      firstItem(initial).content.uid
+    )
     expect(
       screen.getByText('Pinned media is not in the publication candidate')
     ).toBeVisible()

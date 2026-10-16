@@ -83,6 +83,9 @@ async function publish() {
       {{ t(`cccStaging.errors.${failure}`) }}
       <ul v-if="fields.length" class="mt-2 space-y-1">
         <li v-for="(field, index) in fields" :key="index">
+          <code v-if="field.resource_uid" class="mr-2 break-all">{{
+            field.resource_uid
+          }}</code>
           <code class="break-all">{{ field.path }}</code>
           <span class="ml-2 wrap-break-word">{{ field.message }}</span>
         </li>
