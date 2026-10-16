@@ -320,7 +320,7 @@ describe('useDeploymentPickStore', () => {
     expect(reload).toHaveBeenCalledOnce()
   })
 
-  it('an owner clears a workspace default that no longer exists, and a browser that follows it reloads', async () => {
+  it('an owner clears a workspace default that no longer exists without reloading a browser that already runs on Comfy Cloud', async () => {
     Object.assign(useTeamWorkspaceStore(), {
       workspaceId: 'ws-1',
       activeWorkspace: { id: 'ws-1', role: 'owner' }
@@ -340,7 +340,8 @@ describe('useDeploymentPickStore', () => {
     await expect(store.setDefault(null)).resolves.toBeNull()
 
     expect(mockWorkspaceApi.clearDefaultDeployment).toHaveBeenCalledWith('ws-1')
-    expect(reload).toHaveBeenCalledOnce()
+    expect(reload).not.toHaveBeenCalled()
+    expect(store.isSwitching).toBe(false)
   })
 
   it("hands back the server's refusal of a default and stays ready", async () => {
@@ -388,6 +389,22 @@ describe('useDeploymentPickStore', () => {
       deployment_id: 'dep-1'
     })
     expect(reload).toHaveBeenCalledOnce()
+  })
+
+  it('goes back to the listing, refreshed, when the page is still in use after a switch reload', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    mockWorkspaceApi.pickDeployment.mockResolvedValue(undefined)
+    const store = useDeploymentPickStore()
+    await store.load()
+    await store.pick('dep-1')
+    expect(store.isSwitching).toBe(true)
+
+    window.dispatchEvent(new Event('pointerdown'))
+
+    expect(store.isSwitching).toBe(false)
+    await vi.waitFor(() =>
+      expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledTimes(2)
+    )
   })
 
   it('clears the pick for Comfy Cloud and reloads', async () => {
@@ -862,6 +879,32 @@ describe('useDeploymentPickStore', () => {
         expect(store.isVisible).toBe(false)
       }
     )
+
+    it('keeps a shown listing, and keeps retrying, when a refresh gets a 404', async () => {
+      mockWorkspaceApi.listDeployments
+        .mockResolvedValueOnce(listing)
+        .mockRejectedValueOnce(new WorkspaceApiError('404 page not found', 404))
+      const store = useDeploymentPickStore()
+      await store.load()
+
+      await store.load()
+
+      expect(store.isVisible).toBe(true)
+      expect(store.listingRefused).toBe(false)
+    })
+
+    it.for([
+      { answer: 'a 403', status: 403, refused: true },
+      { answer: 'a 404', status: 404, refused: true },
+      { answer: 'a 503', status: 503, refused: false }
+    ])('treats $answer as final: $refused', async ({ status, refused }) => {
+      mockWorkspaceApi.listDeployments.mockRejectedValue(
+        new WorkspaceApiError('listing failed', status)
+      )
+      const store = useDeploymentPickStore()
+      await store.load()
+      expect(store.listingRefused).toBe(refused)
+    })
 
     it('keeps the last listing when a refresh fails', async () => {
       mockWorkspaceApi.listDeployments.mockResolvedValueOnce(listing)
