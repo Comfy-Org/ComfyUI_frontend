@@ -11,7 +11,10 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import type { ComfyWidgetConstructor } from '@/types/comfy'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { isImageUploadInput } from '@/types/nodeDefAugmentation'
-import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
+import {
+  createAnnotatedPath,
+  parseAnnotatedPath
+} from '@/utils/createAnnotatedPath'
 import { addToComboValues } from '@/utils/litegraphUtil'
 
 import {
@@ -133,9 +136,10 @@ export const useImageUploadWidget = () => {
     // Add our own callback to the combo widget to render an image when it changes
     fileComboWidget.callback = function () {
       node.imgs = undefined
-      nodeOutputStore.setNodeOutputs(node, String(fileComboWidget.value), {
-        isAnimated
-      })
+      const widgetValue = `${fileComboWidget.value}`
+      const { filepath, rootFolder } = parseAnnotatedPath(widgetValue)
+      const options = { isAnimated, type: rootFolder }
+      nodeOutputStore.setNodeOutputs(node, filepath, options)
       showPreview({ block: false })
       node.graph?.setDirtyCanvas(true)
     }
@@ -150,9 +154,9 @@ export const useImageUploadWidget = () => {
         | null
         | undefined
       if (fileValue != null) {
-        nodeOutputStore.setNodeOutputs(node, String(fileValue), {
-          isAnimated
-        })
+        const { filepath, rootFolder } = parseAnnotatedPath(`${fileValue}`)
+        const options = { isAnimated, type: rootFolder }
+        nodeOutputStore.setNodeOutputs(node, filepath, options)
       }
       showPreview({ block: false })
     })
