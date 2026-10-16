@@ -1,9 +1,13 @@
-import type { APIRoute } from 'astro'
+import type { APIRoute, APIContext } from 'astro'
 import { z } from 'astro/zod'
 import { editorHeaders } from '@/lib/cms/editor-server'
 
-export const GET: APIRoute = async (context) => {
-  const deny = () => new Response(null, { status: 404, headers: editorHeaders })
+function validPreviewRevision(rev: string | undefined) {
+  return Boolean(
+    rev && /^[1-9]\d*$/.test(rev) && Number.isSafeInteger(Number(rev))
+  )
+}
+function mediaRequest(context: APIContext) {
   const { uid, version, rev } = context.params
   const preview = context.url.pathname.startsWith('/preview-media/')
   const session = context.locals.catalogAuthoring
@@ -11,18 +15,32 @@ export const GET: APIRoute = async (context) => {
     !z.uuid().safeParse(uid).success ||
     !z.uuid().safeParse(version).success ||
     context.url.search ||
-    (context.request.headers.has('Range') &&
-      (!preview || context.request.headers.get('Range') !== 'bytes=0-'))
+    !validRange(context.request.headers, preview)
   )
-    return deny()
-  if (
-    preview &&
-    (!session ||
-      !rev ||
-      !/^[1-9]\d*$/.test(rev) ||
-      !Number.isSafeInteger(Number(rev)))
+    return undefined
+  if (preview && (!session || !validPreviewRevision(rev))) return undefined
+  return { uid, version, rev, preview, session }
+}
+function validRange(headers: Headers, preview: boolean) {
+  return (
+    !headers.has('Range') || (preview && headers.get('Range') === 'bytes=0-')
   )
-    return deny()
+}
+function allowedMediaType(
+  type: string | null,
+  preview: boolean
+): type is string {
+  return Boolean(
+    type &&
+    (/^(image\/(png|jpeg|webp)|application\/json)(;|$)/.test(type) ||
+      (preview && /^video\/(mp4|webm)(;|$)/.test(type)))
+  )
+}
+export const GET: APIRoute = async (context) => {
+  const deny = () => new Response(null, { status: 404, headers: editorHeaders })
+  const request = mediaRequest(context)
+  if (!request) return deny()
+  const { uid, version, rev, preview, session } = request
   const origin = process.env.SITE_CATALOG_API_URL
   if (!origin || process.env.VERCEL_ENV === 'production') return deny()
   try {
@@ -44,11 +62,7 @@ export const GET: APIRoute = async (context) => {
     )
     if (!response.ok) return deny()
     const type = response.headers.get('Content-Type')
-    if (
-      !type ||
-      (!/^(image\/(png|jpeg|webp)|application\/json)(;|$)/.test(type) &&
-        !(preview && /^video\/(mp4|webm)(;|$)/.test(type)))
-    ) {
+    if (!allowedMediaType(type, preview)) {
       await response.body?.cancel()
       return deny()
     }

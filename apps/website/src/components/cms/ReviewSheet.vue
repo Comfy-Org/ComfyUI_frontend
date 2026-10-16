@@ -1,14 +1,13 @@
 <script setup lang="ts">
-import { Check, ChevronDown, ChevronUp, Plus, Trash2 } from '@lucide/vue'
+import { ChevronDown, ChevronUp } from '@lucide/vue'
 import { DialogDescription, DialogTitle } from 'reka-ui'
 import { computed, nextTick } from 'vue'
 
 import AuthorName from '@/components/cms/AuthorName.vue'
 import CatalogReview from '@/components/cms/CatalogReview.vue'
 import ChangeTag from '@/components/cms/ChangeTag.vue'
-import DeleteSubmissionButton from '@/components/cms/DeleteSubmissionButton.vue'
 import SubmissionReview from '@/components/cms/SubmissionReview.vue'
-import UndoChangeButton from '@/components/cms/UndoChangeButton.vue'
+import ReviewSheetActions from './ReviewSheetActions.vue'
 import AdminButton from '@/components/cms/ui/AdminButton.vue'
 import AdminSheetContent from '@/components/cms/ui/AdminSheetContent.vue'
 import Sheet from '@/components/ui/sheet/Sheet.vue'
@@ -147,49 +146,17 @@ const author = computed(() =>
         <CatalogReview v-else :key="item.id" :item :locale />
       </div>
 
-      <footer
-        class="flex min-h-14 shrink-0 flex-wrap items-center gap-2 border-t border-admin-line px-5 py-3"
-      >
-        <AdminButton
-          v-if="item.source === 'catalog' && item.canonical && canEdit"
-          variant="dangerGhost"
-          :icon="Trash2"
-          :disabled
-          @click="emit('discard')"
-          >{{ t('cccStaging.deleteChanges') }}</AdminButton
-        >
-        <UndoChangeButton
-          v-else-if="item.source === 'catalog' && canEdit"
-          :key="item.id"
-          :csrf
-          :uid="item.id"
-          :title="item.title"
-          :published="item.change !== 'new'"
-          destination="/admin/"
-          :locale
-        />
-        <DeleteSubmissionButton
-          v-else-if="item.source === 'submission' && canApply"
-          :key="item.id"
-          :item
-          :csrf
-          :locale
-        />
-        <span class="ml-auto flex flex-wrap items-center gap-1">
-          <AdminButton
-            v-if="canApply"
-            :variant="selected ? 'secondary' : 'primary'"
-            :icon="selected ? Check : Plus"
-            :aria-pressed="selected"
-            :disabled
-            @click="emit('select')"
-          >
-            {{
-              selected ? t('cmsAdmin.review.picked') : t('cmsAdmin.review.pick')
-            }}
-          </AdminButton>
-        </span>
-      </footer>
+      <ReviewSheetActions
+        :item
+        :can-edit="canEdit"
+        :can-apply="canApply"
+        :selected
+        :disabled
+        :csrf
+        :locale
+        @discard="emit('discard')"
+        @select="emit('select')"
+      />
     </AdminSheetContent>
   </Sheet>
 </template>

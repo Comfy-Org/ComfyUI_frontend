@@ -163,83 +163,100 @@ function selectPreview(context: APIContext) {
   return context.redirect(context.url.pathname + context.url.search, 303)
 }
 
-async function respond(context: APIContext, next: MiddlewareNext) {
-  context.locals.catalogLocale =
-    context.url.pathname.startsWith('/zh-CN/') ||
-    context.cookies.get(CATALOG_LOCALE_COOKIE)?.value === 'zh-CN'
-      ? 'zh-CN'
-      : 'en'
-  context.locals.t = translationsFor(resolveLocale(context.currentLocale)).t
-  const admin = isAdmin(context.url.pathname)
-  if (context.isPrerendered) return admin ? denied(404) : next()
-  const cms = Boolean(process.env.SITE_CATALOG_API_URL)
-  if (context.url.pathname.startsWith('/catalog-media/')) return next()
-  if (context.url.pathname.replace(/\/$/, '') === '/admin/content-session') {
-    if (!cms) return editorFailure(503)
-    const response = await next()
-    for (const [name, value] of Object.entries(editorHeaders))
-      response.headers.set(name, value)
-    return response
-  }
-  if (
-    isAuthoringRoute(context.url.pathname) ||
-    (['/admin', '/admin/'].includes(context.url.pathname) &&
-      (context.cookies.has(AUTHORING_COOKIE) ||
-        context.cookies.has(DEMO_COOKIE))) ||
-    context.url.pathname === '/admin/catalog-testers' ||
-    context.url.pathname.startsWith('/preview-media/')
-  ) {
-    if (!cms) return editorFailure(503)
-    const verified = await loadAuthoringSession(context)
-    if (!verified.ok) return verified.response
-    context.locals.catalogAuthoring = verified.session
-    context.locals.catalogAuthoring.preview = currentCatalogPreview(context)
-    const response = await next()
-    for (const [name, value] of Object.entries(editorHeaders))
-      response.headers.set(name, value)
-    return response
-  }
-  if (
-    cms &&
-    (/^\/(?:zh-CN\/)?hub\//.test(context.url.pathname) ||
-      context.url.pathname.startsWith('/models/') ||
-      context.url.pathname === '/') &&
-    (context.cookies.has(AUTHORING_COOKIE) || context.cookies.has(DEMO_COOKIE))
-  ) {
-    const verified = await loadAuthoringSession(context)
-    if (verified.ok) {
-      context.locals.catalogAuthoring = {
-        ...verified.session,
-        preview: currentCatalogPreview(context)
-      }
-      const selection = selectCatalogPreview(context)
-      if (selection) return selection
-      const response = await next()
-      for (const [name, value] of Object.entries(editorHeaders))
-        response.headers.set(name, value)
-      return response
-    }
-    if (
-      context.cookies.has('comfy_catalog_preview') ||
-      context.url.searchParams.has('preview') ||
-      context.url.searchParams.has('preview_at') ||
-      context.url.searchParams.has('now')
+function hasAuthoringCookie(context: APIContext) {
+  return (
+    context.cookies.has(AUTHORING_COOKIE) || context.cookies.has(DEMO_COOKIE)
+  )
+}
+
+function isCatalogAuthoringRequest(context: APIContext) {
+  const path = context.url.pathname
+  return (
+    isAuthoringRoute(path) ||
+    (['/admin', '/admin/'].includes(path) && hasAuthoringCookie(context)) ||
+    path === '/admin/catalog-testers' ||
+    path.startsWith('/preview-media/')
+  )
+}
+
+function isCatalogBrowseRequest(context: APIContext) {
+  const path = context.url.pathname
+  return (
+    (/^\/(?:zh-CN\/)?hub\//.test(path) ||
+      path.startsWith('/models/') ||
+      path === '/') &&
+    hasAuthoringCookie(context)
+  )
+}
+
+function requestedCatalogPreview(context: APIContext) {
+  return (
+    context.cookies.has('comfy_catalog_preview') ||
+    ['preview', 'preview_at', 'now'].some((key) =>
+      context.url.searchParams.has(key)
     )
-      return verified.response
+  )
+}
+
+function editorResponseHeaders(response: Response) {
+  for (const [name, value] of Object.entries(editorHeaders))
+    response.headers.set(name, value)
+  return response
+}
+
+async function authoringResponse(context: APIContext, next: MiddlewareNext) {
+  const verified = await loadAuthoringSession(context)
+  if (!verified.ok) return verified.response
+  context.locals.catalogAuthoring = verified.session
+  context.locals.catalogAuthoring.preview = currentCatalogPreview(context)
+  return editorResponseHeaders(await next())
+}
+
+async function catalogBrowseResponse(
+  context: APIContext,
+  next: MiddlewareNext
+) {
+  const verified = await loadAuthoringSession(context)
+  if (!verified.ok)
+    return requestedCatalogPreview(context) ? verified.response : undefined
+  context.locals.catalogAuthoring = {
+    ...verified.session,
+    preview: currentCatalogPreview(context)
   }
+  const selection = selectCatalogPreview(context)
+  return selection ?? editorResponseHeaders(await next())
+}
+
+async function authenticateSite(context: APIContext, cms: boolean) {
   context.locals.siteDemo = cms && demoMode()
   context.locals.siteLocalAccess =
     cms && (isLocalAccess(context) || context.locals.siteDemo)
-  const signIn = isSignIn(context)
-  const publicDocumentation = isPublicCatalogDocumentation(context)
-  if (cms && !signIn && !publicDocumentation) {
+  if (requiresSiteAuthentication(context, cms)) {
     const failure = await authenticate(context)
     if (failure) return failure
   }
-  if (admin && !signIn && !context.locals.site)
+  if (missingAdminSession(context))
     return context.locals.siteDemo
       ? context.redirect('/admin/local-access', 303)
       : denied(404)
+  return undefined
+}
+function missingAdminSession(context: APIContext) {
+  return (
+    isAdmin(context.url.pathname) && !isSignIn(context) && !context.locals.site
+  )
+}
+function requiresSiteAuthentication(context: APIContext, cms: boolean) {
+  return cms && !isSignIn(context) && !isPublicCatalogDocumentation(context)
+}
+async function siteResponse(
+  context: APIContext,
+  next: MiddlewareNext,
+  cms: boolean
+) {
+  const failure = await authenticateSite(context, cms)
+  if (failure) return failure
+  const publicDocumentation = isPublicCatalogDocumentation(context)
   const selection = publicDocumentation ? undefined : selectPreview(context)
   if (!publicDocumentation && context.url.searchParams.has('preview_at'))
     return denied()
@@ -251,6 +268,40 @@ async function respond(context: APIContext, next: MiddlewareNext) {
     response.headers.set('X-Comfy-Content-Source', 'cms')
   }
   return response
+}
+
+function setRequestLocale(context: APIContext) {
+  context.locals.catalogLocale =
+    context.url.pathname.startsWith('/zh-CN/') ||
+    context.cookies.get(CATALOG_LOCALE_COOKIE)?.value === 'zh-CN'
+      ? 'zh-CN'
+      : 'en'
+  context.locals.t = translationsFor(resolveLocale(context.currentLocale)).t
+}
+async function respond(context: APIContext, next: MiddlewareNext) {
+  setRequestLocale(context)
+  if (context.isPrerendered)
+    return isAdmin(context.url.pathname) ? denied(404) : next()
+  const cms = Boolean(process.env.SITE_CATALOG_API_URL)
+  if (context.url.pathname.startsWith('/catalog-media/')) return next()
+  const editor = await editorRouteResponse(context, next, cms)
+  if (editor) return editor
+  if (cms && isCatalogBrowseRequest(context)) {
+    const response = await catalogBrowseResponse(context, next)
+    if (response) return response
+  }
+  return siteResponse(context, next, cms)
+}
+async function editorRouteResponse(
+  context: APIContext,
+  next: MiddlewareNext,
+  cms: boolean
+) {
+  if (context.url.pathname.replace(/\/$/, '') === '/admin/content-session')
+    return cms ? editorResponseHeaders(await next()) : editorFailure(503)
+  if (isCatalogAuthoringRequest(context))
+    return cms ? authoringResponse(context, next) : editorFailure(503)
+  return undefined
 }
 
 export const onRequest = defineMiddleware(async (context, next) => {

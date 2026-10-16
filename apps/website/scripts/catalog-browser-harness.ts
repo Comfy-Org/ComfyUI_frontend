@@ -36,15 +36,28 @@ export async function readOnlyRoutes(
   await context.route('**/*', async (route) => {
     const request = route.request()
     const url = new URL(request.url())
-    if (request.method() !== 'GET') {
-      writes.push(`${request.method()} ${url.pathname}`)
-      await route.abort()
-      return
-    }
+    if (await rejectWrite(route, url, writes)) return
     if (fulfill && (await fulfill(url, route))) return
-    if (url.origin === website && !blocked.test(url.pathname))
-      await route.continue()
-    else await route.abort()
+    await staticRequest(route, url, website, blocked)
   })
   return writes
+}
+async function rejectWrite(route: Route, url: URL, writes: string[]) {
+  const method = route.request().method()
+  if (method === 'GET') return false
+  writes.push(`${method} ${url.pathname}`)
+  await route.abort()
+  return true
+}
+function allowedStaticURL(url: URL, website: string, blocked: RegExp) {
+  return url.origin === website && !blocked.test(url.pathname)
+}
+async function staticRequest(
+  route: Route,
+  url: URL,
+  website: string,
+  blocked: RegExp
+) {
+  if (allowedStaticURL(url, website, blocked)) await route.continue()
+  else await route.abort()
 }

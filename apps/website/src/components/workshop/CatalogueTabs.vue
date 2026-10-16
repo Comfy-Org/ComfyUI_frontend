@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { isPlainPrimaryClick } from '@/lib/workshop/navigation-intent'
 import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -57,12 +58,7 @@ function navigate(event: MouseEvent, tab: CatalogueTab) {
   const anchor = event.currentTarget
   if (
     (localeLinks && !mounted.value) ||
-    event.defaultPrevented ||
-    event.button !== 0 ||
-    event.metaKey ||
-    event.ctrlKey ||
-    event.shiftKey ||
-    event.altKey ||
+    !isPlainPrimaryClick(event) ||
     !(anchor instanceof HTMLAnchorElement) ||
     (anchor.target !== '' && anchor.target !== '_self') ||
     anchor.hasAttribute('download')

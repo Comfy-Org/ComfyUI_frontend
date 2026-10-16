@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, useId, watch } from 'vue'
-import { UserRound } from '@lucide/vue'
+import AuthorIdentity from './AuthorIdentity.vue'
 import type { ProfileChoice } from '@/lib/cms/profile-client'
 import { searchProfiles, validProfileQuery } from '@/lib/cms/profile-client'
 import type { Locale } from '@/i18n/translations'
@@ -75,6 +75,18 @@ function choose(item: ProfileChoice) {
   query.value = ''
   open.value = false
 }
+function moveChoice(event: KeyboardEvent) {
+  event.preventDefault()
+  const wasOpen = open.value
+  open.value = true
+  active.value = Math.max(
+    0,
+    Math.min(
+      choices.value.length - 1,
+      wasOpen ? active.value + (event.key === 'ArrowDown' ? 1 : -1) : 0
+    )
+  )
+}
 function keyboard(event: KeyboardEvent) {
   if (event.isComposing) return
   if (event.key === 'Enter') {
@@ -84,16 +96,7 @@ function keyboard(event: KeyboardEvent) {
   } else if (event.key === 'Escape' || event.key === 'Tab') {
     open.value = false
   } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-    event.preventDefault()
-    const wasOpen = open.value
-    open.value = true
-    active.value = Math.max(
-      0,
-      Math.min(
-        choices.value.length - 1,
-        wasOpen ? active.value + (event.key === 'ArrowDown' ? 1 : -1) : 0
-      )
-    )
+    moveChoice(event)
   }
 }
 function manual(event: Event) {
@@ -157,20 +160,7 @@ function blur(event: FocusEvent) {
             @mousedown.prevent
             @click="choose(item)"
           >
-            <img
-              v-if="item.avatar_url"
-              :src="item.avatar_url"
-              alt=""
-              referrerpolicy="no-referrer"
-              class="size-8 shrink-0 rounded-full object-cover"
-            />
-            <UserRound v-else class="size-8 shrink-0" aria-hidden="true" />
-            <span class="min-w-0"
-              ><span class="block truncate text-admin-fg">{{ item.label }}</span
-              ><span class="block truncate text-xs">{{
-                item.username
-              }}</span></span
-            >
+            <AuthorIdentity :profile="item" truncate-name />
           </button>
         </div>
       </div>
@@ -187,20 +177,7 @@ function blur(event: FocusEvent) {
       v-if="selected"
       class="flex min-w-0 items-center gap-2 rounded-lg border border-admin-line p-2"
     >
-      <img
-        v-if="selected.avatar_url"
-        :src="selected.avatar_url"
-        alt=""
-        referrerpolicy="no-referrer"
-        class="size-8 shrink-0 rounded-full object-cover"
-      />
-      <UserRound v-else class="size-8 shrink-0" aria-hidden="true" />
-      <span class="min-w-0"
-        ><span class="block text-admin-fg">{{ selected.label }}</span
-        ><span class="block truncate text-xs">{{
-          selected.username
-        }}</span></span
-      >
+      <AuthorIdentity :profile="selected" />
     </div>
     <p v-if="value && !selected" class="truncate text-xs">
       {{ t('cccReferences.currentAccount', { id: value }) }}

@@ -34,13 +34,14 @@ const emit = defineEmits<{
 const t = translationsFor(locale).t
 const state = ref<'idle' | 'uploading' | 'failed'>('idle')
 const file = ref<File>()
-const attempt = shallowRef<{
+interface UploadAttempt {
   replace: boolean
   target?: string
   draft: number
   body: FormData
   key: string
-}>()
+}
+const attempt = shallowRef<UploadAttempt>()
 const error = ref('')
 function choose(event: Event) {
   if (!(event.target instanceof HTMLInputElement)) return
@@ -48,15 +49,17 @@ function choose(event: Event) {
   attempt.value = undefined
   error.value = ''
 }
-async function upload(replace: boolean) {
-  if (!entityUID || !file.value || state.value === 'uploading') return
-  const mime = file.value.type
+function uploadName(file: File) {
+  const mime = file.type
+  if (file.size > (mediaRole.startsWith('workflow-api-') ? 1 << 20 : 64 << 20))
+    return undefined
   if (
-    file.value.size >
-      (mediaRole.startsWith('workflow-api-') ? 1 << 20 : 64 << 20) ||
-    (jsonOnly &&
-      (!file.value.name.toLowerCase().endsWith('.json') ||
-        !['application/json', ''].includes(mime))) ||
+    jsonOnly &&
+    (!file.name.toLowerCase().endsWith('.json') ||
+      !['application/json', ''].includes(mime))
+  )
+    return undefined
+  if (
     ![
       'image/png',
       'image/jpeg',
@@ -66,13 +69,63 @@ async function upload(replace: boolean) {
       'application/json',
       ''
     ].includes(mime)
-  ) {
-    error.value = t('cmsEditor.unsupportedMedia')
-    return
-  }
-  const name = file.value.name
-    .replace(/[^A-Za-z0-9._-]/g, '-')
-    .replace(/^\.+/, '')
+  )
+    return undefined
+  return file.name.replace(/[^A-Za-z0-9._-]/g, '-').replace(/^\.+/, '')
+}
+async function replacementToken(body: FormData, target: string) {
+  const current = await editorRequest('item', { uid: target })
+  const parsed = z
+    .object({ revision_uid: z.uuid(), type: z.literal('media') })
+    .safeParse(current.data)
+  if (!current.ok || !parsed.success) return false
+  body.set('media_uid', target)
+  body.set('expected_revision_uid', parsed.data.revision_uid)
+  return true
+}
+async function uploadAttempt(
+  file: File,
+  name: string,
+  entity: string,
+  replace: boolean,
+  target?: string
+) {
+  const previous = attempt.value
+  if (
+    previous &&
+    previous.replace === replace &&
+    previous.target === target &&
+    previous.draft === draft
+  )
+    return previous
+  const body = new FormData()
+  body.set('file', file)
+  body.set('name', name)
+  body.set('expected_draft_rev', String(draft))
+  body.set('originating_entity_uid', entity)
+  body.set('role', mediaRole)
+  if (target && !(await replacementToken(body, target))) return undefined
+  const next = { replace, target, draft, body, key: crypto.randomUUID() }
+  attempt.value = next
+  return next
+}
+function uploadResult(data: unknown) {
+  const raw = zUploadCccMediaResponse.safeParse(data)
+  if (!raw.success) return undefined
+  const parsed = z
+    .object({ uid: z.uuid(), revision_uid: z.uuid() })
+    .safeParse(raw.data)
+  return parsed.success ? parsed.data : undefined
+}
+function uploadFailed(status?: number) {
+  state.value = 'failed'
+  error.value = t(
+    status === 409 ? 'cmsEditor.conflict' : 'cmsEditor.uploadFailed'
+  )
+}
+async function upload(replace: boolean) {
+  if (!entityUID || !file.value || state.value === 'uploading') return
+  const name = uploadName(file.value)
   if (!name) {
     error.value = t('cmsEditor.unsupportedMedia')
     return
@@ -81,63 +134,44 @@ async function upload(replace: boolean) {
   emit('busy', true)
   const target =
     replace && typeof reference?.id === 'string' ? reference.id : undefined
-  if (
-    !attempt.value ||
-    attempt.value.replace !== replace ||
-    attempt.value.target !== target ||
-    attempt.value.draft !== draft
-  ) {
-    const body = new FormData()
-    body.set('file', file.value)
-    body.set('name', name)
-    body.set('expected_draft_rev', String(draft))
-    body.set('originating_entity_uid', entityUID)
-    body.set('role', mediaRole)
-    if (target) {
-      // The current Media edit token may differ from the retained exact pin.
-      const current = await editorRequest('item', { uid: target })
-      const parsed = z
-        .object({ revision_uid: z.uuid(), type: z.literal('media') })
-        .safeParse(current.data)
-      if (!current.ok || !parsed.success) {
-        state.value = 'failed'
-        error.value = t('cmsEditor.uploadFailed')
-        emit('busy', false)
-        return
-      }
-      body.set('media_uid', target)
-      body.set('expected_revision_uid', parsed.data.revision_uid)
-    }
-    attempt.value = { replace, target, draft, body, key: crypto.randomUUID() }
+  const pending = await uploadAttempt(
+    file.value,
+    name,
+    entityUID,
+    replace,
+    target
+  )
+  if (!pending) {
+    uploadFailed()
+    emit('busy', false)
+    return
   }
-  // Retry the exact bytes/token/key after an uncertain response. Re-fetching the
-  // head here could turn a successful replacement retry into a second edit.
   const response = await editorRequest('upload', {
     csrf,
-    key: attempt.value.key,
-    body: attempt.value.body
+    key: pending.key,
+    body: pending.body
   })
-  const raw = zUploadCccMediaResponse.safeParse(response.data)
-  const parsed = raw.success
-    ? z.object({ uid: z.uuid(), revision_uid: z.uuid() }).safeParse(raw.data)
-    : undefined
-  if (!response.ok || !parsed?.success) {
-    state.value = 'failed'
-    error.value = t(
-      response.status === 409 ? 'cmsEditor.conflict' : 'cmsEditor.uploadFailed'
-    )
-  } else {
-    emit('update', {
-      src: 'r2',
-      id: parsed.data.uid,
-      file_version_uid: parsed.data.revision_uid,
-      name
-    })
-    file.value = undefined
-    attempt.value = undefined
-    state.value = 'idle'
-  }
+  completeUpload(response, name)
   emit('busy', false)
+}
+function completeUpload(
+  response: Awaited<ReturnType<typeof editorRequest>>,
+  name: string
+) {
+  const parsed = uploadResult(response.data)
+  if (!response.ok || !parsed) {
+    uploadFailed(response.status)
+    return
+  }
+  emit('update', {
+    src: 'r2',
+    id: parsed.uid,
+    file_version_uid: parsed.revision_uid,
+    name
+  })
+  file.value = undefined
+  attempt.value = undefined
+  state.value = 'idle'
 }
 </script>
 <template>

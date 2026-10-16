@@ -1,3 +1,4 @@
+import { isPlainPrimaryClick } from '@/lib/workshop/navigation-intent'
 export function installNativeCatalogueTabNavigation() {
   const catalogueSelector =
     'astro-island[data-astro-transition-persist^="ccc-hub-catalogue-"], [data-ccc-abandoned-catalogue]'
@@ -25,16 +26,7 @@ export function installNativeCatalogueTabNavigation() {
       nav.removeAttribute('aria-busy')
     }
   }
-  function click(event: MouseEvent) {
-    if (
-      event.defaultPrevented ||
-      event.button !== 0 ||
-      event.metaKey ||
-      event.ctrlKey ||
-      event.shiftKey ||
-      event.altKey
-    )
-      return
+  function navigationLink(event: MouseEvent) {
     const link =
       event.target instanceof Element
         ? event.target.closest<HTMLAnchorElement>('a[data-astro-reload]')
@@ -45,11 +37,16 @@ export function installNativeCatalogueTabNavigation() {
       link.hasAttribute('download')
     )
       return
+    return link
+  }
+  function click(event: MouseEvent) {
+    if (!isPlainPrimaryClick(event)) return
+    const link = navigationLink(event)
+    if (!link) return
     const nav = link.closest<HTMLElement>('[data-testid="catalogue-tabs"]')
     const catalogue = nav?.closest<HTMLElement>(catalogueSelector)
     if (!nav || !catalogue) return
-    if (catalogue.tagName === 'ASTRO-ISLAND' && !catalogue.hasAttribute('ssr'))
-      return
+    if (hydratedIsland(catalogue)) return
     const target = new URL(link.href, location.href)
     if (target.origin !== location.origin) return
     const links = [...nav.querySelectorAll<HTMLAnchorElement>('a')]
@@ -61,6 +58,16 @@ export function installNativeCatalogueTabNavigation() {
     event.preventDefault()
     marker.style.transform = `translateX(${index * 100}%)`
     nav.setAttribute('aria-busy', 'true')
+    abandonIsland(catalogue)
+    window.stop()
+    location.assign(target.href)
+  }
+  function hydratedIsland(catalogue: HTMLElement) {
+    return (
+      catalogue.tagName === 'ASTRO-ISLAND' && !catalogue.hasAttribute('ssr')
+    )
+  }
+  function abandonIsland(catalogue: HTMLElement) {
     if (catalogue.tagName === 'ASTRO-ISLAND') {
       const placeholder = document.createElement('div')
       placeholder.setAttribute('data-ccc-abandoned-catalogue', '')
@@ -75,8 +82,6 @@ export function installNativeCatalogueTabNavigation() {
       }
       catalogue.replaceWith(placeholder)
     }
-    window.stop()
-    location.assign(target.href)
   }
   document.addEventListener('click', click)
   window.addEventListener('pageshow', reset)

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { isPlainPrimaryClick } from '@/lib/workshop/navigation-intent'
 import {
   onBeforeUnmount,
   onMounted,
@@ -59,15 +60,7 @@ let browseHref = ''
 let browseScroll = 0
 let browseTitle = ''
 function openDetail(event: MouseEvent, model: WorkshopModel) {
-  if (
-    event.defaultPrevented ||
-    event.button !== 0 ||
-    event.metaKey ||
-    event.ctrlKey ||
-    event.shiftKey ||
-    event.altKey
-  )
-    return
+  if (!isPlainPrimaryClick(event)) return
   if (!model.href) return
   const target = new URL(model.href, location.href)
   if (target.origin !== location.origin || !catalogDetailPath(target.pathname))
@@ -95,17 +88,7 @@ function openDetail(event: MouseEvent, model: WorkshopModel) {
 }
 provide(catalogDetailNavigation, openDetail)
 provide(catalogBrowseNavigation, (event) => {
-  if (
-    !detail.value ||
-    !browseHref ||
-    event.defaultPrevented ||
-    event.button !== 0 ||
-    event.metaKey ||
-    event.ctrlKey ||
-    event.shiftKey ||
-    event.altKey
-  )
-    return
+  if (!detail.value || !browseHref || !isPlainPrimaryClick(event)) return
   event.preventDefault()
   event.stopPropagation()
   window.history.pushState(window.history.state, '', browseHref)
@@ -158,21 +141,7 @@ async function updateResults(
       AbortSignal.any([request.signal, AbortSignal.timeout(10000)])
     )
     if (current !== sequence) return
-    const activePage = result.pages[props.section ?? 'models']
-    if (activePage.reset) {
-      target.searchParams.delete('cursor')
-      target.searchParams.set('p', String(activePage.page))
-    }
-    models.value = result.models
-    pages.value = result.pages
-    facets.value = result.facets
-    search.value = target.search
-    if (history !== 'none' || activePage.reset)
-      window.history[`${history === 'none' ? 'replace' : history}State`](
-        window.history.state,
-        '',
-        target.pathname + target.search + target.hash
-      )
+    applyResults(result, target, history)
     return true
   } catch {
     if (current === sequence && !request.signal.aborted) failed.value = true
@@ -180,6 +149,27 @@ async function updateResults(
   } finally {
     if (current === sequence) revalidating.value = false
   }
+}
+function applyResults(
+  result: Awaited<ReturnType<typeof fetchCataloguePage>>,
+  target: URL,
+  history: 'push' | 'replace' | 'none'
+) {
+  const activePage = result.pages[props.section ?? 'models']
+  if (activePage.reset) {
+    target.searchParams.delete('cursor')
+    target.searchParams.set('p', String(activePage.page))
+  }
+  models.value = result.models
+  pages.value = result.pages
+  facets.value = result.facets
+  search.value = target.search
+  if (history !== 'none' || activePage.reset)
+    window.history[`${history === 'none' ? 'replace' : history}State`](
+      window.history.state,
+      '',
+      target.pathname + target.search + target.hash
+    )
 }
 async function refreshBrowse(top = scrollY) {
   if (detail.value || workshopRunInFlight.value) return

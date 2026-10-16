@@ -1,24 +1,28 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, toRaw, useId } from 'vue'
+import EditorStatus from './EditorStatus.vue'
+import { computed, onMounted, ref, toRaw } from 'vue'
 import { useEventListener } from '@vueuse/core'
-import { ArrowLeft, Save, Trash2, RotateCcw } from '@lucide/vue'
-import { DialogRoot, DialogTitle, DialogDescription } from 'reka-ui'
+import { ArrowLeft, Save } from '@lucide/vue'
 import { z } from 'astro/zod'
 import {
   zCreateCccItemResponse,
   zDeleteCccItemResponse
 } from '@comfyorg/ingest-types/zod'
 import AdminButton from '@/components/cms/ui/AdminButton.vue'
-import AdminDialogContent from '@/components/cms/ui/AdminDialogContent.vue'
-import EditorTags from './EditorTags.vue'
+import EditorDeletion from './EditorDeletion.vue'
+import EditorQuestions from './EditorQuestions.vue'
+import EditorOutputs from './EditorOutputs.vue'
+import EditorScripts from './EditorScripts.vue'
+import EditorWorkflowFiles from './EditorWorkflowFiles.vue'
+import EditorContentFields from './EditorContentFields.vue'
+import { useEditorFields } from '@/lib/cms/editor-fields'
 import EditorSaveBar from './EditorSaveBar.vue'
 import EditorPublishing from './EditorPublishing.vue'
-import EditorUseCases from './EditorUseCases.vue'
-import AuthorPicker from './AuthorPicker.vue'
 import InputsEditor from './InputsEditor.vue'
 import ExamplesEditor from './ExamplesEditor.vue'
 import JsonField from './JsonField.vue'
-import MediaUpload from './MediaUpload.vue'
+import EditorHero from './EditorHero.vue'
+import EditorActivity from './EditorActivity.vue'
 import type {
   ContentType,
   Document,
@@ -26,7 +30,6 @@ import type {
 } from '@/lib/cms/editor-document'
 import {
   arrayObjects,
-  contentTypes,
   editorSnapshot,
   hasReservedFields,
   jsonObject,
@@ -57,18 +60,9 @@ const {
 }>()
 const t = translationsFor(locale).t
 const document = ref<Document>(structuredClone(toRaw(initial)))
-const changeIDHelp = useId()
 const validChangeID = computed(
   () => changeID.safeParse(document.value.change_id).success
 )
-const tags = computed(() => {
-  const parsed = z.array(z.string()).safeParse(document.value.tags)
-  return parsed.success ? parsed.data : []
-})
-const useCases = computed(() => {
-  const parsed = z.array(z.string()).safeParse(document.value.use_cases)
-  return parsed.success ? parsed.data : []
-})
 const snapshot = ref(initialSnapshot)
 const kind = ref<ContentType>(initialType)
 const inputsEnabled = computed(
@@ -78,16 +72,6 @@ const inputsEnabled = computed(
       ? document.value.runnable
       : Object.keys(objectValue(document.value.inputs)).length > 0)
 )
-function scriptCode(language: string, event: Event) {
-  if (!(event.target instanceof HTMLTextAreaElement)) return
-  const scripts = { ...objectValue(document.value.script_code) }
-  if (event.target.value.trim()) scripts[language] = event.target.value
-  else delete scripts[language]
-  const next = { ...document.value }
-  if (Object.keys(scripts).length) next.script_code = scripts
-  else delete next.script_code
-  document.value = next
-}
 const draft = ref(initialDraft)
 const state = ref<'idle' | 'saving' | 'saved' | 'conflict' | 'failed'>('idle')
 const errors = ref<string[]>([])
@@ -127,8 +111,6 @@ const completeDocumentBlocked = computed(
 function replaceDocument(next: Document) {
   if (!completeDocumentBlocked.value) document.value = next
 }
-const inputClass =
-  'w-full rounded-lg border border-admin-field bg-admin-page px-3 py-2 text-sm text-admin-fg outline-none focus:border-primary-comfy-yellow'
 const dirty = computed(
   () =>
     JSON.stringify(document.value) !==
@@ -163,185 +145,9 @@ function discardUnsaved() {
   attempt.value = undefined
   editorEpoch.value++
 }
-const fields = ['title', 'slug', 'description', 'long_description'] as const
-function value(name: string) {
-  const raw = document.value[name]
-  return typeof raw === 'string' ? raw : ''
-}
-function patch(name: string, event: Event) {
-  const target = event.target
-  if (
-    !(
-      target instanceof HTMLInputElement ||
-      target instanceof HTMLTextAreaElement ||
-      target instanceof HTMLSelectElement
-    )
-  )
-    return
-  const result =
-    target instanceof HTMLInputElement && target.type === 'checkbox'
-      ? target.checked
-      : target.value
-  const next = { ...document.value, [name]: result }
-  if (
-    result === '' &&
-    [
-      'visible_from',
-      'workflow_uid',
-      'implementation_ref',
-      'router_model_id',
-      'author_uid',
-      'change_id',
-      'documentation_url',
-      'cloud_share_url',
-      'output_type',
-      'long_description',
-      'description',
-      'works_on_cloud'
-    ].includes(name)
-  )
-    delete next[name]
-  document.value = next
-  if (name === 'works_on_cloud' && result !== '')
-    document.value[name] = result === 'true'
+const { value, patch } = useEditorFields(document, () => {
   state.value = 'idle'
-}
-function list(name: string, event: Event) {
-  if (!(event.target instanceof HTMLInputElement)) return
-  document.value = {
-    ...document.value,
-    [name]: event.target.value
-      .split(',')
-      .map((part) => part.trim())
-      .filter(Boolean)
-  }
-}
-function listValue(name: string) {
-  const parsed = z.array(z.string()).safeParse(document.value[name])
-  return parsed.success ? parsed.data.join(', ') : ''
-}
-function counterValue(name: string) {
-  const raw = document.value[name]
-  return typeof raw === 'number' || typeof raw === 'string' ? String(raw) : ''
-}
-function counter(name: string, event: Event) {
-  if (!(event.target instanceof HTMLInputElement)) return
-  const raw = event.target.value
-  const parsed = raw === '' ? undefined : Number(raw)
-  const valid =
-    parsed === undefined ||
-    (/^\d+$/.test(raw) && Number.isSafeInteger(parsed) && parsed >= 0)
-  const next = { ...document.value }
-  if (parsed === undefined) delete next[name]
-  else next[name] = valid ? parsed : raw
-  document.value = next
-  validity(name, valid)
-}
-function faqValue(index: number, name: string) {
-  const raw = arrayObjects(document.value.faq)[index]?.[name]
-  return typeof raw === 'string' ? raw : ''
-}
-function checkFaq() {
-  const questions = new Set<string>()
-  const valid = arrayObjects(document.value.faq).every((entry) => {
-    const question =
-      typeof entry.question === 'string'
-        ? entry.question.trim().toLowerCase()
-        : ''
-    const answer = typeof entry.answer === 'string' ? entry.answer.trim() : ''
-    if (!question || !answer || questions.has(question)) return false
-    questions.add(question)
-    return true
-  })
-  validity('faq', valid)
-}
-function faq(index: number, name: string, event: Event) {
-  if (
-    !(
-      event.target instanceof HTMLInputElement ||
-      event.target instanceof HTMLTextAreaElement
-    )
-  )
-    return
-  const value = event.target.value
-  document.value = {
-    ...document.value,
-    faq: arrayObjects(document.value.faq).map((item, at) =>
-      at === index ? { ...item, [name]: value } : item
-    )
-  }
-  checkFaq()
-}
-function addFaq() {
-  document.value = {
-    ...document.value,
-    faq: [...arrayObjects(document.value.faq), { question: '', answer: '' }]
-  }
-  checkFaq()
-}
-function removeFaq(index: number) {
-  document.value = {
-    ...document.value,
-    faq: arrayObjects(document.value.faq).filter((_, at) => at !== index)
-  }
-  checkFaq()
-}
-function checkOutputs() {
-  const seen = new Set<string>()
-  validity(
-    'outputs',
-    arrayObjects(document.value.outputs).every((entry) => {
-      const id = typeof entry.id === 'string' ? entry.id.trim() : ''
-      if (
-        !id ||
-        seen.has(id) ||
-        typeof entry.nodeId !== 'string' ||
-        !entry.nodeId.trim() ||
-        typeof entry.key !== 'string' ||
-        !entry.key.trim()
-      )
-        return false
-      seen.add(id)
-      return true
-    })
-  )
-}
-function output(index: number, name: string, event: Event) {
-  if (
-    !(
-      event.target instanceof HTMLInputElement ||
-      event.target instanceof HTMLSelectElement
-    )
-  )
-    return
-  const value = event.target.value
-  document.value = {
-    ...document.value,
-    outputs: arrayObjects(document.value.outputs).map((item, at) =>
-      at === index ? { ...item, [name]: value } : item
-    )
-  }
-  checkOutputs()
-}
-function addOutput() {
-  document.value = {
-    ...document.value,
-    outputs: [
-      ...arrayObjects(document.value.outputs),
-      { id: '', nodeId: '', key: '', kind: 'image' }
-    ]
-  }
-  checkOutputs()
-}
-function removeOutput(index: number) {
-  document.value = {
-    ...document.value,
-    outputs: arrayObjects(document.value.outputs).filter(
-      (_, at) => at !== index
-    )
-  }
-  checkOutputs()
-}
+})
 function validity(key: string, valid: boolean) {
   const next = new Set(invalidFields.value)
   if (valid) next.delete(key)
@@ -351,82 +157,77 @@ function validity(key: string, valid: boolean) {
 function busy(active: boolean) {
   uploads.value = Math.max(0, uploads.value + (active ? 1 : -1))
 }
-function media(name: string, reference: Document | undefined) {
-  const next = { ...document.value }
-  if (reference) next[name] = reference
-  else delete next[name]
-  document.value = next
+type SaveAction = 'save' | 'delete' | 'undelete'
+function canSave(action: SaveAction) {
+  if (blocked.value) return false
+  if (action === 'delete')
+    return (
+      Boolean(snapshot.value) && !snapshot.value?.is_deleted && !unsaved.value
+    )
+  if (action === 'undelete') return snapshot.value?.is_deleted === true
+  return !snapshot.value?.is_deleted
 }
-const workflowVersions = computed<Document[]>(() => {
-  const versions = arrayObjects(document.value.workflow_versions)
-  if (versions.length) return versions
-  return arrayObjects(document.value.workflow_files).map((legacy, index) => ({
-    name: typeof legacy.name === 'string' ? legacy.name : `V${index + 1}`,
-    download: objectValue(legacy.file),
-    api: null
-  }))
-})
-const primaryWorkflowVersion = computed<Document>(
-  () => workflowVersions.value[0] ?? { name: 'V1', api: null }
-)
-function setWorkflowVersionField(
-  field: 'name' | 'download' | 'api',
-  value: Document | string | undefined
-) {
-  const versions = workflowVersions.value
-  const reference =
-    field !== 'name' && value && typeof value === 'object'
-      ? { ...value, name: `workflow-${field}-0.json` }
-      : value
-  const first = { ...primaryWorkflowVersion.value, [field]: reference ?? null }
-  const next: Document = {
-    ...document.value,
-    workflow_versions: [first, ...versions.slice(1)]
+function mutationBody(action: SaveAction) {
+  if (action === 'delete' && snapshot.value)
+    return {
+      uid: snapshot.value.uid,
+      expected_draft_rev: draft.value,
+      expected_revision_uid: snapshot.value.revision_uid
+    }
+  return {
+    ...savePayload(document.value, kind.value, draft.value, snapshot.value),
+    ...(snapshot.value ? { uid: snapshot.value.uid } : {})
   }
-  delete next.workflow_files
-  document.value = next
 }
-function workflowVersionName(event: Event) {
-  if (event.target instanceof HTMLInputElement)
-    setWorkflowVersionField('name', event.target.value)
-}
-async function save(action: 'save' | 'delete' | 'undelete' = 'save') {
-  if (
-    blocked.value ||
-    (action === 'save' && snapshot.value?.is_deleted) ||
-    (action === 'delete' &&
-      (!snapshot.value || snapshot.value.is_deleted || unsaved.value)) ||
-    (action === 'undelete' && !snapshot.value?.is_deleted)
-  )
+function reportSaveFailure(
+  response: Awaited<ReturnType<typeof editorRequest>>
+) {
+  state.value = response.status === 409 ? 'conflict' : 'failed'
+  const details = z
+    .object({
+      field_errors: z.array(z.object({ path: z.string(), message: z.string() }))
+    })
+    .safeParse(response.data)
+  if (details.success) {
+    errors.value = details.data.field_errors.map(
+      (field) => `${field.path}: ${field.message}`
+    )
     return
+  }
+  const message =
+    response.status === 409
+      ? 'cmsEditor.conflict'
+      : response.status === 403
+        ? 'cmsEditor.permissionDenied'
+        : 'cmsEditor.saveFailed'
+  errors.value = [t(message)]
+}
+function savedSnapshot(data: unknown, action: SaveAction) {
+  const flat =
+    action === 'delete'
+      ? zDeleteCccItemResponse.safeParse(data)
+      : zCreateCccItemResponse.safeParse(data)
+  const preserved = jsonObject.safeParse(data)
+  if (!flat.success || !preserved.success) return
+  const next = editorSnapshot({
+    ...preserved.data,
+    expected_draft_rev: draft.value,
+    expected_revision_uid: flat.data.revision_uid
+  })
+  if (!next || next.is_deleted !== (action === 'delete')) return
+  if (snapshot.value && next.uid !== snapshot.value.uid) return
+  return next
+}
+async function save(action: SaveAction = 'save') {
+  if (!canSave(action)) return
   if (hasReservedFields(document.value)) {
     state.value = 'failed'
     errors.value = [t('cmsEditor.reservedFields')]
     return
   }
   const operation = action === 'delete' ? 'delete' : 'save'
-  const body =
-    action === 'delete' && snapshot.value
-      ? {
-          uid: snapshot.value.uid,
-          expected_draft_rev: draft.value,
-          expected_revision_uid: snapshot.value.revision_uid
-        }
-      : {
-          ...savePayload(
-            document.value,
-            kind.value,
-            draft.value,
-            snapshot.value
-          ),
-          ...(snapshot.value ? { uid: snapshot.value.uid } : {})
-        }
-  const payload = JSON.stringify(body)
-  if (
-    attempt.value?.payload !== payload ||
-    attempt.value.operation !== operation
-  )
-    attempt.value = { payload, operation, key: crypto.randomUUID() }
+  const payload = JSON.stringify(mutationBody(action))
+  prepareAttempt(payload, operation)
   state.value = 'saving'
   errors.value = []
   const response = await editorRequest(operation, {
@@ -436,47 +237,11 @@ async function save(action: 'save' | 'delete' | 'undelete' = 'save') {
   })
   deleting.value = false
   if (!response.ok) {
-    state.value = response.status === 409 ? 'conflict' : 'failed'
-    const details = z
-      .object({
-        field_errors: z.array(
-          z.object({ path: z.string(), message: z.string() })
-        )
-      })
-      .safeParse(response.data)
-    errors.value = details.success
-      ? details.data.field_errors.map(
-          (field) => `${field.path}: ${field.message}`
-        )
-      : [
-          t(
-            response.status === 409
-              ? 'cmsEditor.conflict'
-              : response.status === 403
-                ? 'cmsEditor.permissionDenied'
-                : 'cmsEditor.saveFailed'
-          )
-        ]
+    reportSaveFailure(response)
     return
   }
-  const flat =
-    operation === 'delete'
-      ? zDeleteCccItemResponse.safeParse(response.data)
-      : zCreateCccItemResponse.safeParse(response.data)
-  const preserved = jsonObject.safeParse(response.data)
-  const next =
-    flat.success && preserved.success
-      ? editorSnapshot({
-          ...preserved.data,
-          expected_draft_rev: draft.value,
-          expected_revision_uid: flat.data.revision_uid
-        })
-      : undefined
-  if (
-    !next ||
-    (snapshot.value && next.uid !== snapshot.value.uid) ||
-    next.is_deleted !== (action === 'delete')
-  ) {
+  const next = savedSnapshot(response.data, action)
+  if (!next) {
     state.value = 'failed'
     errors.value = [t('cmsEditor.invalidResponse')]
     return
@@ -486,8 +251,14 @@ async function save(action: 'save' | 'delete' | 'undelete' = 'save') {
   state.value = 'saved'
   attempt.value = undefined
   editorEpoch.value++
-  // Keep the authoring page at a stable UID route after first creation.
   window.history.replaceState(null, '', `/admin/content/${next.uid}/edit`)
+}
+function prepareAttempt(payload: string, operation: 'save' | 'delete') {
+  if (
+    attempt.value?.payload !== payload ||
+    attempt.value.operation !== operation
+  )
+    attempt.value = { payload, operation, key: crypto.randomUUID() }
 }
 </script>
 <template>
@@ -527,381 +298,61 @@ async function save(action: 'save' | 'delete' | 'undelete' = 'save') {
         >
       </div>
     </header>
-    <p
-      v-if="snapshot?.is_deleted"
-      role="status"
-      class="rounded-xl border border-admin-danger/30 bg-admin-danger/10 p-4 text-sm text-admin-danger-text"
-    >
-      {{ t('cccEditorDelete.deleted') }}
-    </p>
-    <p
-      v-if="state === 'saved' && !dirty"
-      role="status"
-      class="rounded-lg border border-admin-success/30 bg-admin-success/10 p-3 text-sm"
-    >
-      {{ t('cmsEditor.saved') }}
-    </p>
-    <div
-      v-if="errors.length"
-      role="alert"
-      class="rounded-lg border border-admin-danger/30 p-4 text-sm text-admin-danger-text"
-    >
-      <p v-for="error in errors" :key="error">{{ error }}</p>
-      <p v-if="state === 'conflict'" class="mt-2 text-admin-muted">
-        {{ t('cmsEditor.keepEdits') }}
-      </p>
-    </div>
+    <EditorStatus
+      :deleted="snapshot?.is_deleted"
+      :state
+      :dirty
+      :errors
+      :locale
+    />
     <div
       :key="editorEpoch"
       class="grid min-w-0 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_19rem]"
     >
       <fieldset :disabled="readOnly" class="grid min-w-0 gap-5">
-        <section
-          class="grid gap-5 rounded-xl border border-admin-line bg-admin-card p-5"
-        >
-          <div class="grid content-start gap-4">
-            <h2 class="text-lg font-medium">
-              {{ t('cmsEditor.pageContent') }}
-            </h2>
-            <label class="grid gap-1 text-sm text-admin-muted"
-              >{{ t('cmsEditor.type')
-              }}<select
-                v-model="kind"
-                :disabled="Boolean(snapshot)"
-                :class="inputClass"
-              >
-                <option v-for="item in contentTypes" :key="item" :value="item">
-                  {{ item }}
-                </option>
-              </select></label
-            >
-            <label
-              v-for="field in fields"
-              :key="field"
-              class="grid gap-1 text-sm text-admin-muted"
-              >{{
-                field === 'long_description'
-                  ? t('cccMetadata.longDescription')
-                  : t(`cmsEditor.${field}`)
-              }}<textarea
-                v-if="field === 'long_description'"
-                :value="value(field)"
-                rows="12"
-                maxlength="20000"
-                :class="inputClass"
-                @input="patch(field, $event)" /><input
-                v-else
-                :value="value(field)"
-                :required="field === 'title' || field === 'slug'"
-                :maxlength="
-                  field === 'title'
-                    ? snapshot?.schema_version === 1
-                      ? 300
-                      : 80
-                    : field === 'description'
-                      ? snapshot?.schema_version === 1
-                        ? 20000
-                        : 160
-                      : 200
-                "
-                :pattern="
-                  field === 'slug' ? '[a-z0-9]+(-[a-z0-9]+)*' : undefined
-                "
-                :class="inputClass"
-                @input="patch(field, $event)"
-            /></label>
-            <div class="grid gap-1">
-              <label class="grid gap-1 text-sm text-admin-muted">
-                {{ t('cccEditorBatch.label') }}
-                <input
-                  :value="value('change_id')"
-                  :class="inputClass"
-                  maxlength="128"
-                  :aria-invalid="!validChangeID"
-                  :aria-describedby="changeIDHelp"
-                  @input="patch('change_id', $event)"
-                />
-              </label>
-              <p :id="changeIDHelp" class="text-xs text-admin-muted">
-                {{ t('cccEditorBatch.help') }}
-              </p>
-              <p
-                v-if="!validChangeID"
-                role="alert"
-                class="text-xs text-admin-danger-text"
-              >
-                {{ t('cccEditorBatch.invalid') }}
-              </p>
-            </div>
-            <AuthorPicker
-              :model-value="value('author_uid')"
-              :locale
-              :disabled="readOnly"
-              @update:model-value="
-                document = { ...document, author_uid: $event }
-              "
-            />
-            <label class="grid gap-1 text-sm text-admin-muted">
-              {{ t('cccMetadata.documentation') }}
-              <input
-                :value="value('documentation_url')"
-                :class="inputClass"
-                maxlength="2000"
-                @input="patch('documentation_url', $event)"
-              />
-            </label>
-            <p class="text-xs text-admin-muted">
-              {{ t('cccMetadata.ownerFixed') }}
-            </p>
-            <template v-if="kind === 'workflow'">
-              <label class="grid gap-1 text-sm text-admin-muted"
-                >{{ t('cccMetadata.cloud') }}
-                <select
-                  :value="
-                    typeof document.works_on_cloud === 'boolean'
-                      ? String(document.works_on_cloud)
-                      : ''
-                  "
-                  :class="inputClass"
-                  @change="patch('works_on_cloud', $event)"
-                >
-                  <option value="">{{ t('cccMetadata.unspecified') }}</option>
-                  <option value="true">{{ t('cccWorkflow.yes') }}</option>
-                  <option value="false">{{ t('cccWorkflow.no') }}</option>
-                </select>
-              </label>
-              <label class="grid gap-1 text-sm text-admin-muted"
-                >{{ t('cccMetadata.outputType') }}
-                <select
-                  :value="value('output_type')"
-                  :class="inputClass"
-                  @change="patch('output_type', $event)"
-                >
-                  <option value="">{{ t('cccMetadata.unspecified') }}</option>
-                  <option
-                    v-for="output in [
-                      'image',
-                      'video',
-                      'audio',
-                      '3d',
-                      'text',
-                      'mixed'
-                    ] as const"
-                    :key="output"
-                    :value="output"
-                  >
-                    {{ t(`cccWorkflow.output.${output}`) }}
-                  </option>
-                </select>
-              </label>
-              <label class="grid gap-1 text-sm text-admin-muted"
-                >{{ t('cccMetadata.models')
-                }}<input
-                  :value="listValue('model_uids')"
-                  :class="inputClass"
-                  @input="list('model_uids', $event)"
-              /></label>
-              <label class="grid gap-1 text-sm text-admin-muted"
-                >{{ t('cccMetadata.cloudShare')
-                }}<input
-                  :value="value('cloud_share_url')"
-                  :class="inputClass"
-                  maxlength="2000"
-                  @input="patch('cloud_share_url', $event)"
-              /></label>
-            </template>
-            <template v-if="kind === 'model'"
-              ><label class="grid gap-1 text-sm text-admin-muted"
-                >{{ t('cmsEditor.provider')
-                }}<input
-                  :value="value('provider')"
-                  :class="inputClass"
-                  @input="patch('provider', $event)" /></label
-              ><label class="grid gap-1 text-sm text-admin-muted"
-                >{{ t('cmsEditor.routerModel')
-                }}<input
-                  :value="value('router_model_id')"
-                  :class="inputClass"
-                  @input="patch('router_model_id', $event)" /></label
-            ></template>
-            <template v-if="kind === 'app'"
-              ><label class="grid gap-1 text-sm text-admin-muted"
-                >{{ t('cmsEditor.implementation')
-                }}<input
-                  :value="value('implementation_ref')"
-                  :class="inputClass"
-                  @input="patch('implementation_ref', $event)" /></label
-              ><label class="grid gap-1 text-sm text-admin-muted"
-                >{{ t('cmsEditor.workflowUID')
-                }}<input
-                  :value="value('workflow_uid')"
-                  :class="inputClass"
-                  @input="patch('workflow_uid', $event)" /></label
-            ></template>
-            <div class="grid gap-1 text-sm text-admin-muted">
-              <span>{{ t('cmsEditor.tags') }}</span>
-              <EditorTags
-                :model-value="tags"
-                :label="t('cmsEditor.tags')"
-                :locale
-                :disabled="readOnly"
-                @update:model-value="document = { ...document, tags: $event }"
-              />
-            </div>
-            <EditorUseCases
-              :model-value="useCases"
-              :locale
-              :disabled="readOnly"
-              @update:model-value="
-                document = { ...document, use_cases: $event }
-              "
-            />
-          </div>
-        </section>
-        <section
-          class="grid content-start gap-3 rounded-xl border border-admin-line bg-admin-card p-5"
-        >
-          <h2 class="text-lg font-medium">{{ t('cmsEditor.hero') }}</h2>
-          <MediaUpload
-            :reference="document.hero ? objectValue(document.hero) : undefined"
-            :entity-u-i-d="snapshot?.uid"
-            :draft
-            :csrf
+        <EditorContentFields
+          v-model="document"
+          v-model:kind="kind"
+          :locale
+          :existing="Boolean(snapshot)"
+          :schema-version="snapshot?.schema_version"
+          :disabled="readOnly"
+          :valid-change-i-d="validChangeID"
+          @edited="state = 'idle'"
+        />
+        <EditorHero
+          v-model="document"
+          :locale
+          :uid="snapshot?.uid"
+          :draft
+          :csrf
+          @busy="busy"
+        />
+        <EditorQuestions
+          v-model="document"
+          :locale
+          :invalid="invalidFields.has('faq')"
+          @validity="validity('faq', $event)"
+        />
+        <template v-if="kind === 'workflow'">
+          <EditorOutputs
+            v-model="document"
             :locale
-            media-role="hero"
-            @update="media('hero', $event)"
-            @busy="busy"
+            :invalid="invalidFields.has('outputs')"
+            @validity="validity('outputs', $event)"
           />
-          <h3 class="mt-3 text-sm">{{ t('cmsEditor.thumbnail') }}</h3>
-          <MediaUpload
-            :reference="
-              document.thumbnail ? objectValue(document.thumbnail) : undefined
-            "
-            :entity-u-i-d="snapshot?.uid"
-            :draft
-            :csrf
-            :locale
-            media-role="thumbnail"
-            @update="media('thumbnail', $event)"
-            @busy="busy"
-          />
-        </section>
-        <section
-          class="grid gap-4 rounded-2xl border border-admin-line bg-admin-card p-5"
-        >
-          <div class="flex items-center justify-between gap-3">
-            <h2 class="text-lg font-medium">{{ t('cccMetadata.faq') }}</h2>
-            <AdminButton @click="addFaq">{{
-              t('cccMetadata.addQuestion')
-            }}</AdminButton>
-          </div>
-          <p
-            v-if="invalidFields.has('faq')"
-            class="text-sm text-admin-danger-text"
-          >
-            {{ t('cccMetadata.invalidFAQ') }}
+          <label class="flex items-center gap-3 text-sm">
+            <input
+              type="checkbox"
+              :checked="inputsEnabled"
+              @change="patch('runnable', $event)"
+            />
+            {{ t('cccMetadata.runnable') }}
+          </label>
+          <p class="text-sm text-admin-muted">
+            {{ t('cccMetadata.runnableHint') }}
           </p>
-          <div
-            v-for="(_, index) in arrayObjects(document.faq)"
-            :key="index"
-            class="grid gap-3 rounded-lg border border-admin-line p-4"
-          >
-            <label class="grid gap-1 text-sm text-admin-muted"
-              >{{ t('cccMetadata.question', { count: index + 1 })
-              }}<input
-                :value="faqValue(index, 'question')"
-                maxlength="300"
-                :class="inputClass"
-                @input="faq(index, 'question', $event)"
-            /></label>
-            <label class="grid gap-1 text-sm text-admin-muted"
-              >{{ t('cccMetadata.answer', { count: index + 1 })
-              }}<textarea
-                :value="faqValue(index, 'answer')"
-                rows="5"
-                maxlength="20000"
-                :class="inputClass"
-                @input="faq(index, 'answer', $event)"
-              />
-            </label>
-            <AdminButton @click="removeFaq(index)">{{
-              t('cccMetadata.removeQuestion')
-            }}</AdminButton>
-          </div>
-        </section>
-        <section
-          v-if="kind === 'workflow'"
-          class="grid gap-4 rounded-2xl border border-admin-line bg-admin-card p-5"
-        >
-          <div class="flex items-center justify-between gap-3">
-            <h2 class="text-lg font-medium">{{ t('cccMetadata.outputs') }}</h2>
-            <AdminButton @click="addOutput">{{
-              t('cccMetadata.addOutput')
-            }}</AdminButton>
-          </div>
-          <p
-            v-if="invalidFields.has('outputs')"
-            class="text-sm text-admin-danger-text"
-          >
-            {{ t('cccMetadata.invalidOutputs') }}
-          </p>
-          <div
-            v-for="(entry, index) in arrayObjects(document.outputs)"
-            :key="index"
-            class="grid gap-3 rounded-lg border border-admin-line p-4 sm:grid-cols-2"
-          >
-            <label
-              v-for="field in ['id', 'nodeId', 'key'] as const"
-              :key="field"
-              class="grid gap-1 text-sm text-admin-muted"
-              >{{ t(`cccMetadata.output.${field}`, { count: index + 1 })
-              }}<input
-                :value="typeof entry[field] === 'string' ? entry[field] : ''"
-                :class="inputClass"
-                maxlength="200"
-                @input="output(index, field, $event)"
-            /></label>
-            <label class="grid gap-1 text-sm text-admin-muted"
-              >{{ t('cccMetadata.output.kind', { count: index + 1 })
-              }}<select
-                :value="entry.kind"
-                :class="inputClass"
-                @change="output(index, 'kind', $event)"
-              >
-                <option
-                  v-for="kind in [
-                    'image',
-                    'video',
-                    'audio',
-                    '3d',
-                    'text'
-                  ] as const"
-                  :key="kind"
-                  :value="kind"
-                >
-                  {{ t(`cccWorkflow.output.${kind}`) }}
-                </option>
-              </select></label
-            >
-            <AdminButton @click="removeOutput(index)">{{
-              t('cccMetadata.removeOutput')
-            }}</AdminButton>
-          </div>
-        </section>
-        <label
-          v-if="kind === 'workflow'"
-          class="flex items-center gap-3 text-sm"
-        >
-          <input
-            type="checkbox"
-            :checked="inputsEnabled"
-            @change="patch('runnable', $event)"
-          />
-          {{ t('cccMetadata.runnable') }}
-        </label>
-        <p v-if="kind === 'workflow'" class="text-sm text-admin-muted">
-          {{ t('cccMetadata.runnableHint') }}
-        </p>
+        </template>
         <fieldset
           :disabled="!inputsEnabled"
           :class="!inputsEnabled ? 'min-w-0 opacity-40' : 'min-w-0'"
@@ -913,34 +364,7 @@ async function save(action: 'save' | 'delete' | 'undelete' = 'save') {
             @validity="validity"
           />
         </fieldset>
-        <section
-          v-if="kind === 'workflow'"
-          class="grid gap-4 rounded-2xl border border-admin-line bg-admin-card p-5"
-        >
-          <h2 class="text-lg">{{ t('cccMetadata.scriptCode') }}</h2>
-          <p class="text-sm text-admin-muted">
-            {{ t('cccMetadata.scriptHint') }}
-          </p>
-          <label
-            v-for="language in ['python', 'typescript', 'curl'] as const"
-            :key="language"
-            class="grid gap-2 text-sm text-admin-muted"
-          >
-            {{ t(`cccMetadata.script.${language}`) }}
-            <textarea
-              :value="
-                typeof objectValue(document.script_code)[language] === 'string'
-                  ? String(objectValue(document.script_code)[language])
-                  : ''
-              "
-              rows="8"
-              maxlength="60000"
-              spellcheck="false"
-              :class="inputClass"
-              @input="scriptCode(language, $event)"
-            />
-          </label>
-        </section>
+        <EditorScripts v-if="kind === 'workflow'" v-model="document" :locale />
         <ExamplesEditor
           v-model="document"
           :entity-u-i-d="snapshot?.uid"
@@ -950,50 +374,15 @@ async function save(action: 'save' | 'delete' | 'undelete' = 'save') {
           @validity="validity"
           @busy="busy"
         />
-        <section
+        <EditorWorkflowFiles
           v-if="kind === 'workflow'"
-          class="grid gap-4 rounded-2xl border border-admin-line bg-admin-card p-5"
-        >
-          <h2 class="text-lg">{{ t('cccWorkflowVersions.heading') }}</h2>
-          <p class="text-sm text-admin-muted">
-            {{ t('cccWorkflowVersions.help') }}
-          </p>
-          <label class="grid gap-1 text-sm text-admin-muted"
-            >{{ t('cccWorkflowVersions.name')
-            }}<input
-              :value="primaryWorkflowVersion.name"
-              :disabled="!snapshot?.uid"
-              :class="inputClass"
-              maxlength="200"
-              @input="workflowVersionName"
-          /></label>
-          <h3 class="text-sm">{{ t('cccWorkflowVersions.download') }}</h3>
-          <MediaUpload
-            :reference="objectValue(primaryWorkflowVersion.download)"
-            :entity-u-i-d="snapshot?.uid"
-            :draft
-            :csrf
-            :locale
-            media-role="workflow-download-0"
-            :file-label="t('cccWorkflowVersions.download')"
-            json-only
-            @update="setWorkflowVersionField('download', $event)"
-            @busy="busy"
-          />
-          <h3 class="text-sm">{{ t('cccWorkflowVersions.api') }}</h3>
-          <MediaUpload
-            :reference="objectValue(primaryWorkflowVersion.api)"
-            :entity-u-i-d="snapshot?.uid"
-            :draft
-            :csrf
-            :locale
-            media-role="workflow-api-0"
-            :file-label="t('cccWorkflowVersions.api')"
-            json-only
-            @update="setWorkflowVersionField('api', $event)"
-            @busy="busy"
-          />
-        </section>
+          v-model="document"
+          :locale
+          :uid="snapshot?.uid"
+          :draft
+          :csrf
+          @busy="busy"
+        />
       </fieldset>
       <aside class="grid min-w-0 content-start gap-5">
         <EditorPublishing
@@ -1002,100 +391,28 @@ async function save(action: 'save' | 'delete' | 'undelete' = 'save') {
           :disabled="readOnly"
           @update="document = $event"
         />
-        <fieldset
+        <EditorActivity
+          v-model="document"
+          :locale
           :disabled="readOnly"
-          class="grid gap-4 rounded-xl border border-admin-line bg-admin-card p-5"
-        >
-          <h2 class="text-sm font-medium">
-            {{ t('cccEditorLayout.activity') }}
-          </h2>
-          <label
-            v-for="field in ['runs', 'downloads']"
-            :key="field"
-            class="grid gap-1.5 text-xs text-admin-muted"
-          >
-            {{
-              t(field === 'runs' ? 'cccMetadata.runs' : 'cccMetadata.downloads')
-            }}
-            <input
-              :value="counterValue(field)"
-              inputmode="numeric"
-              :aria-invalid="invalidFields.has(field)"
-              :class="inputClass"
-              @input="counter(field, $event)"
-            />
-            <span
-              v-if="invalidFields.has(field)"
-              class="text-xs text-admin-danger-text"
-              >{{ t('cccMetadata.invalidCount') }}</span
-            >
-          </label>
-        </fieldset>
-        <section
+          :invalid-fields="invalidFields"
+          @validity="validity"
+        />
+        <EditorDeletion
           v-if="snapshot"
-          class="grid gap-3 rounded-xl border border-admin-line bg-admin-card p-5"
-        >
-          <h2 class="text-sm font-medium">
-            {{ t('cccEditorDelete.heading') }}
-          </h2>
-          <p class="text-sm text-admin-muted">
-            {{ t('cccEditorDelete.help') }}
-          </p>
-          <p v-if="unsaved" class="text-xs text-admin-muted">
-            {{ t('cccEditorDelete.saveFirst') }}
-          </p>
-          <div>
-            <AdminButton
-              v-if="snapshot.is_deleted"
-              :icon="RotateCcw"
-              :disabled="blocked"
-              @click="save('undelete')"
-              >{{ t('cccEditorDelete.undelete') }}</AdminButton
-            >
-            <AdminButton
-              v-else
-              variant="dangerGhost"
-              :icon="Trash2"
-              :disabled="blocked || unsaved"
-              @click="deleting = true"
-              >{{ t('cccEditorDelete.delete') }}</AdminButton
-            >
-          </div>
-        </section>
+          v-model="deleting"
+          :snapshot
+          :unsaved
+          :blocked
+          :saving="state === 'saving'"
+          :title="value('title')"
+          :locale
+          @delete="save('delete')"
+          @undelete="save('undelete')"
+        />
       </aside>
     </div>
-    <DialogRoot
-      :open="deleting"
-      @update:open="state !== 'saving' && (deleting = $event)"
-    >
-      <AdminDialogContent
-        v-if="deleting"
-        :close-label="t('cccStaging.close')"
-        :close-disabled="state === 'saving'"
-        @escape-key-down="state === 'saving' && $event.preventDefault()"
-        @pointer-down-outside="state === 'saving' && $event.preventDefault()"
-      >
-        <DialogTitle>{{
-          t('cccEditorDelete.confirmTitle', {
-            name: value('title') || snapshot?.uid || ''
-          })
-        }}</DialogTitle>
-        <DialogDescription>{{ t('cccEditorDelete.help') }}</DialogDescription>
-        <div class="flex justify-end gap-2">
-          <AdminButton
-            :disabled="state === 'saving'"
-            @click="deleting = false"
-            >{{ t('cmsEditor.cancel') }}</AdminButton
-          >
-          <AdminButton
-            variant="danger"
-            :disabled="blocked"
-            @click="save('delete')"
-            >{{ t('cccEditorDelete.confirm') }}</AdminButton
-          >
-        </div>
-      </AdminDialogContent>
-    </DialogRoot>
+
     <details class="rounded-2xl border border-admin-line bg-admin-card p-5">
       <summary class="cursor-pointer text-sm text-admin-muted">
         {{ t('cmsEditor.advancedJSON') }}

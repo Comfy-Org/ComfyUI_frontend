@@ -303,43 +303,44 @@ async function workflowContent(model: WorkflowWorkshopModelDetail) {
     })
 }
 
+async function loadDetailContent(slug: string) {
+  if (
+    initialWorkflow?.slug === slug &&
+    initialWorkflow.workflowId === workflowId
+  )
+    return workflowContent(initialWorkflow)
+  const preload = isWorkflowSlug(slug)
+    ? import('./WorkflowPage.vue')
+    : import('./ModelPage.vue')
+  void preload.catch(() => undefined)
+  const { fetchModelsPage } = await import('@/config/models-page-data')
+  const { model, ...page } = await fetchModelsPage(slug)
+  if (model.routerId === undefined) return workflowContent(model)
+  const { default: ModelPage } = await import('./ModelPage.vue')
+  return () => h(ModelPage, { page: { ...page, model } })
+}
+async function loadCatalogueContent() {
+  const forwarding = hasInitialCatalog.value
+    ? Promise.resolve()
+    : forwardLegacyLink()
+  const catalogue = Promise.all([
+    import('./ModelsCatalogue.vue'),
+    hasInitialCatalog.value && initialModels !== undefined
+      ? undefined
+      : fetchModelsCatalogue()
+  ])
+  void catalogue.catch(() => undefined)
+  await forwarding
+  const [{ default: ModelsCatalogue }, models] = await catalogue
+  return () => renderCatalogue(ModelsCatalogue, models)
+}
 function createContent() {
   if (hasInitialCatalog.value && suppliedComponents) {
     const catalogue = suppliedComponents.catalogue
     return () => renderCatalogue(catalogue)
   }
   return defineAsyncComponent({
-    loader: async () => {
-      if (slug) {
-        if (
-          initialWorkflow?.slug === slug &&
-          initialWorkflow.workflowId === workflowId
-        )
-          return workflowContent(initialWorkflow)
-        const preload = isWorkflowSlug(slug)
-          ? import('./WorkflowPage.vue')
-          : import('./ModelPage.vue')
-        void preload.catch(() => undefined)
-        const { fetchModelsPage } = await import('@/config/models-page-data')
-        const { model, ...page } = await fetchModelsPage(slug)
-        if (model.routerId === undefined) return workflowContent(model)
-        const { default: ModelPage } = await import('./ModelPage.vue')
-        return () => h(ModelPage, { page: { ...page, model } })
-      }
-      const forwarding = hasInitialCatalog.value
-        ? Promise.resolve()
-        : forwardLegacyLink()
-      const catalogue = Promise.all([
-        import('./ModelsCatalogue.vue'),
-        hasInitialCatalog.value && initialModels !== undefined
-          ? undefined
-          : fetchModelsCatalogue()
-      ])
-      void catalogue.catch(() => undefined)
-      await forwarding
-      const [{ default: ModelsCatalogue }, models] = await catalogue
-      return () => renderCatalogue(ModelsCatalogue, models)
-    },
+    loader: () => (slug ? loadDetailContent(slug) : loadCatalogueContent()),
     loadingComponent: Loading,
     errorComponent: LoadError,
     onError: (_error, retry, fail, attempts) => {

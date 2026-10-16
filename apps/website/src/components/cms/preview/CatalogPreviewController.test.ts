@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { assert, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import CatalogPreviewController from './CatalogPreviewController.vue'
 
@@ -14,6 +14,9 @@ const props = {
 }
 
 describe('verified staff Preview controller', () => {
+  beforeEach(() => {
+    history.replaceState(null, '', props.currentPath)
+  })
   it('renders session controls without a data request or fake change count, and opens the review page explicitly', async () => {
     const assign = vi
       .spyOn(window.location, 'assign')
@@ -252,6 +255,7 @@ describe('verified staff Preview controller', () => {
     )
   })
   it('refuses an external return path before sending any command', async () => {
+    vi.spyOn(window.location, 'pathname', 'get').mockReturnValue('//evil.test')
     const fetch = vi.fn<typeof globalThis.fetch>()
     vi.mocked(globalThis.fetch).mockImplementation(fetch)
     const assign = vi

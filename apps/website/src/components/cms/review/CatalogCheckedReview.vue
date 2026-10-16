@@ -22,6 +22,7 @@ import type { ReviewReceipt } from '@/lib/cms/review-receipt'
 import { reviewRequest } from '@/lib/cms/staging-client'
 import { canonicalQueue } from '@/lib/cms/canonical-queue'
 import { reviewFieldErrors } from '@/lib/cms/review-errors'
+import ReviewFailure from './ReviewFailure.vue'
 
 const {
   initial,
@@ -112,7 +113,15 @@ async function reload() {
     flow.value.kind === 'discard'
   )
     return
-  const filter = reviewFilter.safeParse({
+  const filter = selectedFilter()
+  if (!filter.success) return
+  const previous = flow.value.snapshot
+  flow.value = { kind: 'loading', snapshot: previous }
+  const result = await reviewRequest('staging', { filter: filter.data })
+  acceptReload(result, previous)
+}
+function selectedFilter() {
+  return reviewFilter.safeParse({
     ...(form.value.search.trim() ? { search: form.value.search.trim() } : {}),
     ...(form.value.author.trim()
       ? { author_uid: form.value.author.trim() }
@@ -123,10 +132,11 @@ async function reload() {
     ...(form.value.type ? { types: [form.value.type] } : {}),
     ...(form.value.changeID ? { change_id: form.value.changeID } : {})
   })
-  if (!filter.success) return
-  const previous = flow.value.snapshot
-  flow.value = { kind: 'loading', snapshot: previous }
-  const result = await reviewRequest('staging', { filter: filter.data })
+}
+function acceptReload(
+  result: Awaited<ReturnType<typeof reviewRequest>>,
+  previous: StagingReview
+) {
   const snapshot = result.ok ? stagingSnapshot(result.data) : undefined
   flow.value = snapshot
     ? { kind: 'ready', snapshot }
@@ -154,14 +164,16 @@ async function review(event: MouseEvent) {
       : {
           kind: 'failed',
           snapshot,
-          reason:
-            result.status === 409 || (result.ok && Boolean(receipt))
-              ? 'stale'
-              : result.status === 422
-                ? 'publicationDependency'
-                : 'failed',
+          reason: reviewFailureReason(result, Boolean(receipt)),
           fields: result.status === 422 ? reviewFieldErrors(result.data) : []
         }
+}
+function reviewFailureReason(
+  result: Awaited<ReturnType<typeof reviewRequest>>,
+  hasReceipt: boolean
+) {
+  if (result.status === 409 || (result.ok && hasReceipt)) return 'stale'
+  return result.status === 422 ? 'publicationDependency' : 'failed'
 }
 function requestDiscard(uids: string[]) {
   if (
@@ -200,12 +212,7 @@ async function discard() {
     flow.value = {
       kind: 'failed',
       snapshot: pending.snapshot,
-      reason:
-        result.status === 409
-          ? 'stale'
-          : result.status === 422
-            ? 'dependency'
-            : 'failed',
+      reason: discardFailureReason(result.status),
       fields: result.status === 422 ? reviewFieldErrors(result.data) : []
     }
     return
@@ -213,14 +220,11 @@ async function discard() {
   const current = await reviewRequest('staging', {
     filter: pending.snapshot.filter
   })
-  const snapshot = current.ok ? stagingSnapshot(current.data) : undefined
-  flow.value = snapshot
-    ? { kind: 'ready', snapshot }
-    : { kind: 'failed', snapshot: pending.snapshot, reason: 'failed' }
-  if (snapshot) {
-    selected.value = new Set()
-    acknowledgeAll.value = false
-  }
+  acceptReload(current, pending.snapshot)
+}
+function discardFailureReason(status: number) {
+  if (status === 409) return 'stale'
+  return status === 422 ? 'dependency' : 'failed'
 }
 async function exit() {
   if (blocked.value) return
@@ -242,22 +246,12 @@ async function exit() {
     :locale
     @open-live="exit"
   >
-    <div
+    <ReviewFailure
       v-if="flow.kind === 'failed'"
-      role="alert"
-      class="mb-5 text-sm text-admin-danger-text"
-    >
-      {{ t(`cccStaging.errors.${flow.reason}`) }}
-      <ul v-if="flow.fields?.length" class="mt-2 space-y-1">
-        <li v-for="(field, index) in flow.fields" :key="index">
-          <code v-if="field.resource_uid" class="mr-2 break-all">{{
-            field.resource_uid
-          }}</code>
-          <code class="break-all">{{ field.path }}</code>
-          <span class="ml-2 wrap-break-word">{{ field.message }}</span>
-        </li>
-      </ul>
-    </div>
+      :reason="flow.reason"
+      :fields="flow.fields"
+      :locale
+    />
     <DraftQueue
       :items="queue"
       :csrf

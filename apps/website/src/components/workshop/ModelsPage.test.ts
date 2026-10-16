@@ -58,7 +58,7 @@ if (
 const selectedWorkflow = selectedWorkflowPage.model
 
 describe('Models page entry', () => {
-  it('uses the selected server workflow without fetching its detail twice and keeps the existing gate', async () => {
+  it('shows a server-selected workflow independently of browse flags without fetching twice', async () => {
     enabled.value = true
     render(ModelsPage, {
       props: {
@@ -72,11 +72,8 @@ describe('Models page entry', () => {
       slots: { fallback: '<h1>Public Models</h1>' }
     })
     expect(
-      await screen.findByRole('heading', { name: 'Public Models' })
+      await screen.findByRole('heading', { name: 'Selected Draft workflow' })
     ).toBeVisible()
-    expect(
-      screen.queryByRole('heading', { name: 'Selected Draft workflow' })
-    ).toBeNull()
     workflowsEnabled.value = true
     expect(
       await screen.findByRole('heading', { name: 'Selected Draft workflow' })
@@ -87,8 +84,10 @@ describe('Models page entry', () => {
     expect(fetch).not.toHaveBeenCalled()
     workflowsEnabled.value = false
     await nextTick()
-    expect(screen.getByRole('heading', { name: 'Public Models' })).toBeVisible()
-    expect(screen.getByTestId('workflow-hero')).not.toBeVisible()
+    expect(
+      screen.getByRole('heading', { name: 'Selected Draft workflow' })
+    ).toBeVisible()
+    expect(screen.queryByRole('heading', { name: 'Public Models' })).toBeNull()
   })
 
   it('replaces a selected workflow snapshot without reusing stale detail data', async () => {

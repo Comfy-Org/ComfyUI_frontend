@@ -52,7 +52,7 @@ const open = computed({
   >
     <template #remaining>
       <p v-if="review.deferred.length" class="text-xs text-admin-muted">
-        {{ t(selectedUids ? 'cccChecked.remaining' : 'cccStaging.deferred') }}
+        {{ t('cccChecked.remaining') }}
       </p>
     </template>
     <template #actions>

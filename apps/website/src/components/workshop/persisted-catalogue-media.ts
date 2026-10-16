@@ -1,6 +1,39 @@
 type TransitionBeforeSwapEvent = DocumentEventMap['astro:before-swap']
 
 const markerAttribute = 'data-ccc-preserved-media'
+interface OriginalMedia {
+  element: Element
+  marker: string
+  previous: string | null
+}
+function restoreMarker(element: Element, previous: string | null) {
+  if (previous === null) element.removeAttribute(markerAttribute)
+  else element.setAttribute(markerAttribute, previous)
+}
+function replaceMedia(
+  island: HTMLElement,
+  tagged: Map<string, OriginalMedia>,
+  clones: Element[]
+) {
+  if (!island.isConnected) return
+  for (const element of island.querySelectorAll('video, audio')) {
+    const marker = element.getAttribute(markerAttribute)
+    const original = marker ? tagged.get(marker) : undefined
+    if (!original || element === original.element) continue
+    clones.push(element)
+    element.replaceWith(original.element)
+  }
+}
+function restoreMarkers(
+  elements: Element[],
+  tagged: Map<string, OriginalMedia>
+) {
+  for (const element of elements) {
+    const marker = element.getAttribute(markerAttribute)
+    const original = marker ? tagged.get(marker) : undefined
+    if (original) restoreMarker(element, original.previous)
+  }
+}
 
 export function preserveCatalogueMedia(
   event: TransitionBeforeSwapEvent,
@@ -46,29 +79,14 @@ export function preserveCatalogueMedia(
       element.setAttribute(markerAttribute, marker)
     try {
       swap()
-      if (!island.isConnected) return
-      for (const element of island.querySelectorAll('video, audio')) {
-        const marker = element.getAttribute(markerAttribute)
-        const original = marker ? tagged.get(marker) : undefined
-        if (!original || element === original.element) continue
-        clones.push(element)
-        element.replaceWith(original.element)
-      }
+      replaceMedia(island, tagged, clones)
     } finally {
-      for (const element of [
-        ...island.querySelectorAll('video, audio'),
-        ...clones
-      ]) {
-        const marker = element.getAttribute(markerAttribute)
-        const original = marker ? tagged.get(marker) : undefined
-        if (!original) continue
-        if (original.previous === null) element.removeAttribute(markerAttribute)
-        else element.setAttribute(markerAttribute, original.previous)
-      }
-      for (const { element, previous } of originals) {
-        if (previous === null) element.removeAttribute(markerAttribute)
-        else element.setAttribute(markerAttribute, previous)
-      }
+      restoreMarkers(
+        [...island.querySelectorAll('video, audio'), ...clones],
+        tagged
+      )
+      for (const { element, previous } of originals)
+        restoreMarker(element, previous)
     }
   }
 }

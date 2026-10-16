@@ -8,15 +8,14 @@ import {
   watch
 } from 'vue'
 import { useMounted, whenever } from '@vueuse/core'
-import { cn } from '@comfyorg/tailwind-utils'
+import CatalogueIntroduction from './CatalogueIntroduction.vue'
 
 import type {
   AppWorkshopModel,
   WorkflowWorkshopModel,
   WorkshopModel
 } from '@/config/models-catalogue'
-import type { Locale, TranslationKey } from '@/i18n/translations'
-import { translationsFor } from '@/i18n/translations'
+import type { Locale } from '@/i18n/translations'
 import WorkshopModelsGrid from './WorkshopModelsGrid.vue'
 import CatalogueTabs from './CatalogueTabs.vue'
 import type { CatalogueTab } from './CatalogueTabs.vue'
@@ -63,7 +62,6 @@ const {
   pages?: CatalogListPages
   facets?: CatalogListFacets
 }>()
-const { t } = translationsFor(locale)
 
 const inSection = ref(false)
 // A category replaces the page's own heading and the switch between
@@ -144,27 +142,27 @@ const appCards = computed<readonly CatalogueApp[]>(() =>
     thumbnail: app.thumbnail
   }))
 )
+const workflowsAvailable = computed(
+  () =>
+    Boolean(
+      pages?.workflows.available ??
+      pages?.workflows.total ??
+      workflows.value.length
+    ) || displayedSection.value === 'workflows'
+)
+const appsAvailable = computed(
+  () =>
+    (appsEnabled.value &&
+      Boolean(
+        pages?.apps.available ?? pages?.apps.total ?? apps.value.length
+      )) ||
+    section === 'apps'
+)
 const availableTabs = computed<readonly CatalogueTab[]>(() => [
   'models',
-  ...((pages?.workflows.available ??
-    pages?.workflows.total ??
-    workflows.value.length) ||
-  displayedSection.value === 'workflows'
-    ? (['workflows'] as const)
-    : []),
-  ...((appsEnabled.value &&
-    (pages?.apps.available ?? pages?.apps.total ?? apps.value.length)) ||
-  section === 'apps'
-    ? (['apps'] as const)
-    : [])
+  ...(workflowsAvailable.value ? (['workflows'] as const) : []),
+  ...(appsAvailable.value ? (['apps'] as const) : [])
 ])
-
-// Each tab says what its own listing is for, in Eric's words.
-const SUBTITLE_KEY = {
-  models: 'workshop.hero.subtitle',
-  workflows: 'workshop.catalogue.workflowsSubtitle',
-  apps: 'workshop.catalogue.appsSubtitle'
-} as const satisfies Record<CatalogueTab, TranslationKey>
 
 whenever(
   () => mounted.value && enabled.value,
@@ -187,27 +185,11 @@ whenever(
 </script>
 
 <template>
-  <div
+  <CatalogueIntroduction
     v-if="!inSection"
-    class="relative isolate -mx-6 mb-6 flex flex-wrap items-center justify-between gap-x-6 gap-y-4 overflow-hidden px-6 pb-2 max-sm:mb-4 max-sm:pb-0 lg:-mx-8 lg:px-8 sm:short:pb-0"
-    data-testid="workshop-hero"
-  >
-    <div class="grid text-lg text-primary-comfy-canvas/70">
-      <p
-        v-for="(subtitle, tab) in SUBTITLE_KEY"
-        :key="tab"
-        :class="
-          cn(
-            'col-start-1 row-start-1',
-            tab === displayedSection ? 'animate-soft-in' : 'invisible'
-          )
-        "
-        :aria-hidden="tab !== displayedSection"
-      >
-        {{ t(subtitle) }}
-      </p>
-    </div>
-  </div>
+    :displayed-section="displayedSection"
+    :locale
+  />
   <WorkshopModelsGrid
     v-if="displayedSection === 'models'"
     v-model:browse-all="browseAll"

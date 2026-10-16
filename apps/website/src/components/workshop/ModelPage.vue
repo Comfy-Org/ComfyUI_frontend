@@ -16,7 +16,7 @@ import ModelPrice from './ModelPrice.vue'
 import ModelDetail from './ModelDetail.vue'
 import ModelStatus from './ModelStatus.vue'
 import ModelSupport from './ModelSupport.vue'
-import TagOverflow from './TagOverflow.vue'
+import ModelTags from './ModelTags.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
 import CatalogRelatedModels from './CatalogRelatedModels.vue'
 
@@ -111,23 +111,12 @@ const restTags = computed(() =>
 
         <div class="flex flex-col gap-4 lg:items-end">
           <ModelPrice :estimate="page.priceEstimate" />
-          <ul
-            v-if="page.shownTags.length > 0"
-            class="scrollbar-hide flex items-center gap-2 max-sm:overflow-x-auto sm:flex-wrap lg:justify-end"
-            data-testid="model-tags"
-          >
-            <li v-for="tag in page.shownTags" :key="tag.search">
-              <a
-                :href="`${routes.workshop}${tag.search}`"
-                class="inline-flex h-7 shrink-0 items-center rounded-full bg-transparency-white-t8 px-3 text-xs/none whitespace-nowrap text-primary-comfy-canvas transition-colors hover:bg-transparency-white-t20 hover:text-primary-comfy-yellow"
-              >
-                {{ tag.label }}
-              </a>
-            </li>
-            <li v-if="page.restTagCount > 0">
-              <TagOverflow :tags="restTags" />
-            </li>
-          </ul>
+          <ModelTags
+            :tags="page.shownTags"
+            :rest-tags="restTags"
+            :rest-count="page.restTagCount"
+            :base-href="routes.workshop"
+          />
         </div>
       </div>
 

@@ -112,8 +112,8 @@ describe('bounded website catalog transport', () => {
     { locale: 'en', label: 'Uncategorized' },
     { locale: 'zh-CN', label: '未分类' }
   ])(
-    'retains an explicit empty category and localized label in $locale',
-    async ({ locale, label }) => {
+    'omits an empty category row while retaining the explicit filter in $locale',
+    async ({ locale }) => {
       const upstream = setup()
       const result = await loadSiteCatalogList(
         undefined,
@@ -122,7 +122,7 @@ describe('bounded website catalog transport', () => {
         new URLSearchParams('category=')
       )
       assert.isTrue(result.ok)
-      expect(result.facets.workflows.categories).toEqual([{ value: '', label }])
+      expect(result.facets.workflows.categories).toEqual([])
       expect(String(upstream.mock.calls[0][0])).toContain('category=')
     }
   )

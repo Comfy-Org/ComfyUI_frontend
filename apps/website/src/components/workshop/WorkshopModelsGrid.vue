@@ -106,17 +106,21 @@ function readAddress(search: string, preserveQuery = false) {
             )
           )
       : openedUseCases(initial.useCase ?? 'all')
-    const order = params.get('sort')
-    if (serverPage)
-      sort.value =
-        order === 'name' || order === 'priceAsc' || order === 'priceDesc'
-          ? order
-          : 'popular'
+    if (serverPage) sort.value = addressSort(params.get('sort'))
     legacyModalities.value = [...initial.modalities]
     legacyProviders.value = [...initial.providers]
     legacyCapabilities.value = [...initial.capabilities]
   })
 }
+function addressSort(order: string | null) {
+  return order === 'name' || order === 'priceAsc' || order === 'priceDesc'
+    ? order
+    : 'popular'
+}
+const resultCount = computed(() =>
+  serverPage ? serverPage.total : visible.value.length
+)
+const showFeatured = computed(() => browsing.value && featured.value.length > 0)
 
 // A browser can restore this page from its cache with a shelf still open, so
 // coming back from a model would land on that shelf rather than on the
@@ -246,14 +250,7 @@ watch(
       ])
         params.delete(key)
       if (query.value) params.set('q', query.value)
-      for (const value of selectedUseCases.value)
-        params.append('useCase', value)
-      for (const value of legacyModalities.value)
-        params.append('modality', value)
-      for (const value of legacyProviders.value)
-        params.append('provider', value)
-      for (const value of legacyCapabilities.value)
-        params.append('capability', value)
+      appendSelectedFilters(params)
       if (sort.value !== 'popular') params.set('sort', sort.value)
       const search = params.toString()
       const current = new URLSearchParams(initialSearch ?? location.search)
@@ -267,6 +264,16 @@ watch(
   },
   { deep: true }
 )
+function appendSelectedFilters(params: URLSearchParams) {
+  const filters = {
+    useCase: selectedUseCases.value,
+    modality: legacyModalities.value,
+    provider: legacyProviders.value,
+    capability: legacyCapabilities.value
+  }
+  for (const [key, values] of Object.entries(filters))
+    for (const value of values) params.append(key, value)
+}
 onBeforeUnmount(() => clearTimeout(searchTimer))
 watch(inSection, (value) => emit('section', value), { immediate: true })
 // Inside a category the tabs give up the row, and the search takes it.
@@ -402,7 +409,7 @@ watch(browseAll, (on) => on && resetFilters())
             <WorkshopFilterMenu
               :use-cases="selectedUseCases"
               :use-case-options="useCaseOptions"
-              :result-count="serverPage ? serverPage.total : visible.length"
+              :result-count="resultCount"
               :locale
               @update:use-cases="applyUseCases"
             />
@@ -413,7 +420,7 @@ watch(browseAll, (on) => on && resetFilters())
       </div>
 
       <FeaturedBanner
-        v-if="browsing && featured.length"
+        v-if="showFeatured"
         :slides="featuredSlides"
         :locale
         class="mb-10 short:mb-6"

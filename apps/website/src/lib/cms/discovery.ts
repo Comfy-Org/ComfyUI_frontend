@@ -5,22 +5,15 @@ function unavailableDocumentation() {
   })
 }
 
-export async function proxyCatalogDocumentation(
-  path:
-    | '/agents'
-    | '/openapi.json'
-    | '/api/v1/catalog/agents'
-    | '/api/v1/catalog/openapi.json'
-    | '/api/v1/catalog/docs'
-) {
-  const origin = process.env.SITE_CATALOG_API_URL
-  if (!origin || process.env.VERCEL_ENV === 'production')
-    return unavailableDocumentation()
-
+type DocumentationPath =
+  | '/agents'
+  | '/openapi.json'
+  | '/api/v1/catalog/agents'
+  | '/api/v1/catalog/openapi.json'
+  | '/api/v1/catalog/docs'
+function documentationURL(origin: string, path: DocumentationPath) {
   let url: URL
   try {
-    // Root website aliases use the catalog namespace upstream, never Cloud's
-    // root discovery paths or the website's Comfy Agent product route.
     const upstreamPath =
       path === '/agents'
         ? '/api/v1/catalog/agents'
@@ -29,15 +22,26 @@ export async function proxyCatalogDocumentation(
           : path
     url = new URL(upstreamPath, origin)
   } catch {
-    return unavailableDocumentation()
+    return undefined
   }
   if (
     !['http:', 'https:'].includes(url.protocol) ||
     url.username ||
     url.password
   )
+    return undefined
+  return url
+}
+function documentationType(path: DocumentationPath) {
+  if (path.endsWith('/openapi.json')) return 'application/json'
+  return path.endsWith('/docs') ? 'text/html' : 'text/plain'
+}
+export async function proxyCatalogDocumentation(path: DocumentationPath) {
+  const origin = process.env.SITE_CATALOG_API_URL
+  if (!origin || process.env.VERCEL_ENV === 'production')
     return unavailableDocumentation()
-
+  const url = documentationURL(origin, path)
+  if (!url) return unavailableDocumentation()
   let response: Response
   try {
     response = await fetch(url, {
@@ -49,11 +53,7 @@ export async function proxyCatalogDocumentation(
     return unavailableDocumentation()
   }
 
-  const expectedType = path.endsWith('/openapi.json')
-    ? 'application/json'
-    : path.endsWith('/docs')
-      ? 'text/html'
-      : 'text/plain'
+  const expectedType = documentationType(path)
   const contentType = response.headers.get('Content-Type') ?? ''
   if (!response.ok || !contentType.startsWith(expectedType))
     return unavailableDocumentation()

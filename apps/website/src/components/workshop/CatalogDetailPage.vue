@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { isPlainPrimaryClick } from '@/lib/workshop/navigation-intent'
 import {
   computed,
   defineAsyncComponent,
@@ -22,6 +23,7 @@ import {
   catalogDetailPath,
   listenCatalogHistory
 } from '@/lib/cms/detail-route'
+import CatalogDetailHeading from './CatalogDetailHeading.vue'
 import CatalogueBackLink from './CatalogueBackLink.vue'
 
 const {
@@ -44,15 +46,7 @@ const parentNavigation = inject(catalogDetailNavigation, undefined)
 const browseNavigation = inject(catalogBrowseNavigation, undefined)
 provide(catalogDetailNavigation, (event, model) => {
   if (parentNavigation) return parentNavigation(event, model)
-  if (
-    event.defaultPrevented ||
-    event.button !== 0 ||
-    event.metaKey ||
-    event.ctrlKey ||
-    event.shiftKey ||
-    event.altKey
-  )
-    return
+  if (!isPlainPrimaryClick(event)) return
   if (!model.href) return
   const target = new URL(model.href, location.href)
   if (target.origin !== location.origin || !catalogDetailPath(target.pathname))
@@ -189,34 +183,12 @@ onScopeDispose(() => {
         >{{ t('cmsEditor.edit') }}</a
       >
     </div>
-    <header
-      class="mb-9"
-      :data-testid="
-        activePath.includes('/workflows/') ? 'workflow-hero' : 'model-hero'
-      "
-    >
-      <h1
-        class="max-w-4xl text-3xl font-light text-primary-comfy-canvas lg:text-5xl"
-      >
-        <template v-if="currentModel && !missing">{{
-          currentModel.name
-        }}</template>
-        <template v-else-if="missing">{{
-          t('cccCatalogPage.notFound')
-        }}</template>
-        <span
-          v-else
-          class="block h-12 w-2/3 animate-pulse rounded-sm bg-hub-surface"
-          :aria-label="t('workshop.load.pending')"
-        />
-      </h1>
-      <p
-        v-if="currentModel?.summary && !missing"
-        class="mt-4 text-lg text-primary-warm-gray"
-      >
-        {{ currentModel.summary }}
-      </p>
-    </header>
+    <CatalogDetailHeading
+      :model="currentModel"
+      :missing
+      :workflow="activePath.includes('/workflows/')"
+      :locale
+    />
     <div
       v-if="failed"
       role="alert"

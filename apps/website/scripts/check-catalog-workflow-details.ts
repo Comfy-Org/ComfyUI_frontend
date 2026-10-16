@@ -78,23 +78,29 @@ try {
     root.className =
       'bg-primary-comfy-ink min-h-screen text-primary-comfy-canvas'
     document.body.append(root)
+    function scriptCode() {
+      return state.empty
+        ? undefined
+        : { python: 'print("Read-only script example")' }
+    }
+    function modelLinks() {
+      return state.empty
+        ? []
+        : [
+            {
+              uid: 'model-fixture',
+              name: 'Referenced model',
+              href: '/hub/models/local-fixture/'
+            }
+          ]
+    }
     createApp({
       render: () => {
         const catalogDetails = {
           locale: state.locale,
           runnable: false,
-          scriptCode: state.empty
-            ? undefined
-            : { python: 'print("Read-only script example")' },
-          models: state.empty
-            ? []
-            : [
-                {
-                  uid: 'model-fixture',
-                  name: 'Referenced model',
-                  href: '/hub/models/local-fixture/'
-                }
-              ],
+          scriptCode: scriptCode(),
+          models: modelLinks(),
           ...(state.empty
             ? {}
             : {

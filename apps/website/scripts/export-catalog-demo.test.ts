@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { writeFile } from 'node:fs/promises'
+import { isDeepStrictEqual } from 'node:util'
 import { describe, expect, it } from 'vitest'
 import { entries } from './export-cms-seed'
 import { convertDemoSnapshot } from './catalog-demo-conversion'
@@ -8,6 +9,17 @@ import { modelSchema } from '@/config/models-catalogue-data'
 import { detailSchema } from '@/config/models-page-data'
 import { catalogPresentation } from '@/lib/cms/catalog-presentation'
 import { jsonObject } from '@/lib/cms/editor-document'
+
+function preservesField(
+  before: ReturnType<typeof jsonObject.safeParse>,
+  after: ReturnType<typeof jsonObject.safeParse>,
+  field: string
+) {
+  return (
+    !before.success ||
+    (after.success && isDeepStrictEqual(before.data[field], after.data[field]))
+  )
+}
 
 describe('explicit site snapshot export', () => {
   it('renders every converted record through the actual website contracts with unchanged inputs and bindings', () => {
@@ -68,16 +80,8 @@ describe('explicit site snapshot export', () => {
             : detail.error.issues.map(
                 (issue) => `${issue.path.join('.')}: ${issue.message}`
               ),
-        bindingsPreserved:
-          !oldCloud.success ||
-          (newCloud.success &&
-            JSON.stringify(oldCloud.data.inputBindings) ===
-              JSON.stringify(newCloud.data.inputBindings)),
-        inputsPreserved:
-          !oldWorkflow.success ||
-          (newWorkflow.success &&
-            JSON.stringify(oldWorkflow.data.inputs) ===
-              JSON.stringify(newWorkflow.data.inputs))
+        bindingsPreserved: preservesField(oldCloud, newCloud, 'inputBindings'),
+        inputsPreserved: preservesField(oldWorkflow, newWorkflow, 'inputs')
       }
     })
     expect(

@@ -45,15 +45,14 @@ async function publish() {
     window.location.assign('/admin/catalog')
     return
   }
-  failure.value =
-    response.status === 409
-      ? 'stale'
-      : response.status === 422
-        ? 'publicationDependency'
-        : 'failed'
+  failure.value = publishFailure(response.status)
   if (response.status === 422) fields.value = reviewFieldErrors(response.data)
   busy.value = false
   emit('busy', false)
+}
+function publishFailure(status: number) {
+  if (status === 409) return 'stale'
+  return status === 422 ? 'publicationDependency' : 'failed'
 }
 </script>
 <template>

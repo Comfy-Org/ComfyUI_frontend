@@ -1,4 +1,5 @@
 import { chromium, expect } from '@playwright/test'
+import type { Route } from '@playwright/test'
 import tailwind from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
 import { createServer } from 'vite'
@@ -53,14 +54,9 @@ try {
     selection_digest: 'b'.repeat(64),
     publish_enabled: false
   }
-  await context.route('**/*', async (route) => {
+  async function fixtureRoute(route: Route) {
     const request = route.request()
-    const url = new URL(request.url())
-    if (
-      url.origin === origin &&
-      url.pathname === '/admin/catalog-api/final-review' &&
-      request.method() === 'POST'
-    ) {
+    if (request.method() === 'POST') {
       expect(request.postDataJSON()).toEqual({
         review: {
           expected_live_rev: 1,
@@ -69,22 +65,38 @@ try {
         },
         selected_uids: [fixture.items[0].content.uid]
       })
-      await route.fulfill({ json: final })
     } else if (request.method() !== 'GET') {
+      mutations.push(new URL(request.url()).pathname)
+      await route.abort()
+      return
+    }
+    await route.fulfill({ json: final })
+  }
+  async function staticRoute(route: Route, url: URL) {
+    if (route.request().method() !== 'GET') {
       mutations.push(url.pathname)
       await route.abort()
-    } else if (
-      url.origin === origin &&
-      url.pathname === '/admin/catalog-api/final-review'
-    ) {
-      await route.fulfill({ json: final })
-    } else if (
+      return
+    }
+    if (allowedStatic(url)) await route.continue()
+    else await route.abort()
+  }
+  function allowedStatic(url: URL) {
+    return (
       url.origin === origin &&
       !url.pathname.startsWith('/admin/') &&
       !url.pathname.startsWith('/api/')
+    )
+  }
+  await context.route('**/*', async (route) => {
+    const request = route.request()
+    const url = new URL(request.url())
+    if (
+      url.origin === origin &&
+      url.pathname === '/admin/catalog-api/final-review'
     ) {
-      await route.continue()
-    } else await route.abort()
+      await fixtureRoute(route)
+    } else await staticRoute(route, url)
   })
   const page = await context.newPage()
   const errors: string[] = []

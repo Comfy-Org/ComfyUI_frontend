@@ -107,18 +107,17 @@ export function settingsMode({
     (property.type === 'number' || property.type === 'integer') &&
     !Object.hasOwn(property, 'enum')
   ) {
-    return numericSettings.every((key) => {
-      const value = documentField(property, key)
-      return (
-        value === undefined ||
-        (typeof value === 'number' &&
-          Number.isFinite(value) &&
-          (!Number.isInteger(value) || Number.isSafeInteger(value)))
-      )
-    })
+    return numericSettings.every((key) => validNumericSetting(property, key))
       ? 'numeric'
       : 'unsupported'
   }
+  return optionsMode(property, presentation)
+}
+function validNumericSetting(property: Document, key: NumericSetting) {
+  const value = documentField(property, key)
+  return value === undefined || (typeof value === 'number' && scalar(value))
+}
+function optionsMode(property: Document, presentation: Document) {
   if (
     presentation.control !== 'dropdown' ||
     !labelMap(presentation.optionLabels)
@@ -127,16 +126,13 @@ export function settingsMode({
   const defaultValue = documentField(property, 'default')
   if (defaultValue !== undefined && !scalar(defaultValue)) return 'unsupported'
   const enumValue = documentField(property, 'enum')
-  if (
-    enumValue !== undefined &&
-    (!Array.isArray(enumValue) || !enumValue.every(scalar))
-  )
-    return 'unsupported'
+  if (!validEnum(enumValue)) return 'unsupported'
   const values = Array.isArray(property.enum) ? property.enum : []
-  // Existing presentation labels use String(value). Mixed values which collide
-  // in that mapping cannot safely be represented as independently labeled rows.
   if (new Set(values.map(String)).size !== values.length) return 'unsupported'
   return 'options'
+}
+function validEnum(value: Document[string] | undefined) {
+  return value === undefined || (Array.isArray(value) && value.every(scalar))
 }
 function numericText(property: Document, key: NumericSetting): string {
   const value = documentField(property, key)
@@ -189,6 +185,100 @@ export function optionValue(row: OptionBuffer): OptionValue | undefined {
   if (row.text === 'false') return false
   return undefined
 }
+function buildNumericProperty(
+  property: Document,
+  buffer: SettingsBuffer
+): SettingsError | undefined {
+  for (const key of numericSettings) {
+    const text = buffer.numeric[key]
+    if (text === '') {
+      delete property[key]
+      continue
+    }
+    const value = parseSettingsNumber(text)
+    if (value === undefined) return 'number'
+    property[key] = value
+  }
+  return numericPropertyError(property)
+}
+function numericPropertyError(property: Document): SettingsError | undefined {
+  if (
+    typeof property.minimum === 'number' &&
+    typeof property.maximum === 'number' &&
+    property.minimum > property.maximum
+  )
+    return 'bounds'
+  if (typeof property.multipleOf === 'number' && property.multipleOf <= 0)
+    return 'step'
+  const defaultValue = documentField(property, 'default')
+  if (
+    defaultValue !== undefined &&
+    !validateWorkshopInput(defaultValue, property)
+  )
+    return 'default'
+  return undefined
+}
+function setOptionDefault(
+  property: Document,
+  json: string
+): SettingsError | undefined {
+  if (json === '') {
+    delete property.default
+    return undefined
+  }
+  let value: unknown
+  try {
+    value = JSON.parse(json)
+  } catch {
+    return 'default'
+  }
+  if (!scalar(value) || !validateWorkshopInput(value, property))
+    return 'default'
+  property.default = value
+  return undefined
+}
+function buildOptionProperty(
+  property: Document,
+  buffer: SettingsBuffer
+): SettingsError | undefined {
+  if (!buffer.options.length) return 'options'
+  const values: OptionValue[] = []
+  for (const row of buffer.options) {
+    const value = optionValue(row)
+    if (value === undefined) return 'number'
+    values.push(value)
+  }
+  if (
+    new Set(values.map((value) => JSON.stringify(value))).size !== values.length
+  )
+    return 'duplicate'
+  if (new Set(values.map(String)).size !== values.length)
+    return 'labelCollision'
+  property.enum = values
+  if (values.some((value) => !validateWorkshopInput(value, property)))
+    return 'optionSchema'
+  return setOptionDefault(property, buffer.defaultJSON)
+}
+function updateOptionLabels(
+  base: InputSettingsValue,
+  buffer: SettingsBuffer,
+  presentation: Document
+) {
+  const labels = new Map(
+    Object.entries(labelMap(presentation.optionLabels) ?? {})
+  )
+  if (Array.isArray(base.property.enum))
+    for (const value of base.property.enum)
+      if (scalar(value)) labels.delete(String(value))
+  for (const row of buffer.options) {
+    const key = String(optionValue(row))
+    if (row.label !== '') labels.set(key, row.label)
+    else labels.delete(key)
+  }
+  if (labels.size || Object.hasOwn(base.presentation, 'optionLabels'))
+    presentation.optionLabels = Object.fromEntries(labels)
+  else delete presentation.optionLabels
+}
 export function buildSettings(
   base: InputSettingsValue,
   buffer: SettingsBuffer
@@ -198,77 +288,11 @@ export function buildSettings(
   const presentation = { ...base.presentation }
   if (mode === 'unsupported')
     return { valid: true, value: { property, presentation } }
-  if (mode === 'numeric') {
-    for (const key of numericSettings) {
-      const text = buffer.numeric[key]
-      if (text === '') {
-        delete property[key]
-        continue
-      }
-      const value = parseSettingsNumber(text)
-      if (value === undefined) return { valid: false, error: 'number' }
-      property[key] = value
-    }
-    if (
-      typeof property.minimum === 'number' &&
-      typeof property.maximum === 'number' &&
-      property.minimum > property.maximum
-    )
-      return { valid: false, error: 'bounds' }
-    if (typeof property.multipleOf === 'number' && property.multipleOf <= 0)
-      return { valid: false, error: 'step' }
-    const defaultValue = documentField(property, 'default')
-    if (
-      defaultValue !== undefined &&
-      !validateWorkshopInput(defaultValue, property)
-    )
-      return { valid: false, error: 'default' }
-  } else {
-    if (!buffer.options.length) return { valid: false, error: 'options' }
-    const values: OptionValue[] = []
-    for (const row of buffer.options) {
-      const value = optionValue(row)
-      if (value === undefined) return { valid: false, error: 'number' }
-      values.push(value)
-    }
-    if (
-      new Set(values.map((value) => JSON.stringify(value))).size !==
-      values.length
-    )
-      return { valid: false, error: 'duplicate' }
-    if (new Set(values.map(String)).size !== values.length)
-      return { valid: false, error: 'labelCollision' }
-    property.enum = values
-    if (values.some((value) => !validateWorkshopInput(value, property)))
-      return { valid: false, error: 'optionSchema' }
-    if (buffer.defaultJSON === '') delete property.default
-    else {
-      let value: unknown
-      try {
-        value = JSON.parse(buffer.defaultJSON)
-      } catch {
-        return { valid: false, error: 'default' }
-      }
-      if (!scalar(value) || !validateWorkshopInput(value, property))
-        return { valid: false, error: 'default' }
-      property.default = value
-    }
-    const labels = new Map(
-      Object.entries(labelMap(presentation.optionLabels) ?? {})
-    )
-    // Delete only labels belonging to options we explicitly edit. Preserve
-    // unrelated metadata/labels rather than treating this as a JSON sanitizer.
-    if (Array.isArray(base.property.enum))
-      for (const value of base.property.enum)
-        if (scalar(value)) labels.delete(String(value))
-    buffer.options.forEach((row, index) => {
-      const key = String(values[index])
-      if (row.label !== '') labels.set(key, row.label)
-      else labels.delete(key)
-    })
-    if (labels.size || Object.hasOwn(base.presentation, 'optionLabels'))
-      presentation.optionLabels = Object.fromEntries(labels)
-    else delete presentation.optionLabels
-  }
+  const error =
+    mode === 'numeric'
+      ? buildNumericProperty(property, buffer)
+      : buildOptionProperty(property, buffer)
+  if (error) return { valid: false, error }
+  if (mode === 'options') updateOptionLabels(base, buffer, presentation)
   return { valid: true, value: { property, presentation } }
 }

@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ArrowUpRight, ChevronLeft } from '@lucide/vue'
+import { ChevronLeft } from '@lucide/vue'
 import { computed } from 'vue'
 import FAQSplit01 from '@/components/blocks/FAQSplit01.vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import WorkflowActions from './WorkflowActions.vue'
 import type { WorkflowWorkshopModelDetail } from '@/config/models-catalogue'
 import { useCaseFor } from '@/config/models-catalogue'
 import { getRoutes } from '@/config/routes'
@@ -152,47 +152,15 @@ function captureWorkflowDownload() {
       >
         {{ model.summary }}
       </p>
-      <div
-        v-if="downloadUrl || cloudHref || documentationURL"
-        class="mt-6 flex flex-wrap items-center gap-2"
-        data-testid="workflow-actions"
-      >
-        <Button
-          v-if="downloadUrl"
-          as="a"
-          :href="downloadUrl"
-          :download="downloadName"
-          variant="outline"
-          class="h-auto min-h-11 max-w-full whitespace-normal"
-          :aria-label="t('workshop.workflow.download')"
-          @click="captureWorkflowDownload"
-          >{{ t('workshop.workflow.downloadShort') }}</Button
-        >
-        <Button
-          v-if="cloudHref"
-          as="a"
-          :href="cloudHref"
-          target="_blank"
-          rel="noopener"
-          variant="ghost"
-          class="h-auto min-h-11 max-w-full font-bold tracking-wider whitespace-normal uppercase"
-          @click="captureTryInCloud"
-          >{{ t('workshop.workflow.tryCloud') }}
-          <template #append>
-            <ArrowUpRight aria-hidden="true" />
-          </template>
-        </Button>
-        <Button
-          v-if="documentationURL"
-          as="a"
-          :href="documentationURL"
-          target="_blank"
-          rel="noopener noreferrer"
-          variant="outline"
-          class="h-auto min-h-11 max-w-full whitespace-normal"
-          >{{ t('workshop.workflow.apiDocs') }}</Button
-        >
-      </div>
+      <WorkflowActions
+        :download-url="downloadUrl"
+        :download-name="downloadName"
+        :cloud-href="cloudHref"
+        :documentation-u-r-l="documentationURL"
+        :locale="model.catalogDetails?.locale ?? 'en'"
+        @download="captureWorkflowDownload"
+        @try-cloud="captureTryInCloud"
+      />
     </header>
 
     <WorkflowPlayground

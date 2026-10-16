@@ -1,6 +1,9 @@
 <script setup lang="ts">
+import InputNumericSettings from './InputNumericSettings.vue'
+import InputDefault from './InputDefault.vue'
 import { computed, ref, watch } from 'vue'
-import { ArrowDown, ArrowUp, Plus, Trash2 } from '@lucide/vue'
+import { Plus } from '@lucide/vue'
+import InputOptionRow from './InputOptionRow.vue'
 import AdminButton from '@/components/cms/ui/AdminButton.vue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
@@ -13,7 +16,6 @@ import type {
 import {
   buildSettings,
   copySettings,
-  numericSettings,
   optionValue,
   settingsBuffer,
   settingsMode
@@ -204,25 +206,14 @@ function selectDefault(event: Event) {
         {{ t(`cccInputSettings.errors.${checked.error}`) }}
       </p>
       <fieldset :disabled="disabled || conflict" class="grid min-w-0 gap-3">
-        <div
+        <InputNumericSettings
           v-if="mode === 'numeric'"
-          class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
-        >
-          <label
-            v-for="key in numericSettings"
-            :key
-            class="grid gap-1 text-xs text-admin-muted"
-          >
-            {{ t(`cccInputSettings.${key}`) }}
-            <input
-              :value="buffer.numeric[key]"
-              type="text"
-              inputmode="decimal"
-              :class="inputClass"
-              @input="numeric(key, $event)"
-            />
-          </label>
-        </div>
+          :disabled="disabled || conflict"
+          :buffer
+          :input-class="inputClass"
+          :locale
+          @input="numeric"
+        />
         <template v-else>
           <div class="flex items-center justify-between gap-2">
             <h4 class="text-xs text-admin-muted">
@@ -232,114 +223,26 @@ function selectDefault(event: Event) {
               t('cccInputSettings.addOption')
             }}</AdminButton>
           </div>
-          <div
+          <InputOptionRow
             v-for="(row, index) in buffer.options"
             :key="row.key"
-            class="grid gap-2 rounded-lg border border-admin-line p-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"
-          >
-            <div class="grid gap-2">
-              <label class="grid gap-1 text-xs text-admin-muted"
-                >{{ t('cccInputSettings.valueType') }}
-                <select
-                  :value="row.type"
-                  :class="inputClass"
-                  @change="type(index, $event)"
-                >
-                  <option value="string">
-                    {{ t('cccInputSettings.string') }}
-                  </option>
-                  <option value="number">
-                    {{ t('cccInputSettings.number') }}
-                  </option>
-                  <option value="boolean">
-                    {{ t('cccInputSettings.boolean') }}
-                  </option>
-                </select>
-              </label>
-              <label class="grid gap-1 text-xs text-admin-muted"
-                >{{ t('cccInputSettings.optionValue') }}
-                <select
-                  v-if="row.type === 'boolean'"
-                  :value="row.text"
-                  :class="inputClass"
-                  @change="option(index, 'text', $event)"
-                >
-                  <option
-                    v-if="!['true', 'false'].includes(row.text)"
-                    :value="row.text"
-                  >
-                    {{ row.text }}
-                  </option>
-                  <option value="true">true</option>
-                  <option value="false">false</option>
-                </select>
-                <input
-                  v-else
-                  :value="row.text"
-                  :inputmode="row.type === 'number' ? 'decimal' : undefined"
-                  :class="inputClass"
-                  @input="option(index, 'text', $event)"
-                />
-              </label>
-            </div>
-            <label class="grid content-start gap-1 text-xs text-admin-muted"
-              >{{ t('cccInputSettings.optionLabel')
-              }}<input
-                :value="row.label"
-                :class="inputClass"
-                @input="option(index, 'label', $event)"
-            /></label>
-            <div class="flex items-end gap-1 sm:flex-col sm:justify-end">
-              <AdminButton
-                :icon="ArrowUp"
-                :disabled="index === 0"
-                :aria-label="t('cccInputSettings.moveUp')"
-                @click="move(index, -1)"
-              />
-              <AdminButton
-                :icon="ArrowDown"
-                :disabled="index === buffer.options.length - 1"
-                :aria-label="t('cccInputSettings.moveDown')"
-                @click="move(index, 1)"
-              />
-              <AdminButton
-                variant="dangerGhost"
-                :icon="Trash2"
-                :aria-label="t('cccInputSettings.removeOption')"
-                @click="remove(index)"
-              />
-            </div>
-          </div>
-          <label class="grid gap-1 text-xs text-admin-muted"
-            >{{ t('cccInputSettings.default') }}
-            <select
-              :value="
-                buffer.defaultJSON === ''
-                  ? ''
-                  : defaultIndex < 0
-                    ? 'missing'
-                    : String(defaultIndex)
-              "
-              :class="inputClass"
-              @change="selectDefault"
-            >
-              <option value="">{{ t('cccInputSettings.noDefault') }}</option>
-              <option
-                v-if="buffer.defaultJSON !== '' && defaultIndex < 0"
-                value="missing"
-                disabled
-              >
-                {{ buffer.defaultJSON }}
-              </option>
-              <option
-                v-for="(row, index) in buffer.options"
-                :key="row.key"
-                :value="String(index)"
-              >
-                {{ row.label || row.text }}
-              </option>
-            </select>
-          </label>
+            :row
+            :index
+            :last="index === buffer.options.length - 1"
+            :input-class="inputClass"
+            :locale
+            @type="type(index, $event)"
+            @option="(field, event) => option(index, field, event)"
+            @move="move(index, $event)"
+            @remove="remove(index)"
+          />
+          <InputDefault
+            :buffer
+            :default-index="defaultIndex"
+            :input-class="inputClass"
+            :locale
+            @change="selectDefault"
+          />
         </template>
       </fieldset>
       <p class="text-xs text-admin-muted">

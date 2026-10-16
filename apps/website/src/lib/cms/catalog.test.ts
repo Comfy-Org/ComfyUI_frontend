@@ -28,10 +28,10 @@ describe('website CMS boundary', () => {
       },
       preview: { view: 'DRAFT', now: '2026-10-15T09:00:00Z' }
     }
-    await loadSiteCatalog(session)
+    await loadSiteCatalog(session, 'en', 'workflows/one-detail', false)
     const [url, options] = upstream.mock.calls[0]
     expect(String(url)).toBe(
-      'http://localhost:8099/admin/api/site/catalog?view=DRAFT&eligible=true&now=2026-10-15T09%3A00%3A00Z'
+      'http://localhost:8099/admin/api/site/catalog?view=DRAFT&eligible=true&now=2026-10-15T09%3A00%3A00Z&workflow_slug=workflows%2Fone-detail'
     )
     expect(options?.headers).toEqual({
       Authorization: 'Bearer local-test-credential'
@@ -53,37 +53,39 @@ describe('website CMS boundary', () => {
     expect(String(upstream.mock.calls[0][0])).toBe(
       'http://localhost:8099/api/v1/catalog/items?workflow_slug=workflows%2Fone-detail'
     )
-    await loadSiteCatalog()
-    expect(String(upstream.mock.calls[1][0])).toBe(
-      'http://localhost:8099/api/v1/catalog/items'
-    )
+    expect(await loadSiteCatalog()).toEqual({ ok: false, status: 503 })
+    expect(upstream).toHaveBeenCalledTimes(1)
   })
 
-  it('parses every existing public card and input definition from the CMS', async () => {
+  it('parses every existing public card and input definition with bounded detail requests', async () => {
     vi.stubEnv('SITE_CATALOG_API_URL', 'http://localhost:8099')
-    vi.mocked(fetch).mockImplementation(
-      vi.fn<typeof fetch>().mockResolvedValue(
+    vi.mocked(fetch).mockImplementation((input) => {
+      const slug = new URL(String(input)).searchParams.get('workflow_slug')
+      const item = entries.find((entry) => entry.slug === slug)
+      return Promise.resolve(
         Response.json({
           revision_id: 1,
           generation: 0,
-          items: entries.map((item) => ({
-            ...item,
-            revision: 1,
-            deleted: false,
-            edit_version: item.uid
-          }))
+          items: item
+            ? [{ ...item, revision: 1, deleted: false, edit_version: item.uid }]
+            : []
         })
       )
+    })
+    const results = await Promise.all(
+      entries.map((item) => loadSiteCatalog(undefined, 'en', item.slug, false))
     )
-    const result = await loadSiteCatalog()
-    expect(result.ok).toBe(true)
-    if (!result.ok) return
-    expect(result.models).toHaveLength(entries.length)
-    expect(result.details.length).toBe(
+    expect(results.every((result) => result.ok)).toBe(true)
+    const models = results.flatMap((result) => (result.ok ? result.models : []))
+    const details = results.flatMap((result) =>
+      result.ok ? result.details : []
+    )
+    expect(models).toHaveLength(entries.length)
+    expect(details).toHaveLength(
       entries.filter((item) => item.kind !== 'APP').length
     )
     expect(
-      result.details.some((model) =>
+      details.some((model) =>
         model.form ? fieldsForDefinition(model.form).length > 0 : false
       )
     ).toBe(true)

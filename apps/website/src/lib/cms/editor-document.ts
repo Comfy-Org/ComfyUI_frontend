@@ -20,46 +20,61 @@ export function documentField(
   return Object.hasOwn(document, key) ? document[key] : undefined
 }
 
-// Zod's record output omits literal __proto__ keys. Authored JSON must be
-// lossless: copy own entries without invoking Object.prototype setters.
+function copyJSONArray(
+  value: unknown[],
+  parents: Set<object>
+): Document[string][] | undefined {
+  const result: Document[string][] = []
+  for (const entry of value) {
+    const copied = copyJSON(entry, parents)
+    if (copied === undefined) return undefined
+    result.push(copied)
+  }
+  return result
+}
+function copyJSONEntries(
+  value: object,
+  parents: Set<object>
+): Document | undefined {
+  const entries: [string, Document[string]][] = []
+  for (const [key, entry] of Object.entries(value)) {
+    const copied = copyJSON(entry, parents)
+    if (copied === undefined) return undefined
+    entries.push([key, copied])
+  }
+  return Object.fromEntries(entries)
+}
+function jsonContainer(value: object) {
+  const prototype = Object.getPrototypeOf(value)
+  return (
+    (Array.isArray(value) ||
+      prototype === Object.prototype ||
+      prototype === null) &&
+    Object.getOwnPropertySymbols(value).length === 0
+  )
+}
 function copyJSON(
   value: unknown,
   parents = new Set<object>()
 ): Document[string] | undefined {
-  if (value === null || typeof value === 'string' || typeof value === 'boolean')
-    return value
+  if (jsonLiteral(value)) return value
   if (typeof value === 'number')
     return Number.isFinite(value) ? value : undefined
   if (typeof value !== 'object' || parents.has(value)) return undefined
-  const prototype = Object.getPrototypeOf(value)
-  if (
-    !Array.isArray(value) &&
-    prototype !== Object.prototype &&
-    prototype !== null
-  )
-    return undefined
-  if (Object.getOwnPropertySymbols(value).length) return undefined
+  if (!jsonContainer(value)) return undefined
   parents.add(value)
   try {
-    if (Array.isArray(value)) {
-      const result: Document[string][] = []
-      for (const entry of value) {
-        const copied = copyJSON(entry, parents)
-        if (copied === undefined) return undefined
-        result.push(copied)
-      }
-      return result
-    }
-    const entries: [string, Document[string]][] = []
-    for (const [key, entry] of Object.entries(value)) {
-      const copied = copyJSON(entry, parents)
-      if (copied === undefined) return undefined
-      entries.push([key, copied])
-    }
-    return Object.fromEntries(entries)
+    return Array.isArray(value)
+      ? copyJSONArray(value, parents)
+      : copyJSONEntries(value, parents)
   } finally {
     parents.delete(value)
   }
+}
+function jsonLiteral(value: unknown): value is null | string | boolean {
+  return (
+    value === null || typeof value === 'string' || typeof value === 'boolean'
+  )
 }
 
 export const jsonObject = z.unknown().transform<Document>((value, ctx) => {

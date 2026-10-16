@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import CatalogPreviewView from './CatalogPreviewView.vue'
 import { computed, onBeforeUnmount, ref, useTemplateRef, watch } from 'vue'
 import { Globe, LayoutDashboard, List, X } from '@lucide/vue'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -15,6 +16,7 @@ import type {
   CatalogPreviewChange,
   CatalogScheduledPage
 } from '@/lib/cms/preview-display'
+import CatalogPreviewMode from './CatalogPreviewMode.vue'
 import CatalogPreviewTimePicker from './CatalogPreviewTimePicker.vue'
 import CatalogPreviewChanges from './CatalogPreviewChanges.vue'
 
@@ -138,69 +140,8 @@ onBeforeUnmount(clearOffset)
         )
       "
     >
-      <p class="mr-auto flex items-center gap-2.5 text-sm">
-        <span
-          :class="
-            cn(
-              'inline-flex h-7 items-center gap-2 rounded-full border px-3 text-xs font-semibold tracking-[0.04em] uppercase',
-              draft
-                ? 'border-admin-info/40 bg-admin-info/15 text-admin-info'
-                : 'border-admin-success/40 bg-admin-success/15 text-admin-success'
-            )
-          "
-        >
-          <span class="relative flex size-2" aria-hidden="true">
-            <span
-              v-if="draft"
-              class="absolute inline-flex size-full animate-ping rounded-full bg-admin-info opacity-60 motion-reduce:hidden"
-            />
-            <span
-              :class="
-                cn(
-                  'relative inline-flex size-2 rounded-full',
-                  draft ? 'bg-admin-info' : 'bg-admin-success'
-                )
-              "
-            />
-          </span>
-          {{ t(draft ? 'cmsAdmin.preview.mode' : 'cmsAdmin.preview.liveMode') }}
-        </span>
-        <span class="hidden text-xs text-admin-muted sm:inline">
-          <template v-if="view === 'DRAFT' && changes !== undefined">
-            {{ t('cccPreview.summary', { count: changes.length }) }}
-          </template>
-          <template v-if="now">
-            <template v-if="view === 'DRAFT' && changes !== undefined">
-              ·
-            </template>
-            {{ t('cccPreview.timeTravel') }}
-          </template>
-        </span>
-      </p>
-      <div
-        role="group"
-        :aria-label="t('cccPreview.view')"
-        class="inline-flex gap-1 rounded-lg border border-admin-field p-0.5"
-      >
-        <button
-          v-for="option in ['DRAFT', 'LIVE'] as const"
-          :key="option"
-          type="button"
-          :aria-pressed="view === option"
-          :disabled="busy"
-          :class="
-            cn(
-              'inline-flex h-6.5 cursor-pointer items-center rounded-md px-2.5 text-xs font-medium focus-visible:outline-2 focus-visible:outline-admin-fg disabled:opacity-40',
-              view === option
-                ? 'bg-admin-selected'
-                : 'text-admin-muted hover:text-admin-fg'
-            )
-          "
-          @click="selection(option)"
-        >
-          {{ t(option === 'DRAFT' ? 'cccPreview.draft' : 'cccPreview.live') }}
-        </button>
-      </div>
+      <CatalogPreviewMode :view :now :count="changes?.length" :locale />
+      <CatalogPreviewView :view :busy :locale @select="selection" />
       <CatalogPreviewTimePicker
         :now
         :launches

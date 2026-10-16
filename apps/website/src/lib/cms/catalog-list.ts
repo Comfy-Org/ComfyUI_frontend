@@ -1,4 +1,7 @@
-import type { CccWebsiteCardsPage } from '@comfyorg/ingest-types'
+import type {
+  CccWebsiteCardsPage,
+  ListCccWebsiteCardsData
+} from '@comfyorg/ingest-types'
 import { zListCccWebsiteCardsQuery } from '@comfyorg/ingest-types/zod'
 
 import { USE_CASES } from '@/config/models-catalogue'
@@ -11,6 +14,7 @@ import { readCatalogCards } from './catalog-cards-response'
 import { catalogPresentation } from './catalog-presentation'
 
 export type CatalogListSection = 'models' | 'workflows' | 'apps'
+type ListCccWebsiteCardsQuery = NonNullable<ListCccWebsiteCardsData['query']>
 
 export interface CatalogListPage {
   page: number
@@ -149,56 +153,15 @@ export async function loadSiteCatalogList(
   let reset = page > 1 && !query.data.cursor
   if (reset) page = 1
   try {
-    const url = new URL(
-      session ? '/admin/api/site/catalog/cards' : '/api/v1/catalog/cards',
-      origin
-    )
-    for (const [key, value] of Object.entries(query.data)) {
-      if (Array.isArray(value))
-        value.forEach((entry) => url.searchParams.append(key, entry))
-      else if (typeof value === 'string' || typeof value === 'number')
-        url.searchParams.set(key, String(value))
-    }
-    if (session) {
-      url.searchParams.set('view', session.preview?.view ?? 'LIVE')
-      if (session.preview?.now) url.searchParams.set('now', session.preview.now)
-    }
-    const options: RequestInit = {
-      ...(session
-        ? { headers: { Authorization: `Bearer ${session.credential}` } }
-        : {}),
-      signal: AbortSignal.timeout(5000),
-      cache: 'no-store'
-    }
-    let response = await fetch(url, options)
-    if (response.status === 409 && url.searchParams.has('cursor')) {
-      await response.body?.cancel()
-      url.searchParams.delete('cursor')
+    const result = await fetchCards(origin, query.data, session)
+    if (result.reset) {
       page = 1
       reset = true
-      response = await fetch(url, options)
     }
+    const { response } = result
     if (!response.ok) return unavailable
     const value = await readCatalogCards(response)
-    if (
-      !value ||
-      value.items.some(
-        (item) =>
-          item.kind !== KINDS[section] ||
-          item.deleted ||
-          !item.enabled ||
-          (!session && item.visibility !== 'PUBLIC')
-      )
-    )
-      return unavailable
-    if (
-      !session &&
-      (value.total !== undefined ||
-        value.generation !== undefined ||
-        Object.values(value.facets).some((facets) =>
-          facets.some((facet) => facet.count !== undefined)
-        ))
-    )
+    if (!value || !validCards(value, section, Boolean(session)))
       return unavailable
     const models = modelSchema
       .array()
@@ -217,4 +180,78 @@ export async function loadSiteCatalogList(
   } catch {
     return unavailable
   }
+}
+
+function cardsURL(
+  origin: string,
+  query: ListCccWebsiteCardsQuery,
+  session?: SiteSession | AuthoringSession
+) {
+  const url = new URL(
+    session ? '/admin/api/site/catalog/cards' : '/api/v1/catalog/cards',
+    origin
+  )
+  appendCardQuery(url.searchParams, query)
+  if (session) {
+    url.searchParams.set('view', session.preview?.view ?? 'LIVE')
+    if (session.preview?.now) url.searchParams.set('now', session.preview.now)
+  }
+  return url
+}
+function appendCardQuery(
+  params: URLSearchParams,
+  query: ListCccWebsiteCardsQuery
+) {
+  for (const [key, value] of Object.entries(query)) {
+    if (Array.isArray(value))
+      value.forEach((entry) => params.append(key, entry))
+    else if (typeof value === 'string' || typeof value === 'number')
+      params.set(key, String(value))
+  }
+}
+async function fetchCards(
+  origin: string,
+  query: ListCccWebsiteCardsQuery,
+  session?: SiteSession | AuthoringSession
+) {
+  const url = cardsURL(origin, query, session)
+  const options: RequestInit = {
+    ...(session
+      ? { headers: { Authorization: `Bearer ${session.credential}` } }
+      : {}),
+    signal: AbortSignal.timeout(5000),
+    cache: 'no-store'
+  }
+  const response = await fetch(url, options)
+  if (response.status !== 409 || !url.searchParams.has('cursor'))
+    return { response, reset: false }
+  await response.body?.cancel()
+  url.searchParams.delete('cursor')
+  return { response: await fetch(url, options), reset: true }
+}
+function validCards(
+  value: CccWebsiteCardsPage,
+  section: CatalogListSection,
+  authenticated: boolean
+) {
+  if (
+    value.items.some(
+      (item) =>
+        item.kind !== KINDS[section] ||
+        item.deleted ||
+        !item.enabled ||
+        (!authenticated && item.visibility !== 'PUBLIC')
+    )
+  )
+    return false
+  return authenticated || !hasPrivateCounts(value)
+}
+function hasPrivateCounts(value: CccWebsiteCardsPage) {
+  return (
+    value.total !== undefined ||
+    value.generation !== undefined ||
+    Object.values(value.facets).some((facets) =>
+      facets.some((facet) => facet.count !== undefined)
+    )
+  )
 }

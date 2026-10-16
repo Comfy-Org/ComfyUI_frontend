@@ -1,5 +1,5 @@
 import { timingSafeEqual } from 'node:crypto'
-import type { APIRoute } from 'astro'
+import type { APIRoute, APIContext } from 'astro'
 import { cookieOptions, newCSRF } from '@/lib/cms/admin'
 import {
   AUTHORING_COOKIE,
@@ -21,16 +21,7 @@ import {
 } from '@/lib/cms/editor-server'
 
 const attempts = new Map<string, { started: number; count: number }>()
-export const POST: APIRoute = async (context) => {
-  if (!demoEnabled()) return editorFailure(404)
-  if (
-    context.url.search ||
-    !validAuthoringOrigin(context) ||
-    !context.request.headers
-      .get('Content-Type')
-      ?.startsWith('application/x-www-form-urlencoded')
-  )
-    return editorFailure(403)
+function rateLimited(context: APIContext) {
   const key = context.clientAddress
   const existing = attempts.get(key)
   const attempt =
@@ -39,7 +30,18 @@ export const POST: APIRoute = async (context) => {
       : { started: Date.now(), count: 0 }
   if (attempts.size > 1000) attempts.clear()
   attempts.set(key, attempt)
-  if (++attempt.count > 30) return editorFailure(429)
+  return ++attempt.count > 30
+}
+function validLoginRequest(context: APIContext) {
+  return (
+    !context.url.search &&
+    validAuthoringOrigin(context) &&
+    context.request.headers
+      .get('Content-Type')
+      ?.startsWith('application/x-www-form-urlencoded')
+  )
+}
+async function loginForm(context: APIContext) {
   const bytes = await boundedBody(context.request, 4096)
   if (!bytes) return editorFailure(400)
   const form = new URLSearchParams(new TextDecoder().decode(bytes))
@@ -51,32 +53,50 @@ export const POST: APIRoute = async (context) => {
     !timingSafeEqual(Buffer.from(csrf), Buffer.from(expected))
   )
     return editorFailure(403)
+  return form
+}
+async function verifyParent() {
+  const parent = await demoParent()
+  const verified = await verifyAuthoringCredential(parent.credential)
+  if (!verified.ok) return verified.response
+  if (!verified.context.can_edit) return editorFailure(403)
+  if (!verified.context.can_apply) return editorFailure(403)
+  if (
+    verified.context.actor_uid !== '00000000-0000-4000-8000-000000000003' ||
+    verified.context.owner_uid !== '00000000-0000-4000-8000-000000000001'
+  )
+    return editorFailure(403)
+  return undefined
+}
+function loginResponse(
+  context: APIContext,
+  invitation: { expires: number; token: string }
+) {
+  const options = {
+    ...cookieOptions(context),
+    maxAge: Math.max(1, Math.floor((invitation.expires - Date.now()) / 1000))
+  }
+  context.cookies.delete(AUTHORING_COOKIE, { path: '/' })
+  context.cookies.delete(DEMO_LOGIN_CSRF, { path: '/' })
+  context.cookies.set(DEMO_COOKIE, invitation.token, options)
+  context.cookies.set(AUTHORING_CSRF_COOKIE, newCSRF(), options)
+  const response = context.redirect('/admin/catalog', 303)
+  for (const [name, value] of Object.entries(editorHeaders))
+    response.headers.set(name, value)
+  return response
+}
+export const POST: APIRoute = async (context) => {
+  if (!demoEnabled()) return editorFailure(404)
+  if (!validLoginRequest(context)) return editorFailure(403)
+  if (rateLimited(context)) return editorFailure(429)
+  const form = await loginForm(context)
+  if (form instanceof Response) return form
   try {
-    const parent = await demoParent()
-    const verified = await verifyAuthoringCredential(parent.credential)
-    if (!verified.ok) return verified.response
-    // The demo parent must hold both capabilities in its own right.
-    if (!verified.context.can_edit) return editorFailure(403)
-    if (!verified.context.can_apply) return editorFailure(403)
-    if (
-      verified.context.actor_uid !== '00000000-0000-4000-8000-000000000003' ||
-      verified.context.owner_uid !== '00000000-0000-4000-8000-000000000001'
-    )
-      return editorFailure(403)
+    const failure = await verifyParent()
+    if (failure) return failure
     const invitation = await redeemDemoInvitation(form.get('code') ?? '')
     if (!invitation) return editorFailure(403)
-    const options = {
-      ...cookieOptions(context),
-      maxAge: Math.max(1, Math.floor((invitation.expires - Date.now()) / 1000))
-    }
-    context.cookies.delete(AUTHORING_COOKIE, { path: '/' })
-    context.cookies.delete(DEMO_LOGIN_CSRF, { path: '/' })
-    context.cookies.set(DEMO_COOKIE, invitation.token, options)
-    context.cookies.set(AUTHORING_CSRF_COOKIE, newCSRF(), options)
-    const response = context.redirect('/admin/catalog', 303)
-    for (const [name, value] of Object.entries(editorHeaders))
-      response.headers.set(name, value)
-    return response
+    return loginResponse(context, invitation)
   } catch {
     return editorFailure(503)
   }

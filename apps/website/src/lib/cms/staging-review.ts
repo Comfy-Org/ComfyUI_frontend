@@ -10,12 +10,7 @@ import { jsonObject } from './editor-document'
 import { accountID } from './account-id'
 import { changeID } from './change-id'
 
-export const editorialStates = [
-  'NEW',
-  'APPROVED',
-  'DEFERRED',
-  'DELETED'
-] as const
+const editorialStates = ['NEW', 'APPROVED', 'DEFERRED', 'DELETED'] as const
 const decisions = ['NEW', 'APPROVED', 'DEFERRED'] as const
 export type Decision = (typeof decisions)[number]
 export const reviewTypes = [
@@ -346,10 +341,47 @@ export interface FieldDifference {
   before?: string
   after?: string
 }
-// Staff display only: arrays are compared at indexed paths, including removals.
-// Bound output so a large workflow or deeply nested input does not freeze UI.
+function isComposite(
+  value: Document[string] | undefined
+): value is Document | Document[string][] {
+  return value !== null && typeof value === 'object'
+}
 export function fieldDifferences(entry: ReviewItem): FieldDifference[] {
   const differences: FieldDifference[] = []
+  function visitObjects(
+    before: Document,
+    after: Document,
+    path: string,
+    depth: number
+  ) {
+    for (const key of new Set([
+      ...Object.keys(before),
+      ...Object.keys(after)
+    ])) {
+      const child = /^[A-Za-z_$][\w$]*$/.test(key)
+        ? `${path}.${key}`
+        : `${path}[${JSON.stringify(key)}]`
+      visit(
+        Object.hasOwn(before, key) ? before[key] : undefined,
+        Object.hasOwn(after, key) ? after[key] : undefined,
+        child,
+        depth + 1
+      )
+    }
+  }
+  function visitChildren(
+    before: Document | Document[string][],
+    after: Document | Document[string][],
+    path: string,
+    depth: number
+  ) {
+    if (Array.isArray(before) && Array.isArray(after)) {
+      for (let i = 0; i < Math.max(before.length, after.length); i++)
+        visit(before[i], after[i], `${path}[${i}]`, depth + 1)
+      return true
+    }
+    return false
+  }
   function visit(
     before: Document[string] | undefined,
     after: Document[string] | undefined,
@@ -358,44 +390,17 @@ export function fieldDifferences(entry: ReviewItem): FieldDifference[] {
   ) {
     if (differences.length >= 100) return
     if (JSON.stringify(before) === JSON.stringify(after)) return
-    if (
-      depth < 12 &&
-      before !== null &&
-      after !== null &&
-      typeof before === 'object' &&
-      typeof after === 'object'
-    ) {
-      if (Array.isArray(before) && Array.isArray(after)) {
-        for (let i = 0; i < Math.max(before.length, after.length); i++)
-          visit(before[i], after[i], `${path}[${i}]`, depth + 1)
-        return
-      }
+    if (depth < 12 && isComposite(before) && isComposite(after)) {
+      if (visitChildren(before, after, path, depth)) return
       if (!Array.isArray(before) && !Array.isArray(after)) {
-        for (const key of new Set([
-          ...Object.keys(before),
-          ...Object.keys(after)
-        ])) {
-          const child = /^[A-Za-z_$][\w$]*$/.test(key)
-            ? `${path}.${key}`
-            : `${path}[${JSON.stringify(key)}]`
-          visit(
-            Object.hasOwn(before, key) ? before[key] : undefined,
-            Object.hasOwn(after, key) ? after[key] : undefined,
-            child,
-            depth + 1
-          )
-        }
+        visitObjects(before, after, path, depth)
         return
       }
     }
     differences.push({
       path,
-      before:
-        before === undefined
-          ? undefined
-          : JSON.stringify(before).slice(0, 1500),
-      after:
-        after === undefined ? undefined : JSON.stringify(after).slice(0, 1500)
+      before: displayDifference(before),
+      after: displayDifference(after)
     })
   }
   visit(
@@ -405,4 +410,7 @@ export function fieldDifferences(entry: ReviewItem): FieldDifference[] {
     0
   )
   return differences
+}
+function displayDifference(value: Document[string] | undefined) {
+  return value === undefined ? undefined : JSON.stringify(value).slice(0, 1500)
 }
