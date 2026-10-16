@@ -85,6 +85,7 @@ import {
 } from './subscriptionOperationView'
 import {
   declineDetail,
+  projectHostedTopupCheckoutResult,
   projectTopupOperation,
   projectTopupResult
 } from './topupOperationView'
@@ -438,6 +439,15 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     return projectTopupResult(result, amountCents)
   }
 
+  async function createHostedTopupCheckout(
+    amountCents: number,
+    returnUrl: string
+  ): Promise<string> {
+    return projectHostedTopupCheckoutResult(
+      await sdk.topup.createHostedTopupCheckout({ amountCents, returnUrl })
+    )
+  }
+
   // The backend gate on these routes is independent of the client flag, so a
   // 404 means the rail is on too early. One answer settles it for the tab:
   // every later action goes straight to the legacy call.
@@ -653,6 +663,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     getOperation,
     recoverPendingOperation,
     createTopup,
+    createHostedTopupCheckout,
     subscribe,
     previewSubscribe,
     cancelSubscription,

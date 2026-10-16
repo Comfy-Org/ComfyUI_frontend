@@ -63,6 +63,12 @@
           </span>
         </div>
       </div>
+      <p
+        v-if="noPaymentMethodRefused"
+        class="m-0 px-8 pt-4 text-sm text-muted-foreground"
+      >
+        {{ $t('credits.topUp.noPaymentMethodCheckoutHint') }}
+      </p>
     </template>
 
     <template v-if="step === 'verifying'">
@@ -249,6 +255,18 @@
           {{ $t('subscription.preview.completeVerification') }}
         </Button>
         <Button
+          v-if="step === 'confirm' && noPaymentMethodRefused"
+          variant="primary"
+          size="lg"
+          class="h-10 justify-center"
+          :disabled="!isValidAmount || paymentLocked || !canTopUp"
+          :loading="paymentLocked"
+          @click="continueToCheckout"
+        >
+          {{ $t('credits.topUp.continueToCheckout') }}
+        </Button>
+        <Button
+          v-else
           :disabled="!isValidAmount || paymentLocked || !canTopUp"
           :loading="paymentLocked"
           :variant="
@@ -377,6 +395,7 @@ const {
   isAddingCredits,
   topupOperation,
   topup,
+  createHostedCheckout,
   retryPaymentAuthentication,
   dismissOperation,
   adoptPendingOperation
@@ -437,6 +456,7 @@ const selectedPreset = ref<number | null>(50)
 const payAmount = ref(50)
 const loading = ref(false)
 const paymentSubmitted = ref(false)
+const noPaymentMethodRefused = ref(false)
 const step = ref<'amount' | 'confirm' | 'verifying'>(
   topupOperation.value && canTopUp.value ? 'verifying' : 'amount'
 )
@@ -685,9 +705,43 @@ function reportPurchaseError(
     },
     billingOpId
   )
+  if (isNoPaymentMethodRefusal(error)) {
+    if (currentAttempt) noPaymentMethodRefused.value = true
+    return
+  }
   toast.error(t('credits.topUp.purchaseError'), {
     description: purchaseErrorDetail(error)
   })
+}
+
+function isNoPaymentMethodRefusal(error: unknown): boolean {
+  return (
+    error instanceof WorkspaceApiError && error.code === 'NO_PAYMENT_METHOD'
+  )
+}
+
+async function continueToCheckout() {
+  if (!(canTopUp.value && isValidAmount.value && !paymentLocked.value)) {
+    return
+  }
+  loading.value = true
+  try {
+    const checkoutUrl = await createHostedCheckout(
+      payAmount.value * 100,
+      window.location.href
+    )
+    usePendingTopup().startPendingTopup()
+    if (!window.open(checkoutUrl, '_blank')) {
+      globalThis.location.href = checkoutUrl
+    }
+    handleClose(false)
+  } catch (error) {
+    toast.error(t('credits.topUp.purchaseError'), {
+      description: purchaseErrorDetail(error)
+    })
+  } finally {
+    loading.value = false
+  }
 }
 
 /**
@@ -760,9 +814,6 @@ function reportTerminal(
 
 function purchaseErrorDetail(error?: unknown): string {
   const code = error instanceof WorkspaceApiError ? error.code : undefined
-  if (code === 'NO_PAYMENT_METHOD') {
-    return t('credits.topUp.noPaymentMethodError')
-  }
   // Only one billing operation is open at a time, so this refusal means the
   // previous purchase has not settled or expired yet — not that anything failed.
   if (code === 'SUBSCRIPTION_CHANGE_IN_PROGRESS') {
