@@ -10,6 +10,10 @@ import type {
   NodesIndexFixture,
   RecordedResponse
 } from '../src/services/providers/__fixtures__/algoliaNodesIndexFixture'
+import {
+  PACK_SEARCHABLE_ATTRIBUTES,
+  buildPackSearchRequest
+} from '../src/services/providers/algoliaPackSearchRequest'
 import type {
   AlgoliaNodePack,
   SearchAttribute
@@ -49,8 +53,6 @@ const RECORDED_ATTRIBUTES: SearchAttribute[] = [
   'publisher_id',
   'latest_version'
 ]
-
-const PACK_SEARCHABLE_ATTRIBUTES: SearchAttribute[] = ['name', 'description']
 
 type RetrievedHit = { objectID: string } & Partial<
   Pick<
@@ -126,19 +128,23 @@ export async function recordNodesIndex(
   }
 }
 
+export function toRecordingRequest(query: string) {
+  return {
+    ...buildPackSearchRequest(query, {
+      pageSize: DEFAULT_PAGE_SIZE,
+      pageNumber: 0,
+      restrictSearchableAttributes: PACK_SEARCHABLE_ATTRIBUTES
+    }),
+    attributesToRetrieve: RECORDED_ATTRIBUTES,
+    analytics: false
+  }
+}
+
 function liveNodesIndexSearch(appId: string, apiKey: string): SearchNodesIndex {
   const client = liteClient(appId, apiKey)
   return async (queries) => {
     const { results } = await client.search<AlgoliaNodePack>({
-      requests: queries.map((query) => ({
-        indexName: 'nodes_index',
-        query,
-        restrictSearchableAttributes: PACK_SEARCHABLE_ATTRIBUTES,
-        attributesToRetrieve: RECORDED_ATTRIBUTES,
-        hitsPerPage: DEFAULT_PAGE_SIZE,
-        page: 0,
-        analytics: false
-      })),
+      requests: queries.map(toRecordingRequest),
       strategy: 'none'
     })
     return (results as SearchResponse<AlgoliaNodePack>[]).map(

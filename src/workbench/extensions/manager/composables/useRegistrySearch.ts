@@ -3,6 +3,7 @@ import type { MaybeRefOrGetter, Ref } from 'vue'
 
 import { DEFAULT_PAGE_SIZE } from '@/constants/searchConstants'
 import { useRegistrySearchGateway } from '@/services/gateway/registrySearchGateway'
+import { PACK_SEARCHABLE_ATTRIBUTES } from '@/services/providers/algoliaPackSearchRequest'
 import type { SearchAttribute } from '@/types/algoliaTypes'
 import type { components } from '@/types/comfyRegistryTypes'
 import type { QuerySuggestion, SearchMode } from '@/types/searchServiceTypes'
@@ -47,7 +48,7 @@ export function useRegistrySearch(inputs: {
   const searchableAttributes = (): SearchAttribute[] =>
     toValue(inputs.searchMode) === 'nodes'
       ? ['comfy_nodes']
-      : ['name', 'description']
+      : PACK_SEARCHABLE_ATTRIBUTES
 
   async function doLoadMore() {
     if (!morePages.value) return

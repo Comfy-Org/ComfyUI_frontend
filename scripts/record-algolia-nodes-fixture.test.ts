@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { DEFAULT_PAGE_SIZE } from '../src/constants/searchConstants'
 import recorded from '../src/services/providers/__fixtures__/algoliaNodesIndex.json'
 import type {
   NodesIndexFixture,
@@ -8,7 +9,8 @@ import type {
 import {
   RECORDED_QUERIES,
   recordNodesIndex,
-  toRecordedResponse
+  toRecordedResponse,
+  toRecordingRequest
 } from './record-algolia-nodes-fixture'
 
 const committedFixture: NodesIndexFixture = recorded
@@ -142,6 +144,27 @@ describe('toRecordedResponse', () => {
           comfy_nodes: []
         }
       ]
+    })
+  })
+})
+
+describe('toRecordingRequest', () => {
+  it('sends the packs-mode search request without analytics, retrieving only the recorded fields', () => {
+    expect(toRecordingRequest('gguf')).toEqual({
+      query: 'gguf',
+      indexName: 'nodes_index',
+      restrictSearchableAttributes: ['name', 'description'],
+      attributesToRetrieve: [
+        'id',
+        'name',
+        'description',
+        'total_install',
+        'publisher_id',
+        'latest_version'
+      ],
+      hitsPerPage: DEFAULT_PAGE_SIZE,
+      page: 0,
+      analytics: false
     })
   })
 })
