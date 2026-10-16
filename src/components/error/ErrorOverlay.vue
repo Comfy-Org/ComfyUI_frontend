@@ -51,9 +51,8 @@
 
         <div class="flex w-full items-center justify-end gap-2 pt-2">
           <Button
-            variant="secondary"
-            size="unset"
-            class="min-h-8 rounded-lg px-3 py-2 text-xs font-normal"
+            variant="textonly"
+            size="sm"
             data-testid="error-overlay-see-errors"
             @click="viewErrorsInGraph"
           >
@@ -66,8 +65,7 @@
           <Button
             v-if="canAskAgent && askAgentContext"
             variant="secondary"
-            size="unset"
-            class="min-h-8 rounded-lg px-3 py-2 text-xs font-normal"
+            size="sm"
             data-testid="error-overlay-ask-agent"
             @click="askAgent"
           >

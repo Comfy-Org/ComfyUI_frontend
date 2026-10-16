@@ -10,7 +10,7 @@
     >
       <Button
         v-if="canAskAgent && allIssuesContext.count > 0"
-        variant="secondary"
+        variant="outline"
         size="sm"
         class="mb-3 w-full"
         data-testid="errors-footer-ask-agent"
