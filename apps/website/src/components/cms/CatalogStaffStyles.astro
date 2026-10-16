@@ -1,0 +1,7 @@
+---
+import catalogStaffStyles from '@/styles/catalog-staff.css?url'
+---
+
+{(Astro.locals.catalogAuthoring || Astro.locals.site) && (
+  <link rel="stylesheet" href={catalogStaffStyles} />
+)}
