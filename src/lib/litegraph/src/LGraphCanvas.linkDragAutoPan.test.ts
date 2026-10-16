@@ -72,6 +72,12 @@ describe('LGraphCanvas link drag auto-pan', () => {
     movePointer(clientX, clientY)
   }
 
+  function space(type: 'keydown' | 'keyup') {
+    const event = new KeyboardEvent(type, { key: ' ' })
+    Object.defineProperty(event, 'target', { value: canvasElement })
+    canvas.processKey(event)
+  }
+
   it('does not pan while a press near the edge stays within click drift', () => {
     pressLink(5, 300)
     const offsetBefore = [...canvas.ds.offset]
@@ -91,21 +97,42 @@ describe('LGraphCanvas link drag auto-pan', () => {
     expect([...canvas.ds.offset]).not.toEqual(offsetBefore)
   })
 
-  it('resumes auto-pan after Space panning during a link drag', () => {
-    dragLinkTo(5, 300)
-    const keydown = new KeyboardEvent('keydown', { key: ' ' })
-    const keyup = new KeyboardEvent('keyup', { key: ' ' })
-    Object.defineProperty(keydown, 'target', { value: canvasElement })
-    Object.defineProperty(keyup, 'target', { value: canvasElement })
+  it('does not pan when Space is tapped during a still press near the edge', () => {
+    pressLink(5, 300)
+    space('keydown')
+    space('keyup')
+    const offsetBefore = [...canvas.ds.offset]
 
-    canvas.processKey(keydown)
+    vi.advanceTimersByTime(16)
+
+    expect([...canvas.ds.offset]).toEqual(offsetBefore)
+  })
+
+  it.for([
+    {
+      name: 'a link drag',
+      start: () => {
+        dragLinkTo(5, 300)
+        space('keydown')
+      }
+    },
+    {
+      name: 'a drag that starts while Space is held',
+      start: () => {
+        pressLink(5, 300)
+        space('keydown')
+        movePointer(5, 340)
+      }
+    }
+  ])('auto-pans $name only once Space is released', ({ start }) => {
+    start()
     const offsetWhileSpacePanning = [...canvas.ds.offset]
 
     vi.advanceTimersByTime(16)
 
     expect([...canvas.ds.offset]).toEqual(offsetWhileSpacePanning)
 
-    canvas.processKey(keyup)
+    space('keyup')
     vi.advanceTimersByTime(16)
 
     expect([...canvas.ds.offset]).not.toEqual(offsetWhileSpacePanning)
