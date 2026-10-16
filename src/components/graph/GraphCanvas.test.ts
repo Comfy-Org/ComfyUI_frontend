@@ -653,6 +653,13 @@ describe('GraphCanvas agent dock', () => {
 
 describe('deployment model options at startup', () => {
   beforeEach(() => {
+    // These tests pin startup against the deployment lookup's backstop to the
+    // millisecond, so the fake clock must move only when a test moves it. With
+    // the suite's `shouldAdvanceTime`, a real 20ms interval also ticks it, and
+    // when that lands in the native yield after a timer fires mid-advance
+    // (the bootstrap watchdog at 30s), `advanceTimersByTimeAsync` extends its
+    // window by the same 20ms and runs the backstop early.
+    vi.useFakeTimers({ shouldAdvanceTime: false })
     distribution.isCloud = true
     onTestFinished(() => {
       distribution.isCloud = false
@@ -841,5 +848,43 @@ describe('deployment model options at startup', () => {
     expect(useDeploymentPickStore().bootDeployment).toBeNull()
     await vi.waitFor(() => expect(app.setup).toHaveBeenCalledOnce())
     expect(mocks.initializeWorkflow).toHaveBeenCalledOnce()
+  })
+
+  it('boots on the deployment when the lookup answers slowly', async () => {
+    const store = useDeploymentPickStore()
+    const deployment = {
+      deployment_id: 'dep-1',
+      release_id: 'r-1',
+      build_id: 'b-1',
+      build_name: 'Build',
+      release_version: 1,
+      status: 'ready',
+      created_at: ''
+    } as const
+    vi.spyOn(store, 'loadOnce').mockReturnValue(
+      new Promise<void>((resolve) => {
+        setTimeout(() => {
+          store.bootDeployment = deployment
+          resolve()
+        }, 3_000)
+      })
+    )
+    let bootedOn: unknown = 'not booted'
+    vi.mocked(app.setup).mockImplementation(async () => {
+      bootedOn = store.bootDeployment
+    })
+    await mountGraphCanvas()
+    await vi.advanceTimersByTimeAsync(2_999)
+    expect(app.setup).not.toHaveBeenCalled()
+
+    await vi.advanceTimersByTimeAsync(1)
+
+    expect(app.setup).toHaveBeenCalledOnce()
+    expect(bootedOn).toEqual(deployment)
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_BACKSTOP_MS)
+    expect(store.bootDeployment).toEqual(deployment)
+    expect(app.setup).toHaveBeenCalledOnce()
+    expect(mocks.initializeWorkflow).toHaveBeenCalledOnce()
+    expect(getActivePinia()?.state.value.toast?.toasts ?? []).toEqual([])
   })
 })
