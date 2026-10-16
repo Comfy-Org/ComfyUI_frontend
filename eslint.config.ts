@@ -31,6 +31,7 @@ import {
   tailwindScriptIgnores,
   templateFiles
 } from './scripts/eslintScope.ts'
+import templateClasses from './tools/eslint-plugins/templateClasses.ts'
 
 const extraFileExtensions = ['.vue']
 
@@ -331,6 +332,19 @@ export default defineConfig([
         }
       },
       ...tailwindConfigs,
+      {
+        files: [
+          'src/**/*.vue',
+          'apps/billing-web/**/*.vue',
+          'packages/account-ui/**/*.vue'
+        ],
+        plugins: { 'template-classes': templateClasses },
+        rules: {
+          'template-classes/no-default-utilities': 'error',
+          'template-classes/no-redundant-component-classes': 'error',
+          'template-classes/no-inherited-utilities': 'error'
+        }
+      },
       // Disables ESLint rules that conflict with formatters
       eslintConfigPrettier,
       importX.flatConfigs.recommended,
