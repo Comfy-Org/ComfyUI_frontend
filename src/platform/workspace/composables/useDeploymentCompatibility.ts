@@ -43,7 +43,9 @@ export function workflowNodeTypes(graph: LGraph): string[] {
     for (const inner of dto.getInnerNodes()) {
       if (inner.isVirtualNode || isSkippedByExecution(inner.mode)) continue
       const source = inner instanceof ExecutableNodeDTO ? inner.node : null
-      types.add(source?.last_serialization?.type ?? inner.type)
+      types.add(
+        source?.last_serialization?.type ?? inner.comfyClass ?? inner.type
+      )
     }
   }
 

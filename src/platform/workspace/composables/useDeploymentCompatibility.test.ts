@@ -67,6 +67,7 @@ const { __dispatchGraphChanged } = apiModule as typeof apiModule & {
 
 interface FakeNode {
   type: string
+  comfyClass?: string
   mode?: LGraphEventMode
   isVirtualNode?: boolean
   serializedType?: string
@@ -84,7 +85,7 @@ function addNodes(target: LGraph | Subgraph, root: LGraph, fakes: FakeNode[]) {
       continue
     }
     const node = new LGraphNode(fake.type, fake.type)
-    node.comfyClass = fake.type
+    node.comfyClass = fake.comfyClass ?? fake.type
     node.mode = fake.mode ?? LGraphEventMode.ALWAYS
     node.isVirtualNode = fake.isVirtualNode
     if (fake.serializedType) {
@@ -276,6 +277,15 @@ describe('workflowNodeTypes', () => {
         return root
       },
       expected: ['CLIP', 'KSampler']
+    },
+    {
+      name: 'a node whose backend class differs from its registry type',
+      build: () =>
+        graph(
+          { type: 'KSampler' },
+          { type: 'registry/CustomLoader', comfyClass: 'CustomLoader' }
+        ),
+      expected: ['CustomLoader', 'KSampler']
     }
   ])('lists what the prompt sends for $name', async ({ build, expected }) => {
     const root = build()
