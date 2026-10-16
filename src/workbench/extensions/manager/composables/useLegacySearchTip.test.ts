@@ -7,17 +7,20 @@ import { useLegacySearchTip } from './useLegacySearchTip'
 describe('useLegacySearchTip', () => {
   let searchQuery: Ref<string>
   let isNewManagerUI: Ref<boolean>
+  let rawResultsEmpty: Ref<boolean>
 
   beforeEach(() => {
     searchQuery = ref('')
     isNewManagerUI = ref(true)
+    rawResultsEmpty = ref(false)
   })
 
   describe('isLegacyManagerSearch', () => {
     it('returns true when searching "manager" in new manager UI', async () => {
       const { isLegacyManagerSearch } = useLegacySearchTip(
         searchQuery,
-        isNewManagerUI
+        isNewManagerUI,
+        rawResultsEmpty
       )
 
       searchQuery.value = 'manager'
@@ -29,7 +32,8 @@ describe('useLegacySearchTip', () => {
     it('returns true when searching "comfyui-manager"', async () => {
       const { isLegacyManagerSearch } = useLegacySearchTip(
         searchQuery,
-        isNewManagerUI
+        isNewManagerUI,
+        rawResultsEmpty
       )
 
       searchQuery.value = 'comfyui-manager'
@@ -41,7 +45,8 @@ describe('useLegacySearchTip', () => {
     it('returns true when searching "comfyui manager" (space variant)', async () => {
       const { isLegacyManagerSearch } = useLegacySearchTip(
         searchQuery,
-        isNewManagerUI
+        isNewManagerUI,
+        rawResultsEmpty
       )
 
       searchQuery.value = 'comfyui manager'
@@ -53,7 +58,8 @@ describe('useLegacySearchTip', () => {
     it('returns true when keyword is part of larger query', async () => {
       const { isLegacyManagerSearch } = useLegacySearchTip(
         searchQuery,
-        isNewManagerUI
+        isNewManagerUI,
+        rawResultsEmpty
       )
 
       searchQuery.value = 'where is manager'
@@ -65,7 +71,8 @@ describe('useLegacySearchTip', () => {
     it('matches case-insensitively', async () => {
       const { isLegacyManagerSearch } = useLegacySearchTip(
         searchQuery,
-        isNewManagerUI
+        isNewManagerUI,
+        rawResultsEmpty
       )
 
       searchQuery.value = 'MANAGER'
@@ -77,7 +84,8 @@ describe('useLegacySearchTip', () => {
     it('returns false when query is empty', async () => {
       const { isLegacyManagerSearch } = useLegacySearchTip(
         searchQuery,
-        isNewManagerUI
+        isNewManagerUI,
+        rawResultsEmpty
       )
 
       searchQuery.value = ''
@@ -89,7 +97,8 @@ describe('useLegacySearchTip', () => {
     it('returns false when query is whitespace only', async () => {
       const { isLegacyManagerSearch } = useLegacySearchTip(
         searchQuery,
-        isNewManagerUI
+        isNewManagerUI,
+        rawResultsEmpty
       )
 
       searchQuery.value = '   '
@@ -101,7 +110,8 @@ describe('useLegacySearchTip', () => {
     it('returns false when searching unrelated terms', async () => {
       const { isLegacyManagerSearch } = useLegacySearchTip(
         searchQuery,
-        isNewManagerUI
+        isNewManagerUI,
+        rawResultsEmpty
       )
 
       searchQuery.value = 'controlnet'
@@ -114,7 +124,8 @@ describe('useLegacySearchTip', () => {
       isNewManagerUI.value = false
       const { isLegacyManagerSearch } = useLegacySearchTip(
         searchQuery,
-        isNewManagerUI
+        isNewManagerUI,
+        rawResultsEmpty
       )
 
       searchQuery.value = 'manager'
@@ -122,5 +133,26 @@ describe('useLegacySearchTip', () => {
 
       expect(isLegacyManagerSearch.value).toBe(false)
     })
+  })
+
+  describe('isUnmatchedLegacyManagerSearch', () => {
+    it.for([
+      { query: 'comfyui-manager', rawEmpty: true, expected: true },
+      { query: 'comfyui-manager', rawEmpty: false, expected: false },
+      { query: 'controlnet', rawEmpty: true, expected: false }
+    ])(
+      'is $expected for "$query" when the raw query empty is $rawEmpty',
+      ({ query, rawEmpty, expected }) => {
+        searchQuery.value = query
+        rawResultsEmpty.value = rawEmpty
+        const { isUnmatchedLegacyManagerSearch } = useLegacySearchTip(
+          searchQuery,
+          isNewManagerUI,
+          rawResultsEmpty
+        )
+
+        expect(isUnmatchedLegacyManagerSearch.value).toBe(expected)
+      }
+    )
   })
 })
