@@ -59,12 +59,9 @@
 
       <section class="flex flex-col gap-9 p-6 @xl:gap-6 @xl:p-9">
         <div class="flex flex-col gap-4">
-          <h2
-            :id="titleId"
-            class="my-0 text-xl font-semibold text-base-foreground @xl:text-2xl"
-          >
+          <DialogTitle class="my-0 text-xl @xl:text-2xl">
             {{ $t('deployToComfyApi.title') }}
-          </h2>
+          </DialogTitle>
           <p class="my-0 text-sm/5 text-muted-foreground">
             {{ $t('deployToComfyApi.body') }}
           </p>
@@ -125,12 +122,12 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 
 import Video from '@/components/common/Video.vue'
 import Button from '@/components/ui/button/Button.vue'
+import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { useAgentHandoff } from '@/platform/workflow/deploy/composables/useAgentHandoff'
 
 const { videoSources = [], posterSrc = '' } = defineProps<{
-  titleId?: string
   videoSources?: ComponentProps<typeof Video>['sources']
   posterSrc?: string
 }>()

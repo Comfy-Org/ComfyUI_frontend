@@ -74,12 +74,16 @@
 
         <main class="flex min-h-0 flex-1 flex-col">
           <slot name="contentFilter" />
-          <h2
-            v-if="!hasLeftPanel"
-            class="m-0 px-6 pt-2 pb-6 text-2xl capitalize select-none"
+          <DialogTitle
+            :class="
+              cn(
+                'm-0 px-6 pt-2 pb-6 text-2xl font-normal capitalize select-none',
+                hasLeftPanel && 'sr-only'
+              )
+            "
           >
             {{ contentTitle }}
-          </h2>
+          </DialogTitle>
           <div
             ref="contentContainer"
             data-testid="base-modal-content"
@@ -146,6 +150,7 @@ import { computed, inject, ref, useSlots, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import type { ButtonVariants } from '@comfyorg/design-system/button.variants'
 import { OnCloseKey } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
