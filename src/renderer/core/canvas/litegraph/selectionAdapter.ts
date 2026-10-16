@@ -1,3 +1,4 @@
+import type { ClickSelectionIntent } from '@/core/selection/selectionIntent'
 import type {
   SelectableKey,
   SelectionCommand
@@ -59,22 +60,9 @@ export function resolveSelectable(
   }
 }
 
-export function setCanvasItemSelected(
-  canvas: LGraphCanvas,
-  item: Positionable,
-  selected: boolean
-): void {
-  const key = selectableKeyOf(item)
-  if (!key) return
-  applyCanvasSelection(canvas, {
-    type: selected ? 'selection.add' : 'selection.remove',
-    key
-  })
-}
-
 interface PlannedSelectionChange {
   key: SelectableKey
-  node?: LGraphNode
+  item: Positionable
 }
 
 function planSelectionChange(
@@ -87,7 +75,7 @@ function planSelectionChange(
   if (!key || keys.has(key) === selected) return false
   if (selected) keys.add(key)
   else keys.delete(key)
-  changes.push({ key, node: item instanceof LGraphNode ? item : undefined })
+  changes.push({ key, item })
   return true
 }
 
@@ -107,15 +95,15 @@ function groupDescendants(group: LGraphGroup): Positionable[] {
 
 function fireSelectionHooks(
   canvas: LGraphCanvas,
-  node: LGraphNode,
+  item: Positionable,
   selected: boolean
 ): void {
   if (selected) {
-    node.onSelected?.()
-    canvas.onNodeSelected?.(node)
+    item.onSelected?.()
+    if (item instanceof LGraphNode) canvas.onNodeSelected?.(item)
   } else {
-    node.onDeselected?.()
-    canvas.onNodeDeselected?.(node)
+    item.onDeselected?.()
+    if (item instanceof LGraphNode) canvas.onNodeDeselected?.(item)
   }
 }
 
@@ -177,10 +165,16 @@ function hasSelectionHooks(
   changes: PlannedSelectionChange[],
   selected: boolean
 ): boolean {
-  return changes.some(({ node }) =>
+  return changes.some(({ item }) =>
     selected
-      ? Boolean(node?.onSelected || canvas.onNodeSelected)
-      : Boolean(node?.onDeselected || canvas.onNodeDeselected)
+      ? Boolean(
+          item.onSelected ||
+          (item instanceof LGraphNode && canvas.onNodeSelected)
+        )
+      : Boolean(
+          item.onDeselected ||
+          (item instanceof LGraphNode && canvas.onNodeDeselected)
+        )
   )
 }
 
@@ -203,9 +197,7 @@ function applySelectionItemWithHooks(
     type: selected ? 'selection.add' : 'selection.remove',
     key
   })
-  if (item instanceof LGraphNode) {
-    fireSelectionHooks(canvas, item, selected)
-  }
+  fireSelectionHooks(canvas, item, selected)
   return true
 }
 
@@ -274,6 +266,81 @@ export function changeCanvasSelection(
     selected,
     selectGroupChildren
   )
+}
+
+export function selectedCanvasNodes(canvas: LGraphCanvas): LGraphNode[] {
+  return [...canvas.selectedItems].filter((item) => item instanceof LGraphNode)
+}
+
+export function clearCanvasSelection(
+  canvas: LGraphCanvas,
+  keepSelected?: Positionable
+): boolean {
+  if (!canvas.graph) return false
+
+  const selected = canvas.selectedItems
+  if (!selected.size) return false
+
+  const kept =
+    keepSelected &&
+    ownsSelectable(canvas, keepSelected) &&
+    selected.has(keepSelected)
+      ? keepSelected
+      : undefined
+  const deselected = [...selected].filter(
+    (item) => item !== kept && ownsSelectable(canvas, item)
+  )
+  const keptKey = kept && selectableKeyOf(kept)
+  applyCanvasSelection(
+    canvas,
+    keptKey
+      ? { type: 'selection.replace', keys: [keptKey] }
+      : { type: 'selection.clear' }
+  )
+  canvas.current_node = null
+
+  const changed = selected.size !== canvas.selectedItems.size
+  for (const item of deselected) item.onDeselected?.()
+  return changed
+}
+
+export function replaceCanvasSelection(
+  canvas: LGraphCanvas,
+  items: Iterable<Positionable>,
+  selectGroupChildren = canvas.groupSelectChildren
+): boolean {
+  const desired = new Set(items)
+  const dropped = [...canvas.selectedItems].filter((item) => !desired.has(item))
+  const removed = changeCanvasSelection(canvas, dropped, false)
+  const added = changeCanvasSelection(
+    canvas,
+    desired,
+    true,
+    selectGroupChildren
+  )
+  return removed || added
+}
+
+export function applyClickSelection(
+  canvas: LGraphCanvas,
+  intent: ClickSelectionIntent,
+  item?: Positionable
+): boolean {
+  switch (intent) {
+    case 'none':
+      return false
+    case 'clear':
+      return clearCanvasSelection(canvas)
+    case 'replace': {
+      const cleared = clearCanvasSelection(canvas, item)
+      const selected = !!item && changeCanvasSelection(canvas, [item], true)
+      return cleared || selected
+    }
+    case 'add':
+      return !!item && changeCanvasSelection(canvas, [item], true)
+    case 'remove':
+      return !!item && changeCanvasSelection(canvas, [item], false)
+  }
 }
 
 export function applyCanvasSelection(
