@@ -102,19 +102,10 @@
           class="flex flex-col rounded-2xl border border-border-default bg-base-background shadow-[0_0_12px_rgba(0,0,0,0.1)] xl:w-80"
         >
           <div class="flex flex-1 flex-col gap-4 p-6 pb-0">
-            <div class="flex items-center justify-between gap-2">
-              <span
-                class="font-inter text-base/normal font-bold text-base-foreground"
-              >
-                {{ tier.name }}
-              </span>
-              <div
-                v-if="tier.isPopular"
-                class="flex h-5 items-center rounded-full bg-base-foreground px-1.5 text-2xs font-bold tracking-tight text-base-background uppercase"
-              >
-                {{ t('subscription.mostPopular') }}
-              </div>
-            </div>
+            <PricingTierHeading
+              :name="tier.name"
+              :is-popular="tier.isPopular"
+            />
             <div class="flex flex-col gap-2">
               <div class="flex items-baseline gap-2">
                 <span
@@ -431,6 +422,7 @@
 </template>
 
 <script setup lang="ts">
+import PricingTierHeading from '@/platform/workspace/components/PricingTierHeading.vue'
 import {
   BILLING_ACTION_NAME,
   planCtaActionName

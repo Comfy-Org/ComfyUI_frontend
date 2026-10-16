@@ -37,19 +37,7 @@
         "
       >
         <div class="flex flex-col gap-4 p-6 pb-0">
-          <div class="flex items-center justify-between gap-2">
-            <span
-              class="font-inter text-base/normal font-bold text-base-foreground"
-            >
-              {{ tier.name }}
-            </span>
-            <div
-              v-if="tier.isPopular"
-              class="flex h-5 items-center rounded-full bg-base-foreground px-1.5 text-2xs font-bold tracking-tight text-base-background uppercase"
-            >
-              {{ t('subscription.mostPopular') }}
-            </div>
-          </div>
+          <PricingTierHeading :name="tier.name" :is-popular="tier.isPopular" />
           <div class="flex flex-col">
             <div class="flex flex-col gap-2">
               <div class="flex items-baseline gap-2">
@@ -272,6 +260,7 @@
 </template>
 
 <script setup lang="ts">
+import PricingTierHeading from '@/platform/workspace/components/PricingTierHeading.vue'
 import { planCtaActionName } from '@/platform/telemetry/billingActionNames'
 import { cn } from '@comfyorg/tailwind-utils'
 import Popover from '@/components/common/ImperativePopover.vue'
