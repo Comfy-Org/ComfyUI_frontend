@@ -29,9 +29,12 @@ function linkWithNonce(): string {
 
 function handOff(
   data: unknown,
-  source: MessageEventSource | null = window
+  {
+    source = window,
+    origin = 'http://127.0.0.1:8188'
+  }: { source?: MessageEventSource | null; origin?: string } = {}
 ): void {
-  window.dispatchEvent(new MessageEvent('message', { data, source }))
+  window.dispatchEvent(new MessageEvent('message', { data, source, origin }))
 }
 
 function workflowMessage(nonce: string, workflow: unknown = defaultGraph) {
@@ -108,14 +111,38 @@ describe(useLocalHandoffUrlLoader, () => {
     )
   })
 
-  it.for([
-    { name: 'another window', sameNonce: true, source: null },
-    { name: 'the opener with another nonce', sameNonce: false, source: window }
-  ])('ignores a workflow from $name', async ({ sameNonce, source }) => {
+  it.for<{
+    name: string
+    sameNonce: boolean
+    source: Window | null
+    origin: string
+  }>([
+    {
+      name: 'another window',
+      sameNonce: true,
+      source: null,
+      origin: 'http://127.0.0.1:8188'
+    },
+    {
+      name: 'the opener with another nonce',
+      sameNonce: false,
+      source: window,
+      origin: 'http://127.0.0.1:8188'
+    },
+    {
+      name: 'an opener that is not local',
+      sameNonce: true,
+      source: window,
+      origin: 'https://evil.example'
+    }
+  ])('ignores a workflow from $name', async ({ sameNonce, source, origin }) => {
     const nonce = linkWithNonce()
     await loadWithOpener()
 
-    handOff(workflowMessage(sameNonce ? nonce : crypto.randomUUID()), source)
+    handOff(workflowMessage(sameNonce ? nonce : crypto.randomUUID()), {
+      source,
+      origin
+    })
     await vi.advanceTimersByTimeAsync(0)
 
     expect(app.loadGraphData).not.toHaveBeenCalled()

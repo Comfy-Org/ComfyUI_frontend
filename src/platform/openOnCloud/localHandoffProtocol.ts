@@ -47,3 +47,24 @@ export function cloudEditorUrl(nonce?: string): string {
 export function cloudOrigin(): string {
   return new URL(getComfyCloudBaseUrl()).origin
 }
+
+const LOCAL_HOSTNAME =
+  /^(localhost|\[::1\]|127(\.\d{1,3}){3}|10(\.\d{1,3}){3}|192\.168(\.\d{1,3}){2}|172\.(1[6-9]|2\d|3[01])(\.\d{1,3}){2}|[\w-]+\.local)$/
+
+function parseOrigin(origin: string): URL | null {
+  try {
+    return new URL(origin)
+  } catch {
+    return null
+  }
+}
+
+/** Whether a page origin is on this computer or its private network. */
+export function isLocalOrigin(origin: string): boolean {
+  const url = parseOrigin(origin)
+  return (
+    url !== null &&
+    (url.protocol === 'http:' || url.protocol === 'https:') &&
+    LOCAL_HOSTNAME.test(url.hostname)
+  )
+}

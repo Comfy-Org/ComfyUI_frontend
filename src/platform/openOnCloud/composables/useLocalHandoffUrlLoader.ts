@@ -11,6 +11,7 @@ import {
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import {
   LOCAL_HANDOFF_PARAM,
+  isLocalOrigin,
   localHandoffReady,
   zLocalHandoffWorkflow
 } from '@/platform/openOnCloud/localHandoffProtocol'
@@ -50,7 +51,7 @@ async function openHandedOffWorkflow(
 
 function requestWorkflow(opener: Window, nonce: string): void {
   function onMessage(event: MessageEvent) {
-    if (event.source !== opener) return
+    if (event.source !== opener || !isLocalOrigin(event.origin)) return
     const handoff = zLocalHandoffWorkflow.safeParse(event.data)
     if (!handoff.success || handoff.data.nonce !== nonce) return
     stop()
