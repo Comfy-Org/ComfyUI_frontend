@@ -124,13 +124,6 @@ function attachmentIconClass(name: string): string {
   return kind === 'other' ? 'icon-[lucide--file]' : iconForMediaType(kind)
 }
 
-/**
- * Sent uploads reuse the reply asset grid (Uy, FE-1323): media attachments
- * render as the DES-530 per-count grid with the same hover-play, inspect, and
- * audio-card behavior as agent replies. A ref resolves to the uploaded input
- * file; an image without one still has its local preview. Text and other
- * kinds have no grid treatment and keep the compact tiles.
- */
 const splitAttachments = computed(() => {
   const grid: ReplyAsset[] = []
   const plain: UserAttachment[] = []
@@ -145,11 +138,7 @@ const splitAttachments = computed(() => {
 function gridAsset(item: UserAttachment): ReplyAsset | undefined {
   const kind = item.kind ?? getMediaTypeFromFilename(item.name)
   if (!isReplyAssetKind(kind)) return undefined
-  const url =
-    item.previewUrl ??
-    (item.ref
-      ? api.apiURL(`/view?filename=${encodeURIComponent(item.ref)}&type=input`)
-      : undefined)
+  const url = attachmentUrl(item, kind)
   if (!url) return undefined
   const filename = item.ref ?? item.name
   return {
@@ -158,6 +147,17 @@ function gridAsset(item: UserAttachment): ReplyAsset | undefined {
     kind,
     label: filename === item.name ? undefined : item.name
   }
+}
+
+function attachmentUrl(
+  item: UserAttachment,
+  kind: ReplyAsset['kind']
+): string | undefined {
+  const capturedUrl =
+    kind === 'video' || kind === 'audio' ? item.mediaUrl : item.previewUrl
+  if (capturedUrl) return capturedUrl
+  if (!item.ref) return
+  return api.apiURL(`/view?filename=${encodeURIComponent(item.ref)}&type=input`)
 }
 </script>
 

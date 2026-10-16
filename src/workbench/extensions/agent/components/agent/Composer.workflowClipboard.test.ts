@@ -21,7 +21,7 @@ function renderComposer() {
       })
   })
   render(Host, {
-    global: { plugins: [i18n], directives: { tooltip: () => {} } }
+    global: { plugins: [i18n] }
   })
   return { store, target, editor: screen.getByRole('textbox') }
 }

@@ -1,5 +1,9 @@
 import fs from 'fs'
 
+import type {
+  AgentAskResolvedData,
+  AgentPendingAskUser
+} from '@comfyorg/ingest-types'
 import { describe, expect, it, vi } from 'vitest'
 
 import { reportError } from '@/platform/telemetry/reportError'
@@ -18,6 +22,7 @@ import type {
   ToolPart
 } from './agentMessageParts'
 import { createAssistantMessage } from './agentMessageParts'
+import { createUndeliverableAskReporter } from './undeliverableAskReporter'
 
 vi.mock(import('@/platform/telemetry/reportError'))
 
@@ -58,6 +63,18 @@ function drive(events: AgentChatEvent[]): AssistantMessage {
   const transport = createAgentEventTransport(message, emit)
   for (const event of events) transport.ingest(event)
   return emit.mock.calls.at(-1)?.[0] ?? message
+}
+
+function driveInFreshTurnsSharingOneReporter(events: AgentChatEvent[]): void {
+  const { report } = createUndeliverableAskReporter()
+  for (const event of events)
+    createAgentEventTransport(
+      createAssistantMessage(T),
+      vi.fn(),
+      undefined,
+      undefined,
+      report
+    ).ingest(event)
 }
 
 function thinking(delta: string): AgentChatEvent {
@@ -144,15 +161,43 @@ function runApproval(
   })
 }
 
-function askResolved(askId = 'turn-1:call-1'): AgentChatEvent {
+function askResolved(
+  askId = 'turn-1:call-1',
+  selected: AgentAskResolvedData['selected'] = ['run'],
+  status: AgentAskResolvedData['status'] = 'answered'
+): AgentChatEvent {
   return zAgentWsEvent.parse({
     type: 'agent_ask_resolved',
     data: {
       thread_id: 't',
       message_id: 'm',
       ask_id: askId,
-      status: 'answered',
-      selected: ['run']
+      status,
+      selected
+    }
+  })
+}
+
+function askUser(
+  askId = 'ask-1',
+  overrides: Partial<AgentPendingAskUser> = {}
+): AgentChatEvent {
+  return zAgentWsEvent.parse({
+    type: 'agent_ask',
+    data: {
+      thread_id: 't',
+      message_id: 'm',
+      ask_id: askId,
+      kind: 'ask_user',
+      prompt: 'Which style?',
+      options: [
+        { id: 'oil', label: 'Oil painting', description: 'Thick strokes' },
+        { id: 'ink', label: 'Ink sketch' }
+      ],
+      min_selections: 1,
+      max_selections: 1,
+      allow_other: true,
+      ...overrides
     }
   })
 }
@@ -641,9 +686,14 @@ describe('agentEventTransport run approval', () => {
     expect(message.streaming).toBe(true)
   })
 
-  it('reports ask_user as a generated kind without a client renderer', () => {
-    drive([runApproval('ask-user-1', 'ask_user')])
+  it('reports an ask_user with nothing to choose as unrendered and says so', () => {
+    const message = drive([
+      askUser('ask-user-1', { options: [], allow_other: false })
+    ])
 
+    expect(message.parts).toEqual([
+      { type: 'askUnavailable', askId: 'ask-user-1' }
+    ])
     expect(reportError).toHaveBeenCalledWith(
       expect.any(Error),
       expect.objectContaining({
@@ -655,21 +705,58 @@ describe('agentEventTransport run approval', () => {
     )
   })
 
-  it('reports an unknown ask kind once with a bounded tag', () => {
-    const unknownKind = 'x'.repeat(100)
-    drive([
-      runApproval('unknown-1', unknownKind),
-      runApproval('unknown-1', unknownKind)
+  it('reports a contract kind this panel has no card for as unrendered', () => {
+    const message = drive([runApproval('paused-1', 'paused')])
+
+    expect(message.parts).toEqual([
+      { type: 'askUnavailable', askId: 'paused-1' }
+    ])
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        tags: expect.objectContaining({
+          reason: 'unrendered-kind',
+          ask_kind: 'paused'
+        })
+      })
+    )
+  })
+
+  it('reports an ask kind outside the contract once, as unknown', () => {
+    const message = drive([
+      runApproval('unknown-1', 'some_new_kind'),
+      runApproval('unknown-1', 'some_new_kind')
     ])
 
+    expect(message.parts).toEqual([
+      { type: 'askUnavailable', askId: 'unknown-1' }
+    ])
     expect(reportError).toHaveBeenCalledTimes(1)
     expect(reportError).toHaveBeenCalledWith(
       expect.any(Error),
       expect.objectContaining({
         tags: {
           reason: 'unknown-kind',
-          ask_kind: 'x'.repeat(64)
+          ask_kind: 'unknown'
         }
+      })
+    )
+  })
+
+  it('reports an unrenderable ask first shown from history when its frame is replayed', () => {
+    const message = createAssistantMessage(T)
+    message.parts.push({ type: 'askUnavailable', askId: 'unknown-1' })
+    const transport = createAgentEventTransport(message, vi.fn())
+
+    transport.ingest(runApproval('unknown-1', 'some_new_kind'))
+
+    expect(message.parts).toEqual([
+      { type: 'askUnavailable', askId: 'unknown-1' }
+    ])
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        tags: expect.objectContaining({ reason: 'unknown-kind' })
       })
     )
   })
@@ -678,9 +765,94 @@ describe('agentEventTransport run approval', () => {
     const asks = Array.from({ length: 33 }, (_, index) =>
       runApproval(`unknown-${index}`, 'unsupported')
     )
-    drive([...asks, asks[0]])
+    driveInFreshTurnsSharingOneReporter([...asks, asks[0]])
 
     expect(reportError).toHaveBeenCalledTimes(34)
+  })
+
+  it('drops the notice standing in for an unrenderable ask once it resolves', () => {
+    const message = drive([
+      runApproval('unknown-1', 'unsupported'),
+      askResolved('unknown-1', null, 'cancelled')
+    ])
+
+    expect(message.parts).toEqual([])
+  })
+})
+
+describe('agentEventTransport ask_user', () => {
+  it('renders the question at the decision point', () => {
+    const message = drive([delta('before'), askUser()])
+
+    expect(message.parts).toEqual([
+      { type: 'text', text: 'before', state: 'done' },
+      expect.objectContaining({ type: 'askUser', askId: 'ask-1' })
+    ])
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('keeps a single card when the same ask is delivered twice', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit)
+
+    transport.ingest(askUser('ask-1'))
+    transport.ingest(askUser('ask-1', { prompt: 'A replayed copy' }))
+
+    expect(
+      emit.mock.lastCall?.[0].parts.filter((part) => part.type === 'askUser')
+    ).toEqual([
+      expect.objectContaining({ askId: 'ask-1', prompt: 'Which style?' })
+    ])
+  })
+
+  it.for([
+    {
+      name: 'answered',
+      event: askResolved('ask-1', ['ink'], 'answered'),
+      resolution: { status: 'answered', selected: ['ink'] }
+    },
+    {
+      name: 'cancelled',
+      event: askResolved('ask-1', null, 'cancelled'),
+      resolution: { status: 'closed' }
+    }
+  ])(
+    'keeps the card read-only with its resolution when $name',
+    ({ event, resolution }) => {
+      const message = drive([askUser('ask-1'), askUser('ask-2'), event])
+
+      expect(message.parts).toMatchObject([
+        { askId: 'ask-1', resolution },
+        { askId: 'ask-2' }
+      ])
+      expect(message.parts[1]).not.toHaveProperty('resolution')
+    }
+  )
+
+  it('keeps a named resolution when a later frame names nothing', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit)
+    transport.ingest(askUser('ask-1'))
+
+    transport.retireAskPart('ask-1', {
+      status: 'answered',
+      selected: [],
+      otherText: 'watercolor'
+    })
+    transport.ingest(askResolved('ask-1', [], 'answered'))
+
+    expect(emit.mock.lastCall?.[0].parts).toEqual([
+      expect.objectContaining({
+        type: 'askUser',
+        resolution: {
+          status: 'answered',
+          selected: [],
+          otherText: 'watercolor'
+        }
+      })
+    ])
   })
 })
 

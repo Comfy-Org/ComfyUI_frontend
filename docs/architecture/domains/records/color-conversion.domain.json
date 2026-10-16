@@ -1,0 +1,29 @@
+{
+  "id": "color-conversion",
+  "capability": "Color conversion",
+  "description": "Shared technical module for color-space conversion and color representation used by controls and renderers. Palette selection and persistence belong to color-palettes.",
+  "modules": [
+    {
+      "path": "src/utils/colorUtil.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/colorUtil.test.ts",
+      "role": "domain"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Color conversion preserves its existing behavior",
+      "checks": ["src/utils/colorUtil.test.ts"]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Inventory preserves existing exports and behavior without granting cross-module permissions. This record describes current responsibilities, not a proposed extraction interface."
+  ],
+  "deepImports": "inventory"
+}

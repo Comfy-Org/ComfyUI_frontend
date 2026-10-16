@@ -12,6 +12,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import type { CheckoutTierKey } from '@/composables/billing/types'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
+import { useBillingDialogsAccess } from '@/platform/cloud/subscription/composables/billingDialogsAccess'
 import { paymentReturnUrl } from '@/platform/cloud/subscription/utils/paymentReturnUrl'
 import { amountDueTodayChanged } from '@comfyorg/account-ui/billing/checkout'
 import { getTeamPlanSlug } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
@@ -416,7 +417,7 @@ export function useSubscriptionCheckout(
       const methods =
         rail === null
           ? await workspaceApi.listSavedPaymentMethods()
-          : await readOnRail(rail.readPaymentMethods)
+          : await readOnRail(rail.readPaymentMethods, 'listSavedPaymentMethods')
       if (methods === undefined) return
       savedPaymentMethods.value = methods
       selectedSavedPaymentMethodId.value =
@@ -624,7 +625,7 @@ export function useSubscriptionCheckout(
         const status =
           readRail === null
             ? await workspaceApi.getBillingStatus()
-            : await readOnRail(readRail.readStatus)
+            : await readOnRail(readRail.readStatus, 'getBillingStatus')
         requiresRecovery =
           status?.billing_status === 'payment_failed' ||
           status?.billing_status === 'paused'
@@ -816,13 +817,12 @@ export function useSubscriptionCheckout(
     planSlug: string,
     tierKey: CheckoutTierKey
   ): Promise<void> {
-    const { useBillingDialogs } =
-      await import('@/composables/billing/useBillingDialogs')
-    const result = await useBillingDialogs().showDowngradeToPersonalDialog({
-      planName: t(`subscription.tiers.${tierKey}.name`),
-      planSlug,
-      paymentIntentSource
-    })
+    const result =
+      await useBillingDialogsAccess().showDowngradeToPersonalDialog({
+        planName: t(`subscription.tiers.${tierKey}.name`),
+        planSlug,
+        paymentIntentSource
+      })
     if (!result) return
 
     previewData.value = result.preview

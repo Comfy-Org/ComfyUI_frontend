@@ -7,6 +7,7 @@ import {
 import { computed, onScopeDispose, shallowRef, watch } from 'vue'
 
 import { isCloud } from '@/platform/distribution/types'
+import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { onCapabilityRevision } from '@/platform/workspace/api/capabilityRevision'
@@ -17,6 +18,7 @@ import {
 import { readOnRail } from '@/platform/workspace/composables/readOnRail'
 import { useBillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { reportWorkspaceScopeMismatch } from '@/platform/workspace/telemetry/workspaceTelemetryContext'
 import { useAuthStore } from '@/stores/authStore'
 
 type CapabilityReadState =
@@ -72,8 +74,9 @@ function readCapabilitiesResponse(
 ): Promise<BillingCapabilitiesResponse | undefined> {
   const rail = useBillingReadRail()
   if (rail === null) return workspaceApi.getBillingCapabilities(signal)
-  return readOnRail(() =>
-    rail.readCapabilities({ signal, forceRefresh: revalidating })
+  return readOnRail(
+    () => rail.readCapabilities({ signal, forceRefresh: revalidating }),
+    'getBillingCapabilities'
   )
 }
 
@@ -106,45 +109,34 @@ function useBillingCapabilitiesInternal() {
     return state.response.capabilities
   })
   const hasResolvedCapabilities = computed(() => capabilities.value !== null)
-  const readUnavailableForCurrentScope = computed(() => {
-    const state = readState.value
-    return (
-      state.status === 'unavailable' &&
-      state.authUid === authStore.userId &&
-      state.workspaceId === workspaceStore.activeWorkspaceId
-    )
-  })
   const canTopUp = computed(() => {
     if (!isCloud) return workspaceStore.activeWorkspace?.role !== 'member'
-    // An unreadable capability keeps top-up available only for owners, so a
-    // transient outage does not strand the one role that can actually top up.
-    // Every other role - including an unresolved one - fails closed.
-    return (
-      capabilities.value?.can_top_up ??
-      (readUnavailableForCurrentScope.value &&
-        workspaceStore.activeWorkspace?.role === 'owner')
-    )
+    return capabilities.value?.can_top_up ?? false
   })
   const canSubscribeSelfServe = computed(
-    () => isCloud && (capabilities.value?.can_subscribe_self_serve ?? false)
+    () => capabilities.value?.can_subscribe_self_serve ?? false
   )
-  const canCancel = computed(
-    () => isCloud && (capabilities.value?.can_cancel ?? false)
-  )
+  const canCancel = computed(() => capabilities.value?.can_cancel ?? false)
   const canReactivate = computed(
-    () => isCloud && (capabilities.value?.can_reactivate ?? false)
+    () => capabilities.value?.can_reactivate ?? false
   )
   const canChangeSeats = computed(
-    () => isCloud && (capabilities.value?.can_change_seats ?? false)
+    () => capabilities.value?.can_change_seats ?? false
   )
-  const canManageMembers = computed(
-    () => isCloud && (capabilities.value?.can_manage_members ?? false)
+  const canManageMembers = computed(() =>
+    receiveServerFact(
+      'can_manage_members',
+      capabilities.value?.can_manage_members ?? false
+    )
   )
-  const canInviteMembers = computed(
-    () => isCloud && (capabilities.value?.can_invite_members ?? false)
+  const canInviteMembers = computed(() =>
+    receiveServerFact(
+      'can_invite_members',
+      capabilities.value?.can_invite_members ?? false
+    )
   )
   const canDowngradeToPersonal = computed(
-    () => isCloud && (capabilities.value?.can_downgrade_to_personal ?? false)
+    () => capabilities.value?.can_downgrade_to_personal ?? false
   )
   const isReady = computed(() => {
     if (!isCloud) return true
@@ -363,6 +355,10 @@ function useBillingCapabilitiesInternal() {
         } else {
           readFailures++
           readState.value = unavailableState(userId, workspaceId)
+          reportWorkspaceScopeMismatch(
+            workspaceId,
+            response.resolved_for.workspace_id
+          )
         }
         scheduleRefresh()
         refetchAfterSettle =

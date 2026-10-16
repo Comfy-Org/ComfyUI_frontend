@@ -12,11 +12,10 @@ export const useImageCompareWidget = (): ComfyWidgetConstructorV2 => {
 
     const widget = node.addWidget('imagecompare', name, ['', ''], () => {}, {
       serialize: true,
-      ...options
+      ...options,
+      hideInPanel: true
     }) as IImageCompareWidget
 
-    // widget.serialize controls workflow persistence; widget.options.serialize
-    // controls prompt (API) serialization — only disable the former.
     widget.serialize = false
 
     return widget

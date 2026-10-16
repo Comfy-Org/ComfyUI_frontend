@@ -1,6 +1,6 @@
 import type { DetachedWindowAPI } from 'happy-dom'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 
 export function createMockNodeDef(
   overrides: Partial<ComfyNodeDef> = {}

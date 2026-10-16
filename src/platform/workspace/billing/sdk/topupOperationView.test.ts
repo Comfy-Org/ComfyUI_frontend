@@ -116,6 +116,23 @@ describe('projectTopupResult', () => {
     )
   })
 
+  it('names the earlier top-up still settling instead of an unknown error', () => {
+    expect(() =>
+      projectTopupResult(
+        { status: 'error', code: 'OPERATION_ALREADY_PENDING' },
+        1000
+      )
+    ).toThrow(
+      expect.objectContaining({
+        name: 'WorkspaceApiError',
+        code: 'OPERATION_ALREADY_PENDING',
+        failureCategory: 'stale_operation',
+        message:
+          'A top-up you started earlier is still going through. Finish verifying it or wait for it to complete before adding more credits.'
+      })
+    )
+  })
+
   it('carries the HTTP status of a transport failure', () => {
     let thrown: unknown
     try {
