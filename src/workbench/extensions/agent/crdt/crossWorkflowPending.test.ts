@@ -140,7 +140,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 }))
 
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
-import type { AgentCrdtStatus } from './useAgentCrdtFollower'
+import type { AgentCrdtStatus } from './agentCrdtStatus'
 
 function deleteNode(nodeId: string): GraphOperation {
   return {

@@ -79,7 +79,7 @@
           errorSeverity === 'error' && 'ring-destructive-background',
           bypassed && bypassOverlayClass,
           muted && mutedOverlayClass,
-          isDraggingOver && 'bg-primary-500/10 ring-4 ring-primary-500'
+          isDraggingOver && 'bg-node-accent/10 ring-4 ring-node-accent'
         )
       "
       :style="{
@@ -480,7 +480,7 @@ const hasCustomContent = computed(() => {
 })
 
 // Computed classes and conditions for better reusability
-const progressClasses = 'h-2 bg-primary-500 transition-all duration-300'
+const progressClasses = 'h-2 bg-node-accent transition-all duration-300'
 
 const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
   () => nodeData.id,
@@ -741,8 +741,8 @@ function handleDragLeave() {
   isDraggingOver.value = false
 }
 
-function handleDrop() {
+function handleDrop(event: DragEvent) {
   isDraggingOver.value = false
-  app.dragOverNode = resolveLGraphNode()
+  app.dragOverNode = event.defaultPrevented ? null : resolveLGraphNode()
 }
 </script>

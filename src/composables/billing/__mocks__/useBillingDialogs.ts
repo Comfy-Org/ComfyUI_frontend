@@ -1,5 +1,7 @@
 import { vi } from 'vitest'
 
+import { provideBillingDialogs } from '@/platform/cloud/subscription/composables/billingDialogsAccess'
+
 import type { useBillingDialogs as realUseBillingDialogs } from '../useBillingDialogs'
 
 type BillingDialogs = ReturnType<typeof realUseBillingDialogs>
@@ -26,3 +28,5 @@ const billingDialogs = vi.mockObject<BillingDialogs>(
 )
 
 export const useBillingDialogs = vi.fn(() => billingDialogs)
+
+provideBillingDialogs(useBillingDialogs)

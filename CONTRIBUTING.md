@@ -268,7 +268,7 @@ Changes that materially affect the default UI must be approved or requested by o
 
 The project supports three types of icons, all with automatic imports (no manual imports needed):
 
-1. **PrimeIcons** - Built-in PrimeVue icons using CSS classes: `<i class="pi pi-plus" />`
+1. **PrimeIcons** - The PrimeIcons icon font, using CSS classes: `<i class="pi pi-plus" />`
 2. **Iconify Icons** - 200,000+ icons from various libraries: `<i class="icon-[lucide--settings]" />`, `<i class="icon-[mdi--folder]" />`
 3. **Custom Icons** - Your own SVG icons: `<i-comfy:workflow />`
 

@@ -1,9 +1,6 @@
 import { vi } from 'vitest'
 
-import type {
-  createNode as realCreateNode,
-  resolveNode as realResolveNode
-} from '../litegraphUtil'
+import type { resolveNode as realResolveNode } from '../litegraphUtil'
 
 export {
   addToComboValues,
@@ -27,5 +24,4 @@ export {
   resolveNodeWidget
 } from '../litegraphUtil'
 
-export const createNode = vi.fn<typeof realCreateNode>(async () => null)
 export const resolveNode = vi.fn<typeof realResolveNode>(() => undefined)

@@ -70,14 +70,10 @@
           />
           <Tooltip v-if="showInviteButton">
             <TooltipTrigger as-child>
-              <span
-                :tabindex="isInviteDisabled ? 0 : undefined"
-                class="inline-flex"
-              >
+              <span class="inline-flex">
                 <Button
                   variant="secondary"
                   size="lg"
-                  :disabled="isInviteDisabled"
                   :aria-label="$t('workspacePanel.inviteMember')"
                   @click="handleInviteMember"
                 >
@@ -87,7 +83,7 @@
               </span>
             </TooltipTrigger>
             <TooltipContent>{{
-              inviteTooltip || $t('workspacePanel.inviteMember')
+              $t('workspacePanel.inviteMember')
             }}</TooltipContent>
           </Tooltip>
           <WorkspaceMenuButton v-if="permissions.canAccessWorkspaceMenu" />
@@ -103,8 +99,7 @@
           <!-- Table Header with Tab Buttons and Column Headers -->
           <div
             v-if="
-              uiConfig.showMembersList &&
-              (showViewTabs || (isCloud && hasMultipleMembers))
+              uiConfig.showMembersList && (showViewTabs || hasMultipleMembers)
             "
             :class="
               cn(
@@ -293,7 +288,6 @@ import MemberUpsellBanner from '@/platform/workspace/components/dialogs/settings
 import PendingInvitesList from '@/platform/workspace/components/dialogs/settings/PendingInvitesList.vue'
 import { ENTERPRISE_URL } from '@/platform/cloud/subscription/constants/tierPricing'
 import { useMembersPanel } from '@/platform/workspace/composables/useMembersPanel'
-import { isCloud } from '@/platform/distribution/types'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const TEAM_PLAN_REQUEST_URL =
@@ -316,8 +310,6 @@ const {
   showSearch,
   showViewTabs,
   showInviteButton,
-  isInviteDisabled,
-  inviteTooltip,
   handleInviteMember,
   personalWorkspaceMember,
   filteredMembers,

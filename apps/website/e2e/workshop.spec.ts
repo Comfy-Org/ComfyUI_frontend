@@ -728,16 +728,13 @@ test.describe('Model playground', () => {
     modelsAccount
   }) => {
     await page.goto(MODEL_PATH)
-    const signIn = page.getByRole('link', {
-      name: 'Sign in to run',
-      exact: true
-    })
-    await expect(signIn).toHaveAttribute('href', /\/login\/\?returnTo=/)
+    const run = page.getByRole('link', { name: 'Run', exact: true })
+    await expect(run).toHaveAttribute('href', /\/login\/\?returnTo=/)
     const prompt = 'a capybara in a trench coat'
     await page
       .getByRole('textbox', { name: 'Prompt', exact: true })
       .fill(prompt)
-    await signIn.click()
+    await run.click()
     await expect(page).toHaveURL(/\/login\/\?returnTo=/)
     await page.getByRole('button', { name: 'Use email instead' }).click()
     await page.getByLabel('Email').fill(modelsAccount.email)
@@ -951,6 +948,20 @@ test.describe('Model playground', () => {
         return box.x < width - 24 && box.x + box.width > width
       })
       .toBe(true)
+  })
+
+  test('tells a keyboard apart from the pick it lands on', async ({ page }) => {
+    await page.goto('/hub/models/krea-2-medium-turbo-text-to-image/')
+    const chosen = page.getByTestId('example-card').first()
+    await expect(chosen).toHaveAttribute('aria-current', 'true')
+    const thumbnail = chosen.getByTestId('example-thumbnail')
+    await expect(thumbnail).toHaveCSS('outline-style', 'none')
+
+    await page.keyboard.press('Tab')
+    await chosen.focus()
+
+    await expect(thumbnail).toHaveCSS('outline-style', 'solid')
+    await expect(thumbnail).toHaveCSS('outline-color', 'rgb(240, 239, 237)')
   })
 
   test('a lone sample takes the phone row @mobile', async ({ page }) => {

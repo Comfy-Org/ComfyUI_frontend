@@ -12,6 +12,7 @@ import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import type { ComfyApp, ComfyExtension } from '@/types/comfy'
 import type { AuthUserInfo } from '@/types/authTypes'
 import { useApp } from '@/scripts/appInstance'
+import { provideExtensionService } from '@/services/extensionServiceAccess'
 
 function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
   return (
@@ -20,6 +21,44 @@ function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
       value !== null &&
       typeof (value as { then?: unknown }).then === 'function')
   )
+}
+
+const graphLoadLifecycleHooks = new Set<string>([
+  'beforeLoadGraph',
+  'beforeConfigureGraph',
+  'afterConfigureGraph',
+  'afterLoadGraph',
+  'onGraphLoadError'
+] satisfies (keyof ComfyExtension)[])
+
+const graphLoadEntrypoints = new Set<PropertyKey>([
+  'loadGraphData',
+  'loadApiJson',
+  'handleFile'
+] satisfies (keyof ComfyApp)[])
+
+function rejectNestedGraphLoad() {
+  return Promise.reject(
+    new Error('A graph-load lifecycle hook cannot start a nested graph load')
+  )
+}
+
+function createGraphLoadHookApp(app: ComfyApp) {
+  let dispatching = true
+  const hookApp = new Proxy(app, {
+    get(target, property) {
+      if (dispatching && graphLoadEntrypoints.has(property))
+        return rejectNestedGraphLoad
+      const value: unknown = Reflect.get(target, property, target)
+      return typeof value === 'function' ? value.bind(target) : value
+    }
+  })
+  return {
+    hookApp,
+    endDispatch: () => {
+      dispatching = false
+    }
+  }
 }
 
 export const useExtensionService = () => {
@@ -179,6 +218,10 @@ export const useExtensionService = () => {
     method: T,
     ...args: Parameters<ComfyExtensionParamsWithoutApp<T>>
   ) => {
+    const graphLoadHook = graphLoadLifecycleHooks.has(method)
+      ? createGraphLoadHookApp(useApp())
+      : undefined
+    const app = graphLoadHook?.hookApp ?? useApp()
     const logError = (ext: ComfyExtension, error: unknown) =>
       console.error(
         `Error calling extension '${ext.name}' method '${method}'`,
@@ -203,7 +246,7 @@ export const useExtensionService = () => {
             (async () => {
               legacyMenuCompat.setCurrentExtension(ext.name)
               try {
-                return await fn.call(ext, ...args, useApp())
+                return await fn.call(ext, ...args, app)
               } finally {
                 legacyMenuCompat.setCurrentExtension(null)
               }
@@ -212,7 +255,7 @@ export const useExtensionService = () => {
           continue
         }
 
-        const result: unknown = fn.call(ext, ...args, useApp())
+        const result: unknown = fn.call(ext, ...args, app)
         pending.push(
           isPromiseLike(result)
             ? Promise.resolve(result).catch((error) => logError(ext, error))
@@ -222,7 +265,11 @@ export const useExtensionService = () => {
         logError(ext, error)
       }
     }
-    return await Promise.all(pending)
+    try {
+      return await Promise.all(pending)
+    } finally {
+      graphLoadHook?.endDispatch()
+    }
   }
 
   return {
@@ -231,3 +278,5 @@ export const useExtensionService = () => {
     invokeExtensionsAsync
   }
 }
+
+provideExtensionService(useExtensionService)
