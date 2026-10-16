@@ -91,6 +91,8 @@ describe('SubscriptionRequiredDialogContent', () => {
     })
 
     expect(screen.queryByTestId('pricing-table')).not.toBeInTheDocument()
-    expect(screen.getByText('Insufficient Credits')).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { name: 'Insufficient Credits' })
+    ).toBeInTheDocument()
   })
 })

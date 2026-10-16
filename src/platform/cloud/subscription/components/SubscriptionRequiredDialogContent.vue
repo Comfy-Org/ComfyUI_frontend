@@ -100,13 +100,13 @@
       <div>
         <div class="flex flex-col gap-6">
           <div class="inline-flex items-center gap-2">
-            <div class="text-sm text-text-primary">
+            <DialogTitle class="m-0 text-sm font-normal text-text-primary">
               {{
                 reason === 'out_of_credits'
                   ? $t('credits.topUp.insufficientTitle')
                   : $t('subscription.required.title')
               }}
-            </div>
+            </DialogTitle>
             <CloudBadge
               reverse-order
               no-padding

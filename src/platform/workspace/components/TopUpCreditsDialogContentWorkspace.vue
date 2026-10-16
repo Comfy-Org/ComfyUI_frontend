@@ -70,11 +70,9 @@
         <i
           class="icon-[lucide--shield-alert] size-10 text-warning-background"
         />
-        <h2
-          class="m-0 text-center text-xl font-semibold text-base-foreground lg:text-2xl"
-        >
+        <DialogTitle class="m-0 text-center text-xl lg:text-2xl">
           {{ $t('credits.topUp.verifyTitle') }}
-        </h2>
+        </DialogTitle>
         <p class="m-0 text-sm text-balance text-muted-foreground">
           {{ verifyingBody }}
         </p>
