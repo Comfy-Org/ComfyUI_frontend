@@ -176,7 +176,6 @@ describe('TabLinkCard', () => {
   })
 
   it('removes its graph listener when unmounted', () => {
-    const removeListener = vi.mocked(api.removeEventListener)
     const tab = createMockLoadedWorkflow({
       path: 'flows/portrait.json',
       filename: 'portrait',
@@ -190,9 +189,11 @@ describe('TabLinkCard', () => {
     view.unmount()
 
     expect(
-      removeListener.mock.calls.some(([type]) => type === 'graphChanged')
+      vi
+        .mocked(api.removeEventListener)
+        .mock.calls.some(([type]) => type === 'graphChanged')
     ).toBe(true)
-    removeListener.mockRestore()
+    vi.mocked(api.removeEventListener).mockRestore()
   })
 
   it('renders no link when the workflow has no open tab to point at', () => {

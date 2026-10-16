@@ -85,7 +85,7 @@ import {
 } from '@/utils/__tests__/canvasTestUtils'
 
 const apiEvents: EventTarget = api
-const getServerFeature = vi.mocked(api.getServerFeature)
+
 const focusNodeInstance = vi.hoisted(() => vi.fn())
 const socketSend = vi.fn()
 const withConsent = vi.hoisted(() =>
@@ -2971,7 +2971,7 @@ describe('AgentPanelRoot attach flow', () => {
   })
 
   it('uploads a picked video above 20MB when the server permits it', async () => {
-    getServerFeature.mockReturnValue(100 * 1024 * 1024)
+    vi.mocked(api.getServerFeature).mockReturnValue(100 * 1024 * 1024)
     const uploaded = stubUploadFetch()
     renderWithSelectedTarget()
 
@@ -3054,7 +3054,7 @@ describe('AgentPanelRoot attach flow', () => {
   it('warns with the configured server limit when a video exceeds it', async () => {
     // PM-118: dropping a movie showed "Comfy Agent hit a server error" because a
     // size rejection was routed through the agent-failure overlay.
-    getServerFeature.mockReturnValue(24 * 1024 * 1024)
+    vi.mocked(api.getServerFeature).mockReturnValue(24 * 1024 * 1024)
     executionErrors.showErrorOverlay.mockClear()
     stubUploadFetch()
     telemetry.trackAgentAttachButtonClicked.mockClear()
@@ -3079,7 +3079,7 @@ describe('AgentPanelRoot attach flow', () => {
   })
 
   it('uses a larger server limit for non-video attachments', async () => {
-    getServerFeature.mockReturnValue(100 * 1024 * 1024)
+    vi.mocked(api.getServerFeature).mockReturnValue(100 * 1024 * 1024)
     const uploaded = stubUploadFetch()
     renderWithSelectedTarget()
     await nextTick()
@@ -3097,7 +3097,7 @@ describe('AgentPanelRoot attach flow', () => {
   })
 
   it('uploads a dropped video above 20MB when the server permits it', async () => {
-    getServerFeature.mockReturnValue(100 * 1024 * 1024)
+    vi.mocked(api.getServerFeature).mockReturnValue(100 * 1024 * 1024)
     const uploaded = stubUploadFetch()
     renderWithSelectedTarget()
     await nextTick()
@@ -3581,7 +3581,7 @@ describe('AgentPanelRoot attach flow', () => {
   })
 
   it('uses the server limit for audio rejection copy', async () => {
-    getServerFeature.mockReturnValue(24 * 1024 * 1024)
+    vi.mocked(api.getServerFeature).mockReturnValue(24 * 1024 * 1024)
     const uploaded = stubUploadFetch()
     renderWithSelectedTarget()
     await nextTick()

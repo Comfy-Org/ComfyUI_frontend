@@ -2436,12 +2436,14 @@ describe('useExecutionStore - WebSocket event handlers', () => {
   describe('status', () => {
     it('reads clientId from api once and stops listening', async () => {
       const apiModule = await import('@/scripts/api')
-      const removeSpy = vi.mocked(apiModule.api.removeEventListener)
 
       fire('status', { exec_info: { queue_remaining: 0 } })
 
       expect(store.clientId).toBe('test-client')
-      expect(removeSpy).toHaveBeenCalledWith('status', expect.any(Function))
+      expect(apiModule.api.removeEventListener).toHaveBeenCalledWith(
+        'status',
+        expect.any(Function)
+      )
     })
   })
 
@@ -2581,7 +2583,7 @@ describe('useExecutionStore - WebSocket event handlers', () => {
   describe('unbindExecutionEvents', () => {
     it('removes every listener registered by bindExecutionEvents', async () => {
       const apiModule = await import('@/scripts/api')
-      const removeSpy = vi.mocked(apiModule.api.removeEventListener)
+
       const events = [
         'notification',
         'execution_start',
@@ -2598,7 +2600,10 @@ describe('useExecutionStore - WebSocket event handlers', () => {
       store.unbindExecutionEvents()
 
       for (const event of events) {
-        expect(removeSpy).toHaveBeenCalledWith(event, expect.any(Function))
+        expect(apiModule.api.removeEventListener).toHaveBeenCalledWith(
+          event,
+          expect.any(Function)
+        )
       }
     })
   })

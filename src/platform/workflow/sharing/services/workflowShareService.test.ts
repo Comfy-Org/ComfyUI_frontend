@@ -18,9 +18,6 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: mockApp
 }))
 
-const mockGetShareableAssets = vi.mocked(api.getShareableAssets)
-const mockFetchApi = vi.mocked(api.fetchApi)
-
 vi.mock(import('@/scripts/api'))
 
 beforeEach(() => {
@@ -64,7 +61,7 @@ describe(useWorkflowShareService, () => {
   })
 
   it('returns unpublished status for unknown workflow', async () => {
-    mockFetchApi.mockResolvedValue(
+    vi.mocked(api.fetchApi).mockResolvedValue(
       mockJsonResponse({
         workflow_id: 'wf-0',
         publish_time: null,
@@ -83,7 +80,7 @@ describe(useWorkflowShareService, () => {
   })
 
   it('publishes a workflow and returns a share URL', async () => {
-    mockFetchApi.mockResolvedValue(
+    vi.mocked(api.fetchApi).mockResolvedValue(
       mockJsonResponse({
         workflow_id: 'test-workflow',
         share_id: 'abc123',
@@ -103,7 +100,7 @@ describe(useWorkflowShareService, () => {
     expect(result.shareId).toBe('abc123')
     expect(result.shareUrl).toBe(`${window.location.origin}/?share=abc123`)
     expect(result.publishedAt).toBeInstanceOf(Date)
-    expect(mockFetchApi).toHaveBeenCalledWith(
+    expect(api.fetchApi).toHaveBeenCalledWith(
       '/userdata/test-workflow/publish',
       {
         method: 'POST',
@@ -117,7 +114,7 @@ describe(useWorkflowShareService, () => {
 
   it('preserves app subpath when normalizing published share URLs', async () => {
     window.history.replaceState({}, '', '/comfy/subpath/?foo=bar#section')
-    mockFetchApi.mockResolvedValue(
+    vi.mocked(api.fetchApi).mockResolvedValue(
       mockJsonResponse({
         workflow_id: 'test-workflow',
         share_id: 'subpath-id',
@@ -139,7 +136,7 @@ describe(useWorkflowShareService, () => {
   })
 
   it('reports published status after publishing', async () => {
-    mockFetchApi.mockResolvedValue(
+    vi.mocked(api.fetchApi).mockResolvedValue(
       mockJsonResponse({
         workflow_id: 'wf-1',
         share_id: 'wf-1',
@@ -159,7 +156,7 @@ describe(useWorkflowShareService, () => {
   })
 
   it('includes prefill data from hub workflow details', async () => {
-    mockFetchApi.mockImplementation(async (path: string) => {
+    vi.mocked(api.fetchApi).mockImplementation(async (path: string) => {
       if (path === '/userdata/wf-prefill/publish') {
         return mockJsonResponse({
           workflow_id: 'wf-prefill',
@@ -213,11 +210,11 @@ describe(useWorkflowShareService, () => {
       tutorialUrl: 'https://youtube.com/abc',
       metadata: { extra: 'value' }
     })
-    expect(mockFetchApi).toHaveBeenNthCalledWith(2, '/hub/workflows/wf-prefill')
+    expect(api.fetchApi).toHaveBeenNthCalledWith(2, '/hub/workflows/wf-prefill')
   })
 
   it('omits empty metadata from prefill', async () => {
-    mockFetchApi.mockImplementation(async (path: string) => {
+    vi.mocked(api.fetchApi).mockImplementation(async (path: string) => {
       if (path === '/userdata/wf-empty-meta/publish') {
         return mockJsonResponse({
           workflow_id: 'wf-empty-meta',
@@ -254,7 +251,7 @@ describe(useWorkflowShareService, () => {
   })
 
   it('rejects hub workflow details that violate the generated contract', async () => {
-    mockFetchApi
+    vi.mocked(api.fetchApi)
       .mockResolvedValueOnce(
         mockJsonResponse({
           workflow_id: 'wf-invalid',
@@ -277,7 +274,7 @@ describe(useWorkflowShareService, () => {
   })
 
   it('returns null prefill when hub workflow details are unavailable', async () => {
-    mockFetchApi.mockImplementation(async (path: string) => {
+    vi.mocked(api.fetchApi).mockImplementation(async (path: string) => {
       if (path === '/userdata/wf-no-meta/publish') {
         return mockJsonResponse({
           workflow_id: 'wf-no-meta',
@@ -298,7 +295,7 @@ describe(useWorkflowShareService, () => {
   })
 
   it('does not fetch hub workflow details when publish record is unlisted', async () => {
-    mockFetchApi.mockResolvedValue(
+    vi.mocked(api.fetchApi).mockResolvedValue(
       mockJsonResponse({
         workflow_id: 'wf-unlisted',
         share_id: 'wf-unlisted',
@@ -312,13 +309,13 @@ describe(useWorkflowShareService, () => {
 
     expect(status.isPublished).toBe(true)
     expect(status.prefill).toBeNull()
-    expect(mockFetchApi).toHaveBeenCalledTimes(1)
-    expect(mockFetchApi).toHaveBeenCalledWith('/userdata/wf-unlisted/publish')
+    expect(api.fetchApi).toHaveBeenCalledTimes(1)
+    expect(api.fetchApi).toHaveBeenCalledWith('/userdata/wf-unlisted/publish')
   })
 
   it('preserves app subpath when normalizing publish status share URLs', async () => {
     window.history.replaceState({}, '', '/comfy/subpath/')
-    mockFetchApi.mockResolvedValue(
+    vi.mocked(api.fetchApi).mockResolvedValue(
       mockJsonResponse({
         workflow_id: 'wf-subpath',
         share_id: 'wf-subpath',
@@ -337,7 +334,7 @@ describe(useWorkflowShareService, () => {
   })
 
   it('returns unpublished when publish record has no share id', async () => {
-    mockFetchApi.mockResolvedValue(
+    vi.mocked(api.fetchApi).mockResolvedValue(
       mockJsonResponse({
         workflow_id: 'wf-2',
         share_id: null,
@@ -354,7 +351,7 @@ describe(useWorkflowShareService, () => {
   })
 
   it('fetches and maps shared workflow payload', async () => {
-    mockFetchApi.mockResolvedValue(
+    vi.mocked(api.fetchApi).mockResolvedValue(
       mockJsonResponse({
         share_id: 'share-123',
         workflow_id: 'wf-123',
@@ -379,7 +376,7 @@ describe(useWorkflowShareService, () => {
     const service = useWorkflowShareService()
     const shared = await service.getSharedWorkflow('share-123')
 
-    expect(mockFetchApi).toHaveBeenCalledWith('/workflows/published/share-123')
+    expect(api.fetchApi).toHaveBeenCalledWith('/workflows/published/share-123')
     expect(shared).toEqual({
       shareId: 'share-123',
       workflowId: 'wf-123',
@@ -402,7 +399,7 @@ describe(useWorkflowShareService, () => {
   })
 
   it('throws when shared workflow request fails', async () => {
-    mockFetchApi.mockResolvedValue(mockJsonResponse({}, false, 404))
+    vi.mocked(api.fetchApi).mockResolvedValue(mockJsonResponse({}, false, 404))
 
     const service = useWorkflowShareService()
 
@@ -412,12 +409,12 @@ describe(useWorkflowShareService, () => {
   })
 
   it('imports published assets via POST /assets/import with share_id', async () => {
-    mockFetchApi.mockResolvedValue(mockJsonResponse({}, true, 200))
+    vi.mocked(api.fetchApi).mockResolvedValue(mockJsonResponse({}, true, 200))
 
     const service = useWorkflowShareService()
     await service.importPublishedAssets(['pa-1', 'pa-2'], 'share-id-1')
 
-    expect(mockFetchApi).toHaveBeenCalledWith('/assets/import', {
+    expect(api.fetchApi).toHaveBeenCalledWith('/assets/import', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -429,12 +426,12 @@ describe(useWorkflowShareService, () => {
   })
 
   it('omits share_id from the payload when not provided', async () => {
-    mockFetchApi.mockResolvedValue(mockJsonResponse({}, true, 200))
+    vi.mocked(api.fetchApi).mockResolvedValue(mockJsonResponse({}, true, 200))
 
     const service = useWorkflowShareService()
     await service.importPublishedAssets(['pa-1'])
 
-    expect(mockFetchApi).toHaveBeenCalledWith('/assets/import', {
+    expect(api.fetchApi).toHaveBeenCalledWith('/assets/import', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ published_asset_ids: ['pa-1'] })
@@ -442,12 +439,12 @@ describe(useWorkflowShareService, () => {
   })
 
   it('omits share_id from the payload when shareId is an empty string', async () => {
-    mockFetchApi.mockResolvedValue(mockJsonResponse({}, true, 200))
+    vi.mocked(api.fetchApi).mockResolvedValue(mockJsonResponse({}, true, 200))
 
     const service = useWorkflowShareService()
     await service.importPublishedAssets(['pa-1'], '')
 
-    expect(mockFetchApi).toHaveBeenCalledWith('/assets/import', {
+    expect(api.fetchApi).toHaveBeenCalledWith('/assets/import', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ published_asset_ids: ['pa-1'] })
@@ -455,7 +452,7 @@ describe(useWorkflowShareService, () => {
   })
 
   it('throws when import request fails', async () => {
-    mockFetchApi.mockResolvedValue(mockJsonResponse({}, false, 400))
+    vi.mocked(api.fetchApi).mockResolvedValue(mockJsonResponse({}, false, 400))
 
     const service = useWorkflowShareService()
 
@@ -466,7 +463,7 @@ describe(useWorkflowShareService, () => {
   })
 
   it('throws when shared workflow payload is invalid', async () => {
-    mockFetchApi.mockResolvedValue(
+    vi.mocked(api.fetchApi).mockResolvedValue(
       mockJsonResponse({ name: 'Invalid', version: 1 })
     )
 
@@ -489,7 +486,7 @@ describe(useWorkflowShareService, () => {
         }
       }
     }
-    mockFetchApi.mockResolvedValue(
+    vi.mocked(api.fetchApi).mockResolvedValue(
       mockJsonResponse({
         share_id: 'share-raw',
         workflow_id: 'wf-raw',
@@ -508,7 +505,9 @@ describe(useWorkflowShareService, () => {
   })
 
   it('treats malformed publish-status payload as unpublished', async () => {
-    mockFetchApi.mockResolvedValue(mockJsonResponse({ is_published: true }))
+    vi.mocked(api.fetchApi).mockResolvedValue(
+      mockJsonResponse({ is_published: true })
+    )
 
     const service = useWorkflowShareService()
     const status = await service.getPublishStatus('wf-4')
@@ -534,12 +533,12 @@ describe(useWorkflowShareService, () => {
 
   it('calls backend API with graph prompt output', async () => {
     mockApp.graphToPrompt.mockResolvedValue({ output: { '1': {} } })
-    mockGetShareableAssets.mockResolvedValue({ assets: [] })
+    vi.mocked(api.getShareableAssets).mockResolvedValue({ assets: [] })
 
     const service = useWorkflowShareService()
     await service.getShareableAssets()
 
-    expect(mockGetShareableAssets).toHaveBeenCalledWith({ '1': {} })
+    expect(api.getShareableAssets).toHaveBeenCalledWith({ '1': {} })
   })
 
   it('propagates error when graphToPrompt fails', async () => {
@@ -552,7 +551,7 @@ describe(useWorkflowShareService, () => {
 
   it('normalizes backend thumbnail field names', async () => {
     mockApp.graphToPrompt.mockResolvedValue({ output: {} })
-    mockGetShareableAssets.mockResolvedValue({
+    vi.mocked(api.getShareableAssets).mockResolvedValue({
       assets: [
         {
           id: 'asset-server-1',
@@ -602,7 +601,7 @@ describe(useWorkflowShareService, () => {
 
   it('returns assets with preview_url intact', async () => {
     mockApp.graphToPrompt.mockResolvedValue({ output: {} })
-    mockGetShareableAssets.mockResolvedValue({
+    vi.mocked(api.getShareableAssets).mockResolvedValue({
       assets: [
         {
           id: 'asset-1',

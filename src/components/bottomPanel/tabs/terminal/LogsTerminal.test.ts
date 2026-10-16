@@ -8,8 +8,6 @@ import LogsTerminal from '@/components/bottomPanel/tabs/terminal/LogsTerminal.vu
 import { useExecutionStore } from '@/stores/executionStore'
 import { api } from '@/scripts/api'
 
-const apiMock = vi.mocked(api)
-
 vi.mock(import('@/scripts/api'))
 
 const terminalMock = vi.hoisted(() => ({
@@ -87,8 +85,8 @@ const deferredRawLogs = () => {
 
 describe('LogsTerminal', () => {
   beforeEach(() => {
-    apiMock.clientId = 'test-client'
-    apiMock.getRawLogs.mockResolvedValue({
+    api.clientId = 'test-client'
+    vi.mocked(api.getRawLogs).mockResolvedValue({
       entries: [{ t: '00:00:00', m: 'log line\n' }],
       size: { cols: 80, row: 24 }
     })
@@ -99,8 +97,8 @@ describe('LogsTerminal', () => {
     renderLogsTerminal()
 
     await vi.waitFor(() => {
-      expect(apiMock.getRawLogs).toHaveBeenCalledTimes(1)
-      expect(apiMock.subscribeLogs).toHaveBeenCalledWith(true)
+      expect(api.getRawLogs).toHaveBeenCalledTimes(1)
+      expect(api.subscribeLogs).toHaveBeenCalledWith(true)
       expect(terminalMock.write).toHaveBeenCalledWith('log line\n')
     })
   })
@@ -109,24 +107,25 @@ describe('LogsTerminal', () => {
     renderLogsTerminal()
 
     await vi.waitFor(() => {
-      expect(apiMock.subscribeLogs).toHaveBeenCalledWith(true)
+      expect(api.subscribeLogs).toHaveBeenCalledWith(true)
     })
 
-    apiMock.dispatchCustomEvent('reconnected')
+    api.dispatchCustomEvent('reconnected')
 
     await vi.waitFor(() => {
-      expect(apiMock.getRawLogs).toHaveBeenCalledTimes(2)
+      expect(api.getRawLogs).toHaveBeenCalledTimes(2)
       expect(terminalMock.reset).toHaveBeenCalledTimes(1)
       expect(terminalMock.scrollToBottom).toHaveBeenCalledTimes(1)
-      expect(apiMock.subscribeLogs).toHaveBeenCalledTimes(2)
-      expect(apiMock.subscribeLogs).toHaveBeenLastCalledWith(true)
+      expect(api.subscribeLogs).toHaveBeenCalledTimes(2)
+      expect(api.subscribeLogs).toHaveBeenLastCalledWith(true)
     })
 
     const resetOrder = terminalMock.reset.mock.invocationCallOrder[0]
     const writeOrder = terminalMock.write.mock.invocationCallOrder.at(-1)!
     const scrollOrder = terminalMock.scrollToBottom.mock.invocationCallOrder[0]
-    const subscribeOrder =
-      apiMock.subscribeLogs.mock.invocationCallOrder.at(-1)!
+    const subscribeOrder = vi
+      .mocked(api.subscribeLogs)
+      .mock.invocationCallOrder.at(-1)!
     expect(resetOrder).toBeLessThan(writeOrder)
     expect(writeOrder).toBeLessThan(scrollOrder)
     expect(scrollOrder).toBeLessThan(subscribeOrder)
@@ -135,21 +134,21 @@ describe('LogsTerminal', () => {
   it('aborts an in-flight resync when a second "reconnected" arrives', async () => {
     renderLogsTerminal()
     await vi.waitFor(() => {
-      expect(apiMock.subscribeLogs).toHaveBeenCalledWith(true)
+      expect(api.subscribeLogs).toHaveBeenCalledWith(true)
     })
 
     const first = deferredRawLogs()
-    apiMock.getRawLogs.mockImplementationOnce(() => first.promise)
-    apiMock.dispatchCustomEvent('reconnected')
+    vi.mocked(api.getRawLogs).mockImplementationOnce(() => first.promise)
+    api.dispatchCustomEvent('reconnected')
     await vi.waitFor(() => {
-      expect(apiMock.getRawLogs).toHaveBeenCalledTimes(2)
+      expect(api.getRawLogs).toHaveBeenCalledTimes(2)
     })
 
-    apiMock.getRawLogs.mockImplementationOnce(async () => ({
+    vi.mocked(api.getRawLogs).mockImplementationOnce(async () => ({
       entries: [{ t: '00:00:00', m: 'fresh\n' }],
       size: { cols: 80, row: 24 }
     }))
-    apiMock.dispatchCustomEvent('reconnected')
+    api.dispatchCustomEvent('reconnected')
     await vi.waitFor(() => {
       expect(terminalMock.reset).toHaveBeenCalledTimes(1)
     })
@@ -168,17 +167,17 @@ describe('LogsTerminal', () => {
 
   it('aborts an in-flight mount fetch when "reconnected" arrives first', async () => {
     const mount = deferredRawLogs()
-    apiMock.getRawLogs.mockImplementationOnce(() => mount.promise)
+    vi.mocked(api.getRawLogs).mockImplementationOnce(() => mount.promise)
     renderLogsTerminal()
     await vi.waitFor(() => {
-      expect(apiMock.getRawLogs).toHaveBeenCalledTimes(1)
+      expect(api.getRawLogs).toHaveBeenCalledTimes(1)
     })
 
-    apiMock.getRawLogs.mockImplementationOnce(async () => ({
+    vi.mocked(api.getRawLogs).mockImplementationOnce(async () => ({
       entries: [{ t: '00:00:00', m: 'fresh\n' }],
       size: { cols: 80, row: 24 }
     }))
-    apiMock.dispatchCustomEvent('reconnected')
+    api.dispatchCustomEvent('reconnected')
     await vi.waitFor(() => {
       expect(terminalMock.reset).toHaveBeenCalledTimes(1)
       expect(terminalMock.write).toHaveBeenCalledWith('fresh\n')
@@ -197,12 +196,12 @@ describe('LogsTerminal', () => {
   it('surfaces an inline error when the resync fetch fails', async () => {
     renderLogsTerminal()
     await vi.waitFor(() => {
-      expect(apiMock.subscribeLogs).toHaveBeenCalledWith(true)
+      expect(api.subscribeLogs).toHaveBeenCalledWith(true)
     })
 
-    apiMock.getRawLogs.mockRejectedValueOnce(new Error('boom'))
+    vi.mocked(api.getRawLogs).mockRejectedValueOnce(new Error('boom'))
 
-    apiMock.dispatchCustomEvent('reconnected')
+    api.dispatchCustomEvent('reconnected')
 
     await vi.waitFor(() => {
       expect(
@@ -212,7 +211,7 @@ describe('LogsTerminal', () => {
   })
 
   it('shows a load error when the initial fetch fails', async () => {
-    apiMock.getRawLogs.mockRejectedValueOnce(new Error('boom'))
+    vi.mocked(api.getRawLogs).mockRejectedValueOnce(new Error('boom'))
 
     renderLogsTerminal()
 
@@ -224,7 +223,7 @@ describe('LogsTerminal', () => {
   })
 
   it('recovers from an initial load failure when a reconnect arrives', async () => {
-    apiMock.getRawLogs
+    vi.mocked(api.getRawLogs)
       .mockRejectedValueOnce(new Error('initial fail'))
       .mockResolvedValueOnce({
         entries: [{ t: '00:00:00', m: 'recovered\n' }],
@@ -239,7 +238,7 @@ describe('LogsTerminal', () => {
       ).toContain('Unable to load logs')
     })
 
-    apiMock.dispatchCustomEvent('reconnected')
+    api.dispatchCustomEvent('reconnected')
 
     await vi.waitFor(() => {
       expect(screen.queryByTestId('terminal-error-message')).toBeNull()
@@ -251,28 +250,28 @@ describe('LogsTerminal', () => {
   it('cleans up listeners and unsubscribes on unmount', async () => {
     const { unmount } = renderLogsTerminal()
     await vi.waitFor(() => {
-      expect(apiMock.subscribeLogs).toHaveBeenCalledWith(true)
+      expect(api.subscribeLogs).toHaveBeenCalledWith(true)
     })
 
     unmount()
     await vi.waitFor(() => {
-      expect(apiMock.subscribeLogs).toHaveBeenCalledWith(false)
+      expect(api.subscribeLogs).toHaveBeenCalledWith(false)
     })
 
-    apiMock.dispatchCustomEvent('reconnected')
+    api.dispatchCustomEvent('reconnected')
     await nextTick()
 
     expect(terminalMock.reset).not.toHaveBeenCalled()
-    expect(apiMock.getRawLogs).toHaveBeenCalledTimes(1)
+    expect(api.getRawLogs).toHaveBeenCalledTimes(1)
   })
 
   it('does not write to the terminal when unmount happens mid-fetch', async () => {
     const pending = deferredRawLogs()
-    apiMock.getRawLogs.mockImplementationOnce(() => pending.promise)
+    vi.mocked(api.getRawLogs).mockImplementationOnce(() => pending.promise)
 
     const { unmount } = renderLogsTerminal()
     await vi.waitFor(() => {
-      expect(apiMock.getRawLogs).toHaveBeenCalledTimes(1)
+      expect(api.getRawLogs).toHaveBeenCalledTimes(1)
     })
 
     unmount()

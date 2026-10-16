@@ -48,8 +48,6 @@ vi.mock(import('@/scripts/api'))
 
 import { api } from '@/scripts/api'
 
-const cancelJobMock = vi.mocked(api.cancelJob)
-
 const downloadBlobMock = vi.fn()
 
 vi.mock(import('@/services/dialogService'))
@@ -130,7 +128,7 @@ describe('useJobMenu', () => {
     )
     vi.mocked(queueStoreMock.update).mockResolvedValue(undefined)
     vi.mocked(queueStoreMock.delete).mockResolvedValue(undefined)
-    cancelJobMock.mockResolvedValue(undefined)
+    vi.mocked(api.cancelJob).mockResolvedValue(undefined)
     nodeDefStoreMock.nodeDefsByName = {
       LoadImage: fromPartial<ComfyNodeDefImpl>({ name: 'LoadImage' }),
       LoadVideo: fromPartial<ComfyNodeDefImpl>({ name: 'LoadVideo' }),
@@ -229,7 +227,7 @@ describe('useJobMenu', () => {
 
       await cancelJob()
 
-      expect(cancelJobMock).toHaveBeenCalledWith('job-1')
+      expect(api.cancelJob).toHaveBeenCalledWith('job-1')
       expect(queueStoreMock.update).toHaveBeenCalled()
     }
   )
@@ -240,18 +238,20 @@ describe('useJobMenu', () => {
 
     await cancelJob()
 
-    expect(cancelJobMock).not.toHaveBeenCalled()
+    expect(api.cancelJob).not.toHaveBeenCalled()
     expect(queueStoreMock.update).toHaveBeenCalled()
   })
 
   it('propagates cancel failures from the API', async () => {
-    cancelJobMock.mockRejectedValueOnce(new Error('Failed to cancel job'))
+    vi.mocked(api.cancelJob).mockRejectedValueOnce(
+      new Error('Failed to cancel job')
+    )
     const { cancelJob } = mountJobMenu()
     setCurrentItem(createJobItem({ state: 'running' }))
 
     await expect(cancelJob()).rejects.toThrow('Failed to cancel job')
 
-    expect(cancelJobMock).toHaveBeenCalledWith('job-1')
+    expect(api.cancelJob).toHaveBeenCalledWith('job-1')
     // Queue refresh is skipped when the cancel request itself fails.
     expect(queueStoreMock.update).not.toHaveBeenCalled()
   })
@@ -779,7 +779,7 @@ describe('useJobMenu', () => {
     const cancelEntry = findActionEntry(jobMenuEntries.value, 'cancel-job')
     await runCommand(cancelEntry)
 
-    expect(cancelJobMock).toHaveBeenCalledWith('job-1')
+    expect(api.cancelJob).toHaveBeenCalledWith('job-1')
     expect(queueStoreMock.update).toHaveBeenCalled()
   })
 
