@@ -427,7 +427,7 @@ describe('postMessage wire body', () => {
 
     expect(JSON.parse(String(lastCall().init.body))).toEqual({
       content: 'add a node',
-      ask_kinds: ['run_approval', 'ask_user'],
+      ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
       current_tab_unbound: true
     })
   })
