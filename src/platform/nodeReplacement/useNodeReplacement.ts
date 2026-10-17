@@ -150,7 +150,30 @@ function planReplacementTopology(
   return { error, updates: [...updates.values()], removals }
 }
 
-/** Uses old_widget_ids as name→index lookup into widgets_values. */
+/**
+ * Prefers the name-keyed `widgets_values_named`, which every workflow saved
+ * with a compacted `widgets_values` also carries. Older workflows have only
+ * the positional array, padded with an empty slot per `serialize: false`
+ * widget, so `old_widget_ids` indexes it by full widget position.
+ */
+function readOldWidgetValue(
+  serialized: ISerialisedNode,
+  oldWidgetIds: string[] | null,
+  oldInputName: string
+): TWidgetValue | undefined {
+  const named = serialized.widgets_values_named
+  if (named) {
+    return Object.hasOwn(named, oldInputName) ? named[oldInputName] : undefined
+  }
+
+  if (!oldWidgetIds || !serialized.widgets_values) return undefined
+
+  const oldWidgetIdx = oldWidgetIds.indexOf(oldInputName)
+  if (oldWidgetIdx === -1) return undefined
+
+  return serialized.widgets_values[oldWidgetIdx]
+}
+
 function transferWidgetValue(
   serialized: ISerialisedNode,
   oldWidgetIds: string[] | null,
@@ -158,12 +181,7 @@ function transferWidgetValue(
   newNode: LGraphNode,
   newInputName: string
 ): void {
-  if (!oldWidgetIds || !serialized.widgets_values) return
-
-  const oldWidgetIdx = oldWidgetIds.indexOf(oldInputName)
-  if (oldWidgetIdx === -1) return
-
-  const oldValue = serialized.widgets_values[oldWidgetIdx]
+  const oldValue = readOldWidgetValue(serialized, oldWidgetIds, oldInputName)
   if (oldValue === undefined) return
 
   const newWidget = newNode.widgets?.find((w) => w.name === newInputName)
@@ -214,6 +232,8 @@ function generateDefaultMapping(
     }
   }
 
+  // Positions into the legacy widgets_values array, so every widget counts —
+  // filtering out `serialize === false` widgets here would shift the indices.
   const oldWidgetIds = (newNode.widgets ?? []).map((w) => w.name)
   for (const widget of newNode.widgets ?? []) {
     if (!oldInputNames.has(widget.name)) {

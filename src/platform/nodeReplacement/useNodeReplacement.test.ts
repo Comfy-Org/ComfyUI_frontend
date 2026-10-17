@@ -13,6 +13,7 @@ import {
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
+import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { useLinkStore } from '@/stores/linkStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -1875,6 +1876,68 @@ describe('useNodeReplacement', () => {
       ])
 
       expect(dispatch).toHaveBeenCalledWith('node:added', { node: newNode })
+    })
+  })
+
+  describe('widget value provenance', () => {
+    const legacyPadded: TWidgetValue[] = []
+    legacyPadded[0] = 'lanczos'
+    legacyPadded[2] = 2.0
+
+    it.for([
+      {
+        name: 'indexes a legacy padded widgets_values by full widget position',
+        serialized: { widgets_values: legacyPadded },
+        expected: 2.0
+      },
+      {
+        name: 'reads widgets_values_named instead of a compacted widgets_values',
+        serialized: {
+          widgets_values: ['lanczos', 3.5],
+          widgets_values_named: { upscale_method: 'lanczos', scale_by: 4.5 }
+        },
+        expected: 4.5
+      },
+      {
+        name: 'skips the transfer when widgets_values_named lacks the input',
+        serialized: {
+          widgets_values: ['lanczos', 3.5, 9],
+          widgets_values_named: { upscale_method: 'lanczos' }
+        },
+        expected: 0
+      }
+    ])('$name', ({ serialized, expected }) => {
+      const placeholder = createPlaceholderNode(1, 'PaddedNode')
+      Object.assign(placeholder.last_serialization!, serialized)
+      Object.assign(placeholder, {
+        widgets: [
+          { name: 'UNKNOWN', value: 'lanczos', type: 'string' },
+          { name: 'UNKNOWN_1', value: 'null', type: 'string' },
+          { name: 'UNKNOWN_2', value: 2.0, type: 'number' }
+        ]
+      })
+
+      const graph = createMockGraph([placeholder])
+      placeholder.graph = graph
+      Object.assign(app, { rootGraph: graph })
+
+      vi.mocked(collectAllNodes).mockReturnValue([placeholder])
+
+      const newNode = createNewNode([], [], [{ name: 'scale_by', value: 0 }])
+      vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
+
+      const { replaceNodesInPlace } = useNodeReplacement()
+      replaceNodesInPlace([
+        makeMissingNodeType('PaddedNode', {
+          new_node_id: 'ImageScaleBy',
+          old_node_id: 'PaddedNode',
+          old_widget_ids: ['upscale_method', 'preview', 'scale_by'],
+          input_mapping: [{ new_id: 'scale_by', old_id: 'scale_by' }],
+          output_mapping: null
+        })
+      ])
+
+      expect(newNode.widgets![0].value).toBe(expected)
     })
   })
 })
