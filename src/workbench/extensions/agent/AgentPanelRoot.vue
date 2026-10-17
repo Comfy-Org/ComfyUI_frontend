@@ -1870,7 +1870,8 @@ async function attachDroppedAsset(event: DragEvent): Promise<boolean> {
         id: `asset:${asset.ref}`,
         name: asset.name,
         ref: asset.ref,
-        previewUrl: asset.previewUrl
+        previewUrl: asset.previewUrl,
+        mediaUrl: asset.mediaUrl
       }) ?? false
     )
   }
