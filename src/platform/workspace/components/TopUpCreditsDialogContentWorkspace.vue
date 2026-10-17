@@ -303,6 +303,16 @@
               : $t('subscription.addCredits')
           }}
         </Button>
+        <Button
+          v-if="step === 'confirm' && checkoutRecovery"
+          variant="secondary"
+          size="lg"
+          :disabled="paymentLocked"
+          :loading="openingDefaultCardPortal"
+          @click="setDefaultCard"
+        >
+          {{ $t('credits.topUp.setDefaultCard') }}
+        </Button>
       </div>
       <div
         v-if="step === 'amount'"
@@ -349,9 +359,13 @@ import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import type { CreateTopupResponse } from '@/platform/workspace/api/workspaceApi'
-import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
+import {
+  WorkspaceApiError,
+  workspaceApi
+} from '@/platform/workspace/api/workspaceApi'
 import type { BillingTab } from '@/platform/workspace/billing/billingTab'
 import { reserveBillingTab } from '@/platform/workspace/billing/billingTab'
+import { registerRefreshOnReturn } from '@/platform/workspace/billing/refreshOnReturn'
 import { topupCheckoutReturnUrl } from '@/platform/workspace/billing/topupCheckoutReturnUrl'
 import { isBlockedOnCustomerPhase } from '@/platform/workspace/billing/customerAttention'
 import { UncreditedTopupResponse } from '@/platform/workspace/billing/sdk/topupOperationView'
@@ -388,7 +402,8 @@ const telemetry = useTelemetry()
 const toast = useToast()
 const { buildDocsUrl, docsPaths } = useExternalLink()
 const { balance, fetchBalance, fetchStatus } = useBillingContext()
-const { canTopUp } = useBillingCapabilities()
+const billingCapabilities = useBillingCapabilities()
+const { canTopUp } = billingCapabilities
 
 const workspaceStore = useTeamWorkspaceStore()
 
@@ -739,8 +754,10 @@ function isNoPaymentMethodRefusal(error: unknown): boolean {
 }
 
 let unmounted = false
+let stopDefaultCardReturnRefresh: (() => void) | null = null
 onUnmounted(() => {
   unmounted = true
+  stopDefaultCardReturnRefresh?.()
 })
 
 function handOffToCheckout(checkoutTab: BillingTab, checkoutUrl: string) {
@@ -758,6 +775,62 @@ function handOffToCheckout(checkoutTab: BillingTab, checkoutUrl: string) {
     }
   })
   handleClose(false)
+}
+
+const openingDefaultCardPortal = ref(false)
+
+function refreshOnDefaultCardReturn() {
+  stopDefaultCardReturnRefresh?.()
+  stopDefaultCardReturnRefresh = registerRefreshOnReturn(async () => {
+    const [paymentMethods] = await Promise.allSettled([
+      workspaceApi.listSavedPaymentMethods(),
+      fetchStatus(),
+      fetchBalance(),
+      billingCapabilities.refresh()
+    ])
+    if (
+      paymentMethods.status !== 'fulfilled' ||
+      !paymentMethods.value.some((method) => method.is_default)
+    ) {
+      return
+    }
+    stopDefaultCardReturnRefresh?.()
+    stopDefaultCardReturnRefresh = null
+    checkoutRecovery.value = null
+  })
+}
+
+async function setDefaultCard() {
+  if (openingDefaultCardPortal.value || paymentLocked.value) return
+  const portalTab = reserveBillingTab()
+  if (!portalTab) {
+    toast.warning(t('g.warning'), {
+      description: t('subscription.billingTabBlocked')
+    })
+    return
+  }
+  openingDefaultCardPortal.value = true
+  try {
+    const { url } = await workspaceApi.getPaymentPortalUrl(
+      window.location.href,
+      'payment_method_update'
+    )
+    if (!url) return reportDefaultCardPortalFailure(portalTab)
+    portalTab.navigate(url)
+    if (!unmounted) refreshOnDefaultCardReturn()
+  } catch {
+    reportDefaultCardPortalFailure(portalTab)
+  } finally {
+    openingDefaultCardPortal.value = false
+  }
+}
+
+function reportDefaultCardPortalFailure(portalTab: BillingTab) {
+  portalTab.close()
+  if (unmounted) return
+  toast.error(t('credits.topUp.setDefaultCardError'), {
+    description: t('credits.topUp.unknownError')
+  })
 }
 
 async function continueToCheckout() {
