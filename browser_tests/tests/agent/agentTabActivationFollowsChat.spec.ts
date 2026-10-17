@@ -28,12 +28,22 @@ const LANDSCAPE_WORKFLOW_ID = 'b2c3d4e5-6f70-4812-9a3b-4c5d6e7f8a9b'
 const PORTRAIT_THREAD_ID = 'c4a7e2d1-5b3f-4e6a-9c8d-1f2a3b4c5d6e'
 const LANDSCAPE_THREAD_ID = 'e1f2a3b4-6c5d-4e7f-8a9b-0c1d2e3f4a5b'
 const UNBOUND_THREAD_ID = 'a1b2c3d4-7e8f-4901-8b2c-3d4e5f6a7b8c'
+// A workflow can carry any number of chats -- `workflow_id` is optional on
+// thread creation and never made unique -- and any of them can be archived.
+// These two are the portrait tab's other chats: one archived and the most
+// recently active of the three, one still active and the least recent.
+const ARCHIVED_PORTRAIT_THREAD_ID = 'd5b8f3e2-6c4a-4f7b-8d9e-2a3b4c5d6e7f'
+const STALE_PORTRAIT_THREAD_ID = 'f6c9a4d3-7d5b-4a8c-9e0f-3b4c5d6e7f80'
 const PORTRAIT_NAME = 'Portrait Study'
 const LANDSCAPE_NAME = 'Landscape Study'
 const PORTRAIT_REQUEST = 'Tidy up the portrait study'
 const LANDSCAPE_REQUEST = 'Widen the landscape study'
 const UNBOUND_REQUEST = 'What does a KSampler do?'
+const ARCHIVED_PORTRAIT_REQUEST = 'Crop the portrait study square'
+const STALE_PORTRAIT_REQUEST = 'Start the portrait study'
 const AT = '2026-09-22T10:00:00Z'
+const LATER = '2026-09-22T12:00:00Z'
+const EARLIER = '2026-09-22T08:00:00Z'
 
 const EMPTY_WORKFLOW: ComfyWorkflowJSON = {
   last_node_id: 0,
@@ -58,18 +68,22 @@ function thread(
   id: string,
   title: string,
   preview: string,
-  workflowId: string
+  workflowId: string,
+  {
+    status = 'active',
+    at = AT
+  }: { status?: 'active' | 'archived'; at?: string } = {}
 ): AgentThreadListResponse['threads'][number] {
   return {
     id,
     title,
     preview,
     workflow_id: workflowId,
-    status: 'active',
+    status,
     message_count: 1,
-    created_at: AT,
-    updated_at: AT,
-    last_message_at: AT
+    created_at: at,
+    updated_at: at,
+    last_message_at: at
   }
 }
 
@@ -103,7 +117,17 @@ const TRANSCRIPTS: Record<string, AgentMessage[]> = {
     LANDSCAPE_WORKFLOW_ID,
     LANDSCAPE_REQUEST
   ),
-  [UNBOUND_THREAD_ID]: transcript(UNBOUND_THREAD_ID, '', UNBOUND_REQUEST)
+  [UNBOUND_THREAD_ID]: transcript(UNBOUND_THREAD_ID, '', UNBOUND_REQUEST),
+  [ARCHIVED_PORTRAIT_THREAD_ID]: transcript(
+    ARCHIVED_PORTRAIT_THREAD_ID,
+    PORTRAIT_WORKFLOW_ID,
+    ARCHIVED_PORTRAIT_REQUEST
+  ),
+  [STALE_PORTRAIT_THREAD_ID]: transcript(
+    STALE_PORTRAIT_THREAD_ID,
+    PORTRAIT_WORKFLOW_ID,
+    STALE_PORTRAIT_REQUEST
+  )
 }
 
 const cloudWorkflows: WorkflowListResponse = {
@@ -121,8 +145,26 @@ const cloudWorkflows: WorkflowListResponse = {
   pagination: { offset: 0, limit: 100, total: 2, has_more: false }
 }
 
+// The portrait tab's three chats are listed so that every cheaper rule picks
+// the wrong one: the archived chat is first and the most recently active of
+// the three, and the stale chat is the first one still active. Only "the most
+// recently active chat that is not archived" lands on 'Portrait chat'.
 const threads: AgentThreadListResponse = {
   threads: [
+    thread(
+      ARCHIVED_PORTRAIT_THREAD_ID,
+      'Archived portrait chat',
+      ARCHIVED_PORTRAIT_REQUEST,
+      PORTRAIT_WORKFLOW_ID,
+      { status: 'archived', at: LATER }
+    ),
+    thread(
+      STALE_PORTRAIT_THREAD_ID,
+      'Stale portrait chat',
+      STALE_PORTRAIT_REQUEST,
+      PORTRAIT_WORKFLOW_ID,
+      { at: EARLIER }
+    ),
     thread(
       PORTRAIT_THREAD_ID,
       'Portrait chat',
@@ -137,7 +179,7 @@ const threads: AgentThreadListResponse = {
     ),
     thread(UNBOUND_THREAD_ID, 'Unbound chat', UNBOUND_REQUEST, '')
   ],
-  pagination: { offset: 0, limit: 100, total: 3, has_more: false }
+  pagination: { offset: 0, limit: 100, total: 5, has_more: false }
 }
 
 test.describe(
@@ -224,7 +266,10 @@ test.describe(
         ).toBeVisible()
       })
 
-      await test.step('activating the portrait tab brings up the portrait chat', async () => {
+      // Three chats are bound to this workflow, so this also pins which one a
+      // tab opens: not the archived one even though it is listed first and was
+      // worked in most recently, and not the stale one.
+      await test.step('activating the portrait tab brings up its most recent live chat', async () => {
         await topbar.getWorkflowTab(PORTRAIT_NAME).click()
         await expect(
           topbar.getWorkflowTab(PORTRAIT_NAME).and(topbar.getActiveTab())
