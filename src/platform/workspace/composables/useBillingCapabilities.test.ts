@@ -1,3 +1,5 @@
+import { setTelemetryRegistry } from '@/platform/telemetry'
+import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
 import { useAuthStore } from '@/stores/authStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import type { BillingCapabilitiesResponse } from '@comfyorg/ingest-types'
@@ -15,6 +17,7 @@ import {
 } from '@/platform/workspace/api/workspaceApi'
 
 import { useBillingCapabilities } from './useBillingCapabilities'
+import { describeServerFactGate } from '@/utils/__tests__/serverFactGate'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 vi.mock(import('firebase/auth'), { spy: true })
@@ -44,7 +47,10 @@ const railState = vi.hoisted(() => ({
 }))
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useBillingReadRail'),
-  () => ({ useBillingReadRail: () => railState.rail })
+  () => ({
+    useBillingReadRail: () => railState.rail,
+    provideBillingSdkStore: () => {}
+  })
 )
 
 function capabilitiesResponse(
@@ -64,8 +70,10 @@ function capabilitiesResponse(
       can_top_up: canTopUp,
       can_cancel: true,
       can_reactivate: true,
+      can_revert_scheduled_change: false,
       can_change_seats: true,
       can_invite_members: true,
+      can_manage_members: true,
       can_downgrade_to_personal: true,
       ...overrides
     },
@@ -184,6 +192,58 @@ describe('useBillingCapabilities', () => {
 
   afterEach(() => scope.stop())
 
+  it.for([
+    [
+      'allowed',
+      () => Promise.resolve(capabilitiesResponse(true)),
+      'succeeded',
+      'success'
+    ],
+    [
+      'policy denied',
+      () => Promise.resolve(capabilitiesResponse(false)),
+      'succeeded',
+      'success'
+    ],
+    [
+      'access denied',
+      () =>
+        Promise.reject(
+          Object.assign(new Error('signed out'), { name: 'AuthStoreError' })
+        ),
+      undefined,
+      undefined
+    ],
+    [
+      'unavailable',
+      () => Promise.reject(new Error('network failed')),
+      'failed',
+      'failure'
+    ]
+  ] as const)(
+    'records capability reads when %s',
+    async ([, response, stage, outcome]) => {
+      const record = vi.fn()
+      const registry = new TelemetryRegistry()
+      registry.registerProvider({ trackBillingEvent: record })
+      setTelemetryRegistry(registry)
+      vi.mocked(workspaceApi.getBillingCapabilities).mockImplementationOnce(
+        response
+      )
+      await billingCapabilities.initialize()
+      if (stage === undefined) {
+        expect(record).not.toHaveBeenCalled()
+        return
+      }
+      expect(record).toHaveBeenCalledExactlyOnceWith({
+        operation: 'capability_read',
+        stage,
+        outcome
+      })
+    }
+  )
+  afterEach(() => setTelemetryRegistry(null))
+
   it('denies Cloud actions while loading, then applies the server capability', async () => {
     let resolveRequest!: (value: BillingCapabilitiesResponse) => void
     vi.mocked(workspaceApi.getBillingCapabilities).mockImplementationOnce(
@@ -199,6 +259,7 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canReactivate.value).toBe(false)
     expect(billingCapabilities.canChangeSeats.value).toBe(false)
     expect(billingCapabilities.canInviteMembers.value).toBe(false)
+    expect(billingCapabilities.canManageMembers.value).toBe(false)
     expect(billingCapabilities.canDowngradeToPersonal.value).toBe(false)
     expect(billingCapabilities.snapshotAuthoritative.value).toBe(false)
 
@@ -216,6 +277,7 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canReactivate.value).toBe(true)
     expect(billingCapabilities.canChangeSeats.value).toBe(true)
     expect(billingCapabilities.canInviteMembers.value).toBe(true)
+    expect(billingCapabilities.canManageMembers.value).toBe(true)
     expect(billingCapabilities.canDowngradeToPersonal.value).toBe(true)
     expect(billingCapabilities.snapshotAuthoritative.value).toBe(true)
   })
@@ -230,8 +292,10 @@ describe('useBillingCapabilities', () => {
         {
           can_cancel: false,
           can_reactivate: false,
+          can_revert_scheduled_change: false,
           can_change_seats: false,
           can_invite_members: false,
+          can_manage_members: false,
           can_downgrade_to_personal: false
         }
       )
@@ -243,7 +307,22 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canReactivate.value).toBe(false)
     expect(billingCapabilities.canChangeSeats.value).toBe(false)
     expect(billingCapabilities.canInviteMembers.value).toBe(false)
+    expect(billingCapabilities.canManageMembers.value).toBe(false)
     expect(billingCapabilities.canDowngradeToPersonal.value).toBe(false)
+  })
+
+  it('does not infer member management from an older response', async () => {
+    const response = capabilitiesResponse(true)
+    Reflect.deleteProperty(response.capabilities, 'can_manage_members')
+    vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce(
+      response
+    )
+
+    await billingCapabilities.initialize()
+
+    expect(billingCapabilities.canInviteMembers.value).toBe(true)
+    expect(billingCapabilities.canChangeSeats.value).toBe(true)
+    expect(billingCapabilities.canManageMembers.value).toBe(false)
   })
 
   it('applies changed capabilities when the current scope is refreshed', async () => {
@@ -273,7 +352,7 @@ describe('useBillingCapabilities', () => {
     )
   })
 
-  it('keeps top-up available for owners when the endpoint is unavailable', async () => {
+  it('withholds top-up from owners when the endpoint is unavailable', async () => {
     vi.mocked(workspaceApi.getBillingCapabilities).mockRejectedValueOnce(
       new Error('unavailable')
     )
@@ -281,12 +360,13 @@ describe('useBillingCapabilities', () => {
     await billingCapabilities.initialize()
 
     expect(billingCapabilities.hasResolvedCapabilities.value).toBe(false)
-    expect(billingCapabilities.canTopUp.value).toBe(true)
+    expect(billingCapabilities.canTopUp.value).toBe(false)
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(false)
     expect(billingCapabilities.canCancel.value).toBe(false)
     expect(billingCapabilities.canReactivate.value).toBe(false)
     expect(billingCapabilities.canChangeSeats.value).toBe(false)
     expect(billingCapabilities.canInviteMembers.value).toBe(false)
+    expect(billingCapabilities.canManageMembers.value).toBe(false)
     expect(billingCapabilities.canDowngradeToPersonal.value).toBe(false)
     expect(billingCapabilities.isReady.value).toBe(true)
     expect(billingCapabilities.snapshotAuthoritative.value).toBe(false)
@@ -356,12 +436,13 @@ describe('useBillingCapabilities', () => {
     await billingCapabilities.initialize()
 
     expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledOnce()
-    expect(billingCapabilities.canTopUp.value).toBe(true)
+    expect(billingCapabilities.canTopUp.value).toBe(false)
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(false)
     expect(billingCapabilities.canCancel.value).toBe(false)
     expect(billingCapabilities.canReactivate.value).toBe(false)
     expect(billingCapabilities.canChangeSeats.value).toBe(false)
     expect(billingCapabilities.canInviteMembers.value).toBe(false)
+    expect(billingCapabilities.canManageMembers.value).toBe(false)
     expect(billingCapabilities.canDowngradeToPersonal.value).toBe(false)
   })
 
@@ -942,7 +1023,7 @@ describe('useBillingCapabilities', () => {
     expect(mockReportError).toHaveBeenCalledOnce()
   })
 
-  it('keeps the owner top-up fallback readable while a retry is in flight', async () => {
+  it('keeps top-up withheld from owners while a retry is in flight', async () => {
     vi.spyOn(Math, 'random').mockReturnValue(0)
     let resolveRetry!: (value: BillingCapabilitiesResponse) => void
     vi.mocked(workspaceApi.getBillingCapabilities)
@@ -955,17 +1036,17 @@ describe('useBillingCapabilities', () => {
       )
 
     await billingCapabilities.initialize()
-    expect(billingCapabilities.canTopUp.value).toBe(true)
+    expect(billingCapabilities.canTopUp.value).toBe(false)
 
     await vi.advanceTimersByTimeAsync(31_000)
     expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
-    expect(billingCapabilities.canTopUp.value).toBe(true)
+    expect(billingCapabilities.canTopUp.value).toBe(false)
     expect(billingCapabilities.isReady.value).toBe(true)
 
     resolveRetry(capabilitiesResponse(true))
     await vi.advanceTimersByTimeAsync(0)
 
-    expect(billingCapabilities.canSubscribeSelfServe.value).toBe(true)
+    expect(billingCapabilities.canTopUp.value).toBe(true)
   })
 
   it('retries as soon as a hidden tab with an unreadable endpoint returns', async () => {
@@ -1064,7 +1145,7 @@ describe('useBillingCapabilities on the SDK rail', () => {
     {
       failure: 'REQUEST_FAILED at 503',
       result: { status: 'error', code: 'REQUEST_FAILED', httpStatus: 503 },
-      canTopUp: true,
+      canTopUp: false,
       authoritative: false,
       reads: 2
     }
@@ -1102,5 +1183,112 @@ describe('useBillingCapabilities on the SDK rail', () => {
 
     expect(readCapabilities).toHaveBeenCalledTimes(2)
     expect(billingCapabilities.snapshotAuthoritative.value).toBe(true)
+  })
+})
+
+describe('useBillingCapabilities capability gates', () => {
+  type Capabilities = BillingCapabilitiesResponse['capabilities']
+
+  let response: BillingCapabilitiesResponse
+  let scope: EffectScope | null = null
+
+  beforeEach(() => {
+    mockIsCloud.value = true
+    railState.rail = null
+    response = capabilitiesResponse(true)
+    vi.mocked(workspaceApi.getBillingCapabilities).mockImplementation(() =>
+      Promise.resolve(structuredClone(response))
+    )
+  })
+
+  afterEach(() => {
+    scope?.stop()
+    scope = null
+    railState.rail = null
+  })
+
+  async function mount() {
+    scope?.stop()
+    scope = effectScope()
+    const billingCapabilities = scope.run(() => useBillingCapabilities())!
+    await billingCapabilities.initialize()
+    return billingCapabilities
+  }
+
+  function otherCapabilityFlips(fact: keyof Capabilities) {
+    const capabilities = capabilitiesResponse(true).capabilities
+    return Object.keys(capabilities)
+      .filter(
+        (key): key is keyof Capabilities => key in capabilities && key !== fact
+      )
+      .map((key) => ({
+        name: `a flipped ${key}`,
+        apply: () => {
+          response.capabilities[key] = !response.capabilities[key]
+        }
+      }))
+  }
+
+  describe.for([
+    ['can_subscribe_self_serve', 'canSubscribeSelfServe'],
+    ['can_cancel', 'canCancel'],
+    ['can_reactivate', 'canReactivate'],
+    ['can_change_seats', 'canChangeSeats'],
+    ['can_manage_members', 'canManageMembers'],
+    ['can_invite_members', 'canInviteMembers'],
+    ['can_downgrade_to_personal', 'canDowngradeToPersonal']
+  ] as const)('%s', ([fact, gate]) => {
+    describeServerFactGate({
+      name: gate,
+      fact: {
+        set: (value) => {
+          response.capabilities[fact] = value
+        }
+      },
+      perturbations: [
+        {
+          name: 'the member role',
+          apply: () => {
+            Object.assign(useTeamWorkspaceStore(), {
+              activeWorkspace: { id: 'workspace-1', role: 'member' }
+            })
+          }
+        },
+        ...otherCapabilityFlips(fact),
+        {
+          name: 'rollout defaults applied',
+          apply: () => {
+            response.rollout_defaults_applied = {
+              can_downgrade_to_personal: true,
+              can_subscribe_self_serve: true,
+              can_top_up: true
+            }
+          }
+        },
+        {
+          name: 'a denied reason',
+          apply: () => {
+            response.denied_reasons = {
+              can_subscribe_self_serve: 'not_workspace_owner'
+            }
+          }
+        },
+        {
+          name: 'the SDK billing rail',
+          apply: () => {
+            railState.rail = {
+              readCapabilities: vi.fn(() =>
+                Promise.resolve({
+                  status: 'ok',
+                  value: structuredClone(response)
+                })
+              )
+            }
+          }
+        }
+      ],
+      mount,
+      read: (billingCapabilities) => billingCapabilities[gate].value
+    })
   })
 })

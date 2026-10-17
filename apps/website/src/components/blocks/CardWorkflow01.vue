@@ -3,8 +3,8 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { HTMLAttributes } from 'vue'
 
-import { resolveRel } from '../../utils/cta'
-import Badge from '../ui/badge/Badge.vue'
+import { resolveRel } from '@/utils/cta'
+import Badge from '@/components/ui/badge/Badge.vue'
 
 type CardWorkflowMedia = {
   type: 'image' | 'video'
@@ -17,6 +17,7 @@ export type CardWorkflowItem = {
   id: string
   title: string
   href?: string
+  newTab?: boolean
   media: CardWorkflowMedia
   description?: string
   tags?: readonly string[]
@@ -33,6 +34,12 @@ const {
   variant?: 'default' | 'compact'
   class?: HTMLAttributes['class']
 }>()
+
+function linkTargetAttrs(newTab = true) {
+  return newTab
+    ? { target: '_blank', rel: resolveRel({ target: '_blank' }) }
+    : {}
+}
 </script>
 
 <template>
@@ -52,8 +59,7 @@ const {
     <a
       v-if="item.href"
       :href="item.href"
-      target="_blank"
-      :rel="resolveRel({ target: '_blank' })"
+      v-bind="linkTargetAttrs(item.newTab)"
       :aria-label="item.title"
       class="absolute inset-0 z-10 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow focus-visible:ring-offset-2 focus-visible:outline-none"
       :class="variant === 'compact' ? 'rounded-5xl' : 'rounded-4.5xl'"
@@ -97,14 +103,14 @@ const {
         :class="
           variant === 'compact'
             ? 'w-full truncate text-sm leading-[1.2] font-semibold text-primary-comfy-canvas/95'
-            : 'text-2xl leading-[1.4] font-medium text-primary-comfy-canvas'
+            : 'text-2xl/[1.4] font-medium text-primary-comfy-canvas'
         "
       >
         {{ item.title }}
       </h3>
       <p
         v-if="item.description"
-        class="text-sm leading-[1.6] font-light text-primary-comfy-canvas"
+        class="text-sm/[1.6] font-light text-primary-comfy-canvas"
         :class="variant === 'compact' ? undefined : 'mt-4'"
       >
         {{ item.description }}

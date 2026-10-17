@@ -1,4 +1,4 @@
-import { $el } from '../../ui'
+import { $el } from '../utils'
 import { ComfyDialog } from '../dialog'
 
 type DialogAction<T> = string | { value?: T; text: string }

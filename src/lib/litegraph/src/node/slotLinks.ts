@@ -1,3 +1,8 @@
+import type {
+  LGraph,
+  LGraphNode,
+  LLink
+} from '@/lib/litegraph/src/types/entityRegistry'
 import { useLinkStore } from '@/stores/linkStore'
 import type { EndpointUpdateError } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
@@ -5,11 +10,9 @@ import type { LinkId } from '@/types/linkId'
 import type { NodeId } from '@/types/nodeId'
 import type { RerouteId } from '@/types/rerouteId'
 
-import type { LGraph } from '../LGraph'
-import type { LGraphNode } from '../LGraphNode'
-import type { INodeInputSlot } from '../interfaces'
+import type { INodeInputSlot } from '../types/slots'
 import { slotFloatingLinks } from '../LLink'
-import type { LLink } from '../LLink'
+
 import { NodeSlotType } from '../types/globalEnums'
 /**
  * Store-backed reads over the links attached to a node's slots.
@@ -64,6 +67,20 @@ export function outputLinkIds(
     ...useLinkStore().getOutputSlotLinks(graphScopeOf(graph), nodeId, slot)
   ].map((topology) => topology.id)
   return ids.sort((a, b) => a - b)
+}
+
+export function nodeLinkIds(
+  graph: Pick<LGraph, 'rootGraph' | 'id'>,
+  node: Pick<LGraphNode, 'id' | 'inputs' | 'outputs'>
+): LinkId[] {
+  const inputIds = node.inputs.flatMap((_, slot) => {
+    const id = inputLinkId(graph, node.id, slot)
+    return id === undefined ? [] : [id]
+  })
+  const outputIds = node.outputs.flatMap((_, slot) =>
+    outputLinkIds(graph, node.id, slot)
+  )
+  return [...inputIds, ...outputIds]
 }
 
 /**

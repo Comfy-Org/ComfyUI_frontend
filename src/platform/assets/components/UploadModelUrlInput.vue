@@ -5,7 +5,7 @@
         <p class="m-0 text-base-foreground">
           {{ $t('assetBrowser.uploadModelDescription1Generic') }}
         </p>
-        <div class="m-0">
+        <div>
           <p class="m-0 text-muted-foreground">
             {{ $t('assetBrowser.uploadModelDescription2Generic') }}
           </p>
@@ -45,20 +45,19 @@
       </div>
 
       <div class="flex flex-col gap-2">
-        <InputText
+        <Input
           v-model="url"
           autofocus
           :placeholder="$t('assetBrowser.genericLinkPlaceholder')"
-          class="w-full border-0 bg-secondary-background p-4"
           data-attr="upload-model-step1-url-input"
         />
-        <p v-if="error" class="text-sm text-error">
+        <p v-if="error" class="text-error">
           {{ error }}
         </p>
       </div>
     </div>
 
-    <div class="flex flex-col gap-6 text-sm text-muted-foreground">
+    <div class="flex flex-col gap-6 text-muted-foreground">
       <div v-if="showSecretsHint">
         <i18n-t keypath="assetBrowser.apiKeyHint" tag="span">
           <template #link>
@@ -81,10 +80,10 @@
 </template>
 
 <script setup lang="ts">
-import InputText from 'primevue/inputtext'
 import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import Input from '@/components/ui/input/Input.vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 

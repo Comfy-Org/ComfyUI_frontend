@@ -1,4 +1,4 @@
-import { assert, describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it } from 'vitest'
 
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type { GraphScope } from '@/types/graphScopeId'
@@ -78,7 +78,6 @@ describe('store collision contracts (EX-002)', () => {
   })
 
   it('linkStore rejects a registration at an occupied identity key', () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     const store = useLinkStore()
     const incumbent = linkTopology(1)
     store.registerLink(scopeA, incumbent)
@@ -93,7 +92,6 @@ describe('store collision contracts (EX-002)', () => {
   })
 
   it('rerouteStore rejects a registration at an occupied identity key', () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     const store = useRerouteStore()
     const incumbent = store.registerReroute(scopeA, rerouteChain(1))
 

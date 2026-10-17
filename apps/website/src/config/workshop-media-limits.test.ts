@@ -22,10 +22,9 @@ it('does not double-encode a raw JSON editor when estimating inline files', () =
   expect(validateForm(schema, { request_body })).toEqual({})
 })
 
-describe.for([
-  'vertexai--gemini-3-pro-image--edit-images',
-  'byteplus--seedream-4-5--edit-images'
-])('inline image request budget: %s', (slug) => {
+describe('inline image request budget: byteplus--seedream-4-5--edit-images', () => {
+  const slug = 'byteplus--seedream-4-5--edit-images'
+
   it.for([
     { sizes: [8_388_608], expected: { images: 'requestTooLarge' } },
     { sizes: [4_194_304, 4_194_304], expected: { images: 'requestTooLarge' } },
@@ -48,6 +47,24 @@ describe.for([
       ).toEqual(expected)
     }
   )
+})
+
+it('excludes URL-uploaded Gemini images from the inline request budget', () => {
+  const model = getRouterWorkshopModelDetail(
+    'vertexai--gemini-3-pro-image--edit-images'
+  )
+  assert.exists(model)
+  const { schema, values } = initialWorkshopPageState(model)
+  expect(
+    validateForm(schema, {
+      ...values,
+      images: [8_388_608, 4_194_304].map((size) => ({
+        name: 'image.png',
+        size,
+        type: 'image/png'
+      }))
+    })
+  ).toEqual({})
 })
 
 describe.for([

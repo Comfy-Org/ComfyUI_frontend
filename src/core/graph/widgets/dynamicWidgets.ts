@@ -1,8 +1,10 @@
 import { remove } from 'es-toolkit'
 import { shallowReactive } from 'vue'
 
+import { assert } from '@/base/assert'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import type { ISlotType, INodeInputSlot } from '@/lib/litegraph/src/interfaces'
+import type { ISlotType } from '@/lib/litegraph/src/interfaces'
+import type { INodeInputSlot } from '@/lib/litegraph/src/types/slots'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LLink } from '@/lib/litegraph/src/LLink'
@@ -19,9 +21,9 @@ import {
   zDynamicComboInputSpec,
   zMatchTypeOptions
 } from '@/schemas/nodeDefSchema'
-import { useLitegraphService } from '@/services/litegraphService'
-import { app } from '@/scripts/app'
-import type { ComfyApp } from '@/scripts/app'
+import { useLitegraphServiceAccess } from '@/core/graph/litegraphServiceAccess'
+import { useApp } from '@/scripts/appInstance'
+import type { ComfyApp } from '@/types/comfy'
 import {
   captureInputLayout,
   replaceNodeInputs
@@ -32,6 +34,7 @@ import { graphScopeOf } from '@/types/graphScopeId'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import { widgetId } from '@/types/widgetId'
+import { dynamicGroupWidget } from './dynamicGroupWidget'
 
 type MatchTypeNode = LGraphNode &
   Pick<Required<LGraphNode>, 'onConnectionsChange'> & {
@@ -101,7 +104,7 @@ function dynamicComboWidget(
   appArg: ComfyApp,
   widgetName?: string
 ) {
-  const { addNodeInput } = useLitegraphService()
+  const { addNodeInput } = useLitegraphServiceAccess()
   const { deleteWidget } = useWidgetValueStore()
   const parseResult = zDynamicComboInputSpec.safeParse(untypedInputData)
   if (!parseResult.success) throw new Error('invalid DynamicCombo spec')
@@ -110,13 +113,18 @@ function dynamicComboWidget(
     inputData[1].options.map(({ key, inputs }) => [key, inputs])
   )
   const subSpec: ComboInputSpec = [Object.keys(options), {}]
-  const { widget, minWidth, minHeight } = app.widgets['COMBO'](
+  const result = useApp().widgets.COMBO(
     node,
     inputName,
     subSpec,
     appArg,
     widgetName
   )
+  assert(
+    result && 'widget' in result && result.widget,
+    'COMBO widget constructor returned no widget'
+  )
+  const { widget, minWidth, minHeight } = result
   const removedWidgetValues = new Map<
     string | undefined,
     Map<string, { type: string; value: WidgetValue }>
@@ -289,7 +297,10 @@ function dynamicComboWidget(
   return { widget, minWidth, minHeight }
 }
 
-export const dynamicWidgets = { COMFY_DYNAMICCOMBO_V3: dynamicComboWidget }
+export const dynamicWidgets = {
+  COMFY_DYNAMICCOMBO_V3: dynamicComboWidget,
+  COMFY_DYNAMICGROUP_V3: dynamicGroupWidget
+}
 const dynamicInputs: Record<
   string,
   (node: LGraphNode, inputSpec: InputSpecV2) => void
@@ -362,7 +373,7 @@ function withComfyMatchType(node: LGraphNode): asserts node is MatchTypeNode {
       const input = this.inputs.at(slot)
       const { graph } = this
       if (contype !== LiteGraph.INPUT || !graph || !input) return
-      if (app.configuringGraph) return
+      if (useApp().configuringGraph) return
       const [matchKey, matchGroup] = Object.entries(
         this.comfyDynamic.matchType
       ).find(([, group]) => input.name in group) ?? ['', undefined]
@@ -411,7 +422,7 @@ function withComfyMatchType(node: LGraphNode): asserts node is MatchTypeNode {
 }
 
 function applyMatchType(node: LGraphNode, inputSpec: InputSpecV2) {
-  const { addNodeInput } = useLitegraphService()
+  const { addNodeInput } = useLitegraphServiceAccess()
   const name = inputSpec.name
   const parseResult = zMatchTypeOptions.safeParse(inputSpec)
   if (!parseResult.success) {
@@ -471,7 +482,7 @@ function addAutogrowGroup(
   groupName: string,
   node: AutogrowNode
 ) {
-  const { addNodeInput } = useLitegraphService()
+  const { addNodeInput } = useLitegraphServiceAccess()
   const { max, min, inputSpecs } = node.comfyDynamic.autogrow[groupName]
   if (ordinal >= max) return
 
@@ -497,6 +508,7 @@ function addAutogrowGroup(
     )) {
       const link = inputLinks.get(existingInput)
       if (link && !inputLinks.has(newInput)) inputLinks.set(newInput, link)
+      if (existingInput.label) newInput.label = existingInput.label
     }
   }
 
@@ -518,22 +530,6 @@ function addAutogrowGroup(
 
 const ORDINAL_REGEX = /\d+$/
 
-/**
- * Whether `key` -- an autogrow input name's segment after the group
- * prefix -- is a member of an autogrow group: matched against an explicit
- * `names` list when the group defines one, or (absent that) required to
- * end in a numeric ordinal. The one membership rule a live autogrow
- * registration (`resolveAutogrowOrdinal` below) and a node type's own
- * static schema (`nodeDefAutogrowGroupOf` in `graphMutations.ts`) must
- * agree on, so it is shared rather than reimplemented at each call site.
- */
-export function isAutogrowGroupMember(
-  key: string,
-  names: readonly string[] | undefined
-): boolean {
-  return names ? names.includes(key) : ORDINAL_REGEX.test(key)
-}
-
 function resolveAutogrowOrdinal(
   inputName: string,
   groupName: string,
@@ -541,8 +537,10 @@ function resolveAutogrowOrdinal(
 ): number | undefined {
   const name = inputName.slice(groupName.length + 1)
   const { names } = node.comfyDynamic.autogrow[groupName]
-  if (!isAutogrowGroupMember(name, names)) return undefined
-  if (names) return names.indexOf(name)
+  if (names) {
+    const index = names.indexOf(name)
+    return index === -1 ? undefined : index
+  }
   const match = name.match(ORDINAL_REGEX)
   return match ? parseInt(match[0]) : undefined
 }
@@ -558,7 +556,7 @@ function autogrowInputConnected(index: number, node: AutogrowNode) {
     !lastInput ||
     ordinal == undefined ||
     (ordinal !== resolveAutogrowOrdinal(lastInput.name, groupName, node) &&
-      !app.configuringGraph)
+      !useApp().configuringGraph)
   )
     return
   addAutogrowGroup(ordinal + 1, groupName, node)
@@ -592,17 +590,44 @@ export function liveAutogrowGroupOf(
   return undefined
 }
 
-export function reconcileAutogrowInputs(node: LGraphNode): void {
-  if (!node.comfyDynamic?.autogrow) return
-  withComfyAutogrow(node)
-  for (const groupName of Object.keys(node.comfyDynamic.autogrow)) {
-    const slot = node.inputs.findLastIndex(
-      (input, index) =>
-        input.name.slice(0, input.name.lastIndexOf('.')) === groupName &&
-        node.getInputLink(index)
-    )
-    if (slot !== -1) autogrowInputConnected(slot, node)
+function highestAutogrowOrdinal(node: AutogrowNode, groupName: string): number {
+  let highest = -1
+  for (const input of node.inputs) {
+    if (!input.name.startsWith(`${groupName}.`)) continue
+    const ordinal = resolveAutogrowOrdinal(input.name, groupName, node)
+    if (ordinal !== undefined && ordinal > highest) highest = ordinal
   }
+  return highest
+}
+
+/**
+ * Grows the autogrow group `name` belongs to until the node holds an input by
+ * that name, and returns its live index. A local connect onto a slot the bound
+ * document has not seen mints a `grow` op (`docOpMinter.mintConnect`); this is
+ * the read leg of that exchange, for a slot the host grew whose live
+ * counterpart does not exist yet. Growth starts above the group's highest live
+ * ordinal, so the slots already carrying links are left alone. Undefined when
+ * `name` belongs to no autogrow group of this node, or the group's `max` stops
+ * short of it.
+ */
+export function growAutogrowInput(
+  node: LGraphNode,
+  name: string
+): number | undefined {
+  if (!hasAutogrowGroups(node)) return undefined
+  const groupName = liveAutogrowGroupOf(node, name)
+  if (groupName === undefined) return undefined
+  const ordinal = resolveAutogrowOrdinal(name, groupName, node)
+  if (ordinal === undefined) return undefined
+  for (
+    let next = highestAutogrowOrdinal(node, groupName) + 1;
+    next <= ordinal;
+    next++
+  ) {
+    addAutogrowGroup(next, groupName, node)
+  }
+  const index = node.inputs.findIndex((input) => input.name === name)
+  return index === -1 ? undefined : index
 }
 
 function autogrowInputDisconnected(index: number, node: AutogrowNode) {
@@ -747,7 +772,7 @@ function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
         ? this.comfyDynamic.autogrow[key]
         : undefined
       if (!autogrowGroup) return
-      if (app.configuringGraph && input.widget)
+      if (useApp().configuringGraph && input.widget)
         ensureWidgetForInput(node, input)
       if (iscon) {
         if (pendingConnection === slot) pendingConnectionSeen = true

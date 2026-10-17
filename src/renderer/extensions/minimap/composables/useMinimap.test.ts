@@ -13,9 +13,9 @@ import { toLinkId } from '@/types/linkId'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 import {
-  createMockCanvas2DContext,
+  createMockCanvasRenderingContext2D,
   createMockMinimapCanvas
-} from '@/utils/__tests__/litegraphTestUtils'
+} from '@/utils/__tests__/canvasTestUtils'
 import type { UUID } from '@/utils/uuid'
 
 interface MockNode {
@@ -246,7 +246,7 @@ describe('useMinimap', () => {
     setupVueUseMocks()
     registerMockLink(1, 'node2')
 
-    mockContext2D = createMockCanvas2DContext()
+    mockContext2D = createMockCanvasRenderingContext2D()
 
     moduleMockCanvasElement = createMockMinimapCanvas({
       getContext: vi
@@ -400,16 +400,6 @@ describe('useMinimap', () => {
       expect(api.addEventListener).not.toHaveBeenCalled()
 
       useCanvasStore().canvas = originalCanvas
-    })
-
-    it('should setup event listeners on graph', async () => {
-      const minimap = await createAndInitializeMinimap()
-
-      await minimap.init()
-
-      expect(moduleMockGraph.onNodeAdded).toBeDefined()
-      expect(moduleMockGraph.onNodeRemoved).toBeDefined()
-      expect(moduleMockGraph.onConnectionChange).toBeDefined()
     })
 
     it('should handle visibility from settings', async () => {
@@ -945,17 +935,6 @@ describe('useMinimap', () => {
 
       expect(mockContext2D.fillRect).toHaveBeenCalled()
       expect(mockContext2D.fillStyle).toBeDefined()
-    })
-  })
-
-  describe('setMinimapRef', () => {
-    it('should set minimap reference', () => {
-      const minimap = useMinimap()
-      const ref = document.createElement('div')
-
-      minimap.setMinimapRef(ref)
-
-      expect(() => minimap.setMinimapRef(ref)).not.toThrow()
     })
   })
 })

@@ -229,7 +229,12 @@ describe('comfy/no-duplicate-ingest-type', () => {
     writeFileSync(path.join(vueProbeDir, 'Probe.vue'), vueProbe)
     writeFileSync(path.join(browserTestProbeDir, 'probe.ts'), browserTestProbe)
 
-    findings = lint([tsProbeDir, vueProbeDir, browserTestProbeDir])
+    findings = lint([
+      tsProbeDir,
+      vueProbeDir,
+      browserTestProbeDir,
+      path.resolve('packages/ingest-types/src/types.gen.ts')
+    ])
   })
 
   afterAll(() => {
@@ -244,6 +249,10 @@ describe('comfy/no-duplicate-ingest-type', () => {
   it('reports at error severity, so pnpm lint gates CI on it', () => {
     expect(findings.length).toBeGreaterThan(0)
     expect([...new Set(findings.map((f) => f.severity))]).toEqual(['error'])
+  })
+
+  it('accepts the generated definitions themselves when linted explicitly', () => {
+    expect(reported('types.gen.ts')).toEqual([])
   })
 
   it.for([
@@ -281,10 +290,6 @@ describe('comfy/no-duplicate-ingest-type', () => {
 
   it('never reports a colliding name the file did not import', () => {
     expect(reported('unimported.ts')).not.toContain('CreateInviteRequest')
-  })
-
-  it('never reports the generated declarations it enforces', () => {
-    expect(lint(['packages/ingest-types/src/types.gen.ts'])).toEqual([])
   })
 
   it.for(['AgentTurnAccepted', 'AgentCancelAccepted'])(

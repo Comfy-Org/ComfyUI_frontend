@@ -23,6 +23,24 @@ scope. Desktop/Local sign-in continuation authenticates before saving; this
 branch currently mounts the Agent extension only in Cloud builds (FE-1931 owns
 the remaining distribution entry points).
 
+## First-use tour
+
+After consent succeeds, the first Agent open starts a four-card tour of the
+panel, composer, graph and chat history. **Next** advances through the cards;
+**Done** on the last card, **Skip** on any card and Escape once a card is on
+screen all dismiss the tour and mark it complete.
+
+Completion is device-local in `localStorage`, scoped to the authenticated user
+and active workspace; with either unresolved there is no scope to record, so no
+tour is shown at all. It does not sync through Global Settings. A different
+user or workspace on the same device gets its own tour. The legacy unscoped
+completion flag is adopted once by the current scope, then removed.
+
+The tour waits rather than marking itself complete when its target is not yet
+available. It is also deferred while App Mode is active or another onboarding
+tour owns the overlay; returning to graph mode or finishing the other tour lets
+the Agent tour appear.
+
 ## CRDT follower
 
 The doc-host follower has no gate of its own: it mounts with the agent panel,
@@ -40,3 +58,10 @@ Incoming `doc_update` frames are decoded and applied incrementally with
 each update. Human `doc_ops` transmission is implemented, but converting local
 canvas commands to the shared semantic op vocabulary remains intentionally
 unwired until the `@comfyorg/comfy-multi-player` applier is available.
+
+## Ask cards
+
+An `ask_user` question stays on screen, read-only, after it resolves, until
+the thread is loaded again. The server's transcript keeps only a pending ask
+(`pending_ask`), so a reload, or opening another chat and coming back, drops a
+card whose ask has resolved.

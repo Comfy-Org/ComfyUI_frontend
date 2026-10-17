@@ -1,20 +1,21 @@
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type {
+  LGraphNode,
+  LLink,
+  Reroute,
+  SubgraphIONode,
+  SubgraphInput,
+  SubgraphOutput
+} from '@/lib/litegraph/src/types/entityRegistry'
+
 import type { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { LinkConnectorEventMap } from '@/lib/litegraph/src/infrastructure/LinkConnectorEventMap'
-import type {
-  LinkNetwork,
-  Point,
-  SlotIndex
-} from '@/lib/litegraph/src/interfaces'
+import type { Point, SlotIndex } from '@/lib/litegraph/src/interfaces'
+import type { LinkNetwork } from '@/lib/litegraph/src/types/linkNetwork'
 import type {
   INodeInputSlot,
-  INodeOutputSlot,
-  LLink,
-  Reroute
-} from '@/lib/litegraph/src/litegraph'
-import type { SubgraphIONodeBase } from '@/lib/litegraph/src/subgraph/SubgraphIONodeBase'
-import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
-import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
+  INodeOutputSlot
+} from '@/lib/litegraph/src/types/slots'
+
 import type { NodeLike } from '@/lib/litegraph/src/types/NodeLike'
 import type { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
 
@@ -31,7 +32,7 @@ export interface RenderLink {
   /** The network that the link belongs to. */
   readonly network: LinkNetwork
   /** The node that the link is being connected from. */
-  readonly node: LGraphNode | SubgraphIONodeBase<SubgraphInput | SubgraphOutput>
+  readonly node: LGraphNode | SubgraphIONode
   /** The slot that the link is being connected from. */
   readonly fromSlot:
     | INodeOutputSlot
@@ -95,4 +96,10 @@ export interface RenderLink {
     output: INodeOutputSlot,
     events: CustomEventTarget<LinkConnectorEventMap>
   ): void
+}
+
+type RegisteredRenderLink = RenderLink
+
+declare module '../types/entityRegistry' {
+  interface RenderLink extends RegisteredRenderLink {}
 }

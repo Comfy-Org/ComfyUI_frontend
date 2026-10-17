@@ -4,6 +4,7 @@ import { nextTick } from 'vue'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import '@/scripts/changeTracker'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 

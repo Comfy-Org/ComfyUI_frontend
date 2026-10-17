@@ -44,7 +44,7 @@ function mountRedirect() {
 
 describe('useOAuthPostLoginRedirect', () => {
   beforeEach(() => {
-    createSessionOrThrow.mockReset().mockResolvedValue(undefined)
+    createSessionOrThrow.mockResolvedValue(undefined)
   })
 
   it('returns no-oauth when neither query nor sessionStorage holds a request id', async () => {

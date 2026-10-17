@@ -1,15 +1,18 @@
 import { useRouter } from 'vue-router'
 
 import { useAssetsUrlLoader } from '@/platform/assets/composables/useAssetsUrlLoader'
-import { usePaymentReturnUrlLoader } from '@/platform/cloud/subscription/composables/usePaymentReturnUrlLoader'
 import { usePricingTableUrlLoader } from '@/platform/cloud/subscription/composables/usePricingTableUrlLoader'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useTopUpUrlLoader } from '@/platform/cloud/subscription/composables/useTopUpUrlLoader'
-import { STRIPE_RETURN_PARAMS } from '@/platform/cloud/subscription/utils/paymentReturnUrl'
+import {
+  BILLING_WEB_RETURN_PARAMS,
+  STRIPE_RETURN_PARAMS
+} from '@/platform/cloud/subscription/utils/paymentReturnUrl'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingsUrlLoader } from '@/platform/settings/composables/useSettingsUrlLoader'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useCreateWorkspaceUrlLoader } from '@/platform/workspace/composables/useCreateWorkspaceUrlLoader'
+import { useDeploymentUrlLoader } from '@/platform/workspace/composables/useDeploymentUrlLoader'
 import { useInviteUrlLoader } from '@/platform/workspace/composables/useInviteUrlLoader'
 import { useWorkspaceUrlLoader } from '@/platform/workspace/composables/useWorkspaceUrlLoader'
 
@@ -23,6 +26,7 @@ interface UrlActionStep {
 }
 
 type UrlActionLoaders = {
+  deploymentUrlLoader: ReturnType<typeof useDeploymentUrlLoader> | null
   workspaceUrlLoader: ReturnType<typeof useWorkspaceUrlLoader> | null
   inviteUrlLoader: ReturnType<typeof useInviteUrlLoader> | null
   createWorkspaceUrlLoader: ReturnType<
@@ -32,7 +36,6 @@ type UrlActionLoaders = {
   topUpUrlLoader: ReturnType<typeof useTopUpUrlLoader> | null
   settingsUrlLoader: ReturnType<typeof useSettingsUrlLoader> | null
   assetsUrlLoader: ReturnType<typeof useAssetsUrlLoader> | null
-  paymentReturnUrlLoader: ReturnType<typeof usePaymentReturnUrlLoader> | null
 }
 
 /**
@@ -47,10 +50,13 @@ type UrlActionLoaders = {
  * rejected `router.replace` and returns normally, so a failed strip needs
  * this backstop rather than leaving the link live with no retry. A
  * successful switch reloads the page and stops the loop before this step
- * runs, so it never re-strips a live workspace switch.
+ * runs, so it never re-strips a live workspace switch. `deployment` likewise:
+ * the deployment link keeps both params only across its own switch reload,
+ * which also stops the loop first.
  */
 const HANDLED_PARAMS = [
   'workspace',
+  'deployment',
   'invite',
   'create_workspace',
   'pricing',
@@ -59,20 +65,35 @@ const HANDLED_PARAMS = [
   'topup',
   'settings',
   'assets',
-  ...STRIPE_RETURN_PARAMS
+  ...STRIPE_RETURN_PARAMS,
+  ...BILLING_WEB_RETURN_PARAMS
 ]
 
+function deploymentLinkSteps(
+  loader: UrlActionLoaders['deploymentUrlLoader']
+): UrlActionStep[] {
+  if (!loader) return []
+  return [
+    {
+      failureMessage: 'Failed to open deployment from URL:',
+      run: () => loader.loadDeploymentFromUrl()
+    }
+  ]
+}
+
 /**
- * Orders the deep-link loaders: workspace first, so `?invite`,
- * `?create_workspace`, `?pricing`, `?topup`, `?settings`, `?assets` all act
- * on the requested workspace rather than the one the app happened to load
- * with. Only the loaders present (cloud-gated by the caller) become steps.
+ * Orders the deep-link loaders: the deployment link first, since with
+ * `?deployment` it owns `?workspace` too (it switches, then picks after the
+ * reload); then workspace, so `?invite`, `?create_workspace`, `?pricing`,
+ * `?topup`, `?settings`, `?assets` all act on the requested workspace rather
+ * than the one the app happened to load with. Only the loaders present
+ * (cloud-gated by the caller) become steps.
  */
 function buildUrlActionSteps(
   loaders: UrlActionLoaders,
   router: ReturnType<typeof useRouter>
 ): UrlActionStep[] {
-  const steps: UrlActionStep[] = []
+  const steps = deploymentLinkSteps(loaders.deploymentUrlLoader)
 
   if (loaders.workspaceUrlLoader) {
     const loader = loaders.workspaceUrlLoader
@@ -124,16 +145,6 @@ function buildUrlActionSteps(
       run: () => loader.loadAssetsFromUrl()
     })
   }
-  // Handles the return leg of a redirect payment (Stripe appends
-  // payment_intent/redirect_status params): strips the params and refreshes
-  // billing status so the pending checkout resumes polling immediately.
-  if (loaders.paymentReturnUrlLoader) {
-    const loader = loaders.paymentReturnUrlLoader
-    steps.push({
-      failureMessage: 'Failed to handle payment return from URL:',
-      run: () => loader.loadPaymentReturnFromUrl()
-    })
-  }
 
   steps.push({
     failureMessage: 'Failed to clear handled deep-link params from the URL:',
@@ -183,6 +194,7 @@ function schedulePendingCheckoutRecovery(
   void (async () => subscriptionDialog.resumePendingPricingFlow())().catch(
     (error) => {
       reportError(error, {
+        surface: 'platform',
         errorType: 'billing_pending_checkout_resume_failure'
       })
     }
@@ -196,14 +208,15 @@ function useIfCloud<T>(create: () => T): T | null {
 
 /**
  * Aggregates the query-param "deep link" loaders the cloud app checks on mount
- * (`?workspace`, `?invite`, `?create_workspace`, `?pricing`, `?topup`,
- * `?settings`, `?assets`), then recovers an interrupted checkout. The loaders
+ * (`?deployment`, `?workspace`, `?invite`, `?create_workspace`, `?pricing`,
+ * `?topup`, `?settings`, `?assets`), then recovers an interrupted checkout. The loaders
  * are instantiated in setup so their `useRoute`/`useRouter` resolve; call
  * `runUrlActionLoaders()` from `onMounted` once the app is ready.
  */
 export function useUrlActionLoaders() {
   const router = useRouter()
 
+  const deploymentUrlLoader = useIfCloud(useDeploymentUrlLoader)
   const workspaceUrlLoader = useIfCloud(useWorkspaceUrlLoader)
   const inviteUrlLoader = useIfCloud(useInviteUrlLoader)
   const createWorkspaceUrlLoader = useIfCloud(useCreateWorkspaceUrlLoader)
@@ -211,20 +224,19 @@ export function useUrlActionLoaders() {
   const topUpUrlLoader = useIfCloud(useTopUpUrlLoader)
   const settingsUrlLoader = useIfCloud(useSettingsUrlLoader)
   const assetsUrlLoader = useIfCloud(useAssetsUrlLoader)
-  const paymentReturnUrlLoader = useIfCloud(usePaymentReturnUrlLoader)
   const subscriptionDialog = useIfCloud(useSubscriptionDialog)
 
   const steps = isCloud
     ? buildUrlActionSteps(
         {
+          deploymentUrlLoader,
           workspaceUrlLoader,
           inviteUrlLoader,
           createWorkspaceUrlLoader,
           pricingTableUrlLoader,
           topUpUrlLoader,
           settingsUrlLoader,
-          assetsUrlLoader,
-          paymentReturnUrlLoader
+          assetsUrlLoader
         },
         router
       )

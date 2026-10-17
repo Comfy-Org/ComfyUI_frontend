@@ -173,7 +173,6 @@ describe('OGG/Opus metadata', () => {
   })
 
   it('returns undefined fields for non-OGG data', async () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const file = new File([new Uint8Array(16)], 'fake.ogg', {
       type: 'audio/ogg'
     })
@@ -182,7 +181,7 @@ describe('OGG/Opus metadata', () => {
 
     expect(result.workflow).toBeUndefined()
     expect(result.prompt).toBeUndefined()
-    expect(warnSpy).toHaveBeenCalledWith(
+    expect(console.warn).toHaveBeenCalledWith(
       'Ogg metadata parsing failed: No OpusTags found or invalid Ogg file'
     )
   })
@@ -202,7 +201,6 @@ describe('OGG/Opus metadata', () => {
   })
 
   it('logs and skips when embedded JSON is malformed', async () => {
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const buffer = createOggWithOpusTags({
       prompt: '{not json}',
       workflow: '{also bad}'
@@ -213,11 +211,11 @@ describe('OGG/Opus metadata', () => {
 
     expect(result.prompt).toBeUndefined()
     expect(result.workflow).toBeUndefined()
-    expect(errorSpy).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       'Failed to parse Ogg prompt metadata',
       expect.any(SyntaxError)
     )
-    expect(errorSpy).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       'Failed to parse Ogg workflow metadata',
       expect.any(SyntaxError)
     )
@@ -234,11 +232,10 @@ describe('OGG/Opus metadata', () => {
         } as unknown as Blob
       })
 
-      const warnSpy = vi.spyOn(console, 'warn')
       const result = await getOggMetadata(file)
 
       expect(result).toEqual({ prompt: undefined, workflow: undefined })
-      expect(warnSpy).toHaveBeenCalledWith(
+      expect(console.warn).toHaveBeenCalledWith(
         expect.stringContaining('Ogg metadata file read failed:'),
         expect.any(Error)
       )
@@ -279,7 +276,6 @@ describe('OGG/Opus metadata', () => {
       type: 'audio/ogg'
     })
     vi.spyOn(file, 'slice').mockReturnValue(new Blob([truncated]))
-    const warnSpy = vi.spyOn(console, 'warn')
 
     const result = await getOggMetadata(file)
 
@@ -287,7 +283,7 @@ describe('OGG/Opus metadata', () => {
     expect(result.prompt).toBeUndefined()
     expect(result.workflow).toBeUndefined()
     // A descriptive warning must be emitted so the truncation is not silent
-    expect(warnSpy).toHaveBeenCalledWith(
+    expect(console.warn).toHaveBeenCalledWith(
       expect.stringContaining(
         'OpusTags packet extends beyond the 2 MB read cap'
       )

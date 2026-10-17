@@ -29,7 +29,7 @@ const NO_FUNDS_ERROR = zAgentAdmissionError.parse({
   }
 })
 
-const DIALOG_SELECTOR = '[aria-labelledby="subscription-required"]'
+const DIALOG_SELECTOR = '[data-dialog-key="subscription-required"]'
 
 /**
  * Re-mocks `/features` (the subscription gate) and `/billing/capabilities`
@@ -43,11 +43,9 @@ async function reconfigureBilling(
   { subscriptionRequired }: { subscriptionRequired: boolean }
 ): Promise<void> {
   const features: RemoteConfig = {
+    'agent-in-app-experience': true,
     posthog_project_token: 'phc_e2e_agent_panel',
-    posthog_config: {
-      advanced_disable_flags: true,
-      bootstrap: { featureFlags: { 'agent-in-app-experience': true } }
-    },
+    posthog_config: { advanced_disable_flags: true },
     subscription_required: subscriptionRequired
   }
   await page.route('**/api/features', (route) =>

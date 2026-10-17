@@ -1,3 +1,4 @@
+import type { LLink, Reroute } from '@/lib/litegraph/src/types/entityRegistry'
 /**
  * Litegraph Link Adapter
  *
@@ -6,10 +7,9 @@
  * rendering data that can be consumed by the PathRenderer.
  * Maintains backward compatibility with existing litegraph integration.
  */
-import type { LLink } from '@/lib/litegraph/src/LLink'
-import type { Reroute } from '@/lib/litegraph/src/Reroute'
+
 import type { CanvasColour, Point } from '@/lib/litegraph/src/interfaces'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
 import {
   LinkDirection,
   LinkMarkerShape,
@@ -24,6 +24,7 @@ import type {
   Point as PointObj,
   RenderMode
 } from '@/renderer/core/canvas/pathRenderer'
+import { setLinkPolyline } from '@/renderer/core/canvas/linkPolylines'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Bounds } from '@/renderer/core/layout/types'
 
@@ -117,7 +118,7 @@ export class LitegraphLinkAdapter {
         disabled: context.disabledPattern
       },
       animation: {
-        time: LiteGraph.getTime() * 0.001
+        time: litegraph().getTime() * 0.001
       },
       scale: context.scale,
       highlightedIds: new Set(Array.from(context.highlightedLinks).map(String))
@@ -214,14 +215,11 @@ export class LitegraphLinkAdapter {
       disabled?: boolean
     } = {}
   ): void {
-    // Apply same defaults as original renderLink
     const startDir = start_dir || LinkDirection.RIGHT
     const endDir = end_dir || LinkDirection.LEFT
 
-    // Convert flow to boolean
     const flowBool = flow === true || (typeof flow === 'number' && flow > 0)
 
-    // Create LinkRenderData from direct parameters
     const linkData: LinkRenderData = {
       id: link ? String(link.id) : 'temp',
       startPoint: { x: a[0], y: a[1] },
@@ -234,15 +232,10 @@ export class LitegraphLinkAdapter {
       disabled: extras.disabled || false
     }
 
-    // Control points handling (spline mode):
-    // - Pre-refactor, the old renderLink honored a single provided control and
-    //   derived the missing side via #addSplineOffset (CENTER => no offset).
-    // - Restore that behavior here so reroute segments render identically.
     if (context.renderMode === LinkRenderType.SPLINE_LINK) {
       const hasStartCtrl = !!extras.startControl
       const hasEndCtrl = !!extras.endControl
 
-      // Compute distance once for offsets
       const dist = Math.sqrt(
         (b[0] - a[0]) * (b[0] - a[0]) + (b[1] - a[1]) * (b[1] - a[1])
       )
@@ -251,7 +244,6 @@ export class LitegraphLinkAdapter {
       const cps: PointObj[] = []
 
       if (hasStartCtrl && hasEndCtrl) {
-        // Both provided explicitly
         cps.push(
           {
             x: a[0] + (extras.startControl![0] || 0),
@@ -264,7 +256,6 @@ export class LitegraphLinkAdapter {
         )
         linkData.controlPoints = cps
       } else if (hasStartCtrl && !hasEndCtrl) {
-        // Start provided, derive end via direction offset (CENTER => no offset)
         const start = {
           x: a[0] + (extras.startControl![0] || 0),
           y: a[1] + (extras.startControl![1] || 0)
@@ -274,7 +265,6 @@ export class LitegraphLinkAdapter {
         cps.push(start, end)
         linkData.controlPoints = cps
       } else if (!hasStartCtrl && hasEndCtrl) {
-        // End provided, derive start via direction offset (CENTER => no offset)
         const start = { x: a[0], y: a[1] }
         this.applySplineOffset(start, startDir, dist * factor)
         const end = {
@@ -284,7 +274,6 @@ export class LitegraphLinkAdapter {
         cps.push(start, end)
         linkData.controlPoints = cps
       } else {
-        // Neither provided: derive both from directions (CENTER => no offset)
         const start = { x: a[0], y: a[1] }
         const end = { x: b[0], y: b[1] }
         this.applySplineOffset(start, startDir, dist * factor)
@@ -294,37 +283,31 @@ export class LitegraphLinkAdapter {
       }
     }
 
-    // Convert context
     const pathContext = this.convertToPathRenderContext(context)
 
-    // Override skip_border if needed
     if (skip_border) {
       pathContext.style.borderWidth = undefined
     }
 
-    // Render using pure renderer
     const path = this.pathRenderer.drawLink(ctx, linkData, pathContext)
 
-    // Store path for hit detection
     const linkSegment = extras.reroute ?? link
     if (linkSegment) {
       linkSegment.path = path
+      setLinkPolyline(linkSegment, () =>
+        this.pathRenderer.polylineOf(linkData, pathContext.style.mode)
+      )
 
-      // Copy calculated center position back to litegraph object
-      // This is needed for hit detection and menu interaction
       if (linkData.centerPos) {
         linkSegment._pos[0] = linkData.centerPos.x
         linkSegment._pos[1] = linkData.centerPos.y
 
-        // Store center angle if calculated (for arrow markers)
         if (linkData.centerAngle !== undefined) {
           linkSegment._centreAngle = linkData.centerAngle
         }
       }
 
-      // Update layout store when writes are enabled (event-driven path)
       if (this.enableLayoutStoreWrites && link && link.id !== -1) {
-        // Calculate bounds and center only when writing
         const bounds = this.calculateLinkBounds(
           [linkData.startPoint.x, linkData.startPoint.y] as Readonly<Point>,
           [linkData.endPoint.x, linkData.endPoint.y] as Readonly<Point>,
@@ -335,7 +318,6 @@ export class LitegraphLinkAdapter {
           y: (linkData.startPoint.y + linkData.endPoint.y) / 2
         }
 
-        // Update whole link layout (only if not a reroute segment)
         if (!extras.reroute) {
           layoutStore.updateLinkLayout(link.id, {
             id: link.id,
@@ -349,7 +331,6 @@ export class LitegraphLinkAdapter {
           })
         }
 
-        // Always update segment layout (for both regular links and reroute segments)
         const rerouteId = extras.reroute ? extras.reroute.id : null
         layoutStore.updateLinkSegmentLayout(link.id, rerouteId, {
           path: path,

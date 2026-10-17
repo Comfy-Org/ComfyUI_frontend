@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import type { CodeLang } from '../../lib/highlight'
-import { highlightTokens } from '../../lib/highlight'
+import type { CodeLang } from '@/lib/highlight'
+import { highlightTokens } from '@/lib/highlight'
 
 const { code, language } = defineProps<{
   code: string

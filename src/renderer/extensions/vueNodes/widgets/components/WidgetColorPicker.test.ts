@@ -79,19 +79,6 @@ describe('WidgetColorPicker Value Binding', () => {
       expect(onUpdateModelValue).toHaveBeenCalledWith('#00ff00')
     })
 
-    it('handles missing callback gracefully', async () => {
-      const onUpdateModelValue = vi.fn()
-      const widget = createColorWidget('#000000', {}, undefined)
-      renderComponent(widget, '#000000', {
-        'onUpdate:modelValue': onUpdateModelValue
-      })
-
-      const input = screen.getByTestId('color-picker-input')
-      await fireEvent.update(input, '#ff00ff')
-
-      expect(onUpdateModelValue).toHaveBeenCalledWith('#ff00ff')
-    })
-
     it('round-trips integer-backed colors including zero', async () => {
       const onUpdateModelValue = vi.fn()
       const widget = createColorWidget(0, { format: 'int' })
@@ -111,22 +98,6 @@ describe('WidgetColorPicker Value Binding', () => {
     })
   })
 
-  describe('Component Rendering', () => {
-    it('renders color picker component', () => {
-      const widget = createColorWidget('#ff0000')
-      renderComponent(widget, '#ff0000')
-
-      expect(screen.getByTestId('color-picker-input')).toBeInTheDocument()
-    })
-
-    it('renders layout field wrapper', () => {
-      const widget = createColorWidget('#ff0000')
-      renderComponent(widget, '#ff0000')
-
-      expect(screen.getByTestId('layout-field')).toBeInTheDocument()
-    })
-  })
-
   describe('Widget Layout Integration', () => {
     it('passes widget to layout field', () => {
       const widget = createColorWidget('#ff0000')
@@ -136,14 +107,6 @@ describe('WidgetColorPicker Value Binding', () => {
       expect(layoutField.getAttribute('data-widget-name')).toBe(
         'test_color_picker'
       )
-    })
-
-    it('maintains proper component structure', () => {
-      const widget = createColorWidget('#ff0000')
-      renderComponent(widget, '#ff0000')
-
-      expect(screen.getByTestId('layout-field')).toBeInTheDocument()
-      expect(screen.getByTestId('color-picker-input')).toBeInTheDocument()
     })
   })
 

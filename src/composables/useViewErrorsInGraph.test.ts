@@ -1,24 +1,16 @@
 import { nextTick } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 
 import { useViewErrorsInGraph } from './useViewErrorsInGraph'
 
-const apiMock = vi.hoisted(() => ({
-  getSettings: vi.fn(),
-  storeSetting: vi.fn(),
-  storeSettings: vi.fn()
-}))
-
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: apiMock
-}))
+vi.mock(import('@/scripts/api'))
 
 vi.mock(import('@/scripts/app'))
 
@@ -43,12 +35,6 @@ function createSelectedCanvas() {
 }
 
 describe('useViewErrorsInGraph', () => {
-  beforeEach(() => {
-    apiMock.getSettings.mockResolvedValue({})
-    apiMock.storeSetting.mockResolvedValue(undefined)
-    apiMock.storeSettings.mockResolvedValue(undefined)
-  })
-
   it('opens graph errors and clears app-mode error UI state', async () => {
     const canvasStore = useCanvasStore()
     const executionErrorStore = useExecutionErrorStore()

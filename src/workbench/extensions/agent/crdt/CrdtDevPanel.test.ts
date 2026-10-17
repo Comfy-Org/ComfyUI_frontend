@@ -4,21 +4,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { i18n } from '@/i18n'
+import { api } from '@/scripts/api'
 
 import { toTurnId, zAgentWsEvent } from '../schemas/agentApiSchema'
 import { useAgentConversationStore } from '../stores/agent/agentConversationStore'
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    getSystemStats: () => Promise.reject(new Error('offline')),
-    getLogs: () => Promise.reject(new Error('offline')),
-    getSettings: () => Promise.reject(new Error('offline')),
-    apiURL: (path: string) => `http://backend${path}`,
-    clientId: 'client-test-1',
-    api_host: 'localhost:8188',
-    api_base: ''
-  }
-}))
+vi.mock(import('@/scripts/api'))
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { rootGraph: { serialize: () => ({ nodes: [], links: [] }) } }
 }))
@@ -30,7 +21,7 @@ import CrdtDevPanel from './CrdtDevPanel.vue'
 import { setCrdtDebugEnabled } from './crdtDebugGate'
 import * as crdtDebugReport from './crdtDebugReport'
 import { clearDevEvents, recordDevEvent } from './devPanelLog'
-import type { AgentCrdtStatus } from './useAgentCrdtFollower'
+import type { AgentCrdtStatus } from './agentCrdtStatus'
 
 const STATUS: AgentCrdtStatus = {
   enabled: true,
@@ -63,9 +54,13 @@ const restore = () => screen.queryByTestId('crdt-dev-panel-restore')
 
 describe('CrdtDevPanel', () => {
   beforeEach(() => {
+    api.clientId = 'client-test-1'
+    api.api_host = 'localhost:8188'
+    vi.mocked(api.getSystemStats).mockRejectedValue(new Error('offline'))
+    vi.mocked(api.getLogs).mockRejectedValue(new Error('offline'))
+    vi.mocked(api.getSettings).mockRejectedValue(new Error('offline'))
+    vi.mocked(api.apiURL).mockImplementation((path) => `http://backend${path}`)
     localStorage.clear()
-    // The gate caches its value, so clearing storage behind it is not enough
-    // to undo a previous test's dismissal.
     setCrdtDebugEnabled(true)
     clearDevEvents()
     reportError.mockClear()
@@ -282,6 +277,7 @@ describe('CrdtDevPanel', () => {
     await user.click(copyReportButton)
 
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'agent',
       errorType: 'crdt_dev_panel_report_copy_failed'
     })
     expect(copyReportButton).toHaveTextContent('Retry copy report')

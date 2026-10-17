@@ -57,7 +57,7 @@ describe('FormDropdownMenu', () => {
       global: globalConfig
     })
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const emptyIcon = container.querySelector('[class*="lucide--circle-off"]')
     expect(emptyIcon).not.toBeNull()
   })
@@ -143,10 +143,6 @@ describe('FormDropdownMenu', () => {
     ).toBe('true')
   })
 
-  /** Regression: PrimeVue Popover teleports the menu to document.body, so
-   *  trackpad pinch-zoom must be guarded on the menu itself — `LGraphNode`
-   *  never sees these events. macOS pinch synthesizes `ctrlKey`; explicit
-   *  `⌘ + wheel` (and Windows/Linux equivalents) come through as `metaKey`. */
   it.for([
     { name: 'ctrlKey', modifier: 'ctrlKey' as const },
     { name: 'metaKey', modifier: 'metaKey' as const }

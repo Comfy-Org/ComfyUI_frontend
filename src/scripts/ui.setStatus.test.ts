@@ -1,21 +1,14 @@
-import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { StatusWsMessageStatus } from '@/platform/remote/comfyui/execution/types'
-import type { ComfyApp } from './app'
 
 import { app } from './app'
 import { ComfyUI } from './ui'
 
-vi.mock(import('./app'), () => ({
-  app: fromPartial<ComfyApp>({
-    lastExecutionError: null,
-    queuePrompt: vi.fn()
-  }),
-  ComfyApp: fromAny(class {})
-}))
+vi.mock(import('./app'))
 
 type SetStatusHost = {
+  app: typeof app
   queueSize: { textContent: string }
   lastQueueSize: number
   batchCount: number
@@ -27,6 +20,7 @@ type SetStatusHost = {
 
 function createHost(overrides: Partial<SetStatusHost> = {}): SetStatusHost {
   return {
+    app,
     queueSize: { textContent: '' },
     lastQueueSize: 0,
     batchCount: 1,
@@ -39,10 +33,6 @@ function createHost(overrides: Partial<SetStatusHost> = {}): SetStatusHost {
 }
 
 describe('ComfyUI.setStatus', () => {
-  beforeEach(() => {
-    vi.mocked(app.queuePrompt).mockClear()
-  })
-
   it('renders the queue size when exec_info is present', () => {
     const host = createHost()
     host.setStatus({ exec_info: { queue_remaining: 3 } })

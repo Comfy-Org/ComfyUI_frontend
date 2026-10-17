@@ -49,12 +49,28 @@ export const useAgentGraphActivityStore = defineStore(
 
     function recordMaterialized(
       target: AgentGraphTarget,
-      nodeIds: readonly NodeId[]
+      nodeIds: readonly NodeId[],
+      turnId?: TurnId | null
     ): void {
       if (nodeIds.length === 0) return
+      // PM-1874: a materialization can arrive after its own turn finished --
+      // the CRDT follower only reports a node once it resolves in the live
+      // graph, which can lag the turn's own startTurn/finishTurn boundary by
+      // one or more frames. Without this guard, a stale node from turn A
+      // lands here while turn B is already `running` for the same
+      // workflow/rootGraphId and gets folded into B's count (the observed
+      // "60 nodes added" when only 3 were added this turn). The caller must
+      // pass the turnId it captured when the underlying CRDT event fired, so
+      // this can tell "my turn is still open" from "a different turn opened
+      // after mine finished". Omitting turnId (undefined) opts out of the
+      // guard for callers that have no turn concept yet.
+      const isStaleTurn =
+        turnId !== undefined &&
+        (!turnOpen.value || turnId !== currentTurnId.value)
+      if (isStaleTurn) return
+      turnOpen.value = true
       if (settleTimer !== undefined) clearTimeout(settleTimer)
       settleTimer = undefined
-      turnOpen.value = true
       const current = state.value
       const sameTarget =
         current.phase !== 'idle' &&

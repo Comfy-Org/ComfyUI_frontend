@@ -34,8 +34,7 @@ vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
           flagState.billingSdkSubscriptionEnabled &&
           flagState.unifiedCloudAuthEnabled
         )
-      },
-      embeddedCheckoutEnabled: false
+      }
     }
   })
 }))
@@ -185,7 +184,7 @@ describe('useWorkspaceBilling top-up with the billing SDK flag', () => {
     expect(useBillingOperationStore().startOperation).toHaveBeenCalledWith(
       'op-sub',
       'subscription',
-      undefined,
+      { resumed: true },
       undefined
     )
     expect(harness.sdk.lifecycle.recover).not.toHaveBeenCalled()

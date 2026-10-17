@@ -133,7 +133,7 @@
         class="ml-auto flex h-6 shrink-0 cursor-not-allowed items-center justify-center overflow-hidden rounded-sm bg-secondary-background px-2 py-1 text-xs opacity-60 select-none"
       >
         <DotSpinner duration="1s" :size="12" class="mr-1.5 shrink-0" />
-        <span class="min-w-0 truncate text-xs text-base-foreground">
+        <span class="min-w-0 truncate text-base-foreground">
           {{ t('g.loading') }}
         </span>
       </div>
@@ -237,9 +237,10 @@ import TransitionCollapse from '@/components/rightSidePanel/layout/TransitionCol
 import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
 import { usePackInstall } from '@/workbench/extensions/manager/composables/nodePack/usePackInstall'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
+import { useManagerDialog } from '@/workbench/extensions/manager/composables/useManagerDialog'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
-import type { MissingNodeType } from '@/types/comfy'
+import type { MissingNodeType } from '@/platform/nodeReplacement/types'
 import type { MissingPackGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
 
 const { group, showInfoButton, highlighted } = defineProps<{
@@ -262,7 +263,8 @@ const packTextButtonClass =
 
 const { missingNodePacks, isLoading } = useMissingNodes()
 const comfyManagerStore = useComfyManagerStore()
-const { shouldShowManagerButtons, openManager } = useManagerState()
+const { shouldShowManagerButtons } = useManagerState()
+const { openManager } = useManagerDialog()
 
 const nodePack = computed(() => {
   if (!group.packId) return null

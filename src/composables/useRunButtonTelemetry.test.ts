@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useTelemetry } from '@/platform/telemetry'
+import { getWorkspaceTelemetryContext } from '@/platform/workspace/telemetry/workspaceTelemetryContext'
 
 const state = vi.hoisted(() => ({
   executionContext: {
@@ -13,10 +14,12 @@ const state = vi.hoisted(() => ({
     has_toolkit_nodes: false,
     toolkit_node_names: []
   },
-  executionContextError: null as Error | null
+  executionContextError: null as Error | null,
+  agentPanelOpen: false
 }))
 
 vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@/platform/workspace/telemetry/workspaceTelemetryContext'))
 
 vi.mock<unknown>(
   import('@/platform/telemetry/utils/getExecutionContext'),
@@ -28,6 +31,13 @@ vi.mock<unknown>(
   })
 )
 
+vi.mock<unknown>(
+  import('@/platform/telemetry/utils/getAgentPanelOpen'),
+  () => ({
+    getAgentPanelOpen: () => state.agentPanelOpen
+  })
+)
+
 import {
   getRunButtonTelemetryProperties,
   useRunButtonTelemetry
@@ -36,6 +46,7 @@ import {
 describe('useRunButtonTelemetry', () => {
   beforeEach(() => {
     state.executionContextError = null
+    state.agentPanelOpen = false
   })
 
   it('builds run button properties from workspace state', () => {
@@ -60,7 +71,37 @@ describe('useRunButtonTelemetry', () => {
       trigger_source: 'button',
       view_mode: 'graph',
       is_app_mode: false,
-      dock_state: 'floating'
+      dock_state: 'floating',
+      agent_panel_open: false
+    })
+  })
+
+  it('reports the agent panel as open when it is open at submit time', () => {
+    state.agentPanelOpen = true
+
+    expect(getRunButtonTelemetryProperties()).toMatchObject({
+      agent_panel_open: true
+    })
+  })
+
+  it('splits a subscribe-to-run click by the selected workspace and rail', () => {
+    vi.mocked(getWorkspaceTelemetryContext).mockReturnValue({
+      workspace_id: 'owner-personal-team-plan',
+      workspace_type: 'personal',
+      workspace_role: 'member',
+      workspace_tier: 'TEAM',
+      auth_rail: 'web_session'
+    })
+
+    expect(
+      getRunButtonTelemetryProperties({ subscribe_to_run: true })
+    ).toMatchObject({
+      subscribe_to_run: true,
+      workspace_id: 'owner-personal-team-plan',
+      workspace_type: 'personal',
+      workspace_role: 'member',
+      workspace_tier: 'TEAM',
+      auth_rail: 'web_session'
     })
   })
 
@@ -78,7 +119,6 @@ describe('useRunButtonTelemetry', () => {
 
   it('does not throw when run button context collection fails', () => {
     const error = new Error('Context unavailable')
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     state.executionContextError = error
 
     try {
@@ -87,12 +127,12 @@ describe('useRunButtonTelemetry', () => {
       ).not.toThrow()
 
       expect(useTelemetry()?.trackRunButton).not.toHaveBeenCalled()
-      expect(consoleError).toHaveBeenCalledExactlyOnceWith(
+      expect(console.error).toHaveBeenCalledExactlyOnceWith(
         '[Telemetry] Run button tracking failed',
         error
       )
     } finally {
-      consoleError.mockRestore()
+      vi.mocked(console.error).mockRestore()
     }
   })
 })

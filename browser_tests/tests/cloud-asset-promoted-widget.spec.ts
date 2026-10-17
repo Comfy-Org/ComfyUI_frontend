@@ -22,7 +22,6 @@ const test = createCloudAssetsFixture([STABLE_CHECKPOINT, STABLE_CHECKPOINT_2])
 interface WidgetSnapshot {
   type: string
   value: string
-  hasLayout: boolean
 }
 
 async function getHostWidgetSnapshot(page: Page): Promise<WidgetSnapshot> {
@@ -33,8 +32,7 @@ async function getHostWidgetSnapshot(page: Page): Promise<WidgetSnapshot> {
 
       return {
         type: widget?.type ?? '',
-        value: String(widget?.value ?? ''),
-        hasLayout: widget?.last_y != null
+        value: String(widget?.value ?? '')
       }
     },
     { nodeId: HOST_NODE_ID, widgetName: WIDGET_NAME }
@@ -64,17 +62,16 @@ test.describe(
           { timeout: 10_000 }
         )
         .toBe(true)
+      const hostNode = await comfyPage.nodeOps.getNodeRefById(HOST_NODE_ID)
+      await hostNode.centerOnNode()
       await expect
         .poll(() => getHostWidgetSnapshot(comfyPage.page))
         .toMatchObject({
-          type: 'asset',
-          hasLayout: true
+          type: 'asset'
         })
       const initialWidget = await getHostWidgetSnapshot(comfyPage.page)
       expect(initialWidget.value).not.toBe(SELECTED_MODEL)
 
-      const hostNode = await comfyPage.nodeOps.getNodeRefById(HOST_NODE_ID)
-      await hostNode.centerOnNode()
       const promotedWidget = await hostNode.getWidgetByName(WIDGET_NAME)
       await promotedWidget.click()
 

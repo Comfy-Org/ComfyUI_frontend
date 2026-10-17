@@ -215,10 +215,6 @@ test.describe(
         await comfyPage.nextFrame()
         await shift.disposeAsync()
 
-        test.fail(
-          true,
-          'FE-2040 / #7454: toggling a group off leaves its cascaded children selected'
-        )
         await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(0)
         await expect(comfyPage.selectionToolbox).toBeHidden()
       })
@@ -232,7 +228,7 @@ test.describe(
         await comfyPage.page.mouse.click(title.x, title.y, { button: 'right' })
         await comfyPage.nextFrame()
 
-        await expect(comfyPage.contextMenu.primeVueMenu).toBeVisible()
+        await expect(comfyPage.contextMenu.ariaMenu).toBeVisible()
         await expect(
           comfyPage.contextMenu.menuItem('Fit Group To Nodes')
         ).toBeVisible()
@@ -246,9 +242,7 @@ test.describe(
           )
           .toEqual([1])
 
-        await expect(
-          comfyPage.contextMenu.primeVueMenu.getByRole('menubar')
-        ).toBeFocused()
+        await expect(comfyPage.contextMenu.ariaMenu).toBeFocused()
         await comfyPage.page.keyboard.press('Escape')
         await comfyPage.contextMenu.waitForHidden()
       })

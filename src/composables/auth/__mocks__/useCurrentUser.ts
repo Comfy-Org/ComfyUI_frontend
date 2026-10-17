@@ -1,6 +1,7 @@
 import { onTestFinished, vi } from 'vitest'
 import { computed } from 'vue'
 
+import { provideCurrentUser } from '@/platform/auth/currentUserAccess'
 import type { useCurrentUser as realUseCurrentUser } from '../useCurrentUser'
 
 function createWatchHandle(): ReturnType<
@@ -12,9 +13,11 @@ function createWatchHandle(): ReturnType<
 
 const defaults: ReturnType<typeof realUseCurrentUser> = {
   loading: false,
+  isAuthInitialized: computed(() => true),
   isLoggedIn: computed(() => false),
   isApiKeyLogin: computed(() => false),
   isEmailProvider: computed(() => false),
+  needsFirebaseSignIn: computed(() => false),
   userDisplayName: computed(() => undefined),
   userEmail: computed(() => undefined),
   userPhotoUrl: computed(() => undefined),
@@ -36,3 +39,5 @@ export const useCurrentUser = vi.fn(() => {
   })
   return currentUser
 })
+
+provideCurrentUser(useCurrentUser)

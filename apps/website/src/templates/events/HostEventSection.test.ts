@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 
-import { t } from '../../i18n/translations'
+import { t } from '@/i18n/translations'
 import HostEventSection from './HostEventSection.vue'
 
 describe('HostEventSection', () => {
@@ -11,10 +11,14 @@ describe('HostEventSection', () => {
     render(HostEventSection, { props: { locale: 'zh-CN' } })
 
     expect(
-      screen.getByRole('heading', { name: t('events.host.title', 'zh-CN') })
+      screen.getByRole('heading', {
+        name: t('events.host.title', {}, { locale: 'zh-CN' })
+      })
     ).toBeTruthy()
     // The first step opens by default, so its body is the localized proof.
-    expect(screen.getByText(t('events.host.step1.intro', 'zh-CN'))).toBeTruthy()
+    expect(
+      screen.getByText(t('events.host.step1.intro', {}, { locale: 'zh-CN' }))
+    ).toBeTruthy()
   })
 
   it('lists the full readiness checklist inside the open first step', () => {
