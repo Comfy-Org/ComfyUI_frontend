@@ -1735,13 +1735,16 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const resolutionStillPending =
       conversationStore.submittedAskAnswer(askId) !== undefined
     if (resolutionStillPending)
-      conversationStore.markAskAwaitingResolution(askId, 'accepted')
-    if (resolutionStillPending)
       reportAcceptedRecoveredAnswer(askId, connection === 'dropped')
     recordDeliveredAsk(askId)
     conversationStore.commitAsk(askId, currentThreadId, { status: 'retired' })
-    if (!channelWasLost && resolutionStillPending)
+    if (
+      resolutionStillPending &&
+      (!channelWasLost || connection === 'initial')
+    ) {
       conversationStore.recordAskAnswer(askId, answer, currentThreadId)
+      conversationStore.markAskAwaitingResolution(askId, 'accepted')
+    }
     return !supersededAnswerReports.has(askId)
   }
 

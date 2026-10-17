@@ -2069,7 +2069,7 @@ describe('useAgentSession (v1 composition root)', () => {
       receipt: AgentAnswerReceipt = { status: 'answered' }
     ) => {
       const answerAsk = vi.fn<AgentRestClient['answerAsk']>(async () => receipt)
-      const { source, emit } = fakeEvents()
+      const { source, emit, status } = fakeEvents()
       const session = useAgentSession({
         rest: fakeRest({ answerAsk }),
         events: source
@@ -2077,7 +2077,7 @@ describe('useAgentSession (v1 composition root)', () => {
       session.start()
       await session.sendMessage('pick for me')
       emit(askUser('msg-1'))
-      return { session, answerAsk, emit }
+      return { session, answerAsk, emit, status }
     }
     const card = () =>
       useAgentConversationStore().messages[0].parts.find(
@@ -2328,6 +2328,21 @@ describe('useAgentSession (v1 composition root)', () => {
         {
           level: 'error',
           text: enMessages.agent.runApproval.answerSuperseded
+        }
+      ])
+    })
+
+    it('keeps a pre-open accepted answer tracked until a later socket drop', async () => {
+      const { session, status } = await parkedOnQuestion()
+      await session.answerAsk('turn-1:call-1', { selected: ['sdxl'] })
+
+      status(true)
+      status(false)
+
+      expect(session.notices.value).toEqual([
+        {
+          level: 'error',
+          text: enMessages.agent.runApproval.answerAcceptedUnconfirmed
         }
       ])
     })

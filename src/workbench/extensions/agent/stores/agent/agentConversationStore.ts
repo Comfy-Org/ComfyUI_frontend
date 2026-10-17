@@ -466,12 +466,9 @@ export const useAgentConversationStore = defineStore(
     function confirmAskPending(askId: string, owner?: string): void {
       const key = threadKey(owner)
       const provisional = provisionalRetiredAsks.get(key)
-      if (
-        provisional?.delete(askId) !== true ||
-        retiredAsks.get(key)?.has(askId) === true
-      )
-        return
+      if (provisional?.delete(askId) !== true) return
       if (provisional.size === 0) provisionalRetiredAsks.delete(key)
+      if (retiredAsks.get(key)?.has(askId) === true) return
       const reopen = (message: AssistantMessage): void => {
         message.parts = message.parts.map((part) =>
           (part.type === 'askUser' || part.type === 'deleteApproval') &&
@@ -538,6 +535,11 @@ export const useAgentConversationStore = defineStore(
     function clearAskAwaitingResolution(askId: string): void {
       const submitted = submittedAskAnswers.get(askId)
       if (submitted) submitted.awaitingResolution = undefined
+    }
+
+    function clearSubmittedAskAnswers(owner: string): void {
+      for (const [askId, submitted] of submittedAskAnswers)
+        if (submitted.owner === owner) submittedAskAnswers.delete(askId)
     }
 
     function discardDetachedAskState(): void {
@@ -1071,14 +1073,13 @@ export const useAgentConversationStore = defineStore(
       persistedParts: AssistantMessage['parts'] | undefined
     ): void {
       provisionalRetiredAsks.delete(turn.threadId)
-      for (const [askId, submitted] of submittedAskAnswers)
-        if (submitted.owner === turn.threadId) submittedAskAnswers.delete(askId)
       const slot = activeSlot.value
       const isActive =
         slot !== null &&
         turn.threadId === slot.threadId &&
         turn.messageId === slot.turnId
       if (isActive) {
+        clearSubmittedAskAnswers(turn.threadId)
         finishWithPersistedParts(slot.message, persistedParts)
         rememberDepartedActiveTurn('settled-turn')
         slot.transport.settle()
@@ -1088,6 +1089,7 @@ export const useAgentConversationStore = defineStore(
       }
       const entry = backgroundTurns.get(turn.messageId)
       if (!entry || entry.messageId !== turn.messageId || entry.settled) return
+      clearSubmittedAskAnswers(turn.threadId)
       finishWithPersistedParts(entry.message, persistedParts)
       entry.transport.settle()
       entry.settled = true

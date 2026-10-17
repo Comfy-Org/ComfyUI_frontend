@@ -1295,6 +1295,20 @@ describe('useAgentConversationStore', () => {
     expect(store.isAskRetired('ask-2', 'background')).toBe(true)
   })
 
+  it('does not clear a live answer when a stale turn settlement arrives', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordAskAnswer('ask-1', { selected: ['run'] }, 'th')
+
+    store.settleTurn(
+      { threadId: 'th', messageId: 'stale' as TurnId },
+      undefined
+    )
+
+    expect(store.submittedAskAnswer('ask-1')).toEqual({ selected: ['run'] })
+  })
+
   it('holds the thread id and clears it on reset', () => {
     const store = useAgentConversationStore()
     store.setThreadId('th-7')
