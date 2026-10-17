@@ -9,6 +9,7 @@ import type {
 } from '@comfyorg/ingest-types'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import { DEPLOY_ACTION_SEEN_SETTINGS } from '@e2e/fixtures/constants/workflowActions'
 
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
@@ -50,12 +51,15 @@ const FUNDED_BILLING_STATUS = {
   max_seats: 1,
   occupied_seats: 1,
   scoped_effective_has_funds: { agent: true },
+  scoped_has_funds: { agent: true },
   scheduled_change: null,
   subscription_duration: 'MONTHLY',
   subscription_status: 'active',
   subscription_tier: 'STANDARD',
   team_credit_stop: null
 } satisfies BillingStatusResponse
+
+export type AgentFundingState = 'funded' | 'exhausted' | 'scopedExhausted'
 
 type HeldBillingRefresh = {
   entered: Promise<void>
@@ -90,11 +94,27 @@ class AgentBillingFixture {
       }
     | undefined
 
-  setAgentFunds(hasFunds: boolean): void {
-    this.status = {
-      ...FUNDED_BILLING_STATUS,
-      has_funds: hasFunds,
-      scoped_effective_has_funds: { agent: hasFunds }
+  setFundingState(state: AgentFundingState): void {
+    switch (state) {
+      case 'funded':
+        this.status = FUNDED_BILLING_STATUS
+        break
+      case 'exhausted':
+        this.status = {
+          ...FUNDED_BILLING_STATUS,
+          has_funds: false,
+          scoped_effective_has_funds: { agent: false },
+          scoped_has_funds: { agent: false }
+        }
+        break
+      case 'scopedExhausted':
+        this.status = {
+          ...FUNDED_BILLING_STATUS,
+          scoped_has_funds: { agent: false }
+        }
+        break
+      default:
+        state satisfies never
     }
   }
 
@@ -160,14 +180,14 @@ const FUNDS_UNAVAILABLE = zAgentAdmissionError.parse({
 export const THINKING_TEXT =
   "I'll set the positive prompt to your red fox scene."
 
-export const THINKING_EVENT: AgentWsEvent = {
-  type: 'agent_thinking',
-  data: {
-    delta: THINKING_TEXT,
-    message_id: TURN_ID,
-    thread_id: THREAD_ID
+export function thinkingEvent(delta: string): AgentWsEvent {
+  return {
+    type: 'agent_thinking',
+    data: { delta, message_id: TURN_ID, thread_id: THREAD_ID }
   }
 }
+
+export const THINKING_EVENT = thinkingEvent(THINKING_TEXT)
 
 export const TOOL_CALL_EVENT: AgentWsEvent = {
   type: 'agent_tool_call',
@@ -211,6 +231,17 @@ export const OPEN_TAB_TOOL_EVENT: AgentWsEvent = {
   }
 }
 
+export const RUNNING_OPEN_TAB_TOOL_EVENT: AgentWsEvent = {
+  type: 'agent_tool_call',
+  data: {
+    tool_call_id: 'call-new-tab',
+    tool_name: 'new_tab',
+    status: 'running',
+    message_id: TURN_ID,
+    thread_id: THREAD_ID
+  }
+}
+
 export const RESIZE_IMAGE_TOOL_EVENT: AgentWsEvent = {
   type: 'agent_tool_call',
   data: {
@@ -226,12 +257,12 @@ export const RESIZE_IMAGE_TOOL_EVENT: AgentWsEvent = {
 const MESSAGE_DELTA_TEXT =
   'The graph is **fully ready** to go — prompt set to the red fox in the snow.'
 
-export const MESSAGE_DELTA_EVENT: AgentWsEvent = {
-  type: 'agent_message_delta',
-  data: {
-    delta: MESSAGE_DELTA_TEXT,
-    message_id: TURN_ID,
-    thread_id: THREAD_ID
+export const MESSAGE_DELTA_EVENT = agentMessageDeltaEvent(MESSAGE_DELTA_TEXT)
+
+export function agentMessageDeltaEvent(delta: string): AgentWsEvent {
+  return {
+    type: 'agent_message_delta',
+    data: { delta, message_id: TURN_ID, thread_id: THREAD_ID }
   }
 }
 
@@ -268,6 +299,7 @@ async function mockAgentBoot(
     agentConsentWrites,
     agentAutoShownReadProbe,
     agentFlagEnabled,
+    starterPromptSet,
     agentPanelInitiallyOpen,
     agentOnboardingCompleted,
     agentRetryAfter,
@@ -354,12 +386,16 @@ async function mockAgentBoot(
   await mockCloudBootRoutes(page, {
     features: {
       ...agentFeatures(agentFlagEnabled),
+      ...(starterPromptSet !== undefined && {
+        'agent-starter-prompt-set': starterPromptSet
+      }),
       ...(agentConsentWebSession && { unified_web_session: true }),
       ...initialFeatureFlags
     },
     settings: {
       'Comfy.TutorialCompleted': true,
       'Comfy.RightSidePanel.ShowErrorsTab': false,
+      ...DEPLOY_ACTION_SEEN_SETTINGS,
       ...(vueNodes && { 'Comfy.VueNodes.Enabled': true }),
       ...initialSettings
     },
@@ -446,7 +482,8 @@ async function mockAgentBoot(
           },
           csrf_token: csrfToken,
           expires_at: '2100-01-01T00:00:00.000Z',
-          absolute_expires_at: '2100-01-08T00:00:00.000Z'
+          absolute_expires_at: '2100-01-08T00:00:00.000Z',
+          has_personal_workspace: true
         })
       )
     )
@@ -577,6 +614,7 @@ type AgentFixtures = {
   agentConsentWebSession: boolean
   agentConsentWrites: boolean[]
   agentFlagEnabled: boolean
+  starterPromptSet: RemoteConfig['agent-starter-prompt-set']
   agentPanel: AgentPanel
   agentPanelInitiallyOpen: boolean
   agentOnboardingCompleted: boolean
@@ -607,6 +645,7 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
     await use([])
   },
   agentFlagEnabled: [true, { option: true }],
+  starterPromptSet: [undefined, { option: true }],
   agentPanel: async ({ comfyPage }, use) => {
     await use(new AgentPanel(comfyPage.page))
   },
@@ -624,6 +663,7 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
       agentConsentWebSession,
       agentConsentWrites,
       agentFlagEnabled,
+      starterPromptSet,
       agentPanelInitiallyOpen,
       agentOnboardingCompleted,
       agentRetryAfter,
@@ -647,6 +687,7 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
       agentConsentWebSession,
       agentConsentWrites,
       agentFlagEnabled,
+      starterPromptSet,
       agentPanelInitiallyOpen,
       agentOnboardingCompleted,
       agentRetryAfter,

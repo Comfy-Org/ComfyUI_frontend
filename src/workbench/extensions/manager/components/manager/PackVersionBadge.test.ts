@@ -1,10 +1,7 @@
 /* oxlint-disable testing-library/no-node-access */
 /* oxlint-disable testing-library/no-container */
-/* oxlint-disable testing-library/prefer-user-event */
-import { fireEvent, render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import PrimeVue from 'primevue/config'
-import Tooltip from 'primevue/tooltip'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -76,10 +73,7 @@ describe('PackVersionBadge', () => {
         ...props
       },
       global: {
-        plugins: [PrimeVue, i18n],
-        directives: {
-          tooltip: Tooltip
-        },
+        plugins: [i18n],
         stubs: {
           PackVersionSelectorPopover: PackVersionSelectorPopoverStub
         }
@@ -176,9 +170,10 @@ describe('PackVersionBadge', () => {
         .click(screen.getByRole('button', { name: /1\.5\.0/ }))
       expect(await screen.findByRole('dialog')).toBeVisible()
       await rerender({ nodePack: mockNodePack, isSelected: false })
-      await nextTick()
 
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      await waitFor(() =>
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      )
     })
 
     it('does not close the popover when card is selected', async () => {
@@ -229,12 +224,24 @@ describe('PackVersionBadge', () => {
       vi.mocked(useComfyManagerStore().isPackEnabled).mockReturnValue(false)
     })
 
-    it('adds disabled styles when pack is disabled', () => {
-      const { container } = renderComponent()
+    it('marks the badge as disabled but keeps it focusable', () => {
+      renderComponent()
 
-      const badge = container.querySelector('[role="text"]')
-      expect(badge).toBeInTheDocument()
-      expect(badge).toHaveClass('cursor-not-allowed', 'opacity-60')
+      const badge = screen.getByRole('button', { name: /1\.5\.0/ })
+      expect(badge).toHaveAttribute('aria-disabled', 'true')
+      expect(badge).not.toBeDisabled()
+    })
+
+    it('explains why the version cannot be changed on keyboard focus', async () => {
+      const user = userEvent.setup()
+      renderComponent()
+
+      await user.tab()
+
+      expect(screen.getByRole('button', { name: /1\.5\.0/ })).toHaveFocus()
+      expect(await screen.findByRole('tooltip')).toHaveTextContent(
+        enMessages.manager.enablePackToChangeVersion
+      )
     })
 
     it('does not show chevron icon when disabled', () => {
@@ -251,29 +258,26 @@ describe('PackVersionBadge', () => {
       expect(updateIcon).not.toBeInTheDocument()
     })
 
-    it('does not toggle popover when clicked while disabled', async () => {
-      const { container } = renderComponent()
+    it.for([
+      { name: 'click', act: (badge: HTMLElement) => userEvent.click(badge) },
+      {
+        name: 'Enter',
+        act: async (badge: HTMLElement) => {
+          badge.focus()
+          await userEvent.keyboard('{Enter}')
+        }
+      },
+      {
+        name: 'Space',
+        act: async (badge: HTMLElement) => {
+          badge.focus()
+          await userEvent.keyboard(' ')
+        }
+      }
+    ])('does not open the version selector on $name', async ({ act }) => {
+      renderComponent()
 
-      const badge = container.querySelector('[role="text"]')!
-      await fireEvent.click(badge)
-
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-    })
-
-    it('has correct tabindex when disabled', () => {
-      const { container } = renderComponent()
-
-      const badge = container.querySelector('[role="text"]')
-      expect(badge).toBeInTheDocument()
-      expect(badge).toHaveAttribute('tabindex', '-1')
-    })
-
-    it('does not respond to keyboard events when disabled', async () => {
-      const { container } = renderComponent()
-
-      const badge = container.querySelector('[role="text"]')!
-      await fireEvent.keyDown(badge, { key: 'Enter' })
-      await fireEvent.keyDown(badge, { key: ' ' })
+      await act(screen.getByRole('button', { name: /1\.5\.0/ }))
 
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     })

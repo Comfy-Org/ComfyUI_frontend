@@ -11,17 +11,17 @@ import type {
   FieldSchema,
   FieldValue,
   FormValues
-} from '../../config/workshop-playground'
+} from '@/config/workshop-playground'
 import {
   MAX_UPLOAD_BYTES,
   urlUploadField,
   validateForm
-} from '../../config/workshop-playground'
-import { formatWorkshopUploadLimit } from '../../config/workshop-limits'
-import { isHttpImageSource } from '../../config/workshop-image-source'
-import { workshopExampleFile } from '../../config/workshop-example-file'
-import type { Locale, TranslationKey } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
+} from '@/config/workshop-playground'
+import { formatWorkshopUploadLimit } from '@/config/workshop-limits'
+import { isHttpImageSource } from '@/config/workshop-image-source'
+import { workshopExampleFile } from '@/config/workshop-example-file'
+import type { Locale, TranslationKey } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import InfoTooltip from '@/components/ui/tooltip/InfoTooltip.vue'
 import FileSourceInput from './FileSourceInput.vue'
 import DialogueInput from './DialogueInput.vue'

@@ -71,6 +71,33 @@ test.describe('Node search box', { tag: '@node' }, () => {
     await expect(comfyPage.canvas).toHaveScreenshot('added-node.png')
   })
 
+  test('Enter adds the top match after typing a query', async ({
+    comfyPage
+  }) => {
+    const initialSamplers =
+      await comfyPage.nodeOps.getNodeRefsByType('KSamplerAdvanced')
+    await comfyPage.canvasOps.doubleClick()
+    await comfyPage.searchBox.typeQuery('KSampler Advanced')
+    await comfyPage.searchBox.waitForFirstResult('KSampler (Advanced)')
+    await comfyPage.searchBox.submitSelectedResult()
+
+    await expect
+      .poll(() => comfyPage.nodeOps.getNodeRefsByType('KSamplerAdvanced'))
+      .toHaveLength(initialSamplers.length + 1)
+  })
+
+  test('One Escape closes the search while results are listed', async ({
+    comfyPage
+  }) => {
+    await comfyPage.command.executeCommand('Workspace.SearchBox.Toggle')
+    await comfyPage.searchBox.typeQuery('KSampler')
+    await expect(comfyPage.searchBox.resultsListbox).toBeVisible()
+
+    await comfyPage.page.keyboard.press('Escape')
+
+    await expect(comfyPage.searchBox.input).toBeHidden()
+  })
+
   test('Can auto link node', { tag: '@screenshot' }, async ({ comfyPage }) => {
     const initialNodeCount = await comfyPage.nodeOps.getGraphNodesCount()
     await comfyPage.canvasOps.disconnectEdge()
@@ -102,11 +129,15 @@ test.describe('Node search box', { tag: '@node' }, () => {
       await comfyPage.canvasOps.dragAndDrop(outputSlotPos, emptySpacePos)
       await comfyPage.page.keyboard.up('Shift')
 
-      // Select the second item as the first item is always reroute
       await comfyPage.searchBox.fillAndSelectFirstNode('Load Checkpoint', {
-        suggestionIndex: 0
+        exact: true
       })
       await waitForSearchInsertion(comfyPage, initialNodeCount)
+      await expect
+        .poll(() =>
+          comfyPage.nodeOps.getNodeRefsByType('CheckpointLoaderSimple')
+        )
+        .toHaveLength(3)
       await expect(comfyPage.canvas).toHaveScreenshot(
         'auto-linked-node-batch.png'
       )
@@ -136,10 +167,12 @@ test.describe('Node search box', { tag: '@node' }, () => {
     await comfyPage.canvasOps.doubleClick()
     await comfyPage.searchBox.input.waitFor({ state: 'visible' })
     await comfyPage.searchBox.input.fill(node)
-    await comfyPage.searchBox.dropdown.waitFor({ state: 'visible' })
+    await comfyPage.searchBox.resultsListbox.waitFor({ state: 'visible' })
 
-    const firstResult = comfyPage.searchBox.dropdown.locator('li').first()
-    await expect(firstResult).toHaveAttribute('aria-label', node)
+    const firstResult = comfyPage.searchBox.resultsListbox
+      .getByRole('option')
+      .first()
+    await expect(firstResult).toHaveAccessibleName(node)
   })
 
   test('@mobile Can trigger on empty canvas tap', async ({ comfyPage }) => {
@@ -222,8 +255,7 @@ test.describe('Node search box', { tag: '@node' }, () => {
       const panel = comfyPage.searchBox.filterSelectionPanel
       await panel.header.waitFor({ state: 'visible' })
       await comfyPage.page
-        .locator('.p-dialog-mask')
-        .filter({ has: panel.header })
+        .getByTestId('node-search-filter-overlay')
         .click({ position: { x: 10, y: 10 } })
 
       // Verify the filter selection panel is hidden
@@ -241,6 +273,19 @@ test.describe('Node search box', { tag: '@node' }, () => {
             name: 'Close'
           })
         ).toBeFocused()
+      })
+
+      test('ignores Escape during IME composition', async ({ comfyPage }) => {
+        const panel = comfyPage.searchBox.filterSelectionPanel
+        await panel.root.dispatchEvent('keydown', {
+          key: 'Escape',
+          isComposing: true
+        })
+        await expect(panel.header).toBeVisible()
+        await expect(comfyPage.searchBox.input).toBeVisible()
+        await comfyPage.page.keyboard.press('Escape')
+        await expect(panel.header).toBeHidden()
+        await expect(comfyPage.searchBox.input).toBeFocused()
       })
 
       test('keeps search open when the filter has keyboard focus', async ({

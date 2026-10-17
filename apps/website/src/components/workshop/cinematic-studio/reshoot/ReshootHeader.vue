@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { translationsFor } from '../../../../i18n/translations'
-import { workshopAppRepo } from '../../../../lib/workshop/apps'
-import { RESHOOT_APP_SLUG } from '../../../../lib/workshop/cinematic-studio/analytics'
-import type { Locale } from '../../../../i18n/translations'
-import AppRepoLink from '../AppRepoLink.vue'
+import { translationsFor } from '@/i18n/translations'
+import { workshopAppRepo } from '@/lib/workshop/apps'
+import { RESHOOT_APP_SLUG } from '@/lib/workshop/cinematic-studio/analytics'
+import type { Locale } from '@/i18n/translations'
+import AppRepoLink from '@/components/workshop/cinematic-studio/AppRepoLink.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const { t } = translationsFor(locale)

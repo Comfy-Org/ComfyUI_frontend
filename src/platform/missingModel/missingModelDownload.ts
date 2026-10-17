@@ -1,8 +1,8 @@
 import { downloadUrlToHfRepoUrl, isCivitaiModelUrl } from '@/utils/formatUtil'
+import { reportError } from '@/platform/telemetry/reportError'
 import { isDesktop } from '@/platform/distribution/types'
 import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-import type { ComfyDesktop2Bridge } from '@/types'
 
 const ALLOWED_SOURCES = [
   'https://civitai.com/',
@@ -43,16 +43,22 @@ export interface ModelWithUrl {
   directory: string
 }
 
-async function startDesktop2ModelDownload(
-  bridge: ComfyDesktop2Bridge,
-  model: ModelWithUrl
-): Promise<void> {
-  try {
-    await bridge.downloadModel?.(model.url, model.name, model.directory)
-  } catch (error: unknown) {
-    console.error('Failed to start Desktop2 model download:', error)
-  }
-}
+export type ModelDownloadDispatchOutcome =
+  | {
+      status: 'not-dispatched'
+      reason: 'not-downloadable' | 'missing-directory-path'
+    }
+  | { status: 'browser-requested' }
+  | {
+      status: 'host-requested'
+      host: 'desktop2' | 'electron'
+      hostResult: Promise<boolean>
+    }
+  | {
+      status: 'dispatch-failed'
+      host: 'desktop2' | 'electron'
+      error: unknown
+    }
 
 function openUrlInNewTab(url: string, downloadAs?: string): void {
   try {
@@ -118,34 +124,109 @@ export function isModelDownloadable(model: ModelWithUrl): boolean {
   return true
 }
 
+type Desktop2Download = NonNullable<
+  NonNullable<typeof window.__comfyDesktop2>['downloadModel']
+>
+
+function modelDownloadRoute():
+  | { host: 'desktop2'; download: Desktop2Download }
+  | { host: 'electron' }
+  | { host: 'browser' } {
+  const bridge = window.__comfyDesktop2
+  const isRemote = bridge?.isRemote?.() ?? window.__comfyDesktop2Remote ?? false
+  if (bridge?.downloadModel && !isRemote) {
+    return { host: 'desktop2', download: bridge.downloadModel.bind(bridge) }
+  }
+  return { host: isDesktop ? 'electron' : 'browser' }
+}
+
+/**
+ * Only the Electron path needs a resolved `savePath`: the desktop2 bridge takes
+ * the logical directory name and decides where to write, and a browser opens
+ * the URL instead.
+ */
+export function modelDownloadNeedsFolderPaths(): boolean {
+  return modelDownloadRoute().host === 'electron'
+}
+
+export function dispatchModelDownload(
+  model: ModelWithUrl,
+  paths: Record<string, string[]>,
+  { revealLegacyDownload = true }: { revealLegacyDownload?: boolean } = {}
+): ModelDownloadDispatchOutcome {
+  if (!isModelDownloadable(model)) {
+    return { status: 'not-dispatched', reason: 'not-downloadable' }
+  }
+
+  const route = modelDownloadRoute()
+  if (route.host === 'desktop2') {
+    try {
+      return {
+        status: 'host-requested',
+        host: 'desktop2',
+        hostResult: Promise.resolve(
+          route.download(model.url, model.name, model.directory)
+        )
+      }
+    } catch (error) {
+      return { status: 'dispatch-failed', host: 'desktop2', error }
+    }
+  }
+
+  if (route.host === 'browser') {
+    openUrlInNewTab(model.url, model.name)
+    return { status: 'browser-requested' }
+  }
+
+  const savePath = paths[model.directory]?.[0]
+  if (!savePath) {
+    return { status: 'not-dispatched', reason: 'missing-directory-path' }
+  }
+
+  if (revealLegacyDownload) {
+    useSidebarTabStore().activeSidebarTabId = MODEL_LIBRARY_TAB_ID
+  }
+  try {
+    return {
+      status: 'host-requested',
+      host: 'electron',
+      hostResult: Promise.resolve(
+        useElectronDownloadStore().start({
+          url: model.url,
+          savePath,
+          filename: model.name
+        })
+      )
+    }
+  } catch (error) {
+    return { status: 'dispatch-failed', host: 'electron', error }
+  }
+}
+
 export function downloadModel(
   model: ModelWithUrl,
   paths: Record<string, string[]>
 ): void {
-  if (!isModelDownloadable(model)) return
+  const outcome = dispatchModelDownload(model, paths)
 
-  const desktop2Bridge = window.__comfyDesktop2
-  const isRemote =
-    desktop2Bridge?.isRemote?.() ?? window.__comfyDesktop2Remote ?? false
-  if (desktop2Bridge?.downloadModel && !isRemote) {
-    void startDesktop2ModelDownload(desktop2Bridge, model)
-    return
-  }
-
-  if (!isDesktop) {
-    openUrlInNewTab(model.url, model.name)
-    return
-  }
-
-  const modelPaths = paths[model.directory]
-  if (modelPaths[0]) {
-    useSidebarTabStore().activeSidebarTabId = MODEL_LIBRARY_TAB_ID
-    void useElectronDownloadStore().start({
-      url: model.url,
-      savePath: modelPaths[0],
-      filename: model.name
+  if (outcome.status === 'dispatch-failed') {
+    reportError(outcome.error, {
+      surface: 'platform',
+      errorType: 'error_starting_model_download',
+      tags: { host: outcome.host }
     })
+    return
   }
+
+  if (outcome.status !== 'host-requested') return
+
+  void outcome.hostResult.catch((error: unknown) => {
+    reportError(error, {
+      surface: 'platform',
+      errorType: 'error_starting_model_download',
+      tags: { host: outcome.host }
+    })
+  })
 }
 
 export interface ModelMetadata {

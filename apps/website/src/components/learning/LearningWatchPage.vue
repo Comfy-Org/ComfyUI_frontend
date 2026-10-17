@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { localizeHref } from '../../config/routes'
-import type { LearningTutorial } from '../../data/learningTutorials'
-import type { Locale } from '../../i18n/translations'
+import { localizeHref } from '@/config/routes'
+import type { LearningTutorial } from '@/data/learningTutorials'
+import type { Locale } from '@/i18n/translations'
 
 import {
   categoryChapters,
@@ -10,16 +10,16 @@ import {
   recommendedFor,
   tutorialDescription,
   tutorialPath
-} from '../../data/learningTutorials'
-import { translationsFor } from '../../i18n/translations'
-import WatchAuthorCard from '../blocks/WatchAuthorCard.vue'
-import WatchRelatedStrip from '../blocks/WatchRelatedStrip.vue'
-import WatchPageLayout from '../blocks/WatchPageLayout.vue'
-import WatchRecommendedCard from '../blocks/WatchRecommendedCard.vue'
-import Button from '../ui/button/Button.vue'
-import VideoPlayer from '../common/VideoPlayer.vue'
+} from '@/data/learningTutorials'
+import { translationsFor } from '@/i18n/translations'
+import WatchAuthorCard from '@/components/blocks/WatchAuthorCard.vue'
+import WatchRelatedStrip from '@/components/blocks/WatchRelatedStrip.vue'
+import WatchPageLayout from '@/components/blocks/WatchPageLayout.vue'
+import WatchRecommendedCard from '@/components/blocks/WatchRecommendedCard.vue'
+import Button from '@/components/ui/button/Button.vue'
+import VideoPlayer from '@/components/common/VideoPlayer.vue'
 import LearningVideoEmbed from './LearningVideoEmbed.vue'
-import Badge from '../ui/badge/Badge.vue'
+import Badge from '@/components/ui/badge/Badge.vue'
 
 const { tutorial, locale = 'en' } = defineProps<{
   tutorial: LearningTutorial

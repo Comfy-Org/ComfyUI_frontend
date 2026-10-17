@@ -9,8 +9,9 @@ import type {
   BillingStatusResponse,
   CancelSubscriptionRequest,
   CancelSubscriptionResponse,
-  ChurnkeyAuthResponse,
   CreateInviteRequest,
+  CreateTopupCheckoutRequest,
+  CreateTopupCheckoutResponse,
   CreateTopupRequest,
   CreateTopupResponse,
   CreateWorkspaceRequest,
@@ -22,12 +23,17 @@ import type {
   PaymentPortalRequest,
   PaymentPortalResponse,
   PendingInvite,
+  PickWorkspaceDeploymentRequest,
   Plan,
   PreviewSubscribeRequest,
   PreviewSubscribeResponse,
   RenewalInvoice,
   ResubscribeRequest,
   ResubscribeResponse,
+  RetentionAcceptance,
+  RetentionAcceptRequest,
+  RetentionFlowEventRequest,
+  RetentionFlowResponse,
   SavedPaymentMethod,
   ScheduledPlanChange,
   SubscribeRequest,
@@ -37,8 +43,15 @@ import type {
   TeamCreditStops,
   TeamCreditStopSummary,
   UpdateWorkspaceRequest,
+  WorkspaceDeployment,
+  WorkspaceDeploymentList,
   WorkspaceWithRole
 } from '@comfyorg/ingest-types'
+import {
+  zRetentionAcceptance,
+  zRetentionFlowResponse
+} from '@comfyorg/ingest-types/zod'
+import type { AxiosInstance } from 'axios'
 import axios from 'axios'
 
 import {
@@ -46,22 +59,24 @@ import {
   webSessionSend
 } from '@/platform/auth/session/webSessionFetch'
 import { useTelemetry } from '@/platform/telemetry'
-import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
-import { churnkeyAuthResponseSchema } from '@/platform/cloud/churnkey/churnkeyAuthSchema'
 import {
   UNKNOWN_ERROR_CODE,
   errorResponseFromBody
 } from '@/platform/remote/comfyui/errors'
 import { attachCapabilityRevisionInterceptor } from '@/platform/workspace/api/capabilityRevision'
+import { DEPLOYMENT_LISTING_TIMEOUT_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
 import type {
   WorkspaceId,
   WorkspaceInviteId
 } from '@/platform/workspace/workspaceTypes'
-import { useAuthStore } from '@/stores/authStore'
-import type { UserId } from '@/types/authTypes'
+import type { AuthHeader, UserId } from '@/types/authTypes'
 
 import { createWebSessionAdapter } from './webSessionAdapter'
-import { WorkspaceApiError } from './workspaceApiError'
+import {
+  NO_WORKSPACE_ACCESS,
+  NoWorkspaceAccessError,
+  WorkspaceApiError
+} from './workspaceApiError'
 import { workspaceApiUrl } from './workspaceApiUrl'
 
 export type WorkspaceType = 'personal' | 'team'
@@ -147,6 +162,9 @@ export type BillingRecoveryAction = NonNullable<
   BillingOpStatusResponse['recovery_action']
 >
 
+export type { WorkspaceDeployment }
+export type { WorkspaceDeploymentList }
+
 interface GetBillingEventsParams {
   page?: number
   limit?: number
@@ -154,37 +172,70 @@ interface GetBillingEventsParams {
 
 export { WorkspaceApiError }
 
+/**
+ * Credentials for workspace requests. The composition root installs the
+ * auth-store backed implementation; the client itself stays free of the
+ * auth layer.
+ */
+interface WorkspaceApiAuth {
+  getWorkspaceAuthHeader(): Promise<AuthHeader>
+  getFirebaseAuthHeader(): Promise<AuthHeader>
+  attachRetryInterceptor(client: AxiosInstance): void
+}
+
 const workspaceApiClient = axios.create({
   headers: {
     'Content-Type': 'application/json'
   }
 })
 
-// acceptInvite opts out via __skipUnifiedRemint (it is deliberately Firebase-authed).
-attachUnifiedRemintInterceptor(workspaceApiClient)
 attachCapabilityRevisionInterceptor(workspaceApiClient)
+
+let workspaceApiAuth: WorkspaceApiAuth | undefined
+
+export function setWorkspaceApiAuth(auth: WorkspaceApiAuth): void {
+  workspaceApiAuth = auth
+  auth.attachRetryInterceptor(workspaceApiClient)
+}
+
+function requireWorkspaceApiAuth(): WorkspaceApiAuth {
+  if (!workspaceApiAuth) {
+    throw new WorkspaceApiError('Workspace API auth is not installed', 401)
+  }
+  return workspaceApiAuth
+}
 
 async function requestAuth() {
   if (webSessionRequests()) {
     const send = await webSessionSend()
     if (send) return { adapter: createWebSessionAdapter(send) }
   }
-  return { headers: await useAuthStore().getWorkspaceAuthHeaderOrThrow() }
+  return { headers: await requireWorkspaceApiAuth().getWorkspaceAuthHeader() }
 }
 
-function handleAxiosError(err: unknown): never {
+export type WorkspaceApiOperation = keyof typeof workspaceApi
+
+function handleAxiosError(
+  err: unknown,
+  operation: WorkspaceApiOperation
+): never {
   if (axios.isAxiosError(err)) {
     const status = err.response?.status
     const { code, message } = errorResponseFromBody(
       err.response?.data,
       err.message
     )
+    if (status === 403 && code === NO_WORKSPACE_ACCESS) {
+      throw new NoWorkspaceAccessError(message, status, operation)
+    }
     // Callers compare `code` against server-defined values, so the parser's
     // "no code reported" sentinel must stay out of that contract.
     throw new WorkspaceApiError(
       message,
       status,
-      code === UNKNOWN_ERROR_CODE ? undefined : code
+      code === UNKNOWN_ERROR_CODE ? undefined : code,
+      undefined,
+      operation
     )
   }
   throw err
@@ -204,7 +255,7 @@ export const workspaceApi = {
       )
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'list')
     }
   },
 
@@ -221,7 +272,7 @@ export const workspaceApi = {
       )
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'getCurrentWorkspace')
     }
   },
 
@@ -239,7 +290,7 @@ export const workspaceApi = {
       )
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'create')
     }
   },
 
@@ -260,7 +311,115 @@ export const workspaceApi = {
       )
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'update')
+    }
+  },
+
+  /**
+   * List the developer-platform deployments this browser may pick, each
+   * with the Release it runs now, and which one it picked. 403 when the account is outside the rollout.
+   * Times out `DEPLOYMENT_LISTING_TIMEOUT_MS` after it is sent; the
+   * sign-in step before it is not covered and can hang.
+   * GET /api/workspaces/:id/deployments
+   */
+  async listDeployments(
+    workspaceId: WorkspaceId
+  ): Promise<WorkspaceDeploymentList> {
+    const auth = await requestAuth()
+    try {
+      const response = await workspaceApiClient.get<WorkspaceDeploymentList>(
+        workspaceApiUrl(`/workspaces/${workspaceId}/deployments`),
+        { ...auth, timeout: DEPLOYMENT_LISTING_TIMEOUT_MS }
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err, 'listDeployments')
+    }
+  },
+
+  /**
+   * Pick the deployment this browser runs on; it follows the deployment's
+   * updates to new Releases. The pick is a cookie on the
+   * response; nothing about the workspace changes.
+   * PUT /api/workspaces/:id/deployment
+   */
+  async pickDeployment(
+    workspaceId: WorkspaceId,
+    payload: PickWorkspaceDeploymentRequest,
+    signal?: AbortSignal
+  ): Promise<void> {
+    const auth = await requestAuth()
+    signal?.throwIfAborted()
+    try {
+      await workspaceApiClient.put(
+        workspaceApiUrl(`/workspaces/${workspaceId}/deployment`),
+        payload,
+        { ...auth, ...(signal ? { signal } : {}) }
+      )
+    } catch (err) {
+      handleAxiosError(err, 'pickDeployment')
+    }
+  },
+
+  /**
+   * Clear the pick: this browser runs on Comfy Cloud, or with
+   * `follow: 'workspace'` on whatever the workspace says (its default
+   * deployment, or Comfy Cloud when it has none).
+   * DELETE /api/workspaces/:id/deployment
+   */
+  async clearDeployment(
+    workspaceId: WorkspaceId,
+    options: { follow?: 'workspace' } = {}
+  ): Promise<void> {
+    const auth = await requestAuth()
+    try {
+      await workspaceApiClient.delete(
+        workspaceApiUrl(`/workspaces/${workspaceId}/deployment`),
+        {
+          ...auth,
+          params: options.follow ? { follow: options.follow } : undefined
+        }
+      )
+    } catch (err) {
+      handleAxiosError(err, 'clearDeployment')
+    }
+  },
+
+  /**
+   * Set the deployment members of the workspace run on when their browser has
+   * no pick of its own (BE-17480). Owner only.
+   * PUT /api/workspaces/:id/default-deployment
+   */
+  async setDefaultDeployment(
+    workspaceId: WorkspaceId,
+    payload: PickWorkspaceDeploymentRequest
+  ): Promise<void> {
+    const auth = await requestAuth()
+    try {
+      await workspaceApiClient.put(
+        workspaceApiUrl(`/workspaces/${workspaceId}/default-deployment`),
+        payload,
+        auth
+      )
+    } catch (err) {
+      handleAxiosError(err, 'setDefaultDeployment')
+    }
+  },
+
+  /**
+   * Clear the workspace's default deployment; members with no pick are back on
+   * Comfy Cloud. Owner only.
+   * DELETE /api/workspaces/:id/default-deployment
+   */
+  async clearDefaultDeployment(workspaceId: WorkspaceId): Promise<void> {
+    const auth = await requestAuth()
+    try {
+      await workspaceApiClient.delete(
+        workspaceApiUrl(`/workspaces/${workspaceId}/default-deployment`),
+        auth
+      )
+    } catch (err) {
+      handleAxiosError(err, 'clearDefaultDeployment')
     }
   },
 
@@ -276,7 +435,7 @@ export const workspaceApi = {
         auth
       )
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'delete')
     }
   },
 
@@ -293,7 +452,7 @@ export const workspaceApi = {
         auth
       )
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'leave')
     }
   },
 
@@ -310,7 +469,7 @@ export const workspaceApi = {
       )
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'listMembers')
     }
   },
 
@@ -326,7 +485,7 @@ export const workspaceApi = {
         auth
       )
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'removeMember')
     }
   },
 
@@ -344,7 +503,7 @@ export const workspaceApi = {
       )
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'updateMemberRole')
     }
   },
 
@@ -361,7 +520,7 @@ export const workspaceApi = {
       )
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'listInvites')
     }
   },
 
@@ -379,7 +538,7 @@ export const workspaceApi = {
       )
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'createInvite')
     }
   },
 
@@ -395,7 +554,7 @@ export const workspaceApi = {
         auth
       )
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'revokeInvite')
     }
   },
 
@@ -411,7 +570,7 @@ export const workspaceApi = {
       )
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'resendInvite')
     }
   },
 
@@ -421,7 +580,7 @@ export const workspaceApi = {
    * Uses Firebase auth (user identity) since the user isn't yet a workspace member.
    */
   async acceptInvite(token: string): Promise<AcceptInviteResponse> {
-    const headers = await useAuthStore().getFirebaseAuthHeaderOrThrow()
+    const headers = await requireWorkspaceApiAuth().getFirebaseAuthHeader()
     try {
       const response = await workspaceApiClient.post<AcceptInviteResponse>(
         workspaceApiUrl(`/invites/${token}/accept`),
@@ -430,7 +589,7 @@ export const workspaceApi = {
       )
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'acceptInvite')
     }
   },
 
@@ -447,7 +606,7 @@ export const workspaceApi = {
       )
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'getBillingStatus')
     }
   },
 
@@ -464,7 +623,7 @@ export const workspaceApi = {
       )
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'getBillingBalance')
     }
   },
 
@@ -484,7 +643,7 @@ export const workspaceApi = {
         )
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'getBillingCapabilities')
     }
   },
 
@@ -501,7 +660,7 @@ export const workspaceApi = {
       )
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'getBillingPlans')
     }
   },
 
@@ -514,7 +673,7 @@ export const workspaceApi = {
       )
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'listSavedPaymentMethods')
     }
   },
 
@@ -539,7 +698,7 @@ export const workspaceApi = {
       )
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'previewSubscribe')
     }
   },
 
@@ -597,7 +756,7 @@ export const workspaceApi = {
       })
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'subscribe')
     }
   },
 
@@ -620,20 +779,62 @@ export const workspaceApi = {
         )
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'cancelSubscription')
     }
   },
 
-  async getChurnkeyAuth(): Promise<ChurnkeyAuthResponse> {
+  /**
+   * Prepare a cancellation session and any retention offer for its owner
+   * POST /api/billing/retention/prepare
+   */
+  async prepareRetentionFlow(): Promise<RetentionFlowResponse> {
     const auth = await requestAuth()
     try {
-      const response = await workspaceApiClient.get<unknown>(
-        workspaceApiUrl('/billing/churnkey/auth'),
+      const response = await workspaceApiClient.post<unknown>(
+        workspaceApiUrl('/billing/retention/prepare'),
+        {},
+        { ...auth, timeout: 5_000 }
+      )
+      return zRetentionFlowResponse.parse(response.data)
+    } catch (err) {
+      handleAxiosError(err, 'prepareRetentionFlow')
+    }
+  },
+
+  /**
+   * Accept the offer bound to a cancellation session
+   * POST /api/billing/retention/accept
+   */
+  async acceptRetentionOffer(sessionId: string): Promise<RetentionAcceptance> {
+    const auth = await requestAuth()
+    try {
+      const response = await workspaceApiClient.post<unknown>(
+        workspaceApiUrl('/billing/retention/accept'),
+        { session_id: sessionId } satisfies RetentionAcceptRequest,
         auth
       )
-      return churnkeyAuthResponseSchema.parse(response.data)
+      return zRetentionAcceptance.parse(response.data)
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'acceptRetentionOffer')
+    }
+  },
+
+  /**
+   * Record that a cancellation session opened, or displayed its offer
+   * POST /api/billing/retention/events
+   */
+  async recordRetentionFlowEvent(
+    request: RetentionFlowEventRequest
+  ): Promise<void> {
+    const auth = await requestAuth()
+    try {
+      await workspaceApiClient.post(
+        workspaceApiUrl('/billing/retention/events'),
+        request,
+        auth
+      )
+    } catch (err) {
+      handleAxiosError(err, 'recordRetentionFlowEvent')
     }
   },
 
@@ -651,7 +852,7 @@ export const workspaceApi = {
       )
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'resubscribe')
     }
   },
 
@@ -671,7 +872,7 @@ export const workspaceApi = {
       )
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'getPaymentPortalUrl')
     }
   },
 
@@ -707,7 +908,33 @@ export const workspaceApi = {
       })
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'createTopup')
+    }
+  },
+
+  /**
+   * Create a Stripe-hosted credit top-up checkout session
+   * POST /api/billing/topup/checkout
+   */
+  async createTopupCheckout(
+    amountCents: number,
+    returnUrl: string
+  ): Promise<CreateTopupCheckoutResponse> {
+    const auth = await requestAuth()
+    try {
+      const response =
+        await workspaceApiClient.post<CreateTopupCheckoutResponse>(
+          workspaceApiUrl('/billing/topup/checkout'),
+          {
+            amount_cents: amountCents,
+            return_url: returnUrl,
+            idempotency_key: crypto.randomUUID()
+          } satisfies CreateTopupCheckoutRequest,
+          auth
+        )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err, 'createTopupCheckout')
     }
   },
 
@@ -726,7 +953,7 @@ export const workspaceApi = {
       )
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'getBillingEvents')
     }
   },
 
@@ -743,7 +970,7 @@ export const workspaceApi = {
       )
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'getBillingOpStatus')
     }
   }
 }

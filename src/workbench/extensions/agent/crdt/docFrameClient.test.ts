@@ -1,3 +1,4 @@
+import { SCHEMA_VERSION } from '@comfyorg/comfy-multi-player'
 import { describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
@@ -111,7 +112,9 @@ describe('doc frame client', () => {
         data: {
           v: 1,
           workflow_id: 'wf-1',
-          state_vector_b64: encodeBase64(stateVector)
+          state_vector_b64: encodeBase64(stateVector),
+          supports_reseed: true,
+          schema_version: SCHEMA_VERSION
         }
       },
       {
@@ -314,5 +317,14 @@ describe('doc frame client', () => {
       type: 'doc_update',
       data: { workflowId: 'wf-1', seq: 0, update: new Uint8Array([1]) }
     })
+  })
+
+  it('rejects inherited object keys as frame types', () => {
+    expect(
+      parseServerDocFrame({
+        type: 'constructor',
+        data: { v: 1, workflow_id: 'wf-1' }
+      })
+    ).toBeNull()
   })
 })

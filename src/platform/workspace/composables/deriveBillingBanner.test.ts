@@ -19,6 +19,7 @@ const funded: BillingBannerInputs = {
   endDate: null,
   canManage: true,
   isPlanEnded: false,
+  isPlanTerminal: false,
   planEndedDismissed: false,
   outOfCreditsDismissed: false,
   planChangeDismissed: false,
@@ -48,8 +49,81 @@ describe('deriveBillingBanner', () => {
     expect(derive({})).toBeNull()
   })
 
-  it('keeps team billing-control notices out of personal plans', () => {
-    expect(derive({ isTeamPlan: false, hasFunds: false })).toBeNull()
+  describe('personal plan', () => {
+    const personal: Partial<BillingBannerInputs> = {
+      isTeamPlan: false,
+      isKnownPersonalTier: true
+    }
+    const endingSoon: Partial<BillingBannerInputs> = {
+      isCancelled: true,
+      endDate: '2026-08-01T00:00:00Z'
+    }
+    // usePlanEnded leaves personal plans out; only the terminal test applies.
+    const terminal: Partial<BillingBannerInputs> = {
+      isPlanTerminal: true,
+      canAccessSubscriptionFeatures: false,
+      billingStatus: 'inactive'
+    }
+
+    it.for([
+      {
+        name: 'out of credits',
+        inputs: { hasFunds: false },
+        kind: 'outOfCredits'
+      },
+      { name: 'an ending plan', inputs: endingSoon, kind: 'ending' },
+      { name: 'an ended plan', inputs: terminal, kind: 'planEnded' }
+    ] as const)('shows $name to a known personal tier', ({ inputs, kind }) => {
+      expect(derive({ ...personal, ...inputs })).toBe(kind)
+    })
+
+    it.for([
+      { name: 'out of credits', inputs: { hasFunds: false } },
+      { name: 'an ending plan', inputs: endingSoon },
+      { name: 'an ended plan', inputs: terminal }
+    ])('fails closed on $name for an unrecognized tier', ({ inputs }) => {
+      expect(
+        derive({ ...inputs, isTeamPlan: false, isKnownPersonalTier: false })
+      ).toBeNull()
+    })
+
+    it('keeps out of credits and ending behind billing control', () => {
+      expect(
+        derive({ ...personal, hasFunds: false, billingControlEnabled: false })
+      ).toBeNull()
+      expect(
+        derive({ ...personal, ...endingSoon, billingControlEnabled: false })
+      ).toBeNull()
+    })
+
+    it('ships plan ended without the billing control flag', () => {
+      expect(
+        derive({ ...personal, ...terminal, billingControlEnabled: false })
+      ).toBe('planEnded')
+    })
+
+    it('ranks plan ended below payment recovery and above out of credits', () => {
+      expect(derive({ ...personal, ...terminal, ...paused })).toBe('paused')
+      expect(derive({ ...personal, ...terminal, hasFunds: false })).toBe(
+        'planEnded'
+      )
+    })
+
+    it('stays hidden once plan ended is dismissed', () => {
+      expect(
+        derive({ ...personal, ...terminal, planEndedDismissed: true })
+      ).toBeNull()
+    })
+
+    it('hides out of credits once dismissed', () => {
+      expect(
+        derive({ ...personal, hasFunds: false, outOfCreditsDismissed: true })
+      ).toBeNull()
+    })
+
+    it('never shows a scheduled plan change', () => {
+      expect(derive({ ...personal, hasScheduledChange: true })).toBeNull()
+    })
   })
 
   it('shows paused to personal workspaces on a known tier', () => {

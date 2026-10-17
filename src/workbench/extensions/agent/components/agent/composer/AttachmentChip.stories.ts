@@ -43,3 +43,17 @@ export const Uploading: Story = {
     uploading: true
   }
 }
+
+export const InvalidVideo: Story = {
+  args: {
+    name: 'broken.mov',
+    validationError: 'invalid-video'
+  }
+}
+
+export const UnsupportedType: Story = {
+  args: {
+    name: 'report.pdf',
+    validationError: 'unsupported-type'
+  }
+}

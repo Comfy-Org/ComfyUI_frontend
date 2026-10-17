@@ -4,6 +4,7 @@ import type { Route } from '@playwright/test'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { openErrorsTab } from '@e2e/fixtures/helpers/ErrorsTabHelper'
+import defaultWorkflow from '@e2e/assets/default.json' with { type: 'json' }
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 
 test.describe('Workflows sidebar', () => {
@@ -441,6 +442,28 @@ test.describe('Workflows sidebar', () => {
       .toEqual(['*Unsaved Workflow', '*workflow1 (Copy)'])
   })
 
+  test(
+    'suppresses the native context menu on a saved workflow',
+    { tag: '@ui' },
+    async ({ comfyPage }) => {
+      await comfyPage.workflow.setupWorkflowsDirectory({
+        'workflow1.json': 'default.json'
+      })
+      const tab = comfyPage.menu.workflowsTab
+      await tab.open()
+
+      const event = await comfyPage.contextMenu.dispatchFor(
+        tab.getPersistedItem('workflow1')
+      )
+
+      expect(event.defaultPrevented).toBe(true)
+      await comfyPage.contextMenu.clickMenuItemExact('Duplicate')
+      await expect
+        .poll(() => tab.getOpenedWorkflowNames())
+        .toEqual(['*Unsaved Workflow', '*workflow1 (Copy)'])
+    }
+  )
+
   test('Can drop workflow from workflows sidebar', async ({ comfyPage }) => {
     await comfyPage.workflow.setupWorkflowsDirectory({
       'workflow1.json': 'default.json'
@@ -475,6 +498,6 @@ test.describe('Workflows sidebar', () => {
     // Wait for nodes to be inserted after drag-drop with retryable assertion
     await expect
       .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-      .toBe(nodeCount * 2)
+      .toBe(nodeCount + defaultWorkflow.nodes.length)
   })
 })

@@ -1,7 +1,7 @@
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
 import { isAuthenticatedConfigLoaded } from '@/platform/remoteConfig/remoteConfig'
-import { computed, ref, shallowRef, toValue, watch } from 'vue'
+import { computed, onScopeDispose, ref, shallowRef, toValue, watch } from 'vue'
 import { createSharedComposable, until } from '@vueuse/core'
 
 import {
@@ -11,17 +11,22 @@ import {
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
 import { isCloud } from '@/platform/distribution/types'
-import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type {
   PreviewSubscribeOptions,
   SubscribeOptions
 } from '@/platform/workspace/api/workspaceApi'
+import {
+  onBillingRefresh,
+  provideCheckoutOperationReader
+} from '@/platform/workspace/billing/billingRefresh'
+import type { BillingRefreshScope } from '@/platform/workspace/billing/billingRefresh'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import type {
   BalanceInfo,
   BillingActions,
   BillingContext,
+  CancelRail,
   BillingState,
   SubscriptionInfo
 } from './types'
@@ -369,6 +374,14 @@ function useBillingContextInternal(): BillingContext {
     return workspace.readAndAdoptPendingOperation()
   }
 
+  function refreshFor(scope: BillingRefreshScope): Promise<unknown> {
+    if (scope === 'subscription') return reconcileSubscriptionSuccess()
+    return Promise.allSettled([fetchStatus(), fetchBalance()])
+  }
+
+  onScopeDispose(onBillingRefresh(refreshFor))
+  onScopeDispose(provideCheckoutOperationReader(readCheckoutOperation))
+
   async function subscribe(planSlug: string, options?: SubscribeOptions) {
     if (!(await whenRoutingKnown())) return
     return checkoutContext.value.subscribe(planSlug, options)
@@ -389,7 +402,9 @@ function useBillingContextInternal(): BillingContext {
 
   async function cancelSubscription(isScopeCurrent?: () => boolean) {
     await waitForRoutingInSameWorkspace()
-    return activeContext.value.cancelSubscription(isScopeCurrent)
+    const rail: CancelRail = type.value === 'workspace' ? 'workspace' : 'legacy'
+    await activeContext.value.cancelSubscription(isScopeCurrent)
+    return rail
   }
 
   async function resubscribe(
@@ -416,20 +431,6 @@ function useBillingContextInternal(): BillingContext {
   async function fetchPlans() {
     if (type.value === 'unknown') return
     return checkoutContext.value.fetchPlans()
-  }
-
-  async function requireActiveSubscription() {
-    if (!(await whenRoutingKnown())) return
-    return activeContext.value.requireActiveSubscription()
-  }
-
-  function showSubscriptionDialog(options?: SubscriptionDialogOptions) {
-    if (type.value !== 'unknown') {
-      return activeContext.value.showSubscriptionDialog(options)
-    }
-    void whenRoutingKnown().then((known) => {
-      if (known) activeContext.value.showSubscriptionDialog(options)
-    })
   }
 
   return {
@@ -462,7 +463,6 @@ function useBillingContextInternal(): BillingContext {
     fetchStatus,
     fetchBalance,
     reconcileSubscriptionSuccess,
-    readCheckoutOperation,
     subscribe,
     previewSubscribe,
     manageSubscription,
@@ -470,8 +470,7 @@ function useBillingContextInternal(): BillingContext {
     resubscribe,
     topup,
     fetchPlans,
-    requireActiveSubscription,
-    showSubscriptionDialog
+    whenRoutingKnown
   }
 }
 

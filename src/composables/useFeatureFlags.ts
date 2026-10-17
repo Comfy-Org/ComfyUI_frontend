@@ -1,3 +1,4 @@
+import type { GetFeaturesResponse } from '@comfyorg/ingest-types'
 import { computed, reactive, readonly, watchEffect } from 'vue'
 import type { Ref } from 'vue'
 
@@ -12,49 +13,11 @@ import {
   sessionAgentGrant,
   sessionAgentGrantValidUntil
 } from '@/platform/remoteConfig/remoteConfig'
+import { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
 import { useTelemetry } from '@/platform/telemetry'
 import { api } from '@/scripts/api'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
-
-/**
- * Known server feature flags (top-level, not extensions)
- */
-export enum ServerFeatureFlag {
-  SUPPORTS_PREVIEW_METADATA = 'supports_preview_metadata',
-  MAX_UPLOAD_SIZE = 'max_upload_size',
-  MANAGER_SUPPORTS_V4 = 'extension.manager.supports_v4',
-  MODEL_UPLOAD_BUTTON_ENABLED = 'model_upload_button_enabled',
-  ASSET_DELETION_ENABLED = 'asset_deletion_enabled',
-  PRIVATE_MODELS_ENABLED = 'private_models_enabled',
-  ONBOARDING_SURVEY_ENABLED = 'onboarding_survey_enabled',
-  LINEAR_TOGGLE_ENABLED = 'linear_toggle_enabled',
-  PARTNER_NODE_GOVERNANCE_ENABLED = 'partner_node_governance_enabled',
-  PARTNER_RUN_GATE_ENABLED = 'partner_run_gate_enabled',
-  USER_SECRETS_ENABLED = 'user_secrets_enabled',
-  NODE_REPLACEMENTS = 'node_replacements',
-  NODE_LIBRARY_ESSENTIALS_ENABLED = 'node_library_essentials_enabled',
-  WORKFLOW_SHARING_ENABLED = 'workflow_sharing_enabled',
-  COMFYHUB_UPLOAD_ENABLED = 'comfyhub_upload_enabled',
-  COMFYHUB_PROFILE_GATE_ENABLED = 'comfyhub_profile_gate_enabled',
-  HOSTED_BILLING_DESTINATION = 'hosted_billing_destination',
-  SHOW_SIGNIN_BUTTON = 'show_signin_button',
-  UNIFIED_CLOUD_AUTH = 'unified_cloud_auth',
-  UNIFIED_WEB_SESSION = 'unified_web_session',
-  BILLING_CONTROL_ENABLED = 'billing_control_enabled',
-  MEMBER_CREDIT_LIMITS_ENABLED = 'member_credit_limits_enabled',
-  LEGACY_BILLING_MIGRATION_ENABLED = 'legacy_billing_migration_enabled',
-  EMBEDDED_CHECKOUT_ENABLED = 'embedded_checked_enabled',
-  BILLING_SDK_TOPUP_ENABLED = 'billing_sdk_topup_enabled',
-  BILLING_SDK_SUBSCRIPTION_ENABLED = 'billing_sdk_subscription_enabled',
-  V1_PAYMENT_RECOVERY = 'v1_payment_recovery',
-  FREE_TIER_JOB_ALLOWANCE_ENABLED = 'free_tier_job_allowance_enabled',
-  CHURNKEY_APP_ID = 'churnkey_app_id',
-  SIGNUP_TURNSTILE = 'signup_turnstile',
-  SUPPORTS_MODEL_TYPE_TAGS = 'supports_model_type_tags',
-  ONBOARDING_TOUR_ENABLED = 'onboarding_tour_enabled',
-  AGENT_IN_APP_EXPERIENCE = 'agent-in-app-experience'
-}
 
 function reportFeatureFlagEvaluation<T>(flagKey: string, value: T): T {
   useTelemetry()?.trackFeatureFlagEvaluation(flagKey, value)
@@ -169,7 +132,9 @@ export function useFeatureFlags() {
       return api.getServerFeature(ServerFeatureFlag.SUPPORTS_PREVIEW_METADATA)
     },
     get maxUploadSize() {
-      return api.getServerFeature(ServerFeatureFlag.MAX_UPLOAD_SIZE)
+      return api.getServerFeature<GetFeaturesResponse['max_upload_size']>(
+        ServerFeatureFlag.MAX_UPLOAD_SIZE
+      )
     },
     get supportsManagerV4() {
       return api.getServerFeature(ServerFeatureFlag.MANAGER_SUPPORTS_V4)
@@ -223,6 +188,12 @@ export function useFeatureFlags() {
         true
       )
     },
+    get partnerNodeTokenEnabled() {
+      return resolveStrictBooleanFlag(
+        ServerFeatureFlag.PARTNER_NODE_TOKEN,
+        remoteConfig.value.partner_node_token
+      )
+    },
     get userSecretsEnabled() {
       return resolveFlag(
         ServerFeatureFlag.USER_SECRETS_ENABLED,
@@ -238,15 +209,6 @@ export function useFeatureFlags() {
         ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED,
         remoteConfig.value.node_library_essentials_enabled,
         isNightly || import.meta.env.DEV
-      )
-    },
-    get workflowSharingEnabled() {
-      // UI is also gated on `isCloud` in TopMenuSection; default false
-      // to match other flags' opt-in convention.
-      return resolveFlag(
-        ServerFeatureFlag.WORKFLOW_SHARING_ENABLED,
-        remoteConfig.value.workflow_sharing_enabled,
-        false
       )
     },
     get comfyHubUploadEnabled() {
@@ -296,6 +258,23 @@ export function useFeatureFlags() {
         remoteConfig.value.unified_web_session
       return value === true
     },
+    get ssoEnabled() {
+      if (!isCloud) return false
+
+      return resolveStrictBooleanFlag(
+        ServerFeatureFlag.SSO_ENABLED,
+        remoteConfig.value.sso_enabled
+      )
+    },
+    /** Browser sign-in for a local ComfyUI that Desktop does not host. */
+    get localWebSsoEnabled() {
+      if (isCloud) return false
+
+      return resolveStrictBooleanFlag(
+        ServerFeatureFlag.LOCAL_WEB_SSO,
+        remoteConfig.value.local_web_sso
+      )
+    },
     get billingControlEnabled() {
       return resolveAuthGatedFlag(
         ServerFeatureFlag.BILLING_CONTROL_ENABLED,
@@ -314,12 +293,6 @@ export function useFeatureFlags() {
         ServerFeatureFlag.LEGACY_BILLING_MIGRATION_ENABLED,
         remoteConfig.value.legacy_billing_migration_enabled,
         cachedLegacyBillingMigrationEnabled
-      )
-    },
-    get embeddedCheckoutEnabled() {
-      return resolveStrictBooleanFlag(
-        ServerFeatureFlag.EMBEDDED_CHECKOUT_ENABLED,
-        remoteConfig.value.embedded_checked_enabled
       )
     },
     get billingSdkTopupEnabled() {
@@ -357,14 +330,6 @@ export function useFeatureFlags() {
         config.free_tier_job_allowance_enabled,
         false
       )
-    },
-    get churnkeyAppId() {
-      if (!isCloud) return ''
-      return resolveFlag(
-        ServerFeatureFlag.CHURNKEY_APP_ID,
-        remoteConfig.value.churnkey_app_id,
-        ''
-      ).trim()
     },
     get signupTurnstileMode() {
       return resolveFlag(
@@ -431,8 +396,6 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.NODE_REPLACEMENTS]: flags.nodeReplacementsEnabled,
       [ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED]:
         flags.nodeLibraryEssentialsEnabled,
-      [ServerFeatureFlag.WORKFLOW_SHARING_ENABLED]:
-        flags.workflowSharingEnabled,
       [ServerFeatureFlag.COMFYHUB_UPLOAD_ENABLED]: flags.comfyHubUploadEnabled,
       [ServerFeatureFlag.COMFYHUB_PROFILE_GATE_ENABLED]:
         flags.comfyHubProfileGateEnabled,
@@ -440,13 +403,13 @@ export function startFeatureFlagTelemetry() {
         flags.hostedBillingDestination,
       [ServerFeatureFlag.SHOW_SIGNIN_BUTTON]: flags.showSignInButton,
       [ServerFeatureFlag.UNIFIED_CLOUD_AUTH]: flags.unifiedCloudAuthEnabled,
+      [ServerFeatureFlag.UNIFIED_WEB_SESSION]: flags.unifiedWebSessionEnabled,
+      [ServerFeatureFlag.SSO_ENABLED]: flags.ssoEnabled,
       [ServerFeatureFlag.BILLING_CONTROL_ENABLED]: flags.billingControlEnabled,
       [ServerFeatureFlag.MEMBER_CREDIT_LIMITS_ENABLED]:
         flags.memberCreditLimitsEnabled,
       [ServerFeatureFlag.LEGACY_BILLING_MIGRATION_ENABLED]:
         flags.legacyBillingMigrationEnabled,
-      [ServerFeatureFlag.EMBEDDED_CHECKOUT_ENABLED]:
-        flags.embeddedCheckoutEnabled,
       [ServerFeatureFlag.BILLING_SDK_TOPUP_ENABLED]:
         flags.billingSdkTopupEnabled,
       [ServerFeatureFlag.BILLING_SDK_SUBSCRIPTION_ENABLED]:
@@ -454,7 +417,6 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.V1_PAYMENT_RECOVERY]: flags.v1PaymentRecovery,
       [ServerFeatureFlag.FREE_TIER_JOB_ALLOWANCE_ENABLED]:
         flags.freeTierJobAllowanceEnabled,
-      [ServerFeatureFlag.CHURNKEY_APP_ID]: flags.churnkeyAppId,
       [ServerFeatureFlag.SIGNUP_TURNSTILE]: flags.signupTurnstileMode,
       [ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS]: flags.supportsModelTypeTags,
       [ServerFeatureFlag.ONBOARDING_TOUR_ENABLED]: flags.onboardingTourEnabled,

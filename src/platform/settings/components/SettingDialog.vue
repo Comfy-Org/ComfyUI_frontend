@@ -1,8 +1,8 @@
 <template>
   <BaseModalLayout
-    content-title=""
+    :content-title="$t('g.settings')"
     data-testid="settings-dialog"
-    size="full"
+    size="md"
     :content-padding="isWorkspaceCategoryActive ? 'none' : 'default'"
     header-padding="symmetric"
   >
@@ -126,20 +126,17 @@ import SettingsPanel from '@/platform/settings/components/SettingsPanel.vue'
 import { useSettingSearch } from '@/platform/settings/composables/useSettingSearch'
 import { useSettingUI } from '@/platform/settings/composables/useSettingUI'
 import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
-import type { SettingTreeNode } from '@/platform/settings/settingStore'
+import type { SettingTreeNode } from '@/platform/settings/composables/useSettingSearch'
 import type {
   ISettingGroup,
-  SettingPanelType,
+  SettingDialogProps,
   SettingParams
 } from '@/platform/settings/types'
 import { OnCloseKey } from '@/types/widgetTypes'
 import { flattenTree } from '@/utils/treeUtil'
 
-const { onClose, defaultPanel, scrollToSettingId } = defineProps<{
-  onClose: () => void
-  defaultPanel?: SettingPanelType
-  scrollToSettingId?: string
-}>()
+const { onClose, defaultPanel, scrollToSettingId } =
+  defineProps<SettingDialogProps>()
 
 provide(OnCloseKey, onClose)
 
@@ -320,7 +317,7 @@ watch(activeCategoryKey, (newKey, oldKey) => {
   30% {
     background-color: color-mix(
       in srgb,
-      var(--p-primary-color) 15%,
+      var(--primary-background) 15%,
       transparent
     );
   }

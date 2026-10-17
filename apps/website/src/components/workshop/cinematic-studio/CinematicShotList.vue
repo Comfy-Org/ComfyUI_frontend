@@ -1,19 +1,19 @@
 <script setup lang="ts">
-import { translationsFor } from '../../../i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import { ChevronRight } from '@lucide/vue'
 import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { Direction } from '../../../lib/workshop/cinematic-studio/catalog'
+import type { Direction } from '@/lib/workshop/cinematic-studio/catalog'
 import {
   cameraGroups,
   directionOption,
   gradeGroup,
   lookGroups
-} from '../../../lib/workshop/cinematic-studio/catalog'
-import type { Locale } from '../../../i18n/translations'
-import { shownOption } from '../../../lib/workshop/cinematic-studio/grade-image'
+} from '@/lib/workshop/cinematic-studio/catalog'
+import type { Locale } from '@/i18n/translations'
+import { shownOption } from '@/lib/workshop/cinematic-studio/grade-image'
 import CinematicDirectionThumb from './CinematicDirectionThumb.vue'
 import CinematicOptionIcon from './CinematicOptionIcon.vue'
 import type { PickerKey } from './picker-key'

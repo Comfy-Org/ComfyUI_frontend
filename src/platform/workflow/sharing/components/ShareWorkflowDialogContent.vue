@@ -1,5 +1,7 @@
 <template>
-  <div class="flex w-full flex-col">
+  <div
+    class="flex w-xl max-w-full flex-col overflow-hidden rounded-2xl border border-border-default bg-base-background shadow-lg"
+  >
     <header
       class="flex h-12 items-center justify-between gap-2 border-b border-border-default px-4"
     >
@@ -28,9 +30,16 @@
           {{ $t('shareWorkflow.publishToHubTab') }}
         </Button>
       </div>
-      <div v-else class="select-none">
+      <DialogTitle
+        :class="
+          cn(
+            'm-0 text-sm font-normal select-none',
+            showPublishToHubTab && 'sr-only'
+          )
+        "
+      >
         {{ $t('shareWorkflow.shareLinkTab') }}
-      </div>
+      </DialogTitle>
       <Button size="icon" :aria-label="$t('g.close')" @click="onClose">
         <i class="icon-[lucide--x] size-4" />
       </Button>
@@ -189,7 +198,7 @@
 <script setup lang="ts">
 import { vAutoAnimate } from '@formkit/auto-animate/vue'
 import { useAsyncState } from '@vueuse/core'
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -197,6 +206,7 @@ import ComfyHubPublishIntroPanel from '@/platform/workflow/sharing/components/pr
 import ShareAssetWarningBox from '@/platform/workflow/sharing/components/ShareAssetWarningBox.vue'
 import ShareUrlCopyField from '@/platform/workflow/sharing/components/ShareUrlCopyField.vue'
 import Button from '@/components/ui/button/Button.vue'
+import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import Input from '@/components/ui/input/Input.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useComfyHubPublishDialog } from '@/platform/workflow/sharing/composables/useComfyHubPublishDialog'
@@ -211,6 +221,7 @@ import { useShareFlowContext } from '@/platform/workflow/sharing/composables/use
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTelemetry } from '@/platform/telemetry'
 import { appendJsonExt } from '@/utils/formatUtil'
+import { getErrorMessage } from '@/utils/errorUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { onClose } = defineProps<{
@@ -369,10 +380,7 @@ async function refreshDialogState() {
     console.error('Failed to load publish status:', error)
     publishResult.value = null
     dialogState.value = 'ready'
-    toast.add({
-      severity: 'error',
-      summary: t('shareWorkflow.loadFailed')
-    })
+    toast.error(t('shareWorkflow.loadFailed'))
   }
 }
 
@@ -405,10 +413,8 @@ const { isLoading: isSaving, execute: handleSave } = useAsyncState(
     immediate: false,
     onError: (error) => {
       console.error('Failed to save workflow:', error)
-      toast.add({
-        severity: 'error',
-        summary: t('shareWorkflow.saveFailedTitle'),
-        detail: t('shareWorkflow.saveFailedDescription')
+      toast.error(t('shareWorkflow.saveFailedTitle'), {
+        description: t('shareWorkflow.saveFailedDescription')
       })
     }
   }
@@ -448,10 +454,8 @@ const {
     immediate: false,
     onError: (error) => {
       console.error('Failed to publish workflow:', error)
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: error instanceof Error ? error.message : t('g.error')
+      toast.error(t('g.error'), {
+        description: getErrorMessage(error) ?? t('g.error')
       })
     }
   }

@@ -2,10 +2,10 @@ import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 
-import { buildSnippet } from '../../config/models-snippets'
-import { workshopContract } from '../../config/workshop-contract-catalog'
-import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
-import { initialWorkshopPageState } from '../../config/workshop-page-state'
+import { buildSnippet } from '@/config/models-snippets'
+import { workshopContract } from '@/config/workshop-contract-catalog'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from '@/config/workshop-router-content'
+import { initialWorkshopPageState } from '@/config/workshop-page-state'
 import ApiTab from './ApiTab.vue'
 
 const routerId = 'bfl/flux-2-pro'
@@ -60,9 +60,7 @@ describe('ApiTab', () => {
   it('prepares SDK asset examples without uploading or reading private files while browsing tabs', async () => {
     const visitor = userEvent.setup()
     const file = new File(['private'], 'photo.png', { type: 'image/png' })
-    const network = vi.fn()
     const read = vi.spyOn(file, 'arrayBuffer')
-    vi.stubGlobal('fetch', network)
     render(ApiTab, {
       props: {
         contract: workshopContract('wavespeed/seedvr2'),
@@ -84,7 +82,7 @@ describe('ApiTab', () => {
     await visitor.click(screen.getByTestId('snippet-curl'))
     expect(snippet.textContent).not.toContain('"image":')
     expect(snippet.textContent).toContain('This request may be incomplete')
-    expect(network).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
     expect(read).not.toHaveBeenCalled()
   })
 
@@ -226,10 +224,6 @@ describe('ApiTab', () => {
     async ({ slug, source }) => {
       const model = getRouterWorkshopModelDetail(slug)
       if (!model) throw new Error('Missing model')
-      const network = vi.fn(() =>
-        Promise.reject(new Error('API browsing must not fetch media'))
-      )
-      vi.stubGlobal('fetch', network)
       render(ApiTab, {
         props: {
           contract: model.execution,
@@ -239,7 +233,7 @@ describe('ApiTab', () => {
       const snippet = await screen.findByTestId('snippet')
       expect(snippet.textContent).toContain(source)
       expect(snippet.textContent).not.toContain('Path(')
-      expect(network).not.toHaveBeenCalled()
+      expect(fetch).not.toHaveBeenCalled()
     }
   )
 

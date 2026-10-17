@@ -1,27 +1,34 @@
+import type {
+  BaseLGraph,
+  LGraph,
+  SubgraphId,
+  LGraphCanvas,
+  ResolvedConnection,
+  GraphOrSubgraph,
+  Subgraph,
+  SubgraphInput
+} from '@/lib/litegraph/src/types/entityRegistry'
 import cloneDeep from 'es-toolkit/compat/cloneDeep'
-import type { BaseLGraph, LGraph, SubgraphId } from '@/lib/litegraph/src/LGraph'
+
 import type { LGraphButton } from '@/lib/litegraph/src/LGraphButton'
-import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
+
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { DrawTitleBoxOptions } from '@/lib/litegraph/src/LGraphNode'
 import { LLink } from '@/lib/litegraph/src/LLink'
-import type { ResolvedConnection } from '@/lib/litegraph/src/LLink'
+
 import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
 import { RecursionError } from '@/lib/litegraph/src/infrastructure/RecursionError'
+import type { IWidgetLocator, ISlotType } from '@/lib/litegraph/src/interfaces'
 import type {
   ISubgraphInput,
-  IWidgetLocator
-} from '@/lib/litegraph/src/interfaces'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { INodeInputSlot, ISlotType } from '@/lib/litegraph/src/litegraph'
+  INodeInputSlot
+} from '@/lib/litegraph/src/types/slots'
+import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
 import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
 import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
-import type {
-  GraphOrSubgraph,
-  Subgraph
-} from '@/lib/litegraph/src/subgraph/Subgraph'
+
 import type {
   ExportedSubgraphInstance,
   ISerialisedNode
@@ -55,7 +62,7 @@ import { deriveWidgetVisibility } from '@/types/widgetVisibility'
 import { ExecutableNodeDTO } from './ExecutableNodeDTO'
 import type { ExecutableLGraphNode, ExecutionId } from './ExecutableNodeDTO'
 import { createPromotedWidgetStoreProjection } from './promotedWidgetStoreProjection'
-import type { SubgraphInput } from './SubgraphInput'
+
 import { createBitmapCache } from './svgBitmapCache'
 
 const workflowSvg = new Image()
@@ -214,20 +221,24 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     subgraphEvents.addEventListener(
       'renaming-input',
       (e) => {
-        const { index, newName } = e.detail
+        const { index, oldName, newName } = e.detail
         const input = this.inputs.at(index)
         if (!input) {
           console.error('Subgraph input not found')
           return
         }
 
-        input.label = newName
+        const previousLabel = input.label ?? input.name
+        if (previousLabel === oldName) input.label = newName
         // Do NOT change input.widget.name — it is the stable internal
         // identifier used by onGraphConfigured (widgetInputs.ts) to match
         // inputs to widgets. Changing it to the display label would cause
         // collisions when two promoted inputs share the same label.
         if (input.widgetId) {
-          useWidgetValueStore().setLabel(input.widgetId, newName)
+          const store = useWidgetValueStore()
+          const widgetLabel =
+            store.getWidget(input.widgetId)?.label ?? previousLabel
+          if (widgetLabel === oldName) store.setLabel(input.widgetId, newName)
         }
         this.invalidatePromotedViews()
         this.graph?.trigger('node:slot-label:changed', {
@@ -1049,4 +1060,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     if (extraInput) shapes.push(extraInput.shape)
     return shapes.every((shape) => shape === shapes[0]) ? shapes[0] : undefined
   }
+}
+
+type RegisteredSubgraphNode = SubgraphNode
+
+declare module '../types/entityRegistry' {
+  interface SubgraphNode extends RegisteredSubgraphNode {}
 }

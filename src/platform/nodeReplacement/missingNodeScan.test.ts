@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import '@/scripts/changeTracker'
 
 vi.mock(import('@/utils/graphTraversalUtil'), () => ({
   collectAllNodes: vi.fn(),

@@ -1,12 +1,19 @@
 import type {
   AgentAdmissionError,
+  AgentAnswerRequest,
+  AgentAskResolvedData,
   UploadImageResponse
 } from '@comfyorg/ingest-types'
 import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useTelemetry } from '@/platform/telemetry'
+import { listSkillPacks } from '@/platform/skills/api/skillsApi'
+import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
+vi.mock(import('@/composables/auth/useCurrentUser'))
+vi.mock(import('@/platform/skills/api/skillsApi'), { spy: true })
 import { reportError } from '@/platform/telemetry/reportError'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import { api } from '@/scripts/api'
@@ -15,6 +22,7 @@ import { toNodeId } from '@/types/nodeId'
 
 import type {
   AgentAnswerAccepted,
+  AgentAnswerReceipt,
   AgentCancelAccepted,
   AgentMessages,
   AgentRunModePreference,
@@ -36,7 +44,9 @@ import type {
   AgentRestClient,
   PostMessageInput
 } from '../../services/agent/agentRestClient'
+import type { AskUserResolution } from '../../services/agent/agentMessageParts'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
+import { useAgentSendGateStore } from '../../stores/agent/agentSendGateStore'
 import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
 
 import type { SelectedNode } from './useCanvasSelection'
@@ -90,7 +100,8 @@ function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
     ),
     answerAsk: vi.fn(
       async (): Promise<AgentAnswerAccepted> => ({
-        status: 'answered'
+        status: 'answered',
+        selected: []
       })
     ),
     uploadImage: vi.fn(
@@ -215,15 +226,39 @@ const runApproval = (id: string, askId = 'turn-1:call-1') =>
       allow_other: false
     }
   })
-const askResolved = (id: string, askId = 'turn-1:call-1') =>
+const askResolved = (
+  id: string,
+  askId = 'turn-1:call-1',
+  selected: AgentAskResolvedData['selected'] = ['run'],
+  status: AgentAskResolvedData['status'] = 'answered'
+) =>
   wire({
     type: 'agent_ask_resolved',
     data: {
       thread_id: 'th-1',
       message_id: id,
       ask_id: askId,
-      status: 'answered',
-      selected: ['run']
+      status,
+      selected
+    }
+  })
+const PAST_ANSWER_RETRY_BACKOFF_MS = 5_000
+const askUser = (id: string, askId = 'turn-1:call-1') =>
+  wire({
+    type: 'agent_ask',
+    data: {
+      thread_id: 'th-1',
+      message_id: id,
+      ask_id: askId,
+      kind: 'ask_user',
+      prompt: 'Which models?',
+      options: [
+        { id: 'sdxl', label: 'SDXL', description: 'Fast' },
+        { id: 'flux', label: 'Flux' }
+      ],
+      min_selections: 1,
+      max_selections: 2,
+      allow_other: true
     }
   })
 const deltaIn = (threadId: string, id: string, text: string) =>
@@ -371,6 +406,142 @@ describe('useAgentSession (v1 composition root)', () => {
     sessionStorage.clear()
     vi.mocked(reportError).mockClear()
     telemetry.trackAgentStopClicked.mockClear()
+  })
+
+  it.for<{
+    kind: string
+    content: string
+    duringTurn: (turn: {
+      session: ReturnType<typeof useAgentSession>
+      emit: (raw: unknown) => void
+    }) => void | Promise<void>
+    firstEndEvent: unknown
+    listings: number
+  }>([
+    {
+      kind: 'skill reference',
+      content:
+        '[Use the saved skill /portrait](skill://portrait?description=Original)',
+      duringTurn: ({ emit }) => emitDeltaBurst(emit, 3),
+      firstEndEvent: done('msg-1'),
+      listings: 2
+    },
+    {
+      kind: 'load_skill',
+      content: 'ordinary text',
+      duringTurn: ({ emit }) => {
+        emit(
+          wire({
+            type: 'agent_tool_call',
+            data: {
+              tool_call_id: 'load',
+              tool_name: 'load_skill',
+              status: 'running',
+              message_id: 'msg-1',
+              thread_id: 'th-1'
+            }
+          })
+        )
+        emitDeltaBurst(emit, 3)
+      },
+      firstEndEvent: done('msg-1'),
+      listings: 2
+    },
+    {
+      kind: 'cancelled',
+      content:
+        '[Use the saved skill /portrait](skill://portrait?description=Original)',
+      duringTurn: async ({ session, emit }) => {
+        emitDeltaBurst(emit, 3)
+        await session.stopTurn()
+      },
+      firstEndEvent: done('msg-1'),
+      listings: 2
+    },
+    {
+      kind: 'errored',
+      content:
+        '[Use the saved skill /portrait](skill://portrait?description=Original)',
+      duringTurn: ({ emit }) => emitDeltaBurst(emit, 3),
+      firstEndEvent: {
+        type: 'agent_message_done',
+        data: { message_id: 'msg-1' }
+      },
+      listings: 2
+    },
+    {
+      kind: 'backgrounded',
+      content:
+        '[Use the saved skill /portrait](skill://portrait?description=Original)',
+      duringTurn: ({ session, emit }) => {
+        emitDeltaBurst(emit, 3)
+        session.newChat()
+      },
+      firstEndEvent: done('msg-1'),
+      listings: 2
+    },
+    {
+      kind: 'unrelated',
+      content: 'ordinary text',
+      duringTurn: ({ emit }) => emitDeltaBurst(emit, 3),
+      firstEndEvent: done('msg-1'),
+      listings: 1
+    }
+  ])(
+    'lists saved skills $listings times in all around a live $kind turn, ignoring a duplicate end event',
+    async ({ content, duringTurn, firstEndEvent, listings }) => {
+      const skills = useSkillPacksStore()
+      skills.flagsEnabled = true
+      vi.mocked(listSkillPacks).mockResolvedValue([])
+      await skills.refreshPacks()
+      const { source, emit } = fakeEvents()
+      const session = useAgentSession({ rest: fakeRest(), events: source })
+      session.start()
+      await session.sendMessage(content)
+      await duringTurn({ session, emit })
+      expect(listSkillPacks).toHaveBeenCalledOnce()
+      emit(firstEndEvent)
+      await Promise.resolve()
+      expect(listSkillPacks).toHaveBeenCalledTimes(listings)
+      emit(done('msg-1'))
+      await Promise.resolve()
+      expect(listSkillPacks).toHaveBeenCalledTimes(listings)
+      session.stop()
+    }
+  )
+
+  it('refreshes a referenced turn recovered as failed only once', async () => {
+    const skills = useSkillPacksStore()
+    skills.flagsEnabled = true
+    vi.mocked(listSkillPacks).mockResolvedValue([])
+    await skills.refreshPacks()
+    const text =
+      '[Use the saved skill /portrait](skill://portrait?description=Original)'
+    const rest = fakeRest({
+      getMessages: vi.fn(
+        async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'msg-1', text),
+          {
+            ...historyRow(2, 'assistant', 'msg-1', '', 'msg-1'),
+            status: 'error'
+          }
+        ]
+      )
+    })
+    const { source, status } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+    status(true)
+    await session.sendMessage(text)
+    status(false)
+    status(true)
+    await vi.waitFor(() => expect(session.isStreaming.value).toBe(false))
+    expect(listSkillPacks).toHaveBeenCalledTimes(2)
+    status(false)
+    status(true)
+    await Promise.resolve()
+    expect(listSkillPacks).toHaveBeenCalledTimes(2)
+    session.stop()
   })
 
   it('initializes when legacy storage cleanup fails', () => {
@@ -595,6 +766,210 @@ describe('useAgentSession (v1 composition root)', () => {
 
     await vi.waitFor(() => expect(reopened.isStreaming.value).toBe(true))
     expect(conversation.activeTurnId).toBe('msg-1')
+  })
+
+  it('re-attaches to the running turn when a send is refused with TURN_IN_PROGRESS', async () => {
+    const conversation = useAgentConversationStore()
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
+      .mockRejectedValue(
+        new AgentApiError(
+          'a turn is already in progress for this thread',
+          409,
+          {
+            error: 'a turn is already in progress for this thread',
+            type: 'TURN_IN_PROGRESS',
+            active_message_id: 'msg-2',
+            turn_id: 'turn-2'
+          }
+        )
+      )
+    const rest = fakeRest({
+      postMessage,
+      getMessages: vi.fn(
+        async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'turn-1', 'add an audio output node'),
+          historyRow(2, 'assistant', 'turn-1', 'Done.', 'msg-1'),
+          historyRow(3, 'user', 'turn-2', 'run it again', 'row-3'),
+          {
+            ...historyRow(4, 'assistant', 'turn-2', '', 'msg-2'),
+            content: {},
+            status: 'streaming'
+          }
+        ]
+      )
+    })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+
+    await session.sendMessage('add an audio output node')
+    emit({
+      type: 'agent_message_done',
+      data: { message_id: 'msg-1', thread_id: 'th-1' }
+    })
+    expect(session.isStreaming.value).toBe(false)
+
+    expect(await session.sendMessage('and now add a save node')).toBe(false)
+
+    await vi.waitFor(() => expect(session.isStreaming.value).toBe(true))
+    expect(conversation.activeTurnId).toBe('msg-2')
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      parts: [
+        {
+          type: 'notice',
+          level: 'error',
+          text: 'This chat still has a response running. Wait for it to finish, or stop it, then send again.'
+        }
+      ]
+    })
+  })
+
+  it('does not let a timed-out re-attachment replace a newer turn', async () => {
+    vi.useFakeTimers()
+    try {
+      let resolveHistory: ((history: AgentMessages) => void) | undefined
+      const postMessage = vi
+        .fn<
+          (
+            threadId: string,
+            req: PostMessageInput
+          ) => Promise<AgentTurnAccepted>
+        >()
+        .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
+        .mockRejectedValueOnce(
+          new AgentApiError('turn in progress', 409, {
+            error: 'turn in progress',
+            type: 'TURN_IN_PROGRESS',
+            active_message_id: 'msg-2',
+            turn_id: 'turn-2'
+          })
+        )
+        .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-3' })
+      const getMessages = vi.fn(
+        () =>
+          new Promise<AgentMessages>((resolve) => {
+            resolveHistory = resolve
+          })
+      )
+      const { source, emit } = fakeEvents()
+      const session = useAgentSession({
+        rest: fakeRest({ postMessage, getMessages }),
+        events: source
+      })
+      session.start()
+      await session.sendMessage('first')
+      emit(done('msg-1'))
+
+      const refused = session.sendMessage('refused')
+      await vi.waitFor(() => expect(getMessages).toHaveBeenCalledOnce())
+      await vi.advanceTimersByTimeAsync(5_000)
+      await refused
+      expect(session.entries.value.at(-1)).toMatchObject({
+        role: 'assistant',
+        parts: [
+          {
+            type: 'notice',
+            level: 'error',
+            text: 'Message failed to send: turn in progress'
+          }
+        ]
+      })
+      await session.sendMessage('newer')
+
+      resolveHistory?.([
+        historyRow(1, 'user', 'turn-2', 'other client'),
+        {
+          ...historyRow(2, 'assistant', 'turn-2', '', 'msg-2'),
+          content: {},
+          status: 'streaming'
+        }
+      ])
+      await Promise.resolve()
+
+      expect(useAgentConversationStore().activeTurnId).toBe('msg-3')
+      expect(
+        session.entries.value
+          .filter((entry) => entry.role === 'user')
+          .map((entry) => entry.text)
+      ).toEqual(['first', 'refused', 'newer'])
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('records no failed send when the re-read finds the refused thread deleted', async () => {
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
+      .mockRejectedValue(
+        new AgentApiError('turn in progress', 409, {
+          error: 'turn in progress',
+          type: 'TURN_IN_PROGRESS',
+          active_message_id: 'msg-2'
+        })
+      )
+    const getMessages = vi.fn(async (): Promise<AgentMessages> => {
+      throw new AgentApiError('thread not found', 404, {
+        error: 'thread not found'
+      })
+    })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage, getMessages }),
+      events: source
+    })
+    session.start()
+    await session.sendMessage('first')
+    emit(done('msg-1'))
+
+    await session.sendMessage('refused')
+
+    expect(
+      session.entries.value.filter((entry) => entry.role === 'user')
+    ).not.toContainEqual(expect.objectContaining({ text: 'refused' }))
+  })
+
+  it('leaves an undiscriminated 409 on an existing thread as a plain failure', async () => {
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
+      .mockRejectedValue(
+        new AgentApiError('conflict', 409, { error: 'conflict' })
+      )
+    const rest = fakeRest({ postMessage })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+
+    await session.sendMessage('make a cat')
+    emit({
+      type: 'agent_message_done',
+      data: { message_id: 'msg-1', thread_id: 'th-1' }
+    })
+
+    await session.sendMessage('make it orange')
+
+    expect(rest.getMessages).not.toHaveBeenCalled()
+    expect(session.isStreaming.value).toBe(false)
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      parts: [
+        {
+          type: 'notice',
+          level: 'error',
+          text: 'Message failed to send: conflict'
+        }
+      ]
+    })
   })
 
   // The other half of (b4a): `subscribe()` runs before the GET resolves, and
@@ -1655,7 +2030,8 @@ describe('useAgentSession (v1 composition root)', () => {
   it('answers a run approval once and stays busy until its resolution event', async () => {
     const answerAsk = vi.fn(
       async (): Promise<AgentAnswerAccepted> => ({
-        status: 'answered'
+        status: 'answered',
+        selected: ['run']
       })
     )
     const rest = fakeRest({ answerAsk })
@@ -1665,8 +2041,8 @@ describe('useAgentSession (v1 composition root)', () => {
     await session.sendMessage('build it')
     emit(runApproval('msg-1'))
 
-    const first = session.answerAsk('turn-1:call-1', 'run')
-    const duplicate = session.answerAsk('turn-1:call-1', 'run')
+    const first = session.answerAsk('turn-1:call-1', { selected: ['run'] })
+    const duplicate = session.answerAsk('turn-1:call-1', { selected: ['run'] })
 
     expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(true)
     await expect(Promise.all([first, duplicate])).resolves.toEqual([
@@ -1674,7 +2050,9 @@ describe('useAgentSession (v1 composition root)', () => {
       false
     ])
     expect(answerAsk).toHaveBeenCalledTimes(1)
-    expect(answerAsk).toHaveBeenCalledWith('th-1', 'turn-1:call-1', ['run'])
+    expect(answerAsk).toHaveBeenCalledWith('th-1', 'turn-1:call-1', {
+      selected: ['run']
+    })
     expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(true)
 
     emit(askResolved('msg-1'))
@@ -1684,6 +2062,368 @@ describe('useAgentSession (v1 composition root)', () => {
         (part) => part.type === 'runApproval'
       )
     ).toBe(false)
+  })
+
+  describe('ask_user', () => {
+    const parkedOnQuestion = async (
+      receipt: AgentAnswerReceipt = { status: 'answered' }
+    ) => {
+      const answerAsk = vi.fn<AgentRestClient['answerAsk']>(async () => receipt)
+      const { source, emit } = fakeEvents()
+      const session = useAgentSession({
+        rest: fakeRest({ answerAsk }),
+        events: source
+      })
+      session.start()
+      await session.sendMessage('pick for me')
+      emit(askUser('msg-1'))
+      return { session, answerAsk, emit }
+    }
+    const card = () =>
+      useAgentConversationStore().messages[0].parts.find(
+        (part) => part.type === 'askUser'
+      )
+    const answerPastBackoff = async (
+      session: ReturnType<typeof useAgentSession>,
+      answer: AgentAnswerRequest
+    ) => {
+      const answered = session.answerAsk('turn-1:call-1', answer)
+      await vi.advanceTimersByTimeAsync(PAST_ANSWER_RETRY_BACKOFF_MS)
+      await answered
+    }
+
+    it('posts the answer, free text included, against the ask it was given for', async () => {
+      const { session, answerAsk, emit } = await parkedOnQuestion()
+
+      await session.answerAsk('turn-1:call-1', {
+        selected: ['sdxl'],
+        other_text: 'a LoRA'
+      })
+
+      expect(answerAsk).toHaveBeenCalledWith('th-1', 'turn-1:call-1', {
+        selected: ['sdxl'],
+        other_text: 'a LoRA'
+      })
+      expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(true)
+
+      emit(
+        wire({
+          type: 'agent_ask_resolved',
+          data: {
+            thread_id: 'th-1',
+            message_id: 'msg-1',
+            ask_id: 'turn-1:call-1',
+            status: 'answered',
+            selected: ['sdxl'],
+            other_text: 'a LoRA'
+          }
+        })
+      )
+
+      expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(false)
+      expect(card()).toMatchObject({
+        resolution: {
+          status: 'answered',
+          selected: ['sdxl'],
+          otherText: 'a LoRA'
+        }
+      })
+      expect(session.notices.value).toEqual([])
+    })
+
+    it('shows the free text the server committed, not the text this tab sent', async () => {
+      const { session, emit } = await parkedOnQuestion()
+      await session.answerAsk('turn-1:call-1', {
+        selected: [],
+        other_text: 'a LoRA'
+      })
+
+      emit(
+        wire({
+          type: 'agent_ask_resolved',
+          data: {
+            thread_id: 'th-1',
+            message_id: 'msg-1',
+            ask_id: 'turn-1:call-1',
+            status: 'answered',
+            selected: [],
+            other_text: 'a ControlNet'
+          }
+        })
+      )
+
+      expect(card()).toMatchObject({
+        resolution: {
+          status: 'answered',
+          selected: [],
+          otherText: 'a ControlNet'
+        }
+      })
+    })
+
+    it('shows the answer the 202 committed when no frame follows', async () => {
+      const { session } = await parkedOnQuestion({
+        status: 'answered',
+        selected: ['sdxl'],
+        other_text: 'a LoRA'
+      })
+
+      await session.answerAsk('turn-1:call-1', {
+        selected: ['sdxl'],
+        other_text: 'a LoRA'
+      })
+      await vi.advanceTimersByTimeAsync(60_000)
+
+      expect(card()).toMatchObject({
+        resolution: {
+          status: 'answered',
+          selected: ['sdxl'],
+          otherText: 'a LoRA'
+        }
+      })
+      expect(session.notices.value).toEqual([])
+    })
+
+    it('reports the answer the 202 committed when another one won', async () => {
+      const { session, emit } = await parkedOnQuestion({
+        status: 'answered',
+        selected: ['flux']
+      })
+      emit(done('msg-1'))
+
+      await session.answerAsk('turn-1:call-1', { selected: ['sdxl'] })
+
+      expect(card()).toMatchObject({
+        resolution: { status: 'answered', selected: ['flux'] }
+      })
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({ errorType: 'agent_ask_answer_superseded' })
+      )
+    })
+
+    it('warns once when the 202 and the frame both name another answer', async () => {
+      const { session, emit } = await parkedOnQuestion({
+        status: 'answered',
+        selected: ['flux']
+      })
+      await session.answerAsk('turn-1:call-1', { selected: ['sdxl'] })
+
+      emit(askResolved('msg-1', 'turn-1:call-1', ['flux']))
+
+      expect(session.notices.value).toEqual([
+        {
+          level: 'error',
+          text: enMessages.agent.runApproval.answerSuperseded
+        }
+      ])
+    })
+
+    it('shows the answer a 409 reports as already committed', async () => {
+      const { session, answerAsk } = await parkedOnQuestion()
+      answerAsk.mockRejectedValue(
+        new AgentApiError('already answered', 409, {
+          error: 'already answered',
+          status: 'answered',
+          selected: ['flux']
+        })
+      )
+
+      await session.answerAsk('turn-1:call-1', { selected: ['sdxl'] })
+
+      expect(card()).toMatchObject({
+        resolution: { status: 'answered', selected: ['flux'] }
+      })
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({ errorType: 'agent_ask_answer_superseded' })
+      )
+    })
+
+    it('puts the card back in service when the server rejects the selection', async () => {
+      const { session, answerAsk } = await parkedOnQuestion()
+      answerAsk.mockRejectedValueOnce(
+        new AgentApiError('selection is invalid', 422, undefined)
+      )
+
+      await session.answerAsk('turn-1:call-1', { selected: ['sdxl'] })
+
+      expect(card()).not.toHaveProperty('resolution')
+      expect(session.notices.value).toEqual([
+        {
+          level: 'error',
+          text: enMessages.agent.askUser.answerRejected
+        }
+      ])
+
+      await session.answerAsk('turn-1:call-1', { selected: ['flux'] })
+
+      expect(answerAsk).toHaveBeenLastCalledWith('th-1', 'turn-1:call-1', {
+        selected: ['flux']
+      })
+    })
+
+    it('does not report a rejected answer as superseded by a later one', async () => {
+      const { session, answerAsk, emit } = await parkedOnQuestion()
+      answerAsk.mockRejectedValueOnce(
+        new AgentApiError('selection is invalid', 422, undefined)
+      )
+      await session.answerAsk('turn-1:call-1', { selected: ['sdxl'] })
+
+      emit(askResolved('msg-1', 'turn-1:call-1', ['flux']))
+
+      expect(card()).toMatchObject({
+        resolution: { status: 'answered', selected: ['flux'] }
+      })
+      expect(reportError).not.toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({ errorType: 'agent_ask_answer_superseded' })
+      )
+    })
+
+    it('reports an empty committed answer that replaced this one', async () => {
+      const { session, emit } = await parkedOnQuestion()
+      await session.answerAsk('turn-1:call-1', { selected: ['sdxl'] })
+
+      emit(askResolved('msg-1', 'turn-1:call-1', []))
+
+      expect(card()).toMatchObject({
+        resolution: { status: 'answered', selected: [] }
+      })
+      expect(session.notices.value).toEqual([
+        {
+          level: 'error',
+          text: enMessages.agent.runApproval.answerSuperseded
+        }
+      ])
+    })
+
+    it('leaves a status-only 202 to the frame to report', async () => {
+      const { session, emit } = await parkedOnQuestion()
+      await session.answerAsk('turn-1:call-1', { selected: ['sdxl'] })
+
+      expect(session.notices.value).toEqual([])
+
+      emit(askResolved('msg-1', 'turn-1:call-1', ['flux']))
+
+      expect(session.notices.value).toEqual([
+        {
+          level: 'error',
+          text: enMessages.agent.runApproval.answerSuperseded
+        }
+      ])
+    })
+
+    it.for([400, 500])(
+      'marks the outcome unconfirmed when the answer may have landed (%i)',
+      async (status) => {
+        const { session, answerAsk } = await parkedOnQuestion()
+        answerAsk.mockRejectedValue(
+          new AgentApiError('blip', status, undefined)
+        )
+
+        await answerPastBackoff(session, { selected: ['flux'] })
+
+        expect(card()).toMatchObject({ resolution: { status: 'unconfirmed' } })
+      }
+    )
+
+    it('lets the server cancel replace an unconfirmed answer', async () => {
+      const { session, answerAsk, emit } = await parkedOnQuestion()
+      answerAsk.mockRejectedValue(
+        new AgentApiError('backend blip', 500, undefined)
+      )
+      await answerPastBackoff(session, { selected: ['flux'] })
+
+      emit(askResolved('msg-1', 'turn-1:call-1', null, 'cancelled'))
+
+      expect(card()).toMatchObject({ resolution: { status: 'closed' } })
+    })
+
+    it.for<{
+      name: string
+      committed: Pick<AgentAskResolvedData, 'selected' | 'other_text'>
+      expected: AskUserResolution
+    }>([
+      {
+        name: 'a different option',
+        committed: { selected: ['flux'] },
+        expected: { status: 'answered', selected: ['flux'] }
+      },
+      {
+        name: 'a superset of it',
+        committed: { selected: ['sdxl', 'flux'], other_text: 'a LoRA' },
+        expected: {
+          status: 'answered',
+          selected: ['sdxl', 'flux'],
+          otherText: 'a LoRA'
+        }
+      },
+      {
+        name: 'a subset of it',
+        committed: { selected: [], other_text: 'a LoRA' },
+        expected: { status: 'answered', selected: [], otherText: 'a LoRA' }
+      },
+      {
+        name: 'free text alone',
+        committed: { selected: [], other_text: 'someone else' },
+        expected: {
+          status: 'answered',
+          selected: [],
+          otherText: 'someone else'
+        }
+      },
+      {
+        name: 'the same option with other free text',
+        committed: { selected: ['sdxl'], other_text: 'a VAE' },
+        expected: { status: 'answered', selected: ['sdxl'], otherText: 'a VAE' }
+      }
+    ])(
+      'shows the committed answer when $name won',
+      async ({ committed, expected }) => {
+        const { session, emit } = await parkedOnQuestion()
+        await session.answerAsk('turn-1:call-1', {
+          selected: ['sdxl'],
+          other_text: 'a LoRA'
+        })
+
+        emit(
+          wire({
+            type: 'agent_ask_resolved',
+            data: {
+              thread_id: 'th-1',
+              message_id: 'msg-1',
+              ask_id: 'turn-1:call-1',
+              status: 'answered',
+              ...committed
+            }
+          })
+        )
+
+        const shown = card()
+        assert(shown?.type === 'askUser')
+        expect(shown.resolution).toEqual(expected)
+        expect(reportError).toHaveBeenCalledWith(
+          expect.any(Error),
+          expect.objectContaining({ errorType: 'agent_ask_answer_superseded' })
+        )
+      }
+    )
+
+    it.for([403, 404, 501])(
+      'shows the card as no longer open here when the answer is refused with %i',
+      async (status) => {
+        const { session, answerAsk } = await parkedOnQuestion()
+        answerAsk.mockRejectedValueOnce(
+          new AgentApiError('refused', status, undefined)
+        )
+
+        await session.answerAsk('turn-1:call-1', { selected: ['flux'] })
+
+        expect(card()).toMatchObject({ resolution: { status: 'retired' } })
+        expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(false)
+      }
+    )
   })
 
   it('collapses a stale approval on 409 without surfacing an error', async () => {
@@ -1699,7 +2439,7 @@ describe('useAgentSession (v1 composition root)', () => {
     await session.sendMessage('build it')
     emit(runApproval('msg-1'))
 
-    await session.answerAsk('turn-1:call-1', 'cancel')
+    await session.answerAsk('turn-1:call-1', { selected: ['cancel'] })
 
     expect(reportError).not.toHaveBeenCalled()
     expect(session.notices.value).toEqual([])
@@ -1729,7 +2469,7 @@ describe('useAgentSession (v1 composition root)', () => {
     await session.sendMessage('build it')
     emit(runApproval('msg-1'))
 
-    await session.answerAsk('turn-1:call-1', 'run')
+    await session.answerAsk('turn-1:call-1', { selected: ['run'] })
 
     expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
       surface: 'agent',
@@ -1758,13 +2498,13 @@ describe('useAgentSession (v1 composition root)', () => {
     // Comfortably past the composable's answer backoff and the store's
     // resolution grace, without restating either: a test that pinned the exact
     // values would fail on a tuning change that broke nothing.
-    const PAST_ANSWER_RETRY_BACKOFF_MS = 5_000
     const PAST_ASK_RESOLUTION_GRACE_MS = 60_000
 
     const parkedOnApproval = async () => {
       const answerAsk = vi.fn(
         async (): Promise<AgentAnswerAccepted> => ({
-          status: 'answered'
+          status: 'answered',
+          selected: ['run']
         })
       )
       const rest = fakeRest({ answerAsk })
@@ -1790,11 +2530,11 @@ describe('useAgentSession (v1 composition root)', () => {
         expect(useAgentConversationStore().activeTurnId).toBeNull()
         expect(cardOnScreen()).toBe(true)
 
-        await session.answerAsk('turn-1:call-1', selection)
+        await session.answerAsk('turn-1:call-1', { selected: [selection] })
 
-        expect(answerAsk).toHaveBeenCalledWith('th-1', 'turn-1:call-1', [
-          selection
-        ])
+        expect(answerAsk).toHaveBeenCalledWith('th-1', 'turn-1:call-1', {
+          selected: [selection]
+        })
       }
     )
 
@@ -1809,9 +2549,11 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(useAgentConversationStore().activeTurnId).toBeNull()
       expect(cardOnScreen()).toBe(true)
 
-      await session.answerAsk('turn-1:call-1', 'run')
+      await session.answerAsk('turn-1:call-1', { selected: ['run'] })
 
-      expect(answerAsk).toHaveBeenCalledWith('th-1', 'turn-1:call-1', ['run'])
+      expect(answerAsk).toHaveBeenCalledWith('th-1', 'turn-1:call-1', {
+        selected: ['run']
+      })
       // No transport survives a settled turn, so no resolution frame can land
       // — the card has to retire on the response instead of waiting for one.
       expect(cardOnScreen()).toBe(false)
@@ -1821,7 +2563,7 @@ describe('useAgentSession (v1 composition root)', () => {
       const { session, emit } = await parkedOnApproval()
       emit(done('msg-1'))
 
-      await session.answerAsk('turn-1:call-1', 'run')
+      await session.answerAsk('turn-1:call-1', { selected: ['run'] })
 
       expect(cardOnScreen()).toBe(false)
       expect(session.answeringAskIds.value.size).toBe(0)
@@ -1845,7 +2587,7 @@ describe('useAgentSession (v1 composition root)', () => {
       emit(runApproval('msg-1'))
       emit(done('msg-1'))
 
-      await session.answerAsk('turn-1:call-1', 'run')
+      await session.answerAsk('turn-1:call-1', { selected: ['run'] })
 
       expect(cardOnScreen()).toBe(false)
       expect(session.answeringAskIds.value.size).toBe(0)
@@ -1871,7 +2613,7 @@ describe('useAgentSession (v1 composition root)', () => {
         await session.sendMessage('build it and run it')
         events.emit(runApproval('msg-1'))
 
-        await session.answerAsk('turn-1:call-1', 'run')
+        await session.answerAsk('turn-1:call-1', { selected: ['run'] })
 
         // Retrying reproduces it, so the card goes -- but it must not go
         // silently, or its disappearance is indistinguishable from the answer
@@ -1912,7 +2654,7 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(useAgentConversationStore().activeTurnId).toBe('msg-2')
       expect(cardOnScreen()).toBe(true)
 
-      await session.answerAsk('turn-1:call-1', 'run')
+      await session.answerAsk('turn-1:call-1', { selected: ['run'] })
 
       expect(cardOnScreen()).toBe(false)
       expect(session.answeringAskIds.value.size).toBe(0)
@@ -1928,7 +2670,7 @@ describe('useAgentSession (v1 composition root)', () => {
         .mockRejectedValueOnce(
           new AgentApiError('failed to wake the turn', 500, undefined)
         )
-        .mockResolvedValueOnce({ status: 'answered' })
+        .mockResolvedValueOnce({ status: 'answered', selected: ['run'] })
       const events = fakeEvents()
       const session = useAgentSession({
         rest: fakeRest({ answerAsk }),
@@ -1941,7 +2683,9 @@ describe('useAgentSession (v1 composition root)', () => {
 
       vi.useFakeTimers()
       try {
-        const answered = session.answerAsk('turn-1:call-1', 'run')
+        const answered = session.answerAsk('turn-1:call-1', {
+          selected: ['run']
+        })
         await vi.advanceTimersByTimeAsync(PAST_ANSWER_RETRY_BACKOFF_MS)
         await answered
       } finally {
@@ -1950,8 +2694,8 @@ describe('useAgentSession (v1 composition root)', () => {
 
       expect(answerAsk).toHaveBeenCalledTimes(2)
       expect(answerAsk.mock.calls).toEqual([
-        ['th-1', 'turn-1:call-1', ['run']],
-        ['th-1', 'turn-1:call-1', ['run']]
+        ['th-1', 'turn-1:call-1', { selected: ['run'] }],
+        ['th-1', 'turn-1:call-1', { selected: ['run'] }]
       ])
       expect(session.notices.value).toEqual([])
       expect(reportError).not.toHaveBeenCalled()
@@ -1964,7 +2708,7 @@ describe('useAgentSession (v1 composition root)', () => {
       vi.useFakeTimers()
       try {
         const { session } = await parkedOnApproval()
-        await session.answerAsk('turn-1:call-1', 'run')
+        await session.answerAsk('turn-1:call-1', { selected: ['run'] })
         expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(true)
         expect(cardOnScreen()).toBe(true)
 
@@ -1983,7 +2727,7 @@ describe('useAgentSession (v1 composition root)', () => {
     // read as confirmation of ours.
     it('warns when the resolution names a selection other than the one it sent', async () => {
       const { session, emit } = await parkedOnApproval()
-      await session.answerAsk('turn-1:call-1', 'cancel')
+      await session.answerAsk('turn-1:call-1', { selected: ['cancel'] })
 
       emit(askResolved('msg-1'))
 
@@ -2016,7 +2760,7 @@ describe('useAgentSession (v1 composition root)', () => {
       status(true)
       await session.sendMessage('build it and run it')
       emit(runApproval('msg-1'))
-      const answered = session.answerAsk('turn-1:call-1', 'run')
+      const answered = session.answerAsk('turn-1:call-1', { selected: ['run'] })
 
       emit(askResolved('msg-1'))
       expect(cardOnScreen()).toBe(false)
@@ -2032,7 +2776,7 @@ describe('useAgentSession (v1 composition root)', () => {
 
     it('stays quiet when the resolution confirms the selection it sent', async () => {
       const { session, emit } = await parkedOnApproval()
-      await session.answerAsk('turn-1:call-1', 'run')
+      await session.answerAsk('turn-1:call-1', { selected: ['run'] })
 
       emit(askResolved('msg-1'))
 
@@ -2057,7 +2801,7 @@ describe('useAgentSession (v1 composition root)', () => {
       await session.sendMessage('build it and run it')
       events.emit(runApproval('msg-1'))
 
-      await session.answerAsk('turn-1:call-1', 'run')
+      await session.answerAsk('turn-1:call-1', { selected: ['run'] })
 
       expect(answerAsk).toHaveBeenCalledTimes(1)
       expect(cardOnScreen()).toBe(false)
@@ -2069,7 +2813,7 @@ describe('useAgentSession (v1 composition root)', () => {
     // server would discard.
     it('keeps a committed answer locked across a panel remount', async () => {
       const { session } = await parkedOnApproval()
-      await session.answerAsk('turn-1:call-1', 'run')
+      await session.answerAsk('turn-1:call-1', { selected: ['run'] })
       expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(true)
       expect(cardOnScreen()).toBe(true)
 
@@ -2087,7 +2831,7 @@ describe('useAgentSession (v1 composition root)', () => {
       const session = useAgentSession({ rest, events: source })
       session.start()
 
-      await session.answerAsk('turn-1:call-1', 'run')
+      await session.answerAsk('turn-1:call-1', { selected: ['run'] })
 
       expect(rest.answerAsk).not.toHaveBeenCalled()
       expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
@@ -2672,7 +3416,7 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(conversation.activeTurnId).toBe('msg-2')
       expect(session.isStreaming.value).toBe(true)
       expect(session.notices.value).toEqual([])
-      expect(vi.mocked(reportError)).not.toHaveBeenCalledWith(
+      expect(reportError).not.toHaveBeenCalledWith(
         expect.anything(),
         expect.objectContaining({ errorType: 'agent_cancel_turn_failed' })
       )
@@ -3004,6 +3748,106 @@ describe('useAgentSession (v1 composition root)', () => {
       ).toEqual(expectedStops)
     }
   )
+
+  it('applies a pending stop to an active turn adopted after a refused send', async () => {
+    let rejectPost: ((error: unknown) => void) | undefined
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
+      .mockImplementationOnce(
+        () =>
+          new Promise<AgentTurnAccepted>((_resolve, reject) => {
+            rejectPost = reject
+          })
+      )
+    const cancelMessage = vi.fn(
+      async (): Promise<AgentCancelAccepted> => ({ status: 'cancelling' })
+    )
+    const rest = fakeRest({
+      postMessage,
+      cancelMessage,
+      getMessages: vi.fn(
+        async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'turn-2', 'other client'),
+          {
+            ...historyRow(2, 'assistant', 'turn-2', '', 'msg-2'),
+            content: {},
+            status: 'streaming'
+          }
+        ]
+      )
+    })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest,
+      events: source,
+      workflow: {
+        current: () => undefined,
+        adopted: vi.fn(),
+        restored: async () => false
+      }
+    })
+    session.start()
+    await session.sendMessage('first')
+    emit(done('msg-1'))
+
+    const refused = session.sendMessage('refused')
+    await session.stopTurn('button')
+    rejectPost?.(
+      new AgentApiError('turn in progress', 409, {
+        error: 'turn in progress',
+        type: 'TURN_IN_PROGRESS',
+        active_message_id: 'msg-2',
+        turn_id: 'turn-2'
+      })
+    )
+    await refused
+
+    expect(cancelMessage).toHaveBeenCalledExactlyOnceWith('th-1', 'msg-2')
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      parts: [
+        {
+          type: 'notice',
+          level: 'error',
+          text: 'This chat still has a response running. Wait for it to finish, or stop it, then send again.'
+        }
+      ]
+    })
+  })
+
+  it('clears a pending stop when the send fails before adopting a turn', async () => {
+    let rejectPost: ((error: unknown) => void) | undefined
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockImplementationOnce(
+        () =>
+          new Promise<AgentTurnAccepted>((_resolve, reject) => {
+            rejectPost = reject
+          })
+      )
+      .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-2' })
+    const cancelMessage = vi.fn(
+      async (): Promise<AgentCancelAccepted> => ({ status: 'cancelling' })
+    )
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage, cancelMessage }),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    const failed = session.sendMessage('failed')
+    await session.stopTurn('button')
+    rejectPost?.(new TypeError('network down'))
+    await failed
+    await session.sendMessage('next')
+
+    expect(cancelMessage).not.toHaveBeenCalled()
+  })
 
   it('(g) a socket blip keeps the turn live and re-checks the server once on the way back up', async () => {
     // PM-1199 / PM-1200. The server never learns the socket went away: it
@@ -3909,6 +4753,27 @@ describe('useAgentSession (v1 composition root)', () => {
     })
   })
 
+  it('keeps the media URL on the sent user entry', async () => {
+    const session = useAgentSession({
+      rest: fakeRest(),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    await session.sendMessage('use this', [
+      {
+        ref: 'clip.mp4',
+        name: 'clip.mp4',
+        mediaUrl: '/api/view?filename=clip.mp4&type=input'
+      }
+    ])
+
+    expect(session.entries.value[0]).toMatchObject({
+      role: 'user',
+      attachments: [{ mediaUrl: '/api/view?filename=clip.mp4&type=input' }]
+    })
+  })
+
   it('serializes stable attachment refs without unrelated fields', async () => {
     const { postedBody, send } = wireSend()
 
@@ -3965,6 +4830,21 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(body.selection).toEqual({
       node_ids: ['5'],
       workflow_id: 'wf-selected'
+    })
+  })
+
+  it('sends a skill invocation unchanged as ordinary message content', async () => {
+    const rest = fakeRest()
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    session.start()
+    const content =
+      '[Use the saved skill /portrait](skill://portrait?description=Use%20defaults) render it'
+    expect(await session.sendMessage(content)).toBe(true)
+    expect(vi.mocked(rest.postMessage).mock.calls[0][1]).toEqual({
+      content,
+      workflowReferences: [],
+      selection: undefined,
+      attachments: undefined
     })
   })
 
@@ -4401,6 +5281,81 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(adopted).toHaveBeenCalledWith('wf-b', undefined, null)
   })
 
+  it('(h10) the selection owner is resolved after prepare() and stays with the staged tab through a switch during the hold', async () => {
+    // Two failure modes share this window. Resolving the selection owner
+    // before prepare() sends `selection` without a workflow_id when the tab's
+    // cloud id was still unresolved on mount (QAF-19). Resolving it from the
+    // tab active after the hold attributes the staged nodes to the tab the
+    // user switched to while waiting. The callback runs once, after the
+    // hold, and the send pins both ids to the originating tab.
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
+      thread_id: 'th-1',
+      message_id: 'msg-1',
+      workflow_id: 'wf-a'
+    }))
+    const rest = fakeRest({ postMessage })
+    const { source } = fakeEvents()
+    let releasePrepare: () => void = () => undefined
+    let prepared = false
+    const prepare = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          releasePrepare = () => {
+            prepared = true
+            resolve()
+          }
+        })
+    )
+    let activePath = 'tab-a'
+    const idForPath = (path: string) => (path === 'tab-a' ? 'wf-a' : 'wf-b')
+    const session = useAgentSession({
+      rest,
+      events: source,
+      workflow: {
+        current: (origin) => {
+          const path = pathFor(origin, activePath)
+          return path === undefined
+            ? undefined
+            : { id: idForPath(path), tabPath: path }
+        },
+        adopted: vi.fn(),
+        prepare
+      }
+    })
+    session.start()
+
+    // Mirrors AgentPanelRoot: the target is captured when Send is clicked and
+    // its cloud id is looked up lazily, so an id that prepare() resolves is
+    // only visible once the hold has released.
+    const stagedTarget = activePath
+    const selectionWorkflowId = vi.fn(() =>
+      prepared ? idForPath(stagedTarget) : undefined
+    )
+    const tags: SelectedNode[] = [{ id: '12', title: 'KSampler' }]
+    const sendPromise = session.sendMessage(
+      'explain',
+      undefined,
+      tags,
+      undefined,
+      selectionWorkflowId
+    )
+    expect(selectionWorkflowId).not.toHaveBeenCalled()
+    activePath = 'tab-b'
+    // Drain microtasks while the hold is still up: a resolver queued before
+    // prepare() settles fires here with `prepared` still false, instead of
+    // being masked by releasePrepare() flipping it synchronously.
+    await Promise.resolve()
+    expect(selectionWorkflowId).not.toHaveBeenCalled()
+    releasePrepare()
+    await sendPromise
+
+    expect(selectionWorkflowId).toHaveBeenCalledOnce()
+    expect(vi.mocked(postMessage).mock.calls[0][1]).toMatchObject({
+      workflowId: 'wf-a',
+      selection: { node_ids: ['12'], workflow_id: 'wf-a' }
+    })
+  })
+
   it('(h6) a bind landing in the prepare()/POST window makes an echoed id read as an echo', async () => {
     // Regression for the r3929083595 race: priorWorkflowId was snapshotted
     // before prepare(), so a bindWorkflow() landing in that window (a late
@@ -4642,6 +5597,93 @@ describe('useAgentSession (v1 composition root)', () => {
       ])
     }
     expect(session.isStreaming.value).toBe(false)
+    expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
+      surface: 'agent',
+      errorType: 'agent_send_message_failed',
+      tags: { status: 500, operation: undefined, retryAfterSeconds: undefined }
+    })
+  })
+
+  it('tags a send failure with its status and operation so a thin alert stays diagnosable (PM-2103)', async () => {
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockRejectedValue(
+        new AgentApiError('', 503, undefined, undefined, 'post_thread_message')
+      )
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    expect(await session.sendMessage('boom again')).toBe(false)
+    expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
+      surface: 'agent',
+      errorType: 'agent_send_message_failed',
+      tags: {
+        status: 503,
+        operation: 'post_thread_message',
+        retryAfterSeconds: undefined
+      }
+    })
+  })
+
+  it('keeps rejected attachment names inline without reporting them', async () => {
+    const message =
+      'private-client-name.pdf is not a file type the agent accepts'
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockRejectedValue(
+        new AgentApiError(message, 422, {
+          type: 'ATTACHMENT_TYPE_NOT_ACCEPTED',
+          rejected: ['private-client-name.pdf'],
+          rejected_count: 1
+        })
+      )
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    expect(await session.sendMessage('use this attachment')).toBe(false)
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      parts: [
+        {
+          type: 'notice',
+          level: 'error',
+          text: `Message failed to send: ${message}`
+        }
+      ]
+    })
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('still reports a 422 send failure that is not an attachment refusal', async () => {
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockRejectedValue(
+        new AgentApiError('content too long', 422, { type: 'VALIDATION_ERROR' })
+      )
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    expect(await session.sendMessage('use this attachment')).toBe(false)
+    expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
+      surface: 'agent',
+      errorType: 'agent_send_message_failed',
+      tags: { status: 422, operation: undefined, retryAfterSeconds: undefined }
+    })
   })
 
   it('(l) newChat keeps the active turn running instead of cancelling it', async () => {
@@ -5364,6 +6406,50 @@ describe('useAgentSession (v1 composition root)', () => {
     ])
     expect(session.notices.value).toHaveLength(0)
   })
+
+  // PM-1660: the gate has to be taken in sendMessage, before performSend
+  // awaits prepareWorkflow(), and released however the POST settles. Without
+  // these two cases the wiring can be removed or moved into the success branch
+  // with every agent unit suite still green — only the @cloud spec notices,
+  // and only on the success path.
+  it.for([
+    ['resolves', (resolve: () => void) => resolve()],
+    ['rejects', (_resolve: () => void, reject: () => void) => reject()]
+  ] as const)(
+    'holds the send gate from send until the POST %s, across New Chat',
+    async ([, settlePost]) => {
+      let settle: () => void = () => {}
+      const postMessage = vi.fn(
+        () =>
+          new Promise<AgentTurnAccepted>((resolve, reject) => {
+            settle = () =>
+              settlePost(
+                () =>
+                  resolve({
+                    thread_id: 'th-1',
+                    message_id: 'msg-1',
+                    workflow_id: 'wf-1'
+                  }),
+                () => reject(new Error('post failed'))
+              )
+          })
+      )
+      const rest = fakeRest({ postMessage })
+      const session = useAgentSession({ rest, events: fakeEvents().source })
+      session.start()
+      const gate = useAgentSendGateStore()
+
+      const sent = session.sendMessage('go')
+      await vi.waitFor(() => expect(postMessage).toHaveBeenCalled())
+      session.newChat('new_chat_button')
+
+      expect(gate.isSending).toBe(true)
+      settle()
+      await sent
+
+      expect(gate.isSending).toBe(false)
+    }
+  )
 })
 
 describe('thread resume (B17)', () => {
@@ -5806,7 +6892,8 @@ describe('app:agent_error telemetry (TEL-8)', () => {
 
     expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
       surface: 'agent',
-      errorType: 'agent_send_message_failed'
+      errorType: 'agent_send_message_failed',
+      tags: { status: 500, operation: undefined, retryAfterSeconds: undefined }
     })
   })
 
@@ -6139,7 +7226,7 @@ describe('app:agent_error telemetry (TEL-8)', () => {
     emit(runApproval('msg-1'))
     telemetry.trackAgentError.mockClear()
 
-    await session.answerAsk('turn-1:call-1', 'run')
+    await session.answerAsk('turn-1:call-1', { selected: ['run'] })
 
     expect(telemetry.trackAgentError).toHaveBeenCalledWith({
       error_class: 'ask_answer_failed',
@@ -6164,7 +7251,7 @@ describe('app:agent_error telemetry (TEL-8)', () => {
     emit(runApproval('msg-1'))
     telemetry.trackAgentError.mockClear()
 
-    await session.answerAsk('turn-1:call-1', 'cancel')
+    await session.answerAsk('turn-1:call-1', { selected: ['cancel'] })
 
     expect(telemetry.trackAgentError).not.toHaveBeenCalled()
   })
@@ -6183,7 +7270,7 @@ describe('app:agent_error telemetry (TEL-8)', () => {
     emit(runApproval('msg-1'))
     telemetry.trackAgentError.mockClear()
 
-    await session.answerAsk('turn-1:call-1', 'run')
+    await session.answerAsk('turn-1:call-1', { selected: ['run'] })
 
     expect(telemetry.trackAgentError).toHaveBeenCalledWith({
       error_class: 'ask_answer_failed',

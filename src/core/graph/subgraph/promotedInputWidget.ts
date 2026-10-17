@@ -1,9 +1,8 @@
-import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
+import type { INodeInputSlot } from '@/lib/litegraph/src/types/slots'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { NodeId } from '@/types/nodeId'
-import { isWidgetVisibleOnSurface } from '@/types/widgetVisibility'
 
 import { resolveSubgraphInputTarget } from './resolveSubgraphInputTarget'
 
@@ -99,13 +98,6 @@ export function promotedInputWidget(input: INodeInputSlot): IBaseWidget | null {
 export function promotedInputWidgets(node: LGraphNode): IBaseWidget[] {
   return node.inputs.flatMap((input) => {
     const widget = promotedInputWidget(input)
-    if (!widget) return []
-    const visibility = input.widgetId
-      ? useWidgetValueStore().getWidgetVisibility(input.widgetId)
-      : undefined
-    return !visibility ||
-      isWidgetVisibleOnSurface(visibility, 'panel', { showAdvanced: true })
-      ? [widget]
-      : []
+    return widget ? [widget] : []
   })
 }

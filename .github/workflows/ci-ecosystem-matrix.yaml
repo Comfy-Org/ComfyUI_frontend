@@ -62,7 +62,15 @@ jobs:
       contents: read
       pull-requests: read
     outputs:
-      should-run: ${{ github.event_name == 'pull_request' && github.event.pull_request.changed_files >= 3000 || steps.changes.outputs.should-run-source }}
+      should-run: >-
+        ${{ (github.event_name == 'push'
+          || github.event_name == 'workflow_dispatch'
+          || (github.event_name == 'pull_request'
+            && github.event.pull_request.head.repo.full_name == github.repository
+            && github.repository == 'Comfy-Org/ComfyUI_frontend'
+            && startsWith(github.head_ref, 'version-bump-')))
+          && (github.event.pull_request.changed_files >= 3000
+            || steps.changes.outputs.should-run-source == 'true') }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -72,8 +80,6 @@ jobs:
       - name: Detect relevant changes
         id: changes
         uses: ./.github/actions/changes-filter
-        with:
-          evaluate-candidate: 'true'
 
   # First job in the run, and deliberately dependency-free so its annotation
   # and step summary land at the top. Stale pins are the one failure mode this
@@ -687,7 +693,7 @@ jobs:
         run: |
           set -euo pipefail
           if [ "$SHOULD_RUN" = false ]; then
-            echo 'This candidate changes nothing the matrix measures, so every expensive stage was skipped.' > matrix-explainer.md
+            echo 'The matrix runs on same-repository version-bump PRs with relevant changes, main-branch pushes, and manual dispatches. This candidate does not qualify, so every expensive stage was skipped.' > matrix-explainer.md
             cat matrix-explainer.md
             exit 0
           fi

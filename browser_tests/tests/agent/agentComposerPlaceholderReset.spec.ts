@@ -60,9 +60,10 @@ test.describe(
       const removeButton = panel.getByRole('button', {
         name: `Remove KSampler #${node.id} reference`
       })
-      await expect(removeButton).toBeVisible()
-      await expect(placeholder).toHaveCount(0)
+      await expect(placeholder).toBeHidden()
 
+      await panel.getByTestId('node-reference-chip').hover()
+      await expect(removeButton).toBeVisible()
       await removeButton.click()
       await expect(removeButton).toHaveCount(0)
 

@@ -31,6 +31,7 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { graphToPrompt } from '@/utils/executionUtil'
 import { isWidgetVisibleOnSurface } from '@/types/widgetVisibility'
+import { renameWidget } from '@/utils/widgetUtil'
 
 function setup(min = 0, max = 3) {
   const graph = new LGraph()
@@ -354,6 +355,315 @@ describe('DynamicGroup widgets', () => {
     }
   )
 
+  function setupTwiceDeepPromotion() {
+    const { node, graph, widget } = setup()
+    graph.remove(node)
+    const outerSubgraph = createTestSubgraph({ rootGraph: graph })
+    const outerHost = createTestSubgraphNode(outerSubgraph)
+    graph.add(outerHost)
+    const innerSubgraph = createTestSubgraph({ rootGraph: graph })
+    const innerHost = createTestSubgraphNode(innerSubgraph, {
+      parentGraph: outerSubgraph
+    })
+    outerSubgraph.add(innerHost)
+    innerSubgraph.add(node)
+    widget('loras').value = 2
+    const strength = widget('loras.1.strength')
+    expect(
+      promoteValueWidgetViaSubgraphInput(innerHost, node, strength).ok
+    ).toBe(true)
+    const innerPromoted = promotedInputWidget(innerHost.inputs[0])
+    if (!innerPromoted) throw new Error('Inner promotion failed')
+    expect(
+      promoteValueWidgetViaSubgraphInput(outerHost, innerHost, innerPromoted).ok
+    ).toBe(true)
+    const outerInput = outerHost.inputs[0]
+    expect(promotedInputWidget(outerInput)?.label).toBe('LoRA #2 strength')
+    return { node, widget, innerHost, outerHost, outerSubgraph, outerInput }
+  }
+
+  it.for([
+    { label: 'LoRA #2 strength', expected: 'LoRA #1 strength' },
+    { label: 'My strength', expected: 'My strength' }
+  ])(
+    'shows $expected through two boundaries after removing a row before the promoted field $label',
+    ({ label, expected }) => {
+      const { widget, outerSubgraph, outerInput } = setupTwiceDeepPromotion()
+      outerSubgraph.renameInput(outerSubgraph.inputs[0], label)
+
+      widget('loras.0').callback?.(undefined)
+
+      expect(promotedInputWidget(outerInput)?.label).toBe(expected)
+    }
+  )
+
+  it.for([
+    {
+      name: 'generated labels',
+      innerLabel: 'LoRA #2 strength',
+      outerLabel: 'LoRA #2 strength',
+      expectedInner: 'LoRA #1 strength',
+      expectedOuter: 'LoRA #1 strength'
+    },
+    {
+      name: 'per-instance custom labels',
+      innerLabel: 'Inner strength',
+      outerLabel: 'Outer strength',
+      expectedInner: 'Inner strength',
+      expectedOuter: 'Outer strength'
+    }
+  ])(
+    'preserves $name across multiple instances when rows are renumbered',
+    ({ innerLabel, outerLabel, expectedInner, expectedOuter }) => {
+      const { widget, innerHost, outerHost, outerInput } =
+        setupTwiceDeepPromotion()
+      const rootGraph = innerHost.subgraph.rootGraph
+      const otherOuterSubgraph = createTestSubgraph({ rootGraph })
+      const otherOuterHost = createTestSubgraphNode(otherOuterSubgraph)
+      rootGraph.add(otherOuterHost)
+      const otherInnerHost = createTestSubgraphNode(innerHost.subgraph, {
+        parentGraph: otherOuterSubgraph
+      })
+      otherOuterSubgraph.add(otherInnerHost)
+      const otherInnerPromoted = promotedInputWidget(otherInnerHost.inputs[0])
+      assert.exists(otherInnerPromoted)
+      expect(
+        promoteValueWidgetViaSubgraphInput(
+          otherOuterHost,
+          otherInnerHost,
+          otherInnerPromoted
+        ).ok
+      ).toBe(true)
+      const otherOuterInput = otherOuterHost.inputs[0]
+      expect(promotedInputWidget(otherOuterInput)?.label).toBe(
+        'LoRA #2 strength'
+      )
+      const innerPromoted = promotedInputWidget(innerHost.inputs[0])
+      const outerPromoted = promotedInputWidget(outerInput)
+      assert.exists(innerPromoted)
+      assert.exists(outerPromoted)
+      renameWidget(innerPromoted, innerHost, innerLabel)
+      renameWidget(outerPromoted, outerHost, outerLabel)
+
+      widget('loras.0').callback?.(undefined)
+
+      expect(
+        [
+          innerHost.inputs[0],
+          otherInnerHost.inputs[0],
+          outerInput,
+          otherOuterInput
+        ].map((input) => promotedInputWidget(input)?.label)
+      ).toEqual([
+        expectedInner,
+        'LoRA #1 strength',
+        expectedOuter,
+        'LoRA #1 strength'
+      ])
+    }
+  )
+
+  it('removes a field promoted through two boundaries when its row is removed', async () => {
+    const { widget, innerHost, outerHost, outerInput } =
+      setupTwiceDeepPromotion()
+
+    widget('loras.1').callback?.(undefined)
+
+    expect(innerHost.inputs).toEqual([])
+    expect(outerHost.inputs).toEqual([])
+    await vi.waitFor(() => expect(promotedInputWidget(outerInput)).toBeNull())
+  })
+
+  it('removes the deleted row inputs from both hosts while keeping the next row', () => {
+    const { node, widget, innerHost, outerHost } = setupTwiceDeepPromotion()
+    widget('loras').value = 3
+    expect(
+      promoteValueWidgetViaSubgraphInput(
+        innerHost,
+        node,
+        widget('loras.2.strength')
+      ).ok
+    ).toBe(true)
+    const innerPromoted = promotedInputWidget(innerHost.inputs[1])
+    assert.exists(innerPromoted)
+    expect(
+      promoteValueWidgetViaSubgraphInput(outerHost, innerHost, innerPromoted).ok
+    ).toBe(true)
+
+    widget('loras.1').callback?.(undefined)
+
+    expect(innerHost.subgraph.inputs).toHaveLength(1)
+    expect(outerHost.subgraph.inputs).toHaveLength(1)
+    expect(
+      [innerHost.inputs, outerHost.inputs].map((inputs) =>
+        inputs.map((input) => promotedInputWidget(input)?.label)
+      )
+    ).toEqual([['LoRA #2 strength'], ['LoRA #2 strength']])
+  })
+
+  it('drops the rerouted promotion link of a removed subgraph input', () => {
+    const { node, widget, innerHost } = setupTwiceDeepPromotion()
+    const subgraph = innerHost.subgraph
+    const linkId = node.inputs.find(
+      (input) => input.name === 'loras.1.strength'
+    )?.link
+    const link = linkId == null ? undefined : subgraph.links.get(linkId)
+    assert.exists(link)
+    assert.exists(subgraph.createReroute([0, 0], link))
+
+    widget('loras.1').callback?.(undefined)
+
+    expect(subgraph.inputs).toEqual([])
+    expect(subgraph.floatingLinks.size).toBe(0)
+  })
+
+  it('drops the rerouted link of a later promoted field in the same row', () => {
+    const { node, widget, innerHost } = setupTwiceDeepPromotion()
+    const subgraph = innerHost.subgraph
+    expect(
+      promoteValueWidgetViaSubgraphInput(
+        innerHost,
+        node,
+        widget('loras.1.enabled')
+      ).ok
+    ).toBe(true)
+    const linkId = node.inputs.find(
+      (input) => input.name === 'loras.1.enabled'
+    )?.link
+    const link = linkId == null ? undefined : subgraph.links.get(linkId)
+    assert.exists(link)
+    assert.exists(subgraph.createReroute([0, 0], link))
+
+    widget('loras.1').callback?.(undefined)
+
+    expect(subgraph.inputs).toEqual([])
+    expect(subgraph.floatingLinks.size).toBe(0)
+  })
+
+  it('drops a floating host link left on a removed promoted input', () => {
+    const { widget, innerHost, outerSubgraph } = setupTwiceDeepPromotion()
+    const linkId = innerHost.inputs[0].link
+    const link = linkId == null ? undefined : outerSubgraph.links.get(linkId)
+    assert.exists(link)
+    assert.exists(outerSubgraph.createReroute([0, 0], link))
+    link.disconnect(outerSubgraph, 'input')
+    expect(outerSubgraph.floatingLinks.size).toBe(1)
+
+    widget('loras.1').callback?.(undefined)
+
+    expect(innerHost.inputs).toEqual([])
+    expect(outerSubgraph.floatingLinks.size).toBe(0)
+  })
+
+  it('removes every promoted field of the deleted row through two boundaries', () => {
+    const { node, widget, innerHost, outerHost } = setupTwiceDeepPromotion()
+    widget('loras').value = 3
+    expect(
+      promoteValueWidgetViaSubgraphInput(
+        innerHost,
+        node,
+        widget('loras.1.enabled')
+      ).ok
+    ).toBe(true)
+    const enabled = promotedInputWidget(innerHost.inputs[1])
+    assert.exists(enabled)
+    expect(
+      promoteValueWidgetViaSubgraphInput(outerHost, innerHost, enabled).ok
+    ).toBe(true)
+    expect(
+      promoteValueWidgetViaSubgraphInput(
+        innerHost,
+        node,
+        widget('loras.2.strength')
+      ).ok
+    ).toBe(true)
+    const strength = promotedInputWidget(innerHost.inputs[2])
+    assert.exists(strength)
+    expect(
+      promoteValueWidgetViaSubgraphInput(outerHost, innerHost, strength).ok
+    ).toBe(true)
+
+    widget('loras.1').callback?.(undefined)
+
+    expect(
+      [innerHost.inputs, outerHost.inputs].map((inputs) =>
+        inputs.map((input) => promotedInputWidget(input)?.label)
+      )
+    ).toEqual([['LoRA #2 strength'], ['LoRA #2 strength']])
+  })
+
+  it('disconnects the deleted row at the outer host while keeping the next row connected', async () => {
+    const { node, widget, innerHost, outerHost, outerInput } =
+      setupTwiceDeepPromotion()
+    const graph = innerHost.subgraph.rootGraph
+    widget('loras').value = 3
+    widget('loras.2.lora_name').value = 'C'
+    widget('loras.2.strength').value = 0.37
+    expect(
+      promoteValueWidgetViaSubgraphInput(
+        innerHost,
+        node,
+        widget('loras.2.strength')
+      ).ok
+    ).toBe(true)
+    const innerPromoted = promotedInputWidget(innerHost.inputs[1])
+    assert.exists(innerPromoted)
+    expect(
+      promoteValueWidgetViaSubgraphInput(outerHost, innerHost, innerPromoted).ok
+    ).toBe(true)
+    const survivingInput = outerHost.inputs[1]
+    const otherHost = createTestSubgraphNode(outerHost.subgraph)
+    graph.add(otherHost)
+    const source = new LGraphNode('Strength source')
+    source.addOutput('strength', 'FLOAT')
+    graph.add(source)
+    const removed = source.connect(0, outerHost, 0)
+    const otherRemoved = source.connect(0, otherHost, 0)
+    const retained = source.connect(0, outerHost, 1)
+    assert.exists(removed)
+    assert.exists(otherRemoved)
+    assert.exists(retained)
+
+    widget('loras.1').callback?.(undefined)
+
+    await vi.waitFor(() => expect(promotedInputWidget(outerInput)).toBeNull())
+    expect(graph.getLink(removed.id)).toBeUndefined()
+    expect(graph.getLink(otherRemoved.id)).toBeUndefined()
+    expect(outerHost.inputs).toEqual([survivingInput])
+    expect(otherHost.inputs).toHaveLength(1)
+    assert.exists(survivingInput.link)
+    expect(graph.getLink(survivingInput.link)).toBe(retained)
+    expect(promotedInputWidget(survivingInput)?.value).toBe(0.37)
+    expect(promotedInputWidget(survivingInput)?.label).toBe('LoRA #2 strength')
+    expect(widget('loras.1.lora_name').value).toBe('C')
+    expect(widget('loras.1.strength').value).toBe(0.37)
+  })
+
+  it('keeps the outer connection when another node still consumes the promoted input', () => {
+    const { widget, innerHost, outerHost, outerInput } =
+      setupTwiceDeepPromotion()
+    const graph = innerHost.subgraph.rootGraph
+    const other = new LGraphNode('Another strength consumer')
+    const input = other.addInput('strength', 'FLOAT')
+    innerHost.subgraph.add(other)
+    const internal = innerHost.subgraph.inputNode.slots[0].connect(input, other)
+    const source = new LGraphNode('Strength source')
+    source.addOutput('strength', 'FLOAT')
+    graph.add(source)
+    const external = source.connect(0, outerHost, 0)
+    assert.exists(internal)
+    assert.exists(external)
+
+    widget('loras.1').callback?.(undefined)
+
+    assert.exists(outerInput.link)
+    assert.exists(input.link)
+    expect(graph.getLink(outerInput.link)).toBe(external)
+    expect(innerHost.subgraph.getLink(input.link)).toBe(internal)
+    expect(innerHost.subgraph.inputs[0].linkIds).toEqual([internal.id])
+    expect(widget('loras').value).toBe(1)
+  })
+
   it.for([
     { label: 'LoRA #2 strength', expected: 'LoRA 1행 strength' },
     { label: 'My strength', expected: 'My strength' }
@@ -450,7 +760,6 @@ describe('DynamicGroup widgets', () => {
     const link = source.connect(0, node, node.findInputSlot('loras.0.strength'))
     const saved = node.serialize()
     const previousWidgets = [...(node.widgets ?? [])]
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     const update = vi.spyOn(useLinkStore(), 'updateEndpoints').mockReturnValue({
       ok: false,
       error: { code: 'unowned-topology', message: 'Rejected' }
@@ -474,7 +783,6 @@ describe('DynamicGroup widgets', () => {
     graph.add(source)
     const link = source.connect(0, node, node.findInputSlot('loras.1.strength'))
     const saved = node.serialize()
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     vi.spyOn(useLinkStore(), 'updateEndpoints').mockReturnValue({
       ok: false,
       error: { code: 'unowned-topology', message: 'Rejected' }
@@ -543,7 +851,6 @@ describe('DynamicGroup widgets', () => {
       }
     }
     LiteGraph.registerNodeType(nodeType, InvalidDynamicGroup)
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     try {
       const restored = new LGraph()
       restored.configure(saved)

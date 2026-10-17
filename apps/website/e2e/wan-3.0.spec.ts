@@ -1,8 +1,8 @@
 import { expect } from '@playwright/test'
 
-import { getRoutes } from '../src/config/routes'
-import { wan3Page } from '../src/data/wan3'
-import { t } from '../src/i18n/translations'
+import { getRoutes } from '@/config/routes'
+import { wan3Page } from '@/data/wan3'
+import { t } from '@/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 import { waitForIsland } from './fixtures/islands'
 
@@ -14,7 +14,7 @@ const HERO_SECONDARY_CTA = t('wan3.hero.secondaryCta')
 const FAQ_HEADING = t('wan3.faq.heading')
 const RUN_OPTIONS_HEADING = t('wan3.runOptions.heading')
 const REVIEWS_HEADING = t('wan3.reviews.heading')
-const MODELS_ROUTE = getRoutes('en').models
+const MODELS_ROUTE = getRoutes('en').workshop
 const WAN3_TEMPLATE = 'https://cloud.comfy.org/?template=api_wan3_0_t2v'
 
 // Counts are the launch requirement rather than a snapshot of the config:
@@ -82,7 +82,7 @@ test.describe('Wan 3.0 launch page @smoke', () => {
   test('breadcrumb trail links to the models catalog', async ({ page }) => {
     const modelsCrumb = page
       .getByRole('navigation', { name: t('ui.breadcrumb') })
-      .getByRole('link', { name: t('models.breadcrumb.models') })
+      .getByRole('link', { name: t('workshop.model.breadcrumb') })
     await expect(modelsCrumb).toHaveAttribute('href', MODELS_ROUTE)
   })
 
@@ -180,9 +180,12 @@ test.describe('Wan 3.0 launch page — zh-CN', () => {
         name: t('ui.breadcrumb', {}, { locale: 'zh-CN' })
       })
       .getByRole('link', {
-        name: t('models.breadcrumb.models', {}, { locale: 'zh-CN' })
+        name: t('workshop.model.breadcrumb', {}, { locale: 'zh-CN' })
       })
-    await expect(modelsCrumb).toHaveAttribute('href', getRoutes('zh-CN').models)
+    await expect(modelsCrumb).toHaveAttribute(
+      'href',
+      getRoutes('zh-CN').workshop
+    )
 
     const footerLink = page
       .locator('footer')

@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { translationsFor } from '../../../i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { DirectionGroup } from '../../../lib/workshop/cinematic-studio/catalog'
-import type { Locale } from '../../../i18n/translations'
+import type { DirectionGroup } from '@/lib/workshop/cinematic-studio/catalog'
+import type { Locale } from '@/i18n/translations'
 import CinematicOptionIcon from './CinematicOptionIcon.vue'
 
 const {

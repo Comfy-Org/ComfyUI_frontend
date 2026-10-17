@@ -52,7 +52,7 @@
           :searcher="applySearchQuery"
           :debounce-ms="400"
           :debounce-max-wait-ms="4000"
-          class="h-9 w-full min-w-0 flex-1 border border-border-subtle bg-transparent min-[880px]:ml-auto min-[880px]:max-w-96"
+          class="h-9 w-full min-w-0 border border-border-subtle bg-transparent min-[880px]:ml-auto min-[880px]:max-w-96"
           autofocus
         />
       </div>
@@ -70,7 +70,7 @@
         data-testid="template-filter-bar"
       >
         <div class="flex items-center gap-3">
-          <div class="flex min-w-0 shrink items-center gap-2">
+          <div class="flex min-w-0 items-center gap-2">
             <Button
               v-for="tab in typeTabs"
               :key="tab.value"
@@ -89,7 +89,7 @@
           </div>
 
           <div
-            class="ml-auto hidden min-w-0 shrink items-center justify-end gap-2 @[58rem]/filters:flex"
+            class="ml-auto hidden min-w-0 items-center justify-end gap-2 @[58rem]/filters:flex"
           >
             <TemplateFilterControls
               v-bind="filterControlBindings"
@@ -281,7 +281,8 @@
                 >
                   <Button
                     v-if="template.tutorialUrl"
-                    v-tooltip.bottom="$t('g.seeTutorial')"
+                    :tooltip="$t('g.seeTutorial')"
+                    tooltip-side="bottom"
                     :aria-label="$t('g.seeTutorial')"
                     variant="inverted"
                     size="icon"
@@ -324,17 +325,25 @@
                       shape="square"
                       class="bg-charcoal-500/50 opacity-80"
                     />
-                    <AccessibleTooltip
-                      v-if="tags.hidden.length"
-                      :label="tags.hidden"
-                      trigger-class="rounded-sm"
-                    >
-                      <Tag
-                        :label="`+${tags.hidden.length}`"
-                        shape="square"
-                        class="bg-charcoal-500/50 opacity-80"
-                      />
-                    </AccessibleTooltip>
+                    <Tooltip v-if="tags.hidden.length" open-on-click>
+                      <TooltipTrigger as-child>
+                        <button
+                          type="button"
+                          :aria-label="tags.hidden.join(', ')"
+                          class="cursor-pointer rounded-sm border-none bg-transparent p-0 focus-visible:ring-1 focus-visible:ring-base-foreground focus-visible:outline-none"
+                          @click.stop
+                        >
+                          <Tag
+                            :label="`+${tags.hidden.length}`"
+                            shape="square"
+                            class="bg-charcoal-500/50 opacity-80"
+                          />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>{{
+                        tags.hidden.join(', ')
+                      }}</TooltipContent>
+                    </Tooltip>
                   </div>
                 </div>
               </CardBottom>
@@ -380,7 +389,7 @@
         ref="loadTrigger"
         class="mt-4 flex h-4 w-full items-center justify-center px-6"
       >
-        <div v-if="isLoadingMore" class="text-sm text-muted">
+        <div v-if="isLoadingMore" class="text-sm text-muted-foreground">
           {{ $t('templateWorkflows.loadingMore', 'Loading more...') }}
         </div>
       </div>
@@ -389,7 +398,7 @@
       <div
         v-if="!isLoading"
         v-show="!activeDetail"
-        class="mt-6 px-6 pb-10 text-sm text-muted"
+        class="mt-6 px-6 pb-10 text-sm text-muted-foreground"
       >
         {{
           $t('templateWorkflows.resultsCount', {
@@ -408,7 +417,10 @@
         :cloud-url="activeDetailCloudUrl"
         :is-partner-node="activeDetail.template.openSource === false"
         :open-pending="openPending"
+        :model-setup="activeDetailModelSetup"
         @open-template="onOpenTemplate"
+        @download-models-and-open="onDownloadModelsAndOpen"
+        @download-model="onDownloadModel"
       >
         <template #preview>
           <TemplatePreview
@@ -442,6 +454,7 @@ import {
   watch
 } from 'vue'
 import { useI18n } from 'vue-i18n'
+import type { ComfyTemplateInputAsset } from '@comfyorg/comfyui-desktop-bridge-types'
 
 import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
@@ -453,7 +466,9 @@ import WorkflowTemplateDetail from '@/components/custom/widget/WorkflowTemplateD
 import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import TemplatePreview from '@/components/templates/thumbnails/TemplatePreview.vue'
 import Button from '@/components/ui/button/Button.vue'
-import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import { selectCountBadgeClass } from '@comfyorg/design-system/select.variants'
 import type { SelectOption } from '@/components/ui/select/types'
 import Spinner from '@/components/ui/spinner/Spinner.vue'
@@ -466,11 +481,16 @@ import type { TemplateSortMode } from '@/composables/useTemplateFiltering'
 import { getComfyCloudBaseUrl } from '@/config/comfyApi'
 import { formatCategoryLabel } from '@/platform/assets/utils/categoryLabel'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
-import { isModelDownloadable } from '@/platform/missingModel/missingModelDownload'
+import { loadFolderPathsOnce } from '@/platform/missingModel/folderPathCache'
+import {
+  isModelDownloadable,
+  modelDownloadNeedsFolderPaths
+} from '@/platform/missingModel/missingModelDownload'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { getModelFileKey } from '@/platform/workflow/core/utils/modelRequirements'
 import { useTemplateModelAvailability } from '@/platform/workflow/templates/composables/useTemplateModelAvailability'
+import { useTemplateModelRowDownloads } from '@/platform/workflow/templates/composables/useTemplateModelRowDownloads'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import type { PreparedWorkflowTemplate } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import type {
@@ -478,7 +498,11 @@ import type {
   TemplateTypeFilter
 } from '@/platform/workflow/templates/types/template'
 import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
-import type { TemplateDetailGroup } from '@/platform/workflow/templates/types/templateDetail'
+import type {
+  TemplateDetailGroup,
+  TemplateDetailRow,
+  TemplateModelSetup
+} from '@/platform/workflow/templates/types/templateDetail'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import {
   filterTemplatesByType,
@@ -489,11 +513,17 @@ import { resolveTemplateModelMetadata } from '@/platform/workflow/templates/util
 import { extractTemplateModelRequirementDetails } from '@/platform/workflow/templates/utils/templateModelRequirements'
 import type { TemplateModelRequirementDetail } from '@/platform/workflow/templates/utils/templateModelRequirements'
 import type { ResolvedTemplateModelAvailability } from '@/platform/workflow/templates/utils/templateModelAvailability'
-import { deriveTemplateModelSetup } from '@/platform/workflow/templates/utils/templateModelSetup'
+import {
+  deriveTemplateModelSetup,
+  isModelDownloadCandidate,
+  isModelRowComplete,
+  remainingModelDownloadTotal
+} from '@/platform/workflow/templates/utils/templateModelSetup'
 import type {
   TemplateModelSetupResult,
   TemplateModelSetupRow
 } from '@/platform/workflow/templates/utils/templateModelSetup'
+import { resolveTemplateInputAssets } from '@/platform/workflow/templates/utils/templateInputAssets'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
 import { OnCloseKey } from '@/types/widgetTypes'
 import { formatSize } from '@/utils/formatUtil'
@@ -517,6 +547,7 @@ onMounted(() => {
 
 // Wrap onClose to track session end
 const onClose = () => {
+  activeDetail.value?.modelSetup.rowDownloads.dispose()
   invalidateDetailWork()
   const timeSpentSeconds = Math.floor(
     (Date.now() - sessionStartTime.value) / 1000
@@ -753,8 +784,12 @@ const hasActiveFilters = computed(
 const mobileFiltersOpen = ref(false)
 const hoveredTemplate = ref<string | null>(null)
 const cardRefs = ref<HTMLElement[]>([])
+type TemplateModelRowDownloads = ReturnType<typeof useTemplateModelRowDownloads>
+
 type ActiveTemplateModelSetup = {
   result: TemplateModelSetupResult
+  pending: boolean
+  rowDownloads: TemplateModelRowDownloads
 }
 
 const modalLayout = ref<InstanceType<typeof BaseModalLayout> | null>(null)
@@ -763,6 +798,7 @@ const activeDetail = ref<{
   template: TemplateInfo
   prepared: PreparedWorkflowTemplate
   modelSetup: ActiveTemplateModelSetup
+  inputAssets: readonly ComfyTemplateInputAsset[]
 } | null>(null)
 const openPending = ref(false)
 let detailGeneration = 0
@@ -949,6 +985,7 @@ watch(
     selectedRunsOn
   ],
   () => {
+    activeDetail.value?.modelSetup.rowDownloads.dispose()
     invalidateDetailWork()
     activeDetail.value = null
     resetPagination()
@@ -989,30 +1026,158 @@ function getModelDetailDescription(row: TemplateModelSetupRow): string {
   return parts.filter(Boolean).join(' · ')
 }
 
-function buildTemplateDetailGroups(
-  setup: TemplateModelSetupResult
-): readonly TemplateDetailGroup[] {
-  if (setup.rows.length === 0) return []
+function toModelDetailRow(
+  row: TemplateModelSetupRow,
+  rowDownloads: TemplateModelRowDownloads
+): TemplateDetailRow {
+  const detailRow: TemplateDetailRow = {
+    id: `model:${getModelFileKey(row.model)}`,
+    kind: 'model',
+    name: row.model.name,
+    description: getModelDetailDescription(row)
+  }
 
-  return [
-    {
+  switch (row.status) {
+    case 'installed':
+      return {
+        ...detailRow,
+        status: {
+          kind: 'installed',
+          label: t('templateWorkflows.detail.installed')
+        }
+      }
+    case 'downloadable':
+      return {
+        ...detailRow,
+        status: {
+          kind: 'downloadable',
+          label: t('templateWorkflows.detail.downloadModel'),
+          downloadState: rowDownloads.stateFor(row.model)
+        }
+      }
+    case 'manual':
+      return {
+        ...detailRow,
+        status: {
+          kind: 'manual',
+          label: t('templateWorkflows.detail.getItManually'),
+          href: row.href
+        }
+      }
+    case 'unavailable':
+      return {
+        ...detailRow,
+        status: {
+          kind: 'unavailable',
+          label: t('templateWorkflows.detail.unavailable')
+        }
+      }
+    case 'unknown':
+      return {
+        ...detailRow,
+        status: {
+          kind: 'unknown',
+          label: t('templateWorkflows.detail.unknown')
+        }
+      }
+    default:
+      return row satisfies never
+  }
+}
+
+function toInputDetailRow(asset: ComfyTemplateInputAsset): TemplateDetailRow {
+  return {
+    id: `input:${asset.assetId}`,
+    kind: 'input',
+    name: t(`templateWorkflows.detail.inputMediaTypes.${asset.mediaType}`),
+    description: asset.filename,
+    ...(asset.previewUrl && {
+      preview: { src: asset.previewUrl, mediaType: asset.mediaType }
+    })
+  }
+}
+
+function buildTemplateDetailGroups(
+  setup: TemplateModelSetupResult,
+  rowDownloads: TemplateModelRowDownloads,
+  inputAssets: readonly ComfyTemplateInputAsset[]
+): readonly TemplateDetailGroup[] {
+  const groups: TemplateDetailGroup[] = []
+
+  if (setup.rows.length > 0) {
+    groups.push({
       id: 'models',
       label: t('templateWorkflows.detail.models'),
       ...(setup.declarationTotal.isComplete && {
         total: formatSize(setup.declarationTotal.bytes)
       }),
-      rows: setup.rows.map((row) => ({
-        id: `model:${getModelFileKey(row.model)}`,
-        name: row.model.name,
-        description: getModelDetailDescription(row)
-      }))
-    }
-  ]
+      rows: setup.rows.map((row) => toModelDetailRow(row, rowDownloads))
+    })
+  }
+
+  if (inputAssets.length > 0) {
+    groups.push({
+      id: 'input-assets',
+      label: t('templateWorkflows.detail.inputAssets'),
+      rows: inputAssets.map(toInputDetailRow)
+    })
+  }
+
+  return groups
 }
 
 const activeDetailGroups = computed<readonly TemplateDetailGroup[]>(() => {
-  const setup = activeDetail.value?.modelSetup.result
-  return setup ? buildTemplateDetailGroups(setup) : []
+  const detail = activeDetail.value
+  if (!detail) return []
+
+  return buildTemplateDetailGroups(
+    detail.modelSetup.result,
+    detail.modelSetup.rowDownloads,
+    detail.inputAssets
+  )
+})
+
+/** The rows this click would start. */
+const activeDetailModelDownloadCandidates = computed<
+  readonly TemplateModelSetupRow[]
+>(() => {
+  const setup = activeDetail.value?.modelSetup
+  if (!setup || setup.pending) return []
+  return setup.result.rows.filter((row) =>
+    isModelDownloadCandidate(row, setup.rowDownloads.stateFor)
+  )
+})
+
+const activeDetailModelDownloadsAvailable = computed(
+  () => activeDetailModelDownloadCandidates.value.length > 0
+)
+
+/** Withheld unless every candidate declares a size: a partial total reads as complete. */
+const activeDetailModelRequirementsMet = computed(() => {
+  const setup = activeDetail.value?.modelSetup
+  return Boolean(
+    setup &&
+    setup.result.rows.every((row) =>
+      isModelRowComplete(row, setup.rowDownloads.stateFor)
+    )
+  )
+})
+
+const activeDetailModelSetup = computed<TemplateModelSetup | undefined>(() => {
+  const setup = activeDetail.value?.modelSetup
+  if (!setup) return undefined
+  if (setup.pending) return { state: 'resolving' }
+  if (activeDetailModelRequirementsMet.value) return undefined
+  if (!activeDetailModelDownloadsAvailable.value) return undefined
+
+  const total = remainingModelDownloadTotal(
+    setup.result.rows,
+    setup.rowDownloads.stateFor
+  )
+  return {
+    state: 'startable',
+    remainingSize: total.isComplete ? formatSize(total.bytes) : undefined
+  }
 })
 
 function applyTemplateModelMetadata(
@@ -1031,6 +1196,7 @@ function applyTemplateModelMetadata(
     metadata,
     { isDownloadable: isModelDownloadable }
   )
+  setup.pending = false
 }
 
 function handleTemplateModelMetadataError(
@@ -1039,6 +1205,8 @@ function handleTemplateModelMetadataError(
   controller: AbortController
 ) {
   if (controller.signal.aborted || generation !== detailGeneration) return
+  const setup = activeDetail.value?.modelSetup
+  if (setup) setup.pending = false
   reportError(error, {
     surface: 'graph',
     errorType: 'workflow_template_model_metadata_failed',
@@ -1095,24 +1263,41 @@ async function showModelSetupIfNeeded(
   const requirements = extractTemplateModelRequirementDetails(
     prepared.data.json
   )
+  const inputAssetsPromise =
+    prepared.sourceModule === 'default'
+      ? resolveTemplateInputAssets(template.name, () => window.__comfyDesktop2)
+      : Promise.resolve<readonly ComfyTemplateInputAsset[]>([])
   if (requirements.length === 0) return false
 
-  const availability = await resolveModelAvailability(
-    requirements.map(({ model }) => model)
-  )
+  // Only the Electron path needs real directories, and resolving them here
+  // rather than mid-dispatch keeps a download from depending on a lookup that
+  // can finish after this view is gone.
+  const [availability, folderPaths] = await Promise.all([
+    resolveModelAvailability(requirements.map(({ model }) => model)),
+    modelDownloadNeedsFolderPaths()
+      ? loadFolderPathsOnce().catch(() => ({}))
+      : Promise.resolve({})
+  ])
   if (generation !== detailGeneration) return true
   if (!availability.some(({ status }) => status === 'missing')) return false
 
+  const inputAssets = await inputAssetsPromise
+  if (generation !== detailGeneration) return true
+
+  const rowDownloads = useTemplateModelRowDownloads({ folderPaths })
   activeDetail.value = {
     template,
     prepared: markRaw(prepared),
+    inputAssets,
     modelSetup: {
       result: deriveTemplateModelSetup(
         requirements,
         availability,
         { status: 'aborted' },
         { isDownloadable: isModelDownloadable }
-      )
+      ),
+      pending: true,
+      rowDownloads
     }
   }
   const controller = new AbortController()
@@ -1160,6 +1345,7 @@ const onLoadWorkflow = async (template: TemplateInfo, event: MouseEvent) => {
 async function onBackToTemplates() {
   if (openPending.value) return
 
+  activeDetail.value?.modelSetup.rowDownloads.dispose()
   invalidateDetailWork()
   activeDetail.value = null
   await nextTick()
@@ -1167,9 +1353,34 @@ async function onBackToTemplates() {
   detailOrigin?.focus()
 }
 
+function onDownloadModel(rowId: string) {
+  const setup = activeDetail.value?.modelSetup
+  if (!setup) return
+
+  const row = setup.result.rows.find(
+    (candidate) =>
+      candidate.status === 'downloadable' &&
+      `model:${getModelFileKey(candidate.model)}` === rowId
+  )
+  if (row?.status === 'downloadable') setup.rowDownloads.request(row.model)
+}
+
+async function onDownloadModelsAndOpen() {
+  const detail = activeDetail.value
+  const setup = detail?.modelSetup
+  if (!detail || !setup || setup.pending || openPending.value) return
+
+  for (const row of activeDetailModelDownloadCandidates.value) {
+    setup.rowDownloads.request(row.model)
+  }
+
+  await onOpenTemplate()
+}
+
 function onSelectNavItem(value: string | null) {
   if (openPending.value) return
 
+  activeDetail.value?.modelSetup.rowDownloads.dispose()
   invalidateDetailWork()
   activeDetail.value = null
   selectedNavItem.value = value
@@ -1249,6 +1460,7 @@ const { isLoading } = useAsyncState(
 )
 
 onBeforeUnmount(() => {
+  activeDetail.value?.modelSetup.rowDownloads.dispose()
   invalidateDetailWork()
   detailOrigin = null
   cardRefs.value = [] // Release DOM refs

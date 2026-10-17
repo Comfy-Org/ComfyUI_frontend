@@ -9,7 +9,6 @@ import AgentConsentCard from './AgentConsentCard.vue'
 
 const props = {
   title: 'Meet Comfy Agent',
-  titleId: 'agent-consent',
   paragraphs: ['First paragraph.', 'Second paragraph.']
 }
 
@@ -26,10 +25,9 @@ describe('AgentConsentCard', () => {
   it('labels the supplied copy for its parent dialog', () => {
     renderCard()
 
-    expect(screen.getByRole('heading', { name: props.title })).toHaveAttribute(
-      'id',
-      props.titleId
-    )
+    expect(
+      screen.getByRole('heading', { name: props.title })
+    ).toBeInTheDocument()
     for (const paragraph of props.paragraphs) {
       expect(screen.getByText(paragraph)).toBeInTheDocument()
     }
@@ -92,8 +90,13 @@ describe('AgentConsentCard', () => {
   })
 
   it('falls back to the placeholder when the video fails to load', async () => {
-    renderCard({ videoSrc: 'https://example.test/a.mp4' })
+    renderCard({
+      videoSources: [{ src: 'https://example.test/a.mp4', type: 'video/mp4' }]
+    })
     expect(screen.queryByText('Video unavailable')).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Play' })
+    ).not.toBeInTheDocument()
 
     await fireEvent.error(screen.getByTestId('agent-consent-video'))
 

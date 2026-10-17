@@ -1,26 +1,21 @@
 <script setup lang="ts">
-import {
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuPortal,
-  DropdownMenuRoot,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
-} from 'reka-ui'
+import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
 import { storeToRefs } from 'pinia'
 import { computed, nextTick, onScopeDispose, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
-import { buildTooltipConfig } from '@/composables/useTooltipConfig'
+import Menu from '@/components/ui/menu/Menu.vue'
+import type { MenuItem } from '@/components/ui/menu/types'
 import type {
   AgentFreeUseNoticeMetadata,
   AgentPaywallSurface,
+  AgentStarterPromptAssignment,
   AgentStopMethod
 } from '@/platform/telemetry/types'
-import type { FreeUseVariant } from '../../experiments/freeUsePlacement'
 
+import type { FreeUseVariant } from '../../experiments/freeUsePlacement'
 import type { ActiveTab } from '../../types/activeTab'
 import type {
   WorkflowReference,
@@ -28,7 +23,7 @@ import type {
   WorkflowReferenceOption
 } from '../../types/workflowReference'
 import type { TurnId } from '../../schemas/agentApiSchema'
-import type { ComposerAttachment } from '../../composables/agent/useComposer'
+import type { ComposerAttachment } from '../../types/composerAttachment'
 import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
 import { DEFAULT_AGENT_PAYWALL_PRESENTATION } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
 import type {
@@ -84,7 +79,9 @@ const {
   selectHistory = async () => false,
   editableTurnId = null,
   answeringAskIds = new Set<string>(),
-  freeUsePlacement = 'control'
+  freeUsePlacement = 'control',
+  starterPromptAssignment = 'control',
+  attributeStarterPromptExperiment = false
 } = defineProps<{
   entries: ConversationEntry[]
   userName?: string
@@ -125,6 +122,8 @@ const {
   editableTurnId?: TurnId | null
   answeringAskIds?: ReadonlySet<string>
   freeUsePlacement?: FreeUseVariant
+  starterPromptAssignment?: AgentStarterPromptAssignment
+  attributeStarterPromptExperiment?: boolean
 }>()
 const emit = defineEmits<{
   send: [
@@ -135,6 +134,7 @@ const emit = defineEmits<{
   stop: [method: AgentStopMethod]
   attach: []
   attachFiles: [files: File[]]
+  removeAttachment: [id: string]
   openAssets: []
   selectNodes: []
   removeTag: [id: string]
@@ -153,12 +153,13 @@ const emit = defineEmits<{
   copyHistory: [id: string]
   renameHistory: [id: string, title: string]
   renameChat: [title: string]
-  answerAsk: [askId: string, selection: 'run' | 'cancel']
+  answerAsk: [askId: string, answer: AgentAnswerRequest]
   openWorkflow: [askId: string, workflowId: string, workflowName?: string]
   approvalShown: [askId: string, turnId: string, workflowId: string | null]
   openReferenceWorkflow: [workflowId: string, workflowName: string]
   showTarget: []
   freeUseNotice: [metadata: AgentFreeUseNoticeMetadata]
+  starterPromptRendered: [assignment: AgentStarterPromptAssignment]
 }>()
 
 const targetNotice = computed(() => {
@@ -249,6 +250,21 @@ function onDeleteHistory(id: string): void {
     }
   emit('deleteHistory', id)
 }
+
+const chatMenuItems = computed<MenuItem[]>(() => [
+  {
+    label: t('g.rename'),
+    icon: 'icon-[lucide--pencil]',
+    command: startRename
+  },
+  { separator: true },
+  {
+    label: t('g.delete'),
+    icon: 'icon-[lucide--trash-2]',
+    variant: 'destructive',
+    command: onDeleteChat
+  }
+])
 
 function onClose(): void {
   panelStore.interruptHistorySelection()
@@ -372,7 +388,8 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
       <div class="flex h-10 shrink-0 items-center px-2">
         <Button
           id="agent-chat-history"
-          v-tooltip.right="buildTooltipConfig(t('agent.showChatHistory'))"
+          :tooltip="t('agent.showChatHistory')"
+          tooltip-side="right"
           type="button"
           variant="muted-textonly"
           size="icon-sm"
@@ -412,10 +429,18 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
               sessionTitle || t('agent.newChatTitle')
             }}</span>
           </Button>
-          <DropdownMenuRoot v-if="sessionId">
-            <DropdownMenuTrigger as-child>
+          <Menu
+            v-if="sessionId"
+            :items="chatMenuItems"
+            side="bottom"
+            align="start"
+            :side-offset="4"
+            class="agent-scope"
+          >
+            <template #trigger>
               <Button
-                v-tooltip.bottom="buildTooltipConfig(t('agent.chatOptions'))"
+                :tooltip="t('agent.chatOptions')"
+                tooltip-side="bottom"
                 variant="muted-textonly"
                 size="icon-sm"
                 :aria-label="t('agent.chatOptions')"
@@ -423,34 +448,8 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
               >
                 <span class="icon-[lucide--chevron-down] size-3" />
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuPortal>
-              <DropdownMenuContent
-                side="bottom"
-                align="start"
-                :side-offset="4"
-                class="agent-scope z-1100 flex h-16 w-32 flex-col gap-1 rounded-xl bg-secondary-background p-1 shadow-lg"
-              >
-                <DropdownMenuItem
-                  class="flex h-6 w-full shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-xs text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
-                  @select="startRename"
-                >
-                  <span class="icon-[lucide--pencil] size-4 shrink-0" />
-                  <span class="truncate">{{ t('g.rename') }}</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator
-                  class="relative h-0 w-full shrink-0 before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-component-node-border"
-                />
-                <DropdownMenuItem
-                  class="flex h-6 w-full shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-xs text-base-foreground outline-none data-highlighted:bg-secondary-background-hover data-highlighted:text-destructive-background"
-                  @select="onDeleteChat"
-                >
-                  <span class="icon-[lucide--trash-2] size-4 shrink-0" />
-                  <span class="truncate">{{ t('g.delete') }}</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenuPortal>
-          </DropdownMenuRoot>
+            </template>
+          </Menu>
         </div>
       </div>
 
@@ -458,6 +457,9 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
         <EmptyState
           v-if="!entries.length"
           :user-name
+          :assignment="starterPromptAssignment"
+          :attribute-experiment="attributeStarterPromptExperiment"
+          @rendered="emit('starterPromptRendered', $event)"
           @insert="
             (text, prompt) => {
               composerRef?.insert(text, prompt)
@@ -495,8 +497,12 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
 
     <template v-if="!showHistory">
       <slot name="instrument" />
-      <footer class="shrink-0 py-3">
-        <div class="mx-auto flex w-full max-w-[640px] flex-col gap-4 px-4">
+      <footer data-testid="agent-panel-footer" class="shrink-0 py-3">
+        <div
+          data-testid="agent-composer-stack"
+          class="mx-auto flex w-full max-w-[640px] flex-col gap-4 px-4"
+        >
+          <slot name="composerNotice" />
           <AgentPaywallCard
             v-if="creditsExhausted"
             data-testid="agent-credits-exhausted-paywall"
@@ -532,6 +538,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             @stop="emit('stop', $event)"
             @attach="emit('attach')"
             @attach-files="emit('attachFiles', $event)"
+            @remove-attachment="emit('removeAttachment', $event)"
             @open-assets="emit('openAssets')"
             @select-nodes="emit('selectNodes')"
             @remove-tag="emit('removeTag', $event)"

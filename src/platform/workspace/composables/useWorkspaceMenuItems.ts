@@ -1,7 +1,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { MenuItem } from 'primevue/menuitem'
+import type { MenuItem } from '@/components/ui/menu/types'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
@@ -10,7 +10,8 @@ import { isCloud } from '@/platform/distribution/types'
 import { formatSubscriptionDate } from '@/platform/workspace/components/subscriptionPanelWorkspace.logic'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
-import { useDialogService } from '@/services/dialogService'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
+import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
 
 /**
  * Builds the Plan & Credits overflow-menu model for the workspace subscription
@@ -32,12 +33,12 @@ export function useWorkspaceMenuItems() {
     isDeleteDisabled,
     deleteDisabledTooltipKey
   } = useWorkspaceUI()
+  const { showCancelSubscriptionFlow } = useBillingDialogs()
   const {
-    showCancelSubscriptionFlow,
     showEditWorkspaceDialog,
     showDeleteWorkspaceDialog,
     showLeaveWorkspaceDialog
-  } = useDialogService()
+  } = useWorkspaceDialogs()
 
   function editWorkspace() {
     void showEditWorkspaceDialog()

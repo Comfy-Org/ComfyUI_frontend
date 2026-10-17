@@ -4,8 +4,8 @@
 // blurbs. Entries are plain links to the statically generated category pages;
 // ClientRouter upgrades clicks to history-aware client-side navigations. The
 // active entry is derived from `category`.
-import type { LearningCategory } from '../../data/learningTutorials'
-import type { Locale, TranslationKey } from '../../i18n/translations'
+import type { LearningCategory } from '@/data/learningTutorials'
+import type { Locale, TranslationKey } from '@/i18n/translations'
 
 import {
   categoryBlurbKeys,
@@ -13,9 +13,9 @@ import {
   categoryPath,
   filterByCategory,
   populatedCategories
-} from '../../data/learningTutorials'
-import { localizeHref } from '../../config/routes'
-import { translationsFor } from '../../i18n/translations'
+} from '@/data/learningTutorials'
+import { localizeHref } from '@/config/routes'
+import { translationsFor } from '@/i18n/translations'
 
 const { locale = 'en', category } = defineProps<{
   locale?: Locale

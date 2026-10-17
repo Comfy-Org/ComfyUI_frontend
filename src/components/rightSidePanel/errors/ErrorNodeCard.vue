@@ -134,20 +134,20 @@
 
               <div class="flex items-center justify-between gap-2">
                 <Button
-                  v-tooltip.top="t('rightSidePanel.getHelpTooltip')"
+                  :tooltip="t('rightSidePanel.getHelpTooltip')"
                   variant="textonly"
                   size="sm"
-                  class="justify-start gap-1 px-0 text-xs hover:bg-transparent hover:text-base-foreground focus-visible:ring-inset"
+                  class="justify-start gap-1 px-0 hover:bg-transparent hover:text-base-foreground focus-visible:ring-inset"
                   @click="handleGetHelp"
                 >
                   <i class="icon-[lucide--external-link] size-4" />
                   {{ t('g.getHelpAction') }}
                 </Button>
                 <Button
-                  v-tooltip.top="t('rightSidePanel.findOnGithubTooltip')"
+                  :tooltip="t('rightSidePanel.findOnGithubTooltip')"
                   variant="textonly"
                   size="sm"
-                  class="justify-end gap-1 px-0 text-xs hover:bg-transparent hover:text-base-foreground focus-visible:ring-inset"
+                  class="justify-end gap-1 px-0 hover:bg-transparent hover:text-base-foreground focus-visible:ring-inset"
                   data-testid="error-card-find-on-github"
                   @click="handleCheckGithub(error)"
                 >

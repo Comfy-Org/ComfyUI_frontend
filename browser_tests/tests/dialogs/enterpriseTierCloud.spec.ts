@@ -72,14 +72,15 @@ const ACTIVE_UNRECOGNIZED_TIER_STATUS = {
 
 async function setupSalesManagedWorkspace(
   page: Page,
-  billingStatus: BillingStatusResponse
+  billingStatus: BillingStatusResponse,
+  capabilities: Partial<BillingCapabilities> = SALES_MANAGED_CAPABILITIES
 ) {
   const workspace = new CloudWorkspaceMockHelper(page)
   await workspace.setup(
     DEFAULT_TEAM_MEMBERS,
     TEAM_WORKSPACE,
     billingStatus,
-    SALES_MANAGED_CAPABILITIES
+    capabilities
   )
   return workspace
 }
@@ -242,11 +243,13 @@ test.describe('Enterprise workspace billing', { tag: '@cloud' }, () => {
   })
 
   test('keeps an ended Enterprise workspace out of self-service recovery', async ({
-    page
+    page,
+    toast
   }) => {
     const workspace = await setupSalesManagedWorkspace(
       page,
-      ENDED_ENTERPRISE_STATUS
+      ENDED_ENTERPRISE_STATUS,
+      { ...SALES_MANAGED_CAPABILITIES, can_top_up: false }
     )
     const content = await workspace.openPlanAndCreditsSettings()
 
@@ -257,8 +260,6 @@ test.describe('Enterprise workspace billing', { tag: '@cloud' }, () => {
       'Inactive'
     )
     await expect(content.getByTestId('subscription-state-card')).toHaveCount(0)
-    // Top-up is closed for a terminal sales-managed plan (cloud#8001), so the
-    // ended state offers no Add credits — restoring access goes through sales.
     await expect(
       content.getByRole('button', { name: 'Add credits' })
     ).toHaveCount(0)
@@ -283,10 +284,9 @@ test.describe('Enterprise workspace billing', { tag: '@cloud' }, () => {
     await expect(
       page.getByRole('heading', { name: 'Choose a Plan' })
     ).toHaveCount(0)
-    await expect(page.locator('.p-toast-message-warn')).toContainText(
-      'Plan inactive'
-    )
-    await expect(page.locator('.p-toast-message-warn')).toContainText(
+    const warning = toast.toastWarnings
+    await expect(warning).toContainText('Plan inactive')
+    await expect(warning).toContainText(
       'Contact your Comfy account manager to restore access.'
     )
   })

@@ -68,6 +68,7 @@ type Category =
   | 'unit'
   | 'e2e-build'
   | 'e2e-test'
+  | 'e2e-video'
   | 'custom-nodes'
   | 'website'
   | 'storybook'
@@ -81,6 +82,7 @@ const REQUIRED = [
   'CI: Custom Nodes Ecosystem Matrix'
 ] as const
 const OPTIONAL_PREFIXES = [
+  'CI: Playwright Videos',
   'CI: Website ',
   'CI: Tests Storybook',
   'CI: Billing '
@@ -121,9 +123,10 @@ export function classify(
     [/^CI: Tests E2E$/, /^setup$/, 'e2e-build'],
     [
       /^CI: Tests E2E$/,
-      /^(playwright-tests(-chromium-sharded)?|playwright-video-new-tests)( \(|$)/,
+      /^playwright-tests(-chromium-sharded)?( \(|$)/,
       'e2e-test'
     ],
+    [/^CI: Playwright Videos$/, /./, 'e2e-video'],
     [
       /^CI: Custom Nodes Ecosystem Matrix$/,
       /^(ecosystem-matrix|matrix-detection-proof)( \(|$)/,

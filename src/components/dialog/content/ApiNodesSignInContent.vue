@@ -1,7 +1,7 @@
 <template>
   <div
     data-testid="api-signin-dialog"
-    class="relative flex max-h-[85vh] min-h-100 w-[min(44rem,90vw)] items-stretch rounded-3xl border border-border-subtle bg-base-background p-2"
+    class="relative flex max-h-[85vh] min-h-100 w-[min(44rem,90vw)] rounded-3xl border border-border-subtle bg-base-background p-2"
   >
     <Button
       variant="muted-textonly"
@@ -24,12 +24,9 @@
     >
       <div class="flex flex-col gap-5">
         <div class="flex flex-col gap-3">
-          <h2
-            :id="titleId"
-            class="m-0 text-[22px] font-semibold text-base-foreground"
-          >
+          <DialogTitle class="m-0 text-[22px]">
             {{ t('apiNodesSignInDialog.title') }}
-          </h2>
+          </DialogTitle>
           <p class="m-0 text-sm/[1.45] text-muted-foreground">
             {{ t('apiNodesSignInDialog.message') }}
           </p>
@@ -65,11 +62,8 @@
       <div
         class="flex flex-wrap items-center justify-between gap-x-2.5 gap-y-2 pt-4"
       >
-        <AccessibleTooltip
-          :label="t('apiNodesSignInDialog.tooltip')"
-          side="bottom"
-        >
-          <template #trigger>
+        <Tooltip>
+          <TooltipTrigger as-child>
             <a
               :href="partnerNodesDocsUrl"
               target="_blank"
@@ -84,8 +78,11 @@
                 {{ t('apiNodesSignInDialog.whatArePartnerNodes') }}
               </span>
             </a>
-          </template>
-        </AccessibleTooltip>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">{{
+            t('apiNodesSignInDialog.tooltip')
+          }}</TooltipContent>
+        </Tooltip>
         <Button
           variant="inverted"
           size="unset"
@@ -103,7 +100,10 @@
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
+import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 
@@ -111,9 +111,8 @@ const { t } = useI18n()
 const { buildDocsUrl } = useExternalLink()
 const nodeDefStore = useNodeDefStore()
 
-const { apiNodeNames, titleId, onLogin, onCancel } = defineProps<{
+const { apiNodeNames, onLogin, onCancel } = defineProps<{
   apiNodeNames: string[]
-  titleId: string
   onLogin?: () => void
   onCancel?: () => void
 }>()

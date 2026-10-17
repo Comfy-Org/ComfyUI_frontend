@@ -4,7 +4,6 @@ import { t } from '@/i18n'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { isWorkspaceBillingRequiredError } from '@/platform/remote/comfyui/errors'
-import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type {
   BillingStatus,
   BillingSubscriptionStatus,
@@ -46,8 +45,7 @@ export function useLegacyBilling(): BillingState & BillingActions {
     fetchStatus: legacyFetchStatus,
     fetchStatusDirect: legacyFetchStatusDirect,
     manageSubscription: legacyManageSubscription,
-    subscribeDirect: legacySubscribeDirect,
-    showSubscriptionDialog: legacyShowSubscriptionDialog
+    subscribeDirect: legacySubscribeDirect
   } = useSubscription()
 
   const authStore = useAuthStore()
@@ -97,6 +95,14 @@ export function useLegacyBilling(): BillingState & BillingActions {
   const occupiedSeats = computed(() => null)
 
   const hasFunds = computed(() => (authStore.balance?.amount_micros ?? 0) > 0)
+  const agentHasFunds = computed(
+    () =>
+      legacySubscriptionStatus.value?.scoped_effective_has_funds?.agent ??
+      hasFunds.value
+  )
+  const agentScopedHasFunds = computed(
+    () => legacySubscriptionStatus.value?.scoped_has_funds?.agent
+  )
   const subscription = computed<SubscriptionInfo | null>(() => {
     // A past-due legacy status has no tier and is inactive, yet must still
     // reach the payment-recovery banner.
@@ -118,7 +124,8 @@ export function useLegacyBilling(): BillingState & BillingActions {
       endDate: legacySubscriptionStatus.value?.cancel_at ?? null,
       isCancelled: isCancelled.value,
       hasFunds: hasFunds.value,
-      agentHasFunds: hasFunds.value
+      agentHasFunds: agentHasFunds.value,
+      agentScopedHasFunds: agentScopedHasFunds.value
     }
   })
 
@@ -232,7 +239,9 @@ export function useLegacyBilling(): BillingState & BillingActions {
   }
 
   async function cancelSubscription(): Promise<void> {
-    await rejectFailures(() => legacyManageSubscription())
+    await rejectFailures(() =>
+      legacyManageSubscription({ cancelSubscription: true })
+    )
   }
 
   async function resubscribe(options?: {
@@ -252,6 +261,7 @@ export function useLegacyBilling(): BillingState & BillingActions {
   }
 
   async function topup(amountCents: number): Promise<void> {
+    if (!canAccessSubscriptionFeatures.value) return
     // Facade standardizes on cents; legacy /customers/credit takes dollars.
     await reportFailures(() =>
       authActions.purchaseCreditsDirect(amountCents / 100)
@@ -261,17 +271,6 @@ export function useLegacyBilling(): BillingState & BillingActions {
   async function fetchPlans(): Promise<void> {
     // Legacy billing doesn't have workspace-style plans
     // Plans are hardcoded in the UI for legacy subscriptions
-  }
-
-  async function requireActiveSubscription(): Promise<void> {
-    await fetchStatus()
-    if (!canAccessSubscriptionFeatures.value) {
-      legacyShowSubscriptionDialog({ reason: 'subscription_required' })
-    }
-  }
-
-  function showSubscriptionDialog(options?: SubscriptionDialogOptions): void {
-    legacyShowSubscriptionDialog(options)
   }
 
   return {
@@ -307,8 +306,6 @@ export function useLegacyBilling(): BillingState & BillingActions {
     cancelSubscription,
     resubscribe,
     topup,
-    fetchPlans,
-    requireActiveSubscription,
-    showSubscriptionDialog
+    fetchPlans
   }
 }
