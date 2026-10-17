@@ -1,8 +1,9 @@
-import { describe, expect, it } from 'vitest'
+import { assert, describe, expect, it } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { ToInputFromIoNodeLink } from '@/lib/litegraph/src/canvas/ToInputFromIoNodeLink'
 import { LinkDirection } from '@/lib/litegraph/src//types/globalEnums'
+import { toLinkId } from '@/types/linkId'
 
 import { subgraphTest } from './__fixtures__/subgraphFixtures'
 import {
@@ -215,6 +216,91 @@ describe('SubgraphIO - Output Slot Dual-Nature Behavior', () => {
       expect(externalNode.inputs[0].link).not.toBe(null)
       expect(subgraph.outputs[0].label).toBe('new_name')
       expect(subgraph.outputs[0].displayName).toBe('new_name')
+    }
+  )
+
+  subgraphTest(
+    'drops dangling link ids before reconnecting an output',
+    ({ subgraphWithNode }) => {
+      const { subgraph } = subgraphWithNode
+      const innerNode = subgraph.nodes[0]
+
+      const output = subgraph.outputs[0]
+      output.linkIds.push(toLinkId(998), toLinkId(999))
+
+      expect(() =>
+        output.connect(innerNode.outputs[0], innerNode)
+      ).not.toThrow()
+      expect(output.linkIds).toEqual(output.getLinks().map(({ id }) => id))
+      expect(output.getLinks()).toHaveLength(1)
+    }
+  )
+
+  subgraphTest(
+    'deduplicates the live link mirror before reconnecting an output',
+    ({ subgraphWithNode }) => {
+      const { subgraph } = subgraphWithNode
+      const innerNode = subgraph.nodes[0]
+      const output = subgraph.outputs[0]
+      const first = output.connect(innerNode.outputs[0], innerNode)
+      assert.exists(first)
+      output.linkIds.push(first.id)
+
+      expect(() =>
+        output.connect(innerNode.outputs[0], innerNode)
+      ).not.toThrow()
+      expect(output.linkIds).toHaveLength(1)
+      expect(output.getLinks()).toHaveLength(1)
+    }
+  )
+
+  subgraphTest(
+    'does not repair a stale link mirror when an extension vetoes the connect',
+    ({ subgraphWithNode }) => {
+      const { subgraph } = subgraphWithNode
+      const innerNode = subgraph.nodes[0]
+      const output = subgraph.outputs[0]
+      output.linkIds.push(toLinkId(998))
+      innerNode.onConnectOutput = () => false
+
+      expect(output.connect(innerNode.outputs[0], innerNode)).toBeUndefined()
+      expect(output.linkIds).toEqual([toLinkId(998)])
+    }
+  )
+
+  subgraphTest(
+    'ignores a link id that belongs to another target',
+    ({ subgraphWithNode }) => {
+      const { subgraph } = subgraphWithNode
+      const innerNode = subgraph.nodes[0]
+      const unrelatedTarget = new LGraphNode('Unrelated Target')
+      unrelatedTarget.addInput('in', '*')
+      subgraph.add(unrelatedTarget)
+      const unrelatedLink = innerNode.connect(0, unrelatedTarget, 0)
+      assert.exists(unrelatedLink)
+      const output = subgraph.outputs[0]
+      output.linkIds.push(unrelatedLink.id)
+
+      expect(output.connect(innerNode.outputs[0], innerNode)).toBeDefined()
+      expect(output.linkIds).not.toContain(unrelatedLink.id)
+      expect(subgraph.getLink(unrelatedLink.id)).toBe(unrelatedLink)
+    }
+  )
+
+  subgraphTest(
+    're-reads output topology after an extension hook mutates it',
+    ({ subgraphWithNode }) => {
+      const { subgraph } = subgraphWithNode
+      const innerNode = subgraph.nodes[0]
+      const output = subgraph.outputs[0]
+      output.connect(innerNode.outputs[0], innerNode)
+      innerNode.onConnectOutput = () => {
+        output.disconnect()
+        return true
+      }
+
+      expect(output.connect(innerNode.outputs[0], innerNode)).toBeDefined()
+      expect(output.getLinks()).toHaveLength(1)
     }
   )
 })

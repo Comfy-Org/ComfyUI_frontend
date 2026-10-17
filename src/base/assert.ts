@@ -33,14 +33,20 @@ export function hasRumAssertReporter(): boolean {
  * - Otherwise: delegates to registered reporter (Sentry, toast, etc.)
  *
  * Reporters forward `message` to external telemetry, so it must be a static
- * description of the invariant. Put diagnostic values in `context` so they do
- * not affect grouping or deduplication.
+ * description of the invariant. Never put user data (workflow names, paths,
+ * prompts) in either `message` or `context`; both are forwarded to external
+ * telemetry. Use only non-sensitive diagnostic values in `context`. Keep
+ * those values out of `message` to preserve grouping and deduplication.
+ *
+ * Returns `void`, not `asserts condition` — outside DEV this returns
+ * normally even when `condition` is false, so callers must keep their own
+ * guard after calling this rather than relying on type narrowing.
  */
 export function assert(
   condition: unknown,
   message: string,
   context?: Record<string, unknown>
-): asserts condition {
+): void {
   if (condition) return
 
   const formatted = `${ASSERTION_FAILURE_PREFIX}${message}`

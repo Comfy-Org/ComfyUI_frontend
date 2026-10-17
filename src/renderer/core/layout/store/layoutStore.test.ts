@@ -60,6 +60,55 @@ describe('layoutStore CRDT operations', () => {
     expect(nodeRef.value).toEqual(layout)
   })
 
+  it('ignores creating a node that already exists, keeping its layout', () => {
+    const nodeId = toNodeId('test-node-duplicate')
+    const layout = createTestNode(nodeId)
+    const createOperation: LayoutOperation = {
+      type: 'createNode',
+      graphId: GRAPH,
+      nodeId,
+      layout,
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas,
+      actor: 'test'
+    }
+
+    layoutStore.applyOperation(createOperation)
+
+    layoutStore.applyOperation({
+      ...createOperation,
+      layout: { ...layout, position: { x: 999, y: 999 } }
+    })
+
+    expect(layoutStore.getNodeLayoutRef(GRAPH, nodeId).value).toEqual(layout)
+  })
+
+  it.for([
+    {
+      action: 'moving',
+      operation: { type: 'moveNode', position: { x: 1, y: 2 } }
+    },
+    {
+      action: 'resizing',
+      operation: { type: 'resizeNode', size: { width: 10, height: 10 } }
+    }
+  ] as const)(
+    'ignores $action a node that is not registered',
+    ({ operation }) => {
+      const nodeId = toNodeId(`test-node-unregistered-${operation.type}`)
+
+      layoutStore.applyOperation({
+        ...operation,
+        graphId: GRAPH,
+        nodeId,
+        timestamp: Date.now(),
+        source: LayoutSource.Canvas,
+        actor: 'test'
+      })
+      expect(layoutStore.getNodeLayoutRef(GRAPH, nodeId).value).toBeNull()
+    }
+  )
+
   it('does not create a node when reading a missing layout', () => {
     const nodeRef = layoutStore.getNodeLayoutRef(GRAPH, toNodeId('missing'))
 

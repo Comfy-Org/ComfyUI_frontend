@@ -1,8 +1,10 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { chainCallback } from '@/lib/litegraph/src/utils/chainCallback'
 import { LegacyWidget } from '@/lib/litegraph/src/widgets/LegacyWidget'
+import { BooleanWidget } from '@/lib/litegraph/src/widgets/BooleanWidget'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { widgetId } from '@/types/widgetId'
 
@@ -86,6 +88,17 @@ function storedValue(widget: IBaseWidget) {
   return useWidgetValueStore().getWidget(widget.widgetId!)?.value
 }
 
+function nonExtensibleWidget(onRemove?: IBaseWidget['onRemove']): IBaseWidget {
+  return Object.preventExtensions<IBaseWidget>({
+    name: 'wrapped',
+    type: 'number',
+    value: 10,
+    options: {},
+    y: 0,
+    onRemove
+  })
+}
+
 /** Node packs rebuild `node.widgets` by writing to the array directly. */
 describe('widgets view', () => {
   beforeEach(() => {
@@ -159,6 +172,177 @@ describe('widgets view', () => {
     expect(widget).toBeInstanceOf(LegacyWidget)
     expect(storedOrder(node)).toEqual(['custom'])
     expect(storedValue(widget)).toBe(10)
+  })
+
+  it('deduplicates a raw source inserted before its installed wrapper', () => {
+    const node = new LGraphNode('test')
+    const source = nonExtensibleWidget()
+    node.widgets = [source]
+    const wrapped = node.widgets[0]
+
+    node.widgets.unshift(source)
+
+    expect(node.widgets).toEqual([wrapped])
+  })
+
+  it('deduplicates repeated direct pushes of one legacy source', () => {
+    const node = new LGraphNode('test')
+    const source = nonExtensibleWidget()
+
+    node.widgets = [source, source]
+
+    expect(node.widgets).toHaveLength(1)
+  })
+
+  it('rebuilds a wrapper removed directly through the widgets view', () => {
+    const node = new LGraphNode('test')
+    const source = nonExtensibleWidget()
+    node.widgets = [source]
+    const first = node.widgets[0]
+
+    node.widgets.splice(0, 1)
+    source.value = 20
+    const second = node.addCustomWidget(source)
+
+    expect(second).not.toBe(first)
+    expect(second.value).toBe(20)
+  })
+
+  it('keeps a wrapped legacy widget during an in-place reorder', () => {
+    const node = new LGraphNode('test')
+    const source = nonExtensibleWidget()
+    node.widgets = [source]
+    const wrapped = node.widgets[0]
+    const other = node.addWidget('number', 'other', 20, null)
+
+    node.widgets[1] = wrapped
+    node.widgets[0] = other
+
+    expect(node.widgets).toEqual([other, wrapped])
+  })
+
+  it('retains source identity while a wrapper is reordered', () => {
+    const node = new LGraphNode('test')
+    const source = nonExtensibleWidget()
+    node.widgets = [source]
+    const wrapped = node.widgets[0]
+    const other = node.addWidget('number', 'other', 20, null)
+
+    node.widgets.splice(0, 1)
+    node.widgets.push(wrapped)
+    node.addCustomWidget(source)
+
+    expect(node.widgets).toEqual([other, wrapped])
+  })
+
+  it('retains an installed wrapper whose local type changes', () => {
+    const node = new LGraphNode('test')
+    const source = nonExtensibleWidget()
+    const installed = node.addCustomWidget(source)
+
+    installed.type = 'hidden'
+    const returned = node.addCustomWidget(source)
+
+    expect(returned).toBe(installed)
+    expect(node.widgets).toEqual([installed])
+    expect(installed.type).toBe('hidden')
+  })
+
+  it.for([
+    {
+      entry: 'addCustomWidget',
+      attachment: 'direct',
+      attachCleanup(widget: IBaseWidget, cleanup: () => void) {
+        widget.onRemove = cleanup
+      },
+      refresh(node: LGraphNode, _widgets: IBaseWidget[], source: IBaseWidget) {
+        return node.addCustomWidget(source)
+      }
+    },
+    {
+      entry: 'widgets.unshift',
+      attachment: 'known-chain',
+      attachCleanup(widget: IBaseWidget, cleanup: () => void) {
+        widget.onRemove = chainCallback(widget.onRemove, cleanup)
+      },
+      refresh(_node: LGraphNode, widgets: IBaseWidget[], source: IBaseWidget) {
+        widgets.unshift(source)
+        return widgets[1]
+      }
+    }
+  ] as const)(
+    'refreshes wrapper state and defers $attachment teardown through $entry',
+    ({ attachCleanup, refresh }) => {
+      const graph = new LGraph()
+      const node = new LGraphNode('test')
+      graph.add(node)
+      const before = node.addWidget('number', 'before', 1, null)
+      const previousSourceCleanup = vi.fn()
+      const source = nonExtensibleWidget(previousSourceCleanup)
+      const installed = node.addCustomWidget(source)
+      const after = node.addWidget('number', 'after', 2, null)
+      assert.exists(node.widgets)
+      const widgets = node.widgets
+      const localCleanup = vi.fn()
+      attachCleanup(installed, localCleanup)
+      const previousId = widgetId(graph.rootGraph.id, node.id, source.name)
+      const input = node.addInput('wrapped', 'number', {
+        widget: { name: 'wrapped' },
+        _widget: installed
+      })
+
+      const currentSourceCleanup = vi.fn()
+      source.onRemove = currentSourceCleanup
+      source.name = 'renamed'
+      source.type = 'toggle'
+      const refreshed = refresh(node, widgets, source)
+
+      expect(refreshed).toBeInstanceOf(BooleanWidget)
+      expect(node.widgets).toEqual([before, refreshed, after])
+      expect(input._widget).toBe(refreshed)
+      expect(previousSourceCleanup).not.toHaveBeenCalled()
+      expect(currentSourceCleanup).not.toHaveBeenCalled()
+      expect(localCleanup).not.toHaveBeenCalled()
+      expect(useWidgetValueStore().getWidget(previousId)).toBeUndefined()
+      expect(
+        useWidgetValueStore()
+          .getNodeWidgets(graph.rootGraph.id, node.id)
+          .map((widget) => widget.type)
+      ).toEqual(['number', 'toggle', 'number'])
+
+      node.removeWidget(refreshed)
+      expect(previousSourceCleanup).not.toHaveBeenCalled()
+      expect(currentSourceCleanup).toHaveBeenCalledOnce()
+      expect(localCleanup.mock.contexts).toEqual([refreshed])
+    }
+  )
+
+  it('preserves an opaque teardown chain when its source callback is unchanged', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    const sourceCleanup = vi.fn()
+    const source = nonExtensibleWidget(sourceCleanup)
+    const installed = node.addCustomWidget(source)
+    const localCleanup = vi.fn()
+    const originalCleanup = installed.onRemove
+    installed.onRemove = () => {
+      originalCleanup?.()
+      localCleanup()
+    }
+    source.type = 'toggle'
+    const refreshed = node.addCustomWidget(source)
+
+    expect(sourceCleanup).not.toHaveBeenCalled()
+    expect(localCleanup).not.toHaveBeenCalled()
+
+    node.removeWidget(refreshed)
+    expect(sourceCleanup).toHaveBeenCalledOnce()
+    expect(localCleanup).toHaveBeenCalledOnce()
+    expect(node.widgets).toEqual([])
+    expect(
+      useWidgetValueStore().getNodeWidgets(graph.rootGraph.id, node.id)
+    ).toEqual([])
   })
 
   it.for(

@@ -9,6 +9,7 @@ describe('appRegistry', () => {
   it('throws before registration', async () => {
     vi.resetModules()
     const fresh = await import('@/scripts/appRegistry')
+    expect(() => fresh.useApp()).toThrowError(TypeError)
     expect(() => fresh.useApp()).toThrow('ComfyApp accessed before registerApp')
   })
 

@@ -89,7 +89,8 @@ import {
 import {
   clearWidgetRestorationSlots,
   getWidgetRestorationSlot,
-  initializeWidgetsView
+  initializeWidgetsView,
+  transferReplacedWidgetState
 } from './node/widgetsView'
 import type { NodeCanonicalField } from './extensionPersistence'
 import {
@@ -175,7 +176,7 @@ import { reportNamedValuesShadowDiff } from './utils/namedValuesShadowDiffTeleme
 import { distributeSpace } from './utils/spaceDistribution'
 import { truncateText } from './utils/textUtils'
 import { BaseWidget } from './widgets/BaseWidget'
-import { toConcreteWidget } from './widgets/widgetMap'
+import { getConcreteWidgetSource, toConcreteWidget } from './widgets/widgetMap'
 import type { WidgetTypeMap } from './widgets/widgetMap'
 
 // #region Types
@@ -404,6 +405,16 @@ const NAMED_SHAPES = {
  */
 
 const wireExecutionOrders = new WeakMap<LGraphNode, number>()
+
+function normalizeLegacySlotIndex(
+  slot: unknown,
+  length: number
+): number | undefined {
+  const index =
+    typeof slot === 'string' && /^\d+$/.test(slot) ? Number(slot) : slot
+  if (typeof index !== 'number' || !Number.isInteger(index)) return
+  return index >= 0 && index < length ? index : undefined
+}
 
 export class LGraphNode
   implements NodeLike, Positionable, IPinnable, IColorable
@@ -1992,17 +2003,20 @@ export class LGraphNode
    * remove an existing output slot
    */
   removeOutput(slot: number): void {
+    const { outputs } = this
+    const slotIndex = normalizeLegacySlotIndex(slot, outputs.length)
+    if (slotIndex === undefined) return
+
     // Only disconnect if node is part of a graph
     if (this.graph) {
-      this.disconnectOutput(slot)
+      this.disconnectOutput(slotIndex)
     }
-    const { outputs } = this
-    outputs.splice(slot, 1)
+    outputs.splice(slotIndex, 1)
 
     // Only update link indices if node is part of a graph. Ascending order:
     // each decrement re-keys the link to an already-processed slot index.
     if (this.graph) {
-      for (let oldSlot = slot + 1; oldSlot <= outputs.length; ++oldSlot) {
+      for (let oldSlot = slotIndex + 1; oldSlot <= outputs.length; ++oldSlot) {
         for (const link of outputLinks(this.graph, this.id, oldSlot)) {
           link.origin_slot--
         }
@@ -2012,13 +2026,13 @@ export class LGraphNode
       for (const floatingLink of this.graph.floatingLinks.values()) {
         if (
           floatingLink.origin_id === this.id &&
-          floatingLink.origin_slot > slot
+          floatingLink.origin_slot > slotIndex
         )
           floatingLink.origin_slot--
       }
     }
 
-    this.onOutputRemoved?.(slot)
+    this.onOutputRemoved?.(slotIndex)
     this.setDirtyCanvas(true, true)
   }
 
@@ -2058,13 +2072,16 @@ export class LGraphNode
    */
   removeInput(slot: number): void {
     const { graph, inputs } = this
-    const slotInfo = legacyArrayItem(inputs, slot)
+    const slotIndex = normalizeLegacySlotIndex(slot, inputs.length)
+    if (slotIndex === undefined) return
+
+    const slotInfo = legacyArrayItem(inputs, slotIndex)
     if (!slotInfo) return
 
     if (graph) {
       const previous = captureInputLayout(this)
       const nextInputs = [...previous.inputs]
-      nextInputs.splice(slot, 1)
+      nextInputs.splice(slotIndex, 1)
       const result = replaceNodeInputs(
         this,
         previous,
@@ -2076,14 +2093,14 @@ export class LGraphNode
       for (const floatingLink of graph.floatingLinks.values()) {
         if (
           floatingLink.target_id === this.id &&
-          floatingLink.target_slot > slot
+          floatingLink.target_slot > slotIndex
         )
           floatingLink.target_slot--
       }
     } else {
-      inputs.splice(slot, 1)
+      inputs.splice(slotIndex, 1)
     }
-    this.onInputRemoved?.(slot, slotInfo)
+    this.onInputRemoved?.(slotIndex, slotInfo)
     this.setDirtyCanvas(true, true)
   }
 
@@ -2346,9 +2363,20 @@ export class LGraphNode
   ): TPlainWidget | WidgetTypeMap[TPlainWidget['type']] {
     this.widgets ||= []
     const widget = toConcreteWidget(custom_widget, this)
-    this.widgets.push(widget)
+    const existingIndex = this.widgets.findIndex(
+      (candidate) =>
+        candidate === widget ||
+        getConcreteWidgetSource(candidate) === custom_widget
+    )
+    if (existingIndex === -1) {
+      this.widgets.push(widget)
+    } else if (this.widgets[existingIndex] !== widget) {
+      transferReplacedWidgetState(this, this.widgets[existingIndex], widget)
+      this.widgets[existingIndex] = widget
+    }
 
-    if (!this.widgets.includes(widget)) return widget
+    const widgetIndex = this.widgets.indexOf(widget)
+    if (widgetIndex === -1) return widget
 
     // Only register with store if node has a valid ID (is already in a graph).
     // If the node isn't in a graph yet (id === -1), registration happens
@@ -2360,8 +2388,9 @@ export class LGraphNode
     if (widget.serialize === false) return widget
 
     const positionalIndex =
-      this.widgets.filter((candidate) => candidate.serialize !== false).length -
-      1
+      this.widgets
+        .slice(0, widgetIndex + 1)
+        .filter((candidate) => candidate.serialize !== false).length - 1
     const restored = useWidgetValueStore().getRestoredWidgetValue(
       this.graph?.rootGraph.id ?? zeroUuid,
       this.id,

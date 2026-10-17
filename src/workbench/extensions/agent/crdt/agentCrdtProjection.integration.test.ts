@@ -3,7 +3,6 @@ import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import { beforeEach, describe, expect, it, onTestFinished } from 'vitest'
 import * as Y from 'yjs'
 
-import { assert } from '@/base/assert'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
@@ -36,8 +35,10 @@ class TestNote extends LGraphNode {
 }
 
 function widgetsOf(node: LGraphNode) {
-  assert(node.widgets, 'test node registers widgets', { title: node.title })
-  return node.widgets
+  const { widgets } = node
+  if (!widgets)
+    throw new Error(`Test node ${node.title} did not register widgets`)
+  return widgets
 }
 
 const WORKFLOW_ID = 'wf-a'

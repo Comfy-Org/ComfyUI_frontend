@@ -33,6 +33,22 @@ import { isNodeSlot, isSubgraphInput } from './subgraphTypeGuards'
 export class SubgraphOutput extends SubgraphSlot {
   declare parent: SubgraphOutputNode
 
+  private findExistingLink(targetSlot: number): LLink | undefined {
+    const { subgraph } = this.parent
+    return this.linkIds
+      .map((id) => subgraph.getLink(id))
+      .find(
+        (link) =>
+          link?.target_id === this.parent.id && link.target_slot === targetSlot
+      )
+  }
+
+  private mirrorNeedsRepair(existingLink: LLink | undefined): boolean {
+    return existingLink
+      ? this.linkIds.length !== 1 || this.linkIds[0] !== existingLink.id
+      : this.linkIds.length !== 0
+  }
+
   override connect(
     slot: INodeOutputSlot,
     node: LGraphNode,
@@ -48,16 +64,29 @@ export class SubgraphOutput extends SubgraphSlot {
     if (outputIndex === -1)
       throw new Error('Slot is not an output of the given node')
 
+    if (this.parent.slots.indexOf(this) === -1) return
+
     if (
       node.onConnectOutput?.(outputIndex, this.type, this, this.parent, -1) ===
       false
     )
       return
 
-    // Link should not be present, but just in case, disconnect it
-    const existingLink = this.getLinks().at(0)
-    if (existingLink != null) {
+    // Re-read after the extension hook because it may mutate topology.
+    const targetSlot = this.parent.slots.indexOf(this)
+    if (targetSlot === -1) return
+    const existingLink = this.findExistingLink(targetSlot)
+    const repairMirror = this.mirrorNeedsRepair(existingLink)
+    const changeStarted = existingLink != null || repairMirror
+    if (changeStarted) {
       subgraph.beforeChange()
+    }
+
+    // Serialized slots may retain duplicate, dangling, or unrelated ids.
+    // Repair the mirror only after the hook approves and inside the change.
+    if (repairMirror) {
+      this.linkIds.splice(0, this.linkIds.length)
+      if (existingLink) this.linkIds.push(existingLink.id)
     }
 
     const linkId = mintLinkId(
@@ -71,12 +100,12 @@ export class SubgraphOutput extends SubgraphSlot {
       node.id,
       outputIndex,
       this.parent.id,
-      this.parent.slots.indexOf(this),
+      targetSlot,
       afterRerouteId
     )
 
     if (!replaceLinkTopology(subgraph, existingLink, link)) {
-      if (existingLink) subgraph.afterChange()
+      if (changeStarted) subgraph.afterChange()
       return
     }
 

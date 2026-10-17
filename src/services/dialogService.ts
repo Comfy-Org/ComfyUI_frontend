@@ -4,7 +4,6 @@ import { merge } from 'es-toolkit/compat'
 import type { Component } from 'vue'
 import type { ComponentAttrs } from 'vue-component-type-helpers'
 
-import { assert } from '@/base/assert'
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
 import ErrorDialogContent from '@/components/dialog/content/ErrorDialogContent.vue'
 import PromptDialogContent from '@/components/dialog/content/PromptDialogContent.vue'
@@ -398,9 +397,10 @@ export function registerExtensionDialogService(
 }
 
 export function useExtensionDialogService(): ExtensionDialogService {
-  assert(
-    extensionDialogService,
-    'Extension dialog service accessed before registerExtensionDialogService'
-  )
+  if (!extensionDialogService)
+    throw new TypeError(
+      'Extension dialog service accessed before registerExtensionDialogService'
+    )
+
   return extensionDialogService
 }
