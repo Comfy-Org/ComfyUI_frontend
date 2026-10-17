@@ -48,8 +48,6 @@ fi
 
 # Configuration
 COMMENT_MARKER="<!-- PLAYWRIGHT_TEST_STATUS -->"
-# Use dot notation for artifact names (as Playwright creates them)
-BROWSERS="chromium chromium-2x chromium-0.5x mobile-chrome"
 
 # Install wrangler if not available (output to stderr for debugging)
 if ! command -v wrangler > /dev/null 2>&1; then
@@ -67,39 +65,42 @@ if ! command -v tsx > /dev/null 2>&1; then
     npm install -g tsx >&2 || echo "Failed to install tsx" >&2
 fi
 
+create_pages_project() {
+    echo "Creating Cloudflare Pages project $1..." >&2
+    wrangler pages project create "$1" --production-branch=main >&2 ||
+        echo "Failed to create Cloudflare Pages project $1" >&2
+}
+
 # Deploy a single browser report, WARN: ensure inputs are sanitized before calling this function
 deploy_report() {
     dir="$1"
     browser="$2"
     branch="$3"
-    
+
     [ ! -d "$dir" ] && echo "failed" && return
-    
-    
-    # Project name with dots converted to dashes for Cloudflare
+
     sanitized_browser="${browser//./-}"
     project="comfyui-playwright-${sanitized_browser}"
-    
+
     echo "Deploying $browser to project $project on branch $branch..." >&2
-    
-    # Try deployment up to 3 times
+
     i=1
     while [ $i -le 3 ]; do
         echo "Deployment attempt $i of 3..." >&2
-        # Branch and project are already sanitized, use them directly
-        # Branch was sanitized at script start, project uses sanitized_browser
         if output=$(wrangler pages deploy "$dir" \
             --project-name="$project" \
             --branch="$branch" 2>&1); then
-            
-            # Extract URL from output (improved regex for valid URL characters)
+
             url=$(echo "$output" | grep -oE 'https://[a-zA-Z0-9.-]+\.pages\.dev\S*' | head -1)
             result="${url:-https://${branch}.${project}.pages.dev}"
             echo "Success! URL: $result" >&2
-            echo "$result"  # Only this goes to stdout for capture
+            echo "$result"
             return
         else
             echo "Deployment failed on attempt $i: $output" >&2
+            case "$output" in
+                *"does not exist"*) create_pages_project "$project" ;;
+            esac
         fi
         [ $i -lt 3 ] && sleep 10
         i=$((i + 1))
@@ -194,7 +195,10 @@ else
     echo "Looking for reports in: $(pwd)/reports"
     echo "Available reports:"
     ls -la reports/ 2>/dev/null || echo "Reports directory not found"
-    
+
+    BROWSERS=$(find reports -mindepth 1 -maxdepth 1 -type d -name 'playwright-report-*' 2>/dev/null |
+        sed 's|^reports/playwright-report-||' | sort | tr '\n' ' ')
+
     # Deploy all reports in parallel and collect URLs + test counts
     temp_dir=$(mktemp -d)
     pids=""
@@ -204,36 +208,27 @@ else
     SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
     BASE_DIR="$(pwd)"
     
-    # Start parallel deployments and count extractions
     for browser in $BROWSERS; do
-        if [ -d "reports/playwright-report-$browser" ]; then
-            echo "Found report for $browser, deploying in parallel..."
-            (
-                url=$(deploy_report "reports/playwright-report-$browser" "$browser" "$cloudflare_branch")
-                echo "$url" > "$temp_dir/$i.url"
-                echo "Deployment result for $browser: $url"
-                
-                # Extract test counts using tsx (TypeScript executor)
-                EXTRACT_SCRIPT="$SCRIPT_DIR/extract-playwright-counts.ts"
-                REPORT_DIR="$BASE_DIR/reports/playwright-report-$browser"
-                
-                if command -v tsx > /dev/null 2>&1 && [ -f "$EXTRACT_SCRIPT" ]; then
-                    echo "Extracting counts from $REPORT_DIR using $EXTRACT_SCRIPT" >&2
-                    # Pass the base URL so we can generate trace links
-                    counts=$(tsx "$EXTRACT_SCRIPT" "$REPORT_DIR" "$url" 2>&1 || echo '{}')
-                    echo "Extracted counts for $browser: $counts" >&2
-                    echo "$counts" > "$temp_dir/$i.counts"
-                else
-                    echo "Script not found or tsx not available: $EXTRACT_SCRIPT" >&2
-                    echo '{}' > "$temp_dir/$i.counts"
-                fi
-            ) &
-            pids="$pids $!"
-        else
-            echo "Report not found for $browser at reports/playwright-report-$browser"
-            echo "failed" > "$temp_dir/$i.url"
-            echo '{}' > "$temp_dir/$i.counts"
-        fi
+        echo "Found report for $browser, deploying in parallel..."
+        (
+            url=$(deploy_report "reports/playwright-report-$browser" "$browser" "$cloudflare_branch")
+            echo "$url" > "$temp_dir/$i.url"
+            echo "Deployment result for $browser: $url"
+
+            EXTRACT_SCRIPT="$SCRIPT_DIR/extract-playwright-counts.ts"
+            REPORT_DIR="$BASE_DIR/reports/playwright-report-$browser"
+
+            if command -v tsx > /dev/null 2>&1 && [ -f "$EXTRACT_SCRIPT" ]; then
+                echo "Extracting counts from $REPORT_DIR using $EXTRACT_SCRIPT" >&2
+                counts=$(tsx "$EXTRACT_SCRIPT" "$REPORT_DIR" "$url" 2>&1 || echo '{}')
+                echo "Extracted counts for $browser: $counts" >&2
+                echo "$counts" > "$temp_dir/$i.counts"
+            else
+                echo "Script not found or tsx not available: $EXTRACT_SCRIPT" >&2
+                echo '{}' > "$temp_dir/$i.counts"
+            fi
+        ) &
+        pids="$pids $!"
         i=$((i + 1))
     done
     
