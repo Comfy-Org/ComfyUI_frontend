@@ -18,8 +18,6 @@ setupInlinePromptEditorDom()
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
-const PLACEMENTS = AGENT_FREE_USE_PLACEMENTS
-
 function mount(
   freeUsePlacement: FreeUseVariant,
   onFreeUseNotice?: (metadata: AgentFreeUseNoticeMetadata) => void
@@ -55,7 +53,7 @@ describe('AgentPanel free-use placement', () => {
     ).toBeNull()
   })
 
-  it.for(PLACEMENTS)(
+  it.for(AGENT_FREE_USE_PLACEMENTS)(
     'renders and reports exactly one notice at %s',
     (variant) => {
       const onFreeUseNotice = vi.fn()
@@ -112,7 +110,7 @@ describe('AgentPanel free-use placement', () => {
     ).toBeNull()
   })
 
-  it.for(PLACEMENTS)(
+  it.for(AGENT_FREE_USE_PLACEMENTS)(
     'leaves the starter prompts and placeholder untouched at %s',
     (variant) => {
       const control = mount('control')
