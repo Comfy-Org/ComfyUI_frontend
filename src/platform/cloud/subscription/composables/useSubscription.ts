@@ -945,7 +945,7 @@ function useSubscriptionInternal() {
     const rail = useBillingReadRail()
     try {
       const status = rail
-        ? await readOnRail(rail.readStatus)
+        ? await readOnRail(rail.readStatus, 'getBillingStatus')
         : await workspaceApi.getBillingStatus()
       return status
     } catch (error) {

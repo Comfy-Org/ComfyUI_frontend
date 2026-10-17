@@ -386,7 +386,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     error.value = null
     try {
       const status = rail
-        ? await readOnRail(rail.readStatus)
+        ? await readOnRail(rail.readStatus, 'getBillingStatus')
         : await workspaceApi.getBillingStatus()
       if (status === undefined || isStaleStatusRead(requestId, workspaceId))
         return false
@@ -415,7 +415,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     error.value = null
     try {
       const balance = rail
-        ? await readOnRail(rail.readBalance)
+        ? await readOnRail(rail.readBalance, 'getBillingBalance')
         : await workspaceApi.getBillingBalance()
       if (balance !== undefined && requestId === latestBillingReadIds.balance) {
         balanceData.value = balance
