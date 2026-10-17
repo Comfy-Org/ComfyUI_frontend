@@ -597,7 +597,6 @@
           "src/platform/workspace/api/capabilityRevision.ts",
           "src/platform/workspace/billing/hostedBillingRoutes.test.ts",
           "src/platform/workspace/billing/hostedBillingRoutes.ts",
-          "src/platform/workspace/billing/stripePublishableKey.ts",
           "src/platform/workspace/billing/subscribeInput.ts",
           "src/services/customerEventsService.test.ts",
           "src/services/customerEventsService.ts"
@@ -617,7 +616,6 @@
           "src/platform/workspace/components/InsufficientCreditsMemberDialog.vue",
           "src/platform/workspace/components/PricingTableWorkspace.test.ts",
           "src/platform/workspace/components/PricingTableWorkspace.vue",
-          "src/platform/workspace/components/SubscriptionAddPaymentPreviewWorkspace.stripe.test.ts",
           "src/platform/workspace/components/SubscriptionAddPaymentPreviewWorkspace.test.ts",
           "src/platform/workspace/components/SubscriptionAddPaymentPreviewWorkspace.vue",
           "src/platform/workspace/components/SubscriptionCheckoutSteps.stories.ts",

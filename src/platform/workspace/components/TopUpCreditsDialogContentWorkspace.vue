@@ -197,18 +197,7 @@
     <div class="mt-auto flex flex-col gap-8 p-8">
       <div v-if="step === 'verifying'">
         <Button
-          v-if="topupCanResumeAuthentication"
-          variant="primary"
-          size="lg"
-          class="w-full"
-          :loading="topupIsAuthenticating"
-          :disabled="!canTopUp"
-          @click="resumeTopupAuthentication"
-        >
-          {{ $t('subscription.preview.completeVerification') }}
-        </Button>
-        <Button
-          v-else-if="topupIsFailedRetryable"
+          v-if="topupIsFailedRetryable"
           variant="primary"
           size="lg"
           class="w-full"
@@ -376,7 +365,6 @@ const {
   isAddingCredits,
   topupOperation,
   topup,
-  retryPaymentAuthentication,
   dismissOperation,
   adoptPendingOperation
 } = useTopupOperation()
@@ -387,12 +375,6 @@ let purchaseAttempt = 0
 const topupActionUrl = computed(() => topupOperation.value?.actionUrl ?? null)
 const topupAuthenticationError = computed(
   () => topupOperation.value?.errorMessage ?? null
-)
-const topupCanResumeAuthentication = computed(
-  () => topupOperation.value?.canRetryAuthentication ?? false
-)
-const topupIsAuthenticating = computed(
-  () => topupOperation.value?.isAuthenticating ?? false
 )
 const topupIsFailedRetryable = computed(
   () => topupOperation.value?.authenticationState === 'failed_retryable'
@@ -536,12 +518,6 @@ function handlePrimaryAction() {
 function openTopupVerification() {
   if (!topupActionUrl.value) return
   window.open(topupActionUrl.value, '_blank', 'noopener,noreferrer')
-}
-
-function resumeTopupAuthentication() {
-  const operation = topupOperation.value
-  if (!operation || !canTopUp.value) return
-  void retryPaymentAuthentication(operation.opId)
 }
 
 function startOverTopup() {
