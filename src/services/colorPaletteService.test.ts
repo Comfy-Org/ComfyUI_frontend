@@ -190,6 +190,31 @@ describe('useColorPaletteService theme variables', () => {
     ])
   })
 
+  it.for([
+    { paletteId: 'dark', expected: ['#222', '#ddd', '#4e4e4e'] },
+    { paletteId: 'light', expected: ['#C9C9C9', '#222', '#888'] }
+  ])(
+    'restores the $paletteId legacy control colors after switching palettes',
+    async ({ paletteId, expected }) => {
+      clearRootThemeAfterTest()
+      onTestFinished(() => {
+        document.documentElement.style.removeProperty('--comfy-input-bg')
+        document.documentElement.style.removeProperty('--input-text')
+        document.documentElement.style.removeProperty('--border-color')
+      })
+      const service = useColorPaletteService()
+
+      await service.loadColorPalette('solarized')
+      await service.loadColorPalette(paletteId)
+
+      expect([
+        readRootProperty('--comfy-input-bg'),
+        readRootProperty('--input-text'),
+        readRootProperty('--border-color')
+      ]).toEqual(expected)
+    }
+  )
+
   it('keeps the dark palette theme equal to the stylesheet defaults', () => {
     const cssDir = join(
       process.cwd(),

@@ -1,3 +1,8 @@
+.dom-widget .comfy-multiline-input {
+  background-color: var(--comfy-input-bg);
+  color: var(--input-text);
+}
+
 .comfy-modal {
   display: none;
   position: fixed;
@@ -122,6 +127,14 @@ button.comfy-close-menu-btn {
   border-color: var(--border);
   border-style: solid;
   margin-top: 2px;
+}
+
+.comfy-menu > button,
+.comfy-menu-btns button,
+.comfy-menu .comfy-list button {
+  color: var(--input-text);
+  background-color: var(--comfy-input-bg);
+  border-color: var(--border-color);
 }
 
 .comfy-menu > button:hover,

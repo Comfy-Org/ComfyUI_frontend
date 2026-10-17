@@ -76,10 +76,12 @@ nodes sit on the canvas and need their own contrast.
   on `button`, `input`, `select`, `optgroup` and `textarea`), so controls
   inherit too. Delete that rule when preflight lands.
 - The old palette variables live in `_legacy-palette.css` as aliases of the
-  theme tokens (`--comfy-menu-bg: var(--background)` and so on). Core
-  palettes no longer write them; non-core palettes still write their own
-  `comfy_base` values. Nothing in the app reads them, but custom nodes read
-  every one, so the file stays. Six renamed variables stay in
+  theme tokens (`--comfy-menu-bg: var(--background)` and so on). Core palettes
+  keep their original `comfy-input-bg`, `input-text` and `border-color` values
+  for LiteGraph textareas and old-menu buttons. These controls retain their
+  palette colors while modern controls use theme tokens. Non-core palettes
+  still write their own `comfy_base` values. Custom nodes also read the old
+  variables, so the aliases stay. Six renamed variables stay in
   `_deprecated-aliases.css` for the same reason.
 
 ## Consequences
