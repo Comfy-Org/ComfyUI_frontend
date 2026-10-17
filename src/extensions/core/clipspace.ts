@@ -2,7 +2,7 @@ import { app, ComfyApp } from '../../scripts/app'
 import { ComfyDialog } from '../../scripts/ui'
 import { $el } from '../../scripts/ui/utils'
 
-class ClipspaceDialog extends ComfyDialog {
+export class ClipspaceDialog extends ComfyDialog {
   static items: Array<
     HTMLButtonElement & {
       contextPredicate?: () => boolean
