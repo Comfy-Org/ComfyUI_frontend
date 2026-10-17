@@ -2073,7 +2073,7 @@ describe('useAgentSession (v1 composition root)', () => {
       receipt: AgentAnswerReceipt = { status: 'answered' }
     ) => {
       const answerAsk = vi.fn<AgentRestClient['answerAsk']>(async () => receipt)
-      const { source, emit } = fakeEvents()
+      const { source, emit, status } = fakeEvents()
       const session = useAgentSession({
         rest: fakeRest({ answerAsk }),
         events: source
@@ -2081,7 +2081,7 @@ describe('useAgentSession (v1 composition root)', () => {
       session.start()
       await session.sendMessage('pick for me')
       emit(askUser('msg-1'))
-      return { session, answerAsk, emit }
+      return { session, answerAsk, emit, status }
     }
     const card = () =>
       useAgentConversationStore().messages[0].parts.find(
@@ -2302,6 +2302,24 @@ describe('useAgentSession (v1 composition root)', () => {
       ])
     })
 
+    it('accepts an explicitly empty answer committed by the server', async () => {
+      const { session } = await parkedOnQuestion({
+        status: 'answered',
+        selected: []
+      })
+
+      const committed = await session.answerAsk('turn-1:call-1', {
+        selected: []
+      })
+      await vi.advanceTimersByTimeAsync(15_000)
+
+      expect(committed).toBe(true)
+      expect(card()).toMatchObject({
+        resolution: { status: 'answered', selected: [] }
+      })
+      expect(session.notices.value).toEqual([])
+    })
+
     it('leaves a status-only 202 to the frame to report', async () => {
       const { session, emit } = await parkedOnQuestion()
       await session.answerAsk('turn-1:call-1', { selected: ['sdxl'] })
@@ -2314,6 +2332,21 @@ describe('useAgentSession (v1 composition root)', () => {
         {
           level: 'error',
           text: enMessages.agent.runApproval.answerSuperseded
+        }
+      ])
+    })
+
+    it('keeps a pre-open accepted answer tracked until a later socket drop', async () => {
+      const { session, status } = await parkedOnQuestion()
+      await session.answerAsk('turn-1:call-1', { selected: ['sdxl'] })
+
+      status(true)
+      status(false)
+
+      expect(session.notices.value).toEqual([
+        {
+          level: 'error',
+          text: enMessages.agent.runApproval.answerAcceptedUnconfirmed
         }
       ])
     })
@@ -2430,16 +2463,17 @@ describe('useAgentSession (v1 composition root)', () => {
     )
   })
 
-  it('collapses a stale approval on 409 without surfacing an error', async () => {
+  it('retires a live-socket 409 without a false uncertainty notice', async () => {
     const answerAsk = vi
       .fn<AgentRestClient['answerAsk']>()
       .mockRejectedValue(new AgentApiError('already answered', 409, undefined))
-    const { source, emit } = fakeEvents()
+    const { source, emit, status } = fakeEvents()
     const session = useAgentSession({
       rest: fakeRest({ answerAsk }),
       events: source
     })
     session.start()
+    status(true)
     await session.sendMessage('build it')
     emit(runApproval('msg-1'))
 
@@ -2574,7 +2608,7 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(session.notices.value).toEqual([])
     })
 
-    it('dismisses itself when the server reports the ask already resolved', async () => {
+    it('retires itself as unconfirmed when a 409 omits the committed answer', async () => {
       const answerAsk = vi
         .fn<AgentRestClient['answerAsk']>()
         .mockRejectedValue(
@@ -2590,13 +2624,22 @@ describe('useAgentSession (v1 composition root)', () => {
       await session.sendMessage('build it and run it')
       emit(runApproval('msg-1'))
       emit(done('msg-1'))
+      status(false)
 
       await session.answerAsk('turn-1:call-1', { selected: ['run'] })
 
       expect(cardOnScreen()).toBe(false)
       expect(session.answeringAskIds.value.size).toBe(0)
-      expect(session.notices.value).toEqual([])
-      expect(reportError).not.toHaveBeenCalled()
+      expect(session.notices.value).toEqual([
+        {
+          level: 'error',
+          text: 'Could not confirm your answer reached the agent. It may still have been applied — reload the page to see where things stand.'
+        }
+      ])
+      expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
+        surface: 'agent',
+        errorType: 'agent_ask_answer_unconfirmed'
+      })
     })
 
     it.for([403, 404] as const)(
@@ -2741,6 +2784,60 @@ describe('useAgentSession (v1 composition root)', () => {
       })
       expect(session.notices.value).toHaveLength(1)
       expect(cardOnScreen()).toBe(false)
+    })
+
+    it('warns from the canonical answer receipt when another selection won', async () => {
+      const answerAsk = vi
+        .fn<AgentRestClient['answerAsk']>()
+        .mockResolvedValue({ status: 'answered', selected: ['run'] })
+      const events = fakeEvents()
+      const session = useAgentSession({
+        rest: fakeRest({ answerAsk }),
+        events: events.source
+      })
+      session.start()
+      events.status(true)
+      await session.sendMessage('build it and run it')
+      events.emit(runApproval('msg-1'))
+
+      const answered = await session.answerAsk('turn-1:call-1', 'cancel')
+
+      expect(answered).toBe(false)
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        surface: 'agent',
+        errorType: 'agent_ask_answer_superseded'
+      })
+      expect(reportError).not.toHaveBeenCalledWith(expect.any(Error), {
+        surface: 'agent',
+        errorType: 'agent_ask_answer_unconfirmed'
+      })
+      expect(session.notices.value).toHaveLength(1)
+    })
+
+    it('treats an empty approval receipt as status-only for object answers', async () => {
+      const answerAsk = vi
+        .fn<AgentRestClient['answerAsk']>()
+        .mockResolvedValue({ status: 'answered', selected: [] })
+      const events = fakeEvents()
+      const session = useAgentSession({
+        rest: fakeRest({ answerAsk }),
+        events: events.source
+      })
+      session.start()
+      events.status(true)
+      await session.sendMessage('build it and run it')
+      events.emit(runApproval('msg-1'))
+
+      const answered = await session.answerAsk('turn-1:call-1', {
+        selected: ['run']
+      })
+
+      expect(answered).toBe(true)
+      expect(reportError).not.toHaveBeenCalledWith(expect.any(Error), {
+        surface: 'agent',
+        errorType: 'agent_ask_answer_superseded'
+      })
+      expect(session.notices.value).toEqual([])
     })
 
     // The resolution frame retires the card on its way through, so by the time
@@ -3911,6 +4008,23 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(rest.getMessages).toHaveBeenCalledWith('th-1', expect.anything())
   })
 
+  it('(g2b) a later false after the initial snapshot marks the channel dropped', async () => {
+    const { source, emit, status } = fakeEvents()
+    const session = useAgentSession({ rest: fakeRest(), events: source })
+    session.start()
+    status(false)
+
+    await session.sendMessage('go')
+    emit(runApproval('msg-1'))
+    status(false)
+    await session.answerAsk('turn-1:call-1', 'run')
+
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'agent',
+      errorType: 'agent_ask_answer_winner_unconfirmed'
+    })
+  })
+
   // Backend invariant (cloud `newAssistantMessage` + the complete/fail writes):
   // an assistant row carries content only once it goes terminal, so a live turn
   // has nothing to re-hydrate from. Keep this row contentless — giving it text
@@ -4255,6 +4369,22 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(session.editableTurnId.value).toBe('msg-1')
   })
 
+  it('(g6b) an approval does not make a still-streaming stopped turn editable', async () => {
+    const { source, emit, status } = fakeEvents()
+    const session = useAgentSession({ rest: fakeRest(), events: source })
+    session.start()
+    status(true)
+
+    await session.sendMessage('go')
+    emit(delta('msg-1', 'partial'))
+    await session.stopTurn()
+    emit(runApproval('msg-1'))
+
+    expect(approvalParts(session)).toHaveLength(1)
+    expect(session.isStreaming.value).toBe(true)
+    expect(session.editableTurnId.value).toBeNull()
+  })
+
   it('(g7) a flapping socket starts one recovery job per turn, not one per reconnect', async () => {
     const rest = streamingTurnRest()
     const { source, emit, status } = fakeEvents()
@@ -4394,7 +4524,7 @@ describe('useAgentSession (v1 composition root)', () => {
     )
   })
 
-  it('(g10) a failing recovery fetch stays silent and leaves the turn live for the socket', async () => {
+  it('(g10) a failing recovery fetch does not amplify backend failure and leaves the turn live', async () => {
     const rest = fakeRest({
       getMessages: vi.fn(async (): Promise<AgentMessages> => {
         throw new TypeError('Failed to fetch')
@@ -4542,7 +4672,7 @@ describe('useAgentSession (v1 composition root)', () => {
     )
   })
 
-  it('(g18) a history fetch that never answers is abandoned at the recovery deadline', async () => {
+  it('(g18) a history fetch that never answers stops at its deadline', async () => {
     const getMessages = vi.fn(hangingGetMessages)
     const rest = fakeRest({ getMessages })
     const { source, emit, status } = fakeEvents()
@@ -4555,21 +4685,17 @@ describe('useAgentSession (v1 composition root)', () => {
 
     status(false)
     status(true)
-    await vi.advanceTimersByTimeAsync(59_999)
+    await vi.advanceTimersByTimeAsync(59_000)
     expect(getMessages).toHaveBeenCalledTimes(1)
     const signal = getMessages.mock.calls[0]?.[1]?.signal
     assert.exists(signal)
     expect(signal.aborted).toBe(false)
 
-    await vi.advanceTimersByTimeAsync(1)
+    await vi.advanceTimersByTimeAsync(1_000)
     expect(signal.aborted).toBe(true)
     expect(session.isStreaming.value).toBe(true)
     expect(reportError).not.toHaveBeenCalled()
-
-    status(false)
-    status(true)
-    await vi.advanceTimersByTimeAsync(0)
-    expect(getMessages).toHaveBeenCalledTimes(2)
+    await vi.waitFor(() => expect(getMessages).toHaveBeenCalledOnce())
   })
 
   it('(g19) stopping the session cancels its in-flight history fetch', async () => {
@@ -4736,6 +4862,795 @@ describe('useAgentSession (v1 composition root)', () => {
       })
     )
     expect(conversationStore.liveTurns()).toHaveLength(1)
+  })
+
+  it('(g47) each reconnect gets one bounded recovery pass', async () => {
+    vi.useFakeTimers()
+    try {
+      const getMessages = vi.fn(async (): Promise<AgentMessages> => {
+        throw new AgentApiError('temporary failure', 500, undefined)
+      })
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({
+        rest: fakeRest({ getMessages }),
+        events: source
+      })
+      session.start({ restore: false })
+      status(true)
+      await session.sendMessage('go')
+      emit(delta('msg-1', 'partial'))
+
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(64_000)
+      expect(getMessages).toHaveBeenCalledTimes(6)
+
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(64_000)
+      expect(getMessages).toHaveBeenCalledTimes(12)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  // PM-1738. A turn parked on a run approval stays `streaming` for as long as
+  // the user takes to answer, so the drop that swallowed its `agent_ask` frame
+  // leaves the server waiting on a card the panel never drew. Recovery already
+  // polls the row, and the row carries the unanswered ask.
+  const PARKED_ASK: NonNullable<AgentMessages[number]['pending_ask']> = {
+    message_id: 'msg-1',
+    ask_id: 'turn-1:call-1',
+    kind: 'run_approval',
+    context: {
+      workflow_id: 'workflow-1',
+      workflow_name: 'Portrait workflow'
+    },
+    prompt: 'Run it?',
+    options: [
+      { id: 'run', label: 'Run' },
+      { id: 'cancel', label: 'Cancel' }
+    ],
+    min_selections: 1,
+    max_selections: 1,
+    allow_other: false
+  }
+
+  const parkedRow = (): AgentMessages[number] => ({
+    ...historyRow(2, 'assistant', 'msg-1', '', 'msg-1'),
+    content: {},
+    status: 'streaming',
+    pending_ask: PARKED_ASK
+  })
+
+  const unparkedRow = (): AgentMessages[number] => ({
+    ...historyRow(2, 'assistant', 'msg-1', '', 'msg-1'),
+    content: {},
+    status: 'streaming'
+  })
+
+  const parkedOnApprovalRest = () =>
+    fakeRest({
+      getMessages: vi.fn(
+        async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'msg-1', 'go'),
+          parkedRow()
+        ]
+      )
+    })
+
+  const approvalParts = (session: ReturnType<typeof useAgentSession>) => {
+    const assistant = session.entries.value.at(-1)
+    assert(assistant !== undefined && 'parts' in assistant)
+    return assistant.parts.filter((part) => part.type === 'runApproval')
+  }
+
+  it('(g27) an approval the drop swallowed is restored from the row and reported once', async () => {
+    vi.useFakeTimers()
+    try {
+      const rest = parkedOnApprovalRest()
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+
+      await session.sendMessage('go')
+      emit(delta('msg-1', 'partial'))
+      expect(approvalParts(session)).toHaveLength(0)
+
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(approvalParts(session)).toEqual([
+        {
+          type: 'runApproval',
+          askId: 'turn-1:call-1',
+          workflowId: 'workflow-1',
+          workflowName: 'Portrait workflow'
+        }
+      ])
+      expect(session.isStreaming.value).toBe(true)
+
+      await vi.advanceTimersByTimeAsync(31_000)
+
+      expect(approvalParts(session)).toHaveLength(1)
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+        surface: 'agent',
+        errorType: 'failure_delivering_agent_approval_ask',
+        level: 'error',
+        tags: {
+          feature_area: 'agent',
+          operation: 'recovery',
+          recovery_cause: 'reconnect'
+        },
+        context: {
+          threadId: 'th-1',
+          messageId: 'msg-1',
+          askId: 'turn-1:call-1'
+        }
+      })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(g28) an approval the socket did deliver is neither redrawn nor reported', async () => {
+    vi.useFakeTimers()
+    try {
+      const rest = parkedOnApprovalRest()
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+
+      await session.sendMessage('go')
+      emit(runApproval('msg-1'))
+      expect(approvalParts(session)).toHaveLength(1)
+
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(31_000)
+
+      expect(approvalParts(session)).toHaveLength(1)
+      expect(reportError).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(g29) a poll whose snapshot predates the answer does not resurrect the card', async () => {
+    vi.useFakeTimers()
+    try {
+      const rest = parkedOnApprovalRest()
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+
+      await session.sendMessage('go')
+      emit(runApproval('msg-1'))
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(0)
+      expect(approvalParts(session)).toHaveLength(1)
+
+      emit(askResolved('msg-1'))
+      expect(approvalParts(session)).toHaveLength(0)
+
+      await vi.advanceTimersByTimeAsync(31_000)
+
+      expect(approvalParts(session)).toHaveLength(0)
+      expect(reportError).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(g30) a broadcast that merely lagged the poll renders one card and is not reported', async () => {
+    vi.useFakeTimers()
+    try {
+      const rest = parkedOnApprovalRest()
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+
+      await session.sendMessage('go')
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(0)
+      expect(approvalParts(session)).toHaveLength(1)
+
+      emit(runApproval('msg-1'))
+      await vi.advanceTimersByTimeAsync(31_000)
+
+      expect(approvalParts(session)).toHaveLength(1)
+      expect(reportError).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(g32) an ask answered elsewhere is not resurrected by a stale poll', async () => {
+    vi.useFakeTimers()
+    try {
+      const rest = parkedOnApprovalRest()
+      vi.mocked(rest.answerAsk).mockRejectedValue(
+        new AgentApiError('already answered', 409, undefined)
+      )
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+
+      await session.sendMessage('go')
+      emit(runApproval('msg-1'))
+      status(false)
+      await session.answerAsk('turn-1:call-1', 'run')
+      expect(approvalParts(session)).toHaveLength(0)
+
+      status(true)
+      await vi.advanceTimersByTimeAsync(31_000)
+
+      expect(approvalParts(session)).toHaveLength(0)
+      expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
+        surface: 'agent',
+        errorType: 'agent_ask_answer_unconfirmed'
+      })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  // The 409 branch resolves the ask straight on the store, so the ledger only
+  // learns of a hydrated card's ask from `answerAsk` itself. Without that the
+  // next poll, whose row still carries the ask the server has not cleared yet,
+  // would draw the card back over a reply the user had already released.
+  it('(g33) answering a hydrated ask keeps a stale poll from drawing it again', async () => {
+    vi.useFakeTimers()
+    try {
+      const rest = fakeRest({
+        getMessages: vi.fn(
+          async (): Promise<AgentMessages> => [
+            historyRow(1, 'user', 'msg-1', 'go'),
+            parkedRow()
+          ]
+        )
+      })
+      vi.mocked(rest.answerAsk).mockRejectedValue(
+        new AgentApiError('already answered', 409, undefined)
+      )
+      const { source, status } = fakeEvents()
+      localStorage.setItem(StorageKeys.agentThread('personal'), 'th-1')
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+      await vi.advanceTimersByTimeAsync(0)
+      expect(approvalParts(session)).toHaveLength(1)
+
+      status(false)
+      await session.answerAsk('turn-1:call-1', 'run')
+      expect(approvalParts(session)).toHaveLength(0)
+
+      await vi.advanceTimersByTimeAsync(31_000)
+
+      expect(approvalParts(session)).toHaveLength(0)
+      expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
+        surface: 'agent',
+        errorType: 'agent_ask_answer_unconfirmed'
+      })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(g37) an uncertain hydrated answer keeps a stale poll from restoring its card', async () => {
+    vi.useFakeTimers()
+    try {
+      let resolveStalePoll: ((history: AgentMessages) => void) | undefined
+      const rest = fakeRest({
+        getMessages: vi
+          .fn<AgentRestClient['getMessages']>()
+          .mockResolvedValueOnce([
+            historyRow(1, 'user', 'msg-1', 'go'),
+            parkedRow()
+          ])
+          .mockImplementationOnce(
+            () =>
+              new Promise<AgentMessages>((resolve) => {
+                resolveStalePoll = resolve
+              })
+          ),
+        answerAsk: vi
+          .fn<AgentRestClient['answerAsk']>()
+          .mockRejectedValue(new AgentApiError('backend blip', 500, undefined))
+      })
+      const { source, status } = fakeEvents()
+      localStorage.setItem(StorageKeys.agentThread('personal'), 'th-1')
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+      await vi.advanceTimersByTimeAsync(0)
+      expect(approvalParts(session)).toHaveLength(1)
+      await vi.waitFor(() => expect(rest.getMessages).toHaveBeenCalledTimes(2))
+
+      const answered = session.answerAsk('turn-1:call-1', 'run')
+      await vi.advanceTimersByTimeAsync(5_000)
+      await answered
+      expect(approvalParts(session)).toHaveLength(0)
+
+      resolveStalePoll?.([historyRow(1, 'user', 'msg-1', 'go'), parkedRow()])
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(approvalParts(session)).toHaveLength(0)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(g39) a 202 cannot silently confirm which answer won for a recovered card', async () => {
+    const { source, emit, status } = fakeEvents()
+    const session = useAgentSession({ rest: fakeRest(), events: source })
+    session.start()
+    status(true)
+    await session.sendMessage('go')
+    emit(runApproval('msg-1'))
+    status(false)
+
+    await session.answerAsk('turn-1:call-1', 'run')
+
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'agent',
+      errorType: 'agent_ask_answer_winner_unconfirmed'
+    })
+    expect(session.notices.value).toHaveLength(1)
+  })
+
+  it('(g38) a remount does not restore an ask the prior session retired', async () => {
+    vi.useFakeTimers()
+    try {
+      const rest = parkedOnApprovalRest()
+      vi.mocked(rest.answerAsk).mockRejectedValue(
+        new AgentApiError('already answered', 409, undefined)
+      )
+      const firstEvents = fakeEvents()
+      localStorage.setItem(StorageKeys.agentThread('personal'), 'th-1')
+      const first = useAgentSession({ rest, events: firstEvents.source })
+      first.start()
+      firstEvents.status(true)
+      await vi.advanceTimersByTimeAsync(0)
+      expect(approvalParts(first)).toHaveLength(1)
+
+      await first.answerAsk('turn-1:call-1', 'run')
+      first.stop()
+
+      const secondEvents = fakeEvents()
+      const second = useAgentSession({ rest, events: secondEvents.source })
+      second.start()
+      secondEvents.status(true)
+      await vi.advanceTimersByTimeAsync(31_000)
+
+      expect(approvalParts(second)).toHaveLength(0)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  // The same lag `(g33)` describes, read from the other side: the server
+  // clears `pending_ask` behind the answer, so a row it has already closed can
+  // still be carrying a spent one. A later row keeps the turn open, so
+  // recovery still polls -- and must take the ask only from the open row, or
+  // the turn's own closed row resurrects a card nobody can answer. The
+  // hydrate path is already gated this way (`applyAssistantRow`).
+  it('(g36) a closed row still carrying a spent ask does not restore a card', async () => {
+    vi.useFakeTimers()
+    try {
+      const rest = fakeRest({
+        getMessages: vi.fn(
+          async (): Promise<AgentMessages> => [
+            historyRow(1, 'user', 'msg-1', 'go'),
+            {
+              ...parkedRow(),
+              status: 'interrupted'
+            },
+            {
+              ...historyRow(3, 'assistant', 'msg-1', '', 'row-3'),
+              content: {},
+              status: 'streaming'
+            }
+          ]
+        )
+      })
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+
+      await session.sendMessage('go')
+      emit(delta('msg-1', 'partial'))
+
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(31_000)
+
+      expect(approvalParts(session)).toHaveLength(0)
+      expect(reportError).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  // A frame published while the first history fetch is still in flight has no
+  // turn in memory to reach: `ingest` drops it. Recovery is the only thing
+  // left that can draw the card, so the drop must not be recorded as a
+  // delivery.
+  it('(g34) a frame the store could not route yet is still restored by recovery', async () => {
+    vi.useFakeTimers()
+    try {
+      let releaseHistory = (): void => {}
+      const history = new Promise<void>((resolve) => {
+        releaseHistory = resolve
+      })
+      let served = 0
+      const rest = fakeRest({
+        getMessages: vi.fn(async (): Promise<AgentMessages> => {
+          // The first response is the one that predates the ask row, so
+          // hydration has nothing to draw the card from.
+          if (served++ === 0) {
+            await history
+            return [historyRow(1, 'user', 'msg-1', 'go'), unparkedRow()]
+          }
+          return [historyRow(1, 'user', 'msg-1', 'go'), parkedRow()]
+        }),
+        answerAsk: vi
+          .fn<AgentRestClient['answerAsk']>()
+          .mockRejectedValue(
+            new AgentApiError('already answered', 409, undefined)
+          )
+      })
+      const { source, status } = fakeEvents()
+      localStorage.setItem(StorageKeys.agentThread('personal'), 'th-1')
+      const session = useAgentSession({ rest, events: source })
+      useAgentConversationStore().ingest(
+        zAgentWsEvent.parse(runApproval('msg-1'))
+      )
+      session.start()
+      status(true)
+
+      expect(session.entries.value).toHaveLength(0)
+
+      releaseHistory()
+      await vi.advanceTimersByTimeAsync(31_000)
+
+      expect(approvalParts(session)).toHaveLength(1)
+      status(false)
+      await session.answerAsk('turn-1:call-1', 'run')
+      expect(session.notices.value).toEqual([
+        {
+          level: 'error',
+          text: 'Could not confirm your answer reached the agent. It may still have been applied — reload the page to see where things stand.'
+        }
+      ])
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(g35) a drop while a hydrate job is polling files the ask as a lost frame', async () => {
+    vi.useFakeTimers()
+    try {
+      // The row parks only once the socket is down, so the hydrate job's own
+      // polls see nothing and the restore can only come from the reconnect
+      // job that takes it over. Keyed on the drop rather than on a call count
+      // because hydrate and its first poll share the 0ms head of the schedule.
+      let parked = false
+      const rest = fakeRest({
+        getMessages: vi.fn(
+          async (): Promise<AgentMessages> => [
+            historyRow(1, 'user', 'msg-1', 'go'),
+            parked ? parkedRow() : unparkedRow()
+          ]
+        )
+      })
+      const { source, status } = fakeEvents()
+      localStorage.setItem(StorageKeys.agentThread('personal'), 'th-1')
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+      await vi.advanceTimersByTimeAsync(0)
+      expect(approvalParts(session)).toHaveLength(0)
+
+      parked = true
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(31_000)
+
+      expect(approvalParts(session)).toHaveLength(1)
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(
+        expect.any(Error),
+        expect.objectContaining({
+          level: 'error',
+          tags: expect.objectContaining({ recovery_cause: 'reconnect' })
+        })
+      )
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(g40) recovery replaces a stale approval with the row current ask', async () => {
+    vi.useFakeTimers()
+    try {
+      const currentAskId = 'turn-1:call-2'
+      const rest = fakeRest({
+        getMessages: vi.fn(
+          async (): Promise<AgentMessages> => [
+            historyRow(1, 'user', 'msg-1', 'go'),
+            {
+              ...parkedRow(),
+              pending_ask: { ...PARKED_ASK, ask_id: currentAskId }
+            }
+          ]
+        )
+      })
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start({ restore: false })
+      status(true)
+      await session.sendMessage('go')
+      emit(runApproval('msg-1'))
+
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(1_000)
+
+      expect(approvalParts(session).map((part) => part.askId)).toEqual([
+        currentAskId
+      ])
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(g46) a confirmed row with no pending ask retires a stale approval', async () => {
+    vi.useFakeTimers()
+    try {
+      const rest = fakeRest({
+        getMessages: vi.fn(
+          async (): Promise<AgentMessages> => [
+            historyRow(1, 'user', 'msg-1', 'go'),
+            unparkedRow()
+          ]
+        )
+      })
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start({ restore: false })
+      status(true)
+      await session.sendMessage('go')
+      emit(runApproval('msg-1'))
+
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(1_000)
+
+      expect(approvalParts(session)).toHaveLength(0)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(g47) a delayed duplicate frame cannot redraw a confirmed-stale approval', async () => {
+    vi.useFakeTimers()
+    try {
+      const rest = fakeRest({
+        getMessages: vi.fn(
+          async (): Promise<AgentMessages> => [
+            historyRow(1, 'user', 'msg-1', 'go'),
+            unparkedRow()
+          ]
+        )
+      })
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start({ restore: false })
+      status(true)
+      await session.sendMessage('go')
+      emit(runApproval('msg-1'))
+
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(1_000)
+      expect(approvalParts(session)).toHaveLength(0)
+
+      emit(runApproval('msg-1'))
+      expect(approvalParts(session)).toHaveLength(0)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(g41) a missing turn row cannot retire a live approval', async () => {
+    vi.useFakeTimers()
+    try {
+      const rest = fakeRest({
+        getMessages: vi.fn(
+          async (): Promise<AgentMessages> => [
+            historyRow(1, 'user', 'msg-1', 'go')
+          ]
+        )
+      })
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start({ restore: false })
+      status(true)
+      await session.sendMessage('go')
+      emit(runApproval('msg-1'))
+
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(31_000)
+
+      expect(approvalParts(session)).toHaveLength(1)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(g42) a newer terminal row retires an older pending approval', async () => {
+    vi.useFakeTimers()
+    try {
+      const rest = fakeRest({
+        getMessages: vi.fn(
+          async (): Promise<AgentMessages> => [
+            historyRow(1, 'user', 'msg-1', 'go'),
+            parkedRow(),
+            {
+              ...historyRow(3, 'assistant', 'msg-1', 'done', 'row-3'),
+              status: 'complete'
+            }
+          ]
+        )
+      })
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start({ restore: false })
+      status(true)
+      await session.sendMessage('go')
+      emit(runApproval('msg-1'))
+
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(session.isStreaming.value).toBe(false)
+      expect(approvalParts(session)).toHaveLength(0)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(g43) a confirmed current ask clears reconnect-only answer warnings', async () => {
+    vi.useFakeTimers()
+    try {
+      const rest = parkedOnApprovalRest()
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start({ restore: false })
+      status(true)
+      await session.sendMessage('go')
+      emit(runApproval('msg-1'))
+
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(0)
+      emit(runApproval('msg-1'))
+      await session.answerAsk('turn-1:call-1', 'run')
+
+      expect(session.notices.value).toHaveLength(0)
+      expect(reportError).not.toHaveBeenCalledWith(expect.any(Error), {
+        surface: 'agent',
+        errorType: 'agent_ask_answer_unconfirmed'
+      })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(g44) a restored approval answered on a live socket is not uncertain', async () => {
+    vi.useFakeTimers()
+    try {
+      const rest = parkedOnApprovalRest()
+      const { source, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start({ restore: false })
+      status(true)
+      await session.sendMessage('go')
+
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(3_000)
+      await session.answerAsk('turn-1:call-1', 'run')
+
+      expect(reportError).not.toHaveBeenCalledWith(expect.any(Error), {
+        surface: 'agent',
+        errorType: 'agent_ask_answer_unconfirmed'
+      })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(g45) recovery reads the newest ask-bearing open row', async () => {
+    vi.useFakeTimers()
+    try {
+      const rest = fakeRest({
+        getMessages: vi.fn(
+          async (): Promise<AgentMessages> => [
+            historyRow(1, 'user', 'msg-1', 'go'),
+            parkedRow(),
+            {
+              ...historyRow(3, 'assistant', 'msg-1', '', 'row-3'),
+              content: {},
+              status: 'streaming'
+            }
+          ]
+        )
+      })
+      const { source, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start({ restore: false })
+      status(true)
+      await session.sendMessage('go')
+
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(approvalParts(session).map((part) => part.askId)).toEqual([
+        'turn-1:call-1'
+      ])
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(g31) an ask the server parks during a hydrate fetch is restored as a warning', async () => {
+    vi.useFakeTimers()
+    try {
+      const getMessages = vi
+        .fn<() => Promise<AgentMessages>>()
+        .mockResolvedValueOnce([
+          historyRow(1, 'user', 'msg-1', 'go'),
+          unparkedRow()
+        ])
+        .mockResolvedValue([historyRow(1, 'user', 'msg-1', 'go'), parkedRow()])
+      const rest = fakeRest({ getMessages })
+      const { source, status } = fakeEvents()
+      localStorage.setItem(StorageKeys.agentThread('personal'), 'th-1')
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+
+      // Hydrate and its first recovery poll share the 0ms head of the
+      // schedule, so the restore lands in the same tick as the hydrate that
+      // missed the ask -- and it is filed as the benign publish race, not as
+      // a lost frame, because no socket ever dropped here.
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(approvalParts(session)).toHaveLength(1)
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'failure_delivering_agent_approval_ask',
+          level: 'warning',
+          tags: expect.objectContaining({ recovery_cause: 'hydrate' })
+        })
+      )
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('(h) attachments pass through to the postMessage wire body', async () => {
