@@ -16,6 +16,7 @@
 <script setup lang="ts">
 import {
   computed,
+  markRaw,
   onMounted,
   useTemplateRef,
   watch,
@@ -32,16 +33,16 @@ import {
   reportResourceLoadError
 } from '@/platform/telemetry/assetLoadErrorReporting'
 import { app } from '@/scripts/app'
-import { registerExtensionDialogService } from '@/services/dialogService'
 import { createExtensionDialogService } from '@/services/extensionDialogService'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI } from '@/utils/envUtil'
 import { raiseModalLayer, releaseModalLayer } from '@/utils/modalLayerStack'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 
-registerExtensionDialogService(createExtensionDialogService())
 const workspaceStore = useWorkspaceStore()
-app.extensionManager = useWorkspaceStore()
+app.extensionManager = Object.assign(workspaceStore, {
+  dialog: markRaw(createExtensionDialogService())
+})
 
 const conflictDetection = useConflictDetection()
 const isLoading = computed<boolean>(() => workspaceStore.spinner)

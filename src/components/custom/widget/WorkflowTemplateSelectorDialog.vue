@@ -1269,15 +1269,11 @@ async function showModelSetupIfNeeded(
       : Promise.resolve<readonly ComfyTemplateInputAsset[]>([])
   if (requirements.length === 0) return false
 
-  // Only the Electron path needs real directories, and resolving them here
-  // rather than mid-dispatch keeps a download from depending on a lookup that
-  // can finish after this view is gone.
-  const [availability, folderPaths] = await Promise.all([
+  const [availability, loadedFolderPaths] = await Promise.all([
     resolveModelAvailability(requirements.map(({ model }) => model)),
-    modelDownloadNeedsFolderPaths()
-      ? loadFolderPathsOnce().catch(() => ({}))
-      : Promise.resolve({})
+    modelDownloadNeedsFolderPaths() ? loadFolderPathsOnce() : undefined
   ])
+  const folderPaths = loadedFolderPaths ?? {}
   if (generation !== detailGeneration) return true
   if (!availability.some(({ status }) => status === 'missing')) return false
 
