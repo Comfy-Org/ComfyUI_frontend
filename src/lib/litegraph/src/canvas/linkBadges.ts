@@ -81,7 +81,8 @@ function makeBadge(text: string, color: string): LGraphBadge {
     fgColor: textOnColor(color),
     fontSize: BADGE_FONT_SIZE,
     height: BADGE_HEIGHT,
-    cornerRadius: BADGE_HEIGHT / 2
+    cornerRadius: BADGE_HEIGHT / 2,
+    centerOnCapHeight: true
   })
 }
 
@@ -218,10 +219,26 @@ function drawConnector(
   ctx.restore()
 }
 
+function scaledAround(
+  ctx: CanvasRenderingContext2D,
+  [x, y]: Point,
+  scale: number,
+  draw: () => void
+): void {
+  if (scale === 1) return draw()
+  ctx.save()
+  ctx.translate(x, y)
+  ctx.scale(scale, scale)
+  ctx.translate(-x, -y)
+  draw()
+  ctx.restore()
+}
+
 export function drawHiddenLinkBadges(
   ctx: CanvasRenderingContext2D,
   layout: LinkBadgePair,
-  visibleArea: ReadOnlyRect
+  visibleArea: ReadOnlyRect,
+  scale = 1
 ): void {
   const endpoints = [layout.output, layout.input]
   const visible = endpoints.some(({ socket, hitArea }) =>
@@ -235,7 +252,9 @@ export function drawHiddenLinkBadges(
       side === 'output'
         ? left + BADGE_CONNECT_INSET
         : left + width - BADGE_CONNECT_INSET
-    drawConnector(ctx, socket, [connectorX, top + height / 2], layout.color)
-    layout.badge.draw(ctx, left, top)
+    scaledAround(ctx, socket, scale, () => {
+      drawConnector(ctx, socket, [connectorX, top + height / 2], layout.color)
+      layout.badge.draw(ctx, left, top)
+    })
   }
 }

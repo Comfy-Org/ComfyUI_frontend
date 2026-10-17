@@ -12,6 +12,10 @@ import type { LinkId } from '@/types/linkId'
 
 import { Subgraph } from '../subgraph/Subgraph'
 import type { CanvasPointerEvent } from '../types/events'
+import {
+  cancelLinkHideTransition,
+  startLinkHideTransitions
+} from './linkHideTransition'
 
 export interface LinkMutationHost {
   emitBeforeChange(): void
@@ -43,9 +47,7 @@ export function hideLink(
   scope: GraphScope,
   linkId: LinkId
 ): void {
-  mutateLink(host, () =>
-    useLinkPresentationStore().patch(scope, linkId, { hidden: true })
-  )
+  hideLinks(host, scope, [linkId])
 }
 
 export function hideLinks(
@@ -55,7 +57,14 @@ export function hideLinks(
 ): void {
   mutateLink(host, () => {
     const store = useLinkPresentationStore()
-    for (const linkId of linkIds) store.patch(scope, linkId, { hidden: true })
+    const newlyHidden: LinkId[] = []
+    for (const linkId of linkIds) {
+      if (store.getPresentation(scope, linkId)?.hidden === true) continue
+      store.patch(scope, linkId, { hidden: true })
+      if (store.getPresentation(scope, linkId)?.hidden === true)
+        newlyHidden.push(linkId)
+    }
+    startLinkHideTransitions(scope.rootGraphId, newlyHidden, performance.now())
   })
 }
 
@@ -97,9 +106,10 @@ export function showLink(
   scope: GraphScope,
   linkId: LinkId
 ): void {
-  mutateLink(host, () =>
+  mutateLink(host, () => {
+    cancelLinkHideTransition(scope.rootGraphId, linkId)
     useLinkPresentationStore().patch(scope, linkId, { hidden: false })
-  )
+  })
 }
 
 export function renameLink(
