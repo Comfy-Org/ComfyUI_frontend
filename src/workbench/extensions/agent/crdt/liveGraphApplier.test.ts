@@ -2047,10 +2047,12 @@ describe('LiveGraphApplier change bracket', () => {
   ])(
     'applies a $name frame inside exactly one before/after bracket that changes the graph',
     ({ op }) => {
-      const { graph, doc, applier, collector, applyCollected } = setup(seed)
-      applyCollected()
       const { canvas, events } = recordingCanvas()
-      graph.list_of_graphcanvas = [canvas]
+      const { graph, doc, applier, collector, applyCollected } = setup(seed, {
+        getCanvas: () => canvas
+      })
+      applyCollected()
+      events.length = 0
       const before = graph.serialize()
 
       expect(applyOps(doc, [op], CATALOG).outcomes).toEqual([
@@ -2064,9 +2066,10 @@ describe('LiveGraphApplier change bracket', () => {
   )
 
   it('brackets a catch-up frame and a lineage replacement once each, and never without a graph', () => {
-    const { graph, doc, collector, applier } = setup(seed)
     const { canvas, events } = recordingCanvas()
-    graph.list_of_graphcanvas = [canvas]
+    const { graph, doc, collector, applier } = setup(seed, {
+      getCanvas: () => canvas
+    })
     const catchUp = collector.peek()
     const empty = followedDoc({ nodes: [], links: [] }, CATALOG)
 
