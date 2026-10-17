@@ -322,21 +322,34 @@ describe('parseComfyWorkflow', () => {
   describe('workflow.nodes.properties.aux_id', () => {
     const validAuxIds = [
       'valid/valid',
-      'valid-username-with-dash/valid_github-repo-name-with-underscore'
+      'valid-username-with-dash/valid_github-repo-name-with-underscore',
+      'custom-nodes.git',
+      'custom-nodes',
+      'https://gitlab.example.com/team/subgroup/custom-nodes.git',
+      'https://bitbucket.org/team/custom-nodes',
+      'HTTPS://GitLab.example.com/team/custom-nodes.git',
+      'http://git.example.com:3000/team/custom-nodes.git'
     ]
     it.for(validAuxIds)('valid aux_id: %s', async (aux_id) => {
-      const workflow = JSON.parse(JSON.stringify(defaultGraph))
+      const workflow = structuredClone(defaultGraph)
       workflow.nodes[0].properties.aux_id = aux_id
-      await expect(validateComfyWorkflow(workflow)).resolves.not.toBeNull()
+      const validated = await validateComfyWorkflow(workflow)
+      expect(validated?.nodes[0].properties.aux_id).toBe(aux_id)
     })
     const invalidAuxIds = [
       'invalid spaces in username/repo',
       'invalid-chars-name-$/repo',
       'github-name/invalid spaces in repo',
-      'not-both-names-with-slash'
+      '',
+      'invalid@basename',
+      'https:custom-nodes',
+      'https://',
+      'https://invalid host/team/custom-nodes',
+      'ftp://git.example.com/team/custom-nodes.git',
+      'ssh://git@git.example.com/team/custom-nodes.git'
     ]
     it.for(invalidAuxIds)('invalid aux_id: %s', async (aux_id) => {
-      const workflow = JSON.parse(JSON.stringify(defaultGraph))
+      const workflow = structuredClone(defaultGraph)
       workflow.nodes[0].properties.aux_id = aux_id
       await expect(validateComfyWorkflow(workflow)).resolves.toBeNull()
     })
