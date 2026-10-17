@@ -85,6 +85,11 @@ describe('toRepoName', () => {
     { query: 'kijai/comfyui-kjnodes.git/', expected: 'comfyui-kjnodes' },
     { query: 'kijai/comfyui-kjnodes.git//', expected: 'comfyui-kjnodes' },
     { query: 'kijai/comfyui-kjnodes /', expected: 'comfyui-kjnodes' },
+    { query: 'kijai/comfyui-kjnodes / /', expected: 'comfyui-kjnodes' },
+    {
+      query: 'ltdrdata/ComfyUI-Manager.git /',
+      expected: 'ComfyUI-Manager'
+    },
     { query: 'Comfy-Org/ComfyUI-Manager', expected: 'ComfyUI-Manager' },
     { query: 'ZHO-ZHO-ZHO/ComfyUI-Gemini', expected: 'ComfyUI-Gemini' },
     {
@@ -160,6 +165,10 @@ describe('buildPackSearchFallbacks', () => {
       query: 'kijai/comfyui-kjnodes /',
       expected: ['comfyui-kjnodes', 'comfyui kjnodes']
     },
+    {
+      query: 'kijai/comfyui-kjnodes / /',
+      expected: ['comfyui-kjnodes', 'comfyui kjnodes']
+    },
     { query: 'comfyui-kjnodes /', expected: ['comfyui kjnodes'] },
     {
       query: 'euler-discrete-scheduler',
@@ -180,6 +189,7 @@ describe('buildPackSearchFallbacks', () => {
     'image/upscaling',
     'image/upscaling/',
     'image/upscaling//',
+    'image/upscaling / /',
     'https://github.com/kijai/',
     'kijai/kjnodes/',
     'kijai/c',
