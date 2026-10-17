@@ -8,6 +8,10 @@ import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
+import {
+  zComfyWorkflow,
+  zComfyWorkflow1
+} from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { WorkspaceStore } from '@e2e/types/globals'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { assetPath } from '@e2e/fixtures/utils/paths'
@@ -66,6 +70,33 @@ export class WorkflowHelper {
       Object.keys(localStorage).some((key) =>
         key.startsWith('Comfy.Workflow.Draft.v2:')
       )
+    )
+  }
+
+  async getDraftWorkflows(): Promise<ComfyWorkflowJSON[]> {
+    const workflows = await this.comfyPage.page.evaluate(() => {
+      const workflows: unknown[] = []
+      for (const key of Object.keys(localStorage)) {
+        if (!key.startsWith('Comfy.Workflow.Draft.v2:')) continue
+        const rawPayload = localStorage.getItem(key)
+        if (rawPayload === null) continue
+
+        const payload: unknown = JSON.parse(rawPayload)
+        if (
+          typeof payload !== 'object' ||
+          payload === null ||
+          !('data' in payload) ||
+          typeof payload.data !== 'string'
+        ) {
+          throw new Error('Draft payload has no workflow JSON')
+        }
+        const workflow: unknown = JSON.parse(payload.data)
+        workflows.push(workflow)
+      }
+      return workflows
+    })
+    return workflows.map((workflow) =>
+      zComfyWorkflow.or(zComfyWorkflow1).parse(workflow)
     )
   }
 
@@ -277,18 +308,18 @@ export class WorkflowHelper {
   async openNewTabThenReturn(): Promise<void> {
     const { topbar } = this.comfyPage.menu
     const originalTabIndex = (await topbar.getTabNames()).length - 1
-    await expect(topbar.getTab(originalTabIndex)).toHaveClass(
-      /p-togglebutton-checked/
-    )
+    await expect(
+      topbar.getTab(originalTabIndex).and(topbar.getActiveTab())
+    ).toBeVisible()
     await topbar.newWorkflowButton.click()
     await expect
       .poll(() => topbar.getTabNames())
       .toHaveLength(originalTabIndex + 2)
     await expect.poll(() => this.getGraphNodeIds()).toEqual([])
     await topbar.getTab(originalTabIndex).click()
-    await expect(topbar.getTab(originalTabIndex)).toHaveClass(
-      /p-togglebutton-checked/
-    )
+    await expect(
+      topbar.getTab(originalTabIndex).and(topbar.getActiveTab())
+    ).toBeVisible()
     await this.waitForWorkflowIdle()
   }
 

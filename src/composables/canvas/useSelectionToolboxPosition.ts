@@ -1,13 +1,16 @@
-import { useElementBounding, useRafFn } from '@vueuse/core'
+import { useElementBounding, useEventListener, useRafFn } from '@vueuse/core'
 import { computed, onUnmounted, ref, watch, watchEffect } from 'vue'
 import type { Ref } from 'vue'
 
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import type { ReadOnlyRect, Rect } from '@/lib/litegraph/src/interfaces'
+import { getSelectedLinksAnchor } from '@/lib/litegraph/src/canvas/linkSelection'
 import { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import type { Point } from '@/renderer/core/layout/types'
+import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
 import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
 import { computeUnionBounds } from '@/utils/mathUtil'
 
@@ -52,6 +55,9 @@ function getSelectionBounds(item: LGraphNode | LGraphGroup): ReadOnlyRect {
   return bounds
 }
 
+const SELECTION_BOUNDS_PADDING = 10
+const LINK_ANCHOR_GAP = 10
+
 export function useSelectionToolboxPosition(
   toolboxRef: Ref<HTMLElement | undefined>
 ) {
@@ -59,6 +65,16 @@ export function useSelectionToolboxPosition(
   const lgCanvas = canvasStore.getCanvas()
   const { getSelectableItems } = useSelectedLiteGraphItems()
   const { shouldRenderVueNodes } = useVueFeatureFlags()
+  const isDraggingLiteGraphItems = ref(lgCanvas.isDragging)
+  const linkSelectionStore = useLinkSelectionStore()
+
+  useEventListener(
+    lgCanvas.canvas,
+    'litegraph:dragging-items-changed',
+    (event: CustomEvent<{ dragging: boolean }>) => {
+      isDraggingLiteGraphItems.value = event.detail.dragging
+    }
+  )
 
   // World position of selection center
   const worldPosition = ref({ x: 0, y: 0 })
@@ -72,49 +88,46 @@ export function useSelectionToolboxPosition(
 
   // Unified dragging state - combines both LiteGraph and Vue node dragging
   const isDragging = computed((): boolean => {
-    const litegraphDragging = canvasStore.canvas?.state.draggingItems ?? false
     const vueNodeDragging =
       shouldRenderVueNodes.value && layoutStore.isDraggingVueNodes.value
-    return litegraphDragging || vueNodeDragging
+    return isDraggingLiteGraphItems.value || vueNodeDragging
   })
 
-  /**
-   * Update position based on selection
-   */
+  function itemsAnchor(items: Set<unknown>): Point | undefined {
+    const bounds = computeUnionBounds(
+      [...items].flatMap((item) =>
+        item instanceof LGraphNode || item instanceof LGraphGroup
+          ? [getSelectionBounds(item)]
+          : []
+      )
+    )
+    return bounds
+      ? {
+          x: bounds.x + bounds.width / 2,
+          y: bounds.y - SELECTION_BOUNDS_PADDING
+        }
+      : undefined
+  }
+
+  function selectionAnchor(): Point | undefined {
+    const items = getSelectableItems()
+    if (items.size) return itemsAnchor(items)
+    const linkAnchor = lgCanvas.graph && getSelectedLinksAnchor(lgCanvas.graph)
+    return linkAnchor
+      ? { x: linkAnchor.x, y: linkAnchor.y - LINK_ANCHOR_GAP }
+      : undefined
+  }
+
   const updateSelectionBounds = () => {
-    const selectableItems = getSelectableItems()
+    const anchor = selectionAnchor()
 
-    if (!selectableItems.size) {
-      visible.value = false
-      return
-    }
-
-    // Don't show toolbox while dragging
-    if (isDragging.value) {
+    if (!anchor || isDragging.value) {
       visible.value = false
       return
     }
 
     visible.value = true
-
-    // Get bounds for all selected items
-    const allBounds: ReadOnlyRect[] = []
-    for (const item of selectableItems) {
-      if (item instanceof LGraphNode || item instanceof LGraphGroup) {
-        allBounds.push(getSelectionBounds(item))
-      }
-    }
-
-    // Compute union bounds
-    const unionBounds = computeUnionBounds(allBounds)
-    if (!unionBounds) return
-
-    worldPosition.value = {
-      x: unionBounds.x + unionBounds.width / 2,
-      // createBounds() applied a default padding of 10px
-      // so adjust Y to maintain visual consistency
-      y: unionBounds.y - 10
-    }
+    worldPosition.value = anchor
 
     updateTransform()
   }
@@ -147,23 +160,27 @@ export function useSelectionToolboxPosition(
     }
   })
 
-  // Watch for selection changes
+  const handleSelectionMembershipChange = () => {
+    if (!moreOptionsRestorePending.value && !moreOptionsSelectionSignature)
+      return
+
+    moreOptionsRestorePending.value = false
+    moreOptionsWasOpenBeforeDrag = false
+    moreOptionsSelectionSignature = moreOptionsOpen.value
+      ? buildSelectionSignature(canvasStore)
+      : null
+  }
+
   watch(
-    () => canvasStore.getCanvas().state.selectionChanged,
-    (changed) => {
-      if (changed) {
-        if (moreOptionsRestorePending.value || moreOptionsSelectionSignature) {
-          moreOptionsRestorePending.value = false
-          moreOptionsWasOpenBeforeDrag = false
-          if (!moreOptionsOpen.value) {
-            moreOptionsSelectionSignature = null
-          } else {
-            moreOptionsSelectionSignature = buildSelectionSignature(canvasStore)
-          }
-        }
-        updateSelectionBounds()
-        canvasStore.getCanvas().state.selectionChanged = false
-      }
+    [
+      () => canvasStore.selectedItems,
+      () => layoutStore.layoutVersion,
+      () => linkSelectionStore.selection
+    ],
+    ([selectedItems], [previousSelectedItems]) => {
+      if (selectedItems !== previousSelectedItems)
+        handleSelectionMembershipChange()
+      updateSelectionBounds()
     },
     { immediate: true }
   )
@@ -172,7 +189,7 @@ export function useSelectionToolboxPosition(
     (v) => {
       if (v) {
         moreOptionsSelectionSignature = buildSelectionSignature(canvasStore)
-      } else if (!canvasStore.canvas?.state.draggingItems) {
+      } else if (!isDraggingLiteGraphItems.value) {
         moreOptionsSelectionSignature = null
         if (moreOptionsRestorePending.value)
           moreOptionsRestorePending.value = false

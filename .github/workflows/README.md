@@ -18,4 +18,8 @@ Workflow files follow a consistent naming pattern: `<prefix>-<descriptive-name>.
 
 Each workflow file contains comments explaining its purpose, triggers, and behavior. For specific details about what each workflow does, refer to the comments at the top of each `.yaml` file.
 
+The candidate dependency prototype lives in `ci-tests-e2e.yaml`. See
+[CI-PREREQUISITES-0038](../../docs/adr/CI-PREREQUISITES-0038-gate-expensive-candidate-tests.md)
+for measured runtimes, required-check compatibility, and rollout limits.
+
 For GitHub Actions documentation, see [Events that trigger workflows](https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows).

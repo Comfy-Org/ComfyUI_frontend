@@ -3,7 +3,11 @@ import { describe, expect, it } from 'vitest'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 
 import { failedTopup, pendingTopup, settledTopup } from './billingSdkTestUtils'
-import { projectTopupOperation, projectTopupResult } from './topupOperationView'
+import {
+  projectHostedTopupCheckoutResult,
+  projectTopupOperation,
+  projectTopupResult
+} from './topupOperationView'
 
 describe('projectTopupOperation', () => {
   it('hands the dialog the hosted verification link', () => {
@@ -89,13 +93,13 @@ describe('projectTopupResult', () => {
     ).toMatchObject({ billing_op_id: 'op-1', status: 'failed' })
   })
 
-  it('reports nothing for a purchase this tab stopped observing', () => {
+  it('reports a purchase this tab stopped observing as still pending', () => {
     expect(
       projectTopupResult(
         { status: 'unsettled', operation: settledTopup('timed_out') },
         1000
       )
-    ).toBeUndefined()
+    ).toMatchObject({ billing_op_id: 'op-1', status: 'pending' })
   })
 
   it('throws the API error whose code the dialog already handles', () => {
@@ -116,6 +120,23 @@ describe('projectTopupResult', () => {
     )
   })
 
+  it('names the earlier top-up still settling instead of an unknown error', () => {
+    expect(() =>
+      projectTopupResult(
+        { status: 'error', code: 'OPERATION_ALREADY_PENDING' },
+        1000
+      )
+    ).toThrow(
+      expect.objectContaining({
+        name: 'WorkspaceApiError',
+        code: 'OPERATION_ALREADY_PENDING',
+        failureCategory: 'stale_operation',
+        message:
+          'A top-up you started earlier is still going through. Finish verifying it or wait for it to complete before adding more credits.'
+      })
+    )
+  })
+
   it('carries the HTTP status of a transport failure', () => {
     let thrown: unknown
     try {
@@ -129,5 +150,30 @@ describe('projectTopupResult', () => {
 
     expect(thrown).toBeInstanceOf(WorkspaceApiError)
     expect(thrown).toMatchObject({ status: 503, code: 'REQUEST_FAILED' })
+  })
+})
+
+describe('projectHostedTopupCheckoutResult', () => {
+  it('hands the dialog the hosted Checkout URL', () => {
+    expect(
+      projectHostedTopupCheckoutResult({
+        status: 'ok',
+        url: 'https://checkout.stripe.com/c/pay/cs_1'
+      })
+    ).toBe('https://checkout.stripe.com/c/pay/cs_1')
+  })
+
+  it.for([
+    [{ status: 'error', code: 'INVALID_RETURN_URL' }, 'validation'],
+    [{ status: 'error', code: 'NOT_AVAILABLE' }, 'api_rejected'],
+    [{ status: 'error', code: 'REQUEST_FAILED' }, 'network']
+  ] as const)('throws %o as a %s API error', ([failure, failureCategory]) => {
+    expect(() => projectHostedTopupCheckoutResult(failure)).toThrow(
+      expect.objectContaining({
+        name: 'WorkspaceApiError',
+        code: failure.code,
+        failureCategory
+      })
+    )
   })
 })

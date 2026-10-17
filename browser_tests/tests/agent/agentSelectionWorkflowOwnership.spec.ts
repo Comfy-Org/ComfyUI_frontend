@@ -10,6 +10,8 @@ import {
   referenceNode,
   referenceWorkflow
 } from '@e2e/fixtures/agentInlineReferencesFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { Topbar } from '@e2e/fixtures/components/Topbar'
 
 test.use({
   connectWebSocketToServer: false,
@@ -48,10 +50,9 @@ test(
       mimeType: 'application/json',
       buffer: Buffer.from(JSON.stringify(referenceWorkflow))
     })
-    await page
-      .getByRole('button', { name: enMessages.agent.entryButton, exact: true })
-      .click()
-    const panel = page.locator('#agent-panel-root')
+    const agentPanel = new AgentPanel(page)
+    await agentPanel.open()
+    const panel = agentPanel.root
     const targetPicker = panel.getByRole('button', {
       name: enMessages.agent.switchWorkflow
     })
@@ -77,9 +78,9 @@ test(
         exact: true
       })
       .click()
-    await expect(
-      page.locator('.workflow-tabs .p-togglebutton-checked')
-    ).toHaveText('Unsaved Workflow (2)')
+    await expect(new Topbar(page).getActiveTab()).toHaveText(
+      'Unsaved Workflow (2)'
+    )
     await expect(targetPicker).toHaveText('Portrait study')
     await expect(editor).toHaveText('Warm up Color balance #12 ')
     await testInfo.attach('staged-node-from-other-tab', {

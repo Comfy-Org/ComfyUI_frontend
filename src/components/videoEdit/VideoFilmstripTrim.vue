@@ -1,5 +1,5 @@
 <template>
-  <div class="flex h-16 w-full items-stretch" @pointerdown.stop>
+  <div class="flex h-16 w-full" @pointerdown.stop>
     <div
       ref="trackRef"
       data-testid="trim-track"

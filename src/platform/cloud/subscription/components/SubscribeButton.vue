@@ -15,6 +15,7 @@ import { onBeforeUnmount, ref, watch } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useSubscriptionPaywall } from '@/composables/billing/useSubscriptionPaywall'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -37,8 +38,8 @@ const emit = defineEmits<{
   subscribed: []
 }>()
 
-const { canAccessSubscriptionFeatures, showSubscriptionDialog, tier } =
-  useBillingContext()
+const { canAccessSubscriptionFeatures, tier } = useBillingContext()
+const { showSubscriptionDialog } = useSubscriptionPaywall()
 const isAwaitingStripeSubscription = ref(false)
 
 watch(
@@ -53,7 +54,8 @@ watch(
 
 const handleSubscribe = () => {
   useTelemetry()?.trackSubscription('subscribe_clicked', {
-    current_tier: tier.value?.toLowerCase()
+    current_tier: tier.value?.toLowerCase(),
+    reason: 'subscribe_now_button'
   })
   isAwaitingStripeSubscription.value = true
   showSubscriptionDialog({ reason: 'subscribe_now_button' })

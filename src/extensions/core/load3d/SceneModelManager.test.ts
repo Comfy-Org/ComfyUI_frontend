@@ -1,13 +1,22 @@
 import { SparkRenderer } from '@sparkjsdev/spark'
 import * as THREE from 'three'
-import { describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 
 import { createRendererViewState } from '@/renderer/three/sharedWebGLRenderer'
 
 import { DEFAULT_MODEL_CAPABILITIES } from './ModelAdapter'
 import type { ModelAdapterCapabilities } from './ModelAdapter'
-import { SceneModelManager } from './SceneModelManager'
+import {
+  cloneObject3DResources,
+  disposeObject3D,
+  SceneModelManager
+} from './SceneModelManager'
 import type { EventManagerInterface } from './interfaces'
+import { QuadWireframeOverlay } from './quadWireframe/QuadWireframeManager'
+import {
+  faceSizesFor,
+  registerFaceSizes
+} from './quadWireframe/faceSizesRegistry'
 
 function createMockEventManager(): EventManagerInterface {
   return {
@@ -17,11 +26,19 @@ function createMockEventManager(): EventManagerInterface {
   }
 }
 
+function quadWireframeOf(mesh: THREE.Mesh): QuadWireframeOverlay | undefined {
+  return mesh.children.find(
+    (child): child is QuadWireframeOverlay =>
+      child instanceof QuadWireframeOverlay
+  )
+}
+
 function createManager(
   overrides: {
     scene?: THREE.Scene
     eventManager?: EventManagerInterface
     capabilities?: Partial<ModelAdapterCapabilities>
+    disposeModelViaAdapter?: (model: THREE.Object3D) => void
   } = {}
 ) {
   const scene = overrides.scene ?? new THREE.Scene()
@@ -43,7 +60,9 @@ function createManager(
     getActiveCamera,
     setupCamera,
     setupGizmo,
-    () => capabilities
+    () => capabilities,
+    () => null,
+    overrides.disposeModelViaAdapter
   )
 
   return {
@@ -97,6 +116,13 @@ function createMeshModel(name = 'TestModel'): THREE.Group {
   return group
 }
 
+function createQuadMeshModel(): { model: THREE.Group; mesh: THREE.Mesh } {
+  const geometry = new THREE.BoxGeometry(1, 1, 1)
+  registerFaceSizes(geometry, new Uint32Array(6).fill(4))
+  const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial())
+  return { model: new THREE.Group().add(mesh), mesh }
+}
+
 function createPointsModel(name = 'TestModel'): THREE.Group {
   const geometry = new THREE.BufferGeometry()
   const material = new THREE.PointsMaterial({ color: 0xff0000 })
@@ -106,6 +132,54 @@ function createPointsModel(name = 'TestModel'): THREE.Group {
   group.add(points)
   return group
 }
+
+describe('line resource ownership', () => {
+  it.for([
+    {
+      name: 'Line',
+      createLine: (geometry: THREE.BufferGeometry, material: THREE.Material) =>
+        new THREE.Line(geometry, material)
+    },
+    {
+      name: 'LineLoop',
+      createLine: (geometry: THREE.BufferGeometry, material: THREE.Material) =>
+        new THREE.LineLoop(geometry, material)
+    },
+    {
+      name: 'LineSegments',
+      createLine: (geometry: THREE.BufferGeometry, material: THREE.Material) =>
+        new THREE.LineSegments(geometry, material)
+    }
+  ])('$name clones and disposes geometry and material', ({ createLine }) => {
+    const sourceGeometry = new THREE.BufferGeometry()
+    const sourceMaterial = new THREE.LineBasicMaterial()
+    const line = createLine(sourceGeometry, sourceMaterial)
+
+    cloneObject3DResources(line)
+
+    expect(line.geometry).not.toBe(sourceGeometry)
+    expect(line.material).not.toBe(sourceMaterial)
+    const geometryDispose = vi.spyOn(line.geometry, 'dispose')
+    const materialDispose = vi.spyOn(line.material, 'dispose')
+    disposeObject3D(line, new Set())
+    expect(geometryDispose).toHaveBeenCalledOnce()
+    expect(materialDispose).toHaveBeenCalledOnce()
+  })
+})
+
+describe('cloneObject3DResources', () => {
+  it('keeps n-gon face sizes on cloned mesh geometry', () => {
+    const sourceGeometry = new THREE.BoxGeometry()
+    const faceSizes = new Uint32Array([4, 4, 4, 4, 4, 4])
+    registerFaceSizes(sourceGeometry, faceSizes)
+    const mesh = new THREE.Mesh(sourceGeometry, new THREE.MeshBasicMaterial())
+
+    cloneObject3DResources(mesh)
+
+    expect(mesh.geometry).not.toBe(sourceGeometry)
+    expect(faceSizesFor(mesh.geometry)).toBe(faceSizes)
+  })
+})
 
 describe('SceneModelManager', () => {
   describe('constructor', () => {
@@ -165,6 +239,53 @@ describe('SceneModelManager', () => {
       expect(textureDispose).toHaveBeenCalled()
       expect(manager.appliedTexture).toBeNull()
     })
+
+    it('does not dispose a borrowed applied texture', () => {
+      const { manager } = createManager()
+      const texture = new THREE.Texture()
+      const textureDispose = vi.spyOn(texture, 'dispose')
+      manager.borrowAppliedTexture(texture)
+
+      manager.reset()
+
+      expect(textureDispose).not.toHaveBeenCalled()
+      expect(manager.appliedTexture).toBeNull()
+    })
+
+    it('disposes an owned texture before replacing it with a borrowed one', () => {
+      const { manager } = createManager()
+      const owned = new THREE.Texture()
+      const borrowed = new THREE.Texture()
+      const ownedDispose = vi.spyOn(owned, 'dispose')
+      const borrowedDispose = vi.spyOn(borrowed, 'dispose')
+      manager.appliedTexture = owned
+
+      manager.borrowAppliedTexture(borrowed)
+
+      expect(ownedDispose).toHaveBeenCalledOnce()
+      expect(borrowedDispose).not.toHaveBeenCalled()
+      expect(manager.appliedTexture).toBe(borrowed)
+    })
+
+    it('preserves a borrowed texture while replacing the rendered model', () => {
+      const { manager, scene } = createManager({
+        capabilities: { requiresMaterialRebuild: true }
+      })
+      const texture = new THREE.Texture()
+      const textureDispose = vi.spyOn(texture, 'dispose')
+      const material = new THREE.MeshStandardMaterial({ map: texture })
+      const model = new THREE.Group()
+      model.add(new THREE.Mesh(new THREE.BoxGeometry(), material))
+      manager.addModelToScene(model)
+      manager.originalModel = new THREE.BoxGeometry()
+      manager.borrowAppliedTexture(texture)
+
+      manager.setMaterialMode('pointCloud')
+
+      expect(textureDispose).not.toHaveBeenCalled()
+      expect(scene.getObjectByName('MainModel')).not.toBe(model)
+      expect(manager.currentModel).toBe(scene.getObjectByName('MainModel'))
+    })
   })
 
   describe('createSTLMaterial', () => {
@@ -220,7 +341,8 @@ describe('SceneModelManager', () => {
       expect(spy).toHaveBeenCalledWith('wireframe')
       // The final material mode visible on the mesh should be wireframe.
       const mesh = model.children[0] as THREE.Mesh
-      expect((mesh.material as THREE.MeshBasicMaterial).wireframe).toBe(true)
+      expect(mesh.material).toBe(manager.occluderMaterial)
+      expect(quadWireframeOf(mesh)).toBeDefined()
     })
 
     it('snapshots original materials before applying materialMode so restore is correct', async () => {
@@ -326,9 +448,12 @@ describe('SceneModelManager', () => {
     it('disposes mesh geometry and materials', async () => {
       const { manager } = createManager()
       const model = createMeshModel()
-      const mesh = model.children[0] as THREE.Mesh
+      const mesh = model.children[0]
+      if (!(mesh instanceof THREE.Mesh) || Array.isArray(mesh.material)) {
+        throw new Error('Expected a mesh with one material')
+      }
       const geoDispose = vi.spyOn(mesh.geometry, 'dispose')
-      const matDispose = vi.spyOn(mesh.material as THREE.Material, 'dispose')
+      const matDispose = vi.spyOn(mesh.material, 'dispose')
 
       await manager.setupModel(model)
       manager.clearModel()
@@ -337,12 +462,44 @@ describe('SceneModelManager', () => {
       expect(matDispose).toHaveBeenCalled()
     })
 
+    it.for([
+      {
+        mode: 'normal',
+        shared: (manager: SceneModelManager) => manager.normalMaterial
+      },
+      {
+        mode: 'wireframe',
+        shared: (manager: SceneModelManager) => manager.occluderMaterial
+      }
+    ] as const)(
+      'disposes the parked original but keeps the shared $mode material',
+      async ({ mode, shared }) => {
+        const { manager } = createManager()
+        const model = createMeshModel()
+        const mesh = model.children[0]
+        assert.instanceOf(mesh, THREE.Mesh)
+        assert.instanceOf(mesh.material, THREE.Material)
+        const disposeOriginal = vi.spyOn(mesh.material, 'dispose')
+        const disposeShared = vi.spyOn(shared(manager), 'dispose')
+
+        await manager.setupModel(model)
+        manager.setMaterialMode(mode)
+        manager.clearModel()
+
+        expect(disposeOriginal).toHaveBeenCalledOnce()
+        expect(disposeShared).not.toHaveBeenCalled()
+      }
+    )
+
     it('disposes points geometry and materials', async () => {
       const { manager } = createManager()
       const model = createPointsModel()
-      const points = model.children[0] as THREE.Points
+      const points = model.children[0]
+      if (!(points instanceof THREE.Points) || Array.isArray(points.material)) {
+        throw new Error('Expected points with one material')
+      }
       const geoDispose = vi.spyOn(points.geometry, 'dispose')
-      const matDispose = vi.spyOn(points.material as THREE.Material, 'dispose')
+      const matDispose = vi.spyOn(points.material, 'dispose')
 
       await manager.setupModel(model)
       manager.clearModel()
@@ -363,6 +520,47 @@ describe('SceneModelManager', () => {
       manager.clearModel()
 
       expect(scene.children).toContain(sparkRenderer)
+    })
+  })
+
+  describe('disposeCurrentModel', () => {
+    it('removes and releases the current model through its adapter', async () => {
+      const disposeModelViaAdapter = vi.fn()
+      const { manager, scene } = createManager({ disposeModelViaAdapter })
+      const model = createMeshModel()
+      const mesh = model.children[0]
+      assert.instanceOf(mesh, THREE.Mesh)
+      assert(!Array.isArray(mesh.material))
+      const geometryDispose = vi.spyOn(mesh.geometry, 'dispose')
+      const materialDispose = vi.spyOn(mesh.material, 'dispose')
+      const borrowedTexture = new THREE.Texture()
+      const textureDispose = vi.spyOn(borrowedTexture, 'dispose')
+      assert.instanceOf(mesh.material, THREE.MeshStandardMaterial)
+      mesh.material.map = borrowedTexture
+      await manager.setupModel(model)
+      manager.borrowAppliedTexture(borrowedTexture)
+
+      manager.disposeCurrentModel()
+
+      expect(manager.currentModel).toBeNull()
+      expect(manager.appliedTexture).toBeNull()
+      expect(scene.children).not.toContain(model)
+      expect(geometryDispose).toHaveBeenCalledOnce()
+      expect(materialDispose).toHaveBeenCalledOnce()
+      expect(textureDispose).not.toHaveBeenCalled()
+      expect(disposeModelViaAdapter).toHaveBeenCalledWith(model)
+    })
+
+    it('preserves source identity while replacing the current model', async () => {
+      const { manager } = createManager()
+      await manager.setupModel(createMeshModel())
+      manager.originalFileName = 'source.ply'
+      manager.originalURL = 'api/view?filename=source.ply'
+
+      manager.disposeCurrentModel()
+
+      expect(manager.originalFileName).toBe('source.ply')
+      expect(manager.originalURL).toBe('api/view?filename=source.ply')
     })
   })
 
@@ -451,7 +649,7 @@ describe('SceneModelManager', () => {
       )
     })
 
-    it('switches to wireframe material', async () => {
+    it('outlines static meshes with occluded triangle edges', async () => {
       const { manager, eventManager } = createManager()
       const model = createMeshModel()
       await manager.setupModel(model)
@@ -459,12 +657,63 @@ describe('SceneModelManager', () => {
       manager.setMaterialMode('wireframe')
 
       const mesh = model.children[0] as THREE.Mesh
-      expect(mesh.material).toBeInstanceOf(THREE.MeshBasicMaterial)
-      expect((mesh.material as THREE.MeshBasicMaterial).wireframe).toBe(true)
+      expect(mesh.material).toBe(manager.occluderMaterial)
+      expect(quadWireframeOf(mesh)).toBeDefined()
       expect(eventManager.emitEvent).toHaveBeenCalledWith(
         'materialModeChange',
         'wireframe'
       )
+    })
+
+    it('keeps deforming meshes on the native triangle wireframe', async () => {
+      const { manager } = createManager()
+      const geometry = new THREE.BoxGeometry()
+      geometry.morphAttributes.position = [geometry.getAttribute('position')]
+      const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial())
+      await manager.setupModel(new THREE.Group().add(mesh))
+
+      manager.setMaterialMode('wireframe')
+
+      expect(mesh.material).toBe(manager.wireframeMaterial)
+      expect(quadWireframeOf(mesh)).toBeUndefined()
+    })
+
+    it('clearQuadWireframe removes overlays and releases their edges', async () => {
+      const { manager } = createManager()
+      const { model, mesh } = createQuadMeshModel()
+      await manager.setupModel(model)
+      manager.setMaterialMode('wireframe')
+      const edges = quadWireframeOf(mesh)!.geometry
+      const dispose = vi.spyOn(edges, 'dispose')
+
+      manager.clearQuadWireframe()
+
+      expect(quadWireframeOf(mesh)).toBeUndefined()
+      expect(dispose).toHaveBeenCalledOnce()
+    })
+
+    it('replaces the triangle wireframe with polygon edges', async () => {
+      const { manager } = createManager()
+      const { model, mesh } = createQuadMeshModel()
+      const originalMaterial = mesh.material
+      await manager.setupModel(model)
+
+      manager.setMaterialMode('wireframe')
+
+      expect(
+        quadWireframeOf(mesh)!.geometry.getAttribute('position').count
+      ).toBe(24)
+      expect(mesh.material).toBe(manager.occluderMaterial)
+      expect(manager.occluderMaterial.colorWrite).toBe(false)
+      expect(manager.occluderMaterial.depthWrite).toBe(true)
+      expect(quadWireframeOf(mesh)!.renderOrder).toBeGreaterThan(
+        mesh.renderOrder
+      )
+
+      manager.setMaterialMode('original')
+
+      expect(quadWireframeOf(mesh)).toBeUndefined()
+      expect(mesh.material).toBe(originalMaterial)
     })
 
     it('switches to depth material', async () => {
@@ -885,6 +1134,25 @@ describe('SceneModelManager', () => {
 
       const mainModels = scene.children.filter((c) => c.name === 'MainModel')
       expect(mainModels).toHaveLength(1)
+    })
+
+    it('disposes the parked original and per-mode materials while rebuilding', () => {
+      const { manager } = createPLYManager()
+      manager.setMaterialMode('wireframe')
+      const wireframeModel = manager.currentModel
+      assert.instanceOf(wireframeModel, THREE.Group)
+      const mesh = wireframeModel.children[0]
+      assert.instanceOf(mesh, THREE.Mesh)
+      const originalMaterial = manager.originalMaterials.get(mesh)
+      assert.instanceOf(originalMaterial, THREE.Material)
+      assert.instanceOf(mesh.material, THREE.MeshBasicMaterial)
+      const disposeOriginal = vi.spyOn(originalMaterial, 'dispose')
+      const disposeWireframe = vi.spyOn(mesh.material, 'dispose')
+
+      manager.setMaterialMode('pointCloud')
+
+      expect(disposeOriginal).toHaveBeenCalledOnce()
+      expect(disposeWireframe).toHaveBeenCalledOnce()
     })
   })
 })

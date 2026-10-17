@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { marked } from 'marked'
+import type { Token, Tokens } from 'marked'
 import { computed, defineAsyncComponent, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -16,12 +17,15 @@ import type { ReplyAsset } from '../../../utils/replyAssets'
 import {
   classifyAssetUrl,
   replyAssetResultItem,
+  rewriteAgentAssetHtml,
   tokenReplyAssets
 } from '../../../utils/replyAssets'
 import CodeBlock from './CodeBlock.vue'
 import ReplyAssetGroup from './ReplyAssetGroup.vue'
 
-const { text } = defineProps<{ text: string }>()
+const { text } = defineProps<{
+  text: string
+}>()
 const apiBaseUrl = new URL(api.apiURL(''), window.location.origin).href
 const normalizedBase = apiBaseUrl.replace(/\/+$/, '')
 
@@ -40,19 +44,37 @@ interface AssetsSegment {
 }
 type Segment = ProseSegment | CodeSegment | AssetsSegment
 
+function isFencedCode(token: Token): token is Tokens.Code {
+  return token.type === 'code' && token.codeBlockStyle !== 'indented'
+}
+
+function pushAssets(out: Segment[], assets: ReplyAsset[]): void {
+  const prev = out.at(-1)
+  if (prev?.type === 'assets') prev.assets.push(...assets)
+  else out.push({ type: 'assets', assets })
+}
+
 const segments = computed<Segment[]>(() => {
   const out: Segment[] = []
   let prose = ''
   const flushProse = () => {
-    if (!prose) return
+    // A run of only blank-line ("space") tokens between two asset blocks
+    // (e.g. two bare images joined by AgentMessageGroup.vue's `\n\n`) has no
+    // visible content: dropping it here, instead of emitting an empty prose
+    // segment, keeps the surrounding assets adjacent so pushAssets can still
+    // merge them into one grid.
+    if (!prose.trim()) {
+      prose = ''
+      return
+    }
     out.push({
       type: 'prose',
-      html: renderMarkdownToHtml(prose, apiBaseUrl)
+      html: rewriteAgentAssetHtml(renderMarkdownToHtml(prose, apiBaseUrl))
     })
     prose = ''
   }
   for (const token of marked.lexer(text)) {
-    if (token.type === 'code' && token.codeBlockStyle !== 'indented') {
+    if (isFencedCode(token)) {
       flushProse()
       out.push({
         type: 'code',
@@ -62,18 +84,16 @@ const segments = computed<Segment[]>(() => {
       continue
     }
     const assets = tokenReplyAssets(token)
-    if (assets) {
-      flushProse()
-      const resolved = assets.map((asset) => ({
-        ...asset,
-        url: resolveMarkdownUrl(asset.url, normalizedBase)
-      }))
-      const prev = out.at(-1)
-      if (prev?.type === 'assets') prev.assets.push(...resolved)
-      else out.push({ type: 'assets', assets: resolved })
-    } else {
+    if (!assets) {
       prose += token.raw
+      continue
     }
+    const resolved = assets.map((asset) => ({
+      ...asset,
+      url: resolveMarkdownUrl(asset.url, normalizedBase)
+    }))
+    flushProse()
+    pushAssets(out, resolved)
   }
   flushProse()
   return out

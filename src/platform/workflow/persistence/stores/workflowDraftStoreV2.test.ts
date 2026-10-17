@@ -71,7 +71,6 @@ describe('workflowDraftStoreV2', () => {
   })
 
   afterEach(() => {
-    activeSpy?.mockRestore()
     activeSpy = null
     localStorage.clear()
     sessionStorage.clear()
@@ -332,6 +331,7 @@ describe('workflowDraftStoreV2', () => {
       expect(ok).toBe(false)
 
       expect(reportErrorMock).toHaveBeenCalledWith(expect.any(Error), {
+        surface: 'graph',
         errorType: 'storage_quota_exhausted',
         level: 'warning',
         tags: { store: 'workflowDraftStoreV2' },

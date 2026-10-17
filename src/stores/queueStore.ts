@@ -15,8 +15,8 @@ import { api } from '@/scripts/api'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import { filterPreviewableResults } from '@/utils/resultItem'
 import { parseTaskOutput } from '@/stores/resultItemParsing'
-import type { ComfyApp } from '@/scripts/app'
-import { useExtensionService } from '@/services/extensionService'
+import type { ComfyApp } from '@/types/comfy'
+import { useExtensionServiceAccess } from '@/services/extensionServiceAccess'
 import { getJobDetail } from '@/services/jobOutputCache'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -29,6 +29,16 @@ enum TaskItemDisplayStatus {
   Completed = 'Completed',
   Failed = 'Failed',
   Cancelled = 'Cancelled'
+}
+
+function toAugmentedPreviewOutput(
+  previewOutput: NonNullable<JobListItem['preview_output']>
+): AugmentedResultItem {
+  return {
+    ...previewOutput,
+    filename: previewOutput.filename ?? '',
+    subfolder: previewOutput.subfolder ?? ''
+  }
 }
 
 export class TaskItemImpl {
@@ -54,7 +64,11 @@ export class TaskItemImpl {
           }
         : {})
     this.outputs = effectiveOutputs
-    this.flatOutputs = flatOutputs ?? this.calculateFlatOutputs()
+    this.flatOutputs =
+      flatOutputs ??
+      (!outputs && job.preview_output?.mediaType === 'text'
+        ? [toAugmentedPreviewOutput(job.preview_output)]
+        : this.calculateFlatOutputs())
   }
 
   calculateFlatOutputs(): ReadonlyArray<AugmentedResultItem> {
@@ -232,7 +246,7 @@ export class TaskItemImpl {
         rawOutputs[rawNodeExecutionId]
       )
     }
-    useExtensionService().invokeExtensions(
+    useExtensionServiceAccess().invokeExtensions(
       'onNodeOutputsUpdated',
       app.nodeOutputs
     )

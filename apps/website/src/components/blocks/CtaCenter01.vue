@@ -3,8 +3,8 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { AnchorHTMLAttributes } from 'vue'
 
-import Button from '../ui/button/Button.vue'
-import { resolveRel } from '../../utils/cta'
+import Button from '@/components/ui/button/Button.vue'
+import { resolveRel } from '@/utils/cta'
 
 type Cta = {
   label: string
@@ -20,6 +20,7 @@ type TermsLink = {
 
 const {
   heading,
+  headingClass,
   subtitle,
   subtitleClass,
   primaryCta,
@@ -28,6 +29,7 @@ const {
   compact = false
 } = defineProps<{
   heading: string
+  headingClass?: string
   subtitle?: string
   subtitleClass?: string
   primaryCta: Cta
@@ -48,7 +50,8 @@ const {
           'max-w-3xl font-light tracking-tight text-pretty whitespace-pre-line text-primary-comfy-canvas',
           compact
             ? 'text-2xl/snug lg:text-4xl/snug'
-            : 'text-4xl/snug lg:text-6xl/snug'
+            : 'text-4xl/snug lg:text-6xl/snug',
+          headingClass
         )
       "
     >

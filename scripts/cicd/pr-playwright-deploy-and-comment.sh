@@ -123,6 +123,11 @@ parse_counts() {
     fi
 }
 
+count_screenshot_diffs() {
+    find snapshot-updates -name manifest.json -exec cat {} + 2>/dev/null |
+        jq -s 'map(length) | add // 0'
+}
+
 # Builds the " (✅ x / ❌ x / ⚠️ x / ⏭️ x)" suffix for a report line, or "" when there's no total.
 counts_suffix() {
     read -r passed failed flaky skipped total <<< "$(parse_counts "$1")"
@@ -272,27 +277,6 @@ else
     # Clean up temp directory
     rm -rf "$temp_dir"
 
-    # Deploy the focused new-tests report (with embedded video), if the PR
-    # added spec files (see playwright-video-new-tests in ci-tests-e2e.yaml).
-    # Reuses the chromium project on its own branch so it doesn't clobber the
-    # main chromium report deployed above.
-    new_tests_url=""
-    new_tests_counts="{}"
-    if [ -d "reports/playwright-report-new-tests" ]; then
-        echo "Found new-tests report, deploying..."
-        new_tests_url=$(deploy_report "reports/playwright-report-new-tests" "chromium" "${cloudflare_branch}-new-tests")
-
-        EXTRACT_SCRIPT="$SCRIPT_DIR/extract-playwright-counts.ts"
-        REPORT_DIR="$BASE_DIR/reports/playwright-report-new-tests"
-        if command -v tsx > /dev/null 2>&1 && [ -f "$EXTRACT_SCRIPT" ]; then
-            new_tests_counts=$(tsx "$EXTRACT_SCRIPT" "$REPORT_DIR" "$new_tests_url" 2>&1 || echo '{}')
-        fi
-    fi
-
-    # counts_array (browsers only, read again below) must stay separate: the
-    # per-browser listing loop zips it positionally against BROWSERS/urls.
-    agg_all_counts="$all_counts|$new_tests_counts"
-
     # Calculate total test counts across all browsers
     total_passed=0
     total_failed=0
@@ -300,8 +284,8 @@ else
     total_skipped=0
     total_tests=0
 
-    IFS='|' read -r -a agg_counts_array <<< "$agg_all_counts"
-    for counts_json in "${agg_counts_array[@]}"; do
+    IFS='|' read -r -a counts_array <<< "$all_counts"
+    for counts_json in "${counts_array[@]}"; do
         [ -z "$counts_json" ] && continue
         read -r passed failed flaky skipped total <<< "$(parse_counts "$counts_json")"
         total_passed=$((total_passed + passed))
@@ -340,9 +324,14 @@ else
     if [ $total_failed -gt 0 ]; then
         comment="$comment
 
-### ❌ Failed Tests"
+> ❌ $total_failed tests failed. Expand the failed tests below, review their traces and fix the failures before merging.
 
-        for counts_json in "${agg_counts_array[@]}"; do
+<details>
+<summary>Failed tests</summary>
+
+"
+
+        for counts_json in "${counts_array[@]}"; do
             [ -z "$counts_json" ] || [ "$counts_json" = "{}" ] && continue
             
             if command -v jq > /dev/null 2>&1; then
@@ -369,8 +358,20 @@ $test_line"
                 fi
             fi
         done
+        comment="$comment
+
+</details>"
     fi
     
+    screenshot_diffs=$(count_screenshot_diffs) || screenshot_diffs=0
+    if [ "${screenshot_diffs:-0}" -gt 0 ]; then
+        diff_plural="s"
+        [ "$screenshot_diffs" -eq 1 ] && diff_plural=""
+        comment="$comment
+
+- [ ] Update Playwright expectations ($screenshot_diffs screenshot diff$diff_plural)"
+    fi
+
     # Add browser reports in collapsible section
     comment="$comment
 
@@ -381,9 +382,9 @@ $test_line"
     
     # Add browser results
     i=0
+    deployment_failed=false
     IFS=' ' read -r -a browser_array <<< "$BROWSERS"
     IFS=' ' read -r -a url_array <<< "$urls"
-    IFS='|' read -r -a counts_array <<< "$all_counts"
     for counts_json in "${counts_array[@]}"; do
         [ -z "$counts_json" ] && { i=$((i + 1)); continue; }
         browser="${browser_array[$i]:-}"
@@ -393,6 +394,7 @@ $test_line"
             comment="$comment
 - **${browser}**: [View Report](${url})$(counts_suffix "$counts_json")"
         else
+            deployment_failed=true
             comment="$comment
 - **${browser}**: ❌ Deployment failed"
         fi
@@ -400,14 +402,15 @@ $test_line"
     done
     unset IFS
 
-    if [ -n "$new_tests_url" ] && [ "$new_tests_url" != "failed" ]; then
-        comment="$comment
-- **New-test walkthrough** (chromium, recorded video): [View Report](${new_tests_url})$(counts_suffix "$new_tests_counts")"
-    fi
-
     comment="$comment
 
 </details>"
+
+    if [ "$deployment_failed" = true ]; then
+        comment="$comment
+
+> ❌ Browser reports are missing. [Open the workflow run]($WORKFLOW_URL), fix report generation or deployment and re-run the job."
+    fi
 
     post_comment "$comment"
 fi

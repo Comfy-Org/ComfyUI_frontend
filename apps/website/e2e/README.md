@@ -4,6 +4,10 @@ Use `test` from `./fixtures/blockExternalMedia`, not `@playwright/test`.
 Use its `page` and `context`. Set user-agent variants with scoped `test.use`
 options instead of creating browser contexts.
 
+Find an auth toast with `new AuthToasts(page).withText(...)` from
+`./fixtures/authToasts`, never `page.getByText` on its copy: a screen-reader
+live region repeats that copy.
+
 ## No external requests
 
 Register test-specific `context.route` responses before navigation. They override
@@ -71,3 +75,17 @@ downloaded for Chromium on September 7, 2026. Its
 [source file](https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2)
 has SHA-256 `3100e775e8616cd2611beecfa23a4263d7037586789b43f035236a2e6fbd4c62`.
 The SIL Open Font License is in `assets/Inter-OFL.txt`.
+
+## Screenshot baselines
+
+Baselines are Linux-only (`*-visual-linux.png`); never commit ones generated
+locally. When a `@visual` assertion fails in CI, the shard uploads the actual
+image on the baseline's path as a `website-snapshot-updates-*` artifact.
+Comment `/update-website-screenshots`, add the `Update Website Screenshots`
+label, or tick the checkbox in the PR report comment: the workflow waits for
+the E2E run and commits those images to the branch without rerunning
+Playwright. A run with no failed screenshot assertions commits nothing.
+The workflow fails and says why when there is no E2E run for the head
+commit, the run takes over 45 minutes, or a shard did not finish or left no
+artifact. `/update-website-screenshots full` reruns the visual project with
+`--update-snapshots` instead.

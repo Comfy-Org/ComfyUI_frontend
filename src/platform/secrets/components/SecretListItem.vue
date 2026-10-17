@@ -13,12 +13,12 @@
         />
         <span
           v-else-if="secret.provider"
-          class="rounded-sm bg-tertiary-background px-2 py-0.5 text-xs text-muted"
+          class="rounded-sm bg-tertiary-background px-2 py-0.5 text-xs text-muted-foreground"
         >
           {{ providerLabel }}
         </span>
       </div>
-      <div class="flex gap-3 text-xs text-muted">
+      <div class="flex gap-3 text-xs text-muted-foreground">
         <span v-if="createdAtLabel">{{ createdAtLabel }}</span>
         <span v-if="lastUsedLabel">
           {{ lastUsedLabel }}
@@ -26,10 +26,10 @@
       </div>
     </div>
     <div class="flex items-center gap-2">
-      <i v-if="loading" class="pi pi-spinner pi-spin text-muted" />
+      <i v-if="loading" class="pi pi-spinner pi-spin text-muted-foreground" />
       <template v-else>
         <Button
-          v-tooltip="{ value: editLabel, showDelay: 300 }"
+          :tooltip="editLabel"
           variant="muted-textonly"
           size="icon-sm"
           :aria-label="editLabel"
@@ -39,7 +39,7 @@
           <i class="pi pi-pen-to-square" />
         </Button>
         <Button
-          v-tooltip="{ value: deleteLabel, showDelay: 300 }"
+          :tooltip="deleteLabel"
           variant="muted-textonly"
           size="icon-sm"
           :aria-label="deleteLabel"

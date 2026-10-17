@@ -10,10 +10,6 @@ import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 
 import { markDeletedAssetsAsMissingMedia } from './markDeletedAssetsAsMissingMedia'
 
-vi.mock(import('@/platform/distribution/types'), () => ({
-  isCloud: true
-}))
-
 vi.mock(import('@/platform/missingMedia/missingMediaScan'), { spy: true })
 const mockScanNodeMediaCandidates = vi.mocked(scanNodeMediaCandidates)
 
@@ -94,7 +90,6 @@ describe('FE-230 markDeletedAssetsAsMissingMedia', () => {
     expect(mockScanNodeMediaCandidates).toHaveBeenCalledWith(
       expect.anything(),
       inputNode,
-      true,
       { includeTemp: true }
     )
   })

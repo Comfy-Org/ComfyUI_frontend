@@ -23,6 +23,21 @@ test.describe('Node library sidebar V2', () => {
     await expect(tab.getNode('KSampler (Advanced)')).toBeVisible()
   })
 
+  test('Clicking a folder focuses it for keyboard navigation', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.nodeLibraryTabV2
+
+    await tab.expandFolder('model')
+    await expect(tab.getFolder('model')).toBeFocused()
+
+    await comfyPage.page.keyboard.press('ArrowLeft')
+    await expect(tab.getFolder('model')).toHaveAttribute(
+      'aria-expanded',
+      'false'
+    )
+  })
+
   test('Search filters nodes in All tab', async ({ comfyPage }) => {
     const tab = comfyPage.menu.nodeLibraryTabV2
 
@@ -69,18 +84,38 @@ test.describe('Node library sidebar V2', () => {
     comfyPage
   }) => {
     const tab = comfyPage.menu.nodeLibraryTabV2
+    const menu = comfyPage.contextMenu
 
     await tab.expandFolder('model')
     await tab.expandFolder('sampling')
     const node = tab.getNode('KSampler (Advanced)')
     await expect(node).toBeVisible()
 
-    await node.click({ button: 'right' })
+    await menu.openFor(node)
+    await menu.hoverItem('Bookmark Node', 'content')
 
-    const contextMenu = comfyPage.page.getByRole('menuitem', {
-      name: /Bookmark Node/
+    const hoverStyle = await menu.getItemStyle('Bookmark Node')
+    const expectedBackground = await menu.resolveBackgroundToken(
+      '--secondary-background-hover'
+    )
+    expect.soft(hoverStyle).toEqual({
+      backgroundColor: expectedBackground,
+      borderRadius: '6px',
+      paddingBottom: '6px',
+      paddingLeft: '12px',
+      paddingRight: '12px',
+      paddingTop: '6px'
     })
-    await expect(contextMenu).toBeVisible()
+
+    await menu.focusItemWithKeyboard('Bookmark Node')
+    expect.soft(await menu.getItemStyle('Bookmark Node')).toEqual(hoverStyle)
+
+    await menu.clickMenuItemExact('Bookmark Node')
+    await expect(tab.getNodes('KSampler (Advanced)')).toHaveCount(2)
+
+    await menu.openFor(tab.getNode('KSampler (Advanced)').first())
+    await menu.clickMenuItemExact('Unbookmark Node')
+    await expect(tab.getNodes('KSampler (Advanced)')).toHaveCount(1)
   })
 
   test('Search clear restores folder view', async ({ comfyPage }) => {
