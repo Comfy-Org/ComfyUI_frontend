@@ -1,7 +1,7 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
@@ -17,10 +17,6 @@ import DeployToComfyApiCard from './DeployToComfyApiCard.vue'
 
 const BUILDER_URL =
   'https://platform.comfy.org/profile/builds/new?step=import&bundle=b-1&workspace=ws-1'
-
-const installation = vi.hoisted(() => ({
-  blockedUrl: undefined as string | undefined
-}))
 
 vi.mock(import('@/platform/telemetry'))
 
@@ -46,15 +42,12 @@ vi.mock(
   () => {
     const deploy = vi.fn(async () => true)
     return {
-      useInstallationDeploy: () =>
+      useInstallationDeploy: vi.fn(() =>
         fromPartial<ReturnType<typeof useInstallationDeploy>>({
-          state: ref(
-            installation.blockedUrl
-              ? { status: 'tab_blocked' as const, url: installation.blockedUrl }
-              : { status: 'idle' as const }
-          ),
+          state: ref({ status: 'idle' as const }),
           deploy
         })
+      )
     }
   }
 )
@@ -91,10 +84,6 @@ function renderCard(
   })
   return { onDone, onDismiss, user: userEvent.setup() }
 }
-
-afterEach(() => {
-  installation.blockedUrl = undefined
-})
 
 describe('DeployToComfyApiCard', () => {
   it('summarises what the graph puts into the Build', () => {
@@ -196,18 +185,38 @@ describe('DeployToComfyApiCard', () => {
 
     expect(useInstallationDeploy().deploy).toHaveBeenCalledOnce()
     expect(onDone).toHaveBeenCalledOnce()
-    expect(useTelemetry()?.trackUiButtonClicked).toHaveBeenNthCalledWith(1, {
+    expect(useTelemetry()?.trackUiButtonClicked).toHaveBeenCalledWith({
       button_id: 'deploy_to_comfy_api_platform_clicked',
       element_group: 'deploy_to_comfy_api'
     })
-    expect(useTelemetry()?.trackUiButtonClicked).toHaveBeenNthCalledWith(2, {
+    expect(useTelemetry()?.trackUiButtonClicked).toHaveBeenCalledWith({
       button_id: 'deploy_to_comfy_api_builder_opened',
       element_group: 'deploy_to_comfy_api'
     })
   })
 
+  it('keeps the dialog open and reports no wizard when the upload does not open it', async () => {
+    vi.mocked(useInstallationDeploy().deploy).mockResolvedValueOnce(false)
+    const { onDone, user } = renderCard({ deploysInstallation: true })
+
+    await user.click(screen.getByRole('button', { name: 'Deploy on Platform' }))
+
+    expect(onDone).not.toHaveBeenCalled()
+    expect(
+      useTelemetry()?.trackUiButtonClicked
+    ).toHaveBeenCalledExactlyOnceWith({
+      button_id: 'deploy_to_comfy_api_platform_clicked',
+      element_group: 'deploy_to_comfy_api'
+    })
+  })
+
   it('links to the build wizard when the browser blocked its tab, and reports done', async () => {
-    installation.blockedUrl = BUILDER_URL
+    vi.mocked(useInstallationDeploy).mockReturnValueOnce(
+      fromPartial({
+        state: ref({ status: 'tab_blocked' as const, url: BUILDER_URL }),
+        deploy: vi.fn()
+      })
+    )
     const { onDone, user } = renderCard({ deploysInstallation: true })
     const link = screen.getByRole('link', { name: 'Open the build wizard' })
 

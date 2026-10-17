@@ -46,19 +46,19 @@ const REPORTED_REASONS: ReadonlySet<BundleFailureReason> = new Set([
   'invalid_request'
 ])
 
+const state = ref<InstallationDeployState>({ status: 'idle' })
+
 function openInNewTab(url: string): boolean {
   const tab = window.open(url, '_blank')
   if (tab) tab.opener = null
   return tab !== null || isDesktop || window.__comfyDesktop2 !== undefined
 }
 
-/** Uploads the local installation and opens the pre-filled build wizard. */
 export function useInstallationDeploy() {
   const authStore = useAuthStore()
   const apiKeyAuthStore = useApiKeyAuthStore()
   const { showSignInDialog } = useAuthDialogs()
   const toast = useToast()
-  const state = ref<InstallationDeployState>({ status: 'idle' })
 
   async function workspaceToken(): Promise<TokenLookup> {
     try {

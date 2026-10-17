@@ -657,29 +657,35 @@ describe('TopMenuSection', () => {
         when: 'after a headless run on a server that can deploy',
         usedHeadlessly: true,
         deployToCloud: true,
-        shown: true
+        count: 1
       },
       {
         when: 'before any headless run',
         usedHeadlessly: false,
         deployToCloud: true,
-        shown: false
+        count: 0
       },
       {
         when: 'while the server cannot deploy',
         usedHeadlessly: true,
         deployToCloud: false,
-        shown: false
+        count: 0
       }
-    ])('shows ($shown) $when', ({ usedHeadlessly, deployToCloud, shown }) => {
-      Object.assign(useFeatureFlags().flags, { usedHeadlessly, deployToCloud })
+    ])(
+      'renders $count deploy button $when',
+      ({ usedHeadlessly, deployToCloud, count }) => {
+        Object.assign(useFeatureFlags().flags, {
+          usedHeadlessly,
+          deployToCloud
+        })
 
-      createWrapper({ stubs: { FreeTierQuota: true } })
+        createWrapper({ stubs: { FreeTierQuota: true } })
 
-      expect(
-        screen.queryByRole('button', { name: 'Deploy to Comfy API' }) !== null
-      ).toBe(shown)
-    })
+        expect(
+          screen.queryAllByRole('button', { name: 'Deploy to Comfy API' })
+        ).toHaveLength(count)
+      }
+    )
 
     it('sits left of the panel toggle and opens the dialog for the installation', async () => {
       enableDeployButton()

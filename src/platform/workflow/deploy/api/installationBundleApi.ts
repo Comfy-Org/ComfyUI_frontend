@@ -85,7 +85,6 @@ async function postBundle(credential: AuthHeader): Promise<BundlePost> {
   }
 }
 
-/** Has the local server upload its installation snapshot to the builder. */
 export async function createInstallationBundle(
   credential: AuthHeader
 ): Promise<BundleResult> {
