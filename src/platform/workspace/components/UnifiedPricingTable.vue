@@ -416,7 +416,7 @@
 <script setup lang="ts">
 import Badge from '@/components/ui/badge/Badge.vue'
 import PricingTierHeading from '@/platform/workspace/components/PricingTierHeading.vue'
-import Card from '@/components/ui/card/Card.vue'
+import Card from '@comfyorg/design-system/card/Card'
 import {
   BILLING_ACTION_NAME,
   planCtaActionName

@@ -129,7 +129,7 @@
 </template>
 
 <script setup lang="ts">
-import Card from '@/components/ui/card/Card.vue'
+import Card from '@comfyorg/design-system/card/Card'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { storeToRefs } from 'pinia'
 import { computed, ref } from 'vue'

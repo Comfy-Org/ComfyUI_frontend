@@ -4,9 +4,9 @@ import type { HTMLAttributes } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
-import Card from '@/components/ui/card/Card.vue'
-import CardFooter from '@/components/ui/card/CardFooter.vue'
-import CardHeader from '@/components/ui/card/CardHeader.vue'
+import Card from '@comfyorg/design-system/card/Card'
+import CardFooter from '@comfyorg/design-system/card/CardFooter'
+import CardHeader from '@comfyorg/design-system/card/CardHeader'
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 
 const { class: className, onClose } = defineProps<{

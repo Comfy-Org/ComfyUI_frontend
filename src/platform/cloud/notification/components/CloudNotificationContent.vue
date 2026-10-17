@@ -76,7 +76,7 @@
 </template>
 
 <script setup lang="ts">
-import Card from '@/components/ui/card/Card.vue'
+import Card from '@comfyorg/design-system/card/Card'
 import { onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 

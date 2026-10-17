@@ -157,7 +157,7 @@
 </template>
 
 <script setup lang="ts">
-import Card from '@/components/ui/card/Card.vue'
+import Card from '@comfyorg/design-system/card/Card'
 import {
   getTopupAmountPreset,
   TOPUP_AMOUNT_PRESETS_USD

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import Card from '@/components/ui/card/Card.vue'
+import Card from '@comfyorg/design-system/card/Card'
 import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'

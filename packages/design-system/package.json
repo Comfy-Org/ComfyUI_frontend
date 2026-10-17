@@ -14,6 +14,7 @@
     "url": "git+https://github.com/Comfy-Org/ComfyUI_frontend.git"
   },
   "files": [
+    "dist",
     "src/css",
     "src/icons",
     "src/button.variants.ts",
@@ -23,6 +24,7 @@
   ],
   "type": "module",
   "exports": {
+    "./card/*": "./src/components/card/*.vue",
     "./css/*": "./src/css/*",
     "./icons/*": "./src/icons/*",
     "./button.variants": "./src/button.variants.ts",
@@ -31,9 +33,23 @@
     "./workspaceAvatar": "./src/workspaceAvatar.ts"
   },
   "publishConfig": {
+    "exports": {
+      "./card/*": {
+        "types": "./dist/card/*.d.ts",
+        "import": "./dist/card/*.js"
+      },
+      "./css/*": "./src/css/*",
+      "./icons/*": "./src/icons/*",
+      "./button.variants": "./src/button.variants.ts",
+      "./select.variants": "./src/select.variants.ts",
+      "./tag.variants": "./src/tag.variants.ts",
+      "./workspaceAvatar": "./src/workspaceAvatar.ts"
+    },
     "access": "public"
   },
   "scripts": {
+    "build": "vite build",
+    "prepack": "pnpm run build",
     "format": "oxfmt --write",
     "format:check": "oxfmt --check",
     "test": "vitest run",
@@ -48,12 +64,23 @@
     "tw-animate-css": "catalog:"
   },
   "devDependencies": {
+    "@comfyorg/tailwind-utils": "workspace:^",
+    "@vitejs/plugin-vue": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "tailwindcss": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:"
+    "vite": "catalog:",
+    "vite-plugin-dts": "catalog:",
+    "vitest": "catalog:",
+    "vue": "catalog:"
   },
   "peerDependencies": {
-    "tailwindcss": "^4.1.0"
+    "tailwindcss": "^4.1.0",
+    "vue": "^3.5.40"
+  },
+  "peerDependenciesMeta": {
+    "vue": {
+      "optional": true
+    }
   }
 }

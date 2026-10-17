@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "declaration": true,
+    "types": []
+  },
+  "include": ["src/components/**/*.ts", "src/components/**/*.vue"],
+  "exclude": ["src/**/*.stories.ts"]
+}

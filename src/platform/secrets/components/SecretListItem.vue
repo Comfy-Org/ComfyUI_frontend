@@ -54,7 +54,7 @@
 </template>
 
 <script setup lang="ts">
-import Card from '@/components/ui/card/Card.vue'
+import Card from '@comfyorg/design-system/card/Card'
 import Badge from '@/components/ui/badge/Badge.vue'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'

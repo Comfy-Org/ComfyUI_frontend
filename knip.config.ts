@@ -35,7 +35,7 @@ const config: KnipConfig = {
       project: ['src/**/*.ts']
     },
     'packages/design-system': {
-      project: ['src/**/*.{css,js,ts}']
+      project: ['src/**/*.{css,js,ts,vue}']
     },
     'packages/tailwind-utils': {
       project: ['src/**/*.{js,ts}']
