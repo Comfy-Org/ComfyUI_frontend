@@ -4,7 +4,7 @@ import { getBillingWebUrl } from '@/config/billingWeb'
 import { isCloud } from '@/platform/distribution/types'
 import { hostBillingEnvironment } from '@/platform/workspace/billing/hostedBillingRoutes'
 
-const DESKTOP_TOPUP_RETURN_PATH = '/return/desktop-topup'
+const TOPUP_RETURN_PATH = '/return/topup'
 
 const BILLING_WEB_ORIGINS: Readonly<Record<BillingEnvironment, string>> = {
   production: 'https://billing.comfy.org',
@@ -43,5 +43,5 @@ export function topupCheckoutReturnUrl(
   if (!base) return undefined
 
   const prefix = base.pathname.replace(/\/$/, '')
-  return new URL(`${prefix}${DESKTOP_TOPUP_RETURN_PATH}`, base.origin).href
+  return new URL(`${prefix}${TOPUP_RETURN_PATH}`, base.origin).href
 }

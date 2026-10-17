@@ -21,31 +21,31 @@ describe('topupCheckoutReturnUrl', () => {
       name: 'the server-sent billing-web origin',
       billingWebBase: new URL('https://billing.comfy.org'),
       environment: undefined,
-      expected: 'https://billing.comfy.org/return/desktop-topup'
+      expected: 'https://billing.comfy.org/return/topup'
     },
     {
       name: 'a prefixed billing-web deployment',
       billingWebBase: new URL('https://preview.comfy.org/billing/'),
       environment: undefined,
-      expected: 'https://preview.comfy.org/billing/return/desktop-topup'
+      expected: 'https://preview.comfy.org/billing/return/topup'
     },
     {
       name: 'the production origin when the local server sends none',
       billingWebBase: null,
       environment: 'production',
-      expected: 'https://billing.comfy.org/return/desktop-topup'
+      expected: 'https://billing.comfy.org/return/topup'
     },
     {
       name: 'the staging origin when the local server sends none',
       billingWebBase: null,
       environment: 'staging',
-      expected: 'https://stagingbilling.comfy.org/return/desktop-topup'
+      expected: 'https://stagingbilling.comfy.org/return/topup'
     },
     {
       name: 'the test origin when the local server sends none',
       billingWebBase: null,
       environment: 'test',
-      expected: 'https://testbilling.comfy.org/return/desktop-topup'
+      expected: 'https://testbilling.comfy.org/return/topup'
     },
     {
       name: 'nothing when no origin resolves',
@@ -54,7 +54,7 @@ describe('topupCheckoutReturnUrl', () => {
       expected: undefined
     }
   ] as const)(
-    'returns Desktop and local builds to $name',
+    'returns non-cloud-web builds to $name',
     ({ billingWebBase, environment, expected }) => {
       expect(
         topupCheckoutReturnUrl({

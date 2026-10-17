@@ -759,7 +759,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         )
         expect(createCheckout).toHaveBeenCalledWith(
           5000,
-          'https://testbilling.comfy.org/return/desktop-topup'
+          'https://testbilling.comfy.org/return/topup'
         )
         expect(open).toHaveBeenCalledWith(checkoutUrl, '_blank')
         expect(window.location.href).toBe(appUrl)

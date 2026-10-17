@@ -72,7 +72,7 @@ test.describe('Top-up without a saved payment method', () => {
     const checkoutBody = (await checkoutRequest).postDataJSON()
     expect(checkoutBody).toMatchObject({ amount_cents: 5000 })
     expect(checkoutBody.return_url).toMatch(
-      /^https:\/\/(test|staging)?billing\.comfy\.org\/return\/desktop-topup$/
+      /^https:\/\/(test|staging)?billing\.comfy\.org\/return\/topup$/
     )
     await expect(await checkoutPage).toHaveURL(CHECKOUT_URL)
     await expect(page).toHaveURL(appUrl)
