@@ -29,6 +29,16 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
   const trackedJobId = ref<JobId | null>(null)
   const pendingResolve = ref(new Set<JobId>())
   const executedNodeIds = new Set<string>()
+  /**
+   * Outputs already appended, so a replayed `executed` is skipped.
+   *
+   * Keyed by what the frame carries, not just where it came from. A reconnect
+   * replays the identical frame, while a node that legitimately reports again
+   * carries different files, and an expanded copy in a loop shares its
+   * `display_node` with its siblings but not its `node`.
+   */
+  const appendedOutputKeys = new Set<string>()
+  const MAX_APPENDED_OUTPUT_KEYS = 500
 
   const activeWorkflowInProgressItems = computed(() => {
     const path = workflowStore.activeWorkflow?.path
@@ -60,6 +70,10 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
 
   function onJobStart(jobId: JobId) {
     executedNodeIds.clear()
+    // This job's keys only: a concurrent job's outputs must stay deduped.
+    for (const key of appendedOutputKeys) {
+      if (key.startsWith(`${jobId}:`)) appendedOutputKeys.delete(key)
+    }
 
     const item: InProgressItem = {
       id: makeItemId(jobId),
@@ -112,6 +126,8 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
 
   function onNodeExecuted(jobId: JobId, detail: ExecutedWsMessage) {
     const nodeId = String(detail.display_node || detail.node)
+    const outputKey = appendedOutputKey(jobId, detail)
+    if (appendedOutputKeys.has(outputKey)) return
     executedNodeIds.add(nodeId)
     if (raf) {
       cancelAnimationFrame(raf)
@@ -153,6 +169,7 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
       arr.splice(idx, 1, imageItem, ...extras)
       currentSkeletonId.value = null
       inProgressItems.value = arr
+      rememberAppendedOutput(outputKey)
       return
     }
 
@@ -167,6 +184,26 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
     }))
     autoSelect(`slot:${newItems[0].id}`, jobId)
     inProgressItems.value = [...newItems, ...inProgressItems.value]
+    rememberAppendedOutput(outputKey)
+  }
+
+  function appendedOutputKey(jobId: JobId, detail: ExecutedWsMessage): string {
+    const files = flattenNodeOutput([String(detail.node), detail.output])
+      .map((item) => `${item.subfolder}/${item.filename}`)
+      .sort()
+      .join(',')
+    return `${jobId}:${detail.node}:${files}`
+  }
+
+  function rememberAppendedOutput(key: string) {
+    appendedOutputKeys.add(key)
+    // Bounded: far above nodes-per-job times concurrent jobs, and Set keeps
+    // insertion order, so the oldest key goes first.
+    while (appendedOutputKeys.size > MAX_APPENDED_OUTPUT_KEYS) {
+      const oldest = appendedOutputKeys.values().next().value
+      if (oldest === undefined) break
+      appendedOutputKeys.delete(oldest)
+    }
   }
 
   function onJobComplete(jobId: JobId) {

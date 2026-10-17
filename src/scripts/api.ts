@@ -26,6 +26,7 @@ import { webSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import { FETCH_RESPONSE_HEADERS_TIMEOUT_MS } from '@/scripts/apiTimeouts'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
+import { zeroUuid } from '@/utils/uuid'
 import type {
   ModelFile,
   ModelFolderInfo
@@ -72,7 +73,8 @@ import type {
 } from '@/platform/workflow/templates/types/template'
 import type {
   ComfyApiWorkflow,
-  ComfyWorkflowJSON
+  ComfyWorkflowJSON,
+  WorkflowId
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { SerializedNodeId } from '@/types/nodeId'
 import type {
@@ -96,6 +98,29 @@ interface QueuePromptRequestBody {
   client_id: string
   prompt: ComfyApiWorkflow
   partial_execution_targets?: NodeExecutionId[]
+  /**
+   * Echoed back by the server on every WebSocket frame this prompt produces
+   * that carries a `prompt_id` (ComfyUI#16763 for JSON frames, #16809 for the
+   * metadata header on binary previews). An older server ignores the field
+   * rather than rejecting the prompt.
+   *
+   * Cloud does not read this field: its gateway stamps `workflow_id` from
+   * `extra_pnginfo.workflow.id` and assigns the routing ids after the frame's
+   * own fields, where core lets the frame's fields win. Treat the ids that
+   * arrive as authoritative either way.
+   *
+   * Two limits worth knowing, since the contract is the server's and not ours:
+   *
+   * - `status` and `logs` frames have no `prompt_id`, so they are never
+   *   stamped and a consumer still needs the `prompt_id`-to-workflow mapping.
+   * - A value the server cannot use is dropped rather than rejected: over 256
+   *   characters of its own JSON serialisation, not 256 bytes of content, with
+   *   non-ASCII escaped to `\\uXXXX` first. The server then falls back to
+   *   `extra_data.extra_pnginfo.workflow.id`, so omitting this field does not
+   *   keep frames unstamped.
+   */
+  workflow_metadata?: { workflow_id: string }
+
   extra_data: {
     extra_pnginfo: {
       workflow: ComfyWorkflowJSON
@@ -264,6 +289,7 @@ interface BackendApiCalls {
     displayNodeId: string
     realNodeId: string
     jobId: string
+    workflowId?: WorkflowId
   }
   progress_text: ProgressTextWsMessage
   progress_state: ProgressStateWsMessage
@@ -442,6 +468,12 @@ export class ComfyApi extends EventTarget {
    * The current client id from websocket status updates.
    */
   clientId?: string
+  /**
+   * The `executing` message being dispatched, including `prompt_id` and
+   * `workflow_id`. Non-null only while `executing` listeners run, so read it
+   * synchronously inside the listener.
+   */
+  lastExecutingMessage: ExecutingWsMessage | null = null
   /**
    * The current user id.
    */
@@ -1054,7 +1086,8 @@ export class ComfyApi extends EventTarget {
                 displayNodeId: metadata.display_node_id,
                 parentNodeId: metadata.parent_node_id,
                 realNodeId: metadata.real_node_id,
-                jobId: metadata.prompt_id
+                jobId: metadata.prompt_id,
+                workflowId: metadata.workflow_id
               })
 
               // Also dispatch legacy b_preview for backward compatibility
@@ -1080,10 +1113,15 @@ export class ComfyApi extends EventTarget {
               this.dispatchCustomEvent('status', msg.data.status ?? null)
               break
             case 'executing':
-              this.dispatchCustomEvent(
-                'executing',
-                msg.data.display_node || msg.data.node
-              )
+              this.lastExecutingMessage = msg.data
+              try {
+                this.dispatchCustomEvent(
+                  'executing',
+                  msg.data.display_node || msg.data.node
+                )
+              } finally {
+                this.lastExecutingMessage = null
+              }
               break
             case 'execution_start':
             case 'execution_error':
@@ -1268,6 +1306,10 @@ export class ComfyApi extends EventTarget {
       ...(options?.partialExecutionTargets && {
         partial_execution_targets: options.partialExecutionTargets
       }),
+      ...(workflow.id &&
+        workflow.id !== zeroUuid && {
+          workflow_metadata: { workflow_id: workflow.id }
+        }),
       extra_data: {
         auth_token_comfy_org: this.authToken,
         api_key_comfy_org: this.apiKey,

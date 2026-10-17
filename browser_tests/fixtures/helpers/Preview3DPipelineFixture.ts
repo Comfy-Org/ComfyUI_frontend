@@ -215,11 +215,9 @@ export class Preview3DPipelineContext {
   }
 
   async openPersistedWorkflowFromSidebar(workflowName: string): Promise<void> {
-    const tab = this.comfyPage.menu.workflowsTab
-    await tab.open()
-    await tab.getPersistedItem(workflowName).click()
-    await this.comfyPage.workflow.waitForWorkflowIdle(30_000)
-    await this.comfyPage.vueNodes.waitForNodes()
+    await this.comfyPage.workflow.openPersistedWorkflow(workflowName, {
+      idleTimeout: 30_000
+    })
   }
 
   async assertPreview3dModelPathAndLastTime(path: string): Promise<void> {

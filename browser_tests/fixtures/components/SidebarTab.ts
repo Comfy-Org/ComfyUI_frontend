@@ -221,10 +221,11 @@ export class WorkflowsSidebarTab extends SidebarTab {
     })
   }
 
-  getPersistedItem(name: string) {
-    return this.root.locator('.comfyui-workflows-browse .node-label', {
-      hasText: name
-    })
+  getPersistedItem(name: string, options: { exact?: boolean } = {}) {
+    const browse = this.root.locator('.comfyui-workflows-browse')
+    return options.exact
+      ? browse.getByText(name, { exact: true })
+      : browse.locator('.node-label', { hasText: name })
   }
 
   async renameWorkflow(locator: Locator, newName: string) {

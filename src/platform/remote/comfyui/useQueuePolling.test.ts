@@ -3,7 +3,9 @@ import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useQueuePolling } from '@/platform/remote/comfyui/useQueuePolling'
+import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
+import { toNodeId } from '@/types/nodeId'
 
 function mountUseQueuePolling() {
   render({
@@ -30,22 +32,16 @@ describe('useQueuePolling', () => {
     expect(store.update).not.toHaveBeenCalled()
   })
 
-  it('polls when activeJobsCount is exactly 1', async () => {
+  // The 2 row is what keeps this from being narrowed back to `=== 1`: polling
+  // with several jobs in flight is how per-job progress recovers when a
+  // terminal WebSocket frame is dropped.
+  it.for([1, 2])('polls when activeJobsCount is %i', async (count) => {
     mountUseQueuePolling()
 
-    Object.assign(store, { activeJobsCount: 1 })
+    Object.assign(store, { activeJobsCount: count })
     await vi.advanceTimersByTimeAsync(8_000)
 
     expect(store.update).toHaveBeenCalledOnce()
-  })
-
-  it('does not poll when activeJobsCount > 1', async () => {
-    mountUseQueuePolling()
-
-    Object.assign(store, { activeJobsCount: 2 })
-    await vi.advanceTimersByTimeAsync(16_000)
-
-    expect(store.update).not.toHaveBeenCalled()
   })
 
   it('stops polling when activeJobsCount drops to 0', async () => {
@@ -56,6 +52,25 @@ describe('useQueuePolling', () => {
     await vi.advanceTimersByTimeAsync(16_000)
 
     expect(store.update).not.toHaveBeenCalled()
+  })
+
+  it('keeps polling while execution state awaits terminal reconciliation', async () => {
+    useExecutionStore().nodeProgressStatesByJob = {
+      'stuck-job': {
+        '1': {
+          value: 3,
+          max: 10,
+          state: 'running',
+          node_id: toNodeId('1'),
+          prompt_id: 'stuck-job'
+        }
+      }
+    }
+    mountUseQueuePolling()
+
+    await vi.advanceTimersByTimeAsync(8_000)
+
+    expect(store.update).toHaveBeenCalledOnce()
   })
 
   it('resets timer when loading completes', async () => {
