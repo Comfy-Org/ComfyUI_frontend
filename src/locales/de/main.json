@@ -75,6 +75,8 @@
     "feedbackCaption": "Feedback teilen",
     "focusNode": "Auf Canvas anzeigen",
     "focusNodeLabel": "{node} auf Canvas anzeigen",
+    "freeUseNotice": "Prompts und Workflow-Ausführungen sind während der BETA KOSTENLOS.",
+    "freeUseNoticeLabel": "Hinweis zur kostenlosen Nutzung",
     "friend": "da",
     "gotIt": "Verstanden",
     "greeting": "Hallo {name},",
@@ -124,12 +126,16 @@
       "upgradePlan": "Plan upgraden"
     },
     "placeholder": "Beschreiben Sie Ideen, verwenden Sie {'@'} zum Referenzieren von Workflows, ziehen Sie Medien-Assets und Dateien hinein oder\nerwähnen Sie Nodes",
+    "recoveredTurnFailed": "Der Agent konnte diese Antwort nicht abschließen.",
     "reference": "Referenz",
     "remove": "Entfernen",
     "removeNodeLabel": "Referenz zu {node} entfernen",
     "removeWorkflowReference": "Referenz von {name} entfernen",
     "retryAfterSeconds": "Sie können es in {seconds}s erneut versuchen.",
     "runApproval": {
+      "answerFailed": "Ihre Antwort konnte nicht gesendet werden. Laden Sie die Seite neu und versuchen Sie es erneut.",
+      "answerSuperseded": "Diese Anfrage wurde bereits an anderer Stelle beantwortet, daher wurde diese Antwort anstelle Ihrer verwendet.",
+      "answerUncertain": "Es konnte nicht bestätigt werden, dass Ihre Antwort den Agenten erreicht hat. Möglicherweise wurde sie dennoch angewendet — laden Sie die Seite neu, um den aktuellen Stand zu sehen.",
       "cancel": "Abbrechen",
       "lead": "Dieses Tool möchte den Workflow ausführen:",
       "leadBound": "Dieses Tool möchte diesen Workflow ausführen.",
@@ -184,7 +190,16 @@
         "Erklären Sie die ausgewählten Nodes",
         "Helfen Sie mir, die fehlenden Nodes für diesen Workflow zu installieren",
         "Beheben Sie die Fehler in diesem Workflow"
-      ]
+      ],
+      "treatment": {
+        "cloud": [
+          "Erstellen Sie ein Produktbild aus einem Text-Prompt",
+          "Erstellen Sie einen Bild-zu-Video-Workflow",
+          "Erklären Sie, wie ein ComfyUI-Workflow funktioniert",
+          "Finden Sie den besten Workflow für eine bestimmte Aufgabe",
+          "Diagnostizieren und beheben Sie Fehler in einem Workflow"
+        ]
+      }
     },
     "switchWorkflow": "Workflow wechseln",
     "switchWorkflowForNodes": "Wechseln Sie zu {workflowName}, um Nodes hinzuzufügen.",
@@ -196,8 +211,11 @@
     "targetWorkflowUnavailable": "Der Ziel-Workflow ist nicht mehr verfügbar.",
     "thinking": "Denkt nach...",
     "title": "Comfy Agent",
+    "toolFailedSkill": "{skill} konnte nicht geladen werden",
     "toolForgettingPreference": "Vergisst eine Einstellung",
     "toolForgotPreference": "Eine Einstellung vergessen",
+    "toolLoadedSkill": "{skill} geladen",
+    "toolLoadingSkill": "{skill} wird geladen",
     "toolOpenedNewTab": "Einen neuen Tab geöffnet",
     "toolOpeningNewTab": "Öffnet einen neuen Tab",
     "toolSavedPreference": "Eine Einstellung gespeichert",
@@ -274,6 +292,7 @@
       "failed": "Download fehlgeschlagen",
       "inProgress": "{assetName} wird heruntergeladen..."
     },
+    "downloadFailed": "{name} konnte nicht heruntergeladen werden",
     "emptyImported": {
       "canImport": "Noch keine Modelle importiert. Klicken Sie auf „Importieren“, um eigene hinzuzufügen.",
       "restricted": "Persönliche Modelle sind nur ab dem Creator-Tarif verfügbar."
@@ -448,6 +467,11 @@
     "deleteAccount": {
       "contactSupport": "Um Ihr Konto zu löschen, kontaktieren Sie bitte {email}"
     },
+    "desktopHost": {
+      "continueInBrowser": "Schließen Sie die Anmeldung in Ihrem Browser ab",
+      "signInFailed": "Die Anmeldung wurde nicht abgeschlossen. Versuchen Sie es erneut.",
+      "signOutFailed": "Comfy Desktop ist weiterhin angemeldet. Schließen Sie alle laufenden Installationen ab oder brechen Sie sie ab, und melden Sie sich dann erneut ab."
+    },
     "errors": {
       "auth/account-exists-with-different-credential": "Mit dieser Methode konnten wir Sie nicht anmelden. Versuchen Sie eine andere Anmeldeoption oder setzen Sie Ihr Passwort zurück, um fortzufahren.",
       "auth/cancelled-popup-request": "Ein anderes Anmeldefenster war bereits geöffnet, daher wurde dieses abgebrochen. Bitte versuchen Sie es erneut.",
@@ -464,6 +488,7 @@
       "generic": "Bei der Anmeldung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.",
       "signupBlocked": "Ihr Konto konnte derzeit nicht erstellt werden. Bitte versuchen Sie es später erneut. Wenn dies weiterhin passiert, schreiben Sie an support@comfy.org."
     },
+    "hidePassword": "Passwort ausblenden",
     "login": {
       "andText": "und",
       "backToGithubLogin": "Stattdessen mit Github registrieren",
@@ -480,6 +505,7 @@
       "forgotPassword": "Passwort vergessen?",
       "forgotPasswordError": "E-Mail zum Zurücksetzen des Passworts konnte nicht gesendet werden",
       "freeRunsSuffix": "um {count} kostenlosen Durchlauf zu erhalten. | um {count} kostenlose Durchläufe zu erhalten.",
+      "freeRunsSuffixGoogle": "mit Google fortfahren, um {count} kostenlosen Durchlauf zu erhalten. | mit Google fortfahren, um {count} kostenlose Durchläufe zu erhalten.",
       "freeTierBadge": "Für Free Tier berechtigt",
       "freeTierDescription": "Registrieren Sie sich mit Google und erhalten Sie jeden Monat {credits} kostenlose Credits. Keine Karte erforderlich.",
       "freeTierDescriptionGeneric": "Registrieren Sie sich mit Google und erhalten Sie jeden Monat kostenlose Credits. Keine Karte erforderlich.",
@@ -524,6 +550,7 @@
       "message": "Aus Sicherheitsgründen müssen Sie sich für diese Aktion erneut anmelden. Möchten Sie fortfahren?",
       "title": "Erneute Anmeldung erforderlich"
     },
+    "showPassword": "Passwort anzeigen",
     "signOut": {
       "saveFailed": "Abmeldung abgebrochen, da das Speichern von \"{workflow}\" fehlgeschlagen ist.",
       "signOut": "Abmelden",
@@ -532,6 +559,12 @@
       "successDetail": "Sie wurden von Ihrem Konto abgemeldet.",
       "unsavedChangesMessage": "Sie haben ungespeicherte Änderungen, die beim Abmelden verloren gehen. Möchten Sie fortfahren?",
       "unsavedChangesTitle": "Ungespeicherte Änderungen"
+    },
+    "signOutEverywhere": {
+      "action": "Von allen Geräten abmelden",
+      "failed": "Abmeldung von allen Geräten nicht möglich",
+      "success": "Von allen Geräten abgemeldet",
+      "successDetail": "Jedes bei Ihrem Konto angemeldete Gerät wurde abgemeldet."
     },
     "signup": {
       "alreadyHaveAccount": "Haben Sie bereits ein Konto?",
@@ -548,6 +581,36 @@
       "signUpWithGoogle": "Mit Google registrieren",
       "title": "Konto erstellen"
     },
+    "sso": {
+      "continueWithSso": "Mit SSO fortfahren",
+      "emailLabel": "Geschäftliche E-Mail-Adresse",
+      "emailPlaceholder": "Geben Sie Ihre geschäftliche E-Mail-Adresse ein",
+      "errors": {
+        "accountConflict": "Mehr als ein Comfy-Konto verwendet diese E-Mail-Adresse. Senden Sie eine E-Mail an support{'@'}comfy.org, um Hilfe zu erhalten.",
+        "accountDeleted": "Dieses Konto ist zur Löschung vorgesehen. Wenn dies ein Fehler ist, senden Sie eine E-Mail an support{'@'}comfy.org.",
+        "emailDomainNotAllowed": "Die Anmeldung Ihrer Organisation hat eine E-Mail-Adresse außerhalb ihrer Domains zurückgegeben. Bitten Sie Ihre Administration, Ihre geschäftliche E-Mail-Adresse im Verzeichnis zu verwenden.",
+        "expired": "Ihre Anmeldung ist abgelaufen oder wurde in einem anderen Browser gestartet. Starten Sie erneut.",
+        "failed": "Wir konnten Sie nicht über Single Sign-On anmelden. Versuchen Sie es erneut.",
+        "idpError": "Ihr Identitätsanbieter hat die Anmeldung nicht abgeschlossen. Versuchen Sie es erneut.",
+        "notConfigured": "Single Sign-On ist für Ihre Organisation nicht eingerichtet. Wenden Sie sich an Ihre Administration.",
+        "orgDisabled": "Single Sign-On ist für Ihre Organisation deaktiviert. Wenden Sie sich an Ihre Administration.",
+        "orgMismatch": "Sie haben sich bei einer anderen Organisation angemeldet als der für diese E-Mail-Adresse vorgesehenen. Versuchen Sie es erneut mit Ihrem Geschäftskonto.",
+        "orgNotAttached": "Der Comfy-Workspace Ihrer Organisation ist noch nicht eingerichtet. Wenden Sie sich an Ihre Administration.",
+        "rateLimited": "Zu viele Anmeldeversuche. Warten Sie einige Minuten und versuchen Sie es erneut.",
+        "suspended": "Ihre Organisation hat Ihren Zugriff entfernt. Wenden Sie sich an Ihre Administration.",
+        "unavailable": "Single Sign-On ist momentan nicht verfügbar. Versuchen Sie es gleich noch einmal."
+      },
+      "invalidEmail": "Geben Sie eine gültige E-Mail-Adresse ein.",
+      "notSso": "Diese E-Mail-Adresse verwendet keinen Single Sign-On. Verwenden Sie eine der obigen Anmeldeoptionen.",
+      "required": {
+        "body": "Dieses Konto meldet sich über den Single Sign-On Ihrer Organisation an. Fahren Sie mit SSO fort, um sich anzumelden.",
+        "bodyWithEmail": "{email} meldet sich über den Single Sign-On Ihrer Organisation an. Fahren Sie mit SSO fort, um sich anzumelden.",
+        "dismiss": "Nicht jetzt",
+        "title": "Ihre Organisation erfordert Single Sign-On"
+      },
+      "submit": "Fortfahren",
+      "unavailable": "Wir konnten Single Sign-On momentan nicht prüfen. Versuchen Sie es gleich noch einmal oder verwenden Sie eine der obigen Anmeldeoptionen."
+    },
     "turnstile": {
       "expired": "Die Verifizierung ist abgelaufen. Bitte schließen Sie die Aufgabe erneut ab.",
       "failed": "Verifizierung fehlgeschlagen. Bitte versuchen Sie es erneut.",
@@ -563,6 +626,7 @@
         "ended": "Ihre Sitzung ist abgelaufen. Melden Sie sich erneut an, um fortzufahren.",
         "identityChanged": "Ihre Sitzung hat sich geändert. Laden Sie die Seite neu, um fortzufahren.",
         "refused": "Ihre Anfrage wurde abgelehnt. Laden Sie die Seite neu und versuchen Sie es erneut.",
+        "ssoRequired": "Ihre Organisation erfordert Single Sign-On. Fahren Sie mit SSO fort, um sich anzumelden.",
         "unavailable": "Wir konnten Ihr Konto nicht erreichen. Versuchen Sie es gleich noch einmal.",
         "workspaceDenied": "Sie haben keinen Zugriff auf diesen Arbeitsbereich. Wenden Sie sich an den Support, wenn dies weiterhin geschieht."
       }
@@ -577,6 +641,9 @@
     "authenticationFailedDetail": "Die Zahlungsbestätigung konnte nicht abgeschlossen werden. Bitte versuchen Sie es erneut.",
     "authenticationUnavailable": "Sichere Zahlungsbestätigung ist nicht verfügbar. Bitte aktualisieren Sie die Seite und versuchen Sie es erneut.",
     "cancelFailed": "Abonnement konnte nicht gekündigt werden",
+    "cancelPaymentFailed": "Diese Zahlung konnte nicht storniert werden. Bitte versuchen Sie es erneut.",
+    "cancelPaymentInFlight": "Diese Zahlung wird bereits verarbeitet und kann nicht storniert werden.",
+    "cancelPaymentNotCancelable": "Diese Zahlung kann nicht mehr storniert werden.",
     "cancelTimeout": "Zeitüberschreitung bei der Abonnementkündigung",
     "expiredCardDetail": "Diese Karte ist abgelaufen. Verwenden Sie eine andere Zahlungsmethode.",
     "incorrectCvcDetail": "Der Sicherheitscode der Karte ist falsch. Überprüfen Sie ihn und versuchen Sie es erneut.",
@@ -989,6 +1056,7 @@
     "Copy Image": "Bild kopieren",
     "Delete": "Löschen",
     "Distribute Nodes": "Nodes verteilen",
+    "Download Images": "Bilder herunterladen",
     "Duplicate": "Duplizieren",
     "Edit Subgraph Widgets": "Subgraph-Widgets bearbeiten",
     "Expand": "Ausklappen",
@@ -1136,6 +1204,7 @@
     "BOOLEAN": "BOOLEAN",
     "BOUNDING_BOX": "BOUNDING_BOX",
     "BOUNDING_BOXES": "BOUNDING_BOXES",
+    "CAMERA_INFO_STATE": "CAMERA_INFO_STATE",
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
     "CLIP_VISION_OUTPUT": "CLIP_VISION_OUTPUT",
@@ -1144,6 +1213,7 @@
     "COMBO": "COMBO",
     "COMFY_AUTOGROW_V3": "COMFY_AUTOGROW_V3",
     "COMFY_DYNAMICCOMBO_V3": "COMFY_DYNAMICCOMBO_V3",
+    "COMFY_DYNAMICGROUP_V3": "COMFY_DYNAMICGROUP_V3",
     "COMFY_MATCHTYPE_V3": "COMFY_MATCHTYPE_V3",
     "COMPOSITOR": "KOMPOSITOR",
     "CONDITIONING": "KONDITIONIERUNG",
@@ -1242,6 +1312,13 @@
     "WAN_CAMERA_EMBEDDING": "WAN_CAMERA_EMBEDDING",
     "WEBCAM": "WEBCAM"
   },
+  "deployToComfyApi": {
+    "body": "Stellen Sie diesen Workflow in wenigen Minuten als Produktions-API bereit. Verpacken Sie Ihre benutzerdefinierten Nodes, Modelle und Python-Abhängigkeiten in einen reproduzierbaren Build, und Comfy API führt ihn als automatisch skalierenden Endpunkt aus.",
+    "buttonLabel": "Bei Comfy API bereitstellen",
+    "deployOnPlatform": "Auf der Plattform bereitstellen",
+    "readDocs": "Dokumentation lesen",
+    "title": "Bei Comfy API bereitstellen"
+  },
   "desktopLogin": {
     "confirmMessage": "Die ComfyUI-Desktop-App wartet darauf, sich mit Ihrem Konto anzumelden. Fahren Sie nur fort, wenn Sie die Anmeldung gerade über die ComfyUI-Desktop-App gestartet haben.",
     "confirmSummary": "Desktop-Anmeldung genehmigen?",
@@ -1249,6 +1326,8 @@
     "expiredSummary": "Desktop-Anmeldung fehlgeschlagen",
     "failedDetail": "Beim Abschließen der Desktop-Anmeldung ist ein Fehler aufgetreten. Starten Sie die Anmeldung erneut über die ComfyUI-Desktop-App.",
     "failedSummary": "Desktop-Anmeldung fehlgeschlagen",
+    "ssoUnavailableDetail": "Ihr Konto wird über das SSO Ihrer Organisation angemeldet, das die ComfyUI-Desktop-App noch nicht verwenden kann. Fragen Sie Ihre Administration nach einer anderen Möglichkeit, sich bei der Desktop-App anzumelden.",
+    "ssoUnavailableSummary": "Die Desktop-Anmeldung ist für SSO-Konten noch nicht verfügbar",
     "successDetail": "Sie können zur ComfyUI-Desktop-App zurückkehren.",
     "successSummary": "Angemeldet"
   },
@@ -1278,6 +1357,11 @@
     "skip": "Überspringen",
     "title": "git herunterladen",
     "warning": "Wenn Sie sicher sind, dass git nicht installiert sein muss oder ein Fehler vorliegt, können Sie auf „Überspringen“ klicken, um diese Prüfung zu umgehen. Der Versuch, ComfyUI ohne eine funktionsfähige Kopie von git auszuführen, wird derzeit nicht unterstützt."
+  },
+  "dynamicGroup": {
+    "add": "{group} hinzufügen",
+    "remove": "{row} entfernen",
+    "row": "{group} Nr. {index}"
   },
   "electronFileDownload": {
     "cancel": "Download abbrechen",
@@ -1765,7 +1849,8 @@
     "exportingAssets": "Assets werden exportiert",
     "noExportsInQueue": "Keine {filter}-Exporte in der Queue",
     "preparingExport": "Export wird vorbereitet...",
-    "retryDownload": "Download erneut versuchen"
+    "retryDownload": "Download erneut versuchen",
+    "unsupportedDownloadUrl": "Nicht unterstützte Export-Download-URL"
   },
   "feedback": {
     "title": "Feedback teilen"
@@ -1867,6 +1952,7 @@
     "download": "Herunterladen",
     "downloadAudio": "Audio herunterladen",
     "downloadImage": "Bild herunterladen",
+    "downloadImages": "Bilder herunterladen",
     "downloadVideo": "Video herunterladen",
     "downloadWithSize": "Herunterladen ({size})",
     "downloading": "Wird heruntergeladen",
@@ -2004,6 +2090,7 @@
     "nMoreKeybindings": "+ {count} weitere",
     "nMoreKeybindingsCompact": "+ {count}",
     "name": "Name",
+    "new": "NEU",
     "newFolder": "Neuer Ordner",
     "next": "Nächste",
     "nextImage": "Nächstes Bild",
@@ -2120,6 +2207,7 @@
     "selectItemsToDelete": "Wählen Sie Elemente zum Löschen aus",
     "selectItemsToDuplicate": "Wählen Sie Elemente zum Duplizieren aus",
     "selectItemsToRename": "Wählen Sie Elemente zum Umbenennen aus",
+    "selected": "Ausgewählt",
     "selectedFile": "Ausgewählte Datei",
     "setAKeybindingForTheFollowing": "Legen Sie ein Tastenkürzel fest für:",
     "setAsBackground": "Als Hintergrund festlegen",
@@ -2176,6 +2264,7 @@
     "usageHint": "Nutzungshinweis",
     "use": "Verwenden",
     "user": "Benutzer",
+    "validate": "Validieren",
     "versionMismatchWarning": "Warnung zur Versionskompatibilität",
     "versionMismatchWarningMessage": "{warning}: {detail} Anweisungen zum Update finden Sie unter https://docs.comfy.org/installation/update_comfyui#common-update-issues.",
     "videoFailedToLoad": "Video konnte nicht geladen werden",
@@ -3262,6 +3351,7 @@
     "Beeble": "Beeble",
     "Bria": "Bria",
     "ByteDance": "ByteDance",
+    "Clarity AI": "Clarity AI",
     "ElevenLabs": "ElevenLabs",
     "Fish Audio": "Fish Audio",
     "Gemini": "Gemini",
@@ -3438,6 +3528,11 @@
     "outputs": "Ausgaben",
     "type": "Typ"
   },
+  "nodeOutputsExport": {
+    "download": "Herunterladen ({count})",
+    "downloadAll": "Alle herunterladen",
+    "title": "Assets herunterladen"
+  },
   "nodeReplacement": {
     "compatibleAlternatives": "Kompatible Alternativen",
     "installMissingNodes": "Fehlende Nodes installieren",
@@ -3488,6 +3583,7 @@
       "deny": "Abbrechen",
       "detailsHeader": "Details",
       "errorExpired": "Diese Einwilligungsanfrage ist abgelaufen oder wurde bereits verwendet. Bitte starten Sie die Client-App erneut.",
+      "errorOriginRefused": "Wir konnten dies von dieser Seite aus nicht genehmigen. Öffnen Sie die Anmeldung erneut über die App.",
       "errorScopeBroadening": "Die zuvor genehmigten Berechtigungen decken diese Anfrage nicht ab. Sie müssen die neuen Berechtigungen erneut autorisieren.",
       "errorUnavailable": "Diese Funktion ist derzeit nicht verfügbar. Bitte kontaktieren Sie den Support, falls das Problem weiterhin besteht.",
       "genericError": "OAuth-Anfrage fehlgeschlagen. Bitte starten Sie die Client-App erneut.",
@@ -3689,7 +3785,8 @@
     "importingModels": "Modelle werden importiert",
     "noImportsInQueue": "Keine {filter} in der Queue",
     "pending": "Ausstehend",
-    "progressCount": "{completed} von {total}"
+    "progressCount": "{completed} von {total}",
+    "taskUnavailable": "Die Download-Aufgabe ist nicht mehr verfügbar."
   },
   "queue": {
     "completedIn": "Abgeschlossen in {duration}",
@@ -4237,6 +4334,7 @@
     "assets": "Assets",
     "backToAssets": "Zurück zu allen Assets",
     "browseTemplates": "Beispielvorlagen durchsuchen",
+    "closeSidebar": "Seitenleiste schließen",
     "downloads": "Downloads",
     "folderView": {
       "errorDetail": "Die Outputs für diesen Job konnten nicht abgerufen werden. Bitte versuchen Sie es erneut.",
@@ -4475,6 +4573,7 @@
       "discountRefreshFailed": "Ihr Rabatt wurde angewendet. Aktualisieren Sie die Seite, um Ihren aktualisierten Plan zu sehen.",
       "endOfBillingPeriod": "Ende des Abrechnungszeitraums",
       "failed": "Abonnement konnte nicht gekündigt werden",
+      "finishOnStripe": "Ihr Abonnement ist noch nicht gekündigt. Schließen Sie die Kündigung auf der gerade geöffneten Stripe-Seite ab. Bis dahin wird Ihr Plan wie gewohnt verlängert.",
       "keepSubscription": "Abonnement behalten",
       "offerUnavailable": "Diese Option ist nicht verfügbar. Bitte wählen Sie eine andere Option.",
       "title": "Abonnement kündigen",
@@ -4548,7 +4647,7 @@
       "runLabel": "Ausführen"
     },
     "inactiveEnterpriseDescription": "Sie können keine Workflows ausführen oder neue Mitglieder hinzufügen. Wenden Sie sich an den Vertrieb, um den Zugriff wiederherzustellen.",
-    "inactiveTeamDescription": "Reaktivieren Sie Ihren Team-Tarif, um weitere Mitglieder hinzuzufügen und Workflows auszuführen",
+    "inactiveTeamDescription": "Reaktivieren Sie Ihren Team-Plan, um weitere Mitglieder hinzuzufügen und Workflows auszuführen",
     "inactiveTeamPlanIncludes": "Ein aktiver Tarif umfasst alles aus {plan}, zusätzlich:",
     "inactiveTeamTitle": "Inaktives Team-Abonnement",
     "inviteUpTo": "Einladen bis zu",
@@ -4607,7 +4706,7 @@
     "perMonth": "/ Monat",
     "perYear": "/ Jahr",
     "personalHeader": "Persönliche Tarife sind nur für die individuelle Nutzung vorgesehen. {action}",
-    "personalHeaderAction": "Um Teammitglieder hinzuzufügen, abonnieren Sie den Team-Tarif.",
+    "personalHeaderAction": "Um Teammitglieder hinzuzufügen, abonnieren Sie den Team-Plan.",
     "personalWorkspace": "Persönlicher Workspace",
     "planLoadError": "Ihre Tarifdetails konnten nicht geladen werden.",
     "planLoadErrorRetry": "Erneut versuchen",
@@ -4632,6 +4731,7 @@
       "backToAllPlans": "Zurück zu allen Plänen",
       "billedEachMonth": "{amount} werden monatlich berechnet. Jederzeit kündbar.",
       "billingAddress": "Rechnungsadresse",
+      "cancelPaymentAndRetry": "Zahlung stornieren und erneut versuchen",
       "changePaymentMethod": "Ändern",
       "commitment": "Bindung",
       "completePayment": "Schließen Sie Ihre Zahlung ab",
@@ -4789,7 +4889,7 @@
       "perkRolePermissions": "Rollenbasierte Berechtigungen",
       "perkSharedPool": "Gemeinsamer Credit-Pool für alle Mitglieder",
       "tagline": "Wählen Sie Ihr eigenes Credit-Abonnement. Mit einem größeren Credit-Abonnement erhalten Sie einen höheren Rabatt.",
-      "unavailable": "Dieser Team-Tarif ist derzeit nicht verfügbar."
+      "unavailable": "Dieser Team-Plan ist derzeit nicht verfügbar."
     },
     "teamPlanIncludes": "Ihr Tarif umfasst alles aus {plan}, zusätzlich:",
     "teamPlanName": "Team",
@@ -4904,6 +5004,38 @@
       "Video API": "Video-API"
     },
     "clearAllFilters": "Alle Filter zurücksetzen",
+    "detail": {
+      "backToTemplates": "Zurück zu {category}",
+      "breadcrumbLabel": "Vorlagennavigation",
+      "cloudUpsellDescription": "Auf Cloud-GPUs ohne lokale Einrichtung oder Downloads ausführen.",
+      "cloudUpsellTitle": "Diese Vorlage in Comfy Cloud ausführen",
+      "downloadCancelled": "Download abgebrochen",
+      "downloadFailed": "Download fehlgeschlagen",
+      "downloadModel": "Modell herunterladen",
+      "downloadModelNamed": "{model} herunterladen",
+      "downloadModelsAndOpen": "Modelle herunterladen & öffnen",
+      "downloadPaused": "Pausiert",
+      "downloadPausedModel": "Download für {model} pausiert",
+      "downloadPausedProgress": "Pausiert · {progress}",
+      "downloadQueued": "In Warteschlange",
+      "downloadStarting": "Wird gestartet",
+      "downloaded": "Heruntergeladen",
+      "downloading": "Wird heruntergeladen",
+      "downloadingModel": "{model} wird heruntergeladen",
+      "getItManually": "Manuell herunterladen",
+      "installed": "Installiert",
+      "models": "Modelle",
+      "openInCloud": "In Cloud öffnen",
+      "openNow": "Jetzt öffnen",
+      "partnerNodeDescription": "Wählen Sie, ob Sie diesen Workflow lokal oder in Comfy Cloud ausführen möchten.",
+      "partnerNodeTitle": "Dieser Workflow verwendet Partner-Nodes",
+      "requirements": "Vorlagenanforderungen",
+      "retryDownload": "Erneut versuchen",
+      "retryDownloadNamed": "Download für {model} erneut versuchen",
+      "unavailable": "Nicht verfügbar",
+      "unknown": "Unbekannt",
+      "usedBy": "Wird verwendet von {nodes}"
+    },
     "error": {
       "loading": "Die Vorlage konnte nicht geöffnet werden. Bitte versuchen Sie es erneut.",
       "preparingMedia": "Einige Beispielmedien konnten nicht vorbereitet werden. Der Workflow wird geöffnet; wählen Sie für alle fehlenden Eingaben eigene Dateien aus.",
@@ -4959,6 +5091,7 @@
     "errorOpenImage": "Fehler beim Öffnen des Bildes: {error}",
     "errorSaveSetting": "Fehler beim Speichern der Einstellung {id}: {err}",
     "exportSuccess": "Modell erfolgreich als {format} exportiert",
+    "extraResourcesUploadFailed": "Upload zusätzlicher Ressourcen fehlgeschlagen",
     "failedExecutionPathResolution": "Pfad zu den ausgewählten Nodes konnte nicht aufgelöst werden",
     "failedToAccessBillingPortal": "Abrechnungsportal konnte nicht geöffnet werden: {error}",
     "failedToApplyTexture": "Textur konnte nicht angewendet werden",
@@ -5006,6 +5139,7 @@
     "modelLoadedSuccessfully": "3D-Modell erfolgreich geladen",
     "no3dScene": "Keine 3D-Szene zum Anwenden der Textur",
     "no3dSceneToExport": "Keine 3D-Szene zum Exportieren",
+    "noPersonalWorkspace": "Dieses Konto verfügt über keine persönliche Abrechnung. Verwalten Sie die Abrechnung über Ihren Team-Workspace.",
     "noTemplatesToExport": "Keine Vorlagen zum Exportieren",
     "nodeDefinitionsUpdateFailed": "Node-Definitionen konnten nicht aktualisiert werden",
     "nodeDefinitionsUpdated": "Node-Definitionen aktualisiert",
@@ -5191,7 +5325,11 @@
     "addedToWorkspace": "Sie wurden hinzugefügt zu:",
     "deepLinkStayed": "Dieser Arbeitsbereich konnte nicht geöffnet werden. Sie befinden sich weiterhin in {workspaceName}.",
     "inviteAccepted": "Einladung angenommen",
+    "inviteDirectoryManaged": "Der Admin Ihrer Organisation verwaltet die Mitgliedschaft",
+    "inviteDirectoryManagedDetail": "Die Mitglieder dieses Workspaces werden über das Verzeichnis Ihrer Organisation verwaltet, daher können Einladungslinks nicht zum Beitritt verwendet werden. Bitten Sie den Admin Ihrer Organisation, Sie hinzuzufügen.",
     "inviteFailed": "Einladung konnte nicht angenommen werden",
+    "inviteSsoUnavailable": "Bitten Sie Ihren Admin, Sie hinzuzufügen",
+    "inviteSsoUnavailableDetail": "Einladungslinks können noch nicht über ein SSO-Konto angenommen werden. Bitten Sie einen Workspace-Admin, Sie direkt zum Workspace hinzuzufügen.",
     "switchFailed": "Workspace konnte nicht gewechselt werden. Bitte versuchen Sie es erneut.",
     "viewWorkspace": "Workspace anzeigen"
   },
@@ -5200,12 +5338,17 @@
       "accessDenied": "Sie haben keinen Zugriff auf diesen Workspace",
       "invalidFirebaseToken": "Authentifizierung fehlgeschlagen. Bitte versuchen Sie, sich erneut anzumelden.",
       "notAuthenticated": "Sie müssen angemeldet sein, um auf Workspaces zuzugreifen",
+      "ssoRequired": "Ihre Organisation erfordert Single Sign-On. Fahren Sie mit SSO fort, um sich anzumelden.",
       "tokenExchangeFailed": "Authentifizierung beim Workspace fehlgeschlagen: {error}",
       "workspaceNotFound": "Workspace nicht gefunden"
     },
     "initializationFailed": "Ihr Workspace konnte nicht geladen werden",
     "initializationFailedDetail": "Überprüfen Sie Ihre Verbindung und versuchen Sie es erneut.",
     "initializationFailedSignOutDetail": "Melden Sie sich ab und erneut an, um fortzufahren.",
+    "noWorkspaceAccess": {
+      "detail": "Bitten Sie Ihren Admin, Sie zu einem Workspace hinzuzufügen, und melden Sie sich dann erneut an.",
+      "title": "Sie haben keinen Zugriff auf einen Workspace"
+    },
     "retry": "Erneut versuchen"
   },
   "workspacePanel": {
@@ -5227,20 +5370,26 @@
     },
     "billingStatus": {
       "ending": {
-        "body": "Mitglieder behalten bis dahin vollen Zugriff. Setzen Sie Ihr Abonnement fort, um Ihre gemeinsamen Credits und Sitzplätze zu behalten.",
+        "body": "Ihnen werden keine weiteren Kosten berechnet. Mitglieder behalten bis dahin den vollständigen Zugriff. Setzen Sie Ihren Plan fort, um die gemeinsamen Credits Ihres Teams zu behalten.",
+        "contactSales": "Vertrieb kontaktieren",
         "enterpriseBody": "Mitglieder behalten bis dahin den vollen Zugriff. Wenden Sie sich an unser Vertriebsteam, um ihn zu verlängern.",
         "enterpriseTitle": "Ihr Enterprise-Plan endet am {date}",
-        "reactivate": "Abonnement fortsetzen",
-        "title": "Ihr Teamplan endet am {date}"
+        "memberBody": "Sie können bis dahin Workflows ausführen.",
+        "personalBody": "Ihnen werden keine weiteren Kosten berechnet. Setzen Sie Ihren Plan fort, um Ihre monatlichen Credits zu behalten.",
+        "personalTitle": "Ihr {plan}-Plan endet am {date}",
+        "reactivate": "Plan fortsetzen",
+        "title": "Ihr Team-Plan endet am {date}"
       },
       "outOfCredits": {
         "addCredits": "Credits hinzufügen",
-        "body": "Ihr Team hat alle Credits verbraucht. Fügen Sie weitere Credits hinzu, um weiter zu generieren, oder warten Sie, bis die Credits am {date} wieder aufgefüllt werden.",
-        "bodyNoDate": "Ihr Team hat alle Credits verbraucht. Fügen Sie weitere Credits hinzu, um weiter zu generieren.",
+        "body": "Ihr Team hat alle Credits aufgebraucht. Fügen Sie weitere Credits hinzu oder warten Sie, bis die Credits am {date} wieder aufgefüllt werden.",
+        "bodyNoDate": "Ihr Team hat alle Credits aufgebraucht. Fügen Sie weitere Credits hinzu.",
         "dismiss": "Schließen",
-        "memberBody": "Ihr Team hat alle Credits verbraucht. Ihre Workspace-Administratoren müssen weitere Credits hinzufügen, damit Sie weiter generieren können.",
-        "title": "Keine Credits mehr",
-        "upgradeBody": "Führen Sie ein Plan-Upgrade durch, um Credits hinzuzufügen und weiter zu generieren."
+        "memberBody": "Ihr Team hat alle Credits aufgebraucht. Bitten Sie den Workspace-Inhaber, weitere Credits hinzuzufügen, oder warten Sie, bis die Credits am {date} wieder aufgefüllt werden.",
+        "memberBodyNoDate": "Ihr Team hat alle Credits aufgebraucht. Bitten Sie den Workspace-Inhaber, weitere Credits hinzuzufügen.",
+        "personalBody": "Sie haben alle Ihre Credits aufgebraucht. Fügen Sie weitere Credits hinzu oder warten Sie, bis die Credits am {date} wieder aufgefüllt werden.",
+        "personalBodyNoDate": "Sie haben alle Ihre Credits aufgebraucht. Fügen Sie weitere Credits hinzu.",
+        "title": "Keine Credits mehr"
       },
       "paused": {
         "body": "Das Abonnement dieses Workspace ist pausiert. Aktualisieren Sie die Zahlungsmethode, um es fortzusetzen.",
@@ -5250,14 +5399,22 @@
       "payInvoice": "Rechnung bezahlen",
       "planChange": {
         "body": "Ihr aktueller Plan bleibt bis dahin aktiv.",
-        "title": "Ihr Plan wechselt am {date} zu {plan}"
+        "title": "Ihr Plan wechselt am {date} zu {plan}."
       },
-      "updatePayment": "Zahlungsmethode aktualisieren",
-      "warning": {
-        "bodyNoDate": "Ihre Zahlung konnte nicht verarbeitet werden. Aktualisieren Sie die Zahlungsmethode, um eine Unterbrechung zu vermeiden.",
-        "bodyWithAmount": "Ihre Zahlung über {amount} konnte nicht verarbeitet werden. Bezahlen Sie die Rechnung oder aktualisieren Sie die Zahlungsdaten, um eine Unterbrechung zu vermeiden.",
-        "title": "Zahlung fehlgeschlagen"
-      }
+      "planEnded": {
+        "enterpriseBody": "Kontaktieren Sie den Vertrieb, um einen neuen Enterprise-Plan zu starten.",
+        "enterpriseTitle": "Ihr Enterprise-Plan endete am {date}",
+        "personalBody": "Abonnieren Sie erneut, um Workflows auszuführen und wieder monatliche Credits zu erhalten.",
+        "personalTitle": "Ihr {plan}-Plan endete am {date}",
+        "personalTitleNoDate": "Ihr {plan}-Plan ist beendet",
+        "planTitle": "Ihr Plan endete am {date}",
+        "salesBody": "Kontaktieren Sie den Vertrieb, um einen neuen Plan zu starten.",
+        "salesMemberBody": "Bitten Sie den Workspace-Inhaber, den Vertrieb zu kontaktieren.",
+        "teamBody": "Abonnieren Sie erneut, um Workflows auszuführen und wieder gemeinsame Credits zu erhalten.",
+        "teamMemberBody": "Bitten Sie den Workspace-Inhaber, erneut zu abonnieren.",
+        "teamTitle": "Ihr Team-Plan endete am {date}"
+      },
+      "updatePayment": "Zahlungsmethode aktualisieren"
     },
     "changeRoleDialog": {
       "demoteConfirm": "Zum Mitglied herabstufen",
@@ -5328,6 +5485,11 @@
       "titleSingleSeat": "Ihr aktueller Tarif unterstützt nur einen Platz",
       "upgradeToTeam": "Auf Team upgraden"
     },
+    "invoices": {
+      "fullHistory": "Vollständiger Rechnungsverlauf",
+      "nextInvoice": "Nächste Rechnung",
+      "usd": "USD"
+    },
     "leaveDialog": {
       "leave": "Verlassen",
       "message": "Sie können nur erneut beitreten, wenn Sie den Workspace-Besitzer kontaktieren.",
@@ -5368,7 +5530,7 @@
       },
       "endedEnterpriseTitle": "Ihr Enterprise-Plan ist beendet",
       "endedPlanTitle": "Ihr Plan ist beendet",
-      "endedTeamTitle": "Ihr Team-Plan ist beendet",
+      "endedTeamTitle": "Ihr Team-Plan ist abgelaufen",
       "expiredOn": "Abgelaufen am {date}",
       "loadFailed": "Nicht alles auf dieser Seite konnte geladen werden.",
       "membersCount": "{count} von {maxSeats} Mitgliedern",
@@ -5378,6 +5540,7 @@
       "noMembers": "Keine Mitglieder",
       "noMembersMatch": "Keine Mitglieder entsprechen „{query}“",
       "pendingInvitesCount": "{count} ausstehende Einladung | {count} ausstehende Einladungen",
+      "planEndedFooter": "Ihr Plan ist abgelaufen, daher können Sie keine neuen Mitglieder hinzufügen.",
       "reactivateTeam": "Team reaktivieren",
       "resubscribe": "Erneut abonnieren",
       "searchPlaceholder": "Suchen...",
@@ -5396,6 +5559,7 @@
     "menu": {
       "creatorCannotLeave": "Der Ersteller des Workspace kann den von ihm erstellten Workspace nicht verlassen",
       "deleteWorkspace": "Workspace löschen",
+      "deleteWorkspaceAfterPlanEndsTooltip": "Sie können diesen Workspace löschen, nachdem Ihr Plan am {date} abläuft",
       "deleteWorkspaceDisabledTooltip": "Kündigen Sie zuerst das aktive Abonnement Ihres Workspace",
       "editWorkspace": "Workspace-Details bearbeiten",
       "leaveWorkspace": "Workspace verlassen"
@@ -5448,6 +5612,7 @@
     "planCredits": {
       "tabs": {
         "activity": "Aktivität",
+        "invoices": "Rechnungen",
         "overview": "Credits"
       }
     },
@@ -5496,6 +5661,7 @@
   "workspaceSwitcher": {
     "createWorkspace": "Arbeitsbereich erstellen",
     "failedToSwitch": "Arbeitsbereich konnte nicht gewechselt werden",
+    "managedByOrganization": "Ihre Organisation verwaltet Ihre Workspaces, daher können Sie keinen erstellen.",
     "maxWorkspacesReached": "Sie können nur 10 Arbeitsbereiche besitzen. Löschen Sie einen, um einen neuen zu erstellen.",
     "personal": "Persönlich",
     "roleMember": "Mitglied",
@@ -5509,6 +5675,7 @@
     "hideMinimap": "Minimap ausblenden",
     "label": "Zoom-Steuerung",
     "showMinimap": "Minimap anzeigen",
+    "zoomPercentage": "Zoom-Prozentsatz",
     "zoomToFit": "Zoom anpassen"
   }
 }

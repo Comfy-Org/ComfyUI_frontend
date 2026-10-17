@@ -2766,6 +2766,41 @@
       }
     }
   },
+  "CameraAngle": {
+    "description": "یک زاویهٔ دوربین پیرامون سوژه را با پیش‌نمایش سه‌بعدی انتخاب کنید. یک camera_info برای nodeهای سه‌بعدی و یک توضیح سادهٔ انگلیسی از نما برای پرامپت‌ها خروجی می‌دهد.",
+    "display_name": "ساخت پرامپت زاویهٔ دوربین",
+    "inputs": {
+      "horizontal_angle": {
+        "name": "horizontal_angle",
+        "tooltip": "زاویهٔ سمت پیرامون سوژه برحسب درجه. ۰ روبه‌رو، ۹۰ سمت راست و ۱۸۰ پشت سوژه است."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "تصویر مرجع اختیاری که در پیش‌نمایش سه‌بعدی روی جلوی مکعب سوژه نمایش داده می‌شود."
+      },
+      "vertical_angle": {
+        "name": "vertical_angle",
+        "tooltip": "ارتفاع برحسب درجه. مقدار منفی از پایین به بالا و مقدار مثبت از بالا به پایین نگاه می‌کند."
+      },
+      "view": {
+        "name": "view"
+      },
+      "zoom": {
+        "name": "zoom",
+        "tooltip": "زوم لنز روی سوژه: ۰ نمای باز و ۱۰ نمای نزدیک است. به camera_info.zoom منتقل می‌شود."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "1": {
+        "name": "prompt",
+        "tooltip": null
+      }
+    }
+  },
   "Canny": {
     "display_name": "Canny",
     "inputs": {
@@ -2900,6 +2935,27 @@
       "start_sigma": {
         "name": "start_sigma",
         "tooltip": "اولین سیگما که این گزینه‌ها اعمال می‌شوند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ClarityCrystalUpscaleNode": {
+    "description": "تصویری را با Crystal Upscaler هوش مصنوعی Clarity بزرگ‌نمایی کنید؛ بزرگ‌نمایی‌کننده‌ای با وفاداری بالا که به تصویر اصلی وفادار می‌ماند و چهره‌ها، پوست و بافت‌های ظریف را بازسازی می‌کند. حداکثر خروجی: ۱۰۰ مگاپیکسل.",
+    "display_name": "بزرگ‌نمایی Crystal هوش مصنوعی Clarity",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "مدل مورد استفاده."
+      },
+      "model_creativity": {
+        "name": "creativity"
+      },
+      "model_scale_factor": {
+        "name": "scale_factor"
       }
     },
     "outputs": {
@@ -4078,9 +4134,12 @@
     }
   },
   "CreateCameraInfo": {
-    "description": "ساخت camera_info. حالت 'orbit' با استفاده از yaw/pitch/distance به دور هدف می‌چرخد؛ حالت 'look_at' دوربین را در موقعیت جهانی قرار می‌دهد. مختصات در فضای جهانی بیننده (راست‌دست، محور Y رو به بالا) هستند.",
+    "description": "یک camera_info بسازید. حالت «orbit» با yaw/pitch/distance پیرامون هدف جهت‌گیری می‌کند؛ «look_at» دوربین را در موقعیت جهانی قرار می‌دهد. مختصات، فضای جهانی بیننده هستند (راست‌دست، محور Y رو به بالا).",
     "display_name": "ایجاد اطلاعات دوربین",
     "inputs": {
+      "camera_info_state": {
+        "name": "camera_info_state"
+      },
       "camera_type": {
         "name": "camera_type",
         "tooltip": "پروژکشن مورد استفاده توسط Render Splat: پرسپکتیو (کوتاه‌شدگی) یا اورتوگرافیک (موازی)."
@@ -4860,7 +4919,7 @@
       },
       "language_code": {
         "name": "language_code",
-        "tooltip": "کد زبان بر اساس ISO-639-1 یا ISO-639-3 (مثلاً 'en'، 'es'، 'fra'). برای شناسایی خودکار خالی بگذارید."
+        "tooltip": "کد زبان ISO 639-1 (برای نمونه، 'en'، 'es'، 'ja'). برای تشخیص خودکار، خالی بگذارید."
       },
       "model": {
         "name": "model",
@@ -4930,7 +4989,7 @@
       },
       "language_code": {
         "name": "language_code",
-        "tooltip": "کد زبان ISO-639-1 یا ISO-639-3 (مثلاً 'en'، 'es'، 'fra'). برای تشخیص خودکار خالی بگذارید."
+        "tooltip": "کد زبان ISO 639-1 (برای نمونه، 'en'، 'es'، 'ja'). برای تشخیص خودکار، خالی بگذارید."
       },
       "model": {
         "name": "model",
@@ -4938,15 +4997,6 @@
       },
       "model_similarity_boost": {
         "name": "similarity_boost"
-      },
-      "model_speed": {
-        "name": "speed"
-      },
-      "model_style": {
-        "name": "style"
-      },
-      "model_use_speaker_boost": {
-        "name": "use_speaker_boost"
       },
       "output_format": {
         "name": "output_format",
@@ -5834,6 +5884,52 @@
       },
       "width": {
         "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3ImageNode": {
+    "description": "با FLUX 3 از روی یک پرامپت تصویر تولید می‌کند، یا تا ۱۰ تصویر مرجع را ویرایش و ترکیب می‌کند. در پرامپت، به مراجع با عنوان image 1، image 2 و به همین ترتیب اشاره کنید.",
+    "display_name": "تصویر Flux 3",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "«auto» از نخستین تصویر مرجع پیروی می‌کند یا نسبتی را از پرامپت انتخاب می‌کند."
+      },
+      "bounding_boxes": {
+        "name": "bounding_boxes",
+        "tooltip": "کادرهای اختیاری از Create Bounding Boxes که اشیا یا متن را در خروجی قرار می‌دهند. موقعیت‌ها نسبت به بوم هستند؛ بنابراین نسبت ابعاد خروجی را به آن بدهید."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "grounding": {
+        "name": "grounding",
+        "tooltip": "اجازه دهید مدل پیش از تولید، پرامپت را با جست‌وجوی وب و تصویر بررسی کند."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "تصاویر مرجع اختیاری، در مجموع تا ۱۰ تصویر، که هرکدام دست‌کم 256x256 پیکسل باشند."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "آنچه باید تولید شود یا ویرایشی که باید انجام شود. پرامپت پیش از تولید تفسیر و گسترش می‌یابد."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "اندازهٔ خروجی با نسبت تصویر انتخاب‌شده: 0.75K حدود ۰٫۶ مگاپیکسل، 1K برابر ۱ MP، 1.5K برابر ۲٫۴ MP، 2K برابر ۴٫۲ MP و 4K برابر ۱۶٫۸ MP است."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "میزان تحمل تعدیل محتوا؛ ۰ سخت‌گیرانه‌ترین مقدار است."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed برای تعیین اینکه آیا node باید دوباره اجرا شود یا نه؛ FLUX 3 seed خود را انتخاب می‌کند، بنابراین نتایج واقعی صرف‌نظر از این مقدار غیرقطعی هستند."
       }
     },
     "outputs": {
@@ -6803,7 +6899,7 @@
   },
   "GeminiNanoBanana2V2": {
     "description": "تولید یا ویرایش تصاویر به صورت همزمان از طریق Google Vertex API.",
-    "display_name": "نانو بنانا ۲",
+    "display_name": "Nano Banana ۲.۱",
     "inputs": {
       "control_after_generate": {
         "name": "کنترل پس از تولید"
@@ -6853,7 +6949,7 @@
       },
       "2": {
         "name": "تصویر تفکر",
-        "tooltip": "اولین تصویر از فرایند تفکر مدل. فقط در صورت انتخاب سطح تفکر HIGH و حالت پاسخ IMAGE+TEXT در دسترس است."
+        "tooltip": "اولین تصویر از فرایند تفکر مدل. فقط با حالت IMAGE+TEXT در دسترس است."
       }
     }
   },
@@ -7434,7 +7530,7 @@
     "inputs": {
       "aspect_ratio": {
         "name": "نسبت ابعاد",
-        "tooltip": "نسبت ابعاد ویدیوی خروجی."
+        "tooltip": "نسبت ابعاد ویدیوی خروجی. هنگام ارائهٔ تصویر ورودی نادیده گرفته می‌شود؛ ویدیو از نسبت ابعاد تصویر پیروی می‌کند."
       },
       "control_after_generate": {
         "name": "کنترل پس از تولید"
@@ -7453,11 +7549,11 @@
       },
       "prompt": {
         "name": "راهنما",
-        "tooltip": "توضیح متنی ویدیوی موردنظر. هنگامی که یک تصویر ورودی ارائه شده باشد، برای grok-imagine-video-1.5 اختیاری است."
+        "tooltip": "توضیح متنیِ ویدیوی موردنظر. برای مدل‌های grok-imagine-video-1.5، هنگام ارائهٔ تصویر ورودی، اختیاری است."
       },
       "resolution": {
         "name": "وضوح",
-        "tooltip": "وضوح ویدیوی خروجی. 1080p فقط برای grok-imagine-video-1.5 در دسترس است."
+        "tooltip": "وضوح ویدیوی خروجی. ۱۰۸۰p برای grok-imagine-video در دسترس نیست."
       },
       "seed": {
         "name": "بذر",
@@ -10327,6 +10423,36 @@
       }
     }
   },
+  "KlingTryOnNode": {
+    "description": "یک مورد پوشاک را به تن یک شخص بپوشانید. نتیجه هم‌اندازهٔ تصویر شخص است و طولانی‌ترین ضلع آن حداکثر ۲۰۴۸px خواهد بود.",
+    "display_name": "پرو مجازی Kling",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "garment_image": {
+        "name": "garment_image",
+        "tooltip": "لباسی که باید پوشانده شود: عکس محصول، چیدمان تخت، مانکن یا عکسِ تنِ مدل. عکسِ تنِ مدل ممکن است باقی لباس‌های آن ست را نیز منتقل کند. فقط لباس پشتیبانی می‌شود؛ کفش، کیف و اکسسوری پشتیبانی نمی‌شوند."
+      },
+      "keep_pose": {
+        "name": "keep_pose",
+        "tooltip": "برای امکان تغییر ژست جهت نمایش بهتر لباس، آن را خاموش کنید."
+      },
+      "person_image": {
+        "name": "person_image",
+        "tooltip": "عکس یک نفر، ترجیحاً رو‌به‌رو یا در نمای سه‌رخ. تصاویر با ضلعی بیش از ۲۰۴۸px ابتدا کوچک‌سازی می‌شوند."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که آیا node باید دوباره اجرا شود یا نه؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingVideoNode": {
     "description": "تولید ویدیو با Kling V3. پشتیبانی از تبدیل متن به ویدیو و تصویر به ویدیو با امکان استفاده از استوری‌بورد چندپرومپتی و تولید صوت اختیاری.",
     "display_name": "Kling 3.0 ویدیو",
@@ -11285,11 +11411,19 @@
   "LatentApplyOperationCFG": {
     "display_name": "LatentApplyOperationCFG",
     "inputs": {
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "اعمال عملیات را در این سهم از زمان‌بندی نویززدایی مدل متوقف کنید. ۱ انتهای کار است."
+      },
       "model": {
         "name": "مدل"
       },
       "operation": {
         "name": "عملیات"
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "اعمال عملیات را از این سهم از زمان‌بندی نویززدایی مدل آغاز کنید. ۰ ابتدای کار است."
       }
     },
     "outputs": {
@@ -11524,6 +11658,24 @@
       },
       "samples": {
         "name": "نمونه‌ها"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LatentOperationBlend": {
+    "description": "کل latent را به‌سمت latent مرجع ترکیب می‌کند و در صورت نیاز، مرجع را با درون‌یابی نزدیک‌ترین همسایه تغییر اندازه می‌دهد.",
+    "display_name": "ترکیب عملیات latent",
+    "inputs": {
+      "reference": {
+        "name": "reference"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "۰، latent را بدون تغییر باقی می‌گذارد؛ ۱ با latent مرجعِ تغییراندازه‌یافته مطابقت دارد."
       }
     },
     "outputs": {
@@ -11933,6 +12085,80 @@
     "inputs": {
       "latent": {
         "name": "latent"
+      }
+    }
+  },
+  "LoadLoraModel": {
+    "description": "یک پشته از LoRAها را بر یک مدل انتشار اعمال کنید. برای هر LoRA یک ردیف اضافه کنید؛ هر ردیف یک فایل LoRA و قدرت آن را انتخاب می‌کند.",
+    "display_name": "بارگذاری LoRA (مدل)",
+    "inputs": {
+      "loras": {
+        "name": "loras",
+        "tooltip": "هر ردیف یک LoRA را به مدل اعمال می‌کند."
+      },
+      "loras_$add": {
+        "name": "افزودن LoRA"
+      },
+      "loras_$notice": {
+        "name": "LoRA"
+      },
+      "loras_0": {
+        "name": "LoRA #۱"
+      },
+      "loras_0_enabled": {
+        "name": "LoRA #۱ فعال است"
+      },
+      "loras_0_lora_name": {
+        "name": "LoRA #۱ lora_name"
+      },
+      "loras_0_strength": {
+        "name": "قدرت LoRA #۱"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "مدل انتشاری که LoRAها بر آن اعمال خواهند شد."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "مدل انتشارِ تغییر‌یافته."
+      }
+    }
+  },
+  "LoadLoraTextEncoder": {
+    "description": "یک پشته از LoRAها را روی یک رمزگذار متن CLIP اعمال کنید. برای هر LoRA یک ردیف اضافه کنید؛ هر ردیف یک فایل LoRA و شدت آن را انتخاب می‌کند.",
+    "display_name": "بارگذاری LoRA (رمزگذار متن)",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "رمزگذار متن CLIP که LoRAها روی آن اعمال خواهند شد."
+      },
+      "loras": {
+        "name": "loraها",
+        "tooltip": "هر ردیف یک LoRA را روی رمزگذار متن اعمال می‌کند."
+      },
+      "loras_$add": {
+        "name": "افزودن LoRA"
+      },
+      "loras_$notice": {
+        "name": "LoRA"
+      },
+      "loras_0": {
+        "name": "LoRA #۱"
+      },
+      "loras_0_enabled": {
+        "name": "LoRA #۱ فعال است"
+      },
+      "loras_0_lora_name": {
+        "name": "LoRA #۱ lora_name"
+      },
+      "loras_0_strength": {
+        "name": "شدت LoRA #۱"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "رمزگذار متن CLIP تغییر‌یافته."
       }
     }
   },
@@ -18481,7 +18707,7 @@
   "PrimitiveInt": {
     "display_name": "عدد صحیح",
     "inputs": {
-      "fixed": {
+      "control_after_generate": {
         "name": "کنترل پس از تولید"
       },
       "value": {
@@ -18632,7 +18858,7 @@
   },
   "QuiverImageToSVGNode": {
     "description": "بردارسازی یک تصویر شطرنجی به SVG با استفاده از Quiver AI.",
-    "display_name": "تبدیل تصویر Quiver به SVG",
+    "display_name": "تبدیل تصویر Quiver به SVG (قدیمی)",
     "inputs": {
       "auto_crop": {
         "name": "auto_crop",
@@ -18676,9 +18902,54 @@
       }
     }
   },
+  "QuiverImageToSVGNodeV2": {
+    "description": "یک تصویر شطرنجی را با استفاده از Quiver AI به SVG برداری تبدیل کنید.",
+    "display_name": "تبدیل تصویر Quiver به SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که برای برداری‌سازی SVG استفاده می‌شود."
+      },
+      "model_auto_crop": {
+        "name": "auto_crop"
+      },
+      "model_height": {
+        "name": "ارتفاع"
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "بذر"
+      },
+      "model_target_size": {
+        "name": "target_size"
+      },
+      "model_temperature": {
+        "name": "دما"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QuiverTextToSVGNode": {
     "description": "تولید یک SVG از طریق پرامپت متنی با استفاده از Quiver AI.",
-    "display_name": "تبدیل متن Quiver به SVG",
+    "display_name": "تبدیل متن Quiver به SVG (قدیمی)",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -18715,6 +18986,51 @@
       "seed": {
         "name": "seed",
         "tooltip": "Seed برای تعیین اجرای مجدد node؛ نتایج واقعی صرف‌نظر از seed غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QuiverTextToSVGNodeV2": {
+    "description": "با استفاده از Quiver AI از یک پرامپت متنی SVG تولید کنید.",
+    "display_name": "تبدیل متن Quiver به SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که برای تولید SVG استفاده می‌شود."
+      },
+      "model_height": {
+        "name": "ارتفاع"
+      },
+      "model_instructions": {
+        "name": "دستورالعمل‌ها"
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "بذر"
+      },
+      "model_temperature": {
+        "name": "دما"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "عرض"
       }
     },
     "outputs": {
@@ -22372,7 +22688,7 @@
   "SeedNode": {
     "display_name": "بذر",
     "inputs": {
-      "fixed": {
+      "control_after_generate": {
         "name": "کنترل پس از تولید"
       },
       "seed": {
@@ -27514,6 +27830,79 @@
       },
       "seed": {
         "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ImageToVideoNode": {
+    "description": "از یک فریم آغازین و یک پرامپت اختیاری ویدیو تولید می‌کند. خروجی نسبت ابعاد تصویر ورودی را حفظ می‌کند.",
+    "display_name": "تولید ویدیو از تصویر Vidu Q4",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "image": {
+        "name": "تصویر",
+        "tooltip": "فریم آغازین ویدیوی تولیدشده. نسبت ابعاد باید بین ۱:۵ و ۵:۱ باشد."
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که برای تولید ویدیو استفاده می‌شود."
+      },
+      "model_audio": {
+        "name": "صدا"
+      },
+      "model_duration": {
+        "name": "مدت"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_resolution": {
+        "name": "تفکیک‌پذیری"
+      },
+      "model_seed": {
+        "name": "بذر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ReferenceVideoNode": {
+    "description": "از تصاویر مرجع، صدای مرجع اختیاری و یک پرامپت ویدیو تولید می‌کند.",
+    "display_name": "تولید ویدیو از مرجع Vidu Q4",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که برای تولید ویدیو استفاده می‌شود."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_audio": {
+        "name": "صدا"
+      },
+      "model_duration": {
+        "name": "مدت"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_resolution": {
+        "name": "تفکیک‌پذیری"
+      },
+      "model_seed": {
+        "name": "بذر"
       }
     },
     "outputs": {
