@@ -2,7 +2,6 @@ import { toLightThemeNodeColor } from '@/renderer/extensions/vueNodes/utils/node
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
-import { adjustColor } from '@/utils/colorUtil'
 
 import { MinimapDataSource } from './data/MinimapDataSource'
 import type {
@@ -32,11 +31,11 @@ function readMinimapColors(isLightTheme: boolean, activityOutline: string) {
   const primary = resolveThemeColor('primary')
   const mutedForeground = resolveThemeColor('muted-foreground')
   return {
-    nodeColor: adjustColor(primary, { opacity: 0.6 }),
+    nodeColor: `color-mix(in srgb, ${primary} 60%, transparent)`,
     nodeColorDefault: resolveThemeColor('muted'),
     linkColor: mutedForeground,
     slotColor: mutedForeground,
-    groupColor: adjustColor(primary, { opacity: 0.4 }),
+    groupColor: `color-mix(in srgb, ${primary} 40%, transparent)`,
     groupColorDefault: mutedForeground,
     bypassColor: BYPASS_COLOR,
     errorColor: '#FF0000',
@@ -87,9 +86,6 @@ function getNodeColor(
   return colors.nodeColor
 }
 
-/**
- * Render groups on the minimap
- */
 function renderGroups(
   ctx: CanvasRenderingContext2D,
   dataSource: MinimapDataSource,
@@ -113,7 +109,7 @@ function renderGroups(
       color = group.color ?? colors.groupColorDefault
 
       if (colors.isLightTheme) {
-        color = adjustColor(color, { opacity: 0.5 })
+        color = `color-mix(in srgb, ${color} 50%, transparent)`
       }
     }
 
