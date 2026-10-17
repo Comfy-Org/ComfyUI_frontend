@@ -55,7 +55,7 @@ test.describe('Agent bound-canvas read path', { tag: '@cloud' }, () => {
     agentPanel,
     comfyPage,
     postedMessages,
-    getWebSocket
+    getAgentSocket
   }) => {
     test.setTimeout(45_000)
 
@@ -67,7 +67,7 @@ test.describe('Agent bound-canvas read path', { tag: '@cloud' }, () => {
 
     await agentPanel.open()
     const userBubbles = agentPanel.root.getByTestId('user-message-bubble')
-    const ws = await getWebSocket()
+    const ws = await getAgentSocket()
 
     // Turn 1: unbound temporary tab. The 202 ack binds the tab to
     // BOUND_WORKFLOW_ID (AgentPanelRoot.onWorkflowAdopted).
@@ -132,7 +132,7 @@ test.describe('Agent bound-canvas read path', { tag: '@cloud' }, () => {
     agentPanel,
     comfyPage,
     postedMessages,
-    getWebSocket
+    getAgentSocket
   }) => {
     test.setTimeout(45_000)
 
@@ -141,7 +141,7 @@ test.describe('Agent bound-canvas read path', { tag: '@cloud' }, () => {
 
     await agentPanel.open()
     const userBubbles = agentPanel.root.getByTestId('user-message-bubble')
-    const ws = await getWebSocket()
+    const ws = await getAgentSocket()
 
     await agentPanel.composer.fill(FIRST_PROMPT)
     await agentPanel.sendButton.click()
