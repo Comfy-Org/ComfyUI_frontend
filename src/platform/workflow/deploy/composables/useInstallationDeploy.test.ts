@@ -218,7 +218,21 @@ describe(useInstallationDeploy, () => {
           { error: 'invalid_body', message: 'name too long' },
           { status: 400 }
         ),
-      message: 'deployToComfyApi.bundleUnavailable',
+      message: 'deployToComfyApi.bundleRejected',
+      reported: true
+    },
+    {
+      when: 'the stored API key is malformed',
+      response: () =>
+        Response.json({ error: 'invalid_api_key_format' }, { status: 400 }),
+      message: 'deployToComfyApi.bundleUnauthorized',
+      reported: false
+    },
+    {
+      when: 'the server answers with an unknown error code',
+      response: () =>
+        Response.json({ error: 'something_new' }, { status: 400 }),
+      message: 'deployToComfyApi.bundleRejected',
       reported: true
     },
     {
