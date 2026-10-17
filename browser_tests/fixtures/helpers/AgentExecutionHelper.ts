@@ -8,6 +8,8 @@ import { AssetsHelper, createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
 import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
 
 const PROMPT_ROUTE_PATTERN = /\/api\/prompt$/
+const JOB_CANCEL_ROUTE_PATTERN =
+  /\/api\/(?:interrupt|jobs\/(?:[^/]+\/)?cancel)$/
 
 /**
  * Queue and execution surface for the black-box agent harness.
@@ -22,6 +24,7 @@ export class AgentExecutionHelper {
   > = {}
   private readonly assets: AssetsHelper
   private readonly submitted: unknown[] = []
+  private readonly jobCancels: string[] = []
   private jobCounter = 0
 
   constructor(
@@ -33,6 +36,10 @@ export class AgentExecutionHelper {
 
   async install(): Promise<void> {
     await mockViewFiles(this.page, this.viewFiles)
+    await this.page.route(JOB_CANCEL_ROUTE_PATTERN, (route) => {
+      this.jobCancels.push(new URL(route.request().url()).pathname)
+      return route.fulfill({ status: 200, body: '' })
+    })
     await this.assets.mockOutputHistory([])
     await this.page.route(PROMPT_ROUTE_PATTERN, async (route) => {
       if (route.request().method() !== 'POST') return route.fallback()
@@ -61,6 +68,11 @@ export class AgentExecutionHelper {
 
   submittedPrompts(): readonly unknown[] {
     return this.submitted
+  }
+
+  /** Paths of job interrupt or cancel requests, in request order. */
+  jobCancelRequests(): readonly string[] {
+    return this.jobCancels
   }
 
   lastSubmittedJobId(): string {
