@@ -3,6 +3,8 @@ import type { APIRoute, APIContext, GetStaticPaths } from 'astro'
 import { workshopPages } from '@/config/workshop-page-content'
 import { prepareModelPage } from './model-page'
 import { catalogDetailPath } from '@/lib/cms/detail-route'
+import { isCatalogLocale } from '@/config/catalog-locales'
+import type { CatalogLocale } from '@/config/catalog-locales'
 import {
   cmsEnabled,
   loadSiteCatalog,
@@ -36,17 +38,12 @@ export const GET: APIRoute = async ({ params, locals, url }) => {
 function detailRequest(
   url: URL,
   locals: APIContext['locals']
-): Response | { target: string | null; locale: 'en' | 'zh-CN' } {
+): Response | { target: string | null; locale: CatalogLocale } {
   const target = url.searchParams.get('path')
   const requestedLocale = url.searchParams.get('locale')
-  if (
-    requestedLocale !== null &&
-    requestedLocale !== 'en' &&
-    requestedLocale !== 'zh-CN'
-  )
+  if (requestedLocale !== null && !isCatalogLocale(requestedLocale))
     return new Response('Invalid content locale', { status: 400 })
-  const locale =
-    requestedLocale ?? (locals.catalogLocale === 'zh-CN' ? 'zh-CN' : 'en')
+  const locale = requestedLocale ?? locals.catalogLocale ?? 'en'
   if (target && !catalogDetailPath(target))
     return new Response('Invalid content route', { status: 400 })
   return { target, locale }
@@ -58,7 +55,7 @@ type DetailCatalog = Extract<
 async function detailResponse(
   slug: string | undefined,
   locals: APIContext['locals'],
-  locale: 'en' | 'zh-CN',
+  locale: CatalogLocale,
   catalog?: DetailCatalog
 ) {
   const selected = catalog?.details[0]

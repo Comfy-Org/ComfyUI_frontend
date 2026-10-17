@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import {
+  catalogLocalePrefix,
+  withCatalogLocalePrefix
+} from '@/config/catalog-locales'
 import { isPlainPrimaryClick } from '@/lib/workshop/navigation-intent'
 import {
   computed,
@@ -54,8 +58,7 @@ provide(catalogDetailNavigation, (event, model) => {
   const target = new URL(model.href, location.href)
   if (target.origin !== location.origin || !catalogDetailPath(target.pathname))
     return
-  if (locale === 'zh-CN' && !target.pathname.startsWith('/zh-CN/'))
-    target.pathname = '/zh-CN' + target.pathname
+  target.pathname = withCatalogLocalePrefix(target.pathname, locale)
   event.preventDefault()
   event.stopPropagation()
   activePreview.value = model
@@ -88,7 +91,7 @@ const routerPage = computed(() => {
     : undefined
 })
 const browsePath = computed(() => {
-  const prefix = locale === 'zh-CN' ? '/zh-CN' : ''
+  const prefix = catalogLocalePrefix(locale)
   return `${prefix}/hub/${activePath.value.includes('/workflows/') ? 'workflows' : 'models'}/`
 })
 let request: AbortController | undefined

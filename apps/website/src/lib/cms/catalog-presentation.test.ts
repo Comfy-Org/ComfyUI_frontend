@@ -553,6 +553,54 @@ describe('native CONTENT presentation', () => {
       fields: ['$.title', '$.description']
     })
   })
+  it('shows a reviewed Japanese translation in LIVE and falls back per field', () => {
+    const japanese = {
+      ...record,
+      data: {
+        ...record.data,
+        tags: ['image'],
+        translations: {
+          'zh-CN': { title: '本地标题', review_state: 'machine' },
+          ja: {
+            title: '画像から動画へ',
+            tags: ['画像'],
+            faq: [{ question: '使い方は？', answer: '説明に従ってください。' }],
+            review_state: 'reviewed'
+          }
+        }
+      }
+    }
+    const view = catalogPresentation(japanese, 'ja', false)
+    expect(view).toMatchObject({
+      name: '画像から動画へ',
+      summary: 'Source description',
+      capabilities: ['画像']
+    })
+    expect(JSON.stringify(view)).toContain('使い方は？')
+    expect(catalogLanguageFallback(japanese, 'ja', false)).toEqual({
+      source: 'en',
+      fields: ['$.description']
+    })
+    expect(catalogPresentation(japanese, 'en', false)).toMatchObject({
+      name: 'Source title',
+      capabilities: ['image']
+    })
+  })
+  it('keeps machine Japanese out of LIVE but shows it in Draft preview', () => {
+    const machine = {
+      ...record,
+      data: {
+        ...record.data,
+        translations: { ja: { title: '機械翻訳', review_state: 'machine' } }
+      }
+    }
+    expect(catalogPresentation(machine, 'ja', false)).toMatchObject({
+      name: 'Source title'
+    })
+    expect(catalogPresentation(machine, 'ja', true)).toMatchObject({
+      name: '機械翻訳'
+    })
+  })
   it('keeps legacy projection values unchanged until their conversion is complete', () => {
     const legacy = { ...record, data: { type: 'CLOUD', name: 'Legacy' } }
     expect(catalogPresentation(legacy)).toBe(legacy.data)

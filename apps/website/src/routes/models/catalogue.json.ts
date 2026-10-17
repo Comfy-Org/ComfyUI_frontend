@@ -3,6 +3,7 @@ import type { APIContext } from 'astro'
 import { workshopPages } from '@/config/workshop-page-content'
 import { cmsEnabled, catalogUnavailable } from '@/lib/cms/catalog'
 import { loadSiteCatalogList } from '@/lib/cms/catalog-list'
+import { isCatalogLocale } from '@/config/catalog-locales'
 
 export async function GET(context?: APIContext) {
   return cmsEnabled()
@@ -12,7 +13,7 @@ export async function GET(context?: APIContext) {
 function listRequest(context?: APIContext) {
   const params = context?.url.searchParams ?? new URLSearchParams()
   const locale = params.get('format') === 'page' ? params.get('locale') : null
-  if (locale && locale !== 'en' && locale !== 'zh-CN')
+  if (locale && !isCatalogLocale(locale))
     return new Response('Invalid catalog locale', { status: 400 })
   const requested = params.get('section')
   const section =

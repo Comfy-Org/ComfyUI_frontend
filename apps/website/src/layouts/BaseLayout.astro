@@ -41,6 +41,7 @@ import {
 } from '@/utils/jsonLd'
 import type { Crumb, JsonLdNode, WebPageType } from '@/utils/jsonLd'
 import JsonLdGraph from '@/components/common/JsonLdGraph.astro'
+import { cmsEnabled } from '@/lib/cms/cms-enabled'
 
 type PPFormulaFace =
   'Light' | 'Regular' | 'Medium' | 'Semibold' | 'Bold' | 'NarrowSemibold'
@@ -103,9 +104,17 @@ const head = headIndexing({
   pageNoindex: shouldNoindex,
   indexableBuild: isIndexableBuild()
 })
-const languageAlternates = localeAlternates(canonicalURL.pathname)
+const alternateOptions = { localizedHub: cmsEnabled() }
+const languageAlternates = localeAlternates(
+  canonicalURL.pathname,
+  alternateOptions
+)
 const alternates = head.emitAlternates
-  ? hreflangAlternates(canonicalURL.pathname, canonicalURL.origin)
+  ? hreflangAlternates(
+      canonicalURL.pathname,
+      canonicalURL.origin,
+      alternateOptions
+    )
   : []
 const openGraphLocale = ogLocale(locale)
 const openGraphLocaleAlternates = ogLocaleAlternates(locale, alternates)

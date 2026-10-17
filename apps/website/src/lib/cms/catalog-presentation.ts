@@ -2,6 +2,7 @@ import type { ContentCatalogRecord } from '@comfyorg/ingest-types'
 import { jsonObject } from './editor-document'
 import type { Document } from './editor-document'
 import { translationsFor } from '@/i18n/translations'
+import { resolveLocale } from '@/config/locales'
 import { USE_CASES } from '@/config/models-catalogue'
 import {
   workflowCatalogDetailsSchema,
@@ -90,7 +91,7 @@ function authorDetails(d: Document, locale: string) {
   const name = matches ? trimmedText(resolved.name) : undefined
   const unavailable =
     typeof d.author_uid === 'string' && d.author_uid.trim()
-      ? translationsFor(locale === 'zh-CN' ? 'zh-CN' : 'en').t(
+      ? translationsFor(resolveLocale(locale)).t(
           'cccWorkflow.authorUnavailable'
         )
       : undefined
@@ -206,9 +207,7 @@ function modelLinkName(
       : (label?.title ?? resource?.data.title)
   return typeof name === 'string' && name.trim()
     ? name.trim()
-    : translationsFor(locale === 'zh-CN' ? 'zh-CN' : 'en').t(
-        'cccWorkflow.modelUnavailable'
-      )
+    : translationsFor(resolveLocale(locale)).t('cccWorkflow.modelUnavailable')
 }
 
 function modelLinkHref(
@@ -284,7 +283,7 @@ function workflowDetails(
 ) {
   const urls = objectPresentation(d.website_media)
   return workflowCatalogDetailsSchema.safeParse({
-    locale: ['en', 'zh-CN', 'ja'].includes(locale) ? locale : 'en',
+    locale: resolveLocale(locale),
     cloudShareURL: validURL(d.cloud_share_url, validCloudShareURL),
     documentationURL: validURL(d.documentation_url, validDocumentationURL),
     apiWorkflowFile: workflowVersionFile(d, urls, 'api'),
@@ -491,7 +490,11 @@ export function catalogPresentation(
     summary: displayText(d, local, 'description'),
     href: `${record.slug}/`,
     workflowCount: preserved.workflowCount ?? 0,
-    capabilities: Array.isArray(d.tags) ? d.tags : [],
+    capabilities: Array.isArray(local.tags)
+      ? local.tags
+      : Array.isArray(d.tags)
+        ? d.tags
+        : [],
     ...catalogUseCases(d),
     ...(typeof d.provider === 'string' ? { provider: d.provider } : {}),
     ...contentPresentation(record, d, preserved, details)

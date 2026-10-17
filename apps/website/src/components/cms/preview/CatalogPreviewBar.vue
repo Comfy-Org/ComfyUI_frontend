@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import {
+  CATALOG_LOCALE_OPTIONS,
+  catalogLocaleBadge
+} from '@/config/catalog-locales'
 import CatalogPreviewView from './CatalogPreviewView.vue'
 import { computed, onBeforeUnmount, ref, useTemplateRef, watch } from 'vue'
 import { Globe, LayoutDashboard, List, X } from '@lucide/vue'
@@ -29,10 +33,7 @@ const {
   busy = false,
   error,
   locale = 'en',
-  languages = [
-    { code: 'en', label: 'English' },
-    { code: 'zh-CN', label: '中文' }
-  ]
+  languages = [...CATALOG_LOCALE_OPTIONS]
 } = defineProps<{
   active: boolean
   view?: 'DRAFT' | 'LIVE'
@@ -54,7 +55,7 @@ const emit = defineEmits<{
 const t = computed(() => translationsFor(locale).t)
 const visible = computed(() => active && (view === 'DRAFT' || Boolean(now)))
 const draft = computed(() => view === 'DRAFT')
-const languageCode = computed(() => (locale === 'zh-CN' ? '中' : 'EN'))
+const languageCode = computed(() => catalogLocaleBadge(locale))
 const changesOpen = ref(false)
 const languagesOpen = ref(false)
 const bar = useTemplateRef<HTMLElement>('bar')

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { withCatalogLocalePrefix } from '@/config/catalog-locales'
 import { isPlainPrimaryClick } from '@/lib/workshop/navigation-intent'
 import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue'
 
@@ -77,18 +78,15 @@ const labels = {
 } as const
 const routes = getRoutes(locale)
 const hrefs = {
-  models:
-    localeLinks && locale === 'zh-CN'
-      ? `/zh-CN${routes.workshop}`
-      : routes.workshop,
-  workflows:
-    localeLinks && locale === 'zh-CN'
-      ? `/zh-CN${routes.hubWorkflows}`
-      : routes.hubWorkflows,
-  apps:
-    localeLinks && locale === 'zh-CN'
-      ? `/zh-CN${routes.hubApps}`
-      : routes.hubApps
+  models: localeLinks
+    ? withCatalogLocalePrefix(routes.workshop, locale)
+    : routes.workshop,
+  workflows: localeLinks
+    ? withCatalogLocalePrefix(routes.hubWorkflows, locale)
+    : routes.hubWorkflows,
+  apps: localeLinks
+    ? withCatalogLocalePrefix(routes.hubApps, locale)
+    : routes.hubApps
 } as const satisfies Record<CatalogueTab, string>
 const markerStyle = computed(() => ({
   transform: `translateX(${tabs.indexOf(active.value) * 100}%)`,

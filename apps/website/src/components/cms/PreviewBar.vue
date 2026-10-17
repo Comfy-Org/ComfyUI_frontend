@@ -1,4 +1,10 @@
 <script setup lang="ts">
+import {
+  CATALOG_LOCALE_OPTIONS,
+  catalogLocaleBadge,
+  catalogLocaleFromPath,
+  catalogLocalePrefix
+} from '@/config/catalog-locales'
 import { Globe, LayoutDashboard, List, Pencil, X } from '@lucide/vue'
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue'
@@ -60,12 +66,16 @@ const launches = computed(() =>
       : []
   )
 )
-const basePath = pathname.replace(/^\/zh-CN(?=\/)/, '')
-const languages = [
-  { code: 'en', label: 'English', href: basePath },
-  { code: 'zh-CN', label: '中文', href: `/zh-CN${basePath}` }
-]
-const languageCode = locale === 'zh-CN' ? '中' : 'EN'
+const current = catalogLocaleFromPath(pathname)
+const basePath = current
+  ? pathname.slice(catalogLocalePrefix(current).length) || '/'
+  : pathname
+const languages = CATALOG_LOCALE_OPTIONS.map(({ code, label }) => ({
+  code,
+  label,
+  href: `${catalogLocalePrefix(code)}${basePath}`
+}))
+const languageCode = catalogLocaleBadge(locale)
 const views = [
   { value: 'DRAFT', label: t('cmsAdmin.preview.draftTab') },
   { value: 'LIVE', label: t('cmsAdmin.preview.liveTab') }
