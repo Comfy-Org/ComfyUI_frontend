@@ -1,3 +1,4 @@
+import type { GetFeaturesResponse } from '@comfyorg/ingest-types'
 import { computed, reactive, readonly, watchEffect } from 'vue'
 import type { Ref } from 'vue'
 
@@ -131,7 +132,9 @@ export function useFeatureFlags() {
       return api.getServerFeature(ServerFeatureFlag.SUPPORTS_PREVIEW_METADATA)
     },
     get maxUploadSize() {
-      return api.getServerFeature(ServerFeatureFlag.MAX_UPLOAD_SIZE)
+      return api.getServerFeature<GetFeaturesResponse['max_upload_size']>(
+        ServerFeatureFlag.MAX_UPLOAD_SIZE
+      )
     },
     get supportsManagerV4() {
       return api.getServerFeature(ServerFeatureFlag.MANAGER_SUPPORTS_V4)

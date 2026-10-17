@@ -4,39 +4,7 @@
   "description": "Global dialog state, stacking, focus, dismissal guards, confirmation and prompt dialogs, and extension dialog dispatch. Feature-specific dialog contents remain with their owning modules.",
   "modules": [
     {
-      "path": "src/services/dialogServiceTypes.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/components/dialog/bodyPointerEventsRestore.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/dialog/confirm/ConfirmBody.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/dialog/confirm/confirmDialog.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/dialog/confirm/confirmDialog.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/dialog/confirm/ConfirmFooter.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/dialog/confirm/ConfirmHeader.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/dialog/content/ConfirmationDialogContent.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/dialog/content/ConfirmationDialogContent.vue",
+      "path": "src/components/dialog/**",
       "role": "presentation"
     },
     {
@@ -44,51 +12,7 @@
       "role": "domain"
     },
     {
-      "path": "src/components/dialog/content/error/FindIssueButton.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/dialog/content/ErrorDialogContent.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/dialog/content/PromptDialogContent.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/dialog/content/PromptDialogContent.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/dialog/GlobalDialog.menu.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/dialog/GlobalDialog.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/dialog/GlobalDialog.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/dialog/dialogDismissGuards.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/dialog/vRekaZIndex.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/stores/dialogStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/dialogStore.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/services/dialogService.ts",
+      "path": "src/services/__mocks__/dialogService.ts",
       "role": "application"
     },
     {
@@ -104,12 +28,24 @@
       "role": "application"
     },
     {
-      "path": "src/services/__mocks__/dialogService.ts",
+      "path": "src/services/dialogService.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/services/dialogServiceTypes.ts",
       "role": "application"
     },
     {
       "path": "src/services/extensionDialogService.ts",
       "role": "integration"
+    },
+    {
+      "path": "src/stores/dialogStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/dialogStore.ts",
+      "role": "application"
     }
   ],
   "publicEntryPoints": [],

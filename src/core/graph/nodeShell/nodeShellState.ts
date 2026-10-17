@@ -1,3 +1,7 @@
+import type {
+  LGraph,
+  LGraphNode
+} from '@/lib/litegraph/src/types/entityRegistry'
 import { shallowReactive } from 'vue'
 
 import { assert } from '@/base/assert'
@@ -15,8 +19,7 @@ import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@/lib/litegraph/src/types/slots'
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+
 import type { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import type { NodeState } from '@/types/nodeState'
 

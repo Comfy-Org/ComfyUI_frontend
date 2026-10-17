@@ -589,5 +589,9 @@
       "reconciliation_needed": "That change needs a look from support before it completes.",
       "superseded": "Your workspace changed while we were working. Please try again."
     }
+  },
+  "desktopTopupReturn": {
+    "title": "Return to ComfyUI Desktop",
+    "body": "Your balance updates in the app once the payment is confirmed. If you canceled, nothing was charged."
   }
 }
