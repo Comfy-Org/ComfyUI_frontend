@@ -23,7 +23,7 @@ describe('apiTransport.send', () => {
 
   it('reports failure instead of throwing while the socket is still CONNECTING', () => {
     const send = vi.fn()
-    api.socket = fromPartial<WebSocket>({
+    api.socket = fromPartial({
       readyState: WebSocket.CONNECTING,
       send
     })
@@ -33,7 +33,7 @@ describe('apiTransport.send', () => {
 
   it('sends and reports success once the socket is OPEN', () => {
     const send = vi.fn()
-    api.socket = fromPartial<WebSocket>({ readyState: WebSocket.OPEN, send })
+    api.socket = fromPartial({ readyState: WebSocket.OPEN, send })
     expect(apiTransport.send('frame')).toBe(true)
     expect(send).toHaveBeenCalledWith('frame')
   })
@@ -44,7 +44,7 @@ describe('createLoggedTransport.send', () => {
 
   beforeEach(() => {
     clearDevEvents()
-    api.socket = fromPartial<WebSocket>({
+    api.socket = fromPartial({
       readyState: WebSocket.OPEN,
       send: vi.fn()
     })

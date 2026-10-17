@@ -177,7 +177,7 @@ function dispatchOpsResult(detail: unknown): void {
 }
 
 beforeEach(() => {
-  api.socket = fromPartial<WebSocket>({ readyState: 1, send: vi.fn() })
+  api.socket = fromPartial({ readyState: 1, send: vi.fn() })
   useAgentPanelStore().enabled = true
   bridgeState.current = null
   bridgeState.transport.up = true

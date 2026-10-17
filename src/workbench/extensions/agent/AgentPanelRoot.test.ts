@@ -272,7 +272,7 @@ function syncFakeSelection() {
 }
 
 beforeEach(() => {
-  api.socket = fromPartial<WebSocket>({ readyState: 1, send: socketSend })
+  api.socket = fromPartial({ readyState: 1, send: socketSend })
   vi.mocked(api.fetchApi).mockImplementation((route, options) =>
     fetch(route.startsWith('/api') ? route : `/api${route}`, options)
   )

@@ -242,7 +242,7 @@ function dispatchFrame(type: string, detail: unknown): void {
 
 describe('useAgentCrdtFollower', () => {
   beforeEach(() => {
-    api.socket = fromPartial<WebSocket>({ readyState: 1, send: vi.fn() })
+    api.socket = fromPartial({ readyState: 1, send: vi.fn() })
     useAgentPanelStore().enabled = true
     sessionStorage.clear()
     bridgeState.current = null
