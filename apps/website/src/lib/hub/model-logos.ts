@@ -43,6 +43,8 @@ const MODEL_TO_LOGO: Record<string, string> = {
   Sonilo: 'sonilo'
 }
 
+export const COMFY_LOGO_PATH = '/icons/logomark.svg'
+
 function escapeRegex(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }

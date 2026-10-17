@@ -26,8 +26,10 @@ import {
   useWorkshopAppsEnabled,
   useWorkshopAuthFlag,
   useWorkshopEnabled,
+  useWorkshopFlag,
   useWorkshopWorkflowsEnabled
 } from '@/scripts/posthog.ts'
+import { HUB_HOME_FLAG } from '@/lib/workshop/hub-section.ts'
 import { isWorkshopModelShown } from '@/scripts/workshop-model-flags.ts'
 import type { HubApp, HubSections } from '@/data/mainNavigation.ts'
 import GitHubStarBadge from '@/components/common/GitHubStarBadge.vue'
@@ -57,9 +59,11 @@ const showWorkshop = computed(
 )
 const workflowsEnabled = useWorkshopWorkflowsEnabled()
 const appsEnabled = useWorkshopAppsEnabled()
+const hubHomeEnabled = useWorkshopFlag(HUB_HOME_FLAG)
 const hubSections = computed<HubSections>(() => ({
   workflows: showWorkshop.value && workflowsEnabled.value,
   apps: showWorkshop.value && appsEnabled.value,
+  explore: mounted.value && hubHomeEnabled.value,
   reshoot:
     showWorkshop.value &&
     appsEnabled.value &&

@@ -4,10 +4,12 @@ import { describe, expect, it } from 'vitest'
 
 import HeaderMainMobile from './HeaderMainMobile.vue'
 
-async function openMenu() {
+async function openMenu(explore = false) {
   const user = userEvent.setup()
   render(HeaderMainMobile, {
-    props: { hubSections: { workflows: true, apps: true, reshoot: true } }
+    props: {
+      hubSections: { workflows: true, apps: true, reshoot: true, explore }
+    }
   })
   await user.click(screen.getByRole('button', { name: 'Toggle menu' }))
   return user
@@ -109,5 +111,23 @@ describe('HeaderMainMobile', () => {
         (label) => screen.getByRole('link', { name: label }).textContent
       )
     ).toEqual(enterpriseLinks)
+  })
+})
+
+describe('HeaderMainMobile: the way into the Hub home', () => {
+  it('offers the way in once the flag opens the Hub home', async () => {
+    const user = await openMenu(true)
+    await user.click(screen.getByRole('button', { name: /^Hub\b/ }))
+
+    expect(screen.getByTestId('nav-explore-link').getAttribute('href')).toBe(
+      '/hub/'
+    )
+  })
+
+  it('leaves the way in out while the flag is closed', async () => {
+    const user = await openMenu()
+    await user.click(screen.getByRole('button', { name: /^Hub\b/ }))
+
+    expect(screen.queryByTestId('nav-explore-link')).toBeNull()
   })
 })

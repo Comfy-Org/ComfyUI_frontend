@@ -60,6 +60,7 @@ const baseRoutes = {
   nanoBanana: '/nano-banana/',
   brand: '/brand/',
   // The hub catalogue. `workshop` keeps its old name.
+  hubExplore: '/hub/',
   workshop: '/hub/models/',
   hubWorkflows: '/hub/workflows/',
   hubApps: '/hub/apps/',
@@ -93,7 +94,8 @@ type Routes = Readonly<Record<RouteKey, string>>
 // form, so no localized variant exists. See the comment header in
 // src/pages/minimax/license/professional-request.astro.
 //
-// workshop, hubWorkflows, hubApps, workshopSignIn, cinematicStudio, reshoot:
+// hubExplore, workshop, hubWorkflows, hubApps, workshopSignIn, cinematicStudio,
+// reshoot:
 // English only. Every locale links the one catalogue.
 //
 // customerVideoBlackMath / customerVideoSilversideAi: dedicated watch pages
@@ -111,6 +113,7 @@ const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
   'enterpriseMsa',
   'models',
   'minimaxLicenseProfessionalRequest',
+  'hubExplore',
   'workshop',
   'hubWorkflows',
   'hubApps',
