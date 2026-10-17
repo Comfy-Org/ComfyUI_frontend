@@ -51,6 +51,7 @@
         <p
           v-if="getInlineMessage(error)"
           class="m-0 max-h-[4lh] overflow-y-auto px-0.5 text-xs/relaxed wrap-break-word whitespace-pre-wrap"
+          data-testid="error-card-message"
         >
           {{ getInlineMessage(error) }}
         </p>
