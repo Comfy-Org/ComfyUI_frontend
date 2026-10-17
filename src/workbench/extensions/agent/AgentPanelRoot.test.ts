@@ -5795,7 +5795,10 @@ describe('AgentPanelRoot history', () => {
       ).rejects.toThrow()
       expect(useAgentConversationStore().threadId).toBe('th-1')
 
-      ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
+      dispatchApiEvent('agent_message_done', {
+        message_id: 'm-1',
+        thread_id: 'th-1'
+      })
       await screen.findByRole('button', { name: 'Send' })
 
       workflowStore.activeWorkflow = second
