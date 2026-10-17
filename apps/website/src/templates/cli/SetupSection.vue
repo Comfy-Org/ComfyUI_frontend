@@ -8,6 +8,7 @@ import CopyableField from '@/components/ui/copyable-field/CopyableField.vue'
 import { externalLinks, getRoutes } from '@/config/routes'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
+import { I18nT } from 'vue-i18n'
 import type { CliClientId } from '@/scripts/posthog'
 import {
   captureCliClientTabClick,
@@ -186,23 +187,34 @@ const copiedLabel = t('ui.copied')
           v-if="activeConnectionId === 'cloud'"
           class="mt-4 max-w-xl text-xs text-primary-warm-gray"
         >
-          {{ t('cli.setup.requirementPrefix')
-          }}<a
-            :href="getRoutes(locale).pricing"
-            class="rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
-            >{{ t('cli.setup.requirementLinkLabel') }}</a
-          >{{ t('cli.setup.requirementSuffix')
-          }}{{ t('cli.setup.requirementFootnote') }}
+          <I18nT
+            keypath="cli.setup.requirement"
+            :i18n="translationsFor(locale)"
+          >
+            <template #link>
+              <a
+                :href="getRoutes(locale).pricing"
+                class="rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
+                >{{ t('cli.setup.requirementLinkLabel') }}</a
+              >
+            </template>
+          </I18nT>
         </p>
         <p v-else class="mt-4 max-w-xl text-xs text-primary-warm-gray">
-          {{ t('cli.setup.local.requirementPrefix')
-          }}<a
-            :href="externalLinks.comfyCliRepo"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
-            >{{ t('cli.setup.local.requirementLinkLabel') }}</a
-          >{{ t('cli.setup.local.requirementSuffix') }}
+          <I18nT
+            keypath="cli.setup.local.requirement"
+            :i18n="translationsFor(locale)"
+          >
+            <template #link>
+              <a
+                :href="externalLinks.comfyCliRepo"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
+                >{{ t('cli.setup.local.requirementLinkLabel') }}</a
+              >
+            </template>
+          </I18nT>
         </p>
       </template>
     </SectionHeader>
@@ -337,14 +349,20 @@ const copiedLabel = t('ui.copied')
                   v-if="activeClientFor(connId).shell?.showKeyLink"
                   class="mt-6 text-sm text-smoke-700"
                 >
-                  {{ t('cli.setup.shell.ci.keyLinkPrefix')
-                  }}<a
-                    :href="externalLinks.apiKeys"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
-                    >{{ t('cli.setup.shell.ci.keyLinkLabel') }}</a
+                  <I18nT
+                    keypath="cli.setup.shell.ci.keyLink"
+                    :i18n="translationsFor(locale)"
                   >
+                    <template #link>
+                      <a
+                        :href="externalLinks.apiKeys"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
+                        >{{ t('cli.setup.shell.ci.keyLinkLabel') }}</a
+                      >
+                    </template>
+                  </I18nT>
                 </p>
               </template>
             </div>
@@ -358,14 +376,17 @@ const copiedLabel = t('ui.copied')
         {{ t('cli.setup.betaNote') }}
       </p>
       <p class="text-xs text-primary-warm-gray">
-        {{ t('cli.setup.docsPrefix')
-        }}<a
-          :href="externalLinks.docsCliReference"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
-          >{{ t('cli.setup.docsLinkLabel') }}</a
-        >{{ t('cli.setup.docsSuffix') }}
+        <I18nT keypath="cli.setup.docs" :i18n="translationsFor(locale)">
+          <template #link>
+            <a
+              :href="externalLinks.docsCliReference"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
+              >{{ t('cli.setup.docsLinkLabel') }}</a
+            >
+          </template>
+        </I18nT>
       </p>
     </div>
   </section>

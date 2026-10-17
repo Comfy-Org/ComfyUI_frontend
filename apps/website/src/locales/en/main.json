@@ -678,7 +678,7 @@
       "heading": "Sign in to your account",
       "newHere": "New to Comfy?",
       "signUpLink": "Sign up here",
-      "freeRunsSuffix": "to get 5 free runs.",
+      "signUpPrompt": "{link} to get 5 free runs.",
       "google": "Sign in with Google",
       "github": "Sign in with Github",
       "googleSsoInAppBrowserNotice": "If you opened this from an in-app browser (e.g. Instagram, LinkedIn), Google sign-in may not work. Use GitHub or email, or open this page in your device's default browser.",
@@ -969,9 +969,8 @@
     },
     "step2": {
       "title": "Load a workflow",
-      "descriptionPrefix": "Start from ",
-      "descriptionLink": "a community template",
-      "descriptionSuffix": " or build your own."
+      "descriptionWithLink": "Start from {link} or build your own.",
+      "descriptionLink": "a community template"
     },
     "step3": {
       "title": "Generate & Iterate",
@@ -1950,10 +1949,8 @@
           "tagline": "Open source. Runs free on your own machine."
         }
       },
-      "requirementPrefix": "To use Comfy Cloud via MCP, you need a ",
+      "requirement": "To use Comfy Cloud via MCP, you need a {link}. A credit top-up alone isn't enough to run generations.",
       "requirementLinkLabel": "subscription of any tier",
-      "requirementSuffix": ".",
-      "requirementFootnote": " A credit top-up alone isn't enough to run generations.",
       "manual": {
         "title": "Install manually",
         "description": "Add this URL as a custom connector or remote MCP server in your client, then sign in when prompted.",
@@ -1993,9 +1990,8 @@
       "skillsNote": "Using Claude Code? The Comfy skills plugin adds ready-made slash commands. ",
       "skillsLink": "View on GitHub",
       "local": {
-        "requirementPrefix": "The local ComfyUI connection runs free on your own hardware, and the MCP is ",
+        "requirement": "The local ComfyUI connection runs free on your own hardware, and the MCP is {link}.",
         "requirementLinkLabel": "open source on GitHub",
-        "requirementSuffix": ".",
         "manual": {
           "title": "Install the server",
           "description": "Install comfy-mcp from PyPI with the command above, then register it in your client. Your client launches the server, and the server drives the ComfyUI on your machine."
@@ -2168,14 +2164,11 @@
           "tagline": "Open source. Runs free on your own machine."
         }
       },
-      "requirementPrefix": "Cloud runs spend Comfy credits. Add credits, or use an existing ",
+      "requirement": "Cloud runs spend Comfy credits. Add credits, or use an existing {link}. Browsing templates, models, and nodes is free with a Comfy account.",
       "requirementLinkLabel": "Comfy Cloud subscription",
-      "requirementSuffix": ".",
-      "requirementFootnote": " Browsing templates, models, and nodes is free with a Comfy account.",
       "local": {
-        "requirementPrefix": "Local runs are free on your own hardware, and the CLI is ",
-        "requirementLinkLabel": "open source on GitHub",
-        "requirementSuffix": "."
+        "requirement": "Local runs are free on your own hardware, and the CLI is {link}.",
+        "requirementLinkLabel": "open source on GitHub"
       },
       "manual": {
         "tabsLabel": "Pick your client",
@@ -2207,14 +2200,13 @@
           "title": "No browser required",
           "stepCloud": "Authenticate with an API key: set COMFY_API_KEY or pass --api-key. The whole submit-wait-download loop fits on one line:",
           "stepLocal": "Non-interactive setup for runners and devcontainers:",
-          "keyLinkPrefix": "Create your key at ",
+          "keyLink": "Create your key at {link}",
           "keyLinkLabel": "platform.comfy.org"
         }
       },
       "betaNote": "comfy generate is in beta: flag names, model aliases, and output formats may change. The underlying partner endpoints are stable.",
-      "docsPrefix": "Every command and flag lives in the ",
-      "docsLinkLabel": "command reference",
-      "docsSuffix": "."
+      "docs": "Every command and flag lives in the {link}.",
+      "docsLinkLabel": "command reference"
     },
     "session": {
       "heading": "A real session, start to finish.",
@@ -2226,9 +2218,8 @@
       "label": "AGENT SKILLS",
       "heading": "Skills your agent already knows.",
       "subtitle": "One command installs five bundled skills that teach Claude Code, Cursor, and any AGENTS.md-aware tool the whole CLI. Below are six production briefs. Every prompt is ready to paste.",
-      "moreSkillsPrefix": "More agent skills live in the ",
+      "moreSkills": "More agent skills live in the {link}.",
       "moreSkillsLinkLabel": "Comfy Skills repository",
-      "moreSkillsSuffix": ".",
       "bundledLabel": "BUNDLED SKILLS",
       "bundled": {
         "comfy": "workflows, models, and generation from the shell",
@@ -3392,8 +3383,7 @@
     }
   },
   "hubspotForm": {
-    "embedLoadErrorPrefix": "Unable to load the form. Email us at",
-    "embedLoadErrorSuffix": "and we'll route your request."
+    "embedLoadError": "Unable to load the form. Email us at {email} and we'll route your request."
   },
   "demos": {
     "category": {
@@ -3592,7 +3582,7 @@
     "hero": {
       "label": "AFFILIATE",
       "headingHighlight": "Earn 30%",
-      "headingMuted": "recurring commission for 3 months.",
+      "headline": "{highlight} recurring commission for 3 months.",
       "feature1": "30% recurring commission for 3 months",
       "feature2": "60-day cookie window",
       "feature3": "$100 minimum payout",
@@ -5038,7 +5028,7 @@
         "body": "Every model runs on Comfy by default, you can set `model_provider` to run them on another provider. We're starting with the highest-traffic models, more models and providers are coming soon.",
         "modelColumn": "MODEL",
         "moreModels": "+{count} more models",
-        "moreModelsSuffix": "run on Comfy",
+        "moreModelsLine": "{models} run on Comfy",
         "browseAll": "Browse all {count} models",
         "served": "Served",
         "notServed": "Not served"
@@ -5141,7 +5131,7 @@
       "update": "How to Update ComfyUI"
     },
     "hero": {
-      "title": "Our GPUs.",
+      "headline": "{highlight} Our GPUs.",
       "titleHighlight": "Your graph.",
       "subtitle": "Comfy Cloud nodes run the newest open models on our GPUs from inside your own ComfyUI. Drop one into the graph you already have and wire it like any other node.",
       "feature1": "No subscription",

@@ -80,7 +80,7 @@
       "feature3": "最低支払額$100",
       "feature4": "毎月の支払い",
       "headingHighlight": "30%を獲得",
-      "headingMuted": "3か月間の継続コミッション。",
+      "headline": "{highlight} 3か月間の継続コミッション。",
       "imageAlt": "Comfyアフィリエイトプログラム",
       "label": "アフィリエイト"
     },
@@ -240,7 +240,6 @@
         "session": "サインインは完了しましたが、ワークスペースセッションを開始できませんでした。再試行するか、別のアカウントで再度サインインしてください。"
       },
       "forgotPassword": "パスワードをお忘れですか？",
-      "freeRunsSuffix": "5回の無料実行を獲得しましょう。",
       "github": "Githubでログイン",
       "google": "Googleでログイン",
       "googleSsoInAppBrowserNotice": "アプリ内ブラウザ（例：Instagram、LinkedIn）から開いた場合、Googleでのサインインができないことがあります。GitHubまたはメールをご利用いただくか、デバイスの標準ブラウザでこのページを開いてください。",
@@ -255,6 +254,7 @@
       "retry": "セッションを再試行",
       "signOut": "サインアウト",
       "signUpLink": "こちらからサインアップ",
+      "signUpPrompt": "{link} 5回の無料実行を獲得しましょう。",
       "signingIn": "サインインしています…",
       "ssoRedirecting": "組織のサインインページに移動しています…",
       "submit": "ログイン",
@@ -899,9 +899,8 @@
         },
         "tabsLabel": "実行場所を選択"
       },
+      "docs": "すべてのコマンドとフラグは、{link}に掲載されています。",
       "docsLinkLabel": "コマンドリファレンス",
-      "docsPrefix": "すべてのコマンドとフラグは、",
-      "docsSuffix": "に掲載されています。",
       "heading": "Comfy CLIをセットアップ",
       "install": {
         "cloudDescription": "PyPIからインストールします（Homebrewも利用可能）。その後、クラウド接続をセットアップします。ブラウザでサインイン画面が開きます。",
@@ -910,22 +909,19 @@
       },
       "label": "はじめる",
       "local": {
-        "requirementLinkLabel": "GitHubでオープンソース",
-        "requirementPrefix": "ローカル実行は自分のハードウェア上で無料で行え、CLIは",
-        "requirementSuffix": "です。"
+        "requirement": "ローカル実行は自分のハードウェア上で無料で行え、CLIは{link}です。",
+        "requirementLinkLabel": "GitHubでオープンソース"
       },
       "manual": {
         "step": "手動で進めたいですか？上記のインストール後：",
         "tabsLabel": "クライアントを選択"
       },
-      "requirementFootnote": " Comfyアカウントがあれば、テンプレート、モデル、ノードの閲覧は無料です。",
+      "requirement": "クラウドでの実行にはComfyクレジットを使用します。クレジットを追加するか、既存の{link}を利用してください。 Comfyアカウントがあれば、テンプレート、モデル、ノードの閲覧は無料です。",
       "requirementLinkLabel": "Comfy Cloudサブスクリプション",
-      "requirementPrefix": "クラウドでの実行にはComfyクレジットを使用します。クレジットを追加するか、既存の",
-      "requirementSuffix": "を利用してください。",
       "shell": {
         "ci": {
+          "keyLink": "キーを作成する：{link}",
           "keyLinkLabel": "platform.comfy.org",
-          "keyLinkPrefix": "キーを作成する：",
           "stepCloud": "APIキーで認証します：COMFY_API_KEY を設定するか、--api-key を渡します。送信・待機・ダウンロードの一連の処理は1行で実行できます：",
           "stepLocal": "ランナーおよびdevcontainer向けの非対話型セットアップ：",
           "title": "ブラウザ不要"
@@ -975,9 +971,8 @@
       },
       "heading": "エージェントがすでに知っているスキル。",
       "label": "エージェントスキル",
+      "moreSkills": "さらに多くのエージェントスキルは、{link}にあります。",
       "moreSkillsLinkLabel": "Comfy Skillsリポジトリ",
-      "moreSkillsPrefix": "さらに多くのエージェントスキルは、",
-      "moreSkillsSuffix": "にあります。",
       "subtitle": "1つのコマンドで、Claude Code、Cursor、そしてAGENTS.md対応のあらゆるツールにCLI全体を教える、バンドル済みの5つのスキルをインストールできます。以下は本番用の6つのブリーフです。すべてのプロンプトをそのまま貼り付けられます。"
     },
     "why": {
@@ -1230,8 +1225,8 @@
       "feature1": "サブスクリプション不要",
       "feature2": "ダウンロード不要、VRAMの最低要件なし",
       "feature3": "GPU秒単位でクレジット課金",
+      "headline": "{highlight} 私たちのGPU。",
       "subtitle": "Comfy Cloudノードなら、ご自身のComfyUI内から当社のGPUで最新のオープンモデルを実行できます。すでにあるグラフに追加し、ほかのノードと同じように接続するだけです。",
-      "title": "私たちのGPU。",
       "titleHighlight": "あなたのグラフ。",
       "videoAlt": "ComfyUIキャンバス上のComfy Cloud Flux 2 Text to Imageノード。Save Imageノードに接続されている"
     },
@@ -2176,8 +2171,7 @@
     },
     "step2": {
       "descriptionLink": "コミュニティテンプレート",
-      "descriptionPrefix": "まずは",
-      "descriptionSuffix": "を使うか、独自に作成しましょう。",
+      "descriptionWithLink": "まずは{link}を使うか、独自に作成しましょう。",
       "title": "ワークフローを読み込む"
     },
     "step3": {
@@ -2206,8 +2200,7 @@
     }
   },
   "hubspotForm": {
-    "embedLoadErrorPrefix": "フォームを読み込めません。以下のメールアドレスまでご連絡ください：",
-    "embedLoadErrorSuffix": "いただいたご依頼を適切な担当へおつなぎします。"
+    "embedLoadError": "フォームを読み込めません。以下のメールアドレスまでご連絡ください： {email} いただいたご依頼を適切な担当へおつなぎします。"
   },
   "industries": {
     "advertising": "広告・クリエイティブスタジオ",
@@ -2480,19 +2473,16 @@
           "description": "上記のコマンドでPyPIから comfy-mcp をインストールし、クライアントに登録してください。クライアントがサーバーを起動し、サーバーがあなたのマシン上のComfyUIを操作します。",
           "title": "サーバーをインストール"
         },
-        "requirementLinkLabel": "GitHubでオープンソースとして公開されています",
-        "requirementPrefix": "ローカルのComfyUI接続はお使いのハードウェア上で無料で動作し、MCPは ",
-        "requirementSuffix": "。"
+        "requirement": "ローカルのComfyUI接続はお使いのハードウェア上で無料で動作し、MCPは {link}。",
+        "requirementLinkLabel": "GitHubでオープンソースとして公開されています"
       },
       "manual": {
         "description": "このURLをクライアントのカスタムコネクタまたはリモートMCPサーバーとして追加し、求められたらサインインしてください。",
         "tabsLabel": "クライアントを選択",
         "title": "手動でインストール"
       },
-      "requirementFootnote": " クレジットのチャージだけでは生成を実行できません。",
+      "requirement": "MCP経由でComfy Cloudを利用するには、{link}が必要です。 クレジットのチャージだけでは生成を実行できません。",
       "requirementLinkLabel": "いずれかのプランのサブスクリプション",
-      "requirementPrefix": "MCP経由でComfy Cloudを利用するには、",
-      "requirementSuffix": "が必要です。",
       "skillsLink": "GitHubで見る",
       "skillsNote": "Claude Codeをお使いですか？Comfy skillsプラグインにより、すぐに使えるスラッシュコマンドが追加されます。 ",
       "subtitle": "実行場所を選択：Comfy Cloud GPU、またはご自身のマシン。\nサーバーを自分で追加するか、エージェントにインストールを依頼すれば、ComfyUIのすべてのツールセットをチャットで利用できます。",
@@ -3297,7 +3287,7 @@
         "heading": "同じモデルを、より多くの場所で実行。",
         "modelColumn": "モデル",
         "moreModels": "+{count}種類のモデル",
-        "moreModelsSuffix": "Comfyで実行",
+        "moreModelsLine": "{models} Comfyで実行",
         "notServed": "提供対象外",
         "served": "提供中"
       },

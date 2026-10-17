@@ -46,10 +46,11 @@ as the application's `src/locales/` at the repository root:
   `t('workshop.search.show', { n }, { locale })`.
 - Plural forms separated by `|`: `"{count} node | {count} nodes"`, picked with
   `t('cloudNodesLaunch.models.nodeCount', { count }, { locale, plural: count })`.
-- Styled words inside a sentence are a named placeholder, never a message
-  split around them: `"Built for {highlight} who need quality."`, rendered with
-  `<I18nT keypath="…" :i18n="translationsFor(locale)">` and a `#highlight`
-  slot, so each locale decides where the styled word sits.
+- Styled words or links inside a sentence are a named placeholder, never a
+  message split around them: `"Built for {highlight} who need quality."` or
+  `"Start from {link} or build your own."`, rendered with
+  `<I18nT keypath="…" :i18n="translationsFor(locale)">` and a `#highlight` or
+  `#link` slot, so each locale decides where the styled word or link sits.
 - The characters `{`, `}`, `@` and `|` are message syntax, so literal ones are
   written as `{'{'}`, `{'}'}`, `{'@'}` and `{'|'}`.
 
