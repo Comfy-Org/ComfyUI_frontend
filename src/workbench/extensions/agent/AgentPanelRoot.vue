@@ -25,7 +25,8 @@ import type {
   AgentMessageSentMetadata,
   AgentPaywallSurface,
   AgentRunApprovalDecision,
-  AgentStopMethod
+  AgentStopMethod,
+  AgentWorkflowBindSource
 } from '@/platform/telemetry/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { formatWorkflowSyncErrorDetail } from '@/workbench/extensions/agent/crdt/workflowSyncErrorDetail'
@@ -706,12 +707,9 @@ const workflowDetached = computed(() => selectedTarget.value === null)
 // re-attaching during prepare() cannot pull a later tab into this turn.
 function originWorkflow(origin?: TurnOrigin): ComfyWorkflow | undefined {
   if (origin === null) return undefined
-  return (
-    (origin === undefined
-      ? selectedTarget.value
-      : workflowStore.openWorkflows.find(
-          (workflow) => workflow.path === origin.tabPath
-        )) ?? undefined
+  if (origin === undefined) return selectedTarget.value ?? undefined
+  return workflowStore.openWorkflows.find(
+    (workflow) => workflow.instanceId === origin.instanceId
   )
 }
 
@@ -722,11 +720,12 @@ function targetWorkflowTurnContext(
   const target = originWorkflow(origin)
   if (!target) return undefined
   const id = cloudIdFor(target)
-  if (id === undefined && !target.isTemporary && origin !== undefined)
-    return undefined
-  return id === undefined
-    ? { tabPath: target.path }
-    : { id, tabPath: target.path }
+  return {
+    tabPath: target.path,
+    instanceId: target.instanceId,
+    isTemporary: target.isTemporary,
+    ...(id !== undefined ? { id } : {})
+  }
 }
 
 function serializedCanvas(target: ComfyWorkflow) {
@@ -788,28 +787,39 @@ const workflowTabs = computed<ActiveTab[]>(() =>
   }))
 )
 
+function adoptionSource(
+  workflowId: string,
+  sent: WorkflowTurnContext,
+  tab: ComfyWorkflow
+): Extract<AgentWorkflowBindSource, 'active_tab' | 'minted'> | null {
+  if (sent.id !== undefined) {
+    const boundNow = bindingStore.workflowIdFor(tab.path)
+    const stillBound = boundNow === undefined || boundNow === workflowId
+    return sent.id === workflowId && stillBound ? 'active_tab' : null
+  }
+  const minted =
+    sent.isTemporary &&
+    cloudIdFor(tab) === undefined &&
+    bindingStore.tabPathFor(workflowId) === undefined &&
+    storedWorkflowFor(workflowId) === null
+  return minted ? 'minted' : null
+}
+
 function onWorkflowAdopted(
   workflowId: string,
   sent: WorkflowTurnContext | undefined,
   previousWorkflowId: string | null
 ): void {
   if (sent === undefined) return
-  // An unbound tab adopts a workflow only when it was minted for this turn:
-  // an id that already resolves to an open tab belongs to that tab.
-  const adoptable =
-    sent.id === undefined
-      ? bindingStore.tabPathFor(workflowId) === undefined &&
-        storedWorkflowFor(workflowId) === null
-      : sent.id === workflowId
-  if (adoptable) {
-    bindingStore.bind(workflowId, sent.tabPath)
-    tabActivity.setEditing(sent.tabPath)
-    reportWorkflowBound(
-      workflowId,
-      previousWorkflowId,
-      sent.id === undefined ? 'minted' : 'active_tab'
-    )
-  }
+  const tab = workflowStore.openWorkflows.find(
+    (workflow) => workflow.instanceId === sent.instanceId
+  )
+  if (!tab) return
+  const source = adoptionSource(workflowId, sent, tab)
+  if (source === null) return
+  bindingStore.bind(workflowId, tab.path)
+  tabActivity.setEditing(tab.path)
+  reportWorkflowBound(workflowId, previousWorkflowId, source)
 }
 
 function warnWorkflowUnavailable(): void {
@@ -1668,7 +1678,9 @@ const { submit: onSend } = useAgentDraftSubmission({
           : {})
       },
       origin:
-        originContext === undefined ? null : { tabPath: originContext.tabPath }
+        originContext === undefined
+          ? null
+          : { instanceId: originContext.instanceId }
     }
     const selectionWorkflow = selectedTarget.value
     try {

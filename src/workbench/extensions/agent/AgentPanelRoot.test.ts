@@ -65,7 +65,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { useAssetsStore } from '@/stores/assetsStore'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { startAssetDrag } from '@/platform/assets/utils/assetDragUtil'
-import { getFilenameDetails } from '@/utils/formatUtil'
+import { generateUUID, getFilenameDetails } from '@/utils/formatUtil'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
@@ -622,11 +622,11 @@ function addTab(
   const slash = path.lastIndexOf('/')
   const { filename, suffix } = getFilenameDetails(path.slice(slash + 1))
   const tab = createMockLoadedWorkflow({
-    instanceId: path,
     path,
     directory: path.slice(0, slash),
     filename,
     suffix,
+    instanceId: generateUUID(),
     isTemporary: false,
     isModified: false,
     activeState: null,
@@ -6381,6 +6381,38 @@ describe('AgentPanelRoot workflow binding', () => {
     return { target, references: referenceTabs }
   }
 
+  function holdMintAck(ackWorkflowId: string): {
+    bodies: unknown[]
+    release: () => void
+  } {
+    const bodies: unknown[] = []
+    let resolveAck: () => void = () => undefined
+    const held = new Promise<void>((resolve) => {
+      resolveAck = resolve
+    })
+    vi.mocked(fetch).mockImplementation(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input)
+
+        if (url.includes('/messages') && init?.method === 'POST') {
+          bodies.push(JSON.parse(String(init.body)))
+          await held
+          return json(202, ack(ackWorkflowId, 'm-1'))
+        }
+        if (url.includes('/messages')) return json(200, [])
+        if (url.includes('/agent/threads')) return json(200, agentThreadList())
+        if (url.includes('/workflows')) {
+          return json(200, {
+            data: [],
+            pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+          })
+        }
+        return new Response('{}', { status: 200 })
+      }
+    )
+    return { bodies, release: () => resolveAck() }
+  }
+
   it('preserves active-turn graph activity across remount and delayed hydration', async () => {
     makeTab('wf-42')
     let resolveHistory!: (response: Response) => void
@@ -11594,70 +11626,184 @@ describe('AgentPanelRoot workflow binding', () => {
     }
   )
 
-  it('cancels and restores the draft when its target closes during preparation', async () => {
-    const origin = makeTab('wf-origin')
-    origin.activeState = fromPartial<ComfyWorkflowJSON>({ id: 'origin-draft' })
-    const replacement = addTab('workflows/replacement.json', {
-      activeState: fromPartial<ComfyWorkflowJSON>({ id: 'replacement-draft' })
-    })
-    useAgentWorkflowTabBindingStore().bind('wf-replacement', replacement.path)
-    const bodies: Record<string, unknown>[] = []
-    let workflowRequests = 0
-    let releasePreparation: () => void = () => undefined
-    vi.mocked(fetch).mockImplementation(
-      async (input: RequestInfo | URL, init?: RequestInit) => {
-        const url = String(input)
+  it.for([
+    { name: 'a bound saved tab', boundId: 'wf-origin', isTemporary: false },
+    { name: 'an unbound temporary tab', boundId: undefined, isTemporary: true }
+  ])(
+    'cancels and restores the draft when $name closes during preparation',
+    async ({ boundId, isTemporary }) => {
+      const origin = makeTab(boundId)
+      Object.assign(origin, { isTemporary })
+      origin.activeState = fromPartial<ComfyWorkflowJSON>({
+        id: 'origin-draft'
+      })
+      const replacement = addTab('workflows/replacement.json', {
+        activeState: fromPartial<ComfyWorkflowJSON>({ id: 'replacement-draft' })
+      })
+      useAgentWorkflowTabBindingStore().bind('wf-replacement', replacement.path)
+      const bodies: Record<string, unknown>[] = []
+      let workflowRequests = 0
+      let releasePreparation: () => void = () => undefined
+      vi.mocked(fetch).mockImplementation(
+        async (input: RequestInfo | URL, init?: RequestInit) => {
+          const url = String(input)
 
-        if (url.includes('/messages') && init?.method === 'POST') {
-          bodies.push(JSON.parse(String(init.body)) as Record<string, unknown>)
-          return json(202, ack('wf-fresh', 'm-1'))
-        }
-        if (url.includes('/messages')) return json(200, [])
-        if (url.includes('/agent/threads')) return json(200, agentThreadList())
-        if (url.includes('/workflows')) {
-          workflowRequests++
-          if (workflowRequests > 1)
-            await new Promise<void>((resolve) => {
-              releasePreparation = resolve
+          if (url.includes('/messages') && init?.method === 'POST') {
+            bodies.push(
+              JSON.parse(String(init.body)) as Record<string, unknown>
+            )
+            return json(202, ack('wf-fresh', 'm-1'))
+          }
+          if (url.includes('/messages')) return json(200, [])
+          if (url.includes('/agent/threads'))
+            return json(200, agentThreadList())
+          if (url.includes('/workflows')) {
+            workflowRequests++
+            if (workflowRequests > 1)
+              await new Promise<void>((resolve) => {
+                releasePreparation = resolve
+              })
+            return json(200, {
+              data: [],
+              pagination: { offset: 0, limit: 100, total: 0, has_more: false }
             })
-          return json(200, {
-            data: [],
-            pagination: { offset: 0, limit: 100, total: 0, has_more: false }
-          })
+          }
+          return new Response('{}', { status: 200 })
         }
-        return new Response('{}', { status: 200 })
-      }
-    )
+      )
+
+      renderWithSelectedTarget()
+      await vi.waitFor(() => expect(workflowRequests).toBe(1))
+      await userEvent.click(screen.getByRole('textbox'))
+      await userEvent.paste('build a graph')
+      await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+      await vi.waitFor(() => expect(workflowRequests).toBe(2))
+      await workflowStore.closeWorkflow(
+        workflowStore.getWorkflowByPath(origin.path)!
+      )
+      workflowStore.activeWorkflow = replacement
+      releasePreparation()
+
+      await vi.waitFor(() =>
+        expect(useAgentComposerStore().draft).toBe('build a graph')
+      )
+      expect(bodies).toHaveLength(0)
+      expect(useAgentPanelStore().selectedWorkflow).toBeNull()
+      expect(screen.queryByRole('button', { name: 'Stop' })).toBeNull()
+      expect(
+        useAgentWorkflowTabBindingStore().tabPathFor('wf-fresh')
+      ).toBeUndefined()
+      expect(
+        useAgentWorkflowTabBindingStore().workflowIdFor(replacement.path)
+      ).toBe('wf-replacement')
+      expect(
+        socketSend.mock.calls.some(([frame]) =>
+          String(frame).includes('doc_subscribe')
+        )
+      ).toBe(false)
+    }
+  )
+
+  it('does not bind a replacement tab at the origin path when a stale mint ack arrives', async () => {
+    const origin = makeTab()
+    Object.assign(origin, { isTemporary: true })
+    const { bodies, release } = holdMintAck('wf-fresh')
 
     renderWithSelectedTarget()
-    await vi.waitFor(() => expect(workflowRequests).toBe(1))
     await userEvent.click(screen.getByRole('textbox'))
     await userEvent.paste('build a graph')
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
-    await vi.waitFor(() => expect(workflowRequests).toBe(2))
+    await vi.waitFor(() => expect(bodies).toHaveLength(1))
+
     await workflowStore.closeWorkflow(
       workflowStore.getWorkflowByPath(origin.path)!
     )
-    workflowStore.activeWorkflow = replacement
-    releasePreparation()
+    workflowStore.activeWorkflow = addTab(origin.path, { isTemporary: true })
+    release()
 
     await vi.waitFor(() =>
-      expect(useAgentComposerStore().draft).toBe('build a graph')
+      expect(useAgentConversationStore().threadId).toBe('th-1')
     )
-    expect(bodies).toHaveLength(0)
-    expect(useAgentPanelStore().selectedWorkflow).toBeNull()
-    expect(screen.queryByRole('button', { name: 'Stop' })).toBeNull()
     expect(
       useAgentWorkflowTabBindingStore().tabPathFor('wf-fresh')
     ).toBeUndefined()
     expect(
-      useAgentWorkflowTabBindingStore().workflowIdFor(replacement.path)
-    ).toBe('wf-replacement')
+      useAgentWorkflowTabBindingStore().workflowIdFor(origin.path)
+    ).toBeUndefined()
     expect(
       socketSend.mock.calls.some(([frame]) =>
         String(frame).includes('doc_subscribe')
       )
     ).toBe(false)
+  })
+
+  it('follows the same temporary tab instance when it is saved before the ack', async () => {
+    const tab = makeTab()
+    Object.assign(tab, { isTemporary: true })
+    const { bodies, release } = holdMintAck('wf-fresh')
+
+    renderWithSelectedTarget()
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('build a graph')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await vi.waitFor(() => expect(bodies).toHaveLength(1))
+
+    await workflowStore.renameWorkflow(tab, 'workflows/saved.json')
+    Object.assign(tab, { isTemporary: false })
+    release()
+
+    await vi.waitFor(() =>
+      expect(useAgentConversationStore().threadId).toBe('th-1')
+    )
+    expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-fresh')).toBe(
+      'workflows/saved.json'
+    )
+  })
+
+  it('does not adopt when the originating tab acquired a binding while the message was in flight', async () => {
+    const tab = makeTab()
+    Object.assign(tab, { isTemporary: true })
+    const { bodies, release } = holdMintAck('wf-fresh')
+
+    renderWithSelectedTarget()
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('build a graph')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await vi.waitFor(() => expect(bodies).toHaveLength(1))
+
+    useAgentWorkflowTabBindingStore().bind('wf-other', tab.path)
+    release()
+
+    await vi.waitFor(() =>
+      expect(useAgentConversationStore().threadId).toBe('th-1')
+    )
+    expect(
+      useAgentWorkflowTabBindingStore().tabPathFor('wf-fresh')
+    ).toBeUndefined()
+    expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-other')).toBe(
+      tab.path
+    )
+  })
+
+  it('does not rebind a bound tab that acquired another binding while the message was in flight', async () => {
+    const tab = makeTab('wf-a')
+    const { bodies, release } = holdMintAck('wf-a')
+
+    renderWithSelectedTarget()
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('build a graph')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await vi.waitFor(() => expect(bodies).toHaveLength(1))
+
+    useAgentWorkflowTabBindingStore().bind('wf-other', tab.path)
+    release()
+
+    await vi.waitFor(() =>
+      expect(useAgentConversationStore().threadId).toBe('th-1')
+    )
+    expect(useAgentWorkflowTabBindingStore().workflowIdFor(tab.path)).toBe(
+      'wf-other'
+    )
   })
 
   it('sends only the remaining chip after one is dismissed', async () => {
