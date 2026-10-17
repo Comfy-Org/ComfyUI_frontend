@@ -1,3 +1,5 @@
+import { delay } from 'es-toolkit'
+
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { reportError } from '@/platform/telemetry/reportError'
 import {
@@ -15,6 +17,35 @@ function isCodedServerRefusal(err: unknown): err is WorkspaceApiError {
     err.status >= 400 &&
     err.status < 500
   )
+}
+
+const REVERT_POLL_INTERVAL_MS = 1500
+const REVERT_POLL_ATTEMPTS = 20
+
+type RevertSettlement = { settled: true } | { settled: false; reason: string }
+
+async function waitForRevertOperation(opId: string): Promise<RevertSettlement> {
+  for (let attempt = 0; attempt < REVERT_POLL_ATTEMPTS; attempt++) {
+    await delay(REVERT_POLL_INTERVAL_MS)
+    const operation = await workspaceApi.getBillingOpStatus(opId)
+    if (operation.status === 'succeeded') return { settled: true }
+    if (operation.status !== 'pending') {
+      return {
+        settled: false,
+        reason:
+          operation.error_message ??
+          `Scheduled change revert ended as ${operation.status}`
+      }
+    }
+  }
+  return { settled: false, reason: 'Scheduled change revert did not settle' }
+}
+
+async function requestRevert(): Promise<RevertSettlement> {
+  const response = await workspaceApi.revertScheduledChange()
+  return response.status === 'pending'
+    ? waitForRevertOperation(response.billing_op_id)
+    : { settled: true }
 }
 
 function refusalOf(err: unknown, errorType: string): PlanCommandOutcome {
@@ -35,10 +66,15 @@ export function usePlanLifecycleCommands() {
   }
 
   async function revertScheduledChange(): Promise<PlanCommandOutcome> {
+    const errorType = 'failure_reverting_scheduled_plan_change'
     try {
-      await workspaceApi.revertScheduledChange()
+      const settlement = await requestRevert()
+      if (!settlement.settled) {
+        reportError(settlement.reason, { surface: 'billing', errorType })
+        return { ok: false, serverMessage: null }
+      }
     } catch (err) {
-      return refusalOf(err, 'failure_reverting_scheduled_plan_change')
+      return refusalOf(err, errorType)
     }
     await resync()
     return { ok: true }

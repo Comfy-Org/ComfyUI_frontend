@@ -249,6 +249,77 @@ describe('BillingTab', () => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     })
 
+    describe('when the server accepts the revert as pending', () => {
+      beforeEach(() => {
+        vi.useFakeTimers({ shouldAdvanceTime: true })
+        vi.mocked(workspaceApi.revertScheduledChange).mockResolvedValueOnce({
+          billing_op_id: 'op-revert',
+          status: 'pending'
+        })
+      })
+
+      async function confirmStay() {
+        const user = userEvent.setup({
+          advanceTimers: vi.advanceTimersByTime
+        })
+        await user.click(screen.getByRole('button', { name: 'Stay on Pro' }))
+      }
+
+      it('waits for the operation to succeed before rereading status and closing', async () => {
+        vi.mocked(workspaceApi.getBillingOpStatus)
+          .mockResolvedValueOnce({
+            id: 'op-revert',
+            started_at: '2026-10-17T00:00:00Z',
+            status: 'pending'
+          })
+          .mockResolvedValueOnce({
+            id: 'op-revert',
+            started_at: '2026-10-17T00:00:00Z',
+            status: 'succeeded'
+          })
+        const { fetchStatus } = await openStay()
+        fetchStatus.mockClear()
+
+        await confirmStay()
+        await vi.advanceTimersByTimeAsync(1500)
+
+        expect(fetchStatus).not.toHaveBeenCalled()
+        expect(screen.getByRole('dialog')).toBeInTheDocument()
+
+        await vi.advanceTimersByTimeAsync(1500)
+
+        expect(workspaceApi.getBillingOpStatus).toHaveBeenCalledWith(
+          'op-revert'
+        )
+        expect(fetchStatus).toHaveBeenCalled()
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      })
+
+      it('keeps the dialog open with generic copy when the operation fails', async () => {
+        vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValueOnce({
+          id: 'op-revert',
+          started_at: '2026-10-17T00:00:00Z',
+          status: 'failed',
+          error_message: 'Stripe rejected the update'
+        })
+        await openStay()
+
+        await confirmStay()
+        await vi.advanceTimersByTimeAsync(1500)
+
+        expect(screen.getByRole('alert')).toHaveTextContent(
+          "We couldn't make this change. Try again."
+        )
+        expect(screen.getByRole('dialog')).toBeInTheDocument()
+        expect(reportError).toHaveBeenCalledWith(
+          'Stripe rejected the update',
+          expect.objectContaining({
+            errorType: 'failure_reverting_scheduled_plan_change'
+          })
+        )
+      })
+    })
+
     it('shows the server message when the server refuses', async () => {
       vi.mocked(workspaceApi.revertScheduledChange).mockRejectedValueOnce(
         new WorkspaceApiError(
