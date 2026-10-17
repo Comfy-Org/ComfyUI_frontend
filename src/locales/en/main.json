@@ -3570,6 +3570,8 @@
         "actions": {
           "choosePlan": "Choose a plan",
           "manage": "Manage",
+          "resume": "Resume plan",
+          "stay": "Stay on {plan}",
           "subscribe": "Subscribe"
         },
         "active": {
@@ -3578,6 +3580,7 @@
         },
         "ended": "Ended {date}.",
         "ending": "Ends {date}. You won't be charged again.",
+        "lifecycleRefused": "We couldn't make this change. Try again.",
         "managedByOwner": "Managed by the workspace owner.",
         "noPlan": {
           "freeRunsLeft": "You have {remaining} of {total} free runs left. Subscribe to keep running workflows after that.",
@@ -3585,7 +3588,15 @@
           "line": "Subscribe to run workflows on Cloud.",
           "title": "This workspace has no active plan"
         },
+        "resumeConfirm": {
+          "body": "Your plan will renew on {date}. You can cancel again anytime.",
+          "title": "Resume your {plan} plan?"
+        },
         "scheduledChange": "Changes to {plan} on {date}.",
+        "stayConfirm": {
+          "body": "Your plan won't change to {plan} on {date}. You can schedule a change again anytime.",
+          "title": "Cancel your change to {plan}?"
+        },
         "unknown": {
           "title": "Your plan"
         }

@@ -1230,6 +1230,7 @@ describe('useBillingCapabilities capability gates', () => {
     ['can_subscribe_self_serve', 'canSubscribeSelfServe'],
     ['can_cancel', 'canCancel'],
     ['can_reactivate', 'canReactivate'],
+    ['can_revert_scheduled_change', 'canRevertScheduledChange'],
     ['can_change_seats', 'canChangeSeats'],
     ['can_manage_members', 'canManageMembers'],
     ['can_invite_members', 'canInviteMembers'],

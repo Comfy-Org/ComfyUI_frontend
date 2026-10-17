@@ -9,7 +9,13 @@ import enMessages from '@/locales/en/main.json'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 import type { BalanceInfo, SubscriptionInfo } from '@/composables/billing/types'
+import type { Plan } from '@/platform/workspace/api/workspaceApi'
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
+import { reportError } from '@/platform/telemetry/reportError'
+import {
+  WorkspaceApiError,
+  workspaceApi
+} from '@/platform/workspace/api/workspaceApi'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
@@ -20,6 +26,8 @@ vi.mock(import('@/composables/billing/useBillingDialogs'))
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 vi.mock(import('@/platform/cloud/subscription/composables/useFreeTierQuota'))
+vi.mock(import('@/platform/workspace/api/workspaceApi'))
+vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock<unknown>(import('@/platform/workspace/utils/platformLink'), () => ({
   platformLink: (path: string) => `https://platform.test${path}?workspace=ws_1`
 }))
@@ -44,6 +52,9 @@ interface Scenario {
   error?: string | null
   role?: 'owner' | 'member'
   canSubscribeSelfServe?: boolean
+  canRevertScheduledChange?: boolean
+  canReactivate?: boolean
+  resubscribe?: () => Promise<void>
   capabilitiesReady?: boolean
   capabilitiesResolved?: boolean
   balance?: BalanceInfo | null
@@ -52,6 +63,8 @@ interface Scenario {
 function arrange(scenario: Scenario = {}) {
   const initialize = vi.fn(async () => {})
   const refresh = vi.fn(async () => {})
+  const fetchStatus = vi.fn(async () => {})
+  const resubscribe = vi.fn(scenario.resubscribe ?? (async () => {}))
 
   vi.mocked(useBillingContext).mockReturnValue(
     fromPartial({
@@ -70,10 +83,14 @@ function arrange(scenario: Scenario = {}) {
       ),
       billingStatus: computed(() => 'paid'),
       isTeamPlan: computed(() => false),
-      plans: computed(() => []),
+      plans: computed(() => [
+        fromPartial<Plan>({ slug: 'creator-yearly', tier: 'CREATOR' })
+      ]),
       balance: computed(() => scenario.balance ?? null),
       currentTeamCreditStop: computed(() => null),
-      initialize
+      initialize,
+      fetchStatus,
+      resubscribe
     })
   )
   vi.mocked(useBillingCapabilities).mockReturnValue(
@@ -81,6 +98,10 @@ function arrange(scenario: Scenario = {}) {
       canSubscribeSelfServe: computed(
         () => scenario.canSubscribeSelfServe ?? true
       ),
+      canRevertScheduledChange: computed(
+        () => scenario.canRevertScheduledChange ?? false
+      ),
+      canReactivate: computed(() => scenario.canReactivate ?? false),
       canTopUp: computed(() => true),
       isReady: computed(() => scenario.capabilitiesReady ?? true),
       hasResolvedCapabilities: computed(
@@ -113,7 +134,7 @@ function arrange(scenario: Scenario = {}) {
     }
   })
 
-  return { initialize, refresh }
+  return { initialize, refresh, fetchStatus, resubscribe }
 }
 
 describe('BillingTab', () => {
@@ -182,6 +203,168 @@ describe('BillingTab', () => {
     expect(
       screen.queryByRole('link', { name: 'Open billing' })
     ).not.toBeInTheDocument()
+  })
+
+  describe('Stay on plan', () => {
+    const scheduledChange: SubscriptionInfo = {
+      ...activeSubscription,
+      scheduledChange: {
+        plan_slug: 'creator-yearly',
+        effective_at: '2026-10-28T00:00:00Z',
+        team_credit_stop: null
+      }
+    }
+
+    async function openStay(scenario: Scenario = {}) {
+      const arranged = arrange({
+        subscription: scheduledChange,
+        canRevertScheduledChange: true,
+        ...scenario
+      })
+      await userEvent.click(screen.getByRole('button', { name: 'Stay on Pro' }))
+      return arranged
+    }
+
+    it('confirms with the target and date the scheduled change carries, and no amount', async () => {
+      await openStay()
+
+      const dialog = screen.getByRole('dialog', {
+        name: 'Cancel your change to Creator?'
+      })
+      expect(dialog).toHaveTextContent(
+        "Your plan won't change to Creator on October 28, 2026. You can schedule a change again anytime."
+      )
+      expect(dialog).not.toHaveTextContent('$')
+    })
+
+    it('reverts the scheduled change and rereads status when confirmed', async () => {
+      const { fetchStatus, refresh } = await openStay()
+      fetchStatus.mockClear()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Stay on Pro' }))
+
+      expect(workspaceApi.revertScheduledChange).toHaveBeenCalledOnce()
+      expect(fetchStatus).toHaveBeenCalled()
+      expect(refresh).toHaveBeenCalled()
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    })
+
+    it('shows the server message when the server refuses', async () => {
+      vi.mocked(workspaceApi.revertScheduledChange).mockRejectedValueOnce(
+        new WorkspaceApiError(
+          'Only the original owner can change this plan.',
+          403,
+          'NOT_ORIGINAL_OWNER'
+        )
+      )
+      const { fetchStatus } = await openStay()
+      fetchStatus.mockClear()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Stay on Pro' }))
+
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'Only the original owner can change this plan.'
+      )
+      expect(screen.getByRole('dialog')).toBeInTheDocument()
+      expect(fetchStatus).not.toHaveBeenCalled()
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('reports an uncoded failure and shows generic copy', async () => {
+      vi.mocked(workspaceApi.revertScheduledChange).mockRejectedValueOnce(
+        new Error('Network Error')
+      )
+      await openStay()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Stay on Pro' }))
+
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        "We couldn't make this change. Try again."
+      )
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'failure_reverting_scheduled_plan_change'
+        })
+      )
+    })
+
+    it('hides Stay when the server withholds can_revert_scheduled_change', () => {
+      arrange({
+        subscription: scheduledChange,
+        canRevertScheduledChange: false
+      })
+
+      expect(
+        screen.queryByRole('button', { name: 'Stay on Pro' })
+      ).not.toBeInTheDocument()
+    })
+  })
+
+  describe('Resume plan', () => {
+    const ending: Scenario = {
+      subscription: {
+        ...activeSubscription,
+        isCancelled: true,
+        endDate: '2026-10-28T00:00:00Z'
+      },
+      subscriptionStatus: 'canceled',
+      canReactivate: true
+    }
+
+    async function openResume(scenario: Scenario = {}) {
+      const arranged = arrange({ ...ending, ...scenario })
+      await userEvent.click(screen.getByRole('button', { name: 'Resume plan' }))
+      return arranged
+    }
+
+    it('confirms renewal on the date the plan ends, and no amount', async () => {
+      await openResume()
+
+      const dialog = screen.getByRole('dialog', {
+        name: 'Resume your Pro plan?'
+      })
+      expect(dialog).toHaveTextContent(
+        'Your plan will renew on October 28, 2026. You can cancel again anytime.'
+      )
+      expect(dialog).not.toHaveTextContent('$')
+    })
+
+    it('resumes the plan and closes when confirmed', async () => {
+      const { resubscribe } = await openResume()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Resume plan' }))
+
+      expect(resubscribe).toHaveBeenCalledOnce()
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    })
+
+    it('shows the server message when the server refuses', async () => {
+      await openResume({
+        resubscribe: async () => {
+          throw new WorkspaceApiError(
+            'Only the original owner can resume this plan.',
+            403,
+            'NOT_ORIGINAL_OWNER'
+          )
+        }
+      })
+
+      await userEvent.click(screen.getByRole('button', { name: 'Resume plan' }))
+
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'Only the original owner can resume this plan.'
+      )
+      expect(screen.getByRole('dialog')).toBeInTheDocument()
+    })
+
+    it('hides Resume when the server withholds can_reactivate', () => {
+      arrange({ ...ending, canReactivate: false })
+
+      expect(
+        screen.queryByRole('button', { name: 'Resume plan' })
+      ).not.toBeInTheDocument()
+    })
   })
 
   it('renders an unrecognised plan as Your plan', () => {
