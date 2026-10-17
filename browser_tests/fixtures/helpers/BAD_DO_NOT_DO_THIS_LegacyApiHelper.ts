@@ -33,6 +33,44 @@ export class BAD_DO_NOT_DO_THIS_LegacyApiHelper {
     )
   }
 
+  /**
+   * Assigns `target_slot` straight onto a link whose destination slot is
+   * already occupied. The store refuses the move, so this is the legacy path
+   * that produces a rejected endpoint update without throwing.
+   */
+  moveLinkOntoOccupiedInputSlot(
+    nodeType: string,
+    fromInputIndex: number,
+    toInputIndex: number
+  ) {
+    return this.page.evaluate(
+      ([nodeType, fromInputIndex, toInputIndex]) => {
+        const graph = window.app!.graph
+        const node = graph.nodes.find((node) => node.type === nodeType)
+        if (!node) throw new Error(`${nodeType} not found`)
+
+        const moving = node.getInputLink(fromInputIndex)
+        if (!moving)
+          throw new Error(`${nodeType} input ${fromInputIndex} has no link`)
+        const occupant = node.getInputLink(toInputIndex)
+        if (!occupant)
+          throw new Error(`${nodeType} input ${toInputIndex} has no link`)
+
+        moving.target_slot = toInputIndex
+
+        return {
+          movingLinkId: String(moving.id),
+          movingSlotAfter:
+            node.getInputLink(fromInputIndex)?.id === moving.id
+              ? fromInputIndex
+              : moving.target_slot,
+          occupantRetained: node.getInputLink(toInputIndex)?.id === occupant.id
+        }
+      },
+      [nodeType, fromInputIndex, toInputIndex] as const
+    )
+  }
+
   spliceOutputLinks(nodeType: string, outputIndex: number) {
     return this.page.evaluate(
       ([nodeType, outputIndex]) => {

@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 
+const mockReportError = vi.hoisted(() => vi.fn())
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: mockReportError
+}))
+
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 
@@ -263,6 +268,7 @@ describe('slotLinks', () => {
     assignments.set(target.inputs[0], stale)
     const onConnectionsChange = vi.fn()
     target.onConnectionsChange = onConnectionsChange
+    mockReportError.mockClear()
 
     expect(
       replaceNodeInputs(target, previous, [target.inputs[0]], assignments)
@@ -273,12 +279,15 @@ describe('slotLinks', () => {
         message: `Link ${stale.id} does not own its current placement`
       }
     })
-    expect(console.error).toHaveBeenCalledWith(
-      'Failed to replace node inputs',
-      {
-        code: 'unowned-topology',
-        message: `Link ${stale.id} does not own its current placement`
-      }
+    expect(mockReportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'node_input_replace_rejected',
+        context: expect.objectContaining({
+          nodeId: target.id,
+          code: 'unowned-topology'
+        })
+      })
     )
 
     expect(target.getInputLink(0)).toBe(kept)
