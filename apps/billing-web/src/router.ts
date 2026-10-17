@@ -36,6 +36,7 @@ import {
 } from '@/telemetry/webEntryTelemetry'
 import BillingHomeView from '@/views/BillingHomeView.vue'
 import CheckoutRouteView from '@/views/CheckoutRouteView.vue'
+import DesktopTopupReturnView from '@/views/DesktopTopupReturnView.vue'
 import EntryErrorView from '@/views/EntryErrorView.vue'
 import InvoicesView from '@/views/InvoicesView.vue'
 import PaymentMethodsView from '@/views/PaymentMethodsView.vue'
@@ -48,6 +49,16 @@ import TopupRouteView from '@/views/TopupRouteView.vue'
 const APP_ENTRY_PATH = '/'
 
 export const SIGN_IN_PATH = '/sign-in'
+
+/** Where hosted top-up checkouts from Desktop and local builds land; shipped builds keep this URL. */
+export const DESKTOP_TOPUP_RETURN_PATH = '/return/desktop-topup'
+
+declare module 'vue-router' {
+  interface RouteMeta {
+    /** Opens signed out, outside the entry contract and the billing shell. */
+    readonly public?: true
+  }
+}
 
 const INTENT_VIEWS: Record<BillingIntent, Component> = {
   pricing: EntryErrorView,
@@ -69,6 +80,12 @@ const routes: RouteRecordRaw[] = [
     path: SIGN_IN_PATH,
     name: 'sign-in',
     component: SignInView
+  },
+  {
+    path: DESKTOP_TOPUP_RETURN_PATH,
+    name: 'desktop-topup-return',
+    component: DesktopTopupReturnView,
+    meta: { public: true }
   },
   ...BILLING_INTENTS.map((intent) => ({
     path: billingIntentPath(intent),
@@ -176,8 +193,9 @@ function leaveForHost(href: string): void {
 }
 
 /**
- * Billing is never public: every route but the sign-in page needs a live
- * workspace session, and `pending` is not one — a restored identity that
+ * Billing is never public beyond its `public` return pages, which read
+ * neither the entry nor the session: every other route but the sign-in page
+ * needs a live workspace session, and `pending` is not one — a restored identity that
  * mints afterwards is carried back by the sign-in page's own redirect.
  *
  * The entry is read before the guard runs, so a link we cannot read explains
@@ -275,6 +293,10 @@ export function createBillingRouter(
 
   router.beforeEach(async (to) => {
     latestNavigation += 1
+    if (to.meta.public) {
+      recordBillingEntry(undefined)
+      return true
+    }
     if (to.path === APP_ENTRY_PATH) recordBillingEntry(undefined)
     else if (to.path !== SIGN_IN_PATH && !(await readEntry(to.fullPath)))
       return false

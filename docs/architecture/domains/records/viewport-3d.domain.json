@@ -3,101 +3,12 @@
   "capability": "3D viewport",
   "description": "Shared Three.js viewport: WebGL renderer views and high-precision output, scene, camera, controls, lighting, view helper, and event managers, letterboxed sizing, render loop, context-menu guard, viewport widget shell, and node wiring. Model loading, animation, recording, serialization, and node extensions remain in the Load3D host.",
   "modules": [
-    { "path": "src/renderer/three/**", "role": "infrastructure" },
     {
-      "path": "src/extensions/core/load3d/interfaces.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/extensions/core/load3d/load3dViewport.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/extensions/core/load3d/load3dViewport.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/extensions/core/load3d/EventManager.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/extensions/core/load3d/EventManager.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/extensions/core/load3d/Viewport3d.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/extensions/core/load3d/Viewport3d.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/extensions/core/load3d/CameraManager.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/CameraManager.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/ControlsManager.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/ControlsManager.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/LightingManager.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/LightingManager.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/SceneManager.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/SceneManager.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/ViewHelperManager.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/ViewHelperManager.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/load3dRenderLoop.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/load3dRenderLoop.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/load3dContextMenuGuard.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/load3dContextMenuGuard.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/createViewport3d.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/components/load3d/ViewportWidgetShell.vue",
+      "path": "src/components/load3d/ViewportWidgetShell.test.ts",
       "role": "presentation"
     },
     {
-      "path": "src/components/load3d/ViewportWidgetShell.test.ts",
+      "path": "src/components/load3d/ViewportWidgetShell.vue",
       "role": "presentation"
     },
     {
@@ -105,12 +16,104 @@
       "role": "presentation"
     },
     {
+      "path": "src/composables/useViewportNodeWiring.test.ts",
+      "role": "integration"
+    },
+    {
       "path": "src/composables/useViewportNodeWiring.ts",
       "role": "integration"
     },
     {
-      "path": "src/composables/useViewportNodeWiring.test.ts",
+      "path": "src/extensions/core/load3d/CameraManager.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/load3d/CameraManager.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/load3d/ControlsManager.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/load3d/ControlsManager.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/load3d/EventManager.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/extensions/core/load3d/EventManager.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/extensions/core/load3d/LightingManager.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/load3d/LightingManager.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/load3d/SceneManager.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/load3d/SceneManager.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/load3d/ViewHelperManager.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/load3d/ViewHelperManager.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/load3d/Viewport3d.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/extensions/core/load3d/Viewport3d.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/extensions/core/load3d/createViewport3d.ts",
       "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/load3d/interfaces.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/extensions/core/load3d/load3dContextMenuGuard.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/load3d/load3dContextMenuGuard.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/load3d/load3dRenderLoop.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/load3d/load3dRenderLoop.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/load3d/load3dViewport.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/extensions/core/load3d/load3dViewport.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/three/**",
+      "role": "infrastructure"
     }
   ],
   "publicEntryPoints": [],

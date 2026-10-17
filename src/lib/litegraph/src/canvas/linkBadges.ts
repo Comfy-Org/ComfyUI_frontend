@@ -1,8 +1,9 @@
+import type { LLink } from '@/lib/litegraph/src/types/entityRegistry'
 import { textOnColor } from '@/utils/colorUtil'
 
 import type { HasBoundingRect, Point, ReadOnlyRect, Rect } from '../interfaces'
 import { LGraphBadge } from '../LGraphBadge'
-import type { LLink } from '../LLink'
+
 import type { LinkId } from '@/types/linkId'
 import type { LinkPresentation } from '@/types/linkPresentation'
 import { compareNodeIds } from '@/types/nodeId'

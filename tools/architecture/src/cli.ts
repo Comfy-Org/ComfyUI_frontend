@@ -4,7 +4,7 @@ import { BOUNDARIES_PATH, buildBoundaries } from './boundaries'
 import { buildCatalog, parseCodeowners } from './catalog'
 import { attempt, readJson, readText, writeFormatted } from './outcome'
 import type { Outcome } from './outcome'
-import { listUnclassifiedFiles, loadArchitectureConfiguration } from './records'
+import { loadArchitectureConfiguration } from './records'
 import type { ArchitectureWarning } from './records'
 import { censusSuppressions, ledgerErrors } from './suppressions'
 
@@ -32,10 +32,7 @@ export function runArchitecture(
   const configuration = loaded.value
   const warnings = [
     ...configuration.warnings,
-    ...listUnclassifiedFiles(
-      configuration.records,
-      configuration.sourceFiles
-    ).map((file) => ({
+    ...configuration.unclassifiedFiles.map((file) => ({
       message: `${file} is not claimed by any domain. Add it to a module in docs/architecture/domains/records.`,
       file
     }))
@@ -48,7 +45,7 @@ export function runArchitecture(
     )
     return { errors: [], warnings }
   }
-  const boundaries = buildBoundaries(configuration.records)
+  const boundaries = buildBoundaries(configuration)
   if (mode === 'update') {
     const written = writeFormatted(
       repositoryRoot,
