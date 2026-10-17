@@ -1,6 +1,7 @@
 import type {
   AgentAnswerRequest,
   AgentPostMessageRequest,
+  PaginationInfo,
   UploadImageResponse,
   WorkflowResponse
 } from '@comfyorg/ingest-types'
@@ -49,7 +50,7 @@ import type {
   CloudWorkflowEntry
 } from '../../schemas/agentApiSchema'
 
-const CLOUD_WORKFLOW_PAGE_SIZE = 100
+const LIST_PAGE_SIZE = 100
 
 /**
  * PM-1658: tightens `fetchApi`'s shared 60s header deadline for the one
@@ -170,6 +171,18 @@ export class AgentResponseUnreadableError extends Error {
   constructor(cause: unknown) {
     super('Unreadable agent response body', { cause })
     this.name = 'AgentResponseUnreadableError'
+  }
+}
+
+export type PaginationStopReason = 'missing_cursor' | 'repeated_cursor'
+
+export class AgentThreadListIncompleteError extends Error {
+  readonly reason: PaginationStopReason
+
+  constructor(reason: PaginationStopReason) {
+    super('Agent thread list ended before its last page')
+    this.name = 'AgentThreadListIncompleteError'
+    this.reason = reason
   }
 }
 
@@ -562,6 +575,38 @@ export function createAgentRestClient() {
     }
   }
 
+  async function listAllPages<
+    Page extends { pagination: PaginationInfo },
+    Item
+  >(
+    operation: AgentApiOperation,
+    path: string,
+    schema: z.ZodType<Page>,
+    itemsOf: (page: Page) => Item[],
+    signal?: AbortSignal
+  ): Promise<{ items: Item[]; stopReason?: PaginationStopReason }> {
+    const items: Item[] = []
+    let cursor: string | undefined
+    const seenCursors = new Set<string>()
+    for (;;) {
+      const after = cursor ? `&after=${encodeURIComponent(cursor)}` : ''
+      const page = await request(
+        operation,
+        `${path}?limit=${LIST_PAGE_SIZE}${after}`,
+        { method: 'GET', signal },
+        schema
+      )
+      items.push(...itemsOf(page))
+      if (!page.pagination.has_more) return { items }
+      const nextCursor = page.pagination.next_cursor
+      if (!nextCursor) return { items, stopReason: 'missing_cursor' }
+      if (seenCursors.has(nextCursor))
+        return { items, stopReason: 'repeated_cursor' }
+      seenCursors.add(nextCursor)
+      cursor = nextCursor
+    }
+  }
+
   async function postMessage(
     threadId: string,
     req: PostMessageInput
@@ -599,14 +644,18 @@ export function createAgentRestClient() {
     )
   }
 
-  async function listThreads(): Promise<AgentThreadSummary[]> {
-    const page = await request(
+  async function listThreads(
+    options: { signal?: AbortSignal } = {}
+  ): Promise<AgentThreadSummary[]> {
+    const { items, stopReason } = await listAllPages(
       'list_threads',
       '/agent/threads',
-      { method: 'GET' },
-      zAgentThreads
+      zAgentThreads,
+      (page) => page.threads,
+      options.signal
     )
-    return page.threads
+    if (stopReason) throw new AgentThreadListIncompleteError(stopReason)
+    return items
   }
 
   async function getRunMode(): Promise<AgentRunModePreference> {
@@ -630,28 +679,13 @@ export function createAgentRestClient() {
   }
 
   async function listCloudWorkflows(): Promise<CloudWorkflowListing> {
-    const entries: CloudWorkflowEntry[] = []
-    let hasMore: boolean
-    let cursor: string | undefined
-    const seenCursors = new Set<string>()
-    do {
-      const after = cursor ? `&after=${encodeURIComponent(cursor)}` : ''
-      const result = await request(
-        'list_cloud_workflows',
-        `/workflows?limit=${CLOUD_WORKFLOW_PAGE_SIZE}${after}`,
-        { method: 'GET' },
-        zCloudWorkflowIndex
-      )
-      entries.push(...result.data)
-      hasMore = result.pagination.has_more
-      if (hasMore) {
-        const nextCursor = result.pagination.next_cursor
-        if (!nextCursor || seenCursors.has(nextCursor)) break
-        seenCursors.add(nextCursor)
-        cursor = nextCursor
-      }
-    } while (hasMore)
-    return { entries, complete: !hasMore }
+    const { items, stopReason } = await listAllPages(
+      'list_cloud_workflows',
+      '/workflows',
+      zCloudWorkflowIndex,
+      (page) => page.data
+    )
+    return { entries: items, complete: stopReason === undefined }
   }
 
   async function getCloudWorkflow(

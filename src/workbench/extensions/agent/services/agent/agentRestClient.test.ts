@@ -1,3 +1,7 @@
+import type {
+  AgentThreadListResponse,
+  PaginationInfo
+} from '@comfyorg/ingest-types'
 import { describe, expect, it, vi } from 'vitest'
 
 import {
@@ -8,7 +12,10 @@ import type { AuthCredential, AuthScheme } from '@/types/authTypes'
 import * as authRejection from '@/platform/auth/authRejection'
 import { api } from '@/scripts/api'
 
-import type { CloudWorkflowEntry } from '../../schemas/agentApiSchema'
+import type {
+  AgentThreadSummary,
+  CloudWorkflowEntry
+} from '../../schemas/agentApiSchema'
 
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/platform/telemetry/reportError'))
@@ -332,6 +339,90 @@ describe('agentRestClient route + method', () => {
       'wf-5'
     ])
     expect(listing.complete).toBe(true)
+  })
+})
+
+describe('listThreads pagination', () => {
+  function threadPage(
+    ids: string[],
+    { has_more, next_cursor }: Pick<PaginationInfo, 'has_more' | 'next_cursor'>
+  ): Response {
+    const threads: AgentThreadSummary[] = ids.map((id) => ({
+      id,
+      title: id,
+      preview: '',
+      workflow_id: '',
+      status: 'active',
+      message_count: 1,
+      created_at: '2026-10-01T00:00:00Z',
+      updated_at: '2026-10-01T00:00:00Z',
+      last_message_at: '2026-10-01T00:00:00Z'
+    }))
+    return jsonResponse(200, {
+      threads,
+      pagination: { offset: 0, limit: 100, total: 0, has_more, next_cursor }
+    } satisfies AgentThreadListResponse)
+  }
+
+  it('follows next_cursor at the maximum page size until has_more is false', async () => {
+    respond(
+      threadPage(['th-1', 'th-2'], { has_more: true, next_cursor: 'next page' })
+    )
+    respond(threadPage(['th-3'], { has_more: false }))
+
+    const threads = await makeClient().listThreads()
+
+    expect(vi.mocked(api.fetchApi).mock.calls.map(([route]) => route)).toEqual([
+      '/agent/threads?limit=100',
+      '/agent/threads?limit=100&after=next%20page'
+    ])
+    expect(threads.map(({ id }) => id)).toEqual(['th-1', 'th-2', 'th-3'])
+  })
+
+  it.for([
+    {
+      reason: 'missing_cursor',
+      pages: () => [threadPage(['th-1'], { has_more: true })]
+    },
+    {
+      reason: 'repeated_cursor',
+      pages: () => [
+        threadPage(['th-1'], { has_more: true, next_cursor: 'a' }),
+        threadPage(['th-2'], { has_more: true, next_cursor: 'a' })
+      ]
+    }
+  ])(
+    'rejects with $reason when paging stops before the last page',
+    async ({ reason, pages }) => {
+      pages().forEach(respond)
+
+      await expect(makeClient().listThreads()).rejects.toMatchObject({
+        name: 'AgentThreadListIncompleteError',
+        reason
+      })
+    }
+  )
+
+  it('passes the caller abort signal to every page request', async () => {
+    respond(threadPage(['th-1'], { has_more: true, next_cursor: 'page-2' }))
+    respond(threadPage(['th-2'], { has_more: false }))
+    const { signal } = new AbortController()
+
+    await makeClient().listThreads({ signal })
+
+    expect(
+      vi.mocked(api.fetchApi).mock.calls.map(([, init]) => init?.signal)
+    ).toEqual([signal, signal])
+  })
+
+  it('rejects instead of returning a partial list when a later page fails', async () => {
+    respond(threadPage(['th-1'], { has_more: true, next_cursor: 'page-2' }))
+    respond(jsonResponse(503, { error: 'unavailable' }))
+
+    await expect(makeClient().listThreads()).rejects.toMatchObject({
+      name: 'AgentApiError',
+      status: 503
+    })
   })
 })
 

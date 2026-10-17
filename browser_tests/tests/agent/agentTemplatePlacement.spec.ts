@@ -16,6 +16,7 @@ import {
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
 
@@ -259,8 +260,8 @@ class TemplatePlacementHarness {
 
   private async mockAgentApi(): Promise<void> {
     const { page } = this
-    await page.route('**/api/agent/threads', (route) =>
-      route.fulfill(jsonRoute({ threads: [] }))
+    await page.route('**/api/agent/threads?*', (route) =>
+      route.fulfill(jsonRoute(emptyAgentThreadList()))
     )
     await page.route('**/api/agent/threads/*/messages', (route) => {
       if (route.request().method() === 'POST') {

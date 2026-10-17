@@ -1,7 +1,6 @@
 import { expect } from '@playwright/test'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-import type { AgentThreadListResponse } from '@comfyorg/ingest-types'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import type { AgentRunModePreference } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
@@ -14,6 +13,7 @@ import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
@@ -130,11 +130,8 @@ test.describe(
       )
       await hostSocket.install()
 
-      const threadList: AgentThreadListResponse = {
-        pagination: { has_more: false, limit: 100, offset: 0, total: 0 },
-        threads: []
-      }
-      await page.route('**/api/agent/threads', (route) =>
+      const threadList = emptyAgentThreadList()
+      await page.route('**/api/agent/threads?*', (route) =>
         route.fulfill(jsonRoute(threadList))
       )
       const runModePreference: AgentRunModePreference = {
@@ -191,24 +188,18 @@ test.describe(
         await hostSocket.waitForSubscribe()
       })
 
-      // The follower creates the node from the document it just received.
       const node = vueNodes.getNodeLocator(String(NODE_ID))
       await expect(node).toBeVisible()
       await expect(node.getByText('faithful', { exact: true })).toBeVisible()
 
-      // `_extra_2` is the aliased tail: it must reach `mode.b`.
       await expect(
         node.getByRole('spinbutton', { name: 'mode.b' })
       ).toHaveValue('71')
 
-      // `mode.a` is catalogued, so its named value is applied after `configure`.
       await expect(
         node.getByRole('spinbutton', { name: 'mode.a' })
       ).toHaveValue('91')
 
-      // A later frame can carry a child before the selector that rebuilds
-      // the group. The selector must run first so neither saved child value
-      // is overwritten by the newly selected option's defaults.
       hostSocket.send(
         host.replaceDocumentWidgets(NODE_ID, [
           ['mode.a', 92],

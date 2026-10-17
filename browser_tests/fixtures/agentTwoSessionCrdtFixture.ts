@@ -29,6 +29,7 @@ import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
 import { emptySeed } from '@e2e/fixtures/data/agent/agentRemoteApply'
+import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 const SOCKET_SID = 'b6f0a2c1-8e34-4d21-9c07-2a1b3c4d5e60'
@@ -295,8 +296,8 @@ export class AgentTwoSessionCrdtHarness {
 
   private async mockAgentApi(): Promise<void> {
     const { page } = this
-    await page.route('**/api/agent/threads', (route) =>
-      route.fulfill(jsonRoute({ threads: [] }))
+    await page.route('**/api/agent/threads?*', (route) =>
+      route.fulfill(jsonRoute(emptyAgentThreadList()))
     )
     await page.route('**/api/agent/threads/*/messages', (route) => {
       const request = route.request()

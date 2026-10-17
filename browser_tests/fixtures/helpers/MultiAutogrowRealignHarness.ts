@@ -1,10 +1,7 @@
 import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import type {
-  AgentThreadListResponse,
-  JobsListResponse
-} from '@comfyorg/ingest-types'
+import type { JobsListResponse } from '@comfyorg/ingest-types'
 import type { ModelFolderInfo } from '@/platform/assets/schemas/assetSchema'
 import type { PromptResponse } from '@/platform/remote/comfyui/types'
 import type {
@@ -50,6 +47,7 @@ import {
   seed,
   sourceNodeDef
 } from '@e2e/fixtures/data/agent/agentCrdtMultiAutogrowRealignFixture'
+import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 export const SENTINEL_PROMPT = 'multi-autogrow-realign-sentinel-prompt'
@@ -137,10 +135,6 @@ export class MultiAutogrowRealignHarness {
     options: { settings?: Record<string, unknown> } = {}
   ): Promise<void> {
     const { page } = this
-    // Registered before `bootAgentApp` (with `objectInfo: 'server'` below) so
-    // it wins over the empty handler `mockCloudBootRoutes` would otherwise
-    // register afterward for the same route -- Playwright runs the
-    // most-recently-registered matching handler first.
     await page.route('**/api/object_info', (route) =>
       route.fulfill(
         jsonRoute({
@@ -150,10 +144,6 @@ export class MultiAutogrowRealignHarness {
       )
     )
 
-    // Neither route is registered by `bootAgentApp`'s own boot mocks: the
-    // model-folder list is read while the panel chrome renders, and
-    // `queueStore`'s background job poll runs for the lifetime of every one
-    // of this file's tests, not only a scenario that sends a second turn.
     const folders: ModelFolderInfo[] = []
     await page.route('**/api/experiment/models', (route) =>
       route.fulfill(jsonRoute(folders))
@@ -166,11 +156,8 @@ export class MultiAutogrowRealignHarness {
 
     await this.hostSocket.install()
 
-    const threadList: AgentThreadListResponse = {
-      pagination: { has_more: false, limit: 100, offset: 0, total: 0 },
-      threads: []
-    }
-    await page.route('**/api/agent/threads', (route) =>
+    const threadList = emptyAgentThreadList()
+    await page.route('**/api/agent/threads?*', (route) =>
       route.fulfill(jsonRoute(threadList))
     )
     const runModePreference: AgentRunModePreference = {
@@ -185,11 +172,6 @@ export class MultiAutogrowRealignHarness {
       message_id: MESSAGE_ID,
       workflow_id: WORKFLOW_ID
     }
-    // Stateful once the turn is sent: a page reload re-runs
-    // `useAgentSession.start()`, which finds the persisted thread id in
-    // `localStorage` and hydrates from this same endpoint -- the message row's
-    // `workflow_id` is what lets the agent panel rebind its target and
-    // resubscribe the CRDT follower after the reload.
     let turnSent = false
     await page.route('**/api/agent/threads/*/messages', (route) => {
       if (route.request().method() !== 'POST') {
@@ -219,8 +201,6 @@ export class MultiAutogrowRealignHarness {
 
     await bootAgentApp(page, true, {
       objectInfo: 'server',
-      // Only the Vue node renderer projects follower edits onto the canvas as
-      // DOM this test can query.
       settings: {
         'Comfy.VueNodes.Enabled': true,
         'Comfy.Graph.CanvasInfo': false,
@@ -228,10 +208,6 @@ export class MultiAutogrowRealignHarness {
       }
     })
 
-    // Registered only now, same as `AgentConversationHarness.
-    // selectWorkflowTarget`: `bootAgentApp`'s own mocks blanket-match
-    // `**/api/userdata**` for every method, and Playwright runs the
-    // most-recently-registered matching route first.
     this.persistence = await mockSavedWorkflowPersistence(page, WORKFLOW_ID)
 
     await page.route('**/api/prompt', (route) => {

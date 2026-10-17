@@ -124,7 +124,10 @@ import {
 } from './composables/agent/useAgentSession'
 import { useAgentDraftSubmission } from './composables/agent/useAgentDraftSubmission'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
-import { createAgentRestClient } from './services/agent/agentRestClient'
+import {
+  AgentThreadListIncompleteError,
+  createAgentRestClient
+} from './services/agent/agentRestClient'
 import type { DraftSnapshot } from './services/agent/agentRestClient'
 import type { AgentPaywallAction } from './services/agent/agentPaywallPresentation'
 import {
@@ -1421,13 +1424,28 @@ function toChatSession(thread: AgentThreadSummary): ChatSession {
   }
 }
 
+let historyRefreshGeneration = 0
+let appliedHistoryRefreshGeneration = 0
+const historyRefreshAbort = new AbortController()
+
 async function refreshHistory(): Promise<void> {
+  const { signal } = historyRefreshAbort
+  if (signal.aborted) return
+  const generation = ++historyRefreshGeneration
   try {
-    history.replaceAll((await listThreads()).map(toChatSession))
+    const threads = await listThreads({ signal })
+    if (signal.aborted || generation < appliedHistoryRefreshGeneration) return
+    appliedHistoryRefreshGeneration = generation
+    history.replaceAll(threads.map(toChatSession))
   } catch (error) {
+    if (signal.aborted || generation !== historyRefreshGeneration) return
     reportError(error, {
       surface: 'agent',
-      errorType: 'agent_thread_list_load_failed'
+      errorType: 'agent_thread_list_load_failed',
+      tags:
+        error instanceof AgentThreadListIncompleteError
+          ? { reason: error.reason }
+          : undefined
     })
     surfaceAgentError(
       'agent_api_failed',
@@ -1443,6 +1461,13 @@ async function refreshHistory(): Promise<void> {
 }
 
 void refreshHistory()
+onBeforeUnmount(() =>
+  runPanelTeardown({
+    abortHistoryRefreshes: () => {
+      historyRefreshAbort.abort()
+    }
+  })
+)
 
 const currentChatReady = computed(
   () =>

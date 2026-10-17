@@ -17,6 +17,7 @@ import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
@@ -109,26 +110,8 @@ function subscribeStateVectorOf(raw: Buffer | string): string | null {
   return state_vector_b64
 }
 
-/**
- * Drives one "add a note to the canvas" turn through to the agent reporting
- * it done -- the tool call's own completion AND the turn's "Worked for Xs"
- * summary, matching the bug report's "every working affordance" -- while the
- * doc host has ALREADY recorded the `add_node` op authoritatively
- * (`host.apply` below) but its broadcast `doc_update` is deliberately held
- * back. Callers decide when (if ever) to release it via the returned
- * `sendDelayedDocUpdate`.
- */
 async function driveThroughToolCallDone(
   page: Page,
-  /**
-   * The healthy-doc-host ordering is the tool call's own terminal frame
-   * landing before the matching `doc_update` broadcast -- that is what every
-   * scenario above exercises. 'docUpdateBeforeToolCall' instead releases the
-   * (already-applied, see `host.apply` below) `doc_update` BEFORE the
-   * `agent_tool_call success` frame, to exercise the inverted ordering a
-   * lost-wakeup regression in `notifyCanvasCaughtUp`'s edge-triggering would
-   * strand at `STALE_AFTER_MS` even though the canvas had already caught up.
-   */
   order:
     | 'toolCallBeforeDocUpdate'
     | 'docUpdateBeforeToolCall' = 'toolCallBeforeDocUpdate'
@@ -150,8 +133,8 @@ async function driveThroughToolCallDone(
     socket.send(JSON.stringify(frame))
   }
 
-  await page.route('**/api/agent/threads', (route) =>
-    route.fulfill(jsonRoute({ threads: [] }))
+  await page.route('**/api/agent/threads?*', (route) =>
+    route.fulfill(jsonRoute(emptyAgentThreadList()))
   )
   await page.route('**/api/agent/threads/*/messages', (route) => {
     if (route.request().method() === 'POST') {
@@ -265,10 +248,6 @@ async function driveThroughToolCallDone(
     }
   })
 
-  // The doc host records the op on its authoritative document as soon as the
-  // tool actually executes -- this is not a race the agent lost, the op is
-  // real -- independent of when its broadcast reaches this client relative
-  // to the tool call's own terminal frame, which `order` controls below.
   const update = host.apply([
     {
       op: 'add_node',
@@ -292,15 +271,8 @@ async function driveThroughToolCallDone(
   ])
   expect(Object.keys(host.graph().nodes)).toContain(String(ADDED_NODE_ID))
 
-  // The inverted ordering: the doc_update broadcast reaches this client
-  // while the tool is still (from the chat frames' perspective) running --
-  // the healthy-doc-host case most reviewers flagged as the lost-wakeup risk
-  // for notifyCanvasCaughtUp()'s edge triggering.
   if (order === 'docUpdateBeforeToolCall') send(update)
 
-  // The tool-call-completion affordance: `agentEventTransport.ts`'s `ingest()`
-  // flips this tool part `done` the instant this frame is read, purely from
-  // `status`, with nothing checked on the CRDT doc side (see file header).
   send({
     type: 'agent_tool_call',
     data: {
@@ -325,16 +297,11 @@ async function driveThroughToolCallDone(
     data: { thread_id: THREAD_ID, message_id: MESSAGE_ID, usage: null }
   })
 
-  // Setup checkpoint: every working affordance the report names has settled --
-  // the composer is free again and the turn's own "Worked for Xs" summary is
-  // up -- while the canvas (asserted by the caller) has nothing yet.
   await expect(panel.getByRole('button', { name: SEND_LABEL })).toBeVisible()
   await expect(panel.getByRole('button', { name: /^Worked/ })).toBeVisible()
 
   return {
     vueNodes,
-    // A no-op once `order` already sent it above -- resending the same
-    // update twice is not part of what either ordering means to exercise.
     sendDelayedDocUpdate: () => {
       if (order !== 'docUpdateBeforeToolCall') send(update)
     }

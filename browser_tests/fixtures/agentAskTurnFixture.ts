@@ -24,6 +24,7 @@ import {
   answerPath,
   askTurnIds
 } from '@e2e/fixtures/data/agent/agentAskFrames'
+import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
@@ -79,8 +80,8 @@ async function startAskTurn(
     })
     return route.fulfill(jsonRoute({ status: 'answered' }))
   })
-  await page.route('**/api/agent/threads', (route) =>
-    route.fulfill(jsonRoute({ threads: [] }))
+  await page.route('**/api/agent/threads?*', (route) =>
+    route.fulfill(jsonRoute(emptyAgentThreadList()))
   )
   await page.route('**/api/agent/threads/*/messages', (route) => {
     if (route.request().method() === 'POST') {
