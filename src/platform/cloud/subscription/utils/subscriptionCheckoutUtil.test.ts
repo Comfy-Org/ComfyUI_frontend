@@ -56,7 +56,8 @@ vi.mock(import('@/platform/telemetry'))
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
-  }
+  },
+  isDesktop: false
 }))
 
 vi.mock<unknown>(

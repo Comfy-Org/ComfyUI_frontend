@@ -14,10 +14,14 @@ import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useTelemetry } from '@/platform/telemetry'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
-import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
+import {
+  WorkspaceApiError,
+  workspaceApi
+} from '@/platform/workspace/api/workspaceApi'
 import type { CreateTopupResponse } from '@/platform/workspace/api/workspaceApi'
 import { billingOperation } from '@/platform/workspace/composables/billingOperationTestUtils'
 import type { BillingOperation } from '@/platform/workspace/composables/billingOperationTestUtils'
@@ -30,7 +34,10 @@ import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPo
 const mockShowSettings = vi.fn()
 const mockToastAdd = vi.fn()
 
-const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
+const mockDistributionTypes = vi.hoisted(() => ({
+  isCloud: true,
+  isDesktop: false
+}))
 
 vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 
@@ -49,8 +56,12 @@ vi.mock(import('@/platform/telemetry'))
 
 vi.mock(import('firebase/auth'), { spy: true })
 const mockClearPendingTopup = vi.hoisted(() => vi.fn())
+const mockStartPendingTopup = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(import('@/composables/billing/usePendingTopup'), () => ({
-  usePendingTopup: () => ({ clearPendingTopup: mockClearPendingTopup })
+  usePendingTopup: () => ({
+    clearPendingTopup: mockClearPendingTopup,
+    startPendingTopup: mockStartPendingTopup
+  })
 }))
 
 vi.mock<unknown>(
@@ -373,27 +384,259 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(mockBillingContext().topup).not.toHaveBeenCalled()
   })
 
-  it('explains how to add a payment method when the purchase is refused', async () => {
-    vi.mocked(mockBillingContext().topup).mockRejectedValue(
-      new WorkspaceApiError(
-        'No default payment method is selected.',
-        400,
-        'NO_PAYMENT_METHOD'
+  describe('without a default payment method', () => {
+    const checkoutUrl = 'https://checkout.stripe.com/c/pay/cs_test'
+
+    function refuseForNoPaymentMethod() {
+      vi.mocked(mockBillingContext().topup).mockRejectedValue(
+        new WorkspaceApiError(
+          'No default payment method is selected.',
+          400,
+          'NO_PAYMENT_METHOD'
+        )
       )
-    )
+    }
 
-    renderDialog()
-    await clickAddCredits()
-    await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
+    async function payAndGetRefused() {
+      const rendered = renderDialog()
+      await clickAddCredits()
+      await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
+      const continueButton = await screen.findByRole('button', {
+        name: 'Continue to checkout'
+      })
+      return { ...rendered, continueButton }
+    }
 
-    await waitFor(() =>
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          detail:
-            'No payment method is saved for this workspace. Add one via Settings → Plan & Credits → Manage billing, then retry the top-up.'
+    function stubCheckoutTab() {
+      const tab = { opener: window, location: { href: '' }, close: vi.fn() }
+      const open = vi.spyOn(window, 'open').mockReturnValue(tab as never)
+      return { tab, open }
+    }
+
+    function checkoutOpensAt(url: string) {
+      vi.spyOn(workspaceApi, 'createTopupCheckout').mockResolvedValue({
+        checkout_url: url
+      })
+    }
+
+    it('offers hosted checkout for the selected amount instead of a dead-end error', async () => {
+      refuseForNoPaymentMethod()
+      const createCheckout = vi
+        .spyOn(workspaceApi, 'createTopupCheckout')
+        .mockResolvedValue({ checkout_url: checkoutUrl })
+      const { tab, open } = stubCheckoutTab()
+      const { continueButton } = await payAndGetRefused()
+      expect(
+        screen.getByText(
+          'This workspace has no card saved for one-click top-ups. Pay on a checkout page instead.'
+        )
+      ).toBeInTheDocument()
+
+      await userEvent.click(continueButton)
+
+      await waitFor(() => expect(tab.location.href).toBe(checkoutUrl))
+      expect(open).toHaveBeenCalledExactlyOnceWith('', '_blank')
+      expect(createCheckout).toHaveBeenCalledWith(5000, window.location.href)
+      expect(mockStartPendingTopup).toHaveBeenCalledOnce()
+      expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
+        key: 'top-up-credits'
+      })
+      expect(mockClearPendingTopup).not.toHaveBeenCalled()
+      expect(mockToastAdd).not.toHaveBeenCalled()
+    })
+
+    it('offers Pay again once the user goes back to change the amount', async () => {
+      refuseForNoPaymentMethod()
+      await payAndGetRefused()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Back' }))
+      await userEvent.click(screen.getByRole('button', { name: 'Add credits' }))
+
+      expect(
+        screen.getByRole('button', { name: 'Pay $50.00' })
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Continue to checkout' })
+      ).not.toBeInTheDocument()
+    })
+
+    it('refreshes the workspace balance and status when the user returns from checkout', async () => {
+      refuseForNoPaymentMethod()
+      checkoutOpensAt(checkoutUrl)
+      const { tab } = stubCheckoutTab()
+      const { unmount, continueButton } = await payAndGetRefused()
+      await userEvent.click(continueButton)
+      await waitFor(() => expect(tab.location.href).toBe(checkoutUrl))
+      unmount()
+      const billing = mockBillingContext()
+      vi.mocked(billing.fetchBalance).mockClear()
+      vi.mocked(billing.fetchStatus).mockClear()
+
+      window.dispatchEvent(new Event('focus'))
+
+      await waitFor(() => {
+        expect(billing.fetchBalance).toHaveBeenCalled()
+        expect(billing.fetchStatus).toHaveBeenCalled()
+      })
+    })
+
+    it('keeps watching after a failed balance read instead of treating it as zero', async () => {
+      refuseForNoPaymentMethod()
+      checkoutOpensAt(checkoutUrl)
+      const { tab } = stubCheckoutTab()
+      const billing = mockBillingContext()
+      const balanceMicros = ref<number | null>(null)
+      Object.assign(billing, {
+        balance: computed(() =>
+          balanceMicros.value === null
+            ? null
+            : { amountMicros: balanceMicros.value, currency: 'usd' }
+        )
+      })
+      const { unmount, continueButton } = await payAndGetRefused()
+      await userEvent.click(continueButton)
+      await waitFor(() => expect(tab.location.href).toBe(checkoutUrl))
+      unmount()
+      vi.mocked(billing.fetchBalance)
+        .mockReset()
+        .mockRejectedValueOnce(new Error('balance unavailable'))
+        .mockImplementation(async () => {
+          balanceMicros.value = 1_000_000
+        })
+      vi.useFakeTimers()
+
+      try {
+        window.dispatchEvent(new Event('focus'))
+        await vi.advanceTimersByTimeAsync(2_000)
+        expect(billing.fetchBalance).toHaveBeenCalledTimes(2)
+
+        await vi.advanceTimersByTimeAsync(5_000)
+        expect(billing.fetchBalance).toHaveBeenCalledTimes(3)
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('hands checkout to the Desktop host and returns it to the billing-web return page', async () => {
+      refuseForNoPaymentMethod()
+      const createCheckout = vi
+        .spyOn(workspaceApi, 'createTopupCheckout')
+        .mockResolvedValue({ checkout_url: checkoutUrl })
+      window.__comfyDesktop2 = {}
+      remoteConfig.value = { billing_web_url: 'https://testbilling.comfy.org' }
+      const open = vi.spyOn(window, 'open').mockReturnValue(null)
+      const appUrl = window.location.href
+
+      try {
+        await userEvent.click((await payAndGetRefused()).continueButton)
+
+        await waitFor(() =>
+          expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
+            key: 'top-up-credits'
+          })
+        )
+        expect(createCheckout).toHaveBeenCalledWith(
+          5000,
+          'https://testbilling.comfy.org/return/topup'
+        )
+        expect(open).toHaveBeenCalledWith(checkoutUrl, '_blank')
+        expect(window.location.href).toBe(appUrl)
+      } finally {
+        delete window.__comfyDesktop2
+        remoteConfig.value = {}
+      }
+    })
+
+    it('keeps the app in place when the browser blocks the checkout tab and reopens it on request', async () => {
+      refuseForNoPaymentMethod()
+      checkoutOpensAt(checkoutUrl)
+      const tab = { opener: window, location: { href: '' }, close: vi.fn() }
+      const open = vi
+        .spyOn(window, 'open')
+        .mockReturnValueOnce(null)
+        .mockReturnValueOnce(tab as never)
+      const appUrl = window.location.href
+
+      await userEvent.click((await payAndGetRefused()).continueButton)
+
+      expect(
+        await screen.findByRole('heading', { name: "Checkout didn't open" })
+      ).toBeInTheDocument()
+      expect(window.location.href).toBe(appUrl)
+      expect(mockStartPendingTopup).not.toHaveBeenCalled()
+      expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
+
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Open checkout' })
+      )
+
+      expect(open).toHaveBeenCalledTimes(2)
+      expect(tab.location.href).toBe(checkoutUrl)
+      expect(mockStartPendingTopup).toHaveBeenCalledOnce()
+      expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
+        key: 'top-up-credits'
+      })
+    })
+
+    it('abandons a checkout that resolves after the dialog was dismissed', async () => {
+      refuseForNoPaymentMethod()
+      let resolveCheckout: (value: { checkout_url: string }) => void = () => {}
+      vi.spyOn(workspaceApi, 'createTopupCheckout').mockReturnValue(
+        new Promise((resolve) => {
+          resolveCheckout = resolve
         })
       )
-    )
+      const { tab } = stubCheckoutTab()
+      const { unmount, continueButton } = await payAndGetRefused()
+      await userEvent.click(continueButton)
+
+      unmount()
+      resolveCheckout({ checkout_url: checkoutUrl })
+
+      await waitFor(() => expect(tab.close).toHaveBeenCalledOnce())
+      expect(tab.location.href).toBe('')
+      expect(mockStartPendingTopup).not.toHaveBeenCalled()
+      expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
+    })
+
+    it('keeps the dialog open and explains a checkout that could not start', async () => {
+      refuseForNoPaymentMethod()
+      vi.spyOn(workspaceApi, 'createTopupCheckout').mockRejectedValue(
+        new WorkspaceApiError('Bad return url', 400, 'INVALID_RETURN_URL')
+      )
+      const { tab } = stubCheckoutTab()
+
+      await userEvent.click((await payAndGetRefused()).continueButton)
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        "The payment page couldn't open. Nothing was charged. Try again."
+      )
+      expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(tab.close).toHaveBeenCalledOnce()
+      expect(mockStartPendingTopup).not.toHaveBeenCalled()
+      expect(
+        screen.getByRole('button', { name: 'Continue to checkout' })
+      ).toBeEnabled()
+    })
+
+    it('does not offer checkout for any other refusal', async () => {
+      vi.mocked(mockBillingContext().topup).mockRejectedValue(
+        new WorkspaceApiError(
+          'Unpaid invoice',
+          400,
+          'OUTSTANDING_PAYMENT_REQUIRED'
+        )
+      )
+
+      renderDialog()
+      await clickAddCredits()
+      await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
+
+      await waitFor(() => expect(mockToastAdd).toHaveBeenCalled())
+      expect(
+        screen.queryByRole('button', { name: 'Continue to checkout' })
+      ).not.toBeInTheDocument()
+    })
   })
 
   it('allows returning to amount selection before payment', async () => {

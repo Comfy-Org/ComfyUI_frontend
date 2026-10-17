@@ -71,7 +71,7 @@ function hostnameOf(url: string): string | undefined {
  * base URL that will not parse classifies nothing, so it fails closed like any
  * other unresolved environment rather than throwing through the caller.
  */
-function hostBillingEnvironment(
+export function hostBillingEnvironment(
   cloudBaseUrl = getComfyCloudBaseUrl()
 ): BillingEnvironment | undefined {
   const hostname = hostnameOf(cloudBaseUrl)

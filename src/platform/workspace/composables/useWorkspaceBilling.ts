@@ -30,6 +30,7 @@ import {
   WorkspaceApiError,
   workspaceApi
 } from '@/platform/workspace/api/workspaceApi'
+import { reserveBillingTab } from '@/platform/workspace/billing/billingTab'
 import { openHostedBillingTabOutcome } from '@/platform/workspace/billing/openHostedBillingTab'
 import { registerRefreshOnReturn } from '@/platform/workspace/billing/refreshOnReturn'
 import { useBillingSdkStore } from '@/platform/workspace/billing/sdk/billingSdkStore'
@@ -578,14 +579,12 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     if (hosted === 'opened') return
     if (hosted === 'blocked') return reportBillingTabBlocked()
 
-    // The handle arms the return refresh, so adding `noopener` here (which
-    // nulls it) silently stops billing state from re-reading on return.
-    const portalTab = window.open('', '_blank')
+    const portalTab = reserveBillingTab()
     if (!portalTab) return reportBillingTabBlocked()
     try {
       const url = await requestPortalUrl()
       if (!url) return portalTab.close()
-      portalTab.location.href = url
+      portalTab.navigate(url)
       refreshOnPortalReturn()
     } catch (err) {
       portalTab.close()

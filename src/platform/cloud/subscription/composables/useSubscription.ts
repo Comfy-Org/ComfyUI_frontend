@@ -38,6 +38,7 @@ import {
   recordPendingSubscriptionCheckoutAttempt
 } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 import { useSubscriptionCancellationWatcher } from './useSubscriptionCancellationWatcher'
+import { openBillingUrl } from '@/platform/workspace/billing/billingTab'
 
 class BillingPortalTabBlockedError extends Error {}
 
@@ -252,8 +253,7 @@ function useSubscriptionInternal() {
       )
     }
 
-    const checkoutWindow = window.open(response.checkout_url, '_blank')
-    if (!checkoutWindow) {
+    if (!openBillingUrl(response.checkout_url)) {
       return
     }
 

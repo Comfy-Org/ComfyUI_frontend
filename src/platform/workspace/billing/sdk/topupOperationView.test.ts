@@ -3,7 +3,11 @@ import { describe, expect, it } from 'vitest'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 
 import { failedTopup, pendingTopup, settledTopup } from './billingSdkTestUtils'
-import { projectTopupOperation, projectTopupResult } from './topupOperationView'
+import {
+  projectHostedTopupCheckoutResult,
+  projectTopupOperation,
+  projectTopupResult
+} from './topupOperationView'
 
 describe('projectTopupOperation', () => {
   it('hands the dialog the hosted verification link', () => {
@@ -129,5 +133,29 @@ describe('projectTopupResult', () => {
 
     expect(thrown).toBeInstanceOf(WorkspaceApiError)
     expect(thrown).toMatchObject({ status: 503, code: 'REQUEST_FAILED' })
+  })
+})
+
+describe('projectHostedTopupCheckoutResult', () => {
+  it('hands the dialog the hosted Checkout URL', () => {
+    expect(
+      projectHostedTopupCheckoutResult({
+        status: 'ok',
+        url: 'https://checkout.stripe.com/c/pay/cs_1'
+      })
+    ).toBe('https://checkout.stripe.com/c/pay/cs_1')
+  })
+
+  it.for([
+    { status: 'error', code: 'INVALID_RETURN_URL' },
+    { status: 'error', code: 'NOT_AVAILABLE' },
+    { status: 'error', code: 'REQUEST_FAILED' }
+  ] as const)('throws %o as an API error carrying its code', (failure) => {
+    expect(() => projectHostedTopupCheckoutResult(failure)).toThrow(
+      expect.objectContaining({
+        name: 'WorkspaceApiError',
+        code: failure.code
+      })
+    )
   })
 })

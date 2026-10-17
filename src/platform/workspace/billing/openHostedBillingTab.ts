@@ -9,6 +9,7 @@ import type { BillingIntent } from '@comfyorg/billing-contract'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { reserveBillingTab } from '@/platform/workspace/billing/billingTab'
 import { hostedBillingRoute } from '@/platform/workspace/billing/hostedBillingRoutes'
 import { registerRefreshOnReturn } from '@/platform/workspace/billing/refreshOnReturn'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
@@ -17,21 +18,6 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 export interface OpenHostedBillingTabOptions {
   readonly plan?: string
   readonly teamCreditStopId?: string
-}
-
-/**
- * `noopener` returns a null handle even on success, so the blocked tab and the
- * opened one are told apart by opening a blank tab and clearing `opener` by
- * hand before it leaves `about:blank`. Only that one property survives: the
- * tab stays in this page's browsing-context group and sends this origin as
- * the referrer, both of which `'noopener,noreferrer'` would have prevented.
- */
-function openDisownedTab(url: URL): boolean {
-  const tab = window.open('', '_blank')
-  if (!tab) return false
-  tab.opener = null
-  tab.location.href = url.href
-  return true
 }
 
 let stopReturnRefresh: (() => void) | null = null
@@ -133,7 +119,9 @@ export function openHostedBillingTabOutcome(
     workspaceId
   })
   if (route.kind !== 'billing_web') return 'unavailable'
-  if (!openDisownedTab(route.url)) return 'blocked'
+  const tab = reserveBillingTab()
+  if (!tab) return 'blocked'
+  tab.navigate(route.url.href)
   armReturnRefresh(intent, workspaceId)
   return 'opened'
 }

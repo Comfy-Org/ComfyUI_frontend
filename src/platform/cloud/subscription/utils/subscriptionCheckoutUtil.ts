@@ -19,6 +19,7 @@ import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFai
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 
 import type { BillingCycle } from './subscriptionTierRank'
+import { openBillingUrl } from '@/platform/workspace/billing/billingTab'
 
 type CheckoutTier = TierKey | `${TierKey}-yearly`
 
@@ -159,8 +160,7 @@ async function initiateSubscriptionCheckout(
     }
 
     if (openInNewTab) {
-      const checkoutWindow = window.open(data.checkout_url, '_blank')
-      if (!checkoutWindow) {
+      if (!openBillingUrl(data.checkout_url)) {
         return
       }
       persistPendingSubscriptionCheckoutAttempt(pendingAttempt)
