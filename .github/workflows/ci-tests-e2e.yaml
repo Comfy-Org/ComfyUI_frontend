@@ -82,7 +82,7 @@ jobs:
 
       # Upload only verified dist/ (containerized test jobs will pnpm install without cache)
       - name: Upload built frontend
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: frontend-dist
           path: dist/
@@ -97,7 +97,7 @@ jobs:
           VITE_USE_LEGACY_DEFAULT_GRAPH: 'true'
 
       - name: Upload desktop frontend
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: frontend-dist-desktop
           path: dist/
@@ -207,7 +207,7 @@ jobs:
           COLLECT_COVERAGE: 'true'
 
       - name: Upload blob report
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: ${{ !cancelled() }}
         with:
           name: blob-report-chromium-${{ matrix.shardIndex }}
@@ -215,7 +215,7 @@ jobs:
           retention-days: 1
 
       - name: Upload snapshot updates
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: ${{ !cancelled() && github.event_name == 'pull_request' }}
         continue-on-error: true
         with:
@@ -227,7 +227,7 @@ jobs:
 
       - name: Upload shard coverage data
         if: always()
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: e2e-coverage-shard-${{ matrix.shardIndex }}
           path: coverage/playwright/
@@ -281,7 +281,7 @@ jobs:
           PLAYWRIGHT_BLOB_OUTPUT_DIR: ./blob-report
 
       - name: Upload blob report
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: ${{ !cancelled() }}
         with:
           name: blob-report-cloud-${{ matrix.shardIndex }}
@@ -289,7 +289,7 @@ jobs:
           retention-days: 1
 
       - name: Upload snapshot updates
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: ${{ !cancelled() && github.event_name == 'pull_request' }}
         continue-on-error: true
         with:
@@ -351,7 +351,7 @@ jobs:
           PLAYWRIGHT_BLOB_OUTPUT_DIR: ./blob-report
 
       - name: Upload snapshot updates
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: ${{ !cancelled() && github.event_name == 'pull_request' }}
         continue-on-error: true
         with:
@@ -371,7 +371,7 @@ jobs:
           pnpm exec playwright merge-reports --reporter=json ./blob-report
 
       - name: Upload Playwright report
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: playwright-report-${{ matrix.browser }}
@@ -419,7 +419,7 @@ jobs:
           pnpm dlx @playwright/test merge-reports --reporter=json ./all-blob-reports
 
       - name: Upload HTML report
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: playwright-report-${{ matrix.project }}
           path: ./playwright-report/
