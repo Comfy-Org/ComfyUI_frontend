@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { createContext } from 'astro/middleware'
 import type { ContentCatalogReview } from '@/lib/cms/review-contract'
-import { expect, it, vi } from 'vitest'
+import { beforeEach, expect, it, vi } from 'vitest'
 import { POST as signIn } from './session'
 import { POST as testerSignIn } from './tester-session'
 import {
@@ -28,6 +28,44 @@ const review: ContentCatalogReview = {
 }
 const origin = 'https://preview.example'
 const csrf = 'a'.repeat(64)
+
+beforeEach(() => {
+  vi.stubEnv('DEV', true)
+  vi.stubEnv('VERCEL_ENV', '')
+  vi.stubEnv('SITE_CATALOG_LOCAL_CREDENTIAL_FILE', '/private/test-only.json')
+})
+
+it.for(['preview', 'production'])(
+  'hides legacy credential exchange in %s',
+  async (environment) => {
+    vi.stubEnv('VERCEL_ENV', environment)
+    vi.stubEnv('SITE_CATALOG_DEMO', '')
+    vi.mocked(verifySiteSession).mockResolvedValue(review)
+    const ctx = context('/admin/session')
+    expect((await signIn(ctx)).status).toBe(404)
+    expect(verifySiteSession).not.toHaveBeenCalled()
+    expect(ctx.cookies.has(SESSION_COOKIE)).toBe(false)
+  }
+)
+
+it('keeps the explicit preview demo credential exchange available', async () => {
+  vi.stubEnv('VERCEL_ENV', 'preview')
+  vi.stubEnv('SITE_CATALOG_DEMO', '1')
+  vi.mocked(verifySiteSession).mockResolvedValue(review)
+  const ctx = context('/admin/session')
+  expect((await signIn(ctx)).status).toBe(204)
+  expect(ctx.cookies.get(SESSION_COOKIE)?.value).toBe('test-only')
+})
+
+it('does not enable legacy exchange with the demo flag in production', async () => {
+  vi.stubEnv('VERCEL_ENV', 'production')
+  vi.stubEnv('SITE_CATALOG_DEMO', '1')
+  vi.mocked(verifySiteSession).mockResolvedValue(review)
+  const ctx = context('/admin/session')
+  expect((await signIn(ctx)).status).toBe(404)
+  expect(verifySiteSession).not.toHaveBeenCalled()
+  expect(ctx.cookies.has(SESSION_COOKIE)).toBe(false)
+})
 
 function context(path: string, requestOrigin = origin) {
   const result = createContext({

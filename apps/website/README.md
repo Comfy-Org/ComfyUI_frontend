@@ -166,6 +166,12 @@ behind the explicit non-production `SITE_CATALOG_DEMO` build flag; real catalog
 sessions and uploads never use it. A verified canonical session at `/admin/`
 redirects to the real Draft console. No production consumer is activated.
 
+Legacy site-session exchange (`POST /admin/session`) and verification are
+available only in the explicit in-memory demo or the existing development-only
+local tester configuration. Normal catalog use never probes the retired
+`/admin/api/site/review` endpoint or creates a legacy site cookie. Catalog
+authoring continues through its separate, freshly verified session contract.
+
 The legacy `/admin/actions` mutation handler and projection-shaped admin pages
 are sample-data-only: without `SITE_CATALOG_DEMO=1` outside production they
 return 404 before any write. Preview cookie controls remain separate. Real

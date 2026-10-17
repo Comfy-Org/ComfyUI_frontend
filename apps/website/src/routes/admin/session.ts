@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro'
-import { TESTER_COOKIE } from '@/lib/cms/testers'
+import { TESTER_COOKIE, testersEnabled } from '@/lib/cms/testers'
+import { demoMode } from '@/lib/cms/demo'
 import {
   SESSION_COOKIE,
   CSRF_COOKIE,
@@ -9,6 +10,11 @@ import {
 } from '@/lib/cms/admin'
 
 export const POST: APIRoute = async (context) => {
+  if (!demoMode() && !testersEnabled())
+    return new Response('Not found', {
+      status: 404,
+      headers: { 'Cache-Control': 'private, no-store' }
+    })
   const origin = context.request.headers.get('origin')
   if (
     !origin ||
