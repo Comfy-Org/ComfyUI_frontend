@@ -72,7 +72,6 @@ const isCancelled = computed(() => isDownloadCancelled(job.status))
         v-if="isRunning || isPending"
         variant="muted-textonly"
         size="sm"
-        :aria-label="t('electronFileDownload.cancel')"
         :disabled="isCancelling"
         @click="emit('cancel', job.taskId)"
       >
