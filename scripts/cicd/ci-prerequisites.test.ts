@@ -1,9 +1,18 @@
 import { spawnSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
+import { runInNewContext } from 'node:vm'
 
 import { describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
 import { z } from 'zod'
+
+const stepSchema = z.object({
+  run: z.string().optional(),
+  if: z.string().optional(),
+  uses: z.string().optional(),
+  env: z.record(z.string(), z.unknown()).optional(),
+  with: z.record(z.string(), z.unknown()).optional()
+})
 
 const workflowSchema = z.object({
   on: z.record(z.string(), z.unknown()),
@@ -13,17 +22,13 @@ const workflowSchema = z.object({
       needs: z.union([z.string(), z.array(z.string())]).optional(),
       if: z.string().optional(),
       uses: z.string().optional(),
-      steps: z
-        .array(
-          z.object({
-            run: z.string().optional(),
-            uses: z.string().optional(),
-            with: z.record(z.string(), z.unknown()).optional()
-          })
-        )
-        .optional()
+      steps: z.array(stepSchema).optional()
     })
   )
+})
+
+const actionSchema = z.object({
+  runs: z.object({ steps: z.array(stepSchema).default([]) })
 })
 
 function workflow(file: string) {
@@ -33,6 +38,48 @@ function workflow(file: string) {
 }
 
 const pipeline = workflow('ci-tests-e2e.yaml')
+
+function evaluateBoolean(expression: string, context: object) {
+  return z
+    .boolean()
+    .parse(
+      runInNewContext(
+        expression.slice(3, -2).replace(/\.([a-zA-Z_][\w-]*)/g, '["$1"]'),
+        context
+      )
+    )
+}
+
+function uploadedArtifacts(steps: z.infer<typeof stepSchema>[]): unknown[] {
+  return steps.flatMap((step) => {
+    if (step.uses?.startsWith('actions/upload-artifact@'))
+      return [step.with?.name]
+    if (step.uses?.startsWith('./.github/actions/'))
+      return uploadedArtifacts(
+        actionSchema.parse(
+          parse(
+            readFileSync(
+              `${step.uses}/action.${existsSync(`${step.uses}/action.yaml`) ? 'yaml' : 'yml'}`,
+              'utf8'
+            )
+          )
+        ).runs.steps
+      )
+    return []
+  })
+}
+
+function uploader(artifact: string) {
+  return Object.keys(pipeline.jobs).find((job) =>
+    uploadedArtifacts(pipeline.jobs[job].steps ?? []).includes(artifact)
+  )
+}
+
+function ancestors(job: string): string[] {
+  return [pipeline.jobs[job].needs ?? []]
+    .flat()
+    .flatMap((parent) => [parent, ...ancestors(parent)])
+}
 
 it.for([
   ['ci-tests-e2e.yaml', 'merge-reports'],
@@ -121,9 +168,9 @@ describe('candidate prerequisites', () => {
         PREFLIGHT: 'skipped',
         CHANGES: 'success',
         SHOULD_RUN: 'false',
+        DESKTOP_CLOUD_BUILD: 'skipped',
         SHARDED: 'skipped',
-        BROWSERS: 'skipped',
-        VIDEO: 'skipped'
+        BROWSERS: 'skipped'
       },
       1
     ],
@@ -133,9 +180,9 @@ describe('candidate prerequisites', () => {
         PREFLIGHT: 'success',
         CHANGES: 'success',
         SHOULD_RUN: 'false',
+        DESKTOP_CLOUD_BUILD: 'skipped',
         SHARDED: 'skipped',
-        BROWSERS: 'skipped',
-        VIDEO: 'skipped'
+        BROWSERS: 'skipped'
       },
       0
     ]
@@ -147,22 +194,26 @@ describe('candidate prerequisites', () => {
   )
 
   it.for([
-    ['success', 0],
-    ['failure', 1],
-    ['cancelled', 1],
-    ['skipped', 1]
-  ] satisfies [string, number][])(
-    'cloud shards ending with %s produce E2E exit status %s',
-    ([cloud, expected]) => {
+    ['CLOUD', 'success', 0],
+    ['CLOUD', 'failure', 1],
+    ['CLOUD', 'cancelled', 1],
+    ['CLOUD', 'skipped', 1],
+    ['DESKTOP_CLOUD_BUILD', 'failure', 1],
+    ['DESKTOP_CLOUD_BUILD', 'cancelled', 1],
+    ['DESKTOP_CLOUD_BUILD', 'skipped', 1]
+  ] satisfies [string, string, number][])(
+    '%s ending with %s produces E2E exit status %s',
+    ([need, result, expected]) => {
       expect(
         verdict('e2e-status', {
           PREFLIGHT: 'success',
           CHANGES: 'success',
           SHOULD_RUN: 'true',
+          DESKTOP_CLOUD_BUILD: 'success',
           SHARDED: 'success',
-          CLOUD: cloud,
+          CLOUD: 'success',
           BROWSERS: 'success',
-          VIDEO: 'skipped'
+          [need]: result
         })
       ).toBe(expected)
     }
@@ -191,6 +242,51 @@ describe('candidate prerequisites', () => {
     )
   })
 
+  it.for([
+    'preflight',
+    'unit',
+    'ecosystem',
+    'playwright-tests-chromium-sharded'
+  ])('%s waits for the localhost build but not desktop or cloud', (job) => {
+    const waitsFor = ancestors(job)
+    expect(waitsFor).toContain(uploader('frontend-dist'))
+    expect(waitsFor).not.toContain(uploader('frontend-dist-desktop'))
+    expect(waitsFor).not.toContain(uploader('frontend-dist-cloud'))
+  })
+
+  it.for([
+    ['playwright-tests-chromium-sharded', 'frontend-dist'],
+    ['playwright-tests-cloud-sharded', 'frontend-dist-cloud'],
+    ['playwright-tests', 'frontend-dist'],
+    ['playwright-tests', 'frontend-dist-desktop'],
+    ['playwright-tests', 'frontend-dist-cloud']
+  ])('%s waits for the job that uploads %s', ([job, artifact]) => {
+    expect(ancestors(job)).toContain(uploader(artifact))
+  })
+
+  it.for([
+    ['playwright-tests-cloud-sharded', 'success', true],
+    ['playwright-tests-cloud-sharded', 'failure', false],
+    ['playwright-tests-cloud-sharded', 'skipped', false],
+    ['playwright-tests', 'success', true],
+    ['playwright-tests', 'failure', false],
+    ['playwright-tests', 'skipped', false]
+  ] satisfies [string, string, boolean][])(
+    '%s runs after a %s distribution build: %s',
+    ([job, result, expected]) => {
+      expect(
+        evaluateBoolean(pipeline.jobs[job].if ?? '', {
+          cancelled: () => false,
+          needs: {
+            preflight: { result: 'success' },
+            'setup-desktop-cloud': { result },
+            changes: { outputs: { 'should-run': 'true' } }
+          }
+        })
+      ).toBe(expected)
+    }
+  )
+
   it.for(['lint-pr', 'lint-queue', 'fallow', 'unit', 'ecosystem'])(
     '%s is called in the same run without a duplicate candidate trigger',
     (job) => {
@@ -203,3 +299,35 @@ describe('candidate prerequisites', () => {
     }
   )
 })
+
+it.for([
+  ['ci-tests-e2e.yaml', 'deploy-and-comment', '${{ github.run_id }}'],
+  [
+    'ci-tests-e2e-forks.yaml',
+    'deploy-and-comment-forked-pr',
+    '${{ github.event.workflow_run.id }}'
+  ]
+])('%s uses the source run for its report verdict', ([file, job, result]) => {
+  expect(
+    workflow(file).jobs[job].steps?.find((step) => step.env?.SUMMARY_FILE)?.env
+      ?.SOURCE_RUN_ID
+  ).toBe(result)
+})
+
+it.for([
+  ['cloud', 'success', true],
+  ['cloud', 'failure', false],
+  ['cloud', 'cancelled', false],
+  ['chromium', 'failure', true]
+])(
+  'merges %s reports after a %s distribution build: %s',
+  ([project, result, expected]) => {
+    const decisions = pipeline.jobs['merge-reports'].steps?.map((step) =>
+      evaluateBoolean(step.if ?? '${{ true }}', {
+        matrix: { project },
+        needs: { 'setup-desktop-cloud': { result } }
+      })
+    )
+    expect(new Set(decisions)).toEqual(new Set([expected]))
+  }
+)

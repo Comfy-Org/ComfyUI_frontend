@@ -170,13 +170,18 @@ flowchart TD
     Event[PR or merge group] --> Quality[Quality checks]
     Event --> Fallow[Fallow]
     Event --> Changes[Path selection]
-    Changes --> Build[Three-distribution build]
+    Changes --> Build[Localhost build]
+    Changes --> DistributionBuild[Desktop and cloud builds]
     Quality --> LintStatus[lint-and-format]
     Changes --> Gate{preflight}
     Build --> Gate
     LintStatus --> Gate
     Fallow --> Gate
-    Gate -->|Success| Playwright[Frontend Playwright]
+    Gate -->|Success| Playwright[Chromium shards]
+    Gate -->|Success| DistributionTests[Cloud shards and browser matrix]
+    DistributionBuild --> DistributionTests
+    DistributionBuild --> E2EStatus
+    DistributionTests --> E2EStatus
     Gate -->|Success| Unit[Vitest]
     Gate -->|Success| Ecosystem[Custom-node ecosystem matrix]
     Gate -->|Failure| Blocked[Skip expensive suites]
@@ -188,6 +193,10 @@ flowchart TD
 ```
 
 </details>
+
+The localhost build gates `preflight`. Desktop and cloud builds run separately
+and gate only their consuming E2E suites and `e2e-status`. A distribution-only
+build failure therefore leaves unit, ecosystem, and Chromium feedback available.
 
 ### Concurrency ownership
 
@@ -239,7 +248,7 @@ coordinated run. No new key retroactively cancels those runs.
 ### Negative
 
 - Passing candidates wait for the slowest prerequisite. Unit tests and the
-  ecosystem matrix now wait for the build as well as lint checks.
+  ecosystem matrix wait for the localhost build as well as lint checks.
 - Independent test failures can remain undiscovered until a later push,
   increasing the number of author feedback cycles.
 - Unit-only edits now require a build, even when Playwright remains skipped.

@@ -44,8 +44,10 @@ describe('CI runtime ownership', () => {
   it.for([
     ['CI: Tests Unit', 'test', 'unit'],
     ['CI: Tests E2E', 'setup', 'e2e-build'],
+    ['CI: Tests E2E', 'setup-desktop-cloud', 'e2e-distribution-build'],
     ['CI: Tests E2E', 'playwright-tests (1, chromium)', 'e2e-test'],
     ['CI: Tests E2E', 'playwright-tests-chromium-sharded (1, 16)', 'e2e-test'],
+    ['CI: Tests E2E', 'playwright-tests-cloud-sharded (1, 4)', 'e2e-test'],
     [
       'CI: Playwright Videos',
       'playwright-video-new-tests (chromium, 1, 2)',
@@ -70,6 +72,14 @@ describe('CI runtime ownership', () => {
       expect(classify(workflow, job)?.category ?? null).toBe(expected)
     }
   )
+})
+
+it('does not count a distribution build failure as a prerequisite failure', () => {
+  expect(classify('CI: Tests E2E', 'setup-desktop-cloud')).toEqual({
+    category: 'e2e-distribution-build',
+    gate: false,
+    expensive: true
+  })
 })
 
 describe('cohort arithmetic', () => {
