@@ -2413,7 +2413,7 @@
     }
   },
   "CLIPLoader": {
-    "description": "Tarifler:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (226-token padding)\ncosmos: old t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1 (Önerilen) veya t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VL veya Music3 Qwen/RVQ",
+    "description": "Tarifler:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (226 belirteç dolgusu)\ncosmos: eski t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1 (Önerilir) veya t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VL veya Music3 Qwen/RVQ\nflux3: qwen3-vl 4B",
     "display_name": "CLIP Yükle",
     "inputs": {
       "clip_name": {
@@ -5701,7 +5701,7 @@
     }
   },
   "FishAudioTextToSpeech": {
-    "description": "Metni konuşmaya dönüştürür. Metindeki duygu ipuçlarını ([happy], [whispering] s2.1-pro'da; (happy) s1'de) ve birden çok bağlı sesle {'@'}Voice1/{'@'}Voice2 etiketleri aracılığıyla çok konuşmacılı diyaloğu destekler.",
+    "description": "Metni konuşmaya dönüştürür. Metindeki duygu ipuçlarını (s2.1-pro'da [happy], [whispering]; s1'de (happy)), drama-3'te doğal dildeki [directions] ve `<whisper>...</whisper>` sözcük etiketlerini ve birden çok bağlı sesle {'@'}Voice1/{'@'}Voice2 etiketleri aracılığıyla çok konuşmacılı diyaloğu destekler.",
     "display_name": "Fish Audio Metinden Konuşmaya",
     "inputs": {
       "control_after_generate": {
@@ -5893,8 +5893,8 @@
     }
   },
   "Flux3ImageNode": {
-    "description": "FLUX 3 ile bir istemden görüntü oluşturur veya en fazla 10 referans görüntüsünü düzenler ve birleştirir. İstem içinde referanslara görüntü 1, görüntü 2 vb. olarak başvurun.",
-    "display_name": "Flux 3 Görüntü",
+    "description": "Bir istemden FLUX 3 Image ile görüntü oluşturur veya en fazla 10 referans görüntüyü düzenler ve birleştirir. İstemde referanslardan görüntü 1, görüntü 2 vb. olarak bahsedin.",
+    "display_name": "FLUX 3 Görüntü",
     "inputs": {
       "aspect_ratio": {
         "name": "aspect_ratio",
@@ -5984,6 +5984,26 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3LayoutPrompt": {
+    "description": "Create Bounding Boxes düğümündeki kutuları, düzen tablosu olarak bir FLUX 3 Image istemine ekler.",
+    "display_name": "FLUX 3 Image Düzen İstemi",
+    "inputs": {
+      "element": {
+        "name": "element",
+        "tooltip": "Create Bounding Boxes düğümündeki istem ögeleri. Renk paletleri kullanılmaz; renkleri açıklamada belirtin."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "İstem metni. Sözcükleri kutuya bağlamak için N numaralı kutuyu <obj_N> olarak belirtin."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "prompt",
         "tooltip": null
       }
     }
@@ -7223,6 +7243,30 @@
       }
     }
   },
+  "GetAudioLatentSize": {
+    "description": "Bir ses latent'inin uzunluğunu, ses kanalı sayısını ve batch boyutunu döndürür.",
+    "display_name": "Ses Latent Boyutunu Al",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "İncelenecek ses veya ses/video latent'i."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "length",
+        "tooltip": "Ses latent uzunluğu."
+      },
+      "1": {
+        "name": "audio_channels",
+        "tooltip": "Ses kanallarının sayısı. Ses kanalı boyutu olmayan latent'lerde bir kanal vardır."
+      },
+      "2": {
+        "name": "batch_size",
+        "tooltip": "Batch içindeki latent sayısı."
+      }
+    }
+  },
   "GetICLoRAParameters": {
     "description": "Bir LoRA yüklü modelin safetensors meta verilerinden IC-LoRA parametrelerini çıkarır ve LTXVAddGuide için çıktılar (örn. reference_downscale_factor).",
     "display_name": "IC-LoRA Parametrelerini Al",
@@ -7275,6 +7319,34 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "GetLatentSize": {
+    "description": "Bir görüntü veya video latent'inin genişliğini, yüksekliğini, kare sayısını ve batch boyutunu döndürür.",
+    "display_name": "Görüntü/Video Latent Boyutunu Al",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "İncelenecek görüntü veya video latent'i."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "width",
+        "tooltip": "Latent genişliği."
+      },
+      "1": {
+        "name": "height",
+        "tooltip": "Latent yüksekliği."
+      },
+      "2": {
+        "name": "frames",
+        "tooltip": "Latent kare sayısı. Görüntü latent'lerinde bir kare vardır."
+      },
+      "3": {
+        "name": "batch_size",
+        "tooltip": "Batch içindeki latent sayısı."
       }
     }
   },
@@ -9298,6 +9370,28 @@
       }
     }
   },
+  "ImageSDRToHDR": {
+    "description": "sRGB parlaklığını Rec.2020 HLG HDR'ye genişletir. Sonucu HDR renk uzayı seçiliyken kaydedin. Alfa korunur.",
+    "display_name": "SDR'yi HDR'ye Dönüştür",
+    "inputs": {
+      "algorithm": {
+        "name": "algorithm",
+        "tooltip": "Kalibre edilmiş monotonik bir log-kazanç eğrisiyle harmanlanmış, Lottes tarzı rasyonel genişletme."
+      },
+      "algorithm_target_luminance": {
+        "name": "target_luminance"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "sRGB'deki SDR görüntü(ler)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ImageScale": {
     "display_name": "Görüntüyü Büyüt",
     "inputs": {
@@ -10590,6 +10684,41 @@
     "outputs": {
       "0": {
         "name": "stil_referansı",
+        "tooltip": null
+      }
+    }
+  },
+  "Krea3ImageNode": {
+    "description": "Görüntüleri Krea 3 ile düzenleyin veya herhangi bir görüntü bağlı değilse metinden yeni bir görüntü oluşturun.",
+    "display_name": "Krea 3 Görüntü",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_precise_edit": {
+        "name": "precise_edit"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_thinking_mode": {
+        "name": "thinking_mode"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -13153,6 +13282,38 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MOSSImageLayoutPrompt": {
+    "description": "İstemden ve Sınırlayıcı Kutular Oluştur düğümündeki kutulardan bir MOSS-Image düzen istemi oluşturur.",
+    "display_name": "MOSS-Image Düzen İstemi",
+    "inputs": {
+      "character_boxes": {
+        "name": "character_boxes",
+        "tooltip": "Sınırlayıcı Kutular Oluştur önizlemesinde etiketlendiği gibi, nesneler yerine karakter olarak etiketlenecek nesne kutularının numaraları; ör. \"1, 3\"."
+      },
+      "element": {
+        "name": "element",
+        "tooltip": "Sınırlayıcı Kutular Oluştur düğümündeki istem öğeleri. Açıklama kutunun başlığıdır; metin kutuları kendi metinlerini de işler."
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "Oluşturulan görüntünün yüksekliği; kutular, görüntünün piksellerine yerleştirilir."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Tüm görüntünün açıklaması."
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "Oluşturulan görüntünün genişliği; kutular, görüntünün piksellerine yerleştirilir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "prompt",
         "tooltip": null
       }
     }
@@ -18880,7 +19041,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "Modelin çizimden önce ne kadar akıl yürütme harcadığı. Daha yüksek düzeyler ayrıntıyı iyileştirir ve daha fazla token maliyetine yol açar. Yalnızca Arrow 2 modelleri tarafından kullanılır."
+        "tooltip": "Modelin çizimden önce ne kadar akıl yürütme yapacağını belirler. Daha yüksek seviyeler ayrıntıyı artırır ve daha fazla token maliyetine neden olur."
       },
       "seed": {
         "name": "seed",
@@ -18968,7 +19129,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "Modelin çizimden önce ne kadar akıl yürütme harcadığı. Daha yüksek düzeyler ayrıntıyı iyileştirir ve daha fazla token maliyetine yol açar. Yalnızca Arrow 2 modelleri tarafından kullanılır."
+        "tooltip": "Modelin çizimden önce ne kadar akıl yürütme yapacağını belirler. Daha yüksek seviyeler ayrıntıyı artırır ve daha fazla token maliyetine neden olur."
       },
       "reference_images": {
         "name": "reference_images",
@@ -19824,6 +19985,42 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "ReferenceMultiLatent": {
+    "description": "Referans görüntülerini kodlar ve düzenleme modelleri için latentlerini pozitif ve isteğe bağlı negatif koşullandırmaya ekler.",
+    "display_name": "Referans Çoklu Latent Ayarla",
+    "inputs": {
+      "images": {
+        "name": "images"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Hiçbir VAE bağlı olmadığında referans görüntüleri yok sayılır."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "Negatif koşullandırma bağlı olmadığında pozitif çıktıyı döndürür."
+      },
+      "2": {
+        "name": "empty_latent",
+        "tooltip": "0.0 ile çarpılmış ilk referans latentini veya seçili çözünürlükte kare boş bir latent döndürür."
       }
     }
   },
