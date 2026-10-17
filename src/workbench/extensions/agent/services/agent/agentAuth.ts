@@ -27,6 +27,7 @@ export async function withAgentAuth(
     ...init,
     headers,
     redirect: 'error',
+    onAuthScheme: () => init.onAuthScheme?.('cloud-auth-header'),
     onAuthCredential: () => init.onAuthCredential?.(attached)
   }
 }

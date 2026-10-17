@@ -3,6 +3,8 @@ import type { Ref } from 'vue'
 
 const RETRY_BASE_MS = 1_000
 const RETRY_MAX_MS = 30_000
+/** Lookups tried before a transient failure is treated as a rejection. */
+const MAX_ATTEMPTS = 8
 
 interface AgentIdentityDeps {
   getIdentity(): Promise<{ userId: string }>
@@ -11,7 +13,10 @@ interface AgentIdentityDeps {
   onFailure(error: unknown): void
 }
 
-/** Outcome of the identity lookup. `rejected` holds until `reset()`. */
+/**
+ * Outcome of the identity lookup. `rejected` holds until `reset()`, or until
+ * the socket reopens after the retry budget ran out.
+ */
 export type AgentIdentityState =
   | { status: 'pending' }
   | { status: 'resolved'; userId: string }
@@ -32,6 +37,7 @@ export function resolveAgentIdentity(
   let failures = 0
   let retryTimer: ReturnType<typeof setTimeout> | null = null
   let generation = 0
+  let exhausted = false
 
   function cancelRetry(): void {
     if (retryTimer === null) return
@@ -58,6 +64,11 @@ export function resolveAgentIdentity(
       state.value = { status: 'rejected' }
       return
     }
+    if (failures >= MAX_ATTEMPTS) {
+      exhausted = true
+      state.value = { status: 'rejected' }
+      return
+    }
     scheduleRetry()
   }
 
@@ -78,7 +89,12 @@ export function resolveAgentIdentity(
   }
 
   function retryNow(): void {
-    if (retryTimer !== null) void attempt()
+    if (exhausted) {
+      exhausted = false
+      failures = 0
+      state.value = { status: 'pending' }
+    } else if (retryTimer === null) return
+    void attempt()
   }
 
   const stopListening = deps.onSocketOpen(retryNow)
@@ -90,6 +106,7 @@ export function resolveAgentIdentity(
       generation += 1
       state.value = { status: 'pending' }
       failures = 0
+      exhausted = false
       inFlight = false
       cancelRetry()
       void attempt()

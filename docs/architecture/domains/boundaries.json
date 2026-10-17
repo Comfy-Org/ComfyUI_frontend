@@ -99,7 +99,9 @@
           "src/workbench/extensions/agent/crdt/agentCrdtDocLifecycle.test.ts",
           "src/workbench/extensions/agent/crdt/layoutFollowerBridge.ts",
           "src/workbench/extensions/agent/crdt/followerSubscription.test.ts",
-          "src/workbench/extensions/agent/crdt/rejectedOpNotice.ts"
+          "src/workbench/extensions/agent/crdt/rejectedOpNotice.ts",
+          "src/workbench/extensions/agent/services/agent/agentIdentity.ts",
+          "src/workbench/extensions/agent/services/agent/agentIdentity.test.ts"
         ]
       },
       {
@@ -109,6 +111,12 @@
           "src/workbench/extensions/agent/services/agent/agentEventSource.test.ts",
           "src/workbench/extensions/agent/services/agent/agentRestClient.ts",
           "src/workbench/extensions/agent/services/agent/agentRestClient.test.ts",
+          "src/workbench/extensions/agent/services/agent/agentAuth.ts",
+          "src/workbench/extensions/agent/services/agent/agentAuth.test.ts",
+          "src/workbench/extensions/agent/services/agent/__mocks__/agentAuth.ts",
+          "src/workbench/extensions/agent/crdt/agentDocFrameTransport.ts",
+          "src/workbench/extensions/agent/crdt/agentDocFrameTransport.test.ts",
+          "src/workbench/extensions/agent/crdt/__fixtures__/agentSocket.ts",
           "src/workbench/extensions/agent/utils/resolveReplyAssetDownload.ts",
           "src/workbench/extensions/agent/utils/resolveReplyAssetDownload.test.ts",
           "src/workbench/extensions/agent/utils/videoThumbnail.ts",

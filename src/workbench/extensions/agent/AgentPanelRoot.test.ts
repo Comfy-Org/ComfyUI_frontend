@@ -12799,19 +12799,32 @@ describe('AgentPanelRoot agent socket identity', () => {
     expect(subscribeAttempts()).toEqual(['wf-42'])
   })
 
-  it('looks the identity up once when the backend rejects the credential', async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true })
-    const identity = vi.fn(async () => json(401, { error: 'unauthorized' }))
-    mockMessagesEndpoint('wf-42')
-    respondToFetch(/\/agent\/identity$/, identity)
-    bindActiveTab('wf-42')
-    useAgentPanelStore().enabled = true
+  it.for([
+    { reason: 'the backend rejects the credential', status: 401 },
+    { reason: 'the backend has no identity route', status: 404 }
+  ])(
+    'looks the identity up once and seeds the draft when $reason',
+    async ({ status }) => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      const identity = vi.fn(async () => json(status, { error: 'refused' }))
+      const bodies = mockMessagesEndpoint('wf-42')
+      respondToFetch(/\/agent\/identity$/, identity)
+      bindActiveTab('wf-42')
+      useAgentPanelStore().enabled = true
 
-    await renderAndSend('first message')
-    await vi.advanceTimersByTimeAsync(60_000)
+      await renderAndSend('first message')
+      await vi.advanceTimersByTimeAsync(60_000)
+      ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
+      await screen.findByRole('button', { name: 'Send' })
+      await sendFromComposer('second message')
 
-    expect(identity).toHaveBeenCalledOnce()
-  })
+      expect(identity).toHaveBeenCalledOnce()
+      expect(bodies[1]).toMatchObject({
+        workflow_id: 'wf-42',
+        draft: { content: expect.anything() }
+      })
+    }
+  )
 
   it.for([
     {

@@ -20,7 +20,6 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { isAuthRejectionStatus } from '@/platform/auth/authRejection'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import type {
@@ -129,10 +128,7 @@ import {
 } from './composables/agent/useAgentSession'
 import { useAgentDraftSubmission } from './composables/agent/useAgentDraftSubmission'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
-import {
-  AgentApiError,
-  createAgentRestClient
-} from './services/agent/agentRestClient'
+import { createAgentRestClient } from './services/agent/agentRestClient'
 import {
   agentSocketAuthParams,
   ensureSignedIn,
@@ -234,8 +230,7 @@ onBeforeUnmount(() => docTransport.destroy())
 const agentIdentity = resolveAgentIdentity({
   getIdentity: () => rest.getIdentity(),
   onSocketOpen: (listener) => docTransport.onSocketOpen(listener),
-  isRetryable: (error) =>
-    !(error instanceof AgentApiError && isAuthRejectionStatus(error.status)),
+  isRetryable: (error) => isRetryableRequestFailure(error, false),
   onFailure: (error) =>
     reportError(error, {
       surface: 'agent',
@@ -752,6 +747,9 @@ function targetWorkflowDraft(origin?: TurnOrigin): DraftSnapshot | undefined {
   return { content }
 }
 
+// A pending identity still withholds the draft: the seed replaces the server
+// document, and a canvas the follower has not caught up would undo agent edits.
+// Pending is bounded; the lookup settles as `rejected` after its retry budget.
 function followerOwnsDocument(documentId: string | undefined): boolean {
   return (
     documentId !== undefined &&

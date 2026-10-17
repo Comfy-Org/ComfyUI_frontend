@@ -392,6 +392,38 @@
       "role": "infrastructure"
     },
     {
+      "path": "src/workbench/extensions/agent/services/agent/agentAuth.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/workbench/extensions/agent/services/agent/agentAuth.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/workbench/extensions/agent/services/agent/__mocks__/agentAuth.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/workbench/extensions/agent/services/agent/agentIdentity.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/workbench/extensions/agent/services/agent/agentIdentity.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/workbench/extensions/agent/crdt/agentDocFrameTransport.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/workbench/extensions/agent/crdt/agentDocFrameTransport.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/workbench/extensions/agent/crdt/__fixtures__/agentSocket.ts",
+      "role": "infrastructure"
+    },
+    {
       "path": "src/workbench/extensions/agent/utils/resolveReplyAssetDownload.ts",
       "role": "infrastructure"
     },
