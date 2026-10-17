@@ -5,7 +5,6 @@
     :locale
     :preview-data
     :billing-cycle
-    :dark-surface
     :promo-applied
     :close-demoted="showInviteBlock && invitedEmails.length === 0"
     @close="$emit('close')"
@@ -37,11 +36,6 @@
             v-else
             ref="inviteForm"
             :show-submit="false"
-            :tags-input-class="
-              darkSurface
-                ? 'min-h-10 w-full bg-secondary px-3 focus-within:bg-secondary hover:bg-secondary/80'
-                : undefined
-            "
             source="post_upgrade_success"
             :submit-label="$t('subscription.success.sendInvites')"
             :placeholder="$t('subscription.success.inviteEmailsPlaceholder')"
@@ -92,15 +86,12 @@ const {
   previewData = null,
   teamPlan = null,
   billingCycle = 'monthly',
-  darkSurface = false,
   promoApplied = null
 } = defineProps<{
   tierKey?: Exclude<TierKey, 'free' | 'founder'> | null
   previewData?: PreviewSubscribeResponse | null
   teamPlan?: TeamPlanSelection | null
   billingCycle?: BillingCycle
-  /** Dialog paints base-background; the plan card elevates to stay visible. */
-  darkSurface?: boolean
   /** Applied promotion feedback (Figma 5379-30077 S3). Display-ready strings;
    *  the backend does not supply this yet — see the promo validation ask. */
   promoApplied?: {

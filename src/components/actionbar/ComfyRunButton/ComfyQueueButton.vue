@@ -172,7 +172,7 @@ const queueButtonLabel = computed(() =>
 )
 
 const queueButtonVariant = computed<
-  'destructive' | 'inverted' | 'secondary' | 'subscribe'
+  'destructive' | 'primary' | 'secondary' | 'subscribe'
 >(() =>
   paymentRecoveryLock === 'owner'
     ? 'subscribe'
@@ -180,7 +180,7 @@ const queueButtonVariant = computed<
       ? 'secondary'
       : isStopInstantAction.value
         ? 'destructive'
-        : 'inverted'
+        : 'primary'
 )
 const queueMenuTriggerVariant = computed(() =>
   queueButtonVariant.value === 'subscribe'
@@ -189,7 +189,7 @@ const queueMenuTriggerVariant = computed(() =>
 )
 const queueMenuTriggerVariantClass = {
   destructive: 'border-black/20 data-[state=open]:bg-destructive/90',
-  inverted: 'data-[state=open]:bg-foreground/80',
+  primary: 'data-[state=open]:bg-primary/90',
   secondary: 'text-muted-foreground'
 } satisfies Record<typeof queueMenuTriggerVariant.value, string>
 const queueMenuTriggerClass =

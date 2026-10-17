@@ -79,14 +79,8 @@
       :is-loading="isSubscribing || isPolling"
       :action-url="activeCheckoutActionUrl"
       :authentication-state
-      :authentication-error
-      :reconciliation-operation-id
       :parked-checkout-recovery
-      :quote-is-current
-      :is-applying-promotion-code
       @add-credit-card="handleAddCreditCard"
-      @apply-promotion-code="applyPromotionCode"
-      @invalidate-quote="invalidateQuote"
       @back="handleBackToPricing"
     />
 
@@ -102,17 +96,11 @@
       :action-url="activeCheckoutActionUrl"
       :force-reactivation="reactivationRequired"
       :authentication-state
-      :authentication-error
-      :reconciliation-operation-id
-      :quote-is-current
-      :is-applying-promotion-code
       :payment-cancelable
       :canceling-payment="isCancelingPayment"
       :cancel-payment-error
       @cancel-payment="cancelPayment"
       @confirm="handleConfirmTransition"
-      @apply-promotion-code="applyPromotionCode"
-      @invalidate-quote="invalidateQuote"
       @back="handleBackToPricing"
     />
 
@@ -167,14 +155,10 @@ const {
   isResubscribing,
   previewData,
   reactivationRequired,
-  quoteIsCurrent,
-  isApplyingPromotionCode,
   selectedTierKey,
   selectedBillingCycle,
   activeCheckoutActionUrl,
   authenticationState,
-  authenticationError,
-  reconciliationOperationId,
   parkedCheckoutRecovery,
   isPolling,
   paymentCancelable,
@@ -185,8 +169,6 @@ const {
   handleBackToPricing,
   handleAddCreditCard,
   handleConfirmTransition,
-  applyPromotionCode,
-  invalidateQuote,
   handleResubscribe,
   handleSuccessClose
 } = useSubscriptionCheckout(emit, paymentIntentSource, {
