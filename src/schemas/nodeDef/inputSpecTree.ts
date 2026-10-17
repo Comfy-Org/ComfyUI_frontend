@@ -31,6 +31,7 @@ interface DynamicControl {
 
 const none = () => []
 
+const MAX_INPUT_SPEC_DEPTH = 64
 const MAX_SPEC_DRIFT_REPORTS = 10
 const reportedSpecDrift = new Set<string>()
 
@@ -62,6 +63,30 @@ function warnSpecDrift(
       optionIndex,
       issueCount: error.issues.length
     },
+    level: 'warning'
+  })
+}
+
+function warnSpecDepth(spec: InputSpecV2): void {
+  const location = JSON.stringify([spec.name, spec.type, 'depth'])
+  if (
+    reportedSpecDrift.has(location) ||
+    reportedSpecDrift.size >= MAX_SPEC_DRIFT_REPORTS
+  )
+    return
+
+  reportedSpecDrift.add(location)
+
+  reportError(new Error('Node input specification exceeds the nesting limit'), {
+    surface: 'graph',
+    errorType: 'error_node_input_spec_depth_exceeded',
+    tags: {
+      failure_kind: 'degraded',
+      feature_area: 'node_definition',
+      operation: 'walk_input_spec',
+      outcome: 'recovered'
+    },
+    context: { controlType: spec.type, maxDepth: MAX_INPUT_SPEC_DEPTH },
     level: 'warning'
   })
 }
@@ -154,17 +179,24 @@ function dynamicControlFor(spec: InputSpecV2): DynamicControl | undefined {
  *
  * Nested specs arrive from the backend as V1 tuples even when `spec` itself
  * has already been normalized, so each child is converted on the way out.
- * The tree is finite: specs originate from parsed `/object_info` JSON, which
- * cannot contain cycles.
+ * Parsed JSON cannot contain cycles but can still be arbitrarily deep.
+ * Retain nodes up to 64 edges from the root, then prune only their descendants.
  */
-function* walkNestedInputSpecs(spec: InputSpecV2): Generator<InputSpecV2> {
+function* walkNestedInputSpecs(
+  spec: InputSpecV2,
+  depth = 0
+): Generator<InputSpecV2> {
   const control = dynamicControlFor(spec)
   if (!control) return
 
   for (const inputs of control.nestedInputs(spec)) {
     for (const child of toInputSpecsV2(inputs)) {
+      if (depth >= MAX_INPUT_SPEC_DEPTH) {
+        warnSpecDepth(spec)
+        return
+      }
       yield child
-      yield* walkNestedInputSpecs(child)
+      yield* walkNestedInputSpecs(child, depth + 1)
     }
   }
 }
