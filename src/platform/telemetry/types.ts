@@ -965,6 +965,15 @@ export interface AgentStarterPromptClickedMetadata
   /** Size of the rendered set, so a set that grew or shrank is visible too. */
   prompt_count: number
   /**
+   * How many of that set the viewer could actually see. A panel narrower than
+   * 460px hides everything past the third chip with a container query, so this
+   * is 3 there and `prompt_count` elsewhere. Deliberately not folded into
+   * `prompt_count`: that field has to keep meaning "set size" for the
+   * starter-prompt set experiment to read it, and a reader cannot otherwise
+   * tell a shrunken set from a narrow panel.
+   */
+  visible_prompt_count: number
+  /**
    * FNV-1a of the *displayed* text, 8 hex chars. Here so a copy change under a
    * stable `prompt_id` is detectable — without it, a before/after read cannot
    * tell a better slot from a rewritten one. Not the text itself (job `Don't`
