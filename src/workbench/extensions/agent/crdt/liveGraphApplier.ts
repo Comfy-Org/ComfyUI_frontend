@@ -21,7 +21,7 @@ import { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { withGraphIntentSource } from '@/lib/litegraph/src/graphIntents'
 import { detachSerialisedLinks } from '@/lib/litegraph/src/linkDeduplication'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import { topologicalSortSubgraphs } from '@/lib/litegraph/src/subgraph/subgraphDeduplication'
 import type {
   ExportedSubgraph,
@@ -934,12 +934,10 @@ export class LiveGraphApplier {
     if (!docNodes) return
     const orderedIds = [...docNodes.keys()]
     for (const [nodeId, names] of nodes) {
-      const widgets = docNodes.get(nodeId)
+      const entry = docNodes.get(nodeId)
+      const widgets = entry?.widgets
       if (widgets === undefined) continue
-      const index = orderedIds.indexOf(nodeId)
-      const live: LGraphNode | undefined =
-        subgraph.getNodeById(toNodeId(nodeId)) ??
-        (index >= 0 ? subgraph.nodes[index] : undefined)
+      const live = liveInteriorNode(subgraph, orderedIds, nodeId, entry)
       if (!live) continue
       this.applyInteriorWidgets(live, widgets, names, mode)
       this.propagateInteriorToHosts(
@@ -1445,6 +1443,20 @@ function changed(
   if (names.has(name)) return true
   const positional = overflowWidget(node, name)
   return positional !== undefined && names.has(positional.name)
+}
+
+function liveInteriorNode(
+  subgraph: Subgraph,
+  orderedIds: readonly string[],
+  nodeId: string,
+  entry: { type: string | undefined } | undefined
+): LGraphNode | undefined {
+  const byId = subgraph.getNodeById(toNodeId(nodeId))
+  if (byId) return byId
+  const index = orderedIds.indexOf(nodeId)
+  const byPosition = index >= 0 ? subgraph.nodes[index] : undefined
+  if (!byPosition || entry?.type === undefined) return undefined
+  return byPosition.type === entry.type ? byPosition : undefined
 }
 
 type InteriorSyncTargets = Map<string, Map<string, ReadonlySet<string> | 'all'>>

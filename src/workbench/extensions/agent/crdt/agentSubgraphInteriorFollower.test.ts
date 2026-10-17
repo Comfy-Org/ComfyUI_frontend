@@ -75,7 +75,12 @@ function operation(id: string, version: number, payload: GraphOperation): Op {
   }
 }
 
-function workflow(): WorkflowJSON {
+interface WorkflowOptions {
+  rootIdCollidesWithInterior?: boolean
+  secondHost?: boolean
+}
+
+function workflow(options: WorkflowOptions = {}): WorkflowJSON {
   const graph = new LGraph()
   const subgraph = createTestSubgraph({
     rootGraph: graph,
@@ -90,17 +95,27 @@ function workflow(): WorkflowJSON {
   const host = createTestSubgraphNode(subgraph, { id: 1 })
   graph.add(host)
   host.widgets[0].value = HOST_INITIAL_VALUE
+  if (options.secondHost) {
+    const second = createTestSubgraphNode(subgraph, { id: 4 })
+    graph.add(second)
+    second.widgets[0].value = 5
+  }
 
   const source = LiteGraph.createNode('source')!
   source.id = toNodeId(2)
   graph.add(source)
-  return graph.serialize() as unknown as WorkflowJSON
+  const serialized = graph.serialize()
+  if (options.rootIdCollidesWithInterior) {
+    const sourceNode = serialized.nodes.find((n) => n.id === 2)
+    if (sourceNode) sourceNode.id = 7
+  }
+  return serialized as unknown as WorkflowJSON
 }
 
-function startFollower() {
+function startFollower(options: WorkflowOptions = {}) {
   const graph = new LGraph()
   const disable = enableSubgraphNodeCreation(graph)
-  const hostDoc = mint(workflow(), CATALOG)
+  const hostDoc = mint(workflow(options), CATALOG)
   const follower = new FollowerDoc()
   const adapter = new AgentCrdtProjection(() => graph)
   adapter.bind('workflow', follower)
@@ -134,6 +149,31 @@ function deliver(
       actor: 'agent:test',
       opIds: [id]
     })
+  ).toMatchObject({ applied: true })
+}
+
+function forwardDefinitionEdit(
+  state: ReturnType<typeof startFollower>,
+  widget: string,
+  value: unknown,
+  seq: number
+) {
+  const vector = Y.encodeStateVector(state.hostDoc)
+  state.hostDoc.transact(() => {
+    const definitions = state.hostDoc.getMap<Y.Map<unknown>>('definitions')
+    definitions.forEach((definition) => {
+      const nodes = definition.get('nodes')
+      if (!(nodes instanceof Y.Map)) return
+      const interior = nodes.get('7')
+      if (!(interior instanceof Y.Map)) return
+      const widgets = interior.get('widgets')
+      if (widgets instanceof Y.Map) widgets.set(widget, value)
+    })
+  })
+  const update = Y.encodeStateAsUpdate(state.hostDoc, vector)
+  state.follower.applyRemoteUpdate(update)
+  expect(
+    state.adapter.applyFrame({ workflowId: 'workflow', seq: seq + 1, update })
   ).toMatchObject({ applied: true })
 }
 
@@ -266,5 +306,36 @@ describe('FE-3468 agent CRDT follower on subgraph definition interiors', () => {
     expect(definition?.nodes?.[0]?.widgets_values).toEqual([42, 99])
     const host = serialized.nodes.find((n) => n.id === 1)
     expect(host?.widgets_values).toEqual([42])
+  })
+
+  it('applies an interior edit when the live interior id was remapped', () => {
+    const state = startFollower({ rootIdCollidesWithInterior: true })
+    expect(interiorOf(state).id).not.toBe(toNodeId(7))
+    deliver(
+      state,
+      {
+        op: 'set_widget',
+        node_id: 7,
+        widget: 'detail',
+        value: 77,
+        path: ['1', '7'],
+        inner_widget: 'detail'
+      },
+      1
+    )
+
+    expect(interiorWidgets(state)).toEqual({ value: 1, detail: 77 })
+  })
+
+  it('updates every host of a shared definition on an interior edit', () => {
+    const state = startFollower({ secondHost: true })
+    forwardDefinitionEdit(state, 'value', 42, 1)
+
+    const second = state.graph.getNodeById(toNodeId(4)) as SubgraphNode
+    expect(interiorWidgets(state)).toEqual({ value: 42, detail: 10 })
+    expect(surfaceWidgets(state)).toEqual({ value: 42 })
+    expect(second.widgets.map((w) => [w.name, w.value])).toEqual([
+      ['value', 42]
+    ])
   })
 })
