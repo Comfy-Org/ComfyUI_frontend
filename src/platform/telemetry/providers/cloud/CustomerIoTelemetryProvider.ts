@@ -4,7 +4,6 @@ import { watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { i18n } from '@/i18n'
-import { reportError } from '@/platform/telemetry/reportError'
 import { whenStoresReady } from '@/platform/telemetry/storeReadiness'
 import type { AuthUserInfo } from '@/types/authTypes'
 
@@ -24,6 +23,7 @@ import type {
 export const EVENT_SOURCE = 'web-sdk'
 
 const SDK_OPERATION_TIMEOUT_MS = 10_000
+const IN_APP_PLUGIN_NAME = 'Customer.io In-App Plugin'
 
 interface QueuedEvent {
   event: string
@@ -69,25 +69,15 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
     }
 
     void import('@customerio/cdp-analytics-browser')
-      .then(async ({ AnalyticsBrowser, InAppPlugin }) => {
-        const analytics = AnalyticsBrowser.load({ writeKey })
-        const inAppRegistration = analytics
-          .register(
-            InAppPlugin({
-              siteId,
-              events: null,
-              anonymousInApp: false,
-              _env: undefined,
-              _logging: undefined,
-              colorScheme: 'system'
-            })
-          )
-          .catch((error) => {
-            reportError(error, {
-              surface: 'platform',
-              errorType: 'customerio_in_app_plugin_registration_failure'
-            })
-          })
+      .then(async ({ AnalyticsBrowser }) => {
+        const analytics = AnalyticsBrowser.load(
+          { writeKey },
+          {
+            integrations: {
+              [IN_APP_PLUGIN_NAME]: { enabled: false }
+            }
+          }
+        )
 
         await whenStoresReady()
         this.analytics = analytics
@@ -127,10 +117,8 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
         })
 
         void this.flushQueue()
-        void inAppRegistration.finally(() => {
-          this.isPageViewTrackingReady = true
-          this.flushPageView()
-        })
+        this.isPageViewTrackingReady = true
+        this.flushPageView()
       })
       .catch((error) => {
         console.error('Failed to load Customer.io:', error)
