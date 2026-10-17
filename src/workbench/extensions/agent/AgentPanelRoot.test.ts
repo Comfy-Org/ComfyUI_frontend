@@ -4627,13 +4627,19 @@ describe('AgentPanelRoot attach flow', () => {
     ).not.toBeInTheDocument()
   })
 
-  async function attachExr(assets: Record<string, string>[]) {
+  async function attachExr(
+    assets: Record<string, string>[],
+    rejectPreviewLookup = false
+  ) {
     vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
       const url = String(input)
 
       if (url.endsWith('/api/upload/image'))
         return json(200, { name: 'plate.exr', subfolder: '', type: 'input' })
-      if (url.includes('/api/assets?')) return json(200, { assets })
+      if (url.includes('/api/assets?')) {
+        if (rejectPreviewLookup) throw new Error('preview lookup failed')
+        return json(200, { assets })
+      }
       return json(202, { thread_id: 'th-1', message_id: 'm-1' })
     })
 
@@ -4668,6 +4674,13 @@ describe('AgentPanelRoot attach flow', () => {
 
   it('shows the name tile for an EXR with no stored preview', async () => {
     const chip = await attachExr([])
+
+    expect(within(chip).queryByRole('img')).not.toBeInTheDocument()
+    expect(within(chip).getByText('plate.exr')).toBeInTheDocument()
+  })
+
+  it('keeps the name tile when the EXR preview lookup fails', async () => {
+    const chip = await attachExr([], true)
 
     expect(within(chip).queryByRole('img')).not.toBeInTheDocument()
     expect(within(chip).getByText('plate.exr')).toBeInTheDocument()
