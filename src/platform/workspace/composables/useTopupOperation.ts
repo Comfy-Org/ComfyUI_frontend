@@ -6,6 +6,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import type { CreateTopupResponse } from '@/platform/workspace/api/workspaceApi'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useBillingSdkStore } from '@/platform/workspace/billing/sdk/billingSdkStore'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 
@@ -36,6 +37,21 @@ export function useTopupOperation() {
   function topup(amountCents: number): Promise<CreateTopupResponse | void> {
     if (sdkStore) return sdkStore.createTopup(amountCents)
     return billingContext.topup(amountCents)
+  }
+
+  /** The Stripe-hosted Checkout URL for a one-off purchase of `amountCents`. */
+  async function createHostedCheckout(
+    amountCents: number,
+    returnUrl: string
+  ): Promise<string> {
+    if (sdkStore) {
+      return sdkStore.createHostedTopupCheckout(amountCents, returnUrl)
+    }
+    const { checkout_url } = await workspaceApi.createTopupCheckout(
+      amountCents,
+      returnUrl
+    )
+    return checkout_url
   }
 
   function retryPaymentAuthentication(operationId: string): Promise<boolean> {
@@ -73,6 +89,7 @@ export function useTopupOperation() {
     isAddingCredits,
     topupOperation,
     topup,
+    createHostedCheckout,
     retryPaymentAuthentication,
     dismissOperation,
     adoptPendingOperation

@@ -11,6 +11,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTelemetry } from '@/platform/telemetry'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import { reserveBillingTab } from '@/platform/workspace/billing/billingTab'
 import { hostedBillingRoute } from '@/platform/workspace/billing/hostedBillingRoutes'
 import { registerRefreshOnReturn } from '@/platform/workspace/billing/refreshOnReturn'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
@@ -24,21 +25,6 @@ export interface OpenHostedBillingTabOptions {
   readonly source?: PaymentIntentSource
   /** The cloud journey this hands off; one is minted when the entry has none. */
   readonly journeyId?: string
-}
-
-/**
- * `noopener` returns a null handle even on success, so the blocked tab and the
- * opened one are told apart by opening a blank tab and clearing `opener` by
- * hand before it leaves `about:blank`. Only that one property survives: the
- * tab stays in this page's browsing-context group and sends this origin as
- * the referrer, both of which `'noopener,noreferrer'` would have prevented.
- */
-function openDisownedTab(url: URL): boolean {
-  const tab = window.open('', '_blank')
-  if (!tab) return false
-  tab.opener = null
-  tab.location.href = url.href
-  return true
 }
 
 let stopReturnRefresh: (() => void) | null = null
@@ -143,7 +129,9 @@ export function openHostedBillingTabOutcome(
     source: options.source
   })
   if (route.kind !== 'billing_web') return 'unavailable'
-  const result = openDisownedTab(route.url) ? 'opened' : 'blocked'
+  const tab = reserveBillingTab()
+  tab?.navigate(route.url.href)
+  const result = tab ? 'opened' : 'blocked'
   useTelemetry()?.trackBillingEvent({
     operation: 'web_handoff',
     stage: 'opened',
