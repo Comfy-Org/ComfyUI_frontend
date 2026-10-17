@@ -12,16 +12,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-// Mirrors the production bridge in AgentPanelRoot.vue, which takes the same
-// exemption to drive the real layout store.
-// eslint-disable-next-line import-x/no-restricted-paths
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-// eslint-disable-next-line import-x/no-restricted-paths
-import { LayoutSource } from '@/renderer/core/layout/types'
-// Test-only: builds the fixture with the real renderer-owned STRING widget
-// constructor so it registers a DOM widget exactly as `Comfy.NoteNode` does.
-// eslint-disable-next-line import-x/no-restricted-paths
-import { useStringWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useStringWidget'
+import { app } from '@/scripts/app'
+import { ComfyWidgets } from '@/scripts/widgets'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { GraphScope } from '@/types/graphScopeId'
@@ -60,12 +52,12 @@ class NoteLikeNode extends LGraphNode {
 
   constructor(title: string) {
     super(title)
-    useStringWidget()(this, {
-      type: 'STRING',
-      name: 'text',
-      default: '',
-      multiline: true
-    })
+    ComfyWidgets.STRING(
+      this,
+      'text',
+      ['STRING', { default: '', multiline: true }],
+      app
+    )
     this.serialize_widgets = true
   }
 }
@@ -95,43 +87,7 @@ function remoteMutations(scope: GraphScope) {
   return createGraphMutations({
     placement: inertPlacementPort,
     getScope: () => scope,
-    layout: {
-      createNode(scope, nodeId, { position, size }, context) {
-        layoutStore.applyOperation({
-          type: 'createNode',
-          graphId: scope.rootGraphId,
-          ownerGraphId: scope.owningGraphId,
-          nodeId,
-          layout: {
-            id: nodeId,
-            position,
-            size,
-            bounds: { x: position.x, y: position.y, ...size },
-            zIndex: layoutStore.allocateZIndex(),
-            visible: true
-          },
-          source: LayoutSource.AgentRemote,
-          actor: context.actor,
-          opId: context.opId,
-          timestamp: Date.now()
-        })
-      },
-      deleteNodes(scope, nodeIds, context) {
-        const timestamp = Date.now()
-        layoutStore.applyOperations(
-          nodeIds.map((nodeId) => ({
-            type: 'deleteNode',
-            graphId: scope.rootGraphId,
-            ownerGraphId: scope.owningGraphId,
-            nodeId,
-            source: LayoutSource.AgentRemote,
-            actor: context.actor,
-            opId: context.opId,
-            timestamp
-          }))
-        )
-      }
-    }
+    layout: { createNode: () => {}, deleteNodes: () => {} }
   })
 }
 
