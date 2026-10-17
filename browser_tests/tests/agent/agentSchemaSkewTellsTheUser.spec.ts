@@ -19,45 +19,6 @@ import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
-/**
- * Regression test for PM-2047 (recurrence of PM-2046): "Agent rebuild never
- * shows the workflow — complete failure to initialize workflow, survives
- * refresh, re-login and restarts."
- *
- * This is the sibling of `agentZeroNodesOnUnreadableSchema.spec.ts`, and it
- * covers the half that one explicitly does not. That spec simulates an
- * ABSENT `meta.schema_version` and proves the gate un-latches when the host
- * sends a repair frame; its own header records that the real-world trigger
- * for an absent version was never found.
- *
- * The real-world trigger is a version SKEW, not an absent version. The gate
- * (`assertReadableSchema`, KA-11) is exact-equality against the version this
- * build compiled against, so a doc-host writing `SCHEMA_VERSION + 1` makes
- * every frame of every document unreadable to the served frontend. There is
- * no repair frame in that world — the writer is not wrong, the two sides are
- * pinned to different releases — so the un-latching fix cannot help, and the
- * refusal is permanent by construction.
- *
- * What made it "complete failure to initialize": both operands of that
- * comparison are the document's stored version and the frontend bundle's
- * compiled constant. A refresh, a logout/login, a browser restart and a
- * reboot all change neither, so every recovery path the person has re-runs
- * the identical comparison and gets the identical refusal — while the agent's
- * turn completes and reports success over the unrelated chat channel.
- *
- * The gate is NOT relaxed here: projecting a document this build cannot read
- * is the fail-open failure KA-11 exists to prevent. What this asserts is that
- * the person is TOLD. Before the fix the read gate reported only to the dev
- * panel and an `errored` counter — it was the one refusal that blanks the
- * whole canvas and the only one with no user-visible signal at all.
- *
- * The production fix shipped in #21084 with unit coverage only, which is why
- * this spec is the whole remaining contribution: the behaviour has no proof
- * through the black-box harness, and `docs/harness-first-qa.md` requires one.
- * It asserts the `stale_client_schema` copy #21084 chose, so it is red on any
- * build where the read gate goes back to refusing silently.
- */
-
 const WORKFLOW_ID = 'b4e7b4e3-8f4c-4c9b-ad2f-7f3b2daf1b23'
 const THREAD_ID = 'dac7bad1-ac2b-4cac-9a1f-2b3c4d5e6f81'
 const MESSAGE_ID = '1d6c2f88-3e5b-4a0f-9c74-2b3d4e5f6113'
@@ -68,12 +29,6 @@ const SOCKET_SID = '8e2a3f4b-5c6d-4e7f-9a01-2b3c4d5e6f81'
 const CATALOG: WidgetCatalog = {
   types: { MarkdownNote: { widget_order: ['text'] } }
 }
-/**
- * PM-2047's reporter asked the agent to rebuild the workflow in earlier turns,
- * so the stored document already holds the rebuilt graph before this session
- * ever subscribes. Seeding it at mint keeps the host's own seq bookkeeping
- * untouched, so the only thing this spec varies is the schema stamp.
- */
 const SEED: WorkflowJSON = {
   nodes: [
     {
@@ -97,11 +52,6 @@ const SEND_LABEL = enMessages.agent.send
 const STOP_LABEL = enMessages.agent.stop
 const SYNC_FAILED_TITLE = enMessages.agent.workflowSyncFailedTitle
 const SYNC_FAILED_DETAIL = enMessages.agent.workflowSyncFailedDetailStaleClient
-/**
- * Matched on the invariant tail of `agent.placeholder` rather than the whole
- * string: the "/ use skills," clause is feature-gated, so the full localized
- * message is not always the composer's accessible name.
- */
 const COMPOSER_LABEL = /add references, drag in assets/
 
 test.describe(
@@ -175,14 +125,7 @@ test.describe(
             typeof state_vector_b64 !== 'string'
           )
             return
-          // Captured while the host can still read its own doc: this is the
-          // server-side half of the PM-2047 trace — the rebuild committed and
-          // validated, so the graph really is on the server's record.
           committedNodeIds = Object.keys(host.graph().nodes)
-          // The deployed doc-host is a release ahead of this bundle, so every
-          // frame it writes declares a version this build does not read. No
-          // repair frame follows, because nothing is broken on the host side —
-          // the two sides are simply pinned to different releases.
           host.advanceSchemaVersionBeyondReader()
           send(host.subscribed())
           send(host.catchUp(state_vector_b64))
@@ -256,10 +199,6 @@ test.describe(
         .click()
       await expect(picker).toHaveText('Unsaved Workflow')
 
-      // Setup checkpoint: the agent socket is open, so `send` below reaches the
-      // panel. It does NOT prove the skewed catch-up was handled — `socket` is
-      // assigned when `/ws` connects, which `bootAgentApp` has already waited
-      // for. The refusal having run is proven by the notice at the end.
       await expect.poll(() => socket !== null).toBe(true)
 
       const composer = panel.getByRole('textbox', { name: COMPOSER_LABEL })
@@ -303,8 +242,6 @@ test.describe(
         data: { thread_id: THREAD_ID, message_id: MESSAGE_ID, usage: null }
       })
 
-      // Setup checkpoint, still expected to pass: the agent's turn completes
-      // and reports success in the panel — "agent says done".
       await expect(
         panel.getByRole('button', { name: SEND_LABEL })
       ).toBeVisible()
@@ -313,19 +250,10 @@ test.describe(
       )
       await expect(panel.getByRole('button', { name: /^Worked/ })).toBeVisible()
 
-      // The server-side half of the PM-2047 trace, asserted once the client has
-      // actually subscribed: the rebuild committed and validated, so the graph
-      // is on the server's own record (`draft_committed=true`, validated
-      // ready-to-run, zero errors) before the version stamp was advanced.
       await expect
         .poll(() => committedNodeIds, { timeout: 20_000 })
         .toContain(String(ADDED_NODE_ID))
 
-      // The fix under test: the person is told why the canvas is empty,
-      // instead of being left to refresh, re-login and reboot against a
-      // comparison none of those can change. The notice names the one
-      // recovery that does change an operand — reload this page — which is
-      // what distinguishes it from a generic disconnect.
       const notice = page.getByTestId('toast')
       await expect(notice.getByText(SYNC_FAILED_TITLE)).toBeVisible({
         timeout: 15_000
@@ -334,15 +262,6 @@ test.describe(
         notice.getByText(SYNC_FAILED_DETAIL, { exact: false })
       ).toBeVisible()
 
-      // Unchanged and deliberately asserted: the gate still refuses. Reading a
-      // document this build cannot read would be the fail-open failure KA-11
-      // exists to prevent, so the node must NOT appear.
-      //
-      // Asserted AFTER the notice, not before it: the notice is this spec's
-      // only proof that the refusal path has actually run on the skewed
-      // catch-up frame. Checked earlier, `toHaveCount(0)` can pass simply
-      // because nothing has been projected yet, and a fail-open regression
-      // that renders the node a moment later would go uncaught.
       await expect(vueNodes.getNodeLocator(String(ADDED_NODE_ID))).toHaveCount(
         0
       )
