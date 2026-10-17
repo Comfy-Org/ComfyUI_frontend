@@ -4,11 +4,7 @@
       class="flex cursor-pointer items-center justify-between gap-4 px-4 py-3 text-sm"
     >
       {{ $t('nodeOutputsExport.downloadAll') }}
-      <Checkbox
-        class="bg-transparent"
-        :model-value="allSelected"
-        @update:model-value="selectAll"
-      />
+      <Checkbox :model-value="allSelected" @update:model-value="selectAll" />
     </label>
     <ul
       class="m-0 flex max-h-[50vh] list-none flex-col gap-2 overflow-y-auto px-4 py-1"
@@ -35,7 +31,6 @@
           </div>
           <span class="min-w-0 flex-1 truncate text-sm">{{ item.name }}</span>
           <Checkbox
-            class="bg-transparent"
             :model-value="selected[index]"
             @update:model-value="(value) => selectItem(index, value)"
           />

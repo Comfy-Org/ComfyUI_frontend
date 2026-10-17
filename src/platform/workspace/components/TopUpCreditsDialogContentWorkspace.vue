@@ -14,10 +14,7 @@
         >
           <i class="icon-[lucide--arrow-left] size-5" />
         </button>
-        <h2
-          v-if="step !== 'verifying'"
-          class="m-0 text-base font-bold text-base-foreground"
-        >
+        <DialogTitle v-if="step !== 'verifying'" class="m-0 font-bold">
           {{
             step === 'confirm'
               ? $t('credits.topUp.confirmTitle')
@@ -25,7 +22,7 @@
                 ? $t('credits.topUp.addMoreCreditsToRun')
                 : $t('credits.topUp.addMoreCredits')
           }}
-        </h2>
+        </DialogTitle>
       </div>
       <button
         class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none"
@@ -73,11 +70,9 @@
         <i
           class="icon-[lucide--shield-alert] size-10 text-warning-background"
         />
-        <h2
-          class="m-0 text-center text-xl font-semibold text-base-foreground lg:text-2xl"
-        >
+        <DialogTitle class="m-0 text-center text-xl lg:text-2xl">
           {{ $t('credits.topUp.verifyTitle') }}
-        </h2>
+        </DialogTitle>
         <p class="m-0 text-sm text-balance text-muted-foreground">
           {{ verifyingBody }}
         </p>
@@ -202,21 +197,10 @@
     <div class="mt-auto flex flex-col gap-8 p-8">
       <div v-if="step === 'verifying'">
         <Button
-          v-if="topupCanResumeAuthentication"
+          v-if="topupIsFailedRetryable"
           variant="primary"
           size="lg"
-          class="h-10 w-full justify-center"
-          :loading="topupIsAuthenticating"
-          :disabled="!canTopUp"
-          @click="resumeTopupAuthentication"
-        >
-          {{ $t('subscription.preview.completeVerification') }}
-        </Button>
-        <Button
-          v-else-if="topupIsFailedRetryable"
-          variant="primary"
-          size="lg"
-          class="h-10 w-full justify-center"
+          class="w-full"
           @click="startOverTopup"
         >
           {{ $t('credits.topUp.startOver') }}
@@ -225,7 +209,7 @@
           v-else-if="topupIsParkedWithoutLink"
           variant="secondary"
           size="lg"
-          class="h-10 w-full justify-center"
+          class="w-full"
           @click="() => handleClose(false)"
         >
           {{ $t('g.ok') }}
@@ -234,7 +218,7 @@
           v-else-if="!topupReconciliationOperationId"
           variant="primary"
           size="lg"
-          class="h-10 w-full justify-center"
+          class="w-full"
           :disabled="!topupActionUrl || !canTopUp"
           :loading="!topupActionUrl"
           :aria-label="$t('subscription.preview.completeVerification')"
@@ -248,7 +232,6 @@
           v-if="step === 'confirm' && topupActionUrl && canTopUp"
           variant="primary"
           size="lg"
-          class="h-10 justify-center"
           @click="openTopupVerification"
         >
           {{ $t('subscription.preview.completeVerification') }}
@@ -301,6 +284,7 @@ import { useI18n } from 'vue-i18n'
 
 import { creditsToUsd, usdToCredits } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
+import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import NumberField from '@/components/ui/number-field/NumberField.vue'
 import NumberFieldDecrement from '@/components/ui/number-field/NumberFieldDecrement.vue'
 import NumberFieldIncrement from '@/components/ui/number-field/NumberFieldIncrement.vue'
@@ -381,7 +365,6 @@ const {
   isAddingCredits,
   topupOperation,
   topup,
-  retryPaymentAuthentication,
   dismissOperation,
   adoptPendingOperation
 } = useTopupOperation()
@@ -392,12 +375,6 @@ let purchaseAttempt = 0
 const topupActionUrl = computed(() => topupOperation.value?.actionUrl ?? null)
 const topupAuthenticationError = computed(
   () => topupOperation.value?.errorMessage ?? null
-)
-const topupCanResumeAuthentication = computed(
-  () => topupOperation.value?.canRetryAuthentication ?? false
-)
-const topupIsAuthenticating = computed(
-  () => topupOperation.value?.isAuthenticating ?? false
 )
 const topupIsFailedRetryable = computed(
   () => topupOperation.value?.authenticationState === 'failed_retryable'
@@ -541,12 +518,6 @@ function handlePrimaryAction() {
 function openTopupVerification() {
   if (!topupActionUrl.value) return
   window.open(topupActionUrl.value, '_blank', 'noopener,noreferrer')
-}
-
-function resumeTopupAuthentication() {
-  const operation = topupOperation.value
-  if (!operation || !canTopUp.value) return
-  void retryPaymentAuthentication(operation.opId)
 }
 
 function startOverTopup() {

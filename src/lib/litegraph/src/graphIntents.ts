@@ -1,3 +1,8 @@
+import type {
+  LGraph,
+  LGraphNode,
+  LLink
+} from '@/lib/litegraph/src/types/entityRegistry'
 /**
  * Graph mutations announced as commands from the graph-API funnel they run
  * through (`LGraph.add/remove/_addLink/_removeLink/clear`, the widget value
@@ -11,10 +16,6 @@
 import { reportError } from '@/platform/telemetry/reportError'
 import type { LinkId } from '@/types/linkId'
 import type { NodeId } from '@/types/nodeId'
-
-import type { LGraph } from './LGraph'
-import type { LGraphNode } from './LGraphNode'
-import type { LLink } from './LLink'
 
 export type GraphIntentSource = 'local' | 'agent-remote' | 'load'
 

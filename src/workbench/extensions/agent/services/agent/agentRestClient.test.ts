@@ -410,7 +410,7 @@ describe('postMessage wire body', () => {
     const parsed = JSON.parse(init.body as string) as Record<string, unknown>
     expect(parsed).toEqual({
       content: 'build it',
-      ask_kinds: ['run_approval', 'ask_user'],
+      ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
       workflow_id: 'wf-9',
       selection: { nodeId: 3 },
       attachments: ['a1']
@@ -438,7 +438,7 @@ describe('postMessage wire body', () => {
 
     expect(JSON.parse(String(lastCall().init.body))).toEqual({
       content: 'just text',
-      ask_kinds: ['run_approval', 'ask_user']
+      ask_kinds: ['run_approval', 'ask_user', 'delete_approval']
     })
   })
 
@@ -455,7 +455,7 @@ describe('postMessage wire body', () => {
 
     expect(JSON.parse(String(lastCall().init.body))).toEqual({
       content: 'build it',
-      ask_kinds: ['run_approval', 'ask_user'],
+      ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
       client_message_id: '3f2504e0-4f89-41d3-9a0c-0305e82c3301'
     })
   })
@@ -478,7 +478,7 @@ describe('postMessage wire body', () => {
 
     expect(JSON.parse(String(lastCall().init.body))).toEqual({
       content: "what's on my canvas",
-      ask_kinds: ['run_approval', 'ask_user'],
+      ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
       draft: { content: { nodes: [{ id: 1, type: 'LoadImage' }], links: [] } }
     })
   })
@@ -688,6 +688,18 @@ describe('error mapping', () => {
     expect((error as AgentApiError).message).toBe(
       'Agent request failed (HTTP 503)'
     )
+  })
+
+  it('carries its operation so a non-auth status can still be tagged downstream (PM-2103)', async () => {
+    respond(new Response('', { status: 503 }))
+
+    const error = await makeClient()
+      .postMessage('t1', { content: 'try it' })
+      .catch((caught: unknown) => caught)
+
+    if (!(error instanceof AgentApiError)) throw error
+    expect(error.operation).toBe('post_thread_message')
+    expect(error.status).toBe(503)
   })
 
   it('throws zod when a success body violates the response schema (anti-drift)', async () => {

@@ -435,11 +435,7 @@ onMounted(() => {
         v-if="recommendedWidgets.length"
         class="flex justify-center border-b border-interface-stroke py-4"
       >
-        <Button
-          size="sm"
-          class="rounded-sm border-none px-3 py-0.5"
-          @click.stop="showRecommended"
-        >
+        <Button size="sm" class="px-3 py-0.5" @click.stop="showRecommended">
           {{ $t('subgraphStore.showRecommended') }}
         </Button>
       </div>

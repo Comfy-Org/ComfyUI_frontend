@@ -5,6 +5,14 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 
 test.describe('Feature Flags', { tag: ['@slow', '@settings'] }, () => {
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.page
+      .context()
+      .route('https://{api,stagingapi}.comfy.org/releases**', (route) =>
+        route.fulfill({ json: [] })
+      )
+  })
+
   test('Client and server exchange feature flags on connection', async ({
     comfyPage
   }) => {

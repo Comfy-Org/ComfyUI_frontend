@@ -38,12 +38,10 @@
           :key="`${target.nodeId}:${target.widgetName}`"
           class="flex min-w-0 items-center gap-2"
         >
-          <span class="min-w-0 truncate text-muted-foreground">
+          <span class="min-w-0 truncate">
             {{ target.nodeLabel }}
           </span>
-          <span class="shrink-0 text-muted-foreground">
-            - {{ target.widgetName }}
-          </span>
+          <span class="shrink-0"> - {{ target.widgetName }} </span>
         </li>
       </ul>
     </div>
@@ -55,11 +53,8 @@
           <label>
             {{ $t('assetBrowser.modelTypeSelectorLabel') }}
           </label>
-          <i
-            aria-hidden="true"
-            class="icon-[lucide--circle-question-mark] text-muted-foreground"
-          />
-          <span v-if="!isMissingModelResolution" class="text-muted-foreground">
+          <i aria-hidden="true" class="icon-[lucide--circle-question-mark]" />
+          <span v-if="!isMissingModelResolution">
             {{ $t('assetBrowser.notSureLeaveAsIs') }}
           </span>
         </div>

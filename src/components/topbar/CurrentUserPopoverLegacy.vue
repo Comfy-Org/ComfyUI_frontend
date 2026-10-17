@@ -31,7 +31,7 @@
           <Button
             ref="workspaceSwitcherTrigger"
             variant="muted-textonly"
-            class="flex h-auto w-full items-center justify-between rounded-lg px-4 py-2 hover:bg-secondary-background-hover"
+            class="flex h-auto w-full justify-between px-4 py-2"
             :aria-expanded="isWorkspaceSwitcherOpen"
             aria-haspopup="menu"
             aria-controls="workspace-switcher-panel"
@@ -93,7 +93,6 @@
         v-if="canTopUp"
         variant="secondary"
         size="sm"
-        class="text-base-foreground"
         data-testid="add-credits-button"
         :data-dd-action-name="BILLING_ACTION_NAME.addCreditsPopover"
         @click="handleTopUp"

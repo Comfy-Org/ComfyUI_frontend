@@ -1,22 +1,8 @@
 <template>
-  <div
-    class="flex w-90 max-w-full flex-col overflow-hidden rounded-2xl border border-border-default bg-base-background"
-  >
-    <div
-      class="flex h-12 items-center gap-2 border-b border-border-default p-4"
-    >
-      <p class="m-0 min-w-0 flex-1 font-inter text-sm text-base-foreground">
-        {{ $t(titleKey) }}
-      </p>
-      <button
-        type="button"
-        :aria-label="$t('g.close')"
-        class="flex size-4 shrink-0 cursor-pointer items-center justify-center border-none bg-transparent text-base-foreground hover:text-muted-foreground"
-        @click="onClose"
-      >
-        <i class="pi pi-times text-xs" />
-      </button>
-    </div>
+  <DialogPanel class="w-90 max-w-full" @close="onClose">
+    <template #title>
+      {{ $t(titleKey) }}
+    </template>
 
     <div class="p-4">
       <p class="m-0 font-inter text-sm text-muted-foreground">
@@ -24,7 +10,7 @@
       </p>
     </div>
 
-    <div class="flex items-center justify-end p-4">
+    <template #footer>
       <Button
         :variant="canManage ? 'inverted' : 'secondary'"
         size="lg"
@@ -43,11 +29,12 @@
           )
         }}
       </Button>
-    </div>
-  </div>
+    </template>
+  </DialogPanel>
 </template>
 
 <script setup lang="ts">
+import DialogPanel from '@/components/ui/dialog/DialogPanel.vue'
 import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'

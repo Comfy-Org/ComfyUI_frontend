@@ -23,6 +23,7 @@ const mockFetchApi = vi.fn()
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
     getServerFeature: (_name: string, defaultValue: unknown) => defaultValue,
     getShareableAssets: (...args: unknown[]) => mockGetShareableAssets(...args),
     fetchApi: (...args: unknown[]) => mockFetchApi(...args),

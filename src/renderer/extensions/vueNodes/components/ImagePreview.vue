@@ -79,11 +79,11 @@
         role="alert"
         class="flex size-full flex-1 flex-col items-center justify-around self-center py-8 text-center text-base-foreground"
       >
-        <i class="mb-2 icon-[lucide--image-off] size-12 text-base-foreground" />
-        <p class="text-sm text-base-foreground">
+        <i class="mb-2 icon-[lucide--image-off] size-12" />
+        <p class="text-sm">
           {{ $t('g.imageFailedToLoad') }}
         </p>
-        <p class="mt-1 text-xs text-base-foreground">
+        <p class="mt-1 text-xs">
           {{ getImageFilename(currentImageUrl) }}
         </p>
       </div>
@@ -195,9 +195,7 @@
       >
         {{ $t('g.errorLoadingImage') }}
       </span>
-      <span v-else-if="showLoader" class="text-base-foreground">
-        {{ $t('g.loading') }}...
-      </span>
+      <span v-else-if="showLoader"> {{ $t('g.loading') }}... </span>
       <span v-else>
         {{ actualDimensions || $t('g.calculatingDimensions') }}
       </span>
