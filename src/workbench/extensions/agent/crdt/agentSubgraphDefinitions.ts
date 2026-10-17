@@ -367,28 +367,18 @@ function readInteriorWidgets(source: Y.Map<unknown>): InteriorWidgetValues {
   return undefined
 }
 
-export interface SubgraphInteriorNode {
-  type: string | undefined
-  widgets: InteriorWidgetValues
-}
-
 function collectInteriorWidgets(
   source: Y.Map<unknown>,
-  into: Map<string, Map<string, SubgraphInteriorNode>>
+  into: Map<string, Map<string, InteriorWidgetValues>>
 ): void {
   const id = plain(source.get('id'))
   const nodes = source.get('nodes')
   if (typeof id === 'string' && nodes instanceof Y.Map) {
-    const interiors = new Map<string, SubgraphInteriorNode>()
+    const interiors = new Map<string, InteriorWidgetValues>()
     for (const nodeId of orderedKeys(source.get(NODE_ORDER), nodes)) {
       const node = nodes.get(nodeId)
-      if (node instanceof Y.Map) {
-        const type = plain(node.get('type'))
-        interiors.set(nodeId, {
-          type: typeof type === 'string' ? type : undefined,
-          widgets: readInteriorWidgets(node)
-        })
-      }
+      if (node instanceof Y.Map)
+        interiors.set(nodeId, readInteriorWidgets(node))
     }
     into.set(id, interiors)
   }
@@ -406,8 +396,8 @@ function collectInteriorWidgets(
 /** Every definition's interior widget values, in mint order. */
 export function readSubgraphInteriorWidgets(
   doc: Y.Doc
-): Map<string, Map<string, SubgraphInteriorNode>> {
-  const result = new Map<string, Map<string, SubgraphInteriorNode>>()
+): Map<string, Map<string, InteriorWidgetValues>> {
+  const result = new Map<string, Map<string, InteriorWidgetValues>>()
   const root = definitionsMap(doc)
   if (!root) return result
   root.forEach((value) => {

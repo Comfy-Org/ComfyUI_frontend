@@ -251,7 +251,7 @@ describe('FE-3468 agent CRDT follower on subgraph definition interiors', () => {
     })
   })
 
-  it('promoted widget edited in the surface layer updates surface and bottom', () => {
+  it('promoted widget edited in the surface layer updates only the surface', () => {
     const state = startFollower()
     deliver(
       state,
@@ -271,7 +271,7 @@ describe('FE-3468 agent CRDT follower on subgraph definition interiors', () => {
 
     expect(surfaceWidgets(state)).toEqual({ value: 42 })
     expect(storedSurfaceWidgets(state)).toEqual({ value: 42 })
-    expect(interiorWidgets(state)).toEqual({ value: 42, detail: 10 })
+    expect(interiorWidgets(state)).toEqual({ value: 1, detail: 10 })
   })
 
   it('posted canvas carries committed interior values after a bottom-layer edit', () => {

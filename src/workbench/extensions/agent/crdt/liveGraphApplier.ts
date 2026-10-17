@@ -21,7 +21,7 @@ import { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { withGraphIntentSource } from '@/lib/litegraph/src/graphIntents'
 import { detachSerialisedLinks } from '@/lib/litegraph/src/linkDeduplication'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { topologicalSortSubgraphs } from '@/lib/litegraph/src/subgraph/subgraphDeduplication'
 import type {
   ExportedSubgraph,
@@ -561,6 +561,7 @@ function floorSizeToContent(node: LGraphNode): void {
 export class LiveGraphApplier {
   private readonly deps: LiveGraphApplierDeps
   private readonly reported = new Set<string>()
+  private readonly interiorIds = new Map<string, Map<string, NodeId>>()
   private readonly failureCounts: number[] = []
 
   constructor(deps: LiveGraphApplierDeps) {
@@ -717,6 +718,7 @@ export class LiveGraphApplier {
       const failure = tryCreateSubgraph(rootGraph, definition, reserved)
       if (failure === undefined) {
         this.reported.delete(`definition:${definition.id}`)
+        this.recordInteriorIds(rootGraph, definition)
         continue
       }
       this.incrementFailureCount()
@@ -729,6 +731,20 @@ export class LiveGraphApplier {
         context: { graphId: graph.id, definitionId: definition.id }
       })
     }
+  }
+
+  private recordInteriorIds(
+    rootGraph: LGraph,
+    definition: ExportedSubgraph
+  ): void {
+    const live = rootGraph.subgraphs.get(definition.id)
+    if (!live || !definition.nodes) return
+    if (definition.nodes.length !== live.nodes.length) return
+    const mapping = new Map<string, NodeId>()
+    for (const [index, node] of definition.nodes.entries()) {
+      mapping.set(String(node.id), live.nodes[index].id)
+    }
+    this.interiorIds.set(definition.id, mapping)
   }
 
   private deleteNode(graph: LGraph, id: string): void {
@@ -932,12 +948,13 @@ export class LiveGraphApplier {
     if (!subgraph) return
     const docNodes = docInteriors.get(definitionId)
     if (!docNodes) return
-    const orderedIds = [...docNodes.keys()]
     for (const [nodeId, names] of nodes) {
-      const entry = docNodes.get(nodeId)
-      const widgets = entry?.widgets
+      const widgets = docNodes.get(nodeId)
       if (widgets === undefined) continue
-      const live = liveInteriorNode(subgraph, orderedIds, nodeId, entry)
+      const mapped = this.interiorIds.get(definitionId)?.get(nodeId)
+      const live = mapped
+        ? subgraph.getNodeById(mapped)
+        : subgraph.getNodeById(toNodeId(nodeId))
       if (!live) continue
       this.applyInteriorWidgets(live, widgets, names, mode)
       this.propagateInteriorToHosts(
@@ -994,7 +1011,9 @@ export class LiveGraphApplier {
     mode: ApplyMode
   ): void {
     for (const input of promotedInputs(host)) {
-      const target = resolvePromotedTarget(host, input.name)
+      const target = host.isSubgraphNode()
+        ? host.resolvePromotedTarget(input.name)
+        : undefined
       if (!target || target.nodeId !== liveInterior.id) continue
       if (!names.has(target.widgetName)) continue
       if (!Object.hasOwn(record, target.widgetName)) continue
@@ -1002,32 +1021,6 @@ export class LiveGraphApplier {
         host,
         { [input.name]: record[target.widgetName] },
         mode
-      )
-    }
-  }
-
-  private syncInteriorFromHost(
-    host: LGraphNode,
-    name: string,
-    value: unknown
-  ): void {
-    if (!isWidgetValue(value)) return
-    const target = resolvePromotedTarget(host, name)
-    if (!target || !host.isSubgraphNode()) return
-    const interior = host.subgraph.getNodeById(target.nodeId)
-    if (!interior || interior.isSubgraphNode()) return
-    const widget = interior.widgets?.find((w) => w.name === target.widgetName)
-    if (!widget) return
-    if (this.holdsLocalWrite(interior, target.widgetName, value)) return
-    try {
-      this.setWidgetValue(interior, widget, value)
-    } catch (error) {
-      this.reportOnce(
-        `interior-sync:${String(host.id)}:${name}`,
-        `Subgraph host ${String(host.id)} could not mirror promoted widget '${name}' onto its interior`,
-        'agent_graph_apply_failed',
-        { nodeId: host.id, name },
-        error
       )
     }
   }
@@ -1190,7 +1183,6 @@ export class LiveGraphApplier {
       }
       try {
         this.setPromotedWidgetValue(node, widget, value)
-        this.syncInteriorFromHost(node, name, value)
       } catch (error) {
         const options = {
           surface: 'agent',
@@ -1445,20 +1437,6 @@ function changed(
   return positional !== undefined && names.has(positional.name)
 }
 
-function liveInteriorNode(
-  subgraph: Subgraph,
-  orderedIds: readonly string[],
-  nodeId: string,
-  entry: { type: string | undefined } | undefined
-): LGraphNode | undefined {
-  const byId = subgraph.getNodeById(toNodeId(nodeId))
-  if (byId) return byId
-  const index = orderedIds.indexOf(nodeId)
-  const byPosition = index >= 0 ? subgraph.nodes[index] : undefined
-  if (!byPosition || entry?.type === undefined) return undefined
-  return byPosition.type === entry.type ? byPosition : undefined
-}
-
 type InteriorSyncTargets = Map<string, Map<string, ReadonlySet<string> | 'all'>>
 
 function interiorSyncTargets(
@@ -1486,27 +1464,6 @@ function interiorSyncTargets(
 
 function promotedInputs(node: LGraphNode): INodeInputSlot[] {
   return node.inputs.filter((input) => input.widgetId)
-}
-
-function resolvePromotedTarget(
-  host: LGraphNode,
-  inputName: string
-): { nodeId: NodeId; widgetName: string } | undefined {
-  if (!host.isSubgraphNode()) return undefined
-  const slot = host.subgraph.inputNode.slots.find((s) => s.name === inputName)
-  if (!slot) return undefined
-  for (const linkId of slot.linkIds) {
-    const link = host.subgraph.getLink(linkId)
-    if (!link) continue
-    const { inputNode, input } = link.resolve(host.subgraph)
-    if (!inputNode || !input) continue
-    if (inputNode.isSubgraphNode()) {
-      return { nodeId: inputNode.id, widgetName: input.name }
-    }
-    const widget = inputNode.getWidgetFromSlot(input)
-    if (widget) return { nodeId: inputNode.id, widgetName: widget.name }
-  }
-  return undefined
 }
 
 function subgraphHostInstances(
