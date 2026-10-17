@@ -16,6 +16,7 @@ import {
 import type {
   CompositeInput,
   Compositor,
+  CompositorInit,
   FBOHandle
 } from '@comfyorg/layer-editor/compositor'
 import type { ChannelData, RasterData } from '@comfyorg/layer-editor/node'
@@ -26,7 +27,9 @@ import { useLayerEditorSession } from './useLayerEditorSession'
 class FakeCompositor implements Compositor {
   disposed = false
   initResult = true
-  init() {
+  onContextRestored?: () => void
+  init(opts: CompositorInit) {
+    this.onContextRestored = opts.onContextRestored
     return this.initResult
   }
   resize() {}
@@ -317,6 +320,21 @@ describe('useLayerEditorSession', () => {
     expect(session.glOk.value).toBe(false)
     session.setElements(makeElements())
     await flushFrames()
+  })
+
+  it('invalidates presentation on context restore only while the session is alive', () => {
+    const { session, compositor } = makeSession()
+    session.editor.takePresentDamage()
+    expect(session.editor.takePresentDamage().full).toBe(false)
+
+    compositor.onContextRestored?.()
+
+    expect(session.editor.takePresentDamage().full).toBe(true)
+    session.dispose()
+    const version = session.version.value
+    compositor.onContextRestored?.()
+    expect(session.editor.takePresentDamage().full).toBe(false)
+    expect(session.version.value).toBe(version)
   })
 
   describe('layer ops', () => {

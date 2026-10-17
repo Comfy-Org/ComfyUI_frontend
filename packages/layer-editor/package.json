@@ -76,6 +76,10 @@
       "types": "./dist/render/place.d.ts",
       "default": "./src/render/place.ts"
     },
+    "./session": {
+      "types": "./dist/session.d.ts",
+      "default": "./src/session.ts"
+    },
     "./tool": {
       "types": "./dist/tool.d.ts",
       "default": "./src/tool.ts"

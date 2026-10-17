@@ -8,18 +8,12 @@ import {
 import { PropCommand } from '@comfyorg/layer-editor/commands/prop'
 import { SetTransformCommand } from '@comfyorg/layer-editor/commands/setTransform'
 import type { Compositor } from '@comfyorg/layer-editor/compositor'
-import { createWebGLCompositor } from '@comfyorg/layer-editor/compositor/webglCompositor'
 import { filterTopmost, findNode } from '@comfyorg/layer-editor/document'
-import { createEditor } from '@comfyorg/layer-editor/editor/editor'
 import type { AlphaSampler } from '@comfyorg/layer-editor/editor/pickOps'
 import { pickLayerAt } from '@comfyorg/layer-editor/editor/pickOps'
 import { Dirty } from '@comfyorg/layer-editor/history'
 import type { FillSpec } from '@comfyorg/layer-editor/fill'
-import {
-  fillKind,
-  rasterKind,
-  registerBuiltinKinds
-} from '@comfyorg/layer-editor/kinds'
+import { fillKind, rasterKind } from '@comfyorg/layer-editor/kinds'
 import type { BlendFn } from '@comfyorg/layer-editor/mode'
 import { LAYER_MODES, defaultMode } from '@comfyorg/layer-editor/mode'
 import type {
@@ -32,8 +26,8 @@ import type {
 import { placedBounds } from '@comfyorg/layer-editor/render/bake'
 import type { OutsideCanvasPreviewLayer } from '@comfyorg/layer-editor/render/outsideCanvasPreview'
 import { drawOutsideCanvasPreview } from '@comfyorg/layer-editor/render/outsideCanvasPreview'
+import { createSession } from '@comfyorg/layer-editor/session'
 import type { CanvasItem } from '@comfyorg/layer-editor/tool'
-import { registerBuiltinTools } from '@comfyorg/layer-editor/tools'
 import { canTransformNode } from '@comfyorg/layer-editor/tools/transformTool'
 import {
   hitHandle,
@@ -132,9 +126,6 @@ function flipCanvasAxis(
 export type LayerEditorSession = ReturnType<typeof useLayerEditorSession>
 
 export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
-  registerBuiltinKinds()
-  registerBuiltinTools()
-
   const loadImage = opts.loadImage ?? defaultLoadImage
   const version = ref(0)
   const activeNodeId = ref<string | null>(null)
@@ -148,15 +139,12 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
   const flipParity = reactive(new Map<string, { h: boolean; v: boolean }>())
   const inputOrderIds: string[] = []
 
-  const compositor = (opts.createCompositor ?? createWebGLCompositor)()
-  let onContextRestored: (() => void) | null = null
-  glOk.value = compositor.init({
-    width: 1024,
-    height: 1024,
-    onContextRestored: () => onContextRestored?.()
+  const session = createSession({
+    createCompositor: opts.createCompositor,
+    onChange
   })
-  const editor = createEditor({ compositor, onChange })
-  onContextRestored = () => editor.invalidate()
+  const { editor, compositor } = session
+  glOk.value = session.glOk
   const content = editor.content
 
   let mainCanvas: HTMLCanvasElement | null = null
@@ -1023,7 +1011,7 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
     rafId = null
     overlayRafId = null
     moveRaf = null
-    compositor.dispose()
+    session.dispose()
   }
 
   addBackgroundLayer()
