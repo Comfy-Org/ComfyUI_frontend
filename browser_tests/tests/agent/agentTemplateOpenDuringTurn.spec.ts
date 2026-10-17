@@ -1,0 +1,39 @@
+import { expect } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+
+import { agentTurnLockTest as test } from '@e2e/fixtures/agentTurnLockFixture'
+import { ComfyTemplates } from '@e2e/fixtures/components/Templates'
+
+test.use({ connectWebSocketToServer: false })
+test.describe.configure({ timeout: 120_000 })
+
+test.describe(
+  'PM-2126: opening a template while an agent turn is running',
+  { tag: ['@cloud', '@ui'] },
+  () => {
+    test('opens the template without the load-failure toast', async ({
+      turnLock,
+      page,
+      toast
+    }) => {
+      const templates = new ComfyTemplates(page)
+
+      await test.step('agent turn is running', async () => {
+        await turnLock.openOnBlankWorkflow()
+        await turnLock.startTurn('add an audio output node')
+        await expect(turnLock.stopButton).toBeVisible()
+      })
+
+      await test.step('template opens fully while the turn keeps running', async () => {
+        const id = await templates.openFirstTemplate()
+        await templates.expectTemplateOpened(id)
+        await expect(toast.toastErrors).toHaveCount(0)
+        await expect(
+          toast.withText(enMessages.templateWorkflows.error.loading)
+        ).toHaveCount(0)
+        await expect(turnLock.stopButton).toBeVisible()
+      })
+    })
+  }
+)
