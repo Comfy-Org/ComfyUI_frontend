@@ -165,6 +165,9 @@ export const workspaceApi = vi.mockObject<typeof realWorkspaceApi>(
       topup_id: 'op-1',
       status: 'completed'
     }),
+    createTopupCheckout: async () => ({
+      checkout_url: 'https://checkout.stripe.com/c/pay/cs_mock'
+    }),
     getBillingEvents: async () => ({
       events: [],
       limit: 20,
