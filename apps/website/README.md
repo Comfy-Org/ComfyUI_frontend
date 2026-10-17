@@ -56,6 +56,21 @@ composer because the site renders locales concurrently. Missing messages fall
 back to English. The catalog test compiles every message and checks that each
 eligible English message has Chinese copy.
 
+The build renders every locale, but in production a browser loads only English and
+the page's own `<html lang>` catalog. `LocaleCatalogPreloads.astro` declares
+those catalogs in the layout `<head>` so they download in parallel with the
+page, and a client-side navigation into another locale loads that catalog
+before the page swaps. A component in the browser can render English or its
+page's locale; calling `translationsFor` with any other locale throws. A new
+layout that hosts islands should include `LocaleCatalogPreloads`. `BaseLayout`
+registers catalog preparation before `ClientRouter`, so navigation also waits
+when it starts before the island modules load. If an initial catalog request
+fails or exceeds ten seconds, the browser retries with its bundled catalog
+chunk. Failed navigation loads use a full-page retry; a superseded navigation
+cancels its catalog fetch. Catalog links persist only when their locale and
+build URL match, and navigation consumes each catalog without repeating its
+preload request.
+
 `main.json` is the catalog for each locale. Keep feature copy grouped under a
 nested feature key.
 

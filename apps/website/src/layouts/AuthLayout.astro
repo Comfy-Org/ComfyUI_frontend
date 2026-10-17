@@ -4,6 +4,7 @@ import '@/styles/global.css'
 import AuthHeroCarousel from '@/components/auth/AuthHeroCarousel.vue'
 import AuthToast from '@/components/auth/AuthToast.vue'
 import GoogleTagManager from '@/components/common/GoogleTagManager.astro'
+import LocaleCatalogPreloads from '@/components/common/LocaleCatalogPreloads.astro'
 import type { Locale } from '@/i18n/translations'
 
 /**
@@ -29,6 +30,7 @@ const { t } = Astro.locals
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <LocaleCatalogPreloads locale={locale} />
     <meta name="description" content={description} />
     <meta name="robots" content="noindex, nofollow" />
     <title>{title}</title>

@@ -6,8 +6,8 @@ import { computed, ref } from 'vue'
 import type { Locale, TranslationKey } from '@/i18n/translations'
 
 import { prefersReducedMotion } from '@/composables/useReducedMotion'
+import { DEFAULT_LOCALE } from '@/config/locales'
 import { translationsFor } from '@/i18n/translations'
-import en from '@/locales/en/main.json' with { type: 'json' }
 import { scrollTo } from '@/scripts/smoothScroll'
 import SafeRichText from '@/components/common/SafeRichTextContent'
 
@@ -42,7 +42,8 @@ function isMessageGroup(value: unknown): value is MessageGroup {
 }
 
 function buildSections(): LegalSection[] {
-  const catalog: unknown = en
+  const catalog: unknown =
+    translationsFor(DEFAULT_LOCALE).getLocaleMessage(DEFAULT_LOCALE)
   if (!isMessageGroup(catalog) || !isMessageGroup(catalog[prefix])) return []
 
   return Object.entries(catalog[prefix]).flatMap(([id, section]) => {

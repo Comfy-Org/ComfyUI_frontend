@@ -85,6 +85,10 @@ describe('site translations', () => {
     expect(t('tos.effectiveDateLabel')).toBe('Effective Date')
   })
 
+  it('preserves intentional empty messages', () => {
+    expect(translationsFor('en').t('gallery.heroTitleAfter')).toBe('')
+  })
+
   it.for([
     ['en', '42 models'],
     ['zh-CN', '42 个模型'],

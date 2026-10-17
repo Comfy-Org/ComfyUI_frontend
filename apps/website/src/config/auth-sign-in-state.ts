@@ -13,9 +13,9 @@ import type {
   AuthErrorCopy
 } from '@comfyorg/account-core/firebaseAuthError'
 
+import { DEFAULT_LOCALE } from '@/config/locales'
 import type { Locale, TranslationKey } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
-import en from '@/locales/en/main.json' with { type: 'json' }
 
 export type AuthSignInProvider = 'google' | 'github' | 'email'
 
@@ -55,9 +55,9 @@ export type AuthSignInEvent =
 
 const SUPPORT_EMAIL = 'support@comfy.org'
 
-const authErrorCodes = Object.keys(en.auth.errors).filter(
-  (code) => code !== 'generic' && code !== 'signupBlocked'
-)
+const authErrorCodes = Object.keys(
+  translationsFor(DEFAULT_LOCALE).tm('auth.errors')
+).filter((code) => code !== 'generic' && code !== 'signupBlocked')
 
 /** This host's own auth-error table, keyed the way the package resolver reads it. */
 function localizedAuthErrorCopy(locale: Locale): AuthErrorCopy {
