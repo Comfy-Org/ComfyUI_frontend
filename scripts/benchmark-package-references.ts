@@ -115,10 +115,10 @@ try {
   ) {
     const result = compile('-b', 'consumer/tsconfig.json', '--verbose')
     const producerBuilt = result.output.includes(
-      `Building project '${path.join(producer, 'tsconfig.json')}'`
+      `Building project '${path.join(producer, 'tsconfig.json').replaceAll('\\', '/')}'`
     )
     const consumerBuilt = result.output.includes(
-      `Building project '${path.join(consumer, 'tsconfig.json')}'`
+      `Building project '${path.join(consumer, 'tsconfig.json').replaceAll('\\', '/')}'`
     )
     assert.equal(
       producerBuilt,

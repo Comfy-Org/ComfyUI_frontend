@@ -94,11 +94,14 @@ describe('comfyAPIPlugin transform', () => {
       const id = path.join(root, `src/scripts/${module}.ts`)
       const { emitFile } = runTransform(false, id, readFileSync(id, 'utf8'))
 
-      for (const name of names) {
-        expect(emitFile.mock.calls[0][0].source).toContain(
-          `export const ${name} = window.comfyAPI.${module}.${name};`
+      expect(emitFile.mock.calls[0][0].source.split('\n')).toEqual(
+        expect.arrayContaining(
+          names.map(
+            (name) =>
+              `export const ${name} = window.comfyAPI.${module}.${name};`
+          )
         )
-      }
+      )
     }
   )
 
