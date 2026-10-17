@@ -11,7 +11,6 @@ import {
   mockAgentTurnApi,
   mockWorkflowPersistence
 } from '@e2e/fixtures/agentPanelFixture'
-import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
@@ -92,32 +91,6 @@ const seed: WorkflowJSON = {
   version: 0.4
 }
 
-function putUnresolvableLinkIntoTheUpcomingFirstFrame(host: HostDoc): void {
-  host.replaceLink([LINK_ID, LATE_SOURCE_NODE_ID, 0, SINK_NODE_ID, 0, 'IMAGE'])
-}
-
-function firstArrivalOfTheLinksMissingEndpoint(): RecordedGraphOperation {
-  return {
-    op: 'add_node',
-    node_id: LATE_SOURCE_NODE_ID,
-    class_type: SOURCE_TYPE,
-    pos: [120, 120],
-    node: {
-      id: LATE_SOURCE_NODE_ID,
-      type: SOURCE_TYPE,
-      pos: [120, 120],
-      size: [240, 60],
-      mode: 0,
-      flags: {},
-      order: 1,
-      inputs: [],
-      outputs: [{ name: 'IMAGE', type: 'IMAGE', links: [LINK_ID] }],
-      properties: {},
-      widgets_values: []
-    }
-  }
-}
-
 test.describe(
   'Agent follower on a link whose endpoint arrives in a later frame',
   { tag: ['@cloud', '@agent', '@canvas', '@node'] },
@@ -165,11 +138,17 @@ test.describe(
       })
 
       const host = new HostDoc(WORKFLOW_ID, seed, catalog)
-      putUnresolvableLinkIntoTheUpcomingFirstFrame(host)
-
       const sink = vueNodes.getNodeLocator(String(SINK_NODE_ID))
 
       await test.step('frame A carries one unresolvable link alongside good nodes: the good nodes still arrive', async () => {
+        host.replaceLink([
+          LINK_ID,
+          LATE_SOURCE_NODE_ID,
+          0,
+          SINK_NODE_ID,
+          0,
+          'IMAGE'
+        ])
         for (const frame of host.initialSync())
           socket.send(JSON.stringify(frame))
 
@@ -186,7 +165,29 @@ test.describe(
 
       await test.step('frame B materializes the missing endpoint for the first time', async () => {
         socket.send(
-          JSON.stringify(host.apply([firstArrivalOfTheLinksMissingEndpoint()]))
+          JSON.stringify(
+            host.apply([
+              {
+                op: 'add_node',
+                node_id: LATE_SOURCE_NODE_ID,
+                class_type: SOURCE_TYPE,
+                pos: [120, 120],
+                node: {
+                  id: LATE_SOURCE_NODE_ID,
+                  type: SOURCE_TYPE,
+                  pos: [120, 120],
+                  size: [240, 60],
+                  mode: 0,
+                  flags: {},
+                  order: 1,
+                  inputs: [],
+                  outputs: [{ name: 'IMAGE', type: 'IMAGE', links: [LINK_ID] }],
+                  properties: {},
+                  widgets_values: []
+                }
+              }
+            ])
+          )
         )
         await expect(
           vueNodes.getNodeLocator(String(LATE_SOURCE_NODE_ID))
