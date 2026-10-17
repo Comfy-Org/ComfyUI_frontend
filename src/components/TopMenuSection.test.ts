@@ -35,7 +35,6 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 vi.mock(import('firebase/auth'))
@@ -710,9 +709,9 @@ describe('TopMenuSection', () => {
       vi.mocked(useSettingStore(pinia).get).mockImplementation((key) => {
         if (key === 'Comfy.UseNewMenu') return 'Top'
         if (key === 'Comfy.UI.TabBarLayout') return 'Integrated'
+        if (key === 'Comfy.RightSidePanel.IsOpen') return true
         return undefined
       })
-      useRightSidePanelStore(pinia).isOpen = true
 
       const { container } = createWrapper({ pinia })
       await nextTick()
