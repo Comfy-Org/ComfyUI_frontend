@@ -272,7 +272,7 @@ function act() {
           cn(
             'h-10 w-full cursor-pointer rounded-lg px-4 text-sm font-semibold focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none',
             primary === 'close'
-              ? 'bg-secondary text-foreground hover:bg-secondary/80'
+              ? 'bg-secondary text-foreground hover:bg-accent'
               : 'bg-foreground text-background hover:opacity-90'
           )
         "

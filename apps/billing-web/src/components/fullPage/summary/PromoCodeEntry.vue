@@ -72,7 +72,7 @@ const canRemove = computed(() => live && entry.kind !== 'removing')
       <button
         type="button"
         :disabled="!live"
-        class="flex h-8 cursor-pointer items-center rounded-md bg-secondary px-2 text-xs text-foreground hover:bg-secondary/80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40 max-lg:h-10 max-lg:px-3"
+        class="flex h-8 cursor-pointer items-center rounded-md bg-secondary px-2 text-xs text-foreground hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40 max-lg:h-10 max-lg:px-3"
         @click="emit('open')"
       >
         {{ t(`${P}.add`) }}

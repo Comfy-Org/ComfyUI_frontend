@@ -124,7 +124,7 @@ describe('WidgetButton Interactions', () => {
     })
 
     it.for([
-      ['secondary', 'hover:bg-secondary/80'],
+      ['secondary', 'hover:bg-accent'],
       ['primary', 'hover:bg-primary/90'],
       ['inverted', 'hover:bg-foreground/80'],
       ['textonly', 'hover:bg-accent']

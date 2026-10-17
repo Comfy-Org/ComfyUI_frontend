@@ -383,7 +383,7 @@
 }
 
 .litegraph .dialog .btn:hover {
-  background-color: color-mix(in srgb, var(--secondary) 80%, transparent);
+  background-color: var(--accent);
   color: var(--foreground);
 }
 

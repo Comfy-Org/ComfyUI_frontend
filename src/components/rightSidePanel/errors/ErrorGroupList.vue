@@ -101,9 +101,7 @@
             :class="
               cn(
                 'min-w-0 flex-1 truncate text-xs font-semibold transition-colors duration-200',
-                hasSelectionEmphasis
-                  ? 'text-primary/90'
-                  : 'text-muted-foreground'
+                hasSelectionEmphasis ? 'text-primary' : 'text-muted-foreground'
               )
             "
           >
@@ -451,8 +449,8 @@ const HIDDEN_BY_FILTER = { error: 'missing', missing: 'error' } as const
 
 const SEVERITY_CHIP_CLASS = {
   error: {
-    idle: 'border-border text-destructive/90',
-    active: 'border-destructive/45 text-destructive/90'
+    idle: 'border-border text-destructive',
+    active: 'border-destructive/45 text-destructive'
   },
   missing: {
     idle: 'border-border text-warning',
@@ -701,7 +699,7 @@ const hero = computed(() => {
   }
   return {
     count: errorCount.value,
-    countClass: 'text-destructive/90',
+    countClass: 'text-destructive',
     title: t('rightSidePanel.errorsDetected', errorCount.value),
     description: t('rightSidePanel.resolveErrorsBeforeRun')
   }

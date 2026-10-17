@@ -31,7 +31,7 @@
           variant="secondary"
           :aria-label="fitViewLabel"
           :style="stringifiedMinimapStyles.buttonStyles"
-          class="size-8 bg-transparent p-0 hover:bg-accent"
+          class="size-8 bg-transparent p-0"
           @click="() => commandStore.execute('Comfy.Canvas.FitView')"
         >
           <i class="icon-[lucide--focus] size-4" aria-hidden="true" />

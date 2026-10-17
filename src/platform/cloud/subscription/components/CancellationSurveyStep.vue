@@ -17,7 +17,7 @@
           :value="option"
           :class="
             cn(
-              'flex w-full cursor-pointer items-center gap-2 rounded-[10px] border border-border/50 bg-transparent p-2.5 text-left text-sm transition-colors hover:bg-secondary/80 focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none',
+              'flex w-full cursor-pointer items-center gap-2 rounded-[10px] border border-border/50 bg-transparent p-2.5 text-left text-sm transition-colors hover:bg-accent focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none',
               reason === option && 'border-transparent bg-secondary'
             )
           "

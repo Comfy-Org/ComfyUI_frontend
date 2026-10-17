@@ -13,10 +13,7 @@
           size="unset"
           :aria-pressed="grid"
           :class="
-            cn(
-              'shrink-0 gap-1.5 rounded-md px-2 py-1 hover:bg-muted',
-              grid && 'bg-muted'
-            )
+            cn('shrink-0 gap-1.5 rounded-md px-2 py-1', grid && 'bg-muted')
           "
           @click="grid = !grid"
         >

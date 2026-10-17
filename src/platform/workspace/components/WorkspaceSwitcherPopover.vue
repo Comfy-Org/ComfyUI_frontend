@@ -27,7 +27,7 @@
               :class="
                 cn(
                   'group flex h-[54px] w-full items-center gap-2 rounded-sm px-2 py-4',
-                  'hover:bg-secondary/80',
+                  'hover:bg-accent',
                   isCurrentWorkspace(workspace) && 'bg-secondary'
                 )
               "

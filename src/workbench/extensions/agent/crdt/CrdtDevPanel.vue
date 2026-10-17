@@ -693,7 +693,7 @@ function fmtTime(at: number): string {
       v-if="dismissed"
       type="button"
       :title="S.restore"
-      class="mr-4 mb-1 flex h-6 cursor-pointer items-center gap-1 self-end rounded-full border bg-secondary px-2 text-muted-foreground transition-colors hover:bg-secondary/80 hover:text-foreground"
+      class="mr-4 mb-1 flex h-6 cursor-pointer items-center gap-1 self-end rounded-full border bg-secondary px-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
       data-testid="crdt-dev-panel-restore"
       @click="restore"
     >
@@ -706,7 +706,7 @@ function fmtTime(at: number): string {
       ref="chipButton"
       type="button"
       :title="S.open"
-      class="mr-4 mb-1 flex h-6 cursor-pointer items-center gap-1 self-end rounded-full border bg-secondary px-2 text-muted-foreground transition-colors hover:bg-secondary/80 hover:text-foreground"
+      class="mr-4 mb-1 flex h-6 cursor-pointer items-center gap-1 self-end rounded-full border bg-secondary px-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
       data-testid="crdt-dev-panel-chip"
       @click="setOpen(true)"
     >

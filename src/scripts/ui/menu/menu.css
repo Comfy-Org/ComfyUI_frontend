@@ -28,7 +28,11 @@
 
 .primary .comfyui-button:not(:disabled):hover,
 .primary.comfyui-button:not(:disabled):hover {
-  background-color: var(--primary) !important;
+  background-color: color-mix(
+    in srgb,
+    var(--primary) 90%,
+    var(--background)
+  ) !important;
   color: var(--foreground) !important;
 }
 
@@ -98,7 +102,7 @@
 }
 
 .comfyui-split-button-popup > .comfyui-button:not(:disabled):hover {
-  background-color: var(--input);
+  background-color: var(--accent);
 }
 
 /* Button group */

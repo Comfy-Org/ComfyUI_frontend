@@ -44,7 +44,7 @@ function edit(event: Event) {
       <button
         type="submit"
         :disabled="locked"
-        class="flex h-8 cursor-pointer items-center rounded-lg bg-secondary px-2 text-xs hover:bg-secondary/80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40 max-lg:h-10 max-lg:px-3"
+        class="flex h-8 cursor-pointer items-center rounded-lg bg-secondary px-2 text-xs hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40 max-lg:h-10 max-lg:px-3"
       >
         {{ t(`${P}.apply`) }}
       </button>

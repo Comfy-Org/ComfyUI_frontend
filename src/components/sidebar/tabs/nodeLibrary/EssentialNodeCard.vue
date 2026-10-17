@@ -2,7 +2,7 @@
   <div
     :class="
       cn(
-        'group @container relative flex aspect-square w-full flex-col items-center justify-center gap-2 rounded-lg bg-secondary pt-3 pb-2 transition-colors duration-150 select-none hover:bg-secondary/80',
+        'group @container relative flex aspect-square w-full flex-col items-center justify-center gap-2 rounded-lg bg-secondary pt-3 pb-2 transition-colors duration-150 select-none hover:bg-accent',
         nodeDef ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'
       )
     "

@@ -297,11 +297,9 @@ defineExpose({
           <span class="flex min-w-0 flex-1 items-center gap-2">
             <i
               v-if="nodeHasError"
-              class="icon-[lucide--octagon-alert] size-4 shrink-0 text-destructive/90"
+              class="icon-[lucide--octagon-alert] size-4 shrink-0 text-destructive"
             />
-            <span
-              :class="cn('truncate', nodeHasError && 'text-destructive/90')"
-            >
+            <span :class="cn('truncate', nodeHasError && 'text-destructive')">
               <slot name="label">
                 {{ displayLabel }}
               </slot>

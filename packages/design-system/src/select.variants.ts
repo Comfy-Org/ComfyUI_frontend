@@ -1,7 +1,7 @@
 import { cva } from 'cva'
 
 export const selectTriggerVariants = cva({
-  base: 'relative inline-flex cursor-pointer items-center rounded-lg border-[2.5px] border-solid bg-secondary text-foreground transition-all duration-200 ease-in-out outline-none select-none hover:bg-secondary/80 disabled:cursor-default disabled:opacity-30 disabled:hover:bg-secondary',
+  base: 'relative inline-flex cursor-pointer items-center rounded-lg border-[2.5px] border-solid bg-secondary text-foreground transition-all duration-200 ease-in-out outline-none select-none hover:bg-accent disabled:cursor-default disabled:opacity-30 disabled:hover:bg-secondary',
   variants: {
     size: {
       md: 'h-8',

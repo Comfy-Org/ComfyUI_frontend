@@ -5,7 +5,7 @@ export const buttonVariants = cva({
   base: 'relative inline-flex cursor-pointer touch-manipulation appearance-none items-center justify-center gap-2 rounded-md border-none font-inter text-sm font-medium whitespace-nowrap transition-colors focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([width]):not([height])]:size-4',
   variants: {
     variant: {
-      secondary: 'bg-secondary text-foreground hover:bg-secondary/80',
+      secondary: 'bg-secondary text-foreground hover:bg-accent',
       primary: 'bg-primary text-foreground hover:bg-primary/90',
       inverted: 'bg-foreground text-background hover:bg-foreground/80',
       destructive: 'bg-destructive text-foreground hover:bg-destructive/90',

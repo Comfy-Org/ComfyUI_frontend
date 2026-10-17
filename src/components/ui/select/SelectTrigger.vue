@@ -32,7 +32,7 @@ const {
         'rounded-lg',
         'bg-secondary text-foreground',
         'transition-all duration-200 ease-in-out',
-        'hover:bg-secondary/80',
+        'hover:bg-accent',
         'border-[2.5px] border-solid',
         invalid
           ? 'border-destructive'

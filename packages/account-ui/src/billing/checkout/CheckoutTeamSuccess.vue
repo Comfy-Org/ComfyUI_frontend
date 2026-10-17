@@ -156,7 +156,7 @@ const inviting = computed(
 )
 const inputClass = computed(() =>
   darkSurface
-    ? 'min-h-10 w-full bg-secondary px-3 focus-within:bg-secondary hover:bg-secondary/80'
+    ? 'min-h-10 w-full bg-secondary px-3 focus-within:bg-secondary hover:bg-accent'
     : 'min-h-10 w-full bg-muted px-3 focus-within:bg-muted hover:bg-muted/80'
 )
 

@@ -68,7 +68,7 @@ function onDismiss(): void {
         :href="AGENT_DOCS_URL"
         target="_blank"
         rel="noopener noreferrer"
-        class="inline p-0 text-sm/5 font-normal text-primary/90 hover:underline hover:underline-offset-4"
+        class="inline p-0 text-sm/5 font-normal text-foreground underline underline-offset-4"
         @click="emit('notice', { action: 'learn_more_clicked', placement })"
       >
         {{ $t('g.learnMore') }}
