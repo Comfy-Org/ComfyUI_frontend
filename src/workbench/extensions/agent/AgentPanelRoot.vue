@@ -1584,7 +1584,6 @@ let assetDragDepth = 0
 watch(
   selectedTarget,
   (target) => {
-    canvasStore.setHighlightedNodeIds([])
     canvasStore.stopNodePicking()
     composerStore.setNodeScope(target?.instanceId ?? null)
     nodeReferenceWorkflow = null
@@ -1610,14 +1609,9 @@ start({
       threadId.value === agentPanelStore.view.previousThreadId)
 })
 
-watch(
-  () => canvasStore.currentGraph,
-  () => {
-    canvasStore.setHighlightedNodeIds([])
-    canvasStore.stopNodePicking()
-  },
-  { flush: 'sync' }
-)
+watch(() => canvasStore.currentGraph, canvasStore.stopNodePicking, {
+  flush: 'sync'
+})
 
 function onSelectNodes(): void {
   if (!canReferenceNodes.value || canvasStore.isPickingNodes) return
@@ -1748,7 +1742,6 @@ function onRemoveSelectionTag(id: string): void {
 }
 
 function onClosePanel(): void {
-  canvasStore.setHighlightedNodeIds([])
   canvasStore.stopNodePicking()
   useTelemetry()?.trackAgentCloseButtonClicked()
   agentPanelStore.close('close_button')

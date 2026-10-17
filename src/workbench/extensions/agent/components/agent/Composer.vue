@@ -2,6 +2,7 @@
 import {
   computed,
   nextTick,
+  onBeforeUnmount,
   onMounted,
   onUnmounted,
   ref,
@@ -339,6 +340,8 @@ watch(
   },
   { immediate: true }
 )
+
+onBeforeUnmount(() => emit('mentionHighlight', null))
 const skillsRetryVisible = computed(
   () => mentionSection.value === 'skills' && skills.loadFailed
 )

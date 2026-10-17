@@ -1029,11 +1029,28 @@ describe('Composer', () => {
       expect(emitted().mentionHighlight.at(-1)).toEqual([NODES[1]])
 
       await userEvent.hover(
+        within(menu).getByRole('menuitem', { name: 'Back' })
+      )
+      expect(emitted().mentionHighlight.at(-1)).toEqual([null])
+
+      await userEvent.hover(
         within(menu).getByRole('menuitem', { name: 'VAE Decode' })
       )
       expect(emitted().mentionHighlight.at(-1)).toEqual([NODES[2]])
 
       await userEvent.keyboard('{Escape}')
+      expect(emitted().mentionHighlight.at(-1)).toEqual([null])
+    })
+
+    it('releases the highlight when the composer unmounts', async () => {
+      const { emitted, unmount } = mount({ getMentionNodes: () => NODES })
+      await openReferenceSection('Nodes')
+
+      await userEvent.keyboard('{ArrowDown}')
+      expect(emitted().mentionHighlight.at(-1)).toEqual([NODES[0]])
+
+      unmount()
+
       expect(emitted().mentionHighlight.at(-1)).toEqual([null])
     })
 
