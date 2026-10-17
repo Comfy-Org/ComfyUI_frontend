@@ -2,7 +2,7 @@
   <Menu :items="menuItems">
     <template #trigger>
       <Button
-        v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
+        :tooltip="$t('g.moreOptions')"
         variant="muted-textonly"
         size="icon-lg"
         :aria-label="$t('g.moreOptions')"
@@ -14,38 +14,23 @@
 
 <script setup lang="ts">
 import type { MenuItem } from '@/components/ui/menu/types'
-import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Menu from '@/components/ui/menu/Menu.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useDeleteWorkspaceGate } from '@/platform/workspace/composables/useDeleteWorkspaceGate'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useDialogService } from '@/services/dialogService'
+import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
 
 const { t } = useI18n()
 const {
   showLeaveWorkspaceDialog,
   showDeleteWorkspaceDialog,
   showEditWorkspaceDialog
-} = useDialogService()
-const { isWorkspaceSubscribed } = storeToRefs(useTeamWorkspaceStore())
+} = useWorkspaceDialogs()
 const { permissions, uiConfig } = useWorkspaceUI()
-
-// Disable delete when the workspace has an active subscription (prevents
-// accidental deletion); uses the workspace's own status, not the global one.
-const isDeleteDisabled = computed(
-  () =>
-    uiConfig.value.workspaceMenuAction === 'delete' &&
-    isWorkspaceSubscribed.value
-)
-
-const deleteTooltip = computed(() => {
-  if (!isDeleteDisabled.value) return undefined
-  const tooltipKey = uiConfig.value.workspaceMenuDisabledTooltip
-  return tooltipKey ? t(tooltipKey) : undefined
-})
+const { gate: deleteGate, tooltip: deleteTooltip } = useDeleteWorkspaceGate()
 
 function leaveWorkspace() {
   if (!permissions.value.canLeaveWorkspace) return
@@ -53,13 +38,7 @@ function leaveWorkspace() {
 }
 
 function deleteWorkspace() {
-  if (
-    !permissions.value.canManageSubscription ||
-    uiConfig.value.workspaceMenuAction !== 'delete' ||
-    isDeleteDisabled.value
-  ) {
-    return
-  }
+  if (deleteGate.value.status !== 'enabled') return
   void showDeleteWorkspaceDialog()
 }
 
@@ -74,17 +53,15 @@ const menuItems = computed<MenuItem[]>(() => {
     })
   }
 
-  if (
-    uiConfig.value.workspaceMenuAction === 'delete' &&
-    permissions.value.canManageSubscription
-  ) {
+  if (deleteGate.value.status !== 'hidden') {
+    const disabled = deleteGate.value.status === 'disabled'
     items.push({
       label: t('workspacePanel.menu.deleteWorkspace'),
       icon: 'pi pi-trash',
       variant: 'destructive',
-      disabled: isDeleteDisabled.value,
+      disabled,
       tooltip: deleteTooltip.value,
-      command: isDeleteDisabled.value ? undefined : deleteWorkspace
+      command: disabled ? undefined : deleteWorkspace
     })
   }
 

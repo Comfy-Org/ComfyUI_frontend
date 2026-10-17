@@ -1,7 +1,7 @@
 <template>
   <Popover
     ref="popoverRef"
-    side="top"
+    side="bottom"
     :side-offset="8"
     content-class="workflow-popover-fade w-fit rounded-xl border-none bg-transparent p-0 shadow-lg transition-opacity duration-150 ease-out"
     @mouseleave="hidePopover"
@@ -20,7 +20,7 @@
         />
       </div>
       <div class="px-3 pt-1 pb-2">
-        <span class="block truncate text-sm font-medium text-text-primary">
+        <span class="block truncate text-sm font-medium">
           {{ workflowFilename }}
         </span>
       </div>

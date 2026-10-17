@@ -3,6 +3,7 @@ import type { Page, Route } from '@playwright/test'
 import type {
   AgentRunMode,
   AgentThreadListResponse,
+  BillingStatusResponse,
   GlobalSetting,
   ListAssetsResponse,
   WorkflowListResponse
@@ -16,6 +17,7 @@ import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/w
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { AgentTurnAccepted } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
+import { mockAgentIdentity } from '@e2e/fixtures/agentSocket'
 import { cloudAppFixture, waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { DEPLOY_ACTION_SEEN_SETTINGS } from '@e2e/fixtures/constants/workflowActions'
@@ -58,6 +60,8 @@ interface BootAgentAppOptions {
    * boot and relying on route-precedence order.
    */
   assets?: ListAssetsResponse
+  /** Replaces `mockBilling`'s default billing status. */
+  billingStatus?: BillingStatusResponse
   beforeNavigate?: (page: Page) => Promise<void>
 }
 
@@ -69,7 +73,8 @@ async function mockAgentBoot(
     features,
     vueNodes,
     objectInfo,
-    assets
+    assets,
+    billingStatus
   }: { agentFlag: boolean } & BootAgentAppOptions
 ): Promise<void> {
   await mockCloudBoot(page, {
@@ -85,7 +90,8 @@ async function mockAgentBoot(
     },
     objectInfo
   })
-  await mockBilling(page)
+  await mockBilling(page, { billingStatus })
+  await mockAgentIdentity(page)
   const storedConsent: GlobalSetting = {
     key: AGENT_CONSENT_SETTING_ID,
     value: true,

@@ -11,12 +11,12 @@ import type {
 } from '@/platform/telemetry/types'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { useDialogService } from '@/services/dialogService'
+import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useDialogStore } from '@/stores/dialogStore'
+import { AGENT_DOCS_URL } from '@/workbench/extensions/agent/agentDocs'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 
 export const CONSENT_DIALOG_KEY = 'agent-consent'
-const DOCS_URL = 'https://docs.comfy.org/agent-tools/in-app-agent'
 const CONSENT_MEDIA_BASE = 'https://media.comfy.org/website/comfy-agent'
 const CONSENT_VIDEO_SOURCES = [
   {
@@ -43,7 +43,7 @@ export interface ConsentOfferHooks {
 
 export function useAgentConsent() {
   const dialogStore = useDialogStore()
-  const dialogService = useDialogService()
+  const { showSignInDialog } = useAuthDialogs()
   const consentStore = useAgentConsentStore()
   const toast = useToast()
   const { isLoggedIn } = useCurrentUser()
@@ -139,7 +139,7 @@ export function useAgentConsent() {
           },
           dialogComponentProps: {
             closable: true,
-            dismissableMask: true
+            dismissOnPointerDownOutside: true
           }
         })
       }
@@ -152,7 +152,7 @@ export function useAgentConsent() {
           contentProps: { accepting: true, error: '' },
           dialogComponentProps: {
             closable: false,
-            dismissableMask: false
+            dismissOnPointerDownOutside: false
           }
         })
 
@@ -184,11 +184,10 @@ export function useAgentConsent() {
         component: AgentConsentCard,
         props: {
           title: t('agent.consent.title'),
-          titleId: CONSENT_DIALOG_KEY,
           paragraphs: [t('agent.consent.body1'), t('agent.consent.body2')],
           videoSources: CONSENT_VIDEO_SOURCES,
           posterSrc: CONSENT_POSTER_SRC,
-          docsUrl: DOCS_URL,
+          docsUrl: AGENT_DOCS_URL,
           accepting: false,
           error: '',
           onVnodeMounted: () => {
@@ -204,14 +203,8 @@ export function useAgentConsent() {
           }
         },
         dialogComponentProps: {
-          renderer: 'reka',
-          dismissableMask: true,
-          closeOnEscape: true,
-          modal: true,
+          dismissOnPointerDownOutside: true,
           headless: true,
-          overlayClass: 'bg-black/55',
-          contentClass:
-            'w-[min(640px,calc(100vw-2rem))] border-none bg-transparent shadow-none sm:max-w-[640px]',
           onClose: () => {
             if (settled) return
             settled = true
@@ -242,7 +235,7 @@ export function useAgentConsent() {
     if (!(await showConsentDialog(trigger, false, undefined, hooks)))
       return null
     try {
-      if (!(await dialogService.showSignInDialog())) return null
+      if (!(await showSignInDialog())) return null
     } catch (error) {
       reportError(error, {
         surface: 'agent',

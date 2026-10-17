@@ -3,7 +3,7 @@ import { ref } from 'vue'
 
 import { createToastId } from '@/types/toastId'
 import type { ToastId } from '@/types/toastId'
-import type { ToastAction, ToastOptions } from '@/types/extensionTypes'
+import type { ToastAction, ToastOptions } from '@/types/toastOptions'
 
 type ToastKind = 'error' | 'info' | 'loading' | 'success' | 'warning'
 

@@ -24,10 +24,10 @@
           <SelectValue />
         </SelectTrigger>
         <SelectContent class="min-w-16 p-1">
-          <SelectItem value="hex" class="px-2 py-1 text-xs">
+          <SelectItem value="hex" class="py-1 text-xs">
             {{ t('color.hex') }}
           </SelectItem>
-          <SelectItem value="rgba" class="px-2 py-1 text-xs">
+          <SelectItem value="rgba" class="py-1 text-xs">
             {{ t('color.rgba') }}
           </SelectItem>
         </SelectContent>

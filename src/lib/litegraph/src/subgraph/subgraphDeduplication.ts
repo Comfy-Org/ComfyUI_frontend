@@ -19,7 +19,7 @@ import { toNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import { toLinkId } from '@/types/linkId'
 import { toRerouteId } from '@/types/rerouteId'
-import type { NodeProperty } from '@/types/nodeState'
+import type { NodeProperty } from '@/types/nodeProperty'
 import { createUuidv4 } from '@/utils/uuid'
 import type {
   ExportedSubgraph,

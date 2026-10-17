@@ -67,9 +67,35 @@ describe('EmptyState', () => {
           promptId: 'slot_5',
           promptIndex: 4,
           promptCount: 5,
+          visiblePromptCount: 5,
           promptTextHash: '2f8b1ba4',
           locale: 'en'
         }
+      ]
+    ])
+  })
+
+  it('separates the visible count from the set size in a narrow panel', async () => {
+    const user = userEvent.setup()
+    const { emitted } = render(EmptyState, {
+      global: { plugins: [i18n] }
+    })
+    const buttons = screen.getAllByRole('button')
+    // happy-dom does not evaluate container queries; hide the overflow as the
+    // compact breakpoint does.
+    buttons.slice(3).forEach((button) => (button.style.display = 'none'))
+
+    await user.click(buttons[0])
+
+    expect(emitted().insert).toEqual([
+      [
+        LOCAL_PROMPTS[0].text,
+        expect.objectContaining({
+          promptId: 'slot_1',
+          // The set did not shrink, so the set-size field must not move.
+          promptCount: 5,
+          visiblePromptCount: 3
+        })
       ]
     ])
   })

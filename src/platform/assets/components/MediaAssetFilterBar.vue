@@ -13,7 +13,7 @@
         <Menu v-if="isCloud" :modal="false">
           <template #trigger>
             <Button
-              v-tooltip.top="{ value: $t('assetBrowser.filterBy') }"
+              :tooltip="$t('assetBrowser.filterBy')"
               variant="secondary"
               size="icon"
               icon="icon-[lucide--list-filter]"
@@ -26,9 +26,7 @@
             v-model:media-type-filters="mediaTypeFilters"
           />
         </Menu>
-        <MediaAssetSettingsButton
-          v-tooltip.top="{ value: $t('sideToolbar.mediaAssets.viewSettings') }"
-        >
+        <MediaAssetSettingsButton>
           <template #default>
             <MediaAssetSettingsMenu
               v-model:view-mode="viewMode"
@@ -67,7 +65,7 @@
       </span>
       <Button
         variant="textonly"
-        class="h-6 px-1.5 text-xs text-muted-foreground"
+        class="h-6 px-1.5 text-muted-foreground"
         @click="clearFilters"
       >
         {{ $t('sideToolbar.mediaAssets.clearFilters') }}

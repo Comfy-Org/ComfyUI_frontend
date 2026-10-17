@@ -13,8 +13,7 @@ export interface ModelFamily {
 // "Wan 2.6", "Wan2.5", "LTX-2.5", "Vidu Q3", "Kling O1": the registry spells a
 // release every way there is, and each spelling has to fall off the name for
 // the family to come out.
-const VERSION_SUFFIX =
-  /(?:[\s\-.]+v?[A-Za-z]?(\d+(?:\.\d+)*)|(\d+(?:\.\d+)*))$/i
+const VERSION_SUFFIX = /(?:[\s\-.]+v?[A-Z]?(\d+(?:\.\d+)*)|(\d+(?:\.\d+)*))$/i
 const QUALIFIER_SUFFIX =
   /[\s-]+(pro|lite|flash|fast|turbo|mini|max|ultra|plus|ai|3d)$/i
 

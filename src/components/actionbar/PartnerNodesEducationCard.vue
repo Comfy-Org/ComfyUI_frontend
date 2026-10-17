@@ -42,11 +42,13 @@
               >
                 <i
                   :class="
-                    audibleSide === 'open'
-                      ? 'icon-[lucide--volume-2]'
-                      : 'icon-[lucide--volume-x]'
+                    cn(
+                      'size-4',
+                      audibleSide === 'open'
+                        ? 'icon-[lucide--volume-2]'
+                        : 'icon-[lucide--volume-x]'
+                    )
                   "
-                  class="size-4"
                 />
               </Button>
               <Button
@@ -62,11 +64,13 @@
               >
                 <i
                   :class="
-                    audibleSide === 'partner'
-                      ? 'icon-[lucide--volume-2]'
-                      : 'icon-[lucide--volume-x]'
+                    cn(
+                      'size-4',
+                      audibleSide === 'partner'
+                        ? 'icon-[lucide--volume-2]'
+                        : 'icon-[lucide--volume-x]'
+                    )
                   "
-                  class="size-4"
                 />
               </Button>
 
@@ -100,15 +104,20 @@
                 <span class="text-xs font-semibold text-white">
                   {{ t('partnerNodesEducation.partnerTab') }}
                 </span>
-                <AccessibleTooltip
-                  :label="t('partnerNodesEducation.tooltip')"
-                  side="top"
-                  :side-offset="8"
-                  trigger-class="flex items-center text-white/60 hover:text-white"
-                  content-class="max-w-56"
-                >
-                  <i class="icon-[lucide--info] size-3" />
-                </AccessibleTooltip>
+                <Tooltip open-on-click>
+                  <TooltipTrigger as-child>
+                    <button
+                      type="button"
+                      :aria-label="t('partnerNodesEducation.tooltip')"
+                      class="flex items-center text-white/60 hover:text-white"
+                    >
+                      <i class="icon-[lucide--info] size-3" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent :side-offset="8" class="max-w-56">{{
+                    t('partnerNodesEducation.tooltip')
+                  }}</TooltipContent>
+                </Tooltip>
               </div>
             </div>
           </div>
@@ -142,39 +151,35 @@
                 <span class="flex-1 text-sm/snug text-text-secondary">
                   {{ t(`partnerNodesEducation.benefits.${row.key}`) }}
                 </span>
-                <span class="flex w-15 justify-center">
+                <span
+                  v-for="column in [
+                    {
+                      label: t('partnerNodesEducation.openHeader'),
+                      included: row.open
+                    },
+                    {
+                      label: t('partnerNodesEducation.partnerHeader'),
+                      included: row.partner
+                    }
+                  ]"
+                  :key="column.label"
+                  class="flex w-15 justify-center"
+                >
                   <i
                     :class="
-                      row.open
-                        ? 'icon-[lucide--check] text-brand-yellow'
-                        : 'icon-[lucide--minus] text-muted-foreground'
+                      cn(
+                        'size-4',
+                        column.included
+                          ? 'icon-[lucide--check] text-brand-yellow'
+                          : 'icon-[lucide--minus] text-muted-foreground'
+                      )
                     "
-                    class="size-4"
                     aria-hidden="true"
                   />
                   <span class="sr-only">
-                    {{ t('partnerNodesEducation.openHeader') }}:
+                    {{ column.label }}:
                     {{
-                      row.open
-                        ? t('partnerNodesEducation.included')
-                        : t('partnerNodesEducation.notIncluded')
-                    }}
-                  </span>
-                </span>
-                <span class="flex w-15 justify-center">
-                  <i
-                    :class="
-                      row.partner
-                        ? 'icon-[lucide--check] text-brand-yellow'
-                        : 'icon-[lucide--minus] text-muted-foreground'
-                    "
-                    class="size-4"
-                    aria-hidden="true"
-                  />
-                  <span class="sr-only">
-                    {{ t('partnerNodesEducation.partnerHeader') }}:
-                    {{
-                      row.partner
+                      column.included
                         ? t('partnerNodesEducation.included')
                         : t('partnerNodesEducation.notIncluded')
                     }}
@@ -207,12 +212,15 @@ import { useI18n } from 'vue-i18n'
 
 import VideoCompareSlider from '@/components/common/VideoCompareSlider.vue'
 import Button from '@/components/ui/button/Button.vue'
-import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import { usePartnerNodesRunGate } from '@/composables/billing/usePartnerNodesRunGate'
 import { usePartnerNodesInGraph } from '@/composables/node/usePartnerNodesInGraph'
-import { useDialogService } from '@/services/dialogService'
+import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { usePartnerNodesEducationStore } from '@/platform/workflow/templates/stores/partnerNodesEducationStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { cn } from '@comfyorg/tailwind-utils'
 
 interface ComparisonRow {
   key: string
@@ -248,10 +256,10 @@ const { isCardRequested, requestedForWorkflowKey } = storeToRefs(educationStore)
 const { hasPartnerNodes } = usePartnerNodesInGraph()
 const { gate, partnerNodes } = usePartnerNodesRunGate()
 const { activeWorkflow } = storeToRefs(useWorkflowStore())
-const dialogService = useDialogService()
+const { showApiNodesSignInDialog } = useAuthDialogs()
 
 function openSignIn() {
-  void dialogService.showApiNodesSignInDialog(
+  void showApiNodesSignInDialog(
     partnerNodes.value.map((node) => node.displayName)
   )
 }

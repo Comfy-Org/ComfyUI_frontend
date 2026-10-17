@@ -1,13 +1,14 @@
 <template>
-  <SidebarIcon
-    v-coachmark="FIRST_RUN_COACH_IDS.templatesButton"
-    icon="icon-[comfy--template]"
-    :tooltip="$t('sideToolbar.templates')"
-    :label="$t('sideToolbar.labels.templates')"
-    :is-small="isSmall"
-    class="templates-tab-button"
-    @click="openTemplates"
-  />
+  <div v-coachmark="FIRST_RUN_COACH_IDS.templatesButton" class="flex">
+    <SidebarIcon
+      icon="icon-[comfy--template]"
+      :tooltip="$t('sideToolbar.templates')"
+      :label="$t('sideToolbar.labels.templates')"
+      :is-small="isSmall"
+      class="templates-tab-button"
+      @click="openTemplates"
+    />
+  </div>
 </template>
 
 <script setup lang="ts">

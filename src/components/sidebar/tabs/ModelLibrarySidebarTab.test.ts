@@ -14,7 +14,7 @@ import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import { useModelStore } from '@/stores/modelStore'
 import type { ComfyModelDef } from '@/stores/modelStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import type { TreeExplorerNode } from '@/types/treeExplorerTypes'
 
 import ModelLibrarySidebarTab from './ModelLibrarySidebarTab.vue'
@@ -129,8 +129,7 @@ describe('ModelLibrarySidebarTab', () => {
     return render(ModelLibrarySidebarTab, {
       global: {
         plugins: [i18n],
-        stubs: { teleport: true },
-        directives: { tooltip: {} }
+        stubs: { teleport: true }
       }
     })
   }
@@ -167,7 +166,7 @@ describe('ModelLibrarySidebarTab', () => {
       'checkpoints'
     )
     expect(useNodeDragToCanvas().startDrag).toHaveBeenCalledWith(mockNodeDef, {
-      widgetValues: { ckpt_name: 'model.safetensors' },
+      widgetValues: [{ selector: 'ckpt_name', value: 'model.safetensors' }],
       source: 'sidebar_drag'
     })
   })

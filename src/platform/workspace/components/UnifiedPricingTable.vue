@@ -94,7 +94,7 @@
          falling back to TIER_PRICING). -->
       <div
         v-if="planMode === 'personal'"
-        class="flex flex-col items-stretch gap-6 xl:flex-1 xl:flex-row xl:justify-center"
+        class="flex flex-col gap-6 xl:flex-1 xl:flex-row xl:justify-center"
       >
         <div
           v-for="tier in tiers"
@@ -102,21 +102,12 @@
           class="flex flex-col rounded-2xl border border-border-default bg-base-background shadow-[0_0_12px_rgba(0,0,0,0.1)] xl:w-80"
         >
           <div class="flex flex-1 flex-col gap-4 p-6 pb-0">
-            <div class="flex flex-row items-center justify-between gap-2">
-              <span
-                class="font-inter text-base/normal font-bold text-base-foreground"
-              >
-                {{ tier.name }}
-              </span>
-              <div
-                v-if="tier.isPopular"
-                class="flex h-5 items-center rounded-full bg-base-foreground px-1.5 text-2xs font-bold tracking-tight text-base-background uppercase"
-              >
-                {{ t('subscription.mostPopular') }}
-              </div>
-            </div>
+            <PricingTierHeading
+              :name="tier.name"
+              :is-popular="tier.isPopular"
+            />
             <div class="flex flex-col gap-2">
-              <div class="flex flex-row items-baseline gap-2">
+              <div class="flex items-baseline gap-2">
                 <span
                   class="font-inter text-[28px] leading-normal font-semibold text-base-foreground tabular-nums"
                 >
@@ -154,7 +145,7 @@
               <div
                 v-for="feature in tier.features"
                 :key="feature"
-                class="flex flex-row items-start gap-2"
+                class="flex items-start gap-2"
               >
                 <i class="pi pi-check mt-0.5 text-xs text-base-foreground" />
                 <span class="text-sm font-normal text-muted-foreground">
@@ -166,7 +157,7 @@
             <!-- Credit grant + template-based video estimate, pinned to the
                  card bottom so the figures align across tiers. -->
             <div class="mt-auto flex flex-col gap-1">
-              <div class="flex flex-row items-center gap-2">
+              <div class="flex items-center gap-2">
                 <i
                   class="icon-[lucide--coins] size-4 shrink-0 bg-credit"
                   aria-hidden="true"
@@ -203,6 +194,7 @@
                     : 'border-transparent bg-secondary-background hover:bg-secondary-background-hover focus:bg-secondary-background-selected'
                 )
               "
+              :data-dd-action-name="planCtaActionName(tier.key)"
               @click="() => handleSubscribe(tier.key)"
             >
               {{ getButtonLabel(tier) }}
@@ -214,7 +206,7 @@
       <!-- TEAM PLAN: [Team Plan | Details] card + Enterprise card -->
       <div v-else class="flex min-h-0 flex-col gap-6 xl:flex-1">
         <div
-          class="flex flex-col items-stretch gap-6 xl:flex-1 xl:flex-row xl:justify-center"
+          class="flex flex-col gap-6 xl:flex-1 xl:flex-row xl:justify-center"
         >
           <!-- Team Plan + Details share one card, split by a divider. -->
           <div
@@ -244,7 +236,7 @@
 
               <!-- Selected credit grant + template-based video estimate -->
               <div class="flex flex-col gap-1">
-                <div class="flex flex-row items-center gap-2">
+                <div class="flex items-center gap-2">
                   <i
                     class="icon-[lucide--coins] size-4 shrink-0 bg-credit"
                     aria-hidden="true"
@@ -271,7 +263,8 @@
               <Button
                 variant="inverted"
                 :disabled="isTeamButtonDisabled"
-                class="mt-auto h-10 w-full font-inter text-sm/normal font-bold"
+                class="mt-auto h-10 w-full text-sm/normal font-bold"
+                :data-dd-action-name="BILLING_ACTION_NAME.subscribeTeamPlan"
                 @click="handleSubscribeTeam"
               >
                 {{ teamButtonLabel }}
@@ -302,7 +295,7 @@
                 <div
                   v-for="perk in teamDetailPerks"
                   :key="perk"
-                  class="flex flex-row items-start gap-2"
+                  class="flex items-start gap-2"
                 >
                   <i class="pi pi-check mt-0.5 text-xs text-base-foreground" />
                   <span class="text-sm font-normal text-muted-foreground">
@@ -315,7 +308,7 @@
                 <span class="text-sm text-muted-foreground">
                   {{ t('subscription.teamPlan.comingSoonLabel') }}
                 </span>
-                <div class="flex flex-row items-start gap-2">
+                <div class="flex items-start gap-2">
                   <i class="pi pi-clock mt-0.5 text-xs text-muted-foreground" />
                   <span class="text-sm font-normal text-muted-foreground">
                     {{ t('subscription.teamPlan.perkProjectAssets') }}
@@ -348,7 +341,7 @@
             </span>
             <Button
               variant="secondary"
-              class="mt-auto h-10 w-full border-transparent bg-secondary-background font-bold hover:bg-secondary-background-hover"
+              class="mt-auto h-10 w-full border-transparent font-bold"
               @click="handleViewEnterprise"
             >
               {{ t('subscription.enterprise.cta') }}
@@ -429,6 +422,11 @@
 </template>
 
 <script setup lang="ts">
+import PricingTierHeading from '@/platform/workspace/components/PricingTierHeading.vue'
+import {
+  BILLING_ACTION_NAME,
+  planCtaActionName
+} from '@/platform/telemetry/billingActionNames'
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed, onMounted, ref, watch } from 'vue'
 import { I18nT, useI18n } from 'vue-i18n'

@@ -5,7 +5,15 @@ import type {
   WorkflowJSON
 } from '@comfyorg/comfy-multi-player'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import * as Y from 'yjs'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -1153,6 +1161,191 @@ describe('LiveGraphApplier', () => {
     ])
   })
 
+  it.for([
+    {
+      field: 'flags.collapsed',
+      key: 'flags',
+      value: { collapsed: true },
+      expected: true,
+      renderedSize: [LiteGraph.NODE_COLLAPSED_WIDTH, 0]
+    },
+    {
+      field: 'flags.pinned',
+      key: 'flags',
+      value: { pinned: true },
+      expected: true,
+      renderedSize: [210, 100]
+    },
+    {
+      field: 'mode',
+      key: 'mode',
+      value: 3,
+      expected: 3,
+      renderedSize: [210, 100]
+    },
+    {
+      field: 'mode',
+      key: 'mode',
+      value: 4,
+      expected: 4,
+      renderedSize: [210, 100]
+    }
+  ])(
+    'announces $field once when applying and reapplying a document field',
+    ({ field, key, value, expected, renderedSize }) => {
+      const { graph, doc, applyCollected, applyEdit } = setup({
+        nodes: [sourceNode(1)],
+        links: []
+      })
+      applyCollected()
+      const node = graph.getNodeById(toNodeId(1))
+      assert.exists(node)
+      const listener = vi.fn()
+      onTestFinished(onGraphIntent(listener))
+
+      applyEdit(() => nodesMap(doc).get('1')?.set(key, value))
+      applyEdit(() => nodesMap(doc).get('1')?.set(key, value))
+
+      expect(listener).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          type: 'set_node_field',
+          field,
+          value: expected,
+          source: 'agent-remote'
+        })
+      )
+      expect([...node.size]).toEqual([210, 100])
+      expect([...node.renderingSize]).toEqual(renderedSize)
+    }
+  )
+
+  it.for([
+    {
+      flags: {},
+      collapsed: false,
+      pinned: false,
+      resizable: true,
+      renderedSize: [210, 100]
+    },
+    {
+      flags: { pinned: true },
+      collapsed: false,
+      pinned: true,
+      resizable: false,
+      renderedSize: [210, 100]
+    },
+    {
+      flags: { collapsed: true },
+      collapsed: true,
+      pinned: false,
+      resizable: true,
+      renderedSize: [LiteGraph.NODE_COLLAPSED_WIDTH, 0]
+    }
+  ])(
+    'updates pinned, collapsed and custom flags to $flags',
+    ({ flags, collapsed, pinned, resizable, renderedSize }) => {
+      const { graph, doc, applyCollected, applyEdit } = setup({
+        nodes: [
+          sourceNode(1, {
+            flags: { pinned: true, collapsed: true, allow_interaction: true }
+          })
+        ],
+        links: []
+      })
+      applyCollected()
+      const node = graph.getNodeById(toNodeId(1))
+      assert.exists(node)
+
+      applyEdit(() => nodesMap(doc).get('1')?.set('flags', flags))
+
+      expect(node.collapsed).toBe(collapsed)
+      expect(node.pinned).toBe(pinned)
+      expect(node.resizable).toBe(resizable)
+      expect(node.flags.allow_interaction).toBeUndefined()
+      expect([...node.renderingSize]).toEqual(renderedSize)
+    }
+  )
+
+  it('creates trigger slots through the mode channel', () => {
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [sourceNode(1)],
+      links: []
+    })
+    applyCollected()
+
+    applyEdit(() => nodesMap(doc).get('1')?.set('mode', 3))
+
+    const node = graph.getNodeById(toNodeId(1))
+    assert.exists(node)
+    expect(node.inputs.map(({ name }) => name)).toContain('onTrigger')
+    expect(node.outputs.map(({ name }) => name)).toContain('onExecuted')
+  })
+
+  it('reports a refused mode once and preserves the live mode', () => {
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [sourceNode(1)],
+      links: []
+    })
+    applyCollected()
+
+    applyEdit(() => nodesMap(doc).get('1')?.set('mode', 99))
+    applyEdit(() => nodesMap(doc).get('1')?.set('mode', 99))
+
+    expect(graph.getNodeById(toNodeId(1))?.mode).toBe(0)
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      expect.any(Error),
+      expect.objectContaining({ errorType: 'agent_graph_node_mode_rejected' })
+    )
+  })
+
+  it.for([
+    {
+      initial: {},
+      update: { color: '#322', bgcolor: '#533' },
+      expected: { color: '#322', bgcolor: '#533' },
+      calls: 1
+    },
+    {
+      initial: {},
+      update: { color: '#123456', bgcolor: '#654321' },
+      expected: { color: '#123456', bgcolor: '#654321' },
+      calls: 0
+    },
+    {
+      initial: { color: '#123456', bgcolor: '#533' },
+      update: { color: '#322' },
+      expected: { color: '#322', bgcolor: '#533' },
+      calls: 1
+    },
+    {
+      initial: { color: '#322', bgcolor: '#654321' },
+      update: { bgcolor: '#533' },
+      expected: { color: '#322', bgcolor: '#533' },
+      calls: 1
+    }
+  ])(
+    'applies colour update $update using a named option when available',
+    ({ initial, update, expected, calls }) => {
+      const { graph, doc, applyCollected, applyEdit } = setup({
+        nodes: [sourceNode(1)],
+        links: []
+      })
+      applyCollected()
+      const node = graph.getNodeById(toNodeId(1))
+      assert.exists(node)
+      Object.assign(node, initial)
+      const setColorOption = vi.spyOn(node, 'setColorOption')
+
+      applyEdit(() => {
+        nodesMap(doc).get('1')?.set('color', update.color)
+        nodesMap(doc).get('1')?.set('bgcolor', update.bgcolor)
+      })
+
+      expect(node).toMatchObject(expected)
+      expect(setColorOption).toHaveBeenCalledTimes(calls)
+    }
+  )
+
   it('replaces live flags with the document flags but keeps a live placement ghost', () => {
     const { graph, doc, applyCollected, applyEdit } = setup({
       nodes: [sourceNode(1, { flags: { pinned: true } })],
@@ -1211,6 +1404,7 @@ describe('LiveGraphApplier', () => {
     })
 
     expect(result.createdNodeIds).toEqual([toNodeId(2)])
+    expect(result.failureCount).toBe(1)
     expect(graph.getNodeById(toNodeId(2))).toBeTruthy()
     expect(reportError).toHaveBeenCalledTimes(1)
     expect(reportError).toHaveBeenCalledWith(
@@ -1218,6 +1412,91 @@ describe('LiveGraphApplier', () => {
       expect.objectContaining({
         errorType: 'agent_graph_apply_failed',
         context: { actor: 'agent:test', opIds: ['op-1'] }
+      })
+    )
+  })
+
+  it('counts each frame against its own depth when an extension hook re-enters the applier', () => {
+    const { graph, doc, applier, applyCollected, applyEdit } = setup({
+      nodes: [sourceNode(1), sinkNode(2)],
+      links: []
+    })
+    applyCollected()
+    const outer = graph.getNodeById(toNodeId(1))
+    const victim = graph.getNodeById(toNodeId(2))
+    if (!outer || !victim) throw new Error('nodes 1 and 2 were not created')
+    victim.onRemoved = () => {
+      throw new Error('inner hook exploded')
+    }
+
+    let inner: ReturnType<typeof applier.applyChanges> | undefined
+    outer.onRemoved = () => {
+      inner = applier.applyChanges(
+        doc,
+        {
+          nodes: new Map([['2', 'delete']]),
+          widgets: new Map(),
+          resyncNodes: new Set(),
+          links: new Set()
+        },
+        { actor: 'agent:inner', opIds: ['op-inner'] }
+      )
+      throw new Error('extension hook exploded')
+    }
+
+    const result = applyEdit(() => {
+      nodesMap(doc).delete('1')
+    })
+
+    expect(inner?.failureCount).toBe(1)
+    expect(result.failureCount).toBe(1)
+  })
+
+  it('counts a degradation that never threw: an unresolved link', () => {
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [sourceNode(1), sinkNode(2)],
+      links: [[7, 1, 0, 2, 0, 'IMAGE']]
+    })
+    applyCollected()
+    expect(graph.links.has(toLinkId(7))).toBe(true)
+
+    const result = applyEdit(() => {
+      nodesMap(doc)
+        .get('2')
+        ?.set('inputs', [{ name: 'bogus', type: 'IMAGE', link: 7 }])
+      linksMap(doc).set('7', [7, 1, 0, 2, 0, 'IMAGE'])
+    })
+
+    expect(result.failureCount).toBe(1)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ errorType: 'agent_graph_link_unresolved' })
+    )
+  })
+
+  it('counts a degradation that never threw: a subgraph definition that will not register', () => {
+    const { doc, applyCollected, applyEdit } = setup({
+      nodes: [sourceNode(1)],
+      links: []
+    })
+    applyCollected()
+
+    const result = applyEdit(() => {
+      doc
+        .getMap<unknown>('definitions')
+        .set(
+          'bad',
+          new Y.Map<unknown>(
+            Object.entries({ id: 'not-a-uuid', name: 'Broken' })
+          )
+        )
+    })
+
+    expect(result.failureCount).toBe(1)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        errorType: 'agent_subgraph_definitions_failed'
       })
     )
   })
@@ -1487,6 +1766,28 @@ describe('LiveGraphApplier', () => {
       target_id: toNodeId(2)
     })
     expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('connects a dangling link when its endpoint arrives in a later frame', () => {
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [sourceNode(1), sinkNode(2)],
+      links: []
+    })
+    applyCollected()
+
+    applyEdit(() => {
+      linksMap(doc).set('7', [7, 3, 0, 2, 0, 'IMAGE'])
+    })
+    expect(graph.links.has(toLinkId(7))).toBe(false)
+
+    applyEdit(() => {
+      nodesMap(doc).set('3', new Y.Map<unknown>(Object.entries(sourceNode(3))))
+    })
+
+    expect(graph.links.get(toLinkId(7))).toMatchObject({
+      origin_id: toNodeId(3),
+      target_id: toNodeId(2)
+    })
   })
 
   it('removes a live link whose document entry now names a slot the node lacks', () => {

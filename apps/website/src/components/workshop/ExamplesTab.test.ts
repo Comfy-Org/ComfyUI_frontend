@@ -123,3 +123,31 @@ it('asks a video example for a frame it can paint before playback', () => {
     'https://media.example/clip.mp4#t=0.1'
   )
 })
+
+it('refuses a pick while the form it would fill is busy', async () => {
+  const user = userEvent.setup()
+  const preset = example({ id: 'busy', title: 'Busy' })
+  const { emitted } = render(ExamplesTab, {
+    props: { examples: [preset], galleryLabel: 'Gallery', disabled: true }
+  })
+  await user.click(screen.getByTestId('example-card'))
+  expect(emitted().open).toBeUndefined()
+})
+
+it('marks only the example the page is showing', () => {
+  render(ExamplesTab, {
+    props: {
+      galleryLabel: 'Gallery',
+      activeId: 'second',
+      examples: [
+        example({ id: 'first', title: 'First' }),
+        example({ id: 'second', title: 'Second' })
+      ]
+    }
+  })
+  const [first, second] = screen.getAllByTestId('example-card')
+  expect(first.getAttribute('aria-current')).toBeNull()
+  expect(second.getAttribute('aria-current')).toBe('true')
+  expect(screen.getAllByTestId('example-chosen')).toHaveLength(1)
+  expect(within(second).getByTestId('example-chosen')).toBeTruthy()
+})

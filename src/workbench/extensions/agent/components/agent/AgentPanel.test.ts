@@ -33,6 +33,8 @@ import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSet
 
 setupInlinePromptEditorDom()
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
+
 function createHistoryGroups() {
   return {
     current: [],
@@ -139,6 +141,7 @@ const suggestedPromptAttribution: AgentStarterPromptAttribution = {
   promptId: 'slot_1',
   promptIndex: 0,
   promptCount: 5,
+  visiblePromptCount: 5,
   promptTextHash: 'a62d17a3',
   locale: 'en'
 }
@@ -281,7 +284,6 @@ describe('AgentPanel', () => {
       },
       global: {
         plugins: [i18n],
-        directives: { tooltip: {} },
         stubs: { WorkflowSelectorChip: true }
       }
     })
@@ -523,7 +525,6 @@ describe('AgentPanel', () => {
       props: { entries: [], historyGroups: createHistoryGroups() },
       global: {
         plugins: [pinia, i18n],
-        directives: { tooltip: {} },
         stubs: {
           WorkflowSelectorChip: true
         }
@@ -576,7 +577,6 @@ describe('AgentPanel', () => {
         },
         global: {
           plugins: [pinia, i18n],
-          directives: { tooltip: {} },
           stubs: { WorkflowSelectorChip: true }
         }
       })
