@@ -609,7 +609,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   const observedDeliveredAsks = new Set<string>()
   const supersededAnswerReports = new Set<string>()
   const acceptedUnconfirmedReports = new Set<string>()
-  const acceptedAsksAwaitingResolution = new Set<string>()
+  const conflictUnconfirmedReports = new Set<string>()
   const lateAskReports = new Map<
     string,
     {
@@ -1645,7 +1645,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     conversationStore.recordAskAnswer(askId, normalizedAnswer, currentThreadId)
     conversationStore.setAskAnswering(askId, true)
     const answerChannelEpoch = resolutionChannelEpoch
-    const answerStartedWithoutResolutionChannel = connection === 'dropped'
+    const answerStartedWithoutResolutionChannel = connection !== 'live'
     const resolutionChannelWasLost = () =>
       answerStartedWithoutResolutionChannel ||
       resolutionChannelEpoch !== answerChannelEpoch
@@ -1656,6 +1656,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         answer: normalizedAnswer,
         currentThreadId,
         receipt,
+        runApprovalAnswer,
         resolutionChannelWasLost
       })
     } catch (error) {
@@ -1664,6 +1665,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
           error,
           askId,
           currentThreadId,
+          runApprovalAnswer,
           resolutionChannelWasLost()
         )
       return false
@@ -1675,15 +1677,17 @@ export function useAgentSession(deps: AgentSessionDeps) {
     answer,
     currentThreadId,
     receipt,
+    runApprovalAnswer,
     resolutionChannelWasLost
   }: {
     askId: string
     answer: AgentAnswerRequest
     currentThreadId: string
     receipt: AgentAnswerReceipt
+    runApprovalAnswer: boolean
     resolutionChannelWasLost: () => boolean
   }): boolean {
-    if (!receiptNamesCommittedAnswer(receipt, answer))
+    if (!receiptNamesCommittedAnswer(receipt, runApprovalAnswer))
       return commitStatusOnlyAskReceipt({
         askId,
         answer,
@@ -1691,7 +1695,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         resolutionChannelWasLost
       })
     const committed = toAskResolution(receipt)
-    acceptedAsksAwaitingResolution.delete(askId)
+    conversationStore.clearAskAwaitingResolution(askId)
     const superseded =
       committed.status === 'answered' && isSupersededAnswer(answer, committed)
     reportSupersededAnswer(askId, committed)
@@ -1706,17 +1710,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
       selected?: string[] | null
       other_text?: string
     },
-    submitted?: AgentAnswerRequest
+    runApprovalAnswer = false
   ): boolean {
     if (receipt.status !== undefined && receipt.status !== 'answered')
       return false
     if (receipt.other_text !== undefined) return true
     if (receipt.selected === undefined || receipt.selected === null)
       return false
-    const runApproval =
-      submitted?.selected.length === 1 &&
-      (submitted.selected[0] === 'run' || submitted.selected[0] === 'cancel')
-    return !runApproval || receipt.selected.length > 0
+    return !runApprovalAnswer || receipt.selected.length > 0
   }
 
   function commitStatusOnlyAskReceipt({
@@ -1733,9 +1734,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const channelWasLost = resolutionChannelWasLost()
     const resolutionStillPending =
       conversationStore.submittedAskAnswer(askId) !== undefined
-    if (resolutionStillPending) acceptedAsksAwaitingResolution.add(askId)
     if (resolutionStillPending)
-      reportAcceptedRecoveredAnswer(askId, channelWasLost)
+      conversationStore.markAskAwaitingResolution(askId, 'accepted')
+    if (resolutionStillPending)
+      reportAcceptedRecoveredAnswer(askId, connection === 'dropped')
     recordDeliveredAsk(askId)
     conversationStore.commitAsk(askId, currentThreadId, { status: 'retired' })
     if (!channelWasLost && resolutionStillPending)
@@ -1767,18 +1769,30 @@ export function useAgentSession(deps: AgentSessionDeps) {
     pushError(i18n.global.t('agent.runApproval.answerAcceptedUnconfirmed'))
   }
 
+  function reportUnconfirmedConflict(askId: string): void {
+    if (conflictUnconfirmedReports.has(askId)) return
+    conflictUnconfirmedReports.add(askId)
+    reportError(new Error('restored approval conflict cannot be verified'), {
+      surface: 'agent',
+      errorType: 'agent_ask_answer_unconfirmed'
+    })
+    pushError(i18n.global.t('agent.runApproval.answerUncertain'))
+  }
+
   function handleAnswerFailure(
     error: unknown,
     askId: string,
     threadId: string,
+    runApprovalAnswer: boolean,
     resolutionChannelWasLost = connection === 'dropped'
   ): boolean {
-    acceptedAsksAwaitingResolution.delete(askId)
+    conversationStore.clearAskAwaitingResolution(askId)
     if (error instanceof AgentApiError && error.status === 409) {
       return handleConflictAnswerFailure(
         error,
         askId,
         threadId,
+        runApprovalAnswer,
         resolutionChannelWasLost
       )
     }
@@ -1815,6 +1829,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     error: AgentApiError,
     askId: string,
     threadId: string,
+    runApprovalAnswer: boolean,
     resolutionChannelWasLost: boolean
   ): boolean {
     const conflict = zAgentAskConflict.safeParse(error.body)
@@ -1833,7 +1848,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const submitted = conversationStore.submittedAskAnswer(askId)
     if (
       conflict.success &&
-      receiptNamesCommittedAnswer(conflict.data, submitted)
+      receiptNamesCommittedAnswer(conflict.data, runApprovalAnswer)
     ) {
       const committed = toAskResolution(conflict.data)
       const superseded =
@@ -1868,8 +1883,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
       threadId
     )
     if (!resolutionChannelWasLost) {
-      if (submitted)
+      if (submitted) {
         conversationStore.recordAskAnswer(askId, submitted, threadId)
+        conversationStore.markAskAwaitingResolution(askId, 'conflict')
+      }
       return
     }
     reportError(error, {
@@ -2104,7 +2121,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function handleResolvedAsk(
     event: Extract<AgentWsEvent, { type: 'agent_ask_resolved' }>
   ): void {
-    acceptedAsksAwaitingResolution.delete(event.data.ask_id)
+    conversationStore.clearAskAwaitingResolution(event.data.ask_id)
     const resolution = toAskResolution(event.data)
     reportSupersededAnswer(event.data.ask_id, resolution)
     // The owning transport may already be gone, so retire the ask explicitly
@@ -2159,18 +2176,16 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (!live) {
       if (connection === 'initial' && !receivedStatusSnapshot) {
         receivedStatusSnapshot = true
-        connection = 'dropped'
-        resolutionChannelEpoch += 1
-        for (const askId of acceptedAsksAwaitingResolution)
-          reportAcceptedRecoveredAnswer(askId, true)
         return
       }
       receivedStatusSnapshot = true
       if (connection === 'dropped') return
       connection = 'dropped'
       resolutionChannelEpoch += 1
-      for (const askId of acceptedAsksAwaitingResolution)
-        reportAcceptedRecoveredAnswer(askId, true)
+      for (const awaiting of conversationStore.asksAwaitingResolution())
+        if (awaiting.kind === 'accepted')
+          reportAcceptedRecoveredAnswer(awaiting.askId, true)
+        else reportUnconfirmedConflict(awaiting.askId)
       return
     }
     receivedStatusSnapshot = true
@@ -2210,7 +2225,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
       if (!isTurnLive(turn, ownedGeneration)) return
       if (state.rerun)
         void reconcileTurn(turn, state.rerunCause, state.automaticRerun)
-      else if (!isAutomaticRerun) void reconcileTurn(turn, cause, true)
     }, TURN_RECOVERY_DEADLINE_MS)
     try {
       const needsRerun = await recoverTurn(
@@ -2541,25 +2555,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (usage) usage.used = true
   }
 
-  function clearLateAskReportsForTurn(turn: LiveTurn): void {
-    for (const [key, scheduled] of lateAskReports) {
-      if (
-        scheduled.threadId !== turn.threadId ||
-        scheduled.messageId !== turn.messageId
-      )
-        continue
-      clearTimeout(scheduled.timer)
-      lateAskReports.delete(key)
-    }
-  }
-
   function settleTerminalTurn(
     turn: LiveTurn,
     parts: Extract<TurnOutcome, { kind: 'terminal' }>['parts']
   ): void {
     markRecoveredSkillUse(turn, parts)
     finishSkillTurn(turn)
-    clearLateAskReportsForTurn(turn)
     conversationStore.settleTurn(turn, parts)
     markStoppedTurnReady(turn)
   }

@@ -7,9 +7,19 @@ import { createAgentEventSource } from './agentEventSource'
 
 function fakeHost(readyState?: number) {
   const target = new EventTarget()
+  const socketTarget = new EventTarget()
   const registered = new Set<string>()
   const host: AgentEventHost = {
-    socket: readyState === undefined ? null : { readyState },
+    socket:
+      readyState === undefined
+        ? null
+        : {
+            readyState,
+            addEventListener: (type, listener) =>
+              socketTarget.addEventListener(type, listener),
+            removeEventListener: (type, listener) =>
+              socketTarget.removeEventListener(type, listener)
+          },
     addCustomEventListener(type, listener) {
       registered.add(type)
       target.addEventListener(type, listener as EventListener)
@@ -28,7 +38,10 @@ function fakeHost(readyState?: number) {
   const emit = (type: string, data?: unknown): void => {
     target.dispatchEvent(new CustomEvent(type, { detail: data }))
   }
-  return { host, emit, registered }
+  const open = (): void => {
+    socketTarget.dispatchEvent(new Event('open'))
+  }
+  return { host, emit, open, registered }
 }
 
 describe('createAgentEventSource', () => {
@@ -64,8 +77,7 @@ describe('createAgentEventSource', () => {
     const status = vi.fn()
 
     createAgentEventSource(host).onStatus?.(status)
-    expect(status).toHaveBeenCalledOnce()
-    expect(status).toHaveBeenLastCalledWith(false)
+    expect(status).not.toHaveBeenCalled()
 
     emit('reconnecting')
     expect(status).toHaveBeenLastCalledWith(false)
@@ -89,11 +101,21 @@ describe('createAgentEventSource', () => {
     const status = vi.fn()
 
     const unsubscribe = createAgentEventSource(host).onStatus?.(status)
-    expect(status).toHaveBeenCalledOnce()
-    expect(status).toHaveBeenLastCalledWith(false)
+    expect(status).not.toHaveBeenCalled()
 
     unsubscribe?.()
     emit('reconnected')
+    expect(status).not.toHaveBeenCalled()
+  })
+
+  it('reports the first open of a socket that was connecting at bind time', () => {
+    const { host, open } = fakeHost(WebSocket.CONNECTING)
+    const status = vi.fn()
+
+    createAgentEventSource(host).onStatus?.(status)
+    open()
+
     expect(status).toHaveBeenCalledOnce()
+    expect(status).toHaveBeenCalledWith(true)
   })
 })

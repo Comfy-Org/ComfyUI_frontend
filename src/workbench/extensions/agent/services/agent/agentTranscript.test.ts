@@ -777,6 +777,7 @@ describe('normalizeAgentTranscript', () => {
 
     const transcript = normalizeAgentTranscript(
       [first, second, latest],
+      (askId) => askId === 'ask-retired',
       (askId) => askId === 'ask-retired'
     )
 

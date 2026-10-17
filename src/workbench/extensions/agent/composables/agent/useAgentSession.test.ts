@@ -4627,7 +4627,7 @@ describe('useAgentSession (v1 composition root)', () => {
     )
   })
 
-  it('(g18) a history fetch that never answers gets one deadline follow-up', async () => {
+  it('(g18) a history fetch that never answers stops at its deadline', async () => {
     const getMessages = vi.fn(hangingGetMessages)
     const rest = fakeRest({ getMessages })
     const { source, emit, status } = fakeEvents()
@@ -4650,7 +4650,7 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(signal.aborted).toBe(true)
     expect(session.isStreaming.value).toBe(true)
     expect(reportError).not.toHaveBeenCalled()
-    await vi.waitFor(() => expect(getMessages).toHaveBeenCalledTimes(2))
+    await vi.waitFor(() => expect(getMessages).toHaveBeenCalledOnce())
   })
 
   it('(g19) stopping the session cancels its in-flight history fetch', async () => {

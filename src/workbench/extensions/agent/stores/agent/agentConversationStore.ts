@@ -464,8 +464,14 @@ export const useAgentConversationStore = defineStore(
     }
 
     function confirmAskPending(askId: string, owner?: string): void {
-      provisionalRetiredAsksFor(owner).delete(askId)
       const key = threadKey(owner)
+      const provisional = provisionalRetiredAsks.get(key)
+      if (
+        provisional?.delete(askId) !== true ||
+        retiredAsks.get(key)?.has(askId) === true
+      )
+        return
+      if (provisional.size === 0) provisionalRetiredAsks.delete(key)
       const reopen = (message: AssistantMessage): void => {
         message.parts = message.parts.map((part) =>
           (part.type === 'askUser' || part.type === 'deleteApproval') &&
@@ -482,7 +488,11 @@ export const useAgentConversationStore = defineStore(
 
     const submittedAskAnswers = new Map<
       string,
-      { answer: AgentAnswerRequest; owner: string }
+      {
+        answer: AgentAnswerRequest
+        owner: string
+        awaitingResolution?: 'accepted' | 'conflict'
+      }
     >()
 
     function recordAskAnswer(
@@ -503,6 +513,31 @@ export const useAgentConversationStore = defineStore(
       const answer = submittedAskAnswers.get(askId)?.answer
       submittedAskAnswers.delete(askId)
       return answer
+    }
+
+    function markAskAwaitingResolution(
+      askId: string,
+      kind: 'accepted' | 'conflict'
+    ): void {
+      const submitted = submittedAskAnswers.get(askId)
+      if (submitted) submitted.awaitingResolution = kind
+    }
+
+    function asksAwaitingResolution(): Array<{
+      askId: string
+      kind: 'accepted' | 'conflict'
+    }> {
+      return [...submittedAskAnswers]
+        .filter(([, submitted]) => submitted.awaitingResolution !== undefined)
+        .map(([askId, submitted]) => ({
+          askId,
+          kind: submitted.awaitingResolution!
+        }))
+    }
+
+    function clearAskAwaitingResolution(askId: string): void {
+      const submitted = submittedAskAnswers.get(askId)
+      if (submitted) submitted.awaitingResolution = undefined
     }
 
     function discardDetachedAskState(): void {
@@ -1036,6 +1071,8 @@ export const useAgentConversationStore = defineStore(
       persistedParts: AssistantMessage['parts'] | undefined
     ): void {
       provisionalRetiredAsks.delete(turn.threadId)
+      for (const [askId, submitted] of submittedAskAnswers)
+        if (submitted.owner === turn.threadId) submittedAskAnswers.delete(askId)
       const slot = activeSlot.value
       const isActive =
         slot !== null &&
@@ -1418,6 +1455,9 @@ export const useAgentConversationStore = defineStore(
       recordAskAnswer,
       submittedAskAnswer,
       takeSubmittedAskAnswer,
+      markAskAwaitingResolution,
+      asksAwaitingResolution,
+      clearAskAwaitingResolution,
       commitAsk,
       retireAsk,
       isAskRetired,

@@ -2,7 +2,11 @@ import type { AgentEventSource } from '../../composables/agent/useAgentSession'
 import { AGENT_WS_EVENT_TYPES } from '../../schemas/agentApiSchema'
 
 export interface AgentEventHost {
-  socket: { readyState: number } | null
+  socket: {
+    readyState: number
+    addEventListener?(type: 'open', listener: () => void): void
+    removeEventListener?(type: 'open', listener: () => void): void
+  } | null
   addCustomEventListener(
     type: string,
     listener: (event: CustomEvent<unknown>) => void
@@ -37,10 +41,13 @@ export function createAgentEventSource(host: AgentEventHost): AgentEventSource {
     onStatus(listener) {
       const onDown = (): void => listener(false)
       const onUp = (): void => listener(true)
+      const initialSocket = host.socket
       host.addEventListener('reconnecting', onDown)
       host.addEventListener('reconnected', onUp)
-      listener(host.socket?.readyState === OPEN)
+      if (initialSocket?.readyState === OPEN) listener(true)
+      else initialSocket?.addEventListener?.('open', onUp)
       return () => {
+        initialSocket?.removeEventListener?.('open', onUp)
         host.removeEventListener('reconnecting', onDown)
         host.removeEventListener('reconnected', onUp)
       }
