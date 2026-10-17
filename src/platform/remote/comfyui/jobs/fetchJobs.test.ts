@@ -148,6 +148,14 @@ describe('fetchJobs', () => {
       {
         name: 'a non-ok response',
         mockFetch: () => vi.fn().mockResolvedValue({ ok: false, status: 500 })
+      },
+      {
+        name: 'a JSON parse error',
+        mockFetch: () =>
+          vi.fn().mockResolvedValue({
+            ok: true,
+            json: () => Promise.reject(new Error('Invalid JSON'))
+          })
       }
     ])('returns an empty array and reports $name', async ({ mockFetch }) => {
       const result = await fetchHistory(mockFetch())
