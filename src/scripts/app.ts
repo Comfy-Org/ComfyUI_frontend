@@ -66,6 +66,8 @@ import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 import { restoreDynamicGroupInputs } from '@/platform/workflow/core/utils/restoreDynamicGroupInputs'
 import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import type { DocumentTransition } from '@/platform/workflow/core/stores/documentLifecycleStore'
+import { useDocumentLifecycleStore } from '@/platform/workflow/core/stores/documentLifecycleStore'
 import {
   ComfyWorkflow,
   useWorkflowStore
@@ -78,6 +80,7 @@ import type {
   WorkflowJSON04
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { toNodeId } from '@/types/nodeId'
+import { toRootGraphId } from '@/types/graphScopeId'
 import { zNodePackMetadata } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import {
@@ -1224,7 +1227,11 @@ export class ComfyApp implements IComfyApp {
       silentAssetErrors = false,
       workflowNavigationId
     } = options
-    useWorkflowService().beforeLoadNewGraph(clean)
+    const transition = useWorkflowService().beforeLoadNewGraph(
+      clean,
+      workflow,
+      graphData?.id
+    )
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
 
     ChangeTracker.isLoadingGraph = true
@@ -1402,6 +1409,7 @@ export class ComfyApp implements IComfyApp {
         await this.reportGraphLoadFailure(error)
       } finally {
         ChangeTracker.isLoadingGraph = false
+        if (clean) useDocumentLifecycleStore().invalidate()
       }
       void useSubgraphNavigationStore().updateHash(
         'workflow-load',
@@ -1500,6 +1508,7 @@ export class ComfyApp implements IComfyApp {
         }
       } catch (error) {
         await this.reportGraphLoadFailure(error)
+        useDocumentLifecycleStore().invalidate()
         // Resolves rather than throws: the close/replacement guards read this outcome.
         return false
       }
@@ -1598,7 +1607,8 @@ export class ComfyApp implements IComfyApp {
         await useWorkflowService().afterLoadNewGraph(
           workflow,
           this.rootGraph.serialize() as unknown as ComfyWorkflowJSON,
-          effectiveShareId
+          effectiveShareId,
+          transition
         )
       } catch (error) {
         if (isCurrentGraphLoad()) throw error
@@ -2213,13 +2223,13 @@ export class ComfyApp implements IComfyApp {
     // Use parameters strictly as the final fallback
     if (parameters && typeof parameters === 'string') {
       return await this.enqueueGraphLoad(async () => {
+        let transition: DocumentTransition | undefined
         const outcome = await importA1111(
           this.rootGraph,
           parameters,
           async () => {
             try {
-              // false: final destination; no later load republishes the hash.
-              useWorkflowService().beforeLoadNewGraph(false)
+              transition = useWorkflowService().beforeLoadNewGraph(false)
               await useExtensionService().invokeExtensionsAsync(
                 'beforeLoadGraph'
               )
@@ -2258,7 +2268,9 @@ export class ComfyApp implements IComfyApp {
         )
         await useWorkflowService().afterLoadNewGraph(
           fileName,
-          this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
+          this.rootGraph.serialize() as unknown as ComfyWorkflowJSON,
+          undefined,
+          transition
         )
         await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
         return
@@ -2406,7 +2418,7 @@ export class ComfyApp implements IComfyApp {
     options: { deferWarnings?: boolean }
   ): Promise<void> {
     // false: no workflow load follows to republish the hash.
-    useWorkflowService().beforeLoadNewGraph(false)
+    const transition = useWorkflowService().beforeLoadNewGraph(false)
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
     this.canvas.setGraph(this.rootGraph)
     withGraphIntentSource('load', () => this.clean())
@@ -2613,7 +2625,9 @@ export class ComfyApp implements IComfyApp {
     )
     await useWorkflowService().afterLoadNewGraph(
       fileName,
-      this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
+      this.rootGraph.serialize() as unknown as ComfyWorkflowJSON,
+      undefined,
+      transition
     )
     await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
     if (missingNodeTypes.length) {
@@ -2752,11 +2766,12 @@ export class ComfyApp implements IComfyApp {
 
     useDomWidgetStore().clear()
 
-    // Subgraph does not properly implement `clear` and the parent class's
-    // (`LGraph`) `clear` breaks the subgraph structure.
     if (!this.canvas.subgraph) {
       this.rootGraph.clear()
       ensureNonZeroUuid(this.rootGraph)
+      useDocumentLifecycleStore().rebindActiveRootGraph(
+        toRootGraphId(this.rootGraph.id)
+      )
     }
 
     executionErrorStore.setActiveGraph(this.rootGraph.id)

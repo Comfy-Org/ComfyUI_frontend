@@ -17,10 +17,12 @@ import {
   computed,
   createApp,
   defineComponent,
+  effectScope,
   h,
   nextTick,
   reactive,
-  ref
+  ref,
+  watch
 } from 'vue'
 import type { Ref } from 'vue'
 import { useClipboard } from '@vueuse/core'
@@ -44,6 +46,10 @@ import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
+import {
+  toDocumentUid,
+  useDocumentLifecycleStore
+} from '@/platform/workflow/core/stores/documentLifecycleStore'
 import { toNodeId } from '@/types/nodeId'
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -325,6 +331,35 @@ function syncFakeSelection() {
   setCanvasSelection([...(canvasStore.canvas?.selectedItems ?? [])])
 }
 
+function seededRootGraphId(workflow: ComfyWorkflow): string | undefined {
+  return workflow.activeState?.id
+}
+
+function startDocumentLifecycleMirror(): () => void {
+  const scope = effectScope(true)
+  scope.run(() => {
+    watch(
+      () => workflowStore.activeWorkflow,
+      (active) => {
+        const lifecycle = useDocumentLifecycleStore()
+        if (!active) {
+          lifecycle.beginTransition(null)
+          return
+        }
+        const uid = toDocumentUid(active.instanceId)
+        const transition = lifecycle.beginTransition(uid)
+        const seeded = seededRootGraphId(active)
+        lifecycle.activate(
+          toRootGraphId(seeded ?? `live-root-${uid}`),
+          transition
+        )
+      },
+      { flush: 'sync' }
+    )
+  })
+  return () => scope.stop()
+}
+
 beforeEach(() => {
   agentSocket = createFakeAgentSocket()
   agentSocket.send.mockImplementation((frame) => {
@@ -463,6 +498,8 @@ beforeEach(() => {
   )
 
   workflowStore.activeWorkflow = null
+  useDocumentLifecycleStore().$reset()
+  const stopDocumentLifecycleMirror = startDocumentLifecycleMirror()
   setCanvasSelection([])
   canvasStore.currentGraph = null
   appMock.graph.nodes = []
@@ -503,6 +540,7 @@ beforeEach(() => {
   paywallHasFunds.value = false
   paywallAgentHasFunds.value = undefined
   paywallAgentScopedHasFunds.value = undefined
+  return stopDocumentLifecycleMirror
 })
 
 const zAgentWsEventForTest = (raw: unknown): AgentChatEvent =>
@@ -12654,7 +12692,7 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(docOpMinterDeps.current?.boundRootGraphId()).toBeNull()
   })
 
-  it("reports the newly bound workflow's root graph id after an active-tab switch, even though the previously bound workflow stayed correct while its tab was inactive", async () => {
+  it("reports the newly bound workflow's root graph id after an active-tab switch, and nothing while the bound workflow's tab is backgrounded", async () => {
     makeTab('wf-a')
     const tabB = addTab('workflows/b.json', {
       activeState: fromPartial<ComfyWorkflowJSON>({ id: 'wf-b' })
@@ -12670,13 +12708,10 @@ describe('AgentPanelRoot workflow binding', () => {
       )
     )
 
-    // A stays bound but leaves the screen; a write-once latch would also
-    // still report wf-a here, so this alone would not catch a regression.
     workflowStore.activeWorkflow = addTab('workflows/elsewhere.json')
     await nextTick()
-    expect(docOpMinterDeps.current?.boundRootGraphId()).toBe(
-      toRootGraphId('wf-a')
-    )
+    expect(docOpMinterDeps.current?.boundRootGraphId()).toBeNull()
+    expect(docOpMinterDeps.current?.isDocBound()).toBe(false)
 
     // The agent moves the session onto B's own tab.
     dispatchApiEvent('agent_active_tab', {
@@ -12693,7 +12728,7 @@ describe('AgentPanelRoot workflow binding', () => {
   })
 
   it("reflects the bound workflow's own root graph id rotating without a rebind (regression)", async () => {
-    const tab = makeTab('wf-42')
+    makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
 
     await renderAndSend('add an upscaler')
@@ -12704,13 +12739,14 @@ describe('AgentPanelRoot workflow binding', () => {
       )
     )
 
-    // The same bound workflow's own graph id rotates in place (LGraph.clear
-    // mints a fresh uuid) without boundWorkflowId itself ever changing.
-    tab.activeState = fromPartial<ComfyWorkflowJSON>({ id: 'wf-42-rotated' })
+    useDocumentLifecycleStore().rebindActiveRootGraph(
+      toRootGraphId('wf-42-rotated')
+    )
 
     expect(docOpMinterDeps.current?.boundRootGraphId()).toBe(
       toRootGraphId('wf-42-rotated')
     )
+    expect(docOpMinterDeps.current?.isDocBound()).toBe(true)
   })
 })
 

@@ -1113,6 +1113,21 @@ export class AgentConversationHarness {
     }
   }
 
+  /** Runs Clear Workflow and returns the root graph id before and after. */
+  async clearWorkflowFromCommand(): Promise<{ before: string; after: string }> {
+    const before = await this.rootGraphId()
+    await this.comfyPage.nodeOps.clearGraph()
+    await expect(this.vueNodes.nodes).toHaveCount(0)
+    return { before, after: await this.rootGraphId() }
+  }
+
+  async rootGraphId(): Promise<string> {
+    return await this.page.evaluate(() => {
+      if (!window.app?.rootGraph) throw new Error('root graph is unavailable')
+      return window.app.rootGraph.id
+    })
+  }
+
   async rememberRecoveryGraph(): Promise<void> {
     await this.page.evaluate(() => {
       if (!window.app?.rootGraph) throw new Error('root graph is unavailable')
