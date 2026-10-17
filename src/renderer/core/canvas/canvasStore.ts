@@ -1,5 +1,5 @@
 import { useEventListener, whenever } from '@vueuse/core'
-import { defineStore } from 'pinia'
+import { defineStore, storeToRefs } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -20,8 +20,8 @@ import { useSelectionStore } from '@/core/selection/selectionStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { graphScopeOf } from '@/types/graphScopeId'
-import { serializeNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
+import { useNodeHighlightStore } from '@/renderer/core/canvas/nodeHighlightStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { createPositionBounds } from '@/utils/positionBounds'
 
@@ -151,27 +151,17 @@ export const useCanvasStore = defineStore('canvas', () => {
     () =>
       new Set(selectedItems.value.filter(isLGraphNode).map((item) => item.id))
   )
-  const highlightedNodeIds = ref<Set<NodeId>>(new Set())
+  const { highlightedNodeIds } = storeToRefs(useNodeHighlightStore())
 
-  /** Emphasizes nodes without mutating the user's graph selection. */
   const setHighlightedNodeIds = (ids: Iterable<NodeId>) => {
-    highlightedNodeIds.value = new Set(ids)
-    const currentCanvas = canvas.value
-    if (!currentCanvas) return
-    currentCanvas.highlighted_node_ids = new Set(
-      [...highlightedNodeIds.value].map(serializeNodeId)
-    )
-    currentCanvas.setDirty(true, false)
+    useNodeHighlightStore().setHighlightedNodeIds(ids)
+    canvas.value?.setDirty(true, false)
   }
 
   whenever(
     () => canvas.value,
     (newCanvas) => {
       currentGraph.value = newCanvas.graph
-      newCanvas.highlighted_node_ids = new Set(
-        [...highlightedNodeIds.value].map(serializeNodeId)
-      )
-      if (highlightedNodeIds.value.size > 0) newCanvas.setDirty(true, false)
       // Scoped to the on-screen graph: selection only holds items from it,
       // so removals in other graphs can't affect the live selection.
       useEventListener(

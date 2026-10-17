@@ -123,37 +123,21 @@ describe('useCanvasStore', () => {
   })
 
   it('highlights nodes without changing graph selection', async () => {
-    const canvas = fromPartial<LGraphCanvas>({
-      highlighted_node_ids: new Set(),
-      selectedItems: new Set(),
-      setDirty: vi.fn(),
-      canvas: document.createElement('canvas')
-    })
+    const graph = new LGraph()
+    const selected = new LGraphNode('selected')
+    graph.add(selected)
+    const canvas = createTestCanvas(graph, createMockCanvasRenderingContext2D())
+    onTestFinished(() => canvas.unbindEvents())
     store.canvas = canvas
     await nextTick()
+    canvas.select(selected)
+    const setDirty = vi.spyOn(canvas, 'setDirty')
 
     store.setHighlightedNodeIds([toNodeId(7)])
 
     expect(store.highlightedNodeIds).toEqual(new Set([toNodeId(7)]))
-    expect(canvas.highlighted_node_ids).toEqual(new Set([7]))
-    expect(canvas.selectedItems).toEqual(new Set())
-    expect(canvas.setDirty).toHaveBeenCalledWith(true, false)
-  })
-
-  it('applies stored highlights when the canvas becomes available', async () => {
-    store.setHighlightedNodeIds([toNodeId(7)])
-    const canvas = fromPartial<LGraphCanvas>({
-      graph: new LGraph(),
-      highlighted_node_ids: new Set(),
-      setDirty: vi.fn(),
-      canvas: document.createElement('canvas')
-    })
-
-    store.canvas = canvas
-    await nextTick()
-
-    expect(canvas.highlighted_node_ids).toEqual(new Set([7]))
-    expect(canvas.setDirty).toHaveBeenCalledWith(true, false)
+    expect(store.selectedItems).toEqual([selected])
+    expect(setDirty).toHaveBeenCalledWith(true, false)
   })
 
   describe('node:before-removed selection cleanup', () => {

@@ -9,6 +9,8 @@ const renderModes = [
   { name: 'Vue nodes', vueNodesEnabled: true }
 ] as const
 
+const NODE_CLIP_PADDING = 24
+
 for (const mode of renderModes) {
   test.describe(
     `Agent node mention highlighting (${mode.name})`,
@@ -23,7 +25,6 @@ for (const mode of renderModes) {
     },
     () => {
       test.describe.configure({ timeout: 30_000 })
-      // Source: https://github.com/Comfy-Org/ComfyUI_frontend/pull/18397
       test.use({ objectInfo: 'server' })
 
       test.beforeEach(async ({ agentPanel, comfyPage }) => {
@@ -43,67 +44,80 @@ for (const mode of renderModes) {
         comfyPage
       }) => {
         const panel = agentPanel.root
-        await expect
-          .poll(() => comfyPage.nodeOps.getSelectedNodeIds())
-          .toEqual([])
-        const idleCanvas = await comfyPage.canvas.screenshot({
-          mask: [panel],
-          animations: 'disabled'
-        })
-
-        await agentPanel.composer.fill('@')
-        await panel
-          .getByRole('menuitem', { name: enMessages.agent.nodes, exact: true })
-          .click()
         const nodeMention = panel.getByRole('menuitem', {
           name: 'KSampler',
           exact: true
         })
-        await nodeMention.hover()
 
-        await expect
-          .poll(() => comfyPage.nodeOps.getSelectedNodeIds())
-          .toEqual([])
-        let highlightedCanvas = idleCanvas
-        await expect
-          .poll(async () => {
-            highlightedCanvas = await comfyPage.canvas.screenshot({
-              mask: [panel],
-              animations: 'disabled'
-            })
-            return highlightedCanvas.equals(idleCanvas)
-          })
-          .toBe(false)
-        if (mode.vueNodesEnabled) {
-          await expect(
-            comfyPage.vueNodes.getNodeByTitle('KSampler').first()
-          ).toHaveClass(/outline-node-component-outline/)
-        }
+        const clip = await comfyPage.page.evaluate((padding) => {
+          const node = window.app!.graph.nodes.at(0)
+          if (!node) throw new Error('KSampler node is unavailable')
+          const [x, y, width, height] = node.getBounding()
+          const [left, top] = window.app!.canvasPosToClientPos([x, y])
+          const [right, bottom] = window.app!.canvasPosToClientPos([
+            x + width,
+            y + height
+          ])
+          return {
+            x: left - padding,
+            y: top - padding,
+            width: right - left + padding * 2,
+            height: bottom - top + padding * 2
+          }
+        }, NODE_CLIP_PADDING)
 
-        await agentPanel.composer.press('Escape')
-        await expect(nodeMention).toHaveCount(0)
-        await expect
-          .poll(() =>
-            comfyPage.page.evaluate(
-              () => window.app!.canvas.highlighted_node_ids.size
-            )
-          )
-          .toBe(0)
-        await comfyPage.nextFrame()
-        await expect
-          .poll(async () => {
-            const clearedCanvas = await comfyPage.canvas.screenshot({
-              mask: [panel],
-              animations: 'disabled'
-            })
-            return clearedCanvas.equals(highlightedCanvas)
+        // Clipped to the node so the comparisons below cannot be satisfied by
+        // frame churn elsewhere on the canvas.
+        const screenshotNode = () =>
+          comfyPage.page.screenshot({
+            clip,
+            mask: [panel],
+            animations: 'disabled'
           })
-          .toBe(false)
-        if (mode.vueNodesEnabled) {
-          await expect(
-            comfyPage.vueNodes.getNodeByTitle('KSampler').first()
-          ).not.toHaveClass(/outline-node-component-outline/)
-        }
+
+        const idleNode = await screenshotNode()
+
+        await test.step('emphasizes the hovered node without selecting it', async () => {
+          await expect
+            .poll(() => comfyPage.nodeOps.getSelectedNodeIds())
+            .toEqual([])
+
+          await agentPanel.composer.fill('@')
+          await panel
+            .getByRole('menuitem', {
+              name: enMessages.agent.nodes,
+              exact: true
+            })
+            .click()
+          await nodeMention.hover()
+
+          await expect
+            .poll(() => comfyPage.nodeOps.getSelectedNodeIds())
+            .toEqual([])
+          await expect
+            .poll(async () => (await screenshotNode()).equals(idleNode))
+            .toBe(false)
+          if (mode.vueNodesEnabled) {
+            await expect(
+              comfyPage.vueNodes.getNodeByTitle('KSampler').first()
+            ).toHaveClass(/outline-node-component-outline/)
+          }
+        })
+
+        await test.step('Escape removes the emphasis', async () => {
+          await agentPanel.composer.press('Escape')
+          await expect(nodeMention).toHaveCount(0)
+          await comfyPage.nextFrame()
+
+          await expect
+            .poll(async () => (await screenshotNode()).equals(idleNode))
+            .toBe(true)
+          if (mode.vueNodesEnabled) {
+            await expect(
+              comfyPage.vueNodes.getNodeByTitle('KSampler').first()
+            ).not.toHaveClass(/outline-node-component-outline/)
+          }
+        })
       })
     }
   )

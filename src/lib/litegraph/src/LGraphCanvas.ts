@@ -31,6 +31,7 @@ import {
 } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 import { useSelectionStore } from '@/core/selection/selectionStore'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import { useNodeHighlightStore } from '@/renderer/core/canvas/nodeHighlightStore'
 import {
   applyLogicalCanvasStyle,
   applyViewport,
@@ -900,9 +901,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   set selectedItems(items: Iterable<Positionable>) {
     this.selectItems([...items].filter((item) => ownsSelectable(this, item)))
   }
-
-  /** Nodes transiently emphasized by UI affordances without changing selection. */
-  highlighted_node_ids: Set<SerializedNodeId> = new Set()
 
   /** The group currently being resized. */
   resizingGroup: LGraphGroup | null = null
@@ -5706,14 +5704,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       ctx.clip()
     }
 
-    // draw shape
     this.drawNodeShape(
       node,
       ctx,
       size,
       color,
       bgcolor,
-      node.selected || this.highlighted_node_ids.has(serializeNodeId(node.id))
+      node.selected || useNodeHighlightStore().isHighlighted(node.id)
     )
 
     // Render title buttons (if not collapsed)
@@ -5943,12 +5940,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       node.onDrawTitle?.(ctx)
     }
 
-    // Draw stroke styles
-    for (const [name, getStyle] of Object.entries(node.strokeStyles)) {
-      const strokeStyle =
-        name === 'selected'
-          ? getStyle.call(node, _selected)
-          : getStyle.call(node)
+    for (const getStyle of Object.values(node.strokeStyles)) {
+      const strokeStyle = getStyle.call(node, _selected)
       if (strokeStyle) {
         strokeShape(ctx, area, {
           shape,
