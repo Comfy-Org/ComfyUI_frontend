@@ -601,10 +601,6 @@ function renderWithSelectedTarget() {
   return render(AgentPanelRoot, { global: { plugins: [i18n] } })
 }
 
-/**
- * The standing credits-exhausted card waits for an activated thread, so cases
- * about it start from one rather than a fresh empty chat.
- */
 function activateThread(): void {
   useAgentConversationStore().setThreadId('th-active')
 }
@@ -2025,8 +2021,6 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
     expect(telemetry.trackAgentPaywallShown).not.toHaveBeenCalled()
   })
 
-  // A fresh grant can take a while to be realized by billing, so a funded-soon
-  // user must not be greeted by an out-of-credits card on a fresh empty chat.
   it('stays hidden on an empty thread until the thread is activated', async () => {
     paywallHasFunds.value = false
     render(AgentPanelRoot, { global: { plugins: [i18n] } })

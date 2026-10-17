@@ -5,10 +5,6 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
 import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
 
-// A fresh grant can take a while to be realized by billing, so a workspace that
-// is about to be funded can still read as exhausted when the panel opens. The
-// standing out-of-credits card therefore waits until the thread is activated by
-// the user's first message instead of greeting an empty thread.
 test.describe(
   'Agent standing credits-exhaustion on an empty thread',
   { tag: ['@cloud', '@ui'] },
