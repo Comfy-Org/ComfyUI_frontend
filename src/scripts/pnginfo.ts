@@ -4,17 +4,17 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
 import { api } from './api'
+import { getFromAvifFile } from './metadata/avif'
+import { getFromFlacFile } from './metadata/flac'
+import { getFromLatentFile } from './metadata/latent'
+import { getFromPngFile } from './metadata/png'
+import { getFromWebpFile } from './metadata/webp'
 
-// oxlint-disable-next-line comfy/no-reexports
-export { getFromAvifFile as getAvifMetadata } from './metadata/avif'
-// oxlint-disable-next-line comfy/no-reexports
-export { getFromFlacFile as getFlacMetadata } from './metadata/flac'
-// oxlint-disable-next-line comfy/no-reexports
-export { getLatentMetadata } from './metadata/latent'
-// oxlint-disable-next-line comfy/no-reexports
-export { getFromPngFile as getPngMetadata } from './metadata/png'
-// oxlint-disable-next-line comfy/no-reexports
-export { getWebpMetadata } from './metadata/webp'
+export const getAvifMetadata = getFromAvifFile
+export const getFlacMetadata = getFromFlacFile
+export const getLatentMetadata = getFromLatentFile
+export const getPngMetadata = getFromPngFile
+export const getWebpMetadata = getFromWebpFile
 
 interface NodeConnection {
   node: LGraphNode

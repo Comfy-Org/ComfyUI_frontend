@@ -43,7 +43,7 @@ function parseExifData(exifData: Uint8Array) {
   return ifdData
 }
 
-export function getWebpMetadata(file: File) {
+export function getFromWebpFile(file: File) {
   return new Promise<Record<string, string>>((r) => {
     const reader = new FileReader()
     reader.onload = (event) => {

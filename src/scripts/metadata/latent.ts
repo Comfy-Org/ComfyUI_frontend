@@ -1,4 +1,4 @@
-export function getLatentMetadata(
+export function getFromLatentFile(
   file: File
 ): Promise<Record<string, string> | undefined> {
   return new Promise((r) => {

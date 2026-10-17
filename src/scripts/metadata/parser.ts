@@ -4,12 +4,12 @@ import { getFromFlacFile } from '@/scripts/metadata/flac'
 import { getGltfBinaryMetadata } from '@/scripts/metadata/gltf'
 import { getFromIsobmffFile } from '@/scripts/metadata/isobmff'
 import { getDataFromJSON } from '@/scripts/metadata/json'
-import { getLatentMetadata } from '@/scripts/metadata/latent'
+import { getFromLatentFile } from '@/scripts/metadata/latent'
 import { getMp3Metadata } from '@/scripts/metadata/mp3'
 import { getOggMetadata } from '@/scripts/metadata/ogg'
 import { getFromPngFile } from '@/scripts/metadata/png'
 import { getSvgMetadata } from '@/scripts/metadata/svg'
-import { getWebpMetadata } from '@/scripts/metadata/webp'
+import { getFromWebpFile } from '@/scripts/metadata/webp'
 import type { ComfyMetadata } from '@/types/metadataTypes'
 
 export async function getWorkflowDataFromFile(
@@ -22,7 +22,7 @@ export async function getWorkflowDataFromFile(
     return await getFromAvifFile(file)
   }
   if (file.type === 'image/webp') {
-    const pngInfo = await getWebpMetadata(file)
+    const pngInfo = await getFromWebpFile(file)
     const workflow = pngInfo.workflow || pngInfo.Workflow
     const prompt = pngInfo.prompt || pngInfo.Prompt
     return { workflow, prompt }
@@ -60,7 +60,7 @@ export async function getWorkflowDataFromFile(
     return await getGltfBinaryMetadata(file)
   }
   if (file.name.endsWith('.latent') || file.name.endsWith('.safetensors')) {
-    return await getLatentMetadata(file)
+    return await getFromLatentFile(file)
   }
 
   if (file.type === 'application/json' || file.name.endsWith('.json')) {

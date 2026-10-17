@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import { getLatentMetadata } from './latent'
+import { getFromLatentFile } from './latent'
 
-describe('getLatentMetadata', () => {
+describe('getFromLatentFile', () => {
   function buildSafetensors(headerObj: object): File {
     const headerBytes = new TextEncoder().encode(JSON.stringify(headerObj))
     const buf = new Uint8Array(8 + headerBytes.length)
@@ -22,7 +22,7 @@ describe('getLatentMetadata', () => {
       'tensor.weight': { dtype: 'F32', shape: [1], data_offsets: [0, 4] }
     })
 
-    const metadata = await getLatentMetadata(file)
+    const metadata = await getFromLatentFile(file)
 
     expect(metadata).toEqual({ workflow, prompt })
   })
@@ -32,7 +32,7 @@ describe('getLatentMetadata', () => {
       'tensor.weight': { dtype: 'F32', shape: [1], data_offsets: [0, 4] }
     })
 
-    const metadata = await getLatentMetadata(file)
+    const metadata = await getFromLatentFile(file)
 
     expect(metadata).toBeUndefined()
   })
@@ -40,7 +40,7 @@ describe('getLatentMetadata', () => {
   it('returns undefined for a truncated or malformed file', async () => {
     const file = new File([new Uint8Array(4)], 'bad.safetensors')
 
-    const metadata = await getLatentMetadata(file)
+    const metadata = await getFromLatentFile(file)
 
     expect(metadata).toBeUndefined()
   })
