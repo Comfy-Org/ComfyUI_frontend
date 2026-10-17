@@ -1,0 +1,6 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./packages/object-info-parser/tsconfig.build.json" }
+  ]
+}
