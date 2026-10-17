@@ -7,7 +7,8 @@ import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import type { SubscriptionInfo } from '@/composables/billing/types'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
+import type { BalanceInfo, SubscriptionInfo } from '@/composables/billing/types'
 import type { Plan } from '@/platform/workspace/api/workspaceApi'
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -21,6 +22,7 @@ import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import BillingTab from './BillingTab.vue'
 
 vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/composables/billing/useBillingDialogs'))
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 vi.mock(import('@/platform/cloud/subscription/composables/useFreeTierQuota'))
@@ -55,6 +57,7 @@ interface Scenario {
   resubscribe?: () => Promise<void>
   capabilitiesReady?: boolean
   capabilitiesResolved?: boolean
+  balance?: BalanceInfo | null
 }
 
 function arrange(scenario: Scenario = {}) {
@@ -83,6 +86,8 @@ function arrange(scenario: Scenario = {}) {
       plans: computed(() => [
         fromPartial<Plan>({ slug: 'creator-yearly', tier: 'CREATOR' })
       ]),
+      balance: computed(() => scenario.balance ?? null),
+      currentTeamCreditStop: computed(() => null),
       initialize,
       fetchStatus,
       resubscribe
@@ -97,6 +102,7 @@ function arrange(scenario: Scenario = {}) {
         () => scenario.canRevertScheduledChange ?? false
       ),
       canReactivate: computed(() => scenario.canReactivate ?? false),
+      canTopUp: computed(() => true),
       isReady: computed(() => scenario.capabilitiesReady ?? true),
       hasResolvedCapabilities: computed(
         () => scenario.capabilitiesResolved ?? true
@@ -368,5 +374,26 @@ describe('BillingTab', () => {
       screen.getByRole('heading', { name: 'Your plan' })
     ).toBeInTheDocument()
     expect(screen.queryByTestId('billing-plan-line')).not.toBeInTheDocument()
+  })
+
+  it('shows the served balance under the plan and opens top-up from Add credits', async () => {
+    arrange({
+      balance: {
+        amountMicros: 1000,
+        currency: 'usd',
+        effectiveBalanceMicros: 1000,
+        effectiveBalanceAuthoritative: true,
+        prepaidBalanceMicros: 1000,
+        cloudCreditBalanceMicros: 0
+      }
+    })
+
+    expect(screen.getByTestId('billing-credits-available')).toHaveTextContent(
+      '2,110'
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: 'Add credits' }))
+
+    expect(useBillingDialogs().showTopUpCreditsDialog).toHaveBeenCalled()
   })
 })
