@@ -79,20 +79,34 @@ describe('extension loading', () => {
         level: 'warning'
       })
       expect(options.tags).toEqual({ failed_extension_count: 2 })
-      expect(options.context?.failures).toEqual([
-        {
-          ext: BROKEN,
-          message: `Cannot find module '${BROKEN}'`,
-          stack: expect.stringContaining(`Cannot find module '${BROKEN}'`)
-        },
-        {
-          ext: '/extensions/b/b.js',
-          message: "Cannot find module '/extensions/b/b.js'",
-          stack: expect.stringContaining(
-            "Cannot find module '/extensions/b/b.js'"
-          )
-        }
-      ])
+      expect(options.context).toEqual({
+        failures: [
+          {
+            ext: BROKEN,
+            message: `Cannot find module '${BROKEN}'`,
+            stack: expect.stringContaining(`Cannot find module '${BROKEN}'`)
+          },
+          {
+            ext: '/extensions/b/b.js',
+            message: "Cannot find module '/extensions/b/b.js'",
+            stack: expect.stringContaining(
+              "Cannot find module '/extensions/b/b.js'"
+            )
+          }
+        ]
+      })
+    })
+
+    it('keeps a batch at the cap untruncated', () => {
+      reportExtensionLoadFailures(
+        Array.from({ length: 10 }, (_, i) =>
+          failureFor(`/extensions/pack-${i}/main.js`)
+        )
+      )
+
+      expect(
+        vi.mocked(reportError).mock.calls[0][1].context
+      ).not.toHaveProperty(EXTENSION_FAILURES_TRUNCATED_FIELD)
     })
 
     it('elides the tail once past the naming cap', () => {
