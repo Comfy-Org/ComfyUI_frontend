@@ -52,7 +52,6 @@ function standaloneEnv(
     ...env,
     AGENT_BIND_ADDR: '127.0.0.1',
     AGENT_COMFY_URL: options.comfyUrl,
-    AGENT_CRDT_MODE: 'off',
     AGENT_DATA_DIR: dataDir,
     AGENT_ENGINE: 'inline',
     AGENT_SESSION_TOKEN: token,
