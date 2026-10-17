@@ -4563,16 +4563,6 @@ export const zPostCustomNodeProxyPath = z.object({
   path: z.string()
 })
 
-/**
- * Editing instructions from this deployed API build
- */
-export const zGetCccAgentInstructionsResponse = z.string()
-
-/**
- * Editing instructions from this deployed API build
- */
-export const zGetCccAgentsInstructionsResponse = z.string()
-
 export const zAgentGetDraftQuery = z.object({
   workflow_id: z.string()
 })
@@ -6017,30 +6007,6 @@ export const zListCccWebsiteCardsResponse = zCccWebsiteCardsPage
  */
 export const zGetCatalogDocsResponse = z.string()
 
-export const zArchiveCccDraftBody = z.object({
-  expected_draft_generation: z.coerce
-    .bigint()
-    .gte(BigInt(0))
-    .max(BigInt('9223372036854775807'), {
-      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
-    }),
-  expected_draft_rev: z.coerce
-    .bigint()
-    .gte(BigInt(1))
-    .max(BigInt('9223372036854775807'), {
-      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
-    })
-})
-
-export const zArchiveCccDraftHeaders = z.object({
-  'Idempotency-Key': z.string().min(1).max(200)
-})
-
-/**
- * Archived revision and fresh Draft/state
- */
-export const zArchiveCccDraftResponse = zCccjson
-
 export const zBatchCccItemsBody = z.object({
   expected_draft_rev: z.coerce
     .bigint()
@@ -6171,29 +6137,6 @@ export const zRestoreCccItemVersionPath = z.object({
  * New immutable forward Draft save and exact concurrency tokens
  */
 export const zRestoreCccItemVersionResponse = zCccjson
-
-export const zRestoreCccLiveItemBody = z.object({
-  expected_draft_rev: z.coerce
-    .bigint()
-    .gte(BigInt(1))
-    .max(BigInt('9223372036854775807'), {
-      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
-    }),
-  expected_revision_uid: z.uuid()
-})
-
-export const zRestoreCccLiveItemHeaders = z.object({
-  'Idempotency-Key': z.string().min(1).max(200)
-})
-
-export const zRestoreCccLiveItemPath = z.object({
-  uid: z.uuid()
-})
-
-/**
- * Flat new immutable Draft save, original owner/author and updated edit tokens
- */
-export const zRestoreCccLiveItemResponse = zCccjson
 
 export const zUploadCccMediaBody = z.object({
   change_id: z
@@ -6389,37 +6332,6 @@ export const zGetCccRevisionItemPath = z.object({
  * Flat Content and exact edit/revision context
  */
 export const zGetCccRevisionItemResponse = zCccjson
-
-export const zReopenCccRevisionBody = z.object({
-  archive_draft: z.literal(true),
-  expected_draft_generation: z.coerce
-    .bigint()
-    .gte(BigInt(0))
-    .max(BigInt('9223372036854775807'), {
-      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
-    }),
-  expected_draft_rev: z.coerce
-    .bigint()
-    .gte(BigInt(1))
-    .max(BigInt('9223372036854775807'), {
-      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
-    })
-})
-
-export const zReopenCccRevisionHeaders = z.object({
-  'Idempotency-Key': z.string().min(1).max(200)
-})
-
-export const zReopenCccRevisionPath = z.object({
-  rev: z.coerce.bigint().gte(BigInt(1)).max(BigInt('9223372036854775807'), {
-    error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
-  })
-})
-
-/**
- * New Draft/state and reopened-from revision
- */
-export const zReopenCccRevisionResponse = zCccjson
 
 export const zGetCccTypeSchemaPath = z.object({
   type: z.enum(['model', 'workflow', 'app', 'template_set', 'media']),
@@ -6953,11 +6865,6 @@ export const zPostOAuthTokenBody = z.object({
  * New token pair
  */
 export const zPostOAuthTokenResponse = zOAuthTokenResponse
-
-/**
- * OpenAPI JSON with CCC contract version and environment
- */
-export const zGetCccOpenApiResponse = zCccjson
 
 export const zGetTemplateProxyPath = z.object({
   path: z.string()
