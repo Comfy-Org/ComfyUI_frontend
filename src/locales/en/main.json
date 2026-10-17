@@ -4491,7 +4491,12 @@
     "summaryPacks": "{count} node pack | {count} node packs",
     "summaryModels": "{count} model | {count} models",
     "summaryClasses": "{count} node class | {count} node classes",
-    "briefFailed": "The brief for your agent could not be prepared. Try again."
+    "briefFailed": "The brief for your agent could not be prepared. Try again.",
+    "openBuilder": "Open the build wizard",
+    "bundleUnauthorized": "Sign in to your Comfy account again, then try once more.",
+    "bundleTooMany": "You have too many pending uploads. Try again later; they expire after 24 hours.",
+    "bundleTooLarge": "This installation is too large to upload.",
+    "bundleUnavailable": "Could not reach Comfy. Try again later."
   },
   "openSharedWorkflow": {
     "dialogTitle": "Open shared workflow",

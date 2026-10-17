@@ -46,11 +46,8 @@ const mockData = vi.hoisted(() => ({
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
-const distribution = vi.hoisted(() => ({ isCloud: false }))
 vi.mock(import('@/platform/distribution/types'), () => ({
-  get isCloud() {
-    return distribution.isCloud
-  },
+  isCloud: false,
   isNightly: false
 }))
 
@@ -649,26 +646,34 @@ describe('TopMenuSection', () => {
   })
 
   describe('Deploy to Comfy API button', () => {
+    function enableDeployButton() {
+      Object.assign(useFeatureFlags().flags, {
+        usedHeadlessly: true,
+        deployToCloud: true
+      })
+    }
+
     it.for([
       {
-        when: 'on local with the flag on',
-        flag: true,
-        onCloud: false,
+        when: 'after a headless run on a server that can deploy',
+        usedHeadlessly: true,
+        deployToCloud: true,
         shown: true
       },
       {
-        when: 'while the flag is off',
-        flag: false,
-        onCloud: false,
+        when: 'before any headless run',
+        usedHeadlessly: false,
+        deployToCloud: true,
         shown: false
       },
-      { when: 'on Comfy Cloud', flag: true, onCloud: true, shown: false }
-    ])('shows ($shown) $when', ({ flag, onCloud, shown }) => {
-      distribution.isCloud = onCloud
-      onTestFinished(() => {
-        distribution.isCloud = false
-      })
-      vi.mocked(useFeatureFlags().flags).runBarDeployEnabled = flag
+      {
+        when: 'while the server cannot deploy',
+        usedHeadlessly: true,
+        deployToCloud: false,
+        shown: false
+      }
+    ])('shows ($shown) $when', ({ usedHeadlessly, deployToCloud, shown }) => {
+      Object.assign(useFeatureFlags().flags, { usedHeadlessly, deployToCloud })
 
       createWrapper({ stubs: { FreeTierQuota: true } })
 
@@ -677,8 +682,8 @@ describe('TopMenuSection', () => {
       ).toBe(shown)
     })
 
-    it('sits left of the panel toggle and opens the Deploy to Comfy API dialog', async () => {
-      vi.mocked(useFeatureFlags().flags).runBarDeployEnabled = true
+    it('sits left of the panel toggle and opens the dialog for the installation', async () => {
+      enableDeployButton()
       const { user } = createWrapper()
       const deploy = screen.getByRole('button', {
         name: 'Deploy to Comfy API'
@@ -691,13 +696,15 @@ describe('TopMenuSection', () => {
       ).toBeTruthy()
       await user.click(deploy)
 
-      expect(openDeployToComfyApiDialog).toHaveBeenCalledOnce()
+      expect(openDeployToComfyApiDialog).toHaveBeenCalledExactlyOnceWith({
+        deploysInstallation: true
+      })
     })
 
     it('keeps the floating actionbar container open for the deploy button', async () => {
       localStorage.setItem('Comfy.MenuPosition.Docked', 'false')
       useManagerState().shouldShowExtensionsButton = computed(() => false)
-      vi.mocked(useFeatureFlags().flags).runBarDeployEnabled = true
+      enableDeployButton()
       const pinia = getActivePinia()
       assert.exists(pinia)
       vi.mocked(useSettingStore(pinia).get).mockImplementation((key) => {
