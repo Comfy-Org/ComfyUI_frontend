@@ -260,6 +260,11 @@ describe('main', () => {
       name: 'an unknown option',
       args: ['--chek'],
       error: "Could not parse arguments: Unknown option '--chek'"
+    },
+    {
+      name: 'an empty --report path',
+      args: ['--check', '--report='],
+      error: '--report requires a file path'
     }
   ])('reports $name as an error', ({ args, error }) => {
     const { exitCode, output } = runMain(args, createRepository())

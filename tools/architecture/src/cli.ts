@@ -194,6 +194,8 @@ function parseOptions(args: string[]): Outcome<CliOptions> {
       ok: false,
       errors: [`Pass exactly one of ${MODES.map((m) => `--${m}`).join(', ')}`]
     }
+  if (values.report === '')
+    return { ok: false, errors: ['--report requires a file path'] }
   return { ok: true, value: { mode: modes[0], reportFile: values.report } }
 }
 
