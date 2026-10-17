@@ -14,11 +14,11 @@
         >
           <i class="pi pi-arrow-left text-base" />
         </CheckoutButton>
-        <h2
+        <CheckoutTitle
           class="m-0 flex-1 text-center text-xl font-semibold text-base-foreground lg:text-2xl"
         >
           {{ confirmTitle }}
-        </h2>
+        </CheckoutTitle>
         <div class="size-8 shrink-0" aria-hidden="true" />
       </div>
       <CheckoutReactivationBanner
@@ -136,6 +136,7 @@ import CheckoutPaymentNotices from './CheckoutPaymentNotices.vue'
 import CheckoutPromotionCode from './CheckoutPromotionCode.vue'
 import CheckoutReactivationBanner from './CheckoutReactivationBanner.vue'
 import CheckoutTermsNote from './CheckoutTermsNote.vue'
+import CheckoutTitle from './CheckoutTitle.vue'
 import CheckoutTransitionSummary from './CheckoutTransitionSummary.vue'
 import CheckoutTransitionTotal from './CheckoutTransitionTotal.vue'
 import CheckoutVerificationPrompt from './CheckoutVerificationPrompt.vue'

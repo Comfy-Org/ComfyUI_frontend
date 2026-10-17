@@ -1,4 +1,5 @@
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/types/entityRegistry'
+
 import type { NodeId } from '@/types/nodeId'
 
 import { resolveSubgraphInputLink } from './resolveSubgraphInputLink'

@@ -10,26 +10,22 @@ import {
 } from './banner'
 
 describe('challengeBannerConfig', () => {
-  it('links to the details in a new tab with campaign tracking', () => {
-    const { link } = getBannerData(challengeBannerConfig, 'en')
-    const params = new URLSearchParams(link?.href.split('?')[1])
-
-    expect(Object.fromEntries(params)).toEqual({
-      utm_source: 'comfy_org',
-      utm_medium: 'website',
-      utm_campaign: 'dev_platform_challenge',
-      utm_content: 'platform_strip_details'
-    })
-    expect(link).toMatchObject({
-      title: 'Read the post',
-      target: '_blank',
-      rel: 'noopener noreferrer'
-    })
-  })
+  it.for([
+    { locale: 'en', href: '/open-source-higgsfield/' },
+    { locale: 'zh-CN', href: '/zh-CN/open-source-higgsfield/' }
+  ] as const)(
+    'links $locale visitors to the challenge page in the same tab',
+    ({ locale, href }) => {
+      expect(getBannerData(challengeBannerConfig, locale).link).toMatchObject({
+        href,
+        target: undefined
+      })
+    }
+  )
 
   it.for([
-    { now: '2026-10-19T08:59:00-07:00', visible: true },
-    { now: '2026-10-19T09:01:00-07:00', visible: false }
+    { now: '2026-10-30T08:59:00-07:00', visible: true },
+    { now: '2026-10-30T09:01:00-07:00', visible: false }
   ])('has visibility $visible at $now', ({ now, visible }) => {
     expect(
       evaluateBannerVisibility(challengeBannerConfig, {
@@ -52,31 +48,31 @@ describe('activeBannerFor', () => {
     {
       name: 'a page banner wins over the sitewide banner while it runs',
       page: challengeBannerConfig,
-      now: '2026-10-19T08:59:00-07:00',
+      now: '2026-10-30T08:59:00-07:00',
       expected: challengeBannerConfig
     },
     {
       name: 'a page banner falls back to the sitewide banner once it ends',
       page: challengeBannerConfig,
-      now: '2026-10-19T09:01:00-07:00',
+      now: '2026-10-30T09:01:00-07:00',
       expected: bannerConfig
     },
     {
       name: '/events shows the challenge banner while it runs',
       page: challengeBannerConfig,
-      now: '2026-10-19T08:59:00-07:00',
+      now: '2026-10-30T08:59:00-07:00',
       expected: challengeBannerConfig
     },
     {
       name: '/events shows the sitewide banner once the challenge ends',
       page: challengeBannerConfig,
-      now: '2026-10-19T09:01:00-07:00',
+      now: '2026-10-30T09:01:00-07:00',
       expected: bannerConfig
     },
     {
       name: 'a page without its own banner shows the sitewide banner',
       page: undefined,
-      now: '2026-10-19T08:59:00-07:00',
+      now: '2026-10-30T08:59:00-07:00',
       expected: bannerConfig
     }
   ])('$name', ({ page, now, expected }) => {

@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
-import type { AuthCredential, AuthHeader } from '@/types/authTypes'
+import type { AuthCredential, AuthHeader, AuthScheme } from '@/types/authTypes'
 
 import {
   agentSocketAuthParams,
@@ -51,12 +51,15 @@ describe('withAgentAuth', () => {
     async ({ header, name, value, credential }) => {
       userHeader(header)
       const reported: AuthCredential[] = []
+      const schemes: AuthScheme[] = []
 
       const init = await withAgentAuth({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        onAuthScheme: (scheme) => schemes.push(scheme),
         onAuthCredential: (kind) => reported.push(kind)
       })
+      init.onAuthScheme?.('none')
       init.onAuthCredential?.('none')
 
       const headers = new Headers(init.headers)
@@ -65,6 +68,7 @@ describe('withAgentAuth', () => {
       expect(init.method).toBe('POST')
       expect(init.redirect).toBe('error')
       expect(reported).toEqual([credential])
+      expect(schemes).toEqual(['cloud-auth-header'])
     }
   )
 

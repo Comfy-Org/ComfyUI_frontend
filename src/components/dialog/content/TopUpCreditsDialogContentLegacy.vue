@@ -4,13 +4,13 @@
   >
     <!-- Header -->
     <div class="flex items-center justify-between p-8">
-      <h2 class="m-0 text-lg font-bold text-base-foreground">
+      <DialogTitle class="m-0 text-lg font-bold">
         {{
           isInsufficientCredits
             ? $t('credits.topUp.addMoreCreditsToRun')
             : $t('credits.topUp.addMoreCredits')
         }}
-      </h2>
+      </DialogTitle>
       <button
         class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none"
         :aria-label="$t('g.close')"
@@ -142,7 +142,6 @@
         :loading="loading"
         variant="primary"
         size="lg"
-        class="h-10 justify-center"
         @click="handleBuy"
       >
         {{ $t('credits.topUp.buyCredits') }}
@@ -171,6 +170,7 @@ import { useI18n } from 'vue-i18n'
 
 import { creditsToUsd, usdToCredits } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
+import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import NumberField from '@/components/ui/number-field/NumberField.vue'
 import NumberFieldDecrement from '@/components/ui/number-field/NumberFieldDecrement.vue'
 import NumberFieldIncrement from '@/components/ui/number-field/NumberFieldIncrement.vue'

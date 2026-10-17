@@ -403,7 +403,15 @@ function reportSendFailure(error: unknown): void {
   if (isAttachmentTypeRejection(error)) return
   reportError(error, {
     surface: 'agent',
-    errorType: 'agent_send_message_failed'
+    errorType: 'agent_send_message_failed',
+    tags:
+      error instanceof AgentApiError
+        ? {
+            status: error.status,
+            operation: error.operation,
+            retryAfterSeconds: error.retryAfterSeconds
+          }
+        : undefined
   })
 }
 

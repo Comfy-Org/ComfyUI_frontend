@@ -1,10 +1,7 @@
 <script setup lang="ts">
 import './agentPanel.css'
 
-import type {
-  AgentAnswerRequest,
-  GetFeaturesResponse
-} from '@comfyorg/ingest-types'
+import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
 import { useClipboard } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import {
@@ -20,7 +17,7 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { isAuthRejectionStatus } from '@/platform/auth/authRejection'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import type {
@@ -129,10 +126,7 @@ import {
 } from './composables/agent/useAgentSession'
 import { useAgentDraftSubmission } from './composables/agent/useAgentDraftSubmission'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
-import {
-  AgentApiError,
-  createAgentRestClient
-} from './services/agent/agentRestClient'
+import { createAgentRestClient } from './services/agent/agentRestClient'
 import {
   agentSocketAuthParams,
   ensureSignedIn,
@@ -235,8 +229,7 @@ onBeforeUnmount(() => docTransport.destroy())
 const agentIdentity = resolveAgentIdentity({
   getIdentity: () => rest.getIdentity(),
   onSocketOpen: (listener) => docTransport.onSocketOpen(listener),
-  isRetryable: (error) =>
-    !(error instanceof AgentApiError && isAuthRejectionStatus(error.status)),
+  isRetryable: (error) => isRetryableRequestFailure(error, false),
   onFailure: (error) =>
     reportError(error, {
       surface: 'agent',
@@ -753,6 +746,9 @@ function targetWorkflowDraft(origin?: TurnOrigin): DraftSnapshot | undefined {
   return { content }
 }
 
+// A pending identity still withholds the draft: the seed replaces the server
+// document, and a canvas the follower has not caught up would undo agent edits.
+// Pending is bounded; the lookup settles as `rejected` after its retry budget.
 function followerOwnsDocument(documentId: string | undefined): boolean {
   return (
     documentId !== undefined &&
@@ -1776,6 +1772,7 @@ function onSelectNodes(): void {
 
 const assetsStore = useAssetsStore()
 let inputAssetRefresh: Promise<unknown> = Promise.resolve()
+const { flags } = useFeatureFlags()
 
 const attachment = useAttachment({
   validate: isValidAgentAttachment,
@@ -1799,10 +1796,7 @@ const attachment = useAttachment({
       .then(() => assetsStore.inputAssets.loadNew())
       .catch(() => undefined)
   },
-  maxBytes: () =>
-    api.getServerFeature<GetFeaturesResponse['max_upload_size']>(
-      'max_upload_size'
-    ) ?? MAX_ATTACHMENT_BYTES,
+  maxBytes: () => flags.maxUploadSize ?? MAX_ATTACHMENT_BYTES,
   onError: warnAttachment,
   onDuplicate: notifyDuplicateAttachments,
   staged: () => composerStore.attachments,

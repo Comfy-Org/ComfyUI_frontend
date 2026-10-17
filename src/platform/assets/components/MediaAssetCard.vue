@@ -22,7 +22,7 @@
   >
     <!-- Top Area: Media Preview -->
     <div
-      class="relative aspect-square overflow-hidden p-0"
+      class="relative aspect-square overflow-hidden"
       @click.stop="handlePreviewClick"
       @dblclick.stop="(fileKind === 'image' || isHdr) && handleZoomClick()"
     >
