@@ -381,8 +381,8 @@ export class AgentConversationHarness {
   /** Serves the saved workflow with every `search` replaced on later GETs. */
   replaceInSavedWorkflow(search: string, replacement: string): void {
     const content = this.savedWorkflow?.savedContent()
-    if (content === undefined)
-      throw new Error('the app has not saved a workflow yet')
+    if (!content?.includes(search))
+      throw new Error(`the saved workflow does not contain "${search}"`)
     this.savedWorkflow?.corruptSavedContent(
       content.replaceAll(search, replacement)
     )
