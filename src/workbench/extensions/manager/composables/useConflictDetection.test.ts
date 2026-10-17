@@ -391,6 +391,20 @@ describe('useConflictDetection', () => {
       expect(types).not.toContain('banned')
     })
 
+    it('flags a flagged conflict for a NodeVersion with NodeVersionStatusFlagged', () => {
+      const { checkNodeCompatibility } = useConflictDetection()
+      const { conflicts, hasConflict } = checkNodeCompatibility({
+        status: 'NodeVersionStatusFlagged'
+      })
+
+      const types = conflicts.map((c) => c.type)
+      expect(types).toContain('flagged')
+      expect(types).not.toContain('banned')
+      // hasConflict is what swaps the version dropdown's green VerifiedIcon for
+      // a warning triangle, so a flagged version must not read as verified.
+      expect(hasConflict).toBe(true)
+    })
+
     it('forwards supported_os/supported_accelerators to the systemCompatibility checks', () => {
       const { checkNodeCompatibility } = useConflictDetection()
       checkNodeCompatibility({
