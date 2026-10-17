@@ -46,6 +46,7 @@ const canCancel = computed(() => {
     size="lg"
     class="w-full"
     :href="signInHref"
+    :aria-label="t('workshop.run.signIn')"
     @click="leaveForSignIn($event, signInHref)"
     >{{ t('workshop.run.run') }}</Button
   >
