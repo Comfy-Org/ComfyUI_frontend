@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import Message from '@/components/ui/message/Message.vue'
 
 import type {
   AskUnavailablePart,
@@ -20,18 +21,14 @@ const notice = computed<NoticePart>(() =>
 </script>
 
 <template>
-  <div
+  <Message
+    :severity="notice.level"
     :role="notice.level === 'error' ? 'alert' : 'status'"
-    :class="
-      cn(
-        'flex items-start gap-2 rounded-xl border px-3 py-2 text-sm',
-        notice.level === 'error'
-          ? 'border-destructive-background/40 text-destructive-background'
-          : 'border-component-node-border text-muted-foreground'
-      )
-    "
+    :aria-live="notice.level === 'error' ? 'assertive' : 'polite'"
   >
-    <span class="mt-0.5 icon-[lucide--triangle-alert] size-4 shrink-0" />
+    <template #icon>
+      <span class="mt-0.5 icon-[lucide--triangle-alert] block size-4" />
+    </template>
     <span class="flex flex-col gap-0.5">
       <span>{{ notice.text }}</span>
       <span
@@ -45,5 +42,5 @@ const notice = computed<NoticePart>(() =>
         }}
       </span>
     </span>
-  </div>
+  </Message>
 </template>

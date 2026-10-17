@@ -2,7 +2,6 @@
 import './agentPanel.css'
 
 import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
-import { useClipboard } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import {
   computed,
@@ -17,6 +16,7 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -1425,7 +1425,7 @@ onBeforeUnmount(() => {
   })
 })
 
-const { copy } = useClipboard({ legacy: true })
+const { copyToClipboard } = useCopyToClipboard({ showSuccessToast: false })
 
 // DES-1221. Read while the panel is on screen, so the experiment's denominator
 // is the panel openers the hypothesis is about.
@@ -1573,7 +1573,7 @@ function buildTranscriptMarkdown(entries: ConversationEntry[]): string {
 
 function onCopyMarkdown(id: string): void {
   if (id === history.activeId && id === threadId.value)
-    void copy(buildTranscriptMarkdown(entries.value))
+    void copyToClipboard(buildTranscriptMarkdown(entries.value))
   else toast.info(t('agent.copyUnavailable'))
 }
 

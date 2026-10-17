@@ -71,7 +71,9 @@ function rowSignature(row: ActivityRow): string {
       :key="index"
       v-memo="[rowSignature(row), index === rows.length - 1, live]"
       role="listitem"
-      :class="cn('flex gap-2 px-2', live && 'agent-row-enter')"
+      :class="
+        cn('flex gap-2 px-2', live && 'ease-out fade-in motion-safe:animate-in')
+      "
     >
       <div class="flex w-4 shrink-0 flex-col items-center">
         <span

@@ -394,7 +394,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           variant="muted-textonly"
           size="icon-sm"
           :aria-label="t('agent.showChatHistory')"
-          class="size-6 shrink-0 data-coach-hover:bg-secondary-background-hover"
+          class="shrink-0 data-coach-hover:bg-secondary-background-hover"
           @click="onOpenHistory"
         >
           <span class="icon-[lucide--history] size-4 shrink-0" />
@@ -405,7 +405,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             v-model="renameDraft"
             type="text"
             :aria-label="t('g.rename')"
-            class="h-6 flex-1 px-2 py-1 text-xs"
+            class="flex-1"
             @keydown="onRenameKeydown"
             @blur="commitRename"
           />
@@ -443,7 +443,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
                 variant="muted-textonly"
                 size="icon-sm"
                 :aria-label="t('agent.chatOptions')"
-                class="size-6 shrink-0"
+                class="shrink-0"
               >
                 <span class="icon-[lucide--chevron-down] size-3" />
               </Button>

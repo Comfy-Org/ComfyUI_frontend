@@ -15,6 +15,7 @@ import {
   useTemplateRef,
   watch
 } from 'vue'
+import type { VNode } from 'vue'
 import { default as DOMPurify } from 'dompurify'
 import { useI18n } from 'vue-i18n'
 
@@ -35,12 +36,9 @@ import type { PromptEditor } from '../../../types/promptEditor'
 import type { WorkflowReferenceMetadata } from '../../../types/workflowReference'
 import type { SkillReferenceMetadata } from '../../../types/skillReference'
 import InlineAssetReference from './InlineAssetReference.vue'
-import {
-  inlineReferenceChipClass,
-  inlineReferenceRemoveAnchorClass,
-  inlineReferenceRemoveBadgeClass,
-  inlineReferenceRemoveButtonClass
-} from './inlineReferenceChipStyles'
+import InlineNodeReference from './InlineNodeReference.vue'
+import InlineWorkflowReference from './InlineWorkflowReference.vue'
+import { inlineReferenceNodeViewClass } from './inlineReferenceChipStyles'
 import ComposerSkillReference from './ComposerSkillReference.vue'
 import {
   inlinePromptSchema,
@@ -278,36 +276,19 @@ function searchHintDom(): HTMLElement {
   return hint
 }
 
-function assetReferenceView(
-  node: Node,
+function removeReference(
   editor: EditorView,
-  getPos: () => number | undefined
-) {
-  const dom = document.createElement('span')
-  const reference = promptNodeReference(node, 0)
-  if (reference?.kind !== 'asset') return { dom }
+  getPos: () => number | undefined,
+  node: Node
+): void {
+  const position = getPos()
+  if (position === undefined) return
+  editor.dispatch(deleteReference(editor.state, position, node))
+  editor.focus()
+}
+
+function componentNodeView(dom: HTMLElement, vnode: VNode) {
   dom.contentEditable = 'false'
-  dom.className =
-    'inline-flex rounded-sm align-middle ring-offset-base-background [&.ProseMirror-selectednode]:ring-2 [&.ProseMirror-selectednode]:ring-base-foreground [&.ProseMirror-selectednode]:ring-offset-1'
-  const vnode = h(InlineAssetReference, {
-    name: reference.attachment.name,
-    previewUrl: reference.attachment.previewUrl,
-    mediaKind: reference.attachment.mediaKind,
-    removeLabel: t('agent.removeAssetReference', {
-      name: reference.attachment.name
-    }),
-    onHighlight: (active: boolean) => {
-      if (active) activeAssetReferences.set(dom, reference.attachment.id)
-      else if (!activeAssetReferences.delete(dom)) return
-      emit('highlightAssets', [...new Set(activeAssetReferences.values())])
-    },
-    onRemove: () => {
-      const position = getPos()
-      if (position === undefined) return
-      editor.dispatch(deleteReference(editor.state, position, node))
-      editor.focus()
-    }
-  })
   vnode.appContext = appContext ?? null
   render(vnode, dom)
   return {
@@ -318,6 +299,34 @@ function assetReferenceView(
   }
 }
 
+function assetReferenceView(
+  node: Node,
+  editor: EditorView,
+  getPos: () => number | undefined
+) {
+  const dom = document.createElement('span')
+  const reference = promptNodeReference(node, 0)
+  if (reference?.kind !== 'asset') return { dom }
+  dom.className = inlineReferenceNodeViewClass
+  return componentNodeView(
+    dom,
+    h(InlineAssetReference, {
+      name: reference.attachment.name,
+      previewUrl: reference.attachment.previewUrl,
+      mediaKind: reference.attachment.mediaKind,
+      removeLabel: t('agent.removeAssetReference', {
+        name: reference.attachment.name
+      }),
+      onHighlight: (active: boolean) => {
+        if (active) activeAssetReferences.set(dom, reference.attachment.id)
+        else if (!activeAssetReferences.delete(dom)) return
+        emit('highlightAssets', [...new Set(activeAssetReferences.values())])
+      },
+      onRemove: () => removeReference(editor, getPos, node)
+    })
+  )
+}
+
 function nodeReferenceView(
   node: Node,
   editor: EditorView,
@@ -326,45 +335,41 @@ function nodeReferenceView(
   const dom = document.createElement('span')
   const reference = promptNodeReference(node, 0)
   if (reference?.kind !== 'node') return { dom }
-  dom.contentEditable = 'false'
-  dom.dataset.testid = `${reference.kind}-reference-chip`
-  dom.className = inlineReferenceChipClass
-  dom.tabIndex = 0
-  const icon = document.createElement('span')
-  icon.className = 'icon-[comfy--node] size-3 shrink-0'
-  icon.setAttribute('aria-hidden', 'true')
-  const label = document.createElement('span')
-  label.className = 'min-w-0 max-w-56 truncate'
-  label.textContent = reference.node.title
-  dom.append(icon, label)
-  const id = document.createElement('span')
-  id.className = 'shrink-0 text-muted-foreground'
-  id.textContent = ` #${reference.node.id}`
-  const remove = document.createElement('button')
-  remove.type = 'button'
-  remove.setAttribute(
-    'aria-label',
-    t('agent.removeNodeLabel', { node: composerReferenceName(reference) })
+  dom.dataset.testid = 'node-reference-chip'
+  dom.className = inlineReferenceNodeViewClass
+  return componentNodeView(
+    dom,
+    h(InlineNodeReference, {
+      title: reference.node.title,
+      nodeId: reference.node.id,
+      removeLabel: t('agent.removeNodeLabel', {
+        node: composerReferenceName(reference)
+      }),
+      onRemove: () => removeReference(editor, getPos, node)
+    })
   )
-  const removeAnchor = document.createElement('span')
-  removeAnchor.className = inlineReferenceRemoveAnchorClass
-  remove.className = inlineReferenceRemoveButtonClass
-  const badge = document.createElement('span')
-  badge.className = inlineReferenceRemoveBadgeClass
-  const cross = document.createElement('span')
-  cross.className = 'icon-[lucide--x] size-2'
-  cross.setAttribute('aria-hidden', 'true')
-  badge.append(cross)
-  remove.append(badge)
-  remove.onclick = () => {
-    const position = getPos()
-    if (position === undefined) return
-    editor.dispatch(deleteReference(editor.state, position, node))
-    editor.focus()
-  }
-  removeAnchor.append(remove)
-  dom.append(id, removeAnchor)
-  return { dom, stopEvent: () => true, ignoreMutation: () => true }
+}
+
+function workflowReferenceView(
+  node: Node,
+  editor: EditorView,
+  getPos: () => number | undefined
+) {
+  const id: unknown = node.attrs.id
+  const name: unknown = node.attrs.name
+  const dom = document.createElement('span')
+  if (typeof id !== 'string' || typeof name !== 'string') return { dom }
+  dom.dataset.testid = 'workflow-reference-chip'
+  dom.className = inlineReferenceNodeViewClass
+  return componentNodeView(
+    dom,
+    h(InlineWorkflowReference, {
+      name,
+      unavailable: node.attrs.unavailable === true,
+      onOpen: () => emit('openReferenceWorkflow', id, name),
+      onRemove: () => removeReference(editor, getPos, node)
+    })
+  )
 }
 
 onMounted(() => {
@@ -381,7 +386,7 @@ onMounted(() => {
         ? { 'aria-activedescendant': activeDescendant }
         : {}),
       class:
-        'text-base-foreground w-full flex-1 cursor-text p-3 font-inter text-[14px]/5 font-normal wrap-anywhere whitespace-pre-wrap outline-none'
+        'text-base-foreground w-full flex-1 cursor-text p-3 font-inter text-sm/5 font-normal wrap-anywhere whitespace-pre-wrap outline-none'
     }),
     decorations(state) {
       if (state.selection.empty) {
@@ -518,84 +523,16 @@ onMounted(() => {
         const dom = document.createElement('span')
         const reference = promptNodeReference(node, 0)
         if (reference?.kind !== 'skill') return { dom }
-        dom.contentEditable = 'false'
         dom.className =
           'rounded-sm [&.ProseMirror-selectednode]:ring-2 [&.ProseMirror-selectednode]:ring-base-foreground'
-        const vnode = h(ComposerSkillReference, { skill: reference })
-        vnode.appContext = appContext ?? null
-        render(vnode, dom)
-        return {
+        return componentNodeView(
           dom,
-          stopEvent: () => true,
-          ignoreMutation: () => true,
-          destroy: () => render(null, dom)
-        }
+          h(ComposerSkillReference, { skill: reference })
+        )
       },
-      node: (node, editor, getPos) => nodeReferenceView(node, editor, getPos),
+      node: nodeReferenceView,
       asset: assetReferenceView,
-      workflow(node, editor, getPos) {
-        const id: unknown = node.attrs.id
-        const name: unknown = node.attrs.name
-        const dom = document.createElement('span')
-        if (typeof id !== 'string' || typeof name !== 'string') return { dom }
-        dom.contentEditable = 'false'
-        dom.dataset.testid = 'workflow-reference-chip'
-        dom.className = inlineReferenceChipClass
-        const open = document.createElement('button')
-        open.type = 'button'
-        open.tabIndex = 0
-        const unavailable = node.attrs.unavailable === true
-        open.setAttribute(
-          'aria-label',
-          t(
-            unavailable
-              ? 'agent.unavailableWorkflowReference'
-              : 'agent.openWorkflowTab',
-            { name }
-          )
-        )
-        if (unavailable) {
-          const reason = t('agent.workflowReferenceUnavailableReason')
-          open.setAttribute('aria-disabled', 'true')
-          open.setAttribute('aria-description', reason)
-          open.title = reason
-        }
-        open.className =
-          'flex min-w-0 cursor-pointer items-center border-none bg-transparent p-0 text-inherit outline-none aria-disabled:cursor-not-allowed'
-        const icon = document.createElement('span')
-        icon.className = 'icon-[comfy--workflow] mr-1 size-3 shrink-0'
-        const title = document.createElement('span')
-        title.className = 'min-w-0 max-w-56 truncate'
-        title.textContent = name
-        open.append(icon, title)
-        open.onclick = () => {
-          if (!unavailable) emit('openReferenceWorkflow', id, name)
-        }
-        const removeAnchor = document.createElement('span')
-        removeAnchor.className = inlineReferenceRemoveAnchorClass
-        const remove = document.createElement('button')
-        remove.type = 'button'
-        remove.setAttribute(
-          'aria-label',
-          t('agent.removeWorkflowReference', { name })
-        )
-        remove.className = inlineReferenceRemoveButtonClass
-        const badge = document.createElement('span')
-        badge.className = inlineReferenceRemoveBadgeClass
-        const cross = document.createElement('span')
-        cross.className = 'icon-[lucide--x] size-2'
-        badge.append(cross)
-        remove.append(badge)
-        remove.onclick = () => {
-          const position = getPos()
-          if (position === undefined) return
-          editor.dispatch(deleteReference(editor.state, position, node))
-          editor.focus()
-        }
-        removeAnchor.append(remove)
-        dom.append(open, removeAnchor)
-        return { dom, stopEvent: () => true, ignoreMutation: () => true }
-      }
+      workflow: workflowReferenceView
     }
   })
 })

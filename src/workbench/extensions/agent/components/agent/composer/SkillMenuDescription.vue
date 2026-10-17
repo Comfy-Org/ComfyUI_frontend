@@ -27,28 +27,25 @@ onBeforeUnmount(() => {
 <template>
   <HoverCard v-if="skill && anchor" open>
     <HoverCardContent
+      as-child
       :reference="anchor"
       side="top"
       align="end"
-      :side-offset="0"
+      :side-offset="6"
       :collision-padding="16"
-      class="border-0 bg-transparent p-0 shadow-none"
+      class="w-62.5 max-w-[calc(100vw-2rem)] before:absolute before:inset-x-0 before:h-1.5 data-[side=bottom]:before:bottom-full data-[side=top]:before:top-full"
     >
       <div
-        class="pb-1.5"
+        :id
+        ref="card"
+        tabindex="-1"
+        class="text-xs/4 font-normal wrap-anywhere whitespace-pre-wrap text-muted-foreground outline-none select-text"
         @mouseenter="emit('enter')"
         @mouseleave="emit('leave')"
+        @focusout="emit('focusout', $event)"
+        @keydown.esc.stop="emit('dismiss')"
       >
-        <div
-          :id
-          ref="card"
-          tabindex="-1"
-          class="w-62.5 max-w-[calc(100vw-2rem)] rounded-[10px] border border-border-subtle bg-base-background p-2.5 text-xs/4 font-normal wrap-anywhere whitespace-pre-wrap text-muted-foreground shadow-md outline-none select-text"
-          @focusout="emit('focusout', $event)"
-          @keydown.esc.stop="emit('dismiss')"
-        >
-          {{ skill.description }}
-        </div>
+        {{ skill.description }}
       </div>
     </HoverCardContent>
   </HoverCard>

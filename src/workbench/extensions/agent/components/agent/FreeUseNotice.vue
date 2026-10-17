@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import { useLocalStorage } from '@vueuse/core'
 import { computed, watch } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import Message from '@/components/ui/message/Message.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import type {
   AgentFreeUseNoticeMetadata,
@@ -12,13 +12,6 @@ import type {
 import { AGENT_DOCS_URL } from '@/workbench/extensions/agent/agentDocs'
 
 import { freeUseNoticeDismissedKey } from './freeUseNoticeDismissal'
-
-const PLACEMENT_CLASSES = {
-  'top-banner': 'px-4 py-3',
-  'near-composer': 'rounded-lg px-4 py-3',
-  'above-input': 'px-4 py-3',
-  'inside-input': 'm-3 rounded-lg px-4 py-3'
-} as const satisfies Record<AgentFreeUsePlacement, string>
 
 const { placement } = defineProps<{ placement: AgentFreeUsePlacement }>()
 const emit = defineEmits<{ notice: [metadata: AgentFreeUseNoticeMetadata] }>()
@@ -47,42 +40,41 @@ function onDismiss(): void {
 </script>
 
 <template>
-  <div
+  <Message
     v-if="visible"
+    severity="info"
     role="note"
+    aria-live="off"
     :aria-label="$t('agent.freeUseNoticeLabel')"
     :data-placement="placement"
-    :class="
-      cn(
-        'flex items-start gap-3 bg-blue-selection text-base-foreground',
-        PLACEMENT_CLASSES[placement]
-      )
-    "
+    :class="placement === 'inside-input' && 'm-3 w-auto'"
   >
-    <p class="my-0 min-w-0 flex-1 text-sm/5">
-      {{ $t('agent.freeUseNotice') }}
+    <div class="flex items-start gap-3">
+      <p class="my-0 min-w-0 flex-1">
+        {{ $t('agent.freeUseNotice') }}
+        <Button
+          variant="link"
+          size="link"
+          as="a"
+          :href="AGENT_DOCS_URL"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="py-0 underline"
+          @click="emit('notice', { action: 'learn_more_clicked', placement })"
+        >
+          {{ $t('g.learnMore') }}
+        </Button>
+      </p>
       <Button
-        variant="link"
-        size="unset"
-        as="a"
-        :href="AGENT_DOCS_URL"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="inline p-0 text-sm/5 font-normal text-primary-background-hover hover:underline hover:underline-offset-4"
-        @click="emit('notice', { action: 'learn_more_clicked', placement })"
+        type="button"
+        variant="muted-textonly"
+        size="icon-sm"
+        :aria-label="$t('agent.dismiss')"
+        class="shrink-0"
+        @click="onDismiss"
       >
-        {{ $t('g.learnMore') }}
+        <span class="icon-[lucide--x] size-5" />
       </Button>
-    </p>
-    <Button
-      type="button"
-      variant="muted-textonly"
-      size="icon-sm"
-      :aria-label="$t('agent.dismiss')"
-      class="shrink-0"
-      @click="onDismiss"
-    >
-      <span class="icon-[lucide--x] size-5" />
-    </Button>
-  </div>
+    </div>
+  </Message>
 </template>

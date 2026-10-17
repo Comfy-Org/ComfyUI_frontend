@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, inject, onMounted, ref } from 'vue'
+import { computed, inject, onMounted, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import Message from '@/components/ui/message/Message.vue'
 
 import type { RunApprovalPart } from '../../../services/agent/agentMessageParts'
 import { agentBoundWorkflowIdKey } from '../agentBoundWorkflowId'
@@ -24,6 +25,7 @@ const emit = defineEmits<{
 onMounted(() => emit('shown', part.askId, part.workflowId ?? null))
 
 const { t } = useI18n()
+const leadId = useId()
 const workflowLabel = computed(
   () =>
     part.workflowName?.trim() ||
@@ -33,70 +35,75 @@ const workflowLabel = computed(
 </script>
 
 <template>
-  <div
-    class="flex w-full flex-col gap-2 overflow-hidden rounded-lg border border-component-node-border bg-secondary-background p-4 shadow-interface"
+  <Message
+    severity="secondary"
+    role="group"
+    aria-live="off"
+    :aria-labelledby="leadId"
   >
-    <div class="flex min-w-0 flex-col gap-0.5 text-sm/5">
-      <p class="m-0">
-        {{
-          t(
-            hideWorkflowName
-              ? 'agent.runApproval.leadBound'
-              : 'agent.runApproval.lead'
-          )
-        }}
-      </p>
-      <ul
-        v-if="!hideWorkflowName"
-        class="m-0 min-w-0 list-disc pl-5 text-muted-foreground"
-      >
-        <li>
-          <Button
-            v-if="part.workflowId"
-            type="button"
-            variant="link"
-            size="unset"
-            class="max-w-full justify-start text-left font-normal wrap-break-word whitespace-normal text-inherit underline underline-offset-2"
-            @click="
-              emit(
-                'openWorkflow',
-                part.askId,
-                part.workflowId,
-                part.workflowName
-              )
-            "
-          >
-            {{ workflowLabel }}
-          </Button>
-          <span v-else class="wrap-break-word underline underline-offset-2">
-            {{ workflowLabel }}
-          </span>
-        </li>
-      </ul>
-      <p class="m-0 text-muted-foreground">
-        {{ t('agent.runApproval.question') }}
-      </p>
-    </div>
+    <div class="flex flex-col gap-2">
+      <div class="flex min-w-0 flex-col gap-0.5 text-sm/5">
+        <p :id="leadId" class="m-0">
+          {{
+            t(
+              hideWorkflowName
+                ? 'agent.runApproval.leadBound'
+                : 'agent.runApproval.lead'
+            )
+          }}
+        </p>
+        <ul
+          v-if="!hideWorkflowName"
+          class="m-0 min-w-0 list-disc pl-5 text-muted-foreground"
+        >
+          <li>
+            <Button
+              v-if="part.workflowId"
+              type="button"
+              variant="link"
+              size="link"
+              class="max-w-full justify-start py-0 text-left wrap-break-word whitespace-normal text-inherit underline underline-offset-2"
+              @click="
+                emit(
+                  'openWorkflow',
+                  part.askId,
+                  part.workflowId,
+                  part.workflowName
+                )
+              "
+            >
+              {{ workflowLabel }}
+            </Button>
+            <span v-else class="wrap-break-word underline underline-offset-2">
+              {{ workflowLabel }}
+            </span>
+          </li>
+        </ul>
+        <p class="m-0 text-muted-foreground">
+          {{ t('agent.runApproval.question') }}
+        </p>
+      </div>
 
-    <div class="flex h-6 w-full justify-end gap-2">
-      <Button
-        variant="secondary"
-        size="sm"
-        :disabled="answering"
-        :aria-busy="answering || undefined"
-        @click="emit('answer', part.askId, 'cancel')"
-      >
-        {{ t('agent.runApproval.cancel') }}
-      </Button>
-      <Button
-        variant="primary"
-        size="sm"
-        :disabled="answering"
-        :aria-busy="answering || undefined"
-        @click="emit('answer', part.askId, 'run')"
-      >
-        {{ t('agent.runApproval.run') }}
-      </Button>
+      <div class="flex h-6 w-full justify-end gap-2">
+        <Button
+          variant="secondary"
+          size="sm"
+          :disabled="answering"
+          :aria-busy="answering || undefined"
+          @click="emit('answer', part.askId, 'cancel')"
+        >
+          {{ t('agent.runApproval.cancel') }}
+        </Button>
+        <Button
+          variant="primary"
+          size="sm"
+          :disabled="answering"
+          :aria-busy="answering || undefined"
+          @click="emit('answer', part.askId, 'run')"
+        >
+          {{ t('agent.runApproval.run') }}
+        </Button>
+      </div>
     </div>
-  </div>
+  </Message>
 </template>
