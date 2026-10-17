@@ -146,6 +146,12 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     if (boot === undefined || !isVisible.value) return null
     return changeBetween(boot, pickedDeployment.value)
   })
+  const switcherOpenAsks = shallowRef(0)
+  const switcherOpenRequested = shallowRef(false)
+
+  function requestSwitcherOpen() {
+    switcherOpenAsks.value++
+  }
 
   let latestRequest = 0
   let lastApplied = 0
@@ -419,13 +425,16 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     isSwitching,
     bootDeployment,
     changeSinceBoot,
+    switcherOpenAsks,
+    switcherOpenRequested,
     load,
     loadOnce,
     bootOnComfyCloud,
     pick,
     pickFromLink,
     followWorkspace,
-    setDefault
+    setDefault,
+    requestSwitcherOpen
   }
 })
 

@@ -89,7 +89,7 @@
          The switcher renders nothing until its listing answers, and nothing
          when the account is outside the rollout or its first listing fails. -->
     <DeploymentSwitcher
-      v-if="!accountActionsOnly && isCloud && !isApiKeyLogin"
+      v-if="!accountActionsOnly && deploymentSwitcherOffered"
     />
 
     <!-- Credits Section -->
@@ -280,6 +280,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useDeploymentSwitcherOffered } from '@/platform/workspace/composables/useDeploymentSwitcherOffered'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
@@ -329,6 +330,7 @@ const {
 const isDesktopHostWorkspaceFixed = computed(
   () => isDesktopHostSignedIn() && !canDesktopHostSwitchWorkspace()
 )
+const deploymentSwitcherOffered = useDeploymentSwitcherOffered()
 const settingsDialog = useSettingsDialog()
 const { showTopUpCreditsDialog } = useBillingDialogs()
 const { showCreateWorkspaceDialog } = useWorkspaceDialogs()
