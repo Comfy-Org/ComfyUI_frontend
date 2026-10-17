@@ -1,14 +1,16 @@
 ---
 import PreviewBar from '@/components/cms/PreviewBar.vue'
 import { resolveLocale } from '@/config/locales'
+import { withoutCatalogLocalePrefix } from '@/config/catalog-locales'
 import { buildQueue } from '@/lib/cms/queue'
 import { loadSubmissions } from '@/lib/cms/submissions'
 
 const session = Astro.locals.site
 const preview = session?.preview
-const pagePath = Astro.url.pathname
-  .replace(/^\/zh-CN(?=\/)/, '')
-  .replace(/\/$/, '')
+const pagePath = withoutCatalogLocalePrefix(Astro.url.pathname).replace(
+  /\/$/,
+  ''
+)
 const pageItem = session?.review.draft.items.find(
   (item) => item.slug === pagePath
 )

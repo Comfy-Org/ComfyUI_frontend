@@ -1,4 +1,5 @@
 import type { CatalogPreviewChange } from './preview-display'
+import { withoutCatalogLocalePrefix } from '@/config/catalog-locales'
 
 export type DraftCardState = 'new' | 'updated' | 'scheduled'
 const ring: Record<DraftCardState, string[]> = {
@@ -15,7 +16,7 @@ function pagePath(href: string, origin: string) {
   try {
     const url = new URL(href, origin)
     if (url.origin !== origin) return
-    const path = url.pathname.replace(/^\/zh-CN(?=\/)/, '').replace(/\/$/, '')
+    const path = withoutCatalogLocalePrefix(url.pathname).replace(/\/$/, '')
     return /^\/hub\/(?:models|workflows|apps)\/[^/]+$/.test(path)
       ? path
       : undefined

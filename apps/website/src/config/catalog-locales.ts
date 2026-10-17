@@ -92,3 +92,11 @@ export function catalogLocaleBadge(locale: string): string {
     ? (LOCALE_BADGES[locale] ?? locale.toUpperCase())
     : 'EN'
 }
+
+/** `pathname` without its catalog locale prefix (`/ja/hub/x/` → `/hub/x/`). */
+export function withoutCatalogLocalePrefix(pathname: string): string {
+  const locale = catalogLocaleFromPath(pathname)
+  return locale
+    ? pathname.slice(catalogLocalePrefix(locale).length) || '/'
+    : pathname
+}

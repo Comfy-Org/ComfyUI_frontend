@@ -1,5 +1,6 @@
 import { modelsPageDataSchema } from '@/config/models-page-data'
 import { catalogDetailPath } from './detail-route'
+import { withoutCatalogLocalePrefix } from '@/config/catalog-locales'
 
 export async function fetchCatalogDetail(
   path: string,
@@ -7,7 +8,7 @@ export async function fetchCatalogDetail(
   signal: AbortSignal
 ) {
   if (!catalogDetailPath(path)) throw new Error('Invalid content route')
-  const canonical = path.replace(/^\/zh-CN/, '').replace(/\/$/, '')
+  const canonical = withoutCatalogLocalePrefix(path).replace(/\/$/, '')
   const slug = canonical.replace(/^\/hub\//, '').replace(/^models\//, '')
   const url = new URL(`/models/${slug}/page.json`, location.origin)
   url.searchParams.set('path', canonical)
