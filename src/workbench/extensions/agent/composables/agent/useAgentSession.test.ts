@@ -2298,6 +2298,24 @@ describe('useAgentSession (v1 composition root)', () => {
       ])
     })
 
+    it('accepts an explicitly empty answer committed by the server', async () => {
+      const { session } = await parkedOnQuestion({
+        status: 'answered',
+        selected: []
+      })
+
+      const committed = await session.answerAsk('turn-1:call-1', {
+        selected: []
+      })
+      await vi.advanceTimersByTimeAsync(15_000)
+
+      expect(committed).toBe(true)
+      expect(card()).toMatchObject({
+        resolution: { status: 'answered', selected: [] }
+      })
+      expect(session.notices.value).toEqual([])
+    })
+
     it('leaves a status-only 202 to the frame to report', async () => {
       const { session, emit } = await parkedOnQuestion()
       await session.answerAsk('turn-1:call-1', { selected: ['sdxl'] })
@@ -3958,7 +3976,7 @@ describe('useAgentSession (v1 composition root)', () => {
 
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
       surface: 'agent',
-      errorType: 'agent_ask_answer_unconfirmed'
+      errorType: 'agent_ask_answer_winner_unconfirmed'
     })
   })
 
@@ -4461,7 +4479,7 @@ describe('useAgentSession (v1 composition root)', () => {
     )
   })
 
-  it('(g10) a failing recovery fetch gets one bounded follow-up and leaves the turn live', async () => {
+  it('(g10) a failing recovery fetch does not amplify backend failure and leaves the turn live', async () => {
     const rest = fakeRest({
       getMessages: vi.fn(async (): Promise<AgentMessages> => {
         throw new TypeError('Failed to fetch')
@@ -4479,7 +4497,7 @@ describe('useAgentSession (v1 composition root)', () => {
     status(true)
     await vi.advanceTimersByTimeAsync(60_000)
 
-    expect(rest.getMessages).toHaveBeenCalledTimes(11)
+    expect(rest.getMessages).toHaveBeenCalledTimes(6)
     expect(session.notices.value).toEqual([])
     expect(session.isStreaming.value).toBe(true)
 
@@ -4801,7 +4819,7 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(conversationStore.liveTurns()).toHaveLength(1)
   })
 
-  it('(g47) each reconnect gets one bounded follow-up recovery pass', async () => {
+  it('(g47) each reconnect gets one bounded recovery pass', async () => {
     vi.useFakeTimers()
     try {
       const getMessages = vi.fn(async (): Promise<AgentMessages> => {
@@ -4820,12 +4838,12 @@ describe('useAgentSession (v1 composition root)', () => {
       status(false)
       status(true)
       await vi.advanceTimersByTimeAsync(64_000)
-      expect(getMessages).toHaveBeenCalledTimes(12)
+      expect(getMessages).toHaveBeenCalledTimes(6)
 
       status(false)
       status(true)
       await vi.advanceTimersByTimeAsync(64_000)
-      expect(getMessages).toHaveBeenCalledTimes(24)
+      expect(getMessages).toHaveBeenCalledTimes(12)
     } finally {
       vi.useRealTimers()
     }
@@ -5139,7 +5157,7 @@ describe('useAgentSession (v1 composition root)', () => {
 
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
       surface: 'agent',
-      errorType: 'agent_ask_answer_unconfirmed'
+      errorType: 'agent_ask_answer_winner_unconfirmed'
     })
     expect(session.notices.value).toHaveLength(1)
   })

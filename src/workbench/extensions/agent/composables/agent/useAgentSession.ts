@@ -587,6 +587,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   interface PendingAskObservation {
     pendingAskId: string | undefined
     deliveredAskIds: Set<string>
+    observedAt: number
   }
   const recoveryPendingAskObservations = new Map<
     string,
@@ -605,7 +606,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
    * an `ask_id` carries its `message_id`, so it is never reused.
    */
   const deliveredAsks = new Set<string>()
+  const observedDeliveredAsks = new Set<string>()
   const supersededAnswerReports = new Set<string>()
+  const acceptedUnconfirmedReports = new Set<string>()
+  const acceptedAsksAwaitingResolution = new Set<string>()
   const lateAskReports = new Map<
     string,
     {
@@ -616,11 +620,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
   >()
 
   function recordDeliveredAsk(askId: string): void {
+    observedDeliveredAsks.delete(askId)
+    observedDeliveredAsks.add(askId)
     deliveredAsks.delete(askId)
     deliveredAsks.add(askId)
-    if (deliveredAsks.size <= MAX_DELIVERED_ASKS) return
-    const oldest = deliveredAsks.values().next().value
-    if (oldest !== undefined) deliveredAsks.delete(oldest)
+    for (const ledger of [deliveredAsks, observedDeliveredAsks]) {
+      if (ledger.size <= MAX_DELIVERED_ASKS) continue
+      const oldest = ledger.values().next().value
+      if (oldest !== undefined) ledger.delete(oldest)
+    }
   }
 
   function recordSupersededAnswerReport(askId: string): boolean {
@@ -640,7 +648,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
   ): PendingAskObservation {
     const observation = {
       pendingAskId,
-      deliveredAskIds
+      deliveredAskIds,
+      observedAt: Date.now()
     }
     recoveryPendingAskObservations.delete(key)
     recoveryPendingAskObservations.set(key, observation)
@@ -1633,7 +1642,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (answeringAskIds.value.has(askId)) return false
     const runApprovalAnswer = typeof answer === 'string'
     const normalizedAnswer = runApprovalAnswer ? { selected: [answer] } : answer
-    conversationStore.recordAskAnswer(askId, normalizedAnswer)
+    conversationStore.recordAskAnswer(askId, normalizedAnswer, currentThreadId)
     conversationStore.setAskAnswering(askId, true)
     const answerChannelEpoch = resolutionChannelEpoch
     const answerStartedWithoutResolutionChannel = connection === 'dropped'
@@ -1651,7 +1660,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       })
     } catch (error) {
       if (answeringAskIds.value.has(askId))
-        handleAnswerFailure(
+        return handleAnswerFailure(
           error,
           askId,
           currentThreadId,
@@ -1674,7 +1683,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     receipt: AgentAnswerReceipt
     resolutionChannelWasLost: () => boolean
   }): boolean {
-    if (!receiptNamesCommittedAnswer(receipt))
+    if (!receiptNamesCommittedAnswer(receipt, answer))
       return commitStatusOnlyAskReceipt({
         askId,
         answer,
@@ -1682,6 +1691,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         resolutionChannelWasLost
       })
     const committed = toAskResolution(receipt)
+    acceptedAsksAwaitingResolution.delete(askId)
     const superseded =
       committed.status === 'answered' && isSupersededAnswer(answer, committed)
     reportSupersededAnswer(askId, committed)
@@ -1690,11 +1700,23 @@ export function useAgentSession(deps: AgentSessionDeps) {
     return !superseded
   }
 
-  function receiptNamesCommittedAnswer(receipt: {
-    selected?: string[] | null
-    other_text?: string
-  }): boolean {
-    return (receipt.selected?.length ?? 0) > 0 || Boolean(receipt.other_text)
+  function receiptNamesCommittedAnswer(
+    receipt: {
+      status?: string
+      selected?: string[] | null
+      other_text?: string
+    },
+    submitted?: AgentAnswerRequest
+  ): boolean {
+    if (receipt.status !== undefined && receipt.status !== 'answered')
+      return false
+    if (receipt.other_text !== undefined) return true
+    if (receipt.selected === undefined || receipt.selected === null)
+      return false
+    const runApproval =
+      submitted?.selected.length === 1 &&
+      (submitted.selected[0] === 'run' || submitted.selected[0] === 'cancel')
+    return !runApproval || receipt.selected.length > 0
   }
 
   function commitStatusOnlyAskReceipt({
@@ -1707,16 +1729,18 @@ export function useAgentSession(deps: AgentSessionDeps) {
     answer: AgentAnswerRequest
     currentThreadId: string
     resolutionChannelWasLost: () => boolean
-  }): true {
+  }): boolean {
     const channelWasLost = resolutionChannelWasLost()
     const resolutionStillPending =
       conversationStore.submittedAskAnswer(askId) !== undefined
-    if (resolutionStillPending) reportAcceptedRecoveredAnswer(channelWasLost)
+    if (resolutionStillPending) acceptedAsksAwaitingResolution.add(askId)
+    if (resolutionStillPending)
+      reportAcceptedRecoveredAnswer(askId, channelWasLost)
     recordDeliveredAsk(askId)
     conversationStore.commitAsk(askId, currentThreadId, { status: 'retired' })
     if (!channelWasLost && resolutionStillPending)
-      conversationStore.recordAskAnswer(askId, answer)
-    return true
+      conversationStore.recordAskAnswer(askId, answer, currentThreadId)
+    return !supersededAnswerReports.has(askId)
   }
 
   function failUnroutableAsk(askId: string): void {
@@ -1730,14 +1754,17 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   function reportAcceptedRecoveredAnswer(
+    askId: string,
     resolutionChannelWasLost: boolean
   ): void {
-    if (!resolutionChannelWasLost) return
+    if (!resolutionChannelWasLost || acceptedUnconfirmedReports.has(askId))
+      return
+    acceptedUnconfirmedReports.add(askId)
     reportError(new Error('accepted restored approval cannot be verified'), {
       surface: 'agent',
-      errorType: 'agent_ask_answer_unconfirmed'
+      errorType: 'agent_ask_answer_winner_unconfirmed'
     })
-    pushError(i18n.global.t('agent.runApproval.answerUncertain'))
+    pushError(i18n.global.t('agent.runApproval.answerAcceptedUnconfirmed'))
   }
 
   function handleAnswerFailure(
@@ -1745,15 +1772,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
     askId: string,
     threadId: string,
     resolutionChannelWasLost = connection === 'dropped'
-  ): void {
+  ): boolean {
+    acceptedAsksAwaitingResolution.delete(askId)
     if (error instanceof AgentApiError && error.status === 409) {
-      handleConflictAnswerFailure(
+      return handleConflictAnswerFailure(
         error,
         askId,
         threadId,
         resolutionChannelWasLost
       )
-      return
     }
     const failure = classifyAnswerFailure(error)
     reportError(error, {
@@ -1781,6 +1808,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       }
     }
     settle[failure]()
+    return false
   }
 
   function handleConflictAnswerFailure(
@@ -1788,7 +1816,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     askId: string,
     threadId: string,
     resolutionChannelWasLost: boolean
-  ): void {
+  ): boolean {
     const conflict = zAgentAskConflict.safeParse(error.body)
     if (
       conflict.success &&
@@ -1800,23 +1828,48 @@ export function useAgentSession(deps: AgentSessionDeps) {
         toAskResolution(conflict.data),
         threadId
       )
-      return
+      return false
     }
-    if (conflict.success && receiptNamesCommittedAnswer(conflict.data)) {
+    const submitted = conversationStore.submittedAskAnswer(askId)
+    if (
+      conflict.success &&
+      receiptNamesCommittedAnswer(conflict.data, submitted)
+    ) {
       const committed = toAskResolution(conflict.data)
+      const superseded =
+        submitted !== undefined &&
+        committed.status === 'answered' &&
+        isSupersededAnswer(submitted, committed)
       reportSupersededAnswer(askId, committed)
       conversationStore.retireAsk(askId, committed, threadId)
-      return
+      return !superseded
     }
+    retireUnknownConflict(
+      error,
+      askId,
+      threadId,
+      submitted,
+      resolutionChannelWasLost
+    )
+    return false
+  }
+
+  function retireUnknownConflict(
+    error: AgentApiError,
+    askId: string,
+    threadId: string,
+    submitted: AgentAnswerRequest | undefined,
+    resolutionChannelWasLost: boolean
+  ): void {
     recordDeliveredAsk(askId)
-    const submitted = conversationStore.submittedAskAnswer(askId)
     conversationStore.retireAsk(
       askId,
       { status: resolutionChannelWasLost ? 'unconfirmed' : 'retired' },
       threadId
     )
     if (!resolutionChannelWasLost) {
-      if (submitted) conversationStore.recordAskAnswer(askId, submitted)
+      if (submitted)
+        conversationStore.recordAskAnswer(askId, submitted, threadId)
       return
     }
     reportError(error, {
@@ -2051,6 +2104,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function handleResolvedAsk(
     event: Extract<AgentWsEvent, { type: 'agent_ask_resolved' }>
   ): void {
+    acceptedAsksAwaitingResolution.delete(event.data.ask_id)
     const resolution = toAskResolution(event.data)
     reportSupersededAnswer(event.data.ask_id, resolution)
     // The owning transport may already be gone, so retire the ask explicitly
@@ -2105,13 +2159,18 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (!live) {
       if (connection === 'initial' && !receivedStatusSnapshot) {
         receivedStatusSnapshot = true
-        if (answeringAskIds.value.size > 0) resolutionChannelEpoch += 1
+        connection = 'dropped'
+        resolutionChannelEpoch += 1
+        for (const askId of acceptedAsksAwaitingResolution)
+          reportAcceptedRecoveredAnswer(askId, true)
         return
       }
       receivedStatusSnapshot = true
       if (connection === 'dropped') return
       connection = 'dropped'
       resolutionChannelEpoch += 1
+      for (const askId of acceptedAsksAwaitingResolution)
+        reportAcceptedRecoveredAnswer(askId, true)
       return
     }
     receivedStatusSnapshot = true
@@ -2215,8 +2274,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
     signal: AbortSignal
   ): Promise<boolean> {
     const key = recoveryKey(turn)
-    let previousObservation = recoveryPendingAskObservations.get(key)
+    let previousObservation = recentPendingAskObservation(key)
     let hasUnconfirmedObservation = false
+    let sawStreamingObservation = false
     for (const ms of TURN_RECOVERY_DELAYS_MS) {
       await delay(ms, { signal })
       if (!isTurnLive(turn, generation)) return false
@@ -2239,6 +2299,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         hasUnconfirmedObservation = true
         continue
       }
+      sawStreamingObservation = true
       const pendingAskId = streamingPendingAskId(outcome)
       const pendingAskConfirmed =
         previousObservation !== undefined &&
@@ -2262,7 +2323,20 @@ export function useAgentSession(deps: AgentSessionDeps) {
         deliveredBeforeFetch
       )
     }
-    return hasUnconfirmedObservation
+    return hasUnconfirmedObservation && sawStreamingObservation
+  }
+
+  function recentPendingAskObservation(
+    key: string
+  ): PendingAskObservation | undefined {
+    const observation = recoveryPendingAskObservations.get(key)
+    if (
+      observation === undefined ||
+      Date.now() - observation.observedAt <= TURN_RECOVERY_DEADLINE_MS
+    )
+      return observation
+    recoveryPendingAskObservations.delete(key)
+    return undefined
   }
 
   function reconcileStreamingApproval(
@@ -2330,6 +2404,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       return
     if (conversationStore.isAskRetired(pendingAsk.ask_id, turn.threadId)) return
     if (conversationStore.isAskShown(turn, pendingAsk.ask_id)) return
+    const wasDeliveredBefore = observedDeliveredAsks.has(pendingAsk.ask_id)
     conversationStore.ingest({
       type: 'agent_ask',
       data: {
@@ -2340,7 +2415,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     })
     if (!conversationStore.isAskShown(turn, pendingAsk.ask_id)) return
     recordDeliveredAsk(pendingAsk.ask_id)
-    reportRestoredApproval(turn, pendingAsk.ask_id, cause)
+    if (!wasDeliveredBefore)
+      reportRestoredApproval(turn, pendingAsk.ask_id, cause)
   }
 
   /**
@@ -2541,15 +2617,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
           kind: 'streaming',
           pendingAsk: rows.findLast(
             (row) =>
-              !isTerminalTurnStatus(row.status) &&
-              row.pending_ask !== undefined &&
-              !conversationStore.isAskPermanentlyRetired(
-                row.pending_ask.ask_id,
-                turn.threadId
-              ) &&
-              conversationStore.submittedAskAnswer(row.pending_ask.ask_id) ===
-                undefined &&
-              !answeringAskIds.value.has(row.pending_ask.ask_id)
+              !isTerminalTurnStatus(row.status) && row.pending_ask !== undefined
           )?.pending_ask
         }
       return {

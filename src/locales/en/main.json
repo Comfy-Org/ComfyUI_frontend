@@ -5672,6 +5672,7 @@
       "run": "Run",
       "answerFailed": "Could not send your answer. Reload the page and try again.",
       "answerUncertain": "Could not confirm your answer reached the agent. It may still have been applied — reload the page to see where things stand.",
+      "answerAcceptedUnconfirmed": "Your answer reached the agent, but we could not confirm whether it was the answer applied. Reload the page to see where things stand.",
       "answerSuperseded": "This was already answered somewhere else, so that answer was used instead of yours."
     },
     "askUnavailable": "The agent is waiting on a step this panel can't show.",

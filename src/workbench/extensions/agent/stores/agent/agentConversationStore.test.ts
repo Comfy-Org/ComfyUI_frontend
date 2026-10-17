@@ -1019,6 +1019,15 @@ describe('useAgentConversationStore', () => {
         ])[0]
       ]
       store.hydrate(deleteTranscript())
+      store.retireAsk('turn-1:call-1', { status: 'retired' }, 'th', false)
+      store.confirmAskPending('turn-1:call-1', 'th')
+      expect(
+        store.messages.flatMap((message) =>
+          message.parts.filter((part) => part.type === 'deleteApproval')
+        )
+      ).toEqual([
+        expect.not.objectContaining({ resolution: expect.anything() })
+      ])
       store.retireAsk(
         'turn-1:call-1',
         { status: 'answered', selected: ['keep'] },

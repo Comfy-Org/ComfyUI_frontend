@@ -456,14 +456,11 @@ export const useAgentConversationStore = defineStore(
       return retired
     }
     function isAskRetired(askId: string, owner?: string): boolean {
+      const key = threadKey(owner)
       return (
-        retiredAsksFor(owner).has(askId) ||
-        provisionalRetiredAsksFor(owner).has(askId)
+        retiredAsks.get(key)?.has(askId) === true ||
+        provisionalRetiredAsks.get(key)?.has(askId) === true
       )
-    }
-
-    function isAskPermanentlyRetired(askId: string, owner?: string): boolean {
-      return retiredAsksFor(owner).has(askId)
     }
 
     function confirmAskPending(askId: string, owner?: string): void {
@@ -471,7 +468,8 @@ export const useAgentConversationStore = defineStore(
       const key = threadKey(owner)
       const reopen = (message: AssistantMessage): void => {
         message.parts = message.parts.map((part) =>
-          part.type === 'askUser' && part.askId === askId
+          (part.type === 'askUser' || part.type === 'deleteApproval') &&
+          askIdOf(part) === askId
             ? { ...part, resolution: undefined }
             : part
         )
@@ -487,8 +485,12 @@ export const useAgentConversationStore = defineStore(
       { answer: AgentAnswerRequest; owner: string }
     >()
 
-    function recordAskAnswer(askId: string, answer: AgentAnswerRequest): void {
-      submittedAskAnswers.set(askId, { answer, owner: threadKey() })
+    function recordAskAnswer(
+      askId: string,
+      answer: AgentAnswerRequest,
+      owner?: string
+    ): void {
+      submittedAskAnswers.set(askId, { answer, owner: threadKey(owner) })
     }
 
     function submittedAskAnswer(askId: string): AgentAnswerRequest | undefined {
@@ -1033,6 +1035,7 @@ export const useAgentConversationStore = defineStore(
       turn: LiveTurn,
       persistedParts: AssistantMessage['parts'] | undefined
     ): void {
+      provisionalRetiredAsks.delete(turn.threadId)
       const slot = activeSlot.value
       const isActive =
         slot !== null &&
@@ -1418,7 +1421,6 @@ export const useAgentConversationStore = defineStore(
       commitAsk,
       retireAsk,
       isAskRetired,
-      isAskPermanentlyRetired,
       confirmAskPending,
       reconcileApprovalParts,
       startTurn,
