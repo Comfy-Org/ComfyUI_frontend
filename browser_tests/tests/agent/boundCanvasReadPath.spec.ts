@@ -93,10 +93,12 @@ test.describe('Agent bound-canvas read path', { tag: '@cloud' }, () => {
     // binding the ack applied may not be in place when the next POST is built.
     await expect(agentPanel.stopButton).toHaveCount(0)
     await expect(agentPanel.composer).toHaveText('')
-    await expect(agentPanel.sendButton).toBeEnabled()
 
-    // Turn 2: same thread, same (now bound) tab, canvas unchanged.
+    // Turn 2: same thread, same (now bound) tab, canvas unchanged. Send is
+    // disabled while the composer is empty, so it can only be asserted
+    // enabled after the prompt is in.
     await agentPanel.composer.fill(SECOND_PROMPT)
+    await expect(agentPanel.sendButton).toBeEnabled()
     await agentPanel.sendButton.click()
     await expect.poll(() => postedMessages.length).toBe(2)
     const second = parsePosted(postedMessages[1])
@@ -104,9 +106,15 @@ test.describe('Agent bound-canvas read path', { tag: '@cloud' }, () => {
     expect(second.workflow_id, 'binding from turn 1 ack must be sent').toBe(
       BOUND_WORKFLOW_ID
     )
-    expect(second.current_tab, 'current_tab must point at the bound id').toBe(
-      BOUND_WORKFLOW_ID
-    )
+    // Which tab the turn is about is carried by `workflow_id` plus
+    // `current_tab_unbound`, not by `current_tab`. PM-1847 (`37f8246743`) made
+    // that pair the contract because a turn with neither reads server-side as
+    // "no tab selected"; `openTabsSnapshot` has not populated `current_tab`
+    // since. A bound tab is identifiable, so the unbound flag must be absent.
+    expect(
+      second.current_tab_unbound,
+      'a bound tab must not be reported as unbound'
+    ).toBeFalsy()
     expect(
       second.open_tabs?.map((t) => t.workflow_id),
       'open_tabs must include the bound id'
@@ -160,7 +168,7 @@ test.describe('Agent bound-canvas read path', { tag: '@cloud' }, () => {
     const second = parsePosted(postedMessages[1])
 
     expect(second.workflow_id).toBe(BOUND_WORKFLOW_ID)
-    expect(second.current_tab).toBe(BOUND_WORKFLOW_ID)
+    expect(second.current_tab_unbound).toBeFalsy()
     expect(second.open_tabs?.map((tab) => tab.workflow_id)).toContain(
       BOUND_WORKFLOW_ID
     )
