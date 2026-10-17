@@ -5830,21 +5830,21 @@
     },
     "examples": {
       "title": "Start with an example",
-      "road": {
-        "place": "Desert road",
+      "singer": {
+        "place": "Home studio",
+        "character": "Disco diva"
+      },
+      "boxer": {
+        "place": "Old gym",
+        "character": "Comfy fan"
+      },
+      "painter": {
+        "place": "Painter's studio",
+        "character": "Ronin"
+      },
+      "cowboy": {
+        "place": "Desert canyon",
         "character": "Robot"
-      },
-      "office": {
-        "place": "Office",
-        "character": "Astronaut"
-      },
-      "square": {
-        "place": "Town square",
-        "character": "Knight"
-      },
-      "kitchen": {
-        "place": "Kitchen",
-        "character": "Pirate chef"
       },
       "failed": "That example could not be loaded. Try again, or add your own video."
     },

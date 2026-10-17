@@ -4348,21 +4348,21 @@
     },
     "examples": {
       "title": "从示例开始",
-      "road": {
-        "place": "沙漠公路",
+      "singer": {
+        "place": "家庭录音室",
+        "character": "迪斯科天后"
+      },
+      "boxer": {
+        "place": "老拳馆",
+        "character": "Comfy 粉丝"
+      },
+      "painter": {
+        "place": "画室",
+        "character": "浪人"
+      },
+      "cowboy": {
+        "place": "沙漠峡谷",
         "character": "机器人"
-      },
-      "office": {
-        "place": "办公室",
-        "character": "宇航员"
-      },
-      "square": {
-        "place": "小镇广场",
-        "character": "骑士"
-      },
-      "kitchen": {
-        "place": "厨房",
-        "character": "海盗厨师"
       },
       "failed": "无法加载该示例。请重试，或添加你自己的视频。"
     },

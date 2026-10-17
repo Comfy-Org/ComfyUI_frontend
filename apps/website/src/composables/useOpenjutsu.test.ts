@@ -173,12 +173,12 @@ describe('useOpenjutsu', () => {
     swap.seed.value = 7
 
     const loading = swap.takeExample(SWAP_EXAMPLES[0])
-    expect(swap.loadingExample.value).toBe('road')
+    expect(swap.loadingExample.value).toBe('singer')
     await loading
 
-    expect(swap.video.value?.name).toBe('road.mp4')
-    expect(swap.character.value?.name).toBe('robot.jpg')
-    expect(swap.target.value).toBe('the man in the red jacket')
+    expect(swap.video.value?.name).toBe('singer.mp4')
+    expect(swap.character.value?.name).toBe('diva.jpg')
+    expect(swap.target.value).toBe('the woman singing at the microphone')
     expect(swap.size.value).toBe('768p')
     expect(swap.seed.value).toBeUndefined()
     expect(swap.loadingExample.value).toBeUndefined()

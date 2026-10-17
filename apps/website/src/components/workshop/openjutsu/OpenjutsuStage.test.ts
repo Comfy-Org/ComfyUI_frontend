@@ -46,7 +46,7 @@ describe('OpenjutsuStage', () => {
     })
 
     expect(screen.getByText('Start with an example')).toBeVisible()
-    await userEvent.click(screen.getByRole('button', { name: /Office/ }))
+    await userEvent.click(screen.getByRole('button', { name: /Old gym/ }))
 
     expect(emitted('example')).toEqual([[SWAP_EXAMPLES[1]]])
   })
@@ -82,14 +82,14 @@ describe('OpenjutsuStage', () => {
 
   it('holds the examples while one is loading', () => {
     render(OpenjutsuStage, {
-      props: { ...editing, videoUrl: undefined, loadingExample: 'office' }
+      props: { ...editing, videoUrl: undefined, loadingExample: 'boxer' }
     })
 
-    expect(screen.getByRole('button', { name: /Office/ })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: /Old gym/ })).toHaveAttribute(
       'aria-busy',
       'true'
     )
-    expect(screen.getByRole('button', { name: /Kitchen/ })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /Desert canyon/ })).toBeDisabled()
   })
 
   it('plays the clip in the site player before any take', () => {
