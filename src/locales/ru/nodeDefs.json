@@ -2413,7 +2413,7 @@
     }
   },
   "CLIPLoader": {
-    "description": "Рецепты:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (дополнение до 226 токенов)\ncosmos: old t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1 (рекомендуется) или t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VL или Music3 Qwen/RVQ",
+    "description": "Рецепты:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (дополнение до 226 токенов)\ncosmos: old t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1 (рекомендуется) или t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VL или Music3 Qwen/RVQ\nflux3: qwen3-vl 4B",
     "display_name": "Загрузить CLIP",
     "inputs": {
       "clip_name": {
@@ -5701,7 +5701,7 @@
     }
   },
   "FishAudioTextToSpeech": {
-    "description": "Преобразует текст в речь. Поддерживает указания эмоций в тексте ([happy], [whispering] в s2.1-pro; (happy) в s1) и диалоги с несколькими говорящими через теги {'@'}Voice1/{'@'}Voice2 при подключении нескольких голосов.",
+    "description": "Преобразует текст в речь. Поддерживает указания эмоций в тексте ([happy], [whispering] в s2.1-pro; (happy) в s1), [указания], написанные обычным языком, и теги слов `<whisper>...</whisper>` в drama-3, а также диалоги с несколькими говорящими через теги {'@'}Voice1/{'@'}Voice2 при подключении нескольких голосов.",
     "display_name": "Fish Audio: текст в речь",
     "inputs": {
       "control_after_generate": {
@@ -5893,8 +5893,8 @@
     }
   },
   "Flux3ImageNode": {
-    "description": "Создаёт изображение с помощью FLUX 3 по промпту или редактирует и объединяет до 10 референсных изображений. Ссылайтесь на референсы в промпте как на изображение 1, изображение 2 и так далее.",
-    "display_name": "Flux 3 Изображение",
+    "description": "Создаёт изображение с помощью FLUX 3 Image по запросу или редактирует и объединяет до 10 эталонных изображений. Ссылайтесь на эталонные изображения в запросе как на изображение 1, изображение 2 и так далее.",
+    "display_name": "Изображение FLUX 3",
     "inputs": {
       "aspect_ratio": {
         "name": "aspect_ratio",
@@ -5984,6 +5984,26 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3LayoutPrompt": {
+    "description": "Добавляет рамки из «Создать ограничивающие рамки» к запросу FLUX 3 Image в качестве таблицы макета.",
+    "display_name": "Запрос макета FLUX 3 Image",
+    "inputs": {
+      "element": {
+        "name": "элемент",
+        "tooltip": "Элементы запроса из узла «Создать ограничивающие рамки». Палитры цветов не используются — опишите цвета в описании."
+      },
+      "prompt": {
+        "name": "запрос",
+        "tooltip": "Текст запроса. Укажите рамку N как <obj_N>, чтобы привязать к ней слова."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "запрос",
         "tooltip": null
       }
     }
@@ -7223,6 +7243,30 @@
       }
     }
   },
+  "GetAudioLatentSize": {
+    "description": "Возвращает длину, количество аудиоканалов и размер пакета аудиолатента.",
+    "display_name": "Получить размер аудиолатента",
+    "inputs": {
+      "latent": {
+        "name": "латент",
+        "tooltip": "Аудиолатент или аудио-/видеолатент для проверки."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "длина",
+        "tooltip": "Длина аудиолатента."
+      },
+      "1": {
+        "name": "аудиоканалы",
+        "tooltip": "Количество аудиоканалов. Латенты без измерения аудиоканалов имеют один канал."
+      },
+      "2": {
+        "name": "размер пакета",
+        "tooltip": "Количество латентов в пакете."
+      }
+    }
+  },
   "GetICLoRAParameters": {
     "description": "Извлекает параметры IC-LoRA из метаданных safetensors модели, загруженной через LoRA, и выводит их для LTXVAddGuide (например, reference_downscale_factor).",
     "display_name": "Получить параметры IC-LoRA",
@@ -7275,6 +7319,34 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "GetLatentSize": {
+    "description": "Возвращает ширину, высоту, количество кадров и размер пакета латента изображения или видео.",
+    "display_name": "Получить размер латента изображения/видео",
+    "inputs": {
+      "latent": {
+        "name": "латент",
+        "tooltip": "Латент изображения или видео для проверки."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ширина",
+        "tooltip": "Ширина латента."
+      },
+      "1": {
+        "name": "высота",
+        "tooltip": "Высота латента."
+      },
+      "2": {
+        "name": "кадры",
+        "tooltip": "Количество кадров в латенте. Латенты изображений имеют один кадр."
+      },
+      "3": {
+        "name": "размер пакета",
+        "tooltip": "Количество латентов в пакете."
       }
     }
   },
@@ -8106,6 +8178,33 @@
       },
       "1": {
         "name": "отрицательный",
+        "tooltip": null
+      }
+    }
+  },
+  "HiggsfieldMotionTransferNode": {
+    "description": "Преобразует видео с новыми персонажами, локациями или стилями на основе эталонных изображений, сохраняя движение, движение камеры и тайминг.",
+    "display_name": "Перенос движения Higgsfield Genjutsu",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Модель для использования."
+      },
+      "model_prompt": {
+        "name": "запрос"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "model_seed": {
+        "name": "сид"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -9263,6 +9362,28 @@
       },
       "rotation": {
         "name": "вращение"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageSDRToHDR": {
+    "description": "Расширяет яркость sRGB до HDR Rec.2020 HLG. Сохраните результат с выбранным цветовым пространством HDR. Альфа-канал сохраняется.",
+    "display_name": "Преобразовать SDR в HDR",
+    "inputs": {
+      "algorithm": {
+        "name": "алгоритм",
+        "tooltip": "Рациональное расширение в стиле Lottes, смешанное с калиброванной монотонной кривой логарифмического усиления."
+      },
+      "algorithm_target_luminance": {
+        "name": "целевая_яркость"
+      },
+      "image": {
+        "name": "изображение",
+        "tooltip": "Изображения SDR в sRGB."
       }
     },
     "outputs": {
@@ -10563,6 +10684,41 @@
     "outputs": {
       "0": {
         "name": "style_reference",
+        "tooltip": null
+      }
+    }
+  },
+  "Krea3ImageNode": {
+    "description": "Редактируйте изображения с помощью Krea 3 или создавайте новое изображение из текста, если изображение не подключено.",
+    "display_name": "Изображение Krea 3",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "model": {
+        "name": "модель"
+      },
+      "model_aspect_ratio": {
+        "name": "соотношение_сторон"
+      },
+      "model_precise_edit": {
+        "name": "точное_редактирование"
+      },
+      "model_prompt": {
+        "name": "запрос"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "model_seed": {
+        "name": "сид"
+      },
+      "model_thinking_mode": {
+        "name": "режим_мышления"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -13162,6 +13318,38 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MOSSImageLayoutPrompt": {
+    "description": "Создаёт запрос компоновки MOSS-Image из запроса и прямоугольников узла Create Bounding Boxes.",
+    "display_name": "Запрос компоновки MOSS-Image",
+    "inputs": {
+      "character_boxes": {
+        "name": "прямоугольники_персонажей",
+        "tooltip": "Номера прямоугольников объектов, которые следует обозначить как персонажей, а не объекты, как отмечено в предпросмотре Create Bounding Boxes, например: «1, 3»."
+      },
+      "element": {
+        "name": "элемент",
+        "tooltip": "Элементы запроса из узла Create Bounding Boxes. Описание служит подписью прямоугольника; текстовые прямоугольники также отображают свой текст."
+      },
+      "height": {
+        "name": "высота",
+        "tooltip": "Высота создаваемого изображения; прямоугольники размещаются в его пикселях."
+      },
+      "prompt": {
+        "name": "запрос",
+        "tooltip": "Описание всего изображения."
+      },
+      "width": {
+        "name": "ширина",
+        "tooltip": "Ширина создаваемого изображения; прямоугольники размещаются в его пикселях."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "запрос",
         "tooltip": null
       }
     }
@@ -18889,7 +19077,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "Сколько рассуждений модель выполняет перед рисованием. Более высокие уровни улучшают детализацию и требуют больше токенов. Используется только моделями Arrow 2."
+        "tooltip": "Сколько рассуждений модель выполняет перед рисованием. Более высокие уровни улучшают детализацию и расходуют больше токенов."
       },
       "seed": {
         "name": "seed",
@@ -18977,7 +19165,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "Сколько рассуждений модель выполняет перед рисованием. Более высокие уровни улучшают детализацию и требуют больше токенов. Используется только моделями Arrow 2."
+        "tooltip": "Сколько рассуждений модель выполняет перед рисованием. Более высокие уровни улучшают детализацию и расходуют больше токенов."
       },
       "reference_images": {
         "name": "reference_images",
@@ -19833,6 +20021,42 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "ReferenceMultiLatent": {
+    "description": "Кодирует эталонные изображения и добавляет их latent к положительному и необязательному отрицательному кондиционированию для моделей редактирования.",
+    "display_name": "Установить эталонный Multi Latent",
+    "inputs": {
+      "images": {
+        "name": "изображения"
+      },
+      "negative": {
+        "name": "отрицательное"
+      },
+      "positive": {
+        "name": "положительное"
+      },
+      "resolution": {
+        "name": "разрешение"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Эталонные изображения игнорируются, если vae не подключён."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "позитивный",
+        "tooltip": null
+      },
+      "1": {
+        "name": "негативный",
+        "tooltip": "Возвращает позитивный выход, если негативное кондиционирование не подключено."
+      },
+      "2": {
+        "name": "empty_latent",
+        "tooltip": "Первый опорный latent, умноженный на 0.0, или квадратный пустой latent с выбранным разрешением."
       }
     }
   },

@@ -50,8 +50,14 @@
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "選択したアイテムを削除"
   },
+  "Comfy_Canvas_DeleteSelectedLinks": {
+    "label": "選択したリンクを削除"
+  },
   "Comfy_Canvas_FitView": {
     "label": "選択したノードにビューを合わせる"
+  },
+  "Comfy_Canvas_HideSelectedLinks": {
+    "label": "選択したリンクを非表示"
   },
   "Comfy_Canvas_Lock": {
     "label": "キャンバスをロック"

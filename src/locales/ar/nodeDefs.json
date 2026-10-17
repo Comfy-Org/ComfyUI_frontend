@@ -2413,7 +2413,7 @@
     }
   },
   "CLIPLoader": {
-    "description": "الوصفات:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (حشو 226 رمزًا)\ncosmos: t5 xxl القديم\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1 (موصى به) أو t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VL أو Music3 Qwen/RVQ",
+    "description": "الوصفات:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (حشو بـ 226 رمزًا)\ncosmos: t5 xxl القديم\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1 (موصى به) أو t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VL أو Music3 Qwen/RVQ\nflux3: qwen3-vl 4B",
     "display_name": "تحميل CLIP",
     "inputs": {
       "clip_name": {
@@ -5701,7 +5701,7 @@
     }
   },
   "FishAudioTextToSpeech": {
-    "description": "تحويل النص إلى كلام. يدعم إشارات المشاعر في النص ([happy]، [whispering] في s2.1-pro؛ (happy) في s1) وحوارًا متعدد المتحدثين عبر وسوم {'@'}Voice1/{'@'}Voice2 مع عدة أصوات متصلة.",
+    "description": "يحوّل النص إلى كلام. يدعم إشارات المشاعر في النص ([happy]، [whispering] في s2.1-pro؛ و(happy) في s1)، و[التعليمات] باللغة الطبيعية ووسوم الكلمات `<whisper>...</whisper>` في drama-3، وحوارًا متعدد المتحدثين عبر وسوم {'@'}Voice1/{'@'}Voice2 مع عدة أصوات متصلة.",
     "display_name": "Fish Audio تحويل النص إلى كلام",
     "inputs": {
       "control_after_generate": {
@@ -5893,8 +5893,8 @@
     }
   },
   "Flux3ImageNode": {
-    "description": "يُنشئ صورة باستخدام FLUX 3 من موجّه، أو يحرر ويجمع ما يصل إلى 10 صور مرجعية. أشِر إلى المراجع في الموجّه بوصفها الصورة 1 والصورة 2 وهكذا.",
-    "display_name": "صورة Flux 3",
+    "description": "يُنشئ صورة باستخدام FLUX 3 Image من موجّه، أو يحرر ويجمع ما يصل إلى 10 صور مرجعية. أشِر إلى المراجع في الموجّه بوصفها الصورة 1، الصورة 2، وهكذا.",
+    "display_name": "FLUX 3 Image",
     "inputs": {
       "aspect_ratio": {
         "name": "aspect_ratio",
@@ -5984,6 +5984,26 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3LayoutPrompt": {
+    "description": "يلحق المربعات من Create Bounding Boxes بموجّه FLUX 3 Image بوصفها جدول تخطيطه.",
+    "display_name": "موجّه تخطيط FLUX 3 Image",
+    "inputs": {
+      "element": {
+        "name": "عنصر",
+        "tooltip": "عناصر الموجّه من عقدة Create Bounding Boxes. لا تُستخدم لوحات الألوان، صِف الألوان في الوصف."
+      },
+      "prompt": {
+        "name": "موجّه",
+        "tooltip": "نص الموجّه. استشهد بالمربع N باعتباره <obj_N> لربط الكلمات به."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "موجّه",
         "tooltip": null
       }
     }
@@ -7223,6 +7243,30 @@
       }
     }
   },
+  "GetAudioLatentSize": {
+    "description": "يعيد الطول وعدد قنوات الصوت وحجم الدفعة لـ latent صوتي.",
+    "display_name": "الحصول على حجم latent الصوت",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "الـ latent الصوتي أو الصوتي/المرئي المراد فحصه."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "الطول",
+        "tooltip": "طول الـ latent الصوتي."
+      },
+      "1": {
+        "name": "audio_channels",
+        "tooltip": "عدد قنوات الصوت. تحتوي الـ latents التي لا تملك بُعد قناة صوتية على قناة واحدة."
+      },
+      "2": {
+        "name": "batch_size",
+        "tooltip": "عدد الـ latents في الدفعة."
+      }
+    }
+  },
   "GetICLoRAParameters": {
     "description": "يستخرج معلمات IC-LoRA من بيانات safetensors الوصفية لنموذج LoRA المحمّل ويخرجها لـ LTXVAddGuide (مثل reference_downscale_factor).",
     "display_name": "الحصول على معلمات IC-LoRA",
@@ -7275,6 +7319,34 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "GetLatentSize": {
+    "description": "يعيد العرض والارتفاع وعدد الإطارات وحجم الدفعة لـ latent صورة أو فيديو.",
+    "display_name": "الحصول على حجم latent الصورة/الفيديو",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "الـ latent الخاص بالصورة أو الفيديو المراد فحصه."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "العرض",
+        "tooltip": "عرض الـ latent."
+      },
+      "1": {
+        "name": "الارتفاع",
+        "tooltip": "ارتفاع الـ latent."
+      },
+      "2": {
+        "name": "الإطارات",
+        "tooltip": "عدد إطارات الـ latent. تحتوي latents الصور على إطار واحد."
+      },
+      "3": {
+        "name": "batch_size",
+        "tooltip": "عدد الـ latents في الدفعة."
       }
     }
   },
@@ -8106,6 +8178,33 @@
       },
       "1": {
         "name": "سلبي",
+        "tooltip": null
+      }
+    }
+  },
+  "HiggsfieldMotionTransferNode": {
+    "description": "يعيد تقديم فيديو بشخصيات أو مواقع أو أنماط جديدة من الصور المرجعية مع الحفاظ على حركته وحركة الكاميرا وتوقيته.",
+    "display_name": "نقل الحركة Higgsfield Genjutsu",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "نموذج",
+        "tooltip": "النموذج المراد استخدامه."
+      },
+      "model_prompt": {
+        "name": "موجّه"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -9263,6 +9362,28 @@
       },
       "rotation": {
         "name": "الدوران"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageSDRToHDR": {
+    "description": "وسّع سطوع sRGB إلى HDR بتنسيق Rec.2020 HLG. احفظ النتيجة مع تحديد مساحة الألوان HDR. يتم الحفاظ على قناة ألفا.",
+    "display_name": "تحويل SDR إلى HDR",
+    "inputs": {
+      "algorithm": {
+        "name": "الخوارزمية",
+        "tooltip": "توسعة كسرية بأسلوب Lottes ممزوجة بمنحنى كسب لوغاريتمي رتيب مُعاير."
+      },
+      "algorithm_target_luminance": {
+        "name": "سطوع الهدف"
+      },
+      "image": {
+        "name": "الصورة",
+        "tooltip": "صورة أو صور SDR بتنسيق sRGB."
       }
     },
     "outputs": {
@@ -10563,6 +10684,41 @@
     "outputs": {
       "0": {
         "name": "مرجع النمط",
+        "tooltip": null
+      }
+    }
+  },
+  "Krea3ImageNode": {
+    "description": "حرّر الصور باستخدام Krea 3، أو أنشئ صورة جديدة من نص عند عدم توصيل صورة.",
+    "display_name": "صورة Krea 3",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_aspect_ratio": {
+        "name": "نسبة العرض إلى الارتفاع"
+      },
+      "model_precise_edit": {
+        "name": "تحرير دقيق"
+      },
+      "model_prompt": {
+        "name": "الموجّه"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      },
+      "model_thinking_mode": {
+        "name": "وضع التفكير"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -13162,6 +13318,38 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MOSSImageLayoutPrompt": {
+    "description": "ينشئ موجّه تخطيط MOSS-Image من الموجّه والمربعات من Create Bounding Boxes.",
+    "display_name": "موجّه تخطيط MOSS-Image",
+    "inputs": {
+      "character_boxes": {
+        "name": "مربعات الشخصيات",
+        "tooltip": "أرقام مربعات الكائنات المطلوب وسمها كشخصيات بدلًا من كائنات، وفقًا للوسوم في معاينة Create Bounding Boxes، مثل \"1, 3\"."
+      },
+      "element": {
+        "name": "العنصر",
+        "tooltip": "عناصر الموجّه من العقدة Create Bounding Boxes. الوصف هو تسمية المربع، كما تعرض مربعات النص نصها أيضًا."
+      },
+      "height": {
+        "name": "الارتفاع",
+        "tooltip": "ارتفاع الصورة المُولّدة؛ توضع المربعات ضمن بكسلاتها."
+      },
+      "prompt": {
+        "name": "الموجّه",
+        "tooltip": "وصف الصورة كاملةً."
+      },
+      "width": {
+        "name": "العرض",
+        "tooltip": "عرض الصورة المُولّدة؛ توضع المربعات ضمن بكسلاتها."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "الموجّه",
         "tooltip": null
       }
     }
@@ -18889,7 +19077,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "مقدار الاستدلال الذي ينفقه النموذج قبل الرسم. تحسّن المستويات الأعلى التفاصيل وتستهلك رموزًا أكثر. يُستخدم فقط بواسطة نماذج Arrow 2."
+        "tooltip": "مقدار الاستدلال الذي ينفقه النموذج قبل الرسم. تحسّن المستويات الأعلى التفاصيل وتكلّف رموزًا أكثر."
       },
       "seed": {
         "name": "seed",
@@ -18977,7 +19165,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "مقدار الاستدلال الذي ينفقه النموذج قبل الرسم. تحسّن المستويات الأعلى التفاصيل وتستهلك رموزًا أكثر. يُستخدم فقط بواسطة نماذج Arrow 2."
+        "tooltip": "مقدار الاستدلال الذي ينفقه النموذج قبل الرسم. تحسّن المستويات الأعلى التفاصيل وتكلّف رموزًا أكثر."
       },
       "reference_images": {
         "name": "reference_images",
@@ -19833,6 +20021,42 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "ReferenceMultiLatent": {
+    "description": "يشفّر الصور المرجعية ويضيف تمثيلاتها الكامنة إلى التكييف الإيجابي والسلبي الاختياري لنماذج التحرير.",
+    "display_name": "تعيين الكامن المتعدد المرجعي",
+    "inputs": {
+      "images": {
+        "name": "الصور"
+      },
+      "negative": {
+        "name": "سلبي"
+      },
+      "positive": {
+        "name": "إيجابي"
+      },
+      "resolution": {
+        "name": "الدقة"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "لا تؤخذ الصور المرجعية في الحسبان عند عدم توصيل VAE."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "إيجابي",
+        "tooltip": null
+      },
+      "1": {
+        "name": "سلبي",
+        "tooltip": "يعيد المخرج الإيجابي عندما لا يكون التكييف السلبي متصلاً."
+      },
+      "2": {
+        "name": "كامن_فارغ",
+        "tooltip": "أول كامن مرجعي مضروب في 0.0، أو كامن فارغ مربع بالدقة المحددة."
       }
     }
   },
