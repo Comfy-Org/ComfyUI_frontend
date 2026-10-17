@@ -295,29 +295,51 @@ describe('BillingTab', () => {
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
       })
 
-      it('keeps the dialog open with generic copy when the operation fails', async () => {
-        vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValueOnce({
-          id: 'op-revert',
-          started_at: '2026-10-17T00:00:00Z',
-          status: 'failed',
-          error_message: 'Stripe rejected the update'
-        })
-        await openStay()
+      const pollRejection = new WorkspaceApiError('Gateway timeout', 504)
 
-        await confirmStay()
-        await vi.advanceTimersByTimeAsync(1500)
+      it.for([
+        {
+          outcome: 'the operation fails',
+          arrangePoll: () =>
+            vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValueOnce({
+              id: 'op-revert',
+              started_at: '2026-10-17T00:00:00Z',
+              status: 'failed',
+              error_message: 'Stripe rejected the update'
+            }),
+          reported: 'Stripe rejected the update'
+        },
+        {
+          outcome: 'the status read fails',
+          arrangePoll: () =>
+            vi
+              .mocked(workspaceApi.getBillingOpStatus)
+              .mockRejectedValueOnce(pollRejection),
+          reported: pollRejection
+        }
+      ])(
+        'keeps the dialog open with generic copy and rereads status when $outcome',
+        async ({ arrangePoll, reported }) => {
+          arrangePoll()
+          const { fetchStatus } = await openStay()
+          fetchStatus.mockClear()
 
-        expect(screen.getByRole('alert')).toHaveTextContent(
-          "We couldn't make this change. Try again."
-        )
-        expect(screen.getByRole('dialog')).toBeInTheDocument()
-        expect(reportError).toHaveBeenCalledWith(
-          'Stripe rejected the update',
-          expect.objectContaining({
-            errorType: 'failure_reverting_scheduled_plan_change'
-          })
-        )
-      })
+          await confirmStay()
+          await vi.advanceTimersByTimeAsync(1500)
+
+          expect(screen.getByRole('alert')).toHaveTextContent(
+            "We couldn't make this change. Try again."
+          )
+          expect(screen.getByRole('dialog')).toBeInTheDocument()
+          expect(fetchStatus).toHaveBeenCalled()
+          expect(reportError).toHaveBeenCalledWith(
+            reported,
+            expect.objectContaining({
+              errorType: 'failure_reverting_scheduled_plan_change'
+            })
+          )
+        }
+      )
     })
 
     it('shows the server message when the server refuses', async () => {

@@ -22,23 +22,33 @@ function isCodedServerRefusal(err: unknown): err is WorkspaceApiError {
 const REVERT_POLL_INTERVAL_MS = 1500
 const REVERT_POLL_ATTEMPTS = 20
 
-type RevertSettlement = { settled: true } | { settled: false; reason: string }
+type RevertSettlement = { settled: true } | { settled: false; cause: unknown }
+
+async function readRevertOperation(
+  opId: string
+): Promise<RevertSettlement | null> {
+  try {
+    const operation = await workspaceApi.getBillingOpStatus(opId)
+    if (operation.status === 'succeeded') return { settled: true }
+    if (operation.status === 'pending') return null
+    return {
+      settled: false,
+      cause:
+        operation.error_message ??
+        `Scheduled change revert ended as ${operation.status}`
+    }
+  } catch (cause) {
+    return { settled: false, cause }
+  }
+}
 
 async function waitForRevertOperation(opId: string): Promise<RevertSettlement> {
   for (let attempt = 0; attempt < REVERT_POLL_ATTEMPTS; attempt++) {
     await delay(REVERT_POLL_INTERVAL_MS)
-    const operation = await workspaceApi.getBillingOpStatus(opId)
-    if (operation.status === 'succeeded') return { settled: true }
-    if (operation.status !== 'pending') {
-      return {
-        settled: false,
-        reason:
-          operation.error_message ??
-          `Scheduled change revert ended as ${operation.status}`
-      }
-    }
+    const settlement = await readRevertOperation(opId)
+    if (settlement) return settlement
   }
-  return { settled: false, reason: 'Scheduled change revert did not settle' }
+  return { settled: false, cause: 'Scheduled change revert did not settle' }
 }
 
 async function requestRevert(): Promise<RevertSettlement> {
@@ -70,7 +80,8 @@ export function usePlanLifecycleCommands() {
     try {
       const settlement = await requestRevert()
       if (!settlement.settled) {
-        reportError(settlement.reason, { surface: 'billing', errorType })
+        reportError(settlement.cause, { surface: 'billing', errorType })
+        await resync()
         return { ok: false, serverMessage: null }
       }
     } catch (err) {
