@@ -30,6 +30,8 @@ import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 
 import ErrorGroupList from './ErrorGroupList.vue'
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
+
 vi.mock<unknown>(import('@/scripts/app'), () => {
   const rootGraph = {
     id: 'root',

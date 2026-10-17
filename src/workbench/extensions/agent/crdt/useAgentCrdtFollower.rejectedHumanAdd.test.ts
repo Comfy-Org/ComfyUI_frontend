@@ -11,6 +11,8 @@ import { parseWireOps } from '@e2e/fixtures/agentWireFrame'
 
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
+
 // The frame the sender actually put on the wire, narrowed the same way a
 // real host would (`parseWireOps`) instead of casting `JSON.parse`'s
 // `unknown` straight to a shape this test just asserts is there.

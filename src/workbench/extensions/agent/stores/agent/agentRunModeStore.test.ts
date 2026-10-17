@@ -1,14 +1,22 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { accountScope } from '@/platform/workflow/persistence/base/accountScope'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import { api } from '@/scripts/api'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock(import('@/scripts/api'))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 import { useAgentComposerStore } from './agentComposerStore'
 import { useAgentRunModeStore } from './agentRunModeStore'
 import { useAgentSendGateStore } from './agentSendGateStore'
+
+const STORAGE_KEY = StorageKeys.agentRunModePreference(
+  accountScope('user-1', 'personal')!
+)
 
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -21,10 +29,11 @@ describe('agentRunModeStore', () => {
   beforeEach(() => {
     localStorage.clear()
     vi.mocked(api.fetchApi).mockReset()
+    useCurrentUser().resolvedUserInfo = computed(() => ({ id: 'user-1' }))
   })
 
   it('uses the safe fallback when loading gets 404 with invalid local state', async () => {
-    localStorage.setItem('Comfy.Agent.RunModePreference', '{invalid')
+    localStorage.setItem(STORAGE_KEY, '{invalid')
     vi.mocked(api.fetchApi).mockResolvedValueOnce(
       jsonResponse(404, { error: 'not found' })
     )
@@ -36,7 +45,36 @@ describe('agentRunModeStore', () => {
     expect(store.creditLimit).toBeNull()
   })
 
-  it('migrates a legacy preference when loading gets 404', async () => {
+  it.for(['load', 'save'] as const)(
+    'does not apply a previous account response from %s',
+    async (operation) => {
+      const identity = ref({ id: 'user-1' })
+      useCurrentUser().resolvedUserInfo = computed(() => identity.value)
+      let complete!: (response: Response) => void
+      vi.mocked(api.fetchApi).mockReturnValue(
+        new Promise((resolve) => {
+          complete = resolve
+        })
+      )
+      const store = useAgentRunModeStore()
+      const pending =
+        operation === 'load' ? store.load() : store.save('auto', null)
+      await vi.waitFor(() => expect(api.fetchApi).toHaveBeenCalled())
+      identity.value = { id: 'user-2' }
+      complete(jsonResponse(200, { mode: 'auto', credit_limit: null }))
+      await pending
+      expect(store.mode).toBe('ask_approval')
+      expect(
+        localStorage.getItem(
+          StorageKeys.agentRunModePreference(
+            accountScope('user-2', 'personal')!
+          )
+        )
+      ).toBeNull()
+    }
+  )
+
+  it('refuses an unowned legacy preference when loading gets 404', async () => {
     localStorage.setItem('Comfy.Agent.RunMode', 'auto-limit')
     localStorage.setItem('Comfy.Agent.RunCreditLimit', '75')
     vi.mocked(api.fetchApi).mockResolvedValueOnce(
@@ -46,32 +84,30 @@ describe('agentRunModeStore', () => {
     const store = useAgentRunModeStore()
     await store.load()
 
-    expect(store.mode).toBe('auto_limited')
-    expect(store.creditLimit).toBe(75)
-    expect(
-      JSON.parse(localStorage.getItem('Comfy.Agent.RunModePreference')!)
-    ).toEqual({ mode: 'auto_limited', credit_limit: 75 })
+    expect(store.mode).toBe('ask_approval')
+    expect(store.creditLimit).toBeNull()
+    expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
     expect(localStorage.getItem('Comfy.Agent.RunMode')).toBeNull()
     expect(localStorage.getItem('Comfy.Agent.RunCreditLimit')).toBeNull()
   })
 
-  it('uses the default limit when a legacy limited mode has no valid limit', () => {
+  it('does not grant automatic execution from a legacy mode without a limit', () => {
     localStorage.setItem('Comfy.Agent.RunMode', 'auto-limit')
 
     const store = useAgentRunModeStore()
 
-    expect(store.mode).toBe('auto_limited')
-    expect(store.creditLimit).toBe(300)
+    expect(store.mode).toBe('ask_approval')
+    expect(store.creditLimit).toBeNull()
   })
 
-  it('preserves legacy keys when migration cannot produce a preference', () => {
+  it('removes invalid unowned legacy preferences', () => {
     localStorage.setItem('Comfy.Agent.RunMode', 'unsupported')
     localStorage.setItem('Comfy.Agent.RunCreditLimit', '75')
 
     useAgentRunModeStore()
 
-    expect(localStorage.getItem('Comfy.Agent.RunMode')).toBe('unsupported')
-    expect(localStorage.getItem('Comfy.Agent.RunCreditLimit')).toBe('75')
+    expect(localStorage.getItem('Comfy.Agent.RunMode')).toBeNull()
+    expect(localStorage.getItem('Comfy.Agent.RunCreditLimit')).toBeNull()
   })
 
   it('loads the server preference as the source of truth', async () => {
@@ -131,7 +167,7 @@ describe('agentRunModeStore', () => {
       init?.method === 'GET' ? getResponse : putResponse
     )
     localStorage.setItem(
-      'Comfy.Agent.RunModePreference',
+      STORAGE_KEY,
       JSON.stringify({ mode: 'auto', credit_limit: null })
     )
     const store = useAgentRunModeStore()
@@ -208,7 +244,7 @@ describe('agentRunModeStore', () => {
 
   it('keeps a valid local preference when the endpoint is unavailable', async () => {
     localStorage.setItem(
-      'Comfy.Agent.RunModePreference',
+      STORAGE_KEY,
       JSON.stringify({ mode: 'auto_limited', credit_limit: 50 })
     )
     localStorage.setItem('Comfy.Agent.RunMode', 'ask')
@@ -255,9 +291,10 @@ describe('agentRunModeStore', () => {
 
     expect(store.mode).toBe('auto')
     expect(store.creditLimit).toBeNull()
-    expect(
-      JSON.parse(localStorage.getItem('Comfy.Agent.RunModePreference')!)
-    ).toEqual({ mode: 'auto', credit_limit: null })
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!)).toEqual({
+      mode: 'auto',
+      credit_limit: null
+    })
   })
 
   it.for([
@@ -281,7 +318,7 @@ describe('agentRunModeStore', () => {
   // server first and re-authorize the turn the user had already sent.
   it('holds a mode change back until the in-flight send settles', async () => {
     localStorage.setItem(
-      'Comfy.Agent.RunModePreference',
+      STORAGE_KEY,
       JSON.stringify({ mode: 'auto', credit_limit: null })
     )
     vi.mocked(api.fetchApi).mockResolvedValue(

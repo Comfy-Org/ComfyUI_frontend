@@ -1,4 +1,5 @@
 import { reportError } from '@/platform/telemetry/reportError'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import { createUuidv4 } from '@/utils/uuid'
 
 import { recordDevEvent } from './devPanelLog'
@@ -25,7 +26,7 @@ import { recordDevEvent } from './devPanelLog'
 // indefinitely. (1) closes case (b). Case (a) happens inside one page load,
 // so the nonce cannot see it; it is only BOUNDED by (2), not closed. The
 // `fec-docid-1` reproducer tracks the remaining same-tab window.
-const DOC_ID_SESSION_KEY = 'Comfy.Agent.CrdtDocId'
+const DOC_ID_SESSION_KEY = StorageKeys.agentCrdtDocId
 const DOC_ID_TTL_MS = 5 * 60 * 1000
 // Re-stamp the expiry on doc traffic at most this often, so a busy channel
 // does not turn every frame into a sessionStorage write.

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { useClipboard, useEventListener } from '@vueuse/core'
+import { useClipboard, useEventListener, useLocalStorage } from '@vueuse/core'
 import {
   computed,
   nextTick,
@@ -18,6 +18,8 @@ import { resolveDeployEnv } from '@/platform/telemetry/initDatadogRum'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
+import { useAccountStorage } from '@/platform/workflow/persistence/composables/useAccountStorage'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -179,48 +181,15 @@ const VERDICT_TONE: Record<string, string> = {
   'not-reached': 'text-muted-foreground border-component-node-border'
 }
 
-// ── open/close state, persisted ───────────────────────────────────────────
-const OPEN_KEY = 'Comfy.Agent.CrdtDevPanel.open'
-const HIDDEN_KEY = 'Comfy.Agent.CrdtDevPanel.hidden'
-
-const open = ref(readOpen())
+const open = useLocalStorage(StorageKeys.agentCrdtPanelOpen, false)
 const tab = ref<'status' | 'log' | 'merge'>('status')
-const dismissed = ref(readHidden())
+const dismissed = useLocalStorage(StorageKeys.agentCrdtPanelHidden, false)
 const chipButton = useTemplateRef<HTMLButtonElement>('chipButton')
 const closeButton = useTemplateRef<HTMLButtonElement>('closeButton')
-
-function readOpen(): boolean {
-  try {
-    return localStorage.getItem(OPEN_KEY) === 'true'
-  } catch {
-    return false
-  }
-}
-
-function readHidden(): boolean {
-  try {
-    return localStorage.getItem(HIDDEN_KEY) === 'true'
-  } catch {
-    return false
-  }
-}
-
-function setHidden(hidden: boolean): void {
-  try {
-    localStorage.setItem(HIDDEN_KEY, String(hidden))
-  } catch {
-    return
-  }
-}
 
 function setOpen(value: boolean) {
   open.value = value
   if (value) void nextTick(poll)
-  try {
-    localStorage.setItem(OPEN_KEY, String(value))
-  } catch {
-    // Storage unavailable — the panel still toggles in-memory.
-  }
 }
 
 function onDocumentKeydown(event: KeyboardEvent): void {
@@ -346,25 +315,7 @@ function onLevelChange(next: CrdtLogLevel) {
 const mergeScenarios = getMergeScenarios()
 const scenario = shallowRef<MergeScenario>(mergeScenarios[0])
 const simulation = shallowRef<MergeSimulation | null>(null)
-const NOTE_KEY = 'Comfy.Agent.CrdtDevPanel.note'
-
-function readNote(): string {
-  try {
-    return localStorage.getItem(NOTE_KEY) ?? ''
-  } catch {
-    return ''
-  }
-}
-
-const testerNote = ref(readNote())
-
-watch(testerNote, (next) => {
-  try {
-    localStorage.setItem(NOTE_KEY, next)
-  } catch {
-    // Storage unavailable — the note simply does not survive a remount.
-  }
-})
+const testerNote = useAccountStorage(StorageKeys.agentCrdtNote, '')
 
 function selectScenario(id: string) {
   const next = mergeScenarios.find((candidate) => candidate.id === id)
@@ -628,12 +579,10 @@ function collectIdentifiers(crdt: CrdtDebugSnapshot): ReportIdentifiers {
 function dismiss() {
   setOpen(false)
   dismissed.value = true
-  setHidden(true)
 }
 
 function restore() {
   dismissed.value = false
-  setHidden(false)
 }
 
 const proxyTarget = computed(() => api.apiURL(''))

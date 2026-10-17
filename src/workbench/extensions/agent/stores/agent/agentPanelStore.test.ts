@@ -4,6 +4,7 @@ import { nextTick } from 'vue'
 import { useTelemetry } from '@/platform/telemetry'
 import { api } from '@/scripts/api'
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/platform/telemetry'))
 
 import { getAgentPanelOpen } from '@/platform/telemetry/utils/getAgentPanelOpen'

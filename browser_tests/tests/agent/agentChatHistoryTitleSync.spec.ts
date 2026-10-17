@@ -5,6 +5,7 @@ import type {
 } from '@comfyorg/ingest-types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { accountScope } from '@/platform/workflow/persistence/base/accountScope'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 
 import {
@@ -14,7 +15,7 @@ import {
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
-const WORKSPACE_ID = 'personal'
+const ACCOUNT_SCOPE = accountScope('test-user-e2e', 'ws-personal')!
 const THREAD_ID = 'thread-title-sync-e2e'
 const TURN_ID = 'c6c9b9b0-2f31-4a63-9b00-000000000001'
 const SEEDED_AT = new Date(0).toISOString()
@@ -83,9 +84,6 @@ test.describe(
         resolveThreadsRefetch?.()
       })
 
-      // The transcript fetch is held until the test has already observed the
-      // stale list entry with no derived title yet, so the "before" state is
-      // driven deterministically instead of raced against hydration.
       let releaseTranscriptHydration: (() => void) | undefined
       const transcriptGate = new Promise<void>((resolve) => {
         releaseTranscriptHydration = resolve
@@ -102,11 +100,9 @@ test.describe(
         route.fulfill(jsonRoute([]))
       )
 
-      // Resume straight into the existing thread, the same way a reopened
-      // app restores its last chat (useAgentSession.start()).
       await page.addInitScript(
         ({ key, threadId }) => localStorage.setItem(key, threadId),
-        { key: StorageKeys.agentThread(WORKSPACE_ID), threadId: THREAD_ID }
+        { key: StorageKeys.agentThread(ACCOUNT_SCOPE), threadId: THREAD_ID }
       )
 
       await bootAgentApp(page, agentFlagEnabled)
@@ -131,7 +127,6 @@ test.describe(
         await panel
           .getByRole('button', { name: enMessages.agent.backToPreviousChat })
           .click()
-        // Nothing has hydrated yet, so the header has no derived title either.
         await expect(
           panel.getByRole('button', {
             name: enMessages.agent.newChatTitle,

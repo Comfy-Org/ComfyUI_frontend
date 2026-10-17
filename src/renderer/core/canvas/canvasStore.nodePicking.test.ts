@@ -11,6 +11,8 @@ import {
   createTestCanvas
 } from '@/utils/__tests__/canvasTestUtils'
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
+
 function setup() {
   const graph = new LGraph()
   const first = new LGraphNode('First')

@@ -1,9 +1,11 @@
 import { zAgentAskConflict } from '@comfyorg/ingest-types/zod'
 import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
+import { until } from '@vueuse/core'
 import { delay, xor } from 'es-toolkit'
 import { computed, ref, watch } from 'vue'
 import { ZodError } from 'zod'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { i18n } from '@/i18n'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import { useTelemetry } from '@/platform/telemetry'
@@ -16,11 +18,11 @@ import type {
   AgentThreadStartSource,
   AgentWorkflowBindSource
 } from '@/platform/telemetry/types'
-import { clearLegacyAgentStorage } from '@/platform/workflow/persistence/base/storageIO'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import {
-  getWorkspaceId,
-  StorageKeys
-} from '@/platform/workflow/persistence/base/storageKeys'
+  useAccountScope,
+  useAccountStorage
+} from '@/platform/workflow/persistence/composables/useAccountStorage'
 import { createUuidv4 } from '@/utils/uuid'
 import type {
   AgentActiveTabData,
@@ -429,8 +431,42 @@ export function useAgentSession(deps: AgentSessionDeps) {
     onAskResolved,
     workflow
   } = deps
-  const threadStorageKey = StorageKeys.agentThread(getWorkspaceId())
-  clearLegacyAgentStorage()
+  const { resolvedUserInfo } = useCurrentUser()
+  let loadGeneration = 0
+  const scope = useAccountScope()
+  const owner = ref(scope.value)
+  const pendingThread = ref<string | null>()
+  const persistedThread = useAccountStorage<string | null>(
+    StorageKeys.agentThread,
+    null,
+    {},
+    computed(() => (scope.value === owner.value ? owner.value : null))
+  )
+  const storedThread = computed({
+    get: () =>
+      pendingThread.value === undefined
+        ? persistedThread.value
+        : pendingThread.value,
+    set: (value: string | null) => {
+      if (owner.value === null) pendingThread.value = value
+      else persistedThread.value = value
+    }
+  })
+  watch(
+    [scope, () => resolvedUserInfo.value?.id],
+    ([next, nextUserId], [, previousUserId]) => {
+      if (previousUserId !== undefined && nextUserId !== previousUserId) {
+        pendingThread.value = undefined
+        loadGeneration++
+      }
+      if (owner.value !== null || next === null) return
+      owner.value = next
+      if (pendingThread.value === undefined) return
+      persistedThread.value = pendingThread.value
+      pendingThread.value = undefined
+    },
+    { flush: 'sync' }
+  )
 
   const conversationStore = useAgentConversationStore()
   const sendGateStore = useAgentSendGateStore()
@@ -580,12 +616,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function initializeWorkflowContext(hasThread: boolean): void {
     workflow?.initialize?.(hasThread)
-    // The binding only outlives a remount together with its thread: a page
-    // with no surviving thread has no resumed turn the binding could serve.
-    if (
-      conversationStore.threadId === null &&
-      localStorage.getItem(threadStorageKey) === null
-    ) {
+    if (conversationStore.threadId === null && storedThread.value === null) {
       rememberedWorkflowId = null
       boundWorkflowId.value = null
     }
@@ -596,30 +627,29 @@ export function useAgentSession(deps: AgentSessionDeps) {
     readyThreadId.value = null
     ownedGeneration = ++sessionGeneration
     connection = 'initial'
-    const surviving = conversationStore.threadId
-    const stored =
-      conversationStore.messages.length === 0
-        ? localStorage.getItem(threadStorageKey)
-        : null
-    const initialThreadId = surviving ?? stored
-    initializeWorkflowContext(initialThreadId !== null)
     unsubscribe = events.subscribe(onRaw)
     if (events.onStatus) unsubscribeStatus = events.onStatus(onStatus)
+    void initializeThread(restore)
+  }
+
+  async function initializeThread(restore: boolean): Promise<void> {
+    const generation = ++loadGeneration
+    const isCurrent = () =>
+      !stopped &&
+      generation === loadGeneration &&
+      ownedGeneration === sessionGeneration
+    if (owner.value === null) await until(owner).not.toBeNull()
+    if (!isCurrent()) return
+    const surviving = conversationStore.threadId
+    const stored =
+      conversationStore.messages.length === 0 ? storedThread.value : null
+    const initialThreadId = surviving ?? stored
+    initializeWorkflowContext(initialThreadId !== null)
     if (!restore) return
     if (initialThreadId === null) {
       onThreadActivated?.(null)
       return
     }
-    void restoreInitialThread(initialThreadId, surviving)
-  }
-
-  async function restoreInitialThread(
-    initialThreadId: string,
-    surviving: string | null
-  ): Promise<void> {
-    const generation = ++loadGeneration
-    const isCurrent = () =>
-      generation === loadGeneration && ownedGeneration === sessionGeneration
     const stashedTurn = beginInitialThread(initialThreadId, surviving)
     const ready = await hydrateFromServer(
       initialThreadId,
@@ -867,8 +897,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (error instanceof AgentApiError && error.status === 404) {
       if (conversationStore.threadId === threadId)
         conversationStore.setThreadId(null)
-      if (localStorage.getItem(threadStorageKey) === threadId)
-        localStorage.removeItem(threadStorageKey)
+      if (storedThread.value === threadId) storedThread.value = null
       return false
     }
     reportError(error, {
@@ -1081,7 +1110,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const startsThread = conversationStore.threadId === null
     conversationStore.setThreadId(ack.thread_id)
     onThreadActivated?.(ack.thread_id)
-    localStorage.setItem(threadStorageKey, ack.thread_id)
+    storedThread.value = ack.thread_id
     if (ack.workflow_id !== undefined) {
       const boundAtAck = boundWorkflowId.value
       bindWorkflow(ack.workflow_id)
@@ -1272,9 +1301,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
       )
       return true
     } catch (error) {
-      // Before the generation guard: the binding store is page-global and
-      // persisted, so a refusal that lands after newChat()/loadThread() has
-      // moved on still has to release, or the dead id survives the reload.
       releaseDisownedWorkflow(sentContext, error)
       if (generation !== loadGeneration) return false
       const reattached = await reattachRefusedTurn(
@@ -1582,7 +1608,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
-  let loadGeneration = 0
   let refusedTurnReattachGeneration = 0
 
   function newChat(
@@ -1599,7 +1624,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     rememberedWorkflowId = null
     pendingWorkflowBind = null
     malformedStreamReports.clear()
-    localStorage.removeItem(threadStorageKey)
+    storedThread.value = null
     pendingThreadSource.value = source ?? null
   }
 
@@ -1627,7 +1652,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     conversationStore.setThreadId(threadId)
     const hydrated = await hydrateFromServer(threadId, isCurrent, stashedTurn)
     if (hydrated && isCurrent()) {
-      localStorage.setItem(threadStorageKey, threadId)
+      storedThread.value = threadId
       onThreadActivated?.(threadId)
       conversationStore.resumeBackgroundTurn()
     }
@@ -1957,7 +1982,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     onThreadActivated?.(null)
     boundWorkflowId.value = null
     rememberedWorkflowId = null
-    localStorage.removeItem(threadStorageKey)
+    storedThread.value = null
   }
 
   const isSending = computed(() => sending.value)

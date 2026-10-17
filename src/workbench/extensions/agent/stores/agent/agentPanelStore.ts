@@ -14,6 +14,8 @@ import type {
 } from '@/platform/telemetry/types'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
+import { useAccountStorage } from '@/platform/workflow/persistence/composables/useAccountStorage'
 import { api } from '@/scripts/api'
 
 import type {
@@ -24,8 +26,6 @@ import { reduceCreditTransitionNotice } from './creditTransitionNoticeState'
 
 const PANEL_MIN_WIDTH = 420
 const PANEL_MAX_WIDTH = 960
-const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
-const DISCOVERED_STORAGE_KEY = 'Comfy.AgentPanel.discovered'
 
 type TargetTracking =
   | { mode: 'uninitialized' }
@@ -64,14 +64,13 @@ export type AgentPanelView =
 export const useAgentPanelStore = defineStore('agentPanel', () => {
   const enabled = ref(false)
   const consentAccepted = ref(false)
-  // writeDefaults false: no storage key planted for flag-off users.
-  const isOpen = useLocalStorage(OPEN_STORAGE_KEY, false, {
+  const isOpen = useLocalStorage(StorageKeys.agentPanelOpen, false, {
     writeDefaults: false
   })
-  /** Whether the panel has ever been shown to this user, on any visit. */
-  const hasEverOpened = useLocalStorage(DISCOVERED_STORAGE_KEY, false, {
-    writeDefaults: false
-  })
+  const hasEverOpened = useAccountStorage(
+    StorageKeys.agentPanelDiscovered,
+    false
+  )
   const gateSettled = ref(false)
   const view = shallowRef<AgentPanelView>({ screen: 'chat' })
   const flagsSettled = computed(() => api.serverFeatureFlagsSettled.value)

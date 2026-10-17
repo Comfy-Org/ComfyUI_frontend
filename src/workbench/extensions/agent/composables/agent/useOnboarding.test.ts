@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 import type { CoachStep } from './useOnboarding'
 import {
-  adoptSharedOnboardingFlag,
+  hasSeenCoach,
   resetCoach,
   scopedOnboardingKey,
   useOnboarding
@@ -100,9 +100,15 @@ describe('useOnboarding', () => {
     expect(resumed.step.value).toEqual(STEPS[0])
   })
 
-  it('honors the existing default completion key', () => {
-    localStorage.setItem('Comfy.AgentPanel.onboarded', 'true')
-    const tour = useOnboarding(STEPS)
+  it('honors the existing account completion key', () => {
+    localStorage.setItem(
+      'Comfy.AgentPanel.onboarded.user-a.workspace-a',
+      'true'
+    )
+    const tour = useOnboarding(
+      STEPS,
+      scopedOnboardingKey('user-a', 'workspace-a')!
+    )
     expect(tour.active.value).toBe(false)
     tour.next()
     expect(tour.index.value).toBe(0)
@@ -122,7 +128,7 @@ describe('useOnboarding', () => {
 
   it('scopes the stored flag to the account and workspace', () => {
     expect(scopedOnboardingKey('user-a', 'workspace-a')).toBe(
-      'Comfy.AgentPanel.onboarded.user-a.workspace-a'
+      'Comfy.AgentPanel.onboarded:%5B%22workspace-a%22%2C%22user-a%22%5D'
     )
   })
 
@@ -131,26 +137,27 @@ describe('useOnboarding', () => {
     expect(scopedOnboardingKey('user-a', null)).toBeNull()
   })
 
-  it('carries a device-wide flag onto the scope in front of the user', () => {
+  it('does not assign a device-wide completion to the next account', () => {
     localStorage.setItem('Comfy.AgentPanel.onboarded', 'true')
 
-    adoptSharedOnboardingFlag('Comfy.AgentPanel.onboarded.user-a.workspace-a')
-
-    expect(
-      localStorage.getItem('Comfy.AgentPanel.onboarded.user-a.workspace-a')
-    ).toBe('true')
+    expect(hasSeenCoach(scopedOnboardingKey('user-a', 'workspace-a')!)).toBe(
+      false
+    )
     expect(localStorage.getItem('Comfy.AgentPanel.onboarded')).toBeNull()
   })
 
   it('leaves a workspace the user has not seen clear of the old flag', () => {
-    localStorage.setItem('Comfy.AgentPanel.onboarded', 'true')
-    adoptSharedOnboardingFlag('Comfy.AgentPanel.onboarded.user-a.workspace-a')
+    localStorage.setItem(
+      'Comfy.AgentPanel.onboarded.user-a.workspace-a',
+      'true'
+    )
+    expect(hasSeenCoach(scopedOnboardingKey('user-a', 'workspace-a')!)).toBe(
+      true
+    )
 
-    adoptSharedOnboardingFlag('Comfy.AgentPanel.onboarded.user-a.workspace-b')
-
-    expect(
-      localStorage.getItem('Comfy.AgentPanel.onboarded.user-a.workspace-b')
-    ).toBeNull()
+    expect(hasSeenCoach(scopedOnboardingKey('user-a', 'workspace-b')!)).toBe(
+      false
+    )
   })
 
   it('runs the tour again for another account in the same browser and workspace', async () => {

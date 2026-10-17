@@ -4,13 +4,13 @@ import { fn } from 'storybook/test'
 import '../../agentPanel.css'
 
 import { AGENT_FREE_USE_PLACEMENTS } from '@/platform/telemetry/types'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 
 import FreeUseNotice from './FreeUseNotice.vue'
-import { FREE_USE_NOTICE_DISMISSED_KEY } from './freeUseNoticeDismissal'
 
 function clearFreeUseNoticeDismissals() {
   for (const key of Object.keys(localStorage)) {
-    if (key.startsWith(FREE_USE_NOTICE_DISMISSED_KEY)) {
+    if (key.startsWith(StorageKeys.agentFreeUseNoticeDismissed(''))) {
       localStorage.removeItem(key)
     }
   }

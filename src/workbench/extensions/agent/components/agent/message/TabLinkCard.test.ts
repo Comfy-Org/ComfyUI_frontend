@@ -12,6 +12,8 @@ import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 import TabLinkCard from './TabLinkCard.vue'
 import { AgentTargetNavigationError } from '../../../services/agent/targetAwareAgentNavigation'
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
+
 vi.hoisted(() => {
   vi.stubGlobal(
     'ResizeObserver',

@@ -5,6 +5,8 @@ import { nextTick } from 'vue'
 
 import { i18n } from '@/i18n'
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
+
 import { toTurnId, zAgentWsEvent } from '../schemas/agentApiSchema'
 import { useAgentConversationStore } from '../stores/agent/agentConversationStore'
 

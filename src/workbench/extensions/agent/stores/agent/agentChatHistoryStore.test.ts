@@ -1,6 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
 
-import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { accountScope } from '@/platform/workflow/persistence/base/accountScope'
+import {
+  getWorkspaceId,
+  StorageKeys
+} from '@/platform/workflow/persistence/base/storageKeys'
 
 import type { ChatSession } from './agentChatHistoryStore'
 import {
@@ -9,6 +16,7 @@ import {
 } from './agentChatHistoryStore'
 
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 const NOW = new Date(2026, 2, 15, 12, 0, 0).getTime()
 const DAY = 86_400_000
@@ -69,6 +77,12 @@ describe('useAgentChatHistoryStore', () => {
   beforeEach(() => {
     localStorage.clear()
     sessionStorage.clear()
+    useCurrentUser().resolvedUserInfo = computed(() => ({ id: 'user-1' }))
+    vi.spyOn(
+      useTeamWorkspaceStore(),
+      'activeWorkspaceId',
+      'get'
+    ).mockImplementation(getWorkspaceId)
   })
 
   it('overlays a rename onto the grouped list and titleFor', () => {
@@ -137,11 +151,11 @@ describe('useAgentChatHistoryStore', () => {
       JSON.stringify({ type: 'team', id: 'workspace-b' })
     )
     localStorage.setItem(
-      StorageKeys.agentChatTitles('workspace-b'),
+      StorageKeys.agentChatTitles(accountScope('user-1', 'workspace-b')!),
       JSON.stringify({ a: 'Scoped title' })
     )
     localStorage.setItem(
-      StorageKeys.agentDeletedThreads('workspace-b'),
+      StorageKeys.agentDeletedThreads(accountScope('user-1', 'workspace-b')!),
       JSON.stringify(['deleted'])
     )
     localStorage.setItem(
@@ -172,11 +186,11 @@ describe('useAgentChatHistoryStore', () => {
       JSON.stringify({ type: 'team', id: 'workspace-b' })
     )
     localStorage.setItem(
-      StorageKeys.agentChatTitles('workspace-a'),
+      StorageKeys.agentChatTitles(accountScope('user-1', 'workspace-a')!),
       JSON.stringify({ a: 'Workspace A title' })
     )
     localStorage.setItem(
-      StorageKeys.agentDeletedThreads('workspace-a'),
+      StorageKeys.agentDeletedThreads(accountScope('user-1', 'workspace-a')!),
       JSON.stringify(['a'])
     )
 

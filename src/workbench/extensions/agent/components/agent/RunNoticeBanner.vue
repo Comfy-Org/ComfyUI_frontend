@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { useStorage } from '@vueuse/core'
 import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
+import { useAccountStorage } from '@/platform/workflow/persistence/composables/useAccountStorage'
 
 const {
   expanded = false,
@@ -15,7 +16,7 @@ const {
 }>()
 
 const emit = defineEmits<{ showTarget: [] }>()
-const dismissed = useStorage('Comfy.AgentPanel.runNoticeDismissed', false)
+const dismissed = useAccountStorage(StorageKeys.agentRunNoticeDismissed, false)
 const contextMessages = {
   following: 'agent.targetFollowsVisibleWorkflow',
   mismatch: 'agent.viewingDifferentWorkflow',

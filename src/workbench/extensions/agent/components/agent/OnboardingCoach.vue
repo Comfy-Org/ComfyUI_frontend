@@ -33,7 +33,7 @@ const COACH_HOVER_ATTRIBUTE = 'data-coach-hover'
 
 const { steps, storageKey } = defineProps<{
   steps: CoachStep[]
-  storageKey?: string
+  storageKey: string
 }>()
 const emit = defineEmits<{ finished: [] }>()
 
