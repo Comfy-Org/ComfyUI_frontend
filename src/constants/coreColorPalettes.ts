@@ -4,6 +4,7 @@ import github from '@/assets/palettes/github.json' with { type: 'json' }
 import light from '@/assets/palettes/light.json' with { type: 'json' }
 import nord from '@/assets/palettes/nord.json' with { type: 'json' }
 import solarized from '@/assets/palettes/solarized.json' with { type: 'json' }
+import spooky from '@/assets/palettes/spooky.json' with { type: 'json' }
 import type {
   ColorPalettes,
   CompletedPalette
@@ -15,7 +16,8 @@ export const CORE_COLOR_PALETTES: ColorPalettes = {
   solarized,
   arc,
   nord,
-  github
+  github,
+  spooky
 } as const
 
 export const DEFAULT_COLOR_PALETTE: CompletedPalette = dark

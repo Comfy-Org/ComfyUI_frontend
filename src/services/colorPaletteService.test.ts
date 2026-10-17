@@ -76,6 +76,17 @@ describe('useColorPaletteService theme variables', () => {
         '--secondary': '#094656',
         '--border': 'color-mix(in srgb, #073642 75.5%, #fff)'
       }
+    },
+    {
+      paletteId: 'spooky',
+      expected: {
+        '--background': '#0c0910',
+        '--node': '#140f19',
+        '--node-header': '#2b1640',
+        '--node-foreground': '#c8b6d6',
+        '--secondary': '#22182c',
+        '--border': '#45305a'
+      }
     }
   ])(
     'applies the $paletteId palette to the theme variables',
