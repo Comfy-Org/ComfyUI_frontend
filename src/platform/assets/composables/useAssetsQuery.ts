@@ -121,19 +121,31 @@ function assetsQueryInternal(
       return
     }
     await preempt(async () => {
-      morePages.value = true
-      nextCursor = undefined
-      seenCursors.clear()
-      items.value = []
+      resetPages()
       await until(backingOff).toBe(false)
       await doLoadMore()
     })
   }
 
-  function invalidate(stale?: string[]) {
-    const operation = invalidationQueue.then(() => applyInvalidation(stale))
+  function resetPages() {
+    morePages.value = true
+    nextCursor = undefined
+    seenCursors.clear()
+    items.value = []
+  }
+
+  function serializeInvalidation(apply: () => Promise<void>) {
+    const operation = invalidationQueue.then(apply)
     invalidationQueue = operation
     return operation
+  }
+
+  function invalidate(stale?: string[]) {
+    return serializeInvalidation(() => applyInvalidation(stale))
+  }
+
+  function clear() {
+    return serializeInvalidation(() => preempt(async () => resetPages()))
   }
 
   async function doQuery(
@@ -175,7 +187,7 @@ function assetsQueryInternal(
   }
 
   void loadMore()
-  return {
+  const list = {
     hasMore,
     invalidate,
     isLoading,
@@ -183,7 +195,11 @@ function assetsQueryInternal(
     loadMore,
     loadNew
   }
+  listClearers.set(list, clear)
+  return list
 }
+
+const listClearers = new WeakMap<PagedList<AssetItem>, () => Promise<void>>()
 
 const sharedState: SharedPagedListState<ListAssetsData['query'], AssetItem> = {
   cache: new Map(),
@@ -201,5 +217,11 @@ export function useAssetsQuery(
 export async function invalidateAll() {
   await Promise.all(
     [...sharedState.cache.values()].map((e) => e.list.invalidate())
+  )
+}
+
+export async function clearAll() {
+  await Promise.all(
+    [...sharedState.cache.values()].map((e) => listClearers.get(e.list)?.())
   )
 }

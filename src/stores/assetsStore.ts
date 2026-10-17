@@ -4,6 +4,7 @@ import { defineStore } from 'pinia'
 import {
   computed,
   effectScope,
+  onScopeDispose,
   reactive,
   ref,
   shallowReactive,
@@ -24,16 +25,19 @@ import type {
   TagsOperationResult
 } from '@/platform/assets/schemas/assetSchema'
 import {
+  clearAll,
   useAssetsQuery,
   invalidateAll
 } from '@/platform/assets/composables/useAssetsQuery'
 import { assetService } from '@/platform/assets/services/assetService'
+import { onAccountIdentityChange } from '@/platform/auth/accountStateReset'
 import type { AssetPaginationOptions } from '@/platform/assets/services/assetService'
 import type { AssetSeedCompletedWsMessage } from '@/platform/remote/comfyui/execution/types'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { api } from '@/scripts/api'
 import { WrappedList } from '@/utils/pagedList'
 import type { PagedList } from '@/utils/pagedList'
+import { isAbortError } from '@/utils/typeGuardUtil'
 
 import { TaskItemImpl } from './queueStore'
 import { useAssetDownloadStore } from './assetDownloadStore'
@@ -42,11 +46,14 @@ import { useModelToNodeStore } from './modelToNodeStore'
 /**
  * Fetch input files from the internal API (OSS version)
  */
-async function fetchInputFilesFromAPI(): Promise<AssetItem[]> {
+async function fetchInputFilesFromAPI(
+  signal: AbortSignal
+): Promise<AssetItem[]> {
   const response = await fetch(api.internalURL('/files/input'), {
     headers: {
       'Comfy-User': api.user
-    }
+    },
+    signal
   })
 
   if (!response.ok) {
@@ -54,6 +61,7 @@ async function fetchInputFilesFromAPI(): Promise<AssetItem[]> {
   }
 
   const filenames: string[] = await response.json()
+  signal.throwIfAborted()
   return filenames.map((name, index) =>
     mapInputFileToAssetItem(name, index, 'input')
   )
@@ -121,19 +129,25 @@ export const useAssetsStore = defineStore('assets', () => {
     return deletingAssetIds.has(assetId)
   }
 
-  const fetchInputFiles = fetchInputFilesFromAPI
+  let identityController = new AbortController()
 
   const {
     state: rawInputAssets,
     isLoading: inputLoading,
     execute: executeUpdateInputs
-  } = useAsyncState(fetchInputFiles, [], {
-    immediate: false,
-    resetOnExecute: false,
-    onError: (err) => {
-      console.error('Error fetching input assets:', err)
+  } = useAsyncState(
+    () => fetchInputFilesFromAPI(identityController.signal),
+    [],
+    {
+      immediate: false,
+      resetOnExecute: false,
+      onError: (err) => {
+        if (!isAbortError(err)) {
+          console.error('Error fetching input assets:', err)
+        }
+      }
     }
-  })
+  )
 
   const historyInputs: PagedList<AssetItem> = {
     hasMore: false,
@@ -146,7 +160,7 @@ export const useAssetsStore = defineStore('assets', () => {
     loadNew: async () => undefined
   }
 
-  function useHistoryAssets(): PagedList<AssetItem> {
+  function useHistoryAssets(): PagedList<AssetItem> & { clear: () => void } {
     // Pagination state
     const historyOffset = ref(0)
     const hasMoreHistory = ref(true)
@@ -161,6 +175,8 @@ export const useAssetsStore = defineStore('assets', () => {
     const fetchHistoryAssets = async (
       loadMore = false
     ): Promise<AssetItem[]> => {
+      const { signal } = identityController
+
       // Reset state for initial load
       if (!loadMore) {
         historyOffset.value = 0
@@ -171,8 +187,10 @@ export const useAssetsStore = defineStore('assets', () => {
 
       // Fetch from server with offset
       const history = await api.getHistory(BATCH_SIZE, {
-        offset: historyOffset.value
+        offset: historyOffset.value,
+        signal
       })
+      signal.throwIfAborted()
 
       // Convert JobListItems to AssetItems
       const newAssets = mapHistoryToAssets(history)
@@ -240,6 +258,7 @@ export const useAssetsStore = defineStore('assets', () => {
         await fetchHistoryAssets(false)
         historyAssets.value = allHistoryItems.value
       } catch (err) {
+        if (isAbortError(err)) return
         console.error('Error fetching history assets:', err)
         historyError.value = err
         // Keep existing data when error occurs
@@ -253,10 +272,11 @@ export const useAssetsStore = defineStore('assets', () => {
 
     const updateHistory = () => {
       if (!refreshPromise) {
-        refreshPromise = historyQueue.then(doUpdateHistory).finally(() => {
-          refreshPromise = undefined
+        const operation = historyQueue.then(doUpdateHistory).finally(() => {
+          if (refreshPromise === operation) refreshPromise = undefined
         })
-        historyQueue = refreshPromise
+        refreshPromise = operation
+        historyQueue = operation
       }
       return refreshPromise
     }
@@ -273,6 +293,7 @@ export const useAssetsStore = defineStore('assets', () => {
         historyAssets.value = allHistoryItems.value
         return true
       } catch (err) {
+        if (isAbortError(err)) return false
         console.error('Error loading more history:', err)
         historyError.value = err
         // Keep existing data when error occurs (consistent with updateHistory)
@@ -290,15 +311,33 @@ export const useAssetsStore = defineStore('assets', () => {
         const operation = historyQueue.then(() =>
           hasMoreHistory.value ? doLoadMoreHistory() : false
         )
-        loadMorePromise = operation.finally(() => {
-          loadMorePromise = undefined
+        const settled = operation.finally(() => {
+          if (loadMorePromise === settled) loadMorePromise = undefined
         })
+        loadMorePromise = settled
         historyQueue = operation.then(() => undefined)
       }
       return loadMorePromise
     }
 
+    /**
+     * Drop every loaded item. Requests already queued keep their place, but the
+     * next refresh or page load starts a new operation instead of joining one
+     * issued for the previous identity.
+     */
+    const clear = () => {
+      historyOffset.value = 0
+      hasMoreHistory.value = true
+      allHistoryItems.value = []
+      loadedIds.clear()
+      historyAssets.value = []
+      historyError.value = null
+      refreshPromise = undefined
+      loadMorePromise = undefined
+    }
+
     return {
+      clear,
       hasMore: hasMoreHistory,
       invalidate: updateHistory,
       isLoading: computed(() => historyLoading.value || isLoadingMore.value),
@@ -310,6 +349,7 @@ export const useAssetsStore = defineStore('assets', () => {
 
   const inputAssets = ref<PagedList<AssetItem>>(undefined!)
   const outputAssets = ref<PagedList<AssetItem>>(undefined!)
+  let historyOutputs: ReturnType<typeof useHistoryAssets> | undefined
   let assetsScope: EffectScope | undefined
   watch(
     () => flags.assetsEnabled,
@@ -317,6 +357,7 @@ export const useAssetsStore = defineStore('assets', () => {
       if (assetsScope) assetsScope.stop()
       assetsScope = undefined
 
+      historyOutputs = undefined
       if (isAssets) {
         assetsScope = effectScope()
         assetsScope.run(() => {
@@ -329,7 +370,8 @@ export const useAssetsStore = defineStore('assets', () => {
         })
       } else {
         inputAssets.value = historyInputs
-        outputAssets.value = useHistoryAssets()
+        historyOutputs = useHistoryAssets()
+        outputAssets.value = historyOutputs
       }
     },
     { immediate: true }
@@ -898,6 +940,21 @@ export const useAssetsStore = defineStore('assets', () => {
       invalidateCategory('tag:models')
     }
 
+    /**
+     * Drop every cached category, aborting any walk still in flight. Used on an
+     * identity change, where the whole model inventory belongs to the previous
+     * account.
+     */
+    function invalidateAllCategories(): void {
+      const categories = new Set([
+        ...modelStateByCategory.value.keys(),
+        ...pendingRequestByCategory.keys(),
+        ...pendingPromiseByCategory.keys(),
+        ...abortByCategory.keys()
+      ])
+      for (const category of categories) invalidateCategory(category)
+    }
+
     return {
       getAssets,
       isLoading,
@@ -910,7 +967,8 @@ export const useAssetsStore = defineStore('assets', () => {
       invalidateCategory,
       updateAssetMetadata,
       updateAssetTags,
-      invalidateModelsForCategory
+      invalidateModelsForCategory,
+      invalidateAllCategories
     }
   }
 
@@ -926,8 +984,23 @@ export const useAssetsStore = defineStore('assets', () => {
     invalidateCategory,
     updateAssetMetadata,
     updateAssetTags,
-    invalidateModelsForCategory
+    invalidateModelsForCategory,
+    invalidateAllCategories
   } = getModelState()
+
+  /** Drop the previous account's cached assets and abort its requests. */
+  const reset = ({ signedIn = true }: { signedIn?: boolean } = {}) => {
+    identityController.abort()
+    identityController = new AbortController()
+
+    rawInputAssets.value = []
+    historyOutputs?.clear()
+    if (flags.assetsEnabled) void (signedIn ? invalidateAll() : clearAll())
+
+    invalidateAllCategories()
+    assetService.invalidateModelBuckets()
+  }
+  onScopeDispose(onAccountIdentityChange('assets', reset))
 
   // Watch for completed downloads and refresh model caches
   whenever(
@@ -972,6 +1045,7 @@ export const useAssetsStore = defineStore('assets', () => {
     outputAssets,
     invalidateAll,
     loadOutputAsset,
+    reset,
 
     // Deletion tracking
     deletingAssetIds,

@@ -8,7 +8,7 @@ import type { Auth, User, UserCredential } from 'firebase/auth'
 import * as firebaseAuth from 'firebase/auth'
 import type { Mock } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { nextTick, toValue } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'
 
@@ -32,6 +32,9 @@ import { useDialogService } from '@/services/dialogService'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { api } from '@/scripts/api'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
+import { useAssetsStore } from '@/stores/assetsStore'
+import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
+import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { DesktopHostAuthState } from '@/platform/auth/desktopHost/desktopHostAuthBridge'
 import {
   startDesktopHostSession,
@@ -2412,6 +2415,72 @@ describe('useAuthStore', () => {
       authStateCallback(accountB)
 
       expect(mockResetSocket).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('queue and asset state on identity change', () => {
+    async function seedAccountState() {
+      useQueueStore().historyTasks = [
+        new TaskItemImpl(
+          fromPartial<JobListItem>({
+            id: 'account-a-job',
+            status: 'completed',
+            create_time: 1,
+            priority: 1
+          })
+        )
+      ]
+      respondToFetch(/\/files\/input$/, () => Response.json(['account-a.png']))
+      await useAssetsStore().inputAssets.invalidate()
+    }
+
+    const seededState = () => ({
+      queue: useQueueStore().historyTasks.map(({ jobId }) => jobId),
+      inputs: toValue(useAssetsStore().inputAssets.items).map(
+        ({ name }) => name
+      )
+    })
+    const accountAState = {
+      queue: ['account-a-job'],
+      inputs: ['account-a.png']
+    }
+    const clearedState = { queue: [], inputs: [] }
+
+    it.for([
+      {
+        name: 'a direct account switch',
+        next: () => ({ ...mockUser, uid: 'account-b' }),
+        outcome: 'clears',
+        expected: clearedState
+      },
+      {
+        name: 'sign-out',
+        next: () => null,
+        outcome: 'clears',
+        expected: clearedState
+      },
+      {
+        name: 'the same account again',
+        next: () => mockUser,
+        outcome: 'keeps',
+        expected: accountAState
+      }
+    ])('$outcome account state on $name', async ({ next, expected }) => {
+      await seedAccountState()
+      expect(seededState()).toEqual(accountAState)
+
+      authStateCallback(next())
+
+      expect(seededState()).toEqual(expected)
+    })
+
+    it('keeps state loaded after signing in from signed-out', async () => {
+      authStateCallback(null)
+      await seedAccountState()
+
+      authStateCallback({ ...mockUser, uid: 'account-b' })
+
+      expect(seededState()).toEqual(accountAState)
     })
   })
 })

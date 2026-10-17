@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
-import { computed, ref, shallowRef, toRaw, toValue } from 'vue'
+import { computed, onScopeDispose, ref, shallowRef, toRaw, toValue } from 'vue'
 
+import { onAccountIdentityChange } from '@/platform/auth/accountStateReset'
 import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type {
   APITaskType,
@@ -293,6 +294,8 @@ export const useQueueStore = defineStore('queue', () => {
   const updateState = { inFlight: false, dirty: false }
   const hasDirtyUpdate = () => updateState.dirty
 
+  let identityController = new AbortController()
+
   const tasks = computed<TaskItemImpl[]>(
     () =>
       [
@@ -324,11 +327,14 @@ export const useQueueStore = defineStore('queue', () => {
     updateState.inFlight = true
     updateState.dirty = false
     isLoading.value = true
+    const { signal } = identityController
     try {
       const [queueResult, historyResult] = await Promise.allSettled([
-        api.getQueue({ throwOnError: true }),
-        api.getHistory(maxHistoryItems.value)
+        api.getQueue({ throwOnError: true, signal }),
+        api.getHistory(maxHistoryItems.value, { signal })
       ])
+
+      if (signal.aborted) return
 
       if (queueResult.status === 'fulfilled') {
         const queue = queueResult.value
@@ -421,6 +427,17 @@ export const useQueueStore = defineStore('queue', () => {
     await update()
   }
 
+  /** Drop the previous account's tasks locally; nothing is deleted server-side. */
+  const reset = () => {
+    identityController.abort()
+    identityController = new AbortController()
+    runningTasks.value = []
+    pendingTasks.value = []
+    historyTasks.value = []
+    hasFetchedHistorySnapshot.value = false
+  }
+  onScopeDispose(onAccountIdentityChange('queue', reset))
+
   return {
     runningTasks,
     pendingTasks,
@@ -437,6 +454,7 @@ export const useQueueStore = defineStore('queue', () => {
 
     update,
     clear,
+    reset,
     delete: deleteTask
   }
 })
