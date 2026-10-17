@@ -5229,8 +5229,6 @@ describe('useAgentSession (v1 composition root)', () => {
       rest,
       events: source,
       workflow: {
-        // The path outlives the tab: a replacement opened at 'tab-a' answers
-        // the same lookup, and only the instance tells the two apart.
         current: () => ({
           tabPath: 'tab-a',
           instanceId,

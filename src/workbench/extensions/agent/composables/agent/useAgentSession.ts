@@ -1043,9 +1043,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   // current_tab_unbound's own contract (see its generated doc comment) is
-  // a tab-level fact: this tab has no cloud id yet. A temporary wfContext
-  // with no id is exactly that; a saved tab whose cloud id failed to resolve
-  // also has no id, but is not a tab to mint for.
+  // a tab-level fact: this tab has no cloud id yet.
   //
   // boundWorkflowId === null narrows WHEN we assert that fact, and is a
   // client-side policy choice, not part of the field's own meaning: the
@@ -1318,12 +1316,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
-  /**
-   * A turn belongs to the tab instance that started it. An id-less origin is
-   * protected too: an unsaved tab that closes during prepare() leaves nothing
-   * to attribute the turn to, and a tab reopened at the same path is a
-   * different instance, not the same target.
-   */
   function workflowTargetChanged(
     origin: WorkflowTurnContext | undefined,
     current: WorkflowTurnContext | undefined

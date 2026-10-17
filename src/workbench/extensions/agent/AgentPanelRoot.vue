@@ -704,9 +704,7 @@ const workflowDetached = computed(() => selectedTarget.value === null)
 
 // Resolves the tab a turn is attributed to. `null` (the send had no origin
 // tab) resolves to nothing rather than falling back to the selected target, so
-// re-attaching during prepare() cannot pull a later tab into this turn. A
-// pinned origin resolves by instance rather than by path: a tab that closed
-// mid-send and was replaced at the same path is not the turn's target.
+// re-attaching during prepare() cannot pull a later tab into this turn.
 function originWorkflow(origin?: TurnOrigin): ComfyWorkflow | undefined {
   if (origin === null) return undefined
   if (origin === undefined) return selectedTarget.value ?? undefined
@@ -799,11 +797,6 @@ function adoptionSource(
     const stillBound = boundNow === undefined || boundNow === workflowId
     return sent.id === workflowId && stillBound ? 'active_tab' : null
   }
-  // An unbound tab adopts a workflow only when it was minted for this turn:
-  // an id that already resolves to a tab or a stored workflow belongs there,
-  // and a tab that acquired its own binding mid-flight is no longer unbound.
-  // `sent.isTemporary` is read from the send, not from the tab now: saving the
-  // originating tab while the POST is in flight does not disown its own turn.
   const minted =
     sent.isTemporary &&
     cloudIdFor(tab) === undefined &&
@@ -818,10 +811,6 @@ function onWorkflowAdopted(
   previousWorkflowId: string | null
 ): void {
   if (sent === undefined) return
-  // The ack may be stale: the originating tab can close while the POST is in
-  // flight, and another tab can take its path. Bind to the instance that sent
-  // the turn, at whatever path it now holds - it may have been saved or
-  // renamed in the meantime.
   const tab = workflowStore.openWorkflows.find(
     (workflow) => workflow.instanceId === sent.instanceId
   )

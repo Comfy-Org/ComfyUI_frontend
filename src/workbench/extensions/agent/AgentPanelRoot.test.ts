@@ -6381,8 +6381,6 @@ describe('AgentPanelRoot workflow binding', () => {
     return { target, references: referenceTabs }
   }
 
-  // Holds the mint ack so a test can rearrange the tabs while the POST is in
-  // flight: `bodies` fills when the request leaves, `release` delivers the ack.
   function holdMintAck(ackWorkflowId: string): {
     bodies: unknown[]
     release: () => void
@@ -11628,8 +11626,6 @@ describe('AgentPanelRoot workflow binding', () => {
     }
   )
 
-  // An id-less origin gets the same protection as a bound one: the turn belongs
-  // to the tab instance that started it, and that instance is no longer open.
   it.for([
     { name: 'a bound saved tab', boundId: 'wf-origin', isTemporary: false },
     { name: 'an unbound temporary tab', boundId: undefined, isTemporary: true }
