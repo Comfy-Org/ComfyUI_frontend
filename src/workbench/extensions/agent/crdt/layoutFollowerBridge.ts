@@ -19,14 +19,6 @@ export interface ClassifiedDocUpdate extends DocUpdate {
   catchUp: boolean
 }
 
-/**
- * Outbound frames are advisory: the follower's correctness never depends on one
- * arriving. A transport that cannot carry a frame reports `false`; one that
- * throws (the shape the old /ws-backed transport had before this seam was fixed,
- * and the shape
- * any future transport might regress to) is contained here rather than being
- * allowed to abort a Vue watcher or an unmount hook.
- */
 function trySend(send: () => boolean): boolean {
   try {
     return send()

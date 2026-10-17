@@ -35,13 +35,6 @@ vi.mock(import('@/platform/telemetry/reportError'))
 
 const WORKFLOW_ID = 'wf-1'
 
-/**
- * Transport double that models the real socket lifecycle rather than an
- * always-ready pipe: it starts CLOSED (the state the old /ws-backed transport
- * was in while `ComfyApi.createSocket` awaited its auth token) and THROWS on a
- * send while closed — byte-for-byte the behaviour that transport shipped with. It also
- * counts live listener registrations so a leak is observable.
- */
 class SocketTransport extends EventTarget implements DocFrameTransport {
   open = false
   readonly sent: string[] = []
