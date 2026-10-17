@@ -162,6 +162,26 @@ describe('API Feature Flags', () => {
       expect(api.getServerFeature('api_version')).toBe('1.0.0')
     })
 
+    it('takes the agent feature from a handshake reply that follows an earlier agent_status push', () => {
+      void api.init()
+      const send = (type: string, data: unknown) =>
+        wsEventHandlers['message']({ data: JSON.stringify({ type, data }) })
+
+      send('agent_status', { state: 'starting', reason: null })
+      expect(api.serverFeatureFlagsSettled.value).toBe(false)
+
+      send('feature_flags', {
+        api_version: '1.0.0',
+        agent: { state: 'ready', reason: null }
+      })
+
+      expect(api.getServerFeature('agent')).toEqual({
+        state: 'ready',
+        reason: null
+      })
+      expect(api.serverFeatureFlagsSettled.value).toBe(true)
+    })
+
     it('settles feature flags immediately when the server delivers an empty map', () => {
       void api.init()
 
