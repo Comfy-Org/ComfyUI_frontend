@@ -4,6 +4,7 @@ import { loadIconSet } from '@iconify/tailwind4/lib/helpers/loader.js'
 import plugin from 'tailwindcss/plugin'
 
 import { COMFY_ICON_PREFIX, loadComfyIconSet } from './comfyIconSet.js'
+import { withForcedColors } from './forcedColors.js'
 
 /**
  * Tailwind 4 plugin that provides icon variants with configurable
@@ -77,7 +78,7 @@ export default plugin(({ matchComponents }) => {
     matchComponents({
       [`icon-s${sw}`]: (icon) => {
         try {
-          return getDynamicCSSRulesWithStroke(icon, sw)
+          return withForcedColors(getDynamicCSSRulesWithStroke(icon, sw))
         } catch (err) {
           if (err instanceof InvalidIconProbeError) return {}
           throw err
