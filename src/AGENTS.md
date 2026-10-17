@@ -43,6 +43,10 @@
   a migration of affected queries and alerts that accounts for old and new
   releases reporting different names.
 
+[ADR-TELEMETRY-ERRORS-0030](../docs/adr/TELEMETRY-ERRORS-0030-agent-consumable-error-telemetry.md)
+proposes agent-consumable tags, assertion modes, catch classification, and PII
+rules. It is Proposed: treat it as direction rather than a gate.
+
 ## Security
 
 - Sanitize HTML with DOMPurify
