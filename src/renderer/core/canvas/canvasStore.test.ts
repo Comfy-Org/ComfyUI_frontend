@@ -15,6 +15,7 @@ import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { selectableKeyOf } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useNodeHighlightStore } from '@/renderer/core/canvas/nodeHighlightStore'
 import { useSelectionStore } from '@/core/selection/selectionStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
@@ -135,7 +136,9 @@ describe('useCanvasStore', () => {
 
     store.setHighlightedNodeIds([toNodeId(7)])
 
-    expect(store.highlightedNodeIds).toEqual(new Set([toNodeId(7)]))
+    expect(useNodeHighlightStore().highlightedNodeIds).toEqual(
+      new Set([toNodeId(7)])
+    )
     expect(store.selectedItems).toEqual([selected])
     expect(setDirty).toHaveBeenCalledWith(true, false)
   })
