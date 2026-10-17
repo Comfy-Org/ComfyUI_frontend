@@ -118,7 +118,6 @@ export type RemoteConfig = Partial<GetFeaturesResponses[200]> & {
   partner_node_token?: boolean
   user_secrets_enabled?: boolean
   node_library_essentials_enabled?: boolean
-  run_bar_deploy_enabled?: boolean
   supports_model_type_tags?: boolean
   free_tier_credits?: number
   new_free_tier_subscriptions?: boolean

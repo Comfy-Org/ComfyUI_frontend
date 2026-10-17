@@ -94,9 +94,7 @@
                 size="icon"
                 :aria-label="t('deployToComfyApi.buttonLabel')"
                 data-testid="run-bar-deploy"
-                @click="
-                  () => openDeployToComfyApiDialog().catch(toastErrorHandler)
-                "
+                @click="openDeployInstallationDialog"
               >
                 <i class="icon-[lucide--rocket] size-4" />
               </Button>
@@ -235,8 +233,13 @@ const { t } = useI18n()
 const { toastErrorHandler } = useErrorHandling()
 const { flags } = useFeatureFlags()
 const isDeployButtonShown = computed(
-  () => !isCloud && flags.runBarDeployEnabled
+  () => flags.usedHeadlessly && flags.deployToCloud
 )
+function openDeployInstallationDialog() {
+  openDeployToComfyApiDialog({ deploysInstallation: true }).catch(
+    toastErrorHandler
+  )
+}
 const executionErrorStore = useExecutionErrorStore()
 const actionBarButtonStore = useActionBarButtonStore()
 const queueUIStore = useQueueUIStore()

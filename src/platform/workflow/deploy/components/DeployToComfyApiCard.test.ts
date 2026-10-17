@@ -2,12 +2,14 @@ import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
 import type { useExternalLink } from '@/composables/useExternalLink'
 import enMessages from '@/locales/en/main.json'
 import { useAgentHandoff } from '@/platform/workflow/deploy/composables/useAgentHandoff'
+import { useInstallationDeploy } from '@/platform/workflow/deploy/composables/useInstallationDeploy'
 import type { BuildInputs } from '@/platform/workflow/deploy/utils/buildInputs'
 
 import DeployToComfyApiCard from './DeployToComfyApiCard.vue'
@@ -25,6 +27,20 @@ vi.mock(
     } satisfies BuildInputs
     return {
       useAgentHandoff: () => ({ captureInputs: () => inputs, copyBrief })
+    }
+  }
+)
+
+vi.mock(
+  import('@/platform/workflow/deploy/composables/useInstallationDeploy'),
+  () => {
+    const deploy = vi.fn(async () => true)
+    return {
+      useInstallationDeploy: () =>
+        fromPartial<ReturnType<typeof useInstallationDeploy>>({
+          state: ref({ status: 'idle' as const }),
+          deploy
+        })
     }
   }
 )
@@ -153,6 +169,15 @@ describe('DeployToComfyApiCard', () => {
       screen.queryByTestId('deploy-to-comfy-api-video-placeholder')
     ).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Play' })).toBeInTheDocument()
+  })
+
+  it('uploads the installation from Deploy on Platform and reports done once the wizard opens', async () => {
+    const { onDone, user } = renderCard({ deploysInstallation: true })
+
+    await user.click(screen.getByRole('button', { name: 'Deploy on Platform' }))
+
+    expect(useInstallationDeploy().deploy).toHaveBeenCalledOnce()
+    expect(onDone).toHaveBeenCalledOnce()
   })
 
   it('shows the placeholder when there is no video', () => {
