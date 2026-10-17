@@ -360,15 +360,16 @@ jobs:
             } else if (infrastructure) {
               lines.push(
                 '> [!CAUTION]',
-                '> A shard failed before producing a report, so the suite did not fully run. No pass/fail counts are available.'
+                '> A shard failed before producing a report, so the suite did not fully run. Check the workflow logs, fix the shard failure and re-run the suite.'
               )
             } else {
-              lines.push('> [!CAUTION]', '> Some tests failed.')
+              lines.push('> [!CAUTION]', '> Some tests failed. Open the report below and fix the failures before merging.')
             }
 
+            lines.push('', reportUrl ? `[View Report](${reportUrl})` : 'Report unavailable. Check the workflow logs.')
+
             const rows = [
-              ['Status', passed ? '✅ Passed' : infrastructure ? '💥 Infrastructure failure' : '❌ Failed'],
-              ['Report', reportUrl ? `[View Report](${reportUrl})` : '_unavailable_']
+              ['Status', passed ? '✅ Passed' : infrastructure ? '💥 Infrastructure failure' : '❌ Failed']
             ]
             if (!passed && !infrastructure) {
               rows.push(
@@ -378,9 +379,14 @@ jobs:
             }
             lines.push(
               '',
+              '<details>',
+              '<summary>Test results</summary>',
+              '',
               '| | |',
               '|---|---|',
-              ...rows.map(([k, v]) => `| **${k}** | ${v} |`)
+              ...rows.map(([k, v]) => `| **${k}** | ${v} |`),
+              '',
+              '</details>'
             )
 
             if (screenshotFailures > 0) {

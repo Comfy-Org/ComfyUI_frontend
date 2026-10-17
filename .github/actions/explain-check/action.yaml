@@ -92,9 +92,20 @@ runs:
           printf '## %s %s: %s\n\n' "$INPUT_ICON" "$INPUT_TITLE" "$badge"
           printf '%s\n' "$INPUT_HEADLINE"
 
+          run_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          case "$INPUT_STATUS" in
+            fail|warn)
+              printf '\n> Review the findings below and [open the workflow run](%s) to fix the reported issues before merging.\n' "$run_url"
+              ;;
+            withheld)
+              printf '\n> No verdict is available. [Open the workflow run](%s) to confirm the check was intentionally skipped, or fix the collection failure and re-run it.\n' "$run_url"
+              ;;
+          esac
+
           if [ -n "$INPUT_DETAILS_FILE" ] && [ -s "$INPUT_DETAILS_FILE" ]; then
-            printf '\n'
+            printf '\n<details>\n<summary>Findings and check details</summary>\n\n'
             cat "$INPUT_DETAILS_FILE"
+            printf '\n\n</details>\n'
           fi
 
           if [ -n "$INPUT_REPRODUCE" ]; then

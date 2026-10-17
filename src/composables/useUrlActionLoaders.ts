@@ -1,7 +1,6 @@
 import { useRouter } from 'vue-router'
 
 import { useAssetsUrlLoader } from '@/platform/assets/composables/useAssetsUrlLoader'
-import { usePaymentReturnUrlLoader } from '@/platform/cloud/subscription/composables/usePaymentReturnUrlLoader'
 import { usePricingTableUrlLoader } from '@/platform/cloud/subscription/composables/usePricingTableUrlLoader'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useTopUpUrlLoader } from '@/platform/cloud/subscription/composables/useTopUpUrlLoader'
@@ -37,7 +36,6 @@ type UrlActionLoaders = {
   topUpUrlLoader: ReturnType<typeof useTopUpUrlLoader> | null
   settingsUrlLoader: ReturnType<typeof useSettingsUrlLoader> | null
   assetsUrlLoader: ReturnType<typeof useAssetsUrlLoader> | null
-  paymentReturnUrlLoader: ReturnType<typeof usePaymentReturnUrlLoader> | null
 }
 
 /**
@@ -147,16 +145,6 @@ function buildUrlActionSteps(
       run: () => loader.loadAssetsFromUrl()
     })
   }
-  // Handles the return leg of a redirect payment (Stripe appends
-  // payment_intent/redirect_status params): strips the params and refreshes
-  // billing status so the pending checkout resumes polling immediately.
-  if (loaders.paymentReturnUrlLoader) {
-    const loader = loaders.paymentReturnUrlLoader
-    steps.push({
-      failureMessage: 'Failed to handle payment return from URL:',
-      run: () => loader.loadPaymentReturnFromUrl()
-    })
-  }
 
   steps.push({
     failureMessage: 'Failed to clear handled deep-link params from the URL:',
@@ -236,7 +224,6 @@ export function useUrlActionLoaders() {
   const topUpUrlLoader = useIfCloud(useTopUpUrlLoader)
   const settingsUrlLoader = useIfCloud(useSettingsUrlLoader)
   const assetsUrlLoader = useIfCloud(useAssetsUrlLoader)
-  const paymentReturnUrlLoader = useIfCloud(usePaymentReturnUrlLoader)
   const subscriptionDialog = useIfCloud(useSubscriptionDialog)
 
   const steps = isCloud
@@ -249,8 +236,7 @@ export function useUrlActionLoaders() {
           pricingTableUrlLoader,
           topUpUrlLoader,
           settingsUrlLoader,
-          assetsUrlLoader,
-          paymentReturnUrlLoader
+          assetsUrlLoader
         },
         router
       )

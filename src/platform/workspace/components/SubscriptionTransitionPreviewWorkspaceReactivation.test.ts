@@ -158,11 +158,10 @@ function makePreview(
 
 function renderComponent(
   previewData: PreviewSubscribeResponse,
-  forceReactivation = false,
-  quoteIsCurrent = true
+  forceReactivation = false
 ) {
   return render(SubscriptionTransitionPreviewWorkspace, {
-    props: { previewData, forceReactivation, quoteIsCurrent },
+    props: { previewData, forceReactivation },
     global: { plugins: [i18n] }
   })
 }
@@ -583,27 +582,6 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
       expect(
         screen.queryByText('subscription.preview.quoteUnavailable')
       ).toBeNull()
-    })
-
-    it('does not confirm without a current quote', async () => {
-      const user = userEvent.setup()
-      mockSubscription.value = { isCancelled: false, endDate: null }
-      const { emitted } = render(SubscriptionTransitionPreviewWorkspace, {
-        props: {
-          previewData: makePreview({}),
-          forceReactivation: false,
-          quoteIsCurrent: false,
-          embeddedCheckoutEnabled: true
-        },
-        global: { plugins: [i18n] }
-      })
-      const confirmButton = screen.getByRole('button', {
-        name: 'Confirm upgrade'
-      })
-
-      expect(confirmButton).toBeDisabled()
-      await user.click(confirmButton)
-      expect(emitted().confirm).toBeUndefined()
     })
 
     it('disables confirm while subscription status has not loaded yet, even below the charge threshold', () => {

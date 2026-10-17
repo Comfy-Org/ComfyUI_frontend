@@ -4,39 +4,11 @@
   "description": "In-app coachmark tours for the first-run and app-mode entry paths: tour definitions and the pure tour reducer, the tour and overlay stores, coachmark target registration and the v-coachmark directive, spotlight and card layout, landing dialog, replay and reset of onboarding state. Cloud sign-up onboarding and the onboarding survey belong to the cloud record.",
   "modules": [
     {
-      "path": "src/platform/onboarding/onboardingTours.ts",
-      "role": "domain"
+      "path": "src/platform/onboarding/**",
+      "role": "presentation"
     },
     {
-      "path": "src/platform/onboarding/onboardingTours.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/onboarding/tourState.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/onboarding/tourState.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/onboarding/onboardingTourStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/onboarding/onboardingTourStore.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/onboarding/onboardingTourStore.registeredTour.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/onboarding/onboardingOverlayStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/onboarding/onboardingOverlayStore.test.ts",
+      "path": "src/platform/onboarding/coachmarkRegistry.test.ts",
       "role": "application"
     },
     {
@@ -44,11 +16,27 @@
       "role": "application"
     },
     {
-      "path": "src/platform/onboarding/coachmarkRegistry.test.ts",
+      "path": "src/platform/onboarding/fixtures/**",
       "role": "application"
     },
     {
-      "path": "src/platform/onboarding/fixtures/coachmarkTargets.ts",
+      "path": "src/platform/onboarding/onboardingOverlayStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/onboarding/onboardingOverlayStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/onboarding/onboardingReplay.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/onboarding/onboardingReplay.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/onboarding/onboardingReset.test.ts",
       "role": "application"
     },
     {
@@ -56,80 +44,36 @@
       "role": "application"
     },
     {
-      "path": "src/platform/onboarding/onboardingReset.test.ts",
+      "path": "src/platform/onboarding/onboardingTourStore.registeredTour.test.ts",
       "role": "application"
+    },
+    {
+      "path": "src/platform/onboarding/onboardingTourStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/onboarding/onboardingTourStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/onboarding/onboardingTours.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/onboarding/onboardingTours.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/onboarding/tourState.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/onboarding/tourState.ts",
+      "role": "domain"
     },
     {
       "path": "src/platform/onboarding/useTourTriggers.ts",
       "role": "application"
-    },
-    {
-      "path": "src/platform/onboarding/onboardingReplay.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/platform/onboarding/onboardingReplay.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/platform/onboarding/coachmarkLayout.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/onboarding/coachmarkLayout.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/onboarding/useCoachmarkTarget.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/onboarding/useCoachmarkTarget.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/onboarding/vCoachmark.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/onboarding/vCoachmark.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/onboarding/CoachmarkCard.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/onboarding/CoachmarkCard.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/onboarding/CoachmarkLanding.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/onboarding/CoachmarkLanding.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/onboarding/TourOverlay.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/onboarding/TourOverlay.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/onboarding/TourSpotlight.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/onboarding/TourSpotlight.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/onboarding/TourSpotlight.interactive.test.ts",
-      "role": "presentation"
     }
   ],
   "publicEntryPoints": [],
