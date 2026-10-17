@@ -1,13 +1,13 @@
 <template>
-  <BuilderDialog
+  <DialogPanel
     data-testid="builder-empty-workflow-dialog"
-    :show-close="false"
+    class="w-xl max-w-full min-w-116"
   >
     <template #title>
       {{ $t('builderToolbar.emptyWorkflowTitle') }}
     </template>
 
-    <div class="flex flex-col gap-2">
+    <div class="flex flex-col gap-2 p-4">
       <p class="m-0 text-sm text-muted-foreground">
         {{ $t('linearMode.emptyWorkflowExplanation') }}
       </p>
@@ -34,13 +34,12 @@
         {{ $t('linearMode.loadTemplate') }}
       </Button>
     </template>
-  </BuilderDialog>
+  </DialogPanel>
 </template>
 
 <script setup lang="ts">
 import Button from '@/components/ui/button/Button.vue'
-
-import BuilderDialog from './BuilderDialog.vue'
+import DialogPanel from '@/components/ui/dialog/DialogPanel.vue'
 
 defineEmits<{
   backToWorkflow: []

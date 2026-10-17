@@ -1,134 +1,120 @@
 <script setup lang="ts">
-import NodeUnionIcon from '@/components/icons/NodeUnionIcon.vue'
+import { Check } from '@lucide/vue'
 
-interface Fact {
-  id: string
-  term: string
-  description: string
-}
+import { cn } from '@comfyorg/tailwind-utils'
 
-interface Deliverable {
-  id: string
-  title: string
-  description: string
-}
+import type { AccordionStep } from '@/components/blocks/StepsAccordion01.vue'
+import type { Locale } from '@/i18n/translations'
+
+import StepsAccordion01 from '@/components/blocks/StepsAccordion01.vue'
+import SafeRichText from '@/components/common/SafeRichTextContent'
+import Button from '@/components/ui/button/Button.vue'
+import { translationsFor } from '@/i18n/translations'
 
 const {
-  heading,
-  facts,
-  intro,
-  deliverables,
-  requirementsHeading,
-  requirements,
-  note
+  locale = 'en',
+  signupHref,
+  submitHref
 } = defineProps<{
-  heading: string
-  facts: readonly Fact[]
-  intro: string
-  deliverables: readonly Deliverable[]
-  requirementsHeading: string
-  requirements: readonly string[]
-  note: string
+  locale?: Locale
+  signupHref: string
+  submitHref: string
 }>()
+const { t } = translationsFor(locale)
 
-function stepNumber(index: number) {
-  return String(index + 1).padStart(2, '0')
-}
+const steps: AccordionStep[] = (
+  ['Signup', 'Requirements', 'Prepare', 'Submit'] as const
+).map((id) => ({ id, title: t(`eventChallenge.enter${id}Title`) }))
+
+const sdkDocsHref = {
+  en: 'https://docs.comfy.org/development/api-development/sdks',
+  'zh-CN': 'https://docs.comfy.org/zh/development/api-development/sdks',
+  ja: 'https://docs.comfy.org/ja/development/api-development/sdks'
+} as const satisfies Record<Locale, string>
+
+const requirements = ([1, 2, 3, 4, 5, 6] as const).map((item) =>
+  t(`eventChallenge.requirement${item}`, { sdkDocsHref: sdkDocsHref[locale] })
+)
+
+const deliverables = (['Repo', 'Demo', 'Link', 'Social'] as const).map(
+  (item) => ({
+    id: item,
+    title: t(`eventChallenge.enter${item}`),
+    body: t(`eventChallenge.enter${item}Body`)
+  })
+)
+
+const bodyClass = 'text-sm text-primary-comfy-canvas/70'
+const checkItemClass = 'flex gap-3 text-sm text-primary-warm-white'
+const checkIconClass = 'mt-0.5 size-4 shrink-0 text-primary-comfy-yellow'
 </script>
 
 <template>
-  <section class="mx-auto max-w-9xl px-6 py-16 lg:py-24">
-    <h2
-      class="text-center text-3xl font-light text-balance text-primary-comfy-canvas lg:text-5xl/tight"
-    >
-      {{ heading }}
-    </h2>
-
-    <dl class="mt-12 border-t border-primary-comfy-canvas/20 lg:mt-23">
-      <div
-        v-for="fact in facts"
-        :key="fact.id"
-        class="flex flex-col gap-4 border-b border-primary-comfy-canvas/20 py-10 lg:flex-row lg:gap-6"
-      >
-        <dt
-          class="shrink-0 text-2xl font-light text-primary-comfy-canvas lg:w-1/3"
-        >
-          {{ fact.term }}
-        </dt>
-        <dd
-          class="flex-1 text-base font-light text-primary-comfy-canvas/70 lg:max-w-4xl lg:text-xl/9"
-        >
-          {{ fact.description }}
-        </dd>
+  <StepsAccordion01
+    id="how-to-enter"
+    class="scroll-mt-40 lg:px-20"
+    :title="t('eventChallenge.enter')"
+    :lead="t('eventChallenge.enterLead')"
+    :steps
+  >
+    <template #actions>
+      <div class="mt-8 inline-flex flex-col gap-3">
+        <Button as="a" :href="signupHref">
+          {{ t('eventChallenge.enterSignupCta') }}
+        </Button>
+        <Button as="a" variant="outline" :href="submitHref">
+          {{ t('eventChallenge.submit') }}
+        </Button>
       </div>
-    </dl>
+    </template>
 
-    <p
-      class="mt-16 text-center text-base text-primary-comfy-canvas/60 lg:mt-24 lg:text-xl"
-    >
-      {{ intro }}
-    </p>
-
-    <ol class="mt-8 flex flex-col gap-4 lg:mt-14 lg:flex-row lg:gap-3.5">
-      <li
-        v-for="(deliverable, index) in deliverables"
-        :key="deliverable.id"
-        class="relative flex min-w-0 flex-1 flex-col gap-4 rounded-[40px] border-2 border-primary-comfy-yellow bg-primary-comfy-ink p-10"
-      >
-        <span
-          v-if="index > 0"
-          class="absolute top-1/2 right-full z-10 hidden -translate-x-px -translate-y-1/2 lg:flex"
-          aria-hidden="true"
-        >
-          <NodeUnionIcon
-            class="size-4 scale-x-150 rotate-90 text-primary-comfy-yellow"
-          />
-        </span>
-        <div>
-          <p
-            class="text-xs font-bold tracking-widest text-primary-comfy-yellow"
-          >
-            {{ stepNumber(index) }}
-          </p>
-          <h3
-            class="mt-1 text-2xl font-medium tracking-widest text-primary-comfy-canvas uppercase"
-          >
-            {{ deliverable.title }}
-          </h3>
-        </div>
-        <p class="wrap-anywhere text-primary-comfy-canvas">
-          {{ deliverable.description }}
-        </p>
-      </li>
-    </ol>
-
-    <div class="mx-auto mt-16 max-w-6xl lg:mt-30">
-      <details open class="group border-y border-primary-comfy-canvas/20">
-        <summary
-          class="flex min-h-11 cursor-pointer list-none items-center justify-between gap-8 py-5 pr-5 text-xl font-medium text-primary-comfy-canvas group-open:text-primary-comfy-yellow hover:text-primary-comfy-yellow lg:pt-12 lg:pb-9 lg:text-2xl [&::-webkit-details-marker]:hidden"
-        >
-          {{ requirementsHeading }}
-          <img
-            src="/icons/plus.svg"
-            alt=""
-            width="32"
-            height="32"
-            class="size-8 shrink-0 transition-transform group-open:rotate-45"
-          />
-        </summary>
-        <ul
-          class="list-disc space-y-4 pb-8 pl-7 text-base/relaxed text-primary-comfy-canvas/70 marker:text-primary-comfy-yellow lg:space-y-4.5 lg:pb-11 lg:text-xl/relaxed"
-        >
-          <li v-for="requirement in requirements" :key="requirement">
-            {{ requirement }}
-          </li>
-        </ul>
-      </details>
-      <p
-        class="mt-8 text-base font-light text-primary-comfy-canvas/60 lg:mt-11"
-      >
-        {{ note }}
+    <template #Signup>
+      <p :class="bodyClass">
+        {{ t('eventChallenge.enterSignupBody') }}
       </p>
-    </div>
-  </section>
+      <Button
+        as="a"
+        variant="underlineLink"
+        class="mt-6 text-sm"
+        :href="signupHref"
+      >
+        {{ t('eventChallenge.enterSignupLink') }}
+      </Button>
+    </template>
+
+    <template #Requirements>
+      <ul class="space-y-2">
+        <li v-for="item in requirements" :key="item" :class="checkItemClass">
+          <Check :class="checkIconClass" aria-hidden="true" />
+          <SafeRichText :html="item" />
+        </li>
+      </ul>
+    </template>
+
+    <template #Prepare>
+      <p :class="bodyClass">
+        {{ t('eventChallenge.enterIntro') }}
+      </p>
+      <ul class="mt-4 space-y-4 lg:pl-8">
+        <li v-for="item in deliverables" :key="item.id">
+          <div :class="checkItemClass">
+            <Check :class="checkIconClass" aria-hidden="true" />
+            <span>{{ item.title }}</span>
+          </div>
+          <p :class="cn('mt-1 pl-7', bodyClass)">
+            {{ item.body }}
+          </p>
+        </li>
+      </ul>
+    </template>
+
+    <template #Submit>
+      <p :class="bodyClass">
+        {{ t('eventChallenge.enterSubmitBody') }}
+      </p>
+      <Button as="a" class="mt-6" :href="submitHref">
+        {{ t('eventChallenge.submit') }}
+      </Button>
+    </template>
+  </StepsAccordion01>
 </template>

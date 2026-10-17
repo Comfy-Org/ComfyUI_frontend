@@ -4,15 +4,12 @@ import type {
   SubscriptionCheckoutTier,
   SubscriptionCheckoutType
 } from '@comfyorg/account-core/billing'
-import type { PaymentIntent } from '@stripe/stripe-js'
-import { loadStripe } from '@stripe/stripe-js/pure'
 import { customerCanActHere } from '@comfyorg/account-core/billing'
 import { useEventListener } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
@@ -25,7 +22,6 @@ import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type {
   BillingAuthenticationState,
   BillingOperationPhase,
-  BillingDeclineReason,
   BillingRecoveryAction
 } from '@/platform/workspace/api/workspaceApi'
 import { refreshBilling } from '@/platform/workspace/billing/billingRefresh'
@@ -40,7 +36,6 @@ import {
   needsCustomerAttention,
   progressToastKind
 } from '@/platform/workspace/billing/customerAttention'
-import { resolveStripePublishableKey } from '@/platform/workspace/billing/stripePublishableKey'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
@@ -63,18 +58,6 @@ const AUTHENTICATION_TIMEOUT_MS = 23 * 60 * 60_000
 // mid-flow. The operation is terminal-failed only because it never completed —
 // its replacement is proceeding normally, so there is nothing to report.
 const CHECKOUT_SUPERSEDED_REASON = 'checkout_superseded'
-// Statuses that mean the resumed challenge left the intent exactly where it
-// started, so the attempt needs a fresh start rather than a poll. A denylist
-// fails toward the server rather than toward the customer: an unlisted or
-// future Stripe status reports optimistically as processing, which the next
-// poll's own authentication_state corrects if that guess was wrong — unlike
-// an allowlist, where the same gap would report a live payment as failed.
-const UNMOVED_INTENT_STATUSES: ReadonlySet<PaymentIntent.Status> = new Set([
-  'requires_payment_method',
-  'requires_action',
-  'canceled'
-])
-
 // The poller adopts only operations the legacy rail issued; the SDK rail settles its own.
 function trackLegacyBillingEvent(event: BillingTelemetryEvent) {
   useTelemetry()?.trackBillingEvent({ ...event, billing_client: 'legacy' })
@@ -100,14 +83,12 @@ export interface StartOperationMetadata {
   cycle?: BillingCycle
   checkoutType?: SubscriptionCheckoutType
   paymentIntentSource?: PaymentIntentSource
-  suppressProcessingToast?: boolean
   /**
    * Adopted from a status read rather than started by the customer here. The
    * read names the operation but not what it waits on, so without a served
    * link it is announced by its first status, never before it.
    */
   resumed?: boolean
-  autoHandleRequiresAction?: boolean
   downgradeToPersonal?: {
     memberRemovalCount: number
     memberRemovalFailures: number
@@ -148,7 +129,6 @@ interface BillingOperation {
   cycle?: BillingCycle
   checkoutType?: SubscriptionCheckoutType
   paymentIntentSource?: PaymentIntentSource
-  autoHandleRequiresAction: boolean
   // Last phase the server reported for a pending operation. The phases
   // isBlockedOnCustomerPhase names will not advance until the customer acts, so
   // a dialog should offer them a way back rather than keep waiting. Null while
@@ -173,7 +153,6 @@ interface FailureRecovery {
 
 export const useBillingOperationStore = defineStore('billingOperation', () => {
   const workspaceStore = useTeamWorkspaceStore()
-  const { flags } = useFeatureFlags()
   const toast = useToast()
   const operations = ref<Map<string, BillingOperation>>(new Map())
   const timeouts = new Map<string, ReturnType<typeof setTimeout>>()
@@ -183,8 +162,6 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   const progressToastsAwaitingFirstRead = new Set<string>()
   const terminalResolvers = new Map<string, TerminalResolver>()
   const terminalPromises = new Map<string, Promise<BillingOperation>>()
-  const autoHandledPaymentActions = new Set<string>()
-  const paymentIntentClientSecrets = new Map<string, string>()
   const inFlightPolls = new Map<string, Promise<void>>()
 
   useEventListener(document, 'visibilitychange', () => {
@@ -277,11 +254,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     operation: BillingOperation,
     metadata: StartOperationMetadata | undefined
   ) {
-    if (
-      !isPaymentOperation(operation.type) ||
-      metadata?.suppressProcessingToast
-    )
-      return
+    if (!isPaymentOperation(operation.type)) return
     if (metadata?.resumed && operation.actionUrl === null) {
       progressToastsAwaitingFirstRead.add(operation.opId)
       return
@@ -355,7 +328,6 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       paymentIntentSource:
         metadata?.paymentIntentSource ??
         getCheckoutJourneyPaymentIntentSource(opId),
-      autoHandleRequiresAction: metadata?.autoHandleRequiresAction ?? false,
       phase: null,
       downgradeToPersonal: metadata?.downgradeToPersonal,
       dismissed: false
@@ -435,31 +407,15 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         return
       }
 
-      if (
-        response.status === 'reconciliation_needed' ||
-        (flags.embeddedCheckoutEnabled &&
-          response.authentication_state === 'reconciliation_needed')
-      ) {
+      if (response.status === 'reconciliation_needed') {
         handleReconciliationNeeded(opId)
         return
       }
 
-      // The phase can widen the budget, so it is applied before the decision,
-      // which then reads the updated operation. The action URL stays after it:
-      // a link landing on an operation already out of budget is not retained.
       updateOperationPhase(opId, response.phase ?? null)
       if (stopIfTimedOut(opId, operations.value.get(opId) ?? operation)) return
 
-      const pollingPaused = flags.embeddedCheckoutEnabled
-        ? await updateAuthenticationState(
-            opId,
-            response.authentication_state,
-            response.payment_intent_client_secret,
-            response.decline_reason
-          )
-        : false
       updateOperationActionUrl(opId, validateActionUrl(response.action_url))
-      if (pollingPaused) return
       scheduleNextPoll(opId)
     } catch {
       const currentOperation = operations.value.get(opId)
@@ -525,12 +481,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   }
 
   function customerCanAct(operation: BillingOperation): boolean {
-    return customerCanActHere(
-      legacyOperationActionHold(
-        operation,
-        paymentIntentClientSecrets.has(operation.opId)
-      )
-    )
+    return customerCanActHere(legacyOperationActionHold(operation, false))
   }
 
   function scheduleNextPoll(opId: string) {
@@ -576,170 +527,6 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     return operation.type === 'subscription'
       ? elapsed > SUBSCRIPTION_ACTION_DISCOVERY_TIMEOUT_MS
       : elapsed > TIMEOUT_MS
-  }
-
-  async function updateAuthenticationState(
-    opId: string,
-    state?: BillingAuthenticationState,
-    clientSecret?: string,
-    declineReason?: BillingDeclineReason
-  ): Promise<boolean> {
-    if (!state) return false
-    const operation = operations.value.get(opId)
-    if (!operation || operation.status !== 'pending') return true
-
-    const knownSecret = paymentIntentClientSecrets.get(opId)
-    if (clientSecret) paymentIntentClientSecrets.set(opId, clientSecret)
-    const secret = clientSecret ?? knownSecret
-    // requires_action after a failed browser attempt is the same challenge the
-    // customer just abandoned — the intent has not moved. Keeping the failure
-    // presentation stops the alert flapping between polls; a state that
-    // actually advanced (processing, succeeded, failed) still flows through and
-    // resolves the UI. A different client secret is a genuinely new challenge
-    // and still flows through — same rule the echo check below applies.
-    //
-    // Likewise after a browser attempt that SUCCEEDED: the server can keep
-    // reporting requires_action for the same intent until it observes the
-    // completion, and downgrading processing back to requires_action reopened
-    // the pay button mid-payment.
-    const isStaleFailure =
-      state === 'requires_action' &&
-      operation.authenticationState === 'failed_retryable' &&
-      (!clientSecret || clientSecret === knownSecret)
-    const isEchoOfHandledChallenge =
-      state === 'requires_action' &&
-      operation.authenticationState === 'processing' &&
-      autoHandledPaymentActions.has(opId) &&
-      (!clientSecret || clientSecret === knownSecret)
-    const displayState =
-      isStaleFailure || isEchoOfHandledChallenge
-        ? operation.authenticationState
-        : state
-    const declineDetail =
-      state === 'failed_retryable' && declineReason
-        ? billingFailureDetail(operation.type, declineReason)
-        : null
-    updateOperation(opId, {
-      authenticationState: displayState,
-      canRetryAuthentication:
-        Boolean(secret) && displayState === 'requires_action',
-      authenticationRequiredSeen:
-        operation.authenticationRequiredSeen || state === 'requires_action',
-      ...(declineDetail && { errorMessage: declineDetail })
-    })
-
-    // Neither authentication state is terminal for a pending operation: the
-    // customer may complete the challenge on a hosted page or another device,
-    // and the server learns before this tab does. Polling therefore continues
-    // at the slower authentication cadence until the operation settles or times
-    // out — pausing here left a completed payment showing "complete
-    // verification" forever.
-    if (state === 'failed_retryable') return false
-    if (
-      state !== 'requires_action' ||
-      !operation.autoHandleRequiresAction ||
-      autoHandledPaymentActions.has(opId)
-    ) {
-      return false
-    }
-    // Only the in-page challenge we drive ourselves suspends polling, for as
-    // long as it is on screen.
-    autoHandledPaymentActions.add(opId)
-    return !(await runPaymentIntentAction(opId))
-  }
-
-  async function retryPaymentAuthentication(opId: string): Promise<boolean> {
-    if (!flags.embeddedCheckoutEnabled) return false
-    const operation = operations.value.get(opId)
-    if (
-      !operation ||
-      operation.status !== 'pending' ||
-      !paymentIntentClientSecrets.has(opId) ||
-      operation.authenticationState !== 'requires_action'
-    ) {
-      return false
-    }
-    const completed = await runPaymentIntentAction(opId)
-    if (completed) void poll(opId)
-    return completed
-  }
-
-  async function runPaymentIntentAction(opId: string): Promise<boolean> {
-    const operation = operations.value.get(opId)
-    const clientSecret = paymentIntentClientSecrets.get(opId)
-    if (!operation || !clientSecret || operation.isAuthenticating) return false
-    updateOperation(opId, {
-      isAuthenticating: true,
-      canRetryAuthentication: false,
-      errorMessage: null
-    })
-
-    try {
-      const publishableKey = resolveStripePublishableKey()
-      const stripe = publishableKey ? await loadStripe(publishableKey) : null
-      if (!stripe) {
-        setAuthenticationFailed(
-          opId,
-          t('billingOperation.authenticationUnavailable')
-        )
-        return false
-      }
-      const { error, paymentIntent } = await stripe.handleNextAction({
-        clientSecret
-      })
-      if (error) {
-        setAuthenticationFailed(
-          opId,
-          error.message || t('billingOperation.authenticationFailedDetail')
-        )
-        return false
-      }
-      // With no action left to resume the call succeeds and changes nothing, so
-      // an intent still sitting on its pre-challenge status has not paid.
-      if (paymentIntent && UNMOVED_INTENT_STATUSES.has(paymentIntent.status)) {
-        setAuthenticationFailed(
-          opId,
-          t('billingOperation.authenticationFailedDetail')
-        )
-        return false
-      }
-      updateOperation(opId, {
-        authenticationState: 'processing',
-        isAuthenticating: false,
-        canRetryAuthentication: false,
-        errorMessage: null,
-        actionUrl: null
-      })
-      autoHandledPaymentActions.add(opId)
-      intervals.set(opId, INITIAL_INTERVAL_MS)
-      waitingWithoutActionSince.delete(opId)
-      return true
-    } catch (error) {
-      setAuthenticationFailed(
-        opId,
-        error instanceof Error
-          ? error.message
-          : t('billingOperation.authenticationFailedDetail')
-      )
-      return false
-    }
-  }
-
-  function setAuthenticationFailed(opId: string, errorMessage: string) {
-    const operation = operations.value.get(opId)
-    if (!operation) return
-    updateOperation(opId, {
-      authenticationState: 'failed_retryable',
-      isAuthenticating: false,
-      canRetryAuthentication: false,
-      errorMessage
-    })
-    // A browser-step error is not a verdict on the payment: the challenge may
-    // have completed server-side despite the client error (observed: the
-    // intent succeeded seconds after handleNextAction reported failure, and a
-    // paused UI stayed on "failed" for a live subscription). Keep polling so
-    // the server's state resolves the presentation.
-    scheduleNextPoll(opId)
   }
 
   function updateOperation(opId: string, patch: Partial<BillingOperation>) {
@@ -788,16 +575,6 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   function updateOperationActionUrl(opId: string, actionUrl: string | null) {
     const operation = operations.value.get(opId)
     if (!operation || operation.status !== 'pending') return
-    // An action link echoed while this tab's completed challenge is still
-    // processing points at that same challenge; surfacing it would ask the
-    // customer to redo a step they just finished.
-    if (
-      actionUrl !== null &&
-      autoHandledPaymentActions.has(opId) &&
-      operation.authenticationState !== 'requires_action'
-    ) {
-      return
-    }
     const updated: BillingOperation = {
       ...operation,
       actionUrl,
@@ -805,10 +582,6 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         operation.authenticationRequiredSeen || actionUrl !== null
     }
     operations.value = new Map(operations.value).set(opId, updated)
-    // Tracks the CURRENT action_url, which the contract defines as present
-    // exactly while the operation cannot proceed without the customer — so the
-    // toast never outlives the verification action it points at. Swapped only
-    // when that answer changes, or a dismissed toast would return every poll.
     syncProgressToastAfterRead(operation, updated)
   }
 
@@ -1336,8 +1109,6 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     }
     intervals.delete(opId)
     waitingWithoutActionSince.delete(opId)
-    autoHandledPaymentActions.delete(opId)
-    paymentIntentClientSecrets.delete(opId)
     progressToastsAwaitingFirstRead.delete(opId)
 
     const progressToast = progressToasts.get(opId)
@@ -1376,7 +1147,6 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     topupActionOperation,
     getOperation,
     startOperation,
-    retryPaymentAuthentication,
     clearOperation,
     dismissOperation
   }

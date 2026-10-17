@@ -3,17 +3,38 @@
   "capability": "HDR image viewer",
   "description": "HDR and EXR image inspection: gamut conversion, image statistics and histograms, image loading and rendering, channel and exposure controls, and viewer dialog integration. Shared WebGL viewport and model-viewer dialog configuration remain external dependencies.",
   "modules": [
-    { "path": "src/renderer/hdr/colorGamut.ts", "role": "domain" },
-    { "path": "src/renderer/hdr/colorGamut.test.ts", "role": "domain" },
-    { "path": "src/renderer/hdr/hdrStats.ts", "role": "domain" },
-    { "path": "src/renderer/hdr/hdrStats.test.ts", "role": "domain" },
-    { "path": "src/renderer/hdr/hdrViewerShader.ts", "role": "infrastructure" },
-    { "path": "src/utils/hdrFormatUtil.ts", "role": "infrastructure" },
-    { "path": "src/utils/hdrFormatUtil.test.ts", "role": "infrastructure" },
-    { "path": "src/composables/useHdrViewer.ts", "role": "application" },
-    { "path": "src/components/hdr/**", "role": "presentation" },
-    { "path": "src/services/hdrViewerService.ts", "role": "integration" },
-    { "path": "src/services/hdrViewerService.test.ts", "role": "integration" }
+    {
+      "path": "src/components/hdr/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/composables/useHdrViewer.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/hdr/**",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/hdr/hdrViewerShader.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/services/hdrViewerService.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/services/hdrViewerService.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/utils/hdrFormatUtil.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/utils/hdrFormatUtil.ts",
+      "role": "infrastructure"
+    }
   ],
   "publicEntryPoints": [],
   "allowedDependencies": [],

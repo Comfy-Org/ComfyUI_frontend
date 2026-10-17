@@ -65,7 +65,7 @@
       </span>
       <Button
         variant="textonly"
-        class="h-6 px-1.5 text-xs text-muted-foreground"
+        class="h-6 px-1.5 text-muted-foreground"
         @click="clearFilters"
       >
         {{ $t('sideToolbar.mediaAssets.clearFilters') }}

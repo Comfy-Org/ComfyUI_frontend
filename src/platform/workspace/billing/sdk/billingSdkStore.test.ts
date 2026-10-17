@@ -3,7 +3,6 @@ import { nextTick } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useTelemetry } from '@/platform/telemetry'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
@@ -57,20 +56,13 @@ vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
 vi.mock(import('firebase/auth'))
 
-const mockLoadStripe = vi.hoisted(() => vi.fn())
-vi.mock<unknown>(import('@stripe/stripe-js/pure'), () => ({
-  loadStripe: mockLoadStripe
-}))
-
 let harness: ReturnType<typeof fakeBillingSdk>
 let options: BillingSdkOptions
 const refreshed = vi.fn()
 
 beforeEach(() => {
   stubAccountIdentityPort()
-  vi.mocked(useFeatureFlags().flags).embeddedCheckoutEnabled = false
   vi.mocked(useFeatureFlags().flags).hostedBillingDestination = 'stripe'
-  remoteConfig.value = {}
   harness = fakeBillingSdk()
   mockCreateBillingSdk.mockImplementation((sdkOptions) => {
     options = sdkOptions
@@ -269,44 +261,6 @@ describe('useBillingSdkStore', () => {
     expect(useToast().toasts).toEqual([])
   })
 
-  it('drives a required in-page challenge once per operation', () => {
-    useBillingSdkStore()
-    const challenged = pendingTopup({
-      presentation: 'embedded',
-      challenge: { clientSecret: 'pi_secret', status: 'required' }
-    })
-
-    harness.publish(challenged)
-    harness.publish(challenged)
-
-    expect(harness.sdk.driveChallenge).toHaveBeenCalledExactlyOnceWith('op-1')
-  })
-
-  it('refuses to retry a challenge while embedded checkout is off', async () => {
-    await expect(
-      useBillingSdkStore().retryPaymentAuthentication('op-1')
-    ).resolves.toBe(false)
-    expect(harness.sdk.driveChallenge).not.toHaveBeenCalled()
-  })
-
-  it('retries the in-page challenge on request and reports whether it completed', async () => {
-    vi.mocked(useFeatureFlags().flags).embeddedCheckoutEnabled = true
-    const store = useBillingSdkStore()
-    vi.mocked(harness.sdk.driveChallenge).mockResolvedValueOnce('failed')
-
-    await expect(store.retryPaymentAuthentication('op-1')).resolves.toBe(false)
-    await expect(store.retryPaymentAuthentication('op-1')).resolves.toBe(true)
-    expect(harness.sdk.driveChallenge).toHaveBeenCalledTimes(2)
-
-    harness.publish(
-      pendingTopup({
-        presentation: 'embedded',
-        challenge: { clientSecret: 'pi_secret', status: 'required' }
-      })
-    )
-    expect(harness.sdk.driveChallenge).toHaveBeenCalledTimes(2)
-  })
-
   it('reports the source of the journey a reattached operation is bound to', () => {
     resolveCheckoutJourney({
       actorUid: 'user-1',
@@ -430,76 +384,6 @@ describe('useBillingSdkStore', () => {
         duration: Number.POSITIVE_INFINITY
       })
     )
-  })
-
-  it.for([
-    { outcome: 'rejects', load: () => Promise.reject(new Error('blocked')) },
-    { outcome: 'yields nothing', load: () => Promise.resolve(null) }
-  ])(
-    'offers no challenge port when the payment provider script $outcome',
-    async ({ load }) => {
-      vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_test_challenge')
-      mockLoadStripe.mockImplementation(load)
-      useBillingSdkStore()
-
-      await expect(options.challengePort()).resolves.toBeUndefined()
-    }
-  )
-
-  it('prefers the server-configured publishable key over the build-time one', async () => {
-    vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_build_time')
-    remoteConfig.value = { stripe_publishable_key: 'pk_server' }
-    mockLoadStripe.mockResolvedValue({})
-    useBillingSdkStore()
-
-    await options.challengePort()
-
-    expect(mockLoadStripe).toHaveBeenCalledWith('pk_server')
-  })
-
-  it('falls back to the build-time key when the server has none configured', async () => {
-    vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_build_time')
-    remoteConfig.value = {}
-    mockLoadStripe.mockResolvedValue({})
-    useBillingSdkStore()
-
-    await options.challengePort()
-
-    expect(mockLoadStripe).toHaveBeenCalledWith('pk_build_time')
-  })
-
-  it.for(['', 42] as const)(
-    'treats a malformed server key (%j) as absent',
-    async (malformed) => {
-      vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_build_time')
-      remoteConfig.value = {
-        stripe_publishable_key: malformed as unknown as string
-      }
-      mockLoadStripe.mockResolvedValue({})
-      useBillingSdkStore()
-
-      await options.challengePort()
-
-      expect(mockLoadStripe).toHaveBeenCalledWith('pk_build_time')
-    }
-  )
-
-  it('reports checkout unavailable when neither source configures a key', () => {
-    vi.mocked(useFeatureFlags().flags).embeddedCheckoutEnabled = true
-    vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', undefined)
-    remoteConfig.value = {}
-    useBillingSdkStore()
-
-    expect(options.embeddedCheckoutAvailable()).toBe(false)
-  })
-
-  it('reports checkout available on the server key alone, with no build-time key', () => {
-    vi.mocked(useFeatureFlags().flags).embeddedCheckoutEnabled = true
-    vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', undefined)
-    remoteConfig.value = { stripe_publishable_key: 'pk_server' }
-    useBillingSdkStore()
-
-    expect(options.embeddedCheckoutAvailable()).toBe(true)
   })
 
   it('polls every pending operation when the tab returns', () => {
@@ -689,25 +573,6 @@ describe('useBillingSdkStore subscription commands', () => {
     expect(store.subscriptionActionUrl).toBe('https://pay.example/op-1')
   })
 
-  it('drives no in-page challenge for a subscribe it reattached to', async () => {
-    const openPage = vi.spyOn(window, 'open').mockReturnValue(null)
-    const store = useBillingSdkStore()
-
-    reattachedSubscribe()
-    harness.publish(
-      pendingSubscription({
-        presentation: 'embedded',
-        actionUrl: 'https://pay.example/invoice',
-        challenge: { clientSecret: 'pi_secret', status: 'required' }
-      })
-    )
-    await nextTick()
-
-    expect(harness.sdk.driveChallenge).not.toHaveBeenCalled()
-    expect(openPage).not.toHaveBeenCalled()
-    expect(store.subscriptionActionUrl).toBe('https://pay.example/invoice')
-  })
-
   it('finishes a reattached subscribe the way the poller did', async () => {
     useBillingSdkStore()
 
@@ -810,45 +675,6 @@ describe('useBillingSdkStore subscription commands', () => {
     expect(store.subscriptionActionUrl).toBe('https://pay.example/op-1')
   })
 
-  it('opens no payment page while this tab drives the in-page challenge', () => {
-    const openPage = vi.spyOn(window, 'open').mockReturnValue(null)
-    useBillingSdkStore()
-
-    harness.publish(
-      pendingSubscription({
-        presentation: 'embedded',
-        actionUrl: 'https://pay.example/invoice',
-        challenge: { clientSecret: 'pi_secret', status: 'required' }
-      })
-    )
-
-    expect(harness.sdk.driveChallenge).toHaveBeenCalledExactlyOnceWith('op-1')
-    expect(openPage).not.toHaveBeenCalled()
-    expect(useToast().toasts).toEqual([
-      expect.objectContaining({
-        kind: 'warning',
-        title: 'Verify your payment to finish setting up your workspace'
-      })
-    ])
-  })
-
-  it('opens the hosted page for an embedded operation that carries no in-page challenge', () => {
-    const openPage = vi.spyOn(window, 'open').mockReturnValue({} as Window)
-    useBillingSdkStore()
-
-    harness.publish(
-      pendingSubscription({
-        presentation: 'embedded',
-        actionUrl: 'https://pay.example/invoice'
-      })
-    )
-
-    expect(openPage).toHaveBeenCalledExactlyOnceWith(
-      'https://pay.example/invoice',
-      '_blank'
-    )
-  })
-
   it.for([
     { page: 'opened', opened: window, reported: [['op-1', 'new_tab']] },
     { page: 'had blocked', opened: null, reported: [] }
@@ -922,20 +748,6 @@ describe('useBillingSdkStore subscription commands', () => {
     harness.publish(settledOperation('succeeded', 'subscription'))
 
     expect(store.subscriptionActionUrl).toBeNull()
-  })
-
-  it('drives the in-page challenge a subscribe raises, as it does for a top-up', async () => {
-    useBillingSdkStore()
-
-    harness.publish(
-      pendingSubscription({
-        presentation: 'embedded',
-        challenge: { clientSecret: 'cs_1', status: 'required' }
-      })
-    )
-    await nextTick()
-
-    expect(harness.sdk.driveChallenge).toHaveBeenCalledExactlyOnceWith('op-1')
   })
 
   it('hands back the portal URL without refreshing anything', async () => {

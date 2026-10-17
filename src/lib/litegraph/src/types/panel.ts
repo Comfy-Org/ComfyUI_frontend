@@ -1,4 +1,5 @@
-import type { LGraphNode } from '../LGraphNode'
+import type { LGraphNode } from '@/lib/litegraph/src/types/entityRegistry'
+
 import type { IContextMenuValue } from './contextMenu'
 import type { TWidgetValue } from './widgets'
 

@@ -1,5 +1,5 @@
 <template>
-  <div class="flex min-h-8 flex-row items-center gap-2">
+  <div class="flex min-h-8 items-center gap-2">
     <div class="flex grow items-center">
       <span
         :id="`${props.id}-label`"

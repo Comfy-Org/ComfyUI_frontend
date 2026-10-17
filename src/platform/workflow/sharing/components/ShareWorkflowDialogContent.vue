@@ -30,9 +30,16 @@
           {{ $t('shareWorkflow.publishToHubTab') }}
         </Button>
       </div>
-      <div v-else class="select-none">
+      <DialogTitle
+        :class="
+          cn(
+            'm-0 text-sm font-normal select-none',
+            showPublishToHubTab && 'sr-only'
+          )
+        "
+      >
         {{ $t('shareWorkflow.shareLinkTab') }}
-      </div>
+      </DialogTitle>
       <Button size="icon" :aria-label="$t('g.close')" @click="onClose">
         <i class="icon-[lucide--x] size-4" />
       </Button>
@@ -199,6 +206,7 @@ import ComfyHubPublishIntroPanel from '@/platform/workflow/sharing/components/pr
 import ShareAssetWarningBox from '@/platform/workflow/sharing/components/ShareAssetWarningBox.vue'
 import ShareUrlCopyField from '@/platform/workflow/sharing/components/ShareUrlCopyField.vue'
 import Button from '@/components/ui/button/Button.vue'
+import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import Input from '@/components/ui/input/Input.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useComfyHubPublishDialog } from '@/platform/workflow/sharing/composables/useComfyHubPublishDialog'

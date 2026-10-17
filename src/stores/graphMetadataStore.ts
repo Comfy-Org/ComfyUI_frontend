@@ -1,7 +1,10 @@
+import type {
+  LGraphConfig,
+  LGraphExtra
+} from '@/lib/litegraph/src/types/entityRegistry'
 import { defineStore } from 'pinia'
 import { shallowReactive } from 'vue'
 
-import type { LGraphConfig, LGraphExtra } from '@/lib/litegraph/src/LGraph'
 import type { UUID } from '@/utils/uuid'
 
 interface GraphMetadata {

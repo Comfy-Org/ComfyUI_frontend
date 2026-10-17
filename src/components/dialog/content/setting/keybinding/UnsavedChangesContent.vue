@@ -14,11 +14,7 @@
         >
           {{ $t('g.cancel') }}
         </Button>
-        <Button
-          variant="secondary"
-          class="bg-secondary-background"
-          @click="onResult(false)"
-        >
+        <Button variant="secondary" @click="onResult(false)">
           {{ $t('g.keybindingPresets.discardAndSwitch') }}
         </Button>
         <Button

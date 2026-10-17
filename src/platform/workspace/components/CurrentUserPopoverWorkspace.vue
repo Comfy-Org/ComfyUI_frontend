@@ -114,7 +114,6 @@
         v-if="canTopUp"
         variant="secondary"
         size="sm"
-        class="text-base-foreground"
         data-testid="add-credits-button"
         :data-dd-action-name="BILLING_ACTION_NAME.addCreditsPopover"
         @click="handleTopUp"
