@@ -240,9 +240,7 @@ function act() {
         class="flex items-baseline justify-between gap-4"
       >
         <dt class="text-muted-foreground">{{ row.label }}</dt>
-        <dd
-          class="m-0 flex items-center gap-1.5 text-foreground tabular-nums"
-        >
+        <dd class="m-0 flex items-center gap-1.5 text-foreground tabular-nums">
           <i
             v-if="row.kind === 'added'"
             class="icon-[lucide--coins] size-4 shrink-0"
