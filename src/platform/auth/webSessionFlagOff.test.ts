@@ -4,7 +4,10 @@ import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 
 import { MISSING_CUSTOMER_MESSAGE } from '@comfyorg/account-core/customerRecovery'
-import type { ExchangeTokenResponse } from '@comfyorg/ingest-types'
+import type {
+  BillingCapabilities,
+  ExchangeTokenResponse
+} from '@comfyorg/ingest-types'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
@@ -170,7 +173,7 @@ const CAPABILITIES = {
     can_manage_partner_node_access: false,
     can_view_pending_invites: false,
     can_view_team_usage: false
-  },
+  } satisfies BillingCapabilities,
   rollout_defaults_applied: {
     can_downgrade_to_personal: false,
     can_subscribe_self_serve: false,
