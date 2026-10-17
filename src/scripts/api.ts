@@ -887,6 +887,12 @@ export class ComfyApi extends EventTarget {
     return !requests || params.has('token')
   }
 
+  /** The cloud socket's auth params; null when no one is signed in to open it. */
+  async socketAuthParams(): Promise<URLSearchParams | null> {
+    const params = new URLSearchParams()
+    return (await this.addSocketAuth(params)) ? params : null
+  }
+
   /**
    * Creates and connects a WebSocket for realtime updates
    * @param {boolean} isReconnect If the socket is connection is a reconnect attempt

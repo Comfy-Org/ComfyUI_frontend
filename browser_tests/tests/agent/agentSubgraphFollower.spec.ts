@@ -41,34 +41,38 @@ test.describe(
 
     test('materializes a linked host with nested definitions and applies a promoted widget edit', async ({
       page,
-      getWebSocket
+      getAgentSocket
     }) => {
-      const socket =
-        await test.step('open the agent-enabled workflow', async () => {
-          await page.setViewportSize({ width: 1920, height: 1280 })
-          await bootAgentApp(page, true, {
-            onboardingCompleted: true,
-            settings: { 'Comfy.VueNodes.Enabled': true },
-            objectInfo: agentSubgraphNodeDefs,
-            beforeNavigate: async (page) => {
-              await mockAgentTurnApi(page, {
-                message_id: '3818ba00-d772-4a3f-98c1-9312725b577d',
-                thread_id: 'd4c016c4-3b8c-44cf-97de-1ae27e43e718',
-                workflow_id: AGENT_SUBGRAPH_WORKFLOW_ID
-              })
-              await mockWorkflowPersistence(page, AGENT_SUBGRAPH_WORKFLOW_ID)
-            }
-          })
-          return getWebSocket()
+      await test.step('open the agent-enabled workflow', async () => {
+        await page.setViewportSize({ width: 1920, height: 1280 })
+        await bootAgentApp(page, true, {
+          onboardingCompleted: true,
+          settings: { 'Comfy.VueNodes.Enabled': true },
+          objectInfo: agentSubgraphNodeDefs,
+          beforeNavigate: async (page) => {
+            await mockAgentTurnApi(page, {
+              message_id: '3818ba00-d772-4a3f-98c1-9312725b577d',
+              thread_id: 'd4c016c4-3b8c-44cf-97de-1ae27e43e718',
+              workflow_id: AGENT_SUBGRAPH_WORKFLOW_ID
+            })
+            await mockWorkflowPersistence(page, AGENT_SUBGRAPH_WORKFLOW_ID)
+          }
         })
+      })
 
       const outboundFrames: string[] = []
-      socket.onMessage((message) => outboundFrames.push(String(message)))
 
-      await test.step('select the workflow and send an agent turn', async () => {
+      const socket = await test.step('open the agent panel', async () => {
         await loadSeedIntoActiveTab(page, subgraphWorkflow)
         const agentPanel = new AgentPanel(page)
         await agentPanel.open()
+        const opened = await getAgentSocket()
+        opened.onMessage((message) => outboundFrames.push(String(message)))
+        return opened
+      })
+
+      await test.step('select the workflow and send an agent turn', async () => {
+        const agentPanel = new AgentPanel(page)
         await agentPanel.selectWorkflow()
         const composer = agentPanel.root.getByRole('textbox', {
           name: /^Describe ideas/
@@ -261,34 +265,38 @@ test.describe(
 
     test('applies interior widget edits to the subgraph and its host', async ({
       page,
-      getWebSocket
+      getAgentSocket
     }) => {
-      const socket =
-        await test.step('open the agent-enabled workflow', async () => {
-          await page.setViewportSize({ width: 1920, height: 1280 })
-          await bootAgentApp(page, true, {
-            onboardingCompleted: true,
-            settings: { 'Comfy.VueNodes.Enabled': true },
-            objectInfo: agentSubgraphNodeDefs,
-            beforeNavigate: async (page) => {
-              await mockAgentTurnApi(page, {
-                message_id: '3818ba00-d772-4a3f-98c1-9312725b577d',
-                thread_id: 'd4c016c4-3b8c-44cf-97de-1ae27e43e718',
-                workflow_id: AGENT_SUBGRAPH_WORKFLOW_ID
-              })
-              await mockWorkflowPersistence(page, AGENT_SUBGRAPH_WORKFLOW_ID)
-            }
-          })
-          return getWebSocket()
+      await test.step('open the agent-enabled workflow', async () => {
+        await page.setViewportSize({ width: 1920, height: 1280 })
+        await bootAgentApp(page, true, {
+          onboardingCompleted: true,
+          settings: { 'Comfy.VueNodes.Enabled': true },
+          objectInfo: agentSubgraphNodeDefs,
+          beforeNavigate: async (page) => {
+            await mockAgentTurnApi(page, {
+              message_id: '3818ba00-d772-4a3f-98c1-9312725b577d',
+              thread_id: 'd4c016c4-3b8c-44cf-97de-1ae27e43e718',
+              workflow_id: AGENT_SUBGRAPH_WORKFLOW_ID
+            })
+            await mockWorkflowPersistence(page, AGENT_SUBGRAPH_WORKFLOW_ID)
+          }
         })
+      })
 
       const outboundFrames: string[] = []
-      socket.onMessage((message) => outboundFrames.push(String(message)))
 
-      await test.step('select the workflow and send an agent turn', async () => {
+      const socket = await test.step('open the agent panel', async () => {
         await loadSeedIntoActiveTab(page, subgraphWorkflow)
         const agentPanel = new AgentPanel(page)
         await agentPanel.open()
+        const opened = await getAgentSocket()
+        opened.onMessage((message) => outboundFrames.push(String(message)))
+        return opened
+      })
+
+      await test.step('select the workflow and send an agent turn', async () => {
+        const agentPanel = new AgentPanel(page)
         await agentPanel.selectWorkflow()
         const composer = agentPanel.root.getByRole('textbox', {
           name: /^Describe ideas/
@@ -387,7 +395,7 @@ test.describe(
 
     test('keeps promoted widget defaults when the host carries extra opaque values', async ({
       page,
-      getWebSocket
+      getAgentSocket
     }) => {
       await page.setViewportSize({ width: 1920, height: 1280 })
       await bootAgentApp(page, true, {
@@ -403,10 +411,6 @@ test.describe(
           await mockWorkflowPersistence(page, AGENT_SUBGRAPH_DRIFT_WORKFLOW_ID)
         }
       })
-      const socket = await getWebSocket()
-      const outboundFrames: string[] = []
-      socket.onMessage((message) => outboundFrames.push(String(message)))
-
       await loadSeedIntoActiveTab(page, {
         ...subgraphWorkflow,
         nodes: [],
@@ -414,6 +418,9 @@ test.describe(
       })
       const agentPanel = new AgentPanel(page)
       await agentPanel.open()
+      const socket = await getAgentSocket()
+      const outboundFrames: string[] = []
+      socket.onMessage((message) => outboundFrames.push(String(message)))
       await agentPanel.selectWorkflow()
       const composer = agentPanel.root.getByRole('textbox', {
         name: /^Describe ideas/
