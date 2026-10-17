@@ -3,6 +3,7 @@ import { expect } from '@playwright/test'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
+import { AGENT_COMPOSER_PLACEHOLDER_TEXT } from '@e2e/fixtures/utils/agentComposerLabel'
 
 test.describe(
   'Agent composer placeholder reset (PM-1331)',
@@ -34,7 +35,7 @@ test.describe(
       await agentPanel.open()
       await agentPanel.selectWorkflow()
       const panel = agentPanel.root
-      const placeholder = panel.getByText(/^Describe ideas/)
+      const placeholder = panel.getByText(AGENT_COMPOSER_PLACEHOLDER_TEXT)
       await expect(placeholder).toBeVisible()
 
       await panel

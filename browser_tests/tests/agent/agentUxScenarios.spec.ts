@@ -4,6 +4,7 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import { TestIds } from '@e2e/fixtures/selectors'
 import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
+import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
 test.describe('Linear Agent UX scenarios', { tag: '@cloud' }, () => {
   test('PM-1373 shows fewer cold-start suggestions below the compact panel breakpoint', async ({
@@ -48,7 +49,9 @@ test.describe('Linear Agent UX scenarios', { tag: '@cloud' }, () => {
 
       await agentPanel.resizeTo(width, agentPanel.dockedPanel)
 
-      const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
+      const composer = panel.getByRole('textbox', {
+        name: AGENT_COMPOSER_LABEL
+      })
       const send = panel.getByRole('button', { name: 'Send' })
       await composer.fill('Keep controls usable')
 

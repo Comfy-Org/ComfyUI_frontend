@@ -50,6 +50,7 @@ import {
   sourceNodeDef
 } from '@e2e/fixtures/data/agent/agentCrdtMultiAutogrowRealignFixture'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
 export const SENTINEL_PROMPT = 'multi-autogrow-realign-sentinel-prompt'
 export const SENTINEL_WIDTH = 777
@@ -284,7 +285,7 @@ export class MultiAutogrowRealignHarness {
    */
   async sendTurn(text: string): Promise<void> {
     await this.panel
-      .getByRole('textbox', { name: /^Describe ideas/ })
+      .getByRole('textbox', { name: AGENT_COMPOSER_LABEL })
       .fill(text)
     await this.panel
       .getByRole('button', { name: enMessages.agent.send })

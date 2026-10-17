@@ -201,13 +201,11 @@ describe('Composer', () => {
     expect(emitted().mentionPick).toBeUndefined()
   })
 
-  it('hints at ideas, references and dragged assets without skills', () => {
+  it('uses one primary action in the empty composer placeholder', () => {
     mount()
 
-    const text = screen.getByText(
-      'Describe ideas, @ add references, drag in assets'
-    )
-    expect(text).toBeVisible()
+    expect(screen.getByText('Describe what you want to create')).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Reference' })).toBeVisible()
   })
 
   it.for([
@@ -223,25 +221,20 @@ describe('Composer', () => {
       store.replaceDraft({ text: '', workflowReferences: [], attachments })
       mount()
       const box = screen.getByRole('textbox')
-      expect(
-        screen.getByText('Describe ideas, @ add references, drag in assets')
-      ).toBeVisible()
+      expect(screen.getByText('Describe what you want to create')).toBeVisible()
 
       await userEvent.click(box)
       await userEvent.paste('hello')
 
       expect(store.draft).toBe('hello')
       expect(
-        isInaccessible(
-          screen.getByText('Describe ideas, @ add references, drag in assets')
-        )
+        isInaccessible(screen.getByText('Describe what you want to create'))
       ).toBe(true)
+      expect(screen.getByRole('button', { name: 'Reference' })).toBeVisible()
 
       await userEvent.keyboard('{Control>}a{/Control}{Backspace}')
       expect(store.draft).toBe('')
-      expect(
-        screen.getByText('Describe ideas, @ add references, drag in assets')
-      ).toBeVisible()
+      expect(screen.getByText('Describe what you want to create')).toBeVisible()
       expect(store.attachments).toEqual(attachments)
     }
   )
@@ -257,6 +250,19 @@ describe('Composer', () => {
     expect(getMentionNodes).not.toHaveBeenCalled()
   })
 
+  it('opens the node and workflow reference picker from the @ control', async () => {
+    mount({ getMentionNodes: () => [{ id: '7', title: 'KSampler' }] })
+    const textbox = screen.getByRole('textbox')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Reference' }))
+
+    expect(textbox).toHaveTextContent('@')
+    expect(screen.getByRole('menuitem', { name: 'Nodes' })).toBeVisible()
+    expect(screen.getByRole('menuitem', { name: 'Workflows' })).toBeVisible()
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Nodes' }))
+    expect(screen.getByRole('menuitem', { name: 'KSampler' })).toBeVisible()
+  })
+
   it('enters graph selection mode from a click in Add to prompt', async () => {
     const { emitted } = mount({ getMentionNodes: vi.fn(() => []) })
 
@@ -265,6 +271,18 @@ describe('Composer', () => {
 
     expect(emitted().selectNodes).toHaveLength(1)
     expect(screen.getByRole('textbox')).not.toHaveFocus()
+  })
+
+  it('separates a Reference trigger from existing text', async () => {
+    mount({ getMentionNodes: () => [{ id: '7', title: 'KSampler' }] })
+    const textbox = screen.getByRole('textbox')
+    await userEvent.click(textbox)
+    await userEvent.paste('edit this')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Reference' }))
+
+    expect(textbox).toHaveTextContent('edit this @')
+    expect(screen.getByRole('menuitem', { name: 'Nodes' })).toBeVisible()
   })
 
   it('retains the draft on Enter while a workflow selection is saving', async () => {
@@ -1718,9 +1736,7 @@ describe('Composer', () => {
   it('keeps the empty prompt hint visible when only nodes are selected', () => {
     mount({ selectionTags: [{ id: '5', title: 'KSampler' }] })
 
-    expect(
-      screen.getByText('Describe ideas, @ add references, drag in assets')
-    ).toBeVisible()
+    expect(screen.getByText('Describe what you want to create')).toBeVisible()
   })
 
   it('hides the conditional entries from the add menu by default', async () => {
