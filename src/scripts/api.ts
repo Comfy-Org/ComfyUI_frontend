@@ -40,6 +40,7 @@ import type { components as ManagerComponents } from '@/workbench/extensions/man
 import type {
   AssetDownloadWsMessage,
   AssetExportWsMessage,
+  AssetSeedCompletedWsMessage,
   ExecutedWsMessage,
   ExecutingWsMessage,
   ExecutionCachedWsMessage,
@@ -269,6 +270,7 @@ interface BackendApiCalls {
   feature_flags: FeatureFlagsWsMessage
   asset_download: AssetDownloadWsMessage
   asset_export: AssetExportWsMessage
+  'assets.seed.completed': AssetSeedCompletedWsMessage
 }
 
 /** Dictionary of all api calls */
@@ -883,6 +885,12 @@ export class ComfyApi extends EventTarget {
       params.set('token', authToken)
     }
     return !requests || params.has('token')
+  }
+
+  /** The cloud socket's auth params; null when no one is signed in to open it. */
+  async socketAuthParams(): Promise<URLSearchParams | null> {
+    const params = new URLSearchParams()
+    return (await this.addSocketAuth(params)) ? params : null
   }
 
   /**

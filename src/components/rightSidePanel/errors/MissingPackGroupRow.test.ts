@@ -1,6 +1,5 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -109,7 +108,7 @@ function renderRow(
       ...props
     },
     global: {
-      plugins: [PrimeVue, i18n]
+      plugins: [i18n]
     }
   })
   return { user, onLocateNode, onOpenManagerInfo }

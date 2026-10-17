@@ -21,6 +21,7 @@ import {
 } from '@/platform/auth/desktopHost/desktopHostSession'
 import { ssoFlowStore } from '@comfyorg/account-core/telemetry'
 
+import { provideEnsureSessionCookie } from '@/platform/auth/session/sessionCookieAccess'
 import { trackSsoSignInCompleted } from '@/platform/auth/sso/ssoTelemetry'
 import { SessionRevokedError } from '@/platform/auth/session/sessionRevokedError'
 import { useTelemetry } from '@/platform/telemetry'
@@ -45,13 +46,8 @@ vi.mock(import('@/platform/workflow/persistence/base/storageIO'), () => ({
   prepareWorkflowWorkspaceTransition: mockPrepareWorkflowWorkspaceTransition
 }))
 
-const mockEnsureSessionCookie = vi.hoisted(() => vi.fn())
-
-vi.mock<unknown>(import('@/platform/auth/session/useSessionCookie'), () => ({
-  useSessionCookie: () => ({
-    ensureSessionCookie: mockEnsureSessionCookie
-  })
-}))
+const mockEnsureSessionCookie = vi.fn<() => Promise<void>>()
+provideEnsureSessionCookie(mockEnsureSessionCookie)
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 

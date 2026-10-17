@@ -33,6 +33,7 @@ setupInlinePromptEditorDom()
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/platform/telemetry'))
+vi.mock(import('../../services/agent/agentAuth'))
 const fetchApi = vi.mocked(api.fetchApi)
 const telemetryProvider = useTelemetry()
 assert.exists(telemetryProvider)
@@ -1861,6 +1862,7 @@ describe('Composer', () => {
               promptId: 'slot_1',
               promptIndex: 0,
               promptCount: 5,
+              visiblePromptCount: 5,
               promptTextHash: 'deadbeef',
               locale: 'en'
             }

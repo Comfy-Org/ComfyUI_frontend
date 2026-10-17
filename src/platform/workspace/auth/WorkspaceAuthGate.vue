@@ -110,6 +110,7 @@ import { NoWorkspaceAccessError } from '@/platform/workspace/api/workspaceApiErr
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { syncWorkspaceTelemetryContext } from '@/platform/workspace/telemetry/workspaceTelemetryContext'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -122,6 +123,7 @@ const initializationState = ref<
 const initializationRetryable = ref(true)
 const errorPanel = useTemplateRef<HTMLElement>('errorPanel')
 const billingCapabilities = useBillingCapabilities()
+syncWorkspaceTelemetryContext()
 let initializationGeneration = 0
 let initializationController: AbortController | null = null
 let backgroundInitialization: Promise<void> | null = null

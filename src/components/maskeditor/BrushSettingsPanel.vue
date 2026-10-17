@@ -15,14 +15,14 @@
       </span>
 
       <div
-        class="flex h-[50px] w-full flex-row items-center gap-2.5 rounded-[10px] bg-secondary-background-hover"
+        class="flex h-[50px] w-full items-center gap-2.5 rounded-[10px] bg-secondary-background-hover"
       >
         <div
           class="maskEditor_sidePanelBrushShapeCircle hover:bg-comfy-menu-bg"
           :class="
             cn(
               store.brushSettings.type === BrushShape.Arc
-                ? 'active bg-(--p-button-text-primary-color)'
+                ? 'active'
                 : 'bg-transparent'
             )
           "
@@ -34,7 +34,7 @@
           :class="
             cn(
               store.brushSettings.type === BrushShape.Rect
-                ? 'active bg-(--p-button-text-primary-color)'
+                ? 'active'
                 : 'bg-transparent'
             )
           "

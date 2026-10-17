@@ -302,16 +302,19 @@ export const zUsageSummary = z.object({
  * Present, with empty groups, buckets and breakdown, when the requested grouping is not served for this workspace. Render as unavailable, not as zero spend.
  */
 export const zUsageNotAvailable = z.object({
-  reason: z.enum(['no_attribution_source'])
+  reason: z.enum(['no_attribution_source', 'filter_needs_ledger'])
 })
 
 export const zUsageGroupLabel = z.object({
   display_name: z.string().optional(),
+  email: z.string().optional(),
+  former_member: z.boolean().optional(),
   key: z.string(),
   key_name: z.string().optional(),
   key_prefix: z.string().optional(),
   kind: z.enum(['api_key', 'session', 'deployment']).optional(),
   owner_display_name: z.string().optional(),
+  owner_email: z.string().optional(),
   owner_user_id: z.string().optional()
 })
 
@@ -344,6 +347,7 @@ export const zUsageTimeSeries = z.object({
   group_labels: z.array(zUsageGroupLabel).optional(),
   groups: z.array(z.string()),
   not_available: zUsageNotAvailable.optional(),
+  served_from: z.enum(['ledger']).optional(),
   starting_on: z.iso.datetime(),
   summary: zUsageSummary
 })
@@ -1325,14 +1329,26 @@ export const zPreviewSubscribeRequest = z.object({
 })
 
 /**
- * Reason why a plan is unavailable
+ * Why a plan is unavailable. Present exactly when available is false and
+ * absent when it is true. Only the first reason that applies is reported,
+ * in the order below. Render the value as received; do not recompute it.
+ * same_plan: (a) Why can this plan not be picked? (b) It is the plan the workspace is already on. (c) Absent means the plan is not the current one. (d) Not a refusal of a different plan; see incompatible_transition. (e) The plan slug equals the slug of the workspace's active subscription.
+ * incompatible_transition: (a) Why is this plan closed for the workspace's current plan? (b) The transition rules never allow it: the Free plan, which is provisioned only through free-tier eligibility, or a switch into the Founders plan. (c) Absent means no such rule applies. (d) Not a temporary state, and not billing_operation_in_progress, billing_operation_parked or annual_to_monthly_unsupported. (e) The target is the Free plan, or the transition matrix refuses the pair for a reason other than annual_to_monthly_unsupported.
+ * billing_operation_in_progress: (a) Why can no other plan be picked for now? (b) A subscription-changing billing operation is running for the workspace's active subscription. It settles on its own, so a client may say that plans will be available again shortly. (c) Absent means no such operation is running. (d) Not billing_operation_parked, which does not clear on its own, not a successor already scheduled for a future billing boundary, and not a seat problem. (e) The workspace has a non-scheduled active subscription and a subscription-changing billing operation is running and none is parked.
+ * billing_operation_parked: (a) Why can no other plan be picked until support steps in? (b) A subscription-changing billing operation is parked for reconciliation for the workspace's active subscription: it is either paid but credits not granted, or a replacement subscription that could not finish superseding the old one. It does not clear on its own, so a client must route the user to support and never imply a wait. (c) Absent means no operation is parked. (d) Not billing_operation_in_progress, which settles on its own, not a successor already scheduled for a future billing boundary, and not a seat problem. (e) The workspace has a non-scheduled active subscription and a subscription-changing billing operation is parked; reported instead of billing_operation_in_progress when both exist.
+ * annual_to_monthly_unsupported: (a) Why can a monthly plan not be chosen from an annual plan? (b) The annual commitment binds, so a move to a higher-tier monthly plan is not supported before the term ends. (c) Absent means the transition is not an annual to higher-tier monthly move. (d) Not a downgrade, which is allowed and scheduled, and not incompatible_transition. (e) The transition matrix refuses the pair with its annual-to-monthly tier upgrade rule.
+ * exceeds_max_seats: (a) Why is this plan closed to a workspace with many people? (b) The occupied seats exceed the plan's seat limit, counted as the subscribe request counts them: a team plan counts members plus unexpired pending invitations, any other plan counts members alone. (c) Absent means the occupied seats fit the plan. (d) Not a pending-invitation count for non-team plans, where an invitation does not occupy a seat. (e) For a team plan, members + pending invitations is greater than the seat limit; for any other plan, members is greater than the seat limit; a positive workspace override replaces the plan default in both cases.
+ * requires_team and requires_personal are part of this enum but are not reported today.
  */
 export const zPlanAvailabilityReason = z.enum([
   'same_plan',
   'incompatible_transition',
+  'billing_operation_in_progress',
+  'billing_operation_parked',
+  'annual_to_monthly_unsupported',
+  'exceeds_max_seats',
   'requires_team',
-  'requires_personal',
-  'exceeds_max_seats'
+  'requires_personal'
 ])
 
 /**
@@ -2407,6 +2423,7 @@ export const zExchangeTokenResponse = z.object({
  *
  */
 export const zExchangeTokenRequest = z.object({
+  resource: z.enum(['partner-node']).optional(),
   workspace_id: z.string().optional()
 })
 
@@ -2902,9 +2919,15 @@ export const zBillingOpCancelResponse = z.object({
  * A single history event. The cloud history-events store is the single source of truth for both billing events (charges, credits, adjustments) and user-facing usage events.
  */
 export const zBillingEvent = z.object({
+  api_key_name: z.string().optional(),
+  api_key_prefix: z.string().optional(),
   createdAt: z.iso.datetime(),
   event_id: z.string(),
   event_type: z.string(),
+  member_display_name: z.string().optional(),
+  member_email: z.string().optional(),
+  member_former: z.boolean().optional(),
+  member_user_id: z.string().optional(),
   params: z.record(z.string(), z.unknown()).optional()
 })
 
@@ -2980,12 +3003,24 @@ export const zBillingCapabilityRolloutDefaults = z.object({
  * names the policy branch that decided, not customer-facing wording: the
  * client owns the message.
  *
+ * How to read this: render each capability from `capabilities` as received, and
+ * use a reason only to explain a capability that is false. Never recombine
+ * capabilities or reasons into a new decision, and never derive a reason from
+ * tier, role, status or plan slug. A missing reason is not a grant. A refused
+ * capability usually has a key here naming the branch that refused it. A false
+ * capability with no matching key is an unexplained refusal: no recognised
+ * explanation, still false. A true capability never has a key.
+ * Within a key the values are listed in the order the resolver reaches them,
+ * and the first one reached is the one reported. Capabilities are UI guidance,
+ * not authorization: the write endpoints decide.
+ *
  * The invariant runs one way only. **Presence implies refusal**: a key is
  * present only alongside `capabilities.<key> == false`, reconciled before
  * the response is built, so a reason never accompanies a granted
- * capability. **Absence implies nothing** -- it means no recognised
- * explanation, not that the capability was granted. Consult
- * `capabilities`, which stays authoritative for what the client may offer.
+ * capability. **Absence implies nothing**: on a false capability it
+ * means no recognised explanation, and on a true capability it is the
+ * expected state. Consult `capabilities`, which stays authoritative for what
+ * the client may offer.
  *
  * A key is absent for a refused capability whenever this service is
  * talking to a billing-api that predates the field, and whenever it drops
@@ -2999,14 +3034,78 @@ export const zBillingCapabilityRolloutDefaults = z.object({
  *
  */
 export const zBillingCapabilityDenials = z.object({
+  can_cancel: z
+    .enum([
+      'not_a_member',
+      'not_workspace_owner',
+      'not_original_owner',
+      'free_plan',
+      'no_subscription',
+      'tier_not_self_serve',
+      'billing_operation_in_progress',
+      'billing_operation_parked',
+      'cancellation_scheduled',
+      'subscription_ended',
+      'subscription_not_started',
+      'subscription_status_unrecognized'
+    ])
+    .optional(),
+  can_delete_workspace: z
+    .enum([
+      'not_a_member',
+      'not_workspace_owner',
+      'workspace_sso_attached',
+      'personal_workspace',
+      'billing_operation_in_progress',
+      'billing_operation_parked',
+      'plan_not_ended'
+    ])
+    .optional(),
+  can_leave_workspace: z
+    .enum([
+      'not_a_member',
+      'membership_managed_by_directory',
+      'personal_workspace_creator',
+      'workspace_creator',
+      'only_owner'
+    ])
+    .optional(),
+  can_reactivate: z
+    .enum([
+      'not_a_member',
+      'not_workspace_owner',
+      'not_original_owner',
+      'no_subscription',
+      'tier_not_self_serve',
+      'billing_operation_in_progress',
+      'billing_operation_parked',
+      'cancellation_not_scheduled',
+      'subscription_ended',
+      'subscription_not_started',
+      'subscription_status_unrecognized'
+    ])
+    .optional(),
   can_subscribe_self_serve: z
     .enum([
       'not_a_member',
       'not_workspace_owner',
+      'not_original_owner',
+      'creator_only_provisioning',
       'tier_not_self_serve',
-      'subscription_not_started',
       'subscription_change_in_progress',
+      'subscription_not_started',
       'subscription_status_unrecognized'
+    ])
+    .optional(),
+  can_top_up: z
+    .enum([
+      'not_a_member',
+      'not_workspace_owner',
+      'creator_only_provisioning',
+      'payment_past_due',
+      'free_plan',
+      'no_subscription',
+      'subscription_ended'
     ])
     .optional()
 })
@@ -3015,17 +3114,37 @@ export const zBillingCapabilityDenials = z.object({
  * Conservative UI guidance. These values do not authorize billing writes;
  * each write endpoint independently enforces its permission policy.
  *
+ * Each field answers one UI question for the authenticated user in the
+ * authenticated workspace. Render each as received and never combine fields
+ * into a new decision. False without a matching key in denied_reasons means no
+ * recognised explanation, not necessarily a refusal. A field is never
+ * per-surface: one value serves every screen. The plan-lifecycle fields
+ * (can_subscribe_self_serve, can_cancel, can_reactivate,
+ * can_revert_scheduled_change) require the workspace's creator only when the
+ * rollout mode is not `owner`; every other owner-level field stays open to
+ * every owner.
+ *
+ * When the deployment has billing disabled, this endpoint answers without
+ * consulting billing-api: can_top_up is true, can_manage_members and
+ * can_invite_members follow the owner role, and every other field is false.
+ *
  */
 export const zBillingCapabilities = z.object({
   can_cancel: z.boolean(),
   can_change_seats: z.boolean(),
+  can_delete_workspace: z.boolean(),
   can_downgrade_to_personal: z.boolean(),
   can_invite_members: z.boolean(),
+  can_leave_workspace: z.boolean(),
+  can_manage_billing: z.boolean(),
   can_manage_members: z.boolean(),
+  can_manage_partner_node_access: z.boolean(),
   can_reactivate: z.boolean(),
   can_revert_scheduled_change: z.boolean(),
   can_subscribe_self_serve: z.boolean(),
-  can_top_up: z.boolean()
+  can_top_up: z.boolean(),
+  can_view_pending_invites: z.boolean(),
+  can_view_team_usage: z.boolean()
 })
 
 /**
@@ -3035,6 +3154,8 @@ export const zBillingCapabilitiesResponse = z.object({
   capabilities: zBillingCapabilities,
   denied_reasons: zBillingCapabilityDenials.optional(),
   expires_at: z.iso.datetime(),
+  plan_kind: z.enum(['none', 'self_serve', 'sales_managed']).optional(),
+  recovery_route: z.enum(['none', 'resubscribe', 'contact_sales']).optional(),
   resolved_for: zBillingCapabilityScope,
   revision: z.coerce
     .bigint()
@@ -3149,6 +3270,26 @@ export const zAssetCreated = zAsset.and(
 )
 
 /**
+ * Attachment extensions whose content the model can see: the raster formats Go's image
+ * package decodes, plus HEIC/HEIF stills (iPhone photos), which view_asset converts to JPEG
+ * first. view_asset always re-encodes to PNG or JPEG, so the provider's own four-type image
+ * allowlist is satisfied by construction rather than by matching this list.
+ *
+ */
+export const zAgentViewableAttachmentExtension = z.enum([
+  '.png',
+  '.jpg',
+  '.jpeg',
+  '.gif',
+  '.webp',
+  '.bmp',
+  '.tif',
+  '.tiff',
+  '.heic',
+  '.heif'
+])
+
+/**
  * Acknowledgement that a turn was accepted. The agent runs asynchronously; output streams over the WebSocket (agent_message_delta, agent_tool_call, draft_patch, agent_message_done).
  */
 export const zAgentTurnAccepted = z.object({
@@ -3251,6 +3392,81 @@ export const zAgentRunApprovalContext = z.object({
 })
 
 /**
+ * Attachment extensions that are accepted so a user can keep them beside a workflow, and
+ * nothing more — the agent can neither read the contents nor wire the file in.
+ *
+ * .avif is the only one: it is an image the turn cannot decode (no registry entry, so
+ * view_asset would fail) and it is not text, so read_asset would return mojibake. It stays
+ * accepted because it was attachable before the policy existed.
+ *
+ */
+export const zAgentRetainedAttachmentExtension = z.enum(['.avif'])
+
+/**
+ * Attachment extensions the agent recognizes as 3D models and wires into Load3D's model_file
+ * widget. They are exactly the set Load3D accepts (comfy_extras/nodes_load_3d.py); .usdz is
+ * absent from both lists, so it is not an exclusion this tier makes.
+ *
+ */
+export const zAgentReferenceAttachmentExtension = z.enum([
+  '.glb',
+  '.obj',
+  '.fbx',
+  '.gltf',
+  '.stl',
+  '.ply',
+  '.spz',
+  '.splat',
+  '.ksplat'
+])
+
+/**
+ * Attachment extensions whose contents the agent reads verbatim, with read_asset. The bytes
+ * are decoded as UTF-8 and returned as text, bounded and truncation-marked.
+ *
+ * This tier describes CONTENT ACCESS only and says nothing about whether the file can be
+ * wired into a graph. Those are separate questions, so a format becoming a node input later
+ * does not move it out of this tier.
+ *
+ * .svg is here rather than with the images because it is XML: view_asset cannot decode it,
+ * but its markup is exactly what a caller would want read.
+ *
+ */
+export const zAgentReadableAttachmentExtension = z.enum([
+  '.md',
+  '.markdown',
+  '.txt',
+  '.json',
+  '.csv',
+  '.yaml',
+  '.yml',
+  '.xml',
+  '.log',
+  '.svg'
+])
+
+/**
+ * Attachment extensions the agent can only describe from metadata. A subset of the containers
+ * ingest sorts into a load node's video/audio lists: that categoriser also accepts .wmv, .flv,
+ * .aac and .wma, which the agreed attachment list rejects.
+ *
+ */
+export const zAgentProbeableAttachmentExtension = z.enum([
+  '.mp4',
+  '.webm',
+  '.mov',
+  '.m4v',
+  '.avi',
+  '.mkv',
+  '.mp3',
+  '.wav',
+  '.ogg',
+  '.opus',
+  '.flac',
+  '.m4a'
+])
+
+/**
  * Which card renders an ask. `ask_user` is the generic prompt raised by the ask_user tool. `run_approval` is the run consent card raised when the caller's ask_approval run mode gates a run: exactly the Run and Cancel options, never free text. `paused` is the admission pause card: one Resume option, never free text. `delete_approval` is the delete consent card for nodes the user made: exactly the Delete and Keep options, never free text. The same value is the agent_ask event's `kind`, the message list's `pending_ask.kind`, and an entry of `ask_kinds` on the message POST.
  */
 export const zAgentAskKind = z.enum([
@@ -3265,7 +3481,7 @@ export const zAgentAskKind = z.enum([
  */
 export const zAgentPostMessageRequest = z.object({
   ask_kinds: z.array(zAgentAskKind).optional(),
-  attachments: z.array(z.string()).optional(),
+  attachments: z.array(z.string().max(256)).max(25).optional(),
   client_id: z.string().optional(),
   client_message_id: z.string().max(128).optional(),
   content: z.string(),
@@ -3475,6 +3691,74 @@ export const zAgentCancelUnconfirmed = z.object({
 export const zAgentCancelAccepted = z.object({
   status: z.enum(['cancelling'])
 })
+
+/**
+ * Every extension the agent accepts as an attachment, grouped by what it can actually DO with
+ * one. The grouping is the point: the tiers differ sharply, and a client that renders them as
+ * one flat "supported files" list tells the user something false (PM-1855).
+ *
+ * - `view`: the model sees the content. view_asset decodes the still (converting HEIC/HEIF to
+ * JPEG first) and re-encodes it as PNG/JPEG into the turn, so the model reasons about actual
+ * pixels.
+ * - `probe`: metadata only. probe_media reports duration, resolution, frame rate and codecs;
+ * nothing in the model's input can carry a clip, so the CONTENT stays unreadable. Seeing a
+ * video means cutting a frame out with process_media and viewing that.
+ * - `reference`: the agent knows the file is a 3D model, with its kind and id, and wires its
+ * filename into a Load3D node's model_file widget. No tool opens the mesh itself: the cloud
+ * turn registers neither a shell nor a file-read tool, by design, as it is a shared
+ * multi-tenant pod.
+ * - `read`: the agent reads the contents verbatim with read_asset — UTF-8 decoded, bounded
+ * and truncation-marked. The tier describes CONTENT ACCESS only; whether the file can also
+ * be wired into a graph is a separate axis, so a format gaining an upload-backed node input
+ * later stays in this tier.
+ * - `retain`: the file is attached and nothing more — neither readable nor wirable. Only
+ * .avif, which the turn cannot decode as an image and is not text.
+ *
+ * The union of the five arrays is the accepted list. Anything absent is rejected.
+ *
+ */
+export const zAgentAttachmentPolicy = z.object({
+  probe: z.array(zAgentProbeableAttachmentExtension),
+  read: z.array(zAgentReadableAttachmentExtension),
+  reference: z.array(zAgentReferenceAttachmentExtension),
+  retain: z.array(zAgentRetainedAttachmentExtension),
+  view: z.array(zAgentViewableAttachmentExtension)
+})
+
+/**
+ * 422 body when a posted attachment's extension is outside the accepted list. It carries the
+ * policy rather than only an error string so a client never has to hardcode the list to
+ * explain the refusal — the same reason the list is expressed as enums the frontend generates
+ * its types from.
+ *
+ */
+export const zAgentAttachmentRejected = z.object({
+  accepted: zAgentAttachmentPolicy,
+  error: z.string(),
+  rejected: z.array(z.string()),
+  rejected_count: z.int(),
+  type: z.enum(['ATTACHMENT_TYPE_NOT_ACCEPTED'])
+})
+
+export const zAgentAttachmentBoundsExceeded = z.object({
+  error: z.string(),
+  limits: z.object({
+    max_item_length: z.int(),
+    max_items: z.int()
+  }),
+  overlong_ref: z.string(),
+  received_count: z.int(),
+  type: z.enum(['ATTACHMENT_BOUNDS_EXCEEDED'])
+})
+
+export const zAgentAttachmentError = z.discriminatedUnion('type', [
+  zAgentAttachmentRejected.extend({
+    type: z.literal('ATTACHMENT_TYPE_NOT_ACCEPTED')
+  }),
+  zAgentAttachmentBoundsExceeded.extend({
+    type: z.literal('ATTACHMENT_BOUNDS_EXCEEDED')
+  })
+])
 
 /**
  * How an ask left pending, as stored on the ask row. `answered` means an answer was committed and delivered to the turn; `cancelled` means the turn ended, was stopped, or could not take the answer; `expired` means the ask timed out. There is no "unknown" status: when an answer request fails with a 5xx the client does not know the outcome and should wait for agent_ask_resolved or refetch the thread.
@@ -4305,6 +4589,10 @@ export const zGetBillingUsageTimeSeriesQuery = z.object({
     .enum(['model', 'endpoint', 'product', 'product_line', 'person', 'source'])
     .optional()
     .default('model'),
+  filter_product_line: z.string().max(200).optional(),
+  filter_model: z.string().max(200).optional(),
+  filter_person: z.string().max(200).optional(),
+  filter_source: z.string().max(200).optional(),
   granularity: z.enum(['hour', 'day', 'month']).optional().default('month'),
   starting_on: z.iso.datetime().optional(),
   ending_before: z.iso.datetime().optional(),

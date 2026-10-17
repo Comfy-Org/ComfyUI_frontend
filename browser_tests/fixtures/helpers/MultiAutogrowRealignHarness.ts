@@ -37,7 +37,6 @@ import {
   EXPECTED_TARGETS,
   MESSAGE_ID,
   NODE_TYPE,
-  SOCKET_SID,
   SOURCE_NODE_ID,
   SOURCE_NODE_TYPE,
   SPARE_SLOTS,
@@ -114,7 +113,6 @@ export class MultiAutogrowRealignHarness {
       page,
       WORKFLOW_ID,
       this.host,
-      SOCKET_SID,
       'apply'
     )
     this.topbar = new Topbar(page)

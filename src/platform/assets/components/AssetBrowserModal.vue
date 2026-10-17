@@ -78,7 +78,7 @@
       <ModelInfoPanel v-if="focusedAsset" :asset="focusedAsset" :cache-key />
       <div
         v-else
-        class="flex h-full items-center justify-center p-6 text-center wrap-break-word text-muted"
+        class="flex h-full items-center justify-center p-6 text-center wrap-break-word text-muted-foreground"
       >
         {{ $t('assetBrowser.modelInfo.selectModelPrompt') }}
       </div>

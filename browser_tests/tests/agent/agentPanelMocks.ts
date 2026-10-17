@@ -21,6 +21,7 @@ import type {
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { zAgentAdmissionError } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
+import { mockAgentIdentity } from '@e2e/fixtures/agentSocket'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { mockCloudBootRoutes } from '@e2e/fixtures/utils/cloudBootMocks'
@@ -257,12 +258,12 @@ export const RESIZE_IMAGE_TOOL_EVENT: AgentWsEvent = {
 const MESSAGE_DELTA_TEXT =
   'The graph is **fully ready** to go — prompt set to the red fox in the snow.'
 
-export const MESSAGE_DELTA_EVENT: AgentWsEvent = {
-  type: 'agent_message_delta',
-  data: {
-    delta: MESSAGE_DELTA_TEXT,
-    message_id: TURN_ID,
-    thread_id: THREAD_ID
+export const MESSAGE_DELTA_EVENT = agentMessageDeltaEvent(MESSAGE_DELTA_TEXT)
+
+export function agentMessageDeltaEvent(delta: string): AgentWsEvent {
+  return {
+    type: 'agent_message_delta',
+    data: { delta, message_id: TURN_ID, thread_id: THREAD_ID }
   }
 }
 
@@ -361,6 +362,7 @@ async function mockAgentBoot(
   )
 
   await mockBilling(page)
+  await mockAgentIdentity(page)
   await page.route('**/api/billing/status', (route) =>
     agentBilling.fulfillStatus(route)
   )

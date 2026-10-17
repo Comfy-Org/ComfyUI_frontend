@@ -14,6 +14,8 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
 }))
 
 async function loadUseSessionCookie() {
+  const { provideAuthStore } = await import('@/platform/auth/authStoreAccess')
+  provideAuthStore(useAuthStore)
   return await import('@/platform/auth/session/useSessionCookie')
 }
 

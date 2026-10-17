@@ -21,7 +21,6 @@
             v-for="format in exportFormats"
             :key="format.value"
             variant="textonly"
-            class="text-base-foreground"
             @click="exportModel(format.value)"
           >
             {{ format.label }}

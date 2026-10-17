@@ -190,7 +190,7 @@ function openFullSettings() {
       <Button
         variant="muted-textonly"
         size="sm"
-        class="gap-2 text-sm"
+        class="text-sm"
         @click="openFullSettings"
       >
         {{ t('rightSidePanel.globalSettings.viewAllSettings') }}

@@ -1,11 +1,14 @@
 import type {
+  LGraphNode,
+  SubgraphNode,
+  SubgraphInput
+} from '@/lib/litegraph/src/types/entityRegistry'
+import type {
   PromotedWidgetExecutionSource,
   ResolvedPromotedWidget
 } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
+
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { createNodeExecutionId } from '@/types/nodeIdentification'

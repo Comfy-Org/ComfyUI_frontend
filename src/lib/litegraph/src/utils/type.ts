@@ -1,7 +1,11 @@
 import { without } from 'es-toolkit'
 
 import type { IColorable, ISlotType } from '@/lib/litegraph/src/interfaces'
-import type { NodeBindable } from '@/lib/litegraph/src/types/widgets'
+import type { NodeId } from '@/types/nodeId'
+
+export interface NodeBindable {
+  setNodeId(nodeId: NodeId): void
+}
 
 /**
  * Converts a plain object to a class instance if it is not already an instance of the class.

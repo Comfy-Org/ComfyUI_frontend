@@ -18,6 +18,7 @@ const media = {
 const localNote = { en: 'Runs locally', 'zh-CN': '本地运行' }
 
 const clipBase = 'https://media.comfy.org/website/nvidia-rtx'
+const heroClip = `${clipBase}/nvidia-vfx-nodes-ab-720p.mp4`
 
 const beforeAfter: ModelLaunchBeforeAfter = {
   headingKey: 'nvidiaRtx.beforeAfter.heading',
@@ -71,10 +72,11 @@ export const nvidiaRtxPage: ModelLaunchPage = {
   hero: {
     layout: 'media-first',
     mediaOutline: 'gray',
-    videoSrc:
-      'https://media.comfy.org/website/nvidia-rtx/nvidia-vfx-nodes-ab-720p.mp4',
+    videoSrc: heroClip,
     posterSrc: '/images/models/nvidia-vfx-hero-poster.jpg',
     mobileFallbackImageSrc: '/images/models/nvidia-vfx-hero-poster.jpg',
+    // The 720p clip is already light enough for phones, so they play it too.
+    mobileVideoSrc: heroClip,
     titleKey: 'nvidiaRtx.hero.title',
     titleSize: 'compact',
     descriptionKey: 'nvidiaRtx.hero.description',
