@@ -2766,6 +2766,41 @@
       }
     }
   },
+  "CameraAngle": {
+    "description": "Bir 3B önizlemeyle öznenin çevresinden bir kamera açısı seçin. 3B düğümler için bir camera_info ve istemler için yalın İngilizce bir çekim açıklaması çıktısı verir.",
+    "display_name": "Kamera Açısı İstemi Oluştur",
+    "inputs": {
+      "horizontal_angle": {
+        "name": "horizontal_angle",
+        "tooltip": "Öznenin etrafındaki azimut açısı, derece cinsinden. 0 ön taraf, 90 sağ taraf, 180 arka taraftır."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "3B önizlemede özne küpünün ön yüzünde gösterilen isteğe bağlı referans görüntüsü."
+      },
+      "vertical_angle": {
+        "name": "vertical_angle",
+        "tooltip": "Yükseklik açısı, derece cinsinden. Negatif değerler aşağıdan yukarı bakar, pozitif değerler yukarıdan aşağı bakar."
+      },
+      "view": {
+        "name": "view"
+      },
+      "zoom": {
+        "name": "zoom",
+        "tooltip": "Özne üzerindeki lens yakınlaştırması: 0 geniş çekim, 10 yakın plandır. camera_info.zoom değerine aktarılır."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "1": {
+        "name": "prompt",
+        "tooltip": null
+      }
+    }
+  },
   "Canny": {
     "display_name": "Canny",
     "inputs": {
@@ -2900,6 +2935,27 @@
       "start_sigma": {
         "name": "başlangıç sigma",
         "tooltip": "Bu seçeneklerin geçerli olacağı ilk sigma değeri."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ClarityCrystalUpscaleNode": {
+    "description": "Bir görüntüyü, özgün görüntüye sadık kalan ve yüzleri, cildi ve ince dokuyu iyileştiren yüksek doğruluklu bir büyütücü olan Clarity AI Crystal Upscaler ile büyütün. Azami çıktı: 100 megapiksel.",
+    "display_name": "Clarity AI Crystal Büyütme",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Kullanılacak model."
+      },
+      "model_creativity": {
+        "name": "creativity"
+      },
+      "model_scale_factor": {
+        "name": "scale_factor"
       }
     },
     "outputs": {
@@ -6843,7 +6899,7 @@
   },
   "GeminiNanoBanana2V2": {
     "description": "Google Vertex API aracılığıyla senkron bir şekilde görseller oluşturun veya düzenleyin.",
-    "display_name": "Nano Banana 2",
+    "display_name": "Nano Banana 2.1",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -6893,7 +6949,7 @@
       },
       "2": {
         "name": "thought_image",
-        "tooltip": "Modelin düşünme sürecinden ilk görsel. Sadece thinking_level YÜKSEK ve IMAGE+TEXT modality ile kullanılabilir."
+        "tooltip": "Modelin düşünme sürecindeki ilk görüntü. Yalnızca IMAGE+TEXT kipiyle kullanılabilir."
       }
     }
   },
@@ -10367,6 +10423,36 @@
       }
     }
   },
+  "KlingTryOnNode": {
+    "description": "Bir kişiye bir giysi giydirin. Sonuç, kişi görüntüsüyle aynı boyuttadır; en uzun kenar 2048px ile sınırlandırılır.",
+    "display_name": "Kling Sanal Deneme",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturmadan sonra kontrol"
+      },
+      "garment_image": {
+        "name": "garment_image",
+        "tooltip": "Giydirilecek kıyafet: ürün fotoğrafı, düz serim, manken veya model üzerindeki fotoğraf. Model üzerindeki bir fotoğraf, o kombinin geri kalanını da aktarabilir. Yalnızca kıyafetler desteklenir; ayakkabı, çanta ve aksesuarlar desteklenmez."
+      },
+      "keep_pose": {
+        "name": "keep_pose",
+        "tooltip": "Daha iyi bir kıyafet sunumu için pozun değişmesine izin vermek üzere kapatın."
+      },
+      "person_image": {
+        "name": "person_image",
+        "tooltip": "Tek bir kişinin fotoğrafı; tercihen önden veya dörtte üç açıdan. Bir kenarı 2048px'i aşan görüntüler önce küçültülür."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün yeniden çalıştırılıp çalıştırılmayacağını denetler; sonuçlar seed ne olursa olsun deterministik değildir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingVideoNode": {
     "description": "Kling V3 ile videolar oluşturun. Metinden videoya ve isteğe bağlı storyboard çoklu istem ve ses üretimiyle görüntüden videoya destekler.",
     "display_name": "Kling 3.0 Video",
@@ -11325,11 +11411,19 @@
   "LatentApplyOperationCFG": {
     "display_name": "GizliİşlemUygulaCFG",
     "inputs": {
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "İşlemi, modelin gürültü giderme zamanlamasının bu kesrinde uygulamayı durdurun. 1 bitiştir."
+      },
       "model": {
         "name": "model"
       },
       "operation": {
         "name": "işlem"
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "İşlemi, modelin gürültü giderme zamanlamasının bu kesrinde uygulamaya başlayın. 0 başlangıçtır."
       }
     },
     "outputs": {
@@ -11564,6 +11658,24 @@
       },
       "samples": {
         "name": "örnekler"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LatentOperationBlend": {
+    "description": "Tüm latenti referans latente doğru harmanlayın; gerektiğinde referansı en yakın komşu enterpolasyonuyla yeniden boyutlandırın.",
+    "display_name": "Latent İşlem Harmanlama",
+    "inputs": {
+      "reference": {
+        "name": "reference"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "0, latent'i değiştirmez; 1, yeniden boyutlandırılan başvuru latent'iyle eşleşir."
       }
     },
     "outputs": {
@@ -11973,6 +12085,80 @@
     "inputs": {
       "latent": {
         "name": "gizli"
+      }
+    }
+  },
+  "LoadLoraModel": {
+    "description": "Bir difüzyon modeline bir LoRA yığını uygular. Her LoRA için bir satır ekleyin; her satır bir LoRA dosyası ve gücünü seçer.",
+    "display_name": "LoRA Yükle (Model)",
+    "inputs": {
+      "loras": {
+        "name": "loras",
+        "tooltip": "Her satır modele bir LoRA uygular."
+      },
+      "loras_$add": {
+        "name": "LoRA Ekle"
+      },
+      "loras_$notice": {
+        "name": "LoRA"
+      },
+      "loras_0": {
+        "name": "LoRA #1"
+      },
+      "loras_0_enabled": {
+        "name": "LoRA #1 etkin"
+      },
+      "loras_0_lora_name": {
+        "name": "LoRA #1 lora_name"
+      },
+      "loras_0_strength": {
+        "name": "LoRA #1 gücü"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "LoRA'ların uygulanacağı difüzyon modeli."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Değiştirilmiş difüzyon modeli."
+      }
+    }
+  },
+  "LoadLoraTextEncoder": {
+    "description": "Bir CLIP metin kodlayıcısına bir LoRA yığını uygular. Her LoRA için bir satır ekleyin; her satır bir LoRA dosyası ve gücünü seçer.",
+    "display_name": "LoRA Yükle (Metin Kodlayıcı)",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "LoRA'ların uygulanacağı CLIP metin kodlayıcısı."
+      },
+      "loras": {
+        "name": "loras",
+        "tooltip": "Her satır metin kodlayıcısına bir LoRA uygular."
+      },
+      "loras_$add": {
+        "name": "LoRA Ekle"
+      },
+      "loras_$notice": {
+        "name": "LoRA"
+      },
+      "loras_0": {
+        "name": "LoRA #1"
+      },
+      "loras_0_enabled": {
+        "name": "LoRA #1 etkin"
+      },
+      "loras_0_lora_name": {
+        "name": "LoRA #1 lora_name"
+      },
+      "loras_0_strength": {
+        "name": "LoRA #1 gücü"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Değiştirilmiş CLIP metin kodlayıcısı."
       }
     }
   },
@@ -18672,7 +18858,7 @@
   },
   "QuiverImageToSVGNode": {
     "description": "Bir raster görseli Quiver AI kullanarak SVG'ye vektörleştirir.",
-    "display_name": "Quiver Görselden SVG'ye",
+    "display_name": "Quiver Görüntüyü SVG'ye Dönüştür (Eski)",
     "inputs": {
       "auto_crop": {
         "name": "auto_crop",
@@ -18716,9 +18902,54 @@
       }
     }
   },
+  "QuiverImageToSVGNodeV2": {
+    "description": "Bir raster görüntüyü Quiver AI kullanarak SVG'ye vektörleştirir.",
+    "display_name": "Quiver Görüntüyü SVG'ye Dönüştür",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturmadan sonra kontrol"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "SVG vektörleştirmesi için kullanılacak model."
+      },
+      "model_auto_crop": {
+        "name": "auto_crop"
+      },
+      "model_height": {
+        "name": "height"
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_target_size": {
+        "name": "target_size"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "Genişlik"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QuiverTextToSVGNode": {
     "description": "Quiver AI kullanarak bir metin isteminden SVG oluşturur.",
-    "display_name": "Quiver Metinden SVG'ye",
+    "display_name": "Quiver Metinden SVG'ye (Eski)",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -18755,6 +18986,51 @@
       "seed": {
         "name": "seed",
         "tooltip": "Düğümün tekrar çalıştırılıp çalıştırılmayacağını belirleyen tohum; gerçek sonuçlar tohumdan bağımsız olarak deterministik değildir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QuiverTextToSVGNodeV2": {
+    "description": "Quiver AI kullanarak bir metin isteminden SVG oluşturun.",
+    "display_name": "Quiver Metinden SVG'ye",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Oluşturma sonrası kontrol"
+      },
+      "model": {
+        "name": "Model",
+        "tooltip": "SVG oluşturmak için kullanılacak model."
+      },
+      "model_height": {
+        "name": "Yükseklik"
+      },
+      "model_instructions": {
+        "name": "Talimatlar"
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_prompt": {
+        "name": "İstem"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "Tohum"
+      },
+      "model_temperature": {
+        "name": "Sıcaklık"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "Genişlik"
       }
     },
     "outputs": {
@@ -27554,6 +27830,79 @@
       },
       "seed": {
         "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ImageToVideoNode": {
+    "description": "Bir başlangıç karesinden ve isteğe bağlı bir istemden video oluşturun. Çıktı, giriş görüntüsünün en-boy oranını korur.",
+    "display_name": "Vidu Q4 Görüntüden Videoya Oluşturma",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Oluşturma sonrası kontrol"
+      },
+      "image": {
+        "name": "Görüntü",
+        "tooltip": "Oluşturulan videonun başlangıç karesi. En-boy oranı 1:5 ile 5:1 arasında olmalıdır."
+      },
+      "model": {
+        "name": "Model",
+        "tooltip": "Video oluşturmak için kullanılacak model."
+      },
+      "model_audio": {
+        "name": "Ses"
+      },
+      "model_duration": {
+        "name": "Süre"
+      },
+      "model_prompt": {
+        "name": "İstem"
+      },
+      "model_resolution": {
+        "name": "Çözünürlük"
+      },
+      "model_seed": {
+        "name": "Tohum"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ReferenceVideoNode": {
+    "description": "Referans görüntülerden, isteğe bağlı referans sesten ve bir istemden video oluşturun.",
+    "display_name": "Vidu Q4 Referanstan Videoya Oluşturma",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Oluşturma sonrası kontrol"
+      },
+      "model": {
+        "name": "Model",
+        "tooltip": "Video oluşturmak için kullanılacak model."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_audio": {
+        "name": "Ses"
+      },
+      "model_duration": {
+        "name": "Süre"
+      },
+      "model_prompt": {
+        "name": "İstem"
+      },
+      "model_resolution": {
+        "name": "Çözünürlük"
+      },
+      "model_seed": {
+        "name": "Tohum"
       }
     },
     "outputs": {

@@ -2766,6 +2766,41 @@
       }
     }
   },
+  "CameraAngle": {
+    "description": "通过 3D 预览选择主体周围的相机角度。输出供 3D 节点使用的 camera_info，以及用于提示词的纯英文镜头描述。",
+    "display_name": "构建相机角度提示词",
+    "inputs": {
+      "horizontal_angle": {
+        "name": "horizontal_angle",
+        "tooltip": "主体周围的方位角，单位为度。0 为正面，90 为右侧，180 为背面。"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "可选参考图像，会显示在 3D 预览中主体立方体的正面。"
+      },
+      "vertical_angle": {
+        "name": "vertical_angle",
+        "tooltip": "仰角，单位为度。负值表示从下方向上看，正值表示从上方向下看。"
+      },
+      "view": {
+        "name": "view"
+      },
+      "zoom": {
+        "name": "zoom",
+        "tooltip": "主体的镜头变焦：0 为广角镜头，10 为特写。会传递到 camera_info.zoom。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "1": {
+        "name": "prompt",
+        "tooltip": null
+      }
+    }
+  },
   "Canny": {
     "display_name": "Canny边缘检测",
     "inputs": {
@@ -2900,6 +2935,27 @@
       "start_sigma": {
         "name": "起始sigma",
         "tooltip": "这些选项生效的第一个sigma值。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ClarityCrystalUpscaleNode": {
+    "description": "使用 Clarity AI 的 Crystal Upscaler 放大图像。这是一款高保真放大器，可忠实还原原图，并修复面部、皮肤和细微纹理。最大输出：1 亿像素。",
+    "display_name": "Clarity AI Crystal 放大",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "要使用的模型。"
+      },
+      "model_creativity": {
+        "name": "creativity"
+      },
+      "model_scale_factor": {
+        "name": "scale_factor"
       }
     },
     "outputs": {
@@ -6843,7 +6899,7 @@
   },
   "GeminiNanoBanana2V2": {
     "description": "通过 Google Vertex API 同步生成或编辑图像。",
-    "display_name": "Nano Banana 2",
+    "display_name": "Nano Banana 2.1",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -6893,7 +6949,7 @@
       },
       "2": {
         "name": "thought_image",
-        "tooltip": "模型思考过程中的第一张图像。仅在 thinking_level 设为 HIGH 且 response_modalities 为 IMAGE+TEXT 时可用。"
+        "tooltip": "模型思考过程中的第一张图像。仅在 IMAGE+TEXT 模态下可用。"
       }
     }
   },
@@ -10367,6 +10423,36 @@
       }
     }
   },
+  "KlingTryOnNode": {
+    "description": "为人物穿上服装。结果与人物图像尺寸相同，最长边限制为 2048px。",
+    "display_name": "Kling 虚拟试穿",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "garment_image": {
+        "name": "garment_image",
+        "tooltip": "要穿上的服装：商品照片、平铺图、模特架照片或真人上身照片。真人上身照片可能会保留该套服装的其余部分。仅支持服装；不支持鞋子、包袋和配饰。"
+      },
+      "keep_pose": {
+        "name": "keep_pose",
+        "tooltip": "关闭后可允许姿势改变，以获得更好的服装展示效果。"
+      },
+      "person_image": {
+        "name": "person_image",
+        "tooltip": "单人照片，最好为正面或四分之三视角。任一边超过 2048px 的图像会先缩小。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed 控制节点是否应重新运行；无论 seed 如何，结果都不具确定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingVideoNode": {
     "description": "使用 Kling V3 生成视频。支持文生视频和图生视频，可选分镜多提示词和音频生成。",
     "display_name": "Kling 3.0 视频",
@@ -11325,11 +11411,19 @@
   "LatentApplyOperationCFG": {
     "display_name": "Latent应用操作CFG",
     "inputs": {
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "在模型去噪流程的此比例处停止应用操作。1 表示结束。"
+      },
       "model": {
         "name": "模型"
       },
       "operation": {
         "name": "操作"
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "在模型去噪流程的此比例处开始应用操作。0 表示开始。"
       }
     },
     "outputs": {
@@ -11564,6 +11658,24 @@
       },
       "samples": {
         "name": "Latent"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LatentOperationBlend": {
+    "description": "将整个潜空间向参考潜空间混合，必要时使用最近邻插值调整参考潜空间的大小。",
+    "display_name": "潜空间操作混合",
+    "inputs": {
+      "reference": {
+        "name": "reference"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "0 时潜空间保持不变；1 时匹配缩放后的参考潜空间。"
       }
     },
     "outputs": {
@@ -11973,6 +12085,80 @@
     "inputs": {
       "latent": {
         "name": "Latent"
+      }
+    }
+  },
+  "LoadLoraModel": {
+    "description": "将一组 LoRA 应用于扩散模型。每个 LoRA 添加一行；每行选择一个 LoRA 文件及其强度。",
+    "display_name": "加载 LoRA（模型）",
+    "inputs": {
+      "loras": {
+        "name": "LoRA 列表",
+        "tooltip": "每一行将一个 LoRA 应用于模型。"
+      },
+      "loras_$add": {
+        "name": "添加 LoRA"
+      },
+      "loras_$notice": {
+        "name": "LoRA"
+      },
+      "loras_0": {
+        "name": "LoRA #1"
+      },
+      "loras_0_enabled": {
+        "name": "LoRA #1 已启用"
+      },
+      "loras_0_lora_name": {
+        "name": "LoRA #1 lora_name"
+      },
+      "loras_0_strength": {
+        "name": "LoRA #1 强度"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "将应用 LoRA 的扩散模型。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "修改后的扩散模型。"
+      }
+    }
+  },
+  "LoadLoraTextEncoder": {
+    "description": "将一组 LoRA 应用于 CLIP 文本编码器。每个 LoRA 添加一行；每行选择一个 LoRA 文件及其强度。",
+    "display_name": "加载 LoRA（文本编码器）",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "将应用 LoRA 的 CLIP 文本编码器。"
+      },
+      "loras": {
+        "name": "LoRA 列表",
+        "tooltip": "每一行将一个 LoRA 应用于文本编码器。"
+      },
+      "loras_$add": {
+        "name": "添加 LoRA"
+      },
+      "loras_$notice": {
+        "name": "LoRA"
+      },
+      "loras_0": {
+        "name": "LoRA #1"
+      },
+      "loras_0_enabled": {
+        "name": "LoRA #1 已启用"
+      },
+      "loras_0_lora_name": {
+        "name": "LoRA #1 lora_name"
+      },
+      "loras_0_strength": {
+        "name": "LoRA #1 强度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "修改后的 CLIP 文本编码器。"
       }
     }
   },
@@ -18672,7 +18858,7 @@
   },
   "QuiverImageToSVGNode": {
     "description": "使用Quiver AI将光栅图像矢量化为SVG。",
-    "display_name": "Quiver 图像转SVG",
+    "display_name": "Quiver 图像转 SVG（旧版）",
     "inputs": {
       "auto_crop": {
         "name": "auto_crop",
@@ -18716,9 +18902,54 @@
       }
     }
   },
+  "QuiverImageToSVGNodeV2": {
+    "description": "使用 Quiver AI 将栅格图像矢量化为 SVG。",
+    "display_name": "Quiver 图像转 SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用于 SVG 矢量化的模型。"
+      },
+      "model_auto_crop": {
+        "name": "auto_crop"
+      },
+      "model_height": {
+        "name": "高度"
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "种子"
+      },
+      "model_target_size": {
+        "name": "target_size"
+      },
+      "model_temperature": {
+        "name": "温度"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QuiverTextToSVGNode": {
     "description": "使用Quiver AI根据文本提示生成SVG。",
-    "display_name": "Quiver 文本转SVG",
+    "display_name": "Quiver 文本转 SVG（旧版）",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -18755,6 +18986,51 @@
       "seed": {
         "name": "seed",
         "tooltip": "用于决定节点是否重新运行的种子；无论种子如何，实际结果都是非确定性的。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QuiverTextToSVGNodeV2": {
+    "description": "使用 Quiver AI 根据文本提示词生成 SVG。",
+    "display_name": "Quiver 文本转 SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用于生成 SVG 的模型。"
+      },
+      "model_height": {
+        "name": "高度"
+      },
+      "model_instructions": {
+        "name": "说明"
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "种子"
+      },
+      "model_temperature": {
+        "name": "温度"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "宽度"
       }
     },
     "outputs": {
@@ -27554,6 +27830,79 @@
       },
       "seed": {
         "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ImageToVideoNode": {
+    "description": "根据起始帧和可选提示词生成视频。输出会保持输入图像的宽高比。",
+    "display_name": "Vidu Q4 图生视频生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "image": {
+        "name": "图像",
+        "tooltip": "生成视频的起始帧。宽高比必须介于 1:5 和 5:1 之间。"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用于生成视频的模型。"
+      },
+      "model_audio": {
+        "name": "音频"
+      },
+      "model_duration": {
+        "name": "时长"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "model_seed": {
+        "name": "种子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ReferenceVideoNode": {
+    "description": "根据参考图像、可选参考音频和提示词生成视频。",
+    "display_name": "Vidu Q4 参考图生视频生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用于生成视频的模型。"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_audio": {
+        "name": "音频"
+      },
+      "model_duration": {
+        "name": "时长"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "model_seed": {
+        "name": "种子"
       }
     },
     "outputs": {

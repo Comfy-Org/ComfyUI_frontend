@@ -2766,6 +2766,41 @@
       }
     }
   },
+  "CameraAngle": {
+    "description": "בחרו זווית מצלמה סביב נושא עם תצוגה מקדימה תלת־ממדית. הפלט כולל camera_info עבור צמתי 3D ותיאור צילום באנגלית פשוטה עבור פרומפטים.",
+    "display_name": "יצירת פרומפט לזווית מצלמה",
+    "inputs": {
+      "horizontal_angle": {
+        "name": "horizontal_angle",
+        "tooltip": "אַזִימוּט סביב הנושא במעלות. 0 הוא החזית, 90 הוא הצד הימני ו־180 הוא הגב."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "תמונת ייחוס אופציונלית המוצגת בחזית קוביית הנושא בתצוגה המקדימה התלת־ממדית."
+      },
+      "vertical_angle": {
+        "name": "vertical_angle",
+        "tooltip": "גובה במעלות. ערך שלילי מביט כלפי מעלה מלמטה, וערך חיובי מביט כלפי מטה מלמעלה."
+      },
+      "view": {
+        "name": "view"
+      },
+      "zoom": {
+        "name": "zoom",
+        "tooltip": "זום העדשה על הנושא: 0 הוא צילום רחב, 10 הוא תקריב. מועבר אל camera_info.zoom."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "1": {
+        "name": "prompt",
+        "tooltip": null
+      }
+    }
+  },
   "Canny": {
     "display_name": "זיהוי קצוות (Canny)",
     "inputs": {
@@ -2900,6 +2935,27 @@
       "start_sigma": {
         "name": "start_sigma",
         "tooltip": "ה-sigma הראשון בו אפשרויות אלו יהיו בתוקף."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ClarityCrystalUpscaleNode": {
+    "description": "הגדלת רזולוציה של תמונה באמצעות Crystal Upscaler של Clarity AI, מגדיל רזולוציה באיכות גבוהה שנאמן למקור ומשחזר פנים, עור ומרקם עדין. פלט מרבי: 100 מגה־פיקסל.",
+    "display_name": "הגדלת רזולוציה Crystal של Clarity AI",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "המודל שבו יש להשתמש."
+      },
+      "model_creativity": {
+        "name": "יצירתיות"
+      },
+      "model_scale_factor": {
+        "name": "גורם_קנה_מידה"
       }
     },
     "outputs": {
@@ -6843,7 +6899,7 @@
   },
   "GeminiNanoBanana2V2": {
     "description": "יצירת או עריכת תמונות באופן סינכרוני באמצעות Google Vertex API.",
-    "display_name": "Nano Banana 2",
+    "display_name": "Nano Banana 2.1",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -6893,7 +6949,7 @@
       },
       "2": {
         "name": "thought_image",
-        "tooltip": "התמונה הראשונה מתהליך החשיבה של המודל. זמין רק כאשר thinking_level מוגדר ל-HIGH ו-modality הוא IMAGE+TEXT."
+        "tooltip": "התמונה הראשונה מתהליך החשיבה של המודל. זמינה רק במודאליות IMAGE+TEXT."
       }
     }
   },
@@ -10367,6 +10423,36 @@
       }
     }
   },
+  "KlingTryOnNode": {
+    "description": "הלבשת אדם בפריט לבוש. גודל התוצאה זהה לגודל תמונת האדם, ומוגבל ל־2048px בצלע הארוכה ביותר.",
+    "display_name": "מדידה וירטואלית של Kling",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "garment_image": {
+        "name": "garment_image",
+        "tooltip": "פריט הלבוש להלבשה: תמונת מוצר, צילום פריסה שטוחה, בובת תצוגה או תמונה על דוגמן. תמונה על דוגמן עשויה להעביר גם את יתר פריטי התלבושת. נתמכים פריטי לבוש בלבד; נעליים, תיקים ואביזרים אינם נתמכים."
+      },
+      "keep_pose": {
+        "name": "keep_pose",
+        "tooltip": "כבה כדי לאפשר שינוי תנוחה לצורך הצגה טובה יותר של התלבושת."
+      },
+      "person_image": {
+        "name": "person_image",
+        "tooltip": "תמונה של אדם אחד, רצוי במבט חזיתי או בזווית של שלושה רבעים. תמונות שבהן אחת הצלעות גדולה מ־2048px יוקטנו תחילה."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "ה־seed קובע אם יש להריץ את הצומת מחדש; התוצאות אינן דטרמיניסטיות ללא קשר ל־seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingVideoNode": {
     "description": "יצירת סרטונים עם Kling V3. תומך בטקסט-לווידאו ותמונה-לווידאו עם אפשרות לפרומפט מרובה (storyboard) ויצירת אודיו.",
     "display_name": "Kling 3.0 וידאו",
@@ -11325,11 +11411,19 @@
   "LatentApplyOperationCFG": {
     "display_name": "LatentApplyOperationCFG",
     "inputs": {
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "הפסק להחיל את הפעולה בחלק זה של לוח הזמנים להסרת הרעש של המודל. 1 הוא הסוף."
+      },
       "model": {
         "name": "model"
       },
       "operation": {
         "name": "פעולה"
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "התחל להחיל את הפעולה בחלק זה של לוח הזמנים להסרת הרעש של המודל. 0 הוא ההתחלה."
       }
     },
     "outputs": {
@@ -11564,6 +11658,24 @@
       },
       "samples": {
         "name": "samples"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LatentOperationBlend": {
+    "description": "מזג את כל המרחב הלטנטי לכיוון המרחב הלטנטי של הייחוס, תוך שינוי גודל הייחוס באמצעות אינטרפולציית השכן הקרוב בעת הצורך.",
+    "display_name": "מיזוג פעולות במרחב לטנטי",
+    "inputs": {
+      "reference": {
+        "name": "ייחוס"
+      },
+      "strength": {
+        "name": "עוצמה",
+        "tooltip": "0 משאיר את ה-latent ללא שינוי; 1 מתאים ל-latent הייחוס ששונה גודלו."
       }
     },
     "outputs": {
@@ -11973,6 +12085,80 @@
     "inputs": {
       "latent": {
         "name": "latent"
+      }
+    }
+  },
+  "LoadLoraModel": {
+    "description": "החלת ערימה של LoRA על מודל דיפוזיה. יש להוסיף שורה אחת לכל LoRA; בכל שורה בוחרים קובץ LoRA ואת העוצמה שלו.",
+    "display_name": "טעינת LoRA (מודל)",
+    "inputs": {
+      "loras": {
+        "name": "LoRA",
+        "tooltip": "כל שורה מחילה LoRA אחד על המודל."
+      },
+      "loras_$add": {
+        "name": "הוספת LoRA"
+      },
+      "loras_$notice": {
+        "name": "LoRA"
+      },
+      "loras_0": {
+        "name": "LoRA מס' 1"
+      },
+      "loras_0_enabled": {
+        "name": "LoRA מס' 1 מופעל"
+      },
+      "loras_0_lora_name": {
+        "name": "LoRA מס' 1 lora_name"
+      },
+      "loras_0_strength": {
+        "name": "עוצמת LoRA מס' 1"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "מודל הדיפוזיה שעליו יוחלו רכיבי ה-LoRA."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "מודל הדיפוזיה שהשתנה."
+      }
+    }
+  },
+  "LoadLoraTextEncoder": {
+    "description": "החלת ערימה של LoRA על מקודד טקסט CLIP. יש להוסיף שורה אחת לכל LoRA; בכל שורה בוחרים קובץ LoRA ואת העוצמה שלו.",
+    "display_name": "טעינת LoRA (מקודד טקסט)",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "מקודד הטקסט CLIP שעליו יוחלו רכיבי ה-LoRA."
+      },
+      "loras": {
+        "name": "LoRA",
+        "tooltip": "כל שורה מחילה LoRA אחד על מקודד הטקסט."
+      },
+      "loras_$add": {
+        "name": "הוספת LoRA"
+      },
+      "loras_$notice": {
+        "name": "LoRA"
+      },
+      "loras_0": {
+        "name": "LoRA מס' 1"
+      },
+      "loras_0_enabled": {
+        "name": "LoRA מס' 1 מופעל"
+      },
+      "loras_0_lora_name": {
+        "name": "LoRA מס' 1 lora_name"
+      },
+      "loras_0_strength": {
+        "name": "עוצמת LoRA מס' 1"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "מקודד הטקסט CLIP שהשתנה."
       }
     }
   },
@@ -18672,7 +18858,7 @@
   },
   "QuiverImageToSVGNode": {
     "description": "המרת תמונה רסטרית ל-SVG באמצעות Quiver AI.",
-    "display_name": "Quiver Image ל-SVG",
+    "display_name": "תמונה ל-SVG של Quiver (מדור קודם)",
     "inputs": {
       "auto_crop": {
         "name": "auto_crop",
@@ -18716,9 +18902,54 @@
       }
     }
   },
+  "QuiverImageToSVGNodeV2": {
+    "description": "המרת תמונת רסטר ל-SVG באמצעות Quiver AI.",
+    "display_name": "תמונה ל-SVG של Quiver",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל שישמש לווקטוריזציה של SVG."
+      },
+      "model_auto_crop": {
+        "name": "חיתוך_אוטומטי"
+      },
+      "model_height": {
+        "name": "גובה"
+      },
+      "model_presence_penalty": {
+        "name": "קנס_נוכחות"
+      },
+      "model_reasoning_effort": {
+        "name": "מאמץ_הסקה"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_target_size": {
+        "name": "גודל_יעד"
+      },
+      "model_temperature": {
+        "name": "טמפרטורה"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "רוחב"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QuiverTextToSVGNode": {
     "description": "יצירת SVG מתוך הנחיה טקסטואלית באמצעות Quiver AI.",
-    "display_name": "Quiver Text ל-SVG",
+    "display_name": "Quiver טקסט ל־SVG (מדור קודם)",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -18755,6 +18986,51 @@
       "seed": {
         "name": "seed",
         "tooltip": "seed לקביעת האם הצומת ירוץ מחדש; התוצאות בפועל אינן דטרמיניסטיות ללא קשר ל-seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QuiverTextToSVGNodeV2": {
+    "description": "צור SVG מהנחיית טקסט באמצעות Quiver AI.",
+    "display_name": "Quiver טקסט ל־SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל שישמש ליצירת SVG."
+      },
+      "model_height": {
+        "name": "גובה"
+      },
+      "model_instructions": {
+        "name": "הוראות"
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_prompt": {
+        "name": "הנחיה"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "זרע"
+      },
+      "model_temperature": {
+        "name": "טמפרטורה"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "רוחב"
       }
     },
     "outputs": {
@@ -27554,6 +27830,79 @@
       },
       "seed": {
         "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ImageToVideoNode": {
+    "description": "צור וידאו מפריים פתיחה ומהנחיה אופציונלית. הפלט שומר על יחס הממדים של תמונת הקלט.",
+    "display_name": "Vidu Q4 יצירת וידאו מתמונה",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "image": {
+        "name": "תמונה",
+        "tooltip": "פריים הפתיחה של הווידאו שנוצר. יחס הממדים חייב להיות בין 1:5 ל־5:1."
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל שישמש ליצירת וידאו."
+      },
+      "model_audio": {
+        "name": "שמע"
+      },
+      "model_duration": {
+        "name": "משך"
+      },
+      "model_prompt": {
+        "name": "הנחיה"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ReferenceVideoNode": {
+    "description": "צור וידאו מתמונות ייחוס, שמע ייחוס אופציונלי והנחיה.",
+    "display_name": "Vidu Q4 יצירת וידאו מהפניה",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל שישמש ליצירת וידאו."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_audio": {
+        "name": "שמע"
+      },
+      "model_duration": {
+        "name": "משך"
+      },
+      "model_prompt": {
+        "name": "הנחיה"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
       }
     },
     "outputs": {
