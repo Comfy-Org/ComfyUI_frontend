@@ -340,25 +340,31 @@ describe('useAgentConversationStore', () => {
   // seconds later than the canvas actually caught up.
   it('still settles a canvas-sync-pending tool call after its turn has settled', () => {
     const store = useAgentConversationStore()
-    store.setCanvasSyncGate(() => true)
+    const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+    const laterWorkflowId = '8c6d5e4f-3a2b-4c1d-9e8f-7a6b5c4d3e2f'
+    store.setCanvasSyncGate(() => 'awaiting')
     store.startTurn(T1)
+    store.ingest(activeTab(workflowId, 't1'))
     store.ingest(toolCall('t1', 'add_node', 'success'))
+    store.ingest(activeTab(laterWorkflowId, 't1'))
     store.ingest(done('t1'))
 
     // The turn is settled (message.streaming is false), but the tool part
     // itself is held at 'streaming' -- the spinner -- pending canvas catch-up.
     expect(store.messages[0].streaming).toBe(false)
-    expect(store.messages[0].parts[0]).toMatchObject({
-      type: 'tool',
-      state: 'streaming'
-    })
+    expect(store.messages[0].parts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ type: 'tool', state: 'streaming' })
+      ])
+    )
 
-    store.notifyCanvasCaughtUp()
+    store.notifyCanvasCaughtUp(workflowId.toUpperCase())
 
-    expect(store.messages[0].parts[0]).toMatchObject({
-      type: 'tool',
-      state: 'done'
-    })
+    expect(store.messages[0].parts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ type: 'tool', state: 'done' })
+      ])
+    )
   })
 
   // PM-1575 regression (finding #1/#9, high): the normal ordering on a
@@ -371,7 +377,7 @@ describe('useAgentConversationStore', () => {
     const store = useAgentConversationStore()
     let outcomeCount = 0
     store.setCanvasSyncGate(
-      () => true,
+      () => 'awaiting',
       () => outcomeCount
     )
     store.startTurn(T1)
@@ -393,7 +399,7 @@ describe('useAgentConversationStore', () => {
   // STALE_AFTER_MS fallback.
   it('keeps an earlier settled turn reachable after a second turn also settles with a held part', () => {
     const store = useAgentConversationStore()
-    store.setCanvasSyncGate(() => true)
+    store.setCanvasSyncGate(() => 'awaiting')
 
     store.startTurn(T1)
     store.ingest(toolCall('t1', 'add_node', 'success'))
@@ -422,7 +428,7 @@ describe('useAgentConversationStore', () => {
   // a turn nobody is tracking anymore.
   it('flushes a held tool-call part immediately when its turn is aborted', () => {
     const store = useAgentConversationStore()
-    store.setCanvasSyncGate(() => true)
+    store.setCanvasSyncGate(() => 'awaiting')
     store.startTurn(T1)
     store.ingest(toolCall('t1', 'add_node', 'success'))
     expect(store.messages[0].parts[0]).toMatchObject({ state: 'streaming' })
@@ -717,7 +723,7 @@ describe('useAgentConversationStore', () => {
   // settling the moment it is clear nothing will ever resume it.
   it('flushes a held tool-call part immediately when a settled background turn is resumed but not reactivated', () => {
     const store = useAgentConversationStore()
-    store.setCanvasSyncGate(() => true)
+    store.setCanvasSyncGate(() => 'awaiting')
     store.setThreadId('th')
     store.startTurn(T1)
     store.ingest(toolCall('t1', 'add_node', 'success'))
@@ -737,7 +743,7 @@ describe('useAgentConversationStore', () => {
   // with the disposed transport's own stale snapshot.
   it('does not let an orphaned canvas-sync timer overwrite hydrated content under the same turn id', () => {
     const store = useAgentConversationStore()
-    store.setCanvasSyncGate(() => true)
+    store.setCanvasSyncGate(() => 'awaiting')
     store.startTurn(T1)
     store.ingest(toolCall('t1', 'add_node', 'success'))
     store.ingest(done('t1'))
@@ -758,10 +764,10 @@ describe('useAgentConversationStore', () => {
   // remount) never reached a transport created before it.
   it('routes a later setCanvasSyncGate() call to a transport created before it', () => {
     const store = useAgentConversationStore()
-    store.setCanvasSyncGate(() => false)
+    store.setCanvasSyncGate(() => 'none')
     store.startTurn(T1)
 
-    store.setCanvasSyncGate(() => true)
+    store.setCanvasSyncGate(() => 'awaiting')
     store.ingest(toolCall('t1', 'add_node', 'success'))
 
     expect(store.messages[0].parts[0]).toMatchObject({ state: 'streaming' })
@@ -779,7 +785,7 @@ describe('useAgentConversationStore', () => {
     const store = useAgentConversationStore()
     const applied = ref(5)
     store.setCanvasSyncGate(
-      () => true,
+      () => 'awaiting',
       () => applied.value
     )
     store.startTurn(T1)
@@ -1959,21 +1965,39 @@ describe('useAgentConversationStore', () => {
 
   it('keeps a successful tool pending until canvas catch-up after background settlement', () => {
     const store = useAgentConversationStore()
+    const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+    const laterWorkflowId = '8c6d5e4f-3a2b-4c1d-9e8f-7a6b5c4d3e2f'
     store.setThreadId('th')
-    store.setCanvasSyncGate(() => true)
+    store.setCanvasSyncGate(() => 'awaiting')
     store.startTurn(T1)
+    store.ingest(activeTab(workflowId, 't1'))
     store.ingest(toolCall('t1', 'add_node', 'success'))
+    store.ingest(activeTab(laterWorkflowId, 't1'))
     store.stashActiveTurn()
 
     store.settleTurn({ threadId: 'th', messageId: T1 }, undefined)
 
-    expect(store.messages[0].parts).toMatchObject([
-      { type: 'tool', name: 'add_node', state: 'streaming', ok: true }
-    ])
-    store.notifyCanvasCaughtUp()
-    expect(store.messages[0].parts).toMatchObject([
-      { type: 'tool', name: 'add_node', state: 'done', ok: true }
-    ])
+    expect(store.messages[0].parts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'tool',
+          name: 'add_node',
+          state: 'streaming',
+          ok: true
+        })
+      ])
+    )
+    store.notifyCanvasCaughtUp(workflowId)
+    expect(store.messages[0].parts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'tool',
+          name: 'add_node',
+          state: 'done',
+          ok: true
+        })
+      ])
+    )
   })
 
   it.for<{

@@ -36,7 +36,7 @@ test.describe(
       ).toBe(2)
     })
 
-    test('reports a canvas edit as succeeded when the document never arrived', async ({
+    test('reports a canvas edit as unconfirmed when the document never arrived', async ({
       page
     }) => {
       const agent = new AgentRemoteApplyHarness(page)
@@ -53,9 +53,16 @@ test.describe(
       agent.finishTurn('Added a Load Image node.')
 
       await agent.expectTurnReportedFinished()
+      // Preserve the assistant reply: it can contain useful explanation or
+      // recovery guidance even when a canvas write was not observed. The
+      // browser-owned summary and glyph below are what prevent that reply
+      // from being presented as confirmed work.
       await expect(
         agent.panel.getByText('Added a Load Image node.').first()
       ).toBeVisible()
+      await expect(agent.workSummary).toContainText(
+        'Changes not confirmed on your canvas'
+      )
 
       await expect(agent.node(nodeId)).toHaveCount(0)
       expect(await agent.settledCanvasNodeIds()).toEqual(before)
@@ -65,15 +72,8 @@ test.describe(
       await expect(addNodeRow).toBeVisible()
 
       await expect(agent.streamingGlyph(addNodeRow)).toHaveCount(0)
-
-      // Expected failure: that terminal state must not read as a plain
-      // success while the canvas has nothing to show for the call.
-      // `agentToolGlyph.ts` already renders `circle-x` for a failed call, so a
-      // fix has a rendering to reach for; this asserts the absence of the
-      // success glyph rather than the presence of any particular replacement,
-      // so it does not prescribe which one.
-      test.fail()
       await expect(agent.settledSuccessGlyph(addNodeRow)).toHaveCount(0)
+      await expect(agent.unconfirmedGlyph(addNodeRow)).toBeVisible()
     })
   }
 )

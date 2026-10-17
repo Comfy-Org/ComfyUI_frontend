@@ -11,7 +11,7 @@ const {
 } = defineProps<{
   expanded?: boolean
   workflowName?: string
-  context?: 'following' | 'mismatch' | 'unavailable'
+  context?: 'following' | 'mismatch' | 'unavailable' | 'emptyCanvas'
 }>()
 
 const emit = defineEmits<{ showTarget: [] }>()
@@ -19,7 +19,12 @@ const dismissed = useStorage('Comfy.AgentPanel.runNoticeDismissed', false)
 const contextMessages = {
   following: 'agent.targetFollowsVisibleWorkflow',
   mismatch: 'agent.viewingDifferentWorkflow',
-  unavailable: 'agent.targetWorkflowUnavailable'
+  unavailable: 'agent.targetWorkflowUnavailable',
+  // PM-1996: the agent finished a turn and this tab has no nodes on it. Said
+  // by the panel, which can see the canvas, rather than left to the turn's
+  // prose, which has offered to export and save a blank workflow -- and
+  // pointed at a menu that does not exist -- while the canvas was empty.
+  emptyCanvas: 'agent.canvasIsEmptyAfterTurn'
 } as const satisfies Record<NonNullable<typeof context>, string>
 const defaultNotice = computed(() =>
   expanded ? 'agent.runNoticeExpanded' : 'agent.runNotice'
@@ -30,6 +35,7 @@ const defaultNotice = computed(() =>
   <div
     v-if="context || !dismissed"
     role="note"
+    :data-testid="context ? `agent-run-notice-${context}` : undefined"
     :aria-live="context ? 'polite' : undefined"
     class="relative flex items-start gap-2 overflow-hidden rounded-lg bg-base-background p-4 ring-1 ring-border-subtle before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-muted-background"
   >

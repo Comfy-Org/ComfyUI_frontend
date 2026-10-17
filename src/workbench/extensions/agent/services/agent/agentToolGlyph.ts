@@ -56,9 +56,18 @@ export function toolLabel(
 export function toolGlyph(
   name: string,
   state: PartState,
-  ok?: boolean
+  ok?: boolean,
+  /**
+   * PM-1343: `false` when this call reported success but the canvas was never
+   * observed to change (see `ToolPart.canvasConfirmed`). Distinct from
+   * `ok === false`: the tool did not fail, we simply cannot say its effect
+   * reached the person's canvas -- so it gets its own glyph rather than
+   * borrowing either the failure cross or the settled success mark.
+   */
+  canvasConfirmed?: boolean
 ): string {
   if (state === 'streaming') return 'animate-spin icon-[lucide--loader-circle]'
   if (ok === false) return 'icon-[lucide--circle-x]'
+  if (canvasConfirmed === false) return 'icon-[lucide--triangle-alert]'
   return knownTool(name)?.icon ?? 'icon-[lucide--wrench]'
 }
