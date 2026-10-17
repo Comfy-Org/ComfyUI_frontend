@@ -1,0 +1,44 @@
+---
+import type { RoadmapStage } from '@/content/roadmap.schema'
+
+interface Props {
+  stage: RoadmapStage
+}
+
+const { stage } = Astro.props
+const { t } = Astro.locals
+
+// The marker fills in as work gets closer to done.
+const marker: Record<RoadmapStage, string> = {
+  shipped: 'bg-primary-comfy-yellow',
+  shipping: 'border-2 border-primary-comfy-yellow',
+  building: 'border-2 border-primary-comfy-canvas/60',
+  exploring: 'border-2 border-dashed border-primary-comfy-canvas/40'
+}
+---
+
+<section
+  id={`roadmap-${stage}`}
+  class="roadmap-group grid gap-6 py-10 lg:grid-cols-[13rem_1fr] lg:gap-12 lg:py-14"
+  aria-labelledby={`roadmap-${stage}-heading`}
+>
+  <header class="lg:sticky lg:top-28 lg:self-start lg:pt-5">
+    <h2
+      id={`roadmap-${stage}-heading`}
+      class="flex items-center gap-3 text-xs font-bold tracking-widest text-primary-comfy-yellow uppercase"
+    >
+      <span
+        class={`size-3 rounded-full ${marker[stage]}`}
+        aria-hidden="true"
+      ></span>
+      {t(`roadmap.stage.${stage}`)}
+    </h2>
+    <p class="mt-2 text-sm font-light text-primary-comfy-canvas/50">
+      {t(`roadmap.stageDescription.${stage}`)}
+    </p>
+  </header>
+
+  <ol class="grid list-none gap-x-12 gap-y-10 md:grid-cols-2">
+    <slot />
+  </ol>
+</section>

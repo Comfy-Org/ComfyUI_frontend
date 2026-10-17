@@ -1,0 +1,15 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import RoadmapBoard from '@/components/roadmap/RoadmapBoard.astro'
+import RoadmapHero from '@/components/roadmap/RoadmapHero.astro'
+
+const locale = 'en' as const
+---
+
+<BaseLayout
+  title={Astro.locals.t('roadmap.page.title')}
+  description={Astro.locals.t('roadmap.page.description')}
+>
+  <RoadmapHero />
+  <RoadmapBoard locale={locale} />
+</BaseLayout>

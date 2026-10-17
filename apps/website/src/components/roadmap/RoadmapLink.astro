@@ -1,0 +1,10 @@
+---
+// Anchors inside an entry body. Matches the title link so both open a new tab.
+const { href } = Astro.props
+const { t } = Astro.locals
+---
+
+<a href={href} target="_blank" rel="noopener noreferrer">
+  <slot />
+  <span class="sr-only">{` (${t('roadmap.opensInNewTab')})`}</span>
+</a>

@@ -1,0 +1,40 @@
+---
+import { roadmapFeedbackLinks } from '@/config/roadmap-feedback'
+
+const { t } = Astro.locals
+
+// Display order. The destinations themselves live in the config.
+const asks = [
+  'roadmap',
+  'featureRequest',
+  'bug'
+] as const satisfies readonly (keyof typeof roadmapFeedbackLinks)[]
+---
+
+<section
+  class="mt-12 max-w-3xl border-t border-primary-comfy-canvas/10 pt-8 lg:mt-16"
+>
+  <h2 class="text-lg font-light wrap-break-word text-primary-comfy-canvas">
+    {t('roadmap.feedback.heading')}
+  </h2>
+  <p class="mt-2 text-sm font-light text-primary-comfy-canvas/70">
+    {t('roadmap.feedback.intro')}
+  </p>
+
+  <ul class="mt-6 flex list-none flex-col gap-5">
+    {asks.map((ask) => <li>
+      <a
+        href={roadmapFeedbackLinks[ask]}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="rounded-xs text-base font-light wrap-break-word text-primary-comfy-canvas underline decoration-primary-comfy-canvas/30 underline-offset-4 transition-colors hover:text-primary-comfy-yellow hover:decoration-primary-comfy-yellow focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-comfy-yellow"
+      >
+        {t(`roadmap.feedback.${ask}.label`)}
+        <span class="sr-only">{` (${t('roadmap.opensInNewTab')})`}</span>
+      </a>
+      <p class="mt-1 text-sm font-light text-primary-comfy-canvas/60">
+        {t(`roadmap.feedback.${ask}.description`)}
+      </p>
+    </li>)}
+  </ul>
+</section>

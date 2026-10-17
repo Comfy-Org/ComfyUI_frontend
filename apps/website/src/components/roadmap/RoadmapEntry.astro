@@ -1,0 +1,80 @@
+---
+interface Props {
+  id: string
+  title: string
+  area: string
+  areaLabel: string
+  date?: string
+  link?: string
+  /** Shipped entries lead with the month they landed. */
+  shipped?: boolean
+}
+
+const { id, title, area, areaLabel, date, link, shipped = false } = Astro.props
+const { t } = Astro.locals
+
+const chip =
+  'rounded-full border px-2.5 py-1 text-2xs font-bold tracking-widest uppercase'
+---
+
+<li
+  class="roadmap-item border-t border-primary-comfy-canvas/10 pt-5"
+  data-area={area}
+>
+  <div class="flex flex-wrap items-center gap-3">
+    {date && <span
+      class:list={[
+        'text-2xs font-bold tracking-widest uppercase tabular-nums',
+        shipped ? 'text-primary-comfy-yellow' : 'text-primary-comfy-canvas/70'
+      ]}
+    >
+      {date}
+    </span>}
+    <span
+      class={`${chip} border-primary-comfy-canvas/20 text-primary-comfy-canvas/60`}
+    >
+      {areaLabel}
+    </span>
+  </div>
+
+  <h3 class="mt-3 text-xl font-light wrap-break-word text-primary-comfy-canvas">
+    {link ? (
+      <a
+        href={link}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="rounded-xs underline decoration-primary-comfy-canvas/30 underline-offset-4 transition-colors hover:text-primary-comfy-yellow hover:decoration-primary-comfy-yellow focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-comfy-yellow"
+      >
+        {title}
+        <span class="sr-only">{` (${t('roadmap.opensInNewTab')})`}</span>
+      </a>
+    ) : (
+      title
+    )}
+  </h3>
+
+  <div
+    class="roadmap-entry mt-2 max-w-xl text-sm/relaxed font-light wrap-break-word text-primary-comfy-canvas/70"
+    data-entry={id}
+  >
+    <slot />
+  </div>
+</li>
+
+<style>
+  .roadmap-entry :global(p) {
+    margin: 0 0 0.75rem;
+  }
+  .roadmap-entry :global(p:last-child) {
+    margin-bottom: 0;
+  }
+  .roadmap-entry :global(a) {
+    color: var(--color-primary-comfy-yellow);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    transition: opacity 0.15s;
+  }
+  .roadmap-entry :global(a:hover) {
+    opacity: 0.7;
+  }
+</style>

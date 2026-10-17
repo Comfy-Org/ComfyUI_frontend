@@ -91,6 +91,8 @@ describe('indexing policy', () => {
     '/case-studies',
     '/zh-CN/videos/',
     '/demos',
+    '/roadmap',
+    '/zh-CN/roadmap/',
     '/login',
     '/signup',
     '/forgot-password',
