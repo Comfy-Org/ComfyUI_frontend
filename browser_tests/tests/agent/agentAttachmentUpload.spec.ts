@@ -5,6 +5,7 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
+import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
 test.describe('Agent attachment cancellation', { tag: '@cloud' }, () => {
   test('closing the panel removes a pending upload and preserves a sendable draft', async ({
@@ -31,7 +32,9 @@ test.describe('Agent attachment cancellation', { tag: '@cloud' }, () => {
       await agentPanel.open()
       await agentPanel.selectWorkflow()
       const panel = page.locator('#agent-panel-root')
-      const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
+      const composer = panel.getByRole('textbox', {
+        name: AGENT_COMPOSER_LABEL
+      })
       const send = panel.getByRole('button', { name: 'Send', exact: true })
       await composer.fill('Keep this draft')
       await expect(send).toBeEnabled()

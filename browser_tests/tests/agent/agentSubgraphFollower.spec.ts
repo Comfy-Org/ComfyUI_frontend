@@ -28,6 +28,7 @@ import {
 } from '@e2e/fixtures/data/agentSubgraphFollower'
 import { loadSeedIntoActiveTab } from '@e2e/fixtures/utils/seedActiveTab'
 import subgraphWorkflow from '@e2e/assets/subgraphs/agent-subgraph-with-two-promoted-widgets.json' with { type: 'json' }
+import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
 const test = mergeTests(agentTest, webSocketFixture)
 
@@ -75,7 +76,7 @@ test.describe(
         const agentPanel = new AgentPanel(page)
         await agentPanel.selectWorkflow()
         const composer = agentPanel.root.getByRole('textbox', {
-          name: /^Describe ideas/
+          name: AGENT_COMPOSER_LABEL
         })
         await composer.fill('Build the subgraph')
         await agentPanel.root.getByRole('button', { name: 'Send' }).click()
@@ -423,7 +424,7 @@ test.describe(
       socket.onMessage((message) => outboundFrames.push(String(message)))
       await agentPanel.selectWorkflow()
       const composer = agentPanel.root.getByRole('textbox', {
-        name: /^Describe ideas/
+        name: AGENT_COMPOSER_LABEL
       })
       await composer.fill('Inspect the subgraph')
       await agentPanel.root.getByRole('button', { name: 'Send' }).click()

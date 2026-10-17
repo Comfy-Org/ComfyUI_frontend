@@ -516,23 +516,18 @@ describe('Composer skill selection', () => {
     expect(screen.queryByRole('menu', { name: 'Skills' })).toBeNull()
   })
 
-  it('drops the slash hint and menu when skills are disabled', async () => {
+  it('keeps one placeholder and drops the slash menu when skills are disabled', async () => {
     const { skills } = mount()
-    expect(
-      screen.getByText(
-        'Describe ideas, / use skills, @ add references, drag in assets'
-      )
-    ).toBeVisible()
+    expect(screen.getByText('Describe what you want to create')).toBeVisible()
 
     skills.flagsEnabled = false
     await nextTick()
+    // PM-1233: the placeholder states the primary action only. It no longer
+    // advertises the slash menu, so it reads the same either way — what the
+    // flag still has to change is whether `/` opens anything.
+    expect(screen.getByText('Describe what you want to create')).toBeVisible()
     expect(
-      screen.getByText('Describe ideas, @ add references, drag in assets')
-    ).toBeVisible()
-    expect(
-      screen.getByRole('textbox', {
-        name: 'Describe ideas, @ add references, drag in assets'
-      })
+      screen.getByRole('textbox', { name: 'Describe what you want to create' })
     ).toBeVisible()
     await type('/')
     expect(screen.queryByRole('menu')).toBeNull()

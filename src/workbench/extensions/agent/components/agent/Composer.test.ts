@@ -221,9 +221,7 @@ describe('Composer', () => {
       store.replaceDraft({ text: '', workflowReferences: [], attachments })
       mount()
       const box = screen.getByRole('textbox')
-      expect(
-        screen.getByText('Describe what you want to create')
-      ).toBeVisible()
+      expect(screen.getByText('Describe what you want to create')).toBeVisible()
 
       await userEvent.click(box)
       await userEvent.paste('hello')
@@ -236,9 +234,7 @@ describe('Composer', () => {
 
       await userEvent.keyboard('{Control>}a{/Control}{Backspace}')
       expect(store.draft).toBe('')
-      expect(
-        screen.getByText('Describe what you want to create')
-      ).toBeVisible()
+      expect(screen.getByText('Describe what you want to create')).toBeVisible()
       expect(store.attachments).toEqual(attachments)
     }
   )
