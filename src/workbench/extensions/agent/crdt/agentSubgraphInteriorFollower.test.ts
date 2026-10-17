@@ -205,8 +205,6 @@ describe('FE-3468 agent CRDT follower on subgraph definition interiors', () => {
     )
 
     expect(interiorWidgets(state)).toEqual({ value: 1, detail: 99 })
-    // No surface widget exists for a non-promoted widget; the promoted
-    // surface must not be disturbed by the interior detail edit.
     expect(surfaceWidgets(state)).toEqual({ value: HOST_INITIAL_VALUE })
     expect(storedSurfaceWidgets(state)).toEqual({
       value: HOST_INITIAL_VALUE

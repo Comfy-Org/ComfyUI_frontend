@@ -56,7 +56,7 @@ export type NodeChange = 'add' | 'update' | 'delete'
  * Ids are document keys (strings); the applier resolves them against the live
  * graph.
  */
-/** Interior widget edits: definition id → interior node id → widget names. */
+
 type InteriorChanges = ReadonlyMap<
   string,
   ReadonlyMap<string, ReadonlySet<string> | 'all'>
@@ -68,9 +68,9 @@ export interface FrameChanges {
   widgets: ReadonlyMap<string, ReadonlySet<string> | 'all'>
   resyncNodes: ReadonlySet<string>
   links: ReadonlySet<string>
-  /** Widget edits inside subgraph definitions (FE-3468). */
+
   interiors?: InteriorChanges
-  /** Definitions whose interiors need a full widget resync. */
+
   interiorDefinitions?: ReadonlySet<string>
 }
 
@@ -680,17 +680,21 @@ export class LiveGraphApplier {
     key: string,
     message: string,
     errorType: string,
-    context: Record<string, unknown>
+    context: Record<string, unknown>,
+    cause?: unknown
   ): void {
     this.incrementFailureCount()
     if (this.reported.has(key)) return
     this.reported.add(key)
-    reportError(new Error(message), {
-      surface: 'agent',
-      errorType,
-      tags: { ...AGENT_APPLY_TAGS, outcome: 'degraded' },
-      context
-    })
+    reportError(
+      cause === undefined ? new Error(message) : new Error(message, { cause }),
+      {
+        surface: 'agent',
+        errorType,
+        tags: { ...AGENT_APPLY_TAGS, outcome: 'degraded' },
+        context
+      }
+    )
   }
 
   private currentFailureCount(): number {
@@ -890,12 +894,6 @@ export class LiveGraphApplier {
     )
   }
 
-  /**
-   * FE-3468: project definition-interior widget edits onto the live
-   * subgraph (the bottom layer) and, for promoted widgets, onto every host
-   * instance's surface widget. Read-only with respect to the shared doc:
-   * values are read from the follower doc and written only to live nodes.
-   */
   private applyInteriors(
     graph: LGraph,
     doc: Y.Doc,
@@ -963,9 +961,6 @@ export class LiveGraphApplier {
     names: ReadonlySet<string> | 'all',
     mode: ApplyMode
   ): void {
-    // Only a named edit propagates: a wholesale ('all') interior resync
-    // would re-impose the definition's default for a promoted widget,
-    // whose live value the host instance owns (it may legitimately differ).
     if (names === 'all') return
     if (widgets === undefined || Array.isArray(widgets)) return
     const record = widgets as Record<string, unknown>
@@ -1013,7 +1008,6 @@ export class LiveGraphApplier {
     }
   }
 
-  /** Mirror a promoted host write onto the interior widget it promotes. */
   private syncInteriorFromHost(
     host: LGraphNode,
     name: string,
@@ -1034,9 +1028,9 @@ export class LiveGraphApplier {
         `interior-sync:${String(host.id)}:${name}`,
         `Subgraph host ${String(host.id)} could not mirror promoted widget '${name}' onto its interior`,
         'agent_graph_apply_failed',
-        { nodeId: host.id, name }
+        { nodeId: host.id, name },
+        error
       )
-      void error
     }
   }
 
@@ -1455,7 +1449,6 @@ function changed(
 
 type InteriorSyncTargets = Map<string, Map<string, ReadonlySet<string> | 'all'>>
 
-/** Merge named interior edits with wholesale definition resync marks. */
 function interiorSyncTargets(
   granular: InteriorChanges | undefined,
   full: ReadonlySet<string> | undefined,
@@ -1471,7 +1464,6 @@ function interiorSyncTargets(
     for (const definitionId of full) {
       const nodes = targets.get(definitionId) ?? new Map()
       for (const nodeId of docInteriors.get(definitionId)?.keys() ?? []) {
-        // Keep a named edit's precision over the wholesale resync mark.
         if (!nodes.has(nodeId)) nodes.set(nodeId, 'all')
       }
       targets.set(definitionId, nodes)
@@ -1484,10 +1476,6 @@ function promotedInputs(node: LGraphNode): INodeInputSlot[] {
   return node.inputs.filter((input) => input.widgetId)
 }
 
-/**
- * The interior node and widget a host's promoted input feeds, resolved
- * through the subgraph's input links (first connected source wins).
- */
 function resolvePromotedTarget(
   host: LGraphNode,
   inputName: string
@@ -1509,7 +1497,6 @@ function resolvePromotedTarget(
   return undefined
 }
 
-/** Every live host instance of a definition, at root and nested inside other subgraphs. */
 function subgraphHostInstances(
   graph: LGraph,
   definitionId: string

@@ -339,18 +339,12 @@ function definitionsMap(doc: Y.Doc): Y.Map<unknown> | null {
   return doc.getMap<unknown>(DEFINITIONS_ROOT)
 }
 
-/**
- * The definitions root a deep observer can attach to. Unlike the read-only
- * `definitionsMap()` above, this materialises the (empty) root type on a
- * follower doc that has not received a definition yet, so an observer
- * registered before the first definition arrives still sees it land. This
- * only creates the local Yjs type; it writes no document content.
- */
+/** The definitions root a deep observer can attach to. */
 export function definitionsObserverRoot(doc: Y.Doc): Y.Map<unknown> {
   return doc.getMap<unknown>(DEFINITIONS_ROOT)
 }
 
-/** Widget values of one interior node: named map, opaque array, or absent. */
+/** Interior widget values: named map, opaque array, or absent. */
 export type InteriorWidgetValues =
   | Record<string, unknown>
   | readonly unknown[]
@@ -399,10 +393,7 @@ function collectInteriorWidgets(
   }
 }
 
-/**
- * Every definition's interior widget values, keyed by definition id then
- * interior node id, in mint order. Read-only: this never writes the doc.
- */
+/** Every definition's interior widget values, in mint order. */
 export function readSubgraphInteriorWidgets(
   doc: Y.Doc
 ): Map<string, Map<string, InteriorWidgetValues>> {

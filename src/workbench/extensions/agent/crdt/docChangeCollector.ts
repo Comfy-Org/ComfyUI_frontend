@@ -91,9 +91,6 @@ export class DocChangeCollector {
       this.interiors.set(definitionId, nodes)
     }
     if (names === 'all') {
-      // A named edit collected in the same frame is more precise than a
-      // wholesale mark (storage bookkeeping fires both); keep the names so
-      // the applier knows which widget actually changed.
       if (nodes.get(nodeId) === undefined) nodes.set(nodeId, 'all')
       return
     }
@@ -103,12 +100,6 @@ export class DocChangeCollector {
     nodes.set(nodeId, merged)
   }
 
-  /**
-   * Deep events under `definitions`: an interior widget edit lives at
-   * `[definitionId, 'nodes', nodeId, 'widgets']` (nested definitions add a
-   * `'definitions'/'subgraphs'/definitionId` prefix). Anything else that
-   * touches a definition resyncs that definition's interiors wholesale.
-   */
   private readonly onDefinitionsChanged = (
     events: Y.YEvent<Y.AbstractType<unknown>>[]
   ): void => {
