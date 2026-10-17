@@ -22,6 +22,7 @@ import {
   CONSENT_DIALOG_KEY,
   useAgentConsent
 } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
+import { consentOfferDeclined } from '@/workbench/extensions/agent/services/agent/consentOfferDeclined'
 import { registerWorkflowTabActivityTracker } from '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
@@ -428,9 +429,30 @@ export function registerAgentPanelExtension(): void {
       const offerWhenStartupDecided = (): void => {
         // A boot that never reports forfeits this session's automatic offer
         // rather than landing it on a late first-run screen.
-        whenStartupDecided()
-          .then((decided) => {
-            if (decided) {
+        //
+        // The refusal is read here rather than inside `offerConsentUnprompted`
+        // because this is the one seam every automatic attempt passes through,
+        // and because that function has to stay synchronous: four callers
+        // re-drive this chain, and an await before `autoShowInFlight` is set
+        // and the one-shot key is burned is a window for a second card.
+        const refusalIdentity = consentStore.identity
+        Promise.all([whenStartupDecided(), consentOfferDeclined()])
+          .then(([decided, refusal]) => {
+            if (consentStore.identity !== refusalIdentity) return
+            if (!refusal.ok) {
+              reportOfferExit('startup_probe_failed', 'startup')
+              reportError(refusal.cause, {
+                surface: 'agent',
+                errorType: 'agent_consent_auto_offer_failure'
+              })
+              return
+            }
+            if (refusal.declined) {
+              // Not transient and never retried, so the hold goes with it: the
+              // offer is not owed any more, this page load or any later one.
+              reportOfferExit('consent_declined', 'startup')
+              dropHold()
+            } else if (decided) {
               // Once the discovery window is over, a closed panel is a
               // persisted preference. Consent remains available from an
               // already-open panel or explicit user action.
