@@ -4,6 +4,9 @@
   "private": true,
   "description": "Manual audits of Tailwind class usage across Vue templates",
   "type": "module",
+  "exports": {
+    "./textCategories": "./src/textCategories.ts"
+  },
   "dependencies": {
     "vue": "catalog:"
   },

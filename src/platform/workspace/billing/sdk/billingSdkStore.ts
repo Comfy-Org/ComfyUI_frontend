@@ -1,10 +1,10 @@
 import { openBillingUrl } from '@/platform/workspace/billing/billingTab'
 /**
  * The app's single billing SDK instance and the top-up effects the poller
- * performs today, moved onto the lifecycle's state: the progress toast, the
- * in-page challenge, and — for an operation this tab reattached to rather
- * than issued — the refresh, dialog routing, toast, and telemetry that the
- * dialog performs for the operations it issues itself.
+ * performs today, moved onto the lifecycle's state: the progress toast and —
+ * for an operation this tab reattached to rather than issued — the refresh,
+ * dialog routing, toast, and telemetry that the dialog performs for the
+ * operations it issues itself.
  */
 import type {
   BillingOperationKind,
@@ -13,7 +13,6 @@ import type {
   BillingOperationTelemetryEvent,
   BillingResult,
   CapabilitiesReadOptions,
-  EmbeddedChallengePort,
   PendingBillingOperation,
   PreviewSubscribeInput,
   SubscribeInput
@@ -24,7 +23,6 @@ import {
   toBillingTelemetryEvent,
   validateActionUrl
 } from '@comfyorg/account-core/billing'
-import { loadStripe } from '@stripe/stripe-js/pure'
 import { until, useEventListener } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, shallowRef } from 'vue'
@@ -57,7 +55,6 @@ import {
   needsCustomerAttention,
   progressToastKind
 } from '@/platform/workspace/billing/customerAttention'
-import { resolveStripePublishableKey } from '@/platform/workspace/billing/stripePublishableKey'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { provideBillingSdkStore } from '@/platform/workspace/composables/useBillingReadRail'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -111,18 +108,6 @@ function isFrictionEvent(event: BillingOperationTelemetryEvent): boolean {
   return FRICTION_EVENT_NAMES.has(event.name)
 }
 
-async function loadChallengePort(): Promise<EmbeddedChallengePort | undefined> {
-  const publishableKey = resolveStripePublishableKey()
-  const stripe = publishableKey
-    ? await loadStripe(publishableKey).catch(() => null)
-    : null
-  if (!stripe) return undefined
-  return {
-    handleNextAction: (clientSecret) =>
-      stripe.handleNextAction({ clientSecret })
-  }
-}
-
 export const useBillingSdkStore = defineStore('billingSdk', () => {
   const workspaceAuthStore = useWorkspaceAuthStore()
   const workspaceStore = useTeamWorkspaceStore()
@@ -134,7 +119,6 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   const dismissed = shallowRef<ReadonlySet<string>>(new Set())
   const resumedOperations = new Set<string>()
   const callerStarted = new Set<BillingOperationKind>()
-  const drivenChallenges = new Set<string>()
   const offeredActions = new Map<string, Set<string>>()
   const progressToasts = new Map<string, ProgressToast>()
 
@@ -161,11 +145,8 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     ...sessionPorts(),
     resolveUrl: workspaceApiUrl,
     pointerStorage: sessionStorage,
-    embeddedCheckoutAvailable: () =>
-      flags.embeddedCheckoutEnabled && Boolean(resolveStripePublishableKey()),
     hostedDestination: () => flags.hostedBillingDestination,
-    onTelemetry: reportTelemetry,
-    challengePort: loadChallengePort
+    onTelemetry: reportTelemetry
   })
 
   sdk.lifecycle.subscribe((state) => {
@@ -292,7 +273,6 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   function onTopupChanged(state: BillingOperationState) {
     if (state.phase === 'pending') {
       syncProgressToast(state, 'topup')
-      void driveRequiredChallenge(state)
       return
     }
     clearProgressToast(state.id)
@@ -330,10 +310,6 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     progressToasts.delete(operationId)
   }
 
-  // A subscribe the SDK settles has no dialog watching it, so the two customer
-  // steps the checkout performs for the legacy response — driving the in-page
-  // challenge and opening the hosted payment page — are performed here, or the
-  // operation waits on a customer who was never shown anything.
   function onSubscriptionChanged(state: BillingOperationState) {
     if (state.phase !== 'pending') {
       clearProgressToast(state.id)
@@ -344,17 +320,8 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
       return
     }
     if (state.kind === 'subscription') syncProgressToast(state, 'subscription')
-    // A reattached operation may be one billing-web is paying right now, so its
-    // challenge is that page's to drive, as on the legacy rail.
     if (resumedOperations.has(state.id)) return
-    void driveRequiredChallenge(state)
-    if (!drivesInPageChallenge(state)) openHostedAction(state)
-  }
-
-  // The server offers its hosted page beside the client secret, so an
-  // embedded operation carries both; the in-page challenge is its route.
-  function drivesInPageChallenge(state: PendingBillingOperation): boolean {
-    return state.presentation === 'embedded' && state.challenge !== undefined
+    openHostedAction(state)
   }
 
   // One offer per hosted step, not per poll, and not again for a step this
@@ -377,15 +344,6 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     toast.warning(t('g.warning'), {
       description: t('subscription.preview.paymentPopupBlocked')
     })
-  }
-
-  // One in-page challenge per operation, as the poller drives it: a later
-  // challenge for the same operation waits for the customer's retry.
-  async function driveRequiredChallenge(state: PendingBillingOperation) {
-    if (state.challenge?.status !== 'required') return
-    if (drivenChallenges.has(state.id)) return
-    drivenChallenges.add(state.id)
-    await sdk.driveChallenge(state.id)
   }
 
   async function settleResumed(state: BillingOperationState) {
@@ -641,14 +599,6 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     }
   }
 
-  async function retryPaymentAuthentication(
-    operationId: string
-  ): Promise<boolean> {
-    if (!flags.embeddedCheckoutEnabled) return false
-    drivenChallenges.add(operationId)
-    return (await sdk.driveChallenge(operationId)) === 'completed'
-  }
-
   function dismissOperation(operationId: string) {
     dismissed.value = new Set([...dismissed.value, operationId])
   }
@@ -678,7 +628,6 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     readCapabilities,
     readPaymentMethods,
     readEvents,
-    retryPaymentAuthentication,
     dismissOperation
   }
 })

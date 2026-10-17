@@ -183,9 +183,6 @@ beforeEach(() => {
   vi.mocked(useBillingOperationStore().startOperation).mockResolvedValue(
     billingOperation({ type: 'topup' })
   )
-  vi.mocked(
-    useBillingOperationStore().retryPaymentAuthentication
-  ).mockResolvedValue(false)
   vi.mocked(useBillingOperationStore().dismissOperation).mockImplementation(
     (opId) => {
       const store = useBillingOperationStore()
@@ -1020,27 +1017,6 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(screen.queryByText('Select amount')).not.toBeInTheDocument()
   })
 
-  it('resumes a live challenge in page', async () => {
-    renderDialog()
-
-    setIsAddingCredits(true)
-    setTopupActionOperation({
-      opId: 'op-resume',
-      status: 'pending',
-      actionUrl: null,
-      authenticationState: 'requires_action',
-      canRetryAuthentication: true
-    })
-    await nextTick()
-
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Complete verification' })
-    )
-    expect(
-      useBillingOperationStore().retryPaymentAuthentication
-    ).toHaveBeenCalledWith('op-resume')
-  })
-
   it('reports a failed challenge without offering to resume it', async () => {
     renderDialog()
 
@@ -1059,9 +1035,6 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(
       screen.queryByRole('button', { name: 'Complete verification' })
     ).not.toBeInTheDocument()
-    expect(
-      useBillingOperationStore().retryPaymentAuthentication
-    ).not.toHaveBeenCalled()
   })
 
   it.for([
@@ -1180,8 +1153,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       'op-1',
       'topup',
       {
-        attemptStartedAt: expect.any(Number),
-        autoHandleRequiresAction: true
+        attemptStartedAt: expect.any(Number)
       }
     )
 
@@ -1299,8 +1271,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       'topup',
       {
         attemptStartedAt: expect.any(Number),
-        paymentIntentSource: 'agent_paywall',
-        autoHandleRequiresAction: true
+        paymentIntentSource: 'agent_paywall'
       }
     )
   })
@@ -1387,8 +1358,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       'op-1',
       'topup',
       {
-        attemptStartedAt: expect.any(Number),
-        autoHandleRequiresAction: true
+        attemptStartedAt: expect.any(Number)
       }
     )
     expect(mockBillingContext().fetchBalance).not.toHaveBeenCalled()

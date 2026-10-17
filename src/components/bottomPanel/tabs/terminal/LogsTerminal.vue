@@ -1,5 +1,5 @@
 <template>
-  <div class="relative size-full bg-transparent">
+  <div class="relative size-full">
     <p
       v-if="errorMessage"
       data-testid="terminal-error-message"

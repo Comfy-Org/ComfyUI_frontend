@@ -168,7 +168,6 @@ export const useSubscriptionDialog = () => {
           onClose: hide,
           reason: options?.reason,
           paymentIntentSource,
-          embeddedCheckoutEnabled: flags.embeddedCheckoutEnabled,
           initialCheckout: options?.initialCheckout,
           initialPlanMode: getInitialPlanMode(
             options?.planMode,
