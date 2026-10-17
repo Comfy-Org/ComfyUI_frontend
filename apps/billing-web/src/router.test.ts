@@ -9,7 +9,7 @@ import App from '@/App.vue'
 import { safeReturnTo } from '@/auth/returnTo'
 import { recordBillingEntry, useBillingEntry } from '@/entry/billingEntry'
 import { createBillingI18n } from '@/i18n'
-import { createBillingRouter, DESKTOP_TOPUP_RETURN_PATH } from '@/router'
+import { createBillingRouter, TOPUP_RETURN_PATH } from '@/router'
 import type { BillingWebSessionPhase } from '@/router'
 import { createFakeBillingClient } from '@/test/fakeBillingClient'
 
@@ -194,25 +194,25 @@ describe('the billing route guard', () => {
   })
 })
 
-describe('the Desktop top-up return page', () => {
+describe('the top-up return page', () => {
   it.for(['pending', 'signed-out', 'minting', 'error'] as const)(
     'opens for a %s visitor without asking for a session',
     async (phase) => {
       const readPhase = vi.fn(() => phase)
       const router = createBillingRouter(createMemoryHistory(), readPhase)
 
-      await router.push(DESKTOP_TOPUP_RETURN_PATH)
+      await router.push(TOPUP_RETURN_PATH)
 
-      expect(router.currentRoute.value.fullPath).toBe(DESKTOP_TOPUP_RETURN_PATH)
+      expect(router.currentRoute.value.fullPath).toBe(TOPUP_RETURN_PATH)
       expect(readPhase).not.toHaveBeenCalled()
     }
   )
 
   it('reads the same whether the payment went through or was canceled', async () => {
-    await arriveAt(DESKTOP_TOPUP_RETURN_PATH, routerAt('signed-out'))
+    await arriveAt(TOPUP_RETURN_PATH, routerAt('signed-out'))
 
     expect(
-      await screen.findByRole('heading', { name: 'Return to ComfyUI Desktop' })
+      await screen.findByRole('heading', { name: 'Return to ComfyUI' })
     ).toBeInTheDocument()
     expect(
       screen.getByText(
@@ -227,10 +227,10 @@ describe('the Desktop top-up return page', () => {
   it('is not replaced by the error of a link read earlier in the tab', async () => {
     const router = await arriveAt(`/v1/refunds?${ENTRY_QUERY}`)
 
-    await router.push(DESKTOP_TOPUP_RETURN_PATH)
+    await router.push(TOPUP_RETURN_PATH)
 
     expect(
-      await screen.findByRole('heading', { name: 'Return to ComfyUI Desktop' })
+      await screen.findByRole('heading', { name: 'Return to ComfyUI' })
     ).toBeInTheDocument()
     expect(useBillingEntry().error.value).toBeUndefined()
   })
