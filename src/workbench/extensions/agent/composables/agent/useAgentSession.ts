@@ -1047,7 +1047,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const turnAccepted = accepted || isUnreadableAckFailure(error)
     reportError(error, {
       surface: 'agent',
-      errorType: 'agent_send_message_failed'
+      errorType: 'agent_send_message_failed',
+      tags:
+        error instanceof AgentApiError
+          ? {
+              status: error.status,
+              operation: error.operation,
+              retryAfterSeconds: error.retryAfterSeconds
+            }
+          : undefined
     })
     trackAgentError(
       'request_failed',
