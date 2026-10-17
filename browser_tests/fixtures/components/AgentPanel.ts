@@ -75,6 +75,14 @@ export class AgentPanel {
     this.copyReportButton = this.root.getByRole('button', {
       name: 'Copy full report'
     })
+    this.copiedButton = this.root.getByRole('button', { name: 'Copied' })
+    this.workflowPicker = this.root
+      .getByRole('button', { name: enMessages.agent.switchWorkflow })
+      .or(
+        this.root.getByRole('button', {
+          name: frMessages.agent.switchWorkflow
+        })
+      )
     this.creditsExhaustedPaywall = this.root.getByRole('alert').filter({
       hasText: enMessages.agent.paywall.title
     })

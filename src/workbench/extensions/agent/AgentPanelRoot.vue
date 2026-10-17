@@ -129,6 +129,7 @@ import type { DraftSnapshot } from './services/agent/agentRestClient'
 import type { AgentPaywallAction } from './services/agent/agentPaywallPresentation'
 import {
   DEFAULT_AGENT_PAYWALL_PRESENTATION,
+  UNRESOLVED_AGENT_PAYWALL_PRESENTATION,
   resolveAgentPaywallPresentation,
   toAgentPaywallCta,
   toAgentPaywallReason
@@ -189,7 +190,9 @@ const {
 } = useBillingCapabilities()
 const paywallPresentation = computed(() => {
   if (isCloud && !hasResolvedCapabilities.value && !canTopUp.value) {
-    return DEFAULT_AGENT_PAYWALL_PRESENTATION
+    return capabilityReadSettled.value
+      ? DEFAULT_AGENT_PAYWALL_PRESENTATION
+      : UNRESOLVED_AGENT_PAYWALL_PRESENTATION
   }
   return resolveAgentPaywallPresentation({
     distribution: isCloud ? 'cloud' : 'local',
