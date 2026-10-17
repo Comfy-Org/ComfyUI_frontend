@@ -11,7 +11,7 @@ export const badgeVariants = cva({
       compact: 'h-5 rounded-full px-2 py-0.5 text-xs normal-case',
       label: 'h-3.5 rounded-full px-1 text-3xs font-semibold uppercase',
       circle: 'size-3.5 rounded-full text-3xs font-semibold',
-      outline: 'rounded-sm border bg-transparent px-1.5 py-0.5 text-2xs',
+      outline: 'rounded-sm border px-1.5 py-0.5 text-2xs',
       square: 'rounded-sm px-1.5 py-0.5 text-xs',
       pill: 'rounded-full px-2 py-0.5 text-2xs',
       dot: 'size-2 rounded-full p-0'
@@ -28,7 +28,9 @@ export const badgeVariants = cva({
       warning: 'bg-warning text-warning-foreground'
     }
   },
-  compoundVariants: [{ variant: 'outline', class: 'bg-transparent' }],
+  compoundVariants: [
+    { variant: 'outline', class: 'bg-transparent text-foreground' }
+  ],
   defaultVariants: { variant: 'tag', severity: 'secondary' }
 })
 
