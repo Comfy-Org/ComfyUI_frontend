@@ -21,7 +21,6 @@ function admissionRejected(error: WorkshopWorkflowError): boolean {
     error.status >= 400 &&
     error.status < 500 &&
     [
-      'invalid_request',
       'invalid_input',
       'payload_too_large',
       'unsupported_media_type',

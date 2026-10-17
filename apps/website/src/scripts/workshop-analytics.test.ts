@@ -91,6 +91,92 @@ describe('Workshop execution attribution', () => {
     })
     expect(JSON.stringify(details)).not.toContain('private')
   })
+
+  it.for([
+    {
+      name: 'a 5xx at submission',
+      failure: new WorkshopWorkflowError('service_unavailable', {}, 503),
+      details: {
+        reason: 'network',
+        workflow_error_code: 'service_unavailable',
+        http_status: 503
+      }
+    },
+    {
+      name: 'a source that could not be downloaded',
+      failure: new WorkshopWorkflowError('media_download_failed', {}, 404, {
+        stage: 'download'
+      }),
+      details: {
+        reason: 'upload',
+        workflow_error_code: 'media_download_failed',
+        http_status: 404,
+        failure_stage: 'download'
+      }
+    },
+    {
+      name: 'an upload grant Cloud could not mint',
+      failure: new WorkshopWorkflowError('service_unavailable', {}, 502, {
+        stage: 'mint'
+      }),
+      details: {
+        reason: 'network',
+        http_status: 502,
+        failure_stage: 'mint'
+      }
+    },
+    {
+      name: 'a credential refused while minting an upload grant',
+      failure: new WorkshopWorkflowError('not_authenticated', {}, 401, {
+        stage: 'mint'
+      }),
+      details: {
+        workflow_error_code: 'not_authenticated',
+        http_status: 401,
+        failure_stage: 'mint'
+      }
+    },
+    {
+      name: 'a rejected upload',
+      failure: new WorkshopWorkflowError('media_upload_rejected', {}, 404, {
+        stage: 'upload'
+      }),
+      details: { reason: 'upload', http_status: 404, failure_stage: 'upload' }
+    },
+    {
+      name: 'an upload that timed out',
+      failure: new WorkshopWorkflowError(
+        'media_upload_timeout',
+        {},
+        undefined,
+        {
+          cause: new DOMException('Upload timed out', 'TimeoutError'),
+          stage: 'timeout'
+        }
+      ),
+      details: {
+        reason: 'upload',
+        failure_stage: 'timeout',
+        exception_name: 'TimeoutError'
+      }
+    },
+    {
+      name: 'an upload the connection dropped',
+      failure: new WorkshopWorkflowError(
+        'media_upload_network',
+        {},
+        undefined,
+        { cause: new TypeError('Failed to fetch'), stage: 'network' }
+      ),
+      details: {
+        reason: 'network',
+        failure_stage: 'network',
+        exception_name: 'TypeError'
+      }
+    }
+  ])('diagnoses $name', ({ failure, details }) => {
+    expect(workshopWorkflowFailureAnalytics(failure, [])).toMatchObject(details)
+  })
 })
 
 describe('Workshop failure analytics', () => {

@@ -376,6 +376,10 @@ describe('existing Cloud workflow controller', () => {
       response: async () => Response.json({ error: {} }, { status: 503 })
     },
     {
+      name: 'an unclassified conflict',
+      response: async () => Response.json({ error: {} }, { status: 409 })
+    },
+    {
       name: 'a rejection-shaped server error',
       response: async () =>
         Response.json({ error: { type: 'invalid_input' } }, { status: 500 })

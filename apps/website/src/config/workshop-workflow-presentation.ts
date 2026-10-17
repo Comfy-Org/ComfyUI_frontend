@@ -14,42 +14,35 @@ export function workflowStatusKey(run: WorkflowRunSummary): TranslationKey {
   return 'workshop.workflow.queued'
 }
 
+const WORKFLOW_ERROR_KEYS: Partial<
+  Record<WorkshopWorkflowError['code'], TranslationKey>
+> = {
+  invalid_request: 'workshop.error.validation',
+  invalid_input: 'workshop.error.validation',
+  payload_too_large: 'workshop.workflow.inputSize',
+  unsupported_media_type: 'workshop.form.badType',
+  not_authenticated: 'workshop.workflow.signInAgain',
+  access_denied: 'workshop.workflow.accessDenied',
+  workflow_not_found: 'workshop.workflow.definitionChanged',
+  definition_changed: 'workshop.workflow.definitionChanged',
+  definition_incompatible: 'workshop.workflow.definitionChanged',
+  run_not_found: 'workshop.workflow.runMissing',
+  insufficient_credits: 'workshop.error.noCredits',
+  rate_limited: 'workshop.error.rateLimit',
+  media_unavailable: 'workshop.workflow.mediaUnavailable',
+  media_download_failed: 'workshop.workflow.mediaUnavailable',
+  media_upload_rejected: 'workshop.workflow.mediaUnavailable',
+  media_upload_timeout: 'workshop.workflow.mediaUnavailable',
+  media_upload_network: 'workshop.workflow.mediaUnavailable',
+  service_unavailable: 'workshop.error.unavailable',
+  execution_failed: 'workshop.workflow.failed',
+  delivery_failed: 'workshop.workflow.deliveryFailed',
+  persistence: 'workshop.workflow.storageFailed',
+  submission_unknown: 'workshop.workflow.submissionUnknown'
+}
+
 export function workflowErrorKey(error: WorkshopWorkflowError): TranslationKey {
-  switch (error.code) {
-    case 'invalid_request':
-    case 'invalid_input':
-      return 'workshop.error.validation'
-    case 'payload_too_large':
-      return 'workshop.workflow.inputSize'
-    case 'unsupported_media_type':
-      return 'workshop.form.badType'
-    case 'not_authenticated':
-      return 'workshop.workflow.signInAgain'
-    case 'access_denied':
-      return 'workshop.workflow.accessDenied'
-    case 'workflow_not_found':
-    case 'definition_changed':
-    case 'definition_incompatible':
-      return 'workshop.workflow.definitionChanged'
-    case 'run_not_found':
-      return 'workshop.workflow.runMissing'
-    case 'insufficient_credits':
-      return 'workshop.error.noCredits'
-    case 'rate_limited':
-      return 'workshop.error.rateLimit'
-    case 'media_unavailable':
-      return 'workshop.workflow.mediaUnavailable'
-    case 'execution_failed':
-      return 'workshop.workflow.failed'
-    case 'delivery_failed':
-      return 'workshop.workflow.deliveryFailed'
-    case 'persistence':
-      return 'workshop.workflow.storageFailed'
-    case 'submission_unknown':
-      return 'workshop.workflow.submissionUnknown'
-    default:
-      return 'workshop.workflow.connectionLost'
-  }
+  return WORKFLOW_ERROR_KEYS[error.code] ?? 'workshop.workflow.connectionLost'
 }
 
 export function workflowNoticeKey(

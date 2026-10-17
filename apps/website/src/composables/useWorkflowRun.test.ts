@@ -327,6 +327,8 @@ describe('workflow page caller lifecycle', () => {
       name: 'run_finished',
       properties: expect.objectContaining({
         status: 'failed',
+        reason: 'provider',
+        workflow_error_code: 'execution_failed',
         failed_node_id: '7',
         failed_node_type: 'GeminiImage2Node',
         cloud_exception_type: 'Exception'

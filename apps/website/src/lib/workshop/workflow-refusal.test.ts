@@ -26,6 +26,7 @@ const REFUSALS: readonly [
   ['network', undefined],
   ['response', undefined],
   ['execution_failed', undefined],
+  ['service_unavailable', undefined],
   // What is wrong with an input belongs beside the input, and the panel's own
   // words for a rejection it cannot pin to a field are about a model.
   ['invalid_request', undefined],
@@ -46,6 +47,10 @@ const REFUSALS: readonly [
   // does not.
   ['access_denied', undefined],
   ['media_unavailable', undefined],
+  ['media_download_failed', undefined],
+  ['media_upload_rejected', undefined],
+  ['media_upload_timeout', undefined],
+  ['media_upload_network', undefined],
   ['delivery_failed', undefined],
   ['submission_unknown', undefined],
   ['persistence', undefined],
@@ -120,7 +125,7 @@ describe('panelSaysRefusal', () => {
         phase: 'interrupted',
         record: RECORD,
         observation: run('failed'),
-        error: new WorkshopWorkflowError('media_unavailable')
+        error: new WorkshopWorkflowError('media_upload_network')
       })
     ).toBe(true)
   })
