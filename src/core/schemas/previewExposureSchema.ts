@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
+import type { NodeProperty } from '@/types/nodeProperty'
 import { toNodeId } from '@/types/nodeId'
 
 import { parseNodePropertyArray } from './parseNodePropertyArray'

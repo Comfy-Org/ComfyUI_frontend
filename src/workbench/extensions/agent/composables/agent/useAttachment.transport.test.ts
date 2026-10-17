@@ -4,6 +4,8 @@ import { createAgentRestClient } from '../../services/agent/agentRestClient'
 import { useAttachment } from './useAttachment'
 import type { ComposerAttachment } from '../../types/composerAttachment'
 
+vi.mock(import('../../services/agent/agentAuth'))
+
 it('keeps a 4 MiB upload alive past 60 seconds and aborts it at 94 seconds', async () => {
   vi.useFakeTimers()
   onTestFinished(() => {

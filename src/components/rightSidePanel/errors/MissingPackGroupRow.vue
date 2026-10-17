@@ -133,7 +133,7 @@
         class="ml-auto flex h-6 shrink-0 cursor-not-allowed items-center justify-center overflow-hidden rounded-sm bg-secondary-background px-2 py-1 text-xs opacity-60 select-none"
       >
         <DotSpinner duration="1s" :size="12" class="mr-1.5 shrink-0" />
-        <span class="min-w-0 truncate text-xs text-base-foreground">
+        <span class="min-w-0 truncate text-base-foreground">
           {{ t('g.loading') }}
         </span>
       </div>

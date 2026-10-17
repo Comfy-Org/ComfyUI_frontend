@@ -46,7 +46,7 @@
               ? activeSidebarTabId === 'job-history'
               : queueOverlayExpanded
           "
-          class="relative px-3"
+          class="px-3"
           data-testid="queue-overlay-toggle"
           @click="toggleQueueOverlay"
           @contextmenu.stop.prevent="showQueueContextMenu"

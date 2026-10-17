@@ -4,6 +4,10 @@
   "description": "Presenting a workflow's blocking problems in one place: classification and grouping of execution and validation errors with missing nodes, missing models, missing media, and swappable nodes, the errors tab with group lists, error and missing-node cards, locate-node and selection emphasis, error report generation and actions, and the top-menu error overlay with its state. Error stores, the error catalog, and the missing-model, missing-media, and node-replacement cards remain with their records.",
   "modules": [
     {
+      "path": "src/components/error/**",
+      "role": "application"
+    },
+    {
       "path": "src/components/error/ErrorOverlay.test.ts",
       "role": "presentation"
     },
@@ -12,68 +16,16 @@
       "role": "presentation"
     },
     {
-      "path": "src/components/error/useErrorOverlayState.test.ts",
+      "path": "src/components/rightSidePanel/errors/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/rightSidePanel/errors/__tests__/**",
       "role": "application"
-    },
-    {
-      "path": "src/components/error/useErrorOverlayState.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/components/rightSidePanel/errors/__tests__/absorptionFixtures.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/components/rightSidePanel/errors/ErrorCardSection.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/rightSidePanel/errors/ErrorGroupList.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/rightSidePanel/errors/ErrorGroupList.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/rightSidePanel/errors/ErrorNodeCard.stories.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/rightSidePanel/errors/ErrorNodeCard.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/rightSidePanel/errors/ErrorNodeCard.vue",
-      "role": "presentation"
     },
     {
       "path": "src/components/rightSidePanel/errors/executionItemList.ts",
       "role": "domain"
-    },
-    {
-      "path": "src/components/rightSidePanel/errors/LocateNodeButton.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/rightSidePanel/errors/LocateNodeButton.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/rightSidePanel/errors/MissingNodeCard.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/rightSidePanel/errors/MissingNodeCard.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/rightSidePanel/errors/MissingPackGroupRow.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/rightSidePanel/errors/MissingPackGroupRow.vue",
-      "role": "presentation"
     },
     {
       "path": "src/components/rightSidePanel/errors/selectionEmphasis.ts",
@@ -82,14 +34,6 @@
     {
       "path": "src/components/rightSidePanel/errors/swapNodeGroups.test.ts",
       "role": "application"
-    },
-    {
-      "path": "src/components/rightSidePanel/errors/TabErrors.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/rightSidePanel/errors/TabErrors.vue",
-      "role": "presentation"
     },
     {
       "path": "src/components/rightSidePanel/errors/types.ts",
@@ -128,11 +72,11 @@
       "role": "application"
     },
     {
-      "path": "src/utils/errorReportUtil.ts",
+      "path": "src/utils/errorReportUtil.test.ts",
       "role": "domain"
     },
     {
-      "path": "src/utils/errorReportUtil.test.ts",
+      "path": "src/utils/errorReportUtil.ts",
       "role": "domain"
     }
   ],

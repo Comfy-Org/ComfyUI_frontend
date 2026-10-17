@@ -1,8 +1,11 @@
+import type {
+  LGraph,
+  LGraphCanvas
+} from '@/lib/litegraph/src/types/entityRegistry'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
-import type { LGraph } from '../LGraph'
 import type { LinkSegment } from '../interfaces'
-import type { LGraphCanvas } from '../LGraphCanvas'
+
 import { Reroute } from '../Reroute'
 
 /**

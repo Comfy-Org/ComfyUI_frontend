@@ -1,7 +1,7 @@
 <template>
   <Button
     v-if="isCloud && isFreeTier && !subscribeToRunPromptVisible"
-    class="mr-2 shrink-0 whitespace-nowrap"
+    class="mr-2 shrink-0"
     variant="subscribe"
     size="sm"
     data-testid="topbar-subscribe-button"

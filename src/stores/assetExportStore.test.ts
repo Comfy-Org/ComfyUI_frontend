@@ -6,24 +6,12 @@ import type { AssetExportWsMessage } from '@/platform/remote/comfyui/execution/t
 import { api } from '@/scripts/api'
 import { useAssetExportStore } from '@/stores/assetExportStore'
 
-type ExportEventHandler = (e: CustomEvent<unknown>) => void
+vi.mock(import('@/scripts/api'))
 
-const eventHandler = vi.hoisted(() => {
-  const state: { current: ExportEventHandler | null } = { current: null }
-  return state
+beforeEach(() => {
+  api.api_base = '/comfy'
+  vi.mocked(api.apiURL).mockImplementation((route) => `/comfy${route}`)
 })
-
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    api_base: '/comfy',
-    apiURL: vi.fn((route: string) => `/comfy${route}`),
-    fetchApi: vi.fn(),
-    addEventListener: vi.fn((_event: string, handler: ExportEventHandler) => {
-      eventHandler.current = handler
-    }),
-    removeEventListener: vi.fn()
-  }
-}))
 
 vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
@@ -79,20 +67,17 @@ function createExportMessage(
 }
 
 function dispatch(msg: AssetExportWsMessage) {
-  dispatchUnknown(msg)
+  api.dispatchCustomEvent('asset_export', msg)
 }
 
 function dispatchUnknown(msg: unknown) {
-  if (!eventHandler.current) {
-    throw new Error('Event handler not registered. Call the store factory.')
-  }
-  eventHandler.current(new CustomEvent('asset_export', { detail: msg }))
+  const apiEvents: EventTarget = api
+  apiEvents.dispatchEvent(new CustomEvent('asset_export', { detail: msg }))
 }
 
 describe('useAssetExportStore polling', () => {
   beforeEach(() => {
     vi.useFakeTimers({ shouldAdvanceTime: false })
-    eventHandler.current = null
   })
 
   it('reconciles an export from a task result of its own shape', async () => {

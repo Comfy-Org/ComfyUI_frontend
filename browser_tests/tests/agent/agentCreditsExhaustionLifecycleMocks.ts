@@ -16,7 +16,7 @@ class AgentCreditsLifecycleFixture {
     private readonly page: Page,
     private readonly agentPanel: AgentPanel,
     private readonly acceptedTurns: AgentTurnAccepted[],
-    private readonly ws: WebSocketRoute,
+    private readonly getAgentSocket: () => Promise<WebSocketRoute>,
     private readonly setFundingState: (state: AgentFundingState) => void
   ) {}
 
@@ -55,7 +55,8 @@ class AgentCreditsLifecycleFixture {
         }
       }
     }
-    this.ws.send(JSON.stringify(doneEvent))
+    const ws = await this.getAgentSocket()
+    ws.send(JSON.stringify(doneEvent))
     await billingRefresh
   }
 }
@@ -66,16 +67,15 @@ export const test = base.extend<{
   creditsLifecycle: AgentCreditsLifecycleFixture
 }>({
   creditsLifecycle: async (
-    { acceptedTurns, agentBilling, agentPanel, getWebSocket, page },
+    { acceptedTurns, agentBilling, agentPanel, getAgentSocket, page },
     use
   ) => {
-    const ws = await getWebSocket()
     await use(
       new AgentCreditsLifecycleFixture(
         page,
         agentPanel,
         acceptedTurns,
-        ws,
+        getAgentSocket,
         (state) => agentBilling.setFundingState(state)
       )
     )

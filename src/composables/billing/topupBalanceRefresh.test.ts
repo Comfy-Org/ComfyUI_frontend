@@ -151,7 +151,7 @@ describe('watchForTopupBalanceUpdate', () => {
       amount_micros: 6_000
     })
 
-    watchForTopupBalanceUpdate(onBalanceIncreased)
+    watchForTopupBalanceUpdate({ onBalanceIncreased })
     returnToApp()
     await vi.advanceTimersByTimeAsync(30_000)
 
@@ -161,7 +161,7 @@ describe('watchForTopupBalanceUpdate', () => {
   it('leaves dependents alone while the balance is unchanged', async () => {
     const onBalanceIncreased = vi.fn(async () => {})
 
-    watchForTopupBalanceUpdate(onBalanceIncreased)
+    watchForTopupBalanceUpdate({ onBalanceIncreased })
     returnToApp()
     await vi.advanceTimersByTimeAsync(30_000)
 
@@ -174,7 +174,9 @@ describe('watchForTopupBalanceUpdate', () => {
       amount_micros: 6_000
     })
 
-    watchForTopupBalanceUpdate(() => Promise.reject(new Error('status down')))
+    watchForTopupBalanceUpdate({
+      onBalanceIncreased: () => Promise.reject(new Error('status down'))
+    })
     returnToApp()
     await vi.advanceTimersByTimeAsync(30_000)
 
