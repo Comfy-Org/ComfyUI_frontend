@@ -3,7 +3,8 @@ import type { APIContext } from 'astro'
 import { zContentCatalogReview } from './review-contract'
 import type { ContentCatalogReview } from './review-contract'
 import { normalizeProjection } from './catalog-contract'
-import { catalogFetch } from './demo'
+import { catalogFetch, demoMode } from './demo'
+import { testersEnabled } from './testers'
 import { contentDiff } from './diff'
 import { hasCatalogCapability } from '@/lib/cms/catalog-capabilities'
 
@@ -46,6 +47,7 @@ export async function siteAPI(
 export async function verifySiteSession(
   credential: string
 ): Promise<ContentCatalogReview | undefined> {
+  if (!demoMode() && !testersEnabled()) return undefined
   if (!credential || credential.length > 8192 || /[\r\n]/.test(credential))
     return undefined
   const response = await siteAPI('/admin/api/site/review', credential)

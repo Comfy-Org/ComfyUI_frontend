@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ContentCatalogReview } from './review-contract'
 import { draftChanges, parsePreview, verifySiteSession } from './admin'
 
@@ -11,6 +11,27 @@ const empty: ContentCatalogReview = {
 }
 
 describe('staff site administration boundary', () => {
+  beforeEach(() => {
+    vi.stubEnv('DEV', true)
+    vi.stubEnv('VERCEL_ENV', '')
+    vi.stubEnv('SITE_CATALOG_LOCAL_CREDENTIAL_FILE', '/private/test-only.json')
+  })
+
+  it.for(['preview', 'production'])(
+    'refuses legacy sessions in %s without calling retired endpoints',
+    async (environment) => {
+      vi.stubEnv('VERCEL_ENV', environment)
+      vi.stubEnv('SITE_CATALOG_API_URL', 'https://catalog.example')
+      vi.stubEnv('SITE_CATALOG_DEMO', '')
+      const upstream = vi
+        .fn<typeof fetch>()
+        .mockResolvedValue(Response.json(empty))
+      vi.mocked(fetch).mockImplementation(upstream)
+      expect(await verifySiteSession('verified-editor')).toBeUndefined()
+      expect(upstream).not.toHaveBeenCalled()
+    }
+  )
+
   it('does not accept permission claims without backend verification', async () => {
     vi.stubEnv('SITE_CATALOG_API_URL', 'http://localhost:8099')
     const upstream = vi
