@@ -1354,6 +1354,22 @@ describe('assetsStore - failure reporting', () => {
     })
   })
 
+  it('reports load-more history failures to telemetry', async () => {
+    const failure = new Error('next page unavailable')
+    vi.mocked(api.getHistory)
+      .mockResolvedValueOnce(createHistoryPage(0))
+      .mockRejectedValueOnce(failure)
+
+    const store = useAssetsStore()
+    await store.outputAssets.loadNew()
+
+    await expect(store.outputAssets.loadMore()).resolves.toBe(false)
+    expect(reportError).toHaveBeenCalledWith(failure, {
+      errorType: 'failure_loading_more_history_assets',
+      surface: 'assets'
+    })
+  })
+
   it('reports input file fetch failures to telemetry', async () => {
     vi.mocked(global.fetch).mockResolvedValueOnce(
       new Response(null, { status: 500 })
