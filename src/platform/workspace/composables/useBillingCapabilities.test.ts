@@ -81,6 +81,11 @@ function capabilitiesResponse(
       can_manage_partner_node_access: false,
       can_view_pending_invites: false,
       can_view_team_usage: false,
+      can_edit_workspace: false,
+      can_manage_auto_top_up: false,
+      can_manage_subscription: false,
+      can_run_workflows: false,
+      can_upgrade: false,
       can_downgrade_to_personal: true,
       ...overrides
     },
@@ -1185,7 +1190,12 @@ describe('useBillingCapabilities on the SDK rail', () => {
           can_subscribe_self_serve: true,
           can_top_up: true,
           can_view_pending_invites: true,
-          can_view_team_usage: false
+          can_view_team_usage: false,
+          can_edit_workspace: false,
+          can_manage_auto_top_up: false,
+          can_manage_subscription: false,
+          can_run_workflows: false,
+          can_upgrade: false
         },
         denials: {
           can_cancel: 'no_subscription',
