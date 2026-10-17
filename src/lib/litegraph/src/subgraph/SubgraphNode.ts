@@ -438,7 +438,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     }
   }
 
-  override configure(info: ExportedSubgraphInstance): void {
+  override configure(
+    info: ExportedSubgraphInstance,
+    options?: Parameters<LGraphNode['configure']>[1]
+  ): void {
     for (const input of this.inputs) {
       this._clearPromotedWidget(input)
       if (
@@ -489,8 +492,11 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       )
     )
 
-    super.configure(info)
-    if (!info.widgets_values_named || !LiteGraph.namedValuesRestore)
+    super.configure(info, options)
+    if (
+      !info.widgets_values_named ||
+      !(options?.restoreNamed || LiteGraph.namedValuesRestore)
+    )
       this._applyPromotedWidgetValues(info.widgets_values)
   }
 
