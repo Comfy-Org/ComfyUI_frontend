@@ -204,6 +204,10 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
         'background-color',
         'rgb(23, 23, 24)'
       )
+      await expect(page.getByTestId('agent-consent-card')).toHaveCSS(
+        'border-color',
+        'rgb(73, 74, 80)'
+      )
       await expect(
         page.getByRole('heading', { name: enMessages.agent.consent.title })
       ).toHaveCSS('color', 'rgb(255, 255, 255)')

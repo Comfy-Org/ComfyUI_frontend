@@ -3,7 +3,7 @@
     <Spinner v-if="isLoading" class="m-auto" :aria-label="$t('g.loading')" />
     <SanitizedHtml
       v-else-if="!error"
-      class="comfy-markdown-content overflow-visible [--comfy-markdown-font-size:var(--text-sm)]"
+      class="comfy-markdown-content overflow-visible [--comfy-markdown-font-size:var(--text-sm)] [&_table]:block [&_table]:overflow-x-auto"
       :html="renderedHelpHtml"
     />
     <div

@@ -14,9 +14,9 @@
             :key="item.value"
             variant="square"
             severity="secondary"
-            class="truncate"
+            class="min-w-0 shrink"
           >
-            {{ item.name }}
+            <span class="truncate">{{ item.name }}</span>
           </Badge>
         </div>
       </template>

@@ -45,9 +45,9 @@
 .agent-shimmer-text {
   background: linear-gradient(
     90deg,
-    var(--color-muted-foreground) 35%,
-    var(--color-foreground) 50%,
-    var(--color-muted-foreground) 65%
+    var(--muted-foreground) 35%,
+    var(--foreground) 50%,
+    var(--muted-foreground) 65%
   );
   background-size: 200% auto;
   background-clip: text;
@@ -59,7 +59,7 @@
   :where(#agent-panel-root, .agent-scope)
   .agent-shimmer-text {
   animation: none;
-  color: var(--color-muted-foreground);
+  color: var(--muted-foreground);
   -webkit-text-fill-color: currentcolor;
 }
 
@@ -70,7 +70,7 @@
 
   .agent-shimmer-text {
     animation: none;
-    color: var(--color-muted-foreground);
+    color: var(--muted-foreground);
     -webkit-text-fill-color: currentcolor;
   }
 
@@ -96,7 +96,7 @@
   :where(#agent-panel-root, .agent-scope),
   :where(#agent-panel-root, .agent-scope) :where(*) {
     scrollbar-width: thin;
-    scrollbar-color: var(--color-border) transparent;
+    scrollbar-color: var(--border) transparent;
   }
 
   :where(#agent-panel-root, .agent-scope)

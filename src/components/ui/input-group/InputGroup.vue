@@ -17,7 +17,7 @@ const { class: className } = defineProps<{
         'group/input-group relative flex h-10 w-full min-w-0 items-center rounded-lg bg-secondary text-sm text-foreground outline-none',
         'has-[>[data-align=inline-start]]:*:data-[slot=input-group-control]:pl-2',
         'has-[>[data-align=inline-end]]:*:data-[slot=input-group-control]:pr-2',
-        'has-[[data-slot=input-group-control]:focus-visible]:ring-1 has-[[data-slot=input-group-control]:focus-visible]:ring-border',
+        'has-[[data-slot=input-group-control]:focus-visible]:ring-1 has-[[data-slot=input-group-control]:focus-visible]:ring-ring',
         'has-[[data-slot=input-group-control][aria-invalid=true]]:ring-1 has-[[data-slot=input-group-control][aria-invalid=true]]:ring-destructive',
         className
       )

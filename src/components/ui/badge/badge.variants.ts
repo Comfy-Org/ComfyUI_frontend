@@ -28,6 +28,7 @@ export const badgeVariants = cva({
       warning: 'bg-warning text-warning-foreground'
     }
   },
+  compoundVariants: [{ variant: 'outline', class: 'bg-transparent' }],
   defaultVariants: { variant: 'tag', severity: 'secondary' }
 })
 
