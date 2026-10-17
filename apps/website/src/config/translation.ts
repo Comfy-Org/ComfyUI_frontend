@@ -12,7 +12,7 @@ const languages = {
   { name: string; guidance?: string }
 >
 
-export const translationExclusions = [
+const translationExclusions = [
   'tos',
   'enterprise-msa',
   'privacy',

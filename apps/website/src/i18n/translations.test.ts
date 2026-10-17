@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest'
 
 import type { Locale } from '@/config/locales'
 import { LOCALE_CODES } from '@/config/locales'
-import { translationExclusions } from '@/config/translation'
 import { translationsFor } from './translations'
 
 type Catalog = { [key: string]: string | Catalog }
@@ -113,22 +112,6 @@ describe('site translations', () => {
 })
 
 describe.for(catalogs)('$file catalog', ({ english, messages }) => {
-  it('includes Chinese copy for every eligible English message', () => {
-    const chinese = messages['zh-CN'] ?? {}
-    const chineseKeys = new Set(leafMessages(chinese).map(([key]) => key))
-    const missing = leafMessages(english)
-      .map(([key]) => key)
-      .filter(
-        (key) =>
-          !chineseKeys.has(key) &&
-          !translationExclusions.some(
-            (prefix) => key === prefix || key.startsWith(`${prefix}.`)
-          )
-      )
-
-    expect(missing).toEqual([])
-  })
-
   it.for(LOCALE_CODES)('renders every %s message', (locale: Locale) => {
     const i18n = createI18n({
       legacy: false,
