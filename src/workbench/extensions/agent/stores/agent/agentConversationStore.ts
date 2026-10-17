@@ -1425,6 +1425,23 @@ export const useAgentConversationStore = defineStore(
       )
     }
 
+    function askKind(
+      askId: string
+    ): 'runApproval' | 'askUser' | 'deleteApproval' | undefined {
+      for (const message of messages.value) {
+        const part = message.parts.find(
+          (candidate) =>
+            isPendingAskPart(candidate) && candidate.askId === askId
+        )
+        if (
+          part?.type === 'runApproval' ||
+          part?.type === 'askUser' ||
+          part?.type === 'deleteApproval'
+        )
+          return part.type
+      }
+    }
+
     const activeMessageId = computed(() => activeMessage.value?.id ?? null)
     const isStreaming = computed(() => activeMessage.value?.streaming ?? false)
     const status = computed<ConversationStatus>(() => {
@@ -1460,6 +1477,7 @@ export const useAgentConversationStore = defineStore(
       markAskAwaitingResolution,
       asksAwaitingResolution,
       clearAskAwaitingResolution,
+      askKind,
       commitAsk,
       retireAsk,
       isAskRetired,

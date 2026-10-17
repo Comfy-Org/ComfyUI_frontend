@@ -41,13 +41,28 @@ export function createAgentEventSource(host: AgentEventHost): AgentEventSource {
     onStatus(listener) {
       const onDown = (): void => listener(false)
       const onUp = (): void => listener(true)
-      const initialSocket = host.socket
+      let observedSocket = host.socket
+      let socketObserver: ReturnType<typeof setInterval> | undefined
+      const bindSocket = (): void => {
+        const socket = host.socket
+        if (socket === observedSocket) return
+        observedSocket?.removeEventListener?.('open', onUp)
+        observedSocket = socket
+        if (socket?.readyState === OPEN) listener(true)
+        else socket?.addEventListener?.('open', onUp)
+        if (socket && socketObserver !== undefined) {
+          clearInterval(socketObserver)
+          socketObserver = undefined
+        }
+      }
       host.addEventListener('reconnecting', onDown)
       host.addEventListener('reconnected', onUp)
-      if (initialSocket?.readyState === OPEN) listener(true)
-      else initialSocket?.addEventListener?.('open', onUp)
+      if (observedSocket?.readyState === OPEN) listener(true)
+      else observedSocket?.addEventListener?.('open', onUp)
+      if (!observedSocket) socketObserver = setInterval(bindSocket, 50)
       return () => {
-        initialSocket?.removeEventListener?.('open', onUp)
+        if (socketObserver !== undefined) clearInterval(socketObserver)
+        observedSocket?.removeEventListener?.('open', onUp)
         host.removeEventListener('reconnecting', onDown)
         host.removeEventListener('reconnected', onUp)
       }

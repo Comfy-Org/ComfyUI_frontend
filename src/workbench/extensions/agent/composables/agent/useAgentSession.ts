@@ -1640,8 +1640,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
       return false
     }
     if (answeringAskIds.value.has(askId)) return false
-    const runApprovalAnswer = typeof answer === 'string'
-    const normalizedAnswer = runApprovalAnswer ? { selected: [answer] } : answer
+    const legacyRunApprovalAnswer = typeof answer === 'string'
+    const runApprovalAnswer =
+      legacyRunApprovalAnswer ||
+      conversationStore.askKind(askId) === 'runApproval'
+    const normalizedAnswer = legacyRunApprovalAnswer
+      ? { selected: [answer] }
+      : answer
     conversationStore.recordAskAnswer(askId, normalizedAnswer, currentThreadId)
     conversationStore.setAskAnswering(askId, true)
     const answerChannelEpoch = resolutionChannelEpoch

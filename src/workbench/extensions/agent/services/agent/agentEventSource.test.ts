@@ -41,7 +41,16 @@ function fakeHost(readyState?: number) {
   const open = (): void => {
     socketTarget.dispatchEvent(new Event('open'))
   }
-  return { host, emit, open, registered }
+  const attachSocket = (nextReadyState: number): void => {
+    host.socket = {
+      readyState: nextReadyState,
+      addEventListener: (type, listener) =>
+        socketTarget.addEventListener(type, listener),
+      removeEventListener: (type, listener) =>
+        socketTarget.removeEventListener(type, listener)
+    }
+  }
+  return { host, emit, open, attachSocket, registered }
 }
 
 describe('createAgentEventSource', () => {
@@ -117,5 +126,20 @@ describe('createAgentEventSource', () => {
 
     expect(status).toHaveBeenCalledOnce()
     expect(status).toHaveBeenCalledWith(true)
+  })
+
+  it('observes a socket created after status binding', () => {
+    vi.useFakeTimers()
+    const { host, attachSocket } = fakeHost()
+    const status = vi.fn()
+
+    const unsubscribe = createAgentEventSource(host).onStatus?.(status)
+    attachSocket(WebSocket.OPEN)
+    vi.advanceTimersByTime(50)
+
+    expect(status).toHaveBeenCalledOnce()
+    expect(status).toHaveBeenCalledWith(true)
+    unsubscribe?.()
+    vi.useRealTimers()
   })
 })

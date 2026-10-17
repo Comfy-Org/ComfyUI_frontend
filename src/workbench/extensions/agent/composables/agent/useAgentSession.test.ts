@@ -2810,6 +2810,32 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(session.notices.value).toHaveLength(1)
     })
 
+    it('treats an empty approval receipt as status-only for object answers', async () => {
+      const answerAsk = vi
+        .fn<AgentRestClient['answerAsk']>()
+        .mockResolvedValue({ status: 'answered', selected: [] })
+      const events = fakeEvents()
+      const session = useAgentSession({
+        rest: fakeRest({ answerAsk }),
+        events: events.source
+      })
+      session.start()
+      events.status(true)
+      await session.sendMessage('build it and run it')
+      events.emit(runApproval('msg-1'))
+
+      const answered = await session.answerAsk('turn-1:call-1', {
+        selected: ['run']
+      })
+
+      expect(answered).toBe(true)
+      expect(reportError).not.toHaveBeenCalledWith(expect.any(Error), {
+        surface: 'agent',
+        errorType: 'agent_ask_answer_superseded'
+      })
+      expect(session.notices.value).toEqual([])
+    })
+
     // The resolution frame retires the card on its way through, so by the time
     // a slow request rejects there is nothing left to warn about — and telling
     // the user their answer might not have arrived, after the server has said
