@@ -364,7 +364,7 @@
   },
   "src/core/graph/widgets/dynamicWidgets.ts": {
     "comfy/no-new-error-throw": {
-      "count": 7
+      "count": 6
     }
   },
   "src/core/selection/selectionStore.ts": {
