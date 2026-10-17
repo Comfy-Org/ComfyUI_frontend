@@ -124,7 +124,6 @@ import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacem
 import type { MissingNodeType } from '@/platform/nodeReplacement/types'
 
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
-import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -887,8 +886,6 @@ export class ComfyApp implements IComfyApp {
     this.canvasElRef.value = canvasEl
 
     await useWorkspaceStore().workflow.syncWorkflows()
-    //Doesn't need to block. Blueprints will load async
-    void useSubgraphStore().fetchSubgraphs()
 
     this.addProcessKeyHandler()
     this.addConfigureHandler()
