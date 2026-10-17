@@ -327,6 +327,35 @@ describe('FE-3468 agent CRDT follower on subgraph definition interiors', () => {
     expect(interiorWidgets(state)).toEqual({ value: 1, detail: 77 })
   })
 
+  it('applies an interior edit when a fresh applier meets a pre-existing definition', () => {
+    const state = startFollower({ rootIdCollidesWithInterior: true })
+    const fresh = new AgentCrdtProjection(() => state.graph)
+    fresh.bind('workflow', state.follower)
+    const vector = Y.encodeStateVector(state.hostDoc)
+    const result = applyOps(
+      state.hostDoc,
+      [
+        operation('op-fresh', 9, {
+          op: 'set_widget',
+          node_id: 7,
+          widget: 'detail',
+          value: 88,
+          path: ['1', '7'],
+          inner_widget: 'detail'
+        })
+      ],
+      CATALOG
+    )
+    expect(result.outcomes).toEqual([{ op_id: 'op-fresh', outcome: 'applied' }])
+    const update = Y.encodeStateAsUpdate(state.hostDoc, vector)
+    state.follower.applyRemoteUpdate(update)
+    expect(
+      fresh.applyFrame({ workflowId: 'workflow', seq: 9, update })
+    ).toMatchObject({ applied: true })
+
+    expect(interiorWidgets(state)).toEqual({ value: 1, detail: 88 })
+  })
+
   it('updates every host of a shared definition on an interior edit', () => {
     const state = startFollower({ secondHost: true })
     forwardDefinitionEdit(state, 'value', 42, 1)

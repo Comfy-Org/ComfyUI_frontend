@@ -739,12 +739,24 @@ export class LiveGraphApplier {
   ): void {
     const live = rootGraph.subgraphs.get(definition.id)
     if (!live || !definition.nodes) return
-    if (definition.nodes.length !== live.nodes.length) return
+    this.recordInteriorMapping(
+      definition.id,
+      definition.nodes.map((node) => String(node.id)),
+      live.nodes
+    )
+  }
+
+  private recordInteriorMapping(
+    definitionId: string,
+    orderedDocIds: readonly string[],
+    liveNodes: readonly LGraphNode[]
+  ): void {
+    if (orderedDocIds.length !== liveNodes.length) return
     const mapping = new Map<string, NodeId>()
-    for (const [index, node] of definition.nodes.entries()) {
-      mapping.set(String(node.id), live.nodes[index].id)
+    for (const [index, docId] of orderedDocIds.entries()) {
+      mapping.set(docId, liveNodes[index].id)
     }
-    this.interiorIds.set(definition.id, mapping)
+    this.interiorIds.set(definitionId, mapping)
   }
 
   private deleteNode(graph: LGraph, id: string): void {
@@ -948,6 +960,13 @@ export class LiveGraphApplier {
     if (!subgraph) return
     const docNodes = docInteriors.get(definitionId)
     if (!docNodes) return
+    if (!this.interiorIds.has(definitionId)) {
+      this.recordInteriorMapping(
+        definitionId,
+        [...docNodes.keys()],
+        subgraph.nodes
+      )
+    }
     for (const [nodeId, names] of nodes) {
       const widgets = docNodes.get(nodeId)
       if (widgets === undefined) continue
