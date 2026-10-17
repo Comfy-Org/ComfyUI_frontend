@@ -1,13 +1,14 @@
-import type { WebSocketRoute } from '@playwright/test'
 import { expect, mergeTests } from '@playwright/test'
 import type { AgentPostMessageRequest } from '@comfyorg/ingest-types'
 import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
 
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
-import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-
-import { MESSAGE_DONE_EVENT, agentTest } from '@e2e/tests/agent/agentPanelMocks'
+import {
+  MESSAGE_DONE_EVENT,
+  agentTest,
+  pushAgentEvent
+} from '@e2e/tests/agent/agentPanelMocks'
 
 const test = mergeTests(agentTest, webSocketFixture)
 
@@ -16,10 +17,6 @@ const BOUND_WORKFLOW_ID = 'a81718a4-02ae-41e6-ae85-c33b7bb880f6'
 
 const FIRST_PROMPT = 'What is on my canvas?'
 const SECOND_PROMPT = 'Describe the focused canvas.'
-
-function pushEvent(ws: WebSocketRoute, event: AgentWsEvent): void {
-  ws.send(JSON.stringify(event))
-}
 
 function parsePosted(raw: string | undefined): AgentPostMessageRequest {
   expect(raw, 'a message body must have been POSTed').toBeTruthy()
@@ -45,17 +42,25 @@ function draftNodeCount(body: AgentPostMessageRequest): number {
 /**
  * Regression coverage for the "focused canvas is empty" read-path failure
  * (QA sweep GM-12): a populated workflow whose tab has been bound to a cloud
- * workflow id by the first turn ack must be sent on the next turn with both
- * the binding and a populated draft, otherwise the agent reads an empty graph.
+ * workflow id by the first turn ack must still tell the agent *which* graph to
+ * read on the next turn, otherwise the agent reads an empty graph.
+ *
+ * The first (unbound) turn carries the canvas inline as a draft. The second
+ * turn deliberately does not: the follower owns the bound document by then, so
+ * the binding — not a draft — is what identifies the graph. See
+ * `followerOwnsDocument` in `AgentPanelRoot.vue` (#17469), which withholds a
+ * draft the backend would otherwise apply unconditionally over a live
+ * document. Asserting a populated turn-2 draft here would pin the pre-#17469
+ * read path and re-license that clobber.
  */
 test.describe('Agent bound-canvas read path', { tag: '@cloud' }, () => {
   test.use({ connectWebSocketToServer: false })
 
-  test('second turn on a bound populated tab carries the binding and a populated draft', async ({
+  test('second turn on a bound populated tab carries the binding and withholds the draft', async ({
     agentPanel,
     comfyPage,
     postedMessages,
-    getWebSocket
+    getAgentSocket
   }) => {
     test.setTimeout(45_000)
 
@@ -67,7 +72,7 @@ test.describe('Agent bound-canvas read path', { tag: '@cloud' }, () => {
 
     await agentPanel.open()
     const userBubbles = agentPanel.root.getByTestId('user-message-bubble')
-    const ws = await getWebSocket()
+    const ws = await getAgentSocket()
 
     // Turn 1: unbound temporary tab. The 202 ack binds the tab to
     // BOUND_WORKFLOW_ID (AgentPanelRoot.onWorkflowAdopted).
@@ -87,7 +92,7 @@ test.describe('Agent bound-canvas read path', { tag: '@cloud' }, () => {
     // proves nothing. The user bubble is the first rendered signal that
     // activeTurnId is set (see agentTurnLockFixture.startTurn).
     await expect(userBubbles).toHaveText([FIRST_PROMPT])
-    pushEvent(ws, MESSAGE_DONE_EVENT)
+    pushAgentEvent(ws, MESSAGE_DONE_EVENT)
 
     // Turn 1 must actually settle before turn 2 is composed, otherwise the
     // binding the ack applied may not be in place when the next POST is built.
@@ -119,20 +124,22 @@ test.describe('Agent bound-canvas read path', { tag: '@cloud' }, () => {
       second.open_tabs?.map((t) => t.workflow_id),
       'open_tabs must include the bound id'
     ).toContain(BOUND_WORKFLOW_ID)
-    // Exact, not a lower bound: these tests pin down *which* graph the agent
-    // reads, so a draft over-populated from another open tab is also a
-    // read-path regression.
+    // ...and must NOT re-send the canvas inline. Once the tab is bound, the
+    // follower owns that document, so `AgentPanelRoot.targetWorkflowDraft`
+    // withholds the draft (`followerOwnsDocument`, #17469): the backend
+    // applies a versionless draft unconditionally, so seeding one over a live
+    // document would overwrite edits the canvas has not caught up with.
     expect(
-      draftNodeCount(second),
-      'turn 2 draft must still carry the populated graph (GM-12: reads empty)'
-    ).toBe(nodeCount)
+      second.draft,
+      'a bound tab must not seed a draft over the live document'
+    ).toBeUndefined()
   })
 
-  test('switching to a new tab and back keeps the bound tab populated on the next turn', async ({
+  test('switching to a new tab and back keeps the next turn pointed at the bound tab', async ({
     agentPanel,
     comfyPage,
     postedMessages,
-    getWebSocket
+    getAgentSocket
   }) => {
     test.setTimeout(45_000)
 
@@ -141,13 +148,13 @@ test.describe('Agent bound-canvas read path', { tag: '@cloud' }, () => {
 
     await agentPanel.open()
     const userBubbles = agentPanel.root.getByTestId('user-message-bubble')
-    const ws = await getWebSocket()
+    const ws = await getAgentSocket()
 
     await agentPanel.composer.fill(FIRST_PROMPT)
     await agentPanel.sendButton.click()
     await expect.poll(() => postedMessages.length).toBe(1)
     await expect(userBubbles).toHaveText([FIRST_PROMPT])
-    pushEvent(ws, MESSAGE_DONE_EVENT)
+    pushAgentEvent(ws, MESSAGE_DONE_EVENT)
     await expect(agentPanel.stopButton).toHaveCount(0)
     await expect(agentPanel.composer).toHaveText('')
 
@@ -173,8 +180,8 @@ test.describe('Agent bound-canvas read path', { tag: '@cloud' }, () => {
       BOUND_WORKFLOW_ID
     )
     expect(
-      draftNodeCount(second),
-      'draft after tab switch must reflect the bound populated tab'
-    ).toBe(nodeCount)
+      second.draft,
+      'a tab detour must not make the turn seed a draft over the bound document'
+    ).toBeUndefined()
   })
 })
