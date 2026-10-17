@@ -700,6 +700,20 @@ describe('TopMenuSection', () => {
       })
     })
 
+    it('tracks deploy button clicks', async () => {
+      enableDeployButton()
+      const { user } = createWrapper()
+
+      await user.click(
+        screen.getByRole('button', { name: 'Deploy to Comfy API' })
+      )
+
+      expect(useTelemetry()?.trackUiButtonClicked).toHaveBeenCalledWith({
+        button_id: 'run_bar_deploy_clicked',
+        element_group: 'top_menu'
+      })
+    })
+
     it('keeps the floating actionbar container open for the deploy button', async () => {
       localStorage.setItem('Comfy.MenuPosition.Docked', 'false')
       useManagerState().shouldShowExtensionsButton = computed(() => false)

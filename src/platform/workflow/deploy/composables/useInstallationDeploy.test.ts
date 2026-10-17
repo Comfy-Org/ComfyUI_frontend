@@ -179,6 +179,7 @@ describe(useInstallationDeploy, () => {
       await expect(deploy()).resolves.toBe(true)
 
       expect(state.value).toEqual({ status: 'idle' })
+      expect(window.open).toHaveBeenCalledExactlyOnceWith(BUILDER_URL, '_blank')
     }
   )
 

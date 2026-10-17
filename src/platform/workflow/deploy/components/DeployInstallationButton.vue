@@ -9,7 +9,7 @@
     target="_blank"
     rel="noopener noreferrer"
     data-testid="deploy-to-comfy-api-open-builder"
-    @click="emit('opened')"
+    @click="openedBuilder"
   >
     {{ $t('deployToComfyApi.openBuilder') }}
     <i
@@ -32,13 +32,27 @@
 
 <script setup lang="ts">
 import Button from '@/components/ui/button/Button.vue'
+import { useTelemetry } from '@/platform/telemetry'
 import { useInstallationDeploy } from '@/platform/workflow/deploy/composables/useInstallationDeploy'
 
 const emit = defineEmits<{ opened: [] }>()
 
 const { state, deploy } = useInstallationDeploy()
 
+function track(buttonId: string) {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: buttonId,
+    element_group: 'deploy_to_comfy_api'
+  })
+}
+
+function openedBuilder() {
+  track('deploy_to_comfy_api_builder_opened')
+  emit('opened')
+}
+
 async function deployInstallation() {
-  if (await deploy()) emit('opened')
+  track('deploy_to_comfy_api_platform_clicked')
+  if (await deploy()) openedBuilder()
 }
 </script>
