@@ -1,0 +1,119 @@
+# Deletes `core/X.Y` and `cloud/X.Y` backport target labels once their line can
+# no longer ship. release-branch-create.yaml creates both labels at each cut;
+# its old prune step read only the first 200 labels, never pruned once the repo
+# passed 200, and has been removed in favour of this.
+#
+# A line is dead the moment its product moves past it (a rollback is a
+# fix-forward emergency, not a reason to backport to the old line). What is
+# live is polled from what users are served, so it holds however a build got
+# there, including a deploy that skipped canary:
+#   - cloud: the SHA cloud.comfy.org serves, mapped to its cloud/* branch
+#   - core:  the frontend pin in ComfyUI requirements.txt on master and on the
+#            latest ComfyUI release tag
+# Rules and their tests live in scripts/cicd/retire-backport-labels.ts.
+name: 'Release: Retire Backport Labels'
+
+on:
+  schedule:
+    # Hourly, offset from the other release crons.
+    - cron: '41 * * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Report what would be deleted without changing anything'
+        type: boolean
+        default: true
+      max_per_run:
+        description: 'Most labels to delete per product in this run (raise only after checking the live line)'
+        type: number
+        default: 4
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  retire:
+    if: github.repository == 'Comfy-Org/ComfyUI_frontend'
+    # Separate jobs per product: a failure reading one signal (cloud header,
+    # ComfyUI API) never blocks the other. A signal that can't be read fails
+    # the job before any label is touched.
+    strategy:
+      fail-fast: false
+      matrix:
+        product: [cloud, core]
+    name: Retire ${{ matrix.product }} labels
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write # comments and label delete go through the issues API
+      pull-requests: write # comments on PRs through the issues API
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          # The cloud job maps the served SHA to the cloud/* branch containing it.
+          fetch-depth: 0
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Retire labels
+        id: retire
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PRODUCT: ${{ matrix.product }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+          MAX_PER_RUN: ${{ inputs.max_per_run || 4 }}
+        run: |
+          set -o pipefail
+          ARGS=(--product "$PRODUCT" --max-per-run "$MAX_PER_RUN" --report report.md)
+          if [ "$DRY_RUN" = "true" ]; then ARGS+=(--dry-run); fi
+          pnpm exec tsx scripts/cicd/retire-backport-labels.ts "${ARGS[@]}" 2>&1 | tee log.txt
+
+      - name: Post to Slack
+        # Only when something was retired. A run with nothing to do stays silent.
+        if: steps.retire.outputs.retired != ''
+        continue-on-error: true
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL_ID: ${{ vars.SLACK_FRONTEND_RELEASES_CHANNEL_ID }}
+        run: |
+          if [ -z "$SLACK_CHANNEL_ID" ]; then
+            echo "::warning::SLACK_FRONTEND_RELEASES_CHANNEL_ID is unset — skipping Slack notification."
+            exit 0
+          fi
+          RUN_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          REPORT=$(head -c 2800 report.md)
+          BODY=$(jq -n --arg ch "$SLACK_CHANNEL_ID" --arg text "$REPORT" --arg url "$RUN_URL" '{
+            channel: $ch,
+            text: "Retired backport labels",
+            blocks: [
+              {type: "section", text: {type: "mrkdwn", text: $text}},
+              {type: "context", elements: [{type: "mrkdwn", text: ("Release sheriff: retarget or close anything still open against a retired branch. <" + $url + "|Run log>")}]}
+            ]
+          }')
+          # Slack answers HTTP 200 with {"ok":false,"error":...} on auth and
+          # channel errors, so -f alone would report a silent drop as success.
+          RESPONSE=$(curl -sS -X POST \
+            --connect-timeout 10 --max-time 30 \
+            -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "$BODY" \
+            https://slack.com/api/chat.postMessage)
+          if ! jq -e '.ok == true' <<<"$RESPONSE" >/dev/null; then
+            echo "Slack rejected the notification: $(jq -r '.error // "unparseable response"' <<<"$RESPONSE")"
+            exit 1
+          fi
+
+      - name: Job summary
+        if: always()
+        run: |
+          echo "## Retire ${{ matrix.product }} backport labels" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          cat log.txt >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || echo '(no log)' >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
