@@ -118,31 +118,28 @@
         v-else-if="isUnresolvedTab"
         :node-names="unresolvedNodeNames"
       />
-      <NoResultsPlaceholder
-        v-else-if="displayPacks.length === 0 && !canLoadMorePacks"
-        :title="emptyStateTitle"
-        :message="emptyStateMessage"
-      />
-      <div v-else class="size-full" @click="handleGridContainerClick">
-        <VirtualGrid
-          id="results-grid"
-          :items="resultsWithKeys"
-          :buffer-rows="4"
-          :grid-style="GRID_STYLE"
-          :on-load-more="loadMorePacks"
-          :can-load-more="canLoadMorePacks"
-        >
-          <template #item="{ item }">
-            <PackCard
-              :node-pack="item"
-              :is-selected="
-                selectedNodePacks.some((pack) => pack.id === item.id)
-              "
-              @click.stop="(event: MouseEvent) => selectNodePack(item, event)"
-            />
-          </template>
-        </VirtualGrid>
-      </div>
+      <VirtualGrid
+        v-else
+        id="results-grid"
+        :items="pagedResults"
+        :buffer-rows="4"
+        :grid-style="GRID_STYLE"
+        @click="handleGridContainerClick"
+      >
+        <template #item="{ item }">
+          <PackCard
+            :node-pack="item"
+            :is-selected="selectedNodePacks.some((pack) => pack.id === item.id)"
+            @click.stop="(event: MouseEvent) => selectNodePack(item, event)"
+          />
+        </template>
+        <template #placeholder>
+          <NoResultsPlaceholder
+            :title="emptyStateTitle"
+            :message="emptyStateMessage"
+          />
+        </template>
+      </VirtualGrid>
     </template>
 
     <template #rightPanel>
@@ -382,7 +379,6 @@ const searchResults = computed(() => [...toValue(packs.items)])
 const isSearchLoading = computed(
   () => isSearchBacked.value && toValue(packs.isLoading)
 )
-const hasMorePacks = computed(() => toValue(packs.hasMore))
 const suggestions = computed(() => toValue(packs.suggestions))
 const sortOptions = PACK_SORTABLE_FIELDS
 const filterOptions = computed(() => [
@@ -398,10 +394,6 @@ const availableSortOptions = computed(() =>
 const onOptionSelect = (suggestion: QuerySuggestion) => {
   searchQuery.value = suggestion.query
 }
-const loadMorePacks = () => packs.loadMore()
-const canLoadMorePacks = computed(
-  () => hasMorePacks.value && !isSearchLoading.value && isSearchBacked.value
-)
 const isInitialLoad = computed(
   () =>
     isSearchBacked.value &&
@@ -496,7 +488,7 @@ const isSettledWithNoPacks = computed(
     displayPacks.value.length === 0 &&
     !isLoading.value &&
     !isManagerErrorRelevant.value &&
-    !hasMorePacks.value
+    !toValue(packs.hasMore)
 )
 
 const isUnmatchedLegacyManagerSearch = computed(() => {
@@ -511,13 +503,21 @@ const isUnmatchedLegacyManagerSearch = computed(() => {
   )
 })
 
-const resultsWithKeys = computed(
-  () =>
-    displayPacks.value.map((item) => ({
-      ...item,
-      key: item.id || item.name
-    })) as (components['schemas']['Node'] & { key: string })[]
+const resultsWithFallbackId = computed(() =>
+  displayPacks.value.map((item) => ({ id: item.name ?? '', ...item }))
 )
+
+const pagedResults = {
+  hasMore: computed(
+    () =>
+      toValue(packs.hasMore) && !isSearchLoading.value && isSearchBacked.value
+  ),
+  invalidate: packs.invalidate,
+  isLoading: packs.isLoading,
+  items: resultsWithFallbackId,
+  loadMore: packs.loadMore,
+  loadNew: packs.loadNew
+}
 
 const selectedNodePacks = ref<components['schemas']['Node'][]>([])
 const selectedNodePack = computed<components['schemas']['Node'] | null>(() =>
@@ -536,7 +536,7 @@ watch(
 
 // Auto-select the pack matching initialPackId once
 if (initialPackId) {
-  until(resultsWithKeys)
+  until(resultsWithFallbackId)
     .toMatch((packs) => packs.some((p) => p.id === initialPackId))
     .then((packs) => {
       const target = packs.find((p) => p.id === initialPackId)

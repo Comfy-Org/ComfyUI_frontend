@@ -9,6 +9,8 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { OutputStackListItem } from '@/platform/assets/composables/useOutputStacks'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
+import { mockPagedList } from '@/utils/__tests__/pagedListUtils'
+import { pagedItems } from '@/utils/pagedList'
 
 import AssetsSidebarListView from './AssetsSidebarListView.vue'
 
@@ -24,12 +26,13 @@ const VirtualGridStub = defineComponent({
   name: 'VirtualGrid',
   props: {
     items: {
-      type: Array,
+      type: [Array, Object],
       default: () => []
     }
   },
+  methods: { pagedItems },
   template:
-    '<div><slot v-for="item in items" :key="item.key" name="item" :item="item" /></div>'
+    '<div><slot v-for="item in pagedItems(items)" :key="item.id" name="item" :item="item" /></div>'
 })
 
 const AssetsListItemStub = defineComponent({
@@ -66,7 +69,7 @@ const buildAsset = (id: string, name: string): AssetItem =>
   })
 
 const buildOutputItem = (asset: AssetItem): OutputStackListItem => ({
-  key: `asset-${asset.id}`,
+  id: asset.id,
   asset
 })
 
@@ -76,7 +79,7 @@ function renderListView(
 ) {
   return render(AssetsSidebarListView, {
     props: {
-      assetItems,
+      assetItems: mockPagedList({ items: assetItems }),
       selectableAssets: [],
       isSelected: () => false,
       isStackExpanded: () => false,

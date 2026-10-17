@@ -64,6 +64,10 @@ vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => {
   }
 })
 
+const mockDistribution = vi.hoisted(() => ({ isCloud: false }))
+
+vi.mock(import('@/platform/distribution/types'), () => mockDistribution)
+
 vi.mock(import('@/composables/useFeatureFlags'))
 
 vi.mock(import('@/scripts/api'))
@@ -648,11 +652,17 @@ describe('verifyMediaCandidates', () => {
     )
     const store = useAssetsStore()
     store.inputAssets = fromPartial({ items: input })
-    store.outputAssets = fromPartial({ items: output })
+    Object.assign(store, { outputAssets: fromPartial({ items: output }) })
   }
 
-  const hashLookups = () =>
-    vi.mocked(api.fetchApi).mock.calls.filter(([url]) => url.includes('hash='))
+  const remoteLookups = () =>
+    vi
+      .mocked(api.fetchApi)
+      .mock.calls.filter(([url]) => /[?&](hash|name_contains)=/.test(url))
+
+  beforeEach(() => {
+    mockDistribution.isCloud = false
+  })
 
   it.for<
     AssetSources & {
@@ -698,8 +708,15 @@ describe('verifyMediaCandidates', () => {
       fetched: true
     },
     {
-      source: 'store miss without assets',
+      source: 'input store miss without assets',
       name: 'photo.png',
+      assetsEnabled: false,
+      isMissing: true,
+      fetched: false
+    },
+    {
+      source: 'output store miss without assets',
+      name: 'photo.png [output]',
       assetsEnabled: false,
       isMissing: undefined,
       fetched: false
@@ -714,25 +731,38 @@ describe('verifyMediaCandidates', () => {
       await verifyMediaCandidates(candidates)
 
       expect(candidates[0].isMissing).toBe(isMissing)
-      expect(hashLookups().length > 0).toBe(fetched)
+      expect(remoteLookups().length > 0).toBe(fetched)
     }
   )
 
-  it('queries remote assets once per name by unannotated name', async () => {
-    stubAssets({})
-    const { signal } = new AbortController()
-    const candidates = [
-      makeCandidate('1', 'photo.png [input]', { isMissing: undefined }),
-      makeCandidate('2', 'photo.png [input]', { isMissing: undefined })
-    ]
+  it.for([
+    {
+      distribution: 'cloud',
+      isCloud: true,
+      url: '/assets?hash=photo.png&limit=1'
+    },
+    {
+      distribution: 'local',
+      isCloud: false,
+      url: '/assets?limit=1&name_contains=photo.png&tags_all=input'
+    }
+  ])(
+    'queries $distribution remote assets once per name',
+    async ({ isCloud, url }) => {
+      mockDistribution.isCloud = isCloud
+      stubAssets({})
+      const { signal } = new AbortController()
+      const candidates = [
+        makeCandidate('1', 'photo.png [input]', { isMissing: undefined }),
+        makeCandidate('2', 'photo.png [input]', { isMissing: undefined })
+      ]
 
-    await verifyMediaCandidates(candidates, { signal })
+      await verifyMediaCandidates(candidates, { signal })
 
-    expect(hashLookups()).toEqual([
-      ['/assets?hash=photo.png&limit=1', { signal }]
-    ])
-    expect(candidates.map((c) => c.isMissing)).toEqual([true, true])
-  })
+      expect(remoteLookups()).toEqual([[url, { signal }]])
+      expect(candidates.map((c) => c.isMissing)).toEqual([true, true])
+    }
+  )
 
   it('leaves resolved candidates untouched', async () => {
     stubAssets({})
@@ -744,7 +774,7 @@ describe('verifyMediaCandidates', () => {
     await verifyMediaCandidates(candidates)
 
     expect(candidates.map((c) => c.isMissing)).toEqual([true, false])
-    expect(hashLookups()).toEqual([])
+    expect(remoteLookups()).toEqual([])
   })
 
   it('propagates remote failures', async () => {

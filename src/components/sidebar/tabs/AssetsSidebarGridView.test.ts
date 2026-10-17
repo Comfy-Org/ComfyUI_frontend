@@ -6,6 +6,8 @@ import { describe, expect, it } from 'vitest'
 import { MEDIA_ASSET_GRID_MODE } from '@/platform/assets/components/mediaAssetViewOptions'
 import type { MediaAssetGridMode } from '@/platform/assets/components/mediaAssetViewOptions'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { mockPagedList } from '@/utils/__tests__/pagedListUtils'
+import { pagedItems } from '@/utils/pagedList'
 
 import AssetsSidebarGridView from './AssetsSidebarGridView.vue'
 
@@ -13,12 +15,13 @@ const VirtualGridStub = defineComponent({
   name: 'VirtualGrid',
   props: {
     items: {
-      type: Array,
+      type: [Array, Object],
       default: () => []
     }
   },
+  methods: { pagedItems },
   template:
-    '<div><slot v-for="item in items" :key="item.key" name="item" :item="item" /></div>'
+    '<div><slot v-for="item in pagedItems(items)" :key="item.id" name="item" :item="item" /></div>'
 })
 
 const MediaAssetCardStub = defineComponent({
@@ -42,7 +45,7 @@ const videoAsset: AssetItem = fromPartial({
 function renderGridView(gridMode: MediaAssetGridMode) {
   return render(AssetsSidebarGridView, {
     props: {
-      assets: [videoAsset],
+      assets: mockPagedList({ items: [videoAsset] }),
       isSelected: () => false,
       showOutputCount: () => false,
       getOutputCount: () => 0,
