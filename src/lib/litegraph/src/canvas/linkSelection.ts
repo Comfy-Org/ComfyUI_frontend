@@ -1,3 +1,5 @@
+import { partition } from 'es-toolkit'
+
 import { getLinkPolyline } from '@/renderer/core/canvas/linkPolylines'
 import {
   pointInBounds,
@@ -10,10 +12,13 @@ import { graphScopeOf } from '@/types/graphScopeId'
 import type { LinkId } from '@/types/linkId'
 
 import type { LGraph } from '../LGraph'
+import type { LGraphNode } from '../LGraphNode'
 import { LLink } from '../LLink'
 import { Reroute } from '../Reroute'
 import type { LinkSegment, ReadOnlyRect } from '../interfaces'
-import { deleteLinks, hideLinks } from './linkVisibility'
+import { inputLinkId, outputLinkIds } from '../node/slotLinks'
+import { LinkRenderType } from '../types/globalEnums'
+import { deleteLinks, hideLinks, showLinks } from './linkVisibility'
 import type { LinkMutationHost } from './linkVisibility'
 
 interface LinkSelectionHost extends LinkMutationHost {
@@ -57,13 +62,23 @@ function getSelectedLinks(graph: LGraph): LLink[] {
   const selection = useLinkSelectionStore().selection
   if (!selection) return []
   return selection.links.filter(
-    (link) => graph.getLink(link.id) === link && isLinkVisible(graph, link)
+    (link) =>
+      graph.getLink(link.id) === link &&
+      (selection.includesHidden || isLinkVisible(graph, link))
   )
 }
 
-/** Ids of the selected links that are still the graph's own, visible links. */
+/** Ids of the selected links that are still the graph's own links. */
 export function getSelectedLinkIds(graph: LGraph): LinkId[] {
   return getSelectedLinks(graph).map((link) => link.id)
+}
+
+function partitionSelectedLinksByVisibility(
+  graph: LGraph
+): [visible: LLink[], hidden: LLink[]] {
+  return partition(getSelectedLinks(graph), (link) =>
+    isLinkVisible(graph, link)
+  )
 }
 
 function segmentsOf(graph: LGraph, links: readonly LLink[]): LinkSegment[] {
@@ -110,8 +125,9 @@ export function getSelectedLinksAnchor(graph: LGraph): Point | undefined {
   const selection = useLinkSelectionStore().selection
   const links = getSelectedLinks(graph)
   if (!selection || !links.length) return undefined
+  const visibleLinks = links.filter((link) => isLinkVisible(graph, link))
   const { anchorX: x, marquee } = selection
-  const polylines = segmentsOf(graph, links).flatMap((segment) => {
+  const polylines = segmentsOf(graph, visibleLinks).flatMap((segment) => {
     const polyline = getLinkPolyline(segment)
     return polyline ? [polyline] : []
   })
@@ -124,6 +140,52 @@ export function getSelectedLinksAnchor(graph: LGraph): Point | undefined {
   if (crossing !== Infinity) return { x, y: crossing }
   if (inside !== Infinity) return { x, y: inside }
   return { x, y: marquee.y }
+}
+
+function slotLinkIds(
+  graph: LGraph,
+  node: LGraphNode,
+  type: 'input' | 'output',
+  slot: number
+): LinkId[] {
+  if (type === 'output') return outputLinkIds(graph, node.id, slot)
+  const linkId = inputLinkId(graph, node.id, slot)
+  return linkId === undefined ? [] : [linkId]
+}
+
+export function hasModifierKey(
+  event: Pick<MouseEvent, 'shiftKey' | 'ctrlKey' | 'metaKey' | 'altKey'>
+): boolean {
+  return event.shiftKey || event.ctrlKey || event.metaKey || event.altKey
+}
+
+export function selectSlotLinks(
+  host: {
+    graph: LGraph | null
+    links_render_mode: number
+    deselectAll(): void
+  },
+  node: LGraphNode,
+  type: 'input' | 'output',
+  slot: number,
+  slotPosition: Point
+): boolean {
+  const { graph } = host
+  if (!graph || node.graph !== graph) return false
+  if (host.links_render_mode === LinkRenderType.HIDDEN_LINK) return false
+  const links = slotLinkIds(graph, node, type, slot).flatMap((linkId) => {
+    const link = graph.getLink(linkId)
+    return link ? [link] : []
+  })
+  if (!links.length) return false
+  host.deselectAll()
+  useLinkSelectionStore().select({
+    links,
+    marquee: { ...slotPosition, width: 0, height: 0 },
+    anchorX: slotPosition.x,
+    includesHidden: true
+  })
+  return true
 }
 
 export function selectLinksInMarquee(
@@ -156,9 +218,32 @@ export function clearLinkSelection(
 export function hideSelectedLinks(host: LinkSelectionHost): boolean {
   const { graph } = host
   if (!graph) return false
-  const linkIds = getSelectedLinkIds(graph)
-  if (!linkIds.length) return false
-  hideLinks(host, graphScopeOf(graph), linkIds)
+  const [visible] = partitionSelectedLinksByVisibility(graph)
+  if (!visible.length) return false
+  hideLinks(
+    host,
+    graphScopeOf(graph),
+    visible.map((link) => link.id)
+  )
+  clearLinkSelection()
+  return true
+}
+
+export function areSelectedLinksHidden(graph: LGraph): boolean {
+  const [visible, hidden] = partitionSelectedLinksByVisibility(graph)
+  return hidden.length > 0 && !visible.length
+}
+
+export function showSelectedLinks(host: LinkSelectionHost): boolean {
+  const { graph } = host
+  if (!graph) return false
+  const [, hidden] = partitionSelectedLinksByVisibility(graph)
+  if (!hidden.length) return false
+  showLinks(
+    host,
+    graphScopeOf(graph),
+    hidden.map((link) => link.id)
+  )
   clearLinkSelection()
   return true
 }

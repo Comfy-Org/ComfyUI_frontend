@@ -108,7 +108,9 @@ import {
 import {
   clearLinkSelection,
   getSelectedLinkIds,
-  selectLinksInMarquee
+  hasModifierKey,
+  selectLinksInMarquee,
+  selectSlotLinks
 } from './canvas/linkSelection'
 import {
   resolvePointerTarget,
@@ -2432,8 +2434,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         this._dirty()
       }
     })
-    this._autoPan.updatePointer(this.mouse[0], this.mouse[1])
-    this._autoPan.start()
+    pointer.onDragStart = () => {
+      if (this._spaceKeyHeld) return
+      this._autoPan?.updatePointer(this.mouse[0], this.mouse[1])
+      this._autoPan?.start()
+    }
   }
 
   /**
@@ -3033,9 +3038,18 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             }
           }
 
-          // TODO: Move callbacks to the start of this closure (onInputClick is already correct).
           pointer.onDoubleClick = () => node.onOutputDblClick?.(i, e)
-          pointer.onClick = () => node.onOutputClick?.(i, e)
+          pointer.onClick = () => {
+            node.onOutputClick?.(i, e)
+            if (
+              !hasModifierKey(e) &&
+              selectSlotLinks(this, node, 'output', i, {
+                x: link_pos[0],
+                y: link_pos[1]
+              })
+            )
+              this.setDirty(true, true)
+          }
 
           return
         }
@@ -3051,7 +3065,17 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
         if (isInSlot) {
           pointer.onDoubleClick = () => node.onInputDblClick?.(i, e)
-          pointer.onClick = () => node.onInputClick?.(i, e)
+          pointer.onClick = () => {
+            node.onInputClick?.(i, e)
+            if (
+              !hasModifierKey(e) &&
+              selectSlotLinks(this, node, 'input', i, {
+                x: link_pos[0],
+                y: link_pos[1]
+              })
+            )
+              this.setDirty(true, true)
+          }
 
           const shouldBreakLink =
             LiteGraph.ctrl_alt_click_do_break_link &&
@@ -4207,7 +4231,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         this.dragging_canvas = held.draggingCanvas && this.pointer.isDown
         if (
           this.pointer.isDown &&
-          (this.isDragging || this.linkConnector.isConnecting)
+          (this.isDragging ||
+            (this.linkConnector.isConnecting && this.pointer.dragStarted))
         ) {
           this._autoPan?.updatePointer(this.mouse[0], this.mouse[1])
           this._autoPan?.start()

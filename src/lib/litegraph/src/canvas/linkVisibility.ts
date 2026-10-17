@@ -59,6 +59,17 @@ export function hideLinks(
   })
 }
 
+export function showLinks(
+  host: LinkMutationHost,
+  scope: GraphScope,
+  linkIds: Iterable<LinkId>
+): void {
+  mutateLink(host, () => {
+    const store = useLinkPresentationStore()
+    for (const linkId of linkIds) store.patch(scope, linkId, { hidden: false })
+  })
+}
+
 export function deleteLinks(
   host: LinkMutationHost,
   graph: LGraph,
