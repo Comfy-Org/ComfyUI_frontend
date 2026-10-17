@@ -5791,8 +5791,9 @@
       "restore": "Undo remove video"
     },
     "target": {
-      "heading": "Who to replace",
-      "placeholder": "Who to replace? Describe one person so no one else in the shot matches, e.g. the man in the purple shirt."
+      "heading": "Who to replace (optional)",
+      "placeholder": "Optional: who to replace. With more than one person in the shot, describe one so no one else matches, e.g. the man in the purple shirt.",
+      "anyone": "the person"
     },
     "seed": {
       "shuffle": "Pick a random seed",
@@ -5806,8 +5807,7 @@
     },
     "needs": {
       "video": "Add a video to start",
-      "character": "Add a character image",
-      "target": "Say who to replace"
+      "character": "Add a character image"
     },
     "generate": {
       "note": "The original sound is kept on the result.",

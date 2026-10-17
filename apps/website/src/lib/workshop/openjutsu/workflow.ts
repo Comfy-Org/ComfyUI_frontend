@@ -34,7 +34,7 @@ export interface SwapRequest {
  * more is added. `<Video 1>` and `<Picture 1>` are how H3 names its references.
  */
 export function swapPrompt(target: string): string {
-  const who = target.trim().replace(/[.\s]+$/, '')
+  const who = target.trim().replace(/[.\s]+$/, '') || 'the person'
   return [
     `Replace only ${who} in <Video 1> with the character in <Picture 1>.`,
     "Keep the replacement character's identity, outfit, and art style from <Picture 1>.",

@@ -97,6 +97,12 @@ describe('swapPrompt', () => {
     )
     expect(prompt).toContain('all other people')
   })
+
+  it('names the person when no one is described', () => {
+    expect(swapPrompt('  ')).toMatch(
+      /^Replace only the person in <Video 1> with the character in <Picture 1>\./
+    )
+  })
 })
 
 describe('resolveSeed', () => {

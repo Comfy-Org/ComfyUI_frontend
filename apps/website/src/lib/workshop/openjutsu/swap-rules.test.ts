@@ -95,15 +95,14 @@ describe('quoteRefusesCredit', () => {
 })
 
 describe('missingInput', () => {
-  it.for<[boolean, boolean, string, string | undefined]>([
-    [false, false, '', 'video'],
-    [true, false, 'the man', 'character'],
-    [true, true, '   ', 'target'],
-    [true, true, 'the man', undefined]
+  it.for<[boolean, boolean, string | undefined]>([
+    [false, false, 'video'],
+    [true, false, 'character'],
+    [true, true, undefined]
   ])(
-    'asks in the panel order: %s %s "%s" -> %s',
-    ([video, character, target, missing]) => {
-      expect(missingInput({ video, character, target })).toBe(missing)
+    'asks in the panel order, with who to replace optional: %s %s -> %s',
+    ([video, character, missing]) => {
+      expect(missingInput({ video, character })).toBe(missing)
     }
   )
 })
@@ -128,7 +127,7 @@ describe('canSwap', () => {
 
   it.for<[string, Partial<Parameters<typeof canSwap>[0]>]>([
     ['the gate is not ready', { gate: 'signedOut' }],
-    ['an input is missing', { missing: 'target' }],
+    ['an input is missing', { missing: 'character' }],
     ['a take is rendering', { rendering: true }],
     ['the price is not known yet', { quoteSettled: false }],
     ['the quote blocks the run', { quote: quote({ next_run: 'blocked' }) }],

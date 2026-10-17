@@ -193,7 +193,7 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
       ])
       if (stale()) return
       character.value = image
-      target.value = example.target
+      target.value = ''
       size.value = SWAP_SIZES[0]
       seed.value = undefined
       await useWholeClip(clip)
@@ -298,8 +298,7 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
   const missing = computed(() =>
     missingInput({
       video: !!video.value && !!trim.value,
-      character: !!character.value,
-      target: target.value
+      character: !!character.value
     })
   )
   const canGenerate = computed(() =>

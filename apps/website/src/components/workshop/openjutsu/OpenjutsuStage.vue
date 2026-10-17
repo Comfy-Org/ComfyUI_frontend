@@ -83,9 +83,10 @@ const done = computed(() => {
 const shape = computed(() => current?.frame ?? frame)
 const source = computed(() => stageSource(stageView.value))
 const part = computed(() => loopWindow(stageView.value))
+const who = (target: string) => target.trim() || t('openjutsu.target.anyone')
 const playerLabel = computed(() =>
   current?.url && view === 'result'
-    ? t('openjutsu.take.detail', { target: current.target })
+    ? t('openjutsu.take.detail', { target: who(current.target) })
     : t('reshoot.clip.yours')
 )
 
@@ -134,7 +135,9 @@ const elapsedSeconds = computed(() => {
             :result="done.result"
             :source="done.source"
             :offset="done.take.window.start"
-            :label="t('openjutsu.take.detail', { target: done.take.target })"
+            :label="
+              t('openjutsu.take.detail', { target: who(done.take.target) })
+            "
             :locale
           />
           <OpenjutsuPlayer

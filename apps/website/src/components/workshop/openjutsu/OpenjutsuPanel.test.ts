@@ -98,7 +98,10 @@ describe('OpenjutsuPanel', () => {
   it('edits who to replace, the quality and a fixed seed', async () => {
     const { emitted } = render(OpenjutsuPanel, { props: models })
 
-    await userEvent.type(screen.getByLabelText('Who to replace'), 'the man')
+    await userEvent.type(
+      screen.getByLabelText('Who to replace (optional)'),
+      'the man'
+    )
     await userEvent.click(
       screen.getByRole('button', { name: 'Quality: 768p · Sharper' })
     )

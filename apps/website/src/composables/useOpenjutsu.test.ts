@@ -87,7 +87,7 @@ beforeEach(() => {
 })
 
 describe('useOpenjutsu', () => {
-  it('asks for the video, then the character, then who to replace', async () => {
+  it('asks for the video, then the character, and runs without saying who to replace', async () => {
     const swap = start()
     await vi.advanceTimersByTimeAsync(0)
     expect(swap.missing.value).toBe('video')
@@ -101,10 +101,7 @@ describe('useOpenjutsu', () => {
     expect(swap.missing.value).toBe('character')
 
     swap.takeCharacter(hero)
-    expect(swap.missing.value).toBe('target')
-    expect(swap.canGenerate.value).toBe(false)
-
-    swap.target.value = 'the man'
+    expect(swap.target.value).toBe('')
     expect(swap.missing.value).toBeUndefined()
     expect(swap.canGenerate.value).toBe(true)
   })
@@ -161,7 +158,7 @@ describe('useOpenjutsu', () => {
     }
   )
 
-  it('loads an example with its clip, character and words, on the default settings', async () => {
+  it('loads an example with its clip and character, no words, on the default settings', async () => {
     vi.mocked(fetch).mockImplementation(
       async (url) =>
         new Response(
@@ -178,7 +175,7 @@ describe('useOpenjutsu', () => {
 
     expect(swap.video.value?.name).toBe('singer.mp4')
     expect(swap.character.value?.name).toBe('diva.jpg')
-    expect(swap.target.value).toBe('the woman singing at the microphone')
+    expect(swap.target.value).toBe('')
     expect(swap.size.value).toBe('768p')
     expect(swap.seed.value).toBeUndefined()
     expect(swap.loadingExample.value).toBeUndefined()
@@ -341,7 +338,7 @@ describe('useOpenjutsu', () => {
     pending.get(newer.character)?.()
     await second
 
-    expect(swap.target.value).toBe(newer.target)
+    expect(swap.character.value?.name).toBe(newer.character.split('/').at(-1))
     expect(swap.loadingExample.value).toBeUndefined()
   })
 

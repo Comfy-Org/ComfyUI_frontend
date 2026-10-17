@@ -55,17 +55,16 @@ export const quoteRefusesCredit = (
   quote: ReshootQuote | undefined
 ) => !rendering && quote?.blocked_reason === 'insufficient_credits'
 
-export type MissingInput = 'video' | 'character' | 'target'
+export type MissingInput = 'video' | 'character'
 
 /** What is still missing before Generate, in the order the panel asks. */
 export function missingInput(inputs: {
   readonly video: boolean
   readonly character: boolean
-  readonly target: string
 }): MissingInput | undefined {
   if (!inputs.video) return 'video'
   if (!inputs.character) return 'character'
-  return inputs.target.trim() ? undefined : 'target'
+  return undefined
 }
 
 /** Whether Generate may start a run right now. */

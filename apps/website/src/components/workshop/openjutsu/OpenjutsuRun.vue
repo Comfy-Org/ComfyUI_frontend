@@ -36,8 +36,7 @@ const emit = defineEmits<{ generate: []; cancel: [] }>()
 
 const NEEDS = {
   video: 'openjutsu.needs.video',
-  character: 'openjutsu.needs.character',
-  target: 'openjutsu.needs.target'
+  character: 'openjutsu.needs.character'
 } as const
 
 /** Gates the account can act on keep their own buttons: sign in, buy, switch. */
