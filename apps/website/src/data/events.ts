@@ -697,6 +697,108 @@ const events: readonly ComfyEvent[] = [
     }
   },
   {
+    id: 'comfy-smart-routing',
+    category: 'livestream',
+    organizer: 'comfy',
+    // TODO: start time not provided; startDateTime is date-only (like the
+    // other events without a confirmed time). Add the time to startDateTime
+    // and dateLabel once the YouTube schedule is confirmed. No card image
+    // yet: add media with eventImage() once the art is on media.comfy.org.
+    title: {
+      en: 'Comfy Smart Routing: Optimize Every Call for Price or Speed',
+      'zh-CN': 'Comfy 智能路由：为每次调用优化价格或速度'
+    },
+    description: {
+      en: 'Matt Miller, Product Manager at ComfyUI, joins host Allyson to show how Comfy Smart Routing optimizes every call for price or speed.',
+      'zh-CN':
+        'ComfyUI 产品经理 Matt Miller 做客本场直播，与主持人 Allyson 一起介绍 Comfy 智能路由如何为每次调用优化价格或速度。'
+    },
+    location: { en: 'Online', 'zh-CN': '线上' },
+    dateLabel: {
+      en: 'November 4, 2026',
+      'zh-CN': '2026年11月4日'
+    },
+    startDateTime: '2026-11-04',
+    liveVideoId: 'q7a-RWj-IxQ'
+  },
+  {
+    id: 'spooky-season-model-jam',
+    category: 'livestream',
+    organizer: 'comfy',
+    // TODO: start time not provided; startDateTime is date-only (like the
+    // other events without a confirmed time). Add the time to startDateTime
+    // and dateLabel once the YouTube schedule is confirmed. No card image
+    // yet: add media with eventImage() once the art is on media.comfy.org.
+    title: {
+      en: "Spooky Season Model Jam: Comfy's Creepiest Generations",
+      'zh-CN': '万圣节 Model Jam：Comfy 最诡异的生成作品'
+    },
+    description: {
+      en: "Comfy Creatives join host Purz for a Spooky Season Model Jam, sharing Comfy's creepiest generations.",
+      'zh-CN':
+        'Comfy Creatives 团队做客本场直播，与主持人 Purz 一起举办万圣节主题 Model Jam，分享 Comfy 最诡异的生成作品。'
+    },
+    location: { en: 'Online', 'zh-CN': '线上' },
+    dateLabel: {
+      en: 'October 28, 2026',
+      'zh-CN': '2026年10月28日'
+    },
+    startDateTime: '2026-10-28',
+    liveVideoId: 'U3A70LKBU2E'
+  },
+  {
+    id: 'ltx-for-vfx',
+    category: 'livestream',
+    organizer: 'comfy',
+    // TODO: liveVideoId ISpoBLE3NU is 10 characters as given in the request
+    // (YouTube IDs are 11); confirm the full ID from the live URL.
+    // TODO: start time not provided; startDateTime is date-only (like the
+    // other events without a confirmed time). Add the time to startDateTime
+    // and dateLabel once the YouTube schedule is confirmed. No card image
+    // yet: add media with eventImage() once the art is on media.comfy.org.
+    title: {
+      en: 'LTX for VFX: Pro Post-Production Workflows',
+      'zh-CN': 'LTX 用于 VFX：专业后期制作工作流'
+    },
+    description: {
+      en: 'Mohamed Oumoumad, Director of Production Technology at LTX, joins hosts Purz and Doug Hogan to walk through pro post-production workflows with LTX for VFX.',
+      'zh-CN':
+        'LTX 制作技术总监 Mohamed Oumoumad 做客本场直播，与主持人 Purz 和 Doug Hogan 一起讲解使用 LTX 进行 VFX 的专业后期制作工作流。'
+    },
+    location: { en: 'Online', 'zh-CN': '线上' },
+    dateLabel: {
+      en: 'October 21, 2026',
+      'zh-CN': '2026年10月21日'
+    },
+    startDateTime: '2026-10-21',
+    liveVideoId: 'ISpoBLE3NU'
+  },
+  {
+    id: 'inside-flux-3-image',
+    category: 'livestream',
+    organizer: 'comfy',
+    // TODO: start time not provided; startDateTime is date-only (like the
+    // other events without a confirmed time). Add the time to startDateTime
+    // and dateLabel once the YouTube schedule is confirmed. No card image
+    // yet: add media with eventImage() once the art is on media.comfy.org.
+    title: {
+      en: 'Inside FLUX 3 Image & Special Surprise Announcement',
+      'zh-CN': '深入了解 FLUX 3 Image 与特别惊喜发布'
+    },
+    description: {
+      en: 'Yumeng Li, Research Scientist at Black Forest Labs, joins hosts Purz and Paul for a look inside FLUX 3 Image and a special surprise announcement.',
+      'zh-CN':
+        'Black Forest Labs 研究科学家 Yumeng Li 做客本场直播，与主持人 Purz 和 Paul 一起深入了解 FLUX 3 Image，并带来一项特别的惊喜发布。'
+    },
+    location: { en: 'Online', 'zh-CN': '线上' },
+    dateLabel: {
+      en: 'October 15, 2026',
+      'zh-CN': '2026年10月15日'
+    },
+    startDateTime: '2026-10-15',
+    liveVideoId: '71EHPhMb_Dg'
+  },
+  {
     id: 'la-august-meetup',
     category: 'meetup',
     organizer: 'community',
