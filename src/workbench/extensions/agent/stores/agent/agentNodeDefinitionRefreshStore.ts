@@ -61,7 +61,12 @@ export const useAgentNodeDefinitionRefreshStore = defineStore(
     }
 
     function enqueueRefresh(): void {
-      queue = queue.then(refreshIfStale)
+      queue = queue.then(refreshIfStale).catch((error: unknown) => {
+        reportError(error, {
+          surface: 'agent',
+          errorType: 'failure_running_agent_node_definition_refresh'
+        })
+      })
     }
 
     function observeAgentEvent(event: AgentWsEvent): void {

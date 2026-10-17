@@ -190,4 +190,25 @@ describe('agentNodeDefinitionRefreshStore', () => {
     expect(refresh).toHaveBeenCalledTimes(2)
     expect(reportError).not.toHaveBeenCalled()
   })
+
+  it('reports an unexpected refresh failure and keeps refreshing later restarts', async () => {
+    const refresh = registerRefreshCommand()
+    vi.mocked(useWorkflowService).mockImplementationOnce(() => {
+      throw new Error('workflow service unavailable')
+    })
+    const store = useAgentNodeDefinitionRefreshStore()
+    store.observeAgentEvent(restartSucceeded)
+    await vi.advanceTimersByTimeAsync(0)
+
+    store.observeAgentEvent(restartSucceeded)
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(refresh).toHaveBeenCalledTimes(2)
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'failure_running_agent_node_definition_refresh'
+      })
+    )
+  })
 })
