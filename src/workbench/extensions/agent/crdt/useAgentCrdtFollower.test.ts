@@ -16,6 +16,7 @@ import { render } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { api } from '@/scripts/api'
 
 import { useTelemetry } from '@/platform/telemetry'
 import type { reportError as reportErrorFn } from '@/platform/telemetry/reportError'
@@ -27,6 +28,8 @@ import type { DocNodeDelta, FrameOutcome } from './agentCrdtProjection'
 import type { DocFrameTransport } from './docFrameClient'
 import type { GraphOperation } from './graphOperations'
 import type { BatchOutcome, OpSenderDeps } from './opSender'
+
+const apiEvents: EventTarget = api
 
 const bridgeState = vi.hoisted(() => {
   const liveSubscriptions = new Map<object, Set<string>>()
@@ -126,23 +129,6 @@ const telemetryState = vi.hoisted(() => ({
   reportError: vi.fn<typeof reportErrorFn>()
 }))
 
-const apiState = vi.hoisted(() => {
-  const target = new EventTarget()
-  return {
-    target,
-    api: {
-      socket: { readyState: 1, send: vi.fn() },
-      addCustomEventListener: vi.fn(),
-      removeCustomEventListener: vi.fn(),
-      addEventListener: (type: string, listener: EventListener) =>
-        target.addEventListener(type, listener),
-      removeEventListener: vi.fn((type: string, listener: EventListener) =>
-        target.removeEventListener(type, listener)
-      )
-    }
-  }
-})
-
 vi.mock<unknown>(import('./layoutFollowerBridge'), () => ({
   LayoutFollowerBridge: class {
     constructor() {
@@ -185,7 +171,7 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
 }))
 vi.mock(import('@/platform/telemetry'))
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({ api: apiState.api }))
+vi.mock(import('@/scripts/api'))
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { graph: null, canvas: null }
 }))
@@ -283,6 +269,7 @@ function dispatchFrame(type: string, detail: unknown): void {
 
 describe('useAgentCrdtFollower', () => {
   beforeEach(() => {
+    api.socket = fromPartial({ readyState: 1, send: vi.fn() })
     useAgentPanelStore().enabled = true
     sessionStorage.clear()
     bridgeState.current = null
@@ -371,7 +358,7 @@ describe('useAgentCrdtFollower', () => {
     first.dispatchEvent(
       new CustomEvent('doc_update', { detail: { workflowId: 'wf-1', seq: 42 } })
     )
-    apiState.target.dispatchEvent(new Event('reconnected'))
+    apiEvents.dispatchEvent(new Event('reconnected'))
     vi.advanceTimersByTime(STALE_AFTER_MS * 2)
     workflowId.value = 'wf-2'
     await nextTick()
@@ -822,7 +809,7 @@ describe('useAgentCrdtFollower', () => {
     dispatchFrame('doc_subscribed', { ok: true })
     expect(status().connected).toBe(true)
 
-    apiState.target.dispatchEvent(new Event('reconnected'))
+    apiEvents.dispatchEvent(new Event('reconnected'))
 
     expect(status().connected).toBe(false)
     expect(bridge().reconnect).toHaveBeenCalledOnce()
@@ -911,7 +898,7 @@ describe('useAgentCrdtFollower', () => {
   it('re-drives subscription intent on every status frame', () => {
     const { unmount } = mountFollower('wf-1')
 
-    apiState.target.dispatchEvent(new Event('status'))
+    apiEvents.dispatchEvent(new Event('status'))
 
     expect(bridge().reconcile).toHaveBeenCalled()
     unmount()
@@ -922,7 +909,7 @@ describe('useAgentCrdtFollower', () => {
     const { unmount } = mountFollower('wf-1')
     dispatchFrame('doc_subscribed', { ok: false })
 
-    apiState.target.dispatchEvent(new Event('status'))
+    apiEvents.dispatchEvent(new Event('status'))
     expect(bridge().reconcile).not.toHaveBeenCalled()
 
     vi.advanceTimersByTime(500)
@@ -954,7 +941,7 @@ describe('useAgentCrdtFollower', () => {
     })
 
     vi.advanceTimersByTime(60_000)
-    apiState.target.dispatchEvent(new Event('status'))
+    apiEvents.dispatchEvent(new Event('status'))
 
     expect(bridge().resubscribe).not.toHaveBeenCalled()
     expect(bridge().reconcile).not.toHaveBeenCalled()
@@ -979,7 +966,7 @@ describe('useAgentCrdtFollower', () => {
     })
 
     vi.advanceTimersByTime(60_000)
-    apiState.target.dispatchEvent(new Event('status'))
+    apiEvents.dispatchEvent(new Event('status'))
 
     expect(bridge().resubscribe).not.toHaveBeenCalled()
     expect(bridge().reconcile).not.toHaveBeenCalled()
@@ -1004,7 +991,7 @@ describe('useAgentCrdtFollower', () => {
     })
 
     vi.advanceTimersByTime(60_000)
-    apiState.target.dispatchEvent(new Event('status'))
+    apiEvents.dispatchEvent(new Event('status'))
 
     expect(bridge().resubscribe).not.toHaveBeenCalled()
     expect(bridge().reconcile).not.toHaveBeenCalled()
@@ -2788,7 +2775,7 @@ describe('useAgentCrdtFollower', () => {
     // recovery; the heartbeat stays disarmed until the next confirm.
     dispatchFrame('doc_subscribed', { ok: true })
     bridge().resubscribe.mockClear()
-    apiState.target.dispatchEvent(new Event('reconnected'))
+    apiEvents.dispatchEvent(new Event('reconnected'))
     const reconnectResubscribes = bridge().resubscribe.mock.calls.length
     vi.advanceTimersByTime(STALE_AFTER_MS * 2)
     expect(bridge().resubscribe.mock.calls.length).toBe(reconnectResubscribes)
@@ -2827,7 +2814,7 @@ describe('useAgentCrdtFollower', () => {
     vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
     expect(bridge().resubscribe).toHaveBeenCalledTimes(2)
 
-    apiState.target.dispatchEvent(new Event('reconnected'))
+    apiEvents.dispatchEvent(new Event('reconnected'))
     expect(bridge().reconnect).toHaveBeenCalledOnce()
     dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
     vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
@@ -2865,10 +2852,10 @@ describe('useAgentCrdtFollower', () => {
     dispatchFrame('doc_subscribed', { ok: false })
     vi.advanceTimersByTime(30_000)
     expect(bridge().resubscribe).toHaveBeenCalledTimes(2)
-    apiState.target.dispatchEvent(new Event('status'))
+    apiEvents.dispatchEvent(new Event('status'))
     expect(bridge().reconcile).not.toHaveBeenCalled()
 
-    apiState.target.dispatchEvent(new Event('reconnected'))
+    apiEvents.dispatchEvent(new Event('reconnected'))
     expect(bridge().reconnect).toHaveBeenCalledOnce()
     dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
     vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
@@ -2896,9 +2883,8 @@ describe('useAgentCrdtFollower', () => {
     })
     const listenerFailure = new Error('listener removal failed')
     const clientFailure = new Error('client destroy failed')
-    apiState.api.removeEventListener.mockImplementation((type, listener) => {
+    vi.mocked(api.removeEventListener).mockImplementation((type) => {
       if (type === 'reconnected') throw listenerFailure
-      apiState.target.removeEventListener(type, listener)
     })
     clientState.destroy.mockImplementation(() => {
       throw clientFailure
@@ -2914,7 +2900,7 @@ describe('useAgentCrdtFollower', () => {
     expect(projectionState.destroy).toHaveBeenCalled()
     expect(bridge().destroy).toHaveBeenCalled()
     expect(clientState.destroy).toHaveBeenCalled()
-    expect(apiState.api.removeEventListener).toHaveBeenCalledWith(
+    expect(api.removeEventListener).toHaveBeenCalledWith(
       'status',
       expect.any(Function)
     )
@@ -2922,10 +2908,9 @@ describe('useAgentCrdtFollower', () => {
 
   it('reports cleanup failures that throw a nullish value', () => {
     const { unmount } = mountFollower('wf-1')
-    apiState.api.removeEventListener.mockImplementation((type, listener) => {
+    vi.mocked(api.removeEventListener).mockImplementation((type) => {
       if (type === 'reconnected') throw null
       if (type === 'status') throw undefined
-      apiState.target.removeEventListener(type, listener)
     })
 
     unmount()
@@ -3042,7 +3027,7 @@ describe('useAgentCrdtFollower', () => {
         ok: false,
         code: 'stale_schema_reseed_refused'
       })
-      apiState.target.dispatchEvent(new Event('status'))
+      apiEvents.dispatchEvent(new Event('status'))
       vi.advanceTimersByTime(10 * 60_000)
 
       expect(bridge().resubscribe).not.toHaveBeenCalled()

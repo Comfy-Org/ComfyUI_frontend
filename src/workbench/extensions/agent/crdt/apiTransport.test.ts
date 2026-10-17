@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { fromPartial } from '@total-typescript/shoehorn'
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({ app: { graph: null } }))
-vi.mock<unknown>(import('@/scripts/api'), () => ({ api: { socket: null } }))
+vi.mock(import('@/scripts/api'))
 
 import { api } from '@/scripts/api'
 
@@ -10,13 +11,9 @@ import { setCrdtDebugEnabled, setCrdtLogLevel } from './crdtDebugGate'
 import { clearDevEvents, devEvents, stringifyDevEvents } from './devPanelLog'
 import { apiTransport } from './useAgentCrdtFollower'
 
-const mutableApi = api as unknown as {
-  socket: { readyState: number; send: (frame: string) => void } | null
-}
-
 describe('apiTransport.send', () => {
   beforeEach(() => {
-    mutableApi.socket = null
+    api.socket = null
   })
 
   it('reports failure instead of throwing when there is no socket yet', () => {
@@ -26,14 +23,17 @@ describe('apiTransport.send', () => {
 
   it('reports failure instead of throwing while the socket is still CONNECTING', () => {
     const send = vi.fn()
-    mutableApi.socket = { readyState: WebSocket.CONNECTING, send }
+    api.socket = fromPartial({
+      readyState: WebSocket.CONNECTING,
+      send
+    })
     expect(apiTransport.send('{}')).toBe(false)
     expect(send).not.toHaveBeenCalled()
   })
 
   it('sends and reports success once the socket is OPEN', () => {
     const send = vi.fn()
-    mutableApi.socket = { readyState: WebSocket.OPEN, send }
+    api.socket = fromPartial({ readyState: WebSocket.OPEN, send })
     expect(apiTransport.send('frame')).toBe(true)
     expect(send).toHaveBeenCalledWith('frame')
   })
@@ -44,7 +44,10 @@ describe('createLoggedTransport.send', () => {
 
   beforeEach(() => {
     clearDevEvents()
-    mutableApi.socket = { readyState: WebSocket.OPEN, send: vi.fn() }
+    api.socket = fromPartial({
+      readyState: WebSocket.OPEN,
+      send: vi.fn()
+    })
   })
 
   it('leaves the frame unparsed while the debug instrument is off', () => {
