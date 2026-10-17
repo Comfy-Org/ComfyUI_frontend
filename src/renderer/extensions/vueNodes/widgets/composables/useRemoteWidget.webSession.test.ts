@@ -41,7 +41,7 @@ const identity = vi.hoisted(() => {
 vi.mock(import('@/platform/distribution/types'), () => ({
   DISTRIBUTION: 'cloud' as const,
   isCloud: true,
-  isDesktop: false,
+  isLegacyDesktopBuild: false,
   isNightly: false
 }))
 

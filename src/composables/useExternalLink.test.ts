@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const mockData = vi.hoisted(() => ({ isDesktop: false }))
+const mockData = vi.hoisted(() => ({ isLegacyDesktopBuild: false }))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
-  get isDesktop() {
-    return mockData.isDesktop
+  get isLegacyDesktopBuild() {
+    return mockData.isLegacyDesktopBuild
   }
 }))
 
@@ -33,7 +33,7 @@ describe('useExternalLink', () => {
   beforeEach(() => {
     // Reset to default state
     i18n.global.locale.value = 'en'
-    mockData.isDesktop = false
+    mockData.isLegacyDesktopBuild = false
   })
 
   describe('staticUrls', () => {
@@ -99,7 +99,7 @@ describe('useExternalLink', () => {
 
     it('should add platform suffix when requested', () => {
       i18n.global.locale.value = 'en'
-      mockData.isDesktop = true
+      mockData.isLegacyDesktopBuild = true
       vi.mocked(electronAPI).mockReturnValue({
         getPlatform: () => 'darwin'
       } as ReturnType<typeof electronAPI>)
@@ -111,7 +111,7 @@ describe('useExternalLink', () => {
 
     it('should add platform suffix with trailing slash', () => {
       i18n.global.locale.value = 'en'
-      mockData.isDesktop = true
+      mockData.isLegacyDesktopBuild = true
       vi.mocked(electronAPI).mockReturnValue({
         getPlatform: () => 'win32'
       } as ReturnType<typeof electronAPI>)
@@ -123,7 +123,7 @@ describe('useExternalLink', () => {
 
     it('should combine locale and platform', () => {
       i18n.global.locale.value = 'zh'
-      mockData.isDesktop = true
+      mockData.isLegacyDesktopBuild = true
       vi.mocked(electronAPI).mockReturnValue({
         getPlatform: () => 'darwin'
       } as ReturnType<typeof electronAPI>)
@@ -138,7 +138,7 @@ describe('useExternalLink', () => {
 
     it('should not add platform when not desktop', () => {
       i18n.global.locale.value = 'en'
-      mockData.isDesktop = false
+      mockData.isLegacyDesktopBuild = false
 
       const { buildDocsUrl } = useExternalLink()
       const url = buildDocsUrl('/installation/desktop', { platform: true })

@@ -8,11 +8,11 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
 import { checkMirrorReachable } from '@/utils/electronMirrorCheck'
-import { isDesktop } from '@/platform/distribution/types'
+import { isLegacyDesktopBuild } from '@/platform/distribution/types'
 import { electronAPI as getElectronAPI } from '@/utils/envUtil'
 
 void (async () => {
-  if (!isDesktop) return
+  if (!isLegacyDesktopBuild) return
 
   const electronAPI = getElectronAPI()
   const desktopAppVersion = await electronAPI.getElectronVersion()

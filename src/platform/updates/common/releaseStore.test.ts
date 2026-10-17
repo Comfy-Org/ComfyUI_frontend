@@ -19,11 +19,14 @@ vi.mock(import('semver'), () => ({
   valid: vi.fn(() => '1.0.0')
 }))
 
-const mockData = vi.hoisted(() => ({ isDesktop: true, isCloud: false }))
+const mockData = vi.hoisted(() => ({
+  isLegacyDesktopBuild: true,
+  isCloud: false
+}))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
-  get isDesktop() {
-    return mockData.isDesktop
+  get isLegacyDesktopBuild() {
+    return mockData.isLegacyDesktopBuild
   },
   get isCloud() {
     return mockData.isCloud
@@ -692,7 +695,7 @@ describe('useReleaseStore', () => {
 
   describe('when NOT running on desktop (web)', () => {
     beforeEach(() => {
-      mockData.isDesktop = false
+      mockData.isLegacyDesktopBuild = false
     })
 
     it('should NOT show toast even when all other conditions are met', () => {

@@ -16,7 +16,7 @@ vi.mock(import('@/platform/assets/composables/useAssetBrowserDialog'), () => ({
 }))
 vi.mock(import('@/platform/distribution/types'), () => ({
   DISTRIBUTION: 'localhost' as const,
-  isDesktop: false,
+  isLegacyDesktopBuild: false,
   isNightly: false,
   isCloud: true
 }))

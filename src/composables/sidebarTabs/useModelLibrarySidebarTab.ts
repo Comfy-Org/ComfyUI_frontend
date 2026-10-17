@@ -3,7 +3,7 @@ import { markRaw } from 'vue'
 import ModelLibrarySidebarTab from '@/components/sidebar/tabs/ModelLibrarySidebarTab.vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { openModelLibraryBrowser } from '@/platform/assets/composables/openModelLibraryBrowser'
-import { isCloud, isDesktop } from '@/platform/distribution/types'
+import { isCloud, isLegacyDesktopBuild } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
@@ -29,7 +29,7 @@ export const useModelLibrarySidebarTab = (): SidebarTabExtension => {
       return true
     },
     iconBadge: () => {
-      if (isDesktop) {
+      if (isLegacyDesktopBuild) {
         const electronDownloadStore = useElectronDownloadStore()
         if (electronDownloadStore.inProgressDownloads.length > 0) {
           return electronDownloadStore.inProgressDownloads.length.toString()

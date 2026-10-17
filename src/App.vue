@@ -26,7 +26,7 @@ import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import config from '@/config'
 import TooltipProvider from '@/components/ui/tooltip/TooltipProvider.vue'
 import SessionReconnecting from '@/platform/auth/session/components/SessionReconnecting.vue'
-import { isCloud, isDesktop } from '@/platform/distribution/types'
+import { isCloud, isLegacyDesktopBuild } from '@/platform/distribution/types'
 import {
   reportPreloadError,
   reportResourceLoadError
@@ -79,7 +79,7 @@ const showContextMenu = (event: MouseEvent) => {
 onMounted(() => {
   window['__COMFYUI_FRONTEND_VERSION__'] = config.app_version
 
-  if (isDesktop) {
+  if (isLegacyDesktopBuild) {
     document.addEventListener('contextmenu', showContextMenu)
   }
 

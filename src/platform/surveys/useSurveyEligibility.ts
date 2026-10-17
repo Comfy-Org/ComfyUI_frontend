@@ -2,7 +2,11 @@ import { useStorage } from '@vueuse/core'
 import type { MaybeRefOrGetter } from 'vue'
 import { computed, toValue } from 'vue'
 
-import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
+import {
+  isCloud,
+  isLegacyDesktopBuild,
+  isNightly
+} from '@/platform/distribution/types'
 
 import { useFeatureUsageTracker } from './useFeatureUsageTracker'
 
@@ -51,7 +55,9 @@ export function useSurveyEligibility(
   )
   const isSurveyEnabled = computed(() => resolvedConfig.value.enabled ?? true)
 
-  const isNightlyLocalhost = computed(() => isNightly && !isCloud && !isDesktop)
+  const isNightlyLocalhost = computed(
+    () => isNightly && !isCloud && !isLegacyDesktopBuild
+  )
 
   const hasReachedThreshold = computed(() => useCount.value >= threshold.value)
 

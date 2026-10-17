@@ -3,7 +3,11 @@ import {
   getDefaultLocale,
   SUPPORTED_LOCALE_OPTIONS
 } from '@/locales/localeConfig'
-import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
+import {
+  isCloud,
+  isLegacyDesktopBuild,
+  isNightly
+} from '@/platform/distribution/types'
 import { TOUR_SEEN_SETTING } from '@/platform/onboarding/onboardingTours'
 import { CANVAS_NAVIGATION_PRESETS } from '@/platform/settings/constants/canvasNavigation'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -1185,7 +1189,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip:
       'Modern: DOM-based rendering with enhanced interactivity, native browser features, and updated visual design. Classic: Traditional canvas rendering.',
     defaultValue: false,
-    defaultsByInstallVersion: { '1.41.0': isCloud || isDesktop },
+    defaultsByInstallVersion: { '1.41.0': isCloud || isLegacyDesktopBuild },
     sortOrder: 100,
     experimental: true,
     versionAdded: '1.27.1'

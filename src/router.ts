@@ -24,7 +24,7 @@ import {
   readSsoHint
 } from '@/platform/auth/session/ssoReentryStorage'
 import { trackSsoRequiredShown } from '@/platform/auth/sso/ssoTelemetry'
-import { isCloud, isDesktop } from '@/platform/distribution/types'
+import { isCloud, isLegacyDesktopBuild } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useAuthStore } from '@/stores/authStore'
@@ -59,7 +59,7 @@ const isFileProtocol = window.location.protocol === 'file:'
  *   to support deployments like http://mysite.com/ComfyUI/
  */
 function getBasePath(): string {
-  if (isDesktop) return '/'
+  if (isLegacyDesktopBuild) return '/'
   if (isCloud) return import.meta.env.BASE_URL || '/'
   return window.location.pathname
 }
@@ -278,7 +278,7 @@ if (isCloud) {
     // Handle other protected routes
     if (!isLoggedIn) {
       // For Electron, use dialog
-      if (isDesktop) {
+      if (isLegacyDesktopBuild) {
         const loginSuccess = await useAuthDialogs().showSignInDialog()
         return loginSuccess ? next() : next(false)
       }
@@ -288,7 +288,7 @@ if (isCloud) {
 
     // User is logged in - check if they need onboarding (when enabled)
     // For root path, check actual user status to handle waitlisted users
-    if (!isDesktop && to.path === '/') {
+    if (!isLegacyDesktopBuild && to.path === '/') {
       if (!flags.onboardingSurveyEnabled) {
         return next()
       }

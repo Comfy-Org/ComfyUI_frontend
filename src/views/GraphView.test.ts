@@ -41,10 +41,10 @@ const apiMock = vi.hoisted(() =>
 const distribution = vi.hoisted(
   (): {
     isCloud: typeof DistributionTypes.isCloud
-    isDesktop: typeof DistributionTypes.isDesktop
+    isLegacyDesktopBuild: typeof DistributionTypes.isLegacyDesktopBuild
   } => ({
     isCloud: false,
-    isDesktop: false
+    isLegacyDesktopBuild: false
   })
 )
 
@@ -228,7 +228,7 @@ const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
 
 describe('GraphView - reconnect wiring', () => {
   beforeEach(() => {
-    distribution.isDesktop = false
+    distribution.isLegacyDesktopBuild = false
     templateInputMock.subscribeProgress.mockReturnValue(
       templateInputMock.stopProgress
     )
@@ -255,7 +255,7 @@ describe('GraphView - reconnect wiring', () => {
   })
 
   it('reconciles a completed template input without a page refresh', async () => {
-    distribution.isDesktop = true
+    distribution.isLegacyDesktopBuild = true
     Object.defineProperty(window, '__comfyDesktop2', {
       configurable: true,
       value: {
@@ -287,7 +287,7 @@ describe('GraphView - reconnect wiring', () => {
   })
 
   it('releases a completed template input when the graph refresh fails', async () => {
-    distribution.isDesktop = true
+    distribution.isLegacyDesktopBuild = true
     Object.defineProperty(window, '__comfyDesktop2', {
       configurable: true,
       value: {

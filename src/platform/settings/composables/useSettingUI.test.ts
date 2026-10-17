@@ -17,7 +17,7 @@ import { useSettingUI as useSettingUIComposable } from './useSettingUI'
 const env = vi.hoisted(() => {
   const state = {
     isCloud: false,
-    isDesktop: false,
+    isLegacyDesktopBuild: false,
     workspaceRole: 'owner' as 'owner' | 'member',
     partnerNodeGovernanceStatus: 'inactive' as
       | 'inactive'
@@ -43,8 +43,8 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return env.state.isCloud
   },
-  get isDesktop() {
-    return env.state.isDesktop
+  get isLegacyDesktopBuild() {
+    return env.state.isLegacyDesktopBuild
   }
 }))
 
@@ -123,7 +123,7 @@ describe('useSettingUI', () => {
   beforeEach(() => {
     Object.assign(env.state, {
       isCloud: false,
-      isDesktop: false,
+      isLegacyDesktopBuild: false,
       workspaceRole: 'owner',
       partnerNodeGovernanceStatus: 'inactive',
       partnerNodeGovernanceProviders: []

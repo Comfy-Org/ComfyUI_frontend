@@ -161,7 +161,11 @@ import { useI18n } from 'vue-i18n'
 
 import PuzzleIcon from '@/components/icons/PuzzleIcon.vue'
 import { useExternalLink } from '@/composables/useExternalLink'
-import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
+import {
+  isCloud,
+  isLegacyDesktopBuild,
+  isNightly
+} from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { buildFeedbackTypeformUrl } from '@/platform/support/config'
 import { useTelemetry } from '@/platform/telemetry'
@@ -247,7 +251,7 @@ const moreItems = computed<MenuItem[]>(() => {
       key: 'desktop-guide',
       type: 'item',
       label: t('helpCenter.desktopUserGuide'),
-      visible: isDesktop,
+      visible: isLegacyDesktopBuild,
       action: () => {
         trackResourceClick('docs', true)
         openExternalLink(
@@ -263,7 +267,7 @@ const moreItems = computed<MenuItem[]>(() => {
       key: 'dev-tools',
       type: 'item',
       label: t('helpCenter.openDevTools'),
-      visible: isDesktop,
+      visible: isLegacyDesktopBuild,
       action: () => {
         openDevTools()
         emit('close')
@@ -272,13 +276,13 @@ const moreItems = computed<MenuItem[]>(() => {
     {
       key: 'divider-1',
       type: 'divider',
-      visible: isDesktop
+      visible: isLegacyDesktopBuild
     },
     {
       key: 'reinstall',
       type: 'item',
       label: t('helpCenter.reinstall'),
-      visible: isDesktop,
+      visible: isLegacyDesktopBuild,
       action: () => {
         onReinstall()
         emit('close')
@@ -415,7 +419,7 @@ const menuItems = computed<MenuItem[]>(() => {
     })
   }
   // Update ComfyUI - only for non-desktop, non-cloud with new manager UI
-  if (!isDesktop && !isCloud && isNewManagerUI.value) {
+  if (!isLegacyDesktopBuild && !isCloud && isNewManagerUI.value) {
     items.push({
       key: 'update-comfyui',
       type: 'item',
@@ -593,13 +597,13 @@ const onSubmenuLeave = (): void => {
 }
 
 const openDevTools = (): void => {
-  if (isDesktop) {
+  if (isLegacyDesktopBuild) {
     electronAPI().openDevTools()
   }
 }
 
 const onReinstall = (): void => {
-  if (isDesktop) {
+  if (isLegacyDesktopBuild) {
     void electronAPI().reinstall()
   }
 }

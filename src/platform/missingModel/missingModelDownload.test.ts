@@ -29,7 +29,7 @@ vi.mock(
     ({
       DISTRIBUTION: 'localhost',
       isCloud: false,
-      get isDesktop() {
+      get isLegacyDesktopBuild() {
         return mockIsDesktop.value
       },
       isNightly: false

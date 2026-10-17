@@ -32,8 +32,11 @@ on the user's own machine — a real product surface, not a dev rig), and
 **Dev/ephemeral** (a Vite dev server against a selected backend). The build
 models this in `src/platform/distribution/types.ts`
 (`Distribution = 'desktop' | 'localhost' | 'cloud'`, `DISTRIBUTION`, `isCloud`,
-`isDesktop`), resolved by `vite.config.mts` into the compile-time
-`__DISTRIBUTION__` define.
+`isLegacyDesktopBuild`), resolved by `vite.config.mts` into the compile-time
+`__DISTRIBUTION__` define. The `desktop` build ships only in the legacy
+Electron app (Desktop 1). Comfy-Desktop (Desktop 2) runs the standard
+`localhost` build and is detected at runtime with `isComfyDesktop2()`
+(`window.__comfyDesktop2`), not by the build.
 
 The follower **apply** path has no product-specific graph semantics — every
 surface receives the same host-made `doc_update` and applies it the same way.
@@ -182,7 +185,7 @@ module **when direct-to-agent product wiring is implemented** — it resolves th
 agent HTTP/WS base URL (an `AGENT_BASE_URL`-style value), whether the route is
 same-origin through cloud ingest or direct to the local/Desktop agent binary,
 and credentials by delegating to `authStore.getAuthHeader()`. Use
-`DISTRIBUTION`/`isCloud`/`isDesktop` **inside that boundary only**; do not
+`DISTRIBUTION`/`isCloud`/`isLegacyDesktopBuild`/`isComfyDesktop2()` **inside that boundary only**; do not
 scatter distribution checks through the follower apply path or rendering, and never
 reduce auth to `isCloud` (Local and Desktop are authenticated product
 surfaces). Dev-only Vite proxy/credential behavior stays in Vite config and is

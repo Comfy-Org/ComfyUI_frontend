@@ -30,13 +30,13 @@ vi.hoisted(() => {
   }
 })
 
-const mockData = vi.hoisted(() => ({ isDesktop: false }))
+const mockData = vi.hoisted(() => ({ isLegacyDesktopBuild: false }))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false,
   isNightly: false,
-  get isDesktop() {
-    return mockData.isDesktop
+  get isLegacyDesktopBuild() {
+    return mockData.isLegacyDesktopBuild
   }
 }))
 
@@ -77,7 +77,7 @@ describe('ReleaseNotificationToast', () => {
   }
 
   beforeEach(() => {
-    mockData.isDesktop = false
+    mockData.isLegacyDesktopBuild = false
     Object.assign(useReleaseStore(), { recentRelease: null })
     Object.assign(useReleaseStore(), { shouldShowToast: true })
   })
@@ -152,7 +152,7 @@ describe('ReleaseNotificationToast', () => {
   })
 
   it('executes desktop updater flow when running on desktop', async () => {
-    mockData.isDesktop = true
+    mockData.isLegacyDesktopBuild = true
     Object.assign(useReleaseStore(), {
       recentRelease: {
         version: '1.2.3',
@@ -181,7 +181,7 @@ describe('ReleaseNotificationToast', () => {
   })
 
   it('shows an error toast if the desktop updater flow fails on desktop', async () => {
-    mockData.isDesktop = true
+    mockData.isLegacyDesktopBuild = true
     Object.assign(useReleaseStore(), {
       recentRelease: {
         version: '1.2.3',

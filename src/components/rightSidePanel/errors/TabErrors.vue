@@ -43,13 +43,17 @@ import { defineAsyncComponent } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
+import {
+  isCloud,
+  isLegacyDesktopBuild,
+  isNightly
+} from '@/platform/distribution/types'
 
 import ErrorGroupList from './ErrorGroupList.vue'
 import { useErrorActions } from './useErrorActions'
 
 const ErrorPanelSurveyCta =
-  isNightly && !isCloud && !isDesktop
+  isNightly && !isCloud && !isLegacyDesktopBuild
     ? defineAsyncComponent(
         () => import('@/platform/surveys/ErrorPanelSurveyCta.vue')
       )

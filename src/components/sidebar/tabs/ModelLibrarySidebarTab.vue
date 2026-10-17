@@ -49,7 +49,7 @@
       </SidebarTopArea>
     </template>
     <template #body>
-      <ElectronDownloadItems v-if="isDesktop" />
+      <ElectronDownloadItems v-if="isLegacyDesktopBuild" />
 
       <TreeExplorer
         v-model:expanded-keys="expandedKeys"
@@ -94,7 +94,7 @@ import {
 } from '@/stores/modelStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import type { TreeExplorerNode, TreeNode } from '@/types/treeExplorerTypes'
-import { isDesktop } from '@/platform/distribution/types'
+import { isLegacyDesktopBuild } from '@/platform/distribution/types'
 import { buildTree } from '@/utils/treeUtil'
 
 const modelStore = useModelStore()

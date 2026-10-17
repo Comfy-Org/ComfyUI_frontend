@@ -1,5 +1,5 @@
 import { useShortcutsTab } from '@/composables/bottomPanelTabs/useShortcutsTab'
-import { isDesktop } from '@/platform/distribution/types'
+import { isLegacyDesktopBuild } from '@/platform/distribution/types'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 
@@ -16,7 +16,7 @@ export async function registerCoreBottomPanelTabs() {
     const { useLogsTerminalTab, useCommandTerminalTab } =
       await import('@/composables/bottomPanelTabs/useTerminalTabs')
     bottomPanelStore.registerBottomPanelTab(useLogsTerminalTab())
-    if (isDesktop) {
+    if (isLegacyDesktopBuild) {
       bottomPanelStore.registerBottomPanelTab(useCommandTerminalTab())
     }
   } catch (error) {

@@ -1,7 +1,7 @@
 import { useAsyncState } from '@vueuse/core'
 import { defineStore } from 'pinia'
 
-import { isCloud, isDesktop } from '@/platform/distribution/types'
+import { isCloud, isLegacyDesktopBuild } from '@/platform/distribution/types'
 import type { SystemStats } from '@/platform/remote/comfyui/types'
 import { api } from '@/scripts/api'
 
@@ -40,7 +40,7 @@ export const useSystemStatsStore = defineStore('systemStats', () => {
 
     const os = systemStats.value.system.os.toLowerCase()
 
-    if (isDesktop) {
+    if (isLegacyDesktopBuild) {
       if (os.includes('windows')) {
         return 'desktop-windows'
       }

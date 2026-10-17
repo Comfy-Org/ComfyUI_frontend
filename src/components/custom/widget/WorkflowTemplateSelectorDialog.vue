@@ -480,7 +480,7 @@ import { useTemplateFiltering } from '@/composables/useTemplateFiltering'
 import type { TemplateSortMode } from '@/composables/useTemplateFiltering'
 import { getComfyCloudBaseUrl } from '@/config/comfyApi'
 import { formatCategoryLabel } from '@/platform/assets/utils/categoryLabel'
-import { isCloud, isDesktop } from '@/platform/distribution/types'
+import { isCloud, isLegacyDesktopBuild } from '@/platform/distribution/types'
 import { loadFolderPathsOnce } from '@/platform/missingModel/folderPathCache'
 import {
   isModelDownloadable,
@@ -1258,7 +1258,7 @@ async function showModelSetupIfNeeded(
   prepared: PreparedWorkflowTemplate,
   generation: number
 ): Promise<boolean> {
-  if (!isDesktop) return false
+  if (!isLegacyDesktopBuild) return false
 
   const requirements = extractTemplateModelRequirementDetails(
     prepared.data.json

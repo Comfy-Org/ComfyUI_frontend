@@ -95,7 +95,7 @@ const { mockDistributionIsCloud, mockDistributionIsDesktop } = vi.hoisted(
 )
 
 vi.mock(import('@/platform/distribution/types'), () => ({
-  get isDesktop() {
+  get isLegacyDesktopBuild() {
     return mockDistributionIsDesktop.value
   },
   get isCloud() {

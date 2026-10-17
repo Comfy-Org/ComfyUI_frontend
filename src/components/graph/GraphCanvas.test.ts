@@ -37,7 +37,7 @@ import GraphCanvas from './GraphCanvas.vue'
 const distribution = vi.hoisted(() => ({ isCloud: false }))
 vi.mock(import('@/platform/distribution/types'), () => ({
   DISTRIBUTION: 'localhost' as const,
-  isDesktop: false,
+  isLegacyDesktopBuild: false,
   isNightly: false,
   get isCloud() {
     return distribution.isCloud

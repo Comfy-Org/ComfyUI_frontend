@@ -29,7 +29,7 @@ vi.mock(import('@/services/dialogService'))
 vi.mock(import('@/platform/distribution/types'), () => ({
   DISTRIBUTION: 'cloud' as const,
   isCloud: true,
-  isDesktop: false,
+  isLegacyDesktopBuild: false,
   isNightly: false
 }))
 vi.mock(import('@/platform/auth/firebaseIdentity'), () => ({

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted } from 'vue'
 
-import { isDesktop } from '@/platform/distribution/types'
+import { isLegacyDesktopBuild } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useCloudNotificationDialog } from '@/platform/cloud/notification/composables/useCloudNotificationDialog'
@@ -52,7 +52,7 @@ async function resetNotificationState(platform: string) {
 
 async function scheduleCloudNotification() {
   const platform = electronAPI()?.getPlatform()
-  if (!isDesktop || platform !== 'darwin') return
+  if (!isLegacyDesktopBuild || platform !== 'darwin') return
 
   await settingStore.load()
   if (settingStore.error !== undefined) return

@@ -3,7 +3,7 @@ import { defineStore } from 'pinia'
 import { compare, valid } from 'semver'
 import { computed, ref } from 'vue'
 
-import { isCloud, isDesktop } from '@/platform/distribution/types'
+import { isCloud, isLegacyDesktopBuild } from '@/platform/distribution/types'
 import { useOnboardingOverlayStore } from '@/platform/onboarding/onboardingOverlayStore'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -95,7 +95,7 @@ export const useReleaseStore = defineStore('release', () => {
   // Show toast if needed
   const shouldShowToast = computed(() => {
     // Only show on desktop version
-    if (!isDesktop || isCloud) {
+    if (!isLegacyDesktopBuild || isCloud) {
       return false
     }
 
@@ -127,7 +127,7 @@ export const useReleaseStore = defineStore('release', () => {
   // Show red-dot indicator
   const shouldShowRedDot = computed(() => {
     // Only show on desktop version
-    if (!isDesktop || isCloud) {
+    if (!isLegacyDesktopBuild || isCloud) {
       return false
     }
 
@@ -183,7 +183,7 @@ export const useReleaseStore = defineStore('release', () => {
       return false
     }
 
-    if (!isDesktop && !isCloud) {
+    if (!isLegacyDesktopBuild && !isCloud) {
       return false
     }
 
