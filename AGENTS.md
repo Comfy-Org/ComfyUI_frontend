@@ -239,11 +239,6 @@ ADR files are named `<DOMAIN>[-<SUBDOMAIN>]-<NNNN>-descriptive-title.md`: at mos
 
 ## Common Pitfalls
 
-- "Desktop" means two apps. Comfy-Desktop (Desktop 2) runs the standard
-  localhost build and is detected at runtime with `isComfyDesktop2()`
-  (`window.__comfyDesktop2`). `isLegacyDesktopBuild`, `electronAPI()` and
-  `pnpm dev:electron` cover only the legacy Electron app (Desktop 1) and are
-  false or absent inside Desktop 2. New desktop behaviour targets Desktop 2.
 - NEVER derive a server fact on the client: a gate renders one fact from the
   API as received, without combining it with role, tier, plan state, seats or
   `isCloud`. Local UI state (loading, in-flight, form validity) may only
