@@ -179,24 +179,27 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect(panel.getByText('Resize image node')).toBeVisible()
   })
 
-  test('defers the targetless run notice until composer focus', async ({
+  test('keeps the workflow binding notice immediate and never defers to the generic run notice', async ({
     agentPanel
   }) => {
     await agentPanel.open()
 
-    // Matched by its own copy, not by the role alone: the free-use notice is
-    // also a `role="note"` and its placement is experiment-gated, so counting
-    // every note in the panel would make this pass or fail on that flag. The
-    // copy comes from the locale file so a reword cannot strand the test.
+    const bindingNotice = agentPanel.root
+      .getByRole('note')
+      .filter({ hasText: enMessages.agent.targetFollowsVisibleWorkflow })
     const runNotice = agentPanel.root
       .getByRole('note')
       .filter({ hasText: enMessages.agent.runNotice })
+
+    await expect(bindingNotice).toHaveCount(1)
+    await expect(bindingNotice).toBeVisible()
     await expect(runNotice).toHaveCount(0)
 
     await agentPanel.composer.focus()
 
-    await expect(runNotice).toHaveCount(1)
-    await expect(runNotice).toBeVisible()
+    await expect(bindingNotice).toHaveCount(1)
+    await expect(bindingNotice).toBeVisible()
+    await expect(runNotice).toHaveCount(0)
   })
 
   test('shows an admission paywall without losing the rejected prompt', async ({

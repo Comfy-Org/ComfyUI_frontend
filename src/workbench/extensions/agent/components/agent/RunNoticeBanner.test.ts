@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { i18n } from '@/i18n'
 
 import RunNoticeBanner from './RunNoticeBanner.vue'
+import { RUN_NOTICE_DEFERRAL_MS } from './runNoticeDeferral'
 
 const STORAGE_KEY = 'Comfy.AgentPanel.runNoticeDismissed'
 
@@ -39,7 +40,7 @@ describe('RunNoticeBanner', () => {
       expect(screen.queryByRole('note')).toBeNull()
 
       await rerender({ expanded, workflowName: '', engaged: true })
-      await vi.advanceTimersByTimeAsync(499)
+      await vi.advanceTimersByTimeAsync(RUN_NOTICE_DEFERRAL_MS - 1)
       expect(screen.queryByRole('note')).toBeNull()
 
       await vi.advanceTimersByTimeAsync(1)
