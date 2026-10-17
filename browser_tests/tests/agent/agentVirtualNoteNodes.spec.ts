@@ -84,7 +84,6 @@ test.describe(
     }, testInfo) => {
       test.setTimeout(120_000)
       const { topbar, vueNodes } = agentConversation
-      const tabs = topbar.workflowTabs.locator('.p-togglebutton')
       const noteText = () =>
         vueNodes.getNodeLocator(String(NOTE_ID)).getByLabel('text', {
           exact: true
@@ -113,13 +112,8 @@ test.describe(
       // Returning to the bound tab re-subscribes the follower, which replays
       // the whole host document, both note adds included, over the live graph.
       await test.step('both survive switching tabs away and back', async () => {
-        await expect(tabs).toHaveCount(1)
-        await topbar.newWorkflowButton.click()
-        await expect(tabs).toHaveCount(2)
-        await expect(vueNodes.nodes).toHaveCount(0)
         const before = agentConversation.subscribeCount()
-        await topbar.getTab(0).click()
-        await expect(topbar.getTab(0)).toHaveClass(/p-togglebutton-checked/)
+        await topbar.openBlankTabAndReturn()
         await expect
           .poll(() => agentConversation.subscribeCount())
           .toBe(before + 1)
