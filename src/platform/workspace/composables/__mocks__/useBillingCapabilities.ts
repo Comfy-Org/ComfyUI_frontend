@@ -16,6 +16,10 @@ const defaults: ReturnType<typeof realUseBillingCapabilities> = {
   canInviteMembers: computed(() =>
     receiveServerFact('can_invite_members', false)
   ),
+  canDeleteWorkspace: computed(() =>
+    receiveServerFact('can_delete_workspace', false)
+  ),
+  deleteWorkspaceDenial: computed(() => undefined),
   canDowngradeToPersonal: computed(() => false),
   isReady: computed(() => true),
   hasResolvedCapabilities: computed(() => true),
