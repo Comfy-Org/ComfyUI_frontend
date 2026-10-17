@@ -54,9 +54,9 @@ test.describe('Agent reply assets', { tag: '@cloud' }, () => {
     await test.step('render only the collapsed model previews', async () => {
       await expect(agentPanel.replyAssetTiles).toHaveCount(COLLAPSED_COUNT)
       await expect(agentPanel.replyAssetThumbnails).toHaveCount(COLLAPSED_COUNT)
-      expect([...new Set(lookedUpModels)].sort()).toEqual(
-        [...VISIBLE_MODELS].sort()
-      )
+      const uniqueLookups = [...new Set(lookedUpModels)]
+      expect(uniqueLookups).toEqual(expect.arrayContaining(VISIBLE_MODELS))
+      expect(uniqueLookups).toHaveLength(VISIBLE_MODELS.length)
     })
 
     await test.step('expand and render the remaining model preview', async () => {
@@ -67,6 +67,64 @@ test.describe('Agent reply assets', { tag: '@cloud' }, () => {
       await expect(agentPanel.replyAssetThumbnails).toHaveCount(MODEL_COUNT)
       await expect.poll(() => new Set(lookedUpModels).size).toBe(MODEL_COUNT)
       expect(lookedUpModels).toContain(HIDDEN_MODEL)
+    })
+  })
+
+  test('keeps the reply readable when one asset preview cannot be rendered', async ({
+    agentPanel,
+    page,
+    postedMessages,
+    getWebSocket
+  }) => {
+    test.setTimeout(60_000)
+
+    // The first lookup for this asset reports no preview, and its model bytes
+    // never arrive, so the offscreen render fails. A surface that treats the
+    // first outcome as terminal leaves the tile blank for the message's
+    // lifetime; the preview is available from the second lookup onwards.
+    const UNRENDERABLE = 'mesh-0'
+    const lookedUpModels = await mockReplyAssetPreviews(page, {
+      previewMissesBefore: { [`${UNRENDERABLE}.glb`]: 1 }
+    })
+    await page.route(
+      (url) =>
+        url.pathname.endsWith('/api/view') &&
+        url.searchParams.get('filename') === `${UNRENDERABLE}.glb`,
+      (route) => route.abort()
+    )
+
+    const REPLY_TEXT = 'Here are the meshes I generated.'
+    const reply = `${REPLY_TEXT}\n\n${Array.from(
+      { length: COLLAPSED_COUNT },
+      (_, index) => `- ![mesh-${index}](/api/view?filename=mesh-${index}.glb)`
+    ).join('\n')}`
+
+    await test.step('send a reply whose first asset cannot be previewed', async () => {
+      await agentPanel.open()
+      await agentPanel.sendMessage('show me every mesh')
+      await expect.poll(() => postedMessages.length).toBeGreaterThanOrEqual(1)
+      const ws = await getWebSocket()
+      ws.send(JSON.stringify({ type: 'feature_flags', data: { assets: true } }))
+      pushAgentEvent(ws, agentMessageDeltaEvent(reply))
+      pushAgentEvent(ws, MESSAGE_DONE_EVENT)
+    })
+
+    await test.step('the reply and every tile still render', async () => {
+      await expect(agentPanel.root.getByText(REPLY_TEXT)).toBeVisible()
+      await expect(agentPanel.replyAssetTiles).toHaveCount(COLLAPSED_COUNT)
+      await expect(
+        agentPanel.root.getByRole('button', { name: UNRENDERABLE, exact: true })
+      ).toBeVisible()
+    })
+
+    await test.step('the unrenderable tile recovers instead of staying blank', async () => {
+      await expect(
+        agentPanel.root.getByRole('img', { name: UNRENDERABLE })
+      ).toBeVisible()
+      await expect(agentPanel.replyAssetThumbnails).toHaveCount(COLLAPSED_COUNT)
+      expect(
+        lookedUpModels.filter((name) => name === `${UNRENDERABLE}.glb`).length
+      ).toBeGreaterThan(1)
     })
   })
 })

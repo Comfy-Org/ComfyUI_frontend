@@ -120,8 +120,22 @@ async function mockAgentBoot(
   )
 }
 
-export async function mockReplyAssetPreviews(page: Page): Promise<string[]> {
+export interface ReplyAssetPreviewOptions {
+  /**
+   * Asset name to the number of leading lookups that report the asset with no
+   * preview. Later lookups report a preview as usual, so a surface that never
+   * looks the asset up again stays on its fallback while one that retries
+   * recovers.
+   */
+  previewMissesBefore?: Record<string, number>
+}
+
+export async function mockReplyAssetPreviews(
+  page: Page,
+  { previewMissesBefore = {} }: ReplyAssetPreviewOptions = {}
+): Promise<string[]> {
   const lookedUp: string[] = []
+  const lookupCounts = new Map<string, number>()
   await page.route('**/api/assets**', (route: Route) => {
     const url = new URL(route.request().url())
     if (url.pathname.endsWith('/content')) {
@@ -138,11 +152,14 @@ export async function mockReplyAssetPreviews(page: Page): Promise<string[]> {
       return route.fulfill(jsonRoute(response))
     }
     if (/^mesh-\d+\.glb$/.test(name)) lookedUp.push(name)
+    const seen = (lookupCounts.get(name) ?? 0) + 1
+    lookupCounts.set(name, seen)
     const asset = {
       id: `asset-${name}`,
       name,
       hash: name,
-      preview_id: `preview-${name}`,
+      preview_id:
+        seen <= (previewMissesBefore[name] ?? 0) ? null : `preview-${name}`,
       created_at: '2026-10-01T00:00:00Z',
       updated_at: '2026-10-01T00:00:00Z'
     } satisfies Asset
