@@ -8,6 +8,7 @@ vi.mock(import('@/platform/telemetry'))
 
 import { getAgentPanelOpen } from '@/platform/telemetry/utils/getAgentPanelOpen'
 
+import type { AgentPanelView } from './agentPanelStore'
 import { useAgentPanelStore } from './agentPanelStore'
 
 const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
@@ -601,5 +602,88 @@ describe('agentPanelStore width', () => {
     store.close('topbar_button')
     await nextTick()
     expect(getAgentPanelOpen()).toBe(false)
+  })
+})
+
+describe('agentPanelStore thread navigation', () => {
+  it.for([
+    {
+      outcome: 'keeps any chat current on the chat screen',
+      view: { screen: 'chat' },
+      threadId: 'th-other',
+      activeThreadId: null,
+      current: true
+    },
+    {
+      outcome:
+        'keeps the active chat current on idle History opened over a new chat',
+      view: {
+        screen: 'history',
+        previousThreadId: null,
+        selection: { status: 'idle' }
+      },
+      threadId: 'th-active',
+      activeThreadId: 'th-active',
+      current: true
+    },
+    {
+      outcome:
+        'keeps the chat idle History opened over current when no chat is active',
+      view: {
+        screen: 'history',
+        previousThreadId: 'th-open',
+        selection: { status: 'idle' }
+      },
+      threadId: 'th-open',
+      activeThreadId: null,
+      current: true
+    },
+    {
+      outcome:
+        'makes a chat stale on idle History opened over another active chat',
+      view: {
+        screen: 'history',
+        previousThreadId: 'th-open',
+        selection: { status: 'idle' }
+      },
+      threadId: 'th-other',
+      activeThreadId: 'th-open',
+      current: false
+    },
+    {
+      outcome: 'keeps the chat History is loading current',
+      view: {
+        screen: 'history',
+        previousThreadId: 'th-open',
+        selection: { status: 'loading', id: 'th-other' }
+      },
+      threadId: 'th-other',
+      activeThreadId: 'th-open',
+      current: true
+    },
+    {
+      outcome: 'makes the active chat stale once History fails to reopen it',
+      view: {
+        screen: 'history',
+        previousThreadId: 'th-open',
+        selection: { status: 'failed', id: 'th-open' }
+      },
+      threadId: 'th-open',
+      activeThreadId: 'th-open',
+      current: false
+    }
+  ] satisfies {
+    outcome: string
+    view: AgentPanelView
+    threadId: string
+    activeThreadId: string | null
+    current: boolean
+  }[])('$outcome', ({ view, threadId, activeThreadId, current }) => {
+    const store = useAgentPanelStore()
+    store.view = view
+
+    expect(store.isThreadNavigationCurrent(threadId, activeThreadId)).toBe(
+      current
+    )
   })
 })

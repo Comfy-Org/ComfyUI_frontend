@@ -37,18 +37,29 @@ type TargetTracking =
       workflow: null
       closedPath?: never
       unavailable?: never
+      unresolved?: never
     }
   | {
       mode: 'retained'
       workflow: null
       closedPath: string
       unavailable?: never
+      unresolved?: never
     }
   | {
       mode: 'retained'
       workflow: null
       closedPath?: never
       unavailable: true
+      unresolved?: never
+    }
+  | {
+      mode: 'retained'
+      workflow: null
+      closedPath?: never
+      unavailable?: never
+      unresolved: true
+      listed: boolean
     }
 
 export type AgentPanelView =
@@ -106,6 +117,19 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
       targetTracking.value.workflow === null &&
       targetTracking.value.unavailable === true
   )
+  const targetUnresolved = computed(
+    () =>
+      targetTracking.value.mode === 'retained' &&
+      targetTracking.value.workflow === null &&
+      targetTracking.value.unresolved === true
+  )
+  const unresolvedTargetListed = computed(
+    () =>
+      targetTracking.value.mode === 'retained' &&
+      targetTracking.value.workflow === null &&
+      targetTracking.value.unresolved === true &&
+      targetTracking.value.listed
+  )
   const canRestoreWorkflow = computed(
     () => targetTracking.value.mode === 'restoring'
   )
@@ -123,6 +147,20 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
         ...view.value,
         selection: { status: 'failed', id: view.value.selection.id }
       }
+  }
+
+  function isThreadNavigationCurrent(
+    threadId: string | null,
+    activeThreadId: string | null
+  ): boolean {
+    const navigation = view.value
+    if (navigation.screen === 'chat') return true
+    const { selection } = navigation
+    if (selection.status !== 'idle' && threadId === selection.id)
+      return selection.status === 'loading'
+    return (
+      threadId === activeThreadId || threadId === navigation.previousThreadId
+    )
   }
 
   function initializeTargetTracking(hasThread: boolean): void {
@@ -144,6 +182,15 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
       workflow === null
         ? { mode: 'retained', workflow: null }
         : { mode: 'retained', workflow }
+  }
+
+  function retainUnresolvedTarget(listed: boolean): void {
+    targetTracking.value = {
+      mode: 'retained',
+      workflow: null,
+      unresolved: true,
+      listed
+    }
   }
 
   function markWorkflowTargetUnavailable(): void {
@@ -381,6 +428,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     gateSettled,
     view,
     interruptHistorySelection,
+    isThreadNavigationCurrent,
     flagsSettled,
     reportedExhaustionIdentity,
     reportedFreeUseExposure,
@@ -402,6 +450,9 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     startFollowingVisibleWorkflow,
     selectedWorkflow,
     targetUnavailable,
+    targetUnresolved,
+    unresolvedTargetListed,
+    retainUnresolvedTarget,
     markWorkflowTargetUnavailable,
     canRestoreWorkflow,
     beginWorkflowRestoration,

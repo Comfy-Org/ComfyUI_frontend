@@ -30,6 +30,8 @@ type WorkflowResolverDeps = {
 
 export type CloudWorkflowLifecycle = 'live' | 'gone' | 'unknown'
 
+export type CloudListingStatus = 'listed' | 'omitted' | 'unknown'
+
 export function useAgentWorkflowResolver({
   workflows,
   bindings,
@@ -37,8 +39,9 @@ export function useAgentWorkflowResolver({
   getCloudWorkflow
 }: WorkflowResolverDeps) {
   const cloudIndex = ref<WorkflowReferenceMetadata[]>([])
-  const listedCloudIds = ref<ReadonlySet<string>>(new Set())
-  const listingComplete = ref(false)
+  const listing = ref<{ ids: ReadonlySet<string>; complete: boolean } | null>(
+    null
+  )
   let refreshGeneration = 0
   const cloudIdsByName = computed(() => {
     const counts = new Map<string, number>()
@@ -53,11 +56,11 @@ export function useAgentWorkflowResolver({
 
   async function refreshCloudWorkflowIds(): Promise<boolean> {
     const generation = ++refreshGeneration
+    listing.value = null
     try {
       const { entries, complete } = await listCloudWorkflows()
       if (generation !== refreshGeneration) return false
-      listedCloudIds.value = new Set(entries.map(({ id }) => id))
-      listingComplete.value = complete
+      listing.value = { ids: new Set(entries.map(({ id }) => id)), complete }
       cloudIndex.value = entries.flatMap(({ id, name }) =>
         name === undefined ? [] : [{ id, name }]
       )
@@ -161,8 +164,10 @@ export function useAgentWorkflowResolver({
       : null
   }
 
-  function cloudListingOmits(workflowId: string): boolean {
-    return listingComplete.value && !listedCloudIds.value.has(workflowId)
+  function cloudListingStatus(workflowId: string): CloudListingStatus {
+    if (listing.value === null) return 'unknown'
+    if (listing.value.ids.has(workflowId)) return 'listed'
+    return listing.value.complete ? 'omitted' : 'unknown'
   }
 
   /**
@@ -258,7 +263,7 @@ export function useAgentWorkflowResolver({
     boundOrOpenWorkflowFor,
     cachedOpenWorkflowFor,
     storedWorkflowFor,
-    cloudListingOmits,
+    cloudListingStatus,
     cloudWorkflowLifecycle,
     openWorkflowFor,
     availableWorkflowReferences,

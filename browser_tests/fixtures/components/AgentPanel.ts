@@ -32,10 +32,13 @@ export class AgentPanel {
   public readonly copyReportButton: Locator
   public readonly creditsExhaustedPaywall: Locator
   public readonly creditTransitionNotice: Locator
+  public readonly currentHistorySection: Locator
   public readonly debugHeading: Locator
   public readonly dockedPanel: Locator
   public readonly dockedPanelShell: Locator
   public readonly fileInput: Locator
+  public readonly historyButton: Locator
+  public readonly historyHeading: Locator
   public readonly nodeSelectionBanner: Locator
   public readonly openButton: Locator
   public readonly root: Locator
@@ -46,6 +49,7 @@ export class AgentPanel {
   public readonly stopButton: Locator
   private readonly toasts: ToastHelper
   public readonly workflowPicker: Locator
+  public readonly workflowSearch: Locator
   public readonly workflowSwitch: Locator
   public readonly workSummary: Locator
 
@@ -79,10 +83,22 @@ export class AgentPanel {
     this.creditTransitionNotice = this.root.getByTestId(
       'agent-credit-transition-notice'
     )
+    this.currentHistorySection = this.root.getByRole('region', {
+      name: enMessages.agent.historyCurrent,
+      exact: true
+    })
     this.debugHeading = this.root.getByText('CRDT debug', { exact: true })
     this.dockedPanel = page.getByTestId('docked-agent-panel')
     this.dockedPanelShell = page.getByTestId('docked-agent-panel-shell')
     this.fileInput = this.root.getByTestId('agent-file-input')
+    this.historyButton = this.root.getByRole('button', {
+      name: enMessages.agent.showChatHistory,
+      exact: true
+    })
+    this.historyHeading = this.root.getByRole('heading', {
+      name: enMessages.agent.history,
+      exact: true
+    })
     this.nodeSelectionBanner = page.getByTestId('node-selection-mode-banner')
     this.openButton = page.getByRole('button', {
       name: enMessages.agent.entryButton,
@@ -105,6 +121,9 @@ export class AgentPanel {
     this.workflowPicker = this.root.getByRole('button', {
       name: enMessages.agent.switchWorkflow
     })
+    this.workflowSearch = page.getByPlaceholder(
+      enMessages.agent.searchWorkflows
+    )
     this.workflowSwitch = this.root.getByRole('switch', {
       name: 'Workflow JSON'
     })
@@ -291,6 +310,16 @@ export class AgentPanel {
 
     await expect(this.root).toBeVisible({ timeout })
     return this.root
+  }
+
+  async openHistory(): Promise<void> {
+    await this.historyButton.click()
+    await expect(this.historyHeading).toBeVisible()
+  }
+
+  async openHistoryChat(title: string): Promise<void> {
+    await this.openHistory()
+    await this.root.getByRole('button', { name: title, exact: true }).click()
   }
 
   async close(): Promise<void> {

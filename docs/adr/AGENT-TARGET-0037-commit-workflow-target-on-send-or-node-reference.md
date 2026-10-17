@@ -73,3 +73,11 @@ Passive defaults do not emit synthetic picker bindings. Their acknowledged
 bindings remain `active_tab` or `minted`; explicit picker transitions retain
 `selector_chip` attribution. Removing mandatory picker interaction will reduce
 the selector-source share; this is an expected change in the interaction mix.
+
+## Amendment (2026-10-15): A retained target can keep a chat readable
+
+A retained target with no workflow can also mean that a restored chat's
+workflow could not be found locally and is not known to be gone; the chat stays
+readable. [AGENT-HISTORY-0038](AGENT-HISTORY-0038-wait-for-chat-and-workflow-readiness.md)
+calls this an unresolved target. It is not the unresolved startup above, where
+no target has been decided yet.
