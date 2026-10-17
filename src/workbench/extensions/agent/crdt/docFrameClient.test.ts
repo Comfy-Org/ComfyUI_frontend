@@ -95,7 +95,7 @@ describe('doc frame client', () => {
     )
   })
 
-  it('encodes subscribe, unsubscribe and doc_ops protocol frames', () => {
+  it('encodes client-to-server protocol frames', () => {
     const transport = new TestTransport()
     const client = new DocFrameClient(transport)
     const stateVector = Uint8Array.from([1, 2, 3])
@@ -104,6 +104,11 @@ describe('doc frame client', () => {
     client.sendOps('wf-1', 'tab-a', [
       { op_id: 'op-1', actor: 'human:user:tab-a', type: 'node.move' }
     ])
+    client.sendAwareness('wf-1', 'human:user:tab-a', {
+      cursor: [10, 20],
+      selectedNodeIds: ['node-1']
+    })
+    client.sendAwareness('wf-1', 'human:user:tab-a')
     client.unsubscribe('wf-1')
 
     expect(transport.sent.map((frame) => JSON.parse(frame))).toEqual([
@@ -124,6 +129,26 @@ describe('doc frame client', () => {
           workflow_id: 'wf-1',
           tab: 'tab-a',
           ops: [{ op_id: 'op-1', actor: 'human:user:tab-a', type: 'node.move' }]
+        }
+      },
+      {
+        type: 'awareness',
+        data: {
+          v: 1,
+          workflow_id: 'wf-1',
+          actor: 'human:user:tab-a',
+          state: {
+            cursor: [10, 20],
+            selectedNodeIds: ['node-1']
+          }
+        }
+      },
+      {
+        type: 'awareness',
+        data: {
+          v: 1,
+          workflow_id: 'wf-1',
+          actor: 'human:user:tab-a'
         }
       },
       {
@@ -327,4 +352,107 @@ describe('doc frame client', () => {
       })
     ).toBeNull()
   })
+
+  it.for([
+    ['< at Go cap', { value: '<'.repeat(1363) + 'xx' }, true],
+    ['< over Go cap', { value: '<'.repeat(1364) }, false],
+    ['U+2028 at Go cap', { value: '\u2028'.repeat(1363) + 'xx' }, true],
+    ['U+2029 over Go cap', { value: '\u2029'.repeat(1364) }, false]
+  ] as const)('sizes %s', ([, state, accepted]) => {
+    const transport = new TestTransport()
+    const client = new DocFrameClient(transport)
+
+    expect(client.sendAwareness('wf-1', 'human:user:tab-a', state)).toBe(
+      accepted
+    )
+    expect(transport.sent).toHaveLength(accepted ? 1 : 0)
+  })
+
+  it.for(invalidAwarenessCases())(
+    'refuses $name without throwing',
+    ({ workflowId, actor, state }) => {
+      const transport = new TestTransport()
+      const client = new DocFrameClient(transport)
+
+      expect(client.sendAwareness(workflowId, actor, state)).toBe(false)
+      expect(transport.sent).toHaveLength(0)
+    }
+  )
+
+  it('sends the measured awareness state once', () => {
+    const transport = new TestTransport()
+    const client = new DocFrameClient(transport)
+    let passes = 0
+    const state = {
+      toJSON(key: string) {
+        passes += 1
+        if (passes > 1) throw new Error('second serialization pass')
+        return key === 'state' ? 'x'.repeat(9 * 1024) : { cursor: [1, 2] }
+      }
+    }
+
+    expect(client.sendAwareness('wf-1', 'human:user:tab-a', state)).toBe(true)
+    expect(JSON.parse(transport.sent[0]).data.state).toEqual({ cursor: [1, 2] })
+  })
+
+  it('reports each outgoing awareness rejection reason once', () => {
+    const client = new DocFrameClient(new TestTransport())
+
+    client.sendAwareness('wf:1', 'human:user:tab-a')
+    client.sendAwareness('wf 2', 'human:user:tab-a')
+    client.sendAwareness('wf-1', 'not-an-actor')
+
+    expect(vi.mocked(reportError).mock.calls).toEqual([
+      [
+        expect.any(Error),
+        {
+          surface: 'agent',
+          errorType: 'agent_crdt_invalid_outgoing_frame',
+          tags: { reason: 'workflow_id' },
+          level: 'warning'
+        }
+      ],
+      [
+        expect.any(Error),
+        {
+          surface: 'agent',
+          errorType: 'agent_crdt_invalid_outgoing_frame',
+          tags: { reason: 'actor' },
+          level: 'warning'
+        }
+      ]
+    ])
+  })
 })
+
+function invalidAwarenessCases() {
+  const revoked = Proxy.revocable({}, {})
+  revoked.revoke()
+  const cyclic: Record<string, unknown> = {}
+  cyclic.self = cyclic
+  const valid = { workflowId: 'wf-1', actor: 'human:user:tab-a' }
+  return [
+    { ...valid, name: 'an empty workflow id', workflowId: '', state: {} },
+    { ...valid, name: 'a reserved actor', actor: 'system:mint', state: {} },
+    { ...valid, name: 'an array state', state: [1, 2] },
+    { ...valid, name: 'a Date state', state: new Date(0) },
+    {
+      ...valid,
+      name: 'a class instance state',
+      state: new (class Cursor {
+        x = 1
+      })()
+    },
+    { ...valid, name: 'a cyclic state', state: cyclic },
+    {
+      ...valid,
+      name: 'a throwing getter',
+      state: {
+        get cursor(): never {
+          throw new Error('getter failed')
+        }
+      }
+    },
+    { ...valid, name: 'a revoked Proxy', state: revoked.proxy }
+  ]
+}
