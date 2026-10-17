@@ -184,14 +184,19 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
   }) => {
     await agentPanel.open()
 
-    const notice = agentPanel.root.getByRole('note')
-    await expect(notice).toHaveCount(0)
+    // Matched by its own copy, not by the role alone: the free-use notice is
+    // also a `role="note"` and its placement is experiment-gated, so counting
+    // every note in the panel would make this pass or fail on that flag. The
+    // copy comes from the locale file so a reword cannot strand the test.
+    const runNotice = agentPanel.root
+      .getByRole('note')
+      .filter({ hasText: enMessages.agent.runNotice })
+    await expect(runNotice).toHaveCount(0)
 
     await agentPanel.composer.focus()
 
-    await expect(notice).toContainText(
-      'Use Run permissions in the composer toolbar'
-    )
+    await expect(runNotice).toHaveCount(1)
+    await expect(runNotice).toBeVisible()
   })
 
   test('shows an admission paywall without losing the rejected prompt', async ({
