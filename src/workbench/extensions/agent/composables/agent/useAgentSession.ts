@@ -5,6 +5,7 @@ import { ZodError } from 'zod'
 import { i18n } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
+import type { ReportErrorOptions } from '@/platform/telemetry/reportError'
 import type {
   AgentErrorClass,
   AgentErrorMetadata,
@@ -352,6 +353,15 @@ function parseAdmissionError(error: unknown) {
     parsed.data.error.type === 'PAYMENT_REQUIRED' ? 402 : 503
   if (error.status !== expectedStatus) return undefined
   return { ...parsed.data.error, retryAfterSeconds: error.retryAfterSeconds }
+}
+
+function sendFailureTags(error: unknown): ReportErrorOptions['tags'] {
+  if (!(error instanceof AgentApiError)) return undefined
+  return {
+    status: error.status,
+    operation: error.operation,
+    retryAfterSeconds: error.retryAfterSeconds
+  }
 }
 
 function disownsWorkflow(error: unknown): boolean {
@@ -1047,7 +1057,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const turnAccepted = accepted || isUnreadableAckFailure(error)
     reportError(error, {
       surface: 'agent',
-      errorType: 'agent_send_message_failed'
+      errorType: 'agent_send_message_failed',
+      tags: sendFailureTags(error)
     })
     trackAgentError(
       'request_failed',
