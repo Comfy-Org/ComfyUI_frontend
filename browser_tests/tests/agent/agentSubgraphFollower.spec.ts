@@ -310,26 +310,31 @@ test.describe(
       })
 
       const frames = agentSubgraphInteriorFrames()
-      const readLayers = () =>
-        page.evaluate((hostId) => {
+      function readLayers() {
+        return page.evaluate((hostId) => {
           const graph = window.app!.graph
           const host = graph.nodes.find(
             ({ id }) => String(id) === String(hostId)
           )
           const subgraph = host ? graph.subgraphs.get(host.type) : undefined
-          const interior = (type: string) =>
-            subgraph?.nodes
+          function interior(type: string) {
+            return subgraph?.nodes
               .find((node) => node.type === type)
               ?.widgets?.map(({ name, value }) => ({ name, value }))
+          }
           return {
             host: host?.widgets?.map(({ name, value }) => ({ name, value })),
             sampler: interior('KSampler'),
             textEncode: interior('CLIPTextEncode')
           }
         }, AGENT_SUBGRAPH_HOST_ID)
+      }
+      function sendFrames(framesToSend: typeof frames.initial) {
+        for (const frame of framesToSend) socket.send(JSON.stringify(frame))
+      }
 
       await test.step('materialize the host and its subgraph', async () => {
-        for (const frame of frames.initial) socket.send(JSON.stringify(frame))
+        sendFrames(frames.initial)
         await expect.poll(readLayers).toMatchObject({
           host: [
             { name: 'text', value: AGENT_SUBGRAPH_INITIAL_TEXT },
