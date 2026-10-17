@@ -46,6 +46,7 @@ export function startAssetDrag(
   const mediaKind = getMediaTypeFromFilename(asset.name)
   const previewUrl = URL.parse(resolvePreviewUrl(asset), location.href)
   const fileUrl = URL.parse(getAssetFileUrl(asset), location.href)
+  const playable = mediaKind === 'video' || mediaKind === 'audio'
   const assetInfo = {
     ...(output?.filename
       ? {
@@ -61,7 +62,8 @@ export function startAssetDrag(
         }),
     attachment_ref: getAssetUrlFilename(asset),
     media_kind: mediaKind,
-    preview_url: mediaKind === 'image' ? previewUrl?.toString() : undefined
+    preview_url: mediaKind === 'image' ? previewUrl?.toString() : undefined,
+    media_url: playable ? fileUrl?.toString() : undefined
   }
   dataTransfer.setData(MIME_ASSET_INFO, JSON.stringify(assetInfo))
 
