@@ -118,7 +118,6 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
 import { zeroUuid } from '@/utils/uuid'
 import type { importA1111 } from './pnginfo'
-import { ChangeTracker } from './changeTracker'
 
 type WorkflowService = ReturnType<typeof useWorkflowService>
 type WorkflowValidation = ReturnType<typeof useWorkflowValidation>
@@ -548,6 +547,45 @@ describe('ComfyApp', () => {
       await app.loadGraphData(createWorkflowGraphData())
 
       expect(couldCaptureDuringDeactivate).toBe(true)
+      expect(ChangeTracker.canCaptureCanvas(outgoing.changeTracker)).toBe(false)
+    })
+
+    it('keeps the outgoing workflow able to capture across an awaiting beforeLoadGraph hook', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      await useRealWorkflowService()
+      mockWorkflowService.afterLoadNewGraph.mockResolvedValue()
+      const outgoing = markLoaded(
+        new ComfyWorkflow({
+          path: 'workflows/outgoing.json',
+          modified: 0,
+          size: 0
+        })
+      )
+      useWorkflowStore().activeWorkflow = outgoing
+      ChangeTracker.bindCanvasTracker(outgoing.changeTracker)
+
+      // An extension hook that awaits real work crosses a task boundary, so a
+      // queued capture (the keydown rAF capture) can run here. The outgoing
+      // graph is still the one on the canvas, so that capture is legitimate:
+      // dropping it would let a failed target load repaint the retained
+      // workflow from an activeState missing its last change.
+      let hookName: unknown
+      let couldCaptureInsideHook: boolean | undefined
+      mockExtensionService.invokeExtensionsAsync.mockImplementationOnce(
+        async (hook: unknown) => {
+          hookName = hook
+          await Promise.resolve()
+          couldCaptureInsideHook = ChangeTracker.canCaptureCanvas(
+            outgoing.changeTracker
+          )
+        }
+      )
+
+      await app.loadGraphData(createWorkflowGraphData())
+
+      expect(hookName).toBe('beforeLoadGraph')
+      expect(couldCaptureInsideHook).toBe(true)
       expect(ChangeTracker.canCaptureCanvas(outgoing.changeTracker)).toBe(false)
     })
 

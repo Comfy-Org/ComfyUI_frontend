@@ -307,8 +307,20 @@ function createNodeOutputsMutationView(
   })
 }
 
-function beginGraphLoad(suppressWorkflowReset: boolean) {
+/**
+ * Run the pre-load workflow bookkeeping and the `beforeLoadGraph` hook, then
+ * invalidate canvas ownership.
+ *
+ * Ownership is invalidated last, immediately before the caller replaces the
+ * canvas graph. Invalidating before the awaited hook leaves a window in which
+ * the outgoing workflow is still active with its graph still on the canvas, so
+ * a capture there is legitimate but would be dropped — and a failed target load
+ * would then repaint the retained workflow from an activeState missing that
+ * last change.
+ */
+async function beginGraphLoad(suppressWorkflowReset: boolean) {
   useWorkflowService().beforeLoadNewGraph(suppressWorkflowReset)
+  await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
   invalidateCanvasTracker()
 }
 
@@ -1230,8 +1242,7 @@ export class ComfyApp implements IComfyApp {
       silentAssetErrors = false,
       workflowNavigationId
     } = options
-    beginGraphLoad(clean)
-    await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+    await beginGraphLoad(clean)
 
     ChangeTracker.isLoadingGraph = true
     let reset_invalid_values = false
@@ -2225,10 +2236,7 @@ export class ComfyApp implements IComfyApp {
           async () => {
             try {
               // false: final destination; no later load republishes the hash.
-              beginGraphLoad(false)
-              await useExtensionService().invokeExtensionsAsync(
-                'beforeLoadGraph'
-              )
+              await beginGraphLoad(false)
             } finally {
               useMissingNodesErrorStore().setMissingNodeTypes([])
             }
@@ -2412,8 +2420,7 @@ export class ComfyApp implements IComfyApp {
     options: { deferWarnings?: boolean }
   ): Promise<void> {
     // false: no workflow load follows to republish the hash.
-    beginGraphLoad(false)
-    await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+    await beginGraphLoad(false)
     this.canvas.setGraph(this.rootGraph)
     withGraphIntentSource('load', () => this.clean())
 

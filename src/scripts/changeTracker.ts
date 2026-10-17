@@ -316,7 +316,10 @@ function reportCanvasMismatchCall(method: string, workflowPath: string) {
 export class ChangeTracker implements WorkflowChangeTracker {
   static MAX_HISTORY = 50
 
-  static bindCanvasTracker(tracker: ChangeTracker) {
+  // Ownership is identity only — these never call into the tracker — so they
+  // take the `WorkflowChangeTracker` contract a `ComfyWorkflow` exposes rather
+  // than the concrete class.
+  static bindCanvasTracker(tracker: WorkflowChangeTracker) {
     bindCanvasTracker(tracker)
   }
 
@@ -324,11 +327,11 @@ export class ChangeTracker implements WorkflowChangeTracker {
     invalidateCanvasTracker()
   }
 
-  static isCanvasOwner(tracker: ChangeTracker): boolean {
+  static isCanvasOwner(tracker: WorkflowChangeTracker): boolean {
     return isCanvasOwner(tracker)
   }
 
-  static canCaptureCanvas(tracker: ChangeTracker): boolean {
+  static canCaptureCanvas(tracker: WorkflowChangeTracker): boolean {
     return canCaptureCanvas(tracker)
   }
 
