@@ -384,6 +384,16 @@ export class AgentConversationHarness {
     return workflow
   }
 
+  /** Serves the saved workflow with every `search` replaced on later GETs. */
+  replaceInSavedWorkflow(search: string, replacement: string): void {
+    const content = this.savedWorkflow?.savedContent()
+    if (content === undefined)
+      throw new Error('the app has not saved a workflow yet')
+    this.savedWorkflow?.corruptSavedContent(
+      content.replaceAll(search, replacement)
+    )
+  }
+
   /**
    * Make the host refuse every subscribe from now on. A follower that
    * re-subscribes after this gets no catch-up, so whatever the canvas shows

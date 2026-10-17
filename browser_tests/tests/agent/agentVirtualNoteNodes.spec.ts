@@ -13,6 +13,8 @@ import {
   NOTE_ID,
   NOTE_TEXT,
   SAVED_NAME,
+  SERVED_MARKDOWN_HEADING,
+  SERVED_NOTE_TEXT,
   VIRTUAL_NODE_ADDS
 } from '@e2e/fixtures/data/agent/agentVirtualNoteNodes'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -59,11 +61,14 @@ test.describe(
 
       // Each node must carry its own text: a follower that minted an empty
       // placeholder widget, or bound both nodes to one value, fails here.
-      const expectBothNotes = async () => {
-        await expect(noteText()).toHaveValue(NOTE_TEXT)
-        await expect(markdownText()).toContainText(MARKDOWN_HEADING)
+      const expectBothNotes = async (
+        note = NOTE_TEXT,
+        heading = MARKDOWN_HEADING
+      ) => {
+        await expect(noteText()).toHaveValue(note)
+        await expect(markdownText()).toContainText(heading)
         await expect(markdownText()).toContainText(MARKDOWN_BODY)
-        await expect(markdownText()).not.toContainText(NOTE_TEXT)
+        await expect(markdownText()).not.toContainText(note)
       }
 
       await test.step('host adds a Note and a MarkdownNote', async () => {
@@ -116,6 +121,11 @@ test.describe(
       // used here: it drops the open tab the workflow picker lists.)
       await test.step('both survive reload and reopen without host replay', async () => {
         agentConversation.refuseHostSubscribes()
+        agentConversation.replaceInSavedWorkflow(NOTE_TEXT, SERVED_NOTE_TEXT)
+        agentConversation.replaceInSavedWorkflow(
+          MARKDOWN_HEADING,
+          SERVED_MARKDOWN_HEADING
+        )
         const restoredContent = page.waitForResponse(
           (response) =>
             response.request().method() === 'GET' &&
@@ -134,7 +144,7 @@ test.describe(
           .click()
         await expect(picker).toHaveText(SAVED_NAME)
         expect((await restoredContent).ok()).toBe(true)
-        await expectBothNotes()
+        await expectBothNotes(SERVED_NOTE_TEXT, SERVED_MARKDOWN_HEADING)
         const afterPath = testInfo.outputPath('after-reload.png')
         await page.screenshot({ path: afterPath })
         await testInfo.attach('after-reload', {

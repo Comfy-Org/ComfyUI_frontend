@@ -7,6 +7,8 @@ export const MARKDOWN_HEADING = 'Agent markdown heading'
 export const MARKDOWN_BODY = 'markdown body line'
 export const MARKDOWN_TEXT = `# ${MARKDOWN_HEADING}\n\n${MARKDOWN_BODY}`
 export const SAVED_NAME = 'Virtual note nodes'
+export const SERVED_NOTE_TEXT = 'served note text'
+export const SERVED_MARKDOWN_HEADING = 'Served markdown heading'
 
 function addVirtualNode(
   id: number,
