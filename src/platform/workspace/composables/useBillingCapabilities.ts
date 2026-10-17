@@ -1,4 +1,3 @@
-import type { BillingCapabilitiesResponse } from '@comfyorg/ingest-types'
 import {
   createSharedComposable,
   defaultDocument,
@@ -10,6 +9,7 @@ import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { onCapabilityRevision } from '@/platform/workspace/api/capabilityRevision'
+import type { BillingCapabilitiesRead } from '@/platform/workspace/api/workspaceApi'
 import {
   WorkspaceApiError,
   workspaceApi
@@ -38,7 +38,7 @@ type CapabilityReadState =
       status: 'resolved'
       authUid: string
       workspaceId: string
-      response: BillingCapabilitiesResponse
+      response: BillingCapabilitiesRead
       refreshAt: number
     }
 
@@ -71,7 +71,7 @@ interface ActiveCapabilityRequest {
 function readCapabilitiesResponse(
   signal: AbortSignal,
   revalidating: boolean
-): Promise<BillingCapabilitiesResponse | undefined> {
+): Promise<BillingCapabilitiesRead | undefined> {
   const rail = useBillingReadRail()
   if (rail === null) return workspaceApi.getBillingCapabilities(signal)
   return readOnRail(
@@ -95,7 +95,7 @@ function useBillingCapabilitiesInternal() {
   let readFailures = 0
   let invalidatedRequestId = 0
 
-  const capabilities = computed(() => {
+  const resolvedResponse = computed(() => {
     const userId = actorId.value
     const workspaceId = workspaceStore.activeWorkspaceId
     const state = readState.value
@@ -110,8 +110,11 @@ function useBillingCapabilitiesInternal() {
       return null
     }
 
-    return state.response.capabilities
+    return state.response
   })
+  const capabilities = computed(
+    () => resolvedResponse.value?.capabilities ?? null
+  )
   const hasResolvedCapabilities = computed(() => capabilities.value !== null)
   const canTopUp = computed(() => capabilities.value?.can_top_up ?? false)
   const canSubscribeSelfServe = computed(
@@ -135,6 +138,15 @@ function useBillingCapabilitiesInternal() {
       'can_invite_members',
       capabilities.value?.can_invite_members ?? false
     )
+  )
+  const canDeleteWorkspace = computed(() =>
+    receiveServerFact(
+      'can_delete_workspace',
+      capabilities.value?.can_delete_workspace ?? false
+    )
+  )
+  const deleteWorkspaceDenial = computed<string | undefined>(
+    () => resolvedResponse.value?.denied_reasons?.can_delete_workspace
   )
   const canDowngradeToPersonal = computed(
     () => capabilities.value?.can_downgrade_to_personal ?? false
@@ -196,7 +208,7 @@ function useBillingCapabilitiesInternal() {
 
   // NaN from an unparseable timestamp fails the comparison and lands on the
   // fixed interval.
-  function nextRefreshAt(response: BillingCapabilitiesResponse): number {
+  function nextRefreshAt(response: BillingCapabilitiesRead): number {
     const now = Date.now()
     const remaining = Date.parse(response.expires_at) - now
     if (remaining >= MIN_REFRESH_DELAY_MS) {
@@ -470,6 +482,8 @@ function useBillingCapabilitiesInternal() {
     canChangeSeats,
     canInviteMembers,
     canManageMembers,
+    canDeleteWorkspace,
+    deleteWorkspaceDenial,
     canDowngradeToPersonal,
     isReady,
     hasResolvedCapabilities,

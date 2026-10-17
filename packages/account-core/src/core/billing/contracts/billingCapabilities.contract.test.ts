@@ -7,11 +7,15 @@ import type {
 import { describe, expect, expectTypeOf, it } from 'vitest'
 import type { z } from 'zod'
 
+import type { CapabilityDenialReason } from '../capabilityDenials.js'
+
 type CapabilitiesResponseBody = z.input<typeof zBillingCapabilitiesResponse>
 type CapabilitiesResponse = z.infer<typeof zBillingCapabilitiesResponse>
 type Capabilities = z.infer<typeof zBillingCapabilities>
 type CapabilityScope = z.infer<typeof zBillingCapabilityScope>
 type RolloutDefaults = z.infer<typeof zBillingCapabilityRolloutDefaults>
+type DeniedReasons = NonNullable<CapabilitiesResponse['denied_reasons']>
+type ServerDenialReason = NonNullable<DeniedReasons[keyof DeniedReasons]>
 
 function capabilities(): Capabilities {
   return {
@@ -20,6 +24,12 @@ function capabilities(): Capabilities {
     can_downgrade_to_personal: false,
     can_invite_members: true,
     can_manage_members: true,
+    can_delete_workspace: false,
+    can_leave_workspace: false,
+    can_manage_billing: false,
+    can_manage_partner_node_access: false,
+    can_view_pending_invites: false,
+    can_view_team_usage: false,
     can_reactivate: false,
     can_revert_scheduled_change: false,
     can_subscribe_self_serve: true,
@@ -44,13 +54,12 @@ function capabilitiesBody(
   }
 }
 
-// Compile-time pins: a regen that moves these fails the package typecheck.
-
-// The five fields the reader composes its own schema from, plus two it leaves out.
 expectTypeOf<keyof CapabilitiesResponse>().toEqualTypeOf<
   | 'capabilities'
   | 'denied_reasons'
   | 'expires_at'
+  | 'plan_kind'
+  | 'recovery_route'
   | 'resolved_for'
   | 'revision'
   | 'rollout_defaults_applied'
@@ -59,14 +68,23 @@ expectTypeOf<keyof CapabilitiesResponse>().toEqualTypeOf<
 expectTypeOf<Capabilities>().toEqualTypeOf<{
   can_cancel: boolean
   can_change_seats: boolean
+  can_delete_workspace: boolean
   can_downgrade_to_personal: boolean
   can_invite_members: boolean
+  can_leave_workspace: boolean
+  can_manage_billing: boolean
   can_manage_members: boolean
+  can_manage_partner_node_access: boolean
   can_reactivate: boolean
   can_revert_scheduled_change: boolean
   can_subscribe_self_serve: boolean
   can_top_up: boolean
+  can_view_pending_invites: boolean
+  can_view_team_usage: boolean
 }>()
+expectTypeOf<ServerDenialReason>().toEqualTypeOf<
+  Exclude<CapabilityDenialReason, 'unspecified'>
+>()
 expectTypeOf<CapabilityScope>().toEqualTypeOf<{
   user_id: string
   workspace_id: string
@@ -76,7 +94,6 @@ expectTypeOf<RolloutDefaults>().toEqualTypeOf<{
   can_subscribe_self_serve: boolean
   can_top_up: boolean
 }>()
-// The expiry the reader paces freshness from; the revision it reads as a number.
 expectTypeOf<CapabilitiesResponse['expires_at']>().toEqualTypeOf<string>()
 expectTypeOf<CapabilitiesResponse['revision']>().toEqualTypeOf<bigint>()
 

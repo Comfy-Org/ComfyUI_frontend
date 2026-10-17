@@ -146,6 +146,10 @@ export type { ScheduledPlanChange }
 export type { BillingBalanceResponse }
 export type { BillingEventsResponse }
 export type { BillingCapabilitiesResponse }
+export type BillingCapabilitiesRead = Omit<
+  BillingCapabilitiesResponse,
+  'denied_reasons'
+> & { denied_reasons?: Readonly<Partial<Record<string, string>>> }
 export type { CreateTopupResponse }
 export type { BillingOpStatusResponse }
 export type { SavedPaymentMethod }
