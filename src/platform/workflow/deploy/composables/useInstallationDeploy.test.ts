@@ -68,7 +68,7 @@ describe(useInstallationDeploy, () => {
       })
     )
     expect(window.open).toHaveBeenCalledExactlyOnceWith(BUILDER_URL, '_blank')
-    expect(state.value).toEqual({ status: 'idle' })
+    expect(state.value).toEqual({ status: 'opened' })
   })
 
   it('uploads with the stored API key when there is no workspace token', async () => {
@@ -182,11 +182,25 @@ describe(useInstallationDeploy, () => {
     finishUpload(bundleCreated())
     await upload
 
-    expect(api.fetchApi).toHaveBeenCalledOnce()
     expect(reopened.state.value).toEqual({
       status: 'tab_blocked',
       url: BUILDER_URL
     })
+  })
+
+  it('offers a fresh upload once the blocked-tab link has been followed', async () => {
+    vi.mocked(window.open).mockReturnValueOnce(null)
+    vi.mocked(api.fetchApi)
+      .mockResolvedValueOnce(bundleCreated())
+      .mockResolvedValueOnce(bundleCreated())
+    const { deploy, markOpened, state } = useInstallationDeploy()
+    await deploy()
+
+    markOpened()
+
+    expect(state.value).toEqual({ status: 'opened' })
+    await expect(deploy()).resolves.toBe(true)
+    expect(api.fetchApi).toHaveBeenCalledTimes(2)
   })
 
   it.for([
@@ -212,7 +226,7 @@ describe(useInstallationDeploy, () => {
 
       await expect(deploy()).resolves.toBe(true)
 
-      expect(state.value).toEqual({ status: 'idle' })
+      expect(state.value).toEqual({ status: 'opened' })
       expect(window.open).toHaveBeenCalledExactlyOnceWith(BUILDER_URL, '_blank')
     }
   )
