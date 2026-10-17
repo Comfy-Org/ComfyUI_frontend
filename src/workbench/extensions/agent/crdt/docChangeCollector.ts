@@ -112,34 +112,48 @@ export class DocChangeCollector {
   private readonly onDefinitionsChanged = (
     events: Y.YEvent<Y.AbstractType<unknown>>[]
   ): void => {
-    for (const event of events) {
-      const path = event.path.map(String)
-      const nodesIndex = path.lastIndexOf('nodes')
-      if (nodesIndex >= 1 && path.length > nodesIndex + 1) {
-        const definitionId = path[nodesIndex - 1]
-        const nodeId = path[nodesIndex + 1]
-        const tail = path[nodesIndex + 2]
-        if (event instanceof Y.YArrayEvent) {
-          this.markInterior(definitionId, nodeId, 'all')
-        } else if (tail === 'widgets' && event instanceof Y.YMapEvent) {
-          this.markInterior(definitionId, nodeId, new Set(event.keysChanged))
-        } else {
-          this.markInterior(definitionId, nodeId, 'all')
-        }
-        continue
-      }
-      const subgraphsIndex = path.lastIndexOf('subgraphs')
-      const definitionId =
-        subgraphsIndex >= 0 && path.length > subgraphsIndex + 1
-          ? path[subgraphsIndex + 1]
-          : path[0]
-      if (definitionId) this.interiorDefinitions.add(definitionId)
-      if (
-        event.target === this.definitionsMap &&
-        event instanceof Y.YMapEvent
-      ) {
-        for (const id of event.keysChanged) this.interiorDefinitions.add(id)
-      }
+    for (const event of events) this.collectDefinitionEvent(event)
+  }
+
+  private collectDefinitionEvent(
+    event: Y.YEvent<Y.AbstractType<unknown>>
+  ): void {
+    const path = event.path.map(String)
+    const nodesIndex = path.lastIndexOf('nodes')
+    if (nodesIndex >= 1 && path.length > nodesIndex + 1) {
+      this.collectInteriorEvent(event, path, nodesIndex)
+      return
+    }
+    this.collectDefinitionResync(event, path)
+  }
+
+  private collectInteriorEvent(
+    event: Y.YEvent<Y.AbstractType<unknown>>,
+    path: string[],
+    nodesIndex: number
+  ): void {
+    const definitionId = path[nodesIndex - 1]
+    const nodeId = path[nodesIndex + 1]
+    const tail = path[nodesIndex + 2]
+    if (tail === 'widgets' && event instanceof Y.YMapEvent) {
+      this.markInterior(definitionId, nodeId, new Set(event.keysChanged))
+      return
+    }
+    this.markInterior(definitionId, nodeId, 'all')
+  }
+
+  private collectDefinitionResync(
+    event: Y.YEvent<Y.AbstractType<unknown>>,
+    path: string[]
+  ): void {
+    const subgraphsIndex = path.lastIndexOf('subgraphs')
+    const definitionId =
+      subgraphsIndex >= 0 && path.length > subgraphsIndex + 1
+        ? path[subgraphsIndex + 1]
+        : path[0]
+    if (definitionId) this.interiorDefinitions.add(definitionId)
+    if (event.target === this.definitionsMap && event instanceof Y.YMapEvent) {
+      for (const id of event.keysChanged) this.interiorDefinitions.add(id)
     }
   }
 

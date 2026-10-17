@@ -41,8 +41,6 @@ import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 
-import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
-
 import {
   allSubgraphDefinitions,
   readSubgraphDefinitions,
@@ -911,22 +909,7 @@ export class LiveGraphApplier {
     const hasFull = full !== undefined && full.size > 0
     if (!hasGranular && !hasFull) return
     const docInteriors = readSubgraphInteriorWidgets(doc)
-    const targets = new Map<string, Map<string, ReadonlySet<string> | 'all'>>()
-    if (granular) {
-      for (const [definitionId, nodes] of granular) {
-        targets.set(definitionId, new Map(nodes))
-      }
-    }
-    if (full) {
-      for (const definitionId of full) {
-        const nodes = targets.get(definitionId) ?? new Map()
-        for (const nodeId of docInteriors.get(definitionId)?.keys() ?? []) {
-          // Keep a named edit's precision over the wholesale resync mark.
-          if (!nodes.has(nodeId)) nodes.set(nodeId, 'all')
-        }
-        targets.set(definitionId, nodes)
-      }
-    }
+    const targets = interiorSyncTargets(granular, full, docInteriors)
     for (const [definitionId, nodes] of targets) {
       this.try(context, () =>
         this.syncDefinitionInteriors(
@@ -960,18 +943,7 @@ export class LiveGraphApplier {
         subgraph.getNodeById(toNodeId(nodeId)) ??
         (index >= 0 ? subgraph.nodes[index] : undefined)
       if (!live) continue
-      if (names === 'all' || Array.isArray(widgets)) {
-        this.applyWidgets(live, widgets as DocNode['widgets'], mode)
-      } else if (!Array.isArray(widgets)) {
-        const filtered = Object.fromEntries(
-          Object.entries(widgets).filter(([name]) => names.has(name))
-        )
-        if (Object.keys(filtered).length > 0) {
-          this.applyWidgets(live, filtered, mode, {
-            documentWidgets: widgets as DocNode['widgets']
-          })
-        }
-      }
+      this.applyInteriorWidgets(live, widgets, names, mode)
       this.propagateInteriorToHosts(
         graph,
         definitionId,
@@ -998,17 +970,46 @@ export class LiveGraphApplier {
     if (widgets === undefined || Array.isArray(widgets)) return
     const record = widgets as Record<string, unknown>
     for (const host of subgraphHostInstances(graph, definitionId)) {
-      for (const input of promotedInputs(host)) {
-        const target = resolveSubgraphInputTarget(host, input.name)
-        if (!target || target.nodeId !== liveInterior.id) continue
-        if (!names.has(target.widgetName)) continue
-        if (!Object.hasOwn(record, target.widgetName)) continue
-        this.applyHostWidgets(
-          host,
-          { [input.name]: record[target.widgetName] },
-          mode
-        )
-      }
+      this.propagateInteriorToHost(host, liveInterior, record, names, mode)
+    }
+  }
+
+  private applyInteriorWidgets(
+    live: LGraphNode,
+    widgets: Record<string, unknown> | readonly unknown[],
+    names: ReadonlySet<string> | 'all',
+    mode: ApplyMode
+  ): void {
+    if (names === 'all' || Array.isArray(widgets)) {
+      this.applyWidgets(live, widgets as DocNode['widgets'], mode)
+      return
+    }
+    const filtered = Object.fromEntries(
+      Object.entries(widgets).filter(([name]) => names.has(name))
+    )
+    if (Object.keys(filtered).length === 0) return
+    this.applyWidgets(live, filtered, mode, {
+      documentWidgets: widgets as DocNode['widgets']
+    })
+  }
+
+  private propagateInteriorToHost(
+    host: LGraphNode,
+    liveInterior: LGraphNode,
+    record: Record<string, unknown>,
+    names: ReadonlySet<string>,
+    mode: ApplyMode
+  ): void {
+    for (const input of promotedInputs(host)) {
+      const target = resolvePromotedTarget(host, input.name)
+      if (!target || target.nodeId !== liveInterior.id) continue
+      if (!names.has(target.widgetName)) continue
+      if (!Object.hasOwn(record, target.widgetName)) continue
+      this.applyHostWidgets(
+        host,
+        { [input.name]: record[target.widgetName] },
+        mode
+      )
     }
   }
 
@@ -1019,7 +1020,7 @@ export class LiveGraphApplier {
     value: unknown
   ): void {
     if (!isWidgetValue(value)) return
-    const target = resolveSubgraphInputTarget(host, name)
+    const target = resolvePromotedTarget(host, name)
     if (!target || !host.isSubgraphNode()) return
     const interior = host.subgraph.getNodeById(target.nodeId)
     if (!interior || interior.isSubgraphNode()) return
@@ -1452,8 +1453,60 @@ function changed(
   return positional !== undefined && names.has(positional.name)
 }
 
+type InteriorSyncTargets = Map<string, Map<string, ReadonlySet<string> | 'all'>>
+
+/** Merge named interior edits with wholesale definition resync marks. */
+function interiorSyncTargets(
+  granular: InteriorChanges | undefined,
+  full: ReadonlySet<string> | undefined,
+  docInteriors: ReturnType<typeof readSubgraphInteriorWidgets>
+): InteriorSyncTargets {
+  const targets: InteriorSyncTargets = new Map()
+  if (granular) {
+    for (const [definitionId, nodes] of granular) {
+      targets.set(definitionId, new Map(nodes))
+    }
+  }
+  if (full) {
+    for (const definitionId of full) {
+      const nodes = targets.get(definitionId) ?? new Map()
+      for (const nodeId of docInteriors.get(definitionId)?.keys() ?? []) {
+        // Keep a named edit's precision over the wholesale resync mark.
+        if (!nodes.has(nodeId)) nodes.set(nodeId, 'all')
+      }
+      targets.set(definitionId, nodes)
+    }
+  }
+  return targets
+}
+
 function promotedInputs(node: LGraphNode): INodeInputSlot[] {
   return node.inputs.filter((input) => input.widgetId)
+}
+
+/**
+ * The interior node and widget a host's promoted input feeds, resolved
+ * through the subgraph's input links (first connected source wins).
+ */
+function resolvePromotedTarget(
+  host: LGraphNode,
+  inputName: string
+): { nodeId: NodeId; widgetName: string } | undefined {
+  if (!host.isSubgraphNode()) return undefined
+  const slot = host.subgraph.inputNode.slots.find((s) => s.name === inputName)
+  if (!slot) return undefined
+  for (const linkId of slot.linkIds) {
+    const link = host.subgraph.getLink(linkId)
+    if (!link) continue
+    const { inputNode, input } = link.resolve(host.subgraph)
+    if (!inputNode || !input) continue
+    if (inputNode.isSubgraphNode()) {
+      return { nodeId: inputNode.id, widgetName: input.name }
+    }
+    const widget = inputNode.getWidgetFromSlot(input)
+    if (widget) return { nodeId: inputNode.id, widgetName: widget.name }
+  }
+  return undefined
 }
 
 /** Every live host instance of a definition, at root and nested inside other subgraphs. */
