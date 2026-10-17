@@ -25,7 +25,13 @@ describe('RouterCapabilitiesSection', () => {
   it('identifies supported providers with logos', () => {
     render(RouterCapabilitiesSection, { props: { locale: 'en' } })
 
-    for (const provider of ['fal', 'Runware', 'WaveSpeed'])
+    for (const provider of [
+      'fal',
+      'Runware',
+      'WaveSpeed',
+      'Higgsfield',
+      'Pika'
+    ])
       expect(screen.getAllByRole('img', { name: provider })).toHaveLength(1)
   })
 })

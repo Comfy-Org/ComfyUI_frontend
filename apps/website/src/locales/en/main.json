@@ -5081,7 +5081,7 @@
       },
       "faq": {
         "1": {
-          "q": "Why not call fal, Runware, or Wavespeed directly?",
+          "q": "Why not call {providers} directly?",
           "a": "You can, and plenty of teams do. Comfy Router earns its place when you need more than one: the same model on more than one provider, one key and one job surface, and a route you pick. Each provider routes to itself. Comfy Router gives you one surface across them."
         },
         "2": {
