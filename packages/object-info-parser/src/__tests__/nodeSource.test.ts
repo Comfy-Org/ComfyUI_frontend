@@ -64,8 +64,8 @@ describe('getNodeSource', () => {
     expect(result).toEqual({
       type: NodeSourceType.CustomNodes,
       className: 'comfy-custom-nodes',
-      displayText: 'Example',
-      badgeText: 'Example'
+      displayText: 'Example 1.0.0',
+      badgeText: 'Example 1.0.0'
     })
   })
 
@@ -93,7 +93,7 @@ describe('getNodeSource', () => {
       )
       expect(result.type).toBe(NodeSourceType.Essentials)
       expect(result.className).toBe('comfy-essentials')
-      expect(result.displayText).toBe('Example')
+      expect(result.displayText).toBe('Example 1.0.0')
     })
 
     it('should not identify nodes without essentials_category as essentials', () => {

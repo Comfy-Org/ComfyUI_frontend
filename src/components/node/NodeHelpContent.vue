@@ -1,5 +1,9 @@
 <template>
   <div class="node-help-content mx-auto w-full">
+    <p v-if="node.nodeSource?.type === 'custom_nodes'" class="mb-3 text-sm">
+      <strong>{{ $t('nodeHelpPage.pack') }}:</strong>
+      {{ node.nodeSource.displayText }}
+    </p>
     <Spinner v-if="isLoading" class="m-auto" :aria-label="$t('g.loading')" />
     <!-- Markdown fetched successfully -->
     <SanitizedHtml
