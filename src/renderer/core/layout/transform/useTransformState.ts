@@ -120,11 +120,58 @@ function useTransformStateIndividual() {
     }
   }
 
+  /**
+   * Tests whether a node's canvas-space bounding box overlaps the visible
+   * viewport, expanded by a margin.
+   *
+   * Mirrors `transformStyle`'s mapping (screen = (canvas + offset) * scale)
+   * so a node's on-screen rect is compared directly against the viewport
+   * dimensions in pixels - no `screenToCanvas` round trip needed.
+   *
+   * @param position - Node's [x, y] position in canvas coordinates
+   * @param size - Node's [width, height] in canvas coordinates
+   * @param viewport - Visible viewport size in screen pixels
+   * @param margin - Extra visible area as a fraction of viewport dimensions
+   *   (e.g. 0.75 = 75% extra on each axis), so nodes just outside the strict
+   *   viewport stay mounted and don't pop in in on pan/zoom.
+   * @returns true if the node's screen-space rect intersects the margined viewport
+   */
+  const isNodeInViewport = (
+    position: readonly [number, number],
+    size: readonly [number, number],
+    viewport: { width: number; height: number },
+    margin = 0
+  ): boolean => {
+    const [x, y] = position
+    const [width, height] = size
+
+    const screenX = (x + camera.x) * camera.z
+    const screenY = (y + camera.y) * camera.z
+    const screenWidth = width * camera.z
+    const screenHeight = height * camera.z
+
+    const marginX = viewport.width * margin
+    const marginY = viewport.height * margin
+
+    const minX = -marginX
+    const minY = -marginY
+    const maxX = viewport.width + marginX
+    const maxY = viewport.height + marginY
+
+    return (
+      screenX + screenWidth >= minX &&
+      screenX <= maxX &&
+      screenY + screenHeight >= minY &&
+      screenY <= maxY
+    )
+  }
+
   return {
     camera: readonly(camera),
     transformStyle,
     syncWithCanvas,
-    screenToCanvas
+    screenToCanvas,
+    isNodeInViewport
   }
 }
 
