@@ -609,7 +609,15 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       if (isPermanentSessionError(result.code)) {
         surfaceUnifiedPermanentFailure(result.code)
       } else {
-        console.warn('Unified login mint failed:', result.code)
+        reportError(new Error(`Unified login mint failed: ${result.code}`), {
+          surface: 'auth',
+          errorType: 'unified_login_mint_failure',
+          level: 'warning',
+          tags: {
+            failure_code: result.code,
+            http_status: result.httpStatus ?? 'none'
+          }
+        })
       }
       return false
     }
