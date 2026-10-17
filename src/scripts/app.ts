@@ -19,6 +19,7 @@ import { resolveDynamicInputSpec } from '@/core/graph/widgets/dynamicInputSpec'
 import { setBackendNodeText, st, t } from '@/i18n'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { ChangeTracker } from '@/scripts/changeTracker'
+import { invalidateCanvasTracker } from '@/scripts/canvasTrackerOwnership'
 import { registerApp } from '@/scripts/appRegistry'
 import {
   clipspace,
@@ -304,6 +305,23 @@ function createNodeOutputsMutationView(
       return deleted
     }
   })
+}
+
+/**
+ * Run the pre-load workflow bookkeeping and the `beforeLoadGraph` hook, then
+ * invalidate canvas ownership.
+ *
+ * Ownership is invalidated last, immediately before the caller replaces the
+ * canvas graph. Invalidating before the awaited hook leaves a window in which
+ * the outgoing workflow is still active with its graph still on the canvas, so
+ * a capture there is legitimate but would be dropped — and a failed target load
+ * would then repaint the retained workflow from an activeState missing that
+ * last change.
+ */
+async function beginGraphLoad(suppressWorkflowReset: boolean) {
+  useWorkflowService().beforeLoadNewGraph(suppressWorkflowReset)
+  await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+  invalidateCanvasTracker()
 }
 
 export class ComfyApp implements IComfyApp {
@@ -1224,8 +1242,7 @@ export class ComfyApp implements IComfyApp {
       silentAssetErrors = false,
       workflowNavigationId
     } = options
-    useWorkflowService().beforeLoadNewGraph(clean)
-    await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+    await beginGraphLoad(clean)
 
     ChangeTracker.isLoadingGraph = true
     let reset_invalid_values = false
@@ -2219,10 +2236,7 @@ export class ComfyApp implements IComfyApp {
           async () => {
             try {
               // false: final destination; no later load republishes the hash.
-              useWorkflowService().beforeLoadNewGraph(false)
-              await useExtensionService().invokeExtensionsAsync(
-                'beforeLoadGraph'
-              )
+              await beginGraphLoad(false)
             } finally {
               useMissingNodesErrorStore().setMissingNodeTypes([])
             }
@@ -2406,8 +2420,7 @@ export class ComfyApp implements IComfyApp {
     options: { deferWarnings?: boolean }
   ): Promise<void> {
     // false: no workflow load follows to republish the hash.
-    useWorkflowService().beforeLoadNewGraph(false)
-    await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+    await beginGraphLoad(false)
     this.canvas.setGraph(this.rootGraph)
     withGraphIntentSource('load', () => this.clean())
 

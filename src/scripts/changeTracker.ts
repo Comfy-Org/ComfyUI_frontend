@@ -26,6 +26,14 @@ import { isSelectOnly } from '@/utils/litegraphUtil'
 import { isModalOpen } from '@/utils/modalUtil'
 
 import { api } from './api'
+import {
+  bindCanvasTracker,
+  canCaptureCanvas,
+  invalidateCanvasTracker,
+  isCanvasCaptureBlocked,
+  isCanvasOwner,
+  resetCanvasTrackerForTest
+} from './canvasTrackerOwnership'
 import { useApp } from '@/scripts/appInstance'
 import { provideChangeTracker } from '@/scripts/changeTrackerAccess'
 import { clipspace } from '@/scripts/clipspace'
@@ -293,8 +301,48 @@ function reportInactiveTrackerCall(method: string, workflowPath: string) {
   assert(false, `ChangeTracker.${method}() called on inactive tracker`)
 }
 
+const reportedCanvasMismatchCalls = new Set<string>()
+
+function reportCanvasMismatchCall(method: string, workflowPath: string) {
+  const key = `${method}:${workflowPath}`
+  if (reportedCanvasMismatchCalls.has(key)) return
+  reportedCanvasMismatchCalls.add(key)
+  assert(
+    false,
+    `ChangeTracker.${method}() called while another workflow's graph is on the canvas`
+  )
+}
+
 export class ChangeTracker implements WorkflowChangeTracker {
   static MAX_HISTORY = 50
+
+  // Ownership is identity only — these never call into the tracker — so they
+  // take the `WorkflowChangeTracker` contract a `ComfyWorkflow` exposes rather
+  // than the concrete class.
+  static bindCanvasTracker(tracker: WorkflowChangeTracker) {
+    bindCanvasTracker(tracker)
+  }
+
+  static invalidateCanvasTracker() {
+    invalidateCanvasTracker()
+  }
+
+  static isCanvasOwner(tracker: WorkflowChangeTracker): boolean {
+    return isCanvasOwner(tracker)
+  }
+
+  static canCaptureCanvas(tracker: WorkflowChangeTracker): boolean {
+    return canCaptureCanvas(tracker)
+  }
+
+  private static isCanvasCaptureBlocked(): boolean {
+    return isCanvasCaptureBlocked()
+  }
+
+  static resetCanvasTrackerForTest() {
+    resetCanvasTrackerForTest()
+    reportedCanvasMismatchCalls.clear()
+  }
   /**
    * Guard flag to prevent captureCanvasState from running during loadGraphData.
    * Between rootGraph.configure() and afterLoadNewGraph(), the rootGraph
@@ -463,6 +511,11 @@ export class ChangeTracker implements WorkflowChangeTracker {
       reportInactiveTrackerCall('captureCanvasState', this.workflow.path)
       return
     }
+    if (ChangeTracker.isCanvasCaptureBlocked()) return
+    if (!ChangeTracker.canCaptureCanvas(this)) {
+      reportCanvasMismatchCall('captureCanvasState', this.workflow.path)
+      return
+    }
 
     const currentState = clone(
       useApp().rootGraph.serialize()
@@ -483,7 +536,8 @@ export class ChangeTracker implements WorkflowChangeTracker {
   squashState = useDebounceFn(() => {
     if (
       this !== useWorkflowStore().activeWorkflow?.changeTracker ||
-      ChangeTracker.isLoadingGraph
+      ChangeTracker.isLoadingGraph ||
+      !ChangeTracker.canCaptureCanvas(this)
     )
       return
 

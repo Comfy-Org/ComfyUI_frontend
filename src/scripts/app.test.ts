@@ -303,6 +303,7 @@ describe('ComfyApp', () => {
     app = new ComfyApp()
     mockCanvas = createMockCanvas() as LGraphCanvas
     app.canvas = mockCanvas
+    ChangeTracker.resetCanvasTrackerForTest()
     useWorkflowStore().activeWorkflow = null
     const temporaryWorkflow = new ComfyWorkflow({
       path: 'workflows/temporary.json',
@@ -520,6 +521,72 @@ describe('ComfyApp', () => {
       const [migrated] = reload.mock.calls[0]
       expect(migrated?.nodes.map((node) => node.type)).not.toContain('Reroute')
       expect(useToast().toasts).toEqual([])
+    })
+
+    it('invalidates canvas ownership after deactivating the outgoing workflow', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      await useRealWorkflowService()
+      mockWorkflowService.afterLoadNewGraph.mockResolvedValue()
+      const outgoing = markLoaded(
+        new ComfyWorkflow({
+          path: 'workflows/outgoing.json',
+          modified: 0,
+          size: 0
+        })
+      )
+      useWorkflowStore().activeWorkflow = outgoing
+      ChangeTracker.bindCanvasTracker(outgoing.changeTracker)
+      let couldCaptureDuringDeactivate = false
+      vi.mocked(outgoing.changeTracker.deactivate).mockImplementation(() => {
+        couldCaptureDuringDeactivate = ChangeTracker.canCaptureCanvas(
+          outgoing.changeTracker
+        )
+      })
+
+      await app.loadGraphData(createWorkflowGraphData())
+
+      expect(couldCaptureDuringDeactivate).toBe(true)
+      expect(ChangeTracker.canCaptureCanvas(outgoing.changeTracker)).toBe(false)
+    })
+
+    it('keeps the outgoing workflow able to capture across an awaiting beforeLoadGraph hook', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      await useRealWorkflowService()
+      mockWorkflowService.afterLoadNewGraph.mockResolvedValue()
+      const outgoing = markLoaded(
+        new ComfyWorkflow({
+          path: 'workflows/outgoing.json',
+          modified: 0,
+          size: 0
+        })
+      )
+      useWorkflowStore().activeWorkflow = outgoing
+      ChangeTracker.bindCanvasTracker(outgoing.changeTracker)
+
+      // An extension hook that awaits real work crosses a task boundary, so a
+      // queued capture (the keydown rAF capture) can run here. The outgoing
+      // graph is still the one on the canvas, so that capture is legitimate:
+      // dropping it would let a failed target load repaint the retained
+      // workflow from an activeState missing its last change.
+      let hookName: unknown
+      let couldCaptureInsideHook: boolean | undefined
+      mockExtensionService.invokeExtensionsAsync.mockImplementationOnce(
+        async (hook: unknown) => {
+          hookName = hook
+          await Promise.resolve()
+          couldCaptureInsideHook = ChangeTracker.canCaptureCanvas(
+            outgoing.changeTracker
+          )
+        }
+      )
+
+      await app.loadGraphData(createWorkflowGraphData())
+
+      expect(hookName).toBe('beforeLoadGraph')
+      expect(couldCaptureInsideHook).toBe(true)
+      expect(ChangeTracker.canCaptureCanvas(outgoing.changeTracker)).toBe(false)
     })
 
     it('forwards clean and navigation intent to workflow navigation', async () => {
