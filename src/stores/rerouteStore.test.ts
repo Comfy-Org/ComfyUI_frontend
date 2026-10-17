@@ -1,6 +1,7 @@
-import { assert, describe, expect, it } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
+import { reportAssertFailure } from '@/platform/telemetry/assertFailureReporter'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import type { LinkTopology } from '@/types/linkTopology'
@@ -10,6 +11,8 @@ import { toRerouteId } from '@/types/rerouteId'
 
 import { useLinkStore } from './linkStore'
 import { EMPTY_MEMBERSHIP, useRerouteStore } from './rerouteStore'
+
+vi.mock(import('@/platform/telemetry/assertFailureReporter'))
 
 const graphA = {
   rootGraphId: toRootGraphId('graph-a'),
@@ -56,6 +59,14 @@ describe('useRerouteStore', () => {
     const usurper = chain(1, 7)
     expect(store.registerReroute(graphA, usurper)).toBeUndefined()
     expect(console.error).toHaveBeenCalledOnce()
+    expect(reportAssertFailure).toHaveBeenCalledWith(
+      'Reroute store ownership conflict',
+      {
+        rerouteId: toRerouteId(1),
+        incumbentGraphId: graphA.owningGraphId,
+        owningGraphId: graphA.owningGraphId
+      }
+    )
 
     expect(store.deleteReroute(graphA, usurper)).toBe(false)
     expect(store.getReroute(graphA, toRerouteId(1))).toBe(owner)
