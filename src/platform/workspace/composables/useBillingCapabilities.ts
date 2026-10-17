@@ -135,6 +135,12 @@ function useBillingCapabilitiesInternal() {
   const canReactivate = computed(
     () => capabilities.value?.can_reactivate ?? false
   )
+  const canRevertScheduledChange = computed(() =>
+    receiveServerFact(
+      'can_revert_scheduled_change',
+      capabilities.value?.can_revert_scheduled_change ?? false
+    )
+  )
   const canChangeSeats = computed(
     () => capabilities.value?.can_change_seats ?? false
   )
@@ -484,6 +490,7 @@ function useBillingCapabilitiesInternal() {
     canSubscribeSelfServe,
     canCancel,
     canReactivate,
+    canRevertScheduledChange,
     canChangeSeats,
     canInviteMembers,
     canManageMembers,

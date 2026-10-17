@@ -17,18 +17,21 @@
         {{ line }}
       </p>
     </div>
-    <Button
-      v-if="action"
-      as="a"
-      :href="plansUrl"
-      target="_blank"
-      rel="noopener"
-      :variant="action === 'manage' ? 'secondary' : 'inverted'"
-      class="shrink-0"
-    >
-      {{ $t(`workspacePanel.billingTab.plan.actions.${action}`) }}
-      <i class="icon-[lucide--external-link] size-4" aria-hidden="true" />
-    </Button>
+    <div class="flex shrink-0 items-center gap-2">
+      <BillingPlanLifecycle :state />
+      <Button
+        v-if="action"
+        as="a"
+        :href="plansUrl"
+        target="_blank"
+        rel="noopener"
+        :variant="action === 'manage' ? 'secondary' : 'inverted'"
+        class="shrink-0"
+      >
+        {{ $t(`workspacePanel.billingTab.plan.actions.${action}`) }}
+        <i class="icon-[lucide--external-link] size-4" aria-hidden="true" />
+      </Button>
+    </div>
   </section>
 </template>
 
@@ -37,6 +40,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import BillingPlanLifecycle from '@/platform/workspace/components/dialogs/settings/billing/BillingPlanLifecycle.vue'
 import { formatPlanDate } from '@/platform/workspace/components/dialogs/settings/billing/planRow'
 import type {
   PlanRowAction,

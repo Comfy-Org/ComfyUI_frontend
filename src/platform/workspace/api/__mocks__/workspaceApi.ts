@@ -158,6 +158,10 @@ export const workspaceApi = vi.mockObject<typeof realWorkspaceApi>(
       billing_op_id: 'op-1',
       status: 'active'
     }),
+    revertScheduledChange: async () => ({
+      billing_op_id: 'op-1',
+      status: 'reverted'
+    }),
     getPaymentPortalUrl: async () => ({ url: '' }),
     createTopup: async (amount_cents) => ({
       amount_cents,
