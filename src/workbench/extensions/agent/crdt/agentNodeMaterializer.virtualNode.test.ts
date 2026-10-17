@@ -1,11 +1,3 @@
-/**
- * Frontend-only ("virtual") node classes such as `Note` never appear in
- * `object_info`, so the pinned widget catalog has no `widget_order` for them.
- * comfy-multi-player stores their positional `widgets_values` whole under
- * `__widgets_opaque` and round-trips the array verbatim. This suite pins the
- * follower + materializer behaviour for that shape: the live node must end
- * up with its constructor-created widget populated from the opaque array.
- */
 import { applyOps, mint } from '@comfyorg/comfy-multi-player'
 import { fromPartial } from '@total-typescript/shoehorn'
 import type { Op, WidgetCatalog } from '@comfyorg/comfy-multi-player'
@@ -45,10 +37,6 @@ vi.mock(import('@/scripts/app'), () => ({
   })
 }))
 
-/**
- * Same construction as `Comfy.NoteNode` in `extensions/core/noteNode.ts`: a
- * multiline STRING DOM widget named `text`, `serialize_widgets`, virtual.
- */
 class NoteLikeNode extends LGraphNode {
   override isVirtualNode = true
 
@@ -64,7 +52,6 @@ class NoteLikeNode extends LGraphNode {
   }
 }
 
-/** Pinned catalog with no entry for the virtual class, as in production. */
 const CATALOG: WidgetCatalog = {
   types: {
     dummy: { widget_order: [] }
@@ -159,14 +146,9 @@ describe('virtual node with opaque positional widgets_values', () => {
     expect(node?.widgets?.map(({ name }) => name)).toEqual(['text'])
     expect(node?.widgets?.[0]?.value).toBe('hello from the agent')
 
-    // The DOM widget must be registered so the textarea renders.
     const domWidgets = [...useDomWidgetStore().widgetStates.values()]
     expect(domWidgets.map((state) => state.widget.name)).toEqual(['text'])
 
-    // The store record addressed by the widget's real name carries the value.
-    // `createNodeFromPayload` also registers a positional placeholder record
-    // named "0" for uncatalogued widgets; cleaning that up is tracked as a
-    // separate follow-up, so this test does not pin the exact record set.
     const records = useWidgetValueStore().getNodeWidgets(
       scope.rootGraphId,
       toNodeId(1)

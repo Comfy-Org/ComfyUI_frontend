@@ -59,8 +59,6 @@ test.describe(
           exact: true
         })
 
-      // Each node must carry its own text: a follower that minted an empty
-      // placeholder widget, or bound both nodes to one value, fails here.
       const expectBothNotes = async (
         note = NOTE_TEXT,
         heading = MARKDOWN_HEADING
@@ -78,8 +76,6 @@ test.describe(
         await expectBothNotes()
       })
 
-      // Returning to the bound tab re-subscribes the follower, which replays
-      // the whole host document, both note adds included, over the live graph.
       await test.step('both survive switching tabs away and back', async () => {
         const before = agentConversation.subscribeCount()
         await topbar.openBlankTabAndReturn()
@@ -87,13 +83,9 @@ test.describe(
           .poll(() => agentConversation.subscribeCount())
           .toBe(before + 1)
         await expectBothNotes()
-        // The tab click leaves its preview popover open over the topbar menu.
         await agentConversation.panel.hover()
       })
 
-      // The saved file has to carry both nodes and their text itself: a
-      // serializer that dropped an uncatalogued node, or wrote its widget
-      // value out of position, would still render fine while the host lives.
       await test.step('the saved workflow file carries both notes', async () => {
         await topbar.saveWorkflowAs(SAVED_NAME)
         await expect(topbar.getActiveTab()).toContainText(SAVED_NAME)
@@ -114,11 +106,6 @@ test.describe(
         })
       })
 
-      // After the reload the host refuses the follower's re-subscribe, so no
-      // catch-up can replay the note adds, and reopening the tab has to fetch
-      // the saved file from the server: whatever renders came from that file
-      // alone, not from local state. (`reloadWithoutLocalWorkflow` cannot be
-      // used here: it drops the open tab the workflow picker lists.)
       await test.step('both survive reload and reopen without host replay', async () => {
         agentConversation.refuseHostSubscribes()
         agentConversation.replaceInSavedWorkflow(NOTE_TEXT, SERVED_NOTE_TEXT)

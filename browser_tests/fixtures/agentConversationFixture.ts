@@ -223,7 +223,6 @@ export class AgentConversationHarness {
   private readonly displayNames = new Map<string, string>()
   // Resolved when the panel cancels the turn the recording stopped.
   private readonly cancelWaiters = new Map<string, () => void>()
-  // Handle on the persistence mock installed by `persistSavedWorkflow`.
   private savedWorkflow: Awaited<
     ReturnType<typeof mockSavedWorkflowPersistence>
   > | null = null
@@ -362,12 +361,7 @@ export class AgentConversationHarness {
     return name === undefined ? null : `workflows/${name}.json`
   }
 
-  /**
-   * The workflow JSON the app last saved, parsed and schema-validated.
-   * Throws before any save, and throws with the schema errors when the saved
-   * file is not a valid workflow, so a spec cannot pass on a file the app
-   * itself would refuse to reload.
-   */
+  /** The last saved workflow, schema-validated; throws when absent or invalid. */
   async savedWorkflowContent(): Promise<ComfyWorkflowJSON> {
     const content = this.savedWorkflow?.savedContent()
     if (content === undefined)
@@ -394,11 +388,7 @@ export class AgentConversationHarness {
     )
   }
 
-  /**
-   * Make the host refuse every subscribe from now on. A follower that
-   * re-subscribes after this gets no catch-up, so whatever the canvas shows
-   * came from somewhere other than the host document.
-   */
+  /** Makes the host refuse every later subscribe, so no catch-up is sent. */
   refuseHostSubscribes(reason = 'overloaded'): void {
     this.hostSocket.refuseSubscribes(reason)
   }
