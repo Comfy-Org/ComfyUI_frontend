@@ -23,6 +23,7 @@ import { ssoFlowStore } from '@comfyorg/account-core/telemetry'
 
 import { provideEnsureSessionCookie } from '@/platform/auth/session/sessionCookieAccess'
 import { trackSsoSignInCompleted } from '@/platform/auth/sso/ssoTelemetry'
+import { SessionRevokedError } from '@/platform/auth/session/sessionRevokedError'
 import { useTelemetry } from '@/platform/telemetry'
 import { NoWorkspaceAccessError } from '@/platform/workspace/api/workspaceApiError'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
@@ -457,6 +458,25 @@ describe('useTeamWorkspaceStore', () => {
       // Should have been called 4 times (initial + 3 retries)
       expect(mockWorkspaceApi.list).toHaveBeenCalledTimes(4)
     })
+
+    it.for([
+      { code: 'SESSION_REVOKED' as const, attempts: 2 },
+      { code: 'TOKEN_REVOKED' as const, attempts: 1 }
+    ])(
+      'tries a $code refusal $attempts time(s) before giving up',
+      async ({ code, attempts }) => {
+        const refusal = new SessionRevokedError('revoked', code)
+        mockEnsureSessionCookie.mockRejectedValue(refusal)
+
+        const store = useTeamWorkspaceStore()
+        const initialization = store.initialize().catch((e: unknown) => e)
+        await vi.advanceTimersByTimeAsync(7000)
+
+        expect(await initialization).toBe(refusal)
+        expect(mockEnsureSessionCookie).toHaveBeenCalledTimes(attempts)
+        expect(store.initState).toBe('error')
+      }
+    )
 
     it('does not reinitialize if already initialized', async () => {
       const store = useTeamWorkspaceStore()
