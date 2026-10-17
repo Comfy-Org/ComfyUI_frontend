@@ -1,5 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { User } from 'firebase/auth'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
@@ -57,6 +58,10 @@ beforeEach(() => {
   vi.spyOn(window, 'open').mockReturnValue(fromPartial<Window>({}))
 })
 
+afterEach(() => {
+  delete window.__comfyDesktop2
+})
+
 describe(useInstallationDeploy, () => {
   it('uploads with the workspace token and opens the pre-filled build wizard', async () => {
     respondWith(bundleCreated())
@@ -83,6 +88,22 @@ describe(useInstallationDeploy, () => {
     expect(sentHeaders()).toMatchObject({
       'X-API-KEY': `comfyui-${'a'.repeat(64)}`
     })
+  })
+
+  it('refuses the stored API key while another account is signed in', async () => {
+    stubWorkspaceToken(undefined)
+    useAuthStore().currentUser = fromPartial<User>({ uid: 'signed-in-user' })
+    vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
+      'X-API-KEY': `comfyui-${'a'.repeat(64)}`
+    })
+
+    await expect(useInstallationDeploy().deploy()).resolves.toBe(false)
+
+    expect(api.fetchApi).not.toHaveBeenCalled()
+    expect(useAuthDialogs().showSignInDialog).not.toHaveBeenCalled()
+    expect(useToast().error).toHaveBeenCalledExactlyOnceWith(
+      t('deployToComfyApi.bundleUnauthorized')
+    )
   })
 
   it('asks the user to sign in, and uploads nothing when they cancel', async () => {
@@ -112,6 +133,18 @@ describe(useInstallationDeploy, () => {
     })
   })
 
+  it('tells the user to sign in again when sign-in yields no credential', async () => {
+    stubWorkspaceToken(undefined)
+    vi.mocked(useAuthDialogs().showSignInDialog).mockResolvedValueOnce(true)
+
+    await expect(useInstallationDeploy().deploy()).resolves.toBe(false)
+
+    expect(api.fetchApi).not.toHaveBeenCalled()
+    expect(useToast().error).toHaveBeenCalledExactlyOnceWith(
+      t('deployToComfyApi.bundleUnauthorized')
+    )
+  })
+
   it('offers the build wizard as a link when the browser blocks the new tab', async () => {
     vi.mocked(window.open).mockReturnValueOnce(null)
     respondWith(bundleCreated())
@@ -122,16 +155,32 @@ describe(useInstallationDeploy, () => {
     expect(state.value).toEqual({ status: 'tab_blocked', url: BUILDER_URL })
   })
 
-  it('counts Desktop as opened, because its system browser leaves no tab handle', async () => {
-    distribution.isDesktop = true
-    vi.mocked(window.open).mockReturnValueOnce(null)
-    respondWith(bundleCreated())
-    const { deploy, state } = useInstallationDeploy()
+  it.for([
+    {
+      desktop: 'the Desktop build',
+      setUp: () => {
+        distribution.isDesktop = true
+      }
+    },
+    {
+      desktop: 'Comfy-Desktop v2',
+      setUp: () => {
+        window.__comfyDesktop2 = fromPartial({})
+      }
+    }
+  ])(
+    'counts $desktop as opened, because its system browser leaves no tab handle',
+    async ({ setUp }) => {
+      setUp()
+      vi.mocked(window.open).mockReturnValueOnce(null)
+      respondWith(bundleCreated())
+      const { deploy, state } = useInstallationDeploy()
 
-    await expect(deploy()).resolves.toBe(true)
+      await expect(deploy()).resolves.toBe(true)
 
-    expect(state.value).toEqual({ status: 'idle' })
-  })
+      expect(state.value).toEqual({ status: 'idle' })
+    }
+  )
 
   it.for([
     {

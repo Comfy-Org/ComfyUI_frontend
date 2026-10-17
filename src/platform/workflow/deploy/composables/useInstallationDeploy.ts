@@ -3,7 +3,6 @@ import { readonly, ref } from 'vue'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { t } from '@/i18n'
-import { isDesktopHostSignedIn } from '@/platform/auth/desktopHost/desktopHostSession'
 import { isDesktop } from '@/platform/distribution/types'
 import { reportError } from '@/platform/telemetry/reportError'
 import { createInstallationBundle } from '@/platform/workflow/deploy/api/installationBundleApi'
@@ -49,7 +48,7 @@ const REPORTED_REASONS: ReadonlySet<BundleFailureReason> = new Set([
 function openInNewTab(url: string): boolean {
   const tab = window.open(url, '_blank')
   if (tab) tab.opener = null
-  return tab !== null || isDesktop
+  return tab !== null || isDesktop || window.__comfyDesktop2 !== undefined
 }
 
 /** Uploads the local installation and opens the pre-filled build wizard. */
@@ -79,9 +78,8 @@ export function useInstallationDeploy() {
         header: { Authorization: `Bearer ${workspace.token}` }
       }
     }
-    const apiKeyHeader = isDesktopHostSignedIn()
-      ? null
-      : apiKeyAuthStore.getAuthHeader()
+    if (authStore.isAuthenticated) return { ok: false, reason: 'unauthorized' }
+    const apiKeyHeader = apiKeyAuthStore.getAuthHeader()
     return apiKeyHeader
       ? { ok: true, header: apiKeyHeader }
       : { ok: false, reason: 'signed_out' }
@@ -91,7 +89,9 @@ export function useInstallationDeploy() {
     const credential = await deployCredential()
     if (credential.ok || credential.reason !== 'signed_out') return credential
     if (!(await showSignInDialog())) return credential
-    return deployCredential()
+    const retried = await deployCredential()
+    if (retried.ok || retried.reason !== 'signed_out') return retried
+    return { ok: false, reason: 'unauthorized' }
   }
 
   async function uploadInstallation(): Promise<BundleResult | DeployFailure> {
