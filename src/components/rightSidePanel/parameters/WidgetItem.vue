@@ -100,6 +100,11 @@ const simplifiedWidget = computed((): SimplifiedWidget => {
       : widget.value) as SimplifiedWidgetValue,
     label: widgetState?.label ?? widget.label,
     options: { ...baseOptions, disabled },
+    callback:
+      widgetType.toLowerCase() === 'button'
+        ? (value) =>
+            widget.callback?.(value, canvasStore.canvas ?? undefined, node)
+        : undefined,
     spec: nodeDefStore.getInputSpecForWidget(node, widgetName),
     controlWidget: getControlWidget(widget)
   }
@@ -180,7 +185,7 @@ const displayLabel = customRef((track, trigger) => {
 
       <span
         v-if="(showNodeName || hasParents) && displayNodeName"
-        class="mx-1 my-0 min-w-10 flex-1 truncate p-0 text-right text-xs text-muted-foreground"
+        class="mx-1 my-0 min-w-10 flex-1 truncate text-right text-xs text-muted-foreground"
       >
         {{ displayNodeName }}
       </span>

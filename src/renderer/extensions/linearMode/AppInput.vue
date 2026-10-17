@@ -28,7 +28,7 @@ function togglePromotion() {
 <template>
   <div
     v-if="enable"
-    class="pointer-events-auto relative col-span-2 flex cursor-pointer flex-row gap-1"
+    class="pointer-events-auto relative col-span-2 flex cursor-pointer gap-1"
     @pointerdown.capture.stop.prevent="togglePromotion"
     @click.capture.stop.prevent
     @pointerup.capture.stop.prevent
@@ -45,7 +45,7 @@ function togglePromotion() {
     >
       <i
         v-if="isPromoted"
-        class="bg-primary-foreground place-center icon-[lucide--check]"
+        class="place-center icon-[lucide--check] bg-base-background"
       />
     </div>
     <div

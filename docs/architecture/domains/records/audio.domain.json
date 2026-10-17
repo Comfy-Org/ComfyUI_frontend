@@ -1,0 +1,102 @@
+{
+  "id": "audio",
+  "capability": "Audio",
+  "description": "Audio upload, recording, playback, and waveform presentation for audio nodes, plus the shared waveform player. Template, agent, queue, and asset components that embed the player remain with their owning domains.",
+  "modules": [
+    {
+      "path": "src/components/common/WaveAudioPlayer.stories.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/WaveAudioPlayer.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/WaveAudioPlayer.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/composables/useWaveAudioPlayer.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useWaveAudioPlayer.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/extensions/core/uploadAudio.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/uploadAudio.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/components/AudioPreview.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetRecordAudio.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetRecordAudio.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/components/audio/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/audio/**",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/utils/audioUtils.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/services/audioService.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/services/audioService.ts",
+      "role": "infrastructure"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Upload, preview, and record widgets preserve audio node registration",
+      "checks": [
+        "src/extensions/core/uploadAudio.test.ts",
+        "browser_tests/tests/vueNodes/widgets/audioWidget.spec.ts",
+        "browser_tests/tests/recordAudio.spec.ts"
+      ]
+    },
+    {
+      "name": "Recording, encoding, and upload preserve browser media lifetimes",
+      "checks": [
+        "src/services/audioService.test.ts",
+        "src/renderer/extensions/vueNodes/widgets/composables/audio/useAudioRecorder.test.ts",
+        "src/renderer/extensions/vueNodes/widgets/components/WidgetRecordAudio.test.ts"
+      ]
+    },
+    {
+      "name": "Playback controls preserve preview and waveform player behavior",
+      "checks": [
+        "src/renderer/extensions/vueNodes/widgets/components/audio/AudioPreviewPlayer.test.ts",
+        "src/composables/useWaveAudioPlayer.test.ts",
+        "src/components/common/WaveAudioPlayer.test.ts"
+      ]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Existing widget registry, node content, linear mode, queue, asset, and agent callers may continue importing audio internals during inventory.",
+    "The capability uses the shared upload, API, and widget value services without owning them."
+  ],
+  "deepImports": "inventory"
+}

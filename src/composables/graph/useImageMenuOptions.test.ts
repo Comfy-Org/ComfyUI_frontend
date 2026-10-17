@@ -1,10 +1,10 @@
-import { fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
-import { defineComponent } from 'vue'
-import { createI18n } from 'vue-i18n'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { useImageMenuOptions } from './useImageMenuOptions'
 
@@ -18,21 +18,24 @@ const i18n = createI18n({
         'Open in Mask Editor': 'Open in Mask Editor',
         'Copy Image': 'Copy Image',
         'Paste Image': 'Paste Image',
-        'Save Image': 'Save Image'
+        'Save Image': 'Save Image',
+        'Download Images': 'Download Images'
       }
     }
   }
 })
 
-function setupComposable() {
+function mountComposable(): ReturnType<typeof useImageMenuOptions> {
   let composable!: ReturnType<typeof useImageMenuOptions>
-  const Wrapper = defineComponent({
-    setup() {
-      composable = useImageMenuOptions()
-      return () => null
-    }
-  })
-  render(Wrapper, { global: { plugins: [i18n] } })
+  render(
+    {
+      setup() {
+        composable = useImageMenuOptions()
+        return () => null
+      }
+    },
+    { global: { plugins: [i18n] } }
+  )
   return composable
 }
 
@@ -65,7 +68,7 @@ describe('useImageMenuOptions', () => {
   describe('getImageMenuOptions', () => {
     it('includes Paste Image option when node supports paste', () => {
       const node = createImageNode()
-      const { getImageMenuOptions } = setupComposable()
+      const { getImageMenuOptions } = mountComposable()
       const options = getImageMenuOptions(node)
       const labels = options.map((o) => o.label)
 
@@ -74,7 +77,7 @@ describe('useImageMenuOptions', () => {
 
     it('excludes Paste Image option when node does not support paste', () => {
       const node = createImageNode({ pasteFiles: undefined })
-      const { getImageMenuOptions } = setupComposable()
+      const { getImageMenuOptions } = mountComposable()
       const options = getImageMenuOptions(node)
       const labels = options.map((o) => o.label)
 
@@ -83,9 +86,30 @@ describe('useImageMenuOptions', () => {
 
     it('returns empty array when node has no images and no pasteFiles', () => {
       const node = createMockLGraphNode({ imgs: [] })
-      const { getImageMenuOptions } = setupComposable()
+      const { getImageMenuOptions } = mountComposable()
 
       expect(getImageMenuOptions(node)).toEqual([])
+    })
+
+    it.for([
+      {
+        name: 'several outputs that never loaded as <img> (e.g. EXR)',
+        images: [{ filename: 'f1.exr' }, { filename: 'f2.exr' }],
+        expected: ['Download Images']
+      },
+      {
+        name: 'a single output',
+        images: [{ filename: 'f1.exr' }],
+        expected: []
+      }
+    ])('offers exporting outputs for $name', ({ images, expected }) => {
+      const node = createMockLGraphNode({ imgs: [] })
+      vi.spyOn(useNodeOutputStore(), 'getNodeOutputs').mockReturnValue({
+        images
+      })
+      const { getImageMenuOptions } = mountComposable()
+
+      expect(getImageMenuOptions(node).map((o) => o.label)).toEqual(expected)
     })
 
     it('returns only Paste Image when node has no images but supports paste', () => {
@@ -94,7 +118,7 @@ describe('useImageMenuOptions', () => {
         pasteFile: vi.fn(),
         pasteFiles: vi.fn()
       })
-      const { getImageMenuOptions } = setupComposable()
+      const { getImageMenuOptions } = mountComposable()
       const options = getImageMenuOptions(node)
       const labels = options.map((o) => o.label)
 
@@ -103,7 +127,7 @@ describe('useImageMenuOptions', () => {
 
     it('places Paste Image between Copy Image and Save Image', () => {
       const node = createImageNode()
-      const { getImageMenuOptions } = setupComposable()
+      const { getImageMenuOptions } = mountComposable()
       const options = getImageMenuOptions(node)
       const labels = options.map((o) => o.label)
 
@@ -117,7 +141,7 @@ describe('useImageMenuOptions', () => {
 
     it('gives the Open in Mask Editor option the mask icon', () => {
       const node = createImageNode()
-      const { getImageMenuOptions } = setupComposable()
+      const { getImageMenuOptions } = mountComposable()
       const options = getImageMenuOptions(node)
       const maskOption = options.find((o) => o.label === 'Open in Mask Editor')
 
@@ -126,7 +150,7 @@ describe('useImageMenuOptions', () => {
 
     it('gives every image action option an icon so labels stay aligned', () => {
       const node = createImageNode()
-      const { getImageMenuOptions } = setupComposable()
+      const { getImageMenuOptions } = mountComposable()
       const options = getImageMenuOptions(node)
 
       expect(options.every((o) => !!o.icon)).toBe(true)
@@ -134,7 +158,7 @@ describe('useImageMenuOptions', () => {
 
     it('keeps output preview actions when the local image input is unavailable', () => {
       const node = createImageNode()
-      const { getImageMenuOptions } = setupComposable()
+      const { getImageMenuOptions } = mountComposable()
       const labels = getImageMenuOptions(node, {
         input: false,
         preview: true
@@ -161,7 +185,7 @@ describe('useImageMenuOptions', () => {
         })
       )
 
-      const { getImageMenuOptions } = setupComposable()
+      const { getImageMenuOptions } = mountComposable()
       const options = getImageMenuOptions(node)
       const pasteOption = options.find((o) => o.label === 'Paste Image')
 
@@ -178,7 +202,7 @@ describe('useImageMenuOptions', () => {
       const node = createImageNode()
       mockClipboard(fromPartial<Clipboard>({ read: undefined }))
 
-      const { getImageMenuOptions } = setupComposable()
+      const { getImageMenuOptions } = mountComposable()
       const options = getImageMenuOptions(node)
       const pasteOption = options.find((o) => o.label === 'Paste Image')
 
@@ -199,7 +223,7 @@ describe('useImageMenuOptions', () => {
         })
       )
 
-      const { getImageMenuOptions } = setupComposable()
+      const { getImageMenuOptions } = mountComposable()
       const options = getImageMenuOptions(node)
       const pasteOption = options.find((o) => o.label === 'Paste Image')
 

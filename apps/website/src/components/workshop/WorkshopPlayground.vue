@@ -1,28 +1,55 @@
 <script setup lang="ts">
 import { useClipboard } from '@vueuse/core'
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
-import { externalLinks } from '../../config/routes'
-import type { WorkshopDetailModel } from '../../config/workshop-detail'
-import { defaultWorkshopValues } from '../../config/workshop-detail'
-import { parseWorkshopJsonInput } from '../../config/workshop-json-schema'
-import type { WorkshopSnippetLanguage } from '../../config/workshop-snippets'
+import { apiKeysLink } from '@/config/routes'
+import type { WorkshopDetailModel } from '@/config/workshop-detail'
+import { defaultWorkshopValues } from '@/config/workshop-detail'
+import { parseWorkshopJsonInput } from '@/config/workshop-json-schema'
+import {
+  onBeforeSignInLeave,
+  popWorkshopForm,
+  stashWorkshopForm
+} from '@/config/workshop-return'
+import type { WorkshopSnippetLanguage } from '@/config/workshop-snippets'
 import {
   WORKSHOP_SNIPPET_LANGUAGES,
   buildWorkshopInput,
   buildWorkshopSnippet,
   workshopIdempotencyKey
-} from '../../config/workshop-snippets'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+} from '@/config/workshop-snippets'
+import { useWorkshopSession } from '@/config/workshop-session-state'
+import { workspaceLinkedHref } from '@/config/workshop-workspace-link'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import WorkshopForm from './WorkshopForm.vue'
 
 const { model, locale = 'en' } = defineProps<{
   model: WorkshopDetailModel
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
+
+const { session } = useWorkshopSession()
+const apiKeyHref = computed(() =>
+  workspaceLinkedHref(
+    apiKeysLink({ onboarding: 'models', model: model.slug }),
+    session.value?.workspace.id
+  )
+)
 const values = ref(defaultWorkshopValues(model.fields))
+
+// A visitor coming back from sign-in or a purchase lands with the form they
+// left; the stash is one-shot, so a plain visit costs one storage read.
+onMounted(() => {
+  const restored = popWorkshopForm(model.slug, model.fields)
+  if (restored) values.value = { ...values.value, ...restored }
+})
+const stopStashing = onBeforeSignInLeave(() =>
+  stashWorkshopForm(model.slug, model.fields, values.value)
+)
+onUnmounted(stopStashing)
 const language = ref<WorkshopSnippetLanguage>('typescript')
 // `legacy: true` on purpose. Without it `isSupported` is just the Clipboard
 // API check, so on an insecure origin — a LAN-IP or staging preview, where
@@ -147,14 +174,14 @@ const languageLabels: Record<WorkshopSnippetLanguage, string> = {
       <TabsRoot v-model="language">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <TabsList
-            :aria-label="t('workshop.model.codeLanguage', locale)"
+            :aria-label="t('workshop.model.codeLanguage')"
             class="flex gap-1"
           >
             <TabsTrigger
               v-for="option in WORKSHOP_SNIPPET_LANGUAGES"
               :key="option"
               :value="option"
-              class="focus-visible:ring-primary-comfy-yellow/50 data-[state=active]:bg-primary-comfy-yellow cursor-pointer rounded-full px-4 py-2 text-sm text-primary-comfy-canvas/65 transition-colors hover:text-primary-comfy-canvas focus-visible:ring-2 focus-visible:outline-none data-[state=active]:text-primary-comfy-ink"
+              class="cursor-pointer rounded-full px-4 py-2 text-sm text-primary-comfy-canvas/65 transition-colors hover:text-primary-comfy-canvas focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none data-[state=active]:bg-primary-comfy-yellow data-[state=active]:text-primary-comfy-ink"
             >
               {{ languageLabels[option] }}
             </TabsTrigger>
@@ -162,14 +189,10 @@ const languageLabels: Record<WorkshopSnippetLanguage, string> = {
           <button
             type="button"
             :disabled="!canCopySnippet"
-            class="text-primary-comfy-yellow text-sm hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+            class="text-sm text-primary-comfy-yellow hover:underline disabled:cursor-not-allowed disabled:opacity-50"
             @click="copySnippet"
           >
-            {{
-              copied
-                ? t('workshop.model.copied', locale)
-                : t('workshop.model.copy', locale)
-            }}
+            {{ copied ? t('workshop.model.copied') : t('workshop.model.copy') }}
           </button>
         </div>
         <TabsContent
@@ -185,17 +208,17 @@ const languageLabels: Record<WorkshopSnippetLanguage, string> = {
           -->
           <pre
             tabindex="0"
-            class="focus-visible:ring-primary-comfy-yellow/50 mt-3 max-h-168 overflow-auto rounded-2xl border border-primary-comfy-canvas/10 bg-black p-6 text-sm/relaxed text-primary-comfy-canvas focus-visible:ring-2 focus-visible:outline-none"
+            class="mt-3 max-h-168 overflow-auto rounded-2xl border border-primary-comfy-canvas/10 bg-black p-6 text-sm/relaxed text-primary-comfy-canvas focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
           ><code>{{ option === language ? snippet : buildWorkshopSnippet(option, model.id, model.fields, values, idempotencyKey) }}</code></pre>
         </TabsContent>
       </TabsRoot>
       <a
-        :href="externalLinks.apiKeys"
+        :href="apiKeyHref"
         target="_blank"
         rel="noopener noreferrer"
-        class="text-primary-comfy-yellow mt-4 inline-flex text-sm font-medium hover:underline"
+        class="mt-4 inline-flex text-sm font-medium text-primary-comfy-yellow hover:underline"
       >
-        {{ t('workshop.model.getApiKey', locale) }}
+        {{ t('workshop.model.getApiKey') }}
       </a>
     </section>
   </div>

@@ -1,18 +1,9 @@
 <template>
-  <div class="flex w-full flex-col">
-    <header
-      class="flex h-12 items-center justify-between gap-2 border-b border-border-default px-4"
-    >
-      <div class="flex items-center gap-2">
-        <i class="icon-[comfy--extensions-blocks]" />
-        <h2 class="text-neutral m-0 text-base">
-          {{ $t('manager.survey.title') }}
-        </h2>
-      </div>
-      <Button size="icon" :aria-label="$t('g.close')" @click="onClose">
-        <i class="icon-[lucide--x] size-4" />
-      </Button>
-    </header>
+  <DialogPanel class="w-lg max-w-full" @close="onClose">
+    <template #title>
+      <i class="icon-[comfy--extensions-blocks]" />
+      {{ $t('manager.survey.title') }}
+    </template>
 
     <main class="px-5 py-4">
       <p
@@ -55,14 +46,14 @@
         </div>
       </div>
     </main>
-  </div>
+  </DialogPanel>
 </template>
 
 <script setup lang="ts">
 import { useEventListener, useTimeoutFn } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import DialogPanel from '@/components/ui/dialog/DialogPanel.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 

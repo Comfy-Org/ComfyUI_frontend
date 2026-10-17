@@ -1,4 +1,5 @@
 ﻿import * as THREE from 'three'
+import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ControlsManager } from './ControlsManager'
@@ -7,7 +8,7 @@ const { mockOrbitControls } = vi.hoisted(() => ({
   mockOrbitControls: vi.fn()
 }))
 
-vi.mock('three/examples/jsm/controls/OrbitControls', () => {
+vi.mock(import('three/examples/jsm/controls/OrbitControls'), () => {
   type Listener = () => void
   class OrbitControls {
     object: THREE.Camera
@@ -31,7 +32,7 @@ vi.mock('three/examples/jsm/controls/OrbitControls', () => {
       this.listeners.get(event)?.forEach((cb) => cb())
     }
   }
-  return { OrbitControls }
+  return { OrbitControls: fromAny(OrbitControls) }
 })
 
 function makeElement() {

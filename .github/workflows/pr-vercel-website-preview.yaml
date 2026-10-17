@@ -75,6 +75,11 @@ jobs:
 
             <sub>${{ steps.urls.outputs.build-note }}</sub>
 
+            <details>
+            <summary>Deployment details</summary>
+
             <sub>This commit: ${{ steps.urls.outputs.unique-url }}</sub>
 
             <sub>Last updated: ${{ github.event.workflow_run.updated_at }} for `${{ steps.urls.outputs.short-sha }}`</sub>
+
+            </details>

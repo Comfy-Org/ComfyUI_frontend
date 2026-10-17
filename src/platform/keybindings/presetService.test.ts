@@ -1,7 +1,5 @@
-import type * as I18nModule from '@/i18n'
-import type { ComfyApp } from '@/scripts/app'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -9,37 +7,18 @@ import { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import type { KeybindingPreset } from '@/platform/keybindings/types'
 
-const mockApi = vi.hoisted(() => ({
-  listUserDataFullInfo: vi.fn(),
-  getUserData: vi.fn(),
-  storeUserData: vi.fn(),
-  deleteUserData: vi.fn()
-}))
+import { api } from '@/scripts/api'
 
 const mockDownloadBlob = vi.hoisted(() => vi.fn())
 const mockUploadFile = vi.hoisted(() => vi.fn())
-const mockConfirm = vi.hoisted(() => vi.fn(async () => true))
-const mockPrompt = vi.hoisted(() =>
-  vi.fn<() => Promise<string | null>>(async () => 'test-preset')
-)
-const mockShowSmallLayoutDialog = vi.hoisted(() =>
-  vi.fn((options: Record<string, unknown>) => {
-    const props = options.props as Record<string, unknown> | undefined
-    const onResult = props?.onResult as ((v: boolean) => void) | undefined
-    onResult?.(true)
-  })
-)
 const mockSettingSet = vi.hoisted(() =>
   vi.fn<ReturnType<typeof useSettingStore>['set']>(async () => undefined)
 )
-const mockToastAdd = vi.hoisted(() => vi.fn())
 const mockPersistUserKeybindings = vi.hoisted(() =>
   vi.fn(async () => undefined)
 )
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: mockApi
-}))
+vi.mock(import('@/scripts/api'))
 
 vi.mock(import('@/base/common/downloadUtil'), () => ({
   downloadBlob: mockDownloadBlob
@@ -49,24 +28,34 @@ vi.mock(import('@/scripts/utils'), () => ({
   uploadFile: mockUploadFile
 }))
 
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: () => ({
-    confirm: mockConfirm,
-    prompt: mockPrompt,
-    showSmallLayoutDialog: mockShowSmallLayoutDialog
-  })
-}))
+vi.mock(import('@/services/dialogService'))
 
-vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
-  useErrorHandling: () => ({
-    wrapWithErrorHandling: <T extends (...args: unknown[]) => unknown>(fn: T) =>
-      fn,
-    wrapWithErrorHandlingAsync: <T extends (...args: unknown[]) => unknown>(
-      fn: T
-    ) => fn,
-    toastErrorHandler: vi.fn()
-  })
-}))
+function resolveSmallLayoutDialog(
+  options: Parameters<
+    ReturnType<typeof useDialogService>['showSmallLayoutDialog']
+  >[0],
+  result: boolean
+) {
+  const props = options.props
+  if (props && 'onResult' in props && typeof props.onResult === 'function') {
+    props.onResult(result)
+  }
+  return useDialogStore().showDialog(options)
+}
+
+function closeSmallLayoutDialog(
+  options: Parameters<
+    ReturnType<typeof useDialogService>['showSmallLayoutDialog']
+  >[0]
+) {
+  const props = options.dialogComponentProps
+  if (props && 'onClose' in props && typeof props.onClose === 'function') {
+    props.onClose()
+  }
+  return useDialogStore().showDialog(options)
+}
+
+vi.mock(import('@/composables/useErrorHandling'))
 
 vi.mock<unknown>(import('@/platform/keybindings/keybindingService'), () => ({
   useKeybindingService: () => ({
@@ -74,12 +63,14 @@ vi.mock<unknown>(import('@/platform/keybindings/keybindingService'), () => ({
   })
 }))
 
-vi.mock(import('@/i18n'), async (importOriginal) => ({
-  ...(await importOriginal<typeof I18nModule>()),
-  t: (key: string) => key
-}))
+vi.mock(import('@/i18n'))
 
 beforeEach(() => {
+  vi.mocked(useDialogService()).confirm.mockResolvedValue(true)
+  vi.mocked(useDialogService()).prompt.mockResolvedValue('test-preset')
+  vi.mocked(useDialogService()).showSmallLayoutDialog.mockImplementation(
+    (options) => resolveSmallLayoutDialog(options, true)
+  )
   vi.mocked(useDialogStore().closeDialog).mockImplementation(() => undefined)
   useDialogStore().dialogStack = []
 })
@@ -87,7 +78,6 @@ beforeEach(() => {
 beforeEach(() => {
   vi.mocked(useSettingStore().set).mockImplementation(mockSettingSet)
   vi.mocked(useSettingStore().get).mockImplementation(() => 'default')
-  vi.mocked(useToastStore().add).mockImplementation(mockToastAdd)
 })
 
 describe('useKeybindingPresetService', () => {
@@ -104,7 +94,7 @@ describe('useKeybindingPresetService', () => {
 
   describe('listPresets', () => {
     it('parses API response correctly', async () => {
-      mockApi.listUserDataFullInfo.mockResolvedValue([
+      vi.mocked(api.listUserDataFullInfo).mockResolvedValue([
         { path: 'vim.json', size: 100, modified: 123 },
         { path: 'emacs.json', size: 200, modified: 456 }
       ])
@@ -112,12 +102,12 @@ describe('useKeybindingPresetService', () => {
       const service = await getPresetService()
       const presets = await service.listPresets()
 
-      expect(mockApi.listUserDataFullInfo).toHaveBeenCalledWith('keybindings')
+      expect(api.listUserDataFullInfo).toHaveBeenCalledWith('keybindings')
       expect(presets).toEqual(['vim', 'emacs'])
     })
 
     it('returns empty array when no presets exist', async () => {
-      mockApi.listUserDataFullInfo.mockResolvedValue([])
+      vi.mocked(api.listUserDataFullInfo).mockResolvedValue([])
 
       const service = await getPresetService()
       const presets = await service.listPresets()
@@ -128,7 +118,7 @@ describe('useKeybindingPresetService', () => {
 
   describe('savePreset', () => {
     it('calls storeUserData with correct path and data', async () => {
-      mockApi.storeUserData.mockResolvedValue(new Response())
+      vi.mocked(api.storeUserData).mockResolvedValue(new Response())
 
       const keybinding = new KeybindingImpl({
         commandId: 'test.cmd',
@@ -139,7 +129,7 @@ describe('useKeybindingPresetService', () => {
       const service = await getPresetService()
       await service.savePreset('my-preset')
 
-      expect(mockApi.storeUserData).toHaveBeenCalledWith(
+      expect(api.storeUserData).toHaveBeenCalledWith(
         'keybindings/my-preset.json',
         expect.stringContaining('"name":"my-preset"'),
         { overwrite: true, stringify: false }
@@ -148,7 +138,7 @@ describe('useKeybindingPresetService', () => {
     })
 
     it('does not update store when storeUserData rejects', async () => {
-      mockApi.storeUserData.mockRejectedValue(new Error('Server error'))
+      vi.mocked(api.storeUserData).mockRejectedValue(new Error('Server error'))
 
       const keybinding = new KeybindingImpl({
         commandId: 'test.cmd',
@@ -169,7 +159,7 @@ describe('useKeybindingPresetService', () => {
 
   describe('deletePreset', () => {
     it('calls deleteUserData and resets to default if active', async () => {
-      mockApi.deleteUserData.mockResolvedValue(
+      vi.mocked(api.deleteUserData).mockResolvedValue(
         new Response(null, { status: 200 })
       )
 
@@ -184,15 +174,13 @@ describe('useKeybindingPresetService', () => {
       const service = await getPresetService()
       await service.deletePreset('vim')
 
-      expect(mockApi.deleteUserData).toHaveBeenCalledWith(
-        'keybindings/vim.json'
-      )
+      expect(api.deleteUserData).toHaveBeenCalledWith('keybindings/vim.json')
       expect(store.currentPresetName).toBe('default')
       expect(Object.keys(store.getUserKeybindings())).toHaveLength(0)
     })
 
     it('throws when deleteUserData response is not ok', async () => {
-      mockApi.deleteUserData.mockResolvedValue(
+      vi.mocked(api.deleteUserData).mockResolvedValue(
         new Response(null, { status: 500 })
       )
 
@@ -205,16 +193,16 @@ describe('useKeybindingPresetService', () => {
     })
 
     it('does nothing when user cancels confirmation', async () => {
-      mockConfirm.mockResolvedValueOnce(false)
+      vi.mocked(useDialogService()).confirm.mockResolvedValueOnce(false)
 
       const service = await getPresetService()
       await service.deletePreset('vim')
 
-      expect(mockApi.deleteUserData).not.toHaveBeenCalled()
+      expect(api.deleteUserData).not.toHaveBeenCalled()
     })
 
     it('does not reset to default when deleting a non-active preset', async () => {
-      mockApi.deleteUserData.mockResolvedValue(
+      vi.mocked(api.deleteUserData).mockResolvedValue(
         new Response(null, { status: 200 })
       )
 
@@ -280,15 +268,15 @@ describe('useKeybindingPresetService', () => {
           type: 'application/json'
         })
       )
-      mockApi.storeUserData.mockResolvedValue(new Response())
-      mockApi.getUserData.mockResolvedValue(
+      vi.mocked(api.storeUserData).mockResolvedValue(new Response())
+      vi.mocked(api.getUserData).mockResolvedValue(
         new Response(JSON.stringify(validPreset), { status: 200 })
       )
 
       const service = await getPresetService()
       await service.importPreset()
 
-      expect(mockApi.storeUserData).toHaveBeenCalledWith(
+      expect(api.storeUserData).toHaveBeenCalledWith(
         'keybindings/imported.json',
         JSON.stringify(validPreset),
         { overwrite: true, stringify: false }
@@ -336,7 +324,7 @@ describe('useKeybindingPresetService', () => {
         newBindings: [],
         unsetBindings: []
       }
-      mockApi.getUserData.mockResolvedValue(
+      vi.mocked(api.getUserData).mockResolvedValue(
         new Response(JSON.stringify(presetData), { status: 200 })
       )
 
@@ -464,12 +452,10 @@ describe('useKeybindingPresetService', () => {
         })
       )
 
-      mockShowSmallLayoutDialog.mockImplementationOnce(
-        (options: Record<string, unknown>) => {
-          const props = options.props as Record<string, unknown> | undefined
-          const onResult = props?.onResult as ((v: boolean) => void) | undefined
-          onResult?.(false)
-        }
+      vi.mocked(
+        useDialogService()
+      ).showSmallLayoutDialog.mockImplementationOnce((options) =>
+        resolveSmallLayoutDialog(options, false)
       )
 
       const targetPreset: KeybindingPreset = {
@@ -479,7 +465,7 @@ describe('useKeybindingPresetService', () => {
         ],
         unsetBindings: []
       }
-      mockApi.getUserData.mockResolvedValueOnce(
+      vi.mocked(api.getUserData).mockResolvedValueOnce(
         new Response(JSON.stringify(targetPreset), { status: 200 })
       )
 
@@ -503,7 +489,7 @@ describe('useKeybindingPresetService', () => {
         })
       )
 
-      mockApi.storeUserData.mockResolvedValueOnce(new Response())
+      vi.mocked(api.storeUserData).mockResolvedValueOnce(new Response())
 
       const targetPreset: KeybindingPreset = {
         name: 'vim',
@@ -512,14 +498,14 @@ describe('useKeybindingPresetService', () => {
         ],
         unsetBindings: []
       }
-      mockApi.getUserData.mockResolvedValueOnce(
+      vi.mocked(api.getUserData).mockResolvedValueOnce(
         new Response(JSON.stringify(targetPreset), { status: 200 })
       )
 
       const service = await getPresetService()
       await service.switchPreset('vim')
 
-      expect(mockApi.storeUserData).toHaveBeenCalledWith(
+      expect(api.storeUserData).toHaveBeenCalledWith(
         'keybindings/my-preset.json',
         expect.any(String),
         { overwrite: true, stringify: false }
@@ -535,23 +521,17 @@ describe('useKeybindingPresetService', () => {
         })
       )
 
-      mockShowSmallLayoutDialog.mockImplementationOnce(
-        (options: Record<string, unknown>) => {
-          const dialogComponentProps = options.dialogComponentProps as
-            | Record<string, unknown>
-            | undefined
-          const onClose = dialogComponentProps?.onClose as
-            | (() => void)
-            | undefined
-          onClose?.()
-        }
+      vi.mocked(
+        useDialogService()
+      ).showSmallLayoutDialog.mockImplementationOnce((options) =>
+        closeSmallLayoutDialog(options)
       )
 
       const service = await getPresetService()
       await service.switchPreset('vim')
 
       expect(store.currentPresetName).toBe('default')
-      expect(mockApi.getUserData).not.toHaveBeenCalled()
+      expect(api.getUserData).not.toHaveBeenCalled()
     })
 
     it('switches without dialog when preset is not modified', async () => {
@@ -562,14 +542,14 @@ describe('useKeybindingPresetService', () => {
         ],
         unsetBindings: []
       }
-      mockApi.getUserData.mockResolvedValueOnce(
+      vi.mocked(api.getUserData).mockResolvedValueOnce(
         new Response(JSON.stringify(targetPreset), { status: 200 })
       )
 
       const service = await getPresetService()
       await service.switchPreset('vim')
 
-      expect(mockShowSmallLayoutDialog).not.toHaveBeenCalled()
+      expect(useDialogService().showSmallLayoutDialog).not.toHaveBeenCalled()
       expect(store.currentPresetName).toBe('vim')
     })
 
@@ -582,8 +562,8 @@ describe('useKeybindingPresetService', () => {
       )
 
       // promptAndSaveNewPreset succeeds
-      mockApi.listUserDataFullInfo.mockResolvedValueOnce([])
-      mockApi.storeUserData.mockResolvedValueOnce(new Response())
+      vi.mocked(api.listUserDataFullInfo).mockResolvedValueOnce([])
+      vi.mocked(api.storeUserData).mockResolvedValueOnce(new Response())
 
       const targetPreset: KeybindingPreset = {
         name: 'vim',
@@ -592,14 +572,14 @@ describe('useKeybindingPresetService', () => {
         ],
         unsetBindings: []
       }
-      mockApi.getUserData.mockResolvedValueOnce(
+      vi.mocked(api.getUserData).mockResolvedValueOnce(
         new Response(JSON.stringify(targetPreset), { status: 200 })
       )
 
       const service = await getPresetService()
       await service.switchPreset('vim')
 
-      expect(mockPrompt).toHaveBeenCalled()
+      expect(useDialogService().prompt).toHaveBeenCalled()
       expect(store.currentPresetName).toBe('vim')
     })
 
@@ -612,12 +592,12 @@ describe('useKeybindingPresetService', () => {
       )
 
       // promptAndSaveNewPreset returns false (user cancels prompt)
-      mockPrompt.mockResolvedValueOnce(null)
+      vi.mocked(useDialogService()).prompt.mockResolvedValueOnce(null)
 
       const service = await getPresetService()
       await service.switchPreset('vim')
 
-      expect(mockApi.getUserData).not.toHaveBeenCalled()
+      expect(api.getUserData).not.toHaveBeenCalled()
       expect(store.currentPresetName).toBe('default')
     })
 
@@ -636,12 +616,10 @@ describe('useKeybindingPresetService', () => {
       )
 
       // Dialog returns false (discard)
-      mockShowSmallLayoutDialog.mockImplementationOnce(
-        (options: Record<string, unknown>) => {
-          const props = options.props as Record<string, unknown> | undefined
-          const onResult = props?.onResult as ((v: boolean) => void) | undefined
-          onResult?.(false)
-        }
+      vi.mocked(
+        useDialogService()
+      ).showSmallLayoutDialog.mockImplementationOnce((options) =>
+        resolveSmallLayoutDialog(options, false)
       )
 
       const service = await getPresetService()
@@ -654,7 +632,7 @@ describe('useKeybindingPresetService', () => {
 
   describe('promptAndSaveNewPreset', () => {
     it('returns false when user cancels prompt', async () => {
-      mockPrompt.mockResolvedValueOnce(null)
+      vi.mocked(useDialogService()).prompt.mockResolvedValueOnce(null)
 
       const service = await getPresetService()
       const result = await service.promptAndSaveNewPreset()
@@ -663,7 +641,7 @@ describe('useKeybindingPresetService', () => {
     })
 
     it('returns false when user enters empty name', async () => {
-      mockPrompt.mockResolvedValueOnce('   ')
+      vi.mocked(useDialogService()).prompt.mockResolvedValueOnce('   ')
 
       const service = await getPresetService()
       const result = await service.promptAndSaveNewPreset()
@@ -672,14 +650,14 @@ describe('useKeybindingPresetService', () => {
     })
 
     it('saves successfully with valid name', async () => {
-      mockApi.listUserDataFullInfo.mockResolvedValueOnce([])
-      mockApi.storeUserData.mockResolvedValueOnce(new Response())
+      vi.mocked(api.listUserDataFullInfo).mockResolvedValueOnce([])
+      vi.mocked(api.storeUserData).mockResolvedValueOnce(new Response())
 
       const service = await getPresetService()
       const result = await service.promptAndSaveNewPreset()
 
       expect(result).toBe(true)
-      expect(mockApi.storeUserData).toHaveBeenCalledWith(
+      expect(api.storeUserData).toHaveBeenCalledWith(
         'keybindings/test-preset.json',
         expect.any(String),
         { overwrite: true, stringify: false }
@@ -687,17 +665,17 @@ describe('useKeybindingPresetService', () => {
     })
 
     it('confirms overwrite when preset name already exists', async () => {
-      mockApi.listUserDataFullInfo.mockResolvedValueOnce([
+      vi.mocked(api.listUserDataFullInfo).mockResolvedValueOnce([
         { path: 'test-preset.json', size: 100, modified: 123 }
       ])
-      mockApi.storeUserData.mockResolvedValueOnce(new Response())
+      vi.mocked(api.storeUserData).mockResolvedValueOnce(new Response())
 
       const service = await getPresetService()
       const result = await service.promptAndSaveNewPreset()
 
       expect(result).toBe(true)
-      expect(mockConfirm).toHaveBeenCalled()
-      expect(mockApi.storeUserData).toHaveBeenCalledWith(
+      expect(useDialogService().confirm).toHaveBeenCalled()
+      expect(api.storeUserData).toHaveBeenCalledWith(
         'keybindings/test-preset.json',
         expect.any(String),
         { overwrite: true, stringify: false }
@@ -705,16 +683,16 @@ describe('useKeybindingPresetService', () => {
     })
 
     it('returns false when user rejects overwrite', async () => {
-      mockApi.listUserDataFullInfo.mockResolvedValueOnce([
+      vi.mocked(api.listUserDataFullInfo).mockResolvedValueOnce([
         { path: 'test-preset.json', size: 100, modified: 123 }
       ])
-      mockConfirm.mockResolvedValueOnce(false)
+      vi.mocked(useDialogService()).confirm.mockResolvedValueOnce(false)
 
       const service = await getPresetService()
       const result = await service.promptAndSaveNewPreset()
 
       expect(result).toBe(false)
-      expect(mockApi.storeUserData).not.toHaveBeenCalled()
+      expect(api.storeUserData).not.toHaveBeenCalled()
     })
   })
 
@@ -766,7 +744,7 @@ describe('useKeybindingPresetService', () => {
 
   describe('loadPreset error handling', () => {
     it('throws when API returns non-ok response', async () => {
-      mockApi.getUserData.mockResolvedValueOnce(
+      vi.mocked(api.getUserData).mockResolvedValueOnce(
         new Response(null, { status: 404 })
       )
 
@@ -777,7 +755,7 @@ describe('useKeybindingPresetService', () => {
     })
 
     it('throws when response contains invalid JSON', async () => {
-      mockApi.getUserData.mockResolvedValueOnce(
+      vi.mocked(api.getUserData).mockResolvedValueOnce(
         new Response('not-json{{{', { status: 200 })
       )
 
@@ -786,7 +764,7 @@ describe('useKeybindingPresetService', () => {
     })
 
     it('throws when Zod validation fails', async () => {
-      mockApi.getUserData.mockResolvedValueOnce(
+      vi.mocked(api.getUserData).mockResolvedValueOnce(
         new Response(JSON.stringify({ name: 'valid', wrongField: true }), {
           status: 200
         })
@@ -800,7 +778,4 @@ describe('useKeybindingPresetService', () => {
   })
 })
 
-vi.mock(import('@/scripts/app'), async () => {
-  const { fromPartial } = await import('@total-typescript/shoehorn')
-  return { app: fromPartial<ComfyApp>({}) }
-})
+vi.mock(import('@/scripts/app'))

@@ -1,6 +1,6 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro'
-import PaymentStatusSection from '../../components/payment/PaymentStatusSection.vue'
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import PaymentStatusSection from '@/components/payment/PaymentStatusSection.vue'
 ---
 
 <BaseLayout
@@ -10,3 +10,10 @@ import PaymentStatusSection from '../../components/payment/PaymentStatusSection.
 >
   <PaymentStatusSection status="failed" />
 </BaseLayout>
+
+<script>
+  if (window.opener) {
+    window.opener.focus()
+    window.close()
+  }
+</script>

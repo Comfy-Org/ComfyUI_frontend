@@ -13,7 +13,11 @@ const { title, links } = defineProps<{
 
 <template>
   <nav :aria-label="title" class="flex flex-col gap-4">
-    <h3 class="text-sm font-bold">{{ title }}</h3>
+    <h3
+      class="text-sm font-bold tracking-wider text-primary-comfy-canvas/70 uppercase"
+    >
+      {{ title }}
+    </h3>
     <div class="flex flex-col">
       <a
         v-for="link in links"
@@ -21,7 +25,7 @@ const { title, links } = defineProps<{
         :href="link.href"
         :target="link.external ? '_blank' : undefined"
         :rel="link.external ? 'noopener' : undefined"
-        class="hover:text-primary-warm-white block py-1.5 text-sm transition-colors"
+        class="block py-1.5 text-sm transition-colors hover:text-primary-warm-white"
       >
         {{ link.label }}
         <img

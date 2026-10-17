@@ -230,6 +230,9 @@
   "Comfy_NewBlankWorkflow": {
     "label": "新建空白工作流"
   },
+  "Comfy_Onboarding_Replay": {
+    "label": "重新播放入门引导"
+  },
   "Comfy_OpenClipspace": {
     "label": "打开剪贴板"
   },
@@ -277,9 +280,6 @@
   },
   "Comfy_Subgraph_SetSearchAliases": {
     "label": "设置子图搜索别名"
-  },
-  "Comfy_ToggleAssetAPI": {
-    "label": "实验性：启用 AssetAPI"
   },
   "Comfy_ToggleCanvasInfo": {
     "label": "画布性能"

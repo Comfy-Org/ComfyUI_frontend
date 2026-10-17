@@ -105,7 +105,7 @@
             id="profile-description"
             v-model="description"
             :placeholder="$t('comfyHubProfile.descriptionPlaceholder')"
-            class="h-24 resize-none rounded-lg border-none bg-secondary-background p-4 text-sm shadow-none"
+            class="h-24 resize-none p-4 shadow-none"
           />
         </div>
       </div>
@@ -135,7 +135,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useI18n } from 'vue-i18n'
 import { useObjectUrl } from '@vueuse/core'
 
@@ -148,7 +148,8 @@ import {
   MAX_IMAGE_SIZE_MB
 } from '@/platform/workflow/sharing/utils/validateFileSize'
 import { useComfyHubProfileGate } from '@/platform/workflow/sharing/composables/useComfyHubProfileGate'
-import type { ComfyHubProfile } from '@/schemas/apiSchema'
+import type { ComfyHubProfile } from '@/platform/workflow/sharing/schemas/shareSchemas'
+import { getErrorMessage } from '@/utils/errorUtil'
 
 const {
   onProfileCreated,
@@ -205,10 +206,8 @@ async function handleCreate() {
     })
     onProfileCreated(profile)
   } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: error instanceof Error ? error.message : t('g.error')
+    toast.error(t('g.error'), {
+      description: getErrorMessage(error) ?? t('g.error')
     })
   } finally {
     isCreating.value = false

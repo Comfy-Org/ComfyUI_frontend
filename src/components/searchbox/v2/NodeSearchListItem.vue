@@ -4,7 +4,7 @@
   >
     <div class="flex min-w-0 flex-1 flex-col gap-1 overflow-hidden">
       <!-- Row 1: Name (left) + badges (right) -->
-      <div class="text-foreground flex items-center gap-2 text-sm">
+      <div class="flex items-center gap-2 text-sm text-base-foreground">
         <span
           v-if="isBookmarked && !hideBookmarkIcon"
           role="img"
@@ -128,8 +128,8 @@ import HighlightedText from '@/components/searchbox/HighlightedText.vue'
 import { NODE_TO_ESSENTIALS_CATEGORY } from '@/constants/essentialsNodes'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { useNodeFrequencyStore } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
+import { useNodeFrequencyStore } from '@/stores/nodeFrequencyStore'
 import { CORE_NODE_MODULES, NodeSourceType } from '@/types/nodeSource'
 import { getProviderIcon, getProviderName } from '@/utils/categoryUtil'
 import { formatNumberWithSuffix } from '@/utils/formatUtil'

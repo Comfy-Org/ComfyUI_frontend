@@ -1,4 +1,4 @@
-import type { MissingNodeType } from '@/types/comfy'
+import type { MissingNodeType } from '@/platform/nodeReplacement/types'
 
 import type { MissingNodePack } from '../types'
 

@@ -4,8 +4,9 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { computed, ref } from 'vue'
 import type { AnchorHTMLAttributes, HTMLAttributes } from 'vue'
 
-import BrandButton from '../common/BrandButton.vue'
-import CheckIcon from '../icons/CheckIcon.vue'
+import BrandButton from '@/components/common/BrandButton.vue'
+import CheckIcon from '@/components/icons/CheckIcon.vue'
+import BuildConfiguratorChipGroup from './BuildConfiguratorChipGroup.vue'
 
 type Cta = {
   label: string
@@ -48,6 +49,7 @@ const {
   modelsUnit = 'models',
   pinnedLabel = 'pinned',
   moreOptionsLabel = 'more options',
+  showOptionDetails = false,
   class: className
 } = defineProps<{
   heading: string
@@ -69,6 +71,7 @@ const {
   modelsUnit?: string
   pinnedLabel?: string
   moreOptionsLabel?: string
+  showOptionDetails?: boolean
   class?: HTMLAttributes['class']
 }>()
 
@@ -80,12 +83,6 @@ const activeNodeIds = ref(
 const activeModelIds = ref(
   models.filter((model) => model.selected).map((model) => model.id)
 )
-
-function toggleId(ids: string[], id: string): string[] {
-  return ids.includes(id)
-    ? ids.filter((existing) => existing !== id)
-    : [...ids, id]
-}
 
 const selectedEnvironment = computed(() =>
   environments.find(
@@ -109,29 +106,20 @@ const pillClasses = (selected: boolean) =>
       ? 'bg-primary-comfy-plum text-primary-warm-white'
       : 'bg-primary-comfy-canvas/8 text-primary-warm-white/55 hover:bg-primary-comfy-canvas/15'
   )
-
-const chipClasses = (option: ChipOption, selected: boolean) =>
-  cn(
-    'flex cursor-pointer items-center gap-2 rounded-full px-3.5 py-2 transition-colors',
-    option.mono ? 'font-mono text-[11.5px]' : 'text-[13px]',
-    selected
-      ? 'bg-primary-comfy-plum text-primary-warm-white'
-      : 'bg-primary-comfy-canvas/8 text-primary-comfy-canvas hover:bg-primary-comfy-canvas/15'
-  )
 </script>
 
 <template>
   <section
     :class="
-      cn('max-w-9xl mx-auto w-full px-6 py-14 md:py-20 lg:px-12', className)
+      cn('mx-auto w-full max-w-9xl px-6 py-14 md:py-20 lg:px-12', className)
     "
   >
     <div
-      class="bg-primary-comfy-ink-light flex flex-col gap-10 rounded-4xl p-6 md:p-10 lg:flex-row lg:gap-16 lg:p-14"
+      class="flex flex-col gap-10 rounded-4xl bg-primary-comfy-ink-light p-6 md:p-10 lg:flex-row lg:gap-16 lg:p-14"
     >
       <div class="flex w-full flex-col justify-center lg:flex-1 lg:pl-6">
         <p
-          class="text-primary-comfy-yellow mb-6 text-sm font-extrabold tracking-wider uppercase"
+          class="mb-6 text-sm font-extrabold tracking-wider text-primary-comfy-yellow uppercase"
         >
           {{ eyebrow }}
         </p>
@@ -155,7 +143,7 @@ const chipClasses = (option: ChipOption, selected: boolean) =>
             class="flex items-start gap-3 text-sm/relaxed text-primary-comfy-canvas md:text-base/relaxed"
           >
             <CheckIcon
-              class="text-primary-comfy-yellow mt-0.5 size-5 shrink-0"
+              class="mt-0.5 size-5 shrink-0 text-primary-comfy-yellow"
             />
             <span>{{ feature }}</span>
           </li>
@@ -192,6 +180,7 @@ const chipClasses = (option: ChipOption, selected: boolean) =>
               {{ release }}
             </button>
             <span
+              v-if="showOptionDetails"
               class="self-center text-[13px] text-primary-warm-white/55 underline underline-offset-4"
             >
               {{ moreOptionsLabel }}
@@ -217,6 +206,7 @@ const chipClasses = (option: ChipOption, selected: boolean) =>
               {{ environmentLabel(environment) }}
             </button>
             <span
+              v-if="showOptionDetails"
               class="self-center text-[13px] text-primary-warm-white/55 underline underline-offset-4"
             >
               {{ moreOptionsLabel }}
@@ -224,74 +214,23 @@ const chipClasses = (option: ChipOption, selected: boolean) =>
           </div>
         </div>
 
-        <div class="mt-6" role="group" :aria-label="nodesLabel">
-          <p
-            class="text-[0.65rem] tracking-[0.12em] text-primary-warm-white/55 uppercase"
-          >
-            {{ nodesLabel }}
-          </p>
-          <div class="mt-3 flex flex-wrap gap-2">
-            <button
-              v-for="node in nodes"
-              :key="node.id"
-              type="button"
-              :aria-pressed="activeNodeIds.includes(node.id)"
-              :class="chipClasses(node, activeNodeIds.includes(node.id))"
-              @click="activeNodeIds = toggleId(activeNodeIds, node.id)"
-            >
-              <span
-                class="size-1.5 shrink-0 rounded-full"
-                :class="
-                  activeNodeIds.includes(node.id)
-                    ? 'bg-primary-comfy-yellow'
-                    : 'border border-primary-warm-gray'
-                "
-              />
-              {{ node.label }}
-            </button>
-            <span
-              class="self-center text-[13px] text-primary-warm-white/55 underline underline-offset-4"
-            >
-              {{ moreOptionsLabel }}
-            </span>
-          </div>
-        </div>
-
-        <div class="mt-6" role="group" :aria-label="modelsLabel">
-          <p
-            class="text-[0.65rem] tracking-[0.12em] text-primary-warm-white/55 uppercase"
-          >
-            {{ modelsLabel }}
-          </p>
-          <div class="mt-3 flex flex-wrap gap-2">
-            <button
-              v-for="model in models"
-              :key="model.id"
-              type="button"
-              :aria-pressed="activeModelIds.includes(model.id)"
-              :class="chipClasses(model, activeModelIds.includes(model.id))"
-              @click="activeModelIds = toggleId(activeModelIds, model.id)"
-            >
-              <span
-                class="size-1.5 shrink-0 rounded-full"
-                :class="
-                  activeModelIds.includes(model.id)
-                    ? 'bg-primary-comfy-yellow'
-                    : 'border border-primary-warm-gray'
-                "
-              />
-              {{ model.label }}
-            </button>
-            <span
-              class="self-center text-[13px] text-primary-warm-white/55 underline underline-offset-4"
-            >
-              {{ moreOptionsLabel }}
-            </span>
-          </div>
-        </div>
+        <BuildConfiguratorChipGroup
+          v-model="activeNodeIds"
+          :label="nodesLabel"
+          :options="nodes"
+          :show-option-details="showOptionDetails"
+          :more-options-label="moreOptionsLabel"
+        />
+        <BuildConfiguratorChipGroup
+          v-model="activeModelIds"
+          :label="modelsLabel"
+          :options="models"
+          :show-option-details="showOptionDetails"
+          :more-options-label="moreOptionsLabel"
+        />
 
         <div
-          class="border-primary-comfy-plum/25 mt-8 flex flex-col gap-5 border-t pt-5 sm:flex-row sm:items-end sm:justify-between"
+          class="mt-8 flex flex-col gap-5 border-t border-primary-comfy-plum/25 pt-5 sm:flex-row sm:items-end sm:justify-between"
         >
           <p
             class="font-mono text-[11.5px]/relaxed text-primary-warm-white/55"

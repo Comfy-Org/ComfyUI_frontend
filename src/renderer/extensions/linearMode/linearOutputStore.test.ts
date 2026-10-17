@@ -5,31 +5,24 @@ import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import { toNodeId } from '@/types/nodeId'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
+import type { Ref } from 'vue'
 
+import { useAppMode } from '@/composables/useAppMode'
 import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOutputStore'
-import type { ExecutedWsMessage } from '@/schemas/apiSchema'
+import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
 
-const isAppModeRef = ref(true)
-
-const { apiTarget } = vi.hoisted(() => ({
-  apiTarget: new EventTarget()
-}))
+import { api as apiTarget } from '@/scripts/api'
 
 vi.mock(import('@/platform/assets/composables/media/assetMappers'))
 
-vi.mock<unknown>(import('@/composables/useAppMode'), () => ({
-  useAppMode: () => ({
-    isAppMode: isAppModeRef,
-    isBuilderMode: ref(false)
-  })
-}))
+vi.mock(import('@/composables/useAppMode'))
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: Object.assign(apiTarget, {
-    apiURL: (path: string) => path
-  })
-}))
+vi.mock(import('@/scripts/api'))
+
+beforeEach(() => {
+  vi.mocked(apiTarget.apiURL).mockImplementation((path) => path)
+})
 
 function setJobWorkflowPath(jobId: string, path: string) {
   const next = new Map(useExecutionStore().jobIdToSessionWorkflowPath)
@@ -53,10 +46,13 @@ function makeExecutedDetail(
 }
 
 describe('linearOutputStore', () => {
+  let isAppModeRef: Ref<boolean>
+
   beforeEach(() => {
+    isAppModeRef = ref(true)
+    useAppMode().isAppMode = computed(() => isAppModeRef.value)
     useExecutionStore().activeJobId = null
     useJobPreviewStore().clearAllPreviews()
-    isAppModeRef.value = true
     useWorkflowStore().activeWorkflow = fromPartial({
       path: 'workflows/test-workflow.json'
     })
@@ -1196,7 +1192,7 @@ describe('linearOutputStore', () => {
           '1'
         )
       })
-      apiTarget.dispatchEvent(event)
+      apiTarget.dispatchCustomEvent('executed', event.detail)
 
       // Dog's latent preview also arrives
       useJobPreviewStore().setPreviewUrl('job-dog', 'blob:dog-latent', '2')
@@ -1287,7 +1283,7 @@ describe('linearOutputStore', () => {
           '3'
         )
       })
-      apiTarget.dispatchEvent(event)
+      apiTarget.dispatchCustomEvent('executed', event.detail)
 
       expect(
         store.inProgressItems.filter((i) => i.state === 'image')

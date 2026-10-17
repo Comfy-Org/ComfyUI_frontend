@@ -183,10 +183,6 @@ async function renderViewerContent(options: RenderOptions = {}) {
         SceneControls: {
           name: 'SceneControls',
           template: '<div data-testid="scene-controls" />'
-        },
-        Button: {
-          name: 'Button',
-          template: '<button type="button"><slot /></button>'
         }
       }
     }

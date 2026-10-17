@@ -1,4 +1,4 @@
-import type { INodeInputSlot } from '@/lib/litegraph/src/litegraph'
+import type { INodeInputSlot } from '@/lib/litegraph/src/types/slots'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetId } from '@/types/widgetId'
@@ -32,6 +32,9 @@ export function createPromotedWidgetStoreProjection(
     },
     get options() {
       return store.getWidget(id)?.options ?? {}
+    },
+    set options(next) {
+      store.setOptions(id, next)
     },
     get value() {
       return store.getWidget(id)?.value

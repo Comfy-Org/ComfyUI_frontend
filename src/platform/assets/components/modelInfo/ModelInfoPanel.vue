@@ -44,7 +44,7 @@
           :href="sourceUrl"
           target="_blank"
           rel="noopener noreferrer"
-          class="hover:text-foreground inline-flex items-center gap-1.5 text-muted-foreground no-underline transition-colors"
+          class="inline-flex items-center gap-1.5 text-muted-foreground no-underline transition-colors hover:text-base-foreground"
         >
           <img
             v-if="sourceName === 'Civitai'"
@@ -77,7 +77,7 @@
               :placeholder="t('assetBrowser.modelInfo.selectModelType')"
             />
           </SelectTrigger>
-          <SelectContent :style="selectContentStyle">
+          <SelectContent>
             <SelectItem
               v-for="option in modelTypes"
               :key="option.value"
@@ -91,7 +91,7 @@
           <div
             aria-disabled="true"
             :aria-describedby="modelTypeReadonlyReasonId"
-            class="cursor-not-allowed p-2 text-sm text-muted-foreground"
+            class="cursor-not-allowed p-2 text-muted-foreground"
           >
             {{
               modelTypes.find((o) => o.value === selectedModelType)?.name ??
@@ -165,7 +165,6 @@
             size="icon-sm"
             :title="t('g.copyAll')"
             :aria-label="t('g.copyAll')"
-            class="p-0"
             @click="copyToClipboard(triggerPhrases.join(', '))"
           >
             <i class="icon-[lucide--copy] size-4 min-h-4 min-w-4 opacity-60" />
@@ -190,7 +189,7 @@
         v-if="description"
         :label="t('assetBrowser.modelInfo.description')"
       >
-        <p class="text-sm whitespace-pre-wrap">{{ description }}</p>
+        <p class="whitespace-pre-wrap">{{ description }}</p>
       </ModelInfoField>
       <ModelInfoField :label="t('assetBrowser.modelInfo.description')">
         <textarea
@@ -219,7 +218,6 @@
 <script setup lang="ts">
 import { useDebounceFn } from '@vueuse/core'
 import { computed, ref, useId, useTemplateRef, watch } from 'vue'
-import type { StyleValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import EditableText from '@/components/common/EditableText.vue'
@@ -270,10 +268,9 @@ const accordionClass = cn(
   'border-t border-border-default bg-modal-panel-background'
 )
 
-const { asset, cacheKey, selectContentStyle } = defineProps<{
+const { asset, cacheKey } = defineProps<{
   asset: AssetDisplayItem
   cacheKey?: string
-  selectContentStyle?: StyleValue
 }>()
 
 const assetsStore = useAssetsStore()
@@ -325,7 +322,7 @@ const debouncedFlushMetadata = useDebounceFn(() => {
   if (isImmutable.value) return
   assetsStore.updateAssetMetadata(
     asset,
-    { ...(asset.user_metadata ?? {}), ...pendingUpdates.value },
+    { ...asset.user_metadata, ...pendingUpdates.value },
     cacheKey
   )
 }, 500)

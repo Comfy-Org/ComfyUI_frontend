@@ -188,7 +188,9 @@ describe('renderDocument', () => {
     const second = group([leaf(0.9)], { id: 'g2' })
     expect(() => renderDocument(doc([first, second]), deps(c))).toThrow('boom')
     expect(c.allocated).toHaveLength(2)
-    expect([...c.freed].sort()).toEqual(c.allocated.map((h) => h.id).sort())
+    expect([...c.freed].sort((a, b) => a - b)).toEqual(
+      c.allocated.map((h) => h.id).sort((a, b) => a - b)
+    )
   })
 
   it('frees nested targets when a later allocTarget throws', () => {

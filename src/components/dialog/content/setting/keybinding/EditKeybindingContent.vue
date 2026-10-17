@@ -8,7 +8,7 @@
     </div>
 
     <input
-      class="text-foreground mb-4 w-full rounded-sm border border-border-default bg-secondary-background px-3 py-2 text-center shadow-none focus:outline-none"
+      class="mb-4 w-full rounded-sm border border-border-default bg-secondary-background px-3 py-2 text-center text-base-foreground shadow-none focus:outline-none"
       :value="dialogState.newCombo?.toString() ?? ''"
       :placeholder="$t('g.enterYourKeybind')"
       :aria-label="$t('g.enterYourKeybind')"
@@ -38,7 +38,7 @@
 import type { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { KeyComboImpl } from '@/platform/keybindings/keyCombo'
 
-import type { EditKeybindingDialogState } from '@/composables/useEditKeybindingDialog'
+import type { EditKeybindingDialogState } from '@/components/dialog/content/setting/keybinding/editKeybindingDialogState'
 
 const { dialogState, onUpdateCombo, existingKeybindingOnCombo } = defineProps<{
   dialogState: EditKeybindingDialogState

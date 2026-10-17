@@ -1,10 +1,7 @@
-/* eslint-disable testing-library/no-node-access */
-/* eslint-disable testing-library/no-container */
-/* eslint-disable testing-library/prefer-user-event */
-import { fireEvent, render, screen } from '@testing-library/vue'
+/* oxlint-disable testing-library/no-node-access */
+/* oxlint-disable testing-library/no-container */
+import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import PrimeVue from 'primevue/config'
-import Tooltip from 'primevue/tooltip'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -35,10 +32,6 @@ const mockInstalledPacks = {
   'installed-pack': { ver: '2.0.0', cnr_id: 'installed-pack', enabled: true }
 }
 
-let mockIsPackEnabled: ReturnType<
-  typeof vi.mocked<ReturnType<typeof useComfyManagerStore>['isPackEnabled']>
->
-
 vi.mock<unknown>(
   import('@/workbench/extensions/manager/composables/nodePack/usePackUpdateStatus'),
 
@@ -48,17 +41,6 @@ vi.mock<unknown>(
     }))
   })
 )
-
-const mockToggle = vi.fn()
-const mockHide = vi.fn()
-const PopoverStub = {
-  name: 'Popover',
-  template: '<div><slot></slot></div>',
-  methods: {
-    toggle: mockToggle,
-    hide: mockHide
-  }
-}
 
 const PackVersionSelectorPopoverStub = {
   name: 'PackVersionSelectorPopover',
@@ -72,8 +54,7 @@ describe('PackVersionBadge', () => {
     const store = useComfyManagerStore()
     store.installedPacks = mockInstalledPacks
     await nextTick()
-    mockIsPackEnabled = vi.mocked(store.isPackEnabled)
-    mockIsPackEnabled.mockReturnValue(true)
+    vi.mocked(useComfyManagerStore().isPackEnabled).mockReturnValue(true)
   })
 
   function renderComponent({
@@ -92,12 +73,8 @@ describe('PackVersionBadge', () => {
         ...props
       },
       global: {
-        plugins: [PrimeVue, i18n],
-        directives: {
-          tooltip: Tooltip
-        },
+        plugins: [i18n],
         stubs: {
-          Popover: PopoverStub,
           PackVersionSelectorPopover: PackVersionSelectorPopoverStub
         }
       }
@@ -157,27 +134,29 @@ describe('PackVersionBadge', () => {
 
     await user.click(screen.getByRole('button', { name: /1\.5\.0/ }))
 
-    expect(mockToggle).toHaveBeenCalled()
+    expect(await screen.findByRole('dialog')).toBeVisible()
   })
 
   it('closes the popover when cancel is emitted', async () => {
     const user = userEvent.setup()
     renderComponent()
 
+    await user.click(screen.getByRole('button', { name: /1\.5\.0/ }))
     await user.click(screen.getByTestId('cancel-btn'))
     await nextTick()
 
-    expect(mockHide).toHaveBeenCalled()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
   it('closes the popover when submit is emitted', async () => {
     const user = userEvent.setup()
     renderComponent()
 
+    await user.click(screen.getByRole('button', { name: /1\.5\.0/ }))
     await user.click(screen.getByTestId('submit-btn'))
     await nextTick()
 
-    expect(mockHide).toHaveBeenCalled()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
   describe('selection state changes', () => {
@@ -186,10 +165,15 @@ describe('PackVersionBadge', () => {
         props: { isSelected: true }
       })
 
+      await userEvent
+        .setup()
+        .click(screen.getByRole('button', { name: /1\.5\.0/ }))
+      expect(await screen.findByRole('dialog')).toBeVisible()
       await rerender({ nodePack: mockNodePack, isSelected: false })
-      await nextTick()
 
-      expect(mockHide).toHaveBeenCalled()
+      await waitFor(() =>
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      )
     })
 
     it('does not close the popover when card is selected', async () => {
@@ -197,10 +181,13 @@ describe('PackVersionBadge', () => {
         props: { isSelected: false }
       })
 
+      await userEvent
+        .setup()
+        .click(screen.getByRole('button', { name: /1\.5\.0/ }))
       await rerender({ nodePack: mockNodePack, isSelected: true })
       await nextTick()
 
-      expect(mockHide).not.toHaveBeenCalled()
+      expect(screen.getByRole('dialog')).toBeVisible()
     })
 
     it('does not close the popover when isSelected remains false', async () => {
@@ -208,10 +195,13 @@ describe('PackVersionBadge', () => {
         props: { isSelected: false }
       })
 
+      await userEvent
+        .setup()
+        .click(screen.getByRole('button', { name: /1\.5\.0/ }))
       await rerender({ nodePack: mockNodePack, isSelected: false })
       await nextTick()
 
-      expect(mockHide).not.toHaveBeenCalled()
+      expect(screen.getByRole('dialog')).toBeVisible()
     })
 
     it('does not close the popover when isSelected remains true', async () => {
@@ -219,24 +209,39 @@ describe('PackVersionBadge', () => {
         props: { isSelected: true }
       })
 
+      await userEvent
+        .setup()
+        .click(screen.getByRole('button', { name: /1\.5\.0/ }))
       await rerender({ nodePack: mockNodePack, isSelected: true })
       await nextTick()
 
-      expect(mockHide).not.toHaveBeenCalled()
+      expect(screen.getByRole('dialog')).toBeVisible()
     })
   })
 
   describe('disabled state', () => {
     beforeEach(() => {
-      mockIsPackEnabled.mockReturnValue(false)
+      vi.mocked(useComfyManagerStore().isPackEnabled).mockReturnValue(false)
     })
 
-    it('adds disabled styles when pack is disabled', () => {
-      const { container } = renderComponent()
+    it('marks the badge as disabled but keeps it focusable', () => {
+      renderComponent()
 
-      const badge = container.querySelector('[role="text"]')
-      expect(badge).toBeInTheDocument()
-      expect(badge).toHaveClass('cursor-not-allowed', 'opacity-60')
+      const badge = screen.getByRole('button', { name: /1\.5\.0/ })
+      expect(badge).toHaveAttribute('aria-disabled', 'true')
+      expect(badge).not.toBeDisabled()
+    })
+
+    it('explains why the version cannot be changed on keyboard focus', async () => {
+      const user = userEvent.setup()
+      renderComponent()
+
+      await user.tab()
+
+      expect(screen.getByRole('button', { name: /1\.5\.0/ })).toHaveFocus()
+      expect(await screen.findByRole('tooltip')).toHaveTextContent(
+        enMessages.manager.enablePackToChangeVersion
+      )
     })
 
     it('does not show chevron icon when disabled', () => {
@@ -253,31 +258,28 @@ describe('PackVersionBadge', () => {
       expect(updateIcon).not.toBeInTheDocument()
     })
 
-    it('does not toggle popover when clicked while disabled', async () => {
-      const { container } = renderComponent()
+    it.for([
+      { name: 'click', act: (badge: HTMLElement) => userEvent.click(badge) },
+      {
+        name: 'Enter',
+        act: async (badge: HTMLElement) => {
+          badge.focus()
+          await userEvent.keyboard('{Enter}')
+        }
+      },
+      {
+        name: 'Space',
+        act: async (badge: HTMLElement) => {
+          badge.focus()
+          await userEvent.keyboard(' ')
+        }
+      }
+    ])('does not open the version selector on $name', async ({ act }) => {
+      renderComponent()
 
-      const badge = container.querySelector('[role="text"]')!
-      await fireEvent.click(badge)
+      await act(screen.getByRole('button', { name: /1\.5\.0/ }))
 
-      expect(mockToggle).not.toHaveBeenCalled()
-    })
-
-    it('has correct tabindex when disabled', () => {
-      const { container } = renderComponent()
-
-      const badge = container.querySelector('[role="text"]')
-      expect(badge).toBeInTheDocument()
-      expect(badge).toHaveAttribute('tabindex', '-1')
-    })
-
-    it('does not respond to keyboard events when disabled', async () => {
-      const { container } = renderComponent()
-
-      const badge = container.querySelector('[role="text"]')!
-      await fireEvent.keyDown(badge, { key: 'Enter' })
-      await fireEvent.keyDown(badge, { key: ' ' })
-
-      expect(mockToggle).not.toHaveBeenCalled()
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     })
   })
 })

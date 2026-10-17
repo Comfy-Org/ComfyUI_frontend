@@ -7,7 +7,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import { useCanvasRefresh } from './useCanvasRefresh'
-import type { MenuOption } from './useMoreOptionsMenu'
+import type { MenuOption } from './menuOption'
 import { useNodeCustomization } from './useNodeCustomization'
 
 /**

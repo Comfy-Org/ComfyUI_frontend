@@ -1,0 +1,337 @@
+<script setup lang="ts">
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+
+import { cn } from '@comfyorg/tailwind-utils'
+
+import type { FilterBadgeType } from '@/composables/useHubStore'
+import { useHubStore } from '@/composables/useHubStore'
+import type { UseCase, WorkshopModel } from '@/config/models-catalogue'
+import {
+  USE_CASES,
+  sortWorkshopModels,
+  useCasesFor
+} from '@/config/models-catalogue'
+import { searchWorkshopModels } from '@/config/models-search'
+import { workshopModels as defaultWorkshopModels } from '@/config/workshop-browse-content'
+import { groupModels } from '@/config/model-family'
+import hubTemplates from '@/data/hubTemplates.json'
+import { hubWorkflowPath } from '@/lib/hub/workflow-detail'
+import {
+  partnerModelFor,
+  useCaseForTemplate
+} from '@/lib/hub/template-use-case'
+import { tagDisplayName } from '@/lib/hub/tag-aliases'
+import { withFacetFields } from '@/lib/hub/facet-fields'
+import type { HubTemplate } from '@/lib/hub/types'
+import type { Locale, TranslationKey } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import type {
+  FacetGroupConfig,
+  SortOption,
+  ToolbarLabels
+} from './BrowseToolbar.vue'
+import HubUseCaseNav from './HubUseCaseNav.vue'
+import type { GridLabels } from './WorkflowGrid.vue'
+import WorkflowGrid from './WorkflowGrid.vue'
+import WorkshopHero from '@/components/workshop/WorkshopHero.vue'
+import WorkshopModelCard from '@/components/workshop/WorkshopModelCard.vue'
+import WorkshopSearchField from '@/components/workshop/WorkshopSearchField.vue'
+
+const {
+  locale = 'en',
+  embedded = false,
+  models = defaultWorkshopModels,
+  templates = hubTemplates as HubTemplate[]
+} = defineProps<{
+  locale?: Locale
+  embedded?: boolean
+  models?: readonly WorkshopModel[]
+  templates?: readonly HubTemplate[]
+}>()
+const { t } = translationsFor(locale)
+
+const facetedTemplates = computed(() =>
+  templates.map((template) => withFacetFields(template, models))
+)
+const store = useHubStore()
+
+// The use cases read as a rail beside the grid, the way the models listing
+// does. Embedded elsewhere the hub is a grid on its own, without them.
+const railBeside = computed(() => !embedded)
+onUnmounted(() => store.reset())
+
+const TABS = ['all', 'nodeGraphs', 'comfyApps', 'models'] as const
+
+// The hub browses by what a thing makes, the same axis and the same vocabulary
+// as the models list, so a workflow and a model answer to the same use case.
+const useCase = ref<UseCase | 'all'>('all')
+
+const useCaseLabelKey: Record<UseCase | 'all', TranslationKey> = {
+  all: 'workshop.useCase.all',
+  'generate-images': 'workshop.useCase.generateImages',
+  'edit-images': 'workshop.useCase.editImages',
+  'generate-videos': 'workshop.useCase.generateVideos',
+  'animate-images': 'workshop.useCase.animateImages',
+  'edit-videos': 'workshop.useCase.editVideos',
+  '3d': 'workshop.useCase.3d',
+  audio: 'workshop.useCase.audio',
+  text: 'workshop.useCase.text'
+}
+
+const inUseCase = (value: UseCase | 'all') => ({
+  models: models.filter(
+    (model) => value === 'all' || useCasesFor(model).includes(value)
+  ),
+  templates: facetedTemplates.value.filter(
+    (tmpl) => value === 'all' || useCaseForTemplate(tmpl, models) === value
+  )
+})
+
+const totalIn = (value: UseCase | 'all') => {
+  const { models, templates: scoped } = inUseCase(value)
+  return groupModels(models).length + scoped.length
+}
+
+// In the catalogue's reading order, and without printing the tally: the row
+// names use cases, it is not a report.
+const useCaseTabs = computed(() =>
+  ['all' as const, ...USE_CASES.filter((value) => totalIn(value) > 0)].map(
+    (value) => ({
+      value,
+      label: t(useCaseLabelKey[value])
+    })
+  )
+)
+
+const scoped = computed(() => inUseCase(useCase.value))
+
+onMounted(() => {
+  const params = new URLSearchParams(location.search)
+  const tab = TABS.find((value) => value === params.get('tab'))
+  if (tab) store.setTab(tab)
+  const wanted = USE_CASES.find((value) => value === params.get('useCase'))
+  if (wanted) useCase.value = wanted
+  for (const type of ['tag', 'model'] as const) {
+    const value = params.get(type)
+    if (value) store.toggleBadge({ type, value })
+  }
+  const query = params.get('q')
+  if (query) store.searchQuery.value = query
+})
+
+const toolbarLabels: ToolbarLabels = {
+  all: t('workshop.hub.kind.all'),
+  nodeGraphs: t('workshop.hub.kind.graph'),
+  comfyApps: t('workshop.hub.kind.app'),
+  models: t('workshop.hub.kind.models'),
+  filter: t('workshop.filter.label'),
+  clearAll: t('workshop.hub.facets.clearAll'),
+  searchPlaceholder: t('workshop.hub.facets.search'),
+  noResults: t('workshop.hub.facets.noResults'),
+  typeAll: t('workshop.hub.kind.all'),
+  less: t('workshop.hub.facets.less'),
+  selected: (n) => t('workshop.hub.facets.selected', { n }),
+  showResults: (n) => t('workshop.hub.facets.show', { n }),
+  showModels: (n) => t('workshop.search.show', { n }),
+  resize: t('workshop.filter.resize')
+}
+// Workflows are dated and models are priced, so a tab offers what the things
+// it lists can actually be ordered by.
+const WORKFLOW_SORTS: SortOption[] = [
+  {
+    value: 'popular',
+    label: t('workshop.sort.popular')
+  },
+  {
+    value: 'newest',
+    label: t('workshop.hub.sort.newest')
+  },
+  { value: 'name', label: t('workshop.sort.name') }
+]
+const MODEL_SORTS: SortOption[] = [
+  {
+    value: 'popular',
+    label: t('workshop.sort.popular')
+  },
+  { value: 'name', label: t('workshop.sort.name') },
+  {
+    value: 'priceAsc',
+    label: t('workshop.sort.priceAsc')
+  },
+  {
+    value: 'priceDesc',
+    label: t('workshop.sort.priceDesc')
+  }
+]
+const sortOptions = computed(() =>
+  store.activeTab.value === 'models' ? MODEL_SORTS : WORKFLOW_SORTS
+)
+
+// An order the new tab cannot honour would otherwise linger in the button.
+watch(sortOptions, (options) => {
+  if (!options.some((option) => option.value === store.sortBy.value))
+    store.setSort('popular')
+})
+
+const facetsConfig: FacetGroupConfig[] = [
+  {
+    key: 'media',
+    type: 'media',
+    label: t('workshop.filter.outputGroup'),
+    display: 'segmented',
+    allLabel: t('workshop.hub.kind.all')
+  },
+  {
+    key: 'categories',
+    type: 'tag',
+    label: t('workshop.filter.capabilityGroup'),
+    display: 'chips',
+    allLabel: t('workshop.hub.facets.allTasks')
+  },
+  {
+    key: 'models',
+    type: 'model',
+    label: t('workshop.hub.models'),
+    display: 'select',
+    allLabel: t('workshop.hub.facets.allModels')
+  },
+  {
+    key: 'partners',
+    type: 'partner',
+    label: t('workshop.hub.facets.partner'),
+    display: 'select',
+    allLabel: t('workshop.hub.facets.allPartners')
+  }
+]
+const gridLabels: GridLabels = {
+  tryNow: t('workshop.hub.tryNow'),
+  loadMore: t('workshop.hub.loadMore'),
+  empty: t('workshop.hub.empty'),
+  emptyHint: t('workshop.hub.emptyHint'),
+  showing: (shown, total) => t('workshop.hub.showing', { shown, total })
+}
+
+// A Hub entry tagged as a partner node whose model matches a Workshop model
+// opens that model's playground; everything else stays on comfy.org.
+const hrefFor = (template: HubTemplate) =>
+  partnerModelFor(template, models)?.href ?? hubWorkflowPath(template.name)
+
+const filteredModels = computed(() => {
+  const matches = searchWorkshopModels(scoped.value.models, {
+    query: store.searchQuery.value
+  })
+  const order = store.sortBy.value
+  return sortWorkshopModels(matches, order === 'newest' ? 'popular' : order)
+})
+
+// Models open the All tab, in the same grid as the workflows behind them.
+const LEAD_MODELS = 5
+
+const modelFamilies = computed(() => groupModels(filteredModels.value))
+
+const filteredTemplates = computed(() => {
+  const badges = store.filterBadges.value
+  const chosen = (type: FilterBadgeType) =>
+    badges.filter((b) => b.type === type).map((b) => b.value)
+  const tags = chosen('tag')
+  const models = chosen('model')
+  const media = chosen('media')
+  const partners = chosen('partner')
+  const query = store.searchQuery.value.trim().toLowerCase()
+  return scoped.value.templates.filter(
+    (tmpl) =>
+      (tags.length === 0 || tags.some((tag) => tmpl.tags.includes(tag))) &&
+      (models.length === 0 ||
+        models.some((model) => tmpl.models.includes(model))) &&
+      (media.length === 0 || media.includes(tmpl.mediaType)) &&
+      (partners.length === 0 ||
+        (tmpl.partner !== undefined && partners.includes(tmpl.partner))) &&
+      (query === '' ||
+        tmpl.title.toLowerCase().includes(query) ||
+        tmpl.models.some((m) => m.toLowerCase().includes(query)) ||
+        tmpl.tags.some((tag) =>
+          tagDisplayName(tag).toLowerCase().includes(query)
+        ) ||
+        tmpl.username.toLowerCase().includes(query))
+  )
+})
+</script>
+
+<template>
+  <section :class="cn(!embedded && 'pb-32')" data-testid="workshop-hub">
+    <WorkshopHero
+      v-if="!embedded"
+      :eyebrow="t('workshop.hero.eyebrow')"
+      :heading="t('workshop.hub.title')"
+      data-testid="hub-heading"
+    />
+
+    <div
+      :class="
+        cn('gap-10', railBeside && 'lg:grid lg:grid-cols-[15rem_minmax(0,1fr)]')
+      "
+    >
+      <aside
+        v-if="railBeside"
+        class="mb-8 max-sm:mb-4 lg:sticky lg:top-28 lg:mb-0 lg:max-h-[calc(100vh-9rem)] lg:scrollbar-thin lg:self-start lg:overflow-y-auto lg:pt-4"
+      >
+        <HubUseCaseNav
+          rail-beside
+          :entries="useCaseTabs"
+          :current="useCase"
+          :label="t('workshop.media.label')"
+          @select="useCase = $event"
+        />
+      </aside>
+
+      <div class="min-w-0">
+        <WorkflowGrid
+          :templates="filteredTemplates"
+          :facet-templates="facetedTemplates"
+          :facets-config="facetsConfig"
+          :toolbar-labels="toolbarLabels"
+          :sort-options="sortOptions"
+          :labels="gridLabels"
+          :href-for="hrefFor"
+          :model-count="modelFamilies.length"
+        >
+          <template #search>
+            <WorkshopSearchField
+              v-model="store.searchQuery.value"
+              :models
+              :locale
+              compact
+              class="max-sm:size-10 max-sm:flex-none sm:w-64 lg:w-80"
+            />
+          </template>
+
+          <template v-if="store.activeTab.value === 'all'" #lead>
+            <WorkshopModelCard
+              v-for="family in modelFamilies.slice(0, LEAD_MODELS)"
+              :key="family.key"
+              :model="family.latest"
+              :locale
+              provider-badge
+              data-testid="hub-models-lead"
+            />
+          </template>
+
+          <template #models>
+            <ul
+              class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3"
+              data-testid="hub-models"
+            >
+              <li v-for="family in modelFamilies" :key="family.key">
+                <WorkshopModelCard
+                  :model="family.latest"
+                  :locale
+                  provider-badge
+                />
+              </li>
+            </ul>
+          </template>
+        </WorkflowGrid>
+      </div>
+    </div>
+  </section>
+</template>

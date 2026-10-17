@@ -4,7 +4,7 @@
       <Button
         v-if="showUsageActivity"
         variant="muted-textonly"
-        class="text-xs text-text-secondary"
+        class="text-text-secondary"
         @click="handleFullUsageActivity"
       >
         <i class="pi pi-external-link text-xs text-text-secondary" />
@@ -13,7 +13,7 @@
       <Button
         v-if="showPlansLink"
         variant="muted-textonly"
-        class="text-xs text-text-secondary"
+        class="text-text-secondary"
         @click="$emit('viewPlans')"
       >
         <i class="pi pi-external-link text-xs text-text-secondary" />
@@ -21,7 +21,7 @@
       </Button>
       <Button
         variant="muted-textonly"
-        class="text-xs text-text-secondary"
+        class="text-text-secondary"
         @click="handleOpenPartnerNodesInfo"
       >
         <i class="pi pi-question-circle text-xs text-text-secondary" />
@@ -29,7 +29,7 @@
       </Button>
       <Button
         variant="muted-textonly"
-        class="text-xs text-text-secondary"
+        class="text-text-secondary"
         :loading="isLoadingSupport"
         @click="handleMessageSupport"
       >
@@ -41,7 +41,7 @@
     <Button
       v-if="!isCloud && showInvoiceHistory"
       variant="muted-textonly"
-      class="text-xs text-text-secondary"
+      class="text-text-secondary"
       @click="handleInvoiceHistory"
     >
       {{ $t('subscription.invoiceHistory') }}
@@ -54,9 +54,9 @@
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'
-import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { useSubscriptionActions } from '@/platform/cloud/subscription/composables/useSubscriptionActions'
 import { isCloud } from '@/platform/distribution/types'
+import { platformLink } from '@/platform/workspace/utils/platformLink'
 
 const {
   showInvoiceHistory = true,
@@ -82,11 +82,7 @@ async function handleInvoiceHistory() {
 }
 
 function handleFullUsageActivity() {
-  window.open(
-    `${getComfyPlatformBaseUrl()}/profile/usage`,
-    '_blank',
-    'noopener'
-  )
+  window.open(platformLink('/profile/usage'), '_blank', 'noopener')
 }
 
 function handleOpenPartnerNodesInfo() {

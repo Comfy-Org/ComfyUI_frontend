@@ -5,32 +5,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, defineComponent, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { api } from '@/scripts/api'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import '@/scripts/changeTracker'
 import { StorageKeys } from '../base/storageKeys'
 import * as storageIO from '../base/storageIO'
 import { useWorkflowDraftStoreV2 } from '../stores/workflowDraftStoreV2'
 import { useWorkflowPersistenceV2 } from './useWorkflowPersistenceV2'
 
-const mockToastAdd = vi.fn()
-vi.mock<unknown>(
-  import('primevue'), // eslint-disable-line primevue-removal/no-imports
-  () => ({
-    useToast: () => ({
-      add: mockToastAdd
-    })
-  })
-)
-
-vi.mock<unknown>(
-  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
-
-  () => ({
-    useToast: () => ({
-      add: mockToastAdd
-    })
-  })
-)
+const apiEvents: EventTarget = api
 
 vi.mock(
   import('@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'),
@@ -77,17 +62,7 @@ vi.mock<unknown>(import('vue-router'), () => ({
   })
 }))
 
-const currentUserMocks = vi.hoisted(() => ({
-  onUserLogout: vi.fn(),
-  onUserResolved: vi.fn()
-}))
-
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: () => ({
-    onUserLogout: currentUserMocks.onUserLogout,
-    onUserResolved: currentUserMocks.onUserResolved
-  })
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 const preservedQueryMocks = vi.hoisted(() => ({
   payloads: {} as Record<string, Record<string, string> | undefined>
@@ -126,30 +101,13 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock(import('../migration/migrateV1toV2'), () => ({
-  migrateV1toV2: vi.fn()
-}))
-
-type GraphChangedHandler = (() => void) | null
-
 const mocks = vi.hoisted(() => {
   const state = {
-    graphChangedHandler: null as GraphChangedHandler,
     currentGraph: {} as Record<string, unknown>
   }
   const serializeMock = vi.fn(() => state.currentGraph)
   const loadGraphDataMock = vi.fn()
-  const apiMock = {
-    clientId: 'test-client',
-    initialClientId: 'test-client',
-    addEventListener: vi.fn((event: string, handler: () => void) => {
-      if (event === 'graphChanged') {
-        state.graphChangedHandler = handler
-      }
-    }),
-    removeEventListener: vi.fn()
-  }
-  return { state, serializeMock, loadGraphDataMock, apiMock }
+  return { state, serializeMock, loadGraphDataMock }
 })
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
@@ -165,9 +123,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: mocks.apiMock
-}))
+vi.mock(import('@/scripts/api'))
 
 type WorkflowPersistence = ReturnType<typeof useWorkflowPersistenceV2>
 
@@ -183,19 +139,10 @@ describe('useWorkflowPersistenceV2', () => {
 
   beforeEach(() => {
     useSettingStore().settingValues['Comfy.Workflow.Persist'] = true
-    mocks.state.graphChangedHandler = null
     mocks.state.currentGraph = { initial: true }
     mocks.serializeMock.mockImplementation(() => mocks.state.currentGraph)
-    mocks.apiMock.clientId = 'test-client'
-    mocks.apiMock.initialClientId = 'test-client'
-    mocks.apiMock.addEventListener.mockImplementation(
-      (event: string, handler: () => void) => {
-        if (event === 'graphChanged') {
-          mocks.state.graphChangedHandler = handler
-        }
-      }
-    )
-    mocks.apiMock.removeEventListener.mockImplementation(() => {})
+    api.clientId = 'test-client'
+    api.initialClientId = 'test-client'
     routeMocks.query = {}
     preservedQueryMocks.payloads = {}
     distributionMocks.isCloud = false
@@ -428,7 +375,6 @@ describe('useWorkflowPersistenceV2', () => {
 
     it('falls back to the default workflow when metadata loading fails', async () => {
       const workflowStore = useWorkflowStore()
-      vi.spyOn(console, 'error').mockImplementation(() => {})
       vi.spyOn(workflowStore, 'loadWorkflows').mockRejectedValue(
         new Error('metadata failed')
       )
@@ -594,7 +540,7 @@ describe('useWorkflowPersistenceV2', () => {
       await nextTick()
 
       mocks.state.currentGraph = { nodes: [{ id: 1, type: 'KSampler' }] }
-      mocks.state.graphChangedHandler?.()
+      apiEvents.dispatchEvent(new Event('graphChanged'))
       await vi.runAllTimersAsync()
 
       await expect(
@@ -698,7 +644,7 @@ describe('useWorkflowPersistenceV2', () => {
       nodes: [],
       extra: { marker: 'final-edit' }
     }
-    mocks.state.graphChangedHandler?.()
+    apiEvents.dispatchEvent(new Event('graphChanged'))
 
     const payloadKey = StorageKeys.draftPayload(workflow.path, 'personal')
     expect(localStorage.getItem(payloadKey)).toBeNull()
@@ -719,11 +665,11 @@ describe('useWorkflowPersistenceV2', () => {
     mountWorkflowPersistence()
 
     mocks.state.currentGraph = { nodes: [] }
-    const graphChangedHandler = mocks.state.graphChangedHandler
-    if (!graphChangedHandler) {
-      throw new Error('Graph change handler was not registered')
-    }
-    graphChangedHandler()
+    expect(api.addEventListener).toHaveBeenCalledWith(
+      'graphChanged',
+      expect.any(Function)
+    )
+    apiEvents.dispatchEvent(new Event('graphChanged'))
 
     const mounted = mountedApps.pop()
     if (!mounted) throw new Error('Failed to find mounted persistence app')
@@ -758,7 +704,7 @@ describe('useWorkflowPersistenceV2', () => {
       nodes: [],
       extra: { marker: 'workspace-a-final-edit' }
     }
-    mocks.state.graphChangedHandler?.()
+    apiEvents.dispatchEvent(new Event('graphChanged'))
 
     const sourcePayloadKey = StorageKeys.draftPayload(
       workflow.path,
@@ -779,7 +725,7 @@ describe('useWorkflowPersistenceV2', () => {
       nodes: [],
       extra: { marker: 'late-source-write' }
     }
-    mocks.state.graphChangedHandler?.()
+    apiEvents.dispatchEvent(new Event('graphChanged'))
     await vi.runAllTimersAsync()
 
     const sourcePayload = JSON.parse(localStorage.getItem(sourcePayloadKey)!)
@@ -803,8 +749,9 @@ describe('useWorkflowPersistenceV2', () => {
     sessionStorage.setItem('Comfy.Workflow.ActivePath:test-client', '{}')
     mountWorkflowPersistence()
 
-    const onLogout = currentUserMocks.onUserLogout.mock.calls[0][0]
-    const onUserResolved = currentUserMocks.onUserResolved.mock.calls[0][0]
+    const onLogout = vi.mocked(useCurrentUser().onUserLogout).mock.calls[0][0]
+    const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
+      .calls[0][0]
     onLogout()
 
     expect(localStorage).toHaveLength(0)
@@ -845,8 +792,9 @@ describe('useWorkflowPersistenceV2', () => {
     )
     mountWorkflowPersistence()
 
-    const onLogout = currentUserMocks.onUserLogout.mock.calls[0][0]
-    const onUserResolved = currentUserMocks.onUserResolved.mock.calls[0][0]
+    const onLogout = vi.mocked(useCurrentUser().onUserLogout).mock.calls[0][0]
+    const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
+      .calls[0][0]
     onLogout()
     onUserResolved({ id: 'user-b' })
     onLogout()
@@ -867,8 +815,9 @@ describe('useWorkflowPersistenceV2', () => {
     )
     mountWorkflowPersistence()
 
-    const onLogout = currentUserMocks.onUserLogout.mock.calls[0][0]
-    const onUserResolved = currentUserMocks.onUserResolved.mock.calls[0][0]
+    const onLogout = vi.mocked(useCurrentUser().onUserLogout).mock.calls[0][0]
+    const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
+      .calls[0][0]
     onLogout()
     onUserResolved({ id: 'user-a' })
 
@@ -895,10 +844,11 @@ describe('useWorkflowPersistenceV2', () => {
     workflowStore.activeWorkflow = workflow
     mountWorkflowPersistence()
     mocks.state.currentGraph = { marker: 'stale-source-edit' }
-    mocks.state.graphChangedHandler?.()
+    apiEvents.dispatchEvent(new Event('graphChanged'))
 
-    const onLogout = currentUserMocks.onUserLogout.mock.calls[0][0]
-    const onUserResolved = currentUserMocks.onUserResolved.mock.calls[0][0]
+    const onLogout = vi.mocked(useCurrentUser().onUserLogout).mock.calls[0][0]
+    const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
+      .calls[0][0]
     onLogout()
     onUserResolved({ id: 'user-b' })
     await vi.runAllTimersAsync()
@@ -930,7 +880,7 @@ describe('useWorkflowPersistenceV2', () => {
     await nextTick()
 
     mocks.state.currentGraph = { marker: 'destination-edit' }
-    mocks.state.graphChangedHandler?.()
+    apiEvents.dispatchEvent(new Event('graphChanged'))
     await vi.runAllTimersAsync()
 
     expect(localStorage.getItem(sourcePayloadKey)).toBeNull()

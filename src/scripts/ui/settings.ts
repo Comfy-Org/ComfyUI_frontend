@@ -1,20 +1,25 @@
 import { t } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { SettingParams } from '@/platform/settings/types'
-import { useToastStore } from '@/platform/updates/common/toastStore'
-import type { Settings } from '@/schemas/apiSchema'
-import type { ComfyApp } from '@/scripts/app'
+import type { SettingParams, Settings } from '@/platform/settings/types'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { getErrorMessage } from '@/utils/errorUtil'
 
 import { ComfyDialog } from './dialog'
 
+function saveSetting<K extends keyof Settings>(id: K, value: Settings[K]) {
+  useSettingStore()
+    .set(id, value)
+    .catch((err) => {
+      useToast().warning(
+        t('toastMessages.errorSaveSetting', {
+          err: getErrorMessage(err) ?? t('g.unknownError'),
+          id
+        })
+      )
+    })
+}
+
 export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
-  app: ComfyApp
-
-  constructor(app: ComfyApp) {
-    super()
-    this.app = app
-  }
-
   dispatchChange<T>(id: string, value: T, oldValue?: T) {
     this.dispatchEvent(
       new CustomEvent(id + '.change', {
@@ -85,13 +90,7 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
    * @deprecated Use `settingStore.set` instead.
    */
   setSettingValue<K extends keyof Settings>(id: K, value: Settings[K]) {
-    useSettingStore()
-      .set(id, value)
-      .catch((err) => {
-        useToastStore().addAlert(
-          t('toastMessages.errorSaveSetting', { id, err })
-        )
-      })
+    saveSetting(id, value)
   }
 
   /**
@@ -113,7 +112,9 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
    * })
    * ```
    */
-  addSetting(params: SettingParams) {
+  addSetting<K extends keyof Settings>(
+    params: SettingParams<Settings[K]> & { id: K }
+  ) {
     const settingStore = useSettingStore()
     settingStore.addSetting(params)
 
@@ -122,7 +123,7 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
         return settingStore.get(params.id)
       },
       set value(v) {
-        settingStore.set(params.id, v)
+        saveSetting(params.id, v)
       }
     }
   }
