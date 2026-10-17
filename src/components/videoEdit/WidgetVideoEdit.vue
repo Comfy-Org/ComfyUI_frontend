@@ -35,10 +35,9 @@ import type {
   VideoEditFeature,
   VideoEditValue
 } from '@/lib/litegraph/src/types/widgets'
-import { app } from '@/scripts/app'
+import { useWidgetHostNode } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetHostNode'
 import type { NodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 const { widget, nodeId } = defineProps<{
   widget: SimplifiedWidget<VideoEditValue, IWidgetVideoEditOptions>
@@ -53,11 +52,10 @@ const features = computed(
   (): VideoEditFeature[] => widget.options?.features ?? ['trim', 'crop']
 )
 
-const node = computed(() => {
-  const locatorId = widget.nodeLocatorId
-  const owner = locatorId && getNodeByLocatorId(app.rootGraph, locatorId)
-  return owner || app.canvas.graph?.getNodeById(nodeId)
-})
+const node = useWidgetHostNode(
+  () => widget,
+  () => nodeId
+)
 
 const { videoUrl, status, onError, retry } = useVideoSourceUrl(node)
 
