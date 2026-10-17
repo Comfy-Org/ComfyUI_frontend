@@ -5,7 +5,6 @@ import type {
 } from 'algoliasearch/dist/lite/browser'
 import { liteClient as algoliasearch } from 'algoliasearch/dist/lite/builds/browser'
 import { uniqBy } from 'es-toolkit'
-import { memoize } from 'es-toolkit/compat'
 
 import {
   MIN_CHARS_FOR_SUGGESTIONS_ALGOLIA,
@@ -68,40 +67,34 @@ const toRegistryPublisher = (
   }
 }
 
-/**
- * Convert from node pack in Algolia format to Comfy Registry format
- */
-const toRegistryPack = memoize(
-  (
-    algoliaNode: AlgoliaNodePack
-  ): RegistryNodePack & { comfy_nodes: string[] } => {
-    return {
-      id: algoliaNode.id ?? algoliaNode.objectID,
-      name: algoliaNode.name,
-      description: algoliaNode.description,
-      repository: algoliaNode.repository_url,
-      license: algoliaNode.license,
-      downloads: algoliaNode.total_install,
-      status: algoliaNode.status,
-      icon: algoliaNode.icon_url,
-      latest_version: toRegistryLatestVersion(algoliaNode),
-      publisher: toRegistryPublisher(algoliaNode),
-      created_at: algoliaNode.create_time,
-      category: algoliaNode.category,
-      author: algoliaNode.author,
-      tags: algoliaNode.tags,
-      github_stars: algoliaNode.github_stars,
-      supported_os: algoliaNode.supported_os,
-      supported_comfyui_version: algoliaNode.supported_comfyui_version,
-      supported_comfyui_frontend_version:
-        algoliaNode.supported_comfyui_frontend_version,
-      supported_accelerators: algoliaNode.supported_accelerators,
-      banner_url: algoliaNode.banner_url,
-      comfy_nodes: algoliaNode.comfy_nodes
-    }
-  },
-  (algoliaNode: AlgoliaNodePack) => algoliaNode.id ?? algoliaNode.objectID
-)
+const toRegistryPack = (
+  algoliaNode: AlgoliaNodePack
+): RegistryNodePack & { comfy_nodes: string[] } => {
+  return {
+    id: algoliaNode.id ?? algoliaNode.objectID,
+    name: algoliaNode.name,
+    description: algoliaNode.description,
+    repository: algoliaNode.repository_url,
+    license: algoliaNode.license,
+    downloads: algoliaNode.total_install,
+    status: algoliaNode.status,
+    icon: algoliaNode.icon_url,
+    latest_version: toRegistryLatestVersion(algoliaNode),
+    publisher: toRegistryPublisher(algoliaNode),
+    created_at: algoliaNode.create_time,
+    category: algoliaNode.category,
+    author: algoliaNode.author,
+    tags: algoliaNode.tags,
+    github_stars: algoliaNode.github_stars,
+    supported_os: algoliaNode.supported_os,
+    supported_comfyui_version: algoliaNode.supported_comfyui_version,
+    supported_comfyui_frontend_version:
+      algoliaNode.supported_comfyui_frontend_version,
+    supported_accelerators: algoliaNode.supported_accelerators,
+    banner_url: algoliaNode.banner_url,
+    comfy_nodes: algoliaNode.comfy_nodes
+  }
+}
 
 export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
   const searchClient = algoliasearch(__ALGOLIA_APP_ID__, __ALGOLIA_API_KEY__)
