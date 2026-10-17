@@ -10,6 +10,7 @@ if [ -n "${CI-}" ]; then
   exit 0
 fi
 
+pnpm deps:audit 1>&2
 pnpm knip 1>&2
 git fetch --quiet --no-tags origin main
 base="$(git merge-base HEAD FETCH_HEAD)"

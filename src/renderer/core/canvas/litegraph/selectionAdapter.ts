@@ -1,5 +1,11 @@
 import type { ClickSelectionIntent } from '@/core/selection/selectionIntent'
 import type {
+  LGraph,
+  LGraphCanvas,
+  SubgraphInputNode,
+  SubgraphOutputNode
+} from '@/lib/litegraph/src/types/entityRegistry'
+import type {
   SelectableKey,
   SelectionCommand
 } from '@/core/selection/selectionState'
@@ -7,18 +13,14 @@ import {
   parseSelectableKey,
   toSelectableKey
 } from '@/core/selection/selectionState'
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
+
 import type { Positionable } from '@/lib/litegraph/src/interfaces'
-import {
-  LGraphGroup,
-  LGraphNode,
-  Reroute,
-  Subgraph
-} from '@/lib/litegraph/src/litegraph'
+import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
+import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { Reroute } from '@/lib/litegraph/src/Reroute'
 import { SubgraphIONodeBase } from '@/lib/litegraph/src/subgraph/SubgraphIONodeBase'
-import type { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
-import type { SubgraphOutputNode } from '@/lib/litegraph/src/subgraph/SubgraphOutputNode'
+import { isSubgraph } from '@/lib/litegraph/src/subgraph/subgraphTypeGuards'
+
 import { useSelectionStore } from '@/core/selection/selectionStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
@@ -53,7 +55,7 @@ export function resolveSelectable(
     case 'reroute':
       return graph.getReroute(toRerouteId(Number(id)))
     case 'io':
-      if (!(graph instanceof Subgraph)) return undefined
+      if (!isSubgraph(graph)) return undefined
       return [graph.inputNode, graph.outputNode].find(
         (ioNode) => String(ioNode.id) === id
       )

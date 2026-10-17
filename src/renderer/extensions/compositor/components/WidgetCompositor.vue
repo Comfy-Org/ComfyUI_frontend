@@ -49,7 +49,7 @@
     <Button
       variant="secondary"
       size="md"
-      class="w-full gap-2"
+      class="w-full"
       :disabled="!canOpen"
       :title="canOpen ? undefined : t('compositor.runWorkflowFirst')"
       data-testid="compositor-open-button"

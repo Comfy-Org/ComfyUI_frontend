@@ -19,10 +19,7 @@
         :collision-padding="10"
         class="z-1700 rounded-lg border border-border-subtle bg-base-background p-2 shadow-sm will-change-[transform,opacity] data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
       >
-        <div
-          v-if="activeLayout"
-          class="flex w-32 flex-row items-center px-2 py-1"
-        >
+        <div v-if="activeLayout" class="flex w-32 items-center px-2 py-1">
           <Slider
             :model-value="[gap]"
             :min="MIN_ARRANGE_GAP"
@@ -33,7 +30,7 @@
             @value-commit="onSliderCommit"
           />
         </div>
-        <div v-else class="flex flex-row gap-1">
+        <div v-else class="flex gap-1">
           <Button
             :tooltip="t('g.arrangeVertically')"
             variant="muted-textonly"

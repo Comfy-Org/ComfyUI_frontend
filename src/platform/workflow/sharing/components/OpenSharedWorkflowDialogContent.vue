@@ -25,8 +25,8 @@
       <footer
         class="flex items-center justify-end gap-2.5 border-t border-border-default px-8 py-4"
       >
-        <Skeleton class="h-10 w-24 rounded-md" />
-        <Skeleton class="h-10 w-40 rounded-md" />
+        <Skeleton class="h-10 w-24" />
+        <Skeleton class="h-10 w-40" />
       </footer>
     </template>
 

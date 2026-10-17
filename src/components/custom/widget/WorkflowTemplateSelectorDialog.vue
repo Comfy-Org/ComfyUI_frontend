@@ -52,7 +52,7 @@
           :searcher="applySearchQuery"
           :debounce-ms="400"
           :debounce-max-wait-ms="4000"
-          class="h-9 w-full min-w-0 flex-1 border border-border-subtle bg-transparent min-[880px]:ml-auto min-[880px]:max-w-96"
+          class="h-9 w-full min-w-0 border border-border-subtle bg-transparent min-[880px]:ml-auto min-[880px]:max-w-96"
           autofocus
         />
       </div>
@@ -70,7 +70,7 @@
         data-testid="template-filter-bar"
       >
         <div class="flex items-center gap-3">
-          <div class="flex min-w-0 shrink items-center gap-2">
+          <div class="flex min-w-0 items-center gap-2">
             <Button
               v-for="tab in typeTabs"
               :key="tab.value"
@@ -89,7 +89,7 @@
           </div>
 
           <div
-            class="ml-auto hidden min-w-0 shrink items-center justify-end gap-2 @[58rem]/filters:flex"
+            class="ml-auto hidden min-w-0 items-center justify-end gap-2 @[58rem]/filters:flex"
           >
             <TemplateFilterControls
               v-bind="filterControlBindings"

@@ -30,6 +30,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
 import { DatadogRumTelemetryProvider } from '@/platform/telemetry/providers/cloud/DatadogRumTelemetryProvider'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
@@ -182,9 +183,6 @@ beforeEach(() => {
   vi.mocked(useBillingOperationStore().startOperation).mockResolvedValue(
     billingOperation({ type: 'topup' })
   )
-  vi.mocked(
-    useBillingOperationStore().retryPaymentAuthentication
-  ).mockResolvedValue(false)
   vi.mocked(useBillingOperationStore().dismissOperation).mockImplementation(
     (opId) => {
       const store = useBillingOperationStore()
@@ -646,8 +644,14 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         .spyOn(workspaceApi, 'createTopupCheckout')
         .mockResolvedValue({ checkout_url: checkoutUrl })
       const { tab, open } = stubCheckoutTab()
+      const { continueButton } = await payAndGetRefused()
+      expect(
+        screen.getByText(
+          'This workspace has no card saved for one-click top-ups. Pay on a checkout page instead, or set a default card so future top-ups charge it directly.'
+        )
+      ).toBeInTheDocument()
 
-      await userEvent.click((await payAndGetRefused()).continueButton)
+      await userEvent.click(continueButton)
 
       await waitFor(() => expect(tab.location.href).toBe(checkoutUrl))
       expect(open).toHaveBeenCalledExactlyOnceWith('', '_blank')
@@ -732,12 +736,13 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       }
     })
 
-    it('hands checkout to the Desktop host without navigating the app away', async () => {
+    it('hands checkout to the Desktop host and returns it to the billing-web return page', async () => {
       refuseForNoPaymentMethod()
-      vi.spyOn(workspaceApi, 'createTopupCheckout').mockResolvedValue({
-        checkout_url: checkoutUrl
-      })
+      const createCheckout = vi
+        .spyOn(workspaceApi, 'createTopupCheckout')
+        .mockResolvedValue({ checkout_url: checkoutUrl })
       window.__comfyDesktop2 = {}
+      remoteConfig.value = { billing_web_url: 'https://testbilling.comfy.org' }
       const open = vi.spyOn(window, 'open').mockReturnValue(null)
       const appUrl = window.location.href
 
@@ -749,11 +754,47 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
             key: 'top-up-credits'
           })
         )
+        expect(createCheckout).toHaveBeenCalledWith(
+          5000,
+          'https://testbilling.comfy.org/return/topup'
+        )
         expect(open).toHaveBeenCalledWith(checkoutUrl, '_blank')
         expect(window.location.href).toBe(appUrl)
       } finally {
         delete window.__comfyDesktop2
+        remoteConfig.value = {}
       }
+    })
+
+    it('keeps the app in place when the browser blocks the checkout tab and reopens it on request', async () => {
+      refuseForNoPaymentMethod()
+      checkoutOpensAt(checkoutUrl)
+      const tab = { opener: window, location: { href: '' }, close: vi.fn() }
+      const open = vi
+        .spyOn(window, 'open')
+        .mockReturnValueOnce(null)
+        .mockReturnValueOnce(tab as never)
+      const appUrl = window.location.href
+
+      await userEvent.click((await payAndGetRefused()).continueButton)
+
+      expect(
+        await screen.findByRole('heading', { name: "Checkout didn't open" })
+      ).toBeInTheDocument()
+      expect(window.location.href).toBe(appUrl)
+      expect(mockStartPendingTopup).not.toHaveBeenCalled()
+      expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
+
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Open checkout' })
+      )
+
+      expect(open).toHaveBeenCalledTimes(2)
+      expect(tab.location.href).toBe(checkoutUrl)
+      expect(mockStartPendingTopup).toHaveBeenCalledOnce()
+      expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
+        key: 'top-up-credits'
+      })
     })
 
     it('abandons a checkout that resolves after the dialog was dismissed', async () => {
@@ -786,11 +827,10 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
 
       await userEvent.click((await payAndGetRefused()).continueButton)
 
-      await waitFor(() =>
-        expect(useToast().error).toHaveBeenCalledWith('Purchase Failed', {
-          description: 'Failed to purchase credits: Bad return url'
-        })
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        "The payment page couldn't open. Nothing was charged. Try again."
       )
+      expect(useToast().error).not.toHaveBeenCalled()
       expect(tab.close).toHaveBeenCalledOnce()
       expect(mockStartPendingTopup).not.toHaveBeenCalled()
       expect(
@@ -1109,27 +1149,6 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(screen.queryByText('Select amount')).not.toBeInTheDocument()
   })
 
-  it('resumes a live challenge in page', async () => {
-    renderDialog()
-
-    setIsAddingCredits(true)
-    setTopupActionOperation({
-      opId: 'op-resume',
-      status: 'pending',
-      actionUrl: null,
-      authenticationState: 'requires_action',
-      canRetryAuthentication: true
-    })
-    await nextTick()
-
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Complete verification' })
-    )
-    expect(
-      useBillingOperationStore().retryPaymentAuthentication
-    ).toHaveBeenCalledWith('op-resume')
-  })
-
   it('reports a failed challenge without offering to resume it', async () => {
     renderDialog()
 
@@ -1148,9 +1167,6 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(
       screen.queryByRole('button', { name: 'Complete verification' })
     ).not.toBeInTheDocument()
-    expect(
-      useBillingOperationStore().retryPaymentAuthentication
-    ).not.toHaveBeenCalled()
   })
 
   it.for([
@@ -1269,8 +1285,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       'op-1',
       'topup',
       {
-        attemptStartedAt: expect.any(Number),
-        autoHandleRequiresAction: true
+        attemptStartedAt: expect.any(Number)
       }
     )
 
@@ -1388,8 +1403,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       'topup',
       {
         attemptStartedAt: expect.any(Number),
-        paymentIntentSource: 'agent_paywall',
-        autoHandleRequiresAction: true
+        paymentIntentSource: 'agent_paywall'
       }
     )
   })
@@ -1476,8 +1490,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       'op-1',
       'topup',
       {
-        attemptStartedAt: expect.any(Number),
-        autoHandleRequiresAction: true
+        attemptStartedAt: expect.any(Number)
       }
     )
     expect(mockBillingContext().fetchBalance).not.toHaveBeenCalled()

@@ -14,7 +14,10 @@
         >
           <i class="icon-[lucide--arrow-left] size-5" />
         </button>
-        <DialogTitle v-if="step !== 'verifying'" class="m-0 font-bold">
+        <DialogTitle
+          v-if="step === 'amount' || step === 'confirm'"
+          class="m-0 font-bold"
+        >
           {{
             step === 'confirm'
               ? $t('credits.topUp.confirmTitle')
@@ -64,12 +67,31 @@
         </div>
       </div>
       <p
-        v-if="noPaymentMethodRefused"
+        v-if="checkoutRecovery === 'refused'"
         class="m-0 px-8 pt-4 text-sm text-muted-foreground"
       >
         {{ $t('credits.topUp.noPaymentMethodCheckoutHint') }}
       </p>
+      <p
+        v-else-if="checkoutRecovery === 'failed'"
+        role="alert"
+        class="m-0 px-8 pt-4 text-sm text-destructive-background"
+      >
+        {{ $t('credits.topUp.checkoutOpenFailed') }}
+      </p>
     </template>
+
+    <div
+      v-if="step === 'checkoutBlocked'"
+      class="flex flex-col items-center gap-3 px-8 text-center"
+    >
+      <DialogTitle class="m-0 text-center text-xl lg:text-2xl">
+        {{ $t('credits.topUp.checkoutBlockedTitle') }}
+      </DialogTitle>
+      <p class="m-0 text-sm text-balance text-muted-foreground">
+        {{ $t('credits.topUp.checkoutBlockedBody') }}
+      </p>
+    </div>
 
     <template v-if="step === 'verifying'">
       <div class="flex flex-col items-center gap-3 px-8 text-center">
@@ -203,21 +225,10 @@
     <div class="mt-auto flex flex-col gap-8 p-8">
       <div v-if="step === 'verifying'">
         <Button
-          v-if="topupCanResumeAuthentication"
+          v-if="topupIsFailedRetryable"
           variant="primary"
           size="lg"
-          class="h-10 w-full justify-center"
-          :loading="topupIsAuthenticating"
-          :disabled="!canTopUp"
-          @click="resumeTopupAuthentication"
-        >
-          {{ $t('subscription.preview.completeVerification') }}
-        </Button>
-        <Button
-          v-else-if="topupIsFailedRetryable"
-          variant="primary"
-          size="lg"
-          class="h-10 w-full justify-center"
+          class="w-full"
           @click="startOverTopup"
         >
           {{ $t('credits.topUp.startOver') }}
@@ -226,7 +237,7 @@
           v-else-if="topupIsParkedWithoutLink"
           variant="secondary"
           size="lg"
-          class="h-10 w-full justify-center"
+          class="w-full"
           @click="() => handleClose(false)"
         >
           {{ $t('g.ok') }}
@@ -235,7 +246,7 @@
           v-else-if="!topupReconciliationOperationId"
           variant="primary"
           size="lg"
-          class="h-10 w-full justify-center"
+          class="w-full"
           :disabled="!topupActionUrl || !canTopUp"
           :loading="!topupActionUrl"
           :aria-label="$t('subscription.preview.completeVerification')"
@@ -244,26 +255,35 @@
           {{ $t('subscription.preview.completeVerification') }}
         </Button>
       </div>
+      <Button
+        v-else-if="step === 'checkoutBlocked'"
+        variant="primary"
+        size="lg"
+        class="w-full"
+        @click="openBlockedCheckout"
+      >
+        {{ $t('credits.topUp.openCheckout') }}
+        <i class="icon-[lucide--external-link] size-4" />
+      </Button>
       <div v-else class="flex flex-col gap-2">
         <Button
           v-if="step === 'confirm' && topupActionUrl && canTopUp"
           variant="primary"
           size="lg"
-          class="h-10 justify-center"
           @click="openTopupVerification"
         >
           {{ $t('subscription.preview.completeVerification') }}
         </Button>
         <Button
-          v-if="step === 'confirm' && noPaymentMethodRefused"
+          v-if="step === 'confirm' && checkoutRecovery"
           variant="primary"
           size="lg"
-          class="h-10 justify-center"
           :disabled="!isValidAmount || paymentLocked || !canTopUp"
           :loading="paymentLocked"
           @click="continueToCheckout"
         >
           {{ $t('credits.topUp.continueToCheckout') }}
+          <i class="icon-[lucide--external-link] size-4" />
         </Button>
         <Button
           v-else
@@ -273,7 +293,7 @@
             step === 'confirm' && topupActionUrl ? 'tertiary' : 'primary'
           "
           size="lg"
-          class="h-10 justify-center tabular-nums"
+          class="tabular-nums"
           :data-dd-action-name="BILLING_ACTION_NAME.topUpPrimary"
           @click="handlePrimaryAction"
         >
@@ -284,10 +304,9 @@
           }}
         </Button>
         <Button
-          v-if="step === 'confirm' && noPaymentMethodRefused"
+          v-if="step === 'confirm' && checkoutRecovery"
           variant="secondary"
           size="lg"
-          class="h-10 justify-center"
           :disabled="paymentLocked"
           :loading="openingDefaultCardPortal"
           @click="setDefaultCard"
@@ -347,6 +366,7 @@ import {
 import type { BillingTab } from '@/platform/workspace/billing/billingTab'
 import { reserveBillingTab } from '@/platform/workspace/billing/billingTab'
 import { registerRefreshOnReturn } from '@/platform/workspace/billing/refreshOnReturn'
+import { topupCheckoutReturnUrl } from '@/platform/workspace/billing/topupCheckoutReturnUrl'
 import { isBlockedOnCustomerPhase } from '@/platform/workspace/billing/customerAttention'
 import { UncreditedTopupResponse } from '@/platform/workspace/billing/sdk/topupOperationView'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
@@ -415,7 +435,6 @@ const {
   topupOperation,
   topup,
   createHostedCheckout,
-  retryPaymentAuthentication,
   dismissOperation,
   adoptPendingOperation
 } = useTopupOperation()
@@ -426,12 +445,6 @@ let purchaseAttempt = 0
 const topupActionUrl = computed(() => topupOperation.value?.actionUrl ?? null)
 const topupAuthenticationError = computed(
   () => topupOperation.value?.errorMessage ?? null
-)
-const topupCanResumeAuthentication = computed(
-  () => topupOperation.value?.canRetryAuthentication ?? false
-)
-const topupIsAuthenticating = computed(
-  () => topupOperation.value?.isAuthenticating ?? false
 )
 const topupIsFailedRetryable = computed(
   () => topupOperation.value?.authenticationState === 'failed_retryable'
@@ -475,8 +488,9 @@ const selectedPreset = ref<number | null>(50)
 const payAmount = ref(50)
 const loading = ref(false)
 const paymentSubmitted = ref(false)
-const noPaymentMethodRefused = ref(false)
-const step = ref<'amount' | 'confirm' | 'verifying'>(
+const checkoutRecovery = ref<'refused' | 'failed' | null>(null)
+const blockedCheckoutUrl = ref<string | null>(null)
+const step = ref<'amount' | 'confirm' | 'verifying' | 'checkoutBlocked'>(
   topupOperation.value && canTopUp.value ? 'verifying' : 'amount'
 )
 
@@ -578,14 +592,8 @@ function openTopupVerification() {
   window.open(topupActionUrl.value, '_blank', 'noopener,noreferrer')
 }
 
-function resumeTopupAuthentication() {
-  const operation = topupOperation.value
-  if (!operation || !canTopUp.value) return
-  void retryPaymentAuthentication(operation.opId)
-}
-
 function showAmountStep() {
-  noPaymentMethodRefused.value = false
+  checkoutRecovery.value = null
   step.value = 'amount'
 }
 
@@ -612,7 +620,7 @@ async function handleBuy() {
   purchaseAttempt += 1
   const attempt = purchaseAttempt
   const isCurrentAttempt = () => attempt === purchaseAttempt
-  noPaymentMethodRefused.value = false
+  checkoutRecovery.value = null
   loading.value = true
   paymentSubmitted.value = true
   const attemptStartedAt = Date.now()
@@ -731,7 +739,7 @@ function reportPurchaseError(
     billingOpId
   )
   if (isNoPaymentMethodRefusal(error)) {
-    if (currentAttempt) noPaymentMethodRefused.value = true
+    if (currentAttempt) checkoutRecovery.value = 'refused'
     return
   }
   toast.error(t('credits.topUp.purchaseError'), {
@@ -752,6 +760,23 @@ onUnmounted(() => {
   stopDefaultCardReturnRefresh?.()
 })
 
+function handOffToCheckout(checkoutTab: BillingTab, checkoutUrl: string) {
+  checkoutTab.navigate(checkoutUrl)
+  usePendingTopup().startPendingTopup()
+  watchForTopupBalanceUpdate({
+    current: () => balance.value?.amountMicros ?? null,
+    fetch: async () => {
+      const [balanceRead] = await Promise.allSettled([
+        fetchBalance(),
+        fetchStatus()
+      ])
+      if (balanceRead.status === 'rejected') throw balanceRead.reason
+      return balance.value?.amountMicros ?? null
+    }
+  })
+  handleClose(false)
+}
+
 const openingDefaultCardPortal = ref(false)
 
 function refreshOnDefaultCardReturn() {
@@ -771,7 +796,7 @@ function refreshOnDefaultCardReturn() {
     }
     stopDefaultCardReturnRefresh?.()
     stopDefaultCardReturnRefresh = null
-    noPaymentMethodRefused.value = false
+    checkoutRecovery.value = null
   })
 }
 
@@ -812,41 +837,42 @@ async function continueToCheckout() {
   if (!(canTopUp.value && isValidAmount.value && !paymentLocked.value)) {
     return
   }
+  const returnUrl = topupCheckoutReturnUrl()
+  if (!returnUrl) {
+    checkoutRecovery.value = 'failed'
+    return
+  }
   const checkoutTab = reserveBillingTab()
   loading.value = true
   try {
     const checkoutUrl = await createHostedCheckout(
       payAmount.value * 100,
-      window.location.href
+      returnUrl
     )
     if (unmounted) {
       checkoutTab?.close()
       return
     }
-    usePendingTopup().startPendingTopup()
-    watchForTopupBalanceUpdate({
-      current: () => balance.value?.amountMicros ?? null,
-      fetch: async () => {
-        const [balanceRead] = await Promise.allSettled([
-          fetchBalance(),
-          fetchStatus()
-        ])
-        if (balanceRead.status === 'rejected') throw balanceRead.reason
-        return balance.value?.amountMicros ?? null
-      }
-    })
-    if (checkoutTab) checkoutTab.navigate(checkoutUrl)
-    else globalThis.location.href = checkoutUrl
-    handleClose(false)
+    if (checkoutTab) {
+      handOffToCheckout(checkoutTab, checkoutUrl)
+      return
+    }
+    blockedCheckoutUrl.value = checkoutUrl
+    step.value = 'checkoutBlocked'
   } catch (error) {
     checkoutTab?.close()
+    console.error('Hosted top-up checkout failed to open', error)
     if (unmounted) return
-    toast.error(t('credits.topUp.purchaseError'), {
-      description: purchaseErrorDetail(error)
-    })
+    checkoutRecovery.value = 'failed'
   } finally {
     loading.value = false
   }
+}
+
+function openBlockedCheckout() {
+  const checkoutUrl = blockedCheckoutUrl.value
+  const checkoutTab = checkoutUrl ? reserveBillingTab() : null
+  if (checkoutUrl && checkoutTab) handOffToCheckout(checkoutTab, checkoutUrl)
 }
 
 /**

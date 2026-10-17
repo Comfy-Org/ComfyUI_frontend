@@ -4,16 +4,124 @@
   "description": "Shared technical module, not a business domain. The node widget runtime shared by the Vue node renderer, the classic canvas, linear mode, and the properties panel: the widget-type-to-component registry, generic widget components (number, text, textarea, toggle, select and form dropdown, color, chart, galleria, button, resolution preview, value control, dynamic group rows), the DOM and legacy canvas widget hosts, widget constructors that create LiteGraph widgets from node definitions, remote and asset-backed combo data, promoted-widget resolution, and the PrimitiveNode type guard. Constructors and hosts adapt to the LiteGraph and DOM widget runtime and are integration. The legacy LiteGraph widget layer and widget value contracts belong to node-widgets. Capability widgets already recorded (audio, Markdown, image compare, text preview, bounding boxes, compositor, light, painter) stay with their records.",
   "modules": [
     {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/form/dropdown/types.ts",
+      "path": "src/components/boundingbox/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/curve/WidgetCurve.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/curve/WidgetCurve.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/DomWidgets.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/components/graph/DomWidgets.vue",
+      "role": "integration"
+    },
+    {
+      "path": "src/components/graph/widgets/**",
+      "role": "integration"
+    },
+    {
+      "path": "src/components/graph/widgets/MultiSelectWidget.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/widgets/MultiSelectWidget.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/widgets/TextPreviewWidget.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/widgets/TextPreviewWidget.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/palette/WidgetColors.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/palette/WidgetColors.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/range/WidgetRange.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/range/WidgetRange.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/composables/element/useDomClipping.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/element/useDomClipping.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/node/**",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/node/canvasImagePreviewTypes.ts",
       "role": "domain"
+    },
+    {
+      "path": "src/composables/useUpstreamValue.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/useUpstreamValue.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/uploadImage.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgets/BoundingBoxWidget.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgets/CurveWidget.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgets/VideoEditWidget.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/components/**",
+      "role": "presentation"
     },
     {
       "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetChart.types.ts",
       "role": "domain"
     },
     {
-      "path": "src/renderer/extensions/vueNodes/widgets/composables/useNumberStepCalculation.ts",
-      "role": "domain"
+      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetDOM.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue",
+      "role": "integration"
     },
     {
       "path": "src/renderer/extensions/vueNodes/widgets/components/form/dropdown/shared.test.ts",
@@ -22,6 +130,14 @@
     {
       "path": "src/renderer/extensions/vueNodes/widgets/components/form/dropdown/shared.ts",
       "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/components/form/dropdown/types.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils.ts",
+      "role": "integration"
     },
     {
       "path": "src/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData.desktop.test.ts",
@@ -34,306 +150,6 @@
     {
       "path": "src/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData.ts",
       "role": "application"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/composables/useDismissOnCanvasGesture.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/composables/useDismissOnCanvasGesture.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/composables/useRestoreFocusOnViewportPointer.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/composables/useRestoreFocusOnViewportPointer.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/BatchNavigation.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/BatchNavigation.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdown.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdown.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownInput.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownInput.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownMenu.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownMenu.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownMenuActions.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownMenuActions.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownMenuFilter.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownMenuFilter.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownMenuItem.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownMenuItem.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/form/FormSelectButton.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/form/FormSelectButton.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/layout/**",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/ValueControlButton.stories.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/ValueControlButton.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/ValueControlButton.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/ValueControlPopover.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/ValueControlPopover.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetButton.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetButton.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetChart.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetChart.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetColorPicker.stories.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetColorPicker.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetColorPicker.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetDynamicGroupRow.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetGalleria.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetGalleria.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetInputNumber.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetInputNumber.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetInputNumberGradientSlider.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetInputNumberGradientSlider.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetInputNumberInput.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetInputNumberInput.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetInputNumberSlider.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetInputNumberSlider.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetInputText.stories.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetInputText.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetInputText.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetResolutionPreview.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetResolutionPreview.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetSelect.asset-mode.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetSelect.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetSelect.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetSelectDefault.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetSelectDefault.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetSelectDropdown.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetSelectDropdown.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/widgetTestUtils.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetTextarea.stories.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetTextarea.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetTextarea.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetToggleSwitch.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetToggleSwitch.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetWithControl.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetWithControl.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/composables/useWidgetRenderer.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/registry/**",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetDOM.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue",
-      "role": "integration"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue",
-      "role": "integration"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils.ts",
-      "role": "integration"
     },
     {
       "path": "src/renderer/extensions/vueNodes/widgets/composables/useBooleanWidget.ts",
@@ -352,19 +168,19 @@
       "role": "integration"
     },
     {
-      "path": "src/renderer/extensions/vueNodes/widgets/composables/useColorsWidget.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/composables/useColorsWidget.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/renderer/extensions/vueNodes/widgets/composables/useColorWidget.test.ts",
       "role": "integration"
     },
     {
       "path": "src/renderer/extensions/vueNodes/widgets/composables/useColorWidget.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useColorsWidget.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useColorsWidget.ts",
       "role": "integration"
     },
     {
@@ -378,6 +194,14 @@
     {
       "path": "src/renderer/extensions/vueNodes/widgets/composables/useCurveWidget.ts",
       "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useDismissOnCanvasGesture.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useDismissOnCanvasGesture.ts",
+      "role": "application"
     },
     {
       "path": "src/renderer/extensions/vueNodes/widgets/composables/useFloatWidget.test.ts",
@@ -420,6 +244,10 @@
       "role": "integration"
     },
     {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useNumberStepCalculation.ts",
+      "role": "domain"
+    },
+    {
       "path": "src/renderer/extensions/vueNodes/widgets/composables/useProgressTextWidget.ts",
       "role": "integration"
     },
@@ -442,6 +270,14 @@
     {
       "path": "src/renderer/extensions/vueNodes/widgets/composables/useResolutionPreviewWidget.ts",
       "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useRestoreFocusOnViewportPointer.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useRestoreFocusOnViewportPointer.ts",
+      "role": "application"
     },
     {
       "path": "src/renderer/extensions/vueNodes/widgets/composables/useStringWidget.test.ts",
@@ -468,127 +304,55 @@
       "role": "integration"
     },
     {
-      "path": "src/renderer/extensions/vueNodes/widgets/utils/forwardMiddleButtonToCanvas.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/utils/forwardMiddleButtonToCanvas.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/utils/multilineTextarea.promoted.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/utils/multilineTextarea.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/utils/resolvePromotedWidget.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/utils/resolvePromotedWidget.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/utils/savedImageUrls.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/utils/savedImageUrls.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/renderer/utils/nodeTypeGuards.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/components/boundingbox/WidgetBoundingBox.test.ts",
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useWidgetRenderer.test.ts",
       "role": "presentation"
     },
     {
-      "path": "src/components/boundingbox/WidgetBoundingBox.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/curve/WidgetCurve.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/curve/WidgetCurve.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/graph/DomWidgets.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/components/graph/DomWidgets.vue",
-      "role": "integration"
-    },
-    {
-      "path": "src/components/graph/widgets/DomWidget.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/components/graph/widgets/DomWidget.vue",
-      "role": "integration"
-    },
-    {
-      "path": "src/components/graph/widgets/domWidgetMountReporting.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/components/graph/widgets/domWidgetMountReporting.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/components/graph/widgets/domWidgetZIndex.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/components/graph/widgets/domWidgetZIndex.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/components/graph/widgets/MultiSelectWidget.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/graph/widgets/MultiSelectWidget.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/graph/widgets/TextPreviewWidget.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/graph/widgets/TextPreviewWidget.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/palette/WidgetColors.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/palette/WidgetColors.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/range/WidgetRange.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/range/WidgetRange.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/stores/widgetStore.ts",
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions.test.ts",
       "role": "application"
     },
     {
-      "path": "src/stores/widgetStore.test.ts",
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/registry/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/utils/**",
+      "role": "integration"
+    },
+    {
+      "path": "src/scripts/domWidget.performance.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/scripts/domWidget.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/scripts/domWidget.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/scripts/errorNodeWidgets.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/scripts/widgets.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/stores/domWidgetStore.test.ts",
       "role": "application"
     },
     {
@@ -596,96 +360,28 @@
       "role": "application"
     },
     {
-      "path": "src/stores/domWidgetStore.test.ts",
+      "path": "src/stores/widgetStore.test.ts",
       "role": "application"
     },
     {
-      "path": "src/composables/element/useDomClipping.test.ts",
+      "path": "src/stores/widgetStore.ts",
       "role": "application"
     },
     {
-      "path": "src/composables/element/useDomClipping.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/node/canvasImagePreviewTypes.ts",
+      "path": "src/types/positionConfig.ts",
       "role": "domain"
     },
     {
-      "path": "src/composables/node/useNodeAnimatedImage.test.ts",
-      "role": "integration"
+      "path": "src/types/simplifiedWidget.ts",
+      "role": "domain"
     },
     {
-      "path": "src/composables/node/useNodeAnimatedImage.ts",
-      "role": "integration"
+      "path": "src/types/widgetConstructor.ts",
+      "role": "domain"
     },
     {
-      "path": "src/composables/node/useNodeCanvasImagePreview.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/composables/node/useNodeCanvasImagePreview.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/composables/node/useNodeDragAndDrop.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/composables/node/useNodeDragAndDrop.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/composables/node/useNodeFileInput.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/composables/node/useNodeFileInput.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/composables/node/useNodeImage.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/composables/node/useNodeImage.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/composables/node/useNodeImageUpload.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/composables/node/useNodeImageUpload.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/composables/node/useNodePaste.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/composables/node/useNodePaste.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/composables/node/useNodeProgressText.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/composables/node/useProgressTextPreviews.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/composables/node/useProgressTextPreviews.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/composables/useUpstreamValue.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/composables/useUpstreamValue.ts",
-      "role": "integration"
+      "path": "src/types/widgetTypes.ts",
+      "role": "presentation"
     },
     {
       "path": "src/utils/imageUtil.test.ts",
@@ -706,58 +402,6 @@
     {
       "path": "src/utils/widgetPropFilter.ts",
       "role": "domain"
-    },
-    {
-      "path": "src/types/simplifiedWidget.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/types/widgetConstructor.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/types/positionConfig.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/types/widgetTypes.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/scripts/widgets.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/scripts/errorNodeWidgets.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/scripts/domWidget.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/scripts/domWidget.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/scripts/domWidget.performance.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/extensions/core/uploadImage.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/lib/litegraph/src/widgets/BoundingBoxWidget.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/lib/litegraph/src/widgets/CurveWidget.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/lib/litegraph/src/widgets/VideoEditWidget.ts",
-      "role": "presentation"
     }
   ],
   "publicEntryPoints": [],

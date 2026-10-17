@@ -58,7 +58,7 @@ test.describe('Top-up without a saved payment method', () => {
     await topUpDialog.root.getByRole('button', { name: 'Pay $50.00' }).click()
 
     await expect(
-      topUpDialog.root.getByText(/no default payment method/)
+      topUpDialog.root.getByText(/no card saved for one-click top-ups/)
     ).toBeVisible()
     await expect(comfyPage.toast.toastErrors).toHaveCount(0)
 
@@ -69,10 +69,11 @@ test.describe('Top-up without a saved payment method', () => {
       .getByRole('button', { name: 'Continue to checkout' })
       .click()
 
-    expect((await checkoutRequest).postDataJSON()).toMatchObject({
-      amount_cents: 5000,
-      return_url: appUrl
-    })
+    const checkoutBody = (await checkoutRequest).postDataJSON()
+    expect(checkoutBody).toMatchObject({ amount_cents: 5000 })
+    expect(checkoutBody.return_url).toMatch(
+      /^https:\/\/(test|staging)?billing\.comfy\.org\/return\/topup$/
+    )
     await expect(await checkoutPage).toHaveURL(CHECKOUT_URL)
     await expect(page).toHaveURL(appUrl)
     await expect(topUpDialog.root).toBeHidden()
