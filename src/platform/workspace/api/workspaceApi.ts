@@ -10,6 +10,8 @@ import type {
   CancelSubscriptionRequest,
   CancelSubscriptionResponse,
   CreateInviteRequest,
+  CreateTopupCheckoutRequest,
+  CreateTopupCheckoutResponse,
   CreateTopupRequest,
   CreateTopupResponse,
   CreateWorkspaceRequest,
@@ -144,6 +146,10 @@ export type { ScheduledPlanChange }
 export type { BillingBalanceResponse }
 export type { BillingEventsResponse }
 export type { BillingCapabilitiesResponse }
+export type BillingCapabilitiesRead = Omit<
+  BillingCapabilitiesResponse,
+  'denied_reasons'
+> & { denied_reasons?: Readonly<Partial<Record<string, string>>> }
 export type { CreateTopupResponse }
 export type { BillingOpStatusResponse }
 export type { SavedPaymentMethod }
@@ -907,6 +913,32 @@ export const workspaceApi = {
       return response.data
     } catch (err) {
       handleAxiosError(err, 'createTopup')
+    }
+  },
+
+  /**
+   * Create a Stripe-hosted credit top-up checkout session
+   * POST /api/billing/topup/checkout
+   */
+  async createTopupCheckout(
+    amountCents: number,
+    returnUrl: string
+  ): Promise<CreateTopupCheckoutResponse> {
+    const auth = await requestAuth()
+    try {
+      const response =
+        await workspaceApiClient.post<CreateTopupCheckoutResponse>(
+          workspaceApiUrl('/billing/topup/checkout'),
+          {
+            amount_cents: amountCents,
+            return_url: returnUrl,
+            idempotency_key: crypto.randomUUID()
+          } satisfies CreateTopupCheckoutRequest,
+          auth
+        )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err, 'createTopupCheckout')
     }
   },
 

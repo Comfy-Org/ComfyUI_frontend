@@ -34,7 +34,6 @@ const defaultFlags: FeatureFlags = {
   billingControlEnabled: false,
   memberCreditLimitsEnabled: false,
   legacyBillingMigrationEnabled: false,
-  embeddedCheckoutEnabled: false,
   billingSdkTopupEnabled: false,
   billingSdkTopupRailEnabled: false,
   billingSdkSubscriptionEnabled: false,

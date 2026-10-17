@@ -1193,11 +1193,13 @@ describe('useWorkspaceBilling', () => {
       mockWorkspaceApi.getPaymentPortalUrl.mockRejectedValue(
         new Error('portal down')
       )
+      const { tab } = stubPortalTab()
 
       const billing = setupBilling()
 
       await expect(billing.manageSubscription()).rejects.toThrow('portal down')
       expect(billing.error.value).toBe('portal down')
+      expect(tab.close).toHaveBeenCalledOnce()
     })
 
     it('re-reads billing state once when the tab regains visibility after opening the portal', async () => {

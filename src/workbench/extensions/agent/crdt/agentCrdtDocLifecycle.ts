@@ -39,6 +39,8 @@ const DOC_ID_REFRESH_INTERVAL_MS = DOC_ID_TTL_MS / 2
 const SUBSCRIBE_RETRY_BASE_MS = 500
 const SUBSCRIBE_RETRY_MAX_ATTEMPTS = 6
 
+export type SubscribeGiveUpReason = 'refused' | 'timeout'
+
 // PM-1604 / BE-11437: the doc-host's terminal classifications for a
 // document this build can never read back - unlike every other refusal
 // reason, no amount of backoff retry changes that outcome, so these codes
@@ -217,7 +219,7 @@ export class AgentCrdtDocLifecycle {
   constructor(
     private readonly workflowId: () => string | null,
     private readonly resubscribe: () => void,
-    private readonly onGaveUp: () => void
+    private readonly onGaveUp: (reason: SubscribeGiveUpReason) => void
   ) {}
 
   readPersistedDocId(): string | null {
@@ -262,6 +264,10 @@ export class AgentCrdtDocLifecycle {
     this.clearStaleProbe()
     this.scheduleSubscribeRetry()
     return false
+  }
+
+  refusalIsFinal(): boolean {
+    return !this.confirmedSinceLastSend && this.subscribeRetryTimer === null
   }
 
   stopProbing(): void {
@@ -326,7 +332,7 @@ export class AgentCrdtDocLifecycle {
     }
   }
 
-  shouldDeferSubscribe(): boolean {
+  private shouldDeferSubscribe(): boolean {
     return this.gaveUp || this.subscribeRetryTimer !== null
   }
 
@@ -423,7 +429,7 @@ export class AgentCrdtDocLifecycle {
       level: 'warning',
       tags: { feature_area: 'agent', operation: 'sync', outcome: 'gave_up' }
     })
-    this.onGaveUp()
+    this.onGaveUp('refused')
     return true
   }
 
@@ -444,7 +450,7 @@ export class AgentCrdtDocLifecycle {
         tags: { feature_area: 'agent', operation: 'sync', outcome: 'gave_up' }
       }
     )
-    this.onGaveUp()
+    this.onGaveUp('timeout')
   }
 
   private clearSubscribeRetry(): void {

@@ -1,8 +1,14 @@
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type {
+  LGraphNode,
+  LLink,
+  Reroute,
+  SubgraphInput,
+  SubgraphOutput
+} from '@/lib/litegraph/src/types/entityRegistry'
+
 import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
-import type { LLink } from '@/lib/litegraph/src/LLink'
-import type { Reroute } from '@/lib/litegraph/src/Reroute'
+
 import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
@@ -15,8 +21,7 @@ import type {
   INodeOutputSlot
 } from '@/lib/litegraph/src/types/slots'
 import type { LinkNetwork } from '@/lib/litegraph/src/types/linkNetwork'
-import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
-import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
+
 import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
 
 import type { RenderLink } from './RenderLink'
@@ -219,4 +224,10 @@ export class FloatingRenderLink implements RenderLink {
 
     events.dispatch('output-moved', this)
   }
+}
+
+type RegisteredFloatingRenderLink = FloatingRenderLink
+
+declare module '../types/entityRegistry' {
+  interface FloatingRenderLink extends RegisteredFloatingRenderLink {}
 }
