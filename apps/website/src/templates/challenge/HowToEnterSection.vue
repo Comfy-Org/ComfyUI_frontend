@@ -26,8 +26,14 @@ const steps: AccordionStep[] = (
   ['Signup', 'Requirements', 'Prepare', 'Submit'] as const
 ).map((id) => ({ id, title: t(`eventChallenge.enter${id}Title`) }))
 
+const sdkDocsHref = {
+  en: 'https://docs.comfy.org/development/api-development/sdks',
+  'zh-CN': 'https://docs.comfy.org/zh/development/api-development/sdks',
+  ja: 'https://docs.comfy.org/ja/development/api-development/sdks'
+} as const satisfies Record<Locale, string>
+
 const requirements = ([1, 2, 3, 4, 5, 6] as const).map((item) =>
-  t(`eventChallenge.requirement${item}`)
+  t(`eventChallenge.requirement${item}`, { sdkDocsHref: sdkDocsHref[locale] })
 )
 
 const deliverables = (['Repo', 'Demo', 'Link', 'Social'] as const).map(

@@ -5786,7 +5786,7 @@
     "enterSubmitTitle": "Submit",
     "enterSubmitBody": "Submit by October 30. Final winners will be announced November 6.",
     "enterIntro": "Every submission must include:",
-    "requirement1": "Your work must be built using the Comfy <a href=\"/platform/\" class=\"text-primary-comfy-yellow underline\">Developer Platform</a> (Comfy Router and/or <a href=\"https://docs.comfy.org/development/api-development/sdks\" target=\"_blank\" class=\"text-primary-comfy-yellow underline\">Comfy SDK</a>)",
+    "requirement1": "Your work must be built using the Comfy <a href=\"/platform/\" class=\"text-primary-comfy-yellow underline\">Developer Platform</a> (Comfy Router and/or <a href=\"{sdkDocsHref}\" target=\"_blank\" class=\"text-primary-comfy-yellow underline\">Comfy SDK</a>)",
     "requirement2": "Your repo must include an open-source license and enough setup detail that someone else can run it on their own machine",
     "requirement3": "Any other tools, models, or techniques you want to combine with it are fair game and must be explained in your demo video",
     "requirement4": "All submissions must be lawful, SFW, and must not contain unlicensed IP or likenesses",

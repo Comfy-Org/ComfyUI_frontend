@@ -64,7 +64,7 @@ describe('HowToEnterSection', () => {
       locale: 'zh-CN',
       step: '2. 应用要求',
       name: 'Comfy SDK',
-      href: 'https://docs.comfy.org/development/api-development/sdks'
+      href: 'https://docs.comfy.org/zh/development/api-development/sdks'
     }
   ] as const)(
     'links the $locale "$name" requirement to $href',
