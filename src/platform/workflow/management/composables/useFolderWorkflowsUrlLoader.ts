@@ -1,4 +1,3 @@
-import { sortBy } from 'es-toolkit'
 import { useRoute, useRouter } from 'vue-router'
 
 import { isCloud } from '@/platform/distribution/types'
@@ -33,15 +32,16 @@ function isFolderName(value: unknown): value is string {
 /**
  * Opens the saved workflows of the folder a link names:
  * `?workflows=<folder>` opens every `.json` directly in `workflows/<folder>/`
- * as a tab, in name order, with the first in front. A tab already open is
- * reused. A folder name that is not one path segment, a repeated or bare
- * param (which the preserved-query tracker stashes joined with `,`), or a
- * folder with no workflows, opens nothing. If the first workflow fails to
- * open, the tabs are left as they were. The param survives the sign-in and
- * onboarding redirects through the preserved-query stash. It is then dropped,
- * stash included, except while a Cloud deployment link (in the URL or its own
- * stash) is still to pick, since that pick reloads the page and the boot after
- * it opens the folder again.
+ * as a tab, in natural name order, with the first in front. A tab already
+ * open is reused and keeps its place, so the folder's tabs may sit among
+ * tabs that were open before. A folder name that is not one path segment, a
+ * repeated or bare param (which the preserved-query tracker stashes joined
+ * with `,`), or a folder with no workflows, opens nothing. If the first
+ * workflow fails to open, the tabs are left as they were. The param survives
+ * the sign-in and onboarding redirects through the preserved-query stash. It
+ * is then dropped, stash included, except while a Cloud deployment link (in
+ * the URL or its own stash) is still to pick, since that pick reloads the page
+ * and the boot after it opens the folder again.
  */
 export function useFolderWorkflowsUrlLoader() {
   const route = useRoute()
@@ -51,12 +51,16 @@ export function useFolderWorkflowsUrlLoader() {
   function workflowsIn(folder: string): ComfyWorkflow[] {
     const prefix = `${ComfyWorkflow.basePath}${folder}/`
     const inFolder = workflowStore.persistedWorkflows.filter(({ path }) => {
+      if (!path.startsWith(prefix)) return false
       const name = path.slice(prefix.length)
-      return (
-        path.startsWith(prefix) && name.endsWith('.json') && !name.includes('/')
-      )
+      return name.endsWith('.json') && !name.includes('/')
     })
-    return sortBy(inFolder, [(workflow) => workflow.path])
+    return inFolder.sort((a, b) =>
+      a.fullFilename.localeCompare(b.fullFilename, undefined, {
+        numeric: true,
+        sensitivity: 'base'
+      })
+    )
   }
 
   async function openInFront(folder: string): Promise<boolean> {
