@@ -1,8 +1,17 @@
-import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import type {
+  ComponentPropsAndSlots,
+  Meta,
+  StoryObj
+} from '@storybook/vue3-vite'
+import type { AnchorHTMLAttributes, ButtonHTMLAttributes } from 'vue'
 
 import ButtonPill from './ButtonPill.vue'
 
-const meta: Meta<typeof ButtonPill> = {
+type StoryArgs = ComponentPropsAndSlots<typeof ButtonPill> &
+  Pick<AnchorHTMLAttributes, 'href'> &
+  Pick<ButtonHTMLAttributes, 'type'>
+
+const meta: Meta<StoryArgs> = {
   title: 'Website/UI/ButtonPill',
   component: ButtonPill,
   tags: ['autodocs'],
@@ -24,13 +33,12 @@ const meta: Meta<typeof ButtonPill> = {
     },
     size: {
       control: { type: 'select' },
-      options: ['default', 'lg', 'icon']
+      options: ['default', 'lg']
     },
     iconPosition: {
       control: { type: 'select' },
       options: ['right', 'left']
-    },
-    hideLabel: { control: 'boolean' }
+    }
   }
 }
 
@@ -117,8 +125,8 @@ export const IconLeft: Story = {
   })
 }
 
-export const RevealLabelOnHover: Story = {
-  args: { as: 'a', href: '#', hideLabel: true },
+export const HoverAnimation: Story = {
+  args: { as: 'a', href: '#' },
   render: (args) => ({
     components: { ButtonPill },
     setup: () => ({ args }),

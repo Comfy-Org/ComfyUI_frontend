@@ -1,26 +1,40 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import { expect, within } from 'storybook/test'
+import type { ComponentProps } from 'vue-component-type-helpers'
 
 import HeroBackdrop01 from './HeroBackdrop01.vue'
 
-const sampleImage =
-  'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1600&q=80'
+const sampleImage = '/images/mcp/mcp-thumb-keyart.webp'
 
-const meta: Meta<typeof HeroBackdrop01> = {
+type HeroBackdropStoryArgs = ComponentProps<typeof HeroBackdrop01>
+
+const meta = {
   title: 'Website/Blocks/HeroBackdrop01',
   component: HeroBackdrop01,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'stable'],
   args: {
     backdrop: { type: 'image', src: sampleImage, alt: 'Abstract gradient' },
     title: 'Build anything\nwith ComfyUI',
     subtitle:
       'A powerful, modular visual interface for building and running AI workflows.'
   }
-}
+} satisfies Meta<HeroBackdropStoryArgs>
 
 export default meta
 type Story = StoryObj<typeof meta>
 
-export const Default: Story = {}
+export const Default: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    await expect(
+      canvas.getByRole('heading', { level: 1, name: /build anything/i })
+    ).toBeVisible()
+    await expect(
+      canvas.getByRole('img', { name: 'Abstract gradient' })
+    ).toHaveAttribute('fetchpriority', 'high')
+  }
+}
 
 export const WithBadge: Story = {
   args: {
@@ -37,5 +51,11 @@ export const WithFootnote: Story = {
 export const NoBackdrop: Story = {
   args: {
     backdrop: undefined
+  }
+}
+
+export const Mobile: Story = {
+  globals: {
+    viewport: { value: 'mobile1', isRotated: false }
   }
 }

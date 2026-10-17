@@ -26,6 +26,5 @@
     "playwright.acceptance.config.ts",
     "vitest.config.ts"
   ],
-  "exclude": ["src/**/*.stories.ts"],
-  "references": [{ "path": "./tsconfig.stories.json" }]
+  "exclude": ["src/**/*.stories.ts"]
 }

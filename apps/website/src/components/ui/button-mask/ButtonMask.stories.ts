@@ -1,8 +1,17 @@
-import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import type {
+  ComponentPropsAndSlots,
+  Meta,
+  StoryObj
+} from '@storybook/vue3-vite'
+import type { AnchorHTMLAttributes, ButtonHTMLAttributes } from 'vue'
 
 import ButtonMask from './ButtonMask.vue'
 
-const meta: Meta<typeof ButtonMask> = {
+type StoryArgs = ComponentPropsAndSlots<typeof ButtonMask> &
+  Pick<AnchorHTMLAttributes, 'href'> &
+  Pick<ButtonHTMLAttributes, 'type'>
+
+const meta: Meta<StoryArgs> = {
   title: 'Website/UI/ButtonMask',
   component: ButtonMask,
   tags: ['autodocs'],
