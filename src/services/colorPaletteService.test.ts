@@ -1,8 +1,9 @@
 import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
 
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
+import { CORE_COLOR_PALETTES } from '@/constants/coreColorPalettes'
 import { themeSchema } from '@/schemas/colorPaletteSchema'
 import type { ComfyApp } from '@/scripts/app'
 import { useColorPaletteService } from '@/services/colorPaletteService'
@@ -239,6 +240,37 @@ describe('useColorPaletteService theme variables', () => {
         ])
       )
     )
+  })
+
+  it.for(
+    Object.values(CORE_COLOR_PALETTES).flatMap(({ id, colors }) =>
+      colors.theme ? [{ paletteId: id, theme: colors.theme }] : []
+    )
+  )(
+    'applies every theme token the $paletteId palette sets',
+    async ({ paletteId, theme }) => {
+      clearRootThemeAfterTest()
+
+      await useColorPaletteService().loadColorPalette(paletteId)
+
+      const tokens = Object.keys(theme).map((token) => `--${token}`)
+      expect(
+        Object.fromEntries(tokens.map((name) => [name, readRootProperty(name)]))
+      ).toEqual(
+        Object.fromEntries(
+          Object.entries(theme).map(([token, value]) => [`--${token}`, value])
+        )
+      )
+    }
+  )
+
+  it.for(
+    Object.values(CORE_COLOR_PALETTES).flatMap(({ id, colors }) => {
+      const image = colors.litegraph_base.BACKGROUND_IMAGE
+      return image?.startsWith('/assets/') ? [{ paletteId: id, image }] : []
+    })
+  )('ships the $paletteId canvas background image', ({ image }) => {
+    expect(existsSync(join(process.cwd(), 'public', image))).toBe(true)
   })
 })
 
