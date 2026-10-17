@@ -272,8 +272,11 @@ function onPaywallAction(
   openAccountPrecondition('subscription', { source: 'agent_paywall' })
 }
 
-const { messages: conversationMessages, entries: conversationEntries } =
-  storeToRefs(conversationStore)
+const {
+  messages: conversationMessages,
+  entries: conversationEntries,
+  threadId: conversationThreadId
+} = storeToRefs(conversationStore)
 watch(
   () =>
     // Gated on the read having *settled*, which includes settling as
@@ -369,8 +372,17 @@ const latestEntryHasPaywall = computed(() => {
     latestEntry.parts.some((part) => part.type === 'paywall')
   )
 })
+/**
+ * Held back until the thread is activated (its first user turn was accepted,
+ * or an existing thread is open). A freshly granted credit can take a while to
+ * be realized by billing, so an empty thread would otherwise greet a user who
+ * is about to be funded with an out-of-credits card. A refused first send still
+ * surfaces the inline card. Revisit if the agent ever opens threads with a
+ * proactive first turn: an empty thread would no longer mean "user not engaged".
+ */
 const showStandingPaywall = computed(() => {
-  if (!creditsExhausted.value) return false
+  if (!creditsExhausted.value || conversationThreadId.value === null)
+    return false
   return !latestEntryHasPaywall.value
 })
 
