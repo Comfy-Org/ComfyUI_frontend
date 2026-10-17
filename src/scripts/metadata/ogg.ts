@@ -73,6 +73,71 @@ export async function getOggMetadata(file: File): Promise<ComfyMetadata> {
   return parseVorbisComments(packetData, decoder)
 }
 
+/** Outcome of scanning the segments of one Ogg page. */
+interface PageSegmentsResult {
+  nextOffset: number
+  inOpusTags: boolean
+  packetEnded: boolean
+}
+
+/**
+ * Processes segments within a single Ogg page to extract OpusTags data.
+ */
+function processPageSegments(
+  data: Uint8Array,
+  lengthsOffset: number,
+  startDataOffset: number,
+  pageSegmentsCount: number,
+  inOpusTags: boolean,
+  segments: Uint8Array[]
+): PageSegmentsResult {
+  let dataOffset = startDataOffset
+  let currentInOpusTags = inOpusTags
+
+  for (let i = 0; i < pageSegmentsCount; i++) {
+    const segmentLength = data[lengthsOffset + i]
+
+    // Stop processing if the segment exceeds our available data buffer
+    if (dataOffset + segmentLength > data.length) {
+      return {
+        nextOffset: dataOffset,
+        inOpusTags: currentInOpusTags,
+        packetEnded: true
+      }
+    }
+
+    const segment = data.subarray(dataOffset, dataOffset + segmentLength)
+    dataOffset += segmentLength
+
+    if (
+      !currentInOpusTags &&
+      segmentLength >= 8 &&
+      compareMagic(segment, 0, OPUS_TAGS_MAGIC)
+    ) {
+      currentInOpusTags = true
+    }
+
+    if (currentInOpusTags) {
+      segments.push(segment)
+      // Ogg lacing spec: If a segment length is less than 255 (OGG_MAX_SEGMENT_SIZE),
+      // it marks the end of the current packet (data chunk)
+      if (segmentLength < OGG_MAX_SEGMENT_SIZE) {
+        return {
+          nextOffset: dataOffset,
+          inOpusTags: currentInOpusTags,
+          packetEnded: true
+        }
+      }
+    }
+  }
+
+  return {
+    nextOffset: dataOffset,
+    inOpusTags: currentInOpusTags,
+    packetEnded: false
+  }
+}
+
 /**
  * Traverses the Ogg page structure to extract all segments belonging to the
  * OpusTags packet.
@@ -96,46 +161,72 @@ function extractOpusTags(data: Uint8Array): Uint8Array[] {
 
     const pageSegmentsCount = data[offset + OGG_PAGE_SEGMENTS_OFFSET]
     const lengthsOffset = offset + OGG_HEADER_SIZE
-    let dataOffset = lengthsOffset + pageSegmentsCount
+    const dataOffset = lengthsOffset + pageSegmentsCount
 
     if (dataOffset > data.length) break
 
-    let pageProcessingEnded = false
+    const result = processPageSegments(
+      data,
+      lengthsOffset,
+      dataOffset,
+      pageSegmentsCount,
+      inOpusTags,
+      segments
+    )
 
-    for (let i = 0; i < pageSegmentsCount; i++) {
-      const segmentLength = data[lengthsOffset + i]
-
-      // Stop processing if the segment exceeds our available data buffer
-      if (dataOffset + segmentLength > data.length) {
-        pageProcessingEnded = true
-        break
-      }
-
-      const segment = data.subarray(dataOffset, dataOffset + segmentLength)
-      dataOffset += segmentLength
-
-      if (!inOpusTags) {
-        if (segmentLength >= 8 && compareMagic(segment, 0, OPUS_TAGS_MAGIC)) {
-          inOpusTags = true
-        }
-      }
-
-      if (inOpusTags) {
-        segments.push(segment)
-        // Ogg lacing spec: If a segment length is less than 255 (OGG_MAX_SEGMENT_SIZE),
-        // it marks the end of the current packet (data chunk)
-        if (segmentLength < OGG_MAX_SEGMENT_SIZE) {
-          pageProcessingEnded = true
-          break
-        }
-      }
-    }
-
-    if (pageProcessingEnded) break
-    offset = dataOffset
+    inOpusTags = result.inOpusTags
+    offset = result.nextOffset
+    if (result.packetEnded) break
   }
 
   return segments
+}
+
+/**
+ * Skips the 8-byte OpusTags magic string and vendor string to locate the comments count offset.
+ */
+function getCommentsOffset(
+  packetData: Uint8Array,
+  packetView: DataView
+): number | null {
+  const readIndex = 8 // Skip 'OpusTags' magic string (8 bytes)
+
+  // Bounds check: ensure vendor length field is within packet
+  if (readIndex + 4 > packetData.length) return null
+
+  // Skip vendor string length (4 bytes) + vendor string
+  const vendorLength = packetView.getUint32(readIndex, true)
+  const afterVendor = readIndex + 4 + vendorLength
+
+  // Bounds check: ensure vendor string and the user comment list length field
+  // are within packet
+  if (afterVendor + 4 > packetData.length) return null
+  return afterVendor
+}
+
+/**
+ * Parses an individual Vorbis comment KEY=VALUE pair into the ComfyMetadata result.
+ */
+function parseCommentEntry(text: string, result: ComfyMetadata): void {
+  const separatorIndex = text.indexOf('=')
+  if (separatorIndex === -1) return
+
+  const key = text.substring(0, separatorIndex).toLowerCase()
+  const value = text.substring(separatorIndex + 1)
+
+  if (key === 'prompt') {
+    try {
+      result.prompt = parseJsonWithNonFinite<ComfyApiWorkflow>(value)
+    } catch (e) {
+      console.error('Failed to parse Ogg prompt metadata', e)
+    }
+  } else if (key === 'workflow') {
+    try {
+      result.workflow = parseJsonWithNonFinite<ComfyWorkflowJSON>(value)
+    } catch (e) {
+      console.error('Failed to parse Ogg workflow metadata', e)
+    }
+  }
 }
 
 /**
@@ -157,33 +248,20 @@ function parseVorbisComments(
   packetData: Uint8Array,
   decoder: TextDecoder
 ): ComfyMetadata {
-  let readIndex = 8 // Skip 'OpusTags' magic string (8 bytes)
   const packetView = new DataView(
     packetData.buffer,
     packetData.byteOffset,
     packetData.byteLength
   )
 
-  // Bounds check: ensure vendor length field is within packet
-  if (readIndex + 4 > packetData.length)
+  const commentsOffset = getCommentsOffset(packetData, packetView)
+  if (commentsOffset === null) {
     return { prompt: undefined, workflow: undefined }
-
-  // Skip vendor string length (4 bytes) + vendor string
-  const vendorLength = packetView.getUint32(readIndex, true)
-  readIndex += 4
-
-  // Bounds check: ensure vendor string is within packet
-  if (readIndex + vendorLength > packetData.length)
-    return { prompt: undefined, workflow: undefined }
-  readIndex += vendorLength
-
-  // Bounds check: ensure user comment list length field is within packet
-  if (readIndex + 4 > packetData.length)
-    return { prompt: undefined, workflow: undefined }
+  }
 
   // Get the number of user comments
-  const userCommentListLength = packetView.getUint32(readIndex, true)
-  readIndex += 4
+  const userCommentListLength = packetView.getUint32(commentsOffset, true)
+  let readIndex = commentsOffset + 4
 
   const result: ComfyMetadata = {}
   for (let i = 0; i < userCommentListLength; i++) {
@@ -203,25 +281,7 @@ function parseVorbisComments(
     )
     readIndex += commentLength
 
-    const separatorIndex = text.indexOf('=')
-    if (separatorIndex !== -1) {
-      const key = text.substring(0, separatorIndex).toLowerCase()
-      const value = text.substring(separatorIndex + 1)
-      if (key === 'prompt') {
-        try {
-          result.prompt = parseJsonWithNonFinite<ComfyApiWorkflow>(value)
-        } catch (e) {
-          console.error('Failed to parse Ogg prompt metadata', e)
-        }
-      } else if (key === 'workflow') {
-        try {
-          result.workflow = parseJsonWithNonFinite<ComfyWorkflowJSON>(value)
-        } catch (e) {
-          console.error('Failed to parse Ogg workflow metadata', e)
-        }
-      }
-    }
-
+    parseCommentEntry(text, result)
     if (result.prompt !== undefined && result.workflow !== undefined) break
   }
 

@@ -18,9 +18,7 @@ const nanFixturePath = path.resolve(
 const OGG_HEADER_SIZE = 27
 const OGG_MAX_SEGMENT_SIZE = 255
 
-function createOggWithOpusTags(comments: {
-  [key: string]: string
-}): ArrayBuffer {
+function buildOpusTagsPacket(comments: { [key: string]: string }): Uint8Array {
   const vendor = 'ComfyUI'
   const vendorBytes = new TextEncoder().encode(vendor)
   const commentKeys = Object.keys(comments)
@@ -53,10 +51,11 @@ function createOggWithOpusTags(comments: {
     pos += entryBytes.length
   }
 
-  // Construct Ogg Pages for Metadata
-  const pages: Uint8Array[] = []
+  return packetData
+}
 
-  // Prepend minimal OpusHead as Page 0 (BOS)
+/** Minimal OpusHead as Page 0 (BOS). */
+function createOpusHeadPage(): Uint8Array {
   const headPageSize = OGG_HEADER_SIZE + 1 + 19
   const headPage = new Uint8Array(headPageSize)
   headPage.set(new TextEncoder().encode('OggS'), 0)
@@ -67,8 +66,12 @@ function createOggWithOpusTags(comments: {
   headPage.set(new TextEncoder().encode('OpusHead'), OGG_HEADER_SIZE + 1)
   headPage[OGG_HEADER_SIZE + 1 + 8] = 1 // version
   headPage[OGG_HEADER_SIZE + 1 + 9] = 2 // channels
-  pages.push(headPage)
+  return headPage
+}
 
+/** Construct Ogg pages carrying the given OpusTags packet. */
+function packetToOggPages(packetData: Uint8Array): Uint8Array[] {
+  const pages: Uint8Array[] = []
   let packetPos = 0
   let packetEnded = false
 
@@ -111,31 +114,48 @@ function createOggWithOpusTags(comments: {
     packetPos += dataSizeInThisPage
   }
 
+  return pages
+}
+
+/** Dummy audio page (approx 65KB per page). */
+function createDummyAudioPage(): Uint8Array {
+  const numSegments = OGG_MAX_SEGMENT_SIZE
+  const segmentDataSize = OGG_MAX_SEGMENT_SIZE
+  const dataSize = numSegments * segmentDataSize
+  const pageSize = OGG_HEADER_SIZE + numSegments + dataSize
+  const audioPage = new Uint8Array(pageSize)
+
+  // Ogg Header for dummy audio
+  audioPage.set(new TextEncoder().encode('OggS'), 0)
+  audioPage[5] = 0x00 // Normal page
+  audioPage[26] = numSegments
+
+  // Segment Table (all max size)
+  audioPage.fill(
+    segmentDataSize,
+    OGG_HEADER_SIZE,
+    OGG_HEADER_SIZE + numSegments
+  )
+
+  // The rest of the array remains 0x00, acting as valid empty dummy audio data
+  return audioPage
+}
+
+function createOggWithOpusTags(comments: {
+  [key: string]: string
+}): ArrayBuffer {
+  const packetData = buildOpusTagsPacket(comments)
+  const pages: Uint8Array[] = [
+    createOpusHeadPage(),
+    ...packetToOggPages(packetData)
+  ]
+
   // Append Dummy Audio Ogg Pages
   let currentTotalSize = pages.reduce((sum, p) => sum + p.length, 0)
   const TARGET_SIZE = 65536 // 64KB: ensures the file spans multiple Ogg pages for multi-page parsing tests
 
   while (currentTotalSize < TARGET_SIZE) {
-    // Create a dummy audio page (approx 65KB per page)
-    const numSegments = OGG_MAX_SEGMENT_SIZE
-    const segmentDataSize = OGG_MAX_SEGMENT_SIZE
-    const dataSize = numSegments * segmentDataSize
-    const pageSize = OGG_HEADER_SIZE + numSegments + dataSize
-    const audioPage = new Uint8Array(pageSize)
-
-    // Ogg Header for dummy audio
-    audioPage.set(new TextEncoder().encode('OggS'), 0)
-    audioPage[5] = 0x00 // Normal page
-    audioPage[26] = numSegments
-
-    // Segment Table (all max size)
-    audioPage.fill(
-      segmentDataSize,
-      OGG_HEADER_SIZE,
-      OGG_HEADER_SIZE + numSegments
-    )
-
-    // The rest of the array remains 0x00, acting as valid empty dummy audio data
+    const audioPage = createDummyAudioPage()
     pages.push(audioPage)
     currentTotalSize += audioPage.length
   }
