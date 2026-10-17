@@ -434,6 +434,7 @@ export class ComfyApp implements IComfyApp {
   private configuringGraphLevel: number = 0
   private graphLoadSequence = 0
   private graphLoadQueue: Promise<void> = Promise.resolve()
+  private activatingGraphLoads = 0
   private pendingCamera:
     | { id: number; workflow: string | null | ComfyWorkflow }
     | undefined
@@ -1184,6 +1185,36 @@ export class ComfyApp implements IComfyApp {
     await useExtensionService().invokeExtensionsAsync('onGraphLoadError', error)
   }
 
+  /**
+   * Activates a graph built outside `loadGraphData` under the same
+   * `isLoadingGraph` guard, so a failed activation's recovery cannot capture
+   * the built graph into the retained workflow's change tracker.
+   */
+  private async activateBuiltGraph(fileName: string) {
+    ChangeTracker.isLoadingGraph = true
+    try {
+      await this.activateGraph(fileName)
+    } finally {
+      ChangeTracker.isLoadingGraph = false
+    }
+  }
+
+  private async activateGraph(
+    workflow: string | null | ComfyWorkflow,
+    shareId?: string
+  ) {
+    this.activatingGraphLoads++
+    try {
+      await useWorkflowService().afterLoadNewGraph(
+        workflow,
+        this.rootGraph.serialize() as unknown as ComfyWorkflowJSON,
+        shareId
+      )
+    } finally {
+      this.activatingGraphLoads--
+    }
+  }
+
   private enqueueGraphLoad<T>(operation: () => Promise<T>): Promise<T> {
     const result = this.graphLoadQueue.then(operation)
     this.graphLoadQueue = result.then(
@@ -1202,6 +1233,20 @@ export class ComfyApp implements IComfyApp {
   ): Promise<LoadedComfyWorkflow | boolean | undefined> {
     return this.enqueueGraphLoad(() =>
       this.loadGraphDataNow(graphData, clean, restore_view, workflow, options)
+    )
+  }
+
+  loadGraphDataWithinLoad(
+    ...args: Parameters<ComfyApp['loadGraphData']>
+  ): ReturnType<ComfyApp['loadGraphData']> {
+    if (this.activatingGraphLoads === 0) return this.loadGraphData(...args)
+    const [graphData, clean = true, restore_view = true, workflow = null] = args
+    return this.loadGraphDataNow(
+      graphData,
+      clean,
+      restore_view,
+      workflow,
+      args[4] ?? {}
     )
   }
 
@@ -1595,13 +1640,16 @@ export class ComfyApp implements IComfyApp {
       useTelemetry()?.trackWorkflowOpened(telemetryPayload)
       useTelemetry()?.trackWorkflowImported(telemetryPayload)
       try {
-        await useWorkflowService().afterLoadNewGraph(
-          workflow,
-          this.rootGraph.serialize() as unknown as ComfyWorkflowJSON,
-          effectiveShareId
-        )
+        await this.activateGraph(workflow, effectiveShareId)
       } catch (error) {
-        if (isCurrentGraphLoad()) throw error
+        // Not reportGraphLoadFailure: `afterConfigureGraph` already ran, so
+        // `onGraphLoadError` would contradict what extensions observed.
+        useDialogService().showErrorDialog(error, {
+          title: t('errorDialog.loadWorkflowTitle'),
+          reportType: 'loadWorkflowError'
+        })
+        console.error(error)
+        return false
       }
       if (!isCurrentGraphLoad()) {
         await cancelReplacedLoad()
@@ -2256,10 +2304,7 @@ export class ComfyApp implements IComfyApp {
           'afterConfigureGraph',
           []
         )
-        await useWorkflowService().afterLoadNewGraph(
-          fileName,
-          this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
-        )
+        await this.activateBuiltGraph(fileName)
         await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
         return
       })
@@ -2611,10 +2656,7 @@ export class ComfyApp implements IComfyApp {
       'afterConfigureGraph',
       missingNodeTypes
     )
-    await useWorkflowService().afterLoadNewGraph(
-      fileName,
-      this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
-    )
+    await this.activateBuiltGraph(fileName)
     await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
     if (missingNodeTypes.length) {
       this.showMissingNodesError(missingNodeTypes, options)

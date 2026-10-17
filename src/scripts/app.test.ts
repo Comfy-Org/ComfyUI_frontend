@@ -585,6 +585,30 @@ describe('ComfyApp', () => {
       )
     })
 
+    it('resolves false without afterLoadGraph when activation rejects', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      mockWorkflowService.afterLoadNewGraph.mockRejectedValueOnce(
+        new Error('Failed to load file')
+      )
+      const showDialog = vi.spyOn(useDialogStore(), 'showDialog')
+
+      await expect(
+        app.loadGraphData(createWorkflowGraphData(), true, true, 'dup', {
+          workflowNavigationId: 11
+        })
+      ).resolves.toBe(false)
+
+      expect(showDialog).toHaveBeenCalledOnce()
+      expect(
+        mockExtensionService.invokeExtensionsAsync
+      ).not.toHaveBeenCalledWith('afterLoadGraph')
+      expect(useSubgraphNavigationStore().updateHash).toHaveBeenCalledWith(
+        'workflow-load',
+        11
+      )
+    })
+
     it('resolves false and notifies onGraphLoadError when a pre-configure step fails', async () => {
       // A failure before `rootGraph.configure` even runs (a `beforeConfigureGraph`
       // extension hook throwing, here) previously skipped both
@@ -1174,6 +1198,89 @@ describe('ComfyApp', () => {
           ([hook]) => hook
         )
       ).toEqual(['beforeLoadGraph', 'afterConfigureGraph', 'afterLoadGraph'])
+    })
+
+    it.for([
+      { entry: 'API JSON', load: () => app.loadApiJson({}, 'dup') },
+      {
+        entry: 'A1111',
+        load: () => {
+          vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+            parameters: 'positive\nNegative prompt: negative\nSteps: 20'
+          })
+          return app.handleFile(createTestFile('a1111.png', 'image/png'))
+        }
+      }
+    ])(
+      'activates an $entry import under the graph-load guard and rethrows its rejection',
+      async ({ load }) => {
+        app.canvasElRef.value = document.createElement('canvas')
+        const graph = new LGraph()
+        Reflect.set(app, 'rootGraphInternal', graph)
+        Reflect.set(singletonApp, 'rootGraphInternal', graph)
+        const activationError = new Error('Failed to load file')
+        let loadingGraphDuringActivation: boolean | undefined
+        mockWorkflowService.afterLoadNewGraph.mockImplementationOnce(
+          async () => {
+            loadingGraphDuringActivation = ChangeTracker.isLoadingGraph
+            throw activationError
+          }
+        )
+
+        await expect(load()).rejects.toBe(activationError)
+
+        expect(loadingGraphDuringActivation).toBe(true)
+        expect(ChangeTracker.isLoadingGraph).toBe(false)
+      }
+    )
+
+    it('holds the graph-load guard through each queued import activation', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      let finishFirst = () => {}
+      const loadingGraphDuringActivation: boolean[] = []
+      mockWorkflowService.afterLoadNewGraph
+        .mockImplementationOnce(
+          () =>
+            new Promise<void>((resolve) => {
+              loadingGraphDuringActivation.push(ChangeTracker.isLoadingGraph)
+              finishFirst = resolve
+            })
+        )
+        .mockImplementationOnce(async () => {
+          loadingGraphDuringActivation.push(ChangeTracker.isLoadingGraph)
+          throw new Error('Failed to load file')
+        })
+
+      const firstImport = app.loadApiJson({}, 'first')
+      const secondImport = app.loadApiJson({}, 'second')
+      await vi.waitFor(() =>
+        expect(mockWorkflowService.afterLoadNewGraph).toHaveBeenCalledOnce()
+      )
+      finishFirst()
+      await firstImport
+
+      await expect(secondImport).rejects.toThrow('Failed to load file')
+      expect(loadingGraphDuringActivation).toEqual([true, true])
+      expect(ChangeTracker.isLoadingGraph).toBe(false)
+    })
+
+    it('lets an activation recovery load within the held graph load', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      mockWorkflowService.afterLoadNewGraph.mockImplementationOnce(async () => {
+        await app.loadGraphDataWithinLoad(createWorkflowGraphData())
+        throw new Error('Failed to load file')
+      })
+
+      await expect(
+        app.loadGraphData(createWorkflowGraphData(), true)
+      ).resolves.toBe(false)
+      expect(mockWorkflowService.afterLoadNewGraph).toHaveBeenCalledTimes(2)
     })
   })
 
@@ -3297,7 +3404,7 @@ describe('ComfyApp', () => {
       Reflect.set(singletonApp, 'rootGraphInternal', graph)
     })
 
-    it('runs the next workflow after a load rejects', async () => {
+    it('runs the next workflow after a load fails to activate', async () => {
       mockWorkflowService.afterLoadNewGraph.mockRejectedValueOnce(
         new Error('activation failed')
       )
@@ -3305,7 +3412,7 @@ describe('ComfyApp', () => {
       const first = app.loadGraphData(createWorkflowGraphData(), true)
       const second = app.loadGraphData(createWorkflowGraphData(), true)
 
-      await expect(first).rejects.toThrow('activation failed')
+      await expect(first).resolves.toBe(false)
       await expect(second).resolves.toBeTruthy()
     })
 

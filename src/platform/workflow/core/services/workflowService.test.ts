@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { useDialogService } from '@/services/dialogService'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore' // oxlint-disable-line comfy/no-restricted-paths
@@ -14,8 +15,9 @@ import type {
 } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { ComfyWorkflow as ComfyWorkflowClass } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { defaultGraph } from '@/scripts/defaultGraph'
+import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
 import { useToast } from '@/components/ui/toast/toastStore'
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import {
@@ -158,6 +160,7 @@ beforeEach(() => {
 describe('useWorkflowService', () => {
   beforeEach(() => {
     vi.mocked(app.loadGraphData).mockResolvedValue(true)
+    vi.mocked(app.loadGraphDataWithinLoad).mockResolvedValue(true)
     resetWorkflowLoadQueueForTests()
     vi.mocked(useWorkflowDraftStoreV2().saveDraft).mockReturnValue(true)
   })
@@ -2464,6 +2467,195 @@ describe('useWorkflowService', () => {
           existingWorkflow.path
         )
       })
+    })
+  })
+
+  describe('afterLoadNewGraph activation failure', () => {
+    const openPaths = () =>
+      useWorkflowStore().openWorkflows.map((open) => open.path)
+    const loadedGraphs = () =>
+      vi.mocked(app.loadGraphDataWithinLoad).mock.calls.map(([graph]) => graph)
+
+    function createUnfetchableWorkflow(path: string) {
+      const workflow = new ComfyWorkflowClass({
+        path,
+        modified: Date.now(),
+        size: 100
+      })
+      vi.spyOn(workflow, 'load').mockRejectedValue(
+        new Error('Failed to load file')
+      )
+      return workflow
+    }
+
+    function setUpRetainedWithUnfetchable(
+      options: { unfetchableTabIndex?: number } = {}
+    ) {
+      const workflowStore = useWorkflowStore()
+      const retained = createWorkflow(null, {
+        loadable: true,
+        path: 'workflows/retained.json'
+      }) as LoadedComfyWorkflow
+      workflowStore.attachWorkflow(retained, 0)
+      const unfetchable = createUnfetchableWorkflow('workflows/dup.json')
+      workflowStore.attachWorkflow(unfetchable, options.unfetchableTabIndex)
+      workflowStore.activeWorkflow = retained
+      vi.mocked(app.loadGraphDataWithinLoad).mockClear()
+      return { retained, unfetchable }
+    }
+
+    it('drops the tab it opened and repaints the retained workflow', async () => {
+      const { retained } = setUpRetainedWithUnfetchable()
+
+      await expect(
+        useWorkflowService().afterLoadNewGraph('dup', makeWorkflowData())
+      ).rejects.toThrow('Failed to load file')
+
+      expect(openPaths()).toEqual(['workflows/retained.json'])
+      expect(useWorkflowStore().activeWorkflow?.path).toBe(
+        'workflows/retained.json'
+      )
+      expect(loadedGraphs()).toEqual([retained.activeState])
+    })
+
+    it.for([
+      { case: 'was already open', unfetchableTabIndex: 1, draft: null },
+      {
+        case: 'holds a draft',
+        unfetchableTabIndex: undefined,
+        draft: { data: '{}', updatedAt: 0, name: 'dup', isTemporary: false }
+      }
+    ])(
+      'keeps an unfetchable tab that $case',
+      async ({ unfetchableTabIndex, draft }) => {
+        setUpRetainedWithUnfetchable({ unfetchableTabIndex })
+        vi.mocked(useWorkflowDraftStoreV2().getDraft).mockReturnValue(draft)
+
+        await expect(
+          useWorkflowService().afterLoadNewGraph('dup', makeWorkflowData())
+        ).rejects.toThrow('Failed to load file')
+
+        expect(openPaths()).toContain('workflows/dup.json')
+        expect(useWorkflowDraftStoreV2().removeDraft).not.toHaveBeenCalledWith(
+          'workflows/dup.json'
+        )
+      }
+    )
+
+    it('keeps a tab another activation opened while this one was fetching', async () => {
+      const { unfetchable } = setUpRetainedWithUnfetchable()
+      const workflowStore = useWorkflowStore()
+      const concurrent = createUnfetchableWorkflow('workflows/concurrent.json')
+      workflowStore.attachWorkflow(concurrent)
+      vi.mocked(unfetchable.load).mockImplementationOnce(async () => {
+        workflowStore.openWorkflowsInBackground({
+          right: ['workflows/concurrent.json']
+        })
+        throw new Error('Failed to load file')
+      })
+
+      await expect(
+        useWorkflowService().afterLoadNewGraph('dup', makeWorkflowData())
+      ).rejects.toThrow('Failed to load file')
+
+      expect(openPaths()).toEqual([
+        'workflows/retained.json',
+        'workflows/concurrent.json'
+      ])
+    })
+
+    it('leaves a newer load in place when the rejected activation was superseded', async () => {
+      const { unfetchable } = setUpRetainedWithUnfetchable()
+      const graphState = vi
+        .spyOn(app, 'rootGraphOrUndefined', 'get')
+        .mockReturnValue(fromPartial<LGraph>({ state: {} }))
+      vi.mocked(unfetchable.load).mockImplementationOnce(async () => {
+        graphState.mockReturnValue(fromPartial<LGraph>({ state: {} }))
+        throw new Error('Failed to load file')
+      })
+
+      await useWorkflowService().afterLoadNewGraph('dup', makeWorkflowData())
+
+      expect(app.loadGraphDataWithinLoad).not.toHaveBeenCalled()
+      expect(openPaths()).toContain('workflows/dup.json')
+    })
+
+    it('loads a blank graph when the retained repaint resolves false', async () => {
+      const { retained } = setUpRetainedWithUnfetchable()
+      vi.mocked(app.loadGraphDataWithinLoad).mockResolvedValueOnce(false)
+
+      await expect(
+        useWorkflowService().afterLoadNewGraph('dup', makeWorkflowData())
+      ).rejects.toThrow('Failed to load file')
+
+      expect(loadedGraphs()).toEqual([retained.activeState, blankGraph])
+      expect(reportErrorMock).not.toHaveBeenCalled()
+    })
+
+    it('reports a recovery that cannot load anything and still rethrows the activation error', async () => {
+      const workflowStore = useWorkflowStore()
+      workflowStore.attachWorkflow(
+        createUnfetchableWorkflow('workflows/dup.json')
+      )
+      workflowStore.activeWorkflow = null
+      vi.mocked(app.loadGraphDataWithinLoad)
+        .mockClear()
+        .mockResolvedValueOnce(false)
+
+      await expect(
+        useWorkflowService().afterLoadNewGraph('dup', makeWorkflowData())
+      ).rejects.toThrow('Failed to load file')
+
+      expect(loadedGraphs()).toEqual([blankGraph])
+      expect(reportErrorMock).toHaveBeenCalledWith(expect.any(Error), {
+        surface: 'graph',
+        errorType: 'workflow_load_recovery_failure'
+      })
+    })
+
+    it('does not recover again when the retained repaint fails to activate', async () => {
+      const { retained } = setUpRetainedWithUnfetchable()
+      const service = useWorkflowService()
+      vi.mocked(app.loadGraphDataWithinLoad).mockImplementationOnce(
+        async () => {
+          vi.mocked(retained.changeTracker.reset).mockImplementationOnce(() => {
+            throw new Error('repaint activation failed')
+          })
+          await expect(
+            service.afterLoadNewGraph(retained, makeWorkflowData())
+          ).rejects.toThrow('repaint activation failed')
+          return false
+        }
+      )
+
+      await expect(
+        service.afterLoadNewGraph('dup', makeWorkflowData())
+      ).rejects.toThrow('Failed to load file')
+
+      expect(loadedGraphs()).toEqual([retained.activeState, blankGraph])
+    })
+
+    it('leaves the canvas alone when activation failed after switching to its workflow', async () => {
+      const workflowStore = useWorkflowStore()
+      const retained = createWorkflow(null, {
+        loadable: true,
+        path: 'workflows/retained.json'
+      })
+      workflowStore.attachWorkflow(retained, 0)
+      workflowStore.activeWorkflow = retained as LoadedComfyWorkflow
+      vi.mocked(app.loadGraphDataWithinLoad).mockClear()
+      vi.mocked(
+        useNodeOutputStore().restorePreviewsForWorkflow
+      ).mockImplementationOnce(() => {
+        throw new Error('previews failed')
+      })
+
+      await expect(
+        useWorkflowService().afterLoadNewGraph('fresh', makeWorkflowData())
+      ).rejects.toThrow('previews failed')
+
+      expect(workflowStore.activeWorkflow.path).toBe('workflows/fresh.json')
+      expect(app.loadGraphDataWithinLoad).not.toHaveBeenCalled()
     })
   })
 
