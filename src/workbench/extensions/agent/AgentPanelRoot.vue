@@ -812,6 +812,20 @@ function onWorkflowAdopted(
   }
 }
 
+async function onWorkflowRestoredAndBound(
+  workflowId: string | undefined,
+  isCurrent: () => boolean
+): Promise<boolean> {
+  const { ready, committedWorkflowId } = await onWorkflowRestored(
+    workflowId,
+    isCurrent
+  )
+  if (committedWorkflowId === null || !isCurrent()) return ready
+  if (boundWorkflowId.value !== committedWorkflowId)
+    bindWorkflow(committedWorkflowId)
+  return ready
+}
+
 function warnWorkflowUnavailable(): void {
   toast.warning(t('agent.targetNavigationUnavailable'), { duration: 5000 })
 }
@@ -895,7 +909,7 @@ const {
     initialize: agentPanelStore.initializeTargetTracking,
     current: targetWorkflowTurnContext,
     adopted: onWorkflowAdopted,
-    restored: onWorkflowRestored,
+    restored: onWorkflowRestoredAndBound,
     prepare: async () => {
       try {
         await refreshCloudWorkflowIds()

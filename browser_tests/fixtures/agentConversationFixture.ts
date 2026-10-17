@@ -353,6 +353,39 @@ export class AgentConversationHarness {
     await mockSavedWorkflowPersistence(this.page, this.conversation.workflow.id)
   }
 
+  /** Serve this thread a stored transcript naming its bound workflow, as the service does once a turn has run. */
+  async persistThreadTranscript(assistantText = 'Done.'): Promise<void> {
+    const workflowId = this.conversation.workflow.id
+    const { content } = this.conversation.turns[0].request
+    const history: AgentMessages = [
+      {
+        id: 'restored-user-1',
+        thread_id: THREAD_ID,
+        turn_id: 'restored-turn-1',
+        seq: 1,
+        role: 'user',
+        status: 'complete',
+        workflow_id: workflowId,
+        content: { text: content }
+      },
+      {
+        id: 'restored-assistant-1',
+        thread_id: THREAD_ID,
+        turn_id: 'restored-turn-1',
+        seq: 2,
+        role: 'assistant',
+        status: 'complete',
+        workflow_id: workflowId,
+        content: { text: assistantText }
+      }
+    ]
+    await this.page.route('**/api/agent/threads/*/messages', (route) =>
+      route.request().method() === 'GET'
+        ? route.fulfill(jsonRoute(history))
+        : route.fallback()
+    )
+  }
+
   async sendPrompt(turn = 0): Promise<void> {
     const { content } = this.conversation.turns[turn].request
     await this.composer.fill(content)
