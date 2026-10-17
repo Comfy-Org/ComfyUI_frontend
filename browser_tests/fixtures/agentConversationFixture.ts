@@ -351,15 +351,7 @@ export class AgentConversationHarness {
     await mockSavedWorkflowPersistence(this.page, this.conversation.workflow.id)
   }
 
-  /**
-   * Serve a stored transcript for this thread that names the bound workflow,
-   * the way the service does once a turn has run. {@link mockAgentApi} answers
-   * history with an empty array, which is a thread that never ran: a reloaded
-   * page then has nothing to restore its target from, so the panel's own
-   * restore path cannot run and no reload case can observe what it does.
-   * Registered after that handler, so this one wins for GET and sends every
-   * other method back to it.
-   */
+  /** Serve this thread a stored transcript naming its bound workflow, as the service does once a turn has run. */
   async persistThreadTranscript(assistantText = 'Done.'): Promise<void> {
     const workflowId = this.conversation.workflow.id
     const { content } = this.conversation.turns[0].request

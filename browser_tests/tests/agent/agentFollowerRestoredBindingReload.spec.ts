@@ -7,14 +7,6 @@ import type { ModelFolderInfo } from '@/platform/assets/schemas/assetSchema'
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
-// FE-1969: the thread's stored transcript is what names the workflow a
-// reloaded page was bound to, and restoring that target reopens its tab and
-// repaints the picker. The panel therefore LOOKS attached after a reload, so a
-// host edit that reaches nobody is invisible to the user until they send
-// another message - and while a turn is running they cannot.
-//
-// The sibling case where the page has no stored transcript to restore from,
-// and the user reattaches by hand, is `agentFollowerReloadBinding.spec.ts`.
 test.describe(
   'Agent follower after a restored-target reload',
   { tag: ['@cloud', '@agent', '@vue-nodes'] },
@@ -69,13 +61,10 @@ test.describe(
         await expect(prompt).toBeVisible()
       })
 
-      await test.step('a host edit reaches the canvas without another turn', async () => {
+      await test.step('a never-saved, never-recorded host edit reaches the canvas with no turn sent since the reload, so only a live subscription can be delivering it', async () => {
         await expect
           .poll(() => agentConversation.subscribeCount(), { timeout: 30_000 })
           .toBeGreaterThan(subscribesBeforeReload)
-        // This value was never saved or recorded, and no turn has been sent
-        // since the reload. Only a live subscription restored by the target
-        // restoration itself can deliver it.
         agentConversation.pushHostOps([
           {
             op: 'set_widget',

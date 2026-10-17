@@ -7556,12 +7556,6 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(useWorkflowService().saveWorkflowAs).not.toHaveBeenCalled()
   })
 
-  // FE-1969: the transcript is the only thing that names the workflow a
-  // reloaded page was bound to, so restoring the target has to restore the
-  // session binding too. Without it the panel reads as attached while the
-  // follower stays unsubscribed and the minter stays off until the next turn
-  // ack, so every host edit in between reaches nobody. Browser-visible
-  // coverage: `agentFollowerRestoredBindingReload.spec.ts`.
   it('binds the session to the workflow its transcript restored', async () => {
     const restored = addTab('workflows/restored.json', {
       activeState: fromPartial<ComfyWorkflowJSON>({ id: 'graph-restored' })
@@ -7599,6 +7593,65 @@ describe('AgentPanelRoot workflow binding', () => {
     await vi.waitFor(() =>
       expect(docOpMinterDeps.current?.isDocBound()).toBe(true)
     )
+    expect(useToast().toasts).toHaveLength(0)
+  })
+
+  it('binds the session to the workflow a history thread restored, not only a reload', async () => {
+    makeTab('wf-42')
+    const old = addTab('workflows/old.json', {
+      activeState: fromPartial<ComfyWorkflowJSON>({ id: 'graph-old' })
+    })
+    useAgentWorkflowTabBindingStore().bind('wf-old', old.path)
+    const history: AgentMessages = [
+      {
+        id: 'row',
+        thread_id: 'th-history',
+        seq: 1,
+        role: 'user',
+        status: 'complete',
+        turn_id: 'turn',
+        workflow_id: 'wf-old',
+        content: { text: 'Historical prompt' }
+      }
+    ]
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input)
+
+      if (url.includes('/messages')) return json(200, history)
+      if (url.includes('/workflows'))
+        return json(200, {
+          data: [{ id: 'wf-old', name: 'old' }],
+          pagination: { offset: 0, limit: 100, total: 1, has_more: false }
+        })
+      return json(
+        200,
+        agentThreadList([
+          agentThread({
+            id: 'th-history',
+            title: 'Earlier chat',
+            last_message_at: '2026-09-01T00:00:00Z'
+          })
+        ])
+      )
+    })
+    renderWithSelectedTarget()
+    expect(docOpMinterDeps.current?.isDocBound()).toBe(false)
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await userEvent.click(await screen.findByText('Earlier chat'))
+    await screen.findAllByText('Historical prompt')
+
+    await vi.waitFor(() =>
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(old.path)
+    )
+    await vi.waitFor(() =>
+      expect(docOpMinterDeps.current?.isDocBound()).toBe(true)
+    )
+    expect(workflowStore.activeWorkflow?.path).toBe(old.path)
     expect(useToast().toasts).toHaveLength(0)
   })
 
