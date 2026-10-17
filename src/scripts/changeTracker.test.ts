@@ -477,8 +477,165 @@ describe('ChangeTracker', () => {
         expect(app.rootGraph.serialize).not.toHaveBeenCalled()
         expect(mockAssert).toHaveBeenCalledWith(
           false,
-          'ChangeTracker.captureCanvasState() called on inactive tracker'
+          'ChangeTracker.captureCanvasState() called on inactive tracker',
+          expect.objectContaining({ method: 'captureCanvasState' })
         )
+      })
+
+      it('reports diagnostic context without workflow names', () => {
+        const tracker = createTracker()
+        tracker.workflow.path = '/test/private-client-name.json'
+        useWorkflowStore().activeWorkflow = fromPartial({
+          path: '/test/other-private-name.json',
+          changeTracker: {}
+        })
+
+        tracker.captureCanvasState()
+
+        const context = mockAssert.mock.calls[0][2]
+        expect(context).toEqual({
+          method: 'captureCanvasState',
+          hasActiveWorkflow: true,
+          sameWorkflow: false,
+          changeCount: 0,
+          stack: expect.any(String)
+        })
+        expect(JSON.stringify(context)).not.toContain('private')
+      })
+
+      it('reports hasActiveWorkflow false when no workflow is active', () => {
+        const tracker = createTracker()
+        useWorkflowStore().activeWorkflow = null
+
+        tracker.captureCanvasState()
+
+        expect(mockAssert.mock.calls[0][2]).toMatchObject({
+          hasActiveWorkflow: false,
+          sameWorkflow: false
+        })
+      })
+
+      it('reports sameWorkflow true when the workflow holds a replaced tracker', () => {
+        const tracker = createTracker()
+        useWorkflowStore().activeWorkflow = fromPartial({
+          changeTracker: {}
+        })
+        tracker.workflow = useWorkflowStore().activeWorkflow!
+
+        tracker.captureCanvasState()
+
+        expect(mockAssert.mock.calls[0][2]).toMatchObject({
+          hasActiveWorkflow: true,
+          sameWorkflow: true
+        })
+      })
+
+      describe('stack formatting', () => {
+        function stubStack(stack: string | undefined) {
+          vi.stubGlobal(
+            'Error',
+            class extends Error {
+              constructor(message?: string) {
+                super(message)
+                this.stack = stack
+              }
+            }
+          )
+        }
+
+        function reportWithStack(stack: string | undefined) {
+          const tracker = createTracker()
+          useWorkflowStore().activeWorkflow = fromPartial({
+            changeTracker: {}
+          })
+          stubStack(stack)
+          try {
+            tracker.captureCanvasState()
+          } finally {
+            vi.unstubAllGlobals()
+          }
+          return mockAssert.mock.calls[0][2].stack
+        }
+
+        it('drops the V8 header line and the reporter frames only', () => {
+          expect(
+            reportWithStack(
+              [
+                'Error',
+                '    at reportInactiveTrackerCall (a.js:1:1)',
+                '    at ChangeTracker.captureCanvasState (a.js:2:1)',
+                '    at caller (b.js:3:1)'
+              ].join('\n')
+            )
+          ).toBe(
+            [
+              '    at ChangeTracker.captureCanvasState (a.js:2:1)',
+              '    at caller (b.js:3:1)'
+            ].join('\n')
+          )
+        })
+
+        it('keeps every real frame for header-less engines', () => {
+          expect(
+            reportWithStack(
+              [
+                'reportInactiveTrackerCall@a.js:1:1',
+                'captureCanvasState@a.js:2:1',
+                'caller@b.js:3:1'
+              ].join('\n')
+            )
+          ).toBe('captureCanvasState@a.js:2:1\ncaller@b.js:3:1')
+        })
+
+        it('is undefined when the engine exposes no stack', () => {
+          expect(reportWithStack(undefined)).toBeUndefined()
+        })
+      })
+
+      it('does not assert when the active workflow changes inside a beforeChange/afterChange transaction', () => {
+        const tracker = createTracker()
+        tracker.beforeChange()
+
+        // createTracker() makes the new workflow active while the first
+        // tracker's transaction is still open
+        const other = createTracker()
+        tracker.afterChange()
+
+        expect(app.rootGraph.serialize).not.toHaveBeenCalled()
+        expect(mockAssert).not.toHaveBeenCalled()
+        expect(tracker.changeCount).toBe(0)
+        expect(other.changeCount).toBe(0)
+      })
+
+      it('keeps nested transactions balanced on a tracker that went inactive', () => {
+        const tracker = createTracker()
+        tracker.beforeChange()
+        tracker.beforeChange()
+        createTracker()
+
+        tracker.afterChange()
+        expect(tracker.changeCount).toBe(1)
+        tracker.afterChange()
+
+        expect(tracker.changeCount).toBe(0)
+        expect(mockAssert).not.toHaveBeenCalled()
+      })
+
+      it('captures normally once an inactive tracker becomes active again', () => {
+        const tracker = createTracker(createState(1))
+        tracker.beforeChange()
+        const other = createTracker()
+        tracker.afterChange()
+        useWorkflowStore().activeWorkflow = fromPartial({
+          changeTracker: tracker
+        })
+        mockCanvasState(createState(2))
+
+        tracker.captureCanvasState()
+
+        expect(tracker.activeState.nodes).toHaveLength(2)
+        expect(other.undoQueue).toHaveLength(0)
+        expect(mockAssert).not.toHaveBeenCalled()
       })
     })
 
@@ -1931,6 +2088,40 @@ describe('ChangeTracker', () => {
       expect(useSubgraphNavigationStore().exportState).toHaveBeenCalled()
     })
 
+    it('commits canvas edits made inside an open transaction before going inactive', () => {
+      const tracker = createTracker(createState(1))
+      tracker.beforeChange()
+      const changed = createState(2)
+      mockCanvasState(changed)
+
+      tracker.deactivate()
+
+      expect(tracker.activeState).toEqual(changed)
+      expect(tracker.undoQueue).toHaveLength(1)
+      expect(useNodeOutputStore().snapshotOutputs).toHaveBeenCalled()
+
+      // the late close of the transaction, after the workflow switched
+      useWorkflowStore().activeWorkflow = fromPartial({ changeTracker: {} })
+      tracker.afterChange()
+
+      expect(tracker.changeCount).toBe(0)
+      expect(tracker.activeState).toEqual(changed)
+      expect(tracker.undoQueue).toHaveLength(1)
+      expect(mockAssert).not.toHaveBeenCalled()
+    })
+
+    it('does not commit an open transaction while a graph is loading', () => {
+      const tracker = createTracker(createState(1))
+      tracker.beforeChange()
+      ChangeTracker.isLoadingGraph = true
+      mockCanvasState(createState(2))
+
+      tracker.deactivate()
+
+      expect(app.rootGraph.serialize).not.toHaveBeenCalled()
+      expect(tracker.activeState.nodes).toHaveLength(1)
+    })
+
     it('skips captureCanvasState but still calls store during undo/redo', () => {
       const tracker = createTracker(createState(1))
       tracker._restoringState = true
@@ -1953,7 +2144,8 @@ describe('ChangeTracker', () => {
       expect(useNodeOutputStore().snapshotOutputs).not.toHaveBeenCalled()
       expect(mockAssert).toHaveBeenCalledWith(
         false,
-        'ChangeTracker.deactivate() called on inactive tracker'
+        'ChangeTracker.deactivate() called on inactive tracker',
+        expect.objectContaining({ method: 'deactivate' })
       )
     })
   })
