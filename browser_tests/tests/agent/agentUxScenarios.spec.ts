@@ -21,19 +21,19 @@ test.describe('Linear Agent UX scenarios', { tag: '@cloud' }, () => {
 
     await test.step('Resize to 459px, just below the breakpoint', async () => {
       await agentPanel.resizeTo(459)
-      await expect(agentPanel.suggestedPromptVisibility()).resolves.toEqual([
-        true,
-        true,
-        true,
-        ...Array.from({ length: total - compactCount }, () => false)
-      ])
+      await expect
+        .poll(() => agentPanel.suggestedPromptVisibility())
+        .toEqual([
+          ...Array.from({ length: compactCount }, () => true),
+          ...Array.from({ length: total - compactCount }, () => false)
+        ])
     })
 
     await test.step('Resize to 460px, the expanded breakpoint', async () => {
       await agentPanel.resizeTo(460)
-      await expect(agentPanel.suggestedPromptVisibility()).resolves.toEqual(
-        Array.from({ length: total }, () => true)
-      )
+      await expect
+        .poll(() => agentPanel.suggestedPromptVisibility())
+        .toEqual(Array.from({ length: total }, () => true))
     })
   })
 
