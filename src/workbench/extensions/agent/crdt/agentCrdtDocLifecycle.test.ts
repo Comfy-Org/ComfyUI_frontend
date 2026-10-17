@@ -225,6 +225,23 @@ describe('AgentCrdtDocLifecycle ack timeout', () => {
     expect(devEvents().map(({ kind }) => kind)).not.toContain('stale_probe')
   })
 
+  it('late updates cannot restore a cleared binding after ack timeout gives up', () => {
+    const { lifecycle, onGaveUp } = wire()
+    lifecycle.onSubscribeConfirmed()
+    lifecycle.onSubscribeSent(WORKFLOW_ID)
+    vi.advanceTimersByTime(3 * SUBSCRIBE_ACK_TIMEOUT_MS)
+    expect(onGaveUp).toHaveBeenCalledOnce()
+    lifecycle.clearPersistedDocId()
+
+    vi.advanceTimersByTime(3 * 60 * 1000)
+    lifecycle.onDocumentUpdate()
+
+    expect(lifecycle.readPersistedDocId()).toBeNull()
+
+    lifecycle.onSubscribeConfirmed()
+    expect(lifecycle.readPersistedDocId()).toBe(WORKFLOW_ID)
+  })
+
   it('a reconnect resets the silent-attempt budget', () => {
     const { lifecycle, resubscribe, onGaveUp } = wire()
     lifecycle.onSubscribeSent(WORKFLOW_ID)
