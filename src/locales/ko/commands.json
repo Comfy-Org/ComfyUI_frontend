@@ -50,8 +50,14 @@
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "선택한 항목 삭제"
   },
+  "Comfy_Canvas_DeleteSelectedLinks": {
+    "label": "선택한 링크 삭제"
+  },
   "Comfy_Canvas_FitView": {
     "label": "선택한 노드에 뷰 맞추기"
+  },
+  "Comfy_Canvas_HideSelectedLinks": {
+    "label": "선택한 링크 숨기기"
   },
   "Comfy_Canvas_Lock": {
     "label": "캔버스 잠금"

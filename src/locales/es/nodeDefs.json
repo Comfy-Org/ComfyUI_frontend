@@ -2413,7 +2413,7 @@
     }
   },
   "CLIPLoader": {
-    "description": "Recetas:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (relleno de 226 tokens)\ncosmos: t5 xxl antiguo\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1 (recomendado) o t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VL o Music3 Qwen/RVQ",
+    "description": "Recetas:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (relleno de 226 tokens)\ncosmos: t5 xxl antiguo\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1 (recomendado) o t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VL o Music3 Qwen/RVQ\nflux3: qwen3-vl 4B",
     "display_name": "Cargar CLIP",
     "inputs": {
       "clip_name": {
@@ -5701,7 +5701,7 @@
     }
   },
   "FishAudioTextToSpeech": {
-    "description": "Convierte texto a voz. Admite indicaciones de emoción en el texto ([happy], [whispering] en s2.1-pro; (happy) en s1) y diálogos con varios hablantes mediante etiquetas {'@'}Voice1/{'@'}Voice2 con varias voces conectadas.",
+    "description": "Convierte texto en voz. Admite indicaciones de emoción en el texto ([happy], [whispering] en s2.1-pro; (happy) en s1), [instrucciones] en lenguaje natural y etiquetas de palabras `<whisper>...</whisper>` en drama-3, y diálogos con varios hablantes mediante etiquetas {'@'}Voice1/{'@'}Voice2 con varias voces conectadas.",
     "display_name": "Fish Audio Texto a voz",
     "inputs": {
       "control_after_generate": {
@@ -5893,8 +5893,8 @@
     }
   },
   "Flux3ImageNode": {
-    "description": "Genera una imagen con FLUX 3 a partir de un prompt, o edita y combina hasta 10 imágenes de referencia. Haga referencia a las imágenes en el prompt como imagen 1, imagen 2, etc.",
-    "display_name": "Flux 3 Image",
+    "description": "Genera una imagen con FLUX 3 Image a partir de un prompt, o edita y combina hasta 10 imágenes de referencia. Haz referencia a las imágenes en el prompt como imagen 1, imagen 2, etc.",
+    "display_name": "Imagen FLUX 3",
     "inputs": {
       "aspect_ratio": {
         "name": "aspect_ratio",
@@ -5984,6 +5984,26 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3LayoutPrompt": {
+    "description": "Añade los cuadros de Crear cuadros delimitadores a un prompt de FLUX 3 Image como su tabla de diseño.",
+    "display_name": "Prompt de diseño de imagen FLUX 3",
+    "inputs": {
+      "element": {
+        "name": "elemento",
+        "tooltip": "Elementos del prompt del nodo Crear cuadros delimitadores. Las paletas de colores no se usan; describe los colores en la descripción."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "El texto del prompt. Haz referencia al cuadro N como <obj_N> para vincular palabras a él."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "prompt",
         "tooltip": null
       }
     }
@@ -7223,6 +7243,30 @@
       }
     }
   },
+  "GetAudioLatentSize": {
+    "description": "Devuelve la longitud, el número de canales de audio y el tamaño del lote de un latent de audio.",
+    "display_name": "Obtener tamaño del latent de audio",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "El latent de audio o audio/vídeo que se debe inspeccionar."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "longitud",
+        "tooltip": "La longitud del latent de audio."
+      },
+      "1": {
+        "name": "audio_channels",
+        "tooltip": "El número de canales de audio. Los latents sin una dimensión de canal de audio tienen un canal."
+      },
+      "2": {
+        "name": "batch_size",
+        "tooltip": "El número de latents del lote."
+      }
+    }
+  },
   "GetICLoRAParameters": {
     "description": "Extrae los parámetros IC-LoRA de los metadatos safetensors de un modelo cargado con LoRA y los proporciona para LTXVAddGuide (por ejemplo, reference_downscale_factor).",
     "display_name": "Obtener parámetros IC-LoRA",
@@ -7275,6 +7319,34 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "GetLatentSize": {
+    "description": "Devuelve el ancho, el alto, el número de fotogramas y el tamaño del lote de un latent de imagen o vídeo.",
+    "display_name": "Obtener tamaño del latent de imagen/vídeo",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "El latent de imagen o vídeo que se debe inspeccionar."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ancho",
+        "tooltip": "El ancho del latent."
+      },
+      "1": {
+        "name": "alto",
+        "tooltip": "El alto del latent."
+      },
+      "2": {
+        "name": "fotogramas",
+        "tooltip": "El número de fotogramas del latent. Los latents de imagen tienen un fotograma."
+      },
+      "3": {
+        "name": "batch_size",
+        "tooltip": "El número de latents del lote."
       }
     }
   },
@@ -8106,6 +8178,33 @@
       },
       "1": {
         "name": "negativo",
+        "tooltip": null
+      }
+    }
+  },
+  "HiggsfieldMotionTransferNode": {
+    "description": "Recrea un vídeo con nuevos personajes, ubicaciones o estilos a partir de imágenes de referencia, manteniendo su movimiento, movimiento de cámara y temporización.",
+    "display_name": "Transferencia de movimiento Higgsfield Genjutsu",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo que se utilizará."
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolución"
+      },
+      "model_seed": {
+        "name": "semilla"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -9263,6 +9362,28 @@
       },
       "rotation": {
         "name": "rotación"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageSDRToHDR": {
+    "description": "Expande el brillo sRGB a HDR HLG Rec.2020. Guarda el resultado con el espacio de color HDR seleccionado. Se conserva el canal alfa.",
+    "display_name": "Convertir SDR a HDR",
+    "inputs": {
+      "algorithm": {
+        "name": "algoritmo",
+        "tooltip": "Expansión racional de estilo Lottes combinada con una curva monotónica calibrada de ganancia logarítmica."
+      },
+      "algorithm_target_luminance": {
+        "name": "luminancia_objetivo"
+      },
+      "image": {
+        "name": "imagen",
+        "tooltip": "Imagen(es) SDR en sRGB."
       }
     },
     "outputs": {
@@ -10563,6 +10684,41 @@
     "outputs": {
       "0": {
         "name": "style_reference",
+        "tooltip": null
+      }
+    }
+  },
+  "Krea3ImageNode": {
+    "description": "Edita imágenes con Krea 3 o genera una imagen nueva a partir de texto cuando no hay ninguna imagen conectada.",
+    "display_name": "Imagen Krea 3",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "model_aspect_ratio": {
+        "name": "relación_de_aspecto"
+      },
+      "model_precise_edit": {
+        "name": "edición_precisa"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolución"
+      },
+      "model_seed": {
+        "name": "semilla"
+      },
+      "model_thinking_mode": {
+        "name": "modo_de_razonamiento"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -13162,6 +13318,38 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MOSSImageLayoutPrompt": {
+    "description": "Crea un prompt de diseño MOSS-Image a partir del prompt y los cuadros de Crear cuadros delimitadores.",
+    "display_name": "Prompt de diseño MOSS-Image",
+    "inputs": {
+      "character_boxes": {
+        "name": "cuadros_de_personajes",
+        "tooltip": "Números de los cuadros de objetos que se etiquetarán como personajes en lugar de objetos, según se etiquetan en la vista previa de Crear cuadros delimitadores; p. ej., \"1, 3\"."
+      },
+      "element": {
+        "name": "elemento",
+        "tooltip": "Elementos de prompt del nodo Crear cuadros delimitadores. La descripción es el título del cuadro; los cuadros de texto también representan su texto."
+      },
+      "height": {
+        "name": "alto",
+        "tooltip": "Alto de la imagen generada; los cuadros se colocan en sus píxeles."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descripción de toda la imagen."
+      },
+      "width": {
+        "name": "ancho",
+        "tooltip": "Ancho de la imagen generada; los cuadros se colocan en sus píxeles."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "prompt",
         "tooltip": null
       }
     }
@@ -18889,7 +19077,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "Cuánto razonamiento emplea el modelo antes de dibujar. Los niveles más altos mejoran el detalle y consumen más tokens. Solo lo utilizan los modelos Arrow 2."
+        "tooltip": "Cuánto razonamiento emplea el modelo antes de dibujar. Los niveles más altos mejoran el detalle y consumen más tokens."
       },
       "seed": {
         "name": "semilla",
@@ -18977,7 +19165,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "Cuánto razonamiento emplea el modelo antes de dibujar. Los niveles más altos mejoran el detalle y consumen más tokens. Solo lo utilizan los modelos Arrow 2."
+        "tooltip": "Cuánto razonamiento emplea el modelo antes de dibujar. Los niveles más altos mejoran el detalle y consumen más tokens."
       },
       "reference_images": {
         "name": "imágenes_de_referencia",
@@ -19833,6 +20021,42 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "ReferenceMultiLatent": {
+    "description": "Codifica imágenes de referencia y añade sus latentes al condicionamiento positivo y negativo opcional para modelos de edición.",
+    "display_name": "Establecer Multi Latent de referencia",
+    "inputs": {
+      "images": {
+        "name": "imágenes"
+      },
+      "negative": {
+        "name": "negativo"
+      },
+      "positive": {
+        "name": "positivo"
+      },
+      "resolution": {
+        "name": "resolución"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Las imágenes de referencia se ignoran cuando no hay ningún VAE conectado."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positivo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negativo",
+        "tooltip": "Devuelve la salida positiva cuando el condicionamiento negativo no está conectado."
+      },
+      "2": {
+        "name": "empty_latent",
+        "tooltip": "El primer latente de referencia multiplicado por 0.0, o un latente vacío cuadrado en la resolución seleccionada."
       }
     }
   },

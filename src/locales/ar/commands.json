@@ -50,8 +50,14 @@
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "حذف العناصر المحددة"
   },
+  "Comfy_Canvas_DeleteSelectedLinks": {
+    "label": "حذف الوصلات المحددة"
+  },
   "Comfy_Canvas_FitView": {
     "label": "تعديل العرض ليناسب العقد المحددة"
+  },
+  "Comfy_Canvas_HideSelectedLinks": {
+    "label": "إخفاء الوصلات المحددة"
   },
   "Comfy_Canvas_Lock": {
     "label": "قفل اللوحة"

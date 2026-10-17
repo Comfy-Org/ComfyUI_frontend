@@ -2413,7 +2413,7 @@
     }
   },
   "CLIPLoader": {
-    "description": "권장 설정:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (226토큰 패딩)\ncosmos: 이전 t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1 (권장) 또는 t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VL 또는 Music3 Qwen/RVQ",
+    "description": "레시피:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (226토큰 패딩)\ncosmos: 이전 t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1 (권장) 또는 t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VL 또는 Music3 Qwen/RVQ\nflux3: qwen3-vl 4B",
     "display_name": "CLIP 로드",
     "inputs": {
       "clip_name": {
@@ -5701,7 +5701,7 @@
     }
   },
   "FishAudioTextToSpeech": {
-    "description": "텍스트를 음성으로 변환합니다. 텍스트의 감정 단서(s2.1-pro에서는 [happy], [whispering], s1에서는 (happy))와 여러 음성이 연결된 경우 {'@'}Voice1/{'@'}Voice2 태그를 통한 다중 화자 대화를 지원합니다.",
+    "description": "텍스트를 음성으로 변환합니다. 텍스트 내 감정 큐([happy], [whispering]은 s2.1-pro, (happy)는 s1), 일반 언어 [directions] 및 drama-3의 `<whisper>...</whisper>` 단어 태그, 그리고 여러 음성이 연결된 경우 {'@'}Voice1/{'@'}Voice2 태그를 통한 다화자 대화를 지원합니다.",
     "display_name": "Fish Audio 텍스트 음성 변환",
     "inputs": {
       "control_after_generate": {
@@ -5893,8 +5893,8 @@
     }
   },
   "Flux3ImageNode": {
-    "description": "프롬프트를 사용해 FLUX 3로 이미지를 생성하거나, 최대 10개의 참조 이미지를 편집하고 결합합니다. 프롬프트에서 참조 이미지는 이미지 1, 이미지 2 등의 방식으로 지칭하세요.",
-    "display_name": "Flux 3 이미지",
+    "description": "프롬프트로 FLUX 3 이미지를 생성하거나 최대 10개의 참조 이미지를 편집하고 결합합니다. 프롬프트에서 참조 이미지는 image 1, image 2 등의 이름으로 참조하세요.",
+    "display_name": "FLUX 3 이미지",
     "inputs": {
       "aspect_ratio": {
         "name": "aspect_ratio",
@@ -5984,6 +5984,26 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3LayoutPrompt": {
+    "description": "Create Bounding Boxes의 상자를 레이아웃 표로 FLUX 3 이미지 프롬프트에 추가합니다.",
+    "display_name": "FLUX 3 이미지 레이아웃 프롬프트",
+    "inputs": {
+      "element": {
+        "name": "요소",
+        "tooltip": "Create Bounding Boxes 노드의 프롬프트 요소입니다. 색상 팔레트는 사용되지 않으므로 설명에서 색상을 기술하세요."
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "프롬프트 텍스트입니다. 단어를 연결하려면 상자 N을 <obj_N>으로 참조하세요."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "프롬프트",
         "tooltip": null
       }
     }
@@ -7223,6 +7243,30 @@
       }
     }
   },
+  "GetAudioLatentSize": {
+    "description": "오디오 latent의 길이, 오디오 채널 수 및 배치 크기를 반환합니다.",
+    "display_name": "오디오 latent 크기 가져오기",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "검사할 오디오 또는 오디오/비디오 latent입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "길이",
+        "tooltip": "오디오 latent 길이입니다."
+      },
+      "1": {
+        "name": "오디오_채널",
+        "tooltip": "오디오 채널 수입니다. 오디오 채널 차원이 없는 latent에는 채널이 하나 있습니다."
+      },
+      "2": {
+        "name": "배치_크기",
+        "tooltip": "배치에 있는 latent의 수입니다."
+      }
+    }
+  },
   "GetICLoRAParameters": {
     "description": "LoRA가 로드된 모델의 safetensors 메타데이터에서 IC-LoRA 파라미터를 추출하여 LTXVAddGuide(예: reference_downscale_factor)에 출력합니다.",
     "display_name": "IC-LoRA 파라미터 가져오기",
@@ -7275,6 +7319,34 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "GetLatentSize": {
+    "description": "이미지 또는 비디오 latent의 너비, 높이, 프레임 수 및 배치 크기를 반환합니다.",
+    "display_name": "이미지/비디오 latent 크기 가져오기",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "검사할 이미지 또는 비디오 latent입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "너비",
+        "tooltip": "latent 너비입니다."
+      },
+      "1": {
+        "name": "높이",
+        "tooltip": "latent 높이입니다."
+      },
+      "2": {
+        "name": "프레임",
+        "tooltip": "latent 프레임 수입니다. 이미지 latent에는 프레임이 하나 있습니다."
+      },
+      "3": {
+        "name": "배치_크기",
+        "tooltip": "배치에 있는 latent의 수입니다."
       }
     }
   },
@@ -8106,6 +8178,33 @@
       },
       "1": {
         "name": "negative",
+        "tooltip": null
+      }
+    }
+  },
+  "HiggsfieldMotionTransferNode": {
+    "description": "모션, 카메라 움직임 및 타이밍은 유지하면서 참조 이미지의 새 캐릭터, 장소 또는 스타일로 비디오를 재구성합니다.",
+    "display_name": "Higgsfield Genjutsu 모션 전송",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "사용할 모델입니다."
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -9263,6 +9362,28 @@
       },
       "rotation": {
         "name": "회전"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageSDRToHDR": {
+    "description": "sRGB 밝기를 Rec.2020 HLG HDR로 확장합니다. HDR 색상 공간을 선택하여 결과를 저장하세요. 알파는 유지됩니다.",
+    "display_name": "SDR을 HDR로 변환",
+    "inputs": {
+      "algorithm": {
+        "name": "알고리즘",
+        "tooltip": "보정된 단조 로그 게인 곡선과 혼합된 Lottes 스타일의 유리 함수 확장입니다."
+      },
+      "algorithm_target_luminance": {
+        "name": "target_luminance"
+      },
+      "image": {
+        "name": "이미지",
+        "tooltip": "sRGB의 SDR 이미지."
       }
     },
     "outputs": {
@@ -10563,6 +10684,41 @@
     "outputs": {
       "0": {
         "name": "스타일 참조",
+        "tooltip": null
+      }
+    }
+  },
+  "Krea3ImageNode": {
+    "description": "Krea 3로 이미지를 편집하거나, 이미지가 연결되지 않은 경우 텍스트에서 새 이미지를 생성합니다.",
+    "display_name": "Krea 3 이미지",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_precise_edit": {
+        "name": "precise_edit"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
+      },
+      "model_thinking_mode": {
+        "name": "thinking_mode"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -13162,6 +13318,38 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MOSSImageLayoutPrompt": {
+    "description": "프롬프트와 Create Bounding Boxes의 상자로 MOSS-Image 레이아웃 프롬프트를 구성합니다.",
+    "display_name": "MOSS-Image 레이아웃 프롬프트",
+    "inputs": {
+      "character_boxes": {
+        "name": "character_boxes",
+        "tooltip": "Create Bounding Boxes 미리보기에서 태그된 대로 객체 대신 캐릭터로 지정할 객체 상자의 번호입니다. 예: \"1, 3\"."
+      },
+      "element": {
+        "name": "요소",
+        "tooltip": "Create Bounding Boxes 노드의 프롬프트 요소입니다. 설명은 상자의 캡션이며, 텍스트 상자는 텍스트도 렌더링합니다."
+      },
+      "height": {
+        "name": "높이",
+        "tooltip": "생성된 이미지의 높이입니다. 상자는 해당 이미지의 픽셀에 배치됩니다."
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "전체 이미지에 대한 설명입니다."
+      },
+      "width": {
+        "name": "너비",
+        "tooltip": "생성된 이미지의 너비입니다. 상자는 해당 이미지의 픽셀에 배치됩니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "프롬프트",
         "tooltip": null
       }
     }
@@ -18889,7 +19077,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "그리기 전에 모델이 수행하는 추론의 양입니다. 수준이 높을수록 세부 묘사가 개선되지만 더 많은 토큰이 소모됩니다. Arrow 2 모델에서만 사용됩니다."
+        "tooltip": "그리기 전에 모델이 사용하는 추론량입니다. 수준이 높을수록 세부 묘사가 향상되고 더 많은 토큰이 소모됩니다."
       },
       "seed": {
         "name": "seed",
@@ -18977,7 +19165,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "그리기 전에 모델이 수행하는 추론의 양입니다. 수준이 높을수록 세부 묘사가 개선되지만 더 많은 토큰이 소모됩니다. Arrow 2 모델에서만 사용됩니다."
+        "tooltip": "그리기 전에 모델이 사용하는 추론량입니다. 수준이 높을수록 세부 묘사가 향상되고 더 많은 토큰이 소모됩니다."
       },
       "reference_images": {
         "name": "reference_images",
@@ -19833,6 +20021,42 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "ReferenceMultiLatent": {
+    "description": "참조 이미지를 인코딩하고 해당 latent를 편집 모델용 양성 및 선택적 음성 컨디셔닝에 추가합니다.",
+    "display_name": "참조 멀티 latent 설정",
+    "inputs": {
+      "images": {
+        "name": "이미지"
+      },
+      "negative": {
+        "name": "음성"
+      },
+      "positive": {
+        "name": "양성"
+      },
+      "resolution": {
+        "name": "해상도"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "VAE가 연결되지 않은 경우 참조 이미지는 무시됩니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "긍정",
+        "tooltip": null
+      },
+      "1": {
+        "name": "부정",
+        "tooltip": "부정 컨디셔닝이 연결되지 않은 경우 긍정 출력을 반환합니다."
+      },
+      "2": {
+        "name": "빈_latent",
+        "tooltip": "첫 번째 참조 latent에 0.0을 곱한 값 또는 선택한 해상도의 정사각형 빈 latent입니다."
       }
     }
   },

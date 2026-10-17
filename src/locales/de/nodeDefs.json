@@ -2413,7 +2413,7 @@
     }
   },
   "CLIPLoader": {
-    "description": "Rezepte:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (226-Token-Padding)\ncosmos: old t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1 (Empfohlen) oder t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VL oder Music3 Qwen/RVQ",
+    "description": "Rezepte:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (226-Token-Padding)\ncosmos: old t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1 (Empfohlen) oder t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VL oder Music3 Qwen/RVQ\nflux3: qwen3-vl 4B",
     "display_name": "CLIP laden",
     "inputs": {
       "clip_name": {
@@ -5701,7 +5701,7 @@
     }
   },
   "FishAudioTextToSpeech": {
-    "description": "Konvertiert Text in Sprache. Unterstützt Emotionshinweise im Text ([happy], [whispering] bei s2.1-pro; (happy) bei s1) und Dialoge mit mehreren Sprechern über {'@'}Voice1/{'@'}Voice2-Tags mit mehreren verbundenen Stimmen.",
+    "description": "Wandelt Text in Sprache um. Unterstützt Emotionshinweise im Text ([happy], [whispering] bei s2.1-pro; (happy) bei s1), natürlichsprachliche [Anweisungen] und `<whisper>...</whisper>`-Wort-Tags bei drama-3 sowie Dialoge mit mehreren Sprechern über {'@'}Voice1/{'@'}Voice2-Tags mit mehreren verbundenen Stimmen.",
     "display_name": "Fish Audio Text zu Sprache",
     "inputs": {
       "control_after_generate": {
@@ -5893,8 +5893,8 @@
     }
   },
   "Flux3ImageNode": {
-    "description": "Erzeugt mit FLUX 3 ein Bild aus einem Prompt oder bearbeitet und kombiniert bis zu 10 Referenzbilder. Verweisen Sie im Prompt auf die Referenzen als Bild 1, Bild 2 usw.",
-    "display_name": "Flux 3 Bild",
+    "description": "Generiert mit FLUX 3 Bild ein Bild aus einem Prompt oder bearbeitet und kombiniert bis zu 10 Referenzbilder. Verweisen Sie im Prompt auf die Referenzen als Bild 1, Bild 2 usw.",
+    "display_name": "FLUX 3 Bild",
     "inputs": {
       "aspect_ratio": {
         "name": "aspect_ratio",
@@ -5984,6 +5984,26 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3LayoutPrompt": {
+    "description": "Fügt die Boxen aus Create Bounding Boxes als Layout-Tabelle an einen FLUX 3 Bild-Prompt an.",
+    "display_name": "FLUX 3 Bild-Layout-Prompt",
+    "inputs": {
+      "element": {
+        "name": "Element",
+        "tooltip": "Prompt-Elemente aus dem Node Create Bounding Boxes. Farbpaletten werden nicht verwendet; beschreiben Sie Farben in der Beschreibung."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Der Prompt-Text. Referenzieren Sie Box N als <obj_N>, um Wörter damit zu verknüpfen."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "prompt",
         "tooltip": null
       }
     }
@@ -7223,6 +7243,30 @@
       }
     }
   },
+  "GetAudioLatentSize": {
+    "description": "Gibt die Länge, Anzahl der Audiokanäle und Batchgröße eines Audio-Latents zurück.",
+    "display_name": "Audio-Latent-Größe abrufen",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "Das zu untersuchende Audio- oder Audio-/Video-Latent."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Länge",
+        "tooltip": "Die Länge des Audio-Latents."
+      },
+      "1": {
+        "name": "Audiokanäle",
+        "tooltip": "Die Anzahl der Audiokanäle. Latents ohne Audiokanal-Dimension haben einen Kanal."
+      },
+      "2": {
+        "name": "Batchgröße",
+        "tooltip": "Die Anzahl der Latents im Batch."
+      }
+    }
+  },
   "GetICLoRAParameters": {
     "description": "Extrahiert IC-LoRA-Parameter aus den safetensors-Metadaten eines mit LoRA geladenen Modells und gibt sie für LTXVAddGuide aus (z. B. reference_downscale_factor).",
     "display_name": "IC-LoRA-Parameter abrufen",
@@ -7275,6 +7319,34 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "GetLatentSize": {
+    "description": "Gibt Breite, Höhe, Frameanzahl und Batchgröße eines Bild- oder Video-Latents zurück.",
+    "display_name": "Bild-/Video-Latent-Größe abrufen",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "Das zu untersuchende Bild- oder Video-Latent."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Breite",
+        "tooltip": "Die Breite des Latents."
+      },
+      "1": {
+        "name": "Höhe",
+        "tooltip": "Die Höhe des Latents."
+      },
+      "2": {
+        "name": "Frames",
+        "tooltip": "Die Frameanzahl des Latents. Bild-Latents haben einen Frame."
+      },
+      "3": {
+        "name": "Batchgröße",
+        "tooltip": "Die Anzahl der Latents im Batch."
       }
     }
   },
@@ -8106,6 +8178,33 @@
       },
       "1": {
         "name": "negative",
+        "tooltip": null
+      }
+    }
+  },
+  "HiggsfieldMotionTransferNode": {
+    "description": "Gestaltet ein Video mit neuen Charakteren, Orten oder Stilen aus Referenzbildern neu, wobei Bewegung, Kamerabewegung und Timing erhalten bleiben.",
+    "display_name": "Higgsfield Genjutsu Bewegungsübertragung",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "model": {
+        "name": "Modell",
+        "tooltip": "Zu verwendendes Modell."
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "Auflösung"
+      },
+      "model_seed": {
+        "name": "Seed"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -9263,6 +9362,28 @@
       },
       "rotation": {
         "name": "rotation"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageSDRToHDR": {
+    "description": "Erweitert die sRGB-Helligkeit zu Rec.2020 HLG HDR. Speichern Sie das Ergebnis mit ausgewähltem HDR-Farbraum. Der Alphakanal bleibt erhalten.",
+    "display_name": "SDR in HDR konvertieren",
+    "inputs": {
+      "algorithm": {
+        "name": "Algorithmus",
+        "tooltip": "Lottes-artige rationale Erweiterung, gemischt mit einer kalibrierten monotonen Log-Gain-Kurve."
+      },
+      "algorithm_target_luminance": {
+        "name": "Ziel-Luminanz"
+      },
+      "image": {
+        "name": "Bild",
+        "tooltip": "SDR-Bild(er) in sRGB."
       }
     },
     "outputs": {
@@ -10563,6 +10684,41 @@
     "outputs": {
       "0": {
         "name": "style_reference",
+        "tooltip": null
+      }
+    }
+  },
+  "Krea3ImageNode": {
+    "description": "Bearbeiten Sie Bilder mit Krea 3 oder generieren Sie ein neues Bild aus Text, wenn kein Bild verbunden ist.",
+    "display_name": "Krea 3 Bild",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "model": {
+        "name": "Modell"
+      },
+      "model_aspect_ratio": {
+        "name": "Seitenverhältnis"
+      },
+      "model_precise_edit": {
+        "name": "präzise Bearbeitung"
+      },
+      "model_prompt": {
+        "name": "Prompt"
+      },
+      "model_resolution": {
+        "name": "Auflösung"
+      },
+      "model_seed": {
+        "name": "Seed"
+      },
+      "model_thinking_mode": {
+        "name": "Denkmodus"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -13162,6 +13318,38 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MOSSImageLayoutPrompt": {
+    "description": "Erstellt einen MOSS-Image-Layout-Prompt aus dem Prompt und den Boxen aus „Create Bounding Boxes“.",
+    "display_name": "MOSS-Image-Layout-Prompt",
+    "inputs": {
+      "character_boxes": {
+        "name": "Charakter-Boxen",
+        "tooltip": "Nummern der Objektboxen, die als Charaktere statt als Objekte gekennzeichnet werden sollen, wie in der Vorschau von „Create Bounding Boxes“ markiert, z. B. „1, 3“."
+      },
+      "element": {
+        "name": "Element",
+        "tooltip": "Prompt-Elemente aus dem Node „Create Bounding Boxes“. Die Beschreibung ist die Beschriftung der Box; Textboxen geben auch ihren Text wieder."
+      },
+      "height": {
+        "name": "Höhe",
+        "tooltip": "Höhe des generierten Bildes; die Boxen werden in dessen Pixeln platziert."
+      },
+      "prompt": {
+        "name": "Prompt",
+        "tooltip": "Beschreibung des gesamten Bildes."
+      },
+      "width": {
+        "name": "Breite",
+        "tooltip": "Breite des generierten Bildes; die Boxen werden in dessen Pixeln platziert."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Prompt",
         "tooltip": null
       }
     }
@@ -18889,7 +19077,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "Wie viel Denkaufwand das Modell vor dem Zeichnen verwendet. Höhere Stufen verbessern Details und verbrauchen mehr Tokens. Wird nur von den Arrow-2-Modellen verwendet."
+        "tooltip": "Wie viel Reasoning das Modell vor dem Zeichnen aufwendet. Höhere Stufen verbessern die Details und kosten mehr Tokens."
       },
       "seed": {
         "name": "Seed",
@@ -18977,7 +19165,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "Wie viel Denkaufwand das Modell vor dem Zeichnen verwendet. Höhere Stufen verbessern Details und verbrauchen mehr Tokens. Wird nur von den Arrow-2-Modellen verwendet."
+        "tooltip": "Wie viel Reasoning das Modell vor dem Zeichnen aufwendet. Höhere Stufen verbessern die Details und kosten mehr Tokens."
       },
       "reference_images": {
         "name": "Referenzbilder",
@@ -19833,6 +20021,42 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "ReferenceMultiLatent": {
+    "description": "Kodiert Referenzbilder und fügt deren latents dem positiven und optionalen negativen Conditioning für Bearbeitungsmodelle hinzu.",
+    "display_name": "Referenz-Multi-Latent festlegen",
+    "inputs": {
+      "images": {
+        "name": "Bilder"
+      },
+      "negative": {
+        "name": "negativ"
+      },
+      "positive": {
+        "name": "positiv"
+      },
+      "resolution": {
+        "name": "Auflösung"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Referenzbilder werden ignoriert, wenn kein VAE verbunden ist."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positiv",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negativ",
+        "tooltip": "Gibt die positive Ausgabe zurück, wenn die negative Konditionierung nicht verbunden ist."
+      },
+      "2": {
+        "name": "leeres_latent",
+        "tooltip": "Gibt das erste Referenz-latent multipliziert mit 0.0 zurück oder ein quadratisches leeres latent bei der ausgewählten Auflösung."
       }
     }
   },
