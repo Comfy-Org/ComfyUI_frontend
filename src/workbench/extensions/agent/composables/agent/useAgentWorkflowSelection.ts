@@ -25,18 +25,6 @@ type RestorationOutcome =
   | { outcome: 'deleted' }
   | { outcome: 'superseded' }
 
-/**
- * What a restoration attempt did, as two separate questions.
- *
- * `ready` answers "may hydration continue" and is deliberately true in the
- * several cases where nothing was restored - an already-decided target, no id
- * in the transcript, a workflow the cloud has deleted. A caller that needs to
- * know a restoration *committed* cannot infer it from `ready`, and must not
- * reconstruct it from what the UI happens to show afterwards: in following
- * mode "the transcript's workflow is the visible tab" is true whenever the
- * user simply has that tab open. `committedWorkflowId` is set by the one place
- * a restoration commits, so it says so rather than being deduced.
- */
 interface WorkflowRestoration {
   ready: boolean
   committedWorkflowId: string | null
@@ -287,8 +275,6 @@ export function useAgentWorkflowSelection({
     isSessionCurrent: () => boolean
   ): Promise<WorkflowRestoration> {
     if (!isSessionCurrent()) return RESTORE_ABANDONED
-    // A target that is already decided (e.g. a remounted panel) needs no
-    // restoration, so the chat is ready as far as its workflow goes.
     if (!canRestoreWorkflow.value) return NOT_RESTORED
     const generation = ++targetSelectionGeneration
     const isCurrent = () =>

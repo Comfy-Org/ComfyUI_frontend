@@ -816,15 +816,6 @@ function onWorkflowAdopted(
   }
 }
 
-/**
- * FE-1969: a reload leaves the session with no in-memory binding, and the
- * thread's own transcript is the only thing that names the workflow it was
- * bound to. Restoring that target reopens its tab and repaints the picker, so
- * the panel looks attached - but without a session binding the follower never
- * resubscribes, and every host edit until the NEXT turn ack reaches nobody.
- * Bind the restored workflow as well, from the id the server's transcript
- * carries rather than from anything this page persisted.
- */
 async function onWorkflowRestoredAndBound(
   workflowId: string | undefined,
   isCurrent: () => boolean
@@ -833,14 +824,6 @@ async function onWorkflowRestoredAndBound(
     workflowId,
     isCurrent
   )
-  // Bind only what a restoration actually committed. `ready` is also true
-  // when nothing was restored, and the restore hook runs from every
-  // hydrateFromServer - including reattachRefusedTurn and
-  // reconcileSnapshotTurn, neither of which clears the binding first - so a
-  // looser condition could move a live binding off the document a running
-  // turn is editing. `commitWorkflowTarget` is the only place that sets this,
-  // and it has already done bindingStore.bind() and the 'restored'
-  // reportWorkflowBound() by the time we get here.
   if (committedWorkflowId === null || !isCurrent()) return ready
   if (boundWorkflowId.value !== committedWorkflowId)
     bindWorkflow(committedWorkflowId)

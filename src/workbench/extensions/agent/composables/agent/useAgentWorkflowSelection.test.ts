@@ -159,14 +159,7 @@ describe('historical workflow restoration', () => {
     }
   )
 
-  // The restore hook runs from every hydrateFromServer, not only at startup -
-  // reattachRefusedTurn and reconcileSnapshotTurn reach it mid-turn and
-  // neither begins a restoration. Those calls return ready without restoring
-  // anything, and they must say so: the workflow is open, selected and active
-  // in exactly the state an "is the restored target live?" check would have
-  // accepted, so reporting a commit here is what would rebind a running turn
-  // off the document the agent is editing.
-  it('reports no commit when the panel is not restoring, even with the workflow live', async () => {
+  it('reports no commit when the panel is not restoring, even with the workflow open, selected and active', async () => {
     const { selection, workflows, bindings, panel } = setup()
     const saved = createMockLoadedWorkflow({
       path: 'workflows/saved.json',
@@ -253,8 +246,6 @@ describe('historical workflow restoration', () => {
     expect(panel.selectedWorkflow).toBeNull()
     expect(workflows.activeWorkflow?.path).toBe(current.path)
     finishRefresh()
-    // The committed id is reported by the one place that commits, so a caller
-    // never has to deduce "a restoration happened" from the resulting UI.
     expect(await restoration).toEqual({
       ready: true,
       committedWorkflowId: 'wf-saved'
@@ -690,11 +681,9 @@ describe('historical workflow restoration', () => {
     expect(workflows.openWorkflows).not.toContain(draft)
   })
 
-  it('leaves a deleted target unavailable when nothing local answers for it', async () => {
+  it('leaves a deleted target unavailable, and reports ready with no commit, when nothing local answers for it', async () => {
     const { selection, workflows, panel, current, warnRestoreFailed } = setup()
 
-    // `ready` is true here and nothing was restored. A caller cannot use it to
-    // decide whether to bind, which is what `committedWorkflowId` is for.
     expect(await selection.restoreTarget('wf-deleted', () => true)).toEqual({
       ready: true,
       committedWorkflowId: null
