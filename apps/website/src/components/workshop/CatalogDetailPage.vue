@@ -33,10 +33,16 @@ import CatalogueBackLink from './CatalogueBackLink.vue'
 const {
   path,
   preview,
+  initial,
+  initialMissing = false,
   locale = 'en'
 } = defineProps<{
   path: string
   preview?: WorkshopModel
+  /** Server-loaded record for `path`, so the first HTML has real content. */
+  initial?: ModelsPageData
+  /** The server already found no record for `path` (the page is a 404). */
+  initialMissing?: boolean
   locale?: Locale
 }>()
 const loadWorkflowPage = () => import('./WorkflowPage.vue')
@@ -71,9 +77,9 @@ provide(catalogDetailNavigation, (event, model) => {
   document.title = `${model.name} - Comfy`
   window.scrollTo({ top: 0, behavior: 'instant' })
 })
-const page = shallowRef<ModelsPageData>()
-const failed = ref(false)
-const missing = ref(false)
+const page = shallowRef<ModelsPageData | undefined>(initial)
+const failed = ref(initialMissing)
+const missing = ref(initialMissing)
 const currentModel = computed(() => page.value?.model ?? activePreview.value)
 const workflow = computed(() =>
   page.value?.model.workflowId !== undefined ? page.value.model : undefined
@@ -147,7 +153,9 @@ function restorePage(event: PageTransitionEvent) {
 }
 let stopHistory: (() => void) | undefined
 onMounted(() => {
-  void load()
+  // The server already rendered this record; later navigation and focus/
+  // visibility refreshes still fetch the current one.
+  if (!initial && !initialMissing) void load()
   stopHistory = listenCatalogHistory(restoreDetail)
   window.addEventListener('focus', refreshVisible)
   window.addEventListener('pageshow', restorePage)
@@ -240,6 +248,7 @@ onScopeDispose(() => {
       v-else
       :aria-label="t('workshop.load.pending')"
       aria-busy="true"
+      data-testid="catalog-detail-loading"
       class="grid gap-6 lg:grid-cols-[2fr_1fr]"
     >
       <div

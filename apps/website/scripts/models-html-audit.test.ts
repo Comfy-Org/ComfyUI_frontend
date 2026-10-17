@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  auditCatalogDetailBody,
   auditMediaLabels,
   auditModelPage,
   auditModelsHub
@@ -177,5 +178,42 @@ describe(auditModelsHub, () => {
         (href) => href === '/a/'
       )
     ).toEqual([])
+  })
+})
+
+describe(auditCatalogDetailBody, () => {
+  const record = {
+    name: 'Example Model',
+    summary: 'Turns prompts into images.'
+  }
+  const page = (body: string) => `<main>${body}</main>`
+
+  it('accepts one named h1 with the summary', () => {
+    expect(
+      auditCatalogDetailBody(
+        page('<h1>Example Model</h1><p>Turns prompts into images.</p>'),
+        record
+      )
+    ).toEqual([])
+  })
+
+  it.for([
+    ['no h1', page('<p>Turns prompts into images.</p>')],
+    ['an empty h1', page('<h1> </h1><p>Turns prompts into images.</p>')],
+    [
+      'two h1s',
+      page(
+        '<h1>Example Model</h1><h1>Example Model</h1><p>Turns prompts into images.</p>'
+      )
+    ],
+    ['a missing summary', page('<h1>Example Model</h1>')],
+    [
+      'a loader in place of the record',
+      page(
+        '<h1>Example Model</h1><p>Turns prompts into images.</p><section data-testid="catalog-detail-loading"></section>'
+      )
+    ]
+  ] as const)('rejects %s', ([, html]) => {
+    expect(auditCatalogDetailBody(html, record)).not.toEqual([])
   })
 })

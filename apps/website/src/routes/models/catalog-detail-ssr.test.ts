@@ -1,0 +1,130 @@
+// @vitest-environment node
+import { describe, expect, it, vi } from 'vitest'
+import { createSSRApp, h } from 'vue'
+import { renderToString } from 'vue/server-renderer'
+
+import CatalogDetailPage from '@/components/workshop/CatalogDetailPage.vue'
+import {
+  catalogDetailHead,
+  catalogDetailNoindex,
+  loadCatalogDetailPage
+} from '@/lib/cms/detail-page-server'
+import type { AuthoringSession } from '@/lib/cms/authoring-session'
+import { auditCatalogDetailBody } from '@website/scripts/models-html-audit'
+import { entries } from '@website/scripts/export-cms-seed'
+
+const SITE = new URL('https://comfy.org')
+const records = entries.filter((entry) => entry.kind !== 'APP')
+
+// One-record catalog reads, exactly what the route's server load requests.
+function serveCatalog() {
+  vi.stubEnv('SITE_CATALOG_API_URL', 'http://localhost:8099')
+  vi.mocked(fetch).mockImplementation((input) => {
+    const url = new URL(String(input))
+    const item = entries.find(
+      (entry) => entry.slug === url.searchParams.get('workflow_slug')
+    )
+    return Promise.resolve(
+      Response.json({
+        revision_id: 1,
+        generation: 0,
+        items: item
+          ? [{ ...item, revision: 1, deleted: false, edit_version: item.uid }]
+          : []
+      })
+    )
+  })
+}
+
+describe('catalog detail pages in server HTML (SEO audit)', () => {
+  it('covers both workflow and model records', () => {
+    expect(records.some((entry) => entry.kind === 'WORKFLOW')).toBe(true)
+    expect(records.some((entry) => entry.kind === 'MODEL')).toBe(true)
+  })
+
+  it.for(records.map((entry) => [entry.kind, entry.slug] as const))(
+    'server-renders %s %s with its title, h1, description, canonical and JSON-LD',
+    async ([, slug]) => {
+      serveCatalog()
+      const pathname = `${slug}/`
+      const load = await loadCatalogDetailPage({}, pathname, 'en')
+      if (load.status !== 'ok') throw new Error(`record ${slug} ${load.status}`)
+      const { page } = load
+      expect(catalogDetailNoindex({}, load)).toBe(false)
+
+      const head = catalogDetailHead(page, pathname, SITE, 'en', 'en')
+      expect(head.title).toContain(page.model.name)
+      expect(head.description.trim()).not.toBe('')
+      expect(head.canonicalPath).toBe(page.model.href)
+      expect(head.canonicalPath.replace(/\/$/, '')).toBe(slug)
+      expect(head.jsonLd.mainEntityId).toBeTruthy()
+
+      const html = await renderToString(
+        createSSRApp({
+          render: () =>
+            h(CatalogDetailPage, {
+              path: pathname,
+              initial: page,
+              locale: 'en'
+            })
+        })
+      )
+      expect(auditCatalogDetailBody(html, page.model)).toEqual([])
+    }
+  )
+
+  it('keeps the locale prefix in the canonical of a localized page', async () => {
+    serveCatalog()
+    const record = records[0]
+    const pathname = `/zh-CN${record.slug}/`
+    const load = await loadCatalogDetailPage({}, pathname, 'zh-CN')
+    if (load.status !== 'ok') throw new Error(load.status)
+    const head = catalogDetailHead(load.page, pathname, SITE, 'zh-CN', 'zh-CN')
+    expect(head.canonicalPath).toBe(`/zh-CN${load.page.model.href}`)
+  })
+
+  it('reports an unknown record as missing and keeps it out of the index', async () => {
+    serveCatalog()
+    const load = await loadCatalogDetailPage(
+      {},
+      '/hub/workflows/does-not-exist/',
+      'en'
+    )
+    expect(load.status).toBe('missing')
+    expect(catalogDetailNoindex({}, load)).toBe(true)
+    const html = await renderToString(
+      createSSRApp({
+        render: () =>
+          h(CatalogDetailPage, {
+            path: '/hub/workflows/does-not-exist/',
+            initialMissing: true,
+            locale: 'en'
+          })
+      })
+    )
+    expect(html).toContain('Content not found')
+    expect(html).not.toContain('catalog-detail-loading')
+  })
+
+  it('reports an upstream failure as unavailable, never as a page', async () => {
+    vi.stubEnv('SITE_CATALOG_API_URL', 'http://localhost:8099')
+    vi.mocked(fetch).mockResolvedValue(new Response('', { status: 503 }))
+    const load = await loadCatalogDetailPage({}, `${records[0].slug}/`, 'en')
+    expect(load.status).toBe('unavailable')
+    expect(catalogDetailNoindex({}, load)).toBe(true)
+  })
+
+  it('never indexes a staff view, which can show unpublished Draft content', async () => {
+    serveCatalog()
+    const load = await loadCatalogDetailPage({}, `${records[0].slug}/`, 'en')
+    const staff = { catalogAuthoring: {} as AuthoringSession }
+    expect(catalogDetailNoindex(staff, load)).toBe(true)
+  })
+
+  it('rejects paths that are not catalog detail routes', async () => {
+    serveCatalog()
+    const load = await loadCatalogDetailPage({}, '/hub/apps/x/', 'en')
+    expect(load.status).toBe('missing')
+    expect(fetch).not.toHaveBeenCalled()
+  })
+})

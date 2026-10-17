@@ -10,6 +10,11 @@ import {
 } from '@/config/hub-models'
 import { workshopPagePaths } from '@/config/workshop-page-content'
 import { cmsEnabled } from '@/lib/cms/catalog'
+import {
+  catalogDetailHead,
+  catalogDetailNoindex,
+  loadCatalogDetailPage
+} from '@/lib/cms/detail-page-server'
 
 interface Props {
   id: string
@@ -27,16 +32,58 @@ export const getStaticPaths: GetStaticPaths = ({ routePattern }) =>
       }))
 
 const catalog = cmsEnabled() && process.env.VERCEL_ENV !== 'production'
+const locale = Astro.locals.catalogLocale ?? 'en'
+// Render the record into the first HTML (search engines, no-JS readers) from
+// the same one-record read the island uses; the island hydrates without a
+// second fetch and still fetches on client navigation.
+const detail = catalog
+  ? await loadCatalogDetailPage(Astro.locals, Astro.url.pathname, locale)
+  : undefined
+if (detail?.status === 'missing') Astro.response.status = 404
+const record = detail?.status === 'ok' ? detail.page : undefined
+const head =
+  record &&
+  catalogDetailHead(
+    record,
+    Astro.url.pathname,
+    Astro.site,
+    Astro.currentLocale,
+    locale
+  )
+const noindex = detail ? catalogDetailNoindex(Astro.locals, detail) : true
 ---
 
 {catalog ? (
-  <BaseLayout title="Comfy Hub" canonicalPath={Astro.url.pathname} noindex>
-    <CatalogDetailPage
-      path={Astro.url.pathname}
-      locale={Astro.locals.catalogLocale ?? 'en'}
-      client:load
-    />
-  </BaseLayout>
+  head ? (
+    <BaseLayout
+      title={head.title}
+      description={head.description}
+      ogImage={head.ogImage}
+      ogImageAlt={head.ogImageAlt}
+      canonicalPath={head.canonicalPath}
+      noindex={noindex}
+      pageType={head.jsonLd.pageType}
+      breadcrumbs={head.jsonLd.breadcrumbs}
+      mainEntityId={head.jsonLd.mainEntityId}
+      extraJsonLd={head.jsonLd.extraJsonLd}
+    >
+      <CatalogDetailPage
+        path={Astro.url.pathname}
+        initial={record}
+        locale={locale}
+        client:load
+      />
+    </BaseLayout>
+  ) : (
+    <BaseLayout title="Comfy Hub" canonicalPath={Astro.url.pathname} noindex>
+      <CatalogDetailPage
+        path={Astro.url.pathname}
+        initialMissing={detail?.status === 'missing'}
+        locale={locale}
+        client:load
+      />
+    </BaseLayout>
+  )
 ) : (
   <LegacyDetailPage id={Astro.props.id} />
 )}
