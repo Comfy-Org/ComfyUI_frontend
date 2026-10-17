@@ -67,7 +67,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type { RootGraphId } from '@/types/graphScopeId'
 import { isCloud } from '@/platform/distribution/types'
-import { parseNodeId } from '@/types/nodeId'
+import { parseNodeId, toNodeId } from '@/types/nodeId'
 import { parseNodeLocatorId } from '@/types/nodeIdentification'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
@@ -1319,6 +1319,7 @@ function runApprovalDecision(
 
 void refreshCloudWorkflowIds()
 onBeforeUnmount(() => {
+  canvasStore.setHighlightedNodeIds([])
   runPanelTeardown({
     releaseCoachCompletionWaiters: () => {
       releaseCoachCompletionWaiters()
@@ -1811,6 +1812,10 @@ function onMentionPick(node: SelectedNode): void {
     useTelemetry()?.trackAgentNodeTagged({ source: 'mention_picker' })
 }
 
+function onMentionHighlight(node: SelectedNode | null): void {
+  canvasStore.setHighlightedNodeIds(node ? [toNodeId(node.id)] : [])
+}
+
 function onRemoveSelectionTag(id: string): void {
   const node = canvasStore.selectedItems
     .filter(isLGraphNode)
@@ -2014,6 +2019,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       @select-nodes="onSelectNodes"
       @remove-tag="onRemoveSelectionTag"
       @mention-pick="onMentionPick"
+      @mention-highlight="onMentionHighlight"
       @request-workflow-references="onRequestWorkflowReferences"
       @remove-workflow-reference="composerStore.removeWorkflowReference"
       @feedback="onFeedback"

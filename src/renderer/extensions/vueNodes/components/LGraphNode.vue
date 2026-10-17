@@ -19,7 +19,7 @@
           ? 'h-(--node-height)'
           : 'min-h-(--node-height) min-w-(--min-node-width)',
         cursorClass,
-        isSelected && 'outline-node-component-outline',
+        isEmphasized && 'outline-node-component-outline',
         executing && 'outline-node-stroke-executing',
         shouldHandleNodePointerEvents &&
           !nodeData.flags?.ghost &&
@@ -53,14 +53,14 @@
       :id="nodeId"
     />
     <div
-      v-if="isSelected || executing"
+      v-if="isEmphasized || executing"
       data-testid="node-state-outline-overlay"
       :class="
         cn(
           'pointer-events-none absolute z-0 border-3 outline-none',
           selectionShapeClass,
           hasAnyError ? '-inset-1.75' : '-inset-0.75',
-          isSelected
+          isEmphasized
             ? 'border-node-component-outline'
             : 'border-node-stroke-executing'
         )
@@ -269,6 +269,7 @@ import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useNodeHighlightStore } from '@/renderer/core/canvas/nodeHighlightStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useGLSLPreview } from '@/renderer/glsl/useGLSLPreview'
@@ -352,8 +353,12 @@ useVueElementTracking(nodeId.value, 'node')
 const canvasStore = useCanvasStore()
 
 const { selectedNodeIds, isGhostPlacing } = storeToRefs(useCanvasStore())
-const isSelected = computed(() => {
-  return selectedNodeIds.value.has(nodeId.value)
+const { highlightedNodeIds } = storeToRefs(useNodeHighlightStore())
+const isEmphasized = computed(() => {
+  return (
+    selectedNodeIds.value.has(nodeId.value) ||
+    highlightedNodeIds.value.has(nodeId.value)
+  )
 })
 
 const nodeLocatorId = computed(

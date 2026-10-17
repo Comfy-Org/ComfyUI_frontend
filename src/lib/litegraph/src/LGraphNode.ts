@@ -325,6 +325,7 @@ interface DrawTitleOptions {
 
 interface DrawTitleTextOptions extends DrawTitleOptions {
   default_title_color: string
+  selected?: boolean
 }
 
 export interface DrawTitleBoxOptions extends DrawTitleOptions {
@@ -684,7 +685,7 @@ export class LGraphNode
    */
   strokeStyles: Record<
     string,
-    (this: LGraphNode) => IDrawBoundingOptions | undefined
+    (this: LGraphNode, selected?: boolean) => IDrawBoundingOptions | undefined
   >
 
   /**
@@ -1129,9 +1130,10 @@ export class LGraphNode
   }
 
   private _getSelectedStrokeStyle(
-    this: LGraphNode
+    this: LGraphNode,
+    selected = this.selected
   ): IDrawBoundingOptions | undefined {
-    if (this.selected) {
+    if (selected) {
       return {
         padding: this.has_errors ? 20 : undefined
       }
@@ -4054,12 +4056,11 @@ export class LGraphNode
       scale,
       default_title_color,
       low_quality = false,
+      selected = this.selected,
       title_height = LiteGraph.NODE_TITLE_HEIGHT
     }: DrawTitleTextOptions
   ): void {
     const size = this.renderingSize
-    const selected = this.selected
-
     if (this.onDrawTitleText) {
       this.onDrawTitleText(
         ctx,

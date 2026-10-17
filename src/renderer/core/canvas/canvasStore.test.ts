@@ -15,8 +15,10 @@ import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { selectableKeyOf } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useNodeHighlightStore } from '@/renderer/core/canvas/nodeHighlightStore'
 import { useSelectionStore } from '@/core/selection/selectionStore'
 import { graphScopeOf } from '@/types/graphScopeId'
+import { toNodeId } from '@/types/nodeId'
 import {
   createMockCanvasRenderingContext2D,
   createTestCanvas
@@ -119,6 +121,26 @@ describe('useCanvasStore', () => {
       expect(canvas.setDirty).toHaveBeenCalledWith(true, true)
       expect(store.appScalePercentage).toBe(150)
     })
+  })
+
+  it('highlights nodes without changing graph selection', async () => {
+    const graph = new LGraph()
+    const selected = new LGraphNode('selected')
+    graph.add(selected)
+    const canvas = createTestCanvas(graph, createMockCanvasRenderingContext2D())
+    onTestFinished(() => canvas.unbindEvents())
+    store.canvas = canvas
+    await nextTick()
+    canvas.select(selected)
+    const setDirty = vi.spyOn(canvas, 'setDirty')
+
+    store.setHighlightedNodeIds([toNodeId(7)])
+
+    expect(useNodeHighlightStore().highlightedNodeIds).toEqual(
+      new Set([toNodeId(7)])
+    )
+    expect(store.selectedItems).toEqual([selected])
+    expect(setDirty).toHaveBeenCalledWith(true, false)
   })
 
   describe('node:before-removed selection cleanup', () => {

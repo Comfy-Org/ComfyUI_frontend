@@ -46,6 +46,7 @@ import {
 } from '@/core/selection/selectionIntent'
 import { useSelectionStore } from '@/core/selection/selectionStore'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import { useNodeHighlightStore } from '@/renderer/core/canvas/nodeHighlightStore'
 import {
   applyLogicalCanvasStyle,
   applyViewport,
@@ -5698,8 +5699,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       ctx.clip()
     }
 
-    // draw shape
-    this.drawNodeShape(node, ctx, size, color, bgcolor, node.selected)
+    this.drawNodeShape(
+      node,
+      ctx,
+      size,
+      color,
+      bgcolor,
+      node.selected || useNodeHighlightStore().isHighlighted(node.id)
+    )
 
     // Render title buttons (if not collapsed)
     if (!node.flags.collapsed) {
@@ -5920,16 +5927,16 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       node.drawTitleText(ctx, {
         scale: this.ds.scale,
         default_title_color: this.node_title_color,
-        low_quality
+        low_quality,
+        selected: _selected
       })
 
       // custom title render
       node.onDrawTitle?.(ctx)
     }
 
-    // Draw stroke styles
     for (const getStyle of Object.values(node.strokeStyles)) {
-      const strokeStyle = getStyle.call(node)
+      const strokeStyle = getStyle.call(node, _selected)
       if (strokeStyle) {
         strokeShape(ctx, area, {
           shape,
