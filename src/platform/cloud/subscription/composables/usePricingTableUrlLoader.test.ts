@@ -48,10 +48,12 @@ const TEAM_CREDIT_STOPS = {
     id: `team_${usd}`,
     credits: usd * 211,
     monthly: {
+      action: 'subscribe',
       list_price_cents: usd * 100,
       price_cents: usd * 100 - index * 500
     },
     yearly: {
+      action: 'subscribe',
       list_price_cents: usd * 100,
       price_cents: usd * 100 - index * 1000
     }

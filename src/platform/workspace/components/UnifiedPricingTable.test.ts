@@ -24,6 +24,7 @@ function apiPlan(
   priceCents = 2000
 ): Plan {
   return {
+    action: 'subscribe',
     availability: { available: true },
     credits_cents: creditsCents,
     duration,
@@ -562,14 +563,30 @@ describe('UnifiedPricingTable team plan CTA', () => {
         {
           id: 'stop-320',
           credits: 67_520,
-          monthly: { list_price_cents: 32_000, price_cents: 30_400 },
-          yearly: { list_price_cents: 32_000, price_cents: 28_800 }
+          monthly: {
+            action: 'subscribe',
+            list_price_cents: 32_000,
+            price_cents: 30_400
+          },
+          yearly: {
+            action: 'subscribe',
+            list_price_cents: 32_000,
+            price_cents: 28_800
+          }
         },
         {
           id: 'stop-640',
           credits: 135_040,
-          monthly: { list_price_cents: 64_000, price_cents: 60_800 },
-          yearly: { list_price_cents: 64_000, price_cents: 57_600 }
+          monthly: {
+            action: 'subscribe',
+            list_price_cents: 64_000,
+            price_cents: 60_800
+          },
+          yearly: {
+            action: 'subscribe',
+            list_price_cents: 64_000,
+            price_cents: 57_600
+          }
         }
       ]
     }))
