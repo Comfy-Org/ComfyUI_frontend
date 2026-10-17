@@ -17,10 +17,13 @@ import {
   AGENT_SUBGRAPH_HOST_ID,
   AGENT_SUBGRAPH_INITIAL_SEED,
   AGENT_SUBGRAPH_INITIAL_TEXT,
+  AGENT_SUBGRAPH_INTERIOR_EDITED_STEPS,
+  AGENT_SUBGRAPH_INTERIOR_EDITED_TEXT,
   AGENT_SUBGRAPH_LINK_ID,
   AGENT_SUBGRAPH_WORKFLOW_ID,
   agentSubgraphNodeDefs,
   agentSubgraphFrames,
+  agentSubgraphInteriorFrames,
   agentSubgraphWidgetDriftFrames
 } from '@e2e/fixtures/data/agentSubgraphFollower'
 import { loadSeedIntoActiveTab } from '@e2e/fixtures/utils/seedActiveTab'
@@ -253,6 +256,132 @@ test.describe(
         await page.screenshot({
           path: test.info().outputPath('subgraph-text-edited.png')
         })
+      })
+    })
+
+    test('applies interior widget edits to the subgraph and its host', async ({
+      page,
+      getWebSocket
+    }) => {
+      const socket =
+        await test.step('open the agent-enabled workflow', async () => {
+          await page.setViewportSize({ width: 1920, height: 1280 })
+          await bootAgentApp(page, true, {
+            onboardingCompleted: true,
+            settings: { 'Comfy.VueNodes.Enabled': true },
+            objectInfo: agentSubgraphNodeDefs,
+            beforeNavigate: async (page) => {
+              await mockAgentTurnApi(page, {
+                message_id: '3818ba00-d772-4a3f-98c1-9312725b577d',
+                thread_id: 'd4c016c4-3b8c-44cf-97de-1ae27e43e718',
+                workflow_id: AGENT_SUBGRAPH_WORKFLOW_ID
+              })
+              await mockWorkflowPersistence(page, AGENT_SUBGRAPH_WORKFLOW_ID)
+            }
+          })
+          return getWebSocket()
+        })
+
+      const outboundFrames: string[] = []
+      socket.onMessage((message) => outboundFrames.push(String(message)))
+
+      await test.step('select the workflow and send an agent turn', async () => {
+        await loadSeedIntoActiveTab(page, subgraphWorkflow)
+        const agentPanel = new AgentPanel(page)
+        await agentPanel.open()
+        await agentPanel.selectWorkflow()
+        const composer = agentPanel.root.getByRole('textbox', {
+          name: /^Describe ideas/
+        })
+        await composer.fill('Edit inside the subgraph')
+        await agentPanel.root.getByRole('button', { name: 'Send' }).click()
+      })
+
+      await test.step('subscribe the follower to the workflow document', async () => {
+        await expect
+          .poll(() => outboundFrames, { timeout: 15_000 })
+          .toContainEqual(
+            expect.stringMatching(
+              new RegExp(
+                `doc_subscribe.*${AGENT_SUBGRAPH_WORKFLOW_ID}|${AGENT_SUBGRAPH_WORKFLOW_ID}.*doc_subscribe`
+              )
+            )
+          )
+      })
+
+      const frames = agentSubgraphInteriorFrames()
+      function readLayers() {
+        return page.evaluate((hostId) => {
+          const graph = window.app!.graph
+          const host = graph.nodes.find(
+            ({ id }) => String(id) === String(hostId)
+          )
+          const subgraph = host ? graph.subgraphs.get(host.type) : undefined
+          function interior(type: string) {
+            return subgraph?.nodes
+              .find((node) => node.type === type)
+              ?.widgets?.map(({ name, value }) => ({ name, value }))
+          }
+          return {
+            host: host?.widgets?.map(({ name, value }) => ({ name, value })),
+            sampler: interior('KSampler'),
+            textEncode: interior('CLIPTextEncode')
+          }
+        }, AGENT_SUBGRAPH_HOST_ID)
+      }
+      function sendFrames(framesToSend: typeof frames.initial) {
+        for (const frame of framesToSend) socket.send(JSON.stringify(frame))
+      }
+
+      await test.step('materialize the host and its subgraph', async () => {
+        sendFrames(frames.initial)
+        await expect.poll(readLayers).toMatchObject({
+          host: [
+            { name: 'text', value: AGENT_SUBGRAPH_INITIAL_TEXT },
+            { name: 'seed', value: AGENT_SUBGRAPH_INITIAL_SEED }
+          ]
+        })
+      })
+
+      await test.step('apply a non-promoted interior steps edit', async () => {
+        socket.send(JSON.stringify(frames.stepsEdit))
+        await expect.poll(readLayers).toMatchObject({
+          sampler: expect.arrayContaining([
+            { name: 'steps', value: AGENT_SUBGRAPH_INTERIOR_EDITED_STEPS }
+          ]),
+          host: [
+            { name: 'text', value: AGENT_SUBGRAPH_INITIAL_TEXT },
+            { name: 'seed', value: AGENT_SUBGRAPH_INITIAL_SEED }
+          ]
+        })
+      })
+
+      await test.step('apply a promoted interior text edit', async () => {
+        socket.send(JSON.stringify(frames.textEdit))
+        await expect.poll(readLayers).toMatchObject({
+          textEncode: [
+            { name: 'text', value: AGENT_SUBGRAPH_INTERIOR_EDITED_TEXT }
+          ],
+          host: [
+            { name: 'text', value: AGENT_SUBGRAPH_INTERIOR_EDITED_TEXT },
+            { name: 'seed', value: AGENT_SUBGRAPH_INITIAL_SEED }
+          ]
+        })
+        await page
+          .getByRole('button', { name: 'Fit View (.)', exact: true })
+          .click()
+        const node = new VueNodeHelpers(page).getNodeLocator(
+          String(AGENT_SUBGRAPH_HOST_ID)
+        )
+        await expect(node.getByRole('textbox')).toHaveValue(
+          AGENT_SUBGRAPH_INTERIOR_EDITED_TEXT
+        )
+        await page.screenshot({
+          path: test.info().outputPath('subgraph-interior-edited.png')
+        })
+        expect(outboundFrames.some((frame) => frame.includes('doc_ops'))).toBe(
+          false
+        )
       })
     })
 

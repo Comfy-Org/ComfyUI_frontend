@@ -339,6 +339,73 @@ function definitionsMap(doc: Y.Doc): Y.Map<unknown> | null {
   return doc.getMap<unknown>(DEFINITIONS_ROOT)
 }
 
+/** The definitions root a deep observer can attach to. */
+export function definitionsObserverRoot(doc: Y.Doc): Y.Map<unknown> {
+  return doc.getMap<unknown>(DEFINITIONS_ROOT)
+}
+
+/** Interior widget values: named map, opaque array, or absent. */
+type InteriorWidgetValues =
+  | Record<string, unknown>
+  | readonly unknown[]
+  | undefined
+
+function readInteriorWidgets(source: Y.Map<unknown>): InteriorWidgetValues {
+  const widgets = source.get('widgets')
+  if (widgets instanceof Y.Map) {
+    return Object.fromEntries(
+      [...widgets.entries()].flatMap(([name, value]) =>
+        isReadableKey(name) ? [[name, plain(value)]] : []
+      )
+    )
+  }
+  const opaque = source.get(OPAQUE_WIDGETS_KEY)
+  if (opaque !== undefined) {
+    const value = plain(opaque)
+    return Array.isArray(value) ? value : undefined
+  }
+  return undefined
+}
+
+function collectInteriorWidgets(
+  source: Y.Map<unknown>,
+  into: Map<string, Map<string, InteriorWidgetValues>>
+): void {
+  const id = plain(source.get('id'))
+  const nodes = source.get('nodes')
+  if (typeof id === 'string' && nodes instanceof Y.Map) {
+    const interiors = new Map<string, InteriorWidgetValues>()
+    for (const nodeId of orderedKeys(source.get(NODE_ORDER), nodes)) {
+      const node = nodes.get(nodeId)
+      if (node instanceof Y.Map)
+        interiors.set(nodeId, readInteriorWidgets(node))
+    }
+    into.set(id, interiors)
+  }
+  const nested = source.get('definitions')
+  if (nested instanceof Y.Map) {
+    const subgraphs = nested.get('subgraphs')
+    if (subgraphs instanceof Y.Map) {
+      subgraphs.forEach((value) => {
+        if (value instanceof Y.Map) collectInteriorWidgets(value, into)
+      })
+    }
+  }
+}
+
+/** Every definition's interior widget values, in mint order. */
+export function readSubgraphInteriorWidgets(
+  doc: Y.Doc
+): Map<string, Map<string, InteriorWidgetValues>> {
+  const result = new Map<string, Map<string, InteriorWidgetValues>>()
+  const root = definitionsMap(doc)
+  if (!root) return result
+  root.forEach((value) => {
+    if (value instanceof Y.Map) collectInteriorWidgets(value, result)
+  })
+  return result
+}
+
 export function allSubgraphDefinitions(
   definitions: readonly ExportedSubgraph[]
 ): ExportedSubgraph[] {
