@@ -582,7 +582,7 @@ export class LiveGraphApplier {
           this.try(context, () => {
             const result = this.upsertNode(graph, doc, id, mode)
             if (result === 'created') created.push(toNodeId(id))
-            if (result === 'recreated') {
+            if (result === 'created' || result === 'recreated') {
               for (const link of docLinksIncident(doc, id)) {
                 this.connectLink(graph, doc, link)
               }
