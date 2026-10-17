@@ -57,6 +57,7 @@ type MetricKey =
   | 'frameDurationMs'
   | 'p95FrameDurationMs'
   | 'heapUsedBytes'
+  | 'heapDeltaBytes'
 
 interface MetricDef {
   key: MetricKey
@@ -86,6 +87,7 @@ const REPORTED_METRICS: MetricDef[] = [
   { key: 'scriptDurationMs', label: 'script duration', unit: 'ms' },
   { key: 'totalBlockingTimeMs', label: 'TBT', unit: 'ms' },
   { key: 'heapUsedBytes', label: 'heap used', unit: 'bytes' },
+  { key: 'heapDeltaBytes', label: 'heap delta', unit: 'bytes' },
   { key: 'domNodes', label: 'DOM nodes', unit: '', minAbsDelta: 5 },
   { key: 'eventListeners', label: 'event listeners', unit: '', minAbsDelta: 5 }
 ]
