@@ -18,11 +18,15 @@ import {
   findRerouteAtPoint,
   queryRenderedLinkSegmentsAtPoint
 } from './hitTesting'
-import { queryHiddenLinkBadgeAtPoint } from './linkBadgeRenderer'
+import {
+  queryHiddenLinkBadgeAtPoint,
+  queryHiddenLinkStackAtPoint
+} from './linkBadgeRenderer'
 
 export type PointerTarget =
   | { kind: 'node'; node: LGraphNode }
   | { kind: 'linkBadge'; link: LLink }
+  | { kind: 'linkBadgeStack'; stackKey: string }
   | { kind: 'subgraphIO'; ioNode: SubgraphInputNode | SubgraphOutputNode }
   | { kind: 'reroute'; reroute: Reroute; part: 'body' | 'input' | 'output' }
   | { kind: 'link'; segment: LinkSegment }
@@ -42,6 +46,9 @@ export function resolvePointerTarget(
     return { kind: 'node', node }
 
   const point: Point = [e.canvasX, e.canvasY]
+
+  const stack = queryHiddenLinkStackAtPoint(canvas, graph, ...point)
+  if (stack) return { kind: 'linkBadgeStack', stackKey: stack.stackKey }
 
   const badgeLink = queryHiddenLinkBadgeAtPoint(
     canvas,

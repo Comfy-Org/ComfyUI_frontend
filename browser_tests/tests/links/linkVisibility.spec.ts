@@ -1,3 +1,4 @@
+import { toNodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
 
 import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
@@ -132,6 +133,83 @@ test.describe('Hidden link badges', { tag: ['@canvas', '@screenshot'] }, () => {
       .toEqual({ hidden: true, label: 'Renamed badge' })
   })
 })
+
+test.describe(
+  'Stacked hidden link badges',
+  { tag: ['@canvas', '@screenshot'] },
+  () => {
+    const checkpointLoaderId = toNodeId(4)
+    const clipSlot = 1
+    const firstClipLinkId = '3'
+
+    test.beforeEach(async ({ comfyPage, linkVisibility }) => {
+      await comfyPage.workflow.loadWorkflow('default')
+      await linkVisibility.hideLinksFromOutput(checkpointLoaderId, clipSlot)
+    })
+
+    test('collapses links from one output and reveals them all on hover', async ({
+      comfyPage,
+      linkVisibility
+    }) => {
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'link-stack-collapsed.png'
+      )
+
+      await linkVisibility.hoverOutputBadgeRow(checkpointLoaderId, clipSlot, 0)
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'link-stack-hover-reveals-all.png'
+      )
+    })
+
+    test('expands on click and hovering one label reveals only that link', async ({
+      comfyPage,
+      linkVisibility
+    }) => {
+      await linkVisibility.clickOutputBadgeRow(checkpointLoaderId, clipSlot, 0)
+      await linkVisibility.hoverOutputBadgeRow(checkpointLoaderId, clipSlot, 1)
+
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'link-stack-expanded-hover-one.png'
+      )
+    })
+
+    test('renaming an expanded label moves it out of the stack', async ({
+      comfyPage,
+      linkVisibility
+    }) => {
+      await linkVisibility.clickOutputBadgeRow(checkpointLoaderId, clipSlot, 0)
+
+      await test.step('Rename the first expanded label', async () => {
+        await linkVisibility.openRenamePromptAtOutputBadgeRow(
+          checkpointLoaderId,
+          clipSlot,
+          1
+        )
+        await expect(linkVisibility.promptInput).toHaveValue('')
+        await linkVisibility.promptInput.fill('Positive clip')
+        await linkVisibility.promptInput.press('Enter')
+        await expect(linkVisibility.promptInput).toBeHidden()
+        await expect
+          .poll(
+            async () =>
+              (await comfyPage.workflow.getExportedWorkflow()).extra
+                ?.linkPresentation?.[firstClipLinkId]
+          )
+          .toEqual({ hidden: true, label: 'Positive clip' })
+      })
+
+      await test.step('The renamed label sits below the remaining link', async () => {
+        await linkVisibility.parkPointer()
+        await linkVisibility.openRenamePromptAtOutputBadgeRow(
+          checkpointLoaderId,
+          clipSlot,
+          1
+        )
+        await expect(linkVisibility.promptInput).toHaveValue('Positive clip')
+      })
+    })
+  }
+)
 
 test.describe(
   'Hidden link Vue slot reveal',

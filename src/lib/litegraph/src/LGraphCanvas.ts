@@ -93,17 +93,21 @@ import { findRerouteAtPoint } from './canvas/hitTesting'
 import { getCanvasContextMenuTarget } from './canvas/getCanvasContextMenuTarget'
 import {
   clearLinkBadgeHitAreas,
+  collapseLinkBadgeStacks,
   drawHiddenLinkBadges,
-  queryLinkBadgeAtPoint
+  queryLinkBadgeHitAtPoint,
+  toggleLinkBadgeStack
 } from './canvas/linkBadges'
 import { layoutGraphLinkBadges } from './canvas/linkBadgeRenderer'
 import {
   getLinkMenuOptions,
+  getLinkStackMenuOptions,
   getVisibleRerouteLink,
   hideLink,
   hideLinks,
   promptRenameLinkBadge,
-  showLink
+  showLink,
+  showLinks
 } from './canvas/linkVisibility'
 import {
   clearLinkSelection,
@@ -504,6 +508,8 @@ function marqueeSelectsLinks(
     !canvas.selectOnly && !canvas.selectedItems.size && !e.shiftKey && !e.altKey
   )
 }
+
+function toggleStackOnceOnDoubleClick(): void {}
 
 /**
  * This class is in charge of rendering one graph inside a canvas. And provides all the interaction required.
@@ -2168,6 +2174,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const { graph } = this
     if (graph) clearRootLinkReveals(graphScopeOf(graph).rootGraphId)
     clearLinkBadgeHitAreas(this)
+    collapseLinkBadgeStacks(this)
     this.dirty_bgcanvas = true
     if (newGraph === graph) return
 
@@ -2775,6 +2782,18 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         const { link } = target
         pointer.onDoubleClick = () =>
           promptRenameLinkBadge(this, graphScopeOf(graph), link.id, e)
+        pointer.onDragStart = () => (this.dragging_canvas = true)
+        pointer.finally = () => (this.dragging_canvas = false)
+        return
+      }
+
+      case 'linkBadgeStack': {
+        const { stackKey } = target
+        pointer.onClick = () => {
+          toggleLinkBadgeStack(this, stackKey)
+          this.dirty_bgcanvas = true
+        }
+        pointer.onDoubleClick = toggleStackOnceOnDoubleClick
         pointer.onDragStart = () => (this.dragging_canvas = true)
         pointer.finally = () => (this.dragging_canvas = false)
         return
@@ -3499,13 +3518,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.graph_mouse[0] = x
     this.graph_mouse[1] = y
 
-    const hoveredBadge = queryLinkBadgeAtPoint(this, x, y)
-    const nodeAtPoint =
-      hoveredBadge === undefined
-        ? null
-        : graph.getNodeOnPos(x, y, this.visible_nodes)
-    const revealed =
-      hoveredBadge !== undefined && !nodeAtPoint ? [hoveredBadge] : []
+    const hoveredBadge = queryLinkBadgeHitAtPoint(this, x, y)
+    const nodeAtPoint = hoveredBadge
+      ? graph.getNodeOnPos(x, y, this.visible_nodes)
+      : null
+    const revealed = hoveredBadge && !nodeAtPoint ? hoveredBadge.linkIds : []
     if (setRevealedLinks(graphScopeOf(graph).rootGraphId, revealed, this)) {
       this.dirty_bgcanvas = true
     }
@@ -4058,8 +4075,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     /** The mouseup event occurred near the mousedown event. */
     /** Normal-looking click event - mouseUp occurred near mouseDown, without dragging. */
+    const { eDown } = pointer
+    const pressedBadge =
+      eDown && queryLinkBadgeHitAtPoint(this, eDown.canvasX, eDown.canvasY)
     const isClick = pointer.up(e)
     if (isClick) {
+      if (e.button === 0 && !pressedBadge && collapseLinkBadgeStacks(this)) {
+        this.dirty_bgcanvas = true
+      }
       pointer.isDown = false
       pointer.isDouble = false
       // Required until all link behaviour is added to Pointer API
@@ -4244,6 +4267,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         this.node_panel?.close()
         this.options_panel?.close()
         if (this.node_panel || this.options_panel) block_default = true
+        if (collapseLinkBadgeStacks(this)) {
+          this.dirty_bgcanvas = true
+          block_default = true
+        }
       }
 
       // TODO
@@ -6211,9 +6238,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       link.disconnectOnDrop = distSquared < radius ** 2
     })
 
-    for (const layout of hiddenLinkLayouts.values()) {
-      drawHiddenLinkBadges(ctx, layout, margin_area)
-    }
+    drawHiddenLinkBadges(ctx, this, margin_area)
 
     ctx.globalAlpha = 1
   }
@@ -8671,11 +8696,21 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       menu_info = this.getCanvasMenuOptions()
       if (!this.graph) throw new NullGraphError()
 
-      const { reroute, linkSegment, link, group } = getCanvasContextMenuTarget(
-        this,
-        event.canvasX,
-        event.canvasY
-      )
+      const { reroute, linkSegment, link, stackedLinks, group } =
+        getCanvasContextMenuTarget(this, event.canvasX, event.canvasY)
+      if (stackedLinks) {
+        const graphScope = graphScopeOf(this.graph)
+        new LiteGraph.ContextMenu<string>(getLinkStackMenuOptions(), {
+          event,
+          callback: () =>
+            showLinks(
+              this,
+              graphScope,
+              stackedLinks.map(({ id }) => id)
+            )
+        })
+        return
+      }
       if (reroute) {
         menu_info.unshift(
           {
