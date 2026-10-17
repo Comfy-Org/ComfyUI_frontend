@@ -1,5 +1,13 @@
 import { readFileSync } from 'node:fs'
-import { applyOps, mint, project } from '@comfyorg/comfy-multi-player'
+import {
+  applyOps,
+  mint,
+  nodesMap,
+  NODE_INCARNATION_KEY,
+  OPAQUE_WIDGETS_KEY,
+  project,
+  WIDGET_FORM_KEY
+} from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -16,7 +24,6 @@ import {
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
-import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import {
   createTestSubgraph,
   createTestSubgraphNode
@@ -35,7 +42,8 @@ import { attachDocOpMinter, wireNodeSnapshot } from './docOpMinter'
 import type { DocOpMinter, DocOpMinterDeps } from './docOpMinter'
 import type { GraphOperation } from './graphOperations'
 import { readDocPromotedWidgets } from './agentSubgraphDefinitions'
-import { readDocSlotNames } from './liveGraphApplier'
+import { followedDoc } from './__fixtures__/followedDoc'
+import { LiveGraphApplier, readDocSlotNames } from './liveGraphApplier'
 import { mintWireOps } from './opEnvelope'
 
 vi.mock(import('@/platform/telemetry/reportError'))
@@ -1543,29 +1551,90 @@ describe('attachDocOpMinter', () => {
     expect(wireNodeSnapshot(source)?.widgets_values).toEqual({})
   })
 
-  it('omits doc-internal incarnation storage from an imported missing-node snapshot', () => {
-    const node = new LGraphNode('Missing ImageScaleToTotalPixels')
-    const imported: ISerialisedNode = {
-      id: 41,
-      type: 'ImageScaleToTotalPixels',
-      pos: [10, 20],
-      size: [240, 120],
-      flags: {},
-      order: 0,
-      mode: 0
-    }
-    node.last_serialization = Object.assign(imported, {
-      __incarnation: '0',
-      extension_payload: { owner: 'custom-node' }
-    })
+  it.for(['ImageScaleToTotalPixels', 'TestSource'])(
+    'keeps document bookkeeping out of live and minted %s nodes',
+    async (type) => {
+      const properties = { [NODE_INCARNATION_KEY]: 'user-owned', label: 'kept' }
+      const { doc, collector } = followedDoc(
+        {
+          nodes: [
+            {
+              id: 41,
+              type,
+              pos: [10, 20],
+              size: [240, 120],
+              flags: {},
+              order: 0,
+              mode: 0,
+              properties,
+              extension_payload: { owner: 'custom-node' }
+            }
+          ],
+          links: []
+        },
+        CATALOG
+      )
+      const stored = nodesMap(doc).get('41')
+      assert.exists(stored)
+      stored.set(NODE_INCARNATION_KEY, '0')
+      stored.set(OPAQUE_WIDGETS_KEY, [37])
+      stored.set(WIDGET_FORM_KEY, { kind: 'positional' })
+      const applier = new LiveGraphApplier({ getGraph: () => graph })
+      expect(
+        applier.applyChanges(doc, collector.take(), {
+          actor: 'agent:test',
+          opIds: []
+        }).failureCount
+      ).toBe(0)
+      const node = graph.getNodeById(toNodeId(41))
+      assert.exists(node)
+      const serialized = node.serialize()
+      expect(serialized).not.toHaveProperty(NODE_INCARNATION_KEY)
+      expect(serialized).not.toHaveProperty(OPAQUE_WIDGETS_KEY)
+      expect(serialized).not.toHaveProperty(WIDGET_FORM_KEY)
+      expect(node).not.toHaveProperty(NODE_INCARNATION_KEY)
+      expect(node).not.toHaveProperty(WIDGET_FORM_KEY)
+      expect(node.properties).toEqual(properties)
 
-    expect(wireNodeSnapshot(node)).toEqual(
-      expect.objectContaining({
-        type: 'ImageScaleToTotalPixels',
+      emitGraphIntent({ type: 'add_node', graph, node })
+      await afterFlush()
+      expect(minted).toHaveLength(1)
+      const [operation] = minted
+      assert(operation.op === 'add_node')
+      expect(operation.node).toMatchObject({
+        type,
+        properties,
         extension_payload: { owner: 'custom-node' }
       })
-    )
-    expect(wireNodeSnapshot(node)).not.toHaveProperty('__incarnation')
+      expect(operation.node).not.toHaveProperty(NODE_INCARNATION_KEY)
+      expect(operation.node).not.toHaveProperty(OPAQUE_WIDGETS_KEY)
+      expect(operation.node).not.toHaveProperty(WIDGET_FORM_KEY)
+    }
+  )
+
+  it('omits bookkeeping supplied by a custom node serializer when minting', async () => {
+    const node = new TestSource()
+    const serialize = node.serialize.bind(node)
+    node.serialize = () => ({
+      ...serialize(),
+      [NODE_INCARNATION_KEY]: '0',
+      [OPAQUE_WIDGETS_KEY]: [37],
+      [WIDGET_FORM_KEY]: { kind: 'positional' },
+      extension_payload: { owner: 'custom-node' }
+    })
+    graph.add(node)
+    await afterFlush()
+
+    expect(minted).toHaveLength(1)
+    const [operation] = minted
+    assert(operation.op === 'add_node')
+    expect(operation.node).toMatchObject({
+      type: 'TestSource',
+      extension_payload: { owner: 'custom-node' }
+    })
+    expect(operation.node).not.toHaveProperty(NODE_INCARNATION_KEY)
+    expect(operation.node).not.toHaveProperty(OPAQUE_WIDGETS_KEY)
+    expect(operation.node).not.toHaveProperty(WIDGET_FORM_KEY)
   })
 
   it('does not mint an active-graph widget write without a live widget', async () => {
