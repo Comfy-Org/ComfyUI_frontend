@@ -28,7 +28,7 @@
   </ToastDock>
   <PartnerNodesEducationCard v-if="!isCloud" />
   <DesktopCloudNotificationController />
-  <UnloadWindowConfirmDialog v-if="!isDesktop" />
+  <UnloadWindowConfirmDialog v-if="!isLegacyDesktopBuild" />
   <MenuHamburger />
   <TourOverlay v-if="graphReady" />
   <FirstRunTour />
@@ -80,7 +80,7 @@ import AssetExportProgressDialog from '@/platform/assets/components/AssetExportP
 import ModelImportProgressDialog from '@/platform/assets/components/ModelImportProgressDialog.vue'
 import { registerAssetBrowserModalComponent } from '@/platform/assets/composables/useAssetBrowserDialog'
 import DesktopCloudNotificationController from '@/platform/cloud/notification/components/DesktopCloudNotificationController.vue'
-import { isCloud, isDesktop } from '@/platform/distribution/types'
+import { isCloud, isLegacyDesktopBuild } from '@/platform/distribution/types'
 import SettingDialog from '@/platform/settings/components/SettingDialog.vue'
 import { registerSettingDialogComponent } from '@/platform/settings/composables/useSettingsDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -165,7 +165,7 @@ const templateInputGraphSync = startTemplateInputDownloadGraphSync({
   }
 })
 const stopTemplateInputDownloadTracking =
-  (isDesktop &&
+  (isLegacyDesktopBuild &&
     window.__comfyDesktop2?.onTemplateInputDownloadProgress?.((progress) => {
       templateInputDownloadStore.updateProgress(progress)
       templateInputGraphSync.handleProgress(progress)
@@ -200,7 +200,7 @@ watch(
     } else {
       document.documentElement.classList.add(DARK_THEME_CLASS)
     }
-    if (isDesktop) {
+    if (isLegacyDesktopBuild) {
       electronAPI().changeTheme({
         color: 'rgba(0, 0, 0, 0)',
         symbolColor: newTheme.colors.comfy_base['input-text']
@@ -218,7 +218,7 @@ watch(
  * three `shallowRef` arrays into a new array on every change, and
  * `TaskItemImpl` instances are immutable (replaced, never mutated).
  */
-if (isDesktop) {
+if (isLegacyDesktopBuild) {
   watch(
     () => queueStore.tasks,
     (newTasks, oldTasks) => {

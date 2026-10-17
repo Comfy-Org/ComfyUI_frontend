@@ -57,7 +57,7 @@ This project uses **pnpm**. Always prefer scripts defined in `package.json` (e.g
 
 - `pnpm dev`: Start Vite dev server.
 - `pnpm dev:cloud`: Dev server connected to cloud backend (testcloud.comfy.org)
-- `pnpm dev:electron`: Dev server with Electron API mocks
+- `pnpm dev:electron`: Dev server with legacy Desktop 1 Electron API mocks
 - `pnpm build`: Type-check then production build to `dist/`
 - `pnpm preview`: Preview the production build locally
 - `pnpm test:unit`: Run Vitest unit tests

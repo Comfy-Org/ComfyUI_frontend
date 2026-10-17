@@ -13,7 +13,7 @@ import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPo
 const { mockDistributionTypes } = vi.hoisted(() => ({
   mockDistributionTypes: {
     isCloud: true,
-    isDesktop: true
+    isLegacyDesktopBuild: true
   }
 }))
 

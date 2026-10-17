@@ -1,6 +1,6 @@
 import { downloadUrlToHfRepoUrl, isCivitaiModelUrl } from '@/utils/formatUtil'
 import { reportError } from '@/platform/telemetry/reportError'
-import { isDesktop } from '@/platform/distribution/types'
+import { isLegacyDesktopBuild } from '@/platform/distribution/types'
 import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
@@ -137,7 +137,7 @@ function modelDownloadRoute():
   if (bridge?.downloadModel && !isRemote) {
     return { host: 'desktop2', download: bridge.downloadModel.bind(bridge) }
   }
-  return { host: isDesktop ? 'electron' : 'browser' }
+  return { host: isLegacyDesktopBuild ? 'electron' : 'browser' }
 }
 
 /**

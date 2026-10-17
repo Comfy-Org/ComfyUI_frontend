@@ -112,7 +112,10 @@ const fixtures = vi.hoisted(() => {
   }
 })
 
-const runtime = vi.hoisted(() => ({ isCloud: false, isDesktop: true }))
+const runtime = vi.hoisted(() => ({
+  isCloud: false,
+  isLegacyDesktopBuild: true
+}))
 const mocks = vi.hoisted(() => ({
   filterTemplatesByCategory: vi.fn(() => [fixtures.template]),
   getTemplateDescription: vi.fn(
@@ -173,8 +176,8 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return runtime.isCloud
   },
-  get isDesktop() {
-    return runtime.isDesktop
+  get isLegacyDesktopBuild() {
+    return runtime.isLegacyDesktopBuild
   }
 }))
 
@@ -364,7 +367,7 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
     ).mockImplementation(mocks.filterTemplatesByCategory)
     vi.mocked(workflowTemplatesStore.loadWorkflowTemplates).mockResolvedValue()
     runtime.isCloud = false
-    runtime.isDesktop = true
+    runtime.isLegacyDesktopBuild = true
     mocks.prepareWorkflowTemplate.mockResolvedValue(fixtures.prepared)
     mocks.openPreparedWorkflowTemplate.mockResolvedValue('loaded')
     mocks.resolveAvailability.mockResolvedValue([
@@ -659,7 +662,7 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
   })
 
   it('opens directly outside Desktop without resolving model inventory', async () => {
-    runtime.isDesktop = false
+    runtime.isLegacyDesktopBuild = false
     renderDialog()
     await clickTemplateCard()
 

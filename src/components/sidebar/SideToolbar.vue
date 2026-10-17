@@ -92,7 +92,11 @@ import ComfyMenuButton from '@/components/sidebar/ComfyMenuButton.vue'
 import SidebarBottomPanelToggleButton from '@/components/sidebar/SidebarBottomPanelToggleButton.vue'
 import SidebarSettingsButton from '@/components/sidebar/SidebarSettingsButton.vue'
 import SidebarShortcutsToggleButton from '@/components/sidebar/SidebarShortcutsToggleButton.vue'
-import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
+import {
+  isCloud,
+  isLegacyDesktopBuild,
+  isNightly
+} from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -119,7 +123,7 @@ const {
 }>()
 
 const NightlySurveyController =
-  isNightly && !isCloud && !isDesktop
+  isNightly && !isCloud && !isLegacyDesktopBuild
     ? defineAsyncComponent(
         () => import('@/platform/surveys/NightlySurveyController.vue')
       )

@@ -24,7 +24,7 @@ import { flushErrorReports } from '@/platform/telemetry/reportError'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import '@/lib/litegraph/public/css/litegraph.css'
 import router from '@/router'
-import { isDesktop, isNightly } from '@/platform/distribution/types'
+import { isLegacyDesktopBuild, isNightly } from '@/platform/distribution/types'
 import { stripPaymentReturnParams } from '@/platform/cloud/subscription/utils/paymentReturnUrl'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { installWorkspaceApiAuth } from '@/platform/workspace/api/workspaceApiAuth'
@@ -117,7 +117,7 @@ flushErrorReports()
 // not user-facing in stable releases.
 setAssertReporter(
   (message, context) => {
-    if (isDesktop) {
+    if (isLegacyDesktopBuild) {
       captureMessage(message, { level: 'warning', extra: context })
     }
     if (isCloud) {

@@ -3,7 +3,7 @@ import type { DownloadState } from '@comfyorg/comfyui-electron-types'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-import { isDesktop } from '@/platform/distribution/types'
+import { isLegacyDesktopBuild } from '@/platform/distribution/types'
 import { reportError } from '@/platform/telemetry/reportError'
 import { electronAPI } from '@/utils/envUtil'
 
@@ -45,7 +45,9 @@ function normalizeElectronDownloadState({
 /** Electron downloads store handler */
 export const useElectronDownloadStore = defineStore('downloads', () => {
   const downloads = ref<ElectronDownload[]>([])
-  const DownloadManager = isDesktop ? electronAPI().DownloadManager : undefined
+  const DownloadManager = isLegacyDesktopBuild
+    ? electronAPI().DownloadManager
+    : undefined
   const progressListeners = new Set<(download: ElectronDownload) => void>()
   let isProgressListenerInstalled = false
 
@@ -99,7 +101,7 @@ export const useElectronDownloadStore = defineStore('downloads', () => {
   }
 
   async function initialize() {
-    if (!isDesktop || !DownloadManager) return
+    if (!isLegacyDesktopBuild || !DownloadManager) return
 
     // Listen immediately so no live event is missed, but hold them back until
     // the snapshot has been applied: the snapshot describes an older moment,

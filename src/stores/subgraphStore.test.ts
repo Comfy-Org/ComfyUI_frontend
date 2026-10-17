@@ -24,7 +24,7 @@ import { BLUEPRINT_TYPE_PREFIX } from '@/utils/blueprintUtils'
 
 const mockDistributionTypes = vi.hoisted(() => ({
   isCloud: false,
-  isDesktop: false
+  isLegacyDesktopBuild: false
 }))
 vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 
@@ -82,7 +82,7 @@ describe('useSubgraphStore', () => {
     vi.mocked(useDialogService().prompt).mockResolvedValue('testname')
     vi.mocked(useDialogService().confirm).mockResolvedValue(true)
     mockDistributionTypes.isCloud = false
-    mockDistributionTypes.isDesktop = false
+    mockDistributionTypes.isLegacyDesktopBuild = false
     vi.mocked(useCanvasStore().getCanvas).mockImplementation(
       () => comfyApp.canvas
     )
@@ -672,7 +672,7 @@ describe('useSubgraphStore', () => {
     })
 
     it('should include blueprints on desktop when includeOnDistributions has desktop', async () => {
-      mockDistributionTypes.isDesktop = true
+      mockDistributionTypes.isLegacyDesktopBuild = true
       await mockFetch(
         {},
         {

@@ -20,7 +20,7 @@ vi.mock(
     ({
       DISTRIBUTION: 'desktop',
       isCloud: false,
-      isDesktop: true,
+      isLegacyDesktopBuild: true,
       isNightly: false
     }) as const
 )

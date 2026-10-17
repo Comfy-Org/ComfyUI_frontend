@@ -25,6 +25,7 @@ import {
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { isComfyDesktop2 } from '@/platform/distribution/types'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { whenStoresReady } from '@/platform/telemetry/storeReadiness'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
@@ -166,7 +167,7 @@ interface DesktopEntryAttribution {
 
 function stampPlatformAxes(event: CaptureResult | null): CaptureResult | null {
   if (!event) return null
-  event.properties.client = window.__comfyDesktop2 ? 'desktop' : 'web'
+  event.properties.client = isComfyDesktop2() ? 'desktop' : 'web'
   event.properties.deployment = 'cloud'
   return event
 }

@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
-import { isCloud, isDesktop } from '@/platform/distribution/types'
+import { isCloud, isLegacyDesktopBuild } from '@/platform/distribution/types'
 import {
   getSettingInfo,
   useSettingStore
@@ -276,7 +276,7 @@ export function useSettingUI(
     ...visibleWorkspacePanels.value,
     keybindingPanel,
     extensionPanel,
-    ...(isDesktop ? [serverConfigPanel] : []),
+    ...(isLegacyDesktopBuild ? [serverConfigPanel] : []),
     ...(shouldShowSecretsPanel.value ? [secretsPanel] : []),
     ...(shouldShowSkillPacksPanel.value ? [skillPacksPanel] : [])
   ])
@@ -341,7 +341,9 @@ export function useSettingUI(
         translateCategory(keybindingPanel.node),
         translateCategory(extensionPanel.node),
         translateCategory(aboutPanel.node),
-        ...(isDesktop ? [translateCategory(serverConfigPanel.node)] : [])
+        ...(isLegacyDesktopBuild
+          ? [translateCategory(serverConfigPanel.node)]
+          : [])
       ]
     }),
     ...(customNodeSettingCategories.value.length > 0

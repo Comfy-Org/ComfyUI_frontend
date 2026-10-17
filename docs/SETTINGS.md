@@ -131,7 +131,7 @@ Example versioned defaults from codebase:
 {
   id: 'Comfy.VueNodes.Enabled',
   defaultValue: false,
-  defaultsByInstallVersion: { '1.41.0': isCloud || isDesktop }
+  defaultsByInstallVersion: { '1.41.0': isCloud || isLegacyDesktopBuild }
 }
 ```
 

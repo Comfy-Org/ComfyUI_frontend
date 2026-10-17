@@ -31,7 +31,7 @@ vi.mock(import('@/composables/bottomPanelTabs/useTerminalTabs'), () => ({
 
 vi.mock(import('@/platform/telemetry/reportError'))
 
-const distribution = vi.hoisted(() => ({ isDesktop: false }))
+const distribution = vi.hoisted(() => ({ isLegacyDesktopBuild: false }))
 vi.mock(import('@/platform/distribution/types'), () => distribution)
 
 const shortcutTabIds = ['shortcuts-essentials', 'shortcuts-view-controls']
@@ -46,14 +46,18 @@ const registeredTabIds = () => {
 
 describe('registerCoreBottomPanelTabs', () => {
   it.for([
-    { build: 'localhost', isDesktop: false, terminal: ['logs'] },
-    { build: 'localhost', isDesktop: true, terminal: ['logs', 'command'] },
-    { build: 'cloud', isDesktop: false, terminal: [] }
+    { build: 'localhost', isLegacyDesktopBuild: false, terminal: ['logs'] },
+    {
+      build: 'localhost',
+      isLegacyDesktopBuild: true,
+      terminal: ['logs', 'command']
+    },
+    { build: 'cloud', isLegacyDesktopBuild: false, terminal: [] }
   ])(
-    'registers shortcuts and terminal tabs (build: $build, isDesktop: $isDesktop)',
-    async ({ build, isDesktop, terminal }) => {
+    'registers shortcuts and terminal tabs (build: $build, isLegacyDesktopBuild: $isLegacyDesktopBuild)',
+    async ({ build, isLegacyDesktopBuild, terminal }) => {
       vi.stubGlobal('__DISTRIBUTION__', build)
-      distribution.isDesktop = isDesktop
+      distribution.isLegacyDesktopBuild = isLegacyDesktopBuild
 
       await registerCoreBottomPanelTabs()
 

@@ -19,7 +19,7 @@ import type {
   ComfyNodeDef as ComfyNodeDefV1,
   InputSpec
 } from '@/schemas/nodeDefSchema'
-import { isCloud, isDesktop } from '@/platform/distribution/types'
+import { isCloud, isLegacyDesktopBuild } from '@/platform/distribution/types'
 import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
 import { api } from '@/scripts/api'
 import type { GlobalSubgraphData } from '@/scripts/api'
@@ -229,7 +229,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       const subgraphs = await api.getGlobalSubgraphs()
       const currentDistribution: TemplateIncludeOnDistributionEnum = isCloud
         ? TemplateIncludeOnDistributionEnum.Cloud
-        : isDesktop
+        : isLegacyDesktopBuild
           ? TemplateIncludeOnDistributionEnum.Desktop
           : TemplateIncludeOnDistributionEnum.Local
       const filteredEntries = Object.entries(subgraphs).filter(([, v]) => {

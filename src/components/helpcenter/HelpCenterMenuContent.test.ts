@@ -26,7 +26,7 @@ beforeEach(() => {
 
 const distribution = vi.hoisted(() => ({
   isCloud: false,
-  isDesktop: false,
+  isLegacyDesktopBuild: false,
   isNightly: false
 }))
 
@@ -35,8 +35,8 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return distribution.isCloud
   },
-  get isDesktop() {
-    return distribution.isDesktop
+  get isLegacyDesktopBuild() {
+    return distribution.isLegacyDesktopBuild
   },
   get isNightly() {
     return distribution.isNightly
@@ -89,7 +89,7 @@ describe('HelpCenterMenuContent feedback item', () => {
 
   beforeEach(() => {
     distribution.isCloud = false
-    distribution.isDesktop = false
+    distribution.isLegacyDesktopBuild = false
     distribution.isNightly = false
     openSpy = vi.spyOn(window, 'open').mockReturnValue(null)
   })
@@ -139,7 +139,7 @@ describe('HelpCenterMenuContent system status item', () => {
 
   beforeEach(() => {
     distribution.isCloud = false
-    distribution.isDesktop = false
+    distribution.isLegacyDesktopBuild = false
     distribution.isNightly = false
     openSpy = vi.spyOn(window, 'open').mockReturnValue(null)
   })
@@ -166,7 +166,7 @@ describe('HelpCenterMenuContent system status item', () => {
 
 describe('HelpCenterMenuContent onboarding replay', () => {
   it('is hidden outside developer mode', async () => {
-    distribution.isDesktop = true
+    distribution.isLegacyDesktopBuild = true
     useSettingStore().settingValues['Comfy.DevMode'] = false
     const { user } = renderComponent()
 
@@ -196,7 +196,7 @@ describe('HelpCenterMenuContent onboarding replay', () => {
 describe('HelpCenterMenuContent ComfyUI update', () => {
   beforeEach(() => {
     distribution.isCloud = false
-    distribution.isDesktop = false
+    distribution.isLegacyDesktopBuild = false
     managerState.isNewManagerUI.value = true
   })
 

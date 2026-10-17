@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { computed } from 'vue'
 
 import { useExternalLink } from '@/composables/useExternalLink'
-import { isCloud, isDesktop } from '@/platform/distribution/types'
+import { isCloud, isLegacyDesktopBuild } from '@/platform/distribution/types'
 import type { AboutPageBadge } from '@/types/comfy'
 import { electronAPI } from '@/utils/envUtil'
 import { formatCommitHash } from '@/utils/formatUtil'
@@ -36,7 +36,7 @@ export const useAboutPanelStore = defineStore('aboutPanel', () => {
     // so the python server's API doesn't have the version info.
     {
       label: `ComfyUI ${
-        isDesktop
+        isLegacyDesktopBuild
           ? 'v' + electronAPI().getComfyUIVersion()
           : formatCommitHash(coreVersion.value)
       }`,

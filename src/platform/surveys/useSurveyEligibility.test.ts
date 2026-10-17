@@ -8,7 +8,7 @@ const FEATURE_USAGE_KEY = 'Comfy.FeatureUsage'
 const mockDistribution = vi.hoisted(() => ({
   isNightly: true,
   isCloud: false,
-  isDesktop: false
+  isLegacyDesktopBuild: false
 }))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -18,8 +18,8 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockDistribution.isCloud
   },
-  get isDesktop() {
-    return mockDistribution.isDesktop
+  get isLegacyDesktopBuild() {
+    return mockDistribution.isLegacyDesktopBuild
   }
 }))
 
@@ -32,7 +32,7 @@ describe('useSurveyEligibility', () => {
   beforeEach(() => {
     mockDistribution.isNightly = true
     mockDistribution.isCloud = false
-    mockDistribution.isDesktop = false
+    mockDistribution.isLegacyDesktopBuild = false
   })
 
   function setFeatureUsage(featureId: string, useCount: number) {
@@ -65,7 +65,7 @@ describe('useSurveyEligibility', () => {
     })
 
     it('is not eligible on desktop', () => {
-      mockDistribution.isDesktop = true
+      mockDistribution.isLegacyDesktopBuild = true
       setFeatureUsage('test-feature', 5)
 
       const { isEligible } = useSurveyEligibility(defaultConfig)

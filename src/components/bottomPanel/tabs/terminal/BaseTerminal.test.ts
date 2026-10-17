@@ -59,11 +59,11 @@ vi.mock<unknown>(import('@/utils/envUtil'), () => ({
   electronAPI: vi.fn(() => null)
 }))
 
-const mockData = vi.hoisted(() => ({ isDesktop: false }))
+const mockData = vi.hoisted(() => ({ isLegacyDesktopBuild: false }))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
-  get isDesktop() {
-    return mockData.isDesktop
+  get isLegacyDesktopBuild() {
+    return mockData.isLegacyDesktopBuild
   }
 }))
 

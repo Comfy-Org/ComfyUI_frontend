@@ -14,7 +14,9 @@ const downloadManager = vi.hoisted(() => ({
   startDownload: vi.fn()
 }))
 
-vi.mock(import('@/platform/distribution/types'), () => ({ isDesktop: true }))
+vi.mock(import('@/platform/distribution/types'), () => ({
+  isLegacyDesktopBuild: true
+}))
 vi.mock<unknown>(import('@/utils/envUtil'), () => ({
   electronAPI: () => ({ DownloadManager: downloadManager })
 }))

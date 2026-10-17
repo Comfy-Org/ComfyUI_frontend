@@ -16,7 +16,7 @@ vi.mock(
     ({
       DISTRIBUTION: 'cloud',
       isCloud: true,
-      isDesktop: false
+      isLegacyDesktopBuild: false
     }) as const
 )
 

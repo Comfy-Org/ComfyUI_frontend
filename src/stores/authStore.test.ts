@@ -45,7 +45,7 @@ import { replayIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 const { mockDistributionTypes } = vi.hoisted(() => ({
   mockDistributionTypes: {
     isCloud: true,
-    isDesktop: false,
+    isLegacyDesktopBuild: false,
     DISTRIBUTION: 'cloud'
   }
 }))
@@ -2436,7 +2436,7 @@ describe('useAuthStore in local/desktop distribution', () => {
 
   beforeEach(async () => {
     mockDistributionTypes.isCloud = false
-    mockDistributionTypes.isDesktop = false
+    mockDistributionTypes.isLegacyDesktopBuild = false
     mockDistributionTypes.DISTRIBUTION = 'localhost'
 
     vi.mocked(firebaseAuth.initializeAuth).mockReturnValue(mockAuth)
@@ -2458,7 +2458,7 @@ describe('useAuthStore in local/desktop distribution', () => {
 
   afterEach(() => {
     mockDistributionTypes.isCloud = true
-    mockDistributionTypes.isDesktop = false
+    mockDistributionTypes.isLegacyDesktopBuild = false
     mockDistributionTypes.DISTRIBUTION = 'cloud'
   })
 

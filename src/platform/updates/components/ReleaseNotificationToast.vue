@@ -57,7 +57,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useCommandStore } from '@/stores/commandStore'
-import { isDesktop } from '@/platform/distribution/types'
+import { isLegacyDesktopBuild } from '@/platform/distribution/types'
 import { formatVersionAnchor } from '@/utils/formatUtil'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
@@ -167,7 +167,7 @@ const handleLearnMore = () => {
 }
 
 const handleUpdate = async () => {
-  if (isDesktop) {
+  if (isLegacyDesktopBuild) {
     try {
       await useCommandStore().execute('Comfy-Desktop.CheckForUpdates')
       dismissToast()

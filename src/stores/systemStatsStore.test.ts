@@ -4,13 +4,13 @@ import type { SystemStats } from '@/platform/remote/comfyui/types'
 import { api } from '@/scripts/api'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 
-const mockData = vi.hoisted(() => ({ isDesktop: false }))
+const mockData = vi.hoisted(() => ({ isLegacyDesktopBuild: false }))
 
 vi.mock(import('@/scripts/api'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
-  get isDesktop() {
-    return mockData.isDesktop
+  get isLegacyDesktopBuild() {
+    return mockData.isLegacyDesktopBuild
   },
   isCloud: false
 }))
@@ -155,7 +155,7 @@ describe('useSystemStatsStore', () => {
 
     describe('desktop environment', () => {
       beforeEach(() => {
-        mockData.isDesktop = true
+        mockData.isLegacyDesktopBuild = true
       })
 
       it('should return "desktop-windows" for Windows desktop', () => {
@@ -233,7 +233,7 @@ describe('useSystemStatsStore', () => {
 
     describe('git environment (non-desktop)', () => {
       beforeEach(() => {
-        mockData.isDesktop = false
+        mockData.isLegacyDesktopBuild = false
       })
 
       it('should return "git-windows" for Windows git', () => {
@@ -311,7 +311,7 @@ describe('useSystemStatsStore', () => {
 
     describe('case insensitive OS detection', () => {
       beforeEach(() => {
-        mockData.isDesktop = false
+        mockData.isLegacyDesktopBuild = false
       })
 
       it('should handle uppercase OS names', () => {

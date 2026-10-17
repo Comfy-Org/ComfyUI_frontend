@@ -26,7 +26,7 @@ vi.mock(import('@/platform/telemetry'))
 
 const distribution = vi.hoisted(() => ({
   isCloud: false,
-  isDesktop: false,
+  isLegacyDesktopBuild: false,
   isNightly: false
 }))
 
@@ -41,8 +41,8 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return distribution.isCloud
   },
-  get isDesktop() {
-    return distribution.isDesktop
+  get isLegacyDesktopBuild() {
+    return distribution.isLegacyDesktopBuild
   },
   get isNightly() {
     return distribution.isNightly
@@ -166,7 +166,7 @@ beforeEach(() => {
   vi.mocked(useTelemetry).mockReturnValue(fromPartial(telemetry))
   consentChecking.value = false
   distribution.isCloud = false
-  distribution.isDesktop = false
+  distribution.isLegacyDesktopBuild = false
   distribution.isNightly = false
   useSettingStore().$patch({
     settingValues: { 'Comfy.UI.TabBarLayout': 'Default' }

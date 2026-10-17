@@ -11,7 +11,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return distribution.isCloud
   },
-  isDesktop: false
+  isLegacyDesktopBuild: false
 }))
 
 vi.mock<unknown>(

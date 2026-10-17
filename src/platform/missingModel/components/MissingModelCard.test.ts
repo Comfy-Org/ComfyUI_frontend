@@ -51,7 +51,7 @@ vi.mock(
       get isCloud() {
         return mockIsCloud.value
       },
-      isDesktop: false,
+      isLegacyDesktopBuild: false,
       isNightly: false
     }) as const
 )

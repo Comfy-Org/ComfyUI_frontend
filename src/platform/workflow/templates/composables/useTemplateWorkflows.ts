@@ -3,7 +3,7 @@ import { useI18n } from 'vue-i18n'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { createToastId } from '@/types/toastId'
-import { isCloud, isDesktop } from '@/platform/distribution/types'
+import { isCloud, isLegacyDesktopBuild } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
 import { useTelemetry } from '@/platform/telemetry'
@@ -169,7 +169,7 @@ export function useTemplateWorkflows() {
   }
 
   function startTemplateInputDownloads(id: string, sourceModule: string) {
-    if (!isDesktop || sourceModule !== 'default') return
+    if (!isLegacyDesktopBuild || sourceModule !== 'default') return
 
     void resolveTemplateInputAssets(id, () => window.__comfyDesktop2).then(
       (assets) => {

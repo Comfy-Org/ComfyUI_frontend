@@ -123,7 +123,7 @@ boundary keyed on `DISTRIBUTION`.
 
 Flag:
 
-- **`DISTRIBUTION` / `isCloud` / `isDesktop` checks scattered through follower core** —
+- **`DISTRIBUTION` / `isCloud` / `isLegacyDesktopBuild` / `isComfyDesktop2()` checks scattered through follower core** —
   distribution conditionals inside the CRDT apply seam, `DocFrameClient`, or rendering.
   They belong only in the agent connection/configuration boundary.
 - **Auth reduced to `isCloud`** — resolving credentials by distribution instead of

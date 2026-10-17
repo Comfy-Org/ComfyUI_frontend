@@ -3,7 +3,9 @@
     :class="
       cn(
         'workflow-tabs-container flex h-full flex-auto flex-row gap-1 overflow-hidden bg-comfy-menu-bg px-1',
-        isDesktop ? 'max-w-[env(titlebar-area-width,100vw)]' : 'max-w-full'
+        isLegacyDesktopBuild
+          ? 'max-w-[env(titlebar-area-width,100vw)]'
+          : 'max-w-full'
       )
     "
   >
@@ -102,7 +104,7 @@
       <TopbarSubscribeButton />
     </div>
     <div
-      v-if="isDesktop"
+      v-if="isLegacyDesktopBuild"
       class="window-actions-spacer app-drag min-w-[min(75px,env(titlebar-area-width,0)*9999)] flex-auto shrink-0"
     />
   </div>
@@ -126,7 +128,11 @@ import TabsList from '@/components/ui/tabs/TabsList.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useWorkflowStatusDismissal } from '@/composables/useWorkflowStatusDismissal'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
-import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
+import {
+  isCloud,
+  isLegacyDesktopBuild,
+  isNightly
+} from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { openFeedbackDialog } from '@/platform/support/feedbackDialog'
 import { useTelemetry } from '@/platform/telemetry'

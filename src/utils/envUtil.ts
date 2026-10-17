@@ -1,6 +1,6 @@
 import type { ElectronAPI } from '@comfyorg/comfyui-electron-types'
 
-import { isDesktop } from '@/platform/distribution/types'
+import { isLegacyDesktopBuild } from '@/platform/distribution/types'
 
 /**
  * Extend Window interface to include electronAPI
@@ -19,5 +19,7 @@ export function showNativeSystemMenu() {
 }
 
 export function isNativeWindow() {
-  return isDesktop && !!window.navigator.windowControlsOverlay?.visible
+  return (
+    isLegacyDesktopBuild && !!window.navigator.windowControlsOverlay?.visible
+  )
 }
