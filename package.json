@@ -13,6 +13,7 @@
     "architecture:update": "tsx tools/architecture/src/cli.ts --update",
     "adr:check": "tsx scripts/check-adrs.ts",
     "audit:inherited-classes": "tsx tools/design-system-audits/src/cli.ts",
+    "benchmark:packages": "tsx scripts/benchmark-package-references.ts",
     "build:packages": "node node_modules/typescript/bin/tsc -b tsconfig.packages.json",
     "build:dist": "vite build --config vite.config.mts",
     "build:cloud": "cross-env DISTRIBUTION=cloud vite build --config vite.config.mts",
