@@ -288,6 +288,11 @@ describe('fetchJobs', () => {
       const result = await fetchQueue(mockFetch)
 
       expect(result).toEqual({ Running: [], Pending: [] })
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        errorType: 'failure_fetching_jobs',
+        surface: 'platform',
+        context: { statuses: 'in_progress,pending' }
+      })
     })
 
     it('propagates errors when requested', async () => {
