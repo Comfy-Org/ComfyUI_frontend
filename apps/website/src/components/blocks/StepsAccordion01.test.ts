@@ -82,6 +82,22 @@ describe('StepsAccordion01', () => {
     ).toBe('/host')
   })
 
+  it('renders the actions slot outside every step body', () => {
+    render(StepsAccordion01, {
+      props: { title: 'How it works', steps },
+      slots: { ...slots, actions: '<a href="/join">Join</a>' }
+    })
+
+    const join = screen.getByRole('link', { name: 'Join' })
+    expect(join.getAttribute('href')).toBe('/join')
+    expect(
+      within(screen.getByRole('region', { name: '1. Plan it' })).queryByRole(
+        'link',
+        { name: 'Join' }
+      )
+    ).toBeNull()
+  })
+
   it('lets titleClass override the heading defaults via cn()', () => {
     const { unmount } = render(StepsAccordion01, {
       props: { title: 'How it works', steps }

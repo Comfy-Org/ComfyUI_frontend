@@ -4,31 +4,63 @@
   "description": "Open workflow documents and sessions: the ComfyWorkflow model and workflow store (open tabs, active workflow, modified state, subgraph paths), workflowService open, save, save-as, close, and insert flows, workflow menu actions, workflow ids and clipboard conversion, pending load warnings, restoring dynamic group inputs from API prompts, extracting workflows from jobs and assets, and the workflows and apps sidebar tab registrations. Draft persistence, sharing, templates, deployment, the document format, and graph entity implementation are separate records.",
   "modules": [
     {
-      "path": "src/platform/workflow/management/stores/workflowStoreTypes.ts",
+      "path": "src/components/common/WorkflowActionsDropdown.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/WorkflowActionsDropdown.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/dialog/UnloadWindowConfirmDialog.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/sidebar/tabs/AppsSidebarTab.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/sidebar/tabs/AppsSidebarTab.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/sidebar/tabs/BaseWorkflowsSidebarTab.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/sidebar/tabs/BaseWorkflowsSidebarTab.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/sidebar/tabs/WorkflowsSidebarTab.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/sidebar/tabs/workflows/WorkflowTreeLeaf.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/topbar/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/composables/useNewMenuItemIndicator.test.ts",
       "role": "application"
     },
     {
-      "path": "src/platform/workflow/core/services/__mocks__/workflowService.ts",
+      "path": "src/composables/useNewMenuItemIndicator.ts",
       "role": "application"
     },
     {
-      "path": "src/platform/workflow/core/services/workflowActionsService.test.ts",
+      "path": "src/composables/useWorkflowActionsMenu.test.ts",
       "role": "application"
     },
     {
-      "path": "src/platform/workflow/core/services/workflowActionsService.ts",
+      "path": "src/composables/useWorkflowActionsMenu.ts",
       "role": "application"
     },
     {
-      "path": "src/platform/workflow/core/services/workflowService.insertWorkflow.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/workflow/core/services/workflowService.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/workflow/core/services/workflowService.ts",
+      "path": "src/platform/workflow/core/services/**",
       "role": "application"
     },
     {
@@ -64,131 +96,19 @@
       "role": "domain"
     },
     {
-      "path": "src/platform/workflow/management/composables/useAppsSidebarTab.ts",
+      "path": "src/platform/workflow/management/composables/**",
       "role": "integration"
     },
     {
-      "path": "src/platform/workflow/management/composables/useWorkflowsSidebarTab.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/platform/workflow/management/stores/comfyWorkflow.ts",
+      "path": "src/platform/workflow/management/stores/**",
       "role": "application"
     },
     {
-      "path": "src/platform/workflow/management/stores/workflowStore.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/workflow/management/stores/workflowStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/workflow/utils/workflowExtractionUtil.test.ts",
+      "path": "src/platform/workflow/utils/**",
       "role": "infrastructure"
     },
     {
-      "path": "src/platform/workflow/utils/workflowExtractionUtil.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/components/common/WorkflowActionsDropdown.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/common/WorkflowActionsDropdown.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/dialog/UnloadWindowConfirmDialog.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/sidebar/tabs/AppsSidebarTab.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/sidebar/tabs/AppsSidebarTab.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/sidebar/tabs/BaseWorkflowsSidebarTab.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/sidebar/tabs/BaseWorkflowsSidebarTab.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/sidebar/tabs/workflows/WorkflowTreeLeaf.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/sidebar/tabs/WorkflowsSidebarTab.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/topbar/WorkflowOverflowMenu.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/topbar/WorkflowOverflowMenu.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/topbar/WorkflowTab.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/topbar/WorkflowTab.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/topbar/WorkflowTabPopover.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/topbar/WorkflowTabs.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/topbar/WorkflowTabs.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/stores/workflowTabActivityStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/workflowTabActivityStore.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/userFileStore.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/stores/userFileStore.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/composables/useNewMenuItemIndicator.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/useNewMenuItemIndicator.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/useWorkflowActionsMenu.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/useWorkflowActionsMenu.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/utils/syncUtil.ts",
+      "path": "src/scripts/changeTracker.test.ts",
       "role": "application"
     },
     {
@@ -196,16 +116,32 @@
       "role": "application"
     },
     {
-      "path": "src/scripts/changeTracker.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/scripts/defaultGraph.ts",
       "role": "domain"
     },
     {
+      "path": "src/stores/userFileStore.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/stores/userFileStore.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/stores/workflowTabActivityStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/workflowTabActivityStore.ts",
+      "role": "application"
+    },
+    {
       "path": "src/types/workflowMenuItem.ts",
       "role": "domain"
+    },
+    {
+      "path": "src/utils/syncUtil.ts",
+      "role": "application"
     }
   ],
   "publicEntryPoints": [],

@@ -324,7 +324,12 @@ else
     if [ $total_failed -gt 0 ]; then
         comment="$comment
 
-### ❌ Failed Tests"
+> ❌ $total_failed tests failed. Expand the failed tests below, review their traces and fix the failures before merging.
+
+<details>
+<summary>Failed tests</summary>
+
+"
 
         for counts_json in "${counts_array[@]}"; do
             [ -z "$counts_json" ] || [ "$counts_json" = "{}" ] && continue
@@ -353,6 +358,9 @@ $test_line"
                 fi
             fi
         done
+        comment="$comment
+
+</details>"
     fi
     
     screenshot_diffs=$(count_screenshot_diffs) || screenshot_diffs=0
@@ -374,6 +382,7 @@ $test_line"
     
     # Add browser results
     i=0
+    deployment_failed=false
     IFS=' ' read -r -a browser_array <<< "$BROWSERS"
     IFS=' ' read -r -a url_array <<< "$urls"
     for counts_json in "${counts_array[@]}"; do
@@ -385,6 +394,7 @@ $test_line"
             comment="$comment
 - **${browser}**: [View Report](${url})$(counts_suffix "$counts_json")"
         else
+            deployment_failed=true
             comment="$comment
 - **${browser}**: ❌ Deployment failed"
         fi
@@ -395,6 +405,12 @@ $test_line"
     comment="$comment
 
 </details>"
+
+    if [ "$deployment_failed" = true ]; then
+        comment="$comment
+
+> ❌ Browser reports are missing. [Open the workflow run]($WORKFLOW_URL), fix report generation or deployment and re-run the job."
+    fi
 
     post_comment "$comment"
 fi

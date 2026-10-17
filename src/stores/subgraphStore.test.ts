@@ -32,20 +32,7 @@ vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 vi.mock(import('@/platform/telemetry'))
 vi.mock(import('@/platform/telemetry/reportError'))
 
-// Add mock for api at the top of the file
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    getUserData: vi.fn(),
-    storeUserData: vi.fn(),
-    listUserDataFullInfo: vi.fn(),
-    getGlobalSubgraphs: vi.fn(),
-    deleteUserData: vi.fn(() =>
-      Promise.resolve(new Response(null, { status: 204 }))
-    ),
-    apiURL: vi.fn(),
-    addEventListener: vi.fn()
-  }
-}))
+vi.mock(import('@/scripts/api'))
 vi.mock(import('@/services/dialogService'))
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({

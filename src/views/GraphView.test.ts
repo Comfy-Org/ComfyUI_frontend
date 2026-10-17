@@ -9,6 +9,7 @@ import { useVersionCompatibilityStore } from '@/platform/updates/common/versionC
 import { mockDeploymentListing } from '@/platform/workspace/__fixtures__/deploymentListing'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { app } from '@/scripts/app'
+import { api as apiMock } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
@@ -16,6 +17,20 @@ import { useTemplateInputDownloadStore } from '@/stores/templateInputDownloadSto
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 beforeEach(() => {
+  vi.mocked(apiMock.getHistory).mockResolvedValue([])
+  vi.mocked(apiMock.getSystemStats).mockResolvedValue({
+    system: {
+      os: 'Linux',
+      python_version: '3.11',
+      embedded_python: false,
+      comfyui_version: '1.0.0',
+      pytorch_version: '2.3.0',
+      argv: [],
+      ram_total: 16000000000,
+      ram_free: 8000000000
+    },
+    devices: []
+  })
   vi.mocked(useVersionCompatibilityStore().initialize).mockResolvedValue(
     undefined
   )
@@ -30,14 +45,6 @@ beforeEach(() => {
   )
 })
 
-const apiMock = vi.hoisted(() =>
-  Object.assign(new EventTarget(), {
-    getServerFeature: vi.fn((_name: string, fallback?: unknown) => fallback),
-    getSystemStats: vi.fn(async () => ({ system: {}, devices: [] })),
-    getQueue: vi.fn(async () => ({ Running: [], Pending: [] })),
-    getHistory: vi.fn(async () => [])
-  })
-)
 const distribution = vi.hoisted(
   (): {
     isCloud: typeof DistributionTypes.isCloud
@@ -67,7 +74,7 @@ const templateInputMock = vi.hoisted(() => ({
   updateProgress: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({ api: apiMock }))
+vi.mock(import('@/scripts/api'))
 vi.mock(import('firebase/auth'))
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
@@ -245,11 +252,8 @@ describe('GraphView - reconnect wiring', () => {
   it('wires the reconnected event to the toast and queue refresh', () => {
     render(GraphView, { global: { plugins: [i18n] } })
 
-    apiMock.dispatchEvent(new Event('reconnected'))
+    apiMock.dispatchCustomEvent('reconnected')
 
-    // `handleReconnected` calls both before its first `await`, so dispatching
-    // the event is enough — there is nothing to wait for, and waiting for it
-    // only hid how long the import above was taking.
     expect(useReconnectingNotification().onReconnected).toHaveBeenCalledTimes(1)
     expect(useReconnectQueueRefresh()).toHaveBeenCalledTimes(1)
   })
@@ -324,7 +328,8 @@ describe('GraphView - output assets refresh', () => {
     useSidebarTabStore().activeSidebarTabId = null
     const loadNew = vi.spyOn(useAssetsStore().outputAssets, 'loadNew')
 
-    apiMock.dispatchEvent(new Event('execution_success'))
+    const apiEvents: EventTarget = apiMock
+    apiEvents.dispatchEvent(new Event('execution_success'))
 
     await waitFor(() => expect(loadNew).toHaveBeenCalledTimes(1))
   })

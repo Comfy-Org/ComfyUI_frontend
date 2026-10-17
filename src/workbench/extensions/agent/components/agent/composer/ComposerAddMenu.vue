@@ -137,10 +137,7 @@ async function pickWorkflow(workflow: WorkflowReferenceOption): Promise<void> {
             {{ t('agent.addFromAssets') }}
           </span>
         </MenuItem>
-        <MenuSeparator
-          v-if="canAttach && canOpenAssets"
-          class="mt-0 mb-px h-px bg-border-subtle"
-        />
+        <MenuSeparator v-if="canAttach && canOpenAssets" class="mt-0 mb-px" />
         <MenuItem v-if="canAttach" @select="emit('attach')">
           <i-lucide:paperclip class="size-4 shrink-0" />
           <span class="whitespace-nowrap">{{ t('agent.attachFiles') }}</span>

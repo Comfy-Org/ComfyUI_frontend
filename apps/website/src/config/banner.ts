@@ -61,16 +61,15 @@ export const bannerConfig: BannerConfig = {
 }
 
 export const challengeBannerConfig: BannerConfig = {
-  id: 'dev-platform-challenge',
+  id: 'open-source-higgsfield',
   isActive: true,
-  endsAt: '2026-10-19T09:00:00-07:00',
+  endsAt: '2026-10-30T09:00:00-07:00',
   targetSections: ['sitewide'],
-  titleKey: 'platform.challengeBanner.label',
-  descriptionKey: 'platform.challengeBanner.line',
+  titleKey: 'eventChallenge.banner.label',
+  descriptionKey: 'eventChallenge.banner.line',
   link: {
-    href: 'https://blog.comfy.org/p/open-call-comfy-dev-platform-challenge?utm_source=comfy_org&utm_medium=website&utm_campaign=dev_platform_challenge&utm_content=platform_strip_details',
-    titleKey: 'platform.challengeBanner.cta',
-    target: true,
+    href: '/open-source-higgsfield/',
+    titleKey: 'eventChallenge.banner.cta',
     buttonVariant: 'underlineLink'
   }
 }
