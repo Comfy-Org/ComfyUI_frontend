@@ -8,7 +8,7 @@
     "
     @click="collapsible && toggleCollapse()"
   >
-    <h3 class="text-xs font-bold text-text-secondary uppercase">
+    <h3 class="m-0 text-xs font-bold text-text-secondary uppercase">
       {{ title }}
     </h3>
     <i
