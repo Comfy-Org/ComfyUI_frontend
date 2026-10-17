@@ -21,7 +21,11 @@
         class="sidebar-content-container size-full overflow-x-hidden overflow-y-auto transition-opacity duration-200 ease-in-out"
         :class="{ 'opacity-0': canvasStore.isPickingNodes }"
       >
-        <ExtensionSlot v-if="activeSidebarTab" :extension="activeSidebarTab" />
+        <ExtensionSlot
+          v-if="activeSidebarTab"
+          :key="activeSidebarTab.id"
+          :extension="activeSidebarTab"
+        />
       </div>
     </template>
     <template v-if="showUI && !isBuilderMode" #topmenu>
