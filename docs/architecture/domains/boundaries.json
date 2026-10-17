@@ -1740,18 +1740,8 @@
         ]
       },
       {
-        "name": "image-compositor/application",
-        "patterns": [
-          "src/renderer/extensions/layerEditor/engine/editor/editor.selection.test.ts",
-          "src/renderer/extensions/layerEditor/engine/editor/editor.test.ts",
-          "src/renderer/extensions/layerEditor/engine/editor/editor.ts"
-        ]
-      },
-      {
         "name": "image-compositor/infrastructure",
         "patterns": [
-          "src/renderer/extensions/layerEditor/engine/compositor/webglCompositor.ts",
-          "src/renderer/extensions/layerEditor/engine/render/**",
           "src/renderer/extensions/layerEditor/psdExport.test.ts",
           "src/renderer/extensions/layerEditor/psdExport.ts",
           "src/renderer/extensions/layerEditor/psdMapping.test.ts",
@@ -5259,21 +5249,9 @@
         ]
       },
       {
-        "from": "image-compositor/application",
-        "allow": [
-          "image-compositor/domain",
-          "image-compositor/application",
-          "image-compositor/infrastructure",
-          "image-compositor/application/outer-1",
-          "image-compositor/domain/outer-2",
-          "unclassified"
-        ]
-      },
-      {
         "from": "image-compositor/infrastructure",
         "allow": [
           "image-compositor/domain",
-          "image-compositor/application",
           "image-compositor/infrastructure",
           "image-compositor/application/outer-1",
           "image-compositor/domain/outer-2",
@@ -5284,7 +5262,6 @@
         "from": "image-compositor/presentation",
         "allow": [
           "image-compositor/domain",
-          "image-compositor/application",
           "image-compositor/presentation",
           "image-compositor/application/outer-1",
           "image-compositor/domain/outer-2",
@@ -5295,7 +5272,6 @@
         "from": "image-compositor/integration",
         "allow": [
           "image-compositor/domain",
-          "image-compositor/application",
           "image-compositor/infrastructure",
           "image-compositor/presentation",
           "image-compositor/integration",
@@ -7200,7 +7176,6 @@
         "from": "image-compositor/application/outer-1",
         "allow": [
           "image-compositor/domain",
-          "image-compositor/application",
           "image-compositor/infrastructure",
           "image-compositor/application/outer-1",
           "image-compositor/domain/outer-2",

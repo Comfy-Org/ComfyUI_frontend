@@ -207,8 +207,8 @@ import {
   CANVAS_SIZE_MIN,
   DEFAULT_BACKGROUND_COLOR
 } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
-import type { BlendFn } from '@/renderer/extensions/layerEditor/engine/mode'
-import { LAYER_MODES } from '@/renderer/extensions/layerEditor/engine/mode'
+import type { BlendFn } from '@comfyorg/layer-editor/mode'
+import { LAYER_MODES } from '@comfyorg/layer-editor/mode'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { session } = defineProps<{ session: LayerEditorSession }>()

@@ -1,0 +1,114 @@
+{
+  "name": "@comfyorg/layer-editor",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./commands/bakeContent": {
+      "types": "./dist/commands/bakeContent.d.ts",
+      "default": "./src/commands/bakeContent.ts"
+    },
+    "./commands/prop": {
+      "types": "./dist/commands/prop.d.ts",
+      "default": "./src/commands/prop.ts"
+    },
+    "./commands/setTransform": {
+      "types": "./dist/commands/setTransform.d.ts",
+      "default": "./src/commands/setTransform.ts"
+    },
+    "./compositor": {
+      "types": "./dist/compositor.d.ts",
+      "default": "./src/compositor.ts"
+    },
+    "./compositor/webglCompositor": {
+      "types": "./dist/compositor/webglCompositor.d.ts",
+      "default": "./src/compositor/webglCompositor.ts"
+    },
+    "./content": {
+      "types": "./dist/content.d.ts",
+      "default": "./src/content.ts"
+    },
+    "./document": {
+      "types": "./dist/document.d.ts",
+      "default": "./src/document.ts"
+    },
+    "./editor/editor": {
+      "types": "./dist/editor/editor.d.ts",
+      "default": "./src/editor/editor.ts"
+    },
+    "./editor/pickOps": {
+      "types": "./dist/editor/pickOps.d.ts",
+      "default": "./src/editor/pickOps.ts"
+    },
+    "./fill": {
+      "types": "./dist/fill.d.ts",
+      "default": "./src/fill.ts"
+    },
+    "./history": {
+      "types": "./dist/history.d.ts",
+      "default": "./src/history.ts"
+    },
+    "./kinds": {
+      "types": "./dist/kinds/index.d.ts",
+      "default": "./src/kinds/index.ts"
+    },
+    "./mode": {
+      "types": "./dist/mode.d.ts",
+      "default": "./src/mode.ts"
+    },
+    "./node": {
+      "types": "./dist/node.d.ts",
+      "default": "./src/node.ts"
+    },
+    "./nodeKind": {
+      "types": "./dist/nodeKind.d.ts",
+      "default": "./src/nodeKind.ts"
+    },
+    "./render/bake": {
+      "types": "./dist/render/bake.d.ts",
+      "default": "./src/render/bake.ts"
+    },
+    "./render/outsideCanvasPreview": {
+      "types": "./dist/render/outsideCanvasPreview.d.ts",
+      "default": "./src/render/outsideCanvasPreview.ts"
+    },
+    "./render/place": {
+      "types": "./dist/render/place.d.ts",
+      "default": "./src/render/place.ts"
+    },
+    "./session": {
+      "types": "./dist/session.d.ts",
+      "default": "./src/session.ts"
+    },
+    "./tool": {
+      "types": "./dist/tool.d.ts",
+      "default": "./src/tool.ts"
+    },
+    "./tools": {
+      "types": "./dist/tools/index.d.ts",
+      "default": "./src/tools/index.ts"
+    },
+    "./tools/transformMath": {
+      "types": "./dist/tools/transformMath.d.ts",
+      "default": "./src/tools/transformMath.ts"
+    },
+    "./tools/transformTool": {
+      "types": "./dist/tools/transformTool.d.ts",
+      "default": "./src/tools/transformTool.ts"
+    }
+  },
+  "scripts": {
+    "build": "node ../../node_modules/typescript/bin/tsc -b tsconfig.build.json",
+    "typecheck": "tsx ../../scripts/vue-tsc-native.ts --project tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "es-toolkit": "^1.39.9"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "catalog:",
+    "happy-dom": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}
