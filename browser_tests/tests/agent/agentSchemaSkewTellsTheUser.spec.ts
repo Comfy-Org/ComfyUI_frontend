@@ -256,8 +256,10 @@ test.describe(
         .click()
       await expect(picker).toHaveText('Unsaved Workflow')
 
-      // Setup checkpoint, still expected to pass: the doc subscription round
-      // trip actually completed, carrying the skewed catch-up frame.
+      // Setup checkpoint: the agent socket is open, so `send` below reaches the
+      // panel. It does NOT prove the skewed catch-up was handled — `socket` is
+      // assigned when `/ws` connects, which `bootAgentApp` has already waited
+      // for. The refusal having run is proven by the notice at the end.
       await expect.poll(() => socket !== null).toBe(true)
 
       const composer = panel.getByRole('textbox', { name: COMPOSER_LABEL })
@@ -319,13 +321,6 @@ test.describe(
         .poll(() => committedNodeIds, { timeout: 20_000 })
         .toContain(String(ADDED_NODE_ID))
 
-      // Unchanged and deliberately asserted: the gate still refuses. Reading a
-      // document this build cannot read would be the fail-open failure KA-11
-      // exists to prevent, so the node must NOT appear.
-      await expect(vueNodes.getNodeLocator(String(ADDED_NODE_ID))).toHaveCount(
-        0
-      )
-
       // The fix under test: the person is told why the canvas is empty,
       // instead of being left to refresh, re-login and reboot against a
       // comparison none of those can change. The notice names the one
@@ -338,6 +333,19 @@ test.describe(
       await expect(
         notice.getByText(SYNC_FAILED_DETAIL, { exact: false })
       ).toBeVisible()
+
+      // Unchanged and deliberately asserted: the gate still refuses. Reading a
+      // document this build cannot read would be the fail-open failure KA-11
+      // exists to prevent, so the node must NOT appear.
+      //
+      // Asserted AFTER the notice, not before it: the notice is this spec's
+      // only proof that the refusal path has actually run on the skewed
+      // catch-up frame. Checked earlier, `toHaveCount(0)` can pass simply
+      // because nothing has been projected yet, and a fail-open regression
+      // that renders the node a moment later would go uncaught.
+      await expect(vueNodes.getNodeLocator(String(ADDED_NODE_ID))).toHaveCount(
+        0
+      )
     })
   }
 )
