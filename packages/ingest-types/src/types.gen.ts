@@ -6496,40 +6496,6 @@ export type PostCustomNodeProxyResponses = {
   200: unknown
 }
 
-export type GetCccAgentInstructionsData = {
-  body?: never
-  path?: never
-  query?: never
-  url: '/agent'
-}
-
-export type GetCccAgentInstructionsResponses = {
-  /**
-   * Editing instructions from this deployed API build
-   */
-  200: string
-}
-
-export type GetCccAgentInstructionsResponse =
-  GetCccAgentInstructionsResponses[keyof GetCccAgentInstructionsResponses]
-
-export type GetCccAgentsInstructionsData = {
-  body?: never
-  path?: never
-  query?: never
-  url: '/agents'
-}
-
-export type GetCccAgentsInstructionsResponses = {
-  /**
-   * Editing instructions from this deployed API build
-   */
-  200: string
-}
-
-export type GetCccAgentsInstructionsResponse =
-  GetCccAgentsInstructionsResponses[keyof GetCccAgentsInstructionsResponses]
-
 export type AgentGetDraftData = {
   body?: never
   path?: never
@@ -13881,18 +13847,25 @@ export type GetCccAuthoringContextData = {
 
 export type GetCccAuthoringContextErrors = {
   /**
-   * Unsupported query parameters
+   * Unsupported query parameters; or `code` `workspace_id_invalid` (see SessionWorkspaceIDInvalid).
    */
-  400: unknown
+  400: ErrorResponse
   /**
-   * Verified staff edit or apply permission required
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
    */
-  403: unknown
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   */
+  403: ForbiddenError
   /**
    * Dedicated catalog unavailable
    */
   503: unknown
 }
+
+export type GetCccAuthoringContextError =
+  GetCccAuthoringContextErrors[keyof GetCccAuthoringContextErrors]
 
 export type GetCccAuthoringContextResponses = {
   /**
@@ -13970,51 +13943,6 @@ export type GetCatalogDocsResponses = {
 export type GetCatalogDocsResponse =
   GetCatalogDocsResponses[keyof GetCatalogDocsResponses]
 
-export type ArchiveCccDraftData = {
-  body: {
-    expected_draft_generation: number
-    expected_draft_rev: number
-  }
-  headers: {
-    'Idempotency-Key': string
-  }
-  path?: never
-  query?: never
-  url: '/api/v1/catalog/draft/archive'
-}
-
-export type ArchiveCccDraftErrors = {
-  /**
-   * Invalid review tokens or unsupported fields
-   */
-  400: Cccjson
-  /**
-   * Verified staff edit permission required
-   */
-  403: unknown
-  /**
-   * Stale reviewed Draft or idempotency mismatch
-   */
-  409: unknown
-  /**
-   * Dedicated catalog unavailable
-   */
-  503: unknown
-}
-
-export type ArchiveCccDraftError =
-  ArchiveCccDraftErrors[keyof ArchiveCccDraftErrors]
-
-export type ArchiveCccDraftResponses = {
-  /**
-   * Archived revision and fresh Draft/state
-   */
-  200: Cccjson
-}
-
-export type ArchiveCccDraftResponse =
-  ArchiveCccDraftResponses[keyof ArchiveCccDraftResponses]
-
 export type BatchCccItemsData = {
   body: {
     expected_draft_rev: number
@@ -14034,9 +13962,13 @@ export type BatchCccItemsErrors = {
    */
   400: Cccjson
   /**
-   * Verified staff edit permission required
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
    */
-  403: unknown
+  401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   */
+  403: ForbiddenError
   /**
    * Existing target absent from owner-scoped Draft
    */
@@ -14075,9 +14007,17 @@ export type DiscardCccChangesData = {
 
 export type DiscardCccChangesErrors = {
   /**
-   * Verified staff edit permission on every target required
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
    */
-  403: unknown
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   */
+  403: ForbiddenError
   /**
    * Stale state/selection/exact version or idempotency mismatch; no partial discard
    */
@@ -14114,13 +14054,17 @@ export type GetCccFinalReviewData = {
 
 export type GetCccFinalReviewErrors = {
   /**
-   * Unsupported query parameters
+   * Unsupported query parameters; or `code` `workspace_id_invalid` (see SessionWorkspaceIDInvalid).
    */
-  400: unknown
+  400: ErrorResponse
   /**
-   * Verified publisher permission required
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
    */
-  403: unknown
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   */
+  403: ForbiddenError
   /**
    * Unreviewed work, no approved changes, or invalid selective candidate
    */
@@ -14130,6 +14074,9 @@ export type GetCccFinalReviewErrors = {
    */
   503: unknown
 }
+
+export type GetCccFinalReviewError =
+  GetCccFinalReviewErrors[keyof GetCccFinalReviewErrors]
 
 export type GetCccFinalReviewResponses = {
   /**
@@ -14150,26 +14097,33 @@ export type ReviewCccCheckedPublicationData = {
 
 export type ReviewCccCheckedPublicationErrors = {
   /**
-   * Unsupported query parameters
+   * Unsupported query parameters; or `code` `workspace_id_invalid` (see SessionWorkspaceIDInvalid).
    */
-  400: unknown
+  400: ErrorResponse
   /**
-   * Verified publisher permission required
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
    */
-  403: unknown
+  401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   */
+  403: ForbiddenError
   /**
    * Stale reviewed state or selected item no longer pending
    */
   409: unknown
   /**
-   * Invalid explicit selection or candidate dependencies
+   * Invalid explicit selection or candidate dependencies; bounded field_errors include the affected resource_uid when known
    */
-  422: unknown
+  422: Cccjson
   /**
    * Dedicated catalog unavailable
    */
   503: unknown
 }
+
+export type ReviewCccCheckedPublicationError =
+  ReviewCccCheckedPublicationErrors[keyof ReviewCccCheckedPublicationErrors]
 
 export type ReviewCccCheckedPublicationResponses = {
   /**
@@ -14190,13 +14144,17 @@ export type ReviewCccCheckedReceiptData = {
 
 export type ReviewCccCheckedReceiptErrors = {
   /**
-   * Unsupported query parameters
+   * Unsupported query parameters; or `code` `workspace_id_invalid` (see SessionWorkspaceIDInvalid).
    */
-  400: unknown
+  400: ErrorResponse
   /**
-   * Verified publisher permission required
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
    */
-  403: unknown
+  401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   */
+  403: ForbiddenError
   /**
    * Stale reviewed state or selected item no longer pending
    */
@@ -14240,9 +14198,13 @@ export type CreateCccItemErrors = {
    */
   400: Cccjson
   /**
-   * Verified staff edit permission required
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
    */
-  403: unknown
+  401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   */
+  403: ForbiddenError
   /**
    * Stale Draft/edit token or idempotency payload mismatch
    */
@@ -14286,9 +14248,13 @@ export type DeleteCccItemErrors = {
    */
   400: Cccjson
   /**
-   * Verified staff edit permission required
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
    */
-  403: unknown
+  401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   */
+  403: ForbiddenError
   /**
    * Resource absent from owner-scoped Draft
    */
@@ -14326,13 +14292,17 @@ export type GetCccDraftItemData = {
 
 export type GetCccDraftItemErrors = {
   /**
-   * Invalid UID or unsupported query parameters
+   * Invalid UID or unsupported query parameters; or `code` `workspace_id_invalid` (see SessionWorkspaceIDInvalid).
    */
-  400: unknown
+  400: ErrorResponse
   /**
-   * Verified staff read permission required
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
    */
-  403: unknown
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   */
+  403: ForbiddenError
   /**
    * Resource missing or outside canonical owner scope
    */
@@ -14342,6 +14312,9 @@ export type GetCccDraftItemErrors = {
    */
   503: unknown
 }
+
+export type GetCccDraftItemError =
+  GetCccDraftItemErrors[keyof GetCccDraftItemErrors]
 
 export type GetCccDraftItemResponses = {
   /**
@@ -14371,9 +14344,13 @@ export type ReplaceCccItemErrors = {
    */
   400: Cccjson
   /**
-   * Verified staff edit permission required
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
    */
-  403: unknown
+  401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   */
+  403: ForbiddenError
   /**
    * Resource not found in the selected Draft/owner scope
    */
@@ -14423,9 +14400,13 @@ export type RestoreCccItemVersionErrors = {
    */
   400: Cccjson
   /**
-   * Verified staff edit permission required
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
    */
-  403: unknown
+  401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   */
+  403: ForbiddenError
   /**
    * Current or source edit not found in the target UID/owner scope
    */
@@ -14453,57 +14434,6 @@ export type RestoreCccItemVersionResponses = {
 export type RestoreCccItemVersionResponse =
   RestoreCccItemVersionResponses[keyof RestoreCccItemVersionResponses]
 
-export type RestoreCccLiveItemData = {
-  body: {
-    expected_draft_rev: number
-    expected_revision_uid: string
-  }
-  headers: {
-    'Idempotency-Key': string
-  }
-  path: {
-    uid: string
-  }
-  query?: never
-  url: '/api/v1/catalog/draft/items/{uid}/restore-live'
-}
-
-export type RestoreCccLiveItemErrors = {
-  /**
-   * Invalid tokens or generic Media mutation refused
-   */
-  400: Cccjson
-  /**
-   * Verified staff edit permission required
-   */
-  403: unknown
-  /**
-   * Resource absent from organization-scoped Draft
-   */
-  404: unknown
-  /**
-   * Stale Draft/edit token or idempotency mismatch
-   */
-  409: unknown
-  /**
-   * Dedicated catalog unavailable
-   */
-  503: unknown
-}
-
-export type RestoreCccLiveItemError =
-  RestoreCccLiveItemErrors[keyof RestoreCccLiveItemErrors]
-
-export type RestoreCccLiveItemResponses = {
-  /**
-   * Flat new immutable Draft save, original owner/author and updated edit tokens
-   */
-  200: Cccjson
-}
-
-export type RestoreCccLiveItemResponse =
-  RestoreCccLiveItemResponses[keyof RestoreCccLiveItemResponses]
-
 export type UploadCccMediaData = {
   body: {
     /**
@@ -14529,13 +14459,17 @@ export type UploadCccMediaData = {
 
 export type UploadCccMediaErrors = {
   /**
-   * Malformed multipart request
+   * Malformed multipart request; or `code` `workspace_id_invalid` (see SessionWorkspaceIDInvalid).
    */
-  400: unknown
+  400: ErrorResponse
   /**
-   * Verified staff edit permission required
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
    */
-  403: unknown
+  401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   */
+  403: ForbiddenError
   /**
    * Origin is absent or outside owner scope
    */
@@ -14585,9 +14519,17 @@ export type DeleteCccMediaData = {
 
 export type DeleteCccMediaErrors = {
   /**
-   * Verified staff edit permission required
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
    */
-  403: unknown
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   */
+  403: ForbiddenError
   /**
    * Logical media is absent or outside owner scope
    */
@@ -14642,13 +14584,17 @@ export type ReplaceCccMediaFileData = {
 
 export type ReplaceCccMediaFileErrors = {
   /**
-   * Malformed multipart request
+   * Malformed multipart request; or `code` `workspace_id_invalid` (see SessionWorkspaceIDInvalid).
    */
-  400: unknown
+  400: ErrorResponse
   /**
-   * Verified staff edit permission required
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
    */
-  403: unknown
+  401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   */
+  403: ForbiddenError
   /**
    * Logical media is absent or outside owner scope
    */
@@ -14696,26 +14642,33 @@ export type PublishCccDraftData = {
 
 export type PublishCccDraftErrors = {
   /**
-   * Unsupported query parameters
+   * Unsupported query parameters; or `code` `workspace_id_invalid` (see SessionWorkspaceIDInvalid).
    */
-  400: unknown
+  400: ErrorResponse
   /**
-   * Verified publisher permission required
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
    */
-  403: unknown
+  401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   */
+  403: ForbiddenError
   /**
    * Stale reviewed state or decisions or conflicting retry; nothing published
    */
   409: unknown
   /**
-   * Invalid review, unfinished decisions or reference/dependency validation failed; nothing published
+   * Invalid review, unfinished decisions or reference/dependency validation failed; nothing published. Bounded field_errors include the affected resource_uid when known.
    */
-  422: unknown
+  422: Cccjson
   /**
-   * Local publication is disabled or catalog unavailable
+   * Catalog unavailable
    */
   503: unknown
 }
+
+export type PublishCccDraftError =
+  PublishCccDraftErrors[keyof PublishCccDraftErrors]
 
 export type PublishCccDraftResponses = {
   /**
@@ -14743,18 +14696,24 @@ export type GetCccStagingData = {
 
 export type GetCccStagingErrors = {
   /**
-   * Unknown, repeated scalar or invalid filter; bounded result exceeded
+   * Unknown, repeated scalar or invalid filter; bounded result exceeded; or `code` `workspace_id_invalid` (see SessionWorkspaceIDInvalid).
    */
-  400: unknown
+  400: ErrorResponse
   /**
-   * Verified staff read permission required
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
    */
-  403: unknown
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   */
+  403: ForbiddenError
   /**
    * Dedicated catalog unavailable
    */
   503: unknown
 }
+
+export type GetCccStagingError = GetCccStagingErrors[keyof GetCccStagingErrors]
 
 export type GetCccStagingResponses = {
   /**
@@ -14778,9 +14737,17 @@ export type StageCccChangesData = {
 
 export type StageCccChangesErrors = {
   /**
-   * Publisher permission required; edit alone is insufficient
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
    */
-  403: unknown
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   */
+  403: ForbiddenError
   /**
    * Stale review, changed matching count or conflicting retry
    */
@@ -14794,6 +14761,9 @@ export type StageCccChangesErrors = {
    */
   503: unknown
 }
+
+export type StageCccChangesError =
+  StageCccChangesErrors[keyof StageCccChangesErrors]
 
 export type StageCccChangesResponses = {
   /**
@@ -14881,13 +14851,17 @@ export type GetCccItemHistoryData = {
 
 export type GetCccItemHistoryErrors = {
   /**
-   * Invalid limit, cursor or unsupported query parameter
+   * Invalid limit, cursor or unsupported query parameter; or `code` `workspace_id_invalid` (see SessionWorkspaceIDInvalid).
    */
-  400: unknown
+  400: ErrorResponse
   /**
-   * Verified staff permission required
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
    */
-  403: unknown
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   */
+  403: ForbiddenError
   /**
    * Resource outside organization scope or absent
    */
@@ -14897,6 +14871,9 @@ export type GetCccItemHistoryErrors = {
    */
   503: unknown
 }
+
+export type GetCccItemHistoryError =
+  GetCccItemHistoryErrors[keyof GetCccItemHistoryErrors]
 
 export type GetCccItemHistoryResponses = {
   /**
@@ -14982,14 +14959,25 @@ export type GetCccPreviewMediaBytesData = {
 
 export type GetCccPreviewMediaBytesErrors = {
   /**
-   * Authentication required
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
    */
-  401: unknown
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   */
+  403: ForbiddenError
   /**
    * Unauthorized, unavailable, unselected, or unsupported HEAD/range/query
    */
   404: unknown
 }
+
+export type GetCccPreviewMediaBytesError =
+  GetCccPreviewMediaBytesErrors[keyof GetCccPreviewMediaBytesErrors]
 
 export type GetCccPreviewMediaBytesResponses = {
   /**
@@ -15014,9 +15002,17 @@ export type HeadCccPreviewMediaBytesData = {
 
 export type HeadCccPreviewMediaBytesErrors = {
   /**
-   * Authentication required
+   * Session workspace selector refused (workspace_id_invalid); no body on HEAD
+   */
+  400: unknown
+  /**
+   * No valid credential (see SessionUnauthorized); no body on HEAD
    */
   401: unknown
+  /**
+   * Refused (see SessionForbidden); no body on HEAD
+   */
+  403: unknown
   /**
    * HEAD is unsupported; private no-store with no bytes or redirects
    */
@@ -15035,9 +15031,17 @@ export type GetCccRevisionItemData = {
 
 export type GetCccRevisionItemErrors = {
   /**
-   * Verified staff permission required
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
    */
-  403: unknown
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   */
+  403: ForbiddenError
   /**
    * Resource/revision not found in organization scope
    */
@@ -15048,6 +15052,9 @@ export type GetCccRevisionItemErrors = {
   503: unknown
 }
 
+export type GetCccRevisionItemError =
+  GetCccRevisionItemErrors[keyof GetCccRevisionItemErrors]
+
 export type GetCccRevisionItemResponses = {
   /**
    * Flat Content and exact edit/revision context
@@ -15057,54 +15064,6 @@ export type GetCccRevisionItemResponses = {
 
 export type GetCccRevisionItemResponse =
   GetCccRevisionItemResponses[keyof GetCccRevisionItemResponses]
-
-export type ReopenCccRevisionData = {
-  body: {
-    archive_draft: true
-    expected_draft_generation: number
-    expected_draft_rev: number
-  }
-  headers: {
-    'Idempotency-Key': string
-  }
-  path: {
-    rev: number
-  }
-  query?: never
-  url: '/api/v1/catalog/revisions/{rev}/reopen'
-}
-
-export type ReopenCccRevisionErrors = {
-  /**
-   * Invalid review tokens or missing explicit archive consent
-   */
-  400: Cccjson
-  /**
-   * Verified staff edit permission required
-   */
-  403: unknown
-  /**
-   * Stale reviewed Draft or idempotency mismatch
-   */
-  409: unknown
-  /**
-   * Dedicated catalog unavailable or retained schema cannot be reopened
-   */
-  503: unknown
-}
-
-export type ReopenCccRevisionError =
-  ReopenCccRevisionErrors[keyof ReopenCccRevisionErrors]
-
-export type ReopenCccRevisionResponses = {
-  /**
-   * New Draft/state and reopened-from revision
-   */
-  200: Cccjson
-}
-
-export type ReopenCccRevisionResponse =
-  ReopenCccRevisionResponses[keyof ReopenCccRevisionResponses]
 
 export type GetCccTypeSchemaData = {
   body?: never
@@ -15142,14 +15101,24 @@ export type GetCccStateData = {
 
 export type GetCccStateErrors = {
   /**
-   * Verified staff permission required
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
    */
-  403: unknown
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   */
+  403: ForbiddenError
   /**
    * Dedicated catalog unavailable; no legacy fallback
    */
   503: unknown
 }
+
+export type GetCccStateError = GetCccStateErrors[keyof GetCccStateErrors]
 
 export type GetCccStateResponses = {
   /**
@@ -17718,23 +17687,6 @@ export type PostOAuthTokenResponses = {
 
 export type PostOAuthTokenResponse =
   PostOAuthTokenResponses[keyof PostOAuthTokenResponses]
-
-export type GetCccOpenApiData = {
-  body?: never
-  path?: never
-  query?: never
-  url: '/openapi.json'
-}
-
-export type GetCccOpenApiResponses = {
-  /**
-   * OpenAPI JSON with CCC contract version and environment
-   */
-  200: Cccjson
-}
-
-export type GetCccOpenApiResponse =
-  GetCccOpenApiResponses[keyof GetCccOpenApiResponses]
 
 export type GetTemplateProxyData = {
   body?: never
