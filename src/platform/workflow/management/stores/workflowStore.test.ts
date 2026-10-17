@@ -30,16 +30,7 @@ import {
 } from '@/utils/__tests__/litegraphTestUtils'
 import { createMockCanvas } from '@/utils/__tests__/canvasTestUtils'
 
-// Add mock for api at the top of the file
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    getUserData: vi.fn(),
-    storeUserData: vi.fn(),
-    listUserDataFullInfo: vi.fn(),
-    apiURL: vi.fn(),
-    addEventListener: vi.fn()
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 // Mock comfyApp globally for the store setup
 vi.mock<unknown>(import('@/scripts/app'), () => ({

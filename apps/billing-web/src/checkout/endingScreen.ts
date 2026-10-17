@@ -40,6 +40,23 @@ const REFUSAL_COPY: Readonly<Record<CapabilityDenialReason, RefusalCopy>> = {
   subscription_status_unrecognized: 'unknown',
   subscription_change_in_progress: 'change_unnamed',
   not_a_member: 'unknown',
+  not_original_owner: 'unknown',
+  creator_only_provisioning: 'unknown',
+  payment_past_due: 'unknown',
+  free_plan: 'unknown',
+  no_subscription: 'unknown',
+  subscription_ended: 'unknown',
+  billing_operation_in_progress: 'unknown',
+  billing_operation_parked: 'unknown',
+  cancellation_scheduled: 'unknown',
+  cancellation_not_scheduled: 'unknown',
+  workspace_sso_attached: 'unknown',
+  personal_workspace: 'unknown',
+  plan_not_ended: 'unknown',
+  membership_managed_by_directory: 'unknown',
+  personal_workspace_creator: 'unknown',
+  workspace_creator: 'unknown',
+  only_owner: 'unknown',
   unspecified: 'unknown'
 }
 
