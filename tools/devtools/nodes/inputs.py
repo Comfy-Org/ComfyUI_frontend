@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import time
 
+from comfy_api.latest import _io
 from comfy_api.v0_0_2 import IO
 from nodes import LoadImage
 
@@ -506,7 +507,7 @@ class NodeWithDynamicGroup(IO.ComfyNode):
             description="Echoes repeated widget rows without loading models.",
             inputs=[
                 IO.String.Input("before", default="first"),
-                IO.DynamicGroup.Input("loras", template=[
+                _io._DynamicGroup.Input("loras", template=[
                     IO.Combo.Input("lora_name", options=["A.safetensors", "B.safetensors", "C.safetensors"]),
                     IO.Float.Input("strength", default=1.0, min=-2.0, max=2.0, step=0.1),
                     IO.Boolean.Input("enabled", default=True, optional=True),
@@ -576,7 +577,7 @@ NODE_CLASS_MAPPINGS = {
     "DevToolsBranchNode": TestBranchNode,
 }
 
-if hasattr(IO, "DynamicGroup"):
+if hasattr(_io, "_DynamicGroup"):
     NODE_CLASS_MAPPINGS["DevToolsNodeWithDynamicGroup"] = NodeWithDynamicGroup
 
 NODE_DISPLAY_NAME_MAPPINGS = {
