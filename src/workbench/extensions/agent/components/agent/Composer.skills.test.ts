@@ -522,9 +522,6 @@ describe('Composer skill selection', () => {
 
     skills.flagsEnabled = false
     await nextTick()
-    // PM-1233: the placeholder states the primary action only. It no longer
-    // advertises the slash menu, so it reads the same either way — what the
-    // flag still has to change is whether `/` opens anything.
     expect(screen.getByText('Describe what you want to create')).toBeVisible()
     expect(
       screen.getByRole('textbox', { name: 'Describe what you want to create' })
