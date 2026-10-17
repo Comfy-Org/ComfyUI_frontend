@@ -1,0 +1,85 @@
+name: Campaign Links
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/campaign-links.yaml'
+      - 'apps/website/scripts/campaign-links*'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Preview URLs, check duplicates, or create drafts
+        type: choice
+        options: [preview, check, create-drafts]
+        default: preview
+      vertical:
+        description: Vertical
+        type: choice
+        options:
+          [all, vfx, advertising, film-animation, architectural-visualization]
+        default: all
+      track:
+        description: Campaign type
+        type: choice
+        options: [all, comfy-led, agency-led]
+        default: all
+      version:
+        description: Page version (v2 exists for VFX only)
+        type: choice
+        options: [all, v1, v2]
+        default: all
+      source:
+        description: Traffic source
+        type: string
+        default: linkedin
+      creative:
+        description: Creative identifier (utm_content)
+        type: string
+        default: sizzle_video_01
+      audience:
+        description: Audience or ad group (optional utm_term)
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: campaign-links
+  cancel-in-progress: false
+
+jobs:
+  links:
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Generate campaign links
+        env:
+          MODE: ${{ inputs.mode || 'preview' }}
+          CAMPAIGN_VERTICAL: ${{ inputs.vertical || 'all' }}
+          CAMPAIGN_TRACK: ${{ inputs.track || 'all' }}
+          CAMPAIGN_VERSION: ${{ inputs.version || 'all' }}
+          CAMPAIGN_SOURCE: ${{ inputs.source || 'linkedin' }}
+          CAMPAIGN_CREATIVE: ${{ inputs.creative || 'sizzle_video_01' }}
+          CAMPAIGN_AUDIENCE: ${{ inputs.audience }}
+          UTM_MANAGER_TOKEN: ${{ github.event_name == 'workflow_dispatch' && inputs.mode != 'preview' && secrets.UTM_MANAGER_TOKEN || '' }}
+        run: node apps/website/scripts/campaign-links.ts --mode "$MODE" --output "$RUNNER_TEMP/campaign-links.json"
+      - name: Attach link report
+        uses: actions/upload-artifact@v6
+        with:
+          name: campaign-links-${{ github.run_id }}
+          path: ${{ runner.temp }}/campaign-links.json
+          if-no-files-found: error
+      - name: Show link report
+        run: |
+          echo '### Campaign link report' >> "$GITHUB_STEP_SUMMARY"
+          echo '```json' >> "$GITHUB_STEP_SUMMARY"
+          cat "$RUNNER_TEMP/campaign-links.json" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
