@@ -110,27 +110,112 @@ describe('useRegistrySearch', () => {
     })
   })
 
-  it('reports the mode a first page was searched in, not one switched to while it loaded', async () => {
-    let resolveSearch: (result: SearchPacksResult) => void = () => {}
-    vi.mocked(useRegistrySearchGateway().searchPacks).mockReturnValueOnce(
-      new Promise((resolve) => {
-        resolveSearch = resolve
+  it.for([
+    {
+      change: 'mode',
+      initial: { query: 'comfyui-manager', searchMode: 'nodes' as const },
+      initialAttributes: ['comfy_nodes'],
+      changed: { query: 'comfyui-manager', searchMode: 'packs' as const }
+    },
+    {
+      change: 'query',
+      initial: { query: 'comfyui-kjnodes', searchMode: 'packs' as const },
+      initialAttributes: ['name', 'description'],
+      changed: { query: 'comfyui-manager', searchMode: 'packs' as const }
+    }
+  ])(
+    'reruns the first-page search when the $change changes while it loads',
+    async ({ initial, initialAttributes, changed }) => {
+      const { searchPacks } = useRegistrySearchGateway()
+      let resolveStaleSearch: (result: SearchPacksResult) => void = () => {}
+      vi.mocked(searchPacks)
+        .mockReturnValueOnce(
+          new Promise((resolve) => {
+            resolveStaleSearch = resolve
+          })
+        )
+        .mockResolvedValueOnce({
+          nodePacks: [{ id: 'current-pack' }],
+          querySuggestions: [],
+          hasMore: true,
+          rawResultsEmpty: false
+        })
+        .mockResolvedValueOnce({
+          nodePacks: [{ id: 'current-pack-2' }],
+          querySuggestions: [],
+          hasMore: false,
+          rawResultsEmpty: false
+        })
+      const query = ref(initial.query)
+      const searchMode = ref<SearchMode>(initial.searchMode)
+      const search = useRegistrySearch({ query, searchMode })
+      await until(search.isLoading).toBe(true)
+
+      query.value = changed.query
+      searchMode.value = changed.searchMode
+      await nextTick()
+      resolveStaleSearch({
+        nodePacks: [{ id: 'stale-pack' }],
+        querySuggestions: [],
+        hasMore: true,
+        rawResultsEmpty: true
       })
-    )
+      await until(search.isLoading).toBe(false)
+
+      expect(toValue(search.items)).toEqual([{ id: 'current-pack' }])
+      expect(search.firstPage.value).toEqual({
+        ...changed,
+        rawResultsEmpty: false
+      })
+
+      await search.loadMore()
+
+      expect(toValue(search.items)).toEqual([
+        { id: 'current-pack' },
+        { id: 'current-pack-2' }
+      ])
+      expect(
+        vi
+          .mocked(searchPacks)
+          .mock.calls.map(([searched, params]) => [
+            searched,
+            params.pageNumber,
+            params.restrictSearchableAttributes
+          ])
+      ).toEqual([
+        [initial.query, 0, initialAttributes],
+        [changed.query, 0, ['name', 'description']],
+        [changed.query, 1, ['name', 'description']]
+      ])
+    }
+  )
+
+  it('reruns without reporting an error when a search fails after the mode changed', async () => {
+    const { searchPacks } = useRegistrySearchGateway()
+    let rejectStaleSearch: (error: Error) => void = () => {}
+    vi.mocked(searchPacks)
+      .mockReturnValueOnce(
+        new Promise((_, reject) => {
+          rejectStaleSearch = reject
+        })
+      )
+      .mockResolvedValueOnce({
+        nodePacks: [{ id: 'current-pack' }],
+        querySuggestions: [],
+        rawResultsEmpty: false
+      })
     const searchMode = ref<SearchMode>('nodes')
     const search = useRegistrySearch({ query: 'comfyui-manager', searchMode })
     await until(search.isLoading).toBe(true)
 
     searchMode.value = 'packs'
     await nextTick()
-    resolveSearch({
-      nodePacks: [],
-      querySuggestions: [],
-      rawResultsEmpty: true
-    })
+    rejectStaleSearch(new Error('search unavailable'))
     await until(search.isLoading).toBe(false)
 
-    expect(search.firstPage.value?.searchMode).toBe('nodes')
+    expect(reportError).not.toHaveBeenCalled()
+    expect(toValue(search.items)).toEqual([{ id: 'current-pack' }])
+    expect(search.firstPage.value?.searchMode).toBe('packs')
   })
 
   it('reports no first page when the search for it fails', async () => {

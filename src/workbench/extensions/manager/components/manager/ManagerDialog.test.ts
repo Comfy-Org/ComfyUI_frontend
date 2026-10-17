@@ -241,15 +241,22 @@ describe('ManagerDialog legacy-manager tip', () => {
     expect(screen.queryByText(TIP, { exact: false })).not.toBeInTheDocument()
   })
 
-  it('hides the tip when a nodes-mode ComfyUI-Manager search lands after the switch to packs', async () => {
+  it('drops a nodes-mode ComfyUI-Manager search that lands after the switch to packs and searches packs', async () => {
     useNewManagerUI()
-    let resolveSearch: (value: SearchPacksResult) => void = () => {}
-    vi.mocked(useRegistrySearchGateway().searchPacks)
+    const { searchPacks } = useRegistrySearchGateway()
+    let resolveNodesSearch: (value: SearchPacksResult) => void = () => {}
+    let resolvePacksSearch: (value: SearchPacksResult) => void = () => {}
+    vi.mocked(searchPacks)
       .mockResolvedValueOnce(result([], false))
       .mockResolvedValueOnce(result([], false))
       .mockReturnValueOnce(
         new Promise((resolve) => {
-          resolveSearch = resolve
+          resolveNodesSearch = resolve
+        })
+      )
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolvePacksSearch = resolve
         })
       )
       .mockResolvedValue(result([], false))
@@ -263,9 +270,28 @@ describe('ManagerDialog legacy-manager tip', () => {
     await user.click(
       screen.getByRole('button', { name: enMessages.manager.filter.nodePack })
     )
-    resolveSearch(result([], true))
+    resolveNodesSearch(
+      result([{ id: 'nodes-mode-pack', name: 'Nodes Mode Pack' }], true)
+    )
     await settleSearch()
 
+    expect(screen.queryByText('Nodes Mode Pack')).not.toBeInTheDocument()
+    expect(screen.queryByText(TIP, { exact: false })).not.toBeInTheDocument()
+    expect(vi.mocked(searchPacks).mock.calls.at(-1)).toEqual([
+      'comfyui-manager',
+      expect.objectContaining({
+        pageNumber: 0,
+        restrictSearchableAttributes: ['name', 'description']
+      })
+    ])
+
+    resolvePacksSearch(
+      result([{ id: 'comfyui-manager', name: 'ComfyUI-Manager' }], false)
+    )
+    await settleSearch()
+
+    expect(screen.getByText('ComfyUI-Manager')).toBeInTheDocument()
+    expect(screen.queryByText('Nodes Mode Pack')).not.toBeInTheDocument()
     expect(screen.queryByText(TIP, { exact: false })).not.toBeInTheDocument()
   })
 

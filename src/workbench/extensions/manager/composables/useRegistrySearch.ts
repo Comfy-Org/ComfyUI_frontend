@@ -25,6 +25,8 @@ interface SearchedFirstPage {
   rawResultsEmpty: boolean
 }
 
+type PageLoadOutcome = 'loaded' | 'inputsChanged'
+
 /**
  * Offset-paged registry search as a {@link PagedList}. Query inputs are reactive
  * so a change resets and reloads from the first page. A relevance-ranked index
@@ -67,10 +69,12 @@ export function useRegistrySearch(inputs: {
     return isTypedSearch ? { analyticsTags: [USER_SEARCH_ANALYTICS_TAG] } : {}
   }
 
-  async function doLoadMore() {
-    if (!morePages.value) return
+  async function doLoadMore(): Promise<PageLoadOutcome> {
+    if (!morePages.value) return 'loaded'
     const query = searchedQuery()
     const searchMode = toValue(inputs.searchMode)
+    const isCurrent = () =>
+      query === searchedQuery() && searchMode === toValue(inputs.searchMode)
     try {
       const result = await searchPacks(query, {
         pageSize: DEFAULT_PAGE_SIZE,
@@ -78,6 +82,7 @@ export function useRegistrySearch(inputs: {
         restrictSearchableAttributes: searchableAttributes(searchMode),
         ...analyticsParams(query)
       })
+      if (!isCurrent()) return 'inputsChanged'
       const { nodePacks } = result
       morePages.value = result.hasMore ?? nodePacks.length >= DEFAULT_PAGE_SIZE
       if (pageNumber === 0) {
@@ -91,26 +96,31 @@ export function useRegistrySearch(inputs: {
       suggestions.value = result.querySuggestions
       pageNumber++
     } catch (error) {
+      if (!isCurrent()) return 'inputsChanged'
       reportError(error, {
         errorType: 'error_searching_registry_packs',
         surface: 'platform'
       })
       morePages.value = false
     }
+    return 'loaded'
   }
 
   const reload = () =>
     preempt(async () => {
-      pageNumber = 0
-      morePages.value = true
-      firstPage.value = null
-      items.value = []
-      await doLoadMore()
+      do {
+        pageNumber = 0
+        morePages.value = true
+        firstPage.value = null
+        items.value = []
+      } while ((await doLoadMore()) === 'inputsChanged')
     })
 
   async function loadMore() {
     const startingPage = pageNumber
-    await enqueue('loadMore', doLoadMore)
+    await enqueue('loadMore', async () => {
+      await doLoadMore()
+    })
     return pageNumber > startingPage
   }
 
