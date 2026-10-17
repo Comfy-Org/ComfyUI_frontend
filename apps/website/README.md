@@ -2,6 +2,34 @@
 
 Marketing/brand website built with Astro + Vue.
 
+## Comfy Content Catalog rollout
+
+The CCC presentation layer is intentionally unmounted. The components under
+`src/components/cms/` provide the admin shell and yellow Draft/timewarp banner,
+with localized controls and readable change details. They emit intents; they
+do not authenticate, fetch content, set cookies, publish, or change routes.
+
+This layer changes no existing page, endpoint, middleware, build mode, or
+deployment setting. Its new theme tokens are namespaced to these components.
+There are no demo invitations, credentials, fixture data, or temporary publish
+switches in this layer. Existing JSONL/catalogue delivery remains unchanged.
+
+Follow-on frontend layers will add server-authorized, default-off session and
+Preview adapters, content/media forms, staging/final review, and finally an
+explicit consumer activation. The server must authorize every request and
+publication action; a hidden button or a caller-supplied `active` prop never
+grants access. Preview/timewarp must not alter real-UTC public media eligibility.
+
+Implementation follows the [CCC design](https://app.notion.com/p/3f06d73d365081cf9225d3c34f262b63).
+Backend foundation/review work is separately staged in Cloud PRs
+[13026](https://github.com/Comfy-Org/cloud/pull/13026),
+[13028](https://github.com/Comfy-Org/cloud/pull/13028), and
+[13030](https://github.com/Comfy-Org/cloud/pull/13030).
+
+The Linux demo is independently operated and is not a production activation
+or acceptance proof for this PR. Subsequent layers must keep existing Cloud
+contracts, content, and website behavior intact until a reviewed cutover.
+
 ## Linting
 
 From the repository root, `pnpm lint` checks website Astro, JavaScript,
