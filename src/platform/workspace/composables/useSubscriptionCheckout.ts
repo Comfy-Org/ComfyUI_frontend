@@ -56,6 +56,7 @@ import {
   savePendingSubscriptionCheckout
 } from '@/platform/workspace/utils/pendingSubscriptionCheckout'
 import { trackWorkspaceCheckoutStarted } from '@/platform/workspace/utils/workspaceCheckoutTelemetry'
+import { openBillingUrl } from '@/platform/workspace/billing/billingTab'
 
 type CheckoutStep = 'pricing' | 'preview' | 'success'
 export type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
@@ -612,8 +613,7 @@ export function useSubscriptionCheckout(
           })
         )
       }
-      const paymentWindow = window.open(portalUrl.href, '_blank')
-      if (!paymentWindow) {
+      if (!openBillingUrl(portalUrl.href)) {
         toast.add({
           severity: 'warn',
           summary: t('g.warning'),
@@ -1544,8 +1544,7 @@ export function useSubscriptionCheckout(
       initialActionUrl = response.payment_method_url
       // The open runs after `await subscribe(...)`, so it's not a direct user
       // gesture and can be popup-blocked; warn instead of failing silently.
-      const paymentWindow = window.open(initialActionUrl, '_blank')
-      if (!paymentWindow) {
+      if (!openBillingUrl(initialActionUrl)) {
         toast.add({
           severity: 'warn',
           summary: t('g.warning'),

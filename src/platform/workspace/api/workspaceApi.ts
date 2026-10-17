@@ -11,6 +11,8 @@ import type {
   CancelSubscriptionResponse,
   ChurnkeyAuthResponse,
   CreateInviteRequest,
+  CreateTopupCheckoutRequest,
+  CreateTopupCheckoutResponse,
   CreateTopupRequest,
   CreateTopupResponse,
   CreateWorkspaceRequest,
@@ -675,6 +677,32 @@ export const workspaceApi = {
         } satisfies CreateTopupRequest,
         { headers }
       )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  /**
+   * Create a Stripe-hosted credit top-up checkout session
+   * POST /api/billing/topup/checkout
+   */
+  async createTopupCheckout(
+    amountCents: number,
+    returnUrl: string
+  ): Promise<CreateTopupCheckoutResponse> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response =
+        await workspaceApiClient.post<CreateTopupCheckoutResponse>(
+          workspaceApiUrl('/billing/topup/checkout'),
+          {
+            amount_cents: amountCents,
+            return_url: returnUrl,
+            idempotency_key: crypto.randomUUID()
+          } satisfies CreateTopupCheckoutRequest,
+          { headers }
+        )
       return response.data
     } catch (err) {
       handleAxiosError(err)

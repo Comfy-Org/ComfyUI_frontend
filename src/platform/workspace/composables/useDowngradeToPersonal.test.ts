@@ -69,7 +69,10 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
+vi.mock(import('@/platform/distribution/types'), () => ({
+  isCloud: true,
+  isDesktop: false
+}))
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 

@@ -7,6 +7,8 @@
 import type {
   BillingDeclineReason,
   BillingOperationState,
+  HostedTopupCheckoutFailure,
+  HostedTopupCheckoutResult,
   TopupFailure,
   TopupResult
 } from '@comfyorg/account-core/billing'
@@ -72,7 +74,9 @@ export function projectTopupOperation(
   }
 }
 
-function topupFailureError(failure: TopupFailure): WorkspaceApiError {
+function topupFailureError(
+  failure: TopupFailure | HostedTopupCheckoutFailure
+): WorkspaceApiError {
   const serverCode = 'serverCode' in failure ? failure.serverCode : undefined
   return new WorkspaceApiError(
     t('credits.topUp.unknownError'),
@@ -105,4 +109,12 @@ export function projectTopupResult(
     case 'error':
       throw topupFailureError(result)
   }
+}
+
+/** The hosted Checkout URL, or the failure as the error the dialog handles. */
+export function projectHostedTopupCheckoutResult(
+  result: HostedTopupCheckoutResult
+): string {
+  if (result.status === 'ok') return result.url
+  throw topupFailureError(result)
 }
