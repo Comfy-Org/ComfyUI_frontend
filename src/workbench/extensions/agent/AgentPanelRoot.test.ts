@@ -4617,6 +4617,65 @@ describe('AgentPanelRoot attach flow', () => {
     ).not.toBeInTheDocument()
   })
 
+  async function attachExr(
+    assets: Record<string, string>[],
+    rejectPreviewLookup = false
+  ) {
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input)
+
+      if (url.endsWith('/api/upload/image'))
+        return json(200, { name: 'plate.exr', subfolder: '', type: 'input' })
+      if (url.includes('/api/assets?')) {
+        if (rejectPreviewLookup) throw new Error('preview lookup failed')
+        return json(200, { assets })
+      }
+      return json(202, { thread_id: 'th-1', message_id: 'm-1' })
+    })
+
+    renderWithSelectedTarget()
+
+    await userEvent.upload(
+      screen.getByTestId<HTMLInputElement>('agent-file-input'),
+      new File(['x'], 'plate.exr', { type: '' })
+    )
+
+    const chip = within(
+      await screen.findByTestId('composer-asset-section')
+    ).getByRole('group', { name: 'plate.exr' })
+    await vi.waitFor(() =>
+      expect(
+        screen.queryByLabelText(i18n.global.t('agent.uploading'))
+      ).not.toBeInTheDocument()
+    )
+    return chip
+  }
+
+  it('shows the stored preview of an uploaded EXR', async () => {
+    const chip = await attachExr([
+      { id: 'a-1', name: 'plate.exr', hash: 'plate.exr', preview_id: 'p-1' }
+    ])
+
+    expect(within(chip).getByAltText('plate.exr')).toHaveAttribute(
+      'src',
+      expect.stringContaining('/assets/p-1/content')
+    )
+  })
+
+  it('shows the name tile for an EXR with no stored preview', async () => {
+    const chip = await attachExr([])
+
+    expect(within(chip).queryByRole('img')).not.toBeInTheDocument()
+    expect(within(chip).getByText('plate.exr')).toBeInTheDocument()
+  })
+
+  it('keeps the name tile when the EXR preview lookup fails', async () => {
+    const chip = await attachExr([], true)
+
+    expect(within(chip).queryByRole('img')).not.toBeInTheDocument()
+    expect(within(chip).getByText('plate.exr')).toBeInTheDocument()
+  })
+
   it('renders the attachment on the turn that sent it, not earlier turns', async () => {
     let acks = 0
     vi.mocked(fetch).mockImplementation(

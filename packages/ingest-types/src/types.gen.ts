@@ -5508,9 +5508,12 @@ export type AgentRunApprovalContext = {
 export type AgentRetainedAttachmentExtension = '.avif'
 
 /**
- * Attachment extensions the agent recognizes as 3D models and wires into Load3D's model_file
- * widget. They are exactly the set Load3D accepts (comfy_extras/nodes_load_3d.py); .usdz is
- * absent from both lists, so it is not an exclusion this tier makes.
+ * Attachment extensions the agent cannot open but wires into a load node by filename. The 3D
+ * models go into Load3D's model_file widget and are exactly the set Load3D accepts
+ * (comfy_extras/nodes_load_3d.py); .usdz is absent from both lists, so it is not an exclusion
+ * this tier makes. .exr goes into LoadImage's image widget: ComfyUI core v0.40.0 registers it
+ * as an image type, but it is HDR, so view_asset cannot decode it and it is not on the view
+ * tier.
  *
  */
 export type AgentReferenceAttachmentExtension =
@@ -5523,6 +5526,7 @@ export type AgentReferenceAttachmentExtension =
   | '.spz'
   | '.splat'
   | '.ksplat'
+  | '.exr'
 
 /**
  * Attachment extensions whose contents the agent reads verbatim, with read_asset. The bytes
@@ -5919,10 +5923,11 @@ export type AgentAttachmentRejected = {
  * - `probe`: metadata only. probe_media reports duration, resolution, frame rate and codecs;
  * nothing in the model's input can carry a clip, so the CONTENT stays unreadable. Seeing a
  * video means cutting a frame out with process_media and viewing that.
- * - `reference`: the agent knows the file is a 3D model, with its kind and id, and wires its
- * filename into a Load3D node's model_file widget. No tool opens the mesh itself: the cloud
- * turn registers neither a shell nor a file-read tool, by design, as it is a shared
- * multi-tenant pod.
+ * - `reference`: the agent knows what the file is, with its kind and id, and wires its
+ * filename into the load node that takes it: a 3D model into a Load3D node's model_file
+ * widget, an .exr into a LoadImage node's image widget. No tool opens the file itself: the
+ * cloud turn registers neither a shell nor a file-read tool, by design, as it is a shared
+ * multi-tenant pod, and view_asset cannot decode an EXR.
  * - `read`: the agent reads the contents verbatim with read_asset — UTF-8 decoded, bounded
  * and truncation-marked. The tier describes CONTENT ACCESS only; whether the file can also
  * be wired into a graph is a separate axis, so a format gaining an upload-backed node input

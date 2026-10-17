@@ -5,6 +5,7 @@ import { i18n } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
 import { hasAudioType, hasImageType, hasVideoType } from '@/utils/eventUtils'
 import { formatSize, getMediaTypeFromFilename } from '@/utils/formatUtil'
+import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import {
   AgentApiError,
@@ -27,6 +28,7 @@ const MIME_TYPE_PATTERN =
 interface UploadResult {
   ref: string
   url?: string
+  previewUrl?: string
 }
 
 type UploadFileResult = 'uploaded' | 'cancelled' | 'failed'
@@ -92,7 +94,7 @@ async function fileContentHash(file: File): Promise<string> {
 }
 
 function attachmentMediaKind(file: File): MediaKind {
-  if (hasImageType(file)) return 'image'
+  if (hasImageType(file) || isHdrImageFilename(file.name)) return 'image'
   if (hasVideoType(file)) return 'video'
   if (hasAudioType(file)) return 'audio'
   return getMediaTypeFromFilename(file.name)
@@ -102,6 +104,7 @@ function localPreview(
   file: File,
   kind: MediaKind
 ): Pick<ComposerAttachment, 'previewUrl' | 'mediaUrl'> {
+  if (isHdrImageFilename(file.name)) return {}
   const playable = kind === 'video' || kind === 'audio'
   const url =
     kind === 'image' || playable ? URL.createObjectURL(file) : undefined
@@ -112,9 +115,11 @@ function localPreview(
 }
 
 function uploadedPreview(
+  name: string,
   kind: MediaKind,
-  url?: string
+  { url, previewUrl }: UploadResult
 ): Partial<ComposerAttachment> {
+  if (isHdrImageFilename(name)) return previewUrl ? { previewUrl } : {}
   if (!url) return {}
   if (kind === 'audio' || kind === 'video') return { mediaUrl: url }
   if (kind === 'image') return { previewUrl: url }
@@ -315,7 +320,7 @@ export function useAttachment(options: UseAttachmentOptions) {
       const result = await resolveUpload(id, file)
       options.update(id, {
         ref: result.ref,
-        ...uploadedPreview(mediaKind, result.url),
+        ...uploadedPreview(file.name, mediaKind, result),
         uploading: false
       })
       return 'uploaded'

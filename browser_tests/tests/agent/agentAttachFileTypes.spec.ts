@@ -21,6 +21,7 @@ const ACCEPTED: ReadonlyArray<{
   { tier: 'probe', file: 'clip.mp4' },
   { tier: 'read', file: 'notes.md' },
   { tier: 'reference', file: 'mesh.glb' },
+  { tier: 'reference', file: 'plate.exr' },
   { tier: 'retain', file: 'photo.avif' }
 ]
 
@@ -35,8 +36,7 @@ const REJECTED = [
   'env.hdr',
   'track.aac',
   'track.aiff',
-  'track.wma',
-  'plate.exr'
+  'track.wma'
 ] as const
 
 const VIDEO_HEADERS: Partial<Record<string, Buffer>> = {

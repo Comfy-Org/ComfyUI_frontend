@@ -5,6 +5,7 @@ import { computed, ref } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 
 const { name, previewUrl, mediaKind, variant } = defineProps<{
   name: string
@@ -22,6 +23,9 @@ function onImageError(event: Event): void {
   )
     failedUrl.value = event.target.getAttribute('src') ?? undefined
 }
+const showNameTile = computed(
+  () => variant === 'tray' && kind.value !== 'other' && isHdrImageFilename(name)
+)
 const isMediaIcon = computed(
   () => kind.value === 'audio' || kind.value === 'video'
 )
@@ -62,6 +66,13 @@ const icon = computed(() => {
       class="size-full rounded-sm object-cover"
       @error="onImageError"
     />
+    <span
+      v-else-if="showNameTile"
+      aria-hidden="true"
+      class="flex size-full items-center justify-center overflow-hidden rounded-sm bg-secondary-background p-1 text-center text-[10px] leading-tight break-all text-muted-foreground"
+    >
+      <span class="line-clamp-3">{{ name }}</span>
+    </span>
     <span
       v-else
       :role="isMediaIcon ? 'img' : undefined"
