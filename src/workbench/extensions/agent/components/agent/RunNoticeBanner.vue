@@ -4,6 +4,8 @@ import { computed, watch } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 
+import { RUN_NOTICE_DEFERRAL_MS } from './runNoticeDeferral'
+
 const {
   expanded = false,
   workflowName,
@@ -26,7 +28,7 @@ const contextMessages = {
 const defaultNotice = computed(() =>
   expanded ? 'agent.runNoticeExpanded' : 'agent.runNotice'
 )
-const { ready, start } = useTimeout(500, {
+const { ready, start } = useTimeout(RUN_NOTICE_DEFERRAL_MS, {
   controls: true,
   immediate: false
 })

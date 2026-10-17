@@ -36,6 +36,7 @@ import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
 
 import AgentPanel from './AgentPanel.vue'
 import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
+import { RUN_NOTICE_DEFERRAL_MS } from './runNoticeDeferral'
 
 setupInlinePromptEditorDom()
 
@@ -509,7 +510,7 @@ describe('AgentPanel', () => {
     expect(screen.queryByRole('note')).toBeNull()
     await nextTick()
     await fireEvent.focusIn(screen.getByRole('textbox'))
-    await vi.advanceTimersByTimeAsync(500)
+    await vi.advanceTimersByTimeAsync(RUN_NOTICE_DEFERRAL_MS)
 
     expect(screen.getByRole('note')).toHaveTextContent(
       'Use Run permissions in the composer toolbar'
