@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import Slider from './Slider.vue'
+import Slider from '@comfyorg/design-system/slider/Slider'
 
 async function flush() {
   await nextTick()

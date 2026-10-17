@@ -100,7 +100,7 @@ import { useRegionGate } from '@comfyorg/account-ui/auth/regionGate'
 
 import SignUpForm from '@/components/dialog/content/signin/SignUpForm.vue'
 import Message from '@/components/ui/message/Message.vue'
-import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import CloudSocialAuthButtons from '@/platform/cloud/onboarding/components/CloudSocialAuthButtons.vue'

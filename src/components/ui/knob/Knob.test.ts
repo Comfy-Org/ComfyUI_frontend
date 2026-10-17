@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
-import Knob from './Knob.vue'
+import Knob from '@comfyorg/design-system/knob/Knob'
 
 describe('Knob', () => {
   it('normalizes both control arcs to 100 path units', () => {

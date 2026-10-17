@@ -25,7 +25,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
 
-import TableHead from './TableHead.vue'
+import TableHead from '@comfyorg/design-system/table/TableHead'
 import type { TableSortDirection } from './tableUtils'
 
 const { class: className } = defineProps<{ class?: HTMLAttributes['class'] }>()

@@ -69,7 +69,7 @@ import { useI18n } from 'vue-i18n'
 
 import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
-import Input from '@/components/ui/input/Input.vue'
+import Input from '@comfyorg/design-system/input/Input'
 import Menu from '@/components/ui/menu/Menu.vue'
 import type { MenuItemAction } from '@/components/ui/menu/types'
 import { useWorkflowActionsMenu } from '@/composables/useWorkflowActionsMenu'

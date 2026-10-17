@@ -25,7 +25,7 @@
 <script setup lang="ts">
 import { nextTick, ref, watch } from 'vue'
 
-import Input from '@/components/ui/input/Input.vue'
+import Input from '../input/Input.vue'
 
 const {
   modelValue,

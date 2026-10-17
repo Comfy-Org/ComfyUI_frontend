@@ -322,6 +322,14 @@ const appSourceRoot = path.join(repoRoot, 'src')
 
 function uiComponentFile(source: string, importer: string) {
   if (!importer.startsWith(appSourceRoot + path.sep)) return null
+  const shared = source.match(/^@comfyorg\/design-system\/(.+)$/)
+  if (shared) {
+    return path.join(
+      repoRoot,
+      'packages/design-system/src/components',
+      shared[1] + '.vue'
+    )
+  }
   const match = source.match(/^@\/(components\/ui\/.+\.vue)$/)
   return match ? path.join(appSourceRoot, match[1]) : null
 }

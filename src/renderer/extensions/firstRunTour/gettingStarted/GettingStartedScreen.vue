@@ -125,9 +125,9 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import Tab from '@/components/tab/Tab.vue'
-import TabList from '@/components/tab/TabList.vue'
-import TabPanel from '@/components/tab/TabPanel.vue'
+import Tab from '@comfyorg/design-system/tab/Tab'
+import TabList from '@comfyorg/design-system/tab/TabList'
+import TabPanel from '@comfyorg/design-system/tab/TabPanel'
 import Button from '@/components/ui/button/Button.vue'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'

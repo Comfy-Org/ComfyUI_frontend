@@ -148,7 +148,7 @@ import { computed, inject, ref, useSlots, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import type { ButtonVariants } from '@comfyorg/design-system/button.variants'
 import { OnCloseKey } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'

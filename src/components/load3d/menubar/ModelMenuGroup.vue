@@ -101,12 +101,12 @@ import {
 } from '@/components/load3d/menubar/menuBarStyles'
 import { usePopoverExclusivity } from '@/components/load3d/menubar/usePopoverExclusivity'
 import Button from '@/components/ui/button/Button.vue'
-import Popover from '@/components/ui/popover/Popover.vue'
+import Popover from '@comfyorg/design-system/popover/Popover'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import {
   menuButtonClass,
   selectedMenuButtonClass
-} from '@/components/ui/menu/menuStyles'
+} from '@comfyorg/design-system/lib/menu/menuStyles'
 import type {
   MaterialMode,
   ModelConfig,

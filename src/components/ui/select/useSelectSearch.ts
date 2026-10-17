@@ -2,7 +2,7 @@ import { useFuse } from '@vueuse/integrations/useFuse'
 import type { MaybeRefOrGetter, Ref } from 'vue'
 import { computed, toValue } from 'vue'
 
-import type { SelectOption } from './types'
+import type { SelectOption } from '@comfyorg/design-system/lib/select/types'
 
 export function useSelectSearch<Value extends string | number>(
   query: Ref<string>,

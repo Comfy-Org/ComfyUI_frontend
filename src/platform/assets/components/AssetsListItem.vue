@@ -166,7 +166,7 @@ import { useProgressBarBackground } from '@/composables/useProgressBarBackground
 import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import VideoPlayOverlay from './VideoPlayOverlay.vue'
+import VideoPlayOverlay from '@comfyorg/design-system/media/VideoPlayOverlay'
 
 const emit = defineEmits<{
   'stack-toggle': []

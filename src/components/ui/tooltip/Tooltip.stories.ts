@@ -2,9 +2,9 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
 import Button from '@/components/ui/button/Button.vue'
 
-import Tooltip from './Tooltip.vue'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from './TooltipContent.vue'
-import TooltipTrigger from './TooltipTrigger.vue'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 
 const meta: Meta<typeof Tooltip> = {
   title: 'Components/Tooltip/Tooltip',

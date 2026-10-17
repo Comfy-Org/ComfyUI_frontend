@@ -28,7 +28,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
-import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
+import LoadingOverlay from '@comfyorg/design-system/common/LoadingOverlay'
 import { useLoad3dDrag } from '@/composables/useLoad3dDrag'
 
 const props = defineProps<{

@@ -11,9 +11,9 @@ import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import Input from '@/components/ui/input/Input.vue'
+import Input from '@comfyorg/design-system/input/Input'
 import MenuContent from '@/components/ui/menu/MenuContent.vue'
-import MenuRadioItem from '@/components/ui/menu/MenuRadioItem.vue'
+import MenuRadioItem from '@comfyorg/design-system/menu/MenuRadioItem'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 
 import type { ActiveTab } from '../../../types/activeTab'

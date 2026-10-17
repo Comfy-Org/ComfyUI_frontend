@@ -46,6 +46,43 @@ For the palette and fonts without the Tailwind layers or icon plugins:
 Icons are exposed to Tailwind as `icon-[comfy--*]` and `icon-mask-[comfy--*]`
 utilities. Size them with `size-*`, not font-size classes.
 
+## Vue components
+
+Install Vue alongside the package to use its components. Published components
+are compiled ES modules with type declarations; workspace imports use their
+Vue source. Both use the theme imported above, which scans the component
+classes for Tailwind utilities.
+
+Published consumers must also import the component stylesheet for scoped styles
+and animations:
+
+```ts
+import '@comfyorg/design-system/components.css'
+```
+
+Import supporting types and recipes through `@comfyorg/design-system/lib/`,
+for example `@comfyorg/design-system/lib/select/types`.
+
+Components that retain `pi-*` icon classes require the host to load
+`primeicons/primeicons.css` separately.
+
+```vue
+<script setup lang="ts">
+import Card from '@comfyorg/design-system/card/Card'
+import CardHeader from '@comfyorg/design-system/card/CardHeader'
+import CardTitle from '@comfyorg/design-system/card/CardTitle'
+import CardFooter from '@comfyorg/design-system/card/CardFooter'
+</script>
+
+<template>
+  <Card surface="secondary">
+    <CardHeader><CardTitle>Workspace</CardTitle></CardHeader>
+    <p>Shared workspace content</p>
+    <CardFooter>Actions</CardFooter>
+  </Card>
+</template>
+```
+
 ## Releasing
 
 Run the **Version Bump Design System** workflow to open a version PR, then merge

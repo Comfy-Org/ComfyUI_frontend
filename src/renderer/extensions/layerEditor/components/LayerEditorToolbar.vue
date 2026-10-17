@@ -96,14 +96,14 @@ import { PopoverTrigger } from 'reka-ui'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Popover from '@/components/ui/popover/Popover.vue'
+import Popover from '@comfyorg/design-system/popover/Popover'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import {
   menuContentClass,
   menuButtonClass
-} from '@/components/ui/menu/menuStyles'
-import ToggleGroup from '@/components/ui/toggle-group/ToggleGroup.vue'
-import ToggleGroupItem from '@/components/ui/toggle-group/ToggleGroupItem.vue'
+} from '@comfyorg/design-system/lib/menu/menuStyles'
+import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
+import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
 import { useLayerEditorExport } from '@/renderer/extensions/layerEditor/composables/useLayerEditorExport'
 import type { LayerEditorSession } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
 import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'

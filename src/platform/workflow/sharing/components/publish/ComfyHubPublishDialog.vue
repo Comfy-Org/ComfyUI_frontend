@@ -89,7 +89,7 @@ import { useI18n } from 'vue-i18n'
 
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import Button from '@/components/ui/button/Button.vue'
-import Input from '@/components/ui/input/Input.vue'
+import Input from '@comfyorg/design-system/input/Input'
 import ComfyHubPublishNav from '@/platform/workflow/sharing/components/publish/ComfyHubPublishNav.vue'
 import ComfyHubPublishWizardContent from '@/platform/workflow/sharing/components/publish/ComfyHubPublishWizardContent.vue'
 import { useComfyHubPublishSubmission } from '@/platform/workflow/sharing/composables/useComfyHubPublishSubmission'

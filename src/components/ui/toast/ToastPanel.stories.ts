@@ -7,7 +7,7 @@ import type { AssetDownload } from '@/stores/assetDownloadStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import ToastDock from './ToastDock.vue'
-import ToastPanel from './ToastPanel.vue'
+import ToastPanel from '@comfyorg/design-system/toast/ToastPanel'
 
 interface PanelStoryArgs {
   expanded: boolean

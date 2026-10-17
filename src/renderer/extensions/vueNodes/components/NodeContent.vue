@@ -38,7 +38,7 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
 
 import VideoPreview from '../VideoPreview.vue'
-import AudioPreview from './AudioPreview.vue'
+import AudioPreview from '@comfyorg/design-system/media/AudioPreview'
 import ImagePreview from './ImagePreview.vue'
 import { IMAGE_PREVIEW_MARGIN_TOP } from './imagePreviewLayout'
 

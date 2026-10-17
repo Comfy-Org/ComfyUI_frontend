@@ -25,12 +25,15 @@ jobs:
       - name: Typecheck
         run: pnpm -C packages/design-system typecheck
 
+      - name: Build components
+        run: pnpm -C packages/design-system build
+
       - name: Verify packed tarball only contains public design system files
         shell: bash
         run: |
           set -euo pipefail
           UNEXPECTED=$(
-            pnpm -C packages/design-system pack --dry-run --json |
+            pnpm --config.ignore-scripts=true -C packages/design-system pack --dry-run --json |
               jq -r '
                 .files[].path
                 | select(
@@ -41,6 +44,7 @@ jobs:
                     and . != "src/button.variants.ts"
                     and . != "src/select.variants.ts"
                     and . != "src/tag.variants.ts"
+                    and (startswith("dist/") | not)
                     and (startswith("src/css/") | not)
                     and (startswith("src/icons/") | not)
                   )

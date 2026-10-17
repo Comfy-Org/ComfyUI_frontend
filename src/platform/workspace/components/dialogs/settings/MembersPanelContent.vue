@@ -279,9 +279,9 @@ import { useSettingsHeaderCollapse } from '@/platform/settings/composables/useSe
 
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Button from '@/components/ui/button/Button.vue'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import WorkspaceMenuButton from '@/platform/workspace/components/dialogs/settings/WorkspaceMenuButton.vue'
 import MemberListItem from '@/platform/workspace/components/dialogs/settings/MemberListItem.vue'
 import MemberUpsellBanner from '@/platform/workspace/components/dialogs/settings/MemberUpsellBanner.vue'

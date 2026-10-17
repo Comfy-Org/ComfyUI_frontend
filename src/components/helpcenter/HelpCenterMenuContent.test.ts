@@ -60,7 +60,7 @@ vi.mock<unknown>(
 vi.mock(import('@/workbench/extensions/manager/composables/useManagerDialog'))
 vi.mock(import('@/workbench/extensions/manager/composables/useManagerState'))
 
-vi.mock(import('@/components/icons/PuzzleIcon.vue'), () => ({
+vi.mock(import('@comfyorg/design-system/icon/PuzzleIcon'), () => ({
   default: defineComponent({
     name: 'PuzzleIconStub',
     render: () => h('div')

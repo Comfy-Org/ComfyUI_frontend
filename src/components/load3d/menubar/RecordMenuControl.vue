@@ -98,9 +98,9 @@ import {
 } from '@/components/load3d/menubar/menuBarStyles'
 import { usePopoverExclusivity } from '@/components/load3d/menubar/usePopoverExclusivity'
 import Button from '@/components/ui/button/Button.vue'
-import Popover from '@/components/ui/popover/Popover.vue'
+import Popover from '@comfyorg/design-system/popover/Popover'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
-import { menuButtonClass } from '@/components/ui/menu/menuStyles'
+import { menuButtonClass } from '@comfyorg/design-system/lib/menu/menuStyles'
 
 const { compact = false } = defineProps<{
   compact?: boolean

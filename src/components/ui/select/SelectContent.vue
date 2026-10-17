@@ -13,8 +13,8 @@ import { computed, useAttrs } from 'vue'
 import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import SelectScrollDownButton from './SelectScrollDownButton.vue'
-import SelectScrollUpButton from './SelectScrollUpButton.vue'
+import SelectScrollDownButton from '@comfyorg/design-system/select/SelectScrollDownButton'
+import SelectScrollUpButton from '@comfyorg/design-system/select/SelectScrollUpButton'
 
 defineOptions({
   inheritAttrs: false

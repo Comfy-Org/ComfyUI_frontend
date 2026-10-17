@@ -257,7 +257,7 @@
 </template>
 
 <script setup lang="ts">
-import Card from '@/components/ui/card/Card.vue'
+import Card from '@comfyorg/design-system/card/Card'
 import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
 import type { BillingOperationTerminal } from '@comfyorg/account-core/billing'
 import {
@@ -270,11 +270,11 @@ import { useI18n } from 'vue-i18n'
 
 import { creditsToUsd, usdToCredits } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
-import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
-import NumberField from '@/components/ui/number-field/NumberField.vue'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
+import NumberField from '@comfyorg/design-system/number-field/NumberField'
 import NumberFieldDecrement from '@/components/ui/number-field/NumberFieldDecrement.vue'
 import NumberFieldIncrement from '@/components/ui/number-field/NumberFieldIncrement.vue'
-import NumberFieldInput from '@/components/ui/number-field/NumberFieldInput.vue'
+import NumberFieldInput from '@comfyorg/design-system/number-field/NumberFieldInput'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@/platform/telemetry'

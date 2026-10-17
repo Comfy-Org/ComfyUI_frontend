@@ -4,7 +4,7 @@ import { computed, toValue } from 'vue'
 
 import MenuRadioGroup from './MenuRadioGroup.vue'
 import MenuSubContent from './MenuSubContent.vue'
-import MenuSubTrigger from './MenuSubTrigger.vue'
+import MenuSubTrigger from '@comfyorg/design-system/menu/MenuSubTrigger'
 import type { MenuItemRadioGroup, MenuItemSubmenu } from './types'
 
 const { item, ownerId } = defineProps<{

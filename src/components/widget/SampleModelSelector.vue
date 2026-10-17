@@ -110,9 +110,9 @@
 import { computed, provide, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import CardBottom from '@/components/card/CardBottom.vue'
-import CardContainer from '@/components/card/CardContainer.vue'
-import CardTop from '@/components/card/CardTop.vue'
+import CardBottom from '@comfyorg/design-system/content-card/CardBottom'
+import CardContainer from '@comfyorg/design-system/content-card/CardContainer'
+import CardTop from '@comfyorg/design-system/content-card/CardTop'
 import Tag from '@/components/chip/Tag.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
 import type { MenuItem } from '@/components/ui/menu/types'

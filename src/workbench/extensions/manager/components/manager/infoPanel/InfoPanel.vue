@@ -108,7 +108,7 @@ import { computed, provide, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
-import ModelInfoField from '@/platform/assets/components/modelInfo/ModelInfoField.vue'
+import ModelInfoField from '@comfyorg/design-system/field/ModelInfoField'
 import type { components } from '@/types/comfyRegistryTypes'
 import PackStatusMessage from '@/workbench/extensions/manager/components/manager/PackStatusMessage.vue'
 import PackVersionBadge from '@/workbench/extensions/manager/components/manager/PackVersionBadge.vue'

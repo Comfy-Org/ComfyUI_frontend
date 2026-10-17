@@ -416,7 +416,7 @@
 <script setup lang="ts">
 import Badge from '@/components/ui/badge/Badge.vue'
 import PricingTierHeading from '@/platform/workspace/components/PricingTierHeading.vue'
-import Card from '@/components/ui/card/Card.vue'
+import Card from '@comfyorg/design-system/card/Card'
 import {
   BILLING_ACTION_NAME,
   planCtaActionName
@@ -427,7 +427,8 @@ import { I18nT, useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import CreditSlider from '@/components/ui/credit-slider/CreditSlider.vue'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
+import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import {
   ENTERPRISE_URL,

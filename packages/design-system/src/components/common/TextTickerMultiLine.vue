@@ -20,7 +20,7 @@ import { useElementSize } from '@vueuse/core'
 import { computed, useTemplateRef } from 'vue'
 
 import MarqueeLine from './MarqueeLine.vue'
-import { splitTextAtWordBoundary } from '@/utils/textTickerUtils'
+import { splitTextAtWordBoundary } from './textTickerUtils'
 
 const { text } = defineProps<{ text: string }>()
 

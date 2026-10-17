@@ -141,6 +141,10 @@ jobs:
             fi
           fi
 
+      - name: Build components
+        if: steps.check_npm.outputs.exists == 'false'
+        run: pnpm -C packages/design-system build
+
       - name: Publish package
         if: steps.check_npm.outputs.exists == 'false'
         env:

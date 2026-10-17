@@ -5,7 +5,7 @@ import type { Slot } from 'vue'
 
 import MenuAction from './MenuAction.vue'
 import MenuItemContent from './MenuItemContent.vue'
-import MenuSeparator from './MenuSeparator.vue'
+import MenuSeparator from '@comfyorg/design-system/menu/MenuSeparator'
 import MenuSubmenu from './MenuSubmenu.vue'
 import type { MenuItem } from './types'
 

@@ -206,7 +206,7 @@ import { useEventListener } from '@vueuse/core'
 import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 
 import { formatCredits } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'

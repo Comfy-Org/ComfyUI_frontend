@@ -119,7 +119,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { onMounted } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import type { SubscriptionCheckoutSelection } from '@/composables/billing/types'
 import { useSubscriptionCheckout } from '@/platform/workspace/composables/useSubscriptionCheckout'

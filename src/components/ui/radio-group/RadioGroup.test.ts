@@ -3,8 +3,8 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { defineComponent, ref } from 'vue'
 
-import RadioGroup from './RadioGroup.vue'
-import RadioGroupItem from './RadioGroupItem.vue'
+import RadioGroup from '@comfyorg/design-system/radio-group/RadioGroup'
+import RadioGroupItem from '@comfyorg/design-system/radio-group/RadioGroupItem'
 
 const Harness = defineComponent({
   components: { RadioGroup, RadioGroupItem },

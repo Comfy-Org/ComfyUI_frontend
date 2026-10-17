@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import type { CheckboxCheckedState } from 'reka-ui'
 import { ref } from 'vue'
 
-import Checkbox from './Checkbox.vue'
+import Checkbox from '@comfyorg/design-system/checkbox/Checkbox'
 
 const meta: Meta<typeof Checkbox> = {
   title: 'Components/Checkbox',

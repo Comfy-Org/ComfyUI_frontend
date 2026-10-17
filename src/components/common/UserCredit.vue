@@ -26,7 +26,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
 import Badge from '@/components/ui/badge/Badge.vue'

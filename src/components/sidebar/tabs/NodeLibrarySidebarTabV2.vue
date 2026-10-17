@@ -109,9 +109,9 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import FilterDropdown from '@/components/common/FilterDropdown.vue'
-import Tab from '@/components/tab/Tab.vue'
-import TabList from '@/components/tab/TabList.vue'
-import TabPanel from '@/components/tab/TabPanel.vue'
+import Tab from '@comfyorg/design-system/tab/Tab'
+import TabList from '@comfyorg/design-system/tab/TabList'
+import TabPanel from '@comfyorg/design-system/tab/TabPanel'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
@@ -145,7 +145,7 @@ import { flattenTree, sortedTree, unwrapTreeRoot } from '@/utils/treeUtil'
 import AllNodesPanel from './nodeLibrary/AllNodesPanel.vue'
 import EssentialNodesPanel from './nodeLibrary/EssentialNodesPanel.vue'
 import SidebarTabTemplate from './SidebarTabTemplate.vue'
-import SidebarTopArea from './SidebarTopArea.vue'
+import SidebarTopArea from '@comfyorg/design-system/navigation/SidebarTopArea'
 
 const { flags } = useFeatureFlags()
 

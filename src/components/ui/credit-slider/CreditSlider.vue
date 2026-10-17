@@ -10,7 +10,7 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import Slider from '@/components/ui/slider/Slider.vue'
+import Slider from '@comfyorg/design-system/slider/Slider'
 import { getStopDiscountedMonthlyUsd } from '@comfyorg/account-ui/billing/catalog'
 import {
   DEFAULT_TEAM_PLAN_STOP_INDEX,

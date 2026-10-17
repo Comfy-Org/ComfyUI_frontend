@@ -48,9 +48,9 @@ import {
   formPanelClass
 } from '@/components/load3d/menubar/menuBarStyles'
 import { usePopoverExclusivity } from '@/components/load3d/menubar/usePopoverExclusivity'
-import Popover from '@/components/ui/popover/Popover.vue'
+import Popover from '@comfyorg/design-system/popover/Popover'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
-import Slider from '@/components/ui/slider/Slider.vue'
+import Slider from '@comfyorg/design-system/slider/Slider'
 import Button from '@/components/ui/button/Button.vue'
 import type { LightConfig } from '@/extensions/core/load3d/interfaces'
 import { useSettingStore } from '@/platform/settings/settingStore'

@@ -14,6 +14,7 @@
     "url": "git+https://github.com/Comfy-Org/ComfyUI_frontend.git"
   },
   "files": [
+    "dist",
     "src/css",
     "src/icons",
     "src/button.variants.ts",
@@ -23,6 +24,9 @@
   ],
   "type": "module",
   "exports": {
+    "./*": "./src/components/*.vue",
+    "./lib/*": "./src/components/*.ts",
+    "./components.css": "./dist/components.css",
     "./css/*": "./src/css/*",
     "./icons/*": "./src/icons/*",
     "./button.variants": "./src/button.variants.ts",
@@ -31,9 +35,28 @@
     "./workspaceAvatar": "./src/workspaceAvatar.ts"
   },
   "publishConfig": {
+    "exports": {
+      "./*": {
+        "types": "./dist/*.d.ts",
+        "import": "./dist/*.js"
+      },
+      "./lib/*": {
+        "types": "./dist/*.d.ts",
+        "import": "./dist/*.js"
+      },
+      "./components.css": "./dist/components.css",
+      "./css/*": "./src/css/*",
+      "./icons/*": "./src/icons/*",
+      "./button.variants": "./src/button.variants.ts",
+      "./select.variants": "./src/select.variants.ts",
+      "./tag.variants": "./src/tag.variants.ts",
+      "./workspaceAvatar": "./src/workspaceAvatar.ts"
+    },
     "access": "public"
   },
   "scripts": {
+    "build": "vite build",
+    "prepack": "pnpm run build",
     "format": "oxfmt --write",
     "format:check": "oxfmt --check",
     "test": "vitest run",
@@ -44,16 +67,33 @@
     "@iconify/tailwind4": "catalog:",
     "@iconify/tools": "catalog:",
     "@iconify/utils": "catalog:",
+    "@vueuse/core": "catalog:",
+    "chart.js": "^4.5.0",
     "cva": "catalog:",
+    "dompurify": "catalog:",
+    "es-toolkit": "^1.39.9",
+    "reka-ui": "catalog:",
     "tw-animate-css": "catalog:"
   },
   "devDependencies": {
+    "@comfyorg/tailwind-utils": "workspace:^",
+    "@microsoft/api-extractor": "catalog:",
+    "@vitejs/plugin-vue": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "tailwindcss": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:"
+    "vite": "catalog:",
+    "vite-plugin-dts": "catalog:",
+    "vitest": "catalog:",
+    "vue": "catalog:"
   },
   "peerDependencies": {
-    "tailwindcss": "^4.1.0"
+    "tailwindcss": "^4.1.0",
+    "vue": "^3.5.40"
+  },
+  "peerDependenciesMeta": {
+    "vue": {
+      "optional": true
+    }
   }
 }

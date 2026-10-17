@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { ref } from 'vue'
 
-import Textarea from './Textarea.vue'
+import Textarea from '@comfyorg/design-system/textarea/Textarea'
 
 const meta: Meta<typeof Textarea> = {
   title: 'UI/Textarea',

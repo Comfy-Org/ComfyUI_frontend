@@ -5,7 +5,7 @@ import type {
 } from '@storybook/vue3-vite'
 import { computed, ref, toRefs } from 'vue'
 
-import Slider from './Slider.vue'
+import Slider from '@comfyorg/design-system/slider/Slider'
 
 interface StoryArgs extends ComponentPropsAndSlots<typeof Slider> {
   disabled: boolean

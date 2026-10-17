@@ -33,7 +33,8 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ColorPicker from '@/components/ui/color-picker/ColorPicker.vue'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
+import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
 
 const { t } = useI18n()
 

@@ -281,7 +281,7 @@ import { useElementSize } from '@vueuse/core'
 import { computed, useTemplateRef } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import Slider from '@/components/ui/slider/Slider.vue'
+import Slider from '@comfyorg/design-system/slider/Slider'
 import { PAINTER_TOOLS, usePainter } from '@/composables/painter/usePainter'
 import type { NodeId } from '@/types/nodeId'
 import { toHexFromFormat } from '@/utils/colorUtil'

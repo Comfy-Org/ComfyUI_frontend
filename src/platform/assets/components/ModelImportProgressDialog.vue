@@ -5,7 +5,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Loader from '@/components/loader/Loader.vue'
-import ToastPanel from '@/components/ui/toast/ToastPanel.vue'
+import ToastPanel from '@comfyorg/design-system/toast/ToastPanel'
 import ProgressToastItem from '@/components/toast/ProgressToastItem.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'

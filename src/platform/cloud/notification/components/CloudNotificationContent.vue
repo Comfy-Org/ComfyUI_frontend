@@ -76,12 +76,12 @@
 </template>
 
 <script setup lang="ts">
-import Card from '@/components/ui/card/Card.vue'
+import Card from '@comfyorg/design-system/card/Card'
 import { onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import { useTelemetry } from '@/platform/telemetry'
 import { useDialogStore } from '@/stores/dialogStore'
 

@@ -52,7 +52,7 @@ import { default as DOMPurify } from 'dompurify'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
+import SanitizedHtml from '@comfyorg/design-system/common/SanitizedHtml'
 import Button from '@/components/ui/button/Button.vue'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { formatVersionAnchor } from '@/utils/formatUtil'

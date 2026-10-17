@@ -90,9 +90,9 @@ import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { computed, ref, useTemplateRef } from 'vue'
 
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import type { TopbarBadge } from '@/types/comfy'
 
 const {

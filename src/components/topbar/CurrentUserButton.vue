@@ -62,7 +62,7 @@ import Popover from '@/components/common/ImperativePopover.vue'
 import { computed, defineAsyncComponent, ref } from 'vue'
 
 import UserAvatar from '@/components/common/UserAvatar.vue'
-import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'

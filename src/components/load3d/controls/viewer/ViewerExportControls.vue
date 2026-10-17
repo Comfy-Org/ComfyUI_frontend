@@ -29,11 +29,11 @@
 import { computed, ref, watch } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import Select from '@/components/ui/select/Select.vue'
+import Select from '@comfyorg/design-system/select/Select'
 import SelectContent from '@/components/ui/select/SelectContent.vue'
-import SelectItem from '@/components/ui/select/SelectItem.vue'
-import SelectTrigger from '@/components/ui/select/SelectTrigger.vue'
-import SelectValue from '@/components/ui/select/SelectValue.vue'
+import SelectItem from '@comfyorg/design-system/select/SelectItem'
+import SelectTrigger from '@comfyorg/design-system/select/SelectTrigger'
+import SelectValue from '@comfyorg/design-system/select/SelectValue'
 import { getExportFormatOptions } from '@/extensions/core/load3d/constants'
 
 const { sourceFormat = null } = defineProps<{

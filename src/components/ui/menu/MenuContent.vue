@@ -14,7 +14,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 
-import { menuContentClass } from './menuStyles'
+import { menuContentClass } from '@comfyorg/design-system/lib/menu/menuStyles'
 
 const {
   class: className,

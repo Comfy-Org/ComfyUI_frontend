@@ -88,7 +88,7 @@ import Button from '@/components/ui/button/Button.vue'
 import {
   menuButtonClass,
   menuContentClass
-} from '@/components/ui/menu/menuStyles'
+} from '@comfyorg/design-system/lib/menu/menuStyles'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { cn } from '@comfyorg/tailwind-utils'

@@ -5,10 +5,10 @@ import { nextTick, ref } from 'vue'
 
 import { raiseModalLayer, releaseModalLayer } from '@/utils/modalLayerStack'
 
-import Select from './Select.vue'
+import Select from '@comfyorg/design-system/select/Select'
 import SelectContent from './SelectContent.vue'
-import SelectItem from './SelectItem.vue'
-import SelectTrigger from './SelectTrigger.vue'
+import SelectItem from '@comfyorg/design-system/select/SelectItem'
+import SelectTrigger from '@comfyorg/design-system/select/SelectTrigger'
 
 function findContentElement(): HTMLElement | null {
   return document.querySelector('[data-dismissable-layer]')

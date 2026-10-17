@@ -121,8 +121,8 @@ import TopbarSubscribeButton from '@/components/topbar/TopbarSubscribeButton.vue
 import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import Tabs from '@/components/ui/tabs/Tabs.vue'
-import TabsList from '@/components/ui/tabs/TabsList.vue'
+import Tabs from '@comfyorg/design-system/tabs/Tabs'
+import TabsList from '@comfyorg/design-system/tabs/TabsList'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useWorkflowStatusDismissal } from '@/composables/useWorkflowStatusDismissal'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'

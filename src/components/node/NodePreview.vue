@@ -91,7 +91,7 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
 import { truncate, zip } from 'es-toolkit/compat'
 import { computed } from 'vue'
 
-import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
+import SanitizedHtml from '@comfyorg/design-system/common/SanitizedHtml'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import LGraphNodePreview from '@/renderer/extensions/vueNodes/components/LGraphNodePreview.vue'
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'

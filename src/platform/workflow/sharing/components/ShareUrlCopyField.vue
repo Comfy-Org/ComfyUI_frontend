@@ -25,7 +25,7 @@
 import { refAutoReset } from '@vueuse/core'
 
 import Button from '@/components/ui/button/Button.vue'
-import Input from '@/components/ui/input/Input.vue'
+import Input from '@comfyorg/design-system/input/Input'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useTelemetry } from '@/platform/telemetry'
 import { useShareFlowContext } from '@/platform/workflow/sharing/composables/useShareFlowContext'

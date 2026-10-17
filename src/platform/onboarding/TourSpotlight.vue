@@ -167,7 +167,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { raiseModalLayer, releaseModalLayer } from '@/utils/modalLayerStack'
 
-import CoachmarkCard from './CoachmarkCard.vue'
+import CoachmarkCard from '@comfyorg/design-system/card/CoachmarkCard'
 import {
   CARD_WIDTH,
   SPOTLIGHT_PAD,

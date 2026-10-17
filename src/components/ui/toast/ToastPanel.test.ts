@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { defineComponent, ref } from 'vue'
 
-import ToastPanel from './ToastPanel.vue'
+import ToastPanel from '@comfyorg/design-system/toast/ToastPanel'
 
 const PanelWithToggle = defineComponent({
   components: { ToastPanel },

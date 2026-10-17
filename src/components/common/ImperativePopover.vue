@@ -5,7 +5,7 @@ import type { FocusOutsideEvent, PointerDownOutsideEvent } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 import { ref } from 'vue'
 
-import Popover from '@/components/ui/popover/Popover.vue'
+import Popover from '@comfyorg/design-system/popover/Popover'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import { cn } from '@comfyorg/tailwind-utils'
 

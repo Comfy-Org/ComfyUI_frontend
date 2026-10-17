@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, useTemplateRef } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import type { useAgentMentionPicker } from '../../../composables/agent/useAgentMentionPicker'
 import type { SkillReferenceMetadata } from '../../../types/skillReference'
 import AssetThumbnail from './AssetThumbnail.vue'

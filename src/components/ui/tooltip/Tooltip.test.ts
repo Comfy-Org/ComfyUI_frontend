@@ -5,10 +5,10 @@ import { defineComponent, ref } from 'vue'
 
 import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
 
-import Tooltip from './Tooltip.vue'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from './TooltipContent.vue'
-import TooltipProvider from './TooltipProvider.vue'
-import TooltipTrigger from './TooltipTrigger.vue'
+import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 
 const TooltipHarness = defineComponent({
   components: { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger },

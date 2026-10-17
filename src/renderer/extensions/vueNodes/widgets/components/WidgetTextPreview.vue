@@ -61,9 +61,9 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
+import SanitizedHtml from '@comfyorg/design-system/common/SanitizedHtml'
 import Button from '@/components/ui/button/Button.vue'
-import Textarea from '@/components/ui/textarea/Textarea.vue'
+import Textarea from '@comfyorg/design-system/textarea/Textarea'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'

@@ -46,7 +46,7 @@ import { useI18n } from 'vue-i18n'
 
 import { formatUsdFromCents } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
-import Input from '@/components/ui/input/Input.vue'
+import Input from '@comfyorg/design-system/input/Input'
 import { useDialogStore } from '@/stores/dialogStore'
 import { getErrorMessage } from '@/utils/errorUtil'
 

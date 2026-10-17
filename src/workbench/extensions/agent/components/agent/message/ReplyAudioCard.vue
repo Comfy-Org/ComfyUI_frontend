@@ -2,7 +2,7 @@
 import { toRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Slider from '@/components/ui/slider/Slider.vue'
+import Slider from '@comfyorg/design-system/slider/Slider'
 import Button from '@/components/ui/button/Button.vue'
 import { useWaveAudioPlayer } from '@/composables/useWaveAudioPlayer'
 import { useAssetDownload } from '@/platform/assets/composables/useAssetDownload'

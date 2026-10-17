@@ -129,14 +129,14 @@
 </template>
 
 <script setup lang="ts">
-import Card from '@/components/ui/card/Card.vue'
+import Card from '@comfyorg/design-system/card/Card'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { storeToRefs } from 'pinia'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import { useWorkspaceSwitch } from '@/platform/workspace/composables/useWorkspaceSwitch'
 import { useWorkspaceTierLabel } from '@/platform/workspace/composables/useWorkspaceTierLabel'

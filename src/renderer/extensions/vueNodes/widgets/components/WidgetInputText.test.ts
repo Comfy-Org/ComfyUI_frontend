@@ -1,8 +1,8 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 
-import Input from '@/components/ui/input/Input.vue'
-import Textarea from '@/components/ui/textarea/Textarea.vue'
+import Input from '@comfyorg/design-system/input/Input'
+import Textarea from '@comfyorg/design-system/textarea/Textarea'
 import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 

@@ -167,7 +167,7 @@ import { useI18n } from 'vue-i18n'
 import {
   menuContentClass,
   menuItemClass
-} from '@/components/ui/menu/menuStyles'
+} from '@comfyorg/design-system/lib/menu/menuStyles'
 import { cn } from '@comfyorg/tailwind-utils'
 import {
   dateFilterOptions,

@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import SanitizedHtml from './SanitizedHtml.vue'
+import SanitizedHtml from '@comfyorg/design-system/common/SanitizedHtml'
 
 describe('SanitizedHtml', () => {
   it('preserves code token colours and font styles without executable or layout attributes', () => {

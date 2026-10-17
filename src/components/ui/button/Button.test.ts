@@ -2,7 +2,7 @@ import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
-import TooltipProvider from '@/components/ui/tooltip/TooltipProvider.vue'
+import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
 
 import Button from './Button.vue'
 

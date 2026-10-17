@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
 import Button from '@/components/ui/button/Button.vue'
-import Card from '@/components/ui/card/Card.vue'
-import CardFooter from '@/components/ui/card/CardFooter.vue'
-import CardHeader from '@/components/ui/card/CardHeader.vue'
-import CardTitle from '@/components/ui/card/CardTitle.vue'
+import Card from '@comfyorg/design-system/card/Card'
+import CardFooter from '@comfyorg/design-system/card/CardFooter'
+import CardHeader from '@comfyorg/design-system/card/CardHeader'
+import CardTitle from '@comfyorg/design-system/card/CardTitle'
 
 const meta: Meta<typeof Card> = {
   title: 'Components/Card',

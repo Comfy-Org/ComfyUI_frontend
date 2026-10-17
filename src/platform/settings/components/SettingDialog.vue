@@ -116,7 +116,7 @@ import SettingsWorkspaceHeader from '@/platform/settings/components/SettingsWork
 import CurrentUserMessage from '@/components/dialog/content/setting/CurrentUserMessage.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import NavItem from '@/components/widget/nav/NavItem.vue'
-import NavTitle from '@/components/widget/nav/NavTitle.vue'
+import NavTitle from '@comfyorg/design-system/navigation/NavTitle'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useSettingsHeaderCollapse } from '@/platform/settings/composables/useSettingsHeaderCollapse'
 import { cn } from '@comfyorg/tailwind-utils'

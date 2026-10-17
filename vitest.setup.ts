@@ -9,7 +9,7 @@ import type { Plugin } from 'vue'
 
 import './vitest.network.setup'
 
-import { appTooltipProviderDefaults } from '@/components/ui/tooltip/tooltipConfig'
+import { appTooltipProviderDefaults } from '@comfyorg/design-system/lib/tooltip/tooltipConfig'
 import { clearRegisteredLiteGraphTypes } from '@/lib/litegraph/src/litegraphInstance'
 import { remoteConfigState } from '@/platform/remoteConfig/remoteConfig'
 import { StubPath2D } from '@/utils/__tests__/stubPath2D'

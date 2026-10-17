@@ -378,9 +378,9 @@
 
 <script setup lang="ts">
 import Badge from '@/components/ui/badge/Badge.vue'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -395,7 +395,7 @@ import { useManagerState } from '@/workbench/extensions/manager/composables/useM
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
 import CollapseToggleButton from '../layout/CollapseToggleButton.vue'
-import TransitionCollapse from '../layout/TransitionCollapse.vue'
+import TransitionCollapse from '@comfyorg/design-system/transition/TransitionCollapse'
 import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import ErrorCardSection from './ErrorCardSection.vue'
 import ErrorNodeCard from './ErrorNodeCard.vue'
@@ -406,7 +406,7 @@ import MissingModelCard from '@/platform/missingModel/components/MissingModelCar
 import MissingMediaCard from '@/platform/missingMedia/components/MissingMediaCard.vue'
 import { isCloud } from '@/platform/distribution/types'
 import Button from '@/components/ui/button/Button.vue'
-import DotSpinner from '@/components/common/DotSpinner.vue'
+import DotSpinner from '@comfyorg/design-system/common/DotSpinner'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { usePackInstall } from '@/workbench/extensions/manager/composables/nodePack/usePackInstall'
 import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'

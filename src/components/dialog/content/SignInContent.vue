@@ -186,7 +186,7 @@ import { isEmbeddedWebView } from '@comfyorg/account-core/webviewDetection'
 
 import Button from '@/components/ui/button/Button.vue'
 import Message from '@/components/ui/message/Message.vue'
-import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useSocialSignIn } from '@/platform/auth/social/useSocialSignIn'

@@ -5,7 +5,7 @@ import { DropdownMenuRadioGroup } from 'reka-ui'
 import TextTooltip from '@/components/ui/tooltip/TextTooltip.vue'
 
 import MenuItemContent from './MenuItemContent.vue'
-import MenuRadioItem from './MenuRadioItem.vue'
+import MenuRadioItem from '@comfyorg/design-system/menu/MenuRadioItem'
 
 interface Option {
   label: string

@@ -117,7 +117,7 @@ import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import ButtonGroup from '@/components/ui/button-group/ButtonGroup.vue'
+import ButtonGroup from '@comfyorg/design-system/button-group/ButtonGroup'
 import Menu from '@/components/ui/menu/Menu.vue'
 import type { MenuItem } from '@/components/ui/menu/types'
 import { useAppMode } from '@/composables/useAppMode'

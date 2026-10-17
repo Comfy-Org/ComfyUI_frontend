@@ -67,7 +67,7 @@ import Load3DViewerButton from '@/components/graph/selectionToolbox/Load3DViewer
 import MaskEditorButton from '@/components/graph/selectionToolbox/MaskEditorButton.vue'
 import RefreshSelectionButton from '@/components/graph/selectionToolbox/RefreshSelectionButton.vue'
 import PublishSubgraphButton from '@/components/graph/selectionToolbox/SaveToSubgraphLibrary.vue'
-import TooltipProvider from '@/components/ui/tooltip/TooltipProvider.vue'
+import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
 import { useSelectionToolboxPosition } from '@/composables/canvas/useSelectionToolboxPosition'
 import { useSelectionState } from '@/composables/graph/useSelectionState'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -80,7 +80,7 @@ import type { ComfyCommandImpl } from '@/stores/commandStore'
 import FrameNodes from './selectionToolbox/FrameNodes.vue'
 import LinkSelectionActions from './selectionToolbox/LinkSelectionActions.vue'
 import NodeOptionsButton from './selectionToolbox/NodeOptionsButton.vue'
-import VerticalDivider from './selectionToolbox/VerticalDivider.vue'
+import VerticalDivider from '@comfyorg/design-system/common/VerticalDivider'
 
 const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()

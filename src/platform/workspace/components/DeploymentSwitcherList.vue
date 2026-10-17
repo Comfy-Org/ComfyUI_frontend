@@ -43,7 +43,7 @@ import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import DeploymentSwitcherRow from '@/platform/workspace/components/DeploymentSwitcherRow.vue'
+import DeploymentSwitcherRow from '@comfyorg/design-system/menu/DeploymentSwitcherRow'
 import { useDeploymentLabels } from '@/platform/workspace/composables/useDeploymentLabels'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 

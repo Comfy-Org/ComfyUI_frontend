@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import EditableText from '@/components/common/EditableText.vue'
+import EditableText from '@comfyorg/design-system/common/EditableText'
 import Badge from '@/components/ui/badge/Badge.vue'
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'

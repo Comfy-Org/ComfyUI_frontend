@@ -28,11 +28,11 @@
 </template>
 
 <script setup lang="ts">
-import Knob from '@/components/ui/knob/Knob.vue'
-import NumberField from '@/components/ui/number-field/NumberField.vue'
+import Knob from '@comfyorg/design-system/knob/Knob'
+import NumberField from '@comfyorg/design-system/number-field/NumberField'
 import NumberFieldDecrement from '@/components/ui/number-field/NumberFieldDecrement.vue'
 import NumberFieldIncrement from '@/components/ui/number-field/NumberFieldIncrement.vue'
-import NumberFieldInput from '@/components/ui/number-field/NumberFieldInput.vue'
+import NumberFieldInput from '@comfyorg/design-system/number-field/NumberFieldInput'
 
 defineProps<{
   ariaLabel?: string

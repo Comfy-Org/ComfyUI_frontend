@@ -34,7 +34,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import Switch from '@/components/ui/switch/Switch.vue'
+import Switch from '@comfyorg/design-system/switch/Switch'
 import type { components } from '@/types/comfyRegistryTypes'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
 import { useImportFailedDetection } from '@/workbench/extensions/manager/composables/useImportFailedDetection'

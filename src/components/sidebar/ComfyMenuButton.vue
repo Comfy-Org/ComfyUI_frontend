@@ -38,7 +38,7 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import ComfyLogo from '@/components/icons/ComfyLogo.vue'
+import ComfyLogo from '@comfyorg/design-system/icon/ComfyLogo'
 import Button from '@/components/ui/button/Button.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
 import type { MenuItem } from '@/components/ui/menu/types'

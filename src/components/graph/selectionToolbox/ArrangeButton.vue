@@ -74,7 +74,7 @@ import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import Slider from '@/components/ui/slider/Slider.vue'
+import Slider from '@comfyorg/design-system/slider/Slider'
 import {
   MAX_ARRANGE_GAP,
   MIN_ARRANGE_GAP

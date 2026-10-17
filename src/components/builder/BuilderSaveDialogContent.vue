@@ -54,7 +54,7 @@
 import { ref, useId } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import DialogDescription from '@/components/ui/dialog/DialogDescription.vue'
+import DialogDescription from '@comfyorg/design-system/dialog/DialogDescription'
 import DialogPanel from '@/components/ui/dialog/DialogPanel.vue'
 
 import ViewTypeRadioGroup from './ViewTypeRadioGroup.vue'

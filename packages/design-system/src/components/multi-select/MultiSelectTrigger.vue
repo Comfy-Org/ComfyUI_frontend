@@ -47,16 +47,16 @@
 </template>
 
 <script setup lang="ts">
+import type { ClassValue } from 'cva'
 import { ComboboxAnchor, ComboboxTrigger } from 'reka-ui'
 
 import {
   selectCountBadgeClass,
   selectDropdownClass,
   selectTriggerVariants
-} from '@comfyorg/design-system/select.variants'
+} from '../../select.variants'
 import { cn } from '@comfyorg/tailwind-utils'
-import type { ClassValue } from '@comfyorg/tailwind-utils'
-import type { SelectOption } from '@/components/ui/select/types'
+import type { SelectOption } from '../select/types'
 
 defineOptions({ inheritAttrs: false })
 

@@ -176,7 +176,7 @@
 import { computed, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import Slider from '@/components/ui/slider/Slider.vue'
+import Slider from '@comfyorg/design-system/slider/Slider'
 import { useRetryableMediaSrc } from '@/composables/media/useRetryableMediaSrc'
 import { useWaveAudioPlayer } from '@/composables/useWaveAudioPlayer'
 import { cn } from '@comfyorg/tailwind-utils'

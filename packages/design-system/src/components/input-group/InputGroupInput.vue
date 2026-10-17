@@ -3,7 +3,7 @@ import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import Input from '@/components/ui/input/Input.vue'
+import Input from '../input/Input.vue'
 
 const { class: className } = defineProps<{
   class?: HTMLAttributes['class']

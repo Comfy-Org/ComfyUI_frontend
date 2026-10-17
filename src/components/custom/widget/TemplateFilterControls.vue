@@ -51,7 +51,7 @@
 
 <script setup lang="ts">
 import MultiSelect from '@/components/ui/multi-select/MultiSelect.vue'
-import type { SelectOption } from '@/components/ui/select/types'
+import type { SelectOption } from '@comfyorg/design-system/lib/select/types'
 import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
 import type { TemplateSortMode } from '@/composables/useTemplateFiltering'
 

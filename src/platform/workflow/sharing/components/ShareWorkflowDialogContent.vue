@@ -189,7 +189,7 @@
 </template>
 
 <script setup lang="ts">
-import Card from '@/components/ui/card/Card.vue'
+import Card from '@comfyorg/design-system/card/Card'
 import { vAutoAnimate } from '@formkit/auto-animate/vue'
 import { useAsyncState } from '@vueuse/core'
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -200,9 +200,9 @@ import ComfyHubPublishIntroPanel from '@/platform/workflow/sharing/components/pr
 import ShareAssetWarningBox from '@/platform/workflow/sharing/components/ShareAssetWarningBox.vue'
 import ShareUrlCopyField from '@/platform/workflow/sharing/components/ShareUrlCopyField.vue'
 import Button from '@/components/ui/button/Button.vue'
-import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
-import Input from '@/components/ui/input/Input.vue'
-import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
+import Input from '@comfyorg/design-system/input/Input'
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { useComfyHubPublishDialog } from '@/platform/workflow/sharing/composables/useComfyHubPublishDialog'
 import type {
   WorkflowPublishResult,

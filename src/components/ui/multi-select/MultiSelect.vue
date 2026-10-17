@@ -46,9 +46,9 @@ import type { StyleValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import MultiSelectContent from '@/components/ui/multi-select/MultiSelectContent.vue'
-import MultiSelectTrigger from '@/components/ui/multi-select/MultiSelectTrigger.vue'
+import MultiSelectTrigger from '@comfyorg/design-system/multi-select/MultiSelectTrigger'
 
-import type { SelectOption } from '@/components/ui/select/types'
+import type { SelectOption } from '@comfyorg/design-system/lib/select/types'
 import { useAttrsClass } from '@/composables/useAttrsClass'
 import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 import { usePopoverSizing } from '@/composables/usePopoverSizing'

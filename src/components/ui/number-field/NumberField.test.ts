@@ -6,10 +6,10 @@ import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
-import NumberField from './NumberField.vue'
+import NumberField from '@comfyorg/design-system/number-field/NumberField'
 import NumberFieldDecrement from './NumberFieldDecrement.vue'
 import NumberFieldIncrement from './NumberFieldIncrement.vue'
-import NumberFieldInput from './NumberFieldInput.vue'
+import NumberFieldInput from '@comfyorg/design-system/number-field/NumberFieldInput'
 
 const i18n = createI18n({
   legacy: false,
