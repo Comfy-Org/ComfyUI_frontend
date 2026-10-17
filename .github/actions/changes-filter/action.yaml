@@ -34,7 +34,8 @@ description: >
 outputs:
   should-run:
     description: >
-      Any file outside `apps/`, `docs/`, `.storybook/`, or `**/*.md` changed.
+      Any file outside `apps/`, `docs/`, `.storybook/`, `.github/pr-images/`, or
+      `**/*.md` changed.
     value: ${{ steps.mode.outputs.evaluate != 'true' || steps.relevant.outputs.relevant == 'true' }}
   should-run-unit:
     description: >
@@ -127,6 +128,7 @@ runs:
             - '!apps/**'
             - '!docs/**'
             - '!.storybook/**'
+            - '!.github/pr-images/**'
             - '!**/*.md'
           unit: &unit
             - *relevant
