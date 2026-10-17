@@ -201,6 +201,19 @@ export function compileWorkshopIndex(
         const output = Object.hasOwn(responses, '200')
           ? responses['200']
           : undefined
+        const altProviders = (
+          snapshot.document['x-comfy-router-alt-providers'] ?? []
+        ).map(({ provider, model_id }) => {
+          if (!model_id.startsWith(`${provider}/`))
+            throw new Error(
+              `Alt provider leg ${model_id} is not served by ${provider}: ${snapshot.id}`
+            )
+          if (model_id === snapshot.id)
+            throw new Error(
+              `Alt provider leg names its own model: ${snapshot.id}`
+            )
+          return { provider, routerId: model_id }
+        })
         const description = contract
           ? contract.inputSchema.description
           : snapshot.document['x-comfy-output-schema-authored']
@@ -210,6 +223,7 @@ export function compileWorkshopIndex(
           id: snapshot.id,
           catalogId: contract?.catalogId ?? snapshot.id,
           ...(typeof description === 'string' ? { description } : {}),
+          ...(altProviders.length ? { altProviders } : {}),
           ...(override ? { unavailableReason: override.reason } : {}),
           ...(!contract ? { incompleteReason: 'missing-input-schema' } : {})
         }
@@ -222,6 +236,11 @@ export function compileWorkshopIndex(
     new Set(records.map((record) => record.catalogId)).size !== records.length
   )
     throw new Error('Duplicate Router index catalog IDs')
+  const altRouterIds = records.flatMap(
+    (record) => record.altProviders?.map(({ routerId }) => routerId) ?? []
+  )
+  if (new Set(altRouterIds).size !== altRouterIds.length)
+    throw new Error('Duplicate alt provider legs')
   return `[\n${records.map((record) => JSON.stringify(record)).join(',\n')}\n]\n`
 }
 

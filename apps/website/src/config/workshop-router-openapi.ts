@@ -17,6 +17,14 @@ const documentSchema = z.looseObject({
   'x-comfy-router-model-id': z.string(),
   'x-comfy-input-schema-authored': z.boolean(),
   'x-comfy-output-schema-authored': z.boolean(),
+  'x-comfy-router-alt-providers': z
+    .array(
+      z.object({
+        provider: z.string().regex(/^[\w.-]+$/),
+        model_id: z.string().regex(/^[\w.-]+\/[\w.-]+$/)
+      })
+    )
+    .optional(),
   paths: z.record(z.string(), z.looseObject({ post: operation })),
   components: z
     .looseObject({ schemas: z.record(z.string(), jsonObject).optional() })
