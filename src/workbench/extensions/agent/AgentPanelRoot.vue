@@ -829,27 +829,22 @@ async function onWorkflowRestoredAndBound(
   workflowId: string | undefined,
   isCurrent: () => boolean
 ): Promise<boolean> {
-  const restored = await onWorkflowRestored(workflowId, isCurrent)
-  if (!restored || workflowId === undefined || !isCurrent()) return restored
-  if (boundWorkflowId.value !== workflowId && isRestoredTargetLive(workflowId))
-    bindWorkflow(workflowId)
-  return restored
-}
-
-/**
- * `onWorkflowRestored` also reports true when there was nothing to restore -
- * an already-decided target on a remount - so it cannot be the only condition
- * for binding. This is: the restored workflow is BOTH the panel's selected
- * target and the active tab, which is what a restoration itself produces, so a
- * background target can never be subscribed.
- */
-function isRestoredTargetLive(workflowId: string): boolean {
-  const restoredTab = boundOrOpenWorkflowFor(workflowId)
-  if (restoredTab === null) return false
-  return (
-    selectedTarget.value?.path === restoredTab.path &&
-    workflowStore.activeWorkflow?.path === restoredTab.path
+  const { ready, committedWorkflowId } = await onWorkflowRestored(
+    workflowId,
+    isCurrent
   )
+  // Bind only what a restoration actually committed. `ready` is also true
+  // when nothing was restored, and the restore hook runs from every
+  // hydrateFromServer - including reattachRefusedTurn and
+  // reconcileSnapshotTurn, neither of which clears the binding first - so a
+  // looser condition could move a live binding off the document a running
+  // turn is editing. `commitWorkflowTarget` is the only place that sets this,
+  // and it has already done bindingStore.bind() and the 'restored'
+  // reportWorkflowBound() by the time we get here.
+  if (committedWorkflowId === null || !isCurrent()) return ready
+  if (boundWorkflowId.value !== committedWorkflowId)
+    bindWorkflow(committedWorkflowId)
+  return ready
 }
 
 function warnWorkflowUnavailable(): void {

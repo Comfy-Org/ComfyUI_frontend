@@ -25,6 +25,32 @@ type RestorationOutcome =
   | { outcome: 'deleted' }
   | { outcome: 'superseded' }
 
+/**
+ * What a restoration attempt did, as two separate questions.
+ *
+ * `ready` answers "may hydration continue" and is deliberately true in the
+ * several cases where nothing was restored - an already-decided target, no id
+ * in the transcript, a workflow the cloud has deleted. A caller that needs to
+ * know a restoration *committed* cannot infer it from `ready`, and must not
+ * reconstruct it from what the UI happens to show afterwards: in following
+ * mode "the transcript's workflow is the visible tab" is true whenever the
+ * user simply has that tab open. `committedWorkflowId` is set by the one place
+ * a restoration commits, so it says so rather than being deduced.
+ */
+interface WorkflowRestoration {
+  ready: boolean
+  committedWorkflowId: string | null
+}
+
+const NOT_RESTORED: WorkflowRestoration = {
+  ready: true,
+  committedWorkflowId: null
+}
+const RESTORE_ABANDONED: WorkflowRestoration = {
+  ready: false,
+  committedWorkflowId: null
+}
+
 function restorationOutcomeFor(
   lifecycle: CloudWorkflowLifecycle,
   target: ComfyWorkflow | null
@@ -259,25 +285,25 @@ export function useAgentWorkflowSelection({
   async function onWorkflowRestored(
     workflowId: string | undefined,
     isSessionCurrent: () => boolean
-  ): Promise<boolean> {
-    if (!isSessionCurrent()) return false
+  ): Promise<WorkflowRestoration> {
+    if (!isSessionCurrent()) return RESTORE_ABANDONED
     // A target that is already decided (e.g. a remounted panel) needs no
     // restoration, so the chat is ready as far as its workflow goes.
-    if (!canRestoreWorkflow.value) return true
+    if (!canRestoreWorkflow.value) return NOT_RESTORED
     const generation = ++targetSelectionGeneration
     const isCurrent = () =>
       generation === targetSelectionGeneration &&
       isSessionCurrent() &&
       canRestoreWorkflow.value
-    if (workflowId === undefined) return true
+    if (workflowId === undefined) return NOT_RESTORED
     const cached = cachedOpenWorkflowFor(workflowId)
     if (cached !== null)
       return openRestoredWorkflow(cached, workflowId, isCurrent)
     const resolved = await resolveRestorationTarget(workflowId, isCurrent)
-    if (resolved.outcome === 'superseded') return false
+    if (resolved.outcome === 'superseded') return RESTORE_ABANDONED
     if (resolved.outcome === 'deleted') {
       panelStore.markWorkflowTargetUnavailable()
-      return true
+      return NOT_RESTORED
     }
     return openRestoredWorkflow(resolved.target, workflowId, isCurrent)
   }
@@ -286,31 +312,31 @@ export function useAgentWorkflowSelection({
     target: ComfyWorkflow | null,
     workflowId: string,
     isCurrent: () => boolean
-  ): Promise<boolean> {
+  ): Promise<WorkflowRestoration> {
     try {
       if (target === null) {
         await workflowStore.syncWorkflows()
-        if (!isCurrent()) return false
+        if (!isCurrent()) return RESTORE_ABANDONED
         target = storedWorkflowFor(workflowId)
       }
       if (target === null) {
         panelStore.setWorkflowTarget(null)
         warnRestoreFailed()
-        return false
+        return RESTORE_ABANDONED
       }
       const opened = await workflowService.openWorkflow(target, { isCurrent })
-      if (!isCurrent()) return false
+      if (!isCurrent()) return RESTORE_ABANDONED
       if (!opened) {
         panelStore.setWorkflowTarget(null)
         warnRestoreFailed()
-        return false
+        return RESTORE_ABANDONED
       }
       commitWorkflowTarget(target, workflowId, 'restored')
-      return true
+      return { ready: true, committedWorkflowId: workflowId }
     } catch {
-      if (!isCurrent()) return false
+      if (!isCurrent()) return RESTORE_ABANDONED
       warnRestoreFailed()
-      return false
+      return RESTORE_ABANDONED
     }
   }
 
