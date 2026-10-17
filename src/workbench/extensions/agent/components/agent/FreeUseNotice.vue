@@ -23,19 +23,14 @@ const PLACEMENT_CLASSES = {
 const { placement } = defineProps<{ placement: AgentFreeUsePlacement }>()
 const emit = defineEmits<{ notice: [metadata: AgentFreeUseNoticeMetadata] }>()
 
-const { isAuthInitialized, isLoggedIn, resolvedUserInfo } = useCurrentUser()
+const { isAuthInitialized, resolvedUserInfo } = useCurrentUser()
 const dismissed = useLocalStorage(
   () => freeUseNoticeDismissedKey(resolvedUserInfo.value?.id),
   false,
   { writeDefaults: false }
 )
 
-const visible = computed(
-  () =>
-    isAuthInitialized.value &&
-    (!isLoggedIn.value || !!resolvedUserInfo.value?.id) &&
-    !dismissed.value
-)
+const visible = computed(() => isAuthInitialized.value && !dismissed.value)
 
 watch(
   visible,
