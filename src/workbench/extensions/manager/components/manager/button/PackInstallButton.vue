@@ -7,7 +7,7 @@
   >
     <i
       v-if="hasConflict && !isInstalling && !isLoading"
-      class="icon-[lucide--triangle-alert] text-warning-background"
+      class="icon-[lucide--triangle-alert] text-warning"
     />
     <DotSpinner
       v-else-if="isLoading || isInstalling"

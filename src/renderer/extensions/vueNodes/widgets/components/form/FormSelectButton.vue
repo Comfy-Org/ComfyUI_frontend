@@ -13,16 +13,14 @@
           'border-none bg-transparent',
           'text-center text-xs font-normal',
           {
-            'bg-interface-menu-component-surface-selected':
-              isSelected(index) && !disabled,
-            'hover:bg-interface-menu-component-surface-selected/50':
-              !isSelected(index) && !disabled,
+            'bg-muted': isSelected(index) && !disabled,
+            'hover:bg-muted/50': !isSelected(index) && !disabled,
             'cursor-not-allowed opacity-50': disabled,
             'cursor-pointer': !disabled
           },
           isSelected(index) && !disabled
-            ? 'text-text-primary'
-            : 'text-text-secondary'
+            ? 'text-foreground'
+            : 'text-muted-foreground'
         )
       "
       :disabled="disabled"
