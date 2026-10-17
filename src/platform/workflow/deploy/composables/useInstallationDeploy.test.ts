@@ -206,8 +206,7 @@ describe(useInstallationDeploy, () => {
     },
     {
       when: 'the builder is busy',
-      response: () =>
-        Response.json({ error: 'builder_busy' }, { status: 503 }),
+      response: () => Response.json({ error: 'builder_busy' }, { status: 503 }),
       message: 'deployToComfyApi.bundleBusy',
       reported: false
     },
