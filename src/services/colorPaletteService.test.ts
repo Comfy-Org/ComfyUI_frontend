@@ -1,7 +1,7 @@
 import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
 
-import { existsSync, readFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
+import { basename, join } from 'node:path'
 
 import { CORE_COLOR_PALETTES } from '@/constants/coreColorPalettes'
 import { themeSchema } from '@/schemas/colorPaletteSchema'
@@ -296,6 +296,16 @@ describe('useColorPaletteService theme variables', () => {
     })
   )('ships the $paletteId canvas background image', ({ image }) => {
     expect(existsSync(join(process.cwd(), 'public', image))).toBe(true)
+  })
+
+  it('lists every shipped palette file as a selectable palette', () => {
+    const shipped = readdirSync(join(process.cwd(), 'src/assets/palettes')).map(
+      (file) => basename(file, '.json')
+    )
+
+    expect(useColorPaletteStore().palettes.map(({ id }) => id)).toEqual(
+      expect.arrayContaining(shipped)
+    )
   })
 })
 
