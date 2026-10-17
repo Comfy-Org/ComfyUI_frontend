@@ -22,7 +22,7 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 const JOB_ID = 'agent-golden-path-run-1'
 const OUTPUT_FILENAME = 'agent-golden-path-out.png'
 const ASK_ID = `${MESSAGE_ID}:call-run`
-const ANSWER_PATH = `/api/agent/threads/${THREAD_ID}/asks/${ASK_ID}/answer`
+const ANSWER_PATH = `/api/agent/threads/${THREAD_ID}/asks/${encodeURIComponent(ASK_ID)}/answer`
 
 const ids = { message_id: MESSAGE_ID, thread_id: THREAD_ID }
 
