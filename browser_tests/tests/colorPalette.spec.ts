@@ -128,7 +128,22 @@ const customColorPalettes = {
       }
     }
   },
-  // A custom light theme with fg color red
+  light_legacy: {
+    id: 'light_legacy',
+    name: 'Legacy Light',
+    light_theme: true,
+    colors: {
+      node_slot: {},
+      litegraph_base: {},
+      comfy_base: {
+        'comfy-menu-bg': '#FFFFFF',
+        'contrast-mix-color': '#000',
+        'interface-panel-hover-surface': 'var(--color-gray-200)',
+        'interface-panel-selected-surface':
+          'color-mix(in srgb, var(--interface-panel-surface) 78%, var(--contrast-mix-color))'
+      }
+    }
+  },
   light_red: {
     id: 'light_red',
     name: 'Light Red',
@@ -217,11 +232,35 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
       await menuButton.click()
       await expect
         .poll(() =>
-          menuButton.evaluate((el) => getComputedStyle(el).backgroundColor)
+          menuButton.evaluate((el) => {
+            const selected = getComputedStyle(el).backgroundColor
+            return (
+              selected !== 'rgba(0, 0, 0, 0)' &&
+              selected !== getComputedStyle(document.body).backgroundColor
+            )
+          })
         )
-        .not.toBe('rgba(0, 0, 0, 0)')
+        .toBe(true)
       await expect(comfyPage.page).toHaveScreenshot(
         'custom-light-palette-menu-open.png'
+      )
+    })
+
+    test('supports Light palettes exported before the theme migration', async ({
+      comfyPage
+    }) => {
+      await comfyPage.settings.setSetting('Comfy.ColorPalette', 'light_legacy')
+      const menuButton = comfyPage.page.getByTestId('comfy-menu-button')
+
+      await menuButton.hover()
+      await expect(menuButton).toHaveCSS(
+        'background-color',
+        'oklch(0.928 0.006 264.531)'
+      )
+      await menuButton.click()
+      await expect(menuButton).toHaveCSS(
+        'background-color',
+        'color(srgb 0.78 0.78 0.78)'
       )
     })
   })

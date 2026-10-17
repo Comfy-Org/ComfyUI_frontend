@@ -19,6 +19,13 @@
   --content-fg: var(--foreground);
   --content-hover-bg: var(--accent);
   --content-hover-fg: var(--foreground);
+  --interface-stroke: var(--border);
+  --interface-panel-surface: var(--background);
+  --interface-panel-hover-surface: var(--accent);
+  --interface-panel-selected-surface: var(--muted);
+  --interface-button-hover-surface: var(--accent);
+  --contrast-mix-color: light-dark(#000, #fff);
+  --color-gray-200: theme(colors.gray.200);
   --bar-shadow: 0 0 0.5rem var(--shadow-color);
   --interface-panel-box-shadow: 1px 1px 8px 0 var(--shadow-color);
   --interface-panel-drop-shadow: 1px 1px 4px var(--shadow-color);

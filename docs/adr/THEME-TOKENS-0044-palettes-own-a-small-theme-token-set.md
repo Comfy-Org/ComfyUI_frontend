@@ -81,7 +81,7 @@ nodes sit on the canvas and need their own contrast.
   for LiteGraph textareas and old-menu buttons. These controls retain their
   palette colors while modern controls use theme tokens. Non-core palettes
   still write their own `comfy_base` values. Custom nodes also read the old
-  variables, so the aliases stay. Six renamed variables stay in
+  variables, so the aliases stay. Renamed extension variables stay in
   `_deprecated-aliases.css` for the same reason.
 
 ## Consequences
@@ -92,8 +92,8 @@ nodes sit on the canvas and need their own contrast.
   the `@theme inline` mapping and the legacy derivation.
 - Derived palettes take `primary`, `destructive` and `warning` from the base
   theme, because `comfy_base` has no equivalent.
-- Custom nodes that read a removed variable outside the six aliases lose that
-  color.
+- Custom nodes that read a removed variable outside the deprecated aliases
+  lose that color.
 - The `dark:` variant and `--p-*` variables stay banned. When a component needs
   a different color per mode, it gets a token instead.
 
