@@ -2413,7 +2413,7 @@
     }
   },
   "CLIPLoader": {
-    "description": "配方：\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl（226 個 token 填補）\ncosmos: 舊版 t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1（建議）或 t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VL 或 Music3 Qwen/RVQ",
+    "description": "建議搭配：\nsd：clip-l\nstable cascade：clip-g\nsd3：t5 xxl / clip-g / clip-l\nstable audio：t5 base\nmochi：t5 xxl\ncogvideox：t5 xxl（226 個 token 填補）\ncosmos：舊版 t5 xxl\nlumina2：gemma 2 2B\nwan：umt5 xxl\nhidream：llama-3.1（建議）或 t5\nomnigen2：qwen vl 2.5 3B\njoyimage：qwen3-vl 8B\nlens：gpt-oss-20b\npixeldit：gemma 2 2B elm\nminimax：MiniMax H3 Qwen3-VL 或 Music3 Qwen/RVQ\nflux3：qwen3-vl 4B",
     "display_name": "載入 CLIP",
     "inputs": {
       "clip_name": {
@@ -5701,7 +5701,7 @@
     }
   },
   "FishAudioTextToSpeech": {
-    "description": "將文字轉換為語音。支援文字中的情緒提示（s2.1-pro 使用 [happy]、[whispering]；s1 使用 (happy)），並可透過 {'@'}Voice1/{'@'}Voice2 標籤搭配多個已連接的語音進行多說話者對話。",
+    "description": "將文字轉換為語音。支援文字中的情緒提示（s2.1-pro 使用 [happy]、[whispering]；s1 使用 (happy)）、drama-3 中的自然語言 [directions] 與 `<whisper>...</whisper>` 詞彙標籤，以及透過 {'@'}Voice1/{'@'}Voice2 標籤和多個已連接語音建立多說話者對話。",
     "display_name": "Fish Audio 文字轉語音",
     "inputs": {
       "control_after_generate": {
@@ -5893,8 +5893,8 @@
     }
   },
   "Flux3ImageNode": {
-    "description": "使用 FLUX 3 根據提示詞產生圖像，或編輯並合併最多 10 張參考圖像。在提示詞中請將參考圖像稱為 image 1、image 2，依此類推。",
-    "display_name": "Flux 3 圖像",
+    "description": "根據提示詞使用 FLUX 3 Image 產生影像，或編輯並合併最多 10 張參考影像。在提示詞中以影像 1、影像 2 等方式指稱參考影像。",
+    "display_name": "FLUX 3 影像",
     "inputs": {
       "aspect_ratio": {
         "name": "aspect_ratio",
@@ -5984,6 +5984,26 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3LayoutPrompt": {
+    "description": "將 Create Bounding Boxes 中的方框附加至 FLUX 3 Image 提示詞，作為其版面表格。",
+    "display_name": "FLUX 3 Image 版面提示詞",
+    "inputs": {
+      "element": {
+        "name": "element",
+        "tooltip": "來自 Create Bounding Boxes 節點的提示詞元素。不會使用調色盤，請在描述中說明顏色。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "提示詞文字。以 <obj_N> 引用方框 N，將文字與其連結。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "prompt",
         "tooltip": null
       }
     }
@@ -7223,6 +7243,30 @@
       }
     }
   },
+  "GetAudioLatentSize": {
+    "description": "傳回音訊 latent 的長度、音訊聲道數量及批次大小。",
+    "display_name": "取得音訊 latent 大小",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "要檢查的音訊或音訊／影片 latent。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "length",
+        "tooltip": "音訊 latent 長度。"
+      },
+      "1": {
+        "name": "audio_channels",
+        "tooltip": "音訊聲道數量。沒有音訊聲道維度的 latent 具有一個聲道。"
+      },
+      "2": {
+        "name": "batch_size",
+        "tooltip": "批次中的 latent 數量。"
+      }
+    }
+  },
   "GetICLoRAParameters": {
     "description": "從已載入 LoRA 模型的 safetensors 中提取 IC-LoRA 參數，並將其輸出給 LTXVAddGuide（例如 reference_downscale_factor）。",
     "display_name": "取得 IC-LoRA 參數",
@@ -7275,6 +7319,34 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "GetLatentSize": {
+    "description": "傳回影像或影片 latent 的寬度、高度、影格數及批次大小。",
+    "display_name": "取得影像／影片 latent 大小",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "要檢查的影像或影片 latent。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "width",
+        "tooltip": "latent 寬度。"
+      },
+      "1": {
+        "name": "height",
+        "tooltip": "latent 高度。"
+      },
+      "2": {
+        "name": "frames",
+        "tooltip": "latent 的影格數。影像 latent 有一個影格。"
+      },
+      "3": {
+        "name": "batch_size",
+        "tooltip": "批次中的 latent 數量。"
       }
     }
   },
@@ -9298,6 +9370,28 @@
       }
     }
   },
+  "ImageSDRToHDR": {
+    "description": "將 sRGB 亮度擴展至 Rec.2020 HLG HDR。請以選取 HDR 色彩空間的方式儲存結果。會保留 Alpha。",
+    "display_name": "將 SDR 轉換為 HDR",
+    "inputs": {
+      "algorithm": {
+        "name": "algorithm",
+        "tooltip": "將 Lottes 風格的有理函數擴展與經校準的單調對數增益曲線混合。"
+      },
+      "algorithm_target_luminance": {
+        "name": "target_luminance"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "sRGB 色彩空間的 SDR 影像。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ImageScale": {
     "display_name": "放大圖片",
     "inputs": {
@@ -10590,6 +10684,41 @@
     "outputs": {
       "0": {
         "name": "style_reference",
+        "tooltip": null
+      }
+    }
+  },
+  "Krea3ImageNode": {
+    "description": "使用 Krea 3 編輯影像；未連接影像時，則可根據文字生成新影像。",
+    "display_name": "Krea 3 影像",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_precise_edit": {
+        "name": "precise_edit"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "model_seed": {
+        "name": "種子"
+      },
+      "model_thinking_mode": {
+        "name": "thinking_mode"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -13153,6 +13282,38 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MOSSImageLayoutPrompt": {
+    "description": "根據提示詞及「建立邊界框」中的方框建立 MOSS-Image 版面配置提示詞。",
+    "display_name": "MOSS-Image 版面配置提示詞",
+    "inputs": {
+      "character_boxes": {
+        "name": "character_boxes",
+        "tooltip": "要標示為角色而非物件的物件方框編號，如同在「建立邊界框」預覽中標記，例如「1, 3」。"
+      },
+      "element": {
+        "name": "元素",
+        "tooltip": "來自「建立邊界框」節點的提示詞元素。描述會作為方框的說明文字，文字方框也會繪製其中的文字。"
+      },
+      "height": {
+        "name": "高度",
+        "tooltip": "生成影像的高度；方框會依其像素位置放置。"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "整張影像的描述。"
+      },
+      "width": {
+        "name": "寬度",
+        "tooltip": "生成影像的寬度；方框會依其像素位置放置。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "提示詞",
         "tooltip": null
       }
     }
@@ -18880,7 +19041,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "模型在繪製前投入的推理程度。較高的層級可改善細節，但會消耗更多權杖。僅供 Arrow 2 模型使用。"
+        "tooltip": "模型在繪製前投入的推理量。較高等級可改善細節，但會耗用更多權杖。"
       },
       "seed": {
         "name": "seed",
@@ -18968,7 +19129,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "模型在繪製前投入的推理程度。較高的層級可改善細節，但會消耗更多權杖。僅供 Arrow 2 模型使用。"
+        "tooltip": "模型在繪製前投入的推理量。較高等級可改善細節，但會耗用更多權杖。"
       },
       "reference_images": {
         "name": "reference_images",
@@ -19824,6 +19985,42 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "ReferenceMultiLatent": {
+    "description": "將參考影像編碼，並將其潛在表示附加至編輯模型的正向及可選負向條件。",
+    "display_name": "設定多個參考潛在表示",
+    "inputs": {
+      "images": {
+        "name": "影像"
+      },
+      "negative": {
+        "name": "負向"
+      },
+      "positive": {
+        "name": "正向"
+      },
+      "resolution": {
+        "name": "解析度"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "未連接 VAE 時，會忽略參考影像。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正向",
+        "tooltip": null
+      },
+      "1": {
+        "name": "負向",
+        "tooltip": "未連接負向條件時，傳回正向輸出。"
+      },
+      "2": {
+        "name": "empty_latent",
+        "tooltip": "第一個參考潛在表示乘以 0.0，或是在所選解析度下建立方形空白潛在表示。"
       }
     }
   },

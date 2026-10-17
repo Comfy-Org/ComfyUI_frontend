@@ -2413,7 +2413,7 @@
     }
   },
   "CLIPLoader": {
-    "description": "Configurations :\nsd : clip-l\nstable cascade : clip-g\nsd3 : t5 xxl / clip-g / clip-l\nstable audio : t5 base\nmochi : t5 xxl\ncogvideox : t5 xxl (remplissage à 226 jetons)\ncosmos : ancien t5 xxl\nlumina2 : gemma 2 2B\nwan : umt5 xxl\nhidream : llama-3.1 (recommandé) ou t5\nomnigen2 : qwen vl 2.5 3B\njoyimage : qwen3-vl 8B\nlens : gpt-oss-20b\npixeldit : gemma 2 2B elm\nminimax : MiniMax H3 Qwen3-VL ou Music3 Qwen/RVQ",
+    "description": "Recettes :\nsd : clip-l\nstable cascade : clip-g\nsd3 : t5 xxl / clip-g / clip-l\nstable audio : t5 base\nmochi : t5 xxl\ncogvideox : t5 xxl (remplissage à 226 jetons)\ncosmos : ancien t5 xxl\nlumina2 : gemma 2 2B\nwan : umt5 xxl\nhidream : llama-3.1 (recommandé) ou t5\nomnigen2 : qwen vl 2.5 3B\njoyimage : qwen3-vl 8B\nlens : gpt-oss-20b\npixeldit : gemma 2 2B elm\nminimax : MiniMax H3 Qwen3-VL ou Music3 Qwen/RVQ\nflux3 : qwen3-vl 4B",
     "display_name": "Charger CLIP",
     "inputs": {
       "clip_name": {
@@ -5701,7 +5701,7 @@
     }
   },
   "FishAudioTextToSpeech": {
-    "description": "Convertir du texte en parole. Prend en charge les indications d’émotion dans le texte ([happy], [whispering] sur s2.1-pro ; (happy) sur s1) et les dialogues à plusieurs locuteurs via les balises {'@'}Voice1/{'@'}Voice2 avec plusieurs voix connectées.",
+    "description": "Convertit du texte en parole. Prend en charge les indications d’émotion dans le texte ([happy], [whispering] sur s2.1-pro ; (happy) sur s1), les [directions] en langage naturel et les balises de mots `<whisper>...</whisper>` sur drama-3, ainsi que les dialogues à plusieurs locuteurs via les balises {'@'}Voice1/{'@'}Voice2 avec plusieurs voix connectées.",
     "display_name": "Synthèse vocale Fish Audio",
     "inputs": {
       "control_after_generate": {
@@ -5893,8 +5893,8 @@
     }
   },
   "Flux3ImageNode": {
-    "description": "Génère une image avec FLUX 3 à partir d’un prompt, ou modifie et combine jusqu’à 10 images de référence. Référez-vous aux images dans le prompt comme image 1, image 2, et ainsi de suite.",
-    "display_name": "Flux 3 Image",
+    "description": "Génère une image avec FLUX 3 Image à partir d’un prompt, ou modifie et combine jusqu’à 10 images de référence. Faites référence aux images dans le prompt comme image 1, image 2, et ainsi de suite.",
+    "display_name": "Image FLUX 3",
     "inputs": {
       "aspect_ratio": {
         "name": "aspect_ratio",
@@ -5984,6 +5984,26 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3LayoutPrompt": {
+    "description": "Ajoute les boîtes de Create Bounding Boxes à un prompt FLUX 3 Image sous forme de tableau de disposition.",
+    "display_name": "Prompt de disposition FLUX 3 Image",
+    "inputs": {
+      "element": {
+        "name": "élément",
+        "tooltip": "Éléments du prompt provenant du nœud Create Bounding Boxes. Les palettes de couleurs ne sont pas utilisées ; décrivez les couleurs dans la description."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Le texte du prompt. Citez la boîte N sous la forme <obj_N> pour y associer des mots."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "prompt",
         "tooltip": null
       }
     }
@@ -7223,6 +7243,30 @@
       }
     }
   },
+  "GetAudioLatentSize": {
+    "description": "Renvoie la longueur, le nombre de canaux audio et la taille du lot d’un latent audio.",
+    "display_name": "Obtenir la taille du latent audio",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "Le latent audio ou audio/vidéo à inspecter."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "longueur",
+        "tooltip": "La longueur du latent audio."
+      },
+      "1": {
+        "name": "canaux_audio",
+        "tooltip": "Le nombre de canaux audio. Les latents sans dimension de canal audio ont un canal."
+      },
+      "2": {
+        "name": "taille_du_lot",
+        "tooltip": "Le nombre de latents dans le lot."
+      }
+    }
+  },
   "GetICLoRAParameters": {
     "description": "Extrait les paramètres IC-LoRA des métadonnées safetensors d’un modèle LoRA chargé et les transmet à LTXVAddGuide (ex. reference_downscale_factor).",
     "display_name": "Obtenir les paramètres IC-LoRA",
@@ -7275,6 +7319,34 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "GetLatentSize": {
+    "description": "Renvoie la largeur, la hauteur, le nombre d’images et la taille du lot d’un latent image ou vidéo.",
+    "display_name": "Obtenir la taille du latent image/vidéo",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "Le latent image ou vidéo à inspecter."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "largeur",
+        "tooltip": "La largeur du latent."
+      },
+      "1": {
+        "name": "hauteur",
+        "tooltip": "La hauteur du latent."
+      },
+      "2": {
+        "name": "images",
+        "tooltip": "Le nombre d’images du latent. Les latents d’image ont une image."
+      },
+      "3": {
+        "name": "taille_du_lot",
+        "tooltip": "Le nombre de latents dans le lot."
       }
     }
   },
@@ -9298,6 +9370,28 @@
       }
     }
   },
+  "ImageSDRToHDR": {
+    "description": "Étend la luminosité sRGB vers le HDR HLG Rec.2020. Enregistrez le résultat avec l’espace colorimétrique HDR sélectionné. L’alpha est préservé.",
+    "display_name": "Convertir SDR en HDR",
+    "inputs": {
+      "algorithm": {
+        "name": "algorithme",
+        "tooltip": "Expansion rationnelle de style Lottes, fusionnée avec une courbe de gain logarithmique monotone calibrée."
+      },
+      "algorithm_target_luminance": {
+        "name": "luminance_cible"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Image(s) SDR en sRGB."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ImageScale": {
     "display_name": "Agrandir l'image",
     "inputs": {
@@ -10590,6 +10684,41 @@
     "outputs": {
       "0": {
         "name": "style_reference",
+        "tooltip": null
+      }
+    }
+  },
+  "Krea3ImageNode": {
+    "description": "Modifiez des images avec Krea 3 ou générez une nouvelle image à partir de texte lorsqu’aucune image n’est connectée.",
+    "display_name": "Krea 3 Image",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_precise_edit": {
+        "name": "precise_edit"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_thinking_mode": {
+        "name": "thinking_mode"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -13153,6 +13282,38 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MOSSImageLayoutPrompt": {
+    "description": "Crée un prompt de mise en page MOSS-Image à partir du prompt et des boîtes de Create Bounding Boxes.",
+    "display_name": "Prompt de mise en page MOSS-Image",
+    "inputs": {
+      "character_boxes": {
+        "name": "character_boxes",
+        "tooltip": "Numéros des boîtes d’objets à étiqueter comme personnages plutôt que comme objets, tels qu’indiqués dans l’aperçu de Create Bounding Boxes, par ex. « 1, 3 »."
+      },
+      "element": {
+        "name": "element",
+        "tooltip": "Éléments du prompt provenant du nœud Create Bounding Boxes. La description est la légende de la boîte ; les boîtes de texte affichent également leur texte."
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "Hauteur de l’image générée ; les boîtes sont positionnées dans ses pixels."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Description de l’image entière."
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "Largeur de l’image générée ; les boîtes sont positionnées dans ses pixels."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "prompt",
         "tooltip": null
       }
     }
@@ -18880,7 +19041,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "Quantité de raisonnement que le modèle effectue avant de dessiner. Les niveaux plus élevés améliorent les détails et consomment davantage de jetons. Utilisé uniquement par les modèles Arrow 2."
+        "tooltip": "Quantité de raisonnement que le modèle effectue avant de dessiner. Des niveaux plus élevés améliorent les détails et coûtent davantage de jetons."
       },
       "seed": {
         "name": "seed",
@@ -18968,7 +19129,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "Quantité de raisonnement que le modèle effectue avant de dessiner. Les niveaux plus élevés améliorent les détails et consomment davantage de jetons. Utilisé uniquement par les modèles Arrow 2."
+        "tooltip": "Quantité de raisonnement que le modèle effectue avant de dessiner. Des niveaux plus élevés améliorent les détails et coûtent davantage de jetons."
       },
       "reference_images": {
         "name": "reference_images",
@@ -19824,6 +19985,42 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "ReferenceMultiLatent": {
+    "description": "Encode les images de référence et ajoute leurs latents au conditionnement positif et, facultativement, négatif pour les modèles d’édition.",
+    "display_name": "Définir le multi-latent de référence",
+    "inputs": {
+      "images": {
+        "name": "images"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Les images de référence sont ignorées lorsqu’aucun VAE n’est connecté."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "Renvoie la sortie positive lorsque le conditionnement négatif n’est pas connecté."
+      },
+      "2": {
+        "name": "empty_latent",
+        "tooltip": "Premier latent de référence multiplié par 0.0, ou un latent vide carré à la résolution sélectionnée."
       }
     }
   },

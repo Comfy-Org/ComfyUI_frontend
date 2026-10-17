@@ -2413,7 +2413,7 @@
     }
   },
   "CLIPLoader": {
-    "description": "推荐配置：\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl（填充至 226 个词元）\ncosmos: 旧版 t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1（推荐）或 t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VL 或 Music3 Qwen/RVQ",
+    "description": "推荐配置：\nsd：clip-l\nstable cascade：clip-g\nsd3：t5 xxl / clip-g / clip-l\nstable audio：t5 base\nmochi：t5 xxl\ncogvideox：t5 xxl（226 词元填充）\ncosmos：旧版 t5 xxl\nlumina2：gemma 2 2B\nwan：umt5 xxl\nhidream：llama-3.1（推荐）或 t5\nomnigen2：qwen vl 2.5 3B\njoyimage：qwen3-vl 8B\nlens：gpt-oss-20b\npixeldit：gemma 2 2B elm\nminimax：MiniMax H3 Qwen3-VL 或 Music3 Qwen/RVQ\nflux3：qwen3-vl 4B",
     "display_name": "加载CLIP",
     "inputs": {
       "clip_name": {
@@ -5701,7 +5701,7 @@
     }
   },
   "FishAudioTextToSpeech": {
-    "description": "将文本转换为语音。支持文本中的情绪提示（s2.1-pro 使用 [happy]、[whispering]；s1 使用 (happy)），并可通过 {'@'}Voice1/{'@'}Voice2 标签和多个已连接的声音实现多说话人对话。",
+    "description": "将文本转换为语音。支持文本中的情绪提示（s2.1-pro 使用 [happy]、[whispering]；s1 使用 (happy)）、drama-3 中的自然语言 [指令] 和 `<whisper>...</whisper>` 词语标签，以及通过 {'@'}Voice1/{'@'}Voice2 标签和多个已连接语音实现多说话人对话。",
     "display_name": "Fish Audio 文本转语音",
     "inputs": {
       "control_after_generate": {
@@ -5893,8 +5893,8 @@
     }
   },
   "Flux3ImageNode": {
-    "description": "使用 FLUX 3 根据提示词生成图像，或编辑并组合最多 10 张参考图像。在提示词中将参考图像称为图像 1、图像 2，依此类推。",
-    "display_name": "Flux 3 图像",
+    "description": "使用 FLUX 3 Image 根据提示词生成图像，或编辑并组合最多 10 张参考图像。在提示词中将参考图像称为图像 1、图像 2，依此类推。",
+    "display_name": "FLUX 3 图像",
     "inputs": {
       "aspect_ratio": {
         "name": "aspect_ratio",
@@ -5984,6 +5984,26 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3LayoutPrompt": {
+    "description": "将“创建边界框”中的框作为布局表附加到 FLUX 3 Image 提示词中。",
+    "display_name": "FLUX 3 图像布局提示词",
+    "inputs": {
+      "element": {
+        "name": "element",
+        "tooltip": "来自“创建边界框”节点的提示词元素。不使用调色板，请在描述中说明颜色。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "提示词文本。将框 N 写作 <obj_N>，以将文字与其关联。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "prompt",
         "tooltip": null
       }
     }
@@ -7223,6 +7243,30 @@
       }
     }
   },
+  "GetAudioLatentSize": {
+    "description": "返回音频 latent 的长度、音频通道数和批次大小。",
+    "display_name": "获取音频 latent 大小",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "要检查的音频或音频/视频 latent。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "长度",
+        "tooltip": "音频 latent 的长度。"
+      },
+      "1": {
+        "name": "audio_channels",
+        "tooltip": "音频通道数量。没有音频通道维度的 latent 有一个通道。"
+      },
+      "2": {
+        "name": "batch_size",
+        "tooltip": "批次中的 latent 数量。"
+      }
+    }
+  },
   "GetICLoRAParameters": {
     "description": "从已加载 LoRA 模型的 safetensors 元数据中提取 IC-LoRA 参数，并将其输出用于 LTXVAddGuide（例如 reference_downscale_factor）。",
     "display_name": "获取 IC-LoRA 参数",
@@ -7275,6 +7319,34 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "GetLatentSize": {
+    "description": "返回图像或视频 latent 的宽度、高度、帧数和批次大小。",
+    "display_name": "获取图像/视频 latent 大小",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "要检查的图像或视频 latent。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "宽度",
+        "tooltip": "latent 宽度。"
+      },
+      "1": {
+        "name": "高度",
+        "tooltip": "latent 高度。"
+      },
+      "2": {
+        "name": "帧数",
+        "tooltip": "latent 的帧数。图像 latent 有一帧。"
+      },
+      "3": {
+        "name": "batch_size",
+        "tooltip": "批次中的 latent 数量。"
       }
     }
   },
@@ -9298,6 +9370,28 @@
       }
     }
   },
+  "ImageSDRToHDR": {
+    "description": "将 sRGB 亮度扩展至 Rec.2020 HLG HDR。保存结果时请选择 HDR 色彩空间。Alpha 通道会被保留。",
+    "display_name": "将 SDR 转换为 HDR",
+    "inputs": {
+      "algorithm": {
+        "name": "algorithm",
+        "tooltip": "采用 Lottes 风格的有理扩展，并与经校准的单调对数增益曲线混合。"
+      },
+      "algorithm_target_luminance": {
+        "name": "target_luminance"
+      },
+      "image": {
+        "name": "图像",
+        "tooltip": "sRGB 中的 SDR 图像。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ImageScale": {
     "display_name": "缩放图像",
     "inputs": {
@@ -10590,6 +10684,41 @@
     "outputs": {
       "0": {
         "name": "风格参考",
+        "tooltip": null
+      }
+    }
+  },
+  "Krea3ImageNode": {
+    "description": "使用 Krea 3 编辑图像，或在未连接图像时根据文本生成新图像。",
+    "display_name": "Krea 3 图像",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_precise_edit": {
+        "name": "precise_edit"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "model_seed": {
+        "name": "种子"
+      },
+      "model_thinking_mode": {
+        "name": "thinking_mode"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -13153,6 +13282,38 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MOSSImageLayoutPrompt": {
+    "description": "根据提示词和“创建边界框”中的边界框构建 MOSS-Image 布局提示词。",
+    "display_name": "MOSS-Image 布局提示词",
+    "inputs": {
+      "character_boxes": {
+        "name": "character_boxes",
+        "tooltip": "要标记为角色而非对象的对象边界框编号，与“创建边界框”预览中的标记一致，例如“1, 3”。"
+      },
+      "element": {
+        "name": "元素",
+        "tooltip": "来自“创建边界框”节点的提示词元素。描述是边界框的说明文字，文本框还会渲染其中的文本。"
+      },
+      "height": {
+        "name": "高度",
+        "tooltip": "生成图像的高度；边界框按其像素位置放置。"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "整张图像的描述。"
+      },
+      "width": {
+        "name": "宽度",
+        "tooltip": "生成图像的宽度；边界框按其像素位置放置。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "提示词",
         "tooltip": null
       }
     }
@@ -18880,7 +19041,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "模型在绘制前进行推理的程度。更高级别可改善细节，但会消耗更多 token。仅由 Arrow 2 模型使用。"
+        "tooltip": "模型在绘制前进行推理的程度。较高等级可改善细节，但会消耗更多 token。"
       },
       "seed": {
         "name": "seed",
@@ -18968,7 +19129,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "模型在绘制前进行推理的程度。更高级别可改善细节，但会消耗更多 token。仅由 Arrow 2 模型使用。"
+        "tooltip": "模型在绘制前进行推理的程度。较高等级可改善细节，但会消耗更多 token。"
       },
       "reference_images": {
         "name": "reference_images",
@@ -19824,6 +19985,42 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "ReferenceMultiLatent": {
+    "description": "对参考图像进行编码，并将其潜空间附加到编辑模型的正面条件和可选负面条件中。",
+    "display_name": "设置参考多潜空间",
+    "inputs": {
+      "images": {
+        "name": "图像"
+      },
+      "negative": {
+        "name": "负面"
+      },
+      "positive": {
+        "name": "正面"
+      },
+      "resolution": {
+        "name": "分辨率"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "未连接 VAE 时将忽略参考图像。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正面",
+        "tooltip": null
+      },
+      "1": {
+        "name": "负面",
+        "tooltip": "未连接负面条件时，返回正面输出。"
+      },
+      "2": {
+        "name": "empty_latent",
+        "tooltip": "第一个参考潜空间乘以 0.0，或者为所选分辨率的方形空潜空间。"
       }
     }
   },

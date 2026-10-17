@@ -2413,7 +2413,7 @@
     }
   },
   "CLIPLoader": {
-    "description": "推奨構成:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl（226トークンのパディング）\ncosmos: old t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1（推奨）または t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VL または Music3 Qwen/RVQ",
+    "description": "レシピ:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl（226トークンのパディング）\ncosmos: old t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1（推奨）または t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VL または Music3 Qwen/RVQ\nflux3: qwen3-vl 4B",
     "display_name": "CLIPを読み込む",
     "inputs": {
       "clip_name": {
@@ -5701,7 +5701,7 @@
     }
   },
   "FishAudioTextToSpeech": {
-    "description": "テキストを音声に変換します。テキスト内の感情キュー（s2.1-proでは[happy]、[whispering]、s1では(happy)）と、複数の接続された音声で{'@'}Voice1/{'@'}Voice2タグを使用した複数話者の対話をサポートします。",
+    "description": "テキストを音声に変換します。テキスト内の感情キュー（s2.1-pro では [happy]、[whispering]、s1 では (happy)）、drama-3 での自然言語による [directions] と `<whisper>...</whisper>` 単語タグ、および複数の接続された音声で {'@'}Voice1/{'@'}Voice2 タグを使用した複数話者の対話に対応しています。",
     "display_name": "Fish Audio テキスト読み上げ",
     "inputs": {
       "control_after_generate": {
@@ -5893,8 +5893,8 @@
     }
   },
   "Flux3ImageNode": {
-    "description": "プロンプトからFLUX 3で画像を生成するか、最大10枚の参照画像を編集・結合します。プロンプト内では、参照画像をimage 1、image 2のように指定してください。",
-    "display_name": "Flux 3 Image",
+    "description": "プロンプトから FLUX 3 Image で画像を生成するか、最大10枚の参照画像を編集・結合します。プロンプト内では、参照画像を image 1、image 2 のように指定してください。",
+    "display_name": "FLUX 3 Image",
     "inputs": {
       "aspect_ratio": {
         "name": "aspect_ratio",
@@ -5984,6 +5984,26 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3LayoutPrompt": {
+    "description": "Create Bounding Boxes のボックスを、レイアウトテーブルとして FLUX 3 Image プロンプトに追加します。",
+    "display_name": "FLUX 3 Image レイアウトプロンプト",
+    "inputs": {
+      "element": {
+        "name": "element",
+        "tooltip": "Create Bounding Boxes ノードからのプロンプト要素。カラーパレットは使用されないため、色は説明に記述してください。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "プロンプトテキスト。ボックス N を <obj_N> として参照し、単語と関連付けます。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "prompt",
         "tooltip": null
       }
     }
@@ -7223,6 +7243,30 @@
       }
     }
   },
+  "GetAudioLatentSize": {
+    "description": "オーディオ latent の長さ、オーディオチャンネル数、バッチサイズを返します。",
+    "display_name": "オーディオ latent サイズを取得",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "検査するオーディオまたはオーディオ／動画 latent。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "length",
+        "tooltip": "オーディオ latent の長さ。"
+      },
+      "1": {
+        "name": "audio_channels",
+        "tooltip": "オーディオチャンネル数。オーディオチャンネル次元がない latent には、1チャンネルあります。"
+      },
+      "2": {
+        "name": "batch_size",
+        "tooltip": "バッチ内の latent 数。"
+      }
+    }
+  },
   "GetICLoRAParameters": {
     "description": "LoRA読み込み済みモデルのsafetensorsメタデータからIC-LoRAパラメータを抽出し、LTXVAddGuide（例：reference_downscale_factor）用に出力します。",
     "display_name": "IC-LoRAパラメータの取得",
@@ -7275,6 +7319,34 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "GetLatentSize": {
+    "description": "画像または動画 latent の幅、高さ、フレーム数、バッチサイズを返します。",
+    "display_name": "画像／動画 latent サイズを取得",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "検査する画像または動画 latent。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "width",
+        "tooltip": "latent の幅。"
+      },
+      "1": {
+        "name": "height",
+        "tooltip": "latent の高さ。"
+      },
+      "2": {
+        "name": "frames",
+        "tooltip": "latent のフレーム数。画像 latent は1フレームです。"
+      },
+      "3": {
+        "name": "batch_size",
+        "tooltip": "バッチ内の latent 数。"
       }
     }
   },
@@ -9298,6 +9370,28 @@
       }
     }
   },
+  "ImageSDRToHDR": {
+    "description": "sRGB の明るさを Rec.2020 HLG HDR に拡張します。HDR カラースペースを選択して結果を保存してください。アルファは保持されます。",
+    "display_name": "SDR を HDR に変換",
+    "inputs": {
+      "algorithm": {
+        "name": "algorithm",
+        "tooltip": "キャリブレーション済みの単調な対数ゲイン曲線とブレンドした、Lottes スタイルの有理拡張。"
+      },
+      "algorithm_target_luminance": {
+        "name": "target_luminance"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "sRGB の SDR 画像。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ImageScale": {
     "display_name": "画像を拡大",
     "inputs": {
@@ -10590,6 +10684,41 @@
     "outputs": {
       "0": {
         "name": "スタイル参照",
+        "tooltip": null
+      }
+    }
+  },
+  "Krea3ImageNode": {
+    "description": "Krea 3で画像を編集するか、画像が接続されていない場合はテキストから新しい画像を生成します。",
+    "display_name": "Krea 3 Image",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_precise_edit": {
+        "name": "precise_edit"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_thinking_mode": {
+        "name": "thinking_mode"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -13153,6 +13282,38 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MOSSImageLayoutPrompt": {
+    "description": "プロンプトとCreate Bounding BoxesのボックスからMOSS-Imageレイアウトプロンプトを作成します。",
+    "display_name": "MOSS-Image レイアウトプロンプト",
+    "inputs": {
+      "character_boxes": {
+        "name": "character_boxes",
+        "tooltip": "Create Bounding Boxesのプレビューでタグ付けされた、オブジェクトではなくキャラクターとしてラベル付けするオブジェクトボックスの番号。例: \"1, 3\"。"
+      },
+      "element": {
+        "name": "要素",
+        "tooltip": "Create Bounding Boxesノードからのプロンプト要素です。説明はボックスのキャプションとなり、テキストボックスではテキストも描画されます。"
+      },
+      "height": {
+        "name": "高さ",
+        "tooltip": "生成画像の高さ。ボックスはそのピクセル上に配置されます。"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "画像全体の説明。"
+      },
+      "width": {
+        "name": "幅",
+        "tooltip": "生成画像の幅。ボックスはそのピクセル上に配置されます。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "プロンプト",
         "tooltip": null
       }
     }
@@ -18880,7 +19041,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "描画前にモデルが費やす推論量です。レベルを上げると詳細度は向上しますが、より多くのトークンを消費します。Arrow 2 モデルでのみ使用されます。"
+        "tooltip": "描画前にモデルが行う推論の量。レベルを上げると詳細度が向上し、より多くのトークンを消費します。"
       },
       "seed": {
         "name": "seed",
@@ -18968,7 +19129,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "描画前にモデルが費やす推論量です。レベルを上げると詳細度は向上しますが、より多くのトークンを消費します。Arrow 2 モデルでのみ使用されます。"
+        "tooltip": "描画前にモデルが行う推論の量。レベルを上げると詳細度が向上し、より多くのトークンを消費します。"
       },
       "reference_images": {
         "name": "reference_images",
@@ -19824,6 +19985,42 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "ReferenceMultiLatent": {
+    "description": "参照画像をエンコードし、その潜在表現をポジティブおよび任意のネガティブコンディショニングに追加します。",
+    "display_name": "参照マルチ潜在を設定",
+    "inputs": {
+      "images": {
+        "name": "画像"
+      },
+      "negative": {
+        "name": "ネガティブ"
+      },
+      "positive": {
+        "name": "ポジティブ"
+      },
+      "resolution": {
+        "name": "解像度"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "VAEが接続されていない場合、参照画像は無視されます。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ポジティブ",
+        "tooltip": null
+      },
+      "1": {
+        "name": "ネガティブ",
+        "tooltip": "ネガティブコンディショニングが接続されていない場合、ポジティブ出力を返します。"
+      },
+      "2": {
+        "name": "empty_latent",
+        "tooltip": "最初の参照潜在表現に0.0を乗算したもの、または選択した解像度の正方形の空の潜在表現。"
       }
     }
   },
