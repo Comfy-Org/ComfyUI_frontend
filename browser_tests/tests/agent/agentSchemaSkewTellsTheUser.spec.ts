@@ -1,4 +1,3 @@
-import type { WebSocketRoute } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
@@ -6,15 +5,13 @@ import type { WorkflowListResponse } from '@comfyorg/ingest-types'
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-import { parseServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
 
 import {
   agentTest as test,
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
+import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
-import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -24,7 +21,6 @@ const THREAD_ID = 'dac7bad1-ac2b-4cac-9a1f-2b3c4d5e6f81'
 const MESSAGE_ID = '1d6c2f88-3e5b-4a0f-9c74-2b3d4e5f6113'
 const ADDED_NODE_ID = 9103
 const NODE_TEXT = 'the agent says it added this'
-const SOCKET_SID = '8e2a3f4b-5c6d-4e7f-9a01-2b3c4d5e6f81'
 
 const CATALOG: WidgetCatalog = {
   types: { MarkdownNote: { widget_order: ['text'] } }
@@ -66,18 +62,14 @@ test.describe(
       const host = new HostDoc(WORKFLOW_ID, SEED, CATALOG)
       const vueNodes = new VueNodeHelpers(page)
 
-      let socket: WebSocketRoute | null = null
       let committedNodeIds: string[] = []
 
-      const send = (frame: AgentWsEvent | HostFrame): void => {
-        if (
-          (frame.type.startsWith('doc_') || frame.type === 'awareness') &&
-          parseServerDocFrame(frame) === null
-        )
-          throw new Error(`frame ${frame.type} is not a valid doc frame`)
-        if (!socket) throw new Error('the app has not opened /ws yet')
-        socket.send(JSON.stringify(frame))
-      }
+      const hostSocket = new AgentFollowerHostSocket(page, WORKFLOW_ID, host)
+      hostSocket.answerSubscribesWith((stateVector) => {
+        committedNodeIds = Object.keys(host.graph().nodes)
+        host.advanceSchemaVersionBeyondReader()
+        return [host.subscribed(), host.catchUp(stateVector)]
+      })
 
       await page.route('**/api/agent/threads', (route) =>
         route.fulfill(jsonRoute({ threads: [] }))
@@ -96,42 +88,7 @@ test.describe(
         }
         return route.fulfill(jsonRoute([]))
       })
-      await page.routeWebSocket(/\/ws/, (ws) => {
-        socket = ws
-        ws.send(
-          JSON.stringify({
-            type: 'status',
-            data: {
-              status: { exec_info: { queue_remaining: 0 } },
-              sid: SOCKET_SID
-            }
-          })
-        )
-        ws.onMessage((raw) => {
-          const frame: unknown = JSON.parse(raw.toString())
-          if (typeof frame !== 'object' || frame === null) return
-          const { type, data } = frame as { type?: unknown; data?: unknown }
-          if (
-            type !== 'doc_subscribe' ||
-            typeof data !== 'object' ||
-            data === null
-          )
-            return
-          const { workflow_id, state_vector_b64 } = data as {
-            workflow_id?: unknown
-            state_vector_b64?: unknown
-          }
-          if (
-            workflow_id !== WORKFLOW_ID ||
-            typeof state_vector_b64 !== 'string'
-          )
-            return
-          committedNodeIds = Object.keys(host.graph().nodes)
-          host.advanceSchemaVersionBeyondReader()
-          send(host.subscribed())
-          send(host.catchUp(state_vector_b64))
-        })
-      })
+      await hostSocket.install()
 
       await bootAgentApp(page, true, {
         settings: {
@@ -200,7 +157,7 @@ test.describe(
         .click()
       await expect(picker).toHaveText('Unsaved Workflow')
 
-      await expect.poll(() => socket !== null).toBe(true)
+      await expect.poll(() => hostSocket.connectionCount()).toBeGreaterThan(0)
 
       const composer = panel.getByRole('textbox', { name: COMPOSER_LABEL })
       await composer.fill('Rebuild the workflow.')
@@ -209,7 +166,7 @@ test.describe(
         panel.getByText('Rebuild the workflow.').first()
       ).toBeVisible()
 
-      send({
+      hostSocket.send({
         type: 'agent_active_tab',
         data: {
           workflow_id: WORKFLOW_ID,
@@ -218,7 +175,7 @@ test.describe(
           message_id: MESSAGE_ID
         }
       })
-      send({
+      hostSocket.send({
         type: 'agent_tool_call',
         data: {
           tool_call_id: 'call-1',
@@ -230,7 +187,7 @@ test.describe(
         }
       })
 
-      send({
+      hostSocket.send({
         type: 'agent_message_delta',
         data: {
           delta: 'Rebuilt the workflow.',
@@ -238,7 +195,7 @@ test.describe(
           message_id: MESSAGE_ID
         }
       })
-      send({
+      hostSocket.send({
         type: 'agent_message_done',
         data: { thread_id: THREAD_ID, message_id: MESSAGE_ID, usage: null }
       })
