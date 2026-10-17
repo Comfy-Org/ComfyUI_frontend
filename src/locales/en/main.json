@@ -3901,7 +3901,10 @@
     "failedToSetDefault": "Could not change the workspace default",
     "linkTimedOut": "This deployment took too long to open. Try the link again.",
     "linkRefused": "Couldn't open this deployment",
-    "linkWorkspaceRefused": "Couldn't switch to that workspace. You're still in {workspaceName}."
+    "linkWorkspaceRefused": "Couldn't switch to that workspace. You're still in {workspaceName}.",
+    "runsThisWorkflow": "Runs this workflow",
+    "missingNodes": "Missing {count} node | Missing {count} nodes",
+    "notChecked": "Not checked"
   },
   "selectionToolbox": {
     "executeButton": {
