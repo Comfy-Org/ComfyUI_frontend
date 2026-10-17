@@ -409,6 +409,21 @@ describe('useSessionCookie', () => {
 
     expect(await useSessionCookie().sessionRequiresSso()).toBe(false)
   })
+
+  it('surfaces a plain-text proxy body instead of dropping it', async () => {
+    vi.mocked(useAuthStore().getIdToken).mockResolvedValue('firebase-id-token')
+    vi.mocked(globalThis.fetch).mockResolvedValue(
+      new Response('upstream connect error', {
+        status: 502,
+        statusText: 'Bad Gateway'
+      })
+    )
+    const { useSessionCookie } = await loadUseSessionCookie()
+
+    await expect(useSessionCookie().createSessionOrThrow()).rejects.toThrow(
+      'upstream connect error'
+    )
+  })
 })
 
 vi.mock(import('@/scripts/app'))

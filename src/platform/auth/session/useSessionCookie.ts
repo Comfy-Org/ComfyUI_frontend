@@ -1,13 +1,26 @@
 import { isSsoRequiredRefusal } from '@comfyorg/account-core/sso'
-import { zErrorResponse } from '@comfyorg/ingest-types/zod'
 
 import { useCurrentUserAccess } from '@/platform/auth/currentUserAccess'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import { isCloud } from '@/platform/distribution/types'
+import {
+  UNKNOWN_ERROR_CODE,
+  parseErrorResponse
+} from '@/platform/remote/comfyui/errors'
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { useAuthStoreAccess } from '@/platform/auth/authStoreAccess'
+
+class SessionCookieError extends Error {
+  constructor(
+    message: string,
+    public readonly code?: string
+  ) {
+    super(message)
+    this.name = 'SessionCookieError'
+  }
+}
 
 interface InFlightCreateSession {
   ownerUid: string | null
@@ -45,22 +58,26 @@ export const useSessionCookie = () => {
   }
 
   const readSessionError = async (response: Response): Promise<Error> => {
-    const errorData: unknown = await response.json().catch(() => null)
-    const refusal = zErrorResponse.partial().safeParse(errorData).data
-    const text = refusal?.message ?? response.statusText
-    if (isSsoRequiredRefusal(response.status, errorData)) {
-      return new SsoRequiredSessionError(text)
+    const errorResponse = await parseErrorResponse(response)
+    const { code, message } = errorResponse
+    if (isSsoRequiredRefusal(response.status, errorResponse)) {
+      return new SsoRequiredSessionError(message)
     }
-    return response.status === 401 && refusal?.code === 'SESSION_REVOKED'
-      ? new SessionRevokedError(text)
-      : new Error(text)
+    return response.status === 401 && code === 'SESSION_REVOKED'
+      ? new SessionRevokedError(message)
+      : new SessionCookieError(
+          message,
+          code === UNKNOWN_ERROR_CODE ? undefined : code
+        )
   }
 
   const getSessionHeaderOrThrow = async (): Promise<Record<string, string>> => {
     const authStore = useAuthStoreAccess()
     const firebaseToken = await authStore.getIdToken()
     if (!firebaseToken) {
-      throw new Error('No Firebase token available for session creation')
+      throw new SessionCookieError(
+        'No Firebase token available for session creation'
+      )
     }
 
     return { Authorization: `Bearer ${firebaseToken}` }
@@ -74,7 +91,7 @@ export const useSessionCookie = () => {
     const authHeader = await getSessionHeaderOrThrow()
 
     if ((authStore.currentUser?.uid ?? null) !== expectedOwnerUid) {
-      throw new Error('Session identity changed during creation')
+      throw new SessionCookieError('Session identity changed during creation')
     }
 
     const response = await createSessionWithHeader(authHeader)
@@ -105,12 +122,16 @@ export const useSessionCookie = () => {
       promise: sessionMutationTail
         .then(async () => {
           if ((useAuthStoreAccess().currentUser?.uid ?? null) !== ownerUid) {
-            throw new Error('Session identity changed before creation')
+            throw new SessionCookieError(
+              'Session identity changed before creation'
+            )
           }
           await performCreateSession(ownerUid)
           confirmedSessionOwnerUid = ownerUid
           if ((useAuthStoreAccess().currentUser?.uid ?? null) !== ownerUid) {
-            throw new Error('Session identity changed during creation')
+            throw new SessionCookieError(
+              'Session identity changed during creation'
+            )
           }
         })
         .finally(() => {
@@ -128,7 +149,9 @@ export const useSessionCookie = () => {
   const currentOwnerUidOrThrow = (): string => {
     const ownerUid = useAuthStoreAccess().currentUser?.uid
     if (!ownerUid) {
-      throw new Error('No authenticated user available for session creation')
+      throw new SessionCookieError(
+        'No authenticated user available for session creation'
+      )
     }
     return ownerUid
   }
