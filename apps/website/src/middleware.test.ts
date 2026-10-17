@@ -346,3 +346,48 @@ describe('provider bypass on the complete CMS middleware chain', () => {
     expect(response?.headers.has('Cloudflare-CDN-Cache-Control')).toBe(false)
   })
 })
+
+describe('robots header on CMS responses', () => {
+  const review = {
+    draft: { revision_id: 2, generation: 1, items: [] },
+    live: { revision_id: 1, generation: 1, items: [] },
+    can_edit: true,
+    can_apply: false,
+    history: []
+  }
+  function anonymous(path: string) {
+    return createContext({
+      request: new Request(`http://127.0.0.1:4329${path}`),
+      defaultLocale: 'en',
+      clientAddress: '127.0.0.1'
+    })
+  }
+  const page = () => Promise.resolve(new Response('Detail'))
+
+  it('keeps every CMS page out of search in a non-indexable build', async () => {
+    vi.stubEnv('SITE_CATALOG_API_URL', 'http://localhost:8099')
+    vi.stubEnv('VERCEL_ENV', 'preview')
+    const response = await onRequest(anonymous('/hub/workflows/example/'), page)
+    expect(response?.headers.get('X-Robots-Tag')).toBe('noindex, nofollow')
+  })
+
+  it('leaves an anonymous LIVE page to its own robots meta in an indexable build', async () => {
+    vi.stubEnv('SITE_CATALOG_API_URL', 'http://localhost:8099')
+    vi.stubEnv('VERCEL_ENV', '')
+    vi.stubEnv('WEBSITE_INDEXABLE', '1')
+    const response = await onRequest(anonymous('/hub/workflows/example/'), page)
+    expect(response?.headers.has('X-Robots-Tag')).toBe(false)
+    expect(response?.headers.get('X-Comfy-Content-Source')).toBe('cms')
+  })
+
+  it('keeps a staff view out of search even in an indexable build', async () => {
+    vi.stubEnv('SITE_CATALOG_API_URL', 'http://localhost:8099')
+    vi.stubEnv('VERCEL_ENV', '')
+    vi.stubEnv('WEBSITE_INDEXABLE', '1')
+    vi.mocked(verifySiteSession).mockResolvedValue(review)
+    const context = contextFor('/hub/workflows/example/')
+    const response = await onRequest(context, page)
+    expect(context.locals.site).toBeDefined()
+    expect(response?.headers.get('X-Robots-Tag')).toBe('noindex, nofollow')
+  })
+})
