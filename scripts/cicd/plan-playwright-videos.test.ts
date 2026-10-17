@@ -1,5 +1,6 @@
 import { spawnSync } from 'node:child_process'
 import {
+  existsSync,
   mkdtempSync,
   readFileSync,
   rmSync,
@@ -7,7 +8,7 @@ import {
   writeFileSync
 } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { delimiter, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { describe, expect, it } from 'vitest'
@@ -15,7 +16,13 @@ import { parse } from 'yaml'
 import { z } from 'zod'
 
 const script = join(import.meta.dirname, 'plan-playwright-videos.sh')
-const bash = '/bin/bash'
+// The recording command runs with PATH limited to stub binaries, so resolve
+// bash from the caller's PATH up front.
+const bash =
+  (process.env.PATH ?? '')
+    .split(delimiter)
+    .map((dir) => join(dir, 'bash'))
+    .find((candidate) => existsSync(candidate)) ?? 'bash'
 const playwright = fileURLToPath(import.meta.resolve('@playwright/test'))
 
 function fixture(chromiumCount: number, cloudCount = 0) {
