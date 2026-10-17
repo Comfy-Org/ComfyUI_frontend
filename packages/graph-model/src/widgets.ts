@@ -177,6 +177,7 @@ export type IWidget =
   | ICompositorWidget
   | IRangeWidget
   | IVideoEditWidget
+  | IVideoConcatWidget
   | IResolutionPreviewWidget
   | IBoundingBoxesWidget
   | ILightInfoWidget
@@ -467,6 +468,23 @@ export interface IVideoEditWidget extends IBaseWidget<
 > {
   type: 'videoedit'
   value: VideoEditValue
+}
+
+export interface VideoConcatValue {
+  order?: string[]
+}
+
+export interface IWidgetVideoConcatOptions extends IWidgetOptions {
+  source: string
+}
+
+export interface IVideoConcatWidget extends IBaseWidget<
+  VideoConcatValue,
+  'videoconcat',
+  IWidgetVideoConcatOptions
+> {
+  type: 'videoconcat'
+  value: VideoConcatValue
 }
 
 export interface IWidgetResolutionPreviewOptions extends IWidgetOptions {
