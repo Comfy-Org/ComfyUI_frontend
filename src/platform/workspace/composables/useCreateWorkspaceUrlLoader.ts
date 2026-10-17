@@ -1,10 +1,4 @@
-import { useRoute, useRouter } from 'vue-router'
-
-import {
-  clearPreservedQuery,
-  hydratePreservedQuery,
-  mergePreservedQueryIntoQuery
-} from '@/platform/navigation/preservedQueryManager'
+import { usePreservedQueryDeepLink } from '@/platform/navigation/composables/usePreservedQueryDeepLink'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
 
@@ -21,8 +15,7 @@ const NAMESPACE = PRESERVED_QUERY_NAMESPACES.CREATE_WORKSPACE
  * as the invite URL loader.
  */
 export function useCreateWorkspaceUrlLoader() {
-  const route = useRoute()
-  const router = useRouter()
+  const deepLink = usePreservedQueryDeepLink(NAMESPACE)
   const { showTeamWorkspacesDialog } = useWorkspaceDialogs()
 
   /**
@@ -35,25 +28,10 @@ export function useCreateWorkspaceUrlLoader() {
    * 4. Clean up URL and preserved query
    */
   async function loadCreateWorkspaceFromUrl() {
-    hydratePreservedQuery(NAMESPACE)
-    const mergedQuery = mergePreservedQueryIntoQuery(NAMESPACE, route.query)
-    if (mergedQuery) {
-      await router.replace({ query: mergedQuery })
-    }
-
-    const query = mergedQuery ?? route.query
-    const param = query.create_workspace
+    const param = await deepLink.hydrateAndRead()
     if (!param || typeof param !== 'string') return
 
-    const newQuery = { ...route.query }
-    delete newQuery.create_workspace
-    router.replace({ query: newQuery }).catch((error) => {
-      console.warn(
-        '[useCreateWorkspaceUrlLoader] Failed to clean URL params:',
-        error
-      )
-    })
-    clearPreservedQuery(NAMESPACE)
+    deepLink.strip()
 
     try {
       await showTeamWorkspacesDialog()
