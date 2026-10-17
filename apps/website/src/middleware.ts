@@ -34,6 +34,7 @@ import {
 } from './lib/cms/admin'
 import { narrowToLocalRole } from '@/lib/cms/catalog-capabilities'
 import { cmsEnabled } from '@/lib/cms/cms-enabled'
+import { isIndexableBuild } from '@/config/indexing'
 
 function isAdmin(path: string) {
   return path === '/admin' || path.startsWith('/admin/')
@@ -265,12 +266,26 @@ async function siteResponse(
     return denied()
   if (selection) return selection
   const response = await next()
-  if (cms) {
-    response.headers.set('Cache-Control', 'private, no-store')
-    response.headers.set('X-Robots-Tag', 'noindex, nofollow')
-    response.headers.set('X-Comfy-Content-Source', 'cms')
-  }
+  if (cms) markCmsResponse(context, response)
   return response
+}
+
+function markCmsResponse(context: APIContext, response: Response) {
+  response.headers.set('Cache-Control', 'private, no-store')
+  if (keepOutOfSearch(context))
+    response.headers.set('X-Robots-Tag', 'noindex, nofollow')
+  response.headers.set('X-Comfy-Content-Source', 'cms')
+}
+
+// Crawlers honor X-Robots-Tag over page meta, so apply the same rule as the
+// page: staff sessions can see unpublished Draft content, and non-indexable
+// builds stay out of search. An anonymous LIVE page in an indexable build is
+// left to its own robots meta (e.g. a catalog detail page's).
+function keepOutOfSearch(context: APIContext) {
+  return (
+    Boolean(context.locals.site ?? context.locals.catalogAuthoring) ||
+    !isIndexableBuild()
+  )
 }
 
 function setRequestLocale(context: APIContext) {
