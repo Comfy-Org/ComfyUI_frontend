@@ -36,7 +36,7 @@ import {
 } from '@/telemetry/webEntryTelemetry'
 import BillingHomeView from '@/views/BillingHomeView.vue'
 import CheckoutRouteView from '@/views/CheckoutRouteView.vue'
-import DesktopTopupReturnView from '@/views/DesktopTopupReturnView.vue'
+import TopupReturnView from '@/views/TopupReturnView.vue'
 import EntryErrorView from '@/views/EntryErrorView.vue'
 import InvoicesView from '@/views/InvoicesView.vue'
 import PaymentMethodsView from '@/views/PaymentMethodsView.vue'
@@ -51,7 +51,7 @@ const APP_ENTRY_PATH = '/'
 export const SIGN_IN_PATH = '/sign-in'
 
 /** Where hosted top-up checkouts from Desktop and local builds land; shipped builds keep this URL. */
-export const DESKTOP_TOPUP_RETURN_PATH = '/return/desktop-topup'
+export const TOPUP_RETURN_PATH = '/return/topup'
 
 declare module 'vue-router' {
   interface RouteMeta {
@@ -82,9 +82,9 @@ const routes: RouteRecordRaw[] = [
     component: SignInView
   },
   {
-    path: DESKTOP_TOPUP_RETURN_PATH,
-    name: 'desktop-topup-return',
-    component: DesktopTopupReturnView,
+    path: TOPUP_RETURN_PATH,
+    name: 'topup-return',
+    component: TopupReturnView,
     meta: { public: true }
   },
   ...BILLING_INTENTS.map((intent) => ({

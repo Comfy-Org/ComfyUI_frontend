@@ -7,10 +7,7 @@ const { t } = useI18n()
 </script>
 
 <template>
-  <EndingFrame
-    :title="t('desktopTopupReturn.title')"
-    :body="t('desktopTopupReturn.body')"
-  >
+  <EndingFrame :title="t('topupReturn.title')" :body="t('topupReturn.body')">
     <p class="m-0 text-center text-sm text-muted-foreground">
       {{ t('checkout.fullPage.ending.closeTab') }}
     </p>
