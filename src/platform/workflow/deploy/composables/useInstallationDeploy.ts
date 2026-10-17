@@ -14,9 +14,10 @@ import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 import type { AuthHeader } from '@/types/authTypes'
 
-type InstallationDeployState =
+export type InstallationDeployState =
   | { status: 'idle' }
   | { status: 'uploading' }
+  | { status: 'opened' }
   | { status: 'tab_blocked'; url: string }
 
 type DeployFailure = {
@@ -125,10 +126,14 @@ export function useInstallationDeploy() {
     }
     const opened = openInNewTab(result.url)
     state.value = opened
-      ? { status: 'idle' }
+      ? { status: 'opened' }
       : { status: 'tab_blocked', url: result.url }
     return opened
   }
 
-  return { state: readonly(state), deploy }
+  function markOpened() {
+    state.value = { status: 'opened' }
+  }
+
+  return { state: readonly(state), deploy, markOpened }
 }

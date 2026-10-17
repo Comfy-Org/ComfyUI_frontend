@@ -11,6 +11,7 @@ import enMessages from '@/locales/en/main.json'
 import { useTelemetry } from '@/platform/telemetry'
 import { useAgentHandoff } from '@/platform/workflow/deploy/composables/useAgentHandoff'
 import { useInstallationDeploy } from '@/platform/workflow/deploy/composables/useInstallationDeploy'
+import type { InstallationDeployState } from '@/platform/workflow/deploy/composables/useInstallationDeploy'
 import type { BuildInputs } from '@/platform/workflow/deploy/utils/buildInputs'
 
 import DeployToComfyApiCard from './DeployToComfyApiCard.vue'
@@ -39,18 +40,29 @@ vi.mock(
 
 vi.mock(
   import('@/platform/workflow/deploy/composables/useInstallationDeploy'),
-  () => {
-    const deploy = vi.fn(async () => true)
-    return {
-      useInstallationDeploy: vi.fn(() =>
-        fromPartial<ReturnType<typeof useInstallationDeploy>>({
-          state: ref({ status: 'idle' as const }),
-          deploy
-        })
-      )
-    }
-  }
+  () => ({ useInstallationDeploy: vi.fn() })
 )
+
+function fakeInstallationDeploy(
+  initial: InstallationDeployState,
+  outcome: InstallationDeployState
+) {
+  const state = ref<InstallationDeployState>(initial)
+  const installation = {
+    state,
+    deploy: vi.fn(async () => {
+      state.value = outcome
+      return outcome.status === 'opened'
+    }),
+    markOpened: vi.fn(() => {
+      state.value = { status: 'opened' }
+    })
+  }
+  vi.mocked(useInstallationDeploy).mockReturnValueOnce(
+    fromPartial(installation)
+  )
+  return installation
+}
 
 vi.mock(import('@/config/comfyApi'), () => ({
   getComfyPlatformBaseUrl: () => 'https://platform.comfy.org'
@@ -179,11 +191,15 @@ describe('DeployToComfyApiCard', () => {
   })
 
   it('uploads the installation from Deploy on Platform and reports done once the wizard opens', async () => {
+    const installation = fakeInstallationDeploy(
+      { status: 'idle' },
+      { status: 'opened' }
+    )
     const { onDone, user } = renderCard({ deploysInstallation: true })
 
     await user.click(screen.getByRole('button', { name: 'Deploy on Platform' }))
 
-    expect(useInstallationDeploy().deploy).toHaveBeenCalledOnce()
+    expect(installation.deploy).toHaveBeenCalledOnce()
     expect(onDone).toHaveBeenCalledOnce()
     expect(useTelemetry()?.trackUiButtonClicked).toHaveBeenCalledWith({
       button_id: 'deploy_to_comfy_api_platform_clicked',
@@ -196,7 +212,7 @@ describe('DeployToComfyApiCard', () => {
   })
 
   it('keeps the dialog open and reports no wizard when the upload does not open it', async () => {
-    vi.mocked(useInstallationDeploy().deploy).mockResolvedValueOnce(false)
+    fakeInstallationDeploy({ status: 'idle' }, { status: 'idle' })
     const { onDone, user } = renderCard({ deploysInstallation: true })
 
     await user.click(screen.getByRole('button', { name: 'Deploy on Platform' }))
@@ -211,11 +227,9 @@ describe('DeployToComfyApiCard', () => {
   })
 
   it('links to the build wizard when the browser blocked its tab, and reports done', async () => {
-    vi.mocked(useInstallationDeploy).mockReturnValueOnce(
-      fromPartial({
-        state: ref({ status: 'tab_blocked' as const, url: BUILDER_URL }),
-        deploy: vi.fn()
-      })
+    const installation = fakeInstallationDeploy(
+      { status: 'tab_blocked', url: BUILDER_URL },
+      { status: 'opened' }
     )
     const { onDone, user } = renderCard({ deploysInstallation: true })
     const link = screen.getByRole('link', { name: 'Open the build wizard' })
@@ -223,6 +237,7 @@ describe('DeployToComfyApiCard', () => {
     expect(link).toHaveAttribute('href', BUILDER_URL)
     await user.click(link)
 
+    expect(installation.markOpened).toHaveBeenCalledOnce()
     expect(onDone).toHaveBeenCalledOnce()
     expect(
       useTelemetry()?.trackUiButtonClicked
