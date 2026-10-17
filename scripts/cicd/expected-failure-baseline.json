@@ -1,10 +1,6 @@
 {
   "entries": [
     {
-      "id": "playwright:browser_tests/tests/agent/agentAttachFileTypeParity.spec.ts:gives the same answer for a .csv whether it is picked or dropped:1",
-      "classification": "live-defect"
-    },
-    {
       "id": "playwright:browser_tests/tests/agent/agentLayoutQuality.spec.ts:draws every node without overlapping another:1",
       "classification": "live-defect"
     },
@@ -73,43 +69,11 @@
       "classification": "live-defect"
     },
     {
-      "id": "playwright:browser_tests/tests/vueNodes/interactions/canvas/selection.spec.ts:shift-toggling a group off also deselects its cascaded children:1",
-      "classification": "live-defect"
-    },
-    {
       "id": "playwright:browser_tests/tests/workspace/workflowDraftForeignWindowSignIn.spec.ts:a second window signing in neither wipes drafts nor stops persistence:1",
       "classification": "live-defect"
     },
     {
       "id": "vitest:src/lib/litegraph/src/LGraphCanvas.gesture.test.ts:releases a hovered node with the pointerup event:1",
-      "classification": "live-defect"
-    },
-    {
-      "id": "vitest:src/lib/litegraph/src/LGraphCanvas.selection.test.ts:a clearing click reports one change:1",
-      "classification": "live-defect"
-    },
-    {
-      "id": "vitest:src/lib/litegraph/src/LGraphCanvas.selection.test.ts:a replacing click reports one change:1",
-      "classification": "live-defect"
-    },
-    {
-      "id": "vitest:src/lib/litegraph/src/LGraphCanvas.selection.test.ts:deselect() reports the change:1",
-      "classification": "live-defect"
-    },
-    {
-      "id": "vitest:src/lib/litegraph/src/LGraphCanvas.selection.test.ts:live marquee reports one change:1",
-      "classification": "live-defect"
-    },
-    {
-      "id": "vitest:src/lib/litegraph/src/LGraphCanvas.selection.test.ts:nested groups receive onSelected:1",
-      "classification": "live-defect"
-    },
-    {
-      "id": "vitest:src/lib/litegraph/src/LGraphCanvas.selection.test.ts:select() reports the change:1",
-      "classification": "live-defect"
-    },
-    {
-      "id": "vitest:src/lib/litegraph/src/LGraphCanvas.selection.test.ts:shift+alt marquee resolves the same way in both modes:1",
       "classification": "live-defect"
     },
     {
