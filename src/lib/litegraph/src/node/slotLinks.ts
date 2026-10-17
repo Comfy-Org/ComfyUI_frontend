@@ -215,6 +215,7 @@ export function replaceNodeInputs(
     if (!result.ok) {
       reportError(new Error(result.error.message), {
         errorType: 'node_input_replace_rejected',
+        surface: 'graph',
         context: { nodeId: node.id, code: result.error.code }
       })
       return result

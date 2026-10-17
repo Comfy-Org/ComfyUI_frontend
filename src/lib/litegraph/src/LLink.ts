@@ -208,6 +208,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
     if (!result.ok) {
       reportError(new Error(result.error.message), {
         errorType: 'link_endpoint_update_rejected',
+        surface: 'graph',
         context: { linkId: this.id, code: result.error.code, patch }
       })
     }
