@@ -94,7 +94,7 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
     }
   )
 
-  void showHdrPreviewIfApplicable(modelValue.value)
+  requestAnimationFrame(() => void showHdrPreviewIfApplicable(modelValue.value))
 
   function updateSelectedItems(selectedItems: Set<string>) {
     const id =
