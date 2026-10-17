@@ -67,6 +67,7 @@ describe('EmptyState', () => {
           promptId: 'slot_5',
           promptIndex: 4,
           promptCount: 5,
+          visiblePromptCount: 5,
           promptTextHash: '2f8b1ba4',
           locale: 'en'
         }
@@ -74,13 +75,13 @@ describe('EmptyState', () => {
     ])
   })
 
-  it('reports only the suggestions a narrow panel leaves visible', async () => {
+  it('separates the visible count from the set size in a narrow panel', async () => {
     const user = userEvent.setup()
     const { emitted } = render(EmptyState, {
       global: { plugins: [i18n] }
     })
     const buttons = screen.getAllByRole('button')
-    // jsdom does not evaluate container queries; hide the overflow as the
+    // happy-dom does not evaluate container queries; hide the overflow as the
     // compact breakpoint does.
     buttons.slice(3).forEach((button) => (button.style.display = 'none'))
 
@@ -89,7 +90,12 @@ describe('EmptyState', () => {
     expect(emitted().insert).toEqual([
       [
         LOCAL_PROMPTS[0].text,
-        expect.objectContaining({ promptId: 'slot_1', promptCount: 3 })
+        expect.objectContaining({
+          promptId: 'slot_1',
+          // The set did not shrink, so the set-size field must not move.
+          promptCount: 5,
+          visiblePromptCount: 3
+        })
       ]
     ])
   })

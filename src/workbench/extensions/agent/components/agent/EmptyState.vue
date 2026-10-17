@@ -68,6 +68,8 @@ const promptList = useTemplateRef<HTMLElement>('promptList')
 /**
  * Suggestions the viewer could actually see. A narrow panel hides the overflow
  * with a container query, so the set's length overstates what was on screen.
+ * Reported alongside the set size, never instead of it: the set experiment
+ * reads the set size, and one field cannot carry both facts.
  */
 function visiblePromptCount(): number {
   const buttons = promptList.value?.querySelectorAll('button')
@@ -88,9 +90,10 @@ function onPromptClick(prompt: string, index: number): void {
     starterPromptAttribution(
       prompt,
       index,
-      visiblePromptCount(),
+      prompts.value.length,
       promptLocale.value,
-      shouldAttributeExperiment.value ? effectiveAssignment.value : undefined
+      shouldAttributeExperiment.value ? effectiveAssignment.value : undefined,
+      visiblePromptCount()
     )
   )
 }
