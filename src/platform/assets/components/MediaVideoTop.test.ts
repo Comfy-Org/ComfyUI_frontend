@@ -1,7 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import { describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { h, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { fireEvent, render, screen } from '@testing-library/vue'
@@ -215,6 +215,80 @@ describe('MediaVideoTop', () => {
       expect(playSpy).not.toHaveBeenCalled()
     }
   )
+
+  describe('click propagation while native controls are showing', () => {
+    const containerRect = new DOMRect(0, 100, 320, 200)
+    const hoverScaledVideoRect = new DOMRect(-8, 95, 336, 210)
+
+    async function renderPlayingHoveredVideo() {
+      const user = userEvent.setup()
+      const onCardClick = vi.fn()
+      const asset = createVideoAsset('https://example.com/thumb.jpg')
+      render(
+        () =>
+          h('div', { 'aria-label': 'card', onClick: onCardClick }, [
+            h(MediaVideoTop, { asset })
+          ]),
+        { global: globalConfig }
+      )
+
+      vi.spyOn(
+        HTMLDivElement.prototype,
+        'getBoundingClientRect'
+      ).mockReturnValue(containerRect)
+      const video = screen.getByLabelText<HTMLVideoElement>('clip.mp4')
+      vi.spyOn(video, 'getBoundingClientRect').mockReturnValue(
+        hoverScaledVideoRect
+      )
+
+      await fireEvent.play(video)
+      await user.hover(video)
+      expect(video.controls).toBe(true)
+
+      async function metaClickAt(clientY: number) {
+        await user.keyboard('{Meta>}')
+        await user.pointer({
+          keys: '[MouseLeft]',
+          target: video,
+          coords: { clientY }
+        })
+        await user.keyboard('{/Meta}')
+      }
+
+      return { onCardClick, metaClickAt }
+    }
+
+    it.for([
+      { case: 'the control strip', clientY: 290, expectedCardClicks: 0 },
+      {
+        case: 'the strip above the scaled video rect',
+        clientY: 240,
+        expectedCardClicks: 0
+      },
+      { case: 'the video body', clientY: 200, expectedCardClicks: 1 }
+    ])(
+      'modifier-click on $case reaches the card $expectedCardClicks times',
+      async ({ clientY, expectedCardClicks }) => {
+        const { onCardClick, metaClickAt } = await renderPlayingHoveredVideo()
+
+        await metaClickAt(clientY)
+
+        expect(onCardClick).toHaveBeenCalledTimes(expectedCardClicks)
+      }
+    )
+
+    it('lets a modifier-click through when the container has zero height', async () => {
+      const { onCardClick, metaClickAt } = await renderPlayingHoveredVideo()
+      vi.spyOn(
+        HTMLDivElement.prototype,
+        'getBoundingClientRect'
+      ).mockReturnValue(new DOMRect(0, 100, 320, 0))
+
+      await metaClickAt(100)
+
+      expect(onCardClick).toHaveBeenCalledTimes(1)
+    })
+  })
 
   it('pauses playback from a subsequent click when native controls are disabled', async () => {
     const user = userEvent.setup()
