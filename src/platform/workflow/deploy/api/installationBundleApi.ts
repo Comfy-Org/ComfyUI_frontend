@@ -13,6 +13,7 @@ const zBundleErrorCode = z.enum([
   'too_many_bundles',
   'too_large',
   'offline',
+  'builder_busy',
   'builder_unavailable',
   'builder_rejected',
   'invalid_body',
@@ -29,6 +30,7 @@ export type BundleFailureReason =
   | 'too_many_bundles'
   | 'too_large'
   | 'offline'
+  | 'busy'
   | 'unavailable'
   | 'invalid_request'
 
@@ -47,6 +49,7 @@ const REASON_BY_ERROR_CODE = {
   too_many_bundles: 'too_many_bundles',
   too_large: 'too_large',
   offline: 'offline',
+  builder_busy: 'busy',
   builder_unavailable: 'unavailable',
   builder_rejected: 'unavailable',
   invalid_body: 'invalid_request',
