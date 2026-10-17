@@ -5348,37 +5348,41 @@ describe('AgentPanelRoot history', () => {
     } {
       const loadedThreads: string[] = []
       let listCalls = 0
-      vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
-        const url = String(input)
-        if (url.endsWith('/api/agent/threads')) {
-          listCalls += 1
-          return json(200, agentThreadList(threads))
+      vi.mocked(fetch).mockImplementation(
+        async (input: RequestInfo | URL, init?: RequestInit) => {
+          const url = String(input)
+          if (init?.method === 'POST' && url.includes('/messages'))
+            return json(202, ack('wf-second'))
+          if (url.endsWith('/api/agent/threads')) {
+            listCalls += 1
+            return json(200, agentThreadList(threads))
+          }
+          if (url.includes('/api/workflows'))
+            return json(200, {
+              data: [
+                { id: 'wf-first', name: 'first' },
+                { id: 'wf-second', name: 'second' }
+              ],
+              pagination: { offset: 0, limit: 100, total: 2, has_more: false }
+            })
+          const match = url.match(/\/api\/agent\/threads\/([^/]+)\/messages$/)
+          if (match) {
+            loadedThreads.push(match[1])
+            return json(200, [
+              {
+                id: `${match[1]}-user`,
+                thread_id: match[1],
+                seq: 1,
+                role: 'user',
+                status: 'complete',
+                turn_id: `${match[1]}-turn`,
+                content: { text: `Prompt in ${match[1]}` }
+              }
+            ] satisfies AgentMessages)
+          }
+          return json(200, { data: [], pagination: { has_more: false } })
         }
-        if (url.includes('/api/workflows'))
-          return json(200, {
-            data: [
-              { id: 'wf-first', name: 'first' },
-              { id: 'wf-second', name: 'second' }
-            ],
-            pagination: { offset: 0, limit: 100, total: 2, has_more: false }
-          })
-        const match = url.match(/\/api\/agent\/threads\/([^/]+)\/messages$/)
-        if (match) {
-          loadedThreads.push(match[1])
-          return json(200, [
-            {
-              id: `${match[1]}-user`,
-              thread_id: match[1],
-              seq: 1,
-              role: 'user',
-              status: 'complete',
-              turn_id: `${match[1]}-turn`,
-              content: { text: `Prompt in ${match[1]}` }
-            }
-          ] satisfies AgentMessages)
-        }
-        return json(200, { data: [], pagination: { has_more: false } })
-      })
+      )
       return { loadedThreads, listCalls: () => listCalls }
     }
 
@@ -5569,6 +5573,113 @@ describe('AgentPanelRoot history', () => {
         )
       ).rejects.toThrow()
       expect(loadedThreads).toEqual([])
+    })
+
+    // `workflow_id` is not unique across threads and a thread can be archived,
+    // so "the chat for this tab" is a rule rather than the first row that
+    // matches. Both cases below list the wrong answer first, so picking by
+    // list order fails them.
+    it('opens the tab chat that is still active, not an archived one', async () => {
+      const first = addTab('workflows/first.json')
+      const second = addTab('workflows/second.json')
+      workflowStore.activeWorkflow = second
+      const { loadedThreads } = stubWorkflowBoundHistory([
+        agentThread({
+          id: 'th-first-archived',
+          title: 'Archived chat',
+          last_message_at: '2026-09-22T12:00:00Z',
+          status: 'archived',
+          workflow_id: 'wf-first'
+        }),
+        agentThread({
+          id: 'th-first',
+          title: 'First chat',
+          last_message_at: '2026-09-22T10:00:00Z',
+          workflow_id: 'wf-first'
+        })
+      ])
+
+      renderWithSelectedTarget()
+      workflowStore.activeWorkflow = first
+
+      await vi.waitFor(
+        () => expect(useAgentConversationStore().threadId).toBe('th-first'),
+        { timeout: FOLLOW_LANDS_WITHIN_MS }
+      )
+      expect(loadedThreads).toEqual(['th-first'])
+    })
+
+    it('opens the most recently active chat when the tab has several', async () => {
+      const first = addTab('workflows/first.json')
+      const second = addTab('workflows/second.json')
+      workflowStore.activeWorkflow = second
+      const { loadedThreads } = stubWorkflowBoundHistory([
+        agentThread({
+          id: 'th-first-stale',
+          title: 'Stale chat',
+          last_message_at: '2026-09-22T08:00:00Z',
+          workflow_id: 'wf-first'
+        }),
+        agentThread({
+          id: 'th-first-recent',
+          title: 'Recent chat',
+          last_message_at: '2026-09-22T11:00:00Z',
+          workflow_id: 'wf-first'
+        })
+      ])
+
+      renderWithSelectedTarget()
+      workflowStore.activeWorkflow = first
+
+      await vi.waitFor(
+        () =>
+          expect(useAgentConversationStore().threadId).toBe('th-first-recent'),
+        { timeout: FOLLOW_LANDS_WITHIN_MS }
+      )
+      expect(loadedThreads).toEqual(['th-first-recent'])
+    })
+
+    // Retargeting the agent mid-turn is already refused by `canSelectTarget`.
+    // Activating a tab reaches the same place by a different door, so looking
+    // at another tab while a turn streams must not move the chat -- and must
+    // not stop following once the turn is over.
+    it('does not move the chat while a turn is streaming', async () => {
+      const first = addTab('workflows/first.json')
+      const second = addTab('workflows/second.json')
+      workflowStore.activeWorkflow = second
+      const { loadedThreads } = stubWorkflowBoundHistory([
+        agentThread({
+          id: 'th-first',
+          title: 'First chat',
+          last_message_at: '2026-09-22T10:00:00Z',
+          workflow_id: 'wf-first'
+        })
+      ])
+
+      renderWithSelectedTarget()
+      await sendFromComposer('keep working on this one')
+
+      workflowStore.activeWorkflow = first
+
+      await expect(
+        vi.waitFor(() => expect(loadedThreads).not.toEqual([]), {
+          timeout: FOLLOW_LANDS_WITHIN_MS
+        })
+      ).rejects.toThrow()
+      expect(useAgentConversationStore().threadId).toBe('th-1')
+
+      ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
+      await screen.findByRole('button', { name: 'Send' })
+
+      workflowStore.activeWorkflow = second
+      await nextTick()
+      workflowStore.activeWorkflow = first
+
+      await vi.waitFor(
+        () => expect(useAgentConversationStore().threadId).toBe('th-first'),
+        { timeout: FOLLOW_LANDS_WITHIN_MS }
+      )
+      expect(loadedThreads).toEqual(['th-first'])
     })
   })
 

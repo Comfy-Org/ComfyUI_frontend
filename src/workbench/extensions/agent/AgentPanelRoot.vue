@@ -1532,6 +1532,48 @@ const activeWorkflowId = computed(() => {
   return workflow ? cloudIdFor(workflow) : undefined
 })
 
+/**
+ * Whether the session is between turns. Every other thing that moves the
+ * agent's workflow context is gated on this -- `canSelectTarget` above is
+ * built from the same two refs -- so the follow is gated on it too. Without
+ * that, looking at another tab mid-turn would call `loadThread`, which stashes
+ * the running turn and clears the binding, and the panel would navigate away
+ * from the conversation the agent is streaming into.
+ */
+const sessionIdle = computed(() => !isSending.value && status.value === 'idle')
+
+/**
+ * When a thread was last worked in. `last_message_at` is empty on a thread
+ * with no activity yet, so creation time stands in and the ordering stays
+ * total. Parsed rather than compared as text because the ordering has to hold
+ * for any RFC3339 the server emits, not only the UTC form it emits today.
+ */
+function threadActivityAt(thread: AgentThreadSummary): number {
+  const stamp = Date.parse(thread.last_message_at || thread.created_at)
+  return Number.isNaN(stamp) ? 0 : stamp
+}
+
+/**
+ * The chat a workflow tab opens. Nothing makes `workflow_id` unique across
+ * threads -- it is optional on thread creation and a user can start any number
+ * of chats about one workflow -- so this needs a rule of its own rather than
+ * whichever row the page happens to list first. Archived chats are not
+ * candidates, and the most recently active of what remains wins: that is the
+ * chat the user last worked in, and mid-stream it is the one the agent is
+ * writing into.
+ */
+function threadForWorkflow(workflowId: string): AgentThreadSummary | undefined {
+  return threadSummaries.value.reduce<AgentThreadSummary | undefined>(
+    (best, thread) =>
+      thread.workflow_id === workflowId &&
+      thread.status === 'active' &&
+      (best === undefined || threadActivityAt(thread) > threadActivityAt(best))
+        ? thread
+        : best,
+    undefined
+  )
+}
+
 function followActiveWorkflowChat(): void {
   if (!followOwed.value) return
   // Pointing the composer at a workflow binds the chat the user is in to that
@@ -1542,11 +1584,17 @@ function followActiveWorkflowChat(): void {
     followOwed.value = false
     return
   }
+  // A turn that starts after the activation retires the follow for the same
+  // reason arming refuses one: the cloud id and the summary list can resolve
+  // mid-turn, and landing the follow then would move the chat out from under
+  // the running turn.
+  if (!sessionIdle.value) {
+    followOwed.value = false
+    return
+  }
   const workflowId = activeWorkflowId.value
   if (workflowId === undefined) return
-  const matchingThread = threadSummaries.value.find(
-    (thread) => thread.workflow_id === workflowId
-  )
+  const matchingThread = threadForWorkflow(workflowId)
   if (matchingThread === undefined) return
   followOwed.value = false
   if (matchingThread.id === threadId.value) return
@@ -1558,7 +1606,8 @@ function followActiveWorkflowChat(): void {
 watch(
   () => workflowStore.activeWorkflow,
   (workflow) => {
-    followOwed.value = workflow !== null && !workflow.isTemporary
+    followOwed.value =
+      workflow !== null && !workflow.isTemporary && sessionIdle.value
     followActiveWorkflowChat()
   }
 )
