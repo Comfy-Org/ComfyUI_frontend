@@ -2631,7 +2631,7 @@ describe('AgentPanelRoot attach flow', () => {
   })
 
   it('reads changed developer upload limits without remounting the panel', async () => {
-    getServerFeature.mockImplementation(
+    vi.mocked(api.getServerFeature).mockImplementation(
       (name, defaultValue) => getDevOverride(name) ?? defaultValue
     )
     const uploaded = stubUploadFetch()
