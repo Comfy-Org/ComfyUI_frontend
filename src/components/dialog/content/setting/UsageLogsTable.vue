@@ -63,7 +63,7 @@
             <TableCell>
               <Button
                 v-if="customerEventService.hasAdditionalInfo(event)"
-                :tooltip="additionalInfoTooltip(event)"
+                :tooltip="customerEventService.getTooltipContent(event)"
                 variant="textonly"
                 size="icon-sm"
                 :aria-label="$t('credits.additionalInfo')"
@@ -134,15 +134,6 @@ function eventAmount(event: AuditLog) {
   const amount = event.params?.amount
   const value = typeof amount === 'string' ? Number(amount) : amount
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined
-}
-
-function additionalInfoTooltip(event: AuditLog) {
-  return Object.entries(event.params ?? {})
-    .map(
-      ([key, value]) =>
-        `${customerEventService.formatJsonKey(key)}: ${customerEventService.formatJsonValue(value)}`
-    )
-    .join('\n')
 }
 
 // A billing-route flip can overlap two loads against different backends; only
