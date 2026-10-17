@@ -54,7 +54,12 @@ function capabilitiesFor(
       can_manage_billing: isOwner,
       can_manage_partner_node_access: isOwner,
       can_view_pending_invites: isOwner,
-      can_view_team_usage: isOwner
+      can_view_team_usage: isOwner,
+      can_edit_workspace: isOwner,
+      can_manage_auto_top_up: isOwner,
+      can_manage_subscription: isOwner,
+      can_run_workflows: isOwner,
+      can_upgrade: isOwner
     },
     rollout_defaults_applied: {
       can_downgrade_to_personal: false,
