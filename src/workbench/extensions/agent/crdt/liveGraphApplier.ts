@@ -41,9 +41,12 @@ import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 
+import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
+
 import {
   allSubgraphDefinitions,
-  readSubgraphDefinitions
+  readSubgraphDefinitions,
+  readSubgraphInteriorWidgets
 } from './agentSubgraphDefinitions'
 import type { PlacementRect } from './batchPlacement'
 import { placementOffset } from './batchPlacement'
@@ -55,12 +58,22 @@ export type NodeChange = 'add' | 'update' | 'delete'
  * Ids are document keys (strings); the applier resolves them against the live
  * graph.
  */
+/** Interior widget edits: definition id → interior node id → widget names. */
+export type InteriorChanges = ReadonlyMap<
+  string,
+  ReadonlyMap<string, ReadonlySet<string> | 'all'>
+>
+
 export interface FrameChanges {
   nodes: ReadonlyMap<string, NodeChange>
   /** Widget names edited per node, or `'all'` when the storage was replaced. */
   widgets: ReadonlyMap<string, ReadonlySet<string> | 'all'>
   resyncNodes: ReadonlySet<string>
   links: ReadonlySet<string>
+  /** Widget edits inside subgraph definitions (FE-3468). */
+  interiors?: InteriorChanges
+  /** Definitions whose interiors need a full widget resync. */
+  interiorDefinitions?: ReadonlySet<string>
 }
 
 export interface RemoteApplyContext {
@@ -600,6 +613,8 @@ export class LiveGraphApplier {
           this.try(context, () => this.syncWidgets(graph, doc, id, names, mode))
         }
 
+        this.applyInteriors(graph, doc, changes, context, mode)
+
         this.applyLinks(graph, doc, [...changes.links], context)
         if (mode === 'merge') this.placeBatch(graph, created)
         return {
@@ -878,6 +893,153 @@ export class LiveGraphApplier {
   }
 
   /**
+   * FE-3468: project definition-interior widget edits onto the live
+   * subgraph (the bottom layer) and, for promoted widgets, onto every host
+   * instance's surface widget. Read-only with respect to the shared doc:
+   * values are read from the follower doc and written only to live nodes.
+   */
+  private applyInteriors(
+    graph: LGraph,
+    doc: Y.Doc,
+    changes: FrameChanges,
+    context: RemoteApplyContext,
+    mode: ApplyMode
+  ): void {
+    const granular = changes.interiors
+    const full = changes.interiorDefinitions
+    const hasGranular = granular !== undefined && granular.size > 0
+    const hasFull = full !== undefined && full.size > 0
+    if (!hasGranular && !hasFull) return
+    const docInteriors = readSubgraphInteriorWidgets(doc)
+    const targets = new Map<string, Map<string, ReadonlySet<string> | 'all'>>()
+    if (granular) {
+      for (const [definitionId, nodes] of granular) {
+        targets.set(definitionId, new Map(nodes))
+      }
+    }
+    if (full) {
+      for (const definitionId of full) {
+        const nodes = targets.get(definitionId) ?? new Map()
+        for (const nodeId of docInteriors.get(definitionId)?.keys() ?? []) {
+          // Keep a named edit's precision over the wholesale resync mark.
+          if (!nodes.has(nodeId)) nodes.set(nodeId, 'all')
+        }
+        targets.set(definitionId, nodes)
+      }
+    }
+    for (const [definitionId, nodes] of targets) {
+      this.try(context, () =>
+        this.syncDefinitionInteriors(
+          graph,
+          definitionId,
+          nodes,
+          docInteriors,
+          mode
+        )
+      )
+    }
+  }
+
+  private syncDefinitionInteriors(
+    graph: LGraph,
+    definitionId: string,
+    nodes: ReadonlyMap<string, ReadonlySet<string> | 'all'>,
+    docInteriors: ReturnType<typeof readSubgraphInteriorWidgets>,
+    mode: ApplyMode
+  ): void {
+    const subgraph = graph.rootGraph.subgraphs.get(definitionId)
+    if (!subgraph) return
+    const docNodes = docInteriors.get(definitionId)
+    if (!docNodes) return
+    const orderedIds = [...docNodes.keys()]
+    for (const [nodeId, names] of nodes) {
+      const widgets = docNodes.get(nodeId)
+      if (widgets === undefined) continue
+      const index = orderedIds.indexOf(nodeId)
+      const live: LGraphNode | undefined =
+        subgraph.getNodeById(toNodeId(nodeId)) ??
+        (index >= 0 ? subgraph.nodes[index] : undefined)
+      if (!live) continue
+      if (names === 'all' || Array.isArray(widgets)) {
+        this.applyWidgets(live, widgets as DocNode['widgets'], mode)
+      } else if (!Array.isArray(widgets)) {
+        const filtered = Object.fromEntries(
+          Object.entries(widgets).filter(([name]) => names.has(name))
+        )
+        if (Object.keys(filtered).length > 0) {
+          this.applyWidgets(live, filtered, mode, {
+            documentWidgets: widgets as DocNode['widgets']
+          })
+        }
+      }
+      this.propagateInteriorToHosts(
+        graph,
+        definitionId,
+        live,
+        widgets,
+        names,
+        mode
+      )
+    }
+  }
+
+  private propagateInteriorToHosts(
+    graph: LGraph,
+    definitionId: string,
+    liveInterior: LGraphNode,
+    widgets: unknown,
+    names: ReadonlySet<string> | 'all',
+    mode: ApplyMode
+  ): void {
+    // Only a named edit propagates: a wholesale ('all') interior resync
+    // would re-impose the definition's default for a promoted widget,
+    // whose live value the host instance owns (it may legitimately differ).
+    if (names === 'all') return
+    if (widgets === undefined || Array.isArray(widgets)) return
+    const record = widgets as Record<string, unknown>
+    for (const host of subgraphHostInstances(graph, definitionId)) {
+      for (const input of promotedInputs(host)) {
+        const target = resolveSubgraphInputTarget(host, input.name)
+        if (!target || target.nodeId !== liveInterior.id) continue
+        if (!names.has(target.widgetName)) continue
+        if (!Object.hasOwn(record, target.widgetName)) continue
+        this.applyHostWidgets(
+          host,
+          { [input.name]: record[target.widgetName] },
+          mode
+        )
+      }
+    }
+  }
+
+  /** Mirror a promoted host write onto the interior widget it promotes. */
+  private syncInteriorFromHost(
+    host: LGraphNode,
+    name: string,
+    value: unknown
+  ): void {
+    if (!isWidgetValue(value)) return
+    const target = resolveSubgraphInputTarget(host, name)
+    if (!target || !host.isSubgraphNode()) return
+    const interior = host.subgraph.getNodeById(target.nodeId)
+    if (!interior || interior.isSubgraphNode()) return
+    const widget = interior.widgets?.find((w) => w.name === target.widgetName)
+    if (!widget) return
+    if (this.holdsLocalWrite(interior, target.widgetName, value)) return
+    try {
+      this.setWidgetValue(interior, widget, value)
+    } catch (error) {
+      this.reportOnce(
+        `interior-sync:${String(host.id)}:${name}`,
+        `Subgraph host ${String(host.id)} could not mirror promoted widget '${name}' onto its interior`,
+        'agent_graph_apply_failed',
+        { nodeId: host.id, name }
+      )
+      void error
+    }
+  }
+
+  /**
    * `options.documentWidgets` is the node's whole document map. It differs
    * from `widgets` on partial frames, where alias precedence still depends on
    * every key. Creation can suppress reports for unmatched names while still
@@ -1035,6 +1197,7 @@ export class LiveGraphApplier {
       }
       try {
         this.setPromotedWidgetValue(node, widget, value)
+        this.syncInteriorFromHost(node, name, value)
       } catch (error) {
         const options = {
           surface: 'agent',
@@ -1291,6 +1454,28 @@ function changed(
 
 function promotedInputs(node: LGraphNode): INodeInputSlot[] {
   return node.inputs.filter((input) => input.widgetId)
+}
+
+/** Every live host instance of a definition, at root and nested inside other subgraphs. */
+function subgraphHostInstances(
+  graph: LGraph,
+  definitionId: string
+): LGraphNode[] {
+  const hosts: LGraphNode[] = []
+  const seen = new Set<LGraphNode>()
+  const visit = (nodes: readonly LGraphNode[]): void => {
+    for (const node of nodes) {
+      if (seen.has(node)) continue
+      seen.add(node)
+      if (node.isSubgraphNode() && node.subgraph.id === definitionId) {
+        hosts.push(node)
+      }
+    }
+  }
+  visit(graph.rootGraph.nodes)
+  for (const subgraph of graph.rootGraph.subgraphs.values())
+    visit(subgraph.nodes)
+  return hosts
 }
 
 function promotedWidgetIds(node: LGraphNode): string[] {
