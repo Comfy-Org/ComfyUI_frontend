@@ -66,8 +66,6 @@ for (const mode of renderModes) {
           }
         }, NODE_CLIP_PADDING)
 
-        // Clipped to the node so the comparisons below cannot be satisfied by
-        // frame churn elsewhere on the canvas.
         const screenshotNode = () =>
           comfyPage.page.screenshot({
             clip,

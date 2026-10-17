@@ -1,5 +1,5 @@
 import { useEventListener, whenever } from '@vueuse/core'
-import { defineStore, storeToRefs } from 'pinia'
+import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -159,8 +159,6 @@ export const useCanvasStore = defineStore('canvas', () => {
     () =>
       new Set(selectedItems.value.filter(isLGraphNode).map((item) => item.id))
   )
-  const { highlightedNodeIds } = storeToRefs(useNodeHighlightStore())
-
   const setHighlightedNodeIds = (ids: Iterable<NodeId>) => {
     useNodeHighlightStore().setHighlightedNodeIds(ids)
     canvas.value?.setDirty(true, false)
@@ -170,8 +168,6 @@ export const useCanvasStore = defineStore('canvas', () => {
     () => canvas.value,
     (newCanvas) => {
       currentGraph.value = newCanvas.graph
-      // Scoped to the on-screen graph: selection only holds items from it,
-      // so removals in other graphs can't affect the live selection.
       useEventListener(
         () => currentGraph.value?.events,
         'node:before-removed',
@@ -231,7 +227,6 @@ export const useCanvasStore = defineStore('canvas', () => {
     canvas,
     selectedItems,
     selectedNodeIds,
-    highlightedNodeIds,
     setHighlightedNodeIds,
     appScalePercentage,
     linearMode,

@@ -1,8 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-import type { NodeId, SerializedNodeId } from '@/types/nodeId'
-import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 
 export const useNodeHighlightStore = defineStore('nodeHighlight', () => {
   const highlightedNodeIds = ref<Set<NodeId>>(new Set())
@@ -11,8 +10,7 @@ export const useNodeHighlightStore = defineStore('nodeHighlight', () => {
     highlightedNodeIds.value = new Set(ids)
   }
 
-  const isHighlighted = (id: SerializedNodeId) =>
-    highlightedNodeIds.value.has(toNodeId(id))
+  const isHighlighted = (id: NodeId) => highlightedNodeIds.value.has(id)
 
   return { highlightedNodeIds, setHighlightedNodeIds, isHighlighted }
 })
