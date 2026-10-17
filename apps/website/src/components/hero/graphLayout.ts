@@ -14,12 +14,12 @@ export const FLOW: {
   canvas: { width: number; height: number }
   elements: Record<ElementKey, ElementRect>
 } = {
-  canvas: { width: 95, height: 44 },
+  canvas: { width: 95, height: 33 },
   elements: {
-    input: { left: 0, top: 5.3, width: 19, height: 14.25 },
-    angle: { left: 24, top: 17, width: 20, height: 20 },
-    color: { left: 48, top: 18, width: 14, height: 9 },
-    output: { left: 65, top: 3.5, width: 42, height: 31.5 }
+    input: { left: 0, top: 3, width: 19, height: 14.25 },
+    angle: { left: 24, top: 9.5, width: 20, height: 20 },
+    color: { left: 48, top: 10.5, width: 14, height: 9 },
+    output: { left: 65, top: 0.5, width: 42, height: 31.5 }
   }
 }
 

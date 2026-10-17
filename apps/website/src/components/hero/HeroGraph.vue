@@ -121,15 +121,15 @@ function wrapperStyle(key: ElementKey) {
       <GraphLinks :positions />
 
       <div
-        class="pointer-events-none absolute top-[1.5em] left-1/2 z-20 flex -translate-x-1/2 flex-col items-center"
+        class="pointer-events-none absolute top-[0.5em] left-1/2 z-20 flex -translate-x-1/2 flex-col items-center"
       >
-        <div class="text-[3em]">
+        <div class="text-[2.25em]">
           <HeroHeadline :locale />
         </div>
       </div>
 
       <div
-        class="pointer-events-none absolute bottom-[2em] left-1/2 z-20 flex -translate-x-1/2"
+        class="pointer-events-none absolute bottom-[0.25em] left-1/2 z-20 flex -translate-x-1/2"
       >
         <BrandButton
           :href="externalLinks.cloudCta('hero_get_started_free')"
