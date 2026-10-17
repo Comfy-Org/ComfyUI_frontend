@@ -109,7 +109,7 @@ export const Confirmation: Story = {
             <p class="m-0 text-sm text-base-foreground">{{ args.default }}</p>
             <div class="flex justify-end gap-2">
               <Button variant="secondary" @click="close()">Cancel</Button>
-              <Button @click="close()">Remove</Button>
+              <Button variant="destructive" @click="close()">Remove</Button>
             </div>
           </div>
         </template>
