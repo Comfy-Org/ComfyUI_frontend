@@ -16,6 +16,7 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useApp } from '@/scripts/appInstance'
 import type { ComfyApp } from '@/types/comfy'
 import { ChangeTracker } from '@/scripts/changeTracker'
+import { clone } from '@/scripts/utils'
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -244,8 +245,13 @@ export const useAppModeStore = defineStore('appMode', () => {
       if (!useApp().isGraphReady) return
       const graph = useApp().rootGraph
       const extra = graph.extra
+      // Plain copies only: spreading the reactive selections yields proxied
+      // tuples, which break structuredClone of the serialized graph.
       extra.linearData = {
-        inputs: [...data.inputs],
+        inputs: data.inputs.map(
+          ([id, name, config]): LinearInput =>
+            config ? [id, name, clone(config)] : [id, name]
+        ),
         outputs: [...data.outputs]
       }
       workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
