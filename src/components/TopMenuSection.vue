@@ -236,6 +236,10 @@ const isDeployButtonShown = computed(
   () => flags.usedHeadlessly && flags.deployToCloud
 )
 function openDeployInstallationDialog() {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'run_bar_deploy_clicked',
+    element_group: 'top_menu'
+  })
   openDeployToComfyApiDialog({ deploysInstallation: true }).catch(
     toastErrorHandler
   )
