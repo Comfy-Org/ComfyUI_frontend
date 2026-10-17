@@ -1,3 +1,5 @@
+import type { SubscribeGiveUpReason } from './agentCrdtDocLifecycle'
+
 /**
  * s5-metrics-1: per-outcome counters for every `doc_update` the composable's
  * listeners observe, replacing the single overloaded `updatesApplied`
@@ -44,10 +46,16 @@ export interface AgentCrdtOutcomeCounters {
   dropped: number
 }
 
+export type AgentCrdtTerminalState =
+  | SubscribeGiveUpReason
+  | 'schema_error'
+  | null
+
 export interface AgentCrdtStatus {
   enabled: boolean
   connected: boolean
   workflowId: string | null
+  terminal: AgentCrdtTerminalState
   /**
    * Mirror of `bridge.follower.updatesApplied` (Yjs merges, reset to 0 on
    * `doc_reset` / `follower_replaced`). Not interchangeable with

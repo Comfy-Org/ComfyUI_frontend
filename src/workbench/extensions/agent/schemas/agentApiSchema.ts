@@ -6,6 +6,7 @@ import {
   zAgentAttachmentRejected,
   zAgentCancelAccepted,
   zAgentError as zGeneratedAgentError,
+  zAgentIdentity as zGeneratedAgentIdentity,
   zAgentMessage as zGeneratedAgentMessage,
   zAgentPendingAskBase,
   zAgentRunMode as zGeneratedAgentRunMode,
@@ -355,7 +356,7 @@ export const zAgentWsEvent = z.discriminatedUnion('type', [
 ])
 export type AgentWsEvent = z.infer<typeof zAgentWsEvent>
 
-export const AGENT_WS_EVENT_TYPES: ReadonlySet<AgentWsEvent['type']> = new Set(
+const AGENT_WS_EVENT_TYPES: ReadonlySet<AgentWsEvent['type']> = new Set(
   zAgentWsEvent.options.map((option) => option.shape.type.value)
 )
 
@@ -368,3 +369,7 @@ export function parseAgentWsEvent(
 ): z.ZodSafeParseResult<AgentWsEvent> {
   return zAgentWsEvent.safeParse(value)
 }
+
+export const zAgentIdentity = zGeneratedAgentIdentity.extend({
+  user_id: z.string().min(1)
+})

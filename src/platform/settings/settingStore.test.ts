@@ -14,14 +14,7 @@ import { api } from '@/scripts/api'
 
 vi.mock(import('@/platform/telemetry'))
 
-// Mock the api
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    getSettings: vi.fn(),
-    storeSetting: vi.fn(),
-    storeSettings: vi.fn()
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 describe('useSettingStore', () => {
   let store: ReturnType<typeof useSettingStore>

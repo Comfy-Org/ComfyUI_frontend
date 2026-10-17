@@ -34,6 +34,8 @@ function isReadableDirectory(path: string): boolean {
   }
 }
 
+const AGENT_SESSION_HEADER = 'X-Comfy-Agent-Session'
+
 type AgentTokenSource =
   | { kind: 'static'; token: string }
   | { kind: 'discovery'; dataDir: string }
@@ -87,13 +89,24 @@ export function createDevAgentConfig(env: NodeJS.ProcessEnv) {
       ? { kind: 'discovery', dataDir }
       : undefined
 
+  const proxy =
+    url && tokenSource
+      ? createAgentProxy(url, tokenSource, comfyToken)
+      : undefined
   return {
     host: !comfyToken && env.VITE_REMOTE_DEV === 'true' ? '0.0.0.0' : undefined,
-    proxy:
-      url && tokenSource
-        ? createAgentProxy(url, tokenSource, comfyToken)
-        : undefined
+    proxy,
+    proxySuppliesCredential: proxy !== undefined && Boolean(comfyToken)
   }
+}
+
+function comfyCredentialHeaders(
+  comfyToken: string | undefined
+): Record<string, string> {
+  if (!comfyToken) return {}
+  return comfyToken.startsWith('comfyui-')
+    ? { 'X-API-KEY': comfyToken }
+    : { Authorization: `Bearer ${comfyToken}` }
 }
 
 function createAgentProxy(
@@ -107,9 +120,9 @@ function createAgentProxy(
     rewrite: (path: string) => path.replace(/^\/api/, ''),
     headers: {
       ...(tokenSource.kind === 'static'
-        ? { Authorization: `Bearer ${tokenSource.token}` }
+        ? { [AGENT_SESSION_HEADER]: tokenSource.token }
         : {}),
-      ...(comfyToken ? { 'X-Comfy-Token': comfyToken } : {})
+      ...comfyCredentialHeaders(comfyToken)
     },
     configure: (proxy) => {
       proxy.on('proxyReqWs', (proxyReq, req, socket) => {
@@ -122,9 +135,9 @@ function createAgentProxy(
 
       const { dataDir } = tokenSource
       function authorize(proxyReq: ClientRequest) {
-        proxyReq.removeHeader('Authorization')
+        proxyReq.removeHeader(AGENT_SESSION_HEADER)
         const token = readAgentDiscoveryToken(dataDir)
-        if (token) proxyReq.setHeader('Authorization', `Bearer ${token}`)
+        if (token) proxyReq.setHeader(AGENT_SESSION_HEADER, token)
       }
       proxy.on('proxyReq', authorize)
       proxy.on('proxyReqWs', authorize)
@@ -135,5 +148,17 @@ function createAgentProxy(
       res.end('The agent proxy serves the dev server origin only')
       return false
     }
+  }
+}
+
+export function devServerAgentRoutes(
+  agentProxy: ProxyOptions | undefined,
+  eventsSocketProxy: ProxyOptions
+): Record<string, ProxyOptions> {
+  return {
+    ...(agentProxy
+      ? { '/api/workflows': agentProxy, '/api/agent': agentProxy }
+      : {}),
+    '/api/agent/events': { ...eventsSocketProxy, ws: true }
   }
 }

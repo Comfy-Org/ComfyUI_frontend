@@ -472,9 +472,20 @@ const copyLogLabel = computed(() => {
   return t(`${i18nKey}.copyLog`)
 })
 
+async function writeClipboard(text: string): Promise<boolean> {
+  const ok = await copyToClipboard(text)
+  if (!ok) {
+    reportError(new Error('Clipboard write failed'), {
+      surface: 'agent',
+      errorType: 'crdt_dev_panel_clipboard_write_failed'
+    })
+  }
+  return ok
+}
+
 async function copyItem(key: string, text: string) {
   const request = ++itemCopyRequest
-  const ok = await copyToClipboard(text)
+  const ok = await writeClipboard(text)
   if (request !== itemCopyRequest) return
   itemCopy.value = { key, state: ok ? 'done' : 'failed' }
   clearTimeout(itemCopyReset)
@@ -500,7 +511,7 @@ function flashLogCopyState(ok: boolean) {
 async function copyLog() {
   try {
     flashLogCopyState(
-      await copyToClipboard(stringifyDevEvents(matchingEvents.value))
+      await writeClipboard(stringifyDevEvents(matchingEvents.value))
     )
   } catch {
     flashLogCopyState(false)
@@ -561,7 +572,7 @@ function collectCurrentMediaUiDiagnostics() {
 }
 
 async function copyCollectedReport(report: string): Promise<void> {
-  if (!(await copyToClipboard(report))) {
+  if (!(await writeClipboard(report))) {
     reportCopyState.value = { status: 'failed', report }
     return
   }

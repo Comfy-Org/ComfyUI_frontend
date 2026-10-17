@@ -4,8 +4,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import { i18n } from '@/i18n'
+import { api } from '@/scripts/api'
 
-const { copyToClipboard } = vi.hoisted(() => ({
+const { copyToClipboard, reportError } = vi.hoisted(() => ({
+  reportError: vi.fn(),
   copyToClipboard: vi.fn<(text: string) => Promise<boolean>>(() =>
     Promise.resolve(true)
   )
@@ -14,6 +16,7 @@ const { copyToClipboard } = vi.hoisted(() => ({
 vi.mock(import('@/composables/useCopyToClipboard'), () => ({
   useCopyToClipboard: () => ({ copied: ref(false), copyToClipboard })
 }))
+vi.mock(import('@/platform/telemetry/reportError'), () => ({ reportError }))
 
 import type { AgentCrdtStatus } from './agentCrdtStatus'
 import CrdtDevPanel from './CrdtDevPanel.vue'
@@ -26,14 +29,7 @@ import {
   stringifyDevEvents
 } from './devPanelLog'
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    apiURL: (route: string) => `/api${route}`,
-    clientId: 'client-test-1',
-    api_host: 'localhost:8188',
-    api_base: ''
-  }
-}))
+vi.mock(import('@/scripts/api'))
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { rootGraph: { serialize: () => ({ nodes: [], links: [] }) } }
 }))
@@ -41,6 +37,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 const status: AgentCrdtStatus = {
   enabled: true,
   connected: true,
+  terminal: null,
   workflowId: 'doc-123',
   updatesApplied: 1,
   lastFrameType: 'doc_update',
@@ -70,6 +67,8 @@ function renderPanel(overrides: Partial<AgentCrdtStatus> = {}) {
 
 describe('CrdtDevPanel clipboard controls', () => {
   beforeEach(() => {
+    api.clientId = 'client-test-1'
+    api.api_host = 'localhost:8188'
     setCrdtDebugEnabled(true)
     clearDevEvents()
     localStorage.clear()
@@ -186,6 +185,10 @@ describe('CrdtDevPanel clipboard controls', () => {
       await userEvent.click(docButton)
 
       expect(copyToClipboard).toHaveBeenCalledOnce()
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+        surface: 'agent',
+        errorType: 'crdt_dev_panel_clipboard_write_failed'
+      })
       expect(docButton).toHaveTextContent('Copy failed')
 
       await vi.advanceTimersByTimeAsync(1600)
