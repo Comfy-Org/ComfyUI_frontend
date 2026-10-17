@@ -253,6 +253,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
       currency: data.currency,
       effectiveBalanceMicros:
         data.effective_balance_micros ?? data.amount_micros,
+      effectiveBalanceAuthoritative: data.effective_balance_authoritative,
       prepaidBalanceMicros: data.prepaid_balance_micros ?? 0,
       cloudCreditBalanceMicros: data.cloud_credit_balance_micros ?? 0
     }

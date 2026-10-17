@@ -3538,6 +3538,23 @@
   },
   "workspacePanel": {
     "billingTab": {
+      "credits": {
+        "addCredits": "Add credits",
+        "available": "Available",
+        "inUse": "In use now",
+        "overdrawn": "Your runs used {count} more credit than you had. | Your runs used {count} more credits than you had.",
+        "plan": "Plan",
+        "planOfPool": "{remaining} of {total}",
+        "planTooltip": "Credits included with your plan. They refill each billing period.",
+        "rateInfo": "About credits",
+        "rateTooltip": "Credits pay for runs. {credits} credits = $1.",
+        "resubscribe": "Resubscribe to use credits on Cloud.",
+        "subscribe": "Subscribe to use credits on Cloud.",
+        "title": "Credits",
+        "topUp": "Top-up",
+        "topUpTooltip": "Credits you added. They're used once plan credits run out.",
+        "unavailable": "Couldn't load your balance."
+      },
       "handoff": {
         "member": {
           "action": "View usage",

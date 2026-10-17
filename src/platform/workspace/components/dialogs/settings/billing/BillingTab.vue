@@ -22,12 +22,19 @@
         {{ $t('workspacePanel.billingTab.tryAgain') }}
       </Button>
     </div>
-    <BillingPlanRow
-      v-else
-      :state="planRow"
-      :action="action"
-      :can-manage-billing="canManageBilling"
-    />
+    <template v-else>
+      <BillingPlanRow
+        :state="planRow"
+        :action="action"
+        :can-manage-billing="canManageBilling"
+      />
+      <BillingCreditsCard
+        :state="creditsCard"
+        :can-top-up="capabilities.canTopUp.value"
+        @retry="retryBalance"
+        @add-credits="addCredits"
+      />
+    </template>
 
     <section
       class="flex items-center justify-between gap-4"
@@ -57,12 +64,17 @@ import { computed, onMounted } from 'vue'
 import Button from '@/components/ui/button/Button.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
+import { useTelemetry } from '@/platform/telemetry'
+import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
+import BillingCreditsCard from '@/platform/workspace/components/dialogs/settings/billing/BillingCreditsCard.vue'
 import BillingPlanRow from '@/platform/workspace/components/dialogs/settings/billing/BillingPlanRow.vue'
 import {
   deriveBillingTabLoad,
   planRowAction
 } from '@/platform/workspace/components/dialogs/settings/billing/planRow'
+import { useBillingCreditsCard } from '@/platform/workspace/components/dialogs/settings/billing/useBillingCreditsCard'
 import { useBillingPlanRow } from '@/platform/workspace/components/dialogs/settings/billing/useBillingPlanRow'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
@@ -72,6 +84,9 @@ const billing = useBillingContext()
 const capabilities = useBillingCapabilities()
 const { workspaceRole } = useWorkspaceUI()
 const { state: planRow } = useBillingPlanRow()
+const { state: creditsCard } = useBillingCreditsCard(planRow)
+const { showTopUpCreditsDialog } = useBillingDialogs()
+const telemetry = useTelemetry()
 
 const HANDOFF_PATH = {
   owner: '/profile/billing',
@@ -104,6 +119,17 @@ const action = computed(() =>
 const handoffUrl = computed(() =>
   platformLink(HANDOFF_PATH[handoffAudience.value])
 )
+
+async function retryBalance() {
+  await billing.fetchBalance().catch(() => undefined)
+}
+
+function addCredits() {
+  telemetry?.trackAddApiCreditButtonClicked({ source: 'credits_panel' })
+  void showTopUpCreditsDialog({
+    source: paymentIntentSourceForAddCreditsClick('credits_panel')
+  })
+}
 
 async function retry() {
   await Promise.allSettled([billing.initialize(), capabilities.refresh()])
