@@ -44,7 +44,7 @@
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
-import type { AgentStatusWsMessage } from '@/platform/remote/comfyui/execution/types'
+import type { AgentServerFeature } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 const {
   active = false,
@@ -55,6 +55,6 @@ const {
   /** Draw attention to the button for a user who has never opened the panel. */
   inviting?: boolean
   /** ComfyUI's agent while it is not ready: shown, but inert. */
-  comfyAgent?: AgentStatusWsMessage
+  comfyAgent?: AgentServerFeature
 }>()
 </script>
