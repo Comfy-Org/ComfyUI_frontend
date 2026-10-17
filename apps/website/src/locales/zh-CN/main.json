@@ -5179,7 +5179,7 @@
     "enterSubmitTitle": "提交",
     "enterSubmitBody": "请在 10 月 30 日前提交。最终获胜者将于 11 月 6 日公布。",
     "enterIntro": "每份参赛作品必须包含：",
-    "requirement1": "作品必须使用 Comfy <a href=\"/zh-CN/platform/\" class=\"text-primary-comfy-yellow underline\">开发者平台</a>构建（Comfy Router 和/或 <a href=\"https://docs.comfy.org/zh/development/api-development/sdks\" target=\"_blank\" class=\"text-primary-comfy-yellow underline\">Comfy SDK</a>）",
+    "requirement1": "作品必须使用 Comfy <a href=\"/zh-CN/platform/\" class=\"text-primary-comfy-yellow underline\">开发者平台</a>构建（Comfy Router 和/或 <a href=\"https://docs.comfy.org/development/api-development/sdks\" target=\"_blank\" class=\"text-primary-comfy-yellow underline\">Comfy SDK</a>）",
     "requirement2": "代码仓库必须包含开源许可证，以及足够详细的安装说明，让其他人能在自己的机器上运行",
     "requirement3": "可以结合使用任何其他工具、模型或技术，但必须在演示视频中加以说明",
     "requirement4": "所有参赛作品必须合法、适合公开场合观看（SFW），且不得包含未经授权的 IP 或肖像",
