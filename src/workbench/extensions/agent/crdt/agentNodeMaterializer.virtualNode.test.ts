@@ -7,12 +7,14 @@
  * up with its constructor-created widget populated from the opaque array.
  */
 import { applyOps, mint } from '@comfyorg/comfy-multi-player'
+import { fromPartial } from '@total-typescript/shoehorn'
 import type { Op, WidgetCatalog } from '@comfyorg/comfy-multi-player'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
+import type { ComfyApp } from '@/scripts/app'
 import { ComfyWidgets } from '@/scripts/widgets'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -31,8 +33,8 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
+vi.mock(import('@/scripts/app'), () => ({
+  app: fromPartial<ComfyApp>({
     rootGraph: { id: 'root' },
     canvas: {
       processMouseDown: vi.fn(),
@@ -40,7 +42,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
       processMouseUp: vi.fn(),
       processMouseWheel: vi.fn()
     }
-  }
+  })
 }))
 
 /**
