@@ -33,6 +33,7 @@ export const localeDefinitions = {
   en: { text: 'English', loaders: null },
   zh: { text: '中文', loaders: loadersFor('zh') },
   'zh-TW': { text: '繁體中文', loaders: loadersFor('zh-TW') },
+  de: { text: 'Deutsch', loaders: loadersFor('de') },
   ru: { text: 'Русский', loaders: loadersFor('ru') },
   ja: { text: '日本語', loaders: loadersFor('ja') },
   ko: { text: '한국어', loaders: loadersFor('ko') },
