@@ -5,11 +5,8 @@ import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type {
-  DialogContentSize,
-  DialogContentSurface
-} from './dialog.variants.js'
-import { dialogContentVariants } from './dialog.variants.js'
+import type { DialogContentSize, DialogContentSurface } from './dialog.variants'
+import { dialogContentVariants } from './dialog.variants'
 
 const {
   class: customClass = '',

@@ -8,7 +8,7 @@ import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { menuItemClass } from './menuStyles.js'
+import { menuItemClass } from './menuStyles'
 
 const { class: className, ...restProps } = defineProps<
   DropdownMenuRadioItemProps & { class?: HTMLAttributes['class'] }

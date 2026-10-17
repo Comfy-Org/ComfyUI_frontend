@@ -62,8 +62,7 @@
     "eslint-plugin-testing-library",
     "postcss-html",
     // Executed by models-snippets.test.ts inside the generated Node examples.
-    "mime-types",
-    "vue-component-type-helpers"
+    "mime-types"
   ],
 
   "ignoreUnresolvedImports": [

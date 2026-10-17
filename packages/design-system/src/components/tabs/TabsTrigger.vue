@@ -6,8 +6,8 @@ import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { TabsTriggerVariants } from './tabs.variants.js'
-import { tabsTriggerVariants } from './tabs.variants.js'
+import type { TabsTriggerVariants } from './tabs.variants'
+import { tabsTriggerVariants } from './tabs.variants'
 
 const props = defineProps<
   TabsTriggerProps & {

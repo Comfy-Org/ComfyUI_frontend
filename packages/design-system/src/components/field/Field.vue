@@ -3,8 +3,8 @@ import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { FieldVariants } from './field.variants.js'
-import { fieldVariants } from './field.variants.js'
+import type { FieldVariants } from './field.variants'
+import { fieldVariants } from './field.variants'
 
 const { class: className, orientation } = defineProps<{
   class?: HTMLAttributes['class']

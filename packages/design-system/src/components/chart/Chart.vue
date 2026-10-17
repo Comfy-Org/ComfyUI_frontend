@@ -13,8 +13,8 @@ import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { useChart } from './useChart.js'
-import type { SupportedChartType } from './useChart.js'
+import { useChart } from './useChart'
+import type { SupportedChartType } from './useChart'
 
 const {
   data,

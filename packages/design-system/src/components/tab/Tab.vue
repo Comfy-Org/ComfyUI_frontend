@@ -29,8 +29,8 @@ import { computed, inject } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { tabStateVariants } from './tab.variants.js'
-import { TAB_LIST_INJECTION_KEY } from './tabKeys.js'
+import { tabStateVariants } from './tab.variants'
+import { TAB_LIST_INJECTION_KEY } from './tabKeys'
 
 const props = defineProps<{
   value: T

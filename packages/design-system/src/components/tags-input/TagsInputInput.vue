@@ -6,7 +6,7 @@ import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { tagsInputFocusKey, tagsInputIsEditingKey } from './tagsInputContext.js'
+import { tagsInputFocusKey, tagsInputIsEditingKey } from './tagsInputContext'
 
 const {
   isEmpty = false,

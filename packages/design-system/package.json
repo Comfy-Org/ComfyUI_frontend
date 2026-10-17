@@ -73,11 +73,11 @@
     "dompurify": "catalog:",
     "es-toolkit": "^1.39.9",
     "reka-ui": "catalog:",
-    "tw-animate-css": "catalog:",
-    "vue-component-type-helpers": "catalog:"
+    "tw-animate-css": "catalog:"
   },
   "devDependencies": {
     "@comfyorg/tailwind-utils": "workspace:^",
+    "@microsoft/api-extractor": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "tailwindcss": "catalog:",

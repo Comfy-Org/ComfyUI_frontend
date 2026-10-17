@@ -2,7 +2,7 @@
 import type { TooltipProviderProps } from 'reka-ui'
 import { TooltipProvider, useForwardProps } from 'reka-ui'
 
-import { appTooltipProviderDefaults } from './tooltipConfig.js'
+import { appTooltipProviderDefaults } from './tooltipConfig'
 
 const {
   delayDuration = appTooltipProviderDefaults.delayDuration,

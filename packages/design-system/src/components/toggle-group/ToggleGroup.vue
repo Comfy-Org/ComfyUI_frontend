@@ -6,11 +6,11 @@ import { provide, toRef } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { ToggleGroupVariants } from './toggleGroup.variants.js'
+import type { ToggleGroupVariants } from './toggleGroup.variants'
 import {
   toggleGroupVariantKey,
   toggleGroupVariants
-} from './toggleGroup.variants.js'
+} from './toggleGroup.variants'
 
 interface Props extends ToggleGroupRootProps {
   class?: HTMLAttributes['class']

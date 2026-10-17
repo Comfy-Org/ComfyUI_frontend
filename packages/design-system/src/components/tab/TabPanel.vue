@@ -13,7 +13,7 @@
 <script setup lang="ts" generic="T extends string = string">
 import { computed, inject } from 'vue'
 
-import { TAB_LIST_INJECTION_KEY } from './tabKeys.js'
+import { TAB_LIST_INJECTION_KEY } from './tabKeys'
 
 const { value, modelValue } = defineProps<{
   value: T

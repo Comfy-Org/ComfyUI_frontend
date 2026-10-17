@@ -3,8 +3,8 @@ import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { InputGroupAddonVariants } from './inputGroup.variants.js'
-import { inputGroupAddonVariants } from './inputGroup.variants.js'
+import type { InputGroupAddonVariants } from './inputGroup.variants'
+import { inputGroupAddonVariants } from './inputGroup.variants'
 
 const { align = 'inline-start', class: className } = defineProps<{
   align?: InputGroupAddonVariants['align']

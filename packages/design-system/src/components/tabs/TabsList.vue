@@ -6,8 +6,8 @@ import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { TabsListVariants } from './tabs.variants.js'
-import { tabsListVariants } from './tabs.variants.js'
+import type { TabsListVariants } from './tabs.variants'
+import { tabsListVariants } from './tabs.variants'
 
 const props = defineProps<
   TabsListProps & {

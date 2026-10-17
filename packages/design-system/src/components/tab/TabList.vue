@@ -12,7 +12,7 @@ import { provide } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { TAB_LIST_INJECTION_KEY } from './tabKeys.js'
+import { TAB_LIST_INJECTION_KEY } from './tabKeys'
 
 const { class: customClass = '' } = defineProps<{ class?: string }>()
 

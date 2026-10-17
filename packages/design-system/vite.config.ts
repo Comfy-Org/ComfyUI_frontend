@@ -11,7 +11,20 @@ export default defineConfig({
     dts({
       tsconfigPath: 'tsconfig.build.json',
       entryRoot: 'src/components',
-      cleanVueFileName: true
+      bundleTypes: {
+        bundledPackages: ['reka-ui']
+      },
+      beforeWriteFile: function preserveVueSlotDeclarations(
+        _filePath,
+        content
+      ) {
+        return {
+          content: content.replace(
+            /\bdeclare var (?=__VLS_\d+\s*:)/g,
+            'declare let '
+          )
+        }
+      }
     })
   ],
   build: {
