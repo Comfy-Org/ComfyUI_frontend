@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useClipboard } from '@vueuse/core'
 
 import { i18n } from '@/i18n'
+import { api } from '@/scripts/api'
 
 const { reportError, writeText } = vi.hoisted(() => ({
   reportError: vi.fn(),
@@ -28,14 +29,7 @@ import {
   stringifyDevEvents
 } from './devPanelLog'
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    apiURL: (route: string) => `/api${route}`,
-    clientId: 'client-test-1',
-    api_host: 'localhost:8188',
-    api_base: ''
-  }
-}))
+vi.mock(import('@/scripts/api'))
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { rootGraph: { serialize: () => ({ nodes: [], links: [] }) } }
 }))
@@ -72,6 +66,8 @@ function renderPanel(overrides: Partial<AgentCrdtStatus> = {}) {
 
 describe('CrdtDevPanel clipboard controls', () => {
   beforeEach(() => {
+    api.clientId = 'client-test-1'
+    api.api_host = 'localhost:8188'
     vi.mocked(useClipboard).mockReturnValue(fromPartial({ copy: writeText }))
     setCrdtDebugEnabled(true)
     clearDevEvents()
