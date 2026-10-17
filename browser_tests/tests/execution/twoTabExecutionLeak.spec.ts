@@ -1,6 +1,7 @@
 import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
 import { executionFixture as test } from '@e2e/fixtures/execution'
 import { imageOutput } from '@e2e/fixtures/helpers/ExecutionHelper'
+import { UserDataHelper } from '@e2e/fixtures/helpers/UserDataHelper'
 
 const KSAMPLER_NODE = '3'
 const SAVE_IMAGE_NODE = '9'
@@ -18,6 +19,22 @@ test.describe('cross-tab execution leak', { tag: '@ui' }, () => {
       [`${WORKFLOW_A_COPY}.json`]: 'execution/workflow_with_id.json'
     })
     await comfyPage.workflow.openPersistedWorkflow(WORKFLOW_A)
+  })
+
+  // The devtools endpoint behind setupWorkflowsDirectory only creates and
+  // overwrites, and the user id is `playwright-test-${parallelIndex}`, so these
+  // files would otherwise accumulate in the worker's user directory and outlive
+  // the suite. browser_tests/README.md asks the owning fixture to clean up
+  // saved workflows.
+  test.afterEach(async ({ comfyPage }) => {
+    const userData = new UserDataHelper(
+      comfyPage.request,
+      comfyPage.id,
+      comfyPage.url
+    )
+    for (const name of [WORKFLOW_A, WORKFLOW_B, WORKFLOW_A_COPY]) {
+      await userData.delete(`workflows/${name}.json`)
+    }
   })
 
   test('switching back shows the finished run, not a stuck one', async ({
@@ -68,25 +85,26 @@ test.describe('cross-tab execution leak', { tag: '@ui' }, () => {
       .poll(() => comfyPage.nodeOps.getExecutionRender(KSAMPLER_NODE))
       .toEqual({ progress: 0.25, outlined: true })
 
-    await comfyPage.workflow.openPersistedWorkflow(WORKFLOW_B)
-
-    expect(await comfyPage.nodeOps.getExecutionRender(KSAMPLER_NODE)).toEqual({
-      progress: null,
-      outlined: false
+    await test.step('B shows nothing of A run', async () => {
+      await comfyPage.workflow.openPersistedWorkflow(WORKFLOW_B)
+      expect(await comfyPage.nodeOps.getExecutionRender(KSAMPLER_NODE)).toEqual(
+        { progress: null, outlined: false }
+      )
     })
 
-    simulator.play([...running.nodeRunning(KSAMPLER_NODE, 3, 4)])
+    await test.step('A keeps advancing while B is in front', async () => {
+      simulator.play([...running.nodeRunning(KSAMPLER_NODE, 3, 4)])
+      await comfyPage.workflow.switchToTab(WORKFLOW_A)
+      await expect
+        .poll(() => comfyPage.nodeOps.getExecutionRender(KSAMPLER_NODE))
+        .toEqual({ progress: 0.75, outlined: true })
+    })
 
-    await comfyPage.workflow.switchToTab(WORKFLOW_A)
-
-    await expect
-      .poll(() => comfyPage.nodeOps.getExecutionRender(KSAMPLER_NODE))
-      .toEqual({ progress: 0.75, outlined: true })
-
-    await comfyPage.workflow.switchToTab(WORKFLOW_B)
-    expect(await comfyPage.nodeOps.getExecutionRender(KSAMPLER_NODE)).toEqual({
-      progress: null,
-      outlined: false
+    await test.step('returning to B is still clean', async () => {
+      await comfyPage.workflow.switchToTab(WORKFLOW_B)
+      expect(await comfyPage.nodeOps.getExecutionRender(KSAMPLER_NODE)).toEqual(
+        { progress: null, outlined: false }
+      )
     })
   })
 
