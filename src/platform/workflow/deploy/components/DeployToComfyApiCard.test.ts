@@ -1,23 +1,19 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen, waitFor } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
-import type { useErrorHandling } from '@/composables/useErrorHandling'
 import type { useExternalLink } from '@/composables/useExternalLink'
 import enMessages from '@/locales/en/main.json'
 import { useAgentHandoff } from '@/platform/workflow/deploy/composables/useAgentHandoff'
+import { useInstallationDeploy } from '@/platform/workflow/deploy/composables/useInstallationDeploy'
 import type { BuildInputs } from '@/platform/workflow/deploy/utils/buildInputs'
+import { api } from '@/scripts/api'
 
 import DeployToComfyApiCard from './DeployToComfyApiCard.vue'
-
-const openPlatformBuild = vi.hoisted(() => vi.fn(() => Promise.resolve(true)))
-vi.mock(
-  import('@/platform/workflow/deploy/composables/usePlatformBuildHandoff'),
-  () => ({ usePlatformBuildHandoff: () => ({ open: openPlatformBuild }) })
-)
 
 vi.mock(
   import('@/platform/workflow/deploy/composables/useAgentHandoff'),
@@ -36,6 +32,26 @@ vi.mock(
   }
 )
 
+vi.mock(import('@/scripts/api'))
+
+vi.mock(
+  import('@/platform/workflow/deploy/composables/useInstallationDeploy'),
+  () => {
+    const deploy = vi.fn(async () => true)
+    return {
+      useInstallationDeploy: () =>
+        fromPartial<ReturnType<typeof useInstallationDeploy>>({
+          state: ref({ status: 'idle' as const }),
+          deploy
+        })
+    }
+  }
+)
+
+vi.mock(import('@/config/comfyApi'), () => ({
+  getComfyPlatformBaseUrl: () => 'https://platform.comfy.org'
+}))
+
 vi.mock(import('@/composables/useExternalLink'), () => {
   const buildDocsUrl = vi.fn(
     (path: string, _options?: { includeLocale?: boolean }) =>
@@ -46,12 +62,6 @@ vi.mock(import('@/composables/useExternalLink'), () => {
       fromPartial<ReturnType<typeof useExternalLink>>({ buildDocsUrl })
   }
 })
-
-const toastErrorHandler = vi.hoisted(() => vi.fn())
-vi.mock(import('@/composables/useErrorHandling'), () => ({
-  useErrorHandling: () =>
-    fromPartial<ReturnType<typeof useErrorHandling>>({ toastErrorHandler })
-}))
 
 const i18n = createI18n({
   legacy: false,
@@ -134,54 +144,15 @@ describe('DeployToComfyApiCard', () => {
     expect(button).toHaveTextContent('Build with your agent')
   })
 
-  it('hands the workflow to the platform and reports done', async () => {
+  it('links to the developer platform in a new tab without a referrer, and reports done', async () => {
     const { onDone, user } = renderCard()
+    const link = screen.getByRole('link', { name: 'Deploy on Platform' })
 
-    await user.click(screen.getByTestId('deploy-to-comfy-api-platform'))
-
-    expect(openPlatformBuild).toHaveBeenCalledOnce()
+    expect(link).toHaveAttribute('href', 'https://platform.comfy.org')
+    expect(link).toHaveAttribute('target', '_blank')
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+    await user.click(link)
     expect(onDone).toHaveBeenCalledOnce()
-  })
-
-  it('stays open, with the button held, while the handoff is in flight', async () => {
-    const { onDone, user } = renderCard()
-    let finish!: (opened: boolean) => void
-    openPlatformBuild.mockReturnValueOnce(
-      new Promise<boolean>((resolve) => {
-        finish = resolve
-      })
-    )
-    const button = screen.getByTestId('deploy-to-comfy-api-platform')
-
-    await user.click(button)
-    await user.click(button)
-
-    expect(button).toBeDisabled()
-    expect(openPlatformBuild).toHaveBeenCalledOnce()
-    finish(true)
-    await waitFor(() => expect(onDone).toHaveBeenCalledOnce())
-    expect(button).toBeEnabled()
-  })
-
-  it('stays open and releases the button when opening the platform fails', async () => {
-    const { onDone, user } = renderCard()
-    openPlatformBuild.mockRejectedValueOnce(new Error('opener unavailable'))
-    const button = screen.getByTestId('deploy-to-comfy-api-platform')
-
-    await user.click(button)
-
-    await waitFor(() => expect(button).toBeEnabled())
-    expect(onDone).not.toHaveBeenCalled()
-    expect(toastErrorHandler).toHaveBeenCalledWith(expect.any(Error))
-  })
-
-  it('stays open when no tab could be opened', async () => {
-    const { onDone, user } = renderCard()
-    openPlatformBuild.mockResolvedValueOnce(false)
-
-    await user.click(screen.getByTestId('deploy-to-comfy-api-platform'))
-
-    expect(onDone).not.toHaveBeenCalled()
   })
 
   it('shows its media over the poster', () => {
@@ -201,6 +172,39 @@ describe('DeployToComfyApiCard', () => {
       screen.queryByTestId('deploy-to-comfy-api-video-placeholder')
     ).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Play' })).toBeInTheDocument()
+  })
+
+  it('reads nothing from the installation for a workflow deploy', () => {
+    renderCard()
+
+    expect(api.fetchApi).not.toHaveBeenCalled()
+    expect(
+      screen.queryByTestId('deploy-to-comfy-api-upload-notice')
+    ).not.toBeInTheDocument()
+  })
+
+  it('summarises the installation and says what it uploads', async () => {
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(
+      Response.json({ custom_nodes: 14, models: 37 })
+    )
+    renderCard({ deploysInstallation: true })
+
+    expect(
+      await screen.findByTestId('deploy-to-comfy-api-summary')
+    ).toHaveTextContent('14 custom nodes · 37 models')
+    expect(api.fetchApi).toHaveBeenCalledExactlyOnceWith('/deploy/summary')
+    expect(
+      screen.getByTestId('deploy-to-comfy-api-upload-notice')
+    ).toBeInTheDocument()
+  })
+
+  it('uploads the installation from Deploy on Platform and reports done once the wizard opens', async () => {
+    const { onDone, user } = renderCard({ deploysInstallation: true })
+
+    await user.click(screen.getByRole('button', { name: 'Deploy on Platform' }))
+
+    expect(useInstallationDeploy().deploy).toHaveBeenCalledOnce()
+    expect(onDone).toHaveBeenCalledOnce()
   })
 
   it('shows the placeholder when there is no video', () => {

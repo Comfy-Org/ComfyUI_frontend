@@ -1,19 +1,13 @@
-import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
+import { render } from '@testing-library/vue'
 import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import ComfyActionbar from '@/components/actionbar/ComfyActionbar.vue'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { i18n } from '@/i18n'
-import * as distribution from '@/platform/distribution/types'
 import { coachmarkElements } from '@/platform/onboarding/coachmarkRegistry'
 import { vCoachmark } from '@/platform/onboarding/vCoachmark'
 import { useSettingStore } from '@/platform/settings/settingStore'
-
-vi.mock(import('@/composables/useFeatureFlags'))
-vi.mock(import('@/platform/distribution/types'), { spy: true })
 
 vi.mock(import('@/components/actionbar/ComfyRunButton'), async () => {
   const { defineComponent } = await import('vue')
@@ -59,56 +53,6 @@ const renderActionbar = (showRunProgressBar: boolean) => {
 describe('ComfyActionbar', () => {
   beforeEach(() => {
     i18n.global.locale.value = 'en'
-    vi.spyOn(distribution, 'isCloud', 'get').mockReturnValue(false)
-  })
-
-  it.for([
-    { cloud: false, usedHeadlessly: false },
-    { cloud: true, usedHeadlessly: true }
-  ])(
-    'hides the builder menu outside eligible local installs: %j',
-    async ({ cloud, usedHeadlessly }) => {
-      vi.spyOn(distribution, 'isCloud', 'get').mockReturnValue(cloud)
-      Object.assign(useFeatureFlags().flags, { usedHeadlessly })
-      const { dockedProgressContainer } = renderActionbar(false)
-
-      try {
-        await nextTick()
-        expect(
-          screen.queryByRole('button', {
-            name: 'Runs on Local. Choose where it runs'
-          })
-        ).not.toBeInTheDocument()
-      } finally {
-        dockedProgressContainer.remove()
-      }
-    }
-  )
-
-  it('opens the builder from the eligible local Run bar', async () => {
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-    Object.assign(useFeatureFlags().flags, { usedHeadlessly: true })
-    vi.spyOn(window, 'open').mockReturnValue(null)
-    const { dockedProgressContainer } = renderActionbar(false)
-
-    try {
-      await user.click(
-        screen.getByRole('button', {
-          name: 'Runs on Local. Choose where it runs'
-        })
-      )
-      await user.click(
-        screen.getByRole('menuitem', { name: 'Deploy to Cloud…' })
-      )
-
-      expect(window.open).toHaveBeenCalledWith(
-        expect.stringContaining('/profile/builds/new?step=import'),
-        '_blank',
-        'noopener'
-      )
-    } finally {
-      dockedProgressContainer.remove()
-    }
   })
 
   it('registers the resolved run button as a coachmark target', async () => {

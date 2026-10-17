@@ -2,11 +2,7 @@ import { toRaw } from 'vue'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { t } from '@/i18n'
-import type {
-  ISerialisedGraph,
-  Point,
-  SerialisableGraph
-} from '@/lib/litegraph/src/litegraph'
+import type { Point, SerialisableGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToast } from '@/components/ui/toast/toastStore'
 import {
@@ -51,7 +47,6 @@ import {
   generateUUID
 } from '@/utils/formatUtil'
 import type { AppMode } from '@/utils/appMode'
-import { serializeWorkflow } from '@/utils/executionUtil'
 import type { UUID } from '@/utils/uuid'
 import { ensureNonZeroUuid, zeroUuid } from '@/utils/uuid'
 
@@ -234,7 +229,7 @@ export const useWorkflowService = () => {
    * Adds scale and offset from litegraph canvas to the workflow JSON.
    * @param workflow The workflow to add the view restore data to
    */
-  function addViewRestore(workflow: ComfyWorkflowJSON | ISerialisedGraph) {
+  function addViewRestore(workflow: ComfyWorkflowJSON) {
     if (!settingStore.get('Comfy.EnableWorkflowViewRestore')) return
 
     const { offset, scale } = useApp().canvas.ds
@@ -242,14 +237,6 @@ export const useWorkflowService = () => {
 
     workflow.extra ??= {}
     workflow.extra.ds = { scale, offset: [x, y] }
-  }
-
-  function prepareWorkflowJson(): ISerialisedGraph {
-    const workflow = serializeWorkflow(useApp().rootGraph, {
-      sortNodes: settingStore.get('Comfy.Workflow.SortNodeIdOnSave')
-    })
-    addViewRestore(workflow)
-    return workflow
   }
 
   /**
@@ -265,11 +252,10 @@ export const useWorkflowService = () => {
     if (workflow?.path) {
       filename = workflow.filename
     }
-    const data =
-      promptProperty === 'workflow'
-        ? prepareWorkflowJson()
-        : (await useApp().graphToPrompt()).output
-    const json = JSON.stringify(data, null, 2)
+    const p = await useApp().graphToPrompt()
+
+    addViewRestore(p.workflow)
+    const json = JSON.stringify(p[promptProperty], null, 2)
     const blob = new Blob([json], { type: 'application/json' })
     const file = await getFilename(filename)
     if (!file) return
@@ -967,7 +953,6 @@ export const useWorkflowService = () => {
 
   return {
     exportWorkflow,
-    prepareWorkflowJson,
     saveWorkflowAs,
     saveWorkflow,
     loadDefaultWorkflow,

@@ -46,19 +46,6 @@ vi.mock(import('@/platform/telemetry'))
 
 describe('useFeatureFlags', () => {
   describe('flags object', () => {
-    it.for([
-      { value: undefined, enabled: false },
-      { value: false, enabled: false },
-      { value: 'true', enabled: false },
-      { value: true, enabled: true }
-    ])('reads the headless-use server flag: $value', ({ value, enabled }) => {
-      vi.mocked(api.getServerFeature).mockImplementation((path, fallback) =>
-        path === ServerFeatureFlag.USED_HEADLESSLY ? value : fallback
-      )
-
-      expect(useFeatureFlags().flags.usedHeadlessly).toBe(enabled)
-    })
-
     it('should provide reactive readonly flags', () => {
       const { flags } = useFeatureFlags()
 

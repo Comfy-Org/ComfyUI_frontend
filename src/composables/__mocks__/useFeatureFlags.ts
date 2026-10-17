@@ -8,7 +8,6 @@ export const startFeatureFlagTelemetry = vi.fn(() => watchEffect(() => {}))
 type FeatureFlags = ReturnType<typeof realUseFeatureFlags>['flags']
 
 const defaultFlags: FeatureFlags = {
-  usedHeadlessly: false,
   supportsPreviewMetadata: false,
   maxUploadSize: 0,
   supportsManagerV4: false,
@@ -22,6 +21,8 @@ const defaultFlags: FeatureFlags = {
   partnerNodeTokenEnabled: false,
   userSecretsEnabled: false,
   nodeReplacementsEnabled: false,
+  usedHeadlessly: false,
+  deployToCloud: false,
   nodeLibraryEssentialsEnabled: false,
   comfyHubUploadEnabled: false,
   comfyHubProfileGateEnabled: false,

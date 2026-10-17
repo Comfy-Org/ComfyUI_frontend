@@ -20,11 +20,6 @@
             )
           "
         />
-        <BuildTargetMenu
-          v-if="!isCloud && flags.usedHeadlessly"
-          :disabled="openingBuilder"
-          @deploy="deployToCloud"
-        />
         <div v-coachmark="FIRST_RUN_COACH_IDS.runButton" class="inline-flex">
           <Suspense @resolve="comfyRunButtonResolved">
             <ComfyRunButton />
@@ -102,12 +97,7 @@ import Button from '@/components/ui/button/Button.vue'
 import ContextMenu from '@/components/ui/menu/ContextMenu.vue'
 import type { MenuItem } from '@/components/ui/menu/types'
 import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
-import { useErrorHandling } from '@/composables/useErrorHandling'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import FreeTierQuota from '@/platform/cloud/subscription/components/FreeTierQuota.vue'
-import { isCloud } from '@/platform/distribution/types'
-import BuildTargetMenu from '@/platform/workflow/deploy/components/BuildTargetMenu.vue'
-import { usePlatformBuildHandoff } from '@/platform/workflow/deploy/composables/usePlatformBuildHandoff'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
@@ -140,21 +130,6 @@ const executionStore = useExecutionStore()
 const queueStore = useQueueStore()
 const sidebarTabStore = useSidebarTabStore()
 const { t, n } = useI18n()
-const { flags } = useFeatureFlags()
-const { open: openPlatformBuild } = usePlatformBuildHandoff()
-const { toastErrorHandler } = useErrorHandling()
-const openingBuilder = ref(false)
-
-async function deployToCloud() {
-  openingBuilder.value = true
-  try {
-    await openPlatformBuild()
-  } catch (error) {
-    toastErrorHandler(error)
-  } finally {
-    openingBuilder.value = false
-  }
-}
 const { isIdle: isExecutionIdle } = storeToRefs(executionStore)
 const { activeJobsCount } = storeToRefs(queueStore)
 const { activeSidebarTabId } = storeToRefs(sidebarTabStore)

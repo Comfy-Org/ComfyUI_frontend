@@ -1,7 +1,3 @@
-import { downloadBlob } from '@/base/common/downloadUtil'
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { graphToPrompt } from '@/utils/executionUtil'
-import { fromPartial } from '@total-typescript/shoehorn'
 import { useDialogService } from '@/services/dialogService'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore' // oxlint-disable-line comfy/no-restricted-paths
@@ -40,7 +36,6 @@ import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 import type { AppMode } from '@/utils/appMode'
 import { isValidUuid } from '@/utils/formatUtil'
 import { zeroUuid } from '@/utils/uuid'
-import { toNodeId } from '@/types/nodeId'
 import { t } from '@/i18n'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
@@ -93,10 +88,6 @@ function makeWorkflowDataWithId(id: string): ComfyWorkflowJSON {
 }
 
 vi.mock(import('@/services/dialogService'))
-
-vi.mock(import('@/base/common/downloadUtil'), () => ({
-  downloadBlob: vi.fn()
-}))
 
 vi.mock(import('@/scripts/app'))
 
@@ -2069,117 +2060,6 @@ describe('useWorkflowService', () => {
       expect(result).toBe(false)
       expect(workflowStore.saveWorkflow).not.toHaveBeenCalled()
     })
-  })
-
-  describe('exportWorkflow', () => {
-    it('exports the same workflow JSON used by the builder handoff', async () => {
-      vi.spyOn(useSettingStore(), 'get').mockImplementation(
-        (key: string): boolean => key === 'Comfy.EnableWorkflowViewRestore'
-      )
-      const graph = new LGraph()
-      graph.add(new LGraphNode('Sampler'))
-      vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
-      const service = useWorkflowService()
-      const workflow = service.prepareWorkflowJson()
-
-      await service.exportWorkflow('portrait', 'workflow')
-
-      const [filename, blob] = vi.mocked(downloadBlob).mock.calls[0]
-      expect(filename).toBe('portrait')
-      expect(JSON.parse(await blob.text())).toEqual(workflow)
-      expect(workflow.nodes).toHaveLength(1)
-      expect(workflow.extra?.ds).toEqual({ scale: 1, offset: [0, 0] })
-    })
-
-    it('exports execution output for the API format', async () => {
-      const output = { '1': { class_type: 'KSampler', inputs: { seed: 42 } } }
-      vi.mocked(app.graphToPrompt).mockResolvedValue({
-        workflow: makeWorkflowData(),
-        output
-      })
-
-      await useWorkflowService().exportWorkflow('portrait', 'output')
-
-      const [, blob] = vi.mocked(downloadBlob).mock.calls[0]
-      expect(JSON.parse(await blob.text())).toEqual(output)
-    })
-  })
-
-  describe('prepareWorkflowJson', () => {
-    it('runs none of graphToPrompt’s execution-time hooks', async () => {
-      const graph = new LGraph()
-      const primitive = new LGraphNode('Primitive')
-      primitive.isVirtualNode = true
-      const applyToGraph = vi.fn()
-      primitive.applyToGraph = applyToGraph
-      graph.add(primitive)
-      const sampler = new LGraphNode('KSampler')
-      const seed = sampler.addWidget('number', 'seed', 1, () => {})
-      const serializeValue = vi.fn(() => 1)
-      seed.serializeValue = serializeValue
-      graph.add(sampler)
-      vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
-
-      useWorkflowService().prepareWorkflowJson()
-
-      expect(applyToGraph).not.toHaveBeenCalled()
-      expect(serializeValue).not.toHaveBeenCalled()
-
-      await graphToPrompt(graph)
-      expect(applyToGraph).toHaveBeenCalled()
-      expect(serializeValue).toHaveBeenCalled()
-    })
-
-    it('serializes the graph as saved, with the canvas view', () => {
-      vi.spyOn(useSettingStore(), 'get').mockImplementation(
-        (key: string): boolean => key === 'Comfy.EnableWorkflowViewRestore'
-      )
-      vi.spyOn(app.rootGraph, 'serialize').mockReturnValueOnce(
-        fromPartial({
-          nodes: [
-            {
-              id: 1,
-              inputs: [{ name: 'model', localized_name: 'Model' }],
-              outputs: [{ name: 'LATENT', localized_name: 'Latent' }]
-            }
-          ],
-          extra: {}
-        })
-      )
-
-      const workflow = useWorkflowService().prepareWorkflowJson()
-
-      expect(workflow.nodes[0].inputs?.[0]).not.toHaveProperty('localized_name')
-      expect(workflow.nodes[0].outputs?.[0]).not.toHaveProperty(
-        'localized_name'
-      )
-      expect(workflow.extra?.ds).toEqual({ scale: 1, offset: [0, 0] })
-      expect(workflow.extra?.frontendVersion).toEqual(expect.any(String))
-    })
-
-    it.for([
-      { sortNodes: false, expectedIds: [2, 1] },
-      { sortNodes: true, expectedIds: [1, 2] }
-    ])(
-      'preserves the node-order preference: $sortNodes',
-      ({ sortNodes, expectedIds }) => {
-        const graph = new LGraph()
-        for (const id of [2, 1]) {
-          const node = new LGraphNode('Sampler')
-          node.id = toNodeId(id)
-          graph.add(node)
-        }
-        vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
-        vi.spyOn(useSettingStore(), 'get').mockImplementation(
-          (key: string): boolean =>
-            key === 'Comfy.Workflow.SortNodeIdOnSave' && sortNodes
-        )
-
-        const workflow = useWorkflowService().prepareWorkflowJson()
-
-        expect(workflow.nodes.map(({ id }) => id)).toEqual(expectedIds)
-      }
-    )
   })
 
   describe('closeWorkflow', () => {

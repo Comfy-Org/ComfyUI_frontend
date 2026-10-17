@@ -66,10 +66,18 @@
             {{ $t('deployToComfyApi.body') }}
           </p>
           <p
+            v-if="summary"
             class="my-0 text-sm/5 text-muted-foreground"
             data-testid="deploy-to-comfy-api-summary"
           >
             {{ summary }}
+          </p>
+          <p
+            v-if="deploysInstallation"
+            class="my-0 text-sm/5 text-muted-foreground"
+            data-testid="deploy-to-comfy-api-upload-notice"
+          >
+            {{ $t('deployToComfyApi.installationUploadNotice') }}
           </p>
           <ReuseDocsLink class="@xl:hidden" />
         </div>
@@ -95,13 +103,21 @@
               {{ $t('deployToComfyApi.deployWithAgent') }}
             </template>
           </Button>
+          <DeployInstallationButton
+            v-if="deploysInstallation"
+            @opened="emit('done')"
+          />
           <Button
+            v-else
             variant="inverted"
             size="lg"
             class="w-full @xl:w-auto"
+            as="a"
+            :href="platformUrl"
+            target="_blank"
+            rel="noopener noreferrer"
             data-testid="deploy-to-comfy-api-platform"
-            :disabled="pending"
-            @click="deployOnPlatform"
+            @click="emit('done')"
           >
             {{ $t('deployToComfyApi.deployOnPlatform') }}
           </Button>
@@ -112,7 +128,7 @@
 </template>
 
 <script setup lang="ts">
-import { createReusableTemplate } from '@vueuse/core'
+import { createReusableTemplate, useAsyncState } from '@vueuse/core'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { ComponentProps } from 'vue-component-type-helpers'
@@ -120,14 +136,20 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 import Video from '@/components/common/Video.vue'
 import Button from '@/components/ui/button/Button.vue'
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
-import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useExternalLink } from '@/composables/useExternalLink'
+import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
+import { fetchInstallationSummary } from '@/platform/workflow/deploy/api/installationBundleApi'
+import DeployInstallationButton from '@/platform/workflow/deploy/components/DeployInstallationButton.vue'
 import { useAgentHandoff } from '@/platform/workflow/deploy/composables/useAgentHandoff'
-import { usePlatformBuildHandoff } from '@/platform/workflow/deploy/composables/usePlatformBuildHandoff'
 
-const { videoSources = [], posterSrc = '' } = defineProps<{
+const {
+  videoSources = [],
+  posterSrc = '',
+  deploysInstallation = false
+} = defineProps<{
   videoSources?: ComponentProps<typeof Video>['sources']
   posterSrc?: string
+  deploysInstallation?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -140,23 +162,35 @@ defineOptions({ inheritAttrs: false })
 const { t } = useI18n()
 const { buildDocsUrl } = useExternalLink()
 const { captureInputs, copyBrief } = useAgentHandoff()
-const { open: openPlatformBuild } = usePlatformBuildHandoff()
-const { toastErrorHandler } = useErrorHandling()
 const [DefineDocsLink, ReuseDocsLink] = createReusableTemplate()
-const pending = ref(false)
 const isCopying = ref(false)
 const copied = ref(false)
 
 const docsUrl = buildDocsUrl('/development/overview', { includeLocale: true })
 const inputs = captureInputs()
+const platformUrl = getComfyPlatformBaseUrl()
 
-const summary = computed(() =>
-  [
-    t('deployToComfyApi.summaryPacks', inputs.nodePacks.length),
-    t('deployToComfyApi.summaryModels', inputs.models.length),
-    t('deployToComfyApi.summaryClasses', inputs.nodeClasses.length)
-  ].join(' · ')
+const { state: installationSummary } = useAsyncState(
+  fetchInstallationSummary,
+  undefined,
+  { immediate: deploysInstallation }
 )
+
+const summary = computed(() => {
+  if (!deploysInstallation) {
+    return [
+      t('deployToComfyApi.summaryPacks', inputs.nodePacks.length),
+      t('deployToComfyApi.summaryModels', inputs.models.length),
+      t('deployToComfyApi.summaryClasses', inputs.nodeClasses.length)
+    ].join(' · ')
+  }
+  const counts = installationSummary.value
+  if (!counts) return ''
+  return [
+    t('deployToComfyApi.summaryCustomNodes', counts.custom_nodes),
+    t('deployToComfyApi.summaryModels', counts.models)
+  ].join(' · ')
+})
 
 async function copyHandoff() {
   if (isCopying.value) return
@@ -166,17 +200,6 @@ async function copyHandoff() {
     copied.value = await copyBrief()
   } finally {
     isCopying.value = false
-  }
-}
-
-async function deployOnPlatform() {
-  pending.value = true
-  try {
-    if (await openPlatformBuild()) emit('done')
-  } catch (error) {
-    toastErrorHandler(error)
-  } finally {
-    pending.value = false
   }
 }
 </script>
