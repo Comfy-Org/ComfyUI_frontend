@@ -3,9 +3,12 @@ import { describe, expect, it, vi } from 'vitest'
 import { nextTick, ref, toValue } from 'vue'
 
 import { DEFAULT_PAGE_SIZE } from '@/constants/searchConstants'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useRegistrySearchGateway } from '@/services/gateway/registrySearchGateway'
-import type { SearchPacksResult } from '@/types/searchServiceTypes'
+import type { SearchMode, SearchPacksResult } from '@/types/searchServiceTypes'
 import { useRegistrySearch } from '@/workbench/extensions/manager/composables/useRegistrySearch'
+
+vi.mock(import('@/platform/telemetry/reportError'))
 
 vi.mock(import('@/services/gateway/registrySearchGateway'), () => {
   const gateway = {
@@ -60,6 +63,7 @@ describe('useRegistrySearch', () => {
 
       expect(search.firstPage.value).toEqual({
         query: 'test',
+        searchMode: 'packs',
         rawResultsEmpty: expected
       })
     }
@@ -83,6 +87,7 @@ describe('useRegistrySearch', () => {
 
     expect(search.firstPage.value).toEqual({
       query: 'kijai/comfyui-kjnodes',
+      searchMode: 'packs',
       rawResultsEmpty: true
     })
 
@@ -100,8 +105,117 @@ describe('useRegistrySearch', () => {
 
     expect(search.firstPage.value).toEqual({
       query: 'comfyui-manager',
+      searchMode: 'packs',
       rawResultsEmpty: true
     })
+  })
+
+  it.for([
+    {
+      change: 'mode',
+      initial: { query: 'comfyui-manager', searchMode: 'nodes' as const },
+      initialAttributes: ['comfy_nodes'],
+      changed: { query: 'comfyui-manager', searchMode: 'packs' as const }
+    },
+    {
+      change: 'query',
+      initial: { query: 'comfyui-kjnodes', searchMode: 'packs' as const },
+      initialAttributes: ['name', 'description'],
+      changed: { query: 'comfyui-manager', searchMode: 'packs' as const }
+    }
+  ])(
+    'reruns the first-page search when the $change changes while it loads',
+    async ({ initial, initialAttributes, changed }) => {
+      const { searchPacks } = useRegistrySearchGateway()
+      let resolveStaleSearch: (result: SearchPacksResult) => void = () => {}
+      vi.mocked(searchPacks)
+        .mockReturnValueOnce(
+          new Promise((resolve) => {
+            resolveStaleSearch = resolve
+          })
+        )
+        .mockResolvedValueOnce({
+          nodePacks: [{ id: 'current-pack' }],
+          querySuggestions: [],
+          hasMore: true,
+          rawResultsEmpty: false
+        })
+        .mockResolvedValueOnce({
+          nodePacks: [{ id: 'current-pack-2' }],
+          querySuggestions: [],
+          hasMore: false,
+          rawResultsEmpty: false
+        })
+      const query = ref(initial.query)
+      const searchMode = ref<SearchMode>(initial.searchMode)
+      const search = useRegistrySearch({ query, searchMode })
+      await until(search.isLoading).toBe(true)
+
+      query.value = changed.query
+      searchMode.value = changed.searchMode
+      await nextTick()
+      resolveStaleSearch({
+        nodePacks: [{ id: 'stale-pack' }],
+        querySuggestions: [],
+        hasMore: true,
+        rawResultsEmpty: true
+      })
+      await until(search.isLoading).toBe(false)
+
+      expect(toValue(search.items)).toEqual([{ id: 'current-pack' }])
+      expect(search.firstPage.value).toEqual({
+        ...changed,
+        rawResultsEmpty: false
+      })
+
+      await search.loadMore()
+
+      expect(toValue(search.items)).toEqual([
+        { id: 'current-pack' },
+        { id: 'current-pack-2' }
+      ])
+      expect(
+        vi
+          .mocked(searchPacks)
+          .mock.calls.map(([searched, params]) => [
+            searched,
+            params.pageNumber,
+            params.restrictSearchableAttributes
+          ])
+      ).toEqual([
+        [initial.query, 0, initialAttributes],
+        [changed.query, 0, ['name', 'description']],
+        [changed.query, 1, ['name', 'description']]
+      ])
+    }
+  )
+
+  it('reruns without reporting an error when a search fails after the mode changed', async () => {
+    const { searchPacks } = useRegistrySearchGateway()
+    let rejectStaleSearch: (error: Error) => void = () => {}
+    vi.mocked(searchPacks)
+      .mockReturnValueOnce(
+        new Promise((_, reject) => {
+          rejectStaleSearch = reject
+        })
+      )
+      .mockResolvedValueOnce({
+        nodePacks: [{ id: 'current-pack' }],
+        querySuggestions: [],
+        rawResultsEmpty: false
+      })
+    const searchMode = ref<SearchMode>('nodes')
+    const search = useRegistrySearch({ query: 'comfyui-manager', searchMode })
+    await until(search.isLoading).toBe(true)
+
+    searchMode.value = 'packs'
+    await nextTick()
+    rejectStaleSearch(new Error('search unavailable'))
+    await until(search.isLoading).toBe(false)
+
+    expect(reportError).not.toHaveBeenCalled()
+    expect(toValue(search.items)).toEqual([{ id: 'current-pack' }])
+    expect(search.firstPage.value?.searchMode).toBe('packs')
   })
 
   it('reports no first page when the search for it fails', async () => {
@@ -121,7 +235,10 @@ describe('useRegistrySearch', () => {
     await until(search.isLoading).toBe(false)
 
     expect(search.firstPage.value).toBeNull()
-    expect(console.error).toHaveBeenCalledWith(new Error('search unavailable'))
+    expect(reportError).toHaveBeenCalledWith(new Error('search unavailable'), {
+      errorType: 'error_searching_registry_packs',
+      surface: 'platform'
+    })
   })
 
   it('searches the trimmed query and ignores edits that only change surrounding whitespace', async () => {
@@ -162,6 +279,7 @@ describe('useRegistrySearch', () => {
 
     expect(search.firstPage.value).toEqual({
       query: 'gguf',
+      searchMode: 'packs',
       rawResultsEmpty: false
     })
   })

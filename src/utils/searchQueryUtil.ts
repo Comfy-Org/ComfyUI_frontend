@@ -6,9 +6,9 @@ const GITHUB_REPO_URL =
 const BARE_COMPOUND_REPO_SLUG =
   /^[A-Za-z0-9-]+\/([\w.-]*[A-Za-z0-9][-_][A-Za-z0-9][\w.-]*)$/
 
-const TRAILING_GIT_OR_SLASHES = /(?:\.git)?\/*$/i
+const TRAILING_GIT_SLASHES_OR_SPACES = /(?:\.git|[\s/])+$/i
 
-const TRAILING_SLASHES = /\/+$/
+const TRAILING_SLASHES_OR_SPACES = /[\s/]+$/
 
 const WORD_SEPARATORS = /[\s_-]+/
 
@@ -23,7 +23,9 @@ function stripRepoOwner(query: string): string {
 }
 
 export function toRepoName(query: string): string {
-  return stripRepoOwner(query.trim().replace(TRAILING_GIT_OR_SLASHES, ''))
+  return stripRepoOwner(
+    query.trim().replace(TRAILING_GIT_SLASHES_OR_SPACES, '')
+  )
 }
 
 export function splitOnSeparators(input: string): string {
@@ -31,7 +33,10 @@ export function splitOnSeparators(input: string): string {
 }
 
 function toComparableQuery(input: string): string {
-  return input.trim().replace(TRAILING_SLASHES, '').replace(WHITESPACE_RUN, ' ')
+  return input
+    .trim()
+    .replace(TRAILING_SLASHES_OR_SPACES, '')
+    .replace(WHITESPACE_RUN, ' ')
 }
 
 export function buildPackSearchFallbacks(query: string): string[] {

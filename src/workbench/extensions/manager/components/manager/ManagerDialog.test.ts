@@ -241,6 +241,60 @@ describe('ManagerDialog legacy-manager tip', () => {
     expect(screen.queryByText(TIP, { exact: false })).not.toBeInTheDocument()
   })
 
+  it('drops a nodes-mode ComfyUI-Manager search that lands after the switch to packs and searches packs', async () => {
+    useNewManagerUI()
+    const { searchPacks } = useRegistrySearchGateway()
+    let resolveNodesSearch: (value: SearchPacksResult) => void = () => {}
+    let resolvePacksSearch: (value: SearchPacksResult) => void = () => {}
+    vi.mocked(searchPacks)
+      .mockResolvedValueOnce(result([], false))
+      .mockResolvedValueOnce(result([], false))
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveNodesSearch = resolve
+        })
+      )
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolvePacksSearch = resolve
+        })
+      )
+      .mockResolvedValue(result([], false))
+    const { user, searchBox } = renderDialog()
+    await settleSearch()
+    await user.click(screen.getByRole('button', { name: enMessages.g.nodes }))
+    await settleSearch()
+
+    await user.type(searchBox, 'comfyui-manager')
+    await settleSearch()
+    await user.click(
+      screen.getByRole('button', { name: enMessages.manager.filter.nodePack })
+    )
+    resolveNodesSearch(
+      result([{ id: 'nodes-mode-pack', name: 'Nodes Mode Pack' }], true)
+    )
+    await settleSearch()
+
+    expect(screen.queryByText('Nodes Mode Pack')).not.toBeInTheDocument()
+    expect(screen.queryByText(TIP, { exact: false })).not.toBeInTheDocument()
+    expect(vi.mocked(searchPacks).mock.calls.at(-1)).toEqual([
+      'comfyui-manager',
+      expect.objectContaining({
+        pageNumber: 0,
+        restrictSearchableAttributes: ['name', 'description']
+      })
+    ])
+
+    resolvePacksSearch(
+      result([{ id: 'comfyui-manager', name: 'ComfyUI-Manager' }], false)
+    )
+    await settleSearch()
+
+    expect(screen.getByText('ComfyUI-Manager')).toBeInTheDocument()
+    expect(screen.queryByText('Nodes Mode Pack')).not.toBeInTheDocument()
+    expect(screen.queryByText(TIP, { exact: false })).not.toBeInTheDocument()
+  })
+
   it('hides the tip on the unresolved-nodes tab', async () => {
     useNewManagerUI()
     useWorkflowPacks().unresolvedNodeNames.value = ['MysteryNode']
@@ -298,6 +352,22 @@ describe('ManagerDialog legacy-manager tip', () => {
       expect(screen.queryByText(TIP, { exact: false })).not.toBeInTheDocument()
     }
   )
+
+  it('hides the tip on the installed tab when the search found the ComfyUI-Manager pack', async () => {
+    useNewManagerUI()
+    vi.mocked(useRegistrySearchGateway().searchPacks).mockResolvedValue(
+      result([{ id: 'comfyui-manager', name: 'ComfyUI-Manager' }], false)
+    )
+    const { user, searchBox } = renderDialog(ManagerTab.AllInstalled)
+
+    await user.type(searchBox, 'comfyui-manager')
+    await settleSearch()
+
+    expect(
+      screen.getByText(enMessages.manager.noResultsFound)
+    ).toBeInTheDocument()
+    expect(screen.queryByText(TIP, { exact: false })).not.toBeInTheDocument()
+  })
 
   it('hides the tip on the installed tab while the installed packs load', async () => {
     useNewManagerUI()

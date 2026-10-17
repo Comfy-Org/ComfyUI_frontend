@@ -6,6 +6,7 @@ import {
   PACK_SEARCHABLE_ATTRIBUTES,
   USER_SEARCH_ANALYTICS_TAG
 } from '@/constants/searchConstants'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useRegistrySearchGateway } from '@/services/gateway/registrySearchGateway'
 import type {
   SearchAttribute,
@@ -20,8 +21,11 @@ type RegistryNodePack = components['schemas']['Node']
 
 interface SearchedFirstPage {
   query: string
+  searchMode: SearchMode
   rawResultsEmpty: boolean
 }
+
+type PageLoadOutcome = 'loaded' | 'inputsChanged'
 
 /**
  * Offset-paged registry search as a {@link PagedList}. Query inputs are reactive
@@ -37,8 +41,8 @@ export function useRegistrySearch(inputs: {
 }): PagedList<RegistryNodePack> & {
   suggestions: Readonly<Ref<QuerySuggestion[]>>
   /**
-   * The query behind the shown first page and its outcome; null while that
-   * page loads or after it failed.
+   * The query and mode behind the shown first page and its outcome; null
+   * while that page loads or after it failed.
    */
   firstPage: Readonly<Ref<SearchedFirstPage | null>>
 } {
@@ -52,10 +56,8 @@ export function useRegistrySearch(inputs: {
   const { enqueue, preempt, running: isLoading } = usePreemptableQueue()
   const searchedQuery = () => toValue(inputs.query).trim()
 
-  const searchableAttributes = (): SearchAttribute[] =>
-    toValue(inputs.searchMode) === 'nodes'
-      ? ['comfy_nodes']
-      : [...PACK_SEARCHABLE_ATTRIBUTES]
+  const searchableAttributes = (searchMode: SearchMode): SearchAttribute[] =>
+    searchMode === 'nodes' ? ['comfy_nodes'] : [...PACK_SEARCHABLE_ATTRIBUTES]
 
   function analyticsParams(
     query: string
@@ -67,45 +69,58 @@ export function useRegistrySearch(inputs: {
     return isTypedSearch ? { analyticsTags: [USER_SEARCH_ANALYTICS_TAG] } : {}
   }
 
-  async function doLoadMore() {
-    if (!morePages.value) return
+  async function doLoadMore(): Promise<PageLoadOutcome> {
+    if (!morePages.value) return 'loaded'
     const query = searchedQuery()
+    const searchMode = toValue(inputs.searchMode)
+    const isCurrent = () =>
+      query === searchedQuery() && searchMode === toValue(inputs.searchMode)
     try {
       const result = await searchPacks(query, {
         pageSize: DEFAULT_PAGE_SIZE,
         pageNumber,
-        restrictSearchableAttributes: searchableAttributes(),
+        restrictSearchableAttributes: searchableAttributes(searchMode),
         ...analyticsParams(query)
       })
+      if (!isCurrent()) return 'inputsChanged'
       const { nodePacks } = result
       morePages.value = result.hasMore ?? nodePacks.length >= DEFAULT_PAGE_SIZE
       if (pageNumber === 0) {
         firstPage.value = {
           query,
+          searchMode,
           rawResultsEmpty: result.rawResultsEmpty ?? nodePacks.length === 0
         }
       }
       items.value.push(...nodePacks)
       suggestions.value = result.querySuggestions
       pageNumber++
-    } catch (err) {
-      console.error(err)
+    } catch (error) {
+      if (!isCurrent()) return 'inputsChanged'
+      reportError(error, {
+        errorType: 'error_searching_registry_packs',
+        surface: 'platform'
+      })
       morePages.value = false
     }
+    return 'loaded'
   }
 
   const reload = () =>
     preempt(async () => {
-      pageNumber = 0
-      morePages.value = true
-      firstPage.value = null
-      items.value = []
-      await doLoadMore()
+      do {
+        pageNumber = 0
+        morePages.value = true
+        firstPage.value = null
+        items.value = []
+      } while ((await doLoadMore()) === 'inputsChanged')
     })
 
   async function loadMore() {
     const startingPage = pageNumber
-    await enqueue('loadMore', doLoadMore)
+    await enqueue('loadMore', async () => {
+      await doLoadMore()
+    })
     return pageNumber > startingPage
   }
 
