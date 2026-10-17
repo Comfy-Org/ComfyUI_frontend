@@ -55,6 +55,7 @@
     "validate:markdown-alternates": "tsx ./scripts/validate-markdown-alternates.ts",
     "indexnow:submit": "tsx ./scripts/indexnow-submit.ts",
     "check:link-slashes": "tsx ./scripts/check-internal-link-slashes.ts",
+    "check:workshop-media": "tsx ./scripts/check-workshop-media.ts",
     "workshop:generate": "tsx ./scripts/generate-workshop-models.ts",
     "workshop:generate-versions": "tsx ./scripts/generate-workshop-versions.ts",
     "hub:backfill-media-type": "tsx ./scripts/backfill-template-media-type.ts",
