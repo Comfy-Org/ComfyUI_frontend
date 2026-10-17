@@ -5,6 +5,11 @@ import {
   agentCopyPasteTest as test
 } from '@e2e/fixtures/AgentCopyPasteDriver'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { nextFrame } from '@e2e/fixtures/utils/timing'
+
+// Plain text, so `text/html` carries no node payload: the only way a node can
+// reach the graph from this paste is the canvas-paste fallback.
+const COMPOSER_PASTE_TEXT = 'make the sampler deterministic'
 
 test.describe(
   'Copy and paste beside the agent panel',
@@ -112,6 +117,68 @@ test.describe(
           .poll(() => agentCopyPaste.clipboard.readText())
           .toContain(replyText.split(/\s+/).slice(0, 3).join(' '))
         expect(await agentCopyPaste.graphNodes()).toHaveLength(before.length)
+      })
+    })
+
+    test('pasting text into the composer leaves the graph untouched', async ({
+      agentCopyPaste,
+      page
+    }) => {
+      const before = await agentCopyPaste.graphNodes()
+
+      await test.step('copy a node on the canvas', async () => {
+        await agentCopyPaste.revealAndSelectNode(
+          AGENT_COPY_PASTE_SCENARIO.earlierNode.id
+        )
+        await agentCopyPaste.clipboard.copy()
+      })
+
+      await test.step('put plain text on the clipboard', () =>
+        agentCopyPaste.clipboard.writeText(COMPOSER_PASTE_TEXT))
+
+      await test.step('paste it into the composer', () =>
+        agentCopyPaste.clipboard.paste(agentCopyPaste.composer))
+
+      await test.step('the text lands in the composer', () =>
+        expect(agentCopyPaste.composer).toContainText(COMPOSER_PASTE_TEXT))
+
+      await test.step('no node was added to the graph', async () => {
+        await nextFrame(page)
+        expect(await agentCopyPaste.nodesAddedSince(before)).toEqual([])
+      })
+    })
+
+    test('a composer paste keeps the node clipboard usable on the canvas', async ({
+      agentCopyPaste,
+      page
+    }) => {
+      const before = await agentCopyPaste.graphNodes()
+
+      await test.step('copy a node on the canvas', async () => {
+        await agentCopyPaste.revealAndSelectNode(
+          AGENT_COPY_PASTE_SCENARIO.earlierNode.id
+        )
+        await agentCopyPaste.clipboard.copy()
+      })
+
+      await test.step('paste plain text into the composer', async () => {
+        await agentCopyPaste.clipboard.writeText(COMPOSER_PASTE_TEXT)
+        await agentCopyPaste.clipboard.paste(agentCopyPaste.composer)
+        await expect(agentCopyPaste.composer).toContainText(COMPOSER_PASTE_TEXT)
+      })
+
+      await test.step('paste on the canvas', () =>
+        agentCopyPaste.clipboard.paste(page.locator('#graph-canvas')))
+
+      await test.step('the copied node is pasted', async () => {
+        await expect
+          .poll(() => agentCopyPaste.graphNodes())
+          .toHaveLength(before.length + 1)
+        expect(await agentCopyPaste.nodesAddedSince(before)).toEqual([
+          expect.objectContaining({
+            type: AGENT_COPY_PASTE_SCENARIO.earlierNode.type
+          })
+        ])
       })
     })
 
