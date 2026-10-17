@@ -21,6 +21,7 @@ const mockInvalidateOutputAssets = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
     fetchApi: mockFetchApi,
     apiURL: mockApiURL,
     api_base: ''

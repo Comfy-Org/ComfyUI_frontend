@@ -137,7 +137,7 @@
           data-testid="missing-model-gated-access"
           variant="muted-textonly"
           size="icon"
-          class="size-8 shrink-0 text-warning-background hover:text-warning-background focus-visible:ring-inset"
+          class="shrink-0 text-warning-background hover:text-warning-background focus-visible:ring-inset"
           :aria-label="
             t(
               usesNativeModelAccess

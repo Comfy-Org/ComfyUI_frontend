@@ -42,6 +42,7 @@ function environment(pageUrl: string) {
       removeItem: (key: string) => void items.delete(key)
     },
     tokens: createMemoryTokenStore(),
+    withRefreshLock: (task) => task(),
     fetchImpl: vi.fn<typeof fetch>(
       async () =>
         new Response(

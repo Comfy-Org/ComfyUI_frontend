@@ -30,7 +30,6 @@ vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({
     flags: {
       billingSdkTopupRailEnabled: false,
-      embeddedCheckoutEnabled: false,
       get billingSdkSubscriptionRailEnabled() {
         return (
           flagState.billingSdkSubscriptionEnabled &&

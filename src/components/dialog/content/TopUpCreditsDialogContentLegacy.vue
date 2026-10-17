@@ -142,7 +142,6 @@
         :loading="loading"
         variant="primary"
         size="lg"
-        class="h-10 justify-center"
         @click="handleBuy"
       >
         {{ $t('credits.topUp.buyCredits') }}

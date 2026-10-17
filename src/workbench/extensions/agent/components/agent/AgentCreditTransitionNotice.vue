@@ -17,7 +17,7 @@ onMounted(() => emit('shown'))
     <span
       class="icon-[heroicons--information-circle-20-solid] size-5 shrink-0 text-warning-foreground"
     />
-    <p class="my-0 min-w-0 flex-1 text-sm text-base-foreground">
+    <p class="my-0 min-w-0 flex-1 text-sm">
       {{ $t('agent.creditTransitionNotice') }}
     </p>
     <Button

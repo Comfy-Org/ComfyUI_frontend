@@ -3029,7 +3029,6 @@
     "expiredCardDetail": "This card has expired. Use a different payment method.",
     "incorrectCvcDetail": "The card security code is incorrect. Check it and try again.",
     "processingErrorDetail": "Your payment couldn't be processed. Try again or use another payment method.",
-    "authenticationUnavailable": "Secure payment authentication is unavailable. Please refresh and try again.",
     "authenticationFailedDetail": "We couldn't complete payment verification. Please try again.",
     "authenticatePaymentDetail": "Your bank needs to approve this payment. Please try again and confirm the payment with your bank when prompted.",
     "authenticatePaymentBlockedDetail": "Your bank didn't approve this payment. Contact your bank before trying another purchase.",
@@ -3451,9 +3450,6 @@
       },
       "promoCodePlaceholder": "Promo code",
       "applyPromoCode": "Apply",
-      "applyQuoteBeforeContinuing": "Apply the promo code to refresh your quote before continuing.",
-      "quoteStale": "Your quote changed. Review the updated amount and try again.",
-      "quoteRefreshFailed": "Your quote expired and couldn't be refreshed. Choose your plan again.",
       "renewsAt": "Renews at {amount} on {date}. Cancel anytime.",
       "renewsAtAmount": "Renews at {amount}. Cancel anytime.",
       "discountComposition": "Discounts",
@@ -3869,6 +3865,8 @@
     "failedToSwitch": "Failed to switch workspace"
   },
   "deploymentSwitcher": {
+    "lookupUnavailable": "Could not check which deployment this editor runs on.",
+    "lookupUnavailableDetail": "The models shown are Comfy Cloud's. Reload to try again.",
     "runningOn": "Running on",
     "comfyCloud": "Comfy Cloud",
     "comfyCloudCaption": "Comfy's own node set",

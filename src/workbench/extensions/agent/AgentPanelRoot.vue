@@ -1,10 +1,7 @@
 <script setup lang="ts">
 import './agentPanel.css'
 
-import type {
-  AgentAnswerRequest,
-  GetFeaturesResponse
-} from '@comfyorg/ingest-types'
+import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
 import { useClipboard } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import {
@@ -20,6 +17,7 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import type {
@@ -1711,6 +1709,7 @@ function onSelectNodes(): void {
 
 const assetsStore = useAssetsStore()
 let inputAssetRefresh: Promise<unknown> = Promise.resolve()
+const { flags } = useFeatureFlags()
 
 const attachment = useAttachment({
   validate: isValidAgentAttachment,
@@ -1738,10 +1737,7 @@ const attachment = useAttachment({
       .then(() => assetsStore.inputAssets.loadNew())
       .catch(() => undefined)
   },
-  maxBytes: () =>
-    api.getServerFeature<GetFeaturesResponse['max_upload_size']>(
-      'max_upload_size'
-    ) ?? MAX_ATTACHMENT_BYTES,
+  maxBytes: () => flags.maxUploadSize ?? MAX_ATTACHMENT_BYTES,
   onError: warnAttachment,
   onDuplicate: notifyDuplicateAttachments,
   staged: () => composerStore.attachments,

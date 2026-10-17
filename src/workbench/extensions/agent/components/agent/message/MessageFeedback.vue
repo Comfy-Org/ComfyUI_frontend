@@ -62,9 +62,7 @@ async function downloadAssets(): Promise<void> {
 </script>
 
 <template>
-  <div
-    class="flex w-full items-center justify-start gap-1 text-muted-foreground"
-  >
+  <div class="flex w-full items-center gap-1 text-muted-foreground">
     <Button
       :tooltip="t('agent.helpful')"
       type="button"
