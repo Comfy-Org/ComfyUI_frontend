@@ -290,7 +290,10 @@ describe('ReplyAssetGroup', () => {
 
     await vi.runAllTimersAsync()
 
-    expect(generateModelThumbnail).toHaveBeenCalledTimes(30)
+    // The initial attempt plus MAX_THUMBNAIL_BUSY_RETRIES. The backoff is
+    // exponential and capped at eight minutes, so this covers a longer busy
+    // period than a flat ladder of the same length would.
+    expect(generateModelThumbnail).toHaveBeenCalledTimes(10)
   })
 
   it('generates thumbnails only for model URLs that name a filename query', async () => {
@@ -631,7 +634,7 @@ describe('ReplyAssetGroup', () => {
     isAssetPreviewSupported.mockReturnValue(true)
     const models = Array.from({ length: 13 }, (_, n) => ({
       ...model,
-      url: `https://x/mesh-${n}.glb`,
+      url: `https://x/api/view?filename=mesh-${n}.glb`,
       filename: `mesh-${n}.glb`
     }))
     renderGroup(models)
@@ -640,7 +643,7 @@ describe('ReplyAssetGroup', () => {
       expect(generateModelThumbnail).toHaveBeenCalledTimes(12)
     )
     expect(generateModelThumbnail).not.toHaveBeenCalledWith(
-      'https://x/mesh-12.glb',
+      'https://x/api/view?filename=mesh-12.glb',
       'mesh-12.glb',
       expect.any(AbortSignal)
     )
@@ -648,7 +651,7 @@ describe('ReplyAssetGroup', () => {
     await userEvent.click(toggle())
     await waitFor(() =>
       expect(generateModelThumbnail).toHaveBeenCalledWith(
-        'https://x/mesh-12.glb',
+        'https://x/api/view?filename=mesh-12.glb',
         'mesh-12.glb',
         expect.any(AbortSignal)
       )
