@@ -1,6 +1,12 @@
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 import { getActivePinia } from 'pinia'
-import { render, screen, waitFor, within } from '@testing-library/vue'
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within
+} from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { defineComponent, nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -30,6 +36,7 @@ import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
 
 import AgentPanel from './AgentPanel.vue'
 import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
+import { RUN_NOTICE_DEFERRAL_MS } from './runNoticeDeferral'
 
 setupInlinePromptEditorDom()
 
@@ -480,6 +487,33 @@ describe('AgentPanel', () => {
     expect(
       screen.getByRole('button', { name: 'Share feedback' })
     ).toBeInTheDocument()
+  })
+
+  it('shows the targetless run notice shortly after composer focus', async () => {
+    vi.useFakeTimers()
+    const pinia = getActivePinia()
+    if (pinia === undefined) throw new Error('Expected an active testing Pinia')
+    render(AgentPanel, {
+      props: {
+        entries: [],
+        historyGroups: createHistoryGroups(),
+        workflowDetached: true
+      },
+      global: {
+        plugins: [pinia, i18n],
+        directives: { tooltip: {} },
+        stubs: { WorkflowSelectorChip: true }
+      }
+    })
+
+    expect(screen.queryByRole('note')).toBeNull()
+    await nextTick()
+    await fireEvent.focusIn(screen.getByRole('textbox'))
+    await vi.advanceTimersByTimeAsync(RUN_NOTICE_DEFERRAL_MS)
+
+    expect(screen.getByRole('note')).toHaveTextContent(
+      'Use Run permissions in the composer toolbar'
+    )
   })
 
   it('groups chat options with the title and separates history navigation', () => {

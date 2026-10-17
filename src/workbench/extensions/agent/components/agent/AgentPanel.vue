@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
 import { storeToRefs } from 'pinia'
+import { useEventListener } from '@vueuse/core'
 import { computed, nextTick, onScopeDispose, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -272,7 +273,18 @@ function onClose(): void {
 }
 
 const composerRef = ref<InstanceType<typeof Composer>>()
+const panelRef = ref<HTMLElement>()
+const runNoticeEngaged = ref(false)
 const workflowSelectorRef = ref<InstanceType<typeof WorkflowSelectorChip>>()
+
+useEventListener(panelRef, 'focusin', (event) => {
+  if (
+    event.target instanceof Element &&
+    event.target.closest('#agent-composer')
+  ) {
+    runNoticeEngaged.value = true
+  }
+})
 
 function onWorkflowTargetRequired(): void {
   workflowSelectorRef.value?.openPicker()
@@ -354,6 +366,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
 
 <template>
   <section
+    ref="panelRef"
     class="@container flex h-full flex-col overflow-hidden bg-base-background text-base-foreground"
   >
     <PanelHeader
@@ -512,6 +525,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             :expanded="isMaximized"
             :workflow-name="workflowDetached ? undefined : activeTab?.name"
             :context="targetNotice"
+            :engaged="runNoticeEngaged"
             @show-target="emit('showTarget')"
           />
           <FreeUseNotice
