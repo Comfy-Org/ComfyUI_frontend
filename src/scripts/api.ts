@@ -89,6 +89,7 @@ import {
   fetchJobDetail,
   fetchQueue
 } from '@/platform/remote/comfyui/jobs/fetchJobs'
+import { isAbortError } from '@/utils/typeGuardUtil'
 
 const SERVER_FEATURE_FLAGS_TIMEOUT_MS = 5_000
 
@@ -1415,10 +1416,10 @@ export class ComfyApi extends EventTarget {
     Pending: JobListItem[]
   }> {
     try {
-      return await fetchQueue(this.fetchApi.bind(this), options)
+      return await fetchQueue(this.fetchApi.bind(this))
     } catch (error) {
       if (options?.throwOnError) throw error
-      console.error('Failed to fetch queue:', error)
+      if (!isAbortError(error)) console.error('Failed to fetch queue:', error)
       return { Running: [], Pending: [] }
     }
   }
@@ -1429,7 +1430,7 @@ export class ComfyApi extends EventTarget {
    */
   async getHistory(
     max_items: number = 200,
-    options?: { offset?: number }
+    options?: { offset?: number; throwOnError?: boolean }
   ): Promise<JobListItem[]> {
     try {
       return await fetchHistory(
@@ -1438,7 +1439,8 @@ export class ComfyApi extends EventTarget {
         options?.offset
       )
     } catch (error) {
-      console.error(error)
+      if (options?.throwOnError) throw error
+      if (!isAbortError(error)) console.error('Failed to fetch history:', error)
       return []
     }
   }

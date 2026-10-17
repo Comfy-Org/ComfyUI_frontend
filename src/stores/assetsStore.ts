@@ -32,6 +32,7 @@ import type { AssetPaginationOptions } from '@/platform/assets/services/assetSer
 import type { AssetSeedCompletedWsMessage } from '@/platform/remote/comfyui/execution/types'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { api } from '@/scripts/api'
+import { isAbortError } from '@/utils/typeGuardUtil'
 import { WrappedList } from '@/utils/pagedList'
 import type { PagedList } from '@/utils/pagedList'
 
@@ -161,18 +162,19 @@ export const useAssetsStore = defineStore('assets', () => {
     const fetchHistoryAssets = async (
       loadMore = false
     ): Promise<AssetItem[]> => {
-      // Reset state for initial load
+      const offset = loadMore ? historyOffset.value : 0
+
+      // Fetch before touching accumulated state so a failed refresh leaves the
+      // last known good page set intact for the next load-more.
+      const history = await api.getHistory(BATCH_SIZE, {
+        offset,
+        throwOnError: true
+      })
+
       if (!loadMore) {
-        historyOffset.value = 0
-        hasMoreHistory.value = true
         allHistoryItems.value = []
         loadedIds.clear()
       }
-
-      // Fetch from server with offset
-      const history = await api.getHistory(BATCH_SIZE, {
-        offset: historyOffset.value
-      })
 
       // Convert JobListItems to AssetItems
       const newAssets = mapHistoryToAssets(history)
@@ -206,7 +208,7 @@ export const useAssetsStore = defineStore('assets', () => {
       }
 
       // Update pagination state
-      historyOffset.value += BATCH_SIZE
+      historyOffset.value = offset + BATCH_SIZE
       hasMoreHistory.value = history.length === BATCH_SIZE
 
       if (allHistoryItems.value.length > MAX_HISTORY_ITEMS) {
@@ -240,6 +242,7 @@ export const useAssetsStore = defineStore('assets', () => {
         await fetchHistoryAssets(false)
         historyAssets.value = allHistoryItems.value
       } catch (err) {
+        if (isAbortError(err)) return
         console.error('Error fetching history assets:', err)
         historyError.value = err
         // Keep existing data when error occurs
@@ -273,6 +276,7 @@ export const useAssetsStore = defineStore('assets', () => {
         historyAssets.value = allHistoryItems.value
         return true
       } catch (err) {
+        if (isAbortError(err)) return false
         console.error('Error loading more history:', err)
         historyError.value = err
         // Keep existing data when error occurs (consistent with updateHistory)
