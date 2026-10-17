@@ -3,6 +3,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
 import { useApp } from '@/scripts/appInstance'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { viewableResultItems } from '@/utils/resultItemUtil'
 
 export type Clipspace = {
   widgets?: Pick<IBaseWidget, 'type' | 'name' | 'value'>[] | null
@@ -62,14 +63,17 @@ export function copyToClipspace(node: LGraphNode) {
   const paintedIndex = imgs ? imgs.length + 1 : 1
   const combinedIndex = imgs ? imgs.length + 2 : 2
 
-  // for vueNodes mode
-  const images = useNodeOutputStore().getNodeOutputs(node)?.images
+  // for vueNodes mode. Filtered to match the compacted `imgs` preview list
+  // that `selectedIndex` indexes into.
+  const images = viewableResultItems(
+    useNodeOutputStore().getNodeOutputs(node)?.images
+  )
 
   clipspace.current = {
     widgets: widgets,
     imgs: imgs,
     original_imgs: orig_imgs,
-    images: images,
+    images: images.length ? images : undefined,
     selectedIndex: selectedIndex,
     img_paste_mode: 'selected', // reset to default im_paste_mode state on copy action
     paintedIndex: paintedIndex,

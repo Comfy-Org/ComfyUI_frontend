@@ -8,6 +8,9 @@ import { app } from '@/scripts/app'
 import type { useAudioService } from '@/services/audioService'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { reportError } from '@/platform/telemetry/reportError'
+import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
+import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 const {
   mockMediaRecorderConstruct,
@@ -289,6 +292,60 @@ describe('Comfy.AudioWidget AUDIO_UI widget', () => {
 
     expect(domWidget.serialize).toBe(false)
     expect(domWidget.options.serialize).toBe(false)
+  })
+
+  const outputLeadingWithDegenerateAudio = fromAny<
+    NodeExecutionOutput,
+    unknown
+  >({
+    audio: [
+      null,
+      { status: 'unavailable', reason: 'upload_failed' },
+      { filename: 'good.mp3', subfolder: 'sub', type: 'output' }
+    ]
+  })
+
+  function createAudioUIWidget() {
+    return {
+      name: 'audioUI',
+      element: document.createElement('audio'),
+      options: {},
+      value: '',
+      callback: vi.fn()
+    }
+  }
+
+  it('previews the first usable entry when a run reports degenerate audio', async () => {
+    const AUDIO_UI = await loadAudioUIWidget()
+    const audioUIWidget = createAudioUIWidget()
+    const node = fromAny<LGraphNode, unknown>({
+      addDOMWidget: vi.fn(() => audioUIWidget),
+      constructor: { nodeData: { output_node: true } }
+    })
+    AUDIO_UI(node, 'audioUI')
+
+    node.onExecuted?.(outputLeadingWithDegenerateAudio)
+
+    expect(api.apiURL).toHaveBeenCalledWith(
+      '/view?filename=good.mp3&subfolder=sub&type=output'
+    )
+  })
+
+  it('previews the first usable entry when restored outputs lead with degenerate audio', () => {
+    const extension = registeredExtensions.find(
+      ({ name }) => name === 'Comfy.AudioWidget'
+    )
+    vi.mocked(getNodeByLocatorId).mockReturnValue(
+      fromAny<LGraphNode, unknown>({ widgets: [createAudioUIWidget()] })
+    )
+
+    extension?.onNodeOutputsUpdated?.({
+      [createNodeLocatorId(null, 1)]: outputLeadingWithDegenerateAudio
+    })
+
+    expect(api.apiURL).toHaveBeenCalledWith(
+      '/view?filename=good.mp3&subfolder=sub&type=output'
+    )
   })
 })
 

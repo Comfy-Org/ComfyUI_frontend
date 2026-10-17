@@ -310,6 +310,40 @@ describe('fetchJobs', () => {
       expect(result?.outputs).toBeDefined()
     })
 
+    it('parses each degenerate output entry independently of its array', async () => {
+      const jobDetail = {
+        ...createMockJob('job1', 'completed'),
+        outputs: {
+          '1': {
+            images: [
+              null,
+              { status: 'unavailable', reason: 'upload_failed' },
+              { filename: 'good.png', subfolder: '', type: 'output' }
+            ],
+            animated: [null, true],
+            video: [null],
+            audio: [{ filename: 'sound.wav', subfolder: '', type: 'bogus' }]
+          }
+        }
+      }
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(jobDetail)
+      })
+
+      const result = await fetchJobDetail(mockFetch, 'job1')
+
+      expect(result?.id).toBe('job1')
+      const outputs = result?.outputs?.['1']
+      expect(outputs?.images).toEqual([
+        null,
+        {},
+        { filename: 'good.png', subfolder: '', type: 'output' }
+      ])
+      expect(outputs?.animated).toEqual([null, true])
+      expect(outputs?.audio).toEqual([null])
+    })
+
     it('returns undefined for non-ok response', async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: false,

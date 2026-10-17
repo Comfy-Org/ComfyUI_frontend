@@ -1256,6 +1256,7 @@ describe('ComfyApp', () => {
 
       vi.mocked(useNodeOutputStore().setOutputFromLegacy).mockClear()
       const image = images[0]
+      if (!image) throw new Error('expected the legacy output image')
       image.filename = 'mutated.png'
       expect(useNodeOutputStore().setOutputFromLegacy).toHaveBeenCalledWith(
         '1',

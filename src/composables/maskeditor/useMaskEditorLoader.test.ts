@@ -65,6 +65,16 @@ function createLoadImageNode(widgetValue: string): LGraphNode {
   })
 }
 
+function createOutputNode(images: unknown[]): LGraphNode {
+  return fromAny<LGraphNode, unknown>({
+    id: 9,
+    type: 'PreviewImage',
+    imgs: [{ src: 'http://localhost:8188/api/view?filename=rendered.png' }],
+    images,
+    widgets: []
+  })
+}
+
 function subfolderOf(url: string): string | null {
   return new URL(url).searchParams.get('subfolder')
 }
@@ -162,6 +172,39 @@ describe('useMaskEditorLoader', () => {
       sourceRef: { filename: 'clipspace-painted-masked-123.png' },
       paintLayer: undefined,
       nodeId: toNodeId(7)
+    })
+  })
+
+  it('resolves the first usable entry when node.images leads with degenerate entries', async () => {
+    const node = createOutputNode([
+      null,
+      { status: 'unavailable', reason: 'upload_failed' },
+      { filename: 'good.png', subfolder: '', type: 'output' }
+    ])
+
+    await useMaskEditorLoader().loadFromNode(node)
+
+    expect(requestedUrls).not.toHaveLength(0)
+    expect(
+      requestedUrls.filter((url) => !url.includes('filename=good.png'))
+    ).toEqual([])
+    expect(mockDataStore.inputData).toMatchObject({
+      sourceRef: { filename: 'good.png', type: 'output' },
+      nodeId: 9
+    })
+  })
+
+  it('falls back to the rendered image when no entry carries a filename', async () => {
+    const node = createOutputNode([
+      null,
+      { status: 'unavailable', reason: 'upload_failed' }
+    ])
+
+    await useMaskEditorLoader().loadFromNode(node)
+
+    expect(mockDataStore.inputData).toMatchObject({
+      sourceRef: { filename: 'rendered.png' },
+      nodeId: 9
     })
   })
 
