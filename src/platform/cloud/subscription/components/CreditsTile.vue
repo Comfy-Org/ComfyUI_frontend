@@ -179,9 +179,8 @@
       </div>
     </template>
 
-    <div v-if="showActionButton" class="flex flex-col gap-3">
+    <div v-if="canTopUp" class="flex flex-col gap-3">
       <Button
-        v-if="canTopUp"
         :variant="isOutOfCredits ? 'inverted' : 'secondary'"
         size="lg"
         :class="
@@ -195,15 +194,9 @@
       >
         {{ $t('subscription.addCredits') }}
       </Button>
-      <Button
-        v-else
-        variant="subscribe"
-        size="lg"
-        class="w-full font-normal"
-        @click="handleUpgradeToAddCredits"
-      >
-        {{ $t('subscription.upgradeToAddCredits') }}
-      </Button>
+      <span v-if="creditsUseNote" class="text-sm text-muted-foreground">
+        {{ creditsUseNote }}
+      </span>
     </div>
   </div>
 </template>
@@ -221,7 +214,6 @@ import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useSubscriptionCredits } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
-import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import {
   DEFAULT_TIER_KEY,
   isSalesManagedTier,
@@ -250,10 +242,11 @@ const {
   balance,
   canAccessSubscriptionFeatures,
   currentTeamCreditStop,
+  subscriptionStatus,
   fetchBalance,
   fetchStatus
 } = useBillingContext()
-const { canTopUp, canSubscribeSelfServe } = useBillingCapabilities()
+const { canTopUp } = useBillingCapabilities()
 const {
   prepaidCredits,
   totalCredits,
@@ -262,7 +255,6 @@ const {
   isLoadingBalance
 } = useSubscriptionCredits()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
-const { showPricingTable } = useSubscriptionDialog()
 const customerEventsService = useCustomerEventsService()
 const { showTopUpCreditsDialog } = useBillingDialogs()
 const telemetry = useTelemetry()
@@ -300,12 +292,6 @@ const creditPoolTotalCredits = computed<number | null>(() => {
   return isAnnualBilling.value ? monthlyCredits * 12 : monthlyCredits
 })
 
-// Tier decides the note, not the state: a lapsed sales-managed plan gets the
-// same disabled shape as self-serve (cloud#8001 closed its can_top_up, so the
-// old exclusion left a bare balance with no explanation) — only the route
-// back differs, the account manager rather than a Reactivate button. The
-// state keys on the prop rather than can_top_up because that capability is
-// rollout-defaulted and fails open for owners on an unreadable snapshot.
 const showsInactivePlanState = computed(() => inactivePlan === true)
 
 const inactiveCreditsNote = computed(() => {
@@ -428,12 +414,21 @@ const showBar = computed(
     creditPoolTotalCredits.value !== null &&
     creditPoolTotalCredits.value > 0
 )
-const showActionButton = computed(
-  () =>
-    (canTopUp.value || canSubscribeSelfServe.value) &&
-    !zeroState &&
-    !showsInactivePlanState.value
-)
+const creditsUseNote = computed(() => {
+  if (
+    !isCloud ||
+    canAccessSubscriptionFeatures.value ||
+    zeroState ||
+    showsInactivePlanState.value
+  ) {
+    return null
+  }
+  return t(
+    subscriptionStatus.value === 'ended'
+      ? 'subscription.resubscribeToUseCredits'
+      : 'subscription.subscribeToUseCredits'
+  )
+})
 
 const isMonthlyDepleted = computed(
   () =>
@@ -556,10 +551,6 @@ function handleAddCredits() {
   void showTopUpCreditsDialog({
     source: paymentIntentSourceForAddCreditsClick('credits_panel')
   })
-}
-
-function handleUpgradeToAddCredits() {
-  showPricingTable({ reason: 'upgrade_to_add_credits' })
 }
 
 async function handleWindowFocus() {
