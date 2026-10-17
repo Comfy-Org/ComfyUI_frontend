@@ -59,7 +59,8 @@ test.describe(
   { tag: ['@cloud', '@agent'] },
   () => {
     test('a turn the agent reports as done surfaces the incompatible-version notice instead of a silently empty canvas', async ({
-      page
+      page,
+      toast
     }) => {
       test.setTimeout(60_000)
       const host = new HostDoc(WORKFLOW_ID, SEED, CATALOG)
@@ -254,13 +255,10 @@ test.describe(
         .poll(() => committedNodeIds, { timeout: 20_000 })
         .toContain(String(ADDED_NODE_ID))
 
-      const notice = page.getByTestId('toast')
-      await expect(notice.getByText(SYNC_FAILED_TITLE)).toBeVisible({
+      await expect(toast.withText(SYNC_FAILED_TITLE)).toBeVisible({
         timeout: 15_000
       })
-      await expect(
-        notice.getByText(SYNC_FAILED_DETAIL, { exact: false })
-      ).toBeVisible()
+      await expect(toast.withText(SYNC_FAILED_DETAIL)).toBeVisible()
 
       await expect(vueNodes.getNodeLocator(String(ADDED_NODE_ID))).toHaveCount(
         0
