@@ -5,7 +5,7 @@ import {
   useIntersectionObserver,
   useResizeObserver
 } from '@vueuse/core'
-import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, provide, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -23,6 +23,7 @@ import type { ConversationEntry } from '../../stores/agent/agentConversationStor
 import type { TurnId } from '../../schemas/agentApiSchema'
 import type { PromptSnapshot } from '../../types/workflowReference'
 
+import { conversationFollowKey } from './conversationFollow'
 import AgentMessage from './message/AgentMessage.vue'
 import UserMessage from './message/UserMessage.vue'
 
@@ -74,12 +75,13 @@ watch([() => skills.enabled, () => skills.scope], () => {
 
 const scrollContainer = ref<HTMLElement>()
 const content = ref<HTMLElement>()
-const shouldFollowLatest = ref(true)
+const followIntent = ref<'latest' | 'reading' | 'paused'>('latest')
 const atBottom = ref(true)
 const bottomGracePx = 16
 const followIntentTolerancePx = 1
 let pendingProgrammaticScroll: { target: number; frame: number } | undefined
 let pendingConversationId: string | undefined
+let pausedTraceId: string | undefined
 
 const top = ref<HTMLElement>()
 const atTop = ref(true)
@@ -94,26 +96,62 @@ function clearPendingProgrammaticScroll(): void {
   pendingProgrammaticScroll = undefined
 }
 
-useEventListener(scrollContainer, 'pointerdown', clearPendingProgrammaticScroll)
-useEventListener(scrollContainer, 'keydown', clearPendingProgrammaticScroll)
-useEventListener(scrollContainer, 'wheel', clearPendingProgrammaticScroll, {
+function distanceFromEnd(element: HTMLElement): number {
+  return element.scrollHeight - element.scrollTop - element.clientHeight
+}
+
+function intentAt(element: HTMLElement): 'latest' | 'reading' {
+  return distanceFromEnd(element) <= followIntentTolerancePx
+    ? 'latest'
+    : 'reading'
+}
+
+function measureAtBottom(element: HTMLElement): boolean {
+  atBottom.value = distanceFromEnd(element) <= bottomGracePx
+  return atBottom.value
+}
+
+function handleUserScrollInput(event: Event): void {
+  clearPendingProgrammaticScroll()
+  const element = scrollContainer.value
+  if (followIntent.value !== 'paused' || !element) return
+  if (event.type === 'pointerdown' && event.target !== element) return
+  followIntent.value = intentAt(element)
+}
+
+useEventListener(scrollContainer, 'pointerdown', handleUserScrollInput)
+useEventListener(scrollContainer, 'keydown', handleUserScrollInput)
+useEventListener(scrollContainer, 'wheel', handleUserScrollInput, {
   passive: true
 })
-useEventListener(
-  scrollContainer,
-  'touchstart',
-  clearPendingProgrammaticScroll,
-  {
-    passive: true
-  }
-)
+useEventListener(scrollContainer, 'touchstart', handleUserScrollInput, {
+  passive: true
+})
 
 onBeforeUnmount(clearPendingProgrammaticScroll)
+
+function pauseFollowingForTrace(traceId: string): void {
+  clearPendingProgrammaticScroll()
+  pausedTraceId = traceId
+  followIntent.value = 'paused'
+}
+
+function resumeFollowingAfterTrace(traceId: string): void {
+  const element = scrollContainer.value
+  if (followIntent.value !== 'paused' || traceId !== pausedTraceId || !element)
+    return
+  followIntent.value = measureAtBottom(element) ? 'latest' : 'reading'
+}
+
+provide(conversationFollowKey, {
+  pauseForTrace: pauseFollowingForTrace,
+  traceSettled: resumeFollowingAfterTrace
+})
 
 function scrollToLatest(): void {
   const element = scrollContainer.value
   if (!element) return
-  shouldFollowLatest.value = true
+  followIntent.value = 'latest'
   atBottom.value = true
   const target = Math.max(0, element.scrollHeight - element.clientHeight)
   clearPendingProgrammaticScroll()
@@ -136,9 +174,7 @@ function scrollToLatest(): void {
 useEventListener(scrollContainer, 'scroll', () => {
   const element = scrollContainer.value
   if (!element) return
-  atBottom.value =
-    element.scrollHeight - element.scrollTop - element.clientHeight <=
-    bottomGracePx
+  measureAtBottom(element)
   if (
     pendingProgrammaticScroll &&
     Math.abs(element.scrollTop - pendingProgrammaticScroll.target) <=
@@ -147,23 +183,25 @@ useEventListener(scrollContainer, 'scroll', () => {
     clearPendingProgrammaticScroll()
     return
   }
-  shouldFollowLatest.value =
-    element.scrollHeight - element.scrollTop - element.clientHeight <=
-    followIntentTolerancePx
+  if (followIntent.value !== 'paused') followIntent.value = intentAt(element)
   clearPendingProgrammaticScroll()
 })
 
 function followLatestAfterResize(): void {
   const element = scrollContainer.value
   if (!element || element.clientHeight === 0) return
-  atBottom.value =
-    element.scrollHeight - element.scrollTop - element.clientHeight <=
-    bottomGracePx
-  if (shouldFollowLatest.value) scrollToLatest()
+  measureAtBottom(element)
+  if (followIntent.value === 'latest') scrollToLatest()
 }
 
 useResizeObserver(content, followLatestAfterResize)
 useResizeObserver(scrollContainer, followLatestAfterResize)
+
+const showLatest = computed(
+  () =>
+    followIntent.value === 'reading' ||
+    (followIntent.value === 'paused' && !atBottom.value)
+)
 
 const latestContentSignal = computed(() => {
   const last = entries.at(-1)
@@ -181,7 +219,7 @@ watch(
   (current, previous) => {
     if (current == null || previous == null) return
     pendingConversationId = current
-    shouldFollowLatest.value = true
+    followIntent.value = 'latest'
   }
 )
 
@@ -190,7 +228,7 @@ watch(
   async () => {
     if (entries.length === 0) {
       pendingConversationId = undefined
-      shouldFollowLatest.value = true
+      followIntent.value = 'latest'
       return
     }
     if (
@@ -199,7 +237,7 @@ watch(
     )
       return
     pendingConversationId = undefined
-    shouldFollowLatest.value = true
+    followIntent.value = 'latest'
     await nextTick()
     scrollToLatest()
   }
@@ -208,9 +246,9 @@ watch(
 watch(
   latestContentSignal,
   async () => {
-    if (!shouldFollowLatest.value) return
+    if (followIntent.value !== 'latest') return
     await nextTick()
-    if (!shouldFollowLatest.value) return
+    if (followIntent.value !== 'latest') return
     scrollToLatest()
   },
   { flush: 'post', immediate: true }
@@ -226,7 +264,8 @@ watch(
         cn(
           'h-full overflow-y-auto',
           !atTop && 'mask-t-from-[calc(100%-2rem)]',
-          !atBottom && 'mask-b-from-[calc(100%-2rem)]'
+          !atBottom && 'mask-b-from-[calc(100%-2rem)]',
+          followIntent === 'paused' && '[overflow-anchor:none]'
         )
       "
     >
@@ -271,7 +310,7 @@ watch(
     </div>
 
     <Button
-      v-if="!shouldFollowLatest"
+      v-if="showLatest"
       :tooltip="t('agent.latest')"
       type="button"
       variant="secondary"

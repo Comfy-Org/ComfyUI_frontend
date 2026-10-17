@@ -1,5 +1,6 @@
 import { zGlobalSettingValue } from '@comfyorg/ingest-types/zod'
 import type { Page, Route, WebSocketRoute } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 import type {
   AgentThreadListResponse,
@@ -19,7 +20,10 @@ import type {
   AgentTurnAccepted,
   AgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-import { zAgentAdmissionError } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import {
+  zAgentAdmissionError,
+  zAgentWsEvent
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
@@ -279,6 +283,94 @@ export const MESSAGE_DONE_EVENT: AgentWsEvent = {
       cache_creation_input_tokens: 0
     }
   }
+}
+
+function pushTurnEvent(
+  ws: WebSocketRoute,
+  event: AgentWsEvent,
+  messageId: string
+): void {
+  pushAgentEvent(
+    ws,
+    zAgentWsEvent.parse({
+      ...event,
+      data: { ...event.data, message_id: messageId }
+    })
+  )
+}
+
+export function pushThinking(
+  ws: WebSocketRoute,
+  delta: string,
+  messageId = TURN_ID
+): void {
+  pushTurnEvent(ws, thinkingEvent(delta), messageId)
+}
+
+export function pushDelta(
+  ws: WebSocketRoute,
+  delta: string,
+  messageId?: string
+): void {
+  if (MESSAGE_DELTA_EVENT.type !== 'agent_message_delta')
+    throw new Error('message delta fixture has the wrong event type')
+  pushAgentEvent(ws, {
+    type: 'agent_message_delta',
+    data: {
+      ...MESSAGE_DELTA_EVENT.data,
+      delta,
+      message_id: messageId ?? MESSAGE_DELTA_EVENT.data.message_id
+    }
+  })
+}
+
+export async function finishWorkedTurnAfterLongReply({
+  acceptedTurns,
+  agentPanel,
+  socket
+}: {
+  acceptedTurns: AgentTurnAccepted[]
+  agentPanel: AgentPanel
+  socket: WebSocketRoute
+}): Promise<void> {
+  const userMessages = agentPanel.root.getByTestId('user-message-bubble')
+  await agentPanel.sendMessage('Explain this workflow in detail')
+  await expect(userMessages).toHaveText(['Explain this workflow in detail'])
+  pushDelta(
+    socket,
+    Array.from(
+      { length: 40 },
+      (_, index) => `Paragraph ${index + 1}: workflow detail.\n\n`
+    ).join('')
+  )
+  socket.send(JSON.stringify(MESSAGE_DONE_EVENT))
+  await expect(
+    agentPanel.root.getByText('Paragraph 40: workflow detail.', {
+      exact: true
+    })
+  ).toBeInViewport()
+
+  await agentPanel.sendMessage('Plan this workflow')
+  await expect(userMessages).toHaveText([
+    'Explain this workflow in detail',
+    'Plan this workflow'
+  ])
+  expect(acceptedTurns).toHaveLength(2)
+  const planTurn = acceptedTurns[1].message_id
+  pushThinking(
+    socket,
+    Array.from(
+      { length: 3 },
+      (_, index) => `Step ${index + 1}: check the graph.`
+    ).join('\n\n'),
+    planTurn
+  )
+  pushTurnEvent(socket, TOOL_CALL_EVENT, planTurn)
+  pushDelta(socket, 'Done.', planTurn)
+  pushTurnEvent(socket, MESSAGE_DONE_EVENT, planTurn)
+
+  await expect(agentPanel.workSummary).toHaveAttribute('aria-expanded', 'false')
+  await agentPanel.waitForConversationToSettle()
 }
 
 function agentFeatures(agentFlag: boolean): RemoteConfig {
