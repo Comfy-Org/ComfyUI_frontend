@@ -298,6 +298,7 @@
                   size="lg"
                   variant="secondary"
                   class="rounded-lg bg-interface-menu-component-surface-selected px-4 text-sm font-normal text-text-primary"
+                  :data-dd-action-name="BILLING_ACTION_NAME.upgradePlanPanel"
                   @click="handleUpgrade"
                 >
                   {{
@@ -411,6 +412,7 @@
 </template>
 
 <script setup lang="ts">
+import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
 import { useSettingsHeaderCollapse } from '@/platform/settings/composables/useSettingsHeaderCollapse'
 import { cn } from '@comfyorg/tailwind-utils'
 import { useTimestamp } from '@vueuse/core'

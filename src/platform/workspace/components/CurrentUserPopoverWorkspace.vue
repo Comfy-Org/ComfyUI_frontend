@@ -117,6 +117,7 @@
         size="sm"
         class="text-base-foreground"
         data-testid="add-credits-button"
+        :data-dd-action-name="BILLING_ACTION_NAME.addCreditsPopover"
         @click="handleTopUp"
       >
         {{ $t('subscription.addCredits') }}
@@ -178,6 +179,7 @@
       type="button"
       class="flex w-full cursor-pointer appearance-none items-center gap-2 border-0 bg-transparent px-4 py-2 text-left hover:bg-secondary-background-hover focus-visible:bg-secondary-background-hover focus-visible:outline-none"
       data-testid="manage-plan-menu-item"
+      :data-dd-action-name="BILLING_ACTION_NAME.managePlanPopover"
       @click="handleOpenManagePlanSettings"
     >
       <i class="icon-[lucide--credit-card] size-4 text-muted-foreground" />
@@ -259,6 +261,7 @@
 </template>
 
 <script setup lang="ts">
+import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
 import { onClickOutside } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import Skeleton from 'primevue/skeleton'
