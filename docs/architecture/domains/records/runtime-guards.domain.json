@@ -4,11 +4,11 @@
   "description": "Shared technical module for runtime narrowing of abort errors, nullable values, graph entities, slots, and result-item variants. The combined file imports types from multiple modules and remains an extraction candidate.",
   "modules": [
     {
-      "path": "src/utils/typeGuardUtil.ts",
+      "path": "src/utils/typeGuardUtil.test.ts",
       "role": "domain"
     },
     {
-      "path": "src/utils/typeGuardUtil.test.ts",
+      "path": "src/utils/typeGuardUtil.ts",
       "role": "domain"
     }
   ],

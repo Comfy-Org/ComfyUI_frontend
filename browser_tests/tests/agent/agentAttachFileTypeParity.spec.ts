@@ -42,11 +42,11 @@ test.describe(
 
       await expect(agentPanel.fileInput).toHaveAttribute(
         'accept',
-        /(^|,)video\/\*(,|$)/
+        /(^|,)\.mp4(,|$)/
       )
       await expect(agentPanel.fileInput).toHaveAttribute(
         'accept',
-        /(^|,)audio\/\*(,|$)/
+        /(^|,)\.wav(,|$)/
       )
 
       await agentPanel.fileInput.setInputFiles([
@@ -123,8 +123,6 @@ test.describe(
       )
 
       expect(dropped).not.toBe('ignored')
-
-      test.fail()
       expect(
         dropped,
         `the file browser answered "${picked}"; a drop of the same file must answer the same`

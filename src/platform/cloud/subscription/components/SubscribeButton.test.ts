@@ -14,6 +14,7 @@ import SubscribeButton from './SubscribeButton.vue'
 
 vi.mock(import('@/platform/telemetry'))
 vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/composables/billing/useSubscriptionPaywall'))
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
 function renderComponent() {

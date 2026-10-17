@@ -17,12 +17,7 @@ vi.mock(import('@/config'), () => ({
 
 vi.mock(import('@/scripts/app'))
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    getSettings: vi.fn(() => Promise.resolve({})),
-    storeSetting: vi.fn(() => Promise.resolve(undefined))
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 const i18n = createI18n({
   legacy: false,

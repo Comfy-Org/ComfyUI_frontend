@@ -2,6 +2,12 @@ import * as THREE from 'three'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type Load3d from '@/extensions/core/load3d/Load3d'
+import {
+  copyLoad3dState,
+  getNodeByLoad3d,
+  handleViewportRefresh,
+  removeLoad3d
+} from '@/extensions/core/load3d/load3dInstances'
 import { QuadWireframeOverlay } from '@/extensions/core/load3d/quadWireframe/QuadWireframeManager'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useLoad3dService } from '@/services/load3dService'
@@ -120,14 +126,14 @@ describe('load3dService', () => {
       nodeMap.set(node, load3d)
       await svc.getLoad3dAsync(node)
 
-      expect(svc.getNodeByLoad3d(load3d)).toBe(node)
+      expect(getNodeByLoad3d(load3d)).toBe(node)
     })
 
     it('returns null when the Load3d instance is not in the map', async () => {
       const svc = useLoad3dService()
       await svc.getLoad3dAsync(makeNode('warmup'))
 
-      expect(svc.getNodeByLoad3d(makeLoad3d())).toBeNull()
+      expect(getNodeByLoad3d(makeLoad3d())).toBeNull()
     })
   })
 
@@ -139,7 +145,7 @@ describe('load3dService', () => {
       nodeMap.set(node, load3d)
       await svc.getLoad3dAsync(node)
 
-      svc.removeLoad3d(node)
+      removeLoad3d(node)
 
       expect(load3d.remove).toHaveBeenCalled()
       expect(nodeMap.has(node)).toBe(false)
@@ -149,7 +155,7 @@ describe('load3dService', () => {
       const svc = useLoad3dService()
       await svc.getLoad3dAsync(makeNode('warmup'))
 
-      expect(() => svc.removeLoad3d(makeNode('not-there'))).not.toThrow()
+      expect(() => removeLoad3d(makeNode('not-there'))).not.toThrow()
     })
   })
 
@@ -272,7 +278,7 @@ describe('load3dService', () => {
 
   describe('handleViewportRefresh', () => {
     it('returns silently when the load3d is null', () => {
-      expect(() => useLoad3dService().handleViewportRefresh(null)).not.toThrow()
+      expect(() => handleViewportRefresh(null)).not.toThrow()
     })
 
     it('toggles the camera through the opposite type and back, then updates controls', () => {
@@ -284,7 +290,7 @@ describe('load3dService', () => {
         getControlsManager: vi.fn().mockReturnValue({ controls })
       } as unknown as Load3d
 
-      useLoad3dService().handleViewportRefresh(load3d)
+      handleViewportRefresh(load3d)
 
       expect(load3d.handleResize).toHaveBeenCalled()
       expect(load3d.toggleCamera).toHaveBeenNthCalledWith(1, 'orthographic')
@@ -301,7 +307,7 @@ describe('load3dService', () => {
         getControlsManager: vi.fn().mockReturnValue({ controls })
       } as unknown as Load3d
 
-      useLoad3dService().handleViewportRefresh(load3d)
+      handleViewportRefresh(load3d)
 
       expect(load3d.toggleCamera).toHaveBeenNthCalledWith(1, 'perspective')
       expect(load3d.toggleCamera).toHaveBeenNthCalledWith(2, 'orthographic')
@@ -533,7 +539,7 @@ describe('load3dService', () => {
       const { target } = makeTarget()
       skeletonCloneMock.mockReturnValue(makeModel())
 
-      await useLoad3dService().copyLoad3dState(source, target)
+      await copyLoad3dState(source, target)
 
       expect(target.toggleCamera).toHaveBeenCalledWith('perspective')
       expect(target.setCameraState).toHaveBeenCalledWith({ snapshot: true })
@@ -553,7 +559,7 @@ describe('load3dService', () => {
       })
       const { target } = makeTarget()
 
-      await useLoad3dService().copyLoad3dState(source, target)
+      await copyLoad3dState(source, target)
 
       expect(target.loadModel).toHaveBeenCalledWith(
         'http://example.com/scan.splat'
@@ -570,7 +576,7 @@ describe('load3dService', () => {
       const { target } = makeTarget()
       vi.mocked(target.loadModel).mockResolvedValue('cancelled')
 
-      await useLoad3dService().copyLoad3dState(source, target)
+      await copyLoad3dState(source, target)
 
       expect(target.toggleCamera).not.toHaveBeenCalled()
       expect(target.setCameraState).not.toHaveBeenCalled()
@@ -589,7 +595,7 @@ describe('load3dService', () => {
       })
       const { target } = makeTarget()
 
-      await useLoad3dService().copyLoad3dState(source, target)
+      await copyLoad3dState(source, target)
 
       expect(target.loadModel).not.toHaveBeenCalled()
     })
@@ -602,7 +608,7 @@ describe('load3dService', () => {
       const clone = makeModel()
       skeletonCloneMock.mockReturnValue(clone)
 
-      await useLoad3dService().copyLoad3dState(source, target)
+      await copyLoad3dState(source, target)
 
       expect(state.sceneRemoved).toContain(existing)
       expect(state.sceneAdded).toContain(clone)
@@ -616,7 +622,7 @@ describe('load3dService', () => {
         state.modelManager.showSkeleton = false
       })
 
-      await useLoad3dService().copyLoad3dState(source, target)
+      await copyLoad3dState(source, target)
 
       expect(state.modelManager.showSkeleton).toBe(true)
     })
@@ -641,7 +647,7 @@ describe('load3dService', () => {
       const clone = sourceModel.clone(true)
       skeletonCloneMock.mockReturnValue(clone)
 
-      await useLoad3dService().copyLoad3dState(source, target)
+      await copyLoad3dState(source, target)
 
       const cloneMesh = firstMesh(clone)
       expect(cloneMesh.material).not.toBe(original)
@@ -673,7 +679,7 @@ describe('load3dService', () => {
         applied = true
       })
 
-      await useLoad3dService().copyLoad3dState(source, target)
+      await copyLoad3dState(source, target)
 
       expect(applied).toBe(true)
       expect(state.modelManager.materialMode).toBe('wireframe')
@@ -686,7 +692,7 @@ describe('load3dService', () => {
       const { target, state } = makeTarget()
       skeletonCloneMock.mockReturnValue(clone)
 
-      await useLoad3dService().copyLoad3dState(source, target)
+      await copyLoad3dState(source, target)
 
       expect(skeletonCloneMock).toHaveBeenCalledWith(sourceModel)
       expect(state.modelManager.currentModel).toBe(clone)
@@ -710,8 +716,8 @@ describe('load3dService', () => {
         .mockReturnValueOnce(firstClone)
         .mockReturnValueOnce(secondClone)
 
-      await useLoad3dService().copyLoad3dState(source, target)
-      await useLoad3dService().copyLoad3dState(source, target)
+      await copyLoad3dState(source, target)
+      await copyLoad3dState(source, target)
 
       const firstMesh = firstClone.children[0]
       const secondMesh = secondClone.children[0]
@@ -749,7 +755,7 @@ describe('load3dService', () => {
       const { target } = makeTarget()
       skeletonCloneMock.mockReturnValueOnce(clone)
 
-      await useLoad3dService().copyLoad3dState(source, target)
+      await copyLoad3dState(source, target)
 
       const line = clone.children[0]
       if (!(line instanceof THREE.LineSegments)) {
@@ -772,7 +778,7 @@ describe('load3dService', () => {
       const { target, state } = makeTarget()
       skeletonCloneMock.mockReturnValue(makeModel())
 
-      await useLoad3dService().copyLoad3dState(source, target)
+      await copyLoad3dState(source, target)
 
       expect(state.modelManager.originalModel).toBe(sourceOriginal)
       expect(state.modelManager.currentUpDirection).toBe('+y')
@@ -788,7 +794,7 @@ describe('load3dService', () => {
       const { target } = makeTarget()
       skeletonCloneMock.mockReturnValue(clone)
 
-      await useLoad3dService().copyLoad3dState(source, target)
+      await copyLoad3dState(source, target)
 
       expect(clone.position.toArray()).toEqual([1, 2, 3])
       expect(clone.rotation.toArray().slice(0, 3)).toEqual([0.1, 0.2, 0.3])
@@ -800,7 +806,7 @@ describe('load3dService', () => {
       const { target } = makeTarget()
       skeletonCloneMock.mockReturnValue(makeModel())
 
-      await useLoad3dService().copyLoad3dState(source, target)
+      await copyLoad3dState(source, target)
 
       expect(target.applyGizmoTransform).toHaveBeenCalledWith(
         { x: 7, y: 8, z: 9 },
@@ -817,7 +823,7 @@ describe('load3dService', () => {
       const { target } = makeTarget({ gizmoEnabled: false })
       skeletonCloneMock.mockReturnValue(makeModel())
 
-      await useLoad3dService().copyLoad3dState(source, target)
+      await copyLoad3dState(source, target)
 
       expect(target.setGizmoEnabled).toHaveBeenCalledWith(true)
     })
@@ -830,7 +836,7 @@ describe('load3dService', () => {
       const { target } = makeTarget({ gizmoEnabled: true })
       skeletonCloneMock.mockReturnValue(makeModel())
 
-      await useLoad3dService().copyLoad3dState(source, target)
+      await copyLoad3dState(source, target)
 
       expect(target.setGizmoEnabled).toHaveBeenCalledWith(true)
     })
@@ -843,7 +849,7 @@ describe('load3dService', () => {
       const { target } = makeTarget({ gizmoEnabled: false })
       skeletonCloneMock.mockReturnValue(makeModel())
 
-      await useLoad3dService().copyLoad3dState(source, target)
+      await copyLoad3dState(source, target)
 
       expect(target.setGizmoEnabled).not.toHaveBeenCalled()
     })
@@ -859,7 +865,7 @@ describe('load3dService', () => {
       const { target, state } = makeTarget()
       skeletonCloneMock.mockReturnValue(clone)
 
-      await useLoad3dService().copyLoad3dState(source, target)
+      await copyLoad3dState(source, target)
 
       expect(state.animationManager.setupModelAnimations).toHaveBeenCalledWith(
         clone,
@@ -875,7 +881,7 @@ describe('load3dService', () => {
       const { target, state } = makeTarget()
       skeletonCloneMock.mockReturnValue(makeModel())
 
-      await useLoad3dService().copyLoad3dState(source, target)
+      await copyLoad3dState(source, target)
 
       expect(state.animationManager.setupModelAnimations).not.toHaveBeenCalled()
     })
@@ -892,7 +898,7 @@ describe('load3dService', () => {
       await useLoad3dService().getLoad3dAsync(node)
       const { target } = makeTarget()
 
-      await useLoad3dService().copyLoad3dState(source, target)
+      await copyLoad3dState(source, target)
 
       expect(target.setBackgroundImage).toHaveBeenCalledWith('3d/bg.png')
     })
@@ -901,7 +907,7 @@ describe('load3dService', () => {
       const source = makeSource({ backgroundInfo: { type: 'color' } })
       const { target } = makeTarget()
 
-      await useLoad3dService().copyLoad3dState(source, target)
+      await copyLoad3dState(source, target)
 
       expect(target.setBackgroundImage).toHaveBeenCalledWith('')
     })
@@ -910,7 +916,7 @@ describe('load3dService', () => {
       const source = makeSource({ lightsIntensity: 0 })
       const { target } = makeTarget()
 
-      await useLoad3dService().copyLoad3dState(source, target)
+      await copyLoad3dState(source, target)
 
       expect(target.setLightIntensity).toHaveBeenCalledWith(1)
     })
@@ -919,7 +925,7 @@ describe('load3dService', () => {
       const source = makeSource({ cameraType: 'orthographic' })
       const { target } = makeTarget()
 
-      await useLoad3dService().copyLoad3dState(source, target)
+      await copyLoad3dState(source, target)
 
       expect(target.setFOV).not.toHaveBeenCalled()
     })
@@ -929,7 +935,7 @@ describe('load3dService', () => {
       const { target, state } = makeTarget()
       skeletonCloneMock.mockReturnValue(makeModel())
 
-      await useLoad3dService().copyLoad3dState(source, target)
+      await copyLoad3dState(source, target)
 
       expect(state.gizmoManager.detach).toHaveBeenCalled()
     })
@@ -940,7 +946,7 @@ describe('load3dService', () => {
       const { target, state } = makeTarget()
       skeletonCloneMock.mockReturnValue(clone)
 
-      await useLoad3dService().copyLoad3dState(source, target)
+      await copyLoad3dState(source, target)
 
       expect(state.gizmoManager.setupForModel).toHaveBeenCalledWith(clone)
     })

@@ -23,7 +23,7 @@
       <Button
         variant="secondary"
         size="lg"
-        class="rounded-lg px-4 text-sm font-normal"
+        class="font-normal"
         :loading="isLoading"
         @click="handleRetry"
       >
@@ -46,7 +46,7 @@
         </span>
         <p class="m-0 text-2xl font-semibold text-base-foreground">
           {{ upcomingAmount }}
-          <span class="text-base font-normal text-base-foreground">
+          <span class="text-base font-normal">
             {{ $t('workspacePanel.invoices.usd') }}
           </span>
         </p>

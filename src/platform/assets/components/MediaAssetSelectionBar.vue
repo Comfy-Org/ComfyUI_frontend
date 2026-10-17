@@ -11,7 +11,7 @@
         type="button"
         data-testid="assets-deselect-selected"
         :aria-label="$t('mediaAsset.selection.deselectAll')"
-        class="rounded-lg hover:bg-base-background/10"
+        class="hover:bg-base-background/10"
         @click="emit('deselect')"
       >
         <i class="icon-[lucide--x] size-4" />
@@ -27,7 +27,7 @@
           type="button"
           data-testid="assets-download-selected"
           :aria-label="$t('mediaAsset.selection.downloadSelected')"
-          class="rounded-lg hover:bg-base-background/10"
+          class="hover:bg-base-background/10"
           @click="emit('download')"
         >
           <i class="icon-[lucide--download] size-4" />
@@ -41,7 +41,7 @@
             type="button"
             data-testid="assets-delete-selected"
             :aria-label="$t('mediaAsset.selection.deleteSelected')"
-            class="rounded-lg hover:bg-base-background/10"
+            class="hover:bg-base-background/10"
             @click="emit('delete')"
           >
             <i class="icon-[lucide--trash-2] size-4" />

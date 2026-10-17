@@ -158,33 +158,6 @@ describe('useFeatureFlags', () => {
     })
   })
 
-  describe('embeddedCheckoutEnabled', () => {
-    it.for([
-      ['missing', undefined, false],
-      ['false', false, false],
-      ['malformed', 'true', false],
-      ['true', true, true]
-    ] as const)('is fail-closed for %s values', ([, value, expected]) => {
-      vi.mocked(api.getServerFeature).mockReturnValue(value)
-
-      const { flags } = useFeatureFlags()
-
-      expect(flags.embeddedCheckoutEnabled).toBe(expected)
-      expect(api.getServerFeature).toHaveBeenCalledWith(
-        ServerFeatureFlag.EMBEDDED_CHECKOUT_ENABLED,
-        false
-      )
-    })
-
-    it('is false when feature lookup throws', () => {
-      vi.mocked(api.getServerFeature).mockImplementation(() => {
-        throw new Error('feature service unavailable')
-      })
-
-      expect(useFeatureFlags().flags.embeddedCheckoutEnabled).toBe(false)
-    })
-  })
-
   describe('hostedBillingDestination', () => {
     afterEach(() => {
       remoteConfig.value = {}

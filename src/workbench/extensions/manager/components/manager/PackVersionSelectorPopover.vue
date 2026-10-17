@@ -79,7 +79,7 @@
       </Button>
       <Button
         variant="secondary"
-        class="rounded-lg bg-secondary-background px-4 py-2.5 text-sm text-base-foreground"
+        class="px-4 py-2.5 text-sm"
         :disabled="isInstallDisabled"
         @click="handleSubmit"
       >

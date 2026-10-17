@@ -21,7 +21,10 @@ import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
 import { useAgentMentionPicker } from '../../composables/agent/useAgentMentionPicker'
 import { useSkillMenuDescription } from '../../composables/agent/useSkillMenuDescription'
 import { useWorkflowReferencePicker } from '../../composables/agent/useWorkflowReferencePicker'
-import type { ComposerAttachment } from '../../types/composerAttachment'
+import type {
+  AttachmentValidationError,
+  ComposerAttachment
+} from '../../types/composerAttachment'
 import type { MentionSection } from '../../composables/agent/mentionPickerState'
 import { useComposer } from '../../composables/agent/useComposer'
 import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
@@ -362,16 +365,23 @@ const primaryActionLabel = computed(() =>
 const primaryActionVariant = computed(() =>
   running.value ? 'secondary' : 'inverted'
 )
+const SEND_BLOCKED_MESSAGES = {
+  'invalid-video': 'agent.sendBlockedByInvalidVideo',
+  'unsupported-type': 'agent.sendBlockedByUnsupportedType'
+} as const satisfies Record<AttachmentValidationError, string>
+
 const sendBlockedReason = computed(() => {
-  const invalid = composer.attachments.value.filter(
-    (item) => item.validationError
+  const invalid = composer.attachments.value.flatMap(
+    ({ name, validationError }) =>
+      validationError ? [{ name, validationError }] : []
   )
   if (running.value || invalid.length === 0) return undefined
-  return t(
-    'agent.sendBlockedByInvalidVideo',
-    { name: invalid[0].name, count: invalid.length },
-    invalid.length
-  )
+  if (invalid.length > 1)
+    return t('agent.sendBlockedByInvalidAttachments', {
+      count: invalid.length
+    })
+  const [{ name, validationError }] = invalid
+  return t(SEND_BLOCKED_MESSAGES[validationError], { name })
 })
 const primaryActionTooltip = computed(
   () => sendBlockedReason.value ?? primaryActionLabel.value

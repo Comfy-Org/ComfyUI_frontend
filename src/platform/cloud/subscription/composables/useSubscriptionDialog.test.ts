@@ -366,21 +366,6 @@ describe('useSubscriptionDialog', () => {
       const props = mockShowLayoutDialog.mock.calls[0][0].props
       expect(props.initialPlanMode).toBe('personal')
       expect(props).not.toHaveProperty('onChooseTeam')
-      expect(props.embeddedCheckoutEnabled).toBe(false)
-    })
-
-    it('enables embedded checkout only for the exact server flag', () => {
-      useBillingRouting().type = computed(() => 'workspace')
-      useBillingRouting().shouldUseWorkspaceBilling = computed(() => true)
-      useBillingRouting().shouldUseUnifiedPricing = computed(() => true)
-      vi.mocked(useFeatureFlags().flags).embeddedCheckoutEnabled = true
-      const { showPricingTable } = useSubscriptionDialog()
-
-      showPricingTable()
-
-      expect(
-        mockShowLayoutDialog.mock.calls[0][0].props.embeddedCheckoutEnabled
-      ).toBe(true)
     })
 
     it('routes an existing per-member (legacy) team subscriber to the old team table', () => {
@@ -474,6 +459,32 @@ describe('useSubscriptionDialog', () => {
       expect(useTelemetry()?.trackSubscription).toHaveBeenCalledWith(
         'modal_opened',
         expect.objectContaining({ reason: 'subscribe_to_run' })
+      )
+    })
+
+    it('splits a subscribe-to-run modal_opened by the selected workspace', () => {
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspace: {
+          id: 'owner-personal-team-plan',
+          type: 'personal',
+          role: 'member',
+          subscriptionTier: 'TEAM'
+        }
+      })
+      const { showPricingTable } = useSubscriptionDialog()
+
+      showPricingTable({ reason: 'subscribe_to_run' })
+
+      expect(useTelemetry()?.trackSubscription).toHaveBeenCalledWith(
+        'modal_opened',
+        expect.objectContaining({
+          reason: 'subscribe_to_run',
+          workspace_id: 'owner-personal-team-plan',
+          workspace_type: 'personal',
+          workspace_role: 'member',
+          workspace_tier: 'TEAM',
+          auth_rail: 'token'
+        })
       )
     })
 

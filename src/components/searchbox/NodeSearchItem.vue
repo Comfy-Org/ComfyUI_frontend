@@ -27,7 +27,7 @@
       </div>
       <div
         v-if="showCategory"
-        class="option-category truncate text-sm font-light text-muted-foreground"
+        class="option-category truncate font-light text-muted-foreground"
       >
         {{ nodeDef.category.replaceAll('/', ' > ') }}
       </div>
@@ -63,8 +63,8 @@ import HighlightedText from '@/components/searchbox/HighlightedText.vue'
 import Badge from '@/components/ui/badge/Badge.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { useNodeFrequencyStore } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
+import { useNodeFrequencyStore } from '@/stores/nodeFrequencyStore'
 import { NodeSourceType } from '@/types/nodeSource'
 import { formatNumberWithSuffix } from '@/utils/formatUtil'
 

@@ -17,7 +17,7 @@
       class="border-b border-border-default last:border-b-0"
     >
       <div
-        class="sticky top-0 z-10 flex h-14 w-full items-center justify-between border-0 bg-comfy-menu-bg px-4 text-sm font-bold tracking-wide text-muted-foreground"
+        class="sticky top-0 z-10 flex h-14 w-full items-center justify-between bg-comfy-menu-bg px-4 text-sm font-bold tracking-wide text-muted-foreground"
       >
         <span class="uppercase">{{ $t(`essentials.${section.key}`) }}</span>
       </div>

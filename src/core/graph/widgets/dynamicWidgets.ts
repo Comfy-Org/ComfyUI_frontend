@@ -21,7 +21,7 @@ import {
   zDynamicComboInputSpec,
   zMatchTypeOptions
 } from '@/schemas/nodeDefSchema'
-import { useLitegraphService } from '@/services/litegraphService'
+import { useLitegraphServiceAccess } from '@/core/graph/litegraphServiceAccess'
 import { useApp } from '@/scripts/appInstance'
 import type { ComfyApp } from '@/types/comfy'
 import {
@@ -104,7 +104,7 @@ function dynamicComboWidget(
   appArg: ComfyApp,
   widgetName?: string
 ) {
-  const { addNodeInput } = useLitegraphService()
+  const { addNodeInput } = useLitegraphServiceAccess()
   const { deleteWidget } = useWidgetValueStore()
   const parseResult = zDynamicComboInputSpec.safeParse(untypedInputData)
   if (!parseResult.success) throw new Error('invalid DynamicCombo spec')
@@ -422,7 +422,7 @@ function withComfyMatchType(node: LGraphNode): asserts node is MatchTypeNode {
 }
 
 function applyMatchType(node: LGraphNode, inputSpec: InputSpecV2) {
-  const { addNodeInput } = useLitegraphService()
+  const { addNodeInput } = useLitegraphServiceAccess()
   const name = inputSpec.name
   const parseResult = zMatchTypeOptions.safeParse(inputSpec)
   if (!parseResult.success) {
@@ -482,7 +482,7 @@ function addAutogrowGroup(
   groupName: string,
   node: AutogrowNode
 ) {
-  const { addNodeInput } = useLitegraphService()
+  const { addNodeInput } = useLitegraphServiceAccess()
   const { max, min, inputSpecs } = node.comfyDynamic.autogrow[groupName]
   if (ordinal >= max) return
 

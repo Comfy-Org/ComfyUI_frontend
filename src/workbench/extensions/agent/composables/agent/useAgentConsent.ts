@@ -184,7 +184,6 @@ export function useAgentConsent() {
         component: AgentConsentCard,
         props: {
           title: t('agent.consent.title'),
-          titleId: CONSENT_DIALOG_KEY,
           paragraphs: [t('agent.consent.body1'), t('agent.consent.body2')],
           videoSources: CONSENT_VIDEO_SOURCES,
           posterSrc: CONSENT_POSTER_SRC,

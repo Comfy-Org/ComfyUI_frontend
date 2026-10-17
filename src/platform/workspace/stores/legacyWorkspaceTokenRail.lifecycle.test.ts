@@ -1,6 +1,7 @@
 import { ref, shallowRef } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { provideEnsureSessionCookie } from '@/platform/auth/session/sessionCookieAccess'
 import type { LegacyWorkspaceTokenRailDeps } from '@/platform/workspace/stores/legacyWorkspaceTokenRail'
 import { createLegacyWorkspaceTokenRail } from '@/platform/workspace/stores/legacyWorkspaceTokenRail'
 import {
@@ -9,7 +10,6 @@ import {
 } from '@/platform/workspace/workspaceConstants'
 import type { WorkspaceIdentity } from '@/platform/workspace/workspaceTypes'
 
-const mockEnsureSessionCookie = vi.hoisted(() => vi.fn())
 const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
 
 vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
@@ -18,9 +18,8 @@ vi.mock(import('@/platform/workspace/api/workspaceApiUrl'), () => ({
   workspaceApiUrl: (route: string) => `https://api.example.com/api${route}`
 }))
 
-vi.mock<unknown>(import('@/platform/auth/session/useSessionCookie'), () => ({
-  useSessionCookie: () => ({ ensureSessionCookie: mockEnsureSessionCookie })
-}))
+const mockEnsureSessionCookie = vi.fn<() => Promise<void>>()
+provideEnsureSessionCookie(mockEnsureSessionCookie)
 
 const workspace: WorkspaceIdentity = {
   id: 'workspace-123',
