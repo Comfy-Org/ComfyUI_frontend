@@ -4627,6 +4627,7 @@
     "bundleTooMany": "You have too many pending uploads. Try again later; they expire after 24 hours.",
     "bundleTooLarge": "This installation is too large to upload.",
     "bundleUnavailable": "Could not reach Comfy. Try again later.",
+    "bundleBusy": "Comfy is busy. Try again in a moment.",
     "bundleRejected": "Comfy rejected the upload. The problem has been reported."
   },
   "openSharedWorkflow": {

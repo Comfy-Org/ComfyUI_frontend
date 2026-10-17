@@ -36,6 +36,7 @@ const FAILURE_MESSAGE_KEY = {
   too_many_bundles: 'deployToComfyApi.bundleTooMany',
   too_large: 'deployToComfyApi.bundleTooLarge',
   offline: 'deployToComfyApi.bundleUnavailable',
+  busy: 'deployToComfyApi.bundleBusy',
   unavailable: 'deployToComfyApi.bundleUnavailable',
   invalid_request: 'deployToComfyApi.bundleRejected'
 } satisfies Record<BundleFailureReason, string>
