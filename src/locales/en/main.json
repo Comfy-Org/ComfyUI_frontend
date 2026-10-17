@@ -4626,7 +4626,8 @@
     "bundleUnauthorized": "Sign in to your Comfy account again, then try once more.",
     "bundleTooMany": "You have too many pending uploads. Try again later; they expire after 24 hours.",
     "bundleTooLarge": "This installation is too large to upload.",
-    "bundleUnavailable": "Could not reach Comfy. Try again later."
+    "bundleUnavailable": "Could not reach Comfy. Try again later.",
+    "bundleRejected": "Comfy rejected the upload. The problem has been reported."
   },
   "openSharedWorkflow": {
     "dialogTitle": "Open shared workflow",

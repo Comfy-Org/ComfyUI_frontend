@@ -37,7 +37,7 @@ const FAILURE_MESSAGE_KEY = {
   too_large: 'deployToComfyApi.bundleTooLarge',
   offline: 'deployToComfyApi.bundleUnavailable',
   unavailable: 'deployToComfyApi.bundleUnavailable',
-  invalid_request: 'deployToComfyApi.bundleUnavailable'
+  invalid_request: 'deployToComfyApi.bundleRejected'
 } satisfies Record<BundleFailureReason, string>
 
 const REPORTED_REASONS: ReadonlySet<BundleFailureReason> = new Set([
