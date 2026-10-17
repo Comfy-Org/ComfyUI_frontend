@@ -1,5 +1,6 @@
 import { setTelemetryRegistry } from '@/platform/telemetry'
 import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import type { BillingCapabilitiesResponse } from '@comfyorg/ingest-types'
@@ -552,6 +553,91 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canTopUp.value).toBe(false)
     expect(billingCapabilities.isReady.value).toBe(false)
     expect(workspaceApi.getBillingCapabilities).not.toHaveBeenCalled()
+  })
+
+  describe('for an API-key-only local session', () => {
+    function signInWithApiKey(ownerId: string | null) {
+      Object.assign(useApiKeyAuthStore(), {
+        currentUser: ownerId === null ? null : { id: ownerId }
+      })
+    }
+
+    beforeEach(async () => {
+      mockIsCloud.value = false
+      Object.assign(useAuthStore(), { userId: undefined, currentUser: null })
+      signInWithApiKey('key-owner-1')
+      await nextTick()
+    })
+
+    it.for([true, false])(
+      'reaches the ready state with the served top-up capability (%s)',
+      async (served) => {
+        vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce(
+          capabilitiesResponse(served, 'workspace-1', false)
+        )
+
+        await billingCapabilities.initialize()
+
+        expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledOnce()
+        expect(billingCapabilities.isReady.value).toBe(true)
+        expect(billingCapabilities.snapshotAuthoritative.value).toBe(true)
+        expect(billingCapabilities.canTopUp.value).toBe(served)
+        expect(billingCapabilities.canSubscribeSelfServe.value).toBe(false)
+      }
+    )
+
+    it('reaches the ready state with every capability withheld when the server denies the key', async () => {
+      vi.mocked(workspaceApi.getBillingCapabilities).mockRejectedValueOnce(
+        new WorkspaceApiError('Workspace context required', 401)
+      )
+
+      await billingCapabilities.initialize()
+
+      expect(billingCapabilities.isReady.value).toBe(true)
+      expect(billingCapabilities.hasResolvedCapabilities.value).toBe(false)
+      expect(billingCapabilities.canTopUp.value).toBe(false)
+      expect(billingCapabilities.canManageMembers.value).toBe(false)
+    })
+
+    it.for([
+      { name: 'a different owner', nextOwner: 'key-owner-2' },
+      { name: 'the same owner', nextOwner: 'key-owner-1' }
+    ])('rereads for a replacement key held by $name', async ({ nextOwner }) => {
+      vi.mocked(workspaceApi.getBillingCapabilities)
+        .mockResolvedValueOnce(capabilitiesResponse(true))
+        .mockResolvedValueOnce(capabilitiesResponse(false))
+      await billingCapabilities.initialize()
+      expect(billingCapabilities.canTopUp.value).toBe(true)
+
+      signInWithApiKey(null)
+      await nextTick()
+      expect(billingCapabilities.isReady.value).toBe(false)
+      expect(billingCapabilities.canTopUp.value).toBe(false)
+
+      signInWithApiKey(nextOwner)
+      await nextTick()
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+      expect(billingCapabilities.isReady.value).toBe(true)
+      expect(billingCapabilities.canTopUp.value).toBe(false)
+    })
+
+    it('hides the key owner snapshot from a Firebase user who signs in over it', async () => {
+      vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce(
+        capabilitiesResponse(true)
+      )
+      await billingCapabilities.initialize()
+      expect(billingCapabilities.canTopUp.value).toBe(true)
+
+      Object.assign(useAuthStore(), {
+        userId: 'firebase-user-1',
+        currentUser: { uid: 'firebase-user-1' }
+      })
+
+      expect(billingCapabilities.isReady.value).toBe(false)
+      expect(billingCapabilities.canTopUp.value).toBe(false)
+    })
   })
 
   it('accepts a canonical server user ID distinct from the Firebase UID', async () => {

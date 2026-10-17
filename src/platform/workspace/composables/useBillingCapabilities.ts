@@ -18,6 +18,7 @@ import { readOnRail } from '@/platform/workspace/composables/readOnRail'
 import { useBillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { reportWorkspaceScopeMismatch } from '@/platform/workspace/telemetry/workspaceTelemetryContext'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 
 type CapabilityReadState =
@@ -81,7 +82,11 @@ function readCapabilitiesResponse(
 
 function useBillingCapabilitiesInternal() {
   const authStore = useAuthStore()
+  const apiKeyAuthStore = useApiKeyAuthStore()
   const workspaceStore = useTeamWorkspaceStore()
+  const actorId = computed(
+    () => authStore.userId ?? apiKeyAuthStore.currentUser?.id
+  )
   const readState = shallowRef<CapabilityReadState>({ status: 'idle' })
   let initialized = false
   let latestRequestId = 0
@@ -91,7 +96,7 @@ function useBillingCapabilitiesInternal() {
   let invalidatedRequestId = 0
 
   const capabilities = computed(() => {
-    const userId = authStore.userId
+    const userId = actorId.value
     const workspaceId = workspaceStore.activeWorkspaceId
     const state = readState.value
     if (
@@ -138,7 +143,7 @@ function useBillingCapabilitiesInternal() {
     const state = readState.value
     if (state.status === 'idle' || state.status === 'pending') return false
     return (
-      state.authUid === authStore.userId &&
+      state.authUid === actorId.value &&
       state.workspaceId === workspaceStore.activeWorkspaceId
     )
   })
@@ -147,7 +152,7 @@ function useBillingCapabilitiesInternal() {
     const state = readState.value
     if (state.status !== 'resolved' && state.status !== 'denied') return false
     return (
-      state.authUid === authStore.userId &&
+      state.authUid === actorId.value &&
       state.workspaceId === workspaceStore.activeWorkspaceId
     )
   })
@@ -261,7 +266,7 @@ function useBillingCapabilitiesInternal() {
   }
 
   async function fetchCapabilities(signal?: AbortSignal): Promise<void> {
-    const userId = authStore.userId
+    const userId = actorId.value
     const workspaceId = workspaceStore.activeWorkspaceId
     if (!userId || !workspaceId) {
       resetRead()
@@ -314,7 +319,7 @@ function useBillingCapabilitiesInternal() {
         )
         if (
           requestId !== latestRequestId ||
-          userId !== authStore.userId ||
+          userId !== actorId.value ||
           workspaceId !== workspaceStore.activeWorkspaceId
         ) {
           return
@@ -360,7 +365,7 @@ function useBillingCapabilitiesInternal() {
       } catch (error) {
         if (
           requestId !== latestRequestId ||
-          userId !== authStore.userId ||
+          userId !== actorId.value ||
           workspaceId !== workspaceStore.activeWorkspaceId
         ) {
           return
@@ -434,7 +439,7 @@ function useBillingCapabilitiesInternal() {
       await fetchCapabilities(signal)
     } while (
       !signal?.aborted &&
-      !!authStore.userId &&
+      !!actorId.value &&
       !!workspaceStore.activeWorkspaceId &&
       !isReady.value
     )
@@ -446,7 +451,7 @@ function useBillingCapabilitiesInternal() {
 
   watch(
     [
-      () => authStore.userId,
+      () => actorId.value,
       () => workspaceStore.activeWorkspaceId,
       () => workspaceStore.activeWorkspace?.role
     ],
