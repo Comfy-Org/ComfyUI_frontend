@@ -75,6 +75,65 @@ describe('SubgraphIO - Input Slot Dual-Nature Behavior', () => {
     }
   )
 
+  subgraphTest(
+    'removing an input disconnects every internal link it has',
+    ({ subgraphWithNode }) => {
+      const { subgraph } = subgraphWithNode
+      const input = subgraph.inputs[0]
+
+      // One subgraph input fanned out to several internal nodes
+      const internalNodes = Array.from({ length: 4 }, (_, i) => {
+        const node = new LGraphNode(`Internal ${i}`)
+        node.addInput('in', '*')
+        subgraph.add(node)
+        input.connect(node.inputs[0], node)
+        return node
+      })
+      expect(input.linkIds.length).toBe(4)
+
+      subgraph.removeInput(input)
+
+      for (const node of internalNodes) {
+        expect(node.inputs[0].link).toBeNull()
+      }
+      const ioLinks = [...subgraph.links.values()].filter(
+        (link) => link.originIsIoNode
+      )
+      expect(ioLinks).toHaveLength(0)
+    }
+  )
+
+  subgraphTest(
+    'removing an input keeps the links of the inputs after it on the right slot',
+    ({ subgraphWithNode }) => {
+      const { subgraph } = subgraphWithNode
+      const first = subgraph.inputs[0]
+      const second = subgraph.addInput('second', '*')
+
+      const firstTargets = Array.from({ length: 2 }, (_, i) => {
+        const node = new LGraphNode(`First target ${i}`)
+        node.addInput('in', '*')
+        subgraph.add(node)
+        first.connect(node.inputs[0], node)
+        return node
+      })
+      const secondTarget = new LGraphNode('Second target')
+      secondTarget.addInput('in', '*')
+      subgraph.add(secondTarget)
+      second.connect(secondTarget.inputs[0], secondTarget)
+
+      subgraph.removeInput(first)
+
+      expect(subgraph.inputs).toEqual([second])
+      for (const node of firstTargets) {
+        expect(node.inputs[0].link).toBeNull()
+      }
+      const link = subgraph.getLink(secondTarget.inputs[0].link!)
+      expect(link?.origin_slot).toBe(0)
+      expect(second.linkIds).toEqual([link?.id])
+    }
+  )
+
   subgraphTest('handles link disconnection', ({ subgraphWithNode }) => {
     const { subgraph } = subgraphWithNode
     const internalNode = new LGraphNode('External Source')
