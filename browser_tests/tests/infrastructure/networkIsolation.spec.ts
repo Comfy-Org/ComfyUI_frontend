@@ -38,6 +38,28 @@ test.describe('Network isolation', { tag: '@smoke' }, () => {
     await expect(popup).toHaveURL('https://network-test.invalid/popup')
   })
 
+  test('serves deterministic startup dependencies in secondary pages', async ({
+    context
+  }) => {
+    const page = await context.newPage()
+    const frontend = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
+    await page.goto(`${frontend}/api/users`)
+
+    await expect(
+      page.evaluate(async () => {
+        const releases = await fetch(
+          'https://stagingapi.comfy.org/releases'
+        ).then((response) => response.json())
+        const modelViewer = await fetch(
+          'https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js'
+        ).then((response) => response.text())
+        return { releases, modelViewer }
+      })
+    ).resolves.toEqual({ releases: [], modelViewer: '' })
+
+    await page.close()
+  })
+
   test('keeps real backend WebSocket messages', async ({ page }) => {
     const backend =
       process.env.PLAYWRIGHT_SETUP_API_URL ||
