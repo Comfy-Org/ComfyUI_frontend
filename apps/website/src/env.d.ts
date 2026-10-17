@@ -2,6 +2,7 @@ import 'astro/client'
 import type { t } from './i18n/translations'
 import type { SiteSession } from './lib/cms/admin'
 import type { AuthoringSession } from './lib/cms/authoring-session'
+import type { CatalogLocale } from './config/catalog-locales'
 
 declare global {
   namespace App {
@@ -11,7 +12,7 @@ declare global {
       siteLocalAccess?: boolean
       siteDemo?: boolean
       catalogAuthoring?: AuthoringSession
-      catalogLocale?: 'en' | 'zh-CN'
+      catalogLocale?: CatalogLocale
     }
   }
 

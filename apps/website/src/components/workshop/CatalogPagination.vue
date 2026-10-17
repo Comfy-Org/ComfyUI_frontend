@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { catalogLocalePrefix } from '@/config/catalog-locales'
 import { computed } from 'vue'
 
 import type { Locale } from '@/i18n/translations'
@@ -57,7 +58,7 @@ function href(value: number, cursor?: string) {
     params.delete('cursor')
     if (cursor) params.set('cursor', cursor)
   }
-  return `${locale === 'zh-CN' ? '/zh-CN' : ''}/hub/${section}/?${params}`
+  return `${catalogLocalePrefix(locale)}/hub/${section}/?${params}`
 }
 const linkClass =
   'rounded-xl border border-transparency-white-t8 px-5 py-3 text-primary-comfy-canvas hover:text-primary-comfy-yellow focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50'

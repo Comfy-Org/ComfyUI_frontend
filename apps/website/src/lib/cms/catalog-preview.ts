@@ -1,6 +1,8 @@
 import type { APIContext } from 'astro'
 import { z } from 'astro/zod'
 import { cookieOptions, parsePreview } from './admin'
+import { isCatalogLocale } from '@/config/catalog-locales'
+import type { CatalogLocale } from '@/config/catalog-locales'
 
 export const CATALOG_PREVIEW_COOKIE = 'comfy_catalog_preview'
 export const CATALOG_LOCALE_COOKIE = 'comfy_catalog_locale'
@@ -10,7 +12,9 @@ export const previewCommand = z
     now: z
       .union([z.literal('now'), z.string().datetime({ offset: true })])
       .optional(),
-    locale: z.enum(['en', 'zh-CN']).optional()
+    locale: z
+      .custom<CatalogLocale>((value) => isCatalogLocale(value))
+      .optional()
   })
   .strict()
 export type CatalogPreview = NonNullable<ReturnType<typeof parsePreview>>

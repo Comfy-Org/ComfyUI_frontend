@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { isCatalogLocale } from '@/config/catalog-locales'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Eye } from '@lucide/vue'
 import { translationsFor } from '@/i18n/translations'
@@ -85,8 +86,7 @@ async function change(command: CatalogPreviewCommand) {
   window.location.assign(target)
 }
 function language(selected: string) {
-  if (selected === 'en' || selected === 'zh-CN')
-    void change({ view, locale: selected })
+  if (isCatalogLocale(selected)) void change({ view, locale: selected })
 }
 function navigate(path: string) {
   if (unavailable.value) return

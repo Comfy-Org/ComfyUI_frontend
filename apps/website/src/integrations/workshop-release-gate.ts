@@ -20,6 +20,10 @@ import { websiteRoot } from '@website/paths'
 import { unregisteredModelsPaths } from '@/config/models-url-registry'
 import { markdownTwinPath } from '@/lib/markdown-twin-path'
 import { cmsEnabled } from '@/lib/cms/cms-enabled'
+import {
+  PREFIXED_CATALOG_LOCALES,
+  catalogLocalePrefix
+} from '@/config/catalog-locales'
 
 import {
   assertWorkshopCloudEnvForBuild,
@@ -157,6 +161,25 @@ function installCmsRoutes(
   }
 }
 
+/**
+ * The CMS-backed Hub serves every catalog locale under its site prefix
+ * (`/zh-CN/hub/...`, `/ja/hub/...`). Production's static Hub stays English-only.
+ */
+function installLocalizedHubRoutes(
+  injectRoute: HookParameters<'astro:config:setup'>['injectRoute']
+) {
+  const hubRoutes = modelsBuildRoutes(isWorkshopInBuild()).filter((route) =>
+    route.pattern.startsWith('/hub/')
+  )
+  for (const locale of PREFIXED_CATALOG_LOCALES)
+    for (const route of hubRoutes)
+      injectRoute({
+        ...route,
+        pattern: `${catalogLocalePrefix(locale)}${route.pattern}`,
+        prerender: false
+      })
+}
+
 function cmsRendering(route: ReturnType<typeof modelsBuildRoutes>[number]) {
   const dynamic =
     route.pattern.startsWith('/hub/') ||
@@ -205,17 +228,7 @@ export function workshopReleaseGate(): AstroIntegration {
             ...route,
             ...cmsRendering(route)
           })
-        if (cmsEnabled()) {
-          for (const route of modelsBuildRoutes(isWorkshopInBuild()).filter(
-            (route) => route.pattern.startsWith('/hub/')
-          )) {
-            injectRoute({
-              ...route,
-              pattern: `/zh-CN${route.pattern}`,
-              prerender: false
-            })
-          }
-        }
+        if (cmsEnabled()) installLocalizedHubRoutes(injectRoute)
       },
       'astro:build:start': () => {
         assertWorkshopCloudEnvForBuild()

@@ -96,3 +96,15 @@ describe('Preview cookie command transport', () => {
     expect(fetch).not.toHaveBeenCalled()
   })
 })
+
+describe('previewNavigationPath across catalog locales', () => {
+  it.for([
+    ['/hub/workflows/a/?q=1#x', 'ja', '/ja/hub/workflows/a/?q=1#x'],
+    ['/zh-CN/hub/workflows/a/', 'ja', '/ja/hub/workflows/a/'],
+    ['/ja/hub/workflows/a/', 'zh-CN', '/zh-CN/hub/workflows/a/'],
+    ['/ja/hub/workflows/a/', 'en', '/hub/workflows/a/'],
+    ['/ja', 'en', '/']
+  ] as const)('%s → %s', ([path, locale, expected]) => {
+    expect(previewNavigationPath(path, locale)).toBe(expected)
+  })
+})

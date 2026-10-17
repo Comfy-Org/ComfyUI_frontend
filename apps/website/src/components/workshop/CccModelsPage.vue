@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import {
+  catalogLocalePrefix,
+  withCatalogLocalePrefix
+} from '@/config/catalog-locales'
 import { isPlainPrimaryClick } from '@/lib/workshop/navigation-intent'
 import {
   onBeforeUnmount,
@@ -65,8 +69,10 @@ function openDetail(event: MouseEvent, model: WorkshopModel) {
   const target = new URL(model.href, location.href)
   if (target.origin !== location.origin || !catalogDetailPath(target.pathname))
     return
-  if (props.locale === 'zh-CN' && !target.pathname.startsWith('/zh-CN/'))
-    target.pathname = '/zh-CN' + target.pathname
+  target.pathname = withCatalogLocalePrefix(
+    target.pathname,
+    props.locale ?? 'en'
+  )
   event.preventDefault()
   event.stopPropagation()
   if (!detail.value) {
@@ -178,7 +184,7 @@ async function refreshBrowse(top = scrollY) {
     requestAnimationFrame(() => window.scrollTo({ top, behavior: 'instant' }))
 }
 function restoreResults(event: PopStateEvent) {
-  const prefix = props.locale === 'zh-CN' ? '/zh-CN' : ''
+  const prefix = catalogLocalePrefix(props.locale ?? 'en')
   if (catalogDetailPath(location.pathname)) {
     event.stopImmediatePropagation()
     detail.value = {
@@ -209,7 +215,7 @@ function refreshVisible() {
     workshopRunInFlight.value
   )
     return
-  const prefix = props.locale === 'zh-CN' ? '/zh-CN' : ''
+  const prefix = catalogLocalePrefix(props.locale ?? 'en')
   if (location.pathname === `${prefix}/hub/${props.section ?? 'models'}/`)
     void refreshBrowse()
 }

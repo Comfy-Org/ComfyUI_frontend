@@ -144,9 +144,18 @@ describe('Workshop release output', () => {
       expect(routes.some(({ pattern }) => pattern === '/admin/catalog')).toBe(
         rendersOnDemand
       )
-      expect(
-        routes.some(({ pattern }) => pattern.startsWith('/zh-CN/hub/'))
-      ).toBe(rendersOnDemand)
+      for (const prefix of ['/zh-CN/hub/', '/ja/hub/'])
+        expect(routes.some(({ pattern }) => pattern.startsWith(prefix))).toBe(
+          rendersOnDemand
+        )
+      if (rendersOnDemand)
+        for (const route of hubRoutes)
+          expect(routes).toContainEqual(
+            expect.objectContaining({
+              pattern: `/ja${route.pattern}`,
+              prerender: false
+            })
+          )
       expect(
         routes.some(({ pattern }) => pattern === '/api/v1/catalog/agents')
       ).toBe(rendersOnDemand)

@@ -6,6 +6,7 @@ import type { APIContext, MiddlewareNext } from 'astro'
 import type { ContentCatalogReview } from './lib/cms/review-contract'
 import { defineMiddleware } from 'astro:middleware'
 import { resolveLocale } from './config/locales'
+import { resolveCatalogLocale } from './config/catalog-locales'
 import { translationsFor } from './i18n/translations'
 import { isLocalAccess } from '@/routes/admin/local-access'
 import { demoMode } from '@/lib/cms/demo'
@@ -273,11 +274,10 @@ async function siteResponse(
 }
 
 function setRequestLocale(context: APIContext) {
-  context.locals.catalogLocale =
-    context.url.pathname.startsWith('/zh-CN/') ||
-    context.cookies.get(CATALOG_LOCALE_COOKIE)?.value === 'zh-CN'
-      ? 'zh-CN'
-      : 'en'
+  context.locals.catalogLocale = resolveCatalogLocale(
+    context.url.pathname,
+    context.cookies.get(CATALOG_LOCALE_COOKIE)?.value
+  )
   context.locals.t = translationsFor(resolveLocale(context.currentLocale)).t
 }
 async function respond(context: APIContext, next: MiddlewareNext) {

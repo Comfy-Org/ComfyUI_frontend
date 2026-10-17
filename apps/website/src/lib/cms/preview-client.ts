@@ -1,6 +1,11 @@
 import { safeInternalPath } from '@/lib/cms/preview-display'
+import {
+  catalogLocaleFromPath,
+  catalogLocalePrefix
+} from '@/config/catalog-locales'
+import type { CatalogLocale } from '@/config/catalog-locales'
 
-export type CatalogPreviewLocale = 'en' | 'zh-CN'
+export type CatalogPreviewLocale = CatalogLocale
 export interface CatalogPreviewCommand {
   view: 'DRAFT' | 'LIVE'
   now?: string
@@ -15,8 +20,12 @@ export function previewNavigationPath(
   if (!safe) return
   if (!locale) return safe
   const url = new URL(safe, 'https://comfy.org')
-  const unprefixed = url.pathname.replace(/^\/zh-CN(?=\/|$)/, '') || '/'
-  const pathname = locale === 'zh-CN' ? `/zh-CN${unprefixed}` : unprefixed
+  const current = catalogLocaleFromPath(url.pathname)
+  const unprefixed =
+    (current
+      ? url.pathname.slice(catalogLocalePrefix(current).length)
+      : url.pathname) || '/'
+  const pathname = `${catalogLocalePrefix(locale)}${unprefixed}`
   return `${pathname}${url.search}${url.hash}`
 }
 
