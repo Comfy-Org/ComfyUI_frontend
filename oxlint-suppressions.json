@@ -579,7 +579,7 @@
   },
   "src/lib/litegraph/src/litegraph.ts": {
     "comfy/no-reexports": {
-      "count": 54
+      "count": 55
     }
   },
   "src/lib/litegraph/src/litegraphInstance.ts": {
@@ -617,6 +617,16 @@
   },
   "src/lib/litegraph/src/subgraph/SubgraphOutput.ts": {
     "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/lib/litegraph/src/subgraph/subgraphUtils.ts": {
+    "comfy/no-reexports": {
+      "count": 1
+    }
+  },
+  "src/lib/litegraph/src/types/widgets.ts": {
+    "comfy/no-reexports": {
       "count": 1
     }
   },
@@ -1429,6 +1439,16 @@
   "src/types/index.ts": {
     "comfy/no-reexports": {
       "count": 36
+    }
+  },
+  "src/types/nodeState.ts": {
+    "comfy/no-reexports": {
+      "count": 1
+    }
+  },
+  "src/types/simplifiedWidget.ts": {
+    "comfy/no-reexports": {
+      "count": 1
     }
   },
   "src/types/slotId.test.ts": {

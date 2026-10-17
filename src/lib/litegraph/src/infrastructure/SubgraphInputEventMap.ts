@@ -1,6 +1,10 @@
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { INodeInputSlot } from '@/lib/litegraph/src/litegraph'
-import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
+import type {
+  LGraphNode,
+  SubgraphInput
+} from '@/lib/litegraph/src/types/entityRegistry'
+
+import type { INodeInputSlot } from '@/lib/litegraph/src/types/slots'
+
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
 import type { LGraphEventMap } from './LGraphEventMap'

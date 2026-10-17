@@ -59,6 +59,7 @@ import { useAssetsStore } from '@/stores/assetsStore'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { startAssetDrag } from '@/platform/assets/utils/assetDragUtil'
 import { getFilenameDetails } from '@/utils/formatUtil'
+import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
@@ -2669,6 +2670,37 @@ describe('AgentPanelRoot attach flow', () => {
     const tab = addTab('workflows/current.json')
     workflowStore.activeWorkflow = tab
     useAgentWorkflowTabBindingStore().bind('wf-42', tab.path)
+  })
+
+  it('reads changed developer upload limits without remounting the panel', async () => {
+    getServerFeature.mockImplementation(
+      (name, defaultValue) => getDevOverride(name) ?? defaultValue
+    )
+    const uploaded = stubUploadFetch()
+    localStorage.setItem('ff:max_upload_size', '4')
+    renderWithSelectedTarget()
+    const input = screen.getByTestId<HTMLInputElement>('agent-file-input')
+
+    await userEvent.upload(
+      input,
+      new File(['1234'], 'first.png', { type: 'image/png' })
+    )
+    await waitFor(() => expect(uploaded).toEqual(['first.png']))
+
+    localStorage.setItem('ff:max_upload_size', '1')
+    await userEvent.upload(
+      input,
+      new File(['12'], 'second.png', { type: 'image/png' })
+    )
+    await waitFor(() =>
+      expect(useToast().toasts).toContainEqual(
+        expect.objectContaining({
+          kind: 'warning',
+          title: 'second.png is larger than 1 B'
+        })
+      )
+    )
+    expect(uploaded).toEqual(['first.png'])
   })
 
   it.for([
