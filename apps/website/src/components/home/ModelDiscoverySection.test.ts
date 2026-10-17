@@ -99,7 +99,7 @@ describe('ModelDiscoverySection', async () => {
     expect(browse.getAttribute('href')).toBe('/hub/models/')
   })
 
-  it('hides the looping copy of the row from assistive tech', async () => {
+  it('hides the looping copies of the row from assistive tech', async () => {
     render(ModelDiscoverySection, { props: { providers } })
     await nextTick()
 
@@ -109,9 +109,10 @@ describe('ModelDiscoverySection', async () => {
       hidden: true
     })
     expect(visible).toHaveLength(1)
-    expect(all).toHaveLength(2)
+    expect(all).toHaveLength(4)
     expect(visible[0].getAttribute('tabindex')).toBeNull()
-    expect(all[1].getAttribute('tabindex')).toBe('-1')
+    for (const looped of all.slice(1))
+      expect(looped.getAttribute('tabindex')).toBe('-1')
   })
 
   it('loads a provider preview only once its card is hovered', async () => {
@@ -181,10 +182,10 @@ describe('ModelDiscoverySection', async () => {
       }
     })
     await nextTick()
-    expect(pace()).toEqual(['6s', '6s'])
+    expect(pace()).toEqual(['6s', '6s', '6s', '6s'])
 
     await user.click(screen.getByTestId('catalogue-tab-workflows'))
-    expect(pace()).toEqual(['9s', '9s'])
+    expect(pace()).toEqual(['9s', '9s', '9s', '9s'])
   })
 
   it('starts the arriving row at its beginning, not mid-stride', async () => {

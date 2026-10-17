@@ -69,6 +69,11 @@ const marqueeStyle = computed(() => ({
   animationDuration: `${(onWorkflows.value ? workflows.length : providers.length) * SECONDS_PER_CARD}s`
 }))
 
+// Each copy slides one row's width and a gap to the left, so the strip only
+// reaches (COPIES - 1) widths at the end of a cycle. Four copies keep it past
+// the right edge of screens a few times wider than the row.
+const COPIES = 4
+
 const copies = ref<HTMLElement[]>([])
 watch(onWorkflows, () => {
   for (const copy of copies.value)
@@ -124,13 +129,13 @@ const cardClass =
         >
           <div class="group flex w-max gap-3">
             <div
-              v-for="copy in 2"
+              v-for="copy in COPIES"
               ref="copies"
               :key="copy"
               class="flex shrink-0 animate-marquee gap-3 group-focus-within:paused group-hover:paused"
               :style="marqueeStyle"
               data-testid="discovery-marquee"
-              :aria-hidden="copy === 2 ? 'true' : undefined"
+              :aria-hidden="copy > 1 ? 'true' : undefined"
             >
               <DiscoveryWorkflowCard
                 v-for="workflow in workflowRow"
@@ -138,7 +143,7 @@ const cardClass =
                 :workflow
                 :href="workflow.href"
                 :class="cardClass"
-                :tabindex="copy === 2 ? -1 : undefined"
+                :tabindex="copy > 1 ? -1 : undefined"
                 data-testid="discovery-workflow"
               />
               <DiscoveryProviderCard
@@ -147,7 +152,7 @@ const cardClass =
                 :provider
                 :href="cardHref(provider.name)"
                 :class="cardClass"
-                :tabindex="copy === 2 ? -1 : undefined"
+                :tabindex="copy > 1 ? -1 : undefined"
                 data-testid="discovery-provider"
               />
             </div>
