@@ -747,14 +747,17 @@ function handOffToCheckout(checkoutTab: BillingTab, checkoutUrl: string) {
   checkoutTab.navigate(checkoutUrl)
   usePendingTopup().startPendingTopup()
   watchForTopupBalanceUpdate({
-    current: () => balance.value?.amountMicros ?? null,
-    fetch: async () => {
-      const [balanceRead] = await Promise.allSettled([
-        fetchBalance(),
-        fetchStatus()
-      ])
-      if (balanceRead.status === 'rejected') throw balanceRead.reason
-      return balance.value?.amountMicros ?? null
+    source: {
+      current: () => balance.value?.amountMicros ?? null,
+      fetch: async () => {
+        const [balanceRead, statusRead] = await Promise.allSettled([
+          fetchBalance(),
+          fetchStatus()
+        ])
+        if (balanceRead.status === 'rejected') throw balanceRead.reason
+        if (statusRead.status === 'rejected') throw statusRead.reason
+        return balance.value?.amountMicros ?? null
+      }
     }
   })
   handleClose(false)
