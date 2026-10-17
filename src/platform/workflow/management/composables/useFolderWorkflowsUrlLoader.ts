@@ -31,7 +31,7 @@ function isFolderName(value: unknown): value is string {
 }
 
 /**
- * Opens the saved workflows of the folder a link names (BE-21147):
+ * Opens the saved workflows of the folder a link names:
  * `?workflows=<folder>` opens every `.json` directly in `workflows/<folder>/`
  * as a tab, in name order, with the first in front. A tab already open is
  * reused. A folder name that is not one path segment, a repeated or bare
