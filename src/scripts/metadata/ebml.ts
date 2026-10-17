@@ -283,15 +283,24 @@ const findJsonStart = (
 
 const findJsonEnd = (text: string): number | null => {
   let braceCount = 1
-  let pos = 1 // Start after the opening brace
+  let inString = false
 
-  while (braceCount > 0 && pos < text.length) {
-    if (text[pos] === '{') braceCount++
-    if (text[pos] === '}') braceCount--
-    pos++
+  for (let pos = 1; pos < text.length; pos++) {
+    const char = text[pos]
+    if (inString && char === '\\') {
+      pos++
+      continue
+    }
+    if (char === '"') {
+      inString = !inString
+      continue
+    }
+    if (inString) continue
+    if (char === '{') braceCount++
+    if (char === '}' && --braceCount === 0) return pos + 1
   }
 
-  return braceCount === 0 ? pos : null
+  return null
 }
 
 const ebmlToString = (
