@@ -1372,9 +1372,7 @@ const freeUseGrantActive = computed(
 )
 
 const freeUsePlacement = computed(() =>
-  !freeUseGrantActive.value ||
-  unresolvedPaywallPending.value ||
-  creditsExhausted.value
+  !freeUseGrantActive.value || unresolvedPaywallPending.value
     ? 'control'
     : freeUseVariant.value
 )
