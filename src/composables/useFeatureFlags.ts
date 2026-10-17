@@ -204,6 +204,12 @@ export function useFeatureFlags() {
     get nodeReplacementsEnabled() {
       return api.getServerFeature(ServerFeatureFlag.NODE_REPLACEMENTS, false)
     },
+    get usedHeadlessly() {
+      return api.getServerFeature(ServerFeatureFlag.USED_HEADLESSLY, false)
+    },
+    get deployToCloud() {
+      return api.getServerFeature(ServerFeatureFlag.DEPLOY_TO_CLOUD, false)
+    },
     get nodeLibraryEssentialsEnabled() {
       return resolveFlag(
         ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED,
