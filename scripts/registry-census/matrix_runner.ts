@@ -19,6 +19,7 @@ import type {
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
+import { setRootGraph } from '@/scripts/__tests__/appTestUtils'
 import type { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 const S = (v: unknown) => JSON.stringify(v)
@@ -325,8 +326,8 @@ export async function runPack(
   const graph = new LGraph()
   // ComfyApp.setup() non-null-asserts five DOM elements and needs a 2D
   // context, so it cannot boot here. DOM widgets read app.rootGraph while
-  // graph.configure runs, so the private field has to be seeded directly.
-  Reflect.set(app, 'rootGraphInternal', graph)
+  // graph.configure runs, so the root graph has to be seeded directly.
+  setRootGraph(app, graph)
   const byType = (t: string) => graph._nodes.find((n) => n.type === t)
 
   let wvStore: WidgetValueStore | undefined

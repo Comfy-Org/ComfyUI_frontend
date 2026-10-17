@@ -9,6 +9,7 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
+import { getRootGraph, setRootGraph } from '@/scripts/__tests__/appTestUtils'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { graphToPrompt } from '@/utils/executionUtil'
 
@@ -95,10 +96,8 @@ describe('CustomCombo index widget after subgraph promotion', () => {
 
   it('resolves INDEX from the promoted host choice, not the frozen interior value', async () => {
     const rootGraph = new LGraph()
-    type AppWithRootGraph = { rootGraphInternal?: LGraph }
-    const appWithRootGraph = app as unknown as AppWithRootGraph
-    const previousRootGraph = appWithRootGraph.rootGraphInternal
-    appWithRootGraph.rootGraphInternal = rootGraph
+    const previousRootGraph = getRootGraph(app)
+    setRootGraph(app, rootGraph)
 
     try {
       const subgraph = createTestSubgraph({ rootGraph })
@@ -140,16 +139,14 @@ describe('CustomCombo index widget after subgraph promotion', () => {
       // "four" is index 3 of ["one", "two", "three", "four"].
       expect(promptInputs.index).toBe(3)
     } finally {
-      appWithRootGraph.rootGraphInternal = previousRootGraph
+      setRootGraph(app, previousRootGraph)
     }
   })
 
   it('resolves INDEX from the interior widget when choice was never promoted', async () => {
     const rootGraph = new LGraph()
-    type AppWithRootGraph = { rootGraphInternal?: LGraph }
-    const appWithRootGraph = app as unknown as AppWithRootGraph
-    const previousRootGraph = appWithRootGraph.rootGraphInternal
-    appWithRootGraph.rootGraphInternal = rootGraph
+    const previousRootGraph = getRootGraph(app)
+    setRootGraph(app, rootGraph)
 
     try {
       const comboNode = LiteGraph.createNode(
@@ -168,7 +165,7 @@ describe('CustomCombo index widget after subgraph promotion', () => {
       // "two" is index 1 of ["one", "two", "three"].
       expect(promptInputs.index).toBe(1)
     } finally {
-      appWithRootGraph.rootGraphInternal = previousRootGraph
+      setRootGraph(app, previousRootGraph)
     }
   })
 })
