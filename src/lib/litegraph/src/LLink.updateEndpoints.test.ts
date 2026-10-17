@@ -28,7 +28,6 @@ describe('LLink.updateEndpoints rejection handling', () => {
   it('returns a distinguishable failure and reports it through telemetry', () => {
     mockReportError.mockClear()
     const { first } = createOccupiedTargetFixture()
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     const result = first.updateEndpoints({ targetSlot: 1 })
 
@@ -48,7 +47,10 @@ describe('LLink.updateEndpoints rejection handling', () => {
         })
       })
     )
-    expect(consoleError).not.toHaveBeenCalled()
+    // `vitest.console.setup.ts` re-spies console.error in a `beforeEach`, so
+    // this history is this test's own: the reporter replaced the bare
+    // `console.error` call, it did not add a second one beside it.
+    expect(console.error).not.toHaveBeenCalled()
   })
 
   it('returns ok with the updated topology when the store accepts the patch', () => {
