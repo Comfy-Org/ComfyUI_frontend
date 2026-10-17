@@ -2,7 +2,7 @@
   <div class="relative" @pointerdown.stop>
     <div class="mb-4">
       <Button
-        class="w-full border-0 bg-secondary-background text-base-foreground hover:bg-secondary-background-hover"
+        class="w-full border-0"
         :disabled="isRecording || readonly"
         @click="handleStartRecording"
       >

@@ -38,11 +38,6 @@ export function useTopupOperation() {
     return billingContext.topup(amountCents)
   }
 
-  function retryPaymentAuthentication(operationId: string): Promise<boolean> {
-    if (sdkStore) return sdkStore.retryPaymentAuthentication(operationId)
-    return operationStore.retryPaymentAuthentication(operationId)
-  }
-
   function dismissOperation(operationId: string): void {
     if (sdkStore) sdkStore.dismissOperation(operationId)
     else operationStore.dismissOperation(operationId)
@@ -62,10 +57,7 @@ export function useTopupOperation() {
     }
   ): Promise<void> {
     if (sdkStore) return
-    await operationStore.startOperation(operationId, 'topup', {
-      ...metadata,
-      autoHandleRequiresAction: true
-    })
+    await operationStore.startOperation(operationId, 'topup', metadata)
   }
 
   return {
@@ -73,7 +65,6 @@ export function useTopupOperation() {
     isAddingCredits,
     topupOperation,
     topup,
-    retryPaymentAuthentication,
     dismissOperation,
     adoptPendingOperation
   }

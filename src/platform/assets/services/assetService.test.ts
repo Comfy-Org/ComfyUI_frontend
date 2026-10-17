@@ -14,6 +14,7 @@ import {
   assetService
 } from '@/platform/assets/services/assetService'
 import { api } from '@/scripts/api'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
 
@@ -93,6 +94,24 @@ beforeEach(() => {
 describe(assetService.shouldUseWidgetAssetPicker, () => {
   beforeEach(() => {
     mockDistributionState.isCloud = false
+  })
+
+  it.for([
+    { node: 'CheckpointLoaderSimple', input: 'ckpt_name' },
+    { node: 'LoraLoader', input: 'lora_name' },
+    { node: 'LoadLoraModel', input: 'lora_name' },
+    { node: 'LoadLoraTextEncoder', input: 'lora_name' }
+  ])('uses catalog options for $node on a deployment', ({ node, input }) => {
+    mockDistributionState.isCloud = true
+    useDeploymentPickStore().bootDeployment = {
+      deployment_id: 'dep-release',
+      release_id: 'release-1',
+      status: 'ready',
+      created_at: '2026-10-01T00:00:00Z'
+    }
+
+    expect(assetService.shouldUseWidgetAssetPicker(node, input)).toBe(false)
+    expect(assetService.isWidgetAssetPickerEnabled()).toBe(false)
   })
 
   it('returns false when not on cloud', () => {

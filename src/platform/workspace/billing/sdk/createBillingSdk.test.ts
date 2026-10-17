@@ -177,10 +177,8 @@ function harness(overrides: Partial<BillingSdkOptions> = {}) {
       setItem: (key, value) => void storage.set(key, value),
       removeItem: (key) => void storage.delete(key)
     },
-    embeddedCheckoutAvailable: () => false,
     hostedDestination: () => 'stripe',
     onTelemetry: (event) => events.push(event),
-    challengePort: async () => undefined,
     fetchImpl,
     ...overrides
   })
@@ -291,62 +289,4 @@ describe('createBillingSdk', () => {
       )
     ).toContain('"operationId":"op-1"')
   })
-
-  it('drives a required challenge through the host port and reads the result back', async () => {
-    const port = {
-      handleNextAction: vi.fn(async () => ({
-        paymentIntent: { status: 'succeeded' }
-      }))
-    }
-    const { sdk, requireChallenge, settle } = harness({
-      embeddedCheckoutAvailable: () => true,
-      challengePort: async () => port
-    })
-    requireChallenge()
-    const settled = sdk.topup.createTopupCheckout({ amountCents: 1000 })
-    await vi.waitFor(() =>
-      expect(sdk.lifecycle.get('op-1')).toMatchObject({
-        presentation: 'embedded',
-        challenge: { status: 'required' }
-      })
-    )
-
-    settle('succeeded')
-    await expect(sdk.driveChallenge('op-1')).resolves.toBe('completed')
-
-    expect(port.handleNextAction).toHaveBeenCalledWith('pi_secret')
-    await expect(settled).resolves.toMatchObject({ status: 'ok' })
-  })
-
-  it.for([
-    { loader: 'resolves undefined', challengePort: async () => undefined },
-    {
-      loader: 'rejects',
-      challengePort: async () => {
-        throw new Error('payment provider script blocked')
-      }
-    }
-  ])(
-    'fails the challenge, not the operation, when the port loader $loader',
-    async ({ challengePort }) => {
-      const { sdk, requireChallenge } = harness({
-        embeddedCheckoutAvailable: () => true,
-        challengePort
-      })
-      requireChallenge()
-      void sdk.topup.createTopupCheckout({ amountCents: 1000 })
-      await vi.waitFor(() =>
-        expect(sdk.lifecycle.get('op-1')).toMatchObject({
-          challenge: { status: 'required' }
-        })
-      )
-
-      await expect(sdk.driveChallenge('op-1')).resolves.toBe('failed')
-
-      expect(sdk.lifecycle.get('op-1')).toMatchObject({
-        phase: 'pending',
-        authenticationState: 'failed_retryable'
-      })
-    }
-  )
 })

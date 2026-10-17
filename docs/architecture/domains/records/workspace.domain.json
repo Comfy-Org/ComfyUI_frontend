@@ -56,150 +56,6 @@
       "role": "presentation"
     },
     {
-      "path": "src/platform/workspace/components/dialogs/ChangeMemberRoleDialogContent.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/workspace/components/dialogs/ChangeMemberRoleDialogContent.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/workspace/components/dialogs/CreateWorkspaceDialogContent.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/workspace/components/dialogs/DeleteWorkspaceDialogContent.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/workspace/components/dialogs/EditWorkspaceDialogContent.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/workspace/components/dialogs/InviteLinkInvalidDialogContent.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/workspace/components/dialogs/InviteLinkInvalidDialogContent.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/workspace/components/dialogs/InviteLinkList.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/workspace/components/dialogs/InviteMemberDialogContent.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/workspace/components/dialogs/InviteMemberDialogContent.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/workspace/components/dialogs/InviteWrongAccountDialogContent.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/workspace/components/dialogs/InviteWrongAccountDialogContent.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/workspace/components/dialogs/LeaveWorkspaceDialogContent.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/workspace/components/dialogs/RemoveMemberDialogContent.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/workspace/components/dialogs/RevokeInviteDialogContent.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/workspace/components/dialogs/SetMemberCreditLimitDialogContent.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/workspace/components/dialogs/SetMemberCreditLimitDialogContent.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/workspace/components/dialogs/settings/MemberListItem.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/workspace/components/dialogs/settings/MemberListItem.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/workspace/components/dialogs/settings/MembersPanelContent.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/workspace/components/dialogs/settings/MembersPanelContent.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/workspace/components/dialogs/settings/PartnerNodeAccessPanel.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/workspace/components/dialogs/settings/PartnerNodeAccessPanel.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/workspace/components/dialogs/settings/PendingInvitesList.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/workspace/components/dialogs/settings/PendingInvitesList.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/workspace/components/dialogs/settings/WorkspaceActivityContent.stories.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/workspace/components/dialogs/settings/WorkspaceActivityContent.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/workspace/components/dialogs/settings/WorkspaceActivityContent.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/workspace/components/dialogs/settings/WorkspaceMembersPanelContent.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/workspace/components/dialogs/settings/WorkspaceMembersPanelContent.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/workspace/components/dialogs/settings/WorkspaceMenuButton.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/workspace/components/dialogs/settings/WorkspaceMenuButton.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/workspace/components/dialogs/settings/WorkspaceSettingsPanelContent.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/workspace/components/dialogs/settings/WorkspaceSettingsPanelContent.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/workspace/components/dialogs/TeamWorkspacesDialogContent.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/workspace/components/dialogs/TeamWorkspacesDialogContent.vue",
-      "role": "presentation"
-    },
-    {
       "path": "src/platform/workspace/components/InviteMembersForm.test.ts",
       "role": "presentation"
     },
@@ -228,11 +84,11 @@
       "role": "presentation"
     },
     {
-      "path": "src/platform/workspace/composables/__mocks__/useWorkspaceDialogs.ts",
-      "role": "application"
+      "path": "src/platform/workspace/components/dialogs/**",
+      "role": "presentation"
     },
     {
-      "path": "src/platform/workspace/composables/__mocks__/useWorkspaceUI.ts",
+      "path": "src/platform/workspace/composables/__mocks__/**",
       "role": "application"
     },
     {

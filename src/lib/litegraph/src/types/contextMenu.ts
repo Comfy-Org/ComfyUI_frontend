@@ -1,5 +1,8 @@
-import type { ContextMenu } from '../ContextMenu'
-import type { LGraphNode } from '../LGraphNode'
+import type {
+  ContextMenu,
+  LGraphNode
+} from '@/lib/litegraph/src/types/entityRegistry'
+
 import type { IFoundSlot } from './slots'
 
 interface IContextMenuBase {
@@ -58,7 +61,7 @@ export interface IContextMenuValue<
 interface IContextMenuSubmenu<
   TValue = unknown
 > extends IContextMenuOptions<TValue> {
-  options: ConstructorParameters<typeof ContextMenu<TValue>>[0]
+  options: ConstructorParameters<ContextMenu<TValue>['constructor']>[0]
 }
 
 export interface ContextMenuDivElement<

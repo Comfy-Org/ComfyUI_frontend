@@ -18,7 +18,7 @@
       v-if="
         ['in_progress', 'paused', 'completed'].includes(download.status ?? '')
       "
-      class="mt-2 flex flex-row items-center gap-2"
+      class="mt-2 flex items-center gap-2"
     >
       <div
         role="progressbar"

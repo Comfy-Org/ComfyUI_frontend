@@ -5,7 +5,6 @@
     :locale
     :preview-data
     :billing-cycle
-    :dark-surface
     :promo-applied
     :close-demoted="showInviteBlock && invitedEmails.length === 0"
     @close="$emit('close')"
@@ -15,7 +14,7 @@
         <h3 class="m-0 text-base font-normal text-base-foreground">
           {{ $t('subscription.success.inviteTitle') }}
         </h3>
-        <p class="m-0 text-sm text-muted-foreground">
+        <p class="m-0 text-muted-foreground">
           {{ $t('subscription.success.inviteSubtext') }}
         </p>
         <div aria-live="polite">
@@ -23,7 +22,7 @@
             v-if="invitedEmails.length > 0"
             ref="invitedMessage"
             tabindex="-1"
-            class="m-0 text-sm text-success-background"
+            class="m-0 text-success-background"
           >
             {{
               $t(
@@ -37,11 +36,6 @@
             v-else
             ref="inviteForm"
             :show-submit="false"
-            :tags-input-class="
-              darkSurface
-                ? 'min-h-10 w-full bg-secondary-background px-3 focus-within:bg-secondary-background hover:bg-secondary-background-hover'
-                : undefined
-            "
             source="post_upgrade_success"
             :submit-label="$t('subscription.success.sendInvites')"
             :placeholder="$t('subscription.success.inviteEmailsPlaceholder')"
@@ -57,7 +51,7 @@
         v-if="showInviteBlock && invitedEmails.length === 0"
         variant="tertiary"
         size="lg"
-        class="w-full rounded-lg"
+        class="w-full"
         :disabled="!canSendInvites"
         :loading="isSendingInvites"
         @click="handleSendInvites"
@@ -92,15 +86,12 @@ const {
   previewData = null,
   teamPlan = null,
   billingCycle = 'monthly',
-  darkSurface = false,
   promoApplied = null
 } = defineProps<{
   tierKey?: Exclude<TierKey, 'free' | 'founder'> | null
   previewData?: PreviewSubscribeResponse | null
   teamPlan?: TeamPlanSelection | null
   billingCycle?: BillingCycle
-  /** Dialog paints base-background; the plan card elevates to stay visible. */
-  darkSurface?: boolean
   /** Applied promotion feedback (Figma 5379-30077 S3). Display-ready strings;
    *  the backend does not supply this yet — see the promo validation ask. */
   promoApplied?: {
