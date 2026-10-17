@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { Locale } from '@/i18n/translations'
 
+import { I18nT } from 'vue-i18n'
+
 import { translationsFor } from '@/i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
@@ -24,15 +26,18 @@ const investors = [
       >
         {{ t('about.story.label') }}
       </span>
-      <h2
+      <I18nT
+        keypath="about.story.heading"
+        tag="h2"
+        :i18n="translationsFor(locale)"
         class="mt-6 text-3xl font-light text-primary-comfy-canvas lg:text-5xl"
       >
-        {{ t('about.story.headingBefore')
-        }}<span class="text-primary-comfy-yellow">{{
-          t('about.story.headingHighlight')
-        }}</span
-        >{{ t('about.story.headingAfter') }}
-      </h2>
+        <template #highlight>
+          <span class="text-primary-comfy-yellow">{{
+            t('about.story.headingHighlight')
+          }}</span>
+        </template>
+      </I18nT>
       <p class="mt-8 text-base/relaxed text-primary-warm-white lg:text-lg">
         {{ t('about.story.body') }}
       </p>

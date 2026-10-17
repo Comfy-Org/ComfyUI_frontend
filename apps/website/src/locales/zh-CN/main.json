@@ -9,10 +9,8 @@
       "reason2": "想要你的产出比头衔更重要。",
       "reason3": "想要在扁平组织中拥有高度自主权。",
       "reason4": "宁愿交付与学习，也不愿计划与等待。",
-      "whyLabel": "如果你...",
-      "whyTitle": "为什么加入 Comfy？",
-      "whyTitleAfter": "？",
-      "whyTitleBefore": "为什么加入"
+      "whyJoinTitle": "为什么加入{br}{logo}？",
+      "whyLabel": "如果你..."
     },
     "hero": {
       "body": "Comfy 背后的团队规模虽小，但充满热情，致力于打造我们毕生的事业。",
@@ -26,8 +24,7 @@
     },
     "story": {
       "body": "2023 年 1 月，市场上没有任何工具能将两个 AI 模型串联成可重复的工作流。一位魁北克市的开发者用两周时间自己构建了一个，并将其开源。",
-      "headingAfter": "。",
-      "headingBefore": "一个开源项目成为了视觉 AI 的",
+      "heading": "一个开源项目成为了视觉 AI 的{highlight}。",
       "headingHighlight": "行业标准",
       "investorsBody": "如果能开放，就应该开放。这是我们建立一个比任何公司都更快发展的生态系统的方式，也是我们对代码、内容和皮肤的思考方式。我们通过构建值得付费的产品来赚钱，而不是通过控制我们认为应该免费的东西。",
       "investorsLabel": "我们的投资者",
@@ -50,8 +47,7 @@
         "body": "我们为追求精确而非捷径的人而构建。学习曲线虽然陡峭，但回报值得。",
         "title": "RESPECT THE CRAFT"
       },
-      "headingAfter": "，掌握自己的流程，永远不因软件而妥协。",
-      "headingBefore": "我们相信",
+      "heading": "我们相信{highlight}，掌握自己的流程，永远不因软件而妥协。",
       "headingHighlight": "每个人都值得设计出自己梦想中的作品",
       "label": "我们的价值观"
     }
@@ -1046,8 +1042,7 @@
         "label": "创作者",
         "title": "从创意到成品，\n只需几分钟。"
       },
-      "headingAfter": "而生。",
-      "headingBefore": "为追求质量、控制与简约的",
+      "heading": "为追求质量、控制与简约的{highlight}而生。",
       "headingHighlight": "创作者",
       "teams": {
         "description": "无需 IT 部署、GPU 采购，也没有环境配置的烦恼。所有人在同一个最新平台上工作。通过 App Mode 链接分享工作流——团队立即运行，无需培训。",
@@ -2850,8 +2845,7 @@
       },
       "heroCta": "立即试用 {name}",
       "heroSubtitle": "从开源扩散模型到合作伙伴 API，涵盖每一个主流模型，并附带可直接运行的社区工作流模板。",
-      "heroTitleAfter": " 中的 {name}",
-      "heroTitleBefore": "",
+      "heroTitle": "{comfyui} 中的 {name}",
       "label": "模型"
     },
     "llms": {

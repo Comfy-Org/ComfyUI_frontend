@@ -1350,8 +1350,7 @@
       "ctaMobile": "EXPLORE WORKFLOWS"
     },
     "audience": {
-      "headingBefore": "Built for ",
-      "headingAfter": " who need quality, control, and simplicity.",
+      "heading": "Built for {highlight} who need quality, control, and simplicity.",
       "headingHighlight": "creators",
       "creators": {
         "label": "CREATORS",
@@ -1802,9 +1801,8 @@
     },
     "story": {
       "label": "OUR STORY",
-      "headingBefore": "An open-source project that became the ",
+      "heading": "An open-source project that became the {highlight} for visual AI.",
       "headingHighlight": "professional standard",
-      "headingAfter": " for visual AI.",
       "body": "In January, 2023, no tool on the market could chain two AI models together into a repeatable workflow. One developer in Quebec City built his own in two weeks and open-sourced it.",
       "investorsLabel": "OUR INVESTORS",
       "investorsBody": "If it can be open, it should be open. That’s how we build an ecosystem that moves faster than any company could think for, and it’s how we think about code, content, and skins. We make money by building things worth paying for, not by controlling what we believe should be free."
@@ -1815,9 +1813,8 @@
     },
     "values": {
       "label": "OUR VALUES",
-      "headingBefore": "We believe ",
+      "heading": "We believe {highlight}, own their process, and never compromise because of their software.",
       "headingHighlight": "everyone deserves to design exactly what they dream",
-      "headingAfter": ", own their process, and never compromise because of their software.",
       "card1": {
         "title": "SHIP IT",
         "body": "Work hard for what makes it into the world. Ideas don’t substitute for output."
@@ -1837,9 +1834,7 @@
     },
     "careers": {
       "whyLabel": "IF YOU...",
-      "whyTitle": "Why join Comfy?",
-      "whyTitleBefore": "Why join",
-      "whyTitleAfter": "?",
+      "whyJoinTitle": "Why join{br}{logo}?",
       "reason1": "Want to build tools that empower others to create.",
       "reason2": "Want your output to matter more than your title.",
       "reason3": "Want high agency in a flat organization.",
@@ -3541,8 +3536,7 @@
         "title": "{name} Image and Video Creations",
         "cta": "Explore Workflows"
       },
-      "heroTitleBefore": "{name} in ",
-      "heroTitleAfter": "",
+      "heroTitle": "{name} in {comfyui}",
       "heroSubtitle": "From open-source diffusion checkpoints to partner APIs — every major model, with community workflow templates ready to run.",
       "card": {
         "workflows": "{count} workflows"

@@ -1,40 +1,38 @@
 <script setup lang="ts">
-import type { Locale } from '@/i18n/translations'
+import type { Locale, TranslationKey } from '@/i18n/translations'
 
 import type { Ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
-import { useResizeObserver, useTemplateRefsList } from '@vueuse/core'
+import {
+  createReusableTemplate,
+  useResizeObserver,
+  useTemplateRefsList
+} from '@vueuse/core'
 import { computed, onMounted, ref, useSlots } from 'vue'
+
+import { I18nT } from 'vue-i18n'
 
 import { translationsFor } from '@/i18n/translations'
 
-type TranslationKey = Parameters<typeof t>[0]
 type Point = { x: number; y: number }
 
 const {
   reasons,
   rightCardPadding = 'p-6',
-  titleBeforeKey = 'about.careers.whyTitleBefore',
-  titleAfterKey = 'about.careers.whyTitleAfter',
   labelKey = 'about.careers.whyLabel',
   variant = 'split',
   locale = 'en'
 } = defineProps<{
   reasons: TranslationKey[]
   rightCardPadding?: string
-  titleBeforeKey?: TranslationKey
-  titleAfterKey?: TranslationKey
   labelKey?: TranslationKey
-  /**
-   * 'split' — title card + label pill on the left, wired to the reasons and
-   * on to the right card (/careers, /about). 'node' — a single label card
-   * wired to the reasons only (/forward-deployed-creatives).
-   */
+  /** 'split' shows the title card above the label pill; 'node' shows the label as one card. */
   variant?: 'split' | 'node'
   locale?: Locale
 }>()
 const { t } = translationsFor(locale)
+const [DefineWhyJoinTitle, WhyJoinTitle] = createReusableTemplate()
 
 const slots = useSlots()
 const hasRightCard = computed(() => !!slots['right-card'])
@@ -143,7 +141,25 @@ onMounted(() => {
 </script>
 
 <template>
-  <!-- Desktop layout -->
+  <DefineWhyJoinTitle>
+    <div class="rounded-2xl border border-white/10 bg-white/5 px-6 py-5">
+      <I18nT
+        keypath="about.careers.whyJoinTitle"
+        tag="p"
+        :i18n="translationsFor(locale)"
+        class="text-2xl font-light text-primary-comfy-canvas"
+      >
+        <template #br><br /></template>
+        <template #logo>
+          <span
+            class="mb-0.5 inline-block h-5 w-16 bg-primary-comfy-yellow align-middle"
+            style="mask: url(/icons/logo.svg) no-repeat center / contain"
+          />
+        </template>
+      </I18nT>
+    </div>
+  </DefineWhyJoinTitle>
+
   <div ref="containerRef" class="relative mx-auto hidden max-w-6xl lg:block">
     <svg
       class="pointer-events-none absolute inset-0 z-10 size-full overflow-visible"
@@ -173,18 +189,8 @@ onMounted(() => {
         )
       "
     >
-      <!-- Left column: title + label (split) or single node card (node) -->
       <div v-if="variant === 'split'" class="flex w-64 shrink-0 flex-col gap-3">
-        <div class="rounded-2xl border border-white/10 bg-white/5 px-6 py-5">
-          <p class="text-2xl font-light text-primary-comfy-canvas">
-            {{ t(titleBeforeKey) }}
-            <br />
-            <span
-              class="mb-0.5 inline-block h-5 w-16 bg-primary-comfy-yellow align-middle"
-              style="mask: url(/icons/logo.svg) no-repeat center / contain"
-            />{{ t(titleAfterKey) }}
-          </p>
-        </div>
+        <WhyJoinTitle />
         <div
           class="flex items-center justify-end rounded-xl bg-white/5 px-5 py-3"
         >
@@ -212,7 +218,6 @@ onMounted(() => {
         />
       </div>
 
-      <!-- Center column: Reasons card -->
       <div class="relative flex-1">
         <span
           v-if="hasRightCard"
@@ -249,7 +254,6 @@ onMounted(() => {
         </div>
       </div>
 
-      <!-- Right column: slot for card content -->
       <div
         v-if="hasRightCard"
         :class="
@@ -276,7 +280,6 @@ onMounted(() => {
     </div>
   </div>
 
-  <!-- Mobile layout -->
   <div
     ref="mobileContainerRef"
     class="relative mx-auto max-w-6xl overflow-x-clip lg:hidden"
@@ -302,16 +305,7 @@ onMounted(() => {
     </svg>
 
     <template v-if="variant === 'split'">
-      <div class="rounded-2xl border border-white/10 bg-white/5 px-6 py-5">
-        <p class="text-2xl font-light text-primary-comfy-canvas">
-          {{ t(titleBeforeKey) }}
-          <br />
-          <span
-            class="mb-0.5 inline-block h-5 w-16 bg-primary-comfy-yellow align-middle"
-            style="mask: url(/icons/logo.svg) no-repeat center / contain"
-          />{{ t(titleAfterKey) }}
-        </p>
-      </div>
+      <WhyJoinTitle />
 
       <div
         class="mt-3 flex items-center justify-end rounded-xl bg-white/5 px-5 py-3"

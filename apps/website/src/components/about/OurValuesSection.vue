@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import type { Locale } from '@/i18n/translations'
+import type { Locale, TranslationKey } from '@/i18n/translations'
+
+import { I18nT } from 'vue-i18n'
 
 import { translationsFor } from '@/i18n/translations'
 import NodeBadge from '@/components/common/NodeBadge.vue'
@@ -7,8 +9,6 @@ import SectionLabel from '@/components/common/SectionLabel.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const { t } = translationsFor(locale)
-
-type TranslationKey = Parameters<typeof t>[0]
 
 const values: {
   segments: Array<{ text: string }>
@@ -39,15 +39,18 @@ const values: {
       <SectionLabel>
         {{ t('about.values.label') }}
       </SectionLabel>
-      <h2
+      <I18nT
+        keypath="about.values.heading"
+        tag="h2"
+        :i18n="translationsFor(locale)"
         class="mt-6 text-3xl font-light text-primary-comfy-canvas lg:text-5xl"
       >
-        {{ t('about.values.headingBefore')
-        }}<span class="text-primary-comfy-yellow">{{
-          t('about.values.headingHighlight')
-        }}</span
-        >{{ t('about.values.headingAfter') }}
-      </h2>
+        <template #highlight>
+          <span class="text-primary-comfy-yellow">{{
+            t('about.values.headingHighlight')
+          }}</span>
+        </template>
+      </I18nT>
     </div>
 
     <div class="mx-auto mt-16 max-w-5xl">
