@@ -472,27 +472,76 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(false)
   })
 
-  it('keeps local top-up available without calling the Cloud endpoint', async () => {
+  it.for([
+    { role: 'owner', served: false },
+    { role: 'member', served: true }
+  ] as const)(
+    'applies the served top-up capability on local for a $role',
+    async ({ role, served }) => {
+      mockIsCloud.value = false
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspace: { id: 'workspace-1', role }
+      })
+      await nextTick()
+      vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce(
+        capabilitiesResponse(served)
+      )
+
+      await billingCapabilities.initialize()
+
+      expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledOnce()
+      expect(billingCapabilities.canTopUp.value).toBe(served)
+      expect(billingCapabilities.snapshotAuthoritative.value).toBe(true)
+    }
+  )
+
+  it('withholds every capability on local when the read fails', async () => {
     mockIsCloud.value = false
+    vi.mocked(workspaceApi.getBillingCapabilities).mockRejectedValueOnce(
+      new Error('unavailable')
+    )
 
     await billingCapabilities.initialize()
 
-    expect(billingCapabilities.canTopUp.value).toBe(true)
+    expect(billingCapabilities.hasResolvedCapabilities.value).toBe(false)
+    expect(billingCapabilities.canTopUp.value).toBe(false)
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(false)
-    expect(workspaceApi.getBillingCapabilities).not.toHaveBeenCalled()
+    expect(billingCapabilities.canCancel.value).toBe(false)
+    expect(billingCapabilities.canReactivate.value).toBe(false)
+    expect(billingCapabilities.canChangeSeats.value).toBe(false)
+    expect(billingCapabilities.canInviteMembers.value).toBe(false)
+    expect(billingCapabilities.canManageMembers.value).toBe(false)
+    expect(billingCapabilities.canDowngradeToPersonal.value).toBe(false)
+    expect(billingCapabilities.isReady.value).toBe(true)
+    expect(billingCapabilities.snapshotAuthoritative.value).toBe(false)
+    expect(mockReportError).toHaveBeenCalledOnce()
   })
 
-  it('preserves the local role gate for workspace members', async () => {
+  it('applies the served capabilities for a legacy-rail workspace on local', async () => {
     mockIsCloud.value = false
-    Object.assign(useTeamWorkspaceStore(), {
-      activeWorkspace: { id: 'workspace-1', role: 'member' }
+    vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce({
+      ...capabilitiesResponse(
+        true,
+        'workspace-1',
+        true,
+        {},
+        {
+          can_cancel: false,
+          can_reactivate: false,
+          can_change_seats: false
+        }
+      ),
+      subscription_state_authoritative: false
     })
 
     await billingCapabilities.initialize()
 
-    expect(billingCapabilities.canTopUp.value).toBe(false)
-    expect(billingCapabilities.isReady.value).toBe(true)
-    expect(workspaceApi.getBillingCapabilities).not.toHaveBeenCalled()
+    expect(billingCapabilities.canTopUp.value).toBe(true)
+    expect(billingCapabilities.canSubscribeSelfServe.value).toBe(true)
+    expect(billingCapabilities.canCancel.value).toBe(false)
+    expect(billingCapabilities.canReactivate.value).toBe(false)
+    expect(billingCapabilities.canChangeSeats.value).toBe(false)
+    expect(billingCapabilities.snapshotAuthoritative.value).toBe(true)
   })
 
   it('does not enter pending state without an authenticated scope', async () => {
@@ -1230,6 +1279,7 @@ describe('useBillingCapabilities capability gates', () => {
   }
 
   describe.for([
+    ['can_top_up', 'canTopUp'],
     ['can_subscribe_self_serve', 'canSubscribeSelfServe'],
     ['can_cancel', 'canCancel'],
     ['can_reactivate', 'canReactivate'],
@@ -1252,6 +1302,12 @@ describe('useBillingCapabilities capability gates', () => {
             Object.assign(useTeamWorkspaceStore(), {
               activeWorkspace: { id: 'workspace-1', role: 'member' }
             })
+          }
+        },
+        {
+          name: 'the local distribution',
+          apply: () => {
+            mockIsCloud.value = false
           }
         },
         ...otherCapabilityFlips(fact),

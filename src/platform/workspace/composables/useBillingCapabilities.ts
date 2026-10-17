@@ -6,7 +6,6 @@ import {
 } from '@vueuse/core'
 import { computed, onScopeDispose, shallowRef, watch } from 'vue'
 
-import { isCloud } from '@/platform/distribution/types'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -109,10 +108,7 @@ function useBillingCapabilitiesInternal() {
     return state.response.capabilities
   })
   const hasResolvedCapabilities = computed(() => capabilities.value !== null)
-  const canTopUp = computed(() => {
-    if (!isCloud) return workspaceStore.activeWorkspace?.role !== 'member'
-    return capabilities.value?.can_top_up ?? false
-  })
+  const canTopUp = computed(() => capabilities.value?.can_top_up ?? false)
   const canSubscribeSelfServe = computed(
     () => capabilities.value?.can_subscribe_self_serve ?? false
   )
@@ -139,7 +135,6 @@ function useBillingCapabilitiesInternal() {
     () => capabilities.value?.can_downgrade_to_personal ?? false
   )
   const isReady = computed(() => {
-    if (!isCloud) return true
     const state = readState.value
     if (state.status === 'idle' || state.status === 'pending') return false
     return (
@@ -149,7 +144,6 @@ function useBillingCapabilitiesInternal() {
   })
 
   const snapshotAuthoritative = computed(() => {
-    if (!isCloud) return true
     const state = readState.value
     if (state.status !== 'resolved' && state.status !== 'denied') return false
     return (
@@ -436,7 +430,6 @@ function useBillingCapabilitiesInternal() {
 
   async function initialize(signal?: AbortSignal): Promise<void> {
     initialized = true
-    if (!isCloud) return
     do {
       await fetchCapabilities(signal)
     } while (
@@ -460,7 +453,7 @@ function useBillingCapabilitiesInternal() {
     () => {
       readFailures = 0
       resetRead()
-      if (initialized && isCloud) void fetchCapabilities()
+      if (initialized) void fetchCapabilities()
     }
   )
 
