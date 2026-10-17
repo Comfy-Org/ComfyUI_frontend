@@ -56,7 +56,7 @@ try {
       if (!filePath) {
         console.log(
           pc.red(
-            '  Usage: comfy-test transform <file> [--name <n>] [--tags <a,b>] [--workflow <w>] [--output <f>] [--feature-flags <specs>]'
+            '  Usage: comfy-test transform <file> [--name <n>] [--tags <a,b>] [--workflow <w>] [--output <f>] [--feature-flags <specs>] [--force]'
           )
         )
         process.exit(1)
@@ -68,6 +68,7 @@ try {
         tags: parseTags(flags.tags),
         workflow: flags.workflow,
         output: flags.output,
+        force: flags.force !== undefined,
         featureFlags: flags['feature-flags']
           ? parseFeatureFlagSpecs(flags['feature-flags'].split(','))
           : undefined
@@ -216,7 +217,7 @@ Commands:
   add-workflow <file> [--name <n>]
               Add and validate a workflow asset from disk
   plan        Print a test plan for an agent to hand to playwright-test-generator
-  transform   Transform raw codegen output to conventions
+  transform   Transform raw codegen output to conventions (--force to overwrite)
   pr          Open a pull request for a generated test
   check [--distribution cloud|cloud-staging|cloud-prod|local] [--backend <url>]
               Check environment prerequisites (defaults to cloud)

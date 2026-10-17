@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { basename } from 'node:path'
 import pc from 'picocolors'
 import { transform, formatTransformSummary } from '../transform/engine'
@@ -13,6 +13,7 @@ export async function runTransform(
     output?: string
     workflow?: string
     featureFlags?: Record<string, unknown>
+    force?: boolean
   } = {}
 ): Promise<void> {
   header('Transform Codegen → Conventions')
@@ -52,6 +53,11 @@ export async function runTransform(
         '  Refusing to overwrite input file. Pass --output or use a *.raw.spec.ts input.'
       )
     )
+    process.exit(1)
+  }
+  if (existsSync(outputPath) && !options.force) {
+    console.log(pc.red(`  Refusing to overwrite existing file: ${outputPath}`))
+    console.log(pc.dim('  Pass --force to overwrite.'))
     process.exit(1)
   }
   writeFileSync(outputPath, result.code)
