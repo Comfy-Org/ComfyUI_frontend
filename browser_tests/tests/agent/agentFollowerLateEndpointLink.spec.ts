@@ -225,13 +225,9 @@ test.describe(
         // wipe, not a re-seed, not an invented endpoint -- just that one link
         // missing, which is the defined partial-apply state.
         await expect
-          .poll(() =>
-            page.evaluate(() => window.app!.graph.nodes.length)
-          )
+          .poll(() => page.evaluate(() => window.app!.graph.nodes.length))
           .toBe(2)
-        expect(
-          await page.evaluate(() => window.app!.graph.links.size)
-        ).toBe(0)
+        expect(await page.evaluate(() => window.app!.graph.links.size)).toBe(0)
       })
 
       await test.step('frame B materializes the missing endpoint for the first time', async () => {
