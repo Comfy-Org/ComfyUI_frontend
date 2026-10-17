@@ -295,8 +295,8 @@ test.describe('Agent reply drafts', { tag: ['@cloud', '@agent'] }, () => {
       await action.click()
 
       test.fail(
-        true,
-        'The approval card remains visible after its turn completes, but its action no longer reaches the answer endpoint.'
+        selection === 'run',
+        'The run approval card remains visible after its turn completes, but its action no longer reaches the answer endpoint. The cancel path reaches it again since the agent events socket landed.'
       )
       await expect
         .poll(() => answeredRequests)

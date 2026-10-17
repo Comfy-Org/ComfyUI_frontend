@@ -752,7 +752,7 @@ function followerOwnsDocument(documentId: string | undefined): boolean {
   return (
     documentId !== undefined &&
     boundWorkflowId.value === documentId &&
-    crdtStatus.value.terminal === null &&
+    followerCanDeliver() &&
     agentIdentity.state.value.status !== 'rejected'
   )
 }
