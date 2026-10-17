@@ -10,9 +10,6 @@ import { hostTelemetryFixture } from '@e2e/fixtures/hostTelemetryFixture'
 const FLAG = 'agent-free-use-message-placement'
 const PLACEMENT = 'near-composer'
 
-// `scoped_effective_has_funds` stays funded in both cases, which is the cohort
-// a paywall-derived gate got wrong: the grant is spent and purchased credits
-// are paying for every turn.
 function billingStatus({
   grantHeld
 }: {
@@ -99,9 +96,6 @@ test.describe(
       const agentPanel = new AgentPanel(page)
 
       await agentPanel.open()
-      // The gate reads `/billing/status`, so a notice that renders only after
-      // that response has to be given the chance to appear before the negative
-      // is believable; the exposure poll waits on remote config, not on this.
       await billingRead
       await expect
         .poll(
@@ -114,8 +108,6 @@ test.describe(
       await expect(
         agentPanel.root.getByRole('note', { name: 'Free use notice' })
       ).toBeHidden()
-      // Suppression is render-only: the arm still reports its exposure, so the
-      // denominator is unchanged whether or not this viewer was eligible.
       expect(
         hostTelemetry.filter(
           ({ event }) => event === 'app:agent_free_use_notice'
