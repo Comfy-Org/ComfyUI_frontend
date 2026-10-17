@@ -421,6 +421,25 @@ export class PromptExecutionError extends Error {
   }
 }
 
+/**
+ * Reads the deploy-time WebSocket host override. Requires an own string
+ * property so a DOM-clobbering element (`id="__COMFY_API_WS_HOST__"`) or a
+ * prototype-pollution gadget cannot redirect the authenticated socket, and
+ * treats blank values as unset so the socket falls back to `api_host`.
+ */
+function getApiWebSocketHostOverride(): string {
+  if (!Object.hasOwn(window, '__COMFY_API_WS_HOST__')) {
+    return ''
+  }
+  const override = window.__COMFY_API_WS_HOST__
+  if (typeof override !== 'string') {
+    return ''
+  }
+  return override.trim()
+}
+
+const isBareHost = (host: string) => !/[\s/\\?#@]/.test(host)
+
 export class ComfyApi extends EventTarget {
   private _registered = new Set()
   /**
@@ -457,6 +476,12 @@ export class ComfyApi extends EventTarget {
    * identity always wins and superseded attempts never open a leaked socket.
    */
   private socketGeneration = 0
+
+  /**
+   * Handle for the polling fallback, retained so repeated connection failures
+   * reuse one loop instead of stacking a permanent timer per attempt.
+   */
+  private pollQueueInterval: ReturnType<typeof setInterval> | null = null
 
   private authProvider: ApiAuthProvider = anonymousApiAuthProvider
 
@@ -860,15 +885,19 @@ export class ComfyApi extends EventTarget {
    * Poll status  for colab and other things that don't support websockets.
    */
   private _pollQueue() {
-    setInterval(async () => {
+    if (this.pollQueueInterval !== null) return
+    const interval = setInterval(async () => {
+      let status: StatusWsMessageStatus | null
       try {
         const resp = await this.fetchApi('/prompt')
-        const status = (await resp.json()) as StatusWsMessageStatus
-        this.dispatchCustomEvent('status', status)
+        status = resp.ok ? ((await resp.json()) as StatusWsMessageStatus) : null
       } catch {
-        this.dispatchCustomEvent('status', null)
+        status = null
       }
+      if (this.pollQueueInterval !== interval) return
+      this.dispatchCustomEvent('status', status)
     }, 1000)
+    this.pollQueueInterval = interval
   }
 
   /** False when the web session is on and no one is signed in to open it. */
@@ -885,6 +914,16 @@ export class ComfyApi extends EventTarget {
       params.set('token', authToken)
     }
     return !requests || params.has('token')
+  }
+
+  /**
+   * Stops the polling fallback, so a socket that recovers does not leave a
+   * second stream of `status` events running alongside it.
+   */
+  private _stopPollQueue() {
+    if (this.pollQueueInterval === null) return
+    clearInterval(this.pollQueueInterval)
+    this.pollQueueInterval = null
   }
 
   /**
@@ -910,7 +949,9 @@ export class ComfyApi extends EventTarget {
     if (isCloud && !(await this.addSocketAuth(params))) return
 
     const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
-    const baseUrl = `${protocol}://${this.api_host}${this.api_base}/ws`
+    const wsHostOverride = getApiWebSocketHostOverride()
+    const wsHost = wsHostOverride || this.api_host
+    const baseUrl = `${protocol}://${wsHost}${this.api_base}/ws`
     const query = params.toString()
     const wsUrl = query ? `${baseUrl}?${query}` : baseUrl
 
@@ -919,7 +960,21 @@ export class ComfyApi extends EventTarget {
     // generation owns this.socket and no superseded socket is opened.
     if (generation !== this.socketGeneration) return
 
-    const socket = new WebSocket(wsUrl)
+    let socket: WebSocket
+    try {
+      if (wsHostOverride && !isBareHost(wsHostOverride)) {
+        throw new SyntaxError('WebSocket host override must be a bare host')
+      }
+      socket = new WebSocket(wsUrl)
+    } catch (error) {
+      const reason = error instanceof Error ? error.name : 'UnknownError'
+      reportError(
+        new Error(`Failed to open WebSocket to ${wsHost} (${reason})`),
+        { errorType: 'websocket_construction_failure', surface: 'platform' }
+      )
+      this._pollQueue()
+      return
+    }
     this.socket = socket
     this.serverFeatureFlagsSettled.value = false
     socket.binaryType = 'arraybuffer'
@@ -932,7 +987,9 @@ export class ComfyApi extends EventTarget {
     }, SERVER_FEATURE_FLAGS_TIMEOUT_MS)
 
     socket.addEventListener('open', () => {
+      if (this.socket !== socket) return
       opened = true
+      this._stopPollQueue()
 
       // Send feature flags as the first message
       socket.send(
