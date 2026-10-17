@@ -5,53 +5,17 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { ModelFolderInfo } from '@/platform/assets/schemas/assetSchema'
 
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
-import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
+import {
+  MARKDOWN_BODY,
+  MARKDOWN_HEADING,
+  MARKDOWN_ID,
+  MARKDOWN_TEXT,
+  NOTE_ID,
+  NOTE_TEXT,
+  SAVED_NAME,
+  VIRTUAL_NODE_ADDS
+} from '@e2e/fixtures/data/agent/agentVirtualNoteNodes'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
-
-// Note and MarkdownNote are frontend-only nodes: the backend object_info never
-// lists them, so the CRDT host stores their `widgets_values` positionally and
-// the follower has to materialize the text widget itself. A recorded turn
-// binds the chat first; the two adds then arrive as a host edit outside the
-// recording, the way an agent `add_node` tool call reaches the canvas.
-const NOTE_ID = 9001
-const MARKDOWN_ID = 9002
-const NOTE_TEXT = 'agent note text'
-const MARKDOWN_HEADING = 'Agent markdown heading'
-const MARKDOWN_BODY = 'markdown body line'
-const MARKDOWN_TEXT = `# ${MARKDOWN_HEADING}\n\n${MARKDOWN_BODY}`
-const SAVED_NAME = 'Virtual note nodes'
-
-function addVirtualNode(
-  id: number,
-  type: 'Note' | 'MarkdownNote',
-  pos: [number, number],
-  text: string
-): RecordedGraphOperation {
-  return {
-    op: 'add_node',
-    node_id: id,
-    class_type: type,
-    pos,
-    node: {
-      id,
-      type,
-      pos,
-      size: [320, 180],
-      mode: 0,
-      flags: {},
-      order: 0,
-      inputs: [],
-      outputs: [],
-      properties: {},
-      widgets_values: [text]
-    }
-  }
-}
-
-const VIRTUAL_NODE_ADDS: RecordedGraphOperation[] = [
-  addVirtualNode(NOTE_ID, 'Note', [1400, 100], NOTE_TEXT),
-  addVirtualNode(MARKDOWN_ID, 'MarkdownNote', [1400, 400], MARKDOWN_TEXT)
-]
 
 test.describe(
   'Agent adds frontend-only note nodes',
