@@ -3,7 +3,10 @@ import type {
   WorkflowReferenceMetadata,
   WorkflowReferenceOption
 } from '../../types/workflowReference'
+import { useAskAgentAboutIssues } from '../../composables/agent/useAskAgentAboutIssues'
+import type { AgentErrorContext } from '../../types/agentErrorContext'
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
+import { useAgentPanelStore } from '../../stores/agent/agentPanelStore'
 import {
   isInaccessible,
   render,
@@ -123,6 +126,165 @@ describe('Composer', () => {
     expect(emitted().stop).toBeUndefined()
     expect(emitted().send).toBeUndefined()
   })
+
+  it('attaches the error context as an inline reference and serializes it into the sent message', async () => {
+    useAgentComposerStore().setErrorContext({
+      scope: 'card',
+      count: 1,
+      label: 'Execution failed',
+      severity: 'error',
+      problems: [
+        {
+          category: 'execution_failure',
+          message: 'RuntimeError: boom',
+          nodeId: '5',
+          nodeType: 'KSampler'
+        }
+      ]
+    })
+    const view = mount()
+
+    expect(await screen.findByTestId('error-reference-chip')).toBeVisible()
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Can you fix this?')
+    await userEvent.keyboard('{Enter}')
+
+    const sent = view.emitted().send as [string, ...unknown[]][]
+    expect(sent).toHaveLength(1)
+    const [text] = sent[0]
+    expect(text).toContain('Can you fix this?')
+    expect(text).toContain('[Execution failure]')
+    expect(text).toContain('RuntimeError: boom')
+  })
+
+  it('removes the inline error reference on request', async () => {
+    useAgentComposerStore().setErrorContext({
+      scope: 'card',
+      count: 2,
+      label: 'Missing Inputs',
+      severity: 'warning',
+      problems: [
+        { category: 'missing_media', message: 'image missing' },
+        { category: 'missing_media', message: 'video missing' }
+      ]
+    })
+    mount()
+
+    expect(
+      await screen.findByTestId('error-reference-count')
+    ).toHaveTextContent('2')
+    await userEvent.click(screen.getByTestId('error-reference-remove'))
+
+    expect(screen.queryByTestId('error-reference-chip')).toBeNull()
+    expect(useAgentComposerStore().errorContext).toBeNull()
+  })
+
+  it('deletes the inline error reference with Backspace', async () => {
+    useAgentComposerStore().setErrorContext({
+      scope: 'card',
+      count: 1,
+      label: 'Execution failed',
+      severity: 'error',
+      problems: [{ category: 'execution_failure', message: 'boom' }]
+    })
+    mount()
+
+    await screen.findByTestId('error-reference-chip')
+    const editor = screen.getByRole('textbox')
+    await userEvent.click(editor)
+    await userEvent.keyboard('{Backspace}{Backspace}')
+
+    expect(screen.queryByTestId('error-reference-chip')).toBeNull()
+    expect(useAgentComposerStore().errorContext).toBeNull()
+  })
+
+  function renderComposerWhenPanelOpens() {
+    const selectWorkflowReference = vi.fn(
+      async (workflow: WorkflowReferenceOption) => ({
+        id: workflow.id ?? 'saved-scratch',
+        name: workflow.name
+      })
+    )
+    const Harness = defineComponent({
+      setup() {
+        const panel = useAgentPanelStore()
+        return () =>
+          h('div', [
+            h('button', { type: 'button' }, 'Elsewhere'),
+            panel.isOpen
+              ? h(Composer, {
+                  hasWorkflowTarget: true,
+                  selectWorkflowReference
+                })
+              : null
+          ])
+      }
+    })
+    render(Harness, { global: { plugins: [i18n] } })
+  }
+
+  it.for([
+    {
+      entry: 'toast',
+      panel: 'closed',
+      context: { scope: 'single', label: 'SaveImage failed' }
+    },
+    {
+      entry: 'card header',
+      panel: 'closed',
+      context: { scope: 'card', label: 'Missing Inputs' }
+    },
+    {
+      entry: 'footer',
+      panel: 'closed',
+      context: { scope: 'all', label: 'All issues' }
+    },
+    {
+      entry: 'toast',
+      panel: 'open',
+      context: { scope: 'single', label: 'SaveImage failed' }
+    },
+    {
+      entry: 'card header',
+      panel: 'open',
+      context: { scope: 'card', label: 'Missing Inputs' }
+    },
+    {
+      entry: 'footer',
+      panel: 'open',
+      context: { scope: 'all', label: 'All issues' }
+    }
+  ] as const)(
+    'Ask agent from the $entry focuses the $panel composer after the chip',
+    async ({ context, panel: panelState }) => {
+      const panel = useAgentPanelStore()
+      panel.enabled = true
+      if (panelState === 'open') panel.open('topbar_button')
+      const { askAgentAboutIssues } = useAskAgentAboutIssues()
+      const issue: AgentErrorContext = {
+        ...context,
+        count: 1,
+        severity: 'error',
+        problems: [{ category: 'execution_failure', message: 'boom' }]
+      }
+      renderComposerWhenPanelOpens()
+      await nextTick()
+      await userEvent.click(screen.getByRole('button', { name: 'Elsewhere' }))
+
+      askAgentAboutIssues(issue)
+      await nextTick()
+
+      const textbox = screen.getByRole('textbox')
+      expect(textbox).toHaveFocus()
+      await userEvent.keyboard('now')
+      const prompt = useAgentComposerStore().prompt
+      expect(prompt.text).toBe(' now')
+      expect(prompt.references[0]).toMatchObject({
+        kind: 'error',
+        textOffset: 0
+      })
+    }
+  )
 
   it('blocks all node entry points and explains why while workflow references remain available', async () => {
     const reason = 'Please select a workflow first'

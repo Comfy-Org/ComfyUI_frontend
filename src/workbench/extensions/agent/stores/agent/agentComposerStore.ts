@@ -1,11 +1,13 @@
 import { defineStore } from 'pinia'
 import { computed, onScopeDispose, ref, shallowReactive, shallowRef } from 'vue'
+import { v4 as uuidv4 } from 'uuid'
 
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
 import type { AgentInputMethod } from '@/platform/telemetry/types'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
+import type { AgentErrorContext } from '../../types/agentErrorContext'
 import type { ComposerAttachment } from '../../types/composerAttachment'
 import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
 import { selectedNodeKey } from '../../composables/agent/useCanvasSelection'
@@ -75,6 +77,12 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
   const nodeScope = ref<string | null>(null)
   let skillScope: string | null = null
   const promptEpoch = ref(0)
+  const errorContext = computed<AgentErrorContext | null>(() => {
+    const reference = prompt.value.references.find(
+      (item) => item.kind === 'error'
+    )
+    return reference?.kind === 'error' ? reference.context : null
+  })
   // Set by the affordance that supplied the text; read once at submission and
   // reset there, so it describes the message being sent rather than the panel.
   const promptOrigin = ref<AgentInputMethod>('typed')
@@ -86,6 +94,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     textOffset: 0,
     referenceIndex: 0
   })
+  const pendingErrorCaret = ref(false)
   const retiredAssets = new Set<string>()
   const thumbnailJobs = new Map<
     string,
@@ -200,6 +209,11 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
       promptOrigin.value = 'typed'
       starterPrompt.value = null
     }
+    if (
+      promptOrigin.value === 'error_context' &&
+      !references.some((item) => item.kind === 'error')
+    )
+      promptOrigin.value = 'typed'
     if (metadataOnly) draftState.value = { text: next.text, references }
     else updateDraft({ text: next.text, references })
   }
@@ -226,6 +240,42 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     // Cleared, not left stale, when the affordance did not identify itself: an
     // unattributed insert is not the previous chip's click.
     starterPrompt.value = source ?? null
+  }
+
+  function setErrorContext(context: AgentErrorContext): void {
+    const references = prompt.value.references.filter(
+      (item) => item.kind !== 'error'
+    )
+    const inserted = insertComposerReference(
+      { text: draft.value, references },
+      { kind: 'error', id: uuidv4(), context, textOffset: 0 },
+      insertionPoint.value
+    )
+    insertionPoint.value = inserted.insertion
+    promptOrigin.value = 'error_context'
+    starterPrompt.value = null
+    resetPromptHistory()
+    pendingErrorCaret.value = true
+    updateDraft(inserted.prompt)
+  }
+
+  function takePendingErrorCaret(): boolean {
+    if (!pendingErrorCaret.value) return false
+    pendingErrorCaret.value = false
+    return true
+  }
+
+  function clearErrorContext(): void {
+    const references = prompt.value.references.filter(
+      (item) => item.kind !== 'error'
+    )
+    if (references.length === prompt.value.references.length) return
+    if (promptOrigin.value === 'error_context') promptOrigin.value = 'typed'
+    resetPromptHistory()
+    updateDraft({
+      text: resetTextWhenReferencesCleared(draft.value, references),
+      references
+    })
   }
 
   function snapshotReferences(next: PromptSnapshot): ComposerReference[] {
@@ -556,9 +606,13 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     promptEpoch,
     promptOrigin,
     starterPrompt,
+    errorContext,
     insertionPoint,
     submission,
+    takePendingErrorCaret,
     setText,
+    setErrorContext,
+    clearErrorContext,
     setInsertionPoint,
     resetPromptHistory,
     applyEditorPrompt,

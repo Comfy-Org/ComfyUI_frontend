@@ -17,6 +17,7 @@ import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 
 import InlinePromptEditor from './composer/InlinePromptEditor.vue'
 import { composerPromptForSubmission } from '../../utils/composerPrompt'
+import { formatAgentErrorContext } from '../../utils/formatAgentErrorContext'
 import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
 import { useAgentMentionPicker } from '../../composables/agent/useAgentMentionPicker'
 import { useSkillMenuDescription } from '../../composables/agent/useSkillMenuDescription'
@@ -114,7 +115,7 @@ const composer = useComposer({
       const end = Math.max(draft.trimEnd().length, ...offsets)
       emit(
         'send',
-        draft.slice(start, end),
+        withErrorContext(draft.slice(start, end)),
         attachments,
         references.map((reference) => ({
           ...reference,
@@ -124,7 +125,7 @@ const composer = useComposer({
           )
         }))
       )
-    } else emit('send', prepared.text.trim(), attachments)
+    } else emit('send', withErrorContext(prepared.text.trim()), attachments)
   },
   isRunning: () => running.value,
   onStop: () => emit('stop', 'button')
@@ -138,6 +139,12 @@ watch(
   { immediate: true, flush: 'sync' }
 )
 const { workflowReferences } = composer
+
+function withErrorContext(text: string): string {
+  const context = composer.errorContext.value
+  return context ? formatAgentErrorContext(context, text) : text
+}
+
 const placeholderLabel = computed(() =>
   t(skills.enabled ? 'agent.placeholder' : 'agent.placeholderWithoutSkills')
 )
