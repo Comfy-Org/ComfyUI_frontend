@@ -1,6 +1,7 @@
 {
   "files": [],
   "references": [
-    { "path": "./packages/object-info-parser/tsconfig.build.json" }
+    { "path": "./packages/object-info-parser/tsconfig.build.json" },
+    { "path": "./packages/layer-editor/tsconfig.build.json" }
   ]
 }

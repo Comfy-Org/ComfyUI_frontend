@@ -4,47 +4,41 @@ import { computed, reactive, ref } from 'vue'
 import {
   BakeRasterCommand,
   snapshotRaster
-} from '@/renderer/extensions/layerEditor/engine/commands/bakeContent'
-import { PropCommand } from '@/renderer/extensions/layerEditor/engine/commands/prop'
-import { SetTransformCommand } from '@/renderer/extensions/layerEditor/engine/commands/setTransform'
-import type { Compositor } from '@/renderer/extensions/layerEditor/engine/compositor'
-import { createWebGLCompositor } from '@/renderer/extensions/layerEditor/engine/compositor/webglCompositor'
-import {
-  filterTopmost,
-  findNode
-} from '@/renderer/extensions/layerEditor/engine/document'
-import { createEditor } from '@/renderer/extensions/layerEditor/engine/editor/editor'
-import type { AlphaSampler } from '@/renderer/extensions/layerEditor/engine/editor/pickOps'
-import { pickLayerAt } from '@/renderer/extensions/layerEditor/engine/editor/pickOps'
-import { Dirty } from '@/renderer/extensions/layerEditor/engine/history'
-import type { FillSpec } from '@/renderer/extensions/layerEditor/engine/fill'
+} from '@comfyorg/layer-editor/commands/bakeContent'
+import { PropCommand } from '@comfyorg/layer-editor/commands/prop'
+import { SetTransformCommand } from '@comfyorg/layer-editor/commands/setTransform'
+import type { Compositor } from '@comfyorg/layer-editor/compositor'
+import { createWebGLCompositor } from '@comfyorg/layer-editor/compositor/webglCompositor'
+import { filterTopmost, findNode } from '@comfyorg/layer-editor/document'
+import { createEditor } from '@comfyorg/layer-editor/editor/editor'
+import type { AlphaSampler } from '@comfyorg/layer-editor/editor/pickOps'
+import { pickLayerAt } from '@comfyorg/layer-editor/editor/pickOps'
+import { Dirty } from '@comfyorg/layer-editor/history'
+import type { FillSpec } from '@comfyorg/layer-editor/fill'
 import {
   fillKind,
   rasterKind,
   registerBuiltinKinds
-} from '@/renderer/extensions/layerEditor/engine/kinds'
-import type { BlendFn } from '@/renderer/extensions/layerEditor/engine/mode'
-import {
-  LAYER_MODES,
-  defaultMode
-} from '@/renderer/extensions/layerEditor/engine/mode'
+} from '@comfyorg/layer-editor/kinds'
+import type { BlendFn } from '@comfyorg/layer-editor/mode'
+import { LAYER_MODES, defaultMode } from '@comfyorg/layer-editor/mode'
 import type {
   FillData,
   Rect,
   SceneNode,
   Transform,
   Vec2
-} from '@/renderer/extensions/layerEditor/engine/node'
-import { placedBounds } from '@/renderer/extensions/layerEditor/engine/render/bake'
-import type { OutsideCanvasPreviewLayer } from '@/renderer/extensions/layerEditor/engine/render/outsideCanvasPreview'
-import { drawOutsideCanvasPreview } from '@/renderer/extensions/layerEditor/engine/render/outsideCanvasPreview'
-import type { CanvasItem } from '@/renderer/extensions/layerEditor/engine/tool'
-import { registerBuiltinTools } from '@/renderer/extensions/layerEditor/engine/tools'
-import { canTransformNode } from '@/renderer/extensions/layerEditor/engine/tools/transformTool'
+} from '@comfyorg/layer-editor/node'
+import { placedBounds } from '@comfyorg/layer-editor/render/bake'
+import type { OutsideCanvasPreviewLayer } from '@comfyorg/layer-editor/render/outsideCanvasPreview'
+import { drawOutsideCanvasPreview } from '@comfyorg/layer-editor/render/outsideCanvasPreview'
+import type { CanvasItem } from '@comfyorg/layer-editor/tool'
+import { registerBuiltinTools } from '@comfyorg/layer-editor/tools'
+import { canTransformNode } from '@comfyorg/layer-editor/tools/transformTool'
 import {
   hitHandle,
   unionBounds
-} from '@/renderer/extensions/layerEditor/engine/tools/transformMath'
+} from '@comfyorg/layer-editor/tools/transformMath'
 import { createPanZoom } from '@/renderer/extensions/layerEditor/panZoom'
 
 export type LayerEditorPointerMode = 'pointer' | 'hand'

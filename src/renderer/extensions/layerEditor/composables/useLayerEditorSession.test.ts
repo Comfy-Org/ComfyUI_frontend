@@ -17,11 +17,8 @@ import type {
   CompositeInput,
   Compositor,
   FBOHandle
-} from '@/renderer/extensions/layerEditor/engine/compositor'
-import type {
-  ChannelData,
-  RasterData
-} from '@/renderer/extensions/layerEditor/engine/node'
+} from '@comfyorg/layer-editor/compositor'
+import type { ChannelData, RasterData } from '@comfyorg/layer-editor/node'
 
 import { reorderDropIndex } from './layerPanelDnd'
 import { useLayerEditorSession } from './useLayerEditorSession'
