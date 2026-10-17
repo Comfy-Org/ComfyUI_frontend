@@ -40,7 +40,7 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import Input from '@/components/ui/input/Input.vue'
+import Input from '@comfyorg/design-system/input/Input'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'

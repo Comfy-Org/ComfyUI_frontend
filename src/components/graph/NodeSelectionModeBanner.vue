@@ -2,7 +2,7 @@
 import { useEventListener } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 
-import CanvasBanner from '@/components/graph/CanvasBanner.vue'
+import CanvasBanner from '@comfyorg/design-system/common/CanvasBanner'
 import Button from '@/components/ui/button/Button.vue'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'

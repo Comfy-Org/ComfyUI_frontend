@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { ref } from 'vue'
 
-import ToggleGroup from './ToggleGroup.vue'
-import ToggleGroupItem from './ToggleGroupItem.vue'
+import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
+import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
 
 const meta: Meta<typeof ToggleGroup> = {
   title: 'Components/ToggleGroup',

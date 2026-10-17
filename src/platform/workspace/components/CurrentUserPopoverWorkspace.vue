@@ -256,10 +256,10 @@ import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfil
 import DeploymentSwitcher from '@/platform/workspace/components/DeploymentSwitcher.vue'
 import WorkspaceSwitcherPopover from '@/platform/workspace/components/WorkspaceSwitcherPopover.vue'
 import Button from '@/components/ui/button/Button.vue'
-import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import {
   canDesktopHostSwitchWorkspace,

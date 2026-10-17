@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
-import Skeleton from './Skeleton.vue'
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 
 const meta: Meta<typeof Skeleton> = {
   title: 'Components/Skeleton',

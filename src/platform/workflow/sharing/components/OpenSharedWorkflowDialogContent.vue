@@ -167,7 +167,7 @@ import AssetSectionList from '@/platform/workflow/sharing/components/AssetSectio
 import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
 import Button from '@/components/ui/button/Button.vue'
 import DialogPanel from '@/components/ui/dialog/DialogPanel.vue'
-import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { cn } from '@comfyorg/tailwind-utils'
 
 type OpeningAction = 'copy-and-open' | 'open-only'

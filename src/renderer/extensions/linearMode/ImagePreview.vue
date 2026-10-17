@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, useTemplateRef } from 'vue'
 
-import ZoomPane from '@/components/ui/ZoomPane.vue'
+import ZoomPane from '@comfyorg/design-system/ZoomPane'
 import { useExecutionStatus } from '@/renderer/extensions/linearMode/useExecutionStatus'
 import { cn } from '@comfyorg/tailwind-utils'
 

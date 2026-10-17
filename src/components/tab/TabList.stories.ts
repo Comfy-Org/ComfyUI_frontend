@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { ref } from 'vue'
 
-import Tab from './Tab.vue'
-import TabList from './TabList.vue'
+import Tab from '@comfyorg/design-system/tab/Tab'
+import TabList from '@comfyorg/design-system/tab/TabList'
 import type { ComponentExposed } from 'vue-component-type-helpers'
 
 interface GenericMeta<C> extends Omit<Meta<C>, 'component'> {

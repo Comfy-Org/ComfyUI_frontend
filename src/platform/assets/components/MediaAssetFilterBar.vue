@@ -74,7 +74,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import SidebarTopArea from '@/components/sidebar/tabs/SidebarTopArea.vue'
+import SidebarTopArea from '@comfyorg/design-system/navigation/SidebarTopArea'
 import Button from '@/components/ui/button/Button.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'

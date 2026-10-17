@@ -246,7 +246,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import { selectionEmphasisClass } from '@/components/rightSidePanel/errors/selectionEmphasis'
 import Button from '@/components/ui/button/Button.vue'
-import TransitionCollapse from '@/components/rightSidePanel/layout/TransitionCollapse.vue'
+import TransitionCollapse from '@comfyorg/design-system/transition/TransitionCollapse'
 import type { MissingModelViewModel } from '@/platform/missingModel/types'
 import type { UploadModelDialogContext } from '@/platform/assets/composables/useUploadModelWizard'
 

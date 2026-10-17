@@ -8,7 +8,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import TextTooltip from '@/components/ui/tooltip/TextTooltip.vue'
 import { whileMouseDown } from '@/utils/mouseDownUtil'
 
-import { menuItemClass } from './menuStyles'
+import { menuItemClass } from '@comfyorg/design-system/lib/menu/menuStyles'
 import type { MenuItemAction } from './types'
 
 const { allowCommandless = false, item } = defineProps<{

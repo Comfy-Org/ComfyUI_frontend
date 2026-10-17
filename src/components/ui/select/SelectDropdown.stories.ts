@@ -4,7 +4,7 @@ import { ref } from 'vue'
 import MultiSelect from '@/components/ui/multi-select/MultiSelect.vue'
 import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
 
-import type { SelectOption } from './types'
+import type { SelectOption } from '@comfyorg/design-system/lib/select/types'
 
 const meta: Meta = {
   title: 'Components/Select/SelectDropdown',

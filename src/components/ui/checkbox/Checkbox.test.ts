@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
-import Checkbox from './Checkbox.vue'
+import Checkbox from '@comfyorg/design-system/checkbox/Checkbox'
 
 describe('Checkbox', () => {
   it('exposes its state and requests the opposite value when activated', async () => {

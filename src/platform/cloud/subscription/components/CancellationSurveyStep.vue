@@ -76,7 +76,7 @@ import { onMounted, ref, useId } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
-import Textarea from '@/components/ui/textarea/Textarea.vue'
+import Textarea from '@comfyorg/design-system/textarea/Textarea'
 import CancellationStepLayout from '@/platform/cloud/subscription/components/CancellationStepLayout.vue'
 import type {
   CancellationReason,

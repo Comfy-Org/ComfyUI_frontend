@@ -46,7 +46,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import Button from '@/components/ui/button/Button.vue'
-import Input from '@/components/ui/input/Input.vue'
+import Input from '@comfyorg/design-system/input/Input'
 import Message from '@/components/ui/message/Message.vue'
 import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
 import type { User } from '@/stores/userStore'

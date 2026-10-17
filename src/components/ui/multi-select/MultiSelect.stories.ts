@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { ref } from 'vue'
 
-import type { SelectOption } from '@/components/ui/select/types'
+import type { SelectOption } from '@comfyorg/design-system/lib/select/types'
 
 import MultiSelect from './MultiSelect.vue'
 

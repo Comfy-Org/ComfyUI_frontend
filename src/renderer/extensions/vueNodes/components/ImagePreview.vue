@@ -253,7 +253,7 @@ import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
 import Button from '@/components/ui/button/Button.vue'
-import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 import { useNodeOutputsExport } from '@/platform/assets/composables/useNodeOutputsExport'
 import { useTelemetry } from '@/platform/telemetry'

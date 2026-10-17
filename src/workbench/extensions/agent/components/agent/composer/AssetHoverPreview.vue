@@ -9,7 +9,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import AssetMediaPreview from './AssetMediaPreview.vue'
 
-import Popover from '@/components/ui/popover/Popover.vue'
+import Popover from '@comfyorg/design-system/popover/Popover'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'

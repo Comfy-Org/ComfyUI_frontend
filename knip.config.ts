@@ -35,7 +35,8 @@ const config: KnipConfig = {
       project: ['src/**/*.ts']
     },
     'packages/design-system': {
-      project: ['src/**/*.{css,js,ts,vue}']
+      project: ['src/**/*.{css,js,ts,vue}'],
+      ignoreDependencies: ['vue-component-type-helpers']
     },
     'packages/tailwind-utils': {
       project: ['src/**/*.{js,ts}']

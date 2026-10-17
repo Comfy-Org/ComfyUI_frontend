@@ -167,7 +167,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { selectionEmphasisClass } from '@/components/rightSidePanel/errors/selectionEmphasis'
 import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
-import TransitionCollapse from '@/components/rightSidePanel/layout/TransitionCollapse.vue'
+import TransitionCollapse from '@comfyorg/design-system/transition/TransitionCollapse'
 import type { MissingNodeType } from '@/platform/nodeReplacement/types'
 import type { SwapNodeGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
 

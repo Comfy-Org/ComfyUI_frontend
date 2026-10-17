@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import type { TooltipContentProps } from 'reka-ui'
 
-import Tooltip from './Tooltip.vue'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from './TooltipContent.vue'
-import TooltipTrigger from './TooltipTrigger.vue'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 
 const { text, side } = defineProps<{
   text: string

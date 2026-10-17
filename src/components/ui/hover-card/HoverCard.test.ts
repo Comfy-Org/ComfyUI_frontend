@@ -5,9 +5,9 @@ import { h } from 'vue'
 
 import { raiseModalLayer, releaseModalLayer } from '@/utils/modalLayerStack'
 
-import HoverCard from './HoverCard.vue'
+import HoverCard from '@comfyorg/design-system/hover-card/HoverCard'
 import HoverCardContent from './HoverCardContent.vue'
-import HoverCardTrigger from './HoverCardTrigger.vue'
+import HoverCardTrigger from '@comfyorg/design-system/hover-card/HoverCardTrigger'
 
 function openModalLayer() {
   const layer = document.createElement('div')

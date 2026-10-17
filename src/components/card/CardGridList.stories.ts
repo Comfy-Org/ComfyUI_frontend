@@ -2,9 +2,9 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
 import { createGridStyle } from '@/utils/gridUtil'
 
-import CardBottom from './CardBottom.vue'
-import CardContainer from './CardContainer.vue'
-import CardTop from './CardTop.vue'
+import CardBottom from '@comfyorg/design-system/content-card/CardBottom'
+import CardContainer from '@comfyorg/design-system/content-card/CardContainer'
+import CardTop from '@comfyorg/design-system/content-card/CardTop'
 
 const meta: Meta = {
   title: 'Components/Card/CardGridList',

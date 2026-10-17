@@ -72,8 +72,8 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
-import VirtualGrid from '@/components/common/VirtualGrid.vue'
+import LoadingOverlay from '@comfyorg/design-system/common/LoadingOverlay'
+import VirtualGrid from '@comfyorg/design-system/common/VirtualGrid'
 import Button from '@/components/ui/button/Button.vue'
 import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
 import type { OutputStackListItem } from '@/platform/assets/composables/useOutputStacks'

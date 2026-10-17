@@ -33,11 +33,11 @@
 </template>
 
 <script setup lang="ts">
-import Slider from '@/components/ui/slider/Slider.vue'
-import NumberField from '@/components/ui/number-field/NumberField.vue'
+import Slider from '@comfyorg/design-system/slider/Slider'
+import NumberField from '@comfyorg/design-system/number-field/NumberField'
 import NumberFieldDecrement from '@/components/ui/number-field/NumberFieldDecrement.vue'
 import NumberFieldIncrement from '@/components/ui/number-field/NumberFieldIncrement.vue'
-import NumberFieldInput from '@/components/ui/number-field/NumberFieldInput.vue'
+import NumberFieldInput from '@comfyorg/design-system/number-field/NumberFieldInput'
 
 defineProps<{
   modelValue: number

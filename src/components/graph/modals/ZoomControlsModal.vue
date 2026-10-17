@@ -62,10 +62,10 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 
-import NumberField from '@/components/ui/number-field/NumberField.vue'
+import NumberField from '@comfyorg/design-system/number-field/NumberField'
 import NumberFieldDecrement from '@/components/ui/number-field/NumberFieldDecrement.vue'
 import NumberFieldIncrement from '@/components/ui/number-field/NumberFieldIncrement.vue'
-import NumberFieldInput from '@/components/ui/number-field/NumberFieldInput.vue'
+import NumberFieldInput from '@comfyorg/design-system/number-field/NumberFieldInput'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
 import { useCommandStore } from '@/stores/commandStore'

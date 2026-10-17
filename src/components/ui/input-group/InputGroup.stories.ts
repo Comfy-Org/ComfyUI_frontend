@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
-import InputGroup from './InputGroup.vue'
-import InputGroupAddon from './InputGroupAddon.vue'
+import InputGroup from '@comfyorg/design-system/input-group/InputGroup'
+import InputGroupAddon from '@comfyorg/design-system/input-group/InputGroupAddon'
 import InputGroupButton from './InputGroupButton.vue'
-import InputGroupInput from './InputGroupInput.vue'
+import InputGroupInput from '@comfyorg/design-system/input-group/InputGroupInput'
 
 const meta: Meta<typeof InputGroup> = {
   title: 'Components/InputGroup',

@@ -137,7 +137,7 @@ import { downloadFile } from '@/base/common/downloadUtil'
 import Button from '@/components/ui/button/Button.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
 import MenuItemContent from '@/components/ui/menu/MenuItemContent.vue'
-import Slider from '@/components/ui/slider/Slider.vue'
+import Slider from '@comfyorg/design-system/slider/Slider'
 
 import { formatTime } from '@/utils/formatUtil'
 

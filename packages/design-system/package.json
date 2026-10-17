@@ -24,7 +24,9 @@
   ],
   "type": "module",
   "exports": {
-    "./card/*": "./src/components/card/*.vue",
+    "./*": "./src/components/*.vue",
+    "./lib/*": "./src/components/*.ts",
+    "./components.css": "./dist/components.css",
     "./css/*": "./src/css/*",
     "./icons/*": "./src/icons/*",
     "./button.variants": "./src/button.variants.ts",
@@ -34,10 +36,15 @@
   },
   "publishConfig": {
     "exports": {
-      "./card/*": {
-        "types": "./dist/card/*.d.ts",
-        "import": "./dist/card/*.js"
+      "./*": {
+        "types": "./dist/*.d.ts",
+        "import": "./dist/*.js"
       },
+      "./lib/*": {
+        "types": "./dist/*.d.ts",
+        "import": "./dist/*.js"
+      },
+      "./components.css": "./dist/components.css",
       "./css/*": "./src/css/*",
       "./icons/*": "./src/icons/*",
       "./button.variants": "./src/button.variants.ts",
@@ -60,8 +67,14 @@
     "@iconify/tailwind4": "catalog:",
     "@iconify/tools": "catalog:",
     "@iconify/utils": "catalog:",
+    "@vueuse/core": "catalog:",
+    "chart.js": "^4.5.0",
     "cva": "catalog:",
-    "tw-animate-css": "catalog:"
+    "dompurify": "catalog:",
+    "es-toolkit": "^1.39.9",
+    "reka-ui": "catalog:",
+    "tw-animate-css": "catalog:",
+    "vue-component-type-helpers": "catalog:"
   },
   "devDependencies": {
     "@comfyorg/tailwind-utils": "workspace:^",

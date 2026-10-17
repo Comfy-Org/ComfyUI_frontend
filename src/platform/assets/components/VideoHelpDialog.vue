@@ -41,11 +41,11 @@
 import { VisuallyHidden } from 'reka-ui'
 
 import Button from '@/components/ui/button/Button.vue'
-import Dialog from '@/components/ui/dialog/Dialog.vue'
-import DialogContent from '@/components/ui/dialog/DialogContent.vue'
-import DialogOverlay from '@/components/ui/dialog/DialogOverlay.vue'
-import DialogPortal from '@/components/ui/dialog/DialogPortal.vue'
-import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
+import Dialog from '@comfyorg/design-system/dialog/Dialog'
+import DialogContent from '@comfyorg/design-system/dialog/DialogContent'
+import DialogOverlay from '@comfyorg/design-system/dialog/DialogOverlay'
+import DialogPortal from '@comfyorg/design-system/dialog/DialogPortal'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 
 const isVisible = defineModel<boolean>({ required: true })
 

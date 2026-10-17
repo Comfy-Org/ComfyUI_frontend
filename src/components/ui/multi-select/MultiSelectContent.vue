@@ -116,7 +116,7 @@ import type { StyleValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import type { SelectOption } from '@/components/ui/select/types'
+import type { SelectOption } from '@comfyorg/design-system/lib/select/types'
 import { useSelectSearch } from '@/components/ui/select/useSelectSearch'
 
 import {

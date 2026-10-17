@@ -4,11 +4,11 @@ import { describe, expect, it, vi } from 'vitest'
 import { h, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import TagsInput from './TagsInput.vue'
-import TagsInputInput from './TagsInputInput.vue'
-import TagsInputItem from './TagsInputItem.vue'
+import TagsInput from '@comfyorg/design-system/tags-input/TagsInput'
+import TagsInputInput from '@comfyorg/design-system/tags-input/TagsInputInput'
+import TagsInputItem from '@comfyorg/design-system/tags-input/TagsInputItem'
 import TagsInputItemDelete from './TagsInputItemDelete.vue'
-import TagsInputItemText from './TagsInputItemText.vue'
+import TagsInputItemText from '@comfyorg/design-system/tags-input/TagsInputItemText'
 
 const i18n = createI18n({
   legacy: false,

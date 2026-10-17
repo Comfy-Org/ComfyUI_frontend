@@ -92,14 +92,14 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import ViewportWidgetShell from '@/components/load3d/ViewportWidgetShell.vue'
+import ViewportWidgetShell from '@comfyorg/design-system/common/ViewportWidgetShell'
 import { actionClass } from '@/components/load3d/menubar/menuBarStyles'
 import Button from '@/components/ui/button/Button.vue'
-import Select from '@/components/ui/select/Select.vue'
+import Select from '@comfyorg/design-system/select/Select'
 import SelectContent from '@/components/ui/select/SelectContent.vue'
-import SelectItem from '@/components/ui/select/SelectItem.vue'
-import SelectTrigger from '@/components/ui/select/SelectTrigger.vue'
-import SelectValue from '@/components/ui/select/SelectValue.vue'
+import SelectItem from '@comfyorg/design-system/select/SelectItem'
+import SelectTrigger from '@comfyorg/design-system/select/SelectTrigger'
+import SelectValue from '@comfyorg/design-system/select/SelectValue'
 import { useCameraAngle } from '@/composables/useCameraAngle'
 import {
   DISTANCE_TERMS,

@@ -3,8 +3,8 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { defineComponent, ref } from 'vue'
 
-import ToggleGroup from './ToggleGroup.vue'
-import ToggleGroupItem from './ToggleGroupItem.vue'
+import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
+import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
 
 describe('ToggleGroup', () => {
   it('keeps a required single selection when clicked again', async () => {

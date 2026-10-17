@@ -7,7 +7,7 @@ import Button from '@/components/ui/button/Button.vue'
 import Card from '@comfyorg/design-system/card/Card'
 import CardFooter from '@comfyorg/design-system/card/CardFooter'
 import CardHeader from '@comfyorg/design-system/card/CardHeader'
-import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 
 const { class: className, onClose } = defineProps<{
   class?: HTMLAttributes['class']

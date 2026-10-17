@@ -3,8 +3,8 @@ import Badge from '@/components/ui/badge/Badge.vue'
 import { cn } from '@comfyorg/tailwind-utils'
 import { toValue } from 'vue'
 
-import OverlayIcon from '@/components/common/OverlayIcon.vue'
-import Switch from '@/components/ui/switch/Switch.vue'
+import OverlayIcon from '@comfyorg/design-system/common/OverlayIcon'
+import Switch from '@comfyorg/design-system/switch/Switch'
 
 import type { MenuItem } from './types'
 

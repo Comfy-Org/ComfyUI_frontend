@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
-import Input from '@/components/ui/input/Input.vue'
+import Input from '@comfyorg/design-system/input/Input'
 
-import Label from './Label.vue'
+import Label from '@comfyorg/design-system/label/Label'
 
 const meta: Meta<typeof Label> = {
   title: 'Components/Label',

@@ -22,7 +22,7 @@ const filename = path.join(
 const buttonImport =
   "<script setup>\nimport Button from '@/components/ui/button/Button.vue'\n</script>\n"
 const inputImport =
-  "<script setup>\nimport Input from '@/components/ui/input/Input.vue'\n</script>\n"
+  "<script setup>\nimport Input from '@comfyorg/design-system/input/Input'\n</script>\n"
 
 function vue(template: string, script = '') {
   return { filename, code: `${script}<template>${template}</template>\n` }

@@ -15,7 +15,7 @@ import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 
 import MenuItems from './MenuItems.vue'
 import { getMenuAnchorPosition } from './menuAnchor'
-import { menuContentClass } from './menuStyles'
+import { menuContentClass } from '@comfyorg/design-system/lib/menu/menuStyles'
 import type { MenuItem } from './types'
 
 defineOptions({ inheritAttrs: false })

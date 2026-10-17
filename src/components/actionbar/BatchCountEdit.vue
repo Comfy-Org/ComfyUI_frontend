@@ -45,9 +45,9 @@
 </template>
 
 <script lang="ts" setup>
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 
 import { storeToRefs } from 'pinia'
 import { computed, ref, watch } from 'vue'
@@ -58,7 +58,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import TinyChevronIcon from './TinyChevronIcon.vue'
+import TinyChevronIcon from '@comfyorg/design-system/icon/TinyChevronIcon'
 
 const { t } = useI18n()
 

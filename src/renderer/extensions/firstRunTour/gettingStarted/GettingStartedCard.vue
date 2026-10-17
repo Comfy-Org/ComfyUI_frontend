@@ -74,7 +74,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import Loader from '@/components/loader/Loader.vue'
 import DefaultThumbnail from '@/components/templates/thumbnails/DefaultThumbnail.vue'
-import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 
 const {
   imageSrc = '',

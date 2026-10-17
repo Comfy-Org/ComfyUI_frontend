@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
-import Input from './Input.vue'
+import Input from '@comfyorg/design-system/input/Input'
 
 const meta: Meta<typeof Input> = {
   title: 'Components/Input',

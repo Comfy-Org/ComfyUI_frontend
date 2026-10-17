@@ -3,9 +3,9 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Tag from '@/components/chip/Tag.vue'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 
 const { t } = useI18n()
 

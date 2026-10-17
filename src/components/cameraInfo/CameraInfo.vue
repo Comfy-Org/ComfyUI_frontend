@@ -85,7 +85,7 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import ViewportWidgetShell from '@/components/load3d/ViewportWidgetShell.vue'
+import ViewportWidgetShell from '@comfyorg/design-system/common/ViewportWidgetShell'
 import { actionClass } from '@/components/load3d/menubar/menuBarStyles'
 import Button from '@/components/ui/button/Button.vue'
 import { useCameraInfo } from '@/composables/useCameraInfo'

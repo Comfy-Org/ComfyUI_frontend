@@ -5,10 +5,10 @@ import type {
 } from '@storybook/vue3-vite'
 import { ref, toRefs } from 'vue'
 
-import NumberField from './NumberField.vue'
+import NumberField from '@comfyorg/design-system/number-field/NumberField'
 import NumberFieldDecrement from './NumberFieldDecrement.vue'
 import NumberFieldIncrement from './NumberFieldIncrement.vue'
-import NumberFieldInput from './NumberFieldInput.vue'
+import NumberFieldInput from '@comfyorg/design-system/number-field/NumberFieldInput'
 
 type StoryArgs = ComponentPropsAndSlots<typeof NumberField>
 

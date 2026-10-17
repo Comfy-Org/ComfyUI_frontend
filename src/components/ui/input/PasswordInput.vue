@@ -2,10 +2,10 @@
 import type { HTMLAttributes } from 'vue'
 import { ref } from 'vue'
 
-import InputGroup from '@/components/ui/input-group/InputGroup.vue'
-import InputGroupAddon from '@/components/ui/input-group/InputGroupAddon.vue'
+import InputGroup from '@comfyorg/design-system/input-group/InputGroup'
+import InputGroupAddon from '@comfyorg/design-system/input-group/InputGroupAddon'
 import InputGroupButton from '@/components/ui/input-group/InputGroupButton.vue'
-import InputGroupInput from '@/components/ui/input-group/InputGroupInput.vue'
+import InputGroupInput from '@comfyorg/design-system/input-group/InputGroupInput'
 
 const { class: className, disabled = false } = defineProps<{
   class?: HTMLAttributes['class']

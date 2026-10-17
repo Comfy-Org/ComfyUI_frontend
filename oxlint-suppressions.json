@@ -239,11 +239,6 @@
       "count": 2
     }
   },
-  "src/components/ui/toggle-group/index.ts": {
-    "comfy/no-reexports": {
-      "count": 2
-    }
-  },
   "src/composables/auth/useAuthActions.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1

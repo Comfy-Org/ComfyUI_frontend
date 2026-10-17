@@ -73,7 +73,7 @@ import { computed, onMounted, ref, toRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
-import SidebarTopArea from '@/components/sidebar/tabs/SidebarTopArea.vue'
+import SidebarTopArea from '@comfyorg/design-system/navigation/SidebarTopArea'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import ElectronDownloadItems from '@/components/sidebar/tabs/modelLibrary/ElectronDownloadItems.vue'

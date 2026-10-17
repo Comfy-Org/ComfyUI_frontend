@@ -6,8 +6,8 @@ import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@/components/ui/button/Button.vue'
 import type { ButtonVariants } from '@comfyorg/design-system/button.variants'
 
-import type { InputGroupButtonVariants } from './inputGroup.variants'
-import { inputGroupButtonVariants } from './inputGroup.variants'
+import type { InputGroupButtonVariants } from '@comfyorg/design-system/lib/input-group/inputGroup.variants'
+import { inputGroupButtonVariants } from '@comfyorg/design-system/lib/input-group/inputGroup.variants'
 
 const {
   variant = 'muted-textonly',

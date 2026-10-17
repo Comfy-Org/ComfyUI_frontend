@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import CanvasBanner from '@/components/graph/CanvasBanner.vue'
+import CanvasBanner from '@comfyorg/design-system/common/CanvasBanner'
 import Button from '@/components/ui/button/Button.vue'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'

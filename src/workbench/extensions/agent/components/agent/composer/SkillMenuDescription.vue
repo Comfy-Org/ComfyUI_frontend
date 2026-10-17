@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, useTemplateRef } from 'vue'
 
-import HoverCard from '@/components/ui/hover-card/HoverCard.vue'
+import HoverCard from '@comfyorg/design-system/hover-card/HoverCard'
 import HoverCardContent from '@/components/ui/hover-card/HoverCardContent.vue'
 import type { SkillReferenceMetadata } from '../../../types/skillReference'
 

@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { ref } from 'vue'
 
-import Tree from './Tree.vue'
+import Tree from '@comfyorg/design-system/tree/Tree'
 import TreeItem from './TreeItem.vue'
 
 interface ModelItem {

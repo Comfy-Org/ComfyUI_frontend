@@ -64,7 +64,7 @@ import { useI18n } from 'vue-i18n'
 import { ColorComparisonMethod } from '@/extensions/core/maskeditor/types'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
 
-import DropdownControl from './controls/DropdownControl.vue'
+import DropdownControl from '@comfyorg/design-system/select/DropdownControl'
 import SliderControl from './controls/SliderControl.vue'
 import ToggleControl from './controls/ToggleControl.vue'
 

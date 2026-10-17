@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
-import Textarea from './Textarea.vue'
+import Textarea from '@comfyorg/design-system/textarea/Textarea'
 
 describe('Textarea', () => {
   it('renders a textarea element', () => {

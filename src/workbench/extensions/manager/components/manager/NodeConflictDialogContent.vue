@@ -159,7 +159,7 @@ import { filter, flatMap, map, some } from 'es-toolkit/compat'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import ContentDivider from '@/components/common/ContentDivider.vue'
+import ContentDivider from '@comfyorg/design-system/common/ContentDivider'
 import Button from '@/components/ui/button/Button.vue'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 import type {

@@ -38,12 +38,12 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import TinyChevronIcon from '@/components/actionbar/TinyChevronIcon.vue'
-import DotSpinner from '@/components/common/DotSpinner.vue'
+import TinyChevronIcon from '@comfyorg/design-system/icon/TinyChevronIcon'
+import DotSpinner from '@comfyorg/design-system/common/DotSpinner'
 import Menu from '@/components/ui/menu/Menu.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { ButtonVariants } from '@comfyorg/design-system/button.variants'
-import ButtonGroup from '@/components/ui/button-group/ButtonGroup.vue'
+import ButtonGroup from '@comfyorg/design-system/button-group/ButtonGroup'
 import type { components } from '@/types/comfyRegistryTypes'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 

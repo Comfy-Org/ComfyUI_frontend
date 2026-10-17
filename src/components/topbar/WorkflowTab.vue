@@ -130,8 +130,8 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import MenuItems from '@/components/ui/menu/MenuItems.vue'
-import { menuContentClass } from '@/components/ui/menu/menuStyles'
-import TabsTrigger from '@/components/ui/tabs/TabsTrigger.vue'
+import { menuContentClass } from '@comfyorg/design-system/lib/menu/menuStyles'
+import TabsTrigger from '@comfyorg/design-system/tabs/TabsTrigger'
 import {
   usePragmaticDraggable,
   usePragmaticDroppable

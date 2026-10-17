@@ -3,11 +3,11 @@ import { ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import Tag from '@/components/chip/Tag.vue'
-import CardBottom from './CardBottom.vue'
-import CardContainer from './CardContainer.vue'
-import CardDescription from './CardDescription.vue'
-import CardTitle from './CardTitle.vue'
-import CardTop from './CardTop.vue'
+import CardBottom from '@comfyorg/design-system/content-card/CardBottom'
+import CardContainer from '@comfyorg/design-system/content-card/CardContainer'
+import CardDescription from '@comfyorg/design-system/content-card/CardDescription'
+import CardTitle from '@comfyorg/design-system/content-card/CardTitle'
+import CardTop from '@comfyorg/design-system/content-card/CardTop'
 
 interface CardStoryArgs {
   // CardContainer props

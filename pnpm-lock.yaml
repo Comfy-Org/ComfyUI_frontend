@@ -1366,12 +1366,30 @@ importers:
       '@iconify/utils':
         specifier: 'catalog:'
         version: 3.1.4
+      '@vueuse/core':
+        specifier: 'catalog:'
+        version: 14.4.0(vue@3.5.42(typescript@6.0.3))
+      chart.js:
+        specifier: ^4.5.0
+        version: 4.5.1
       cva:
         specifier: 'catalog:'
         version: 1.0.0-beta.4(typescript@6.0.3)
+      dompurify:
+        specifier: 'catalog:'
+        version: 3.4.13
+      es-toolkit:
+        specifier: ^1.39.9
+        version: 1.49.0
+      reka-ui:
+        specifier: 'catalog:'
+        version: 2.6.2(typescript@6.0.3)(vue@3.5.42(typescript@6.0.3))
       tw-animate-css:
         specifier: 'catalog:'
         version: 1.4.0
+      vue-component-type-helpers:
+        specifier: 'catalog:'
+        version: 3.3.11
     devDependencies:
       '@comfyorg/tailwind-utils':
         specifier: workspace:^

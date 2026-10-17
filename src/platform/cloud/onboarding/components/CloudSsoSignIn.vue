@@ -38,7 +38,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import Input from '@/components/ui/input/Input.vue'
+import Input from '@comfyorg/design-system/input/Input'
 import Message from '@/components/ui/message/Message.vue'
 import { readSsoHint } from '@/platform/auth/session/ssoReentryStorage'
 import {

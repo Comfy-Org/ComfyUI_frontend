@@ -1,3 +1,6 @@
+import { globSync } from 'node:fs'
+import { relative } from 'node:path'
+
 import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vite'
 import dts from 'vite-plugin-dts'
@@ -13,17 +16,19 @@ export default defineConfig({
   ],
   build: {
     lib: {
-      entry: {
-        'card/Card': 'src/components/card/Card.vue',
-        'card/CardHeader': 'src/components/card/CardHeader.vue',
-        'card/CardTitle': 'src/components/card/CardTitle.vue',
-        'card/CardFooter': 'src/components/card/CardFooter.vue'
-      },
+      entry: Object.fromEntries(
+        globSync('src/components/**/*.{vue,ts}').map((file) => [
+          relative('src/components', file).replace(/\.(vue|ts)$/, ''),
+          file
+        ])
+      ),
+      cssFileName: 'components',
       formats: ['es']
     },
     minify: false,
     rollupOptions: {
-      external: ['vue', 'cva'],
+      external:
+        /^(vue|cva|reka-ui|@vueuse\/core|chart\.js|dompurify|es-toolkit)(\/|$)/,
       output: {
         entryFileNames: '[name].js',
         chunkFileNames: 'shared/[name]-[hash].js'

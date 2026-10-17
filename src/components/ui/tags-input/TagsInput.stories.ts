@@ -2,11 +2,11 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import type { ComponentExposed } from 'vue-component-type-helpers'
 import { ref } from 'vue'
 
-import TagsInput from './TagsInput.vue'
-import TagsInputInput from './TagsInputInput.vue'
-import TagsInputItem from './TagsInputItem.vue'
+import TagsInput from '@comfyorg/design-system/tags-input/TagsInput'
+import TagsInputInput from '@comfyorg/design-system/tags-input/TagsInputInput'
+import TagsInputItem from '@comfyorg/design-system/tags-input/TagsInputItem'
 import TagsInputItemDelete from './TagsInputItemDelete.vue'
-import TagsInputItemText from './TagsInputItemText.vue'
+import TagsInputItemText from '@comfyorg/design-system/tags-input/TagsInputItemText'
 
 interface GenericMeta<C> extends Omit<Meta<C>, 'component'> {
   component: ComponentExposed<C>

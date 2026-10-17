@@ -167,7 +167,7 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
-import VirtualGrid from '@/components/common/VirtualGrid.vue'
+import VirtualGrid from '@comfyorg/design-system/common/VirtualGrid'
 import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
 import SearchAutocomplete from '@/components/ui/search-input/SearchAutocomplete.vue'
 import Button from '@/components/ui/button/Button.vue'

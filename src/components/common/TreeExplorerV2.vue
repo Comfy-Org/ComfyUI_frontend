@@ -62,7 +62,7 @@ import { computed, provide, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import MenuItems from '@/components/ui/menu/MenuItems.vue'
-import { menuContentClass } from '@/components/ui/menu/menuStyles'
+import { menuContentClass } from '@comfyorg/design-system/lib/menu/menuStyles'
 import type { MenuItem } from '@/components/ui/menu/types'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'

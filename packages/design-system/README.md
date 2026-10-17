@@ -53,6 +53,19 @@ are compiled ES modules with type declarations; workspace imports use their
 Vue source. Both use the theme imported above, which scans the component
 classes for Tailwind utilities.
 
+Published consumers must also import the component stylesheet for scoped styles
+and animations:
+
+```ts
+import '@comfyorg/design-system/components.css'
+```
+
+Import supporting types and recipes through `@comfyorg/design-system/lib/`,
+for example `@comfyorg/design-system/lib/select/types`.
+
+Components that retain `pi-*` icon classes require the host to load
+`primeicons/primeicons.css` separately.
+
 ```vue
 <script setup lang="ts">
 import Card from '@comfyorg/design-system/card/Card'

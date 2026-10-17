@@ -60,7 +60,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import MultiSelect from '@/components/ui/multi-select/MultiSelect.vue'
-import type { SelectOption } from '@/components/ui/select/types'
+import type { SelectOption } from '@comfyorg/design-system/lib/select/types'
 import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
 import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
