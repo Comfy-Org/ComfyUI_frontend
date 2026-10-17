@@ -59,7 +59,7 @@ export type NodeChange = 'add' | 'update' | 'delete'
  * graph.
  */
 /** Interior widget edits: definition id → interior node id → widget names. */
-export type InteriorChanges = ReadonlyMap<
+type InteriorChanges = ReadonlyMap<
   string,
   ReadonlyMap<string, ReadonlySet<string> | 'all'>
 >
