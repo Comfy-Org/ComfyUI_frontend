@@ -1,3 +1,4 @@
+import { openBillingUrl } from '@/platform/workspace/billing/billingTab'
 /**
  * The app's single billing SDK instance and the top-up effects the poller
  * performs today, moved onto the lifecycle's state: the progress toast and —
@@ -82,6 +83,7 @@ import {
 } from './subscriptionOperationView'
 import {
   declineDetail,
+  projectHostedTopupCheckoutResult,
   projectTopupOperation,
   projectTopupResult
 } from './topupOperationView'
@@ -335,7 +337,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     const offered = offeredActions.get(state.id) ?? new Set<string>()
     if (offered.has(actionUrl)) return
     offeredActions.set(state.id, offered.add(actionUrl))
-    if (window.open(actionUrl, '_blank')) {
+    if (openBillingUrl(actionUrl)) {
       sdk.lifecycle.reportHostedStepOpened(state.id, 'new_tab')
       return
     }
@@ -394,6 +396,15 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     const result = await sdk.topup.createTopupCheckout({ amountCents })
     if (result.status === 'ok') void billingCapabilities.refresh()
     return projectTopupResult(result, amountCents)
+  }
+
+  async function createHostedTopupCheckout(
+    amountCents: number,
+    returnUrl: string
+  ): Promise<string> {
+    return projectHostedTopupCheckoutResult(
+      await sdk.topup.createHostedTopupCheckout({ amountCents, returnUrl })
+    )
   }
 
   // The backend gate on these routes is independent of the client flag, so a
@@ -603,6 +614,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     getOperation,
     recoverPendingOperation,
     createTopup,
+    createHostedTopupCheckout,
     subscribe,
     previewSubscribe,
     cancelSubscription,

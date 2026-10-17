@@ -115,6 +115,7 @@ vi.mock(import('./devPanelLog'), () => ({
   recordDevEvent: devLogState.recordDevEvent
 }))
 
+vi.mock(import('@/scripts/api'))
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { graph: null, canvas: null }
 }))
