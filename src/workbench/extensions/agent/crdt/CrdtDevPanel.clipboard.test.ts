@@ -5,8 +5,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useClipboard } from '@vueuse/core'
 
 import { i18n } from '@/i18n'
+import { api } from '@/scripts/api'
 
-const { writeText } = vi.hoisted(() => ({
+const { reportError, writeText } = vi.hoisted(() => ({
+  reportError: vi.fn(),
   writeText: vi.fn<ReturnType<typeof useClipboard>['copy']>(() =>
     Promise.resolve()
   )
@@ -14,6 +16,7 @@ const { writeText } = vi.hoisted(() => ({
 
 vi.mock(import('@vueuse/core'), { spy: true })
 vi.mocked(useClipboard).mockReturnValue(fromPartial({ copy: writeText }))
+vi.mock(import('@/platform/telemetry/reportError'), () => ({ reportError }))
 
 import type { AgentCrdtStatus } from './agentCrdtStatus'
 import CrdtDevPanel from './CrdtDevPanel.vue'
@@ -26,14 +29,7 @@ import {
   stringifyDevEvents
 } from './devPanelLog'
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    apiURL: (route: string) => `/api${route}`,
-    clientId: 'client-test-1',
-    api_host: 'localhost:8188',
-    api_base: ''
-  }
-}))
+vi.mock(import('@/scripts/api'))
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { rootGraph: { serialize: () => ({ nodes: [], links: [] }) } }
 }))
@@ -71,6 +67,8 @@ function renderPanel(overrides: Partial<AgentCrdtStatus> = {}) {
 
 describe('CrdtDevPanel clipboard controls', () => {
   beforeEach(() => {
+    api.clientId = 'client-test-1'
+    api.api_host = 'localhost:8188'
     vi.mocked(useClipboard).mockReturnValue(fromPartial({ copy: writeText }))
     setCrdtDebugEnabled(true)
     clearDevEvents()
@@ -199,6 +197,10 @@ describe('CrdtDevPanel clipboard controls', () => {
       await userEvent.click(docButton)
 
       expect(writeText).toHaveBeenCalledOnce()
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+        surface: 'agent',
+        errorType: 'crdt_dev_panel_clipboard_write_failed'
+      })
       expect(docButton).toHaveTextContent('Copy failed')
 
       await vi.advanceTimersByTimeAsync(1600)

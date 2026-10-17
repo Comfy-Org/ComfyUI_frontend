@@ -17,6 +17,7 @@ const CHIP: AgentStarterPromptAttribution = {
   promptId: 'slot_2',
   promptIndex: 1,
   promptCount: 5,
+  visiblePromptCount: 3,
   promptTextHash: 'deadbeef',
   locale: 'en',
   assignment: 'control'
@@ -173,6 +174,9 @@ describe('useComposer', () => {
       prompt_id: 'slot_2',
       prompt_index: 1,
       prompt_count: 5,
+      // Both counts travel, so a narrow panel is distinguishable from a
+      // shrunken set rather than overwriting it.
+      visible_prompt_count: 3,
       prompt_text_hash: 'deadbeef',
       locale: 'zh',
       click_id: expect.any(String),

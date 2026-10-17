@@ -456,6 +456,7 @@ beforeEach(() => {
   URL.revokeObjectURL = vi.fn()
   localStorage.clear()
   localStorage.setItem('Comfy.AgentPanel.onboarded', 'true')
+  ws.clear()
   getServerFeature.mockReset()
   getServerFeature.mockImplementation(
     (_name: string, defaultValue?: unknown) => defaultValue
@@ -647,7 +648,6 @@ function addTab(
 
 describe('AgentPanelRoot first-use experience', () => {
   beforeEach(() => {
-    ws.clear()
     vi.mocked(fetch).mockImplementation(async () =>
       json(200, agentThreadList())
     )
@@ -1021,7 +1021,6 @@ function queryInlinePaywallText(text: string): HTMLElement | null {
 
 describe('AgentPanelRoot paywall actions', () => {
   beforeEach(() => {
-    ws.clear()
     openAccountPrecondition.mockClear()
   })
 
@@ -1315,7 +1314,6 @@ describe('AgentPanelRoot paywall telemetry', () => {
   let hasFunds: Ref<boolean>
 
   beforeEach(() => {
-    ws.clear()
     openAccountPrecondition.mockClear()
     vi.mocked(useTelemetry())!.trackAgentPaywallShown.mockClear()
     vi.mocked(useTelemetry())!.trackAgentPaywallCtaClicked.mockClear()
@@ -1886,7 +1884,6 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
   const STANDING = 'agent-credits-exhausted-paywall'
 
   beforeEach(() => {
-    ws.clear()
     openAccountPrecondition.mockClear()
     telemetry.trackAgentPaywallShown.mockClear()
     telemetry.trackAgentPaywallCtaClicked.mockClear()
@@ -2359,10 +2356,6 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
 })
 
 describe('AgentPanelRoot session notices', () => {
-  beforeEach(() => {
-    ws.clear()
-  })
-
   it('surfaces a session error notice via the host error modal, not a toast', async () => {
     executionErrors.showErrorOverlay.mockClear()
     vi.mocked(fetch).mockImplementation(
@@ -2375,7 +2368,7 @@ describe('AgentPanelRoot session notices', () => {
     renderWithSelectedTarget()
     const toast = useToast()
 
-    ws.emit('agent_message_done', {})
+    dispatchApiEvent('agent_message_done', {})
     await nextTick()
 
     expect(toast.toasts).toHaveLength(0)
@@ -2701,14 +2694,13 @@ function stubUploadFetch(uploaded: string[] = [], status = 200): string[] {
 
 describe('AgentPanelRoot attach flow', () => {
   beforeEach(() => {
-    ws.clear()
     const tab = addTab('workflows/current.json')
     workflowStore.activeWorkflow = tab
     useAgentWorkflowTabBindingStore().bind('wf-42', tab.path)
   })
 
   it('reads changed developer upload limits without remounting the panel', async () => {
-    getServerFeature.mockImplementation(
+    vi.mocked(api.getServerFeature).mockImplementation(
       (name, defaultValue) => getDevOverride(name) ?? defaultValue
     )
     const uploaded = stubUploadFetch()
@@ -3080,7 +3072,7 @@ describe('AgentPanelRoot attach flow', () => {
   })
 
   it('uploads a picked video above 20MB when the server permits it', async () => {
-    getServerFeature.mockReturnValue(100 * 1024 * 1024)
+    vi.mocked(api.getServerFeature).mockReturnValue(100 * 1024 * 1024)
     const uploaded = stubUploadFetch()
     renderWithSelectedTarget()
 
@@ -3163,7 +3155,7 @@ describe('AgentPanelRoot attach flow', () => {
   it('warns with the configured server limit when a video exceeds it', async () => {
     // PM-118: dropping a movie showed "Comfy Agent hit a server error" because a
     // size rejection was routed through the agent-failure overlay.
-    getServerFeature.mockReturnValue(24 * 1024 * 1024)
+    vi.mocked(api.getServerFeature).mockReturnValue(24 * 1024 * 1024)
     executionErrors.showErrorOverlay.mockClear()
     stubUploadFetch()
     telemetry.trackAgentAttachButtonClicked.mockClear()
@@ -3188,7 +3180,7 @@ describe('AgentPanelRoot attach flow', () => {
   })
 
   it('uses a larger server limit for non-video attachments', async () => {
-    getServerFeature.mockReturnValue(100 * 1024 * 1024)
+    vi.mocked(api.getServerFeature).mockReturnValue(100 * 1024 * 1024)
     const uploaded = stubUploadFetch()
     renderWithSelectedTarget()
     await nextTick()
@@ -3206,7 +3198,7 @@ describe('AgentPanelRoot attach flow', () => {
   })
 
   it('uploads a dropped video above 20MB when the server permits it', async () => {
-    getServerFeature.mockReturnValue(100 * 1024 * 1024)
+    vi.mocked(api.getServerFeature).mockReturnValue(100 * 1024 * 1024)
     const uploaded = stubUploadFetch()
     renderWithSelectedTarget()
     await nextTick()
@@ -3690,7 +3682,7 @@ describe('AgentPanelRoot attach flow', () => {
   })
 
   it('uses the server limit for audio rejection copy', async () => {
-    getServerFeature.mockReturnValue(24 * 1024 * 1024)
+    vi.mocked(api.getServerFeature).mockReturnValue(24 * 1024 * 1024)
     const uploaded = stubUploadFetch()
     renderWithSelectedTarget()
     await nextTick()
@@ -4719,7 +4711,10 @@ describe('AgentPanelRoot attach flow', () => {
     )
 
     await renderAndSend('first message')
-    ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
+    dispatchApiEvent('agent_message_done', {
+      message_id: 'm-1',
+      thread_id: 'th-1'
+    })
     await screen.findByRole('button', { name: 'Send' })
 
     const file = new File(['x'], 'cat.png', { type: 'image/png' })
@@ -4927,10 +4922,6 @@ describe('AgentPanelRoot attach flow', () => {
 })
 
 describe('AgentPanelRoot canvas draft on send', () => {
-  beforeEach(() => {
-    ws.clear()
-  })
-
   it('sends the active tab activeState as draft.content (PM-813/ecw-128)', async () => {
     const messageBodies: unknown[] = []
     vi.mocked(fetch).mockImplementation(
@@ -4998,10 +4989,6 @@ describe('AgentPanelRoot canvas draft on send', () => {
 })
 
 describe('AgentPanelRoot history', () => {
-  beforeEach(() => {
-    ws.clear()
-  })
-
   async function renderWithActiveThread(): Promise<void> {
     vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
       const url = String(input)
@@ -5029,6 +5016,39 @@ describe('AgentPanelRoot history', () => {
       expect(useAgentChatHistoryStore().activeId).toBe('th-active')
     )
   }
+
+  it('keeps a new chat rename when the first turn creates its thread', async () => {
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) =>
+      String(input).endsWith('/api/agent/threads')
+        ? json(200, agentThreadList())
+        : json(202, { thread_id: 'th-new', message_id: 'm-new' })
+    )
+    workflowStore.activeWorkflow = addTab('workflows/new-chat.json')
+    renderWithSelectedTarget()
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.newChatTitle')
+      })
+    )
+    const renameInput = await screen.findByRole<HTMLInputElement>('textbox', {
+      name: i18n.global.t('g.rename')
+    })
+    await userEvent.type(renameInput, 'Duck storyboard{Enter}')
+    expect(screen.getByText('Duck storyboard')).toBeInTheDocument()
+
+    const composer = screen.getByRole('textbox')
+    await userEvent.click(composer)
+    await userEvent.paste('Build it')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    await vi.waitFor(() => {
+      expect(useAgentConversationStore().threadId).toBe('th-new')
+      expect(useAgentChatHistoryStore().titleFor('th-new')).toBe(
+        'Duck storyboard'
+      )
+    })
+  })
 
   it('renames the current chat from the title menu on Enter', async () => {
     await renderWithActiveThread()
@@ -5389,7 +5409,6 @@ describe('AgentPanelRoot history', () => {
 
 describe('AgentPanelRoot transcript copy', () => {
   beforeEach(() => {
-    ws.clear()
     clipboard.copy.mockClear()
   })
 
@@ -5489,7 +5508,6 @@ describe('AgentPanelRoot transcript copy', () => {
 
 describe('AgentPanelRoot feedback capture', () => {
   beforeEach(() => {
-    ws.clear()
     vi.mocked(useTelemetry())!.trackAgentMessageFeedback.mockClear()
   })
 
@@ -5733,7 +5751,7 @@ describe('AgentPanelRoot run approval telemetry', () => {
     await vi.waitFor(() =>
       expect(fetchRequests({ method: 'POST', url: /\/asks\// })).toHaveLength(1)
     )
-    ws.emit('agent_ask_resolved', {
+    dispatchApiEvent('agent_ask_resolved', {
       thread_id: 'th-1',
       message_id: turnId,
       ask_id: 'turn-approval:call-1',
@@ -5792,7 +5810,7 @@ describe('AgentPanelRoot ask_user answer telemetry', () => {
     await vi.waitFor(() =>
       expect(fetchRequests({ method: 'POST', url: /\/asks\// })).toHaveLength(1)
     )
-    ws.emit('agent_ask_resolved', {
+    dispatchApiEvent('agent_ask_resolved', {
       thread_id: 'th-1',
       message_id: turnId,
       ask_id: 'turn-question:call-1',
@@ -5807,10 +5825,6 @@ describe('AgentPanelRoot ask_user answer telemetry', () => {
 })
 
 describe('AgentPanelRoot lifecycle', () => {
-  beforeEach(() => {
-    ws.clear()
-  })
-
   it('reports the header close click and attributes the panel close to it', async () => {
     workflowStore.activeWorkflow = addTab('workflows/current.json')
     const selection = await startVueNodeSelection()
@@ -6023,10 +6037,6 @@ describe('AgentPanelRoot lifecycle', () => {
 })
 
 describe('AgentPanelRoot greeting', () => {
-  beforeEach(() => {
-    ws.clear()
-  })
-
   it('personalizes the empty-state greeting with the account first name', async () => {
     renderWithSelectedTarget()
 
@@ -6035,10 +6045,6 @@ describe('AgentPanelRoot greeting', () => {
 })
 
 describe('AgentPanelRoot a11y id guard', () => {
-  beforeEach(() => {
-    ws.clear()
-  })
-
   // R-193 residual: a duplicated #agent-panel-title (the FE #16912 regression
   // class) reached main unnoticed because the fast suite never asserted the id
   // count. Assert the document-level count, not a getBy* query, so a second
@@ -6104,7 +6110,6 @@ function mockMessagesEndpoint(
 
 describe('AgentPanelRoot workflow binding', () => {
   beforeEach(() => {
-    ws.clear()
     useAgentPanelStore().enabled = true
     vi.mocked(app.loadGraphData).mockClear()
     vi.mocked(validateComfyWorkflow).mockClear()
@@ -6248,6 +6253,8 @@ describe('AgentPanelRoot workflow binding', () => {
           prompt_id: 'slot_2',
           prompt_index: 1,
           prompt_count: 5,
+          // Nothing is hidden at this width, so both counts agree here.
+          visible_prompt_count: 5,
           prompt_text_hash: expect.stringMatching(/^[0-9a-f]{8}$/),
           locale: 'en',
           click_id: 'client-message-1',
@@ -6428,7 +6435,10 @@ describe('AgentPanelRoot workflow binding', () => {
       { workflowId: 'wf-42', rootGraphId: toRootGraphId('graph-1') },
       [toNodeId(401)]
     )
-    ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
+    dispatchApiEvent('agent_message_done', {
+      message_id: 'm-1',
+      thread_id: 'th-1'
+    })
     await screen.findByRole('button', { name: 'Send' })
 
     await sendFromComposer('second turn')
@@ -8288,7 +8298,10 @@ describe('AgentPanelRoot workflow binding', () => {
 
     renderWithSelectedTarget()
     await sendFromComposer('start editing current')
-    ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
+    dispatchApiEvent('agent_message_done', {
+      message_id: 'm-1',
+      thread_id: 'th-1'
+    })
     await screen.findByRole('button', { name: 'Send' })
 
     workflowStore.activeWorkflow = other
@@ -8575,7 +8588,10 @@ describe('AgentPanelRoot workflow binding', () => {
     const activity = useWorkflowTabActivityStore()
     expect(activity.editingTabPath).toBe('workflows/current.json')
 
-    ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
+    dispatchApiEvent('agent_message_done', {
+      message_id: 'm-1',
+      thread_id: 'th-1'
+    })
     await screen.findByRole('button', { name: 'Send' })
     expect(activity.editingTabPath).toBeNull()
     expect(activity.unseenModifiedPaths.has('workflows/current.json')).toBe(
@@ -8623,7 +8639,7 @@ describe('AgentPanelRoot workflow binding', () => {
     const activity = useWorkflowTabActivityStore()
     expect(activity.creatingTab).toBe(false)
 
-    ws.emit('agent_active_tab', {
+    dispatchApiEvent('agent_active_tab', {
       workflow_id: 'wf-new',
       name: 'Fresh',
       thread_id: 'th-1'
@@ -8679,7 +8695,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await renderAndSend('work here')
     vi.useFakeTimers()
 
-    ws.emit('agent_active_tab', {
+    dispatchApiEvent('agent_active_tab', {
       workflow_id: 'wf-new',
       name: 'Fresh',
       thread_id: 'th-1'
@@ -8688,7 +8704,10 @@ describe('AgentPanelRoot workflow binding', () => {
     await vi.advanceTimersByTimeAsync(0)
     expect(activity.creatingTab).toBe(true)
 
-    ws.emit('agent_active_tab', { workflow_id: 'wf-42', thread_id: 'th-1' })
+    dispatchApiEvent('agent_active_tab', {
+      workflow_id: 'wf-42',
+      thread_id: 'th-1'
+    })
     resolveLookup?.(json(404, { error: 'none' }))
 
     await vi.waitFor(() =>
@@ -8733,7 +8752,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
     await renderAndSend('add a node')
 
-    ws.emit('agent_tool_call', {
+    dispatchApiEvent('agent_tool_call', {
       tool_call_id: 'call-add-node',
       tool_name: 'add_node',
       status: 'success',
@@ -8753,7 +8772,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
     await renderAndSend('add a node')
 
-    ws.emit('doc_subscribed', {
+    dispatchApiEvent('doc_subscribed', {
       v: 1,
       workflow_id: 'wf-42',
       ok: false,
@@ -8780,7 +8799,7 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(activity.editingTabPath).toBe('workflows/current.json')
     vi.useFakeTimers()
 
-    ws.emit('agent_active_tab', {
+    dispatchApiEvent('agent_active_tab', {
       workflow_id: 'wf-77',
       name: 'Video test',
       thread_id: 'th-1'
@@ -8821,7 +8840,10 @@ describe('AgentPanelRoot workflow binding', () => {
       expect(activity.editingTabPath).toBe('workflows/current.json')
     )
 
-    ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
+    dispatchApiEvent('agent_message_done', {
+      message_id: 'm-1',
+      thread_id: 'th-1'
+    })
     await vi.waitFor(() => expect(activity.editingTabPath).toBeNull())
   })
 
@@ -8840,7 +8862,7 @@ describe('AgentPanelRoot workflow binding', () => {
     makeTab('wf-42')
     const bodies = mockMessagesEndpoint('wf-42')
     await renderAndSend('first message')
-    ws.emit('agent_message_done', {
+    dispatchApiEvent('agent_message_done', {
       message_id: 'm-1',
       thread_id: 'th-1'
     })
@@ -8863,7 +8885,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
     await sendFromComposer('attached turn')
     expect(bodies[0]).toHaveProperty('workflow_id', 'wf-42')
-    ws.emit('agent_message_done', {
+    dispatchApiEvent('agent_message_done', {
       message_id: 'm-1',
       thread_id: 'th-1'
     })
@@ -8953,7 +8975,10 @@ describe('AgentPanelRoot workflow binding', () => {
     const activity = useWorkflowTabActivityStore()
     expect(activity.editingTabPath).toBe('workflows/current.json')
 
-    ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
+    dispatchApiEvent('agent_message_done', {
+      message_id: 'm-1',
+      thread_id: 'th-1'
+    })
     await vi.waitFor(() => expect(activity.editingTabPath).toBeNull())
 
     await userEvent.click(
@@ -8970,7 +8995,10 @@ describe('AgentPanelRoot workflow binding', () => {
 
     await renderAndSend('work here')
 
-    ws.emit('agent_active_tab', { workflow_id: 'wf-42', thread_id: 'th-1' })
+    dispatchApiEvent('agent_active_tab', {
+      workflow_id: 'wf-42',
+      thread_id: 'th-1'
+    })
     await vi.waitFor(() =>
       expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(tab)
     )
@@ -8998,7 +9026,10 @@ describe('AgentPanelRoot workflow binding', () => {
     telemetry.trackAgentError.mockClear()
     vi.mocked(useWorkflowService()).openWorkflow.mockResolvedValueOnce(false)
 
-    ws.emit('agent_active_tab', { workflow_id: 'wf-42', thread_id: 'th-1' })
+    dispatchApiEvent('agent_active_tab', {
+      workflow_id: 'wf-42',
+      thread_id: 'th-1'
+    })
 
     await vi.waitFor(() =>
       expect(telemetry.trackAgentError).toHaveBeenCalledWith(
@@ -9124,7 +9155,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await vi.waitFor(() =>
       expect(useAgentConversationStore().activeTurnId).toBe('m-1')
     )
-    ws.emit('agent_message_done', {
+    dispatchApiEvent('agent_message_done', {
       message_id: 'm-1',
       thread_id: 'th-1',
       usage: null
@@ -9205,7 +9236,7 @@ describe('AgentPanelRoot workflow binding', () => {
       ]
     )
     await renderAndSend('work here')
-    ws.emit('agent_message_done', {
+    dispatchApiEvent('agent_message_done', {
       message_id: 'm-1',
       thread_id: 'th-1',
       usage: null
@@ -9239,7 +9270,7 @@ describe('AgentPanelRoot workflow binding', () => {
     telemetry.trackAgentWorkflowBound.mockClear()
     vi.useFakeTimers()
 
-    ws.emit('agent_active_tab', {
+    dispatchApiEvent('agent_active_tab', {
       workflow_id: 'wf-77',
       name: 'Video test',
       thread_id: 'th-1'
@@ -9289,7 +9320,7 @@ describe('AgentPanelRoot workflow binding', () => {
       vi.mocked(useTelemetry())!.trackAgentWorkflowApplied.mockClear()
       vi.useFakeTimers()
 
-      ws.emit('agent_active_tab', {
+      dispatchApiEvent('agent_active_tab', {
         workflow_id: 'wf-other',
         name: 'Other',
         thread_id: 'th-1'
@@ -9326,7 +9357,7 @@ describe('AgentPanelRoot workflow binding', () => {
     vi.useFakeTimers()
     vi.mocked(useTelemetry())!.trackAgentWorkflowApplied.mockClear()
 
-    ws.emit('agent_active_tab', {
+    dispatchApiEvent('agent_active_tab', {
       workflow_id: 'wf-late',
       name: 'Late',
       thread_id: 'th-1'
@@ -9371,7 +9402,7 @@ describe('AgentPanelRoot workflow binding', () => {
         }
       )
 
-      ws.emit('agent_active_tab', {
+      dispatchApiEvent('agent_active_tab', {
         workflow_id: 'wf-late',
         name: 'Late',
         thread_id: 'th-1'
@@ -9409,10 +9440,13 @@ describe('AgentPanelRoot workflow binding', () => {
         })
     )
 
-    ws.emit('agent_active_tab', { workflow_id: 'wf-42', thread_id: 'th-1' })
+    dispatchApiEvent('agent_active_tab', {
+      workflow_id: 'wf-42',
+      thread_id: 'th-1'
+    })
     await vi.advanceTimersByTimeAsync(0)
     expect(finishOpen).toBeDefined()
-    ws.emit('agent_active_tab', {
+    dispatchApiEvent('agent_active_tab', {
       workflow_id: 'wf-queued',
       name: 'Queued',
       thread_id: 'th-1'
@@ -9439,7 +9473,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await renderAndSend('work here')
     vi.useFakeTimers()
 
-    ws.emit('agent_active_tab', {
+    dispatchApiEvent('agent_active_tab', {
       workflow_id: 'wf-88',
       name: 'a/b',
       thread_id: 'th-1'
@@ -9451,7 +9485,7 @@ describe('AgentPanelRoot workflow binding', () => {
       ).not.toBeNull()
     )
 
-    ws.emit('agent_active_tab', {
+    dispatchApiEvent('agent_active_tab', {
       workflow_id: 'wf-89',
       name: '  ',
       thread_id: 'th-1'
@@ -9473,7 +9507,7 @@ describe('AgentPanelRoot workflow binding', () => {
     vi.mocked(useWorkflowService()).openWorkflow.mockResolvedValueOnce(false)
     vi.useFakeTimers()
 
-    ws.emit('agent_active_tab', {
+    dispatchApiEvent('agent_active_tab', {
       workflow_id: 'wf-77',
       name: 'Video test',
       thread_id: 'th-1'
@@ -9509,7 +9543,7 @@ describe('AgentPanelRoot workflow binding', () => {
     )
     vi.useFakeTimers()
 
-    ws.emit('agent_active_tab', {
+    dispatchApiEvent('agent_active_tab', {
       workflow_id: 'wf-77',
       name: 'Video test',
       thread_id: 'th-1'
@@ -9548,7 +9582,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await renderAndSend('work here')
     vi.useFakeTimers()
 
-    ws.emit('agent_active_tab', {
+    dispatchApiEvent('agent_active_tab', {
       workflow_id: 'wf-95',
       name: ' .hidden',
       thread_id: 'th-1'
@@ -9568,14 +9602,20 @@ describe('AgentPanelRoot workflow binding', () => {
     await renderAndSend('work here')
     vi.useFakeTimers()
 
-    ws.emit('agent_active_tab', { workflow_id: 'wf-a', thread_id: 'th-1' })
+    dispatchApiEvent('agent_active_tab', {
+      workflow_id: 'wf-a',
+      thread_id: 'th-1'
+    })
     await vi.advanceTimersByTimeAsync(500)
     await vi.waitFor(() =>
       expect(
         workflowStore.getWorkflowByPath('workflows/Unsaved Workflow.json')
       ).not.toBeNull()
     )
-    ws.emit('agent_active_tab', { workflow_id: 'wf-b', thread_id: 'th-1' })
+    dispatchApiEvent('agent_active_tab', {
+      workflow_id: 'wf-b',
+      thread_id: 'th-1'
+    })
     await vi.advanceTimersByTimeAsync(500)
     await vi.waitFor(() =>
       expect(
@@ -9590,7 +9630,10 @@ describe('AgentPanelRoot workflow binding', () => {
         'workflows/Unsaved Workflow (2).json'
       )
     )
-    ws.emit('agent_active_tab', { workflow_id: 'wf-a', thread_id: 'th-1' })
+    dispatchApiEvent('agent_active_tab', {
+      workflow_id: 'wf-a',
+      thread_id: 'th-1'
+    })
     await vi.waitFor(() =>
       expect(activity.editingTabPath).toBe('workflows/Unsaved Workflow.json')
     )
@@ -9616,10 +9659,13 @@ describe('AgentPanelRoot workflow binding', () => {
     await renderAndSend('work here')
     vi.useFakeTimers()
 
-    ws.emit('agent_active_tab', { workflow_id: 'wf-42', thread_id: 'th-1' })
+    dispatchApiEvent('agent_active_tab', {
+      workflow_id: 'wf-42',
+      thread_id: 'th-1'
+    })
     await vi.advanceTimersByTimeAsync(0)
     expect(resolveSlowOpen).toBeDefined()
-    ws.emit('agent_active_tab', {
+    dispatchApiEvent('agent_active_tab', {
       workflow_id: 'wf-quick',
       name: 'Quick tab',
       thread_id: 'th-1'
@@ -9658,14 +9704,14 @@ describe('AgentPanelRoot workflow binding', () => {
           releaseSlowOpen = () => resolve(true)
         })
     )
-    ws.emit('agent_active_tab', {
+    dispatchApiEvent('agent_active_tab', {
       workflow_id: 'wf-slow',
       name: 'Slow tab',
       thread_id: 'th-1'
     })
     await vi.advanceTimersByTimeAsync(500)
     expect(releaseSlowOpen).toBeDefined()
-    ws.emit('agent_active_tab', {
+    dispatchApiEvent('agent_active_tab', {
       workflow_id: 'wf-fast',
       name: 'Fast tab',
       thread_id: 'th-1'
@@ -9698,12 +9744,12 @@ describe('AgentPanelRoot workflow binding', () => {
     await renderAndSend('work here')
     vi.useFakeTimers()
 
-    ws.emit('agent_active_tab', {
+    dispatchApiEvent('agent_active_tab', {
       workflow_id: 'wf-a',
       name: 'A tab',
       thread_id: 'th-1'
     })
-    ws.emit('agent_active_tab', {
+    dispatchApiEvent('agent_active_tab', {
       workflow_id: 'wf-b',
       name: 'B tab',
       thread_id: 'th-1'
@@ -10092,7 +10138,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
     await renderAndSend('first message')
 
-    ws.emit('agent_active_tab', {
+    dispatchApiEvent('agent_active_tab', {
       workflow_id: 'wf-cloud-duck',
       thread_id: 'th-1'
     })
@@ -10136,7 +10182,10 @@ describe('AgentPanelRoot workflow binding', () => {
       )
       renderWithSelectedTarget()
       await sendFromComposer('start editing current')
-      ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
+      dispatchApiEvent('agent_message_done', {
+        message_id: 'm-1',
+        thread_id: 'th-1'
+      })
       await screen.findByRole('button', { name: 'Send' })
       expect(bodies).toHaveLength(1)
       const textbox = screen.getByRole('textbox')
@@ -10840,7 +10889,10 @@ describe('AgentPanelRoot workflow binding', () => {
     const bodies = mockMessagesEndpoint('wf-42')
 
     await renderAndSend('first message')
-    ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
+    dispatchApiEvent('agent_message_done', {
+      message_id: 'm-1',
+      thread_id: 'th-1'
+    })
     await screen.findByRole('button', { name: 'Send' })
 
     const scratch = addTab('workflows/Scratch.json', { isTemporary: true })
@@ -10860,7 +10912,10 @@ describe('AgentPanelRoot workflow binding', () => {
     const bodies = mockMessagesEndpoint('wf-42')
 
     await renderAndSend('first message')
-    ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
+    dispatchApiEvent('agent_message_done', {
+      message_id: 'm-1',
+      thread_id: 'th-1'
+    })
     await screen.findByRole('button', { name: 'Send' })
 
     const scratch = addTab('workflows/Scratch.json', { isTemporary: true })
@@ -10916,7 +10971,10 @@ describe('AgentPanelRoot workflow binding', () => {
     )
 
     await renderAndSend('build a duck')
-    ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
+    dispatchApiEvent('agent_message_done', {
+      message_id: 'm-1',
+      thread_id: 'th-1'
+    })
     await screen.findByRole('button', { name: 'Send' })
     expect(posted[0]).toMatchObject({
       threadId: 'new',
@@ -11204,7 +11262,7 @@ describe('AgentPanelRoot workflow binding', () => {
     })
     expect(selector).toBeDisabled()
 
-    ws.emit('agent_active_tab', {
+    dispatchApiEvent('agent_active_tab', {
       workflow_id: 'wf-other',
       name: 'other',
       thread_id: 'th-1'
@@ -11214,7 +11272,10 @@ describe('AgentPanelRoot workflow binding', () => {
     )
     expect(selector).toHaveTextContent('current')
 
-    ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
+    dispatchApiEvent('agent_message_done', {
+      message_id: 'm-1',
+      thread_id: 'th-1'
+    })
     await screen.findByRole('button', { name: 'Send' })
     await sendFromComposer('second turn')
     expect(bodies[1]).toMatchObject({
@@ -12158,7 +12219,10 @@ describe('AgentPanelRoot workflow binding', () => {
     await sendFromComposer('first ask')
     expect(bodies[0]).toMatchObject({ selection: { node_ids: ['12'] } })
 
-    ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
+    dispatchApiEvent('agent_message_done', {
+      message_id: 'm-1',
+      thread_id: 'th-1'
+    })
     await screen.findByRole('button', { name: 'Send' })
 
     expect([...state.selectedItems]).toEqual([])
@@ -12196,7 +12260,10 @@ describe('AgentPanelRoot workflow binding', () => {
 
     expect(bodies[0]).not.toHaveProperty('selection')
 
-    ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
+    dispatchApiEvent('agent_message_done', {
+      message_id: 'm-1',
+      thread_id: 'th-1'
+    })
     await screen.findByRole('button', { name: 'Send' })
     setCanvasSelection(
       fromPartial([
@@ -12208,7 +12275,10 @@ describe('AgentPanelRoot workflow binding', () => {
     await sendFromComposer('still no nodes')
     expect(bodies[1]).not.toHaveProperty('selection')
 
-    ws.emit('agent_message_done', { message_id: 'm-2', thread_id: 'th-1' })
+    dispatchApiEvent('agent_message_done', {
+      message_id: 'm-2',
+      thread_id: 'th-1'
+    })
     await screen.findByRole('button', { name: 'Send' })
     setCanvasSelection(
       fromPartial([
@@ -12524,7 +12594,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
     await renderAndSend('help me')
 
-    ws.emit('draft_patch', {
+    dispatchApiEvent('draft_patch', {
       workflow_id: 'wf-42',
       base_version: 0,
       version: 1,
@@ -12609,7 +12679,10 @@ describe('AgentPanelRoot workflow binding', () => {
     )
 
     // The agent moves the session onto B's own tab.
-    ws.emit('agent_active_tab', { workflow_id: 'wf-b', thread_id: 'th-1' })
+    dispatchApiEvent('agent_active_tab', {
+      workflow_id: 'wf-b',
+      thread_id: 'th-1'
+    })
 
     await vi.waitFor(() =>
       expect(workflowStore.activeWorkflow?.path).toBe(tabB.path)
@@ -12898,3 +12971,7 @@ describe('AgentPanelRoot agent socket identity', () => {
     }
   )
 })
+
+function dispatchApiEvent(type: string, detail: unknown): void {
+  ws.emit(type, detail)
+}
