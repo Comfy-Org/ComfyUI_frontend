@@ -1,6 +1,7 @@
 import type { InjectionKey } from 'vue'
 import type { WorkshopModel } from '@/config/models-catalogue'
 import { workshopRunInFlight } from '@/config/workshop-run-state'
+import { withoutCatalogLocalePrefix } from '@/config/catalog-locales'
 
 export const catalogDetailNavigation: InjectionKey<
   (event: MouseEvent, model: WorkshopModel) => void
@@ -11,7 +12,9 @@ export const catalogBrowseNavigation: InjectionKey<
 > = Symbol('catalog-browse-navigation')
 
 export function catalogDetailPath(path: string) {
-  return /^\/(?:zh-CN\/)?hub\/(?:models|workflows)\/[^/]+\/?$/.test(path)
+  return /^\/hub\/(?:models|workflows)\/[^/]+\/?$/.test(
+    withoutCatalogLocalePrefix(path)
+  )
 }
 
 export function listenCatalogHistory(

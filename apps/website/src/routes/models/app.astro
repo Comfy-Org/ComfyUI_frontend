@@ -1,6 +1,7 @@
 ---
 import type { GetStaticPaths } from 'astro'
 import BaseLayout from '@/layouts/BaseLayout.astro'
+import { withoutCatalogLocalePrefix } from '@/config/catalog-locales'
 import StaffContentActions from '@/components/cms/StaffContentActions.astro'
 import CinematicStudioPage from '@/components/workshop/cinematic-studio/CinematicStudioPage.vue'
 import { getRouterWorkshopModelDetail } from '@/config/workshop-router-content'
@@ -28,7 +29,7 @@ const catalog = cmsEnabled()
   ? await loadSiteCatalog(
       Astro.locals.catalogAuthoring ?? Astro.locals.site,
       Astro.locals.catalogLocale,
-      Astro.url.pathname.replace(/^\/zh-CN/, '').replace(/\/$/, '')
+      withoutCatalogLocalePrefix(Astro.url.pathname).replace(/\/$/, '')
     )
   : undefined
 const failure = catalog && !catalog.ok ? catalogUnavailable() : undefined
@@ -40,7 +41,7 @@ const model = catalog?.ok
   ? liveApps.find(
       (item) =>
         item.href.replace(/\/$/, '') ===
-        Astro.url.pathname.replace(/^\/zh-CN/, '').replace(/\/$/, '')
+        withoutCatalogLocalePrefix(Astro.url.pathname).replace(/\/$/, '')
     )
   : Astro.props.model
 if (!model) return new Response('Not found', { status: 404 })
@@ -48,7 +49,7 @@ const current = catalog?.ok
   ? catalog.projection.items.find(
       (item) =>
         item.slug ===
-        Astro.url.pathname.replace(/^\/zh-CN/, '').replace(/\/$/, '')
+        withoutCatalogLocalePrefix(Astro.url.pathname).replace(/\/$/, '')
     )
   : undefined
 const app = model.appId

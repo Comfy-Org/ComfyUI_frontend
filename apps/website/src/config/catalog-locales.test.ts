@@ -10,8 +10,10 @@ import {
   catalogLocalePrefix,
   isCatalogLocale,
   resolveCatalogLocale,
-  withCatalogLocalePrefix
+  withCatalogLocalePrefix,
+  withoutCatalogLocalePrefix
 } from './catalog-locales'
+import { catalogDetailPath } from '@/lib/cms/detail-route'
 
 describe('catalog locales', () => {
   it('serves every site locale, so ja is not left out', () => {
@@ -65,5 +67,28 @@ describe('catalog locales', () => {
       '中',
       '日'
     ])
+  })
+
+  it('strips any catalog locale prefix so localized Hub routes resolve', () => {
+    expect(withoutCatalogLocalePrefix('/ja/hub/workflows/a/')).toBe(
+      '/hub/workflows/a/'
+    )
+    expect(withoutCatalogLocalePrefix('/zh-CN/hub/workflows')).toBe(
+      '/hub/workflows'
+    )
+    expect(withoutCatalogLocalePrefix('/ja')).toBe('/')
+    expect(withoutCatalogLocalePrefix('/japan/hub/')).toBe('/japan/hub/')
+    for (const path of [
+      '/hub/workflows/a/',
+      '/zh-CN/hub/models/b',
+      '/ja/hub/workflows/a/'
+    ])
+      expect(catalogDetailPath(path)).toBe(true)
+    for (const path of [
+      '/ko/hub/workflows/a/',
+      '/ja/hub/apps/a/',
+      '/ja/hub/workflows/'
+    ])
+      expect(catalogDetailPath(path)).toBe(false)
   })
 })
