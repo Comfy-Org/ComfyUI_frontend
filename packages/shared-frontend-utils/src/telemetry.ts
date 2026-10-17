@@ -37,12 +37,84 @@ const ERROR_MESSAGE_PREFIX =
 
 const RUM_NOISE_HOSTS = [
   'facebook.com',
+  // Facebook's pixel/SDK is served from facebook.NET, not .com, so the CSP
+  // reports it triggers name a host the .com entry never matched.
+  'facebook.net',
   'px.ads.linkedin.com',
   'browser-intake-us5-datadoghq.com',
   'e2.sy-d.io',
   'google-analytics.com',
   'googletagmanager.com'
 ]
+
+/**
+ * Matches a PARSED hostname, not a substring of the message. A bare
+ * `message.includes(host)` also matches lookalikes (`notfacebook.com`) and any
+ * first-party URL that merely carries a noise host in a path or query
+ * parameter (a proxy or redirect param), silently suppressing real errors.
+ */
+function isNoiseHostname(hostname: string): boolean {
+  return RUM_NOISE_HOSTS.some(
+    (host) => hostname === host || hostname.endsWith(`.${host}`)
+  )
+}
+
+/** Every absolute-URL hostname in `text`, skipping anything unparseable. */
+function hostnamesIn(text: string | undefined): string[] {
+  if (!text) return []
+  const hostnames: string[] = []
+  for (const [url] of text.matchAll(/https?:\/\/[^\s'"<>)\]]+/g)) {
+    try {
+      hostnames.push(new URL(url).hostname)
+    } catch {
+      // Not a URL we can parse — it cannot prove noise, so ignore it.
+    }
+  }
+  return hostnames
+}
+
+export function namesRumNoiseHost(text: string | undefined): boolean {
+  return hostnamesIn(text).some(isNoiseHostname)
+}
+
+/**
+ * Fetch failures only. CSP violations are decided by `isNoiseCspViolation`
+ * below: routing them through here too would drop a violation whose message
+ * merely names a noise host BEFORE the CSP rule could judge its origin, losing
+ * first-party CSP defects involving a third-party resource.
+ */
+function isFetchFailureToNoiseHost(message: string): boolean {
+  return message.includes('Failed to fetch') && namesRumNoiseHost(message)
+}
+
+const CSP_VIOLATION_PREFIX = 'csp_violation:'
+
+/**
+ * A CSP violation is the browser enforcing our policy, and the bulk are
+ * ad/tracking scripts we are happy to see blocked. Drop those — but only when
+ * a known noise host is actually named, by the blocked URI or by the frame the
+ * SDK attributed the violation to.
+ *
+ * Deliberately NOT "drop unless provably first party". No stack is the normal
+ * shape of a first-party report: markup-initiated blocks (`img-src`,
+ * `font-src`, linked `style-src`, inline `<script>`) carry no `sourceFile`, so
+ * the SDK builds no stack, and script-attributed ones often point at the
+ * document URL or a `blob:` we created. Dropping on origin also discards the
+ * CSP regressions worth paging on — a tightening that blocks a required CDN
+ * script, font, or auth/payment SDK, or an injected supply-chain script —
+ * because every one of those presents as a third-party stack.
+ *
+ * Unattributable violations are therefore KEPT. Noise we can prove is noise,
+ * and the rest stays visible.
+ */
+function isNoiseCspViolation(message: string, stack?: string): boolean {
+  // Anchored: genuine SDK reports are prefixed `csp_violation:`. An unanchored
+  // test also catches anything merely quoting the token — a console echo of a
+  // report, or a message embedding user- or URL-supplied text.
+  if (!message.startsWith(CSP_VIOLATION_PREFIX)) return false
+
+  return namesRumNoiseHost(message) || namesRumNoiseHost(stack)
+}
 
 export function isThirdPartyErrorNoise(message?: string): boolean {
   if (!message) return false
@@ -56,6 +128,7 @@ export function isThirdPartyErrorNoise(message?: string): boolean {
 export function isRumErrorNoise(error: {
   readonly message: string
   readonly source?: string
+  readonly stack?: string
 }): boolean {
   const { message } = error
   if (error.source === 'console' && message.startsWith(REPORTED_ERROR_PREFIX))
@@ -64,11 +137,8 @@ export function isRumErrorNoise(error: {
   if (message.startsWith('intervention:')) return true
   if (message.includes('ResizeObserver loop')) return true
 
-  const isNetworkNoise =
-    message.includes('csp_violation') || message.includes('Failed to fetch')
-  return (
-    isNetworkNoise && RUM_NOISE_HOSTS.some((host) => message.includes(host))
-  )
+  if (isFetchFailureToNoiseHost(message)) return true
+  return isNoiseCspViolation(message, error.stack)
 }
 
 /** Origin and path only: a query or fragment can carry a client secret or an email. */

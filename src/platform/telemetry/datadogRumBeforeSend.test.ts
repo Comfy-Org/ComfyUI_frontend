@@ -56,6 +56,133 @@ describe('rumBeforeSend', () => {
     expect(rumBeforeSend(event, fromPartial({}))).toBe(false)
   })
 
+  it('drops fetch failures to the RUM intake itself (adblocker noise)', () => {
+    const event = createErrorEvent(
+      'Failed to fetch https://browser-intake-us5-datadoghq.com/api/v2/rum'
+    )
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(false)
+  })
+
+  it('drops the CSP block of a third-party tracking pixel by host', () => {
+    const event = createErrorEvent(
+      "csp_violation: 'https://www.facebook.com/tr/' blocked by 'form-action' directive"
+    )
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(false)
+  })
+
+  it('keeps a CSP block of a noise host that first-party code triggered', () => {
+    const event = createErrorEvent(
+      "csp_violation: 'https://www.googletagmanager.com/gtm.js' blocked by 'script-src-elem' directive",
+      'at loadGtm (https://cloud.comfy.org/assets/app.js:1:2)'
+    )
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
+  })
+
+  it('keeps a first-party CSP block of a noise host when the stack carries the report header', () => {
+    const header =
+      "csp_violation: 'https://www.googletagmanager.com/gtm.js' blocked by 'script-src-elem' directive"
+    const event = createErrorEvent(
+      header,
+      `${header}\n    at loadGtm (https://cloud.comfy.org/assets/app.js:1:2)`
+    )
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
+  })
+
+  it('drops a CSP block whose /assets/ frame is served by a noise host', () => {
+    const event = createErrorEvent(
+      "csp_violation: 'https://www.facebook.com/tr/' blocked by 'img-src' directive",
+      'at load (https://connect.facebook.net/assets/pixel.js:1:2)'
+    )
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(false)
+  })
+
+  it('drops a CSP violation whose blocked URI carries no host but whose frame is a known tracker', () => {
+    // e.g. a `blob` script injected by an ad script the CSP correctly blocks.
+    // The report's stack points at the offending third-party sourceFile.
+    const event = createErrorEvent(
+      "csp_violation: 'blob' blocked by 'script-src-elem' directive",
+      'at eval (https://connect.facebook.net/en_US/fbevents.js:1:2)'
+    )
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(false)
+  })
+
+  it('keeps an unattributable CSP violation instead of assuming third party', () => {
+    // No stack is the NORMAL shape of a first-party report: markup-initiated
+    // blocks (img-src, font-src, linked style-src, inline <script>) carry no
+    // sourceFile, so the SDK builds no stack. Dropping these loses exactly the
+    // first-party CSP defects this filter promises to keep.
+    const event = createErrorEvent(
+      "csp_violation: 'blob' blocked by 'script-src-elem' directive"
+    )
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
+  })
+
+  it('keeps a CSP violation that blocks a required third-party dependency', () => {
+    // A CSP tightening that breaks a CDN script, font, or auth/payment SDK is a
+    // real functional regression and presents as a third-party stack, so an
+    // origin-based drop would hide it.
+    const event = createErrorEvent(
+      "csp_violation: 'https://cdn.jsdelivr.net/npm/some-dep/dist/index.js' blocked by 'script-src' directive",
+      'at load (https://cdn.jsdelivr.net/npm/some-dep/dist/index.js:1:2)'
+    )
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
+  })
+
+  it('keeps an error that merely quotes the csp_violation token', () => {
+    // Genuine SDK reports are PREFIXED `csp_violation:`; an unanchored test
+    // also swallows a console echo or a message embedding user-supplied text.
+    const event = createErrorEvent(
+      'Failed to parse report body: csp_violation: unexpected token'
+    )
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
+  })
+
+  it('keeps a violation naming a lookalike of a noise host', () => {
+    // Hostname is parsed and compared, so `notfacebook.com` is not
+    // `facebook.com` and a noise host sitting in a query parameter does not
+    // suppress a first-party report.
+    const event = createErrorEvent(
+      "csp_violation: 'https://notfacebook.com/tr/' blocked by 'script-src' directive"
+    )
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
+  })
+
+  it('keeps a first-party fetch failure whose URL carries a noise host in a query param', () => {
+    const event = createErrorEvent(
+      'Failed to fetch https://cloud.comfy.org/api/redirect?next=https%3A%2F%2Ffacebook.com%2Ftr'
+    )
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
+  })
+
+  it('keeps a first-party CSP violation so it can be fixed in the CSP', () => {
+    const event = createErrorEvent(
+      "csp_violation: 'blob' blocked by 'script-src-elem' directive",
+      'at makeWorker (https://cloud.comfy.org/assets/app.js:1:2)'
+    )
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
+  })
+
+  it('keeps an extension-origin CSP violation (scoped to third party only)', () => {
+    const event = createErrorEvent(
+      "csp_violation: 'blob' blocked by 'script-src-elem' directive",
+      'at run (https://cloud.comfy.org/extensions/comfyui-foo/main.js:1:2)'
+    )
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
+  })
+
   it('drops the console echo of an assertion the reporter also reports', () => {
     const event = createErrorEvent(
       '[Assertion failed]: graph is corrupt',

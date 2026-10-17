@@ -6,7 +6,10 @@ import type {
   RumViewEvent
 } from '@datadog/browser-rum'
 
-import { isRumErrorNoise } from '@comfyorg/shared-frontend-utils/telemetry'
+import {
+  isRumErrorNoise,
+  namesRumNoiseHost
+} from '@comfyorg/shared-frontend-utils/telemetry'
 
 import { ASSERTION_FAILURE_PREFIX, hasRumAssertReporter } from '@/base/assert'
 
@@ -26,10 +29,25 @@ type RumErrorOrigin =
   | { origin: 'extension'; extension: string }
   | { origin: 'third_party' }
 
+/** V8 (`at fn (url:1:2)`) and SpiderMonkey (`fn@url:1:2`) frame shapes. */
+function isStackFrameLine(line: string): boolean {
+  return /^\s*at\s/.test(line) || /@https?:\/\//.test(line)
+}
+
+function stackFrameLines(stack?: string): string[] {
+  return stack?.split('\n').filter(isStackFrameLine) ?? []
+}
+
 export function classifyRumErrorOrigin(stack?: string): RumErrorOrigin {
   if (!stack) return { origin: 'third_party' }
 
-  for (const line of stack.split('\n')) {
+  // Only real stack frames decide origin. A report's `stack` is prefixed by
+  // its message header (`csp_violation: '<blockedURI>' blocked by ...`), so
+  // scanning every line lets a vendor- or attacker-controlled blocked URI
+  // such as `https://cdn.vendor.com/assets/pixel.js` read as first party, or
+  // one containing `/extensions/<name>/` be attributed to an extension that
+  // does not exist.
+  for (const line of stackFrameLines(stack)) {
     const extensionFolder = /\/extensions\/([^/?#]+)\//.exec(line)?.[1]
     if (extensionFolder) {
       return FIRST_PARTY_EXTENSION_FOLDERS.has(extensionFolder)
@@ -61,10 +79,21 @@ function isConsoleEchoOfReportedAssertion(event: RumErrorEvent): boolean {
   )
 }
 
+/** Our own code tripping the CSP is a defect even when the blocked host is a tracker. */
+function isFirstPartyCspViolation(event: RumErrorEvent): boolean {
+  const { message, stack } = event.error
+  return (
+    message.startsWith('csp_violation:') &&
+    !stackFrameLines(stack).some(namesRumNoiseHost) &&
+    classifyRumErrorOrigin(stack).origin === 'first_party'
+  )
+}
+
 function shouldKeepRumEvent(event: Parameters<RumBeforeSend>[0]): boolean {
   if (event.type !== 'error') return true
   if (isConsoleEchoOfReportedAssertion(event)) return false
   if (hasUnmodifiableUrlMetadata(event)) return false
+  if (isFirstPartyCspViolation(event)) return true
   return !isRumErrorNoise(event.error)
 }
 
