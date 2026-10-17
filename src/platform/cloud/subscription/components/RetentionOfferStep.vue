@@ -47,11 +47,7 @@
         </p>
         <p class="m-0 text-sm text-muted-foreground">
           {{
-            $t(
-              'subscription.retentionOffer.term',
-              { regular: regularPrice, months },
-              months
-            )
+            $t('subscription.retentionOffer.term', { percent, months }, months)
           }}
         </p>
         <div class="h-px bg-border-subtle" role="presentation" />
@@ -59,59 +55,41 @@
       </div>
       <p class="m-0 text-sm text-muted-foreground">
         {{
-          $t(
-            'subscription.retentionOffer.finePrint',
-            { plan: planName, regular: regularPrice, months },
-            months
-          )
+          $t('subscription.retentionOffer.finePrint', { regular: regularPrice })
         }}
       </p>
     </div>
 
     <div v-else-if="phase === 'applied'" class="flex flex-col gap-5">
       <div
-        class="flex flex-col gap-3 rounded-[14px] border border-border-subtle bg-secondary-background/50 p-4 shadow-xs"
+        class="flex flex-wrap items-center justify-between gap-2 rounded-[14px] border border-border-subtle bg-secondary-background/50 p-4 text-sm shadow-xs"
       >
-        <div class="flex flex-wrap items-center justify-between gap-2 text-sm">
-          <span class="flex items-center gap-2 text-base-foreground">
+        <span class="flex items-center gap-2 text-base-foreground">
+          {{ $t('subscription.retentionOffer.discountPeriod', { months }) }}
+          <Badge
+            variant="compact"
+            class="bg-base-foreground text-base-background"
+          >
+            {{ $t('subscription.retentionOffer.appliedBadge') }}
+          </Badge>
+        </span>
+        <span class="flex items-center gap-2">
+          <span class="text-muted-foreground line-through">
+            {{ regularAmount }}
+          </span>
+          <span class="text-base-foreground">
             {{
-              $t('subscription.retentionOffer.nextPayments', { months }, months)
+              $t('subscription.retentionOffer.pricePerMonth', {
+                price: discountedMonthlyAmount
+              })
             }}
-            <Badge
-              variant="compact"
-              class="bg-base-foreground text-base-background"
-            >
-              {{ $t('subscription.retentionOffer.appliedBadge') }}
-            </Badge>
           </span>
-          <span class="flex items-center gap-2">
-            <span class="text-muted-foreground line-through">
-              {{ regularAmount }}
-            </span>
-            <span class="text-base-foreground">
-              {{
-                $t('subscription.retentionOffer.pricePerMonth', {
-                  price: discountedMonthlyAmount
-                })
-              }}
-            </span>
-          </span>
-        </div>
-        <p class="m-0 text-sm text-muted-foreground">
-          {{
-            $t(
-              'subscription.retentionOffer.savings',
-              { savings, months },
-              months
-            )
-          }}
-        </p>
+        </span>
       </div>
       <p class="m-0 text-sm text-muted-foreground">
         {{
-          $t('subscription.retentionOffer.renewsAt', {
-            regular: regularAmount,
-            date: fullPriceDate
+          $t('subscription.retentionOffer.afterDiscount', {
+            regular: regularAmount
           })
         }}
       </p>
@@ -208,7 +186,6 @@ import type {
 } from '@/platform/cloud/subscription/utils/retentionOffer'
 import {
   discountedAmount,
-  fullPriceRenewal,
   outcomeOnClose
 } from '@/platform/cloud/subscription/utils/retentionOffer'
 import { formatCurrencyCents } from '@/utils/numberUtil'
@@ -246,28 +223,10 @@ function exactAmount(cents: number) {
   return formatQuoteMoney(cents, subscription.currency, locale.value)
 }
 
-function formatDate(date: Date) {
-  return date.toLocaleDateString(locale.value, {
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric'
-  })
-}
-
 const regularPrice = computed(() => headlinePrice(monthlyAmount))
 const discountedPrice = computed(() => headlinePrice(discountedMonthly))
 const regularAmount = computed(() => exactAmount(monthlyAmount))
 const discountedMonthlyAmount = computed(() => exactAmount(discountedMonthly))
-const savings = computed(() =>
-  exactAmount((monthlyAmount - discountedMonthly) * months)
-)
-const discountStartDate = computed(() =>
-  formatDate(new Date(subscription.period_end * 1000))
-)
-const fullPriceDate = computed(() =>
-  formatDate(fullPriceRenewal(subscription.period_end, months))
-)
-
 const keepMessage = computed(() => {
   const grant = creditGrant.value
   if (grant?.cycle !== 'monthly')
@@ -297,7 +256,7 @@ const heading = computed(() => {
       }),
       subtitle: t(
         'subscription.retentionOffer.appliedBody',
-        { percent, months, date: discountStartDate.value },
+        { percent, months },
         months
       )
     },
