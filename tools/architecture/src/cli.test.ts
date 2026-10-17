@@ -288,6 +288,29 @@ describe('main', () => {
       '- src/brandNew.ts is not claimed by any domain'
     )
   })
+
+  it('writes the errors to --report when the check fails', () => {
+    const root = createRepository({ allowedDependencies: ['media'] })
+    const reportDirectory = mkdtempSync(join(tmpdir(), 'architecture-report-'))
+    roots.push(reportDirectory)
+    const reportFile = join(reportDirectory, 'report.md')
+    const { exitCode } = runMain(['--check', '--report', reportFile], root)
+    expect(exitCode).toBe(1)
+    expect(readFileSync(reportFile, 'utf8')).toBe(
+      '### Errors (1)\n\n- images references unknown domain media\n'
+    )
+  })
+
+  it('fails when --report cannot be written, even if the check passes', () => {
+    const root = createRepository()
+    runArchitecture(root, 'update')
+    const { exitCode, output } = runMain(
+      ['--check', '--report', join(root, 'missing/report.md')],
+      root
+    )
+    expect(exitCode).toBe(1)
+    expect(output).toContain('Could not write')
+  })
 })
 
 describe('formatReport', () => {
@@ -321,34 +344,53 @@ describe('formatReport', () => {
     )
   })
 
-  it('renders errors as a list and warnings in a collapsed block as Markdown', () => {
+  it('renders errors and warnings as Markdown lists', () => {
     expect(formatReport(report, 'markdown')).toBe(
       '### Errors (1)\n\n- records/a.json is invalid:\n    id: 100% wrong\n\n' +
-        '<details>\n<summary>Warnings (1)</summary>\n\n- src/new.ts is unclaimed\n\n</details>\n'
+        '### Warnings (1)\n\n- src/new.ts is unclaimed\n'
     )
   })
 
-  it('caps a long Markdown list and counts the rest', () => {
-    const warnings = Array.from({ length: 52 }, (_, i) => ({
+  it.for([
+    { count: 50, last: 'src/file49.ts is unclaimed', overflow: undefined },
+    { count: 51, last: 'src/file49.ts is unclaimed', overflow: '…and 1 more' }
+  ])('lists at most 50 of $count findings', ({ count, last, overflow }) => {
+    const warnings = Array.from({ length: count }, (_, i) => ({
       message: `src/file${i}.ts is unclaimed`,
       file: `src/file${i}.ts`
     }))
-    const markdown = formatReport({ errors: [], warnings }, 'markdown')
-    expect(markdown).toContain('<summary>Warnings (52)</summary>')
-    expect(markdown).toContain('- src/file49.ts is unclaimed\n- …and 2 more')
-    expect(markdown).not.toContain('src/file50.ts')
+    const lines = formatReport({ errors: [], warnings }, 'markdown')
+      .trimEnd()
+      .split('\n')
+    expect(lines[0]).toBe(`### Warnings (${count})`)
+    expect(lines.at(-1)).toBe(`- ${overflow ?? last}`)
+    expect(lines).not.toContain('- src/file50.ts is unclaimed')
   })
 
-  it('escapes HTML so a filename cannot close the PR report section', () => {
-    const file = 'src/<!-- section:architecture:end -->&.ts'
+  it.for([
+    {
+      name: 'an HTML comment that could close the PR report section',
+      message: 'src/<!-- section:architecture:end -->&.ts is unclaimed',
+      rendered:
+        '- src/&lt;!-- section:architecture:end --&gt;&amp;.ts is unclaimed'
+    },
+    {
+      name: 'underscores in a __mocks__ directory',
+      message: 'src/composables/__mocks__/useAppMode.ts is unclaimed',
+      rendered: '- src/composables/\\_\\_mocks\\_\\_/useAppMode.ts is unclaimed'
+    },
+    {
+      name: 'a ** glob in a stale module path',
+      message: 'minimap path matches no source files: src/minimap/**',
+      rendered: '- minimap path matches no source files: src/minimap/\\*\\*'
+    }
+  ])('escapes $name', ({ message, rendered }) => {
     expect(
       formatReport(
-        { errors: [], warnings: [{ message: `${file} is unclaimed`, file }] },
+        { errors: [], warnings: [{ message, file: 'src/x.ts' }] },
         'markdown'
       )
-    ).toContain(
-      '- src/&lt;!-- section:architecture:end --&gt;&amp;.ts is unclaimed'
-    )
+    ).toContain(rendered)
   })
 
   it('renders nothing for a clean report', () => {

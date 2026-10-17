@@ -35,6 +35,7 @@ jobs:
           filter: blob:none
 
       - name: Setup frontend
+        id: setup
         uses: ./.github/actions/setup-frontend
         with:
           # The optional pnpm cache currently fails during runner cleanup on this PR.
@@ -59,7 +60,7 @@ jobs:
 
       - name: Verify architecture contracts
         id: architecture
-        if: hashFiles('tools/architecture/src/cli.ts') != ''
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && hashFiles('tools/architecture/src/cli.ts') != '' }}
         run: pnpm architecture:check --report "$RUNNER_TEMP/architecture-findings.md"
 
       - name: Check server facts on changed lines
@@ -121,32 +122,17 @@ jobs:
           cache-key: ${{ steps.lint-cache.outputs.cache-key }}
           path: ${{ env.LINT_CACHE_PATHS }}
 
-      - name: Resolve architecture verdict
-        id: architecture-verdict
-        if: ${{ !cancelled() && steps.architecture.outcome != 'skipped' }}
-        env:
-          OUTCOME: ${{ steps.architecture.outcome }}
-          FINDINGS: ${{ runner.temp }}/architecture-findings.md
-        run: |
-          if [ "$OUTCOME" != success ]; then
-            echo "status=fail" >> "$GITHUB_OUTPUT"
-          elif [ -s "$FINDINGS" ]; then
-            echo "status=warn" >> "$GITHUB_OUTPUT"
-          else
-            echo "status=pass" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Explain architecture verdict
-        if: ${{ !cancelled() && steps.architecture-verdict.outputs.status != '' }}
+        if: ${{ !cancelled() && steps.architecture.outcome != 'skipped' }}
         uses: ./.github/actions/explain-check
         with:
           slug: architecture
           title: Architecture
           icon: '🏛️'
-          status: ${{ steps.architecture-verdict.outputs.status }}
+          status: ${{ steps.architecture.outcome == 'success' && 'pass' || 'fail' }}
           details-file: ${{ runner.temp }}/architecture-findings.md
           reproduce: pnpm architecture:check
-          docs: '[Frontend domain catalog](docs/architecture/domains/README.md)'
+          docs: '[Frontend domain catalog](${{ github.server_url }}/${{ github.repository }}/blob/${{ github.event.pull_request.head.sha }}/docs/architecture/domains/README.md)'
           pr-number: ${{ github.event.pull_request.number }}
           token: ${{ github.token }}
 

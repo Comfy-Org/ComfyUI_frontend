@@ -80,50 +80,75 @@ export function runArchitecture(
   }
 }
 
-const escapeWorkflowCommand = (text: string) =>
-  text.replaceAll('%', '%25').replaceAll('\r', '%0D').replaceAll('\n', '%0A')
+function escapeWorkflowCommand(text: string): string {
+  return text
+    .replaceAll('%', '%25')
+    .replaceAll('\r', '%0D')
+    .replaceAll('\n', '%0A')
+}
 
-const escapeWorkflowProperty = (text: string) =>
-  escapeWorkflowCommand(text).replaceAll(':', '%3A').replaceAll(',', '%2C')
+function escapeWorkflowProperty(text: string): string {
+  return escapeWorkflowCommand(text)
+    .replaceAll(':', '%3A')
+    .replaceAll(',', '%2C')
+}
 
-const bulletSection = (title: string, lines: string[]) =>
-  lines.length
+function bulletSection(title: string, lines: string[]): string {
+  return lines.length
     ? `${title} (${lines.length}):\n${lines.map((line) => `- ${line}`).join('\n')}\n`
     : ''
+}
 
 const MARKDOWN_LIST_LIMIT = 50
 
-const escapeHtml = (text: string) =>
-  text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+function escapeMarkdown(text: string): string {
+  return text
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replace(/[\\`*_[\]~|#]/g, '\\$&')
+}
 
-const markdownList = (lines: string[]) =>
-  [
+function markdownList(lines: string[]): string {
+  return [
     ...lines
       .slice(0, MARKDOWN_LIST_LIMIT)
-      .map((line) => `- ${escapeHtml(line).replaceAll('\n', '\n  ')}`),
+      .map((line) => `- ${escapeMarkdown(line).replaceAll('\n', '\n  ')}`),
     ...(lines.length > MARKDOWN_LIST_LIMIT
       ? [`- …and ${lines.length - MARKDOWN_LIST_LIMIT} more`]
       : [])
   ].join('\n')
-
-function formatMarkdown({ errors, warnings }: ArchitectureReport): string {
-  const errorSection = errors.length
-    ? `### Errors (${errors.length})\n\n${markdownList(errors)}\n`
-    : ''
-  const warningSection = warnings.length
-    ? `<details>\n<summary>Warnings (${warnings.length})</summary>\n\n${markdownList(warnings.map(({ message }) => message))}\n\n</details>\n`
-    : ''
-  return [errorSection, warningSection].filter(Boolean).join('\n')
 }
 
-const formatText = ({ errors, warnings }: ArchitectureReport) =>
-  bulletSection(
-    'Warnings',
-    warnings.map(({ message }) => message)
-  ) + bulletSection('Errors', errors)
+function markdownSection(title: string, lines: string[]): string {
+  return lines.length
+    ? `### ${title} (${lines.length})\n\n${markdownList(lines)}\n`
+    : ''
+}
 
-const formatAnnotations = ({ errors, warnings }: ArchitectureReport) =>
-  [
+function formatMarkdown({ errors, warnings }: ArchitectureReport): string {
+  return [
+    markdownSection('Errors', errors),
+    markdownSection(
+      'Warnings',
+      warnings.map(({ message }) => message)
+    )
+  ]
+    .filter(Boolean)
+    .join('\n')
+}
+
+function formatText({ errors, warnings }: ArchitectureReport): string {
+  return (
+    bulletSection(
+      'Warnings',
+      warnings.map(({ message }) => message)
+    ) + bulletSection('Errors', errors)
+  )
+}
+
+function formatAnnotations({ errors, warnings }: ArchitectureReport): string {
+  return [
     ...warnings.map(
       ({ message, file }) =>
         `::warning file=${escapeWorkflowProperty(file)},title=Architecture::${escapeWorkflowCommand(message)}\n`
@@ -132,6 +157,7 @@ const formatAnnotations = ({ errors, warnings }: ArchitectureReport) =>
       (error) => `::error title=Architecture::${escapeWorkflowCommand(error)}\n`
     )
   ].join('')
+}
 
 /** Renders a report as plain text, GitHub Actions annotations, or a Markdown PR report section. */
 export function formatReport(
