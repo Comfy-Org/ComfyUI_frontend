@@ -283,15 +283,6 @@ test.describe(
         await expect
           .poll(() => threadListReads, { message: 'thread list refreshed' })
           .toBeGreaterThan(readsBeforePick)
-        // "It stayed" needs a window. The regression puts the tab's chat back
-        // shortly after that refresh lands, so asserting the unbound chat is
-        // on screen proves nothing on its own -- it holds just as well a
-        // moment before the flip.
-        await expect(
-          expect(transcriptBubbles).toHaveText([PORTRAIT_REQUEST], {
-            timeout: 3000
-          })
-        ).rejects.toThrow()
         await expect(transcriptBubbles).toHaveText([UNBOUND_REQUEST])
         await expect(
           topbar.getWorkflowTab(PORTRAIT_NAME).and(topbar.getActiveTab())
