@@ -28,7 +28,6 @@ const MIME_TYPE_PATTERN =
 interface UploadResult {
   ref: string
   url?: string
-  /** A stored preview to show instead of `url`, for files the browser cannot decode (EXR). */
   previewUrl?: string
 }
 
@@ -95,8 +94,6 @@ async function fileContentHash(file: File): Promise<string> {
 }
 
 function attachmentMediaKind(file: File): MediaKind {
-  // Browsers report no MIME type, or a generic one, for EXR. It is still an
-  // image: it shows its stored preview and wires into Load Image.
   if (hasImageType(file) || isHdrImageFilename(file.name)) return 'image'
   if (hasVideoType(file)) return 'video'
   if (hasAudioType(file)) return 'audio'
@@ -107,7 +104,6 @@ function localPreview(
   file: File,
   kind: MediaKind
 ): Pick<ComposerAttachment, 'previewUrl' | 'mediaUrl'> {
-  // The browser cannot decode HDR, so an EXR's own bytes are never a preview.
   if (isHdrImageFilename(file.name)) return {}
   const playable = kind === 'video' || kind === 'audio'
   const url =

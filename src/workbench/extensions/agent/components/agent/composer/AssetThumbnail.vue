@@ -23,8 +23,6 @@ function onImageError(event: Event): void {
   )
     failedUrl.value = event.target.getAttribute('src') ?? undefined
 }
-// An EXR with no stored preview: the browser cannot draw the file itself, so
-// the tray shows its name on a plain tile rather than a generic image icon.
 const showNameTile = computed(
   () => variant === 'tray' && kind.value !== 'other' && isHdrImageFilename(name)
 )

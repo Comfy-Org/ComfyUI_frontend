@@ -1717,8 +1717,6 @@ const attachment = useAttachment({
   upload: async (file, signal) => {
     const uploaded = await rest.uploadImage(file, file.name, signal)
     const filename = uploaded.name ?? file.name
-    // The browser cannot decode an EXR, so its chip shows the stored preview
-    // the asset system keeps for it, never the uploaded file itself.
     const previewUrl = isHdrImageFilename(filename)
       ? ((await findServerPreviewUrl(filename)) ?? undefined)
       : undefined
