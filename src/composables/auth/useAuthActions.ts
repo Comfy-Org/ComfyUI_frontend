@@ -32,6 +32,7 @@ import type {
   SocialSignInOptions
 } from '@/stores/authStore'
 import { usdToMicros } from '@/utils/formatUtil'
+import { openBillingUrl } from '@/platform/workspace/billing/billingTab'
 
 /**
  * The app's own auth.errors table, read through vue-i18n at resolution time.
@@ -205,7 +206,7 @@ export const useAuthActions = () => {
     // refresh on return still fires when telemetry consent is off.
     const pendingTopup = usePendingTopup()
     pendingTopup.startPendingTopup()
-    if (!window.open(response.checkout_url, '_blank')) {
+    if (!openBillingUrl(response.checkout_url)) {
       pendingTopup.clearPendingTopup()
       throw new PaymentPopupBlockedError(
         t('subscription.preview.paymentPopupBlocked')

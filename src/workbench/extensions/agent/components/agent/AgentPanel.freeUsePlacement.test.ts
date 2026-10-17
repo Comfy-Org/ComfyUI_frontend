@@ -7,6 +7,7 @@ import type {
   AgentFreeUseNoticeMetadata,
   AgentFreeUsePlacement
 } from '@/platform/telemetry/types'
+
 import { AGENT_FREE_USE_PLACEMENTS } from '@/platform/telemetry/types'
 
 import AgentPanel from './AgentPanel.vue'

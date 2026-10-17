@@ -42,6 +42,8 @@ import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 import { fetchDroppedAsset, getDroppedAsset } from '@/utils/eventUtils'
 import type { DroppedAsset } from '@/utils/eventUtils'
 import { useAssetsStore } from '@/stores/assetsStore'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 import {
   AGENT_ATTACH_ACCEPT,
   agentAttachRefVerdict,
@@ -129,6 +131,11 @@ import {
 import { useAgentDraftSubmission } from './composables/agent/useAgentDraftSubmission'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 import { createAgentRestClient } from './services/agent/agentRestClient'
+import {
+  agentSocketAuthParams,
+  ensureSignedIn,
+  hasAgentCredential
+} from './services/agent/agentAuth'
 import type { DraftSnapshot } from './services/agent/agentRestClient'
 import type { AgentPaywallAction } from './services/agent/agentPaywallPresentation'
 import {
@@ -138,7 +145,7 @@ import {
   toAgentPaywallReason
 } from './services/agent/agentPaywallPresentation'
 import { createAgentEventSource } from './services/agent/agentEventSource'
-import { createStandaloneAgentEventSource } from './services/agent/standaloneAgentEventSource'
+import { resolveAgentIdentity } from './services/agent/agentIdentity'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { agentMessageText } from './utils/agentMessageText'
 import {
@@ -157,6 +164,7 @@ import {
 import { attachDocOpMinter } from './crdt/docOpMinter'
 import { attachRestoreOpMinter } from './crdt/restoreOpMinter'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
+import { createAgentDocFrameTransport } from './crdt/agentDocFrameTransport'
 
 const CrdtDevPanel = defineAsyncComponent(
   () => import('./crdt/CrdtDevPanel.vue')
@@ -214,10 +222,36 @@ const userName = computed(
 
 const rest = createAgentRestClient()
 
-const events =
-  import.meta.env.VITE_AGENT_STANDALONE === 'true'
-    ? createStandaloneAgentEventSource()
-    : createAgentEventSource(api)
+const events = createAgentEventSource({
+  endpoint: api.apiURL('/agent/events'),
+  getAuthParams: agentSocketAuthParams
+})
+
+const docTransport = createAgentDocFrameTransport(events)
+onBeforeUnmount(() => docTransport.destroy())
+
+const agentIdentity = resolveAgentIdentity({
+  getIdentity: () => rest.getIdentity(),
+  onSocketOpen: (listener) => docTransport.onSocketOpen(listener),
+  isRetryable: (error) => isRetryableRequestFailure(error, false),
+  onFailure: (error) =>
+    reportError(error, {
+      surface: 'agent',
+      errorType: 'failure_resolving_agent_identity',
+      level: 'warning'
+    })
+})
+onBeforeUnmount(() => agentIdentity.stop())
+
+const authStore = useAuthStore()
+const apiKeyAuthStore = useApiKeyAuthStore()
+const agentAccountId = computed(
+  () => authStore.userId ?? apiKeyAuthStore.currentUser?.id ?? null
+)
+watch(agentAccountId, () => {
+  events.reconnect()
+  agentIdentity.reset()
+})
 
 function onPaywallAction(
   action: AgentPaywallAction,
@@ -710,9 +744,22 @@ function targetWorkflowDraft(origin?: TurnOrigin): DraftSnapshot | undefined {
   if (workflowDetached.value) return undefined
   const target = originWorkflow(origin)
   if (!target) return undefined
+  if (followerOwnsDocument(cloudIdFor(target))) return undefined
   const content = serializedCanvas(target)
   if (!content) return undefined
   return { content }
+}
+
+// A pending identity still withholds the draft: the seed replaces the server
+// document, and a canvas the follower has not caught up would undo agent edits.
+// Pending is bounded; the lookup settles as `rejected` after its retry budget.
+function followerOwnsDocument(documentId: string | undefined): boolean {
+  return (
+    documentId !== undefined &&
+    boundWorkflowId.value === documentId &&
+    crdtStatus.value.terminal === null &&
+    agentIdentity.state.value.status !== 'rejected'
+  )
 }
 
 function canvasForWorkflow(workflowId: string): Record<string, unknown> | null {
@@ -848,6 +895,7 @@ const {
     useTelemetry()?.trackAgentThreadStarted({ source }),
   onThreadActivated: (id) => history.setActive(id),
   onAskResolved: forgetApproval,
+  refreshCredentialDuringTurns: !isCloud,
   workflow: {
     initialize: agentPanelStore.initializeTargetTracking,
     current: targetWorkflowTurnContext,
@@ -884,6 +932,15 @@ const isBoundWorkflowActive = computed(() => boundRootGraphId() !== null)
 // session's bound workflow while its tab is active. Suspending the background
 // subscription makes reopening pull state-vector catch-up only after the
 // workflow's serialized activeState has hydrated the transient stores.
+const agentUserId = computed(() => {
+  const identity = agentIdentity.state.value
+  return identity.status === 'resolved' ? identity.userId : null
+})
+
+const isFollowerActive = computed(
+  () => isBoundWorkflowActive.value && agentUserId.value !== null
+)
+
 const {
   status: crdtStatus,
   debugSnapshot: crdtDebugSnapshot,
@@ -891,16 +948,18 @@ const {
   docInputNames,
   docPromotedWidgets,
   mayWritePromotedHost,
-  notifyWidgetWriteRefused
-} = useAgentCrdtFollower(
-  boundWorkflowId,
-  () => resolvedUserInfo.value?.id ?? null,
-  isBoundWorkflowActive,
+  notifyWidgetWriteRefused,
+  subscriptionSent
+} = useAgentCrdtFollower(boundWorkflowId, {
+  transport: docTransport,
+  userId: () => agentUserId.value,
+  isTargetActive: isFollowerActive,
   // `app.isGraphReady` is a plain getter; reading `canvasStore.canvas` (set
   // right after `app.setup()`) makes the follower's graph watch fire once the
   // root graph exists.
-  () => (canvasStore.canvas && app.isGraphReady ? app.rootGraph : null),
-  {
+  getGraph: () =>
+    canvasStore.canvas && app.isGraphReady ? app.rootGraph : null,
+  events: {
     onMaterialized({ workflowId, nodeIds }) {
       if (app.isGraphReady) {
         graphActivity.recordMaterialized(
@@ -917,7 +976,7 @@ const {
         description: formatWorkflowSyncErrorDetail(t, message, code)
       })
   },
-  {
+  applierDeps: {
     getCanvas: () => app.canvas,
     withRemoteActor: (actor, fn) => layoutStore.withActor(actor, fn),
     viewportBounds() {
@@ -927,8 +986,8 @@ const {
       return { x, y, width, height }
     }
   },
-  canvasForWorkflow
-)
+  canvasFor: canvasForWorkflow
+})
 function boundRootGraphId(): RootGraphId | null {
   const bound = boundWorkflowId.value
   if (bound === null) return null
@@ -937,9 +996,12 @@ function boundRootGraphId(): RootGraphId | null {
     ? null
     : documentLifecycle.activeRootGraphId(toDocumentUid(workflow.instanceId))
 }
+function followerCanDeliver(): boolean {
+  return isFollowerActive.value && subscriptionSent()
+}
 const docOpMinter = attachDocOpMinter({
   isEnabled: () => agentPanelStore.enabled,
-  isDocBound: () => isBoundWorkflowActive.value,
+  isDocBound: followerCanDeliver,
   enqueue: enqueueHumanOperations,
   getGraph: () => (app.isGraphReady ? app.rootGraph : null),
   boundRootGraphId,
@@ -950,7 +1012,7 @@ const docOpMinter = attachDocOpMinter({
 })
 const restoreOpMinter = attachRestoreOpMinter({
   isEnabled: () => agentPanelStore.enabled,
-  isDocBound: () => isBoundWorkflowActive.value,
+  isDocBound: followerCanDeliver,
   enqueue: enqueueHumanOperations,
   getGraph: () => (app.isGraphReady ? app.rootGraph : null),
   docInputNames: (nodeId) => {
@@ -1436,6 +1498,23 @@ async function refreshHistory(): Promise<void> {
   }
 }
 
+const provisionalTitle = ref<string>()
+
+watch(
+  threadId,
+  (id, previousId) => {
+    if (
+      id === null ||
+      previousId !== null ||
+      provisionalTitle.value === undefined
+    )
+      return
+    history.rename(id, provisionalTitle.value)
+    provisionalTitle.value = undefined
+  },
+  { immediate: true }
+)
+
 void refreshHistory()
 
 const currentChatReady = computed(
@@ -1459,9 +1538,9 @@ async function onSelectHistory(
   id: string,
   isCurrent: () => boolean
 ): Promise<boolean> {
+  provisionalTitle.value = undefined
   if (currentChatReady.value && id === threadId.value)
     return onShowTarget(isCurrent, warnRestoreFailed)
-
   composerStore.invalidateSubmission()
   cancelWorkflowSelection()
   agentPanelStore.beginWorkflowRestoration()
@@ -1553,6 +1632,7 @@ const { submit: onSend } = useAgentDraftSubmission({
   },
   // fallow-ignore-next-line complexity -- Existing PR logic; this lane changes only the composing panel test.
   send: async (text, attachments, nodes, references, meta) => {
+    if (!hasAgentCredential() && !(await ensureSignedIn())) return false
     const submissionId = composerStore.submission?.id
     if (
       !consentAccepted.value &&
@@ -1612,7 +1692,8 @@ function onStop(method: AgentStopMethod): void {
 }
 
 function onRenameChat(title: string): void {
-  if (threadId.value !== null) history.rename(threadId.value, title)
+  if (threadId.value === null) provisionalTitle.value = title
+  else history.rename(threadId.value, title)
 }
 
 function onRenameHistory(id: string, title: string): void {
@@ -1629,6 +1710,7 @@ function onDeleteHistory(id: string): void {
 }
 
 function onNewChat(source?: 'new_chat_button' | 'history_delete'): void {
+  provisionalTitle.value = undefined
   composerStore.invalidateSubmission()
   cancelWorkflowSelection()
   canvasStore.stopNodePicking()
@@ -1957,7 +2039,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       :select-history="onSelectHistory"
       :current-chat-ready="currentChatReady"
       :session-id="threadId"
-      :custom-title="history.titleFor(threadId)"
+      :custom-title="history.titleFor(threadId) ?? provisionalTitle"
       :selection-tags="selectionTags"
       :node-reference-disabled-reason="nodeReferenceDisabledReason"
       :select-workflow-reference="onSelectWorkflowReference"

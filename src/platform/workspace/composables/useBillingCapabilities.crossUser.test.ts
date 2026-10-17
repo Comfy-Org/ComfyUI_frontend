@@ -48,7 +48,13 @@ function capabilitiesFor(
       can_change_seats: isOwner,
       can_invite_members: isOwner,
       can_manage_members: isOwner,
-      can_downgrade_to_personal: isOwner
+      can_downgrade_to_personal: isOwner,
+      can_delete_workspace: isOwner,
+      can_leave_workspace: isOwner,
+      can_manage_billing: isOwner,
+      can_manage_partner_node_access: isOwner,
+      can_view_pending_invites: isOwner,
+      can_view_team_usage: isOwner
     },
     rollout_defaults_applied: {
       can_downgrade_to_personal: false,

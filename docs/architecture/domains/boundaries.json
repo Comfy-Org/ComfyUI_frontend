@@ -99,7 +99,9 @@
           "src/workbench/extensions/agent/services/agent/undeliverableAskReporter.ts",
           "src/workbench/extensions/agent/stores/**",
           "src/workbench/extensions/agent/utils/getPageVisibilityMetadata.test.ts",
-          "src/workbench/extensions/agent/utils/getPageVisibilityMetadata.ts"
+          "src/workbench/extensions/agent/utils/getPageVisibilityMetadata.ts",
+          "src/workbench/extensions/agent/services/agent/agentIdentity.ts",
+          "src/workbench/extensions/agent/services/agent/agentIdentity.test.ts"
         ]
       },
       {
@@ -107,7 +109,6 @@
         "patterns": [
           "src/workbench/extensions/agent/crdt/__fixtures__/docFrameClient.ts",
           "src/workbench/extensions/agent/crdt/agentCrdtTransport.ts",
-          "src/workbench/extensions/agent/crdt/apiTransport.test.ts",
           "src/workbench/extensions/agent/crdt/crdtDebugGate.test.ts",
           "src/workbench/extensions/agent/crdt/crdtDebugGate.ts",
           "src/workbench/extensions/agent/crdt/crdtDebugReport.test.ts",
@@ -132,12 +133,17 @@
           "src/workbench/extensions/agent/services/agent/agentEventSource.ts",
           "src/workbench/extensions/agent/services/agent/agentRestClient.test.ts",
           "src/workbench/extensions/agent/services/agent/agentRestClient.ts",
-          "src/workbench/extensions/agent/services/agent/standaloneAgentEventSource.test.ts",
-          "src/workbench/extensions/agent/services/agent/standaloneAgentEventSource.ts",
           "src/workbench/extensions/agent/utils/resolveReplyAssetDownload.test.ts",
           "src/workbench/extensions/agent/utils/resolveReplyAssetDownload.ts",
           "src/workbench/extensions/agent/utils/videoThumbnail.test.ts",
-          "src/workbench/extensions/agent/utils/videoThumbnail.ts"
+          "src/workbench/extensions/agent/utils/videoThumbnail.ts",
+          "src/workbench/extensions/agent/services/agent/agentAuth.ts",
+          "src/workbench/extensions/agent/services/agent/agentAuth.test.ts",
+          "src/workbench/extensions/agent/services/agent/__mocks__/agentAuth.ts",
+          "src/workbench/extensions/agent/crdt/agentDocFrameTransport.ts",
+          "src/workbench/extensions/agent/crdt/agentDocFrameTransport.test.ts",
+          "src/workbench/extensions/agent/crdt/__fixtures__/agentSocket.ts",
+          "src/workbench/extensions/agent/crdt/agentCrdtTransport.test.ts"
         ]
       },
       {
@@ -597,7 +603,6 @@
           "src/platform/workspace/api/capabilityRevision.ts",
           "src/platform/workspace/billing/hostedBillingRoutes.test.ts",
           "src/platform/workspace/billing/hostedBillingRoutes.ts",
-          "src/platform/workspace/billing/stripePublishableKey.ts",
           "src/platform/workspace/billing/subscribeInput.ts",
           "src/services/customerEventsService.test.ts",
           "src/services/customerEventsService.ts"
@@ -617,7 +622,6 @@
           "src/platform/workspace/components/InsufficientCreditsMemberDialog.vue",
           "src/platform/workspace/components/PricingTableWorkspace.test.ts",
           "src/platform/workspace/components/PricingTableWorkspace.vue",
-          "src/platform/workspace/components/SubscriptionAddPaymentPreviewWorkspace.stripe.test.ts",
           "src/platform/workspace/components/SubscriptionAddPaymentPreviewWorkspace.test.ts",
           "src/platform/workspace/components/SubscriptionAddPaymentPreviewWorkspace.vue",
           "src/platform/workspace/components/SubscriptionCheckoutSteps.stories.ts",
@@ -4127,6 +4131,7 @@
         "from": "agent/domain",
         "allow": [
           "agent/domain",
+          "authentication/domain",
           "design-system/domain",
           "design-system/domain/outer-1",
           "unclassified"
@@ -4138,9 +4143,13 @@
           "agent/domain",
           "agent/application",
           "agent/infrastructure",
+          "authentication/domain",
+          "authentication/application",
+          "authentication/infrastructure",
           "design-system/domain",
           "design-system/application",
           "design-system/infrastructure",
+          "authentication/infrastructure/outer-1",
           "design-system/domain/outer-1",
           "unclassified"
         ]
@@ -4151,9 +4160,13 @@
           "agent/domain",
           "agent/application",
           "agent/infrastructure",
+          "authentication/domain",
+          "authentication/application",
+          "authentication/infrastructure",
           "design-system/domain",
           "design-system/application",
           "design-system/infrastructure",
+          "authentication/infrastructure/outer-1",
           "design-system/domain/outer-1",
           "unclassified"
         ]
@@ -4164,6 +4177,9 @@
           "agent/domain",
           "agent/application",
           "agent/presentation",
+          "authentication/domain",
+          "authentication/application",
+          "authentication/presentation",
           "design-system/domain",
           "design-system/application",
           "design-system/presentation",
@@ -4180,11 +4196,17 @@
           "agent/infrastructure",
           "agent/presentation",
           "agent/integration",
+          "authentication/domain",
+          "authentication/application",
+          "authentication/infrastructure",
+          "authentication/presentation",
+          "authentication/integration",
           "design-system/domain",
           "design-system/application",
           "design-system/infrastructure",
           "design-system/presentation",
           "agent/integration/outer-1",
+          "authentication/infrastructure/outer-1",
           "design-system/domain/outer-1",
           "design-system/presentation/outer-1",
           "unclassified"
@@ -6048,14 +6070,25 @@
       },
       {
         "from": "settings/domain",
-        "allow": ["settings/domain", "unclassified"]
+        "allow": [
+          "authentication/domain",
+          "dialog-host/domain",
+          "settings/domain",
+          "unclassified"
+        ]
       },
       {
         "from": "settings/application",
         "allow": [
+          "authentication/domain",
+          "authentication/application",
+          "authentication/infrastructure",
+          "dialog-host/domain",
+          "dialog-host/application",
           "settings/domain",
           "settings/application",
           "settings/infrastructure",
+          "authentication/infrastructure/outer-1",
           "settings/application/outer-1",
           "unclassified"
         ]
@@ -6063,9 +6096,15 @@
       {
         "from": "settings/infrastructure",
         "allow": [
+          "authentication/domain",
+          "authentication/application",
+          "authentication/infrastructure",
+          "dialog-host/domain",
+          "dialog-host/application",
           "settings/domain",
           "settings/application",
           "settings/infrastructure",
+          "authentication/infrastructure/outer-1",
           "settings/application/outer-1",
           "unclassified"
         ]
@@ -6073,22 +6112,38 @@
       {
         "from": "settings/presentation",
         "allow": [
+          "authentication/domain",
+          "authentication/application",
+          "authentication/presentation",
+          "dialog-host/domain",
+          "dialog-host/application",
           "settings/domain",
           "settings/application",
           "settings/presentation",
           "settings/application/outer-1",
+          "dialog-host/presentation/outer-2",
           "unclassified"
         ]
       },
       {
         "from": "settings/integration",
         "allow": [
+          "authentication/domain",
+          "authentication/application",
+          "authentication/infrastructure",
+          "authentication/presentation",
+          "authentication/integration",
+          "dialog-host/domain",
+          "dialog-host/application",
+          "dialog-host/integration",
           "settings/domain",
           "settings/application",
           "settings/infrastructure",
           "settings/presentation",
           "settings/integration",
+          "authentication/infrastructure/outer-1",
           "settings/application/outer-1",
+          "dialog-host/presentation/outer-2",
           "unclassified"
         ]
       },
@@ -6761,11 +6816,17 @@
           "agent/infrastructure",
           "agent/presentation",
           "agent/integration",
+          "authentication/domain",
+          "authentication/application",
+          "authentication/infrastructure",
+          "authentication/presentation",
+          "authentication/integration",
           "design-system/domain",
           "design-system/application",
           "design-system/infrastructure",
           "design-system/presentation",
           "agent/integration/outer-1",
+          "authentication/infrastructure/outer-1",
           "design-system/domain/outer-1",
           "design-system/presentation/outer-1",
           "unclassified"
@@ -7329,9 +7390,15 @@
       {
         "from": "settings/application/outer-1",
         "allow": [
+          "authentication/domain",
+          "authentication/application",
+          "authentication/infrastructure",
+          "dialog-host/domain",
+          "dialog-host/application",
           "settings/domain",
           "settings/application",
           "settings/infrastructure",
+          "authentication/infrastructure/outer-1",
           "settings/application/outer-1",
           "unclassified"
         ]
