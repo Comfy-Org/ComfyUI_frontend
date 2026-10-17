@@ -36,7 +36,7 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
 import type { WidgetState } from '@/types/widgetState'
-import { widgetId } from '@/types/widgetId'
+import { parseWidgetId, widgetId } from '@/types/widgetId'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { graphToPrompt } from '@/utils/executionUtil'
 
@@ -1750,6 +1750,113 @@ describe('Promoted widget rewire desync (PM-1328 / PM-1253 / PM-1254)', () => {
 
     expect(hostNode.widgets).toHaveLength(4)
     expect(promotedInputs(hostNode)).toHaveLength(4)
+  })
+})
+
+// Who owns freeing a demoted promoted widget's store entry, and who must not.
+//
+// Reviewers of the cloud/1.54 carrier for #18074 (frontend #19750) read the
+// deferred demotion's `!this.inputs.some(i => i.widgetId === id)` guard as
+// meaning "nothing else holds this id, so free it", concluded it was dead
+// because the input being demoted is still in `this.inputs` carrying the id,
+// and proposed clearing `input.widgetId` before the check. That reading is
+// wrong about the intent, and implementing it reverts #14495: the host's
+// edited value is kept across a disconnect precisely so that re-promoting the
+// same slot restores what the user typed instead of reverting to the interior
+// node's older value. #18074 flipped that issue's e2e case from `test.fail()`
+// on the strength of this.
+//
+// What the guard actually means -- and what these tests pin -- is "free it once
+// the input itself is gone from the node", which only happens when the slot is
+// removed in the same tick as the disconnect. Explicit un-promote
+// (`demotePromotedInput`) frees the entry synchronously on its own path, and
+// retaining a value past a teardown that might be undone is the store's stated
+// policy elsewhere too (`releaseNodeWidgets`: "retaining them lets a node that
+// comes back keep what the user set").
+describe('Promoted widget demotion store ownership', () => {
+  function makeInteriorNode(title: string, value: WidgetValue = 1) {
+    const node = new LGraphNode(title)
+    const input = node.addInput('value', 'number')
+    node.addOutput('out', 'number')
+    const widget: LegacyWidget = new LegacyWidget({
+      name: 'widget',
+      type: 'number',
+      value,
+      y: 0,
+      options: {},
+      node
+    })
+    node.widgets = [widget]
+    input.widget = { name: widget.name }
+    return { node, widget }
+  }
+
+  function createPromotedHost() {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'value', type: 'number' }]
+    })
+    const interior = makeInteriorNode('InteriorNode', 1)
+    subgraph.add(interior.node)
+    subgraph.inputNode.slots[0].connect(interior.node.inputs[0], interior.node)
+
+    const hostNode = createTestSubgraphNode(subgraph)
+    const promotedId = hostNode.inputs[0].widgetId
+    if (!promotedId) throw new Error('expected the input to be promoted')
+
+    return { subgraph, interior, hostNode, promotedId }
+  }
+
+  it('keeps the host value across an ordinary disconnect so re-promoting the slot restores it', async () => {
+    const { subgraph, interior, hostNode, promotedId } = createPromotedHost()
+    const store = useWidgetValueStore()
+
+    // The host-side edit #14495 is about: typed on the subgraph node, not on
+    // the interior node, which still holds its own older value.
+    store.setValue(promotedId, 99)
+
+    interior.node.disconnectInput(0, true)
+    await Promise.resolve()
+
+    // Demoted: no widget on the host, and the input no longer claims an id...
+    expect(hostNode.inputs[0].widgetId).toBeUndefined()
+    expect(hostNode.widgets).toHaveLength(0)
+    // ...but the value survives, because the input itself is still on the node
+    // and the user can put the link back.
+    expect(store.getWidget(promotedId)?.value).toBe(99)
+
+    subgraph.inputNode.slots[0].connect(interior.node.inputs[0], interior.node)
+    await Promise.resolve()
+
+    expect(hostNode.inputs[0].widgetId).toBe(promotedId)
+    expect(store.getWidget(promotedId)?.value).toBe(99)
+  })
+
+  it('keeps the store entry when the disconnect is a same-tick rewire', async () => {
+    const { subgraph, interior, hostNode, promotedId } = createPromotedHost()
+    const store = useWidgetValueStore()
+
+    interior.node.disconnectInput(0, true)
+    subgraph.inputNode.slots[0].connect(interior.node.inputs[0], interior.node)
+    await Promise.resolve()
+
+    expect(hostNode.inputs[0].widgetId).toBe(promotedId)
+    expect(store.getWidget(promotedId)).toBeDefined()
+  })
+
+  it('frees the store entry when the slot is removed in the same tick as the disconnect', async () => {
+    const { subgraph, interior, hostNode, promotedId } = createPromotedHost()
+    const store = useWidgetValueStore()
+    const { graphId, nodeId } = parseWidgetId(promotedId)
+
+    interior.node.disconnectInput(0, true)
+    subgraph.removeInput(subgraph.inputNode.slots[0])
+    await Promise.resolve()
+
+    // The input is gone from the host, so nothing can bring the promotion back
+    // and the guard's one live case fires.
+    expect(hostNode.inputs).toHaveLength(0)
+    expect(store.getWidget(promotedId)).toBeUndefined()
+    expect(store.getNodeWidgetIds(graphId, nodeId)).not.toContain(promotedId)
   })
 })
 
