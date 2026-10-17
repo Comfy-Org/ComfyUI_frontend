@@ -1268,7 +1268,7 @@
         "title": "Free. Open Source.\nNo ceiling.",
         "description": "No feature gates, no trial periods, no \"pro\" tier for core functionality. No vendor can lock you in or force you off the platform. Build your own nodes and modify ComfyUI as your own."
       },
-      "heading": "Why\nprofessionals\nchoose ",
+      "headline": "Why\nprofessionals\nchoose {highlight}",
       "headingHighlight": "Desktop"
     },
     "meta": {
@@ -1324,7 +1324,7 @@
         "title": "Community workflows,\nunlimited customization\nthrough <span class=\"whitespace-nowrap\">pre-installed</span>\ncustom nodes",
         "description": "Browse, run, and remix workflows built by thousands of creators. Start from proven templates instead of blank canvases. Upload custom LoRAs or finetuned foundational models from CivitAI and Hugging Face. The nodes powering ~90% of local ComfyUI workflows are now in the cloud."
       },
-      "heading": "Why\nprofessionals\nchoose ",
+      "headline": "Why\nprofessionals\nchoose {highlight}",
       "headingHighlight": "Cloud"
     },
     "aiModels": {
@@ -2036,7 +2036,7 @@
         "title": "Your GPUs,\nor ours.",
         "description": "Run without a GPU on Comfy Cloud, or go local and let the agent do the hard part: it reads your machine (models, custom nodes, VRAM), untangles complex open-source workflows, and builds ones your hardware can actually run."
       },
-      "heading": "Why build on\n",
+      "headline": "Why build on\n{highlight}",
       "headingHighlight": "Comfy MCP?",
       "subtitle": "The first MCP built for production pipelines: trusted infrastructure that lets engineers and professionals ship faster."
     },
@@ -2302,7 +2302,7 @@
         "title": "Works alongside\nMCP.",
         "description": "One account, two surfaces. Chat through Comfy MCP, script through the CLI, and let your agent pick the right one per task. Cloud outputs land in the same asset library either way."
       },
-      "heading": "Why build on\n",
+      "headline": "Why build on\n{highlight}",
       "headingHighlight": "Comfy CLI?",
       "subtitle": "The terminal counterpart to Comfy MCP: the same engine and the same account, scripted.",
       "mcpLinkLabel": "Set up Comfy MCP"
@@ -3692,7 +3692,7 @@
     },
     "hero": {
       "titleModel": "Gemini Omni 1.1 Flash",
-      "titleRest": " is here",
+      "headline": "{model} is here",
       "description": "Omni 1.1 Flash is Google's new video model, now on Comfy. It's built for fast generation. One node covers text-to-video, image-to-video, reference-to-video, editing, and scene extension, with output up to 4K and audio on every clip.",
       "primaryCta": "RUN IT NOW",
       "secondaryCta": "EXPLORE WORKFLOWS",
@@ -3985,7 +3985,7 @@
     },
     "hero": {
       "title": "Flux 3",
-      "titleRest": " is here",
+      "headline": "{model} is here",
       "description": "Flux 3 generates video with native audio, up to 20 seconds in a single generation. Go text to video or image to video. Run it on Comfy Cloud today. Open weights coming soon.",
       "tagPartnerNodes": "Partner nodes",
       "tagOpenWeightsSoon": "Open weights coming soon",
@@ -4309,7 +4309,7 @@
     },
     "hero": {
       "titleModel": "MiniMax H3",
-      "titleRest": " is here",
+      "headline": "{model} is here",
       "description": "Full multi-modal I/O, native stereo clip. Up to 2K, 5 to 15s per generation. H3 actually conditions on input audio where others overwrite or drop it. H3 is available as Open Weights and through Partner Nodes.",
       "primaryCta": "RUN MINIMAX H3",
       "secondaryCta": "TRY WORKFLOWS",
@@ -4357,7 +4357,7 @@
     },
     "hero": {
       "titleModel": "MiniMax Music 3",
-      "titleRest": " is here",
+      "headline": "{model} is here",
       "description": "Full songs up to five minutes in one generation. Feed lyrics and a music description, and get coherent structure, expressive vocals, and evolving arrangements. Quality holds steady across the whole track, and the open weights are free for most commercial use under the MiniMax Community License.",
       "tagOpenWeights": "Open Weight",
       "tagTextToMusic": "Text to Audio",
@@ -4457,7 +4457,7 @@
     },
     "hero": {
       "titleModel": "Fish Audio Drama 3",
-      "titleRest": " is now on Comfy",
+      "headline": "{model} is now on Comfy",
       "description": "Get 50% off for your first 30 days. Drama 3 is Fish Audio's most emotive, controllable model yet. Write a multi-character scene as one conversation, then build it with audio in a single workflow.",
       "badge1": "Partner node",
       "badge2": "Multi-character scenes",
@@ -5214,7 +5214,7 @@
         "title": "One node, not a migration",
         "description": "You add a node to the graph you already have. Nothing else about your setup changes."
       },
-      "heading": "Maximum control.\n",
+      "headline": "Maximum control.\n{highlight}",
       "headingHighlight": "Offload only the compute.",
       "subtitle": "Your graph, your nodes, your outputs. A Comfy Cloud node hands off a single model run and hands the result straight back."
     },

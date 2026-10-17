@@ -10,7 +10,11 @@ import { test } from './fixtures/blockExternalMedia'
 
 const PATH = '/gemini-omni'
 const ZH_PATH = '/zh-CN/gemini-omni'
-const HERO_TITLE = `${t('geminiOmni.hero.titleModel', {}, { locale: 'en' })}${t('geminiOmni.hero.titleRest', {}, { locale: 'en' })}`
+const HERO_TITLE = t(
+  'geminiOmni.hero.headline',
+  { model: t('geminiOmni.hero.titleModel', {}, { locale: 'en' }) },
+  { locale: 'en' }
+)
 const MODELS_HEADING = t('geminiOmni.models.heading', {}, { locale: 'en' })
 const STEPS_HEADING = t('geminiOmni.steps.heading', {}, { locale: 'en' })
 const STEPS_CTA = t('geminiOmni.steps.secondaryCta', {}, { locale: 'en' })

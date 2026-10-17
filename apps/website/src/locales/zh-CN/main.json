@@ -1007,8 +1007,8 @@
         "description": "一个账户，两个入口。对话用 Comfy MCP，脚本用 CLI，让智能体按任务选择。无论哪种方式，云端输出都进入同一个资产库。",
         "title": "与 MCP\n并肩工作。"
       },
-      "heading": "为什么选择\n",
       "headingHighlight": "Comfy CLI？",
+      "headline": "为什么选择\n{highlight}",
       "mcpLinkLabel": "配置 Comfy MCP",
       "subtitle": "Comfy MCP 的终端搭档：同一个引擎、同一个账户，脚本化。"
     }
@@ -1134,8 +1134,8 @@
         "description": "浏览、运行和混搭由数千名创作者构建的工作流。从经过验证的模板开始，而非空白画布。上传自定义 LoRA 或来自 CivitAI 和 Hugging Face 的微调基础模型。驱动约 90% 本地 ComfyUI 工作流的节点现已上云。",
         "title": "社区工作流，\n通过预安装自定义节点\n实现无限自定义"
       },
-      "heading": "专业人士为何\n选择",
-      "headingHighlight": "Cloud"
+      "headingHighlight": "Cloud",
+      "headline": "专业人士为何\n选择{highlight}"
     }
   },
   "cloudNodes": {
@@ -1310,8 +1310,8 @@
         "description": "你只是在已有的工作流里加一个节点，其他一切都不用改。",
         "title": "只是一个节点，而不是迁移"
       },
-      "heading": "完全掌控。\n",
       "headingHighlight": "只把算力交给我们。",
+      "headline": "完全掌控。\n{highlight}",
       "subtitle": "你的工作流、你的节点、你的输出，始终属于你。Comfy Cloud 节点只把一次模型运行交出去，并把结果直接送回。"
     }
   },
@@ -1533,8 +1533,8 @@
         "description": "没有功能限制、没有试用期、核心功能没有\"专业\"层级。没有供应商可以锁定你或强迫你离开平台。构建自己的节点，随心修改 ComfyUI。",
         "title": "免费。开源。\n没有上限。"
       },
-      "heading": "专业人士为何\n选择",
-      "headingHighlight": "桌面版"
+      "headingHighlight": "桌面版",
+      "headline": "专业人士为何\n选择{highlight}"
     }
   },
   "enterprise": {
@@ -1981,10 +1981,10 @@
       "badge2": "多角色场景",
       "badge3": "首发半价",
       "description": "首 30 天享 5 折优惠。这是 Fish Audio 迄今最富情感、最可控的模型。把多角色场景写成一段对话，再在同一个工作流中连同音频一起构建。",
+      "headline": "{model} 现已登陆 Comfy",
       "primaryCta": "运行 Drama 3",
       "secondaryCta": "查看文档",
-      "titleModel": "Fish Audio Drama 3",
-      "titleRest": " 现已登陆 Comfy"
+      "titleModel": "Fish Audio Drama 3"
     },
     "meta": {
       "description": "Fish Audio 的 Drama 3 是其迄今最富情感、最可控的模型，能把多角色场景作为一段对话完整演绎。发布首日即可在 Comfy Cloud 中试用。",
@@ -2034,12 +2034,12 @@
     },
     "hero": {
       "description": "Flux 3 可生成带原生音频的视频，单次生成最长 20 秒。支持文本生成视频与图像生成视频。今天就在 Comfy Cloud 上运行它。开源权重即将推出。",
+      "headline": "{model} 已上线",
       "primaryCta": "运行 Flux 3",
       "secondaryCta": "试用工作流",
       "tagOpenWeightsSoon": "开源权重即将推出",
       "tagPartnerNodes": "合作伙伴节点",
-      "title": "Flux 3",
-      "titleRest": " 已上线"
+      "title": "Flux 3"
     },
     "meta": {
       "description": "在 Comfy 上运行 Flux 3：Black Forest Labs 的多模态模型可生成带原生音频的视频，单次生成最长 20 秒，支持文本、图像、视频或关键帧输入。",
@@ -2135,14 +2135,14 @@
     },
     "hero": {
       "description": "Omni 1.1 Flash 是 Google 的新一代视频模型，现已登陆 Comfy。它为快速生成而打造。一个节点即可覆盖文本生成视频、图像生成视频、参考生成视频、视频编辑与场景延展，输出最高可达 4K，每个片段都带音频。",
+      "headline": "{model} 已上线",
       "primaryCta": "立即运行",
       "secondaryCta": "探索工作流",
       "tagImageToVideo": "图像转视频",
       "tagPartnerNode": "合作伙伴节点",
       "tagReferenceToVideo": "参考转视频",
       "tagTextToVideo": "文本转视频",
-      "titleModel": "Gemini Omni 1.1 Flash",
-      "titleRest": " 已上线"
+      "titleModel": "Gemini Omni 1.1 Flash"
     },
     "meta": {
       "description": "在 Comfy 上运行 Gemini Omni 1.1 Flash。一个节点即可覆盖文本生成视频、图像生成视频、参考生成视频、视频编辑与场景延展，输出最高可达 4K，每个片段都带音频。",
@@ -2565,8 +2565,8 @@
         "description": "无需 GPU，在 Comfy Cloud 上运行；或选择本地，把难题交给智能体：它了解你的机器（模型、自定义节点、显存），理清复杂的开源工作流，构建你的硬件真正跑得动的工作流。",
         "title": "你的 GPU，\n或我们的。"
       },
-      "heading": "为什么选择\n",
       "headingHighlight": "Comfy MCP？",
+      "headline": "为什么选择\n{highlight}",
       "subtitle": "首个为生产管线打造的 MCP：值得信赖的基础设施，让工程师和专业人士交付更快。"
     }
   },
@@ -2585,12 +2585,12 @@
     },
     "hero": {
       "description": "完整的多模态输入/输出，每个片段都带原生立体声。最高 2K，每次生成 5 到 15 秒。H3 会真正以输入音频为条件进行生成，而其他模型往往覆盖或丢弃它。H3 以开源权重形式提供，也可通过合作伙伴节点使用。",
+      "headline": "{model} 已上线",
       "primaryCta": "运行 MiniMax H3",
       "secondaryCta": "试用工作流",
       "tagOpenWeights": "开源权重",
       "tagPartnerNodes": "合作伙伴节点",
-      "titleModel": "MiniMax H3",
-      "titleRest": " 已上线"
+      "titleModel": "MiniMax H3"
     },
     "meta": {
       "description": "在 Comfy 上运行 MiniMax H3：以开源权重形式提供，也可通过合作伙伴节点使用，多模态输入/输出，每个片段都带原生立体声音频，最高 2K，每次生成 5–15 秒。免费开始使用。",
@@ -2674,12 +2674,12 @@
     },
     "hero": {
       "description": "一次生成最长五分钟的完整歌曲。输入歌词和音乐描述，即可获得连贯的结构、富有表现力的人声和层层递进的编曲。整首曲目质量稳定如一，且开源权重依据 MiniMax 社区许可，对多数商业用途免费。",
+      "headline": "{model} 已上线",
       "primaryCta": "运行工作流",
       "secondaryCta": "了解更多",
       "tagOpenWeights": "开源权重",
       "tagTextToMusic": "文本生成音频",
-      "titleModel": "MiniMax Music 3",
-      "titleRest": " 已上线"
+      "titleModel": "MiniMax Music 3"
     },
     "meta": {
       "description": "在 Comfy 上运行 MiniMax Music 3。文本生成音乐的开源权重模型，可在画布上与其他所有模型一同执导，支持 Comfy Cloud 或你自己的 GPU。",

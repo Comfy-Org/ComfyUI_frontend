@@ -3,6 +3,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { ChevronRight } from '@lucide/vue'
 import { useMediaQuery, useMounted } from '@vueuse/core'
 import { computed } from 'vue'
+import { I18nT } from 'vue-i18n'
 
 import type { Locale } from '@/i18n/translations'
 import type { ModelLaunchHero } from './types'
@@ -73,22 +74,28 @@ const mediaOutlineClass =
       class="mb-6"
     />
 
-    <component
-      :is="headingTag"
+    <I18nT
+      :keypath="hero.titleKey"
+      :tag="headingTag"
+      :i18n="translationsFor(locale)"
       :class="
         cn(
-          'max-w-3xl text-4xl font-light tracking-tight whitespace-pre-line text-primary-comfy-canvas',
+          'max-w-3xl text-4xl font-light tracking-tight whitespace-pre-line',
+          hero.titleModelKey
+            ? 'text-primary-comfy-canvas/80'
+            : 'text-primary-comfy-canvas',
           hero.titleSize === 'compact'
             ? 'lg:text-5xl/tight'
             : 'lg:text-6xl/tight'
         )
       "
     >
-      {{ t(hero.titleKey)
-      }}<span v-if="hero.titleRestKey" class="text-primary-comfy-canvas/80">{{
-        t(hero.titleRestKey)
-      }}</span>
-    </component>
+      <template #model>
+        <span v-if="hero.titleModelKey" class="text-primary-comfy-canvas">{{
+          t(hero.titleModelKey)
+        }}</span>
+      </template>
+    </I18nT>
 
     <p
       v-if="hero.descriptionKey"
@@ -189,15 +196,25 @@ const mediaOutlineClass =
           {{ t(hero.eyebrowKey) }}
         </p>
 
-        <component
-          :is="headingTag"
-          class="text-4xl font-light tracking-tight whitespace-pre-line text-primary-warm-white sm:text-6xl lg:text-8xl/none"
+        <I18nT
+          :keypath="hero.titleKey"
+          :tag="headingTag"
+          :i18n="translationsFor(locale)"
+          :class="
+            cn(
+              'text-4xl font-light tracking-tight whitespace-pre-line sm:text-6xl lg:text-8xl/none',
+              hero.titleModelKey
+                ? 'text-primary-warm-white/80'
+                : 'text-primary-warm-white'
+            )
+          "
         >
-          {{ t(hero.titleKey)
-          }}<span v-if="hero.titleRestKey" class="text-primary-warm-white/80">{{
-            t(hero.titleRestKey)
-          }}</span>
-        </component>
+          <template #model>
+            <span v-if="hero.titleModelKey" class="text-primary-warm-white">{{
+              t(hero.titleModelKey)
+            }}</span>
+          </template>
+        </I18nT>
 
         <p
           v-if="hero.descriptionKey"
@@ -321,22 +338,28 @@ const mediaOutlineClass =
         )
       "
     >
-      <component
-        :is="headingTag"
+      <I18nT
+        :keypath="hero.titleKey"
+        :tag="headingTag"
+        :i18n="translationsFor(locale)"
         :class="
           cn(
-            'text-4xl font-light tracking-tight whitespace-pre-line text-primary-comfy-canvas',
+            'text-4xl font-light tracking-tight whitespace-pre-line',
+            hero.titleModelKey
+              ? 'text-primary-comfy-canvas/80'
+              : 'text-primary-comfy-canvas',
             hero.titleSize === 'compact'
               ? 'lg:text-5xl/tight'
               : 'lg:text-6xl/tight'
           )
         "
       >
-        {{ t(hero.titleKey)
-        }}<span v-if="hero.titleRestKey" class="text-primary-comfy-canvas/80">{{
-          t(hero.titleRestKey)
-        }}</span>
-      </component>
+        <template #model>
+          <span v-if="hero.titleModelKey" class="text-primary-comfy-canvas">{{
+            t(hero.titleModelKey)
+          }}</span>
+        </template>
+      </I18nT>
 
       <p
         v-if="hero.mobileDescriptionKey"
