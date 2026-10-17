@@ -6,8 +6,14 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
 import type { MenuItem } from '@/components/ui/menu/types'
-import { inputForWidget } from '@/core/graph/subgraph/promotedInputWidget'
-import { promoteWidget } from '@/core/graph/subgraph/promotionUtils'
+import {
+  inputForWidget,
+  resolveImmediatePromotedWidgetSource
+} from '@/core/graph/subgraph/promotedInputWidget'
+import {
+  demoteWidget,
+  promoteWidget
+} from '@/core/graph/subgraph/promotionUtils'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -39,6 +45,7 @@ const isLinked = computed(() => {
   return inputForWidget(node, widget)?.widgetId != null
 })
 const canShowInput = computed(() => host != null && !isLinked.value)
+const canHideInput = computed(() => host != null && isLinked.value)
 const isFavorited = computed(() =>
   favoritedWidgetsStore.isFavorited(node, widget.name)
 )
@@ -70,6 +77,13 @@ async function handleRename() {
 function handleShowInput() {
   if (!host) return
   promoteWidget(node, widget, [host])
+}
+
+function handleHideInput() {
+  if (!host) return
+  const source = resolveImmediatePromotedWidgetSource(node, widget)
+  if (!source) return
+  demoteWidget(source.sourceNode, source.sourceWidget, [host])
 }
 
 function handleToggleFavorite() {
@@ -121,6 +135,15 @@ const menuItems = computed<MenuItem[]>(() => [
 </script>
 
 <template>
+  <Button
+    v-if="canHideInput"
+    size="icon"
+    variant="muted-textonly"
+    data-testid="widget-actions-hide-input-button"
+    icon="icon-[lucide--eye-off]"
+    :aria-label="t('rightSidePanel.hideInput')"
+    @click="handleHideInput"
+  />
   <Menu :items="menuItems" align="end">
     <template #trigger>
       <Button
