@@ -90,6 +90,21 @@ describe('useFolderWorkflowsUrlLoader', () => {
     })
   })
 
+  it('orders numbered workflows by number, not character by character', async () => {
+    serveWorkflowFiles(['build/10.json', 'build/2.json'])
+    Object.assign(useRoute().query, { workflows: 'build' })
+
+    await useFolderWorkflowsUrlLoader().openFolderWorkflowsFromUrl()
+
+    expect(openTabPaths()).toEqual([
+      'workflows/build/2.json',
+      'workflows/build/10.json'
+    ])
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledExactlyOnceWith(
+      useWorkflowStore().getWorkflowByPath('workflows/build/2.json')
+    )
+  })
+
   it('reuses a tab that is already open instead of opening it twice', async () => {
     serveWorkflowFiles(['mine.json', 'build/a.json', 'build/b.json'])
     const workflowStore = useWorkflowStore()
