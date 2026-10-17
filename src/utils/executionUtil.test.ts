@@ -10,7 +10,7 @@ function addNode(
   comfyClass: string,
   properties: Record<string, unknown> = {}
 ) {
-  const node = new LGraphNode(comfyClass)
+  const node = new LGraphNode(comfyClass, comfyClass)
   node.comfyClass = comfyClass
   Object.assign(node.properties, properties)
   graph.add(node)
@@ -107,6 +107,50 @@ describe('graphToPrompt widget serialization', () => {
     widget.value = null
 
     expect(await promptInputs(graph, node)).not.toHaveProperty('prompt')
+  })
+})
+
+describe('graphToPrompt API-only values', () => {
+  it('awaits API-only widget values before applying links while preserving workflow values', async () => {
+    const graph = new LGraph()
+    const node = addNode(graph, 'CanvasEditor')
+    node.serialize_widgets = true
+    node.addWidget('number', 'width', 640, () => {}, {})
+    node.addWidget('number', 'height', 960, () => {}, {})
+    const pixels = [{ x: 320, y: 480, width: 160, height: 240 }]
+    const editor = node.addWidget(
+      'custom',
+      'editor_state',
+      pixels,
+      () => {},
+      {}
+    )
+    const apiPixels = [{ ...pixels[0], api_only: true }]
+    editor.serializeValue = async () => {
+      await Promise.resolve()
+      return apiPixels
+    }
+    const dimensions = addNode(graph, 'Dimensions')
+    dimensions.addOutput('width', 'INT')
+    dimensions.addOutput('height', 'INT')
+    node.addInput('width', 'INT')
+    node.addInput('height', 'INT')
+    dimensions.connect(0, node, 0)
+    dimensions.connect(1, node, 1)
+
+    const { workflow, output } = await graphToPrompt(graph)
+
+    expect(output[String(node.id)].inputs).toEqual({
+      width: [String(dimensions.id), 0],
+      height: [String(dimensions.id), 1],
+      editor_state: { __value__: apiPixels }
+    })
+    expect(
+      workflow.nodes.find((n) => String(n.id) === String(node.id))
+        ?.widgets_values
+    ).toEqual([640, 960, pixels])
+    expect(editor.value).toEqual(pixels)
+    expect(node.serialize().widgets_values).toEqual([640, 960, pixels])
   })
 })
 
