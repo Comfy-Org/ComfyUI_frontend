@@ -190,11 +190,11 @@ export function useLegacyBilling(): BillingState & BillingActions {
     }
   }
 
-  async function fetchStatus(): Promise<void> {
+  async function fetchStatusFresh(): Promise<boolean> {
     isLoading.value = true
     error.value = null
     try {
-      await legacyFetchStatus()
+      return (await legacyFetchStatus()) !== null
     } catch (err) {
       error.value =
         err instanceof Error ? err.message : 'Failed to fetch subscription'
@@ -202,6 +202,10 @@ export function useLegacyBilling(): BillingState & BillingActions {
     } finally {
       isLoading.value = false
     }
+  }
+
+  async function fetchStatus(): Promise<void> {
+    await fetchStatusFresh()
   }
 
   async function fetchBalance(): Promise<void> {
@@ -299,6 +303,7 @@ export function useLegacyBilling(): BillingState & BillingActions {
     // Actions
     initialize,
     fetchStatus,
+    fetchStatusFresh,
     fetchBalance,
     subscribe,
     previewSubscribe,

@@ -2,6 +2,7 @@ import type { Component, ComputedRef } from 'vue'
 import { computed, defineAsyncComponent, watch } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import { useBillingIdentity } from './useBillingIdentity'
@@ -27,7 +28,7 @@ export function useAgentDockMount(): AgentDockMount {
     return { docked: computed(() => false), DockedAgentPanel: null }
   }
   const agentPanelStore = useAgentPanelStore()
-  const { subscription } = useBillingContext()
+  const { subscription, fetchStatusFresh, type } = useBillingContext()
 
   // This composable is owned by the persistent graph/linear hosts, unlike the
   // dock component, which is unmounted whenever the panel closes. Keep the
@@ -43,13 +44,104 @@ export function useAgentDockMount(): AgentDockMount {
 
   const billingIdentity = useBillingIdentity()
 
-  watch(
-    [billingIdentity, () => subscription.value?.agentScopedHasFunds],
-    ([identity, scopedHasFunds]) => {
-      if (scopedHasFunds === undefined) return
+  function reportBillingRefreshError(error: unknown): void {
+    reportError(error, {
+      errorType: 'error_refreshing_agent_billing_status',
+      surface: 'agent'
+    })
+  }
+
+  function adoptTransitionBaseline(
+    billingType: string,
+    identity: string,
+    epoch: number
+  ): void {
+    if (billingIdentity.value !== identity || type.value !== billingType) return
+    if (!agentPanelStore.completeCreditTransitionRefresh(identity, epoch))
+      return
+    observeFreshScopedFunds(identity)
+  }
+
+  function refreshTransitionBaseline(identity: string, epoch: number): void {
+    if (fetchStatusFresh === undefined || type.value === 'unknown') return
+    const billingType = type.value
+    const key = `${billingType}:${identity}:${epoch}`
+    void agentPanelStore
+      .refreshBillingStatus(
+        key,
+        fetchStatusFresh,
+        false,
+        reportBillingRefreshError,
+        () => adoptTransitionBaseline(billingType, identity, epoch)
+      )
+      .then((adopted) => {
+        if (adopted) adoptTransitionBaseline(billingType, identity, epoch)
+      }, reportBillingRefreshError)
+  }
+
+  watch(billingIdentity, (identity, previousIdentity) => {
+    if (identity === previousIdentity) return
+    const refreshEpoch = agentPanelStore.beginCreditTransitionRefresh(identity)
+    refreshTransitionBaseline(identity, refreshEpoch)
+  })
+
+  function observeFreshScopedFunds(
+    expectedIdentity = billingIdentity.value
+  ): void {
+    if (billingIdentity.value !== expectedIdentity) return
+    const identity = expectedIdentity
+    const scopedHasFunds = subscription.value?.agentScopedHasFunds
+    if (scopedHasFunds === undefined) return
+    const refresh = agentPanelStore.creditTransitionRefresh
+    if (refresh?.identity !== identity) {
       agentPanelStore.observeAgentScopedFunds(identity, scopedHasFunds)
-    },
+      return
+    }
+    if (
+      refresh.ready &&
+      agentPanelStore.claimCompletedCreditTransitionRefresh(identity)
+    )
+      agentPanelStore.observeAgentScopedFunds(identity, scopedHasFunds)
+  }
+
+  watch(
+    [
+      billingIdentity,
+      () => subscription.value?.agentScopedHasFunds,
+      () => agentPanelStore.creditTransitionRefresh
+    ],
+    () => observeFreshScopedFunds(),
     { immediate: true }
+  )
+
+  watch(type, (billingType, previousType) => {
+    if (billingType === 'unknown' || billingType === previousType) return
+    const refresh = agentPanelStore.creditTransitionRefresh
+    if (refresh?.identity === billingIdentity.value && !refresh.ready) {
+      refreshTransitionBaseline(refresh.identity, refresh.epoch)
+    }
+  })
+
+  watch(
+    () => agentPanelStore.isOpen,
+    (isOpen, wasOpen) => {
+      if (!isOpen || wasOpen || type.value !== 'workspace') return
+      const identity = billingIdentity.value
+      const refresh = agentPanelStore.creditTransitionRefresh
+      if (refresh?.identity === identity && !refresh.ready) {
+        refreshTransitionBaseline(identity, refresh.epoch)
+        return
+      }
+      if (fetchStatusFresh === undefined) return
+      void agentPanelStore
+        .refreshBillingStatus(
+          `${type.value}:${identity}:reopen:${agentPanelStore.panelOpenEpoch}`,
+          fetchStatusFresh,
+          true,
+          reportBillingRefreshError
+        )
+        .catch(reportBillingRefreshError)
+    }
   )
 
   return {
