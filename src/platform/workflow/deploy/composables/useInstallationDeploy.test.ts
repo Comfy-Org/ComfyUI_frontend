@@ -3,43 +3,25 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
+import { t } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useInstallationDeploy } from '@/platform/workflow/deploy/composables/useInstallationDeploy'
 import { api } from '@/scripts/api'
-import type { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import type { useAuthStore } from '@/stores/authStore'
-import type { ApiKeyAuthHeader } from '@/types/authTypes'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 
-const session = vi.hoisted(() => ({
-  workspaceToken: undefined as string | undefined,
-  apiKeyHeader: null as ApiKeyAuthHeader | null,
-  desktopHostSignedIn: false,
-  isDesktop: false
-}))
+const distribution = vi.hoisted(() => ({ isDesktop: false }))
 
+vi.mock(import('firebase/auth'))
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/composables/auth/useAuthDialogs'))
 vi.mock(import('@/platform/telemetry/reportError'))
-vi.mock(import('@/i18n'))
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isDesktop() {
-    return session.isDesktop
-  }
-}))
-vi.mock(import('@/platform/auth/desktopHost/desktopHostSession'), () => ({
-  isDesktopHostSignedIn: () => session.desktopHostSignedIn
-}))
-vi.mock(import('@/stores/authStore'), () => ({
-  useAuthStore: () =>
-    fromPartial<ReturnType<typeof useAuthStore>>({
-      getWorkspaceAuthToken: async () => session.workspaceToken
-    })
-}))
-vi.mock(import('@/stores/apiKeyAuthStore'), () => ({
-  useApiKeyAuthStore: () =>
-    fromPartial<ReturnType<typeof useApiKeyAuthStore>>({
-      getAuthHeader: () => session.apiKeyHeader
-    })
+    return distribution.isDesktop
+  },
+  isCloud: false,
+  isNightly: false
 }))
 
 const BUILDER_URL =
@@ -64,13 +46,14 @@ function sentHeaders(): HeadersInit | undefined {
   return options?.headers
 }
 
+function stubWorkspaceToken(token: string | undefined) {
+  vi.mocked(useAuthStore().getWorkspaceAuthToken).mockResolvedValue(token)
+}
+
 beforeEach(() => {
-  Object.assign(session, {
-    workspaceToken: 'workspace-jwt',
-    apiKeyHeader: null,
-    desktopHostSignedIn: false,
-    isDesktop: false
-  })
+  distribution.isDesktop = false
+  stubWorkspaceToken('workspace-jwt')
+  vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue(null)
   vi.spyOn(window, 'open').mockReturnValue(fromPartial<Window>({}))
 })
 
@@ -89,8 +72,10 @@ describe(useInstallationDeploy, () => {
   })
 
   it('uploads with the stored API key when there is no workspace token', async () => {
-    session.workspaceToken = undefined
-    session.apiKeyHeader = { 'X-API-KEY': `comfyui-${'a'.repeat(64)}` }
+    stubWorkspaceToken(undefined)
+    vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
+      'X-API-KEY': `comfyui-${'a'.repeat(64)}`
+    })
     respondWith(bundleCreated())
 
     await useInstallationDeploy().deploy()
@@ -101,7 +86,7 @@ describe(useInstallationDeploy, () => {
   })
 
   it('asks the user to sign in, and uploads nothing when they cancel', async () => {
-    session.workspaceToken = undefined
+    stubWorkspaceToken(undefined)
 
     await expect(useInstallationDeploy().deploy()).resolves.toBe(false)
 
@@ -111,10 +96,10 @@ describe(useInstallationDeploy, () => {
   })
 
   it('uploads once the user signs in from the prompt', async () => {
-    session.workspaceToken = undefined
+    stubWorkspaceToken(undefined)
     vi.mocked(useAuthDialogs().showSignInDialog).mockImplementationOnce(
       async () => {
-        session.workspaceToken = 'signed-in-jwt'
+        stubWorkspaceToken('signed-in-jwt')
         return true
       }
     )
@@ -138,7 +123,7 @@ describe(useInstallationDeploy, () => {
   })
 
   it('counts Desktop as opened, because its system browser leaves no tab handle', async () => {
-    session.isDesktop = true
+    distribution.isDesktop = true
     vi.mocked(window.open).mockReturnValueOnce(null)
     respondWith(bundleCreated())
     const { deploy, state } = useInstallationDeploy()
@@ -199,7 +184,7 @@ describe(useInstallationDeploy, () => {
 
       await expect(useInstallationDeploy().deploy()).resolves.toBe(false)
 
-      expect(useToast().error).toHaveBeenCalledExactlyOnceWith(message)
+      expect(useToast().error).toHaveBeenCalledExactlyOnceWith(t(message))
       expect(window.open).not.toHaveBeenCalled()
       expect(vi.mocked(reportError).mock.calls.length > 0).toBe(reported)
     }
