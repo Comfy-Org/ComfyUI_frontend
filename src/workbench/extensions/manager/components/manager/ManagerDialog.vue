@@ -507,7 +507,7 @@ const isUnmatchedLegacyManagerSearch = computed(() => {
     firstPage?.query === searchQuery.value.trim() &&
     firstPage.searchMode === searchMode.value &&
     isLegacyManagerQuery(firstPage.query) &&
-    !searchResults.value.some((pack) => isLegacyManagerQuery(pack.id ?? '')) &&
+    !displayPacks.value.some((pack) => isLegacyManagerQuery(pack.id ?? '')) &&
     (firstPage.rawResultsEmpty || isSettledWithNoPacks.value)
   )
 })
