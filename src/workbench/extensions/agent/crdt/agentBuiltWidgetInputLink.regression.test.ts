@@ -80,11 +80,6 @@ function agentBuiltWorkflow(): WorkflowJSON {
   }
 }
 
-/**
- * The same workflow as comfy-cli now builds it: an agent-built node carries a
- * `{name, type, widget, link: null}` entry for each scalar widget input,
- * appended after its link inputs, exactly as a frontend-built node does.
- */
 function socketedAgentBuiltWorkflow(): WorkflowJSON {
   const workflow = agentBuiltWorkflow()
   const sockets = (names: string[]) =>
