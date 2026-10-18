@@ -517,14 +517,9 @@ function mountedWidgetValues(
   if (widgets === undefined || Array.isArray(widgets)) return undefined
   const mounted = Object.entries(widgets).filter(([name]) => {
     const index = overflowWidgetIndex(name)
-    if (index === null)
-      return !constructedNames.has(name) || dynamicGroupController(node, name)
-    const widget = overflowWidget(node, name)
-    return (
-      widget === undefined ||
-      index >= constructed.length ||
-      isDynamicGroupController(widget)
-    )
+    return index === null
+      ? !constructedNames.has(name) || dynamicGroupController(node, name)
+      : overflowWidget(node, name) === undefined || index >= constructed.length
   })
   return mounted.length === 0 ? undefined : Object.fromEntries(mounted)
 }
@@ -546,8 +541,9 @@ function positionalWidgetValues(
     )
   }
   return serializableWidgets(node).map((widget, index) => {
-    // Row counts apply after configure, once the document's row values can back them.
-    if (isDynamicGroupController(widget)) return widget.value
+    // A named row count applies after configure, once the document's row values can back it.
+    if (isDynamicGroupController(widget) && Object.hasOwn(widgets, widget.name))
+      return widget.value
     const alias = `_extra_${index}`
     const name = Object.hasOwn(widgets, widget.name)
       ? widget.name
