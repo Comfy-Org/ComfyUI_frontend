@@ -1,6 +1,10 @@
 import { toRaw } from 'vue'
 import { fromZodError } from 'zod-validation-error'
 
+import {
+  CORE_COLOR_PALETTES,
+  DEFAULT_COLOR_PALETTE
+} from '@/constants/coreColorPalettes'
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -10,6 +14,7 @@ import {
   paletteSchema
 } from '@comfyorg/settings-core/colorPaletteSchema'
 import type {
+  ColorPalettes,
   Colors,
   Palette
 } from '@comfyorg/settings-core/colorPaletteSchema'
@@ -41,6 +46,18 @@ const LEGACY_PALETTE_KEYS = comfyBaseSchema
 
 let latestPaletteSwitch = 0
 
+function availableCustomPaletteId(id: string, palettes: ColorPalettes) {
+  let candidate = `${id}-custom`
+  let suffix = 2
+  while (
+    Object.hasOwn(palettes, candidate) ||
+    Object.hasOwn(CORE_COLOR_PALETTES, candidate)
+  ) {
+    candidate = `${id}-custom-${suffix++}`
+  }
+  return candidate
+}
+
 export const useColorPaletteService = () => {
   const colorPaletteStore = useColorPaletteStore()
   const settingStore = useSettingStore()
@@ -51,12 +68,6 @@ export const useColorPaletteService = () => {
     wrapWithErrorHandlingAsync
   } = useErrorHandling()
 
-  /**
-   * Validates the palette against the zod schema.
-   *
-   * @param data - The palette to validate.
-   * @returns The validated palette.
-   */
   const validateColorPalette = (data: unknown): Palette => {
     const result = paletteSchema.safeParse(data)
     if (result.success) return result.data
@@ -71,32 +82,44 @@ export const useColorPaletteService = () => {
     )
   }
 
-  /**
-   * Deletes a custom color palette.
-   *
-   * @param colorPaletteId - The ID of the color palette to delete.
-   */
+  async function loadCustomColorPalettes() {
+    const palettes = settingStore.exists('Comfy.CustomColorPalettes')
+      ? settingStore.get('Comfy.CustomColorPalettes')
+      : {}
+    const conflicts = Object.keys(palettes).filter((id) =>
+      Object.hasOwn(CORE_COLOR_PALETTES, id)
+    )
+    const migrated = { ...palettes }
+    const previousId = settingStore.exists('Comfy.ColorPalette')
+      ? settingStore.get('Comfy.ColorPalette')
+      : DEFAULT_COLOR_PALETTE.id
+    let activeId = previousId
+    for (const id of conflicts) {
+      const newId = availableCustomPaletteId(id, migrated)
+      migrated[newId] = { ...migrated[id], id: newId }
+      delete migrated[id]
+      if (activeId === id) activeId = newId
+    }
+    colorPaletteStore.customPalettes = migrated
+    if (!conflicts.length) return
+
+    await settingStore.setMany({
+      'Comfy.CustomColorPalettes': migrated,
+      ...(activeId !== previousId ? { 'Comfy.ColorPalette': activeId } : {})
+    })
+  }
+
   const deleteCustomColorPalette = async (colorPaletteId: string) => {
     colorPaletteStore.deleteCustomPalette(colorPaletteId)
     await persistCustomColorPalettes()
   }
 
-  /**
-   * Adds a custom color palette.
-   *
-   * @param colorPalette - The palette to add.
-   */
   const addCustomColorPalette = async (colorPalette: Palette) => {
     validateColorPalette(colorPalette)
     colorPaletteStore.addCustomPalette(colorPalette)
     await persistCustomColorPalettes()
   }
 
-  /**
-   * Sets the colors of node slots and links.
-   *
-   * @param linkColorPalette - The palette to set.
-   */
   const loadLinkColorPalette = (linkColorPalette: Colors['node_slot']) => {
     const types = Object.fromEntries(
       Array.from(nodeDefStore.nodeDataTypes).map((type) => [type, ''])
@@ -126,13 +149,7 @@ export const useColorPaletteService = () => {
     }
   }
 
-  /**
-   * Loads the LiteGraph color palette.
-   *
-   * @param liteGraphColorPalette - The palette to set.
-   */
   const loadLiteGraphColorPalette = (palette: Colors['litegraph_base']) => {
-    // Sets the colors of the LiteGraph objects
     useApp().canvas.node_title_color = palette.NODE_TITLE_COLOR
     useApp().canvas.default_link_color = palette.LINK_COLOR
     const backgroundImage = settingStore.get('Comfy.Canvas.BackgroundImage')
@@ -165,11 +182,6 @@ export const useColorPaletteService = () => {
     Object.assign(LiteGraph, sanitizedPalette)
   }
 
-  /**
-   * Loads the Comfy color palette.
-   *
-   * @param comfyColorPalette - The palette to set.
-   */
   const loadComfyColorPalette = (
     comfyColorPalette: Colors['comfy_base'],
     themeAliasesLegacyColors: boolean
@@ -204,15 +216,10 @@ export const useColorPaletteService = () => {
       localStorage.setItem('comfy-splash-bg', body.backgroundColor)
       localStorage.setItem('comfy-splash-fg', body.color)
     } catch (_) {
-      /* empty */
+      return
     }
   }
 
-  /**
-   * Loads the color palette.
-   *
-   * @param colorPaletteId - The ID of the color palette to load.
-   */
   const loadColorPalette = async (colorPaletteId: string) => {
     const colorPalette = colorPaletteStore.palettesLookup[colorPaletteId]
     if (!colorPalette) {
@@ -245,11 +252,6 @@ export const useColorPaletteService = () => {
     }
   }
 
-  /**
-   * Exports a color palette.
-   *
-   * @param colorPaletteId - The ID of the color palette to export.
-   */
   const exportColorPalette = (colorPaletteId: string) => {
     const colorPalette = colorPaletteStore.palettesLookup[colorPaletteId]
     if (!colorPalette) {
@@ -264,11 +266,6 @@ export const useColorPaletteService = () => {
     )
   }
 
-  /**
-   * Imports a color palette.
-   *
-   * @returns The imported palette.
-   */
   const importColorPalette = async () => {
     const file = await uploadFile('application/json')
     const text = await file.text()
@@ -284,6 +281,9 @@ export const useColorPaletteService = () => {
       deleteCustomColorPalette
     ),
     loadColorPalette: wrapWithErrorHandlingAsync(loadColorPalette),
+    loadCustomColorPalettes: wrapWithErrorHandlingAsync(
+      loadCustomColorPalettes
+    ),
     exportColorPalette: wrapWithErrorHandling(exportColorPalette),
     importColorPalette: wrapWithErrorHandlingAsync(importColorPalette)
   }

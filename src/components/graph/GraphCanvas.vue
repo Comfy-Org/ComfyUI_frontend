@@ -564,8 +564,6 @@ onMounted(async () => {
   let urlTemplateId: string | undefined
   let bootstrapOutcome: 'completed' | 'failed' = 'failed'
   try {
-    // ChangeTracker needs to be initialized before setup, as it will overwrite
-    // some listeners of litegraph canvas.
     ChangeTracker.init()
 
     await until(() => isSettingsReady.value || !!settingsError.value).toBe(true)
@@ -580,7 +578,6 @@ onMounted(async () => {
       throw settingsError.value
     }
 
-    // Register core settings immediately after settings are ready
     CORE_SETTINGS.forEach(settingStore.addSetting)
 
     await Promise.all([
@@ -610,6 +607,8 @@ onMounted(async () => {
     if (disposed) return
     if (!deploymentConfirmed) showDeploymentLookupToast()
     await comfyApp.setup(canvas)
+    await colorPaletteService.loadCustomColorPalettes()
+    if (disposed) return
     canvasStore.canvas = comfyApp.canvas
     canvasStore.canvas.render_canvas_border = false
     useSearchBoxStore().setPopoverRef(nodeSearchboxPopoverRef.value)
@@ -619,23 +618,17 @@ onMounted(async () => {
 
     comfyAppReady.value = true
 
-    // Install error-clearing hooks on the initial graph
     if (comfyApp.canvas?.graph) {
       cleanupErrorHooks = installErrorClearingHooks(comfyApp.canvas.graph)
     }
 
-    // Load color palette
-    colorPaletteStore.customPalettes = settingStore.get(
-      'Comfy.CustomColorPalettes'
-    )
-
-    // Restore saved workflow and workflow tabs state
     await bootstrapTracer.settle('bootstrap/workflow-restore', async () => {
       startupOutcome = await workflowPersistence.initializeWorkflow()
       await workflowPersistence.restoreWorkflowTabsState()
       urlTemplateId = await workflowPersistence.loadTemplateFromUrlIfPresent()
       await useFirstRunEntry().handleStartupOutcome(startupOutcome)
     })
+
     bootstrapOutcome = 'completed'
   } finally {
     if (!disposed) {
@@ -646,10 +639,8 @@ onMounted(async () => {
   const sharedStatus =
     await workflowPersistence.loadSharedWorkflowFromUrlIfPresent()
 
-  // Run query-param deep-link loaders (?invite, ?create_workspace, ?pricing, ?topup)
   await runUrlActionLoaders()
 
-  // Initialize release store to fetch releases from comfy-api (fire-and-forget)
   const { useReleaseStore } =
     await import('@/platform/updates/common/releaseStore')
   const releaseStore = useReleaseStore()
@@ -657,7 +648,6 @@ onMounted(async () => {
 
   emit('ready')
 
-  // The tour draws into an overlay that only mounts once `ready` has flushed.
   await nextTick()
   try {
     await useFirstRunEntry().handleUrlWorkflow(
