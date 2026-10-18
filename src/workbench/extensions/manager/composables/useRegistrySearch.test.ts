@@ -223,7 +223,7 @@ describe('useRegistrySearch', () => {
     })
   })
 
-  it('reports no first page as soon as the mode changes while a later page loads', async () => {
+  it('drops the first page and its packs as soon as the mode changes while a later page loads', async () => {
     vi.mocked(useRegistrySearchGateway().searchPacks)
       .mockResolvedValueOnce({
         nodePacks: [{ id: 'nodes-pack' }],
@@ -241,6 +241,7 @@ describe('useRegistrySearch', () => {
     await nextTick()
 
     expect(search.firstPage.value).toEqual({ status: 'loading' })
+    expect(toValue(search.items)).toEqual([])
   })
 
   it('drops a later page that lands after the mode changed and loads the first page for the new mode', async () => {

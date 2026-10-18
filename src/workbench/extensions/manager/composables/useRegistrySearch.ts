@@ -143,6 +143,7 @@ export function useRegistrySearch(inputs: {
     [searchedQuery, () => toValue(inputs.searchMode)],
     () => {
       firstPage.value = LOADING_FIRST_PAGE
+      items.value = []
       void reload()
     },
     { immediate: true }
