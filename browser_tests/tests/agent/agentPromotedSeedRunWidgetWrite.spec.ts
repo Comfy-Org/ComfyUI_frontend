@@ -156,12 +156,14 @@ async function pressRunAndRandomizeSeed(
       .getByRole('button', { name: enMessages.menu.run, exact: true })
       .click()
     await expect.poll(() => submitted.length).toBe(1)
-    await expect
-      .poll(() => promotedSeed(page))
-      .not.toBe(AGENT_SUBGRAPH_INITIAL_SEED)
-    const seed = await promotedSeed(page)
-    expect(seed).toEqual(expect.any(Number))
-    return Number(seed)
+    let randomizedSeed = Number.NaN
+    await expect(async () => {
+      const seed = await promotedSeed(page)
+      expect(seed).toEqual(expect.any(Number))
+      expect(seed).not.toBe(AGENT_SUBGRAPH_INITIAL_SEED)
+      randomizedSeed = Number(seed)
+    }).toPass({ timeout: 5_000 })
+    return randomizedSeed
   })
 }
 
