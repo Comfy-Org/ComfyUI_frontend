@@ -40,7 +40,12 @@ const { softwareId, nodes: cliJsonLd } = cliPageJsonLd(siteUrl, url, locale)
   <SetupSection locale="zh-CN" client:visible />
   <SessionSection locale="zh-CN" client:visible />
   <SkillsSection locale="zh-CN" client:visible />
-  <AIModelsSection locale="zh-CN" cards={cliModelCards} client:visible />
+  <AIModelsSection
+    locale="zh-CN"
+    cards={cliModelCards}
+    compact
+    client:visible
+  />
   <AgentsSection locale="zh-CN" />
   <WhySection locale="zh-CN" />
   <HowItWorksSection locale="zh-CN" />

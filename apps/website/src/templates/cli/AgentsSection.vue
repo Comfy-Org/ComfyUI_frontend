@@ -38,30 +38,30 @@ const features: {
 
 <template>
   <section class="mx-auto max-w-9xl px-6 py-16 lg:py-24">
-    <SectionHeader max-width="xl" :label="t('cli.agents.label')" align="start">
+    <SectionHeader max-width="xl" :label="t('cli.agents.label')">
       {{ t('cli.agents.heading') }}
       <template #subtitle>
-        <p class="mt-4 max-w-xl text-sm text-smoke-700 lg:text-base">
+        <p class="mx-auto mt-4 max-w-xl text-sm text-smoke-700 lg:text-base">
           {{ t('cli.agents.subtitle') }}
         </p>
       </template>
     </SectionHeader>
 
-    <div class="mt-12 grid grid-cols-1 gap-6 lg:grid-cols-3">
+    <div class="mt-12 grid grid-cols-1 gap-6 lg:mt-16 lg:grid-cols-3">
       <article
         v-for="feature in features"
         :key="feature.id"
-        class="flex flex-col gap-5 rounded-[40px] border-2 border-primary-comfy-yellow bg-primary-comfy-ink p-8 lg:p-10"
+        class="flex min-w-0 flex-col gap-5 rounded-3xl bg-transparency-white-t4 p-6 lg:p-8"
       >
         <p
-          class="self-start rounded-lg bg-white/8 px-3 py-1.5 font-mono text-xs text-primary-comfy-yellow"
+          class="self-start rounded-lg bg-transparency-white-t4 px-3 py-1.5 font-mono text-2xs/relaxed wrap-anywhere text-primary-comfy-yellow sm:text-xs/relaxed lg:text-sm/relaxed"
         >
           {{ feature.command }}
         </p>
         <h3 class="text-2xl font-light text-primary-comfy-canvas">
           {{ t(feature.titleKey) }}
         </h3>
-        <p class="text-sm text-primary-comfy-canvas/70">
+        <p class="text-sm/relaxed text-smoke-700">
           {{ t(feature.descriptionKey) }}
         </p>
       </article>

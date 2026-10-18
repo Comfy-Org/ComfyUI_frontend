@@ -2223,9 +2223,9 @@
     },
     "session": {
       "heading": "A real session, start to finish.",
-      "subtitle": "Recorded in one take against Comfy Cloud: a generation with a partner model, a workflow run on cloud GPUs, and the bundled skills. Idle seconds trimmed, output untouched.",
+      "subtitle": "A native recreation of a Comfy Cloud session: generate a cat, run a lighthouse workflow, and reveal the two saved outputs. Recorded responses are shortened; no commands execute.",
       "alt": "Recorded terminal session: comfy generate saving cat.png, a workflow run on Comfy Cloud, the bundled skills list, and the two images the session saved",
-      "transcript": "Video transcript: comfy setup connects the CLI to Comfy Cloud. comfy generate renders a prompt with a partner model and saves cat.png. comfy run submits a workflow to cloud GPUs, comfy jobs wait tracks it, and comfy download saves the result as f5308bc5_000.png. comfy skills list prints the bundled skills. The session ends with two files saved: cat.png and f5308bc5_000.png."
+      "transcript": "Session transcript: comfy generate renders a cat and saves cat.png. comfy templates fetch retrieves image_z_image_turbo as zimage.json. comfy workflow set-slot changes the prompt to a lighthouse at dusk. comfy run submits that workflow to Cloud and comfy download saves f5308bc5_000.png. The animation ends with both saved images."
     },
     "skills": {
       "label": "AGENT SKILLS",

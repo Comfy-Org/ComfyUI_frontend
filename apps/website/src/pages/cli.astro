@@ -2,9 +2,8 @@
 import BaseLayout from '@/layouts/BaseLayout.astro'
 import AIModelsSection from '@/components/product/shared/AIModelsSection.vue'
 import ProductCardsSection from '@/components/common/ProductCardsSection.vue'
+import CliAgentExperience from '@/templates/cli/CliAgentExperience.vue'
 import HeroSection from '@/templates/cli/HeroSection.vue'
-import SetupSection from '@/templates/cli/SetupSection.vue'
-import SessionSection from '@/templates/cli/SessionSection.vue'
 import SkillsSection from '@/templates/cli/SkillsSection.vue'
 import AgentsSection from '@/templates/cli/AgentsSection.vue'
 import WhySection from '@/templates/cli/WhySection.vue'
@@ -48,10 +47,9 @@ const { softwareId, nodes: cliJsonLd } = cliPageJsonLd(siteUrl, url, locale)
   ogImage="https://media.comfy.org/website/cli/og-v2.jpg"
 >
   <HeroSection locale="en" client:load />
-  <SetupSection locale="en" client:visible />
-  <SessionSection locale="en" client:visible />
+  <CliAgentExperience heading-tag="h2" client:load />
   <SkillsSection locale="en" client:visible />
-  <AIModelsSection locale="en" cards={cliModelCards} client:visible />
+  <AIModelsSection locale="en" cards={cliModelCards} compact client:visible />
   <AgentsSection locale="en" />
   <WhySection locale="en" />
   <HowItWorksSection locale="en" />

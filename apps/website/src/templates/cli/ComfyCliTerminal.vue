@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import { useElementVisibility } from '@vueuse/core'
 import { computed, onUnmounted, ref, useTemplateRef, watchEffect } from 'vue'
 
@@ -8,6 +7,7 @@ import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import type { TerminalLine } from './cliTerminalSequences'
 import { cliTerminalSequences } from './cliTerminalSequences'
+import { terminalTokens } from './cliTerminalHighlight'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const { t } = translationsFor(locale)
@@ -20,11 +20,11 @@ const OUTPUT_DELAY_MS = 550
 const HOLD_MS = 2600
 const BETWEEN_SEQUENCES_MS = 700
 
-const TITLE = 'comfy — zsh'
 const PROMPT = '$ '
 const CHECK = '✓ '
 
-const lineClass = 'font-mono text-xs leading-relaxed break-words lg:text-sm'
+const lineClass =
+  'font-mono text-2xs/relaxed break-words text-primary-comfy-canvas sm:text-xs/relaxed lg:text-sm/relaxed'
 const caretClass =
   'bg-primary-comfy-yellow animate-cursor-blink ml-0.5 inline-block h-3.5 w-1.75 translate-y-0.5'
 
@@ -134,19 +134,12 @@ onUnmounted(() => clearTimeout(timer))
     data-testid="cli-terminal"
     role="img"
     :aria-label="t('cli.hero.terminalAria')"
-    class="flex flex-col overflow-hidden rounded-5xl bg-white/4"
+    class="overflow-hidden rounded-3xl bg-[#2a2230]"
   >
-    <div class="flex items-center gap-2 border-b border-white/10 px-5 py-4">
-      <span class="size-2.5 rounded-full bg-white/15" />
-      <span class="size-2.5 rounded-full bg-white/15" />
-      <span class="size-2.5 rounded-full bg-white/15" />
-      <span class="ml-3 font-mono text-xs text-white/40">{{ TITLE }}</span>
-    </div>
-
     <!-- Every sequence is stacked invisibly in the same grid cell so the
          panel is always as tall as the longest and typing never reflows
          the page. -->
-    <div class="grid p-5 lg:p-6">
+    <div class="grid p-4 sm:p-5 lg:p-6">
       <div
         v-for="sequence in cliTerminalSequences"
         :key="sequence.id"
@@ -160,19 +153,16 @@ onUnmounted(() => clearTimeout(timer))
 
       <div class="col-start-1 row-start-1 flex flex-col gap-2">
         <template v-for="(line, i) in activeSequence.lines" :key="i">
-          <p
-            v-if="isVisibleLine(i)"
-            :class="
-              cn(
-                lineClass,
-                line.kind === 'cmd' && 'text-primary-comfy-canvas',
-                line.kind === 'out' && 'text-white/50',
-                line.kind === 'ok' && 'text-primary-comfy-yellow'
-              )
-            "
-          >
-            {{ displayText(line, i)
-            }}<span
+          <p v-if="isVisibleLine(i)" :class="lineClass">
+            <span
+              v-for="(token, tokenIndex) in terminalTokens(
+                line,
+                displayText(line, i)
+              )"
+              :key="tokenIndex"
+              :style="{ color: token.color }"
+              >{{ token.content }}</span
+            ><span
               v-if="line.kind === 'cmd' && typing && i === revealedCount"
               :class="caretClass"
             />

@@ -64,6 +64,9 @@ function mediaLabel(row: FeatureRow): string {
   <section class="mx-auto max-w-9xl px-6 py-16 lg:py-24">
     <SectionHeader v-if="heading" :label="eyebrow" max-width="xl">
       {{ heading }}
+      <template v-if="$slots.subtitle" #subtitle
+        ><slot name="subtitle"
+      /></template>
     </SectionHeader>
 
     <div v-if="$slots.media" class="mt-12 lg:mt-16">
@@ -74,6 +77,7 @@ function mediaLabel(row: FeatureRow): string {
       <GlassCard
         v-for="(row, i) in rows"
         :key="row.id"
+        role="article"
         class="flex flex-col gap-8 lg:flex-row lg:items-stretch lg:gap-0"
       >
         <!-- Text -->
@@ -98,6 +102,7 @@ function mediaLabel(row: FeatureRow): string {
           <p class="text-sm text-pretty text-smoke-700 lg:text-base">
             <InlineCodeText :text="row.description" />
           </p>
+          <slot name="row-actions" :row="row" />
         </div>
 
         <!-- Media: image or video -->
@@ -146,5 +151,6 @@ function mediaLabel(row: FeatureRow): string {
         </div>
       </GlassCard>
     </div>
+    <div v-if="$slots.footer" class="mt-12"><slot name="footer" /></div>
   </section>
 </template>

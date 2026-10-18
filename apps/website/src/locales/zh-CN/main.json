@@ -882,8 +882,8 @@
     "session": {
       "alt": "终端录屏：comfy generate 保存 cat.png、一次 Comfy Cloud 工作流运行、自带技能列表，以及会话保存的两张图像",
       "heading": "一次真实会话，从头到尾。",
-      "subtitle": "面向 Comfy Cloud 一镜到底：一次合作伙伴模型生成、一次云端 GPU 工作流运行，以及自带技能。只剪掉了等待的秒数，输出原样保留。",
-      "transcript": "视频文字稿：comfy setup 将 CLI 连接到 Comfy Cloud。comfy generate 用合作伙伴模型渲染提示词并保存 cat.png。comfy run 将工作流提交到云端 GPU，comfy jobs wait 跟踪任务，comfy download 将结果保存为 f5308bc5_000.png。comfy skills list 打印自带技能列表。会话最终保存两个文件：cat.png 和 f5308bc5_000.png。"
+      "subtitle": "原生动画重现 Comfy Cloud 会话：生成猫咪、运行灯塔工作流，并展示两个已保存的输出。录制响应已精简；不会执行任何命令。",
+      "transcript": "会话文字记录：comfy generate 生成猫咪并保存 cat.png。comfy templates fetch 将 image_z_image_turbo 保存为 zimage.json。comfy workflow set-slot 将提示词改为黄昏灯塔。comfy run 在云端运行工作流，comfy download 保存 f5308bc5_000.png。动画最后展示两张已保存的图片。"
     },
     "setup": {
       "agent": {

@@ -5,14 +5,21 @@ import type { Locale } from '@/i18n/translations'
 
 import { externalLinks } from '@/config/routes'
 import { translationsFor } from '@/i18n/translations'
+import SectionHeader from '@/components/common/SectionHeader.vue'
 import BrandButton from '@/components/common/BrandButton.vue'
 import CardArrow from '@/components/common/CardArrow.vue'
 import type { AiModelCard } from './aiModelCards'
 import { defaultAiModelCards } from './aiModelCards'
 
-const { locale = 'en', cards = defaultAiModelCards } = defineProps<{
+const {
+  locale = 'en',
+  cards = defaultAiModelCards,
+  compact = false
+} = defineProps<{
   locale?: Locale
   cards?: AiModelCard[]
+  /** Reduced proof-section emphasis for feature pages; full product pages retain defaults. */
+  compact?: boolean
 }>()
 const { t } = translationsFor(locale)
 
@@ -25,35 +32,54 @@ const cardClass =
 
 <template>
   <section
-    class="mx-auto max-w-9xl bg-primary-comfy-ink px-4 py-16 lg:px-20 lg:py-40"
+    :class="
+      cn(
+        'mx-auto max-w-9xl bg-primary-comfy-ink py-16',
+        compact ? 'px-6 lg:py-24' : 'px-4 lg:px-20 lg:py-40'
+      )
+    "
   >
     <div class="mx-auto flex w-full max-w-7xl flex-col items-center">
-      <p
-        class="text-center text-sm font-bold tracking-widest text-primary-comfy-yellow uppercase"
-      >
-        {{ t('cloud.aiModels.label') }}
-      </p>
-
-      <h2
-        class="mt-8 max-w-4xl text-center text-3.5xl/tight font-light text-primary-comfy-canvas lg:text-5xl"
+      <SectionHeader
+        v-if="compact"
+        max-width="xl"
+        :label="t('cloud.aiModels.label')"
       >
         {{ t('cloud.aiModels.heading') }}
-      </h2>
+        <template #subtitle>
+          <p class="mt-4 text-sm text-smoke-700 lg:text-base">
+            {{ t('cloud.aiModels.subtitle') }}
+          </p>
+        </template>
+      </SectionHeader>
+      <template v-else>
+        <p
+          class="text-center text-sm font-bold tracking-widest text-primary-comfy-yellow uppercase"
+        >
+          {{ t('cloud.aiModels.label') }}
+        </p>
 
-      <p
-        class="mt-8 max-w-xl text-center text-sm font-light text-primary-comfy-canvas lg:text-base/snug"
-      >
-        {{ t('cloud.aiModels.subtitle') }}
-      </p>
+        <h2
+          class="mt-8 max-w-4xl text-center text-3.5xl/tight font-light text-primary-comfy-canvas lg:text-5xl"
+        >
+          {{ t('cloud.aiModels.heading') }}
+        </h2>
 
-      <div class="mt-16 w-full lg:mt-24">
+        <p
+          class="mt-8 max-w-xl text-center text-sm font-light text-primary-comfy-canvas lg:text-base/snug"
+        >
+          {{ t('cloud.aiModels.subtitle') }}
+        </p>
+      </template>
+
+      <div :class="cn('w-full', compact ? 'mt-12 lg:mt-16' : 'mt-16 lg:mt-24')">
         <div class="rounded-4xl bg-white/8 p-2 lg:p-1.5">
           <div class="grid grid-cols-1 gap-2 lg:grid-cols-12">
             <a
               v-for="card in cards"
               :key="card.titleKey"
               :href="externalLinks.workflows"
-              :class="cardClass"
+              :class="cn(cardClass, compact && 'lg:aspect-3/2')"
             >
               <video
                 v-if="card.imageSrc.endsWith('.webm')"

@@ -1,6 +1,14 @@
 <script setup lang="ts">
-import SectionHeader from '@/components/common/SectionHeader.vue'
-import CopyableField from '@/components/ui/copyable-field/CopyableField.vue'
+import { ArrowUpRight } from '@lucide/vue'
+import CopyTextButton from '@/components/ui/copy-text-button/CopyTextButton.vue'
+import FeatureRows01 from '@/components/blocks/FeatureRows01.vue'
+import type { FeatureRow } from '@/components/blocks/FeatureRows01.vue'
+import BrandButton from '@/components/common/BrandButton.vue'
+import Accordion from '@/components/ui/accordion/Accordion.vue'
+import AccordionItem from '@/components/ui/accordion/AccordionItem.vue'
+import AccordionTrigger from '@/components/ui/accordion/AccordionTrigger.vue'
+import AccordionContent from '@/components/ui/accordion/AccordionContent.vue'
+import CliCommand from './CliCommand.vue'
 import { externalLinks } from '@/config/routes'
 import type { Locale, TranslationKey } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
@@ -65,84 +73,107 @@ const cards: {
   }
 ]
 
+function cardTitle(key: TranslationKey): string {
+  const title = t(key)
+  if (locale !== 'en') return title
+  const sentence = title.charAt(0) + title.slice(1).toLowerCase()
+  return sentence.replace(/\b3d\b/gi, '3D')
+}
+
+// Existing Comfy Learning and MCP media; illustrative examples, not claimed CLI outputs.
+const images = [
+  'https://media.comfy.org/website/learning/advertising3-thumb.png',
+  'https://media.comfy.org/website/learning/advertising2-thumb.png',
+  'https://media.comfy.org/website/learning/animation1-thumb.jpg',
+  'https://media.comfy.org/website/mcp/hero-demo/set-extension.webp',
+  'https://media.comfy.org/website/learning/animation4-thumb.jpg',
+  'https://media.comfy.org/website/learning/advertising1-thumb.png'
+]
+const rows: FeatureRow[] = cards.map((card, index) => ({
+  id: card.id,
+  title: cardTitle(card.titleKey),
+  description: t(card.promptKey),
+  media: {
+    type: 'image',
+    src: images[index]!,
+    alt: cardTitle(card.titleKey),
+    fit: index === 1 || index === 2 ? 'contain' : 'cover'
+  }
+}))
+
+const exampleLabel = locale === 'en' ? 'Illustrative examples' : '示例图片'
+const promptCopyLabel = locale === 'en' ? 'COPY PROMPT' : '复制提示词'
 const copyLabel = t('ui.copy')
 const copiedLabel = t('ui.copied')
 </script>
 
 <template>
-  <section class="mx-auto max-w-9xl px-6 py-16 lg:py-24">
-    <SectionHeader max-width="xl" :label="t('cli.skills.label')" align="start">
-      {{ t('cli.skills.heading') }}
-      <template #subtitle>
-        <p class="mt-4 max-w-xl text-sm text-smoke-700 lg:text-base">
-          {{ t('cli.skills.subtitle') }}
-        </p>
-        <div class="mt-6 max-w-md">
-          <CopyableField
-            value="comfy skills install"
-            :copy-label="copyLabel"
-            :copied-label="copiedLabel"
-          />
-        </div>
-      </template>
-    </SectionHeader>
-
-    <div class="mt-10 flex flex-col gap-3 lg:mt-14">
-      <p
-        class="text-xs font-bold tracking-widest text-primary-comfy-canvas uppercase"
-      >
-        {{ t('cli.skills.bundledLabel') }}
+  <FeatureRows01
+    class="[&_img.object-contain]:bg-white [&_img.object-contain]:p-4 [&_img[src$='set-extension.webp']]:object-scale-down"
+    :heading="t('cli.skills.heading')"
+    :eyebrow="t('cli.skills.label')"
+    :locale="locale"
+    :rows="rows"
+  >
+    <template #subtitle>
+      <p class="mx-auto mt-4 max-w-xl text-sm text-smoke-700 lg:text-base">
+        {{ t('cli.skills.subtitle') }}
       </p>
-      <ul class="flex flex-wrap gap-2.5">
-        <li
-          v-for="skill in bundledSkills"
-          :key="skill.name"
-          class="flex items-baseline gap-2 rounded-xl border border-white/15 bg-white/4 px-3.5 py-2"
-        >
-          <span class="font-mono text-xs text-primary-comfy-yellow">
-            {{ skill.name }}
-          </span>
-          <span class="text-xs text-smoke-700">
-            {{ t(skill.descriptionKey) }}
-          </span>
-        </li>
-      </ul>
-    </div>
-
-    <div class="mt-10 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-      <article
-        v-for="card in cards"
-        :key="card.id"
-        class="flex flex-col gap-4 rounded-3xl bg-transparency-white-t4 p-6"
-      >
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <h3
-            class="font-formula text-sm font-extrabold tracking-[0.7px] text-primary-comfy-yellow uppercase"
-          >
-            {{ t(card.titleKey) }}
-          </h3>
-          <span class="font-mono text-xs text-white/40">{{ card.skill }}</span>
-        </div>
-        <p class="flex-1 text-sm text-primary-comfy-canvas/80">
-          {{ t(card.promptKey) }}
-        </p>
-        <CopyableField
-          :value="t(card.promptKey)"
+      <div class="mx-auto mt-6 max-w-md">
+        <CliCommand
+          value="comfy skills install"
           :copy-label="copyLabel"
           :copied-label="copiedLabel"
         />
-      </article>
-    </div>
-
-    <p class="mt-8 text-sm text-smoke-700">
-      {{ t('cli.skills.moreSkillsPrefix')
-      }}<a
-        :href="externalLinks.mcpSkills"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
-        >{{ t('cli.skills.moreSkillsLinkLabel') }}</a
-      >{{ t('cli.skills.moreSkillsSuffix') }}
-    </p>
-  </section>
+      </div>
+      <p class="mt-6 text-xs text-smoke-700">{{ exampleLabel }}</p>
+    </template>
+    <template #row-actions="{ row }">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <span
+          class="font-mono text-2xs/relaxed whitespace-nowrap text-primary-comfy-yellow sm:text-xs/relaxed lg:text-sm/relaxed"
+          >{{ cards.find((card) => card.id === row.id)?.skill }}</span
+        >
+        <CopyTextButton
+          class="uppercase"
+          :value="row.description"
+          :label="`${copyLabel}: ${t(cards.find((card) => card.id === row.id)!.titleKey)}`"
+          :copied-label="copiedLabel"
+          >{{ promptCopyLabel }}</CopyTextButton
+        >
+      </div>
+    </template>
+    <template #footer>
+      <div class="flex flex-col items-center gap-8">
+        <BrandButton
+          :href="externalLinks.mcpSkills"
+          target="_blank"
+          rel="noopener noreferrer"
+          variant="outline"
+          class="uppercase"
+          >{{ t('cli.skills.moreSkillsLinkLabel').toUpperCase()
+          }}<ArrowUpRight class="size-4" aria-hidden="true"
+        /></BrandButton>
+        <Accordion type="single" collapsible class="w-full">
+          <AccordionItem value="bundled-skills">
+            <AccordionTrigger>
+              {{ t('cli.skills.bundledLabel') }}
+            </AccordionTrigger>
+            <AccordionContent>
+              <dl class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div v-for="skill in bundledSkills" :key="skill.name">
+                  <dt
+                    class="font-mono text-2xs/relaxed whitespace-nowrap text-primary-comfy-yellow sm:text-xs/relaxed lg:text-sm/relaxed"
+                  >
+                    {{ skill.name }}
+                  </dt>
+                  <dd class="mt-1 text-xs">{{ t(skill.descriptionKey) }}</dd>
+                </div>
+              </dl>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </div>
+    </template>
+  </FeatureRows01>
 </template>
