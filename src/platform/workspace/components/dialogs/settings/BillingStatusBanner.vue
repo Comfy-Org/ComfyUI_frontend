@@ -66,23 +66,15 @@
         >
           {{ $t('workspacePanel.billingStatus.ending.contactSales') }}
         </Button>
-        <template v-else-if="banner.action === 'updatePayment'">
-          <Button
-            v-if="banner.payInvoiceUrl"
-            variant="inverted"
-            size="lg"
-            @click="handlePayInvoice(banner.payInvoiceUrl)"
-          >
-            {{ $t('workspacePanel.billingStatus.payInvoice') }}
-          </Button>
-          <Button
-            :variant="banner.payInvoiceUrl ? 'secondary' : 'inverted'"
-            size="lg"
-            @click="handleUpdatePayment"
-          >
-            {{ $t('workspacePanel.billingStatus.updatePayment') }}
-          </Button>
-        </template>
+        <Button
+          v-else-if="banner.action === 'updatePayment'"
+          variant="inverted"
+          size="lg"
+          :loading="isUpdatingPayment"
+          @click="updatePayment"
+        >
+          {{ $t('workspacePanel.billingStatus.updatePayment') }}
+        </Button>
       </div>
     </div>
   </div>
@@ -104,6 +96,10 @@ import type {
   BillingBannerKind
 } from '@/platform/workspace/composables/useBillingBanner'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import {
+  isTopUpDeniedPastDue,
+  usePaymentRecoveryDialog
+} from '@/platform/workspace/composables/usePaymentRecoveryDialog'
 import { usePlanEnded } from '@/platform/workspace/composables/usePlanEnded'
 import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
 import { useScheduledPlanChange } from '@/platform/workspace/composables/useScheduledPlanChange'
@@ -123,10 +119,9 @@ const { section } = defineProps<{
 }>()
 
 const { t, d } = useI18n()
-const { renewalDate, renewalInvoice, subscription, manageSubscription } =
-  useBillingContext()
+const { renewalDate, subscription } = useBillingContext()
 const { permissions, canReactivatePlan, workspaceType } = useWorkspaceUI()
-const { canTopUp } = useBillingCapabilities()
+const { canTopUp, topUpDenial, canManageBilling } = useBillingCapabilities()
 const { kind, audience, dismiss } = useBillingBanner()
 const { formatTierName } = useWorkspaceTierLabel()
 const { isResubscribing, handleResubscribe } = useResubscribe()
@@ -136,6 +131,7 @@ const {
   isDisplayable: canShowScheduledChange
 } = useScheduledPlanChange()
 const { showTopUpCreditsDialog } = useBillingDialogs()
+const { updatePayment, isUpdatingPayment } = usePaymentRecoveryDialog()
 const subscriptionDialog = useSubscriptionDialog()
 const { isSalesManagedPlan, isEnterprisePlan: isEndedEnterprisePlan } =
   usePlanEnded()
@@ -161,7 +157,6 @@ interface BannerView {
   body: string
   action: BannerAction | null
   dismissible: boolean
-  payInvoiceUrl?: string
 }
 
 const bs = 'workspacePanel.billingStatus'
@@ -198,25 +193,6 @@ const isHiddenOnSection = computed(
     kind.value !== null &&
     PLAN_LIFECYCLE_KINDS.has(kind.value)
 )
-
-// Only an https payment page is opened; anything else hides the action.
-function safeInvoiceUrl(value: string | undefined): string | undefined {
-  if (!value) return undefined
-  try {
-    return new URL(value).protocol === 'https:' ? value : undefined
-  } catch {
-    return undefined
-  }
-}
-
-const pausedView = (): BannerView => ({
-  muted: !canManage.value,
-  title: t(`${bs}.paused.title`),
-  body: canManage.value ? t(`${bs}.paused.body`) : t(`${bs}.paused.memberBody`),
-  action: canManage.value ? 'updatePayment' : null,
-  dismissible: false,
-  payInvoiceUrl: safeInvoiceUrl(renewalInvoice.value?.hosted_invoice_url)
-})
 
 // Sales-managed plans (Enterprise, and unrecognized tiers, which fail closed
 // to sales) return through sales; only a strict ENTERPRISE tier is named.
@@ -278,9 +254,18 @@ const planEndedView = (): BannerView => {
 const outOfCreditsBody = (key: string, noDateKey: string): string =>
   cycleResetDate.value ? t(key, { date: cycleResetDate.value }) : t(noDateKey)
 
-// An owner who cannot top up only reaches this once the plan has ended, which
-// the plan ended notice covers, so that case shows nothing.
 const outOfCreditsView = (): BannerView | null => {
+  if (isTopUpDeniedPastDue(topUpDenial.value)) {
+    return {
+      muted: false,
+      title: t(`${bs}.outOfCredits.title`),
+      body: canManageBilling.value
+        ? t(`${bs}.outOfCredits.pastDueBody`)
+        : t('subscription.paymentRecovery.paymentFailedMemberDescription'),
+      action: canManageBilling.value ? 'updatePayment' : null,
+      dismissible: true
+    }
+  }
   if (!canManage.value) {
     return {
       muted: false,
@@ -349,10 +334,7 @@ const planChangeView = (): BannerView | null =>
       }
     : null
 
-// Runs are already blocked on payment_failed, so it reads as paused.
 const bannerViews: Record<BillingBannerKind, () => BannerView | null> = {
-  paused: pausedView,
-  paymentFailed: pausedView,
   planEnded: planEndedView,
   outOfCredits: outOfCreditsView,
   ending: endingView,
@@ -374,11 +356,5 @@ function handleResubscribePlan() {
 }
 function handleContactSales() {
   window.open(ENTERPRISE_URL, '_blank', 'noopener,noreferrer')
-}
-function handlePayInvoice(url: string) {
-  window.open(url, '_blank', 'noopener,noreferrer')
-}
-function handleUpdatePayment() {
-  void manageSubscription()
 }
 </script>

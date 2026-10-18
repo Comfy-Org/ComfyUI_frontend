@@ -343,6 +343,32 @@ describe('useBillingCapabilities', () => {
     )
   })
 
+  it('exposes the top-up denial and billing management as the server sent them', async () => {
+    const response = capabilitiesResponse(
+      true,
+      'workspace-1',
+      true,
+      {},
+      {
+        can_top_up: false,
+        can_manage_billing: true
+      }
+    )
+    response.denied_reasons = { can_top_up: 'payment_past_due' }
+    vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce(
+      response
+    )
+
+    expect(billingCapabilities.topUpDenial.value).toBeUndefined()
+    expect(billingCapabilities.canManageBilling.value).toBe(false)
+
+    await billingCapabilities.initialize()
+
+    expect(billingCapabilities.canTopUp.value).toBe(false)
+    expect(billingCapabilities.topUpDenial.value).toBe('payment_past_due')
+    expect(billingCapabilities.canManageBilling.value).toBe(true)
+  })
+
   it('grants delete only when the server does', async () => {
     vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce(
       capabilitiesResponse(

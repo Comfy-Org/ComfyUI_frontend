@@ -36,7 +36,8 @@ function defaults(): ReturnType<typeof realUseWorkspaceUI> {
     canAccessSubscriptionFeatures: computed(() => false),
     isOriginalOwner: computed(() => true),
     isSubscriptionCancelled: computed(() => false),
-    isTeamPlanCancelled: computed(() => false)
+    isTeamPlanCancelled: computed(() => false),
+    isWorkspaceMenuInHeader: computed(() => false)
   }
 }
 

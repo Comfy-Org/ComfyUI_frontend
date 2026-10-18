@@ -897,7 +897,7 @@ export const workspaceApi = {
       const response = await workspaceApiClient.post<PaymentPortalResponse>(
         workspaceApiUrl('/billing/payment-portal'),
         { return_url: returnUrl } satisfies PaymentPortalRequest,
-        auth
+        { ...auth, timeout: 30_000 }
       )
       return response.data
     } catch (err) {

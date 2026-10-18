@@ -2497,7 +2497,9 @@
     "textPlaceholder": "text to render (verbatim)",
     "descPlaceholder": "description of this region",
     "colors": "color_palette",
-    "grid": "Grid"
+    "grid": "Grid",
+    "undo": "Undo",
+    "redo": "Redo"
   },
   "palette": {
     "addColor": "Add a color",
@@ -3052,6 +3054,7 @@
     "previewLoadFailed": "Failed to load subscription preview",
     "unableToSubscribe": "Unable to subscribe",
     "billingTabBlocked": "Couldn't open the billing page. Allow pop-ups for this site and try again.",
+    "billingPortalUnavailable": "Couldn't open the billing page. Try again in a moment.",
     "plansForWorkspace": "Plans for {workspace}",
     "personalWorkspace": "Personal Workspace",
     "teamWorkspace": "Team Workspace",
@@ -3625,17 +3628,13 @@
       }
     },
     "billingStatus": {
-      "paused": {
-        "title": "Subscription paused",
-        "body": "This workspace's subscription is paused. Update payment to resume.",
-        "memberBody": "Ask your workspace owner to restore the workspace's subscription."
-      },
       "outOfCredits": {
         "title": "Out of credits",
         "body": "Your team has used all its credits. Add more credits or wait until credits refill on {date}.",
         "bodyNoDate": "Your team has used all its credits. Add more credits.",
         "personalBody": "You've used all your credits. Add more credits or wait until credits refill on {date}.",
         "personalBodyNoDate": "You've used all your credits. Add more credits.",
+        "pastDueBody": "You've used all your credits. Update your payment method to add credits.",
         "memberBody": "Your team has used all its credits. Ask your workspace owner to add more credits or wait until credits refill on {date}.",
         "memberBodyNoDate": "Your team has used all its credits. Ask your workspace owner to add more credits.",
         "addCredits": "Add credits",
@@ -3669,8 +3668,7 @@
         "title": "Your plan changes to {plan} on {date}.",
         "body": "Your current plan stays active until then."
       },
-      "updatePayment": "Update payment",
-      "payInvoice": "Pay invoice"
+      "updatePayment": "Update payment"
     },
     "invite": "Invite",
     "inviteMember": "Invite member",
@@ -3809,6 +3807,10 @@
       "deleteWorkspaceBillingParkedTooltip": "A recent payment needs a fix from our team. Contact support.",
       "deleteWorkspaceBillingInProgressTooltip": "A billing change is in progress. Try again in a moment.",
       "deleteWorkspaceUnavailableTooltip": "This workspace can't be deleted right now.",
+      "leaveWorkspaceCreatorTooltip": "You created this workspace, so you can't leave it.",
+      "leaveWorkspaceOnlyOwnerTooltip": "Make another member an owner before you leave this workspace.",
+      "leaveWorkspaceDirectoryTooltip": "Your organization manages this membership, so you can't leave this workspace.",
+      "leaveWorkspaceUnavailableTooltip": "You can't leave this workspace right now.",
       "creatorCannotLeave": "The workspace creator can't leave the workspace they created"
     },
     "editWorkspaceDialog": {

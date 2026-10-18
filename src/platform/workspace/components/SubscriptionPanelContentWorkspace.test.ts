@@ -280,9 +280,14 @@ describe('SubscriptionPanelContentWorkspace', () => {
     workspaceUI.permissions = computed(() => ({
       ...defaultPermissions,
       canManageSubscription: mockCanManageSubscription.value,
-      canManageSubscriptionLifecycle: mockCanManageSubscriptionLifecycle.value,
-      canLeaveWorkspace: mockCanLeaveWorkspace.value
+      canManageSubscriptionLifecycle: mockCanManageSubscriptionLifecycle.value
     }))
+    useBillingCapabilities().canLeaveWorkspace = computed(() =>
+      receiveServerFact('can_leave_workspace', mockCanLeaveWorkspace.value)
+    )
+    useBillingCapabilities().leaveWorkspaceDenial = computed(() =>
+      mockCanLeaveWorkspace.value ? undefined : 'personal_workspace_creator'
+    )
     workspaceUI.canReactivatePlan = computed(() => mockCanReactivatePlan.value)
     workspaceUI.canOpenPricingSurface = computed(
       () => mockCanOpenPricingSurface.value
