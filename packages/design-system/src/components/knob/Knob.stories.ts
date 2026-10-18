@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { ref, toRefs } from 'vue'
 
-import Knob from '@comfyorg/design-system/knob/Knob'
+import Knob from './Knob.vue'
 
 const meta: Meta<typeof Knob> = {
   title: 'Components/Knob',

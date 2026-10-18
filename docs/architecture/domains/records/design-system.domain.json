@@ -332,10 +332,6 @@
       "role": "presentation"
     },
     {
-      "path": "src/utils/textTickerUtils.test.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/utils/textTickerUtils.ts",
       "role": "domain"
     },
@@ -471,11 +467,8 @@
       "checks": ["src/composables/useModalLiftedZIndex.test.ts"]
     },
     {
-      "name": "Tree data helpers and ticker text splitting stay pure",
-      "checks": [
-        "src/utils/treeUtil.test.ts",
-        "src/utils/textTickerUtils.test.ts"
-      ]
+      "name": "Tree data helpers stay pure",
+      "checks": ["src/utils/treeUtil.test.ts"]
     }
   ],
   "adrs": [],

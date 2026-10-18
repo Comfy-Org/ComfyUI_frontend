@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { splitTextAtWordBoundary } from '@comfyorg/design-system/lib/common/textTickerUtils'
+import { splitTextAtWordBoundary } from './textTickerUtils'
 
 describe('splitTextAtWordBoundary', () => {
   it('returns full text when ratio >= 1 (fits in one line)', () => {

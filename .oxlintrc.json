@@ -589,7 +589,7 @@
       }
     },
     {
-      "files": ["apps/website/**"],
+      "files": ["apps/website/**", "packages/design-system/src/components/**"],
       "rules": {
         "comfy/no-relative-parent-paths": "error",
         "import/no-relative-parent-imports": "error"

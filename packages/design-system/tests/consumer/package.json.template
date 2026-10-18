@@ -1,0 +1,21 @@
+{
+  "name": "design-system-packed-consumer",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "tsc --noEmit && node runtime.ts && vite build && node verifyStyles.ts"
+  },
+  "dependencies": {
+    "reka-ui": "2.6.2",
+    "tailwindcss": "4.3.2",
+    "vue": "3.5.42",
+    "vue-component-type-helpers": "3.3.11"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "4.3.2",
+    "@types/node": "^25.0.0",
+    "@types/web-bluetooth": "^0.0.21",
+    "typescript": "6.0.3",
+    "vite": "8.2.2"
+  }
+}

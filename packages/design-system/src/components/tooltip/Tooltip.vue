@@ -3,7 +3,7 @@ import type { TooltipRootEmits, TooltipRootProps } from 'reka-ui'
 import { TooltipRoot, useForwardPropsEmits } from 'reka-ui'
 import { provide } from 'vue'
 
-import { tooltipOpenOnClickKey } from './tooltipConfig'
+import { tooltipOpenOnClickKey } from './tooltipContext'
 
 const {
   disableClosingTrigger,

@@ -991,7 +991,6 @@
           "src/types/toastOptions.ts",
           "src/utils/histogramUtil.test.ts",
           "src/utils/histogramUtil.ts",
-          "src/utils/textTickerUtils.test.ts",
           "src/utils/textTickerUtils.ts",
           "src/utils/treeUtil.test.ts",
           "src/utils/treeUtil.ts",

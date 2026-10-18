@@ -46,16 +46,3 @@ type DialogContentVariants = VariantProps<typeof dialogContentVariants>
 
 export type DialogContentSize = NonNullable<DialogContentVariants['size']>
 export type DialogContentSurface = NonNullable<DialogContentVariants['surface']>
-
-const sizes = [
-  'sm',
-  'md',
-  'lg',
-  'xl',
-  'full',
-  'fit'
-] as const satisfies Array<DialogContentSize>
-
-const surfaces = ['card', 'none'] as const satisfies Array<DialogContentSurface>
-
-export const FOR_STORIES = { sizes, surfaces } as const

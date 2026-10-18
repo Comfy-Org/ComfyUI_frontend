@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
-import Chart from '@comfyorg/design-system/chart/Chart'
+import Chart from './Chart.vue'
 
 const meta: Meta<typeof Chart> = {
   title: 'Components/Chart',

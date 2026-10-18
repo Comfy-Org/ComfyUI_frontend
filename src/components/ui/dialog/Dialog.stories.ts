@@ -11,9 +11,20 @@ import DialogHeader from '@comfyorg/design-system/dialog/DialogHeader'
 import DialogOverlay from '@comfyorg/design-system/dialog/DialogOverlay'
 import DialogPortal from '@comfyorg/design-system/dialog/DialogPortal'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
-import { FOR_STORIES } from '@comfyorg/design-system/lib/dialog/dialog.variants'
+import type {
+  DialogContentSize,
+  DialogContentSurface
+} from '@comfyorg/design-system/lib/dialog/dialog.variants'
 
-const { sizes, surfaces } = FOR_STORIES
+const sizes = [
+  'sm',
+  'md',
+  'lg',
+  'xl',
+  'full',
+  'fit'
+] satisfies DialogContentSize[]
+const surfaces = ['card', 'none'] satisfies DialogContentSurface[]
 
 const meta: Meta = {
   title: 'Components/Dialog/Dialog',

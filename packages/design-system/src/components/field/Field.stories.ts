@@ -3,11 +3,11 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import Input from '@comfyorg/design-system/input/Input'
 import Switch from '@comfyorg/design-system/switch/Switch'
 
-import Field from '@comfyorg/design-system/field/Field'
-import FieldDescription from '@comfyorg/design-system/field/FieldDescription'
-import FieldError from '@comfyorg/design-system/field/FieldError'
-import FieldGroup from '@comfyorg/design-system/field/FieldGroup'
-import FieldLabel from '@comfyorg/design-system/field/FieldLabel'
+import Field from './Field.vue'
+import FieldDescription from './FieldDescription.vue'
+import FieldError from './FieldError.vue'
+import FieldGroup from './FieldGroup.vue'
+import FieldLabel from './FieldLabel.vue'
 
 const meta: Meta<typeof Field> = {
   title: 'Components/Field',

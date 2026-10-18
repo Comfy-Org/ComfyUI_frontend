@@ -3,7 +3,7 @@ import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import Label from '../label/Label.vue'
+import Label from '@comfyorg/design-system/label/Label'
 
 const { class: className } = defineProps<{
   class?: HTMLAttributes['class']

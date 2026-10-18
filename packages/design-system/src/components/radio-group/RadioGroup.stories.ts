@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { ref } from 'vue'
 
-import RadioGroup from '@comfyorg/design-system/radio-group/RadioGroup'
-import RadioGroupItem from '@comfyorg/design-system/radio-group/RadioGroupItem'
+import RadioGroup from './RadioGroup.vue'
+import RadioGroupItem from './RadioGroupItem.vue'
 
 const meta: Meta<typeof RadioGroup> = {
   title: 'Components/RadioGroup',

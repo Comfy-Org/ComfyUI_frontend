@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { ref } from 'vue'
 
-import Tabs from '@comfyorg/design-system/tabs/Tabs'
-import TabsContent from '@comfyorg/design-system/tabs/TabsContent'
-import TabsList from '@comfyorg/design-system/tabs/TabsList'
-import TabsTrigger from '@comfyorg/design-system/tabs/TabsTrigger'
+import Tabs from './Tabs.vue'
+import TabsContent from './TabsContent.vue'
+import TabsList from './TabsList.vue'
+import TabsTrigger from './TabsTrigger.vue'
 
 const meta: Meta<typeof Tabs> = {
   title: 'Components/Tabs',

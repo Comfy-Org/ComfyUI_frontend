@@ -5,33 +5,26 @@ import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vite'
 import dts from 'vite-plugin-dts'
 
+import manifest from './package.json'
+
 export default defineConfig({
   plugins: [
     vue(),
     dts({
       tsconfigPath: 'tsconfig.build.json',
-      entryRoot: 'src/components',
-      bundleTypes: {
-        bundledPackages: ['reka-ui']
-      },
-      beforeWriteFile: function preserveVueSlotDeclarations(
-        _filePath,
-        content
-      ) {
-        return {
-          content: content.replace(
-            /\bdeclare var (?=__VLS_\d+\s*:)/g,
-            'declare let '
-          )
-        }
-      }
+      entryRoot: 'src/components'
     })
   ],
   build: {
     lib: {
       entry: Object.fromEntries(
-        globSync('src/components/**/*.{vue,ts}').map((file) => [
-          relative('src/components', file).replace(/\.(vue|ts)$/, ''),
+        [
+          ...globSync('src/components/**/*.vue'),
+          ...Object.entries(manifest.exports)
+            .filter(([key]) => key.startsWith('./lib/'))
+            .map(([, target]) => target)
+        ].map((file) => [
+          relative('src/components', file).replace(/\.ts$/, ''),
           file
         ])
       ),

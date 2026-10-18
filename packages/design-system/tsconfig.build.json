@@ -6,5 +6,5 @@
     "types": []
   },
   "include": ["src/components/**/*.ts", "src/components/**/*.vue"],
-  "exclude": ["src/**/*.stories.ts"]
+  "exclude": ["src/**/*.stories.ts", "src/**/*.test.ts"]
 }

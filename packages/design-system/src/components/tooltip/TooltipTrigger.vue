@@ -8,7 +8,7 @@ import {
 } from 'reka-ui'
 import { inject, onBeforeUnmount, ref, watch } from 'vue'
 
-import { tooltipOpenOnClickKey } from './tooltipConfig'
+import { tooltipOpenOnClickKey } from './tooltipContext'
 
 const props = defineProps<TooltipTriggerProps>()
 const forwarded = useForwardProps(props)

@@ -48,10 +48,25 @@ utilities. Size them with `size-*`, not font-size classes.
 
 ## Vue components
 
-Install Vue alongside the package to use its components. Published components
-are compiled ES modules with type declarations; workspace imports use their
-Vue source. Both use the theme imported above, which scans the component
-classes for Tailwind utilities.
+Install the component peers alongside the package:
+
+```sh
+pnpm add vue reka-ui vue-component-type-helpers
+```
+
+Published components are compiled ES modules with declarations for TypeScript's
+`Bundler` module resolution; workspace imports use their Vue source. Reka is a
+peer so host providers and packaged components share its injection contexts.
+Its declarations require `vue-component-type-helpers`, which Reka currently
+omits from its published dependencies. These peers are optional for CSS-only
+consumers.
+
+With strict dependency checking, VueUse also requires the `web-bluetooth`
+ambient types. Install `@types/web-bluetooth` and include `web-bluetooth` if your
+TypeScript configuration restricts `compilerOptions.types`.
+
+Both use the theme imported above, which scans the component classes for
+Tailwind utilities.
 
 Published consumers must also import the component stylesheet for scoped styles
 and animations:

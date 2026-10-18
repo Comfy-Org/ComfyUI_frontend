@@ -25,7 +25,11 @@
   "type": "module",
   "exports": {
     "./*": "./src/components/*.vue",
-    "./lib/*": "./src/components/*.ts",
+    "./lib/select/types": "./src/components/select/types.ts",
+    "./lib/menu/menuStyles": "./src/components/menu/menuStyles.ts",
+    "./lib/dialog/dialog.variants": "./src/components/dialog/dialog.variants.ts",
+    "./lib/input-group/inputGroup.variants": "./src/components/input-group/inputGroup.variants.ts",
+    "./lib/tooltip/tooltipConfig": "./src/components/tooltip/tooltipConfig.ts",
     "./components.css": "./dist/components.css",
     "./css/*": "./src/css/*",
     "./icons/*": "./src/icons/*",
@@ -37,12 +41,28 @@
   "publishConfig": {
     "exports": {
       "./*": {
-        "types": "./dist/*.d.ts",
-        "import": "./dist/*.js"
+        "types": "./dist/*.vue.d.ts",
+        "import": "./dist/*.vue.js"
       },
-      "./lib/*": {
-        "types": "./dist/*.d.ts",
-        "import": "./dist/*.js"
+      "./lib/select/types": {
+        "types": "./dist/select/types.d.ts",
+        "import": "./dist/select/types.js"
+      },
+      "./lib/menu/menuStyles": {
+        "types": "./dist/menu/menuStyles.d.ts",
+        "import": "./dist/menu/menuStyles.js"
+      },
+      "./lib/dialog/dialog.variants": {
+        "types": "./dist/dialog/dialog.variants.d.ts",
+        "import": "./dist/dialog/dialog.variants.js"
+      },
+      "./lib/input-group/inputGroup.variants": {
+        "types": "./dist/input-group/inputGroup.variants.d.ts",
+        "import": "./dist/input-group/inputGroup.variants.js"
+      },
+      "./lib/tooltip/tooltipConfig": {
+        "types": "./dist/tooltip/tooltipConfig.d.ts",
+        "import": "./dist/tooltip/tooltipConfig.js"
       },
       "./components.css": "./dist/components.css",
       "./css/*": "./src/css/*",
@@ -72,27 +92,36 @@
     "cva": "catalog:",
     "dompurify": "catalog:",
     "es-toolkit": "^1.39.9",
-    "reka-ui": "catalog:",
     "tw-animate-css": "catalog:"
   },
   "devDependencies": {
     "@comfyorg/tailwind-utils": "workspace:^",
-    "@microsoft/api-extractor": "catalog:",
+    "@storybook/vue3-vite": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
     "@vitest/coverage-v8": "catalog:",
+    "reka-ui": "catalog:",
     "tailwindcss": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plugin-dts": "catalog:",
     "vitest": "catalog:",
-    "vue": "catalog:"
+    "vue": "catalog:",
+    "vue-component-type-helpers": "^3.3.0"
   },
   "peerDependencies": {
+    "reka-ui": "^2.6.2",
     "tailwindcss": "^4.1.0",
-    "vue": "^3.5.40"
+    "vue": "^3.5.40",
+    "vue-component-type-helpers": "^3.3.0"
   },
   "peerDependenciesMeta": {
+    "reka-ui": {
+      "optional": true
+    },
     "vue": {
+      "optional": true
+    },
+    "vue-component-type-helpers": {
       "optional": true
     }
   }

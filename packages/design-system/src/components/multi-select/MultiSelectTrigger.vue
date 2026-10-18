@@ -54,9 +54,9 @@ import {
   selectCountBadgeClass,
   selectDropdownClass,
   selectTriggerVariants
-} from '../../select.variants'
+} from '@comfyorg/design-system/select.variants'
 import { cn } from '@comfyorg/tailwind-utils'
-import type { SelectOption } from '../select/types'
+import type { SelectOption } from '@comfyorg/design-system/lib/select/types'
 
 defineOptions({ inheritAttrs: false })
 
