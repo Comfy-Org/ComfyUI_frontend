@@ -1,4 +1,4 @@
-import { fromPartial } from '@total-typescript/shoehorn'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -25,6 +25,8 @@ import {
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { Subgraph } from '@/lib/litegraph/src/LGraph'
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
+import { resetReportedWorkflowStateAnomaliesForTests } from '@/platform/workflow/management/stores/comfyWorkflow'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
@@ -1918,6 +1920,95 @@ describe('ChangeTracker', () => {
 
       expect(tracker.activeState).toEqual(changed)
       expectAutoQueueGraphChangedNotDispatched()
+    })
+  })
+
+  describe('graphEqual', () => {
+    beforeEach(() => {
+      resetReportedWorkflowStateAnomaliesForTests()
+    })
+
+    it.for([
+      ['first', null, createState(), { hasFirst: false, hasSecond: true }],
+      ['second', createState(), undefined, { hasFirst: true, hasSecond: false }]
+    ] as const)(
+      'reports and returns false when the %s state is missing',
+      ([, a, b, context]) => {
+        expect(ChangeTracker.graphEqual(a, b)).toBe(false)
+
+        expect(mockAssert).toHaveBeenCalledWith(
+          false,
+          'ChangeTracker.graphEqual() called with a missing state',
+          { method: 'ChangeTracker.graphEqual', ...context }
+        )
+      }
+    )
+
+    it('does not report when both states are present', () => {
+      const state = createState(1)
+
+      expect(ChangeTracker.graphEqual(state, structuredClone(state))).toBe(true)
+      expect(ChangeTracker.graphEqual(state, createState(2))).toBe(false)
+
+      expect(mockAssert).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('updateModified', () => {
+    beforeEach(() => {
+      resetReportedWorkflowStateAnomaliesForTests()
+    })
+
+    function storeWorkflowFor(tracker: ChangeTracker) {
+      const workflow = fromPartial<ComfyWorkflow>({
+        path: tracker.workflow.path,
+        isLoaded: false,
+        isPersisted: true,
+        isTemporary: false,
+        changeTracker: null,
+        initialState: null,
+        activeState: null,
+        originalContent: null,
+        isModified: false
+      })
+      vi.mocked(useWorkflowStore().getWorkflowByPath).mockReturnValue(workflow)
+      return workflow
+    }
+
+    it('marks the workflow modified when its state differs from the initial state', () => {
+      const tracker = createTracker(createState(1))
+      const workflow = storeWorkflowFor(tracker)
+      tracker.activeState = createState(2)
+
+      tracker.updateModified()
+
+      expect(workflow.isModified).toBe(true)
+      expect(mockAssert).not.toHaveBeenCalled()
+    })
+
+    it('leaves isModified alone and reports when the tracker has no initial state', () => {
+      const tracker = createTracker(createState(1))
+      const workflow = storeWorkflowFor(tracker)
+      tracker.initialState = fromAny<ComfyWorkflowJSON, null>(null)
+
+      expect(() => tracker.updateModified()).not.toThrow()
+
+      expect(workflow.isModified).toBe(false)
+      expect(mockAssert).toHaveBeenCalledWith(
+        false,
+        'ChangeTracker has no initial state',
+        {
+          method: 'ChangeTracker.updateModified',
+          isLoaded: false,
+          hasChangeTracker: false,
+          hasInitialState: false,
+          hasActiveState: false,
+          isPersisted: true,
+          isTemporary: false,
+          originalContentKind: 'unavailable',
+          isActive: true
+        }
+      )
     })
   })
 

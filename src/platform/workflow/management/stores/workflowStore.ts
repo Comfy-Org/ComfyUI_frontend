@@ -40,7 +40,11 @@ import type { NodeId } from '@/types/nodeId'
 import { generateUUID, getPathDetails } from '@/utils/formatUtil'
 import { syncEntities } from '@/utils/syncUtil'
 import { isSubgraph } from '@/utils/typeGuardUtil'
-import { ComfyWorkflow, registerWorkflowRuntime } from './comfyWorkflow'
+import {
+  ComfyWorkflow,
+  registerWorkflowRuntime,
+  reportWorkflowStateAnomaly
+} from './comfyWorkflow'
 import type { LoadedComfyWorkflow } from './comfyWorkflow'
 import type { WorkflowStore } from './workflowStoreTypes'
 export { ComfyWorkflow, type LoadedComfyWorkflow }
@@ -183,7 +187,18 @@ export const useWorkflowStore = defineStore('workflow', () => {
   const openWorkflow = async (
     workflow: ComfyWorkflow
   ): Promise<LoadedComfyWorkflow> => {
-    if (isActive(workflow)) return workflow as LoadedComfyWorkflow
+    if (isActive(workflow)) {
+      if (workflow.isLoaded) return workflow as LoadedComfyWorkflow
+      // `isActive` matches by path, so a workflow can be "active" while this
+      // instance never loaded (or has since unloaded) its change tracker.
+      // Returning it as loaded would hand callers a null `initialState`.
+      reportWorkflowStateAnomaly(
+        'openWorkflow called on an active workflow that is not loaded',
+        'workflowStore.openWorkflow',
+        workflow,
+        { isActive: true }
+      )
+    }
 
     if (!openWorkflowPaths.value.includes(workflow.path)) {
       openWorkflowPaths.value.push(workflow.path)

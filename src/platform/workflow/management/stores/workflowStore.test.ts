@@ -6,6 +6,7 @@ import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { resetReportedWorkflowStateAnomaliesForTests } from '@/platform/workflow/management/stores/comfyWorkflow'
 import {
   ComfyWorkflow,
   useWorkflowBookmarkStore,
@@ -50,6 +51,12 @@ vi.mock<unknown>(import('@/utils/typeGuardUtil'), () => ({
 }))
 
 vi.mock(import('@/utils/syncUtil'), { spy: true })
+
+const mockAssert = vi.hoisted(() => vi.fn())
+
+vi.mock(import('@/base/assert'), () => ({
+  assert: mockAssert
+}))
 
 describe('useWorkflowStore', () => {
   let store: ReturnType<typeof useWorkflowStore>
@@ -1411,6 +1418,146 @@ describe('useWorkflowStore', () => {
       await store.closeWorkflow(workflow)
 
       expect(draftStore.getDraft(workflow.path)).toBeNull()
+    })
+  })
+
+  describe('null-state hardening', () => {
+    const storedAs = (content: string) =>
+      vi.mocked(api.getUserData).mockResolvedValue({
+        status: 200,
+        text: () => Promise.resolve(content)
+      } as Response)
+
+    const failedAssertions = () =>
+      mockAssert.mock.calls.filter(([condition]) => !condition)
+
+    const expectReported = (message: string, context: object) =>
+      expect(mockAssert).toHaveBeenCalledWith(
+        false,
+        message,
+        expect.objectContaining(context)
+      )
+
+    beforeEach(() => {
+      resetReportedWorkflowStateAnomaliesForTests()
+    })
+
+    describe('load', () => {
+      it.for(['null', '42', '"text"', '[]'])(
+        'rejects stored content %s',
+        async (content) => {
+          await syncRemoteWorkflows(['a.json'])
+          const workflow = store.getWorkflowByPath('workflows/a.json')!
+          storedAs(content)
+
+          await expect(workflow.load()).rejects.toThrow('not a JSON object')
+
+          expect(workflow.isLoaded).toBe(false)
+          expect(workflow.changeTracker).toBeNull()
+        }
+      )
+
+      it('reports the kind of content without including the path', async () => {
+        await syncRemoteWorkflows(['secret-name.json'])
+        const workflow = store.getWorkflowByPath('workflows/secret-name.json')!
+        storedAs('null')
+
+        await expect(workflow.load()).rejects.toThrow()
+
+        expectReported('Workflow content is not a JSON object', {
+          method: 'ComfyWorkflow.load',
+          isLoaded: false,
+          hasChangeTracker: false,
+          hasInitialState: false,
+          hasActiveState: false,
+          isPersisted: true,
+          isTemporary: false,
+          originalContentKind: 'null'
+        })
+        expect(JSON.stringify(mockAssert.mock.calls)).not.toContain(
+          'secret-name'
+        )
+      })
+
+      it('does not report content that is a JSON object', async () => {
+        await syncRemoteWorkflows(['a.json'])
+        const workflow = store.getWorkflowByPath('workflows/a.json')!
+        storedAs(defaultGraphJSON)
+
+        await workflow.load()
+
+        expect(workflow.isLoaded).toBe(true)
+        expect(failedAssertions()).toHaveLength(0)
+      })
+    })
+
+    describe.for(['save', 'saveAs'] as const)('%s', (method) => {
+      it('refuses to persist an unloaded workflow and reports it', async () => {
+        await syncRemoteWorkflows(['a.json'])
+        const workflow = store.getWorkflowByPath('workflows/a.json')!
+        const contentBefore = workflow.content
+
+        const attempt =
+          method === 'save'
+            ? workflow.save()
+            : workflow.saveAs('workflows/copy.json')
+
+        await expect(attempt).rejects.toThrow('before it is loaded')
+        expect(api.storeUserData).not.toHaveBeenCalled()
+        expect(workflow.content).toBe(contentBefore)
+        expectReported('Workflow saved without an active state', {
+          method: `ComfyWorkflow.${method}`,
+          isLoaded: false,
+          hasChangeTracker: false,
+          hasActiveState: false
+        })
+      })
+    })
+
+    describe('openWorkflow', () => {
+      it('loads a workflow that is active but was never loaded', async () => {
+        await syncRemoteWorkflows(['a.json'])
+        const workflow = store.getWorkflowByPath('workflows/a.json')!
+        store.activeWorkflow = workflow as LoadedComfyWorkflow
+        storedAs(defaultGraphJSON)
+
+        const opened = await store.openWorkflow(workflow)
+
+        expect(opened.isLoaded).toBe(true)
+        expect(opened.initialState).toEqual(defaultGraph)
+        expectReported(
+          'openWorkflow called on an active workflow that is not loaded',
+          {
+            method: 'workflowStore.openWorkflow',
+            isActive: true,
+            isLoaded: false,
+            hasInitialState: false
+          }
+        )
+      })
+
+      it('reports each affected workflow only once', async () => {
+        await syncRemoteWorkflows(['a.json'])
+        const workflow = store.getWorkflowByPath('workflows/a.json')!
+        storedAs(defaultGraphJSON)
+
+        for (let attempt = 0; attempt < 2; attempt++) {
+          workflow.unload()
+          store.activeWorkflow = workflow as LoadedComfyWorkflow
+          await store.openWorkflow(workflow)
+        }
+
+        expect(failedAssertions()).toHaveLength(1)
+      })
+
+      it('does not report an active workflow that is loaded', async () => {
+        const workflow = await store.createTemporary('test.json').load()
+        store.activeWorkflow = workflow
+
+        await store.openWorkflow(workflow)
+
+        expect(failedAssertions()).toHaveLength(0)
+      })
     })
   })
 })
