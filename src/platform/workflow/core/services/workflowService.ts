@@ -27,6 +27,7 @@ import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumb
 import { useApp } from '@/scripts/appInstance'
 import {
   bindCanvasTracker,
+  invalidateCanvasTracker,
   isCanvasOwner
 } from '@/platform/workflow/core/canvasTrackerOwnership'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
@@ -696,6 +697,7 @@ export const useWorkflowService = () => {
       // Save subgraph viewport before the canvas gets overwritten
       useSubgraphNavigationStore().saveCurrentViewport(suppressWorkflowReset)
     }
+    return invalidateCanvasTracker
   }
 
   /**

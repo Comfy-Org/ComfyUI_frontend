@@ -53,10 +53,6 @@ import {
 } from '@/platform/workflow/management/stores/workflowStore'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
-import {
-  bindCanvasTracker,
-  canCaptureCanvas
-} from '@/platform/workflow/core/canvasTrackerOwnership'
 import type { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 import { ChangeTracker } from '@/scripts/changeTracker'
@@ -304,6 +300,7 @@ describe('ComfyApp', () => {
     vi.mocked(useWorkflowService).mockReturnValue(
       fromPartial<WorkflowService>(mockWorkflowService)
     )
+    mockWorkflowService.beforeLoadNewGraph.mockReturnValue(vi.fn())
     app = new ComfyApp()
     mockCanvas = createMockCanvas() as LGraphCanvas
     app.canvas = mockCanvas
@@ -527,60 +524,49 @@ describe('ComfyApp', () => {
       expect(useToast().toasts).toEqual([])
     })
 
-    it('invalidates canvas ownership after deactivating the outgoing workflow', async () => {
+    it('replaces canvas ownership after preparing the outgoing workflow', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       Reflect.set(app, 'rootGraphInternal', new LGraph())
-      await useRealWorkflowService()
       mockWorkflowService.afterLoadNewGraph.mockResolvedValue()
-      const outgoing = markLoaded(
-        new ComfyWorkflow({
-          path: 'workflows/outgoing.json',
-          modified: 0,
-          size: 0
-        })
-      )
-      useWorkflowStore().activeWorkflow = outgoing
-      bindCanvasTracker(outgoing.changeTracker)
-      let couldCaptureDuringDeactivate = false
-      vi.mocked(outgoing.changeTracker.deactivate).mockImplementation(() => {
-        couldCaptureDuringDeactivate = canCaptureCanvas(outgoing.changeTracker)
-      })
+      const replaceCanvas = vi.fn()
+      mockWorkflowService.beforeLoadNewGraph.mockReturnValue(replaceCanvas)
 
       await app.loadGraphData(createWorkflowGraphData())
 
-      expect(couldCaptureDuringDeactivate).toBe(true)
-      expect(canCaptureCanvas(outgoing.changeTracker)).toBe(false)
+      expect(mockWorkflowService.beforeLoadNewGraph).toHaveBeenCalledOnce()
+      expect(replaceCanvas).toHaveBeenCalledOnce()
+      expect(
+        mockWorkflowService.beforeLoadNewGraph.mock.invocationCallOrder[0]
+      ).toBeLessThan(replaceCanvas.mock.invocationCallOrder[0])
     })
 
-    it('keeps the outgoing workflow able to capture across an awaiting beforeLoadGraph hook', async () => {
+    it('waits for the beforeLoadGraph hook before replacing canvas ownership', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       Reflect.set(app, 'rootGraphInternal', new LGraph())
-      await useRealWorkflowService()
       mockWorkflowService.afterLoadNewGraph.mockResolvedValue()
-      const outgoing = markLoaded(
-        new ComfyWorkflow({
-          path: 'workflows/outgoing.json',
-          modified: 0,
-          size: 0
-        })
-      )
-      useWorkflowStore().activeWorkflow = outgoing
-      bindCanvasTracker(outgoing.changeTracker)
-      let hookName: unknown
-      let couldCaptureInsideHook: boolean | undefined
+      const replaceCanvas = vi.fn()
+      mockWorkflowService.beforeLoadNewGraph.mockReturnValue(replaceCanvas)
+      let finishHook = () => {}
+      const hook = new Promise<void>((resolve) => {
+        finishHook = resolve
+      })
       mockExtensionService.invokeExtensionsAsync.mockImplementationOnce(
-        async (hook: unknown) => {
-          hookName = hook
-          await Promise.resolve()
-          couldCaptureInsideHook = canCaptureCanvas(outgoing.changeTracker)
-        }
+        async () => hook
       )
 
-      await app.loadGraphData(createWorkflowGraphData())
+      const load = app.loadGraphData(createWorkflowGraphData())
+      await vi.waitFor(() =>
+        expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+          'beforeLoadGraph'
+        )
+      )
 
-      expect(hookName).toBe('beforeLoadGraph')
-      expect(couldCaptureInsideHook).toBe(true)
-      expect(canCaptureCanvas(outgoing.changeTracker)).toBe(false)
+      expect(replaceCanvas).not.toHaveBeenCalled()
+
+      finishHook()
+      await load
+
+      expect(replaceCanvas).toHaveBeenCalledOnce()
     })
 
     it('forwards clean and navigation intent to workflow navigation', async () => {

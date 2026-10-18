@@ -310,6 +310,17 @@ describe('useWorkflowService', () => {
       ).toHaveBeenCalledWith(true)
     })
 
+    it('returns the canvas replacement transition', () => {
+      const tracker = createMockChangeTracker()
+      bindCanvasTracker(tracker)
+
+      const replaceCanvas = useWorkflowService().beforeLoadNewGraph()
+
+      expect(canCaptureCanvas(tracker)).toBe(true)
+      replaceCanvas()
+      expect(canCaptureCanvas(tracker)).toBe(false)
+    })
+
     it('stores a thumbnail of the active subgraph', () => {
       const activeWorkflow = createModeTestWorkflow()
       const subgraph = createTestSubgraph()
