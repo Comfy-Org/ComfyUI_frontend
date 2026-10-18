@@ -232,9 +232,7 @@ const { isLoggedIn } = useCurrentUser()
 const { t } = useI18n()
 const { toastErrorHandler } = useErrorHandling()
 const { flags } = useFeatureFlags()
-const isDeployButtonShown = computed(
-  () => flags.usedHeadlessly && flags.deployToCloud
-)
+const isDeployButtonShown = computed(() => flags.deployToCloud)
 function openDeployInstallationDialog() {
   useTelemetry()?.trackUiButtonClicked({
     button_id: 'run_bar_deploy_clicked',

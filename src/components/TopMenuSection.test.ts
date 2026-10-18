@@ -646,46 +646,21 @@ describe('TopMenuSection', () => {
 
   describe('Deploy to Comfy API button', () => {
     function enableDeployButton() {
-      Object.assign(useFeatureFlags().flags, {
-        usedHeadlessly: true,
-        deployToCloud: true
-      })
+      Object.assign(useFeatureFlags().flags, { deployToCloud: true })
     }
 
     it.for([
-      {
-        when: 'after a headless run on a server that can deploy',
-        usedHeadlessly: true,
-        deployToCloud: true,
-        count: 1
-      },
-      {
-        when: 'before any headless run',
-        usedHeadlessly: false,
-        deployToCloud: true,
-        count: 0
-      },
-      {
-        when: 'while the server cannot deploy',
-        usedHeadlessly: true,
-        deployToCloud: false,
-        count: 0
-      }
-    ])(
-      'renders $count deploy button $when',
-      ({ usedHeadlessly, deployToCloud, count }) => {
-        Object.assign(useFeatureFlags().flags, {
-          usedHeadlessly,
-          deployToCloud
-        })
+      { when: 'when the server allows it', deployToCloud: true, count: 1 },
+      { when: 'otherwise', deployToCloud: false, count: 0 }
+    ])('renders $count deploy button $when', ({ deployToCloud, count }) => {
+      Object.assign(useFeatureFlags().flags, { deployToCloud })
 
-        createWrapper({ stubs: { FreeTierQuota: true } })
+      createWrapper({ stubs: { FreeTierQuota: true } })
 
-        expect(
-          screen.queryAllByRole('button', { name: 'Deploy to Comfy API' })
-        ).toHaveLength(count)
-      }
-    )
+      expect(
+        screen.queryAllByRole('button', { name: 'Deploy to Comfy API' })
+      ).toHaveLength(count)
+    })
 
     it('sits left of the panel toggle and opens the dialog for the installation', async () => {
       enableDeployButton()
