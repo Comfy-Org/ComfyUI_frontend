@@ -154,11 +154,27 @@ function createNode(graph: LGraph, type: string): LGraphNode {
   return node
 }
 
-function convertNodeToSubgraph(graph: LGraph, node: LGraphNode): LGraphNode {
-  const { subgraph } = graph.convertToSubgraph(new Set<Positionable>([node]))
+function convertNodeToSubgraph(
+  graph: LGraph,
+  node: LGraphNode
+): { inner: LGraphNode; parent: LGraphNode } {
+  const { subgraph, node: parent } = graph.convertToSubgraph(
+    new Set<Positionable>([node])
+  )
   const inner = subgraph.nodes.find((n) => n.type === node.type)
   assert(inner, 'node inside the new subgraph')
-  return inner
+  return { inner, parent }
+}
+
+function parentInputSources(parent: LGraphNode): string[] {
+  const graph = parent.graph
+  assert(graph, 'parent graph')
+  return parent.inputs.flatMap((input) => {
+    const link = input.link == null ? undefined : graph.links.get(input.link)
+    if (!link) return []
+    const origin = graph.getNodeById(link.origin_id)
+    return [`${origin?.type}:${origin?.outputs[link.origin_slot]?.name}`]
+  })
 }
 
 function connectGptImage(graph: LGraph, gptImage: LGraphNode) {
@@ -185,6 +201,74 @@ const gptImageWiring = {
   seed: 'INT'
 }
 
+interface Scenario {
+  graph: LGraph
+  node: LGraphNode
+  innerWiring: Record<string, string>
+  parentSources: string[]
+}
+
+const gptImageParentSources = [
+  'test/FE3463Source:IMAGE',
+  'test/FE3463Source:INT'
+]
+
+function gptImageWithOption(option: string): Scenario {
+  const graph = newGraph()
+  const node = createNode(graph, GPT_IMAGE_TYPE)
+  selectOption(node, option)
+  connectGptImage(graph, node)
+  return {
+    graph,
+    node,
+    innerWiring: gptImageWiring,
+    parentSources: gptImageParentSources
+  }
+}
+
+function loadedGptImage(): Scenario {
+  const graph = newGraph()
+  const saved = createNode(graph, GPT_IMAGE_TYPE)
+  connectGptImage(graph, saved)
+  const reloaded = reloadGraph(graph)
+  const node = reloaded.getNodeById(saved.id)
+  assert(node, 'reloaded GPT Image node')
+  return {
+    graph: reloaded,
+    node,
+    innerWiring: gptImageWiring,
+    parentSources: gptImageParentSources
+  }
+}
+
+function perplexityLlm(): Scenario {
+  const graph = newGraph()
+  const node = createNode(graph, LLM_TYPE)
+  selectOption(node, 'perplexity/sonar-pro')
+  const source = createNode(graph, 'test/FE3463Source')
+  source.connect(2, node, slotOf(node, 'prompt'))
+  source.connect(2, node, slotOf(node, 'system_prompt'))
+  return {
+    graph,
+    node,
+    innerWiring: { prompt: 'STRING', system_prompt: 'STRING' },
+    parentSources: ['test/FE3463Source:STRING']
+  }
+}
+
+const scenarios: [string, () => Scenario][] = [
+  [
+    'GPT Image (model option switched)',
+    () => gptImageWithOption('gpt-image-2.5-sunburst')
+  ],
+  [
+    'GPT Image (default option re-selected)',
+    () => gptImageWithOption('gpt-image-2.5-flare')
+  ],
+  ['GPT Image (loaded from a saved workflow)', loadedGptImage],
+  ['OpenRouter LLM (Perplexity, system prompt wired)', perplexityLlm]
+]
+
 describe('Convert to Subgraph with dynamic combo inputs (FE-3463)', () => {
   beforeEach(async () => {
     resetSubgraphFixtureState()
@@ -199,9 +283,10 @@ describe('Convert to Subgraph with dynamic combo inputs (FE-3463)', () => {
     const gptImage = createNode(graph, GPT_IMAGE_TYPE)
     connectGptImage(graph, gptImage)
 
-    expect(connectedInputTypes(convertNodeToSubgraph(graph, gptImage))).toEqual(
-      gptImageWiring
-    )
+    const { inner, parent } = convertNodeToSubgraph(graph, gptImage)
+
+    expect(connectedInputTypes(inner)).toEqual(gptImageWiring)
+    expect(parentInputSources(parent)).toEqual(gptImageParentSources)
   })
 
   test('wires every repro scenario as intended before conversion', () => {
@@ -232,52 +317,25 @@ describe('Convert to Subgraph with dynamic combo inputs (FE-3463)', () => {
     })
   })
 
-  test.fails('keeps image_1 off model.mask after switching the model option', () => {
-    const graph = newGraph()
-    const gptImage = createNode(graph, GPT_IMAGE_TYPE)
-    selectOption(gptImage, 'gpt-image-2.5-sunburst')
-    connectGptImage(graph, gptImage)
+  test.for(scenarios)(
+    'converts the %s node and keeps its sources on the subgraph node',
+    ([, build]) => {
+      const { graph, node, parentSources } = build()
 
-    expect(connectedInputTypes(convertNodeToSubgraph(graph, gptImage))).toEqual(
-      gptImageWiring
-    )
-  })
+      const { parent } = convertNodeToSubgraph(graph, node)
 
-  test.fails('keeps image_1 off model.mask after re-selecting the default model option', () => {
-    const graph = newGraph()
-    const gptImage = createNode(graph, GPT_IMAGE_TYPE)
-    selectOption(gptImage, 'gpt-image-2.5-flare')
-    connectGptImage(graph, gptImage)
+      expect(parentInputSources(parent)).toEqual(parentSources)
+    }
+  )
 
-    expect(connectedInputTypes(convertNodeToSubgraph(graph, gptImage))).toEqual(
-      gptImageWiring
-    )
-  })
+  test.fails.for(scenarios)(
+    'keeps the inner wiring of the %s node',
+    ([, build]) => {
+      const { graph, node, innerWiring } = build()
 
-  test.fails('keeps image_1 off model.mask on a node loaded from a saved workflow', () => {
-    const graph = newGraph()
-    const gptImage = createNode(graph, GPT_IMAGE_TYPE)
-    connectGptImage(graph, gptImage)
-    const reloaded = reloadGraph(graph)
-    const loaded = reloaded.getNodeById(gptImage.id)
-    assert(loaded, 'reloaded GPT Image node')
+      const { inner } = convertNodeToSubgraph(graph, node)
 
-    expect(
-      connectedInputTypes(convertNodeToSubgraph(reloaded, loaded))
-    ).toEqual(gptImageWiring)
-  })
-
-  test.fails('keeps a system prompt string off the numeric seed input', () => {
-    const graph = newGraph()
-    const llm = createNode(graph, LLM_TYPE)
-    selectOption(llm, 'perplexity/sonar-pro')
-    const source = createNode(graph, 'test/FE3463Source')
-    source.connect(2, llm, slotOf(llm, 'prompt'))
-    source.connect(2, llm, slotOf(llm, 'system_prompt'))
-
-    expect(connectedInputTypes(convertNodeToSubgraph(graph, llm))).toEqual({
-      prompt: 'STRING',
-      system_prompt: 'STRING'
-    })
-  })
+      expect(connectedInputTypes(inner)).toEqual(innerWiring)
+    }
+  )
 })
