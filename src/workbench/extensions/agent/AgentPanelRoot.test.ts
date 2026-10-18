@@ -6425,22 +6425,29 @@ describe('AgentPanelRoot workflow binding', () => {
       ).not.toBe('true')
     })
 
-    it('sends once when App Mode releases the hold as it tears the panel down', async () => {
-      makeTab('wf-42')
-      const bodies = mockMessagesEndpoint('wf-42')
-      const { unmount } = renderWithSelectedTarget()
-      await sendHeldByCoach('build me a workflow')
-      const stopUnmountOnAppMode = watch(
-        () => canvasStore.linearMode,
-        () => unmount(),
-        { flush: 'post' }
-      )
+    it.for([
+      { teardown: 'before', flush: 'sync' },
+      { teardown: 'after', flush: 'post' }
+    ] as const)(
+      'sends once when App Mode tears the panel down $teardown the panel releases the hold',
+      async ({ flush }) => {
+        Object.assign(useAgentPanelStore(), { enabled: true, isOpen: true })
+        makeTab('wf-42')
+        const bodies = mockMessagesEndpoint('wf-42')
+        const { unmount } = renderWithSelectedTarget()
+        await sendHeldByCoach('build me a workflow')
+        const stopUnmountOnAppMode = watch(
+          () => canvasStore.linearMode,
+          () => unmount(),
+          { flush }
+        )
 
-      canvasStore.linearMode = true
+        canvasStore.linearMode = true
 
-      await waitFor(() => expect(bodies).toHaveLength(1))
-      stopUnmountOnAppMode()
-    })
+        await waitFor(() => expect(bodies).toHaveLength(1))
+        stopUnmountOnAppMode()
+      }
+    )
 
     it('puts the draft back instead of sending when the panel closes', async () => {
       makeTab('wf-42')

@@ -1394,7 +1394,9 @@ void refreshCloudWorkflowIds()
 onBeforeUnmount(() => {
   runPanelTeardown({
     releaseCoachCompletionWaiters: () => {
-      releaseCoachCompletionWaiters(false)
+      releaseCoachCompletionWaiters(
+        coachDeferredBy.value !== null && agentPanelStore.isVisible
+      )
     },
     invalidateConsentHeldSubmission: () => {
       if (
