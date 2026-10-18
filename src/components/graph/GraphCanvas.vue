@@ -560,8 +560,6 @@ onMounted(async () => {
   let urlTemplateId: string | undefined
   let bootstrapOutcome: 'completed' | 'failed' = 'failed'
   try {
-    // ChangeTracker needs to be initialized before setup, as it will overwrite
-    // some listeners of litegraph canvas.
     ChangeTracker.init()
 
     await until(() => isSettingsReady.value || !!settingsError.value).toBe(true)
@@ -576,7 +574,6 @@ onMounted(async () => {
       throw settingsError.value
     }
 
-    // Register core settings immediately after settings are ready
     CORE_SETTINGS.forEach(settingStore.addSetting)
 
     await Promise.all([
@@ -597,13 +594,6 @@ onMounted(async () => {
     const deploymentConfirmed = !isCloud || (await waitForDeploymentPick())
     if (disposed) return
     if (!deploymentConfirmed) {
-      // The pick is an HttpOnly cookie the editor cannot read, so with no
-      // listing it cannot tell a browser on a deployment from one on Comfy
-      // Cloud. It boots on Comfy Cloud's models, as it did before
-      // deployments, so a failed lookup never blocks the editor. A browser
-      // that is on a deployment then offers models its Release may not have
-      // (its nodes and jobs are still the deployment's), so the toast says
-      // so and stays until closed, with a reload to try again.
       toast.error(t('deploymentSwitcher.lookupUnavailable'), {
         description: t('deploymentSwitcher.lookupUnavailableDetail'),
         action: {
@@ -613,6 +603,8 @@ onMounted(async () => {
       })
     }
     await comfyApp.setup(canvas)
+    await colorPaletteService.loadCustomColorPalettes()
+    if (disposed) return
     canvasStore.canvas = comfyApp.canvas
     canvasStore.canvas.render_canvas_border = false
     useSearchBoxStore().setPopoverRef(nodeSearchboxPopoverRef.value)
@@ -622,17 +614,10 @@ onMounted(async () => {
 
     comfyAppReady.value = true
 
-    // Install error-clearing hooks on the initial graph
     if (comfyApp.canvas?.graph) {
       cleanupErrorHooks = installErrorClearingHooks(comfyApp.canvas.graph)
     }
 
-    // Load color palette
-    colorPaletteStore.customPalettes = settingStore.get(
-      'Comfy.CustomColorPalettes'
-    )
-
-    // Restore saved workflow and workflow tabs state
     startupOutcome = await workflowPersistence.initializeWorkflow()
     await workflowPersistence.restoreWorkflowTabsState()
     urlTemplateId = await workflowPersistence.loadTemplateFromUrlIfPresent()
@@ -646,10 +631,8 @@ onMounted(async () => {
   const sharedStatus =
     await workflowPersistence.loadSharedWorkflowFromUrlIfPresent()
 
-  // Run query-param deep-link loaders (?invite, ?create_workspace, ?pricing, ?topup)
   await runUrlActionLoaders()
 
-  // Initialize release store to fetch releases from comfy-api (fire-and-forget)
   const { useReleaseStore } =
     await import('@/platform/updates/common/releaseStore')
   const releaseStore = useReleaseStore()
@@ -657,7 +640,6 @@ onMounted(async () => {
 
   emit('ready')
 
-  // The tour draws into an overlay that only mounts once `ready` has flushed.
   await nextTick()
   try {
     await useFirstRunEntry().handleUrlWorkflow(
