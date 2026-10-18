@@ -40,6 +40,13 @@ function isRejectedWidgetWrite(
   )
 }
 
+function rejectedTarget(op: Op | undefined): string | undefined {
+  if (!op) return undefined
+  if (op.op === 'set_widget') return op.widget
+  if (op.op === 'add_node') return op.class_type
+  return op.op
+}
+
 /**
  * Schema §4 aborts the REMAINDER of a batch, so a rejected result can still
  * carry an applied prefix — which is what `partial` distinguishes.
@@ -56,7 +63,10 @@ function noticeKey(widgetWrite: boolean, partial: boolean): string {
 }
 
 export function createRejectedOpNotifier() {
-  const throttledToasts = new Map<string, ThrottledFunction<() => void>>()
+  const throttledToasts = new Map<
+    string,
+    ThrottledFunction<(detail: string) => void>
+  >()
   const reportedCodes = new Set<string>()
 
   function reportOnce(
@@ -80,11 +90,11 @@ export function createRejectedOpNotifier() {
     )
   }
 
-  function throttledToast(detail: string): ThrottledFunction<() => void> {
-    const existing = throttledToasts.get(detail)
-    if (existing) return existing
+  function showThrottled(kind: string, description: string): void {
+    const existing = throttledToasts.get(kind)
+    if (existing) return existing(description)
     const created = throttle(
-      () => {
+      (detail: string) => {
         useToast().error(i18n.global.t('g.error'), {
           description: detail,
           duration: NOTICE_LIFE_MS
@@ -93,8 +103,8 @@ export function createRejectedOpNotifier() {
       NOTICE_LIFE_MS,
       { edges: ['leading'] }
     )
-    throttledToasts.set(detail, created)
-    return created
+    throttledToasts.set(kind, created)
+    created(description)
   }
 
   return {
@@ -105,10 +115,21 @@ export function createRejectedOpNotifier() {
       const code = failed?.code ?? result.code ?? 'unspecified'
       reportOnce(code, widgetWrite, result, failed)
       const partial = result.applied.length > 0 && failed !== undefined
-      throttledToast(i18n.global.t(noticeKey(widgetWrite, partial)))()
+      const kind = noticeKey(widgetWrite, partial)
+      const notice = i18n.global.t(kind)
+      const target = failed && rejectedTarget(rejectedOp(ops, failed))
+      showThrottled(
+        kind,
+        target
+          ? `${notice} ${i18n.global.t('agent.editRejected.reason', { target, code })}`
+          : notice
+      )
     },
     notifyWidgetWriteRefused() {
-      throttledToast(i18n.global.t('agent.editRejected.widgetWrite'))()
+      showThrottled(
+        'agent.editRejected.widgetWrite',
+        i18n.global.t('agent.editRejected.widgetWrite')
+      )
     },
     cancel() {
       for (const throttled of throttledToasts.values()) throttled.cancel()

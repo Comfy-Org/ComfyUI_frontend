@@ -284,6 +284,30 @@ describe('a human edit the doc host rejects', () => {
     ])
   })
 
+  it.for([
+    {
+      label: 'widget write',
+      operation: WIDGET_EDIT,
+      code: 'unknown_widget',
+      reason: 'Rejected: seed (unknown_widget)'
+    },
+    {
+      label: 'node add',
+      operation: NODE_ADD,
+      code: 'unknown_widget',
+      reason: 'Rejected: Note (unknown_widget)'
+    }
+  ])(
+    'names what the host rejected and why for a $label',
+    async ({ operation, code, reason }) => {
+      const { submit } = mountFollower()
+
+      answerWithOpsResult(rejection(await submit(operation), code))
+
+      expect(toastDescriptions()).toEqual([expect.stringContaining(reason)])
+    }
+  )
+
   it('shares one notice between a refusal the minter raised and a host rejection', async () => {
     const { submit, follower } = mountFollower()
 

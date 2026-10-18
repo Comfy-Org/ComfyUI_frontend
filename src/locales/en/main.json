@@ -5992,10 +5992,11 @@
     "showMore": "Show more",
     "showLess": "Show less",
     "editRejected": {
-      "widgetWrite": "Widget edit was rejected and was not saved. Your typed value exists on the canvas only — reload the workflow to see the value that was kept.",
-      "generic": "Your edit was rejected and was not saved. The workflow may no longer match its canvas — reload the workflow to see what was kept.",
-      "widgetWritePartial": "Widget edit was rejected and was not saved, though some earlier edits were. Your typed value exists on the canvas only — reload the workflow to see the values that were kept.",
-      "genericPartial": "Your edit was rejected and was not saved, though some earlier edits were. The workflow may no longer match its canvas — reload the workflow to see what was kept."
+      "widgetWrite": "Widget edit was rejected and was not saved. The agent's copy of this workflow keeps the earlier value — reload the workflow to see it.",
+      "generic": "Your edit was rejected and was not saved, so it was undone on the canvas. Reload the workflow if the canvas looks out of date.",
+      "widgetWritePartial": "Widget edit was rejected and was not saved, though some earlier edits were. The agent's copy of this workflow keeps the earlier value — reload the workflow to see it.",
+      "genericPartial": "Your edit was rejected and was not saved, though some earlier edits were. The rejected part was undone on the canvas; reload the workflow if the canvas looks out of date.",
+      "reason": "Rejected: {target} ({code})"
     },
     "consent": {
       "title": "Meet Comfy Agent",
