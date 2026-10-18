@@ -20,6 +20,9 @@ vi.mock(import('@/config/workshop-session-state'))
 vi.mock(import('@/config/workshop-credits'))
 vi.mock(import('@/scripts/posthog'))
 vi.mock(import('@/lib/workshop/video-trim/filmstrip'))
+vi.mock(import('@/lib/workshop/openjutsu/anchor'), () => ({
+  routerAnchor: vi.fn(() => Promise.reject(new Error('no anchor in tests')))
+}))
 vi.mock(import('@/lib/workshop/openjutsu/transport-config'), () => ({
   OPENJUTSU_SAMPLE_MODE: true,
   get OPENJUTSU_NO_ACCOUNT() {
@@ -242,7 +245,9 @@ describe('useOpenjutsu', () => {
     expect(swap.rendering.value).toBe(false)
     const sent = JSON.stringify(submit.mock.calls.at(0)?.at(0))
     expect(sent).toContain('"start_time":2')
-    expect(sent).toContain('"width":1344')
+    expect(sent).toContain('"resolution":768')
+    expect(sent).toContain('"duration_seconds":6')
+    expect(sent).toContain('"use_anchor":false')
     expect(quote, 'the price is read again after a run').toHaveBeenCalledOnce()
     expect(
       captureWorkshopEvent,
@@ -283,20 +288,20 @@ describe('useOpenjutsu', () => {
       free_runs_remaining: 0,
       price_credits: 0,
       price_per_second: {
-        tier_input: 'megapixels',
-        tier_match: 'at_most',
-        credits: { '0.45': 1.0416666666, '1.1': 1.0416666666 }
+        tier_input: 'resolution',
+        tier_match: 'exact',
+        credits: { '480': 8, '768': 16 }
       },
       next_run: 'paid'
     })
     const swap = start()
     await vi.advanceTimersByTimeAsync(0)
 
-    expect(swap.priceNote.value).toBe('25 credits per second')
+    expect(swap.priceNote.value).toBe('16 credits per second')
 
     swap.takeVideo(clip)
     swap.confirmTrim(trimmed)
-    expect(swap.priceNote.value).toBe('165 credits')
+    expect(swap.priceNote.value).toBe('96 credits')
   })
 
   it('keeps the page as it was when an example cannot be fetched', async () => {

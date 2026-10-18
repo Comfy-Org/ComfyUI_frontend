@@ -71,9 +71,9 @@ signedInTest(
     await page
       .getByTestId('openjutsu-character-file')
       .setInputFiles(asset('placeholder-1x1.webp'))
-    await page.getByLabel('Who to replace').fill('the man')
+    await page.getByLabel('Extra direction').fill('keep the glasses')
 
-    await expect(page.getByTestId('openjutsu-price')).toHaveText('360 credits')
+    await expect(page.getByTestId('openjutsu-price')).toHaveText('240 credits')
     await page.getByTestId('openjutsu-action').click()
 
     await expect

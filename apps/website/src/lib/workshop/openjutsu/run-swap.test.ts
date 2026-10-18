@@ -12,9 +12,10 @@ const job: SwapJob = {
   video: clip,
   character: hero,
   request: {
-    target: 'the man',
+    target: 'keep the glasses',
     start: 1,
     seconds: 5,
+    size: '480p',
     canvas: { width: 1344, height: 768 },
     result: { width: 1344, height: 756 },
     seed: 42
@@ -46,7 +47,72 @@ describe('runSwap', () => {
     const sent = JSON.stringify(submit.mock.calls.at(0)?.at(0))
     expect(sent).toContain('sample-1-clip.mp4')
     expect(sent).toContain('sample-2-hero.png')
-    expect(sent).toContain('Replace only the man in <Video 1>')
+    expect(sent).toContain(
+      'Replace the selected person in <Video 1> with the character in <Picture 1>.'
+    )
+    expect(sent).toContain('keep the glasses')
+  })
+
+  it('uploads the anchor it makes and starts the swap from it', async () => {
+    const transport = sampleTransport(() => 'free')
+    const submit = vi.spyOn(transport, 'submit')
+    const anchor = new File(['anchor'], 'anchor.png', { type: 'image/png' })
+
+    const running = runSwap(
+      transport,
+      uploadOnce(transport),
+      { ...job, makeAnchor: async () => anchor },
+      () => undefined,
+      new AbortController().signal
+    )
+    await vi.advanceTimersByTimeAsync(10_000)
+
+    await expect(running).resolves.toBe(clip)
+    const sent = JSON.stringify(submit.mock.calls.at(0)?.at(0))
+    expect(sent).toContain('anchor.png')
+    expect(sent).toContain('<Picture 2>')
+  })
+
+  it('swaps without an anchor when making one fails', async () => {
+    const transport = sampleTransport(() => 'free')
+    const submit = vi.spyOn(transport, 'submit')
+
+    const running = runSwap(
+      transport,
+      uploadOnce(transport),
+      { ...job, makeAnchor: () => Promise.reject(new Error('router down')) },
+      () => undefined,
+      new AbortController().signal
+    )
+    await vi.advanceTimersByTimeAsync(10_000)
+
+    await expect(running).resolves.toBe(clip)
+    const sent = JSON.stringify(submit.mock.calls.at(0)?.at(0))
+    expect(sent).not.toContain('anchor_image')
+    expect(sent).not.toContain('<Picture 2>')
+  })
+
+  it('stops instead of swapping without an anchor when the run is cancelled', async () => {
+    const transport = sampleTransport(() => 'free')
+    const submit = vi.spyOn(transport, 'submit')
+    const controller = new AbortController()
+    const makeAnchor = () => {
+      controller.abort()
+      return Promise.reject(new DOMException('cancelled', 'AbortError'))
+    }
+
+    const running = runSwap(
+      transport,
+      uploadOnce(transport),
+      { ...job, makeAnchor },
+      () => undefined,
+      controller.signal
+    )
+    const outcome = running.catch((error: unknown) => error)
+    await vi.advanceTimersByTimeAsync(10_000)
+
+    expect(await outcome).toBeInstanceOf(DOMException)
+    expect(submit).not.toHaveBeenCalled()
   })
 
   it('throws the backend failure when the job does not finish', async () => {

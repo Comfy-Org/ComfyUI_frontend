@@ -14,7 +14,9 @@ export type SwapPhase = 'uploading' | ReshootRunPhase | 'fetching'
 export interface SwapJob {
   readonly video: File
   readonly character: File
-  readonly request: Omit<SwapRequest, 'video' | 'character'>
+  /** Makes the first-frame anchor; a failure runs the swap without one. */
+  readonly makeAnchor?: (signal: AbortSignal) => Promise<File>
+  readonly request: Omit<SwapRequest, 'video' | 'character' | 'anchor'>
 }
 
 /**
@@ -44,16 +46,31 @@ export async function runSwap(
   onPhase: (phase: SwapPhase) => void,
   signal: AbortSignal
 ): Promise<Blob> {
-  const [video, character] = await Promise.all([
+  const [video, character, anchor] = await Promise.all([
     upload(job.video, signal),
-    upload(job.character, signal)
+    upload(job.character, signal),
+    anchorFor(job, upload, signal)
   ])
   const finished = await runJob(
     transport,
-    swapWorkflow({ ...job.request, video, character }),
+    swapWorkflow({ ...job.request, video, character, anchor }),
     onPhase,
     signal
   )
   onPhase('fetching')
   return downloadOutput(transport, finished, 'result', signal)
+}
+
+async function anchorFor(
+  job: SwapJob,
+  upload: (file: File, signal: AbortSignal) => Promise<string>,
+  signal: AbortSignal
+): Promise<string | undefined> {
+  if (!job.makeAnchor) return undefined
+  try {
+    return await upload(await job.makeAnchor(signal), signal)
+  } catch (error) {
+    if (signal.aborted) throw error
+    return undefined
+  }
 }

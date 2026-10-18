@@ -5791,8 +5791,9 @@
       "restore": "Undo remove video"
     },
     "target": {
-      "heading": "Who to replace (optional)",
-      "placeholder": "Optional: who to replace. With more than one person in the shot, describe one so no one else matches, e.g. the man in the purple shirt.",
+      "heading": "Extra direction (optional)",
+      "placeholder": "Optional: add character details or fix the last take, e.g. darker jacket, keep the glasses, less smiling.",
+      "empty": "No extra direction",
       "anyone": "the person"
     },
     "seed": {
@@ -5810,7 +5811,7 @@
       "character": "Add a character image"
     },
     "generate": {
-      "note": "The original sound is kept on the result.",
+      "note": "The original sound is kept on the result. Each run also makes a first-frame image, charged separately.",
       "busy": "Swapping. You can set up the next take meanwhile."
     },
     "phase": {

@@ -6,101 +6,108 @@ import { resolveSeed, swapPrompt, swapWorkflow } from './workflow'
 const request = {
   video: 'clip.mp4',
   character: 'hero.png',
-  target: 'the man in the purple shirt.',
+  target: '  keep the glasses  ',
   start: 2.5,
   seconds: 5,
-  canvas: { width: 768, height: 1344 },
-  result: { width: 756, height: 1344 },
+  size: '768p' as const,
+  canvas: { width: 1344, height: 768 },
+  result: { width: 1344, height: 756 },
   seed: 42
 }
 
 describe('swapWorkflow', () => {
   const graph = swapWorkflow(request)
 
-  it('binds the two uploads, with the image ahead of the video', () => {
-    expect(graph.video.inputs.file).toBe('clip.mp4')
-    expect(graph.character.inputs.image).toBe('hero.png')
-    expect(graph['136'].inputs['ref_images.ref_image_0']).toEqual([
-      'character',
-      0
-    ])
+  it('binds the clip and the character reference', () => {
+    expect(graph['30'].inputs.file).toBe('clip.mp4')
+    expect(graph['9'].inputs.image).toBe('hero.png')
+    expect(graph['803'].inputs.reference).toEqual(['9', 0])
   })
 
-  it('shows H3 the chosen part and generates the next grid length up', () => {
-    expect(graph.trim.inputs).toMatchObject({ start_time: 2.5, duration: 5 })
-    expect(graph.sample.inputs.num_frames).toBe(120)
-    expect(graph['136'].inputs.length).toBe(124)
-    expect(
-      graph.frames,
-      'the length sits on the model node itself'
-    ).toBeUndefined()
+  it('cuts the chosen part before preparing it, for the shot and for pricing', () => {
+    expect(graph.trim.inputs).toMatchObject({
+      video: ['30', 0],
+      start_time: 2.5,
+      duration: 5
+    })
+    expect(graph['31'].inputs.video).toEqual(['trim', 0])
+    expect(graph['803'].inputs.source_video).toEqual(['trim', 0])
   })
 
   it.for([
-    [6, 158],
-    [10, 243],
-    [14.375, 345]
-  ])(
-    'puts the length it generates for a %s s part, %s frames, on the model node',
-    ([seconds, frames]) => {
-      const graph = swapWorkflow({ ...request, seconds })
+    ['480p', 480],
+    ['768p', 768]
+  ] as const)(
+    'asks PrepareVideo for %s as the number the app proxy prices by',
+    ([size, resolution]) => {
+      const sized = swapWorkflow({ ...request, size, seconds: 9.4 })
 
-      expect(graph['136'].inputs.length).toBe(frames)
+      expect(sized['31'].inputs).toMatchObject({
+        resolution,
+        duration_seconds: 9.4
+      })
     }
   )
 
-  it('cuts the result back to the chosen length before saving', () => {
-    expect(graph.cut.inputs).toMatchObject({ start_time: 0, duration: 5 })
-    expect(graph.out.inputs.video).toEqual(['cut', 0])
+  it('runs the v1.5 swap LoRA after the 8-step Turbo LoRA', () => {
+    expect(graph['850'].inputs).toMatchObject({
+      lora_name: 'h3_character_swap_v1.5.safetensors',
+      strength_model: 1,
+      model: ['4', 0]
+    })
+    expect(graph['4'].inputs.lora_name).toContain('turbo_8step')
   })
 
-  it.for([7.3, 6.6, 14.375])(
-    'saves a %s s part uncut when H3 generates no more than it',
-    (seconds) => {
-      const exact = swapWorkflow({ ...request, seconds })
-
-      expect(exact.cut).toBeUndefined()
-      expect(exact.out.inputs.video).toEqual(['130', 0])
-    }
-  )
-
-  it('saves the result in the source shape, whatever the canvas', () => {
-    expect(graph.fit.inputs).toMatchObject({ width: 756, height: 1344 })
-    expect(graph['130'].inputs.images).toEqual(['fit', 0])
+  it('seeds the run and saves the result as a video the deployment reports', () => {
+    expect(graph['801'].inputs.seed).toBe(42)
+    expect(graph['808'].inputs).toMatchObject({
+      images: ['807', 0],
+      audio: ['807', 1]
+    })
+    expect(graph['809'].inputs.video).toEqual(['808', 0])
   })
 
-  it('sizes the canvas and seeds the run', () => {
-    expect(graph['136'].inputs).toMatchObject({ width: 768, height: 1344 })
-    expect(graph['129'].inputs.noise_seed).toBe(42)
+  it('uses an anchor through a crop to the prepared size', () => {
+    const anchored = swapWorkflow({ ...request, anchor: 'anchor.png' })
+
+    expect(anchored.anchor_image.inputs.image).toBe('anchor.png')
+    expect(anchored.anchor_fit.inputs).toMatchObject({
+      image: ['anchor_image', 0],
+      width: ['31', 2],
+      height: ['31', 3],
+      crop: 'center'
+    })
+    expect(anchored['803'].inputs).toMatchObject({
+      anchor: ['anchor_fit', 0],
+      use_anchor: true
+    })
+    expect(anchored['801'].inputs.prompt).toContain('<Picture 2>')
   })
 
-  it("puts the source clip's own sound on the result", () => {
-    expect(graph['130'].inputs.audio).toEqual(['components', 1])
-    expect(graph.components.inputs.video).toEqual(['trim', 0])
-  })
-
-  it('runs the swap LoRA at full strength on the Ref2VA base', () => {
-    expect(graph['145'].inputs.strength_model).toBe(1)
-    expect(graph['127'].inputs.unet_name).toContain('ref2va')
+  it('runs without anchor nodes when no anchor was made', () => {
+    expect(graph.anchor_image).toBeUndefined()
+    expect(graph.anchor_fit).toBeUndefined()
+    expect(graph['803'].inputs.anchor).toBeUndefined()
+    expect(graph['803'].inputs.use_anchor).toBe(false)
+    expect(graph['801'].inputs.prompt).not.toContain('<Picture 2>')
   })
 
   it('leaves the stored graph untouched', () => {
-    expect(swapGraph.video.inputs.file).not.toBe('clip.mp4')
+    expect(swapGraph['30'].inputs.file).not.toBe('clip.mp4')
+    expect(swapGraph.anchor_image).toBeDefined()
   })
 })
 
 describe('swapPrompt', () => {
-  it('names the target once and both references by their H3 tags', () => {
-    const prompt = swapPrompt(' the man in the purple shirt. ')
-    expect(prompt).toMatch(
-      /^Replace only the man in the purple shirt in <Video 1> with the character in <Picture 1>\./
+  it("starts with the instruction and both references by their H3 tags, then the visitor's words", () => {
+    expect(swapPrompt('  keep the glasses  ', false)).toBe(
+      'Replace the selected person in <Video 1> with the character in <Picture 1>. Preserve the source performance, scene and audio timing. keep the glasses'
     )
-    expect(prompt).toContain('all other people')
   })
 
-  it('names the person when no one is described', () => {
-    expect(swapPrompt('  ')).toMatch(
-      /^Replace only the person in <Video 1> with the character in <Picture 1>\./
+  it('names the anchor only when there is one, and stands alone without extra words', () => {
+    expect(swapPrompt('', true)).toBe(
+      'Replace the selected person in <Video 1> with the character in <Picture 1>. Preserve the source performance, scene and audio timing. Start from the first frame in <Picture 2>.'
     )
   })
 })

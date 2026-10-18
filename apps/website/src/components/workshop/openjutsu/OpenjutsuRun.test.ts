@@ -23,7 +23,9 @@ describe('OpenjutsuRun', () => {
       'Free · 3 of 5 left today'
     )
     expect(
-      screen.getByText('The original sound is kept on the result.')
+      screen.getByText(
+        'The original sound is kept on the result. Each run also makes a first-frame image, charged separately.'
+      )
     ).toBeVisible()
     expect(emitted('generate')).toHaveLength(1)
   })

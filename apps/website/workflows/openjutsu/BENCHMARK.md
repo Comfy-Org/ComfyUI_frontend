@@ -1,5 +1,36 @@
 # Openjutsu benchmark
 
+## `openjutsu/2` (2026-10-17)
+
+Measured on deployment `dep-cf2de5dc` (release `12a11ef6`, ComfyUI 0.39.0), the
+same graph, models and GPU as the current `dep-1addaa09` apart from the ComfyUI
+version. One RTX PRO 6000 (96 GB), US-NE-1, warm worker. GPU seconds are each
+job's `started_at` to `completed_at`. $4.54 per GPU-hour, 211 credits to the
+dollar: 0.266 credits per GPU-second.
+
+Source: a stock tai chi clip, one continuous shot, 15 s at 1080p, started
+0.5 s in (the original opens on four black frames, which failed SAM). Anchor-free,
+seed 42, one run per cell. Price is what the catalog charges at 8 / 16 credits
+a second.
+
+| Quality | Length | Windows | Job      | GPU s | Cost   | Price  | Margin |
+| ------- | ------ | ------- | -------- | ----- | ------ | ------ | ------ |
+| 480p    | 5.0 s  | 1       | b8a8a1b0 | 119   | 32 cr  | 40 cr  | +26%   |
+| 480p    | 9.4 s  | 2       | 38964ff4 | 331   | 88 cr  | 76 cr  | -14%   |
+| 480p    | 13.6 s | 3       | 6c1bc603 | 416   | 111 cr | 109 cr | -2%    |
+| 768p    | 5.0 s  | 1       | 2f46adc8 | 248   | 66 cr  | 80 cr  | +21%   |
+| 768p    | 9.4 s  | 2       | 82fbe0fb | 494   | 131 cr | 151 cr | +15%   |
+| 768p    | 13.6 s | 3       | f69e6557 | 740   | 197 cr | 218 cr | +11%   |
+
+- 768p grows by about 247 GPU s a window; 480p is noisier, 119 s for one window
+  and about 140 s a window after that.
+- Window edges after PrepareVideo's 17n+5 padding are 5.0, 9.4 and 13.6 s.
+- Not covered: cold starts, failed runs, and the anchor's Router charge (about
+  7 credits, billed separately to the visitor).
+- One run per cell; the billing handoff asks for three.
+
+## `openjutsu/1` (2026-10-08)
+
 Measured 2026-10-08 (UTC) on deployment `dep-3b5009fe-c93b-4a3e-9879-8e3fee3addc1`,
 Build `openjutsu-h3-swap` release `f4ce9bbb` (ComfyUI 0.39.0), one RTX PRO 6000
 (96 GB) in US-NE-1. A new model, node version or GPU invalidates these numbers.

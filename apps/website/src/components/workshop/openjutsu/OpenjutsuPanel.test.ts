@@ -95,11 +95,11 @@ describe('OpenjutsuPanel', () => {
     expect(screen.queryByRole('button', { name: /^Remove/ })).toBeNull()
   })
 
-  it('edits who to replace, the quality and a fixed seed', async () => {
+  it('edits the extra direction, the quality and a fixed seed', async () => {
     const { emitted } = render(OpenjutsuPanel, { props: models })
 
     await userEvent.type(
-      screen.getByLabelText('Who to replace (optional)'),
+      screen.getByLabelText('Extra direction (optional)'),
       'the man'
     )
     await userEvent.click(

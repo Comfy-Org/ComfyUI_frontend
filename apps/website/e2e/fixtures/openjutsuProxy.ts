@@ -13,9 +13,9 @@ const QUOTE = {
   resets_at: null,
   price_credits: 0,
   price_per_second: {
-    tier_input: 'megapixels',
-    tier_match: 'at_most',
-    credits: { '0.45': 1.0416666666, '1.1': 1.0416666666 }
+    tier_input: 'resolution',
+    tier_match: 'exact',
+    credits: { '480': 8, '768': 16 }
   },
   next_run: 'paid'
 }
@@ -40,8 +40,9 @@ export async function mockOpenjutsuProxy(page: Page, workspaceToken: string) {
       }),
       'POST /jobs': (request: Request) => {
         const sent = request.postData() ?? ''
-        expect(sent).toContain('MiniMaxH3ReferenceToVideo')
-        expect(sent).toContain('VideoFrameSample')
+        expect(sent).toContain('H3CharacterSwapPrepareVideo')
+        expect(sent).toContain('"resolution":768')
+        expect(sent).toContain('"use_anchor":false')
         return { json: SWAP_JOB }
       },
       [`GET /jobs/${SWAP_JOB.id}`]: () => ({ json: SWAP_JOB }),
@@ -50,6 +51,9 @@ export async function mockOpenjutsuProxy(page: Page, workspaceToken: string) {
         body: result
       })
     })
+  )
+  await page.route(/\/v2\/models\/openai\/gpt-image-2\.5-sunburst/, (route) =>
+    route.fulfill({ status: 503, json: { error_type: 'unavailable' } })
   )
   await page.route(/\/app-proxy\/[^/]+\//, async (route: Route) => {
     const request = route.request()

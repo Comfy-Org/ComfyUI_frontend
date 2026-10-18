@@ -184,7 +184,7 @@ onBeforeUnmount(() =>
           {{ t('openjutsu.peek.seconds', { seconds: partSeconds.toFixed(1) }) }}
           ·
         </template>
-        {{ target.trim() || t('openjutsu.target.anyone') }}
+        {{ target || t('openjutsu.target.empty') }}
       </span>
       <span class="shrink-0 text-xs text-primary-warm-gray">{{ size }}</span>
     </template>

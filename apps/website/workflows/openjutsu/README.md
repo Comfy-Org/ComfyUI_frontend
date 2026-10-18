@@ -1,106 +1,134 @@
 # Openjutsu workflow contract
 
-Version `openjutsu/1`, written 2026-10-07. **Not yet run as Openjutsu.** The
-graph is Character Swap's `video.api.json` (branch `rob/app-character-swap`,
-validated on Comfy Cloud on 2026-09-29, job `b4e641c5`) with three changes: a
-trim start, 20 steps instead of 28, and its own output prefix. Nothing here has
-been benchmarked; see "Open before a paid run".
+Version `openjutsu/2`, written 2026-10-17. It replaces `openjutsu/1`, the
+core-nodes-only graph built on `MiniMaxH3ReferenceToVideo`.
 
 The graph is `src/lib/workshop/openjutsu/swap.api.json`, filled in by
-`workflow.ts` beside it. Every node is built into ComfyUI; no custom node pack.
+`workflow.ts` beside it. It is Akatz Labs' H3 Character Swap workflow
+(`akatz-labs/h3-character-swap-tool`, `workflows/H3 Character Swap.api.json` at
+`0670e4f`, node for node the same as the canvas file there) with the changes
+listed under "Changes from upstream". It is generated, not hand-edited: the
+build script and upstream copy live outside the repo, in
+`~/comfyvibe/projects/comfy_workshop/openjutsu-v2/h3-character-swap/`
+(`make_graph.py`).
 
-Workspace: `Workshop Apps` (where every Hub app's deployment lives), since
-2026-10-12. Build `openjutsu-h3-swap` (`d3f10ae7-3c0e-4f03-a476-eba190ef669c`),
-release `c8393b68-d81a-44b4-b6dd-b7a6e41da6f0`, ComfyUI `52f98af2`. Deployment
-`dep-4a66f1a2-f688-4169-8f30-8ddc1ce78b51`, RTX PRO 6000, US-NE-1, 0 to 1
+Workspace: Comfy. Build `app-openjutsu` (`ce9cd4e1-ab34-411c-aa5e-625d1835cb5d`),
+release `9e2ed871-78e4-4103-be56-8d2f31097011` (v4), ComfyUI `v0.41.0`
+(`98cc0bf8`), PyTorch 2.12.1 + CUDA 13.0. Deployment
+`dep-1addaa09-5d25-4247-af0e-a79c57f7797a`, RTX PRO 6000, US-NE-1, 0 to 1
 workers. The spec is outside the repo:
-`~/comfyvibe/projects/comfy_workshop/openjutsu/build-workshop-apps/comfy-build.yaml`.
-
-The benchmark ran on the first deployment, `dep-3b5009fe`, in Rob's personal
-workspace (Build `4dacf7e1`, spec in `openjutsu/build/`), now stopped. Same
-spec, same GPU and region.
+`~/comfyvibe/projects/comfy_workshop/openjutsu-v2/build-comfy/comfy-build.yaml`.
+The build only ever adds: `openjutsu/1`'s models and nodes stay installed.
 
 ## What it does
 
-One job: swap one person in a chosen 5 to 15 second part of a video for the
-character in one image, keep the scene, and put the clip's own sound back on the result.
+One job: swap the most prominent person in a chosen 5 to 15 second part of a
+video for the character in one image, keep the scene, and keep the clip's own
+sound. A SAM 3.1 mask limits the change to that person; the run generates in
+124-frame windows with 18 frames of history, so any part length up to 15 s is
+one job.
 
-## Sources
+## Custom nodes
 
-- [LoRA model card](https://huggingface.co/akatz-ai/MiniMax-H3-Character-Swap-LoRA)
-  and its example workflow `examples/H3 Character Swap v1 Ref2VA.json`.
-- [Comfy-Org/MiniMax-H3](https://huggingface.co/Comfy-Org/MiniMax-H3) and the
-  official `video_minimax_h3_r2v` template the example is built on.
-- [Reference Space](https://huggingface.co/spaces/hugging-apps/minimax-h3-character-swap-lora),
-  for reference order, canvases and the frame grid.
+`h3_character_swap`, Akatz Labs' node pack (`worker_nodes/h3_character_swap`
+in the same repo at `0670e4f`), installed as a private copy because it lives in
+a subfolder of a larger repo. GPL-3.0, with one Apache-2.0 kernel file. The
+copy carries two Comfy patches, recorded in its `SOURCE_PROVENANCE.json`:
 
-## Models and why
+- FFmpeg: the build image has no `ffmpeg` or `ffprobe` on PATH. The pack puts
+  the bundled `imageio-ffmpeg` binary on PATH and reads stream facts with PyAV
+  instead of `ffprobe`.
+- `H3CharacterSwapPrepareVideo.resolution` takes the integers `480` and `768`
+  instead of strings, so the app proxy can price on it as a numeric tier.
 
-| Slot            | File                                                       | Why                                                                                      |
-| --------------- | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| Diffusion model | `minimax_h3_ref2va_pruned_int8_convrot`                    | The exact weights the LoRA was trained on. Plain FL2VA/T2V weights are not a substitute. |
-| LoRA            | `h3_character_swap_pro4500_1000`, model only, strength 1.0 | The card's stated starting point. It is an adapter, not a Turbo LoRA.                    |
-| Text encoder    | `qwen3vl_32b_minimax_h3_nvfp4_awq`, type `minimax`         | The one the example ships; needs no special GPU.                                         |
-| Video VAE       | `minimax_h3_video_vae_fp16`                                | What Comfy Cloud has. The example uses the `int8_convrot` build of the same VAE.         |
-| Audio VAE       | `minimax_h3_audio_vae_fp32`                                | Loaded because the conditioning node needs it; its output is not decoded.                |
+## Models
 
-The graph names the LoRA by its published file name, `h3_character_swap_pro4500_1000.safetensors`,
-which is what the Openjutsu build installs. Comfy Cloud's shared model list does not have it.
+| Slot             | File                                                                 | Licence                      |
+| ---------------- | -------------------------------------------------------------------- | ---------------------------- |
+| Diffusion model  | `minimax_h3_ref2va_pruned_int8_convrot`                              | MiniMax H3 Community License |
+| Turbo LoRA       | `minimax_h3_fl2v_turbo_8step_v1.0_768p_comfyui_bf16`, strength 1.0   | Apache-2.0                   |
+| Swap LoRA        | `h3_character_swap_v1.5`, strength 1.0 (Akatz's recommended release) | MiniMax H3 Community License |
+| Text encoder     | `qwen3vl_32b_minimax_h3_nvfp4_awq`, type `minimax`                   | MiniMax H3 Community License |
+| Video, audio VAE | `minimax_h3_video_vae_fp16`, `minimax_h3_audio_vae_fp32`             | MiniMax H3 Community License |
+| Segmentation     | `sam3.1_multiplex_fp16`                                              | SAM License                  |
 
-## Settings and why
+## Settings
 
-| Setting             | Value                                                                                                                                 | Why                                                                                                                                                                                                                                             |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Sampler / scheduler | `res_multistep` / `simple`                                                                                                            | The LoRA author's default. `beta` was dropped as too slow (Rob, 2026-10-07).                                                                                                                                                                    |
-| Steps               | 20                                                                                                                                    | The author's default, and the most Rob wants spent (2026-10-07).                                                                                                                                                                                |
-| Turbo LoRA          | off                                                                                                                                   | The card says none is required; its Turbo result was an experiment.                                                                                                                                                                             |
-| Frame rate          | 24 fps                                                                                                                                | H3's rate. The graph samples the frames it needs evenly from the chosen part. Sources under 24 fps are untested since the frame-repeat step (a KJNodes node) was removed to keep the build core-only.                                           |
-| Length              | `17k + 5` frames, 124 to 345                                                                                                          | H3's grid. As the LoRA's author sets it, the run generates the next grid length at or above the chosen part (5 s becomes 124 frames) and the result is cut back to the part's own length. 345 frames (14.4 s) is the most; 362 would pass 15 s. |
-| Canvas              | the source's own shape at 1344x768 pixels (768p, the default) or 864x480 pixels (480p), each side moved to the nearest multiple of 32 | 768p is the LoRA's training bucket; 480p is its author's starting resolution and costs about a third. See `swapCanvas`.                                                                                                                         |
-| Saved frame         | the largest frame of exactly the source's shape inside the canvas (`fit`, `ImageScale` lanczos)                                       | A swap must never change aspect ratio (Rob, 2026-10-07). The multiple-of-32 nudge is taken back out here. See `resultSize`. Not yet run on the deployment.                                                                                      |
-| `ref_image_size`    | `match`                                                                                                                               | The example's value. `max` may hold identity better and costs time.                                                                                                                                                                             |
-| Reference order     | image, then video                                                                                                                     | The order the LoRA was trained with.                                                                                                                                                                                                            |
-| Prompt              | the card's example wording                                                                                                            | See `swapPrompt`. The card warns that pushing expressions can suppress the swap.                                                                                                                                                                |
-| Sound               | source audio, trimmed to the same part                                                                                                | The card's own later reviews did this. H3's generated audio drifted.                                                                                                                                                                            |
+Upstream's, unchanged: 8 steps, CFG 1, `er_sde` / `normal`, sigma shift 12
+(video) and 3 (audio), Comfy Kitchen attention, 124-frame windows with 18
+frames of history, a 64 px mask expansion, SAM `person` with the largest
+person selected, audio guide on.
+
+## Changes from upstream
+
+| Change                                                   | Why                                                                                                                                                                                          |
+| -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Swap LoRA v1 to `h3_character_swap_v1.5`                 | Akatz's recommended release.                                                                                                                                                                 |
+| `Video Slice` (`trim`) in front of nodes 31 and 803      | The page chooses where the part starts.                                                                                                                                                      |
+| `resolution` as a number, `duration_seconds` always set  | The app proxy prices from both; it refuses `0` (whole clip).                                                                                                                                 |
+| The optional anchor (309) replaced by `LoadImage` + crop | The deployment rejects uploaded files in node 309's own validation; core `LoadImage` takes them. `ImageScale` center-crops the anchor to the prepared size, since node 803 would stretch it. |
+| `CreateVideo` + `SaveVideo` after node 807               | The deployment reports only standard outputs; 807 reports its MP4 under its own key.                                                                                                         |
+| Mask preview (111, 112) removed                          | Not needed by the app.                                                                                                                                                                       |
+| Prompt                                                   | See below.                                                                                                                                                                                   |
+
+## Prompt
+
+Every run sends upstream's instruction with H3's reference tags, then the
+visitor's optional "extra direction":
+
+> Replace the selected person in `<Video 1>` with the character in
+> `<Picture 1>`. Preserve the source performance, scene and audio timing.
+> _(with an anchor:)_ Start from the first frame in `<Picture 2>`.
+> _(the visitor's text, if any)_
+
+The box is optional; it is for character details or for fixing a previous take.
+
+## Anchor
+
+Before the job, the page makes a first-frame anchor: it takes the frame at the
+part's start from the visitor's own video, and asks GPT Image 2.5 sunburst
+(quality `low`, through Comfy Router with the visitor's sign-in) to put the
+character, outfit included, into it. The page uploads the result with the
+other files and the graph uses it through `anchor_image` and `anchor_fit`.
+If making it fails, or nobody is signed in, the job runs without an anchor
+(the page removes both nodes and sets `use_anchor` false). See `anchor.ts`.
+
+The anchor is a separate Router charge on the visitor's credits, about 7
+credits, not part of the app proxy's price.
 
 ## App inputs to graph inputs
 
-| App input                                     | Graph input                                                                                                         |
-| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| Video                                         | `video.file`                                                                                                        |
-| Character image                               | `character.image`                                                                                                   |
-| Who to replace                                | `136.prompt`, through `swapPrompt`                                                                                  |
-| Start of the part (trim dialog)               | `trim.start_time` (seconds)                                                                                         |
-| Length of the part (trim dialog)              | `trim.duration` and `cut.duration` (seconds), `sample.num_frames` (the part at 24 fps), `136.length` (`gridFrames`) |
-| Quality (768p or 480p) and the source's shape | `136.width`, `136.height` (canvas); `fit.width`, `fit.height` (saved frame)                                         |
-| Seed (blank draws one)                        | `129.noise_seed`                                                                                                    |
+| App input                    | Graph input                                               |
+| ---------------------------- | --------------------------------------------------------- |
+| Video                        | `30.file`                                                 |
+| Character image              | `9.image`                                                 |
+| Start and length of the part | `trim.start_time`, `trim.duration`; `31.duration_seconds` |
+| Quality (768p or 480p)       | `31.resolution` (`768` or `480`)                          |
+| Extra direction              | `801.prompt`, through `swapPrompt`                        |
+| Seed (blank draws one)       | `801.seed`                                                |
+| Anchor (made by the page)    | `anchor_image.image`                                      |
 
-Output: node `out` saves `openjutsu/result_*.mp4` (H.264). `LoadVideo` also
-emits a preview of the input under node `video`; the app takes the file whose
-name contains `result`.
-
-## Expected failures
-
-- A part that runs past the end of the clip fails at `Video Slice`
-  (`strict_duration`); the app keeps the part inside the clip.
-- A silent source gives a silent result.
-- More than one person and a vague description: the swap may hit the wrong
-  person or none. The LoRA was only trained on one-person swaps.
-- Hard cuts, long parts and close-up expressions drift; the card says so.
-- Remuxing the sound does not repair lip-sync drift.
+Output: node `809` saves `openjutsu/result_*.mp4` (H.264, source audio). The
+app takes the file whose name contains `result`.
 
 ## Metering
 
-One job, and it is the paid one. There is no free preparation job.
+One job, and it is the paid one. The app proxy prices it from
+`H3CharacterSwapPrepareVideo` (node 31): `duration_seconds` times the rate for
+its `resolution`, 8 credits a second at 480p and 16 at 768p. `price.ts` prices
+the same values the graph sends; a test ties the two. See `BENCHMARK.md`.
+
+## Expected failures
+
+- A clip whose first frame has no person (a fade from black, a title card)
+  fails at `H3CharacterSwapSelectSubject` ("SAM found no subject") before any
+  generation.
+- With several people, the largest one is swapped.
+- Hard cuts break the swap at the cut; one continuous shot is expected.
+- A silent source gives a silent result.
 
 ## Licence
 
-The LoRA and H3 are under the MiniMax H3 Community License. Its standard grant
-excludes the US, EU, UK and South Korea and describes separate authorisation.
-**This needs a decision before anything public.**
-
-## Open before a paid run
-
-2. `ref_image_size` `match` against `max`.
-3. Whether 10 to 14 second parts hold up at all, and what each length costs.
-4. The LoRA installed on a deployment, and the name it has there.
+The node pack is GPL-3.0 (one Apache-2.0 file). H3 and the swap LoRA are under
+the MiniMax H3 Community License, whose standard grant excludes the US, EU, UK
+and South Korea. **This needs a decision before anything public.**

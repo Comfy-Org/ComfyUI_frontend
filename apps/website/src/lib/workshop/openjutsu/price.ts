@@ -3,36 +3,26 @@ import { translationsFor } from '@/i18n/translations'
 import type { ReshootRun } from '@/lib/workshop/cinematic-studio/reshoot-engine/notes'
 import { quoteNote } from '@/lib/workshop/cinematic-studio/reshoot-engine/notes'
 import type { ReshootQuote } from '@/lib/workshop/cinematic-studio/reshoot-engine/transport'
-import type { SwapCanvas } from './clip'
-import { FPS, gridFrames } from './clip'
+import type { SwapSize } from './clip'
+import { RESOLUTION } from './workflow'
 
-/** What a run is priced from: the part's seconds and the canvas H3 generates on. */
+/** What a run is priced from: the seconds it asks for and its quality. */
 export interface SwapPriceRun {
   readonly seconds?: number
-  readonly canvas?: SwapCanvas
+  readonly size?: SwapSize
 }
 
 type PerSecond = NonNullable<ReshootQuote['price_per_second']>
 
-const megapixels = (canvas: SwapCanvas) => (canvas.width * canvas.height) / 1e6
-
-function areaTiers(priced: PerSecond) {
-  return Object.entries(priced.credits)
-    .map(([most, rate]) => ({ most: Number(most), rate }))
-    .filter(({ most }) => Number.isFinite(most))
-    .sort((a, b) => a.most - b.most)
-}
-
-function frameRate(
+function secondRate(
   priced: PerSecond,
-  canvas: SwapCanvas | undefined
+  size: SwapSize | undefined
 ): number | undefined {
-  if (priced.tier_input !== 'megapixels' || priced.tier_match !== 'at_most')
+  if (priced.tier_input !== 'resolution' || priced.tier_match === 'at_most')
     return undefined
-  const tiers = areaTiers(priced)
-  if (canvas) return tiers.find(({ most }) => megapixels(canvas) <= most)?.rate
-  const rates = new Set(tiers.map(({ rate }) => rate))
-  return rates.size === 1 ? tiers[0]?.rate : undefined
+  if (size) return priced.credits[String(RESOLUTION[size])]
+  const rates = new Set(Object.values(priced.credits))
+  return rates.size === 1 ? [...rates][0] : undefined
 }
 
 /** The quote priced for this run as the app proxy charges it; undefined when the page cannot price it. */
@@ -41,11 +31,11 @@ export function runQuote(
   run: SwapPriceRun
 ): ReshootQuote | undefined {
   if (!quote.price_per_second) return quote
-  const rate = run.canvas && frameRate(quote.price_per_second, run.canvas)
+  const rate = run.size && secondRate(quote.price_per_second, run.size)
   if (rate === undefined || run.seconds === undefined) return undefined
   return {
     ...quote,
-    price_credits: Math.ceil(gridFrames(run.seconds) * rate - 1e-9),
+    price_credits: Math.ceil(run.seconds * rate - 1e-9),
     price_per_second: undefined
   }
 }
@@ -53,14 +43,14 @@ export function runQuote(
 /** The credits per second a paid run costs, before a part is chosen. */
 export function perSecondNote(
   quote: ReshootQuote,
-  canvas: SwapCanvas | undefined,
+  size: SwapSize | undefined,
   locale: Locale
 ): string | undefined {
   const priced = quote.price_per_second
-  const rate = priced && frameRate(priced, canvas)
+  const rate = priced && secondRate(priced, size)
   if (rate === undefined || quote.next_run !== 'paid') return undefined
   return translationsFor(locale).t('reshoot.quote.perSecond', {
-    rate: (Math.round(rate * FPS * 100) / 100).toLocaleString(locale)
+    rate: rate.toLocaleString(locale)
   })
 }
 
@@ -83,6 +73,6 @@ export function swapPriceNote(
   const unknown = translationsFor(locale).t('reshoot.quote.priceUnknown')
   if (run.seconds !== undefined) return unknown
   return quote.next_run === 'paid'
-    ? (perSecondNote(quote, run.canvas, locale) ?? unknown)
+    ? (perSecondNote(quote, run.size, locale) ?? unknown)
     : quoteNote(quote, locale, run)
 }

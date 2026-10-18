@@ -21,6 +21,7 @@ import { priceReadable, swapPriceNote } from '@/lib/workshop/openjutsu/price'
 import type { SwapOutcome } from '@/lib/workshop/openjutsu/run-report'
 import { swapRunReport } from '@/lib/workshop/openjutsu/run-report'
 import type { SwapJob } from '@/lib/workshop/openjutsu/run-swap'
+import { routerAnchor } from '@/lib/workshop/openjutsu/anchor'
 import { runSwap, uploadOnce } from '@/lib/workshop/openjutsu/run-swap'
 import {
   canSwap,
@@ -57,11 +58,12 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
     useWorkshopSession()
   const authEnabled = useWorkshopAuthFlag()
   const mounted = useMounted()
-  const transport = openjutsuTransport(async () => {
+  async function sessionToken() {
     const credential = await ensureFresh()
     if (credential?.status !== 'ok') throw new ReshootError('unauthorized')
     return credential.session.token
-  })
+  }
+  const transport = openjutsuTransport(sessionToken)
 
   // --- the two inputs. A video that fits a run is used as soon as it is
   // read; any other waits in the trim dialog while the earlier one stays.
@@ -310,7 +312,7 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
       quote: quote.value,
       priceReadable: priceReadable(quote.value, {
         seconds: partSeconds.value,
-        canvas: canvas.value
+        size: size.value
       })
     })
   )
@@ -319,7 +321,7 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
       return quoteFailed.value ? t('reshoot.quote.failed') : undefined
     return swapPriceNote(
       quote.value,
-      { size: size.value, seconds: partSeconds.value, canvas: canvas.value },
+      { size: size.value, seconds: partSeconds.value },
       locale
     )
   })
@@ -350,10 +352,19 @@ export function useOpenjutsu({ locale = 'en' }: { locale?: Locale } = {}) {
     return {
       video: clip,
       character: image,
+      makeAnchor: (signal) =>
+        routerAnchor({
+          video: clip,
+          start: read.start,
+          character: image,
+          token: sessionToken,
+          signal
+        }),
       request: {
         target: target.value.trim(),
         start: read.start,
         seconds: swapSeconds(read.end - read.start),
+        size: size.value,
         canvas: canvasSize,
         result: resultSize(read.width, read.height, canvasSize),
         seed: resolveSeed(seed.value)
